@@ -1,38 +1,66 @@
-# Harvest Tycoon — GitHub downloadpakket
+# Harvest Tycoon
 
-## 1. Upload naar GitHub
-Pak de ZIP uit. Open https://github.com/floris-adbacklog/harvest-tycoon en kies Add file > Upload files. Upload de INHOUD van de map harvest-tycoon, niet de ZIP en niet de bovenliggende map. package.json, vercel.json en pnpm-lock.yaml moeten direct in de repository staan. Behoud alle submappen. Bij veel bestanden: upload in meerdere rondes of gebruik GitHub Desktop (dit neemt ook verborgen bestanden mee). Commit de upload. De art-assets zijn bedoeld voor deze game, niet om los als assetpack te publiceren; houd de repository private.
+A farming game with the supplied GLB farm pack and Harvest Tycoon logo. All gameplay text is English.
 
-## 2. Supabase
-Doelproject: jnmdirvidffzxukbdmij.
-Schakel Anonymous Sign-ins in bij Authentication.
-Als player_stats nog niet bestaat: plak supabase/player_stats.sql in SQL Editor en voer het volledige script eenmaal uit. Verwacht: Success. No rows returned.
-Als je het eerder gegeven script al met succes uitvoerde, sla deze stap over. Bij een fout of afwijkend bestaand schema: stop en deel de fout; verwijder geen bestaande tabel.
-Het script gebruikt currency DEFAULT 0 en level DEFAULT 1. De game stuurt daarna het actuele lokale saldo (een nieuwe farm begint met 180 munten). Dit verandert de database-default niet.
+## Long-term progression
 
-## 3. Vercel
-Importeer de GitHub-repository als nieuw Vercel-project. vercel.json bevat de instellingen:
-- Framework: Other
-- Install: pnpm install --frozen-lockfile
-- Build: pnpm run build:static
-- Output: dist-static
-- Node.js: 22.x of een nieuwere ondersteunde versie
-Voeg voor Deploy beide Environment Variables toe:
-VITE_SUPABASE_URL = de Project URL uit het Supabase Connect-venster
-VITE_SUPABASE_ANON_KEY = de publieke publishable key (sb_publishable_...) of publieke anon key
-Gebruik nooit een service_role-, secret- of managementsleutel. Stel deze waarden in Vercel in; zet geen ingevuld .env-bestand op GitHub.
-Na wijzigen van deze waarden moet je opnieuw deployen: ze worden tijdens het bouwen opgenomen.
+| Crop | Base growth | Seed cost | Coins per harvested item |
+| --- | --- | --- | --- |
+| Wheat | 2 minutes | 3 | 8 |
+| Lettuce | 5 minutes | 7 | 20 |
+| Corn | 15 minutes | 10 | 40 |
+| Barley | 45 minutes | 20 | 85 |
+| Cabbage | 2 hours | 40 | 170 |
+| Cauliflower | 4 hours | 65 | 300 |
+| Pumpkin | 8 hours | 95 | 480 |
+| Red cabbage | 12 hours | 130 | 720 |
+| Sunflower | 24 hours | 180 | 1,100 |
 
-## 4. Controleren
-Open de game en kies een gebruikersnaam. Controleer in Supabase Table Editor dat je rij verschijnt. Oogst/verkoop, wacht minstens vier seconden en controleer currency en level. Herlaad: dezelfde player_id moet behouden blijven.
-Open een ander browserprofiel of incognitovenster, kies een andere naam en bekijk de ranglijst: beide spelers moeten zichtbaar zijn.
-Controleer daarna met de tweede spelerssessie dat een update van de eerste rij niets wijzigt. Gebruik hiervoor een clienttest met de sessie van speler B, niet de SQL Editor als beheerder. Deze live beveiligingstest is nog niet uitgevoerd; alleen een werkende ranglijst bewijst RLS niet.
+A field yields one crop unattended, two after watering, and three after watering plus extra care. Water removes 20% of remaining growth time. Care is available after 30% of the original growing time and removes another 15% of remaining time. Full care doubles harvest XP. Crops never wither. Silo research improves subsequent planting.
 
-## Opgeslagen voortgang
-De volledige farm blijft in localStorage. Alleen player_id, username, currency, level en updated_at staan in Supabase. Een anonieme identiteit blijft in dezelfde browser; wissen van browsergegevens of een ander apparaat maakt een nieuwe identiteit.
-Een nieuw Vercel-adres heeft aparte browseropslag. De eerdere farm op de Sites-URL verhuist NIET automatisch mee. Gebruik de oorspronkelijke site voor je bestaande save totdat export/import is geregeld.
-Optionele e-maillinking in de interface vereist extra Supabase-instellingen (email provider, manual identity linking en toegestane /play.html-redirect); dit is niet nodig voor anoniem spelen.
+The farm stall earns 36 coins/hour initially, with 24 hours of storage. Eight upgrade levels increase income and capacity (up to 48 hours). Estate projects add 6 coins/hour each. Income before an upgrade settles at the previous rate. The stall uses no crop inventory. Active chores repeat every two or three minutes; short crops, care, production and deliveries provide a higher active earning rate.
 
-## Status van dit pakket
-Dit is een export van de bestaande game. Er is niets naar GitHub geüpload of naar Vercel gepubliceerd. Supabase-instellingen en live sessietests zijn niet uitgevoerd. De bestaande Sites-game is niet gewijzigd.
-De app/ en overige frameworkbestanden zijn bewaard uit de oorspronkelijke code. Gebruik voor deze verhuizing uitsluitend build:static; de oude Sites-serverroute wordt niet ingezet.
+Six sequential estate projects have construction times of 2 hours, 8 hours, 1 day, 2 days, 3 days and 7 days, plus increasingly large coin, produce and mastery requirements. Recurring three-day estate commissions continue afterwards. Nine crops each have four mastery medals at 25, 100, 300 and 1,000 harvested fields. Production buildings reach level 10, silo research reaches level 5, and 32 permanent quests supplement daily activities. Existing balances, inventory, levels and in-progress timers migrate without resetting.
+
+## Local gameplay and cloud stats
+
+`public/farm-client.js` saves the full farm in localStorage after each action. The leaderboard receives only player ID, display username, integer currency, integer level, and a server-generated update timestamp. Inventory, layouts, crop positions, animals and jobs never go to Supabase. Local play does not wait for leaderboard requests.
+
+- `src/supabase.js`: client initialization, anonymous auth, profile and optional email identity linking.
+- `src/sync.js`: allowlisted stats payload, four-second write throttle, coalescing and retry after a new update or reconnection.
+- `src/leaderboard.js`: top twenty by currency, stable ordering, tied ranks and the current player's own rank.
+- `src/ui.js`: username prompt, bottom-bar leaderboard, account linking and HTML overlays.
+- `supabase/player_stats.sql`: table, grants, RLS, indexes and timestamp trigger.
+
+The board contains self-reported client scores. RLS prevents changing another player's row; it cannot verify honest gameplay in a local-only game.
+
+Anonymous identity persists in its browser's saved auth session. It does **not** automatically follow a person to another device. The optional email linking/sign-in panel enables the same Supabase player identity on other devices. Layouts stay device-local; the active device publishes its current score. Clearing browser storage removes its farm and an unlinked anonymous identity.
+
+## Supabase activation
+
+No Supabase project URL or browser key was available when this integration was authored. The unconfigured panel states that the leaderboard is unavailable; it never shows simulated scores.
+
+1. Run `supabase/player_stats.sql` in the intended Supabase project's SQL Editor.
+2. Enable Anonymous Sign-Ins in Authentication settings.
+3. For cross-device identity, also enable email auth and manual identity linking. Allow the production `/play.html` URL as an auth redirect.
+4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the build environment (see `.env.example`). Use a public anon/publishable key. Never use a service-role or secret key in the browser build.
+5. Rebuild and publish. These Vite values are compiled into the browser bundle; changing only a runtime environment variable is insufficient.
+6. In a real browser, choose a username, perform a coin-changing action, wait four seconds and verify the row in the Supabase table editor. Open the board to read it back. Verify a second authenticated player can read the first row but cannot insert/update using its ID.
+
+Project access, SQL execution and live Supabase read-back remain required before claiming the shared leaderboard is activated.
+
+Official references: [anonymous identities](https://supabase.com/docs/guides/auth/auth-anonymous), [row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security).
+
+## Builds and the earlier cloud save
+
+`pnpm build:static` creates `dist-static/` using a Vite-built Supabase bundle plus the static game assets. This output works on a static host without a custom application server. Vercel/Netlify can use that build command and publish directory; `/play.html` remains available for email redirects. The static output makes no legacy farm API request.
+
+The current Sites publication retains a **read-only migration bridge** for farms previously stored in Sites D1. On the first visit without a local save, the game reads that earlier farm once and stores it in the browser. All subsequent actions are local. The old full-farm POST endpoint responds with a reload notice and does not save changes. Existing D1 records remain as recovery copies; they are not uploaded to Supabase. This bridge is not required by the standalone static build. Keep it on the existing Site until players have opened the new version and moved their old save.
+
+`pnpm build` builds the current Sites Worker with that migration bridge. `.openai/hosting.json` retains the same Site identity. No Supabase secrets belong in that manifest.
+
+## Validation
+
+`pnpm test` covers crop care, longer progression, saved-game migration, offline local saves, passive accrual and caps, duplicate rewards, project timing, stats-only payloads, write throttling, offline retries, and leaderboard queries. Tests of Supabase networking use mocks until a real project is available. Existing SQLite checks cover the prior save format and migration compatibility.
+
+The shared game rules are in `game/farm-state.js`; the build copies them to `public/farm-state.js`. Supplied art belongs to the user-provided asset pack and is not distributed as a standalone pack.
