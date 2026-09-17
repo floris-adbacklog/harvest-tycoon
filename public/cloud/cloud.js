@@ -1,4 +1,4 @@
-import { t as e } from "./leaderboard-By0gUNgN.js";
+import { n as e } from "./leaderboard-MecPi8Br.js";
 //#region ../groenveld/node_modules/.pnpm/@supabase+supabase-js@2.116.0/node_modules/@supabase/supabase-js/dist/tracingRegistry.mjs
 var t = Symbol.for("@supabase/supabase-js.traceContextExtractor");
 function n() {
@@ -8184,9 +8184,9 @@ async function Pa() {
 				return r = null, e;
 			},
 			signOut: Na,
-			async leaderboard() {
+			async leaderboard(r = "currency") {
 				if (t !== X) throw Error("Your session has ended.");
-				return e(q, n.id);
+				return e(q, n.id, r);
 			},
 			async request(e) {
 				if (t !== X || !navigator.onLine) throw Error("Your session is paused. Reconnect to continue.");

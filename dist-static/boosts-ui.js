@@ -11,12 +11,12 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   $('boost-wallet').textContent=number(state.diamonds);
   $('boost-catalog').innerHTML=Object.entries(BOOSTS).map(([id,b])=>{
    const status=boostStatus(state,id,farmNow());
-   return `<article class="boost-card ${status.remaining?'boost-active':''}"><div class="boost-card-art">${art(b.art)}</div><div class="boost-card-copy"><h3>${b.name}</h3><p>${b.description}</p><span class="boost-detail" data-boost-time="${id}">${status.remaining?`Active · ${formatDuration(status.remaining)} left`:status.reason||'Ready to activate'}</span></div><button class="boost-buy" data-buy-boost="${id}" ${status.canBuy?'':'disabled'} aria-label="Activate ${b.name} for ${b.cost} diamonds">${art('diamonds')}<span>${b.cost}</span><small>${status.remaining?'Active':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate'}</small></button></article>`;
+   return `<article class="boost-card ${status.remaining?'boost-active':''}"><div class="boost-card-art">${art(b.art)}</div><div class="boost-card-copy"><h3>${b.name}</h3><p>${b.description}</p><span class="boost-detail" data-boost-time="${id}">${status.remaining?`Active · ${formatDuration(status.remaining)} left`:status.reason||(state.diamonds<b.cost?`Need ${b.cost-state.diamonds} more diamonds · Earn them in Today`:'Ready to activate')}</span></div><button class="boost-buy" data-buy-boost="${id}" ${status.canBuy?'':'disabled'} aria-label="Activate ${b.name} for ${b.cost} diamonds">${art('diamonds')}<span>${b.cost}</span><small>${status.remaining?'Active':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate'}</small></button></article>`;
   }).join('');
   $('diamond-packs').innerHTML=DIAMOND_PACKS.map(pack=>`<article class="diamond-pack" aria-disabled="true">${art('diamonds')}<h3>${number(pack.amount)} <span>diamonds</span></h3><strong>${pack.price}</strong><button disabled>Coming after beta</button></article>`).join('');
   $('boost-catalog').querySelectorAll('[data-buy-boost]').forEach(button=>button.onclick=async()=>{
    try{
-    const id=button.dataset.buyBoost,result=await runAction({type:'buy_boost',boost:id});onChange();render();
+    const id=button.dataset.buyBoost,result=await runAction({type:'buy_boost',boost:id,expectedCost:BOOSTS[id].cost});onChange();render();
     const message=id==='crops'?`${result.affected} crops are ready to harvest!`:id==='production'?`${result.affected} batches are ready to collect!`:id==='upgrade'?'Your next production-building upgrade costs 50% less.':`${BOOSTS[id].name} is active for 30 minutes.`;
     $('boost-feedback').textContent=message;notify(message);
    }catch(error){$('boost-feedback').textContent=error.message;notify(error.message);render();}

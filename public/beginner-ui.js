@@ -5,7 +5,7 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide}){
  let busy=false,lastMarkup='';
  function refresh(){
   const steps=beginnerProgress(state),current=steps.find(q=>q.current),done=steps.filter(q=>q.done).length,complete=done===steps.length;
-  $('game').classList.toggle('beginner-active',!complete);$('beginner-mobile').hidden=complete;
+  $('game').classList.toggle('beginner-active',!complete);$('beginner-mobile').hidden=complete;$('beginner-mobile').classList.toggle('is-ready',!!current?.ready);
   $('beginner-mobile-copy').textContent=`Step ${Math.min(done+1,steps.length)} of 10 · ${current?.ready?'Ready to complete':current?.title??'Guide complete'}`;
   $('quest-number').textContent=Math.min(done+1,steps.length);$('quest-total').textContent=steps.length;
   $('quest-title').textContent=current?.title??'Ready to grow your own way';

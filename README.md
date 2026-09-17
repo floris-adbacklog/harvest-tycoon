@@ -42,7 +42,7 @@ The existing project `jnmdirvidffzxukbdmij` has already received the online farm
 
 `pnpm test` covers game rules, pointer interactions, server-only client updates and auth lifecycle races. Real API tests against two temporary Supabase accounts verified sign-in, farm creation, actions, reload, duplicate requests, account isolation and leaderboard reads. See [ONLINE-RELEASE.md](ONLINE-RELEASE.md) for the exact verified scope and remaining deployment checks.
 
-The Vercel-targeted static production build passes. This update has not yet been visually verified on Vercel: local browser preview was blocked, and the GitHub integration rejected writes with HTTP 403. Upload this package to the existing repository to trigger the configured deployment. The updated Supabase `farm-api` v2 is active; its deployed files were compared with these sources.
+The Vercel-targeted static production build passes. This update has not yet been visually verified on Vercel: local browser preview was blocked, and the GitHub integration rejected writes with HTTP 403. Upload this package to the existing repository to trigger the configured deployment. The updated Supabase `farm-api` v3 is active; its deployed files were compared with these sources.
 
 The shared rules are in `game/farm-state.js`. The build copies them to `public/farm-state.js` and the Edge Function source. If game rules change, redeploy `farm-api` as well as the frontend. The old Sites D1 recovery endpoint is retired; historical D1 data remains untouched and is not used by the static Vercel build.
 
@@ -58,6 +58,14 @@ The Packing Shed is behind the crop area. Barley, lettuce and red cabbage have d
 
 The Beginner guide has 10 independent steps: harvest, plant wheat, water, sell, start a batch, collect a daily gift, do a chore, care for a crop, harvest wheat, and collect a finished batch. Completing the tenth step grants 20 diamonds once. The authoritative server saves `onboarding` alongside the farm state. The 41 regular quest IDs and claims are unchanged. Existing farms start a separate guide; an earlier daily gift counts to avoid a one-day wait.
 
-The guide is available in its desktop card, the mobile step banner, and More. “Show me” opens the appropriate tools or building. “Fields” focuses on crops; “Show the whole farm” and My farm restore the overview. The camera frames the useful buildings and fields while reserving room for controls. Smaller building footprints, work yards and low props leave clear paths through the same farm.
+The guide is available in its desktop card, the mobile step banner, and More. “Show me” opens the appropriate tools or building. “Fields” focuses on crops; “Show the whole farm” opens the overview; My farm restores the centered, medium-zoom view. The camera frames the useful buildings and fields while reserving room for controls. Smaller building footprints, work yards and low props leave clear paths through the same farm.
 
 The signed-out page uses the original logo and `public/assets/farm-welcome.webp`, an original generated farm illustration based on the supplied low-poly farm assets. Art direction: crisp sunny isometric farm with gray farmhouse, red barn, windmill, colorful crop rows, tractor, fences and a quiet meadow behind the account panel; no baked-in text or UI. The source image was converted to WebP for delivery.
+
+## Diamond balance
+
+Boosts cost 20 / 60 / 75 / 90 / 150 diamonds (Double XP / Double earnings / Finish production / Instant harvest / Builder’s discount). Daily challenges award 1 / 1 / 2 diamonds, once each. Daily gifts still total 40 per seven-day streak; daily challenges add up to 28 per week. The server rejects stale purchase quotes without charging. See UPDATE-NOTES.md for deployment instructions and verification scope.
+
+## Leaderboard categories
+
+The dropdown has 14 public leaderboards: coins, level, total crops, claimed mastery badges, deliveries, and each of the nine individual crops. All harvest scores are lifetime produce quantities. Diamonds remain private. `supabase/leaderboard-categories.sql` adds indexed counters, backfills existing progress and updates the existing atomic server commit function; it is already applied to the configured project.

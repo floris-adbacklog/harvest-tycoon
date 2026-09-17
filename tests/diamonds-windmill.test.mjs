@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createFarm,normalizeFarm,applyFarmAction,DAILY_DIAMONDS,DAY_MS,BOOSTS,upgradeCost,RECIPES,BUILDINGS,MAX_BUILDING_LEVEL,utcDay,dailyOrders,QUESTS,ITEMS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
-const act=(state,action,time=now)=>applyFarmAction(state,action,time);
+const act=(state,action,time=now)=>applyFarmAction(state,action.type==='buy_boost'?{expectedCost:BOOSTS[action.boost]?.cost,...action}:action,time);
 
 test('old farms gain diamonds, boosts and a windmill without losing progress',()=>{
  const state=createFarm(now);delete state.diamonds;delete state.boosts;delete state.buildings.windmill;delete state.inventory.grainmeal;delete state.inventory.fertilizer;state.version=4;
@@ -30,7 +30,7 @@ test('XP and coin boosts persist, multiply eligible rewards once and expire',()=
  assert.equal(act(state,{type:'field',id:1,action:'harvest'},now+BOOSTS.xp.duration).xp,5);
 });
 test('instant boosts affect existing work only and never pay twice',()=>{
- const state=createFarm(now);state.diamonds=100;
+ const state=createFarm(now);state.diamonds=BOOSTS.crops.cost+BOOSTS.production.cost;
  state.plots[4].watered=true;state.plots[4].tended=true;
  act(state,{type:'buy_boost',boost:'crops'});assert(state.plots.every(p=>!p.crop||p.readyAt<=now));assert.equal(state.plots[8].crop,null);
  const amount=state.diamonds;assert.throws(()=>act(state,{type:'buy_boost',boost:'crops'}),/No crops/);assert.equal(state.diamonds,amount);
@@ -41,7 +41,7 @@ test('instant boosts affect existing work only and never pay twice',()=>{
  assert.throws(()=>act(state,{type:'collect',building:'windmill'}),/Nothing to collect/);
 });
 test('upgrade voucher applies once and survives a rejected upgrade',()=>{
- const state=createFarm(now);state.diamonds=50;const originalCost=upgradeCost(state,'windmill');act(state,{type:'buy_boost',boost:'upgrade'});
+ const state=createFarm(now);state.diamonds=BOOSTS.upgrade.cost;const originalCost=upgradeCost(state,'windmill');act(state,{type:'buy_boost',boost:'upgrade'});
  assert.equal(upgradeCost(state,'windmill'),Math.ceil(originalCost/2));state.coins=0;
  assert.throws(()=>act(state,{type:'upgrade',building:'windmill'}),/need/);assert.equal(state.boosts.upgradeCredits,1);
  state.coins=10000;const result=act(state,{type:'upgrade',building:'windmill'});assert.equal(result.cost,Math.ceil(originalCost/2));assert.equal(state.boosts.upgradeCredits,0);

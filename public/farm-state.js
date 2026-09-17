@@ -275,13 +275,14 @@ export function farmSummary(state,now=Date.now()) {
 export const DAY_MS=86400000;
 export const DAILY_REWARDS=[40,55,70,85,100,120,160];
 export const DAILY_DIAMONDS=[2,3,4,5,6,8,12];
+export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([1,1,2]);
 export const DIAMOND_PACKS=Object.freeze([{amount:50,price:'€1.99'},{amount:300,price:'€9.99'},{amount:1000,price:'€24.99'}]);
 export const BOOSTS=Object.freeze({
- xp:{name:'Double XP',cost:10,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},
- coins:{name:'Double earnings',cost:15,duration:1800000,art:'coins',description:'Double your market sales and delivery coins for 30 minutes. Passive income and gifts stay the same.'},
- crops:{name:'Instant harvest',cost:8,art:'seeds',description:'Make every currently growing crop ready to harvest. Crops stay in their fields until you collect them.'},
- upgrade:{name:'Builder’s discount',cost:20,art:'hammer',description:'Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires.'},
- production:{name:'Finish production',cost:12,art:'boost',description:'Finish all current production batches instantly. Collect the finished goods from their buildings.'}
+ xp:{name:'Double XP',cost:20,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},
+ coins:{name:'Double earnings',cost:60,duration:1800000,art:'coins',description:'Double your market sales and delivery coins for 30 minutes. Passive income and gifts stay the same.'},
+ crops:{name:'Instant harvest',cost:90,art:'seeds',description:'Make every currently growing crop ready to harvest. Crops stay in their fields until you collect them.'},
+ upgrade:{name:'Builder’s discount',cost:150,art:'hammer',description:'Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires.'},
+ production:{name:'Finish production',cost:75,art:'boost',description:'Finish all current production batches instantly. Collect the finished goods from their buildings.'}
 });
 export function boostStatus(state,id,now=Date.now()){
  if(!Object.hasOwn(BOOSTS,id))throw new Error('Choose a valid boost.');
@@ -298,7 +299,7 @@ export function boostStatus(state,id,now=Date.now()){
 export function buyBoost(state,id,now=Date.now()){
  const status=boostStatus(state,id,now);
  if(status.reason)throw new Error(status.reason+'.');
- if(state.diamonds<status.cost)throw new Error(`You need ${status.cost} diamonds. Earn more from your daily streak.`);
+ if(state.diamonds<status.cost)throw new Error(`You need ${status.cost} diamonds. Earn more from daily gifts and challenges.`);
  if(id==='xp')state.boosts.xpUntil=now+status.duration;
  if(id==='coins')state.boosts.coinsUntil=now+status.duration;
  if(id==='upgrade')state.boosts.upgradeCredits=1;
@@ -366,7 +367,7 @@ export function normalizeFarm(state,now=Date.now()){
 export function createFarm(now=Date.now()){return normalizeFarm(createBaseFarm(now),now);}
 export function dailyTasks(state,now=Date.now()){
  normalizeFarm(state,now);const d=dayNumber(now);
- return DAILY_POOLS.map((pool,id)=>{const q=pool[(d+id)%pool.length];return {...q,id,progress:Math.min(q.target,Math.max(0,(state.stats[q.stat]??0)-(state.daily.baseline[q.stat]??0))),claimed:state.daily.claimed.includes(id)};});
+ return DAILY_POOLS.map((pool,id)=>{const q=pool[(d+id)%pool.length];return {...q,id,diamonds:DAILY_CHALLENGE_DIAMONDS[id],progress:Math.min(q.target,Math.max(0,(state.stats[q.stat]??0)-(state.daily.baseline[q.stat]??0))),claimed:state.daily.claimed.includes(id)};});
 }
 export function dailyOrders(state,now=Date.now()){
  normalizeFarm(state,now);const d=dayNumber(now);
@@ -376,9 +377,10 @@ export function claimDaily(state,id,day,now=Date.now()){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('A new day has started. Check the fresh challenges.');
  const q=dailyTasks(state,now).find(q=>q.id===id);if(!q)throw new Error('Choose a daily challenge.');
  if(q.claimed)throw new Error('You already claimed this daily reward.');if(q.progress<q.target)throw new Error('Finish this daily challenge first.');
- state.daily.claimed.push(id);state.coins+=q.reward;state.xp+=10;state.stats.dailies++;
+ state.daily.claimed.push(id);state.coins+=q.reward;state.diamonds+=q.diamonds;state.xp+=10;state.stats.dailies++;
+ state.stats.challenge_diamonds=(state.stats.challenge_diamonds??0)+q.diamonds;
  let bonus=0;if(state.daily.claimed.length===3&&!state.daily.bonusClaimed){bonus=60;state.daily.bonusClaimed=true;state.coins+=bonus;state.xp+=15;}
- return {coins:q.reward+bonus,xp:10+(bonus?15:0),bonus};
+ return {coins:q.reward+bonus,diamonds:q.diamonds,xp:10+(bonus?15:0),bonus};
 }
 export function checkIn(state,now=Date.now()){
  normalizeFarm(state,now);const day=utcDay(now);
@@ -436,7 +438,11 @@ export function applyFarmAction(state,action,now=Date.now()){
 }
 function dispatchFarmAction(state,action,now){
  switch(action.type){
-  case 'buy_boost':return buyBoost(state,action.boost,now);
+  case 'buy_boost':{
+   if(!Object.hasOwn(BOOSTS,action.boost))throw new Error('Choose a valid boost.');
+   if(action.expectedCost!==BOOSTS[action.boost].cost)throw new Error('Boost prices have changed. Reload the game to see current prices.');
+   return buyBoost(state,action.boost,now);
+  }
   case 'fertilize':return fertilizeField(state,action.id,now);
   case 'stall_collect':return collectStall(state,now);
   case 'stall_upgrade':return upgradeStall(state,now);

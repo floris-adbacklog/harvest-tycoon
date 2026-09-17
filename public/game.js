@@ -17,13 +17,13 @@ const state = structuredClone(window.harvestInitialFarm.state);
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false, sound=false, audioContext;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
-let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='overview';
+let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
 const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 let economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
-const client=createFarmClient(state,{onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.textContent=status==='saved'?'Saved to your account':status==='saving'?'Saving your farm…':'Retry save';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
+const client=createFarmClient(state,{onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
 const runAction=action=>client.runAction(action);
 function openUtility(key){if(key==='stall'||key==='chores')growth.open(key);else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
@@ -246,12 +246,15 @@ function resize(){
  const usableWidth=Math.max(width*.5,width-padding.left-padding.right),usableHeight=Math.max(height*.5,height-padding.top-padding.bottom);
  const overviewSpan=Math.max((bounds.maxY-bounds.minY+3)*height/usableHeight,(bounds.maxX-bounds.minX+3)*height/usableWidth);
  const fieldSpan=Math.max(17,19/aspect);
- const span=(viewMode==='fields'?fieldSpan:overviewSpan)/zoom;
+ const homeSpan=Math.min(overviewSpan,Math.max(fieldSpan,mobile?32/aspect:38));
+ const span=(viewMode==='fields'?fieldSpan:viewMode==='home'?homeSpan:overviewSpan)/zoom;
  camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;
  let focus;
  if(viewMode==='fields'){
   const fieldCenter=.25+(Math.ceil(state.plots.length/4)-1)*2.7/2;
   focus=new THREE.Vector3(1.8+pan+panDepth,0,fieldCenter-pan+panDepth);
+ }else if(viewMode==='home'){
+  focus=new THREE.Vector3(1.4+pan+panDepth,0,1.5-pan+panDepth);
  }else{
   const side=(bounds.minX+bounds.maxX)/2+(padding.right-padding.left)*span/(2*height);
   const up=(bounds.minY+bounds.maxY)/2+(padding.top-padding.bottom)*span/(2*height);
@@ -261,12 +264,14 @@ function resize(){
  }
  camera.position.copy(focus).add(new THREE.Vector3(36,40,36));camera.lookAt(focus);camera.updateProjectionMatrix();camera.updateMatrixWorld();
  $('game').classList.toggle('farm-overview',mobile&&viewMode==='overview'&&zoom<1.4);
+ $('fields-view').setAttribute('aria-pressed',String(viewMode==='fields'));$('zoom-reset').setAttribute('aria-pressed',String(viewMode==='home'));$('zoom-fit').setAttribute('aria-pressed',String(viewMode==='overview'));
  $('zoom-in').disabled=zoom>=2.2;$('zoom-out').disabled=zoom<=.75;
  positionLabels();positionBuildingLabels();
 }
 function panFarm(delta,depth=0){pan=Math.max(-20,Math.min(20,pan+delta));panDepth=Math.max(-20,Math.min(20,panDepth+depth));resize();}
 function zoomFarm(value){zoom=Math.max(.75,Math.min(2.2,value));resize();}
-function resetView(){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
+function resetView(){viewMode='home';zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
+function showOverview(){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}
 function focusFields(){viewMode='fields';zoom=1;pan=0;panDepth=0;resize();}
 function measureFarm(){
  // Use each actual building and field box, retaining the useful heights.
@@ -325,7 +330,7 @@ function bindUI(){
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
  $('market-button').addEventListener('click',()=>openDialog('market-dialog'));
  $('help-button').addEventListener('click',()=>openDialog('help-dialog'));
- $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());resetView();toast('Your whole farm, in view.');});
+ $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());resetView();toast('Back to the heart of your farm.');});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
  document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}}));
  $('sell-all').addEventListener('click',()=>sell());
@@ -333,7 +338,7 @@ function bindUI(){
  $('quest-collapse').addEventListener('click',toggleQuest);
  document.querySelector('.quest-heading')?.addEventListener('click',event=>{if(event.target.closest('#quest-collapse'))return;if(mobileLayout.matches)beginner.open();});
  $('sound-button').addEventListener('click',()=>{sound=!sound;$('sound-button').setAttribute('aria-pressed',String(sound));$('sound-button').setAttribute('aria-label',sound?'Mute sound':'Enable sound');$('sound-button').title=sound?'Mute sound':'Enable sound';$('sound-button').innerHTML=`<i data-lucide="${sound?'volume-2':'volume-x'}"></i>`;icons();if(sound)playTone('plant');});
- $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);
+ $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'harvest',4:'tend'}[e.key];if(t){e.preventDefault();setTool(t);}});
  economy=createEconomyUI({state,onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,sound:playTone,runAction,onEstate:section=>growth.open(section)});
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
