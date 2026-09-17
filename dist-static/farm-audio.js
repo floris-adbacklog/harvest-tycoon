@@ -1,4 +1,10 @@
-// Original procedural sounds: no audio downloads or third-party recordings.
+// Original continuous music and procedural effects. No third-party recordings.
+const MUSIC_URL=new URL('./assets/audio/harvest-meadow.wav',import.meta.url);
+async function loadFarmMusic(context){
+ const response=await fetch(MUSIC_URL);
+ if(!response.ok)throw new Error('Music unavailable');
+ return context.decodeAudioData(await response.arrayBuffer());
+}
 export const AUDIO_DEFAULTS=Object.freeze({enabled:true,ambience:22,effects:48});
 export const AUDIO_STORAGE_KEY='harvest-tycoon-audio-v1';
 export function audioSettings(value={}){
@@ -34,16 +40,20 @@ export function createProductionCueTracker(buildings,now){
  reset(buildings,now);
  return {reset,check(current,time){let fresh=false;for(const [id,b] of Object.entries(current)){const job=b.job,old=previous.get(id),token=job?`${job.recipe}:${job.startedAt}:${job.readyAt}`:null;if(job&&old?.token===token&&!old.ready&&job.readyAt<=time)fresh=true;}reset(current,time);return fresh;}};
 }
-export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},setTimer=globalThis.setTimeout,clearTimer=globalThis.clearTimeout}={}){
- let settings={...AUDIO_DEFAULTS},ctx,master,ambientBus,effectBus,noiseBuffer,bed=null,birdTimer=null,unlocked=false,disposed=false,unavailable=false;
+export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic}={}){
+ let settings={...AUDIO_DEFAULTS},ctx,master,ambientBus,effectBus,musicBuffer=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;
  let nextEffectAt=0,priorityUntil=0,resuming=null;
  const voices=new Set(),lastPlayed=new Map();
  try{storage??=windowRef?.localStorage;settings=audioSettings(JSON.parse(storage?.getItem(AUDIO_STORAGE_KEY)??'{}'));}catch{}
  const active=()=>!disposed&&unlocked&&settings.enabled&&!documentRef?.hidden;
- const read=()=>({...settings,available:!unavailable});
+ const read=()=>({...settings,available:!unavailable,musicStatus});
  function ramp(param,value,seconds=.08){const t=ctx.currentTime;param.cancelScheduledValues(t);param.setTargetAtTime(value,t,seconds);}
  function stopVoice(v){try{v.source.stop();}catch{}v.cleanup();}
- function stopBed(){if(birdTimer!==null){clearTimer(birdTimer);birdTimer=null;}if(bed){for(const node of bed){try{node.stop?.();node.disconnect();}catch{}}bed=null;}}
+ function stopBed(){
+  if(!bed)return;
+  if(musicBuffer)musicOffset=(musicOffset+Math.max(0,ctx.currentTime-musicStartedAt))%musicBuffer.duration;
+  for(const node of bed){try{node.stop?.();node.disconnect();}catch{}}bed=null;
+ }
  function silence(){
   if(!ctx)return;master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(0,ctx.currentTime);stopBed();for(const v of [...voices])stopVoice(v);
   nextEffectAt=0;priorityUntil=0;lastPlayed.clear();
@@ -66,24 +76,25 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   gain.gain.setValueAtTime(0,when);gain.gain.linearRampToValueAtTime(volume,when+.014);gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
   source.connect(gain);gain.connect(bus);source.onended=voice.cleanup;voices.add(voice);source.start(when);source.stop(when+duration+.02);
  }
- function scheduleBird(){
-  if(!active()||!settings.ambience)return;
-  birdTimer=setTimer(()=>{
-   birdTimer=null;if(!active()||ctx.state!=='running'||!settings.ambience)return;
-   try{const f=1550+Math.random()*450,t=ctx.currentTime+.01;note(f,t,.14,.035,ambientBus,'sine',1.26);note(f*1.06,t+.23,.18,.028,ambientBus,'sine',.84);scheduleBird();}catch{/* Audio must never interrupt play. */}
-  },11000+Math.random()*12000);
- }
  function startBed(){
-  if(bed||!active()||!settings.ambience)return;
-  if(!noiseBuffer){
-   noiseBuffer=ctx.createBuffer(1,ctx.sampleRate*6,ctx.sampleRate);const samples=noiseBuffer.getChannelData(0);let brown=0;
-   for(let i=0;i<samples.length;i++){brown=(brown+(Math.random()*2-1)*.025)/1.025;samples[i]=brown*3.2;}
-   // Fade both edges to zero to avoid an audible seam in the long breeze loop.
-   const fade=Math.floor(ctx.sampleRate*.3);for(let i=0;i<fade;i++){samples[i]*=i/fade;samples[samples.length-1-i]*=i/fade;}
+  if(bed||!active()||!settings.ambience||ctx.state!=='running')return;
+  if(!musicBuffer){
+   if(musicLoading||Date.now()<musicRetryAt)return;
+   musicStatus='loading';onChange(read());
+   musicLoading=Promise.resolve().then(()=>loadMusic(ctx)).then(buffer=>{
+    if(disposed)return;
+    if(!buffer||!Number.isFinite(buffer.duration)||buffer.duration<=0)throw new Error('Invalid music');
+    musicBuffer=buffer;musicStatus='ready';onChange(read());startBed();
+   }).catch(()=>{if(!disposed){musicStatus='unavailable';musicRetryAt=Date.now()+15000;onChange(read());}}).finally(()=>{musicLoading=null;});
+   return;
   }
-  const breeze=ctx.createBufferSource(),low=ctx.createBiquadFilter(),high=ctx.createBiquadFilter(),gain=ctx.createGain();
-  breeze.buffer=noiseBuffer;breeze.loop=true;low.type='lowpass';low.frequency.value=700;low.Q.value=.5;high.type='highpass';high.frequency.value=90;high.Q.value=.5;gain.gain.value=.7;
-  breeze.connect(low);low.connect(high);high.connect(gain);gain.connect(ambientBus);breeze.start();bed=[breeze,low,high,gain];scheduleBird();
+  // One sample-accurate loop: release tails already wrap in the WAV. No end fade,
+  // restart timers, compressed padding or silent gap between repeats.
+  const music=ctx.createBufferSource(),gain=ctx.createGain();
+  music.buffer=musicBuffer;music.loop=true;music.loopStart=0;music.loopEnd=musicBuffer.duration;
+  gain.gain.setValueAtTime(0,ctx.currentTime);gain.gain.setTargetAtTime(1,ctx.currentTime,.4);
+  music.connect(gain);gain.connect(ambientBus);musicStartedAt=ctx.currentTime;
+  music.start(0,musicOffset);bed=[music,gain];
  }
  function applyMix(fadeIn=false){
   ramp(effectBus.gain,settings.effects/100);ramp(ambientBus.gain,settings.ambience/100,fadeIn?.75:.15);ramp(master.gain,.55,fadeIn?.3:.05);
@@ -119,7 +130,7 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  function visibility(){if(documentRef.hidden)silence();else if(unlocked)void unlock();}
  function pagehide(event){if(event.persisted)silence();else dispose();}
  function pageshow(event){if(event.persisted&&unlocked)void unlock();}
- function dispose(){if(disposed)return;disposed=true;silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
+ function dispose(){if(disposed)return;disposed=true;silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);musicBuffer=null;if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
  documentRef?.addEventListener('pointerup',gesture,true);documentRef?.addEventListener('keydown',gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
  return {settings:read,setSettings,unlock,play,dispose};
 }

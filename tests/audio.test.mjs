@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const settle=()=>new Promise(resolve=>setImmediate(resolve));
 import {createFarmAudio,AUDIO_DEFAULTS,AUDIO_STORAGE_KEY,audioSettings,soundForAction,withActionSounds,createProductionCueTracker,SOUND_CUES} from '../public/farm-audio.js';
 class Param{
  value=0;events=[];
@@ -11,7 +13,7 @@ class Param{
 }
 class Node{
  gain=new Param();frequency=new Param();Q=new Param();threshold=new Param();knee=new Param();ratio=new Param();attack=new Param();release=new Param();stopped=false;disconnected=false;started=false;
- connect(){return this;}disconnect(){this.disconnected=true;}start(){this.started=true;}stop(at){this.stopAt=at;if(at===undefined){this.stopped=true;this.onended?.();}}
+ connect(){return this;}disconnect(){this.disconnected=true;}start(when,offset=0){this.started=true;this.offset=offset;this.startedAt=when;}stop(at){this.stopAt=at;if(at===undefined){this.stopped=true;this.onended?.();}}
 }
 class Context{
  state='suspended';currentTime=1;sampleRate=8000;destination=new Node();oscillators=[];buffers=[];gains=[];
@@ -22,10 +24,10 @@ class Context{
  createBuffer(channels,length){const data=new Float32Array(length);return {getChannelData:()=>data};}
  async resume(){this.state='running';}async suspend(){this.state='suspended';}async close(){this.state='closed';}
 }
-function setup(saved){
- const doc=new EventTarget();doc.hidden=false;const win=new EventTarget(),ctx=new Context(),timers=new Map(),writes=[];let created=0,id=0;
- const audio=createFarmAudio({contextFactory:()=>{created++;return ctx;},storage:{getItem:()=>saved??null,setItem:(...args)=>writes.push(args)},documentRef:doc,windowRef:win,setTimer:fn=>{timers.set(++id,fn);return id;},clearTimer:key=>timers.delete(key)});
- return {audio,doc,win,ctx,timers,writes,created:()=>created};
+function setup(saved,loader){
+ const doc=new EventTarget();doc.hidden=false;const win=new EventTarget(),ctx=new Context(),writes=[];let created=0,loads=0;
+ const audio=createFarmAudio({contextFactory:()=>{created++;return ctx;},storage:{getItem:()=>saved??null,setItem:(...args)=>writes.push(args)},documentRef:doc,windowRef:win,loadMusic:context=>{loads++;return loader?loader(context):Promise.resolve({duration:144});}});
+ return {audio,doc,win,ctx,writes,created:()=>created,loads:()=>loads};
 }
 test('quiet defaults, validation and a saved mute preference are respected before any gesture',async()=>{
  assert.deepEqual(audioSettings({ambience:Infinity,effects:-20,enabled:'yes'}),{enabled:true,ambience:22,effects:0});
@@ -33,15 +35,19 @@ test('quiet defaults, validation and a saved mute preference are respected befor
  const s=setup(JSON.stringify({enabled:false,ambience:10,effects:35}));assert.equal(s.created(),0);assert.equal(await s.audio.unlock(),false);assert.equal(s.created(),0);assert.equal(s.audio.play('levelup'),false);
  s.audio.setSettings({enabled:true});await s.audio.unlock();assert.equal(s.created(),1);assert.equal(s.ctx.state,'running');assert.equal(s.writes[0][0],AUDIO_STORAGE_KEY);assert.equal(s.audio.settings().effects,35);s.audio.dispose();
 });
-test('ambience starts once, sliders have separate buses, and mute stops sources and bird timers',async()=>{
- const s=setup();assert.equal(s.timers.size,0);await s.audio.unlock();await s.audio.unlock();assert.equal(s.created(),1);assert.equal(s.ctx.buffers.length,1);assert.equal(s.timers.size,1);
- s.audio.setSettings({ambience:0,effects:77});assert.equal(s.ctx.buffers[0].stopped,true);assert.equal(s.timers.size,0);assert.equal(s.ctx.gains[2].gain.value,.77);assert.equal(s.audio.play('harvest'),true);
+test('music loads once and loops without restarting on actions or volume changes',async()=>{
+ const s=setup();assert.equal(s.loads(),0);await s.audio.unlock();await settle();await s.audio.unlock();
+ assert.equal(s.created(),1);assert.equal(s.loads(),1);assert.equal(s.ctx.buffers.length,1);
+ const source=s.ctx.buffers[0];assert(source.loop);assert.equal(source.loopStart,0);assert.equal(source.loopEnd,144);assert.equal(source.offset,0);assert.equal(source.stopAt,undefined);
+ s.audio.setSettings({ambience:35,effects:77});s.audio.play('harvest');await settle();assert.equal(s.ctx.buffers.length,1);assert.equal(s.ctx.gains[2].gain.value,.77);
+ s.ctx.currentTime+=37;s.audio.setSettings({ambience:0});assert(source.stopped&&source.disconnected);
+ s.audio.setSettings({ambience:22});await settle();assert.equal(s.ctx.buffers[1].offset,37);assert.equal(s.loads(),1);
  s.audio.setSettings({enabled:false});assert.equal(s.ctx.state,'suspended');assert(s.ctx.oscillators.every(n=>n.stopped&&n.disconnected));assert.equal(s.audio.play('levelup'),false);s.audio.dispose();
 });
-test('hidden tabs suspend and clear effects; returning fades ambience back without a sound backlog',async()=>{
- const s=setup();await s.audio.unlock();s.audio.play('harvest');s.doc.hidden=true;s.doc.dispatchEvent(new Event('visibilitychange'));
- assert.equal(s.ctx.state,'suspended');assert.equal(s.timers.size,0);assert.equal(s.audio.play('reward'),false);const count=s.ctx.oscillators.length;
- s.doc.hidden=false;s.doc.dispatchEvent(new Event('visibilitychange'));await Promise.resolve();await Promise.resolve();assert.equal(s.ctx.state,'running');assert.equal(s.ctx.oscillators.length,count);assert.equal(s.timers.size,1);s.audio.dispose();assert.equal(s.ctx.state,'closed');assert.equal(s.timers.size,0);
+test('hidden tabs suspend, then resume the same music position without an effect backlog',async()=>{
+ const s=setup();await s.audio.unlock();await settle();s.audio.play('harvest');s.ctx.currentTime+=151;s.doc.hidden=true;s.doc.dispatchEvent(new Event('visibilitychange'));
+ assert.equal(s.ctx.state,'suspended');assert(s.ctx.buffers[0].stopped);assert.equal(s.audio.play('reward'),false);const count=s.ctx.oscillators.length;
+ s.doc.hidden=false;s.doc.dispatchEvent(new Event('visibilitychange'));await settle();assert.equal(s.ctx.state,'running');assert.equal(s.ctx.oscillators.length,count);assert.equal(s.ctx.buffers[1].offset,7);assert.equal(s.loads(),1);s.audio.dispose();assert.equal(s.ctx.state,'closed');assert(s.ctx.buffers.every(n=>n.stopped));
 });
 test('fast actions are throttled, level-up takes priority, and completed nodes are disconnected',async()=>{
  const s=setup();await s.audio.unlock();assert(s.audio.play('harvest'));assert.equal(s.audio.play('harvest'),false);assert(s.audio.play('levelup'));assert.equal(s.audio.play('sell'),false);
@@ -63,9 +69,10 @@ test('storage failure and missing audio support do not interrupt the game',async
  const a=createFarmAudio({storage:{getItem(){throw Error();},setItem(){throw Error();}},contextFactory:()=>{throw Error('Unavailable');},windowRef:new EventTarget(),documentRef:new EventTarget()});
  assert.equal(await a.unlock(),false);assert.equal(a.settings().available,false);assert.doesNotThrow(()=>a.setSettings({enabled:false}));assert.equal(a.play('levelup'),false);a.dispose();
 });
-test('returning from browser history restarts a single ambience layer',async()=>{
- const s=setup();await s.audio.unlock();const hide=new Event('pagehide');hide.persisted=true;s.win.dispatchEvent(hide);assert.equal(s.ctx.state,'suspended');
- const show=new Event('pageshow');show.persisted=true;s.win.dispatchEvent(show);await Promise.resolve();await Promise.resolve();assert.equal(s.ctx.state,'running');assert.equal(s.created(),1);assert.equal(s.timers.size,1);s.audio.dispose();
+test('returning from browser history resumes a single music layer',async()=>{
+ const s=setup();await s.audio.unlock();await settle();s.ctx.currentTime+=15;
+ const hide=new Event('pagehide');hide.persisted=true;s.win.dispatchEvent(hide);assert.equal(s.ctx.state,'suspended');
+ const show=new Event('pageshow');show.persisted=true;s.win.dispatchEvent(show);await settle();assert.equal(s.ctx.state,'running');assert.equal(s.created(),1);assert.equal(s.loads(),1);assert.equal(s.ctx.buffers[1].offset,15);s.audio.dispose();
 });
 test('effects stay brief with soft envelopes and moderate frequencies',()=>{
  for(const cue of Object.values(SOUND_CUES)){assert(cue.volume<=.12);assert(cue.notes.length<=6);assert(cue.duration+(cue.notes.length-1)*cue.step<1.3);for(const f of cue.notes)assert(f>=90&&f<1600);}
@@ -78,4 +85,27 @@ test('muting during a pending browser resume cannot restart the background',asyn
  let resolve;const ctx=new Context();ctx.resume=()=>new Promise(r=>{resolve=()=>{ctx.state='running';r();};});
  const doc=new EventTarget();doc.hidden=false;const audio=createFarmAudio({contextFactory:()=>ctx,storage:{getItem:()=>null,setItem(){}},windowRef:new EventTarget(),documentRef:doc});
  const unlocking=audio.unlock();audio.setSettings({enabled:false});resolve();assert.equal(await unlocking,false);assert.equal(ctx.state,'suspended');assert.equal(ctx.buffers.length,0);audio.dispose();
+});
+
+test('a pending music download cannot start playback after mute, hiding or disposal',async()=>{
+ for(const action of ['mute','hide','dispose']){
+  let finish;const s=setup(null,()=>new Promise(resolve=>finish=resolve));await s.audio.unlock();await settle();
+  for(let i=0;i<10;i++)await s.audio.unlock();assert.equal(s.loads(),1);
+  if(action==='mute')s.audio.setSettings({enabled:false});
+  else if(action==='hide'){s.doc.hidden=true;s.doc.dispatchEvent(new Event('visibilitychange'));}
+  else s.audio.dispose();
+  finish({duration:144});await settle();assert.equal(s.ctx.buffers.length,0);s.audio.dispose();
+ }
+});
+test('a failed music load leaves game sounds available and avoids request spam',async()=>{
+ const s=setup(null,async()=>{throw Error('Offline');});await s.audio.unlock();await settle();
+ assert.equal(s.audio.settings().musicStatus,'unavailable');assert(s.audio.play('harvest'));
+ for(let i=0;i<10;i++)await s.audio.unlock();await settle();assert.equal(s.loads(),1);s.audio.dispose();
+});
+test('the shipped 144-second PCM loop has no silent windows or discontinuous seam',()=>{
+ const wav=readFileSync(new URL('../public/assets/audio/harvest-meadow.wav',import.meta.url));
+ assert.equal(wav.toString('ascii',0,4),'RIFF');assert.equal(wav.readUInt16LE(20),1);assert.equal(wav.readUInt16LE(22),1);assert.equal(wav.readUInt32LE(24),24000);assert.equal(wav.readUInt16LE(34),16);
+ const count=(wav.length-44)/2;assert.equal(count/24000,144);let peak=0,minRms=1,maxStep=0,last=0;
+ for(let i=0;i<count;i+=1200){let energy=0;for(let j=i;j<i+1200;j++){const sample=wav.readInt16LE(44+j*2)/32768;energy+=sample*sample;peak=Math.max(peak,Math.abs(sample));if(j)maxStep=Math.max(maxStep,Math.abs(sample-last));last=sample;}minRms=Math.min(minRms,Math.sqrt(energy/1200));}
+ assert(peak<.3);assert(minRms>.01,'no quiet gap even in a 50ms window');const seam=Math.abs(wav.readInt16LE(44)-wav.readInt16LE(wav.length-2))/32768;assert(seam<.002);assert(seam<maxStep);
 });

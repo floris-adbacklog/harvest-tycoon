@@ -1,24 +1,24 @@
 # Harvest Tycoon — September 17 update
 
-## Quiet farm audio, stationary vehicles and centred activity icons
+## Continuous music and activities on the farm
 
-- Soft breeze and occasional birdsong start gently after the first interaction with the farm. Background ambience defaults to 22%; game sounds default to 48%, with a conservative overall output level.
-- Planting, watering, harvesting, care, selling, production, collection, upgrades, quests, daily diamonds and farm activities each have matching short sounds. Level-ups have their own cheerful rising melody and take priority over other effects.
-- Successful actions trigger one sound after the server confirms them. Failed actions and loading old progress do not play reward sounds. Production completion has a quiet, one-time cue during active play.
-- Open the speaker on desktop or More > Sound settings on mobile. Background ambience and game sounds have independent volume sliders, a master mute and a level-up preview. Preferences persist on this device. No farm data is stored with audio preferences.
-- Sound suspends while the tab is hidden and cleans up when leaving the game. Ambient transitions fade in, rapid effects are limited, and completed audio nodes disconnect. If sound is unsupported or blocked, farming remains available.
-- The roaming delivery truck and combine have been removed, including their model downloads. The original parked tractor and delivery cart remain functional.
-- Greenhouse and other activity markers have a fixed 44px round button and a centred 26px icon. Their illustrations can no longer stretch beyond the button. Dragging from a marker still moves the view; a tap opens the activity.
-- All sounds are original procedural Web Audio sounds. No recordings, extra audio files or audio service are required. Browser gesture handling follows [MDN Web Audio guidance](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).
+- The breeze and birdsong have been replaced by Harvest Meadow: an original 2-minute-24-second instrumental with soft piano, warm chords, gentle bass and six melodic variations. No existing game music or third-party recording is used.
+- The uncompressed WAV wraps note releases and room reflections across the loop boundary. One decoded Web Audio source loops at exact sample boundaries, without a stop, silent pause or fade at each repeat. Music resumes at its previous position after hiding the tab or muting it.
+- Background music and game effects retain independent volume sliders and master mute. Music defaults to 22%, effects to 48%. Existing preferences are preserved. Loading the track is asynchronous and cannot block gameplay or game sounds; repeated gestures do not redownload or restart it.
+- Farm activities no longer take up space in the HUD, Buildings or More. Tap the Greenhouse, Apiary, animals or Tool workshop in the farm to open that job directly. The old activity selection grid and Find on farm button are removed. A compact, non-clickable farm-round progress strip remains inside the job panel.
+- All activity markers and task icons now use consistent outlined icons. Greenhouse uses a centred sprout rather than the seed-bag illustration. Other game artwork is unchanged.
+- Planting, harvesting, rewards, production and level-up effects remain. The roaming truck and combine remain removed; the parked tractor and delivery cart retain their functions.
 
-This is a frontend update; the existing Supabase function version 5 is unchanged. Audio has not been auditioned on a physical phone.
+This is a frontend update; the existing Supabase function version 5 is unchanged. The static build and 78 automated tests pass, including music looping, mute/loading races, resume position, and checks for silence and boundary discontinuities in the actual audio file. Playback and layout have not been checked on a physical phone.
+
+The shipped audio file needs no extra service or build dependency. To change the composition, run `scripts/generate-farm-music.py` with Python and NumPy, then rebuild the static site.
 
 ## Living farm and hands-on activities
 
 The farm now loads 70 selected GLB models (previously 55), with 15 additional models from the supplied pack. The surroundings use rolling hills, a distant mountain ridge, golden and green neighbouring fields, a pond with a bridge, additional trees, a workshop shed, stone fencing and a parked trailer. The playable farm stays in the middle; scenery does not force the camera to zoom out.
 
 - Livestock move gently, bees circle the apiary, water ripples and working production buildings emit small wisps. Reduced-motion preferences stop ambient animation.
-- Four activities are available from the Farm activities button, Buildings, More, or the corresponding 3D object: Greenhouse, Apiary, Animal paddock and Tool workshop.
+- Four activities are available by tapping the corresponding 3D object or its round marker: Greenhouse, Apiary, Animal paddock and Tool workshop.
 - Each job asks the player to find three items that need attention. Tile arrangements change on repeat visits. Partial progress is saved. Jobs return after 3–4 minutes and reward coins and XP; greenhouse work also gives lettuce, animal care gives fertilizer.
 - Completing a job at all four different stops gives an additional 22 coins and 10 XP. Repeating one stop does not substitute for the others. There is no deadline or penalty for leaving a job unfinished.
 - The server validates job identity, targets, completed steps, minimum action intervals, cooldowns and rewards. Existing farm progress and diamond rewards are preserved.
@@ -28,7 +28,7 @@ The farm now loads 70 selected GLB models (previously 55), with 15 additional mo
 
 Crop centres are now 3.15 by 3.2 units apart, while each soil tile stays 2.38 units wide. Mobile crop timers use short labels (for example, 12h or 25m, rounded up). When zoomed far out, overlapping timers are hidden with harvest markers given priority. Zooming in reveals more labels; crops remain directly tappable, and accessible labels retain the full time.
 
-Mobile camera and pan buttons are hidden because drag and pinch gestures already perform those actions. My farm still recentres the view. The bottom control area reserves 54 fewer pixels in portrait orientation. Desktop camera controls remain available. Farm activities use a compact floating button instead of another full-width bar.
+Mobile camera and pan buttons are hidden because drag and pinch gestures already perform those actions. My farm still recentres the view. The bottom control area reserves 54 fewer pixels in portrait orientation. Desktop camera controls remain available. Activity markers stay on their objects; there is no floating activities button.
 
 ## Mobile Sign in button fix
 

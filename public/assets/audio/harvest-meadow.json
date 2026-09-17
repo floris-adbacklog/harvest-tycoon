@@ -1,0 +1,11 @@
+{
+  "duration_seconds": 144.0,
+  "sample_rate": 24000,
+  "frames": 3456000,
+  "peak": 0.26,
+  "rms": 0.05962419822737747,
+  "quietest_50ms_rms": 0.028340994535688266,
+  "seam_step": 0.000658812439854408,
+  "max_adjacent_step": 0.033341102720789266,
+  "composition": "Original Harvest Meadow \u2014 48 bars, six phrase variations, 80 BPM"
+}

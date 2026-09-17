@@ -19,6 +19,7 @@ export function art(key,extra=''){
 }
 export function refreshArt(){
  document.querySelectorAll('[data-game-art],[data-lucide],.tiny-coin:not(.game-art)').forEach(el=>{
+  if(el.hasAttribute('data-line-icon'))return;
   const key=el.getAttribute('data-game-art')??(el.classList.contains('tiny-coin')?'coins':symbolMap[el.getAttribute('data-lucide')]);if(!key)return;
   const template=document.createElement('template');template.innerHTML=art(key);const picture=template.content.firstElementChild;
   if(!picture)return;for(const cls of el.classList)if(cls!=='lucide'&&!cls.startsWith('lucide-'))picture.classList.add(cls);

@@ -7,12 +7,12 @@ export function createSoundSettings(audio){
   $('ambience-volume').value=s.ambience;$('effects-volume').value=s.effects;
   $('ambience-value').value=`${s.ambience}%`;$('effects-value').value=`${s.effects}%`;
   for(const id of ['ambience-volume','effects-volume'])$(id).disabled=!s.available;
-  $('sound-status').textContent=!s.available?'Sound is not available in this browser.':!s.enabled?'All sound is muted.':!audible?'Both volume sliders are set to zero.':'A quiet breeze, birdsong and little celebrations.';
+  $('sound-status').textContent=!s.available?'Sound is not available in this browser.':!s.enabled?'All sound is muted.':!audible?'Both volume sliders are set to zero.':s.musicStatus==='unavailable'?'Music could not load. Game sounds are still available.':s.musicStatus==='loading'?'Getting your background music ready…':'Soft music and little celebrations.';
   $('sound-preview').disabled=!s.available||!s.enabled||!s.effects;
   $('sound-button').innerHTML=`<i data-lucide="${audible?'volume-2':'volume-x'}"></i>`;
   $('sound-button').setAttribute('aria-label',`Sound settings, ${audible?'sound on':'muted'}`);
   $('sound-button').title='Sound settings';$('mobile-sound-label').textContent='Sound settings';
-  $('mobile-sound-summary').textContent=audible?'Ambience & game sounds':'Currently muted';refreshArt();
+  $('mobile-sound-summary').textContent=audible?'Music & game sounds':'Currently muted';refreshArt();
  }
  function open(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());refresh();dialog.showModal();}
  $('sound-button').onclick=open;

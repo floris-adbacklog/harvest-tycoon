@@ -361,7 +361,7 @@ function bindUI(){
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  quests=createQuestsUI({state,claim,icons});
- activities=createActivitiesUI({state,runAction,notify:toast,onFind:id=>{const v=farmLife?.views.get(id);if(!v)return;viewMode='home';zoom=1.3;pan=(v.x-v.z+.1)/2;panDepth=(v.x+v.z-2.9)/2;resize();},onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
+ activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,guide:target=>{
   if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':'Tap a ready crop or its basket.');}
   else if(target==='market')openDialog('market-dialog');

@@ -12,7 +12,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  function station(id,object,x,z){
   object.userData.activity=id;
   const height=new THREE.Box3().setFromObject(object).max.y;
-  const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=`<i data-lucide="${ACTIVE_STATIONS[id].icon}"></i>`;label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
+  const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=`<i data-lucide="${ACTIVE_STATIONS[id].icon}" data-line-icon aria-hidden="true"></i>`;label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
   views.set(id,{object,x,z,height,label});return object;
  }
  // Broad, low shapes fill the edges; higher mountains stay behind the farm.
