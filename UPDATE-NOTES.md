@@ -1,5 +1,9 @@
 # Harvest Tycoon — September 17 update
 
+## Mobile Sign in button fix
+
+The decorative logo image could overlap the header because its transparent image box extended outside its visual container. The logo no longer intercepts pointer events, and the header is now above the decorative layer. The Sign in button retains its existing behavior: select the sign-in form, scroll to it and focus Email address. Its touch target is at least 44px tall. Authentication logic is unchanged. This CSS fix has not been tested on a physical phone.
+
 ## Expanded leaderboards
 
 The Rank by dropdown has 14 categories, grouped into Farm progress and Individual crops:
