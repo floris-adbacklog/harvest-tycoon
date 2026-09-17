@@ -6,7 +6,7 @@ const icons=refreshArt;
 export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList}){
  let tab='challenges',utility='tractor',lastDay=utcDay(farmNow()),lastTractorReady=true,lastFieldStatus='',lastCoinBoost=false;
  const open=id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();};
- function act(action,message){try{const r=runAction(action);onChange();refresh();notify(typeof message==='function'?message(r):message);return r;}catch(e){notify(e.message);}}
+ async function act(action,message){try{const r=await runAction(action);onChange();refresh();notify(typeof message==='function'?message(r):message);return r;}catch(e){notify(e.message);}}
  function gift(){
   const now=farmNow(),today=utcDay(now),claimed=state.login.lastDay===today;
   const continuous=claimed||state.login.lastDay===utcDay(now-DAY_MS);

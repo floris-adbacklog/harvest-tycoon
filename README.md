@@ -24,46 +24,27 @@ The farm stall earns 36 coins/hour initially, with 24 hours of storage. Eight up
 
 Six sequential estate projects have construction times of 2 hours, 8 hours, 1 day, 2 days, 3 days and 7 days, plus increasingly large coin, produce and mastery requirements. Recurring three-day estate commissions continue afterwards. Nine crops each have four mastery medals at 25, 100, 300 and 1,000 harvested fields. Production buildings reach level 10, silo research reaches level 5, and 41 permanent quests supplement daily activities. Existing balances, inventory, levels and in-progress timers migrate without resetting.
 
-## Local gameplay and cloud stats
+## Online accounts and authoritative farm storage
 
-`public/farm-client.js` saves the full farm in localStorage after each action. The leaderboard receives only player ID, display username, integer currency, integer level, and a server-generated update timestamp. Inventory, layouts, crop positions, animals and jobs never go to Supabase. Local play does not wait for leaderboard requests.
+Sign in or create an email/password account before the game loads. The full farm is stored in Supabase `player_farms`; `player_stats` contains the public leaderboard. Existing local browser saves are left untouched but are not read, imported or uploaded. Only the authentication session persists in browser storage.
 
-- `src/supabase.js`: email/password login, registration, persistent sessions, profiles and sign-out.
-- `src/sync.js`: allowlisted stats payload, four-second write throttle, coalescing and retry after a new update or reconnection.
-- `src/leaderboard.js`: top twenty by currency, stable ordering, tied ranks and the current player's own rank.
-- `src/ui.js`: login/registration screen, username prompt, account controls, leaderboard and HTML overlays.
-- `supabase/player_stats.sql`: table, grants, RLS, indexes and timestamp trigger.
+The `farm-api` Edge Function validates the user and active session, calculates each action using the shared game rules, and atomically writes the farm and leaderboard. Clients cannot overwrite farm state or scores. Logout removes the game iframe and its in-memory state. Connection failure stops gameplay until a successful reload from Supabase.
 
-The board contains self-reported client scores. RLS prevents changing another player's row; it cannot verify honest gameplay in a local-only game.
+## Deploy on Vercel
 
-Players sign in with email and password. Supabase's browser session persists between visits. The same account restores its username, coins and level on another device. Inventory, diamonds, boosts, crop timers and the rest of the farm remain device-local in this beta. Clearing browser storage removes those local farm details.
+See [VERCEL-SETUP.md](VERCEL-SETUP.md). Commit the files at the repository root, including `vercel.json`, `package.json`, `pnpm-lock.yaml`, `public`, `src`, `game`, `scripts` and `supabase`.
 
-## Supabase activation
+`vercel.json` disables Next.js auto-detection, uses the pinned pnpm installation, runs `npm run build:static` and publishes `dist-static`. The production build requires the two public Supabase environment variables. Never provide a secret/service-role key to the browser build.
 
-The project includes the account integration and SQL migration. Configure a deployment with the existing Supabase project's public build-time values; the unconfigured panel never shows simulated leaderboard scores.
-
-1. Run `supabase/player_stats.sql` in the intended Supabase project's SQL Editor.
-2. Enable email/password authentication in the intended Supabase project.
-3. Allow the production `/play.html` URL as an auth redirect for email confirmation.
-4. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the build environment (see `.env.example`). The build also accepts the older `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` names. Never use a service-role or secret key in the browser build.
-5. Rebuild and publish. These values are compiled into the browser bundle; changing only a runtime environment variable is insufficient.
-6. In a real browser, register or sign in, perform a coin-changing action, wait four seconds and verify the row in the Supabase table editor. Open the board to read it back. Verify a second authenticated player can read the first row but cannot insert/update using its ID.
-
-This beta update preserves the existing integration; it does not run SQL or change the live Supabase project's auth configuration. Account networking and cross-device behavior need verification against the intended deployment.
-
-## Builds and the earlier cloud save
-
-`pnpm build:static` creates `dist-static/` using a Vite-built Supabase bundle plus the static game assets. This output works on a static host without a custom application server. Vercel/Netlify can use that build command and publish directory; `/play.html` remains available for email redirects. The static output makes no legacy farm API request.
-
-The current Sites publication retains a **read-only migration bridge** for farms previously stored in Sites D1. On the first visit without a local save, the game reads that earlier farm once and stores it in the browser. All subsequent actions are local. The old full-farm POST endpoint responds with a reload notice and does not save changes. Existing D1 records remain as recovery copies; they are not uploaded to Supabase. This bridge is not required by the standalone static build. Keep it on the existing Site until players have opened the new version and moved their old save.
-
-`pnpm build` builds the current Sites Worker with that migration bridge. `.openai/hosting.json` retains the same Site identity. No Supabase secrets belong in that manifest.
+The existing project `jnmdirvidffzxukbdmij` has already received the online farm schema, Edge Function and permission fixes. Do not rerun SQL setup on it. For another project, use the setup instructions in VERCEL-SETUP.md.
 
 ## Validation
 
-`pnpm test` covers crop care, longer progression, saved-game migration, offline local saves, passive accrual and caps, duplicate rewards, project timing, stats-only payloads, write throttling, offline retries, and leaderboard queries. Tests of Supabase networking use mocks until a real project is available. Existing SQLite checks cover the prior save format and migration compatibility.
+`pnpm test` covers game rules, pointer interactions, server-only client updates and auth lifecycle races. Real API tests against two temporary Supabase accounts verified sign-in, farm creation, actions, reload, duplicate requests, account isolation and leaderboard reads. See [ONLINE-RELEASE.md](ONLINE-RELEASE.md) for the exact verified scope and remaining deployment checks.
 
-The shared game rules are in `game/farm-state.js`; the build copies them to `public/farm-state.js`. Supplied art belongs to the user-provided asset pack and is not distributed as a standalone pack.
+The managed browser preview is unavailable in this environment, so mobile/desktop visual checks have not been completed. The Vercel-targeted static production build passes; an actual Vercel deployment still requires the user's configured hosting project.
+
+The shared rules are in `game/farm-state.js`. The build copies them to `public/farm-state.js` and the Edge Function source. If game rules change, redeploy `farm-api` as well as the frontend. The old Sites D1 recovery endpoint is retired; historical D1 data remains untouched and is not used by the static Vercel build.
 
 ## September 17 economy and interface update
 

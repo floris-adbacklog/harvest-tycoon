@@ -6,7 +6,7 @@ const icons=refreshArt;
 const number=n=>n.toLocaleString('en-US');
 export function createGrowthUI({state,runAction,onChange,notify,itemList,onPlant}){
  let tab='projects',lastReadiness='';
- function act(action,message){try{const result=runAction(action);onChange();render();$('estate-feedback').textContent=typeof message==='function'?message(result):message;notify($('estate-feedback').textContent);}catch(error){$('estate-feedback').textContent=error.message;notify(error.message);}}
+ async function act(action,message){try{const result=await runAction(action);onChange();render();$('estate-feedback').textContent=typeof message==='function'?message(result):message;notify($('estate-feedback').textContent);}catch(error){$('estate-feedback').textContent=error.message;notify(error.message);}}
  function open(section='projects'){
   tab=section;document.querySelectorAll('dialog[open]').forEach(d=>d.close());render();$('estate-dialog').showModal();icons();
  }

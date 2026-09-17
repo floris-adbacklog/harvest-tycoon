@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, createFarm, progress, farmSummary, seedCost, levelProgress, formatDuration, harvestYield } from './farm-state.js';
+import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, formatDuration, harvestYield } from './farm-state.js';
 import { createEconomyUI } from './economy-ui.js';
 import { createFarmClient, farmNow } from './farm-client.js';
 import { createRetentionUI } from './retention-ui.js';
@@ -12,7 +12,8 @@ import { createQuestsUI } from './quests-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 
 const $ = id => document.getElementById(id);
-const state = createFarm();
+const state = structuredClone(window.harvestInitialFarm.state);
+window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false, sound=false, audioContext;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 let viewportWidth=0,viewportHeight=0,viewportRatio=0;
@@ -20,7 +21,7 @@ const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Ma
 let economy,retention,growth,boosts,quests,mobileUI,windmillRotor;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
-const client=createFarmClient(state,{onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.textContent=status==='saved'?'Saved on this device':status==='saving'?'Saving your farm…':'Retry save';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
+const client=createFarmClient(state,{onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.textContent=status==='saved'?'Saved to your account':status==='saving'?'Saving your farm…':'Retry save';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
 const runAction=action=>client.runAction(action);
 function openUtility(key){if(key==='stall'||key==='chores')growth.open(key);else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
@@ -177,12 +178,12 @@ function particleBurst(id,water=false){
  }
 }
 function floatReward(id,text){const v=plots[id],p=new THREE.Vector3(v.x,2.4,v.z).project(camera),e=document.createElement('div');e.className='floating-reward';e.textContent=text;e.style.left=`${world.offsetLeft+(p.x*.5+.5)*world.clientWidth}px`;e.style.top=`${world.offsetTop+(-p.y*.5+.5)*world.clientHeight}px`;$('game').append(e);setTimeout(()=>e.remove(),1400);}
-function interact(id,forcedAction){
+async function interact(id,forcedAction){
  if(!ready)return;
  const plot=state.plots[id];
  const action=forcedAction??(plot.crop&&farmNow()>=plot.readyAt?'harvest':selectedTool);
  try{
-  const result=runAction({type:'field',id,action,crop:selectedCrop});
+  const result=await runAction({type:'field',id,action,crop:selectedCrop});
   if(action==='harvest'){particleBurst(id);floatReward(id,`+${result.quantity} ${CROPS[result.crop].name} · +${result.xp} XP`);}
   if(action==='water'){particleBurst(id,true);floatReward(id,'+1 crop · 20% less waiting');}
   if(action==='tend'){particleBurst(id);floatReward(id,'Extra care · +1 crop');}
@@ -200,7 +201,7 @@ function updateHint(){
  $('hint-text').textContent=text;
 }
 function updateUI(){
- $('coins').textContent=state.coins.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});$('coins').parentElement.title=`${state.coins.toLocaleString('en-US')} coins`;$('recover-farm').hidden=!state.legacyRecoveryPending;
+ $('coins').textContent=state.coins.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});$('coins').parentElement.title=`${state.coins.toLocaleString('en-US')} coins`;
  const lp=levelProgress(state),lvl=lp.level;$('level').textContent=lvl;$('xp-text').textContent=`${lp.current} / ${lp.target} XP`;$('xp-bar').max=lp.target;$('xp-bar').value=lp.current;
  $('level-name').textContent=['Rookie farmer','Green thumb','Market regular','Harvest hero','Farm tycoon'][Math.min(lvl-1,4)];
  const count=Object.values(state.inventory).reduce((a,b)=>a+b,0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
@@ -214,7 +215,7 @@ function updateUI(){
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
-function claim(id){try{const r=runAction({type:'quest',id});updateUI();playTone('sell');toast(`Quest complete! +${r.coins} coins and +${r.xp} XP.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
+async function claim(id){try{const r=await runAction({type:'quest',id});updateUI();playTone('sell');toast(`Quest complete! +${r.coins} coins and +${r.xp} XP.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;}
 function resize(){
  if(!renderer||!camera)return;
@@ -296,7 +297,6 @@ function bindUI(){
  quests=createQuestsUI({state,claim,icons});
  mobileUI=createMobileUI({openUtility,resetView});
  $('save-status').onclick=()=>client.retry();
- $('recover-farm').onclick=async()=>{try{await client.recoverLegacy();$('recovery-feedback').textContent='Your earlier farm has been recovered and saved on this device.';}catch(error){$('recovery-feedback').textContent=error.message;}};
  new ResizeObserver(resize).observe(world);icons();
 }
 function frame(now){
@@ -315,16 +315,16 @@ function registerAgentTools(){
  const lifecycle=new AbortController();
  const specs=[
   {name:'get_farm_state',title:'Inspect the farm',description:'Read coins, inventory, field IDs, growth and quests in your saved Harvest Tycoon farm.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:false},execute:()=>farmSummary(state)},
-  {name:'work_farm_fields',title:'Plant, water or harvest fields',description:'Apply one farming action to the given fields. Planting spends coins; harvesting adds produce to inventory. Returns per-field results.',inputSchema:{type:'object',properties:{fieldIds:{type:'array',items:{type:'integer',minimum:0,maximum:MAX_PLOTS-1},minItems:1,maxItems:MAX_PLOTS,uniqueItems:true},action:{type:'string',enum:['plant','water','harvest','tend']},crop:{type:'string',enum:Object.keys(CROPS)}},required:['fieldIds','action'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:input=>{
+  {name:'work_farm_fields',title:'Plant, water or harvest fields',description:'Apply one farming action to the given fields. Planting spends coins; harvesting adds produce to inventory. Returns per-field results.',inputSchema:{type:'object',properties:{fieldIds:{type:'array',items:{type:'integer',minimum:0,maximum:MAX_PLOTS-1},minItems:1,maxItems:MAX_PLOTS,uniqueItems:true},action:{type:'string',enum:['plant','water','harvest','tend']},crop:{type:'string',enum:Object.keys(CROPS)}},required:['fieldIds','action'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:async input=>{
    if(!ready)throw new Error('The farm is still loading.');
    if(!input||!Array.isArray(input.fieldIds)||input.fieldIds.length<1||input.fieldIds.length>state.plots.length||new Set(input.fieldIds).size!==input.fieldIds.length||input.fieldIds.some(i=>!Number.isInteger(i)||i<0||i>=state.plots.length)||!['plant','water','harvest','tend'].includes(input.action)||input.crop!==undefined&&!Object.hasOwn(CROPS,input.crop))throw new Error('Invalid field IDs, action or crop.');
    if(input.crop)economy.chooseCrop(input.crop);setTool(input.action);
-   return {results:input.fieldIds.map(id=>({id,...interact(id,input.action)})),farm:farmSummary(state)};
+   return {results:await input.fieldIds.reduce(async(previous,id)=>[...await previous,{id,...await interact(id,input.action)}],Promise.resolve([])),farm:farmSummary(state)};
   }},
-  {name:'sell_farm_harvest',title:'Sell harvested crops',description:'Sell all stored crops and goods, or all of one item, for coins at the market.',inputSchema:{type:'object',properties:{crop:{type:'string',enum:['all',...Object.keys(ITEMS)]}},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:input=>{const crop=input?.crop??'all';if(!['all',...Object.keys(ITEMS)].includes(crop))throw new Error('Invalid crop.');const result=sell(crop);return {...result,farm:farmSummary(state)};}},
-  {name:'start_farm_production',title:'Start a production batch',description:'Consume the ingredients and start a timed recipe in its farm building. Does not collect the finished goods.',inputSchema:{type:'object',properties:{recipe:{type:'string',enum:Object.keys(RECIPES)}},required:['recipe'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:input=>{if(!ready)throw new Error('The farm is loading.');const result=runAction({type:'produce',recipe:input?.recipe});updateUI();economy.openBuilding(result.building);return {...result,farm:farmSummary(state)};}},
-  {name:'collect_farm_production',title:'Collect a finished batch',description:'Collect finished goods from a building into inventory. Fails when the batch is not ready.',inputSchema:{type:'object',properties:{building:{type:'string',enum:Object.keys(BUILDINGS).filter(k=>k!=='farmhouse')}},required:['building'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:input=>{if(!ready)throw new Error('The farm is loading.');const result=runAction({type:'collect',building:input?.building});updateUI();economy.openBuilding(result.building);return {...result,farm:farmSummary(state)};}},
-  {name:'upgrade_farm_building',title:'Upgrade a farm building',description:'Spend coins to increase production speed, or expand the fields when building is farmhouse.',inputSchema:{type:'object',properties:{building:{type:'string',enum:Object.keys(BUILDINGS)}},required:['building'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:input=>{if(!ready)throw new Error('The farm is loading.');const result=runAction(input?.building==='farmhouse'?{type:'expand'}:{type:'upgrade',building:input?.building});expandVisuals();updateUI();economy.openBuilding(input.building);return {...result,farm:farmSummary(state)};}}
+  {name:'sell_farm_harvest',title:'Sell harvested crops',description:'Sell all stored crops and goods, or all of one item, for coins at the market.',inputSchema:{type:'object',properties:{crop:{type:'string',enum:['all',...Object.keys(ITEMS)]}},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:async input=>{const crop=input?.crop??'all';if(!['all',...Object.keys(ITEMS)].includes(crop))throw new Error('Invalid crop.');const result=await sell(crop);return {...result,farm:farmSummary(state)};}},
+  {name:'start_farm_production',title:'Start a production batch',description:'Consume the ingredients and start a timed recipe in its farm building. Does not collect the finished goods.',inputSchema:{type:'object',properties:{recipe:{type:'string',enum:Object.keys(RECIPES)}},required:['recipe'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:async input=>{if(!ready)throw new Error('The farm is loading.');const result=await runAction({type:'produce',recipe:input?.recipe});updateUI();economy.openBuilding(result.building);return {...result,farm:farmSummary(state)};}},
+  {name:'collect_farm_production',title:'Collect a finished batch',description:'Collect finished goods from a building into inventory. Fails when the batch is not ready.',inputSchema:{type:'object',properties:{building:{type:'string',enum:Object.keys(BUILDINGS).filter(k=>k!=='farmhouse')}},required:['building'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:async input=>{if(!ready)throw new Error('The farm is loading.');const result=await runAction({type:'collect',building:input?.building});updateUI();economy.openBuilding(result.building);return {...result,farm:farmSummary(state)};}},
+  {name:'upgrade_farm_building',title:'Upgrade a farm building',description:'Spend coins to increase production speed, or expand the fields when building is farmhouse.',inputSchema:{type:'object',properties:{building:{type:'string',enum:Object.keys(BUILDINGS)}},required:['building'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:async input=>{if(!ready)throw new Error('The farm is loading.');const result=await runAction(input?.building==='farmhouse'?{type:'expand'}:{type:'upgrade',building:input?.building});expandVisuals();updateUI();economy.openBuilding(input.building);return {...result,farm:farmSummary(state)};}}
  ];
  for(const tool of specs){try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}}
  window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});

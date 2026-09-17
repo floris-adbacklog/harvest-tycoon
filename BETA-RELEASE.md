@@ -54,7 +54,7 @@ The farm stall now uses the original roofed `stall_002.glb` rather than a box. T
 
 All nine crop pictures and the product, currency, tool and navigation pictures share a consistent illustrated style with transparent backgrounds. The seed shop, selected seed, ingredients, market, journal and mastery collection use the same artwork for each item. The three sheets are `crops-v2.png`, `goods-v2.png` and `interface-v2.png` under `public/assets/icons/`. Each picture uses a square background cell, so neighbouring images cannot show in the margins. The old SVG atlas viewport and mixed crop thumbnails are no longer used by the interface. Building pins use each building's own original-model thumbnail; the Feed Mill and Windmill are distinct. The header and journal use a clean level badge with a readable number.
 
-The current full-farm save remains device-local, as in the previous release. Diamonds, boosts, jobs and inventory survive reloads on that device. Only existing account stats (coins and level) are synchronized by the current Supabase integration; diamonds and the full farm do not synchronize across devices in this beta.
+This online release stores the complete farm in Supabase after each action. An email/password account and an internet connection are required. Old device saves are not imported. See ONLINE-RELEASE.md and VERCEL-SETUP.md for the current architecture and deployment steps.
 
 ## Build and export
 
