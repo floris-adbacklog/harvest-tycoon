@@ -5,7 +5,7 @@ const now=Date.UTC(2026,8,17,12),hour=3600000;
 test('old saves preserve coins, inventory, levels, crop and job deadlines',()=>{
  const s=createFarm(now);s.version=3;s.xp=2017;s.coins=8123;s.inventory.wheat=67;s.buildings.mill.job={recipe:'flour',startedAt:now-10000,readyAt:now+5000};delete s.mastery;delete s.stall;delete s.estate;delete s.xpOffset;
  const original=structuredClone(s);normalizeFarm(s,now);
- assert.equal(levelOf(s),1+Math.floor(original.xp/60));assert.equal(s.coins,original.coins);assert.deepEqual(s.inventory,original.inventory);assert.equal(s.plots[5].readyAt,original.plots[5].readyAt);assert.deepEqual(s.buildings.mill.job,original.buildings.mill.job);
+ assert.equal(levelOf(s),1+Math.floor(original.xp/60));assert.equal(s.coins,original.coins);assert.deepEqual(s.inventory,original.inventory);assert.equal(s.plots[5].readyAt,original.plots[5].readyAt);assert.equal(s.buildings.mill.job.readyAt,original.buildings.mill.job.readyAt);assert.deepEqual(s.buildings.mill.job.output,{flour:1});
  const again=structuredClone(s);normalizeFarm(s,now);assert.deepEqual(s,again);
 });
 test('active care yields three crops versus one passive crop and cannot be repeated',()=>{
@@ -43,6 +43,6 @@ test('estate chapters take over thirteen days even with unlimited funds, then ke
 });
 test('level requirements grow and all ten building levels keep positive production durations',()=>{
  const s=createFarm(now);assert.equal(levelProgress(s).target,60);s.xp=160;assert.equal(levelOf(s),3);assert.equal(levelProgress(s).target,140);
- for(let level=1;level<=10;level++){s.buildings.mill.level=level;const duration=recipeDuration(s,'flour');assert(duration>0);assert(duration<=RECIPES.flour.duration);}
+ for(let level=1;level<=10;level++){s.buildings.windmill.level=level;const duration=recipeDuration(s,'flour');assert(duration>0);assert(duration<=RECIPES.flour.duration);}
  s.coins=1e9;s.buildings.mill.level=3;for(let i=3;i<10;i++)act(s,{type:'upgrade',building:'mill'},now);assert.throws(()=>act(s,{type:'upgrade',building:'mill'},now),/fully upgraded/);
 });

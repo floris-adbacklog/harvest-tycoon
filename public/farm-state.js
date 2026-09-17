@@ -6,43 +6,50 @@ export const CROPS = Object.freeze({
  sunflower:  {name:'Sunflower',cost:180,sell:1100,duration:86400000,xp:45,model:'plant_007',height:1.65,use:'Sunflower oil'},
  barley: {name:'Barley',cost:20,sell:85,duration:2700000,xp:8,model:'plant_010',height:1.05,use:'Animal feed',art:'/assets/icons/barley.svg'},
  lettuce:{name:'Lettuce',cost:7,sell:20,duration:300000,xp:3,model:'plant_005',height:.47,use:'Fresh salads',art:'/assets/icons/lettuce.svg'},
- redcabbage:{name:'Red cabbage',cost:130,sell:720,duration:43200000,xp:32,model:'plant_006',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg'},
- cauliflower:{name:'Cauliflower',cost:65,sell:300,duration:14400000,xp:18,model:'plant_002',height:.5,use:'Vegetable boxes'}
+ redcabbage:{name:'Red cabbage',cost:130,sell:720,duration:43200000,xp:32,model:'plant_004',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg',tint:0xb66cce},
+ cauliflower:{name:'Cauliflower',cost:65,sell:300,duration:14400000,xp:18,model:'plant_005',height:.5,use:'Vegetable boxes'}
 });
 export const PRODUCTS = Object.freeze({
+ grainmeal:{name:'Grain meal',sell:180,icon:'wheat',color:'wheat'},
+ fertilizer:{name:'Natural fertilizer',sell:260,icon:'sprout',color:'green'},
  salad:{name:'Fresh salad',sell:550,icon:'salad',color:'green'},
  pickles:{name:'Pickled cabbage',sell:1850,icon:'amphora',color:'coral'},
- flour:{name:'Flour',sell:25,icon:'wheat',color:'wheat'},
+ flour:{name:'Flour',sell:60,icon:'wheat',color:'wheat'},
  feed:{name:'Animal feed',sell:115,icon:'package-open',color:'wheat'},
  oil:{name:'Sunflower oil',sell:3000,icon:'droplet',color:'gold'},
  milk:{name:'Milk',sell:80,icon:'milk',color:'blue'},
  eggs:{name:'Eggs',sell:50,icon:'egg',color:'cream'},
  cheese:{name:'Cheese',sell:230,icon:'sandwich',color:'gold'},
- bread:{name:'Bread',sell:180,icon:'croissant',color:'wheat'},
- pie:{name:'Pumpkin pie',sell:1600,icon:'cake-slice',color:'coral'},
+ bread:{name:'Fresh bread',sell:340,icon:'croissant',color:'wheat'},
+ pie:{name:'Fresh pumpkin pie',sell:2100,icon:'cake-slice',color:'coral'},
  vegetables:{name:'Vegetable box',sell:2500,icon:'salad',color:'green'}
 });
 export const ITEMS=Object.freeze({...CROPS,...PRODUCTS});
 export const BUILDINGS = Object.freeze({
  farmhouse:{name:'Farmhouse',tagline:'Room for your next big idea.',icon:'house',model:'house_010',type:'farm',upgradeCost:140},
- mill:{name:'Feed Mill',tagline:'Turn simple crops into useful ingredients.',icon:'wind',model:'hangar_003',type:'production',upgradeCost:90},
+ mill:{name:'Feed Mill',tagline:'Make animal feed and press golden sunflower oil.',icon:'factory',model:'hangar_003',type:'production',upgradeCost:90},
  dairy:{name:'Dairy Barn',tagline:'Happy cows, fresh milk and farmhouse cheese.',icon:'milk',model:'hangar_004',type:'production',upgradeCost:110},
  coop:{name:'Chicken Coop',tagline:'A little feed. A basket of fresh eggs.',icon:'egg',model:'coop_001',type:'production',upgradeCost:75},
  bakery:{name:'Bakery',tagline:'Bake something worth coming home for.',icon:'croissant',model:'house_027',type:'production',upgradeCost:130},
- packing:{name:'Packing Shed',tagline:'Pack your vegetables for a better price.',icon:'package-check',model:'house_030',type:'production',upgradeCost:100}
+ packing:{name:'Packing Shed',tagline:'Pack your vegetables for a better price.',icon:'package-check',model:'house_030',type:'production',upgradeCost:100},
+ windmill:{name:'Windmill',tagline:'Mill grain, make natural fertilizer and help your crops grow.',icon:'wind',model:'tower_001',type:'production',upgradeCost:180}
 });
 export const RECIPES=Object.freeze({
+ grainmeal:{building:'windmill',name:'Grind grain meal',input:{wheat:8,barley:4},output:{grainmeal:3},duration:1200000,xp:30},
+ fertilizer:{building:'windmill',name:'Mix natural fertilizer',input:{grainmeal:2,cabbage:2},output:{fertilizer:3},duration:1800000,xp:40},
+ windflour:{building:'windmill',name:'Mill a large flour batch',input:{grainmeal:3},output:{flour:14},duration:720000,xp:24},
+ windfeed:{building:'windmill',name:'Wind-milled barley feed',input:{barley:8},output:{feed:7},duration:1200000,xp:32},
  barleyfeed:{building:'mill',name:'Mix barley feed',input:{barley:2},output:{feed:2},duration:120000,xp:8},
  salad:{building:'packing',name:'Prepare a fresh salad',input:{lettuce:4,cabbage:2},output:{salad:1},duration:900000,xp:14},
  pickles:{building:'packing',name:'Pickle red cabbage',input:{redcabbage:2},output:{pickles:1},duration:10800000,xp:20},
- flour:{building:'mill',name:'Mill flour',input:{wheat:2},output:{flour:1},duration:90000,xp:8},
+ flour:{building:'windmill',name:'Refine grain meal into flour',input:{grainmeal:1},output:{flour:4},duration:240000,xp:12},
  feed:{building:'mill',name:'Mix animal feed',input:{corn:2},output:{feed:1},duration:120000,xp:8},
  oil:{building:'mill',name:'Press sunflower oil',input:{sunflower:2},output:{oil:1},duration:14400000,xp:15},
  milk:{building:'dairy',name:'Feed the cows',input:{feed:1},output:{milk:2},duration:600000,xp:10},
  cheese:{building:'dairy',name:'Make farmhouse cheese',input:{milk:2},output:{cheese:1},duration:3600000,xp:14},
  eggs:{building:'coop',name:'Feed the chickens',input:{feed:1},output:{eggs:3},duration:300000,xp:10},
  bread:{building:'bakery',name:'Bake fresh bread',input:{flour:4,milk:2},output:{bread:2},duration:1200000,xp:16},
- pie:{building:'bakery',name:'Bake pumpkin pie',input:{flour:2,pumpkin:2,eggs:2},output:{pie:1},duration:7200000,xp:20},
+ pie:{building:'bakery',name:'Bake fresh pumpkin pie',input:{flour:2,pumpkin:2,eggs:2},output:{pie:1},duration:7200000,xp:20},
  vegetables:{building:'packing',name:'Pack a vegetable box',input:{cabbage:4,cauliflower:4},output:{vegetables:1},duration:3600000,xp:15}
 });
 export const QUESTS = Object.freeze([
@@ -77,7 +84,16 @@ export const QUESTS = Object.freeze([
  {title:'A thousand little harvests',description:'Harvest 1,000 fields.',stat:'harvested',target:1000,reward:2500},
  {title:'From farm to estate',description:'Complete 6 estate projects.',stat:'projects',target:6,reward:8000},
  {title:'Known across the valley',description:'Complete 100 delivery orders.',stat:'deliveries',target:100,reward:6000},
- {title:'A lifelong grower',description:'Claim all 36 crop mastery medals.',stat:'mastery_medals',target:36,reward:20000}
+ {title:'A lifelong grower',description:'Claim all 36 crop mastery medals.',stat:'mastery_medals',target:36,reward:20000},
+ {title:'Catch the wind',description:'Collect your first production batch at the Windmill.',stat:'windmill_batches',target:1,reward:180},
+ {title:'Grain with a purpose',description:'Make 3 grain meal at the Windmill.',stat:'made_grainmeal',target:3,reward:160},
+ {title:'Fresh from the mill',description:'Refine grain meal into 12 flour for the Bakery.',stat:'made_flour',target:12,reward:200},
+ {title:'A gentler way to grow',description:'Use natural fertilizer on 4 growing fields.',stat:'fertilized',target:4,reward:240},
+ {title:'A sparkling streak',description:'Earn 10 diamonds from daily gifts.',stat:'diamonds_earned',target:10,reward:200},
+ {title:'A little extra power',description:'Activate 2 boosts with earned diamonds.',stat:'boosts_used',target:2,reward:250},
+ {title:'A stronger windmill',description:'Upgrade your Windmill to level 2.',stat:'windmill_upgrades',target:1,reward:200},
+ {title:'From mill to oven',description:'Collect 12 fresh bread from the Bakery.',stat:'made_bread',target:12,reward:300},
+ {title:'Pumpkin perfection',description:'Collect 6 fresh pumpkin pies from the Bakery.',stat:'made_pie',target:6,reward:400}
 ]);
 export const MAX_PLOTS=24;
 export function xpForLevel(level){const n=level-1;return 60*n+20*n*(n-1);}
@@ -97,7 +113,7 @@ export function expansionMaterials(state){return state.plots.length>=MAX_PLOTS?{
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')return null;
  const level=state.buildings[building].level;
- return level>=MAX_BUILDING_LEVEL?null:Math.round(BUILDINGS[building].upgradeCost*(level<3?level:12*2.7**(level-3)));
+ return level>=MAX_BUILDING_LEVEL?null:Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level:12*2.7**(level-3)))*(state.boosts?.upgradeCredits>0?.5:1));
 }
 function createBaseFarm(now=Date.now()) {
  const plots=Array.from({length:12},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
@@ -119,7 +135,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
   if(p.crop)throw new Error('This field is already planted.');
   if(state.coins<seedCost(state,crop))throw new Error('Not enough coins. Sell some produce at the market.');
   state.coins-=seedCost(state,crop);state.stats.planted++;
-  const duration=cropDuration(state,crop);Object.assign(p,{crop,plantedAt:now,readyAt:now+duration,careAt:now+Math.max(30000,duration*.3),watered:false,tended:false});
+  const duration=cropDuration(state,crop);Object.assign(p,{crop,plantedAt:now,readyAt:now+duration,careAt:now+Math.max(30000,duration*.3),watered:false,tended:false,fertilized:false});
   return {action,crop,cost:seedCost(state,crop)};
  }
  if(!p.crop)throw new Error('Plant a crop in this field first.');
@@ -141,7 +157,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  state.inventory[harvested]+=quantity;state.stats.harvested++;state.stats['harvest_'+harvested]=(state.stats['harvest_'+harvested]??0)+quantity;
  state.mastery.harvests[harvested]=(state.mastery.harvests[harvested]??0)+1;
  if(!state.discovered.includes(harvested))state.discovered.push(harvested);state.stats.varieties=state.discovered.length;state.xp+=xp;
- Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false});
+ Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false});
  return {action,crop:harvested,quantity,xp};
 }
 export function sellCrops(state,item='all') {
@@ -166,7 +182,7 @@ export function startProduction(state,id,now=Date.now()){
  if(a.missing.length)throw new Error('Missing ingredients: '+a.missing.map(m=>`${m.name} (${m.have}/${m.need})`).join(', ')+'.');
  const duration=recipeDuration(state,id);
  for(const [k,n]of Object.entries(r.input))state.inventory[k]-=n;
- b.job={recipe:id,startedAt:now,readyAt:now+duration};
+ b.job={recipe:id,startedAt:now,readyAt:now+duration,output:{...r.output},xp:r.xp};
  return {building:r.building,recipe:id,readyAt:b.job.readyAt};
 }
 export function collectProduction(state,building,now=Date.now()){
@@ -174,10 +190,11 @@ export function collectProduction(state,building,now=Date.now()){
  const b=state.buildings[building],job=b.job;
  if(!job)throw new Error('Nothing to collect yet. Start a recipe first.');
  if(now<job.readyAt)throw new Error('This batch is still being made.');
- const r=RECIPES[job.recipe];
- for(const [k,n]of Object.entries(r.output)){state.inventory[k]+=n;state.stats['made_'+k]=(state.stats['made_'+k]??0)+n;}
- state.stats.produced++;state.stats.bread+=r.output.bread??0;state.xp+=r.xp;b.job=null;
- return {building,items:{...r.output},xp:r.xp};
+ const r=RECIPES[job.recipe],output=job.output??r.output,xp=job.xp??r.xp;
+ for(const [k,n]of Object.entries(output)){state.inventory[k]+=n;state.stats['made_'+k]=(state.stats['made_'+k]??0)+n;}
+ state.stats.produced++;state.stats.bread+=output.bread??0;state.xp+=xp;b.job=null;
+ if(building==='windmill')state.stats.windmill_batches=(state.stats.windmill_batches??0)+1;
+ return {building,items:{...output},xp};
 }
 export function upgradeBuilding(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')throw new Error('Choose a production building.');
@@ -186,6 +203,8 @@ export function upgradeBuilding(state,building){
  if(b.job)throw new Error('Finish and collect the current batch before upgrading.');
  if(state.coins<cost)throw new Error(`You need ${cost} coins for this upgrade.`);
  state.coins-=cost;b.level++;state.stats.upgrades++;state.xp+=15;
+ if(state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
+ if(building==='windmill')state.stats.windmill_upgrades=(state.stats.windmill_upgrades??0)+1;
  return {building,level:b.level,cost};
 }
 export function expandFarm(state){
@@ -195,7 +214,7 @@ export function expandFarm(state){
  const missing=Object.entries(materials).filter(([key,n])=>(state.inventory[key]??0)<n);
  if(missing.length)throw new Error(`Gather the missing supplies: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
  state.coins-=cost;for(const [key,n] of Object.entries(materials))state.inventory[key]-=n;
- state.plots.push({id:state.plots.length,crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false});
+ state.plots.push({id:state.plots.length,crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false});
  state.stats.expansions++;state.xp+=20;state.buildings.farmhouse.level++;
  return {fields:state.plots.length,cost,materials};
 }
@@ -208,11 +227,56 @@ export function claimQuest(state,id){
  return {coins:q.reward,xp:15};
 }
 export function farmSummary(state,now=Date.now()) {
- return {coins:state.coins,xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,status:b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
+ return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,status:b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
 }
 
 export const DAY_MS=86400000;
 export const DAILY_REWARDS=[40,55,70,85,100,120,160];
+export const DAILY_DIAMONDS=[2,3,4,5,6,8,12];
+export const DIAMOND_PACKS=Object.freeze([{amount:50,price:'€1.99'},{amount:300,price:'€9.99'},{amount:1000,price:'€24.99'}]);
+export const BOOSTS=Object.freeze({
+ xp:{name:'Double XP',cost:10,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},
+ coins:{name:'Double earnings',cost:15,duration:1800000,art:'coins',description:'Double your market sales and delivery coins for 30 minutes. Passive income and gifts stay the same.'},
+ crops:{name:'Instant harvest',cost:8,art:'seeds',description:'Make every currently growing crop ready to harvest. Crops stay in their fields until you collect them.'},
+ upgrade:{name:'Builder’s discount',cost:20,art:'hammer',description:'Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires.'},
+ production:{name:'Finish production',cost:12,art:'boost',description:'Finish all current production batches instantly. Collect the finished goods from their buildings.'}
+});
+export function boostStatus(state,id,now=Date.now()){
+ if(!Object.hasOwn(BOOSTS,id))throw new Error('Choose a valid boost.');
+ const boost=BOOSTS[id],until=id==='xp'?state.boosts?.xpUntil:id==='coins'?state.boosts?.coinsUntil:0;
+ const remaining=Math.max(0,(until??0)-now);
+ let reason='';
+ if(remaining)reason='Already active';
+ if(id==='upgrade'&&state.boosts?.upgradeCredits>0)reason='Voucher ready';
+ if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>key!=='farmhouse'&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
+ if(id==='crops'&&!state.plots.some(p=>p.crop&&p.readyAt>now))reason='No crops are growing';
+ if(id==='production'&&!Object.values(state.buildings).some(b=>b.job&&b.job.readyAt>now))reason='No batches are running';
+ return {...boost,remaining,reason,canBuy:!reason&&state.diamonds>=boost.cost};
+}
+export function buyBoost(state,id,now=Date.now()){
+ const status=boostStatus(state,id,now);
+ if(status.reason)throw new Error(status.reason+'.');
+ if(state.diamonds<status.cost)throw new Error(`You need ${status.cost} diamonds. Earn more from your daily streak.`);
+ if(id==='xp')state.boosts.xpUntil=now+status.duration;
+ if(id==='coins')state.boosts.coinsUntil=now+status.duration;
+ if(id==='upgrade')state.boosts.upgradeCredits=1;
+ let affected=0;
+ if(id==='crops')for(const p of state.plots)if(p.crop&&p.readyAt>now){p.readyAt=now;affected++;}
+ if(id==='production')for(const b of Object.values(state.buildings))if(b.job&&b.job.readyAt>now){b.job.readyAt=now;affected++;}
+ state.diamonds-=status.cost;
+ state.stats.boosts_used=(state.stats.boosts_used??0)+1;
+ return {boost:id,cost:status.cost,affected,expiresAt:status.duration?now+status.duration:null};
+}
+export function fertilizeField(state,id,now=Date.now()){
+ if(!Number.isInteger(id)||id<0||id>=state.plots.length)throw new Error('Choose an unlocked field.');
+ const plot=state.plots[id];
+ if(!plot.crop||plot.readyAt<=now)throw new Error('Choose a crop that is still growing.');
+ if(plot.fertilized)throw new Error('This crop has already been fertilized.');
+ if(state.inventory.fertilizer<1)throw new Error('Make natural fertilizer at the Windmill first.');
+ const saved=Math.floor((plot.readyAt-now)*.35);
+ plot.readyAt-=saved;plot.fertilized=true;state.inventory.fertilizer--;state.xp+=5;state.stats.fertilized=(state.stats.fertilized??0)+1;
+ return {id,crop:plot.crop,saved,xp:5};
+}
 const DAILY_POOLS=[
  [{stat:'harvested',target:8,title:'Bring in the harvest',description:'Harvest 8 crops.',reward:45},{stat:'watered',target:8,title:'A little extra care',description:'Water 8 growing crops.',reward:40},{stat:'planted',target:10,title:'A fresh start',description:'Plant 10 crops.',reward:45}],
  [{stat:'produced',target:2,title:'Busy little buildings',description:'Collect 2 production batches.',reward:55},{stat:'made_milk',target:4,title:'Fresh from the barn',description:'Collect 4 milk.',reward:60},{stat:'made_eggs',target:6,title:'The morning basket',description:'Collect 6 eggs.',reward:55}],
@@ -231,15 +295,24 @@ export function utcDay(now=Date.now()){return new Date(now).toISOString().slice(
 export function dayNumber(now=Date.now()){return Math.floor(now/DAY_MS);}
 export function seedCost(state,crop){return Math.max(1,Math.ceil(CROPS[crop].cost*(1-siloBonus(state.siloLevel??0).seeds)));}
 export function normalizeFarm(state,now=Date.now()){
+ const oldVersion=state.version??0;
  if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=xpForLevel(previousLevel)-60*(previousLevel-1);}
- state.version=4;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
+ state.version=6;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
+ state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
+ state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
+ state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
+ state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
+ // Keep paid-for legacy flour batches intact when milling moves to the Windmill.
+ if(oldVersion<6&&state.buildings.mill.job?.recipe==='flour'){
+  state.buildings.mill.job.output??={flour:1};state.buildings.mill.job.xp??=8;
+ }
  state.stats??={};for(const q of QUESTS)state.stats[q.stat]??=0;
  for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals'])state.stats[k]??=0;
  state.discovered??=[];state.siloLevel??=0;state.tractorReadyAt??=0;
  state.login??={lastDay:null,streak:0,best:0,visits:0};state.levelRewards??=[1];
  state.mastery??={harvests:Object.fromEntries(Object.keys(CROPS).map(k=>[k,state.stats['harvest_'+k]??0])),claimed:[]};
  state.stall??={level:1,since:now,bank:0};state.estate??={completed:0,job:null};state.chores??={};
- for(const p of state.plots){p.tended??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*.3);}
+ for(const p of state.plots){p.tended??=false;p.fertilized??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*.3);}
  const day=utcDay(now);
  if(state.daily?.date!==day)state.daily={date:day,baseline:{...state.stats},claimed:[],orders:[],bonusClaimed:false};
  return state;
@@ -266,8 +339,9 @@ export function checkIn(state,now=Date.now()){
  if(state.login.lastDay===day)throw new Error('Your daily gift is already collected.');
  state.login.streak=state.login.lastDay===utcDay(now-DAY_MS)?state.login.streak+1:1;
  state.login.lastDay=day;state.login.best=Math.max(state.login.best,state.login.streak);state.login.visits++;
- const coins=DAILY_REWARDS[(state.login.streak-1)%7];state.coins+=coins;state.xp+=10;
- return {coins,streak:state.login.streak,xp:10};
+ const index=(state.login.streak-1)%7,coins=DAILY_REWARDS[index],diamonds=DAILY_DIAMONDS[index];state.coins+=coins;state.diamonds+=diamonds;state.xp+=10;
+ state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
+ return {coins,diamonds,streak:state.login.streak,xp:10};
 }
 export function deliverOrder(state,id,day,now=Date.now()){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('The order board has refreshed. Pick a new order.');
@@ -303,7 +377,19 @@ export function upgradeSilo(state){
 }
 export function applyFarmAction(state,action,now=Date.now()){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
+ const beforeXP=state.xp,beforeCoins=state.coins;
+ const result=dispatchFarmAction(state,action,now);
+ const earnedXP=state.xp-beforeXP;
+ if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
+ if(state.boosts.coinsUntil>now&&['sell','delivery'].includes(action.type)){
+  const bonus=state.coins-beforeCoins;if(bonus>0){state.coins+=bonus;state.stats.earned+=bonus;result.coins+=bonus;}
+ }
+ return result;
+}
+function dispatchFarmAction(state,action,now){
  switch(action.type){
+  case 'buy_boost':return buyBoost(state,action.boost,now);
+  case 'fertilize':return fertilizeField(state,action.id,now);
   case 'stall_collect':return collectStall(state,now);
   case 'stall_upgrade':return upgradeStall(state,now);
   case 'chore':return doChore(state,action.id,now);

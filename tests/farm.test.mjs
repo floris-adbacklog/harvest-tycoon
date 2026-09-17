@@ -14,7 +14,7 @@ function database(){
 
 test('all 9 crops can be planted, watered and harvested; collection is unique',()=>{
  const s=createFarm(now);s.coins=10000;
- assert.equal(Object.keys(CROPS).length,9);assert.equal(QUESTS.length,32);
+ assert.equal(Object.keys(CROPS).length,9);assert.equal(QUESTS.length,41);
  for(const [crop,c] of Object.entries(CROPS)){
   apply(s,{type:'field',id:8,action:'plant',crop});apply(s,{type:'field',id:8,action:'water'},now+1000);
   assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+1000),/Still growing/);
@@ -24,8 +24,8 @@ test('all 9 crops can be planted, watered and harvested; collection is unique',(
  }
  assert.equal(s.stats.varieties,9);assert.equal(s.discovered.length,9);
 });
-test('all 12 recipes require ingredients, persist timed jobs and collect once',()=>{
- assert.equal(Object.keys(RECIPES).length,12);
+test('all 16 recipes require ingredients, persist timed jobs and collect once',()=>{
+ assert.equal(Object.keys(RECIPES).length,16);
  for(const [id,r]of Object.entries(RECIPES)){
   const s=createFarm(now);for(const k of Object.keys(s.inventory))s.inventory[k]=0;
   const before=structuredClone(s);

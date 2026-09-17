@@ -1,0 +1,30 @@
+HARVEST TYCOON — COMPLETE FINALE EXPORT
+
+Deze ZIP bevat de laatste versie, inclusief de reparatie van de uitgerekte iconen.
+
+INHOUD
+- dist-static/: de volledig gebouwde website, klaar voor een statische webserver.
+  Inclusief afbeeldingen, 55 GLB-modellen, lettertypen, scripts en Supabase-bundle.
+- public/: alle originele gamebestanden en assets, inclusief public/cloud/cloud.js.
+- Overige bestanden: de volledige projectbroncode, tests, build-scripts en SQL.
+
+BELANGRIJK VOOR AFBEELDINGEN
+Upload de HELE inhoud van dist-static/ als website, niet alleen index.html.
+index.html, assets/, vendor/, cloud/, game.js en de overige bestanden moeten
+samen in de hoofdmap van de website staan. De game gebruikt /assets/... URLs.
+Alleen dubbelklikken op index.html (file://) werkt niet: gebruik een webserver.
+
+VERCEL MET PROJECTBRONCODE
+Gebruik de map harvest-tycoon als projectmap.
+Bij statische deployment: Framework Preset = Other,
+Build Command = pnpm build:static, Output Directory = dist-static.
+Behoud de bestaande NEXT_PUBLIC_SUPABASE_URL en
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY om opnieuw te bouwen.
+De meegeleverde dist-static/ is al gebouwd met de opgegeven publieke waarden.
+Gebruik nooit een Supabase service-role key in deze website.
+
+De complete gebouwde website is ook geschikt voor een statische host die
+bestanden rechtstreeks accepteert: upload de inhoud van dist-static/.
+
+Voortgang en databasegegevens zijn geen onderdeel van een projectexport.
+Bestaande Supabase-instellingen en spelersgegevens blijven in het bestaande project.

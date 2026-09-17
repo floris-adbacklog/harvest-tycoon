@@ -2,6 +2,8 @@
 
 A farming game with the supplied GLB farm pack and Harvest Tycoon logo. All gameplay text is English.
 
+See [BETA-RELEASE.md](BETA-RELEASE.md) for the Windmill, fresh baking, diamonds, boosts, new quests, save limitations and export instructions.
+
 ## Long-term progression
 
 | Crop | Base growth | Seed cost | Coins per harvested item |
@@ -20,36 +22,34 @@ A field yields one crop unattended, two after watering, and three after watering
 
 The farm stall earns 36 coins/hour initially, with 24 hours of storage. Eight upgrade levels increase income and capacity (up to 48 hours). Estate projects add 6 coins/hour each. Income before an upgrade settles at the previous rate. The stall uses no crop inventory. Active chores repeat every two or three minutes; short crops, care, production and deliveries provide a higher active earning rate.
 
-Six sequential estate projects have construction times of 2 hours, 8 hours, 1 day, 2 days, 3 days and 7 days, plus increasingly large coin, produce and mastery requirements. Recurring three-day estate commissions continue afterwards. Nine crops each have four mastery medals at 25, 100, 300 and 1,000 harvested fields. Production buildings reach level 10, silo research reaches level 5, and 32 permanent quests supplement daily activities. Existing balances, inventory, levels and in-progress timers migrate without resetting.
+Six sequential estate projects have construction times of 2 hours, 8 hours, 1 day, 2 days, 3 days and 7 days, plus increasingly large coin, produce and mastery requirements. Recurring three-day estate commissions continue afterwards. Nine crops each have four mastery medals at 25, 100, 300 and 1,000 harvested fields. Production buildings reach level 10, silo research reaches level 5, and 41 permanent quests supplement daily activities. Existing balances, inventory, levels and in-progress timers migrate without resetting.
 
 ## Local gameplay and cloud stats
 
 `public/farm-client.js` saves the full farm in localStorage after each action. The leaderboard receives only player ID, display username, integer currency, integer level, and a server-generated update timestamp. Inventory, layouts, crop positions, animals and jobs never go to Supabase. Local play does not wait for leaderboard requests.
 
-- `src/supabase.js`: client initialization, anonymous auth, profile and optional email identity linking.
+- `src/supabase.js`: email/password login, registration, persistent sessions, profiles and sign-out.
 - `src/sync.js`: allowlisted stats payload, four-second write throttle, coalescing and retry after a new update or reconnection.
 - `src/leaderboard.js`: top twenty by currency, stable ordering, tied ranks and the current player's own rank.
-- `src/ui.js`: username prompt, bottom-bar leaderboard, account linking and HTML overlays.
+- `src/ui.js`: login/registration screen, username prompt, account controls, leaderboard and HTML overlays.
 - `supabase/player_stats.sql`: table, grants, RLS, indexes and timestamp trigger.
 
 The board contains self-reported client scores. RLS prevents changing another player's row; it cannot verify honest gameplay in a local-only game.
 
-Anonymous identity persists in its browser's saved auth session. It does **not** automatically follow a person to another device. The optional email linking/sign-in panel enables the same Supabase player identity on other devices. Layouts stay device-local; the active device publishes its current score. Clearing browser storage removes its farm and an unlinked anonymous identity.
+Players sign in with email and password. Supabase's browser session persists between visits. The same account restores its username, coins and level on another device. Inventory, diamonds, boosts, crop timers and the rest of the farm remain device-local in this beta. Clearing browser storage removes those local farm details.
 
 ## Supabase activation
 
-No Supabase project URL or browser key was available when this integration was authored. The unconfigured panel states that the leaderboard is unavailable; it never shows simulated scores.
+The project includes the account integration and SQL migration. Configure a deployment with the existing Supabase project's public build-time values; the unconfigured panel never shows simulated leaderboard scores.
 
 1. Run `supabase/player_stats.sql` in the intended Supabase project's SQL Editor.
-2. Enable Anonymous Sign-Ins in Authentication settings.
-3. For cross-device identity, also enable email auth and manual identity linking. Allow the production `/play.html` URL as an auth redirect.
-4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the build environment (see `.env.example`). Use a public anon/publishable key. Never use a service-role or secret key in the browser build.
-5. Rebuild and publish. These Vite values are compiled into the browser bundle; changing only a runtime environment variable is insufficient.
-6. In a real browser, choose a username, perform a coin-changing action, wait four seconds and verify the row in the Supabase table editor. Open the board to read it back. Verify a second authenticated player can read the first row but cannot insert/update using its ID.
+2. Enable email/password authentication in the intended Supabase project.
+3. Allow the production `/play.html` URL as an auth redirect for email confirmation.
+4. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the build environment (see `.env.example`). The build also accepts the older `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` names. Never use a service-role or secret key in the browser build.
+5. Rebuild and publish. These values are compiled into the browser bundle; changing only a runtime environment variable is insufficient.
+6. In a real browser, register or sign in, perform a coin-changing action, wait four seconds and verify the row in the Supabase table editor. Open the board to read it back. Verify a second authenticated player can read the first row but cannot insert/update using its ID.
 
-Project access, SQL execution and live Supabase read-back remain required before claiming the shared leaderboard is activated.
-
-Official references: [anonymous identities](https://supabase.com/docs/guides/auth/auth-anonymous), [row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security).
+This beta update preserves the existing integration; it does not run SQL or change the live Supabase project's auth configuration. Account networking and cross-device behavior need verification against the intended deployment.
 
 ## Builds and the earlier cloud save
 
