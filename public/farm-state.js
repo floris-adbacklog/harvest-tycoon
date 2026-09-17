@@ -4,10 +4,10 @@ export const CROPS = Object.freeze({
  cabbage:    {name:'Cabbage',cost:40,sell:170,duration:7200000,xp:12,model:'plant_004',height:.48,use:'Vegetable boxes'},
  pumpkin:    {name:'Pumpkin',cost:95,sell:480,duration:28800000,xp:24,model:'plant_003',height:.8,use:'Pumpkin pies'},
  sunflower:  {name:'Sunflower',cost:180,sell:1100,duration:86400000,xp:45,model:'plant_007',height:1.65,use:'Sunflower oil'},
- barley: {name:'Barley',cost:20,sell:85,duration:2700000,xp:8,model:'plant_011',height:1.05,use:'Animal feed',art:'/assets/icons/barley.svg'},
- lettuce:{name:'Lettuce',cost:7,sell:20,duration:300000,xp:3,model:'plant_005',height:.47,use:'Fresh salads',art:'/assets/icons/lettuce.svg',tint:0xbce67e},
- redcabbage:{name:'Red cabbage',cost:130,sell:720,duration:43200000,xp:32,model:'plant_004',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg',tint:0xb66cce},
- cauliflower:{name:'Cauliflower',cost:65,sell:300,duration:14400000,xp:18,model:'plant_005',height:.5,use:'Vegetable boxes'}
+ barley: {name:'Barley',cost:20,sell:85,duration:2700000,xp:8,model:'plant_010',height:1.05,use:'Animal feed',art:'/assets/icons/barley.svg'},
+ lettuce:{name:'Lettuce',cost:7,sell:20,duration:300000,xp:3,model:'plant_005',height:.47,use:'Fresh salads',art:'/assets/icons/lettuce.svg'},
+ redcabbage:{name:'Red cabbage',cost:130,sell:720,duration:43200000,xp:32,model:'plant_006',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg'},
+ cauliflower:{name:'Cauliflower',cost:65,sell:300,duration:14400000,xp:18,model:'plant_002',height:.5,use:'Vegetable boxes'}
 });
 export const PRODUCTS = Object.freeze({
  salad:{name:'Fresh salad',sell:550,icon:'salad',color:'green'},
@@ -79,7 +79,7 @@ export const QUESTS = Object.freeze([
  {title:'Known across the valley',description:'Complete 100 delivery orders.',stat:'deliveries',target:100,reward:6000},
  {title:'A lifelong grower',description:'Claim all 36 crop mastery medals.',stat:'mastery_medals',target:36,reward:20000}
 ]);
-export const MAX_PLOTS=20;
+export const MAX_PLOTS=24;
 export function xpForLevel(level){const n=level-1;return 60*n+20*n*(n-1);}
 export function levelOf(state){const total=state.xp+(state.xpOffset??0);return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);}
 export function levelProgress(state){const level=levelOf(state);return {level,current:state.xp+(state.xpOffset??0)-xpForLevel(level),target:60+40*(level-1)};}
@@ -92,7 +92,7 @@ export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0)
 export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
 export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
 export function expansionCost(state){return state.plots.length>=MAX_PLOTS?null:Math.ceil(600*1.75**Math.max(0,state.plots.length-12)/25)*25;}
-const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16}];
+const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16},{lettuce:30,flour:18,milk:12},{cauliflower:32,feed:20,eggs:14},{redcabbage:30,cheese:16,bread:18},{pumpkin:36,oil:18,pie:20}];
 export function expansionMaterials(state){return state.plots.length>=MAX_PLOTS?{}:{...FIELD_MATERIALS[Math.max(0,state.plots.length-12)]};}
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')return null;

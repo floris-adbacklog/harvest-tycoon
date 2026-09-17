@@ -9,7 +9,7 @@ import { createGrowthUI } from './growth-ui.js';
 const $ = id => document.getElementById(id);
 const state = createFarm();
 let selectedTool='plant', selectedCrop='wheat', ready=false, sound=false, audioContext;
-let renderer,scene,camera,zoom=1,hovered=-1,lastTick=0,lastFrame=0;
+let renderer,scene,camera,zoom=1,pan=0,hovered=-1,lastTick=0,lastFrame=0;
 const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 let economy,retention,growth;
 const utilityViews=new Map();
@@ -20,7 +20,7 @@ function openUtility(key){if(key==='stall'||key==='chores')growth.open(key);else
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const modelNames=['plant_004','plant_005','plant_011','hangar_003','house_027','house_030','tower_005','plant_001','plant_003','plant_007','plant_010','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','cart_001','box_004','coop_001','water_001','landscape_001','ground_004','road_001'];
+const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bucket_001','apiary_001','cart_004','chair_001','firewood_003','hay_002','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','cart_001','box_004','coop_001','water_001','landscape_001','ground_004','road_001'];
 let toastTimer;
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
 function icons(){window.lucide?.createIcons();}
@@ -66,9 +66,19 @@ function decorate(){
  addBuilding('packing',12,-17,{width:4.9,rotation:-Math.PI/2});
  addUtility('tractor','tractor_001',-5.2,-.2,{width:3.1,rotation:-Math.PI/2});
  addUtility('cart','cart_001',-5.5,3.3,{width:2.2,rotation:Math.PI/2});
+ cloneModel('bag_001',-4.6,5.2,{height:.75,rotation:-.25});
+ cloneModel('bag_002',-5.3,5.05,{height:.72,rotation:.35});
+ cloneModel('bucket_001',-4.8,4.45,{height:.62,rotation:.2});
+ cloneModel('cart_004',-14.8,12.4,{width:2.2,rotation:.35});
+ cloneModel('table_001',-12.7,13.4,{width:1.8,rotation:-.2});
+ cloneModel('chair_001',-11.4,13.7,{height:1.05,rotation:-2.4});
+ cloneModel('apiary_001',6.8,9.8,{height:1.35,rotation:.15});
+ cloneModel('apiary_001',7.9,10.2,{height:1.25,rotation:-.2});
+ cloneModel('firewood_003',-15.4,-5.8,{width:1.7,rotation:Math.PI/2});
  cloneModel('hay_001',4.6,-7.8,{width:1.9});
  cloneModel('hay_001',6.2,-8.1,{width:1.7,rotation:.4});
  cloneModel('hay_001',5.35,-7.9,{width:1.5,y:1.2});
+ cloneModel('hay_002',3.7,-8.4,{width:1.45,rotation:.2});
  addUtility('chores','barrel_001',-5.8,-10.7,{height:1.1});
  cloneModel('barrel_001',-6.7,-10.3,{height:1.05});
  addUtility('stall','box_004',-9.2,-5.5,{width:1.05});
@@ -83,11 +93,13 @@ function decorate(){
  const trees=[[-17,-14,6],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-17,17,5.5],[-5,19,5.8],[7,17,6],[14,15,5.4],[19,8,6],[21,1,5.7],[20,-10,6],[19,-19,6.1],[8,-18,5.4],[-10,-19,6.5],[-2,-22,7],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  for(const [x,z] of [[-17,-6],[-16.5,-4],[-18.5,9],[-15,12],[19,-5],[18,2],[21,9],[10,15],[2,16],[-21,-15],[-9,-17],[11,-16]])cloneModel('bush_001',x,z,{width:2.2,rotation:x});
+ for(const [x,z,r] of [[4.8,11.1,.2],[9.1,9.2,1.1],[-13.7,15.2,2.2],[16,5.2,.6]])cloneModel('bush_003',x,z,{width:1.45,rotation:r});
  // Small tufts from the pack add texture while leaving the fields unobstructed.
  for(let i=0;i<54;i++){
   const a=i*2.3999,r=18+(i%7)*1.15,x=Math.cos(a)*r,z=Math.sin(a)*r;
   cloneModel('grass_001',x,z,{height:.25+(i%3)*.1,rotation:a});
  }
+ for(const [x,z,r] of [[5.6,10.8,.3],[8.9,11.1,1.8],[-11.2,14.5,.7],[-14.7,14.8,2.1],[15.5,4.5,.4],[17.1,4.9,2.4]])cloneModel('grass_004',x,z,{height:.38,rotation:r});
 }
 function createPlots(){
  while(plots.length>state.plots.length){
@@ -97,7 +109,7 @@ function createPlots(){
  }
  for(let i=plots.length;i<state.plots.length;i++){
   const x=-2.15+(i%4)*2.65,z=.25+Math.floor(i/4)*2.7;
-  const soil=cloneModel('ground_004',x,z,{width:2.38,depth:2.38,height:.20,y:.02});
+  const soil=cloneModel('garden_bed_001',x,z,{width:2.38,depth:2.38,height:.20,y:.02});
   soil.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(0xc4b39a);n.userData.plot=i;}});
   const hit=new THREE.Mesh(new THREE.BoxGeometry(2.4,.25,2.4),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));hit.position.set(x,.23,z);hit.userData.plot=i;scene.add(hit);
   const ring=new THREE.Mesh(new THREE.RingGeometry(.5,.56,4,1,Math.PI/4),new THREE.MeshBasicMaterial({color:0xffe081,transparent:true,opacity:.8,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.scale.set(3.2,3.2,1);ring.position.set(x,.247,z);ring.visible=false;scene.add(ring);
@@ -194,7 +206,7 @@ function resize(){
  renderer.setSize(width,height);renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
  const mobile=width<721,span=(mobile?Math.max(33,21/aspect):37)/zoom;
  camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;
- const focus=mobile?new THREE.Vector3(2,0,3.5):new THREE.Vector3(0,0,1.8);
+ const focus=mobile?new THREE.Vector3(2+pan,0,3.5-pan):new THREE.Vector3(0,0,1.8);
  camera.position.copy(focus).add(new THREE.Vector3(36,40,36));camera.lookAt(focus);camera.updateProjectionMatrix();camera.updateMatrixWorld();
  $('zoom-in').disabled=zoom>=1.5;$('zoom-out').disabled=zoom<=.75;
  positionLabels();positionBuildingLabels();
@@ -240,16 +252,21 @@ function bindUI(){
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
  $('market-button').addEventListener('click',()=>openDialog('market-dialog'));
  $('tasks-button').addEventListener('click',()=>openDialog('tasks-dialog'));
+ $('all-quests-mobile').addEventListener('click',()=>openDialog('tasks-dialog'));
  $('help-button').addEventListener('click',()=>openDialog('help-dialog'));
- $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());zoom=1;resize();toast('Welcome back to your farm.');});
+ $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());zoom=1;pan=0;resize();toast('Welcome back to your farm.');});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
  document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}}));
  $('sell-all').addEventListener('click',()=>sell());
  $('claim-reward').addEventListener('click',()=>claim(QUESTS.findIndex((_,i)=>!state.claimed.includes(i))));
- $('quest-collapse').addEventListener('click',()=>{const hidden=!$('quest-body').hidden;$('quest-body').hidden=hidden;$('quest-collapse').setAttribute('aria-expanded',String(!hidden));$('quest-collapse').setAttribute('aria-label',hidden?'Expand quest':'Collapse quest');$('quest-collapse').innerHTML=`<i data-lucide="${hidden?'clipboard-check':'chevron-up'}"></i>`;icons();});
+ const toggleQuest=()=>{const hidden=!$('quest-body').hidden;$('quest-body').hidden=hidden;$('quest-collapse').setAttribute('aria-expanded',String(!hidden));$('quest-collapse').setAttribute('aria-label',hidden?'Expand quest':'Collapse quest');$('quest-collapse').innerHTML=`<i data-lucide="${hidden?'clipboard-check':'chevron-up'}"></i>`;icons();};
+ $('quest-collapse').addEventListener('click',toggleQuest);
+ document.querySelector('.quest-heading')?.addEventListener('click',event=>{if(event.target.closest('#quest-collapse'))return;if(innerWidth<721)toggleQuest();});
  if(innerWidth<721){$('quest-body').hidden=true;$('quest-collapse').setAttribute('aria-expanded','false');$('quest-collapse').setAttribute('aria-label','Expand quest');$('quest-collapse').innerHTML='<i data-lucide="clipboard-check"></i>';}
  $('sound-button').addEventListener('click',()=>{sound=!sound;$('sound-button').setAttribute('aria-pressed',String(sound));$('sound-button').setAttribute('aria-label',sound?'Mute sound':'Enable sound');$('sound-button').title=sound?'Mute sound':'Enable sound';$('sound-button').innerHTML=`<i data-lucide="${sound?'volume-2':'volume-x'}"></i>`;icons();if(sound)playTone('plant');});
- $('zoom-in').addEventListener('click',()=>{zoom=Math.min(1.5,zoom+.15);resize();});$('zoom-out').addEventListener('click',()=>{zoom=Math.max(.75,zoom-.15);resize();});$('zoom-reset').addEventListener('click',()=>{zoom=1;resize();});
+ const panFarm=delta=>{pan=Math.max(-12,Math.min(12,pan+delta));resize();};
+ $('pan-left').addEventListener('click',()=>panFarm(-3.5));$('pan-right').addEventListener('click',()=>panFarm(3.5));
+ $('zoom-in').addEventListener('click',()=>{zoom=Math.min(1.5,zoom+.15);resize();});$('zoom-out').addEventListener('click',()=>{zoom=Math.max(.75,zoom-.15);resize();});$('zoom-reset').addEventListener('click',()=>{zoom=1;pan=0;resize();});
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'harvest',4:'tend'}[e.key];if(t){e.preventDefault();setTool(t);}});
  economy=createEconomyUI({state,onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,sound:playTone,runAction,onEstate:section=>growth.open(section)});
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
@@ -328,12 +345,17 @@ async function init(){
   canvas.addEventListener('pointerdown',e=>{
    if(e.button!==0||!ready)return;e.preventDefault();canvas.setPointerCapture(e.pointerId);
    const target=pointerTarget(e),p=target?.type==='plot'?state.plots[target.id]:null;
-   gesture={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,target,mode:p?.crop&&p.readyAt<=farmNow()?'harvest':selectedTool,visited:new Set(),moved:false};
+   gesture={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,target,mode:p?.crop&&p.readyAt<=farmNow()?'harvest':selectedTool,visited:new Set(),moved:false,panAllowed:e.pointerType==='touch'&&target?.type!=='plot',panning:false};
    if(target?.type==='plot'){gesture.visited.add(target.id);interact(target.id,gesture.mode);}
   });
   canvas.addEventListener('pointermove',e=>{
    if(!gesture||gesture.id!==e.pointerId)return;e.preventDefault();$('tooltip').hidden=true;
+   const dx=e.clientX-gesture.lastX,dy=e.clientY-gesture.lastY;
    if(Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>7)gesture.moved=true;
+   if(gesture.panAllowed){
+    if(gesture.panning||Math.abs(e.clientX-gesture.x)>10&&Math.abs(e.clientX-gesture.x)>Math.abs(e.clientY-gesture.y)){gesture.panning=true;panFarm(-dx*.045/zoom);}
+    gesture.lastX=e.clientX;gesture.lastY=e.clientY;return;
+   }
    if(gesture.target?.type==='plot'||!gesture.target){
     const steps=Math.min(12,Math.max(1,Math.ceil(Math.hypot(e.clientX-gesture.lastX,e.clientY-gesture.lastY)/15)));
     for(let i=1;i<=steps;i++)workGesture(pointerTarget({clientX:gesture.lastX+(e.clientX-gesture.lastX)*i/steps,clientY:gesture.lastY+(e.clientY-gesture.lastY)*i/steps}));
@@ -343,7 +365,7 @@ async function init(){
   canvas.addEventListener('pointerup',e=>{
    if(!gesture||gesture.id!==e.pointerId)return;
    const target=pointerTarget(e);
-   if(!gesture.moved&&target?.id===gesture.target?.id){if(target?.type==='building')economy.openBuilding(target.id);if(target?.type==='utility')openUtility(target.id);}
+   if(!gesture.moved&&!gesture.panning&&target?.id===gesture.target?.id){if(target?.type==='building')economy.openBuilding(target.id);if(target?.type==='utility')openUtility(target.id);}
    gesture=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointercancel',()=>{gesture=null;});

@@ -4,7 +4,7 @@ import {createFarm,applyFarmAction,expansionCost,expansionMaterials,tractorQuote
 const now=Date.UTC(2026,8,17,12);
 test('each expansion buys exactly one field with increasing coin and mixed supply costs',()=>{
  const s=createFarm(now);s.coins=1e7;let previous=0;
- for(let n=12;n<20;n++){
+ for(let n=12;n<24;n++){
   const cost=expansionCost(s),materials=expansionMaterials(s),old=structuredClone(s.plots);
   assert(cost>previous);assert(Object.keys(materials).length>=2);Object.assign(s.inventory,materials);
   const balance=s.coins;applyFarmAction(s,{type:'expand'},now);
