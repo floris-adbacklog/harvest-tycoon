@@ -63,7 +63,7 @@ function decorate(){
  addBuilding('mill',-13,2.9,{width:5.4,rotation:Math.PI/2});
  cloneModel('tower_005',-17,1.2,{height:5.4});
  addBuilding('bakery',-10.3,10.3,{width:6.0,rotation:Math.PI/2});
- addBuilding('packing',12.4,4.9,{width:4.9,rotation:-Math.PI/2});
+ addBuilding('packing',12,-17,{width:4.9,rotation:-Math.PI/2});
  addUtility('tractor','tractor_001',-5.2,-.2,{width:3.1,rotation:-Math.PI/2});
  addUtility('cart','cart_001',-5.5,3.3,{width:2.2,rotation:Math.PI/2});
  cloneModel('hay_001',4.6,-7.8,{width:1.9});
@@ -80,7 +80,7 @@ function decorate(){
  const cow2=cloneModel('cow_001',14.5,-5.5,{width:1.85,rotation:2});cow2.userData.building='dairy';animals.push({obj:cow2,x:14.5,z:-5.5,seed:3});
  const sheep=cloneModel('sheep_001',9.1,-9.5,{width:1.6,rotation:.6});sheep.userData.building='dairy';animals.push({obj:sheep,x:9.1,z:-9.5,seed:1.5});
  for(const [x,z,r] of [[-9.1,-1.2,.2],[-11.3,-.9,2.1],[-10.2,1.2,3.1]]){const o=cloneModel('chicken_001',x,z,{height:.72,rotation:r});o.userData.building='coop';animals.push({obj:o,x,z,seed:r});}
- const trees=[[-17,-14,6],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-17,17,5.5],[-5,19,5.8],[7,17,6],[14,15,5.4],[19,8,6],[21,1,5.7],[20,-10,6],[15,-17,6.1],[8,-18,5.4],[-10,-19,6.5],[-2,-22,7],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
+ const trees=[[-17,-14,6],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-17,17,5.5],[-5,19,5.8],[7,17,6],[14,15,5.4],[19,8,6],[21,1,5.7],[20,-10,6],[19,-19,6.1],[8,-18,5.4],[-10,-19,6.5],[-2,-22,7],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  for(const [x,z] of [[-17,-6],[-16.5,-4],[-18.5,9],[-15,12],[19,-5],[18,2],[21,9],[10,15],[2,16],[-21,-15],[-9,-17],[11,-16]])cloneModel('bush_001',x,z,{width:2.2,rotation:x});
  // Small tufts from the pack add texture while leaving the fields unobstructed.

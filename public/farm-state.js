@@ -4,13 +4,13 @@ export const CROPS = Object.freeze({
  cabbage:    {name:'Cabbage',cost:40,sell:170,duration:7200000,xp:12,model:'plant_004',height:.48,use:'Vegetable boxes'},
  pumpkin:    {name:'Pumpkin',cost:95,sell:480,duration:28800000,xp:24,model:'plant_003',height:.8,use:'Pumpkin pies'},
  sunflower:  {name:'Sunflower',cost:180,sell:1100,duration:86400000,xp:45,model:'plant_007',height:1.65,use:'Sunflower oil'},
- barley: {name:'Barley',cost:20,sell:85,duration:2700000,xp:8,model:'plant_011',height:1.05,use:'Animal feed',icon:'wheat'},
- lettuce:{name:'Lettuce',cost:7,sell:20,duration:300000,xp:3,model:'plant_005',height:.47,use:'Fresh salads',icon:'cauliflower',tint:0xbce67e,filter:'hue-rotate(12deg) saturate(1.5)'},
- redcabbage:{name:'Red cabbage',cost:130,sell:720,duration:43200000,xp:32,model:'plant_004',height:.6,use:'Pickled vegetables',icon:'cabbage',tint:0xb66cce,filter:'hue-rotate(170deg) saturate(1.5)'},
+ barley: {name:'Barley',cost:20,sell:85,duration:2700000,xp:8,model:'plant_011',height:1.05,use:'Animal feed',art:'/assets/icons/barley.svg'},
+ lettuce:{name:'Lettuce',cost:7,sell:20,duration:300000,xp:3,model:'plant_005',height:.47,use:'Fresh salads',art:'/assets/icons/lettuce.svg',tint:0xbce67e},
+ redcabbage:{name:'Red cabbage',cost:130,sell:720,duration:43200000,xp:32,model:'plant_004',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg',tint:0xb66cce},
  cauliflower:{name:'Cauliflower',cost:65,sell:300,duration:14400000,xp:18,model:'plant_005',height:.5,use:'Vegetable boxes'}
 });
 export const PRODUCTS = Object.freeze({
- salad:{name:'Fresh salad',sell:285,icon:'salad',color:'green'},
+ salad:{name:'Fresh salad',sell:550,icon:'salad',color:'green'},
  pickles:{name:'Pickled cabbage',sell:1850,icon:'amphora',color:'coral'},
  flour:{name:'Flour',sell:25,icon:'wheat',color:'wheat'},
  feed:{name:'Animal feed',sell:115,icon:'package-open',color:'wheat'},
@@ -18,9 +18,9 @@ export const PRODUCTS = Object.freeze({
  milk:{name:'Milk',sell:80,icon:'milk',color:'blue'},
  eggs:{name:'Eggs',sell:50,icon:'egg',color:'cream'},
  cheese:{name:'Cheese',sell:230,icon:'sandwich',color:'gold'},
- bread:{name:'Bread',sell:85,icon:'croissant',color:'wheat'},
- pie:{name:'Pumpkin pie',sell:750,icon:'cake-slice',color:'coral'},
- vegetables:{name:'Vegetable box',sell:1250,icon:'salad',color:'green'}
+ bread:{name:'Bread',sell:180,icon:'croissant',color:'wheat'},
+ pie:{name:'Pumpkin pie',sell:1600,icon:'cake-slice',color:'coral'},
+ vegetables:{name:'Vegetable box',sell:2500,icon:'salad',color:'green'}
 });
 export const ITEMS=Object.freeze({...CROPS,...PRODUCTS});
 export const BUILDINGS = Object.freeze({
@@ -33,7 +33,7 @@ export const BUILDINGS = Object.freeze({
 });
 export const RECIPES=Object.freeze({
  barleyfeed:{building:'mill',name:'Mix barley feed',input:{barley:2},output:{feed:2},duration:120000,xp:8},
- salad:{building:'packing',name:'Prepare a fresh salad',input:{lettuce:2,cabbage:1},output:{salad:1},duration:900000,xp:14},
+ salad:{building:'packing',name:'Prepare a fresh salad',input:{lettuce:4,cabbage:2},output:{salad:1},duration:900000,xp:14},
  pickles:{building:'packing',name:'Pickle red cabbage',input:{redcabbage:2},output:{pickles:1},duration:10800000,xp:20},
  flour:{building:'mill',name:'Mill flour',input:{wheat:2},output:{flour:1},duration:90000,xp:8},
  feed:{building:'mill',name:'Mix animal feed',input:{corn:2},output:{feed:1},duration:120000,xp:8},
@@ -41,9 +41,9 @@ export const RECIPES=Object.freeze({
  milk:{building:'dairy',name:'Feed the cows',input:{feed:1},output:{milk:2},duration:600000,xp:10},
  cheese:{building:'dairy',name:'Make farmhouse cheese',input:{milk:2},output:{cheese:1},duration:3600000,xp:14},
  eggs:{building:'coop',name:'Feed the chickens',input:{feed:1},output:{eggs:3},duration:300000,xp:10},
- bread:{building:'bakery',name:'Bake fresh bread',input:{flour:2,milk:1},output:{bread:2},duration:1200000,xp:16},
- pie:{building:'bakery',name:'Bake pumpkin pie',input:{flour:1,pumpkin:1,eggs:1},output:{pie:1},duration:7200000,xp:20},
- vegetables:{building:'packing',name:'Pack a vegetable box',input:{cabbage:2,cauliflower:2},output:{vegetables:1},duration:3600000,xp:15}
+ bread:{building:'bakery',name:'Bake fresh bread',input:{flour:4,milk:2},output:{bread:2},duration:1200000,xp:16},
+ pie:{building:'bakery',name:'Bake pumpkin pie',input:{flour:2,pumpkin:2,eggs:2},output:{pie:1},duration:7200000,xp:20},
+ vegetables:{building:'packing',name:'Pack a vegetable box',input:{cabbage:4,cauliflower:4},output:{vegetables:1},duration:3600000,xp:15}
 });
 export const QUESTS = Object.freeze([
  {title:'Your first harvest',description:'Harvest 3 crops from your fields.',stat:'harvested',target:3,reward:40},
@@ -90,7 +90,10 @@ export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,
 export function cropDuration(state,crop){return Math.round(CROPS[crop].duration*(1-siloBonus(state.siloLevel??0).growth));}
 export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0);}
 export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
-export function expansionCost(state){return state.plots.length>=MAX_PLOTS?null:state.plots.length===12?140:240;}
+export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
+export function expansionCost(state){return state.plots.length>=MAX_PLOTS?null:Math.ceil(600*1.75**Math.max(0,state.plots.length-12)/25)*25;}
+const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16}];
+export function expansionMaterials(state){return state.plots.length>=MAX_PLOTS?{}:{...FIELD_MATERIALS[Math.max(0,state.plots.length-12)]};}
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')return null;
  const level=state.buildings[building].level;
@@ -186,13 +189,15 @@ export function upgradeBuilding(state,building){
  return {building,level:b.level,cost};
 }
 export function expandFarm(state){
- const cost=expansionCost(state);
+ const cost=expansionCost(state),materials=expansionMaterials(state);
  if(cost===null)throw new Error('Your farm is fully expanded.');
- if(state.coins<cost)throw new Error(`You need ${cost} coins for four more fields.`);
- state.coins-=cost;const from=state.plots.length;
- for(let id=from;id<from+4;id++)state.plots.push({id,crop:null,plantedAt:0,readyAt:0,watered:false});
+ if(state.coins<cost)throw new Error(`You need ${cost} coins for one more field.`);
+ const missing=Object.entries(materials).filter(([key,n])=>(state.inventory[key]??0)<n);
+ if(missing.length)throw new Error(`Gather the missing supplies: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
+ state.coins-=cost;for(const [key,n] of Object.entries(materials))state.inventory[key]-=n;
+ state.plots.push({id:state.plots.length,crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false});
  state.stats.expansions++;state.xp+=20;state.buildings.farmhouse.level++;
- return {fields:state.plots.length,cost};
+ return {fields:state.plots.length,cost,materials};
 }
 export function claimQuest(state,id){
  if(!Number.isInteger(id)||!QUESTS[id])throw new Error('Choose a valid quest.');
@@ -276,13 +281,21 @@ export function claimLevelRewards(state){
  const levels=Array.from({length:levelOf(state)},(_,i)=>i+1).filter(l=>!state.levelRewards.includes(l));if(!levels.length)throw new Error('No new level rewards yet.');
  const coins=levels.length*30;state.coins+=coins;state.levelRewards.push(...levels);return {coins,levels};
 }
+export function tractorQuote(state,mode,crop='corn',now=Date.now()){
+ const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?p.crop&&!p.watered&&p.readyAt>now:p.crop&&p.readyAt<=now);
+ const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-12)/(seedCost(state,crop)+2)))):eligible.length;
+ const fuel=count?12+count*2:0,seeds=mode==='plant'?count*seedCost(state,crop):0;
+ return {count,fuel,seeds,total:fuel+seeds,ids:eligible.slice(0,count).map(p=>p.id)};
+}
 export function useTractor(state,mode,crop='corn',now=Date.now()){
  if(!['plant','water','harvest'].includes(mode))throw new Error('Choose a tractor task.');if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
  if(now<state.tractorReadyAt)throw new Error(`The tractor will be ready in ${Math.ceil((state.tractorReadyAt-now)/1000)} seconds.`);
- let count=0;
- for(const p of state.plots){const ok=mode==='plant'?!p.crop&&state.coins>=seedCost(state,crop):mode==='water'?p.crop&&!p.watered&&p.readyAt>now:p.crop&&p.readyAt<=now;if(ok){actOnPlot(state,p.id,mode,crop,now);count++;}}
- if(!count)throw new Error(mode==='plant'?'No empty fields you can afford to plant.':mode==='water'?'No growing crops need water.':'No crops are ready to harvest.');
- state.tractorReadyAt=now+15000;state.stats.tractor++;return {count,mode};
+ const quote=tractorQuote(state,mode,crop,now);
+ if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':'No crops are ready to harvest.');
+ if(state.coins<quote.total)throw new Error(`You need ${quote.fuel} coins for tractor fuel. Working by hand is free.`);
+ state.coins-=quote.fuel;
+ for(const id of quote.ids)actOnPlot(state,id,mode,crop,now);
+ state.tractorReadyAt=now+15000;state.stats.tractor++;return {count:quote.count,mode,cost:quote.total,fuel:quote.fuel};
 }
 export function upgradeSilo(state){
  if(state.siloLevel>=5)throw new Error('Your silo research is complete.');const cost=SILO_COSTS[state.siloLevel];if(state.coins<cost)throw new Error(`You need ${cost} coins for this research.`);

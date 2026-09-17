@@ -70,7 +70,7 @@ test('delivery pays above market, consumes inventory and rejects duplicate or st
 });
 test('tractor charges per eligible field, cooldown holds; silo changes only future planting',()=>{
  const s=createFarm(now),n=s.plots.filter(p=>!p.crop).length,balance=s.coins;
- const r=apply(s,{type:'tractor',mode:'plant',crop:'corn'});assert.equal(r.count,n);assert.equal(s.coins,balance-n*CROPS.corn.cost);
+ const r=apply(s,{type:'tractor',mode:'plant',crop:'corn'});assert.equal(r.count,n);assert.equal(s.coins,balance-n*CROPS.corn.cost-12-2*n);
  assert.throws(()=>apply(s,{type:'tractor',mode:'water'}),/ready in/);
  apply(s,{type:'tractor',mode:'water'},now+15000);
  s.coins=10000;const existing=structuredClone(s.plots[8]);apply(s,{type:'silo_upgrade'});assert.deepEqual(s.plots[8],existing);
