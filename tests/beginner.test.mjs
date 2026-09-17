@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createFarm,normalizeFarm,applyFarmAction,BEGINNER_QUESTS,BEGINNER_REWARD,QUESTS,beginnerProgress} from '../game/farm-state.js';
+const now=Date.UTC(2026,8,17,12);
+const act=(state,action,time=now)=>applyFarmAction(state,action,time);
+test('the beginner guide teaches ten achievable starter actions and awards 20 diamonds once',()=>{
+ const state=createFarm(now);assert.equal(BEGINNER_QUESTS.length,10);assert.equal(QUESTS.length,41);
+ const claim=id=>act(state,{type:'beginner_claim',id});
+ assert.throws(()=>claim('harvest'),/farming action/);
+ act(state,{type:'field',id:0,action:'harvest'});claim('harvest');
+ act(state,{type:'field',id:0,action:'plant',crop:'wheat'});claim('plant');
+ act(state,{type:'field',id:0,action:'water'});claim('water');
+ act(state,{type:'sell',item:'corn'});claim('sell');
+ act(state,{type:'produce',recipe:'eggs'});claim('produce');
+ act(state,{type:'checkin'});claim('gift');
+ act(state,{type:'chore',id:'weeds'});claim('chore');
+ act(state,{type:'field',id:0,action:'tend'},now+40000);claim('tend');
+ act(state,{type:'field',id:0,action:'harvest'},now+120000);claim('wheat');
+ assert.equal(state.onboarding.completed,9);assert.equal(state.onboarding.rewardClaimed,false);
+ const before=state.diamonds;
+ assert.throws(()=>act(state,{type:'collect',building:'coop'},now+120000),/still being made/);
+ assert.throws(()=>claim('collect'),/farming action/);assert.equal(state.diamonds,before);
+ act(state,{type:'collect',building:'coop'},now+300000);
+ const reward=claim('collect');assert.equal(reward.diamonds,20);assert.equal(state.diamonds,before+BEGINNER_REWARD);
+ assert.deepEqual(state.claimed,[],'regular quests must not be claimed by the tutorial');
+ assert(beginnerProgress(state).every(q=>q.done));
+ const reloaded=normalizeFarm(JSON.parse(JSON.stringify(state)),now+300001);
+ assert.throws(()=>act(reloaded,{type:'beginner_claim',id:'collect'}),/already complete/);
+ assert.equal(reloaded.diamonds,before+20);
+});
+test('out-of-order actions count but rewards cannot skip steps or trust client fields',()=>{
+ const state=createFarm(now);
+ assert.throws(()=>act(state,{type:'field',id:3,action:'harvest'}),/Still growing/);
+ assert.equal(state.onboarding.milestones.harvest,undefined);
+ act(state,{type:'chore',id:'weeds'});
+ assert.throws(()=>act(state,{type:'beginner_claim',id:'chore',completed:9,diamonds:999}),/current beginner step/);
+ assert.equal(state.onboarding.completed,0);assert.equal(state.diamonds,0);
+ assert.equal(state.onboarding.milestones.chore,true);
+});
+test('existing farms retain regular progress, money, plots and jobs on tutorial migration',()=>{
+ const state=createFarm(now);delete state.onboarding;
+ state.claimed=[0,1,3];state.stats.harvested=50;state.coins=9876;state.diamonds=8;state.login.visits=4;
+ act(state,{type:'produce',recipe:'eggs'});delete state.onboarding;
+ const before=structuredClone(state);normalizeFarm(state,now);
+ for(const key of ['claimed','stats','coins','diamonds','plots','buildings'])assert.deepEqual(state[key],before[key]);
+ assert.equal(state.onboarding.completed,0);assert.equal(state.onboarding.milestones.gift,true);
+ assert.equal(state.onboarding.milestones.harvest,undefined,'old normal-quest counters do not complete beginner steps');
+});
+test('regular quest claims never claim tutorial steps or diamond reward',()=>{
+ const state=createFarm(now);state.stats.harvested=3;
+ act(state,{type:'quest',id:0});assert.deepEqual(state.claimed,[0]);
+ assert.equal(state.onboarding.completed,0);assert.equal(state.diamonds,0);
+});

@@ -97,7 +97,8 @@ test('the Quests navigation button opens directly, resets scroll and can reopen'
  const state=createFarm(),{elements,other,close}=questFixture(state);
  elements['tasks-button'].clickTarget();assert.equal(elements['tasks-dialog'].open,true);assert.equal(elements['tasks-dialog'].scrollTop,0);assert.equal(other.open,false);assert.equal(close.focused,true);
  assert.match(elements['task-list'].innerHTML,/Your first harvest/);
- elements['tasks-dialog'].close();elements['all-quests-mobile'].clickTarget();assert.equal(elements['tasks-dialog'].openCount,2);
+ elements['tasks-dialog'].close();elements['tasks-button'].clickTarget();assert.equal(elements['tasks-dialog'].openCount,2);
+ elements['tasks-dialog'].close();elements['all-quests-mobile'].clickTarget();assert.equal(elements['tasks-dialog'].open,false,'beginner navigation must not open regular quests');
 });
 test('quest filters expose rewards, new features and completed quests without losing progress',()=>{
  const state=createFarm();state.stats[QUESTS[0].stat]=QUESTS[0].target;

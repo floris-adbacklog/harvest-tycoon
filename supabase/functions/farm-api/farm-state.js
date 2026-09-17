@@ -52,6 +52,48 @@ export const RECIPES=Object.freeze({
  pie:{building:'bakery',name:'Bake fresh pumpkin pie',input:{flour:2,pumpkin:2,eggs:2},output:{pie:1},duration:7200000,xp:20},
  vegetables:{building:'packing',name:'Pack a vegetable box',input:{cabbage:4,cauliflower:4},output:{vegetables:1},duration:3600000,xp:15}
 });
+// This introductory track is deliberately independent of the regular QUESTS IDs/stats.
+export const BEGINNER_REWARD=20;
+export const BEGINNER_QUESTS=Object.freeze([
+ {id:'harvest',title:'Your first basket',description:'Harvest one ready crop. Tap the crop or its basket.',guide:'harvest',icon:'shopping-basket'},
+ {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
+ {id:'water',title:'A little water goes a long way',description:'Use Water on one growing crop. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
+ {id:'sell',title:'Your first market sale',description:'Open Market and sell some corn. Save your animal feed for the chickens.',guide:'market',icon:'store'},
+ {id:'produce',title:'Put your buildings to work',description:'Start a production batch. Try Feed the chickens in the Chicken Coop using your starter feed.',guide:'produce',icon:'egg'},
+ {id:'gift',title:'A gift for showing up',description:'Open Today and collect your daily gift. Come back tomorrow to build your streak.',guide:'today',icon:'gift'},
+ {id:'chore',title:'A helping hand',description:'Complete one Farm chore for extra coins while your crops and buildings work.',guide:'chores',icon:'shovel'},
+ {id:'tend',title:'Good things need a little care',description:'Use Care on a growing crop once its care marker appears. Wheat needs about 36 seconds.',guide:'tend',icon:'leaf'},
+ {id:'wheat',title:'Bring in the wheat',description:'Harvest one wheat field when it is ready. Water and care make your harvest bigger.',guide:'harvest',icon:'wheat'},
+ {id:'collect',title:'Made on your farm',description:'Collect a finished batch from a building. Chicken feed becomes eggs in 5 minutes.',guide:'collect',icon:'package-check'}
+]);
+export function beginnerProgress(state){
+ const guide=state.onboarding??{completed:0,milestones:{}};
+ return BEGINNER_QUESTS.map((quest,index)=>({...quest,index,done:index<guide.completed,current:index===guide.completed,ready:!!guide.milestones[quest.id]}));
+}
+export function claimBeginnerQuest(state,id){
+ const guide=state.onboarding,quest=BEGINNER_QUESTS[guide.completed];
+ if(!quest||guide.rewardClaimed)throw new Error('Your beginner guide is already complete.');
+ if(id!==quest.id)throw new Error('Complete the current beginner step first.');
+ if(!guide.milestones[quest.id])throw new Error('Try this farming action before completing the step.');
+ guide.completed++;
+ const diamonds=guide.completed===BEGINNER_QUESTS.length?BEGINNER_REWARD:0;
+ if(diamonds){state.diamonds+=diamonds;guide.rewardClaimed=true;}
+ return {step:quest.id,completed:guide.completed,total:BEGINNER_QUESTS.length,diamonds};
+}
+function recordBeginnerAction(state,action,result,before){
+ const m=state.onboarding.milestones;
+ if(state.stats.harvested>before.harvested)m.harvest=true;
+ if((state.stats.harvest_wheat??0)>before.wheat)m.wheat=true;
+ if(action.type==='field'&&action.action==='plant'&&result.crop==='wheat'||action.type==='tractor'&&action.mode==='plant'&&action.crop==='wheat')m.plant=true;
+ if(state.stats.watered>before.watered)m.water=true;
+ if(state.stats.tended>before.tended)m.tend=true;
+ if(action.type==='sell'&&result.coins>0)m.sell=true;
+ if(action.type==='produce')m.produce=true;
+ if(action.type==='collect')m.collect=true;
+ if(action.type==='checkin')m.gift=true;
+ if(action.type==='chore')m.chore=true;
+}
+
 export const QUESTS = Object.freeze([
  {title:'Your first harvest',description:'Harvest 3 crops from your fields.',stat:'harvested',target:3,reward:40},
  {title:'A little green thumb',description:'Plant 6 crops and let them grow.',stat:'planted',target:6,reward:65},
@@ -310,6 +352,10 @@ export function normalizeFarm(state,now=Date.now()){
  for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals'])state.stats[k]??=0;
  state.discovered??=[];state.siloLevel??=0;state.tractorReadyAt??=0;
  state.login??={lastDay:null,streak:0,best:0,visits:0};state.levelRewards??=[1];
+ // Existing farms keep every regular quest, inventory item and timer. A past daily gift
+ // counts so returning players never have to wait a day to finish the introduction.
+ state.onboarding??={completed:0,milestones:{gift:state.login.visits>0},rewardClaimed:false};
+ state.onboarding.milestones??={};
  state.mastery??={harvests:Object.fromEntries(Object.keys(CROPS).map(k=>[k,state.stats['harvest_'+k]??0])),claimed:[]};
  state.stall??={level:1,since:now,bank:0};state.estate??={completed:0,job:null};state.chores??={};
  for(const p of state.plots){p.tended??=false;p.fertilized??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*.3);}
@@ -378,7 +424,9 @@ export function upgradeSilo(state){
 export function applyFarmAction(state,action,now=Date.now()){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
  const beforeXP=state.xp,beforeCoins=state.coins;
+ const beginnerBefore={harvested:state.stats.harvested,wheat:state.stats.harvest_wheat??0,watered:state.stats.watered,tended:state.stats.tended};
  const result=dispatchFarmAction(state,action,now);
+ recordBeginnerAction(state,action,result,beginnerBefore);
  const earnedXP=state.xp-beforeXP;
  if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
  if(state.boosts.coinsUntil>now&&['sell','delivery'].includes(action.type)){
@@ -403,6 +451,7 @@ function dispatchFarmAction(state,action,now){
   case 'upgrade':return upgradeBuilding(state,action.building);
   case 'expand':return expandFarm(state);
   case 'quest':return claimQuest(state,action.id);
+  case 'beginner_claim':return claimBeginnerQuest(state,action.id);
   case 'daily':return claimDaily(state,action.id,action.day,now);
   case 'checkin':return checkIn(state,now);
   case 'delivery':return deliverOrder(state,action.id,action.day,now);

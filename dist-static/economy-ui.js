@@ -58,14 +58,14 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,sound,run
   }
   $('building-content').innerHTML=content;$('building-feedback').textContent='';
   $('farmhouse-estate')?.addEventListener('click',()=>onEstate('projects'));
-  $('expand-fields')?.addEventListener('click',()=>mutate(()=>{const r=runAction({type:'expand'});onExpand();return `One new field! Your farm now has ${r.fields}.`;}));
-  $('collect-batch')?.addEventListener('click',()=>mutate(()=>{const r=runAction({type:'collect',building:key});return `Collected ${Object.entries(r.items).map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ')} · +${r.xp} XP.`;}));
-  $('upgrade-building')?.addEventListener('click',()=>mutate(()=>{const r=runAction({type:'upgrade',building:key});return `${b.name} upgraded to level ${r.level}.`;}));
-  $('fertilize-field')?.addEventListener('click',()=>mutate(()=>{const r=runAction({type:'fertilize',id:Number($('fertilizer-field').value)});onExpand();return `Field ${r.id+1} fertilized! ${seconds(r.saved)} saved · +${r.xp} XP.`;}));
-  $('building-content').querySelectorAll('[data-recipe]').forEach(btn=>btn.addEventListener('click',()=>mutate(()=>{const r=runAction({type:'produce',recipe:btn.dataset.recipe});return `${RECIPES[r.recipe].name} started. Come back to collect your batch.`;})));
+  $('expand-fields')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'expand'});onExpand();return `One new field! Your farm now has ${r.fields}.`;}));
+  $('collect-batch')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'collect',building:key});return `Collected ${Object.entries(r.items).map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ')} · +${r.xp} XP.`;}));
+  $('upgrade-building')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'upgrade',building:key});return `${b.name} upgraded to level ${r.level}.`;}));
+  $('fertilize-field')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'fertilize',id:Number($('fertilizer-field').value)});onExpand();return `Field ${r.id+1} fertilized! ${seconds(r.saved)} saved · +${r.xp} XP.`;}));
+  $('building-content').querySelectorAll('[data-recipe]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'produce',recipe:btn.dataset.recipe});return `${RECIPES[r.recipe].name} started. Come back to collect your batch.`;})));
   icons();
  }
- function mutate(action){try{const message=action();onChange();renderBuilding();$('building-feedback').textContent=message;notify(message);sound('sell');return {ok:true,message};}catch(e){$('building-feedback').textContent=e.message;notify(e.message);return {error:e.message};}}
+ async function mutate(action){try{const message=await action();onChange();renderBuilding();$('building-feedback').textContent=message;notify(message);sound('sell');return {ok:true,message};}catch(e){$('building-feedback').textContent=e.message;notify(e.message);return {error:e.message};}}
  function renderMarket(){
   const entries=Object.entries(marketTab==='crops'?CROPS:PRODUCTS);
   const multiplier=state.boosts.coinsUntil>farmNow()?2:1;
@@ -74,11 +74,11 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,sound,run
   document.querySelectorAll('[data-market-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.marketTab===marketTab);b.setAttribute('aria-pressed',String(b.dataset.marketTab===marketTab));});
   $('market-items').querySelectorAll('[data-sell]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sell)));icons();
  }
- function sell(key='category'){
+ async function sell(key='category'){
   try{
    let coins=0;
-   if(key==='category'){for(const k of Object.keys(marketTab==='crops'?CROPS:PRODUCTS)){if(state.inventory[k])coins+=runAction({type:'sell',item:k}).coins;}if(!coins)throw new Error('Nothing in this basket yet.');}
-   else coins=runAction({type:'sell',item:key}).coins;
+   if(key==='category'){for(const k of Object.keys(marketTab==='crops'?CROPS:PRODUCTS)){if(state.inventory[k])coins+=(await runAction({type:'sell',item:k})).coins;}if(!coins)throw new Error('Nothing in this basket yet.');}
+   else coins=(await runAction({type:'sell',item:key})).coins;
    onChange();renderMarket();sound('sell');notify(`Sold! +${coins} coins for your next harvest.`);return {coins};
   }catch(e){notify(e.message);return {error:e.message};}
  }

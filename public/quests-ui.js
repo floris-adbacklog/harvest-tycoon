@@ -43,6 +43,6 @@ export function createQuestsUI({state,claim,icons,document:doc=globalThis.docume
   (list.querySelector('[data-claim]')??toolbar.querySelector(`[data-quest-filter="${filter}"]`))?.focus({preventScroll:true});
  });
  // One direct path for desktop and mobile; there is no nested quest popover on phones.
- for(const id of ['tasks-button','all-quests-mobile'])doc.getElementById(id).addEventListener('click',open);
+ doc.getElementById('tasks-button').addEventListener('click',open);
  return {open,refresh(){if(dialog.open)render();}};
 }

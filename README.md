@@ -42,7 +42,7 @@ The existing project `jnmdirvidffzxukbdmij` has already received the online farm
 
 `pnpm test` covers game rules, pointer interactions, server-only client updates and auth lifecycle races. Real API tests against two temporary Supabase accounts verified sign-in, farm creation, actions, reload, duplicate requests, account isolation and leaderboard reads. See [ONLINE-RELEASE.md](ONLINE-RELEASE.md) for the exact verified scope and remaining deployment checks.
 
-The managed browser preview is unavailable in this environment, so mobile/desktop visual checks have not been completed. The Vercel-targeted static production build passes; an actual Vercel deployment still requires the user's configured hosting project.
+The Vercel-targeted static production build passes. This update has not yet been visually verified on Vercel: local browser preview was blocked, and the GitHub integration rejected writes with HTTP 403. Upload this package to the existing repository to trigger the configured deployment. The updated Supabase `farm-api` v2 is active; its deployed files were compared with these sources.
 
 The shared rules are in `game/farm-state.js`. The build copies them to `public/farm-state.js` and the Edge Function source. If game rules change, redeploy `farm-api` as well as the frontend. The old Sites D1 recovery endpoint is retired; historical D1 data remains untouched and is not used by the static Vercel build.
 
@@ -53,3 +53,11 @@ Additional land unlocks one field per purchase, from 12 up to 24. Coin prices st
 Each tractor job costs 12 coins plus 2 coins per worked field; planting also consumes seed coins. The UI quotes the same cost used by the game rules. Manual work remains free. Insufficient funds or supplies do not consume resources.
 
 The Packing Shed is behind the crop area. Barley, lettuce and red cabbage have distinct vector icons. Account details have additional spacing and mobile controls/dialogs adapt to narrow and short screens. All gameplay text remains English.
+
+## Beginner guide and farm overview
+
+The Beginner guide has 10 independent steps: harvest, plant wheat, water, sell, start a batch, collect a daily gift, do a chore, care for a crop, harvest wheat, and collect a finished batch. Completing the tenth step grants 20 diamonds once. The authoritative server saves `onboarding` alongside the farm state. The 41 regular quest IDs and claims are unchanged. Existing farms start a separate guide; an earlier daily gift counts to avoid a one-day wait.
+
+The guide is available in its desktop card, the mobile step banner, and More. “Show me” opens the appropriate tools or building. “Fields” focuses on crops; “Show the whole farm” and My farm restore the overview. The camera frames the useful buildings and fields while reserving room for controls. Smaller building footprints, work yards and low props leave clear paths through the same farm.
+
+The signed-out page uses the original logo and `public/assets/farm-welcome.webp`, an original generated farm illustration based on the supplied low-poly farm assets. Art direction: crisp sunny isometric farm with gray farmhouse, red barn, windmill, colorful crop rows, tractor, fences and a quiet meadow behind the account panel; no baked-in text or UI. The source image was converted to WebP for delivery.

@@ -37,12 +37,12 @@ export function createQuestsUI({state,claim,icons,document:doc=globalThis.docume
   const button=event.target.closest('[data-quest-filter]');if(!button)return;
   filter=button.dataset.questFilter;render();
  });
- list.addEventListener('click',event=>{
+ list.addEventListener('click',async event=>{
   const button=event.target.closest('[data-claim]');if(!button||button.disabled)return;
-  button.disabled=true;claim(Number(button.dataset.claim));render();
+  button.disabled=true;await claim(Number(button.dataset.claim));render();
   (list.querySelector('[data-claim]')??toolbar.querySelector(`[data-quest-filter="${filter}"]`))?.focus({preventScroll:true});
  });
  // One direct path for desktop and mobile; there is no nested quest popover on phones.
- for(const id of ['tasks-button','all-quests-mobile'])doc.getElementById(id).addEventListener('click',open);
+ doc.getElementById('tasks-button').addEventListener('click',open);
  return {open,refresh(){if(dialog.open)render();}};
 }
