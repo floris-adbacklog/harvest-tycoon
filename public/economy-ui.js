@@ -4,7 +4,7 @@ import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const seconds=formatDuration;
-export function createEconomyUI({state,onChange,onCrop,onExpand,notify,sound,runAction,onEstate}){
+export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate}){
  let currentBuilding=null,marketTab='crops',selectedCrop='wheat',seedFilter='all',lastJobReady=false,lastCoinBoost=false;
  function itemArt(key){return art(key,'product-art');}
  function show(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();}
@@ -65,7 +65,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,sound,run
   $('building-content').querySelectorAll('[data-recipe]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'produce',recipe:btn.dataset.recipe});return `${RECIPES[r.recipe].name} started. Come back to collect your batch.`;})));
   icons();
  }
- async function mutate(action){try{const message=await action();onChange();renderBuilding();$('building-feedback').textContent=message;notify(message);sound('sell');return {ok:true,message};}catch(e){$('building-feedback').textContent=e.message;notify(e.message);return {error:e.message};}}
+ async function mutate(action){try{const message=await action();onChange();renderBuilding();$('building-feedback').textContent=message;notify(message);return {ok:true,message};}catch(e){$('building-feedback').textContent=e.message;notify(e.message);return {error:e.message};}}
  function renderMarket(){
   const entries=Object.entries(marketTab==='crops'?CROPS:PRODUCTS);
   const multiplier=state.boosts.coinsUntil>farmNow()?2:1;
@@ -79,7 +79,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,sound,run
    let coins=0;
    if(key==='category'){for(const k of Object.keys(marketTab==='crops'?CROPS:PRODUCTS)){if(state.inventory[k])coins+=(await runAction({type:'sell',item:k})).coins;}if(!coins)throw new Error('Nothing in this basket yet.');}
    else coins=(await runAction({type:'sell',item:key})).coins;
-   onChange();renderMarket();sound('sell');notify(`Sold! +${coins} coins for your next harvest.`);return {coins};
+   onChange();renderMarket();notify(`Sold! +${coins} coins for your next harvest.`);return {coins};
   }catch(e){notify(e.message);return {error:e.message};}
  }
  function refresh(){

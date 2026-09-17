@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {ACTIVE_STATIONS,activityStatus} from './farm-state.js';
-export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','truck_005','harvester_001','lawn_mower_001','house_024','fir_tree_003','tree_008','stone_fence_001','trailer_001'];
+export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','house_024','fir_tree_003','tree_008','stone_fence_001','trailer_001'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
  const views=new Map(),moving=[],effects=[],water=[],smoke=[];
@@ -41,8 +41,6 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  const pig=cloneModel('pig_001',17.9,-5.6,{width:1.3,rotation:1.2});pig.userData.activity='paddock';
  moving.push({obj:horse,x:17.9,z:-8.5,kind:'animal',phase:0},{obj:pig,x:17.9,z:-5.6,kind:'animal',phase:3});
  scenery('fence_001',19.5,-7,{width:5.8,rotation:Math.PI/2});scenery('water_001',18.4,-10.6,{width:1.4});scenery('hay_002',17.7,-3.2,{width:1.8});
- const truck=cloneModel('truck_005',-19,-4,{width:2.8,rotation:Math.PI/2});truck.userData.utility='cart';moving.push({obj:truck,kind:'truck',phase:0});
- const combine=cloneModel('harvester_001',-27,0,{width:3.8,rotation:0});combine.userData.utility='tractor';moving.push({obj:combine,kind:'combine',phase:0});
  // A few bees, kept away from the crop labels.
  for(let i=0;i<5;i++){const bee=new THREE.Mesh(new THREE.SphereGeometry(.06,4,3),new THREE.MeshBasicMaterial({color:0xf5c64c}));scene.add(bee);moving.push({obj:bee,kind:'bee',phase:i*1.8});}
  function attach(id,obj){return station(id,obj,obj.position.x,obj.position.z);}
@@ -53,19 +51,12 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
    v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.86;v.label.classList.toggle('available',!s.remaining);v.label.classList.toggle('working',!!s.job);
   }
  }
- function route(object,points,distance){
-  const lengths=points.map((p,i)=>Math.hypot(points[(i+1)%points.length][0]-p[0],points[(i+1)%points.length][1]-p[1]));
-  let remaining=distance%lengths.reduce((a,b)=>a+b,0);
-  for(let i=0;i<points.length;i++){if(remaining>lengths[i]){remaining-=lengths[i];continue;}const a=points[i],b=points[(i+1)%points.length],f=remaining/lengths[i];object.position.set(a[0]+(b[0]-a[0])*f,0,a[1]+(b[1]-a[1])*f);object.rotation.y=Math.atan2(b[0]-a[0],b[1]-a[1]);break;}
- }
  function watchProduction(buildings){
   for(const id of ['bakery','mill','packing']){const v=buildings.get(id);for(let i=0;i<3;i++){const obj=new THREE.Mesh(new THREE.SphereGeometry(.17,6,4),new THREE.MeshBasicMaterial({color:0xfff5dc,transparent:true,opacity:0,depthWrite:false}));scene.add(obj);smoke.push({obj,id,x:v.x,z:v.z,y:v.height,phase:i/3});}}
  }
  function animate(t,dt,now){
   if(reducedMotion)return;
   for(const m of moving){
-   if(m.kind==='truck')route(m.obj,[[-23,-4.45],[23,-4.45],[23,-3.55],[-23,-3.55]],t*.9);
-   if(m.kind==='combine')route(m.obj,[[-28.5,-5],[-28.5,10],[-25.5,10],[-25.5,-5]],t*.4);
    if(m.kind==='animal'){m.obj.position.x=m.x+Math.sin(t*.18+m.phase)*.42;m.obj.position.z=m.z+Math.sin(t*.14+m.phase)*.5;m.obj.rotation.y=-.7+Math.sin(t*.18+m.phase)*.3;}
    if(m.kind==='bee')m.obj.position.set(10.4+Math.sin(t*1.2+m.phase)*.7,1.2+Math.sin(t*2+m.phase)*.25,13.7+Math.cos(t+m.phase)*.6);
   }

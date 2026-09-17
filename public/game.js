@@ -14,20 +14,24 @@ import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
 import { createActivitiesUI } from './activities-ui.js';
 import { ACTIVE_STATIONS } from './farm-state.js';
+import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
+import { createSoundSettings } from './sound-settings.js';
 
 const $ = id => document.getElementById(id);
 const state = structuredClone(window.harvestInitialFarm.state);
 window.harvestInitialFarm = null;
-let selectedTool='plant', selectedCrop='wheat', ready=false, sound=false, audioContext;
+let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
 const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
-let economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities;
+let economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
 const client=createFarmClient(state,{onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
-const runAction=action=>client.runAction(action);
+const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
+const productionSounds=createProductionCueTracker(state.buildings,Date.now());
+const runAction=withActionSounds(action=>client.runAction(action),()=>levelProgress(state).level,kind=>farmAudio.play(kind));
 function openUtility(key){if(key==='stall'||key==='chores')growth.open(key);else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
@@ -38,14 +42,6 @@ modelNames.push(...LIFE_MODELS);
 let toastTimer;
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
 function icons(){refreshArt();}
-function playTone(kind){
- if(!sound)return;
- try{
-  audioContext??=new(window.AudioContext||window.webkitAudioContext)();audioContext.resume();
-  const notes=kind==='harvest'?[523,659,784]:kind==='sell'?[659,784,1047]:kind==='water'?[440,660]:[392,523];
-  notes.forEach((f,i)=>{const o=audioContext.createOscillator(),g=audioContext.createGain();o.type='sine';o.frequency.value=f;const t=audioContext.currentTime+i*.065;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+.2);o.connect(g);g.connect(audioContext.destination);o.start(t);o.stop(t+.22);});
- }catch{sound=false;}
-}
 
 function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
  const entry=models.get(name);if(!entry)throw new Error(`Missing model: ${name}`);
@@ -215,7 +211,7 @@ async function interact(id,forcedAction){
   if(action==='water'){particleBurst(id,true);floatReward(id,'+1 crop · 20% less waiting');}
   if(action==='tend'){particleBurst(id);floatReward(id,'Extra care · +1 crop');}
   if(action==='plant')floatReward(id,`−${result.cost} coins`);
-  drawCrop(id);renderer.shadowMap.needsUpdate=true;updateUI();icons();playTone(action);return result;
+  drawCrop(id);renderer.shadowMap.needsUpdate=true;updateUI();icons();return result;
  }catch(e){toast(e.message);return {error:e.message};}
 }
 function setTool(tool){selectedTool=tool;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
@@ -237,7 +233,7 @@ function updateUI(){
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
-async function claim(id){try{const r=await runAction({type:'quest',id});updateUI();playTone('sell');toast(`Quest complete! +${r.coins} coins and +${r.xp} XP.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
+async function claim(id){try{const r=await runAction({type:'quest',id});updateUI();toast(`Quest complete! +${r.coins} coins and +${r.xp} XP.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;}
 function resize(){
  if(!renderer||!camera)return;
@@ -356,15 +352,16 @@ function bindUI(){
  const toggleQuest=()=>{if(mobileLayout.matches){beginner.open();return;}const hidden=!$('quest-body').hidden;$('quest-body').hidden=hidden;$('quest-collapse').setAttribute('aria-expanded',String(!hidden));$('quest-collapse').setAttribute('aria-label',hidden?'Expand quest':'Collapse quest');$('quest-collapse').innerHTML=`<i data-lucide="${hidden?'clipboard-check':'chevron-up'}"></i>`;icons();};
  $('quest-collapse').addEventListener('click',toggleQuest);
  document.querySelector('.quest-heading')?.addEventListener('click',event=>{if(event.target.closest('#quest-collapse'))return;if(mobileLayout.matches)beginner.open();});
- $('sound-button').addEventListener('click',()=>{sound=!sound;$('sound-button').setAttribute('aria-pressed',String(sound));$('sound-button').setAttribute('aria-label',sound?'Mute sound':'Enable sound');$('sound-button').title=sound?'Mute sound':'Enable sound';$('sound-button').innerHTML=`<i data-lucide="${sound?'volume-2':'volume-x'}"></i>`;icons();if(sound)playTone('plant');});
+ soundUI=createSoundSettings(farmAudio);
+ document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
  $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'harvest',4:'tend'}[e.key];if(t){e.preventDefault();setTool(t);}});
- economy=createEconomyUI({state,onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,sound:playTone,runAction,onEstate:section=>growth.open(section)});
+ economy=createEconomyUI({state,onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  quests=createQuestsUI({state,claim,icons});
- activities=createActivitiesUI({state,runAction,notify:toast,onFind:id=>{const v=farmLife?.views.get(id);if(!v)return;viewMode='home';zoom=1.3;pan=(v.x-v.z+.1)/2;panDepth=(v.x+v.z-2.9)/2;resize();},onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);playTone(result.finished?'sell':'water');}}});
+ activities=createActivitiesUI({state,runAction,notify:toast,onFind:id=>{const v=farmLife?.views.get(id);if(!v)return;viewMode='home';zoom=1.3;pan=(v.x-v.z+.1)/2;panDepth=(v.x+v.z-2.9)/2;resize();},onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,guide:target=>{
   if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':'Tap a ready crop or its basket.');}
   else if(target==='market')openDialog('market-dialog');
@@ -380,7 +377,7 @@ function bindUI(){
 function frame(now){
  requestAnimationFrame(frame);if(!ready||document.hidden)return;
  if(now-lastFrame<32)return;const dt=Math.min((now-lastFrame)/1000,.1);lastFrame=now;
- if(now-lastTick>500){plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();activities.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
+ if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();activities.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
  if(!reducedMotion){
   if(windmillRotor)windmillRotor.rotation.z-=dt*.28;
   const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());animals.forEach(a=>{a.baseYaw??=a.obj.rotation.y;a.obj.position.x=a.x+Math.sin(t*.18+a.seed)*.4;a.obj.position.z=a.z+Math.cos(t*.14+a.seed)*.3;a.obj.rotation.y=a.baseYaw+Math.sin(t*.17+a.seed)*.2;a.obj.rotation.z=Math.sin(t*2+a.seed)*.007;});

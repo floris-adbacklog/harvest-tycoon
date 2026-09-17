@@ -5,14 +5,10 @@ export function createMobileUI({openUtility,resetView}){
  const $=id=>document.getElementById(id),menu=$('more-dialog');
  $('more-button').onclick=()=>{
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());
-  $('mobile-sound-label').textContent=$('sound-button').getAttribute('aria-pressed')==='true'?'Sound on':'Sound off';
   menu.showModal();menu.scrollTop=0;refreshArt();
  };
  menu.querySelectorAll('[data-menu-action]').forEach(button=>button.onclick=()=>{
   const action=button.dataset.menuAction;
-  if(action==='sound-button'){
-   $(action).click();$('mobile-sound-label').textContent=$(action).getAttribute('aria-pressed')==='true'?'Sound on':'Sound off';return;
-  }
   menu.close();$(action)?.click();
  });
  menu.querySelectorAll('[data-menu-utility]').forEach(button=>button.onclick=()=>{menu.close();openUtility(button.dataset.menuUtility);});
