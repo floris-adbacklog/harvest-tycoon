@@ -1,5 +1,22 @@
 # Harvest Tycoon — September 17 update
 
+## Living farm and hands-on activities
+
+The farm now loads 72 selected GLB models (previously 55), with 17 additional models from the supplied pack. The surroundings use rolling hills, a distant mountain ridge, golden and green neighbouring fields, a pond with a bridge, additional trees, a workshop shed, stone fencing and a parked trailer. The playable farm stays in the middle; scenery does not force the camera to zoom out.
+
+- A delivery truck and combine follow continuous routes. Tap the truck for orders or the combine for the Tractor menu. Livestock move gently, bees circle the apiary, water ripples and working production buildings emit small wisps. Reduced-motion preferences stop ambient animation.
+- Four activities are available from the Farm activities button, Buildings, More, or the corresponding 3D object: Greenhouse, Apiary, Animal paddock and Tool workshop.
+- Each job asks the player to find three items that need attention. Tile arrangements change on repeat visits. Partial progress is saved. Jobs return after 3–4 minutes and reward coins and XP; greenhouse work also gives lettuce, animal care gives fertilizer.
+- Completing a job at all four different stops gives an additional 22 coins and 10 XP. Repeating one stop does not substitute for the others. There is no deadline or penalty for leaving a job unfinished.
+- The server validates job identity, targets, completed steps, minimum action intervals, cooldowns and rewards. Existing farm progress and diamond rewards are preserved.
+- A rejected game action no longer incorrectly displays a lost-connection warning.
+
+## Mobile crop spacing and camera cleanup
+
+Crop centres are now 3.15 by 3.2 units apart, while each soil tile stays 2.38 units wide. Mobile crop timers use short labels (for example, 12h or 25m, rounded up). When zoomed far out, overlapping timers are hidden with harvest markers given priority. Zooming in reveals more labels; crops remain directly tappable, and accessible labels retain the full time.
+
+Mobile camera and pan buttons are hidden because drag and pinch gestures already perform those actions. My farm still recentres the view. The bottom control area reserves 54 fewer pixels in portrait orientation. Desktop camera controls remain available. Farm activities use a compact floating button instead of another full-width bar.
+
 ## Mobile Sign in button fix
 
 The decorative logo image could overlap the header because its transparent image box extended outside its visual container. The logo no longer intercepts pointer events, and the header is now above the decorative layer. The Sign in button retains its existing behavior: select the sign-in form, scroll to it and focus Email address. Its touch target is at least 44px tall. Authentication logic is unchanged. This CSS fix has not been tested on a physical phone.
@@ -73,14 +90,15 @@ Reward text now uses dedicated text elements, so icon replacement cannot duplica
 3. Copy the contents of this extracted project into that repository folder and replace the matching project files. Keep your repository's `.git` folder and your environment settings.
 4. Review the changes in GitHub Desktop. Commit them, then select Push origin.
 5. Open Vercel and wait for the new deployment to become Ready. Keep the existing Supabase environment variables.
-6. Reload the live game. On desktop, check the welcome page; on mobile, check Today and the Beginner guide banner. Check Fields and Show the whole farm on your farm.
+6. Reload the live game. On desktop, check the welcome page; on mobile, check Today and the Beginner guide banner. Check pinch/drag navigation and the four Farm activities on mobile. Desktop keeps Fields and Show the whole farm controls.
 
-Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` version 4. Its deployed source was compared with this package. The leaderboard migration is also already applied. No further database setup or authentication change is needed. Do not rerun the old setup SQL.
+Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` version 5. Its deployed source was compared with this package. The leaderboard migration is also already applied. No further database setup or authentication change is needed. Do not rerun the old setup SQL.
 
 ## Verified scope
 
-- 57 automated tests pass, including a complete beginner journey, one-time reward, rejected skipped steps, saved progress, and preservation of regular quest progress.
+- 64 automated tests pass, including a complete beginner journey, one-time reward, rejected skipped steps, saved progress, and preservation of regular quest progress.
 - The static Vercel production build passes.
 - The deployed Supabase function is ACTIVE with JWT verification enabled and matches the included function sources.
 - The GitHub integration rejected writes with HTTP 403, “Resource not accessible by integration”. No frontend commit was pushed by ChatGPT.
-- Local browser preview was blocked. The new frontend has not been visually checked on Vercel yet; upload is required before that check can happen.
+- All 72 GLBs were parsed with the game’s GLTFLoader. Scene construction, station registration, camera-label positioning and animation updates ran without invalid transforms; the model layout was inspected with a software render.
+- A full browser preview is unavailable in this workspace. The new UI has not been tested on a physical phone or in an authenticated live browser. Upload through GitHub Desktop, then check the new controls and activities on Vercel.

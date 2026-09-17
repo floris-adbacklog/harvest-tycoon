@@ -16,7 +16,7 @@ export function createFarmClient(state,{onChange,onStatus}){
   if(busy)throw new Error('Your previous action is still saving.');
   busy=true;onStatus('saving');document.body.classList.add('farm-saving');
   try{const data=await bridge.request({operation:'action',action,requestId:crypto.randomUUID()});replace(data);return data.result;}
-  catch(error){onStatus('error');throw error;}
+  catch(error){onStatus(error.code==='ACTION_REJECTED'?'saved':'error');throw error;}
   finally{busy=false;document.body.classList.remove('farm-saving');}
  }
  async function load(){clockOffset=bridge.serverNow-Date.now();onChange();onStatus('saved');return {state};}

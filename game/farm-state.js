@@ -340,7 +340,7 @@ export function seedCost(state,crop){return Math.max(1,Math.ceil(CROPS[crop].cos
 export function normalizeFarm(state,now=Date.now()){
  const oldVersion=state.version??0;
  if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=xpForLevel(previousLevel)-60*(previousLevel-1);}
- state.version=6;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
+ state.version=7;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
@@ -359,6 +359,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.onboarding.milestones??={};
  state.mastery??={harvests:Object.fromEntries(Object.keys(CROPS).map(k=>[k,state.stats['harvest_'+k]??0])),claimed:[]};
  state.stall??={level:1,since:now,bank:0};state.estate??={completed:0,job:null};state.chores??={};
+ state.activities??={jobs:{},cooldowns:{},completed:{},round:[],rounds:0};
  for(const p of state.plots){p.tended??=false;p.fertilized??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*.3);}
  const day=utcDay(now);
  if(state.daily?.date!==day)state.daily={date:day,baseline:{...state.stats},claimed:[],orders:[],bonusClaimed:false};
@@ -447,6 +448,8 @@ function dispatchFarmAction(state,action,now){
   case 'stall_collect':return collectStall(state,now);
   case 'stall_upgrade':return upgradeStall(state,now);
   case 'chore':return doChore(state,action.id,now);
+  case 'activity_start':return startActivity(state,action.station,now);
+  case 'activity_work':return workActivity(state,action,now);
   case 'mastery':return claimMastery(state,action.crop,action.tier);
   case 'project_start':return startProject(state,now);
   case 'project_collect':return completeProject(state,now);
@@ -520,4 +523,49 @@ export function startProject(state,now=Date.now()){
 export function completeProject(state,now=Date.now()){
  const job=state.estate.job;if(!job)throw new Error('Start an estate project first.');if(now<job.readyAt)throw new Error('Your project is still being built.');
  const project=currentProject(state);settleStall(state,now);state.estate.completed++;state.estate.job=null;state.stats.projects++;state.xp+=project.xp;return {name:project.name,xp:project.xp,completed:state.estate.completed};
+}
+
+// Small hands-on jobs run alongside crops and production. Only server time and
+// persisted progress determine rewards; the client submits a station and tile.
+export const ACTIVE_STATIONS=Object.freeze({
+ greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:14,xp:5,cooldown:180000,item:'lettuce',instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
+ apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:18,xp:6,cooldown:240000,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
+ paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:16,xp:5,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
+ workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:20,xp:6,cooldown:240000,instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
+});
+export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:22,xp:10});
+export function activityTargets(station,cycle){
+ const offset=(Object.keys(ACTIVE_STATIONS).indexOf(station)+cycle)%6;
+ return [0,2,3].map(i=>(i+offset)%6);
+}
+export function activityStatus(state,station,now=Date.now()){
+ if(!Object.hasOwn(ACTIVE_STATIONS,station))throw new Error('Choose a farm activity.');
+ const a=state.activities??{jobs:{},cooldowns:{},completed:{},round:[],rounds:0};
+ return {...ACTIVE_STATIONS[station],station,job:a.jobs[station]??null,remaining:Math.max(0,(a.cooldowns[station]??0)-now),completed:a.completed[station]??0,inRound:a.round.includes(station)};
+}
+function startActivity(state,station,now){
+ const s=activityStatus(state,station,now);
+ if(s.job)throw new Error('This job is already in progress.');
+ if(s.remaining)throw new Error(`This job returns in ${formatDuration(s.remaining)}.`);
+ const job={startedAt:now,nextAt:now+600,targets:activityTargets(station,s.completed),done:[]};
+ state.activities.jobs[station]=job;return {station,startedAt:now};
+}
+function workActivity(state,action,now){
+ const s=activityStatus(state,action.station,now),job=s.job;
+ if(!job||action.startedAt!==job.startedAt)throw new Error('Open the current job and try again.');
+ if(!Number.isInteger(action.target)||!job.targets.includes(action.target))throw new Error(s.instruction);
+ if(job.done.includes(action.target))throw new Error('That part of the job is already done.');
+ if(now<job.nextAt)throw new Error('Give your last action a moment to finish.');
+ job.done.push(action.target);job.nextAt=now+600;
+ if(job.done.length<3)return {station:action.station,finished:false,progress:job.done.length};
+ const a=state.activities;delete a.jobs[action.station];a.cooldowns[action.station]=now+s.cooldown;
+ a.completed[action.station]=(a.completed[action.station]??0)+1;
+ if(!a.round.includes(action.station))a.round.push(action.station);
+ const roundComplete=Object.keys(ACTIVE_STATIONS).every(key=>a.round.includes(key));
+ const coins=s.coins+(roundComplete?ACTIVITY_ROUND_REWARD.coins:0),xp=s.xp+(roundComplete?ACTIVITY_ROUND_REWARD.xp:0);
+ if(roundComplete){a.round=[];a.rounds++;}
+ state.coins+=coins;state.xp+=xp;
+ if(s.item)state.inventory[s.item]++;
+ state.stats.activities=(state.stats.activities??0)+1;
+ return {station:action.station,finished:true,coins,xp,item:s.item??null,roundComplete};
 }

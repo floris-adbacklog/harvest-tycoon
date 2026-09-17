@@ -21,3 +21,9 @@ test('failed server writes do not change state or read old browser saves',async(
 test('direct game access cannot create a client without an authenticated parent',()=>{
  globalThis.window={parent:{}};assert.throws(()=>createFarmClient({},{}),/Sign in/);
 });
+test('an expected game-rule rejection does not show a broken connection',async()=>{
+ globalThis.document={body:{classList:{add(){},remove(){}}}};
+ globalThis.window={parent:{harvestBridge:{serverNow:Date.now(),request:async()=>{throw Object.assign(new Error('Choose a dry seedling.'),{code:'ACTION_REJECTED'});}}}};
+ const statuses=[],s={coins:180};const client=createFarmClient(s,{onChange(){},onStatus:status=>statuses.push(status)});
+ await assert.rejects(client.runAction({type:'activity_work'}),/seedling/);assert.deepEqual(statuses,['saving','saved']);assert.equal(s.coins,180);
+});

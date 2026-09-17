@@ -11,6 +11,9 @@ import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI } from './quests-ui.js';
 import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
+import { createFarmLife,LIFE_MODELS } from './farm-life.js';
+import { createActivitiesUI } from './activities-ui.js';
+import { ACTIVE_STATIONS } from './farm-state.js';
 
 const $ = id => document.getElementById(id);
 const state = structuredClone(window.harvestInitialFarm.state);
@@ -20,7 +23,7 @@ let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFram
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
 const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
-let economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor;
+let economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
 const client=createFarmClient(state,{onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
@@ -31,6 +34,7 @@ const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bucket_001','apiary_001','cart_004','chair_001','firewood_003','hay_002','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','cart_001','box_004','coop_001','water_001','landscape_001','ground_004','road_001'];
 modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
+modelNames.push(...LIFE_MODELS);
 let toastTimer;
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
 function icons(){refreshArt();}
@@ -62,8 +66,8 @@ function decorate(){
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
  cloneModel('road_001',-1,-4,{width:48,depth:2.9,height:.13,y:-.045});
  cloneModel('road_001',-6,3,{width:2.9,depth:40,height:.13,y:-.035});
- cloneModel('road_001',6.2,17.3,{width:27,depth:2.4,height:.12,y:-.035});
- patch(2.1,7,12,17.2,0x91b768,.004);
+ cloneModel('road_001',6.2,19.8,{width:27,depth:2.4,height:.12,y:-.035});
+ patch(2.575,8.25,12.8,19.4,0x91b768,.004);
  patch(11,-7.7,10,8.4,0x95b86b,.007);
  patch(-12.5,5.3,8.7,13,0x9bbc70,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
@@ -81,7 +85,7 @@ function decorate(){
  cloneModel('bag_001',10.8,5.8,{height:.95,rotation:.4});
  cloneModel('bag_002',11.5,6.2,{height:.85,rotation:-.3});
  cloneModel('prop_023',15,5.8,{width:1.1,rotation:.2});
- cloneModel('greenhouse_003',5.6,-19,{width:3.7,rotation:Math.PI/2});
+ const glasshouse=cloneModel('greenhouse_003',5.6,-19,{width:3.7,rotation:Math.PI/2});
  cloneModel('barrel_002',14.5,-14.6,{height:1.2});
  cloneModel('bucket_003',12.7,-13.9,{height:.65});
  addUtility('tractor','tractor_001',-5.2,-.2,{width:3.1,rotation:-Math.PI/2});
@@ -92,7 +96,7 @@ function decorate(){
  cloneModel('cart_004',-14.8,12.4,{width:2.2,rotation:.35});
  cloneModel('table_001',-12.7,13.4,{width:1.8,rotation:-.2});
  cloneModel('chair_001',-11.4,13.7,{height:1.05,rotation:-2.4});
- cloneModel('apiary_001',10.1,13.8,{height:1.35,rotation:.15});
+ const hive=cloneModel('apiary_001',10.1,13.8,{height:1.35,rotation:.15});
  cloneModel('apiary_001',11.4,14.2,{height:1.25,rotation:-.2});
  cloneModel('firewood_003',-15.4,-5.8,{width:1.7,rotation:Math.PI/2});
  cloneModel('hay_001',4.6,-7.8,{width:1.9});
@@ -106,7 +110,7 @@ function decorate(){
  addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
  fenceLine(8,-12.5,5);fenceLine(7,-11.4,4,'z');fenceLine(16.6,-11.4,4,'z');fenceLine(9.2,-3.6,4);
  fenceLine(-16.6,-13.2,4);fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
- fenceLine(-3,15.6,5);fenceLine(8.6,2.4,7,'z');
+ fenceLine(-3,18.3,6);fenceLine(9.5,2.4,8,'z');
  const cow=cloneModel('cow_001',11,-6.6,{width:2.4,rotation:-.6});cow.userData.building='dairy';animals.push({obj:cow,x:11,z:-6.6,seed:.5});
  const cow2=cloneModel('cow_001',14.5,-5.5,{width:1.85,rotation:2});cow2.userData.building='dairy';animals.push({obj:cow2,x:14.5,z:-5.5,seed:3});
  const sheep=cloneModel('sheep_001',9.1,-9.5,{width:1.6,rotation:.6});sheep.userData.building='dairy';animals.push({obj:sheep,x:9.1,z:-9.5,seed:1.5});
@@ -140,6 +144,8 @@ function decorate(){
   cloneModel('grass_001',x,z,{height:.25+(i%3)*.1,rotation:a});
  }
  for(const [x,z,r] of [[9.5,13.2,.3],[9.5,11.1,1.8],[-11.2,14.5,.7],[-14.7,14.8,2.1],[15.5,4.5,.4],[17.1,4.9,2.4]])cloneModel('grass_004',x,z,{height:.38,rotation:r});
+ farmLife=createFarmLife({scene,cloneModel,patch,state,onOpen:id=>activities.open(id),reducedMotion});
+ farmLife.attach('greenhouse',glasshouse);farmLife.attach('apiary',hive);farmLife.watchProduction(buildingViews);
 }
 function createPlots(){
  while(plots.length>state.plots.length){
@@ -148,7 +154,7 @@ function createPlots(){
   for(const object of [v.hit,v.ring]){object.geometry.dispose();object.material.dispose();}
  }
  for(let i=plots.length;i<state.plots.length;i++){
-  const x=-2.15+(i%4)*2.65,z=.25+Math.floor(i/4)*2.7;
+  const x=-2.15+(i%4)*3.15,z=.25+Math.floor(i/4)*3.2;
   const soil=cloneModel('ground_004',x,z,{width:2.38,depth:2.38,height:.20,y:.02});
   soil.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(0xc4b39a);n.userData.plot=i;}});
   const hit=new THREE.Mesh(new THREE.BoxGeometry(2.4,.25,2.4),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));hit.position.set(x,.23,z);hit.userData.plot=i;scene.add(hit);
@@ -184,7 +190,8 @@ function drawCrop(i){
   if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art('vegetables');
   v.label.className='plot-label ready';v.label.setAttribute('aria-label',`Harvest ${CROPS[p.crop].name} from field ${i+1}`);
  }else{
-  v.label.textContent=`${p.tended?'✦ ':p.watered?'↟ ':''}${formatDuration(p.readyAt-farmNow())}`;v.label.className=`plot-label${p.watered?' watered':''}${!p.tended&&farmNow()>=p.careAt?' care-ready':''}`;v.label.setAttribute('aria-label',`${CROPS[p.crop].name}, field ${i+1}, ${formatDuration(p.readyAt-farmNow())} remaining${p.watered?', watered':''}`);
+  const remaining=p.readyAt-farmNow(),time=mobileLayout.matches?(remaining>=3600000?`${Math.ceil(remaining/3600000)}h`:remaining>=60000?`${Math.ceil(remaining/60000)}m`:`${Math.ceil(Math.max(0,remaining)/1000)}s`):formatDuration(remaining);
+  v.label.textContent=mobileLayout.matches?time:`${p.tended?'✦ ':p.watered?'↟ ':''}${time}`;v.label.className=`plot-label${p.watered?' watered':''}${!p.tended&&farmNow()>=p.careAt?' care-ready':''}`;v.label.setAttribute('aria-label',`${CROPS[p.crop].name}, field ${i+1}, ${formatDuration(p.readyAt-farmNow())} remaining${p.watered?', watered':''}`);
  }
  v.lastReady=ripe;
 }
@@ -226,7 +233,7 @@ function updateUI(){
  $('level-name').textContent=['Rookie farmer','Green thumb','Market regular','Harvest hero','Farm tycoon'][Math.min(lvl-1,4)];
  const count=Object.values(state.inventory).reduce((a,b)=>a+b,0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target);
- beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();boosts?.refresh();quests?.refresh();mobileUI?.refresh();
+ beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();boosts?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
@@ -245,14 +252,14 @@ function resize(){
  const bounds=overviewBounds??{minX:-27,maxX:27,minY:-18,maxY:18};
  const usableWidth=Math.max(width*.5,width-padding.left-padding.right),usableHeight=Math.max(height*.5,height-padding.top-padding.bottom);
  const overviewSpan=Math.max((bounds.maxY-bounds.minY+3)*height/usableHeight,(bounds.maxX-bounds.minX+3)*height/usableWidth);
- const fieldSpan=Math.max(17,19/aspect);
+ const fieldSpan=Math.max(21,24/aspect);
  const homeSpan=Math.min(overviewSpan,Math.max(fieldSpan,mobile?32/aspect:38));
  const span=(viewMode==='fields'?fieldSpan:viewMode==='home'?homeSpan:overviewSpan)/zoom;
  camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;
  let focus;
  if(viewMode==='fields'){
-  const fieldCenter=.25+(Math.ceil(state.plots.length/4)-1)*2.7/2;
-  focus=new THREE.Vector3(1.8+pan+panDepth,0,fieldCenter-pan+panDepth);
+  const fieldCenter=.25+(Math.ceil(state.plots.length/4)-1)*3.2/2;
+  focus=new THREE.Vector3(2.575+pan+panDepth,0,fieldCenter-pan+panDepth);
  }else if(viewMode==='home'){
   focus=new THREE.Vector3(1.4+pan+panDepth,0,1.5-pan+panDepth);
  }else{
@@ -276,7 +283,7 @@ function focusFields(){viewMode='fields';zoom=1;pan=0;panDepth=0;resize();}
 function measureFarm(){
  // Use each actual building and field box, retaining the useful heights.
  const bounds={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity};
- for(const object of [...Array.from(buildingViews.values(),v=>v.object),...Array.from(utilityViews.values(),v=>v.object),...plots.map(v=>v.soil)]){
+ for(const object of [...Array.from(buildingViews.values(),v=>v.object),...Array.from(utilityViews.values(),v=>v.object),...plots.map(v=>v.soil),...Array.from(farmLife?.views.values()??[],v=>v.object)]){
   const box=new THREE.Box3().setFromObject(object);
   for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y+1])for(const z of [box.min.z,box.max.z]){
    const sx=(x-z)/Math.SQRT2,sy=-(x+z)*40/Math.sqrt(8384)+y*72/Math.sqrt(8384);
@@ -293,16 +300,27 @@ function positionLabels(){
   v.label.style.left=`${(point.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-point.y*.5+.5)*world.clientHeight}px`;
   v.label.hidden=point.z>1||point.z< -1||Math.abs(point.x)>1||Math.abs(point.y)>1;
  }
+ if(mobileLayout.matches){
+  // Keep each label attached to its own plot; hide overlaps instead of moving
+  // a timer onto a neighbouring field. Harvest markers take priority.
+  const occupied=[];
+  const candidates=plots.map((v,i)=>({v,i})).filter(({v,i})=>state.plots[i].crop&&!v.label.hidden).sort((a,b)=>Number(b.v.lastReady)-Number(a.v.lastReady)||a.i-b.i);
+  for(const {v} of candidates){
+   const rect=v.label.getBoundingClientRect();
+   const overlaps=occupied.some(r=>rect.left<r.right+4&&rect.right>r.left-4&&rect.top<r.bottom+4&&rect.bottom>r.top-4);
+   if(overlaps)v.label.hidden=true;else occupied.push(rect);
+  }
+ }
 }
 function pointerTarget(event){
  for(let i=0;i<plots.length;i++){const v=plots[i];if(!state.plots[i].crop||v.label.hidden)continue;const box=v.label.getBoundingClientRect();if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type:'plot',id:i};}
- for(const [type,views] of [['building',buildingViews],['utility',utilityViews]])for(const [id,v] of views){
+ for(const [type,views] of [['building',buildingViews],['utility',utilityViews],['activity',farmLife?.views??new Map()]])for(const [id,v] of views){
   if(v.label.hidden)continue;const box=v.label.getBoundingClientRect();
   if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type,id};
  }
  const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);
- const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).map(v=>v.object),...Array.from(utilityViews.values()).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?[windmillRotor]:[])];
- for(const hit of raycaster.intersectObjects(targets,true)){let obj=hit.object;while(obj){if(obj.userData.utility)return {type:'utility',id:obj.userData.utility};if(obj.userData.building)return {type:'building',id:obj.userData.building};if(Number.isInteger(obj.userData.plot))return {type:'plot',id:obj.userData.plot};obj=obj.parent;}}
+ const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).map(v=>v.object),...Array.from(utilityViews.values()).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?[windmillRotor]:[]),...(farmLife?.targets()??[])];
+ for(const hit of raycaster.intersectObjects(targets,true)){let obj=hit.object;while(obj){if(obj.userData.activity)return {type:'activity',id:obj.userData.activity};if(obj.userData.utility)return {type:'utility',id:obj.userData.utility};if(obj.userData.building)return {type:'building',id:obj.userData.building};if(Number.isInteger(obj.userData.plot))return {type:'plot',id:obj.userData.plot};obj=obj.parent;}}
  return null;
 }
 function addUtility(key,model,x,z,options){
@@ -321,6 +339,7 @@ function addBuilding(key,x,z,options){
  buildingViews.set(key,{object,outline,label,x,z,height});
 }
 function positionBuildingLabels(){
+ farmLife?.position(camera,world.clientWidth,world.clientHeight,farmNow());
  for(const v of utilityViews.values()){const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.82;}
  for(const [key,v]of buildingViews){const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82;v.label.classList.toggle('ready',economy.status(key).kind==='ready');}
 }
@@ -345,6 +364,7 @@ function bindUI(){
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  quests=createQuestsUI({state,claim,icons});
+ activities=createActivitiesUI({state,runAction,notify:toast,onFind:id=>{const v=farmLife?.views.get(id);if(!v)return;viewMode='home';zoom=1.3;pan=(v.x-v.z+.1)/2;panDepth=(v.x+v.z-2.9)/2;resize();},onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);playTone(result.finished?'sell':'water');}}});
  beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,guide:target=>{
   if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':'Tap a ready crop or its basket.');}
   else if(target==='market')openDialog('market-dialog');
@@ -360,10 +380,10 @@ function bindUI(){
 function frame(now){
  requestAnimationFrame(frame);if(!ready||document.hidden)return;
  if(now-lastFrame<32)return;const dt=Math.min((now-lastFrame)/1000,.1);lastFrame=now;
- if(now-lastTick>500){plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
+ if(now-lastTick>500){plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();activities.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
  if(!reducedMotion){
   if(windmillRotor)windmillRotor.rotation.z-=dt*.28;
-  const t=clock.getElapsedTime();animals.forEach(a=>{a.obj.position.x=a.x+Math.sin(t*.22+a.seed)*.16;a.obj.position.z=a.z+Math.cos(t*.18+a.seed)*.12;a.obj.rotation.z=Math.sin(t*2+a.seed)*.007;});
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());animals.forEach(a=>{a.baseYaw??=a.obj.rotation.y;a.obj.position.x=a.x+Math.sin(t*.18+a.seed)*.4;a.obj.position.z=a.z+Math.cos(t*.14+a.seed)*.3;a.obj.rotation.y=a.baseYaw+Math.sin(t*.17+a.seed)*.2;a.obj.rotation.z=Math.sin(t*2+a.seed)*.007;});
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -412,7 +432,8 @@ async function init(){
    const target=pointerTarget(e);highlight(target?.id??-1);const tooltip=$('tooltip');
    if(!target||e.pointerType==='touch'){tooltip.hidden=true;return;}
    tooltip.hidden=false;
-   if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
+   if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
+   else if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
    else if(target.type==='building'){const b=BUILDINGS[target.id];tooltip.innerHTML=`<strong>${b.name}</strong><span>${economy.status(target.id).text} · click to open</span>`;}
    else{const p=state.plots[target.id];tooltip.innerHTML=`<strong>${p.crop?CROPS[p.crop].name:'Empty field'}</strong><span>${!p.crop?`Plant ${CROPS[selectedCrop].name.toLowerCase()} · ${seedCost(state,selectedCrop)} coins`:farmNow()>=p.readyAt?'Ready to harvest!':`${formatDuration(p.readyAt-farmNow())} · ${harvestYield(p)} crop${harvestYield(p)>1?'s':''}${!p.tended&&farmNow()>=p.careAt?' · extra care ready':p.tended?' · fully cared for':' · water & care for more'}`}</span>`;}
    const r=world.getBoundingClientRect();tooltip.style.left=`${Math.min(r.width-130,Math.max(130,e.clientX-r.left))}px`;tooltip.style.top=`${e.clientY-r.top-16}px`;
@@ -420,7 +441,7 @@ async function init(){
   renderer.domElement.addEventListener('pointerleave',()=>{highlight(-1);$('tooltip').hidden=true;});
   const canvas=renderer.domElement;
   bindFarmInput({canvas,isReady:()=>ready,pick:pointerTarget,
-   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building')economy.openBuilding(target.id);else if(target.type==='utility')openUtility(target.id);},
+   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building')economy.openBuilding(target.id);else if(target.type==='utility')openUtility(target.id);else if(target.type==='activity')activities.open(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);
