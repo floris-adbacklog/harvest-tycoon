@@ -274,8 +274,8 @@ export function farmSummary(state,now=Date.now()) {
 
 export const DAY_MS=86400000;
 export const DAILY_REWARDS=[40,55,70,85,100,120,160];
-export const DAILY_DIAMONDS=[2,3,4,5,6,8,12];
-export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([1,1,2]);
+export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
+export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]);
 export const DIAMOND_PACKS=Object.freeze([{amount:50,price:'€1.99'},{amount:300,price:'€9.99'},{amount:1000,price:'€24.99'}]);
 export const BOOSTS=Object.freeze({
  xp:{name:'Double XP',cost:20,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},

@@ -24,7 +24,7 @@ test('XP and coin boosts persist, multiply eligible rewards once and expire',()=
  state=normalizeFarm(JSON.parse(JSON.stringify(state)),now);const before=state.xp;const harvested=act(state,{type:'field',id:0,action:'harvest'});assert.equal(harvested.xp,10);assert.equal(state.xp-before,10);
  state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'}).coins,160);
  const order=dailyOrders(state,now)[0];Object.assign(state.inventory,order.input);const delivery=act(state,{type:'delivery',id:order.id,day:utcDay(now)});assert.equal(delivery.coins,order.coins*2);assert.equal(delivery.xp,order.xp*2);
- const gift=act(state,{type:'checkin'});assert.equal(gift.coins,40);assert.equal(gift.diamonds,2);
+ const gift=act(state,{type:'checkin'});assert.equal(gift.coins,40);assert.equal(gift.diamonds,4);
  const balance=state.diamonds;assert.throws(()=>act(state,{type:'buy_boost',boost:'xp'}),/Already active/);assert.equal(state.diamonds,balance);
  state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'},now+BOOSTS.coins.duration).coins,80);
  assert.equal(act(state,{type:'field',id:1,action:'harvest'},now+BOOSTS.xp.duration).xp,5);

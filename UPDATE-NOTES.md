@@ -4,6 +4,14 @@
 
 The decorative logo image could overlap the header because its transparent image box extended outside its visual container. The logo no longer intercepts pointer events, and the header is now above the decorative layer. The Sign in button retains its existing behavior: select the sign-in form, scroll to it and focus Email address. Its touch target is at least 44px tall. Authentication logic is unchanged. This CSS fix has not been tested on a physical phone.
 
+## Opaque mobile controls and doubled free diamonds
+
+The mobile controls now sit on an opaque cream panel; the farm background and vignette no longer show through the gaps. The selected tool keeps its green highlight. This visual change still needs a check on a real mobile device after uploading.
+
+Login gifts now give 4, 6, 8, 10, 12, 16 and 24 diamonds across a seven-day streak (80 total). The three daily challenges give 2, 2 and 4 diamonds (8 per day, up to 56 per week). Together that is 136 free diamonds per complete week, twice the previous recurring rate. Boost prices and the one-time 20-diamond beginner reward are unchanged. Existing balances are preserved and already-claimed rewards cannot be claimed again.
+
+Supabase farm-api version 4 is active and its source was verified against this package. Upload the full project so the displayed reward amounts match the new server rewards.
+
 ## Expanded leaderboards
 
 The Rank by dropdown has 14 categories, grouped into Farm progress and Individual crops:
@@ -31,7 +39,7 @@ The security advisor reported no new database issues. An existing Auth setting h
 | Instant harvest | 90 |
 | Builder’s discount | 150 |
 
-The three daily challenges award 1, 1 and 2 diamonds respectively, once per challenge. Existing login gifts are unchanged: 40 diamonds over a seven-day streak. Completing every daily challenge adds 28 for a maximum of 68 free diamonds per week. The separate beginner completion reward remains 20 diamonds, enough for Double XP.
+The three daily challenges award 2, 2 and 4 diamonds respectively, once per challenge. Existing login gifts are now: 80 diamonds over a seven-day streak. Completing every daily challenge adds 56 for a maximum of 136 free diamonds per week. The separate beginner completion reward remains 20 diamonds, enough for Double XP.
 
 The server checks the displayed purchase price before spending diamonds. An outdated game client is asked to reload instead of being charged a higher price. Upload this entire frontend update before buying boosts. Existing balances, active boosts and claimed challenges are preserved; previously claimed challenges are not paid again. Paid packs remain in their existing beta state; no checkout was added.
 
@@ -67,7 +75,7 @@ Reward text now uses dedicated text elements, so icon replacement cannot duplica
 5. Open Vercel and wait for the new deployment to become Ready. Keep the existing Supabase environment variables.
 6. Reload the live game. On desktop, check the welcome page; on mobile, check Today and the Beginner guide banner. Check Fields and Show the whole farm on your farm.
 
-Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` version 3. Its deployed source was compared with this package. The leaderboard migration is also already applied. No further database setup or authentication change is needed. Do not rerun the old setup SQL.
+Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` version 4. Its deployed source was compared with this package. The leaderboard migration is also already applied. No further database setup or authentication change is needed. Do not rerun the old setup SQL.
 
 ## Verified scope
 
