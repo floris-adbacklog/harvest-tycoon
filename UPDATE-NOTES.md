@@ -15,7 +15,9 @@ The shipped audio file needs no extra service or build dependency. To change the
 
 ## Living farm and hands-on activities
 
-The farm now loads 70 selected GLB models (previously 55), with 15 additional models from the supplied pack. The surroundings use rolling hills, a distant mountain ridge, golden and green neighbouring fields, a pond with a bridge, additional trees, a workshop shed, stone fencing and a parked trailer. The playable farm stays in the middle; scenery does not force the camera to zoom out.
+The farm now loads 75 selected GLB models (previously 55). The four plain `box_004` blocks have been removed from the scene and replaced with detailed wooden crates, a grain sack and a barrel from the supplied pack. A compact wood stack and hay prop add detail to existing work areas without widening the playable farm or blocking paths.
+
+The surroundings continue to use rolling hills, a distant mountain ridge, golden and green neighbouring fields, a pond with a bridge, additional trees, a workshop shed, stone fencing and a parked trailer. The playable farm stays in the middle; scenery does not force the camera to zoom out.
 
 - Livestock move gently, bees circle the apiary, water ripples and working production buildings emit small wisps. Reduced-motion preferences stop ambient animation.
 - Four activities are available by tapping the corresponding 3D object or its round marker: Greenhouse, Apiary, Animal paddock and Tool workshop.
@@ -109,9 +111,9 @@ Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` vers
 
 ## Verified scope
 
-- 75 automated tests pass, including a complete beginner journey, one-time reward, rejected skipped steps, saved progress, and preservation of regular quest progress.
+- 78 automated tests pass, including a complete beginner journey, one-time reward, rejected skipped steps, saved progress, continuous music and preservation of regular quest progress.
 - The static Vercel production build passes. Audio tests cover saved mute preferences, independent volume, hidden-tab suspension, resource cleanup, action/level-up routing, throttling, history navigation and mute/resume races.
 - The deployed Supabase function is ACTIVE with JWT verification enabled and matches the included function sources.
 - The GitHub integration rejected writes with HTTP 403, “Resource not accessible by integration”. No frontend commit was pushed by ChatGPT.
-- All 70 GLBs were parsed with the game’s GLTFLoader. Scene construction, station registration, camera-label positioning and animation updates ran without invalid transforms; the model layout was inspected with a software render.
+- All 75 selected GLBs were parsed with the game’s GLTFLoader. Scene construction, station registration, camera-label positioning and animation updates ran without invalid transforms; the model layout was inspected with a software render.
 - A full browser preview is unavailable in this workspace. The new UI has not been tested on a physical phone or in an authenticated live browser. Upload through GitHub Desktop, then check the new controls and activities on Vercel.

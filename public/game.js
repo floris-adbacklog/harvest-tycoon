@@ -36,7 +36,7 @@ function openUtility(key){if(key==='stall'||key==='chores')growth.open(key);else
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bucket_001','apiary_001','cart_004','chair_001','firewood_003','hay_002','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','cart_001','box_004','coop_001','water_001','landscape_001','ground_004','road_001'];
+const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bag_003','bucket_001','apiary_001','cart_004','chair_001','firewood_003','firewood_008','hay_002','hay_003','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','barrel_009','cart_001','case_002','case_003','coop_001','water_001','landscape_001','ground_004','road_001'];
 modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
 modelNames.push(...LIFE_MODELS);
 let toastTimer;
@@ -117,16 +117,17 @@ function decorate(){
  patch(-10.8,12,7,6.9,0xb9bd89,.008);
  patch(11.5,-17.2,6.8,6.4,0xb7bd88,.008);
  for(const [name,x,z,options] of [
-  ['box_004',9,-14.2,{width:1.1}],['box_004',10.3,-14.3,{width:.8}],
+  ['case_002',9,-14.2,{width:1.1,rotation:.12}],['bag_003',10.25,-14.2,{height:.82,rotation:-.25}],
   ['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],
   ['barrel_002',-15.7,6.5,{height:.95}],['bag_001',-10.2,6.4,{height:.8}],
   ['bag_002',-10.8,6.7,{height:.7}],['firewood_003',-14.1,10.5,{width:1.3}],
-  ['box_004',-8.1,13.5,{width:.9}],['table_001',-13.9,-5.9,{width:1.6}],
+  ['case_003',-8.1,13.5,{width:.9,rotation:.35}],['table_001',-13.9,-5.9,{width:1.6}],
   ['chair_001',-15,-6.3,{height:.85,rotation:1.7}],['bucket_003',-1.8,-9.1,{height:.65}],
   ['hay_002',1.2,-9.7,{width:1.2}],['water_001',14.8,-10.8,{width:1.1}],
   ['garden_bed_001',-17.3,-8,{width:1.8,rotation:Math.PI/2}],
   ['garden_bed_001',-17.3,-5.9,{width:1.8,rotation:Math.PI/2}],
-  ['barrel_001',10.3,7.1,{height:.9}],['box_004',11.6,7.7,{width:.85}],
+  ['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}],
+  ['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}],['hay_003',7.4,-7.6,{width:1.3,rotation:-.35}],
   ['bucket_001',-7.7,1,{height:.65}],['bush_003',-8.4,8,{width:1.1}],
   ['bush_003',8.9,-19.6,{width:1.2}],['grass_004',-8.2,8.9,{height:.3}]
  ])cloneModel(name,x,z,options);

@@ -2,7 +2,7 @@
 
 The supplied upload is a GLB pack. The game loads selected GLB models directly in Three.js; it does not load OBJ files or the entire demo scene.
 
-This update loads **70 distinct model files**, up from 55. Loading every variation would increase mobile download and rendering costs without necessarily improving play. Existing crops and buildings keep their models.
+The game now loads **75 distinct model files**, up from 55. Loading every variation would increase mobile download and rendering costs without necessarily improving play. Existing crops and buildings keep their models.
 
 | Additional models | Purpose |
 | --- | --- |
@@ -13,6 +13,8 @@ This update loads **70 distinct model files**, up from 55. Loading every variati
 | lawn_mower_001, house_024 | Workshop and its hands-on repair activity |
 | trailer_001 | Parked equipment beside the workshop |
 | fir_tree_003, tree_008, stone_fence_001 | Forest edges and low boundary walls |
+| case_002, case_003, bag_003, barrel_009 | Recognisable wooden crates, a grain sack and a barrel replacing four plain white block props |
+| firewood_008, hay_003 | Extra work-yard detail beside the farmhouse and animal area |
 
 The roaming truck and combine were removed at the user’s request. The original parked tractor and delivery cart remain usable.
 
