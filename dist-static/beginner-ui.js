@@ -14,7 +14,8 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide}){
   $('claim-reward').disabled=busy||!current?.ready;$('claim-reward').textContent=complete?'Guide complete':done===9?'Claim 20 diamonds':'Complete step';
   $('beginner-help').hidden=complete;$('beginner-help').textContent=current?.ready?'Take a look':'Show me';
   document.querySelector('.beginner-prize').classList.toggle('claimed',complete);
-  document.querySelector('.beginner-prize span').innerHTML=complete?'<b>20 diamonds earned</b> · Well done!':'<b>20 diamonds</b> after all 10 steps';
+  $('beginner-prize-title').textContent=complete?'20 diamonds earned':'20 diamonds';
+  $('beginner-prize-note').textContent=complete?'Well done, farmer!':'After all 10 steps';
   $('all-quests-mobile').textContent=complete?'Review beginner guide':'View all 10 steps';
   if(!dialog.open)return;
   $('beginner-summary').innerHTML=`<span><strong>${done} of ${steps.length}</strong> steps completed</span><span><span aria-hidden="true">◇</span>${BEGINNER_REWARD} diamonds ${complete?'earned':'to earn'}</span>`;

@@ -1,5 +1,9 @@
 # Harvest Tycoon — September 17 update
 
+## Beginner guide alignment fix
+
+Reward text now uses dedicated text elements, so icon replacement cannot duplicate it inside the diamond sprite. The guide has consistent padding, a flexible progress bar, an always-visible count, contained action buttons and a correctly sized reward icon. All other features from the full September 17 update are included. This is a frontend-only fix; no Supabase update is needed.
+
 ## Included
 
 - A new English welcome page with a large original logo, sharp farm illustration, feature icons and a responsive account card.
