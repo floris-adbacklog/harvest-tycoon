@@ -8140,16 +8140,30 @@ async function Da(e) {
 	}
 	return t;
 }
+async function Oa(e) {
+	let { data: t, error: n } = await K.functions.invoke("diamond-checkout", {
+		body: e,
+		timeout: 2e4
+	});
+	if (n) {
+		let e;
+		try {
+			e = await n.context?.json();
+		} catch {}
+		throw Error(e?.error || "Could not connect to checkout. Please try again.");
+	}
+	return t;
+}
 //#endregion
 //#region src/main.js
-var q = (e) => document.getElementById(e), Oa = null, J = "signin", Y = 0, X = null, Z = null, ka = !1, Aa = !1, ja = !1;
+var q = (e) => document.getElementById(e), ka = null, J = "signin", Y = 0, X = null, Z = null, Aa = !1, ja = !1, Ma = !1;
 function Q(e, t) {
 	document.body.dataset.phase = e, q("loading-screen").hidden = e !== "checking", q("welcome").hidden = e === "checking" || e === "authenticated", q("farm-host").hidden = e !== "authenticated", t && (q("loading-copy").textContent = t);
 }
-function Ma() {
-	Oa?.dispose(), Oa = null, Y++, Z?.remove(), Z = null, X = null, delete window.harvestBridge, q("farm-host").replaceChildren();
+function Na() {
+	ka?.dispose(), ka = null, Y++, Z?.remove(), Z = null, X = null, delete window.harvestBridge, q("farm-host").replaceChildren();
 }
-function Na(e, t = !1) {
+function Pa(e, t = !1) {
 	J = e;
 	let n = J === "register", r = J === "name";
 	q("name-row").hidden = !n && !r, q("player-name").required = n || r;
@@ -8160,17 +8174,17 @@ function Na(e, t = !1) {
 	}), q(n || r ? "player-name" : "email").focus({ preventScroll: !0 }));
 }
 function $(e = "") {
-	Ma(), Na("signin"), Q("unauthenticated"), q("account-message").textContent = e;
+	Na(), Pa("signin"), Q("unauthenticated"), q("account-message").textContent = e;
 }
-function Pa(e = "Your farm is safe. Reconnect to continue.") {
-	Ma(), Q("error"), q("account-title").textContent = "A little pause.", q("account-copy").textContent = e, q("account-message").textContent = "", q("account-form").hidden = !0, document.querySelector(".account-tabs").hidden = !0, q("connection-actions").hidden = !1;
+function Fa(e = "Your farm is safe. Reconnect to continue.") {
+	Na(), Q("error"), q("account-title").textContent = "A little pause.", q("account-copy").textContent = e, q("account-message").textContent = "", q("account-form").hidden = !0, document.querySelector(".account-tabs").hidden = !0, q("connection-actions").hidden = !1;
 }
-async function Fa() {
+async function Ia() {
 	if (!K) {
 		$();
 		return;
 	}
-	Ma(), Q("checking", "Signing you out…");
+	Na(), Q("checking", "Signing you out…");
 	try {
 		let e = await K.auth.signOut();
 		if (e.error) throw e.error;
@@ -8180,12 +8194,12 @@ async function Fa() {
 		$(), q("password").value = "", q("confirm-password").value = "";
 	}
 }
-async function Ia() {
-	if (Aa) {
-		ja = !0;
+async function La() {
+	if (ja) {
+		Ma = !0;
 		return;
 	}
-	Aa = !0, Ma();
+	ja = !0, Na();
 	let n = Y;
 	Q("checking", "Checking your account…");
 	try {
@@ -8204,31 +8218,31 @@ async function Ia() {
 		} catch (e) {
 			if (n !== Y) return;
 			if (e.code === "USERNAME_REQUIRED") {
-				Q("unauthenticated"), Na("name");
+				Q("unauthenticated"), Pa("name");
 				return;
 			}
 			throw e;
 		}
 		if (n !== Y) return;
 		if (i.profile?.player_id !== r.id) {
-			ja = !0;
+			Ma = !0;
 			return;
 		}
-		Oa = t(K, r.id);
+		ka = t(K, r.id);
 		let a = {
 			playerId: X,
-			presence: Oa,
+			presence: ka,
 			serverNow: i.serverNow,
 			takeInitial() {
 				let e = i;
 				return i = null, e;
 			},
-			signOut: Fa,
+			signOut: Ia,
 			async leaderboard(t = "currency") {
 				if (n !== Y) throw Error("Your session has ended.");
 				return {
 					...await e(K, r.id, t),
-					...Oa?.snapshot()
+					...ka?.snapshot()
 				};
 			},
 			async request(e) {
@@ -8238,21 +8252,43 @@ async function Ia() {
 					if (n !== Y || t.profile?.player_id !== r.id) throw Error("Your session has ended.");
 					return t;
 				} catch (e) {
-					throw n === Y && e.code !== "ACTION_REJECTED" && e.status !== 400 && (e.status === 401 ? (await K.auth.signOut({ scope: "local" }), $("Your session has ended. Please sign in again.")) : Pa(e.message)), e;
+					throw n === Y && e.code !== "ACTION_REJECTED" && e.status !== 400 && (e.status === 401 ? (await K.auth.signOut({ scope: "local" }), $("Your session has ended. Please sign in again.")) : Fa(e.message)), e;
 				}
 			}
 		};
-		window.harvestBridge = a, Z = document.createElement("iframe"), Z.title = "Harvest Tycoon farm", Z.src = "/farm.html", q("farm-host").append(Z), Q("authenticated");
+		a.payments = async (e) => {
+			if (n !== Y) throw Error("Your session has ended.");
+			let t = await Oa(e);
+			if (n !== Y) throw Error("Your session has ended.");
+			return t;
+		}, a.checkout = async (e, t) => {
+			let n = await a.payments({
+				operation: "create",
+				pack: e,
+				requestId: t
+			}), r = new URL(n.url);
+			if (r.protocol !== "https:" || r.hostname !== "checkout.stripe.com") throw Error("Invalid checkout destination.");
+			location.assign(r.href);
+		}, a.paymentReturn = () => {
+			let e = new URLSearchParams(location.search);
+			return {
+				id: e.get("purchase"),
+				cancelled: e.get("checkout") === "cancelled"
+			};
+		}, a.clearPaymentReturn = () => {
+			let e = new URL(location.href);
+			e.searchParams.delete("purchase"), e.searchParams.delete("checkout"), history.replaceState(null, "", e.pathname + e.search + e.hash);
+		}, window.harvestBridge = a, Z = document.createElement("iframe"), Z.title = "Harvest Tycoon farm", Z.src = "/farm.html", q("farm-host").append(Z), Q("authenticated");
 	} catch (e) {
-		n === Y && (e.status === 401 ? $("Your session has ended. Please sign in again.") : Pa(Ta(e)));
+		n === Y && (e.status === 401 ? $("Your session has ended. Please sign in again.") : Fa(Ta(e)));
 	} finally {
-		Aa = !1, ja && (ja = !1, queueMicrotask(Ia));
+		ja = !1, Ma && (Ma = !1, queueMicrotask(La));
 	}
 }
 document.querySelectorAll("[data-mode]").forEach((e) => e.onclick = () => {
-	ka || Na(e.dataset.mode, !0);
+	Aa || Pa(e.dataset.mode, !0);
 }), q("account-form").onsubmit = async (e) => {
-	if (e.preventDefault(), !(ka || !e.currentTarget.reportValidity())) {
+	if (e.preventDefault(), !(Aa || !e.currentTarget.reportValidity())) {
 		if ((J === "register" || J === "name") && !wa(q("player-name").value)) {
 			q("account-message").textContent = "Use 3–20 letters, numbers, spaces, underscores or hyphens.";
 			return;
@@ -8262,10 +8298,10 @@ document.querySelectorAll("[data-mode]").forEach((e) => e.onclick = () => {
 			return;
 		}
 		if (!Ca) {
-			Pa("Account access is temporarily unavailable.");
+			Fa("Account access is temporarily unavailable.");
 			return;
 		}
-		ka = !0, q("account-submit").disabled = !0, document.querySelectorAll("[data-mode]").forEach((e) => e.disabled = !0), q("account-message").textContent = J === "register" ? "Creating your account…" : "Opening your farm…";
+		Aa = !0, q("account-submit").disabled = !0, document.querySelectorAll("[data-mode]").forEach((e) => e.disabled = !0), q("account-message").textContent = J === "register" ? "Creating your account…" : "Opening your farm…";
 		try {
 			if (J === "name") {
 				let { error: e } = await K.auth.updateUser({ data: { username: q("player-name").value.trim() } });
@@ -8291,28 +8327,28 @@ document.querySelectorAll("[data-mode]").forEach((e) => e.onclick = () => {
 				});
 				if (e) throw e;
 			}
-			await Ia(), q("password").value = "", q("confirm-password").value = "";
+			await La(), q("password").value = "", q("confirm-password").value = "";
 		} catch (e) {
 			q("account-message").textContent = Ta(e);
 		} finally {
-			ka = !1, q("account-submit").disabled = !1, document.querySelectorAll("[data-mode]").forEach((e) => e.disabled = !1);
+			Aa = !1, q("account-submit").disabled = !1, document.querySelectorAll("[data-mode]").forEach((e) => e.disabled = !1);
 		}
 	}
-}, q("retry-connection").onclick = Ia, q("leave-account").onclick = Fa, window.addEventListener("offline", () => Pa()), window.addEventListener("online", () => {
-	document.body.dataset.phase === "error" && Ia();
+}, q("retry-connection").onclick = La, q("leave-account").onclick = Ia, window.addEventListener("offline", () => Fa()), window.addEventListener("online", () => {
+	document.body.dataset.phase === "error" && La();
 }), K && K.auth.onAuthStateChange((e, t) => {
 	if (e === "SIGNED_OUT") {
 		$();
 		return;
 	}
-	if (e === "SIGNED_IN" && !ka && Aa && (!X || X !== t?.user.id)) {
-		Ma(), Q("checking", "Checking your account…"), ja = !0;
+	if (e === "SIGNED_IN" && !Aa && ja && (!X || X !== t?.user.id)) {
+		Na(), Q("checking", "Checking your account…"), Ma = !0;
 		return;
 	}
-	X && t?.user.id !== X && (Ma(), Q("checking", "Checking your account…")), e === "SIGNED_IN" && !ka && !Z && setTimeout(Ia, 0);
+	X && t?.user.id !== X && (Na(), Q("checking", "Checking your account…")), e === "SIGNED_IN" && !Aa && !Z && setTimeout(La, 0);
 });
-async function La() {
-	if (!Z || Aa) return;
+async function Ra() {
+	if (!Z || ja) return;
 	let e = Y;
 	try {
 		let t = await Ea();
@@ -8323,10 +8359,10 @@ async function La() {
 		}
 		Z.contentWindow.harvestRefresh ? await Z.contentWindow.harvestRefresh() : await window.harvestBridge.request({ operation: "load" });
 	} catch (t) {
-		e === Y && Pa(Ta(t));
+		e === Y && Fa(Ta(t));
 	}
 }
 document.addEventListener("visibilitychange", () => {
-	document.hidden || La();
-}), setInterval(La, 6e4), Ia();
+	document.hidden || Ra();
+}), setInterval(Ra, 6e4), La();
 //#endregion

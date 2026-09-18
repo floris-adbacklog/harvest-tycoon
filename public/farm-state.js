@@ -328,6 +328,17 @@ export const DAILY_REWARDS=[40,55,70,85,100,120,160];
 export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
 export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]);
 export const DIAMOND_PACKS=Object.freeze([{amount:50,price:'€1.99'},{amount:300,price:'€9.99'},{amount:1000,price:'€24.99'}]);
+export const SINGLE_CROP_COST=5;
+export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
+ if(expectedCost!==SINGLE_CROP_COST)throw new Error('The price has changed. Reload the game.');
+ if(!Number.isInteger(id)||id<0||id>=state.plots.length)throw new Error('Choose one unlocked field.');
+ const plot=state.plots[id];
+ if(!plot.crop||plot.readyAt<=now)throw new Error('Choose a crop that is still growing.');
+ if(state.diamonds<SINGLE_CROP_COST)throw new Error('You need 5 diamonds.');
+ state.diamonds-=SINGLE_CROP_COST;plot.readyAt=now;
+ state.stats.boosts_used=(state.stats.boosts_used??0)+1;
+ return {field:id,crop:plot.crop,cost:SINGLE_CROP_COST,affected:1};
+}
 export const BOOSTS=Object.freeze({
  xp:{name:'Double XP',cost:20,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},
  coins:{name:'Double earnings',cost:60,duration:1800000,art:'coins',description:'Double your market sales and delivery coins for 30 minutes. Passive income and gifts stay the same.'},
@@ -536,6 +547,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
 }
 function dispatchFarmAction(state,action,now,random){
  switch(action.type){
+  case 'finish_crop':return finishSingleCrop(state,action.id,action.expectedCost,now);
   case 'buy_boost':{
    if(!Object.hasOwn(BOOSTS,action.boost))throw new Error('Choose a valid boost.');
    if(action.expectedCost!==BOOSTS[action.boost].cost)throw new Error('Boost prices have changed. Reload the game to see current prices.');
@@ -573,7 +585,10 @@ export const MASTERY_TIERS=[{name:'Bronze',target:25,coins:100,xp:25},{name:'Sil
 export const CHORES=Object.freeze({
  weeds:{name:'Clear the paths',description:'Pull weeds along the farm paths.',icon:'shovel',coins:18,xp:4,cooldown:60000,baseChance:60,maxChance:100},
  troughs:{name:'Fill the water troughs',description:'Fresh water for the animals.',icon:'droplets',coins:40,xp:8,cooldown:180000,baseChance:40,maxChance:80,requires:'weeds'},
- sorting:{name:'Sort the seed boxes',description:'Get tomorrow’s planting ready.',icon:'package-open',coins:90,xp:16,cooldown:480000,baseChance:20,maxChance:60,requires:'troughs'}
+ sorting:{name:'Sort the seed boxes',description:'Get tomorrow’s planting ready.',icon:'package-open',coins:90,xp:16,cooldown:480000,baseChance:20,maxChance:60,requires:'troughs'},
+ fences:{name:'Mend the orchard fence',description:'Repair loose rails and keep the orchard safe.',icon:'fence',coins:180,xp:35,cooldown:900000,baseChance:30,maxChance:70,requires:'sorting'},
+ irrigation:{name:'Restore the irrigation',description:'Clear the channels and bring water to the far fields.',icon:'waves',coins:330,xp:65,cooldown:1500000,baseChance:25,maxChance:65,requires:'fences'},
+ harvestfair:{name:'Prepare the harvest fair',description:'Arrange a prize-worthy display of the farm’s best goods.',icon:'party-popper',coins:600,xp:120,cooldown:2700000,baseChance:20,maxChance:60,requires:'irrigation'}
 });
 export function choreStatus(state,id,now=Date.now()){
  if(!Object.hasOwn(CHORES,id))throw new Error('Choose a farm chore.');

@@ -12,3 +12,8 @@
 .hero-logo,.hero-logo img{pointer-events:none;user-select:none;-webkit-user-select:none}
 .welcome-header{position:relative;z-index:2}
 .header-link{position:relative;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;white-space:nowrap}
+/* Mobile players reach the account form before promotional content. */
+@media(max-width:720px){
+ #welcome{padding:12px 16px}.welcome-header{display:none}.welcome-layout{display:flex;flex-direction:column;gap:12px;margin:0 auto;padding:0}.welcome-story{display:contents}.hero-logo{order:0;width:210px;height:100px;flex:0 0 100px;margin:0;overflow:hidden}.hero-logo img{width:210px}.account-card{order:1;padding:18px 20px;border-radius:20px}.story-copy{order:2;padding:26px 0 4px}.card-top{display:none}.account-card h2{font-size:25px;margin:0 0 5px}.account-card>p{font-size:13px;margin-bottom:10px}.account-tabs{margin:12px 0}.account-card label{font-size:12px}.account-card input{font-size:16px;min-height:44px}.account-card .form-row{margin-bottom:10px}.welcome-footer{padding:24px 0}.account-card{scroll-margin-top:12px}
+}
+@media(max-width:720px) and (max-height:700px){.hero-logo{height:68px;flex-basis:68px;width:180px}.hero-logo img{width:175px}.account-card{padding:14px 18px}.account-card>p{display:none}.account-card h2{font-size:23px}.account-tabs{margin:10px 0}}

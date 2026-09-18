@@ -25,7 +25,7 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom}){
   if(event.button!==0||!isReady())return;
   event.preventDefault();canvas.setPointerCapture(event.pointerId);
   const target=pick(event);
-  const point={x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,target,moved:false,multi:false};
+  const point={x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,target,moved:false,multi:false,threshold:event.pointerType==='touch'?12:8};
   pointers.set(event.pointerId,point);
   if(pointers.size>1){for(const item of pointers.values())item.multi=true;return;}
  });
@@ -36,7 +36,7 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom}){
   const pair=[...pointers.values()].filter(p=>p!==point)[0];
   const before=pair?distance(point,pair):0,oldCenter=pair?midpoint(point,pair):null;
   point.x=event.clientX;point.y=event.clientY;
-  if(Math.hypot(point.x-point.startX,point.y-point.startY)>8)point.moved=true;
+  if(Math.hypot(point.x-point.startX,point.y-point.startY)>point.threshold)point.moved=true;
   if(pair){
    const center=midpoint(point,pair);pan(center.x-oldCenter.x,center.y-oldCenter.y);
    if(before>8)zoom(distance(point,pair)/before);

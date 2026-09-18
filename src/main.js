@@ -1,5 +1,5 @@
 import {createFarmPresence} from './presence.js';
-import {supabase,isConfigured,verifiedUser,validUsername,farmRequest,cloudError} from './supabase.js';
+import {supabase,isConfigured,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError} from './supabase.js';
 import {fetchLeaderboard} from './leaderboard.js';
 const $=id=>document.getElementById(id);
 let presence=null;
@@ -25,6 +25,10 @@ async function openFarm(){
    try{const data=await farmRequest(body);if(ticket!==generation||data.profile?.player_id!==user.id)throw new Error('Your session has ended.');return data;}
    catch(error){if(ticket===generation&&error.code!=='ACTION_REJECTED'&&error.status!==400){if(error.status===401){await supabase.auth.signOut({scope:'local'});landing('Your session has ended. Please sign in again.');}else unavailable(error.message);}throw error;}
   }};
+  bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
+  bridge.checkout=async(pack,requestId)=>{const data=await bridge.payments({operation:'create',pack,requestId});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
+  bridge.paymentReturn=()=>{const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
+  bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   window.harvestBridge=bridge;frame=document.createElement('iframe');frame.title='Harvest Tycoon farm';frame.src='/farm.html';$('farm-host').append(frame);phase('authenticated');
  }catch(error){if(ticket===generation){if(error.status===401){landing('Your session has ended. Please sign in again.');}else unavailable(cloudError(error));}}
  finally{checking=false;if(reopen){reopen=false;queueMicrotask(openFarm);}}

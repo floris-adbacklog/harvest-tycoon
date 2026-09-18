@@ -1,5 +1,5 @@
 /* Activity markers live on the farm, leaving the menus and HUD clear. */
-.activity-label{position:absolute;transform:translate(-50%,-110%);display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;line-height:0;aspect-ratio:1;overflow:hidden;border:2px solid #c6d5ad;border-radius:50%;background:#fffdf5;color:#4c6b47;pointer-events:none;box-shadow:0 3px 7px #27442d24}
+.activity-label{position:absolute;transform:translate(-50%,-110%);display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;line-height:0;aspect-ratio:1;overflow:hidden;border:2px solid #c6d5ad;border-radius:50%;background:#fffdf5;color:#4c6b47;pointer-events:auto;touch-action:manipulation;z-index:3;box-shadow:0 3px 7px #27442d24}
 .activity-label>svg{display:block;width:26px;height:26px;min-width:26px;max-width:26px;min-height:26px;max-height:26px;aspect-ratio:1;margin:0;padding:0;justify-self:center;align-self:center}
 .activity-label.available{background:#fff0b2;border-color:#e3b447;color:#765718}.activity-label.working{background:#def0d7;border-color:#83ad6d}
 #activities-dialog{max-width:620px}#activities-dialog .dialog-heading{margin-bottom:16px}

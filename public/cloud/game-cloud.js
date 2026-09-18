@@ -85,49 +85,89 @@ function i({ onOpen: e, onName: t, onRetry: i, onSignIn: a, onRegister: o, onSig
 	};
 }
 //#endregion
+//#region src/payment-ui.js
+function a(e) {
+	let t = e.paymentReturn?.();
+	if (!t?.id) return;
+	let n = document.createElement("dialog");
+	n.setAttribute("aria-labelledby", "payment-result-title"), n.style.cssText = "width:min(420px,calc(100vw - 32px));box-sizing:border-box;padding:28px;border:1px solid #c9d3b6;border-radius:24px;background:#fffdf3;color:#29412d;", n.innerHTML = "<h2 id=\"payment-result-title\">Your diamond purchase</h2><p role=\"status\" style=\"line-height:1.6\"></p><button type=\"button\" data-retry>Check payment</button> <button type=\"button\" data-close>Back to farm</button>", document.body.append(n);
+	let r = n.querySelector("p"), i = n.querySelector("[data-retry]"), a, o = 0, s = !1, c = () => {
+		s = !0, clearTimeout(a);
+	};
+	n.addEventListener("close", () => {
+		c(), e.clearPaymentReturn?.(), n.remove();
+	}), window.addEventListener("pagehide", c, { once: !0 }), n.querySelector("[data-close]").onclick = () => n.close();
+	async function l() {
+		clearTimeout(a), i.disabled = !0;
+		try {
+			let n = await e.payments({
+				operation: "status",
+				purchaseId: t.id
+			});
+			if (s) return;
+			if (n.status === "credited") {
+				r.textContent = `Payment confirmed. ${n.diamonds} diamonds have been added to your farm!`, i.hidden = !0, await window.harvestRefresh?.();
+				return;
+			}
+			if (n.status === "test_paid") {
+				r.textContent = "Test payment confirmed. No real diamonds were added.", i.hidden = !0;
+				return;
+			}
+			r.textContent = t.cancelled ? "Checkout was closed. No diamonds have been added. If you completed a payment, check its status here." : "Waiting for payment confirmation. You can keep playing; your diamonds will arrive automatically once payment is confirmed.", !t.cancelled && ++o < 20 && (a = setTimeout(l, 3e3));
+		} catch (e) {
+			s || (r.textContent = e.message);
+		} finally {
+			i.disabled = !1;
+		}
+	}
+	i.onclick = () => {
+		o = 0, l();
+	}, r.textContent = "Checking your payment…", n.showModal(), l();
+}
+//#endregion
 //#region src/game-cloud.js
-var a;
+var o;
 try {
-	a = window.parent === window ? null : window.parent.harvestBridge;
+	o = window.parent === window ? null : window.parent.harvestBridge;
 } catch {}
-if (!a) location.replace("/play.html");
-else if (window.harvestInitialFarm = a.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
+if (!o) location.replace("/play.html");
+else if (window.harvestInitialFarm = o.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
 else {
 	document.body.hidden = !1;
 	let n = i({
-		onOpen: s,
-		onRetry: s,
+		onOpen: c,
+		onRetry: c,
 		onName: async (e) => {
-			let t = await a.request({
+			let t = await o.request({
 				operation: "rename",
 				username: e
 			});
-			n.setProfile(t.profile, { id: a.playerId });
+			n.setProfile(t.profile, { id: o.playerId });
 		},
-		onSignOut: () => a.signOut()
+		onSignOut: () => o.signOut()
 	});
-	n.setProfile(window.harvestInitialFarm.profile, { id: a.playerId }), n.status("Live rankings");
-	let r = a.presence?.subscribe((t) => {
+	n.setProfile(window.harvestInitialFarm.profile, { id: o.playerId }), n.status("Live rankings");
+	let r = o.presence?.subscribe((t) => {
 		n.open && e(n.results, t);
 	});
 	window.addEventListener("pagehide", () => r?.(), { once: !0 });
-	let o = 0;
-	async function s() {
-		let e = ++o, r = n.category;
+	let s = 0;
+	async function c() {
+		let e = ++s, r = n.category;
 		n.message("Gathering the latest scores…"), n.results.setAttribute("aria-busy", "true");
 		try {
-			let i = await a.leaderboard(r);
-			if (e !== o) return;
-			t(n.results, i, a.playerId), n.status("Up to date");
+			let i = await o.leaderboard(r);
+			if (e !== s) return;
+			t(n.results, i, o.playerId), n.status("Up to date");
 		} catch (t) {
-			e === o && (n.message(t.message), n.status("Could not refresh"));
+			e === s && (n.message(t.message), n.status("Could not refresh"));
 		} finally {
-			e === o && n.results.setAttribute("aria-busy", "false");
+			e === s && n.results.setAttribute("aria-busy", "false");
 		}
 	}
 	await import(
 		/* @vite-ignore */
 		"/game.js"
-);
+), a(o);
 }
 //#endregion

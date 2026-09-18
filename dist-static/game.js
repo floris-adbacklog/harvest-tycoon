@@ -318,6 +318,10 @@ function pointerTarget(event){
   if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type,id};
  }
  const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);
+ // Hands-on stations have dedicated solid hit volumes: glass, open roofs and
+ // small props must not lose taps to scenery or nearby utility models.
+ const stationHit=raycaster.intersectObjects(farmLife?.targets()??[],true)[0];
+ if(stationHit){let node=stationHit.object;while(node){if(node.userData.activity)return {type:'activity',id:node.userData.activity};node=node.parent;}}
  const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).map(v=>v.object),...Array.from(utilityViews.values()).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?[windmillRotor]:[]),...(farmLife?.targets()??[])];
  for(const hit of raycaster.intersectObjects(targets,true)){let obj=hit.object;while(obj){if(obj.userData.activity)return {type:'activity',id:obj.userData.activity};if(obj.userData.utility)return {type:'utility',id:obj.userData.utility};if(obj.userData.building)return {type:'building',id:obj.userData.building};if(Number.isInteger(obj.userData.plot))return {type:'plot',id:obj.userData.plot};obj=obj.parent;}}
  return null;

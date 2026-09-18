@@ -12,8 +12,8 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  function station(id,object,x,z){
   object.userData.activity=id;
   const bounds=new THREE.Box3().setFromObject(object),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
-  const hit=new THREE.Mesh(new THREE.BoxGeometry(Math.max(size.x,2.4),Math.max(size.y,1.6),Math.max(size.z,2.4)),new THREE.MeshBasicMaterial({visible:false}));
-  hit.position.copy(center);hit.userData.activity=id;scene.add(hit);hitAreas.push(hit);
+  const hit=new THREE.Mesh(new THREE.BoxGeometry(Math.max(size.x+.6,2.8),Math.max(size.y+.4,1.8),Math.max(size.z+.6,2.8)),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
+  hit.position.copy(center);hit.userData.activity=id;scene.add(hit);hit.updateMatrixWorld(true);hitAreas.push(hit);
   const height=new THREE.Box3().setFromObject(object).max.y;
   const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=`<i data-lucide="${ACTIVE_STATIONS[id].icon}" data-line-icon aria-hidden="true"></i>`;label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
   views.set(id,{object,x,z,height,label});return object;

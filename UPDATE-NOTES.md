@@ -169,3 +169,12 @@ Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` vers
 - The GitHub integration rejected writes with HTTP 403, “Resource not accessible by integration”. No frontend commit was pushed by ChatGPT.
 - All 75 selected GLBs were parsed with the game’s GLTFLoader. Scene construction, station registration, camera-label positioning and animation updates ran without invalid transforms; the model layout was inspected with a software render.
 - A full browser preview is unavailable in this workspace. The new UI has not been tested on a physical phone or in an authenticated live browser. Upload through GitHub Desktop, then check the new controls and activities on Vercel.
+
+## September 18 — chores, mobile entry and payments foundation
+
+- Six sequential chores with distinct line icons, success bars and reward result dialogs. Practice and existing progress are preserved. New chores: Mending the orchard fence (15 minutes, 180 coins, 35 XP), Restoring irrigation (25 minutes, 330 coins, 65 XP), Preparing the harvest fair (45 minutes, 600 coins, 120 XP). Rewards require success; every attempt gives practice.
+- Mobile account access is positioned before marketing copy, with compact branding and immediately visible Sign in / Create account tabs.
+- Hands-on activity icons are directly tappable. Solid station hit volumes get priority over scenery; touch movement tolerance is increased slightly while dragging and pinch remain supported. Actual Android hardware verification is still needed.
+- Finish one crop costs 5 diamonds: select one growing field and finish its timer. The crop remains in the field to harvest. Empty/ready fields and insufficient balances are rejected without charging.
+- Stripe Checkout and signed webhook processing are implemented, with authoritative pack prices and atomic, idempotent diamond credits. Database/schema/functions have been deployed; see PAYMENT-SETUP.md for the remaining manual webhook and secret steps. Stripe connector permissions blocked webhook creation. Checkout has not been verified end to end and must not be represented as live yet.
+- 120 automated tests pass, including payment validation, existing farming/input regressions, all six chore progression stages, and single-crop spending rules. The production static build passes.

@@ -24,3 +24,8 @@ export async function farmRequest(body){
  }
  return data;
 }
+export async function paymentRequest(body){
+ const {data,error}=await supabase.functions.invoke('diamond-checkout',{body,timeout:20000});
+ if(error){let detail;try{detail=await error.context?.json();}catch{}throw new Error(detail?.error||'Could not connect to checkout. Please try again.');}
+ return data;
+}
