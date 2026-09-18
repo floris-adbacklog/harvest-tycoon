@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const seconds=formatDuration;
 export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate}){
- let currentBuilding=null,marketTab='crops',selectedCrop='wheat',seedFilter='all',lastJobReady='',lastCoinBoost=false;
+ let currentBuilding=null,marketTab='crops',selectedCrop='wheat',seedFilter='all',lastJobReady='',lastCoinBoost=false,mutating=false;
  function itemArt(key){return art(key,'product-art');}
  function show(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();}
  function itemList(items,requirements=false){return Object.entries(items).map(([key,n])=>`<span class="ingredient ${requirements&&state.inventory[key]<n?'missing':''}">${itemArt(key)}<span>${requirements?`${state.inventory[key]}/${n}`:`${n}×`} ${ITEMS[key].name}</span></span>`).join('');}
@@ -50,12 +50,12 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    content+=`<div class="recipe-section-heading"><h3>What shall we make?</h3><span>Ingredients are used when you start.</span></div><div class="recipe-list">`;
    for(const [rid,r]of Object.entries(RECIPES).filter(([,r])=>r.building===key)){
     const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid),value=recipeValue(rid);
-    content+=`<article class="recipe-card"><div class="recipe-title"><h4>${r.name}</h4><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span></div><div class="recipe-flow"><div class="ingredients">${itemList(r.input,true)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div><p class="recipe-value">Ingredients sell for ${value.input} coins → goods sell for ${value.output} coins · <strong>+${value.added} coins from processing</strong></p><div class="recipe-footer"><span>${a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':`Ready to make · +${r.xp} XP`}</span><button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
+    content+=`<article class="recipe-card"><div class="recipe-title"><h4>${r.name}</h4><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span></div><div class="recipe-flow"><div class="ingredients">${itemList(r.input,true)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div><p class="recipe-value">Ingredients sell for ${value.input} coins → goods sell for ${value.output} coins · <strong>+${value.added} coins from processing</strong></p><div class="recipe-footer"><span>${a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':`Ready to make · +${r.xp} XP`}</span>${a.slots>1?`<label class="batch-picker">Batches<select data-batch-count="${rid}" aria-label="Number of batches for ${r.name}" ${a.maxCount?'':'disabled'}>${Array.from({length:Math.max(1,a.maxCount)},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></label>`:''}<button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
    }
    content+='</div>';
    if(key==='windmill'){
     const eligible=state.plots.filter(p=>p.crop&&p.readyAt>farmNow()&&!p.fertilized);
-    content+=`<section class="fertilizer-panel"><div>${art('fertilizer')}<h3>Give a field a head start</h3></div><p>Use 1 natural fertilizer to remove 35% of a crop’s remaining growing time. Once per planting; watering and extra care still work.</p><label for="fertilizer-field">Choose a growing field</label><select id="fertilizer-field" ${eligible.length?'':'disabled'}>${eligible.length?eligible.map(p=>`<option value="${p.id}">Field ${p.id+1} · ${CROPS[p.crop].name} · ${seconds(p.readyAt-farmNow())}</option>`).join(''):'<option>No eligible growing crops</option>'}</select><div class="fertilizer-action"><span>${state.inventory.fertilizer} fertilizer in storage</span><button id="fertilize-field" class="small-button" ${eligible.length&&state.inventory.fertilizer>0?'':'disabled'}>Use 1 fertilizer</button></div></section>`;
+    content+=`<section class="fertilizer-panel"><div>${art('fertilizer')}<h3>Give a field a head start</h3></div><p>Use 1 natural fertilizer to remove 35% of a crop’s remaining growing time. Once per planting; watering and extra care still work.</p><details class="fertilizer-select"><summary id="fertilizer-selection-label">Select growing fields · 0 selected</summary><div class="fertilizer-options">${eligible.length?eligible.map(p=>`<label><input type="checkbox" data-fertilizer-id="${p.id}"><span>Field ${p.id+1} · ${CROPS[p.crop].name}<small>${seconds(p.readyAt-farmNow())} remaining</small></span></label>`).join(''):'<p>No eligible growing crops.</p>'}</div></details><div class="fertilizer-action"><span id="fertilizer-cost">${state.inventory.fertilizer} fertilizer in storage · 0 required</span><button id="fertilize-field" class="small-button" disabled>Fertilize selected fields</button></div></section>`;
    }
    const cost=upgradeCost(state,key);
    content+=`<div class="upgrade-panel"><span class="upgrade-icon"><i data-lucide="circle-fading-arrow-up"></i></span><div><strong>${cost?`Upgrade to level ${bs.level+1}`:'Fully upgraded'}</strong><p>${cost?`${state.boosts.upgradeCredits?'Your 50% upgrade voucher is included in this price. ':''}${productionSlots(bs.level+1)} simultaneous batches, plus ${Math.round(productionSpeed(bs.level+1)*100)}% shorter production time than level 1. ${jobs.length?'Collect all current batches first.':'Applies to your next batches.'}`:`Level ${MAX_BUILDING_LEVEL}: ${slots} simultaneous batches; production takes ${Math.round(productionSpeed(MAX_BUILDING_LEVEL)*100)}% less time.`}</p></div><button id="upgrade-building" class="small-button" ${cost===null||state.coins<cost||jobs.length?'disabled':''}>${cost?`${cost} coins`:'Max level'}</button></div>`;
@@ -65,11 +65,29 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   $('expand-fields')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'expand'});onExpand();return `One new field! Your farm now has ${r.fields}.`;}));
   $('building-content').querySelectorAll('[data-collect-job]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'collect',building:key,jobId:btn.dataset.collectJob});return `Collected ${Object.entries(r.items).map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ')} · +${r.xp} XP.`;})));
   $('upgrade-building')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'upgrade',building:key});return `${b.name} upgraded to level ${r.level}.`;}));
-  $('fertilize-field')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'fertilize',id:Number($('fertilizer-field').value)});onExpand();return `Field ${r.id+1} fertilized! ${seconds(r.saved)} saved · +${r.xp} XP.`;}));
-  $('building-content').querySelectorAll('[data-recipe]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'produce',recipe:btn.dataset.recipe});return `${RECIPES[r.recipe].name} started. Come back to collect your batch.`;})));
+  const selectedFields=()=>[...$('building-content').querySelectorAll('[data-fertilizer-id]:checked')].map(input=>Number(input.dataset.fertilizerId));
+  $('building-content').querySelectorAll('[data-fertilizer-id]').forEach(input=>input.addEventListener('change',()=>{
+   const count=selectedFields().length;
+   $('fertilizer-selection-label').textContent=`Select growing fields · ${count} selected`;
+   $('fertilizer-cost').textContent=`${state.inventory.fertilizer} fertilizer in storage · ${count} required`;
+   $('fertilize-field').disabled=!count||count>state.inventory.fertilizer;
+   $('fertilize-field').textContent=count?`Fertilize ${count} ${count===1?'field':'fields'}`:'Fertilize selected fields';
+  }));
+  $('fertilize-field')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'fertilize',ids:selectedFields()});onExpand();return `${r.count} fields fertilized! Used ${r.cost} fertilizer · +${r.xp} XP.`;}));
+  $('building-content').querySelectorAll('[data-recipe]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'produce',recipe:btn.dataset.recipe,count:Number($('building-content').querySelector(`[data-batch-count="${btn.dataset.recipe}"]`)?.value??1)});return `${r.count} ${r.count===1?'batch':'batches'} of ${RECIPES[r.recipe].name} started.`;})));
+  $('building-content').querySelectorAll('[data-batch-count]').forEach(select=>select.addEventListener('change',()=>{
+   const count=Number(select.value),r=RECIPES[select.dataset.batchCount],card=select.closest('.recipe-card');
+   const multiply=items=>Object.fromEntries(Object.entries(items).map(([k,n])=>[k,n*count]));
+   card.querySelector('.recipe-flow .ingredients').innerHTML=itemList(multiply(r.input),true);
+   card.querySelector('.recipe-output').innerHTML=itemList(multiply(r.output));
+   card.querySelector('.recipe-footer>span').textContent=`Ready to make · +${r.xp*count} XP when collected`;
+   const value=recipeValue(select.dataset.batchCount);
+   card.querySelector('.recipe-value').textContent=`Total: ingredients sell for ${value.input*count} coins → goods sell for ${value.output*count} coins · +${value.added*count} coins from processing`;
+   card.querySelector('[data-recipe]').textContent=`Start ${count} ${count===1?'batch':'batches'}`;icons();
+  }));
   icons();
  }
- async function mutate(action){try{const message=await action();onChange();renderBuilding();$('building-feedback').textContent=message;notify(message);return {ok:true,message};}catch(e){$('building-feedback').textContent=e.message;notify(e.message);return {error:e.message};}}
+ async function mutate(action){if(mutating)return;mutating=true;try{const message=await action();onChange();renderBuilding();$('building-feedback').textContent=message;notify(message);return {ok:true,message};}catch(e){$('building-feedback').textContent=e.message;notify(e.message);return {error:e.message};}finally{mutating=false;}}
  function renderMarket(){
   const entries=Object.entries(marketTab==='crops'?CROPS:PRODUCTS);
   const multiplier=state.boosts.coinsUntil>farmNow()?2:1;

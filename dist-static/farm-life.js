@@ -3,7 +3,7 @@ import {ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','house_024','fir_tree_003','tree_008','stone_fence_001','trailer_001'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
- const views=new Map(),moving=[],effects=[],water=[],smoke=[];
+ const views=new Map(),hitAreas=[],moving=[],effects=[],water=[],smoke=[];
  function scenery(name,x,z,options={}){
   const o=cloneModel(name,x,z,options);
   // The surrounding valley never changes the playable camera bounds or hit tests.
@@ -11,6 +11,9 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  }
  function station(id,object,x,z){
   object.userData.activity=id;
+  const bounds=new THREE.Box3().setFromObject(object),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
+  const hit=new THREE.Mesh(new THREE.BoxGeometry(Math.max(size.x,2.4),Math.max(size.y,1.6),Math.max(size.z,2.4)),new THREE.MeshBasicMaterial({visible:false}));
+  hit.position.copy(center);hit.userData.activity=id;scene.add(hit);hitAreas.push(hit);
   const height=new THREE.Box3().setFromObject(object).max.y;
   const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=`<i data-lucide="${ACTIVE_STATIONS[id].icon}" data-line-icon aria-hidden="true"></i>`;label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
   views.set(id,{object,x,z,height,label});return object;
@@ -68,5 +71,5 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   if(reducedMotion)return;const v=views.get(id);if(!v)return;
   for(let i=0;i<7;i++){const o=new THREE.Mesh(new THREE.SphereGeometry(.1,4,3),new THREE.MeshBasicMaterial({color:i%2?0xffd458:0xd0e79d,transparent:true}));o.position.set(v.x+Math.cos(i)*.7,.8,v.z+Math.sin(i)*.7);scene.add(o);effects.push({obj:o,life:1.4});}
  }
- return {views,attach,position,animate,celebrate,watchProduction,targets:()=>[...views.values()].map(v=>v.object).concat(moving.filter(m=>m.kind!=='bee').map(m=>m.obj))};
+ return {views,attach,position,animate,celebrate,watchProduction,targets:()=>hitAreas.concat([...views.values()].map(v=>v.object).concat(moving.filter(m=>m.kind!=='bee').map(m=>m.obj)))};
 }

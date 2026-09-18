@@ -137,45 +137,57 @@ function i(e, n = "currency") {
 		};
 	});
 }
-function a(e, { rows: n, own: r, rank: a, category: o = "currency" }, s) {
-	let c = t(o);
+function a(e, { rows: n, own: r, rank: a, category: s = "currency", onlinePlayers: c = [], presenceReady: l = !1 }, u) {
+	let d = t(s);
 	if (e.replaceChildren(), !n.length) {
 		let t = document.createElement("p");
 		t.className = "leaderboard-empty", t.textContent = "The valley is quiet. Be the first farmer on this board.", e.append(t);
 		return;
 	}
-	let l = document.createElement("table");
-	l.className = "leaderboard-table";
-	let u = document.createElement("caption");
-	u.className = "leaderboard-caption", u.textContent = `${c.label} · Top 20`, l.append(u);
-	let d = document.createElement("thead"), f = document.createElement("tr");
+	let f = document.createElement("table");
+	f.className = "leaderboard-table";
+	let p = document.createElement("caption");
+	p.className = "leaderboard-caption", p.textContent = `${d.label} · Top 20`, f.append(p);
+	let m = document.createElement("thead"), h = document.createElement("tr");
 	for (let e of [
 		"Rank",
 		"Farmer",
-		c.heading
+		d.heading
 	]) {
 		let t = document.createElement("th");
-		t.scope = "col", t.textContent = e, f.append(t);
+		t.scope = "col", t.textContent = e, h.append(t);
 	}
-	d.append(f), l.append(d);
-	let p = document.createElement("tbody");
-	if (i(n, o).forEach(({ row: e, rank: t, score: n }) => {
+	m.append(h), f.append(m);
+	let g = document.createElement("tbody");
+	if (i(n, s).forEach(({ row: e, rank: t, score: n }) => {
 		let r = document.createElement("tr");
-		r.classList.toggle("is-you", e.player_id === s);
+		r.classList.toggle("is-you", e.player_id === u);
 		let i = document.createElement("td");
 		i.textContent = String(t);
-		let a = document.createElement("td"), o = document.createElement("strong"), c = document.createElement("small");
-		o.textContent = e.username, c.textContent = `Level ${e.level}${e.player_id === s ? " · You" : ""}`, a.append(o, c);
+		let a = document.createElement("td"), o = document.createElement("strong"), s = document.createElement("small");
+		o.textContent = e.username;
+		let c = document.createElement("span");
+		c.className = "online-dot", c.dataset.onlinePlayer = e.player_id, c.setAttribute("role", "img"), o.prepend(c), s.textContent = `Level ${e.level}${e.player_id === u ? " · You" : ""}`, a.append(o, s);
 		let l = document.createElement("td");
-		l.textContent = n.toLocaleString("en-US"), r.append(i, a, l), p.append(r);
-	}), l.append(p), e.append(l), r && a) {
+		l.textContent = n.toLocaleString("en-US"), r.append(i, a, l), g.append(r);
+	}), f.append(g), e.append(f), o(e, {
+		onlinePlayers: c,
+		presenceReady: l
+	}), r && a) {
 		let t = document.createElement("div");
 		t.className = "your-rank";
 		let n = document.createElement("strong"), i = document.createElement("span");
 		n.textContent = `Your rank: #${a}`;
-		let s = Number(r[o] ?? 0).toLocaleString("en-US");
-		i.textContent = o === "level" ? `Level ${s} · ${r.username}` : `${s} ${c.unit} · ${r.username}`, t.append(n, i), e.append(t);
+		let o = Number(r[s] ?? 0).toLocaleString("en-US");
+		i.textContent = s === "level" ? `Level ${o} · ${r.username}` : `${o} ${d.unit} · ${r.username}`, t.append(n, i), e.append(t);
 	}
 }
+function o(e, { onlinePlayers: t = [], presenceReady: n = !1 }) {
+	let r = new Set(t);
+	e.querySelectorAll("[data-online-player]").forEach((e) => {
+		let t = n && r.has(e.dataset.onlinePlayer);
+		e.classList.toggle("is-online", t), e.title = t ? "Online now" : n ? "Not currently online" : "Online status unavailable", e.setAttribute("aria-label", e.title);
+	});
+}
 //#endregion
-export { r as n, a as r, e as t };
+export { o as i, r as n, a as r, e as t };

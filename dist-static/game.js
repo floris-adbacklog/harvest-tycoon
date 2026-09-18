@@ -1,3 +1,4 @@
+import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, formatDuration, harvestYield, productionJobs } from './farm-state.js';
@@ -146,7 +147,7 @@ function decorate(){
 }
 function createPlots(){
  while(plots.length>state.plots.length){
-  const v=plots.pop();v.label.remove();
+  const v=plots.pop();v.label.remove();clearCropVisual(v.cropGroup);
   for(const object of [v.soil,v.hit,v.ring,v.cropGroup])scene.remove(object);
   for(const object of [v.hit,v.ring]){object.geometry.dispose();object.material.dispose();}
  }
@@ -164,7 +165,7 @@ function createPlots(){
 function drawCrop(i){
  const p=state.plots[i],v=plots[i];
  if(v.visualCrop!==p.crop){
-  v.cropGroup.clear();v.visualCrop=p.crop;
+  clearCropVisual(v.cropGroup);v.visualCrop=p.crop;
   if(p.crop){
    const c=CROPS[p.crop];
    if(p.crop==='pumpkin'){
@@ -172,7 +173,7 @@ function drawCrop(i){
    }else{
     const offsets=['wheat','barley'].includes(p.crop)?[-.65,0,.65].flatMap(x=>[-.65,0,.65].map(z=>[x,z])):[[-.55,-.55],[.55,-.55],[-.55,.55],[.55,.55]];
     for(const [dx,dz] of offsets){
-     const o=cloneModel(c.model,0,0,{height:c.height,rotation:p.crop==='sunflower'?-.55:.5+i*.22});scene.remove(o);v.cropGroup.add(o);o.position.set(dx,0,dz);if(c.tint)o.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(c.tint);}});
+     const o=cloneModel(c.model,0,0,{height:c.height,rotation:p.crop==='sunflower'?-.55:.5+i*.22});scene.remove(o);v.cropGroup.add(o);o.position.set(dx,0,dz);if(c.tint)o.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.userData.farmCropOwned=true;n.material.color.setHex(c.tint);}});
     }
    }
   }
@@ -196,7 +197,7 @@ function highlight(id){hovered=id;plots.forEach((v,i)=>v.ring.visible=i===id);fo
 function particleBurst(id,water=false){
  if(reducedMotion)return;
  const v=plots[id];
- for(let i=0;i<13;i++){
+ for(let i=0;i<13&&particles.length<100;i++){
   const mesh=new THREE.Mesh(new THREE.SphereGeometry(water?.045:.055,4,3),new THREE.MeshBasicMaterial({color:water?0x88d0e0:[0xffdb69,0xfff2bb,0xf6bf42][i%3],transparent:true}));
   mesh.position.set(v.x,.9,v.z);scene.add(mesh);particles.push({mesh,velocity:new THREE.Vector3((Math.random()-.5)*2,1.5+Math.random()*1.5,(Math.random()-.5)*2),life:1});
  }
@@ -238,7 +239,7 @@ async function claim(id){try{const r=await runAction({type:'quest',id});updateUI
 function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;}
 function resize(){
  if(!renderer||!camera)return;
- const width=world.clientWidth,height=world.clientHeight,aspect=width/height;
+ const width=world.clientWidth,height=world.clientHeight;if(width<=0||height<=0)return;const aspect=width/height;
  const ratio=Math.min(devicePixelRatio,mobileLayout.matches?1.5:1.75);
  if(ratio!==viewportRatio){renderer.setPixelRatio(ratio);viewportRatio=ratio;}
  if(width!==viewportWidth||height!==viewportHeight){renderer.setSize(width,height);viewportWidth=width;viewportHeight=height;}
@@ -310,6 +311,7 @@ function positionLabels(){
  }
 }
 function pointerTarget(event){
+ for(const [id,v] of farmLife?.views??[]){if(v.label.hidden)continue;const b=v.label.getBoundingClientRect(),pad=6;if(event.clientX>=b.left-pad&&event.clientX<=b.right+pad&&event.clientY>=b.top-pad&&event.clientY<=b.bottom+pad)return {type:'activity',id};}
  for(let i=0;i<plots.length;i++){const v=plots[i];if(!state.plots[i].crop||v.label.hidden)continue;const box=v.label.getBoundingClientRect();if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type:'plot',id:i};}
  for(const [type,views] of [['building',buildingViews],['utility',utilityViews],['activity',farmLife?.views??new Map()]])for(const [id,v] of views){
   if(v.label.hidden)continue;const box=v.label.getBoundingClientRect();
@@ -408,22 +410,22 @@ function registerAgentTools(){
 async function init(){
  bindUI();updateUI();
  try{
-  renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+  renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
   renderer.setClearColor(0xa8c777);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;});
   scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,180);
   const hemi=new THREE.HemisphereLight(0xfff9df,0x6d8153,2.35);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xfff2d7,3.1);sun.position.set(-20,35,18);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;sun.shadow.camera.near=1;sun.shadow.camera.far=95;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  const sun=new THREE.DirectionalLight(0xfff2d7,3.1);sun.position.set(-20,35,18);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;sun.shadow.camera.near=1;sun.shadow.camera.far=95;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
   const loader=new GLTFLoader();let loaded=0;
-  await Promise.all([client.load(),...modelNames.map(async name=>{
+  await Promise.all([client.load(),loadInBatches(modelNames,async name=>{
    const gltf=await loader.loadAsync(`/assets/models/${name}.glb`),object=gltf.scene;
    const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
    object.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));const group=new THREE.Group();group.add(object);
    object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});
    models.set(name,{object:group,size});loaded++;$('load-progress').value=Math.round(loaded/modelNames.length*100);$('load-text').textContent=`${loaded} / ${modelNames.length} little pieces of your farm`;
-  })]);
+  },4)]);
   decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));measureFarm();resize();icons();
   renderer.domElement.addEventListener('pointermove',e=>{
    if(e.pointerType!=='mouse'||e.buttons){highlight(-1);$('tooltip').hidden=true;return;}

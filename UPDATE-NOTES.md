@@ -1,4 +1,16 @@
-# Harvest Tycoon — September 18 quests and deliveries update
+# Harvest Tycoon — bulk actions and presence (prepared update)
+
+DEPLOYMENT STATUS: The matching farm-api server rules are deployed to Supabase as version 9 (ACTIVE, JWT verification enabled), with deployed sources checked against this package. Publish this frontend via GitHub/Vercel to expose the new controls. The static build and all 104 automated tests pass. Leaderboard presence remains unverified live, as described below.
+
+- Production quantity selector: start multiple batches in one atomic request, bounded by building level, free slots and available ingredients. Totals update before starting.
+- Fertilizer multi-select dropdown: select several growing fields, review the total cost and fertilize in one atomic request. One fertilizer per field; invalid selections consume nothing.
+- Delivery orders award 1–4 diamonds based on goods value, product types and ingredient variety. Coin/XP boosts do not multiply diamonds; completed orders cannot be claimed again.
+- Hands-on stations have larger 3D hit areas and padded icon targets.
+- Crop-specific cloned materials are disposed when crops change. Model loading is limited to four concurrent loads. Mobile shadows and antialiasing use less GPU memory. These address identified resource issues, but the reported intermittent crash has not been reproduced or definitively diagnosed.
+- Leaderboard presence implementation is included. LIVE VERIFICATION INCOMPLETE: a two-client Supabase Realtime test returned TIMED_OUT. No online-status success is claimed. Grey indicators can mean presence is unavailable. Presence must be verified before treating this feature as production-ready.
+- All player-facing text remains English.
+
+# Previous quests and deliveries update
 
 - 31 new regular quests (72 total), separate from the existing ten-step beginner guide. Includes all nine individual crops, successful chores, parallel production, each hands-on station, farm rounds, crafted goods, Honey deliveries, silo research and the farm stall.
 - 28 daily challenge templates, with three selected per day. Goals include Greenhouse care, Apiary Honey, workshop repairs, animal care, successful chores and parallel production. Locked chores and parallel production are excluded until available. Existing 2 / 2 / 4 diamond rewards and the completion bonus are preserved.

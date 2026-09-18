@@ -31,7 +31,7 @@ export function rankedRows(rows,category='currency'){
  categoryFor(category);let rank=0,lastScore=null;
  return rows.map((row,i)=>{const score=Number(row[category]??0);if(score!==lastScore)rank=i+1;lastScore=score;return {row,rank,score};});
 }
-export function renderLeaderboard(container,{rows,own,rank,category='currency'},playerId){
+export function renderLeaderboard(container,{rows,own,rank,category='currency',onlinePlayers=[],presenceReady=false},playerId){
  const config=categoryFor(category);container.replaceChildren();
  if(!rows.length){const p=document.createElement('p');p.className='leaderboard-empty';p.textContent='The valley is quiet. Be the first farmer on this board.';container.append(p);return;}
  const table=document.createElement('table');table.className='leaderboard-table';
@@ -42,8 +42,13 @@ export function renderLeaderboard(container,{rows,own,rank,category='currency'},
  rankedRows(rows,category).forEach(({row,rank:place,score:value})=>{
   const tr=document.createElement('tr');tr.classList.toggle('is-you',row.player_id===playerId);
   const n=document.createElement('td');n.textContent=String(place);
-  const name=document.createElement('td'),strong=document.createElement('strong'),small=document.createElement('small');strong.textContent=row.username;small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;name.append(strong,small);
+  const name=document.createElement('td'),strong=document.createElement('strong'),small=document.createElement('small');strong.textContent=row.username;const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');strong.prepend(dot);small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;name.append(strong,small);
   const score=document.createElement('td');score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
- });table.append(tbody);container.append(table);
+ });table.append(tbody);container.append(table);updateOnlineIndicators(container,{onlinePlayers,presenceReady});
  if(own&&rank){const line=document.createElement('div');line.className='your-rank';const label=document.createElement('strong'),value=document.createElement('span');label.textContent=`Your rank: #${rank}`;const score=Number(own[category]??0).toLocaleString('en-US');value.textContent=category==='level'?`Level ${score} · ${own.username}`:`${score} ${config.unit} · ${own.username}`;line.append(label,value);container.append(line);}
+}
+
+export function updateOnlineIndicators(container,{onlinePlayers=[],presenceReady=false}){
+ const online=new Set(onlinePlayers);
+ container.querySelectorAll('[data-online-player]').forEach(dot=>{const active=presenceReady&&online.has(dot.dataset.onlinePlayer);dot.classList.toggle('is-online',active);dot.title=active?'Online now':presenceReady?'Not currently online':'Online status unavailable';dot.setAttribute('aria-label',dot.title);});
 }

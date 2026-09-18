@@ -253,9 +253,18 @@ export function recipeAvailability(state,id){
  const r=RECIPES[id];
  const missing=Object.entries(r.input).filter(([k,n])=>state.inventory[k]<n).map(([k,n])=>({item:k,name:ITEMS[k].name,need:n,have:state.inventory[k]}));
  const b=state.buildings[r.building],used=productionJobs(b).length,slots=productionSlots(b.level),busy=used>=slots;
- return {canStart:!busy&&missing.length===0,missing,busy,used,slots};
+ const maxCount=Math.max(0,Math.min(slots-used,...Object.entries(r.input).map(([k,n])=>Math.floor(state.inventory[k]/n))));
+ return {canStart:!busy&&missing.length===0,missing,busy,used,slots,maxCount};
 }
-export function startProduction(state,id,now=Date.now()){
+export function startProduction(state,id,now=Date.now(),count=1){
+ if(!Number.isInteger(count)||count<1||count>MAX_BUILDING_LEVEL)throw new Error('Choose 1–10 batches.');
+ const a=recipeAvailability(state,id),r=RECIPES[id];
+ if(count>a.slots-a.used)throw new Error('Not enough free production slots. Collect a finished batch first.');
+ if(count>a.maxCount)throw new Error('Missing ingredients for this many batches.');
+ const batches=Array.from({length:count},()=>startSingleProduction(state,id,now));
+ return {...batches[0],count,batches};
+}
+function startSingleProduction(state,id,now=Date.now()){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
  const r=RECIPES[id],b=state.buildings[r.building],a=recipeAvailability(state,id);
  if(a.busy)throw new Error('All production slots are occupied. Collect a finished batch first.');
@@ -352,6 +361,16 @@ export function buyBoost(state,id,now=Date.now()){
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {boost:id,cost:status.cost,affected,expiresAt:status.duration?now+status.duration:null};
 }
+export function fertilizeFields(state,ids,now=Date.now()){
+ if(!Array.isArray(ids)||!ids.length||ids.length>MAX_PLOTS||new Set(ids).size!==ids.length)throw new Error('Select unique growing fields to fertilize.');
+ for(const id of ids){
+  if(!Number.isInteger(id)||id<0||id>=state.plots.length)throw new Error('Choose unlocked fields.');
+  const p=state.plots[id];if(!p.crop||p.readyAt<=now||p.fertilized)throw new Error('One of these fields is no longer eligible. Refresh your selection.');
+ }
+ if(state.inventory.fertilizer<ids.length)throw new Error(`You need ${ids.length} fertilizer for these fields.`);
+ const fields=ids.map(id=>fertilizeField(state,id,now));
+ return {fields,count:fields.length,cost:fields.length,xp:fields.reduce((n,f)=>n+f.xp,0)};
+}
 export function fertilizeField(state,id,now=Date.now()){
  if(!Number.isInteger(id)||id<0||id>=state.plots.length)throw new Error('Choose an unlocked field.');
  const plot=state.plots[id];
@@ -384,7 +403,13 @@ function availableDaily(state,q){
 function selectDailyTasks(state,day){
  return DAILY_POOLS.map((pool,id)=>{const eligible=pool.filter(q=>availableDaily(state,q));return {...eligible[(day+id)%eligible.length]};});
 }
-function orderQuote(order){return {...order,coins:Math.ceil(Object.entries(order.input).reduce((n,[key,count])=>n+ITEMS[key].sell*count,0)*1.4)};}
+export function deliveryDiamonds(order){
+ const entries=Object.entries(order.input),value=entries.reduce((n,[k,count])=>n+ITEMS[k].sell*count,0);
+ const crafted=entries.filter(([k])=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)).length;
+ const difficulty=value+crafted*250+Math.max(0,entries.length-1)*100;
+ return difficulty>=3000?4:difficulty>=1400?3:difficulty>=500?2:1;
+}
+function orderQuote(order){return {...order,diamonds:deliveryDiamonds(order),coins:Math.ceil(Object.entries(order.input).reduce((n,[key,count])=>n+ITEMS[key].sell*count,0)*1.4)};}
 function selectDailyOrders(state,day){
  const eligible=ORDER_POOL.filter(o=>levelOf(state)>=(o.minLevel??1));
  return [0,Math.floor(eligible.length/3),Math.floor(eligible.length*2/3)].map(offset=>orderQuote(eligible[(day+offset)%eligible.length]));
@@ -441,7 +466,7 @@ export function dailyTasks(state,now=Date.now()){
 }
 export function dailyOrders(state,now=Date.now()){
  normalizeFarm(state,now);const d=dayNumber(now);
- return state.daily.orderBoard.map((order,id)=>({...order,id,done:state.daily.orders.includes(id)}));
+ return state.daily.orderBoard.map((order,id)=>({...order,diamonds:deliveryDiamonds(order),id,done:state.daily.orders.includes(id)}));
 }
 export function claimDaily(state,id,day,now=Date.now()){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('A new day has started. Check the fresh challenges.');
@@ -467,9 +492,10 @@ export function deliverOrder(state,id,day,now=Date.now()){
  if(Object.entries(order.input).some(([k,n])=>state.inventory[k]<n))throw new Error('Gather the ingredients for this order first.');
  for(const[k,n]of Object.entries(order.input))state.inventory[k]-=n;
  state.daily.orders.push(id);state.coins+=order.coins;state.xp+=order.xp;state.stats.deliveries++;state.stats.earned+=order.coins;
+ state.diamonds+=order.diamonds;state.stats.delivery_diamonds=(state.stats.delivery_diamonds??0)+order.diamonds;
  if(order.input.honey)state.stats.honey_deliveries=(state.stats.honey_deliveries??0)+1;
  if(Object.keys(order.input).some(k=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)))state.stats.crafted_deliveries=(state.stats.crafted_deliveries??0)+1;
- return {coins:order.coins,xp:order.xp};
+ return {coins:order.coins,xp:order.xp,diamonds:order.diamonds};
 }
 export function claimLevelRewards(state){
  const levels=Array.from({length:levelOf(state)},(_,i)=>i+1).filter(l=>!state.levelRewards.includes(l));if(!levels.length)throw new Error('No new level rewards yet.');
@@ -515,7 +541,7 @@ function dispatchFarmAction(state,action,now,random){
    if(action.expectedCost!==BOOSTS[action.boost].cost)throw new Error('Boost prices have changed. Reload the game to see current prices.');
    return buyBoost(state,action.boost,now);
   }
-  case 'fertilize':return fertilizeField(state,action.id,now);
+  case 'fertilize':return action.ids===undefined?fertilizeField(state,action.id,now):fertilizeFields(state,action.ids,now);
   case 'stall_collect':return collectStall(state,now);
   case 'stall_upgrade':return upgradeStall(state,now);
   case 'chore':return doChore(state,action.id,now,random);
@@ -526,7 +552,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'project_collect':return completeProject(state,now);
   case 'field':return actOnPlot(state,action.id,action.action,action.crop??'corn',now);
   case 'sell':return sellCrops(state,action.item??'all');
-  case 'produce':return startProduction(state,action.recipe,now);
+  case 'produce':return startProduction(state,action.recipe,now,action.count);
   case 'collect':return collectProduction(state,action.building,now,action.jobId);
   case 'upgrade':return upgradeBuilding(state,action.building);
   case 'expand':return expandFarm(state);

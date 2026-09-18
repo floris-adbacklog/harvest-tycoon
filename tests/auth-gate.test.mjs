@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8').split('\n').slice(2).join('\n');
+const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8').split('\n').slice(3).join('\n');
 const settle=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};}
 function fixture({user=null,load,online=true}={}){
@@ -11,7 +11,7 @@ function fixture({user=null,load,online=true}={}){
  const document={body:{dataset:{}},hidden:false,getElementById:element,querySelector:element,querySelectorAll:()=>[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
  const window={addEventListener(name,fn){events[name]=fn;}};
  const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};}}};
- const context=vm.createContext({document,window,navigator:{onLine:online},location:{origin:'https://farm.example'},URL,queueMicrotask,setTimeout:fn=>queueMicrotask(fn),setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>currentUser,validUsername:()=>true,cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
+ const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online},location:{origin:'https://farm.example'},URL,queueMicrotask,setTimeout:fn=>queueMicrotask(fn),setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>currentUser,validUsername:()=>true,cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
  vm.runInContext(source,context);
  return {context,document,window,frames,calls,nodes,events,async auth(event,next){currentUser=next;authCallback(event,next?{user:next}:null);await settle();}};
 }
