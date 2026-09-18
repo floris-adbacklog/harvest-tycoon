@@ -142,7 +142,7 @@ async function o(e) {
 	let c = s.querySelector(".starter-buy"), l = s.querySelector(".starter-feedback"), u = s.querySelector(".starter-time"), d = null, f = 0, p = !1, m = !1, h = "", g = !1;
 	function _() {
 		let e = d?.starter, t = (e?.expiresAt ?? 0) - (Date.now() + f), r = e?.eligible && t > 0;
-		o.hidden = !r, c.disabled = p || !r || !d?.enabled, c.textContent = p ? "Opening secure checkout…" : d?.mode === "test" ? "Test Starter Pack · €2.99" : "Buy Starter Pack · €2.99", u.textContent = e?.claimed ? "Starter Pack already received" : r ? `Available for ${n(t)}` : "This welcome offer has ended.", !d?.enabled && !p && (l.textContent = "Purchases are not available yet. Please check back later.");
+		o.hidden = !r, c.disabled = p || !r || !d?.enabled, c.textContent = p ? "Opening secure checkout…" : d?.mode === "test" ? "Test Starter Pack · €2.99" : "Buy Starter Pack · €2.99", u.textContent = e?.claimed ? "Starter Pack already received" : r ? `Available for ${n(t)}` : "This welcome offer has ended.", !d?.enabled && !p ? l.textContent = "Purchases are not available yet. Please check back later." : d?.enabled && l.textContent === "Purchases are not available yet. Please check back later." && (l.textContent = "");
 	}
 	async function v() {
 		if (!(g || m)) {

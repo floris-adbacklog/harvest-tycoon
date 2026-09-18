@@ -5,7 +5,7 @@ const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SE
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
 Deno.serve(async req=>{
  if(req.method!=='POST')return reply({error:'Use POST.'},405);
- const secret=Deno.env.get('STRIPE_WEBHOOK_SECRET'),key=Deno.env.get('STRIPE_SECRET_KEY');
+ const secret=Deno.env.get('STRIPE_WEBHOOK_SECRET')?.trim(),key=Deno.env.get('STRIPE_SECRET_KEY')?.trim();
  if(!secret||!key)return reply({error:'Webhook configuration is incomplete.'},503);
  const signature=req.headers.get('stripe-signature');if(!signature)return reply({error:'Signature required.'},400);
  const stripe=new Stripe(key,{apiVersion:'2026-07-29.dahlia',httpClient:Stripe.createFetchHttpClient(),maxNetworkRetries:2});

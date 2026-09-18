@@ -188,3 +188,10 @@ Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` vers
 - A successful server-recorded farm action marks a player online for 30 minutes. Loads, idle tabs and rejected/replayed actions do not refresh activity. Status persists across tabs/devices; closing a tab does not erase the 30-minute window. The open leaderboard refreshes every 30 seconds and expires loaded statuses automatically.
 - Starter grants and replay protection were tested inside a rolled-back database transaction under the actual server role. No real account received test rewards. Activity timestamps and stale-action rejection were also tested in Supabase.
 - The user's live Stripe webhook is verified enabled with both required events. Full payment processing still needs an end-to-end test after all Supabase payment secrets and the enable flag are configured. See PAYMENT-SETUP.md.
+
+
+## Desktop Starter Pack placement and live checkout
+
+- Desktop Starter Pack button moved to the bottom-left corner below the side menu so it no longer covers Quests. Mobile placement is preserved.
+- The production checkout now runs in live mode and enables purchases when both required Stripe secrets are configured. An explicit PAYMENTS_ENABLED=false remains an emergency off switch. Test API keys cannot activate the live shop.
+- No real payment has been made or verified in this update. See PAYMENT-SETUP.md for the required server secrets and verification status.

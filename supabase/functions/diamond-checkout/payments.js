@@ -6,6 +6,11 @@ export const PAYMENT_PACKS=Object.freeze({
  starter:{diamonds:300,coins:10000,cents:299,product:'prod_VHfWRMcedF9ShZ',price:'price_1UH6BG04FdNTUSp4Mg5Zl4pD'}
 });
 export const STARTER_WINDOW=72*60*60*1000;
+// This deployed storefront is live. Keep an explicit emergency off switch.
+export function livePaymentConfiguration(key,webhookSecret,enabledFlag){
+ const configured=/^[rs]k_live_/.test((key??'').trim())&&Boolean((webhookSecret??'').trim());
+ return {mode:'live',configured,enabled:configured&&String(enabledFlag??'').trim().toLowerCase()!=='false'};
+}
 export function starterEligibility(createdAt,claimed=false,now=Date.now()){
  const start=Date.parse(createdAt),expiresAt=start+STARTER_WINDOW;
  return {eligible:Number.isFinite(start)&&now>=start&&now<expiresAt&&!claimed,expiresAt:Number.isFinite(expiresAt)?expiresAt:0,claimed};

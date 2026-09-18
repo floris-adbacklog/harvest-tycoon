@@ -1,6 +1,6 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,paymentPack,UUID,starterEligibility} from './payments.js';
+import {PAYMENT_PACKS,paymentPack,UUID,starterEligibility,livePaymentConfiguration} from './payments.js';
 const origin='https://www.harvesttycoon.com';
 const cors={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -16,9 +16,9 @@ Deno.serve(async req=>{
   const active=await admin.rpc('harvest_session_active',{p_player:user.id,p_session:claims.session_id});if(active.error)throw active.error;if(!active.data)return reply({error:'Please sign in again.'},401);
   const raw=await req.text();if(raw.length>2048)return reply({error:'Request too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  const key=Deno.env.get('STRIPE_SECRET_KEY')??'',mode=Deno.env.get('STRIPE_MODE')??'test',live=mode==='live';
-  const configured=['live','test'].includes(mode)&&new RegExp(`^[rs]k_${mode}_`).test(key)&&!!Deno.env.get('STRIPE_WEBHOOK_SECRET');
-  const enabled=configured&&Deno.env.get('PAYMENTS_ENABLED')==='true';
+  const key=(Deno.env.get('STRIPE_SECRET_KEY')??'').trim();
+  const {mode,enabled}=livePaymentConfiguration(key,Deno.env.get('STRIPE_WEBHOOK_SECRET'),Deno.env.get('PAYMENTS_ENABLED'));
+  const live=true;
   const existingStarter=body.operation==='catalog'||body.pack==='starter'?await admin.from('harvest_purchases').select('*').eq('player_id',user.id).eq('pack','starter').eq('livemode',live).neq('status','expired').maybeSingle():null;
   if(existingStarter?.error)throw existingStarter.error;
   const starter=starterEligibility(user.created_at,['credited','test_paid'].includes(existingStarter?.data?.status));
@@ -34,8 +34,8 @@ Deno.serve(async req=>{
   if(body.pack==='starter'&&!starter.eligible)return reply({error:starter.claimed?'You have already received the Starter Pack.':'The Starter Pack is only available during your first 72 hours.'},409);
   const farm=await admin.from('player_farms').select('player_id').eq('player_id',user.id).maybeSingle();if(farm.error)throw farm.error;if(!farm.data)return reply({error:'Open your farm before buying diamonds.'},409);
   const stripe=new Stripe(key,{apiVersion:'2026-07-29.dahlia',httpClient:Stripe.createFetchHttpClient(),maxNetworkRetries:2});
-  const priceId=live?pack.price:Deno.env.get(`STRIPE_TEST_PRICE_${body.pack}`);
-  if(!priceId)return reply({error:'This test pack has not been configured.'},503);
+  const priceId=pack.price;
+  if(!priceId)return reply({error:'This pack has not been configured.'},503);
   const price=await stripe.prices.retrieve(priceId);
   if(!price.active||price.livemode!==live||price.currency!=='eur'||price.unit_amount!==pack.cents||price.type!=='one_time'||(live&&pack.product&&price.product!==pack.product))return reply({error:'This pack needs a pricing configuration update.'},503);
   const insert=await admin.from('harvest_purchases').insert({id:body.requestId,player_id:user.id,pack:body.pack,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:priceId,livemode:live,starter_expires_at:body.pack==='starter'?new Date(starter.expiresAt).toISOString():null});

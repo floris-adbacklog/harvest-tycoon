@@ -14,6 +14,7 @@ export async function createStarterPackUI(bridge){
   buy.textContent=pending?'Opening secure checkout…':catalog?.mode==='test'?'Test Starter Pack · €2.99':'Buy Starter Pack · €2.99';
   time.textContent=offer?.claimed?'Starter Pack already received':eligible?`Available for ${formatDuration(remaining)}`:'This welcome offer has ended.';
   if(!catalog?.enabled&&!pending)feedback.textContent='Purchases are not available yet. Please check back later.';
+  else if(catalog?.enabled&&feedback.textContent==='Purchases are not available yet. Please check back later.')feedback.textContent='';
  }
  async function refresh(){if(refreshing||disposed)return;refreshing=true;try{const data=await bridge.payments({operation:'catalog'});if(disposed)return;catalog=data;offset=data.serverNow-Date.now();render();}catch{if(!catalog)button.hidden=true;}finally{refreshing=false;}}
  button.onclick=()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());requestId=crypto.randomUUID();feedback.textContent='';render();dialog.showModal();refresh();};

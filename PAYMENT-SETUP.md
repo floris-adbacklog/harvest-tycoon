@@ -1,60 +1,53 @@
-# Harvest Tycoon payments
+# Harvest Tycoon — live payments
 
-## Current status
+The deployed diamond-checkout function now runs in **live mode**. STRIPE_MODE is no longer used by this production endpoint. A missing PAYMENTS_ENABLED value no longer leaves the shop disabled.
 
-The purchase table and credit function are installed in project `jnmdirvidffzxukbdmij`. The `diamond-checkout` and `stripe-webhook` Edge Functions are deployed. Database tests confirmed that duplicate fulfillment adds diamonds only once, increments the farm revision, and that test payments cannot add live diamonds. Browser users cannot write purchases or call the credit function.
+## Required Supabase secrets
 
-The live webhook now exists and was verified as enabled: `we_1UH6Qg04FdNTUSp4IZoRQh6J`. Its URL and events are correct. The user reports that its signing secret has been saved in Supabase. Secret values and a full Checkout payment have not been inspected or verified. Do not create a second live webhook.
-
-Endpoint: `https://jnmdirvidffzxukbdmij.supabase.co/functions/v1/stripe-webhook`
-Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`.
-The configured destination uses event API version `2024-04-10`; the handler uses the common Checkout Session fields supported by that version.
-
-If the shop shows **Currently unavailable**, check that `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are present, `STRIPE_MODE` matches the key's mode, and `PAYMENTS_ENABLED=true`. The webhook signing secret alone does not enable checkout. Keep all secrets in Supabase, never in the browser or GitHub.
-
-## Starter Pack
-
-Product: `prod_VHfWRMcedF9ShZ`; verified active one-time EUR price: `price_1UH6BG04FdNTUSp4Mg5Zl4pD` (€2.99).
-Rewards: 10,000 coins, 300 diamonds, and +1 Corn, Wheat, Cabbage, Pumpkin, Sunflower, Barley, Lettuce, Red cabbage and Cauliflower in the ordinary inventory. There is no separate seed inventory and no automatic planting.
-
-The small bottom-left offer is available for 72 hours from the verified account creation date and disappears after purchase. The server enforces one purchase per account and mode. Returning to the game without payment does not award anything. Delayed payment confirmation can finish an eligible checkout after the offer window; new checkouts cannot start after it.
-
-For sandbox tests, also configure `STRIPE_TEST_PRICE_starter` with a sandbox one-time EUR price of 299 cents. The lowercase `starter` suffix is intentional. A sandbox Starter Pack never grants live coins, diamonds or crops.
-
-## Server secrets
-
-Set these in Supabase Edge Function Secrets, never in frontend variables:
+Open Supabase project jnmdirvidffzxukbdmij → Edge Functions → Secrets.
 
 | Name | Value |
 | --- | --- |
-| `STRIPE_SECRET_KEY` | Restricted Stripe API key for the chosen mode, with Checkout Sessions write/read and Prices read access. |
-| `STRIPE_WEBHOOK_SECRET` | Signing secret for this exact webhook destination and mode. |
-| `STRIPE_MODE` | `test` first; `live` only after successful verification. |
-| `PAYMENTS_ENABLED` | `false` until ready to run the payment test; `true` to enable checkout in the selected mode. |
-| `STRIPE_TEST_PRICE_50` | Sandbox EUR one-time Price ID for €1.99. |
-| `STRIPE_TEST_PRICE_300` | Sandbox EUR one-time Price ID for €9.99. |
-| `STRIPE_TEST_PRICE_1000` | Sandbox EUR one-time Price ID for €24.99. |
+| STRIPE_SECRET_KEY | A live Stripe restricted server key (rk_live_…) with Checkout Sessions write/read and Prices read access. A live sk_live_… key also works; restricted access is preferred. |
+| STRIPE_WEBHOOK_SECRET | The whsec_… signing secret for webhook we_1UH6Qg04FdNTUSp4IZoRQh6J. |
+| PAYMENTS_ENABLED | Optional. Set to true to enable, or false to explicitly disable sales. |
 
-The `STRIPE_TEST_PRICE_*` values are only needed in test mode. Live prices have already been verified against the supplied products and are allowlisted on the server. Existing Supabase service credentials are provided by Supabase; do not copy them to the browser.
+Never place these keys in GitHub, frontend environment variables, or chat. A test key cannot enable this live shop. Product IDs and a webhook secret do not replace the Stripe server API key.
 
-## Test before switching live
+The webhook is verified as enabled with the correct endpoint and both required events:
+- https://jnmdirvidffzxukbdmij.supabase.co/functions/v1/stripe-webhook
+- checkout.session.completed
+- checkout.session.async_payment_succeeded
 
-1. In a Stripe sandbox, create the three matching prices and a webhook with the same two events. Configure the test key, test signing secret, test price IDs, `STRIPE_MODE=test` and `PAYMENTS_ENABLED=true`.
-2. Deploy this ZIP to the existing GitHub/Vercel project. Sign in on `https://www.harvesttycoon.com` and open Diamonds & boosts. Buttons should say **Test checkout**.
-3. Complete a payment using Stripe's test payment details. The return screen must say **Test payment confirmed**. The purchase row must show `test_paid`; live diamonds must not increase.
-4. Resend the event from Stripe. It must receive HTTP 200 and create no additional credit. Also test closing checkout, an unsuccessful payment and a delayed payment method. An unpaid completed event must never award diamonds.
-5. Only after this passes, set the live key and live destination signing secret, `STRIPE_MODE=live`, and enable payments. No real payment was made during this update.
+The destination currently uses event API version 2024-04-10; the receiving handler reads Checkout fields supported by that version. No duplicate destination is needed.
 
-In live mode, confirmed purchases update the farm and private purchase receipt in one transaction. Both successful event types for the same Checkout Session still credit exactly once. Reloading the return URL never awards diamonds. Failed webhook processing returns an error so Stripe can retry.
+## Products
 
-## Deployment and limitations
+| Pack | EUR | Reward |
+| --- | --- | --- |
+| 50 diamonds | €1.99 | 50 diamonds |
+| 300 diamonds | €9.99 | 300 diamonds |
+| 1,000 diamonds | €24.99 | 1,000 diamonds |
+| Starter Pack | €2.99 | 10,000 coins, 300 diamonds and each of the 9 crops ×1 in ordinary inventory |
 
-Replace the project's files with the contents of `Harvest-Tycoon/`, commit and push using GitHub Desktop. Preserve your existing hosting configuration and environment variables. The frontend remains static; payment secrets and logic run in Supabase.
+Starter product: prod_VHfWRMcedF9ShZ. Its verified one-time price is price_1UH6BG04FdNTUSp4Mg5Zl4pD.
 
-Checkout returns to the canonical domain `https://www.harvesttycoon.com`. Change the server's `origin` before using another domain. Do not rerun `supabase/payments.sql`, `supabase/starter-pack.sql` or `supabase/activity-status.sql` on this project: these changes are already applied. On a fresh project, apply them in that order after the original farm schema.
+The Starter Pack is available during the first 72 hours after account creation, once per account. It disappears after purchase or expiry. Rewards are added to the account only after a signed successful-payment webhook. Closing checkout or reopening the return URL grants nothing. Server-side reservation prevents multiple payable starter checkouts; confirmed Stripe expiry releases an unpaid reservation.
 
-Automatic tax calculation is not enabled. Review the merchant's applicable tax setup before live sales; the implementation verifies the exact configured EUR amount. Refunds and disputes do not automatically remove diamonds in this version and require merchant review.
+## Verification status
 
-The Supabase security advisor reports no client policies on `harvest_purchases`: this is intentional, because only server functions can access it. It also reports the existing disabled leaked-password protection setting; see https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection.
+The server functions are deployed. Automated tests cover live/test key selection, the emergency off switch, pack amounts, ownership, payment status and line items. Database transactions verified one-time rewards, ordinary inventory grants, expiry, revision updates and client access restrictions under the actual server role. All fixtures were rolled back.
 
-Official references: https://docs.stripe.com/checkout/fulfillment and https://docs.stripe.com/webhooks.
+**No end-to-end Stripe payment has been performed or claimed as verified.** Secret values have not been inspected. A matching live key and a correct signing secret are still required. To test with Stripe test cards, use a separate sandbox deployment configured for test mode; this production endpoint deliberately accepts live purchases only.
+
+After an authorized payment, verify the purchase is credited in harvest_purchases and the correct player's balance increases once. Resending the same event must not award a second reward. Investigate any failed webhook delivery in Stripe before taking further payments; PAYMENTS_ENABLED=false disables new checkouts.
+
+## Deploy the interface
+
+Replace your GitHub project's files with the contents of Harvest-Tycoon/ and push using GitHub Desktop. Vercel will build the updated interface. Preserve the existing hosting environment variables. Payment keys stay in Supabase.
+
+The database changes are already applied: do not rerun payments.sql, starter-pack.sql or activity-status.sql on this project. On a fresh installation, apply those scripts in that order after the base farm schema.
+
+The checkout return URL is https://www.harvesttycoon.com/play.html. Automatic tax calculation is not enabled; review the merchant's applicable tax configuration. Refunds/disputes do not automatically remove diamonds and require merchant review.
+
+The Supabase advisor notice about harvest_purchases having no client policies is intentional: only the server can access purchase records. Existing leaked-password protection remains disabled; see https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection.
