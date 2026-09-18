@@ -85,48 +85,163 @@ function i({ onOpen: e, onName: t, onRetry: i, onSignIn: a, onRegister: o, onSig
 	};
 }
 //#endregion
+//#region public/visual-icons.js
+var a = [
+	{
+		file: "crops-v2.png",
+		columns: 3,
+		keys: [
+			"wheat",
+			"lettuce",
+			"corn",
+			"barley",
+			"cabbage",
+			"cauliflower",
+			"pumpkin",
+			"redcabbage",
+			"sunflower"
+		]
+	},
+	{
+		file: "goods-v2.png",
+		columns: 4,
+		keys: [
+			"grainmeal",
+			"flour",
+			"feed",
+			"fertilizer",
+			"salad",
+			"pickles",
+			"oil",
+			"milk",
+			"eggs",
+			"cheese",
+			"bread",
+			"pie",
+			"vegetables",
+			"tractor",
+			"silo",
+			"cart"
+		]
+	},
+	{
+		file: "interface-v2.png",
+		columns: 4,
+		keys: [
+			"farm",
+			"estate",
+			"buildings",
+			"market",
+			"gift",
+			"quests",
+			"boost",
+			"trophy",
+			"coins",
+			"diamonds",
+			"seeds",
+			"water",
+			"harvest",
+			"care",
+			"hammer",
+			"xp"
+		]
+	}
+], o = {
+	farmhouse: "farmhouse",
+	mill: "mill",
+	dairy: "dairy",
+	coop: "coop",
+	bakery: "bakery",
+	packing: "packing",
+	windmill: "windmill",
+	stall: "stall",
+	chores: "chores",
+	honey: "honey"
+};
+for (let e of [
+	"weeds",
+	"troughs",
+	"sorting",
+	"fences",
+	"irrigation",
+	"harvestfair"
+]) o[`chore-${e}`] = `chore-${e}`;
+for (let e of [
+	"greenhouse",
+	"apiary",
+	"paddock",
+	"workshop"
+]) o[`activity-${e}`] = `activity-${e}`;
+var s = Object.fromEntries(a.flatMap((e) => e.keys.map((t, n) => [t, {
+	...e,
+	index: n
+}])));
+Object.freeze([...Object.keys(s), ...Object.keys(o)]);
+function c(e, t = "") {
+	let n = s[e];
+	if (n) {
+		let { file: r, columns: i, index: a } = n, o = a % i / (i - 1) * 100, s = Math.floor(a / i) / (i - 1) * 100;
+		return `<span class="game-art game-art-sprite ${t}" data-art="${e}" aria-hidden="true" style="--art-sheet:url('/assets/icons/${r}');--art-size:${i * 100}%;--art-position:${o}% ${s}%"></span>`;
+	}
+	return o[e] ? `<img class="game-art ${t}" data-art="${e}" src="/assets/icons/${o[e]}.png" alt="" draggable="false">` : "";
+}
+//#endregion
 //#region src/payment-ui.js
-function a(e) {
+function l(e) {
 	let t = e.paymentReturn?.();
 	if (!t?.id) return;
 	let n = document.createElement("dialog");
-	n.setAttribute("aria-labelledby", "payment-result-title"), n.style.cssText = "width:min(420px,calc(100vw - 32px));box-sizing:border-box;padding:28px;border:1px solid #c9d3b6;border-radius:24px;background:#fffdf3;color:#29412d;", n.innerHTML = "<h2 id=\"payment-result-title\">Your purchase</h2><p role=\"status\" style=\"line-height:1.6\"></p><button type=\"button\" data-retry>Check payment</button> <button type=\"button\" data-close>Back to farm</button>", document.body.append(n);
-	let r = n.querySelector("p"), i = n.querySelector("[data-retry]"), a, o = 0, s = !1, c = () => {
-		s = !0, clearTimeout(a);
+	n.className = "payment-dialog", n.setAttribute("aria-labelledby", "payment-result-title"), n.setAttribute("aria-describedby", "payment-result-message"), n.innerHTML = `<button type="button" class="payment-dismiss" aria-label="Close purchase update"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button><div class="payment-hero">${c("diamonds")}</div><p class="payment-eyebrow">A LITTLE EXTRA GROWING POWER</p><h2 id="payment-result-title">Checking your purchase</h2><p id="payment-result-message" class="payment-message" role="status" aria-live="polite">Just a moment while we check your payment.</p><span class="payment-status">Checking payment</span><div class="payment-actions"><button type="button" data-close autofocus>Back to farm</button><button type="button" data-retry>Check payment</button></div>`, document.body.append(n);
+	let r = n.querySelector("h2"), i = n.querySelector(".payment-message"), a = n.querySelector(".payment-status"), o = n.querySelector("[data-retry]"), s, l = 0, u = !1, d = !1, f = () => {
+		u = !0, clearTimeout(s);
 	};
 	n.addEventListener("close", () => {
-		c(), e.clearPaymentReturn?.(), n.remove();
-	}), window.addEventListener("pagehide", c, { once: !0 }), n.querySelector("[data-close]").onclick = () => n.close();
-	async function l() {
-		clearTimeout(a), i.disabled = !0;
-		try {
-			let n = await e.payments({
-				operation: "status",
-				purchaseId: t.id
-			});
-			if (s) return;
-			if (n.status === "credited") {
-				r.textContent = n.pack === "starter" ? "Starter Pack received! 10,000 coins, 300 diamonds and one of every crop have been added to your account." : `Payment confirmed. ${n.diamonds} diamonds have been added to your farm!`, i.hidden = !0, window.dispatchEvent(new Event("harvest-purchase-confirmed")), await window.harvestRefresh?.();
-				return;
+		f(), window.removeEventListener("pagehide", f), e.clearPaymentReturn?.(), n.remove();
+	}), window.addEventListener("pagehide", f, { once: !0 }), n.querySelector("[data-close]").onclick = () => n.close(), n.querySelector(".payment-dismiss").onclick = () => n.close();
+	function p(e, t, o, s) {
+		n.dataset.state = e, r.textContent = t, i.textContent = o, a.textContent = s;
+	}
+	async function m() {
+		if (!(u || d)) {
+			d = !0, clearTimeout(s), o.disabled = !0, o.textContent = "Checking…";
+			try {
+				let n = await e.payments({
+					operation: "status",
+					purchaseId: t.id
+				});
+				if (u) return;
+				if (n.status === "credited") {
+					p("credited", n.pack === "starter" ? "Your Starter Pack is here!" : "A little sparkle for your farm", n.pack === "starter" ? "10,000 coins, 300 diamonds and one of every crop have been added to your account." : `${Number(n.diamonds).toLocaleString("en-US")} diamonds have been added to your farm. Enjoy your next little upgrade!`, "Payment confirmed"), o.hidden = !0, window.dispatchEvent(new Event("harvest-purchase-confirmed"));
+					try {
+						await window.harvestRefresh?.();
+					} catch {
+						u || (i.textContent += " Reopen your farm to refresh your balance.");
+					}
+					return;
+				}
+				if (n.status === "test_paid") {
+					p("test", "Test payment confirmed", "This was a test purchase. No real diamonds were added.", "Test complete"), o.hidden = !0;
+					return;
+				}
+				if (n.status === "expired") {
+					p("closed", "This checkout has expired", "You can return to the diamond shop to start a new checkout.", "Checkout expired"), o.hidden = !0;
+					return;
+				}
+				t.cancelled ? p("closed", "Back to your farm", "Checkout was closed. If you paid before returning, check your payment status below.", "Checkout closed") : p("pending", "Confirming your purchase", "We’re waiting for payment confirmation. You can return to your farm while we check.", "Awaiting confirmation"), !t.cancelled && ++l < 20 && (s = setTimeout(m, 3e3));
+			} catch {
+				u || p("error", "Let’s check again", "We couldn’t confirm your payment right now. If you paid, check again in a moment.", "Connection interrupted");
+			} finally {
+				d = !1, o.disabled = !1, o.textContent = "Check payment";
 			}
-			if (n.status === "test_paid") {
-				r.textContent = "Test payment confirmed. No real diamonds were added.", i.hidden = !0;
-				return;
-			}
-			r.textContent = t.cancelled ? "Checkout was closed. No diamonds have been added. If you completed a payment, check its status here." : "Waiting for payment confirmation. You can keep playing; your diamonds will arrive automatically once payment is confirmed.", !t.cancelled && ++o < 20 && (a = setTimeout(l, 3e3));
-		} catch (e) {
-			s || (r.textContent = e.message);
-		} finally {
-			i.disabled = !1;
 		}
 	}
-	i.onclick = () => {
-		o = 0, l();
-	}, r.textContent = "Checking your payment…", n.showModal(), l();
+	o.onclick = () => {
+		l = 0, m();
+	}, n.showModal(), m();
 }
 //#endregion
 //#region src/starter-pack-ui.js
-async function o(e) {
+async function u(e) {
 	let { CROPS: t, formatDuration: n } = await import(
 		/* @vite-ignore */
 		"/farm-state.js"
@@ -179,52 +294,52 @@ async function o(e) {
 }
 //#endregion
 //#region src/game-cloud.js
-var s;
+var d;
 try {
-	s = window.parent === window ? null : window.parent.harvestBridge;
+	d = window.parent === window ? null : window.parent.harvestBridge;
 } catch {}
-if (!s) location.replace("/play.html");
-else if (window.harvestInitialFarm = s.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
+if (!d) location.replace("/play.html");
+else if (window.harvestInitialFarm = d.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
 else {
 	document.body.hidden = !1;
 	let n = i({
-		onOpen: u,
-		onRetry: u,
+		onOpen: s,
+		onRetry: s,
 		onName: async (e) => {
-			let t = await s.request({
+			let t = await d.request({
 				operation: "rename",
 				username: e
 			});
-			n.setProfile(t.profile, { id: s.playerId });
+			n.setProfile(t.profile, { id: d.playerId });
 		},
-		onSignOut: () => s.signOut()
+		onSignOut: () => d.signOut()
 	});
-	n.setProfile(window.harvestInitialFarm.profile, { id: s.playerId }), n.status("Live rankings");
-	let r = s.presence?.subscribe((t) => {
+	n.setProfile(window.harvestInitialFarm.profile, { id: d.playerId }), n.status("Live rankings");
+	let r = d.presence?.subscribe((t) => {
 		n.open && e(n.results, t);
-	}), c = setInterval(() => {
-		n.open && !document.hidden && u(!0);
+	}), a = setInterval(() => {
+		n.open && !document.hidden && s(!0);
 	}, 3e4);
 	window.addEventListener("pagehide", () => {
-		r?.(), clearInterval(c);
+		r?.(), clearInterval(a);
 	}, { once: !0 });
-	let l = 0;
-	async function u(e = !1) {
-		let r = ++l, i = n.category;
+	let o = 0;
+	async function s(e = !1) {
+		let r = ++o, i = n.category;
 		e || n.message("Gathering the latest scores…"), n.results.setAttribute("aria-busy", "true");
 		try {
-			let e = await s.leaderboard(i);
-			if (r !== l) return;
-			t(n.results, e, s.playerId), n.status("Up to date");
+			let e = await d.leaderboard(i);
+			if (r !== o) return;
+			t(n.results, e, d.playerId), n.status("Up to date");
 		} catch (t) {
-			r === l && (e || n.message(t.message), n.status("Could not refresh"));
+			r === o && (e || n.message(t.message), n.status("Could not refresh"));
 		} finally {
-			r === l && n.results.setAttribute("aria-busy", "false");
+			r === o && n.results.setAttribute("aria-busy", "false");
 		}
 	}
 	await import(
 		/* @vite-ignore */
 		"/game.js"
-), a(s), o(s);
+), l(d), u(d);
 }
 //#endregion

@@ -1,4 +1,22 @@
-# Harvest Tycoon — bulk actions and presence (prepared update)
+# Latest update — diamond shop, purchase feedback and farm artwork
+
+- Available diamond packs now show full-colour diamonds and green purchase buttons. Unavailable buttons still respect server availability; only the selected pack shows the checkout loading state.
+- Redesigned the purchase return dialog with a painted diamond, clear status badge, rounded controls, readable spacing and a compact mobile layout. Confirmed, pending, closed, expired and interrupted states have distinct English messages.
+- A confirmed payment stays confirmed if refreshing the farm fails. Closing the dialog stops polling and ignores late replies.
+- Four new transparent farm illustrations for Greenhouse, Apiary, Animal paddock and Tool workshop, used on farm markers, job headings and the farm-round tracker. Includes all six painted chore icons from the preceding update.
+- The user confirmed checkout now opens after correcting Stripe key permissions. No payment backend or credentials were changed in this update; a complete real payment has not been independently tested.
+- Browser visual checking was unavailable because the browser blocked the local preview. Asset sizes, alpha, source syntax, build output and payment-state behaviour are checked separately.
+
+# Previous update — illustrated chores
+
+- Six new painted, transparent icons for Clear the paths, Fill the water troughs, Sort the seed boxes, Mend the orchard fence, Restore the irrigation and Prepare the harvest fair.
+- The chore list and result dialog use the matching illustration, with square mobile tiles and contained images to prevent stretching or clipping.
+- Optimised 256 × 256 artwork; all player-facing text remains English. Gameplay rewards and progression are unchanged.
+- Checkout investigation: the purchase table columns and server permissions are present, and the session-check RPC succeeds under the server role. No purchase records existed when checked. The exact runtime exception behind “Checkout is unavailable” remains unverified because access to the Supabase dashboard logs was denied. Payment code has not been changed on speculation, and this update does not claim checkout is fixed.
+- Next checkout diagnostic: Supabase → Edge Functions → diamond-checkout → Logs. Reproduce the failed purchase, then inspect the matching “Checkout failed” entry. Share only the error code/message, never API keys, tokens or secrets.
+- Icon generation prompts and file locations are documented in CHORE-ARTWORK.md.
+
+# Previous bulk actions and presence update
 
 DEPLOYMENT STATUS: The matching farm-api server rules are deployed to Supabase as version 9 (ACTIVE, JWT verification enabled), with deployed sources checked against this package. Publish this frontend via GitHub/Vercel to expose the new controls. The static build and all 104 automated tests pass. Leaderboard presence remains unverified live, as described below.
 

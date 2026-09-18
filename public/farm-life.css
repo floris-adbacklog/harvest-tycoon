@@ -12,3 +12,10 @@
  .activity-dialog-title{gap:10px}.activity-dialog-icon{width:42px;height:42px;flex-basis:42px}.activity-dialog-icon>svg{width:25px;height:25px}#activities-title{font-size:clamp(21px,5.8vw,28px)}.activity-dialog-title .eyebrow{font-size:9px;letter-spacing:1px}.activity-board{gap:7px}.activity-tile{min-height:111px}.activity-tile strong{font-size:11px}.activity-round{padding:12px}.activity-round-stops{gap:7px}
 }
 @media(max-height:550px) and (orientation:landscape){.activity-tile{min-height:90px}}
+
+/* Matching painted station art; the full marker remains the touch target. */
+.activity-label>.game-art{display:block;width:34px;height:34px;min-width:0;min-height:0;max-width:100%;max-height:100%;margin:0;padding:0;object-fit:contain;pointer-events:none}
+.activity-dialog-icon{overflow:hidden;padding:4px;box-sizing:border-box}
+.activity-dialog-icon>.game-art{display:block;width:100%;height:100%;object-fit:contain;margin:0;flex:none}
+.round-stop{width:36px;height:36px;flex-basis:36px}
+.round-stop>.game-art{display:block;width:28px;height:28px;object-fit:contain;margin:0;flex:none}

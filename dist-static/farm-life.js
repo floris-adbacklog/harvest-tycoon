@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
+import {art} from './visual-icons.js';
 export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','house_024','fir_tree_003','tree_008','stone_fence_001','trailer_001'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
@@ -15,7 +16,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   const hit=new THREE.Mesh(new THREE.BoxGeometry(Math.max(size.x+.6,2.8),Math.max(size.y+.4,1.8),Math.max(size.z+.6,2.8)),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
   hit.position.copy(center);hit.userData.activity=id;scene.add(hit);hit.updateMatrixWorld(true);hitAreas.push(hit);
   const height=new THREE.Box3().setFromObject(object).max.y;
-  const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=`<i data-lucide="${ACTIVE_STATIONS[id].icon}" data-line-icon aria-hidden="true"></i>`;label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
+  const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=art(`activity-${id}`);label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
   views.set(id,{object,x,z,height,label});return object;
  }
  // Broad, low shapes fill the edges; higher mountains stay behind the farm.

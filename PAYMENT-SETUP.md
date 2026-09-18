@@ -36,6 +36,8 @@ The Starter Pack is available during the first 72 hours after account creation, 
 
 ## Verification status
 
+Latest user report: checkout opens after enabling Prices Read on the live restricted key. The earlier permission-denied failure was therefore identified. The latest frontend update restores full-colour available pack cards and styles the purchase return dialog; it does not change payment permissions or server fulfilment.
+
 The server functions are deployed. Automated tests cover live/test key selection, the emergency off switch, pack amounts, ownership, payment status and line items. Database transactions verified one-time rewards, ordinary inventory grants, expiry, revision updates and client access restrictions under the actual server role. All fixtures were rolled back.
 
 **No end-to-end Stripe payment has been performed or claimed as verified.** Secret values have not been inspected. A matching live key and a correct signing secret are still required. To test with Stripe test cards, use a separate sandbox deployment configured for test mode; this production endpoint deliberately accepts live purchases only.

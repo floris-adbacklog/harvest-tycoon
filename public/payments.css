@@ -1,0 +1,51 @@
+/* Live store cards. Availability comes from the server, never from styling. */
+.diamond-packs{gap:14px;margin-top:20px}
+.diamond-pack{padding:22px 14px 16px;border:1px solid #bddbe0;border-radius:20px;background:linear-gradient(155deg,#f4fbff,#e5f2f5);filter:none;color:#294e50;box-shadow:0 3px 0 #d9e8e5;transition:border-color .15s,box-shadow .15s}
+.diamond-pack:nth-child(2){background:linear-gradient(155deg,#f5f4ff,#eae5f6);border-color:#d3c6e4;color:#594369}
+.diamond-pack:nth-child(3){background:linear-gradient(155deg,#fffae9,#f6eccd);border-color:#e0cc99;color:#71582a}
+.diamond-pack>.game-art{width:72px;height:72px;opacity:1;margin:0 auto 9px}
+.diamond-pack h3{font:600 30px/1.15 'Outfit',sans-serif}
+.diamond-pack h3 span{font:500 13px/1.5 'DM Sans',sans-serif;margin-top:4px}
+.diamond-pack>strong{font:600 23px/1.3 'Outfit',sans-serif;margin:18px 0 15px}
+.diamond-pack button{min-height:46px;padding:11px 8px;background:#365e42;border:1px solid #2d5137;border-radius:12px;color:#fffef3;font:700 13px/1.4 'DM Sans',sans-serif;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 0 #25462e}
+.diamond-pack button:hover:not(:disabled){background:#284e34}
+.diamond-pack button:focus-visible,.payment-dialog button:focus-visible{outline:3px solid #c2912d;outline-offset:3px}
+.diamond-pack button:disabled{cursor:not-allowed;background:#e4e9df;color:#697661;border-color:#ccd5c3;box-shadow:none;opacity:1}
+.diamond-pack[data-state="opening"]{border-color:#689b75;box-shadow:0 0 0 2px #b5d4b3}
+.diamond-pack[data-state="opening"] button{background:#e2eddc;color:#365e42;cursor:wait}
+.diamond-pack[data-state="unavailable"]>.game-art{opacity:.55}
+
+/* Compact purchase return dialog, separate from the full-height shop. */
+.payment-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);margin:auto;padding:30px 26px 24px;overflow-y:auto;overscroll-behavior:contain;border:1px solid #d0dcc0;border-radius:28px;background:radial-gradient(ellipse at top,#edf4df 0,#fffdf4 62%);color:#2e4832;text-align:center;box-shadow:0 24px 70px #162a3150}
+.payment-dialog::backdrop{background:#173b2d8f;backdrop-filter:blur(5px)}
+.payment-dialog .payment-dismiss{position:absolute;right:12px;top:12px;display:grid;place-items:center;width:44px;height:44px;padding:0;background:#edf1e3;border:1px solid #d9e1cc;border-radius:14px;color:#52684a;cursor:pointer}
+.payment-dismiss svg{width:20px;height:20px}
+.payment-hero{display:grid;place-items:center;width:92px;height:92px;margin:4px auto 16px;border:1px solid #cce2da;border-radius:28px;background:linear-gradient(140deg,#f8fff4,#d9eeec);box-shadow:0 5px 0 #dce9d5}
+.payment-hero .game-art{display:block;width:72px;height:72px;margin:0}
+.payment-dialog .payment-eyebrow{margin:0 0 10px;font:700 10px/1.5 'DM Sans',sans-serif;letter-spacing:1.5px;color:#75845f;text-transform:uppercase}
+.payment-dialog h2{margin:0 0 12px;font:600 29px/1.15 'Outfit',sans-serif;letter-spacing:-.5px}
+.payment-dialog .payment-message{margin:0;font:400 14px/1.7 'DM Sans',sans-serif;color:#68785e;overflow-wrap:anywhere}
+.payment-status{display:inline-flex;align-items:center;gap:7px;margin:18px 0 0;padding:7px 11px;border:1px solid #ded8b7;border-radius:999px;background:#f8f0d8;color:#826b37;font:600 11px/1.5 'DM Sans',sans-serif}
+.payment-status::before{content:'';display:block;width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.payment-dialog[data-state="credited"] .payment-status{background:#e8f1df;border-color:#cbddbc;color:#456a3d}
+.payment-dialog[data-state="error"] .payment-status{background:#faeadc;border-color:#e8ceb3;color:#946234}
+.payment-dialog .payment-actions{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.payment-dialog .payment-actions button{display:block;width:100%;min-height:48px;margin:0;padding:12px 16px;border-radius:14px;font:700 14px/1.4 'DM Sans',sans-serif;cursor:pointer;touch-action:manipulation}
+.payment-dialog [data-close]{border:1px solid #2d5137;background:#365e42;color:#fffdf3;box-shadow:0 3px 0 #25462e}
+.payment-dialog [data-close]:hover{background:#284e34}
+.payment-dialog [data-retry]{border:1px solid #d1dcc0;background:#edf2e2;color:#47653e}
+.payment-dialog [data-retry]:hover:not(:disabled){background:#e2ecd4}
+.payment-dialog [data-retry]:disabled{opacity:.65;cursor:wait}
+.payment-dialog [hidden]{display:none!important}
+@media(max-width:600px){
+ .diamond-packs{grid-template-columns:1fr;gap:12px}
+ .diamond-pack{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:12px;padding:16px;text-align:left;border-radius:18px}
+ .diamond-pack>.game-art{width:56px;height:56px;margin:0}
+ .diamond-pack h3{font-size:27px}.diamond-pack h3 span{font-size:12px}
+ .diamond-pack>strong{font-size:21px;margin:0;white-space:nowrap}
+ .diamond-pack button{grid-column:1/-1;min-height:48px;font-size:14px}
+ .payment-dialog{width:calc(100vw - 28px);max-height:calc(100dvh - 28px);padding:26px 22px 22px;border-radius:24px}
+ .payment-dialog h2{font-size:27px}.payment-dialog .payment-actions{margin-top:20px}
+}
+@media(max-width:360px){.diamond-pack{gap:9px;padding:13px;grid-template-columns:46px minmax(0,1fr) auto}.diamond-pack>.game-art{width:46px;height:46px}.diamond-pack h3{font-size:24px}.diamond-pack>strong{font-size:19px}.payment-dialog{padding-inline:18px}}
+@media(prefers-reduced-motion:reduce){.diamond-pack{transition:none}}

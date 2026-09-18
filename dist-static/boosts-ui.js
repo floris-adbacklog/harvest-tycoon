@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
 
 export function createBoostsUI({state,runAction,onChange,notify}){
- let lastStatus='',catalog=null,purchasing=false,requests={},selectedField='',finishing=false;
+ let lastStatus='',catalog=null,purchasing='',requests={},selectedField='',finishing=false;
  const bridge=()=>window.parent.harvestBridge;
  function signature(){return [state.diamonds,state.boosts.upgradeCredits,...Object.keys(BOOSTS).map(id=>boostStatus(state,id,farmNow()).reason)].join('|');}
  function render(){
@@ -19,10 +19,10 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   $('boost-catalog').insertAdjacentHTML('afterbegin',`<article class="boost-card"><div class="boost-card-art">${art('seeds')}</div><div class="boost-card-copy"><h3>Finish one crop</h3><p>Choose one growing field. Its crop will be ready to harvest instantly.</p><label for="finish-crop-field">Choose a field</label><select id="finish-crop-field" style="display:block;max-width:100%;width:100%;min-height:44px;margin-top:8px;font:inherit" ${!growing.length||finishing?'disabled':''}><option value="">${growing.length?'Select a growing crop…':'No crops are growing'}</option>${growing.map(p=>`<option value="${p.id}" ${String(p.id)===selectedField?'selected':''}>Field ${p.id+1} · ${CROPS[p.crop].name} · ${formatDuration(p.readyAt-farmNow())}</option>`).join('')}</select><small>${state.diamonds<SINGLE_CROP_COST?`You need ${SINGLE_CROP_COST} diamonds.`:''}</small></div><button id="finish-one-crop" class="boost-buy" ${selectedField===''||state.diamonds<SINGLE_CROP_COST||finishing?'disabled':''} aria-label="Finish the selected crop for ${SINGLE_CROP_COST} diamonds">${art('diamonds')}<span>${SINGLE_CROP_COST}</span><small>${finishing?'Finishing…':'Finish crop'}</small></button></article>`);
   $('finish-crop-field').onchange=event=>{selectedField=event.target.value;render();};
   $('finish-one-crop').onclick=async()=>{if(finishing||selectedField==='')return;const id=Number(selectedField);finishing=true;render();try{const r=await runAction({type:'finish_crop',id,expectedCost:SINGLE_CROP_COST});selectedField='';onChange();const message=`Field ${r.field+1}: ${CROPS[r.crop].name} is ready to harvest!`;$('boost-feedback').textContent=message;notify(message);}catch(error){$('boost-feedback').textContent=error.message;}finally{finishing=false;render();}};
-  $('diamond-packs').innerHTML=DIAMOND_PACKS.map(pack=>`<article class="diamond-pack">${art('diamonds')}<h3>${number(pack.amount)} <span>diamonds</span></h3><strong>${pack.price}</strong><button data-diamond-pack="${pack.amount}" ${!catalog?.enabled||purchasing?'disabled':''}>${purchasing?'Opening checkout…':catalog?.enabled?(catalog.mode==='test'?'Test checkout':'Buy diamonds'):'Currently unavailable'}</button></article>`).join('');
+  $('diamond-packs').innerHTML=DIAMOND_PACKS.map(pack=>`<article class="diamond-pack" data-state="${purchasing===String(pack.amount)?'opening':catalog?.enabled?'available':'unavailable'}">${art('diamonds')}<h3>${number(pack.amount)} <span>diamonds</span></h3><strong>${pack.price}</strong><button type="button" data-diamond-pack="${pack.amount}" aria-label="Buy ${number(pack.amount)} diamonds for ${pack.price}" ${!catalog?.enabled||purchasing?'disabled':''}>${purchasing===String(pack.amount)?'Opening checkout…':catalog?.enabled?(catalog.mode==='test'?'Test checkout':'Buy diamonds'):'Currently unavailable'}</button></article>`).join('');
   $('diamond-packs').querySelectorAll('[data-diamond-pack]').forEach(button=>button.onclick=async()=>{
-   if(purchasing)return;const pack=button.dataset.diamondPack;purchasing=true;requests[pack]??=crypto.randomUUID();render();
-   try{await bridge().checkout(pack,requests[pack]);}catch(error){$('boost-feedback').textContent=error.message;purchasing=false;render();}
+   if(purchasing||!catalog?.enabled)return;const pack=button.dataset.diamondPack;purchasing=pack;requests[pack]??=crypto.randomUUID();render();
+   try{await bridge().checkout(pack,requests[pack]);}catch(error){$('boost-feedback').textContent=error.message;purchasing='';render();}
   });
   $('boost-catalog').querySelectorAll('[data-buy-boost]').forEach(button=>button.onclick=async()=>{
    try{

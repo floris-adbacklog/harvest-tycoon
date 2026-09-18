@@ -5,6 +5,9 @@ const sheets=[
  {file:'interface-v2.png',columns:4,keys:['farm','estate','buildings','market','gift','quests','boost','trophy','coins','diamonds','seeds','water','harvest','care','hammer','xp']}
 ];
 const pictures={farmhouse:'farmhouse',mill:'mill',dairy:'dairy',coop:'coop',bakery:'bakery',packing:'packing',windmill:'windmill',stall:'stall',chores:'chores',honey:'honey'};
+// Individual painted illustrations keep each chore recognisable at mobile sizes.
+for(const id of ['weeds','troughs','sorting','fences','irrigation','harvestfair'])pictures[`chore-${id}`]=`chore-${id}`;
+for(const id of ['greenhouse','apiary','paddock','workshop'])pictures[`activity-${id}`]=`activity-${id}`;
 const spriteEntries=Object.fromEntries(sheets.flatMap(sheet=>sheet.keys.map((key,index)=>[key,{...sheet,index}])));
 const symbolMap={salad:'salad',amphora:'pickles',milk:'milk',egg:'eggs',sandwich:'cheese',croissant:'bread','cake-slice':'pie','package-check':'vegetables','package-open':'feed',droplet:'oil',gem:'diamonds',coins:'coins',star:'xp',droplets:'water',scissors:'harvest',shovel:'care',leaf:'care',gift:'gift','clipboard-check':'quests',trophy:'trophy',medal:'trophy',sparkles:'boost',sprout:'seeds',hammer:'hammer',wheat:'wheat',house:'farm',factory:'buildings',landmark:'estate',store:'market',tractor:'tractor',warehouse:'silo',truck:'cart',wind:'windmill','shopping-basket':'vegetables','land-plot':'seeds','circle-fading-arrow-up':'hammer',flag:'quests'};
 export const ART_KEYS=Object.freeze([...Object.keys(spriteEntries),...Object.keys(pictures)]);
