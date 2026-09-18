@@ -136,7 +136,39 @@ export const QUESTS = Object.freeze([
  {title:'A little extra power',description:'Activate 2 boosts with earned diamonds.',stat:'boosts_used',target:2,reward:250},
  {title:'A stronger windmill',description:'Upgrade your Windmill to level 2.',stat:'windmill_upgrades',target:1,reward:200},
  {title:'From mill to oven',description:'Collect 12 fresh bread from the Bakery.',stat:'made_bread',target:12,reward:300},
- {title:'Pumpkin perfection',description:'Collect 6 fresh pumpkin pies from the Bakery.',stat:'made_pie',target:6,reward:400}
+ {title:'Pumpkin perfection',description:'Collect 6 fresh pumpkin pies from the Bakery.',stat:'made_pie',target:6,reward:400},
+ // Append-only: existing quest IDs and claimed rewards never move.
+ {"title":"A helping hand everywhere","description":"Complete 8 hands-on jobs.","stat":"activities","target":8,"reward":180},
+ {"title":"Greenhouse regular","description":"Finish 10 Greenhouse jobs.","stat":"activity_greenhouse","target":10,"reward":220},
+ {"title":"A taste of honey","description":"Finish 5 Apiary jobs.","stat":"activity_apiary","target":5,"reward":180},
+ {"title":"The bee keeper","description":"Finish 30 Apiary jobs.","stat":"activity_apiary","target":30,"reward":550},
+ {"title":"Happy animals","description":"Finish 10 Animal paddock jobs.","stat":"activity_paddock","target":10,"reward":220},
+ {"title":"Tools in good hands","description":"Finish 10 Tool workshop jobs.","stat":"activity_workshop","target":10,"reward":220},
+ {"title":"Around the farm","description":"Finish 3 full farm rounds by helping at all four stops.","stat":"activity_rounds","target":3,"reward":300},
+ {"title":"A well-loved farm","description":"Finish 25 full farm rounds.","stat":"activity_rounds","target":25,"reward":1600},
+ {"title":"Clear paths ahead","description":"Successfully clear the paths 10 times.","stat":"chore_weeds","target":10,"reward":180},
+ {"title":"Water you can count on","description":"Successfully fill the water troughs 10 times.","stat":"chore_troughs","target":10,"reward":350},
+ {"title":"Everything in its place","description":"Successfully sort the seed boxes 10 times.","stat":"chore_sorting","target":10,"reward":650},
+ {"title":"Working side by side","description":"Start 5 batches while another batch is still running in the same building.","stat":"parallel_batches","target":5,"reward":250},
+ {"title":"An efficient workshop","description":"Start 50 batches while another batch is still running in the same building.","stat":"parallel_batches","target":50,"reward":1400},
+ {"title":"Good soil, good harvests","description":"Collect 15 natural fertilizer from production.","stat":"made_fertilizer","target":15,"reward":300},
+ {"title":"Food for the farm","description":"Collect 30 animal feed from production.","stat":"made_feed","target":30,"reward":350},
+ {"title":"Fresh combinations","description":"Collect 10 fresh salads.","stat":"made_salad","target":10,"reward":400},
+ {"title":"A pantry worth keeping","description":"Collect 10 pickled cabbage.","stat":"made_pickles","target":10,"reward":600},
+ {"title":"Sweet deliveries","description":"Complete 5 delivery orders containing Honey.","stat":"honey_deliveries","target":5,"reward":300},
+ {"title":"Crafted with care","description":"Complete 15 delivery orders containing processed farm goods.","stat":"crafted_deliveries","target":15,"reward":600},
+ {"title":"A familiar daily rhythm","description":"Complete 30 daily challenges.","stat":"dailies","target":30,"reward":600},
+ {"title":"The roadside regular","description":"Collect 2,000 coins from the farm stall.","stat":"passive_earned","target":2000,"reward":400},
+ {"title":"Prepared for the season","description":"Upgrade silo research 3 times.","stat":"silo_upgrades","target":3,"reward":400},
+ {"title":"Wheat specialist","description":"Harvest 100 wheat.","stat":"harvest_wheat","target":100,"reward":300},
+ {"title":"Corn specialist","description":"Harvest 75 corn.","stat":"harvest_corn","target":75,"reward":500},
+ {"title":"Lettuce specialist","description":"Harvest 100 lettuce.","stat":"harvest_lettuce","target":100,"reward":300},
+ {"title":"Barley specialist","description":"Harvest 60 barley.","stat":"harvest_barley","target":60,"reward":500},
+ {"title":"Cabbage specialist","description":"Harvest 40 cabbage.","stat":"harvest_cabbage","target":40,"reward":500},
+ {"title":"Cauliflower specialist","description":"Harvest 30 cauliflower.","stat":"harvest_cauliflower","target":30,"reward":500},
+ {"title":"Pumpkin specialist","description":"Harvest 25 pumpkin.","stat":"harvest_pumpkin","target":25,"reward":500},
+ {"title":"Red cabbage specialist","description":"Harvest 20 red cabbage.","stat":"harvest_redcabbage","target":20,"reward":500},
+ {"title":"Sunflower specialist","description":"Harvest 15 sunflower.","stat":"harvest_sunflower","target":15,"reward":500}
 ]);
 export const MAX_PLOTS=24;
 export function xpForLevel(level){const n=level-1;return 60*n+20*n*(n-1);}
@@ -232,6 +264,7 @@ export function startProduction(state,id,now=Date.now()){
  for(const [k,n]of Object.entries(r.input))state.inventory[k]-=n;
  b.batchSequence=(b.batchSequence??0)+1;
  const job={id:`${r.building}-${b.batchSequence}`,recipe:id,startedAt:now,readyAt:now+duration,output:{...r.output},xp:r.xp};
+ if(productionJobs(b).some(j=>j.readyAt>now))state.stats.parallel_batches=(state.stats.parallel_batches??0)+1;
  if(!b.job)b.job=job;else (b.extraJobs??=[]).push(job);
  return {building:r.building,recipe:id,jobId:job.id,readyAt:job.readyAt};
 }
@@ -273,7 +306,7 @@ export function claimQuest(state,id){
  if(!Number.isInteger(id)||!QUESTS[id])throw new Error('Choose a valid quest.');
  const q=QUESTS[id];
  if(state.claimed.includes(id))throw new Error('This reward has already been claimed.');
- if(state.stats[q.stat]<q.target)throw new Error('Finish this quest to claim your reward.');
+ if((state.stats[q.stat]??0)<q.target)throw new Error('Finish this quest to claim your reward.');
  state.claimed.push(id);state.coins+=q.reward;state.xp+=15;
  return {coins:q.reward,xp:15};
 }
@@ -329,12 +362,12 @@ export function fertilizeField(state,id,now=Date.now()){
  plot.readyAt-=saved;plot.fertilized=true;state.inventory.fertilizer--;state.xp+=5;state.stats.fertilized=(state.stats.fertilized??0)+1;
  return {id,crop:plot.crop,saved,xp:5};
 }
-const DAILY_POOLS=[
+const LEGACY_DAILY_POOLS=[
  [{stat:'harvested',target:8,title:'Bring in the harvest',description:'Harvest 8 crops.',reward:45},{stat:'watered',target:8,title:'A little extra care',description:'Water 8 growing crops.',reward:40},{stat:'planted',target:10,title:'A fresh start',description:'Plant 10 crops.',reward:45}],
  [{stat:'produced',target:2,title:'Busy little buildings',description:'Collect 2 production batches.',reward:55},{stat:'made_milk',target:4,title:'Fresh from the barn',description:'Collect 4 milk.',reward:60},{stat:'made_eggs',target:6,title:'The morning basket',description:'Collect 6 eggs.',reward:55}],
  [{stat:'earned',target:120,title:'Market day',description:'Earn 120 coins from sales or deliveries.',reward:55},{stat:'deliveries',target:1,title:'Special delivery',description:'Complete an order at the farm cart.',reward:60},{stat:'harvest_wheat',target:6,title:'Golden fields',description:'Harvest 6 wheat.',reward:45}]
 ];
-const ORDER_POOL=[
+const LEGACY_ORDER_POOL=[
  {title:'The village grocer',input:{corn:3,lettuce:2},coins:112,xp:18},
  {title:'Breakfast at the inn',input:{eggs:3,milk:2},coins:155,xp:25},
  {title:'The flower stall',input:{sunflower:3},coins:190,xp:25},
@@ -343,13 +376,26 @@ const ORDER_POOL=[
  {title:'A picnic in the park',input:{bread:2,salad:1},coins:265,xp:35},
  {title:'Autumn pantry',input:{redcabbage:2,cauliflower:2},coins:245,xp:30}
 ];
+export const DAILY_POOLS=LEGACY_DAILY_POOLS.map((pool,id)=>Object.freeze([...pool,...[[{"stat":"activity_greenhouse","target":2,"title":"Seedling care","description":"Finish 2 Greenhouse jobs.","reward":65},{"stat":"activity_paddock","target":2,"title":"Happy herd","description":"Finish 2 Animal paddock jobs.","reward":65},{"stat":"chore_weeds","target":3,"title":"A tidy start","description":"Successfully clear the paths 3 times.","reward":70},{"stat":"tended","target":4,"title":"More than watering","description":"Give 4 growing crops extra care.","reward":65},{"stat":"harvest_lettuce","target":8,"title":"Leafy little harvest","description":"Harvest 8 lettuce.","reward":55},{"stat":"harvest_corn","target":6,"title":"Golden corn","description":"Harvest 6 corn.","reward":65}],[{"stat":"activity_apiary","target":3,"title":"Honey time","description":"Finish 3 Apiary jobs and collect their Honey.","reward":85},{"stat":"activity_workshop","target":3,"title":"Tools of the trade","description":"Finish 3 Tool workshop jobs.","reward":85},{"stat":"made_feed","target":3,"title":"Feed the farm","description":"Collect 3 animal feed from production.","reward":80},{"stat":"parallel_batches","target":2,"title":"Side by side","description":"Start 2 batches while another batch is still running in the same building.","reward":90,"parallel":true},{"stat":"fertilized","target":2,"title":"A soil boost","description":"Use natural fertilizer on 2 growing fields.","reward":80,"minLevel":3},{"stat":"made_flour","target":4,"title":"Flour power","description":"Collect 4 flour from production.","reward":80,"minLevel":3},{"stat":"made_salad","target":1,"title":"Freshly prepared","description":"Collect 1 fresh salad.","reward":90,"minLevel":4}],[{"stat":"activity_rounds","target":1,"title":"Make the rounds","description":"Finish a full farm round by helping at all four stops.","reward":110},{"stat":"activities","target":6,"title":"A hands-on day","description":"Finish 6 hands-on jobs around the farm.","reward":110},{"stat":"chore_troughs","target":2,"title":"Fresh water rounds","description":"Successfully fill the water troughs twice.","reward":110,"chore":"troughs"},{"stat":"chore_sorting","target":1,"title":"Everything sorted","description":"Successfully sort the seed boxes once.","reward":140,"chore":"sorting"},{"stat":"made_bread","target":2,"title":"Warm from the oven","description":"Collect 2 fresh bread.","reward":100,"minLevel":4},{"stat":"passive_earned","target":30,"title":"Roadside trade","description":"Collect 30 coins from the farm stall.","reward":80,"minLevel":3}]][id]]));
+export const ORDER_POOL=Object.freeze([{"title":"The baker next door","input":{"wheat":5},"xp":15,"minLevel":1},{"title":"A leafy lunch","input":{"lettuce":4,"corn":2},"xp":20,"minLevel":1},{"title":"Sweet little favour","input":{"honey":2,"wheat":4},"xp":20,"minLevel":1},{"title":"Breakfast at the inn","input":{"eggs":3,"milk":2},"xp":25,"minLevel":1},{"title":"The paddock pantry","input":{"feed":2,"corn":2},"xp":25,"minLevel":1},{"title":"Honey on toast","input":{"honey":2,"bread":2},"xp":35,"minLevel":3},{"title":"A cream tea","input":{"honey":3,"milk":2,"bread":1},"xp":35,"minLevel":3},{"title":"The village grocer","input":{"corn":3,"lettuce":2,"cabbage":1},"xp":25,"minLevel":3},{"title":"The millers basket","input":{"grainmeal":2,"flour":4},"xp":30,"minLevel":3},{"title":"For the garden club","input":{"fertilizer":2,"lettuce":4},"xp":30,"minLevel":3},{"title":"The animal sanctuary","input":{"feed":3,"barley":3},"xp":30,"minLevel":3},{"title":"A picnic in the park","input":{"bread":2,"salad":1,"honey":1},"xp":40,"minLevel":4},{"title":"The cheese board","input":{"cheese":2,"bread":1},"xp":35,"minLevel":4},{"title":"A farm-fresh lunch","input":{"salad":2,"eggs":3},"xp":35,"minLevel":4},{"title":"Sunday lunch","input":{"cabbage":2,"pumpkin":2},"xp":35,"minLevel":5},{"title":"The harvest kitchen","input":{"vegetables":1,"flour":3},"xp":45,"minLevel":5},{"title":"A golden afternoon","input":{"pie":1,"honey":2,"milk":2},"xp":50,"minLevel":6},{"title":"Autumn pantry","input":{"redcabbage":2,"cauliflower":2},"xp":40,"minLevel":6},{"title":"The village feast","input":{"bread":3,"cheese":2,"vegetables":1},"xp":65,"minLevel":7},{"title":"Pantry provisions","input":{"pickles":1,"vegetables":1},"xp":55,"minLevel":7},{"title":"A chefs finishing touch","input":{"oil":1,"salad":2,"honey":2},"xp":65,"minLevel":8},{"title":"Golden harvest hamper","input":{"sunflower":2,"oil":1},"xp":60,"minLevel":8},{"title":"The autumn festival","input":{"pie":2,"pickles":1,"honey":3},"xp":75,"minLevel":8},{"title":"The estate banquet","input":{"oil":1,"vegetables":2,"cheese":2,"bread":2},"xp":85,"minLevel":10}]);
+function availableDaily(state,q){
+ return levelOf(state)>=(q.minLevel??1)&&(!q.chore||!choreStatus(state,q.chore).locked)&&(!q.parallel||Object.entries(state.buildings).some(([id,b])=>id!=='farmhouse'&&b.level>=2));
+}
+function selectDailyTasks(state,day){
+ return DAILY_POOLS.map((pool,id)=>{const eligible=pool.filter(q=>availableDaily(state,q));return {...eligible[(day+id)%eligible.length]};});
+}
+function orderQuote(order){return {...order,coins:Math.ceil(Object.entries(order.input).reduce((n,[key,count])=>n+ITEMS[key].sell*count,0)*1.4)};}
+function selectDailyOrders(state,day){
+ const eligible=ORDER_POOL.filter(o=>levelOf(state)>=(o.minLevel??1));
+ return [0,Math.floor(eligible.length/3),Math.floor(eligible.length*2/3)].map(offset=>orderQuote(eligible[(day+offset)%eligible.length]));
+}
 export function utcDay(now=Date.now()){return new Date(now).toISOString().slice(0,10);}
 export function dayNumber(now=Date.now()){return Math.floor(now/DAY_MS);}
 export function seedCost(state,crop){return Math.max(1,Math.ceil(CROPS[crop].cost*(1-siloBonus(state.siloLevel??0).seeds)));}
 export function normalizeFarm(state,now=Date.now()){
  const oldVersion=state.version??0;
  if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=xpForLevel(previousLevel)-60*(previousLevel-1);}
- state.version=9;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
+ state.version=10;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
@@ -362,7 +408,13 @@ export function normalizeFarm(state,now=Date.now()){
   b.extraJobs??=[];b.batchSequence??=0;
   for(const job of productionJobs(b))if(!job.id)job.id=`${key}-${++b.batchSequence}`;
  }
- state.stats??={};for(const q of QUESTS)state.stats[q.stat]??=0;
+ state.stats??={};
+ if(oldVersion<10){
+  // Only recover counters that old saves actually recorded; never invent chore wins.
+  const recovered={activity_rounds:state.activities?.rounds??0,silo_upgrades:state.siloLevel??0,...Object.fromEntries(Object.entries(state.activities?.completed??{}).map(([id,n])=>['activity_'+id,n]))};
+  for(const [key,n] of Object.entries(recovered)){state.stats[key]??=n;if(state.daily?.baseline)state.daily.baseline[key]??=state.stats[key];}
+ }
+ for(const q of QUESTS)state.stats[q.stat]??=0;
  for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals'])state.stats[k]??=0;
  state.discovered??=[];state.siloLevel??=0;state.tractorReadyAt??=0;
  state.login??={lastDay:null,streak:0,best:0,visits:0};state.levelRewards??=[1];
@@ -375,17 +427,21 @@ export function normalizeFarm(state,now=Date.now()){
  state.activities??={jobs:{},cooldowns:{},completed:{},round:[],rounds:0};
  for(const p of state.plots){p.tended??=false;p.fertilized??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*.3);}
  const day=utcDay(now);
- if(state.daily?.date!==day)state.daily={date:day,baseline:{...state.stats},claimed:[],orders:[],bonusClaimed:false};
+ const existingDay=state.daily?.date===day;
+ if(!existingDay)state.daily={date:day,baseline:{...state.stats},claimed:[],orders:[],bonusClaimed:false};
+ const d=dayNumber(now);
+ state.daily.tasks??=oldVersion<10&&existingDay?LEGACY_DAILY_POOLS.map((pool,id)=>({...pool[(d+id)%pool.length]})):selectDailyTasks(state,d);
+ state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  return state;
 }
 export function createFarm(now=Date.now()){return normalizeFarm(createBaseFarm(now),now);}
 export function dailyTasks(state,now=Date.now()){
  normalizeFarm(state,now);const d=dayNumber(now);
- return DAILY_POOLS.map((pool,id)=>{const q=pool[(d+id)%pool.length];return {...q,id,diamonds:DAILY_CHALLENGE_DIAMONDS[id],progress:Math.min(q.target,Math.max(0,(state.stats[q.stat]??0)-(state.daily.baseline[q.stat]??0))),claimed:state.daily.claimed.includes(id)};});
+ return state.daily.tasks.map((q,id)=>{return {...q,id,diamonds:DAILY_CHALLENGE_DIAMONDS[id],progress:Math.min(q.target,Math.max(0,(state.stats[q.stat]??0)-(state.daily.baseline[q.stat]??0))),claimed:state.daily.claimed.includes(id)};});
 }
 export function dailyOrders(state,now=Date.now()){
  normalizeFarm(state,now);const d=dayNumber(now);
- return [0,2,4].map((offset,id)=>{const order=ORDER_POOL[(d+offset)%ORDER_POOL.length];return {...order,coins:Math.ceil(Object.entries(order.input).reduce((n,[key,count])=>n+ITEMS[key].sell*count,0)*1.4),id,done:state.daily.orders.includes(id)};});
+ return state.daily.orderBoard.map((order,id)=>({...order,id,done:state.daily.orders.includes(id)}));
 }
 export function claimDaily(state,id,day,now=Date.now()){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('A new day has started. Check the fresh challenges.');
@@ -411,6 +467,8 @@ export function deliverOrder(state,id,day,now=Date.now()){
  if(Object.entries(order.input).some(([k,n])=>state.inventory[k]<n))throw new Error('Gather the ingredients for this order first.');
  for(const[k,n]of Object.entries(order.input))state.inventory[k]-=n;
  state.daily.orders.push(id);state.coins+=order.coins;state.xp+=order.xp;state.stats.deliveries++;state.stats.earned+=order.coins;
+ if(order.input.honey)state.stats.honey_deliveries=(state.stats.honey_deliveries??0)+1;
+ if(Object.keys(order.input).some(k=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)))state.stats.crafted_deliveries=(state.stats.crafted_deliveries??0)+1;
  return {coins:order.coins,xp:order.xp};
 }
 export function claimLevelRewards(state){
@@ -435,7 +493,7 @@ export function useTractor(state,mode,crop='corn',now=Date.now()){
 }
 export function upgradeSilo(state){
  if(state.siloLevel>=5)throw new Error('Your silo research is complete.');const cost=SILO_COSTS[state.siloLevel];if(state.coins<cost)throw new Error(`You need ${cost} coins for this research.`);
- state.coins-=cost;state.siloLevel++;state.xp+=20;return {level:state.siloLevel,cost};
+ state.coins-=cost;state.siloLevel++;state.stats.silo_upgrades=(state.stats.silo_upgrades??0)+1;state.xp+=20;return {level:state.siloLevel,cost};
 }
 export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRandom){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
@@ -535,7 +593,7 @@ export function doChore(state,id,now=Date.now(),random=secureChoreRandom){
  state.chorePractice??={};state.chorePractice[id]=chore.attempts+1;
  state.chores[id]=now+chore.cooldown;
  const coins=success?chore.coins:0,xp=success?chore.xp:0;
- state.coins+=coins;state.xp+=xp;if(success)state.stats.chores++;
+ state.coins+=coins;state.xp+=xp;if(success){state.stats.chores++;state.stats['chore_'+id]=(state.stats['chore_'+id]??0)+1;}
  return {success,coins,xp,chance:chore.chance,nextChance:Math.min(chore.maxChance,chore.chance+2),attempts:chore.attempts+1,readyAt:state.chores[id]};
 }
 export function currentProject(state){
@@ -598,5 +656,7 @@ function workActivity(state,action,now){
  state.coins+=coins;state.xp+=xp;
  if(s.item)state.inventory[s.item]++;
  state.stats.activities=(state.stats.activities??0)+1;
+ state.stats['activity_'+action.station]=(state.stats['activity_'+action.station]??0)+1;
+ if(roundComplete)state.stats.activity_rounds=(state.stats.activity_rounds??0)+1;
  return {station:action.station,finished:true,coins,xp,item:s.item??null,roundComplete};
 }

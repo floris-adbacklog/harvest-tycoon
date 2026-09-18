@@ -7,7 +7,7 @@ export function questGroups(state){
   const group=state.claimed.includes(id)?'done':value>=quest.target?'ready':'active';
   groups[group].push({id,quest,value});
  });
- groups.active.sort((a,b)=>Number(b.id>=32)-Number(a.id>=32));
+ groups.active.sort((a,b)=>Number(b.id>=41)-Number(a.id>=41));
  return groups;
 }
 
@@ -24,7 +24,7 @@ export function createQuestsUI({state,claim,icons,document:doc=globalThis.docume
    button.setAttribute('aria-pressed',String(button.dataset.questFilter===filter));
    button.querySelector('span').textContent=groups[button.dataset.questFilter].length;
   });
-  list.innerHTML=groups[filter].map(({id,quest:q,value})=>`<article class="task-row ${filter==='done'?'completed':''}"><div class="quest-row-heading"><h3>${q.title}</h3>${id>=32?'<span class="beta-badge">New</span>':''}</div><p>${q.description}</p><progress value="${value}" max="${q.target}" aria-label="${q.title} progress"></progress><div class="task-bottom"><span>${value} / ${q.target}<strong>${q.reward} coins</strong></span>${filter==='ready'?`<button class="primary-button" data-claim="${id}">Claim reward</button>`:`<span class="quest-state">${filter==='done'?'Completed ✓':'In progress'}</span>`}</div></article>`).join('')||`<div class="quest-empty"><i data-lucide="clipboard-check"></i><h3>${filter==='ready'?'No rewards waiting':filter==='done'?'Your journey starts here':'All caught up!'}</h3><p>${filter==='ready'?'Open In progress to find your next goal.':filter==='done'?'Complete a quest, then claim its reward here.':'New milestones will arrive as the farm grows.'}</p></div>`;
+  list.innerHTML=groups[filter].map(({id,quest:q,value})=>`<article class="task-row ${filter==='done'?'completed':''}"><div class="quest-row-heading"><h3>${q.title}</h3>${id>=41?'<span class="beta-badge">New</span>':''}</div><p>${q.description}</p><progress value="${value}" max="${q.target}" aria-label="${q.title} progress"></progress><div class="task-bottom"><span>${value} / ${q.target}<strong>${q.reward} coins</strong></span>${filter==='ready'?`<button class="primary-button" data-claim="${id}">Claim reward</button>`:`<span class="quest-state">${filter==='done'?'Completed ✓':'In progress'}</span>`}</div></article>`).join('')||`<div class="quest-empty"><i data-lucide="clipboard-check"></i><h3>${filter==='ready'?'No rewards waiting':filter==='done'?'Your journey starts here':'All caught up!'}</h3><p>${filter==='ready'?'Open In progress to find your next goal.':filter==='done'?'Complete a quest, then claim its reward here.':'New milestones will arrive as the farm grows.'}</p></div>`;
   icons();
  }
  function open(){

@@ -1,4 +1,14 @@
-# Harvest Tycoon — September 18 chores and Honey update
+# Harvest Tycoon — September 18 quests and deliveries update
+
+- 31 new regular quests (72 total), separate from the existing ten-step beginner guide. Includes all nine individual crops, successful chores, parallel production, each hands-on station, farm rounds, crafted goods, Honey deliveries, silo research and the farm stall.
+- 28 daily challenge templates, with three selected per day. Goals include Greenhouse care, Apiary Honey, workshop repairs, animal care, successful chores and parallel production. Locked chores and parallel production are excluded until available. Existing 2 / 2 / 4 diamond rewards and the completion bonus are preserved.
+- 24 delivery templates with three orders per day. Higher-level farms gain mixed hampers of bread, cheese, pickles, pie, oil, vegetables and Honey. Every order pays 40% above its ingredients' market sale value, plus XP.
+- Daily goals and orders are saved for the entire UTC day. Level-ups, reloads and upgrades cannot change the current selection. New selections arrive at midnight UTC.
+- Existing farms retain today's old challenges, order identities, claim markers and progress until tomorrow. Existing regular quest IDs and claims are preserved.
+- Historical station completions, farm rounds and silo research count toward new lifetime quests. Newly tracked parallel starts, individual chore wins and delivery categories count from this update onward. Failed chores do not advance success quests or challenges.
+- All player-facing text remains English. Deploy the included frontend through GitHub/Vercel after the server update.
+
+# Previous chores and Honey update
 
 - Chores unlock sequentially after 20 attempts at the preceding chore. Practice adds 2 percentage points per attempt, including failures.
 - Clear the paths: 60–100% success, 1-minute cooldown, 18 coins / 4 XP on success.

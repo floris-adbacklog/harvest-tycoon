@@ -14,6 +14,8 @@ test('all four hands-on jobs reward once, give useful goods and complete one rou
  assert.equal(s.xp-xp,Object.values(ACTIVE_STATIONS).reduce((n,a)=>n+a.xp,ACTIVITY_ROUND_REWARD.xp));
  assert.equal(s.inventory.lettuce,inventory.lettuce+1);assert.equal(s.inventory.fertilizer,inventory.fertilizer+1);
  assert.equal(s.inventory.honey,inventory.honey+1);assert.equal(s.inventory.feed,inventory.feed+1);
+ for(const station of Object.keys(ACTIVE_STATIONS))assert.equal(s.stats['activity_'+station],1);
+ assert.equal(s.stats.activity_rounds,1);
  assert(result.roundComplete);assert.equal(s.activities.rounds,1);assert.deepEqual(s.activities.round,[]);assert.equal(s.stats.activities,4);
 });
 test('invalid, premature, wrong and repeated tile requests never award or advance',()=>{

@@ -77,12 +77,12 @@ test('the full Windmill-to-Bakery chain produces fresh goods with a higher margi
 });
 test('new beta quests retain old IDs and each reward can be collected only once',()=>{
  const state=createFarm(now);state.claimed=[0,1,31];const old=state.claimed.slice();
- assert.equal(QUESTS.length,41);assert.equal(QUESTS[31].title,'A lifelong grower');
+ assert.equal(QUESTS.length,72);assert.equal(QUESTS[31].title,'A lifelong grower');
  for(let id=32;id<QUESTS.length;id++){
   const q=QUESTS[id];state.stats[q.stat]=q.target;const coins=state.coins;
   act(state,{type:'quest',id});assert.equal(state.coins,coins+q.reward);assert.throws(()=>act(state,{type:'quest',id}),/already been claimed/);
  }
- assert(old.every(id=>state.claimed.includes(id)));assert.equal(state.claimed.length,12);
+ assert(old.every(id=>state.claimed.includes(id)));assert.equal(state.claimed.length,old.length+QUESTS.length-32);
 });
 test('legacy mill flour keeps its purchased yield and XP after the recipe moves',()=>{
  const state=createFarm(now);state.version=4;state.buildings.mill.job={recipe:'flour',startedAt:now-100000,readyAt:now-1000};
