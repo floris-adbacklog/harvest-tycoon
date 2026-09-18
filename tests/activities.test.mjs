@@ -13,6 +13,7 @@ test('all four hands-on jobs reward once, give useful goods and complete one rou
  assert.equal(s.coins-coins,Object.values(ACTIVE_STATIONS).reduce((n,a)=>n+a.coins,ACTIVITY_ROUND_REWARD.coins));
  assert.equal(s.xp-xp,Object.values(ACTIVE_STATIONS).reduce((n,a)=>n+a.xp,ACTIVITY_ROUND_REWARD.xp));
  assert.equal(s.inventory.lettuce,inventory.lettuce+1);assert.equal(s.inventory.fertilizer,inventory.fertilizer+1);
+ assert.equal(s.inventory.honey,inventory.honey+1);assert.equal(s.inventory.feed,inventory.feed+1);
  assert(result.roundComplete);assert.equal(s.activities.rounds,1);assert.deepEqual(s.activities.round,[]);assert.equal(s.stats.activities,4);
 });
 test('invalid, premature, wrong and repeated tile requests never award or advance',()=>{
@@ -49,5 +50,5 @@ test('repeating one station does not count as visiting all four; idle time award
 test('client-supplied reward fields are ignored and XP boosts apply once',()=>{
  const s=createFarm(now);s.boosts.xpUntil=now+60000;act(s,{type:'activity_start',station:'workshop',coins:999999},now);
  const job=s.activities.jobs.workshop;let result;job.targets.forEach((target,i)=>{result=act(s,{type:'activity_work',station:'workshop',startedAt:now,target,coins:999999,xp:999999},now+(i+1)*700);});
- assert.equal(result.coins,20);assert.equal(result.xp,12);assert.equal(s.activities.completed.workshop,1);
+ assert.equal(result.coins,30);assert.equal(result.xp,16);assert.equal(s.activities.completed.workshop,1);
 });

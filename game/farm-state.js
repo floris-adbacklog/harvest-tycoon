@@ -10,6 +10,7 @@ export const CROPS = Object.freeze({
  cauliflower:{name:'Cauliflower',cost:65,sell:175,duration:14400000,xp:18,model:'plant_005',height:.5,use:'Vegetable boxes'}
 });
 export const PRODUCTS = Object.freeze({
+ honey:{name:'Honey',sell:35,icon:'hexagon',color:'gold'},
  grainmeal:{name:'Grain meal',sell:180,icon:'wheat',color:'wheat'},
  fertilizer:{name:'Natural fertilizer',sell:260,icon:'sprout',color:'green'},
  salad:{name:'Fresh salad',sell:450,icon:'salad',color:'green'},
@@ -91,7 +92,7 @@ function recordBeginnerAction(state,action,result,before){
  if(action.type==='produce')m.produce=true;
  if(action.type==='collect')m.collect=true;
  if(action.type==='checkin')m.gift=true;
- if(action.type==='chore')m.chore=true;
+ if(action.type==='chore'&&result.success)m.chore=true;
 }
 
 export const QUESTS = Object.freeze([
@@ -348,7 +349,7 @@ export function seedCost(state,crop){return Math.max(1,Math.ceil(CROPS[crop].cos
 export function normalizeFarm(state,now=Date.now()){
  const oldVersion=state.version??0;
  if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=xpForLevel(previousLevel)-60*(previousLevel-1);}
- state.version=8;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
+ state.version=9;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
@@ -370,7 +371,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.onboarding??={completed:0,milestones:{gift:state.login.visits>0},rewardClaimed:false};
  state.onboarding.milestones??={};
  state.mastery??={harvests:Object.fromEntries(Object.keys(CROPS).map(k=>[k,state.stats['harvest_'+k]??0])),claimed:[]};
- state.stall??={level:1,since:now,bank:0};state.estate??={completed:0,job:null};state.chores??={};
+ state.stall??={level:1,since:now,bank:0};state.estate??={completed:0,job:null};state.chores??={};state.chorePractice??={};
  state.activities??={jobs:{},cooldowns:{},completed:{},round:[],rounds:0};
  for(const p of state.plots){p.tended??=false;p.fertilized??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*.3);}
  const day=utcDay(now);
@@ -436,11 +437,11 @@ export function upgradeSilo(state){
  if(state.siloLevel>=5)throw new Error('Your silo research is complete.');const cost=SILO_COSTS[state.siloLevel];if(state.coins<cost)throw new Error(`You need ${cost} coins for this research.`);
  state.coins-=cost;state.siloLevel++;state.xp+=20;return {level:state.siloLevel,cost};
 }
-export function applyFarmAction(state,action,now=Date.now()){
+export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRandom){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
  const beforeXP=state.xp,beforeCoins=state.coins;
  const beginnerBefore={harvested:state.stats.harvested,wheat:state.stats.harvest_wheat??0,watered:state.stats.watered,tended:state.stats.tended};
- const result=dispatchFarmAction(state,action,now);
+ const result=dispatchFarmAction(state,action,now,random);
  recordBeginnerAction(state,action,result,beginnerBefore);
  const earnedXP=state.xp-beforeXP;
  if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
@@ -449,7 +450,7 @@ export function applyFarmAction(state,action,now=Date.now()){
  }
  return result;
 }
-function dispatchFarmAction(state,action,now){
+function dispatchFarmAction(state,action,now,random){
  switch(action.type){
   case 'buy_boost':{
    if(!Object.hasOwn(BOOSTS,action.boost))throw new Error('Choose a valid boost.');
@@ -459,7 +460,7 @@ function dispatchFarmAction(state,action,now){
   case 'fertilize':return fertilizeField(state,action.id,now);
   case 'stall_collect':return collectStall(state,now);
   case 'stall_upgrade':return upgradeStall(state,now);
-  case 'chore':return doChore(state,action.id,now);
+  case 'chore':return doChore(state,action.id,now,random);
   case 'activity_start':return startActivity(state,action.station,now);
   case 'activity_work':return workActivity(state,action,now);
   case 'mastery':return claimMastery(state,action.crop,action.tier);
@@ -485,7 +486,19 @@ function dispatchFarmAction(state,action,now){
 
 export const SILO_COSTS=[140,240,380,15000,65000];
 export const MASTERY_TIERS=[{name:'Bronze',target:25,coins:100,xp:25},{name:'Silver',target:100,coins:350,xp:60},{name:'Gold',target:300,coins:1200,xp:150},{name:'Platinum',target:1000,coins:4000,xp:400}];
-export const CHORES=Object.freeze({weeds:{name:'Clear the paths',description:'Pull weeds along the farm paths.',icon:'shovel',coins:12,xp:3,cooldown:180000},troughs:{name:'Fill the water troughs',description:'Fresh water for the animals.',icon:'droplets',coins:10,xp:3,cooldown:180000},sorting:{name:'Sort the seed boxes',description:'Get tomorrow’s planting ready.',icon:'package-open',coins:8,xp:3,cooldown:120000}});
+export const CHORES=Object.freeze({
+ weeds:{name:'Clear the paths',description:'Pull weeds along the farm paths.',icon:'shovel',coins:18,xp:4,cooldown:60000,baseChance:60,maxChance:100},
+ troughs:{name:'Fill the water troughs',description:'Fresh water for the animals.',icon:'droplets',coins:40,xp:8,cooldown:180000,baseChance:40,maxChance:80,requires:'weeds'},
+ sorting:{name:'Sort the seed boxes',description:'Get tomorrow’s planting ready.',icon:'package-open',coins:90,xp:16,cooldown:480000,baseChance:20,maxChance:60,requires:'troughs'}
+});
+export function choreStatus(state,id,now=Date.now()){
+ if(!Object.hasOwn(CHORES,id))throw new Error('Choose a farm chore.');
+ const c=CHORES[id],attempts=Math.max(0,Math.floor(state.chorePractice?.[id]??0));
+ const chance=Math.min(c.maxChance,c.baseChance+attempts*2);
+ const previous=c.requires?choreStatus(state,c.requires,now):null;
+ return {...c,attempts,chance,mastered:chance===c.maxChance,locked:!!previous&&(previous.locked||!previous.mastered),remaining:Math.max(0,(state.chores[id]??0)-now)};
+}
+function secureChoreRandom(){return globalThis.crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;}
 export const PROJECTS=Object.freeze([
  {name:'Rooted homestead',description:'Build a dependable home for your growing farm.',coins:600,input:{wheat:40,milk:12},medals:0,duration:7200000,xp:250},
  {name:'Village supplier',description:'Become the village’s everyday source of fresh food.',coins:3000,input:{corn:40,eggs:36,bread:20},medals:1,duration:28800000,xp:600},
@@ -514,10 +527,16 @@ export function upgradeStall(state,now=Date.now()){
  const cost=stallStatus(state,now).upgradeCost;if(cost===null)throw new Error('Your farm stall is fully upgraded.');if(state.coins<cost)throw new Error(`You need ${cost} coins to upgrade the stall.`);
  settleStall(state,now);state.coins-=cost;state.stall.level++;return {level:state.stall.level,cost};
 }
-export function doChore(state,id,now=Date.now()){
- if(!Object.hasOwn(CHORES,id))throw new Error('Choose a farm chore.');const chore=CHORES[id];
- if(now<(state.chores[id]??0))throw new Error(`This chore returns in ${formatDuration(state.chores[id]-now)}.`);
- state.chores[id]=now+chore.cooldown;state.coins+=chore.coins;state.xp+=chore.xp;state.stats.chores++;return {coins:chore.coins,xp:chore.xp};
+export function doChore(state,id,now=Date.now(),random=secureChoreRandom){
+ const chore=choreStatus(state,id,now);
+ if(chore.locked)throw new Error(`Master ${CHORES[chore.requires].name} first.`);
+ if(chore.remaining)throw new Error(`This chore returns in ${formatDuration(chore.remaining)}.`);
+ const success=random()<chore.chance/100;
+ state.chorePractice??={};state.chorePractice[id]=chore.attempts+1;
+ state.chores[id]=now+chore.cooldown;
+ const coins=success?chore.coins:0,xp=success?chore.xp:0;
+ state.coins+=coins;state.xp+=xp;if(success)state.stats.chores++;
+ return {success,coins,xp,chance:chore.chance,nextChance:Math.min(chore.maxChance,chore.chance+2),attempts:chore.attempts+1,readyAt:state.chores[id]};
 }
 export function currentProject(state){
  const n=state.estate.completed;if(n<PROJECTS.length)return {...PROJECTS[n],id:n};
@@ -540,10 +559,10 @@ export function completeProject(state,now=Date.now()){
 // Small hands-on jobs run alongside crops and production. Only server time and
 // persisted progress determine rewards; the client submits a station and tile.
 export const ACTIVE_STATIONS=Object.freeze({
- greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:14,xp:5,cooldown:180000,item:'lettuce',instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
- apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:18,xp:6,cooldown:240000,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
- paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:16,xp:5,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
- workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:20,xp:6,cooldown:240000,instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
+ greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:20,xp:7,cooldown:180000,item:'lettuce',instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
+ apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:26,xp:8,cooldown:240000,item:'honey',instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
+ paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:24,xp:7,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
+ workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:30,xp:8,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
 });
 export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:22,xp:10});
 export function activityTargets(station,cycle){

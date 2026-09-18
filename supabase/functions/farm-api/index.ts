@@ -31,6 +31,9 @@ Deno.serve(async(req)=>{
    if(renamed.error)throw renamed.error;return reply({profile:renamed.data});
   }
   if(body.operation==='action'&&(!/^[0-9a-f-]{36}$/i.test(body.requestId??'')||!body.action||typeof body.action!=='object'))return reply({error:'Invalid farm action.'},400);
+  // Keep one server-owned roll across optimistic concurrency retries.
+  let choreRoll:number|undefined;
+  const random=()=>choreRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);
   for(let attempt=0;attempt<5;attempt++){
    const found=await admin.from('player_farms').select('*').eq('player_id',user.id).maybeSingle();if(found.error)throw found.error;
    const row=found.data,now=Date.now();
@@ -46,7 +49,7 @@ Deno.serve(async(req)=>{
    if(body.operation==='load')return reply({state,profile,revision:row.revision,serverNow:now});
    const previous=row.receipts.find((r:{id:string})=>r.id===body.requestId);
    if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now});
-   let result;try{result=applyFarmAction(state,body.action,now);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
+   let result;try{result=applyFarmAction(state,body.action,now,random);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
    const receipts=[...row.receipts,{id:body.requestId,result}].slice(-100);
    const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
    if(saved.error)throw saved.error;

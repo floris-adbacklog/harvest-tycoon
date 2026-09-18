@@ -1,4 +1,16 @@
-# Harvest Tycoon — September 18 production update
+# Harvest Tycoon — September 18 chores and Honey update
+
+- Chores unlock sequentially after 20 attempts at the preceding chore. Practice adds 2 percentage points per attempt, including failures.
+- Clear the paths: 60–100% success, 1-minute cooldown, 18 coins / 4 XP on success.
+- Fill the water troughs: 40–80% success, 3-minute cooldown, 40 coins / 8 XP on success.
+- Sort the seed boxes: 20–60% success, 8-minute cooldown, 90 coins / 16 XP on success.
+- Failed attempts award nothing, do not advance quests, and start the cooldown. Server-owned rolls are reused across concurrency retries. Client outcome fields are ignored.
+- Existing balances, successful chore totals and cooldowns are preserved. Per-chore practice starts at zero because older saves did not record attempts per chore.
+- Hands-on rewards: Greenhouse 20 coins / 7 XP / 1 Lettuce; Apiary 26 coins / 8 XP / 1 Honey; Animal paddock 24 coins / 7 XP / 1 Natural fertilizer; Tool workshop 30 coins / 8 XP / 1 Animal feed. Existing interactions and cooldowns are unchanged.
+- Honey sells for 35 coins and uses original transparent jar artwork at public/assets/icons/honey.png, matching the existing goods style. All UI remains English.
+- Honey artwork generated with the built-in image tool. Prompt: one transparent inventory icon matching goods-v2.png's warm painterly 3D style; a squat glass jar of amber honey, cream cloth cap and twine, honeycomb emblem, elevated three-quarter view, centered with padding, no text or other goods.
+
+# Previous production update
 
 ## Parallel production, economy balance and beginner-guide cleanup
 

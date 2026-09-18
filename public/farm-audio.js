@@ -29,6 +29,7 @@ export const SOUND_CUES=Object.freeze({
  levelup:{notes:[523.25,659.25,783.99,1046.5,1318.51,1046.5],step:.14,duration:.52,volume:.12},
 });
 export function soundForAction(action,result,beforeLevel,afterLevel){
+ if(action.type==='chore'&&result.success===false)return null;
  if(afterLevel>beforeLevel)return 'levelup';
  if(action.type==='field')return {plant:'plant',water:'water',harvest:'harvest',tend:'care'}[action.action]??null;
  if(action.type==='activity_work')return result.roundComplete?'reward':result.finished?'collect':{greenhouse:'water',apiary:'collect',paddock:'water',workshop:'chore'}[action.station]??'chore';
