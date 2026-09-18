@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, formatDuration, harvestYield } from './farm-state.js';
+import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, formatDuration, harvestYield, productionJobs } from './farm-state.js';
 import { createEconomyUI } from './economy-ui.js';
 import { createFarmClient, farmNow } from './farm-client.js';
 import { createRetentionUI } from './retention-ui.js';
@@ -367,7 +367,7 @@ function bindUI(){
   if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':'Tap a ready crop or its basket.');}
   else if(target==='market')openDialog('market-dialog');
   else if(target==='produce')economy.openBuilding('coop');
-  else if(target==='collect'){const key=Object.keys(state.buildings).find(k=>state.buildings[k].job?.readyAt<=farmNow())??Object.keys(state.buildings).find(k=>state.buildings[k].job)??'coop';economy.openBuilding(key);}
+  else if(target==='collect'){const key=Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??Object.keys(state.buildings).find(k=>state.buildings[k].job)??'coop';economy.openBuilding(key);}
   else if(target==='today')retention.openToday();
   else if(target==='chores')growth.open('chores');
  }});

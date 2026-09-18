@@ -1,4 +1,22 @@
-# Harvest Tycoon — September 17 update
+# Harvest Tycoon — September 18 production update
+
+## Parallel production, economy balance and beginner-guide cleanup
+
+- Every production building has one simultaneous batch slot per building level: level 1 = 1 slot, level 2 = 2 slots, up to 10 slots at level 10. The Farmhouse continues to expand fields instead.
+- Batches run independently, including different recipes in one building. Each has its own timer, progress and Collect this batch button. Ready goods occupy their slot until collected. Upgrade descriptions show the next level's capacity. All current batches must be collected before upgrading.
+- Level 1 → 2 and level 2 → 3 upgrades cost 50% more. Higher upgrade prices are unchanged. The 50% upgrade voucher still applies once. Current building levels are preserved.
+- Long-wait crops now sell for: Cabbage 110, Cauliflower 175, Pumpkin 250, Red cabbage 340 and Sunflower 480 coins per crop. Seed costs, growing times and the active-care yield are unchanged. Short crops keep their existing prices.
+- Processed prices are also moderated: Fresh salad 450, Pickled cabbage 1,100, Sunflower oil 1,600, Pumpkin pie 1,250 and Vegetable box 1,700 coins. All recipes add sale value; the four longer-crop recipes add about 49–74% over selling all ingredients separately. Recipe cards show the exact added value, before temporary coin boosts.
+- Existing coin/diamond balances, inventory quantities, quests, building levels and paid-for production outputs/timers are preserved. Market prices also apply to existing inventory when sold. Old single-batch saves gain stable batch IDs and empty extra slots without restarting production. Collection IDs reject stale or repeated claims; request receipts and atomic server commits are unchanged.
+- Instant production affects all running batches. Scene status, active-production smoke, completion sounds and farm summaries account for every batch.
+- Once all 10 beginner steps are complete and the 20-diamond reward is claimed, the desktop card, mobile banner and menu shortcut disappear; an open guide closes. Returning players see the same cleanup without claiming again.
+- Everything remains in English. Existing scenery, music, activities, daily diamonds and leaderboards are retained.
+
+Verification: 87 automated tests pass and the static production build succeeds. Supabase farm-api version 6 is ACTIVE, JWT verification remains enabled, and its three deployed source files exactly match this package. Authentication and database schemas are unchanged. A signed-in live-browser/physical-phone playthrough was not performed.
+
+Upload this full project through GitHub Desktop to Vercel to get the matching interface and displayed prices. The server rules are already updated; no SQL setup is needed.
+
+## Earlier September 17 changes (included)
 
 ## Continuous music and activities on the farm
 
@@ -107,11 +125,11 @@ Reward text now uses dedicated text elements, so icon replacement cannot duplica
 5. Open Vercel and wait for the new deployment to become Ready. Keep the existing Supabase environment variables.
 6. Reload the live game. On desktop, check the welcome page; on mobile, check Today and the Beginner guide banner. Check pinch/drag navigation and the four Farm activities on mobile. Desktop keeps Fields and Show the whole farm controls.
 
-Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` version 5. Its deployed source was compared with this package. The leaderboard migration is also already applied. No further database setup or authentication change is needed. Do not rerun the old setup SQL.
+Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` version 6. Its deployed source was compared with this package. The leaderboard migration is also already applied. No further database setup or authentication change is needed. Do not rerun the old setup SQL.
 
 ## Verified scope
 
-- 78 automated tests pass, including a complete beginner journey, one-time reward, rejected skipped steps, saved progress, continuous music and preservation of regular quest progress.
+- 87 automated tests pass, including production at every building level, independent collection, stale-claim rejection, old-save migration, boosts across parallel batches, prices, upgrade vouchers, beginner-guide hiding and the earlier regression tests.
 - The static Vercel production build passes. Audio tests cover saved mute preferences, independent volume, hidden-tab suspension, resource cleanup, action/level-up routing, throttling, history navigation and mute/resume races.
 - The deployed Supabase function is ACTIVE with JWT verification enabled and matches the included function sources.
 - The GitHub integration rejected writes with HTTP 403, “Resource not accessible by integration”. No frontend commit was pushed by ChatGPT.

@@ -1,19 +1,20 @@
-import {CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,expansionMaterials} from './farm-state.js';
+import {CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,expansionMaterials,productionSlots,productionJobs,recipeValue} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const seconds=formatDuration;
 export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate}){
- let currentBuilding=null,marketTab='crops',selectedCrop='wheat',seedFilter='all',lastJobReady=false,lastCoinBoost=false;
+ let currentBuilding=null,marketTab='crops',selectedCrop='wheat',seedFilter='all',lastJobReady='',lastCoinBoost=false;
  function itemArt(key){return art(key,'product-art');}
  function show(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();}
  function itemList(items,requirements=false){return Object.entries(items).map(([key,n])=>`<span class="ingredient ${requirements&&state.inventory[key]<n?'missing':''}">${itemArt(key)}<span>${requirements?`${state.inventory[key]}/${n}`:`${n}×`} ${ITEMS[key].name}</span></span>`).join('');}
  function status(key,now=farmNow()){
   const b=state.buildings[key];if(key==='farmhouse')return {text:`${state.plots.length} / ${MAX_PLOTS} fields`,kind:'farm'};
-  if(!b.job)return {text:'Ready to work',kind:'idle'};
-  if(now>=b.job.readyAt)return {text:'Ready to collect',kind:'ready'};
-  return {text:`Working · ${seconds(b.job.readyAt-now)}`,kind:'working'};
+  const jobs=productionJobs(b),slots=productionSlots(b.level),ready=jobs.filter(j=>now>=j.readyAt).length;
+  if(!jobs.length)return {text:`Ready to work · 0 / ${slots} slots`,kind:'idle'};
+  if(ready)return {text:`${ready} ready · ${jobs.length} / ${slots} slots`,kind:'ready'};
+  return {text:`${jobs.length} / ${slots} working · ${seconds(Math.min(...jobs.map(j=>j.readyAt))-now)}`,kind:'working'};
  }
  function chooseCrop(key){selectedCrop=key;$('selected-crop-art').innerHTML=art(key);$('selected-crop-name').textContent=CROPS[key].name;$('selected-crop-price').textContent=`${seedCost(state,key)} · ${seconds(cropDuration(state,key))}`;onCrop(key);}
  function renderSeeds(){
@@ -37,16 +38,19 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    content+=`<div class="expansion-panel"><div class="expansion-summary"><span><i data-lucide="land-plot"></i> Your growing space</span><strong>${state.plots.length}<small> / ${MAX_PLOTS} fields</small></strong></div><div class="field-preview" aria-hidden="true">${Array.from({length:MAX_PLOTS},(_,i)=>`<span class="${i<state.plots.length?'unlocked':'locked'}"><i data-lucide="${i<state.plots.length?'sprout':'lock-keyhole'}"></i></span>`).join('')}</div><h3>${cost?'Make room for one more.':'Your farm is fully expanded.'}</h3><p>${cost?'Unlock one field at a time. Each new field needs more coins and a different mix of farm supplies.':'Twenty-four fields, nine crops and room to build a lasting estate.'}</p>${cost!==null?`<div class="ingredients expansion-materials">${itemList(materials,true)}</div>`:''}<button id="expand-fields" class="primary-button" ${cost===null||state.coins<cost||!hasMaterials?'disabled':''}>${cost?`Unlock 1 field · ${cost} coins`:'All fields unlocked'}<i data-lucide="${cost?'plus':'check'}"></i></button>${cost!==null&&state.coins<cost?`<small class="shortfall">You need ${cost-state.coins} more coins.</small>`:''}</div>`;
    content+=`<button id="farmhouse-estate" class="estate-entry"><i data-lucide="landmark"></i><span><strong>Your next chapter</strong><small>Estate projects, passive income and mastery</small></span><i data-lucide="chevron-right"></i></button>`;
   }else{
-   if(key==='windmill'||key==='bakery')content+=`<div class="milling-chain"><span>${art('wheat')} Grain</span><b>→</b><span>${art('grainmeal')} Grain meal</span><b>→</b><span>${art('flour')} Flour</span><b>→</b><span>${art('bread')} Fresh baking</span></div><p class="milling-note">${key==='windmill'?'Grind wheat and barley into grain meal, then refine it into flour. Your Bakery turns the flour into higher-value fresh bread and pies.':'Flour now comes from the Windmill. Fresh bread sells for 340 coins each; fresh pumpkin pie sells for 2,100 coins.'}</p>`;
-   const job=bs.job;
-   if(job){
-    const recipe=RECIPES[job.recipe],isReady=farmNow()>=job.readyAt;lastJobReady=isReady;
-    content+=`<div class="job-panel ${isReady?'ready':''}" id="active-job"><div class="job-heading"><span class="job-icon"><i data-lucide="${isReady?'package-check':'timer'}"></i></span><div><strong>${recipe.name}</strong><span id="job-time">${isReady?'Your batch is ready!':`${seconds(job.readyAt-farmNow())} remaining`}</span></div></div><progress id="job-progress" max="100" value="${Math.min(100,(farmNow()-job.startedAt)/(job.readyAt-job.startedAt)*100)}" aria-label="Production progress"></progress><div class="job-result">${itemList(job.output??recipe.output)}</div><button id="collect-batch" class="primary-button" ${isReady?'':'disabled'}>${isReady?'Collect your goods':'Making something good…'}<i data-lucide="shopping-basket"></i></button></div>`;
+   if(key==='windmill'||key==='bakery')content+=`<div class="milling-chain"><span>${art('wheat')} Grain</span><b>→</b><span>${art('grainmeal')} Grain meal</span><b>→</b><span>${art('flour')} Flour</span><b>→</b><span>${art('bread')} Fresh baking</span></div><p class="milling-note">${key==='windmill'?'Grind wheat and barley into grain meal, then refine it into flour. Your Bakery turns the flour into higher-value fresh bread and pies.':'Flour now comes from the Windmill. Process flour into bread and pumpkin pie for a better return than selling the ingredients.'}</p>`;
+   const jobs=productionJobs(bs),slots=productionSlots(bs.level);
+   lastJobReady=jobs.map(j=>`${j.id}:${farmNow()>=j.readyAt}`).join('|');
+   content+=`<div class="production-capacity"><strong>${jobs.length} / ${slots} production slots used</strong><p>Level ${bs.level} · ${slots} simultaneous ${slots===1?'batch':'batches'}. Each building level adds one slot. Ready goods keep their slot until collected.</p></div><div class="production-batches">`;
+   for(const [index,job] of jobs.entries()){
+    const recipe=RECIPES[job.recipe],isReady=farmNow()>=job.readyAt;
+    content+=`<div class="job-panel ${isReady?'ready':''}" data-production-job="${job.id}"><div class="job-heading"><span class="job-icon"><i data-lucide="${isReady?'package-check':'timer'}"></i></span><div><strong>Batch ${index+1} · ${recipe.name}</strong><span data-job-time="${job.id}">${isReady?'Your batch is ready!':`${seconds(job.readyAt-farmNow())} remaining`}</span></div></div><progress data-job-progress="${job.id}" max="100" value="${Math.max(0,Math.min(100,(farmNow()-job.startedAt)/Math.max(1,job.readyAt-job.startedAt)*100))}" aria-label="Batch ${index+1} production progress"></progress><div class="job-result">${itemList(job.output??recipe.output)}</div><button data-collect-job="${job.id}" class="primary-button" ${isReady?'':'disabled'}>${isReady?'Collect this batch':'Making something good…'}<i data-lucide="shopping-basket"></i></button></div>`;
    }
+   content+='</div>';
    content+=`<div class="recipe-section-heading"><h3>What shall we make?</h3><span>Ingredients are used when you start.</span></div><div class="recipe-list">`;
    for(const [rid,r]of Object.entries(RECIPES).filter(([,r])=>r.building===key)){
-    const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid);
-    content+=`<article class="recipe-card"><div class="recipe-title"><h4>${r.name}</h4><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span></div><div class="recipe-flow"><div class="ingredients">${itemList(r.input,true)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div><div class="recipe-footer"><span>${a.busy?'Collect your current batch first.':a.missing.length?'Gather the missing ingredients.':`Ready to make · +${r.xp} XP`}</span><button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
+    const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid),value=recipeValue(rid);
+    content+=`<article class="recipe-card"><div class="recipe-title"><h4>${r.name}</h4><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span></div><div class="recipe-flow"><div class="ingredients">${itemList(r.input,true)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div><p class="recipe-value">Ingredients sell for ${value.input} coins → goods sell for ${value.output} coins · <strong>+${value.added} coins from processing</strong></p><div class="recipe-footer"><span>${a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':`Ready to make · +${r.xp} XP`}</span><button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
    }
    content+='</div>';
    if(key==='windmill'){
@@ -54,12 +58,12 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
     content+=`<section class="fertilizer-panel"><div>${art('fertilizer')}<h3>Give a field a head start</h3></div><p>Use 1 natural fertilizer to remove 35% of a crop’s remaining growing time. Once per planting; watering and extra care still work.</p><label for="fertilizer-field">Choose a growing field</label><select id="fertilizer-field" ${eligible.length?'':'disabled'}>${eligible.length?eligible.map(p=>`<option value="${p.id}">Field ${p.id+1} · ${CROPS[p.crop].name} · ${seconds(p.readyAt-farmNow())}</option>`).join(''):'<option>No eligible growing crops</option>'}</select><div class="fertilizer-action"><span>${state.inventory.fertilizer} fertilizer in storage</span><button id="fertilize-field" class="small-button" ${eligible.length&&state.inventory.fertilizer>0?'':'disabled'}>Use 1 fertilizer</button></div></section>`;
    }
    const cost=upgradeCost(state,key);
-   content+=`<div class="upgrade-panel"><span class="upgrade-icon"><i data-lucide="circle-fading-arrow-up"></i></span><div><strong>${cost?`Upgrade to level ${bs.level+1}`:'Fully upgraded'}</strong><p>${cost?`${state.boosts.upgradeCredits?'Your 50% upgrade voucher is included in this price. ':''}${Math.round(productionSpeed(bs.level+1)*100)}% shorter production time than level 1. ${bs.job?'Collect the current batch first.':'Applies to your next batches.'}`:`Level ${MAX_BUILDING_LEVEL}: production takes ${Math.round(productionSpeed(MAX_BUILDING_LEVEL)*100)}% less time.`}</p></div><button id="upgrade-building" class="small-button" ${cost===null||state.coins<cost||bs.job?'disabled':''}>${cost?`${cost} coins`:'Max level'}</button></div>`;
+   content+=`<div class="upgrade-panel"><span class="upgrade-icon"><i data-lucide="circle-fading-arrow-up"></i></span><div><strong>${cost?`Upgrade to level ${bs.level+1}`:'Fully upgraded'}</strong><p>${cost?`${state.boosts.upgradeCredits?'Your 50% upgrade voucher is included in this price. ':''}${productionSlots(bs.level+1)} simultaneous batches, plus ${Math.round(productionSpeed(bs.level+1)*100)}% shorter production time than level 1. ${jobs.length?'Collect all current batches first.':'Applies to your next batches.'}`:`Level ${MAX_BUILDING_LEVEL}: ${slots} simultaneous batches; production takes ${Math.round(productionSpeed(MAX_BUILDING_LEVEL)*100)}% less time.`}</p></div><button id="upgrade-building" class="small-button" ${cost===null||state.coins<cost||jobs.length?'disabled':''}>${cost?`${cost} coins`:'Max level'}</button></div>`;
   }
   $('building-content').innerHTML=content;$('building-feedback').textContent='';
   $('farmhouse-estate')?.addEventListener('click',()=>onEstate('projects'));
   $('expand-fields')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'expand'});onExpand();return `One new field! Your farm now has ${r.fields}.`;}));
-  $('collect-batch')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'collect',building:key});return `Collected ${Object.entries(r.items).map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ')} · +${r.xp} XP.`;}));
+  $('building-content').querySelectorAll('[data-collect-job]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'collect',building:key,jobId:btn.dataset.collectJob});return `Collected ${Object.entries(r.items).map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ')} · +${r.xp} XP.`;})));
   $('upgrade-building')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'upgrade',building:key});return `${b.name} upgraded to level ${r.level}.`;}));
   $('fertilize-field')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'fertilize',id:Number($('fertilizer-field').value)});onExpand();return `Field ${r.id+1} fertilized! ${seconds(r.saved)} saved · +${r.xp} XP.`;}));
   $('building-content').querySelectorAll('[data-recipe]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'produce',recipe:btn.dataset.recipe});return `${RECIPES[r.recipe].name} started. Come back to collect your batch.`;})));
@@ -96,8 +100,13 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   document.querySelectorAll('[data-building-status]').forEach(el=>{const s=status(el.dataset.buildingStatus,now);el.textContent=s.text;el.className=`building-status ${s.kind}`;});
   const count=Object.keys(BUILDINGS).filter(key=>status(key,now).kind==='ready').length;$('production-count').hidden=!count;$('production-count').textContent=count;
   if($('building-dialog').open&&currentBuilding){
-   const job=state.buildings[currentBuilding].job;
-   if(job){const isReady=now>=job.readyAt;if(isReady!==lastJobReady){renderBuilding();}else if($('job-time')){$('job-time').textContent=isReady?'Your batch is ready!':`${seconds(job.readyAt-now)} remaining`;$('job-progress').value=Math.min(100,(now-job.startedAt)/(job.readyAt-job.startedAt)*100);}}
+   const jobs=productionJobs(state.buildings[currentBuilding]),signature=jobs.map(j=>`${j.id}:${now>=j.readyAt}`).join('|');
+   if(signature!==lastJobReady)renderBuilding();
+   else for(const job of jobs){
+    const time=document.querySelector(`[data-job-time="${job.id}"]`),progress=document.querySelector(`[data-job-progress="${job.id}"]`);
+    if(time)time.textContent=now>=job.readyAt?'Your batch is ready!':`${seconds(job.readyAt-now)} remaining`;
+    if(progress)progress.value=Math.max(0,Math.min(100,(now-job.startedAt)/Math.max(1,job.readyAt-job.startedAt)*100));
+   }
   }
  }
  $('selected-crop-button').addEventListener('click',openSeeds);$('seed-shop-button').addEventListener('click',openSeeds);

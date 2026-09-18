@@ -1,28 +1,28 @@
 export const CROPS = Object.freeze({
  corn:       {name:'Corn',cost:10,sell:40,duration:900000,xp:5,model:'plant_001',height:1.55,use:'Animal feed'},
  wheat:      {name:'Wheat',cost:3,sell:8,duration:120000,xp:2,model:'plant_011',height:.85,use:'Flour & bread'},
- cabbage:    {name:'Cabbage',cost:40,sell:170,duration:7200000,xp:12,model:'plant_004',height:.48,use:'Vegetable boxes'},
- pumpkin:    {name:'Pumpkin',cost:95,sell:480,duration:28800000,xp:24,model:'plant_003',height:.8,use:'Pumpkin pies'},
- sunflower:  {name:'Sunflower',cost:180,sell:1100,duration:86400000,xp:45,model:'plant_007',height:1.65,use:'Sunflower oil'},
+ cabbage:    {name:'Cabbage',cost:40,sell:110,duration:7200000,xp:12,model:'plant_004',height:.48,use:'Vegetable boxes'},
+ pumpkin:    {name:'Pumpkin',cost:95,sell:250,duration:28800000,xp:24,model:'plant_003',height:.8,use:'Pumpkin pies'},
+ sunflower:  {name:'Sunflower',cost:180,sell:480,duration:86400000,xp:45,model:'plant_007',height:1.65,use:'Sunflower oil'},
  barley: {name:'Barley',cost:20,sell:85,duration:2700000,xp:8,model:'plant_010',height:1.05,use:'Animal feed',art:'/assets/icons/barley.svg'},
  lettuce:{name:'Lettuce',cost:7,sell:20,duration:300000,xp:3,model:'plant_005',height:.47,use:'Fresh salads',art:'/assets/icons/lettuce.svg'},
- redcabbage:{name:'Red cabbage',cost:130,sell:720,duration:43200000,xp:32,model:'plant_004',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg',tint:0xb66cce},
- cauliflower:{name:'Cauliflower',cost:65,sell:300,duration:14400000,xp:18,model:'plant_005',height:.5,use:'Vegetable boxes'}
+ redcabbage:{name:'Red cabbage',cost:130,sell:340,duration:43200000,xp:32,model:'plant_004',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg',tint:0xb66cce},
+ cauliflower:{name:'Cauliflower',cost:65,sell:175,duration:14400000,xp:18,model:'plant_005',height:.5,use:'Vegetable boxes'}
 });
 export const PRODUCTS = Object.freeze({
  grainmeal:{name:'Grain meal',sell:180,icon:'wheat',color:'wheat'},
  fertilizer:{name:'Natural fertilizer',sell:260,icon:'sprout',color:'green'},
- salad:{name:'Fresh salad',sell:550,icon:'salad',color:'green'},
- pickles:{name:'Pickled cabbage',sell:1850,icon:'amphora',color:'coral'},
+ salad:{name:'Fresh salad',sell:450,icon:'salad',color:'green'},
+ pickles:{name:'Pickled cabbage',sell:1100,icon:'amphora',color:'coral'},
  flour:{name:'Flour',sell:60,icon:'wheat',color:'wheat'},
  feed:{name:'Animal feed',sell:115,icon:'package-open',color:'wheat'},
- oil:{name:'Sunflower oil',sell:3000,icon:'droplet',color:'gold'},
+ oil:{name:'Sunflower oil',sell:1600,icon:'droplet',color:'gold'},
  milk:{name:'Milk',sell:80,icon:'milk',color:'blue'},
  eggs:{name:'Eggs',sell:50,icon:'egg',color:'cream'},
  cheese:{name:'Cheese',sell:230,icon:'sandwich',color:'gold'},
  bread:{name:'Fresh bread',sell:340,icon:'croissant',color:'wheat'},
- pie:{name:'Fresh pumpkin pie',sell:2100,icon:'cake-slice',color:'coral'},
- vegetables:{name:'Vegetable box',sell:2500,icon:'salad',color:'green'}
+ pie:{name:'Fresh pumpkin pie',sell:1250,icon:'cake-slice',color:'coral'},
+ vegetables:{name:'Vegetable box',sell:1700,icon:'salad',color:'green'}
 });
 export const ITEMS=Object.freeze({...CROPS,...PRODUCTS});
 export const BUILDINGS = Object.freeze({
@@ -142,6 +142,10 @@ export function xpForLevel(level){const n=level-1;return 60*n+20*n*(n-1);}
 export function levelOf(state){const total=state.xp+(state.xpOffset??0);return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);}
 export function levelProgress(state){const level=levelOf(state);return {level,current:state.xp+(state.xpOffset??0)-xpForLevel(level),target:60+40*(level-1)};}
 export const MAX_BUILDING_LEVEL=10;
+export function productionSlots(level){return Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));}
+// Keep the primary job for older clients; extra jobs run in parallel, not a queue.
+export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
+export function recipeValue(id){const r=RECIPES[id],value=items=>Object.entries(items).reduce((sum,[key,n])=>sum+ITEMS[key].sell*n,0);const input=value(r.input),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level){return level<=3?.2*(level-1):.4+.04*(level-3);}
 export function recipeDuration(state,id){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level)));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
@@ -155,7 +159,7 @@ export function expansionMaterials(state){return state.plots.length>=MAX_PLOTS?{
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')return null;
  const level=state.buildings[building].level;
- return level>=MAX_BUILDING_LEVEL?null:Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level:12*2.7**(level-3)))*(state.boosts?.upgradeCredits>0?.5:1));
+ return level>=MAX_BUILDING_LEVEL?null:Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)))*(state.boosts?.upgradeCredits>0?.5:1));
 }
 function createBaseFarm(now=Date.now()) {
  const plots=Array.from({length:12},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
@@ -215,26 +219,30 @@ export function recipeAvailability(state,id){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
  const r=RECIPES[id];
  const missing=Object.entries(r.input).filter(([k,n])=>state.inventory[k]<n).map(([k,n])=>({item:k,name:ITEMS[k].name,need:n,have:state.inventory[k]}));
- return {canStart:!state.buildings[r.building].job&&missing.length===0,missing,busy:!!state.buildings[r.building].job};
+ const b=state.buildings[r.building],used=productionJobs(b).length,slots=productionSlots(b.level),busy=used>=slots;
+ return {canStart:!busy&&missing.length===0,missing,busy,used,slots};
 }
 export function startProduction(state,id,now=Date.now()){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
  const r=RECIPES[id],b=state.buildings[r.building],a=recipeAvailability(state,id);
- if(a.busy)throw new Error('Collect the current batch before starting another.');
+ if(a.busy)throw new Error('All production slots are occupied. Collect a finished batch first.');
  if(a.missing.length)throw new Error('Missing ingredients: '+a.missing.map(m=>`${m.name} (${m.have}/${m.need})`).join(', ')+'.');
  const duration=recipeDuration(state,id);
  for(const [k,n]of Object.entries(r.input))state.inventory[k]-=n;
- b.job={recipe:id,startedAt:now,readyAt:now+duration,output:{...r.output},xp:r.xp};
- return {building:r.building,recipe:id,readyAt:b.job.readyAt};
+ b.batchSequence=(b.batchSequence??0)+1;
+ const job={id:`${r.building}-${b.batchSequence}`,recipe:id,startedAt:now,readyAt:now+duration,output:{...r.output},xp:r.xp};
+ if(!b.job)b.job=job;else (b.extraJobs??=[]).push(job);
+ return {building:r.building,recipe:id,jobId:job.id,readyAt:job.readyAt};
 }
-export function collectProduction(state,building,now=Date.now()){
+export function collectProduction(state,building,now=Date.now(),jobId){
  if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')throw new Error('Choose a production building.');
- const b=state.buildings[building],job=b.job;
+ const b=state.buildings[building],jobs=productionJobs(b),job=jobId===undefined?(jobs.find(j=>j.readyAt<=now)??jobs[0]):jobs.find(j=>j.id===jobId);
  if(!job)throw new Error('Nothing to collect yet. Start a recipe first.');
  if(now<job.readyAt)throw new Error('This batch is still being made.');
  const r=RECIPES[job.recipe],output=job.output??r.output,xp=job.xp??r.xp;
  for(const [k,n]of Object.entries(output)){state.inventory[k]+=n;state.stats['made_'+k]=(state.stats['made_'+k]??0)+n;}
- state.stats.produced++;state.stats.bread+=output.bread??0;state.xp+=xp;b.job=null;
+ state.stats.produced++;state.stats.bread+=output.bread??0;state.xp+=xp;
+ const remaining=jobs.filter(j=>j!==job);b.job=remaining.shift()??null;b.extraJobs=remaining;
  if(building==='windmill')state.stats.windmill_batches=(state.stats.windmill_batches??0)+1;
  return {building,items:{...output},xp};
 }
@@ -242,7 +250,7 @@ export function upgradeBuilding(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')throw new Error('Choose a production building.');
  const b=state.buildings[building],cost=upgradeCost(state,building);
  if(cost===null)throw new Error('This building is fully upgraded.');
- if(b.job)throw new Error('Finish and collect the current batch before upgrading.');
+ if(productionJobs(b).length)throw new Error('Finish and collect all current batches before upgrading.');
  if(state.coins<cost)throw new Error(`You need ${cost} coins for this upgrade.`);
  state.coins-=cost;b.level++;state.stats.upgrades++;state.xp+=15;
  if(state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
@@ -269,7 +277,7 @@ export function claimQuest(state,id){
  return {coins:q.reward,xp:15};
 }
 export function farmSummary(state,now=Date.now()) {
- return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,status:b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
+ return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,slots:id==='farmhouse'?0:productionSlots(b.level),jobs:productionJobs(b).map(j=>({id:j.id,recipe:j.recipe,secondsRemaining:Math.max(0,Math.ceil((j.readyAt-now)/1000))})),status:productionJobs(b).some(j=>now>=j.readyAt)?'ready':b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
 }
 
 export const DAY_MS=86400000;
@@ -293,7 +301,7 @@ export function boostStatus(state,id,now=Date.now()){
  if(id==='upgrade'&&state.boosts?.upgradeCredits>0)reason='Voucher ready';
  if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>key!=='farmhouse'&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
  if(id==='crops'&&!state.plots.some(p=>p.crop&&p.readyAt>now))reason='No crops are growing';
- if(id==='production'&&!Object.values(state.buildings).some(b=>b.job&&b.job.readyAt>now))reason='No batches are running';
+ if(id==='production'&&!Object.values(state.buildings).some(b=>productionJobs(b).some(j=>j.readyAt>now)))reason='No batches are running';
  return {...boost,remaining,reason,canBuy:!reason&&state.diamonds>=boost.cost};
 }
 export function buyBoost(state,id,now=Date.now()){
@@ -305,7 +313,7 @@ export function buyBoost(state,id,now=Date.now()){
  if(id==='upgrade')state.boosts.upgradeCredits=1;
  let affected=0;
  if(id==='crops')for(const p of state.plots)if(p.crop&&p.readyAt>now){p.readyAt=now;affected++;}
- if(id==='production')for(const b of Object.values(state.buildings))if(b.job&&b.job.readyAt>now){b.job.readyAt=now;affected++;}
+ if(id==='production')for(const b of Object.values(state.buildings))for(const job of productionJobs(b))if(job.readyAt>now){job.readyAt=now;affected++;}
  state.diamonds-=status.cost;
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {boost:id,cost:status.cost,affected,expiresAt:status.duration?now+status.duration:null};
@@ -340,7 +348,7 @@ export function seedCost(state,crop){return Math.max(1,Math.ceil(CROPS[crop].cos
 export function normalizeFarm(state,now=Date.now()){
  const oldVersion=state.version??0;
  if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=xpForLevel(previousLevel)-60*(previousLevel-1);}
- state.version=7;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
+ state.version=8;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
@@ -348,6 +356,10 @@ export function normalizeFarm(state,now=Date.now()){
  // Keep paid-for legacy flour batches intact when milling moves to the Windmill.
  if(oldVersion<6&&state.buildings.mill.job?.recipe==='flour'){
   state.buildings.mill.job.output??={flour:1};state.buildings.mill.job.xp??=8;
+ }
+ for(const [key,b] of Object.entries(state.buildings)){
+  b.extraJobs??=[];b.batchSequence??=0;
+  for(const job of productionJobs(b))if(!job.id)job.id=`${key}-${++b.batchSequence}`;
  }
  state.stats??={};for(const q of QUESTS)state.stats[q.stat]??=0;
  for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals'])state.stats[k]??=0;
@@ -456,7 +468,7 @@ function dispatchFarmAction(state,action,now){
   case 'field':return actOnPlot(state,action.id,action.action,action.crop??'corn',now);
   case 'sell':return sellCrops(state,action.item??'all');
   case 'produce':return startProduction(state,action.recipe,now);
-  case 'collect':return collectProduction(state,action.building,now);
+  case 'collect':return collectProduction(state,action.building,now,action.jobId);
   case 'upgrade':return upgradeBuilding(state,action.building);
   case 'expand':return expandFarm(state);
   case 'quest':return claimQuest(state,action.id);

@@ -72,7 +72,7 @@ test('the full Windmill-to-Bakery chain produces fresh goods with a higher margi
   act(state,{type:'collect',building:RECIPES[recipe].building},time);
  }
  assert.equal(state.inventory.bread,2);assert.equal(state.inventory.pie,1);assert.equal(state.inventory.flour,2);
- assert.equal(act(state,{type:'sell',item:'bread'},time).coins,680);assert.equal(act(state,{type:'sell',item:'pie'},time).coins,2100);
+ assert.equal(act(state,{type:'sell',item:'bread'},time).coins,680);assert.equal(act(state,{type:'sell',item:'pie'},time).coins,1250);
  for(const id of ['bread','pie']){const r=RECIPES[id];assert(Object.entries(r.output).reduce((n,[k,v])=>n+ITEMS[k].sell*v,0)>Object.entries(r.input).reduce((n,[k,v])=>n+ITEMS[k].sell*v,0));}
 });
 test('new beta quests retain old IDs and each reward can be collected only once',()=>{

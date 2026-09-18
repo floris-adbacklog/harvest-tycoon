@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {ACTIVE_STATIONS,activityStatus} from './farm-state.js';
+import {ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','house_024','fir_tree_003','tree_008','stone_fence_001','trailer_001'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
@@ -61,7 +61,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
    if(m.kind==='bee')m.obj.position.set(10.4+Math.sin(t*1.2+m.phase)*.7,1.2+Math.sin(t*2+m.phase)*.25,13.7+Math.cos(t+m.phase)*.6);
   }
   water.forEach((r,i)=>{const f=((t*.3+i/3)%1);r.scale.setScalar(.6+f*1.6);r.material.opacity=(1-f)*.35;});
-  for(const s of smoke){const job=state.buildings[s.id]?.job,f=(t*.23+s.phase)%1;s.obj.visible=!!job&&job.readyAt>now;s.obj.position.set(s.x+f*.5,s.y+.1+f*1.8,s.z);s.obj.scale.setScalar(.6+f*1.5);s.obj.material.opacity=(1-f)*.3;}
+  for(const s of smoke){const running=productionJobs(state.buildings[s.id]).some(j=>j.readyAt>now),f=(t*.23+s.phase)%1;s.obj.visible=running;s.obj.position.set(s.x+f*.5,s.y+.1+f*1.8,s.z);s.obj.scale.setScalar(.6+f*1.5);s.obj.material.opacity=(1-f)*.3;}
   for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.life-=dt;e.obj.position.y+=dt*.8;e.obj.material.opacity=Math.max(0,e.life);e.obj.scale.multiplyScalar(1+dt*.3);if(e.life<=0){scene.remove(e.obj);e.obj.geometry.dispose();e.obj.material.dispose();effects.splice(i,1);}}
  }
  function celebrate(id){

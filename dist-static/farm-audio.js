@@ -1,3 +1,4 @@
+import {productionJobs} from './farm-state.js';
 // Original continuous music and procedural effects. No third-party recordings.
 const MUSIC_URL=new URL('./assets/audio/harvest-meadow.wav',import.meta.url);
 async function loadFarmMusic(context){
@@ -36,9 +37,10 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
 }
 export function createProductionCueTracker(buildings,now){
  let previous=new Map();
- function reset(current,time){previous=new Map(Object.entries(current).map(([id,b])=>[id,{token:b.job?`${b.job.recipe}:${b.job.startedAt}:${b.job.readyAt}`:null,ready:!!b.job&&b.job.readyAt<=time}]));}
+ const key=(id,j)=>`${id}:${j.id??j.recipe+':'+j.startedAt}`;
+ function reset(current,time){previous=new Map(Object.entries(current).flatMap(([id,b])=>productionJobs(b).map(j=>[key(id,j),j.readyAt<=time])));}
  reset(buildings,now);
- return {reset,check(current,time){let fresh=false;for(const [id,b] of Object.entries(current)){const job=b.job,old=previous.get(id),token=job?`${job.recipe}:${job.startedAt}:${job.readyAt}`:null;if(job&&old?.token===token&&!old.ready&&job.readyAt<=time)fresh=true;}reset(current,time);return fresh;}};
+ return {reset,check(current,time){let fresh=false;for(const [id,b] of Object.entries(current))for(const job of productionJobs(b)){if(previous.get(key(id,job))===false&&job.readyAt<=time)fresh=true;}reset(current,time);return fresh;}};
 }
 export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic}={}){
  let settings={...AUDIO_DEFAULTS},ctx,master,ambientBus,effectBus,musicBuffer=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;

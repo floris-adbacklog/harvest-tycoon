@@ -5,6 +5,10 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide}){
  let busy=false,lastMarkup='';
  function refresh(){
   const steps=beginnerProgress(state),current=steps.find(q=>q.current),done=steps.filter(q=>q.done).length,complete=done===steps.length;
+  const finished=complete&&state.onboarding?.rewardClaimed===true;
+  document.querySelector('.beginner-card').hidden=finished;
+  document.querySelectorAll('[data-menu-action="all-quests-mobile"]').forEach(el=>el.hidden=finished);
+  if(finished&&dialog.open)dialog.close();
   $('game').classList.toggle('beginner-active',!complete);$('beginner-mobile').hidden=complete;$('beginner-mobile').classList.toggle('is-ready',!!current?.ready);
   $('beginner-mobile-copy').textContent=`Step ${Math.min(done+1,steps.length)} of 10 · ${current?.ready?'Ready to complete':current?.title??'Guide complete'}`;
   $('quest-number').textContent=Math.min(done+1,steps.length);$('quest-total').textContent=steps.length;
@@ -22,7 +26,7 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide}){
   const markup=steps.map(q=>`<article class="beginner-step ${q.done?'done':q.current?'current':''}" ${q.current?'aria-current="step"':''}><span class="beginner-step-number">${q.done?'✓':q.index+1}</span><div><h3>${q.title}</h3><p>${q.description}</p><span class="beginner-status">${q.done?'Completed':q.current?q.ready?'Ready to complete':'Your current step':q.ready?'Already tried · complete the earlier steps first':'Coming up'}</span>${q.current?`<div class="beginner-actions"><button class="small-button" data-beginner-help>Show me</button><button class="primary-button" data-beginner-claim ${!q.ready||busy?'disabled':''}>${q.index===9?'Claim 20 diamonds':'Complete step'}</button></div>`:''}</div></article>`).join('');
   if(markup!==lastMarkup){$('beginner-list').innerHTML=markup;lastMarkup=markup;icons();}
  }
- function open(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();refresh();dialog.scrollTop=0;dialog.querySelector('.close-dialog').focus({preventScroll:true});}
+ function open(){if(state.onboarding?.rewardClaimed&&state.onboarding.completed>=BEGINNER_QUESTS.length)return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();refresh();dialog.scrollTop=0;dialog.querySelector('.close-dialog').focus({preventScroll:true});}
  async function claim(){
   const current=beginnerProgress(state).find(q=>q.current);if(busy||!current?.ready)return;
   busy=true;refresh();
