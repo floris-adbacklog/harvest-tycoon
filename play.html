@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#214d36"><title>Harvest Tycoon — Your next harvest starts here</title><meta name="description" content="Grow a little farm into a thriving estate. Plant, craft, complete daily challenges and return to your own corner of the valley."><link rel="icon" href="/assets/harvest-tycoon-logo.png"><link rel="preload" as="image" href="/assets/farm-welcome.webp"><link rel="stylesheet" href="/welcome.css"></head>
+<body data-phase="checking">
+<section id="loading-screen" class="loading-screen" role="status" aria-live="polite"><img src="/assets/harvest-tycoon-logo.png" alt="Harvest Tycoon" width="220" height="220"><span class="spinner" aria-hidden="true"></span><h1 id="loading-copy">Checking your account…</h1><p>Your next harvest is waiting.</p></section>
+<main id="welcome" hidden>
+ <svg class="welcome-icons" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+ <symbol id="wi-sprout" viewBox="0 0 24 24"><path d="M12 21v-9M12 16C4 16 3 11 3 7c6 0 9 3 9 9ZM12 12c0-6 3-9 9-9 0 6-3 9-9 9Z"/></symbol>
+ <symbol id="wi-craft" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9"/></symbol>
+ <symbol id="wi-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></symbol>
+ <symbol id="wi-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 1 1 0-10 7 7 0 0 1 13 3 3.5 3.5 0 0 1-1 7M9 16l3 3 5-5"/></symbol>
+ <symbol id="wi-gem" viewBox="0 0 24 24"><path d="M3 8 7 3h10l4 5-9 13L3 8ZM3 8h18M7 3l5 18 5-18"/></symbol>
+ </defs></svg>
+ <img class="welcome-landscape" src="/assets/farm-welcome.webp" alt="" fetchpriority="high" width="1672" height="940">
+ <header class="welcome-header"><span class="valley-tag"><svg class="wi"><use href="#wi-sprout"/></svg>YOUR LITTLE COUNTRYSIDE ESCAPE</span><button class="header-link" data-mode="signin">Sign in <span aria-hidden="true">↗</span></button></header>
+ <div class="welcome-layout">
+  <section class="welcome-story" aria-labelledby="welcome-title">
+   <div class="hero-logo"><img src="/assets/harvest-tycoon-logo.png" alt="Harvest Tycoon" width="1024" height="1024" fetchpriority="high"></div>
+   <div class="story-copy"><p class="eyebrow">A LITTLE FARM. A WORLD OF POSSIBILITIES.</p><h1 id="welcome-title">Small seeds.<br><em>Big dreams.</em></h1><p class="hero-copy">A patch of land to call your own. Crops to grow, goods to craft, and a little more to look forward to with every harvest.</p>
+    <div class="farm-features"><span><svg class="wi" aria-hidden="true"><use href="#wi-sprout"/></svg>Grow & harvest</span><span><svg class="wi" aria-hidden="true"><use href="#wi-craft"/></svg>Craft & trade</span><span><svg class="wi" aria-hidden="true"><use href="#wi-sun"/></svg>Daily discoveries</span></div>
+   </div>
+  </section>
+  <section class="account-card" aria-labelledby="account-title"><div class="card-top"><span class="small-sprout" aria-hidden="true"><svg class="wi"><use href="#wi-sprout"/></svg></span><span id="form-eyebrow" class="eyebrow">GOOD TO SEE YOU, FARMER</span></div><h2 id="account-title">Welcome home.</h2><p id="account-copy">Sign in to pick up where you left off.</p>
+   <div class="account-tabs" role="group" aria-label="Account options"><button data-mode="signin" aria-pressed="true">Sign in</button><button data-mode="register" aria-pressed="false">Create account</button></div>
+   <form id="account-form">
+    <div id="name-row" hidden><label for="player-name">Player name</label><input id="player-name" autocomplete="nickname" maxlength="20" minlength="3" placeholder="Sunny Acres"><small>The name other farmers see.</small></div>
+    <div id="email-row"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+    <div id="password-row"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Your password"></div>
+    <div id="confirm-row" hidden><label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" autocomplete="new-password" minlength="6" placeholder="One more time"></div>
+    <p id="account-message" class="form-message" role="status" aria-live="polite"></p><button id="account-submit" class="primary" type="submit">Sign in & play</button>
+   </form>
+   <p class="account-note"><svg class="wi" aria-hidden="true"><use href="#wi-cloud"/></svg><span>Your farm, safely saved to your account.<br>Pick up on any device. Internet required.</span></p><div class="new-farmer-note"><svg class="wi" aria-hidden="true"><use href="#wi-gem"/></svg><span><strong>New here? We’ll show you the ropes.</strong>Complete 10 beginner quests and earn 20 diamonds.</span></div>
+   <div id="connection-actions" hidden><button id="retry-connection" class="primary">Try again</button><button id="leave-account" class="text-button">Sign out</button></div>
+  </section>
+ </div>
+ <footer class="welcome-footer"><strong>HARVEST TYCOON</strong><span>Grow at your own pace. Come back to something good.</span><span><svg class="wi" aria-hidden="true"><use href="#wi-sun"/></svg>A fresh start, every day.</span></footer>
+</main>
+<div id="farm-host" hidden></div>
+<noscript><p>Enable JavaScript to sign in to Harvest Tycoon.</p></noscript>
+<script type="module" src="/cloud/cloud.js"></script>
+</body></html>

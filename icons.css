@@ -1,0 +1,83 @@
+/* Transparent, square artwork: no SVG letterboxing, white plates or neighbouring cells. */
+.game-art{vertical-align:middle;flex:0 0 auto;pointer-events:none}
+.game-art-sprite{display:inline-block;aspect-ratio:1;overflow:hidden;background-color:transparent;background-image:var(--art-sheet);background-size:var(--art-size) var(--art-size);background-position:var(--art-position);background-repeat:no-repeat;mix-blend-mode:normal;border:0;border-radius:0;box-shadow:none}
+.tiny-coin.game-art{display:inline-block;width:21px;height:21px;border:0;background-color:transparent;box-shadow:none;border-radius:0}
+.side-tool>span>.game-art{width:42px;height:42px}
+.side-tool.active>span{background:#e5eddb;border-color:#adc29e;color:#35543b}
+.side-tool em{border-radius:50%;box-shadow:0 1px 3px #354a2020}
+.side-tools{scrollbar-width:none}
+.side-tools::-webkit-scrollbar{display:none}
+.tools .tool>.game-art{width:32px;height:32px}
+.tool.active{background:#eaf0df;box-shadow:inset 0 0 0 1px #bbcfaa}
+.tool kbd{font-size:9px;opacity:.7}
+.leaderboard-button>.game-art{width:36px;height:36px}
+.seed-shop-button>.game-art{width:34px;height:34px}
+.selected-crop-art{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;min-width:0;padding:0!important}
+.selected-crop-art>.game-art{width:46px;height:46px}
+.crop-art{height:137px;padding-top:23px;padding-bottom:3px;overflow:hidden;isolation:isolate}
+.crop-art>.crop-picture{width:112px;height:112px;max-width:100%;margin:auto}
+.crop-card:hover .crop-picture{filter:brightness(1.04)}
+.crop-pace{z-index:1}
+.market-row>.product-art{margin:0;width:52px;height:52px}
+.ingredient>.product-art{width:30px;height:30px;display:inline-block;padding:0}
+.collection-crop>.collection-picture{width:84px;height:84px;filter:grayscale(1);opacity:.4}
+.collection-crop.discovered>.collection-picture{filter:none;opacity:1}
+.mastery-card>.mastery-picture{width:70px;height:70px;align-self:center}
+.mastery-medals>.game-art{width:23px;height:23px;filter:grayscale(1);opacity:.3;margin-right:4px}
+.mastery-medals>.earned{filter:none;opacity:1}
+.milling-chain .game-art{width:44px;height:44px}
+.quest-icon>.game-art{width:28px;height:28px}
+.gift-icon>.game-art,.estate-icon>.game-art,.chore-icon>.game-art{width:40px;height:40px}
+.building-pin{display:grid;place-items:center;width:35px;height:36px;padding:0;border-radius:9px;background:#f0f3e7;flex-shrink:0;overflow:hidden}
+.building-pin>.game-art{display:block;width:33px;height:33px;object-fit:contain}
+.utility-label{display:grid;place-items:center;width:40px;height:40px;padding:0;line-height:0}
+.utility-label>.game-art{display:block;width:30px;height:30px;margin:0;object-fit:contain}
+.plot-label.ready>.game-art{width:23px;height:23px;display:block}
+.tractor-actions>button>.game-art{display:block;flex:0 0 42px;width:42px;height:42px;align-self:center}
+.tractor-actions strong,.tractor-actions small{line-height:1.45;overflow-wrap:anywhere}
+.utility-hero>div{min-width:0}
+.daily-bonus>.game-art,.estate-entry>.game-art{width:32px;height:32px;align-self:center}
+.level-card .level-star{width:47px;height:47px;min-width:47px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:1px solid #d3ab4f;border-radius:15px;background:linear-gradient(145deg,#ffe8a0,#f2ca64);color:#72521d;box-shadow:inset 0 1px 0 #fff4cb;overflow:hidden}
+.level-card .level-caption{font:700 9px 'DM Sans',sans-serif;letter-spacing:1px;line-height:12px;margin-top:1px}
+.level-card .level-star>b{position:static;display:block;inset:auto;padding:0;font:700 24px/26px 'Outfit',sans-serif;color:#72521d;text-shadow:none}
+.journal-level>.journal-medallion{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:68px;height:72px;background:#f8dda0;border:1px solid #d7b868;border-radius:20px}
+.journal-medallion>small{font-size:11px;font-weight:700;letter-spacing:1px;color:#806327}
+.journal-level>.journal-medallion>b{position:static;font:700 34px/36px 'Outfit',sans-serif;color:#72521d}
+
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
+ .side-tools{display:grid;top:164px;max-height:calc(100dvh - 280px);overflow-y:auto;align-content:start;padding:6px 6px 10px}
+}
+@media(min-width:901px){
+ .side-tools{grid-template-columns:repeat(2,74px);gap:13px 8px}
+ .side-tool{width:74px;gap:6px}.side-tool>span{width:54px;height:54px;border-radius:17px;background:#fffdf5;border-color:#d2dcc5;box-shadow:0 3px 8px #31462212}
+ .side-tool b{font-size:12px;color:#334f34}.side-tool.active b{color:#26472d}
+ .side-tool em{min-width:20px;height:20px;right:-4px;top:-4px;font-size:10px;border-width:2px}
+ .tool-dock{border-radius:21px;gap:13px;padding:10px 12px}.tool{gap:5px}
+ .leaderboard-button{background:#f7efcf;border-color:#d9c587}
+}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .utility-hero{align-items:flex-start;gap:12px}.utility-hero>.game-art{width:60px;height:60px}
+ .level-card .level-star{width:39px;height:39px;min-width:39px;border-radius:12px}.level-card .level-caption{font-size:8px;line-height:10px}.level-card .level-star>b{font-size:20px;line-height:22px}
+ .side-tools .side-tool>span>.game-art{width:32px;height:32px}
+ .side-tools .side-tool.active>span{background:none;border:0;box-shadow:none}
+ .side-tools .side-tool em{min-width:18px;height:18px;right:-8px;top:-2px;font-size:10px}
+ .tools .tool>.game-art{width:28px;height:28px}
+ .selected-crop-art{flex:0 0 34px;width:34px;height:36px}.selected-crop-art>.game-art{width:34px;height:34px}
+ .crop-art{height:129px;padding-top:23px}.crop-art>.crop-picture{width:104px;height:104px}
+ .crop-card>strong{font-size:19px}
+ .mastery-card>.mastery-picture{width:54px;height:54px}
+ .market-row>.product-art{width:42px;height:42px}
+ .utility-label{width:44px;height:44px;padding:0}.building-pin>.game-art{width:34px;height:34px}.utility-label>.game-art{width:34px;height:34px}.plot-label.ready>.game-art{width:29px;height:29px}
+ .milling-chain .game-art{width:36px;height:36px}
+ .mobile-menu-grid button>.game-art{width:43px;height:43px}
+}
+@media(max-width:360px){.tools .tool>.game-art{width:23px;height:23px}.crop-art{height:119px}.crop-art>.crop-picture{width:94px;height:94px}.crop-card>strong{font-size:18px}}
+@media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){
+ .side-tools .side-tool>span>.game-art{width:27px;height:27px}.selected-crop-art{width:29px;height:32px;flex-basis:29px}.selected-crop-art>.game-art{width:29px;height:29px}
+}
+
+/* Keep gift artwork inside its tile; the 40px sprite used to overflow the 34px mobile box. */
+.gift-icon{display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;padding:6px;line-height:0;overflow:hidden;flex-shrink:0}
+.gift-icon>.game-art{display:block;width:100%;height:100%;max-width:100%;max-height:100%;margin:0;flex:none}
+.gift-heading>div{min-width:0}
+@media(max-width:900px){.gift-icon{width:40px;height:40px;min-width:40px;padding:6px}}

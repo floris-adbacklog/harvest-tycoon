@@ -98,7 +98,7 @@ function t(t) {
 	if (!Object.hasOwn(e, t)) throw Error("Choose a valid leaderboard category.");
 	return e[t];
 }
-var n = "player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_crops,badges,deliveries";
+var n = "player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_crops,badges,deliveries,last_active_at";
 async function r(e, r, i = "currency") {
 	t(i);
 	let { data: a, error: o } = await e.from("player_stats").select(n).order(i, { ascending: !1 }).order("player_id", { ascending: !0 }).limit(20);
@@ -186,7 +186,7 @@ function o(e, { onlinePlayers: t = [], presenceReady: n = !1 }) {
 	let r = new Set(t);
 	e.querySelectorAll("[data-online-player]").forEach((e) => {
 		let t = n && r.has(e.dataset.onlinePlayer);
-		e.classList.toggle("is-online", t), e.title = t ? "Online now" : n ? "Not currently online" : "Online status unavailable", e.setAttribute("aria-label", e.title);
+		e.classList.toggle("is-online", t), e.title = t ? "Online · active within the last 30 minutes" : n ? "Offline · no action in the last 30 minutes" : "Online status unavailable", e.setAttribute("aria-label", e.title);
 	});
 }
 //#endregion

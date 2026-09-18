@@ -16,7 +16,7 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  harvested_sunflower:{label:'Sunflower harvested',heading:'Sunflower',unit:'sunflower harvested',group:'crops',description:'Lifetime sunflower harvested, including extra yield from water and care.'}
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}
-const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_crops,badges,deliveries';
+const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_crops,badges,deliveries,last_active_at';
 export async function fetchLeaderboard(client,playerId,category='currency'){
  categoryFor(category);
  const {data,error}=await client.from('player_stats').select(PUBLIC_FIELDS).order(category,{ascending:false}).order('player_id',{ascending:true}).limit(20);
@@ -50,5 +50,5 @@ export function renderLeaderboard(container,{rows,own,rank,category='currency',o
 
 export function updateOnlineIndicators(container,{onlinePlayers=[],presenceReady=false}){
  const online=new Set(onlinePlayers);
- container.querySelectorAll('[data-online-player]').forEach(dot=>{const active=presenceReady&&online.has(dot.dataset.onlinePlayer);dot.classList.toggle('is-online',active);dot.title=active?'Online now':presenceReady?'Not currently online':'Online status unavailable';dot.setAttribute('aria-label',dot.title);});
+ container.querySelectorAll('[data-online-player]').forEach(dot=>{const active=presenceReady&&online.has(dot.dataset.onlinePlayer);dot.classList.toggle('is-online',active);dot.title=active?'Online · active within the last 30 minutes':presenceReady?'Offline · no action in the last 30 minutes':'Online status unavailable';dot.setAttribute('aria-label',dot.title);});
 }

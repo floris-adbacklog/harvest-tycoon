@@ -178,3 +178,13 @@ Supabase project `jnmdirvidffzxukbdmij` already runs the updated `farm-api` vers
 - Finish one crop costs 5 diamonds: select one growing field and finish its timer. The crop remains in the field to harvest. Empty/ready fields and insufficient balances are rejected without charging.
 - Stripe Checkout and signed webhook processing are implemented, with authoritative pack prices and atomic, idempotent diamond credits. Database/schema/functions have been deployed; see PAYMENT-SETUP.md for the remaining manual webhook and secret steps. Stripe connector permissions blocked webhook creation. Checkout has not been verified end to end and must not be represented as live yet.
 - 120 automated tests pass, including payment validation, existing farming/input regressions, all six chore progression stages, and single-crop spending rules. The production static build passes.
+
+
+## Starter Pack and activity update
+
+- Starter Pack is €2.99, linked to prod_VHfWRMcedF9ShZ and its verified EUR price. Awards 10,000 coins, 300 diamonds and one of each of the nine crops directly in normal inventory. Available in the first 72 account hours, once per account, with a compact bottom-left icon.
+- Sort the seed boxes now starts at 35% success and reaches its existing 60% maximum after 13 practice attempts. Existing practice is preserved.
+- Finish one crop now costs 10 diamonds. Double XP now costs 25 diamonds for 30 minutes. Old price quotes are rejected without charging.
+- A successful server-recorded farm action marks a player online for 30 minutes. Loads, idle tabs and rejected/replayed actions do not refresh activity. Status persists across tabs/devices; closing a tab does not erase the 30-minute window. The open leaderboard refreshes every 30 seconds and expires loaded statuses automatically.
+- Starter grants and replay protection were tested inside a rolled-back database transaction under the actual server role. No real account received test rewards. Activity timestamps and stale-action rejection were also tested in Supabase.
+- The user's live Stripe webhook is verified enabled with both required events. Full payment processing still needs an end-to-end test after all Supabase payment secrets and the enable flag are configured. See PAYMENT-SETUP.md.

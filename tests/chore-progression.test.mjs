@@ -4,12 +4,12 @@ import {createFarm,normalizeFarm,applyFarmAction as act,choreStatus,CHORES,ACTIV
 import {art} from '../public/visual-icons.js';
 import {soundForAction} from '../public/farm-audio.js';
 const now=Date.UTC(2026,8,18);
-test('practice unlocks chores in order at exactly 20 attempts and respects caps',()=>{
+test('practice unlocks chores in order at their mastery threshold and respects caps',()=>{
  const s=createFarm(now);let time=now;
  for(const id of ['troughs','sorting'])assert.throws(()=>act(s,{type:'chore',id},time,()=>{throw Error('must not roll');}),/Master/);
  for(const id of Object.keys(CHORES)){
   const c=CHORES[id];assert.equal(choreStatus(s,id,time).locked,false);
-  for(let i=0;i<20;i++){
+  for(let i=0;i<Math.ceil((c.maxChance-c.baseChance)/2);i++){
    assert.equal(choreStatus(s,id,time).chance,c.baseChance+i*2);
    act(s,{type:'chore',id},time,()=>0);time+=c.cooldown;
   }

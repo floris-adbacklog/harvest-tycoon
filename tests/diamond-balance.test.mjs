@@ -28,8 +28,14 @@ test('old or manipulated boost quotes never charge a different price',()=>{
 });
 test('free beginner diamonds still buy an entry boost; premium boost prices preserve their value',()=>{
  const s=createFarm(now);s.diamonds=20;
- applyFarmAction(s,{type:'buy_boost',boost:'xp',expectedCost:20},now);assert.equal(s.diamonds,0);
+ const id=s.plots.findIndex(p=>p.crop&&p.readyAt>now);
+ applyFarmAction(s,{type:'finish_crop',id,expectedCost:10},now);assert.equal(s.diamonds,10);
  assert.equal(DAILY_DIAMONDS.reduce((a,b)=>a+b,0)+7*8,136);
  assert.equal(Math.floor(1000/BOOSTS.crops.cost),11);
  const before=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'coins',expectedCost:60},now),/diamonds/);assert.deepEqual(s,before);
+});
+test('Double XP costs 25 diamonds and rejects the old 20-diamond quote',()=>{
+ const s=createFarm(now);s.diamonds=25;
+ assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'xp',expectedCost:20},now),/prices have changed/);assert.equal(s.diamonds,25);
+ applyFarmAction(s,{type:'buy_boost',boost:'xp',expectedCost:25},now);assert.equal(s.diamonds,0);assert.equal(s.boosts.xpUntil,now+1800000);
 });
