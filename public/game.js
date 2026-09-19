@@ -17,6 +17,7 @@ import { createQuestsUI } from './quests-ui.js';
 import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
+import { createScenePolish } from './scene-polish.js';
 import { createActivitiesUI } from './activities-ui.js';
 import { ACTIVE_STATIONS } from './farm-state.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
@@ -32,7 +33,7 @@ let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFram
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
 const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
-let progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI;
+let progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
@@ -57,7 +58,7 @@ function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
  const obj=entry.object.clone(true),d=entry.size;
  if(width!=null&&depth!=null)obj.scale.set(width/d.x,(height??d.y)/d.y,depth/d.z);
  else {const s=height!=null?height/d.y:width!=null?width/Math.max(d.x,d.z):scale;obj.scale.setScalar(s);}
- obj.position.set(x,y,z);obj.rotation.y=rotation;scene.add(obj);return obj;
+ obj.position.set(x,y,z);obj.rotation.y=rotation;obj.userData.model=name;scene.add(obj);return obj;
 }
 function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
@@ -386,7 +387,7 @@ function positionBuildingLabels(){
  for(const [key,v] of utilityViews){v.object.visible=featureUnlocked(state,key);const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=!v.object.visible||Math.abs(p.x)>.94||Math.abs(p.y)>.82;}
  for(const [key,v]of buildingViews){v.object.visible=buildingEligible(state,key);v.hit.visible=v.object.visible;const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=!v.object.visible||Math.abs(p.x)>.92||Math.abs(p.y)>.82;v.label.classList.toggle('ready',economy.status(key).kind==='ready');}
 }
-function expandVisuals(){if(!ready)return;createPlots();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();}
+function expandVisuals(){if(!ready)return;createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();}
 function bindUI(){
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
@@ -430,7 +431,7 @@ function frame(now){
  if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();activities.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
  if(!reducedMotion){
   if(windmillRotor)windmillRotor.rotation.z-=dt*.28;
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());scenePolish?.animate(t);
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -475,7 +476,7 @@ async function init(){
    object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});
    models.set(name,{object:group,size});loaded++;loadingUI.modelsReady(loaded);
   },4)]);
-  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));measureFarm();resize();icons();
+  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});measureFarm();resize();icons();
   renderer.domElement.addEventListener('pointermove',e=>{
    if(e.pointerType!=='mouse'||e.buttons){highlight(-1);$('tooltip').hidden=true;return;}
    const target=pointerTarget(e);highlight(target?.id??-1);const tooltip=$('tooltip');
