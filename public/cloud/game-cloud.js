@@ -1,4 +1,4 @@
-import { i as e, r as t, t as n } from "./leaderboard-BxPn2BgO.js";
+import { i as e, r as t, t as n } from "./leaderboard-BozDYht-.js";
 //#region src/ui.js
 var r = (e) => document.getElementById(e);
 function i({ onOpen: e, onName: t, onRetry: i, onSignIn: a, onRegister: o, onSignOut: s }) {
@@ -6,7 +6,7 @@ function i({ onOpen: e, onName: t, onRetry: i, onSignIn: a, onRegister: o, onSig
 	c.id = "leaderboard-button", c.className = "leaderboard-button", c.setAttribute("aria-haspopup", "dialog"), c.innerHTML = "<i data-lucide=\"trophy\"></i><span>Leaderboard</span>", document.querySelector(".tool-dock").append(c);
 	let l = document.createElement("div");
 	l.innerHTML = `<dialog id="auth-dialog" class="game-dialog auth-dialog" aria-labelledby="auth-title"><div class="auth-brand"><img src="/assets/harvest-tycoon-logo.png" alt="" width="92" height="92"><div><span class="eyebrow">WELCOME BACK TO THE FARM</span><h2 id="auth-title">Save your progress</h2></div></div><p class="section-copy">Sign in to access your coins, level, and player name on any device.</p><div class="auth-tabs" role="tablist"><button type="button" role="tab" data-auth-tab="signin" aria-selected="true">Sign in</button><button type="button" role="tab" data-auth-tab="register" aria-selected="false">Create account</button></div><form id="auth-form"><div id="register-name-row" hidden><label for="auth-username">Player name</label><input id="auth-username" autocomplete="nickname" minlength="3" maxlength="20" placeholder="Sunny Acres"></div><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required><p id="auth-message" class="cloud-form-error" role="status"></p><button id="auth-submit" class="primary-button" type="submit">Sign in<i data-lucide="log-in"></i></button></form><p class="auth-note">Your session stays securely saved in this browser.</p></dialog>
- <dialog id="leaderboard-dialog" class="game-dialog wide-dialog" aria-labelledby="leaderboard-title"><div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="leaderboard-title">The valley leaderboard</h2></div><button class="icon-button" data-cloud-close aria-label="Close"><i data-lucide="x"></i></button></div><p class="leaderboard-intro">Find your place in the valley. Choose a category to compare your progress. A green dot means the farmer has the game open and visible.</p><div class="cloud-profile"><span id="player-name">Your farmer profile</span><button class="small-button" id="rename-player" hidden>Change name</button><button class="small-button" id="logout-player" hidden>Sign out</button></div><div class="leaderboard-filter"><label for="leaderboard-category">Rank by</label><select id="leaderboard-category" aria-describedby="leaderboard-description">${[["progress", "Farm progress"], ["crops", "Individual crops"]].map(([e, t]) => `<optgroup label="${t}">${Object.entries(n).filter(([, t]) => (t.group ?? "progress") === e).map(([e, t]) => `<option value="${e}">${t.label}</option>`).join("")}</optgroup>`).join("")}</select><p id="leaderboard-description">${n.currency.description}</p></div><div class="cloud-sync"><span id="cloud-status" role="status">Connecting…</span><button id="retry-cloud" class="back-button">Refresh</button></div><div id="leaderboard-results" aria-live="polite"></div><p class="cloud-privacy">Your name, online status and public farming achievements appear here. Your diamonds and farm details stay private.</p></dialog>
+ <dialog id="leaderboard-dialog" class="game-dialog wide-dialog" aria-labelledby="leaderboard-title"><div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="leaderboard-title">The valley leaderboard</h2></div><button class="icon-button" data-cloud-close aria-label="Close"><i data-lucide="x"></i></button></div><p class="leaderboard-intro">Find your place in the valley. Choose a category to compare your progress. A green dot means the farmer has the game open and visible.</p><div class="cloud-profile"><span id="player-name">Your farmer profile</span><button class="small-button" id="rename-player" hidden>Change name</button><button class="small-button" id="logout-player" hidden>Sign out</button></div><div class="leaderboard-filter"><label for="leaderboard-category">Rank by</label><select id="leaderboard-category" aria-describedby="leaderboard-description">${[["progress", "Farm progress"], ["crops", "Individual crops"]].map(([e, t]) => `<optgroup label="${t}">${Object.entries(n).filter(([, t]) => (t.group ?? "progress") === e).map(([e, t]) => `<option value="${e}">${t.label}</option>`).join("")}</optgroup>`).join("")}</select><p id="leaderboard-description">${n.level.description}</p></div><div class="cloud-sync"><span id="cloud-status" role="status">Connecting…</span><button id="retry-cloud" class="back-button">Refresh</button></div><div id="leaderboard-results" aria-live="polite"></div><p class="cloud-privacy">Your name, online status and public farming achievements appear here. Your diamonds and farm details stay private.</p></dialog>
  <dialog id="username-dialog" class="game-dialog" aria-labelledby="username-title"><div class="dialog-heading"><div><span class="eyebrow">MEET THE OTHER FARMERS</span><h2 id="username-title">What should we call you?</h2></div><button class="icon-button" data-cloud-close aria-label="Keep playing"><i data-lucide="x"></i></button></div><p class="section-copy">Choose the display name other players will see on the leaderboard.</p><form id="username-form"><label for="username-input">Display name</label><input id="username-input" name="username" autocomplete="nickname" minlength="3" maxlength="20" required placeholder="Sunny Acres"><small>3–20 letters, numbers, spaces, underscores or hyphens.</small><p id="username-error" class="cloud-form-error" role="alert"></p><button class="primary-button" type="submit">Join the leaderboard<i data-lucide="arrow-right"></i></button></form></dialog>`, document.body.append(...l.children);
 	let u = "signin";
 	function d(e) {
@@ -174,6 +174,30 @@ for (let e of [
 	"paddock",
 	"workshop"
 ]) o[`activity-${e}`] = `activity-${e}`;
+for (let e of [
+	"apples",
+	"berries",
+	"greenbeans",
+	"applejuice",
+	"applepie",
+	"berrypreserves",
+	"berrytart",
+	"stew",
+	"juicepress",
+	"preserves",
+	"kitchen"
+]) o[e] = e;
+for (let e of [
+	"orchardjuice",
+	"berrysmoothie",
+	"applecompote",
+	"applevinegar",
+	"pickledbeans",
+	"beangratin",
+	"orchardsalad",
+	"berrycheesecake",
+	"harvesthamper"
+]) o[e] = e;
 var s = Object.fromEntries(a.flatMap((e) => e.keys.map((t, n) => [t, {
 	...e,
 	index: n
@@ -255,7 +279,7 @@ async function u(e) {
 	let o = document.createElement("button");
 	o.id = "starter-pack-button", o.hidden = !0, o.type = "button", o.setAttribute("aria-label", "Starter Pack, €2.99"), o.innerHTML = "<img src=\"/assets/icons/starter-pack.svg\" alt=\"\"><span>Starter Pack</span><small>€2.99</small>";
 	let s = document.createElement("dialog");
-	s.id = "starter-pack-dialog", s.className = "game-dialog", s.setAttribute("aria-labelledby", "starter-pack-title"), s.innerHTML = `<button type="button" class="starter-close" aria-label="Close Starter Pack">×</button><img class="starter-hero" src="/assets/icons/starter-pack.svg" alt=""><span class="eyebrow">A LITTLE HEAD START</span><h2 id="starter-pack-title">Starter Pack</h2><p>Make yourself at home with a one-time welcome bundle.</p><div class="starter-rewards"><div>${r("coins")}<strong>10,000</strong><span>coins</span></div><div>${r("diamonds")}<strong>300</strong><span>diamonds</span></div></div><h3>One of every crop</h3><div class="starter-crops">${Object.entries(t).map(([e, t]) => `<div>${r(e)}<span>${t.name}</span><b>×1</b></div>`).join("")}</div><p class="starter-note">All rewards go directly to your account. Crops are added to your inventory, ready to use or sell.</p><p class="starter-time"></p><button class="primary-button starter-buy" disabled>Buy Starter Pack · €2.99</button><p class="starter-feedback" role="status" aria-live="polite"></p><small>One purchase per account. Available for your first 72 hours.</small>`, document.body.append(o, s), i();
+	s.id = "starter-pack-dialog", s.className = "game-dialog", s.setAttribute("aria-labelledby", "starter-pack-title"), s.innerHTML = `<button type="button" class="starter-close" aria-label="Close Starter Pack">×</button><img class="starter-hero" src="/assets/icons/starter-pack.svg" alt=""><span class="eyebrow">A LITTLE HEAD START</span><h2 id="starter-pack-title">Starter Pack</h2><p>Make yourself at home with a one-time welcome bundle.</p><div class="starter-rewards"><div>${r("coins")}<strong>10,000</strong><span>coins</span></div><div>${r("diamonds")}<strong>300</strong><span>diamonds</span></div></div><h3>1× each of all 12 crops</h3><div class="starter-crops">${Object.entries(t).map(([e, t]) => `<div>${r(e)}<span>${t.name}</span><b>×1</b></div>`).join("")}</div><p class="starter-note">All rewards go directly to your account. Includes Apples, Berries and Green beans. All 12 crops are added to your inventory, ready to use or sell; no fields are planted.</p><p class="starter-time"></p><button class="primary-button starter-buy" disabled>Buy Starter Pack · €2.99</button><p class="starter-feedback" role="status" aria-live="polite"></p><small>One purchase per account. Available for your first 72 hours.</small>`, document.body.append(o, s), i();
 	let c = s.querySelector(".starter-buy"), l = s.querySelector(".starter-feedback"), u = s.querySelector(".starter-time"), d = null, f = 0, p = !1, m = !1, h = "", g = !1;
 	function _() {
 		let e = d?.starter, t = (e?.expiresAt ?? 0) - (Date.now() + f), r = e?.eligible && t > 0;

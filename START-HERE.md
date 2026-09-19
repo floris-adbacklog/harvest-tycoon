@@ -1,3 +1,5 @@
+Latest release: see [PANTRY-UPDATE.md](PANTRY-UPDATE.md) for new recipes, artwork and deployment status. Earlier release notes follow.
+
 # Harvest Tycoon — updated project export, September 17, 2026
 
 ## Included changes

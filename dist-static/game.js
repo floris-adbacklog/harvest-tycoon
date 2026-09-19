@@ -39,7 +39,9 @@ const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bag_003','bucket_001','apiary_001','cart_004','chair_001','firewood_003','firewood_008','hay_002','hay_003','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','barrel_009','cart_001','case_002','case_003','coop_001','water_001','landscape_001','ground_004','road_001'];
 modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
-modelNames.push(...LIFE_MODELS);
+modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','stall_001','case_001','dray_002','dray_004','prop_029');
+modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS);
+const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
 let toastTimer;
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
 function icons(){refreshArt();}
@@ -55,18 +57,30 @@ function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
  mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);mesh.receiveShadow=true;scene.add(mesh);return mesh;
 }
-function fenceLine(x,z,n,axis='x',size=2.2){
- for(let i=0;i<n;i++)cloneModel('fence_001',x+(axis==='x'?i*size:0),z+(axis==='z'?i*size:0),{width:size,rotation:axis==='z'?Math.PI/2:0});
+function fenceLine(x,z,n,axis='x',size=2.2,style='fence_001',tintColor){
+ for(let i=0;i<n;i++){
+  const seg=cloneModel(style,x+(axis==='x'?i*size:0),z+(axis==='z'?i*size:0),{width:size,rotation:axis==='z'?Math.PI/2:0});
+  if(tintColor)tint(seg,tintColor);
+ }
 }
+function groundPatch(name,x,z,width,depth,color){
+ const p=cloneModel(name,x,z,{width,depth,height:.16,y:.006});
+ p.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(color);}});
+ return p;
+}
+// Multiplicative tint: only ever makes a texture darker/warmer, never lighter than its source pixels.
+function tint(obj,color){obj.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(color);}});return obj;}
+// Additive glow: the only way to make an already-dark, texture-mapped prop read lighter.
+function lighten(obj,color,intensity=.3){obj.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.emissive=new THREE.Color(color);n.material.emissiveIntensity=intensity;}});return obj;}
 function decorate(){
- const ground=patch(0,0,200,200,0xa8c777,0);ground.name='Farm ground';
+ const ground=patch(0,0,200,200,0xacae5c,0);ground.name='Farm ground';
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
  cloneModel('road_001',-1,-4,{width:48,depth:2.9,height:.13,y:-.045});
  cloneModel('road_001',-6,3,{width:2.9,depth:40,height:.13,y:-.035});
  cloneModel('road_001',6.2,19.8,{width:27,depth:2.4,height:.12,y:-.035});
- patch(2.575,8.25,12.8,19.4,0x91b768,.004);
- patch(11,-7.7,10,8.4,0x95b86b,.007);
- patch(-12.5,5.3,8.7,13,0x9bbc70,.004);
+ patch(2.575,8.25,12.8,19.4,0xa2a66b,.004);
+ patch(11,-7.7,10,8.4,0xa4a76e,.007);
+ patch(-12.5,5.3,8.7,13,0xa9ab73,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
  addBuilding('dairy',-1,-13.2,{width:6.8,rotation:Math.PI/2});
  addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
@@ -76,6 +90,10 @@ function decorate(){
  addBuilding('bakery',-10.8,12,{width:5.2,rotation:Math.PI/2});
  addBuilding('packing',11.5,-17.2,{width:4.4,rotation:-Math.PI/2});
  addBuilding('windmill',12.8,4,{height:6.6});
+ addBuilding('juicepress',-1,-20.1,{width:4,height:2.8,depth:3.5,rotation:Math.PI/2});
+ addBuilding('preserves',-15.2,-18.6,{width:4.2,height:3,depth:3.8,rotation:Math.PI/2});
+ addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
+ for(const [x,z] of [[-1,-20.1],[-15.2,-18.6],[-12.4,18.2]])patch(x,z,5.1,4.8,0xb6bd88,.008);
  // Both the mill body and its moving sails are original parts from the supplied pack.
  const sail=cloneModel('tower_020',0,0,{height:5.8});scene.remove(sail);
  sail.position.set(0,-2.9,0);windmillRotor=new THREE.Group();windmillRotor.position.set(12.8,4.55,5.8);windmillRotor.add(sail);windmillRotor.userData.building='windmill';scene.add(windmillRotor);
@@ -106,20 +124,23 @@ function decorate(){
  cloneModel('prop_023',-9.2,-2.7,{width:.8});
  addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
  fenceLine(8,-12.5,5);fenceLine(7,-11.4,4,'z');fenceLine(16.6,-11.4,4,'z');fenceLine(9.2,-3.6,4);
- fenceLine(-16.6,-13.2,4);fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
- fenceLine(-3,18.3,6);fenceLine(9.5,2.4,8,'z');
+ // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
+ fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
+ fenceLine(-3,18.3,6,'x',2.2,'fence_008',0xf2e2bd);fenceLine(9.5,2.4,8,'z');
  const cow=cloneModel('cow_001',11,-6.6,{width:2.4,rotation:-.6});cow.userData.building='dairy';animals.push({obj:cow,x:11,z:-6.6,seed:.5});
  const cow2=cloneModel('cow_001',14.5,-5.5,{width:1.85,rotation:2});cow2.userData.building='dairy';animals.push({obj:cow2,x:14.5,z:-5.5,seed:3});
  const sheep=cloneModel('sheep_001',9.1,-9.5,{width:1.6,rotation:.6});sheep.userData.building='dairy';animals.push({obj:sheep,x:9.1,z:-9.5,seed:1.5});
  const goat=cloneModel('goat_001',14.8,-8.4,{width:1.5,rotation:-1.1});goat.userData.building='dairy';animals.push({obj:goat,x:14.8,z:-8.4,seed:4.2});
  for(const [x,z,r] of [[-9.1,-1.2,.2],[-11.3,-.9,2.1],[-10.2,1.2,3.1]]){const o=cloneModel('chicken_001',x,z,{height:.72,rotation:r});o.userData.building='coop';animals.push({obj:o,x,z,seed:r});}
  // Small work yards and low props create breathing room without widening the farm.
- patch(-12.5,4,6.4,6.4,0xb6bd88,.008);
- patch(-10.8,12,7,6.9,0xb9bd89,.008);
- patch(11.5,-17.2,6.8,6.4,0xb7bd88,.008);
+ // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
+ groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
+ groundPatch('ground_007',-10.8,12,7,6.9,0xbaaf8b);
+ groundPatch('ground_006',11.5,-17.2,6.8,6.4,0xb9af8a);
  for(const [name,x,z,options] of [
   ['case_002',9,-14.2,{width:1.1,rotation:.12}],['bag_003',10.25,-14.2,{height:.82,rotation:-.25}],
   ['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],
+  ['prop_029',8.4,-13.6,{width:.55,rotation:.6}],
   ['barrel_002',-15.7,6.5,{height:.95}],['bag_001',-10.2,6.4,{height:.8}],
   ['bag_002',-10.8,6.7,{height:.7}],['firewood_003',-14.1,10.5,{width:1.3}],
   ['case_003',-8.1,13.5,{width:.9,rotation:.35}],['table_001',-13.9,-5.9,{width:1.6}],
@@ -132,7 +153,13 @@ function decorate(){
   ['bucket_001',-7.7,1,{height:.65}],['bush_003',-8.4,8,{width:1.1}],
   ['bush_003',8.9,-19.6,{width:1.2}],['grass_004',-8.2,8.9,{height:.3}]
  ])cloneModel(name,x,z,options);
- const trees=[[-17,-14,6],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-17,17,5.5],[-5,19,5.8],[12,22,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[20,-10,6],[19,-19,6.1],[4,-21,5.4],[-10,-19,6.5],[-2,-22,7],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
+ // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
+ // glow since a plain color tint can only darken a texture, never lighten it.
+ lighten(cloneModel('case_001',9.9,-15.1,{width:.95,rotation:-.4}),0x3a2a16,.28);
+ lighten(cloneModel('dray_004',-18.5,-6.5,{width:2,rotation:.4}),0x3a2a16,.28);
+ lighten(cloneModel('dray_002',-18.6,-11.2,{width:1.9,rotation:.5}),0x3a2a16,.28);
+ lighten(cloneModel('stall_001',-9.5,14.8,{width:2.2,rotation:.4}),0x3a2a16,.28);
+ const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[12,22,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[20,-10,6],[19,-19,6.1],[4,-21,5.4],[-10,-19,6.5],[1,-24.5,4],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  for(const [x,z] of [[-17,-6],[-16.5,-4],[-18.5,9],[-15,12],[19,-5],[18,2],[21,9],[10,15],[2,20],[-21,-15],[-9,-17],[11,-16]])cloneModel('bush_001',x,z,{width:2.2,rotation:x});
  for(const [x,z,r] of [[9.4,12.2,.2],[9.8,9.2,1.1],[-13.7,15.2,2.2],[16,5.2,.6]])cloneModel('bush_003',x,z,{width:1.45,rotation:r});
@@ -168,24 +195,26 @@ function drawCrop(i){
   clearCropVisual(v.cropGroup);v.visualCrop=p.crop;
   if(p.crop){
    const c=CROPS[p.crop];
-   if(p.crop==='pumpkin'){
+   if(c.perennial){
+    const o=cloneModel(c.model,0,0,{height:c.height,width:p.crop==='apples'?1.9:1.7,depth:p.crop==='apples'?1.9:1.7,rotation:.5});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
+   }else if(p.crop==='pumpkin'){
     const o=cloneModel(c.model,0,0,{width:2.05,rotation:Math.PI/2});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
    }else{
     const offsets=['wheat','barley'].includes(p.crop)?[-.65,0,.65].flatMap(x=>[-.65,0,.65].map(z=>[x,z])):[[-.55,-.55],[.55,-.55],[-.55,.55],[.55,.55]];
     for(const [dx,dz] of offsets){
-     const o=cloneModel(c.model,0,0,{height:c.height,rotation:p.crop==='sunflower'?-.55:.5+i*.22});scene.remove(o);v.cropGroup.add(o);o.position.set(dx,0,dz);if(c.tint)o.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.userData.farmCropOwned=true;n.material.color.setHex(c.tint);}});
+     const o=cloneModel(c.model,0,0,{height:c.height,rotation:p.crop==='sunflower'?-.55:.5+i*.22});scene.remove(o);v.cropGroup.add(o);o.position.set(dx,0,dz);if(p.crop==='greenbeans'){for(let j=0;j<3;j++){const pod=new THREE.Mesh(beanPodGeometry,beanPodMaterial);pod.scale.set(.065,.23,.065);pod.position.set(dx+Math.cos(j*2)*.16,.45+j*.19,dz+Math.sin(j*2)*.16);pod.rotation.z=.25-j*.2;v.cropGroup.add(pod);}}if(c.tint)o.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.userData.farmCropOwned=true;n.material.color.setHex(c.tint);}});
     }
    }
   }
  }
  v.cropGroup.position.set(v.x,.25,v.z);
- const pg=progress(p,farmNow()),scale=p.crop ? .12+.88*Math.pow(pg,.6) : 1;
+ const pg=progress(p,farmNow()),scale=p.crop ? (CROPS[p.crop].perennial&&p.harvestCycles>0?.85+.15*pg:.12+.88*Math.pow(pg,.6)) : 1;
  v.cropGroup.scale.setScalar(scale);
  const ripe=p.crop&&farmNow()>=p.readyAt;
  v.soil.traverse(n=>{if(n.isMesh)n.material.color.setHex(p.watered?0x8b8a82:0xc4b39a)});
  if(!p.crop){v.label.innerHTML='';v.label.className='plot-label';v.label.setAttribute('aria-label',`Field ${i+1}, empty. Plant ${CROPS[selectedCrop].name}.`);}
  else if(ripe){
-  if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art('vegetables');
+  if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art(['apples','berries','greenbeans'].includes(p.crop)?p.crop:'vegetables');
   v.label.className='plot-label ready';v.label.setAttribute('aria-label',`Harvest ${CROPS[p.crop].name} from field ${i+1}`);
  }else{
   const remaining=p.readyAt-farmNow(),time=mobileLayout.matches?(remaining>=3600000?`${Math.ceil(remaining/3600000)}h`:remaining>=60000?`${Math.ceil(remaining/60000)}m`:`${Math.ceil(Math.max(0,remaining)/1000)}s`):formatDuration(remaining);
@@ -293,7 +322,7 @@ function measureFarm(){
 function positionLabels(){
  if(!camera)return;
  for(let i=0;i<plots.length;i++){
-  const v=plots[i],p=state.plots[i],y=p.crop?Math.max(.7,(CROPS[p.crop].height+.55)*progress(p,farmNow())):0.4;
+  const v=plots[i],p=state.plots[i],y=p.crop?Math.max(.7,(CROPS[p.crop].height+.55)*(CROPS[p.crop].perennial&&p.harvestCycles>0?1:progress(p,farmNow()))):0.4;
   const point=new THREE.Vector3(v.x,y,v.z).project(camera);
   v.label.style.left=`${(point.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-point.y*.5+.5)*world.clientHeight}px`;
   v.label.hidden=point.z>1||point.z< -1||Math.abs(point.x)>1||Math.abs(point.y)>1;
@@ -322,7 +351,7 @@ function pointerTarget(event){
  // small props must not lose taps to scenery or nearby utility models.
  const stationHit=raycaster.intersectObjects(farmLife?.targets()??[],true)[0];
  if(stationHit){let node=stationHit.object;while(node){if(node.userData.activity)return {type:'activity',id:node.userData.activity};node=node.parent;}}
- const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).map(v=>v.object),...Array.from(utilityViews.values()).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?[windmillRotor]:[]),...(farmLife?.targets()??[])];
+ const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).flatMap(v=>[v.object,v.hit]),...Array.from(utilityViews.values()).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?[windmillRotor]:[]),...(farmLife?.targets()??[])];
  for(const hit of raycaster.intersectObjects(targets,true)){let obj=hit.object;while(obj){if(obj.userData.activity)return {type:'activity',id:obj.userData.activity};if(obj.userData.utility)return {type:'utility',id:obj.userData.utility};if(obj.userData.building)return {type:'building',id:obj.userData.building};if(Number.isInteger(obj.userData.plot))return {type:'plot',id:obj.userData.plot};obj=obj.parent;}}
  return null;
 }
@@ -335,11 +364,14 @@ function addUtility(key,model,x,z,options){
 function addBuilding(key,x,z,options){
  const object=cloneModel(BUILDINGS[key].model,x,z,options);object.userData.building=key;
  const bounds=new THREE.Box3().setFromObject(object),height=bounds.max.y;
+ const size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
+ const hit=new THREE.Mesh(new THREE.BoxGeometry(size.x+.4,size.y+.3,size.z+.4),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
+ hit.position.copy(center);hit.userData.building=key;scene.add(hit);hit.updateMatrixWorld(true);
  const outline=new THREE.BoxHelper(object,0xffdc76);outline.material.transparent=true;outline.material.opacity=.75;outline.visible=false;scene.add(outline);
  const label=document.createElement('button');label.className='building-label';label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
  label.innerHTML=`<span class="building-pin">${art(key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">${key==='farmhouse'?'Expand your fields':'Ready to work'}</small></span>`;
  label.addEventListener('click',()=>economy.openBuilding(key));label.addEventListener('mouseenter',()=>highlight(key));label.addEventListener('mouseleave',()=>highlight(-1));label.addEventListener('focus',()=>highlight(key));label.addEventListener('blur',()=>highlight(-1));$('building-labels').append(label);
- buildingViews.set(key,{object,outline,label,x,z,height});
+ buildingViews.set(key,{object,hit,outline,label,x,z,height});
 }
 function positionBuildingLabels(){
  farmLife?.position(camera,world.clientWidth,world.clientHeight,farmNow());
@@ -387,7 +419,7 @@ function frame(now){
  if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();activities.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
  if(!reducedMotion){
   if(windmillRotor)windmillRotor.rotation.z-=dt*.28;
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());animals.forEach(a=>{a.baseYaw??=a.obj.rotation.y;a.obj.position.x=a.x+Math.sin(t*.18+a.seed)*.4;a.obj.position.z=a.z+Math.cos(t*.14+a.seed)*.3;a.obj.rotation.y=a.baseYaw+Math.sin(t*.17+a.seed)*.2;a.obj.rotation.z=Math.sin(t*2+a.seed)*.007;});
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -415,13 +447,14 @@ async function init(){
  bindUI();updateUI();
  try{
   renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
-  renderer.setClearColor(0xa8c777);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
+  renderer.setClearColor(0xf3dda6);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;});
   scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,180);
-  const hemi=new THREE.HemisphereLight(0xfff9df,0x6d8153,2.35);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xfff2d7,3.1);sun.position.set(-20,35,18);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;sun.shadow.camera.near=1;sun.shadow.camera.far=95;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  const hemi=new THREE.HemisphereLight(0xffedc0,0x8a7a4a,2.35);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xffd9a0,3.05);sun.position.set(-24,26,15);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;sun.shadow.camera.near=1;sun.shadow.camera.far=95;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  scene.fog=new THREE.Fog(0xf3dda6,46,128);
   const loader=new GLTFLoader();let loaded=0;
   await Promise.all([client.load(),loadInBatches(modelNames,async name=>{
    const gltf=await loader.loadAsync(`/assets/models/${name}.glb`),object=gltf.scene;

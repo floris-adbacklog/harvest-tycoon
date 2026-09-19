@@ -1,16 +1,16 @@
 //#region src/leaderboard.js
 var e = Object.freeze({
-	currency: {
-		label: "Most coins",
-		heading: "Coins",
-		unit: "coins",
-		description: "Current coin balance. Spending coins can change your position."
-	},
 	level: {
 		label: "Highest level",
 		heading: "Level",
 		unit: "level",
 		description: "Your farmer level, earned through farming experience."
+	},
+	currency: {
+		label: "Most coins",
+		heading: "Coins",
+		unit: "coins",
+		description: "Current coin balance. Spending coins can change your position."
 	},
 	harvested_crops: {
 		label: "Most crops harvested",
@@ -18,11 +18,23 @@ var e = Object.freeze({
 		unit: "crops harvested",
 		description: "Lifetime harvest of all crop varieties, including extra yield from water and care."
 	},
+	goods_produced: {
+		label: "Most goods produced",
+		heading: "Goods produced",
+		unit: "goods produced",
+		description: "Lifetime production goods collected from every building, from honey to berry tart."
+	},
+	items_sold: {
+		label: "Most items sold",
+		heading: "Items sold",
+		unit: "items sold",
+		description: "Lifetime crops and goods sold at the market. Counts from when this board launched."
+	},
 	badges: {
 		label: "Most badges",
 		heading: "Badges",
 		unit: "badges",
-		description: "Crop mastery medals you have claimed. Up to 36 badges to earn."
+		description: "Crop mastery medals you have claimed. Up to 48 badges to earn."
 	},
 	deliveries: {
 		label: "Most deliveries",
@@ -92,14 +104,35 @@ var e = Object.freeze({
 		unit: "sunflower harvested",
 		group: "crops",
 		description: "Lifetime sunflower harvested, including extra yield from water and care."
+	},
+	harvested_greenbeans: {
+		label: "Green beans harvested",
+		heading: "Green beans",
+		unit: "green beans harvested",
+		group: "crops",
+		description: "Lifetime green beans harvested, including water and care bonuses."
+	},
+	harvested_apples: {
+		label: "Apples harvested",
+		heading: "Apples",
+		unit: "apples harvested",
+		group: "crops",
+		description: "Lifetime apples harvested, including water and care bonuses."
+	},
+	harvested_berries: {
+		label: "Berries harvested",
+		heading: "Berries",
+		unit: "berries harvested",
+		group: "crops",
+		description: "Lifetime berries harvested, including water and care bonuses."
 	}
 });
 function t(t) {
 	if (!Object.hasOwn(e, t)) throw Error("Choose a valid leaderboard category.");
 	return e[t];
 }
-var n = "player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_crops,badges,deliveries,last_active_at";
-async function r(e, r, i = "currency") {
+var n = "player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at";
+async function r(e, r, i = "level") {
 	t(i);
 	let { data: a, error: o } = await e.from("player_stats").select(n).order(i, { ascending: !1 }).order("player_id", { ascending: !0 }).limit(20);
 	if (o) throw o;
@@ -125,7 +158,7 @@ async function r(e, r, i = "currency") {
 		category: i
 	};
 }
-function i(e, n = "currency") {
+function i(e, n = "level") {
 	t(n);
 	let r = 0, i = null;
 	return e.map((e, t) => {
@@ -137,7 +170,7 @@ function i(e, n = "currency") {
 		};
 	});
 }
-function a(e, { rows: n, own: r, rank: a, category: s = "currency", onlinePlayers: c = [], presenceReady: l = !1 }, u) {
+function a(e, { rows: n, own: r, rank: a, category: s = "level", onlinePlayers: c = [], presenceReady: l = !1 }, u) {
 	let d = t(s);
 	if (e.replaceChildren(), !n.length) {
 		let t = document.createElement("p");

@@ -1,10 +1,10 @@
-import {CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote} from './farm-state.js';
+import {CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,marketHighlights,marketValue,DELIVERY_TIERS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList}){
- let tab='challenges',utility='tractor',lastDay=utcDay(farmNow()),lastTractorReady=true,lastFieldStatus='',lastCoinBoost=false;
+ let tab='challenges',utility='tractor',lastDay=utcDay(farmNow()),lastTractorReady=true,lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
  const open=id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();};
  async function act(action,message){try{const r=await runAction(action);onChange();refresh();notify(typeof message==='function'?message(r):message);return r;}catch(e){notify(e.message);}}
  function gift(){
@@ -15,6 +15,9 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   $('checkin-gift').onclick=()=>act({type:'checkin'},r=>`Welcome back! +${r.coins} coins and +${r.diamonds} diamonds · ${r.streak}-day streak.`);
  }
  function renderToday(){
+  const {today}=marketHighlights(farmNow());
+  $('today-market').innerHTML=`<button type="button" class="today-market-card" id="today-open-market">${art(today.item)}<span><small>TODAY’S MARKET PICK</small><strong>${ITEMS[today.item].name}</strong><span>${today.price.toLocaleString('en-US')} coins each · ${today.change>=0?'+':''}${today.change}% vs normal</span></span><b>Market →</b></button>`;
+  $('today-open-market').onclick=()=>{$('today-dialog').close();$('market-button').click();};
   gift();document.querySelectorAll('[data-today-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.todayTab===tab);b.setAttribute('aria-pressed',String(b.dataset.todayTab===tab));});
   const day=utcDay(farmNow());
   if(tab==='challenges'){
@@ -22,7 +25,12 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    $('today-content').innerHTML=`<p class="section-copy">Three challenges, picked for your farm. Only today’s actions count. New goals arrive at midnight UTC.</p><div class="daily-bonus"><i data-lucide="sparkles"></i><span>Finish all three for <strong>60 bonus coins + 15 XP</strong></span><b>${tasks.filter(q=>q.claimed).length}/3</b></div>`+tasks.map(q=>`<article class="daily-task ${q.claimed?'completed':''}"><div><h3>${q.title}</h3><p>${q.description}</p></div><span class="daily-reward">${q.reward} coins <span class="daily-diamond-reward">${art('diamonds')} ${q.diamonds} diamond${q.diamonds===1?'':'s'}</span></span><progress max="${q.target}" value="${q.progress}" aria-label="${q.title} progress"></progress><div class="task-bottom"><span>${q.progress} / ${q.target} · +10 XP</span><button class="small-button" data-daily="${q.id}" ${q.claimed||q.progress<q.target?'disabled':''}>${q.claimed?'Collected':'Claim reward'}</button></div></article>`).join('');
    document.querySelectorAll('[data-daily]').forEach(b=>b.onclick=()=>act({type:'daily',id:Number(b.dataset.daily),day},r=>`Challenge complete! +${r.coins} coins and +${r.diamonds} diamond${r.diamonds===1?'':'s'}${r.bonus?' including your daily bonus!':'.'}`));
   }else{
-   $('today-content').innerHTML='<p class="section-copy">Three orders for your farm level, with a 40% bonus over market value and 1–4 diamonds based on order difficulty. Craft goods or collect Honey at the Apiary. Each order can be delivered once; the board refreshes at midnight UTC.</p>'+dailyOrders(state,farmNow()).map(o=>{const can=Object.entries(o.input).every(([k,n])=>state.inventory[k]>=n);return `<article class="order-card ${o.done?'completed':''}"><div class="order-heading"><span class="order-icon"><i data-lucide="${o.done?'circle-check':'truck'}"></i></span><div><h3>${o.title}</h3><small>${o.coins*(state.boosts.coinsUntil>farmNow()?2:1)} coins · +${o.xp*(state.boosts.xpUntil>farmNow()?2:1)} XP · ${o.diamonds} diamond${o.diamonds===1?'':'s'}</small></div></div><div class="ingredients">${itemList(o.input,true)}</div><button class="small-button" data-order="${o.id}" ${o.done||!can?'disabled':''}>${o.done?'Delivered':can?'Load cart & deliver':'Gather these ingredients'}</button></article>`;}).join('');
+   const now=farmNow(),orders=dailyOrders(state,now),coinBoost=state.boosts.coinsUntil>now?2:1,xpBoost=state.boosts.xpUntil>now?2:1;
+   const ready=orders.filter(o=>!o.done&&Object.entries(o.input).every(([k,n])=>state.inventory[k]>=n)).length;
+   $('today-content').innerHTML=`<div class="delivery-board-intro"><div><h3>Good goods. Better rewards.</h3><p>Three customers, fresh offers every day. Deliver specific baskets for bonus coins and diamonds.</p></div><span>${ready} ready to deliver</span></div>${orders.some(o=>!o.tier)?'<p class="legacy-order-note">Your existing orders and rewards are kept for today. Quick deliveries, village orders and special commissions arrive at the next daily reset.</p>':''}`+orders.map(o=>{
+    const can=Object.entries(o.input).every(([k,n])=>state.inventory[k]>=n),tier=DELIVERY_TIERS[o.tier],value=marketValue(o.input,now),completed=Object.entries(o.input).filter(([k,n])=>state.inventory[k]>=n).length;
+    return `<article class="order-card daily-order ${o.tier??'legacy'} ${o.done?'completed':''}"><div class="daily-order-top"><span class="order-tier">${tier?.name??'Delivery order'}</span><span class="order-bonus">${o.tier?`+${o.bonus}% coins vs market`:'Original daily offer'}</span></div><div class="order-heading"><span class="order-icon">${art(o.tier==='commission'?'trophy':'cart')}</span><div><small>${o.customer??'Village trading post'}</small><h3>${o.title}</h3></div></div>${o.story?`<p class="order-story">${o.story}</p>`:''}<div class="order-payout"><span>${art('coins')}<b>${(o.coins*coinBoost).toLocaleString('en-US')}</b><small>coins${coinBoost===2?' · 2×':''}</small></span><span>${art('diamonds')}<b>${o.diamonds}</b><small>diamonds</small></span><span>${art('xp')}<b>${o.xp*xpBoost}</b><small>XP${xpBoost===2?' · 2×':''}</small></span></div><div class="order-supplies"><span>Delivery basket</span><small>${o.done?'Delivered':`${completed} / ${Object.keys(o.input).length} items ready`}</small></div><div class="ingredients">${itemList(o.input,!o.done)}</div><div class="order-comparison">Market sale: ${(value*coinBoost).toLocaleString('en-US')} coins${o.tier?` · Delivery bonus: +${((o.coins-value)*coinBoost).toLocaleString('en-US')} coins`:''}</div><button class="small-button" data-order="${o.id}" ${o.done||!can?'disabled':''}>${o.done?'Delivered ✓':can?'Load cart & deliver':'Gather these ingredients'}</button></article>`;
+   }).join('');
    document.querySelectorAll('[data-order]').forEach(b=>b.onclick=()=>act({type:'delivery',id:Number(b.dataset.order),day},r=>`Delivery complete! +${r.coins} coins, +${r.xp} XP and +${r.diamonds} diamond${r.diamonds===1?'':'s'}.`));
   }
   countdown();icons();
@@ -49,7 +57,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   $('level-reward').onclick=()=>act({type:'level_rewards'},r=>`Look how far you have grown! +${r.coins} coins.`);icons();
  }
  function refresh(){
-  const tasks=dailyTasks(state,farmNow());$('today-dot').hidden=state.login.lastDay===utcDay(farmNow())&&!tasks.some(q=>!q.claimed&&q.progress>=q.target);
+  const tasks=dailyTasks(state,farmNow());$('today-dot').hidden=state.login.lastDay===utcDay(farmNow())&&!tasks.some(q=>!q.claimed&&q.progress>=q.target)&&!dailyOrders(state,farmNow()).some(o=>!o.done&&Object.entries(o.input).every(([k,n])=>state.inventory[k]>=n));
   $('journal-button').classList.toggle('has-reward',state.levelRewards.length<levelOf(state));
   if($('today-dialog').open)renderToday();if($('utility-dialog').open)renderUtility();if($('journal-dialog').open)renderJournal();
  }
@@ -57,6 +65,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  function fieldStatus(){return state.plots.map(p=>!p.crop?'empty':p.readyAt<=farmNow()?'ready':p.watered?'watered':'growing').join(',');}
  function tick(){
   const coinBoost=state.boosts.coinsUntil>farmNow();if(lastCoinBoost!==coinBoost){lastCoinBoost=coinBoost;if($('today-dialog').open)renderToday();}
+  const xpBoost=state.boosts.xpUntil>farmNow();if(lastXPBoost!==xpBoost){lastXPBoost=xpBoost;if($('today-dialog').open)renderToday();}
   const day=utcDay(farmNow());if(day!==lastDay){lastDay=day;refresh();}countdown();
   if($('utility-dialog').open&&utility==='tractor'){const s=Math.max(0,Math.ceil((state.tractorReadyAt-farmNow())/1000));if(lastTractorReady!==(s===0)||lastFieldStatus!==fieldStatus())renderUtility();else if($('tractor-timer'))$('tractor-timer').textContent=s?`Ready again in ${s}s`:'Your tractor is ready. Choose a job.';}
  }

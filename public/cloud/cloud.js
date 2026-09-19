@@ -1,4 +1,4 @@
-import { n as e } from "./leaderboard-BxPn2BgO.js";
+import { n as e } from "./leaderboard-BozDYht-.js";
 function t(e, t = Date.now()) {
 	let n = Date.parse(e), r = t - n;
 	return Number.isFinite(n) && r >= 0 && r < 18e5;
@@ -29,13 +29,13 @@ function n(e, n, r = globalThis.document, i = globalThis.window, a = Date.now) {
 	};
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+supabase-js@2.116.0/node_modules/@supabase/supabase-js/dist/tracingRegistry.mjs
+//#region ../build-deps/node_modules/@supabase/supabase-js/dist/tracingRegistry.mjs
 var r = Symbol.for("@supabase/supabase-js.traceContextExtractor");
 function i() {
 	return globalThis[r];
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/tslib@2.8.1/node_modules/tslib/tslib.es6.mjs
+//#region ../build-deps/node_modules/tslib/tslib.es6.mjs
 function a(e, t) {
 	var n = {};
 	for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && t.indexOf(r) < 0 && (n[r] = e[r]);
@@ -70,7 +70,7 @@ function o(e, t, n, r) {
 	});
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+functions-js@2.116.0/node_modules/@supabase/functions-js/dist/module/helper.js
+//#region ../build-deps/node_modules/@supabase/functions-js/dist/module/helper.js
 var s = (e) => e ? (...t) => e(...t) : (...e) => fetch(...e), c = class extends Error {
 	constructor(e, t = "FunctionsError", n) {
 		super(e), this.name = t, this.context = n;
@@ -99,7 +99,7 @@ var s = (e) => e ? (...t) => e(...t) : (...e) => fetch(...e), c = class extends 
 	e.Any = "any", e.ApNortheast1 = "ap-northeast-1", e.ApNortheast2 = "ap-northeast-2", e.ApSouth1 = "ap-south-1", e.ApSoutheast1 = "ap-southeast-1", e.ApSoutheast2 = "ap-southeast-2", e.CaCentral1 = "ca-central-1", e.EuCentral1 = "eu-central-1", e.EuWest1 = "eu-west-1", e.EuWest2 = "eu-west-2", e.EuWest3 = "eu-west-3", e.SaEast1 = "sa-east-1", e.UsEast1 = "us-east-1", e.UsWest1 = "us-west-1", e.UsWest2 = "us-west-2";
 })(f ||= {});
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+functions-js@2.116.0/node_modules/@supabase/functions-js/dist/module/FunctionsClient.js
+//#region ../build-deps/node_modules/@supabase/functions-js/dist/module/FunctionsClient.js
 var p = class {
 	constructor(e, { headers: t = {}, customFetch: n, region: r = f.Any } = {}) {
 		this.url = e, this.headers = t, this.region = r, this.fetch = s(n);
@@ -1866,7 +1866,7 @@ function ct(e) {
 	return e?.metas ? at(e) : [];
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+realtime-js@2.116.0/node_modules/@supabase/realtime-js/dist/module/RealtimePresence.js
+//#region ../build-deps/node_modules/@supabase/realtime-js/dist/module/RealtimePresence.js
 var lt;
 (function(e) {
 	e.SYNC = "sync", e.JOIN = "join", e.LEAVE = "leave";
@@ -1880,7 +1880,7 @@ var ut = class {
 	}
 };
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+realtime-js@2.116.0/node_modules/@supabase/realtime-js/dist/module/lib/normalizeChannelError.js
+//#region ../build-deps/node_modules/@supabase/realtime-js/dist/module/lib/normalizeChannelError.js
 function dt(e) {
 	if (e instanceof Error) return e;
 	if (typeof e == "string") return Error(e);
@@ -1895,7 +1895,7 @@ function dt(e) {
 	return /* @__PURE__ */ Error("channel error: connection lost");
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+realtime-js@2.116.0/node_modules/@supabase/realtime-js/dist/module/phoenix/channelAdapter.js
+//#region ../build-deps/node_modules/@supabase/realtime-js/dist/module/phoenix/channelAdapter.js
 var ft = class {
 	constructor(e, t, n) {
 		let r = pt(n);
@@ -1993,7 +1993,7 @@ function pt(e) {
 	}, e.config) };
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+realtime-js@2.116.0/node_modules/@supabase/realtime-js/dist/module/RealtimePostgresFilterBuilder.js
+//#region ../build-deps/node_modules/@supabase/realtime-js/dist/module/RealtimePostgresFilterBuilder.js
 var mt = /[,()"\\]/, ht = (e) => mt.test(e) || e !== e.trim(), gt = (e) => `"${e.replace(/\\/g, "\\\\").replace(/"/g, "\\\"")}"`, _t = (e) => {
 	let t = e === null ? "null" : String(e);
 	return ht(t) ? gt(t) : t;
@@ -2935,7 +2935,7 @@ var zt = class {
 	}
 };
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+storage-js@2.116.0/node_modules/@supabase/storage-js/dist/index.mjs
+//#region ../build-deps/node_modules/@supabase/storage-js/dist/index.mjs
 function Vt(e) {
 	"@babel/helpers - typeof";
 	return Vt = typeof Symbol == "function" && typeof Symbol.iterator == "symbol" ? function(e) {
@@ -3888,7 +3888,7 @@ function N(e) {
 	return e.forEach((e) => or(e, n, r)), or(null, n, r), t.join("");
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+auth-js@2.116.0/node_modules/@supabase/auth-js/dist/module/lib/helpers.js
+//#region ../build-deps/node_modules/@supabase/auth-js/dist/module/lib/helpers.js
 function mr(e) {
 	return Math.round(Date.now() / 1e3) + e;
 }
@@ -4151,7 +4151,7 @@ function Jr(e) {
 	return JSON.parse(JSON.stringify(e));
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+auth-js@2.116.0/node_modules/@supabase/auth-js/dist/module/lib/fetch.js
+//#region ../build-deps/node_modules/@supabase/auth-js/dist/module/lib/fetch.js
 var Yr = (e) => {
 	if (typeof e == "object" && e) {
 		let t = e;
@@ -4287,7 +4287,7 @@ function ii(e) {
 	return !!e.access_token && !!e.refresh_token && !!e.expires_in;
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+auth-js@2.116.0/node_modules/@supabase/auth-js/dist/module/lib/types.js
+//#region ../build-deps/node_modules/@supabase/auth-js/dist/module/lib/types.js
 var ai = [
 	"global",
 	"local",
@@ -4750,7 +4750,7 @@ var ai = [
 	}
 };
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+auth-js@2.116.0/node_modules/@supabase/auth-js/dist/module/lib/local-storage.js
+//#region ../build-deps/node_modules/@supabase/auth-js/dist/module/lib/local-storage.js
 function si(e = {}) {
 	return {
 		getItem: (t) => e[t] || null,
@@ -4769,7 +4769,7 @@ var ci = class extends Error {
 	}
 };
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+auth-js@2.116.0/node_modules/@supabase/auth-js/dist/module/lib/polyfills.js
+//#region ../build-deps/node_modules/@supabase/auth-js/dist/module/lib/polyfills.js
 function li() {
 	if (typeof globalThis != "object") try {
 		Object.defineProperty(Object.prototype, "__magic__", {
@@ -4783,7 +4783,7 @@ function li() {
 	}
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+auth-js@2.116.0/node_modules/@supabase/auth-js/dist/module/lib/web3/ethereum.js
+//#region ../build-deps/node_modules/@supabase/auth-js/dist/module/lib/web3/ethereum.js
 function ui(e) {
 	if (!/^0x[a-fA-F0-9]{40}$/.test(e)) throw Error(`@supabase/auth-js: Address "${e}" is invalid.`);
 	return e.toLowerCase();
@@ -4815,7 +4815,7 @@ function pi(e) {
 	return `${p}\n${m}`;
 }
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+auth-js@2.116.0/node_modules/@supabase/auth-js/dist/module/lib/webauthn.errors.js
+//#region ../build-deps/node_modules/@supabase/auth-js/dist/module/lib/webauthn.errors.js
 var W = class extends Error {
 	constructor({ message: e, code: t, cause: n, name: r }) {
 		super(e, { cause: n }), this.__isWebAuthnError = !0, this.name = r ?? (n instanceof Error ? n.name : void 0) ?? "Unknown Error", this.code = t;
@@ -5301,7 +5301,7 @@ var ji = class {
 	}
 };
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+auth-js@2.116.0/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js
+//#region ../build-deps/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js
 li();
 var Mi = {
 	url: Pn,
@@ -7774,7 +7774,7 @@ var Mi = {
 };
 Fi.nextInstanceID = {};
 //#endregion
-//#region ../groenveld/node_modules/.pnpm/@supabase+auth-js@2.116.0/node_modules/@supabase/auth-js/dist/module/AuthClient.js
+//#region ../build-deps/node_modules/@supabase/auth-js/dist/module/AuthClient.js
 var Ii = Fi, Li = "2.116.0", Ri = "", zi;
 if (typeof Deno < "u") Ri = "deno", zi = Deno.version?.deno;
 else if (typeof document < "u") Ri = "web";
@@ -8230,7 +8230,7 @@ async function Ra() {
 				return i = null, e;
 			},
 			signOut: La,
-			async leaderboard(n = "currency") {
+			async leaderboard(n = "level") {
 				if (t !== Y) throw Error("Your session has ended.");
 				let i = await e(K, r.id, n);
 				if (t !== Y) throw Error("Your session has ended.");

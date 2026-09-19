@@ -14,7 +14,7 @@ function database(){
 
 test('all 12 crops can be planted, watered and harvested; collection is unique',()=>{
  const s=createFarm(now);s.coins=10000;s.xp=xpForLevel(20);
- assert.equal(Object.keys(CROPS).length,12);assert.equal(QUESTS.length,85);
+ assert.equal(Object.keys(CROPS).length,12);assert.equal(QUESTS.length,94);
  for(const [crop,c] of Object.entries(CROPS)){
   apply(s,{type:'field',id:8,action:'plant',crop});apply(s,{type:'field',id:8,action:'water'},now+1000);
   assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+1000),/Still growing/);
@@ -25,8 +25,8 @@ test('all 12 crops can be planted, watered and harvested; collection is unique',
  }
  assert.equal(s.stats.varieties,12);assert.equal(s.discovered.length,12);
 });
-test('all 21 recipes require ingredients, persist timed jobs and collect once',()=>{
- assert.equal(Object.keys(RECIPES).length,21);
+test('all 30 recipes require ingredients, persist timed jobs and collect once',()=>{
+ assert.equal(Object.keys(RECIPES).length,30);
  for(const [id,r]of Object.entries(RECIPES)){
   const s=createFarm(now);s.xp=xpForLevel(20);for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;
   const before=structuredClone(s);

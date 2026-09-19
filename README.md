@@ -1,3 +1,5 @@
+Latest release: see [PANTRY-UPDATE.md](PANTRY-UPDATE.md) for new recipes, artwork and deployment status. Earlier release notes follow.
+
 # Harvest Tycoon
 
 A farming game with the supplied GLB farm pack and Harvest Tycoon logo. All gameplay text is English.
