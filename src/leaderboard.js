@@ -1,8 +1,10 @@
 export const LEADERBOARD_CATEGORIES=Object.freeze({
- currency:{label:'Most coins',heading:'Coins',unit:'coins',description:'Current coin balance. Spending coins can change your position.'},
  level:{label:'Highest level',heading:'Level',unit:'level',description:'Your farmer level, earned through farming experience.'},
+ currency:{label:'Most coins',heading:'Coins',unit:'coins',description:'Current coin balance. Spending coins can change your position.'},
 
  harvested_crops:{label:'Most crops harvested',heading:'Crops',unit:'crops harvested',description:'Lifetime harvest of all crop varieties, including extra yield from water and care.'},
+ goods_produced:{label:'Most goods produced',heading:'Goods produced',unit:'goods produced',description:'Lifetime production goods collected from every building, from honey to pumpkin pie.'},
+ items_sold:{label:'Most items sold',heading:'Items sold',unit:'items sold',description:'Lifetime crops and goods sold at the market. Counts from when this board launched.'},
  badges:{label:'Most badges',heading:'Badges',unit:'badges',description:'Crop mastery medals you have claimed. Up to 36 badges to earn.'},
  deliveries:{label:'Most deliveries',heading:'Deliveries',unit:'deliveries',description:'Total delivery orders completed for your neighbours.'},
  harvested_wheat:{label:'Wheat harvested',heading:'Wheat',unit:'wheat harvested',group:'crops',description:'Lifetime wheat harvested, including extra yield from water and care.'},
@@ -16,8 +18,8 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  harvested_sunflower:{label:'Sunflower harvested',heading:'Sunflower',unit:'sunflower harvested',group:'crops',description:'Lifetime sunflower harvested, including extra yield from water and care.'}
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}
-const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_crops,badges,deliveries,last_active_at';
-export async function fetchLeaderboard(client,playerId,category='currency'){
+const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at';
+export async function fetchLeaderboard(client,playerId,category='level'){
  categoryFor(category);
  const {data,error}=await client.from('player_stats').select(PUBLIC_FIELDS).order(category,{ascending:false}).order('player_id',{ascending:true}).limit(20);
  if(error)throw error;
@@ -27,11 +29,11 @@ export async function fetchLeaderboard(client,playerId,category='currency'){
  if(own){const result=await client.from('player_stats').select('player_id',{count:'exact',head:true}).gt(category,own[category]);if(result.error)throw result.error;rank=(result.count??0)+1;}
  return {rows:data??[],own,rank,category};
 }
-export function rankedRows(rows,category='currency'){
+export function rankedRows(rows,category='level'){
  categoryFor(category);let rank=0,lastScore=null;
  return rows.map((row,i)=>{const score=Number(row[category]??0);if(score!==lastScore)rank=i+1;lastScore=score;return {row,rank,score};});
 }
-export function renderLeaderboard(container,{rows,own,rank,category='currency',onlinePlayers=[],presenceReady=false},playerId){
+export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false},playerId){
  const config=categoryFor(category);container.replaceChildren();
  if(!rows.length){const p=document.createElement('p');p.className='leaderboard-empty';p.textContent='The valley is quiet. Be the first farmer on this board.';container.append(p);return;}
  const table=document.createElement('table');table.className='leaderboard-table';

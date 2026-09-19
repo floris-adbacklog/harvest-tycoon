@@ -56,7 +56,9 @@ test('long-wait crops earn less raw while all recipes add value and planting sta
  for(const id of Object.keys(RECIPES))assert(recipeValue(id).added>0,id);
  for(const id of ['oil','pickles','pie','vegetables']){const v=recipeValue(id);assert(v.output>=v.input*1.45);}
  assert.equal(CROPS.wheat.sell,8);assert.equal(CROPS.corn.sell,40);
- const s=farm();s.inventory.sunflower=2;const start=s.coins;act(s,{type:'sell',item:'sunflower'});assert.equal(s.coins-start,marketQuote('sunflower',now).price*2);
+ const s=farm();for(const k in s.inventory)s.inventory[k]=0;s.inventory.sunflower=2;const start=s.coins;act(s,{type:'sell',item:'sunflower'});assert.equal(s.coins-start,marketQuote('sunflower',now).price*2);
+ assert.equal(s.stats.sold,2);
+ s.inventory.wheat=3;s.inventory.corn=1;act(s,{type:'sell',category:'crops'});assert.equal(s.stats.sold,2+3+1);
 });
 test('a second batch becoming ready triggers one cue even with a long-running first batch',()=>{
  const b={mill:{job:{id:'mill-1',recipe:'oil',startedAt:0,readyAt:10000},extraJobs:[{id:'mill-2',recipe:'feed',startedAt:0,readyAt:1000}]}},tracker=createProductionCueTracker(b,0);

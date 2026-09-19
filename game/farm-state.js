@@ -264,8 +264,9 @@ export function sellCrops(state,item='all',now=Date.now(),day,category) {
  const keys=category?Object.keys(category==='crops'?CROPS:PRODUCTS):item==='all'?Object.keys(ITEMS):[item];
  const total=keys.reduce((v,k)=>v+state.inventory[k]*marketQuote(k,now).price,0);
  if(total===0)throw new Error('Your basket is empty. Harvest or produce something first.');
+ const units=keys.reduce((v,k)=>v+state.inventory[k],0);
  for(const k of keys)state.inventory[k]=0;
- state.coins+=total;state.stats.earned+=total;
+ state.coins+=total;state.stats.earned+=total;state.stats.sold+=units;
  return {coins:total,day:utcDay(now)};
 }
 export function recipeAvailability(state,id){
@@ -506,7 +507,7 @@ export function normalizeFarm(state,now=Date.now()){
   for(const [key,n] of Object.entries(recovered)){state.stats[key]??=n;if(state.daily?.baseline)state.daily.baseline[key]??=state.stats[key];}
  }
  for(const q of QUESTS)state.stats[q.stat]??=0;
- for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals'])state.stats[k]??=0;
+ for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals','sold'])state.stats[k]??=0;
  state.discovered??=[];state.siloLevel??=0;state.tractorReadyAt??=0;
  state.login??={lastDay:null,streak:0,best:0,visits:0};state.levelRewards??=[1];
  // Existing farms keep every regular quest, inventory item and timer. A past daily gift
