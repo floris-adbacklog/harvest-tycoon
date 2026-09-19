@@ -12,3 +12,11 @@ test('an open page expires online status without requiring a reload or live sock
  presence.subscribe(s=>latest=s);presence.setRows([{player_id:'self',last_active_at:new Date(start).toISOString()}]);assert.deepEqual(latest.onlinePlayers,['self']);
  now+=ONLINE_WINDOW;tick();assert.deepEqual(latest.onlinePlayers,[]);presence.dispose();assert.equal(cleared,true);
 });
+
+import {readFileSync} from 'node:fs';
+test('the restore migration stamps last_active_at on real actions only, and never moves it backwards',()=>{
+ const sql=readFileSync(new URL('../supabase/restore-activity-status.sql',import.meta.url),'utf8');
+ assert.match(sql,/case when p_expected>0 then clock_timestamp\(\) else null end/);
+ assert.match(sql,/last_active_at=coalesce\(excluded\.last_active_at,public\.player_stats\.last_active_at\)/);
+ assert.match(sql,/f\.updated_at>coalesce\(s\.last_active_at/);
+});
