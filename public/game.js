@@ -132,7 +132,7 @@ function decorate(){
  addUtility('stall','stall_002',-11.3,-2.6,{width:2.9,rotation:.15});
  cloneModel('prop_023',-9.2,-2.7,{width:.8});
  addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
- {const pen=buildingViews.get('coop').object,house=cloneModel('coop_002',13,-9.5,{width:1.5});pen.attach(house);}
+ {const pen=buildingViews.get('coop').object,house=cloneModel('coop_002',13,-9.5,{width:1.8});pen.attach(house);}
  fenceLine(8,-12.5,5);fenceLine(7,-11.4,4,'z');fenceLine(16.6,-11.4,4,'z');fenceLine(9.2,-3.6,4);
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
  fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);

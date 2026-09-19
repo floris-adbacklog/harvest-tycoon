@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+ <defs>
+  <linearGradient id="note" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd764"/><stop offset=".55" stop-color="#f0a92e"/><stop offset="1" stop-color="#c47a17"/></linearGradient>
+  <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe083"/><stop offset="1" stop-color="#d98d1f"/></linearGradient>
+  <radialGradient id="head" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffe58a"/><stop offset=".55" stop-color="#eda42b"/><stop offset="1" stop-color="#b96f14"/></radialGradient>
+ </defs>
+ <ellipse cx="62" cy="116" rx="40" ry="6" fill="#6b4a1e" opacity=".18"/>
+ <!-- stems -->
+ <rect x="47" y="30" width="9" height="66" rx="3" fill="url(#note)" stroke="#8a520f" stroke-width="2.4"/>
+ <rect x="90" y="21" width="9" height="66" rx="3" fill="url(#note)" stroke="#8a520f" stroke-width="2.4"/>
+ <!-- beam -->
+ <path d="M47 26l52-12v22L47 48z" fill="url(#beam)" stroke="#8a520f" stroke-width="2.6" stroke-linejoin="round"/>
+ <path d="M52 30l42-10" stroke="#fff3b8" stroke-width="2.6" stroke-linecap="round" opacity=".7"/>
+ <path d="M47 40l52-12" stroke="#9c5f12" stroke-width="1.6" stroke-linecap="round" opacity=".45"/>
+ <!-- note heads -->
+ <ellipse cx="38" cy="98" rx="19" ry="14" transform="rotate(-18 38 98)" fill="url(#head)" stroke="#8a520f" stroke-width="2.8"/>
+ <ellipse cx="81" cy="89" rx="19" ry="14" transform="rotate(-18 81 89)" fill="url(#head)" stroke="#8a520f" stroke-width="2.8"/>
+ <path d="M28 96c2-5 7-8 12-8.6M71 87c2-5 7-8 12-8.6" stroke="#fff5c4" stroke-width="3" stroke-linecap="round" fill="none" opacity=".8"/>
+ <!-- little sparkles -->
+ <path d="M108 44l2.6 6.4 6.4 2.6-6.4 2.6-2.6 6.4-2.6-6.4-6.4-2.6 6.4-2.6z" fill="#fff0a8" stroke="#d6941f" stroke-width="1.4" stroke-linejoin="round"/>
+ <path d="M18 60l1.8 4.4 4.4 1.8-4.4 1.8-1.8 4.4-1.8-4.4-4.4-1.8 4.4-1.8z" fill="#fff0a8" stroke="#d6941f" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>
