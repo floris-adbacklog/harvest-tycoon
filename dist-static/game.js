@@ -23,6 +23,7 @@ import { createSoundSettings } from './sound-settings.js';
 
 const $ = id => document.getElementById(id);
 const state = structuredClone(window.harvestInitialFarm.state);
+const initialLevelReward=window.harvestInitialFarm.levelReward;
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
@@ -32,10 +33,10 @@ const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Ma
 let progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
-const client=createFarmClient(state,{onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
+const client=createFarmClient(state,{onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
 const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());
-const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);progression?.announce(progressionChange(before,state));return result;},()=>levelProgress(state).level,kind=>farmAudio.play(kind));
+const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);progression?.announce(progressionChange(before,state,result.levelReward));return result;},()=>levelProgress(state).level,kind=>farmAudio.play(kind));
 function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='stall'||key==='chores')growth.open(key);else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
@@ -416,6 +417,7 @@ function bindUI(){
   else if(target==='chores')growth.open('chores');
  }});
  progression=createProgressionUI({state,isReady:()=>ready&&$('loading').hidden});
+ if(initialLevelReward?.levels.length)progression.announce({...progressionChange(progressionSnapshot(state),state,initialLevelReward),catchUp:true});
  mobileUI=createMobileUI({openUtility,resetView});
  $('save-status').onclick=()=>client.retry();
  new ResizeObserver(resize).observe(world);icons();

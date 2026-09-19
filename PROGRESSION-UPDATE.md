@@ -19,7 +19,7 @@ Sell at least one egg at the Market to unlock hands-on jobs. Free buildings open
 
 Locked crops and buildings are collapsed in their catalogs. Locked recipes are under Coming later. New players see a short list of relevant quests, and future goals are shown in Farm journal. Market rows without stock stay hidden until their production chain is available; purchased inventory always remains visible and sellable. Daily challenges and orders are selected from reachable production chains. Existing daily snapshots are preserved until reset.
 
-The fresh beginner guide still has ten steps and a one-time 20-diamond reward. The chore step becomes selling an egg; the remaining beginner rewards and legacy guide are preserved. Level and milestone celebrations use a new farm-style icon and wait until other dialogs close. They never automatically grant or duplicate rewards.
+The fresh beginner guide still has ten steps and a one-time 20-diamond reward. The chore step becomes selling an egg; the remaining beginner rewards and legacy guide are preserved. Level and milestone celebrations use a new farm-style icon and wait until other dialogs close. See AUTOMATIC-LEVEL-REWARDS.md for the current automatic reward behavior.
 
 ## Mobile fixes
 

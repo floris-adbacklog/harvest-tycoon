@@ -15,7 +15,7 @@ test('collect all aggregates mixed recipes, leaves running batches and other bui
  assert.equal(result.count,2);assert.deepEqual(result.items,items);
  for(const [k,n] of Object.entries(items)){assert.equal(s.inventory[k],before.inventory[k]+n);assert.equal(s.stats['made_'+k],(before.stats['made_'+k]??0)+n);}
  assert.equal(s.stats.produced,before.stats.produced+2);assert.equal(s.stats.windmill_batches,(before.stats.windmill_batches??0)+2);
- assert.equal(s.xp,before.xp+result.xp);assert.equal(s.coins,before.coins);assert.equal(s.diamonds,before.diamonds);
+ assert.equal(s.xp,before.xp+result.xp);assert.deepEqual(result.levelReward,{coins:20,diamonds:0,levels:[2]});assert.equal(s.coins,before.coins+20);assert.equal(s.diamonds,before.diamonds);
  assert.deepEqual(productionJobs(s.buildings.windmill),[working]);assert.deepEqual(s.buildings.mill,other);assert.equal(s.onboarding.milestones.collect,true);
 });
 test('all ten slots collect once, with double XP applied exactly once to the total',()=>{

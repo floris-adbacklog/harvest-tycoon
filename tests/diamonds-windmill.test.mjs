@@ -81,7 +81,7 @@ test('new beta quests retain old IDs and each reward can be collected only once'
  assert.equal(QUESTS.length,94);assert.equal(QUESTS[31].title,'A lifelong grower');
  for(let id=32;id<QUESTS.length;id++){
   const q=QUESTS[id];state.stats[q.stat]=q.target;const coins=state.coins;
-  act(state,{type:'quest',id});assert.equal(state.coins,coins+q.reward);assert.throws(()=>act(state,{type:'quest',id}),/already been claimed/);
+  const result=act(state,{type:'quest',id});assert.equal(state.coins,coins+q.reward+(result.levelReward?.coins??0));assert.throws(()=>act(state,{type:'quest',id}),/already been claimed/);
  }
  assert(old.every(id=>state.claimed.includes(id)));assert.equal(state.claimed.length,old.length+QUESTS.length-32);
 });

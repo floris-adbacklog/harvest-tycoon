@@ -59,7 +59,7 @@ test('Honey deliveries consume stock once and advance the dedicated quest',()=>{
  let s,t,order;
  for(let day=0;day<10;day++){t=now+day*DAY_MS;s=createFarm(t);order=dailyOrders(s,t).find(o=>o.input.honey);if(order)break;}
  assert.ok(order);Object.assign(s.inventory,order.input);const coins=s.coins;
- act(s,{type:'delivery',id:order.id,day:utcDay(t)},t);
- assert.equal(s.stats.honey_deliveries,1);assert.equal(s.inventory.honey,0);assert.equal(s.coins,coins+order.coins);
+ const result=act(s,{type:'delivery',id:order.id,day:utcDay(t)},t);
+ assert.equal(s.stats.honey_deliveries,1);assert.equal(s.inventory.honey,0);assert.equal(s.coins,coins+order.coins+(result.levelReward?.coins??0));
  assert.throws(()=>act(s,{type:'delivery',id:order.id,day:utcDay(t)},t),/already/);assert.equal(s.stats.honey_deliveries,1);
 });

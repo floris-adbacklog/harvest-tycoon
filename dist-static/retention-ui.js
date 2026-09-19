@@ -1,5 +1,5 @@
 import {roadmapMarkup} from './progression-ui.js';
-import {featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,marketHighlights,marketValue,DELIVERY_TIERS} from './farm-state.js';
+import {levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,marketHighlights,marketValue,DELIVERY_TIERS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -54,14 +54,14 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  }
  function openUtility(key){if(!featureUnlocked(state,key)){notify(featureUnlockHint(key));return;}if(key==='cart'){openToday('orders');return;}utility=key;renderUtility();open('utility-dialog');}
  function renderJournal(){
-  const {level,current,target}=levelProgress(state),reward=Array.from({length:level},(_,i)=>i+1).filter(l=>!state.levelRewards.includes(l)).length*30;
-  $('journal-content').innerHTML=`<div class="journal-level"><span class="journal-medallion"><small>LVL</small><b>${level}</b></span><div><h3>One harvest at a time</h3><p>${current} / ${target} XP to level ${level+1}</p><progress max="${target}" value="${current}" aria-label="Level progress"></progress></div></div><button class="primary-button level-reward" id="level-reward" ${reward?'':'disabled'}>${reward?`Collect level rewards · ${reward} coins`:'Earn 30 coins with every new level'}<i data-lucide="gift"></i></button><div class="journal-stats"><div><strong>${state.stats.harvested}</strong><span>crops harvested</span></div><div><strong>${state.claimed.length}/${QUESTS.length}</strong><span>quests complete</span></div><div><strong>${state.stats.deliveries}</strong><span>happy neighbours</span></div></div><div class="recipe-section-heading"><h3>Your crop collection</h3><span>${state.discovered.length} / ${Object.keys(CROPS).length} discovered</span></div><p class="section-copy">Harvest each variety to add it to your journal.</p><div class="collection-grid">${Object.entries(CROPS).map(([key,c])=>`<div class="collection-crop ${state.discovered.includes(key)?'discovered':''}">${art(key,'collection-picture')}<strong>${c.name}</strong><small>${state.discovered.includes(key)?`${state.stats['harvest_'+key]??0} harvested`:'Not harvested yet'}</small></div>`).join('')}</div>`;
+  const {level,current,target}=levelProgress(state),reward=levelReward(level+1);
+  $('journal-content').innerHTML=`<div class="journal-level"><span class="journal-medallion"><small>LVL</small><b>${level}</b></span><div><h3>One harvest at a time</h3><p>${current} / ${target} XP to level ${level+1}</p><progress max="${target}" value="${current}" aria-label="Level progress"></progress></div></div><div class="level-reward"><strong>Next level: ${reward.coins} coins + ${reward.diamonds} diamonds</strong><p>Level-up rewards are added automatically.</p></div><div class="journal-stats"><div><strong>${state.stats.harvested}</strong><span>crops harvested</span></div><div><strong>${state.claimed.length}/${QUESTS.length}</strong><span>quests complete</span></div><div><strong>${state.stats.deliveries}</strong><span>happy neighbours</span></div></div><div class="recipe-section-heading"><h3>Your crop collection</h3><span>${state.discovered.length} / ${Object.keys(CROPS).length} discovered</span></div><p class="section-copy">Harvest each variety to add it to your journal.</p><div class="collection-grid">${Object.entries(CROPS).map(([key,c])=>`<div class="collection-crop ${state.discovered.includes(key)?'discovered':''}">${art(key,'collection-picture')}<strong>${c.name}</strong><small>${state.discovered.includes(key)?`${state.stats['harvest_'+key]??0} harvested`:'Not harvested yet'}</small></div>`).join('')}</div>`;
   $('journal-content').insertAdjacentHTML('beforeend',roadmapMarkup(state));
-  $('level-reward').onclick=()=>act({type:'level_rewards'},r=>`Look how far you have grown! +${r.coins} coins.`);icons();
+  icons();
  }
  function refresh(){
   const tasks=dailyTasks(state,farmNow());$('today-dot').hidden=state.login.lastDay===utcDay(farmNow())&&!tasks.some(q=>!q.claimed&&q.progress>=q.target)&&!dailyOrders(state,farmNow()).some(o=>!o.done&&Object.entries(o.input).every(([k,n])=>state.inventory[k]>=n));
-  $('journal-button').classList.toggle('has-reward',state.levelRewards.length<levelOf(state));
+  $('journal-button').classList.remove('has-reward');
   if($('today-dialog').open)renderToday();if($('utility-dialog').open)renderUtility();if($('journal-dialog').open)renderJournal();
  }
  function countdown(){const ms=DAY_MS-farmNow()%DAY_MS,h=Math.floor(ms/3600000),m=Math.floor(ms/60000)%60;$('daily-countdown').textContent=`Resets in ${h}h ${m}m`;}

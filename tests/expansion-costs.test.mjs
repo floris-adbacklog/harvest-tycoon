@@ -8,8 +8,8 @@ test('each expansion buys exactly one field with increasing coin and mixed suppl
  for(let n=12;n<24;n++){
   const cost=expansionCost(s),materials=expansionMaterials(s),old=structuredClone(s.plots);
   assert(cost>previous);assert(Object.keys(materials).length>=2);Object.assign(s.inventory,materials);
-  const balance=s.coins;applyFarmAction(s,{type:'expand'},now);
-  assert.equal(s.plots.length,n+1);assert.equal(s.coins,balance-cost);assert.deepEqual(s.plots.slice(0,n),old);
+  const balance=s.coins,result=applyFarmAction(s,{type:'expand'},now);
+  assert.equal(s.plots.length,n+1);assert.equal(s.coins,balance-cost+(result.levelReward?.coins??0));assert.deepEqual(s.plots.slice(0,n),old);
   for(const k of Object.keys(materials))assert.equal(s.inventory[k],0);
   assert.equal(normalizeFarm(JSON.parse(JSON.stringify(s)),now).plots.length,n+1);previous=cost;
  }

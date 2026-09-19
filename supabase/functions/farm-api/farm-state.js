@@ -702,10 +702,17 @@ export function deliverOrder(state,id,day,now=Date.now()){
  if(Object.keys(order.input).some(k=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)))state.stats.crafted_deliveries=(state.stats.crafted_deliveries??0)+1;
  return {coins:order.coins,xp:order.xp,diamonds:order.diamonds};
 }
-export function claimLevelRewards(state){
- const levels=Array.from({length:levelOf(state)},(_,i)=>i+1).filter(l=>!state.levelRewards.includes(l));if(!levels.length)throw new Error('No new level rewards yet.');
- const coins=levels.length*30;state.coins+=coins;state.levelRewards.push(...levels);return {coins,levels};
+export function levelReward(level){return {coins:10*level,diamonds:Math.floor(level/5)};}
+export function grantLevelRewards(state,firstLevel=2){
+ const highest=levelOf(state),claimed=new Set(state.levelRewards??[1]),levels=[];
+ let coins=0,diamonds=0;
+ for(let level=Math.max(2,firstLevel);level<=highest;level++)if(!claimed.has(level)){const reward=levelReward(level);coins+=reward.coins;diamonds+=reward.diamonds;levels.push(level);}
+ if(levels.length){state.coins+=coins;state.diamonds+=diamonds;state.levelRewards.push(...levels);state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;}
+ return {coins,diamonds,levels};
 }
+// Compatibility for an already-open older client. The same ledger prevents
+// repeat claims after automatic payment; the new UI has no claim button.
+export function claimLevelRewards(state){const reward=grantLevelRewards(state);if(!reward.levels.length)throw new Error('Level rewards are already added automatically.');return reward;}
 export function tractorQuote(state,mode,crop='corn',now=Date.now()){
  const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?p.crop&&!p.watered&&p.readyAt>now:p.crop&&p.readyAt<=now);
  const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-12)/(seedCost(state,crop)+2)))):eligible.length;
@@ -729,7 +736,7 @@ export function upgradeSilo(state){
 }
 export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRandom){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
- const beforeXP=state.xp,beforeCoins=state.coins;
+ const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state);
  const beginnerBefore={harvested:state.stats.harvested,wheat:state.stats.harvest_wheat??0,watered:state.stats.watered,tended:state.stats.tended};
  const result=dispatchFarmAction(state,action,now,random);
  recordBeginnerAction(state,action,result,beginnerBefore);
@@ -738,6 +745,8 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  if(state.boosts.coinsUntil>now&&['sell','delivery'].includes(action.type)){
   const bonus=state.coins-beforeCoins;if(bonus>0){state.coins+=bonus;state.stats.earned+=bonus;result.coins+=bonus;}
  }
+ const reward=grantLevelRewards(state,beforeLevel+1);
+ if(reward.levels.length)result.levelReward=reward;
  return result;
 }
 function dispatchFarmAction(state,action,now,random){
