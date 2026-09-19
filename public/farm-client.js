@@ -2,7 +2,7 @@
 // the most recently committed server state; it never persists game data.
 let clockOffset=0;
 export const farmNow=()=>Date.now()+clockOffset;
-export function createFarmClient(state,{onChange,onStatus,onLevelReward}){
+export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapterReward}){
  const bridge=window.parent.harvestBridge;
  if(!bridge)throw new Error('Sign in to open your farm.');
  let busy=false;
@@ -11,6 +11,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward}){
   Object.assign(state,structuredClone(data.state));
   clockOffset=data.serverNow-Date.now();
   onChange();onStatus('saved');
+  if(data.chapterReward?.chapters?.length)onChapterReward?.(data.chapterReward);
   if(data.levelReward?.levels?.length)onLevelReward?.(data.levelReward);
  }
  async function runAction(action){

@@ -24,6 +24,7 @@ import { createSoundSettings } from './sound-settings.js';
 
 const $ = id => document.getElementById(id);
 const state = structuredClone(window.harvestInitialFarm.state);
+const initialChapterReward=window.harvestInitialFarm.chapterReward;
 const initialLevelReward=window.harvestInitialFarm.levelReward;
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
@@ -34,7 +35,7 @@ const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Ma
 let progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
-const client=createFarmClient(state,{onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
+const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
 const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);progression?.announce(progressionChange(before,state,result.levelReward));return result;},()=>levelProgress(state).level,kind=>farmAudio.play(kind));
@@ -496,7 +497,7 @@ async function init(){
    },
    zoom:ratio=>zoomFarm(zoom*ratio)
   });
-  ready=true;positionBuildingLabels();updateUI();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0)toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  ready=true;positionBuildingLabels();updateUI();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0)toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;progression.refresh();resolve();},450));
   return ready;
  }catch(error){console.error('Farm initialization failed',error);if(renderer)$('error-message').textContent=error.message||'Your saved farm could not load. Please try again.';$('loading').hidden=true;$('error').hidden=false;if(!renderer)$('error-message').textContent='This game needs WebGL 2. Try a current browser with hardware acceleration enabled.';return false;}

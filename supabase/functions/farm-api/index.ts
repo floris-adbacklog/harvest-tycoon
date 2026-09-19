@@ -1,5 +1,5 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards} from './farm-state.js';
+import {createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
@@ -47,11 +47,11 @@ Deno.serve(async(req)=>{
    const state=normalizeFarm(row.state,now);
    profile={player_id:user.id,username,currency:state.coins,level:levelOf(state)};
    if(body.operation==='load'){
-    const levelReward=grantLevelRewards(state);
-    if(levelReward.levels.length){
+    const levelReward=grantLevelRewards(state),chapterReward=grantChapterRewards(state);
+    if(levelReward.levels.length||chapterReward.chapters.length){
      const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
      if(saved.error)throw saved.error;if(!saved.data)continue;
-     return reply({state,profile:{...profile,currency:state.coins},levelReward,revision:row.revision+1,serverNow:now});
+     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,revision:row.revision+1,serverNow:now});
     }
     return reply({state,profile,revision:row.revision,serverNow:now});
    }

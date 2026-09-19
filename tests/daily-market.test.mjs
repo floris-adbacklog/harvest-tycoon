@@ -10,9 +10,9 @@ test('daily quotes stay fixed within a UTC day, vary by day and respect every it
   assert.equal(q.price,marketQuote(item,time+1000).price);assert.equal(q.price,marketQuote(item,time-11*3600000).price);
   assert.ok(Number.isInteger(q.price)&&q.price>=q.min&&q.price<=q.max);assert.equal(q.day,utcDay(time));
   if(CROPS[item]&&!CROPS[item].perennial)assert.ok(q.price>CROPS[item].cost);
-  if(item==='oil'){assert.equal(q.min,800);assert.equal(q.max,3200);oilPrices.add(q.price);if(Math.abs(q.change)<=20)normalDays++;}
+  if(item==='oil'){assert.equal(q.min,640);assert.equal(q.max,2560);oilPrices.add(q.price);if(Math.abs(q.change)<=20)normalDays++;}
  }
- assert.ok(oilPrices.has(800)&&oilPrices.has(3200)&&oilPrices.size>10);assert.ok(normalDays>150);
+ assert.ok(oilPrices.has(640)&&oilPrices.has(2560)&&oilPrices.size>10);assert.ok(normalDays>150);
  assert.throws(()=>marketQuote('__proto__',now),/valid/);
 });
 test('forecast is derived from tomorrow, and does not depend on player stock or local timezone',()=>{

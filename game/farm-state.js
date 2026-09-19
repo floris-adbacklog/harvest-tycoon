@@ -46,14 +46,17 @@ harvesthamper:{"name": "Harvest Hamper", "sell": 5900, "icon": "package-check", 
 export const ITEMS=Object.freeze({...CROPS,...PRODUCTS});
 // Calendar-based quotes are shared by every player and evaluated with server time.
 // Common prices sit near normal; the outer bands are deliberately uncommon.
+export const MARKET_PAYOUT_MULTIPLIER=0.8;
+const reducedMarketPrice=value=>Math.max(1,Math.round(value*MARKET_PAYOUT_MULTIPLIER));
 const MARKET_CURVE=[0,.12,.22,.30,.36,.41,.45,.48,.50,.50,.50,.52,.55,.59,.64,.70,.78,.88,1];
 function calendarHash(text){let h=2166136261;for(let i=0;i<text.length;i++)h=Math.imul(h^text.charCodeAt(i),16777619);h^=h>>>16;h=Math.imul(h,0x7feb352d);h^=h>>>15;return h>>>0;}
 export function marketQuote(item,now=Date.now()){
  if(!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid market item.');
- const normal=ITEMS[item].sell,range=item==='oil'?[.5,2]:Object.hasOwn(CROPS,item)?[.85,1.15]:[.7,1.6];
- const min=Math.max(1,Math.round(normal*range[0])),max=Math.round(normal*range[1]);
+ const base=ITEMS[item].sell,range=item==='oil'?[.5,2]:Object.hasOwn(CROPS,item)?[.85,1.15]:[.7,1.6];
+ const baseMin=Math.max(1,Math.round(base*range[0])),baseMax=Math.round(base*range[1]);
  const position=MARKET_CURVE[calendarHash(`market-v1:${utcDay(now)}:${item}`)%MARKET_CURVE.length];
- const price=Math.round(position<=.5?min+(normal-min)*position*2:normal+(max-normal)*(position-.5)*2);
+ const originalPrice=Math.round(position<=.5?baseMin+(base-baseMin)*position*2:base+(baseMax-base)*(position-.5)*2);
+ const price=reducedMarketPrice(originalPrice),normal=reducedMarketPrice(base),min=reducedMarketPrice(baseMin),max=reducedMarketPrice(baseMax);
  const change=Math.round((price/normal-1)*100),demand=change< -10?'low':change>10?'high':'fair';
  return {item,day:utcDay(now),price,normal,min,max,change,demand,label:demand==='low'?'Low demand':demand==='high'?'High demand':'Fair price',resetsAt:(dayNumber(now)+1)*DAY_MS};
 }
@@ -78,19 +81,19 @@ export const RECIPES=Object.freeze({
  grainmeal:{building:'windmill',name:'Grind grain meal',input:{wheat:8,barley:4},output:{grainmeal:3},duration:1200000,xp:30},
  fertilizer:{building:'windmill',name:'Mix natural fertilizer',input:{grainmeal:2,cabbage:2},output:{fertilizer:3},duration:1800000,xp:40},
  windflour:{building:'windmill',name:'Mill a large flour batch',input:{grainmeal:3},output:{flour:14},duration:720000,xp:24},
- windfeed:{building:'windmill',name:'Wind-milled barley feed',input:{barley:8},output:{feed:7},duration:1200000,xp:32},
- barleyfeed:{building:'mill',name:'Mix barley feed',input:{barley:2},output:{feed:2},duration:120000,xp:8},
+ windfeed:{building:'windmill',name:'Wind-milled barley feed',input:{barley:8},output:{feed:10},duration:1200000,xp:32},
+ barleyfeed:{building:'mill',name:'Mix barley feed',input:{barley:2},output:{feed:2},duration:120000,xp:6},
  salad:{building:'packing',name:'Prepare a fresh salad',input:{lettuce:4,cabbage:2},output:{salad:1},duration:900000,xp:14},
- pickles:{building:'packing',name:'Pickle red cabbage',input:{redcabbage:2},output:{pickles:1},duration:10800000,xp:20},
- flour:{building:'windmill',name:'Refine grain meal into flour',input:{grainmeal:1},output:{flour:4},duration:240000,xp:12},
- feed:{building:'mill',name:'Mix animal feed',input:{corn:2},output:{feed:1},duration:120000,xp:8},
- oil:{building:'mill',name:'Press sunflower oil',input:{sunflower:2},output:{oil:1},duration:14400000,xp:15},
+ pickles:{building:'packing',name:'Pickle red cabbage',input:{redcabbage:2},output:{pickles:1},duration:10800000,xp:60},
+ flour:{building:'windmill',name:'Refine grain meal into flour',input:{grainmeal:1},output:{flour:4},duration:240000,xp:8},
+ feed:{building:'mill',name:'Mix animal feed',input:{corn:2},output:{feed:1},duration:120000,xp:4},
+ oil:{building:'mill',name:'Press sunflower oil',input:{sunflower:2},output:{oil:1},duration:14400000,xp:80},
  milk:{building:'dairy',name:'Feed the cows',input:{feed:1},output:{milk:2},duration:600000,xp:10},
- cheese:{building:'dairy',name:'Make farmhouse cheese',input:{milk:2},output:{cheese:1},duration:3600000,xp:14},
+ cheese:{building:'dairy',name:'Make farmhouse cheese',input:{milk:2},output:{cheese:1},duration:3600000,xp:24},
  eggs:{building:'coop',name:'Feed the chickens',input:{feed:1},output:{eggs:3},duration:300000,xp:10},
  bread:{building:'bakery',name:'Bake fresh bread',input:{flour:4,milk:2},output:{bread:2},duration:1200000,xp:16},
- pie:{building:'bakery',name:'Bake fresh pumpkin pie',input:{flour:2,pumpkin:2,eggs:2},output:{pie:1},duration:7200000,xp:20},
- vegetables:{building:'packing',name:'Pack a vegetable box',input:{cabbage:4,cauliflower:4},output:{vegetables:1},duration:3600000,xp:15},
+ pie:{building:'bakery',name:'Bake fresh pumpkin pie',input:{flour:2,pumpkin:2,eggs:2},output:{pie:1},duration:7200000,xp:50},
+ vegetables:{building:'packing',name:'Pack a vegetable box',input:{cabbage:4,cauliflower:4},output:{vegetables:1},duration:3600000,xp:30},
  stew:{"building": "kitchen", "name": "Simmer vegetable stew", "input": {"greenbeans": 4, "corn": 3, "cabbage": 2}, "output": {"stew": 1}, "duration": 7200000, "xp": 40, "minLevel": 6},
  applejuice:{"building": "juicepress", "name": "Press apple juice", "input": {"apples": 4}, "output": {"applejuice": 1}, "duration": 10800000, "xp": 45, "minLevel": 8},
  applepie:{"building": "bakery", "name": "Bake an apple pie", "input": {"apples": 4, "flour": 4, "eggs": 2}, "output": {"applepie": 1}, "duration": 14400000, "xp": 55, "minLevel": 8},
@@ -99,7 +102,7 @@ export const RECIPES=Object.freeze({
 orchardjuice:{"building": "juicepress", "name": "Press apple and berry juice", "input": {"apples": 2, "berries": 2}, "output": {"orchardjuice": 1}, "duration": 3600000, "xp": 45, "minLevel": 10},
 berrysmoothie:{"building": "juicepress", "name": "Blend a berry smoothie", "input": {"berries": 2, "milk": 2, "honey": 2}, "output": {"berrysmoothie": 1}, "duration": 5400000, "xp": 48, "minLevel": 10},
 applecompote:{"building": "preserves", "name": "Cook honey apple compote", "input": {"apples": 3, "honey": 2}, "output": {"applecompote": 1}, "duration": 7200000, "xp": 42, "minLevel": 10},
-applevinegar:{"building": "preserves", "name": "Ferment apple vinegar", "input": {"applejuice": 1}, "output": {"applevinegar": 1}, "duration": 21600000, "xp": 60, "minLevel": 10, "requiresBuildings": ["juicepress"]},
+applevinegar:{"building": "preserves", "name": "Ferment apple vinegar", "input": {"applejuice": 1}, "output": {"applevinegar": 1}, "duration": 21600000, "xp": 90, "minLevel": 10, "requiresBuildings": ["juicepress"]},
 pickledbeans:{"building": "preserves", "name": "Pickle green beans", "input": {"greenbeans": 4, "applevinegar": 2}, "output": {"pickledbeans": 1}, "duration": 10800000, "xp": 80, "minLevel": 10, "requiresBuildings": ["juicepress"]},
 beangratin:{"building": "kitchen", "name": "Bake green bean gratin", "input": {"greenbeans": 4, "cheese": 2, "milk": 2}, "output": {"beangratin": 1}, "duration": 10800000, "xp": 65, "minLevel": 7},
 orchardsalad:{"building": "packing", "name": "Prepare an orchard salad", "input": {"apples": 2, "lettuce": 4, "cheese": 2}, "output": {"orchardsalad": 1}, "duration": 2700000, "xp": 38, "minLevel": 8},
@@ -257,7 +260,7 @@ export const MAX_BUILDING_LEVEL=10;
 export function productionSlots(level){return Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));}
 // Keep the primary job for older clients; extra jobs run in parallel, not a queue.
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
-export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+ITEMS[key].sell*n,0):marketValue(items,now);const input=value(r.input),output=value(r.output);return {input,output,added:output-input};}
+export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level){return level<=3?.2*(level-1):.4+.04*(level-3);}
 export function recipeDuration(state,id){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level)));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
@@ -619,11 +622,15 @@ export const DELIVERY_TIERS=Object.freeze({quick:{name:'Quick delivery',minBonus
 function selectDailyOrders(state,day){
  const level=levelOf(state),now=day*DAY_MS,used=new Set();
  const quick=ORDER_POOL.filter(o=>o.minLevel===1&&availableDaily(state,o));
- const village=ORDER_POOL.filter(o=>availableDaily(state,o)&&Object.keys(o.input).some(k=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)));
+ const eligibleVillage=ORDER_POOL.filter(o=>availableDaily(state,o)&&Object.keys(o.input).some(k=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)));
+ // Keep a quick order each day; two days out of three favour advanced village orders.
+ // Every third day rotates the full catalogue so earlier goods stay useful.
+ const villageLevel=Math.max(1,...eligibleVillage.map(o=>o.minLevel));
+ const village=day%3===0?eligibleVillage:eligibleVillage.filter(o=>o.minLevel>=Math.max(1,villageLevel-3));
  const commissionLevel=Math.max(...COMMISSION_POOL.filter(o=>availableDaily(state,o)).map(o=>o.minLevel));
  const commissions=COMMISSION_POOL.filter(o=>o.minLevel===commissionLevel&&availableDaily(state,o));
  return [['quick',quick],['village',village],['commission',commissions]].map(([tier,pool],slot)=>{
-  const candidates=pool.length?pool:quick,unused=candidates.filter(o=>!used.has(o.title)),choices=unused.length?unused:candidates,template=choices[(day+slot)%choices.length];used.add(template.title);
+  const candidates=pool.length?pool:quick,unused=candidates.filter(o=>!used.has(o.title)),choices=unused.length?unused:candidates,rotation=tier==='village'?(day%3===0?Math.floor(day/3):day-Math.floor(day/3)):day,template=choices[(rotation+slot)%choices.length];used.add(template.title);
   return quoteTierOrder(template,tier,now,calendarHash(`orders-v1:${day}:${tier}`));
  });
 }
@@ -691,7 +698,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.onboarding.milestones??={};
  state.mastery??={harvests:Object.fromEntries(Object.keys(CROPS).map(k=>[k,state.stats['harvest_'+k]??0])),claimed:[]};
  for(const key of Object.keys(CROPS)){state.mastery.harvests[key]??=0;state.stats['harvest_'+key]??=0;}
- state.stall??={level:1,since:now,bank:0};state.estate??={completed:0,job:null};state.chores??={};state.chorePractice??={};
+ state.stall??={level:1,since:now,bank:0};state.estate??={completed:0,job:null};state.estate.diamondChapters??=[];state.chores??={};state.chorePractice??={};
  state.activities??={jobs:{},cooldowns:{},completed:{},round:[],rounds:0};
  for(const p of state.plots){p.tended??=false;p.fertilized??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*.3);}
  const day=utcDay(now);
@@ -849,6 +856,7 @@ export function choreStatus(state,id,now=Date.now()){
  return {...c,attempts,chance,mastered:chance===c.maxChance,locked:!!previous&&(previous.locked||!previous.mastered),remaining:Math.max(0,(state.chores[id]??0)-now)};
 }
 function secureChoreRandom(){return globalThis.crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;}
+export const CHAPTER_DIAMONDS=Object.freeze([10,20,35,50,75,100]);
 export const PROJECTS=Object.freeze([
  {name:'Rooted homestead',description:'Build a dependable home for your growing farm.',coins:600,input:{wheat:40,milk:12},medals:0,duration:7200000,xp:250},
  {name:'Village supplier',description:'Become the village’s everyday source of fresh food.',coins:3000,input:{corn:40,eggs:36,bread:20},medals:1,duration:28800000,xp:600},
@@ -889,7 +897,7 @@ export function doChore(state,id,now=Date.now(),random=secureChoreRandom){
  return {success,coins,xp,chance:chore.chance,nextChance:Math.min(chore.maxChance,chore.chance+2),attempts:chore.attempts+1,readyAt:state.chores[id]};
 }
 export function currentProject(state){
- const n=state.estate.completed;if(n<PROJECTS.length)return {...PROJECTS[n],id:n};
+ const n=state.estate.completed;if(n<PROJECTS.length)return {...PROJECTS[n],id:n,diamonds:CHAPTER_DIAMONDS[n]};
  const cycle=n-PROJECTS.length+1,factor=1+cycle*.2;
  return {id:n,name:`Estate commission ${cycle}`,description:'An ongoing contract for an established estate. A larger commission follows each one.',coins:Math.round(200000*factor),input:{bread:Math.ceil(80*factor),oil:Math.ceil(30*factor),vegetables:Math.ceil(50*factor)},medals:18,duration:259200000,xp:3000+cycle*200};
 }
@@ -901,9 +909,22 @@ export function startProject(state,now=Date.now()){
  state.coins-=project.coins;for(const[k,n]of Object.entries(project.input))state.inventory[k]-=n;
  state.estate.job={id:project.id,startedAt:now,readyAt:now+project.duration};return {name:project.name,readyAt:state.estate.job.readyAt};
 }
+export function grantChapterRewards(state){
+ const claimed=new Set(state.estate.diamondChapters??[]),chapters=[];
+ let diamonds=0;
+ for(let id=0;id<Math.min(PROJECTS.length,state.estate.completed);id++)if(!claimed.has(id)){
+  diamonds+=CHAPTER_DIAMONDS[id];chapters.push(id);
+ }
+ if(chapters.length){
+  state.diamonds+=diamonds;state.estate.diamondChapters=[...claimed,...chapters];
+  state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
+  state.stats.chapter_diamonds=(state.stats.chapter_diamonds??0)+diamonds;
+ }
+ return {chapters,diamonds};
+}
 export function completeProject(state,now=Date.now()){
  const job=state.estate.job;if(!job)throw new Error('Start an estate project first.');if(now<job.readyAt)throw new Error('Your project is still being built.');
- const project=currentProject(state);settleStall(state,now);state.estate.completed++;state.estate.job=null;state.stats.projects++;state.xp+=project.xp;return {name:project.name,xp:project.xp,completed:state.estate.completed};
+ const project=currentProject(state);settleStall(state,now);state.estate.completed++;state.estate.job=null;state.stats.projects++;state.xp+=project.xp;const reward=grantChapterRewards(state);return {name:project.name,xp:project.xp,diamonds:reward.diamonds,chapters:reward.chapters,completed:state.estate.completed};
 }
 
 // Small hands-on jobs run alongside crops and production. Only server time and
