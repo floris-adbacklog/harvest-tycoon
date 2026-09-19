@@ -9,7 +9,7 @@ export function createSoundSettings(audio){
   for(const id of ['ambience-volume','effects-volume'])$(id).disabled=!s.available;
   $('sound-status').textContent=!s.available?'Sound is not available in this browser.':!s.enabled?'All sound is muted.':!audible?'Both volume sliders are set to zero.':s.musicStatus==='unavailable'?'Music could not load. Game sounds are still available.':s.musicStatus==='loading'?'Getting your background music ready…':'Soft music and little celebrations.';
   $('sound-preview').disabled=!s.available||!s.enabled||!s.effects;
-  $('sound-button').innerHTML=`<i data-lucide="${audible?'volume-2':'volume-x'}"></i>`;
+  $('sound-button').innerHTML=`<i data-lucide="${audible?'volume-2':'volume-x'}" data-line-icon></i>`;
   $('sound-button').setAttribute('aria-label',`Sound settings, ${audible?'sound on':'muted'}`);
   $('sound-button').title='Sound settings';$('mobile-sound-label').textContent='Sound settings';
   $('mobile-sound-summary').textContent=audible?'Music & game sounds':'Currently muted';refreshArt();

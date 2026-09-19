@@ -44,7 +44,7 @@ test('legacy saves retain access, balances, ongoing jobs, quests and beginner re
  s.buildings.bakery.job={id:'saved',recipe:'bread',startedAt:now,readyAt:now+1000};
  const before=structuredClone(s);normalizeFarm(s,now);
  for(const k of Object.keys(CROPS).filter(k=>!CROPS[k].minLevel))assert.ok(cropUnlocked(s,k),k);
- for(const k of Object.keys(BUILDINGS).filter(k=>!BUILDINGS[k].buildCost))assert.ok(buildingUnlocked(s,k),k);
+ for(const k of Object.keys(BUILDINGS).filter(k=>!BUILDINGS[k].buildCost&&BUILDINGS[k].type!=='family'))assert.ok(buildingUnlocked(s,k),k);
  for(const k of ['activities','chores','projects','boosts','cart'])assert.ok(featureUnlocked(s,k));
  for(const key of ['coins','diamonds','claimed','onboarding','plots','daily'])assert.deepEqual(s[key],before[key]);
  assert.equal(s.buildings.bakery.job.id,'saved');assert.equal(s.buildings.bakery.job.readyAt,now+1000);

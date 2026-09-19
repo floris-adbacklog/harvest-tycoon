@@ -1,3 +1,4 @@
+export const FAMILY_MIN_LEVEL=10;
 export const CROPS = Object.freeze({
  corn:       {name:'Corn',cost:10,sell:40,duration:900000,xp:5,model:'plant_001',height:1.55,use:'Animal feed'},
  wheat:      {name:'Wheat',cost:3,sell:8,duration:120000,xp:2,model:'plant_011',height:.85,use:'Flour & bread'},
@@ -66,6 +67,7 @@ export function marketHighlights(now=Date.now()){
  return {today:sorted(now)[0],tomorrow:sorted(now+DAY_MS)[0]};
 }
 export const BUILDINGS = Object.freeze({
+ familyhall:{name:'Family Hall',tagline:'Grow together with your Farm Family.',icon:'users',model:'house_008',type:'family',minLevel:FAMILY_MIN_LEVEL},
  farmhouse:{name:'Farmhouse',tagline:'Room for your next big idea.',icon:'house',model:'house_010',type:'farm',upgradeCost:140},
  mill:{name:'Feed Mill',tagline:'Make animal feed and press golden sunflower oil.',icon:'factory',model:'hangar_003',type:'production',upgradeCost:90},
  dairy:{name:'Dairy Barn',tagline:'Happy cows, fresh milk and farmhouse cheese.',icon:'milk',model:'hangar_004',type:'production',upgradeCost:110},
@@ -266,9 +268,9 @@ export function recipeDuration(state,id){return Math.round(RECIPES[id].duration*
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // New farms learn gradually. Existing saves keep their pre-progression access.
 export const CROP_LEVELS={corn:1,wheat:1,lettuce:2,barley:4,cabbage:5,cauliflower:6,greenbeans:6,pumpkin:7,apples:8,redcabbage:9,sunflower:10,berries:10};
-export const BUILDING_LEVELS={farmhouse:1,coop:1,mill:2,dairy:3,windmill:4,bakery:5,packing:5,kitchen:6,juicepress:8,preserves:10};
-export const FEATURE_LEVELS={chores:3,stall:3,mastery:3,tractor:4,silo:4,cart:3,projects:6,boosts:3,activities:1};
-export const FEATURE_NAMES={chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand'};
+export const BUILDING_LEVELS={familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:3,windmill:4,bakery:5,packing:5,kitchen:6,juicepress:8,preserves:10};
+export const FEATURE_LEVELS={family:FAMILY_MIN_LEVEL,chores:3,stall:3,mastery:3,tractor:4,silo:4,cart:3,projects:6,boosts:3,activities:1};
+export const FEATURE_NAMES={family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
 function breadMade(state){return (state.stats?.made_bread??state.stats?.bread??0)>0;}
 export function cropUnlockHint(state,crop){return `Reach level ${guidedFarm(state)?CROP_LEVELS[crop]:CROPS[crop].minLevel??1}${guidedFarm(state)&&crop==='cabbage'&&!breadMade(state)?' and collect your first bread from the Bakery':''}.`;}
@@ -276,8 +278,8 @@ export function buildingUnlockHint(state,key){return `Reach level ${guidedFarm(s
 export function cropUnlocked(state,crop){return Object.hasOwn(CROPS,crop)&&levelOf(state)>=(guidedFarm(state)?CROP_LEVELS[crop]:CROPS[crop].minLevel??1)&&(!guidedFarm(state)||crop!=='cabbage'||breadMade(state));}
 export function buildingEligible(state,key){return Object.hasOwn(BUILDINGS,key)&&levelOf(state)>=(guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1)&&(!guidedFarm(state)||key!=='packing'||breadMade(state));}
 export function buildingUnlocked(state,key){return buildingEligible(state,key)&&(!BUILDINGS[key].buildCost||state.buildings[key]?.built===true);}
-export function featureUnlocked(state,key){return !guidedFarm(state)||(key==='activities'?(state.stats?.sold_eggs??0)>0:levelOf(state)>=(FEATURE_LEVELS[key]??1));}
-export function featureUnlockHint(key){return key==='activities'?'Sell an egg at the Market to unlock hands-on jobs.':`Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
+export function featureUnlocked(state,key){if(key==='family')return familyUnlocked(state);return !guidedFarm(state)||(key==='activities'?(state.stats?.sold_eggs??0)>0:levelOf(state)>=(FEATURE_LEVELS[key]??1));}
+export function featureUnlockHint(key){if(key==='family')return familyUnlockHint();return key==='activities'?'Sell an egg at the Market to unlock hands-on jobs.':`Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
 export function unlockEntries(state){return [
  ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
  ...Object.entries(BUILDINGS).map(([key,b])=>({id:'building:'+key,name:b.name,kind:b.buildCost?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
@@ -318,7 +320,7 @@ export function expansionCost(state){return state.plots.length>=MAX_PLOTS?null:M
 const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16},{lettuce:30,flour:18,milk:12},{cauliflower:32,feed:20,eggs:14},{redcabbage:30,cheese:16,bread:18},{pumpkin:36,oil:18,pie:20}];
 export function expansionMaterials(state){return state.plots.length>=MAX_PLOTS?{}:{...FIELD_MATERIALS[Math.max(0,state.plots.length-12)]};}
 export function upgradeCost(state,building){
- if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')return null;
+ if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
  const level=state.buildings[building].level;
  return level>=MAX_BUILDING_LEVEL?null:Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)))*(state.boosts?.upgradeCredits>0?.5:1));
 }
@@ -419,7 +421,7 @@ function startSingleProduction(state,id,now=Date.now()){
  return {building:r.building,recipe:id,jobId:job.id,readyAt:job.readyAt};
 }
 export function collectProduction(state,building,now=Date.now(),jobId){
- if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')throw new Error('Choose a production building.');
+ if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')throw new Error('Choose a production building.');
  const b=state.buildings[building],jobs=productionJobs(b),job=jobId===undefined?(jobs.find(j=>j.readyAt<=now)??jobs[0]):jobs.find(j=>j.id===jobId);
  if(!job)throw new Error('Nothing to collect yet. Start a recipe first.');
  if(now<job.readyAt)throw new Error('This batch is still being made.');
@@ -431,7 +433,7 @@ export function collectProduction(state,building,now=Date.now(),jobId){
  return {building,items:{...output},xp};
 }
 export function collectAllProduction(state,building,now=Date.now()){
- if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')throw new Error('Choose a production building.');
+ if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')throw new Error('Choose a production building.');
  const ready=productionJobs(state.buildings[building]).filter(job=>job.readyAt<=now);
  if(!ready.length)throw new Error('No batches are ready to collect yet.');
  const result={building,count:ready.length,items:{},xp:0};
@@ -443,9 +445,9 @@ export function collectAllProduction(state,building,now=Date.now()){
  return result;
 }
 export const DIAMOND_UPGRADE_COSTS=Object.freeze([25,45,75,110,160,225,300,400,525]);
-export function diamondUpgradeCost(state,building){if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')return null;return DIAMOND_UPGRADE_COSTS[state.buildings[building].level-1]??null;}
+export function diamondUpgradeCost(state,building){if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;return DIAMOND_UPGRADE_COSTS[state.buildings[building].level-1]??null;}
 export function upgradeBuilding(state,building,currency='coins',expectedCost,expectedLevel){
- if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')throw new Error('Choose a production building.');
+ if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')throw new Error('Choose a production building.');
  if(!buildingUnlocked(state,building))throw new Error('Open this building before upgrading it.');
  if(!['coins','diamonds'].includes(currency))throw new Error('Choose coins or diamonds.');
  const b=state.buildings[building],cost=currency==='diamonds'?diamondUpgradeCost(state,building):upgradeCost(state,building);
@@ -478,7 +480,7 @@ export function claimQuest(state,id){
  return {coins:q.reward,xp:15};
 }
 export function farmSummary(state,now=Date.now()) {
- return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,slots:id==='farmhouse'?0:productionSlots(b.level),jobs:productionJobs(b).map(j=>({id:j.id,recipe:j.recipe,secondsRemaining:Math.max(0,Math.ceil((j.readyAt-now)/1000))})),status:productionJobs(b).some(j=>now>=j.readyAt)?'ready':b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
+ return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,slots:BUILDINGS[id].type==='production'?productionSlots(b.level):0,jobs:productionJobs(b).map(j=>({id:j.id,recipe:j.recipe,secondsRemaining:Math.max(0,Math.ceil((j.readyAt-now)/1000))})),status:productionJobs(b).some(j=>now>=j.readyAt)?'ready':b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
 }
 
 export const DAY_MS=86400000;
@@ -489,7 +491,7 @@ export const DIAMOND_PACKS=Object.freeze([{amount:50,price:'€1.99'},{amount:30
 export const SINGLE_BATCH_COST=10;
 export function finishSingleBatch(state,building,jobId,expectedCost,now=Date.now()){
  if(expectedCost!==SINGLE_BATCH_COST)throw new Error('The price has changed. Review the current price.');
- if(!Object.hasOwn(BUILDINGS,building)||!buildingUnlocked(state,building))throw new Error('Choose an open production building.');
+ if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production'||!buildingUnlocked(state,building))throw new Error('Choose an open production building.');
  const job=productionJobs(state.buildings[building]).find(j=>j.id===jobId);
  if(!job||job.readyAt<=now)throw new Error('Choose a batch that is still running.');
  if(state.diamonds<SINGLE_BATCH_COST)throw new Error(`You need ${SINGLE_BATCH_COST} diamonds.`);
@@ -522,7 +524,7 @@ export function boostStatus(state,id,now=Date.now()){
  let reason='';
  if(remaining)reason='Already active';
  if(id==='upgrade'&&state.boosts?.upgradeCredits>0)reason='Voucher ready';
- if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>key!=='farmhouse'&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
+ if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>BUILDINGS[key].type==='production'&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
  if(id==='crops'&&!state.plots.some(p=>p.crop&&p.readyAt>now))reason='No crops are growing';
  if(id==='production'&&!Object.values(state.buildings).some(b=>productionJobs(b).some(j=>j.readyAt>now)))reason='No batches are running';
  return {...boost,remaining,reason,canBuy:!reason&&state.diamonds>=boost.cost};
@@ -589,7 +591,7 @@ export function availableDaily(state,q){
   if(gate&&!featureUnlocked(state,gate))return false;
   if(stat==='fertilized'&&!itemAvailable(state,'fertilizer'))return false;
  }
- return levelOf(state)>=(q.minLevel??1)&&(q.requiresBuildings??[]).every(key=>buildingUnlocked(state,key))&&(!q.chore||!choreStatus(state,q.chore).locked)&&(!q.parallel||Object.entries(state.buildings).some(([id,b])=>id!=='farmhouse'&&b.level>=2));
+ return levelOf(state)>=(q.minLevel??1)&&(q.requiresBuildings??[]).every(key=>buildingUnlocked(state,key))&&(!q.chore||!choreStatus(state,q.chore).locked)&&(!q.parallel||Object.entries(state.buildings).some(([id,b])=>BUILDINGS[id].type==='production'&&b.level>=2));
 }
 function selectDailyTasks(state,day){
  return DAILY_POOLS.map((pool,id)=>{const eligible=pool.filter(q=>availableDaily(state,q));if(!eligible.length)eligible.push(LEGACY_DAILY_POOLS[0][id]);return {...eligible[(day+id)%eligible.length]};});
@@ -690,6 +692,7 @@ export function normalizeFarm(state,now=Date.now()){
  }
  for(const q of QUESTS)state.stats[q.stat]??=0;
  for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals','sold'])state.stats[k]??=0;
+ state.family??={familyId:null,unclaimedCount:0};
  state.discovered??=[];state.siloLevel??=0;state.tractorReadyAt??=0;
  state.login??={lastDay:null,streak:0,best:0,visits:0};state.levelRewards??=[1];
  // Existing farms keep every regular quest, inventory item and timer. A past daily gift
@@ -930,8 +933,8 @@ export function completeProject(state,now=Date.now()){
 // Small hands-on jobs run alongside crops and production. Only server time and
 // persisted progress determine rewards; the client submits a station and tile.
 export const ACTIVE_STATIONS=Object.freeze({
- greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:20,xp:28,cooldown:180000,item:'lettuce',instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
- apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:26,xp:32,cooldown:240000,item:'honey',instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
+ greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:20,xp:28,cooldown:180000,item:'lettuce',itemCount:3,instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
+ apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:26,xp:32,cooldown:240000,item:'honey',itemCount:3,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
  paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:24,xp:28,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
  workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:30,xp:32,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
 });
@@ -967,9 +970,171 @@ function workActivity(state,action,now){
  const coins=s.coins+(roundComplete?ACTIVITY_ROUND_REWARD.coins:0),xp=s.xp+(roundComplete?ACTIVITY_ROUND_REWARD.xp:0);
  if(roundComplete){a.round=[];a.rounds++;}
  state.coins+=coins;state.xp+=xp;
- if(s.item)state.inventory[s.item]++;
+ const itemCount=s.item?(s.itemCount??1):0;
+ if(s.item)state.inventory[s.item]+=itemCount;
  state.stats.activities=(state.stats.activities??0)+1;
  state.stats['activity_'+action.station]=(state.stats['activity_'+action.station]??0)+1;
  if(roundComplete)state.stats.activity_rounds=(state.stats.activity_rounds??0)+1;
- return {station:action.station,finished:true,coins,xp,item:s.item??null,roundComplete};
+ return {station:action.station,finished:true,coins,xp,item:s.item??null,itemCount,roundComplete};
+}
+
+// Farm Family rules. Only the authenticated farm-api executes mutations against
+// the service-only context; browser copies expose constants and display helpers.
+export const FAMILY_CONFIG=Object.freeze({MAX_MEMBERS:6,MIN_CONTRIB_POINTS:500,JOIN_COOLDOWN_MS:48*3600000,RENAME_COOLDOWN_MS:7*DAY_MS,ATTEMPTS_PER_HOUR:10,EXTRA_POINTS_CAP:30000,POOL_PER_ACTIVE_PLAYER:5,POOL_MAX:300,PLAYER_WEEK_DIAMOND_CAP:25,TOURNAMENT_MIN_POINTS:2000,ORDER_COIN_MULTIPLIER:1.25,ORDER_XP_PER_VALUE:1/100,ORDER_DIAMOND_BASE:1,ORDER_DIAMOND_MAX:3,ORDER_COMPLETION_DIAMONDS:4,REWARD_WEEKS:8,ORDER_MIN_VALUE_PER_MEMBER:16000,ORDER_MAX_VALUE_PER_MEMBER:30000,RANK_SHARES:[.5,.3,.2]});
+export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
+export function familyUnlocked(state,minLevel=FAMILY_MIN_LEVEL){return levelOf(state)>=minLevel;}
+export function familyUnlockHint(minLevel=FAMILY_MIN_LEVEL){return `Reach level ${minLevel} to unlock Farm Family.`;}
+export function familyWeek(now=Date.now()){return Math.floor((now-4*DAY_MS)/(7*DAY_MS));}
+export function familyWeekStart(week){return 4*DAY_MS+week*7*DAY_MS;}
+const FAMILY_ORDER_TEMPLATES=Object.freeze([
+ {wheat:100,bread:30,oil:6,honey:30},
+ {corn:80,vegetables:6,cheese:30,honey:30},
+ {barley:60,pie:8,eggs:100,honey:30},
+ {cabbage:50,pickles:8,milk:80,honey:30}
+]);
+export function familyOrder(familyId,week,members,config=FAMILY_CONFIG){
+ if(!Number.isInteger(members)||members<1||members>config.MAX_MEMBERS)throw new Error('Choose a valid family size.');
+ const template=FAMILY_ORDER_TEMPLATES[calendarHash(`family-v1:${familyId}:${week}`)%FAMILY_ORDER_TEMPLATES.length];
+ const lines=Object.fromEntries(Object.entries(template).map(([k,n])=>[k,n*members]));
+ return {lines,value:Object.entries(lines).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0),members};
+}
+export function familyShares(budget,members,cap=Infinity,minimum=0){
+ const result=Object.fromEntries(members.map(m=>[m.player_id,0]));
+ if(!members.length||budget<minimum*members.length)return result;
+ const total=members.reduce((n,m)=>n+m.points,0);let remaining=budget;
+ for(const m of members){const n=Math.min(cap,minimum+Math.floor((budget-minimum*members.length)*m.points/Math.max(1,total)));result[m.player_id]=n;remaining-=n;}
+ const ranked=[...members].sort((a,b)=>b.points-a.points||a.player_id.localeCompare(b.player_id));
+ while(remaining>0){let given=false;for(const m of ranked)if(remaining>0&&result[m.player_id]<cap){result[m.player_id]++;remaining--;given=true;}if(!given)break;}
+ return result;
+}
+export function familyTournament(context,week,config=FAMILY_CONFIG){
+ const entries=context.families.filter(f=>!f.deleted_at).map(f=>{
+  const current=new Set(context.members.filter(m=>m.family_id===f.id&&!m.left_at).map(m=>m.player_id));
+  const rows=context.contributions.filter(c=>c.family_id===f.id&&c.week===week);
+  const active=rows.filter(c=>current.has(c.player_id)&&c.points>=config.MIN_CONTRIB_POINTS);
+  return {family_id:f.id,name:f.name,emblem:f.emblem,points:rows.reduce((n,c)=>n+c.points,0),last_at:Math.max(0,...rows.map(c=>c.last_at)),active,active_members:active.length};
+ }).filter(f=>f.points>0).sort((a,b)=>b.points-a.points||a.last_at-b.last_at||a.family_id.localeCompare(b.family_id));
+ const qualifying=entries.filter(f=>f.active_members>=2&&f.points>=config.TOURNAMENT_MIN_POINTS);
+ const pool=Math.min(config.POOL_MAX,config.POOL_PER_ACTIVE_PLAYER*qualifying.reduce((n,f)=>n+f.active_members,0));
+ return {pool,entries,qualifying};
+}
+export function emptyFamilyContext(){return {revision:0,families:[],members:[],orders:[],contributions:[],results:[],rewards:[],attempts:[],weeks:[],players:[],receipt:null};}
+const familyMember=(c,p)=>c.members.find(m=>m.player_id===p);
+const familyCurrent=(c,p)=>{const m=familyMember(c,p);return m&&!m.left_at&&m.family_id?c.families.find(f=>f.id===m.family_id&&!f.deleted_at):null;};
+const familyMembers=(c,id)=>c.members.filter(m=>m.family_id===id&&!m.left_at);
+function addFamilyReward(c,p,week,kind,coins,xp,diamonds,now,config){
+ if(c.rewards.some(r=>r.player_id===p&&r.week===week&&r.kind===kind))return;
+ const allocated=c.rewards.filter(r=>r.player_id===p&&r.week===week).reduce((n,r)=>n+r.diamonds,0);
+ c.rewards.push({id:`${week}:${kind}:${p}`,player_id:p,week,kind,coins:Math.floor(coins),xp:Math.floor(xp),diamonds:Math.max(0,Math.min(diamonds,config.PLAYER_WEEK_DIAMOND_CAP-allocated)),created_at:now,expires_at:familyWeekStart(week+1)+config.REWARD_WEEKS*7*DAY_MS,claimed_at:null});
+}
+export function settleFamilyWeeks(c,now,config=FAMILY_CONFIG){
+ const current=familyWeek(now),settled=[];
+ const candidates=[...new Set(c.contributions.map(x=>x.week))].filter(w=>w<current&&!c.weeks.some(x=>x.week===w));
+ for(const week of candidates){
+  const board=familyTournament(c,week,config);
+  for(const [index,f] of board.qualifying.entries()){
+   const budget=Math.floor(board.pool*(config.RANK_SHARES[index]??0));
+   const shares=familyShares(budget,f.active,config.PLAYER_WEEK_DIAMOND_CAP,1);
+   c.results.push({week,family_id:f.family_id,rank:index+1,points:f.points,active_members:f.active_members,diamonds_pool:budget,name:f.name,emblem:f.emblem,settled_at:now});
+   if(index<config.RANK_SHARES.length)for(const m of f.active)addFamilyReward(c,m.player_id,week,'tournament',0,0,shares[m.player_id],now,config);
+  }
+  c.weeks.push({week,settled_at:now,pool:board.pool});settled.push(week);
+ }
+ return settled;
+}
+function ensureFamilyOrder(c,f,week,now,config){
+ let order=c.orders.find(o=>o.family_id===f.id&&o.week===week);
+ if(!order){const generated=familyOrder(f.id,week,familyMembers(c,f.id).length,config);order={family_id:f.id,week,lines:generated.lines,filled:{},member_count:generated.members,value:generated.value,created_at:now,completed_at:null};c.orders.push(order);}
+ return order;
+}
+function completeFamilyOrder(c,order,now,config){
+ if(order.completed_at||!Object.entries(order.lines).every(([k,n])=>(order.filled[k]??0)>=n))return false;
+ order.completed_at=now;
+ const eligible=c.contributions.filter(x=>x.family_id===order.family_id&&x.week===order.week&&x.order_points>=config.MIN_CONTRIB_POINTS).map(x=>({...x,points:x.order_points}));
+ // Reward only the value personally supplied by eligible contributors; never
+ // redistribute a departing or below-threshold member's goods as extra coins.
+ const bonus=familyShares(config.ORDER_COMPLETION_DIAMONDS,eligible,Infinity,0);
+ for(const m of eligible)addFamilyReward(c,m.player_id,order.week,'order',m.order_points*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER,m.order_points*config.ORDER_XP_PER_VALUE,Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor(m.order_points/10000))+(bonus[m.player_id]??0),now,config);
+ return true;
+}
+function familyCode(c,random){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(let attempt=0;attempt<30;attempt++){const code=Array.from({length:6},()=>alphabet[Math.floor(random()*alphabet.length)]).join('');if(!c.families.some(f=>f.invite_code===code&&!f.deleted_at))return code;}throw new Error('Please try creating the invite code again.');}
+export function familyMutate(original,state,player,action,now,options={}){
+ const config=options.config??FAMILY_CONFIG,minLevel=options.minLevel??FAMILY_MIN_LEVEL;
+ if(!familyUnlocked(state,minLevel))throw new Error(familyUnlockHint(minLevel));
+ const c=structuredClone(original),week=familyWeek(now),settled=settleFamilyWeeks(c,now,config);
+ const uuid=options.uuid??(()=>crypto.randomUUID()),random=options.random??secureChoreRandom;
+ let member=familyMember(c,player),family=familyCurrent(c,player),result={};
+ const type=action?.type??'family_read';
+ const needFamily=()=>{if(!family)throw new Error('Join a family first.');};
+ const leader=()=>{needFamily();if(member.role!=='leader')throw new Error('Only the family leader can do this.');};
+ const validName=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _'-]{2,19}$/.test(value.trim());
+ const joinable=()=>{if(family)throw new Error('Leave your current family first.');if((member?.cooldown_until??0)>now)throw new Error(`You can join again in ${formatDuration(member.cooldown_until-now)}.`);};
+ if(['family_create','family_join'].includes(type)){
+  let rate=c.attempts.find(a=>a.player_id===player);if(!rate){rate={player_id:player,window_at:now,count:0};c.attempts.push(rate);}
+  if(now-rate.window_at>=3600000){rate.window_at=now;rate.count=0;}
+  if(rate.count>=config.ATTEMPTS_PER_HOUR)return {context:c,result:{error:'Too many attempts. Try again later.'},settled,failed:true};
+  rate.count++;
+ }
+ try{
+  if(type==='family_create'){
+   joinable();if(!validName(action.name))throw new Error('Use 3–20 letters, numbers, spaces, apostrophes, underscores or hyphens.');
+   const name=action.name.trim();if(c.families.some(f=>!f.deleted_at&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('That family name is taken.');
+   if(!FAMILY_EMBLEMS.some(e=>e.id===action.emblem))throw new Error('Choose a family emblem.');
+   family={id:uuid(),name,emblem:action.emblem,invite_code:familyCode(c,random),is_open:false,created_at:now,renamed_at:null,deleted_at:null};c.families.push(family);
+   const next={id:member?.id??uuid(),player_id:player,family_id:family.id,role:'leader',joined_at:now,left_at:null,cooldown_until:null};if(member)Object.assign(member,next);else c.members.push(next);member=next;
+   result={message:'Your Farm Family is ready.'};
+  }else if(type==='family_join'){
+   joinable();
+   const found=action.code?c.families.find(f=>!f.deleted_at&&f.invite_code===String(action.code).trim().toUpperCase()):c.families.find(f=>f.id===action.familyId&&f.is_open&&!f.deleted_at);
+   if(!found||familyMembers(c,found.id).length>=config.MAX_MEMBERS)throw new Error('Invalid code or family unavailable.');
+   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,cooldown_until:null};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;result={message:'Welcome to your Farm Family.'};
+  }else if(['family_leave','family_kick'].includes(type)){
+   needFamily();if(type==='family_kick')leader();const target=type==='family_leave'?member:c.members.find(m=>m.id===action.memberId&&m.family_id===family.id&&!m.left_at);
+   if(!target||type==='family_kick'&&target.player_id===player)throw new Error('Choose another family member.');
+   const wasLeader=target.role==='leader';target.family_id=null;target.left_at=now;target.cooldown_until=now+config.JOIN_COOLDOWN_MS;target.role='member';
+   const remaining=familyMembers(c,family.id).sort((a,b)=>a.joined_at-b.joined_at||a.id.localeCompare(b.id));if(!remaining.length)family.deleted_at=now;else if(wasLeader)remaining[0].role='leader';
+   result={message:type==='family_leave'?'You left the family. Joining is available again in 48 hours.':'Member removed. A 48-hour join cooldown applies.'};
+  }else if(type==='family_promote'){
+   leader();const target=c.members.find(m=>m.id===action.memberId&&m.family_id===family.id&&!m.left_at&&m.player_id!==player);if(!target)throw new Error('Choose another family member.');member.role='member';target.role='leader';result={message:'Family leadership transferred.'};
+  }else if(type==='family_rename'){
+   leader();if(family.renamed_at&&now-family.renamed_at<config.RENAME_COOLDOWN_MS)throw new Error('You can rename your family once every seven days.');if(!validName(action.name))throw new Error('Use a valid 3–20 character family name.');const name=action.name.trim();if(c.families.some(f=>f.id!==family.id&&!f.deleted_at&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('That family name is taken.');family.name=name;family.renamed_at=now;result={message:'Family renamed.'};
+  }else if(type==='family_open'){
+   leader();if(typeof action.open!=='boolean')throw new Error('Choose open or invite-only.');family.is_open=action.open;result={message:action.open?'Your family is open to new members.':'Your family is invite-only.'};
+  }else if(type==='family_code'){
+   leader();family.invite_code=familyCode(c,random);result={message:'A new invite code is ready.'};
+  }else if(type==='family_contribute'||type==='family_tournament_goods'){
+   needFamily();if(action.week!==week)throw new Error('A new week has started. Review the current order.');
+   if(!Object.hasOwn(ITEMS,action.item)||!Number.isSafeInteger(action.count)||action.count<1)throw new Error('Choose a valid item and whole quantity.');
+   const order=ensureFamilyOrder(c,family,week,now,config);let entry=c.contributions.find(x=>x.player_id===player&&x.week===week);
+   if(entry&&entry.family_id!==family.id)throw new Error('You can only contribute to one family each week.');
+   const needed=Math.max(0,(order.lines[action.item]??0)-(order.filled[action.item]??0)),points=ITEMS[action.item].sell*action.count;
+   if(type==='family_contribute'&&(!Object.hasOwn(order.lines,action.item)||action.count>needed))throw new Error('This exceeds what the order still needs.');
+   if(type==='family_tournament_goods'){
+    if(!Object.entries(order.lines).some(([k,n])=>(order.filled[k]??0)>=n))throw new Error('Fill one order line to unlock Tournament goods.');
+    if((entry?.extra_points??0)+points>config.EXTRA_POINTS_CAP)throw new Error('This exceeds your weekly Tournament goods limit.');
+   }
+   if((state.inventory[action.item]??0)<action.count)throw new Error('You do not have enough in stock.');
+   if(!entry){entry={family_id:family.id,week,player_id:player,points:0,order_points:0,extra_points:0,lines:{},last_at:now};c.contributions.push(entry);}
+   state.inventory[action.item]-=action.count;entry.points+=points;entry.last_at=now;
+   if(type==='family_contribute'){entry.order_points+=points;entry.lines[action.item]=(entry.lines[action.item]??0)+action.count;order.filled[action.item]=(order.filled[action.item]??0)+action.count;}
+   else entry.extra_points+=points;
+   const complete=completeFamilyOrder(c,order,now,config);result={points,completed:complete,message:complete?'Family Order complete! Your rewards are ready.':`${action.count} ${ITEMS[action.item].name} contributed. Thank you!`};
+  }else if(type==='family_claim'){
+   const reward=c.rewards.find(r=>r.id===action.rewardId&&r.player_id===player);if(!reward||reward.expires_at<=now)throw new Error('This reward is unavailable or has expired.');if(reward.claimed_at)throw new Error('This reward has already been claimed.');
+   reward.claimed_at=now;state.coins+=reward.coins;state.xp+=reward.xp;state.diamonds+=reward.diamonds;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+reward.diamonds;
+   const levelReward=grantLevelRewards(state);result={coins:reward.coins,xp:reward.xp,diamonds:reward.diamonds,levelReward,message:`Family rewards: +${reward.coins} coins · +${reward.xp} XP · +${reward.diamonds} diamonds.`};
+  }else if(type!=='family_read')throw new Error('Choose a valid family action.');
+ }catch(error){if(['family_create','family_join'].includes(type))return {context:c,result:{error:error.message},settled,failed:true};throw error;}
+ family=familyCurrent(c,player);if(family)ensureFamilyOrder(c,family,week,now,config);
+ state.family={familyId:family?.id??null,unclaimedCount:c.rewards.filter(r=>r.player_id===player&&!r.claimed_at&&r.expires_at>now).length};
+ return {context:c,result,settled,failed:false};
+}
+export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
+ const week=familyWeek(now),family=familyCurrent(c,player),me=familyMember(c,player),board=familyTournament(c,week,config);
+ const current=c.contributions.find(r=>r.player_id===player&&r.week===week),order=family?c.orders.find(o=>o.family_id===family.id&&o.week===week):null;
+ const contributionLocked=!!current&&current.family_id!==family?.id;
+ const rewards=c.rewards.filter(r=>r.player_id===player&&!r.claimed_at&&r.expires_at>now).map(({id,week,kind,coins,xp,diamonds,expires_at})=>({id,week,kind,coins,xp,diamonds,expiresAt:expires_at}));
+ const members=family?familyMembers(c,family.id).map(m=>{const p=c.players.find(p=>p.player_id===m.player_id),points=c.contributions.find(r=>r.family_id===family.id&&r.player_id===m.player_id&&r.week===week)?.points??0;return {id:m.id,username:p?.username??'Farmer',level:p?.level??1,online:p?.online===true,points,role:m.role,isSelf:m.player_id===player};}):[];
+ const card=f=>({id:f.id,name:f.name,emblem:f.emblem,members:familyMembers(c,f.id).length});
+ return {week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,extraCap:config.EXTRA_POINTS_CAP,diamondCap:config.PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:family.is_open,inviteCode:family.invite_code,leader:me.role==='leader',renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,cooldownUntil:me?.cooldown_until??0,openFamilies:c.families.filter(f=>!f.deleted_at&&f.is_open&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview:{coins:Math.floor((current?.order_points??0)*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER),xp:Math.floor((current?.order_points??0)*config.ORDER_XP_PER_VALUE),diamonds:Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor((current?.order_points??0)/10000)),completionBonus:config.ORDER_COMPLETION_DIAMONDS},tournament:{pool:board.pool,top:board.entries.slice(0,5).map(f=>({name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:f.active_members>=2&&f.points>=config.TOURNAMENT_MIN_POINTS})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
 }

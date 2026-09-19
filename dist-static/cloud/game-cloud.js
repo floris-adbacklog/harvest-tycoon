@@ -147,6 +147,11 @@ var a = [
 		]
 	}
 ], o = {
+	"family-weekly-order": "family-weekly-order",
+	"family-members": "family-members",
+	"family-tournament": "family-tournament",
+	"family-management": "family-management",
+	familyhall: "farmhouse",
 	"helping-hand": "helping-hand",
 	"collect-all": "collect-all",
 	"instant-harvest": "instant-harvest",
@@ -199,27 +204,33 @@ for (let e of [
 	"berrycheesecake",
 	"harvesthamper"
 ]) o[e] = e;
-var s = Object.fromEntries(a.flatMap((e) => e.keys.map((t, n) => [t, {
+var s = new Set([
+	"guide",
+	"sound",
+	"streak"
+]);
+for (let e of s) o[e] = e;
+var c = Object.fromEntries(a.flatMap((e) => e.keys.map((t, n) => [t, {
 	...e,
 	index: n
 }])));
-Object.freeze([...Object.keys(s), ...Object.keys(o)]);
-function c(e, t = "") {
-	let n = s[e];
+Object.freeze([...Object.keys(c), ...Object.keys(o)]);
+function l(e, t = "") {
+	let n = c[e];
 	if (n) {
 		let { file: r, columns: i, index: a } = n, o = a % i / (i - 1) * 100, s = Math.floor(a / i) / (i - 1) * 100;
 		return `<span class="game-art game-art-sprite ${t}" data-art="${e}" aria-hidden="true" style="--art-sheet:url('/assets/icons/${r}');--art-size:${i * 100}%;--art-position:${o}% ${s}%"></span>`;
 	}
-	return o[e] ? `<img class="game-art ${t}" data-art="${e}" src="/assets/icons/${o[e]}.png" alt="" draggable="false">` : "";
+	return o[e] ? `<img class="game-art ${t}" data-art="${e}" src="/assets/icons/${o[e]}.${s.has(e) ? "svg" : "png"}" alt="" draggable="false">` : "";
 }
 //#endregion
 //#region src/payment-ui.js
-function l(e) {
+function u(e) {
 	let t = e.paymentReturn?.();
 	if (!t?.id) return;
 	let n = document.createElement("dialog");
-	n.className = "payment-dialog", n.setAttribute("aria-labelledby", "payment-result-title"), n.setAttribute("aria-describedby", "payment-result-message"), n.innerHTML = `<button type="button" class="payment-dismiss" aria-label="Close purchase update"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button><div class="payment-hero">${c("diamonds")}</div><p class="payment-eyebrow">A LITTLE EXTRA GROWING POWER</p><h2 id="payment-result-title">Checking your purchase</h2><p id="payment-result-message" class="payment-message" role="status" aria-live="polite">Just a moment while we check your payment.</p><span class="payment-status">Checking payment</span><div class="payment-actions"><button type="button" data-close autofocus>Back to farm</button><button type="button" data-retry>Check payment</button></div>`, document.body.append(n);
-	let r = n.querySelector("h2"), i = n.querySelector(".payment-message"), a = n.querySelector(".payment-status"), o = n.querySelector("[data-retry]"), s, l = 0, u = !1, d = !1, f = () => {
+	n.className = "payment-dialog", n.setAttribute("aria-labelledby", "payment-result-title"), n.setAttribute("aria-describedby", "payment-result-message"), n.innerHTML = `<button type="button" class="payment-dismiss" aria-label="Close purchase update"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button><div class="payment-hero">${l("diamonds")}</div><p class="payment-eyebrow">A LITTLE EXTRA GROWING POWER</p><h2 id="payment-result-title">Checking your purchase</h2><p id="payment-result-message" class="payment-message" role="status" aria-live="polite">Just a moment while we check your payment.</p><span class="payment-status">Checking payment</span><div class="payment-actions"><button type="button" data-close autofocus>Back to farm</button><button type="button" data-retry>Check payment</button></div>`, document.body.append(n);
+	let r = n.querySelector("h2"), i = n.querySelector(".payment-message"), a = n.querySelector(".payment-status"), o = n.querySelector("[data-retry]"), s, c = 0, u = !1, d = !1, f = () => {
 		u = !0, clearTimeout(s);
 	};
 	n.addEventListener("close", () => {
@@ -254,7 +265,7 @@ function l(e) {
 					p("closed", "This checkout has expired", "You can return to the diamond shop to start a new checkout.", "Checkout expired"), o.hidden = !0;
 					return;
 				}
-				t.cancelled ? p("closed", "Back to your farm", "Checkout was closed. If you paid before returning, check your payment status below.", "Checkout closed") : p("pending", "Confirming your purchase", "We’re waiting for payment confirmation. You can return to your farm while we check.", "Awaiting confirmation"), !t.cancelled && ++l < 20 && (s = setTimeout(m, 3e3));
+				t.cancelled ? p("closed", "Back to your farm", "Checkout was closed. If you paid before returning, check your payment status below.", "Checkout closed") : p("pending", "Confirming your purchase", "We’re waiting for payment confirmation. You can return to your farm while we check.", "Awaiting confirmation"), !t.cancelled && ++c < 20 && (s = setTimeout(m, 3e3));
 			} catch {
 				u || p("error", "Let’s check again", "We couldn’t confirm your payment right now. If you paid, check again in a moment.", "Connection interrupted");
 			} finally {
@@ -263,12 +274,12 @@ function l(e) {
 		}
 	}
 	o.onclick = () => {
-		l = 0, m();
+		c = 0, m();
 	}, n.showModal(), m();
 }
 //#endregion
 //#region src/starter-pack-ui.js
-async function u(e) {
+async function d(e) {
 	let { CROPS: t, formatDuration: n } = await import(
 		/* @vite-ignore */
 		"/farm-state.js"
@@ -321,28 +332,28 @@ async function u(e) {
 }
 //#endregion
 //#region src/game-cloud.js
-var d;
+var f;
 try {
-	d = window.parent === window ? null : window.parent.harvestBridge;
+	f = window.parent === window ? null : window.parent.harvestBridge;
 } catch {}
-if (!d) location.replace("/play.html");
-else if (window.harvestInitialFarm = d.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
+if (!f) location.replace("/play.html");
+else if (window.harvestInitialFarm = f.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
 else {
 	document.body.hidden = !1;
 	let n = i({
 		onOpen: s,
 		onRetry: s,
 		onName: async (e) => {
-			let t = await d.request({
+			let t = await f.request({
 				operation: "rename",
 				username: e
 			});
-			n.setProfile(t.profile, { id: d.playerId });
+			n.setProfile(t.profile, { id: f.playerId });
 		},
-		onSignOut: () => d.signOut()
+		onSignOut: () => f.signOut()
 	});
-	n.setProfile(window.harvestInitialFarm.profile, { id: d.playerId }), n.status("Live rankings");
-	let r = d.presence?.subscribe((t) => {
+	n.setProfile(window.harvestInitialFarm.profile, { id: f.playerId }), n.status("Live rankings");
+	let r = f.presence?.subscribe((t) => {
 		n.open && e(n.results, t);
 	}), a = setInterval(() => {
 		n.open && !document.hidden && s(!0);
@@ -355,9 +366,9 @@ else {
 		let r = ++o, i = n.category;
 		e || n.message("Gathering the latest scores…"), n.results.setAttribute("aria-busy", "true");
 		try {
-			let e = await d.leaderboard(i);
+			let e = await f.leaderboard(i);
 			if (r !== o) return;
-			t(n.results, e, d.playerId), n.status("Up to date");
+			t(n.results, e, f.playerId), n.status("Up to date");
 		} catch (t) {
 			r === o && (e || n.message(t.message), n.status("Could not refresh"));
 		} finally {
@@ -368,6 +379,6 @@ else {
 		/* @vite-ignore */
 		"/game.js"
 );
-	await c && (l(d), await u(d));
+	await c && (u(f), await d(f));
 }
 //#endregion

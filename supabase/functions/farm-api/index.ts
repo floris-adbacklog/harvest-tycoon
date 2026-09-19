@@ -1,3 +1,4 @@
+import {handleFamily} from './family-service.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
@@ -19,7 +20,7 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['load','action','rename'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['load','action','rename','family'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level').eq('player_id',user.id).maybeSingle();
   if(profileResponse.error)throw profileResponse.error;
   let profile=profileResponse.data;
@@ -46,6 +47,10 @@ Deno.serve(async(req)=>{
    }
    const state=normalizeFarm(row.state,now);
    profile={player_id:user.id,username,currency:state.coins,level:levelOf(state)};
+   if(body.operation==='family'||(body.operation==='action'&&String(body.action.type).startsWith('family_'))){
+    const familyResponse=await handleFamily({admin,body,row,state,player:user.id,username});
+    if(!familyResponse)continue;return reply(familyResponse.data,familyResponse.status);
+   }
    if(body.operation==='load'){
     const levelReward=grantLevelRewards(state),chapterReward=grantChapterRewards(state);
     if(levelReward.levels.length||chapterReward.chapters.length){

@@ -45,7 +45,8 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  const horse=station('paddock',cloneModel('horse_002',17.9,-8.5,{width:2.2,rotation:-.7}),17.9,-8.5);
  const pig=cloneModel('pig_001',17.9,-5.6,{width:1.3,rotation:1.2});pig.userData.activity='paddock';
  moving.push({obj:horse,x:17.9,z:-8.5,kind:'animal',phase:0},{obj:pig,x:17.9,z:-5.6,kind:'animal',phase:3});
- scenery('fence_001',19.5,-7,{width:5.8,rotation:Math.PI/2});scenery('water_001',18.4,-10.6,{width:1.4});scenery('hay_002',17.7,-3.2,{width:1.8});
+ // Three standard 2.2-unit segments, like every other fence on the farm (one 5.8-wide piece made the posts oversized).
+ for(const z of [-9.2,-7,-4.8])scenery('fence_001',19.5,z,{width:2.2,rotation:Math.PI/2});scenery('water_001',18.4,-10.6,{width:1.4});scenery('hay_002',17.7,-3.2,{width:1.8});
  // A few bees, kept away from the crop labels.
  for(let i=0;i<5;i++){const bee=new THREE.Mesh(new THREE.SphereGeometry(.06,4,3),new THREE.MeshBasicMaterial({color:0xf5c64c}));scene.add(bee);moving.push({obj:bee,kind:'bee',phase:i*1.8});}
  function attach(id,obj){return station(id,obj,obj.position.x,obj.position.z);}

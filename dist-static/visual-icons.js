@@ -4,14 +4,17 @@ const sheets=[
  {file:'goods-v2.png',columns:4,keys:['grainmeal','flour','feed','fertilizer','salad','pickles','oil','milk','eggs','cheese','bread','pie','vegetables','tractor','silo','cart']},
  {file:'interface-v2.png',columns:4,keys:['farm','estate','buildings','market','gift','quests','boost','trophy','coins','diamonds','seeds','water','harvest','care','hammer','xp']}
 ];
-const pictures={'helping-hand':'helping-hand','collect-all':'collect-all','instant-harvest':'instant-harvest',farmhouse:'farmhouse',mill:'mill',dairy:'dairy',coop:'coop',bakery:'bakery',packing:'packing',windmill:'windmill',stall:'stall',chores:'chores',honey:'honey'};
+const pictures={'family-weekly-order':'family-weekly-order','family-members':'family-members','family-tournament':'family-tournament','family-management':'family-management',familyhall:'farmhouse','helping-hand':'helping-hand','collect-all':'collect-all','instant-harvest':'instant-harvest',farmhouse:'farmhouse',mill:'mill',dairy:'dairy',coop:'coop',bakery:'bakery',packing:'packing',windmill:'windmill',stall:'stall',chores:'chores',honey:'honey'};
 // Individual painted illustrations keep each chore recognisable at mobile sizes.
 for(const id of ['weeds','troughs','sorting','fences','irrigation','harvestfair'])pictures[`chore-${id}`]=`chore-${id}`;
 for(const id of ['greenhouse','apiary','paddock','workshop'])pictures[`activity-${id}`]=`activity-${id}`;
 for(const id of ['apples','berries','greenbeans','applejuice','applepie','berrypreserves','berrytart','stew','juicepress','preserves','kitchen'])pictures[id]=id;
 for(const id of ["orchardjuice", "berrysmoothie", "applecompote", "applevinegar", "pickledbeans", "beangratin", "orchardsalad", "berrycheesecake", "harvesthamper"])pictures[id]=id;
+// Painted-style vector illustrations for the few interface items that had no artwork yet.
+const svgArt=new Set(['guide','sound','streak']);
+for(const id of svgArt)pictures[id]=id;
 const spriteEntries=Object.fromEntries(sheets.flatMap(sheet=>sheet.keys.map((key,index)=>[key,{...sheet,index}])));
-const symbolMap={salad:'salad',amphora:'pickles',milk:'milk',egg:'eggs',sandwich:'cheese',croissant:'bread','cake-slice':'pie','package-check':'vegetables','package-open':'feed',droplet:'oil',gem:'diamonds',coins:'coins',star:'xp',droplets:'water',scissors:'harvest',shovel:'care',leaf:'care',gift:'gift','clipboard-check':'quests',trophy:'trophy',medal:'trophy',sparkles:'boost',sprout:'seeds',hammer:'hammer',wheat:'wheat',house:'farm',factory:'buildings',landmark:'estate',store:'market',tractor:'tractor',warehouse:'silo',truck:'cart',wind:'windmill','shopping-basket':'vegetables','land-plot':'seeds','circle-fading-arrow-up':'hammer',flag:'quests'};
+const symbolMap={salad:'salad',amphora:'pickles',milk:'milk',egg:'eggs',sandwich:'cheese',croissant:'bread','cake-slice':'pie','package-check':'vegetables','package-open':'feed',droplet:'oil',gem:'diamonds',coins:'coins',star:'xp',droplets:'water',scissors:'harvest',shovel:'care',leaf:'care',gift:'gift','clipboard-check':'quests',trophy:'trophy',medal:'trophy',sparkles:'boost',sprout:'seeds',hammer:'hammer',wheat:'wheat',house:'farm',factory:'buildings',landmark:'estate',store:'market',tractor:'tractor',warehouse:'silo',truck:'cart',wind:'windmill','shopping-basket':'vegetables','land-plot':'seeds','circle-fading-arrow-up':'hammer',flag:'quests','circle-help':'guide','volume-2':'sound',flame:'streak'};
 export const ART_KEYS=Object.freeze([...Object.keys(spriteEntries),...Object.keys(pictures)]);
 export function art(key,extra=''){
  const entry=spriteEntries[key];
@@ -19,7 +22,7 @@ export function art(key,extra=''){
   const {file,columns,index}=entry,x=index%columns/(columns-1)*100,y=Math.floor(index/columns)/(columns-1)*100;
   return `<span class="game-art game-art-sprite ${extra}" data-art="${key}" aria-hidden="true" style="--art-sheet:url('/assets/icons/${file}');--art-size:${columns*100}%;--art-position:${x}% ${y}%"></span>`;
  }
- if(pictures[key])return `<img class="game-art ${extra}" data-art="${key}" src="/assets/icons/${pictures[key]}.png" alt="" draggable="false">`;
+ if(pictures[key])return `<img class="game-art ${extra}" data-art="${key}" src="/assets/icons/${pictures[key]}.${svgArt.has(key)?'svg':'png'}" alt="" draggable="false">`;
  return '';
 }
 export function refreshArt(){

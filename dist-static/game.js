@@ -1,3 +1,4 @@
+import {createFamilyUI} from './family-ui.js';
 import {renderFarmGuide} from './farm-guide.js';
 import {createProgressionUI,progressionSnapshot,progressionChange} from './progression-ui.js';
 import {buildingEligible,featureUnlocked,featureUnlockHint} from './farm-state.js';
@@ -17,6 +18,7 @@ import { createQuestsUI } from './quests-ui.js';
 import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
+import { createScenePolish } from './scene-polish.js';
 import { createActivitiesUI } from './activities-ui.js';
 import { ACTIVE_STATIONS } from './farm-state.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
@@ -31,8 +33,8 @@ let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
-const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
-let progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI;
+const familyDecor=[],models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+let familyUI,progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
@@ -47,6 +49,8 @@ const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','p
 modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
 modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','stall_001','case_001','dray_002','dray_004','prop_029');
 modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS);
+modelNames.push('coop_002','mountain_001','mountain_007');
+modelNames.push('house_008','tower_008','pointer_002','table_002','garden_bed_002','firewood_001');
 const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
 let toastTimer;
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
@@ -57,7 +61,7 @@ function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
  const obj=entry.object.clone(true),d=entry.size;
  if(width!=null&&depth!=null)obj.scale.set(width/d.x,(height??d.y)/d.y,depth/d.z);
  else {const s=height!=null?height/d.y:width!=null?width/Math.max(d.x,d.z):scale;obj.scale.setScalar(s);}
- obj.position.set(x,y,z);obj.rotation.y=rotation;scene.add(obj);return obj;
+ obj.position.set(x,y,z);obj.rotation.y=rotation;obj.userData.model=name;scene.add(obj);return obj;
 }
 function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
@@ -100,6 +104,17 @@ function decorate(){
  addBuilding('juicepress',-1,-20.1,{width:4,height:2.8,depth:3.5,rotation:Math.PI/2});
  addBuilding('preserves',-15.2,-18.6,{width:4.2,height:3,depth:3.8,rotation:Math.PI/2});
  addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
+ // North-west square, clear of crop expansions and the north-south path at x=-6.
+ addBuilding('familyhall',-9.3,-20.5,{width:4.2,rotation:Math.PI/2});
+ {
+  // Independent decor is excluded from the raycast target lists.
+  for(const [name,x,z,options] of [
+   ['tower_008',-12.3,-24,{height:3.3}],['pointer_002',-6.8,-18.2,{height:1.3}],
+   ['table_002',-9.6,-16.9,{width:1.5}],['garden_bed_002',-11.8,-17,{width:1.3,height:.28,depth:1.6}],
+   ['firewood_001',-12.2,-20.6,{width:1.1}]
+  ]){const decor=cloneModel(name,x,z,options);familyDecor.push(decor);}
+ }
+
  for(const [x,z] of [[-1,-20.1],[-15.2,-18.6],[-12.4,18.2]])patch(x,z,5.1,4.8,0xb6bd88,.008);
  // Both the mill body and its moving sails are original parts from the supplied pack.
  const sail=cloneModel('tower_020',0,0,{height:5.8});scene.remove(sail);
@@ -130,6 +145,7 @@ function decorate(){
  addUtility('stall','stall_002',-11.3,-2.6,{width:2.9,rotation:.15});
  cloneModel('prop_023',-9.2,-2.7,{width:.8});
  addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
+ {const pen=buildingViews.get('coop').object,house=cloneModel('coop_002',13,-9.5,{width:1.8});pen.attach(house);}
  fenceLine(8,-12.5,5);fenceLine(7,-11.4,4,'z');fenceLine(16.6,-11.4,4,'z');fenceLine(9.2,-3.6,4);
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
  fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
@@ -267,7 +283,7 @@ function updateUI(){
  $('level-name').textContent=['Rookie farmer','Green thumb','Market regular','Harvest hero','Farm tycoon'][Math.min(lvl-1,4)];
  const count=Object.values(state.inventory).reduce((a,b)=>a+b,0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target);
- beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();boosts?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();
+ familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();boosts?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
@@ -381,12 +397,13 @@ function addBuilding(key,x,z,options){
  buildingViews.set(key,{object,hit,outline,label,x,z,height});
 }
 function positionBuildingLabels(){
+ for(const decor of familyDecor)decor.visible=buildingEligible(state,'familyhall');
  if(windmillRotor)windmillRotor.visible=buildingEligible(state,'windmill');
  farmLife?.position(camera,world.clientWidth,world.clientHeight,farmNow());
  for(const [key,v] of utilityViews){v.object.visible=featureUnlocked(state,key);const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=!v.object.visible||Math.abs(p.x)>.94||Math.abs(p.y)>.82;}
  for(const [key,v]of buildingViews){v.object.visible=buildingEligible(state,key);v.hit.visible=v.object.visible;const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=!v.object.visible||Math.abs(p.x)>.92||Math.abs(p.y)>.82;v.label.classList.toggle('ready',economy.status(key).kind==='ready');}
 }
-function expandVisuals(){if(!ready)return;createPlots();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();}
+function expandVisuals(){if(!ready)return;createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();}
 function bindUI(){
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
@@ -403,7 +420,8 @@ function bindUI(){
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
  $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'harvest',4:'tend'}[e.key];if(t){e.preventDefault();setTool(t);}});
- economy=createEconomyUI({state,onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
+ familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
+ economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
@@ -430,7 +448,7 @@ function frame(now){
  if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();activities.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
  if(!reducedMotion){
   if(windmillRotor)windmillRotor.rotation.z-=dt*.28;
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());scenePolish?.animate(t);
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -475,7 +493,7 @@ async function init(){
    object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});
    models.set(name,{object:group,size});loaded++;loadingUI.modelsReady(loaded);
   },4)]);
-  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));measureFarm();resize();icons();
+  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});measureFarm();resize();icons();
   renderer.domElement.addEventListener('pointermove',e=>{
    if(e.pointerType!=='mouse'||e.buttons){highlight(-1);$('tooltip').hidden=true;return;}
    const target=pointerTarget(e);highlight(target?.id??-1);const tooltip=$('tooltip');

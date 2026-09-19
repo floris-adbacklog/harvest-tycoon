@@ -1,4 +1,4 @@
-import {guidedFarm,featureUnlocked} from './farm-state.js';
+import {guidedFarm,featureUnlocked,FAMILY_MIN_LEVEL} from './farm-state.js';
 import {art,refreshArt} from './visual-icons.js';
 
 export function renderFarmGuide(state){
@@ -11,7 +11,7 @@ export function renderFarmGuide(state){
   ['helping-hand','Lend a hand',`${featureUnlocked(state,'activities')?'Tap the Greenhouse, Apiary, animals or Tool workshop.':'Sell an egg to unlock jobs at the Greenhouse, Apiary, animals and Tool workshop.'} Help the three items that need attention to earn rewards. Visit all four stops for a bonus.`],
   ['hammer','Grow your farm','Upgrade buildings with coins or diamonds, and visit the Farmhouse for more fields. Later, discover the tractor, silo research, fertilizer and farm chores.'],
   ['diamonds','A little extra help','Spend diamonds on useful boosts, finishing a crop or batch, or replacing an order. The shop shows exactly what each option does and costs.'],
-  ['quests','Celebrate your progress','Finish the Beginner guide, complete quests and level up for rewards. Estate has six chapters with XP and diamonds, followed by ongoing commissions.']
+  ['quests','Celebrate your progress',`Finish quests and level up for rewards. At level ${FAMILY_MIN_LEVEL}, visit the Family Hall to share weekly orders and enter the Family Tournament. Estate has six chapters, followed by ongoing commissions.`]
  ];
  document.querySelector('#help-dialog .help-steps').innerHTML=steps.map(([icon,title,copy])=>`<li>${art(icon)}<div><strong>${title}</strong><p>${copy}</p></div></li>`).join('');
  refreshArt();

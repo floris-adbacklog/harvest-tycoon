@@ -1,3 +1,4 @@
+import {createFamilyUI} from './family-ui.js';
 import {renderFarmGuide} from './farm-guide.js';
 import {createProgressionUI,progressionSnapshot,progressionChange} from './progression-ui.js';
 import {buildingEligible,featureUnlocked,featureUnlockHint} from './farm-state.js';
@@ -32,8 +33,8 @@ let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
-const models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
-let progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
+const familyDecor=[],models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+let familyUI,progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
@@ -49,6 +50,7 @@ modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023',
 modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','stall_001','case_001','dray_002','dray_004','prop_029');
 modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS);
 modelNames.push('coop_002','mountain_001','mountain_007');
+modelNames.push('house_008','tower_008','pointer_002','table_002','garden_bed_002','firewood_001');
 const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
 let toastTimer;
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
@@ -102,6 +104,17 @@ function decorate(){
  addBuilding('juicepress',-1,-20.1,{width:4,height:2.8,depth:3.5,rotation:Math.PI/2});
  addBuilding('preserves',-15.2,-18.6,{width:4.2,height:3,depth:3.8,rotation:Math.PI/2});
  addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
+ // North-west square, clear of crop expansions and the north-south path at x=-6.
+ addBuilding('familyhall',-9.3,-20.5,{width:4.2,rotation:Math.PI/2});
+ {
+  // Independent decor is excluded from the raycast target lists.
+  for(const [name,x,z,options] of [
+   ['tower_008',-12.3,-24,{height:3.3}],['pointer_002',-6.8,-18.2,{height:1.3}],
+   ['table_002',-9.6,-16.9,{width:1.5}],['garden_bed_002',-11.8,-17,{width:1.3,height:.28,depth:1.6}],
+   ['firewood_001',-12.2,-20.6,{width:1.1}]
+  ]){const decor=cloneModel(name,x,z,options);familyDecor.push(decor);}
+ }
+
  for(const [x,z] of [[-1,-20.1],[-15.2,-18.6],[-12.4,18.2]])patch(x,z,5.1,4.8,0xb6bd88,.008);
  // Both the mill body and its moving sails are original parts from the supplied pack.
  const sail=cloneModel('tower_020',0,0,{height:5.8});scene.remove(sail);
@@ -270,7 +283,7 @@ function updateUI(){
  $('level-name').textContent=['Rookie farmer','Green thumb','Market regular','Harvest hero','Farm tycoon'][Math.min(lvl-1,4)];
  const count=Object.values(state.inventory).reduce((a,b)=>a+b,0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target);
- beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();boosts?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();
+ familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();boosts?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
@@ -384,6 +397,7 @@ function addBuilding(key,x,z,options){
  buildingViews.set(key,{object,hit,outline,label,x,z,height});
 }
 function positionBuildingLabels(){
+ for(const decor of familyDecor)decor.visible=buildingEligible(state,'familyhall');
  if(windmillRotor)windmillRotor.visible=buildingEligible(state,'windmill');
  farmLife?.position(camera,world.clientWidth,world.clientHeight,farmNow());
  for(const [key,v] of utilityViews){v.object.visible=featureUnlocked(state,key);const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=!v.object.visible||Math.abs(p.x)>.94||Math.abs(p.y)>.82;}
@@ -406,7 +420,8 @@ function bindUI(){
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
  $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'harvest',4:'tend'}[e.key];if(t){e.preventDefault();setTool(t);}});
- economy=createEconomyUI({state,onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
+ familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
+ economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});

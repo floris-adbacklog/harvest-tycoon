@@ -6,7 +6,7 @@ import {fieldPicker,bindFieldPicker} from './field-picker.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const seconds=formatDuration;
-export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate}){
+export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate,onFamily}){
  let currentBuilding=null,marketTab='crops',selectedCrop='wheat',seedFilter='all',lastJobReady='',lastCoinBoost=false,mutating=false;
  let marketSelling=false,renderedMarketDay='',lastMarketDay=utcDay(farmNow());
  const number=n=>n.toLocaleString('en-US');
@@ -18,6 +18,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function itemList(items,requirements=false){return Object.entries(items).map(([key,n])=>`<span class="ingredient ${requirements&&state.inventory[key]<n?'missing':''}">${itemArt(key)}<span>${requirements?`${state.inventory[key]}/${n}`:`${n}×`} ${ITEMS[key].name}</span></span>`).join('');}
  function status(key,now=farmNow()){
   const b=state.buildings[key];if(key==='farmhouse')return {text:`${state.plots.length} / ${MAX_PLOTS} fields`,kind:'farm'};
+  if(key==='familyhall')return {text:buildingEligible(state,key)?'Your weekly order & family':'Reach level '+BUILDINGS[key].minLevel,kind:'family'};
   const jobs=productionJobs(b),slots=productionSlots(b.level),ready=jobs.filter(j=>now>=j.readyAt).length;
   if(!buildingUnlocked(state,key))return {text:!buildingEligible(state,key)?buildingUnlockHint(state,key):`Open for ${number(BUILDINGS[key].buildCost)} coins`,kind:'locked'};
   if(!jobs.length)return {text:`Ready to work · 0 / ${slots} slots`,kind:'idle'};
@@ -37,17 +38,17 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  }
  function openSeeds(){renderSeeds();show('seed-dialog');}
  function renderCatalog(){
-  $('building-catalog').innerHTML=Object.entries(BUILDINGS).map(([key,b])=>{const s=status(key);return `<button class="building-card" data-open-building="${key}"><img src="/assets/icons/${key}.png" alt=""><span class="building-card-info"><strong>${b.name}</strong><small>Level ${state.buildings[key].level}${key==='farmhouse'?' · Expand your fields':` · ${Object.values(RECIPES).filter(r=>r.building===key).length} recipes`}</small><span class="building-status ${s.kind}" data-building-status="${key}">${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
+  $('building-catalog').innerHTML=Object.entries(BUILDINGS).map(([key,b])=>{const s=status(key);return `<button class="building-card" data-open-building="${key}"><img src="/assets/icons/${key==='familyhall'?'farmhouse':key}.png" alt=""><span class="building-card-info"><strong>${b.name}</strong><small>${key==='familyhall'?'Weekly orders & tournament':`Level ${state.buildings[key].level}${key==='farmhouse'?' · Expand your fields':` · ${Object.values(RECIPES).filter(r=>r.building===key).length} recipes`}`}</small><span class="building-status ${s.kind}" data-building-status="${key}">${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
   if(guidedFarm(state))foldLocked($('building-catalog'),'[data-open-building]',b=>!buildingEligible(state,b.dataset.openBuilding),'Buildings to unlock');
   $('building-catalog').querySelectorAll('[data-open-building]').forEach(b=>b.addEventListener('click',()=>openBuilding(b.dataset.openBuilding)));icons();
  }
  function openBuildings(){renderCatalog();show('buildings-dialog');}
- function openBuilding(key){if(!Object.hasOwn(BUILDINGS,key))return;currentBuilding=key;renderBuilding();show('building-dialog');}
+ function openBuilding(key){if(!Object.hasOwn(BUILDINGS,key))return;if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHint(state,key));return;}onFamily();return;}currentBuilding=key;renderBuilding();show('building-dialog');}
  function renderBuilding(){
   if(!currentBuilding)return;
   const picker=$('fertilizer-field-picker'),pickerOpen=picker?.open,pickerScroll=picker?.querySelector('.field-picker-options')?.scrollTop??0;
   const key=currentBuilding,b=BUILDINGS[key],bs=state.buildings[key];
-  let content=`<div class="building-hero"><div class="building-image"><img src="/assets/icons/${key}.png" alt=""></div><div><span class="eyebrow">LEVEL ${bs.level}${key==='farmhouse'?' · YOUR HOMESTEAD':' · FARM PRODUCTION'}</span><h2 id="building-title">${b.name}</h2><p>${b.tagline}</p></div></div>`;
+  let content=`<div class="building-hero"><div class="building-image"><img src="/assets/icons/${key==='familyhall'?'farmhouse':key}.png" alt=""></div><div><span class="eyebrow">LEVEL ${bs.level}${key==='farmhouse'?' · YOUR HOMESTEAD':' · FARM PRODUCTION'}</span><h2 id="building-title">${b.name}</h2><p>${b.tagline}</p></div></div>`;
   if(key==='farmhouse'){
    const cost=expansionCost(state),materials=expansionMaterials(state),hasMaterials=Object.entries(materials).every(([k,n])=>state.inventory[k]>=n);
    content+=`<div class="expansion-panel"><div class="expansion-summary"><span><i data-lucide="land-plot"></i> Your growing space</span><strong>${state.plots.length}<small> / ${MAX_PLOTS} fields</small></strong></div><div class="field-preview" aria-hidden="true">${Array.from({length:MAX_PLOTS},(_,i)=>`<span class="${i<state.plots.length?'unlocked':'locked'}"><i data-lucide="${i<state.plots.length?'sprout':'lock-keyhole'}"></i></span>`).join('')}</div><h3>${cost?'Make room for one more.':'Your farm is fully expanded.'}</h3><p>${cost?'Unlock one field at a time. Each new field needs more coins and a different mix of farm supplies.':'Twenty-four fields, twelve crops and room to build a lasting estate.'}</p>${cost!==null?`<div class="ingredients expansion-materials">${itemList(materials,true)}</div>`:''}<button id="expand-fields" class="primary-button" ${cost===null||state.coins<cost||!hasMaterials?'disabled':''}>${cost?`Unlock 1 field · ${cost} coins`:'All fields unlocked'}<i data-lucide="${cost?'plus':'check'}"></i></button>${cost!==null&&state.coins<cost?`<small class="shortfall">You need ${cost-state.coins} more coins.</small>`:''}</div>`;
