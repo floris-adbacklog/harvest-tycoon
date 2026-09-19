@@ -439,17 +439,21 @@ export function collectAllProduction(state,building,now=Date.now()){
  }
  return result;
 }
-export function upgradeBuilding(state,building){
+export const DIAMOND_UPGRADE_COSTS=Object.freeze([25,45,75,110,160,225,300,400,525]);
+export function diamondUpgradeCost(state,building){if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')return null;return DIAMOND_UPGRADE_COSTS[state.buildings[building].level-1]??null;}
+export function upgradeBuilding(state,building,currency='coins',expectedCost,expectedLevel){
  if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')throw new Error('Choose a production building.');
  if(!buildingUnlocked(state,building))throw new Error('Open this building before upgrading it.');
- const b=state.buildings[building],cost=upgradeCost(state,building);
+ if(!['coins','diamonds'].includes(currency))throw new Error('Choose coins or diamonds.');
+ const b=state.buildings[building],cost=currency==='diamonds'?diamondUpgradeCost(state,building):upgradeCost(state,building);
+ if(currency==='diamonds'&&(!featureUnlocked(state,'boosts')||expectedCost!==cost||expectedLevel!==b.level))throw new Error('Review the current diamond upgrade price and building level.');
  if(cost===null)throw new Error('This building is fully upgraded.');
  if(productionJobs(b).length)throw new Error('Finish and collect all current batches before upgrading.');
- if(state.coins<cost)throw new Error(`You need ${cost} coins for this upgrade.`);
- state.coins-=cost;b.level++;state.stats.upgrades++;state.xp+=15;
- if(state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
+ if(state[currency]<cost)throw new Error(`You need ${cost} ${currency} for this upgrade.`);
+ state[currency]-=cost;b.level++;state.stats.upgrades++;state.xp+=15;
+ if(currency==='coins'&&state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
  if(building==='windmill')state.stats.windmill_upgrades=(state.stats.windmill_upgrades??0)+1;
- return {building,level:b.level,cost};
+ return {building,level:b.level,cost,currency};
 }
 export function expandFarm(state){
  const cost=expansionCost(state),materials=expansionMaterials(state);
@@ -479,6 +483,17 @@ export const DAILY_REWARDS=[40,55,70,85,100,120,160];
 export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
 export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]);
 export const DIAMOND_PACKS=Object.freeze([{amount:50,price:'€1.99'},{amount:300,price:'€9.99'},{amount:1000,price:'€24.99'}]);
+export const SINGLE_BATCH_COST=20;
+export function finishSingleBatch(state,building,jobId,expectedCost,now=Date.now()){
+ if(expectedCost!==SINGLE_BATCH_COST)throw new Error('The price has changed. Review the current price.');
+ if(!Object.hasOwn(BUILDINGS,building)||!buildingUnlocked(state,building))throw new Error('Choose an open production building.');
+ const job=productionJobs(state.buildings[building]).find(j=>j.id===jobId);
+ if(!job||job.readyAt<=now)throw new Error('Choose a batch that is still running.');
+ if(state.diamonds<SINGLE_BATCH_COST)throw new Error(`You need ${SINGLE_BATCH_COST} diamonds.`);
+ state.diamonds-=SINGLE_BATCH_COST;job.readyAt=now;
+ state.stats.boosts_used=(state.stats.boosts_used??0)+1;
+ return {building,jobId,cost:SINGLE_BATCH_COST,affected:1};
+}
 export const SINGLE_CROP_COST=10;
 export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
  if(expectedCost!==SINGLE_CROP_COST)throw new Error('The price has changed. Reload the game.');
@@ -609,12 +624,35 @@ function selectDailyOrders(state,day){
  const commissions=COMMISSION_POOL.filter(o=>o.minLevel===commissionLevel&&availableDaily(state,o));
  return [['quick',quick],['village',village],['commission',commissions]].map(([tier,pool],slot)=>{
   const candidates=pool.length?pool:quick,unused=candidates.filter(o=>!used.has(o.title)),choices=unused.length?unused:candidates,template=choices[(day+slot)%choices.length];used.add(template.title);
+  return quoteTierOrder(template,tier,now,calendarHash(`orders-v1:${day}:${tier}`));
+ });
+}
+function quoteTierOrder(template,tier,now,roll){
   const input=Object.fromEntries(Object.entries(template.input).map(([k,n])=>[k,tier==='village'?n*2:n]));
-  const band=DELIVERY_TIERS[tier],roll=calendarHash(`orders-v1:${day}:${tier}`),bonus=band.minBonus+roll%(band.maxBonus-band.minBonus+1);
+  const band=DELIVERY_TIERS[tier],bonus=band.minBonus+roll%(band.maxBonus-band.minBonus+1);
   const value=marketValue(input,now),baseValue=Object.entries(input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
   const diamonds=tier==='quick'?1:tier==='village'?3+roll%3:Math.min(18,8+Math.floor(baseValue/2000)+roll%3);
   return {...template,input,tier,customer:template.customer??(tier==='quick'?'Your neighbours':'Village trading post'),story:template.story??(tier==='quick'?'A small basket to brighten someone’s day.':'The village needs a selection of your farm-made goods.'),bonus,marketValue:value,coins:Math.ceil(value*(100+bonus)/100),diamonds,xp:tier==='village'?template.xp*2:template.xp};
- });
+}
+export const REPLACE_ORDER_COST=5;
+export const DAILY_ORDER_REPLACEMENTS=2;
+export function replacementOptions(state,id,now=Date.now()){
+ const order=state.daily.orderBoard[id];if(!order?.tier||state.daily.orders.includes(id))return [];
+ const used=new Set(state.daily.orderBoard.map(o=>o.title)),pool=order.tier==='commission'?COMMISSION_POOL:ORDER_POOL;
+ return pool.filter(o=>o.minLevel===order.minLevel&&!used.has(o.title)&&availableDaily(state,o)&&(order.tier!=='village'||Object.keys(o.input).some(k=>k!=='honey'&&Object.hasOwn(PRODUCTS,k))));
+}
+export function replaceOrder(state,id,day,revision,expectedCost,now=Date.now()){
+ if(day!==utcDay(now)||state.daily.date!==day)throw new Error('A new day has started. Review the current orders.');
+ if(!Number.isInteger(id)||id<0||id>=state.daily.orderBoard.length)throw new Error('Choose an order.');
+ if(revision!==(state.daily.orderRevisions[id]??0))throw new Error('This order has changed. Review the current order.');
+ if(expectedCost!==REPLACE_ORDER_COST)throw new Error('The price has changed. Review the current price.');
+ if(state.daily.orders.includes(id))throw new Error('Delivered orders cannot be replaced.');
+ if(state.daily.replacements>=DAILY_ORDER_REPLACEMENTS)throw new Error('You have used both replacements today.');
+ const options=replacementOptions(state,id,now);if(!options.length)throw new Error('No alternative order is available for this difficulty yet.');
+ if(state.diamonds<REPLACE_ORDER_COST)throw new Error(`You need ${REPLACE_ORDER_COST} diamonds.`);
+ const roll=calendarHash(`replace:${day}:${id}:${state.daily.replacements}`),order=quoteTierOrder(options[roll%options.length],state.daily.orderBoard[id].tier,now,roll);
+ state.diamonds-=REPLACE_ORDER_COST;state.daily.orderBoard[id]=order;state.daily.orderRevisions[id]=(state.daily.orderRevisions[id]??0)+1;state.daily.replacements++;
+ return {id,title:order.title,cost:REPLACE_ORDER_COST,remaining:DAILY_ORDER_REPLACEMENTS-state.daily.replacements};
 }
 export function utcDay(now=Date.now()){return new Date(now).toISOString().slice(0,10);}
 export function dayNumber(now=Date.now()){return Math.floor(now/DAY_MS);}
@@ -660,6 +698,7 @@ export function normalizeFarm(state,now=Date.now()){
  const existingDay=state.daily?.date===day;
  if(!existingDay)state.daily={date:day,baseline:{...state.stats},claimed:[],orders:[],bonusClaimed:false};
  const d=dayNumber(now);
+ state.daily.replacements??=0;state.daily.orderRevisions??={};
  state.daily.tasks??=oldVersion<10&&existingDay?LEGACY_DAILY_POOLS.map((pool,id)=>({...pool[(d+id)%pool.length]})):selectDailyTasks(state,d);
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  return state;
@@ -671,7 +710,7 @@ export function dailyTasks(state,now=Date.now()){
 }
 export function dailyOrders(state,now=Date.now()){
  normalizeFarm(state,now);const d=dayNumber(now);
- return state.daily.orderBoard.map((order,id)=>({...order,diamonds:deliveryDiamonds(order),id,done:state.daily.orders.includes(id)}));
+ return state.daily.orderBoard.map((order,id)=>({...order,diamonds:deliveryDiamonds(order),id,revision:state.daily.orderRevisions[id]??0,done:state.daily.orders.includes(id)}));
 }
 export function claimDaily(state,id,day,now=Date.now()){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('A new day has started. Check the fresh challenges.');
@@ -691,9 +730,10 @@ export function checkIn(state,now=Date.now()){
  state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
  return {coins,diamonds,streak:state.login.streak,xp:10};
 }
-export function deliverOrder(state,id,day,now=Date.now()){
+export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('The order board has refreshed. Pick a new order.');
  const order=dailyOrders(state,now).find(o=>o.id===id);if(!order)throw new Error('Choose an order.');if(order.done)throw new Error('This order is already delivered.');
+ if(revision!==order.revision)throw new Error('This order has changed. Review the current order before delivering.');
  if(Object.entries(order.input).some(([k,n])=>state.inventory[k]<n))throw new Error('Gather the ingredients for this order first.');
  for(const[k,n]of Object.entries(order.input))state.inventory[k]-=n;
  state.daily.orders.push(id);state.coins+=order.coins;state.xp+=order.xp;state.stats.deliveries++;state.stats.earned+=order.coins;
@@ -750,11 +790,13 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  return result;
 }
 function dispatchFarmAction(state,action,now,random){
- const gates={activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts'};
+ const gates={finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts'};
  const gate=gates[action.type];if(gate&&!featureUnlocked(state,gate))throw new Error(featureUnlockHint(gate));
  switch(action.type){
   case 'construct':return constructBuilding(state,action.building);
   case 'clear_planting':return clearPlanting(state,action.id,action.expectedPlantedAt);
+  case 'finish_batch':return finishSingleBatch(state,action.building,action.jobId,action.expectedCost,now);
+  case 'replace_order':return replaceOrder(state,action.id,action.day,action.revision,action.expectedCost,now);
   case 'finish_crop':return finishSingleCrop(state,action.id,action.expectedCost,now);
   case 'buy_boost':{
    if(!Object.hasOwn(BOOSTS,action.boost))throw new Error('Choose a valid boost.');
@@ -775,13 +817,13 @@ function dispatchFarmAction(state,action,now,random){
   case 'produce':return startProduction(state,action.recipe,now,action.count);
   case 'collect':return collectProduction(state,action.building,now,action.jobId);
   case 'collect_all':return collectAllProduction(state,action.building,now);
-  case 'upgrade':return upgradeBuilding(state,action.building);
+  case 'upgrade':return upgradeBuilding(state,action.building,action.currency,action.expectedCost,action.expectedLevel);
   case 'expand':return expandFarm(state);
   case 'quest':return claimQuest(state,action.id);
   case 'beginner_claim':return claimBeginnerQuest(state,action.id);
   case 'daily':return claimDaily(state,action.id,action.day,now);
   case 'checkin':return checkIn(state,now);
-  case 'delivery':return deliverOrder(state,action.id,action.day,now);
+  case 'delivery':return deliverOrder(state,action.id,action.day,now,action.revision);
   case 'level_rewards':return claimLevelRewards(state);
   case 'tractor':return useTractor(state,action.mode,action.crop,now);
   case 'silo_upgrade':return upgradeSilo(state);
@@ -867,12 +909,12 @@ export function completeProject(state,now=Date.now()){
 // Small hands-on jobs run alongside crops and production. Only server time and
 // persisted progress determine rewards; the client submits a station and tile.
 export const ACTIVE_STATIONS=Object.freeze({
- greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:20,xp:7,cooldown:180000,item:'lettuce',instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
- apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:26,xp:8,cooldown:240000,item:'honey',instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
- paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:24,xp:7,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
- workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:30,xp:8,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
+ greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:20,xp:28,cooldown:180000,item:'lettuce',instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
+ apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:26,xp:32,cooldown:240000,item:'honey',instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
+ paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:24,xp:28,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
+ workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:30,xp:32,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
 });
-export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:22,xp:10});
+export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:22,xp:40});
 export function activityTargets(station,cycle){
  const offset=(Object.keys(ACTIVE_STATIONS).indexOf(station)+cycle)%6;
  return [0,2,3].map(i=>(i+offset)%6);

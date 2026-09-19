@@ -10,9 +10,10 @@ function complete(s,station,time){
 }
 test('all four hands-on jobs reward once, give useful goods and complete one round',()=>{
  const s=createFarm(now),coins=s.coins,xp=s.xp,inventory={...s.inventory};
- let result;Object.keys(ACTIVE_STATIONS).forEach((id,i)=>{result=complete(s,id,now+i*3000);});
- assert.equal(s.coins-coins,Object.values(ACTIVE_STATIONS).reduce((n,a)=>n+a.coins,ACTIVITY_ROUND_REWARD.coins));
+ let result,levelCoins=0;Object.keys(ACTIVE_STATIONS).forEach((id,i)=>{result=complete(s,id,now+i*3000);levelCoins+=result.levelReward?.coins??0;});
+ assert.equal(s.coins-coins-levelCoins,Object.values(ACTIVE_STATIONS).reduce((n,a)=>n+a.coins,ACTIVITY_ROUND_REWARD.coins));
  assert.equal(s.xp-xp,Object.values(ACTIVE_STATIONS).reduce((n,a)=>n+a.xp,ACTIVITY_ROUND_REWARD.xp));
+ assert.equal(s.xp-xp,160);
  assert.equal(s.inventory.lettuce,inventory.lettuce+1);assert.equal(s.inventory.fertilizer,inventory.fertilizer+1);
  assert.equal(s.inventory.honey,inventory.honey+1);assert.equal(s.inventory.feed,inventory.feed+1);
  for(const station of Object.keys(ACTIVE_STATIONS))assert.equal(s.stats['activity_'+station],1);
@@ -53,5 +54,18 @@ test('repeating one station does not count as visiting all four; idle time award
 test('client-supplied reward fields are ignored and XP boosts apply once',()=>{
  const s=createFarm(now);s.boosts.xpUntil=now+60000;act(s,{type:'activity_start',station:'workshop',coins:999999},now);
  const job=s.activities.jobs.workshop;let result;job.targets.forEach((target,i)=>{result=act(s,{type:'activity_work',station:'workshop',startedAt:now,target,coins:999999,xp:999999},now+(i+1)*700);});
- assert.equal(result.coins,30);assert.equal(result.xp,16);assert.equal(s.activities.completed.workshop,1);
+ assert.equal(result.coins,30);assert.equal(result.xp,64);assert.equal(s.activities.completed.workshop,1);
+});
+
+test('Double XP doubles the full hands-on round without multiplying level rewards',()=>{
+ const s=createFarm(now),coins=s.coins,diamonds=s.diamonds,xp=s.xp;
+ s.boosts.xpUntil=now+60000;let creditedCoins=0,creditedDiamonds=0;
+ Object.keys(ACTIVE_STATIONS).forEach((id,i)=>{
+  const r=complete(s,id,now+i*3000);
+  creditedCoins+=r.levelReward?.coins??0;creditedDiamonds+=r.levelReward?.diamonds??0;
+ });
+ assert.equal(s.xp-xp,320);assert.equal(s.coins-coins,122+creditedCoins);
+ assert.equal(s.diamonds-diamonds,creditedDiamonds);assert.equal(s.activities.rounds,1);
+ const before=structuredClone(s);normalizeFarm(s,now+60000);
+ assert.equal(s.xp,before.xp);assert.equal(s.coins,before.coins);assert.equal(s.diamonds,before.diamonds);
 });
