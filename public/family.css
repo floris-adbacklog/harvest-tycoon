@@ -11,3 +11,4 @@
  #family-button .game-art{width:32px;height:32px}
 }
 #family-button[hidden],#family-dot[hidden],#family-tabs[hidden]{display:none}
+.family-prize-preview{display:flex;align-items:center;gap:14px;padding:18px;margin:20px 0;background:#edf4ec;border:1px solid #cbdac1;border-radius:18px}.family-prize-preview>.game-art{width:42px;height:42px;flex-shrink:0}.family-prize-preview strong{display:block;font-size:18px;line-height:1.3}.family-prize-preview span{display:block;font-size:13px;line-height:1.5;margin-top:5px;color:#637358}.family-prize-preview+.family-your-share{margin-top:14px}.family-rank-prize{font-weight:700;color:#5d7350;text-align:right}.family-rules{border-top:1px solid #e2ddcf;padding:16px 0}.family-rules summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;font-weight:700}.family-rules summary::before{content:'+';font-size:22px;color:#7f886a}.family-rules[open] summary::before{content:'−'}

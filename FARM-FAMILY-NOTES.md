@@ -2,15 +2,25 @@
 
 Built from the attached latest repository (`f022c661-8c63-4c21-8758-ce0a6daeb474.zip`), preserving its newer Claude changes.
 
+## Simpler tournament and guaranteed pool (v3)
+
+Every week has a minimum **15-diamond pool**, growing by contributor count up to 300. A family enters with one current member's first positive contribution. The previous two-member and 2,000-point entry requirements have been removed. Existing contributions count immediately; no player inventory or contribution history was reset.
+
+One participating family receives the whole available pool. With two families, the top-place weights are normalized to 5:3; with three or more, the top three share 50% / 30% / 20%. Whole-diamond remainders are assigned deterministically. Individual weekly reward caps remain in force. Per-family result totals and the personal reward preview show the actual payable amount after caps, using the same calculation as settlement.
+
+The weekly order and tournament pages now show the player's estimated diamond prize prominently. Main instructions are shorter; detailed distribution rules and previous results are collapsed. The English UI retains all four dedicated page icons and the separate Family Hall icon.
+
+Verified the existing live contribution read-only: one family, one contributor, 4,080 points. The new calculation gives 15 diamonds; a local settlement simulation agrees. The live week was not settled early and no rewards were manually credited. The server update is live as `farm-api` version 33. Deploy this ZIP's frontend to see the new screens. No additional SQL is required.
+
 ## Family Hall icon correction (v2)
 
-The Family Hall now has its own generated blue-roofed building icon, `public/assets/icons/familyhall.png`. Both the farm marker and building catalogue use it. The previous Farmhouse alias and catalogue fallback were removed. This is a frontend-only change; Supabase version 32 remains current.
+The Family Hall now has its own generated blue-roofed building icon, `public/assets/icons/familyhall.png`. Both the farm marker and building catalogue use it. The previous Farmhouse alias and catalogue fallback were removed. That icon correction was frontend-only; v3 also updates the tournament server rules.
 
 ## Release status
 
 - Supabase project: `jnmdirvidffzxukbdmij`.
 - Migration `farm_family_cooperative_orders` applied successfully.
-- `farm-api` deployed as **version 32**, status **ACTIVE**, JWT verification enabled.
+- `farm-api` deployed as **version 33**, status **ACTIVE**, JWT verification enabled.
 - `harvest_commit_farm` was not replaced. Its definition hash stayed `3aee1c7fbd773babbe9017a3f543ba16` before and after deployment/testing.
 - The frontend is supplied in this ZIP. Copy the repository contents into the existing GitHub project and deploy using its existing Vercel configuration (`npm run build:static`). No further SQL/server deployment is needed for this release.
 - The ZIP also contains a matching `dist-static/` build. Never upload `node_modules` or local secrets.
@@ -39,10 +49,11 @@ See the generated table below for `FAMILY_CONFIG`. Times are milliseconds. If in
 | `RENAME_COOLDOWN_MS` | 604800000 |
 | `ATTEMPTS_PER_HOUR` | 10 |
 | `EXTRA_POINTS_CAP` | 30000 |
+| `POOL_MIN` | 15 |
 | `POOL_PER_ACTIVE_PLAYER` | 5 |
 | `POOL_MAX` | 300 |
 | `PLAYER_WEEK_DIAMOND_CAP` | 25 |
-| `TOURNAMENT_MIN_POINTS` | 2000 |
+| `TOURNAMENT_MIN_POINTS` | 1 |
 | `ORDER_COIN_MULTIPLIER` | 1.25 |
 | `ORDER_XP_PER_VALUE` | 0.01 |
 | `ORDER_DIAMOND_BASE` | 1 |
@@ -57,7 +68,7 @@ The four deterministic order templates have four lines each: one crop, two craft
 
 Order coins are each eligible player's **own order contribution value × 0.8 × 1.25**, rather than a full order payout to every member. Order XP is their own contribution value / 100. Eligibility for an order reward requires 500 points specifically from **order goods**; extras are only for tournament points, as requested. Eligible contributors also split four completion diamonds. Tournament eligibility uses all contribution points and current membership at settlement.
 
-Leaving does not erase goods already supplied or earned reward entitlements. Order contributors can claim earned order rewards after leaving. Tournament eligibility is checked at settlement, before the first new-week membership mutation. Weekly diamond caps include both order and tournament entitlements, whether claimed yet or not. Claims can trigger the existing automatic level rewards separately. Missing ranks and capped leftovers are not redistributed to other ranks.
+Leaving does not erase goods already supplied or earned reward entitlements. Order contributors can claim earned order rewards after leaving. Tournament eligibility is checked at settlement, before the first new-week membership mutation. Weekly diamond caps include both order and tournament entitlements, whether claimed yet or not. Claims can trigger the existing automatic level rewards separately. Empty podium places are redistributed proportionally among occupied winning places. Leftovers from individual reward caps are not redistributed to other ranks.
 
 ## API
 
@@ -95,8 +106,9 @@ Lazy settlement is performed on the first family read/action after a week ends, 
 
 ## Verification and limitations
 
-- Baseline: 201 tests passed before this work. Final: **222 tests passed**, zero failures.
+- Baseline: 201 tests passed before this work. Final: **226 tests passed**, zero failures.
 - Complete output: `FARM-FAMILY-TEST-OUTPUT.txt`.
+- New tournament tests cover the guaranteed minimum, solo and partial-order participation, two-family redistribution, top-three prizes, preview/settlement agreement, combined weekly caps and idempotent claims.
 - Static production build passed; output: `FARM-FAMILY-BUILD-OUTPUT.txt`.
 - SQL tests executed against Supabase inside one transaction ending in ROLLBACK: create, exact inventory deduction, stale revision, request replay, overfill rollback, completion entitlement, single claim, repeated claim rollback, RLS/ACL, action activity stamp and protected function checks. No test users, families, receipts or claims remain.
 - Generate a fresh rollback-only SQL test with `node scripts/test-family-sql.mjs <output.sql>`; run it with administrative test access. Its generated IDs and UTC week are fresh for that run.

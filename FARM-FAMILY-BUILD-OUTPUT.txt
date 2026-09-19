@@ -12,5 +12,5 @@ public/cloud/leaderboard-BozDYht-.js    7.70 kB │ gzip:  2.28 kB
 public/cloud/game-cloud.js             19.52 kB │ gzip:  6.67 kB
 public/cloud/cloud.js                 279.41 kB │ gzip: 65.10 kB
 
-✓ built in 297ms
+✓ built in 721ms
 Standalone static game ready in dist-static/. No application server is required.
