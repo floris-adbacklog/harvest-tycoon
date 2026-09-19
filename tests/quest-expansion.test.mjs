@@ -7,7 +7,7 @@ test('new quests append to old IDs and keep beginner and claimed progress',()=>{
  s.activities.completed={greenhouse:10,apiary:5,paddock:10,workshop:10};s.activities.rounds=3;s.siloLevel=3;
  for(const q of QUESTS.slice(41))delete s.stats[q.stat];
  normalizeFarm(s,now);assert.deepEqual(s.claimed,[0,31,40]);assert.equal(s.onboarding.rewardClaimed,true);
- assert.equal(QUESTS.length,72);assert.equal(QUESTS[31].title,'A lifelong grower');assert.equal(QUESTS[40].title,'Pumpkin perfection');
+ assert.equal(QUESTS.length,85);assert.equal(QUESTS[31].title,'A lifelong grower');assert.equal(QUESTS[40].title,'Pumpkin perfection');
  assert.equal(s.stats.activity_apiary,5);assert.equal(s.stats.activity_rounds,3);assert.equal(s.stats.silo_upgrades,3);
  const id=QUESTS.findIndex(q=>q.title==='A taste of honey');act(s,{type:'quest',id},now);
  assert.throws(()=>act(s,{type:'quest',id},now),/already/);
@@ -32,19 +32,19 @@ test('old daily progress and order identities survive the migration until midnig
  const snapshot=JSON.stringify(s.daily);normalizeFarm(s,now);assert.equal(JSON.stringify(s.daily),snapshot);
 });
 test('daily rotation covers accessible orders without locked chores or parallel goals for starters',()=>{
- assert.equal(DAILY_POOLS.flat().length,28);assert.equal(ORDER_POOL.length,24);
+ assert.equal(DAILY_POOLS.flat().length,36);assert.equal(ORDER_POOL.length,28);
  const tasksSeen=new Set(),ordersSeen=new Set();
  for(let day=0;day<180;day++){
   const t=now+day*DAY_MS,s=createFarm(t);
   for(const q of dailyTasks(s,t)){assert.ok(!q.chore);assert.ok(!q.parallel);assert.ok((q.minLevel??1)<=1);}
   for(const o of dailyOrders(s,t))assert.ok(o.minLevel<=1);
-  s.xp=xpForLevel(20);s.buildings.mill.level=3;s.chorePractice={weeds:20,troughs:20};
+  s.xp=xpForLevel(20);for(const b of Object.values(s.buildings))b.built=true;s.buildings.mill.level=3;s.chorePractice={weeds:20,troughs:20};
   normalizeFarm(s,t+DAY_MS);
   dailyTasks(s,t+DAY_MS).forEach(q=>tasksSeen.add(q.title));
   const orders=dailyOrders(s,t+DAY_MS);assert.equal(new Set(orders.map(o=>o.title)).size,3);
   orders.forEach(o=>{ordersSeen.add(o.title);assert.equal(o.coins,Math.ceil(marketValue(o.input,t+DAY_MS)*(100+o.bonus)/100));});
  }
- assert.equal(tasksSeen.size,28);for(const o of ORDER_POOL.filter(o=>o.minLevel===1||Object.keys(o.input).some(k=>k!=='honey'&&PRODUCTS[k])))assert.ok(ordersSeen.has(o.title),o.title);for(const o of COMMISSION_POOL.filter(o=>o.minLevel===12))assert.ok(ordersSeen.has(o.title));
+ assert.equal(tasksSeen.size,36);for(const o of ORDER_POOL.filter(o=>o.minLevel===1||Object.keys(o.input).some(k=>k!=='honey'&&PRODUCTS[k])))assert.ok(ordersSeen.has(o.title),o.title);for(const o of COMMISSION_POOL.filter(o=>o.minLevel===16))assert.ok(ordersSeen.has(o.title));
 });
 test('new progress only counts accepted actions; failed chores and ready queues do not count',()=>{
  const s=createFarm(now);act(s,{type:'chore',id:'weeds'},now,()=>.99);assert.equal(s.stats.chore_weeds,0);

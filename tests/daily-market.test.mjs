@@ -8,7 +8,7 @@ test('daily quotes stay fixed within a UTC day, vary by day and respect every it
   const time=now+d*DAY_MS,q=marketQuote(item,time);
   assert.equal(q.price,marketQuote(item,time+1000).price);assert.equal(q.price,marketQuote(item,time-11*3600000).price);
   assert.ok(Number.isInteger(q.price)&&q.price>=q.min&&q.price<=q.max);assert.equal(q.day,utcDay(time));
-  if(CROPS[item])assert.ok(q.price>CROPS[item].cost);
+  if(CROPS[item]&&!CROPS[item].perennial)assert.ok(q.price>CROPS[item].cost);
   if(item==='oil'){assert.equal(q.min,800);assert.equal(q.max,3200);oilPrices.add(q.price);if(Math.abs(q.change)<=20)normalDays++;}
  }
  assert.ok(oilPrices.has(800)&&oilPrices.has(3200)&&oilPrices.size>10);assert.ok(normalDays>150);

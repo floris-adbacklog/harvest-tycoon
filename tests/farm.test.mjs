@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {createFarm,applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,dailyTasks,dailyOrders,normalizeFarm,marketValue} from '../game/farm-state.js';
+import {createFarm,applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel} from '../game/farm-state.js';
 import {readFarm,transactFarm} from '../game/farm-store.js';
 const now=Date.UTC(2026,8,16,12);
 const apply=(s,a,t=now)=>applyFarmAction(s,a,t);
@@ -12,22 +12,23 @@ function database(){
  return {sqlite,prepare,batch:async statements=>{sqlite.exec('BEGIN');try{const results=statements.map(s=>({meta:{changes:Number(sqlite.prepare(s._sql).run(...s._args).changes)}}));sqlite.exec('COMMIT');return results;}catch(e){sqlite.exec('ROLLBACK');throw e;}}};
 }
 
-test('all 9 crops can be planted, watered and harvested; collection is unique',()=>{
- const s=createFarm(now);s.coins=10000;
- assert.equal(Object.keys(CROPS).length,9);assert.equal(QUESTS.length,72);
+test('all 12 crops can be planted, watered and harvested; collection is unique',()=>{
+ const s=createFarm(now);s.coins=10000;s.xp=xpForLevel(20);
+ assert.equal(Object.keys(CROPS).length,12);assert.equal(QUESTS.length,85);
  for(const [crop,c] of Object.entries(CROPS)){
   apply(s,{type:'field',id:8,action:'plant',crop});apply(s,{type:'field',id:8,action:'water'},now+1000);
   assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+1000),/Still growing/);
   apply(s,{type:'field',id:8,action:'harvest'},now+c.duration);
-  assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+c.duration),/Plant a crop/);
+  assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+c.duration),/Plant a crop|Still growing/);
+  if(c.perennial)apply(s,{type:'clear_planting',id:8,expectedPlantedAt:s.plots[8].plantedAt},now+c.duration);
   assert.equal(s.stats['harvest_'+crop],2);
  }
- assert.equal(s.stats.varieties,9);assert.equal(s.discovered.length,9);
+ assert.equal(s.stats.varieties,12);assert.equal(s.discovered.length,12);
 });
-test('all 16 recipes require ingredients, persist timed jobs and collect once',()=>{
- assert.equal(Object.keys(RECIPES).length,16);
+test('all 21 recipes require ingredients, persist timed jobs and collect once',()=>{
+ assert.equal(Object.keys(RECIPES).length,21);
  for(const [id,r]of Object.entries(RECIPES)){
-  const s=createFarm(now);for(const k of Object.keys(s.inventory))s.inventory[k]=0;
+  const s=createFarm(now);s.xp=xpForLevel(20);for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;
   const before=structuredClone(s);
   assert.throws(()=>apply(s,{type:'produce',recipe:id}),/Missing ingredients/);assert.deepEqual(s,before);
   Object.assign(s.inventory,r.input);apply(s,{type:'produce',recipe:id});
@@ -73,7 +74,7 @@ test('tractor charges per eligible field, cooldown holds; silo changes only futu
  const r=apply(s,{type:'tractor',mode:'plant',crop:'corn'});assert.equal(r.count,n);assert.equal(s.coins,balance-n*CROPS.corn.cost-12-2*n);
  assert.throws(()=>apply(s,{type:'tractor',mode:'water'}),/ready in/);
  apply(s,{type:'tractor',mode:'water'},now+15000);
- s.coins=10000;const existing=structuredClone(s.plots[8]);apply(s,{type:'silo_upgrade'});assert.deepEqual(s.plots[8],existing);
+ s.coins=10000;s.xp=xpForLevel(20);const existing=structuredClone(s.plots[8]);apply(s,{type:'silo_upgrade'});assert.deepEqual(s.plots[8],existing);
  apply(s,{type:'field',id:8,action:'harvest'},now+DAY_MS);apply(s,{type:'field',id:8,action:'plant',crop:'pumpkin'},now+DAY_MS);
  assert.equal(s.plots[8].readyAt-s.plots[8].plantedAt,CROPS.pumpkin.duration*.9);
  s.coins=100000;for(let i=0;i<4;i++)apply(s,{type:'silo_upgrade'});assert.throws(()=>apply(s,{type:'silo_upgrade'}),/complete/);

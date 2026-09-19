@@ -4,7 +4,7 @@ import {createFarm,normalizeFarm,applyFarmAction,BEGINNER_QUESTS,BEGINNER_REWARD
 const now=Date.UTC(2026,8,17,12);
 const act=(state,action,time=now,random=()=>0)=>applyFarmAction(state,action,time,random);
 test('the beginner guide teaches ten achievable starter actions and awards 20 diamonds once',()=>{
- const state=createFarm(now);assert.equal(BEGINNER_QUESTS.length,10);assert.equal(QUESTS.length,72);
+ const state=createFarm(now);assert.equal(BEGINNER_QUESTS.length,10);assert.equal(QUESTS.length,85);
  const claim=id=>act(state,{type:'beginner_claim',id});
  assert.throws(()=>claim('harvest'),/farming action/);
  act(state,{type:'field',id:0,action:'harvest'});claim('harvest');

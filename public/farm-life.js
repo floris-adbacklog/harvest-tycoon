@@ -40,7 +40,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  scenery('bush_004',10.4,17.6,{width:1.9});scenery('bush_002',23.9,17,{width:1.7});
  scenery('house_024',-9.2,-17.5,{width:3.8,rotation:Math.PI/2});
  station('workshop',cloneModel('lawn_mower_001',-9.1,-14.7,{width:1.25,rotation:.5}),-9.1,-14.7);
- scenery('trailer_001',-16,-17.5,{width:3,rotation:.25});
+ scenery('trailer_001',-19,-20,{width:2.2,rotation:.25});
  // The existing glasshouse and hives receive real activities through attach().
  const horse=station('paddock',cloneModel('horse_002',17.9,-8.5,{width:2.2,rotation:-.7}),17.9,-8.5);
  const pig=cloneModel('pig_001',17.9,-5.6,{width:1.3,rotation:1.2});pig.userData.activity='paddock';
@@ -57,7 +57,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   }
  }
  function watchProduction(buildings){
-  for(const id of ['bakery','mill','packing']){const v=buildings.get(id);for(let i=0;i<3;i++){const obj=new THREE.Mesh(new THREE.SphereGeometry(.17,6,4),new THREE.MeshBasicMaterial({color:0xfff5dc,transparent:true,opacity:0,depthWrite:false}));scene.add(obj);smoke.push({obj,id,x:v.x,z:v.z,y:v.height,phase:i/3});}}
+  for(const id of ['bakery','mill','packing','kitchen','juicepress','preserves']){const v=buildings.get(id);for(let i=0;i<3;i++){const obj=new THREE.Mesh(new THREE.SphereGeometry(.17,6,4),new THREE.MeshBasicMaterial({color:0xfff5dc,transparent:true,opacity:0,depthWrite:false}));scene.add(obj);smoke.push({obj,id,x:v.x,z:v.z,y:v.height,phase:i/3});}}
  }
  function animate(t,dt,now){
   if(reducedMotion)return;
