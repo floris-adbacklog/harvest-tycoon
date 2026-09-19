@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction,DAILY_DIAMONDS,DAY_MS,BOOSTS,upgradeCost,RECIPES,BUILDINGS,MAX_BUILDING_LEVEL,utcDay,dailyOrders,QUESTS,ITEMS} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,applyFarmAction,DAILY_DIAMONDS,DAY_MS,BOOSTS,upgradeCost,RECIPES,BUILDINGS,MAX_BUILDING_LEVEL,utcDay,dailyOrders,QUESTS,ITEMS,marketQuote} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 const act=(state,action,time=now)=>applyFarmAction(state,action.type==='buy_boost'?{expectedCost:BOOSTS[action.boost]?.cost,...action}:action,time);
 
@@ -22,11 +22,11 @@ test('daily diamond rewards cycle, reset and reject repeat claims',()=>{
 test('XP and coin boosts persist, multiply eligible rewards once and expire',()=>{
  let state=createFarm(now);state.diamonds=100;act(state,{type:'buy_boost',boost:'xp'});act(state,{type:'buy_boost',boost:'coins'});
  state=normalizeFarm(JSON.parse(JSON.stringify(state)),now);const before=state.xp;const harvested=act(state,{type:'field',id:0,action:'harvest'});assert.equal(harvested.xp,10);assert.equal(state.xp-before,10);
- state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'}).coins,160);
+ state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'}).coins,marketQuote('wheat',now).price*20);
  const order=dailyOrders(state,now)[0];Object.assign(state.inventory,order.input);const delivery=act(state,{type:'delivery',id:order.id,day:utcDay(now)});assert.equal(delivery.coins,order.coins*2);assert.equal(delivery.xp,order.xp*2);
  const gift=act(state,{type:'checkin'});assert.equal(gift.coins,40);assert.equal(gift.diamonds,4);
  const balance=state.diamonds;assert.throws(()=>act(state,{type:'buy_boost',boost:'xp'}),/Already active/);assert.equal(state.diamonds,balance);
- state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'},now+BOOSTS.coins.duration).coins,80);
+ state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'},now+BOOSTS.coins.duration).coins,marketQuote('wheat',now+BOOSTS.coins.duration).price*10);
  assert.equal(act(state,{type:'field',id:1,action:'harvest'},now+BOOSTS.xp.duration).xp,5);
 });
 test('instant boosts affect existing work only and never pay twice',()=>{
@@ -72,7 +72,7 @@ test('the full Windmill-to-Bakery chain produces fresh goods with a higher margi
   act(state,{type:'collect',building:RECIPES[recipe].building},time);
  }
  assert.equal(state.inventory.bread,2);assert.equal(state.inventory.pie,1);assert.equal(state.inventory.flour,2);
- assert.equal(act(state,{type:'sell',item:'bread'},time).coins,680);assert.equal(act(state,{type:'sell',item:'pie'},time).coins,1250);
+ assert.equal(act(state,{type:'sell',item:'bread'},time).coins,marketQuote('bread',time).price*2);assert.equal(act(state,{type:'sell',item:'pie'},time).coins,marketQuote('pie',time).price);
  for(const id of ['bread','pie']){const r=RECIPES[id];assert(Object.entries(r.output).reduce((n,[k,v])=>n+ITEMS[k].sell*v,0)>Object.entries(r.input).reduce((n,[k,v])=>n+ITEMS[k].sell*v,0));}
 });
 test('new beta quests retain old IDs and each reward can be collected only once',()=>{

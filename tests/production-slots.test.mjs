@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction,productionSlots,productionJobs,recipeValue,recipeAvailability,upgradeCost,BUILDINGS,RECIPES,CROPS,BOOSTS,ITEMS,farmSummary} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,applyFarmAction,productionSlots,productionJobs,recipeValue,recipeAvailability,upgradeCost,BUILDINGS,RECIPES,CROPS,BOOSTS,ITEMS,farmSummary,marketQuote} from '../game/farm-state.js';
 import {createProductionCueTracker} from '../public/farm-audio.js';
 import {createBeginnerUI} from '../public/beginner-ui.js';
 const now=1789690000000;
@@ -56,7 +56,7 @@ test('long-wait crops earn less raw while all recipes add value and planting sta
  for(const id of Object.keys(RECIPES))assert(recipeValue(id).added>0,id);
  for(const id of ['oil','pickles','pie','vegetables']){const v=recipeValue(id);assert(v.output>=v.input*1.45);}
  assert.equal(CROPS.wheat.sell,8);assert.equal(CROPS.corn.sell,40);
- const s=farm();s.inventory.sunflower=2;const start=s.coins;act(s,{type:'sell',item:'sunflower'});assert.equal(s.coins-start,960);
+ const s=farm();s.inventory.sunflower=2;const start=s.coins;act(s,{type:'sell',item:'sunflower'});assert.equal(s.coins-start,marketQuote('sunflower',now).price*2);
 });
 test('a second batch becoming ready triggers one cue even with a long-running first batch',()=>{
  const b={mill:{job:{id:'mill-1',recipe:'oil',startedAt:0,readyAt:10000},extraJobs:[{id:'mill-2',recipe:'feed',startedAt:0,readyAt:1000}]}},tracker=createProductionCueTracker(b,0);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {createFarm,applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,dailyTasks,dailyOrders,normalizeFarm} from '../game/farm-state.js';
+import {createFarm,applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,dailyTasks,dailyOrders,normalizeFarm,marketValue} from '../game/farm-state.js';
 import {readFarm,transactFarm} from '../game/farm-store.js';
 const now=Date.UTC(2026,8,16,12);
 const apply=(s,a,t=now)=>applyFarmAction(s,a,t);
@@ -61,7 +61,7 @@ test('daily progress starts today, all-three bonus pays once, old claims fail',(
 test('delivery pays above market, consumes inventory and rejects duplicate or stale orders',()=>{
  for(let day=0;day<7;day++){
   const t=now+day*DAY_MS,s=createFarm(t),o=dailyOrders(s,t)[0];
-  assert(o.coins>Object.entries(o.input).reduce((n,[k,v])=>n+ITEMS[k].sell*v,0));
+  assert(o.coins>marketValue(o.input,t));
   Object.assign(s.inventory,o.input);apply(s,{type:'delivery',id:o.id,day:utcDay(t)},t);
   for(const k of Object.keys(o.input))assert.equal(s.inventory[k],0);
   assert.throws(()=>apply(s,{type:'delivery',id:o.id,day:utcDay(t)},t),/already delivered/);

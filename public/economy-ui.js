@@ -1,4 +1,4 @@
-import {CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,expansionMaterials,productionSlots,productionJobs,recipeValue} from './farm-state.js';
+import {CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,expansionMaterials,productionSlots,productionJobs,recipeValue,marketQuote,marketHighlights,utcDay} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {fieldPicker,bindFieldPicker} from './field-picker.js';
@@ -7,6 +7,9 @@ const icons=refreshArt;
 const seconds=formatDuration;
 export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate}){
  let currentBuilding=null,marketTab='crops',selectedCrop='wheat',seedFilter='all',lastJobReady='',lastCoinBoost=false,mutating=false;
+ let marketSelling=false,renderedMarketDay='',lastMarketDay=utcDay(farmNow());
+ const number=n=>n.toLocaleString('en-US');
+ const signed=n=>`${n>=0?'+':''}${number(n)}`;
  const batchCounts={},fertilizerFields=new Set();
  function itemArt(key){return art(key,'product-art');}
  function show(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();}
@@ -21,7 +24,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function chooseCrop(key){selectedCrop=key;$('selected-crop-art').innerHTML=art(key);$('selected-crop-name').textContent=CROPS[key].name;$('selected-crop-price').textContent=`${seedCost(state,key)} · ${seconds(cropDuration(state,key))}`;onCrop(key);}
  function renderSeeds(){
   document.querySelectorAll('[data-seed-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.seedFilter===seedFilter);b.setAttribute('aria-pressed',String(b.dataset.seedFilter===seedFilter));});
-  $('crop-catalog').innerHTML=Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([,c])=>seedFilter==='all'||(seedFilter==='quick'?c.duration<=900000:seedFilter==='later'?c.duration>900000&&c.duration<28800000:c.duration>=28800000)).map(([key,c])=>`<button class="crop-card crop-${key} ${selectedCrop===key?'selected':''}" data-choose-crop="${key}" aria-pressed="${selectedCrop===key}"><div class="crop-art"><span class="crop-pace">${c.duration<=900000?'Quick grow':c.duration<28800000?'Day crop':'Slow grow'}</span>${art(key,'crop-picture')}${selectedCrop===key?'<span class="crop-selected"><i data-lucide="check"></i></span>':''}</div><strong>${c.name}</strong><span class="crop-stats"><span>${art('coins','tiny-coin')} ${seedCost(state,key)}</span><span><i data-lucide="clock-3"></i> ${seconds(cropDuration(state,key))}</span></span><small>${c.sell} coins per crop · 1–3 yield</small><span class="crop-use">${c.use}</span></button>`).join('');
+  $('crop-catalog').innerHTML=Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([,c])=>seedFilter==='all'||(seedFilter==='quick'?c.duration<=900000:seedFilter==='later'?c.duration>900000&&c.duration<28800000:c.duration>=28800000)).map(([key,c])=>`<button class="crop-card crop-${key} ${selectedCrop===key?'selected':''}" data-choose-crop="${key}" aria-pressed="${selectedCrop===key}"><div class="crop-art"><span class="crop-pace">${c.duration<=900000?'Quick grow':c.duration<28800000?'Day crop':'Slow grow'}</span>${art(key,'crop-picture')}${selectedCrop===key?'<span class="crop-selected"><i data-lucide="check"></i></span>':''}</div><strong>${c.name}</strong><span class="crop-stats"><span>${art('coins','tiny-coin')} ${seedCost(state,key)}</span><span><i data-lucide="clock-3"></i> ${seconds(cropDuration(state,key))}</span></span><small>${marketQuote(key,farmNow()).price} coins today · 1–3 yield</small><span class="crop-use">${c.use}</span></button>`).join('');
   $('crop-catalog').querySelectorAll('[data-choose-crop]').forEach(b=>b.addEventListener('click',()=>{chooseCrop(b.dataset.chooseCrop);$('seed-dialog').close();notify(`${CROPS[b.dataset.chooseCrop].name} selected. Choose an empty field to plant.`);}));icons();
  }
  function openSeeds(){renderSeeds();show('seed-dialog');}
@@ -52,8 +55,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    content+='</div>';
    content+=`<div class="recipe-section-heading"><h3>What shall we make?</h3><span>Ingredients are used when you start.</span></div><div class="recipe-list">`;
    for(const [rid,r]of Object.entries(RECIPES).filter(([,r])=>r.building===key)){
-    const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid),value=recipeValue(rid),count=Math.max(1,Math.min(batchCounts[rid]??1,a.maxCount||1));batchCounts[rid]=count;
-    content+=`<article class="recipe-card"><div class="recipe-title"><h4>${r.name}</h4><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span></div><div class="recipe-flow"><div class="ingredients">${itemList(r.input,true)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div><p class="recipe-value">Ingredients sell for ${value.input} coins → goods sell for ${value.output} coins · <strong>+${value.added} coins from processing</strong></p><div class="recipe-footer"><span>${a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':`Ready to make · +${r.xp} XP`}</span>${a.slots>1?`<div class="batch-picker"><span id="batch-label-${rid}">Batches</span><div class="batch-stepper" role="group" aria-labelledby="batch-label-${rid}"><button type="button" data-batch-step="-1" data-for-recipe="${rid}" aria-label="Fewer batches of ${r.name}" ${count<=1||!a.maxCount?'disabled':''}>−</button><output data-batch-count="${rid}" data-max="${a.maxCount}" aria-live="polite" aria-label="Number of batches for ${r.name}">${count}</output><button type="button" data-batch-step="1" data-for-recipe="${rid}" aria-label="More batches of ${r.name}" ${count>=a.maxCount?'disabled':''}>+</button></div><small>${a.maxCount} available</small></div>`:''}<button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
+    const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid),value=recipeValue(rid,farmNow()),count=Math.max(1,Math.min(batchCounts[rid]??1,a.maxCount||1));batchCounts[rid]=count;
+    content+=`<article class="recipe-card"><div class="recipe-title"><h4>${r.name}</h4><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span></div><div class="recipe-flow"><div class="ingredients">${itemList(r.input,true)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div><p class="recipe-value">Today: ingredients ${number(value.input)} coins → goods ${number(value.output)} coins · <strong>${signed(value.added)} coins from processing</strong></p><div class="recipe-footer"><span>${a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':`Ready to make · +${r.xp} XP`}</span>${a.slots>1?`<div class="batch-picker"><span id="batch-label-${rid}">Batches</span><div class="batch-stepper" role="group" aria-labelledby="batch-label-${rid}"><button type="button" data-batch-step="-1" data-for-recipe="${rid}" aria-label="Fewer batches of ${r.name}" ${count<=1||!a.maxCount?'disabled':''}>−</button><output data-batch-count="${rid}" data-max="${a.maxCount}" aria-live="polite" aria-label="Number of batches for ${r.name}">${count}</output><button type="button" data-batch-step="1" data-for-recipe="${rid}" aria-label="More batches of ${r.name}" ${count>=a.maxCount?'disabled':''}>+</button></div><small>${a.maxCount} available</small></div>`:''}<button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
    }
    content+='</div>';
    if(key==='windmill'){
@@ -90,8 +93,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    card.querySelector('.recipe-flow .ingredients').innerHTML=itemList(multiply(r.input),true);
    card.querySelector('.recipe-output').innerHTML=itemList(multiply(r.output));
    if(max)card.querySelector('.recipe-footer>span').textContent=`Ready to make · +${r.xp*count} XP when collected`;
-   const value=recipeValue(id);
-   card.querySelector('.recipe-value').textContent=`Total: ingredients sell for ${value.input*count} coins → goods sell for ${value.output*count} coins · +${value.added*count} coins from processing`;
+   const value=recipeValue(id,farmNow());
+   card.querySelector('.recipe-value').textContent=`Today’s total: ingredients ${number(value.input*count)} coins → goods ${number(value.output*count)} coins · ${signed(value.added*count)} coins from processing`;
    card.querySelector('[data-recipe]').textContent=`Start ${count} ${count===1?'batch':'batches'}`;
   }
   $('building-content').querySelectorAll('[data-batch-step]').forEach(button=>button.addEventListener('click',()=>{
@@ -103,20 +106,23 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  }
  async function mutate(action){if(mutating)return;mutating=true;$('building-content').setAttribute('aria-busy','true');$('building-content').querySelectorAll('button').forEach(b=>b.disabled=true);try{const message=await action();onChange();renderBuilding();$('building-feedback').textContent=message;notify(message);return {ok:true,message};}catch(e){$('building-feedback').textContent=e.message;notify(e.message);return {error:e.message};}finally{mutating=false;const message=$('building-feedback').textContent;renderBuilding();$('building-feedback').textContent=message;$('building-content').removeAttribute('aria-busy');}}
  function renderMarket(){
-  const entries=Object.entries(marketTab==='crops'?CROPS:PRODUCTS);
-  const multiplier=state.boosts.coinsUntil>farmNow()?2:1;
-  $('market-items').innerHTML=entries.map(([key,c])=>`<div class="market-row">${itemArt(key)}<div><strong>${c.name}</strong><small>${c.sell*multiplier} coins each${multiplier===2?' · 2× boost active':''}${CROPS[key]?` · ${CROPS[key].use}`:''}</small></div><span>${state.inventory[key]}</span><button class="small-button" data-sell="${key}" ${state.inventory[key]?'':'disabled'}>Sell</button></div>`).join('');
-  const total=entries.reduce((v,[k,c])=>v+state.inventory[k]*c.sell*multiplier,0);$('inventory-value').textContent=`${total} coins`;$('sell-all').disabled=!total;$('sell-all').innerHTML=`Sell all ${marketTab==='crops'?'crops':'goods'}<i data-lucide="arrow-right"></i>`;
-  document.querySelectorAll('[data-market-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.marketTab===marketTab);b.setAttribute('aria-pressed',String(b.dataset.marketTab===marketTab));});
-  $('market-items').querySelectorAll('[data-sell]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sell)));icons();
+  const now=farmNow(),entries=Object.entries(marketTab==='crops'?CROPS:PRODUCTS),multiplier=state.boosts.coinsUntil>now?2:1;
+  renderedMarketDay=utcDay(now);
+  const {today,tomorrow}=marketHighlights(now);
+  $('market-outlook').innerHTML=`<div class="market-outlook-heading"><span class="eyebrow">TODAY’S MARKET</span><span id="market-countdown"></span></div><div class="market-highlight">${art(today.item)}<div><strong>${ITEMS[today.item].name}</strong><span>${number(today.price)} coins each · ${today.label}</span></div><b class="demand-pill ${today.demand}">${signed(today.change)}%</b></div><p class="market-forecast">Tomorrow’s outlook: <strong>${ITEMS[tomorrow.item].name}</strong> · ${tomorrow.label.toLowerCase()} expected.</p><div class="market-board-link"><span>Delivery orders pay extra for specific baskets.</span><button type="button" id="market-orders">View orders →</button></div>`;
+  $('market-orders').onclick=()=>{$('market-dialog').close();$('today-button').click();document.querySelector('[data-today-tab="orders"]').click();};
+  $('market-items').innerHTML=entries.map(([key,c])=>{const q=marketQuote(key,now);return `<div class="market-row dynamic-market-row">${itemArt(key)}<div class="market-item-copy"><strong>${c.name}</strong><span class="market-current-price">${number(q.price*multiplier)} <small>coins each${multiplier===2?' · 2× boost':''}</small></span><span class="market-price-context">Normal ${number(q.normal)} · Range ${number(q.min)}–${number(q.max)}</span><span class="demand-pill ${q.demand}">${q.label} · ${signed(q.change)}%</span></div><span class="market-stock"><b>${number(state.inventory[key])}</b><small>in stock</small></span><button class="small-button" data-sell="${key}" ${!state.inventory[key]||marketSelling?'disabled':''}>Sell</button></div>`;}).join('');
+  const total=entries.reduce((v,[k])=>v+state.inventory[k]*marketQuote(k,now).price*multiplier,0);$('inventory-value').textContent=`${number(total)} coins`;$('sell-all').disabled=!total||marketSelling;$('sell-all').textContent=marketSelling?'Selling…':`Sell all ${marketTab==='crops'?'crops':'goods'}`;
+  document.querySelectorAll('[data-market-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.marketTab===marketTab);b.setAttribute('aria-pressed',String(b.dataset.marketTab===marketTab));b.disabled=marketSelling;});
+  $('market-items').querySelectorAll('[data-sell]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sell)));marketCountdown(now);icons();
  }
+ function marketCountdown(now){const el=$('market-countdown');if(el)el.textContent=`New prices in ${seconds(marketQuote('oil',now).resetsAt-now)} · 00:00 UTC`;}
  async function sell(key='category'){
+  if(marketSelling)return;const day=renderedMarketDay||utcDay(farmNow()),category=marketTab;marketSelling=true;renderMarket();
   try{
-   let coins=0;
-   if(key==='category'){for(const k of Object.keys(marketTab==='crops'?CROPS:PRODUCTS)){if(state.inventory[k])coins+=(await runAction({type:'sell',item:k})).coins;}if(!coins)throw new Error('Nothing in this basket yet.');}
-   else coins=(await runAction({type:'sell',item:key})).coins;
-   onChange();renderMarket();notify(`Sold! +${coins} coins for your next harvest.`);return {coins};
-  }catch(e){notify(e.message);return {error:e.message};}
+   const r=await runAction(key==='category'?{type:'sell',category,day}:{type:'sell',item:key,day});
+   onChange();notify(`Sold! +${number(r.coins)} coins for your next harvest.`);return r;
+  }catch(e){notify(e.message);return {error:e.message};}finally{marketSelling=false;renderMarket();}
  }
  function refresh(){
   $('selected-crop-price').textContent=`${seedCost(state,selectedCrop)} · ${seconds(cropDuration(state,selectedCrop))}`;
@@ -127,7 +133,9 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if($('buildings-dialog').open)renderCatalog();
  }
  function tick(){
-  const now=farmNow();
+  const now=farmNow(),day=utcDay(now);
+  if(day!==lastMarketDay){lastMarketDay=day;if($('market-dialog').open)renderMarket();if($('seed-dialog').open)renderSeeds();if($('building-dialog').open)renderBuilding();}
+  if($('market-dialog').open)marketCountdown(now);
   const coinBoost=state.boosts.coinsUntil>now;if(lastCoinBoost!==coinBoost){lastCoinBoost=coinBoost;if($('market-dialog').open)renderMarket();}
   document.querySelectorAll('[data-building-status]').forEach(el=>{const s=status(el.dataset.buildingStatus,now);el.textContent=s.text;el.className=`building-status ${s.kind}`;});
   const count=Object.keys(BUILDINGS).filter(key=>status(key,now).kind==='ready').length;$('production-count').hidden=!count;$('production-count').textContent=count;

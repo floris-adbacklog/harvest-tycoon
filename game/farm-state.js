@@ -26,6 +26,24 @@ export const PRODUCTS = Object.freeze({
  vegetables:{name:'Vegetable box',sell:1700,icon:'salad',color:'green'}
 });
 export const ITEMS=Object.freeze({...CROPS,...PRODUCTS});
+// Calendar-based quotes are shared by every player and evaluated with server time.
+// Common prices sit near normal; the outer bands are deliberately uncommon.
+const MARKET_CURVE=[0,.12,.22,.30,.36,.41,.45,.48,.50,.50,.50,.52,.55,.59,.64,.70,.78,.88,1];
+function calendarHash(text){let h=2166136261;for(let i=0;i<text.length;i++)h=Math.imul(h^text.charCodeAt(i),16777619);h^=h>>>16;h=Math.imul(h,0x7feb352d);h^=h>>>15;return h>>>0;}
+export function marketQuote(item,now=Date.now()){
+ if(!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid market item.');
+ const normal=ITEMS[item].sell,range=item==='oil'?[.5,2]:Object.hasOwn(CROPS,item)?[.85,1.15]:[.7,1.6];
+ const min=Math.max(1,Math.round(normal*range[0])),max=Math.round(normal*range[1]);
+ const position=MARKET_CURVE[calendarHash(`market-v1:${utcDay(now)}:${item}`)%MARKET_CURVE.length];
+ const price=Math.round(position<=.5?min+(normal-min)*position*2:normal+(max-normal)*(position-.5)*2);
+ const change=Math.round((price/normal-1)*100),demand=change< -10?'low':change>10?'high':'fair';
+ return {item,day:utcDay(now),price,normal,min,max,change,demand,label:demand==='low'?'Low demand':demand==='high'?'High demand':'Fair price',resetsAt:(dayNumber(now)+1)*DAY_MS};
+}
+export function marketValue(items,now=Date.now()){return Object.entries(items).reduce((sum,[key,count])=>sum+marketQuote(key,now).price*count,0);}
+export function marketHighlights(now=Date.now()){
+ const sorted=time=>Object.keys(PRODUCTS).map(k=>marketQuote(k,time)).sort((a,b)=>b.change-a.change||a.item.localeCompare(b.item));
+ return {today:sorted(now)[0],tomorrow:sorted(now+DAY_MS)[0]};
+}
 export const BUILDINGS = Object.freeze({
  farmhouse:{name:'Farmhouse',tagline:'Room for your next big idea.',icon:'house',model:'house_010',type:'farm',upgradeCost:140},
  mill:{name:'Feed Mill',tagline:'Make animal feed and press golden sunflower oil.',icon:'factory',model:'hangar_003',type:'production',upgradeCost:90},
@@ -178,7 +196,7 @@ export const MAX_BUILDING_LEVEL=10;
 export function productionSlots(level){return Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));}
 // Keep the primary job for older clients; extra jobs run in parallel, not a queue.
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
-export function recipeValue(id){const r=RECIPES[id],value=items=>Object.entries(items).reduce((sum,[key,n])=>sum+ITEMS[key].sell*n,0);const input=value(r.input),output=value(r.output);return {input,output,added:output-input};}
+export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+ITEMS[key].sell*n,0):marketValue(items,now);const input=value(r.input),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level){return level<=3?.2*(level-1):.4+.04*(level-3);}
 export function recipeDuration(state,id){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level)));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
@@ -239,14 +257,16 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false});
  return {action,crop:harvested,quantity,xp};
 }
-export function sellCrops(state,item='all') {
+export function sellCrops(state,item='all',now=Date.now(),day,category) {
+ if(day!==undefined&&day!==utcDay(now))throw new Error('Market prices have refreshed. Check today’s prices before selling.');
+ if(category!==undefined&&!['crops','goods'].includes(category))throw new Error('Choose a market category.');
  if(item!=='all'&&!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid item.');
- const keys=item==='all'?Object.keys(ITEMS):[item];
- const total=keys.reduce((v,k)=>v+state.inventory[k]*ITEMS[k].sell,0);
+ const keys=category?Object.keys(category==='crops'?CROPS:PRODUCTS):item==='all'?Object.keys(ITEMS):[item];
+ const total=keys.reduce((v,k)=>v+state.inventory[k]*marketQuote(k,now).price,0);
  if(total===0)throw new Error('Your basket is empty. Harvest or produce something first.');
  for(const k of keys)state.inventory[k]=0;
  state.coins+=total;state.stats.earned+=total;
- return {coins:total};
+ return {coins:total,day:utcDay(now)};
 }
 export function recipeAvailability(state,id){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
@@ -427,15 +447,38 @@ function selectDailyTasks(state,day){
  return DAILY_POOLS.map((pool,id)=>{const eligible=pool.filter(q=>availableDaily(state,q));return {...eligible[(day+id)%eligible.length]};});
 }
 export function deliveryDiamonds(order){
+ if(order.tier&&Number.isInteger(order.diamonds))return order.diamonds;
  const entries=Object.entries(order.input),value=entries.reduce((n,[k,count])=>n+ITEMS[k].sell*count,0);
  const crafted=entries.filter(([k])=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)).length;
  const difficulty=value+crafted*250+Math.max(0,entries.length-1)*100;
  return difficulty>=3000?4:difficulty>=1400?3:difficulty>=500?2:1;
 }
 function orderQuote(order){return {...order,diamonds:deliveryDiamonds(order),coins:Math.ceil(Object.entries(order.input).reduce((n,[key,count])=>n+ITEMS[key].sell*count,0)*1.4)};}
+export const COMMISSION_POOL=Object.freeze([
+ {title:'The village breakfast',customer:'Village Inn',story:'A full house of guests needs a hearty farm breakfast.',input:{milk:8,eggs:12,flour:8},xp:75,minLevel:1},
+ {title:'A countryside picnic',customer:'Valley School',story:'Pack fresh supplies for the children’s countryside outing.',input:{milk:6,eggs:9,honey:6},xp:80,minLevel:1},
+ {title:'The baker’s big weekend',customer:'Willow Bakery',story:'Help the bakery prepare a whole counter of fresh treats.',input:{bread:6,flour:12,milk:6},xp:110,minLevel:4},
+ {title:'Lunch in the village square',customer:'Village Kitchen',story:'The village is gathering for a farm-to-table lunch.',input:{salad:4,cheese:6,bread:4},xp:120,minLevel:4},
+ {title:'The golden harvest festival',customer:'Harvest Festival',story:'Fill the festival pantry with your finest golden produce.',input:{oil:3,pie:3,honey:8},xp:160,minLevel:8},
+ {title:'The winter pantry',customer:'Valley Grocer',story:'Stock the village shelves with a generous assortment of farm goods.',input:{vegetables:3,pickles:4,cheese:6},xp:170,minLevel:8},
+ {title:'The grand estate banquet',customer:'Hilltop Estate',story:'A special celebration calls for an impressive farm-made feast.',input:{oil:4,vegetables:4,pie:3,bread:8},xp:220,minLevel:12},
+ {title:'The valley food fair',customer:'Valley Food Fair',story:'Bring a showcase of your best goods to the annual food fair.',input:{pickles:5,oil:3,cheese:8,vegetables:3},xp:230,minLevel:12}
+]);
+export const DELIVERY_TIERS=Object.freeze({quick:{name:'Quick delivery',minBonus:25,maxBonus:40},village:{name:'Village order',minBonus:45,maxBonus:70},commission:{name:'Special commission',minBonus:90,maxBonus:125}});
 function selectDailyOrders(state,day){
- const eligible=ORDER_POOL.filter(o=>levelOf(state)>=(o.minLevel??1));
- return [0,Math.floor(eligible.length/3),Math.floor(eligible.length*2/3)].map(offset=>orderQuote(eligible[(day+offset)%eligible.length]));
+ const level=levelOf(state),now=day*DAY_MS,used=new Set();
+ const quick=ORDER_POOL.filter(o=>o.minLevel===1);
+ const village=ORDER_POOL.filter(o=>o.minLevel<=level&&Object.keys(o.input).some(k=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)));
+ const commissionLevel=Math.max(...COMMISSION_POOL.filter(o=>o.minLevel<=level).map(o=>o.minLevel));
+ const commissions=COMMISSION_POOL.filter(o=>o.minLevel===commissionLevel);
+ return [['quick',quick],['village',village],['commission',commissions]].map(([tier,pool],slot)=>{
+  const choices=pool.filter(o=>!used.has(o.title)),template=choices[(day+slot)%choices.length];used.add(template.title);
+  const input=Object.fromEntries(Object.entries(template.input).map(([k,n])=>[k,tier==='village'?n*2:n]));
+  const band=DELIVERY_TIERS[tier],roll=calendarHash(`orders-v1:${day}:${tier}`),bonus=band.minBonus+roll%(band.maxBonus-band.minBonus+1);
+  const value=marketValue(input,now),baseValue=Object.entries(input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
+  const diamonds=tier==='quick'?1:tier==='village'?3+roll%3:Math.min(18,8+Math.floor(baseValue/2000)+roll%3);
+  return {...template,input,tier,customer:template.customer??(tier==='quick'?'Your neighbours':'Village trading post'),story:template.story??(tier==='quick'?'A small basket to brighten someone’s day.':'The village needs a selection of your farm-made goods.'),bonus,marketValue:value,coins:Math.ceil(value*(100+bonus)/100),diamonds,xp:tier==='village'?template.xp*2:template.xp};
+ });
 }
 export function utcDay(now=Date.now()){return new Date(now).toISOString().slice(0,10);}
 export function dayNumber(now=Date.now()){return Math.floor(now/DAY_MS);}
@@ -575,7 +618,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'project_start':return startProject(state,now);
   case 'project_collect':return completeProject(state,now);
   case 'field':return actOnPlot(state,action.id,action.action,action.crop??'corn',now);
-  case 'sell':return sellCrops(state,action.item??'all');
+  case 'sell':return sellCrops(state,action.item??'all',now,action.day,action.category);
   case 'produce':return startProduction(state,action.recipe,now,action.count);
   case 'collect':return collectProduction(state,action.building,now,action.jobId);
   case 'collect_all':return collectAllProduction(state,action.building,now);

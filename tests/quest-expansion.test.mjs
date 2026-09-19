@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,QUESTS,DAILY_POOLS,ORDER_POOL,ITEMS,DAY_MS,utcDay,dailyTasks,dailyOrders,xpForLevel,dayNumber} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,applyFarmAction as act,QUESTS,DAILY_POOLS,ORDER_POOL,ITEMS,DAY_MS,utcDay,dailyTasks,dailyOrders,xpForLevel,dayNumber,marketValue,COMMISSION_POOL,PRODUCTS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,18,12);
 test('new quests append to old IDs and keep beginner and claimed progress',()=>{
  const s=createFarm(now);s.version=9;s.claimed=[0,31,40];s.onboarding.completed=10;s.onboarding.rewardClaimed=true;
@@ -31,7 +31,7 @@ test('old daily progress and order identities survive the migration until midnig
  assert.deepEqual(dailyTasks(s,now).map(q=>q.stat),[['harvested','watered','planted'],['produced','made_milk','made_eggs'],['earned','deliveries','harvest_wheat']].map((pool,id)=>pool[(d+id)%3]));
  const snapshot=JSON.stringify(s.daily);normalizeFarm(s,now);assert.equal(JSON.stringify(s.daily),snapshot);
 });
-test('rotation covers all templates without locked chores or parallel goals for starters',()=>{
+test('daily rotation covers accessible orders without locked chores or parallel goals for starters',()=>{
  assert.equal(DAILY_POOLS.flat().length,28);assert.equal(ORDER_POOL.length,24);
  const tasksSeen=new Set(),ordersSeen=new Set();
  for(let day=0;day<180;day++){
@@ -42,9 +42,9 @@ test('rotation covers all templates without locked chores or parallel goals for 
   normalizeFarm(s,t+DAY_MS);
   dailyTasks(s,t+DAY_MS).forEach(q=>tasksSeen.add(q.title));
   const orders=dailyOrders(s,t+DAY_MS);assert.equal(new Set(orders.map(o=>o.title)).size,3);
-  orders.forEach(o=>{ordersSeen.add(o.title);assert.equal(o.coins,Math.ceil(Object.entries(o.input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0)*1.4));});
+  orders.forEach(o=>{ordersSeen.add(o.title);assert.equal(o.coins,Math.ceil(marketValue(o.input,t+DAY_MS)*(100+o.bonus)/100));});
  }
- assert.equal(tasksSeen.size,28);assert.equal(ordersSeen.size,24);
+ assert.equal(tasksSeen.size,28);for(const o of ORDER_POOL.filter(o=>o.minLevel===1||Object.keys(o.input).some(k=>k!=='honey'&&PRODUCTS[k])))assert.ok(ordersSeen.has(o.title),o.title);for(const o of COMMISSION_POOL.filter(o=>o.minLevel===12))assert.ok(ordersSeen.has(o.title));
 });
 test('new progress only counts accepted actions; failed chores and ready queues do not count',()=>{
  const s=createFarm(now);act(s,{type:'chore',id:'weeds'},now,()=>.99);assert.equal(s.stats.chore_weeds,0);
