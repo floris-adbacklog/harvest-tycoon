@@ -2,6 +2,10 @@
 
 Built from the attached latest repository (`f022c661-8c63-4c21-8758-ce0a6daeb474.zip`), preserving its newer Claude changes.
 
+## Family Hall icon correction (v2)
+
+The Family Hall now has its own generated blue-roofed building icon, `public/assets/icons/familyhall.png`. Both the farm marker and building catalogue use it. The previous Farmhouse alias and catalogue fallback were removed. This is a frontend-only change; Supabase version 32 remains current.
+
 ## Release status
 
 - Supabase project: `jnmdirvidffzxukbdmij`.
@@ -124,6 +128,7 @@ Added:
 - `FARM-FAMILY-BUILD-OUTPUT.txt`
 - `FARM-FAMILY-NOTES.md`
 - `FARM-FAMILY-TEST-OUTPUT.txt`
+- `public/assets/icons/familyhall.png`
 - `public/assets/icons/family-management.png`
 - `public/assets/icons/family-members.png`
 - `public/assets/icons/family-tournament.png`

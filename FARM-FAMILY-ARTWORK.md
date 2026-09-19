@@ -19,3 +19,9 @@ Subject prompts:
 4. Management: a small golden wooden noticeboard with an arched roof, cream parchment bearing three green checkmarks, a brass farmhouse key on a hook and a leafy sprig tied with twine.
 
 The four reattached reference PNGs were visually confirmed to be these same illustrations. Full-resolution generated originals were retained in the conversation. Runtime copies preserve transparency and are reduced to 384px for faster mobile loading.
+
+## Family Hall icon (v2 correction)
+
+`public/assets/icons/familyhall.png` is a new, separate transparent PNG. It replaces the Farmhouse alias in the icon registry and the building catalogue. Generated with the built-in image-generation tool, then exported at 384 × 384 pixels for the game.
+
+Prompt: one small inviting rural community hall with a distinctive rich blue pitched roof, cream timber walls, a broad wooden front porch and steps, porch posts, warm windows, and a green pennant with a golden wheat emblem. Entire building shown in an elevated isometric three-quarter view. Polished hand-painted stylized 3D farming illustration, golden timber, blue roof, green accent, soft upper-left light. Compact centered composition, generous padding, legible at 40px. Transparent alpha background. No surrounding land, scenery, ground tile, UI frame, people, lettering, numbers or watermark.

@@ -4,7 +4,7 @@ const sheets=[
  {file:'goods-v2.png',columns:4,keys:['grainmeal','flour','feed','fertilizer','salad','pickles','oil','milk','eggs','cheese','bread','pie','vegetables','tractor','silo','cart']},
  {file:'interface-v2.png',columns:4,keys:['farm','estate','buildings','market','gift','quests','boost','trophy','coins','diamonds','seeds','water','harvest','care','hammer','xp']}
 ];
-const pictures={'family-weekly-order':'family-weekly-order','family-members':'family-members','family-tournament':'family-tournament','family-management':'family-management',familyhall:'farmhouse','helping-hand':'helping-hand','collect-all':'collect-all','instant-harvest':'instant-harvest',farmhouse:'farmhouse',mill:'mill',dairy:'dairy',coop:'coop',bakery:'bakery',packing:'packing',windmill:'windmill',stall:'stall',chores:'chores',honey:'honey'};
+const pictures={'family-weekly-order':'family-weekly-order','family-members':'family-members','family-tournament':'family-tournament','family-management':'family-management',familyhall:'familyhall','helping-hand':'helping-hand','collect-all':'collect-all','instant-harvest':'instant-harvest',farmhouse:'farmhouse',mill:'mill',dairy:'dairy',coop:'coop',bakery:'bakery',packing:'packing',windmill:'windmill',stall:'stall',chores:'chores',honey:'honey'};
 // Individual painted illustrations keep each chore recognisable at mobile sizes.
 for(const id of ['weeds','troughs','sorting','fences','irrigation','harvestfair'])pictures[`chore-${id}`]=`chore-${id}`;
 for(const id of ['greenhouse','apiary','paddock','workshop'])pictures[`activity-${id}`]=`activity-${id}`;

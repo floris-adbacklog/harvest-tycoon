@@ -151,7 +151,7 @@ var a = [
 	"family-members": "family-members",
 	"family-tournament": "family-tournament",
 	"family-management": "family-management",
-	familyhall: "farmhouse",
+	familyhall: "familyhall",
 	"helping-hand": "helping-hand",
 	"collect-all": "collect-all",
 	"instant-harvest": "instant-harvest",
