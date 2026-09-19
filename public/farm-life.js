@@ -32,7 +32,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  for(const [x,z] of [[-30,-13],[-31,-18],[-26,-25],[-16,-30],[-11,-32],[15,-32],[25,-23],[29,-20],[-32,16],[30,17]])scenery(['fir_tree_003','fir_tree_001','fir_tree_006'][Math.abs(x)%3],x,z,{height:3.4+(Math.abs(x)%3)*.4,rotation:z*.2});
  for(let i=0;i<7;i++)scenery(i%3===2?'stone_fence_003':'stone_fence_001',-18+i*2.6,21.7,{width:2.6,height:.65});
  // A shallow pond and small bridge create a recognisable corner near the fields.
- const shore=new THREE.Mesh(new THREE.CircleGeometry(1,18),new THREE.MeshStandardMaterial({color:0xb1b987,roughness:1}));shore.rotation.x=-Math.PI/2;shore.scale.set(6.4,4.4,1);shore.position.set(17.6,.019,15.2);scene.add(shore);
+ const shore=new THREE.Mesh(new THREE.CircleGeometry(1,18),new THREE.MeshStandardMaterial({color:0xb4ac89,roughness:1}));shore.rotation.x=-Math.PI/2;shore.scale.set(6.4,4.4,1);shore.position.set(17.6,.019,15.2);scene.add(shore);
  const pond=new THREE.Mesh(new THREE.CircleGeometry(1,24),new THREE.MeshStandardMaterial({color:0x62bfc0,roughness:.35,metalness:.05}));pond.rotation.x=-Math.PI/2;pond.scale.set(5.8,3.8,1);pond.position.set(17.6,.027,15.2);scene.add(pond);
  scenery('bridge_001',17.5,16.2,{width:11.9,depth:1.7,height:.7,rotation:0,y:.05});
  for(let i=0;i<3;i++){const r=new THREE.Mesh(new THREE.RingGeometry(.48,.51,32),new THREE.MeshBasicMaterial({color:0xd6f1da,transparent:true,opacity:.35,side:THREE.DoubleSide}));r.rotation.x=-Math.PI/2;r.position.set(14.9+i*1.6,.032,14.6-i*.45);scene.add(r);water.push(r);}

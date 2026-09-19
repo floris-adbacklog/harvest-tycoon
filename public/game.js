@@ -65,14 +65,14 @@ function groundPatch(name,x,z,width,depth,color){
  return p;
 }
 function decorate(){
- const ground=patch(0,0,200,200,0xa8c777,0);ground.name='Farm ground';
+ const ground=patch(0,0,200,200,0xacae5c,0);ground.name='Farm ground';
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
  cloneModel('road_001',-1,-4,{width:48,depth:2.9,height:.13,y:-.045});
  cloneModel('road_001',-6,3,{width:2.9,depth:40,height:.13,y:-.035});
  cloneModel('road_001',6.2,19.8,{width:27,depth:2.4,height:.12,y:-.035});
- patch(2.575,8.25,12.8,19.4,0x91b768,.004);
- patch(11,-7.7,10,8.4,0x95b86b,.007);
- patch(-12.5,5.3,8.7,13,0x9bbc70,.004);
+ patch(2.575,8.25,12.8,19.4,0xa2a66b,.004);
+ patch(11,-7.7,10,8.4,0xa4a76e,.007);
+ patch(-12.5,5.3,8.7,13,0xa9ab73,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
  addBuilding('dairy',-1,-13.2,{width:6.8,rotation:Math.PI/2});
  addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
@@ -122,9 +122,9 @@ function decorate(){
  for(const [x,z,r] of [[-9.1,-1.2,.2],[-11.3,-.9,2.1],[-10.2,1.2,3.1]]){const o=cloneModel('chicken_001',x,z,{height:.72,rotation:r});o.userData.building='coop';animals.push({obj:o,x,z,seed:r});}
  // Small work yards and low props create breathing room without widening the farm.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
- groundPatch('ground_002',-12.5,4,6.4,6.4,0xb6bd88);
- groundPatch('ground_007',-10.8,12,7,6.9,0xb9bd89);
- groundPatch('ground_006',11.5,-17.2,6.8,6.4,0xb7bd88);
+ groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
+ groundPatch('ground_007',-10.8,12,7,6.9,0xbaaf8b);
+ groundPatch('ground_006',11.5,-17.2,6.8,6.4,0xb9af8a);
  for(const [name,x,z,options] of [
   ['case_002',9,-14.2,{width:1.1,rotation:.12}],['bag_003',10.25,-14.2,{height:.82,rotation:-.25}],
   ['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],['case_001',9.9,-15.1,{width:.95,rotation:-.4}],
@@ -426,13 +426,14 @@ async function init(){
  bindUI();updateUI();
  try{
   renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
-  renderer.setClearColor(0xa8c777);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
+  renderer.setClearColor(0xf3dda6);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;});
   scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,180);
-  const hemi=new THREE.HemisphereLight(0xfff9df,0x6d8153,2.35);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xfff2d7,3.1);sun.position.set(-20,35,18);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;sun.shadow.camera.near=1;sun.shadow.camera.far=95;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  const hemi=new THREE.HemisphereLight(0xffedc0,0x8a7a4a,2.35);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xffd9a0,3.05);sun.position.set(-24,26,15);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;sun.shadow.camera.near=1;sun.shadow.camera.far=95;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  scene.fog=new THREE.Fog(0xf3dda6,46,128);
   const loader=new GLTFLoader();let loaded=0;
   await Promise.all([client.load(),loadInBatches(modelNames,async name=>{
    const gltf=await loader.loadAsync(`/assets/models/${name}.glb`),object=gltf.scene;

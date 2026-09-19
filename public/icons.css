@@ -3,12 +3,12 @@
 .game-art-sprite{display:inline-block;aspect-ratio:1;overflow:hidden;background-color:transparent;background-image:var(--art-sheet);background-size:var(--art-size) var(--art-size);background-position:var(--art-position);background-repeat:no-repeat;mix-blend-mode:normal;border:0;border-radius:0;box-shadow:none}
 .tiny-coin.game-art{display:inline-block;width:21px;height:21px;border:0;background-color:transparent;box-shadow:none;border-radius:0}
 .side-tool>span>.game-art{width:42px;height:42px}
-.side-tool.active>span{background:#e5eddb;border-color:#adc29e;color:#35543b}
-.side-tool em{border-radius:50%;box-shadow:0 1px 3px #354a2020}
+.side-tool.active>span{background:#ece5dc;border-color:#c0b3a0;color:#524c37}
+.side-tool em{border-radius:50%;box-shadow:0 1px 3px #47372320}
 .side-tools{scrollbar-width:none}
 .side-tools::-webkit-scrollbar{display:none}
 .tools .tool>.game-art{width:32px;height:32px}
-.tool.active{background:#eaf0df;box-shadow:inset 0 0 0 1px #bbcfaa}
+.tool.active{background:#efe8e0;box-shadow:inset 0 0 0 1px #cdbfac}
 .tool kbd{font-size:9px;opacity:.7}
 .leaderboard-button>.game-art{width:36px;height:36px}
 .seed-shop-button>.game-art{width:34px;height:34px}
@@ -28,7 +28,7 @@
 .milling-chain .game-art{width:44px;height:44px}
 .quest-icon>.game-art{width:28px;height:28px}
 .gift-icon>.game-art,.estate-icon>.game-art,.chore-icon>.game-art{width:40px;height:40px}
-.building-pin{display:grid;place-items:center;width:35px;height:36px;padding:0;border-radius:9px;background:#f0f3e7;flex-shrink:0;overflow:hidden}
+.building-pin{display:grid;place-items:center;width:35px;height:36px;padding:0;border-radius:9px;background:#f2ede8;flex-shrink:0;overflow:hidden}
 .building-pin>.game-art{display:block;width:33px;height:33px;object-fit:contain}
 .utility-label{display:grid;place-items:center;width:40px;height:40px;padding:0;line-height:0}
 .utility-label>.game-art{display:block;width:30px;height:30px;margin:0;object-fit:contain}
@@ -49,8 +49,8 @@
 }
 @media(min-width:901px){
  .side-tools{grid-template-columns:repeat(2,74px);gap:13px 8px}
- .side-tool{width:74px;gap:6px}.side-tool>span{width:54px;height:54px;border-radius:17px;background:#fffdf5;border-color:#d2dcc5;box-shadow:0 3px 8px #31462212}
- .side-tool b{font-size:12px;color:#334f34}.side-tool.active b{color:#26472d}
+ .side-tool{width:74px;gap:6px}.side-tool>span{width:54px;height:54px;border-radius:17px;background:#fffdf5;border-color:#dbd1c6;box-shadow:0 3px 8px #44372412}
+ .side-tool b{font-size:12px;color:#4d4635}.side-tool.active b{color:#453e28}
  .side-tool em{min-width:20px;height:20px;right:-4px;top:-4px;font-size:10px;border-width:2px}
  .tool-dock{border-radius:21px;gap:13px;padding:10px 12px}.tool{gap:5px}
  .leaderboard-button{background:#f7efcf;border-color:#d9c587}
