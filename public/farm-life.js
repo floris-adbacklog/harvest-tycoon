@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 import {art} from './visual-icons.js';
-export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','house_024','fir_tree_003','tree_008','stone_fence_001','trailer_001'];
+export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','house_024','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
  const views=new Map(),hitAreas=[],moving=[],effects=[],water=[],smoke=[];
@@ -28,8 +28,8 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  scenery('road_001',-21,7,{width:2.1,depth:41,height:.09});
  scenery('road_001',-1,-23.3,{width:42,depth:2.2,height:.09});
  scenery('road_001',-1,23.2,{width:45,depth:2.2,height:.09});
- for(const [x,z] of [[-19,-22],[-17,-23],[-12,-23],[12,-23],[17,-23],[-24,16],[-23,19],[-22,22],[22,3],[24,8],[25,14],[-18,25],[-12,26],[25,-17]])scenery('tree_008',x,z,{height:2.8+(Math.abs(x+z)%3)*.3,rotation:x*.3});
- for(const [x,z] of [[-30,-13],[-31,-18],[-26,-25],[-16,-30],[-11,-32],[15,-32],[25,-23],[29,-20],[-32,16],[30,17]])scenery('fir_tree_003',x,z,{height:3.4+(Math.abs(x)%3)*.4,rotation:z*.2});
+ for(const [x,z] of [[-19,-22],[-17,-23],[-12,-23],[12,-23],[17,-23],[-24,16],[-23,19],[-22,22],[22,3],[24,8],[25,14],[-18,25],[-12,26],[25,-17]])scenery(['tree_008','tree_002','tree_005','tree_007'][Math.abs(x+z)%4],x,z,{height:2.8+(Math.abs(x+z)%3)*.3,rotation:x*.3});
+ for(const [x,z] of [[-30,-13],[-31,-18],[-26,-25],[-16,-30],[-11,-32],[15,-32],[25,-23],[29,-20],[-32,16],[30,17]])scenery(['fir_tree_003','fir_tree_001','fir_tree_006'][Math.abs(x)%3],x,z,{height:3.4+(Math.abs(x)%3)*.4,rotation:z*.2});
  for(let i=0;i<7;i++)scenery('stone_fence_001',-18+i*2.6,21.7,{width:2.6,height:.65});
  // A shallow pond and small bridge create a recognisable corner near the fields.
  const shore=new THREE.Mesh(new THREE.CircleGeometry(1,18),new THREE.MeshStandardMaterial({color:0xb1b987,roughness:1}));shore.rotation.x=-Math.PI/2;shore.scale.set(6.4,4.4,1);shore.position.set(17.6,.019,15.2);scene.add(shore);
@@ -37,6 +37,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  scenery('bridge_001',17.5,16.2,{width:11.9,depth:1.7,height:.7,rotation:0,y:.05});
  for(let i=0;i<3;i++){const r=new THREE.Mesh(new THREE.RingGeometry(.48,.51,32),new THREE.MeshBasicMaterial({color:0xd6f1da,transparent:true,opacity:.35,side:THREE.DoubleSide}));r.rotation.x=-Math.PI/2;r.position.set(14.9+i*1.6,.032,14.6-i*.45);scene.add(r);water.push(r);}
  for(const [x,z] of [[12.5,15.5],[14,18.5],[21,17.8],[22.3,13.8]]){scenery('bush_003',x,z,{width:1.4});scenery('grass_004',x+.7,z-.4,{height:.6});}
+ scenery('bush_004',10.4,17.6,{width:1.9});scenery('bush_002',23.9,17,{width:1.7});
  scenery('house_024',-9.2,-17.5,{width:3.8,rotation:Math.PI/2});
  station('workshop',cloneModel('lawn_mower_001',-9.1,-14.7,{width:1.25,rotation:.5}),-9.1,-14.7);
  scenery('trailer_001',-16,-17.5,{width:3,rotation:.25});
