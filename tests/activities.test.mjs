@@ -15,7 +15,9 @@ test('all four hands-on jobs reward once, give useful goods and complete one rou
  assert.equal(s.xp-xp,Object.values(ACTIVE_STATIONS).reduce((n,a)=>n+a.xp,ACTIVITY_ROUND_REWARD.xp));
  assert.equal(s.xp-xp,160);
  assert.equal(s.inventory.lettuce,inventory.lettuce+1);assert.equal(s.inventory.fertilizer,inventory.fertilizer+1);
- assert.equal(s.inventory.honey,inventory.honey+1);assert.equal(s.inventory.feed,inventory.feed+1);
+ // Honey is needed in bulk (berry preserves 3, smoothie 2, compote 2), so the Apiary gives three; the other stations still give one.
+ assert.equal(s.inventory.honey,inventory.honey+3);assert.equal(s.inventory.feed,inventory.feed+1);
+ assert.equal(ACTIVE_STATIONS.apiary.itemCount,3);for(const [id,a] of Object.entries(ACTIVE_STATIONS))if(id!=='apiary')assert.equal(a.itemCount??1,1,id);
  for(const station of Object.keys(ACTIVE_STATIONS))assert.equal(s.stats['activity_'+station],1);
  assert.equal(s.stats.activity_rounds,1);
  assert(result.roundComplete);assert.equal(s.activities.rounds,1);assert.deepEqual(s.activities.round,[]);assert.equal(s.stats.activities,4);
