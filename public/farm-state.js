@@ -930,7 +930,7 @@ export function completeProject(state,now=Date.now()){
 // Small hands-on jobs run alongside crops and production. Only server time and
 // persisted progress determine rewards; the client submits a station and tile.
 export const ACTIVE_STATIONS=Object.freeze({
- greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:20,xp:28,cooldown:180000,item:'lettuce',instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
+ greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:20,xp:28,cooldown:180000,item:'lettuce',itemCount:3,instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
  apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:26,xp:32,cooldown:240000,item:'honey',itemCount:3,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
  paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:24,xp:28,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
  workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:30,xp:32,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
