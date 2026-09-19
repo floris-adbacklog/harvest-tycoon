@@ -147,6 +147,8 @@ var a = [
 		]
 	}
 ], o = {
+	"collect-all": "collect-all",
+	"instant-harvest": "instant-harvest",
 	farmhouse: "farmhouse",
 	mill: "mill",
 	dairy: "dairy",

@@ -1,3 +1,23 @@
+# Collect all & clearer production controls — 19 September 2026
+
+- Each production building shows a new illustrated **Collect all** button when two or more batches are ready. One authenticated action collects only ready batches in that building, adds all goods and XP, and advances existing production/quest counters. Running batches and other buildings stay untouched.
+- The existing receipt and atomic commit path is retained. XP boosts apply once to the combined reward. Repeating collection cannot pay out already collected jobs.
+- **Finish one crop** uses an illustrated field picker with crop names, field numbers, remaining time, selected state and keyboard navigation. Selecting a field is free; the separate confirmation still costs 10 diamonds.
+- Fertilizer selection uses compact illustrated rows, visible checkmarks, a bounded scrolling list, select-up-to-stock, Clear and Done controls. The footer shows total fertilizer required and blocks an unaffordable selection. A separate confirmation applies the fertilizer.
+- Batch counts use large minus/plus buttons. Available stock and production slots set the maximum; ingredient totals, output, value and XP update with the selected count. Selections persist through relevant building refreshes.
+- New transparent **Collect all** and **Instant harvest** illustrations. Instant harvest is visually distinct from Finish one crop. Earlier painted chore/activity icons and the improved diamond shop/purchase dialog are included.
+- All player-facing copy remains English. No purchase prices, balances or progression costs changed.
+
+## Deployment and verification
+
+The `farm-api` action is already deployed to project `jnmdirvidffzxukbdmij`, version 16, ACTIVE with JWT verification enabled. Deployed source was read back and matches the tested source. No database migration is required for this update.
+
+Replace your GitHub project files with this ZIP's `Harvest-Tycoon` folder contents and let Vercel rebuild. Keep the existing hosting environment variables. The ZIP includes source, assets and the fresh `dist-static` build. The new frontend is not published automatically by this export.
+
+Validation: 141 tests pass, including mixed ready/running jobs, ten simultaneous collections, repeated claims, original batch rewards, boosted XP, quest counters and field-picker interaction/keyboard behavior. The production static build succeeds. No real paid checkout was performed. A visual mobile browser check was unavailable because the local browser executable is not installed.
+
+---
+
 # Latest update — diamond shop, purchase feedback and farm artwork
 
 - Available diamond packs now show full-colour diamonds and green purchase buttons. Unavailable buttons still respect server availability; only the selected pack shows the checkout loading state.

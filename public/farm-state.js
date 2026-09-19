@@ -90,7 +90,7 @@ function recordBeginnerAction(state,action,result,before){
  if(state.stats.tended>before.tended)m.tend=true;
  if(action.type==='sell'&&result.coins>0)m.sell=true;
  if(action.type==='produce')m.produce=true;
- if(action.type==='collect')m.collect=true;
+ if(action.type==='collect'||action.type==='collect_all')m.collect=true;
  if(action.type==='checkin')m.gift=true;
  if(action.type==='chore'&&result.success)m.chore=true;
 }
@@ -288,6 +288,18 @@ export function collectProduction(state,building,now=Date.now(),jobId){
  const remaining=jobs.filter(j=>j!==job);b.job=remaining.shift()??null;b.extraJobs=remaining;
  if(building==='windmill')state.stats.windmill_batches=(state.stats.windmill_batches??0)+1;
  return {building,items:{...output},xp};
+}
+export function collectAllProduction(state,building,now=Date.now()){
+ if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')throw new Error('Choose a production building.');
+ const ready=productionJobs(state.buildings[building]).filter(job=>job.readyAt<=now);
+ if(!ready.length)throw new Error('No batches are ready to collect yet.');
+ const result={building,count:ready.length,items:{},xp:0};
+ for(const job of ready){
+  const collected=collectProduction(state,building,now,job.id);
+  for(const [key,count] of Object.entries(collected.items))result.items[key]=(result.items[key]??0)+count;
+  result.xp+=collected.xp;
+ }
+ return result;
 }
 export function upgradeBuilding(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||building==='farmhouse')throw new Error('Choose a production building.');
@@ -566,6 +578,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'sell':return sellCrops(state,action.item??'all');
   case 'produce':return startProduction(state,action.recipe,now,action.count);
   case 'collect':return collectProduction(state,action.building,now,action.jobId);
+  case 'collect_all':return collectAllProduction(state,action.building,now);
   case 'upgrade':return upgradeBuilding(state,action.building);
   case 'expand':return expandFarm(state);
   case 'quest':return claimQuest(state,action.id);

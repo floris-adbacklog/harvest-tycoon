@@ -34,7 +34,7 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
  if(action.type==='field')return {plant:'plant',water:'water',harvest:'harvest',tend:'care'}[action.action]??null;
  if(action.type==='activity_work')return result.roundComplete?'reward':result.finished?'collect':{greenhouse:'water',apiary:'collect',paddock:'water',workshop:'chore'}[action.station]??'chore';
  if(['daily','checkin','beginner_claim'].includes(action.type))return result.diamonds>0?'diamond':'reward';
- return {sell:'sell',produce:'produce',collect:'collect',upgrade:'upgrade',expand:'upgrade',quest:'reward',mastery:'reward',level_rewards:'reward',delivery:'sell',tractor:'tractor',chore:'chore',fertilize:'care',stall_collect:'sell',stall_upgrade:'upgrade',project_start:'produce',project_collect:'reward',silo_upgrade:'upgrade',buy_boost:'diamond'}[action.type]??null;
+ return {sell:'sell',produce:'produce',collect:'collect',collect_all:'collect',upgrade:'upgrade',expand:'upgrade',quest:'reward',mastery:'reward',level_rewards:'reward',delivery:'sell',tractor:'tractor',chore:'chore',fertilize:'care',stall_collect:'sell',stall_upgrade:'upgrade',project_start:'produce',project_collect:'reward',silo_upgrade:'upgrade',buy_boost:'diamond'}[action.type]??null;
 }
 export function createProductionCueTracker(buildings,now){
  let previous=new Map();
