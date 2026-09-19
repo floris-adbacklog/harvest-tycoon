@@ -62,7 +62,6 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  function animate(t,dt,now){
   if(reducedMotion)return;
   for(const m of moving){
-   if(m.kind==='animal'){m.obj.position.x=m.x+Math.sin(t*.18+m.phase)*.42;m.obj.position.z=m.z+Math.sin(t*.14+m.phase)*.5;m.obj.rotation.y=-.7+Math.sin(t*.18+m.phase)*.3;}
    if(m.kind==='bee')m.obj.position.set(10.4+Math.sin(t*1.2+m.phase)*.7,1.2+Math.sin(t*2+m.phase)*.25,13.7+Math.cos(t+m.phase)*.6);
   }
   water.forEach((r,i)=>{const f=((t*.3+i/3)%1);r.scale.setScalar(.6+f*1.6);r.material.opacity=(1-f)*.35;});

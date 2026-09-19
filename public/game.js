@@ -56,14 +56,21 @@ function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
  mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);mesh.receiveShadow=true;scene.add(mesh);return mesh;
 }
-function fenceLine(x,z,n,axis='x',size=2.2,style='fence_001'){
- for(let i=0;i<n;i++)cloneModel(style,x+(axis==='x'?i*size:0),z+(axis==='z'?i*size:0),{width:size,rotation:axis==='z'?Math.PI/2:0});
+function fenceLine(x,z,n,axis='x',size=2.2,style='fence_001',tintColor){
+ for(let i=0;i<n;i++){
+  const seg=cloneModel(style,x+(axis==='x'?i*size:0),z+(axis==='z'?i*size:0),{width:size,rotation:axis==='z'?Math.PI/2:0});
+  if(tintColor)tint(seg,tintColor);
+ }
 }
 function groundPatch(name,x,z,width,depth,color){
  const p=cloneModel(name,x,z,{width,depth,height:.16,y:.006});
  p.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(color);}});
  return p;
 }
+// Multiplicative tint: only ever makes a texture darker/warmer, never lighter than its source pixels.
+function tint(obj,color){obj.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(color);}});return obj;}
+// Additive glow: the only way to make an already-dark, texture-mapped prop read lighter.
+function lighten(obj,color,intensity=.3){obj.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.emissive=new THREE.Color(color);n.material.emissiveIntensity=intensity;}});return obj;}
 function decorate(){
  const ground=patch(0,0,200,200,0xacae5c,0);ground.name='Farm ground';
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
@@ -113,8 +120,8 @@ function decorate(){
  addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
  fenceLine(8,-12.5,5);fenceLine(7,-11.4,4,'z');fenceLine(16.6,-11.4,4,'z');fenceLine(9.2,-3.6,4);
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
- fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015');fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
- fenceLine(-3,18.3,6,'x',2.2,'fence_008');fenceLine(9.5,2.4,8,'z');
+ fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
+ fenceLine(-3,18.3,6,'x',2.2,'fence_008',0xf2e2bd);fenceLine(9.5,2.4,8,'z');
  const cow=cloneModel('cow_001',11,-6.6,{width:2.4,rotation:-.6});cow.userData.building='dairy';animals.push({obj:cow,x:11,z:-6.6,seed:.5});
  const cow2=cloneModel('cow_001',14.5,-5.5,{width:1.85,rotation:2});cow2.userData.building='dairy';animals.push({obj:cow2,x:14.5,z:-5.5,seed:3});
  const sheep=cloneModel('sheep_001',9.1,-9.5,{width:1.6,rotation:.6});sheep.userData.building='dairy';animals.push({obj:sheep,x:9.1,z:-9.5,seed:1.5});
@@ -127,7 +134,7 @@ function decorate(){
  groundPatch('ground_006',11.5,-17.2,6.8,6.4,0xb9af8a);
  for(const [name,x,z,options] of [
   ['case_002',9,-14.2,{width:1.1,rotation:.12}],['bag_003',10.25,-14.2,{height:.82,rotation:-.25}],
-  ['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],['case_001',9.9,-15.1,{width:.95,rotation:-.4}],
+  ['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],
   ['prop_029',8.4,-13.6,{width:.55,rotation:.6}],
   ['barrel_002',-15.7,6.5,{height:.95}],['bag_001',-10.2,6.4,{height:.8}],
   ['bag_002',-10.8,6.7,{height:.7}],['firewood_003',-14.1,10.5,{width:1.3}],
@@ -139,10 +146,14 @@ function decorate(){
   ['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}],
   ['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}],['hay_003',7.4,-7.6,{width:1.3,rotation:-.35}],
   ['bucket_001',-7.7,1,{height:.65}],['bush_003',-8.4,8,{width:1.1}],
-  ['bush_003',8.9,-19.6,{width:1.2}],['grass_004',-8.2,8.9,{height:.3}],
-  ['dray_004',-16.6,-4.9,{width:2,rotation:.4}],['dray_002',-7.4,4.4,{width:1.9,rotation:-.8}],
-  ['stall_001',-6.2,11.4,{width:2.2,rotation:-.3}]
+  ['bush_003',8.9,-19.6,{width:1.2}],['grass_004',-8.2,8.9,{height:.3}]
  ])cloneModel(name,x,z,options);
+ // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
+ // glow since a plain color tint can only darken a texture, never lighten it.
+ lighten(cloneModel('case_001',9.9,-15.1,{width:.95,rotation:-.4}),0x3a2a16,.28);
+ lighten(cloneModel('dray_004',-18.5,-6.5,{width:2,rotation:.4}),0x3a2a16,.28);
+ lighten(cloneModel('dray_002',-18.6,-11.2,{width:1.9,rotation:.5}),0x3a2a16,.28);
+ lighten(cloneModel('stall_001',-9.5,14.8,{width:2.2,rotation:.4}),0x3a2a16,.28);
  const trees=[[-17,-14,6],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-17,17,5.5],[-5,19,5.8],[12,22,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[20,-10,6],[19,-19,6.1],[4,-21,5.4],[-10,-19,6.5],[-2,-22,7],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  for(const [x,z] of [[-17,-6],[-16.5,-4],[-18.5,9],[-15,12],[19,-5],[18,2],[21,9],[10,15],[2,20],[-21,-15],[-9,-17],[11,-16]])cloneModel('bush_001',x,z,{width:2.2,rotation:x});
@@ -398,7 +409,7 @@ function frame(now){
  if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();activities.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
  if(!reducedMotion){
   if(windmillRotor)windmillRotor.rotation.z-=dt*.28;
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());animals.forEach(a=>{a.baseYaw??=a.obj.rotation.y;a.obj.position.x=a.x+Math.sin(t*.18+a.seed)*.4;a.obj.position.z=a.z+Math.cos(t*.14+a.seed)*.3;a.obj.rotation.y=a.baseYaw+Math.sin(t*.17+a.seed)*.2;a.obj.rotation.z=Math.sin(t*2+a.seed)*.007;});
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
