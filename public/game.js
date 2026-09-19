@@ -39,6 +39,7 @@ const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bag_003','bucket_001','apiary_001','cart_004','chair_001','firewood_003','firewood_008','hay_002','hay_003','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','barrel_009','cart_001','case_002','case_003','coop_001','water_001','landscape_001','ground_004','road_001'];
 modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
+modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','stall_001','case_001','dray_002','dray_004','prop_029');
 modelNames.push(...LIFE_MODELS);
 let toastTimer;
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
@@ -55,8 +56,13 @@ function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
  mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);mesh.receiveShadow=true;scene.add(mesh);return mesh;
 }
-function fenceLine(x,z,n,axis='x',size=2.2){
- for(let i=0;i<n;i++)cloneModel('fence_001',x+(axis==='x'?i*size:0),z+(axis==='z'?i*size:0),{width:size,rotation:axis==='z'?Math.PI/2:0});
+function fenceLine(x,z,n,axis='x',size=2.2,style='fence_001'){
+ for(let i=0;i<n;i++)cloneModel(style,x+(axis==='x'?i*size:0),z+(axis==='z'?i*size:0),{width:size,rotation:axis==='z'?Math.PI/2:0});
+}
+function groundPatch(name,x,z,width,depth,color){
+ const p=cloneModel(name,x,z,{width,depth,height:.16,y:.006});
+ p.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(color);}});
+ return p;
 }
 function decorate(){
  const ground=patch(0,0,200,200,0xa8c777,0);ground.name='Farm ground';
@@ -106,20 +112,23 @@ function decorate(){
  cloneModel('prop_023',-9.2,-2.7,{width:.8});
  addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
  fenceLine(8,-12.5,5);fenceLine(7,-11.4,4,'z');fenceLine(16.6,-11.4,4,'z');fenceLine(9.2,-3.6,4);
- fenceLine(-16.6,-13.2,4);fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
- fenceLine(-3,18.3,6);fenceLine(9.5,2.4,8,'z');
+ // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
+ fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015');fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
+ fenceLine(-3,18.3,6,'x',2.2,'fence_008');fenceLine(9.5,2.4,8,'z');
  const cow=cloneModel('cow_001',11,-6.6,{width:2.4,rotation:-.6});cow.userData.building='dairy';animals.push({obj:cow,x:11,z:-6.6,seed:.5});
  const cow2=cloneModel('cow_001',14.5,-5.5,{width:1.85,rotation:2});cow2.userData.building='dairy';animals.push({obj:cow2,x:14.5,z:-5.5,seed:3});
  const sheep=cloneModel('sheep_001',9.1,-9.5,{width:1.6,rotation:.6});sheep.userData.building='dairy';animals.push({obj:sheep,x:9.1,z:-9.5,seed:1.5});
  const goat=cloneModel('goat_001',14.8,-8.4,{width:1.5,rotation:-1.1});goat.userData.building='dairy';animals.push({obj:goat,x:14.8,z:-8.4,seed:4.2});
  for(const [x,z,r] of [[-9.1,-1.2,.2],[-11.3,-.9,2.1],[-10.2,1.2,3.1]]){const o=cloneModel('chicken_001',x,z,{height:.72,rotation:r});o.userData.building='coop';animals.push({obj:o,x,z,seed:r});}
  // Small work yards and low props create breathing room without widening the farm.
- patch(-12.5,4,6.4,6.4,0xb6bd88,.008);
- patch(-10.8,12,7,6.9,0xb9bd89,.008);
- patch(11.5,-17.2,6.8,6.4,0xb7bd88,.008);
+ // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
+ groundPatch('ground_002',-12.5,4,6.4,6.4,0xb6bd88);
+ groundPatch('ground_007',-10.8,12,7,6.9,0xb9bd89);
+ groundPatch('ground_006',11.5,-17.2,6.8,6.4,0xb7bd88);
  for(const [name,x,z,options] of [
   ['case_002',9,-14.2,{width:1.1,rotation:.12}],['bag_003',10.25,-14.2,{height:.82,rotation:-.25}],
-  ['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],
+  ['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],['case_001',9.9,-15.1,{width:.95,rotation:-.4}],
+  ['prop_029',8.4,-13.6,{width:.55,rotation:.6}],
   ['barrel_002',-15.7,6.5,{height:.95}],['bag_001',-10.2,6.4,{height:.8}],
   ['bag_002',-10.8,6.7,{height:.7}],['firewood_003',-14.1,10.5,{width:1.3}],
   ['case_003',-8.1,13.5,{width:.9,rotation:.35}],['table_001',-13.9,-5.9,{width:1.6}],
@@ -130,7 +139,9 @@ function decorate(){
   ['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}],
   ['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}],['hay_003',7.4,-7.6,{width:1.3,rotation:-.35}],
   ['bucket_001',-7.7,1,{height:.65}],['bush_003',-8.4,8,{width:1.1}],
-  ['bush_003',8.9,-19.6,{width:1.2}],['grass_004',-8.2,8.9,{height:.3}]
+  ['bush_003',8.9,-19.6,{width:1.2}],['grass_004',-8.2,8.9,{height:.3}],
+  ['dray_004',-16.6,-4.9,{width:2,rotation:.4}],['dray_002',-7.4,4.4,{width:1.9,rotation:-.8}],
+  ['stall_001',-6.2,11.4,{width:2.2,rotation:-.3}]
  ])cloneModel(name,x,z,options);
  const trees=[[-17,-14,6],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-17,17,5.5],[-5,19,5.8],[12,22,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[20,-10,6],[19,-19,6.1],[4,-21,5.4],[-10,-19,6.5],[-2,-22,7],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
