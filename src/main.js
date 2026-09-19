@@ -1,6 +1,7 @@
 import {createFarmPresence} from './presence.js';
 import {supabase,isConfigured,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError} from './supabase.js';
 import {fetchLeaderboard} from './leaderboard.js';
+import {trackSignUp,isNewRegistration} from './analytics.js';
 const $=id=>document.getElementById(id);
 let presence=null;
 let mode='signin',generation=0,playerId=null,frame=null,submitting=false,checking=false,reopen=false;
@@ -46,6 +47,7 @@ $('account-form').onsubmit=async event=>{
   else if(mode==='register'){
    const {data,error}=await supabase.auth.signUp({email:$('email').value.trim(),password:$('password').value,options:{data:{username:$('player-name').value.trim()},emailRedirectTo:new URL('/play.html',location.origin).href}});
    if(error)throw error;
+   if(isNewRegistration(data))trackSignUp({confirmationRequired:!data.session});
    if(!data.session){$('account-message').textContent='Check your inbox to confirm your email, then sign in to open your farm.';$('password').value='';$('confirm-password').value='';return;}
   }else{const {error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;}
   await openFarm();$('password').value='';$('confirm-password').value='';
