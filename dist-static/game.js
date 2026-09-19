@@ -1,3 +1,4 @@
+import {createLoadingScreen} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -444,6 +445,7 @@ function registerAgentTools(){
  window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
 }
 async function init(){
+ const loadingUI=createLoadingScreen(document,modelNames.length);
  bindUI();updateUI();
  try{
   renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
@@ -456,12 +458,12 @@ async function init(){
   const sun=new THREE.DirectionalLight(0xffd9a0,3.05);sun.position.set(-24,26,15);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;sun.shadow.camera.near=1;sun.shadow.camera.far=95;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
   scene.fog=new THREE.Fog(0xf3dda6,46,128);
   const loader=new GLTFLoader();let loaded=0;
-  await Promise.all([client.load(),loadInBatches(modelNames,async name=>{
+  await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{
    const gltf=await loader.loadAsync(`/assets/models/${name}.glb`),object=gltf.scene;
    const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
    object.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));const group=new THREE.Group();group.add(object);
    object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});
-   models.set(name,{object:group,size});loaded++;$('load-progress').value=Math.round(loaded/modelNames.length*100);$('load-text').textContent=`${loaded} / ${modelNames.length} little pieces of your farm`;
+   models.set(name,{object:group,size});loaded++;loadingUI.modelsReady(loaded);
   },4)]);
   decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));measureFarm();resize();icons();
   renderer.domElement.addEventListener('pointermove',e=>{
@@ -485,7 +487,7 @@ async function init(){
    },
    zoom:ratio=>zoomFarm(zoom*ratio)
   });
-  ready=true;updateUI();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0)toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);$('loading').classList.add('fade');setTimeout(()=>$('loading').hidden=true,450);registerAgentTools();requestAnimationFrame(frame);
+  ready=true;updateUI();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0)toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');setTimeout(()=>$('loading').hidden=true,450);registerAgentTools();requestAnimationFrame(frame);
  }catch(error){console.error('Farm initialization failed',error);if(renderer)$('error-message').textContent=error.message||'Your saved farm could not load. Please try again.';$('loading').hidden=true;$('error').hidden=false;if(!renderer)$('error-message').textContent='This game needs WebGL 2. Try a current browser with hardware acceleration enabled.';}
 }
 init();

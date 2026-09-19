@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="/beginner.css">
   <link rel="stylesheet" href="/farm-life.css">
   <link rel="stylesheet" href="/farm-audio.css">
+  <link rel="stylesheet" href="/loading-screen.css">
+  <link rel="preload" as="image" href="/assets/farm-welcome.webp">
   <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
 </head>
 <body hidden>
@@ -53,7 +55,14 @@
     </section>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="tooltip" class="plot-tooltip" hidden></div>
-    <div id="loading" class="loading"><span class="loading-symbol"><i data-lucide="sprout"></i></span><h2>Welcome to Harvest Tycoon</h2><p>Getting your farm ready…</p><progress max="100" value="0" id="load-progress" aria-label="Loading your farm"></progress><span id="load-text">Gathering a little sunshine</span></div>
+    <div id="loading" class="loading farm-loading" aria-labelledby="load-heading"><div class="farm-loading-card">
+ <p class="farm-loading-eyebrow">A LITTLE FARM. BIG POSSIBILITIES.</p>
+ <img class="farm-loading-logo" src="/assets/harvest-tycoon-logo.png" alt="Harvest Tycoon" width="1024" height="1024" fetchpriority="high" draggable="false">
+ <div class="farm-loading-crops" aria-hidden="true"><img src="/assets/icons/wheat.png" alt="" width="52" height="52"><img src="/assets/icons/apples.png" alt="" width="52" height="52"><img src="/assets/icons/corn.png" alt="" width="52" height="52"></div>
+ <h2 class="farm-loading-title" id="load-heading" role="status">Your farm is taking root.</h2><p class="farm-loading-subtitle">A little sunshine. A whole lot to grow.</p>
+ <div class="farm-loading-progress"><div class="farm-loading-meta"><span id="load-text">Getting the fields ready</span><span id="load-percent" aria-hidden="true">0%</span></div><progress max="100" value="0" id="load-progress" aria-label="Farm loading progress"></progress></div>
+ <div class="farm-loading-tip"><span class="farm-loading-tip-label">WHILE YOU WAIT</span><p id="farm-loading-tip">Water and care for your crops to bring home a bigger harvest.</p></div>
+ </div><p class="farm-loading-footer">YOUR OWN LITTLE CORNER OF THE VALLEY</p></div>
     <div id="error" class="error-card" hidden><i data-lucide="cloud-off"></i><h2>Your farm could not load</h2><p id="error-message">Check your connection and try again.</p><button onclick="location.reload()" class="primary-button">Try again</button></div>
   </main>
   <dialog id="sound-dialog" class="game-dialog" aria-labelledby="sound-title"><div class="dialog-heading"><div><span class="eyebrow">THE SOUNDS OF YOUR FARM</span><h2 id="sound-title">Sound settings</h2></div><button class="icon-button close-dialog" aria-label="Close sound settings"><i data-lucide="x"></i></button></div><p>Settle into a gentle melody while your farm grows.</p><label class="sound-switch" for="sound-enabled"><span><i data-lucide="volume-2"></i>Sound enabled</span><input id="sound-enabled" type="checkbox" checked></label><div class="sound-volume"><label for="ambience-volume">Background music</label><output id="ambience-value" for="ambience-volume">22%</output><small>Harvest Meadow · a soft, continuous instrumental.</small><input type="range" id="ambience-volume" min="0" max="100" step="1" value="22"></div><div class="sound-volume"><label for="effects-volume">Game sounds</label><output id="effects-value" for="effects-volume">48%</output><small>Harvests, rewards, level-ups and little jobs.</small><input type="range" id="effects-volume" min="0" max="100" step="1" value="48"></div><button id="sound-preview" class="small-button sound-preview"><i data-lucide="sparkles"></i>Preview level-up sound</button><p id="sound-status" class="sound-status" role="status" aria-live="polite"></p></dialog>

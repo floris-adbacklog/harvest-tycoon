@@ -1,7 +1,14 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#214d36"><title>Harvest Tycoon — Your next harvest starts here</title><meta name="description" content="Grow a little farm into a thriving estate. Plant, craft, complete daily challenges and return to your own corner of the valley."><link rel="icon" href="/assets/harvest-tycoon-logo.png"><link rel="preload" as="image" href="/assets/farm-welcome.webp"><link rel="stylesheet" href="/welcome.css"></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#214d36"><title>Harvest Tycoon — Your next harvest starts here</title><meta name="description" content="Grow a little farm into a thriving estate. Plant, craft, complete daily challenges and return to your own corner of the valley."><link rel="icon" href="/assets/harvest-tycoon-logo.png"><link rel="preload" as="image" href="/assets/farm-welcome.webp"><link rel="stylesheet" href="/welcome.css"><link rel="stylesheet" href="/loading-screen.css"></head>
 <body data-phase="checking">
-<section id="loading-screen" class="loading-screen" role="status" aria-live="polite"><img src="/assets/harvest-tycoon-logo.png" alt="Harvest Tycoon" width="220" height="220"><span class="spinner" aria-hidden="true"></span><h1 id="loading-copy">Checking your account…</h1><p>Your next harvest is waiting.</p></section>
+<section id="loading-screen" class="loading-screen farm-loading" aria-labelledby="loading-copy"><div class="farm-loading-card">
+ <p class="farm-loading-eyebrow">A LITTLE FARM. BIG POSSIBILITIES.</p>
+ <img class="farm-loading-logo" src="/assets/harvest-tycoon-logo.png" alt="Harvest Tycoon" width="1024" height="1024" fetchpriority="high" draggable="false">
+ <div class="farm-loading-crops" aria-hidden="true"><img src="/assets/icons/wheat.png" alt="" width="52" height="52"><img src="/assets/icons/apples.png" alt="" width="52" height="52"><img src="/assets/icons/corn.png" alt="" width="52" height="52"></div>
+ <h1 id="loading-copy" class="farm-loading-title" role="status">Checking your account…</h1><p class="farm-loading-subtitle">A little sunshine. A whole lot to grow.</p>
+ <div class="farm-loading-progress"><div class="farm-loading-track is-indeterminate" aria-hidden="true"><span></span></div></div>
+ <div class="farm-loading-tip"><span class="farm-loading-tip-label">WHILE YOU WAIT</span><p id="farm-loading-tip">Water and care for your crops to bring home a bigger harvest.</p></div>
+ </div><p class="farm-loading-footer">YOUR OWN LITTLE CORNER OF THE VALLEY</p></section>
 <main id="welcome" hidden>
  <svg class="welcome-icons" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
  <symbol id="wi-sprout" viewBox="0 0 24 24"><path d="M12 21v-9M12 16C4 16 3 11 3 7c6 0 9 3 9 9ZM12 12c0-6 3-9 9-9 0 6-3 9-9 9Z"/></symbol>
