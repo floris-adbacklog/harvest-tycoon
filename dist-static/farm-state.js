@@ -486,7 +486,7 @@ export const DAILY_REWARDS=[40,55,70,85,100,120,160];
 export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
 export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]);
 export const DIAMOND_PACKS=Object.freeze([{amount:50,price:'€1.99'},{amount:300,price:'€9.99'},{amount:1000,price:'€24.99'}]);
-export const SINGLE_BATCH_COST=20;
+export const SINGLE_BATCH_COST=10;
 export function finishSingleBatch(state,building,jobId,expectedCost,now=Date.now()){
  if(expectedCost!==SINGLE_BATCH_COST)throw new Error('The price has changed. Review the current price.');
  if(!Object.hasOwn(BUILDINGS,building)||!buildingUnlocked(state,building))throw new Error('Choose an open production building.');

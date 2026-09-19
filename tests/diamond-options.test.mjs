@@ -4,18 +4,18 @@ import {createLegacyFarm} from './legacy-farm.mjs';
 import {applyFarmAction as act,normalizeFarm,productionJobs,diamondUpgradeCost,SINGLE_BATCH_COST,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,replacementOptions,dailyOrders,utcDay,DAY_MS,xpForLevel,BUILDINGS,DIAMOND_UPGRADE_COSTS,RECIPES} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,19,12);
 function farm(){const s=createLegacyFarm(now);s.diamonds=10000;s.coins=100000;s.xp=xpForLevel(20);s.levelRewards=Array.from({length:20},(_,i)=>i+1);for(const k in s.inventory)s.inventory[k]=100;for(const k in BUILDINGS)if(BUILDINGS[k].buildCost)s.buildings[k].built=true;delete s.daily;return normalizeFarm(s,now);}
-test('finish one batch charges 20 once, preserves other jobs and does not collect',()=>{
+test('finish one batch charges 10 once, preserves other jobs and does not collect',()=>{
  const s=farm();s.buildings.coop.level=3;act(s,{type:'produce',recipe:'eggs',count:3},now);
  const jobs=productionJobs(s.buildings.coop),original=structuredClone(jobs),inventory=structuredClone(s.inventory),diamonds=s.diamonds,xp=s.xp;
  const action={type:'finish_batch',building:'coop',jobId:jobs[1].id,expectedCost:SINGLE_BATCH_COST};
- act(s,action,now);assert.equal(s.diamonds,diamonds-20);assert.equal(jobs[1].readyAt,now);assert.deepEqual(jobs[0],original[0]);assert.deepEqual(jobs[2],original[2]);assert.deepEqual(s.inventory,inventory);assert.equal(s.xp,xp);
- assert.throws(()=>act(s,action,now));assert.equal(s.diamonds,diamonds-20);
+ act(s,action,now);assert.equal(s.diamonds,diamonds-10);assert.equal(jobs[1].readyAt,now);assert.deepEqual(jobs[0],original[0]);assert.deepEqual(jobs[2],original[2]);assert.deepEqual(s.inventory,inventory);assert.equal(s.xp,xp);
+ assert.throws(()=>act(s,action,now));assert.equal(s.diamonds,diamonds-10);
  act(s,{type:'collect',building:'coop',jobId:jobs[1].id},now);assert.equal(s.inventory.eggs,inventory.eggs+3);
 });
 test('invalid batch quotes, foreign jobs and insufficient balance spend nothing',()=>{
- for(const extra of [{expectedCost:1},{building:'bakery'},{jobId:'missing'},{expectedCost:'20'},{}]){
-  const s=farm();act(s,{type:'produce',recipe:'eggs'},now);if(!Object.keys(extra).length)s.diamonds=19;
-  const before=structuredClone(s);assert.throws(()=>act(s,{type:'finish_batch',building:'coop',jobId:s.buildings.coop.job.id,expectedCost:20,...extra},now));assert.deepEqual(s,before);
+ for(const extra of [{expectedCost:1},{building:'bakery'},{jobId:'missing'},{expectedCost:'10'},{expectedCost:20},{}]){
+  const s=farm();act(s,{type:'produce',recipe:'eggs'},now);if(!Object.keys(extra).length)s.diamonds=9;
+  const before=structuredClone(s);assert.throws(()=>act(s,{type:'finish_batch',building:'coop',jobId:s.buildings.coop.job.id,expectedCost:10,...extra},now));assert.deepEqual(s,before);
  }
 });
 test('diamond upgrade prices rise every level and retain coins and coin vouchers',()=>{
