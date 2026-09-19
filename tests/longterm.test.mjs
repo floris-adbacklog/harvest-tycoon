@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,levelOf,levelProgress,CROPS,RECIPES,recipeDuration,PROJECTS,currentProject,stallStatus,masteryStatus,DAY_MS} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {normalizeFarm,applyFarmAction as act,levelOf,levelProgress,CROPS,RECIPES,recipeDuration,PROJECTS,currentProject,stallStatus,masteryStatus,DAY_MS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12),hour=3600000;
 test('old saves preserve coins, inventory, levels, crop and job deadlines',()=>{
  const s=createFarm(now);s.version=3;s.xp=2017;s.coins=8123;s.inventory.wheat=67;s.buildings.mill.job={recipe:'flour',startedAt:now-10000,readyAt:now+5000};delete s.mastery;delete s.stall;delete s.estate;delete s.xpOffset;

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PAYMENT_PACKS,starterEligibility,STARTER_WINDOW,validatePaidSession} from '../game/payments.js';
-import {createFarm,applyFarmAction,choreStatus} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {applyFarmAction,choreStatus} from '../game/farm-state.js';
 const start=Date.UTC(2026,8,18),created=new Date(start).toISOString();
 test('starter eligibility is server-time bounded to 72 hours and unavailable after purchase',()=>{
  assert.equal(starterEligibility(created,false,start).eligible,true);

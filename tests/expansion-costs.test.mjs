@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,applyFarmAction,expansionCost,expansionMaterials,tractorQuote,CROPS,ITEMS,RECIPES,normalizeFarm} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {applyFarmAction,expansionCost,expansionMaterials,tractorQuote,CROPS,ITEMS,RECIPES,normalizeFarm} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 test('each expansion buys exactly one field with increasing coin and mixed supply costs',()=>{
  const s=createFarm(now);s.coins=1e7;let previous=0;

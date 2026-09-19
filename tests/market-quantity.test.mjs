@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,applyFarmAction,marketQuote,utcDay} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {applyFarmAction,marketQuote,utcDay} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,19,12);
 test('partial sale preserves stock and credits exact current market price',()=>{
  const farm=createFarm(now);farm.inventory.corn=36;const before=farm.coins;

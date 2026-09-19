@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction,BEGINNER_QUESTS,BEGINNER_REWARD,QUESTS,beginnerProgress} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {normalizeFarm,applyFarmAction,BEGINNER_QUESTS,BEGINNER_REWARD,QUESTS,beginnerProgress} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 const act=(state,action,time=now,random=()=>0)=>applyFarmAction(state,action,time,random);
 test('the beginner guide teaches ten achievable starter actions and awards 20 diamonds once',()=>{

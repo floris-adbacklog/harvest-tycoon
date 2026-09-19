@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,marketQuote,marketValue,marketHighlights,dailyOrders,utcDay,DAY_MS,ITEMS,CROPS,PRODUCTS,xpForLevel,DELIVERY_TIERS} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {normalizeFarm,applyFarmAction as act,marketQuote,marketValue,marketHighlights,dailyOrders,utcDay,DAY_MS,ITEMS,CROPS,PRODUCTS,xpForLevel,DELIVERY_TIERS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,19,12);
 test('daily quotes stay fixed within a UTC day, vary by day and respect every item range',()=>{
  const oilPrices=new Set();let normalDays=0;

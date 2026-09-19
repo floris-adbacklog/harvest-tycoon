@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 import {bindFarmInput,cameraDragDelta} from '../public/farm-input.js';
 import {OrthographicCamera,Vector3} from '../public/vendor/three.module.js';
 import {createQuestsUI,questGroups} from '../public/quests-ui.js';
-import {createFarm,QUESTS,applyFarmAction} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {QUESTS,applyFarmAction} from '../game/farm-state.js';
 
 class Canvas extends EventTarget{
  captured=new Set();

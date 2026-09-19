@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,ACTIVE_STATIONS,ACTIVITY_ROUND_REWARD,activityStatus} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {normalizeFarm,applyFarmAction as act,ACTIVE_STATIONS,ACTIVITY_ROUND_REWARD,activityStatus} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,15);
 function complete(s,station,time){
  const {startedAt}=act(s,{type:'activity_start',station},time);

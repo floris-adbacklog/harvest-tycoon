@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,choreStatus,CHORES,ACTIVE_STATIONS} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {normalizeFarm,applyFarmAction as act,choreStatus,CHORES,ACTIVE_STATIONS} from '../game/farm-state.js';
 import {art} from '../public/visual-icons.js';
 import {soundForAction} from '../public/farm-audio.js';
 const now=Date.UTC(2026,8,18);

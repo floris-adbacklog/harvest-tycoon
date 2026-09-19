@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,CROPS,BUILDINGS,RECIPES,DAY_MS,xpForLevel,cropDuration,seedCost,recipeValue,dailyTasks,dailyOrders,productionJobs,BOOSTS} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {normalizeFarm,applyFarmAction as act,CROPS,BUILDINGS,RECIPES,DAY_MS,xpForLevel,cropDuration,seedCost,recipeValue,dailyTasks,dailyOrders,productionJobs,BOOSTS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,19,12),crops=['greenbeans','apples','berries'],buildings=['kitchen','juicepress','preserves'];
 function advanced(){const s=createFarm(now);s.xp=xpForLevel(20);s.coins=100000;s.diamonds=500;return s;}
 function open(s){for(const key of buildings)act(s,{type:'construct',building:key},now);}

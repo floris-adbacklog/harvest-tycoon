@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,RECIPES,ITEMS,QUESTS,DAILY_POOLS,ORDER_POOL,COMMISSION_POOL,DAY_MS,xpForLevel,recipeAvailability,productionJobs,marketQuote,dailyTasks,dailyOrders,utcDay} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {normalizeFarm,applyFarmAction as act,RECIPES,ITEMS,QUESTS,DAILY_POOLS,ORDER_POOL,COMMISSION_POOL,DAY_MS,xpForLevel,recipeAvailability,productionJobs,marketQuote,dailyTasks,dailyOrders,utcDay} from '../game/farm-state.js';
 const ids=['orchardjuice','berrysmoothie','applecompote','applevinegar','pickledbeans','beangratin','orchardsalad','berrycheesecake','harvesthamper'];
 const now=Date.UTC(2026,8,19,12);
 function farm(){const s=createFarm(now);s.xp=xpForLevel(20);for(const b of Object.values(s.buildings)){b.built=true;b.level=3;}for(const k of Object.keys(s.inventory))s.inventory[k]=100;return s;}
@@ -32,7 +33,7 @@ test('existing save balances, claims, production and daily snapshots survive the
  const s=farm();s.version=11;s.claimed=[0,20,84];for(const id of ids){delete s.inventory[id];delete s.stats['made_'+id];}
  const before=structuredClone(s);normalizeFarm(s,now);
  for(const key of ['coins','diamonds','claimed','daily','plots','onboarding','buildings'])assert.deepEqual(s[key],before[key]);
- for(const id of ids){assert.equal(s.inventory[id],0);assert.equal(s.stats['made_'+id],0);}assert.equal(s.version,12);
+ for(const id of ids){assert.equal(s.inventory[id],0);assert.equal(s.stats['made_'+id],0);}assert.equal(s.version,13);
 });
 test('all products have positive base processing margins, variable prices and reachable objectives',()=>{
  for(const id of ids){const r=RECIPES[id],cost=Object.entries(r.input).reduce((n,[k,q])=>n+ITEMS[k].sell*q,0);assert.ok(ITEMS[id].sell>=cost*1.35,id);assert.ok(QUESTS.some(q=>q.stat==='made_'+id));assert.ok(DAILY_POOLS.flat().some(q=>q.stat==='made_'+id));assert.ok(ORDER_POOL.some(o=>o.input[id]));

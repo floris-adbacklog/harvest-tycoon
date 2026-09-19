@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,applyFarmAction as act,productionJobs,dailyOrders,utcDay,ORDER_POOL,deliveryDiamonds} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {applyFarmAction as act,productionJobs,dailyOrders,utcDay,ORDER_POOL,deliveryDiamonds} from '../game/farm-state.js';
 import {clearCropVisual,loadInBatches} from '../public/render-resources.js';
 const now=Date.UTC(2026,8,18,12);
 test('bulk production fills exactly the requested slots and consumes ingredients once',()=>{

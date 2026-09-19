@@ -1,4 +1,4 @@
-import {ACTIVE_STATIONS,ACTIVITY_ROUND_REWARD,activityStatus,ITEMS,formatDuration} from './farm-state.js';
+import {featureUnlocked,featureUnlockHint,ACTIVE_STATIONS,ACTIVITY_ROUND_REWARD,activityStatus,ITEMS,formatDuration} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {refreshArt,art} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -7,7 +7,7 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
  const dialog=$('activities-dialog');
  function statuses(){return Object.keys(ACTIVE_STATIONS).map(id=>activityStatus(state,id,farmNow()));}
  function signature(){return statuses().map(s=>`${s.station}:${!!s.job}:${s.job?.done.length}:${s.remaining>0}`).join('|');}
- function open(id){if(!Object.hasOwn(ACTIVE_STATIONS,id))return false;selected=id;feedback='';document.querySelectorAll('dialog[open]').forEach(d=>d.close());render();dialog.showModal();return true;}
+ function open(id){if(!featureUnlocked(state,'activities')){notify(featureUnlockHint('activities'));return false;}if(!Object.hasOwn(ACTIVE_STATIONS,id))return false;selected=id;feedback='';document.querySelectorAll('dialog[open]').forEach(d=>d.close());render();dialog.showModal();return true;}
  function render(){
   if(!selected)return;
   const all=statuses(),round=state.activities?.round??[],s=all.find(s=>s.station===selected),panel=$('activity-work');

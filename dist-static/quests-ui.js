@@ -1,13 +1,15 @@
-import {QUESTS} from './farm-state.js';
+import {QUESTS,guidedFarm,availableDaily} from './farm-state.js';
 
 export function questGroups(state){
  const groups={ready:[],active:[],done:[]};
  QUESTS.forEach((quest,id)=>{
+  if(guidedFarm(state)&&!state.claimed.includes(id)&&!availableDaily(state,quest))return;
   const value=Math.min(quest.target,Number(state.stats[quest.stat])||0);
   const group=state.claimed.includes(id)?'done':value>=quest.target?'ready':'active';
   groups[group].push({id,quest,value});
  });
- groups.active.sort((a,b)=>Number(b.id>=41)-Number(a.id>=41));
+ if(!guidedFarm(state))groups.active.sort((a,b)=>Number(b.id>=41)-Number(a.id>=41));
+ else groups.active=groups.active.slice(0,5);
  return groups;
 }
 

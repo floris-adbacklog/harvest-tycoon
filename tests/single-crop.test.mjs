@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,applyFarmAction as act} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {applyFarmAction as act} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,18);
 test('ten diamonds finish only the selected growing crop without harvesting it',()=>{
  const s=createFarm(now);s.diamonds=20;const id=s.plots.findIndex(p=>p.crop&&p.readyAt>now),before=structuredClone(s),crop=s.plots[id].crop;

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,applyFarmAction,dailyTasks,utcDay,DAY_MS,BOOSTS,DAILY_DIAMONDS} from '../game/farm-state.js';
+import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {applyFarmAction,dailyTasks,utcDay,DAY_MS,BOOSTS,DAILY_DIAMONDS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 test('daily challenges pay 2, 2 and 4 diamonds once, separately from login gifts',()=>{
  const s=createFarm(now);const tasks=dailyTasks(s,now);assert.deepEqual(tasks.map(q=>q.diamonds),[2,2,4]);

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
+import {featureUnlocked,ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 import {art} from './visual-icons.js';
 export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','house_024','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
 
@@ -53,7 +53,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   for(const [id,v] of views){
    const p=new THREE.Vector3(v.object.position.x,v.height+.4,v.object.position.z).project(camera),s=activityStatus(state,id,now);
    v.label.style.left=`${(p.x*.5+.5)*width}px`;v.label.style.top=`${(-p.y*.5+.5)*height}px`;
-   v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.86;v.label.classList.toggle('available',!s.remaining);v.label.classList.toggle('working',!!s.job);
+   v.label.hidden=!featureUnlocked(state,'activities')||Math.abs(p.x)>.94||Math.abs(p.y)>.86;v.label.classList.toggle('available',!s.remaining);v.label.classList.toggle('working',!!s.job);
   }
  }
  function watchProduction(buildings){
@@ -72,5 +72,5 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   if(reducedMotion)return;const v=views.get(id);if(!v)return;
   for(let i=0;i<7;i++){const o=new THREE.Mesh(new THREE.SphereGeometry(.1,4,3),new THREE.MeshBasicMaterial({color:i%2?0xffd458:0xd0e79d,transparent:true}));o.position.set(v.x+Math.cos(i)*.7,.8,v.z+Math.sin(i)*.7);scene.add(o);effects.push({obj:o,life:1.4});}
  }
- return {views,attach,position,animate,celebrate,watchProduction,targets:()=>hitAreas.concat([...views.values()].map(v=>v.object).concat(moving.filter(m=>m.kind!=='bee').map(m=>m.obj)))};
+ return {views,attach,position,animate,celebrate,watchProduction,targets:()=>!featureUnlocked(state,'activities')?[]:hitAreas.concat([...views.values()].map(v=>v.object).concat(moving.filter(m=>m.kind!=='bee').map(m=>m.obj)))};
 }

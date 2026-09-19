@@ -1,4 +1,4 @@
-import {CROPS,CHORES,choreStatus,PROJECTS,MASTERY_TIERS,masteryStatus,stallStatus,currentProject,formatDuration,cropDuration} from './farm-state.js';
+import {featureUnlocked,featureUnlockHint,CROPS,CHORES,choreStatus,PROJECTS,MASTERY_TIERS,masteryStatus,stallStatus,currentProject,formatDuration,cropDuration} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -8,10 +8,11 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onPlant
  let tab='projects',lastReadiness='';
  async function act(action,message){try{const result=await runAction(action);onChange();render();$('estate-feedback').textContent=typeof message==='function'?message(result):message;notify($('estate-feedback').textContent);}catch(error){$('estate-feedback').textContent=error.message;notify(error.message);}}
  function open(section='projects'){
+  if(!featureUnlocked(state,section)){notify(featureUnlockHint(section));return;}
   tab=section;document.querySelectorAll('dialog[open]').forEach(d=>d.close());render();$('estate-dialog').showModal();icons();
  }
  function render(){
-  document.querySelectorAll('[data-estate-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.estateTab===tab);b.setAttribute('aria-pressed',String(b.dataset.estateTab===tab));});
+  document.querySelectorAll('[data-estate-tab]').forEach(b=>{b.hidden=!featureUnlocked(state,b.dataset.estateTab);b.classList.toggle('active',b.dataset.estateTab===tab);b.setAttribute('aria-pressed',String(b.dataset.estateTab===tab));});
   $('estate-feedback').textContent='';
   if(tab==='projects')renderProjects();if(tab==='stall')renderStall();if(tab==='chores')renderChores();if(tab==='mastery')renderMastery();
   lastReadiness=readiness();icons();
@@ -60,6 +61,6 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onPlant
   if(tab==='projects'&&state.estate.job){const job=state.estate.job;$('project-clock').textContent=farmNow()>=job.readyAt?'Ready to open':`${formatDuration(job.readyAt-farmNow())} remaining`;$('project-progress').value=Math.min(100,(farmNow()-job.startedAt)/(job.readyAt-job.startedAt)*100);}
  }
  $('estate-button').onclick=()=>open();
- document.querySelectorAll('[data-estate-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.estateTab;render();});
+ document.querySelectorAll('[data-estate-tab]').forEach(b=>b.onclick=()=>open(b.dataset.estateTab));
  return {open,refresh,tick};
 }
