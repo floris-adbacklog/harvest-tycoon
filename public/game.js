@@ -48,6 +48,7 @@ const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','p
 modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
 modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','stall_001','case_001','dray_002','dray_004','prop_029');
 modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS);
+modelNames.push('coop_002','mountain_001','mountain_007');
 const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
 let toastTimer;
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
@@ -131,6 +132,7 @@ function decorate(){
  addUtility('stall','stall_002',-11.3,-2.6,{width:2.9,rotation:.15});
  cloneModel('prop_023',-9.2,-2.7,{width:.8});
  addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
+ {const pen=buildingViews.get('coop').object,house=cloneModel('coop_002',13,-9.5,{width:1.5});pen.attach(house);}
  fenceLine(8,-12.5,5);fenceLine(7,-11.4,4,'z');fenceLine(16.6,-11.4,4,'z');fenceLine(9.2,-3.6,4);
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
  fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
@@ -476,7 +478,7 @@ async function init(){
    object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});
    models.set(name,{object:group,size});loaded++;loadingUI.modelsReady(loaded);
   },4)]);
-  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});measureFarm();resize();icons();
+  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});measureFarm();resize();icons();
   renderer.domElement.addEventListener('pointermove',e=>{
    if(e.pointerType!=='mouse'||e.buttons){highlight(-1);$('tooltip').hidden=true;return;}
    const target=pointerTarget(e);highlight(target?.id??-1);const tooltip=$('tooltip');

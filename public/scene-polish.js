@@ -87,7 +87,54 @@ function tuftGeometry(){
  return g;
 }
 
-export function createScenePolish({scene,getPlots,reducedMotion=false,mobile=false,anisotropy=4}){
+
+// Small scenery that is meant to stand next to a building, never inside its walls.
+const CLIPPABLE=/^(fence|stone_fence|bush|grass|barrel|bag|case|bucket|firewood|prop|hay)_/;
+// Hides fences, bushes and props that stand inside a building. Bounding boxes are too
+// generous (porches, sails), so the test is exact: rays are dropped from above at a few
+// points of each object, and a point counts as "inside" only when real building geometry
+// is above it. Placement is hand-tuned, so this keeps every present and future building clean.
+function hideClippedScenery(scene){
+ const buildings=scene.children.filter(o=>o.userData.building&&o.userData.model);
+ if(!buildings.length)return 0;
+ const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0),origin=new THREE.Vector3(),size=new THREE.Vector3(),hidden=[];
+ const covered=(x,z,y)=>{origin.set(x,80,z);ray.set(origin,down);return ray.intersectObjects(buildings,true).some(h=>h.point.y>y+.25);};
+ for(const o of scene.children){
+  const m=o.userData.model;if(!m||o.userData.building||o.userData.utility||o.userData.activity||!CLIPPABLE.test(m+'_')||!o.visible)continue;
+  const box=new THREE.Box3().setFromObject(o),c=box.getCenter(new THREE.Vector3());box.getSize(size);
+  const long=size.x>=size.z,points=size.x>1.2*size.z||size.z>1.2*size.x
+   ?[-.35,0,.35].map(k=>[c.x+(long?k*size.x:0),c.z+(long?0:k*size.z)])
+   :[[0,0],[.25,.25],[-.25,.25],[.25,-.25],[-.25,-.25]].map(([a,b])=>[c.x+a*size.x,c.z+b*size.z]);
+  const inside=points.filter(([x,z])=>covered(x,z,box.min.y)).length;
+  if(inside/points.length>=.5){o.visible=false;hidden.push(`${m}@${o.position.x.toFixed(1)},${o.position.z.toFixed(1)}`);}
+ }
+ if(hidden.length)console.debug('Scene polish hid scenery that clipped a building:',hidden.join(' '));
+ return hidden.length;
+}
+
+// A ring of rocky peaks around the valley, like the crater in the supplied demo. The fixed
+// isometric camera only sees a limited strip beyond the farm, so the ring is laid out in
+// screen directions (right = +x/-z, back = -x/-z): the side walls show in the normal view
+// and the back wall when the player zooms out. The front stays open so nothing hides the farm.
+function mountainRing({cloneModel,group,rand,mobile}){
+ const names=['mountain_001','mountain_007','mountain_001','mountain_008','mountain_007'],k=Math.SQRT1_2;
+ const step=mobile?22:14;let i=0;
+ for(let a=-8;a<=196;a+=step){
+  const phi=(a+(rand()-.5)*7)*Math.PI/180,A=50+rand()*5,B=46+rand()*5;
+  const sx=A*Math.cos(phi),sb=B*Math.sin(phi);
+  // Screen axes to world: right = (1,0,-1)/sqrt2, back = (-1,0,-1)/sqrt2, around the home focus.
+  const x=1.4+(sx-sb)*k,z=1.5+(-sx-sb)*k;
+  // The wall runs along the ring's tangent.
+  const tx=-A*Math.sin(phi),tb=B*Math.cos(phi),dx=(tx-tb)*k,dz=(-tx-tb)*k;
+  const name=names[i++%names.length],w=30+rand()*10,d=12+rand()*5,h=(name==='mountain_008'?8:9.5)+rand()*4.5+Math.max(0,Math.sin(phi))*2.5;
+  const o=cloneModel(name,x,z,{width:w,depth:d,height:h,y:-.8,rotation:Math.atan2(-dz,dx)+(rand()-.5)*.5});
+  // Distant rock fades toward the sky colour, like the rest of the valley's haze.
+  o.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;n.material=n.material.clone();n.material.emissive=new THREE.Color(0xf0d9a4);n.material.emissiveIntensity=.24;}});
+  group.add(o);
+ }
+}
+
+export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false,mobile=false,anisotropy=4}){
  const rand=mulberry(20260919),group=new THREE.Group();group.name='Scene polish';group.userData.polish=true;scene.add(group);
  scene.updateMatrixWorld(true);
 
@@ -97,6 +144,8 @@ export function createScenePolish({scene,getPlots,reducedMotion=false,mobile=fal
   ground.material.map=groundTexture(mobile?256:512,rand,Math.min(anisotropy,4),200/22);
   ground.material.color.multiplyScalar(1.07);ground.material.needsUpdate=true;
  }
+
+ hideClippedScenery(scene);
 
  // 2. Where plants may grow: everything that is not a flat decal, road-sized clearing or the pond.
  const blocked=[];
@@ -196,6 +245,8 @@ export function createScenePolish({scene,getPlots,reducedMotion=false,mobile=fal
    motes=new THREE.Points(geometry,new THREE.PointsMaterial({color:0xfff0c0,size:.11,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending}));motes.frustumCulled=false;group.add(motes);
   }
  }
+
+ if(cloneModel)mountainRing({cloneModel,group,rand,mobile});
 
  let lastSync=0;
  const at=new THREE.Vector3(),next=new THREE.Vector3();
