@@ -279,7 +279,7 @@ async function u(e) {
 	let o = document.createElement("button");
 	o.id = "starter-pack-button", o.hidden = !0, o.type = "button", o.setAttribute("aria-label", "Starter Pack, €2.99"), o.innerHTML = "<img src=\"/assets/icons/starter-pack.svg\" alt=\"\"><span>Starter Pack</span><small>€2.99</small>";
 	let s = document.createElement("dialog");
-	s.id = "starter-pack-dialog", s.className = "game-dialog", s.setAttribute("aria-labelledby", "starter-pack-title"), s.innerHTML = `<button type="button" class="starter-close" aria-label="Close Starter Pack">×</button><img class="starter-hero" src="/assets/icons/starter-pack.svg" alt=""><span class="eyebrow">A LITTLE HEAD START</span><h2 id="starter-pack-title">Starter Pack</h2><p>Make yourself at home with a one-time welcome bundle.</p><div class="starter-rewards"><div>${r("coins")}<strong>10,000</strong><span>coins</span></div><div>${r("diamonds")}<strong>300</strong><span>diamonds</span></div></div><h3>1× each of all 12 crops</h3><div class="starter-crops">${Object.entries(t).map(([e, t]) => `<div>${r(e)}<span>${t.name}</span><b>×1</b></div>`).join("")}</div><p class="starter-note">All rewards go directly to your account. Includes Apples, Berries and Green beans. All 12 crops are added to your inventory, ready to use or sell; no fields are planted.</p><p class="starter-time"></p><button class="primary-button starter-buy" disabled>Buy Starter Pack · €2.99</button><p class="starter-feedback" role="status" aria-live="polite"></p><small>One purchase per account. Available for your first 72 hours.</small>`, document.body.append(o, s), i();
+	s.id = "starter-pack-dialog", s.className = "game-dialog", s.setAttribute("aria-labelledby", "starter-pack-title"), s.innerHTML = `<button type="button" class="starter-close" aria-label="Close Starter Pack">×</button><img class="starter-hero" src="/assets/icons/starter-pack.svg" alt=""><span class="eyebrow">A LITTLE HEAD START</span><h2 id="starter-pack-title">Starter Pack</h2><p>Make yourself at home with a one-time welcome bundle.</p><div class="starter-rewards"><div>${r("coins")}<strong>10,000</strong><span>coins</span></div><div>${r("diamonds")}<strong>300</strong><span>diamonds</span></div></div><h3>1× each of all 12 crops</h3><div class="starter-crops">${Object.entries(t).map(([e, t]) => `<div>${r(e)}<span>${t.name}</span><b>×1</b></div>`).join("")}</div><p class="starter-note">All crops are added to your inventory, ready to use or sell; no fields are planted.</p><p class="starter-time"></p><button class="primary-button starter-buy" disabled>Buy Starter Pack · €2.99</button><p class="starter-feedback" role="status" aria-live="polite"></p><small>One purchase per account. Available for your first 72 hours.</small>`, document.body.append(o, s), i();
 	let c = s.querySelector(".starter-buy"), l = s.querySelector(".starter-feedback"), u = s.querySelector(".starter-time"), d = null, f = 0, p = !1, m = !1, h = "", g = !1;
 	function _() {
 		let e = d?.starter, t = (e?.expiresAt ?? 0) - (Date.now() + f), r = e?.eligible && t > 0;
@@ -363,9 +363,10 @@ else {
 			r === o && n.results.setAttribute("aria-busy", "false");
 		}
 	}
-	await import(
+	let { farmReady: c } = await import(
 		/* @vite-ignore */
 		"/game.js"
-), l(d), u(d);
+);
+	await c && (l(d), await u(d));
 }
 //#endregion

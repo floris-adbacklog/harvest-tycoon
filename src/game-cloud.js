@@ -15,8 +15,10 @@ if(!bridge){location.replace('/play.html');}else{
   window.addEventListener('pagehide',()=>{stopPresence?.();clearInterval(boardRefresh);},{once:true});
   let boardRequest=0;
   async function openBoard(quiet=false){const request=++boardRequest,category=ui.category;if(!quiet)ui.message('Gathering the latest scores…');ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);if(request!==boardRequest)return;renderLeaderboard(ui.results,result,bridge.playerId);ui.status('Up to date');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
-  await import(/* @vite-ignore */ '/game.js');
-  showPaymentReturn(bridge);
-  createStarterPackUI(bridge);
+  const {farmReady}=await import(/* @vite-ignore */ '/game.js');
+  if(await farmReady){
+   showPaymentReturn(bridge);
+   await createStarterPackUI(bridge);
+  }
  }
 }

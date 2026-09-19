@@ -10,6 +10,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  let marketSelling=false,renderedMarketDay='',lastMarketDay=utcDay(farmNow());
  const number=n=>n.toLocaleString('en-US');
  const signed=n=>`${n>=0?'+':''}${number(n)}`;
+ const sellQuantities={};
  const batchCounts={},fertilizerFields=new Set();
  function itemArt(key){return art(key,'product-art');}
  function show(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();}
@@ -123,16 +124,18 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   const {today,tomorrow}=marketHighlights(now);
   $('market-outlook').innerHTML=`<div class="market-outlook-heading"><span class="eyebrow">TODAY’S MARKET</span><span id="market-countdown"></span></div><div class="market-highlight">${art(today.item)}<div><strong>${ITEMS[today.item].name}</strong><span>${number(today.price)} coins each · ${today.label}</span></div><b class="demand-pill ${today.demand}">${signed(today.change)}%</b></div><p class="market-forecast">Tomorrow’s outlook: <strong>${ITEMS[tomorrow.item].name}</strong> · ${tomorrow.label.toLowerCase()} expected.</p><div class="market-board-link"><span>Delivery orders pay extra for specific baskets.</span><button type="button" id="market-orders">View orders →</button></div>`;
   $('market-orders').onclick=()=>{$('market-dialog').close();$('today-button').click();document.querySelector('[data-today-tab="orders"]').click();};
-  $('market-items').innerHTML=entries.map(([key,c])=>{const q=marketQuote(key,now);return `<div class="market-row dynamic-market-row">${itemArt(key)}<div class="market-item-copy"><strong>${c.name}</strong><span class="market-current-price">${number(q.price*multiplier)} <small>coins each${multiplier===2?' · 2× boost':''}</small></span><span class="market-price-context">Normal ${number(q.normal)} · Range ${number(q.min)}–${number(q.max)}</span><span class="demand-pill ${q.demand}">${q.label} · ${signed(q.change)}%</span></div><span class="market-stock"><b>${number(state.inventory[key])}</b><small>in stock</small></span><button class="small-button" data-sell="${key}" ${!state.inventory[key]||marketSelling?'disabled':''}>Sell</button></div>`;}).join('');
+  $('market-items').innerHTML=entries.map(([key,c])=>{const q=marketQuote(key,now),stock=state.inventory[key],quantity=stock?Math.min(stock,Math.max(1,sellQuantities[key]??1)):0;sellQuantities[key]=quantity;return `<div class="market-row dynamic-market-row">${itemArt(key)}<div class="market-item-copy"><strong>${c.name}</strong><span class="market-current-price">${number(q.price*multiplier)} <small>coins each${multiplier===2?' · 2× boost':''}</small></span><span class="market-price-context">Normal ${number(q.normal)} · Range ${number(q.min)}–${number(q.max)}</span><span class="demand-pill ${q.demand}">${q.label} · ${signed(q.change)}%</span></div><div class="market-sale-controls"><label for="sell-quantity-${key}"><span>${number(stock)} in stock</span><output id="sell-count-${key}">${quantity} selected</output></label><input id="sell-quantity-${key}" data-sell-range="${key}" type="range" min="${stock?1:0}" max="${stock}" step="1" value="${quantity}" aria-label="Quantity of ${c.name} to sell" ${!stock||marketSelling?'disabled':''}><div class="market-sale-buttons"><button class="small-button" data-sell="${key}" ${!stock||marketSelling?'disabled':''}>Sell ${number(quantity)} · ${number(quantity*q.price*multiplier)} coins</button><button class="small-button" data-sell-item-all="${key}" ${!stock||marketSelling?'disabled':''}>Sell all</button></div></div></div>`;}).join('');
   const total=entries.reduce((v,[k])=>v+state.inventory[k]*marketQuote(k,now).price*multiplier,0);$('inventory-value').textContent=`${number(total)} coins`;$('sell-all').disabled=!total||marketSelling;$('sell-all').textContent=marketSelling?'Selling…':`Sell all ${marketTab==='crops'?'crops':'goods'}`;
   document.querySelectorAll('[data-market-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.marketTab===marketTab);b.setAttribute('aria-pressed',String(b.dataset.marketTab===marketTab));b.disabled=marketSelling;});
-  $('market-items').querySelectorAll('[data-sell]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sell)));marketCountdown(now);icons();
+  $('market-items').querySelectorAll('[data-sell]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sell,sellQuantities[b.dataset.sell])));$('market-items').querySelectorAll('[data-sell-item-all]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sellItemAll)));
+  $('market-items').querySelectorAll('[data-sell-range]').forEach(input=>input.addEventListener('input',()=>{const key=input.dataset.sellRange,quantity=Number(input.value);sellQuantities[key]=quantity;$(`sell-count-${key}`).textContent=`${number(quantity)} selected`;$('market-items').querySelector(`[data-sell="${key}"]`).textContent=`Sell ${number(quantity)} · ${number(quantity*marketQuote(key,now).price*multiplier)} coins`;}));
+  marketCountdown(now);icons();
  }
  function marketCountdown(now){const el=$('market-countdown');if(el)el.textContent=`New prices in ${seconds(marketQuote('oil',now).resetsAt-now)} · 00:00 UTC`;}
- async function sell(key='category'){
+ async function sell(key='category',quantity){
   if(marketSelling)return;const day=renderedMarketDay||utcDay(farmNow()),category=marketTab;marketSelling=true;renderMarket();
   try{
-   const r=await runAction(key==='category'?{type:'sell',category,day}:{type:'sell',item:key,day});
+   const r=await runAction(key==='category'?{type:'sell',category,day}:{type:'sell',item:key,day,...(quantity===undefined?{}:{quantity})});
    onChange();notify(`Sold! +${number(r.coins)} coins for your next harvest.`);return r;
   }catch(e){notify(e.message);return {error:e.message};}finally{marketSelling=false;renderMarket();}
  }

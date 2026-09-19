@@ -338,15 +338,17 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  else Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
  return {action,crop:harvested,quantity,xp,regrowing};
 }
-export function sellCrops(state,item='all',now=Date.now(),day,category) {
+export function sellCrops(state,item='all',now=Date.now(),day,category,quantity) {
  if(day!==undefined&&day!==utcDay(now))throw new Error('Market prices have refreshed. Check today’s prices before selling.');
  if(category!==undefined&&!['crops','goods'].includes(category))throw new Error('Choose a market category.');
  if(item!=='all'&&!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid item.');
  const keys=category?Object.keys(category==='crops'?CROPS:PRODUCTS):item==='all'?Object.keys(ITEMS):[item];
- const total=keys.reduce((v,k)=>v+state.inventory[k]*marketQuote(k,now).price,0);
+ if(quantity!==undefined&&(item==='all'||category!==undefined||!Number.isSafeInteger(quantity)||quantity<1||quantity>state.inventory[item]))throw new Error('Choose a valid quantity within your stock.');
+ const amounts=Object.fromEntries(keys.map(k=>[k,quantity??state.inventory[k]]));
+ const total=keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0);
  if(total===0)throw new Error('Your basket is empty. Harvest or produce something first.');
- const units=keys.reduce((v,k)=>v+state.inventory[k],0);
- for(const k of keys)state.inventory[k]=0;
+ const units=keys.reduce((v,k)=>v+amounts[k],0);
+ for(const k of keys)state.inventory[k]-=amounts[k];
  state.coins+=total;state.stats.earned+=total;state.stats.sold+=units;
  return {coins:total,day:utcDay(now)};
 }
@@ -716,7 +718,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'project_start':return startProject(state,now);
   case 'project_collect':return completeProject(state,now);
   case 'field':return actOnPlot(state,action.id,action.action,action.crop??'corn',now);
-  case 'sell':return sellCrops(state,action.item??'all',now,action.day,action.category);
+  case 'sell':return sellCrops(state,action.item??'all',now,action.day,action.category,action.quantity);
   case 'produce':return startProduction(state,action.recipe,now,action.count);
   case 'collect':return collectProduction(state,action.building,now,action.jobId);
   case 'collect_all':return collectAllProduction(state,action.building,now);
