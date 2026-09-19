@@ -92,17 +92,18 @@ function decorate(){
  cloneModel('tower_005',-17,3,{height:4.5});
  addBuilding('bakery',-10.8,12,{width:5.2,rotation:Math.PI/2});
  addBuilding('packing',11.5,-17.2,{width:4.4,rotation:-Math.PI/2});
- addBuilding('windmill',12.8,4,{height:6.6});
+ const windmillPosition={x:12.8,z:-1.5};
+ addBuilding('windmill',windmillPosition.x,windmillPosition.z,{height:6.6});
  addBuilding('juicepress',-1,-20.1,{width:4,height:2.8,depth:3.5,rotation:Math.PI/2});
  addBuilding('preserves',-15.2,-18.6,{width:4.2,height:3,depth:3.8,rotation:Math.PI/2});
  addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
  for(const [x,z] of [[-1,-20.1],[-15.2,-18.6],[-12.4,18.2]])patch(x,z,5.1,4.8,0xb6bd88,.008);
  // Both the mill body and its moving sails are original parts from the supplied pack.
  const sail=cloneModel('tower_020',0,0,{height:5.8});scene.remove(sail);
- sail.position.set(0,-2.9,0);windmillRotor=new THREE.Group();windmillRotor.position.set(12.8,4.55,5.8);windmillRotor.add(sail);windmillRotor.userData.building='windmill';scene.add(windmillRotor);
- cloneModel('bag_001',10.8,5.8,{height:.95,rotation:.4});
- cloneModel('bag_002',11.5,6.2,{height:.85,rotation:-.3});
- cloneModel('prop_023',15,5.8,{width:1.1,rotation:.2});
+ sail.position.set(0,-2.9,0);windmillRotor=new THREE.Group();windmillRotor.position.set(windmillPosition.x,4.55,windmillPosition.z+1.8);windmillRotor.add(sail);windmillRotor.userData.building='windmill';scene.add(windmillRotor);
+ cloneModel('bag_001',windmillPosition.x-2,windmillPosition.z+1.8,{height:.95,rotation:.4});
+ cloneModel('bag_002',windmillPosition.x-1.3,windmillPosition.z+2.2,{height:.85,rotation:-.3});
+ cloneModel('prop_023',windmillPosition.x+2.2,windmillPosition.z+1.8,{width:1.1,rotation:.2});
  const glasshouse=cloneModel('greenhouse_003',5.6,-19,{width:3.7,rotation:Math.PI/2});
  cloneModel('barrel_002',14.5,-14.6,{height:1.2});
  cloneModel('bucket_003',12.7,-13.9,{height:.65});
