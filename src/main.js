@@ -3,7 +3,9 @@ import {supabase,isConfigured,verifiedUser,validUsername,farmRequest,paymentRequ
 import {fetchLeaderboard} from './leaderboard.js';
 import {trackSignUp,isNewRegistration,trackAuth} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
+import {startPwa} from './pwa.js';
 const $=id=>document.getElementById(id);
+startPwa();
 let presence=null;
 let mode='register',generation=0,playerId=null,frame=null,submitting=false,checking=false,reopen=false;
 let focusing=false,nameOpen=false,recovering=false,viewTracked=false,confirmKind='signup',pendingEmail='',resendTimer=null;

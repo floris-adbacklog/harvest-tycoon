@@ -1,0 +1,7 @@
+/* Settings dialog: section headings and the "Farm app" block. The sound controls keep their own styles in farm-audio.css. */
+.settings-heading{display:flex;align-items:center;gap:10px;font:600 17px/1.2 Outfit,'DM Sans',sans-serif;letter-spacing:-.01em;color:#4b452c;margin:2px 0 10px}
+.settings-heading .game-art,.settings-heading svg{width:26px;height:26px;flex-shrink:0}
+#sound-dialog .settings-section{margin-top:24px;padding-top:20px;border-top:1px solid #e3dad0}
+#sound-dialog .install-copy{margin:0;font-size:13px;line-height:1.7;color:#80776b}
+.install-steps{margin:10px 0 0;padding-left:22px;font-size:13px;line-height:1.75;color:#6b6353}
+#install-app{width:100%;justify-content:center;min-height:46px;margin-top:14px}
