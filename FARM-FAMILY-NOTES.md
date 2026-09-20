@@ -1,26 +1,37 @@
 # Farm Family update
 
-Built from the attached latest repository (`f022c661-8c63-4c21-8758-ce0a6daeb474.zip`), preserving its newer Claude changes.
+Built from the reattached `Harvest-Tycoon-Farm-Family-Full-v3(1).zip`, preserving the prior Claude changes and Family features.
 
-## Simpler tournament and guaranteed pool (v3)
+## Family Hall, standings and rewards (v4)
 
-Every week has a minimum **15-diamond pool**, growing by contributor count up to 300. A family enters with one current member's first positive contribution. The previous two-member and 2,000-point entry requirements have been removed. Existing contributions count immediately; no player inventory or contribution history was reset.
+- Relocated the two trees that intersected the Hall: the large tree moved from (-10, -19) to (-21, -16), and the border tree from (-12, -23) to (-14, -25).
+- Removed the decorative house in front of the Hall and its decorative tower. The Tool workshop station remains directly tappable. A bush in the approach was also removed. Unused house/tower assets remain in the pack but are no longer loaded into the scene.
+- Tournament now starts with a compact banner and three distinct gold, silver and bronze rows. Each real family shows its name, contribution points, contributor count and family diamond prize. Empty places have no invented names, statistics or prizes. The player's personal share appears below; details stay collapsed. Mobile layouts place statistics below the family name.
+- First place now wins **50–300 diamonds for the family**. Start at 50 and add 10 for each additional current member who contributed this week across all qualifying families; cap first prize at 300 (26 contributors). Idle members, past-week contributions and departed members do not increase it.
+- Second place receives 60% of first prize; third receives 40%. Only occupied winning places are included in the current pool, so a solo winning family receives the full first prize. Prizes are divided between contributors according to contribution points, with whole-diamond rounding and at least one diamond per contributor. Family prizes are not amounts granted separately to every member.
+- The old combined 25-diamond cap no longer truncates Tournament rewards. Order rewards keep their existing rules and are additional. Tournament entitlements remain unique per player/week, and claims still use the existing atomic server path.
 
-One participating family receives the whole available pool. With two families, the top-place weights are normalized to 5:3; with three or more, the top three share 50% / 30% / 20%. Whole-diamond remainders are assigned deterministically. Individual weekly reward caps remain in force. Per-family result totals and the personal reward preview show the actual payable amount after caps, using the same calculation as settlement.
+| Weekly contributors | First prize | Second prize, if occupied | Third prize, if occupied |
+| --- | ---: | ---: | ---: |
+| 1 | 50 | — | — |
+| 2 | 60 | 36 | — |
+| 6 | 100 | 60 | 40 |
+| 16 | 200 | 120 | 80 |
+| 26 or more | 300 | 180 | 120 |
 
-The weekly order and tournament pages now show the player's estimated diamond prize prominently. Main instructions are shorter; detailed distribution rules and previous results are collapsed. The English UI retains all four dedicated page icons and the separate Family Hall icon.
+These are family prizes. Contributors may belong to one or several families; only existing top-three families receive the corresponding prize. A minimum 50-diamond first prize is displayed before the first entry.
 
-Verified the existing live contribution read-only: one family, one contributor, 4,080 points. The new calculation gives 15 diamonds; a local settlement simulation agrees. The live week was not settled early and no rewards were manually credited. The server update is live as `farm-api` version 33. Deploy this ZIP's frontend to see the new screens. No additional SQL is required.
+Server rules are live in farm-api version 34. The existing contribution history remains intact. No week was settled early, no player inventory was reset, and no diamonds were credited manually. No new SQL migration is needed. Publish this ZIP's frontend to see the changed map and tournament screen.
 
 ## Family Hall icon correction (v2)
 
-The Family Hall now has its own generated blue-roofed building icon, `public/assets/icons/familyhall.png`. Both the farm marker and building catalogue use it. The previous Farmhouse alias and catalogue fallback were removed. That icon correction was frontend-only; v3 also updates the tournament server rules.
+The Family Hall now has its own generated blue-roofed building icon, `public/assets/icons/familyhall.png`. Both the farm marker and building catalogue use it. The previous Farmhouse alias and catalogue fallback were removed. That icon correction was frontend-only; v4 also updates the tournament server rules.
 
 ## Release status
 
 - Supabase project: `jnmdirvidffzxukbdmij`.
 - Migration `farm_family_cooperative_orders` applied successfully.
-- `farm-api` deployed as **version 33**, status **ACTIVE**, JWT verification enabled.
+- `farm-api` deployed as **version 34**, status **ACTIVE**, JWT verification enabled.
 - `harvest_commit_farm` was not replaced. Its definition hash stayed `3aee1c7fbd773babbe9017a3f543ba16` before and after deployment/testing.
 - The frontend is supplied in this ZIP. Copy the repository contents into the existing GitHub project and deploy using its existing Vercel configuration (`npm run build:static`). No further SQL/server deployment is needed for this release.
 - The ZIP also contains a matching `dist-static/` build. Never upload `node_modules` or local secrets.
@@ -29,7 +40,7 @@ The Family Hall now has its own generated blue-roofed building icon, `public/ass
 
 Farm Family and its Hall unlock at the shared level constant. Create an invite-only family, join by code or discover open families. A family can start solo and grow to six members. Share a weekly order, contribute extra tournament goods, collect personal reward entitlements, manage membership and see live/past tournament standings. All UI is English.
 
-The Hall uses `house_008.glb` at (-9.3, -20.5), with `tower_008`, a signpost, table, garden bed and firewood nearby. Props are static and excluded from raycast target lists. The entire Hall has the existing padded building hitbox and a label button. Actual GLB bounds were checked against the neighbouring buildings and tower.
+The Hall uses `house_008.glb` at (-9.3, -20.5), with a signpost, table, garden bed and firewood nearby. Props are static and excluded from raycast target lists. The entire Hall has the existing padded building hitbox and a label button. Actual GLB bounds were checked against the neighbouring buildings and tower.
 
 Four new generated transparent PNG icons are used for This week, Members, Tournament and Family management. They are also used in the page headers and Family topbar button; see `FARM-FAMILY-ARTWORK.md`.
 
@@ -49,10 +60,10 @@ See the generated table below for `FAMILY_CONFIG`. Times are milliseconds. If in
 | `RENAME_COOLDOWN_MS` | 604800000 |
 | `ATTEMPTS_PER_HOUR` | 10 |
 | `EXTRA_POINTS_CAP` | 30000 |
-| `POOL_MIN` | 15 |
-| `POOL_PER_ACTIVE_PLAYER` | 5 |
-| `POOL_MAX` | 300 |
-| `PLAYER_WEEK_DIAMOND_CAP` | 25 |
+| `TOURNAMENT_FIRST_MIN` | 50 |
+| `TOURNAMENT_FIRST_MAX` | 300 |
+| `TOURNAMENT_PER_EXTRA_PLAYER` | 10 |
+| `ORDER_PLAYER_WEEK_DIAMOND_CAP` | 25 |
 | `TOURNAMENT_MIN_POINTS` | 1 |
 | `ORDER_COIN_MULTIPLIER` | 1.25 |
 | `ORDER_XP_PER_VALUE` | 0.01 |
@@ -62,13 +73,13 @@ See the generated table below for `FAMILY_CONFIG`. Times are milliseconds. If in
 | `REWARD_WEEKS` | 8 |
 | `ORDER_MIN_VALUE_PER_MEMBER` | 16000 |
 | `ORDER_MAX_VALUE_PER_MEMBER` | 30000 |
-| `RANK_SHARES` | 0.5, 0.3, 0.2 |
+| `RANK_WEIGHTS` | 1, 0.6, 0.4 |
 
 The four deterministic order templates have four lines each: one crop, two crafted goods and Honey. Their target is fixed when the family first accesses that week, based on its membership then. The tested value band is per member. The 4–6 day completion goal is an initial balancing estimate, not a forced timer: stored goods, upgrades and frequent play can finish sooner. Review actual play after the first few weeks before retuning.
 
 Order coins are each eligible player's **own order contribution value × 0.8 × 1.25**, rather than a full order payout to every member. Order XP is their own contribution value / 100. Eligibility for an order reward requires 500 points specifically from **order goods**; extras are only for tournament points, as requested. Eligible contributors also split four completion diamonds. Tournament eligibility uses all contribution points and current membership at settlement.
 
-Leaving does not erase goods already supplied or earned reward entitlements. Order contributors can claim earned order rewards after leaving. Tournament eligibility is checked at settlement, before the first new-week membership mutation. Weekly diamond caps include both order and tournament entitlements, whether claimed yet or not. Claims can trigger the existing automatic level rewards separately. Empty podium places are redistributed proportionally among occupied winning places. Leftovers from individual reward caps are not redistributed to other ranks.
+Leaving does not erase goods already supplied or earned reward entitlements. Order contributors can claim earned order rewards after leaving. Tournament eligibility is checked at settlement, before the first new-week membership mutation. Order and Tournament entitlements are independent. Claims can trigger the existing automatic level rewards separately. Empty podium places do not reduce first prize; the shown pool is the sum of occupied winning places (or the guaranteed first prize before entry).
 
 ## API
 
@@ -106,9 +117,11 @@ Lazy settlement is performed on the first family read/action after a week ends, 
 
 ## Verification and limitations
 
-- Baseline: 201 tests passed before this work. Final: **226 tests passed**, zero failures.
+- Baseline: 201 tests passed before this work. Final: **228 tests passed**, zero failures.
 - Complete output: `FARM-FAMILY-TEST-OUTPUT.txt`.
-- New tournament tests cover the guaranteed minimum, solo and partial-order participation, two-family redistribution, top-three prizes, preview/settlement agreement, combined weekly caps and idempotent claims.
+- Tournament tests cover the 50-diamond minimum, solo and partial-order participation, scaling from 1 to 60 contributors, the 300-diamond first-prize cap, top-three prizes, order rewards in addition to tournament prizes, preview/settlement agreement and idempotent claims (including a 300-diamond personal claim).
+- Actual GLB geometry bounds were checked against the Hall: 35 trees, zero intersections after relocation. Result: `FARM-FAMILY-SCENE-CHECK.json`.
+- The tournament renderer was checked with 0, 1, 2, 3 and 5 families, including escaped names and empty podium positions.
 - Static production build passed; output: `FARM-FAMILY-BUILD-OUTPUT.txt`.
 - SQL tests executed against Supabase inside one transaction ending in ROLLBACK: create, exact inventory deduction, stale revision, request replay, overfill rollback, completion entitlement, single claim, repeated claim rollback, RLS/ACL, action activity stamp and protected function checks. No test users, families, receipts or claims remain.
 - Generate a fresh rollback-only SQL test with `node scripts/test-family-sql.mjs <output.sql>`; run it with administrative test access. Its generated IDs and UTC week are fresh for that run.
@@ -128,6 +141,7 @@ Modified:
 - `public/farm-state.js`
 - `public/farm.html`
 - `public/game.js`
+- `public/farm-life.js`
 - `public/visual-icons.js`
 - `scripts/sync-game.mjs`
 - `supabase/functions/farm-api/farm-state.js`
@@ -152,6 +166,7 @@ Added:
 - `public/assets/models/table_002.glb`
 - `public/assets/models/tower_008.glb`
 - `public/family-ui.js`
+- `public/family-tournament.js`
 - `public/family.css`
 - `scripts/test-family-sql.mjs`
 - `supabase/farm-family.sql`

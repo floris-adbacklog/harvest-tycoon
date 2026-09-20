@@ -11,4 +11,63 @@
  #family-button .game-art{width:32px;height:32px}
 }
 #family-button[hidden],#family-dot[hidden],#family-tabs[hidden]{display:none}
+
+/* The leading families and their prizes stay together on every screen size. */
+.family-tournament-banner{display:grid;grid-template-columns:60px minmax(0,1fr) auto;align-items:center;gap:16px;padding:20px;border:1px solid #d8dfc5;border-radius:20px;background:linear-gradient(110deg,#edf3e1,#f8f5e6);margin-bottom:22px}
+.family-tournament-banner>.game-art{width:60px;height:60px}
+.family-tournament-title .eyebrow{display:block;font-size:10px;letter-spacing:1.7px;color:#7c8967;margin-bottom:5px}
+#family-dialog .family-tournament-title h3{font-size:24px;line-height:1.12;margin:0 0 7px}
+.family-tournament-title>span:last-child{font-size:12px;color:#73805e}
+.family-tournament-title>span:last-child strong{color:#44553c}
+.family-tournament-pool{display:flex;align-items:center;justify-content:center;gap:9px;padding:12px;background:#fffcf2;border:1px solid #e2dcc5;border-radius:14px}
+.family-tournament-pool>.game-art{width:34px;height:34px;flex-shrink:0}
+.family-tournament-pool strong{display:block;font-size:26px;line-height:1.05;color:#40543c;font-variant-numeric:tabular-nums}
+.family-tournament-pool span{display:block;font-size:11px;color:#7c816c;margin-top:4px}
+.family-standings-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+#family-dialog .family-standings-heading h3{margin:0;font-size:18px}
+.family-standings-heading>span{font-size:11px;color:#7f866d;white-space:nowrap}
+.family-podium{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.family-podium-row{--place:#b9a383;--place-light:#f2e7d8;display:grid;grid-template-columns:34px minmax(0,1fr) 238px;align-items:center;gap:12px;padding:16px 14px;border:1px solid #e5d9c9;border-radius:17px;background:#fffaf2;box-shadow:0 3px 0 #c1b49222}
+.family-place-1{--place:#b48a32;--place-light:#ffedb2;background:linear-gradient(105deg,#fff4ce,#fffdf5);border-color:#e8d49a}
+.family-place-2{--place:#839092;--place-light:#e9eeed;background:linear-gradient(105deg,#eff2ed,#fffdf6);border-color:#d7dfd8}
+.family-place-3{--place:#b37e50;--place-light:#f6e0c7;background:linear-gradient(105deg,#f8e9d9,#fffdf6);border-color:#e8d2b9}
+.family-place{display:grid;place-items:center;min-height:43px;font-size:24px;line-height:1;font-weight:800;color:var(--place);background:var(--place-light);border:1px solid color-mix(in srgb,var(--place) 45%,transparent);border-radius:12px;box-shadow:inset 0 2px 0 #fff8,0 2px 0 #0000000a}
+.family-podium-identity{display:flex;align-items:center;gap:10px}
+.family-podium-identity>.family-emblem{width:42px;height:42px;border-radius:12px}
+.family-podium-identity .family-emblem>.game-art{width:30px;height:30px}
+.family-podium-identity strong{display:block;font-size:17px;line-height:1.2;overflow-wrap:anywhere;color:#424936}
+.family-podium-identity>div>span{display:block;margin-top:5px;font-size:11px;color:#8b846b}
+.family-podium-row.is-yours .family-podium-identity>div>span{color:#56794c;font-weight:700}
+.family-podium-stats{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(76px,1.08fr);gap:6px;margin:0;text-align:center}
+.family-podium-stats>div{display:flex;flex-direction:column;justify-content:center;gap:7px;min-height:62px;background:#fffcf28c;border:1px solid #ded5be77;border-radius:11px;padding:8px 3px}
+.family-podium-stats dt{font-size:10px;color:#817b68;line-height:1.1}
+.family-podium-stats dd{display:flex;align-items:center;justify-content:center;gap:4px;margin:0;font-size:18px;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums;color:#4b513d}
+.family-podium-stats>.family-podium-prize{background:#e8f3f8;border-color:#c3dce5}
+.family-podium-prize dt{color:#637f8c}.family-podium-prize dd{color:#426b7b}
+.family-podium-prize .game-art{width:24px;height:24px;flex-shrink:0}.family-podium-prize strong{font:inherit}
+.family-empty-emblem{width:42px;height:42px;border:1px dashed #d8d2c4;border-radius:12px;display:grid;place-items:center;flex-shrink:0}
+.family-empty-emblem .game-art{width:29px;height:29px;opacity:.45}
+.family-podium-row.is-empty{background:#f8f6ef;border-style:dashed;box-shadow:none;min-height:76px}
+.family-podium-row.is-empty .family-podium-identity strong{color:#96907d;font-size:15px}
+.family-podium-row.is-empty .family-place{background:#eeeade;color:#a59d89;border-color:#ded8c8;box-shadow:none}
+.family-open-place{font-size:12px;color:#a09987;text-align:center}
+#family-dialog .family-standings-note{font-size:12px;line-height:1.5;margin:12px 3px 0;color:#85806c}
+#family-dialog .family-tournament-promise{font-size:13px;line-height:1.5;margin:8px 3px 0;color:#667653}
+.family-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:600px){
+ .family-tournament-banner{grid-template-columns:48px minmax(0,1fr);gap:12px;padding:16px;margin-bottom:18px}
+ .family-tournament-banner>.game-art{width:48px;height:48px}
+ #family-dialog .family-tournament-title h3{font-size:22px}
+ .family-tournament-pool{grid-column:1/-1;padding:9px 12px;justify-content:flex-start;gap:9px}
+ .family-tournament-pool>div{display:flex;align-items:baseline;gap:8px}
+ .family-tournament-pool strong{font-size:23px}.family-tournament-pool>.game-art{width:27px;height:27px}
+ .family-tournament-pool span{margin:0;font-size:12px}
+ .family-podium-row{grid-template-columns:32px minmax(0,1fr);gap:10px;padding:13px 12px}
+ .family-podium-identity{gap:9px}.family-podium-identity strong{font-size:17px}
+ .family-podium-stats{grid-column:1/-1;grid-template-columns:1fr 1fr 1fr;gap:7px}
+ .family-podium-stats>div{min-height:58px}.family-podium-stats dt{font-size:10px}.family-podium-stats dd{font-size:18px}
+ .family-podium-row.is-empty{min-height:66px;padding-block:11px}.family-open-place{display:none}
+ .family-podium-row.is-empty .family-podium-identity strong{font-size:14px}
+ .family-standings-heading>span{font-size:10px}#family-dialog .family-standings-heading h3{font-size:17px}
+}
 .family-prize-preview{display:flex;align-items:center;gap:14px;padding:18px;margin:20px 0;background:#edf4ec;border:1px solid #cbdac1;border-radius:18px}.family-prize-preview>.game-art{width:42px;height:42px;flex-shrink:0}.family-prize-preview strong{display:block;font-size:18px;line-height:1.3}.family-prize-preview span{display:block;font-size:13px;line-height:1.5;margin-top:5px;color:#637358}.family-prize-preview+.family-your-share{margin-top:14px}.family-rank-prize{font-weight:700;color:#5d7350;text-align:right}.family-rules{border-top:1px solid #e2ddcf;padding:16px 0}.family-rules summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;font-weight:700}.family-rules summary::before{content:'+';font-size:22px;color:#7f886a}.family-rules[open] summary::before{content:'−'}
