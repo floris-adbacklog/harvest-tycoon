@@ -50,30 +50,55 @@ test('database: the functions are locked to the signed-in player',()=>{
 
 function domFor(){
  const els={};const el=id=>els[id]??=({id,hidden:false,checked:false,value:'',disabled:false,textContent:'',innerHTML:'',children:[]});
- for(const id of ['notify-settings','notify-crops','notify-production','notify-daily','notify-email','notify-hour','notify-email-time','notify-status'])el(id);
+ for(const id of ['notify-settings','notify-device','notify-device-copy','notify-enable','notify-test','notify-disable','notify-push-rows','notify-email-rows','notify-crops','notify-production','notify-daily','notify-email','notify-hour','notify-email-time','notify-status'])el(id);
  els['notify-hour'].children=[];return {els,document:{getElementById:el,querySelectorAll:()=>[]}};
 }
-test('the reminders block stays hidden until available, then shows the saved choices',async()=>{
- const {els,document}=domFor();let available=false,stored={pushCrops:true,pushProduction:false,pushDaily:false,emailDigest:true,digestHour:20};
- globalThis.document=document;globalThis.window={parent:{harvestBridge:{notifications:{ready:Promise.resolve(),get available(){return available;},async get(){return stored;},async save(prefs){stored=prefs;return prefs;}}}}};
- const {createNotificationsSection}=await import('../public/notifications-ui.js?t='+Date.now());const section=createNotificationsSection();
+function bridgeFor(over={}){
+ const calls=[],state={stored:{pushCrops:true,pushProduction:false,pushDaily:false,emailDigest:true,digestHour:20},device:'off'};
+ const bridge={ready:Promise.resolve(),available:false,config:{enabled:true,push:true,email:true},async get(){return state.stored;},async save(prefs){state.stored=prefs;return prefs;},
+  push:{async status(){return {kind:state.device};},async enable(){calls.push('enable');state.device='on';},async disable(){calls.push('disable');state.device='off';},async test(){calls.push('test');}},...over};
+ return {bridge,state,calls};
+}
+async function open(bridge,dom){
+ globalThis.document=dom.document;globalThis.window={parent:{harvestBridge:{notifications:bridge}}};
+ const {createNotificationsSection}=await import('../public/notifications-ui.js?t='+Math.random());return createNotificationsSection();
+}
+test('the reminders block stays hidden until the service is on, then shows the saved choices',async()=>{
+ const dom=domFor(),{els}=dom,{bridge,state}=bridgeFor();const section=await open(bridge,dom);
  assert.match(els['notify-hour'].innerHTML,/<option value="0">00:00<\/option>/);assert.match(els['notify-hour'].innerHTML,/<option value="23">23:00<\/option>/);
  await section.refresh();assert.equal(els['notify-settings'].hidden,true,'service not on yet');
- available=true;await section.refresh();
+ bridge.available=true;await section.refresh();
  assert.equal(els['notify-settings'].hidden,false);assert.equal(els['notify-crops'].checked,true);assert.equal(els['notify-daily'].checked,false);assert.equal(els['notify-hour'].value,'20');assert.equal(els['notify-email-time'].hidden,false);
- // switching something on saves everything at once
  els['notify-daily'].checked=true;els['notify-email'].checked=false;await els['notify-crops'].onchange();
- assert.deepEqual(stored,{digestHour:20,pushCrops:true,pushProduction:false,pushDaily:true,emailDigest:false});assert.equal(els['notify-status'].textContent,'Saved.');assert.equal(els['notify-email-time'].hidden,true,'the time only matters with the email on');assert.equal(els['notify-crops'].disabled,false);
- // a failed save puts the switches back and says why
- globalThis.window.parent.harvestBridge.notifications.save=async()=>{throw new Error('Unknown time zone.');};
+ assert.deepEqual(state.stored,{digestHour:20,pushCrops:true,pushProduction:false,pushDaily:true,emailDigest:false});assert.equal(els['notify-status'].textContent,'Saved.');assert.equal(els['notify-email-time'].hidden,true,'the time only matters with the email on');assert.equal(els['notify-crops'].disabled,false);
+ bridge.save=async()=>{throw new Error('Unknown time zone.');};
  els['notify-production'].checked=true;await els['notify-production'].onchange();
- assert.equal(els['notify-production'].checked,false);assert.equal(els['notify-status'].textContent,'Unknown time zone.');
+ assert.equal(els['notify-production'].checked,false,'a failed save puts the switch back');assert.equal(els['notify-status'].textContent,'Unknown time zone.');
+ delete globalThis.document;delete globalThis.window;
+});
+test('only what the service offers is shown: push rows for push, the email rows for email',async()=>{
+ for(const [config,push,email] of [[{enabled:true,push:true,email:false},false,true],[{enabled:true,push:false,email:true},true,false]]){
+  const dom=domFor(),{bridge}=bridgeFor({config,available:true,push:config.push?bridgeFor().bridge.push:null});const section=await open(bridge,dom);await section.refresh();
+  assert.equal(dom.els['notify-settings'].hidden,false);assert.equal(dom.els['notify-push-rows'].hidden,push,'push rows hidden without push');assert.equal(dom.els['notify-device'].hidden,push);assert.equal(dom.els['notify-email-rows'].hidden,email,'email rows hidden without email');
+ }
+ const dom=domFor(),{bridge}=bridgeFor({config:{enabled:false,push:false,email:false},available:true});await (await open(bridge,dom)).refresh();assert.equal(dom.els['notify-settings'].hidden,true);
+ delete globalThis.document;delete globalThis.window;
+});
+test('the device block tells the truth per device and its buttons work',async()=>{
+ const dom=domFor(),{els}=dom,{bridge,state,calls}=bridgeFor({available:true});const section=await open(bridge,dom);
+ await section.refresh();assert.match(els['notify-device-copy'].textContent,/Turn on notifications/);assert.equal(els['notify-enable'].hidden,false);assert.equal(els['notify-test'].hidden,true);
+ await els['notify-enable'].onclick();assert.deepEqual(calls,['enable']);assert.match(els['notify-device-copy'].textContent,/are on for this device/);assert.equal(els['notify-test'].hidden,false);assert.equal(els['notify-disable'].hidden,false);assert.equal(els['notify-enable'].hidden,true);
+ await els['notify-test'].onclick();assert.match(els['notify-status'].textContent,/Test sent/);
+ await els['notify-disable'].onclick();assert.equal(state.device,'off');
+ for(const [kind,text,rowsHidden] of [['install-first',/add Harvest Tycoon to your home screen/,false],['blocked',/blocked/,false],['unsupported',/cannot receive/,true]]){state.device=kind;await section.refresh();assert.match(els['notify-device-copy'].textContent,text);assert.equal(els['notify-push-rows'].hidden,rowsHidden);assert.equal(els['notify-enable'].hidden,true);}
+ bridge.push.enable=async()=>{throw new Error('Reminders are not switched on yet.');};state.device='off';await section.refresh();await els['notify-enable'].onclick();assert.match(els['notify-status'].textContent,/not switched on/);assert.equal(els['notify-enable'].disabled,false);
  delete globalThis.document;delete globalThis.window;
 });
 test('the settings dialog carries the reminders block, hidden by default, and never claims delivery it cannot do',()=>{
  const farm=read('public/farm.html');
  assert.match(farm,/<section id="notify-settings"[^>]*hidden>/);
- for(const id of ['notify-crops','notify-production','notify-daily','notify-email','notify-hour'])assert(farm.includes(`id="${id}"`),id);
+ for(const id of ['notify-crops','notify-production','notify-daily','notify-email','notify-hour','notify-device','notify-enable','notify-test','notify-disable'])assert(farm.includes(`id="${id}"`),id);
+ assert.match(farm,/id="notify-push-rows" hidden/);assert.match(farm,/id="notify-email-rows" hidden/);assert.match(farm,/Production ready[\s\S]*At most once an hour/,'production follows the crop rule');
  for(const id of ['notify-crops','notify-production','notify-daily','notify-email'])assert(!new RegExp(`id="${id}"[^>]*checked`).test(farm),`${id} starts off`);
  assert.match(read('public/sound-settings.js'),/createNotificationsSection/);
  assert.match(read('src/main.js'),/bridge\.notifications=createNotifications\(supabase/);

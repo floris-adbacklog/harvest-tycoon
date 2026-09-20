@@ -11,3 +11,6 @@
 .notify-time{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:2px 4px}.notify-time label{font-size:13px;font-weight:700}
 .notify-time select{min-height:44px;border:1px solid #e1d9d0;border-radius:10px;background:#fffef9;padding:8px 12px;font:inherit;font-size:15px;color:#4c452b}
 #sound-dialog .notify-status{margin:12px 0 0;min-height:20px;font-size:12px;text-align:center;color:#827a6f}
+.notify-device{margin-top:14px;padding:14px 16px;border:1px dashed #d8cdbf;border-radius:14px;background:#faf6ef}
+#sound-dialog .notify-device .install-copy{margin:0}
+.notify-device-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:10px}.notify-device-actions .small-button{min-height:44px}.notify-device-actions .link-button{padding:8px 2px;min-height:40px}

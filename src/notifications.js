@@ -1,3 +1,4 @@
+import {createPush} from './push.js';
 // Reminder preferences for the settings dialog. Reads go through row-level security (a player only sees their
 // own row) and writes go through the notification_save function, which validates everything on the server.
 export const DEFAULT_PREFS=Object.freeze({pushCrops:false,pushProduction:false,pushDaily:false,emailDigest:false,digestHour:9});
@@ -19,16 +20,19 @@ export function paramsFromPrefs(prefs,timezone=browserTimezone()){
 
 // `available` only turns true when the notification service answers its config request. Until then the
 // settings dialog does not show reminder switches that would not do anything yet.
-export function createNotifications(supabase,{configUrl=null,fetchImpl=globalThis.fetch,timezone=browserTimezone}={}){
+export function createNotifications(supabase,{configUrl=null,fetchImpl=globalThis.fetch,timezone=browserTimezone,win=globalThis.window}={}){
  let available=false,config=null;
  const ready=(async()=>{
   if(!configUrl||typeof fetchImpl!=='function')return;
   try{const response=await fetchImpl(configUrl);if(!response.ok)return;const body=await response.json();if(body?.enabled===true){available=true;config=body;}}catch{}
  })();
+ const push=createPush({supabase,getKey:async()=>{await ready;return config?.vapidPublicKey??null;},win});
  return {
   ready,
   get available(){return available;},
   get config(){return config;},
+  // Device notifications, only when the service has push switched on.
+  get push(){return config?.push?push:null;},
   async get(){
    const {data,error}=await supabase.from('notification_settings').select('push_crops,push_production,push_daily,email_digest,digest_hour').maybeSingle();
    if(error)throw error;return prefsFromRow(data);
