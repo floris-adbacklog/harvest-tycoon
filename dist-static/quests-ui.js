@@ -1,4 +1,4 @@
-import {QUESTS,guidedFarm,availableDaily} from './farm-state.js';
+import {QUESTS,levelOf,guidedFarm,availableDaily} from './farm-state.js';
 
 export function questGroups(state){
  const groups={ready:[],active:[],done:[]};
@@ -9,7 +9,7 @@ export function questGroups(state){
   groups[group].push({id,quest,value});
  });
  if(!guidedFarm(state))groups.active.sort((a,b)=>Number(b.id>=41)-Number(a.id>=41));
- else groups.active=groups.active.slice(0,5);
+ else groups.active=groups.active.slice(0,levelOf(state)<6?3:5);
  return groups;
 }
 

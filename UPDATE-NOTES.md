@@ -1,3 +1,7 @@
+# Latest complete release: v7
+
+See `PROGRESSION-v7-RELEASE.md` for the level 1–25 progression, painted lock icon, Family Hall model thumbnail, migration and current deployment details. Older sections below are historical.
+
 # Collect all & clearer production controls — 19 September 2026
 
 - Each production building shows a new illustrated **Collect all** button when two or more batches are ready. One authenticated action collects only ready batches in that building, adds all goods and XP, and advances existing production/quest counters. Running batches and other buildings stay untouched.

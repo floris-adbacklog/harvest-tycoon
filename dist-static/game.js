@@ -393,7 +393,7 @@ function addBuilding(key,x,z,options){
  hit.position.copy(center);hit.userData.building=key;scene.add(hit);hit.updateMatrixWorld(true);
  const outline=new THREE.BoxHelper(object,0xffdc76);outline.material.transparent=true;outline.material.opacity=.75;outline.visible=false;scene.add(outline);
  const label=document.createElement('button');label.className='building-label';label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
- label.innerHTML=`<span class="building-pin">${art(key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">${key==='farmhouse'?'Expand your fields':'Ready to work'}</small></span>`;
+ label.innerHTML=`<span class="building-pin">${art(key==='familyhall'?'familyhall-model':key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">${key==='farmhouse'?'Expand your fields':'Ready to work'}</small></span>`;
  label.addEventListener('click',()=>economy.openBuilding(key));label.addEventListener('mouseenter',()=>highlight(key));label.addEventListener('mouseleave',()=>highlight(-1));label.addEventListener('focus',()=>highlight(key));label.addEventListener('blur',()=>highlight(-1));$('building-labels').append(label);
  buildingViews.set(key,{object,hit,outline,label,x,z,height});
 }

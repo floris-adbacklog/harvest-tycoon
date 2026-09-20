@@ -60,6 +60,8 @@ var e = [
 		]
 	}
 ], t = {
+	"familyhall-model": "familyhall-model",
+	lock: "lock",
 	"family-weekly-order": "family-weekly-order",
 	"family-members": "family-members",
 	"family-tournament": "family-tournament",

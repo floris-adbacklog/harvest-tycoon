@@ -1,4 +1,4 @@
-import { a as e, i as t, r as n, t as r } from "./leaderboard-BigxBEvc.js";
+import { a as e, i as t, r as n, t as r } from "./leaderboard-CRiiu6jJ.js";
 var i = Object.freeze({
 	corn: {
 		name: "Corn",
@@ -1452,7 +1452,88 @@ Object.freeze({
 		target: 3,
 		reward: 2360
 	}
-]), Object.freeze([
+]), Object.freeze({
+	corn: 1,
+	wheat: 1,
+	lettuce: 3,
+	barley: 5,
+	greenbeans: 7,
+	cabbage: 9,
+	cauliflower: 11,
+	pumpkin: 13,
+	redcabbage: 15,
+	sunflower: 17,
+	apples: 20,
+	berries: 23
+}), Object.freeze({
+	familyhall: 10,
+	farmhouse: 1,
+	coop: 1,
+	mill: 2,
+	dairy: 4,
+	windmill: 6,
+	bakery: 8,
+	packing: 10,
+	kitchen: 12,
+	juicepress: 21,
+	preserves: 24
+}), Object.freeze({
+	mill: 100,
+	dairy: 300,
+	windmill: 700,
+	bakery: 1e3,
+	packing: 1400,
+	kitchen: 3500,
+	juicepress: 6500,
+	preserves: 1e4
+}), Object.freeze({
+	eggs: 1,
+	feed: 2,
+	milk: 4,
+	barleyfeed: 5,
+	grainmeal: 6,
+	flour: 6,
+	windfeed: 7,
+	bread: 8,
+	cheese: 9,
+	fertilizer: 9,
+	salad: 10,
+	vegetables: 11,
+	windflour: 11,
+	stew: 12,
+	pie: 13,
+	pickles: 15,
+	beangratin: 16,
+	oil: 17,
+	orchardsalad: 20,
+	applejuice: 21,
+	applepie: 22,
+	orchardjuice: 23,
+	berrysmoothie: 23,
+	berrycheesecake: 23,
+	applecompote: 24,
+	berrypreserves: 24,
+	applevinegar: 24,
+	pickledbeans: 25,
+	berrytart: 25,
+	harvesthamper: 25
+}), Object.freeze({
+	challenges: 3,
+	cart: 5,
+	activities: 6,
+	chores: 7,
+	mastery: 9,
+	family: 10,
+	stall: 11,
+	tractor: 12,
+	boosts: 14,
+	silo: 18,
+	projects: 19
+}), Object.freeze({
+	quick: 5,
+	village: 8,
+	commission: 12
+}), Object.freeze([
 	25,
 	45,
 	75,
@@ -2756,6 +2837,31 @@ Object.freeze([
 	{
 		cabbage: 50,
 		pickles: 8,
+		milk: 80,
+		honey: 30
+	}
+]), Object.freeze([
+	{
+		wheat: 150,
+		bread: 30,
+		eggs: 100,
+		honey: 30
+	},
+	{
+		corn: 80,
+		salad: 12,
+		cheese: 30,
+		honey: 30
+	},
+	{
+		barley: 60,
+		bread: 24,
+		eggs: 100,
+		honey: 30
+	},
+	{
+		cabbage: 50,
+		salad: 12,
 		milk: 80,
 		honey: 30
 	}

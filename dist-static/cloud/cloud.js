@@ -1,4 +1,4 @@
-import { n as e } from "./leaderboard-BigxBEvc.js";
+import { n as e } from "./leaderboard-CRiiu6jJ.js";
 function t(e, t = Date.now()) {
 	let n = Date.parse(e), r = t - n;
 	return Number.isFinite(n) && r >= 0 && r < 18e5;

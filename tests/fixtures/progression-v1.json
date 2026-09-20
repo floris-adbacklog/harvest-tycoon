@@ -1,0 +1,4232 @@
+[
+  {
+    "name": "level-1-bread-false-paid-false-legacy-false",
+    "state": {
+      "progression": {
+        "mode": "guided"
+      },
+      "coins": 12345,
+      "xp": 0,
+      "inventory": {
+        "corn": 0,
+        "wheat": 4,
+        "cabbage": 0,
+        "pumpkin": 0,
+        "sunflower": 0,
+        "barley": 0,
+        "lettuce": 0,
+        "redcabbage": 0,
+        "cauliflower": 0,
+        "greenbeans": 0,
+        "apples": 0,
+        "berries": 0,
+        "honey": 0,
+        "grainmeal": 0,
+        "fertilizer": 0,
+        "salad": 0,
+        "pickles": 0,
+        "flour": 0,
+        "feed": 2,
+        "oil": 0,
+        "milk": 0,
+        "eggs": 0,
+        "cheese": 0,
+        "bread": 0,
+        "pie": 0,
+        "vegetables": 0,
+        "applejuice": 0,
+        "applepie": 0,
+        "berrypreserves": 0,
+        "berrytart": 0,
+        "stew": 0,
+        "orchardjuice": 0,
+        "berrysmoothie": 0,
+        "applecompote": 0,
+        "applevinegar": 0,
+        "pickledbeans": 0,
+        "beangratin": 0,
+        "orchardsalad": 0,
+        "berrycheesecake": 0,
+        "harvesthamper": 0
+      },
+      "stats": {
+        "harvested": 0,
+        "planted": 0,
+        "watered": 0,
+        "earned": 0,
+        "produced": 0,
+        "upgrades": 0,
+        "expansions": 0,
+        "bread": 0,
+        "activity_rounds": 0,
+        "silo_upgrades": 0,
+        "harvest_wheat": 0,
+        "varieties": 0,
+        "made_milk": 0,
+        "made_eggs": 0,
+        "made_oil": 0,
+        "made_pie": 0,
+        "harvest_lettuce": 0,
+        "harvest_redcabbage": 0,
+        "made_vegetables": 0,
+        "deliveries": 0,
+        "tractor": 0,
+        "dailies": 0,
+        "tended": 0,
+        "chores": 0,
+        "projects": 0,
+        "mastery_medals": 0,
+        "windmill_batches": 0,
+        "made_grainmeal": 0,
+        "made_flour": 0,
+        "fertilized": 0,
+        "diamonds_earned": 0,
+        "boosts_used": 0,
+        "windmill_upgrades": 0,
+        "made_bread": 0,
+        "activities": 0,
+        "activity_greenhouse": 0,
+        "activity_apiary": 0,
+        "activity_paddock": 0,
+        "activity_workshop": 0,
+        "chore_weeds": 0,
+        "chore_troughs": 0,
+        "chore_sorting": 0,
+        "parallel_batches": 0,
+        "made_fertilizer": 0,
+        "made_feed": 0,
+        "made_salad": 0,
+        "made_pickles": 0,
+        "honey_deliveries": 0,
+        "crafted_deliveries": 0,
+        "passive_earned": 0,
+        "harvest_corn": 0,
+        "harvest_barley": 0,
+        "harvest_cabbage": 0,
+        "harvest_cauliflower": 0,
+        "harvest_pumpkin": 0,
+        "harvest_sunflower": 0,
+        "harvest_greenbeans": 0,
+        "harvest_apples": 0,
+        "harvest_berries": 0,
+        "built_kitchen": 0,
+        "built_juicepress": 0,
+        "built_preserves": 0,
+        "made_stew": 0,
+        "made_applejuice": 0,
+        "made_applepie": 0,
+        "made_berrypreserves": 0,
+        "made_berrytart": 0,
+        "made_orchardjuice": 0,
+        "made_berrysmoothie": 0,
+        "made_applecompote": 0,
+        "made_applevinegar": 0,
+        "made_pickledbeans": 0,
+        "made_beangratin": 0,
+        "made_orchardsalad": 0,
+        "made_berrycheesecake": 0,
+        "made_harvesthamper": 0,
+        "sold": 0,
+        "sold_eggs": 0
+      },
+      "claimed": [
+        0,
+        1
+      ],
+      "plots": [
+        {
+          "id": 0,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 1,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 2,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 3,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 4,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 5,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 6,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 7,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 8,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 9,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 10,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 11,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        }
+      ],
+      "buildings": {
+        "familyhall": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "farmhouse": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "mill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "dairy": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "coop": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "bakery": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "packing": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "windmill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "kitchen": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "juicepress": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "preserves": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        }
+      },
+      "xpOffset": 0,
+      "version": 13,
+      "diamonds": 77,
+      "boosts": {
+        "xpUntil": 0,
+        "coinsUntil": 0,
+        "upgradeCredits": 0
+      },
+      "family": {
+        "familyId": null,
+        "unclaimedCount": 0
+      },
+      "discovered": [],
+      "siloLevel": 0,
+      "tractorReadyAt": 0,
+      "login": {
+        "lastDay": null,
+        "streak": 0,
+        "best": 0,
+        "visits": 0
+      },
+      "levelRewards": [
+        1
+      ],
+      "onboarding": {
+        "completed": 10,
+        "milestones": {},
+        "rewardClaimed": true
+      },
+      "mastery": {
+        "harvests": {
+          "corn": 0,
+          "wheat": 0,
+          "cabbage": 0,
+          "pumpkin": 0,
+          "sunflower": 0,
+          "barley": 0,
+          "lettuce": 0,
+          "redcabbage": 0,
+          "cauliflower": 0,
+          "greenbeans": 0,
+          "apples": 0,
+          "berries": 0
+        },
+        "claimed": []
+      },
+      "stall": {
+        "level": 1,
+        "since": 1789905600000,
+        "bank": 0
+      },
+      "estate": {
+        "completed": 0,
+        "job": null,
+        "diamondChapters": []
+      },
+      "chores": {},
+      "chorePractice": {},
+      "activities": {
+        "jobs": {},
+        "cooldowns": {},
+        "completed": {},
+        "round": [],
+        "rounds": 0
+      },
+      "daily": {
+        "date": "2026-09-20",
+        "baseline": {
+          "harvested": 0,
+          "planted": 0,
+          "watered": 0,
+          "earned": 0,
+          "produced": 0,
+          "upgrades": 0,
+          "expansions": 0,
+          "bread": 0,
+          "activity_rounds": 0,
+          "silo_upgrades": 0,
+          "harvest_wheat": 0,
+          "varieties": 0,
+          "made_milk": 0,
+          "made_eggs": 0,
+          "made_oil": 0,
+          "made_pie": 0,
+          "harvest_lettuce": 0,
+          "harvest_redcabbage": 0,
+          "made_vegetables": 0,
+          "deliveries": 0,
+          "tractor": 0,
+          "dailies": 0,
+          "tended": 0,
+          "chores": 0,
+          "projects": 0,
+          "mastery_medals": 0,
+          "windmill_batches": 0,
+          "made_grainmeal": 0,
+          "made_flour": 0,
+          "fertilized": 0,
+          "diamonds_earned": 0,
+          "boosts_used": 0,
+          "windmill_upgrades": 0,
+          "made_bread": 0,
+          "activities": 0,
+          "activity_greenhouse": 0,
+          "activity_apiary": 0,
+          "activity_paddock": 0,
+          "activity_workshop": 0,
+          "chore_weeds": 0,
+          "chore_troughs": 0,
+          "chore_sorting": 0,
+          "parallel_batches": 0,
+          "made_fertilizer": 0,
+          "made_feed": 0,
+          "made_salad": 0,
+          "made_pickles": 0,
+          "honey_deliveries": 0,
+          "crafted_deliveries": 0,
+          "passive_earned": 0,
+          "harvest_corn": 0,
+          "harvest_barley": 0,
+          "harvest_cabbage": 0,
+          "harvest_cauliflower": 0,
+          "harvest_pumpkin": 0,
+          "harvest_sunflower": 0,
+          "harvest_greenbeans": 0,
+          "harvest_apples": 0,
+          "harvest_berries": 0,
+          "built_kitchen": 0,
+          "built_juicepress": 0,
+          "built_preserves": 0,
+          "made_stew": 0,
+          "made_applejuice": 0,
+          "made_applepie": 0,
+          "made_berrypreserves": 0,
+          "made_berrytart": 0,
+          "made_orchardjuice": 0,
+          "made_berrysmoothie": 0,
+          "made_applecompote": 0,
+          "made_applevinegar": 0,
+          "made_pickledbeans": 0,
+          "made_beangratin": 0,
+          "made_orchardsalad": 0,
+          "made_berrycheesecake": 0,
+          "made_harvesthamper": 0,
+          "sold": 0,
+          "sold_eggs": 0
+        },
+        "claimed": [],
+        "orders": [],
+        "bonusClaimed": false,
+        "replacements": 0,
+        "orderRevisions": {},
+        "tasks": [
+          {
+            "stat": "watered",
+            "target": 8,
+            "title": "A little extra care",
+            "description": "Water 8 growing crops.",
+            "reward": 40
+          },
+          {
+            "stat": "made_eggs",
+            "target": 6,
+            "title": "The morning basket",
+            "description": "Collect 6 eggs.",
+            "reward": 55
+          },
+          {
+            "stat": "earned",
+            "target": 120,
+            "title": "Market day",
+            "description": "Earn 120 coins from sales or deliveries.",
+            "reward": 55
+          }
+        ],
+        "orderBoard": [
+          {
+            "title": "The baker next door",
+            "input": {
+              "wheat": 5
+            },
+            "xp": 15,
+            "minLevel": 1,
+            "tier": "quick",
+            "customer": "Your neighbours",
+            "story": "A small basket to brighten someone’s day.",
+            "bonus": 39,
+            "marketValue": 30,
+            "coins": 42,
+            "diamonds": 1
+          },
+          {
+            "title": "The baker next door",
+            "input": {
+              "wheat": 10
+            },
+            "xp": 30,
+            "minLevel": 1,
+            "tier": "village",
+            "customer": "Village trading post",
+            "story": "The village needs a selection of your farm-made goods.",
+            "bonus": 64,
+            "marketValue": 60,
+            "coins": 99,
+            "diamonds": 4
+          },
+          {
+            "title": "The baker next door",
+            "input": {
+              "wheat": 5
+            },
+            "xp": 15,
+            "minLevel": 1,
+            "tier": "commission",
+            "customer": "Village trading post",
+            "story": "The village needs a selection of your farm-made goods.",
+            "bonus": 124,
+            "marketValue": 30,
+            "coins": 68,
+            "diamonds": 9
+          }
+        ]
+      }
+    },
+    "access": {
+      "crops": [
+        "corn",
+        "wheat"
+      ],
+      "buildings": [
+        "farmhouse",
+        "coop"
+      ],
+      "features": [],
+      "recipes": [
+        "eggs"
+      ]
+    }
+  },
+  {
+    "name": "level-2-bread-false-paid-false-legacy-false",
+    "state": {
+      "progression": {
+        "mode": "guided"
+      },
+      "coins": 12345,
+      "xp": 60,
+      "inventory": {
+        "corn": 0,
+        "wheat": 4,
+        "cabbage": 0,
+        "pumpkin": 0,
+        "sunflower": 0,
+        "barley": 0,
+        "lettuce": 0,
+        "redcabbage": 0,
+        "cauliflower": 0,
+        "greenbeans": 0,
+        "apples": 0,
+        "berries": 0,
+        "honey": 0,
+        "grainmeal": 0,
+        "fertilizer": 0,
+        "salad": 0,
+        "pickles": 0,
+        "flour": 0,
+        "feed": 2,
+        "oil": 0,
+        "milk": 0,
+        "eggs": 0,
+        "cheese": 0,
+        "bread": 0,
+        "pie": 0,
+        "vegetables": 0,
+        "applejuice": 0,
+        "applepie": 0,
+        "berrypreserves": 0,
+        "berrytart": 0,
+        "stew": 0,
+        "orchardjuice": 0,
+        "berrysmoothie": 0,
+        "applecompote": 0,
+        "applevinegar": 0,
+        "pickledbeans": 0,
+        "beangratin": 0,
+        "orchardsalad": 0,
+        "berrycheesecake": 0,
+        "harvesthamper": 0
+      },
+      "stats": {
+        "harvested": 0,
+        "planted": 0,
+        "watered": 0,
+        "earned": 0,
+        "produced": 0,
+        "upgrades": 0,
+        "expansions": 0,
+        "bread": 0,
+        "activity_rounds": 0,
+        "silo_upgrades": 0,
+        "harvest_wheat": 0,
+        "varieties": 0,
+        "made_milk": 0,
+        "made_eggs": 0,
+        "made_oil": 0,
+        "made_pie": 0,
+        "harvest_lettuce": 0,
+        "harvest_redcabbage": 0,
+        "made_vegetables": 0,
+        "deliveries": 0,
+        "tractor": 0,
+        "dailies": 0,
+        "tended": 0,
+        "chores": 0,
+        "projects": 0,
+        "mastery_medals": 0,
+        "windmill_batches": 0,
+        "made_grainmeal": 0,
+        "made_flour": 0,
+        "fertilized": 0,
+        "diamonds_earned": 0,
+        "boosts_used": 0,
+        "windmill_upgrades": 0,
+        "made_bread": 0,
+        "activities": 0,
+        "activity_greenhouse": 0,
+        "activity_apiary": 0,
+        "activity_paddock": 0,
+        "activity_workshop": 0,
+        "chore_weeds": 0,
+        "chore_troughs": 0,
+        "chore_sorting": 0,
+        "parallel_batches": 0,
+        "made_fertilizer": 0,
+        "made_feed": 0,
+        "made_salad": 0,
+        "made_pickles": 0,
+        "honey_deliveries": 0,
+        "crafted_deliveries": 0,
+        "passive_earned": 0,
+        "harvest_corn": 0,
+        "harvest_barley": 0,
+        "harvest_cabbage": 0,
+        "harvest_cauliflower": 0,
+        "harvest_pumpkin": 0,
+        "harvest_sunflower": 0,
+        "harvest_greenbeans": 0,
+        "harvest_apples": 0,
+        "harvest_berries": 0,
+        "built_kitchen": 0,
+        "built_juicepress": 0,
+        "built_preserves": 0,
+        "made_stew": 0,
+        "made_applejuice": 0,
+        "made_applepie": 0,
+        "made_berrypreserves": 0,
+        "made_berrytart": 0,
+        "made_orchardjuice": 0,
+        "made_berrysmoothie": 0,
+        "made_applecompote": 0,
+        "made_applevinegar": 0,
+        "made_pickledbeans": 0,
+        "made_beangratin": 0,
+        "made_orchardsalad": 0,
+        "made_berrycheesecake": 0,
+        "made_harvesthamper": 0,
+        "sold": 0,
+        "sold_eggs": 1
+      },
+      "claimed": [
+        0,
+        1
+      ],
+      "plots": [
+        {
+          "id": 0,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 1,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 2,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 3,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 4,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 5,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 6,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 7,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 8,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 9,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 10,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 11,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        }
+      ],
+      "buildings": {
+        "familyhall": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "farmhouse": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "mill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "dairy": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "coop": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "bakery": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "packing": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "windmill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "kitchen": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "juicepress": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "preserves": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        }
+      },
+      "xpOffset": 0,
+      "version": 13,
+      "diamonds": 77,
+      "boosts": {
+        "xpUntil": 0,
+        "coinsUntil": 0,
+        "upgradeCredits": 0
+      },
+      "family": {
+        "familyId": null,
+        "unclaimedCount": 0
+      },
+      "discovered": [],
+      "siloLevel": 0,
+      "tractorReadyAt": 0,
+      "login": {
+        "lastDay": null,
+        "streak": 0,
+        "best": 0,
+        "visits": 0
+      },
+      "levelRewards": [
+        1
+      ],
+      "onboarding": {
+        "completed": 10,
+        "milestones": {},
+        "rewardClaimed": true
+      },
+      "mastery": {
+        "harvests": {
+          "corn": 0,
+          "wheat": 0,
+          "cabbage": 0,
+          "pumpkin": 0,
+          "sunflower": 0,
+          "barley": 0,
+          "lettuce": 0,
+          "redcabbage": 0,
+          "cauliflower": 0,
+          "greenbeans": 0,
+          "apples": 0,
+          "berries": 0
+        },
+        "claimed": []
+      },
+      "stall": {
+        "level": 1,
+        "since": 1789905600000,
+        "bank": 0
+      },
+      "estate": {
+        "completed": 0,
+        "job": null,
+        "diamondChapters": []
+      },
+      "chores": {},
+      "chorePractice": {},
+      "activities": {
+        "jobs": {},
+        "cooldowns": {},
+        "completed": {},
+        "round": [],
+        "rounds": 0
+      },
+      "daily": {
+        "date": "2026-09-20",
+        "baseline": {
+          "harvested": 0,
+          "planted": 0,
+          "watered": 0,
+          "earned": 0,
+          "produced": 0,
+          "upgrades": 0,
+          "expansions": 0,
+          "bread": 0,
+          "activity_rounds": 0,
+          "silo_upgrades": 0,
+          "harvest_wheat": 0,
+          "varieties": 0,
+          "made_milk": 0,
+          "made_eggs": 0,
+          "made_oil": 0,
+          "made_pie": 0,
+          "harvest_lettuce": 0,
+          "harvest_redcabbage": 0,
+          "made_vegetables": 0,
+          "deliveries": 0,
+          "tractor": 0,
+          "dailies": 0,
+          "tended": 0,
+          "chores": 0,
+          "projects": 0,
+          "mastery_medals": 0,
+          "windmill_batches": 0,
+          "made_grainmeal": 0,
+          "made_flour": 0,
+          "fertilized": 0,
+          "diamonds_earned": 0,
+          "boosts_used": 0,
+          "windmill_upgrades": 0,
+          "made_bread": 0,
+          "activities": 0,
+          "activity_greenhouse": 0,
+          "activity_apiary": 0,
+          "activity_paddock": 0,
+          "activity_workshop": 0,
+          "chore_weeds": 0,
+          "chore_troughs": 0,
+          "chore_sorting": 0,
+          "parallel_batches": 0,
+          "made_fertilizer": 0,
+          "made_feed": 0,
+          "made_salad": 0,
+          "made_pickles": 0,
+          "honey_deliveries": 0,
+          "crafted_deliveries": 0,
+          "passive_earned": 0,
+          "harvest_corn": 0,
+          "harvest_barley": 0,
+          "harvest_cabbage": 0,
+          "harvest_cauliflower": 0,
+          "harvest_pumpkin": 0,
+          "harvest_sunflower": 0,
+          "harvest_greenbeans": 0,
+          "harvest_apples": 0,
+          "harvest_berries": 0,
+          "built_kitchen": 0,
+          "built_juicepress": 0,
+          "built_preserves": 0,
+          "made_stew": 0,
+          "made_applejuice": 0,
+          "made_applepie": 0,
+          "made_berrypreserves": 0,
+          "made_berrytart": 0,
+          "made_orchardjuice": 0,
+          "made_berrysmoothie": 0,
+          "made_applecompote": 0,
+          "made_applevinegar": 0,
+          "made_pickledbeans": 0,
+          "made_beangratin": 0,
+          "made_orchardsalad": 0,
+          "made_berrycheesecake": 0,
+          "made_harvesthamper": 0,
+          "sold": 0,
+          "sold_eggs": 1
+        },
+        "claimed": [],
+        "orders": [],
+        "bonusClaimed": false,
+        "replacements": 0,
+        "orderRevisions": {},
+        "tasks": [
+          {
+            "stat": "activity_paddock",
+            "target": 2,
+            "title": "Happy herd",
+            "description": "Finish 2 Animal paddock jobs.",
+            "reward": 65
+          },
+          {
+            "stat": "activity_apiary",
+            "target": 3,
+            "title": "Honey time",
+            "description": "Finish 3 Apiary jobs and collect their Honey.",
+            "reward": 85
+          },
+          {
+            "stat": "activity_rounds",
+            "target": 1,
+            "title": "Make the rounds",
+            "description": "Finish a full farm round by helping at all four stops.",
+            "reward": 110
+          }
+        ],
+        "orderBoard": [
+          {
+            "title": "The baker next door",
+            "input": {
+              "wheat": 5
+            },
+            "xp": 15,
+            "minLevel": 1,
+            "tier": "quick",
+            "customer": "Your neighbours",
+            "story": "A small basket to brighten someone’s day.",
+            "bonus": 39,
+            "marketValue": 30,
+            "coins": 42,
+            "diamonds": 1
+          },
+          {
+            "title": "The paddock pantry",
+            "input": {
+              "feed": 4,
+              "corn": 4
+            },
+            "xp": 50,
+            "minLevel": 1,
+            "tier": "village",
+            "customer": "Village trading post",
+            "story": "The village needs a selection of your farm-made goods.",
+            "bonus": 64,
+            "marketValue": 584,
+            "coins": 958,
+            "diamonds": 4
+          },
+          {
+            "title": "A leafy lunch",
+            "input": {
+              "lettuce": 4,
+              "corn": 2
+            },
+            "xp": 20,
+            "minLevel": 1,
+            "tier": "commission",
+            "customer": "Village trading post",
+            "story": "The village needs a selection of your farm-made goods.",
+            "bonus": 124,
+            "marketValue": 128,
+            "coins": 287,
+            "diamonds": 9
+          }
+        ]
+      }
+    },
+    "access": {
+      "crops": [
+        "corn",
+        "wheat",
+        "lettuce"
+      ],
+      "buildings": [
+        "farmhouse",
+        "mill",
+        "coop"
+      ],
+      "features": [
+        "activities"
+      ],
+      "recipes": [
+        "feed",
+        "eggs"
+      ]
+    }
+  },
+  {
+    "name": "level-5-bread-false-paid-false-legacy-false",
+    "state": {
+      "progression": {
+        "mode": "guided"
+      },
+      "coins": 12345,
+      "xp": 480,
+      "inventory": {
+        "corn": 0,
+        "wheat": 4,
+        "cabbage": 0,
+        "pumpkin": 0,
+        "sunflower": 0,
+        "barley": 0,
+        "lettuce": 0,
+        "redcabbage": 0,
+        "cauliflower": 0,
+        "greenbeans": 0,
+        "apples": 0,
+        "berries": 0,
+        "honey": 0,
+        "grainmeal": 0,
+        "fertilizer": 0,
+        "salad": 0,
+        "pickles": 0,
+        "flour": 0,
+        "feed": 2,
+        "oil": 0,
+        "milk": 0,
+        "eggs": 0,
+        "cheese": 0,
+        "bread": 0,
+        "pie": 0,
+        "vegetables": 0,
+        "applejuice": 0,
+        "applepie": 0,
+        "berrypreserves": 0,
+        "berrytart": 0,
+        "stew": 0,
+        "orchardjuice": 0,
+        "berrysmoothie": 0,
+        "applecompote": 0,
+        "applevinegar": 0,
+        "pickledbeans": 0,
+        "beangratin": 0,
+        "orchardsalad": 0,
+        "berrycheesecake": 0,
+        "harvesthamper": 0
+      },
+      "stats": {
+        "harvested": 0,
+        "planted": 0,
+        "watered": 0,
+        "earned": 0,
+        "produced": 0,
+        "upgrades": 0,
+        "expansions": 0,
+        "bread": 0,
+        "activity_rounds": 0,
+        "silo_upgrades": 0,
+        "harvest_wheat": 0,
+        "varieties": 0,
+        "made_milk": 0,
+        "made_eggs": 0,
+        "made_oil": 0,
+        "made_pie": 0,
+        "harvest_lettuce": 0,
+        "harvest_redcabbage": 0,
+        "made_vegetables": 0,
+        "deliveries": 0,
+        "tractor": 0,
+        "dailies": 0,
+        "tended": 0,
+        "chores": 0,
+        "projects": 0,
+        "mastery_medals": 0,
+        "windmill_batches": 0,
+        "made_grainmeal": 0,
+        "made_flour": 0,
+        "fertilized": 0,
+        "diamonds_earned": 0,
+        "boosts_used": 0,
+        "windmill_upgrades": 0,
+        "made_bread": 0,
+        "activities": 0,
+        "activity_greenhouse": 0,
+        "activity_apiary": 0,
+        "activity_paddock": 0,
+        "activity_workshop": 0,
+        "chore_weeds": 0,
+        "chore_troughs": 0,
+        "chore_sorting": 0,
+        "parallel_batches": 0,
+        "made_fertilizer": 0,
+        "made_feed": 0,
+        "made_salad": 0,
+        "made_pickles": 0,
+        "honey_deliveries": 0,
+        "crafted_deliveries": 0,
+        "passive_earned": 0,
+        "harvest_corn": 0,
+        "harvest_barley": 0,
+        "harvest_cabbage": 0,
+        "harvest_cauliflower": 0,
+        "harvest_pumpkin": 0,
+        "harvest_sunflower": 0,
+        "harvest_greenbeans": 0,
+        "harvest_apples": 0,
+        "harvest_berries": 0,
+        "built_kitchen": 0,
+        "built_juicepress": 0,
+        "built_preserves": 0,
+        "made_stew": 0,
+        "made_applejuice": 0,
+        "made_applepie": 0,
+        "made_berrypreserves": 0,
+        "made_berrytart": 0,
+        "made_orchardjuice": 0,
+        "made_berrysmoothie": 0,
+        "made_applecompote": 0,
+        "made_applevinegar": 0,
+        "made_pickledbeans": 0,
+        "made_beangratin": 0,
+        "made_orchardsalad": 0,
+        "made_berrycheesecake": 0,
+        "made_harvesthamper": 0,
+        "sold": 0,
+        "sold_eggs": 1
+      },
+      "claimed": [
+        0,
+        1
+      ],
+      "plots": [
+        {
+          "id": 0,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 1,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 2,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 3,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 4,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 5,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 6,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 7,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 8,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 9,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 10,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 11,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        }
+      ],
+      "buildings": {
+        "familyhall": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "farmhouse": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "mill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "dairy": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "coop": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "bakery": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "packing": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "windmill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "kitchen": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "juicepress": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "preserves": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        }
+      },
+      "xpOffset": 0,
+      "version": 13,
+      "diamonds": 77,
+      "boosts": {
+        "xpUntil": 0,
+        "coinsUntil": 0,
+        "upgradeCredits": 0
+      },
+      "family": {
+        "familyId": null,
+        "unclaimedCount": 0
+      },
+      "discovered": [],
+      "siloLevel": 0,
+      "tractorReadyAt": 0,
+      "login": {
+        "lastDay": null,
+        "streak": 0,
+        "best": 0,
+        "visits": 0
+      },
+      "levelRewards": [
+        1
+      ],
+      "onboarding": {
+        "completed": 10,
+        "milestones": {},
+        "rewardClaimed": true
+      },
+      "mastery": {
+        "harvests": {
+          "corn": 0,
+          "wheat": 0,
+          "cabbage": 0,
+          "pumpkin": 0,
+          "sunflower": 0,
+          "barley": 0,
+          "lettuce": 0,
+          "redcabbage": 0,
+          "cauliflower": 0,
+          "greenbeans": 0,
+          "apples": 0,
+          "berries": 0
+        },
+        "claimed": []
+      },
+      "stall": {
+        "level": 1,
+        "since": 1789905600000,
+        "bank": 0
+      },
+      "estate": {
+        "completed": 0,
+        "job": null,
+        "diamondChapters": []
+      },
+      "chores": {},
+      "chorePractice": {},
+      "activities": {
+        "jobs": {},
+        "cooldowns": {},
+        "completed": {},
+        "round": [],
+        "rounds": 0
+      },
+      "daily": {
+        "date": "2026-09-20",
+        "baseline": {
+          "harvested": 0,
+          "planted": 0,
+          "watered": 0,
+          "earned": 0,
+          "produced": 0,
+          "upgrades": 0,
+          "expansions": 0,
+          "bread": 0,
+          "activity_rounds": 0,
+          "silo_upgrades": 0,
+          "harvest_wheat": 0,
+          "varieties": 0,
+          "made_milk": 0,
+          "made_eggs": 0,
+          "made_oil": 0,
+          "made_pie": 0,
+          "harvest_lettuce": 0,
+          "harvest_redcabbage": 0,
+          "made_vegetables": 0,
+          "deliveries": 0,
+          "tractor": 0,
+          "dailies": 0,
+          "tended": 0,
+          "chores": 0,
+          "projects": 0,
+          "mastery_medals": 0,
+          "windmill_batches": 0,
+          "made_grainmeal": 0,
+          "made_flour": 0,
+          "fertilized": 0,
+          "diamonds_earned": 0,
+          "boosts_used": 0,
+          "windmill_upgrades": 0,
+          "made_bread": 0,
+          "activities": 0,
+          "activity_greenhouse": 0,
+          "activity_apiary": 0,
+          "activity_paddock": 0,
+          "activity_workshop": 0,
+          "chore_weeds": 0,
+          "chore_troughs": 0,
+          "chore_sorting": 0,
+          "parallel_batches": 0,
+          "made_fertilizer": 0,
+          "made_feed": 0,
+          "made_salad": 0,
+          "made_pickles": 0,
+          "honey_deliveries": 0,
+          "crafted_deliveries": 0,
+          "passive_earned": 0,
+          "harvest_corn": 0,
+          "harvest_barley": 0,
+          "harvest_cabbage": 0,
+          "harvest_cauliflower": 0,
+          "harvest_pumpkin": 0,
+          "harvest_sunflower": 0,
+          "harvest_greenbeans": 0,
+          "harvest_apples": 0,
+          "harvest_berries": 0,
+          "built_kitchen": 0,
+          "built_juicepress": 0,
+          "built_preserves": 0,
+          "made_stew": 0,
+          "made_applejuice": 0,
+          "made_applepie": 0,
+          "made_berrypreserves": 0,
+          "made_berrytart": 0,
+          "made_orchardjuice": 0,
+          "made_berrysmoothie": 0,
+          "made_applecompote": 0,
+          "made_applevinegar": 0,
+          "made_pickledbeans": 0,
+          "made_beangratin": 0,
+          "made_orchardsalad": 0,
+          "made_berrycheesecake": 0,
+          "made_harvesthamper": 0,
+          "sold": 0,
+          "sold_eggs": 1
+        },
+        "claimed": [],
+        "orders": [],
+        "bonusClaimed": false,
+        "replacements": 0,
+        "orderRevisions": {},
+        "tasks": [
+          {
+            "stat": "harvest_lettuce",
+            "target": 8,
+            "title": "Leafy little harvest",
+            "description": "Harvest 8 lettuce.",
+            "reward": 55
+          },
+          {
+            "stat": "activity_workshop",
+            "target": 3,
+            "title": "Tools of the trade",
+            "description": "Finish 3 Tool workshop jobs.",
+            "reward": 85
+          },
+          {
+            "stat": "made_bread",
+            "target": 2,
+            "title": "Warm from the oven",
+            "description": "Collect 2 fresh bread.",
+            "reward": 100,
+            "minLevel": 4
+          }
+        ],
+        "orderBoard": [
+          {
+            "title": "A leafy lunch",
+            "input": {
+              "lettuce": 4,
+              "corn": 2
+            },
+            "xp": 20,
+            "minLevel": 1,
+            "tier": "quick",
+            "customer": "Your neighbours",
+            "story": "A small basket to brighten someone’s day.",
+            "bonus": 39,
+            "marketValue": 128,
+            "coins": 178,
+            "diamonds": 1
+          },
+          {
+            "title": "The paddock pantry",
+            "input": {
+              "feed": 4,
+              "corn": 4
+            },
+            "xp": 50,
+            "minLevel": 1,
+            "tier": "village",
+            "customer": "Village trading post",
+            "story": "The village needs a selection of your farm-made goods.",
+            "bonus": 64,
+            "marketValue": 584,
+            "coins": 958,
+            "diamonds": 4
+          },
+          {
+            "title": "The baker’s big weekend",
+            "customer": "Willow Bakery",
+            "story": "Help the bakery prepare a whole counter of fresh treats.",
+            "input": {
+              "bread": 6,
+              "flour": 12,
+              "milk": 6
+            },
+            "xp": 110,
+            "minLevel": 4,
+            "tier": "commission",
+            "bonus": 124,
+            "marketValue": 2688,
+            "coins": 6022,
+            "diamonds": 10
+          }
+        ]
+      }
+    },
+    "access": {
+      "crops": [
+        "corn",
+        "wheat",
+        "barley",
+        "lettuce"
+      ],
+      "buildings": [
+        "farmhouse",
+        "mill",
+        "dairy",
+        "coop",
+        "bakery",
+        "windmill"
+      ],
+      "features": [
+        "chores",
+        "stall",
+        "mastery",
+        "tractor",
+        "silo",
+        "cart",
+        "boosts",
+        "activities"
+      ],
+      "recipes": [
+        "grainmeal",
+        "windflour",
+        "windfeed",
+        "barleyfeed",
+        "flour",
+        "feed",
+        "milk",
+        "cheese",
+        "eggs",
+        "bread"
+      ]
+    }
+  },
+  {
+    "name": "level-5-bread-true-paid-false-legacy-false",
+    "state": {
+      "progression": {
+        "mode": "guided"
+      },
+      "coins": 12345,
+      "xp": 480,
+      "inventory": {
+        "corn": 0,
+        "wheat": 4,
+        "cabbage": 0,
+        "pumpkin": 0,
+        "sunflower": 0,
+        "barley": 0,
+        "lettuce": 0,
+        "redcabbage": 0,
+        "cauliflower": 0,
+        "greenbeans": 0,
+        "apples": 0,
+        "berries": 0,
+        "honey": 0,
+        "grainmeal": 0,
+        "fertilizer": 0,
+        "salad": 0,
+        "pickles": 0,
+        "flour": 0,
+        "feed": 2,
+        "oil": 0,
+        "milk": 0,
+        "eggs": 0,
+        "cheese": 0,
+        "bread": 0,
+        "pie": 0,
+        "vegetables": 0,
+        "applejuice": 0,
+        "applepie": 0,
+        "berrypreserves": 0,
+        "berrytart": 0,
+        "stew": 0,
+        "orchardjuice": 0,
+        "berrysmoothie": 0,
+        "applecompote": 0,
+        "applevinegar": 0,
+        "pickledbeans": 0,
+        "beangratin": 0,
+        "orchardsalad": 0,
+        "berrycheesecake": 0,
+        "harvesthamper": 0
+      },
+      "stats": {
+        "harvested": 0,
+        "planted": 0,
+        "watered": 0,
+        "earned": 0,
+        "produced": 0,
+        "upgrades": 0,
+        "expansions": 0,
+        "bread": 0,
+        "activity_rounds": 0,
+        "silo_upgrades": 0,
+        "harvest_wheat": 0,
+        "varieties": 0,
+        "made_milk": 0,
+        "made_eggs": 0,
+        "made_oil": 0,
+        "made_pie": 0,
+        "harvest_lettuce": 0,
+        "harvest_redcabbage": 0,
+        "made_vegetables": 0,
+        "deliveries": 0,
+        "tractor": 0,
+        "dailies": 0,
+        "tended": 0,
+        "chores": 0,
+        "projects": 0,
+        "mastery_medals": 0,
+        "windmill_batches": 0,
+        "made_grainmeal": 0,
+        "made_flour": 0,
+        "fertilized": 0,
+        "diamonds_earned": 0,
+        "boosts_used": 0,
+        "windmill_upgrades": 0,
+        "made_bread": 2,
+        "activities": 0,
+        "activity_greenhouse": 0,
+        "activity_apiary": 0,
+        "activity_paddock": 0,
+        "activity_workshop": 0,
+        "chore_weeds": 0,
+        "chore_troughs": 0,
+        "chore_sorting": 0,
+        "parallel_batches": 0,
+        "made_fertilizer": 0,
+        "made_feed": 0,
+        "made_salad": 0,
+        "made_pickles": 0,
+        "honey_deliveries": 0,
+        "crafted_deliveries": 0,
+        "passive_earned": 0,
+        "harvest_corn": 0,
+        "harvest_barley": 0,
+        "harvest_cabbage": 0,
+        "harvest_cauliflower": 0,
+        "harvest_pumpkin": 0,
+        "harvest_sunflower": 0,
+        "harvest_greenbeans": 0,
+        "harvest_apples": 0,
+        "harvest_berries": 0,
+        "built_kitchen": 0,
+        "built_juicepress": 0,
+        "built_preserves": 0,
+        "made_stew": 0,
+        "made_applejuice": 0,
+        "made_applepie": 0,
+        "made_berrypreserves": 0,
+        "made_berrytart": 0,
+        "made_orchardjuice": 0,
+        "made_berrysmoothie": 0,
+        "made_applecompote": 0,
+        "made_applevinegar": 0,
+        "made_pickledbeans": 0,
+        "made_beangratin": 0,
+        "made_orchardsalad": 0,
+        "made_berrycheesecake": 0,
+        "made_harvesthamper": 0,
+        "sold": 0,
+        "sold_eggs": 1
+      },
+      "claimed": [
+        0,
+        1
+      ],
+      "plots": [
+        {
+          "id": 0,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 1,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 2,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 3,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 4,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 5,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 6,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 7,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 8,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 9,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 10,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 11,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        }
+      ],
+      "buildings": {
+        "familyhall": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "farmhouse": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "mill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "dairy": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "coop": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "bakery": {
+          "level": 1,
+          "job": {
+            "id": "saved-bread",
+            "recipe": "bread",
+            "startedAt": 1789905599900,
+            "readyAt": 1789905720000,
+            "output": {
+              "bread": 2
+            },
+            "xp": 16
+          },
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "packing": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "windmill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "kitchen": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "juicepress": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "preserves": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        }
+      },
+      "xpOffset": 0,
+      "version": 13,
+      "diamonds": 77,
+      "boosts": {
+        "xpUntil": 0,
+        "coinsUntil": 0,
+        "upgradeCredits": 0
+      },
+      "family": {
+        "familyId": null,
+        "unclaimedCount": 0
+      },
+      "discovered": [],
+      "siloLevel": 0,
+      "tractorReadyAt": 0,
+      "login": {
+        "lastDay": null,
+        "streak": 0,
+        "best": 0,
+        "visits": 0
+      },
+      "levelRewards": [
+        1
+      ],
+      "onboarding": {
+        "completed": 10,
+        "milestones": {},
+        "rewardClaimed": true
+      },
+      "mastery": {
+        "harvests": {
+          "corn": 0,
+          "wheat": 0,
+          "cabbage": 0,
+          "pumpkin": 0,
+          "sunflower": 0,
+          "barley": 0,
+          "lettuce": 0,
+          "redcabbage": 0,
+          "cauliflower": 0,
+          "greenbeans": 0,
+          "apples": 0,
+          "berries": 0
+        },
+        "claimed": []
+      },
+      "stall": {
+        "level": 1,
+        "since": 1789905600000,
+        "bank": 0
+      },
+      "estate": {
+        "completed": 0,
+        "job": null,
+        "diamondChapters": []
+      },
+      "chores": {},
+      "chorePractice": {},
+      "activities": {
+        "jobs": {},
+        "cooldowns": {},
+        "completed": {},
+        "round": [],
+        "rounds": 0
+      },
+      "daily": {
+        "date": "2026-09-20",
+        "baseline": {
+          "harvested": 0,
+          "planted": 0,
+          "watered": 0,
+          "earned": 0,
+          "produced": 0,
+          "upgrades": 0,
+          "expansions": 0,
+          "bread": 0,
+          "activity_rounds": 0,
+          "silo_upgrades": 0,
+          "harvest_wheat": 0,
+          "varieties": 0,
+          "made_milk": 0,
+          "made_eggs": 0,
+          "made_oil": 0,
+          "made_pie": 0,
+          "harvest_lettuce": 0,
+          "harvest_redcabbage": 0,
+          "made_vegetables": 0,
+          "deliveries": 0,
+          "tractor": 0,
+          "dailies": 0,
+          "tended": 0,
+          "chores": 0,
+          "projects": 0,
+          "mastery_medals": 0,
+          "windmill_batches": 0,
+          "made_grainmeal": 0,
+          "made_flour": 0,
+          "fertilized": 0,
+          "diamonds_earned": 0,
+          "boosts_used": 0,
+          "windmill_upgrades": 0,
+          "made_bread": 2,
+          "activities": 0,
+          "activity_greenhouse": 0,
+          "activity_apiary": 0,
+          "activity_paddock": 0,
+          "activity_workshop": 0,
+          "chore_weeds": 0,
+          "chore_troughs": 0,
+          "chore_sorting": 0,
+          "parallel_batches": 0,
+          "made_fertilizer": 0,
+          "made_feed": 0,
+          "made_salad": 0,
+          "made_pickles": 0,
+          "honey_deliveries": 0,
+          "crafted_deliveries": 0,
+          "passive_earned": 0,
+          "harvest_corn": 0,
+          "harvest_barley": 0,
+          "harvest_cabbage": 0,
+          "harvest_cauliflower": 0,
+          "harvest_pumpkin": 0,
+          "harvest_sunflower": 0,
+          "harvest_greenbeans": 0,
+          "harvest_apples": 0,
+          "harvest_berries": 0,
+          "built_kitchen": 0,
+          "built_juicepress": 0,
+          "built_preserves": 0,
+          "made_stew": 0,
+          "made_applejuice": 0,
+          "made_applepie": 0,
+          "made_berrypreserves": 0,
+          "made_berrytart": 0,
+          "made_orchardjuice": 0,
+          "made_berrysmoothie": 0,
+          "made_applecompote": 0,
+          "made_applevinegar": 0,
+          "made_pickledbeans": 0,
+          "made_beangratin": 0,
+          "made_orchardsalad": 0,
+          "made_berrycheesecake": 0,
+          "made_harvesthamper": 0,
+          "sold": 0,
+          "sold_eggs": 1
+        },
+        "claimed": [],
+        "orders": [],
+        "bonusClaimed": false,
+        "replacements": 0,
+        "orderRevisions": {},
+        "tasks": [
+          {
+            "stat": "harvest_lettuce",
+            "target": 8,
+            "title": "Leafy little harvest",
+            "description": "Harvest 8 lettuce.",
+            "reward": 55
+          },
+          {
+            "stat": "made_salad",
+            "target": 1,
+            "title": "Freshly prepared",
+            "description": "Collect 1 fresh salad.",
+            "reward": 90,
+            "minLevel": 4
+          },
+          {
+            "stat": "made_bread",
+            "target": 2,
+            "title": "Warm from the oven",
+            "description": "Collect 2 fresh bread.",
+            "reward": 100,
+            "minLevel": 4
+          }
+        ],
+        "orderBoard": [
+          {
+            "title": "A leafy lunch",
+            "input": {
+              "lettuce": 4,
+              "corn": 2
+            },
+            "xp": 20,
+            "minLevel": 1,
+            "tier": "quick",
+            "customer": "Your neighbours",
+            "story": "A small basket to brighten someone’s day.",
+            "bonus": 39,
+            "marketValue": 128,
+            "coins": 178,
+            "diamonds": 1
+          },
+          {
+            "title": "Honey on toast",
+            "input": {
+              "honey": 4,
+              "bread": 4
+            },
+            "xp": 70,
+            "minLevel": 3,
+            "tier": "village",
+            "customer": "Village trading post",
+            "story": "The village needs a selection of your farm-made goods.",
+            "bonus": 64,
+            "marketValue": 1200,
+            "coins": 1968,
+            "diamonds": 4
+          },
+          {
+            "title": "The baker’s big weekend",
+            "customer": "Willow Bakery",
+            "story": "Help the bakery prepare a whole counter of fresh treats.",
+            "input": {
+              "bread": 6,
+              "flour": 12,
+              "milk": 6
+            },
+            "xp": 110,
+            "minLevel": 4,
+            "tier": "commission",
+            "bonus": 124,
+            "marketValue": 2688,
+            "coins": 6022,
+            "diamonds": 10
+          }
+        ]
+      }
+    },
+    "access": {
+      "crops": [
+        "corn",
+        "wheat",
+        "cabbage",
+        "barley",
+        "lettuce"
+      ],
+      "buildings": [
+        "farmhouse",
+        "mill",
+        "dairy",
+        "coop",
+        "bakery",
+        "packing",
+        "windmill"
+      ],
+      "features": [
+        "chores",
+        "stall",
+        "mastery",
+        "tractor",
+        "silo",
+        "cart",
+        "boosts",
+        "activities"
+      ],
+      "recipes": [
+        "grainmeal",
+        "fertilizer",
+        "windflour",
+        "windfeed",
+        "barleyfeed",
+        "salad",
+        "flour",
+        "feed",
+        "milk",
+        "cheese",
+        "eggs",
+        "bread"
+      ]
+    }
+  },
+  {
+    "name": "level-9-bread-true-paid-true-legacy-false",
+    "state": {
+      "progression": {
+        "mode": "guided"
+      },
+      "coins": 12345,
+      "xp": 1600,
+      "inventory": {
+        "corn": 0,
+        "wheat": 4,
+        "cabbage": 0,
+        "pumpkin": 0,
+        "sunflower": 0,
+        "barley": 0,
+        "lettuce": 0,
+        "redcabbage": 0,
+        "cauliflower": 0,
+        "greenbeans": 0,
+        "apples": 0,
+        "berries": 0,
+        "honey": 0,
+        "grainmeal": 0,
+        "fertilizer": 0,
+        "salad": 0,
+        "pickles": 0,
+        "flour": 0,
+        "feed": 2,
+        "oil": 0,
+        "milk": 0,
+        "eggs": 0,
+        "cheese": 0,
+        "bread": 0,
+        "pie": 0,
+        "vegetables": 0,
+        "applejuice": 0,
+        "applepie": 0,
+        "berrypreserves": 0,
+        "berrytart": 0,
+        "stew": 0,
+        "orchardjuice": 0,
+        "berrysmoothie": 0,
+        "applecompote": 0,
+        "applevinegar": 0,
+        "pickledbeans": 0,
+        "beangratin": 0,
+        "orchardsalad": 0,
+        "berrycheesecake": 0,
+        "harvesthamper": 0
+      },
+      "stats": {
+        "harvested": 0,
+        "planted": 0,
+        "watered": 0,
+        "earned": 0,
+        "produced": 0,
+        "upgrades": 0,
+        "expansions": 0,
+        "bread": 0,
+        "activity_rounds": 0,
+        "silo_upgrades": 0,
+        "harvest_wheat": 0,
+        "varieties": 0,
+        "made_milk": 0,
+        "made_eggs": 0,
+        "made_oil": 0,
+        "made_pie": 0,
+        "harvest_lettuce": 0,
+        "harvest_redcabbage": 0,
+        "made_vegetables": 0,
+        "deliveries": 0,
+        "tractor": 0,
+        "dailies": 0,
+        "tended": 0,
+        "chores": 0,
+        "projects": 0,
+        "mastery_medals": 0,
+        "windmill_batches": 0,
+        "made_grainmeal": 0,
+        "made_flour": 0,
+        "fertilized": 0,
+        "diamonds_earned": 0,
+        "boosts_used": 0,
+        "windmill_upgrades": 0,
+        "made_bread": 2,
+        "activities": 0,
+        "activity_greenhouse": 0,
+        "activity_apiary": 0,
+        "activity_paddock": 0,
+        "activity_workshop": 0,
+        "chore_weeds": 0,
+        "chore_troughs": 0,
+        "chore_sorting": 0,
+        "parallel_batches": 0,
+        "made_fertilizer": 0,
+        "made_feed": 0,
+        "made_salad": 0,
+        "made_pickles": 0,
+        "honey_deliveries": 0,
+        "crafted_deliveries": 0,
+        "passive_earned": 0,
+        "harvest_corn": 0,
+        "harvest_barley": 0,
+        "harvest_cabbage": 0,
+        "harvest_cauliflower": 0,
+        "harvest_pumpkin": 0,
+        "harvest_sunflower": 0,
+        "harvest_greenbeans": 0,
+        "harvest_apples": 0,
+        "harvest_berries": 0,
+        "built_kitchen": 0,
+        "built_juicepress": 0,
+        "built_preserves": 0,
+        "made_stew": 0,
+        "made_applejuice": 0,
+        "made_applepie": 0,
+        "made_berrypreserves": 0,
+        "made_berrytart": 0,
+        "made_orchardjuice": 0,
+        "made_berrysmoothie": 0,
+        "made_applecompote": 0,
+        "made_applevinegar": 0,
+        "made_pickledbeans": 0,
+        "made_beangratin": 0,
+        "made_orchardsalad": 0,
+        "made_berrycheesecake": 0,
+        "made_harvesthamper": 0,
+        "sold": 0,
+        "sold_eggs": 1
+      },
+      "claimed": [
+        0,
+        1
+      ],
+      "plots": [
+        {
+          "id": 0,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 1,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 2,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 3,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 4,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 5,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 6,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 7,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 8,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 9,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 10,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 11,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        }
+      ],
+      "buildings": {
+        "familyhall": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "farmhouse": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "mill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "dairy": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "coop": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "bakery": {
+          "level": 1,
+          "job": {
+            "id": "saved-bread",
+            "recipe": "bread",
+            "startedAt": 1789905599900,
+            "readyAt": 1789905720000,
+            "output": {
+              "bread": 2
+            },
+            "xp": 16
+          },
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "packing": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "windmill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "kitchen": {
+          "level": 1,
+          "job": null,
+          "built": true,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "juicepress": {
+          "level": 1,
+          "job": null,
+          "built": true,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "preserves": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        }
+      },
+      "xpOffset": 0,
+      "version": 13,
+      "diamonds": 77,
+      "boosts": {
+        "xpUntil": 0,
+        "coinsUntil": 0,
+        "upgradeCredits": 0
+      },
+      "family": {
+        "familyId": null,
+        "unclaimedCount": 0
+      },
+      "discovered": [],
+      "siloLevel": 0,
+      "tractorReadyAt": 0,
+      "login": {
+        "lastDay": null,
+        "streak": 0,
+        "best": 0,
+        "visits": 0
+      },
+      "levelRewards": [
+        1
+      ],
+      "onboarding": {
+        "completed": 10,
+        "milestones": {},
+        "rewardClaimed": true
+      },
+      "mastery": {
+        "harvests": {
+          "corn": 0,
+          "wheat": 0,
+          "cabbage": 0,
+          "pumpkin": 0,
+          "sunflower": 0,
+          "barley": 0,
+          "lettuce": 0,
+          "redcabbage": 0,
+          "cauliflower": 0,
+          "greenbeans": 0,
+          "apples": 0,
+          "berries": 0
+        },
+        "claimed": []
+      },
+      "stall": {
+        "level": 1,
+        "since": 1789905600000,
+        "bank": 0
+      },
+      "estate": {
+        "completed": 0,
+        "job": null,
+        "diamondChapters": []
+      },
+      "chores": {},
+      "chorePractice": {},
+      "activities": {
+        "jobs": {},
+        "cooldowns": {},
+        "completed": {},
+        "round": [],
+        "rounds": 0
+      },
+      "daily": {
+        "date": "2026-09-20",
+        "baseline": {
+          "harvested": 0,
+          "planted": 0,
+          "watered": 0,
+          "earned": 0,
+          "produced": 0,
+          "upgrades": 0,
+          "expansions": 0,
+          "bread": 0,
+          "activity_rounds": 0,
+          "silo_upgrades": 0,
+          "harvest_wheat": 0,
+          "varieties": 0,
+          "made_milk": 0,
+          "made_eggs": 0,
+          "made_oil": 0,
+          "made_pie": 0,
+          "harvest_lettuce": 0,
+          "harvest_redcabbage": 0,
+          "made_vegetables": 0,
+          "deliveries": 0,
+          "tractor": 0,
+          "dailies": 0,
+          "tended": 0,
+          "chores": 0,
+          "projects": 0,
+          "mastery_medals": 0,
+          "windmill_batches": 0,
+          "made_grainmeal": 0,
+          "made_flour": 0,
+          "fertilized": 0,
+          "diamonds_earned": 0,
+          "boosts_used": 0,
+          "windmill_upgrades": 0,
+          "made_bread": 2,
+          "activities": 0,
+          "activity_greenhouse": 0,
+          "activity_apiary": 0,
+          "activity_paddock": 0,
+          "activity_workshop": 0,
+          "chore_weeds": 0,
+          "chore_troughs": 0,
+          "chore_sorting": 0,
+          "parallel_batches": 0,
+          "made_fertilizer": 0,
+          "made_feed": 0,
+          "made_salad": 0,
+          "made_pickles": 0,
+          "honey_deliveries": 0,
+          "crafted_deliveries": 0,
+          "passive_earned": 0,
+          "harvest_corn": 0,
+          "harvest_barley": 0,
+          "harvest_cabbage": 0,
+          "harvest_cauliflower": 0,
+          "harvest_pumpkin": 0,
+          "harvest_sunflower": 0,
+          "harvest_greenbeans": 0,
+          "harvest_apples": 0,
+          "harvest_berries": 0,
+          "built_kitchen": 0,
+          "built_juicepress": 0,
+          "built_preserves": 0,
+          "made_stew": 0,
+          "made_applejuice": 0,
+          "made_applepie": 0,
+          "made_berrypreserves": 0,
+          "made_berrytart": 0,
+          "made_orchardjuice": 0,
+          "made_berrysmoothie": 0,
+          "made_applecompote": 0,
+          "made_applevinegar": 0,
+          "made_pickledbeans": 0,
+          "made_beangratin": 0,
+          "made_orchardsalad": 0,
+          "made_berrycheesecake": 0,
+          "made_harvesthamper": 0,
+          "sold": 0,
+          "sold_eggs": 1
+        },
+        "claimed": [],
+        "orders": [],
+        "bonusClaimed": false,
+        "replacements": 0,
+        "orderRevisions": {},
+        "tasks": [
+          {
+            "stat": "harvest_apples",
+            "target": 3,
+            "title": "Apples baskets",
+            "description": "Harvest 3 apples.",
+            "reward": 140,
+            "minLevel": 8
+          },
+          {
+            "stat": "made_beangratin",
+            "target": 1,
+            "title": "Green Bean Gratin day",
+            "description": "Collect 1 batch of Green Bean Gratin.",
+            "reward": 200,
+            "minLevel": 7,
+            "requiresBuildings": [
+              "kitchen"
+            ]
+          },
+          {
+            "stat": "made_bread",
+            "target": 2,
+            "title": "Warm from the oven",
+            "description": "Collect 2 fresh bread.",
+            "reward": 100,
+            "minLevel": 4
+          }
+        ],
+        "orderBoard": [
+          {
+            "title": "A leafy lunch",
+            "input": {
+              "lettuce": 4,
+              "corn": 2
+            },
+            "xp": 20,
+            "minLevel": 1,
+            "tier": "quick",
+            "customer": "Your neighbours",
+            "story": "A small basket to brighten someone’s day.",
+            "bonus": 39,
+            "marketValue": 128,
+            "coins": 178,
+            "diamonds": 1
+          },
+          {
+            "title": "An orchard picnic",
+            "input": {
+              "applejuice": 4,
+              "applepie": 2
+            },
+            "xp": 220,
+            "minLevel": 8,
+            "requiresBuildings": [
+              "juicepress"
+            ],
+            "tier": "village",
+            "customer": "Village trading post",
+            "story": "The village needs a selection of your farm-made goods.",
+            "bonus": 64,
+            "marketValue": 5272,
+            "coins": 8647,
+            "diamonds": 4
+          },
+          {
+            "title": "The winter pantry",
+            "customer": "Valley Grocer",
+            "story": "Stock the village shelves with a generous assortment of farm goods.",
+            "input": {
+              "vegetables": 3,
+              "pickles": 4,
+              "cheese": 6
+            },
+            "xp": 170,
+            "minLevel": 8,
+            "tier": "commission",
+            "bonus": 124,
+            "marketValue": 8923,
+            "coins": 19988,
+            "diamonds": 14
+          }
+        ]
+      }
+    },
+    "access": {
+      "crops": [
+        "corn",
+        "wheat",
+        "cabbage",
+        "pumpkin",
+        "barley",
+        "lettuce",
+        "redcabbage",
+        "cauliflower",
+        "greenbeans",
+        "apples"
+      ],
+      "buildings": [
+        "farmhouse",
+        "mill",
+        "dairy",
+        "coop",
+        "bakery",
+        "packing",
+        "windmill",
+        "kitchen",
+        "juicepress"
+      ],
+      "features": [
+        "chores",
+        "stall",
+        "mastery",
+        "tractor",
+        "silo",
+        "cart",
+        "projects",
+        "boosts",
+        "activities"
+      ],
+      "recipes": [
+        "grainmeal",
+        "fertilizer",
+        "windflour",
+        "windfeed",
+        "barleyfeed",
+        "salad",
+        "pickles",
+        "flour",
+        "feed",
+        "milk",
+        "cheese",
+        "eggs",
+        "bread",
+        "pie",
+        "vegetables",
+        "stew",
+        "applejuice",
+        "applepie",
+        "beangratin",
+        "orchardsalad"
+      ]
+    }
+  },
+  {
+    "name": "level-12-bread-true-paid-true-legacy-false",
+    "state": {
+      "progression": {
+        "mode": "guided"
+      },
+      "coins": 12345,
+      "xp": 2860,
+      "inventory": {
+        "corn": 0,
+        "wheat": 4,
+        "cabbage": 0,
+        "pumpkin": 0,
+        "sunflower": 0,
+        "barley": 0,
+        "lettuce": 0,
+        "redcabbage": 0,
+        "cauliflower": 0,
+        "greenbeans": 0,
+        "apples": 0,
+        "berries": 0,
+        "honey": 0,
+        "grainmeal": 0,
+        "fertilizer": 0,
+        "salad": 0,
+        "pickles": 0,
+        "flour": 0,
+        "feed": 2,
+        "oil": 0,
+        "milk": 0,
+        "eggs": 0,
+        "cheese": 0,
+        "bread": 0,
+        "pie": 0,
+        "vegetables": 0,
+        "applejuice": 0,
+        "applepie": 0,
+        "berrypreserves": 0,
+        "berrytart": 0,
+        "stew": 0,
+        "orchardjuice": 0,
+        "berrysmoothie": 0,
+        "applecompote": 0,
+        "applevinegar": 0,
+        "pickledbeans": 0,
+        "beangratin": 0,
+        "orchardsalad": 0,
+        "berrycheesecake": 0,
+        "harvesthamper": 0
+      },
+      "stats": {
+        "harvested": 0,
+        "planted": 0,
+        "watered": 0,
+        "earned": 0,
+        "produced": 0,
+        "upgrades": 0,
+        "expansions": 0,
+        "bread": 0,
+        "activity_rounds": 0,
+        "silo_upgrades": 0,
+        "harvest_wheat": 0,
+        "varieties": 0,
+        "made_milk": 0,
+        "made_eggs": 0,
+        "made_oil": 0,
+        "made_pie": 0,
+        "harvest_lettuce": 0,
+        "harvest_redcabbage": 0,
+        "made_vegetables": 0,
+        "deliveries": 0,
+        "tractor": 0,
+        "dailies": 0,
+        "tended": 0,
+        "chores": 0,
+        "projects": 0,
+        "mastery_medals": 0,
+        "windmill_batches": 0,
+        "made_grainmeal": 0,
+        "made_flour": 0,
+        "fertilized": 0,
+        "diamonds_earned": 0,
+        "boosts_used": 0,
+        "windmill_upgrades": 0,
+        "made_bread": 2,
+        "activities": 0,
+        "activity_greenhouse": 0,
+        "activity_apiary": 0,
+        "activity_paddock": 0,
+        "activity_workshop": 0,
+        "chore_weeds": 0,
+        "chore_troughs": 0,
+        "chore_sorting": 0,
+        "parallel_batches": 0,
+        "made_fertilizer": 0,
+        "made_feed": 0,
+        "made_salad": 0,
+        "made_pickles": 0,
+        "honey_deliveries": 0,
+        "crafted_deliveries": 0,
+        "passive_earned": 0,
+        "harvest_corn": 0,
+        "harvest_barley": 0,
+        "harvest_cabbage": 0,
+        "harvest_cauliflower": 0,
+        "harvest_pumpkin": 0,
+        "harvest_sunflower": 0,
+        "harvest_greenbeans": 0,
+        "harvest_apples": 0,
+        "harvest_berries": 0,
+        "built_kitchen": 0,
+        "built_juicepress": 0,
+        "built_preserves": 0,
+        "made_stew": 0,
+        "made_applejuice": 0,
+        "made_applepie": 0,
+        "made_berrypreserves": 0,
+        "made_berrytart": 0,
+        "made_orchardjuice": 0,
+        "made_berrysmoothie": 0,
+        "made_applecompote": 0,
+        "made_applevinegar": 0,
+        "made_pickledbeans": 0,
+        "made_beangratin": 0,
+        "made_orchardsalad": 0,
+        "made_berrycheesecake": 0,
+        "made_harvesthamper": 0,
+        "sold": 0,
+        "sold_eggs": 1
+      },
+      "claimed": [
+        0,
+        1
+      ],
+      "plots": [
+        {
+          "id": 0,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 1,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 2,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 3,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 4,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 5,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 6,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 7,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 8,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 9,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 10,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 11,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        }
+      ],
+      "buildings": {
+        "familyhall": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "farmhouse": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "mill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "dairy": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "coop": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "bakery": {
+          "level": 1,
+          "job": {
+            "id": "saved-bread",
+            "recipe": "bread",
+            "startedAt": 1789905599900,
+            "readyAt": 1789905720000,
+            "output": {
+              "bread": 2
+            },
+            "xp": 16
+          },
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "packing": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "windmill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "kitchen": {
+          "level": 1,
+          "job": null,
+          "built": true,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "juicepress": {
+          "level": 1,
+          "job": null,
+          "built": true,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "preserves": {
+          "level": 1,
+          "job": null,
+          "built": true,
+          "extraJobs": [],
+          "batchSequence": 0
+        }
+      },
+      "xpOffset": 0,
+      "version": 13,
+      "diamonds": 77,
+      "boosts": {
+        "xpUntil": 0,
+        "coinsUntil": 0,
+        "upgradeCredits": 0
+      },
+      "family": {
+        "familyId": null,
+        "unclaimedCount": 0
+      },
+      "discovered": [],
+      "siloLevel": 0,
+      "tractorReadyAt": 0,
+      "login": {
+        "lastDay": null,
+        "streak": 0,
+        "best": 0,
+        "visits": 0
+      },
+      "levelRewards": [
+        1
+      ],
+      "onboarding": {
+        "completed": 10,
+        "milestones": {},
+        "rewardClaimed": true
+      },
+      "mastery": {
+        "harvests": {
+          "corn": 0,
+          "wheat": 0,
+          "cabbage": 0,
+          "pumpkin": 0,
+          "sunflower": 0,
+          "barley": 0,
+          "lettuce": 0,
+          "redcabbage": 0,
+          "cauliflower": 0,
+          "greenbeans": 0,
+          "apples": 0,
+          "berries": 0
+        },
+        "claimed": []
+      },
+      "stall": {
+        "level": 1,
+        "since": 1789905600000,
+        "bank": 0
+      },
+      "estate": {
+        "completed": 0,
+        "job": null,
+        "diamondChapters": []
+      },
+      "chores": {},
+      "chorePractice": {},
+      "activities": {
+        "jobs": {},
+        "cooldowns": {},
+        "completed": {},
+        "round": [],
+        "rounds": 0
+      },
+      "daily": {
+        "date": "2026-09-20",
+        "baseline": {
+          "harvested": 0,
+          "planted": 0,
+          "watered": 0,
+          "earned": 0,
+          "produced": 0,
+          "upgrades": 0,
+          "expansions": 0,
+          "bread": 0,
+          "activity_rounds": 0,
+          "silo_upgrades": 0,
+          "harvest_wheat": 0,
+          "varieties": 0,
+          "made_milk": 0,
+          "made_eggs": 0,
+          "made_oil": 0,
+          "made_pie": 0,
+          "harvest_lettuce": 0,
+          "harvest_redcabbage": 0,
+          "made_vegetables": 0,
+          "deliveries": 0,
+          "tractor": 0,
+          "dailies": 0,
+          "tended": 0,
+          "chores": 0,
+          "projects": 0,
+          "mastery_medals": 0,
+          "windmill_batches": 0,
+          "made_grainmeal": 0,
+          "made_flour": 0,
+          "fertilized": 0,
+          "diamonds_earned": 0,
+          "boosts_used": 0,
+          "windmill_upgrades": 0,
+          "made_bread": 2,
+          "activities": 0,
+          "activity_greenhouse": 0,
+          "activity_apiary": 0,
+          "activity_paddock": 0,
+          "activity_workshop": 0,
+          "chore_weeds": 0,
+          "chore_troughs": 0,
+          "chore_sorting": 0,
+          "parallel_batches": 0,
+          "made_fertilizer": 0,
+          "made_feed": 0,
+          "made_salad": 0,
+          "made_pickles": 0,
+          "honey_deliveries": 0,
+          "crafted_deliveries": 0,
+          "passive_earned": 0,
+          "harvest_corn": 0,
+          "harvest_barley": 0,
+          "harvest_cabbage": 0,
+          "harvest_cauliflower": 0,
+          "harvest_pumpkin": 0,
+          "harvest_sunflower": 0,
+          "harvest_greenbeans": 0,
+          "harvest_apples": 0,
+          "harvest_berries": 0,
+          "built_kitchen": 0,
+          "built_juicepress": 0,
+          "built_preserves": 0,
+          "made_stew": 0,
+          "made_applejuice": 0,
+          "made_applepie": 0,
+          "made_berrypreserves": 0,
+          "made_berrytart": 0,
+          "made_orchardjuice": 0,
+          "made_berrysmoothie": 0,
+          "made_applecompote": 0,
+          "made_applevinegar": 0,
+          "made_pickledbeans": 0,
+          "made_beangratin": 0,
+          "made_orchardsalad": 0,
+          "made_berrycheesecake": 0,
+          "made_harvesthamper": 0,
+          "sold": 0,
+          "sold_eggs": 1
+        },
+        "claimed": [],
+        "orders": [],
+        "bonusClaimed": false,
+        "replacements": 0,
+        "orderRevisions": {},
+        "tasks": [
+          {
+            "stat": "watered",
+            "target": 8,
+            "title": "A little extra care",
+            "description": "Water 8 growing crops.",
+            "reward": 40
+          },
+          {
+            "stat": "fertilized",
+            "target": 2,
+            "title": "A soil boost",
+            "description": "Use natural fertilizer on 2 growing fields.",
+            "reward": 80,
+            "minLevel": 3
+          },
+          {
+            "stat": "made_applevinegar",
+            "target": 1,
+            "title": "Apple Vinegar day",
+            "description": "Collect 1 batch of Apple Vinegar.",
+            "reward": 250,
+            "minLevel": 10,
+            "requiresBuildings": [
+              "preserves",
+              "juicepress"
+            ]
+          }
+        ],
+        "orderBoard": [
+          {
+            "title": "A leafy lunch",
+            "input": {
+              "lettuce": 4,
+              "corn": 2
+            },
+            "xp": 20,
+            "minLevel": 1,
+            "tier": "quick",
+            "customer": "Your neighbours",
+            "story": "A small basket to brighten someone’s day.",
+            "bonus": 39,
+            "marketValue": 128,
+            "coins": 178,
+            "diamonds": 1
+          },
+          {
+            "title": "The orchard tea room",
+            "input": {
+              "berrytart": 4,
+              "applepie": 4
+            },
+            "xp": 320,
+            "minLevel": 10,
+            "requiresBuildings": [
+              "preserves"
+            ],
+            "tier": "village",
+            "customer": "Village trading post",
+            "story": "The village needs a selection of your farm-made goods.",
+            "bonus": 64,
+            "marketValue": 11900,
+            "coins": 19516,
+            "diamonds": 4
+          },
+          {
+            "title": "The grand estate banquet",
+            "customer": "Hilltop Estate",
+            "story": "A special celebration calls for an impressive farm-made feast.",
+            "input": {
+              "oil": 4,
+              "vegetables": 4,
+              "pie": 3,
+              "bread": 8
+            },
+            "xp": 220,
+            "minLevel": 12,
+            "tier": "commission",
+            "bonus": 124,
+            "marketValue": 15832,
+            "coins": 35464,
+            "diamonds": 18
+          }
+        ]
+      }
+    },
+    "access": {
+      "crops": [
+        "corn",
+        "wheat",
+        "cabbage",
+        "pumpkin",
+        "sunflower",
+        "barley",
+        "lettuce",
+        "redcabbage",
+        "cauliflower",
+        "greenbeans",
+        "apples",
+        "berries"
+      ],
+      "buildings": [
+        "familyhall",
+        "farmhouse",
+        "mill",
+        "dairy",
+        "coop",
+        "bakery",
+        "packing",
+        "windmill",
+        "kitchen",
+        "juicepress",
+        "preserves"
+      ],
+      "features": [
+        "family",
+        "chores",
+        "stall",
+        "mastery",
+        "tractor",
+        "silo",
+        "cart",
+        "projects",
+        "boosts",
+        "activities"
+      ],
+      "recipes": [
+        "grainmeal",
+        "fertilizer",
+        "windflour",
+        "windfeed",
+        "barleyfeed",
+        "salad",
+        "pickles",
+        "flour",
+        "feed",
+        "oil",
+        "milk",
+        "cheese",
+        "eggs",
+        "bread",
+        "pie",
+        "vegetables",
+        "stew",
+        "applejuice",
+        "applepie",
+        "berrypreserves",
+        "berrytart",
+        "orchardjuice",
+        "berrysmoothie",
+        "applecompote",
+        "applevinegar",
+        "pickledbeans",
+        "beangratin",
+        "orchardsalad",
+        "berrycheesecake",
+        "harvesthamper"
+      ]
+    }
+  },
+  {
+    "name": "level-1-bread-false-paid-false-legacy-true",
+    "state": {
+      "progression": {
+        "mode": "legacy"
+      },
+      "coins": 12345,
+      "xp": 0,
+      "inventory": {
+        "corn": 0,
+        "wheat": 4,
+        "cabbage": 0,
+        "pumpkin": 0,
+        "sunflower": 0,
+        "barley": 0,
+        "lettuce": 0,
+        "redcabbage": 0,
+        "cauliflower": 0,
+        "greenbeans": 0,
+        "apples": 0,
+        "berries": 0,
+        "honey": 0,
+        "grainmeal": 0,
+        "fertilizer": 0,
+        "salad": 0,
+        "pickles": 0,
+        "flour": 0,
+        "feed": 2,
+        "oil": 0,
+        "milk": 0,
+        "eggs": 0,
+        "cheese": 0,
+        "bread": 0,
+        "pie": 0,
+        "vegetables": 0,
+        "applejuice": 0,
+        "applepie": 0,
+        "berrypreserves": 0,
+        "berrytart": 0,
+        "stew": 0,
+        "orchardjuice": 0,
+        "berrysmoothie": 0,
+        "applecompote": 0,
+        "applevinegar": 0,
+        "pickledbeans": 0,
+        "beangratin": 0,
+        "orchardsalad": 0,
+        "berrycheesecake": 0,
+        "harvesthamper": 0
+      },
+      "stats": {
+        "harvested": 0,
+        "planted": 0,
+        "watered": 0,
+        "earned": 0,
+        "produced": 0,
+        "upgrades": 0,
+        "expansions": 0,
+        "bread": 0,
+        "activity_rounds": 0,
+        "silo_upgrades": 0,
+        "harvest_wheat": 0,
+        "varieties": 0,
+        "made_milk": 0,
+        "made_eggs": 0,
+        "made_oil": 0,
+        "made_pie": 0,
+        "harvest_lettuce": 0,
+        "harvest_redcabbage": 0,
+        "made_vegetables": 0,
+        "deliveries": 0,
+        "tractor": 0,
+        "dailies": 0,
+        "tended": 0,
+        "chores": 0,
+        "projects": 0,
+        "mastery_medals": 0,
+        "windmill_batches": 0,
+        "made_grainmeal": 0,
+        "made_flour": 0,
+        "fertilized": 0,
+        "diamonds_earned": 0,
+        "boosts_used": 0,
+        "windmill_upgrades": 0,
+        "made_bread": 0,
+        "activities": 0,
+        "activity_greenhouse": 0,
+        "activity_apiary": 0,
+        "activity_paddock": 0,
+        "activity_workshop": 0,
+        "chore_weeds": 0,
+        "chore_troughs": 0,
+        "chore_sorting": 0,
+        "parallel_batches": 0,
+        "made_fertilizer": 0,
+        "made_feed": 0,
+        "made_salad": 0,
+        "made_pickles": 0,
+        "honey_deliveries": 0,
+        "crafted_deliveries": 0,
+        "passive_earned": 0,
+        "harvest_corn": 0,
+        "harvest_barley": 0,
+        "harvest_cabbage": 0,
+        "harvest_cauliflower": 0,
+        "harvest_pumpkin": 0,
+        "harvest_sunflower": 0,
+        "harvest_greenbeans": 0,
+        "harvest_apples": 0,
+        "harvest_berries": 0,
+        "built_kitchen": 0,
+        "built_juicepress": 0,
+        "built_preserves": 0,
+        "made_stew": 0,
+        "made_applejuice": 0,
+        "made_applepie": 0,
+        "made_berrypreserves": 0,
+        "made_berrytart": 0,
+        "made_orchardjuice": 0,
+        "made_berrysmoothie": 0,
+        "made_applecompote": 0,
+        "made_applevinegar": 0,
+        "made_pickledbeans": 0,
+        "made_beangratin": 0,
+        "made_orchardsalad": 0,
+        "made_berrycheesecake": 0,
+        "made_harvesthamper": 0,
+        "sold": 0,
+        "sold_eggs": 0
+      },
+      "claimed": [
+        0,
+        1
+      ],
+      "plots": [
+        {
+          "id": 0,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 1,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 2,
+          "crop": "corn",
+          "plantedAt": 1789904610000,
+          "readyAt": 1789905599000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789904906700
+        },
+        {
+          "id": 3,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 4,
+          "crop": "wheat",
+          "plantedAt": 1789905552000,
+          "readyAt": 1789905672000,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 1789905588000
+        },
+        {
+          "id": 5,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 6,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 7,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 8,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 9,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 10,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        },
+        {
+          "id": 11,
+          "crop": null,
+          "plantedAt": 0,
+          "readyAt": 0,
+          "watered": false,
+          "tended": false,
+          "fertilized": false,
+          "careAt": 0
+        }
+      ],
+      "buildings": {
+        "familyhall": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "farmhouse": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "mill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "dairy": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "coop": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "bakery": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "packing": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "windmill": {
+          "level": 1,
+          "job": null,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "kitchen": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "juicepress": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        },
+        "preserves": {
+          "level": 1,
+          "job": null,
+          "built": false,
+          "extraJobs": [],
+          "batchSequence": 0
+        }
+      },
+      "xpOffset": 0,
+      "version": 13,
+      "diamonds": 77,
+      "boosts": {
+        "xpUntil": 0,
+        "coinsUntil": 0,
+        "upgradeCredits": 0
+      },
+      "family": {
+        "familyId": null,
+        "unclaimedCount": 0
+      },
+      "discovered": [],
+      "siloLevel": 0,
+      "tractorReadyAt": 0,
+      "login": {
+        "lastDay": null,
+        "streak": 0,
+        "best": 0,
+        "visits": 0
+      },
+      "levelRewards": [
+        1
+      ],
+      "onboarding": {
+        "completed": 10,
+        "milestones": {},
+        "rewardClaimed": true
+      },
+      "mastery": {
+        "harvests": {
+          "corn": 0,
+          "wheat": 0,
+          "cabbage": 0,
+          "pumpkin": 0,
+          "sunflower": 0,
+          "barley": 0,
+          "lettuce": 0,
+          "redcabbage": 0,
+          "cauliflower": 0,
+          "greenbeans": 0,
+          "apples": 0,
+          "berries": 0
+        },
+        "claimed": []
+      },
+      "stall": {
+        "level": 1,
+        "since": 1789905600000,
+        "bank": 0
+      },
+      "estate": {
+        "completed": 0,
+        "job": null,
+        "diamondChapters": []
+      },
+      "chores": {},
+      "chorePractice": {},
+      "activities": {
+        "jobs": {},
+        "cooldowns": {},
+        "completed": {},
+        "round": [],
+        "rounds": 0
+      },
+      "daily": {
+        "date": "2026-09-20",
+        "baseline": {
+          "harvested": 0,
+          "planted": 0,
+          "watered": 0,
+          "earned": 0,
+          "produced": 0,
+          "upgrades": 0,
+          "expansions": 0,
+          "bread": 0,
+          "activity_rounds": 0,
+          "silo_upgrades": 0,
+          "harvest_wheat": 0,
+          "varieties": 0,
+          "made_milk": 0,
+          "made_eggs": 0,
+          "made_oil": 0,
+          "made_pie": 0,
+          "harvest_lettuce": 0,
+          "harvest_redcabbage": 0,
+          "made_vegetables": 0,
+          "deliveries": 0,
+          "tractor": 0,
+          "dailies": 0,
+          "tended": 0,
+          "chores": 0,
+          "projects": 0,
+          "mastery_medals": 0,
+          "windmill_batches": 0,
+          "made_grainmeal": 0,
+          "made_flour": 0,
+          "fertilized": 0,
+          "diamonds_earned": 0,
+          "boosts_used": 0,
+          "windmill_upgrades": 0,
+          "made_bread": 0,
+          "activities": 0,
+          "activity_greenhouse": 0,
+          "activity_apiary": 0,
+          "activity_paddock": 0,
+          "activity_workshop": 0,
+          "chore_weeds": 0,
+          "chore_troughs": 0,
+          "chore_sorting": 0,
+          "parallel_batches": 0,
+          "made_fertilizer": 0,
+          "made_feed": 0,
+          "made_salad": 0,
+          "made_pickles": 0,
+          "honey_deliveries": 0,
+          "crafted_deliveries": 0,
+          "passive_earned": 0,
+          "harvest_corn": 0,
+          "harvest_barley": 0,
+          "harvest_cabbage": 0,
+          "harvest_cauliflower": 0,
+          "harvest_pumpkin": 0,
+          "harvest_sunflower": 0,
+          "harvest_greenbeans": 0,
+          "harvest_apples": 0,
+          "harvest_berries": 0,
+          "built_kitchen": 0,
+          "built_juicepress": 0,
+          "built_preserves": 0,
+          "made_stew": 0,
+          "made_applejuice": 0,
+          "made_applepie": 0,
+          "made_berrypreserves": 0,
+          "made_berrytart": 0,
+          "made_orchardjuice": 0,
+          "made_berrysmoothie": 0,
+          "made_applecompote": 0,
+          "made_applevinegar": 0,
+          "made_pickledbeans": 0,
+          "made_beangratin": 0,
+          "made_orchardsalad": 0,
+          "made_berrycheesecake": 0,
+          "made_harvesthamper": 0,
+          "sold": 0,
+          "sold_eggs": 0
+        },
+        "claimed": [],
+        "orders": [],
+        "bonusClaimed": false,
+        "replacements": 0,
+        "orderRevisions": {},
+        "tasks": [
+          {
+            "stat": "harvest_lettuce",
+            "target": 8,
+            "title": "Leafy little harvest",
+            "description": "Harvest 8 lettuce.",
+            "reward": 55
+          },
+          {
+            "stat": "made_feed",
+            "target": 3,
+            "title": "Feed the farm",
+            "description": "Collect 3 animal feed from production.",
+            "reward": 80
+          },
+          {
+            "stat": "activity_rounds",
+            "target": 1,
+            "title": "Make the rounds",
+            "description": "Finish a full farm round by helping at all four stops.",
+            "reward": 110
+          }
+        ],
+        "orderBoard": [
+          {
+            "title": "A leafy lunch",
+            "input": {
+              "lettuce": 4,
+              "corn": 2
+            },
+            "xp": 20,
+            "minLevel": 1,
+            "tier": "quick",
+            "customer": "Your neighbours",
+            "story": "A small basket to brighten someone’s day.",
+            "bonus": 39,
+            "marketValue": 128,
+            "coins": 178,
+            "diamonds": 1
+          },
+          {
+            "title": "Breakfast at the inn",
+            "input": {
+              "eggs": 6,
+              "milk": 4
+            },
+            "xp": 50,
+            "minLevel": 1,
+            "tier": "village",
+            "customer": "Village trading post",
+            "story": "The village needs a selection of your farm-made goods.",
+            "bonus": 64,
+            "marketValue": 640,
+            "coins": 1050,
+            "diamonds": 4
+          },
+          {
+            "title": "The village breakfast",
+            "customer": "Village Inn",
+            "story": "A full house of guests needs a hearty farm breakfast.",
+            "input": {
+              "milk": 8,
+              "eggs": 12,
+              "flour": 8
+            },
+            "xp": 75,
+            "minLevel": 1,
+            "tier": "commission",
+            "bonus": 124,
+            "marketValue": 1728,
+            "coins": 3871,
+            "diamonds": 9
+          }
+        ]
+      }
+    },
+    "access": {
+      "crops": [
+        "corn",
+        "wheat",
+        "cabbage",
+        "pumpkin",
+        "sunflower",
+        "barley",
+        "lettuce",
+        "redcabbage",
+        "cauliflower"
+      ],
+      "buildings": [
+        "farmhouse",
+        "mill",
+        "dairy",
+        "coop",
+        "bakery",
+        "packing",
+        "windmill"
+      ],
+      "features": [
+        "chores",
+        "stall",
+        "mastery",
+        "tractor",
+        "silo",
+        "cart",
+        "projects",
+        "boosts",
+        "activities"
+      ],
+      "recipes": [
+        "grainmeal",
+        "fertilizer",
+        "windflour",
+        "windfeed",
+        "barleyfeed",
+        "salad",
+        "pickles",
+        "flour",
+        "feed",
+        "oil",
+        "milk",
+        "cheese",
+        "eggs",
+        "bread",
+        "pie",
+        "vegetables"
+      ]
+    }
+  }
+]

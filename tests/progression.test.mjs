@@ -1,86 +1,143 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,CROPS,BUILDINGS,RECIPES,cropUnlocked,buildingUnlocked,buildingEligible,featureUnlocked,recipeUnlocked,itemAvailable,beginnerProgress,xpForLevel,levelOf,dailyTasks,dailyOrders,DAY_MS,productionJobs} from '../game/farm-state.js';
-import {progressionSnapshot,progressionChange} from '../public/progression-ui.js';
-const now=Date.UTC(2026,8,19,12);
+import {readFileSync} from 'node:fs';
+import {createFarm,normalizeFarm,applyFarmAction as act,CROPS,BUILDINGS,RECIPES,CROP_LEVELS,BUILDING_LEVELS,FEATURE_LEVELS,BUILDING_COSTS,RECIPE_LEVELS,FEATURE_NAMES,cropUnlocked,buildingUnlocked,buildingEligible,buildingCost,constructionNeeds,featureUnlocked,recipeUnlocked,itemAvailable,beginnerProgress,xpForLevel,levelOf,dailyTasks,dailyOrders,DAY_MS,productionJobs,availableDaily,familyOrder,marketHighlights,unlockEntries,formatDuration} from '../game/farm-state.js';
+import {progressionSnapshot,progressionChange,roadmapMarkup} from '../public/progression-ui.js';
+import {ART_KEYS} from '../public/visual-icons.js';
+const now=Date.UTC(2026,8,20,12);
 function level(s,n){s.xp=xpForLevel(n);s.xpOffset=0;}
-function gather(s,crop,count){s.inventory[crop]=count;}
 function produce(s,recipe,t=now){act(s,{type:'produce',recipe},t);const key=RECIPES[recipe].building,job=productionJobs(s.buildings[key]).at(-1);act(s,{type:'collect',building:key,jobId:job.id},job.readyAt);return job.readyAt;}
-test('new farm starts with two crops, two buildings and achievable daily tasks',()=>{
- const s=createFarm(now);assert.deepEqual(Object.keys(CROPS).filter(k=>cropUnlocked(s,k)),['corn','wheat']);
+function buyAvailable(s,t=now){for(const key of Object.keys(BUILDINGS).sort((a,b)=>BUILDING_LEVELS[a]-BUILDING_LEVELS[b]))if(buildingCost(s,key)&&buildingEligible(s,key)&&!buildingUnlocked(s,key))act(s,{type:'construct',building:key},t);}
+test('new farm starts with two crops, one production building and only a daily gift',()=>{
+ const s=createFarm(now);assert.equal(s.progression.version,2);
+ assert.deepEqual(Object.keys(CROPS).filter(k=>cropUnlocked(s,k)),['corn','wheat']);
  assert.deepEqual(Object.keys(BUILDINGS).filter(k=>buildingUnlocked(s,k)),['farmhouse','coop']);
  assert.ok(s.plots.every(p=>!p.crop||['wheat','corn'].includes(p.crop)));
- assert.ok(recipeUnlocked(s,'eggs'));assert.ok(!recipeUnlocked(s,'oil'));
- for(const key of ['chores','activities','projects','tractor','silo','cart','boosts'])assert.equal(featureUnlocked(s,key),false,key);
- for(const task of dailyTasks(s,now))assert.ok(task.title&&task.target>0);
+ assert.deepEqual(Object.keys(RECIPES).filter(k=>recipeUnlocked(s,k)),['eggs']);
+ for(const key of Object.keys(FEATURE_NAMES))assert.equal(featureUnlocked(s,key),false,key);
+ assert.deepEqual(dailyTasks(s,now),[]);assert.deepEqual(dailyOrders(s,now),[]);
+ assert.equal(act(s,{type:'checkin'},now).xp,10);
 });
-test('gates reject forged actions without spending inventory or balances',()=>{
- for(const action of [{type:'field',id:8,action:'plant',crop:'cabbage'},{type:'produce',recipe:'milk'},{type:'upgrade',building:'bakery'},{type:'chore',id:'weeds'},{type:'activity_start',station:'greenhouse'},{type:'tractor',mode:'plant',crop:'wheat'},{type:'silo_upgrade'},{type:'project_start'},{type:'buy_boost',boost:'xp',expectedCost:25}]){
+test('locked actions and premature construction cannot spend balances or goods',()=>{
+ for(const action of [{type:'construct',building:'mill'},{type:'construct',building:'bakery'},{type:'field',id:8,action:'plant',crop:'cabbage'},{type:'produce',recipe:'milk'},{type:'upgrade',building:'bakery'},{type:'chore',id:'weeds'},{type:'activity_start',station:'greenhouse'},{type:'tractor',mode:'plant',crop:'wheat'},{type:'silo_upgrade'},{type:'project_start'},{type:'buy_boost',boost:'xp',expectedCost:25},{type:'daily',id:0}]){
   const s=createFarm(now),before=structuredClone(s);assert.throws(()=>act(s,action,now));assert.deepEqual(s,before,JSON.stringify(action));
  }
 });
-test('collecting and selling an egg unlocks hands-on jobs and the beginner milestone',()=>{
- const s=createFarm(now);const t=produce(s,'eggs');assert.equal(featureUnlocked(s,'activities'),false);
- const before=progressionSnapshot(s);act(s,{type:'sell',item:'eggs',quantity:1},t);
- assert.equal(s.inventory.eggs,2);assert.equal(s.stats.sold_eggs,1);assert.equal(featureUnlocked(s,'activities'),true);
- assert.equal(beginnerProgress(s).find(q=>q.id==='sell_egg').ready,true);
- assert.ok(progressionChange(before,s).entries.some(e=>e.id==='feature:activities'));
+test('selling the first egg remains an achievable beginner step; jobs arrive at level 6',()=>{
+ const s=createFarm(now),t=produce(s,'eggs');act(s,{type:'sell',item:'eggs',quantity:1},t);
+ assert.equal(s.inventory.eggs,2);assert.equal(beginnerProgress(s).find(q=>q.id==='sell_egg').ready,true);
+ assert.equal(featureUnlocked(s,'activities'),false);level(s,6);assert.ok(featureUnlocked(s,'activities'));
  act(s,{type:'activity_start',station:'greenhouse'},t);assert.ok(s.activities.jobs.greenhouse);
 });
-test('level unlocks follow a viable chain to bread; cabbage requires actual collection',()=>{
+test('buying through the feed, milk, grain and bread chain uses only earlier ingredients',()=>{
+ const s=createFarm(now);s.coins=10000;
+ level(s,2);assert.ok(buildingEligible(s,'mill'));assert.ok(!buildingUnlocked(s,'mill'));
+ let coins=s.coins;act(s,{type:'construct',building:'mill'},now);assert.equal(s.coins,coins-100);
+ s.inventory.corn=2;produce(s,'feed');
+ level(s,4);act(s,{type:'construct',building:'dairy'},now);produce(s,'milk');assert.ok(!recipeUnlocked(s,'cheese'));
+ level(s,6);act(s,{type:'construct',building:'windmill'},now);s.inventory.wheat=8;s.inventory.barley=4;produce(s,'grainmeal');produce(s,'flour');
+ level(s,8);act(s,{type:'construct',building:'bakery'},now);produce(s,'bread');assert.equal(s.inventory.bread,2);
+ level(s,9);assert.ok(cropUnlocked(s,'cabbage'));assert.ok(recipeUnlocked(s,'cheese'));
+ const withoutBread=createFarm(now);level(withoutBread,10);assert.ok(cropUnlocked(withoutBread,'cabbage'));assert.ok(buildingEligible(withoutBread,'packing'));
+});
+test('construction enforces ingredient suppliers, purchase price and one-time ownership',()=>{
+ const s=createFarm(now);level(s,8);s.coins=5000;const coins=s.coins;
+ assert.deepEqual(constructionNeeds(s,'bakery'),['dairy','windmill']);assert.throws(()=>act(s,{type:'construct',building:'bakery'},now),/Dairy Barn and Windmill/);assert.equal(s.coins,coins);
+ act(s,{type:'construct',building:'mill'},now);const paid=s.coins;
+ assert.throws(()=>act(s,{type:'construct',building:'mill'},now),/already/);assert.equal(s.coins,paid);
+ const poor=createFarm(now);level(poor,2);poor.coins=99;assert.throws(()=>act(poor,{type:'construct',building:'mill'},now),/100 coins/);assert.equal(poor.coins,99);assert.ok(!buildingUnlocked(poor,'mill'));
+});
+test('every level has renewable play, every new building has a viable recipe and all chains open by 25',()=>{
  const s=createFarm(now);s.coins=100000;
- level(s,2);assert.ok(buildingUnlocked(s,'mill'));assert.ok(cropUnlocked(s,'lettuce'));gather(s,'corn',2);produce(s,'feed');
- level(s,3);assert.ok(buildingUnlocked(s,'dairy'));produce(s,'milk');assert.ok(!buildingUnlocked(s,'bakery'));
- level(s,4);assert.ok(cropUnlocked(s,'barley'));assert.ok(buildingUnlocked(s,'windmill'));gather(s,'wheat',8);gather(s,'barley',4);produce(s,'grainmeal');produce(s,'flour');
- level(s,5);assert.ok(buildingUnlocked(s,'bakery'));assert.ok(!cropUnlocked(s,'cabbage'));assert.ok(!buildingUnlocked(s,'packing'));
- act(s,{type:'produce',recipe:'bread'},now);assert.equal(cropUnlocked(s,'cabbage'),false);
- const before=progressionSnapshot(s);act(s,{type:'collect',building:'bakery'},s.buildings.bakery.job.readyAt);
- assert.ok(cropUnlocked(s,'cabbage'));assert.ok(buildingUnlocked(s,'packing'));
- assert.ok(progressionChange(before,s).entries.some(e=>e.id==='crop:cabbage'));
- normalizeFarm(s,now+DAY_MS);assert.ok(cropUnlocked(s,'cabbage'));
+ const outputs=new Set();let cropCount=2;
+ for(let n=1;n<=25;n++){
+  level(s,n);buyAvailable(s);
+  const crops=Object.keys(CROPS).filter(k=>cropUnlocked(s,k));assert.ok(crops.includes('wheat')&&crops.includes('corn'));assert.ok(crops.length>=cropCount);cropCount=crops.length;
+  for(const [key,b]of Object.entries(BUILDINGS))if(BUILDING_LEVELS[key]===n&&b.type==='production')assert.ok(Object.keys(RECIPES).some(id=>RECIPES[id].building===key&&recipeUnlocked(s,id)),`${key} lacks a usable first recipe`);
+  for(const [id,r]of Object.entries(RECIPES))if(recipeUnlocked(s,id)){
+   for(const ingredient of Object.keys(r.input))assert.ok(itemAvailable(s,ingredient)||(ingredient==='feed'&&s.inventory.feed>0),`${n}: ${id} cannot obtain ${ingredient}`);
+   Object.keys(r.output).forEach(k=>outputs.add(k));
+  }
+ }
+ assert.equal(cropCount,12);for(const key of Object.keys(BUILDINGS))assert.ok(buildingUnlocked(s,key),key);
+ for(const id of Object.keys(RECIPES))assert.ok(recipeUnlocked(s,id),id);
+ for(const key of Object.keys(FEATURE_NAMES))assert.ok(featureUnlocked(s,key),key);
+ assert.ok(outputs.has('harvesthamper')&&outputs.has('pickledbeans'));
+ const levels=Object.entries(CROP_LEVELS).filter(([,n])=>n>1).sort((a,b)=>a[1]-b[1]);
+ assert.deepEqual(levels.map(([k])=>k),['lettuce','barley','greenbeans','cabbage','cauliflower','pumpkin','redcabbage','sunflower','apples','berries']);
+ assert.equal(new Set(levels.map(([,n])=>n)).size,10);
 });
-test('legacy saves retain access, balances, ongoing jobs, quests and beginner reward',()=>{
- const s=createFarm(now);delete s.progression;s.version=12;s.coins=12345;s.diamonds=77;s.claimed=[1,2];s.onboarding={completed:10,rewardClaimed:true,milestones:{}};
- s.buildings.bakery.job={id:'saved',recipe:'bread',startedAt:now,readyAt:now+1000};
- const before=structuredClone(s);normalizeFarm(s,now);
- for(const k of Object.keys(CROPS).filter(k=>!CROPS[k].minLevel))assert.ok(cropUnlocked(s,k),k);
- for(const k of Object.keys(BUILDINGS).filter(k=>!BUILDINGS[k].buildCost&&BUILDINGS[k].type!=='family'))assert.ok(buildingUnlocked(s,k),k);
- for(const k of ['activities','chores','projects','boosts','cart'])assert.ok(featureUnlocked(s,k));
- for(const key of ['coins','diamonds','claimed','onboarding','plots','daily'])assert.deepEqual(s[key],before[key]);
- assert.equal(s.buildings.bakery.job.id,'saved');assert.equal(s.buildings.bakery.job.readyAt,now+1000);
- assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now),/complete/);
+test('levelled inventory from the Starter Pack cannot bypass seeds, recipes or building locks',()=>{
+ const s=createFarm(now);for(const key of Object.keys(s.inventory))s.inventory[key]=100;
+ assert.equal(cropUnlocked(s,'berries'),false);assert.equal(recipeUnlocked(s,'berrytart'),false);assert.equal(buildingEligible(s,'preserves'),false);
+ assert.throws(()=>act(s,{type:'field',id:8,action:'plant',crop:'apples'},now));
+ act(s,{type:'sell',item:'apples',quantity:1},now);assert.equal(s.inventory.apples,99);
 });
-test('new daily boards never demand locked ingredients across levels and days',()=>{
- for(let lvl=1;lvl<=12;lvl++)for(let day=0;day<8;day++){
-  const t=now+day*DAY_MS,s=createFarm(t);level(s,lvl);if(lvl>=5)s.stats.made_bread=2;
-  if(lvl>=3)s.stats.sold_eggs=1;
-  for(const k of ['kitchen','juicepress','preserves'])if(buildingEligible(s,k))s.buildings[k].built=true;
+test('daily boards respect unlocks and owned production at all 25 levels',()=>{
+ for(let lvl=1;lvl<=25;lvl++)for(const buy of [false,true])for(let day=0;day<14;day++){
+  const t=now+day*DAY_MS,s=createFarm(t);level(s,lvl);s.coins=100000;if(buy)buyAvailable(s,t);s.inventory.feed=0;
   delete s.daily;normalizeFarm(s,t);
-  for(const o of dailyOrders(s,t))for(const item of Object.keys(o.input))assert.ok(itemAvailable(s,item),`${lvl}: ${o.title}: ${item}`);
-  for(const q of dailyTasks(s,t)){assert.ok(q.title);if(q.stat.startsWith('made_'))assert.ok(itemAvailable(s,q.stat.slice(5)));if(q.stat.startsWith('harvest_'))assert.ok(cropUnlocked(s,q.stat.slice(8)));}
+  const orders=dailyOrders(s,t),tasks=dailyTasks(s,t);
+  if(lvl<3)assert.equal(tasks.length,0);if(lvl<5)assert.equal(orders.length,0);
+  if(lvl<8)assert.ok(orders.every(o=>o.tier==='quick'));if(lvl<12)assert.ok(orders.every(o=>o.tier!=='commission'));
+  for(const o of orders)for(const item of Object.keys(o.input))assert.ok(itemAvailable(s,item),`${lvl}/${buy}: ${o.title}: ${item}`);
+  for(const q of tasks)assert.ok(availableDaily(s,q),`${lvl}: ${q.title}`);
  }
 });
-test('level-up reports all new unlocks once, without modifying rewards',()=>{
- const s=createFarm(now),before=progressionSnapshot(s),coins=s.coins,diamonds=s.diamonds;level(s,3);
- const event=progressionChange(before,s);assert.equal(event.leveled,true);assert.equal(event.level,3);
- for(const id of ['building:mill','building:dairy','crop:lettuce','feature:chores'])assert.ok(event.entries.some(e=>e.id===id));
- assert.equal(s.coins,coins);assert.equal(s.diamonds,diamonds);
- assert.deepEqual(progressionChange(progressionSnapshot(s),s).entries,[]);
+test('new delivery tiers append without changing paid, replaced or existing orders',()=>{
+ const s=createFarm(now);s.coins=100000;level(s,5);buyAvailable(s);delete s.daily;normalizeFarm(s,now);
+ const first=structuredClone(dailyOrders(s,now)[0]);assert.equal(s.daily.orderBoard.length,1);s.daily.orders=[0];s.daily.orderRevisions[0]=1;
+ level(s,8);buyAvailable(s);dailyOrders(s,now);assert.equal(s.daily.orderBoard.length,2);
+ assert.deepEqual(s.daily.orderBoard[0].input,first.input);assert.equal(s.daily.orderBoard[0].coins,first.coins);assert.deepEqual(s.daily.orders,[0]);assert.equal(s.daily.orderRevisions[0],1);
+ level(s,12);buyAvailable(s);const all=dailyOrders(s,now);assert.equal(all.length,3);assert.equal(all[2].tier,'commission');
+ const frozen=structuredClone(s.daily);normalizeFarm(s,now);dailyOrders(s,now);assert.deepEqual(s.daily,frozen);
 });
-test('all ten guided steps are achievable without forced level jumps and pay once',()=>{
+test('level-10 families receive affordable chains; high-level families retain advanced orders',()=>{
+ for(const n of [10,17,25]){const s=createFarm(now);s.coins=100000;level(s,n);buyAvailable(s);
+  for(let week=0;week<30;week++)for(const members of [1,6]){
+   const order=familyOrder('test-family',week,members,undefined,n);assert.ok(order.value/members>=16000&&order.value/members<=30000);
+   for(const item of Object.keys(order.lines))assert.ok(itemAvailable(s,item),`${n}: ${item}`);
+  }
+ }
+});
+test('level-up and roadmap use existing painted art and name the crop as it unlocks',()=>{
+ const s=createFarm(now),before=progressionSnapshot(s),coins=s.coins;level(s,3);const event=progressionChange(before,s);
+ for(const id of ['building:mill','crop:lettuce','feature:challenges'])assert.ok(event.entries.some(e=>e.id===id));
+ assert.equal(s.coins,coins);assert.deepEqual(progressionChange(progressionSnapshot(s),s).entries,[]);
+ for(let n=1;n<=25;n++){level(s,n);for(const e of unlockEntries(s))assert.ok(ART_KEYS.includes(e.art),e.id);}
+ assert.equal((roadmapMarkup(createFarm(now)).match(/class="roadmap-entry"/g)??[]).length,3);
+});
+test('market highlights only suggest currently obtainable goods or items already in stock',()=>{
+ const s=createFarm(now);for(let d=0;d<14;d++)for(const q of Object.values(marketHighlights(now+d*DAY_MS,s)))assert.ok(itemAvailable(s,q.item)||s.inventory[q.item]>0,q.item);
+});
+test('all ten beginner steps still finish in the first session and pay once',()=>{
  const s=createFarm(now);
- act(s,{type:'field',id:0,action:'harvest'},now);
- act(s,{type:'field',id:8,action:'plant',crop:'wheat'},now);
- act(s,{type:'field',id:8,action:'water'},now);
- act(s,{type:'sell',item:'corn',quantity:1},now);
- act(s,{type:'produce',recipe:'eggs'},now);
- act(s,{type:'checkin'},now);
- act(s,{type:'field',id:8,action:'tend'},now+40000);
- act(s,{type:'field',id:8,action:'harvest'},now+120000);
- act(s,{type:'collect',building:'coop'},now+300000);
- act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
- const diamonds=s.diamonds;
- for(const q of beginnerProgress(s)){assert.equal(q.ready,true,q.id);act(s,{type:'beginner_claim',id:q.id},now+300000);}
- assert.equal(s.onboarding.completed,10);assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+20);
- assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+300000));
+ act(s,{type:'field',id:0,action:'harvest'},now);act(s,{type:'field',id:8,action:'plant',crop:'wheat'},now);act(s,{type:'field',id:8,action:'water'},now);
+ act(s,{type:'sell',item:'corn',quantity:1},now);act(s,{type:'produce',recipe:'eggs'},now);act(s,{type:'checkin'},now);
+ act(s,{type:'field',id:8,action:'tend'},now+40000);act(s,{type:'field',id:8,action:'harvest'},now+120000);
+ act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
+ const diamonds=s.diamonds;for(const q of beginnerProgress(s)){assert.equal(q.ready,true,q.id);act(s,{type:'beginner_claim',id:q.id},now+300000);}
+ assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+20);assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+300000));
+});
+test('pre-update guided and legacy saves retain every prior unlock, balance, timer and paid reward',()=>{
+ const fixtures=JSON.parse(readFileSync(new URL('./fixtures/progression-v1.json',import.meta.url),'utf8'));
+ for(const {name,state,access}of fixtures){const s=structuredClone(state);normalizeFarm(s,now);
+  for(const key of access.crops)assert.ok(cropUnlocked(s,key),`${name}: ${key}`);
+  for(const key of access.buildings)assert.ok(buildingUnlocked(s,key),`${name}: ${key}`);
+  for(const key of access.features)assert.ok(featureUnlocked(s,key),`${name}: ${key}`);
+  for(const key of access.recipes)assert.ok(recipeUnlocked(s,key),`${name}: ${key}`);
+  for(const key of ['coins','diamonds','xp','inventory','claimed','plots','daily','onboarding','levelRewards'])assert.deepEqual(s[key],state[key],`${name}: ${key}`);
+  for(const key of Object.keys(state.buildings))assert.deepEqual(productionJobs(s.buildings[key]),productionJobs(state.buildings[key]),`${name}: jobs`);
+  const migrated=structuredClone(s);normalizeFarm(s,now);assert.deepEqual(s,migrated,`${name}: migration must be idempotent`);
+ }
+});
+
+test('grandfathered construction keeps the first recipe when a previously available building is bought later',()=>{
+ const fixtures=JSON.parse(readFileSync(new URL('./fixtures/progression-v1.json',import.meta.url),'utf8'));
+ const saved=fixtures.find(f=>f.name==='level-9-bread-true-paid-true-legacy-false').state;
+ const s=structuredClone(saved);s.buildings.juicepress.built=false;normalizeFarm(s,now);
+ assert.ok(buildingEligible(s,'juicepress'));assert.ok(!buildingUnlocked(s,'juicepress'));
+ act(s,{type:'construct',building:'juicepress'},now);assert.ok(recipeUnlocked(s,'applejuice'));
+ s.progression.kept.recipes=[];assert.ok(recipeUnlocked(s,'applejuice'),'partial older migration still keeps buildable recipe access');
+ s.inventory.apples=4;produce(s,'applejuice');assert.equal(s.inventory.applejuice,1);
 });

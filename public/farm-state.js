@@ -62,8 +62,9 @@ export function marketQuote(item,now=Date.now()){
  return {item,day:utcDay(now),price,normal,min,max,change,demand,label:demand==='low'?'Low demand':demand==='high'?'High demand':'Fair price',resetsAt:(dayNumber(now)+1)*DAY_MS};
 }
 export function marketValue(items,now=Date.now()){return Object.entries(items).reduce((sum,[key,count])=>sum+marketQuote(key,now).price*count,0);}
-export function marketHighlights(now=Date.now()){
- const sorted=time=>Object.keys(PRODUCTS).map(k=>marketQuote(k,time)).sort((a,b)=>b.change-a.change||a.item.localeCompare(b.item));
+export function marketHighlights(now=Date.now(),state){
+ const keys=state&&guidedFarm(state)?Object.keys(ITEMS).filter(k=>state.inventory[k]>0||itemAvailable(state,k)):Object.keys(PRODUCTS);
+ const sorted=time=>keys.map(k=>marketQuote(k,time)).sort((a,b)=>b.change-a.change||a.item.localeCompare(b.item));
  return {today:sorted(now)[0],tomorrow:sorted(now+DAY_MS)[0]};
 }
 export const BUILDINGS = Object.freeze({
@@ -126,7 +127,7 @@ export const BEGINNER_QUESTS=Object.freeze([
  {id:'wheat',title:'Bring in the wheat',description:'Harvest one wheat field when it is ready. Water and care make your harvest bigger.',guide:'harvest',icon:'wheat'},
  {id:'collect',title:'Made on your farm',description:'Collect a finished batch from a building. Chicken feed becomes eggs in 5 minutes.',guide:'collect',icon:'package-check'}
 ]);
-function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>q.id==='chore'?{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. This unlocks hands-on jobs around your farm.',guide:'eggs',icon:'egg'}:q):BEGINNER_QUESTS;}
+function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>q.id==='chore'?{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. Save the coins for your next building. Hands-on jobs open at level 6.',guide:'eggs',icon:'egg'}:q):BEGINNER_QUESTS;}
 export function beginnerProgress(state){
  const guide=state.onboarding??{completed:0,milestones:{}};
  return beginnerQuests(state).map((quest,index)=>({...quest,index,done:index<guide.completed,current:index===guide.completed,ready:!!guide.milestones[quest.id]}));
@@ -266,44 +267,72 @@ export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undef
 export function productionSpeed(level){return level<=3?.2*(level-1):.4+.04*(level-3);}
 export function recipeDuration(state,id){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level)));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
-// New farms learn gradually. Existing saves keep their pre-progression access.
-export const CROP_LEVELS={corn:1,wheat:1,lettuce:2,barley:4,cabbage:5,cauliflower:6,greenbeans:6,pumpkin:7,apples:8,redcabbage:9,sunflower:10,berries:10};
-export const BUILDING_LEVELS={familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:3,windmill:4,bakery:5,packing:5,kitchen:6,juicepress:8,preserves:10};
-export const FEATURE_LEVELS={family:FAMILY_MIN_LEVEL,chores:3,stall:3,mastery:3,tractor:4,silo:4,cart:3,projects:6,boosts:3,activities:1};
-export const FEATURE_NAMES={family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand'};
+// Version 2 introduces one small step at a time. Old unlocks are saved once,
+// independently of inventory bundles, so purchases never bypass progression.
+export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:7,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23});
+export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:10,kitchen:12,juicepress:21,preserves:24});
+export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000});
+export const RECIPE_LEVELS=Object.freeze({eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:11,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:23,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:25,harvesthamper:25});
+export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:6,chores:7,mastery:9,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19});
+export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:12});
+export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
-function breadMade(state){return (state.stats?.made_bread??state.stats?.bread??0)>0;}
-export function cropUnlockHint(state,crop){return `Reach level ${guidedFarm(state)?CROP_LEVELS[crop]:CROPS[crop].minLevel??1}${guidedFarm(state)&&crop==='cabbage'&&!breadMade(state)?' and collect your first bread from the Bakery':''}.`;}
-export function buildingUnlockHint(state,key){return `Reach level ${guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1}${guidedFarm(state)&&key==='packing'&&!breadMade(state)?' and collect your first bread from the Bakery':''}.`;}
-export function cropUnlocked(state,crop){return Object.hasOwn(CROPS,crop)&&levelOf(state)>=(guidedFarm(state)?CROP_LEVELS[crop]:CROPS[crop].minLevel??1)&&(!guidedFarm(state)||crop!=='cabbage'||breadMade(state));}
-export function buildingEligible(state,key){return Object.hasOwn(BUILDINGS,key)&&levelOf(state)>=(guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1)&&(!guidedFarm(state)||key!=='packing'||breadMade(state));}
-export function buildingUnlocked(state,key){return buildingEligible(state,key)&&(!BUILDINGS[key].buildCost||state.buildings[key]?.built===true);}
-export function featureUnlocked(state,key){if(key==='family')return familyUnlocked(state);return !guidedFarm(state)||(key==='activities'?(state.stats?.sold_eggs??0)>0:levelOf(state)>=(FEATURE_LEVELS[key]??1));}
-export function featureUnlockHint(key){if(key==='family')return familyUnlockHint();return key==='activities'?'Sell an egg at the Market to unlock hands-on jobs.':`Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
+const kept=(state,kind,key)=>state.progression?.kept?.[kind]?.includes(key)===true;
+export function buildingCost(state,key){return guidedFarm(state)?BUILDING_COSTS[key]??0:BUILDINGS[key]?.buildCost??0;}
+export function constructionNeeds(state,key){return guidedFarm(state)?({dairy:['mill'],bakery:['dairy','windmill']}[key]??[]).filter(k=>!buildingUnlocked(state,k)):[];}
+export function cropUnlockHint(state,crop){return `Reach level ${guidedFarm(state)?CROP_LEVELS[crop]:CROPS[crop].minLevel??1}.`;}
+export function buildingUnlockHint(state,key){return `Reach level ${guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1}.`;}
+export function cropUnlocked(state,crop){return Object.hasOwn(CROPS,crop)&&(kept(state,'crops',crop)||levelOf(state)>=(guidedFarm(state)?CROP_LEVELS[crop]:CROPS[crop].minLevel??1));}
+export function buildingEligible(state,key){return Object.hasOwn(BUILDINGS,key)&&(kept(state,'buildings',key)||levelOf(state)>=(guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1));}
+export function buildingUnlocked(state,key){return buildingEligible(state,key)&&(!buildingCost(state,key)||state.buildings[key]?.built===true);}
+export function featureUnlocked(state,key){if(key==='family')return familyUnlocked(state);return !guidedFarm(state)||kept(state,'features',key)||levelOf(state)>=(FEATURE_LEVELS[key]??1);}
+export function featureUnlockHint(key){return `Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
+export function recipeLevel(state,id){return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
+export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
+const FEATURE_ART={challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand'};
 export function unlockEntries(state){return [
- ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
- ...Object.entries(BUILDINGS).map(([key,b])=>({id:'building:'+key,name:b.name,kind:b.buildCost?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
- ...Object.entries(FEATURE_NAMES).map(([key,name])=>({id:'feature:'+key,name,kind:'Activity',level:FEATURE_LEVELS[key],unlocked:featureUnlocked(state,key),hint:featureUnlockHint(key)}))
+ ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,art:key,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
+ ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall').map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
+ ...Object.entries(FEATURE_NAMES).map(([key,name])=>({id:'feature:'+key,name,art:FEATURE_ART[key]??key,kind:'Activity',level:FEATURE_LEVELS[key],unlocked:featureUnlocked(state,key),hint:featureUnlockHint(key)})),
+ ...Object.entries(RECIPES).filter(([,r])=>buildingUnlocked(state,r.building)).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)}))
  ];}
+function migrateProgression(state){
+ if(!guidedFarm(state)||state.progression.version>=2)return;
+ const crops={corn:1,wheat:1,lettuce:2,barley:4,cabbage:5,cauliflower:6,greenbeans:6,pumpkin:7,apples:8,redcabbage:9,sunflower:10,berries:10};
+ const buildings={familyhall:10,farmhouse:1,coop:1,mill:2,dairy:3,windmill:4,bakery:5,packing:5,kitchen:6,juicepress:8,preserves:10};
+ const features={family:10,chores:3,stall:3,mastery:3,tractor:4,silo:4,cart:3,projects:6,boosts:3,challenges:1};
+ const level=levelOf(state),bread=(state.stats.made_bread??state.stats.bread??0)>0;
+ const cropOpen=k=>level>=crops[k]&&(k!=='cabbage'||bread);
+ const buildingOpen=k=>level>=buildings[k]&&(k!=='packing'||bread);
+ const owned=k=>buildingOpen(k)&&(!BUILDINGS[k].buildCost||state.buildings[k]?.built===true);
+ const activities=(state.stats.sold_eggs??0)>0;
+ const rights={crops:Object.keys(CROPS).filter(cropOpen),buildings:Object.keys(BUILDINGS).filter(buildingOpen),features:Object.keys(features).filter(k=>level>=features[k]),recipes:Object.keys(RECIPES).filter(k=>{const r=RECIPES[k];return buildingOpen(r.building)&&level>=(r.minLevel??1)&&(r.requiresBuildings??[]).every(buildingOpen);}),orderTiers:level>=3?Object.keys(DELIVERY_LEVELS):[]};
+ if(activities)rights.features.push('activities');
+ // A paid building or already growing crop remains usable, including old jobs.
+ for(const [k,b]of Object.entries(state.buildings))if(owned(k)||b.built===true||productionJobs(b).length||b.level>1){b.built=true;if(!rights.buildings.includes(k))rights.buildings.push(k);}
+ for(const p of state.plots)if(p.crop&&!rights.crops.includes(p.crop))rights.crops.push(p.crop);
+ state.progression={...state.progression,version:2,kept:rights};
+}
 // Orders must be achievable from unlocked chains, even when a player owns a
 // locked ingredient from a welcome bundle. A seen set prevents recipe cycles.
 export function itemAvailable(state,item,seen=new Set()){
  if(!guidedFarm(state))return true;
  if(seen.has(item))return false;
  if(CROPS[item])return cropUnlocked(state,item);
- if(item==='honey')return featureUnlocked(state,'activities');
+ if(['honey','feed','fertilizer'].includes(item)&&featureUnlocked(state,'activities'))return true;
  if(item==='eggs'&&state.inventory.feed>0)return true;
  const path=new Set([...seen,item]);
- return Object.values(RECIPES).some(r=>r.output[item]&&buildingUnlocked(state,r.building)&&levelOf(state)>=(r.minLevel??1)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&Object.keys(r.input).every(k=>itemAvailable(state,k,path)));
+ return Object.entries(RECIPES).some(([id,r])=>r.output[item]&&buildingUnlocked(state,r.building)&&levelOf(state)>=recipeLevel(state,id)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&Object.keys(r.input).every(k=>itemAvailable(state,k,path)));
 }
 export function constructBuilding(state,key){
- if(!Object.hasOwn(BUILDINGS,key)||!BUILDINGS[key].buildCost)throw new Error('Choose a new production building.');
- const b=BUILDINGS[key];
+ if(!Object.hasOwn(BUILDINGS,key)||!buildingCost(state,key))throw new Error('Choose a new production building.');
+ const b=BUILDINGS[key],cost=buildingCost(state,key);
  if(state.buildings[key].built)throw new Error('This building is already open.');
- if(levelOf(state)<b.minLevel)throw new Error(`Reach level ${b.minLevel} to open ${b.name}.`);
- if(state.coins<b.buildCost)throw new Error(`You need ${b.buildCost} coins to open ${b.name}.`);
- state.coins-=b.buildCost;state.buildings[key].built=true;state.stats['built_'+key]=1;
- return {building:key,cost:b.buildCost};
+ if(!buildingEligible(state,key))throw new Error(buildingUnlockHint(state,key));
+ const needs=constructionNeeds(state,key);if(needs.length)throw new Error(`Open ${needs.map(k=>BUILDINGS[k].name).join(' and ')} first to supply this building.`);
+ if(state.coins<cost)throw new Error(`You need ${cost} coins to open ${b.name}.`);
+ state.coins-=cost;state.buildings[key].built=true;state.stats['built_'+key]=1;
+ return {building:key,cost};
 }
 export function clearPlanting(state,id,expectedPlantedAt){
  const p=state.plots[id];
@@ -329,7 +358,7 @@ function createBaseFarm(now=Date.now()) {
  ['corn','corn','corn','wheat','wheat'].forEach((crop,id)=>{
   plots[id]={id,crop,plantedAt:now-CROPS[crop].duration*(id<3?1.1:.4),readyAt:now+(id<3?-1000:CROPS[crop].duration*.6),watered:false};
  });
- return {progression:{mode:'guided'},coins:180,xp:0,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),wheat:4,feed:2},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
+ return {version:14,progression:{mode:'guided',version:2},coins:180,xp:0,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),wheat:4,feed:2},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
 }
 export function progress(plot,now=Date.now()) {
  if(!plot.crop)return 0;
@@ -387,8 +416,24 @@ export function sellCrops(state,item='all',now=Date.now(),day,category,quantity)
  state.coins+=total;state.stats.earned+=total;state.stats.sold+=units;
  return {coins:total,day:utcDay(now)};
 }
-export function recipeUnlocked(state,id){const r=RECIPES[id];return !!r&&buildingUnlocked(state,r.building)&&levelOf(state)>=(r.minLevel??1)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&(!guidedFarm(state)||Object.keys(r.input).every(k=>k==='feed'&&state.inventory.feed>0||itemAvailable(state,k)));}
-export function recipeUnlockHint(state,id){const r=RECIPES[id];if(!buildingEligible(state,r.building))return buildingUnlockHint(state,r.building);if(levelOf(state)<(r.minLevel??1))return `Reach level ${r.minLevel}.`;const crops=Object.keys(r.input).filter(k=>CROPS[k]&&!cropUnlocked(state,k));return crops.length?crops.map(k=>`${CROPS[k].name}: ${cropUnlockHint(state,k)}`).join(' '):'Unlock the ingredients and open the required production buildings first.';}
+export function recipeUnlocked(state,id){const r=RECIPES[id];return !!r&&buildingUnlocked(state,r.building)&&levelOf(state)>=recipeLevel(state,id)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&(!guidedFarm(state)||Object.keys(r.input).every(k=>k==='feed'&&state.inventory.feed>0||itemAvailable(state,k)));}
+export function recipeUnlockHint(state,id){
+ const r=RECIPES[id];if(!buildingEligible(state,r.building))return buildingUnlockHint(state,r.building);
+ if(levelOf(state)<recipeLevel(state,id))return `Reach level ${recipeLevel(state,id)}.`;
+ if(!buildingUnlocked(state,r.building))return `Open the ${BUILDINGS[r.building].name} in Buildings.`;
+ const crops=Object.keys(r.input).filter(k=>CROPS[k]&&!cropUnlocked(state,k));
+ if(crops.length)return crops.map(k=>`${CROPS[k].name}: ${cropUnlockHint(state,k)}`).join(' ');
+ const missing=(r.requiresBuildings??[]).filter(k=>!buildingUnlocked(state,k));
+ if(missing.length)return `Open ${missing.map(k=>BUILDINGS[k].name).join(' and ')} first.`;
+ const ingredients=Object.keys(r.input).filter(k=>!itemAvailable(state,k));
+ if(ingredients.length){
+  const item=ingredients[0],suppliers=Object.entries(RECIPES).filter(([,recipe])=>recipe.output[item]).sort(([a],[b])=>recipeLevel(state,a)-recipeLevel(state,b));
+  const supplier=suppliers[0]?.[1];
+  if(supplier&&!buildingUnlocked(state,supplier.building))return `Open the ${BUILDINGS[supplier.building].name} to make ${ITEMS[item].name}.`;
+  if(item==='honey')return featureUnlockHint('activities');
+ }
+ return ingredients.length?`Unlock production for ${ingredients.map(k=>ITEMS[k].name).join(', ')} first.`:`Make in the ${BUILDINGS[r.building].name}.`;
+}
 export function recipeAvailability(state,id){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
  const r=RECIPES[id];
@@ -587,7 +632,10 @@ export function availableDaily(state,q){
   if(q.input&&!Object.keys(q.input).every(k=>itemAvailable(state,k)))return false;
   if(stat.startsWith('harvest_')&&!cropUnlocked(state,stat.slice(8)))return false;
   if(stat.startsWith('made_')&&!itemAvailable(state,stat.slice(5)))return false;
-  const gate=stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':null;
+  if(stat==='produced'&&!Object.keys(RECIPES).some(id=>recipeUnlocked(state,id)))return false;
+  if(stat.startsWith('built_')&&!buildingEligible(state,stat.slice(6)))return false;
+  if(stat==='varieties'&&q.target>Object.keys(CROPS).filter(k=>cropUnlocked(state,k)).length)return false;
+  const gate=stat==='mastery_medals'?'mastery':stat==='projects'?'projects':stat==='silo_upgrades'?'silo':stat==='tractor'?'tractor':stat==='dailies'?'challenges':stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':null;
   if(gate&&!featureUnlocked(state,gate))return false;
   if(stat==='fertilized'&&!itemAvailable(state,'fertilizer'))return false;
  }
@@ -631,7 +679,7 @@ function selectDailyOrders(state,day){
  const village=day%3===0?eligibleVillage:eligibleVillage.filter(o=>o.minLevel>=Math.max(1,villageLevel-3));
  const commissionLevel=Math.max(...COMMISSION_POOL.filter(o=>availableDaily(state,o)).map(o=>o.minLevel));
  const commissions=COMMISSION_POOL.filter(o=>o.minLevel===commissionLevel&&availableDaily(state,o));
- return [['quick',quick],['village',village],['commission',commissions]].map(([tier,pool],slot)=>{
+ return [['quick',quick],['village',village],['commission',commissions]].filter(([tier,pool])=>deliveryTierUnlocked(state,tier)&&(!guidedFarm(state)||pool.length)).map(([tier,pool],slot)=>{
   const candidates=pool.length?pool:quick,unused=candidates.filter(o=>!used.has(o.title)),choices=unused.length?unused:candidates,rotation=tier==='village'?(day%3===0?Math.floor(day/3):day-Math.floor(day/3)):day,template=choices[(rotation+slot)%choices.length];used.add(template.title);
   return quoteTierOrder(template,tier,now,calendarHash(`orders-v1:${day}:${tier}`));
  });
@@ -670,12 +718,13 @@ export function normalizeFarm(state,now=Date.now()){
  const oldVersion=state.version??0;
  if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=xpForLevel(previousLevel)-60*(previousLevel-1);}
  state.progression??={mode:'legacy'};
- state.version=13;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
+ state.version=14;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
  state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
- for(const [key,b] of Object.entries(BUILDINGS))if(b.buildCost)state.buildings[key].built??=false;
+ state.stats??={};migrateProgression(state);
+ for(const key of Object.keys(BUILDINGS))if(buildingCost(state,key))state.buildings[key].built??=false;
  // Keep paid-for legacy flour batches intact when milling moves to the Windmill.
  if(oldVersion<6&&state.buildings.mill.job?.recipe==='flour'){
   state.buildings.mill.job.output??={flour:1};state.buildings.mill.job.xp??=8;
@@ -709,17 +758,24 @@ export function normalizeFarm(state,now=Date.now()){
  if(!existingDay)state.daily={date:day,baseline:{...state.stats},claimed:[],orders:[],bonusClaimed:false};
  const d=dayNumber(now);
  state.daily.replacements??=0;state.daily.orderRevisions??={};
- state.daily.tasks??=oldVersion<10&&existingDay?LEGACY_DAILY_POOLS.map((pool,id)=>({...pool[(d+id)%pool.length]})):selectDailyTasks(state,d);
+ state.daily.tasks??=oldVersion<10&&existingDay?LEGACY_DAILY_POOLS.map((pool,id)=>({...pool[(d+id)%pool.length]})):featureUnlocked(state,'challenges')?selectDailyTasks(state,d):[];
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  return state;
 }
+function refreshProgressionDaily(state,now){
+ if(!guidedFarm(state))return;
+ const day=dayNumber(now);
+ if(!state.daily.tasks.length&&featureUnlocked(state,'challenges'))state.daily.tasks=selectDailyTasks(state,day);
+ const tiers=new Set(state.daily.orderBoard.map(o=>o.tier));
+ if(Object.keys(DELIVERY_LEVELS).some(t=>deliveryTierUnlocked(state,t)&&!tiers.has(t)))for(const order of selectDailyOrders(state,day))if(!tiers.has(order.tier))state.daily.orderBoard.push(order);
+}
 export function createFarm(now=Date.now()){return normalizeFarm(createBaseFarm(now),now);}
 export function dailyTasks(state,now=Date.now()){
- normalizeFarm(state,now);const d=dayNumber(now);
+ normalizeFarm(state,now);refreshProgressionDaily(state,now);const d=dayNumber(now);
  return state.daily.tasks.map((q,id)=>{return {...q,id,diamonds:DAILY_CHALLENGE_DIAMONDS[id],progress:Math.min(q.target,Math.max(0,(state.stats[q.stat]??0)-(state.daily.baseline[q.stat]??0))),claimed:state.daily.claimed.includes(id)};});
 }
 export function dailyOrders(state,now=Date.now()){
- normalizeFarm(state,now);const d=dayNumber(now);
+ normalizeFarm(state,now);refreshProgressionDaily(state,now);const d=dayNumber(now);
  return state.daily.orderBoard.map((order,id)=>({...order,diamonds:deliveryDiamonds(order),id,revision:state.daily.orderRevisions[id]??0,done:state.daily.orders.includes(id)}));
 }
 export function claimDaily(state,id,day,now=Date.now()){
@@ -797,10 +853,11 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  }
  const reward=grantLevelRewards(state,beforeLevel+1);
  if(reward.levels.length)result.levelReward=reward;
+ refreshProgressionDaily(state,now);
  return result;
 }
 function dispatchFarmAction(state,action,now,random){
- const gates={finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts'};
+ const gates={daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts'};
  const gate=gates[action.type];if(gate&&!featureUnlocked(state,gate))throw new Error(featureUnlockHint(gate));
  switch(action.type){
   case 'construct':return constructBuilding(state,action.building);
@@ -992,9 +1049,16 @@ const FAMILY_ORDER_TEMPLATES=Object.freeze([
  {barley:60,pie:8,eggs:100,honey:30},
  {cabbage:50,pickles:8,milk:80,honey:30}
 ]);
-export function familyOrder(familyId,week,members,config=FAMILY_CONFIG){
+const FAMILY_STARTER_ORDERS=Object.freeze([
+ {wheat:150,bread:30,eggs:100,honey:30},
+ {corn:80,salad:12,cheese:30,honey:30},
+ {barley:60,bread:24,eggs:100,honey:30},
+ {cabbage:50,salad:12,milk:80,honey:30}
+]);
+export function familyOrder(familyId,week,members,config=FAMILY_CONFIG,minimumLevel=FAMILY_MIN_LEVEL){
  if(!Number.isInteger(members)||members<1||members>config.MAX_MEMBERS)throw new Error('Choose a valid family size.');
- const template=FAMILY_ORDER_TEMPLATES[calendarHash(`family-v1:${familyId}:${week}`)%FAMILY_ORDER_TEMPLATES.length];
+ const templates=minimumLevel<17?FAMILY_STARTER_ORDERS:FAMILY_ORDER_TEMPLATES;
+ const template=templates[calendarHash(`family-v1:${familyId}:${week}`)%templates.length];
  const lines=Object.fromEntries(Object.entries(template).map(([k,n])=>[k,n*members]));
  return {lines,value:Object.entries(lines).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0),members};
 }
@@ -1053,7 +1117,7 @@ export function settleFamilyWeeks(c,now,config=FAMILY_CONFIG){
 }
 function ensureFamilyOrder(c,f,week,now,config){
  let order=c.orders.find(o=>o.family_id===f.id&&o.week===week);
- if(!order){const generated=familyOrder(f.id,week,familyMembers(c,f.id).length,config);order={family_id:f.id,week,lines:generated.lines,filled:{},member_count:generated.members,value:generated.value,created_at:now,completed_at:null};c.orders.push(order);}
+ if(!order){const members=familyMembers(c,f.id),minimumLevel=Math.min(...members.map(m=>c.players.find(p=>p.player_id===m.player_id)?.level??FAMILY_MIN_LEVEL));const generated=familyOrder(f.id,week,members.length,config,minimumLevel);order={family_id:f.id,week,lines:generated.lines,filled:{},member_count:generated.members,value:generated.value,created_at:now,completed_at:null};c.orders.push(order);}
  return order;
 }
 function completeFamilyOrder(c,order,now,config){
@@ -1170,7 +1234,7 @@ export function familyMutate(original,state,player,action,now,options={}){
   }else if(type==='family_claim'){
    const reward=c.rewards.find(r=>r.id===action.rewardId&&r.player_id===player);if(!reward||reward.expires_at<=now)throw new Error('This reward is unavailable or has expired.');if(reward.claimed_at)throw new Error('This reward has already been claimed.');
    reward.claimed_at=now;state.coins+=reward.coins;state.xp+=reward.xp;state.diamonds+=reward.diamonds;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+reward.diamonds;
-   const levelReward=grantLevelRewards(state);result={coins:reward.coins,xp:reward.xp,diamonds:reward.diamonds,levelReward,message:`Family rewards: +${reward.coins} coins · +${reward.xp} XP · +${reward.diamonds} diamonds.`};
+   const levelReward=grantLevelRewards(state);refreshProgressionDaily(state,now);result={coins:reward.coins,xp:reward.xp,diamonds:reward.diamonds,levelReward,message:`Family rewards: +${reward.coins} coins · +${reward.xp} XP · +${reward.diamonds} diamonds.`};
   }else if(type!=='family_read')throw new Error('Choose a valid family action.');
  }catch(error){if(['family_create','family_join','family_invite','family_accept_invite'].includes(type))return {context:c,result:{error:error.message},settled,failed:true};throw error;}
  refreshFamilyInvitations(c,now);
