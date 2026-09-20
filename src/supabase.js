@@ -2,6 +2,7 @@ import {createClient} from '@supabase/supabase-js';
 const url=import.meta.env.VITE_SUPABASE_URL?.trim();
 const key=import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const isConfigured=Boolean(url&&key);
+export const functionsUrl=url?`${url.replace(/\/$/,'')}/functions/v1`:null;
 export const supabase=isConfigured?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'harvest-tycoon:auth'}}):null;
 export const validUsername=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
 export function cloudError(error){

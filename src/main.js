@@ -1,9 +1,10 @@
 import {createFarmPresence} from './presence.js';
-import {supabase,isConfigured,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError} from './supabase.js';
+import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError} from './supabase.js';
 import {fetchLeaderboard} from './leaderboard.js';
 import {trackSignUp,isNewRegistration,trackAuth} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
+import {createNotifications} from './notifications.js';
 const $=id=>document.getElementById(id);
 startPwa();
 let presence=null;
@@ -73,6 +74,7 @@ async function openFarm(){
    try{const data=await farmRequest(body);if(ticket!==generation||data.profile?.player_id!==user.id)throw new Error('Your session has ended.');return data;}
    catch(error){if(ticket===generation&&error.code!=='ACTION_REJECTED'&&error.status!==400){if(error.status===401){await supabase.auth.signOut({scope:'local'});landing('Your session has ended. Please sign in again.');}else if(!['player_search','player_profile'].includes(body.operation))unavailable(error.message);}throw error;}
   }};
+  bridge.notifications=createNotifications(supabase,{configUrl:functionsUrl&&`${functionsUrl}/notify-hourly?config`});
   bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
   bridge.checkout=async(pack,requestId)=>{const data=await bridge.payments({operation:'create',pack,requestId});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
   bridge.paymentReturn=()=>{const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};

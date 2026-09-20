@@ -1,7 +1,8 @@
 import {refreshArt} from './visual-icons.js';
 import {createInstallSection} from './install-ui.js';
+import {createNotificationsSection} from './notifications-ui.js';
 export function createSoundSettings(audio){
- const $=id=>document.getElementById(id),dialog=$('sound-dialog'),install=createInstallSection();
+ const $=id=>document.getElementById(id),dialog=$('sound-dialog'),install=createInstallSection(),reminders=createNotificationsSection();
  function refresh(){
   const s=audio.settings(),audible=s.enabled&&(s.ambience>0||s.effects>0);
   $('sound-enabled').checked=s.enabled;$('sound-enabled').disabled=!s.available;
@@ -13,7 +14,7 @@ export function createSoundSettings(audio){
   $('sound-button').setAttribute('aria-label','Settings');$('sound-button').title='Settings';
   $('mobile-sound-label').textContent='Settings';$('mobile-sound-summary').textContent=audible?'Sound & app':'Sound off · app';install.refresh();refreshArt();
  }
- function open(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());refresh();dialog.showModal();}
+ function open(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());refresh();dialog.showModal();void reminders.refresh();}
  $('sound-button').onclick=open;
  $('sound-enabled').onchange=()=>{audio.setSettings({enabled:$('sound-enabled').checked});if($('sound-enabled').checked)void audio.unlock();};
  $('ambience-volume').oninput=()=>audio.setSettings({ambience:Number($('ambience-volume').value)});
