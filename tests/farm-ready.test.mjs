@@ -6,7 +6,7 @@ import vm from 'node:vm';
 // Execute the real cloud startup with controlled farm loading and DOM services.
 const source=(await readFile(new URL('../src/game-cloud.js',import.meta.url),'utf8'))
  .replace(/^import .*;\n/gm,'')
- .replace("import(/* @vite-ignore */ '/game.js')",'loadGame()');
+ .replace("import(/* @vite-ignore */ '/game.js?v=familyhall-model-2')",'loadGame()');
 function start(){
  let finish;
  const farmReady=new Promise(resolve=>{finish=resolve;});

@@ -3230,7 +3230,7 @@ else {
 	}
 	let { farmReady: c } = await import(
 		/* @vite-ignore */
-		"/game.js"
+		"/game.js?v=familyhall-model-2"
 );
 	await c && (x(C), await S(C));
 }

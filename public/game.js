@@ -7,7 +7,7 @@ import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, formatDuration, harvestYield, productionJobs } from './farm-state.js';
-import { createEconomyUI } from './economy-ui.js';
+import { createEconomyUI } from './economy-ui.js?v=familyhall-model-2';
 import { createFarmClient, farmNow } from './farm-client.js';
 import { createRetentionUI } from './retention-ui.js';
 import { createGrowthUI } from './growth-ui.js';
