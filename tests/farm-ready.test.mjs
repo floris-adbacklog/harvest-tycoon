@@ -16,6 +16,7 @@ function start(){
   window:{parent:{harvestBridge:bridge},addEventListener(){}},
   document:{body:{hidden:true}},location:{replace:()=>calls.push('redirect')},
   createCloudUI:()=>({setProfile(){},status(){}}),
+  createPlayerProfiles:()=>({open(){},isOpen:false}),
   setInterval:()=>1,clearInterval(){},
   loadGame:async()=>({farmReady}),
   showPaymentReturn:()=>calls.push('payment'),

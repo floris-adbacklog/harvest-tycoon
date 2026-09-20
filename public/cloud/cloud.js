@@ -1,4 +1,4 @@
-import { n as e } from "./leaderboard-BozDYht-.js";
+import { n as e } from "./leaderboard-BigxBEvc.js";
 function t(e, t = Date.now()) {
 	let n = Date.parse(e), r = t - n;
 	return Number.isFinite(n) && r >= 0 && r < 18e5;
@@ -8263,8 +8263,8 @@ async function Va() {
 					let n = await Oa(e);
 					if (t !== Y || n.profile?.player_id !== r.id) throw Error("Your session has ended.");
 					return n;
-				} catch (e) {
-					throw t === Y && e.code !== "ACTION_REJECTED" && e.status !== 400 && (e.status === 401 ? (await K.auth.signOut({ scope: "local" }), $("Your session has ended. Please sign in again.")) : za(e.message)), e;
+				} catch (n) {
+					throw t === Y && n.code !== "ACTION_REJECTED" && n.status !== 400 && (n.status === 401 ? (await K.auth.signOut({ scope: "local" }), $("Your session has ended. Please sign in again.")) : ["player_search", "player_profile"].includes(e.operation) || za(n.message)), n;
 				}
 			}
 		};

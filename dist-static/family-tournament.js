@@ -1,3 +1,4 @@
+import {rankArt} from './rank-art.js';
 import {art} from './visual-icons.js';
 import {formatDuration} from './farm-state.js';
 
@@ -10,7 +11,7 @@ export function renderFamilyTournament({view,now,emblem,rewards,preview}){
  const podiumRow=(f,index)=>{
   const rank=index+1,mine=!!f&&t.yourRank===rank;
   return `<li class="family-podium-row family-place-${rank}${f?'':' is-empty'}${mine?' is-yours':''}">
-   <span class="family-place" aria-label="Place ${rank}">${rank}</span>
+   <span class="family-place" aria-label="Place ${rank}">${rankArt(rank)}</span>
    <div class="family-podium-identity">${f?emblem(f.emblem):`<span class="family-empty-emblem" aria-hidden="true">${art('family-members')}</span>`}
     <div><strong>${f?esc(f.name):'Open place'}</strong><span>${mine?'Your family':f?'Harvest team':'No family here yet'}</span></div>
    </div>
@@ -39,6 +40,6 @@ export function renderFamilyTournament({view,now,emblem,rewards,preview}){
   <p>Family prizes are shared by contribution. Make a delivery and stay in your family until Monday, 00:00 UTC. Only members who contributed this week count. Your personal prize is shown below the standings; order rewards are extra. Prizes may change before the week ends.</p>
  </details>
  <details class="family-rules"><summary>Previous weeks</summary>
-  ${t.past.length?t.past.map(f=>`<div class="family-list-row"><b class="family-rank">${f.rank}</b><div><strong>${esc(f.name)}</strong><span>Week of ${new Date((f.week*7+4)*86400000).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short'})} · ${num(f.points)} points</span></div><span>${f.diamonds} diamonds</span></div>`).join(''):'<p>Results appear after the first week ends.</p>'}
+  ${t.past.length?t.past.map(f=>`<div class="family-list-row"><b class="family-rank">${rankArt(f.rank)}</b><div><strong>${esc(f.name)}</strong><span>Week of ${new Date((f.week*7+4)*86400000).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short'})} · ${num(f.points)} points</span></div><span>${f.diamonds} diamonds</span></div>`).join(''):'<p>Results appear after the first week ends.</p>'}
  </details>`;
 }

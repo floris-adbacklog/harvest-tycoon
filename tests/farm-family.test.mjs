@@ -200,3 +200,19 @@ test('The four Family pages each use their own generated PNG and a mobile-visibl
  for(const key of ['family-weekly-order','family-members','family-tournament','family-management']){assert.ok(html.includes(`data-game-art="${key}"`));assert.ok(readFileSync(`public/assets/icons/${key}.png`).length>1000);}
  assert.match(css,/#family-button:not\(\[hidden\]\)\{display:flex/);assert.match(css,/#family-button\[hidden\]/);
 });
+
+test('new emblems preserve existing IDs and only leaders may change them',()=>{
+ const old=['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy'];
+ assert.deepEqual(FAMILY_EMBLEMS.slice(0,12).map(e=>e.icon),old);assert.equal(FAMILY_EMBLEMS.length,21);
+ let c=join(create());const oldInvite=c.families[0].invite_code;
+ for(const e of FAMILY_EMBLEMS.slice(12)){
+  const result=run(c,farm(),'alice',{type:'family_emblem',emblem:e.id});assert.equal(result.failed,false);c=result.context;assert.equal(c.families[0].emblem,e.id);assert.equal(c.families[0].invite_code,oldInvite);
+ }
+ assert.throws(()=>run(c,farm(),'bob',{type:'family_emblem',emblem:'0'}),/leader/);
+ assert.throws(()=>run(c,farm(),'alice',{type:'family_emblem',emblem:'999'}),/emblem/);
+ assert.throws(()=>run(c,farm(),'alice',{type:'family_emblem',emblem:'__proto__'}),/emblem/);
+});
+test('family standings expose at most ten ranked families while retaining all contributors for prize sizing',()=>{
+ const c=tournamentContext(Array(12).fill(1),Array.from({length:12},(_,i)=>1000-i));
+ const v=familyPublicView(c,'p0-0',farm(),now);assert.equal(v.tournament.top.length,10);assert.equal(v.tournament.activePlayers,12);assert.equal(v.tournament.top[0].diamonds,160);assert.equal(v.tournament.top[9].diamonds,0);
+});

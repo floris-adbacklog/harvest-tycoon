@@ -1,3 +1,4 @@
+import {rankArt} from '../public/rank-art.js';
 export const LEADERBOARD_CATEGORIES=Object.freeze({
  level:{label:'Highest level',heading:'Level',unit:'level',description:'Your farmer level, earned through farming experience.'},
  currency:{label:'Most coins',heading:'Coins',unit:'coins',description:'Current coin balance. Spending coins can change your position.'},
@@ -24,30 +25,29 @@ function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw ne
 const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at';
 export async function fetchLeaderboard(client,playerId,category='level'){
  categoryFor(category);
- const {data,error}=await client.from('player_stats').select(PUBLIC_FIELDS).order(category,{ascending:false}).order('player_id',{ascending:true}).limit(20);
+ const {data,error}=await client.from('player_stats').select(PUBLIC_FIELDS).order(category,{ascending:false}).order('player_id',{ascending:true}).limit(10);
  if(error)throw error;
  let own=data?.find(row=>row.player_id===playerId)??null;
  if(!own&&playerId){const response=await client.from('player_stats').select(PUBLIC_FIELDS).eq('player_id',playerId).maybeSingle();if(response.error)throw response.error;own=response.data;}
  let rank=null;
- if(own){const result=await client.from('player_stats').select('player_id',{count:'exact',head:true}).gt(category,own[category]);if(result.error)throw result.error;rank=(result.count??0)+1;}
+ if(own){const listed=data?.findIndex(row=>row.player_id===playerId)??-1;if(listed>=0)rank=listed+1;else{const result=await client.from('player_stats').select('player_id',{count:'exact',head:true}).gt(category,own[category]);if(result.error)throw result.error;const ties=await client.from('player_stats').select('player_id',{count:'exact',head:true}).eq(category,own[category]).lt('player_id',own.player_id);if(ties.error)throw ties.error;rank=(result.count??0)+(ties.count??0)+1;}}
  return {rows:data??[],own,rank,category};
 }
 export function rankedRows(rows,category='level'){
- categoryFor(category);let rank=0,lastScore=null;
- return rows.map((row,i)=>{const score=Number(row[category]??0);if(score!==lastScore)rank=i+1;lastScore=score;return {row,rank,score};});
+ categoryFor(category);return rows.map((row,i)=>({row,rank:i+1,score:Number(row[category]??0)}));
 }
-export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false},playerId){
+export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false},playerId,onPlayer){
  const config=categoryFor(category);container.replaceChildren();
  if(!rows.length){const p=document.createElement('p');p.className='leaderboard-empty';p.textContent='The valley is quiet. Be the first farmer on this board.';container.append(p);return;}
  const table=document.createElement('table');table.className='leaderboard-table';
- const caption=document.createElement('caption');caption.className='leaderboard-caption';caption.textContent=`${config.label} · Top 20`;table.append(caption);
+ const caption=document.createElement('caption');caption.className='leaderboard-caption';caption.textContent=`${config.label} · Top 10`;table.append(caption);
  const head=document.createElement('thead'),header=document.createElement('tr');
  for(const title of ['Rank','Farmer',config.heading]){const th=document.createElement('th');th.scope='col';th.textContent=title;header.append(th);}head.append(header);table.append(head);
  const tbody=document.createElement('tbody');
  rankedRows(rows,category).forEach(({row,rank:place,score:value})=>{
   const tr=document.createElement('tr');tr.classList.toggle('is-you',row.player_id===playerId);
-  const n=document.createElement('td');n.textContent=String(place);
-  const name=document.createElement('td'),strong=document.createElement('strong'),small=document.createElement('small');strong.textContent=row.username;const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');strong.prepend(dot);small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;name.append(strong,small);
+  const n=document.createElement('td');n.className='leaderboard-place';n.innerHTML=rankArt(place);
+  const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');strong.textContent=row.username;if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',`View ${row.username}'s profile`);strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');strong.prepend(dot);small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;name.append(strong,small);
   const score=document.createElement('td');score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
  });table.append(tbody);container.append(table);updateOnlineIndicators(container,{onlinePlayers,presenceReady});
  if(own&&rank){const line=document.createElement('div');line.className='your-rank';const label=document.createElement('strong'),value=document.createElement('span');label.textContent=`Your rank: #${rank}`;const score=Number(own[category]??0).toLocaleString('en-US');value.textContent=category==='level'?`Level ${score} · ${own.username}`:`${score} ${config.unit} · ${own.username}`;line.append(label,value);container.append(line);}
