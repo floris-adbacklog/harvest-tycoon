@@ -1027,7 +1027,7 @@ export function familyTournament(context,week,config=FAMILY_CONFIG){
  const pool=qualifying.length?prizes.reduce((n,p)=>n+p.diamonds,0):firstPrize;
  return {pool,firstPrize,activePlayers,entries,qualifying,prizes};
 }
-export function emptyFamilyContext(){return {revision:0,families:[],members:[],orders:[],contributions:[],results:[],rewards:[],attempts:[],weeks:[],players:[],receipt:null};}
+export function emptyFamilyContext(){return {revision:0,families:[],members:[],invitations:[],orders:[],contributions:[],results:[],rewards:[],attempts:[],weeks:[],players:[],receipt:null};}
 const familyMember=(c,p)=>c.members.find(m=>m.player_id===p);
 const familyCurrent=(c,p)=>{const m=familyMember(c,p);return m&&!m.left_at&&m.family_id?c.families.find(f=>f.id===m.family_id&&!f.deleted_at):null;};
 const familyMembers=(c,id)=>c.members.filter(m=>m.family_id===id&&!m.left_at);
@@ -1067,10 +1067,20 @@ function completeFamilyOrder(c,order,now,config){
  return true;
 }
 function familyCode(c,random){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(let attempt=0;attempt<30;attempt++){const code=Array.from({length:6},()=>alphabet[Math.floor(random()*alphabet.length)]).join('');if(!c.families.some(f=>f.invite_code===code&&!f.deleted_at))return code;}throw new Error('Please try creating the invite code again.');}
+export const FAMILY_INVITATION_LIFETIME=7*DAY_MS;
+function refreshFamilyInvitations(c,now){
+ c.invitations??=[];
+ for(const invite of c.invitations){
+  if(invite.status!=='pending')continue;
+  if(invite.expires_at<=now){invite.status='expired';invite.resolved_at=now;}
+  else if(!c.families.some(f=>f.id===invite.family_id&&!f.deleted_at)||familyCurrent(c,invite.recipient_id)){invite.status='cancelled';invite.resolved_at=now;}
+ }
+}
 export function familyMutate(original,state,player,action,now,options={}){
  const config=options.config??FAMILY_CONFIG,minLevel=options.minLevel??FAMILY_MIN_LEVEL;
  if(!familyUnlocked(state,minLevel))throw new Error(familyUnlockHint(minLevel));
  const c=structuredClone(original),week=familyWeek(now),settled=settleFamilyWeeks(c,now,config);
+ refreshFamilyInvitations(c,now);
  const uuid=options.uuid??(()=>crypto.randomUUID()),random=options.random??secureChoreRandom;
  let member=familyMember(c,player),family=familyCurrent(c,player),result={};
  const type=action?.type??'family_read';
@@ -1078,7 +1088,7 @@ export function familyMutate(original,state,player,action,now,options={}){
  const leader=()=>{needFamily();if(member.role!=='leader')throw new Error('Only the family leader can do this.');};
  const validName=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _'-]{2,19}$/.test(value.trim());
  const joinable=()=>{if(family)throw new Error('Leave your current family first.');if((member?.cooldown_until??0)>now)throw new Error(`You can join again in ${formatDuration(member.cooldown_until-now)}.`);};
- if(['family_create','family_join'].includes(type)){
+ if(['family_create','family_join','family_invite','family_accept_invite'].includes(type)){
   let rate=c.attempts.find(a=>a.player_id===player);if(!rate){rate={player_id:player,window_at:now,count:0};c.attempts.push(rate);}
   if(now-rate.window_at>=3600000){rate.window_at=now;rate.count=0;}
   if(rate.count>=config.ATTEMPTS_PER_HOUR)return {context:c,result:{error:'Too many attempts. Try again later.'},settled,failed:true};
@@ -1094,9 +1104,37 @@ export function familyMutate(original,state,player,action,now,options={}){
    result={message:'Your Farm Family is ready.'};
   }else if(type==='family_join'){
    joinable();
-   const found=action.code?c.families.find(f=>!f.deleted_at&&f.invite_code===String(action.code).trim().toUpperCase()):c.families.find(f=>f.id===action.familyId&&f.is_open&&!f.deleted_at);
-   if(!found||familyMembers(c,found.id).length>=config.MAX_MEMBERS)throw new Error('Invalid code or family unavailable.');
+   if(action.code)throw new Error('Invite codes have been replaced. Ask the family leader to invite your player name.');
+   const found=c.families.find(f=>f.id===action.familyId&&f.is_open&&!f.deleted_at);
+   if(!found||familyMembers(c,found.id).length>=config.MAX_MEMBERS)throw new Error('This family is unavailable or full.');
    const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,cooldown_until:null};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;result={message:'Welcome to your Farm Family.'};
+  }else if(type==='family_invite'){
+   leader();
+   const target=c.players.find(p=>p.player_id===action.playerId);
+   if(!target||target.player_id===player)throw new Error('Choose another farmer.');
+   if(target.level<minLevel)throw new Error(`This farmer needs level ${minLevel} to join a family.`);
+   if(familyMembers(c,family.id).length>=config.MAX_MEMBERS)throw new Error('Your family is full.');
+   if(familyCurrent(c,target.player_id))throw new Error('This farmer already belongs to a family.');
+   if((familyMember(c,target.player_id)?.cooldown_until??0)>now)throw new Error('This farmer is still in their family join cooldown.');
+   if(c.invitations.some(i=>i.recipient_id===target.player_id&&i.status==='pending'))throw new Error('This farmer already has a pending invitation. They must accept or decline it first.');
+   c.invitations.push({id:uuid(),family_id:family.id,recipient_id:target.player_id,invited_by:player,created_at:now,expires_at:now+FAMILY_INVITATION_LIFETIME,status:'pending',resolved_at:null});
+   result={message:`Invitation sent to ${target.username}.`};
+  }else if(type==='family_accept_invite'){
+   joinable();
+   const invite=c.invitations.find(i=>i.id===action.invitationId&&i.recipient_id===player&&i.status==='pending');
+   if(!invite)throw new Error('This invitation is no longer available.');
+   const found=c.families.find(f=>f.id===invite.family_id&&!f.deleted_at);
+   if(!found||familyMembers(c,found.id).length>=config.MAX_MEMBERS)throw new Error('This family is unavailable or full.');
+   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,cooldown_until:null};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;
+   invite.status='accepted';invite.resolved_at=now;result={message:`Welcome to ${found.name}!`};
+  }else if(type==='family_decline_invite'){
+   const invite=c.invitations.find(i=>i.id===action.invitationId&&i.recipient_id===player&&i.status==='pending');
+   if(!invite)throw new Error('This invitation is no longer available.');
+   invite.status='declined';invite.resolved_at=now;result={message:'Invitation declined.'};
+  }else if(type==='family_cancel_invite'){
+   leader();const invite=c.invitations.find(i=>i.id===action.invitationId&&i.family_id===family.id&&i.status==='pending');
+   if(!invite)throw new Error('This invitation is no longer pending.');
+   invite.status='cancelled';invite.resolved_at=now;result={message:'Invitation cancelled.'};
   }else if(['family_leave','family_kick'].includes(type)){
    needFamily();if(type==='family_kick')leader();const target=type==='family_leave'?member:c.members.find(m=>m.id===action.memberId&&m.family_id===family.id&&!m.left_at);
    if(!target||type==='family_kick'&&target.player_id===player)throw new Error('Choose another family member.');
@@ -1111,8 +1149,7 @@ export function familyMutate(original,state,player,action,now,options={}){
    leader();if(!FAMILY_EMBLEMS.some(e=>e.id===action.emblem))throw new Error('Choose a family emblem.');family.emblem=action.emblem;result={message:'Family emblem updated.'};
   }else if(type==='family_open'){
    leader();if(typeof action.open!=='boolean')throw new Error('Choose open or invite-only.');family.is_open=action.open;result={message:action.open?'Your family is open to new members.':'Your family is invite-only.'};
-  }else if(type==='family_code'){
-   leader();family.invite_code=familyCode(c,random);result={message:'A new invite code is ready.'};
+
   }else if(type==='family_contribute'||type==='family_tournament_goods'){
    needFamily();if(action.week!==week)throw new Error('A new week has started. Review the current order.');
    if(!Object.hasOwn(ITEMS,action.item)||!Number.isSafeInteger(action.count)||action.count<1)throw new Error('Choose a valid item and whole quantity.');
@@ -1135,7 +1172,8 @@ export function familyMutate(original,state,player,action,now,options={}){
    reward.claimed_at=now;state.coins+=reward.coins;state.xp+=reward.xp;state.diamonds+=reward.diamonds;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+reward.diamonds;
    const levelReward=grantLevelRewards(state);result={coins:reward.coins,xp:reward.xp,diamonds:reward.diamonds,levelReward,message:`Family rewards: +${reward.coins} coins · +${reward.xp} XP · +${reward.diamonds} diamonds.`};
   }else if(type!=='family_read')throw new Error('Choose a valid family action.');
- }catch(error){if(['family_create','family_join'].includes(type))return {context:c,result:{error:error.message},settled,failed:true};throw error;}
+ }catch(error){if(['family_create','family_join','family_invite','family_accept_invite'].includes(type))return {context:c,result:{error:error.message},settled,failed:true};throw error;}
+ refreshFamilyInvitations(c,now);
  family=familyCurrent(c,player);if(family)ensureFamilyOrder(c,family,week,now,config);
  state.family={familyId:family?.id??null,unclaimedCount:c.rewards.filter(r=>r.player_id===player&&!r.claimed_at&&r.expires_at>now).length};
  return {context:c,result,settled,failed:false};
@@ -1148,5 +1186,11 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  const rewards=c.rewards.filter(r=>r.player_id===player&&!r.claimed_at&&r.expires_at>now).map(({id,week,kind,coins,xp,diamonds,expires_at})=>({id,week,kind,coins,xp,diamonds,expiresAt:expires_at}));
  const members=family?familyMembers(c,family.id).map(m=>{const p=c.players.find(p=>p.player_id===m.player_id),points=c.contributions.find(r=>r.family_id===family.id&&r.player_id===m.player_id&&r.week===week)?.points??0;return {id:m.id,username:p?.username??'Farmer',level:p?.level??1,online:p?.online===true,points,role:m.role,isSelf:m.player_id===player};}):[];
  const card=f=>({id:f.id,name:f.name,emblem:f.emblem,members:familyMembers(c,f.id).length});
- return {week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,extraCap:config.EXTRA_POINTS_CAP,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:family.is_open,inviteCode:family.invite_code,leader:me.role==='leader',renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,cooldownUntil:me?.cooldown_until??0,openFamilies:c.families.filter(f=>!f.deleted_at&&f.is_open&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview:{coins:Math.floor((current?.order_points??0)*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER),xp:Math.floor((current?.order_points??0)*config.ORDER_XP_PER_VALUE),diamonds:Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor((current?.order_points??0)/10000)),completionBonus:config.ORDER_COMPLETION_DIAMONDS},tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraPlayer:config.TOURNAMENT_PER_EXTRA_PLAYER,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),top:board.qualifying.slice(0,10).map((f,i)=>({name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
+ const pending=(c.invitations??[]).filter(i=>i.status==='pending'&&i.expires_at>now&&c.families.some(f=>f.id===i.family_id&&!f.deleted_at)&&!familyCurrent(c,i.recipient_id));
+ const incoming=pending.find(i=>i.recipient_id===player);
+ const invitedFamily=incoming?c.families.find(f=>f.id===incoming.family_id):null;
+ const invitation=incoming?{id:incoming.id,family:card(invitedFamily),invitedBy:c.players.find(p=>p.player_id===incoming.invited_by)?.username??'Family leader',expiresAt:incoming.expires_at,canAccept:!family&&(me?.cooldown_until??0)<=now&&familyMembers(c,invitedFamily.id).length<config.MAX_MEMBERS}:null;
+ const sentInvitations=family&&me?.role==='leader'?pending.filter(i=>i.family_id===family.id).map(i=>({id:i.id,recipientId:i.recipient_id,username:c.players.find(p=>p.player_id===i.recipient_id)?.username??'Farmer',expiresAt:i.expires_at})):[];
+
+ return {invitation,sentInvitations,week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,extraCap:config.EXTRA_POINTS_CAP,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:family.is_open,leader:me.role==='leader',renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,cooldownUntil:me?.cooldown_until??0,openFamilies:c.families.filter(f=>!f.deleted_at&&f.is_open&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview:{coins:Math.floor((current?.order_points??0)*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER),xp:Math.floor((current?.order_points??0)*config.ORDER_XP_PER_VALUE),diamonds:Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor((current?.order_points??0)/10000)),completionBonus:config.ORDER_COMPLETION_DIAMONDS},tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraPlayer:config.TOURNAMENT_PER_EXTRA_PLAYER,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),top:board.qualifying.slice(0,10).map((f,i)=>({name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
 }

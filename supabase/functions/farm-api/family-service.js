@@ -1,11 +1,11 @@
 import {familyMutate,familyPublicView,familyWeek,levelOf} from './farm-state.js';
 import {isRecentlyActive} from './presence.js';
-const keys={families:['id'],members:['player_id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
+const keys={families:['id'],members:['player_id'],invitations:['id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
 export function familyChanges(before,after){
  const changed={};
  for(const [table,fields] of Object.entries(keys)){
-  const key=r=>fields.map(f=>r[f]).join(':'),old=new Map(before[table].map(r=>[key(r),JSON.stringify(r)]));
-  const rows=after[table].filter(r=>old.get(key(r))!==JSON.stringify(r));if(rows.length)changed[table]=rows;
+  const key=r=>fields.map(f=>r[f]).join(':'),old=new Map((before[table]??[]).map(r=>[key(r),JSON.stringify(r)]));
+  const rows=(after[table]??[]).filter(r=>old.get(key(r))!==JSON.stringify(r));if(rows.length)changed[table]=rows;
  }
  return changed;
 }
@@ -23,6 +23,13 @@ export async function handleFamily({admin,body,row,state,player,username}){
  const before=fetched.data,now=before.now;
  const response=(context,result,failed,written=false)=>({status:failed?422:200,data:failed?{error:result.error,code:'ACTION_REJECTED'}:reading?{profile:{player_id:player},family:publicView(context,player,state,now),serverNow:now}:{state,profile:{player_id:player,username,currency:state.coins,level:levelOf(state)},result:{...result,family:publicView(context,player,state,now)},revision:row.revision+(written?1:0),serverNow:now}});
  if(before.receipt)return response(before,before.receipt.result,before.receipt.failed);
+ if(!reading&&body.action.type==='family_invite'){
+  const target=body.action.playerId;
+  if(typeof target!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target))return {status:422,data:{error:'Choose a valid farmer.',code:'ACTION_REJECTED'}};
+  const found=await admin.from('player_stats').select('player_id,username,level').eq('player_id',target).maybeSingle();
+  if(found.error)throw found.error;
+  if(found.data){before.players=before.players.filter(p=>p.player_id!==target);before.players.push(found.data);}
+ }
  let changed;
  try{changed=familyMutate(before,state,player,reading?{type:'family_read'}:body.action,now);}
  catch(error){return {status:422,data:{error:error.message,code:'ACTION_REJECTED'}};}

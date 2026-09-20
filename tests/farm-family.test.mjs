@@ -7,7 +7,7 @@ const now=Date.parse('2026-09-15T12:00:00Z'),week=familyWeek(now);
 const farm=(level=FAMILY_MIN_LEVEL)=>{const s=createFarm(now);s.xp=xpForLevel(level);s.stats.bread=1;s.stats.made_bread=1;s.stats.sold_eggs=1;return normalizeFarm(s,now);};
 const run=(c,s,p,a,t=now,opts={})=>familyMutate(c,s,p,a,t,opts);
 const create=(c=emptyFamilyContext(),p='alice',name='Meadow Friends',s=farm())=>run(c,s,p,{type:'family_create',name,emblem:'0'}).context;
-const join=(c,p='bob',t=now)=>run(c,farm(),p,{type:'family_join',code:c.families[0].invite_code},t).context;
+const join=(c,p='bob',t=now)=>{c=structuredClone(c);if(!c.players.some(x=>x.player_id===p))c.players.push({player_id:p,username:p,level:FAMILY_MIN_LEVEL});const leader=c.members.find(m=>m.family_id===c.families[0].id&&m.role==='leader'&&!m.left_at);const sent=run(c,farm(),leader.player_id,{type:'family_invite',playerId:p},t);if(sent.failed)return sent.context;const i=sent.context.invitations.find(i=>i.recipient_id===p&&i.status==='pending');return run(sent.context,farm(),p,{type:'family_accept_invite',invitationId:i.id},t).context;};
 const contribution=(c,p,item,count,s=farm(),t=now)=>{s.inventory[item]=Math.max(s.inventory[item]??0,count);return run(c,s,p,{type:'family_contribute',week:familyWeek(t),item,count},t);};
 function tournamentContext(sizes=[2,2,2],points=[10000,5000,2000]){
  const c=emptyFamilyContext();sizes.forEach((size,i)=>{const id='f'+i;c.families.push({id,name:'Family '+i,emblem:'0',deleted_at:null});for(let j=0;j<size;j++){const player='p'+i+'-'+j;c.members.push({id:player,player_id:player,family_id:id,role:j?'member':'leader',joined_at:now,left_at:null});c.contributions.push({family_id:id,player_id:player,week,points:points[i],order_points:points[i],extra_points:0,lines:{},last_at:now+i});}});return c;
@@ -153,7 +153,7 @@ test('Leave passes leadership to oldest member and enforces cooldown and weekly 
 test('Leader permissions, open joining, kick cooldown, code regeneration and rename cooldown',()=>{
  let c=join(create());assert.throws(()=>run(c,farm(),'bob',{type:'family_open',open:true}),/leader/);
  c=run(c,farm(),'alice',{type:'family_open',open:true}).context;c=run(c,farm(),'carol',{type:'family_join',familyId:c.families[0].id}).context;
- const old=c.families[0].invite_code;c=run(c,farm(),'alice',{type:'family_code'}).context;assert.notEqual(c.families[0].invite_code,old);
+ assert.throws(()=>run(c,farm(),'alice',{type:'family_code'}),/valid family action/);
  c=run(c,farm(),'alice',{type:'family_rename',name:'New meadow'}).context;assert.throws(()=>run(c,farm(),'alice',{type:'family_rename',name:'Again'},now+DAY_MS),/seven/);
  c=run(c,farm(),'alice',{type:'family_kick',memberId:c.members.find(m=>m.player_id==='bob').id}).context;assert.equal(c.members.find(m=>m.player_id==='bob').cooldown_until,now+C.JOIN_COOLDOWN_MS);
  c=run(c,farm(),'alice',{type:'family_promote',memberId:c.members.find(m=>m.player_id==='carol').id}).context;assert.equal(c.members.find(m=>m.player_id==='carol').role,'leader');

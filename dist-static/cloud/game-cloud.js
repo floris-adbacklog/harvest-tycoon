@@ -2759,7 +2759,7 @@ Object.freeze([
 		milk: 80,
 		honey: 30
 	}
-]);
+]), 7 * o;
 var f = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
 	"&": "&amp;",
 	"<": "&lt;",

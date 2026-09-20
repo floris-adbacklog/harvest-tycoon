@@ -1,0 +1,15 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> harvest-tycoon@0.1.0 build:static
+> node scripts/build-static.mjs
+
+vite v8.0.13 building client environment for production...
+[2Ktransforming...✓ 57 modules transformed.
+rendering chunks...
+computing gzip size...
+public/cloud/leaderboard-BigxBEvc.js   11.25 kB │ gzip:  3.63 kB
+public/cloud/game-cloud.js             75.04 kB │ gzip: 18.88 kB
+public/cloud/cloud.js                 279.47 kB │ gzip: 65.13 kB
+
+✓ built in 407ms
+Standalone static game ready in dist-static/. No application server is required.
