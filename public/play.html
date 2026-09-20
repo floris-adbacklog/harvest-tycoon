@@ -37,16 +37,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="farm-features"><span><svg class="wi" aria-hidden="true"><use href="#wi-sprout"/></svg>Grow & harvest</span><span><svg class="wi" aria-hidden="true"><use href="#wi-craft"/></svg>Craft & trade</span><span><svg class="wi" aria-hidden="true"><use href="#wi-sun"/></svg>Daily discoveries</span></div>
    </div>
   </section>
-  <section class="account-card" aria-labelledby="account-title"><div class="card-top"><span class="small-sprout" aria-hidden="true"><svg class="wi"><use href="#wi-sprout"/></svg></span><span id="form-eyebrow" class="eyebrow">GOOD TO SEE YOU, FARMER</span></div><h2 id="account-title">Welcome home.</h2><p id="account-copy">Sign in to pick up where you left off.</p>
-   <div class="account-tabs" role="group" aria-label="Account options"><button data-mode="signin" aria-pressed="true">Sign in</button><button data-mode="register" aria-pressed="false">Create account</button></div>
-   <form id="account-form">
-    <div id="name-row" hidden><label for="player-name">Player name</label><input id="player-name" autocomplete="nickname" maxlength="20" minlength="3" placeholder="Sunny Acres"><small>The name other farmers see.</small></div>
-    <div id="email-row"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-    <div id="password-row"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Your password"></div>
-    <div id="confirm-row" hidden><label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" autocomplete="new-password" minlength="6" placeholder="One more time"></div>
-    <p id="account-message" class="form-message" role="status" aria-live="polite"></p><button id="account-submit" class="primary" type="submit">Sign in & play</button>
+  <section class="account-card" aria-labelledby="account-title"><div class="card-top"><span class="small-sprout" aria-hidden="true"><svg class="wi"><use href="#wi-sprout"/></svg></span><span id="form-eyebrow" class="eyebrow">NEW FARMERS WELCOME</span></div><h2 id="account-title">Start your farm.</h2><p id="account-copy">Free to play. Your first harvest is just around the corner.</p>
+   <div class="account-tabs" role="group" aria-label="Account options"><button data-mode="signin" aria-pressed="false">Sign in</button><button data-mode="register" aria-pressed="true">Create account</button></div>
+   <form id="account-form" novalidate>
+    <div id="email-row"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" required placeholder="you@example.com"><small class="field-error" id="email-error" role="alert"></small></div>
+    <div id="password-row"><label for="password">Password</label><div class="password-wrap"><input id="password" type="password" autocomplete="new-password" enterkeyhint="go" required minlength="6" placeholder="Your password"><button type="button" id="toggle-password" class="password-toggle" aria-label="Show password" aria-pressed="false">Show</button></div><small class="field-error" id="password-error" role="alert"></small><button type="button" id="forgot-link" class="link-button" hidden>Forgot your password?</button></div>
+    <button type="button" id="name-toggle" class="link-button">Choose your own player name (optional)</button>
+    <div id="name-row" hidden><label for="player-name">Player name <span id="name-optional" class="optional">optional</span></label><input id="player-name" autocomplete="nickname" autocapitalize="words" enterkeyhint="go" maxlength="20" placeholder="We’ll pick one for you"><small id="name-help">The name other farmers see. Leave it empty and we’ll choose one. You can change it later in the leaderboard.</small><small class="field-error" id="name-error" role="alert"></small></div>
+    <p id="account-message" class="form-message" role="status" aria-live="polite"></p><button id="account-submit" class="primary" type="submit">Start my farm</button>
+    <p id="register-promise" class="register-promise"><svg class="wi" aria-hidden="true"><use href="#wi-gem"/></svg><span><strong>Free to play.</strong> Finish 10 beginner quests and earn 20 diamonds.</span></p>
    </form>
-   <p class="account-note"><svg class="wi" aria-hidden="true"><use href="#wi-cloud"/></svg><span>Your farm, safely saved to your account.<br>Pick up on any device. Internet required.</span></p><div class="new-farmer-note"><svg class="wi" aria-hidden="true"><use href="#wi-gem"/></svg><span><strong>New here? We’ll show you the ropes.</strong>Complete 10 beginner quests and earn 20 diamonds.</span></div>
+   <div id="confirm-panel" class="confirm-panel" hidden><p id="confirm-copy" class="confirm-copy"></p><button type="button" id="resend-confirmation" class="primary">Send the email again</button><p id="confirm-message" class="form-message" role="status" aria-live="polite"></p><p class="confirm-help">Not there? Check your spam folder.<br>Wrong address? <button type="button" id="confirm-back" class="link-button">Use a different email</button><br>Have an account already? <button type="button" class="link-button" data-mode="signin">Sign in</button></p></div>
+   <p id="mode-switch-row" class="mode-switch"><span id="mode-switch-text">Already have an account?</span> <button type="button" id="mode-switch" class="link-button" data-mode="signin">Sign in</button></p>
+   <p class="account-note"><svg class="wi" aria-hidden="true"><use href="#wi-cloud"/></svg><span>Play on any device.<br>Your farm is safely saved to your account.</span></p>
    <div id="connection-actions" hidden><button id="retry-connection" class="primary">Try again</button><button id="leave-account" class="text-button">Sign out</button></div>
   </section>
  </div>
@@ -54,5 +57,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </main>
 <div id="farm-host" hidden></div>
 <noscript><p>Enable JavaScript to sign in to Harvest Tycoon.</p></noscript>
+<script>try{var q=location.hash+'&'+location.search;if(!localStorage.getItem('harvest-tycoon:auth')&&!localStorage.getItem('harvest-tycoon:returning')&&!/access_token=|refresh_token=|[?&#]code=|type=|error/.test(q)){document.body.dataset.phase='unauthenticated';document.getElementById('loading-screen').hidden=true;document.getElementById('welcome').hidden=false;}}catch(e){}</script>
 <script type="module" src="/cloud/cloud.js"></script>
 </body></html>

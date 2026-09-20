@@ -13,6 +13,24 @@ export function isNewRegistration(data){
  return !Array.isArray(identities)||identities.length>0;
 }
 
+export function deviceType(win=globalThis.window){
+ const width=win?.innerWidth??0;
+ return width&&width<768?'mobile':width&&width<1100?'tablet':'desktop';
+}
+
+// Funnel steps of the sign-in / sign-up card ("auth_view", "auth_submit", "auth_error", ...). Only a
+// fixed set of short, lowercase parameters is ever sent, so an email address, player name or raw error
+// message cannot end up in the dataLayer by accident.
+const AUTH_PARAMS=['mode','field','reason','method','after_signup'];
+export function trackAuth(step,params={},win=globalThis.window){
+ const clean={device:deviceType(win)};
+ for(const key of AUTH_PARAMS){
+  const value=params[key];
+  if(typeof value==='boolean'||(typeof value==='string'&&/^[a-z0-9_]{1,32}$/.test(value)))clean[key]=value;
+ }
+ pushEvent(`auth_${step}`,clean,win);
+}
+
 // "sign_up" is the recommended GA4 event name for a new account. With email confirmation switched
 // on, the account exists but the player still has to confirm it, which the flag tells apart.
 export function trackSignUp({confirmationRequired=false}={},win){
