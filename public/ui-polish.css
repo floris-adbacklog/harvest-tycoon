@@ -47,4 +47,5 @@
 .activity-reward span .game-art{width:20px;height:20px}
 /* The star sprite sits high in its cell and looks smaller than the other pictures: centre it and give it the same weight. */
 .game-art-sprite[data-art="xp"]{transform:translateY(12%) scale(1.22)}
-
+/* A button that names an action and its price: the name, then the coin icon with the amount, close together and without a bullet. */
+.research-next .primary-button{gap:8px}.button-price{display:inline-flex;align-items:center;gap:6px}
