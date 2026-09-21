@@ -72,6 +72,22 @@ function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
  else {const s=height!=null?height/d.y:width!=null?width/Math.max(d.x,d.z):scale;obj.scale.setScalar(s);}
  const [px,pz]=place(x,z);obj.position.set(px,y,pz);obj.rotation.y=rotation;obj.userData.model=name;scene.add(obj);return obj;
 }
+// Buildings and helpers that are still to come are shown from the first minute: greyed out, with a lock on their label, so a farmer
+// sees what there is to grow towards. Each material gets one desaturated twin; a locked object swaps to it and back when it unlocks.
+const greyedMaterials=new Map();
+function greyed(material){
+ let grey=greyedMaterials.get(material);
+ if(!grey){
+  grey=material.clone();
+  grey.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.299,.587,.114))),.92)*.9+.05;');};
+  grey.customProgramCacheKey=()=>'greyed';greyedMaterials.set(material,grey);
+ }
+ return grey;
+}
+function setLocked(object,locked){
+ if(object.userData.locked===locked)return;object.userData.locked=locked;
+ object.traverse(mesh=>{if(!mesh.isMesh)return;mesh.userData.original??=mesh.material;const original=mesh.userData.original;mesh.material=locked?(Array.isArray(original)?original.map(greyed):greyed(original)):original;});
+}
 function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
  mesh.rotation.x=-Math.PI/2;{const [px,pz]=place(x,z);mesh.position.set(px,y,pz);}mesh.receiveShadow=true;scene.add(mesh);return mesh;
@@ -120,7 +136,7 @@ function decorate(){
  zone('kitchen');addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
  // The Factory: a long white production hall with a chimney unit at one end and a hopper at the other, south of the pond.
  zone('factory');addBuilding('factory',16.2,21.9,{width:6.4,height:3.6,depth:13,rotation:Math.PI/2});
- // The chimney, the hopper, the yard and the crates only show once the Factory does (level 50): no empty yard with a chimney in it.
+ // The chimney and the hopper are greyed out with the hall until level 50, like every building that is still to come.
  factoryDecor.push(cloneModel('hangar_022',8.6,21.4,{height:3.6,rotation:Math.PI/2}),cloneModel('tower_010',24.2,22.2,{height:5}));
  // North-west square, clear of crop expansions and the north-south path at x=-6.
  zone('familyhall');addBuilding('familyhall',-9.3,-20.5,{width:4.2,rotation:Math.PI/2});
@@ -136,7 +152,7 @@ function decorate(){
  zone('juicepress');patch(-1,-20.1,6.9,6.4,0xb6bd88,.008);
  zone('preserves');patch(-15.2,-18.6,7.1,6.6,0xb6bd88,.008);
  zone('kitchen');patch(-12.4,18.2,5.1,4.8,0xb6bd88,.008);
- zone('factory');factoryDecor.push(patch(16.2,22.3,16.5,6.6,0xb9af8a,.008));
+ zone('factory');patch(16.2,22.3,16.5,6.6,0xb9af8a,.008);
  // Both the mill body and its moving sails are original parts from the supplied pack.
  zone('windmill');
  const sail=cloneModel('tower_020',0,0,{height:5.8});scene.remove(sail);
@@ -445,7 +461,7 @@ function addUtility(key,model,x,z,options){
  const object=cloneModel(model,x,z,options);object.userData.utility=key;
  const height=new THREE.Box3().setFromObject(object).max.y,info=utilityInfo[key];
  const label=document.createElement('button');label.className='utility-label';label.title=`${info.name} · ${info.hint}`;label.setAttribute('aria-label',`Open ${info.name}`);label.innerHTML=art(key);label.onclick=()=>openUtility(key);$('building-labels').append(label);
- utilityViews.set(key,{object,label,x:object.position.x,z:object.position.z,height});
+ utilityViews.set(key,{object,label,info,x:object.position.x,z:object.position.z,height,locked:false});
 }
 function addBuilding(key,x,z,options){
  const object=cloneModel(BUILDINGS[key].model,x,z,options);object.userData.building=key;
@@ -457,16 +473,24 @@ function addBuilding(key,x,z,options){
  const label=document.createElement('button');label.className='building-label';label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
  label.innerHTML=`<span class="building-pin">${art(key==='familyhall'?'familyhall-model':key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">${key==='farmhouse'?'Expand your fields':'Ready to work'}</small></span>`;
  label.addEventListener('click',()=>economy.openBuilding(key));label.addEventListener('mouseenter',()=>highlight(key));label.addEventListener('mouseleave',()=>highlight(-1));label.addEventListener('focus',()=>highlight(key));label.addEventListener('blur',()=>highlight(-1));$('building-labels').append(label);
- buildingViews.set(key,{object,hit,outline,label,x:object.position.x,z:object.position.z,height});
+ buildingViews.set(key,{object,hit,outline,label,pin:label.querySelector('.building-pin'),pinArt:key==='familyhall'?'familyhall-model':key,x:object.position.x,z:object.position.z,height,locked:false});
 }
 function positionBuildingLabels(){
- for(const decor of familyDecor)decor.visible=buildingEligible(state,'familyhall');
- for(const decor of factoryDecor)decor.visible=buildingEligible(state,'factory');
- scenePolish?.showYards();
- if(windmillRotor)windmillRotor.visible=buildingEligible(state,'windmill');
+ for(const decor of familyDecor)setLocked(decor,!buildingEligible(state,'familyhall'));
+ for(const decor of factoryDecor)setLocked(decor,!buildingEligible(state,'factory'));
+ if(windmillRotor)setLocked(windmillRotor,!buildingEligible(state,'windmill'));
  farmLife?.position(camera,world.clientWidth,world.clientHeight,farmNow());
- for(const [key,v] of utilityViews){v.object.visible=featureUnlocked(state,key);const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=!v.object.visible||Math.abs(p.x)>.94||Math.abs(p.y)>.82;}
- for(const [key,v]of buildingViews){v.object.visible=buildingEligible(state,key);v.hit.visible=v.object.visible;const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=!v.object.visible||Math.abs(p.x)>.92||Math.abs(p.y)>.82;v.label.classList.toggle('ready',economy.status(key).kind==='ready');}
+ for(const [key,v] of utilityViews){
+  const locked=!featureUnlocked(state,key);setLocked(v.object,locked);
+  if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.label.innerHTML=art(locked?'lock':key);v.label.setAttribute('aria-label',locked?`${v.info.name} (locked)`:`Open ${v.info.name}`);v.label.title=locked?`${v.info.name} · ${featureUnlockHint(key)}`:`${v.info.name} · ${v.info.hint}`;}
+  const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.82;
+ }
+ for(const [key,v]of buildingViews){
+  const locked=!buildingEligible(state,key),status=economy.status(key);setLocked(v.object,locked);
+  if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.pin.innerHTML=art(locked?'lock':v.pinArt);v.label.setAttribute('aria-label',locked?`${BUILDINGS[key].name} (locked)`:`Open ${BUILDINGS[key].name}`);}
+  const hint=locked?`${BUILDINGS[key].name} · ${status.text}`:'';if(v.label.title!==hint)v.label.title=hint;
+  const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82;v.label.classList.toggle('ready',status.kind==='ready');
+ }
 }
 function expandVisuals(){if(!ready)return;createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();}
 function bindUI(){

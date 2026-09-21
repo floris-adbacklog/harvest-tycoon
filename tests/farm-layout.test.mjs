@@ -54,7 +54,7 @@ test('the scene is laid out through the zones, and the default is restored after
  for(const id of used)assert(id==='fields'||id==='exact'||Object.hasOwn(ANCHORS,id),id);
  assert.match(game,/const limit=Math\.round\(20\*SPREAD\)/,'more room to pan');
  assert.match(game,/sun\.shadow\.camera\.left=-52/,'shadows cover the wider farm');
- assert.match(game,/utilityViews\.set\(key,\{object,label,x:object\.position\.x,z:object\.position\.z,height\}\)/);assert.match(game,/buildingViews\.set\(key,\{object,hit,outline,label,x:object\.position\.x,z:object\.position\.z,height\}\)/,'labels follow where things really stand');
+ assert.match(game,/utilityViews\.set\(key,\{object,label,info,x:object\.position\.x,z:object\.position\.z,height,locked:false\}\)/);assert.match(game,/buildingViews\.set\(key,\{object,hit,outline,label,pin:label\.querySelector\('\.building-pin'\),pinArt:key==='familyhall'\?'familyhall-model':key,x:object\.position\.x,z:object\.position\.z,height,locked:false\}\)/,'labels follow where things really stand');
  assert.match(life,/zone\('pond'\)/);assert.match(life,/zone\('paddock'\)/);assert.match(life,/zone\('workshop'\)/);assert.match(life,/const beeHome=placeIn\('apiary',10\.4,13\.7\)/);
  assert.match(polish,/pondRect=\[10\.4\+pondX/);assert.match(polish,/const RING=1\+\(SPREAD-1\)\*\.85/);
 });

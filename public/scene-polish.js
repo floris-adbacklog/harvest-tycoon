@@ -165,12 +165,11 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
 
  // 3. Dirt yards under buildings (the demo grounds every building on packed earth).
  const yardTex=yardTexture(rand),yardMaterial=new THREE.MeshLambertMaterial({map:yardTex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
- const yards=[];
  for(const o of scene.children){
   if(!o.userData.building)continue;
   const box=new THREE.Box3().setFromObject(o),size=box.getSize(new THREE.Vector3()),c=box.getCenter(new THREE.Vector3());
   const w=THREE.MathUtils.clamp(size.x+2.2,4.6,10),d=THREE.MathUtils.clamp(size.z+2.2,4.6,10);
-  const yard=new THREE.Mesh(new THREE.PlaneGeometry(w,d),yardMaterial);yard.rotation.x=-Math.PI/2;yard.position.set(c.x,.011,c.z);yard.receiveShadow=true;yard.renderOrder=-1;group.add(yard);yards.push({yard,building:o});
+  const yard=new THREE.Mesh(new THREE.PlaneGeometry(w,d),yardMaterial);yard.rotation.x=-Math.PI/2;yard.position.set(c.x,.011,c.z);yard.receiveShadow=true;yard.renderOrder=-1;group.add(yard);
  }
 
  // 4. Furrowed soil on every field. Fields can be added later, so this is re-synced while running.
@@ -259,8 +258,6 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
  }
  return {
   group,
-  // The Factory's yard follows its building: nothing of it shows before level 50 (the other buildings keep their yards).
-  showYards(){for(const {yard,building} of yards)if(building.userData.building==='factory')yard.visible=building.visible;},
   sync:syncFurrows,
   animate(t){
    if(reducedMotion)return;

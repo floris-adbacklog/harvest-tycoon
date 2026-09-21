@@ -49,3 +49,12 @@
 .game-art-sprite[data-art="xp"]{transform:translateY(12%) scale(1.22)}
 /* A button that names an action and its price: the name, then the coin icon with the amount, close together and without a bullet. */
 .research-next .primary-button{gap:8px}.button-price{display:inline-flex;align-items:center;gap:6px}
+/* What is still to come: greyed out, and only a small lock on the label (the name and the hint are in its tooltip and behind a tap), so the farm stays calm. */
+.building-label.locked,.utility-label.locked{filter:grayscale(1);opacity:.7}
+.building-label.locked{padding:3px;width:32px;min-width:32px;height:32px;min-height:32px;justify-content:center;gap:0;box-shadow:none}
+.building-label.locked>span:nth-child(2){display:none}
+.building-label.locked .building-pin{width:24px;height:24px;background:none;border-radius:0}
+.building-label.locked .building-pin>.game-art{width:22px;height:22px}
+.utility-label.locked{width:30px;height:30px;min-width:30px;min-height:30px;padding:0}
+.utility-label.locked>.game-art{width:20px;height:20px}
+

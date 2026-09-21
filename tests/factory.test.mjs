@@ -181,14 +181,25 @@ test('at the top a specialised building always beats the Factory for the same go
  }
 });
 
-test('nothing of the Factory shows before level 50: no empty yard with a chimney and a hopper in it',()=>{
- const game=read('public/game.js');
- assert.match(game,/const familyDecor=\[\],factoryDecor=\[\],/);
- assert.match(game,/factoryDecor\.push\(cloneModel\('hangar_022',[^)]*\),cloneModel\('tower_010',[^)]*\)\);/,'chimney and hopper');
- assert.match(game,/factoryDecor\.push\(patch\(16\.2,22\.3,16\.5,6\.6,0xb9af8a,\.008\)\);/,'the yard');
- assert.match(game,/if\(yard==='factory'\)factoryDecor\.push\(piece\);/,'the crates');
- assert.match(game,/for\(const decor of factoryDecor\)decor\.visible=buildingEligible\(state,'factory'\);/);
- assert.match(game,/v\.object\.visible=buildingEligible\(state,key\)/,'the hall itself follows the same rule as every building');
- assert.match(game,/scenePolish\?\.showYards\(\);/);
- const polish=read('public/scene-polish.js');assert.match(polish,/showYards\(\)\{for\(const \{yard,building\} of yards\)if\(building\.userData\.building==='factory'\)yard\.visible=building\.visible;\}/,'the dirt under the hall too');
+test('what is still to come is shown from the first minute, greyed out with a lock, and stays calm',()=>{
+ const game=read('public/game.js'),css=read('public/ui-polish.css');
+ assert.match(game,/const greyedMaterials=new Map\(\);/);assert.match(game,/function setLocked\(object,locked\)/);
+ assert.match(game,/dot\(diffuseColor\.rgb,vec3\(\.299,\.587,\.114\)\)/,'a real desaturation of the texture, not a darker tint');
+ // buildings: always drawn and clickable, greyed until eligible, a lock on the label
+ assert.doesNotMatch(game,/v\.object\.visible=buildingEligible\(state,key\)/,'a building is no longer hidden while locked');
+ assert.doesNotMatch(game,/v\.hit\.visible=v\.object\.visible/,'and it can be tapped to see what it needs');
+ assert.match(game,/const locked=!buildingEligible\(state,key\),status=economy\.status\(key\);setLocked\(v\.object,locked\);/);
+ assert.match(game,/v\.pin\.innerHTML=art\(locked\?'lock':v\.pinArt\)/);
+ assert.match(game,/v\.label\.hidden=Math\.abs\(p\.x\)>\.92\|\|Math\.abs\(p\.y\)>\.82;/,'a label only hides when it is off screen');
+ assert.match(game,/const hint=locked\?`\$\{BUILDINGS\[key\]\.name\} · \$\{status\.text\}`:'';/,'the name and the hint wait in the tooltip');
+ // helpers (tractor, cart, stall, silo, chores)
+ assert.match(game,/const locked=!featureUnlocked\(state,key\);setLocked\(v\.object,locked\);/);assert.match(game,/v\.label\.innerHTML=art\(locked\?'lock':key\)/);
+ // the pieces that belong to a building follow it
+ assert.match(game,/for\(const decor of familyDecor\)setLocked\(decor,!buildingEligible\(state,'familyhall'\)\);/);
+ assert.match(game,/for\(const decor of factoryDecor\)setLocked\(decor,!buildingEligible\(state,'factory'\)\);/);
+ assert.match(game,/if\(windmillRotor\)setLocked\(windmillRotor,!buildingEligible\(state,'windmill'\)\);/);
+ // calm: a small grey lock, no name
+ assert.match(css,/\.building-label\.locked,\.utility-label\.locked\{filter:grayscale\(1\);opacity:\.7\}/);
+ assert.match(css,/\.building-label\.locked\{padding:3px;width:32px;/);assert.match(css,/\.building-label\.locked>span:nth-child\(2\)\{display:none\}/);
+ assert.match(css,/\.utility-label\.locked\{width:30px;height:30px;/);
 });
