@@ -21,7 +21,7 @@ Deno.serve(async req=>{
   const live=true;
   const existingStarter=body.operation==='catalog'||body.pack==='starter'?await admin.from('harvest_purchases').select('*').eq('player_id',user.id).eq('pack','starter').eq('livemode',live).neq('status','expired').maybeSingle():null;
   if(existingStarter?.error)throw existingStarter.error;
-  // The offer opens when the farm reaches level 10: the server wrote that moment into the farm (farm-state.js stampStarterOffer).
+  // The offer opens when the farm reaches level 14, where diamond boosts unlock: the server wrote that moment into the farm (farm-state.js stampStarterOffer).
   const offerRow=body.operation==='catalog'||body.pack==='starter'?await admin.from('player_farms').select('offer:state->starterOffer').eq('player_id',user.id).maybeSingle():null;
   if(offerRow?.error)throw offerRow.error;
   const starter=starterEligibility(offerRow?.data?.offer?.unlockedAt,['credited','test_paid'].includes(existingStarter?.data?.status));
@@ -35,7 +35,7 @@ Deno.serve(async req=>{
   let pack;try{pack=checkoutPack(body.pack);}catch{return reply({error:'Choose a diamond pack.'},400);}
   const packId=pack.id;
   if(!UUID.test(body.requestId??''))return reply({error:'Invalid purchase request.'},400);
-  if(packId==='starter'&&!starter.eligible)return reply({error:starter.claimed?'You have already received the Starter Pack.':'The Starter Pack opens when you reach level 10 and is then available for 72 hours.'},409);
+  if(packId==='starter'&&!starter.eligible)return reply({error:starter.claimed?'You have already received the Starter Pack.':'The Starter Pack opens when you reach level 14 and is then available for 72 hours.'},409);
   const farm=await admin.from('player_farms').select('player_id').eq('player_id',user.id).maybeSingle();if(farm.error)throw farm.error;if(!farm.data)return reply({error:'Open your farm before buying diamonds.'},409);
   const stripe=new Stripe(key,{apiVersion:'2026-07-29.dahlia',httpClient:Stripe.createFetchHttpClient(),maxNetworkRetries:2});
   const priceId=pack.price;
