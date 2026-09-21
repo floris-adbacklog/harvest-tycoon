@@ -4,7 +4,7 @@ import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {normalizeFarm,applyFarmAction,BEGINNER_QUESTS,BEGINNER_REWARD,QUESTS,beginnerProgress} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 const act=(state,action,time=now,random=()=>0)=>applyFarmAction(state,action,time,random);
-test('the beginner guide teaches ten achievable starter actions and awards 20 diamonds once',()=>{
+test('the beginner guide teaches ten achievable starter actions and awards 50 diamonds once',()=>{
  const state=createFarm(now);assert.equal(BEGINNER_QUESTS.length,10);assert.equal(QUESTS.length,94);
  const claim=id=>act(state,{type:'beginner_claim',id});
  assert.throws(()=>claim('harvest'),/farming action/);
@@ -22,12 +22,12 @@ test('the beginner guide teaches ten achievable starter actions and awards 20 di
  assert.throws(()=>act(state,{type:'collect',building:'coop'},now+120000),/still being made/);
  assert.throws(()=>claim('collect'),/farming action/);assert.equal(state.diamonds,before);
  act(state,{type:'collect',building:'coop'},now+300000);
- const reward=claim('collect');assert.equal(reward.diamonds,20);assert.equal(state.diamonds,before+BEGINNER_REWARD);
+ const reward=claim('collect');assert.equal(reward.diamonds,50);assert.equal(BEGINNER_REWARD,50);assert.equal(state.diamonds,before+BEGINNER_REWARD);
  assert.deepEqual(state.claimed,[],'regular quests must not be claimed by the tutorial');
  assert(beginnerProgress(state).every(q=>q.done));
  const reloaded=normalizeFarm(JSON.parse(JSON.stringify(state)),now+300001);
  assert.throws(()=>act(reloaded,{type:'beginner_claim',id:'collect'}),/already complete/);
- assert.equal(reloaded.diamonds,before+20);
+ assert.equal(reloaded.diamonds,before+50);
 });
 test('out-of-order actions count but rewards cannot skip steps or trust client fields',()=>{
  const state=createFarm(now);

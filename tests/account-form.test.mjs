@@ -34,7 +34,7 @@ test('every mode has the copy the card needs',()=>{
 test('the sign-up card markup has no confirm-password field and the promise sits with the button',()=>{
  assert(!/confirm-password|confirm-row/.test(play));
  assert(play.indexOf('id="account-submit"')<play.indexOf('id="register-promise"'),'promise directly below the button');
- assert.match(play,/id="register-promise"[^>]*>[\s\S]*Free to play\.[\s\S]*20 diamonds/);
+ assert.match(play,/id="register-promise"[^>]*>[\s\S]*Free to play\.[\s\S]*50 diamonds/);
  assert.match(play,/id="account-form" novalidate/);
  assert.match(play,/id="email"[^>]*inputmode="email"[^>]*autocapitalize="none"/);
  assert.match(play,/id="password"[^>]*autocomplete="new-password"/,'a first-time visitor is offered a generated password');

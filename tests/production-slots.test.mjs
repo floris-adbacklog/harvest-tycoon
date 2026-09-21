@@ -74,8 +74,8 @@ test('completed beginner guide disappears from desktop, mobile and menu, includi
   const s=farm();s.onboarding={completed:9,rewardClaimed:false,milestones:{collect:true}};const originalDiamonds=s.diamonds;
   const ui=createBeginnerUI({state:s,runAction:async a=>act(s,a),icons(){},notify(){},onChange(){},guide(){}});
   assert.equal(get('.beginner-card').hidden,false);ui.open();assert.equal(get('beginner-dialog').open,true);
-  await get('claim-reward').listeners.click();assert.equal(s.diamonds,originalDiamonds+20);
+  await get('claim-reward').listeners.click();assert.equal(s.diamonds,originalDiamonds+50);
   for(const el of ['.beginner-card','beginner-mobile','menu'])assert.equal(get(el).hidden,true,el);assert.equal(get('beginner-dialog').open,false);
-  ui.open();assert.equal(get('beginner-dialog').open,false);ui.refresh();assert.equal(get('.beginner-card').hidden,true);assert.equal(s.diamonds,originalDiamonds+20);
+  ui.open();assert.equal(get('beginner-dialog').open,false);ui.refresh();assert.equal(get('.beginner-card').hidden,true);assert.equal(s.diamonds,originalDiamonds+50);
  }finally{globalThis.document=previous;}
 });

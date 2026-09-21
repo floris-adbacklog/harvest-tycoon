@@ -5,13 +5,21 @@ import {CROPS,MASTERY_TIERS,FAMILY_EMBLEMS} from '../game/farm-state.js';
 export const escapeProfileText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const esc=escapeProfileText;
 const fmt=value=>Math.max(0,Number(value)||0).toLocaleString('en-US');
+const two=value=>String(value).padStart(2,'0');
+// Dates are shown as DD-MM-YYYY, in UTC, so every viewer sees the same day. Never a time.
+export function formatDate(ms){
+ const time=Number(ms);if(!Number.isFinite(time)||time<=0)return null;
+ const day=new Date(time),year=day.getUTCFullYear(),month=two(day.getUTCMonth()+1),date=two(day.getUTCDate());
+ return {text:`${date}-${month}-${year}`,iso:`${year}-${month}-${date}`};
+}
+const since=ms=>{const date=formatDate(ms);return date?`<p class="farmer-since"><svg class="farmer-since-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3v4M16 3v4M4 10h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>Member since <time datetime="${date.iso}">${date.text}</time></p>`:'';};
 const initials=name=>String(name??'Farmer').split(/\s+/).slice(0,2).map(part=>part[0]??'').join('').toUpperCase();
 const presence=online=>`<span class="farmer-presence"><span class="online-dot${online?' is-online':''}" aria-hidden="true"></span>${online?'Online':'Offline'}</span>`;
 export function renderPlayerProfile(player,now=Date.now()){
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem),stats=player.stats??{};
  const tiles=[['harvested_crops','Crops harvested','harvest'],['goods_produced','Goods produced','buildings'],['items_sold','Items sold','market'],['deliveries','Deliveries completed','cart']];
  const badges=player.badges??[];
- return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true">${art('wheat')}<span>${esc(initials(player.username))}</span></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${vipBadge(player.vipExpiresAt,now,true)}</div></div>
+ return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="/assets/farmer-avatar.webp" alt="" width="320" height="363" decoding="async" draggable="false"><span>${esc(initials(player.username))}</span></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${vipBadge(player.vipExpiresAt,now,true)}</div></div>
  <section class="farmer-family" aria-label="Family">${art(emblem?.icon??'familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div></section>
  <h3 class="farmer-section-title">Life on the farm</h3><div class="farmer-stat-grid">${tiles.map(([key,label,icon])=>`<div class="farmer-stat">${art(icon)}<div><strong>${fmt(stats[key])}</strong><span>${label}</span></div></div>`).join('')}</div>
  <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Crop mastery</h3><span>${badges.length} / 48 badges</span></div>${badges.length?`<div class="farmer-badge-grid">${badges.map(b=>{const crop=CROPS[b.crop],tier=MASTERY_TIERS[b.tier];if(!crop||!tier)return '';return `<div class="farmer-badge farmer-badge-${Number(b.tier)}" title="${esc(tier.name)} · ${esc(crop.name)}">${art(b.crop)}<strong>${esc(crop.name)}</strong><span>${esc(tier.name)}</span></div>`;}).join('')}</div>`:'<p class="farmer-empty">Every harvest is a step towards a first mastery badge.</p>'}</section>`;

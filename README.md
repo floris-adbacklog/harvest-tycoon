@@ -60,7 +60,7 @@ The Packing Shed is behind the crop area. Barley, lettuce and red cabbage have d
 
 ## Beginner guide and farm overview
 
-The Beginner guide has 10 independent steps: harvest, plant wheat, water, sell, start a batch, collect a daily gift, do a chore, care for a crop, harvest wheat, and collect a finished batch. Completing the tenth step grants 20 diamonds once. The authoritative server saves `onboarding` alongside the farm state. The 41 regular quest IDs and claims are unchanged. Existing farms start a separate guide; an earlier daily gift counts to avoid a one-day wait.
+The Beginner guide has 10 independent steps: harvest, plant wheat, water, sell, start a batch, collect a daily gift, do a chore, care for a crop, harvest wheat, and collect a finished batch. Completing the tenth step grants 50 diamonds once. The authoritative server saves `onboarding` alongside the farm state. The 41 regular quest IDs and claims are unchanged. Existing farms start a separate guide; an earlier daily gift counts to avoid a one-day wait.
 
 The guide is available in its desktop card, the mobile step banner, and More. “Show me” opens the appropriate tools or building. “Fields” focuses on crops; “Show the whole farm” opens the overview; My farm restores the centered, medium-zoom view. The camera frames the useful buildings and fields while reserving room for controls. Smaller building footprints, work yards and low props leave clear paths through the same farm.
 

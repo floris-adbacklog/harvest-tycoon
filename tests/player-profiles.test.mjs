@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {handlePlayerDirectory,escapePlayerSearch,PLAYER_PUBLIC_FIELDS} from '../supabase/functions/farm-api/player-profile-service.js';
-import {renderPlayerProfile,renderPlayerSearch} from '../src/player-profiles.js';
+import {renderPlayerProfile,renderPlayerSearch,formatDate} from '../src/player-profiles.js';
 const id='11111111-1111-4111-8111-111111111111',self='22222222-2222-4222-8222-222222222222';
 const now=Date.UTC(2026,8,20,12);
 function database({stats=[{player_id:id,username:'Sunny <script>',level:21,last_active_at:new Date(now-1000).toISOString(),harvested_crops:500,goods_produced:21,items_sold:33,deliveries:9,harvested_wheat:42,diamonds:999,email:'private@example.com',currency:9999}],members=[],families=[],claimed=['wheat:0','wheat:0','berries:3','wheat:4','notcrop:0','wheat:0:extra','wheat:00',null]}={}){
@@ -54,4 +54,37 @@ test('profile directory routes after session validation and before any farm muta
  const code=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');
  const route=code.indexOf('const directory=await handlePlayerDirectory');assert.ok(route>code.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<code.indexOf("admin.from('player_farms')"));assert.match(code,/return reply\(directory.data,directory.status\)/);
  const bridge=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');assert.ok(bridge.includes("else if(!['player_search','player_profile'].includes(body.operation))unavailable(error.message)"));
+});
+
+const signedUp='2026-09-16T21:12:01.344473+00:00';
+const withAccounts=(getUserById,options)=>{const admin=database(options);admin.auth={admin:{getUserById}};return admin;};
+test('the profile shows the sign-up date and nothing else from the account',async()=>{
+ const asked=[];const admin=withAccounts(async userId=>{asked.push(userId);return {data:{user:{id:userId,email:'secret@example.com',phone:'+31600000000',created_at:signedUp,last_sign_in_at:'2026-09-20T10:00:00Z'}},error:null};});
+ const {data}=await request(admin,{operation:'player_profile',playerId:id});
+ assert.deepEqual(asked,[id]);assert.equal(data.playerProfile.memberSince,Date.parse(signedUp));
+ const json=JSON.stringify(data);for(const secret of ['secret@example.com','+31600000000','last_sign_in_at','2026-09-20T10'])assert.ok(!json.includes(secret),secret);
+});
+test('a profile still loads when the sign-up date cannot be read',async()=>{
+ for(const getUserById of [async()=>{throw new Error('auth down');},async()=>({data:{user:null},error:new Error('nope')}),async()=>({data:{user:{created_at:'not a date'}}})]){
+  const {status,data}=await request(withAccounts(getUserById),{operation:'player_profile',playerId:id});
+  assert.equal(status,200);assert.equal(data.playerProfile.memberSince,null);assert.equal(data.playerProfile.playerId,id);
+ }
+ assert.equal((await request(database(),{operation:'player_profile',playerId:id})).data.playerProfile.memberSince,null,'no auth client at all');
+});
+test('search results carry no sign-up date and never call the auth API',async()=>{
+ let calls=0;const admin=withAccounts(async()=>{calls++;return {data:{user:{created_at:signedUp}}};});
+ const {data}=await request(admin,{operation:'player_search',query:'Sunny'});
+ assert.equal(calls,0);assert.ok(data.players.every(player=>!('memberSince' in player)));
+});
+test('dates are shown as DD-MM-YYYY, in UTC, without a time',()=>{
+ assert.deepEqual(formatDate(Date.parse(signedUp)),{text:'16-09-2026',iso:'2026-09-16'});
+ assert.equal(formatDate(Date.UTC(2026,0,1,0,0,0)).text,'01-01-2026');assert.equal(formatDate(Date.UTC(2026,11,31,23,59,59)).text,'31-12-2026');
+ for(const nothing of [null,undefined,0,-5,NaN,'soon'])assert.equal(formatDate(nothing),null);
+});
+test('the profile says "Member since" only when the date is known',()=>{
+ const player={username:'Tony',level:12,online:false,stats:{},badges:[],family:null};
+ const html=renderPlayerProfile({...player,memberSince:Date.parse(signedUp)});
+ assert.match(html,/<p class="farmer-since">.*Member since <time datetime="2026-09-16">16-09-2026<\/time><\/p>/);
+ assert.ok(!/\d{2}:\d{2}/.test(html.slice(html.indexOf('farmer-since'),html.indexOf('farmer-since')+400)),'no time of day');
+ for(const missing of [{},{memberSince:null},{memberSince:0}])assert.ok(!renderPlayerProfile({...player,...missing}).includes('Member since'));
 });

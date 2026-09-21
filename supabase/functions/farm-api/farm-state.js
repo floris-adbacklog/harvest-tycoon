@@ -114,7 +114,7 @@ harvesthamper:{"building": "packing", "name": "Pack a harvest hamper", "input": 
 
 });
 // This introductory track is deliberately independent of the regular QUESTS IDs/stats.
-export const BEGINNER_REWARD=20;
+export const BEGINNER_REWARD=50;
 // Every finished guide step also pays XP: following the guide takes a new farmer to level 3 in about ten minutes.
 export const BEGINNER_STEP_XP=15;
 export const BEGINNER_QUESTS=Object.freeze([

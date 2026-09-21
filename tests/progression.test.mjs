@@ -117,7 +117,7 @@ test('all ten beginner steps still finish in the first session and pay once',()=
  act(s,{type:'field',id:8,action:'tend'},now+40000);act(s,{type:'field',id:8,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
  const diamonds=s.diamonds;for(const q of beginnerProgress(s)){assert.equal(q.ready,true,q.id);act(s,{type:'beginner_claim',id:q.id},now+300000);}
- assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+20);assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+300000));
+ assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+50);assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+300000));
 });
 test('pre-update guided and legacy saves retain every prior unlock, balance, timer and paid reward',()=>{
  const fixtures=JSON.parse(readFileSync(new URL('./fixtures/progression-v1.json',import.meta.url),'utf8'));

@@ -5,7 +5,7 @@ export const NAME_HINT='Use 3–20 letters, numbers, spaces, underscores or hyph
 // What every mode of the card shows. `fields` lists the visible inputs in display order.
 export const MODES=Object.freeze({
  signin:{eyebrow:'GOOD TO SEE YOU, FARMER',title:'Welcome home.',copy:'Sign in to pick up where you left off.',submit:'Sign in & play',fields:['email','password'],tabs:true,switch:{text:'New here?',label:'Create account',to:'register'}},
- register:{eyebrow:'NEW FARMERS WELCOME',title:'Start your farm.',copy:'Free to play. Your first harvest is just around the corner.',submit:'Start my farm',fields:['email','password'],tabs:true,switch:{text:'Already have an account?',label:'Sign in',to:'signin'}},
+ register:{eyebrow:'NEW FARMERS WELCOME',title:'Start your farm.',copy:'Your first harvest is just around the corner.',submit:'Start my farm',fields:['email','password'],tabs:true,switch:{text:'Already have an account?',label:'Sign in',to:'signin'}},
  name:{eyebrow:'ALMOST THERE',title:'Meet your farmer.',copy:'Choose the name other farmers will see.',submit:'Open my farm',fields:['name'],tabs:false,switch:null},
  forgot:{eyebrow:'NO WORRIES',title:'Forgot your password?',copy:'Enter your email and we’ll send you a link to choose a new one.',submit:'Send reset link',fields:['email'],tabs:false,switch:{text:'',label:'← Back to sign in',to:'signin'}},
  recovery:{eyebrow:'ALMOST BACK IN',title:'Choose a new password.',copy:'Then we’ll open your farm.',submit:'Save & play',fields:['password'],tabs:false,switch:null},
