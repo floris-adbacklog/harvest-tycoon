@@ -67,10 +67,10 @@ export function marketHighlights(now=Date.now(),state){
  const sorted=time=>keys.map(k=>marketQuote(k,time)).sort((a,b)=>b.change-a.change||a.item.localeCompare(b.item));
  return {today:sorted(now)[0],tomorrow:sorted(now+DAY_MS)[0]};
 }
-// The Factory: an endgame building (farm level 50, 500,000 coins, levels 1-20 like every production building) that makes every
+// The Factory: an endgame building (farm level 50, 100,000 coins, levels 1-20 like every production building) that makes every
 // production good in bulk, in twice the time of one normal batch, and bottles honey for coins. Crops are still grown by hand.
 export const FACTORY_LEVEL=50;
-export const FACTORY_COST=500000;
+export const FACTORY_COST=100000;
 export const FACTORY_TIME_FACTOR=2;
 export const FACTORY_HONEY={coins:5000,batch:50,duration:8100000,xp:50};   // 100 coins a honey; 135 minutes is twice what a hive needs for 50 (45 an hour)
 export const BUILDINGS = Object.freeze({

@@ -11,14 +11,14 @@ const base=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory');
 const mass=Object.entries(RECIPES).filter(([,r])=>r.building==='factory');
 function farm(level=60){const s=createLegacyFarm(now);s.xp=xpForLevel(level);s.coins=1e9;s.diamonds=1000;for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;return s;}
 
-test('the Factory is an endgame building: level 50, 500,000 coins, twenty levels, model hangar_007',()=>{
+test('the Factory is an endgame building: level 50, 100,000 coins, twenty levels, model hangar_007',()=>{
  const b=BUILDINGS.factory;assert.equal(b.name,'Factory');assert.equal(b.type,'production');assert.equal(b.model,'hangar_007');
- assert.equal(FACTORY_LEVEL,50);assert.equal(FACTORY_COST,500000);assert.equal(b.minLevel,50);assert.equal(b.buildCost,500000);
- assert.equal(BUILDING_LEVELS.factory,50);assert.equal(BUILDING_COSTS.factory,500000);
+ assert.equal(FACTORY_LEVEL,50);assert.equal(FACTORY_COST,100000);assert.equal(b.minLevel,50);assert.equal(b.buildCost,100000);
+ assert.equal(BUILDING_LEVELS.factory,50);assert.equal(BUILDING_COSTS.factory,100000);
  const s=createFarm(now);s.coins=1e9;
  s.xp=xpForLevel(49);assert.equal(buildingEligible(s,'factory'),false);assert.throws(()=>act(s,{type:'construct',building:'factory'}),/level|unlock|open/i);assert.equal(s.coins,1e9);
- s.xp=xpForLevel(50);assert.equal(levelOf(s),50);assert.equal(buildingEligible(s,'factory'),true);assert.equal(buildingCost(s,'factory'),500000);assert.equal(buildingUnlocked(s,'factory'),false,'it has to be bought');
- act(s,{type:'construct',building:'factory'});assert.equal(s.coins,1e9-500000);assert.equal(buildingUnlocked(s,'factory'),true);
+ s.xp=xpForLevel(50);assert.equal(levelOf(s),50);assert.equal(buildingEligible(s,'factory'),true);assert.equal(buildingCost(s,'factory'),100000);assert.equal(buildingUnlocked(s,'factory'),false,'it has to be bought');
+ act(s,{type:'construct',building:'factory'});assert.equal(s.coins,1e9-100000);assert.equal(buildingUnlocked(s,'factory'),true);
  assert.equal(upgradeCost(s,'factory'),Math.round(800*1.5),'it upgrades like every production building');
  assert.equal(MAX_BUILDING_LEVEL,20);
 });
