@@ -19,7 +19,7 @@ export function createRookieUI({state,document:doc=globalThis.document,now=farmN
  function render(left){
   const on=left>0;phase=on?'on':'ended';
   dialog.innerHTML=`<button type="button" class="rookie-close" data-rookie-close aria-label="Close">×</button>${art('hourglass','rookie-art')}<p class="eyebrow">BEGINNER BOOST</p>`+
-   (on?`<h2 id="rookie-title">${percent}% shorter waiting times</h2><p>Your first ${ROOKIE_MS/60000} minutes are a sprint: new crops and batches finish in a fraction of the time, so there is always something to do.</p>
+   (on?`<h2 id="rookie-title">${percent}% shorter waiting times</h2><p>Your first ${ROOKIE_MS/60000} minutes are a sprint: new crops and batches finish in a fraction of the time.</p>
     <div class="rookie-clock"><progress max="${ROOKIE_MS}" value="${left}" aria-label="Time left of your beginner boost"></progress><b data-rookie-left>${rookieTimeLeft(left)} left</b></div>
     <ul class="rookie-notes"><li><strong>Fast now</strong><span>Corn takes ${fast} instead of ${normal}, and the Care marker shows up sooner.</span></li>
     <li><strong>Only for a while</strong><span>The boost ends ${ROOKIE_MS/60000} minutes after you started your farm. Then waiting times are back to normal; crops and batches that are already running keep their fast times.</span></li>

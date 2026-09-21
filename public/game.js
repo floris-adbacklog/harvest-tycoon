@@ -365,7 +365,7 @@ function updateUI(){
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
-async function claim(id){try{const r=await runAction({type:'quest',id});updateUI();toast(`Quest complete! +${r.coins} coins and +${r.xp} XP.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
+async function claim(id){try{const r=await runAction({type:'quest',id});updateUI();toast(`Quest complete! +${r.coins} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;}
 function resize(){
  if(!renderer||!camera)return;

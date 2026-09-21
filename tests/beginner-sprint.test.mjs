@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,normalizeFarm,applyFarmAction as act,rookieLeft,rookieBoost,ROOKIE_MS,ROOKIE_TIMER_BOOST,cropDuration,recipeDuration,keptStock,sellableStock,STARTER_KEEP,STARTER_ITEMS,CROPS,ITEMS,QUESTS,STARTER_QUESTS,levelOf,levelReward} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,applyFarmAction as act,rookieLeft,rookieBoost,ROOKIE_MS,ROOKIE_TIMER_BOOST,cropDuration,recipeDuration,keptStock,sellableStock,STARTER_KEEP,STARTER_ITEMS,CROPS,ITEMS,QUESTS,STARTER_QUESTS,QUEST_XP,levelOf,levelReward} from '../game/farm-state.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 import {questGroups} from '../public/quests-ui.js';
 import {rookieBadge,rookieLabel,rookieTimeLeft} from '../public/rookie-ui.js';
@@ -84,13 +84,17 @@ test('twenty starter quests are appended after the old ones: small, unique and b
  const known=new Set(QUESTS.slice(0,STARTER_QUESTS.first).map(q=>q.stat));
  for(const q of starters){
   assert(Number.isInteger(q.target)&&q.target>0&&q.target<=300,q.title);assert(Number.isInteger(q.reward)&&q.reward>=20&&q.reward<=60,q.title);
+  assert.equal(q.xp,0,`${q.title} pays coins only`);
   assert(known.has(q.stat)||(q.stat.startsWith('made_')&&ITEMS[q.stat.slice(5)]),`${q.title}: ${q.stat} is a counter that already exists`);assert(/^[\w ,.’-]+$/.test(q.title)&&q.description.endsWith('.'),q.title);
  }
  assert.equal(starters.reduce((n,q)=>n+q.reward,0),710);
+ // Every older quest still pays the usual 15 XP.
+ assert(QUESTS.slice(0,STARTER_QUESTS.first).every(q=>q.xp===undefined));assert.equal(QUEST_XP,15);
+ const old=createFarm(now);old.stats.harvested=3;assert.equal(act(old,{type:'quest',id:0},now).xp,15);
  assert.match(readFileSync(new URL('../game/farm-state.js',import.meta.url),'utf8'),/state\.stats\['made_'\+k\]/,'every collected item has its own made_ counter');
 });
 
-test('a new farmer sees the quickest starter quests first, three at a time, and ticks them off for coins and XP',()=>{
+test('a new farmer sees the quickest starter quests first, three at a time, and ticks them off for coins only',()=>{
  const s=createFarm(now);
  assert.deepEqual(questGroups(s).active.map(x=>x.quest.title),['Thirsty crops','First seeds','First customers']);
  assert.equal(questGroups(s).ready.length,0);
@@ -98,7 +102,7 @@ test('a new farmer sees the quickest starter quests first, three at a time, and 
  const ready=questGroups(s).ready.map(x=>x.quest.title);assert(ready.includes('Thirsty crops')&&ready.includes('First seeds'),ready.join());
  const thirsty=QUESTS.findIndex(q=>q.title==='Thirsty crops'),coins=s.coins,xp=s.xp;
  const r=act(s,{type:'quest',id:thirsty},now);
- assert.equal(r.coins,20);assert.equal(r.xp,15);assert.equal(s.coins,coins+20+(r.levelReward?.coins??0));assert(s.xp>=xp+15);
+ assert.equal(r.coins,20);assert.equal(r.xp,0,'starter quests pay coins, never XP');assert.equal(s.xp,xp);assert.equal(r.levelReward,undefined);assert.equal(s.coins,coins+20);
  assert.throws(()=>act(s,{type:'quest',id:thirsty},now),/already/);
  const titles=questGroups(s).active.map(x=>x.quest.title);assert.equal(titles.length,3);assert(!titles.includes('Thirsty crops'));
  s.xp=225;assert.equal(levelOf(s),6);assert.equal(questGroups(s).active.length,5,'five at a time from level 6');

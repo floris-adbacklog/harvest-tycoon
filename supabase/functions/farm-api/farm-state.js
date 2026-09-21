@@ -309,28 +309,29 @@ export const QUESTS = Object.freeze([
  {title:'Wheat master',description:'Harvest 1,000 wheat.',stat:'harvest_wheat',target:1000,reward:4500},
  {title:'Corn master',description:'Harvest 750 corn.',stat:'harvest_corn',target:750,reward:6000},
  {title:'Pumpkin master',description:'Harvest 250 pumpkin.',stat:'harvest_pumpkin',target:250,reward:6000},
- // Starter quests: small, quick and paid in coins, so the first minutes have something to tick off every minute or two. On a guided
+ // Starter quests: small, quick and paid in coins only (xp:0: with the beginner boost a farmer already levels fast), so the first minutes have
+// something to tick off every minute or two. On a guided
  // farm the quest list shows the cheapest first (see questGroups). Everything after them is unchanged: IDs never move.
- {title:'Thirsty crops',description:'Water 3 growing crops.',stat:'watered',target:3,reward:20},
- {title:'First customers',description:'Sell 5 items at the market.',stat:'sold',target:5,reward:25},
- {title:'Show some care',description:'Give 2 crops extra care.',stat:'tended',target:2,reward:25},
- {title:'Pocket money',description:'Earn 60 coins at the market.',stat:'earned',target:60,reward:30},
- {title:'Morning eggs',description:'Collect 6 eggs.',stat:'made_eggs',target:6,reward:30},
- {title:'Corn on the cob',description:'Harvest 4 corn.',stat:'harvest_corn',target:4,reward:30},
- {title:'Chore time',description:'Complete 2 farm chores.',stat:'chores',target:2,reward:40},
- {title:'A full basket',description:'Harvest 10 crops.',stat:'harvested',target:10,reward:45},
- {title:'First seeds',description:'Plant 3 crops.',stat:'planted',target:3,reward:20},
- {title:'Wheat wave',description:'Harvest 6 wheat.',stat:'harvest_wheat',target:6,reward:30},
- {title:'Salad days',description:'Harvest 4 lettuce.',stat:'harvest_lettuce',target:4,reward:35},
- {title:'Well made',description:'Collect 2 finished production batches.',stat:'produced',target:2,reward:35},
- {title:'Fresh milk',description:'Collect 4 milk.',stat:'made_milk',target:4,reward:40},
- {title:'First challenge',description:'Complete 1 daily challenge.',stat:'dailies',target:1,reward:40},
- {title:'Busy market day',description:'Sell 20 items at the market.',stat:'sold',target:20,reward:40},
- {title:'First order',description:'Complete 1 delivery order.',stat:'deliveries',target:1,reward:45},
- {title:'Feed the flock',description:'Make 6 animal feed at the Mill.',stat:'made_feed',target:6,reward:35},
- {title:'Corn crib',description:'Harvest 12 corn.',stat:'harvest_corn',target:12,reward:40},
- {title:'Say cheese',description:'Collect 2 cheese from the Dairy.',stat:'made_cheese',target:2,reward:45},
- {title:'A small fortune',description:'Earn 300 coins at the market.',stat:'earned',target:300,reward:60}
+ {title:'Thirsty crops',description:'Water 3 growing crops.',stat:'watered',target:3,reward:20,xp:0},
+ {title:'First customers',description:'Sell 5 items at the market.',stat:'sold',target:5,reward:25,xp:0},
+ {title:'Show some care',description:'Give 2 crops extra care.',stat:'tended',target:2,reward:25,xp:0},
+ {title:'Pocket money',description:'Earn 60 coins at the market.',stat:'earned',target:60,reward:30,xp:0},
+ {title:'Morning eggs',description:'Collect 6 eggs.',stat:'made_eggs',target:6,reward:30,xp:0},
+ {title:'Corn on the cob',description:'Harvest 4 corn.',stat:'harvest_corn',target:4,reward:30,xp:0},
+ {title:'Chore time',description:'Complete 2 farm chores.',stat:'chores',target:2,reward:40,xp:0},
+ {title:'A full basket',description:'Harvest 10 crops.',stat:'harvested',target:10,reward:45,xp:0},
+ {title:'First seeds',description:'Plant 3 crops.',stat:'planted',target:3,reward:20,xp:0},
+ {title:'Wheat wave',description:'Harvest 6 wheat.',stat:'harvest_wheat',target:6,reward:30,xp:0},
+ {title:'Salad days',description:'Harvest 4 lettuce.',stat:'harvest_lettuce',target:4,reward:35,xp:0},
+ {title:'Well made',description:'Collect 2 finished production batches.',stat:'produced',target:2,reward:35,xp:0},
+ {title:'Fresh milk',description:'Collect 4 milk.',stat:'made_milk',target:4,reward:40,xp:0},
+ {title:'First challenge',description:'Complete 1 daily challenge.',stat:'dailies',target:1,reward:40,xp:0},
+ {title:'Busy market day',description:'Sell 20 items at the market.',stat:'sold',target:20,reward:40,xp:0},
+ {title:'First order',description:'Complete 1 delivery order.',stat:'deliveries',target:1,reward:45,xp:0},
+ {title:'Feed the flock',description:'Make 6 animal feed at the Mill.',stat:'made_feed',target:6,reward:35,xp:0},
+ {title:'Corn crib',description:'Harvest 12 corn.',stat:'harvest_corn',target:12,reward:40,xp:0},
+ {title:'Say cheese',description:'Collect 2 cheese from the Dairy.',stat:'made_cheese',target:2,reward:45,xp:0},
+ {title:'A small fortune',description:'Earn 300 coins at the market.',stat:'earned',target:300,reward:60,xp:0}
 ]);
 export const STARTER_QUESTS=Object.freeze({first:130,count:20});
 export const MAX_PLOTS=40;
@@ -705,13 +706,16 @@ export function expandFarm(state){
  state.stats.expansions++;state.xp+=20;state.buildings.farmhouse.level++;
  return {fields:state.plots.length,cost,materials};
 }
+// Every quest pays 15 XP unless it says otherwise; the starter quests pay coins only (xp:0).
+export const QUEST_XP=15;
 export function claimQuest(state,id){
  if(!Number.isInteger(id)||!QUESTS[id])throw new Error('Choose a valid quest.');
  const q=QUESTS[id];
  if(state.claimed.includes(id))throw new Error('This reward has already been claimed.');
  if((state.stats[q.stat]??0)<q.target)throw new Error('Finish this quest to claim your reward.');
- state.claimed.push(id);state.coins+=q.reward;state.xp+=15;
- return {coins:q.reward,xp:15};
+ const xp=q.xp??QUEST_XP;
+ state.claimed.push(id);state.coins+=q.reward;state.xp+=xp;
+ return {coins:q.reward,xp};
 }
 export function farmSummary(state,now=Date.now()) {
  return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,slots:BUILDINGS[id].type==='production'?productionSlots(b.level,id):0,jobs:productionJobs(b).map(j=>({id:j.id,recipe:j.recipe,secondsRemaining:Math.max(0,Math.ceil((j.readyAt-now)/1000))})),status:productionJobs(b).some(j=>now>=j.readyAt)?'ready':b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
