@@ -32,3 +32,7 @@ Work from THIS zip only. Do not restore older files from earlier chats. Run `npm
 - VIP/shop responsive CSS is implemented. Visual browser QA at mobile/tablet widths was blocked because the browser policy refused the local test page; do not report it as visually verified. No real paid checkout was performed.
 - No gameplay screenshot/clip on the sign-up page, no "play first, register later", no Google/Apple sign-in.
 - Push has not been tested on real devices yet (needs the new build live). iPhone push only works from the home-screen app.
+
+## Latest: pacing update (see PACING-UPDATE.md)
+Guide order and XP, XP for slow crops, chores at level 4, mastery at level 7, sell-all confirmation, a one-time reminder question, next-unlock hint, pacing events. Tests: `tests/pacing.test.mjs`, `tests/pacing-ui.test.mjs`, `tests/confirm-dialog.test.mjs`. The level curve must not be made faster (top players reach level 36-40 in 3-5 days). Do not move an unlock to a LATER level.
+Also new: diamond shop redesign (`public/shop.css`, one card layout, batch picker like the crop picker) and drawn icons for Reminders and Farm app in Settings.

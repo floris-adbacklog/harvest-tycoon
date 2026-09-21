@@ -1,4 +1,4 @@
-import {CROPS,formatDuration} from './farm-state.js';
+import {CROPS,BUILDINGS,RECIPES,formatDuration} from './farm-state.js';
 import {art} from './visual-icons.js';
 
 // Native disclosure and form controls retain keyboard and screen-reader support.
@@ -10,6 +10,15 @@ export function fieldPicker({id,plots,selected=[],multiple=false,now,disabled=fa
  const active=chosen.has(String(p.id)),copy=`<span class="field-choice-art">${art(p.crop)}</span><span class="field-choice-copy"><strong>Field ${p.id+1} <span>· ${CROPS[p.crop].name}</span></strong><small>${formatDuration(p.readyAt-now)} remaining</small></span>`;
  return multiple?`<label class="field-choice"><input type="checkbox" data-field-choice="${p.id}" ${active?'checked':''} aria-label="Field ${p.id+1}, ${CROPS[p.crop].name}">${copy}<span class="field-choice-check" aria-hidden="true"></span></label>`:`<button type="button" class="field-choice" data-field-choice="${p.id}" aria-pressed="${active}">${copy}<span class="field-choice-check" aria-hidden="true"></span></button>`;
  }).join('')}</div>${multiple?'<div class="field-picker-bottom"><span>1 fertilizer per field</span><button type="button" data-picker-done>Done</button></div>':''}</div></details>`;
+}
+
+// The same picker for running production batches: the product's own picture, the building and recipe, the time left.
+// Choices are numbered by their position in `batches` and bound with bindFieldPicker, exactly like fields.
+export function batchPicker({id,batches,selectedKey='',now,disabled=false}){
+ const current=batches.find(b=>b.key===selectedKey),picture=batch=>Object.keys(RECIPES[batch.job.recipe].output)[0];
+ const empty=!batches.length,off=disabled||empty;
+ const title=current?`${BUILDINGS[current.building].name} · ${RECIPES[current.job.recipe].name}`:empty?'No batches running':'Choose a running batch';
+ return `<details class="field-picker" id="${id}" ${off?'data-disabled="true"':''}><summary ${off?'aria-disabled="true" tabindex="-1"':''}><span class="field-picker-art">${art(current?picture(current):'boost')}</span><span class="field-picker-copy"><strong data-picker-title>${title}</strong><small>${current?`${formatDuration(current.job.readyAt-now)} remaining`:empty?'Start a batch in one of your buildings':'Select one batch to finish instantly'}</small></span><span class="picker-chevron" aria-hidden="true"></span></summary><div class="field-picker-body"><div class="field-picker-options" aria-label="Choose one running batch">${batches.map((b,i)=>`<button type="button" class="field-choice" data-field-choice="${i}" aria-pressed="${b.key===selectedKey}"><span class="field-choice-art">${art(picture(b))}</span><span class="field-choice-copy"><strong>${BUILDINGS[b.building].name} <span>· ${RECIPES[b.job.recipe].name}</span></strong><small>${formatDuration(b.job.readyAt-now)} remaining</small></span><span class="field-choice-check" aria-hidden="true"></span></button>`).join('')}</div></div></details>`;
 }
 
 export function bindFieldPicker(root,{multiple=false,available=0,onChange}){

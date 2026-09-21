@@ -1,0 +1,48 @@
+/* Diamonds & boosts: one card layout for everything, grouped in sections. Loaded after the older shop styles. */
+#boost-dialog{max-width:min(720px,calc(100vw - 24px))}
+#boost-dialog .boost-wallet{margin-bottom:10px;padding:12px 16px;gap:12px}
+#boost-dialog .boost-wallet>.game-art{width:48px;height:48px}
+#boost-dialog .boost-wallet strong{font-size:30px;line-height:1.1}
+#boost-dialog>.section-copy{margin:0 0 4px;font-size:14px;line-height:1.5}
+.shop-section{margin-top:22px}
+.shop-heading{margin:0 0 10px;font:700 12px/1.2 'DM Sans',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8a7d68}
+.shop-list{display:grid;gap:10px}
+#boost-dialog .boost-card{display:grid;grid-template-columns:56px minmax(0,1fr) 96px;grid-template-areas:"art copy buy" "extra extra extra";align-items:center;gap:12px 14px;margin:0;padding:14px 16px;border:1px solid #e6ddd1;border-radius:16px;background:#fbf8f3}
+#boost-dialog .boost-card-art{grid-area:art;align-self:start;display:grid;place-items:center;width:56px;height:56px;border-radius:14px;background:#fffdf7}
+#boost-dialog .boost-card-art>.game-art,#boost-dialog .boost-card-art img{width:46px;height:46px;max-width:100%;max-height:100%;object-fit:contain}
+#boost-dialog .boost-card-copy{grid-area:copy;min-width:0}
+#boost-dialog .boost-card h3{margin:0 0 3px;font:600 18px/1.2 'Outfit',sans-serif;letter-spacing:-.01em;color:#3d392b}
+#boost-dialog .boost-card p{margin:0;font-size:13px;line-height:1.5;color:#7a705f}
+/* Status line: a small pill, always in the same place. */
+#boost-dialog .boost-detail{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 9px;border-radius:99px;background:#efe9df;font-size:11px;line-height:1.4;font-weight:700;color:#7d705b}
+#boost-dialog .boost-detail:before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
+#boost-dialog .boost-detail[data-state=ready]{background:#e6f1dc;color:#4d6f34}
+#boost-dialog .boost-detail[data-state=active]{background:#dcecf6;color:#2f6a8b}
+#boost-dialog .boost-detail[data-state=need]{background:#f3ece0;color:#8a7443}
+#boost-dialog .boost-active{border-color:#a9cde0;background:#f0f8fc}
+/* Price button: the same size and layout for every offer (gem and number on one line, the action beneath). */
+#boost-dialog .boost-buy{grid-area:buy;display:grid;grid-template-rows:auto auto;justify-items:center;align-content:center;gap:2px;width:96px;height:62px;min-height:0;padding:6px;flex-wrap:nowrap;border:1px solid #9fc4da;border-radius:14px;background:#e3f3fd;color:#1f5877;box-shadow:0 2px 0 #b8d6e6;font-size:inherit;cursor:pointer;transition:background .15s,transform .15s}
+#boost-dialog .boost-price{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+#boost-dialog .boost-price .game-art{width:22px;height:22px}
+#boost-dialog .boost-price b{font:700 20px/1 'Outfit',sans-serif;font-variant-numeric:tabular-nums}
+#boost-dialog .boost-buy small{width:auto;margin:0;font-size:11px;font-weight:700;line-height:1.2;text-transform:uppercase;letter-spacing:.05em;opacity:.8}
+#boost-dialog .boost-buy:not(:disabled):hover{background:#cdeafb}
+#boost-dialog .boost-buy:not(:disabled):active{transform:translateY(1px);box-shadow:0 1px 0 #b8d6e6}
+#boost-dialog .boost-buy:disabled{opacity:1;cursor:default;background:#f1ede7;border-color:#e2dbd0;box-shadow:none;color:#a0978a}
+#boost-dialog .boost-buy:disabled .game-art{filter:grayscale(.75);opacity:.6}
+/* Pickers sit under the text, the full width of the card. */
+#boost-dialog .boost-card-extra{grid-area:extra;min-width:0}
+#boost-dialog .boost-card-extra .field-picker-label{display:block;margin:0 0 6px;font-size:12px;font-weight:700;color:#8a7d68}
+#boost-dialog .boost-card-extra .field-picker{margin:0;width:100%;max-width:none}
+#boost-dialog .boost-card-extra .field-picker summary{min-height:58px;background:#fffdf7}
+/* VIP and diamond packs: same rhythm as the sections above. */
+#boost-dialog .vip-shop{margin-top:22px}
+#boost-dialog .diamond-store{margin-top:26px;padding-top:16px}
+@media(max-width:560px){
+ #boost-dialog .boost-card{grid-template-columns:48px minmax(0,1fr);grid-template-areas:"art copy" "buy buy" "extra extra";gap:10px 12px;padding:12px}
+ #boost-dialog .boost-card-art{width:48px;height:48px}
+ #boost-dialog .boost-card-art>.game-art,#boost-dialog .boost-card-art img{width:40px;height:40px}
+ #boost-dialog .boost-buy{width:100%;height:48px;grid-template-rows:none;grid-auto-flow:column;justify-content:center;align-items:center;gap:12px}
+ #boost-dialog .boost-buy small{font-size:12px}
+ #boost-dialog .boost-card h3{font-size:17px}
+}

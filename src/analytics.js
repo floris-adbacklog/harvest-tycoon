@@ -46,3 +46,19 @@ export function trackCommerce(event,params={},win=globalThis.window){
  for(const key of ['cost','diamonds'])if(Number.isSafeInteger(params[key])&&params[key]>=0&&params[key]<=10000)clean[key]=params[key];
  pushEvent(event,clean,win);
 }
+
+// Pacing events from inside the game (how far new farmers get, and where they stop). Only numbers and a few fixed
+// words are accepted, so nothing personal can be sent along.
+const GAME_EVENTS=new Set(['game_session','level_up','guide_step','guide_complete','reminder_prompt']);
+const GUIDE_STEPS=new Set(['harvest','sell','plant','water','produce','gift','chore','sell_egg','tend','wheat','collect']);
+const PROMPT_ACTIONS=new Set(['shown','accepted','dismissed','failed']);
+export function trackGame(event,params={},win=globalThis.window){
+ if(!GAME_EVENTS.has(event))return;
+ const clean={device:deviceType(win)};
+ if(Number.isSafeInteger(params.level)&&params.level>=1&&params.level<=500)clean.level=params.level;
+ if(Number.isSafeInteger(params.index)&&params.index>=0&&params.index<=9)clean.index=params.index;
+ if(GUIDE_STEPS.has(params.step))clean.step=params.step;
+ if(PROMPT_ACTIONS.has(params.action))clean.action=params.action;
+ if(typeof params.returning==='boolean')clean.returning=params.returning;
+ pushEvent(event,clean,win);
+}

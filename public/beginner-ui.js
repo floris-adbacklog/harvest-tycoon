@@ -1,4 +1,4 @@
-import {BEGINNER_QUESTS,BEGINNER_REWARD,beginnerProgress} from './farm-state.js';
+import {BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,beginnerProgress} from './farm-state.js';
 
 export function createBeginnerUI({state,runAction,icons,notify,onChange,guide}){
  const $=id=>document.getElementById(id),dialog=$('beginner-dialog');
@@ -23,14 +23,14 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide}){
   $('all-quests-mobile').textContent=complete?'Review beginner guide':'View all 10 steps';
   if(!dialog.open)return;
   $('beginner-summary').innerHTML=`<span><strong>${done} of ${steps.length}</strong> steps completed</span><span><span aria-hidden="true">◇</span>${BEGINNER_REWARD} diamonds ${complete?'earned':'to earn'}</span>`;
-  const markup=steps.map(q=>`<article class="beginner-step ${q.done?'done':q.current?'current':''}" ${q.current?'aria-current="step"':''}><span class="beginner-step-number">${q.done?'✓':q.index+1}</span><div><h3>${q.title}</h3><p>${q.description}</p><span class="beginner-status">${q.done?'Completed':q.current?q.ready?'Ready to complete':'Your current step':q.ready?'Already tried · complete the earlier steps first':'Coming up'}</span>${q.current?`<div class="beginner-actions"><button class="small-button" data-beginner-help>Show me</button><button class="primary-button" data-beginner-claim ${!q.ready||busy?'disabled':''}>${q.index===9?'Claim 20 diamonds':'Complete step'}</button></div>`:''}</div></article>`).join('');
+  const markup=steps.map(q=>`<article class="beginner-step ${q.done?'done':q.current?'current':''}" ${q.current?'aria-current="step"':''}><span class="beginner-step-number">${q.done?'✓':q.index+1}</span><div><h3>${q.title}</h3><p>${q.description}</p><span class="beginner-status">${q.done?'Completed':q.current?q.ready?'Ready to complete':'Your current step':q.ready?'Already tried · complete the earlier steps first':'Coming up'}${q.done?'':` · +${BEGINNER_STEP_XP} XP`}</span>${q.current?`<div class="beginner-actions"><button class="small-button" data-beginner-help>Show me</button><button class="primary-button" data-beginner-claim ${!q.ready||busy?'disabled':''}>${q.index===9?'Claim 20 diamonds':'Complete step'}</button></div>`:''}</div></article>`).join('');
   if(markup!==lastMarkup){$('beginner-list').innerHTML=markup;lastMarkup=markup;icons();}
  }
  function open(){if(state.onboarding?.rewardClaimed&&state.onboarding.completed>=BEGINNER_QUESTS.length)return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();refresh();dialog.scrollTop=0;dialog.querySelector('.close-dialog').focus({preventScroll:true});}
  async function claim(){
   const current=beginnerProgress(state).find(q=>q.current);if(busy||!current?.ready)return;
   busy=true;refresh();
-  try{const result=await runAction({type:'beginner_claim',id:current.id});onChange();notify(result.diamonds?'Beginner guide complete! You earned 20 diamonds.':`Step ${result.completed} complete. Keep growing!`);}
+  try{const result=await runAction({type:'beginner_claim',id:current.id});onChange();notify(result.diamonds?`Beginner guide complete! +${result.xp??BEGINNER_STEP_XP} XP and ${BEGINNER_REWARD} diamonds.`:`Step ${result.completed} complete · +${result.xp??BEGINNER_STEP_XP} XP. Keep growing!`);}
   catch(error){notify(error.message);}
   finally{busy=false;refresh();if(dialog.open)(dialog.querySelector('[data-beginner-claim]:not(:disabled)')??dialog.querySelector('[data-beginner-help]')??dialog.querySelector('.close-dialog')).focus({preventScroll:true});}
  }

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+ <defs>
+  <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe083"/><stop offset=".5" stop-color="#f0a92e"/><stop offset="1" stop-color="#b96f14"/></linearGradient>
+  <radialGradient id="clap" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffe58a"/><stop offset=".6" stop-color="#eda42b"/><stop offset="1" stop-color="#b96f14"/></radialGradient>
+  <radialGradient id="dot" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ff8a6e"/><stop offset="1" stop-color="#d9412a"/></radialGradient>
+ </defs>
+ <ellipse cx="60" cy="121" rx="38" ry="5.5" fill="#6b4a1e" opacity=".18"/>
+ <circle cx="60" cy="17" r="7" fill="url(#clap)" stroke="#8a520f" stroke-width="2.6"/>
+ <path d="M60 22C41 22 31 38 31 60c0 18-4 24-12 32h82c-8-8-12-14-12-32C89 38 79 22 60 22z" fill="url(#body)" stroke="#8a520f" stroke-width="3" stroke-linejoin="round"/>
+ <rect x="14" y="90" width="92" height="13" rx="6.5" fill="url(#body)" stroke="#8a520f" stroke-width="3"/>
+ <ellipse cx="60" cy="110" rx="10" ry="8.5" fill="url(#clap)" stroke="#8a520f" stroke-width="2.6"/>
+ <path d="M42 44c-4 6-6 13-6 21" stroke="#fff5c4" stroke-width="4" stroke-linecap="round" fill="none" opacity=".8"/>
+ <path d="M50 30c3-2 6-3 10-3" stroke="#fff5c4" stroke-width="3" stroke-linecap="round" fill="none" opacity=".6"/>
+ <path d="M10 52c-4 8-4 16 0 24M118 52c4 8 4 16 0 24" stroke="#d6941f" stroke-width="3.4" stroke-linecap="round" fill="none" opacity=".75"/>
+ <circle cx="98" cy="30" r="13" fill="url(#dot)" stroke="#a5301f" stroke-width="3"/>
+ <path d="M93 25c2-3 6-4 9-2" stroke="#ffd0c4" stroke-width="2.6" stroke-linecap="round" fill="none" opacity=".85"/>
+</svg>

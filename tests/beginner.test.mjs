@@ -9,9 +9,9 @@ test('the beginner guide teaches ten achievable starter actions and awards 20 di
  const claim=id=>act(state,{type:'beginner_claim',id});
  assert.throws(()=>claim('harvest'),/farming action/);
  act(state,{type:'field',id:0,action:'harvest'});claim('harvest');
+ act(state,{type:'sell',item:'corn'});claim('sell');
  act(state,{type:'field',id:0,action:'plant',crop:'wheat'});claim('plant');
  act(state,{type:'field',id:0,action:'water'});claim('water');
- act(state,{type:'sell',item:'corn'});claim('sell');
  act(state,{type:'produce',recipe:'eggs'});claim('produce');
  act(state,{type:'checkin'});claim('gift');
  act(state,{type:'chore',id:'weeds'},now,()=>0);claim('chore');

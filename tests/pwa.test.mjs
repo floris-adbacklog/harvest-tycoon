@@ -82,3 +82,10 @@ test('the farm-app block renders per device and hides itself where nothing can b
  state={kind:'unsupported'};section.refresh();assert.equal(els['app-settings'].hidden,true);
  delete globalThis.document;delete globalThis.window;
 });
+test('settings headings use drawn icons: a golden bell for reminders and a phone with a barn for the farm app',()=>{
+ const farm=read('public/farm.html'),icons=read('public/visual-icons.js');
+ assert.match(farm,/settings-heading"><i data-lucide="bell"><\/i>Reminders/);assert.match(farm,/settings-heading"><i data-lucide="smartphone"><\/i>Farm app/);
+ assert(!/data-lucide="(bell|smartphone)" data-line-icon/.test(farm),'no line icons left on these headings');
+ assert.match(icons,/svgArt=new Set\(\[[^\]]*'reminders'[^\]]*'farmapp'/);assert.match(icons,/bell:'reminders'/);assert.match(icons,/smartphone:'farmapp'/);
+ for(const file of ['reminders','farmapp']){const svg=read(`public/assets/icons/${file}.svg`);assert.match(svg,/viewBox="0 0 128 128"/);assert(!/<script|onload=|href=/i.test(svg),'a plain drawing');}
+});

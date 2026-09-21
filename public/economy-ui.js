@@ -3,6 +3,7 @@ import {marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {fieldPicker,bindFieldPicker} from './field-picker.js';
+import {confirmAction} from './confirm-dialog.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const seconds=formatDuration;
@@ -127,22 +128,33 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  }
  async function mutate(action){if(mutating)return;mutating=true;$('building-content').setAttribute('aria-busy','true');$('building-content').querySelectorAll('button').forEach(b=>b.disabled=true);try{const message=await action();onChange();renderBuilding();$('building-feedback').textContent=message;notify(message);return {ok:true,message};}catch(e){$('building-feedback').textContent=e.message;notify(e.message);return {error:e.message};}finally{mutating=false;const message=$('building-feedback').textContent;renderBuilding();$('building-feedback').textContent=message;$('building-content').removeAttribute('aria-busy');}}
  function renderMarket(){
-  const now=farmNow(),entries=Object.entries(marketTab==='crops'?CROPS:PRODUCTS).filter(([key])=>!guidedFarm(state)||state.inventory[key]>0||itemAvailable(state,key)),multiplier=state.boosts.coinsUntil>now?2:1;
+  const now=farmNow(),entries=marketEntries(),multiplier=state.boosts.coinsUntil>now?2:1;
   renderedMarketDay=utcDay(now);
   const {today,tomorrow}=marketHighlights(now,state);
   $('market-outlook').innerHTML=`<div class="market-outlook-heading"><span class="eyebrow">TODAY’S MARKET</span><span id="market-countdown"></span></div><div class="market-highlight">${art(today.item)}<div><strong>${ITEMS[today.item].name}</strong><span>${number(today.price)} coins each · ${today.label}</span></div><b class="demand-pill ${today.demand}">${signed(today.change)}%</b></div><p class="market-forecast">Tomorrow’s outlook: <strong>${ITEMS[tomorrow.item].name}</strong> · ${tomorrow.label.toLowerCase()} expected.</p><div class="market-board-link"><span>Delivery orders pay extra for specific baskets.</span><button type="button" id="market-orders">View orders →</button></div>`;
   $('market-orders').closest('.market-board-link').hidden=!featureUnlocked(state,'cart');
   $('market-orders').onclick=()=>{$('market-dialog').close();$('today-button').click();document.querySelector('[data-today-tab="orders"]').click();};
   $('market-items').innerHTML=entries.map(([key,c])=>{const q=marketQuote(key,now),stock=state.inventory[key],quantity=stock?Math.min(stock,Math.max(1,sellQuantities[key]??1)):0;sellQuantities[key]=quantity;return `<div class="market-row dynamic-market-row">${itemArt(key)}<div class="market-item-copy"><strong>${c.name}</strong><span class="market-current-price">${number(marketSaleValue(state,q.price,now))} <small>coins each${vipActive(state,now)?' · VIP +5%':''}${multiplier===2?' · 2× boost':''}</small></span><span class="market-price-context">Normal ${number(q.normal)} · Range ${number(q.min)}–${number(q.max)}</span><span class="demand-pill ${q.demand}">${q.label} · ${signed(q.change)}%</span></div><div class="market-sale-controls"><label for="sell-quantity-${key}"><span>${number(stock)} in stock</span><output id="sell-count-${key}">${quantity} selected</output></label><input id="sell-quantity-${key}" data-sell-range="${key}" type="range" min="${stock?1:0}" max="${stock}" step="1" value="${quantity}" aria-label="Quantity of ${c.name} to sell" ${!stock||marketSelling?'disabled':''}><div class="market-sale-buttons"><button class="small-button" data-sell="${key}" ${!stock||marketSelling?'disabled':''}>Sell ${number(quantity)} · ${number(marketSaleValue(state,quantity*q.price,now))} coins</button><button class="small-button" data-sell-item-all="${key}" ${!stock||marketSelling?'disabled':''}>Sell all</button></div></div></div>`;}).join('');
-  const total=marketSaleValue(state,entries.reduce((v,[k])=>v+state.inventory[k]*marketQuote(k,now).price,0),now);$('inventory-value').textContent=`${number(total)} coins`;$('sell-all').disabled=!total||marketSelling;$('sell-all').textContent=marketSelling?'Selling…':`Sell all ${marketTab==='crops'?'crops':'goods'}`;
+  const total=categoryTotal(now);$('inventory-value').textContent=`${number(total)} coins`;$('sell-all').disabled=!total||marketSelling;$('sell-all').textContent=marketSelling?'Selling…':`Sell all ${marketTab==='crops'?'crops':'goods'}`;
   document.querySelectorAll('[data-market-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.marketTab===marketTab);b.setAttribute('aria-pressed',String(b.dataset.marketTab===marketTab));b.disabled=marketSelling;});
   $('market-items').querySelectorAll('[data-sell]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sell,sellQuantities[b.dataset.sell])));$('market-items').querySelectorAll('[data-sell-item-all]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sellItemAll)));
   $('market-items').querySelectorAll('[data-sell-range]').forEach(input=>input.addEventListener('input',()=>{const key=input.dataset.sellRange,quantity=Number(input.value);sellQuantities[key]=quantity;$(`sell-count-${key}`).textContent=`${number(quantity)} selected`;$('market-items').querySelector(`[data-sell="${key}"]`).textContent=`Sell ${number(quantity)} · ${number(marketSaleValue(state,quantity*marketQuote(key,now).price,now))} coins`;}));
   marketCountdown(now);icons();
  }
  function marketCountdown(now){const el=$('market-countdown');if(el)el.textContent=`New prices in ${seconds(marketQuote('oil',now).resetsAt-now)} · 00:00 UTC`;}
+ // What "Sell all" would bring in right now for the tab that is open.
+ function marketEntries(){return Object.entries(marketTab==='crops'?CROPS:PRODUCTS).filter(([key])=>!guidedFarm(state)||state.inventory[key]>0||itemAvailable(state,key));}
+ function categoryTotal(now=farmNow()){return marketSaleValue(state,marketEntries().reduce((v,[k])=>v+state.inventory[k]*marketQuote(k,now).price,0),now);}
+ let confirmingSale=false;
  async function sell(key='category',quantity){
-  if(marketSelling)return;const day=renderedMarketDay||utcDay(farmNow()),category=marketTab;marketSelling=true;renderMarket();
+  if(marketSelling||confirmingSale)return;
+  // Selling a whole tab is one tap that empties the barn, so it asks first. Selling one item stays a single tap.
+  if(key==='category'){
+   const label=marketTab==='crops'?'crops':'goods',total=categoryTotal();confirmingSale=true;
+   const sure=await confirmAction({title:`Sell all your ${label}?`,description:`Are you sure you want to sell all your ${label} for ${number(total)} coins?`,confirmLabel:`Sell for ${number(total)} coins`,cancelLabel:'Keep them'}).finally(()=>{confirmingSale=false;});
+   if(!sure)return;
+  }
+  const day=renderedMarketDay||utcDay(farmNow()),category=marketTab;marketSelling=true;renderMarket();
   try{
    const r=await runAction(key==='category'?{type:'sell',category,day}:{type:'sell',item:key,day,...(quantity===undefined?{}:{quantity})});
    onChange();notify(`Sold! +${number(r.coins)} coins for your next harvest.`);return r;
