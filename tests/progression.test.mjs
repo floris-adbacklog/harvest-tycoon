@@ -9,7 +9,7 @@ function level(s,n){s.xp=xpForLevel(n);s.xpOffset=0;}
 function produce(s,recipe,t=now){act(s,{type:'produce',recipe},t);const key=RECIPES[recipe].building,job=productionJobs(s.buildings[key]).at(-1);act(s,{type:'collect',building:key,jobId:job.id},job.readyAt);return job.readyAt;}
 function buyAvailable(s,t=now){for(const key of Object.keys(BUILDINGS).sort((a,b)=>BUILDING_LEVELS[a]-BUILDING_LEVELS[b]))if(buildingCost(s,key)&&buildingEligible(s,key)&&!buildingUnlocked(s,key))act(s,{type:'construct',building:key},t);}
 test('new farm starts with two crops, one production building and only a daily gift',()=>{
- const s=createFarm(now);assert.equal(s.progression.version,2);
+ const s=createFarm(now);assert.equal(s.progression.version,3);
  assert.deepEqual(Object.keys(CROPS).filter(k=>cropUnlocked(s,k)),['corn','wheat']);
  assert.deepEqual(Object.keys(BUILDINGS).filter(k=>buildingUnlocked(s,k)),['farmhouse','coop']);
  assert.ok(s.plots.every(p=>!p.crop||['wheat','corn'].includes(p.crop)));
@@ -23,10 +23,10 @@ test('locked actions and premature construction cannot spend balances or goods',
   const s=createFarm(now),before=structuredClone(s);assert.throws(()=>act(s,action,now));assert.deepEqual(s,before,JSON.stringify(action));
  }
 });
-test('selling the first egg remains an achievable beginner step; jobs arrive at level 6',()=>{
+test('selling the first egg remains an achievable beginner step; jobs arrive at level 4',()=>{
  const s=createFarm(now),t=produce(s,'eggs');act(s,{type:'sell',item:'eggs',quantity:1},t);
  assert.equal(s.inventory.eggs,2);assert.equal(beginnerProgress(s).find(q=>q.id==='sell_egg').ready,true);
- assert.equal(featureUnlocked(s,'activities'),false);level(s,6);assert.ok(featureUnlocked(s,'activities'));
+ assert.equal(featureUnlocked(s,'activities'),false);level(s,3);assert.equal(featureUnlocked(s,'activities'),false);level(s,4);assert.ok(featureUnlocked(s,'activities'));
  act(s,{type:'activity_start',station:'greenhouse'},t);assert.ok(s.activities.jobs.greenhouse);
 });
 test('buying through the feed, milk, grain and bread chain uses only earlier ingredients',()=>{

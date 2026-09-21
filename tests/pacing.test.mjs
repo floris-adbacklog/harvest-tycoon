@@ -56,8 +56,8 @@ test('slow crops pay more XP so hours of waiting still feel like progress; quick
  for(const key of ['barley','greenbeans','cabbage','cauliflower','pumpkin','redcabbage','sunflower'])assert(perHour(key)>=2.5,`${key} ${perHour(key).toFixed(1)}/h`);
  assert(CROPS.apples.xp>22&&CROPS.berries.xp>18);
 });
-test('chores and crop mastery arrive in the thin levels, and no level unlocks more than four things',()=>{
- assert.equal(FEATURE_LEVELS.chores,4);assert.equal(FEATURE_LEVELS.mastery,7);
+test('hands-on jobs come early, chores wait until level 10, and no level unlocks more than four things',()=>{
+ assert.equal(FEATURE_LEVELS.activities,4);assert.equal(FEATURE_LEVELS.chores,10);assert.equal(FEATURE_LEVELS.mastery,7);
  const perLevel={};const add=(level,what)=>{(perLevel[level]??=[]).push(what);};
  for(const [k,l] of Object.entries(CROP_LEVELS))if(l>1)add(l,'crop:'+k);
  for(const [k,l] of Object.entries(BUILDING_LEVELS))if(l>1)add(l,'building:'+k);
@@ -67,7 +67,8 @@ test('chores and crop mastery arrive in the thin levels, and no level unlocks mo
  for(let level=2;level<=12;level++){const things=perLevel[level]??[];assert(things.length>=2,`level ${level} has only ${things.join(', ')||'nothing'}`);assert(things.length<=4,`level ${level}: ${things.join(', ')}`);}
  assert.equal(FAMILY_MIN_LEVEL,10);
 });
-test('nothing unlocks later than before, so every existing player keeps what they already use',()=>{
- const before={chores:7,mastery:9};
+// Farm chores were moved from level 4 to level 10 on purpose; a farm that already had them keeps them (tests/helping-hands.test.mjs).
+test('nothing else unlocks later than before, so every existing player keeps what they already use',()=>{
+ const before={activities:6,mastery:9};
  for(const [key,level] of Object.entries(before))assert(FEATURE_LEVELS[key]<=level,key);
 });

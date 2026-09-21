@@ -146,7 +146,7 @@ export const BEGINNER_QUESTS=Object.freeze([
  {id:'wheat',title:'Bring in the wheat',description:'Harvest one wheat field when it is ready. Water and care make your harvest bigger.',guide:'harvest',icon:'wheat'},
  {id:'collect',title:'Made on your farm',description:'Collect a finished batch from a building. Chicken feed becomes eggs in 5 minutes.',guide:'collect',icon:'package-check'}
 ]);
-function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>q.id==='chore'?{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. Save the coins for your next building. Hands-on jobs open at level 6.',guide:'eggs',icon:'egg'}:q):BEGINNER_QUESTS;}
+function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>q.id==='chore'?{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. Save the coins for your next building. Hands-on jobs open at level 4.',guide:'eggs',icon:'egg'}:q):BEGINNER_QUESTS;}
 export function beginnerProgress(state){
  const guide=state.onboarding??{completed:0,milestones:{}};
  return beginnerQuests(state).map((quest,index)=>({...quest,index,done:index<guide.completed,current:index===guide.completed,ready:!!guide.milestones[quest.id]}));
@@ -396,7 +396,7 @@ export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenb
 export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:10,kitchen:12,juicepress:21,preserves:24,factory:FACTORY_LEVEL});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,factory:FACTORY_COST});
 export const RECIPE_LEVELS=Object.freeze({eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:11,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:23,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:25,harvesthamper:25});
-export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:6,chores:4,mastery:7,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19});
+export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:4,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:12});
 export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
@@ -420,6 +420,13 @@ export function unlockEntries(state){return [
  ...Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&buildingUnlocked(state,r.building)).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
  ...ENDGAME_FIELDS.map((field,i)=>({id:'field:'+(i+29),name:`Field ${i+29} expansion`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+29,hint:`Level ${field.level} · Expand at the Farmhouse with coins and supplies.`}))
  ];}
+// Farm chores moved from level 4 to level 10 (progression version 3). A guided farm from before that keeps them if it had reached level 4.
+const CHORES_FIRST_LEVEL=4;
+function migrateChoresLevel(state){
+ if(!guidedFarm(state)||(state.progression.version??0)>=3)return;
+ if(levelOf(state)>=CHORES_FIRST_LEVEL||(state.stats?.chores??0)>0){const rights=state.progression.kept??={};rights.features=[...new Set([...(rights.features??[]),'chores'])];}
+ state.progression.version=3;
+}
 function migrateProgression(state){
  if(!guidedFarm(state)||state.progression.version>=2)return;
  const crops={corn:1,wheat:1,lettuce:2,barley:4,cabbage:5,cauliflower:6,greenbeans:6,pumpkin:7,apples:8,redcabbage:9,sunflower:10,berries:10};
@@ -535,7 +542,7 @@ function createBaseFarm(now=Date.now()) {
  ['corn','corn','corn','wheat','wheat'].forEach((crop,id)=>{
   plots[id]={id,crop,plantedAt:now-CROPS[crop].duration*(id<3?1.1:.4),readyAt:now+(id<3?-1000:CROPS[crop].duration*.6),watered:false};
  });
- return {version:14,progression:{mode:'guided',version:2},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
+ return {version:14,progression:{mode:'guided',version:3},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
 }
 export function progress(plot,now=Date.now()) {
  if(!plot.crop)return 0;
@@ -936,7 +943,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
  state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
- state.stats??={};migrateProgression(state);
+ state.stats??={};migrateProgression(state);migrateChoresLevel(state);
  for(const key of Object.keys(BUILDINGS))if(buildingCost(state,key))state.buildings[key].built??=false;
  // Keep paid-for legacy flour batches intact when milling moves to the Windmill.
  if(oldVersion<6&&state.buildings.mill.job?.recipe==='flour'){
