@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel} from '../game/farm-state.js';
+import {applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel,STARTER_COINS,STARTER_ITEMS} from '../game/farm-state.js';
 import {readFarm,transactFarm} from '../game/farm-store.js';
 const now=Date.UTC(2026,8,16,12);
 const apply=(s,a,t=now)=>applyFarmAction(s,a,t);
@@ -82,20 +82,20 @@ test('tractor charges per eligible field, cooldown holds; silo changes only futu
  s.coins=100000;for(let i=0;i<4;i++)apply(s,{type:'silo_upgrade'});assert.throws(()=>apply(s,{type:'silo_upgrade'}),/complete/);
 });
 test('D1 saves survive reload, isolate users and replay network retries exactly once',async()=>{
- const db=database(),a=await readFarm(db,'alice',now);assert.equal(a.state.coins,180);
+ const db=database(),a=await readFarm(db,'alice',now);assert.equal(a.state.coins,STARTER_COINS);
  const first=await transactFarm(db,'alice','request-111111111',[{type:'checkin'},{type:'field',id:0,action:'harvest'}],now);
  const second=await transactFarm(db,'alice','request-111111111',[{type:'checkin'},{type:'field',id:0,action:'harvest'}],now+1000);
  assert(second.replayed);assert.deepEqual(second.state,first.state);assert.equal(second.revision,first.revision);
  const reload=await readFarm(db,'alice',now+2000);assert.deepEqual(reload.state,first.state);
- const bob=await readFarm(db,'bob',now);assert.equal(bob.state.coins,180);assert.equal(bob.state.inventory.corn,0);
+ const bob=await readFarm(db,'bob',now);assert.equal(bob.state.coins,STARTER_COINS);assert.equal(bob.state.inventory.corn,STARTER_ITEMS.corn);
  db.sqlite.close();
 });
 test('simultaneous saves retain both actions and racing gift requests award once',async()=>{
  const db=database();await readFarm(db,'farmer',now);
  await Promise.all([transactFarm(db,'farmer','request-A11111111',[{type:'field',id:0,action:'harvest'}],now),transactFarm(db,'farmer','request-B11111111',[{type:'field',id:1,action:'harvest'}],now)]);
- const s=await readFarm(db,'farmer',now);assert.equal(s.state.inventory.corn,2);assert.equal(s.state.stats.harvested,2);
+ const s=await readFarm(db,'farmer',now);assert.equal(s.state.inventory.corn,STARTER_ITEMS.corn+2);assert.equal(s.state.stats.harvested,2);
  await Promise.all([transactFarm(db,'farmer','request-C11111111',[{type:'checkin'}],now),transactFarm(db,'farmer','request-D11111111',[{type:'checkin'}],now)]);
- const end=await readFarm(db,'farmer',now);assert.equal(end.state.coins,220);assert.equal(end.state.login.visits,1);
+ const end=await readFarm(db,'farmer',now);assert.equal(end.state.coins,STARTER_COINS+40);assert.equal(end.state.login.visits,1);
  const failed=await transactFarm(db,'farmer','request-E11111111',[{type:'produce',recipe:'__proto__'},{type:'field',id:999,action:'harvest'}],now);
  assert(failed.results.every(r=>!r.ok));assert.deepEqual(failed.state,end.state);db.sqlite.close();
 });

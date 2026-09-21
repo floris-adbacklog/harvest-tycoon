@@ -457,12 +457,16 @@ export function upgradeCost(state,building){
  if(level>=BASE_BUILDING_LEVEL){const step=level<MAX_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]:null;return step?Math.ceil(step.coins*voucher):null;}
  return Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)))*voucher);
 }
+// What a new farm starts with, so the first minutes are not spent waiting: coins for seeds and a second egg slot, corn to sell or to
+// mix into feed at the Mill, wheat, and ten animal feed for the chickens (ten batches of eggs).
+export const STARTER_COINS=500;
+export const STARTER_ITEMS=Object.freeze({wheat:8,corn:8,feed:10});   // wheat stays below the 12 of the first new field: that still has to be earned
 function createBaseFarm(now=Date.now()) {
  const plots=Array.from({length:12},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
  ['corn','corn','corn','wheat','wheat'].forEach((crop,id)=>{
   plots[id]={id,crop,plantedAt:now-CROPS[crop].duration*(id<3?1.1:.4),readyAt:now+(id<3?-1000:CROPS[crop].duration*.6),watered:false};
  });
- return {version:14,progression:{mode:'guided',version:2},coins:180,xp:0,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),wheat:4,feed:2},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
+ return {version:14,progression:{mode:'guided',version:2},coins:STARTER_COINS,xp:0,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
 }
 export function progress(plot,now=Date.now()) {
  if(!plot.crop)return 0;
