@@ -39,7 +39,7 @@ test('farms saved with the old curve keep their level and share of progress, wha
   assert.equal(levelProgress(s).level,progress.level);
   const again=structuredClone(s);normalizeFarm(again,now);assert.equal(again.xp,s.xp,`xp ${xp} migrates once`);
  }
- // A client on the new curve reading a farm the server has not migrated yet still shows the right level (deploy order is free).
+ // A client on the new curve reading a farm the server has not migrated yet still shows the right level (new client first, then the server: an old client cannot read a migrated farm).
  for(const xp of [0,59,60,1979,1980,2400,50000])assert.equal(levelOf({xp,xpOffset:0}),levelOf({xp,xpOffset:0,xpCurve:1}));
  const shifted=createFarm(now);delete shifted.xpCurve;shifted.xp=100;shifted.xpOffset=500;const level=levelOf(shifted);normalizeFarm(shifted,now);
  assert.equal(levelOf(shifted),level);assert.equal(shifted.xpOffset,0);

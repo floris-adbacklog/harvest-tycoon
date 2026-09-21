@@ -337,7 +337,8 @@ export const MAX_PLOTS=40;
 // XP curve 2. The first ten levels are quick, so the first harvest already reaches level 2 (15 XP; a harvest is worth 5 XP and the first guide
 // step 15 more) and the first hour is full of level-ups. From level 10 on every step is exactly what it was in curve 1 (60 XP for level 2,
 // 100 for the next, then 40 more each time), just 1,130 XP lower in total. Farms of the old curve are converted once, with their level and
-// their progress inside that level kept (migrateXpCurve); until then levelOf reads them with the old curve, whichever side is deployed first.
+// their progress inside that level kept (migrateXpCurve); until then levelOf reads them with the old curve, so a new client is fine on a farm the server has not
+// converted yet. An old client cannot read a converted farm: deploy the client first, the server after.
 export const XP_CURVE=2;
 const EARLY_GAPS=Object.freeze([15,30,40,60,80,105,135,170,215]);   // XP from level 1 to 2, 2 to 3 ... 9 to 10 (curve 1: 60, 100, 140 ... 380)
 const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
