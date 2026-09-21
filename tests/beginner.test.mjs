@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction,BEGINNER_QUESTS,BEGINNER_REWARD,QUESTS,beginnerProgress} from '../game/farm-state.js';
+import {normalizeFarm,applyFarmAction,levelReward,BEGINNER_QUESTS,BEGINNER_REWARD,QUESTS,beginnerProgress} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 const act=(state,action,time=now,random=()=>0)=>applyFarmAction(state,action,time,random);
 test('the beginner guide teaches ten achievable starter actions and awards 50 diamonds once',()=>{
- const state=createFarm(now);assert.equal(BEGINNER_QUESTS.length,10);assert.equal(QUESTS.length,130);
+ const state=createFarm(now);assert.equal(BEGINNER_QUESTS.length,10);assert.equal(QUESTS.length,150);
  const claim=id=>act(state,{type:'beginner_claim',id});
  assert.throws(()=>claim('harvest'),/farming action/);
  act(state,{type:'field',id:0,action:'harvest'});claim('harvest');
@@ -50,5 +50,5 @@ test('existing farms retain regular progress, money, plots and jobs on tutorial 
 test('regular quest claims never claim tutorial steps or diamond reward',()=>{
  const state=createFarm(now);state.stats.harvested=3;
  act(state,{type:'quest',id:0});assert.deepEqual(state.claimed,[0]);
- assert.equal(state.onboarding.completed,0);assert.equal(state.diamonds,0);
+ assert.equal(state.onboarding.completed,0);assert.equal(state.diamonds,levelReward(2).diamonds,'only the level-up pays diamonds, never the guide reward');
 });

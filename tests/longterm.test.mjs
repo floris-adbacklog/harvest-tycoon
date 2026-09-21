@@ -43,7 +43,7 @@ test('estate chapters take over thirteen days even with unlimited funds, then ke
  assert(time-now>13*DAY_MS);assert.equal(s.estate.completed,8);assert.equal(currentProject(s).name,'Estate commission 3');
 });
 test('level requirements grow and all twenty building levels keep positive production durations',()=>{
- const s=createFarm(now);assert.equal(levelProgress(s).target,60);s.xp=160;assert.equal(levelOf(s),3);assert.equal(levelProgress(s).target,140);
+ const s=createFarm(now);assert.equal(levelProgress(s).target,15);s.xp=60;assert.equal(levelOf(s),3);assert.equal(levelProgress(s).target,40);
  for(let level=1;level<=20;level++){s.buildings.windmill.level=level;const duration=recipeDuration(s,'flour');assert(duration>0);assert(duration<=RECIPES.flour.duration);}
  s.coins=1e9;s.buildings.mill.level=3;for(let i=3;i<10;i++)act(s,{type:'upgrade',building:'mill'},now);assert.equal(s.buildings.mill.level,10);assert.throws(()=>act(s,{type:'upgrade',building:'mill'},now),/Reach level 26/,'level 10 is where the estate upgrades begin');
 });

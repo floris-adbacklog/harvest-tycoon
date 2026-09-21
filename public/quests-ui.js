@@ -10,7 +10,7 @@ export function questGroups(state){
   groups[group].push({id,quest,value});
  });
  if(!guidedFarm(state))groups.active.sort((a,b)=>Number(b.id>=41)-Number(a.id>=41));
- else groups.active=groups.active.slice(0,levelOf(state)<6?3:5);
+ else groups.active=groups.active.sort((a,b)=>a.quest.reward-b.quest.reward||a.id-b.id).slice(0,levelOf(state)<6?3:5);   // the quickest wins first
  return groups;
 }
 

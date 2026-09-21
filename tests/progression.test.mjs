@@ -114,10 +114,10 @@ test('all ten beginner steps still finish in the first session and pay once',()=
  const s=createFarm(now);
  act(s,{type:'field',id:0,action:'harvest'},now);act(s,{type:'field',id:8,action:'plant',crop:'wheat'},now);act(s,{type:'field',id:8,action:'water'},now);
  act(s,{type:'sell',item:'corn',quantity:1},now);act(s,{type:'produce',recipe:'eggs'},now);act(s,{type:'checkin'},now);
- act(s,{type:'field',id:8,action:'tend'},now+40000);act(s,{type:'field',id:8,action:'harvest'},now+120000);
+ act(s,{type:'field',id:8,action:'tend'},now+10000);act(s,{type:'field',id:8,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
- const diamonds=s.diamonds;for(const q of beginnerProgress(s)){assert.equal(q.ready,true,q.id);act(s,{type:'beginner_claim',id:q.id},now+300000);}
- assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+50);assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+300000));
+ const diamonds=s.diamonds;let levelDiamonds=0;for(const q of beginnerProgress(s)){assert.equal(q.ready,true,q.id);levelDiamonds+=act(s,{type:'beginner_claim',id:q.id},now+300000).levelReward?.diamonds??0;}
+ assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+50+levelDiamonds);assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+300000));
 });
 test('pre-update guided and legacy saves retain every prior unlock, balance, timer and paid reward',()=>{
  const fixtures=JSON.parse(readFileSync(new URL('./fixtures/progression-v1.json',import.meta.url),'utf8'));
@@ -126,7 +126,8 @@ test('pre-update guided and legacy saves retain every prior unlock, balance, tim
   for(const key of access.buildings)assert.ok(buildingUnlocked(s,key),`${name}: ${key}`);
   for(const key of access.features)assert.ok(featureUnlocked(s,key),`${name}: ${key}`);
   for(const key of access.recipes)assert.ok(recipeUnlocked(s,key),`${name}: ${key}`);
-  for(const key of ['coins','diamonds','xp','inventory','claimed','plots','daily','onboarding','levelRewards'])assert.deepEqual(s[key],state[key],`${name}: ${key}`);
+  for(const key of ['coins','diamonds','inventory','claimed','plots','daily','onboarding','levelRewards'])assert.deepEqual(s[key],state[key],`${name}: ${key}`);
+  assert.equal(levelOf(s),levelOf(state),`${name}: the level survives the shorter curve`);
   for(const key of Object.keys(state.buildings))assert.deepEqual(productionJobs(s.buildings[key]),productionJobs(state.buildings[key]),`${name}: jobs`);
   const migrated=structuredClone(s);normalizeFarm(s,now);assert.deepEqual(s,migrated,`${name}: migration must be idempotent`);
  }

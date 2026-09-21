@@ -58,3 +58,35 @@
 .utility-label.locked{width:30px;height:30px;min-width:30px;min-height:30px;padding:0}
 .utility-label.locked>.game-art{width:20px;height:20px}
 
+
+/* The beginner-boost chip only informs: on its own it is not a button to the diamond shop. */
+.active-boosts.beginner-only{pointer-events:none;cursor:default;background:#eef8e9;border-color:#bcd9ab;color:#3f6b2c}
+
+/* Beginner boost: an hourglass button next to the diamonds (built like the Family button), and the screen it opens. */
+#rookie-button{position:relative;flex-shrink:0}
+#rookie-button .game-art{width:30px;height:30px;object-fit:contain}
+#rookie-time{position:absolute;right:-3px;bottom:-4px;min-width:20px;padding:0 4px;border:2px solid var(--paper,#fffdf4);border-radius:999px;background:#e59d2c;color:#fff;font:800 9px/14px 'Outfit',system-ui,sans-serif;text-align:center;pointer-events:none}
+#rookie-button[hidden],#rookie-time:empty{display:none}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .topbar .resources:has(#rookie-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;gap:6px}
+ .topbar .resources:has(#rookie-button:not([hidden])):has(#family-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px 44px}
+ #rookie-button:not([hidden]){display:flex;align-items:center;justify-content:center;width:44px;height:48px;padding:5px;border-radius:14px}
+ #rookie-button .game-art{width:32px;height:32px}
+}
+#rookie-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:26px 24px 22px;border:1px solid #cfe3bf;border-radius:24px;background:radial-gradient(ellipse at top,#eaf7dc,#fffdf4 68%);text-align:center;color:#34432d;overflow:auto}
+#rookie-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
+#rookie-dialog .rookie-art{display:block;width:104px;height:104px;object-fit:contain;margin:0 auto 8px}
+#rookie-dialog h2{font:700 28px 'Outfit',sans-serif;margin:6px 0 8px}
+#rookie-dialog>p{font-size:14px;line-height:1.6;margin:0 0 4px}
+.rookie-close{position:absolute;right:12px;top:12px;width:44px;height:44px;border:0;border-radius:14px;background:#ede9dc;font-size:28px;line-height:1;color:#49563c;cursor:pointer}
+.rookie-clock{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;margin:16px 0}
+.rookie-clock progress{appearance:none;-webkit-appearance:none;width:100%;height:12px;border:0;border-radius:99px;background:#e6e2cf;overflow:hidden}
+.rookie-clock progress::-webkit-progress-bar{background:#e6e2cf;border-radius:99px}
+.rookie-clock progress::-webkit-progress-value{background:linear-gradient(90deg,#f3c455,#e59d2c);border-radius:99px}
+.rookie-clock progress::-moz-progress-bar{background:linear-gradient(90deg,#f3c455,#e59d2c);border-radius:99px}
+.rookie-clock b{font-size:14px;color:#8a5a1c;white-space:nowrap}
+.rookie-notes{list-style:none;padding:0;margin:0 0 20px;display:grid;gap:8px;text-align:left}
+.rookie-notes li{display:grid;gap:3px;padding:11px 13px;border-radius:12px;background:#eef2df}
+.rookie-notes strong{font-size:13px}
+.rookie-notes span{font-size:13px;line-height:1.5;color:#55613f}
+#rookie-dialog .primary-button{width:100%;min-height:46px}

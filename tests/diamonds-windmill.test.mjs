@@ -15,10 +15,10 @@ test('old farms gain diamonds, boosts and a windmill without losing progress',()
 test('daily diamond rewards cycle, reset and reject repeat claims',()=>{
  const state=createFarm(now);let total=0;
  for(let day=0;day<9;day++){
-  const result=act(state,{type:'checkin'},now+day*DAY_MS);total+=DAILY_DIAMONDS[day%7];assert.equal(result.diamonds,DAILY_DIAMONDS[day%7]);assert.equal(state.diamonds,total);
+  const result=act(state,{type:'checkin'},now+day*DAY_MS);total+=DAILY_DIAMONDS[day%7]+(result.levelReward?.diamonds??0);assert.equal(result.diamonds,DAILY_DIAMONDS[day%7]);assert.equal(state.diamonds,total);
   assert.throws(()=>act(state,{type:'checkin'},now+day*DAY_MS),/already collected/);assert.equal(state.diamonds,total);
  }
- act(state,{type:'checkin'},now+11*DAY_MS);assert.equal(state.login.streak,1);assert.equal(state.diamonds,total+DAILY_DIAMONDS[0]);
+ const last=act(state,{type:'checkin'},now+11*DAY_MS);assert.equal(state.login.streak,1);assert.equal(state.diamonds,total+DAILY_DIAMONDS[0]+(last.levelReward?.diamonds??0));
 });
 test('XP and coin boosts persist, multiply eligible rewards once and expire',()=>{
  let state=createFarm(now);state.diamonds=BOOSTS.xp.cost+BOOSTS.coins.cost;act(state,{type:'buy_boost',boost:'xp'});act(state,{type:'buy_boost',boost:'coins'});
@@ -78,7 +78,7 @@ test('the full Windmill-to-Bakery chain produces fresh goods with a higher margi
 });
 test('new beta quests retain old IDs and each reward can be collected only once',()=>{
  const state=createFarm(now);state.claimed=[0,1,31];const old=state.claimed.slice();
- assert.equal(QUESTS.length,130);assert.equal(QUESTS[31].title,'A lifelong grower');
+ assert.equal(QUESTS.length,150);assert.equal(QUESTS[31].title,'A lifelong grower');
  for(let id=32;id<QUESTS.length;id++){
   const q=QUESTS[id];state.stats[q.stat]=q.target;const coins=state.coins;
   const result=act(state,{type:'quest',id});assert.equal(state.coins,coins+q.reward+(result.levelReward?.coins??0));assert.throws(()=>act(state,{type:'quest',id}),/already been claimed/);

@@ -142,7 +142,7 @@ export const BEGINNER_QUESTS=Object.freeze([
  {id:'produce',title:'Put your buildings to work',description:'Start a production batch. Try Feed the chickens in the Chicken Coop using your starter feed.',guide:'produce',icon:'egg'},
  {id:'gift',title:'A gift for showing up',description:'Open Today and collect your daily gift. Come back tomorrow to build your streak.',guide:'today',icon:'gift'},
  {id:'chore',title:'A helping hand',description:'Complete one Farm chore for extra coins while your crops and buildings work.',guide:'chores',icon:'shovel'},
- {id:'tend',title:'Good things need a little care',description:'Use Care on a growing crop once its care marker appears. Wheat needs about 36 seconds.',guide:'tend',icon:'leaf'},
+ {id:'tend',title:'Good things need a little care',description:'Use Care on a growing crop once its care marker appears. It comes quickly while you are starting out.',guide:'tend',icon:'leaf'},
  {id:'wheat',title:'Bring in the wheat',description:'Harvest one wheat field when it is ready. Water and care make your harvest bigger.',guide:'harvest',icon:'wheat'},
  {id:'collect',title:'Made on your farm',description:'Collect a finished batch from a building. Chicken feed becomes eggs in 5 minutes.',guide:'collect',icon:'package-check'}
 ]);
@@ -308,13 +308,63 @@ export const QUESTS = Object.freeze([
  {title:'A little extra, again and again',description:'Activate 10 boosts.',stat:'boosts_used',target:10,reward:2500},
  {title:'Wheat master',description:'Harvest 1,000 wheat.',stat:'harvest_wheat',target:1000,reward:4500},
  {title:'Corn master',description:'Harvest 750 corn.',stat:'harvest_corn',target:750,reward:6000},
- {title:'Pumpkin master',description:'Harvest 250 pumpkin.',stat:'harvest_pumpkin',target:250,reward:6000}
-
+ {title:'Pumpkin master',description:'Harvest 250 pumpkin.',stat:'harvest_pumpkin',target:250,reward:6000},
+ // Starter quests: small, quick and paid in coins, so the first minutes have something to tick off every minute or two. On a guided
+ // farm the quest list shows the cheapest first (see questGroups). Everything after them is unchanged: IDs never move.
+ {title:'Thirsty crops',description:'Water 3 growing crops.',stat:'watered',target:3,reward:20},
+ {title:'First customers',description:'Sell 5 items at the market.',stat:'sold',target:5,reward:25},
+ {title:'Show some care',description:'Give 2 crops extra care.',stat:'tended',target:2,reward:25},
+ {title:'Pocket money',description:'Earn 60 coins at the market.',stat:'earned',target:60,reward:30},
+ {title:'Morning eggs',description:'Collect 6 eggs.',stat:'made_eggs',target:6,reward:30},
+ {title:'Corn on the cob',description:'Harvest 4 corn.',stat:'harvest_corn',target:4,reward:30},
+ {title:'Chore time',description:'Complete 2 farm chores.',stat:'chores',target:2,reward:40},
+ {title:'A full basket',description:'Harvest 10 crops.',stat:'harvested',target:10,reward:45},
+ {title:'First seeds',description:'Plant 3 crops.',stat:'planted',target:3,reward:20},
+ {title:'Wheat wave',description:'Harvest 6 wheat.',stat:'harvest_wheat',target:6,reward:30},
+ {title:'Salad days',description:'Harvest 4 lettuce.',stat:'harvest_lettuce',target:4,reward:35},
+ {title:'Well made',description:'Collect 2 finished production batches.',stat:'produced',target:2,reward:35},
+ {title:'Fresh milk',description:'Collect 4 milk.',stat:'made_milk',target:4,reward:40},
+ {title:'First challenge',description:'Complete 1 daily challenge.',stat:'dailies',target:1,reward:40},
+ {title:'Busy market day',description:'Sell 20 items at the market.',stat:'sold',target:20,reward:40},
+ {title:'First order',description:'Complete 1 delivery order.',stat:'deliveries',target:1,reward:45},
+ {title:'Feed the flock',description:'Make 6 animal feed at the Mill.',stat:'made_feed',target:6,reward:35},
+ {title:'Corn crib',description:'Harvest 12 corn.',stat:'harvest_corn',target:12,reward:40},
+ {title:'Say cheese',description:'Collect 2 cheese from the Dairy.',stat:'made_cheese',target:2,reward:45},
+ {title:'A small fortune',description:'Earn 300 coins at the market.',stat:'earned',target:300,reward:60}
 ]);
+export const STARTER_QUESTS=Object.freeze({first:130,count:20});
 export const MAX_PLOTS=40;
-export function xpForLevel(level){const n=level-1;return 60*n+20*n*(n-1);}
-export function levelOf(state){const total=state.xp+(state.xpOffset??0);return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);}
-export function levelProgress(state){const level=levelOf(state);return {level,current:state.xp+(state.xpOffset??0)-xpForLevel(level),target:60+40*(level-1)};}
+// XP curve 2. The first ten levels are quick, so the first harvest already reaches level 2 (15 XP; a harvest is worth 5 XP and the first guide
+// step 15 more) and the first hour is full of level-ups. From level 10 on every step is exactly what it was in curve 1 (60 XP for level 2,
+// 100 for the next, then 40 more each time), just 1,130 XP lower in total. Farms of the old curve are converted once, with their level and
+// their progress inside that level kept (migrateXpCurve); until then levelOf reads them with the old curve, whichever side is deployed first.
+export const XP_CURVE=2;
+const EARLY_GAPS=Object.freeze([15,30,40,60,80,105,135,170,215]);   // XP from level 1 to 2, 2 to 3 ... 9 to 10 (curve 1: 60, 100, 140 ... 380)
+const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
+const EARLY_TOTAL=EARLY_GAPS.reduce((sum,gap)=>sum+gap,0);            // 850 XP for level 10 (curve 1: 1,980)
+const CURVE_SHIFT=oldXpForLevel(10)-EARLY_TOTAL;                        // 1,130
+export function xpForLevel(level){
+ if(level<=1)return 0;
+ if(level<=EARLY_GAPS.length+1)return EARLY_GAPS.slice(0,level-1).reduce((sum,gap)=>sum+gap,0);
+ return oldXpForLevel(level)-CURVE_SHIFT;
+}
+function levelFromTotal(total,curve){
+ if(curve!==XP_CURVE)return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);
+ if(total<EARLY_TOTAL){let level=1,sum=0;for(const gap of EARLY_GAPS){if(total<sum+gap)break;sum+=gap;level++;}return level;}
+ return 1+Math.floor((Math.sqrt(1600+80*(total+CURVE_SHIFT))-40)/40);
+}
+export function levelOf(state){return levelFromTotal(state.xp+(state.xpOffset??0),state.xpCurve);}
+export function levelProgress(state){
+ const level=levelOf(state),total=state.xp+(state.xpOffset??0),fresh=state.xpCurve===XP_CURVE,from=fresh?xpForLevel(level):oldXpForLevel(level),to=fresh?xpForLevel(level+1):oldXpForLevel(level+1);
+ return {level,current:total-from,target:to-from};
+}
+// One-off conversion of a farm from curve 1 to curve 2: the same level, and the same share of the way to the next one.
+function migrateXpCurve(state){
+ if(state.xpCurve===XP_CURVE)return;
+ const total=Math.max(0,Number.isFinite(state.xp)?state.xp:0)+(Number.isFinite(state.xpOffset)?state.xpOffset:0),level=levelFromTotal(total,1);
+ const share=(total-oldXpForLevel(level))/(oldXpForLevel(level+1)-oldXpForLevel(level));
+ state.xp=Math.min(xpForLevel(level+1)-1,Math.round(xpForLevel(level)+share*(xpForLevel(level+1)-xpForLevel(level))));state.xpOffset=0;state.xpCurve=XP_CURVE;   // rounding never lifts a farmer into the next level
+}
 // Levels 1-10 are bought with coins or diamonds, one slot and a bit more speed per level. Levels 11-20 are estate upgrades for the
 // long game (forty fields need far more processing): a higher farm level and finished goods on top of the price, which is coins
 // or diamonds (and the 50% voucher) exactly as below level 10.
@@ -328,7 +378,15 @@ export function productionSlots(level,building){const n=Math.max(1,Math.min(MAX_
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
 export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input)+(r.coins??0),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level,building){const speed=level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));return building==='factory'?speed/2:speed;}
-export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1));}
+// The first 30 minutes after a farm is created are a sprint: new crops and new batches take 80% less time (corn 15 min -> 3 min), the
+// Care marker comes sooner, and the starter corn and animal feed stay in the barn so nothing is sold by accident. Afterwards
+// everything runs at its normal pace. It is plain clock time from creation (state.rookieUntil); crops and batches that are already
+// running keep their times. Only farms created in the guided flow have it: farms from before this simply have no rookieUntil.
+export const ROOKIE_MS=30*60000;
+export const ROOKIE_TIMER_BOOST=.8;
+export const rookieLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil-now):0;
+export const rookieBoost=(state,now=Date.now())=>rookieLeft(state,now)>0?ROOKIE_TIMER_BOOST:0;
+export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now)));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
@@ -405,7 +463,10 @@ export function clearPlanting(state,id,expectedPlantedAt){
  const crop=p.crop;Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
  return {id,crop};
 }
-export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1));}
+// The care marker shows up after 30 seconds or 30% of the growing time. The beginner boost shortens both: the growing time is
+// already shorter, and the 30-second minimum shrinks with it (6 seconds), so Care fits inside a 24-second wheat field.
+const careDelay=(state,duration,now)=>Math.max(30000*(1-rookieBoost(state,now)),duration*.3);
+export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now)));}
 export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0);}
 export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
 export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
@@ -461,12 +522,18 @@ export function upgradeCost(state,building){
 // mix into feed at the Mill, wheat, and ten animal feed for the chickens (ten batches of eggs).
 export const STARTER_COINS=500;
 export const STARTER_ITEMS=Object.freeze({wheat:8,corn:8,feed:10});   // wheat stays below the 12 of the first new field: that still has to be earned
+// The corn and animal feed a new farm starts with are for the first steps (feed at the Mill, eggs at the Coop), not for the market: a
+// beginner who has not met the market yet sells them by accident and then waits 15 minutes for corn. They cannot be sold during the first 30
+// minutes (the beginner boost window); what is grown or made on top of them can be sold at once, and using them (a batch of eggs) shrinks the kept amount with the stock.
+export const STARTER_KEEP=Object.freeze({corn:STARTER_ITEMS.corn,feed:STARTER_ITEMS.feed});
+export const keptStock=(state,key,now=Date.now())=>rookieLeft(state,now)>0?Math.min(state.keep?.[key]??0,state.inventory[key]??0):0;
+export const sellableStock=(state,key,now=Date.now())=>Math.max(0,(state.inventory[key]??0)-keptStock(state,key,now));
 function createBaseFarm(now=Date.now()) {
  const plots=Array.from({length:12},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
  ['corn','corn','corn','wheat','wheat'].forEach((crop,id)=>{
   plots[id]={id,crop,plantedAt:now-CROPS[crop].duration*(id<3?1.1:.4),readyAt:now+(id<3?-1000:CROPS[crop].duration*.6),watered:false};
  });
- return {version:14,progression:{mode:'guided',version:2},coins:STARTER_COINS,xp:0,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
+ return {version:14,progression:{mode:'guided',version:2},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
 }
 export function progress(plot,now=Date.now()) {
  if(!plot.crop)return 0;
@@ -482,7 +549,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
   if(p.crop)throw new Error('This field is already planted.');
   if(state.coins<seedCost(state,crop))throw new Error('Not enough coins. Sell some produce at the market.');
   state.coins-=seedCost(state,crop);state.stats.planted++;
-  const duration=cropDuration(state,crop,false,now);Object.assign(p,{crop,harvestCycles:0,plantedAt:now,readyAt:now+duration,careAt:now+Math.max(30000,duration*.3),watered:false,tended:false,fertilized:false});
+  const duration=cropDuration(state,crop,false,now);Object.assign(p,{crop,harvestCycles:0,plantedAt:now,readyAt:now+duration,careAt:now+careDelay(state,duration,now),watered:false,tended:false,fertilized:false});
   return {action,crop,cost:seedCost(state,crop)};
  }
  if(!p.crop)throw new Error('Plant a crop in this field first.');
@@ -506,7 +573,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  if(!state.discovered.includes(harvested))state.discovered.push(harvested);state.stats.varieties=state.discovered.length;state.xp+=xp;
  const regrowing=!!CROPS[harvested].perennial;
  // One waiting harvest only. A new cycle starts at collection, never at the old deadline.
- if(regrowing){const duration=cropDuration(state,harvested,true,now);Object.assign(p,{plantedAt:now,readyAt:now+duration,careAt:now+Math.max(30000,duration*.3),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1});}
+ if(regrowing){const duration=cropDuration(state,harvested,true,now);Object.assign(p,{plantedAt:now,readyAt:now+duration,careAt:now+careDelay(state,duration,now),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1});}
  else Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
  return {action,crop:harvested,quantity,xp,regrowing};
 }
@@ -516,9 +583,11 @@ export function sellCrops(state,item='all',now=Date.now(),day,category,quantity)
  if(item!=='all'&&!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid item.');
  const keys=category?Object.keys(category==='crops'?CROPS:PRODUCTS):item==='all'?Object.keys(ITEMS):[item];
  if(quantity!==undefined&&(item==='all'||category!==undefined||!Number.isSafeInteger(quantity)||quantity<1||quantity>state.inventory[item]))throw new Error('Choose a valid quantity within your stock.');
- const amounts=Object.fromEntries(keys.map(k=>[k,quantity??state.inventory[k]]));
+ if(quantity!==undefined&&quantity>sellableStock(state,item,now))throw new Error(`Keep your first ${keptStock(state,item,now)} ${ITEMS[item].name.toLowerCase()} for now: you need them for your first steps. Sell what you grow or make on top of them; the rest is free to sell after your first 30 minutes.`);
+ const amounts=Object.fromEntries(keys.map(k=>[k,quantity??sellableStock(state,k,now)]));
  const total=marketSaleValue(state,keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0),now);
- if(total===0)throw new Error('Your basket is empty. Harvest or produce something first.');
+
+ if(total===0){const kept=keys.filter(k=>keptStock(state,k,now)>0);throw new Error(kept.length?`Your starting ${kept.map(k=>ITEMS[k].name.toLowerCase()).join(' and ')} ${kept.length>1?'are':'is'} kept for your first steps. Harvest or make more to sell, or wait until your first 30 minutes are up.`:'Your basket is empty. Harvest or produce something first.');}
  const units=keys.reduce((v,k)=>v+amounts[k],0);
  for(const k of keys){state.inventory[k]-=amounts[k];state.stats['sold_'+k]=(state.stats['sold_'+k]??0)+amounts[k];}
  state.coins+=total;state.stats.earned+=total;state.stats.sold+=units;
@@ -852,8 +921,11 @@ export function dayNumber(now=Date.now()){return Math.floor(now/DAY_MS);}
 export function seedCost(state,crop){return Math.max(1,Math.ceil(CROPS[crop].cost*(1-siloBonus(state.siloLevel??0).seeds)));}
 export function normalizeFarm(state,now=Date.now()){
  const oldVersion=state.version??0;
- if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=xpForLevel(previousLevel)-60*(previousLevel-1);}
+ if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=oldXpForLevel(previousLevel)-60*(previousLevel-1);}
+ migrateXpCurve(state);
  state.progression??={mode:'legacy'};
+ if(state.keep!==undefined)state.keep=Object.fromEntries(Object.entries(state.keep&&typeof state.keep==='object'?state.keep:{}).filter(([k,v])=>Object.hasOwn(ITEMS,k)&&Number.isSafeInteger(v)&&v>0));
+ if(state.rookieUntil!==undefined)state.rookieUntil=Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil):0;
  state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
@@ -944,7 +1016,8 @@ export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  if(Object.keys(order.input).some(k=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)))state.stats.crafted_deliveries=(state.stats.crafted_deliveries??0)+1;
  return {coins:order.coins,xp:order.xp,diamonds:order.diamonds};
 }
-export function levelReward(level){return {coins:10*level,diamonds:Math.floor(level/5)};}
+// Every level pays at least one diamond, so no level-up is ever empty-handed; from level 10 on it grows with every five levels.
+export function levelReward(level){return {coins:10*level,diamonds:Math.max(1,Math.floor(level/5))};}
 export function grantLevelRewards(state,firstLevel=2){
  const highest=levelOf(state),claimed=new Set(state.levelRewards??[1]),levels=[];
  let coins=0,diamonds=0;

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel,STARTER_COINS,STARTER_ITEMS} from '../game/farm-state.js';
+import {applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,levelReward,levelOf,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel,STARTER_COINS,STARTER_ITEMS} from '../game/farm-state.js';
 import {readFarm,transactFarm} from '../game/farm-store.js';
 const now=Date.UTC(2026,8,16,12);
 const apply=(s,a,t=now)=>applyFarmAction(s,a,t);
@@ -15,7 +15,7 @@ function database(){
 
 test('all 12 crops can be planted, watered and harvested; collection is unique',()=>{
  const s=createFarm(now);s.coins=10000;s.xp=xpForLevel(20);
- assert.equal(Object.keys(CROPS).length,12);assert.equal(QUESTS.length,130);
+ assert.equal(Object.keys(CROPS).length,12);assert.equal(QUESTS.length,150);
  for(const [crop,c] of Object.entries(CROPS)){
   apply(s,{type:'field',id:8,action:'plant',crop});apply(s,{type:'field',id:8,action:'water'},now+1000);
   assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+1000),/Still growing/);
@@ -47,7 +47,7 @@ test('login gifts cross UTC boundaries, cannot repeat, cycle and reset without l
   const balance=s.coins;assert.throws(()=>apply(s,{type:'checkin'},now+i*DAY_MS),/already collected/);assert.equal(s.coins,balance);
  }
  const plots=structuredClone(s.plots),balance=s.coins;
- apply(s,{type:'checkin'},now+10*DAY_MS);assert.equal(s.login.streak,1);assert.equal(s.login.best,8);assert.deepEqual(s.plots,plots);assert.equal(s.coins,balance+40);
+ const late=apply(s,{type:'checkin'},now+10*DAY_MS);assert.equal(s.login.streak,1);assert.equal(s.login.best,8);assert.deepEqual(s.plots,plots);assert.equal(s.coins,balance+40+(late.levelReward?.coins??0));
  const midnight=Date.UTC(2026,8,30),b=createFarm(midnight-1);apply(b,{type:'checkin'},midnight-1);apply(b,{type:'checkin'},midnight);assert.equal(b.login.streak,2);
 });
 test('daily progress starts today, all-three bonus pays once, old claims fail',()=>{
@@ -55,8 +55,8 @@ test('daily progress starts today, all-three bonus pays once, old claims fail',(
  normalizeFarm(s,now+DAY_MS);assert.equal(dailyTasks(s,now+DAY_MS).find(q=>q.stat==='harvested')?.progress??0,0);
  for(const q of dailyTasks(s,now+DAY_MS))s.stats[q.stat]=(s.daily.baseline[q.stat]??0)+q.target;
  const initial=s.coins,qs=dailyTasks(s,now+DAY_MS);
- for(const q of qs)apply(s,{type:'daily',id:q.id,day:utcDay(now+DAY_MS)},now+DAY_MS);
- assert.equal(s.coins,initial+qs.reduce((n,q)=>n+q.reward,0)+60);
+ let levels=0;for(const q of qs)levels+=apply(s,{type:'daily',id:q.id,day:utcDay(now+DAY_MS)},now+DAY_MS).levelReward?.coins??0;
+ assert.equal(s.coins,initial+qs.reduce((n,q)=>n+q.reward,0)+60+levels);
  assert.throws(()=>apply(s,{type:'daily',id:0,day},now+DAY_MS),/new day/);
  assert.throws(()=>apply(s,{type:'daily',id:0,day:utcDay(now+DAY_MS)},now+DAY_MS),/already claimed/);
  assert.equal(s.stats.dailies,3);normalizeFarm(s,now+2*DAY_MS);assert.equal(s.daily.claimed.length,0);
@@ -95,7 +95,7 @@ test('simultaneous saves retain both actions and racing gift requests award once
  await Promise.all([transactFarm(db,'farmer','request-A11111111',[{type:'field',id:0,action:'harvest'}],now),transactFarm(db,'farmer','request-B11111111',[{type:'field',id:1,action:'harvest'}],now)]);
  const s=await readFarm(db,'farmer',now);assert.equal(s.state.inventory.corn,STARTER_ITEMS.corn+2);assert.equal(s.state.stats.harvested,2);
  await Promise.all([transactFarm(db,'farmer','request-C11111111',[{type:'checkin'}],now),transactFarm(db,'farmer','request-D11111111',[{type:'checkin'}],now)]);
- const end=await readFarm(db,'farmer',now);assert.equal(end.state.coins,STARTER_COINS+40);assert.equal(end.state.login.visits,1);
+ const end=await readFarm(db,'farmer',now);assert.equal(levelOf(end.state),2);assert.equal(end.state.coins,STARTER_COINS+40+levelReward(2).coins);assert.equal(end.state.login.visits,1);
  const failed=await transactFarm(db,'farmer','request-E11111111',[{type:'produce',recipe:'__proto__'},{type:'field',id:999,action:'harvest'}],now);
  assert(failed.results.every(r=>!r.ok));assert.deepEqual(failed.state,end.state);db.sqlite.close();
 });

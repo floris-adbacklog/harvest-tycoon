@@ -5,7 +5,8 @@ import {mergeRewards,progressionChange,progressionSnapshot} from '../public/prog
 const now=Date.UTC(2026,8,19,12);
 function poised(level){const s=createFarm(now);s.xp=xpForLevel(level)-5;s.xpOffset=0;s.levelRewards=Array.from({length:level-1},(_,i)=>i+1);return s;}
 test('corrected schedule: level 20 gives 200 coins and 4 diamonds',()=>{
- for(const [lvl,coins,diamonds]of [[2,20,0],[4,40,0],[5,50,1],[9,90,1],[10,100,2],[19,190,3],[20,200,4],[25,250,5]])assert.deepEqual(levelReward(lvl),{coins,diamonds});
+ for(const [lvl,coins,diamonds]of [[2,20,1],[3,30,1],[4,40,1],[5,50,1],[9,90,1],[10,100,2],[19,190,3],[20,200,4],[25,250,5]])assert.deepEqual(levelReward(lvl),{coins,diamonds});
+ for(let lvl=2;lvl<=100;lvl++)assert(levelReward(lvl).diamonds>=1,`level ${lvl} never pays zero diamonds`);
 });
 test('level-up credits automatically, persists and cannot be manually paid twice',()=>{
  const s=poised(20),coins=s.coins,diamonds=s.diamonds,before=progressionSnapshot(s);
@@ -20,11 +21,11 @@ test('level-up credits automatically, persists and cannot be manually paid twice
 });
 test('all crossed levels are paid once; coin boost cannot multiply level rewards',()=>{
  const s=createFarm(now);s.boosts.coinsUntil=now+10000;s.boosts.xpUntil=now+10000;
- s.buildings.coop.job={id:'bulk',recipe:'eggs',output:{eggs:3},xp:240,startedAt:now-1000,readyAt:now};
+ s.buildings.coop.job={id:'bulk',recipe:'eggs',output:{eggs:3},xp:73,startedAt:now-1000,readyAt:now};
  const result=act(s,{type:'collect',building:'coop'},now);
- assert.equal(s.xp,480);assert.equal(levelOf(s),5);
- assert.deepEqual(result.levelReward,{coins:140,diamonds:1,levels:[2,3,4,5]});
- assert.equal(s.coins,STARTER_COINS+140);assert.equal(s.diamonds,1);
+ assert.equal(s.xp,146);assert.equal(levelOf(s),5);
+ assert.deepEqual(result.levelReward,{coins:140,diamonds:4,levels:[2,3,4,5]});
+ assert.equal(s.coins,STARTER_COINS+140);assert.equal(s.diamonds,4);
 });
 test('existing unpaid levels settle once while paid levels are preserved',()=>{
  const s=createFarm(now);s.xp=xpForLevel(20);s.levelRewards=Array.from({length:18},(_,i)=>i+1);const coins=s.coins;

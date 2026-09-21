@@ -60,7 +60,7 @@ test('existing boards keep ingredients, payouts and completed IDs until the next
 test('commissions consume goods and award only server-quoted coins, XP and diamonds once',()=>{
  const s=createFarm(now),o=dailyOrders(s,now)[2];Object.assign(s.inventory,o.input);s.boosts.coinsUntil=now+60000;s.boosts.xpUntil=now+60000;
  const before=structuredClone(s),r=act(s,{type:'delivery',id:o.id,day:utcDay(now),diamonds:99999,coins:99999},now);
- assert.equal(r.coins,o.coins*2);assert.equal(r.xp,o.xp*2);assert.equal(r.diamonds,o.diamonds);assert.equal(s.diamonds,before.diamonds+o.diamonds);
+ assert.equal(r.coins,o.coins*2);assert.equal(r.xp,o.xp*2);assert.equal(r.diamonds,o.diamonds);assert.equal(s.diamonds,before.diamonds+o.diamonds+(r.levelReward?.diamonds??0));
  assert.equal(s.stats.deliveries,before.stats.deliveries+1);assert.equal(s.stats.crafted_deliveries,before.stats.crafted_deliveries+1);
  for(const k in o.input)assert.equal(s.inventory[k],0);
  const completed=structuredClone(s);assert.throws(()=>act(s,{type:'delivery',id:o.id,day:utcDay(now)},now),/already/);assert.deepEqual(s,completed);

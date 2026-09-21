@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+ <defs>
+  <linearGradient id="brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffeaa6"/><stop offset=".35" stop-color="#f6c24a"/><stop offset=".75" stop-color="#df9a26"/><stop offset="1" stop-color="#b8731a"/></linearGradient>
+  <linearGradient id="post" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c98419"/><stop offset=".45" stop-color="#ffd86a"/><stop offset="1" stop-color="#c17b17"/></linearGradient>
+  <linearGradient id="glass" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#f7feff"/><stop offset=".5" stop-color="#d4f0f9"/><stop offset="1" stop-color="#9ed6ea"/></linearGradient>
+  <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe98f"/><stop offset=".55" stop-color="#ffc94a"/><stop offset="1" stop-color="#ef9f2a"/></linearGradient>
+  <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff6c7" stop-opacity=".95"/><stop offset="1" stop-color="#fff6c7" stop-opacity="0"/></radialGradient>
+ </defs>
+ <ellipse cx="64" cy="121" rx="38" ry="5" fill="#5e3f12" opacity=".2"/>
+ <!-- posts, behind the glass -->
+ <rect x="24" y="22" width="9" height="84" rx="4" fill="url(#post)" stroke="#8a5512" stroke-width="2.6"/>
+ <rect x="95" y="22" width="9" height="84" rx="4" fill="url(#post)" stroke="#8a5512" stroke-width="2.6"/>
+ <!-- glass, with a soft light where the sand falls -->
+ <path d="M40 24H88C88 40 80 49 71 57C66 62 66 66 71 71C80 79 88 88 88 104H40C40 88 48 79 57 71C62 66 62 62 57 57C48 49 40 40 40 24Z" fill="url(#glass)" stroke="#4e9db9" stroke-width="3.2" stroke-linejoin="round"/>
+ <circle cx="64" cy="64" r="15" fill="url(#glow)"/>
+ <!-- sand: the little that is left above, the falling grains and the growing heap -->
+ <path d="M46 42Q64 48 82 42C80 49 74 54 68.5 59.5Q64 62.5 59.5 59.5C54 54 48 49 46 42Z" fill="url(#sand)" stroke="#c9801a" stroke-width="2.2" stroke-linejoin="round"/>
+ <path d="M64 62V90" stroke="#f7b533" stroke-width="3" stroke-linecap="round"/>
+ <path d="M43 103C46 91 56 87 64 84C72 87 82 91 85 103Z" fill="url(#sand)" stroke="#c9801a" stroke-width="2.2" stroke-linejoin="round"/>
+ <circle cx="55" cy="96" r="1.6" fill="#fff3b8" opacity=".9"/><circle cx="70" cy="93" r="1.4" fill="#fff3b8" opacity=".9"/><circle cx="62" cy="99" r="1.2" fill="#fff3b8" opacity=".8"/>
+ <!-- glass shine -->
+ <path d="M45.5 30C46 41 51 47 56 52" stroke="#fff" stroke-width="3.8" stroke-linecap="round" fill="none" opacity=".9"/>
+ <path d="M82.5 31C82.5 36 81.5 39 80 42" stroke="#fff" stroke-width="2.6" stroke-linecap="round" fill="none" opacity=".6"/>
+ <path d="M45.5 97C46 92 48.5 89 52 86.5" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".75"/>
+ <!-- caps -->
+ <rect x="15" y="7" width="98" height="18" rx="9" fill="url(#brass)" stroke="#8a5512" stroke-width="3"/>
+ <rect x="15" y="103" width="98" height="18" rx="9" fill="url(#brass)" stroke="#8a5512" stroke-width="3"/>
+ <path d="M27 13.2H101" stroke="#fff6cf" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+ <path d="M27 109.2H101" stroke="#fff6cf" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+ <circle cx="26" cy="16" r="2" fill="#a86414"/><circle cx="102" cy="16" r="2" fill="#a86414"/><circle cx="26" cy="112" r="2" fill="#a86414"/><circle cx="102" cy="112" r="2" fill="#a86414"/>
+ <!-- a spark of time -->
+ <path d="M104 40l2.6 6.4L113 49l-6.4 2.6L104 58l-2.6-6.4L95 49l6.4-2.6z" fill="#fff3b0" stroke="#e6a52c" stroke-width="1.6" stroke-linejoin="round"/>
+</svg>

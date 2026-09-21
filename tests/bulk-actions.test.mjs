@@ -28,8 +28,8 @@ test('delivery diamonds scale from 1 to 4, ignore boosts, and never pay twice',(
  assert.deepEqual([...new Set(ORDER_POOL.map(deliveryDiamonds))].sort(),[1,2,3,4]);
  const s=createFarm(now),order=dailyOrders(s,now)[0];Object.assign(s.inventory,order.input);s.boosts.coinsUntil=now+99999;s.boosts.xpUntil=now+99999;
  const before=s.diamonds,r=act(s,{type:'delivery',id:order.id,day:utcDay(now)},now);
- assert.equal(r.diamonds,order.diamonds);assert.equal(s.diamonds,before+order.diamonds);
- assert.throws(()=>act(s,{type:'delivery',id:order.id,day:utcDay(now)},now));assert.equal(s.diamonds,before+order.diamonds);
+ const gain=order.diamonds+(r.levelReward?.diamonds??0);assert.equal(r.diamonds,order.diamonds);assert.equal(s.diamonds,before+gain);
+ assert.throws(()=>act(s,{type:'delivery',id:order.id,day:utcDay(now)},now));assert.equal(s.diamonds,before+gain);
 });
 test('crop cleanup releases owned materials exactly once without disposing shared assets',()=>{
  let disposed=0,cleared=0;const shared={userData:{},dispose(){throw Error('shared asset');}},owned={userData:{farmCropOwned:true},dispose(){disposed++;}};

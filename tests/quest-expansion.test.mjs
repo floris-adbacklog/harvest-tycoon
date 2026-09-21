@@ -9,7 +9,7 @@ test('new quests append to old IDs and keep beginner and claimed progress',()=>{
  s.activities.completed={greenhouse:10,apiary:5,paddock:10,workshop:10};s.activities.rounds=3;s.siloLevel=3;
  for(const q of QUESTS.slice(41))delete s.stats[q.stat];
  normalizeFarm(s,now);assert.deepEqual(s.claimed,[0,31,40]);assert.equal(s.onboarding.rewardClaimed,true);
- assert.equal(QUESTS.length,130);assert.equal(QUESTS[31].title,'A lifelong grower');assert.equal(QUESTS[40].title,'Pumpkin perfection');
+ assert.equal(QUESTS.length,150);assert.equal(QUESTS[31].title,'A lifelong grower');assert.equal(QUESTS[40].title,'Pumpkin perfection');
  assert.equal(s.stats.activity_apiary,5);assert.equal(s.stats.activity_rounds,3);assert.equal(s.stats.silo_upgrades,3);
  const id=QUESTS.findIndex(q=>q.title==='A taste of honey');act(s,{type:'quest',id},now);
  assert.throws(()=>act(s,{type:'quest',id},now),/already/);
@@ -68,7 +68,7 @@ test('Honey deliveries consume stock once and advance the dedicated quest',()=>{
 // The strongest farm on 2026-09-21 (production stats, aggregated): no late-game quest may already be complete for it.
 const strongestFarm={harvested:802,planted:791,watered:702,tended:591,produced:729,earned:147773,sold:524,deliveries:11,chores:124,activities:205,activity_rounds:50,parallel_batches:546,tractor:171,boosts_used:6,passive_earned:7479,dailies:13,harvest_wheat:400,harvest_corn:200,harvest_pumpkin:100,crafted_deliveries:8};
 test('late-game quests come as long ladders above what the first players have reached',()=>{
- const late=QUESTS.slice(94);assert.equal(late.length,36);assert.equal(QUESTS[93].title,'Harvest Hamper specialist','the old quests did not move');
+ const late=QUESTS.slice(94,130);assert.equal(late.length,36);assert.equal(QUESTS[93].title,'Harvest Hamper specialist','the old quests did not move');
  assert.equal(new Set(QUESTS.map(q=>q.title)).size,QUESTS.length,'every title is unique');
  for(const q of late){
   assert(Number.isInteger(q.target)&&q.target>0&&Number.isInteger(q.reward)&&q.reward>0,q.title);
