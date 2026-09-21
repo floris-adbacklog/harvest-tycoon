@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {normalizeFarm,applyFarmAction as act,QUESTS,DAILY_POOLS,ORDER_POOL,ITEMS,DAY_MS,utcDay,dailyTasks,dailyOrders,xpForLevel,dayNumber,marketValue,COMMISSION_POOL,PRODUCTS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,18,12);
@@ -85,4 +86,9 @@ test('late-game quests come as long ladders above what the first players have re
 test('every late-game quest counts a stat the game keeps',()=>{
  const state=createFarm();for(const q of QUESTS.slice(94))assert.equal(state.stats[q.stat],0,q.stat);
 });
-
+test('quest rows carry no "New" badge, whichever quest they show',()=>{
+ const ui=readFileSync(new URL('../public/quests-ui.js',import.meta.url),'utf8');
+ assert.ok(!/>New</.test(ui)&&!ui.includes('beta-badge'),'no badge in the row markup');
+ assert.match(ui,/<div class="quest-row-heading"><h3>\$\{q\.title\}<\/h3><\/div>/);
+ assert.ok(!readFileSync(new URL('../public/beta.css',import.meta.url),'utf8').includes('.beta-badge'),'and no style left for it');
+});
