@@ -1,3 +1,4 @@
+import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {rankArt} from '../public/rank-art.js';
 export const LEADERBOARD_CATEGORIES=Object.freeze({
  level:{label:'Highest level',heading:'Level',unit:'level',description:'Your farmer level, earned through farming experience.'},
@@ -22,7 +23,7 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  harvested_berries:{label:'Berries harvested',heading:'Berries',unit:'berries harvested',group:'crops',description:'Lifetime berries harvested, including water and care bonuses.'}
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}
-const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at';
+const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at,vip_expires_at';
 export async function fetchLeaderboard(client,playerId,category='level'){
  categoryFor(category);
  const {data,error}=await client.from('player_stats').select(PUBLIC_FIELDS).order(category,{ascending:false}).order('player_id',{ascending:true}).limit(10);
@@ -36,7 +37,7 @@ export async function fetchLeaderboard(client,playerId,category='level'){
 export function rankedRows(rows,category='level'){
  categoryFor(category);return rows.map((row,i)=>({row,rank:i+1,score:Number(row[category]??0)}));
 }
-export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false},playerId,onPlayer){
+export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false,now=Date.now()},playerId,onPlayer){
  const config=categoryFor(category);container.replaceChildren();
  if(!rows.length){const p=document.createElement('p');p.className='leaderboard-empty';p.textContent='The valley is quiet. Be the first farmer on this board.';container.append(p);return;}
  const table=document.createElement('table');table.className='leaderboard-table';
@@ -47,13 +48,14 @@ export function renderLeaderboard(container,{rows,own,rank,category='level',onli
  rankedRows(rows,category).forEach(({row,rank:place,score:value})=>{
   const tr=document.createElement('tr');tr.classList.toggle('is-you',row.player_id===playerId);
   const n=document.createElement('td');n.className='leaderboard-place';n.innerHTML=rankArt(place);
-  const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');strong.textContent=row.username;if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',`View ${row.username}'s profile`);strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');strong.prepend(dot);small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;name.append(strong,small);
+  const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');strong.textContent=row.username;if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',`View ${row.username}'s profile`);strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');strong.prepend(dot);const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;name.append(strong,small);
   const score=document.createElement('td');score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
- });table.append(tbody);container.append(table);updateOnlineIndicators(container,{onlinePlayers,presenceReady});
+ });table.append(tbody);container.append(table);updateOnlineIndicators(container,{onlinePlayers,presenceReady,now});
  if(own&&rank){const line=document.createElement('div');line.className='your-rank';const label=document.createElement('strong'),value=document.createElement('span');label.textContent=`Your rank: #${rank}`;const score=Number(own[category]??0).toLocaleString('en-US');value.textContent=category==='level'?`Level ${score} · ${own.username}`:`${score} ${config.unit} · ${own.username}`;line.append(label,value);container.append(line);}
 }
 
-export function updateOnlineIndicators(container,{onlinePlayers=[],presenceReady=false}){
+export function updateOnlineIndicators(container,{onlinePlayers=[],presenceReady=false,now=Date.now()}){
+ refreshVipBadges(container,now);
  const online=new Set(onlinePlayers);
  container.querySelectorAll('[data-online-player]').forEach(dot=>{const active=presenceReady&&online.has(dot.dataset.onlinePlayer);dot.classList.toggle('is-online',active);dot.title=active?'Online · active within the last 30 minutes':presenceReady?'Offline · no action in the last 30 minutes':'Online status unavailable';dot.setAttribute('aria-label',dot.title);});
 }

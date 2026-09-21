@@ -1,0 +1,16 @@
+/* Settings dialog: section headings and the "Farm app" block. The sound controls keep their own styles in farm-audio.css. */
+.settings-heading{display:flex;align-items:center;gap:10px;font:600 17px/1.2 Outfit,'DM Sans',sans-serif;letter-spacing:-.01em;color:#4b452c;margin:2px 0 10px}
+.settings-heading .game-art,.settings-heading svg{width:26px;height:26px;flex-shrink:0}
+#sound-dialog .settings-section{margin-top:24px;padding-top:20px;border-top:1px solid #e3dad0}
+#sound-dialog .install-copy{margin:0;font-size:13px;line-height:1.7;color:#80776b}
+.install-steps{margin:10px 0 0;padding-left:22px;font-size:13px;line-height:1.75;color:#6b6353}
+#install-app{width:100%;justify-content:center;min-height:46px;margin-top:14px}
+.notify-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:66px;border:1px solid #e2d7cb;border-radius:14px;background:#f3ede7;padding:12px 16px;margin-top:10px;cursor:pointer}
+.notify-row>span{display:grid;gap:3px;min-width:0}.notify-row strong{font-size:14px}.notify-row small{font-size:12px;line-height:1.45;color:#827a6f}
+.notify-row input{accent-color:#6e6248;width:25px;height:25px;margin:0;flex-shrink:0;cursor:pointer}.notify-row input:focus-visible{outline:2px solid #d3a032;outline-offset:4px}.notify-row input:disabled{opacity:.5;cursor:wait}
+.notify-time{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:2px 4px}.notify-time label{font-size:13px;font-weight:700}
+.notify-time select{min-height:44px;border:1px solid #e1d9d0;border-radius:10px;background:#fffef9;padding:8px 12px;font:inherit;font-size:15px;color:#4c452b}
+#sound-dialog .notify-status{margin:12px 0 0;min-height:20px;font-size:12px;text-align:center;color:#827a6f}
+.notify-device{margin-top:14px;padding:14px 16px;border:1px dashed #d8cdbf;border-radius:14px;background:#faf6ef}
+#sound-dialog .notify-device .install-copy{margin:0}
+.notify-device-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:10px}.notify-device-actions .small-button{min-height:44px}.notify-device-actions .link-button{padding:8px 2px;min-height:40px}

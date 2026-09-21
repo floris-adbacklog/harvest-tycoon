@@ -24,19 +24,19 @@ test('old or manipulated boost quotes never charge a different price',()=>{
   assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'crops',expectedCost},now),/prices have changed/);
   assert.deepEqual(s,before);
  }
- const r=applyFarmAction(s,{type:'buy_boost',boost:'crops',expectedCost:90},now);
- assert.equal(r.cost,90);assert.equal(s.diamonds,910);
+ const r=applyFarmAction(s,{type:'buy_boost',boost:'crops',expectedCost:150},now);
+ assert.equal(r.cost,150);assert.equal(s.diamonds,850);
 });
 test('free beginner diamonds still buy an entry boost; premium boost prices preserve their value',()=>{
  const s=createFarm(now);s.diamonds=20;
  const id=s.plots.findIndex(p=>p.crop&&p.readyAt>now);
  applyFarmAction(s,{type:'finish_crop',id,expectedCost:10},now);assert.equal(s.diamonds,10);
  assert.equal(DAILY_DIAMONDS.reduce((a,b)=>a+b,0)+7*8,136);
- assert.equal(Math.floor(1000/BOOSTS.crops.cost),11);
- const before=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'coins',expectedCost:60},now),/diamonds/);assert.deepEqual(s,before);
+ assert.equal(Math.floor(1000/BOOSTS.crops.cost),6);
+ const before=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'coins',expectedCost:100},now),/diamonds/);assert.deepEqual(s,before);
 });
-test('Double XP costs 25 diamonds and rejects the old 20-diamond quote',()=>{
- const s=createFarm(now);s.diamonds=25;
- assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'xp',expectedCost:20},now),/prices have changed/);assert.equal(s.diamonds,25);
- applyFarmAction(s,{type:'buy_boost',boost:'xp',expectedCost:25},now);assert.equal(s.diamonds,0);assert.equal(s.boosts.xpUntil,now+1800000);
+test('Double XP costs 50 diamonds and rejects the old 25-diamond quote',()=>{
+ const s=createFarm(now);s.diamonds=50;
+ assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'xp',expectedCost:25},now),/prices have changed/);assert.equal(s.diamonds,50);
+ applyFarmAction(s,{type:'buy_boost',boost:'xp',expectedCost:50},now);assert.equal(s.diamonds,0);assert.equal(s.boosts.xpUntil,now+1800000);
 });

@@ -18,6 +18,9 @@ export function showPaymentReturn(bridge){
   try{
    const result=await bridge.payments({operation:'status',purchaseId:purchase.id});if(closed)return;
    if(result.status==='credited'){
+    // Local deduplication only; no purchase or account identifier is sent to analytics.
+    try{const key='harvest-payment-event:'+purchase.id;if(!sessionStorage.getItem(key)){bridge.trackCommerce?.('diamond_pack_completed',{pack:result.pack,diamonds:result.diamonds});sessionStorage.setItem(key,'1');}}catch{}
+
     display('credited',result.pack==='starter'?'Your Starter Pack is here!':'A little sparkle for your farm',result.pack==='starter'?'10,000 coins, 300 diamonds and one of every crop have been added to your account.':`${Number(result.diamonds).toLocaleString('en-US')} diamonds have been added to your farm. Enjoy your next little upgrade!`,'Payment confirmed');retry.hidden=true;
     window.dispatchEvent(new Event('harvest-purchase-confirmed'));
     // A farm-refresh failure must not turn a verified payment into a payment error.

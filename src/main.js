@@ -1,7 +1,7 @@
 import {createFarmPresence} from './presence.js';
 import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError} from './supabase.js';
 import {fetchLeaderboard} from './leaderboard.js';
-import {trackSignUp,isNewRegistration,trackAuth} from './analytics.js';
+import {trackCommerce,trackSignUp,isNewRegistration,trackAuth} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
 import {createNotifications} from './notifications.js';
@@ -76,8 +76,9 @@ async function openFarm(){
   }};
   notifications=bridge.notifications=createNotifications(supabase,{configUrl:functionsUrl&&`${functionsUrl}/notify-hourly?config`});
   void notifications.ready?.then?.(()=>notifications?.push?.sync?.());
+  bridge.trackCommerce=(event,params)=>{if(ticket===generation)trackCommerce(event,params);};
   bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
-  bridge.checkout=async(pack,requestId)=>{const data=await bridge.payments({operation:'create',pack,requestId});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
+  bridge.checkout=async(pack,requestId)=>{bridge.trackCommerce('diamond_pack_started',{pack});const data=await bridge.payments({operation:'create',pack,requestId});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
   bridge.paymentReturn=()=>{const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   window.harvestBridge=bridge;frame=document.createElement('iframe');frame.title='Harvest Tycoon farm';frame.src='/farm.html';$('farm-host').append(frame);phase('authenticated');store.set(RETURNING_KEY,'1');

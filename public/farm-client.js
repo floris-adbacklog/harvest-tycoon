@@ -17,7 +17,11 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
  async function runAction(action){
   if(busy)throw new Error('Your previous action is still saving.');
   busy=true;onStatus('saving');document.body.classList.add('farm-saving');
-  try{const data=await bridge.request({operation:'action',action,requestId:crypto.randomUUID()});replace(data);return data.result;}
+  try{const data=await bridge.request({operation:'action',action,requestId:crypto.randomUUID()});replace(data);
+   const result=data.result;
+   if(action.type==='buy_vip'){bridge.trackCommerce?.('vip_purchase_completed',{plan:result.plan,cost:result.cost});if(result.extended)bridge.trackCommerce?.('vip_extended',{plan:result.plan});}
+   else if(['buy_boost','finish_crop','finish_batch','replace_order'].includes(action.type))bridge.trackCommerce?.('diamond_action_completed',{action:action.boost??action.type,cost:result.cost});
+   return result;}
   catch(error){onStatus(error.code==='ACTION_REJECTED'?'saved':'error');throw error;}
   finally{busy=false;document.body.classList.remove('farm-saving');}
  }

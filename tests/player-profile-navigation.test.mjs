@@ -20,7 +20,7 @@ function harness(){
  }
  const board=new Element();doc={body:new Element(),activeElement:new Element(),hidden:false,getElementById:()=>board,createElement:()=>new Element()};
  const bridge={request(body){return new Promise((resolve,reject)=>requests.push({body,resolve,reject}));}};
- const context=vm.createContext({document:doc,window:{addEventListener(){}},setTimeout(fn){timer=fn;return 1;},clearTimeout(){timer=null;},setInterval(fn){intervals.push(fn);return 2;},clearInterval(){},renderPlayerProfile:p=>p.username,renderPlayerSearch:players=>players.map(p=>p.username).join(',')});
+ const context=vm.createContext({document:doc,window:{addEventListener(){}},setTimeout(fn){timer=fn;return 1;},clearTimeout(){timer=null;},setInterval(fn){intervals.push(fn);return 2;},clearInterval(){},refreshVipBadges(){},renderPlayerProfile:p=>p.username,renderPlayerSearch:players=>players.map(p=>p.username).join(',')});
  vm.runInContext(`function createPlayerProfiles${source}`,context);
  const controller=context.createPlayerProfiles(bridge),dialog=doc.body.children[0],search=created[0];
  return {controller,requests,dialog,search,doc,intervals,tick(){const fn=timer;timer=null;fn?.();}};

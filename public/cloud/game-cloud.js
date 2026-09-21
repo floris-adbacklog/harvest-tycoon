@@ -1,5 +1,5 @@
-import { a as e, i as t, r as n, t as r } from "./leaderboard-CRiiu6jJ.js";
-var i = Object.freeze({
+import { a as e, i as t, o as n, r, s as i, t as a } from "./leaderboard-BL0SrUQK.js";
+var o = Object.freeze({
 	corn: {
 		name: "Corn",
 		cost: 10,
@@ -131,7 +131,7 @@ var i = Object.freeze({
 		minLevel: 10,
 		perennial: !0
 	}
-}), a = Object.freeze({
+}), s = Object.freeze({
 	honey: {
 		name: "Honey",
 		sell: 35,
@@ -302,8 +302,8 @@ var i = Object.freeze({
 	}
 });
 Object.freeze({
-	...i,
-	...a
+	...o,
+	...s
 }), Object.freeze({
 	familyhall: {
 		name: "Family Hall",
@@ -1544,59 +1544,74 @@ Object.freeze({
 	400,
 	525
 ]);
-var o = 864e5;
+var c = 864e5;
 Object.freeze([
 	2,
 	2,
 	4
 ]), Object.freeze([
 	{
-		amount: 50,
+		amount: 150,
 		price: "€1.99"
 	},
 	{
-		amount: 300,
+		amount: 500,
+		price: "€4.99"
+	},
+	{
+		amount: 1250,
 		price: "€9.99"
 	},
 	{
-		amount: 1e3,
+		amount: 3500,
 		price: "€24.99"
 	}
 ]), Object.freeze({
+	week: {
+		name: "VIP · 7 days",
+		cost: 500,
+		duration: 7 * 864e5
+	},
+	month: {
+		name: "VIP · 30 days",
+		cost: 1500,
+		duration: 30 * 864e5
+	}
+}), Object.freeze({
 	xp: {
 		name: "Double XP",
-		cost: 25,
+		cost: 50,
 		duration: 18e5,
 		art: "xp",
 		description: "Earn twice the XP from farm actions for 30 minutes."
 	},
 	coins: {
 		name: "Double earnings",
-		cost: 60,
+		cost: 100,
 		duration: 18e5,
 		art: "coins",
 		description: "Double your market sales and delivery coins for 30 minutes. Passive income and gifts stay the same."
 	},
 	crops: {
 		name: "Instant harvest",
-		cost: 90,
+		cost: 150,
 		art: "seeds",
 		description: "Make every currently growing crop ready to harvest. Crops stay in their fields until you collect them."
 	},
-	upgrade: {
-		name: "Builder’s discount",
-		cost: 150,
-		art: "hammer",
-		description: "Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires."
-	},
 	production: {
 		name: "Finish production",
-		cost: 75,
+		cost: 200,
 		art: "boost",
 		description: "Finish all current production batches instantly. Collect the finished goods from their buildings."
+	},
+	upgrade: {
+		name: "Buildings discount",
+		cost: 250,
+		art: "hammer",
+		description: "Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires."
 	}
 });
-var s = [
+var l = [
 	[
 		{
 			stat: "harvested",
@@ -1666,7 +1681,7 @@ var s = [
 			reward: 45
 		}
 	]
-], c = [
+], u = [
 	[
 		{
 			stat: "harvest_greenbeans",
@@ -1739,7 +1754,7 @@ var s = [
 		minLevel: 10,
 		requiresBuildings: ["preserves"]
 	}]
-], l = [
+], d = [
 	[
 		{
 			stat: "made_orchardjuice",
@@ -1825,10 +1840,10 @@ var s = [
 		requiresBuildings: ["juicepress", "preserves"]
 	}]
 ];
-s.map((e, t) => Object.freeze([
+l.map((e, t) => Object.freeze([
 	...e,
-	...c[t],
-	...l[t],
+	...u[t],
+	...d[t],
 	...[
 		[
 			{
@@ -2512,7 +2527,7 @@ s.map((e, t) => Object.freeze([
 		maxBonus: 125
 	}
 });
-var u = [
+var f = [
 	{
 		name: "Bronze",
 		target: 25,
@@ -2759,7 +2774,7 @@ Object.freeze({
 	MAX_MEMBERS: 6,
 	MIN_CONTRIB_POINTS: 500,
 	JOIN_COOLDOWN_MS: 48 * 36e5,
-	RENAME_COOLDOWN_MS: 7 * o,
+	RENAME_COOLDOWN_MS: 7 * c,
 	ATTEMPTS_PER_HOUR: 10,
 	EXTRA_POINTS_CAP: 3e4,
 	TOURNAMENT_FIRST_MIN: 50,
@@ -2781,7 +2796,7 @@ Object.freeze({
 		.4
 	]
 });
-var d = Object.freeze([
+var p = Object.freeze([
 	"wheat",
 	"corn",
 	"sunflower",
@@ -2865,16 +2880,16 @@ Object.freeze([
 		milk: 80,
 		honey: 30
 	}
-]), 7 * o;
-var f = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
+]), 7 * c;
+var m = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
 	"&": "&amp;",
 	"<": "&lt;",
 	">": "&gt;",
 	"\"": "&quot;",
 	"'": "&#39;"
-})[e]), p = (e) => Math.max(0, Number(e) || 0).toLocaleString("en-US"), m = (e) => String(e ?? "Farmer").split(/\s+/).slice(0, 2).map((e) => e[0] ?? "").join("").toUpperCase(), h = (e) => `<span class="farmer-presence"><span class="online-dot${e ? " is-online" : ""}" aria-hidden="true"></span>${e ? "Online" : "Offline"}</span>`;
-function g(t) {
-	let n = t.family, r = d.find((e) => e.id === n?.emblem), a = t.stats ?? {}, o = [
+})[e]), h = (e) => Math.max(0, Number(e) || 0).toLocaleString("en-US"), g = (e) => String(e ?? "Farmer").split(/\s+/).slice(0, 2).map((e) => e[0] ?? "").join("").toUpperCase(), _ = (e) => `<span class="farmer-presence"><span class="online-dot${e ? " is-online" : ""}" aria-hidden="true"></span>${e ? "Online" : "Offline"}</span>`;
+function v(t, n = Date.now()) {
+	let r = t.family, a = p.find((e) => e.id === r?.emblem), s = t.stats ?? {}, c = [
 		[
 			"harvested_crops",
 			"Crops harvested",
@@ -2895,189 +2910,191 @@ function g(t) {
 			"Deliveries completed",
 			"cart"
 		]
-	], s = t.badges ?? [];
-	return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true">${e("wheat")}<span>${f(m(t.username))}</span></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${f(t.username)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${e("xp")}Level ${p(t.level)}</span>${h(t.online)}</div></div></div>
- <section class="farmer-family" aria-label="Family">${e(r?.icon ?? "familyhall")}<div><span class="eyebrow">FAMILY</span><h4>${f(n?.name ?? "No family yet")}</h4><p>${f(n?.role ?? "Growing at their own pace")}</p></div></section>
- <h3 class="farmer-section-title">Life on the farm</h3><div class="farmer-stat-grid">${o.map(([t, n, r]) => `<div class="farmer-stat">${e(r)}<div><strong>${p(a[t])}</strong><span>${n}</span></div></div>`).join("")}</div>
- <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Crop mastery</h3><span>${s.length} / 48 badges</span></div>${s.length ? `<div class="farmer-badge-grid">${s.map((t) => {
-		let n = i[t.crop], r = u[t.tier];
-		return !n || !r ? "" : `<div class="farmer-badge farmer-badge-${Number(t.tier)}" title="${f(r.name)} · ${f(n.name)}">${e(t.crop)}<strong>${f(n.name)}</strong><span>${f(r.name)}</span></div>`;
+	], l = t.badges ?? [];
+	return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true">${e("wheat")}<span>${m(g(t.username))}</span></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${m(t.username)}${i(t.vipExpiresAt, n)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${e("xp")}Level ${h(t.level)}</span>${_(t.online)}</div>${i(t.vipExpiresAt, n, !0)}</div></div>
+ <section class="farmer-family" aria-label="Family">${e(a?.icon ?? "familyhall")}<div><span class="eyebrow">FAMILY</span><h4>${m(r?.name ?? "No family yet")}</h4><p>${m(r?.role ?? "Growing at their own pace")}</p></div></section>
+ <h3 class="farmer-section-title">Life on the farm</h3><div class="farmer-stat-grid">${c.map(([t, n, r]) => `<div class="farmer-stat">${e(r)}<div><strong>${h(s[t])}</strong><span>${n}</span></div></div>`).join("")}</div>
+ <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Crop mastery</h3><span>${l.length} / 48 badges</span></div>${l.length ? `<div class="farmer-badge-grid">${l.map((t) => {
+		let n = o[t.crop], r = f[t.tier];
+		return !n || !r ? "" : `<div class="farmer-badge farmer-badge-${Number(t.tier)}" title="${m(r.name)} · ${m(n.name)}">${e(t.crop)}<strong>${m(n.name)}</strong><span>${m(r.name)}</span></div>`;
 	}).join("")}</div>` : "<p class=\"farmer-empty\">Every harvest is a step towards a first mastery badge.</p>"}</section>`;
 }
-function _(e) {
-	return e.map((e) => `<button type="button" class="farmer-search-result" data-player-id="${f(e.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${f(m(e.username))}</span><span class="farmer-search-name"><strong>${f(e.username)}</strong><small>${e.family ? f(e.family.name) : "No family yet"} · Level ${p(e.level)}</small></span>${h(e.online)}<span aria-hidden="true">›</span></button>`).join("");
+function y(e, t = Date.now()) {
+	return e.map((e) => `<button type="button" class="farmer-search-result" data-player-id="${m(e.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${m(g(e.username))}</span><span class="farmer-search-name"><strong>${m(e.username)}${i(e.vipExpiresAt, t)}</strong><small>${e.family ? m(e.family.name) : "No family yet"} · Level ${h(e.level)}</small></span>${_(e.online)}<span aria-hidden="true">›</span></button>`).join("");
 }
-function v(e) {
-	let t = document.getElementById("leaderboard-dialog"), n = document.createElement("section");
-	n.className = "farmer-search", n.setAttribute("aria-label", "Player search"), n.innerHTML = "<label for=\"farmer-search-input\">Find a farmer</label><div class=\"farmer-search-control\"><input id=\"farmer-search-input\" type=\"search\" maxlength=\"20\" autocomplete=\"off\" spellcheck=\"false\" placeholder=\"Search by player name…\" aria-describedby=\"farmer-search-status\"><button type=\"button\" class=\"small-button\" id=\"farmer-search-clear\" hidden>Clear</button></div><p id=\"farmer-search-status\" role=\"status\">Enter at least 2 characters to search all farmers.</p><div id=\"farmer-search-results\"></div>", t.querySelector(".leaderboard-filter").before(n);
-	let r = document.createElement("dialog");
-	r.id = "player-profile-dialog", r.className = "game-dialog farmer-profile-dialog", r.setAttribute("aria-labelledby", "farmer-profile-title"), r.innerHTML = "<div class=\"dialog-heading\"><div><span class=\"eyebrow\">GROWING TOGETHER</span><h2 id=\"farmer-profile-title\">Farmer profile</h2></div><button class=\"icon-button farmer-profile-close\" aria-label=\"Close player profile\">×</button></div><div id=\"farmer-profile-content\" aria-busy=\"false\"></div><p id=\"farmer-profile-status\" class=\"farmer-profile-status\" role=\"status\"></p><button type=\"button\" class=\"small-button farmer-profile-back\">Back to leaderboard</button>", document.body.append(r);
-	let i = n.querySelector("input"), a = n.querySelector("#farmer-search-clear"), o = n.querySelector("#farmer-search-results"), s = n.querySelector("#farmer-search-status"), c = r.querySelector("#farmer-profile-content"), l = r.querySelector("#farmer-profile-status"), u = 0, d = 0, f, p = null, m, h = !1;
-	function v() {
-		r.close();
+function b(e) {
+	let t = document.getElementById("leaderboard-dialog"), r = document.createElement("section");
+	r.className = "farmer-search", r.setAttribute("aria-label", "Player search"), r.innerHTML = "<label for=\"farmer-search-input\">Find a farmer</label><div class=\"farmer-search-control\"><input id=\"farmer-search-input\" type=\"search\" maxlength=\"20\" autocomplete=\"off\" spellcheck=\"false\" placeholder=\"Search by player name…\" aria-describedby=\"farmer-search-status\"><button type=\"button\" class=\"small-button\" id=\"farmer-search-clear\" hidden>Clear</button></div><p id=\"farmer-search-status\" role=\"status\">Enter at least 2 characters to search all farmers.</p><div id=\"farmer-search-results\"></div>", t.querySelector(".leaderboard-filter").before(r);
+	let i = document.createElement("dialog");
+	i.id = "player-profile-dialog", i.className = "game-dialog farmer-profile-dialog", i.setAttribute("aria-labelledby", "farmer-profile-title"), i.innerHTML = "<div class=\"dialog-heading\"><div><span class=\"eyebrow\">GROWING TOGETHER</span><h2 id=\"farmer-profile-title\">Farmer profile</h2></div><button class=\"icon-button farmer-profile-close\" aria-label=\"Close player profile\">×</button></div><div id=\"farmer-profile-content\" aria-busy=\"false\"></div><p id=\"farmer-profile-status\" class=\"farmer-profile-status\" role=\"status\"></p><button type=\"button\" class=\"small-button farmer-profile-back\">Back to leaderboard</button>", document.body.append(i);
+	let a = r.querySelector("input"), o = r.querySelector("#farmer-search-clear"), s = r.querySelector("#farmer-search-results"), c = r.querySelector("#farmer-search-status"), l = i.querySelector("#farmer-profile-content"), u = i.querySelector("#farmer-profile-status"), d = 0, f = 0, p, m = null, h, g = !1, _ = Number.isFinite(e.serverNow) ? e.serverNow - Date.now() : 0;
+	function b() {
+		i.close();
 	}
-	r.querySelector(".farmer-profile-close").onclick = v, r.querySelector(".farmer-profile-back").onclick = v, r.addEventListener("close", () => {
-		++d, p = null, h || (m?.isConnected ? m : i).focus();
+	i.querySelector(".farmer-profile-close").onclick = b, i.querySelector(".farmer-profile-back").onclick = b, i.addEventListener("close", () => {
+		++f, m = null, g || (h?.isConnected ? h : a).focus();
 	});
-	async function y(e) {
-		h || (m = document.activeElement, p = e, ++d, r.querySelector("#farmer-profile-title").textContent = "Farmer profile", c.innerHTML = "<p class=\"farmer-empty\">Opening this farmer’s gate…</p>", l.textContent = "", r.open || r.showModal(), r.scrollTop = 0, await b(!1));
+	async function x(e) {
+		g || (h = document.activeElement, m = e, ++f, i.querySelector("#farmer-profile-title").textContent = "Farmer profile", l.innerHTML = "<p class=\"farmer-empty\">Opening this farmer’s gate…</p>", u.textContent = "", i.open || i.showModal(), i.scrollTop = 0, await S(!1));
 	}
-	async function b(t) {
-		let n = p, i = ++d;
-		if (n) {
-			c.setAttribute("aria-busy", "true");
+	async function S(t) {
+		let r = m, a = ++f;
+		if (r) {
+			l.setAttribute("aria-busy", "true");
 			try {
-				let a = await e.request({
+				let o = await e.request({
 					operation: "player_profile",
-					playerId: n
+					playerId: r
 				});
-				if (h || i !== d || !r.open) return;
-				let o = r.scrollTop;
-				c.innerHTML = g(a.playerProfile), r.querySelector("#farmer-profile-title").textContent = `${a.playerProfile.username}'s profile`, l.textContent = "Online status is based on activity in the last 30 minutes.", t && (r.scrollTop = o);
+				if (g || a !== f || !i.open) return;
+				let s = i.scrollTop;
+				_ = Number.isFinite(o.serverNow) ? o.serverNow - Date.now() : 0, l.innerHTML = v(o.playerProfile, Date.now() + _), n(i, Date.now() + _), i.querySelector("#farmer-profile-title").textContent = `${o.playerProfile.username}'s profile`, u.textContent = "Online status is based on activity in the last 30 minutes.", t && (i.scrollTop = s);
 			} catch (e) {
-				if (h || i !== d || !r.open) return;
-				if (t || c.replaceChildren(), l.textContent = t ? "Could not refresh this profile. Showing the last update." : e.message, !t) {
+				if (g || a !== f || !i.open) return;
+				if (t || l.replaceChildren(), u.textContent = t ? "Could not refresh this profile. Showing the last update." : e.message, !t) {
 					let e = document.createElement("button");
-					e.className = "small-button", e.textContent = "Try again", e.onclick = () => b(!1), c.append(e);
+					e.className = "small-button", e.textContent = "Try again", e.onclick = () => S(!1), l.append(e);
 				}
 			} finally {
-				i === d && c.setAttribute("aria-busy", "false");
+				a === f && l.setAttribute("aria-busy", "false");
 			}
 		}
 	}
-	async function x(t, n) {
-		if (!(h || t !== u)) {
-			o.setAttribute("aria-busy", "true"), s.textContent = "Looking around the valley…";
+	async function C(t, n) {
+		if (!(g || t !== d)) {
+			s.setAttribute("aria-busy", "true"), c.textContent = "Looking around the valley…";
 			try {
 				let r = await e.request({
 					operation: "player_search",
 					query: n
 				});
-				if (h || t !== u) return;
-				o.innerHTML = _(r.players), s.textContent = r.players.length ? `${r.players.length} farmer${r.players.length === 1 ? "" : "s"} found.${r.hasMore ? " More matches available — keep typing to narrow your search." : ""}` : "No farmers found. Try another name.";
+				if (g || t !== d) return;
+				_ = Number.isFinite(r.serverNow) ? r.serverNow - Date.now() : _, s.innerHTML = y(r.players, Date.now() + _), c.textContent = r.players.length ? `${r.players.length} farmer${r.players.length === 1 ? "" : "s"} found.${r.hasMore ? " More matches available — keep typing to narrow your search." : ""}` : "No farmers found. Try another name.";
 			} catch (e) {
-				!h && t === u && (o.replaceChildren(), s.textContent = e.message);
+				!g && t === d && (s.replaceChildren(), c.textContent = e.message);
 			} finally {
-				t === u && o.setAttribute("aria-busy", "false");
+				t === d && s.setAttribute("aria-busy", "false");
 			}
 		}
 	}
-	function S() {
-		clearTimeout(f);
-		let e = ++u, t = i.value.trim();
-		if (a.hidden = !i.value, o.replaceChildren(), o.setAttribute("aria-busy", "false"), t.length < 2) {
-			s.textContent = "Enter at least 2 characters to search all farmers.";
+	function w() {
+		clearTimeout(p);
+		let e = ++d, t = a.value.trim();
+		if (o.hidden = !a.value, s.replaceChildren(), s.setAttribute("aria-busy", "false"), t.length < 2) {
+			c.textContent = "Enter at least 2 characters to search all farmers.";
 			return;
 		}
-		s.textContent = "Searching…", f = setTimeout(() => x(e, t), 300);
+		c.textContent = "Searching…", p = setTimeout(() => C(e, t), 300);
 	}
-	i.addEventListener("input", S), a.onclick = () => {
-		i.value = "", S(), i.focus();
-	}, o.onclick = (e) => {
+	a.addEventListener("input", w), o.onclick = () => {
+		a.value = "", w(), a.focus();
+	}, s.onclick = (e) => {
 		let t = e.target.closest("[data-player-id]");
-		t && o.contains(t) && y(t.dataset.playerId);
+		t && s.contains(t) && x(t.dataset.playerId);
 	};
-	let C = setInterval(() => {
-		h || document.hidden || (r.open ? b(!0) : t.open && i.value.trim().length >= 2 && o.children.length && document.activeElement !== i && !o.contains(document.activeElement) && x(++u, i.value.trim()));
+	let T = setInterval(() => {
+		!g && !document.hidden && n(document, Date.now() + _);
+	}, 1e3), E = setInterval(() => {
+		g || document.hidden || (i.open ? S(!0) : t.open && a.value.trim().length >= 2 && s.children.length && document.activeElement !== a && !s.contains(document.activeElement) && C(++d, a.value.trim()));
 	}, 3e4);
 	return window.addEventListener("pagehide", () => {
-		h = !0, ++u, ++d, clearTimeout(f), clearInterval(C);
+		g = !0, ++d, ++f, clearTimeout(p), clearInterval(E), clearInterval(T);
 	}, { once: !0 }), {
-		open: y,
+		open: x,
 		get isOpen() {
-			return r.open;
+			return i.open;
 		}
 	};
 }
 //#endregion
 //#region src/ui.js
-var y = (e) => document.getElementById(e);
-function b({ onOpen: e, onName: t, onRetry: n, onSignIn: i, onRegister: a, onSignOut: o, onPlayer: s }) {
+var x = (e) => document.getElementById(e);
+function S({ onOpen: e, onName: t, onRetry: n, onSignIn: r, onRegister: i, onSignOut: o, onPlayer: s }) {
 	let c = document.createElement("button");
 	c.id = "leaderboard-button", c.className = "leaderboard-button", c.setAttribute("aria-haspopup", "dialog"), c.innerHTML = "<i data-lucide=\"trophy\"></i><span>Leaderboard</span>", document.querySelector(".tool-dock").append(c);
 	let l = document.createElement("div");
 	l.innerHTML = `<dialog id="auth-dialog" class="game-dialog auth-dialog" aria-labelledby="auth-title"><div class="auth-brand"><img src="/assets/harvest-tycoon-logo.png" alt="" width="92" height="92"><div><span class="eyebrow">WELCOME BACK TO THE FARM</span><h2 id="auth-title">Save your progress</h2></div></div><p class="section-copy">Sign in to access your coins, level, and player name on any device.</p><div class="auth-tabs" role="tablist"><button type="button" role="tab" data-auth-tab="signin" aria-selected="true">Sign in</button><button type="button" role="tab" data-auth-tab="register" aria-selected="false">Create account</button></div><form id="auth-form"><div id="register-name-row" hidden><label for="auth-username">Player name</label><input id="auth-username" autocomplete="nickname" minlength="3" maxlength="20" placeholder="Sunny Acres"></div><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required><p id="auth-message" class="cloud-form-error" role="status"></p><button id="auth-submit" class="primary-button" type="submit">Sign in<i data-lucide="log-in"></i></button></form><p class="auth-note">Your session stays securely saved in this browser.</p></dialog>
- <dialog id="leaderboard-dialog" class="game-dialog wide-dialog" aria-labelledby="leaderboard-title"><div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="leaderboard-title">The valley leaderboard</h2></div><button class="icon-button" data-cloud-close aria-label="Close"><i data-lucide="x"></i></button></div><p class="leaderboard-intro">Meet the farmers of the valley. Tap a name to see their profile. A green dot means they have played in the last 30 minutes.</p><div class="cloud-profile"><span id="player-name">Your farmer profile</span><button class="small-button" id="view-player-profile">Your profile</button><button class="small-button" id="rename-player" hidden>Change name</button><button class="small-button" id="logout-player" hidden>Sign out</button></div><div class="leaderboard-filter"><label for="leaderboard-category">Rank by</label><select id="leaderboard-category" aria-describedby="leaderboard-description">${[["progress", "Farm progress"], ["crops", "Individual crops"]].map(([e, t]) => `<optgroup label="${t}">${Object.entries(r).filter(([, t]) => (t.group ?? "progress") === e).map(([e, t]) => `<option value="${e}">${t.label}</option>`).join("")}</optgroup>`).join("")}</select><p id="leaderboard-description">${r.level.description}</p></div><div class="cloud-sync"><span id="cloud-status" role="status">Connecting…</span><button id="retry-cloud" class="back-button">Refresh</button></div><div id="leaderboard-results" aria-live="polite"></div><p class="cloud-privacy">Your name, online status and public farming achievements appear here. Your diamonds and farm details stay private.</p></dialog>
+ <dialog id="leaderboard-dialog" class="game-dialog wide-dialog" aria-labelledby="leaderboard-title"><div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="leaderboard-title">The valley leaderboard</h2></div><button class="icon-button" data-cloud-close aria-label="Close"><i data-lucide="x"></i></button></div><p class="leaderboard-intro">Meet the farmers of the valley. Tap a name to see their profile. A green dot means they have played in the last 30 minutes.</p><div class="cloud-profile"><span id="player-name">Your farmer profile</span><button class="small-button" id="view-player-profile">Your profile</button><button class="small-button" id="rename-player" hidden>Change name</button><button class="small-button" id="logout-player" hidden>Sign out</button></div><div class="leaderboard-filter"><label for="leaderboard-category">Rank by</label><select id="leaderboard-category" aria-describedby="leaderboard-description">${[["progress", "Farm progress"], ["crops", "Individual crops"]].map(([e, t]) => `<optgroup label="${t}">${Object.entries(a).filter(([, t]) => (t.group ?? "progress") === e).map(([e, t]) => `<option value="${e}">${t.label}</option>`).join("")}</optgroup>`).join("")}</select><p id="leaderboard-description">${a.level.description}</p></div><div class="cloud-sync"><span id="cloud-status" role="status">Connecting…</span><button id="retry-cloud" class="back-button">Refresh</button></div><div id="leaderboard-results" aria-live="polite"></div><p class="cloud-privacy">Your name, online status and public farming achievements appear here. Your diamonds and farm details stay private.</p></dialog>
  <dialog id="username-dialog" class="game-dialog" aria-labelledby="username-title"><div class="dialog-heading"><div><span class="eyebrow">MEET THE OTHER FARMERS</span><h2 id="username-title">What should we call you?</h2></div><button class="icon-button" data-cloud-close aria-label="Keep playing"><i data-lucide="x"></i></button></div><p class="section-copy">Choose the display name other players will see on the leaderboard.</p><form id="username-form"><label for="username-input">Display name</label><input id="username-input" name="username" autocomplete="nickname" minlength="3" maxlength="20" required placeholder="Sunny Acres"><small>3–20 letters, numbers, spaces, underscores or hyphens.</small><p id="username-error" class="cloud-form-error" role="alert"></p><button class="primary-button" type="submit">Join the leaderboard<i data-lucide="arrow-right"></i></button></form></dialog>`, document.body.append(...l.children);
 	let u = "signin";
 	function d(e) {
-		document.querySelectorAll("dialog[open]").forEach((e) => e.close()), y(e).showModal();
+		document.querySelectorAll("dialog[open]").forEach((e) => e.close()), x(e).showModal();
 	}
 	function f(e) {
-		u = e, document.querySelectorAll("[data-auth-tab]").forEach((e) => e.setAttribute("aria-selected", String(e.dataset.authTab === u))), y("register-name-row").hidden = u !== "register", y("auth-username").required = u === "register", y("auth-password").autocomplete = u === "register" ? "new-password" : "current-password", y("auth-submit").innerHTML = u === "register" ? "Create account<i data-lucide=\"user-plus\"></i>" : "Sign in<i data-lucide=\"log-in\"></i>", y("auth-message").textContent = "", window.lucide?.createIcons();
+		u = e, document.querySelectorAll("[data-auth-tab]").forEach((e) => e.setAttribute("aria-selected", String(e.dataset.authTab === u))), x("register-name-row").hidden = u !== "register", x("auth-username").required = u === "register", x("auth-password").autocomplete = u === "register" ? "new-password" : "current-password", x("auth-submit").innerHTML = u === "register" ? "Create account<i data-lucide=\"user-plus\"></i>" : "Sign in<i data-lucide=\"log-in\"></i>", x("auth-message").textContent = "", window.lucide?.createIcons();
 	}
 	function p(e = "") {
-		y("username-input").value = e, y("username-error").textContent = "", d("username-dialog"), y("username-input").focus();
+		x("username-input").value = e, x("username-error").textContent = "", d("username-dialog"), x("username-input").focus();
 	}
 	return document.querySelectorAll("[data-cloud-close]").forEach((e) => e.onclick = () => e.closest("dialog").close()), document.querySelectorAll("[data-auth-tab]").forEach((e) => e.onclick = () => f(e.dataset.authTab)), c.onclick = () => {
 		d("leaderboard-dialog"), e();
-	}, y("retry-cloud").onclick = n, y("leaderboard-category").onchange = () => {
-		y("leaderboard-description").textContent = r[y("leaderboard-category").value].description, e();
-	}, y("rename-player").onclick = () => p(y("player-name").dataset.username ?? ""), y("logout-player").onclick = o, y("view-player-profile").onclick = s, y("auth-form").onsubmit = async (e) => {
+	}, x("retry-cloud").onclick = n, x("leaderboard-category").onchange = () => {
+		x("leaderboard-description").textContent = a[x("leaderboard-category").value].description, e();
+	}, x("rename-player").onclick = () => p(x("player-name").dataset.username ?? ""), x("logout-player").onclick = o, x("view-player-profile").onclick = s, x("auth-form").onsubmit = async (e) => {
 		e.preventDefault();
-		let t = y("auth-submit");
-		t.disabled = !0, y("auth-message").textContent = u === "register" ? "Creating your account…" : "Signing in…";
+		let t = x("auth-submit");
+		t.disabled = !0, x("auth-message").textContent = u === "register" ? "Creating your account…" : "Signing in…";
 		try {
-			if (u === "signin") await i(y("auth-email").value, y("auth-password").value);
-			else if ((await a(y("auth-email").value, y("auth-password").value, y("auth-username").value)).confirmationRequired) {
-				y("auth-message").textContent = "Check your inbox and confirm your email address. You will be signed in automatically afterward.";
+			if (u === "signin") await r(x("auth-email").value, x("auth-password").value);
+			else if ((await i(x("auth-email").value, x("auth-password").value, x("auth-username").value)).confirmationRequired) {
+				x("auth-message").textContent = "Check your inbox and confirm your email address. You will be signed in automatically afterward.";
 				return;
 			}
-			y("auth-dialog").close();
+			x("auth-dialog").close();
 		} catch (e) {
-			y("auth-message").textContent = e.message;
+			x("auth-message").textContent = e.message;
 		} finally {
 			t.disabled = !1;
 		}
-	}, y("username-form").onsubmit = async (n) => {
+	}, x("username-form").onsubmit = async (n) => {
 		n.preventDefault();
 		let r = n.currentTarget.querySelector("[type=\"submit\"]");
-		r.disabled = !0, y("username-error").textContent = "";
+		r.disabled = !0, x("username-error").textContent = "";
 		try {
-			await t(y("username-input").value), d("leaderboard-dialog"), await e();
+			await t(x("username-input").value), d("leaderboard-dialog"), await e();
 		} catch (e) {
-			y("username-error").textContent = e.message;
+			x("username-error").textContent = e.message;
 		} finally {
 			r.disabled = !1;
 		}
 	}, window.lucide?.createIcons(), {
 		promptName: p,
 		requireAuth() {
-			y("auth-dialog").open || d("auth-dialog");
+			x("auth-dialog").open || d("auth-dialog");
 		},
 		authenticated() {
-			y("auth-dialog").open && y("auth-dialog").close();
+			x("auth-dialog").open && x("auth-dialog").close();
 		},
 		configurationError() {
-			d("auth-dialog"), y("auth-message").textContent = "The account connection has not been configured yet.";
+			d("auth-dialog"), x("auth-message").textContent = "The account connection has not been configured yet.";
 		},
 		authMessage(e) {
-			y("auth-dialog").open && (y("auth-message").textContent = e);
+			x("auth-dialog").open && (x("auth-message").textContent = e);
 		},
 		setProfile(e, t) {
-			y("player-name").textContent = e ? e.username : "Pick your farmer name", y("player-name").dataset.username = e?.username ?? "", y("rename-player").hidden = !t, y("logout-player").hidden = !t;
+			x("player-name").textContent = e ? e.username : "Pick your farmer name", x("player-name").dataset.username = e?.username ?? "", x("rename-player").hidden = !t, x("logout-player").hidden = !t;
 		},
 		status(e) {
-			y("cloud-status").textContent = e;
+			x("cloud-status").textContent = e;
 		},
 		message(e) {
 			let t = document.createElement("p");
-			t.className = "leaderboard-empty", t.textContent = e, y("leaderboard-results").replaceChildren(t);
+			t.className = "leaderboard-empty", t.textContent = e, x("leaderboard-results").replaceChildren(t);
 		},
 		get category() {
-			return y("leaderboard-category").value;
+			return x("leaderboard-category").value;
 		},
 		get results() {
-			return y("leaderboard-results");
+			return x("leaderboard-results");
 		},
 		get open() {
-			return y("leaderboard-dialog").open;
+			return x("leaderboard-dialog").open;
 		}
 	};
 }
 //#endregion
 //#region src/payment-ui.js
-function x(t) {
+function C(t) {
 	let n = t.paymentReturn?.();
 	if (!n?.id) return;
 	let r = document.createElement("dialog");
@@ -3101,6 +3118,13 @@ function x(t) {
 				});
 				if (u) return;
 				if (e.status === "credited") {
+					try {
+						let r = "harvest-payment-event:" + n.id;
+						sessionStorage.getItem(r) || (t.trackCommerce?.("diamond_pack_completed", {
+							pack: e.pack,
+							diamonds: e.diamonds
+						}), sessionStorage.setItem(r, "1"));
+					} catch {}
 					p("credited", e.pack === "starter" ? "Your Starter Pack is here!" : "A little sparkle for your farm", e.pack === "starter" ? "10,000 coins, 300 diamonds and one of every crop have been added to your account." : `${Number(e.diamonds).toLocaleString("en-US")} diamonds have been added to your farm. Enjoy your next little upgrade!`, "Payment confirmed"), s.hidden = !0, window.dispatchEvent(new Event("harvest-purchase-confirmed"));
 					try {
 						await window.harvestRefresh?.();
@@ -3131,7 +3155,7 @@ function x(t) {
 }
 //#endregion
 //#region src/starter-pack-ui.js
-async function S(e) {
+async function w(e) {
 	let { CROPS: t, formatDuration: n } = await import(
 		/* @vite-ignore */
 		"/farm-state.js"
@@ -3184,54 +3208,60 @@ async function S(e) {
 }
 //#endregion
 //#region src/game-cloud.js
-var C;
+var T;
 try {
-	C = window.parent === window ? null : window.parent.harvestBridge;
+	T = window.parent === window ? null : window.parent.harvestBridge;
 } catch {}
-if (!C) location.replace("/play.html");
-else if (window.harvestInitialFarm = C.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
+if (!T) location.replace("/play.html");
+else if (window.harvestInitialFarm = T.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
 else {
 	document.body.hidden = !1;
-	let e = b({
-		onOpen: s,
-		onRetry: s,
-		onPlayer: () => r.open(C.playerId),
+	let e = S({
+		onOpen: c,
+		onRetry: c,
+		onPlayer: () => n.open(T.playerId),
 		onName: async (t) => {
-			let n = await C.request({
+			let n = await T.request({
 				operation: "rename",
 				username: t
 			});
-			e.setProfile(n.profile, { id: C.playerId });
+			e.setProfile(n.profile, { id: T.playerId });
 		},
-		onSignOut: () => C.signOut()
-	}), r = v(C);
-	e.setProfile(window.harvestInitialFarm.profile, { id: C.playerId }), e.status("Live rankings");
-	let i = C.presence?.subscribe((n) => {
-		e.open && t(e.results, n);
-	}), a = setInterval(() => {
-		e.open && !r.isOpen && !document.hidden && s(!0);
+		onSignOut: () => T.signOut()
+	}), n = b(T), i = T.serverNow - Date.now();
+	e.setProfile(window.harvestInitialFarm.profile, { id: T.playerId }), e.status("Live rankings");
+	let a = T.presence?.subscribe((n) => {
+		e.open && t(e.results, {
+			...n,
+			now: Date.now() + i
+		});
+	}), o = setInterval(() => {
+		e.open && !n.isOpen && !document.hidden && c(!0);
 	}, 3e4);
 	window.addEventListener("pagehide", () => {
-		i?.(), clearInterval(a);
+		a?.(), clearInterval(o);
 	}, { once: !0 });
-	let o = 0;
-	async function s(t = !1) {
-		let i = ++o, a = e.category;
+	let s = 0;
+	async function c(t = !1) {
+		let a = ++s, o = e.category;
 		t || e.message("Gathering the latest scores…"), e.results.setAttribute("aria-busy", "true");
 		try {
-			let t = await C.leaderboard(a);
-			if (i !== o) return;
-			n(e.results, t, C.playerId, (e) => r.open(e)), e.status("Up to date");
+			let t = await T.leaderboard(o);
+			if (a !== s) return;
+			r(e.results, {
+				...t,
+				now: Date.now() + i
+			}, T.playerId, (e) => n.open(e)), e.status("Up to date");
 		} catch (n) {
-			i === o && (t || e.message(n.message), e.status("Could not refresh"));
+			a === s && (t || e.message(n.message), e.status("Could not refresh"));
 		} finally {
-			i === o && e.results.setAttribute("aria-busy", "false");
+			a === s && e.results.setAttribute("aria-busy", "false");
 		}
 	}
-	let { farmReady: c } = await import(
+	let { farmReady: l } = await import(
 		/* @vite-ignore */
 		"/game.js?v=familyhall-model-2"
 );
-	await c && (x(C), await S(C));
+	await l && (C(T), await w(T));
 }
 //#endregion

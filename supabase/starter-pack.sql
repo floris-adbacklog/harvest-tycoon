@@ -2,17 +2,22 @@
 alter table public.harvest_purchases add column coins integer not null default 0;
 alter table public.harvest_purchases add column starter_expires_at timestamptz;
 alter table public.harvest_purchases drop constraint harvest_purchases_pack_check,
+ drop constraint harvest_purchases_diamonds_check,
  drop constraint harvest_purchases_amount_cents_check,
  drop constraint harvest_pack_amount_matches,
  drop constraint harvest_purchases_status_check;
 alter table public.harvest_purchases
- add constraint harvest_purchases_pack_check check(pack in ('50','300','1000','starter')),
+ add constraint harvest_purchases_pack_check check(pack in ('50','300','1000','100','600','2000','starter')),
+ add constraint harvest_purchases_diamonds_check check(diamonds in (50,100,300,600,1000,2000)),
  add constraint harvest_purchases_amount_cents_check check(amount_cents in (199,299,999,2499)),
  add constraint harvest_purchases_status_check check(status in ('pending','credited','test_paid','expired')),
  add constraint harvest_pack_amount_matches check(
  (pack='50' and diamonds=50 and coins=0 and amount_cents=199) or
  (pack='300' and diamonds=300 and coins=0 and amount_cents=999) or
  (pack='1000' and diamonds=1000 and coins=0 and amount_cents=2499) or
+ (pack='100' and diamonds=100 and coins=0 and amount_cents=199) or
+ (pack='600' and diamonds=600 and coins=0 and amount_cents=999) or
+ (pack='2000' and diamonds=2000 and coins=0 and amount_cents=2499) or
  (pack='starter' and diamonds=300 and coins=10000 and amount_cents=299));
 -- One pending/paid starter checkout per account and mode. Only Stripe-confirmed
 -- expired sessions release their reservation; paid sessions remain reserved.

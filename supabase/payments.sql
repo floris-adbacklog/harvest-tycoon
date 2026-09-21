@@ -2,8 +2,8 @@
 create table public.harvest_purchases (
  id uuid primary key,
  player_id uuid not null references auth.users(id) on delete restrict,
- pack text not null check(pack in ('50','300','1000')),
- diamonds integer not null check(diamonds in (50,300,1000)),
+ pack text not null check(pack in ('100','600','2000')),
+ diamonds integer not null check(diamonds in (100,600,2000)),
  amount_cents integer not null check(amount_cents in (199,999,2499)),
  price_id text not null,
  livemode boolean not null,
@@ -14,9 +14,9 @@ create table public.harvest_purchases (
  created_at timestamptz not null default now(),
  credited_at timestamptz,
  constraint harvest_pack_amount_matches check(
-  (pack='50' and diamonds=50 and amount_cents=199) or
-  (pack='300' and diamonds=300 and amount_cents=999) or
-  (pack='1000' and diamonds=1000 and amount_cents=2499))
+  (pack='100' and diamonds=100 and amount_cents=199) or
+  (pack='600' and diamonds=600 and amount_cents=999) or
+  (pack='2000' and diamonds=2000 and amount_cents=2499))
 );
 create index harvest_purchases_player_created on public.harvest_purchases(player_id,created_at desc);
 alter table public.harvest_purchases enable row level security;

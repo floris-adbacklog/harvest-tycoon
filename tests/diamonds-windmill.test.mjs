@@ -21,7 +21,7 @@ test('daily diamond rewards cycle, reset and reject repeat claims',()=>{
  act(state,{type:'checkin'},now+11*DAY_MS);assert.equal(state.login.streak,1);assert.equal(state.diamonds,total+DAILY_DIAMONDS[0]);
 });
 test('XP and coin boosts persist, multiply eligible rewards once and expire',()=>{
- let state=createFarm(now);state.diamonds=100;act(state,{type:'buy_boost',boost:'xp'});act(state,{type:'buy_boost',boost:'coins'});
+ let state=createFarm(now);state.diamonds=BOOSTS.xp.cost+BOOSTS.coins.cost;act(state,{type:'buy_boost',boost:'xp'});act(state,{type:'buy_boost',boost:'coins'});
  state=normalizeFarm(JSON.parse(JSON.stringify(state)),now);const before=state.xp;const harvested=act(state,{type:'field',id:0,action:'harvest'});assert.equal(harvested.xp,10);assert.equal(state.xp-before,10);
  state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'}).coins,marketQuote('wheat',now).price*20);
  const order=dailyOrders(state,now)[0];Object.assign(state.inventory,order.input);const delivery=act(state,{type:'delivery',id:order.id,day:utcDay(now)});assert.equal(delivery.coins,order.coins*2);assert.equal(delivery.xp,order.xp*2);

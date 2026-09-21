@@ -1,3 +1,5 @@
+> Current catalogue and deployment: see `VIP-DIAMOND-RELEASE.md`. Older setup examples below are historical; do not replace live functions or constraints with them.
+
 # Harvest Tycoon — live payments
 
 The deployed diamond-checkout function now runs in **live mode**. STRIPE_MODE is no longer used by this production endpoint. A missing PAYMENTS_ENABLED value no longer leaves the shop disabled.

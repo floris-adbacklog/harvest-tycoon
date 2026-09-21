@@ -1,4 +1,5 @@
-import {BUILDINGS,RECIPES,productionJobs,SINGLE_BATCH_COST,featureUnlocked,featureUnlockHint,BOOSTS,DIAMOND_PACKS,SINGLE_CROP_COST,CROPS,boostStatus,formatDuration} from './farm-state.js';
+import {confirmDiamondSpend} from './diamond-confirm.js';
+import {VIP_PLANS,vipActive,BUILDINGS,RECIPES,productionJobs,SINGLE_BATCH_COST,featureUnlocked,featureUnlockHint,BOOSTS,DIAMOND_PACKS,SINGLE_CROP_COST,CROPS,boostStatus,formatDuration} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {fieldPicker,bindFieldPicker} from './field-picker.js';
@@ -8,13 +9,15 @@ const number=n=>n.toLocaleString('en-US');
 export function createBoostsUI({state,runAction,onChange,notify}){
  let lastStatus='',catalog=null,purchasing='',requests={},selectedField='',selectedBatch='',finishing=false;
  const bridge=()=>window.parent.harvestBridge;
+ let previousVip=vipActive(state,farmNow()),observedExpiry=state.vipExpiresAt??0;
+ const track=(event,params={})=>bridge()?.trackCommerce?.(event,params);
  function runningBatches(){return Object.entries(state.buildings).flatMap(([building,b])=>productionJobs(b).map((job,index)=>({building,job,number:index+1,key:building+'/'+job.id})).filter(b=>b.job.readyAt>farmNow()));}
- function signature(){return [...runningBatches().map(b=>b.key),state.diamonds,state.boosts.upgradeCredits,...Object.keys(BOOSTS).map(id=>boostStatus(state,id,farmNow()).reason),...state.plots.filter(p=>p.crop&&p.readyAt>farmNow()).map(p=>`${p.id}:${p.crop}`)].join('|');}
+ function signature(){return [state.vipExpiresAt,vipActive(state,farmNow()),finishing,...runningBatches().map(b=>b.key),state.diamonds,state.boosts.upgradeCredits,...Object.keys(BOOSTS).map(id=>boostStatus(state,id,farmNow()).reason),...state.plots.filter(p=>p.crop&&p.readyAt>farmNow()).map(p=>`${p.id}:${p.crop}`)].join('|');}
  function render(){
   $('boost-wallet').textContent=number(state.diamonds);
   $('boost-catalog').innerHTML=Object.entries(BOOSTS).map(([id,b])=>{
    const status=boostStatus(state,id,farmNow());
-   return `<article class="boost-card ${status.remaining?'boost-active':''}"><div class="boost-card-art">${art(id==='crops'?'instant-harvest':b.art)}</div><div class="boost-card-copy"><h3>${b.name}</h3><p>${b.description}</p><span class="boost-detail" data-boost-time="${id}">${status.remaining?`Active · ${formatDuration(status.remaining)} left`:status.reason||(state.diamonds<b.cost?`Need ${b.cost-state.diamonds} more diamonds · Earn them in Today`:'Ready to activate')}</span></div><button class="boost-buy" data-buy-boost="${id}" ${status.canBuy?'':'disabled'} aria-label="Activate ${b.name} for ${b.cost} diamonds">${art('diamonds')}<span>${b.cost}</span><small>${status.remaining?'Active':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate'}</small></button></article>`;
+   return `<article class="boost-card ${status.remaining?'boost-active':''}"><div class="boost-card-art">${art(id==='crops'?'instant-harvest':b.art)}</div><div class="boost-card-copy"><h3>${b.name}</h3><p>${b.description}</p><span class="boost-detail" data-boost-time="${id}">${status.remaining?`Active · ${formatDuration(status.remaining)} left`:status.reason||(state.diamonds<b.cost?`Need ${b.cost-state.diamonds} more diamonds · Earn them in Today`:'Ready to activate')}</span></div><button class="boost-buy" data-buy-boost="${id}" ${status.canBuy&&!finishing?'':'disabled'} aria-label="Activate ${b.name} for ${b.cost} diamonds">${art('diamonds')}<span>${b.cost}</span><small>${status.remaining?'Active':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate'}</small></button></article>`;
   }).join('');
   const batches=runningBatches();if(!batches.some(b=>b.key===selectedBatch))selectedBatch='';
   const selection=batches.find(b=>b.key===selectedBatch);
@@ -32,22 +35,38 @@ export function createBoostsUI({state,runAction,onChange,notify}){
    try{await bridge().checkout(pack,requests[pack]);}catch(error){$('boost-feedback').textContent=error.message;purchasing='';render();}
   });
   $('boost-catalog').querySelectorAll('[data-buy-boost]').forEach(button=>button.onclick=async()=>{
+   if(finishing)return;const id=button.dataset.buyBoost,offer=BOOSTS[id];finishing=true;render();
    try{
-    const id=button.dataset.buyBoost,result=await runAction({type:'buy_boost',boost:id,expectedCost:BOOSTS[id].cost});onChange();render();
-    const message=id==='crops'?`${result.affected} crops are ready to harvest!`:id==='production'?`${result.affected} batches are ready to collect!`:id==='upgrade'?'Your next production-building upgrade costs 50% less.':`${BOOSTS[id].name} is active for 30 minutes.`;
+    if(offer.cost>=150&&!await confirmDiamondSpend({title:offer.name,cost:offer.cost,description:offer.description}))return;
+    const result=await runAction({type:'buy_boost',boost:id,expectedCost:offer.cost});onChange();
+    const message=id==='crops'?`${result.affected} crops are ready to harvest!`:id==='production'?`${result.affected} batches are ready to collect!`:id==='upgrade'?'Your next production-building upgrade costs 50% less.':`${offer.name} is active for 30 minutes.`;
     $('boost-feedback').textContent=message;notify(message);
-   }catch(error){$('boost-feedback').textContent=error.message;notify(error.message);render();}
+   }catch(error){$('boost-feedback').textContent=error.message;notify(error.message);}finally{finishing=false;render();}
+  });
+  let vipPanel=$('vip-shop');if(!vipPanel){vipPanel=document.createElement('section');vipPanel.id='vip-shop';vipPanel.className='vip-shop';$('boost-catalog').after(vipPanel);}
+  const active=vipActive(state,farmNow());
+  vipPanel.innerHTML=`<div class="vip-shop-heading">${art('vip')}<div><h3>A little VIP sunshine</h3><p>The same gentle extras with either plan.</p></div></div><p class="vip-status" data-vip-status>${active?`VIP active · ${formatDuration(state.vipExpiresAt-farmNow())} left`:'Choose your time in the sunshine'}</p><ul class="vip-benefits"><li><strong>10% shorter growing time</strong><br>For new plantings and the next regrowth.</li><li><strong>10% shorter production</strong><br>For batches started while VIP is active.</li><li><strong>5% more market coins</strong><br>For goods and crops you sell.</li><li><strong>2× Today rewards</strong><br>Coins, XP and diamonds from gifts, daily challenges and daily deliveries.</li></ul><div class="vip-plans">${Object.entries(VIP_PLANS).map(([id,plan])=>`<article class="vip-plan"><strong>${plan.name}</strong><span>${id==='week'?'A week of little extras':'30 days · better value'}</span><button type="button" class="small-button" data-buy-vip="${id}" ${finishing||state.diamonds<plan.cost?'disabled':''}>${art('diamonds')} ${active?'Extend':'Activate'} · ${number(plan.cost)}</button>${state.diamonds<plan.cost?`<small>Need ${number(plan.cost-state.diamonds)} more diamonds</small>`:''}</article>`).join('')}</div><p class="vip-fine">One payment in diamonds; no subscription. Renewing adds time, never stronger bonuses. Running timers stay unchanged. Daily rewards are doubled when claimed while VIP is active. Existing Double XP and Double earnings boosts stack with VIP. Family, chapter and level rewards stay the same.</p>`;
+  vipPanel.querySelectorAll('[data-buy-vip]').forEach(button=>button.onclick=async()=>{
+   if(finishing)return;const plan=button.dataset.buyVip,offer=VIP_PLANS[plan],expectedExpiresAt=state.vipExpiresAt??0;finishing=true;render();
+   try{if(!await confirmDiamondSpend({title:active?'Extend your VIP':'Activate VIP',cost:offer.cost,description:`${offer.name}. ${active?'Adds time after your current VIP expires.':'Starts immediately.'} Your benefits never stack in strength.`}))return;
+    track('vip_purchase_started',{plan,cost:offer.cost});await runAction({type:'buy_vip',plan,expectedCost:offer.cost,expectedExpiresAt});onChange();notify(active?'Your VIP time has been extended.':'Welcome to VIP! Your extras are active.');
+   }catch(error){$('boost-feedback').textContent=error.message;notify(error.message);}finally{finishing=false;render();}
   });
   lastStatus=signature();refreshArt();
  }
- async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};render();$('boost-dialog').showModal();try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
+ async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};render();$('boost-dialog').showModal();track('diamond_shop_view');try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
  function refresh(){
   $('diamonds').textContent=state.diamonds.toLocaleString('en-US',matchMedia('(max-width: 900px), (max-height: 550px) and (pointer: coarse)').matches?{notation:'compact',maximumFractionDigits:1}:{});
   $('diamond-button').setAttribute('aria-label',`${number(state.diamonds)} diamonds. Open boosts and diamond shop.`);
   if($('boost-dialog').open)render();tick();
  }
  function tick(){
-  const now=farmNow(),active=[];
+  const now=farmNow(),active=[],isVip=vipActive(state,now);
+  if(previousVip&&!isVip&&observedExpiry===state.vipExpiresAt)track('vip_expired');
+  previousVip=isVip;observedExpiry=state.vipExpiresAt??0;
+  if(isVip)active.push(`VIP · ${formatDuration(state.vipExpiresAt-now)}`);
+  const vipStatus=document.querySelector('[data-vip-status]');if(vipStatus&&isVip)vipStatus.textContent=`VIP active · ${formatDuration(state.vipExpiresAt-now)} left`;
+
   for(const [id,label,until] of [['xp','2× XP',state.boosts.xpUntil],['coins','2× coins',state.boosts.coinsUntil]]){
    if(until>now)active.push(`${label} · ${formatDuration(until-now)}`);
    const el=document.querySelector(`[data-boost-time="${id}"]`);if(el&&until>now)el.textContent=`Active · ${formatDuration(until-now)} left`;

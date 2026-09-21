@@ -20,7 +20,7 @@ test('Starter Pack verifies €2.99, 300 diamonds and 10000 coins against exact 
  assert.equal(validatePaidSession(s,p,items),'pi_starter');
  assert.throws(()=>validatePaidSession({...s,amount_total:199},p,items));
  assert.throws(()=>validatePaidSession(s,{...p,coins:0},items));
- assert.throws(()=>validatePaidSession(s,p,{...items,data:[{quantity:1,price:{id:PAYMENT_PACKS['300'].price}}]}));
+ assert.throws(()=>validatePaidSession(s,p,{...items,data:[{quantity:1,price:{id:PAYMENT_PACKS['1250'].price}}]}));
 });
 test('seed-box sorting starts at 35%, keeps practice and caps at 60% after 13 attempts',()=>{
  const s=createFarm(start);s.chorePractice={weeds:20,troughs:20,sorting:0};

@@ -4,7 +4,7 @@ const sheets=[
  {file:'goods-v2.png',columns:4,keys:['grainmeal','flour','feed','fertilizer','salad','pickles','oil','milk','eggs','cheese','bread','pie','vegetables','tractor','silo','cart']},
  {file:'interface-v2.png',columns:4,keys:['farm','estate','buildings','market','gift','quests','boost','trophy','coins','diamonds','seeds','water','harvest','care','hammer','xp']}
 ];
-const pictures={'familyhall-model':'familyhall-model',lock:'lock','family-weekly-order':'family-weekly-order','family-members':'family-members','family-tournament':'family-tournament','family-management':'family-management',familyhall:'familyhall','helping-hand':'helping-hand','collect-all':'collect-all','instant-harvest':'instant-harvest',farmhouse:'farmhouse',mill:'mill',dairy:'dairy',coop:'coop',bakery:'bakery',packing:'packing',windmill:'windmill',stall:'stall',chores:'chores',honey:'honey'};
+const pictures={vip:'vip','familyhall-model':'familyhall-model',lock:'lock','family-weekly-order':'family-weekly-order','family-members':'family-members','family-tournament':'family-tournament','family-management':'family-management',familyhall:'familyhall','helping-hand':'helping-hand','collect-all':'collect-all','instant-harvest':'instant-harvest',farmhouse:'farmhouse',mill:'mill',dairy:'dairy',coop:'coop',bakery:'bakery',packing:'packing',windmill:'windmill',stall:'stall',chores:'chores',honey:'honey'};
 for(const key of ['rank-gold','rank-silver','rank-bronze','family-bee','family-oak','family-barn'])pictures[key]=key;
 // Individual painted illustrations keep each chore recognisable at mobile sizes.
 for(const id of ['weeds','troughs','sorting','fences','irrigation','harvestfair'])pictures[`chore-${id}`]=`chore-${id}`;
@@ -12,10 +12,10 @@ for(const id of ['greenhouse','apiary','paddock','workshop'])pictures[`activity-
 for(const id of ['apples','berries','greenbeans','applejuice','applepie','berrypreserves','berrytart','stew','juicepress','preserves','kitchen'])pictures[id]=id;
 for(const id of ["orchardjuice", "berrysmoothie", "applecompote", "applevinegar", "pickledbeans", "beangratin", "orchardsalad", "berrycheesecake", "harvesthamper"])pictures[id]=id;
 // Painted-style vector illustrations for the few interface items that had no artwork yet.
-const svgArt=new Set(['guide','sound','streak']);
+const svgArt=new Set(['guide','sound','streak','settings']);
 for(const id of svgArt)pictures[id]=id;
 const spriteEntries=Object.fromEntries(sheets.flatMap(sheet=>sheet.keys.map((key,index)=>[key,{...sheet,index}])));
-const symbolMap={'lock-keyhole':'lock',lock:'lock',salad:'salad',amphora:'pickles',milk:'milk',egg:'eggs',sandwich:'cheese',croissant:'bread','cake-slice':'pie','package-check':'vegetables','package-open':'feed',droplet:'oil',gem:'diamonds',coins:'coins',star:'xp',droplets:'water',scissors:'harvest',shovel:'care',leaf:'care',gift:'gift','clipboard-check':'quests',trophy:'trophy',medal:'trophy',sparkles:'boost',sprout:'seeds',hammer:'hammer',wheat:'wheat',house:'farm',factory:'buildings',landmark:'estate',store:'market',tractor:'tractor',warehouse:'silo',truck:'cart',wind:'windmill','shopping-basket':'vegetables','land-plot':'seeds','circle-fading-arrow-up':'hammer',flag:'quests','circle-help':'guide','volume-2':'sound',flame:'streak'};
+const symbolMap={'lock-keyhole':'lock',lock:'lock',salad:'salad',amphora:'pickles',milk:'milk',egg:'eggs',sandwich:'cheese',croissant:'bread','cake-slice':'pie','package-check':'vegetables','package-open':'feed',droplet:'oil',gem:'diamonds',coins:'coins',star:'xp',droplets:'water',scissors:'harvest',shovel:'care',leaf:'care',gift:'gift','clipboard-check':'quests',trophy:'trophy',medal:'trophy',sparkles:'boost',sprout:'seeds',hammer:'hammer',wheat:'wheat',house:'farm',factory:'buildings',landmark:'estate',store:'market',tractor:'tractor',warehouse:'silo',truck:'cart',wind:'windmill','shopping-basket':'vegetables','land-plot':'seeds','circle-fading-arrow-up':'hammer',flag:'quests','circle-help':'guide','volume-2':'sound',settings:'settings',flame:'streak'};
 export const ART_KEYS=Object.freeze([...Object.keys(spriteEntries),...Object.keys(pictures)]);
 export function art(key,extra=''){
  const entry=spriteEntries[key];

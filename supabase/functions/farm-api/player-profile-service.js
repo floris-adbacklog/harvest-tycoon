@@ -3,7 +3,7 @@ import {CROPS,MASTERY_TIERS} from './farm-state.js';
 
 const cropKeys=Object.keys(CROPS);
 const metrics=['harvested_crops','goods_produced','items_sold','deliveries','badges'];
-export const PLAYER_PUBLIC_FIELDS=['player_id','username','level','last_active_at',...metrics,...cropKeys.map(key=>`harvested_${key}`)].join(',');
+export const PLAYER_PUBLIC_FIELDS=['player_id','username','level','last_active_at','vip_expires_at',...metrics,...cropKeys.map(key=>`harvested_${key}`)].join(',');
 const number=value=>Number.isFinite(Number(value))?Math.max(0,Math.floor(Number(value))):0;
 export const escapePlayerSearch=value=>value.replace(/[\\%_]/g,'\\$&');
 async function read(query){const result=await query;if(result.error)throw result.error;return result.data;}
@@ -16,14 +16,14 @@ async function familiesFor(admin,ids){
  for(const member of members??[]){const f=byId.get(member.family_id);if(f)result.set(member.player_id,{name:f.name,emblem:f.emblem,role:member.role==='leader'?'Leader':'Member'});}
  return result;
 }
-function summary(row,families,now){return {playerId:row.player_id,username:row.username,level:number(row.level),online:isRecentlyActive(row.last_active_at,now),family:families.get(row.player_id)??null};}
+function summary(row,families,now){return {playerId:row.player_id,username:row.username,level:number(row.level),vipExpiresAt:Date.parse(row.vip_expires_at)||0,online:isRecentlyActive(row.last_active_at,now),family:families.get(row.player_id)??null};}
 // Auth/session validation happens in index.ts before this read-only directory is reached.
 // Never load or return a complete farm, account record, membership or family record.
 export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
  const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:player},serverNow:now}});
  if(body.operation==='player_search'){
   if(typeof body.query!=='string'||body.query.trim().length<2||body.query.trim().length>20)return respond({error:'Enter 2–20 characters to find a farmer.'},400);
-  const rows=await read(admin.from('player_stats').select('player_id,username,level,last_active_at').ilike('username',`%${escapePlayerSearch(body.query.trim())}%`).order('username',{ascending:true}).order('player_id',{ascending:true}).limit(21));
+  const rows=await read(admin.from('player_stats').select('player_id,username,level,last_active_at,vip_expires_at').ilike('username',`%${escapePlayerSearch(body.query.trim())}%`).order('username',{ascending:true}).order('player_id',{ascending:true}).limit(21));
   const visible=(rows??[]).slice(0,20),families=await familiesFor(admin,visible.map(row=>row.player_id));
   return respond({players:visible.map(row=>summary(row,families,now)),hasMore:(rows??[]).length>20});
  }

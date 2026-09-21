@@ -166,7 +166,7 @@ test('Failed invite attempts are persisted and limited, including alternating cr
 test('Public view exposes no player IDs, activity timestamps, balances, emails, or other invite codes',()=>{
  let c=join(create());c.players=c.members.map(m=>({player_id:m.player_id,username:m.player_id,level:10,online:true,last_active_at:'secret-time',email:'secret-email',diamonds:900,currency:800}));c.families.push({id:'secret-family',name:'Private',emblem:'1',invite_code:'SECRET',is_open:false,deleted_at:null});
  const v=familyPublicView(c,'alice',farm(),now),json=JSON.stringify(v);for(const secret of ['player_id','last_active','secret-time','secret-email','currency','SECRET'])assert.ok(!json.includes(secret),secret);
- assert.deepEqual(Object.keys(v.members[0]).sort(),['id','isSelf','level','online','points','role','username'].sort());assert.equal(v.members[0].online,true);
+ assert.deepEqual(Object.keys(v.members[0]).sort(),['id','isSelf','level','online','points','role','username','vipExpiresAt'].sort());assert.equal(v.members[0].online,true);
 });
 test('Old saves normalize safely and shared copies and existing presence rule match',()=>{
  const s=farm();delete s.family;const b=structuredClone(s);normalizeFarm(s,now);assert.deepEqual(s.family,{familyId:null,unclaimedCount:0});assert.equal(s.coins,b.coins);assert.equal(s.diamonds,b.diamonds);

@@ -265,7 +265,7 @@ export function productionSlots(level){return Math.max(1,Math.min(MAX_BUILDING_L
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
 export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level){return level<=3?.2*(level-1):.4+.04*(level-3);}
-export function recipeDuration(state,id){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level)));}
+export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level))*(vipActive(state,now)?.9:1));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
@@ -341,7 +341,7 @@ export function clearPlanting(state,id,expectedPlantedAt){
  const crop=p.crop;Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
  return {id,crop};
 }
-export function cropDuration(state,crop,regrowing=false){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth));}
+export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1));}
 export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0);}
 export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
 export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
@@ -374,7 +374,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
   if(p.crop)throw new Error('This field is already planted.');
   if(state.coins<seedCost(state,crop))throw new Error('Not enough coins. Sell some produce at the market.');
   state.coins-=seedCost(state,crop);state.stats.planted++;
-  const duration=cropDuration(state,crop);Object.assign(p,{crop,harvestCycles:0,plantedAt:now,readyAt:now+duration,careAt:now+Math.max(30000,duration*.3),watered:false,tended:false,fertilized:false});
+  const duration=cropDuration(state,crop,false,now);Object.assign(p,{crop,harvestCycles:0,plantedAt:now,readyAt:now+duration,careAt:now+Math.max(30000,duration*.3),watered:false,tended:false,fertilized:false});
   return {action,crop,cost:seedCost(state,crop)};
  }
  if(!p.crop)throw new Error('Plant a crop in this field first.');
@@ -398,7 +398,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  if(!state.discovered.includes(harvested))state.discovered.push(harvested);state.stats.varieties=state.discovered.length;state.xp+=xp;
  const regrowing=!!CROPS[harvested].perennial;
  // One waiting harvest only. A new cycle starts at collection, never at the old deadline.
- if(regrowing){const duration=cropDuration(state,harvested,true);Object.assign(p,{plantedAt:now,readyAt:now+duration,careAt:now+Math.max(30000,duration*.3),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1});}
+ if(regrowing){const duration=cropDuration(state,harvested,true,now);Object.assign(p,{plantedAt:now,readyAt:now+duration,careAt:now+Math.max(30000,duration*.3),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1});}
  else Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
  return {action,crop:harvested,quantity,xp,regrowing};
 }
@@ -409,7 +409,7 @@ export function sellCrops(state,item='all',now=Date.now(),day,category,quantity)
  const keys=category?Object.keys(category==='crops'?CROPS:PRODUCTS):item==='all'?Object.keys(ITEMS):[item];
  if(quantity!==undefined&&(item==='all'||category!==undefined||!Number.isSafeInteger(quantity)||quantity<1||quantity>state.inventory[item]))throw new Error('Choose a valid quantity within your stock.');
  const amounts=Object.fromEntries(keys.map(k=>[k,quantity??state.inventory[k]]));
- const total=keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0);
+ const total=marketSaleValue(state,keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0),now);
  if(total===0)throw new Error('Your basket is empty. Harvest or produce something first.');
  const units=keys.reduce((v,k)=>v+amounts[k],0);
  for(const k of keys){state.inventory[k]-=amounts[k];state.stats['sold_'+k]=(state.stats['sold_'+k]??0)+amounts[k];}
@@ -457,7 +457,7 @@ function startSingleProduction(state,id,now=Date.now()){
  const r=RECIPES[id],b=state.buildings[r.building],a=recipeAvailability(state,id);
  if(a.busy)throw new Error('All production slots are occupied. Collect a finished batch first.');
  if(a.missing.length)throw new Error('Missing ingredients: '+a.missing.map(m=>`${m.name} (${m.have}/${m.need})`).join(', ')+'.');
- const duration=recipeDuration(state,id);
+ const duration=recipeDuration(state,id,now);
  for(const [k,n]of Object.entries(r.input))state.inventory[k]-=n;
  b.batchSequence=(b.batchSequence??0)+1;
  const job={id:`${r.building}-${b.batchSequence}`,recipe:id,startedAt:now,readyAt:now+duration,output:{...r.output},xp:r.xp};
@@ -532,7 +532,23 @@ export const DAY_MS=86400000;
 export const DAILY_REWARDS=[40,55,70,85,100,120,160];
 export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
 export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]);
-export const DIAMOND_PACKS=Object.freeze([{amount:50,price:'€1.99'},{amount:300,price:'€9.99'},{amount:1000,price:'€24.99'}]);
+export const DIAMOND_PACKS=Object.freeze([{amount:150,price:'€1.99'},{amount:500,price:'€4.99'},{amount:1250,price:'€9.99'},{amount:3500,price:'€24.99'}]);
+// VIP has a single server-owned expiry. New purchases extend time, never strength.
+export const VIP_PLANS=Object.freeze({week:{name:'VIP · 7 days',cost:500,duration:7*86400000},month:{name:'VIP · 30 days',cost:1500,duration:30*86400000}});
+export function vipActive(state,now=Date.now()){return Number.isSafeInteger(state.vipExpiresAt)&&state.vipExpiresAt>now;}
+export function dailyRewardMultiplier(state,now=Date.now()){return vipActive(state,now)?2:1;}
+export function marketSaleValue(state,base,now=Date.now()){return Math.floor(base*(vipActive(state,now)?1.05:1)*(state.boosts?.coinsUntil>now?2:1));}
+export function buyVip(state,plan,expectedCost,expectedExpiresAt,now=Date.now()){
+ if(typeof plan!=='string'||!Object.hasOwn(VIP_PLANS,plan))throw new Error('Choose a VIP plan.');
+ const offer=VIP_PLANS[plan],previous=state.vipExpiresAt??0;
+ if(expectedCost!==offer.cost)throw new Error('The price has changed. Review the current price.');
+ if(expectedExpiresAt!==previous)throw new Error('Your VIP status has changed. Review it before extending.');
+ if(state.diamonds<offer.cost)throw new Error(`You need ${offer.cost} diamonds.`);
+ const expiresAt=Math.max(now,previous)+offer.duration;
+ if(!Number.isSafeInteger(expiresAt))throw new Error('VIP cannot be extended further.');
+ state.diamonds-=offer.cost;state.vipExpiresAt=expiresAt;
+ return {plan,cost:offer.cost,vipExpiresAt:expiresAt,extended:previous>now};
+}
 export const SINGLE_BATCH_COST=10;
 export function finishSingleBatch(state,building,jobId,expectedCost,now=Date.now()){
  if(expectedCost!==SINGLE_BATCH_COST)throw new Error('The price has changed. Review the current price.');
@@ -556,11 +572,11 @@ export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
  return {field:id,crop:plot.crop,cost:SINGLE_CROP_COST,affected:1};
 }
 export const BOOSTS=Object.freeze({
- xp:{name:'Double XP',cost:25,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},
- coins:{name:'Double earnings',cost:60,duration:1800000,art:'coins',description:'Double your market sales and delivery coins for 30 minutes. Passive income and gifts stay the same.'},
- crops:{name:'Instant harvest',cost:90,art:'seeds',description:'Make every currently growing crop ready to harvest. Crops stay in their fields until you collect them.'},
- upgrade:{name:'Builder’s discount',cost:150,art:'hammer',description:'Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires.'},
- production:{name:'Finish production',cost:75,art:'boost',description:'Finish all current production batches instantly. Collect the finished goods from their buildings.'}
+ xp:{name:'Double XP',cost:50,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},
+ coins:{name:'Double earnings',cost:100,duration:1800000,art:'coins',description:'Double your market sales and delivery coins for 30 minutes. Passive income and gifts stay the same.'},
+ crops:{name:'Instant harvest',cost:150,art:'seeds',description:'Make every currently growing crop ready to harvest. Crops stay in their fields until you collect them.'},
+ production:{name:'Finish production',cost:200,art:'boost',description:'Finish all current production batches instantly. Collect the finished goods from their buildings.'},
+ upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires.'}
 });
 export function boostStatus(state,id,now=Date.now()){
  if(!Object.hasOwn(BOOSTS,id))throw new Error('Choose a valid boost.');
@@ -718,7 +734,7 @@ export function normalizeFarm(state,now=Date.now()){
  const oldVersion=state.version??0;
  if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=xpForLevel(previousLevel)-60*(previousLevel-1);}
  state.progression??={mode:'legacy'};
- state.version=14;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
+ state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
@@ -772,29 +788,29 @@ function refreshProgressionDaily(state,now){
 export function createFarm(now=Date.now()){return normalizeFarm(createBaseFarm(now),now);}
 export function dailyTasks(state,now=Date.now()){
  normalizeFarm(state,now);refreshProgressionDaily(state,now);const d=dayNumber(now);
- return state.daily.tasks.map((q,id)=>{return {...q,id,diamonds:DAILY_CHALLENGE_DIAMONDS[id],progress:Math.min(q.target,Math.max(0,(state.stats[q.stat]??0)-(state.daily.baseline[q.stat]??0))),claimed:state.daily.claimed.includes(id)};});
+ return state.daily.tasks.map((q,id)=>{return {...q,id,reward:q.reward*dailyRewardMultiplier(state,now),xp:10*dailyRewardMultiplier(state,now),diamonds:DAILY_CHALLENGE_DIAMONDS[id]*dailyRewardMultiplier(state,now),progress:Math.min(q.target,Math.max(0,(state.stats[q.stat]??0)-(state.daily.baseline[q.stat]??0))),claimed:state.daily.claimed.includes(id)};});
 }
 export function dailyOrders(state,now=Date.now()){
  normalizeFarm(state,now);refreshProgressionDaily(state,now);const d=dayNumber(now);
- return state.daily.orderBoard.map((order,id)=>({...order,diamonds:deliveryDiamonds(order),id,revision:state.daily.orderRevisions[id]??0,done:state.daily.orders.includes(id)}));
+ return state.daily.orderBoard.map((order,id)=>({...order,coins:order.coins*dailyRewardMultiplier(state,now),xp:order.xp*dailyRewardMultiplier(state,now),diamonds:deliveryDiamonds(order)*dailyRewardMultiplier(state,now),id,revision:state.daily.orderRevisions[id]??0,done:state.daily.orders.includes(id)}));
 }
 export function claimDaily(state,id,day,now=Date.now()){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('A new day has started. Check the fresh challenges.');
  const q=dailyTasks(state,now).find(q=>q.id===id);if(!q)throw new Error('Choose a daily challenge.');
  if(q.claimed)throw new Error('You already claimed this daily reward.');if(q.progress<q.target)throw new Error('Finish this daily challenge first.');
- state.daily.claimed.push(id);state.coins+=q.reward;state.diamonds+=q.diamonds;state.xp+=10;state.stats.dailies++;
+ state.daily.claimed.push(id);state.coins+=q.reward;state.diamonds+=q.diamonds;state.xp+=q.xp;state.stats.dailies++;
  state.stats.challenge_diamonds=(state.stats.challenge_diamonds??0)+q.diamonds;
- let bonus=0;if(state.daily.claimed.length===3&&!state.daily.bonusClaimed){bonus=60;state.daily.bonusClaimed=true;state.coins+=bonus;state.xp+=15;}
- return {coins:q.reward+bonus,diamonds:q.diamonds,xp:10+(bonus?15:0),bonus};
+ let bonus=0;if(state.daily.claimed.length===3&&!state.daily.bonusClaimed){bonus=60*dailyRewardMultiplier(state,now);state.daily.bonusClaimed=true;state.coins+=bonus;state.xp+=15*dailyRewardMultiplier(state,now);}
+ return {coins:q.reward+bonus,diamonds:q.diamonds,xp:q.xp+(bonus?15*dailyRewardMultiplier(state,now):0),bonus};
 }
 export function checkIn(state,now=Date.now()){
  normalizeFarm(state,now);const day=utcDay(now);
  if(state.login.lastDay===day)throw new Error('Your daily gift is already collected.');
  state.login.streak=state.login.lastDay===utcDay(now-DAY_MS)?state.login.streak+1:1;
  state.login.lastDay=day;state.login.best=Math.max(state.login.best,state.login.streak);state.login.visits++;
- const index=(state.login.streak-1)%7,coins=DAILY_REWARDS[index],diamonds=DAILY_DIAMONDS[index];state.coins+=coins;state.diamonds+=diamonds;state.xp+=10;
+ const index=(state.login.streak-1)%7,coins=DAILY_REWARDS[index]*dailyRewardMultiplier(state,now),diamonds=DAILY_DIAMONDS[index]*dailyRewardMultiplier(state,now),xp=10*dailyRewardMultiplier(state,now);state.coins+=coins;state.diamonds+=diamonds;state.xp+=xp;
  state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
- return {coins,diamonds,streak:state.login.streak,xp:10};
+ return {coins,diamonds,streak:state.login.streak,xp};
 }
 export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('The order board has refreshed. Pick a new order.');
@@ -848,7 +864,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  recordBeginnerAction(state,action,result,beginnerBefore);
  const earnedXP=state.xp-beforeXP;
  if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
- if(state.boosts.coinsUntil>now&&['sell','delivery'].includes(action.type)){
+ if(state.boosts.coinsUntil>now&&['delivery'].includes(action.type)){
   const bonus=state.coins-beforeCoins;if(bonus>0){state.coins+=bonus;state.stats.earned+=bonus;result.coins+=bonus;}
  }
  const reward=grantLevelRewards(state,beforeLevel+1);
@@ -857,9 +873,10 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  return result;
 }
 function dispatchFarmAction(state,action,now,random){
- const gates={daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts'};
+ const gates={buy_vip:'boosts',daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts'};
  const gate=gates[action.type];if(gate&&!featureUnlocked(state,gate))throw new Error(featureUnlockHint(gate));
  switch(action.type){
+  case 'buy_vip':return buyVip(state,action.plan,action.expectedCost,action.expectedExpiresAt,now);
   case 'construct':return constructBuilding(state,action.building);
   case 'clear_planting':return clearPlanting(state,action.id,action.expectedPlantedAt);
   case 'finish_batch':return finishSingleBatch(state,action.building,action.jobId,action.expectedCost,now);
@@ -1248,7 +1265,7 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  const contributionLocked=!!current&&current.family_id!==family?.id;
  const yourPrize=board.prizes.find(p=>p.family_id===family?.id);
  const rewards=c.rewards.filter(r=>r.player_id===player&&!r.claimed_at&&r.expires_at>now).map(({id,week,kind,coins,xp,diamonds,expires_at})=>({id,week,kind,coins,xp,diamonds,expiresAt:expires_at}));
- const members=family?familyMembers(c,family.id).map(m=>{const p=c.players.find(p=>p.player_id===m.player_id),points=c.contributions.find(r=>r.family_id===family.id&&r.player_id===m.player_id&&r.week===week)?.points??0;return {id:m.id,username:p?.username??'Farmer',level:p?.level??1,online:p?.online===true,points,role:m.role,isSelf:m.player_id===player};}):[];
+ const members=family?familyMembers(c,family.id).map(m=>{const p=c.players.find(p=>p.player_id===m.player_id),points=c.contributions.find(r=>r.family_id===family.id&&r.player_id===m.player_id&&r.week===week)?.points??0;return {id:m.id,username:p?.username??'Farmer',level:p?.level??1,vipExpiresAt:Date.parse(p?.vip_expires_at)||0,online:p?.online===true,points,role:m.role,isSelf:m.player_id===player};}):[];
  const card=f=>({id:f.id,name:f.name,emblem:f.emblem,members:familyMembers(c,f.id).length});
  const pending=(c.invitations??[]).filter(i=>i.status==='pending'&&i.expires_at>now&&c.families.some(f=>f.id===i.family_id&&!f.deleted_at)&&!familyCurrent(c,i.recipient_id));
  const incoming=pending.find(i=>i.recipient_id===player);

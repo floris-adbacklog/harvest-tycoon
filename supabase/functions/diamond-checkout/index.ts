@@ -1,6 +1,6 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,paymentPack,UUID,starterEligibility,livePaymentConfiguration} from './payments.js';
+import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration} from './payments.js';
 const origin='https://www.harvesttycoon.com';
 const cors={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -29,21 +29,22 @@ Deno.serve(async req=>{
   }
   if(body.operation!=='create')return reply({error:'Unknown request.'},400);
   if(!enabled)return reply({error:'Diamond purchases are not available yet.'},503);
-  let pack;try{pack=paymentPack(body.pack);}catch{return reply({error:'Choose a diamond pack.'},400);}
+  let pack;try{pack=checkoutPack(body.pack);}catch{return reply({error:'Choose a diamond pack.'},400);}
+  const packId=pack.id;
   if(!UUID.test(body.requestId??''))return reply({error:'Invalid purchase request.'},400);
-  if(body.pack==='starter'&&!starter.eligible)return reply({error:starter.claimed?'You have already received the Starter Pack.':'The Starter Pack is only available during your first 72 hours.'},409);
+  if(packId==='starter'&&!starter.eligible)return reply({error:starter.claimed?'You have already received the Starter Pack.':'The Starter Pack is only available during your first 72 hours.'},409);
   const farm=await admin.from('player_farms').select('player_id').eq('player_id',user.id).maybeSingle();if(farm.error)throw farm.error;if(!farm.data)return reply({error:'Open your farm before buying diamonds.'},409);
   const stripe=new Stripe(key,{apiVersion:'2026-07-29.dahlia',httpClient:Stripe.createFetchHttpClient(),maxNetworkRetries:2});
   const priceId=pack.price;
   if(!priceId)return reply({error:'This pack has not been configured.'},503);
   const price=await stripe.prices.retrieve(priceId);
   if(!price.active||price.livemode!==live||price.currency!=='eur'||price.unit_amount!==pack.cents||price.type!=='one_time'||(live&&pack.product&&price.product!==pack.product))return reply({error:'This pack needs a pricing configuration update.'},503);
-  const insert=await admin.from('harvest_purchases').insert({id:body.requestId,player_id:user.id,pack:body.pack,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:priceId,livemode:live,starter_expires_at:body.pack==='starter'?new Date(starter.expiresAt).toISOString():null});
+  const insert=await admin.from('harvest_purchases').insert({id:body.requestId,player_id:user.id,pack:packId,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:priceId,livemode:live,starter_expires_at:packId==='starter'?new Date(starter.expiresAt).toISOString():null});
   if(insert.error&&insert.error.code!=='23505')throw insert.error;
   let query=admin.from('harvest_purchases').select('*').eq('player_id',user.id);
-  query=body.pack==='starter'?query.eq('pack','starter').eq('livemode',live).neq('status','expired'):query.eq('id',body.requestId);
+  query=packId==='starter'?query.eq('pack','starter').eq('livemode',live).neq('status','expired'):query.eq('id',body.requestId);
   const found=await query.single();if(found.error)throw found.error;
-  const p=found.data;if(p.pack!==body.pack||p.price_id!==priceId||p.livemode!==live)return reply({error:'Start a new purchase request.'},409);
+  const p=found.data;if(p.pack!==packId||p.price_id!==priceId||p.livemode!==live)return reply({error:'Start a new purchase request.'},409);
   if(p.pack==='starter'&&Date.parse(p.created_at)>=starter.expiresAt)return reply({error:'The Starter Pack offer has ended.'},409);
   if(p.status!=='pending')return reply({error:'This purchase has already been processed.'},409);
   if(Date.now()-Date.parse(p.created_at)>23*3600000&&!p.stripe_session_id)return reply({error:'This checkout request needs review. Please contact support before retrying.'},409);

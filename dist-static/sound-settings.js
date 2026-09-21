@@ -1,6 +1,8 @@
 import {refreshArt} from './visual-icons.js';
+import {createInstallSection} from './install-ui.js';
+import {createNotificationsSection} from './notifications-ui.js';
 export function createSoundSettings(audio){
- const $=id=>document.getElementById(id),dialog=$('sound-dialog');
+ const $=id=>document.getElementById(id),dialog=$('sound-dialog'),install=createInstallSection(),reminders=createNotificationsSection();
  function refresh(){
   const s=audio.settings(),audible=s.enabled&&(s.ambience>0||s.effects>0);
   $('sound-enabled').checked=s.enabled;$('sound-enabled').disabled=!s.available;
@@ -9,12 +11,10 @@ export function createSoundSettings(audio){
   for(const id of ['ambience-volume','effects-volume'])$(id).disabled=!s.available;
   $('sound-status').textContent=!s.available?'Sound is not available in this browser.':!s.enabled?'All sound is muted.':!audible?'Both volume sliders are set to zero.':s.musicStatus==='unavailable'?'Music could not load. Game sounds are still available.':s.musicStatus==='loading'?'Getting your background music ready…':'Soft music and little celebrations.';
   $('sound-preview').disabled=!s.available||!s.enabled||!s.effects;
-  $('sound-button').innerHTML=`<i data-lucide="${audible?'volume-2':'volume-x'}" data-line-icon></i>`;
-  $('sound-button').setAttribute('aria-label',`Sound settings, ${audible?'sound on':'muted'}`);
-  $('sound-button').title='Sound settings';$('mobile-sound-label').textContent='Sound settings';
-  $('mobile-sound-summary').textContent=audible?'Music & game sounds':'Currently muted';refreshArt();
+  $('sound-button').setAttribute('aria-label','Settings');$('sound-button').title='Settings';
+  $('mobile-sound-label').textContent='Settings';$('mobile-sound-summary').textContent=audible?'Sound & app':'Sound off · app';install.refresh();refreshArt();
  }
- function open(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());refresh();dialog.showModal();}
+ function open(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());refresh();dialog.showModal();void reminders.refresh();}
  $('sound-button').onclick=open;
  $('sound-enabled').onchange=()=>{audio.setSettings({enabled:$('sound-enabled').checked});if($('sound-enabled').checked)void audio.unlock();};
  $('ambience-volume').oninput=()=>audio.setSettings({ambience:Number($('ambience-volume').value)});
