@@ -1,0 +1,74 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync,readdirSync} from 'node:fs';
+const root=new URL('../',import.meta.url),read=path=>readFileSync(new URL(path,root),'utf8');
+
+// Runs public/app-mode.js against a fake page. `safeTop` is what env(safe-area-inset-top) resolves to.
+function run({standalone=true,parentStandalone=false,inFrame=false,width=402,height=874,screen={width:402,height:874},safeTop=62}={}){
+ const listeners={window:{},document:{}},vars={},attrs={};
+ const page={innerWidth:width,innerHeight:height,matchMedia:()=>({matches:standalone}),navigator:{standalone:false},
+  addEventListener:(name,fn)=>{listeners.window[name]=fn;}};
+ const html={setAttribute:(key,value)=>{attrs[key]=value;},style:{setProperty:(key,value)=>{vars[key]=value;}},appendChild(){},removeChild(){}};
+ page.document={documentElement:html,createElement:()=>({style:{}}),addEventListener:(name,fn)=>{listeners.document[name]=fn;}};
+ page.parent=inFrame?{matchMedia:()=>({matches:parentStandalone}),navigator:{standalone:false}}:page;
+ // The script reads bare `window`, `document`, `screen` and `getComputedStyle`.
+ vm.runInNewContext(read('public/app-mode.js'),{window:page,document:page.document,screen,getComputedStyle:()=>({paddingTop:`${safeTop}px`})});
+ return {attrs,vars,listeners,fake:page};
+}
+const shortfall=options=>run(options).vars['--viewport-shortfall'];
+
+test('the ordinary browser is never marked, so the installed-app rules cannot reach it',()=>{
+ const page=run({standalone:false});
+ assert.deepEqual(page.attrs,{});assert.deepEqual(page.vars,{});
+});
+test('the installed app is marked, in the page and in the game frame',()=>{
+ assert.equal(run().attrs['data-app-mode'],'standalone');
+ assert.equal(run({standalone:false,inFrame:true,parentStandalone:true}).attrs['data-app-mode'],'standalone','the frame follows the page around it');
+ assert.deepEqual(run({standalone:false,inFrame:true,parentStandalone:false}).attrs,{});
+});
+test('a layout height that is a status bar short of the screen is measured',()=>{
+ assert.equal(shortfall({height:812}),'62px','iPhone with Dynamic Island: 874 - 812 is exactly the status bar');
+ assert.equal(shortfall({width:390,height:753,screen:{width:390,height:844},safeTop:91}),'91px');
+});
+test('a page that fills the screen has no shortfall',()=>{
+ assert.equal(shortfall({height:874}),'0px');
+});
+test('other reasons for a shorter page are not mistaken for the quirk',()=>{
+ assert.equal(shortfall({height:812,safeTop:0}),'0px','a page below an opaque status bar has no safe area on top');
+ assert.equal(shortfall({height:600}),'0px','a split-screen window is not a status bar short');
+ assert.equal(shortfall({width:874,height:402,screen:{width:402,height:874},safeTop:0}),'0px','landscape');
+ assert.equal(shortfall({width:874,height:402,screen:{width:874,height:402},safeTop:0}),'0px','landscape, when the screen reports its size the other way round');
+});
+test('it measures again when the window changes',()=>{
+ const page=run({height:874});
+ assert.equal(page.vars['--viewport-shortfall'],'0px');
+ page.fake.innerHeight=812;page.listeners.window.resize();
+ assert.equal(page.vars['--viewport-shortfall'],'62px');
+ page.fake.innerHeight=874;page.listeners.window.orientationchange();
+ assert.equal(page.vars['--viewport-shortfall'],'0px');
+});
+
+const rules=css=>css.replace(/\/\*[\s\S]*?\*\//g,'').split('}').map(rule=>rule.split('{')[0].trim()).filter(Boolean);
+test('every installed-app layout rule is scoped to the installed app',()=>{
+ const css=read('public/pwa-layout.css');
+ assert(rules(css).length>=2);
+ for(const selector of rules(css))assert(selector.startsWith('html[data-app-mode=standalone]'),`unscoped rule: ${selector}`);
+ assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\]:has\(body\[data-phase=authenticated\]\)\{background:#fffdf5\}/);
+});
+test('the game reads the bottom safe area in one place, which the installed app can correct',()=>{
+ const base=read('public/styles.css');
+ assert.match(base,/^:root\{--safe-bottom:env\(safe-area-inset-bottom,0px\)\}/,'the browser keeps the plain safe area');
+ assert.match(read('public/pwa-layout.css'),/html\[data-app-mode=standalone\]\{--safe-bottom:max\(0px,calc\(env\(safe-area-inset-bottom,0px\) - var\(--viewport-shortfall,0px\)\)\)\}/);
+ const own=new Set(['styles.css','welcome.css','pwa-layout.css','loading-screen.css']);
+ for(const file of readdirSync(new URL('public/',root)).filter(name=>name.endsWith('.css')&&!own.has(name)))
+  assert(!/env\(safe-area-inset-bottom\)/.test(read(`public/${file}`)),`${file} reads the bottom safe area directly`);
+ for(const file of ['mobile.css','beginner.css','settings.css','starter-pack.css'])assert.match(read(`public/${file}`),/var\(--safe-bottom\)/,file);
+});
+test('the game frame and the page load the installed-app files, before anything is drawn',()=>{
+ const farm=read('public/farm.html'),play=read('public/play.html');
+ assert(farm.indexOf('/app-mode.js')>0&&farm.indexOf('/app-mode.js')<farm.indexOf('/styles.css'));
+ const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(match=>match[1]);
+ assert.equal(sheets.at(-1),'/pwa-layout.css','loaded last, so it can correct the rules before it');
+ assert(play.indexOf('/app-mode.js')>0&&play.indexOf('/app-mode.js')<play.indexOf('/welcome.css'));
+});

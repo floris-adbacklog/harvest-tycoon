@@ -89,9 +89,10 @@ test('settings headings use drawn icons: a golden bell for reminders and a phone
  assert.match(icons,/svgArt=new Set\(\[[^\]]*'reminders'[^\]]*'farmapp'/);assert.match(icons,/bell:'reminders'/);assert.match(icons,/smartphone:'farmapp'/);
  for(const file of ['reminders','farmapp']){const svg=read(`public/assets/icons/${file}.svg`);assert.match(svg,/viewBox="0 0 128 128"/);assert(!/<script|onload=|href=/i.test(svg),'a plain drawing');}
 });
-test('the installed iPhone app keeps the game and the sign-in card clear of the notch and the home indicator',()=>{
+test('the game frame fills the whole screen and the sign-in card keeps clear of the notch and the home indicator',()=>{
  const css=read('public/welcome.css');
- assert.match(css,/#farm-host\{inset:env\(safe-area-inset-top\) env\(safe-area-inset-right\) env\(safe-area-inset-bottom\) env\(safe-area-inset-left\)\}/,'the game frame is inset, because the iframe cannot see the safe areas itself');
+ assert.match(css,/#farm-host\{position:fixed;inset:0;/,'the frame is not inset: the game inside it already reads the safe areas, so an inset would count them twice');
+ assert(!/#farm-host\{[^}]*env\(/.test(css),'no safe-area inset on the frame itself');
  assert.match(css,/#welcome\{padding-top:calc\(12px \+ env\(safe-area-inset-top\)\);padding-bottom:calc\(12px \+ env\(safe-area-inset-bottom\)\)\}/);
  assert.match(read('public/play.html'),/viewport-fit=cover/);
 });
