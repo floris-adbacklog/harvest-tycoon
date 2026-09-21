@@ -33,3 +33,18 @@
  .rank-crops{padding:8px;margin-top:6px}
  #leaderboard-dialog .leaderboard-filter{margin:12px 0}
 }
+
+/* Reward amounts come with their coin / XP picture. */
+.task-bottom>span>strong.coin-reward{display:flex;align-items:center;gap:6px}
+.coin-reward .game-art{width:22px;height:22px}
+.reward-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+.reward-line b{display:inline-flex;align-items:center;gap:5px;color:#7a6120;font-weight:700}
+.reward-line .game-art{width:20px;height:20px}
+.chore-prizes strong{display:inline-flex;align-items:center;gap:8px}
+.chore-prizes .game-art{width:28px;height:28px}
+.upgrade-payments button{display:flex;align-items:center;justify-content:center;gap:7px}
+.upgrade-payments button .game-art{width:23px;height:23px}
+.activity-reward span .game-art{width:20px;height:20px}
+/* The star sprite sits high in its cell and looks smaller than the other pictures: centre it and give it the same weight. */
+.game-art-sprite[data-art="xp"]{transform:translateY(12%) scale(1.22)}
+

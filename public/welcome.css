@@ -90,6 +90,12 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]){background:#f
  .loop-icons{order:2;margin:20px 0 0;gap:7px}
  .loop-icons li:not(.loop-arrow){gap:6px;padding:4px 13px 4px 5px;font-size:12.5px}
  .loop-icons .wart{width:30px}
+ .player-counts{order:2;align-self:center;margin:16px 0 0}
 }
+/* Live numbers for visitors, as quiet as possible: "2 218 players   1 online" (src/player-counts.js). */
+.player-counts{display:inline-flex;align-items:center;gap:22px;margin:22px 0 0;color:#f3ecd6c2;font-size:12.5px;line-height:1;letter-spacing:.02em;text-shadow:0 1px 8px #1f1c0dcc}
+.pc-item{display:inline-flex;align-items:center;gap:7px}
+.pc-item strong{font-weight:600}
+.pc-dot{width:6px;height:6px;border-radius:50%;background:#78dd6c;box-shadow:0 0 8px #78dd6c99}
 .welcome-story h1,.hero-copy{text-wrap:balance}
 .account-card .account-note{align-items:center}

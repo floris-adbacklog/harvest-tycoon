@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
@@ -13,7 +14,7 @@ test('all four hands-on jobs reward once, give useful goods and complete one rou
  let result,levelCoins=0;Object.keys(ACTIVE_STATIONS).forEach((id,i)=>{result=complete(s,id,now+i*3000);levelCoins+=result.levelReward?.coins??0;});
  assert.equal(s.coins-coins-levelCoins,Object.values(ACTIVE_STATIONS).reduce((n,a)=>n+a.coins,ACTIVITY_ROUND_REWARD.coins));
  assert.equal(s.xp-xp,Object.values(ACTIVE_STATIONS).reduce((n,a)=>n+a.xp,ACTIVITY_ROUND_REWARD.xp));
- assert.equal(s.xp-xp,160);
+ assert.equal(s.xp-xp,240);assert.equal(s.coins-coins-levelCoins,0,'hands-on jobs pay XP only');
  assert.equal(s.inventory.lettuce,inventory.lettuce+3);assert.equal(s.inventory.fertilizer,inventory.fertilizer+1);
  // Honey is needed in bulk (berry preserves 3, smoothie 2, compote 2) and lettuce goes into salads, so the Apiary and the Greenhouse give three; the paddock and workshop still give one.
  assert.equal(s.inventory.honey,inventory.honey+3);assert.equal(s.inventory.feed,inventory.feed+1);
@@ -56,7 +57,7 @@ test('repeating one station does not count as visiting all four; idle time award
 test('client-supplied reward fields are ignored and XP boosts apply once',()=>{
  const s=createFarm(now);s.boosts.xpUntil=now+60000;act(s,{type:'activity_start',station:'workshop',coins:999999},now);
  const job=s.activities.jobs.workshop;let result;job.targets.forEach((target,i)=>{result=act(s,{type:'activity_work',station:'workshop',startedAt:now,target,coins:999999,xp:999999},now+(i+1)*700);});
- assert.equal(result.coins,30);assert.equal(result.xp,64);assert.equal(s.activities.completed.workshop,1);
+ assert.equal(result.coins,0);assert.equal(result.xp,96);assert.equal(s.activities.completed.workshop,1);
 });
 
 test('Double XP doubles the full hands-on round without multiplying level rewards',()=>{
@@ -66,8 +67,14 @@ test('Double XP doubles the full hands-on round without multiplying level reward
   const r=complete(s,id,now+i*3000);
   creditedCoins+=r.levelReward?.coins??0;creditedDiamonds+=r.levelReward?.diamonds??0;
  });
- assert.equal(s.xp-xp,320);assert.equal(s.coins-coins,122+creditedCoins);
+ assert.equal(s.xp-xp,480);assert.equal(s.coins-coins,creditedCoins);
  assert.equal(s.diamonds-diamonds,creditedDiamonds);assert.equal(s.activities.rounds,1);
  const before=structuredClone(s);normalizeFarm(s,now+60000);
  assert.equal(s.xp,before.xp);assert.equal(s.coins,before.coins);assert.equal(s.diamonds,before.diamonds);
+});
+test('hands-on jobs pay XP only: no coins, and XP is 1.5 times the old amounts',()=>{
+ assert.deepEqual(Object.fromEntries(Object.entries(ACTIVE_STATIONS).map(([id,a])=>[id,[a.coins,a.xp]])),{greenhouse:[0,42],apiary:[0,48],paddock:[0,42],workshop:[0,48]});
+ assert.deepEqual({...ACTIVITY_ROUND_REWARD},{coins:0,xp:60});
+ const ui=readFileSync(new URL('../public/activities-ui.js',import.meta.url),'utf8');
+ assert.match(ui,/activity-reward">\$\{art\('xp'\)\}<b>\+\$\{s\.xp\} XP<\/b>/,'the reward line shows the XP picture');assert(!ui.includes("art('coins')")&&!ui.includes('result.coins'),'and no coins');
 });

@@ -254,7 +254,44 @@ export const QUESTS = Object.freeze([
 {"title": "Green Bean Gratin specialist", "description": "Collect 3 batches of Green Bean Gratin.", "stat": "made_beangratin", "target": 3, "reward": 660},
 {"title": "Orchard Salad specialist", "description": "Collect 3 batches of Orchard Salad.", "stat": "made_orchardsalad", "target": 3, "reward": 340},
 {"title": "Berry Cheesecake specialist", "description": "Collect 3 batches of Berry Cheesecake.", "stat": "made_berrycheesecake", "target": 3, "reward": 900},
-{"title": "Harvest Hamper specialist", "description": "Collect 3 batches of Harvest Hamper.", "stat": "made_harvesthamper", "target": 3, "reward": 2360}
+{"title": "Harvest Hamper specialist", "description": "Collect 3 batches of Harvest Hamper.", "stat": "made_harvesthamper", "target": 3, "reward": 2360},
+ // Late game: long ladders above what the first players have reached. Append-only, like everything above.
+ {title:'Fields of plenty',description:'Harvest 2,500 crops.',stat:'harvested',target:2500,reward:6000},
+ {title:'Overflowing barns',description:'Harvest 5,000 crops.',stat:'harvested',target:5000,reward:14000},
+ {title:'Harvest legend',description:'Harvest 10,000 crops.',stat:'harvested',target:10000,reward:32000},
+ {title:'Seed sower',description:'Plant 1,500 crops.',stat:'planted',target:1500,reward:4000},
+ {title:'Master of the seasons',description:'Plant 5,000 crops.',stat:'planted',target:5000,reward:14000},
+ {title:'Rainmaker',description:'Water 1,500 crops.',stat:'watered',target:1500,reward:4000},
+ {title:'Every drop counts',description:'Water 5,000 crops.',stat:'watered',target:5000,reward:14000},
+ {title:'Caring for every plant',description:'Give 1,000 crops extra care.',stat:'tended',target:1000,reward:5000},
+ {title:'Tender loving care',description:'Give 3,000 crops extra care.',stat:'tended',target:3000,reward:15000},
+ {title:'Behind the wheel',description:'Use the tractor 250 times.',stat:'tractor',target:250,reward:3000},
+ {title:'Market regular',description:'Sell 1,000 items at the market.',stat:'sold',target:1000,reward:3500},
+ {title:'Market favourite',description:'Sell 5,000 items at the market.',stat:'sold',target:5000,reward:16000},
+ {title:'A trader’s dream',description:'Sell 20,000 items at the market.',stat:'sold',target:20000,reward:60000},
+ {title:'Quarter of a million',description:'Earn 250,000 coins from sales and deliveries.',stat:'earned',target:250000,reward:8000},
+ {title:'Coin millionaire',description:'Earn 1,000,000 coins from sales and deliveries.',stat:'earned',target:1000000,reward:25000},
+ {title:'Tycoon of the valley',description:'Earn 5,000,000 coins from sales and deliveries.',stat:'earned',target:5000000,reward:80000},
+ {title:'Busy hands',description:'Collect 1,000 production batches.',stat:'produced',target:1000,reward:5000},
+ {title:'A well-run farm',description:'Collect 3,000 production batches.',stat:'produced',target:3000,reward:16000},
+ {title:'Never idle',description:'Start 1,000 batches while another batch is still running in the same building.',stat:'parallel_batches',target:1000,reward:8000},
+ {title:'The factory floor',description:'Start 2,500 batches while another batch is still running in the same building.',stat:'parallel_batches',target:2500,reward:20000},
+ {title:'Trusted supplier',description:'Complete 250 delivery orders.',stat:'deliveries',target:250,reward:15000},
+ {title:'The valley’s favourite',description:'Complete 500 delivery orders.',stat:'deliveries',target:500,reward:36000},
+ {title:'Master of the pantry',description:'Complete 100 delivery orders containing processed farm goods.',stat:'crafted_deliveries',target:100,reward:8000},
+ {title:'Chore champion',description:'Complete 500 farm chores.',stat:'chores',target:500,reward:6000},
+ {title:'Always lending a hand',description:'Complete 1,500 farm chores.',stat:'chores',target:1500,reward:20000},
+ {title:'Farm helper',description:'Complete 250 hands-on jobs.',stat:'activities',target:250,reward:6000},
+ {title:'Hands-on legend',description:'Complete 1,000 hands-on jobs.',stat:'activities',target:1000,reward:24000},
+ {title:'A round every day',description:'Finish 100 full farm rounds.',stat:'activity_rounds',target:100,reward:8000},
+ {title:'The heart of the farm',description:'Finish 250 full farm rounds.',stat:'activity_rounds',target:250,reward:22000},
+ {title:'Daily devotion',description:'Complete 100 daily challenges.',stat:'dailies',target:100,reward:4000},
+ {title:'Never miss a day',description:'Complete 250 daily challenges.',stat:'dailies',target:250,reward:12000},
+ {title:'Money while you sleep',description:'Collect 25,000 coins from the farm stall.',stat:'passive_earned',target:25000,reward:5000},
+ {title:'A little extra, again and again',description:'Activate 10 boosts.',stat:'boosts_used',target:10,reward:2500},
+ {title:'Wheat master',description:'Harvest 1,000 wheat.',stat:'harvest_wheat',target:1000,reward:4500},
+ {title:'Corn master',description:'Harvest 750 corn.',stat:'harvest_corn',target:750,reward:6000},
+ {title:'Pumpkin master',description:'Harvest 250 pumpkin.',stat:'harvest_pumpkin',target:250,reward:6000}
 
 ]);
 export const MAX_PLOTS=24;
@@ -1009,12 +1046,12 @@ export function completeProject(state,now=Date.now()){
 // Small hands-on jobs run alongside crops and production. Only server time and
 // persisted progress determine rewards; the client submits a station and tile.
 export const ACTIVE_STATIONS=Object.freeze({
- greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:20,xp:28,cooldown:180000,item:'lettuce',itemCount:3,instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
- apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:26,xp:32,cooldown:240000,item:'honey',itemCount:3,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
- paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:24,xp:28,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
- workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:30,xp:32,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
+ greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:0,xp:42,cooldown:180000,item:'lettuce',itemCount:3,instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
+ apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:0,xp:48,cooldown:240000,item:'honey',itemCount:3,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
+ paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:0,xp:42,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
+ workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:0,xp:48,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
 });
-export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:22,xp:40});
+export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:0,xp:60});
 export function activityTargets(station,cycle){
  const offset=(Object.keys(ACTIVE_STATIONS).indexOf(station)+cycle)%6;
  return [0,2,3].map(i=>(i+offset)%6);

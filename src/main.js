@@ -5,8 +5,10 @@ import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth} from '.
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
 import {createNotifications} from './notifications.js';
+import {startPlayerCounts} from './player-counts.js';
 const $=id=>document.getElementById(id);
 startPwa();
+startPlayerCounts({functionsUrl});
 let presence=null,notifications=null;
 let mode='register',generation=0,playerId=null,frame=null,submitting=false,checking=false,reopen=false;
 let focusing=false,nameOpen=false,recovering=false,viewTracked=false,confirmKind='signup',pendingEmail='',resendTimer=null;
