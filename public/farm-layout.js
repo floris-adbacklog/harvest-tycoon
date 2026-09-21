@@ -9,9 +9,10 @@ export const ANCHORS=Object.freeze({
  chores:[-5.8,-10.7],stall:[-11.3,-2.6],mill:[-12.5,4],bakery:[-10.8,12],kitchen:[-12.4,18.2],apiary:[10.5,13.8],workshop:[-9.1,-14.7],pond:[17.6,15.2]
 });
 // Where a yard stands when that is not where it was designed (same compact grid; everything inside a yard moves along with it).
-// The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), and the
-// market waits by the road out at the front.
-export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[15.8,5],stall:[-8,23.4],cart:[-19.5,-13],paddock:[1.7,-8.6]});
+// The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), the
+// market waits by the road out at the front, the delivery cart stands at the open end of the farmhouse fence where it can be seen,
+// and the animal paddock stands beside the trunk road below the dairy barn.
+export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[15.8,5],stall:[-8,23.4],cart:[-9.7,-10.45],paddock:[1.7,-8.6]});
 // Trees, bushes and other loose pieces keep this far from the middle of a yard.
 export const YARD_CLEARANCE=5.4;
 
