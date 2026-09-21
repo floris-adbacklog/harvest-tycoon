@@ -11,7 +11,7 @@ test('every board has a chip: seven main boards, a "By crop" chip and one chip p
  const keys=[...html.matchAll(/data-rank="([a-z_]+)"/g)].map(m=>m[1]);
  assert.deepEqual(keys.sort(),Object.keys(LEADERBOARD_CATEGORIES).sort(),'nothing lost from the old dropdown');
  assert.equal(keys.length,19);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,12);
- assert.match(html,/id="rank-crops"[^>]*hidden/,'the crop row starts closed');
+ assert.match(html,/id="rank-crops"[^>]*hidden/,'the crop row starts closed');assert.match(html,/data-rank-crops aria-pressed="false" aria-expanded="false" aria-controls="rank-crops"/);
  for(const key of ['level','currency','harvested_crops','goods_produced','items_sold','badges','deliveries'])assert(RANK_ART[key],`${key} has a picture`);
  assert.match(html,/data-art="wheat"/);assert.match(html,/data-art="berries"/);assert.match(html,/data-art="xp"/);
  assert(!/<select|<option/.test(html));
@@ -23,7 +23,10 @@ test('a tap picks a board; "By crop" opens the crops and remembers the last one'
  next=nextRank(c,{category:'harvested_wheat',lastCrop:'harvested_wheat'},{rank:'harvested_corn'});assert.deepEqual([next.category,next.lastCrop,next.showCrops],['harvested_corn','harvested_corn',true]);
  next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn'},{rank:'level'});assert.equal(next.showCrops,false);assert.equal(next.lastCrop,'harvested_corn');
  next=nextRank(c,{category:'level',lastCrop:'harvested_corn'},{crops:true});assert.equal(next.category,'harvested_corn','back to the crop you had');
- next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn'},{crops:true});assert.equal(next.changed,false,'tapping "By crop" while in it changes nothing');
+ next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn'},{crops:true});assert.deepEqual([next.changed,next.showCrops,next.category],[false,false,'harvested_corn'],'tapping "By crop" again closes the row and keeps the crop board');
+ next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn',open:false},{crops:true});assert.deepEqual([next.changed,next.showCrops],[false,true],'and tapping it once more opens the row again');
+ next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn',open:false},{rank:'harvested_barley'});assert.equal(next.showCrops,true,'picking a crop shows the crops');
+ next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn',open:false},{rank:'badges'});assert.equal(next.showCrops,false);
  assert.equal(nextRank(c,state,{rank:'made_up'}).category,'level','an unknown board is ignored');
 });
 function fakeRoot(){
@@ -41,8 +44,12 @@ test('the chips drive the hidden field and only report real changes',()=>{
  tap(chip('currency'));assert.equal(field.value,'currency');assert.equal(chip('currency').attrs['aria-pressed'],'true');assert.equal(chip('level').attrs['aria-pressed'],'false');
  tap(chip('currency'));assert.deepEqual(seen,['currency'],'the same chip twice is not a change');
  tap(buttons.at(-1));assert.equal(field.value,'harvested_wheat');assert.equal(cropsRow.hidden,false);assert.equal(buttons.at(-1).attrs['aria-pressed'],'true');
- tap(chip('harvested_pumpkin'));assert.equal(field.value,'harvested_pumpkin');tap(chip('level'));assert.equal(cropsRow.hidden,true);
- assert.deepEqual(seen,['currency','harvested_wheat','harvested_pumpkin','level']);
+ tap(chip('harvested_pumpkin'));assert.equal(field.value,'harvested_pumpkin');
+ const toggle=buttons.at(-1);assert.equal(toggle.attrs['aria-expanded'],'true');
+ tap(toggle);assert.equal(cropsRow.hidden,true,'"By crop" closes the row');assert.equal(toggle.attrs['aria-expanded'],'false');assert.equal(field.value,'harvested_pumpkin','the crop board stays selected');assert.equal(toggle.attrs['aria-pressed'],'true');
+ tap(toggle);assert.equal(cropsRow.hidden,false,'and opens it again');assert.equal(toggle.attrs['aria-expanded'],'true');
+ tap(chip('level'));assert.equal(cropsRow.hidden,true);assert.equal(toggle.attrs['aria-expanded'],'false');
+ assert.deepEqual(seen,['currency','harvested_wheat','harvested_pumpkin','level'],'opening and closing the row is not a change of board');
  listenersIgnore();function listenersIgnore(){const r=fakeRoot();bindRankPicker(r.root,{categories:LEADERBOARD_CATEGORIES,field:{value:'level'},onChange(){throw new Error('unexpected');}});}
 });
 test('the leaderboard no longer uses a native dropdown, and the rest of the code still gets its category',()=>{
@@ -50,6 +57,6 @@ test('the leaderboard no longer uses a native dropdown, and the rest of the code
  assert(!ui.includes('<select id="leaderboard-category"'));assert.match(ui,/<input type="hidden" id="leaderboard-category" value="level">/);
  assert.match(ui,/get category\(\)\{return \$\('leaderboard-category'\)\.value;\}/);
  assert.match(ui,/bindRankPicker\(\$\('leaderboard-filter'\)/);assert.match(ui,/\$\('leaderboard-category'\)\.onchange=/);
- const css=read('public/ui-polish.css');assert.match(css,/\.rank-chip\[aria-pressed=true\]/);assert.match(css,/\.game-dialog select\{/);
+ const css=read('public/ui-polish.css');assert.match(css,/\.rank-chip\[aria-pressed=true\]/);assert.match(css,/\.game-dialog select\{/);assert.match(css,/\.rank-chip\[aria-expanded=true\] \.rank-caret/);
  assert.match(read('public/farm.html'),/href="\/ui-polish\.css"/);
 });

@@ -10,7 +10,8 @@
 .rank-chip:active{transform:translateY(1px)}
 .rank-chip[aria-pressed=true]{background:#685e3f;border-color:#5b5133;color:#fffdf0;box-shadow:0 2px 0 #494125}
 .rank-chip:focus-visible{outline:3px solid #d6ae4b;outline-offset:2px}
-.rank-caret{width:7px;height:7px;margin:-3px 0 0 2px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+.rank-caret{width:7px;height:7px;margin:-3px 0 0 2px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .15s}
+.rank-chip[aria-expanded=true] .rank-caret{margin-top:3px;transform:rotate(-135deg)}
 .rank-crops{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding:10px;border:1px solid #e6dccf;border-radius:16px;background:#f5efe6}
 .rank-crops[hidden]{display:none}
 .rank-chip-small{min-height:40px;padding:4px 12px 4px 6px;font-size:12px}
