@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import {avatarImage} from '../public/player-avatars.js';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../public/family-invitations-ui.js',import.meta.url),'utf8').split('export function createFamilyInviteSearch')[1];
 function harness(){
@@ -8,7 +9,7 @@ function harness(){
  const nodes=new Map();const node=key=>{if(!nodes.has(key))nodes.set(key,{value:'',innerHTML:'',textContent:'',listeners:{},addEventListener(key,fn){this.listeners[key]=fn;}});return nodes.get(key);};
  const root={querySelector:node},container={querySelector:()=>root};
  const view={config:{minLevel:10,maxMembers:6},family:{id:'family',members:1,leader:true},sentInvitations:[]};
- const context=vm.createContext({art:()=>'',esc:v=>String(v??''),setTimeout(fn){timer=fn;return 1;},clearTimeout(){timer=null;}});vm.runInContext(`function createFamilyInviteSearch${source}`,context);
+ const context=vm.createContext({avatarImage,art:()=>'',esc:v=>String(v??''),setTimeout(fn){timer=fn;return 1;},clearTimeout(){timer=null;}});vm.runInContext(`function createFamilyInviteSearch${source}`,context);
  const controller=context.createFamilyInviteSearch({request:body=>new Promise((resolve,reject)=>requests.push({body,resolve,reject})),onInvite:async action=>invites.push(action),getView:()=>view,playerId:'self',isBusy:()=>false});controller.html();controller.mount(container);
  return {controller,requests,invites,view,node,container,tick(){const fn=timer;timer=null;fn?.();},type(value){node('input').value=value;node('input').listeners.input();}};
 }

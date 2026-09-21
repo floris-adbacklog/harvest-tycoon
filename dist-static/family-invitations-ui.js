@@ -1,3 +1,4 @@
+import {avatarImage} from './player-avatars.js';
 import {art} from './visual-icons.js';
 import {formatDuration} from './farm-state.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -14,7 +15,7 @@ export function renderSentInvitations(view,now,actionButton){
 export function createFamilyInviteSearch({request,onInvite,getView,playerId,isBusy}){
  let query='',players=[],status='Enter at least 2 characters to find a farmer.',sequence=0,timer,root=null,familyId=null;
  function candidate(p){const view=getView();if(p.playerId===playerId)return 'You';if(p.family)return 'Already in a family';if(p.level<view.config.minLevel)return `Level ${view.config.minLevel} required`;if(view.sentInvitations?.some(i=>i.recipientId===p.playerId))return 'Invited';if(view.family.members>=view.config.maxMembers)return 'Family full';return '';}
- function results(){return players.map(p=>{const reason=candidate(p);return `<div class="family-invite-result"><div><strong>${esc(p.username)}</strong><span>Level ${p.level}${p.family?` · ${esc(p.family.name)}`:''}</span></div><button type="button" class="small-button" data-invite-player="${esc(p.playerId)}" ${reason||isBusy()?'disabled':''}>${esc(reason||'Invite')}</button></div>`;}).join('');}
+ function results(){return players.map(p=>{const reason=candidate(p);return `<div class="family-invite-result">${avatarImage(p.avatarId)}<div><strong>${esc(p.username)}</strong><span>Level ${p.level}${p.family?` · ${esc(p.family.name)}`:''}</span></div><button type="button" class="small-button" data-invite-player="${esc(p.playerId)}" ${reason||isBusy()?'disabled':''}>${esc(reason||'Invite')}</button></div>`;}).join('');}
  function paint(){if(!root)return;root.querySelector('[data-invite-search-status]').textContent=status;root.querySelector('[data-invite-search-results]').innerHTML=results();}
  async function search(ticket,value){
   if(ticket!==sequence||!root)return;status='Looking around the valley…';paint();

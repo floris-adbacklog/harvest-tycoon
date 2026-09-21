@@ -1,29 +1,138 @@
+//#region public/player-avatars.js
+var e = Object.freeze([
+	{
+		id: "default",
+		name: "Original farmer",
+		src: "/assets/farmer-avatar.webp"
+	},
+	{
+		id: "orchard-grower",
+		name: "Orchard grower",
+		src: "/assets/avatars/orchard-grower.webp"
+	},
+	{
+		id: "field-keeper",
+		name: "Field keeper",
+		src: "/assets/avatars/field-keeper.webp"
+	},
+	{
+		id: "berry-gardener",
+		name: "Berry gardener",
+		src: "/assets/avatars/berry-gardener.webp"
+	},
+	{
+		id: "mill-worker",
+		name: "Mill worker",
+		src: "/assets/avatars/mill-worker.webp"
+	},
+	{
+		id: "sunflower-grower",
+		name: "Sunflower grower",
+		src: "/assets/avatars/sunflower-grower.webp"
+	},
+	{
+		id: "village-gardener",
+		name: "Village gardener",
+		src: "/assets/avatars/village-gardener.webp"
+	},
+	{
+		id: "old-hand",
+		name: "Old hand",
+		src: "/assets/avatars/old-hand.webp"
+	},
+	{
+		id: "greenhouse-grower",
+		name: "Greenhouse grower",
+		src: "/assets/avatars/greenhouse-grower.webp"
+	},
+	{
+		id: "beekeeper",
+		name: "Beekeeper",
+		src: "/assets/avatars/beekeeper.webp"
+	},
+	{
+		id: "market-gardener",
+		name: "Market gardener",
+		src: "/assets/avatars/market-gardener.webp"
+	},
+	{
+		id: "dairy-farmer",
+		name: "Dairy farmer",
+		src: "/assets/avatars/dairy-farmer.webp"
+	},
+	{
+		id: "meadow-keeper",
+		name: "Meadow keeper",
+		src: "/assets/avatars/meadow-keeper.webp"
+	},
+	{
+		id: "apple-picker",
+		name: "Apple picker",
+		src: "/assets/avatars/apple-picker.webp"
+	},
+	{
+		id: "herb-gardener",
+		name: "Herb gardener",
+		src: "/assets/avatars/herb-gardener.webp"
+	},
+	{
+		id: "barn-builder",
+		name: "Barn builder",
+		src: "/assets/avatars/barn-builder.webp"
+	},
+	{
+		id: "flower-grower",
+		name: "Flower grower",
+		src: "/assets/avatars/flower-grower.webp"
+	},
+	{
+		id: "harvest-helper",
+		name: "Harvest helper",
+		src: "/assets/avatars/harvest-helper.webp"
+	},
+	{
+		id: "valley-grower",
+		name: "Valley grower",
+		src: "/assets/avatars/valley-grower.webp"
+	},
+	{
+		id: "orchard-veteran",
+		name: "Orchard veteran",
+		src: "/assets/avatars/orchard-veteran.webp"
+	},
+	{
+		id: "farm-mechanic",
+		name: "Farm mechanic",
+		src: "/assets/avatars/farm-mechanic.webp"
+	}
+].map(Object.freeze)), t = new Map(e.map((e) => [e.id, e])), n = (e) => t.get(e) ?? t.get("default"), r = (e) => `<img class="player-avatar-thumb" src="${n(e).src}" alt="" width="48" height="48" loading="lazy" decoding="async" draggable="false">`;
+//#endregion
 //#region public/vip-ui.js
-function e(e) {
+function i(e) {
 	let t = typeof e == "string" ? Date.parse(e) : e;
 	return Number.isSafeInteger(t) && t > 0 ? t : 0;
 }
-function t(t, n = Date.now(), r = !1) {
-	let i = e(t);
-	return i <= n ? "" : `<span class="vip-badge${r ? " vip-badge-detail" : ""}" data-vip-until="${i}" title="VIP farmer" aria-label="VIP farmer"><img src="/assets/icons/vip.png" alt="" width="24" height="24">${r ? "<span data-vip-remaining></span>" : ""}</span>`;
+function a(e, t = Date.now(), n = !1) {
+	let r = i(e);
+	return r <= t ? "" : `<span class="vip-badge${n ? " vip-badge-detail" : ""}" data-vip-until="${r}" title="VIP farmer" aria-label="VIP farmer"><img src="/assets/icons/vip.png" alt="" width="24" height="24">${n ? "<span data-vip-remaining></span>" : ""}</span>`;
 }
-function n(t, n = Date.now()) {
-	t.querySelectorAll("[data-vip-until]").forEach((t) => {
-		let r = e(Number(t.dataset.vipUntil)) - n;
-		if (r <= 0) {
-			t.remove();
+function o(e, t = Date.now()) {
+	e.querySelectorAll("[data-vip-until]").forEach((e) => {
+		let n = i(Number(e.dataset.vipUntil)) - t;
+		if (n <= 0) {
+			e.remove();
 			return;
 		}
-		let i = t.querySelector("[data-vip-remaining]");
-		if (i) {
-			let e = Math.ceil(r / 6e4);
-			i.textContent = `VIP · ${e >= 1440 ? `${Math.floor(e / 1440)}d ${Math.floor(e % 1440 / 60)}h` : e >= 60 ? `${Math.floor(e / 60)}h ${e % 60}m` : `${e}m`} left`;
+		let r = e.querySelector("[data-vip-remaining]");
+		if (r) {
+			let e = Math.ceil(n / 6e4);
+			r.textContent = `VIP · ${e >= 1440 ? `${Math.floor(e / 1440)}d ${Math.floor(e % 1440 / 60)}h` : e >= 60 ? `${Math.floor(e / 60)}h ${e % 60}m` : `${e}m`} left`;
 		}
 	});
 }
 //#endregion
 //#region public/visual-icons.js
-var r = [
+var s = [
 	{
 		file: "crops-v2.png",
 		columns: 3,
@@ -83,7 +192,7 @@ var r = [
 			"xp"
 		]
 	}
-], i = {
+], c = {
 	vip: "vip",
 	"familyhall-model": "familyhall-model",
 	lock: "lock",
@@ -113,7 +222,7 @@ for (let e of [
 	"family-bee",
 	"family-oak",
 	"family-barn"
-]) i[e] = e;
+]) c[e] = e;
 for (let e of [
 	"weeds",
 	"troughs",
@@ -121,13 +230,13 @@ for (let e of [
 	"fences",
 	"irrigation",
 	"harvestfair"
-]) i[`chore-${e}`] = `chore-${e}`;
+]) c[`chore-${e}`] = `chore-${e}`;
 for (let e of [
 	"greenhouse",
 	"apiary",
 	"paddock",
 	"workshop"
-]) i[`activity-${e}`] = `activity-${e}`;
+]) c[`activity-${e}`] = `activity-${e}`;
 for (let e of [
 	"apples",
 	"berries",
@@ -140,7 +249,7 @@ for (let e of [
 	"juicepress",
 	"preserves",
 	"kitchen"
-]) i[e] = e;
+]) c[e] = e;
 for (let e of [
 	"orchardjuice",
 	"berrysmoothie",
@@ -151,35 +260,37 @@ for (let e of [
 	"orchardsalad",
 	"berrycheesecake",
 	"harvesthamper"
-]) i[e] = e;
-var a = new Set([
+]) c[e] = e;
+var l = new Set([
 	"guide",
 	"sound",
 	"streak",
-	"settings"
+	"settings",
+	"reminders",
+	"farmapp"
 ]);
-for (let e of a) i[e] = e;
-var o = Object.fromEntries(r.flatMap((e) => e.keys.map((t, n) => [t, {
+for (let e of l) c[e] = e;
+var u = Object.fromEntries(s.flatMap((e) => e.keys.map((t, n) => [t, {
 	...e,
 	index: n
 }])));
-Object.freeze([...Object.keys(o), ...Object.keys(i)]);
-function s(e, t = "") {
-	let n = o[e];
+Object.freeze([...Object.keys(u), ...Object.keys(c)]);
+function d(e, t = "") {
+	let n = u[e];
 	if (n) {
 		let { file: r, columns: i, index: a } = n, o = a % i / (i - 1) * 100, s = Math.floor(a / i) / (i - 1) * 100;
 		return `<span class="game-art game-art-sprite ${t}" data-art="${e}" aria-hidden="true" style="--art-sheet:url('/assets/icons/${r}');--art-size:${i * 100}%;--art-position:${o}% ${s}%"></span>`;
 	}
-	return i[e] ? `<img class="game-art ${t}" data-art="${e}" src="/assets/icons/${i[e]}.${a.has(e) ? "svg" : "png"}" alt="" draggable="false">` : "";
+	return c[e] ? `<img class="game-art ${t}" data-art="${e}" src="/assets/icons/${c[e]}.${l.has(e) ? "svg" : "png"}" alt="" draggable="false">` : "";
 }
 //#endregion
 //#region public/rank-art.js
-function c(e) {
+function f(e) {
 	return Number.isInteger(e) && e >= 1 && e <= 3 ? `<span class="rank-trophy" role="img" aria-label="${[
 		"Gold",
 		"Silver",
 		"Bronze"
-	][e - 1]} trophy · Place ${e}">${s([
+	][e - 1]} trophy · Place ${e}">${d([
 		"rank-gold",
 		"rank-silver",
 		"rank-bronze"
@@ -187,7 +298,7 @@ function c(e) {
 }
 //#endregion
 //#region src/leaderboard.js
-var l = Object.freeze({
+var p = Object.freeze({
 	level: {
 		label: "Highest level",
 		heading: "Level",
@@ -315,18 +426,18 @@ var l = Object.freeze({
 		description: "Lifetime berries harvested, including water and care bonuses."
 	}
 });
-function u(e) {
-	if (!Object.hasOwn(l, e)) throw Error("Choose a valid leaderboard category.");
-	return l[e];
+function m(e) {
+	if (!Object.hasOwn(p, e)) throw Error("Choose a valid leaderboard category.");
+	return p[e];
 }
-var d = "player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at,vip_expires_at";
-async function f(e, t, n = "level") {
-	u(n);
-	let { data: r, error: i } = await e.from("player_stats").select(d).order(n, { ascending: !1 }).order("player_id", { ascending: !0 }).limit(10);
+var h = "player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at,vip_expires_at,avatar_id";
+async function g(e, t, n = "level") {
+	m(n);
+	let { data: r, error: i } = await e.from("player_stats").select(h).order(n, { ascending: !1 }).order("player_id", { ascending: !0 }).limit(10);
 	if (i) throw i;
 	let a = r?.find((e) => e.player_id === t) ?? null;
 	if (!a && t) {
-		let n = await e.from("player_stats").select(d).eq("player_id", t).maybeSingle();
+		let n = await e.from("player_stats").select(h).eq("player_id", t).maybeSingle();
 		if (n.error) throw n.error;
 		a = n.data;
 	}
@@ -355,68 +466,72 @@ async function f(e, t, n = "level") {
 		category: n
 	};
 }
-function p(e, t = "level") {
-	return u(t), e.map((e, n) => ({
+function _(e, t = "level") {
+	return m(t), e.map((e, n) => ({
 		row: e,
 		rank: n + 1,
 		score: Number(e[t] ?? 0)
 	}));
 }
-function m(e, { rows: n, own: r, rank: i, category: a = "level", onlinePlayers: o = [], presenceReady: s = !1, now: l = Date.now() }, d, f) {
-	let m = u(a);
-	if (e.replaceChildren(), !n.length) {
+function v(e, { rows: t, own: n, rank: i, category: o = "level", onlinePlayers: s = [], presenceReady: c = !1, now: l = Date.now() }, u, d) {
+	let p = m(o);
+	if (e.replaceChildren(), !t.length) {
 		let t = document.createElement("p");
 		t.className = "leaderboard-empty", t.textContent = "The valley is quiet. Be the first farmer on this board.", e.append(t);
 		return;
 	}
-	let g = document.createElement("table");
-	g.className = "leaderboard-table";
-	let _ = document.createElement("caption");
-	_.className = "leaderboard-caption", _.textContent = `${m.label} · Top 10`, g.append(_);
-	let v = document.createElement("thead"), y = document.createElement("tr");
+	let h = document.createElement("table");
+	h.className = "leaderboard-table";
+	let g = document.createElement("caption");
+	g.className = "leaderboard-caption", g.textContent = `${p.label} · Top 10`, h.append(g);
+	let v = document.createElement("thead"), b = document.createElement("tr");
 	for (let e of [
 		"Rank",
 		"Farmer",
-		m.heading
+		p.heading
 	]) {
 		let t = document.createElement("th");
-		t.scope = "col", t.textContent = e, y.append(t);
+		t.scope = "col", t.textContent = e, b.append(t);
 	}
-	v.append(y), g.append(v);
-	let b = document.createElement("tbody");
-	if (p(n, a).forEach(({ row: e, rank: n, score: r }) => {
+	v.append(b), h.append(v);
+	let x = document.createElement("tbody");
+	if (_(t, o).forEach(({ row: e, rank: t, score: n }) => {
 		let i = document.createElement("tr");
-		i.classList.toggle("is-you", e.player_id === d);
-		let a = document.createElement("td");
-		a.className = "leaderboard-place", a.innerHTML = c(n);
-		let o = document.createElement("td"), s = document.createElement(f ? "button" : "strong"), u = document.createElement("small");
-		s.textContent = e.username, f && (s.type = "button", s.className = "player-name-link", s.setAttribute("aria-haspopup", "dialog"), s.setAttribute("aria-label", `View ${e.username}'s profile`), s.onclick = () => f(e.player_id));
-		let p = document.createElement("span");
-		p.className = "online-dot", p.dataset.onlinePlayer = e.player_id, p.setAttribute("role", "img"), s.prepend(p);
-		let m = t(e.vip_expires_at, l);
-		m && s.insertAdjacentHTML("beforeend", m), u.textContent = `Level ${e.level}${e.player_id === d ? " · You" : ""}`, o.append(s, u);
-		let h = document.createElement("td");
-		h.textContent = r.toLocaleString("en-US"), i.append(a, o, h), b.append(i);
-	}), g.append(b), e.append(g), h(e, {
-		onlinePlayers: o,
-		presenceReady: s,
+		i.classList.toggle("is-you", e.player_id === u);
+		let o = document.createElement("td");
+		o.className = "leaderboard-place", o.innerHTML = f(t);
+		let s = document.createElement("td"), c = document.createElement(d ? "button" : "strong"), p = document.createElement("small");
+		c.textContent = e.username, d && (c.type = "button", c.className = "player-name-link", c.setAttribute("aria-haspopup", "dialog"), c.setAttribute("aria-label", `View ${e.username}'s profile`), c.onclick = () => d(e.player_id));
+		let m = document.createElement("span");
+		m.className = "online-dot", m.dataset.onlinePlayer = e.player_id, m.setAttribute("role", "img"), c.prepend(m);
+		let h = a(e.vip_expires_at, l);
+		h && c.insertAdjacentHTML("beforeend", h), p.textContent = `Level ${e.level}${e.player_id === u ? " · You" : ""}`;
+		let g = document.createElement("div");
+		g.className = "leaderboard-farmer", g.innerHTML = r(e.avatar_id);
+		let _ = document.createElement("div");
+		_.append(c, p), g.append(_), s.append(g);
+		let v = document.createElement("td");
+		v.textContent = n.toLocaleString("en-US"), i.append(o, s, v), x.append(i);
+	}), h.append(x), e.append(h), y(e, {
+		onlinePlayers: s,
+		presenceReady: c,
 		now: l
-	}), r && i) {
+	}), n && i) {
 		let t = document.createElement("div");
 		t.className = "your-rank";
-		let n = document.createElement("strong"), o = document.createElement("span");
-		n.textContent = `Your rank: #${i}`;
-		let s = Number(r[a] ?? 0).toLocaleString("en-US");
-		o.textContent = a === "level" ? `Level ${s} · ${r.username}` : `${s} ${m.unit} · ${r.username}`, t.append(n, o), e.append(t);
+		let r = document.createElement("strong"), a = document.createElement("span");
+		r.textContent = `Your rank: #${i}`;
+		let s = Number(n[o] ?? 0).toLocaleString("en-US");
+		a.textContent = o === "level" ? `Level ${s} · ${n.username}` : `${s} ${p.unit} · ${n.username}`, t.append(r, a), e.append(t);
 	}
 }
-function h(e, { onlinePlayers: t = [], presenceReady: r = !1, now: i = Date.now() }) {
-	n(e, i);
-	let a = new Set(t);
+function y(e, { onlinePlayers: t = [], presenceReady: n = !1, now: r = Date.now() }) {
+	o(e, r);
+	let i = new Set(t);
 	e.querySelectorAll("[data-online-player]").forEach((e) => {
-		let t = r && a.has(e.dataset.onlinePlayer);
-		e.classList.toggle("is-online", t), e.title = t ? "Online · active within the last 30 minutes" : r ? "Offline · no action in the last 30 minutes" : "Online status unavailable", e.setAttribute("aria-label", e.title);
+		let t = n && i.has(e.dataset.onlinePlayer);
+		e.classList.toggle("is-online", t), e.title = t ? "Online · active within the last 30 minutes" : n ? "Offline · no action in the last 30 minutes" : "Online status unavailable", e.setAttribute("aria-label", e.title);
 	});
 }
 //#endregion
-export { s as a, h as i, f as n, n as o, m as r, t as s, l as t };
+export { d as a, e as c, y as i, r as l, g as n, o, v as r, a as s, p as t, n as u };

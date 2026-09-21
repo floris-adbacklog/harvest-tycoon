@@ -53,7 +53,7 @@ test('profile and search render names as text with existing painted artwork',asy
 test('profile directory routes after session validation and before any farm mutation',()=>{
  const code=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');
  const route=code.indexOf('const directory=await handlePlayerDirectory');assert.ok(route>code.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<code.indexOf("admin.from('player_farms')"));assert.match(code,/return reply\(directory.data,directory.status\)/);
- const bridge=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');assert.ok(bridge.includes("else if(!['player_search','player_profile'].includes(body.operation))unavailable(error.message)"));
+ const bridge=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');assert.ok(bridge.includes("else if(!['player_search','player_profile','avatar'].includes(body.operation))unavailable(error.message)"));
 });
 
 const signedUp='2026-09-16T21:12:01.344473+00:00';

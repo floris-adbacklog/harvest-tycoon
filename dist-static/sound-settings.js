@@ -12,7 +12,7 @@ export function createSoundSettings(audio){
   $('sound-status').textContent=!s.available?'Sound is not available in this browser.':!s.enabled?'All sound is muted.':!audible?'Both volume sliders are set to zero.':s.musicStatus==='unavailable'?'Music could not load. Game sounds are still available.':s.musicStatus==='loading'?'Getting your background music ready…':'Soft music and little celebrations.';
   $('sound-preview').disabled=!s.available||!s.enabled||!s.effects;
   $('sound-button').setAttribute('aria-label','Settings');$('sound-button').title='Settings';
-  $('mobile-sound-label').textContent='Settings';$('mobile-sound-summary').textContent=audible?'Sound & app':'Sound off · app';install.refresh();refreshArt();
+  $('mobile-sound-label').textContent='Settings';$('mobile-sound-summary').textContent=audible?'Avatar, sound & app':'Avatar & app · sound off';install.refresh();refreshArt();
  }
  function open(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());refresh();dialog.showModal();void reminders.refresh();}
  $('sound-button').onclick=open;

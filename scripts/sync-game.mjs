@@ -6,6 +6,8 @@ copyFileSync(new URL('../game/farm-state.js',import.meta.url),new URL('../supaba
 
 copyFileSync(new URL('../src/presence.js',import.meta.url),new URL('../supabase/functions/farm-api/presence.js',import.meta.url));
 
+copyFileSync(new URL('../public/player-avatars.js',import.meta.url),new URL('../supabase/functions/farm-api/player-avatars.js',import.meta.url));
+
 // The reminder job only needs the display names of crops and buildings, not the whole game.
 {
  const {CROPS,BUILDINGS}=await import('../game/farm-state.js');

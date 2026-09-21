@@ -14,8 +14,9 @@ function start(){
  const bridge={takeInitial:()=>({profile:{}}),playerId:'player'};
  const context=vm.createContext({
   window:{parent:{harvestBridge:bridge},addEventListener(){}},
-  document:{body:{hidden:true}},location:{replace:()=>calls.push('redirect')},
+  document:{body:{hidden:true},getElementById:()=>null},location:{replace:()=>calls.push('redirect')},
   createCloudUI:()=>({setProfile(){},status(){}}),
+  createAvatarSettings:()=>{},
   createPlayerProfiles:()=>({open(){},isOpen:false}),
   setInterval:()=>1,clearInterval(){},
   loadGame:async()=>({farmReady}),

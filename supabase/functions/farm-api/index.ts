@@ -1,3 +1,4 @@
+import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily} from './family-service.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
@@ -21,18 +22,21 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['load','action','rename','family','player_search','player_profile'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['load','action','rename','avatar','family','player_search','player_profile'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='player_search'||body.operation==='player_profile'){
    const directory=await handlePlayerDirectory({admin,body,player:user.id});return reply(directory.data,directory.status);
   }
-  const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level').eq('player_id',user.id).maybeSingle();
+  if(body.operation==='avatar'){
+   const saved=await savePlayerAvatar({admin,player:user.id,avatarId:body.avatarId});return reply(saved.data,saved.status);
+  }
+  const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id').eq('player_id',user.id).maybeSingle();
   if(profileResponse.error)throw profileResponse.error;
   let profile=profileResponse.data;
   const username=profile?.username??(nameValid(user.user_metadata?.username)?user.user_metadata.username.trim():null);
   if(!username)return reply({error:'Choose a player name to open your farm.',code:'USERNAME_REQUIRED'},409);
   if(body.operation==='rename'){
    if(!nameValid(body.username))return reply({error:'Use 3–20 letters, numbers, spaces, underscores or hyphens.'},400);
-   const renamed=await admin.from('player_stats').update({username:body.username.trim()}).eq('player_id',user.id).select('player_id,username,currency,level').single();
+   const renamed=await admin.from('player_stats').update({username:body.username.trim()}).eq('player_id',user.id).select('player_id,username,currency,level,avatar_id').single();
    if(renamed.error)throw renamed.error;return reply({profile:renamed.data});
   }
   if(body.operation==='action'&&(!/^[0-9a-f-]{36}$/i.test(body.requestId??'')||!body.action||typeof body.action!=='object'))return reply({error:'Invalid farm action.'},400);
@@ -50,7 +54,7 @@ Deno.serve(async(req)=>{
     if(created.error)throw created.error;continue;
    }
    const state=normalizeFarm(row.state,now);
-   profile={player_id:user.id,username,currency:state.coins,level:levelOf(state)};
+   profile={player_id:user.id,username,currency:state.coins,level:levelOf(state),avatar_id:profile?.avatar_id??'default'};
    if(body.operation==='family'||(body.operation==='action'&&String(body.action.type).startsWith('family_'))){
     const familyResponse=await handleFamily({admin,body,row,state,player:user.id,username});
     if(!familyResponse)continue;return reply(familyResponse.data,familyResponse.status);

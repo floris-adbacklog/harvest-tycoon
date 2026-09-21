@@ -1,6 +1,16 @@
 # Handoff notes (latest state)
 
-Work from THIS zip only. Do not restore older files from earlier chats. Run `npm test` before and after (353 tests pass now).
+Work from THIS zip only. Do not restore older files from earlier chats. Run `npm test` before and after (448 tests pass for the avatar release; input ZIP baseline was 437).
+
+## Latest: 20 selectable farmer avatars (2026-09-21)
+- Start from this complete ZIP. The authoritative input was `b99c8096-e03e-4563-8752-dd8178777ef1.zip`; none of the older projects was used as source.
+- Settings now starts with **Your farmer avatar**: current preview, expandable picker, 20 newly generated farmers + the original portrait, and an explicit Save avatar button. All are free cosmetics. Responsive 5/4/3-column grid with keyboard-operable radio controls, lazy-loaded transparent WebP assets.
+- Avatar is saved to `player_stats.avatar_id`, so it follows the account across devices. The authenticated `avatar` farm-api operation validates the catalog and changes only the signed-in player's avatar/activity time. No balances or gameplay rules change. Unknown IDs fall back to the original portrait for display.
+- Profiles, leaderboard, player search, family members and family invitation search display the selected avatar. Existing players retain the default until they choose another.
+- Supabase migration `player_avatars` and **farm-api v48 are LIVE**. Do not replay the migration against production. Local record: `supabase/migrations/20260921181951_player_avatars.sql`. Existing RLS is unchanged; direct client UPDATE remains forbidden. Protected `harvest_commit_farm` and `harvest_credit_purchase` definitions were not modified.
+- Assets: `public/assets/avatars/`; shared catalog: `public/player-avatars.js` (sync script copies to farm-api). Generation prompts and asset paths: `AVATAR-ARTWORK.md`. UI: `public/avatar-settings.js`, `public/player-avatars.css`, initialized in `src/game-cloud.js`.
+- Validation: 448 tests pass, including authenticated endpoint ownership, invalid IDs, saved selection after reload/action, and picker error/retry handling. Static production build succeeds. Live migration checked with a transaction that was rolled back; family projection and database ID constraint passed.
+- Frontend still needs normal Vercel deployment. `public/cloud/` and `dist-static/` have been rebuilt. Visual mobile/tablet/browser verification could not run: the browser refused the local preview URL (`ERR_BLOCKED_BY_CLIENT`). No real player avatar was changed during testing.
 
 ## What is new since Progression v7 / Family v6
 - **Compact VIP layout**: the shop now has a smaller header, four short benefit labels with the existing wheat/buildings/coins/gift illustrations in a 2×2 grid, and compact plan cards. The inactive green subheading and long disclaimer are removed. Mobile keeps two benefit columns, with stacked plans. Purchase rules, costs, confirmations and server state are unchanged. See `VIP-COMPACT-UPDATE.md`.
@@ -18,7 +28,7 @@ Work from THIS zip only. Do not restore older files from earlier chats. Run `npm
 - Functions: `notification_save`, `notification_subscribe`, `notification_unsubscribe` (authenticated); `notification_begin_run`, `notification_add_emails`, `notification_candidates` (service role only).
 - Edge Function `notify-hourly` (v4, `verify_jwt` off on purpose: cron call and unsubscribe link have no user; the job is limited to one run per clock hour). Secrets already set in the dashboard: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `RESEND_API_KEY`. Never put secrets in the repo or in `VITE_` variables.
 - `pg_cron` job `notify-hourly` at minute 5 of every hour (`supabase/notifications-cron.sql`).
-- Edge Function `farm-api` is live at v43 (based on the inspected live v42). Any change to it must start from the LIVE copy, not from an older file.
+- Edge Function `farm-api` is live at v48 (avatar update based on inspected live v47, which exactly matched this input ZIP). Any change to it must start from the LIVE copy, not from an older file.
 - Edge Functions `diamond-checkout` and `stripe-webhook` are live at v11. Migrations `double_paid_diamond_packs` and `vip_and_four_diamond_packs` are live. Old pending receipts remain valid.
 
 ## Rules that must not be broken

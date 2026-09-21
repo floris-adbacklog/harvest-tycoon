@@ -1,3 +1,4 @@
+import {avatarImage} from '../public/player-avatars.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {rankArt} from '../public/rank-art.js';
 export const LEADERBOARD_CATEGORIES=Object.freeze({
@@ -23,7 +24,7 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  harvested_berries:{label:'Berries harvested',heading:'Berries',unit:'berries harvested',group:'crops',description:'Lifetime berries harvested, including water and care bonuses.'}
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}
-const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at,vip_expires_at';
+const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at,vip_expires_at,avatar_id';
 export async function fetchLeaderboard(client,playerId,category='level'){
  categoryFor(category);
  const {data,error}=await client.from('player_stats').select(PUBLIC_FIELDS).order(category,{ascending:false}).order('player_id',{ascending:true}).limit(10);
@@ -48,7 +49,7 @@ export function renderLeaderboard(container,{rows,own,rank,category='level',onli
  rankedRows(rows,category).forEach(({row,rank:place,score:value})=>{
   const tr=document.createElement('tr');tr.classList.toggle('is-you',row.player_id===playerId);
   const n=document.createElement('td');n.className='leaderboard-place';n.innerHTML=rankArt(place);
-  const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');strong.textContent=row.username;if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',`View ${row.username}'s profile`);strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');strong.prepend(dot);const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;name.append(strong,small);
+  const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');strong.textContent=row.username;if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',`View ${row.username}'s profile`);strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');strong.prepend(dot);const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;const identity=document.createElement('div');identity.className='leaderboard-farmer';identity.innerHTML=avatarImage(row.avatar_id);const copy=document.createElement('div');copy.append(strong,small);identity.append(copy);name.append(identity);
   const score=document.createElement('td');score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
  });table.append(tbody);container.append(table);updateOnlineIndicators(container,{onlinePlayers,presenceReady,now});
  if(own&&rank){const line=document.createElement('div');line.className='your-rank';const label=document.createElement('strong'),value=document.createElement('span');label.textContent=`Your rank: #${rank}`;const score=Number(own[category]??0).toLocaleString('en-US');value.textContent=category==='level'?`Level ${score} · ${own.username}`:`${score} ${config.unit} · ${own.username}`;line.append(label,value);container.append(line);}

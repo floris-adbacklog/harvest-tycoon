@@ -1,4 +1,4 @@
-import { n as e } from "./leaderboard-BL0SrUQK.js";
+import { n as e } from "./leaderboard-DgNNlQbT.js";
 function t(e, t = Date.now()) {
 	let n = Date.parse(e), r = t - n;
 	return Number.isFinite(n) && r >= 0 && r < 18e5;
@@ -8225,7 +8225,36 @@ function Ba(e, t = {}, n = globalThis.window) {
 	for (let e of ["cost", "diamonds"]) Number.isSafeInteger(t[e]) && t[e] >= 0 && t[e] <= 1e4 && (r[e] = t[e]);
 	Na(e, r, n);
 }
-var Va = "Use 3–20 letters, numbers, spaces, underscores or hyphens.", Ha = Object.freeze({
+var Va = new Set([
+	"game_session",
+	"level_up",
+	"guide_step",
+	"guide_complete",
+	"reminder_prompt"
+]), Ha = new Set([
+	"harvest",
+	"sell",
+	"plant",
+	"water",
+	"produce",
+	"gift",
+	"chore",
+	"sell_egg",
+	"tend",
+	"wheat",
+	"collect"
+]), Ua = new Set([
+	"shown",
+	"accepted",
+	"dismissed",
+	"failed"
+]);
+function Wa(e, t = {}, n = globalThis.window) {
+	if (!Va.has(e)) return;
+	let r = { device: Fa(n) };
+	Number.isSafeInteger(t.level) && t.level >= 1 && t.level <= 500 && (r.level = t.level), Number.isSafeInteger(t.index) && t.index >= 0 && t.index <= 9 && (r.index = t.index), Ha.has(t.step) && (r.step = t.step), Ua.has(t.action) && (r.action = t.action), typeof t.returning == "boolean" && (r.returning = t.returning), Na(e, r, n);
+}
+var Ga = "Use 3–20 letters, numbers, spaces, underscores or hyphens.", Ka = Object.freeze({
 	signin: {
 		eyebrow: "GOOD TO SEE YOU, FARMER",
 		title: "Welcome home.",
@@ -8242,7 +8271,7 @@ var Va = "Use 3–20 letters, numbers, spaces, underscores or hyphens.", Ha = Ob
 	register: {
 		eyebrow: "NEW FARMERS WELCOME",
 		title: "Start your farm.",
-		copy: "Free to play. Your first harvest is just around the corner.",
+		copy: "Your first harvest is just around the corner.",
 		submit: "Start my farm",
 		fields: ["email", "password"],
 		tabs: !0,
@@ -8292,7 +8321,7 @@ var Va = "Use 3–20 letters, numbers, spaces, underscores or hyphens.", Ha = Ob
 		tabs: !1,
 		switch: null
 	}
-}), Ua = [
+}), qa = [
 	"Sunny",
 	"Happy",
 	"Golden",
@@ -8303,7 +8332,7 @@ var Va = "Use 3–20 letters, numbers, spaces, underscores or hyphens.", Ha = Ob
 	"Bright",
 	"Gentle",
 	"Rustic"
-], Wa = [
+], Ja = [
 	"Acres",
 	"Meadow",
 	"Orchard",
@@ -8315,20 +8344,20 @@ var Va = "Use 3–20 letters, numbers, spaces, underscores or hyphens.", Ha = Ob
 	"Creek",
 	"Farm"
 ];
-function Ga(e = Math.random) {
+function Ya(e = Math.random) {
 	let t = (t) => t[Math.floor(e() * t.length) % t.length];
-	return `${t(Ua)} ${t(Wa)} ${1e3 + Math.floor(e() * 9e3)}`;
+	return `${t(qa)} ${t(Ja)} ${1e3 + Math.floor(e() * 9e3)}`;
 }
-var Ka = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e ?? "").trim());
-function qa({ mode: e, name: t = "", email: n = "", password: r = "" }, i) {
+var Xa = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e ?? "").trim());
+function Za({ mode: e, name: t = "", email: n = "", password: r = "" }, i) {
 	let a = {};
-	return (e === "name" || e === "register" && t.trim() !== "") && !i(t) && (a.name = Va), [
+	return (e === "name" || e === "register" && t.trim() !== "") && !i(t) && (a.name = Ga), [
 		"signin",
 		"register",
 		"forgot"
-	].includes(e) && !Ka(n) && (a.email = "Enter a valid email address, like you@example.com."), e === "signin" && !r && (a.password = "Enter your password."), (e === "register" || e === "recovery") && r.length < 6 && (a.password = "Use at least 6 characters."), a;
+	].includes(e) && !Xa(n) && (a.email = "Enter a valid email address, like you@example.com."), e === "signin" && !r && (a.password = "Enter your password."), (e === "register" || e === "recovery") && r.length < 6 && (a.password = "Use at least 6 characters."), a;
 }
-function Ja(e, t = (e) => e?.message) {
+function Qa(e, t = (e) => e?.message) {
 	let n = e?.code, r = e?.status, i = String(e?.message ?? "");
 	return n === "weak_password" ? {
 		field: "password",
@@ -8366,12 +8395,12 @@ function Ja(e, t = (e) => e?.message) {
 }
 //#endregion
 //#region src/pwa.js
-function Ya({ standalone: e = !1, ios: t = !1, promptReady: n = !1, secure: r = !0, serviceWorker: i = !0 } = {}) {
+function $a({ standalone: e = !1, ios: t = !1, promptReady: n = !1, secure: r = !0, serviceWorker: i = !0 } = {}) {
 	return e ? { kind: "installed" } : !r || !i ? { kind: "unsupported" } : n ? { kind: "prompt" } : { kind: t ? "ios" : "manual" };
 }
-function Xa(e = globalThis.window) {
+function eo(e = globalThis.window) {
 	if (!e?.navigator) return null;
-	let t = e.navigator, n = /* @__PURE__ */ new Set(), r = null, i = () => !!(e.matchMedia?.("(display-mode: standalone)")?.matches || t.standalone), a = () => /iphone|ipad|ipod/i.test(t.userAgent ?? "") || t.platform === "MacIntel" && t.maxTouchPoints > 1, o = () => Ya({
+	let t = e.navigator, n = /* @__PURE__ */ new Set(), r = null, i = () => !!(e.matchMedia?.("(display-mode: standalone)")?.matches || t.standalone), a = () => /iphone|ipad|ipod/i.test(t.userAgent ?? "") || t.platform === "MacIntel" && t.maxTouchPoints > 1, o = () => $a({
 		standalone: i(),
 		ios: a(),
 		promptReady: !!r,
@@ -8408,11 +8437,11 @@ function Xa(e = globalThis.window) {
 }
 //#endregion
 //#region src/push.js
-function Za(e) {
+function to(e) {
 	let t = (e + "=".repeat((4 - e.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/"), n = atob(t);
 	return Uint8Array.from(n, (e) => e.charCodeAt(0));
 }
-function Qa({ supabase: e, getKey: t, win: n = globalThis.window }) {
+function no({ supabase: e, getKey: t, win: n = globalThis.window }) {
 	let r = n?.navigator, i = !!(r && "serviceWorker" in r && n && "PushManager" in n && "Notification" in n), a = () => !!(n?.matchMedia?.("(display-mode: standalone)")?.matches || r?.standalone), o = () => /iphone|ipad|ipod/i.test(r?.userAgent ?? "") || r?.platform === "MacIntel" && r?.maxTouchPoints > 1, s = async () => {
 		try {
 			return await r.serviceWorker.ready;
@@ -8444,7 +8473,7 @@ function Qa({ supabase: e, getKey: t, win: n = globalThis.window }) {
 			if (!i) throw Error("The app is not ready yet. Reload the page and try again.");
 			return await l(await i.pushManager.getSubscription() ?? await i.pushManager.subscribe({
 				userVisibleOnly: !0,
-				applicationServerKey: Za(r)
+				applicationServerKey: to(r)
 			})), u();
 		},
 		async disable() {
@@ -8484,42 +8513,42 @@ function Qa({ supabase: e, getKey: t, win: n = globalThis.window }) {
 }
 //#endregion
 //#region src/notifications.js
-var $a = Object.freeze({
+var ro = Object.freeze({
 	pushCrops: !1,
 	pushProduction: !1,
 	pushDaily: !1,
 	emailDigest: !1,
 	digestHour: 9
 });
-function eo() {
+function io() {
 	try {
 		return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 	} catch {
 		return "UTC";
 	}
 }
-var to = (e) => Number.isInteger(e) && e >= 0 && e <= 23;
-function no(e) {
+var ao = (e) => Number.isInteger(e) && e >= 0 && e <= 23;
+function oo(e) {
 	return e ? {
 		pushCrops: e.push_crops === !0,
 		pushProduction: e.push_production === !0,
 		pushDaily: e.push_daily === !0,
 		emailDigest: e.email_digest === !0,
-		digestHour: to(e.digest_hour) ? e.digest_hour : $a.digestHour
-	} : { ...$a };
+		digestHour: ao(e.digest_hour) ? e.digest_hour : ro.digestHour
+	} : { ...ro };
 }
-function ro(e, t = eo()) {
+function so(e, t = io()) {
 	let n = Number(e.digestHour);
 	return {
 		p_push_crops: e.pushCrops === !0,
 		p_push_production: e.pushProduction === !0,
 		p_push_daily: e.pushDaily === !0,
 		p_email_digest: e.emailDigest === !0,
-		p_digest_hour: to(n) ? n : $a.digestHour,
+		p_digest_hour: ao(n) ? n : ro.digestHour,
 		p_timezone: t
 	};
 }
-function io(e, { configUrl: t = null, fetchImpl: n = globalThis.fetch, timezone: r = eo, win: i = globalThis.window } = {}) {
+function co(e, { configUrl: t = null, fetchImpl: n = globalThis.fetch, timezone: r = io, win: i = globalThis.window } = {}) {
 	let a = !1, o = null, s = (async () => {
 		if (!(!t || typeof n != "function")) try {
 			let e = await n(t);
@@ -8527,7 +8556,7 @@ function io(e, { configUrl: t = null, fetchImpl: n = globalThis.fetch, timezone:
 			let r = await e.json();
 			r?.enabled === !0 && (a = !0, o = r);
 		} catch {}
-	})(), c = Qa({
+	})(), c = no({
 		supabase: e,
 		getKey: async () => (await s, o?.vapidPublicKey ?? null),
 		win: i
@@ -8546,10 +8575,10 @@ function io(e, { configUrl: t = null, fetchImpl: n = globalThis.fetch, timezone:
 		async get() {
 			let { data: t, error: n } = await e.from("notification_settings").select("push_crops,push_production,push_daily,email_digest,digest_hour").maybeSingle();
 			if (n) throw n;
-			return no(t);
+			return oo(t);
 		},
 		async save(t) {
-			let n = ro(t, r()), { error: i } = await e.rpc("notification_save", n);
+			let n = so(t, r()), { error: i } = await e.rpc("notification_save", n);
 			if (i) throw i;
 			return {
 				pushCrops: n.p_push_crops,
@@ -8562,10 +8591,45 @@ function io(e, { configUrl: t = null, fetchImpl: n = globalThis.fetch, timezone:
 	};
 }
 //#endregion
+//#region src/player-counts.js
+var lo = (e) => String(e).replace(/\B(?=(\d{3})+(?!\d))/g, " "), uo = ({ players: e, online: t }) => ({
+	players: `${lo(e)} ${e === 1 ? "player" : "players"}`,
+	online: `${lo(t)} online`
+});
+async function fo(e, t = globalThis.fetch) {
+	if (!e || typeof t != "function") return null;
+	let n = await t(`${e}/player-counts`);
+	if (!n.ok) return null;
+	let r = await n.json();
+	return Number.isSafeInteger(r?.players) && Number.isSafeInteger(r?.online) && r.players >= 0 && r.online >= 0 && r.online <= r.players ? {
+		players: r.players,
+		online: r.online
+	} : null;
+}
+function po({ functionsUrl: e, doc: t = globalThis.document, fetchImpl: n = globalThis.fetch, interval: r = 6e4, timers: i = globalThis } = {}) {
+	let a = t?.getElementById?.("player-counts");
+	if (!a || !e) return () => {};
+	let o = !1, s = null, c = (e) => {
+		let t = uo(e);
+		a.querySelector("[data-count=\"players\"]").textContent = t.players, a.querySelector("[data-count=\"online\"]").textContent = t.online, a.hidden = !1;
+	}, l = async () => {
+		if (!(o || t.body?.dataset?.phase === "authenticated")) {
+			if (!t.hidden) try {
+				let t = await fo(e, n);
+				t && !o && c(t);
+			} catch {}
+			o || (s = i.setTimeout(l, r));
+		}
+	};
+	return l(), () => {
+		o = !0, i.clearTimeout?.(s);
+	};
+}
+//#endregion
 //#region src/main.js
 var K = (e) => document.getElementById(e);
-Xa();
-var ao = null, oo = null, q = "register", J = 0, Y = null, X = null, so = !1, co = !1, lo = !1, uo = !1, fo = !1, po = !1, mo = !1, ho = "signup", go = "", _o = null, vo = {}, yo = "harvest-tycoon:auth", bo = "harvest-tycoon:returning", xo = "harvest-tycoon:confirm-pending", Z = {
+eo(), po({ functionsUrl: Da });
+var mo = null, ho = null, q = "register", J = 0, Y = null, X = null, go = !1, _o = !1, vo = !1, yo = !1, bo = !1, xo = !1, So = !1, Co = "signup", wo = "", To = null, Eo = {}, Do = "harvest-tycoon:auth", Oo = "harvest-tycoon:returning", ko = "harvest-tycoon:confirm-pending", Z = {
 	get(e) {
 		try {
 			return localStorage.getItem(e);
@@ -8583,13 +8647,13 @@ var ao = null, oo = null, q = "register", J = 0, Y = null, X = null, so = !1, co
 			localStorage.removeItem(e);
 		} catch {}
 	}
-}, So = () => {
+}, Ao = () => {
 	try {
-		return localStorage.getItem(yo) === null && localStorage.getItem(bo) === null;
+		return localStorage.getItem(Do) === null && localStorage.getItem(Oo) === null;
 	} catch {
 		return !1;
 	}
-}, Co = () => Z.get(bo) === "1" || Z.get(yo) !== null, wo = () => `${globalThis.location?.hash ?? ""}&${globalThis.location?.search ?? ""}`, To = () => /type=(recovery|signup|magiclink|invite|email_change)/.exec(wo())?.[1] ?? "", Eo = () => /error_code=|error=access_denied/.test(wo()), Do = () => new URL("/play.html", location.origin).href, Oo = (e) => e === "name" ? "player-name" : e, ko = {
+}, jo = () => Z.get(Oo) === "1" || Z.get(Do) !== null, Mo = () => `${globalThis.location?.hash ?? ""}&${globalThis.location?.search ?? ""}`, No = () => /type=(recovery|signup|magiclink|invite|email_change)/.exec(Mo())?.[1] ?? "", Po = () => /error_code=|error=access_denied/.test(Mo()), Fo = () => new URL("/play.html", location.origin).href, Io = (e) => e === "name" ? "player-name" : e, Lo = {
 	register: "Creating your account…",
 	signin: "Opening your farm…",
 	name: "Opening your farm…",
@@ -8599,44 +8663,44 @@ var ao = null, oo = null, q = "register", J = 0, Y = null, X = null, so = !1, co
 function Q(e, t) {
 	document.body.dataset.phase = e, K("loading-screen").hidden = e !== "checking", K("welcome").hidden = e === "checking" || e === "authenticated", K("farm-host").hidden = e !== "authenticated", t && (K("loading-copy").textContent = t);
 }
-function Ao() {
-	ao?.dispose(), ao = null, J++, X?.remove(), X = null, Y = null, delete window.harvestBridge, K("farm-host").replaceChildren();
+function Ro() {
+	mo?.dispose(), mo = null, J++, X?.remove(), X = null, Y = null, delete window.harvestBridge, K("farm-host").replaceChildren();
 }
-function jo(e, t) {
-	uo = !0;
+function zo(e, t) {
+	yo = !0;
 	try {
 		K(e).focus(t);
 	} finally {
-		uo = !1;
+		yo = !1;
 	}
 }
-function Mo(e, t = "") {
-	K(e + "-error").textContent = t, K(Oo(e)).setAttribute("aria-invalid", String(!!t));
+function Bo(e, t = "") {
+	K(e + "-error").textContent = t, K(Io(e)).setAttribute("aria-invalid", String(!!t));
 }
-function No() {
+function Vo() {
 	for (let e of [
 		"email",
 		"password",
 		"name"
-	]) Mo(e);
+	]) Bo(e);
 }
-function Po(e) {
-	No();
-	for (let [t, n] of Object.entries(e)) Mo(t, n);
+function Ho(e) {
+	Vo();
+	for (let [t, n] of Object.entries(e)) Bo(t, n);
 	let t = Object.keys(e)[0];
-	t && jo(Oo(t));
+	t && zo(Io(t));
 }
-function Fo(e) {
+function Uo(e) {
 	K("password").type = e ? "text" : "password", K("toggle-password").textContent = e ? "Hide" : "Show", K("toggle-password").setAttribute("aria-label", e ? "Hide password" : "Show password"), K("toggle-password").setAttribute("aria-pressed", String(e));
 }
-function Io(e) {
+function Wo(e) {
 	K("account-submit").disabled = e, document.querySelectorAll("[data-mode]").forEach((t) => t.disabled = e);
 }
-function Lo(e, t = !1) {
+function Go(e, t = !1) {
 	q = e;
-	let n = Ha[q];
-	q !== "register" && (fo = !1);
-	let r = (e) => n.fields.includes(e) || e === "name" && q === "register" && fo, i = [
+	let n = Ka[q];
+	q !== "register" && (bo = !1);
+	let r = (e) => n.fields.includes(e) || e === "name" && q === "register" && bo, i = [
 		"email",
 		"password",
 		"name"
@@ -8645,27 +8709,27 @@ function Lo(e, t = !1) {
 		"email",
 		"password",
 		"name"
-	]) K(e + "-row").hidden = !r(e), K(Oo(e)).required = r(e) && (e !== "name" || q === "name"), K(Oo(e)).setAttribute("enterkeyhint", e === i.at(-1) ? "go" : "next");
-	No(), Fo(!1), K("password").autocomplete = q === "signin" ? "current-password" : "new-password", K("form-eyebrow").textContent = n.eyebrow, K("account-title").textContent = n.title, K("account-copy").textContent = n.copy, K("account-copy").hidden = !n.copy, K("account-submit").textContent = n.submit, K("account-message").textContent = "", K("account-form").hidden = q === "confirm", K("confirm-panel").hidden = q !== "confirm", K("connection-actions").hidden = !0, document.querySelector(".account-tabs").hidden = !n.tabs, K("forgot-link").hidden = q !== "signin", K("name-toggle").hidden = !(q === "register" && !fo), K("name-optional").hidden = q === "name", K("name-help").hidden = q === "name", K("register-promise").hidden = q !== "register", K("mode-switch-row").hidden = !n.switch, n.switch && (K("mode-switch-text").textContent = n.switch.text, K("mode-switch").textContent = n.switch.label, K("mode-switch").dataset.mode = n.switch.to), document.querySelectorAll(".account-tabs [data-mode]").forEach((e) => e.setAttribute("aria-pressed", String(e.dataset.mode === q))), t && (document.querySelector(".account-card").scrollIntoView({
+	]) K(e + "-row").hidden = !r(e), K(Io(e)).required = r(e) && (e !== "name" || q === "name"), K(Io(e)).setAttribute("enterkeyhint", e === i.at(-1) ? "go" : "next");
+	Vo(), Uo(!1), K("password").autocomplete = q === "signin" ? "current-password" : "new-password", K("form-eyebrow").textContent = n.eyebrow, K("account-title").textContent = n.title, K("account-copy").textContent = n.copy, K("account-copy").hidden = !n.copy, K("account-submit").textContent = n.submit, K("account-message").textContent = "", K("account-form").hidden = q === "confirm", K("confirm-panel").hidden = q !== "confirm", K("connection-actions").hidden = !0, document.querySelector(".account-tabs").hidden = !n.tabs, K("forgot-link").hidden = q !== "signin", K("name-toggle").hidden = !(q === "register" && !bo), K("name-optional").hidden = q === "name", K("name-help").hidden = q === "name", K("register-promise").hidden = q !== "register", K("mode-switch-row").hidden = !n.switch, n.switch && (K("mode-switch-text").textContent = n.switch.text, K("mode-switch").textContent = n.switch.label, K("mode-switch").dataset.mode = n.switch.to), document.querySelectorAll(".account-tabs [data-mode]").forEach((e) => e.setAttribute("aria-pressed", String(e.dataset.mode === q))), t && (document.querySelector(".account-card").scrollIntoView({
 		behavior: "smooth",
 		block: "start"
-	}), i.length && jo(Oo(i[0]), { preventScroll: !0 }));
+	}), i.length && zo(Io(i[0]), { preventScroll: !0 }));
 }
 function $(e = "") {
-	Ao(), Lo(e || Co() ? "signin" : "register"), Q("unauthenticated"), K("account-message").textContent = e, mo || (mo = !0, G("view", { mode: q }));
+	Ro(), Go(e || jo() ? "signin" : "register"), Q("unauthenticated"), K("account-message").textContent = e, So || (So = !0, G("view", { mode: q }));
 }
-function Ro(e = "Your farm is safe. Reconnect to continue.") {
-	Ao(), Q("error"), K("account-title").textContent = "A little pause.", K("account-copy").hidden = !1, K("account-copy").textContent = e, K("account-message").textContent = "", K("account-form").hidden = !0, K("confirm-panel").hidden = !0, K("mode-switch-row").hidden = !0, document.querySelector(".account-tabs").hidden = !0, K("connection-actions").hidden = !1;
+function Ko(e = "Your farm is safe. Reconnect to continue.") {
+	Ro(), Q("error"), K("account-title").textContent = "A little pause.", K("account-copy").hidden = !1, K("account-copy").textContent = e, K("account-message").textContent = "", K("account-form").hidden = !0, K("confirm-panel").hidden = !0, K("mode-switch-row").hidden = !0, document.querySelector(".account-tabs").hidden = !0, K("connection-actions").hidden = !1;
 }
-async function zo() {
+async function qo() {
 	if (!W) {
 		$();
 		return;
 	}
 	try {
-		await oo?.push?.detach();
+		await ho?.push?.detach();
 	} catch {}
-	oo = null, Ao(), Q("checking", "Signing you out…");
+	ho = null, Ro(), Q("checking", "Signing you out…");
 	try {
 		let e = await W.auth.signOut();
 		if (e.error) throw e.error;
@@ -8675,25 +8739,25 @@ async function zo() {
 		$(), K("password").value = "";
 	}
 }
-function Bo(e, { kind: t = "signup", fresh: n = !0 } = {}) {
-	go = e, ho = t, t === "signup" && Z.set(xo, "1"), Lo("confirm"), K("confirm-copy").textContent = t === "reset" ? `If ${e} has an account, a link to choose a new password is on its way.` : n ? `We sent a confirmation link to ${e}. Tap it and your farm opens right away.` : `${e} still needs to be confirmed. Use the link we emailed you, or send it again.`, K("confirm-message").textContent = "", G(t === "reset" ? "reset_sent" : "confirmation_sent"), Vo(45);
+function Jo(e, { kind: t = "signup", fresh: n = !0 } = {}) {
+	wo = e, Co = t, t === "signup" && Z.set(ko, "1"), Go("confirm"), K("confirm-copy").textContent = t === "reset" ? `If ${e} has an account, a link to choose a new password is on its way.` : n ? `We sent a confirmation link to ${e}. Tap it and your farm opens right away.` : `${e} still needs to be confirmed. Use the link we emailed you, or send it again.`, K("confirm-message").textContent = "", G(t === "reset" ? "reset_sent" : "confirmation_sent"), Yo(45);
 }
-function Vo(e) {
-	clearInterval(_o);
+function Yo(e) {
+	clearInterval(To);
 	let t = K("resend-confirmation"), n = e, r = () => {
-		t.disabled = n > 0, t.textContent = n > 0 ? `Send the email again (${n}s)` : "Send the email again", n <= 0 && clearInterval(_o), n--;
+		t.disabled = n > 0, t.textContent = n > 0 ? `Send the email again (${n}s)` : "Send the email again", n <= 0 && clearInterval(To), n--;
 	};
-	r(), _o = setInterval(r, 1e3);
+	r(), To = setInterval(r, 1e3);
 }
-function Ho() {
-	po = !0, Ao(), Q("unauthenticated"), Lo("recovery"), G("recovery_open");
+function Xo() {
+	xo = !0, Ro(), Q("unauthenticated"), Go("recovery"), G("recovery_open");
 }
-async function Uo() {
-	if (co) {
-		lo = !0;
+async function Zo() {
+	if (_o) {
+		vo = !0;
 		return;
 	}
-	co = !0, Ao();
+	_o = !0, Ro();
 	let t = J;
 	Q("checking", "Checking your account…");
 	try {
@@ -8712,33 +8776,33 @@ async function Uo() {
 		} catch (e) {
 			if (t !== J) return;
 			if (e.code === "USERNAME_REQUIRED") {
-				Q("unauthenticated"), Lo("name");
+				Q("unauthenticated"), Go("name");
 				return;
 			}
 			throw e;
 		}
 		if (t !== J) return;
 		if (i.profile?.player_id !== r.id) {
-			lo = !0;
+			vo = !0;
 			return;
 		}
-		ao = n(W, r.id), ao.setClock?.(i.serverNow);
+		mo = n(W, r.id), mo.setClock?.(i.serverNow);
 		let a = {
 			playerId: Y,
-			presence: ao,
+			presence: mo,
 			serverNow: i.serverNow,
 			takeInitial() {
 				let e = i;
 				return i = null, e;
 			},
-			signOut: zo,
+			signOut: qo,
 			async leaderboard(n = "level") {
 				if (t !== J) throw Error("Your session has ended.");
 				let i = await e(W, r.id, n);
 				if (t !== J) throw Error("Your session has ended.");
-				return ao?.setRows?.(i.rows), {
+				return mo?.setRows?.(i.rows), {
 					...i,
-					...ao?.snapshot()
+					...mo?.snapshot()
 				};
 			},
 			async request(e) {
@@ -8748,12 +8812,18 @@ async function Uo() {
 					if (t !== J || n.profile?.player_id !== r.id) throw Error("Your session has ended.");
 					return n;
 				} catch (n) {
-					throw t === J && n.code !== "ACTION_REJECTED" && n.status !== 400 && (n.status === 401 ? (await W.auth.signOut({ scope: "local" }), $("Your session has ended. Please sign in again.")) : ["player_search", "player_profile"].includes(e.operation) || Ro(n.message)), n;
+					throw t === J && n.code !== "ACTION_REJECTED" && n.status !== 400 && (n.status === 401 ? (await W.auth.signOut({ scope: "local" }), $("Your session has ended. Please sign in again.")) : [
+						"player_search",
+						"player_profile",
+						"avatar"
+					].includes(e.operation) || Ko(n.message)), n;
 				}
 			}
 		};
-		oo = a.notifications = io(W, { configUrl: Da && `${Da}/notify-hourly?config` }), oo.ready?.then?.(() => oo?.push?.sync?.()), a.trackCommerce = (e, n) => {
+		ho = a.notifications = co(W, { configUrl: Da && `${Da}/notify-hourly?config` }), ho.ready?.then?.(() => ho?.push?.sync?.()), a.trackCommerce = (e, n) => {
 			t === J && Ba(e, n);
+		}, a.trackGame = (e, n) => {
+			t === J && Wa(e, n);
 		}, a.payments = async (e) => {
 			if (t !== J) throw Error("Your session has ended.");
 			let n = await Ma(e);
@@ -8777,30 +8847,30 @@ async function Uo() {
 		}, a.clearPaymentReturn = () => {
 			let e = new URL(location.href);
 			e.searchParams.delete("purchase"), e.searchParams.delete("checkout"), history.replaceState(null, "", e.pathname + e.search + e.hash);
-		}, window.harvestBridge = a, X = document.createElement("iframe"), X.title = "Harvest Tycoon farm", X.src = "/farm.html", K("farm-host").append(X), Q("authenticated"), Z.set(bo, "1");
+		}, window.harvestBridge = a, X = document.createElement("iframe"), X.title = "Harvest Tycoon farm", X.src = "/farm.html", K("farm-host").append(X), Q("authenticated"), Z.set(Oo, "1");
 	} catch (e) {
-		t === J && (e.status === 401 ? $("Your session has ended. Please sign in again.") : Ro(ka(e)));
+		t === J && (e.status === 401 ? $("Your session has ended. Please sign in again.") : Ko(ka(e)));
 	} finally {
-		co = !1, lo && (lo = !1, queueMicrotask(Uo));
+		_o = !1, vo && (vo = !1, queueMicrotask(Zo));
 	}
 }
 document.querySelectorAll("[data-mode]").forEach((e) => e.onclick = () => {
-	if (so) return;
+	if (go) return;
 	let t = e.dataset.mode;
-	t !== q && G("mode", { mode: t }), Lo(t, !0);
+	t !== q && G("mode", { mode: t }), Go(t, !0);
 }), K("forgot-link").onclick = () => {
-	so || (G("mode", { mode: "forgot" }), Lo("forgot", !0));
+	go || (G("mode", { mode: "forgot" }), Go("forgot", !0));
 }, K("name-toggle").onclick = () => {
-	fo = !0, Lo("register"), jo("player-name");
-}, K("toggle-password").onclick = () => Fo(K("password").type === "password");
+	bo = !0, Go("register"), zo("player-name");
+}, K("toggle-password").onclick = () => Uo(K("password").type === "password");
 for (let e of [
 	"email",
 	"password",
 	"player-name"
-]) K(e).oninput = () => Mo(e === "player-name" ? "name" : e);
+]) K(e).oninput = () => Bo(e === "player-name" ? "name" : e);
 K("account-form").addEventListener?.("focusin", (e) => {
 	let t = e.target?.id;
-	!t || uo || (vo[q] || (vo[q] = !0, G("field_start", {
+	!t || yo || (Eo[q] || (Eo[q] = !0, G("field_start", {
 		mode: q,
 		field: t === "player-name" ? "name" : t
 	})), globalThis.innerWidth < 720 && setTimeout(() => e.target.scrollIntoView?.({
@@ -8808,54 +8878,54 @@ K("account-form").addEventListener?.("focusin", (e) => {
 		behavior: "smooth"
 	}), 300));
 }), K("account-form").onsubmit = async (e) => {
-	if (e.preventDefault(), so) return;
-	let t = K("email").value.trim(), n = K("password").value, r = Wo("name") ? K("player-name").value.trim() : "", i = qa({
+	if (e.preventDefault(), go) return;
+	let t = K("email").value.trim(), n = K("password").value, r = Qo("name") ? K("player-name").value.trim() : "", i = Za({
 		mode: q,
 		name: r,
 		email: t,
 		password: n
 	}, Oa);
 	if (Object.keys(i).length) {
-		Po(i), G("error", {
+		Ho(i), G("error", {
 			mode: q,
 			reason: "validation",
 			field: Object.keys(i)[0]
 		});
 		return;
 	}
-	if (No(), !Ea) {
-		Ro("Account access is temporarily unavailable.");
+	if (Vo(), !Ea) {
+		Ko("Account access is temporarily unavailable.");
 		return;
 	}
-	G("submit", { mode: q }), so = !0, Io(!0), K("account-message").textContent = ko[q];
+	G("submit", { mode: q }), go = !0, Wo(!0), K("account-message").textContent = Lo[q];
 	try {
 		if (q === "name") {
 			let { error: e } = await W.auth.updateUser({ data: { username: r } });
 			if (e) throw e;
 		} else if (q === "register") {
-			r ||= Ga();
+			r ||= Ya();
 			let { data: e, error: i } = await W.auth.signUp({
 				email: t,
 				password: n,
 				options: {
 					data: { username: r },
-					emailRedirectTo: Do()
+					emailRedirectTo: Fo()
 				}
 			});
 			if (i) throw i;
-			if (Pa(e) && La({ confirmationRequired: !e.session }), Z.set(bo, "1"), !e.session) {
-				K("password").value = "", Bo(t);
+			if (Pa(e) && La({ confirmationRequired: !e.session }), Z.set(Oo, "1"), !e.session) {
+				K("password").value = "", Jo(t);
 				return;
 			}
 		} else if (q === "forgot") {
-			let { error: e } = await W.auth.resetPasswordForEmail(t, { redirectTo: Do() });
+			let { error: e } = await W.auth.resetPasswordForEmail(t, { redirectTo: Fo() });
 			if (e) throw e;
-			Bo(t, { kind: "reset" });
+			Jo(t, { kind: "reset" });
 			return;
 		} else if (q === "recovery") {
 			let { error: e } = await W.auth.updateUser({ password: n });
 			if (e) throw e;
-			po = !1, G("password_changed"), Z.set(bo, "1");
+			xo = !1, G("password_changed"), Z.set(Oo, "1");
 			try {
 				history.replaceState(null, "", location.pathname);
 			} catch {}
@@ -8865,67 +8935,67 @@ K("account-form").addEventListener?.("focusin", (e) => {
 				password: n
 			});
 			if (e) throw e;
-			let r = Z.get(xo) === "1";
-			Z.remove(xo), G("login", {
+			let r = Z.get(ko) === "1";
+			Z.remove(ko), G("login", {
 				method: "password",
 				after_signup: r
 			});
 		}
-		await Uo(), K("password").value = "";
+		await Zo(), K("password").value = "";
 	} catch (e) {
-		let n = Ja(e, ka);
+		let n = Qa(e, ka);
 		G("error", {
 			mode: q,
 			reason: n.reason,
 			field: n.field
-		}), n.resend ? Bo(t, { fresh: !1 }) : n.field && Wo(n.field) ? Mo(n.field, n.message) : K("account-message").textContent = n.message;
+		}), n.resend ? Jo(t, { fresh: !1 }) : n.field && Qo(n.field) ? Bo(n.field, n.message) : K("account-message").textContent = n.message;
 	} finally {
-		so = !1, Io(!1);
+		go = !1, Wo(!1);
 	}
 };
-function Wo(e) {
+function Qo(e) {
 	return !K(e + "-row").hidden;
 }
 K("resend-confirmation").onclick = async () => {
-	if (!(!go || !W)) {
-		G("resend", { mode: ho }), K("confirm-message").textContent = "Sending…";
+	if (!(!wo || !W)) {
+		G("resend", { mode: Co }), K("confirm-message").textContent = "Sending…";
 		try {
-			let { error: e } = ho === "reset" ? await W.auth.resetPasswordForEmail(go, { redirectTo: Do() }) : await W.auth.resend({
+			let { error: e } = Co === "reset" ? await W.auth.resetPasswordForEmail(wo, { redirectTo: Fo() }) : await W.auth.resend({
 				type: "signup",
-				email: go,
-				options: { emailRedirectTo: Do() }
+				email: wo,
+				options: { emailRedirectTo: Fo() }
 			});
 			if (e) throw e;
-			K("confirm-message").textContent = "Sent! It can take a minute to arrive.", Vo(60);
+			K("confirm-message").textContent = "Sent! It can take a minute to arrive.", Yo(60);
 		} catch (e) {
-			let t = Ja(e, ka);
+			let t = Qa(e, ka);
 			K("confirm-message").textContent = t.message, G("error", {
 				mode: "confirm",
 				reason: t.reason
 			});
 		}
 	}
-}, K("confirm-back").onclick = () => Lo(ho === "reset" ? "forgot" : "register", !0), K("retry-connection").onclick = Uo, K("leave-account").onclick = zo, window.addEventListener("offline", () => Ro()), window.addEventListener("online", () => {
-	document.body.dataset.phase === "error" && Uo();
+}, K("confirm-back").onclick = () => Go(Co === "reset" ? "forgot" : "register", !0), K("retry-connection").onclick = Zo, K("leave-account").onclick = qo, window.addEventListener("offline", () => Ko()), window.addEventListener("online", () => {
+	document.body.dataset.phase === "error" && Zo();
 }), W && W.auth.onAuthStateChange((e, t) => {
 	if (e === "PASSWORD_RECOVERY") {
-		Ho();
+		Xo();
 		return;
 	}
 	if (e === "SIGNED_OUT") {
 		$();
 		return;
 	}
-	if (!po) {
-		if (e === "SIGNED_IN" && !so && co && (!Y || Y !== t?.user.id)) {
-			Ao(), Q("checking", "Checking your account…"), lo = !0;
+	if (!xo) {
+		if (e === "SIGNED_IN" && !go && _o && (!Y || Y !== t?.user.id)) {
+			Ro(), Q("checking", "Checking your account…"), vo = !0;
 			return;
 		}
-		Y && t?.user.id !== Y && (Ao(), Q("checking", "Checking your account…")), e === "SIGNED_IN" && !so && !X && setTimeout(Uo, 0);
+		Y && t?.user.id !== Y && (Ro(), Q("checking", "Checking your account…")), e === "SIGNED_IN" && !go && !X && setTimeout(Zo, 0);
 	}
 });
-async function Go() {
-	if (!X || co) return;
+async function $o() {
+	if (!X || _o) return;
 	let e = J;
 	try {
 		let t = await Aa();
@@ -8936,12 +9006,12 @@ async function Go() {
 		}
 		X.contentWindow.harvestRefresh ? await X.contentWindow.harvestRefresh() : await window.harvestBridge.request({ operation: "load" });
 	} catch (t) {
-		e === J && Ro(ka(t));
+		e === J && Ko(ka(t));
 	}
 }
 document.addEventListener("visibilitychange", () => {
-	document.hidden || Go();
-}), setInterval(Go, 6e4);
-var Ko = To();
-Ko === "recovery" ? Ho() : Eo() ? ($("That link has expired or was already used. Sign in, or ask for a new link."), G("link_error")) : (Ko === "signup" && (G("email_confirmed"), Z.remove(xo)), !Ko && So() ? $() : Uo());
+	document.hidden || $o();
+}), setInterval($o, 6e4);
+var es = No();
+es === "recovery" ? Xo() : Po() ? ($("That link has expired or was already used. Sign in, or ask for a new link."), G("link_error")) : (es === "signup" && (G("email_confirmed"), Z.remove(ko)), !es && Ao() ? $() : Zo());
 //#endregion

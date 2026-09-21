@@ -1,0 +1,10 @@
+/* The installed app (home-screen icon), inside the game frame. Everything here is scoped to html[data-app-mode=standalone],
+   which app-mode.js sets only in that mode, so the ordinary browser keeps exactly the layout it has.
+   The page fills the whole screen, under the status bar and the home indicator; the game keeps its buttons clear of them
+   with env(safe-area-inset-*), and --safe-bottom is the one place where the bottom inset is read. */
+
+/* If the layout viewport ends above the bottom of the screen, that strip (see app-mode.js) already keeps the buttons clear of the home indicator. */
+html[data-app-mode=standalone]{--safe-bottom:max(0px,calc(env(safe-area-inset-bottom,0px) - var(--viewport-shortfall,0px)))}
+
+/* The status bar has white text; a soft dark veil keeps it readable over the light farm. */
+html[data-app-mode=standalone] body::before{content:'';position:fixed;top:0;left:0;right:0;z-index:30;height:calc(env(safe-area-inset-top,0px) + 14px);background:linear-gradient(rgba(38,35,18,.62),rgba(38,35,18,0));pointer-events:none}

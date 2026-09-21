@@ -1,3 +1,4 @@
+import {SPREAD,placeIn} from './farm-layout.js';
 import * as THREE from 'three';
 
 // Purely decorative layer for the 3D farm. It never reads or writes game state,
@@ -116,11 +117,13 @@ function hideClippedScenery(scene){
 // isometric camera only sees a limited strip beyond the farm, so the ring is laid out in
 // screen directions (right = +x/-z, back = -x/-z): the side walls show in the normal view
 // and the back wall when the player zooms out. The front stays open so nothing hides the farm.
+// The mountains stay behind the wider farm.
+const RING=1+(SPREAD-1)*.85;
 function mountainRing({cloneModel,group,rand,mobile}){
  const names=['mountain_001','mountain_007','mountain_001','mountain_008','mountain_007'],k=Math.SQRT1_2;
  const step=mobile?22:14;let i=0;
  for(let a=-8;a<=196;a+=step){
-  const phi=(a+(rand()-.5)*7)*Math.PI/180,A=50+rand()*5,B=46+rand()*5;
+  const phi=(a+(rand()-.5)*7)*Math.PI/180,A=(50+rand()*5)*RING,B=(46+rand()*5)*RING;
   const sx=A*Math.cos(phi),sb=B*Math.sin(phi);
   // Screen axes to world: right = (1,0,-1)/sqrt2, back = (-1,0,-1)/sqrt2, around the home focus.
   const x=1.4+(sx-sb)*k,z=1.5+(-sx-sb)*k;
@@ -155,7 +158,7 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
   if(box.getSize(new THREE.Vector3()).y<.03)continue;
   blocked.push(box.expandByVector(new THREE.Vector3(.45,0,.45)));
  }
- const fieldRect=[-4.6,-2,9.4,18.8],pondRect=[10.4,10.4,24.8,19.6];
+ const [pondX,pondZ]=placeIn('pond',0,0),fieldRect=[-4.6,-2,9.4,22.6],pondRect=[10.4+pondX,10.4+pondZ,24.8+pondX,19.6+pondZ];
  const free=(x,z)=>!blocked.some(b=>x>b.min.x&&x<b.max.x&&z>b.min.z&&z<b.max.z)
   &&!(x>fieldRect[0]&&x<fieldRect[2]&&z>fieldRect[1]&&z<fieldRect[3])
   &&!(x>pondRect[0]&&x<pondRect[2]&&z>pondRect[1]&&z<pondRect[3]);
@@ -183,12 +186,12 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
 
  // 5. Grass tufts and wildflowers, clustered rather than sprinkled evenly.
  const meadow=[];
- const tuftCount=mobile?640:1500,tuftMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
+ const tuftCount=Math.round((mobile?640:1500)*SPREAD*SPREAD),tuftMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
  const tufts=new THREE.InstancedMesh(tuftGeometry(),tuftMaterial,tuftCount),dummy=new THREE.Object3D(),tint=new THREE.Color();
  const greens=[0x8fae4a,0x9db752,0x7ea043,0xb2b95a,0xa6a94a,0xc0b45c];
  let placed=0,guard=0;
  while(placed<tuftCount&&guard++<tuftCount*30){
-  const cx=(rand()-.5)*84,cz=(rand()-.5)*78,n=3+Math.floor(rand()*5);
+  const cx=(rand()-.5)*84*SPREAD,cz=(rand()-.5)*78*SPREAD,n=3+Math.floor(rand()*5);
   for(let k=0;k<n&&placed<tuftCount;k++){
    const x=cx+(rand()-.5)*2.6,z=cz+(rand()-.5)*2.6;if(!free(x,z))continue;
    const s=.7+rand()*.9;dummy.position.set(x,0,z);dummy.rotation.set(0,rand()*Math.PI,0);dummy.scale.set(s,s*(.8+rand()*.5),s);dummy.updateMatrix();
@@ -198,11 +201,11 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
  }
  tufts.frustumCulled=false;tufts.count=placed;tufts.instanceMatrix.needsUpdate=true;if(tufts.instanceColor)tufts.instanceColor.needsUpdate=true;group.add(tufts);
 
- const bloom=[0xfff4e0,0xffd45a,0xf59fb5,0xb79bf0,0xffffff,0xf28b5b],flowerPatches=mobile?26:60,perPatch=6;
+ const bloom=[0xfff4e0,0xffd45a,0xf59fb5,0xb79bf0,0xffffff,0xf28b5b],flowerPatches=Math.round((mobile?26:60)*SPREAD*SPREAD),perPatch=6;
  const flowers=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.075,0),new THREE.MeshLambertMaterial({}),flowerPatches*perPatch);
  let f=0;guard=0;
  while(f<flowerPatches*perPatch&&guard++<flowerPatches*40){
-  const cx=(rand()-.5)*80,cz=(rand()-.5)*74;if(!free(cx,cz))continue;
+  const cx=(rand()-.5)*80*SPREAD,cz=(rand()-.5)*74*SPREAD;if(!free(cx,cz))continue;
   const colour=bloom[Math.floor(rand()*bloom.length)];meadow.push([cx,cz]);
   for(let k=0;k<perPatch&&f<flowerPatches*perPatch;k++){
    const x=cx+(rand()-.5)*1.1,z=cz+(rand()-.5)*1.1;if(!free(x,z))continue;
@@ -240,7 +243,7 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
   }
   if(!mobile){
    const count=46,positions=new Float32Array(count*3);moteData=[];
-   for(let i=0;i<count;i++){positions.set([(rand()-.5)*44,.5+rand()*4.5,(rand()-.5)*40],i*3);moteData.push({v:.08+rand()*.1,ph:rand()*6.28});}
+   for(let i=0;i<count;i++){positions.set([(rand()-.5)*44*SPREAD,.5+rand()*4.5,(rand()-.5)*40*SPREAD],i*3);moteData.push({v:.08+rand()*.1,ph:rand()*6.28});}
    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
    motes=new THREE.Points(geometry,new THREE.PointsMaterial({color:0xfff0c0,size:.11,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending}));motes.frustumCulled=false;group.add(motes);
   }

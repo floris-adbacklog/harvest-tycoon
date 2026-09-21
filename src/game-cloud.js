@@ -1,3 +1,4 @@
+import {createAvatarSettings} from '../public/avatar-settings.js';
 import {createPlayerProfiles} from './player-profiles.js';
 import {createCloudUI} from './ui.js';
 import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
@@ -12,6 +13,7 @@ if(!bridge){location.replace('/play.html');}else{
   const ui=createCloudUI({onOpen:openBoard,onRetry:openBoard,onPlayer:()=>profiles.open(bridge.playerId),onName:async username=>{const data=await bridge.request({operation:'rename',username});ui.setProfile(data.profile,{id:bridge.playerId});},onSignOut:()=>bridge.signOut()});
   const profiles=createPlayerProfiles(bridge),serverOffset=bridge.serverNow-Date.now();
   ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');
+  createAvatarSettings(document.getElementById('avatar-settings'),{bridge,profile:window.harvestInitialFarm.profile,onSaved:profile=>ui.setProfile(profile,{id:bridge.playerId})});
   const stopPresence=bridge.presence?.subscribe(snapshot=>{if(ui.open)updateOnlineIndicators(ui.results,{...snapshot,now:Date.now()+serverOffset});});
   const boardRefresh=setInterval(()=>{if(ui.open&&!profiles.isOpen&&!document.hidden)openBoard(true);},30000);
   window.addEventListener('pagehide',()=>{stopPresence?.();clearInterval(boardRefresh);},{once:true});

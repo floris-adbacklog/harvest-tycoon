@@ -2,16 +2,16 @@ export const FAMILY_MIN_LEVEL=10;
 export const CROPS = Object.freeze({
  corn:       {name:'Corn',cost:10,sell:40,duration:900000,xp:5,model:'plant_001',height:1.55,use:'Animal feed'},
  wheat:      {name:'Wheat',cost:3,sell:8,duration:120000,xp:2,model:'plant_011',height:.85,use:'Flour & bread'},
- cabbage:    {name:'Cabbage',cost:40,sell:110,duration:7200000,xp:12,model:'plant_004',height:.48,use:'Vegetable boxes'},
- pumpkin:    {name:'Pumpkin',cost:95,sell:250,duration:28800000,xp:24,model:'plant_003',height:.8,use:'Pumpkin pies'},
- sunflower:  {name:'Sunflower',cost:180,sell:480,duration:86400000,xp:45,model:'plant_007',height:1.65,use:'Sunflower oil'},
- barley: {name:'Barley',cost:20,sell:85,duration:2700000,xp:8,model:'plant_010',height:1.05,use:'Animal feed',art:'/assets/icons/barley.svg'},
+ cabbage:    {name:'Cabbage',cost:40,sell:110,duration:7200000,xp:18,model:'plant_004',height:.48,use:'Vegetable boxes'},
+ pumpkin:    {name:'Pumpkin',cost:95,sell:250,duration:28800000,xp:36,model:'plant_003',height:.8,use:'Pumpkin pies'},
+ sunflower:  {name:'Sunflower',cost:180,sell:480,duration:86400000,xp:68,model:'plant_007',height:1.65,use:'Sunflower oil'},
+ barley: {name:'Barley',cost:20,sell:85,duration:2700000,xp:12,model:'plant_010',height:1.05,use:'Animal feed',art:'/assets/icons/barley.svg'},
  lettuce:{name:'Lettuce',cost:7,sell:20,duration:300000,xp:3,model:'plant_005',height:.47,use:'Fresh salads',art:'/assets/icons/lettuce.svg'},
- redcabbage:{name:'Red cabbage',cost:130,sell:340,duration:43200000,xp:32,model:'plant_004',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg',tint:0xb66cce},
- cauliflower:{name:'Cauliflower',cost:65,sell:175,duration:14400000,xp:18,model:'plant_005',height:.5,use:'Vegetable boxes'},
- greenbeans:{"name": "Green beans", "cost": 45, "sell": 90, "duration": 5400000, "xp": 14, "model": "plant_006", "height": 1.25, "use": "Vegetable stew", "minLevel": 6},
- apples:{"name": "Apples", "cost": 700, "sell": 100, "duration": 43200000, "regrow": 21600000, "xp": 22, "model": "tree_009", "height": 1.8, "use": "Apple juice & apple pie", "minLevel": 8, "perennial": true},
- berries:{"name": "Berries", "cost": 1000, "sell": 130, "duration": 28800000, "regrow": 14400000, "xp": 18, "model": "bush_003", "height": 0.95, "use": "Berry preserves & berry tart", "minLevel": 10, "perennial": true}
+ redcabbage:{name:'Red cabbage',cost:130,sell:340,duration:43200000,xp:48,model:'plant_004',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg',tint:0xb66cce},
+ cauliflower:{name:'Cauliflower',cost:65,sell:175,duration:14400000,xp:27,model:'plant_005',height:.5,use:'Vegetable boxes'},
+ greenbeans:{"name": "Green beans", "cost": 45, "sell": 90, "duration": 5400000, "xp": 21, "model": "plant_006", "height": 1.25, "use": "Vegetable stew", "minLevel": 6},
+ apples:{"name": "Apples", "cost": 700, "sell": 100, "duration": 43200000, "regrow": 21600000, "xp": 33, "model": "tree_009", "height": 1.8, "use": "Apple juice & apple pie", "minLevel": 8, "perennial": true},
+ berries:{"name": "Berries", "cost": 1000, "sell": 130, "duration": 28800000, "regrow": 14400000, "xp": 27, "model": "bush_003", "height": 0.95, "use": "Berry preserves & berry tart", "minLevel": 10, "perennial": true}
 });
 export const PRODUCTS = Object.freeze({
  honey:{name:'Honey',sell:35,icon:'hexagon',color:'gold'},
@@ -114,12 +114,14 @@ harvesthamper:{"building": "packing", "name": "Pack a harvest hamper", "input": 
 
 });
 // This introductory track is deliberately independent of the regular QUESTS IDs/stats.
-export const BEGINNER_REWARD=20;
+export const BEGINNER_REWARD=50;
+// Every finished guide step also pays XP: following the guide takes a new farmer to level 3 in about ten minutes.
+export const BEGINNER_STEP_XP=15;
 export const BEGINNER_QUESTS=Object.freeze([
  {id:'harvest',title:'Your first basket',description:'Harvest one ready crop. Tap the crop or its basket.',guide:'harvest',icon:'shopping-basket'},
+ {id:'sell',title:'Your first market sale',description:'Open Market and sell some corn. Save your animal feed for the chickens.',guide:'market',icon:'store'},
  {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
  {id:'water',title:'A little water goes a long way',description:'Use Water on one growing crop. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
- {id:'sell',title:'Your first market sale',description:'Open Market and sell some corn. Save your animal feed for the chickens.',guide:'market',icon:'store'},
  {id:'produce',title:'Put your buildings to work',description:'Start a production batch. Try Feed the chickens in the Chicken Coop using your starter feed.',guide:'produce',icon:'egg'},
  {id:'gift',title:'A gift for showing up',description:'Open Today and collect your daily gift. Come back tomorrow to build your streak.',guide:'today',icon:'gift'},
  {id:'chore',title:'A helping hand',description:'Complete one Farm chore for extra coins while your crops and buildings work.',guide:'chores',icon:'shovel'},
@@ -137,10 +139,10 @@ export function claimBeginnerQuest(state,id){
  if(!quest||guide.rewardClaimed)throw new Error('Your beginner guide is already complete.');
  if(id!==quest.id)throw new Error('Complete the current beginner step first.');
  if(!guide.milestones[quest.id])throw new Error('Try this farming action before completing the step.');
- guide.completed++;
+ guide.completed++;state.xp+=BEGINNER_STEP_XP;
  const diamonds=guide.completed===BEGINNER_QUESTS.length?BEGINNER_REWARD:0;
  if(diamonds){state.diamonds+=diamonds;guide.rewardClaimed=true;}
- return {step:quest.id,completed:guide.completed,total:BEGINNER_QUESTS.length,diamonds};
+ return {step:quest.id,completed:guide.completed,total:BEGINNER_QUESTS.length,diamonds,xp:BEGINNER_STEP_XP};
 }
 function recordBeginnerAction(state,action,result,before){
  const m=state.onboarding.milestones;
@@ -252,10 +254,47 @@ export const QUESTS = Object.freeze([
 {"title": "Green Bean Gratin specialist", "description": "Collect 3 batches of Green Bean Gratin.", "stat": "made_beangratin", "target": 3, "reward": 660},
 {"title": "Orchard Salad specialist", "description": "Collect 3 batches of Orchard Salad.", "stat": "made_orchardsalad", "target": 3, "reward": 340},
 {"title": "Berry Cheesecake specialist", "description": "Collect 3 batches of Berry Cheesecake.", "stat": "made_berrycheesecake", "target": 3, "reward": 900},
-{"title": "Harvest Hamper specialist", "description": "Collect 3 batches of Harvest Hamper.", "stat": "made_harvesthamper", "target": 3, "reward": 2360}
+{"title": "Harvest Hamper specialist", "description": "Collect 3 batches of Harvest Hamper.", "stat": "made_harvesthamper", "target": 3, "reward": 2360},
+ // Late game: long ladders above what the first players have reached. Append-only, like everything above.
+ {title:'Fields of plenty',description:'Harvest 2,500 crops.',stat:'harvested',target:2500,reward:6000},
+ {title:'Overflowing barns',description:'Harvest 5,000 crops.',stat:'harvested',target:5000,reward:14000},
+ {title:'Harvest legend',description:'Harvest 10,000 crops.',stat:'harvested',target:10000,reward:32000},
+ {title:'Seed sower',description:'Plant 1,500 crops.',stat:'planted',target:1500,reward:4000},
+ {title:'Master of the seasons',description:'Plant 5,000 crops.',stat:'planted',target:5000,reward:14000},
+ {title:'Rainmaker',description:'Water 1,500 crops.',stat:'watered',target:1500,reward:4000},
+ {title:'Every drop counts',description:'Water 5,000 crops.',stat:'watered',target:5000,reward:14000},
+ {title:'Caring for every plant',description:'Give 1,000 crops extra care.',stat:'tended',target:1000,reward:5000},
+ {title:'Tender loving care',description:'Give 3,000 crops extra care.',stat:'tended',target:3000,reward:15000},
+ {title:'Behind the wheel',description:'Use the tractor 250 times.',stat:'tractor',target:250,reward:3000},
+ {title:'Market regular',description:'Sell 1,000 items at the market.',stat:'sold',target:1000,reward:3500},
+ {title:'Market favourite',description:'Sell 5,000 items at the market.',stat:'sold',target:5000,reward:16000},
+ {title:'A trader’s dream',description:'Sell 20,000 items at the market.',stat:'sold',target:20000,reward:60000},
+ {title:'Quarter of a million',description:'Earn 250,000 coins from sales and deliveries.',stat:'earned',target:250000,reward:8000},
+ {title:'Coin millionaire',description:'Earn 1,000,000 coins from sales and deliveries.',stat:'earned',target:1000000,reward:25000},
+ {title:'Tycoon of the valley',description:'Earn 5,000,000 coins from sales and deliveries.',stat:'earned',target:5000000,reward:80000},
+ {title:'Busy hands',description:'Collect 1,000 production batches.',stat:'produced',target:1000,reward:5000},
+ {title:'A well-run farm',description:'Collect 3,000 production batches.',stat:'produced',target:3000,reward:16000},
+ {title:'Never idle',description:'Start 1,000 batches while another batch is still running in the same building.',stat:'parallel_batches',target:1000,reward:8000},
+ {title:'The factory floor',description:'Start 2,500 batches while another batch is still running in the same building.',stat:'parallel_batches',target:2500,reward:20000},
+ {title:'Trusted supplier',description:'Complete 250 delivery orders.',stat:'deliveries',target:250,reward:15000},
+ {title:'The valley’s favourite',description:'Complete 500 delivery orders.',stat:'deliveries',target:500,reward:36000},
+ {title:'Master of the pantry',description:'Complete 100 delivery orders containing processed farm goods.',stat:'crafted_deliveries',target:100,reward:8000},
+ {title:'Chore champion',description:'Complete 500 farm chores.',stat:'chores',target:500,reward:6000},
+ {title:'Always lending a hand',description:'Complete 1,500 farm chores.',stat:'chores',target:1500,reward:20000},
+ {title:'Farm helper',description:'Complete 250 hands-on jobs.',stat:'activities',target:250,reward:6000},
+ {title:'Hands-on legend',description:'Complete 1,000 hands-on jobs.',stat:'activities',target:1000,reward:24000},
+ {title:'A round every day',description:'Finish 100 full farm rounds.',stat:'activity_rounds',target:100,reward:8000},
+ {title:'The heart of the farm',description:'Finish 250 full farm rounds.',stat:'activity_rounds',target:250,reward:22000},
+ {title:'Daily devotion',description:'Complete 100 daily challenges.',stat:'dailies',target:100,reward:4000},
+ {title:'Never miss a day',description:'Complete 250 daily challenges.',stat:'dailies',target:250,reward:12000},
+ {title:'Money while you sleep',description:'Collect 25,000 coins from the farm stall.',stat:'passive_earned',target:25000,reward:5000},
+ {title:'A little extra, again and again',description:'Activate 10 boosts.',stat:'boosts_used',target:10,reward:2500},
+ {title:'Wheat master',description:'Harvest 1,000 wheat.',stat:'harvest_wheat',target:1000,reward:4500},
+ {title:'Corn master',description:'Harvest 750 corn.',stat:'harvest_corn',target:750,reward:6000},
+ {title:'Pumpkin master',description:'Harvest 250 pumpkin.',stat:'harvest_pumpkin',target:250,reward:6000}
 
 ]);
-export const MAX_PLOTS=24;
+export const MAX_PLOTS=28;
 export function xpForLevel(level){const n=level-1;return 60*n+20*n*(n-1);}
 export function levelOf(state){const total=state.xp+(state.xpOffset??0);return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);}
 export function levelProgress(state){const level=levelOf(state);return {level,current:state.xp+(state.xpOffset??0)-xpForLevel(level),target:60+40*(level-1)};}
@@ -273,7 +312,7 @@ export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenb
 export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:10,kitchen:12,juicepress:21,preserves:24});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000});
 export const RECIPE_LEVELS=Object.freeze({eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:11,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:23,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:25,harvesthamper:25});
-export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:6,chores:7,mastery:9,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19});
+export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:6,chores:4,mastery:7,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:12});
 export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
@@ -345,8 +384,10 @@ export function cropDuration(state,crop,regrowing=false,now=Date.now()){return M
 export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0);}
 export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
 export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
-export function expansionCost(state){return state.plots.length>=MAX_PLOTS?null:Math.ceil(600*1.75**Math.max(0,state.plots.length-12)/25)*25;}
-const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16},{lettuce:30,flour:18,milk:12},{cauliflower:32,feed:20,eggs:14},{redcabbage:30,cheese:16,bread:18},{pumpkin:36,oil:18,pie:20}];
+// Fields 13-24 follow one steep curve; the last four fields (a whole extra row) are a slower, long-term goal.
+const LATE_FIELD_COSTS=Object.freeze([500000,750000,1125000,1690000]);
+export function expansionCost(state){const n=state.plots.length;return n>=MAX_PLOTS?null:n<24?Math.ceil(600*1.75**Math.max(0,n-12)/25)*25:LATE_FIELD_COSTS[n-24];}
+const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16},{lettuce:30,flour:18,milk:12},{cauliflower:32,feed:20,eggs:14},{redcabbage:30,cheese:16,bread:18},{pumpkin:36,oil:18,pie:20},{sunflower:40,cheese:20,pie:22},{cauliflower:44,bread:26,eggs:24},{redcabbage:44,oil:22,vegetables:24},{pumpkin:50,pickles:26,milk:28}];
 export function expansionMaterials(state){return state.plots.length>=MAX_PLOTS?{}:{...FIELD_MATERIALS[Math.max(0,state.plots.length-12)]};}
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
@@ -1007,12 +1048,12 @@ export function completeProject(state,now=Date.now()){
 // Small hands-on jobs run alongside crops and production. Only server time and
 // persisted progress determine rewards; the client submits a station and tile.
 export const ACTIVE_STATIONS=Object.freeze({
- greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:20,xp:28,cooldown:180000,item:'lettuce',itemCount:3,instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
- apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:26,xp:32,cooldown:240000,item:'honey',itemCount:3,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
- paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:24,xp:28,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
- workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:30,xp:32,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
+ greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:0,xp:42,cooldown:180000,item:'lettuce',itemCount:3,instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',targetIcon:'droplets',otherIcon:'sprout'},
+ apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:0,xp:48,cooldown:240000,item:'honey',itemCount:3,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',targetIcon:'hexagon',otherIcon:'flower-2'},
+ paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:0,xp:42,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
+ workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:0,xp:48,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
 });
-export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:22,xp:40});
+export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:0,xp:60});
 export function activityTargets(station,cycle){
  const offset=(Object.keys(ACTIVE_STATIONS).indexOf(station)+cycle)%6;
  return [0,2,3].map(i=>(i+offset)%6);
@@ -1265,7 +1306,7 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  const contributionLocked=!!current&&current.family_id!==family?.id;
  const yourPrize=board.prizes.find(p=>p.family_id===family?.id);
  const rewards=c.rewards.filter(r=>r.player_id===player&&!r.claimed_at&&r.expires_at>now).map(({id,week,kind,coins,xp,diamonds,expires_at})=>({id,week,kind,coins,xp,diamonds,expiresAt:expires_at}));
- const members=family?familyMembers(c,family.id).map(m=>{const p=c.players.find(p=>p.player_id===m.player_id),points=c.contributions.find(r=>r.family_id===family.id&&r.player_id===m.player_id&&r.week===week)?.points??0;return {id:m.id,username:p?.username??'Farmer',level:p?.level??1,vipExpiresAt:Date.parse(p?.vip_expires_at)||0,online:p?.online===true,points,role:m.role,isSelf:m.player_id===player};}):[];
+ const members=family?familyMembers(c,family.id).map(m=>{const p=c.players.find(p=>p.player_id===m.player_id),points=c.contributions.find(r=>r.family_id===family.id&&r.player_id===m.player_id&&r.week===week)?.points??0;return {id:m.id,username:p?.username??'Farmer',avatarId:p?.avatar_id??'default',level:p?.level??1,vipExpiresAt:Date.parse(p?.vip_expires_at)||0,online:p?.online===true,points,role:m.role,isSelf:m.player_id===player};}):[];
  const card=f=>({id:f.id,name:f.name,emblem:f.emblem,members:familyMembers(c,f.id).length});
  const pending=(c.invitations??[]).filter(i=>i.status==='pending'&&i.expires_at>now&&c.families.some(f=>f.id===i.family_id&&!f.deleted_at)&&!familyCurrent(c,i.recipient_id));
  const incoming=pending.find(i=>i.recipient_id===player);
