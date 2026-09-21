@@ -36,3 +36,5 @@ Work from THIS zip only. Do not restore older files from earlier chats. Run `npm
 ## Latest: pacing update (see PACING-UPDATE.md)
 Guide order and XP, XP for slow crops, chores at level 4, mastery at level 7, sell-all confirmation, a one-time reminder question, next-unlock hint, pacing events. Tests: `tests/pacing.test.mjs`, `tests/pacing-ui.test.mjs`, `tests/confirm-dialog.test.mjs`. The level curve must not be made faster (top players reach level 36-40 in 3-5 days). Do not move an unlock to a LATER level.
 Also new: diamond shop redesign (`public/shop.css`, one card layout, batch picker like the crop picker) and drawn icons for Reminders and Farm app in Settings.
+
+UI polish (latest): leaderboard "Rank by" is now chips (`public/rank-picker.js`, hidden field `#leaderboard-category` kept for the rest of the code), remaining native selects share one style (`public/ui-polish.css`), the installed iPhone app insets the game frame for the notch (`#farm-host` in `public/welcome.css`). Tests: `tests/rank-picker.test.mjs`, safe-area test in `tests/pwa.test.mjs`.
