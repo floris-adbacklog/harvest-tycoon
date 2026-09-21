@@ -8,6 +8,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, formatDuration, harvestYield, productionJobs, unlockEntries } from './farm-state.js';
 import { createReminderNudge } from './reminder-nudge.js';
+import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments } from './farm-layout.js';
+import { scatterProps, seeded } from './farm-props.js';
 import { createEconomyUI } from './economy-ui.js?v=familyhall-model-2';
 import { createFarmClient, farmNow } from './farm-client.js';
 import { createRetentionUI } from './retention-ui.js';
@@ -66,17 +68,20 @@ function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
  const obj=entry.object.clone(true),d=entry.size;
  if(width!=null&&depth!=null)obj.scale.set(width/d.x,(height??d.y)/d.y,depth/d.z);
  else {const s=height!=null?height/d.y:width!=null?width/Math.max(d.x,d.z):scale;obj.scale.setScalar(s);}
- obj.position.set(x,y,z);obj.rotation.y=rotation;obj.userData.model=name;scene.add(obj);return obj;
+ const [px,pz]=place(x,z);obj.position.set(px,y,pz);obj.rotation.y=rotation;obj.userData.model=name;scene.add(obj);return obj;
 }
 function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
- mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);mesh.receiveShadow=true;scene.add(mesh);return mesh;
+ mesh.rotation.x=-Math.PI/2;{const [px,pz]=place(x,z);mesh.position.set(px,y,pz);}mesh.receiveShadow=true;scene.add(mesh);return mesh;
 }
 function fenceLine(x,z,n,axis='x',size=2.2,style='fence_001',tintColor){
- for(let i=0;i<n;i++){
-  const seg=cloneModel(style,x+(axis==='x'?i*size:0),z+(axis==='z'?i*size:0),{width:size,rotation:axis==='z'?Math.PI/2:0});
+ const before=currentZone(),spots=fenceSegments(x,z,n,axis,size);
+ zone('fields');
+ for(const [cx,cz] of spots){
+  const seg=cloneModel(style,cx,cz,{width:size,rotation:axis==='z'?Math.PI/2:0});
   if(tintColor)tint(seg,tintColor);
  }
+ zone(before);
 }
 function groundPatch(name,x,z,width,depth,color){
  const p=cloneModel(name,x,z,{width,depth,height:.16,y:.006});
@@ -88,29 +93,31 @@ function tint(obj,color){obj.traverse(n=>{if(n.isMesh){n.material=n.material.clo
 // Additive glow: the only way to make an already-dark, texture-mapped prop read lighter.
 function lighten(obj,color,intensity=.3){obj.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.emissive=new THREE.Color(color);n.material.emissiveIntensity=intensity;}});return obj;}
 function decorate(){
+ // Layout zones (public/farm-layout.js): each yard moves as one piece, the fields stay where they are.
+ zone('fields');
  const ground=patch(0,0,200,200,0xacae5c,0);ground.name='Farm ground';
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
- cloneModel('road_001',-1,-4,{width:48,depth:2.9,height:.13,y:-.045});
- cloneModel('road_001',-6,3,{width:2.9,depth:40,height:.13,y:-.035});
- cloneModel('road_001',6.2,19.8,{width:27,depth:2.4,height:.12,y:-.035});
- patch(2.575,8.25,12.8,19.4,0xa2a66b,.004);
- patch(11,-7.7,10,8.4,0xa4a76e,.007);
- patch(-12.5,5.3,8.7,13,0xa9ab73,.004);
+ zone('exact');
+ for(const road of ROADS.slice(0,3))cloneModel('road_001',road.x,road.z,{...roadSize(road),height:road.height,y:road.y});
+ zone('fields');patch(2.575,9.85,12.8,22.6,0xa2a66b,.004);
+ zone('coop');patch(11,-7.7,10,8.4,0xa4a76e,.007);
+ zone('mill');patch(-12.5,5.3,8.7,13,0xa9ab73,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
- addBuilding('dairy',-1,-13.2,{width:6.8,rotation:Math.PI/2});
- addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
- addBuilding('farmhouse',-13.8,-10.2,{width:6.5,rotation:Math.PI/2});
- addBuilding('mill',-12.5,4,{width:4.8,rotation:Math.PI/2});
+ zone('dairy');addBuilding('dairy',-1,-13.2,{width:6.8,rotation:Math.PI/2});
+ zone('silo');addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
+ zone('farmhouse');addBuilding('farmhouse',-13.8,-10.2,{width:6.5,rotation:Math.PI/2});
+ zone('mill');addBuilding('mill',-12.5,4,{width:4.8,rotation:Math.PI/2});
  cloneModel('tower_005',-17,3,{height:4.5});
- addBuilding('bakery',-10.8,12,{width:5.2,rotation:Math.PI/2});
- addBuilding('packing',11.5,-17.2,{width:4.4,rotation:-Math.PI/2});
+ zone('bakery');addBuilding('bakery',-10.8,12,{width:5.2,rotation:Math.PI/2});
+ zone('packing');addBuilding('packing',11.5,-17.2,{width:4.4,rotation:-Math.PI/2});
+ zone('windmill');
  const windmillPosition={x:12.8,z:-1.5};
  addBuilding('windmill',windmillPosition.x,windmillPosition.z,{height:6.6});
- addBuilding('juicepress',-1,-20.1,{width:4,height:2.8,depth:3.5,rotation:Math.PI/2});
- addBuilding('preserves',-15.2,-18.6,{width:4.2,height:3,depth:3.8,rotation:Math.PI/2});
- addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
+ zone('juicepress');addBuilding('juicepress',-1,-20.1,{width:4,height:2.8,depth:3.5,rotation:Math.PI/2});
+ zone('preserves');addBuilding('preserves',-15.2,-18.6,{width:4.2,height:3,depth:3.8,rotation:Math.PI/2});
+ zone('kitchen');addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
  // North-west square, clear of crop expansions and the north-south path at x=-6.
- addBuilding('familyhall',-9.3,-20.5,{width:4.2,rotation:Math.PI/2});
+ zone('familyhall');addBuilding('familyhall',-9.3,-20.5,{width:4.2,rotation:Math.PI/2});
  {
   // Independent decor is excluded from the raycast target lists.
   for(const [name,x,z,options] of [
@@ -120,76 +127,91 @@ function decorate(){
   ]){const decor=cloneModel(name,x,z,options);familyDecor.push(decor);}
  }
 
- for(const [x,z] of [[-1,-20.1],[-15.2,-18.6],[-12.4,18.2]])patch(x,z,5.1,4.8,0xb6bd88,.008);
+ zone('juicepress');patch(-1,-20.1,5.1,4.8,0xb6bd88,.008);
+ zone('preserves');patch(-15.2,-18.6,5.1,4.8,0xb6bd88,.008);
+ zone('kitchen');patch(-12.4,18.2,5.1,4.8,0xb6bd88,.008);
  // Both the mill body and its moving sails are original parts from the supplied pack.
+ zone('windmill');
  const sail=cloneModel('tower_020',0,0,{height:5.8});scene.remove(sail);
- sail.position.set(0,-2.9,0);windmillRotor=new THREE.Group();windmillRotor.position.set(windmillPosition.x,4.55,windmillPosition.z+1.8);windmillRotor.add(sail);windmillRotor.userData.building='windmill';scene.add(windmillRotor);
+ sail.position.set(0,-2.9,0);windmillRotor=new THREE.Group();{const [rx,rz]=place(windmillPosition.x,windmillPosition.z+1.8);windmillRotor.position.set(rx,4.55,rz);}windmillRotor.add(sail);windmillRotor.userData.building='windmill';scene.add(windmillRotor);
  cloneModel('bag_001',windmillPosition.x-2,windmillPosition.z+1.8,{height:.95,rotation:.4});
  cloneModel('bag_002',windmillPosition.x-1.3,windmillPosition.z+2.2,{height:.85,rotation:-.3});
  cloneModel('prop_023',windmillPosition.x+2.2,windmillPosition.z+1.8,{width:1.1,rotation:.2});
- const glasshouse=cloneModel('greenhouse_003',5.6,-19,{width:3.7,rotation:Math.PI/2});
+ zone('greenhouse');const glasshouse=cloneModel('greenhouse_003',5.6,-19,{width:3.7,rotation:Math.PI/2});
+ zone('packing');
  cloneModel('barrel_002',14.5,-14.6,{height:1.2});
  cloneModel('bucket_003',12.7,-13.9,{height:.65});
- addUtility('tractor','tractor_001',-5.2,-.2,{width:3.1,rotation:-Math.PI/2});
- addUtility('cart','cart_001',-6.3,3.8,{width:2.2,rotation:Math.PI/2});
+ zone('tractor');addUtility('tractor','tractor_001',-5.2,-.2,{width:3.1,rotation:-Math.PI/2});
+ zone('cart');addUtility('cart','cart_001',-6.3,3.8,{width:2.2,rotation:Math.PI/2});
  cloneModel('bag_001',-4.6,5.2,{height:.75,rotation:-.25});
  cloneModel('bag_002',-5.3,5.05,{height:.72,rotation:.35});
  cloneModel('bucket_001',-4.8,4.45,{height:.62,rotation:.2});
+ zone('bakery');
  cloneModel('cart_004',-14.8,12.4,{width:2.2,rotation:.35});
  cloneModel('table_001',-12.7,13.4,{width:1.8,rotation:-.2});
  cloneModel('chair_001',-11.4,13.7,{height:1.05,rotation:-2.4});
+ zone('apiary');
  const hive=cloneModel('apiary_001',10.1,13.8,{height:1.35,rotation:.15});
  cloneModel('apiary_001',11.4,14.2,{height:1.25,rotation:-.2});
- cloneModel('firewood_003',-15.4,-5.8,{width:1.7,rotation:Math.PI/2});
+ zone('farmhouse');cloneModel('firewood_003',-15.4,-5.8,{width:1.7,rotation:Math.PI/2});
+ zone('silo');
  cloneModel('hay_001',4.6,-7.8,{width:1.9});
  cloneModel('hay_001',6.2,-8.1,{width:1.7,rotation:.4});
  cloneModel('hay_001',5.35,-7.9,{width:1.5,y:1.2});
  cloneModel('hay_002',3.7,-8.4,{width:1.45,rotation:.2});
+ zone('chores');
  addUtility('chores','barrel_001',-5.8,-10.7,{height:1.1});
  cloneModel('barrel_001',-6.7,-10.3,{height:1.05});
+ zone('stall');
  addUtility('stall','stall_002',-11.3,-2.6,{width:2.9,rotation:.15});
  cloneModel('prop_023',-9.2,-2.7,{width:.8});
+ zone('coop');
  addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
  {const pen=buildingViews.get('coop').object,house=cloneModel('coop_002',13,-9.5,{width:1.8});pen.attach(house);}
  fenceLine(8,-12.5,5);fenceLine(7,-11.4,4,'z');fenceLine(16.6,-11.4,4,'z');fenceLine(9.2,-3.6,4);
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
- fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);fenceLine(-20,-9,8,'z');fenceLine(-18.8,10.8,5);
- fenceLine(-3,18.3,6,'x',2.2,'fence_008',0xf2e2bd);fenceLine(9.5,2.4,8,'z');
- const cow=cloneModel('cow_001',11,-6.6,{width:2.4,rotation:-.6});cow.userData.building='dairy';animals.push({obj:cow,x:11,z:-6.6,seed:.5});
- const cow2=cloneModel('cow_001',14.5,-5.5,{width:1.85,rotation:2});cow2.userData.building='dairy';animals.push({obj:cow2,x:14.5,z:-5.5,seed:3});
- const sheep=cloneModel('sheep_001',9.1,-9.5,{width:1.6,rotation:.6});sheep.userData.building='dairy';animals.push({obj:sheep,x:9.1,z:-9.5,seed:1.5});
- const goat=cloneModel('goat_001',14.8,-8.4,{width:1.5,rotation:-1.1});goat.userData.building='dairy';animals.push({obj:goat,x:14.8,z:-8.4,seed:4.2});
- for(const [x,z,r] of [[-9.1,-1.2,.2],[-11.3,-.9,2.1],[-10.2,1.2,3.1]]){const o=cloneModel('chicken_001',x,z,{height:.72,rotation:r});o.userData.building='coop';animals.push({obj:o,x,z,seed:r});}
- // Small work yards and low props create breathing room without widening the farm.
+ zone('farmhouse');fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);
+ zone(null);fenceLine(-19,-9,8,'z');fenceLine(-18.8,10.8,5);
+ // White rail fences close the crops in on the west, east and south, the same distance from the outer fields on each side.
+ zone('fields');fenceLine(-3,22.1,6,'x',2.2,'fence_008',0xf2e2bd);
+ fenceLine(-4.4,-.3,11,'z',2.2,'fence_008',0xf2e2bd);fenceLine(9.55,-.3,11,'z',2.2,'fence_008',0xf2e2bd);
+ zone('coop');
+ const animalAt=(model,x,z,options,building,seed)=>{const o=cloneModel(model,x,z,options);o.userData.building=building;const [ax,az]=place(x,z);animals.push({obj:o,x:ax,z:az,seed});return o;};
+ animalAt('cow_001',11,-6.6,{width:2.4,rotation:-.6},'dairy',.5);
+ animalAt('cow_001',14.5,-5.5,{width:1.85,rotation:2},'dairy',3);
+ animalAt('sheep_001',9.1,-9.5,{width:1.6,rotation:.6},'dairy',1.5);
+ animalAt('goat_001',14.8,-8.4,{width:1.5,rotation:-1.1},'dairy',4.2);
+ zone('stall');
+ for(const [x,z,r] of [[-9.1,-1.2,.2],[-11.3,-.9,2.1],[-10.2,1.2,3.1]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
+ // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
- groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
- groundPatch('ground_007',-10.8,12,7,6.9,0xbaaf8b);
- groundPatch('ground_006',11.5,-17.2,6.8,6.4,0xb9af8a);
- for(const [name,x,z,options] of [
-  ['case_002',9,-14.2,{width:1.1,rotation:.12}],['bag_003',10.25,-14.2,{height:.82,rotation:-.25}],
-  ['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],
-  ['prop_029',8.4,-13.6,{width:.55,rotation:.6}],
-  ['barrel_002',-15.7,6.5,{height:.95}],['bag_001',-10.2,6.4,{height:.8}],
-  ['bag_002',-10.8,6.7,{height:.7}],['firewood_003',-14.1,10.5,{width:1.3}],
-  ['case_003',-8.1,13.5,{width:.9,rotation:.35}],['table_001',-13.9,-5.9,{width:1.6}],
-  ['chair_001',-15,-6.3,{height:.85,rotation:1.7}],['bucket_003',-1.8,-9.1,{height:.65}],
-  ['hay_002',1.2,-9.7,{width:1.2}],['water_001',14.8,-10.8,{width:1.1}],
-  ['garden_bed_001',-17.3,-8,{width:1.8,rotation:Math.PI/2}],
-  ['garden_bed_001',-17.3,-5.9,{width:1.8,rotation:Math.PI/2}],
-  ['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}],
-  ['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}],['hay_003',7.4,-7.6,{width:1.3,rotation:-.35}],
-  ['bucket_001',-7.7,1,{height:.65}],['bush_003',-8.4,8,{width:1.1}],
-  ['bush_003',8.9,-19.6,{width:1.2}],['grass_004',-8.2,8.9,{height:.3}]
- ])cloneModel(name,x,z,options);
+ zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
+ zone('bakery');groundPatch('ground_007',-10.8,12,7,6.9,0xbaaf8b);
+ zone('packing');groundPatch('ground_006',11.5,-17.2,6.8,6.4,0xb9af8a);
+ for(const [yard,list] of Object.entries({
+  packing:[['case_002',9,-14.2,{width:1.1,rotation:.12}],['bag_003',10.25,-14.2,{height:.82,rotation:-.25}],['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],['prop_029',8.4,-13.6,{width:.55,rotation:.6}],['bush_003',8.9,-19.6,{width:1.2}]],
+  mill:[['barrel_002',-15.7,6.5,{height:.95}],['bag_001',-10.2,6.4,{height:.8}],['bag_002',-10.8,6.7,{height:.7}],['bucket_001',-7.7,1,{height:.65}],['bush_003',-8.4,8,{width:1.1}],['grass_004',-8.2,8.9,{height:.3}]],
+  bakery:[['firewood_003',-14.1,10.5,{width:1.3}],['case_003',-8.1,13.5,{width:.9,rotation:.35}]],
+  farmhouse:[['table_001',-13.9,-5.9,{width:1.6}],['chair_001',-15,-6.3,{height:.85,rotation:1.7}],['garden_bed_001',-17.3,-8,{width:1.8,rotation:Math.PI/2}],['garden_bed_001',-17.3,-5.9,{width:1.8,rotation:Math.PI/2}],['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}]],
+  dairy:[['bucket_003',-1.8,-9.1,{height:.65}],['hay_002',1.2,-9.7,{width:1.2}]],
+  coop:[['water_001',14.8,-10.8,{width:1.1}]],
+  apiary:[['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}]],
+  silo:[['hay_003',7.4,-7.6,{width:1.3,rotation:-.35}]]
+})){zone(yard);for(const [name,x,z,options] of list)cloneModel(name,x,z,options);}
  // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
  // glow since a plain color tint can only darken a texture, never lighten it.
- lighten(cloneModel('case_001',9.9,-15.1,{width:.95,rotation:-.4}),0x3a2a16,.28);
+ zone('packing');lighten(cloneModel('case_001',9.9,-15.1,{width:.95,rotation:-.4}),0x3a2a16,.28);
+ zone('farmhouse');
  lighten(cloneModel('dray_004',-18.5,-6.5,{width:2,rotation:.4}),0x3a2a16,.28);
  lighten(cloneModel('dray_002',-18.6,-11.2,{width:1.9,rotation:.5}),0x3a2a16,.28);
- lighten(cloneModel('stall_001',-9.5,14.8,{width:2.2,rotation:.4}),0x3a2a16,.28);
+ zone('bakery');lighten(cloneModel('stall_001',-9.5,14.8,{width:2.2,rotation:.4}),0x3a2a16,.28);
+ // Trees, bushes and tufts are spread out with the farm and keep clear of every yard.
+ zone(null);
  // The western boundary keeps tall foliage clear of the Family Hall roof.
  const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[12,22,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[20,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
+ // More trees between the far ones fill the wider ring the spread-out farm needs.
+ [[-27,-24,4.4],[-28,-4,5],[-27,17,5.4],[-9,27,5],[9,29,5.8],[27,3,5.6],[27,-12,5.8],[24,-25,6],[12,-31,5.2],[-6,-33,4.6],[-24,-32,5.2],[-10,-30,4.8]].forEach(([x,z,height],i)=>cloneModel(['tree_004','tree_006','tree_001'][i%3],x,z,{height,rotation:i*2.3+.7}));
  for(const [x,z] of [[-17,-6],[-16.5,-4],[-18.5,9],[-15,12],[19,-5],[18,2],[21,9],[10,15],[2,20],[-21,-15],[11,-16]])cloneModel('bush_001',x,z,{width:2.2,rotation:x});
  for(const [x,z,r] of [[9.4,12.2,.2],[9.8,9.2,1.1],[-13.7,15.2,2.2],[16,5.2,.6]])cloneModel('bush_003',x,z,{width:1.45,rotation:r});
  // Small tufts from the pack add texture while leaving the fields unobstructed.
@@ -199,7 +221,27 @@ function decorate(){
  }
  for(const [x,z,r] of [[9.5,13.2,.3],[9.5,11.1,1.8],[-11.2,14.5,.7],[-14.7,14.8,2.1],[15.5,4.5,.4],[17.1,4.9,2.4]])cloneModel('grass_004',x,z,{height:.38,rotation:r});
  farmLife=createFarmLife({scene,cloneModel,patch,state,onOpen:id=>activities.open(id),reducedMotion});
+ zone('fields');
  farmLife.attach('greenhouse',glasshouse);farmLife.attach('apiary',hive);farmLife.watchProduction(buildingViews);
+ addExtraProps();
+}
+// Small props from the model pack fill the room between the yards. Spots are taken only where nothing stands: not on a
+// building, road, fence, field or the pond.
+function addExtraProps(){
+ scene.updateMatrixWorld(true);
+ const blocked=[];
+ for(const object of scene.children){
+  if(object.isLight||object.isCamera||object===scene.getObjectByName('Farm ground'))continue;
+  const box=new THREE.Box3().setFromObject(object);if(box.isEmpty()||box.getSize(new THREE.Vector3()).y<.03)continue;
+  blocked.push(box);
+ }
+ const [pondX,pondZ]=placeIn('pond',0,0),pond=[10.4+pondX,10.4+pondZ,24.8+pondX,19.6+pondZ],fields=[-5.6,-3,10.4,23.6];
+ const free=(x,z,r)=>!blocked.some(b=>x>b.min.x-r&&x<b.max.x+r&&z>b.min.z-r&&z<b.max.z+r)
+  &&!(x>fields[0]&&x<fields[2]&&z>fields[1]&&z<fields[3])&&!(x>pond[0]-1&&x<pond[2]+1&&z>pond[1]-1&&z<pond[3]+1);
+ const anchors=Object.fromEntries(Object.keys(ANCHORS).map(id=>[id,anchorAt(id)]));
+ // The roadside props follow the roads of the layout, along their length.
+ const roads=roadRects().slice(0,3).map(r=>r.horizontal?[r.minX+3,(r.minZ+r.maxZ)/2,r.maxX-3,(r.minZ+r.maxZ)/2]:[(r.minX+r.maxX)/2,r.minZ+3,(r.minX+r.maxX)/2,r.maxZ-3]);
+ for(const p of scatterProps({anchors,roads,free,rand:seeded(20260921)}))cloneModel(p.name,p.x,p.z,p.options);
 }
 function createPlots(){
  while(plots.length>state.plots.length){
@@ -335,7 +377,7 @@ function resize(){
  $('zoom-in').disabled=zoom>=2.2;$('zoom-out').disabled=zoom<=.75;
  positionLabels();positionBuildingLabels();
 }
-function panFarm(delta,depth=0){pan=Math.max(-20,Math.min(20,pan+delta));panDepth=Math.max(-20,Math.min(20,panDepth+depth));resize();}
+function panFarm(delta,depth=0){const limit=Math.round(20*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
 function zoomFarm(value){zoom=Math.max(.75,Math.min(2.2,value));resize();}
 function resetView(){viewMode='home';zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
 function showOverview(){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}
@@ -392,7 +434,7 @@ function addUtility(key,model,x,z,options){
  const object=cloneModel(model,x,z,options);object.userData.utility=key;
  const height=new THREE.Box3().setFromObject(object).max.y,info=utilityInfo[key];
  const label=document.createElement('button');label.className='utility-label';label.title=`${info.name} · ${info.hint}`;label.setAttribute('aria-label',`Open ${info.name}`);label.innerHTML=art(key);label.onclick=()=>openUtility(key);$('building-labels').append(label);
- utilityViews.set(key,{object,label,x,z,height});
+ utilityViews.set(key,{object,label,x:object.position.x,z:object.position.z,height});
 }
 function addBuilding(key,x,z,options){
  const object=cloneModel(BUILDINGS[key].model,x,z,options);object.userData.building=key;
@@ -404,7 +446,7 @@ function addBuilding(key,x,z,options){
  const label=document.createElement('button');label.className='building-label';label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
  label.innerHTML=`<span class="building-pin">${art(key==='familyhall'?'familyhall-model':key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">${key==='farmhouse'?'Expand your fields':'Ready to work'}</small></span>`;
  label.addEventListener('click',()=>economy.openBuilding(key));label.addEventListener('mouseenter',()=>highlight(key));label.addEventListener('mouseleave',()=>highlight(-1));label.addEventListener('focus',()=>highlight(key));label.addEventListener('blur',()=>highlight(-1));$('building-labels').append(label);
- buildingViews.set(key,{object,hit,outline,label,x,z,height});
+ buildingViews.set(key,{object,hit,outline,label,x:object.position.x,z:object.position.z,height});
 }
 function positionBuildingLabels(){
  for(const decor of familyDecor)decor.visible=buildingEligible(state,'familyhall');
@@ -493,7 +535,7 @@ async function init(){
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;});
   scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,180);
   const hemi=new THREE.HemisphereLight(0xffedc0,0x8a7a4a,2.35);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xffd9a0,3.05);sun.position.set(-24,26,15);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;sun.shadow.camera.near=1;sun.shadow.camera.far=95;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  const sun=new THREE.DirectionalLight(0xffd9a0,3.05);sun.position.set(-24,26,15);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
   scene.fog=new THREE.Fog(0xf3dda6,46,128);
   const loader=new GLTFLoader();let loaded=0;
   await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{
