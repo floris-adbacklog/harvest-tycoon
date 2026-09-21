@@ -172,8 +172,8 @@ function decorate(){
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
  zone('farmhouse');fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);
  zone(null);fenceLine(-19,-9,8,'z');fenceLine(-18.8,10.8,5);
- // White rail fences close the crops in on the west, east and south, the same distance from the outer fields on each side.
- zone('fields');fenceLine(-3,22.1,6,'x',2.2,'fence_008',0xf2e2bd);
+ // White rail fences run along the two sides of the crops, the same distance from the outer fields; the ends stay open.
+ zone('fields');
  fenceLine(-4.4,-.3,11,'z',2.2,'fence_008',0xf2e2bd);fenceLine(9.55,-.3,11,'z',2.2,'fence_008',0xf2e2bd);
  zone('coop');
  const animalAt=(model,x,z,options,building,seed)=>{const o=cloneModel(model,x,z,options);o.userData.building=building;const [ax,az]=place(x,z);animals.push({obj:o,x:ax,z:az,seed});return o;};

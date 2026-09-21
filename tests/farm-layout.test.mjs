@@ -79,3 +79,11 @@ test('a yard keeps its fence whole, and a fence off the roads keeps all its segm
  assert.equal(fenceSegments(9.55,-.3,11,'z').length,11,'the white fences beside the crops');
 });
 
+test('the crops have a white fence on the two sides only',()=>{
+ const game=read('public/game.js'),scene=game.slice(game.indexOf('function decorate(){'),game.indexOf('function createPlots(){'));
+ const white=[...scene.matchAll(/fenceLine\(([^)]*'fence_008'[^)]*)\)/g)].map(m=>m[1]);
+ assert.equal(white.length,2,'one on each side');
+ assert(white.every(args=>/,'z',/.test(args)),'both run along the fields, none across the ends');
+ assert.deepEqual(white.map(args=>Number(args.split(',')[0])),[-4.4,9.55],'the same distance from the outer fields on each side');
+});
+
