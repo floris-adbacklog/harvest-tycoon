@@ -38,7 +38,7 @@ let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
-const familyDecor=[],models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+const familyDecor=[],factoryDecor=[],models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 let familyUI,progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
@@ -120,7 +120,8 @@ function decorate(){
  zone('kitchen');addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
  // The Factory: a long white production hall with a chimney unit at one end and a hopper at the other, south of the pond.
  zone('factory');addBuilding('factory',16.2,21.9,{width:6.4,height:3.6,depth:13,rotation:Math.PI/2});
- cloneModel('hangar_022',8.6,21.4,{height:3.6,rotation:Math.PI/2});cloneModel('tower_010',24.2,22.2,{height:5});
+ // The chimney, the hopper, the yard and the crates only show once the Factory does (level 50): no empty yard with a chimney in it.
+ factoryDecor.push(cloneModel('hangar_022',8.6,21.4,{height:3.6,rotation:Math.PI/2}),cloneModel('tower_010',24.2,22.2,{height:5}));
  // North-west square, clear of crop expansions and the north-south path at x=-6.
  zone('familyhall');addBuilding('familyhall',-9.3,-20.5,{width:4.2,rotation:Math.PI/2});
  {
@@ -135,7 +136,7 @@ function decorate(){
  zone('juicepress');patch(-1,-20.1,6.9,6.4,0xb6bd88,.008);
  zone('preserves');patch(-15.2,-18.6,7.1,6.6,0xb6bd88,.008);
  zone('kitchen');patch(-12.4,18.2,5.1,4.8,0xb6bd88,.008);
- zone('factory');patch(16.2,22.3,16.5,6.6,0xb9af8a,.008);
+ zone('factory');factoryDecor.push(patch(16.2,22.3,16.5,6.6,0xb9af8a,.008));
  // Both the mill body and its moving sails are original parts from the supplied pack.
  zone('windmill');
  const sail=cloneModel('tower_020',0,0,{height:5.8});scene.remove(sail);
@@ -205,7 +206,7 @@ function decorate(){
   apiary:[['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}]],
   silo:[['hay_003',6.4,-7.9,{width:1.3,rotation:-.35}]],
   factory:[['case_002',12.6,24.9,{width:1.1,rotation:.15}],['bag_003',13.8,25.1,{height:.82,rotation:-.3}],['cart_004',20.4,25,{width:1.7,rotation:Math.PI/2}],['prop_029',18.6,25.2,{width:.55,rotation:.5}]]
-})){zone(yard);for(const [name,x,z,options] of list)cloneModel(name,x,z,options);}
+})){zone(yard);for(const [name,x,z,options] of list){const piece=cloneModel(name,x,z,options);if(yard==='factory')factoryDecor.push(piece);}}
  // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
  // glow since a plain color tint can only darken a texture, never lighten it.
  zone('packing');lighten(cloneModel('case_001',9.9,-15.1,{width:.95,rotation:-.4}),0x3a2a16,.28);
@@ -460,6 +461,8 @@ function addBuilding(key,x,z,options){
 }
 function positionBuildingLabels(){
  for(const decor of familyDecor)decor.visible=buildingEligible(state,'familyhall');
+ for(const decor of factoryDecor)decor.visible=buildingEligible(state,'factory');
+ scenePolish?.showYards();
  if(windmillRotor)windmillRotor.visible=buildingEligible(state,'windmill');
  farmLife?.position(camera,world.clientWidth,world.clientHeight,farmNow());
  for(const [key,v] of utilityViews){v.object.visible=featureUnlocked(state,key);const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=!v.object.visible||Math.abs(p.x)>.94||Math.abs(p.y)>.82;}

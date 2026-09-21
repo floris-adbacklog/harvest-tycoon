@@ -180,3 +180,15 @@ test('at the top a specialised building always beats the Factory for the same go
   assert.ok(regular>factory*1.15,`${id}: a level-20 ${r.building} makes ${regular.toFixed(5)} a ms, a level-20 Factory ${factory.toFixed(5)}`);
  }
 });
+
+test('nothing of the Factory shows before level 50: no empty yard with a chimney and a hopper in it',()=>{
+ const game=read('public/game.js');
+ assert.match(game,/const familyDecor=\[\],factoryDecor=\[\],/);
+ assert.match(game,/factoryDecor\.push\(cloneModel\('hangar_022',[^)]*\),cloneModel\('tower_010',[^)]*\)\);/,'chimney and hopper');
+ assert.match(game,/factoryDecor\.push\(patch\(16\.2,22\.3,16\.5,6\.6,0xb9af8a,\.008\)\);/,'the yard');
+ assert.match(game,/if\(yard==='factory'\)factoryDecor\.push\(piece\);/,'the crates');
+ assert.match(game,/for\(const decor of factoryDecor\)decor\.visible=buildingEligible\(state,'factory'\);/);
+ assert.match(game,/v\.object\.visible=buildingEligible\(state,key\)/,'the hall itself follows the same rule as every building');
+ assert.match(game,/scenePolish\?\.showYards\(\);/);
+ const polish=read('public/scene-polish.js');assert.match(polish,/showYards\(\)\{for\(const \{yard,building\} of yards\)if\(building\.userData\.building==='factory'\)yard\.visible=building\.visible;\}/,'the dirt under the hall too');
+});
