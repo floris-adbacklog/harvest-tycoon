@@ -51,7 +51,7 @@ export function createPush({supabase,getKey,win=globalThis.window}){
   },
   async test(){
    const reg=await registration();if(!reg)throw new Error('The app is not ready yet.');
-   await reg.showNotification('Harvest Tycoon',{body:'Notifications work on this device. We will only nudge you when your farm needs you.',icon:'/assets/pwa/icon-192.png',tag:'harvest-tycoon-test'});
+   await reg.showNotification('Harvest Tycoon',{body:'Notifications work in this browser or app. We will only nudge you when your farm needs you.',icon:'/assets/pwa/icon-192.png',tag:'harvest-tycoon-test'});
   }
  };
 }

@@ -6,8 +6,8 @@ const DEVICE={
  unsupported:'This browser cannot receive notifications.',
  'install-first':'On iPhone, first add Harvest Tycoon to your home screen (see Farm app below). Then come back here to turn notifications on.',
  blocked:'Notifications are blocked for this site. Allow them in your browser settings, then reload the page.',
- off:'Turn on notifications to get your reminders on this device.',
- on:'Notifications are on for this device.'
+ off:'Turn on notifications in this browser or app to get your reminders, even when the game is closed.',
+ on:'Notifications are on in this browser or app.'
 };
 const hourLabel=hour=>`${String(hour).padStart(2,'0')}:00`;
 export function createNotificationsSection(){
@@ -59,7 +59,7 @@ export function createNotificationsSection(){
  }
  for(const id of [...Object.values(IDS),'notify-hour']){const el=$(id);if(el)el.onchange=change;}
  if($('notify-enable'))$('notify-enable').onclick=()=>deviceAction('enable','');
- if($('notify-test'))$('notify-test').onclick=()=>deviceAction('test','Test sent. It should appear on this device in a moment.');
- if($('notify-disable'))$('notify-disable').onclick=()=>deviceAction('disable','Notifications are off on this device.');
+ if($('notify-test'))$('notify-test').onclick=()=>deviceAction('test','Test sent. It should appear in a moment.');
+ if($('notify-disable'))$('notify-disable').onclick=()=>deviceAction('disable','Notifications are off in this browser or app.');
  return {refresh};
 }

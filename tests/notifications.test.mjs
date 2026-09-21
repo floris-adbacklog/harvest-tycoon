@@ -87,7 +87,7 @@ test('only what the service offers is shown: push rows for push, the email rows 
 test('the device block tells the truth per device and its buttons work',async()=>{
  const dom=domFor(),{els}=dom,{bridge,state,calls}=bridgeFor({available:true});const section=await open(bridge,dom);
  await section.refresh();assert.match(els['notify-device-copy'].textContent,/Turn on notifications/);assert.equal(els['notify-enable'].hidden,false);assert.equal(els['notify-test'].hidden,true);
- await els['notify-enable'].onclick();assert.deepEqual(calls,['enable']);assert.match(els['notify-device-copy'].textContent,/are on for this device/);assert.equal(els['notify-test'].hidden,false);assert.equal(els['notify-disable'].hidden,false);assert.equal(els['notify-enable'].hidden,true);
+ await els['notify-enable'].onclick();assert.deepEqual(calls,['enable']);assert.match(els['notify-device-copy'].textContent,/are on in this browser or app/);assert.equal(els['notify-test'].hidden,false);assert.equal(els['notify-disable'].hidden,false);assert.equal(els['notify-enable'].hidden,true);
  await els['notify-test'].onclick();assert.match(els['notify-status'].textContent,/Test sent/);
  await els['notify-disable'].onclick();assert.equal(state.device,'off');
  for(const [kind,text,rowsHidden] of [['install-first',/add Harvest Tycoon to your home screen/,false],['blocked',/blocked/,false],['unsupported',/cannot receive/,true]]){state.device=kind;await section.refresh();assert.match(els['notify-device-copy'].textContent,text);assert.equal(els['notify-push-rows'].hidden,rowsHidden);assert.equal(els['notify-enable'].hidden,true);}

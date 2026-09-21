@@ -53,7 +53,7 @@ test('turning off, syncing and signing out keep the server and the device in ste
 });
 test('the test notification is shown locally by the service worker',async()=>{
  const d=device({permission:'granted',existing:'https://push.example/x'});await createPush({supabase:d.supabase,getKey:async()=>'AQID',win:d.win}).test();
- assert.equal(d.calls[0][0],'show');assert.equal(d.calls[0][1],'Harvest Tycoon');assert.match(d.calls[0][2].body,/Notifications work/);
+ assert.equal(d.calls[0][0],'show');assert.equal(d.calls[0][1],'Harvest Tycoon');assert.match(d.calls[0][2].body,/Notifications work in this browser or app/);
 });
 test('push is only offered when the service has it switched on',async()=>{
  const on=createNotifications({},{configUrl:'https://x.example/fn?config',fetchImpl:async()=>({ok:true,json:async()=>({enabled:true,push:true,email:false,vapidPublicKey:'AQID'})}),win:undefined});
