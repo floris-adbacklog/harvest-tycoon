@@ -13,6 +13,15 @@ test('24 additional avatars and the original resolve to unique, shipped images',
  for(const a of PLAYER_AVATARS){assert.ok(existsSync(new URL('../public'+a.src,import.meta.url)),a.src);assert.ok(isPlayerAvatar(a.id));}
  assert.equal(readFileSync(new URL('../public/player-avatars.js',import.meta.url),'utf8'),readFileSync(new URL('../supabase/functions/farm-api/player-avatars.js',import.meta.url),'utf8'));
 });
+test('every avatar is a farmer portrait of the same size and style, and the family emblem artwork is not among them',()=>{
+ for(const a of PLAYER_AVATARS.slice(1)){
+  const file=readFileSync(new URL('../public'+a.src,import.meta.url));
+  assert.equal(file.subarray(0,4).toString(),'RIFF',a.id);assert.equal(file.subarray(8,12).toString(),'WEBP',a.id);
+  assert.ok(file.length>20000&&file.length<60000,`${a.id} is a light portrait (${file.length} bytes)`);
+  assert.match(a.name,/^[A-Z][a-z]+( [a-z]+)?$/,`${a.id} has a role name like the others`);
+ }
+ for(const emblem of ['owl','fox','windmill','horseshoe'])assert.ok(!PLAYER_AVATARS.some(a=>a.name.toLowerCase().includes(emblem)),`${emblem} is an emblem, not an avatar`);
+});
 test('the database accepts exactly the avatars the game offers',()=>{
  const migrations=readdirSync(new URL('../supabase/migrations/',import.meta.url)).filter(f=>/player_avatars\.sql$/.test(f)).sort();
  assert.ok(migrations.length>=2,'the first list and the extension are both in the repo');

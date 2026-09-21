@@ -1,5 +1,4 @@
-// Public cosmetic choices. Keep IDs stable; accounts store only the ID (player_stats.avatar_id has a CHECK on the list, see supabase/player-avatars.sql).
-// The last four IDs were created before their artwork existed: the names describe the art, the IDs stay as the database knows them.
+// Public cosmetic choices. Keep IDs stable; accounts store only the ID (player_stats.avatar_id has a CHECK on the list, see the player_avatars migrations).
 export const PLAYER_AVATARS=Object.freeze([
   {
     "id": "default",
@@ -108,22 +107,22 @@ export const PLAYER_AVATARS=Object.freeze([
   },
   {
     "id": "pond-keeper",
-    "name": "Wise owl",
+    "name": "Pond keeper",
     "src": "/assets/avatars/pond-keeper.webp"
   },
   {
     "id": "ranch-hand",
-    "name": "Cosy fox",
+    "name": "Ranch hand",
     "src": "/assets/avatars/ranch-hand.webp"
   },
   {
     "id": "cheese-maker",
-    "name": "Wheat windmill",
+    "name": "Cheese maker",
     "src": "/assets/avatars/cheese-maker.webp"
   },
   {
     "id": "flower-tender",
-    "name": "Lucky clover",
+    "name": "Flower tender",
     "src": "/assets/avatars/flower-tender.webp"
   }
 ].map(Object.freeze));
