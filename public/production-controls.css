@@ -12,7 +12,7 @@
 .batch-stepper{display:grid;grid-template-columns:44px 40px 44px;align-items:center;border:1px solid #d4c8bb;border-radius:13px;overflow:hidden;background:#fffdf5;box-shadow:0 2px 0 #c7b8a621}
 .batch-stepper button{display:grid;place-items:center;width:44px;height:44px;min-height:44px;border:0;border-radius:0;background:#f1e8e0;color:#514835;font:500 24px 'Outfit',sans-serif;touch-action:manipulation}
 .batch-stepper button:hover:not(:disabled){background:#e8dbcd}.batch-stepper button:disabled{color:#aea498;background:#f2eeea;cursor:default}
-.batch-stepper output{display:block;text-align:center;font:600 18px 'Outfit',sans-serif;font-variant-numeric:tabular-nums;color:#464130}
+.batch-max{display:inline;min-height:32px;padding:4px 8px;border:0;border-radius:8px;background:none;color:#8a5f1f;font:600 11px 'DM Sans',sans-serif;text-decoration:underline;cursor:pointer;touch-action:manipulation}.batch-max:disabled{color:#aea498;cursor:default;text-decoration:none}.batch-stepper output{display:block;text-align:center;font:600 18px 'Outfit',sans-serif;font-variant-numeric:tabular-nums;color:#464130}
 .field-picker-label{display:block;margin-top:12px;font-size:12px;font-weight:700;color:#726756}
 .field-picker{margin:8px 0 2px;min-width:0;max-width:100%;border:1px solid #d1c5b7;border-radius:14px;background:#fffdf5;overflow:hidden;box-shadow:0 2px 3px #47382505}
 .field-picker summary{display:flex;align-items:center;gap:11px;min-height:64px;list-style:none;padding:10px 13px;cursor:pointer;touch-action:manipulation;box-sizing:border-box;color:#4a4533}

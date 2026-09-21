@@ -298,12 +298,16 @@ export const MAX_PLOTS=40;
 export function xpForLevel(level){const n=level-1;return 60*n+20*n*(n-1);}
 export function levelOf(state){const total=state.xp+(state.xpOffset??0);return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);}
 export function levelProgress(state){const level=levelOf(state);return {level,current:state.xp+(state.xpOffset??0)-xpForLevel(level),target:60+40*(level-1)};}
-export const MAX_BUILDING_LEVEL=10;
+// Levels 1-10 are bought with coins or diamonds, one slot and a bit more speed per level. Levels 11-20 are estate upgrades for the
+// long game (forty fields need far more processing): a higher farm level and finished goods on top of the price, which is coins
+// or diamonds (and the 50% voucher) exactly as below level 10.
+export const BASE_BUILDING_LEVEL=10;
+export const MAX_BUILDING_LEVEL=20;
 export function productionSlots(level){return Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));}
 // Keep the primary job for older clients; extra jobs run in parallel, not a queue.
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
 export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input),output=value(r.output);return {input,output,added:output-input};}
-export function productionSpeed(level){return level<=3?.2*(level-1):.4+.04*(level-3);}
+export function productionSpeed(level){return level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));}
 export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level))*(vipActive(state,now)?.9:1));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
@@ -405,10 +409,33 @@ export function expansionLevel(state){return ENDGAME_FIELDS[state.plots.length-2
 export function expansionCost(state){const n=state.plots.length;return n>=MAX_PLOTS?null:n>=28?ENDGAME_FIELDS[n-28].coins:n<20?Math.ceil(600*1.75**Math.max(0,n-12)/25)*25:LATE_FIELD_COSTS[n-20];}
 const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16},{lettuce:30,flour:18,milk:12},{cauliflower:32,feed:20,eggs:14},{redcabbage:30,cheese:16,bread:18},{pumpkin:36,oil:18,pie:20},{sunflower:40,cheese:20,pie:22},{cauliflower:44,bread:26,eggs:24},{redcabbage:44,oil:22,vegetables:24},{pumpkin:50,pickles:26,milk:28}];
 export function expansionMaterials(state){const n=state.plots.length;return n>=MAX_PLOTS?{}:{...(n>=28?ENDGAME_FIELDS[n-28].materials:FIELD_MATERIALS[Math.max(0,n-12)])};}
+// Estate upgrades: target level 11-20. Priced per step, the same for every building (the goods are what differs), and like the
+// last twelve fields they ask for a higher farm level. Ten steps for a farm that can process forty fields of crops.
+// The diamond price continues the curve of levels 1-10 (525 diamonds for level 10, about 700 coins to a diamond).
+export const ESTATE_UPGRADES=Object.freeze([
+ {level:26,coins:400000,diamonds:570,materials:{bread:60,cheese:40}},
+ {level:30,coins:520000,diamonds:745,materials:{stew:30,oil:30}},
+ {level:34,coins:680000,diamonds:970,materials:{vegetables:40,applejuice:30,pie:25}},
+ {level:38,coins:880000,diamonds:1255,materials:{berrypreserves:30,beangratin:25,orchardsalad:25}},
+ {level:42,coins:1150000,diamonds:1645,materials:{applepie:30,pickledbeans:20,cheese:80}},
+ {level:50,coins:1500000,diamonds:2145,materials:{berrytart:30,orchardjuice:50,applecompote:40}},
+ {level:58,coins:1950000,diamonds:2785,materials:{berrysmoothie:50,berrypreserves:60,pie:50}},
+ {level:66,coins:2550000,diamonds:3645,materials:{berrycheesecake:40,applevinegar:60,stew:80}},
+ {level:75,coins:3300000,diamonds:4715,materials:{harvesthamper:25,applepie:60,pickledbeans:50}},
+ {level:85,coins:4300000,diamonds:6145,materials:{harvesthamper:40,berrycheesecake:60,berrytart:60,pickledbeans:80}}
+].map(step=>Object.freeze({...step,materials:Object.freeze(step.materials)})));
+// What the next upgrade of a building asks besides coins, or null below level 10 and at the top.
+export function upgradeRequirements(state,building){
+ if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
+ const level=state.buildings[building].level,step=ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL];
+ return level<BASE_BUILDING_LEVEL||level>=MAX_BUILDING_LEVEL||!step?null:{level:step.level,materials:{...step.materials}};
+}
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
  const level=state.buildings[building].level;
- return level>=MAX_BUILDING_LEVEL?null:Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)))*(state.boosts?.upgradeCredits>0?.5:1));
+ const voucher=state.boosts?.upgradeCredits>0?.5:1;
+ if(level>=BASE_BUILDING_LEVEL){const step=level<MAX_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]:null;return step?Math.ceil(step.coins*voucher):null;}
+ return Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)))*voucher);
 }
 function createBaseFarm(now=Date.now()) {
  const plots=Array.from({length:12},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
@@ -501,7 +528,7 @@ export function recipeAvailability(state,id){
  return {canStart:!locked&&!busy&&missing.length===0,missing,busy,used,slots,maxCount,locked};
 }
 export function startProduction(state,id,now=Date.now(),count=1){
- if(!Number.isInteger(count)||count<1||count>MAX_BUILDING_LEVEL)throw new Error('Choose 1–10 batches.');
+ if(!Number.isInteger(count)||count<1||count>MAX_BUILDING_LEVEL)throw new Error(`Choose 1–${MAX_BUILDING_LEVEL} batches.`);
  const a=recipeAvailability(state,id),r=RECIPES[id];
  if(a.locked)throw new Error(`Unlock this recipe first. ${recipeUnlockHint(state,id)}`);
  if(count>a.slots-a.used)throw new Error('Not enough free production slots. Collect a finished batch first.');
@@ -547,20 +574,25 @@ export function collectAllProduction(state,building,now=Date.now()){
  return result;
 }
 export const DIAMOND_UPGRADE_COSTS=Object.freeze([25,45,75,110,160,225,300,400,525]);
-export function diamondUpgradeCost(state,building){if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;return DIAMOND_UPGRADE_COSTS[state.buildings[building].level-1]??null;}
+export function diamondUpgradeCost(state,building){if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;const level=state.buildings[building].level;return level>=BASE_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]?.diamonds??null:DIAMOND_UPGRADE_COSTS[level-1]??null;}
 export function upgradeBuilding(state,building,currency='coins',expectedCost,expectedLevel){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')throw new Error('Choose a production building.');
  if(!buildingUnlocked(state,building))throw new Error('Open this building before upgrading it.');
  if(!['coins','diamonds'].includes(currency))throw new Error('Choose coins or diamonds.');
- const b=state.buildings[building],cost=currency==='diamonds'?diamondUpgradeCost(state,building):upgradeCost(state,building);
+ const b=state.buildings[building],estate=upgradeRequirements(state,building);
+ const cost=currency==='diamonds'?diamondUpgradeCost(state,building):upgradeCost(state,building);
  if(currency==='diamonds'&&(!featureUnlocked(state,'boosts')||expectedCost!==cost||expectedLevel!==b.level))throw new Error('Review the current diamond upgrade price and building level.');
  if(cost===null)throw new Error('This building is fully upgraded.');
  if(productionJobs(b).length)throw new Error('Finish and collect all current batches before upgrading.');
+ if(estate&&levelOf(state)<estate.level)throw new Error(`Reach level ${estate.level} to upgrade this building to level ${b.level+1}.`);
  if(state[currency]<cost)throw new Error(`You need ${cost} ${currency} for this upgrade.`);
- state[currency]-=cost;b.level++;state.stats.upgrades++;state.xp+=15;
+ const missing=estate?Object.entries(estate.materials).filter(([key,n])=>(state.inventory[key]??0)<n):[];
+ if(missing.length)throw new Error(`Gather the missing supplies: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
+ state[currency]-=cost;if(estate)for(const [key,n] of Object.entries(estate.materials))state.inventory[key]-=n;
+ b.level++;state.stats.upgrades++;state.xp+=15;
  if(currency==='coins'&&state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
  if(building==='windmill')state.stats.windmill_upgrades=(state.stats.windmill_upgrades??0)+1;
- return {building,level:b.level,cost,currency};
+ return {building,level:b.level,cost,currency,materials:estate?{...estate.materials}:{}};
 }
 export function expandFarm(state){
  const cost=expansionCost(state),materials=expansionMaterials(state);

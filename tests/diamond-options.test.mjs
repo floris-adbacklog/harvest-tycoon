@@ -26,8 +26,9 @@ test('diamond upgrade prices rise every level and retain coins and coin vouchers
   act(s,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:cost,expectedLevel:level},now);
   assert.equal(s.buildings.coop.level,level+1);assert.equal(s.coins,coins);assert.equal(s.diamonds,diamonds-cost);assert.equal(s.boosts.upgradeCredits,1);previous=cost;
  }
- assert.equal(diamondUpgradeCost(s,'coop'),null);
- assert.throws(()=>act(s,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:null,expectedLevel:10},now));
+ assert.equal(diamondUpgradeCost(s,'coop'),570,'level 10 is where the estate upgrades start; the curve goes on');
+ assert.throws(()=>act(s,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:null,expectedLevel:10},now),'a stale or missing price is refused');
+ assert.throws(()=>act(s,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:570,expectedLevel:10},now),/Reach level 26/,'and the farm level still counts');
 });
 test('stale, underfunded, busy and invalid diamond upgrades leave the farm intact',()=>{
  for(const scenario of ['stale','cost','poor','busy','currency','farmhouse']){
