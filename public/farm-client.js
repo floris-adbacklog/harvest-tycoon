@@ -1,3 +1,4 @@
+import {BUILDINGS} from './farm-state.js';
 // The parent owns authentication. This disposable frame contains only a view of
 // the most recently committed server state; it never persists game data.
 let clockOffset=0;
@@ -9,6 +10,8 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
  function replace(data){
   for(const key of Object.keys(state))delete state[key];
   Object.assign(state,structuredClone(data.state));
+  // A server that has not learnt about a new building yet must not break the buildings list.
+  state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
   clockOffset=data.serverNow-Date.now();
   onChange();onStatus('saved');
   if(data.chapterReward?.chapters?.length)onChapterReward?.(data.chapterReward);

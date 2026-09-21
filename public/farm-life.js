@@ -62,7 +62,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   }
  }
  function watchProduction(buildings){
-  for(const id of ['bakery','mill','packing','kitchen','juicepress','preserves']){const v=buildings.get(id);for(let i=0;i<3;i++){const obj=new THREE.Mesh(new THREE.SphereGeometry(.17,6,4),new THREE.MeshBasicMaterial({color:0xfff5dc,transparent:true,opacity:0,depthWrite:false}));scene.add(obj);smoke.push({obj,id,x:v.x,z:v.z,y:v.height,phase:i/3});}}
+  for(const id of ['bakery','mill','packing','kitchen','juicepress','preserves','factory']){const v=buildings.get(id);for(let i=0;i<3;i++){const obj=new THREE.Mesh(new THREE.SphereGeometry(.17,6,4),new THREE.MeshBasicMaterial({color:0xfff5dc,transparent:true,opacity:0,depthWrite:false}));scene.add(obj);smoke.push({obj,id,x:v.x,z:v.z,y:v.height,phase:i/3});}}
  }
  function animate(t,dt,now){
   if(reducedMotion)return;

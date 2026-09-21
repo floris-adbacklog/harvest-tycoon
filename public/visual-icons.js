@@ -9,7 +9,7 @@ for(const key of ['rank-gold','rank-silver','rank-bronze','family-bee','family-o
 // Individual painted illustrations keep each chore recognisable at mobile sizes.
 for(const id of ['weeds','troughs','sorting','fences','irrigation','harvestfair'])pictures[`chore-${id}`]=`chore-${id}`;
 for(const id of ['greenhouse','apiary','paddock','workshop'])pictures[`activity-${id}`]=`activity-${id}`;
-for(const id of ['apples','berries','greenbeans','applejuice','applepie','berrypreserves','berrytart','stew','juicepress','preserves','kitchen'])pictures[id]=id;
+for(const id of ['apples','berries','greenbeans','applejuice','applepie','berrypreserves','berrytart','stew','juicepress','preserves','kitchen','factory'])pictures[id]=id;
 for(const id of ["orchardjuice", "berrysmoothie", "applecompote", "applevinegar", "pickledbeans", "beangratin", "orchardsalad", "berrycheesecake", "harvesthamper"])pictures[id]=id;
 // Painted-style vector illustrations for the few interface items that had no artwork yet.
 const svgArt=new Set(['guide','sound','streak','settings','reminders','farmapp']);

@@ -8,7 +8,7 @@ function farm(){const s=createLegacyFarm(now);s.xp=xpForLevel(28);s.levelRewards
 test('new bulk feed is more ingredient-efficient, with positive production margins',()=>{
  assert.equal(RECIPES.windfeed.output.feed,10);
  assert.ok(RECIPES.windfeed.input.barley/RECIPES.windfeed.output.feed<RECIPES.barleyfeed.input.barley/RECIPES.barleyfeed.output.feed);
- for(const id of Object.keys(RECIPES))assert.ok(recipeValue(id).added>0,id);
+ for(const id of Object.keys(RECIPES))if(!RECIPES[id].coins)assert.ok(recipeValue(id).added>0,id);   // bottled honey is a coin sink on purpose
  const s=farm();s.buildings.windmill.level=2;
  s.buildings.windmill.job={id:'windmill-old',recipe:'windfeed',startedAt:now-1200000,readyAt:now,output:{feed:7},xp:32};
  const stock=s.inventory.feed;act(s,{type:'collect',building:'windmill',jobId:'windmill-old'},now);assert.equal(s.inventory.feed,stock+7);

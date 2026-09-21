@@ -8,7 +8,7 @@ const now=1789690000000;
 function farm(){const s=createFarm(now);s.xp=20000;for(const b of Object.values(s.buildings))b.built=true;s.coins=1000000;s.diamonds=500;for(const k of Object.keys(s.inventory))s.inventory[k]=1000;return s;}
 const act=(s,a,t=now)=>applyFarmAction(s,a,t);
 test('every production building permits exactly one simultaneous batch per level',()=>{
- for(const [id,b] of Object.entries(BUILDINGS).filter(([,b])=>b.type==='production'))for(let level=1;level<=10;level++){
+ for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&id!=='factory'))for(let level=1;level<=10;level++){
   const s=farm();s.buildings[id].level=level;const recipe=Object.keys(RECIPES).find(k=>RECIPES[k].building===id);
   for(let i=0;i<level;i++)act(s,{type:'produce',recipe});
   const jobs=productionJobs(s.buildings[id]);assert.equal(jobs.length,level);assert.equal(new Set(jobs.map(j=>j.id)).size,level);assert(jobs.every(j=>j.startedAt===now));
@@ -46,7 +46,7 @@ test('instant production finishes every parallel job and grants nothing until co
  assert.equal(s.inventory.oil,before+3);assert.equal(s.stats.produced,3);assert.equal(s.buildings.mill.job,null);
 });
 test('higher-level production, early upgrade pricing and vouchers stay consistent',()=>{
- for(const [id,b] of Object.entries(BUILDINGS).filter(([,b])=>b.type==='production')){
+ for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&id!=='factory')){
   const s=farm();for(const level of [1,2,3]){s.buildings[id].level=level;const base=Math.round(b.upgradeCost*(level<3?level*1.5:12));assert.equal(upgradeCost(s,id),base);s.boosts.upgradeCredits=1;assert.equal(upgradeCost(s,id),Math.ceil(base/2));s.boosts.upgradeCredits=0;}
   s.buildings[id].level=1;const result=act(s,{type:'upgrade',building:id});assert.equal(productionSlots(result.level),2);
  }
@@ -54,7 +54,7 @@ test('higher-level production, early upgrade pricing and vouchers stay consisten
 test('long-wait crops earn less raw while all recipes add value and planting stays profitable',()=>{
  const old={cabbage:170,cauliflower:300,pumpkin:480,redcabbage:720,sunflower:1100};
  for(const [id,price] of Object.entries(old)){assert(CROPS[id].sell<price*.7);assert(CROPS[id].sell>CROPS[id].cost);}
- for(const id of Object.keys(RECIPES))assert(recipeValue(id).added>0,id);
+ for(const id of Object.keys(RECIPES))if(!RECIPES[id].coins)assert(recipeValue(id).added>0,id);
  for(const id of ['oil','pickles','pie','vegetables']){const v=recipeValue(id);assert(v.output>=v.input*1.45);}
  assert.equal(CROPS.wheat.sell,8);assert.equal(CROPS.corn.sell,40);
  const s=farm();for(const k in s.inventory)s.inventory[k]=0;s.inventory.sunflower=2;const start=s.coins;act(s,{type:'sell',item:'sunflower'});assert.equal(s.coins-start,marketQuote('sunflower',now).price*2);

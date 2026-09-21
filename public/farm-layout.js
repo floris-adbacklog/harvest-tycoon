@@ -5,7 +5,7 @@ export const SPREAD=1.3;
 // Where each yard was designed (x, z on the compact grid).
 export const ANCHORS=Object.freeze({
  dairy:[-1,-13.2],silo:[5.6,-11.8],farmhouse:[-13.8,-10.2],familyhall:[-9.3,-20.5],preserves:[-15.2,-18.6],juicepress:[-1,-20.1],
- greenhouse:[5.6,-19],packing:[11.5,-17.2],coop:[13,-9.5],paddock:[17.9,-7],windmill:[12.8,-1.5],tractor:[-5.2,-.2],cart:[-6.3,3.8],
+ greenhouse:[5.6,-19],packing:[11.5,-17.2],coop:[13,-9.5],paddock:[17.9,-7],windmill:[12.8,-1.5],tractor:[-5.2,-.2],cart:[-6.3,3.8],factory:[16.2,21.9],
  chores:[-5.8,-10.7],stall:[-11.3,-2.6],mill:[-12.5,4],bakery:[-10.8,12],kitchen:[-12.4,18.2],apiary:[10.5,13.8],workshop:[-9.1,-14.7],pond:[17.6,15.2]
 });
 // Where a yard stands when that is not where it was designed (same compact grid; everything inside a yard moves along with it).
@@ -43,10 +43,13 @@ const yardCentres=Object.keys(ANCHORS).map(anchorAt);
 export const FIELD_BLOCK=Object.freeze({minX:-4.4,maxX:9.55,minZ:-1.2,maxZ:31});
 const FIELD_MARGIN=1;
 export const outsideFields=(x,z,margin=0)=>x<FIELD_BLOCK.minX-margin||x>FIELD_BLOCK.maxX+margin||z<FIELD_BLOCK.minZ-margin||z>FIELD_BLOCK.maxZ+margin;
+// The Factory is a long hall (12 east-west) with a chimney and a hopper at its ends: more than the radius around its middle.
+export const factoryYard=()=>{const [x,z]=anchorAt('factory');return Object.freeze({minX:x-8.2,maxX:x+8.2,minZ:z-3.4,maxZ:z+3.9});};
+export const outsideFactory=(x,z,margin=0)=>{const r=factoryYard();return x<r.minX-margin||x>r.maxX+margin||z<r.minZ-margin||z>r.maxZ+margin;};
 
 // Moves a loose piece to the nearest free spot outside every yard and the crops, preferring the direction away from the nearest yard.
 export function clearOfYards(x,z,clearance=YARD_CLEARANCE){
- const free=(px,pz)=>outsideFields(px,pz,FIELD_MARGIN)&&yardCentres.every(([ax,az])=>Math.hypot(px-ax,pz-az)>=clearance-1e-6);
+ const free=(px,pz)=>outsideFields(px,pz,FIELD_MARGIN)&&outsideFactory(px,pz,FIELD_MARGIN)&&yardCentres.every(([ax,az])=>Math.hypot(px-ax,pz-az)>=clearance-1e-6);
  if(free(x,z))return [x,z];
  const [nx,nz]=yardCentres.reduce((best,c)=>Math.hypot(x-c[0],z-c[1])<Math.hypot(x-best[0],z-best[1])?c:best);
  const away=Math.hypot(x-nx,z-nz)<.001?0:Math.atan2(z-nz,x-nx);

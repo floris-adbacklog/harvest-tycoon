@@ -27,8 +27,9 @@ test('all 12 crops can be planted, watered and harvested; collection is unique',
  assert.equal(s.stats.varieties,12);assert.equal(s.discovered.length,12);
 });
 test('all 30 recipes require ingredients, persist timed jobs and collect once',()=>{
- assert.equal(Object.keys(RECIPES).length,30);
- for(const [id,r]of Object.entries(RECIPES)){
+ const ordinary=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory');   // the Factory's bulk versions have their own tests
+ assert.equal(ordinary.length,30);
+ for(const [id,r]of ordinary){
   const s=createFarm(now);s.xp=xpForLevel(20);for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;
   const before=structuredClone(s);
   assert.throws(()=>apply(s,{type:'produce',recipe:id}),/Missing ingredients/);assert.deepEqual(s,before);

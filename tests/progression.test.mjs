@@ -59,8 +59,8 @@ test('every level has renewable play, every new building has a viable recipe and
    Object.keys(r.output).forEach(k=>outputs.add(k));
   }
  }
- assert.equal(cropCount,12);for(const key of Object.keys(BUILDINGS))assert.ok(buildingUnlocked(s,key),key);
- for(const id of Object.keys(RECIPES))assert.ok(recipeUnlocked(s,id),id);
+ assert.equal(cropCount,12);for(const key of Object.keys(BUILDINGS))if(key!=='factory')assert.ok(buildingUnlocked(s,key),key);   // the Factory is an endgame building (level 50)
+ for(const id of Object.keys(RECIPES))if(RECIPES[id].building!=='factory')assert.ok(recipeUnlocked(s,id),id);
  for(const key of Object.keys(FEATURE_NAMES))assert.ok(featureUnlocked(s,key),key);
  assert.ok(outputs.has('harvesthamper')&&outputs.has('pickledbeans'));
  const levels=Object.entries(CROP_LEVELS).filter(([,n])=>n>1).sort((a,b)=>a[1]-b[1]);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {SPREAD,ANCHORS,YARD_CLEARANCE,ROADS,zone,currentZone,place,placeIn,wide,anchorAt,clearOfYards,roadRects,roadSize,onRoad,fenceSegments,FIELD_BLOCK,outsideFields,HOMES} from '../public/farm-layout.js';
+import {SPREAD,ANCHORS,YARD_CLEARANCE,ROADS,zone,currentZone,place,placeIn,wide,anchorAt,clearOfYards,roadRects,roadSize,onRoad,fenceSegments,FIELD_BLOCK,outsideFields,outsideFactory,factoryYard,HOMES} from '../public/farm-layout.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 const nearest=(position,ids=Object.keys(ANCHORS))=>Object.fromEntries(ids.map(id=>[id,Math.min(...ids.filter(other=>other!==id).map(other=>distance(position(id),position(other))))]));
@@ -99,6 +99,7 @@ test('loose scenery never stands in the crops, however far the farm has grown',(
  const game=read('public/game.js'),from=game.indexOf('// Trees, bushes and tufts are spread out'),loose=game.slice(from,game.indexOf('farmLife=createFarmLife(',from));
  const pieces=[...loose.matchAll(/\[(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,-?\d+(?:\.\d+)?)?\]/g)].map(m=>[Number(m[1]),Number(m[2])]);
  assert(pieces.length>40,'the hand-placed trees, bushes and tufts were found');
- for(const [x,z] of pieces){const [px,pz]=place(x,z);assert(outsideFields(px,pz),`piece (${x}, ${z}) ends up at (${px.toFixed(1)}, ${pz.toFixed(1)}) in the crops`);}
+ for(const [x,z] of pieces){const [px,pz]=place(x,z);assert(outsideFields(px,pz),`piece (${x}, ${z}) ends up at (${px.toFixed(1)}, ${pz.toFixed(1)}) in the crops`);assert(outsideFactory(px,pz),`piece (${x}, ${z}) ends up at (${px.toFixed(1)}, ${pz.toFixed(1)}) in the Factory yard`);}
+ const yard=factoryYard();assert(yard.maxX-yard.minX>=16&&yard.minX>=10,'the Factory yard is the long hall, east of the crops');
  zone('fields');
 });

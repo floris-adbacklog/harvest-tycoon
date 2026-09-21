@@ -67,6 +67,12 @@ export function marketHighlights(now=Date.now(),state){
  const sorted=time=>keys.map(k=>marketQuote(k,time)).sort((a,b)=>b.change-a.change||a.item.localeCompare(b.item));
  return {today:sorted(now)[0],tomorrow:sorted(now+DAY_MS)[0]};
 }
+// The Factory: an endgame building (farm level 50, 500,000 coins, levels 1-20 like every production building) that makes every
+// production good in bulk, in twice the time of one normal batch, and bottles honey for coins. Crops are still grown by hand.
+export const FACTORY_LEVEL=50;
+export const FACTORY_COST=500000;
+export const FACTORY_TIME_FACTOR=2;
+export const FACTORY_HONEY={coins:5000,batch:50,duration:8100000,xp:50};   // 100 coins a honey; 135 minutes is twice what a hive needs for 50 (45 an hour)
 export const BUILDINGS = Object.freeze({
  familyhall:{name:'Family Hall',tagline:'Grow together with your Farm Family.',icon:'users',model:'house_008',type:'family',minLevel:FAMILY_MIN_LEVEL},
  farmhouse:{name:'Farmhouse',tagline:'Room for your next big idea.',icon:'house',model:'house_010',type:'farm',upgradeCost:140},
@@ -78,9 +84,10 @@ export const BUILDINGS = Object.freeze({
  windmill:{name:'Windmill',tagline:'Mill grain, make natural fertilizer and help your crops grow.',icon:'wind',model:'tower_001',type:'production',upgradeCost:180},
  kitchen:{"name": "Farm Kitchen", "tagline": "Turn fresh vegetables into a comforting bowl of stew.", "icon": "cooking-pot", "model": "house_011", "type": "production", "upgradeCost": 420, "minLevel": 6, "buildCost": 3500},
  juicepress:{"name": "Juice Press", "tagline": "Bottle the sweetness of your orchard.", "icon": "cup-soda", "model": "hangar_005", "type": "production", "upgradeCost": 600, "minLevel": 8, "buildCost": 6500},
- preserves:{"name": "Preserves Workshop", "tagline": "Berries and honey, saved for something special.", "icon": "amphora", "model": "hangar_002", "type": "production", "upgradeCost": 850, "minLevel": 10, "buildCost": 10000}
+ preserves:{"name": "Preserves Workshop", "tagline": "Berries and honey, saved for something special.", "icon": "amphora", "model": "hangar_002", "type": "production", "upgradeCost": 850, "minLevel": 10, "buildCost": 10000},
+ factory:{"name": "Factory", "tagline": "Every good in huge batches, for the fields and upgrades of a lasting estate.", "icon": "factory", "model": "hangar_007", "type": "production", "upgradeCost": 800, "minLevel": FACTORY_LEVEL, "buildCost": FACTORY_COST}
 });
-export const RECIPES=Object.freeze({
+const BASE_RECIPES=Object.freeze({
  grainmeal:{building:'windmill',name:'Grind grain meal',input:{wheat:8,barley:4},output:{grainmeal:3},duration:1200000,xp:30},
  fertilizer:{building:'windmill',name:'Mix natural fertilizer',input:{grainmeal:2,cabbage:2},output:{fertilizer:3},duration:1800000,xp:40},
  windflour:{building:'windmill',name:'Mill a large flour batch',input:{grainmeal:3},output:{flour:14},duration:720000,xp:24},
@@ -113,6 +120,16 @@ berrycheesecake:{"building": "bakery", "name": "Bake a berry cheesecake", "input
 harvesthamper:{"building": "packing", "name": "Pack a harvest hamper", "input": {"applejuice": 2, "berrypreserves": 2, "bread": 2}, "output": {"harvesthamper": 1}, "duration": 28800000, "xp": 140, "minLevel": 12, "requiresBuildings": ["juicepress", "preserves"]}
 
 });
+// One Factory recipe per production recipe: quick goods (a batch of an hour or less) ×20, slow ones ×10, in twice the time of the
+// normal batch, so a slot of the Factory does the work of 10-20 slots. Ingredients, goods and XP scale the same way (the XP per
+// ingredient stays what it was). Only production goods: no recipe makes a crop. The Factory also bottles honey for coins.
+export const factoryBatches=recipe=>recipe.duration<=3600000?20:10;
+const scaled=(items,n)=>Object.freeze(Object.fromEntries(Object.entries(items).map(([key,count])=>[key,count*n])));
+const MASS_RECIPES=Object.fromEntries([
+ ...Object.entries(BASE_RECIPES).map(([id,r])=>{const n=factoryBatches(r);return [`mass_${id}`,Object.freeze({building:'factory',name:`${r.name} ×${n}`,input:scaled(r.input,n),output:scaled(r.output,n),duration:r.duration*FACTORY_TIME_FACTOR,xp:r.xp*n,base:id,batches:n,minLevel:FACTORY_LEVEL})];}),
+ ['mass_honey',Object.freeze({building:'factory',name:`Bottle honey ×${FACTORY_HONEY.batch}`,input:Object.freeze({}),output:Object.freeze({honey:FACTORY_HONEY.batch}),coins:FACTORY_HONEY.coins,duration:FACTORY_HONEY.duration,xp:FACTORY_HONEY.xp,batches:FACTORY_HONEY.batch,minLevel:FACTORY_LEVEL})]
+]);
+export const RECIPES=Object.freeze({...BASE_RECIPES,...MASS_RECIPES});
 // This introductory track is deliberately independent of the regular QUESTS IDs/stats.
 export const BEGINNER_REWARD=50;
 // Every finished guide step also pays XP: following the guide takes a new farmer to level 3 in about ten minutes.
@@ -303,18 +320,21 @@ export function levelProgress(state){const level=levelOf(state);return {level,cu
 // or diamonds (and the 50% voucher) exactly as below level 10.
 export const BASE_BUILDING_LEVEL=10;
 export const MAX_BUILDING_LEVEL=20;
-export function productionSlots(level){return Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));}
+// The Factory is one shared workshop for every good, so it grows slower than the specialised buildings: a slot for every four levels
+// (one to five) and half the speed bonus. Its batches are 10-20 times bigger, so a full Factory still adds about four fifths of one
+// full specialised building, and the levels 11-20 of those buildings stay worth having.
+export function productionSlots(level,building){const n=Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));return building==='factory'?Math.ceil(n/4):n;}
 // Keep the primary job for older clients; extra jobs run in parallel, not a queue.
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
-export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input),output=value(r.output);return {input,output,added:output-input};}
-export function productionSpeed(level){return level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));}
-export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level))*(vipActive(state,now)?.9:1));}
+export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input)+(r.coins??0),output=value(r.output);return {input,output,added:output-input};}
+export function productionSpeed(level,building){const speed=level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));return building==='factory'?speed/2:speed;}
+export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:7,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23});
-export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:10,kitchen:12,juicepress:21,preserves:24});
-export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000});
+export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:10,kitchen:12,juicepress:21,preserves:24,factory:FACTORY_LEVEL});
+export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,factory:FACTORY_COST});
 export const RECIPE_LEVELS=Object.freeze({eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:11,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:23,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:25,harvesthamper:25});
 export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:6,chores:4,mastery:7,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:12});
@@ -330,20 +350,20 @@ export function buildingEligible(state,key){return Object.hasOwn(BUILDINGS,key)&
 export function buildingUnlocked(state,key){return buildingEligible(state,key)&&(!buildingCost(state,key)||state.buildings[key]?.built===true);}
 export function featureUnlocked(state,key){if(key==='family')return familyUnlocked(state);return !guidedFarm(state)||kept(state,'features',key)||levelOf(state)>=(FEATURE_LEVELS[key]??1);}
 export function featureUnlockHint(key){return `Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
-export function recipeLevel(state,id){return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
+export function recipeLevel(state,id){const factory=RECIPES[id]?.building==='factory';if(factory)return Math.max(FACTORY_LEVEL,RECIPES[id].base?recipeLevel(state,RECIPES[id].base):1);return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
 export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
 const FEATURE_ART={challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand'};
 export function unlockEntries(state){return [
  ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,art:key,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
  ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall').map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
  ...Object.entries(FEATURE_NAMES).map(([key,name])=>({id:'feature:'+key,name,art:FEATURE_ART[key]??key,kind:'Activity',level:FEATURE_LEVELS[key],unlocked:featureUnlocked(state,key),hint:featureUnlockHint(key)})),
- ...Object.entries(RECIPES).filter(([,r])=>buildingUnlocked(state,r.building)).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
+ ...Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&buildingUnlocked(state,r.building)).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
  ...ENDGAME_FIELDS.map((field,i)=>({id:'field:'+(i+29),name:`Field ${i+29} expansion`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+29,hint:`Level ${field.level} · Expand at the Farmhouse with coins and supplies.`}))
  ];}
 function migrateProgression(state){
  if(!guidedFarm(state)||state.progression.version>=2)return;
  const crops={corn:1,wheat:1,lettuce:2,barley:4,cabbage:5,cauliflower:6,greenbeans:6,pumpkin:7,apples:8,redcabbage:9,sunflower:10,berries:10};
- const buildings={familyhall:10,farmhouse:1,coop:1,mill:2,dairy:3,windmill:4,bakery:5,packing:5,kitchen:6,juicepress:8,preserves:10};
+ const buildings={familyhall:10,farmhouse:1,coop:1,mill:2,dairy:3,windmill:4,bakery:5,packing:5,kitchen:6,juicepress:8,preserves:10,factory:FACTORY_LEVEL};
  const features={family:10,chores:3,stall:3,mastery:3,tractor:4,silo:4,cart:3,projects:6,boosts:3,challenges:1};
  const level=levelOf(state),bread=(state.stats.made_bread??state.stats.bread??0)>0;
  const cropOpen=k=>level>=crops[k]&&(k!=='cabbage'||bread);
@@ -500,9 +520,10 @@ export function sellCrops(state,item='all',now=Date.now(),day,category,quantity)
  state.coins+=total;state.stats.earned+=total;state.stats.sold+=units;
  return {coins:total,day:utcDay(now)};
 }
-export function recipeUnlocked(state,id){const r=RECIPES[id];return !!r&&buildingUnlocked(state,r.building)&&levelOf(state)>=recipeLevel(state,id)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&(!guidedFarm(state)||Object.keys(r.input).every(k=>k==='feed'&&state.inventory.feed>0||itemAvailable(state,k)));}
+export function recipeUnlocked(state,id){const r=RECIPES[id];return !!r&&(!r.base||recipeUnlocked(state,r.base))&&buildingUnlocked(state,r.building)&&levelOf(state)>=recipeLevel(state,id)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&(!guidedFarm(state)||Object.keys(r.input).every(k=>k==='feed'&&state.inventory.feed>0||itemAvailable(state,k)));}
 export function recipeUnlockHint(state,id){
  const r=RECIPES[id];if(!buildingEligible(state,r.building))return buildingUnlockHint(state,r.building);
+ if(r.base&&buildingUnlocked(state,r.building)&&!recipeUnlocked(state,r.base))return `First unlock ${RECIPES[r.base].name}. ${recipeUnlockHint(state,r.base)}`;
  if(levelOf(state)<recipeLevel(state,id))return `Reach level ${recipeLevel(state,id)}.`;
  if(!buildingUnlocked(state,r.building))return `Open the ${BUILDINGS[r.building].name} in Buildings.`;
  const crops=Object.keys(r.input).filter(k=>CROPS[k]&&!cropUnlocked(state,k));
@@ -511,7 +532,7 @@ export function recipeUnlockHint(state,id){
  if(missing.length)return `Open ${missing.map(k=>BUILDINGS[k].name).join(' and ')} first.`;
  const ingredients=Object.keys(r.input).filter(k=>!itemAvailable(state,k));
  if(ingredients.length){
-  const item=ingredients[0],suppliers=Object.entries(RECIPES).filter(([,recipe])=>recipe.output[item]).sort(([a],[b])=>recipeLevel(state,a)-recipeLevel(state,b));
+  const item=ingredients[0],suppliers=Object.entries(RECIPES).filter(([,recipe])=>recipe.output[item]&&recipe.building!=='factory').sort(([a],[b])=>recipeLevel(state,a)-recipeLevel(state,b));
   const supplier=suppliers[0]?.[1];
   if(supplier&&!buildingUnlocked(state,supplier.building))return `Open the ${BUILDINGS[supplier.building].name} to make ${ITEMS[item].name}.`;
   if(item==='honey')return featureUnlockHint('activities');
@@ -522,16 +543,18 @@ export function recipeAvailability(state,id){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
  const r=RECIPES[id];
  const missing=Object.entries(r.input).filter(([k,n])=>state.inventory[k]<n).map(([k,n])=>({item:k,name:ITEMS[k].name,need:n,have:state.inventory[k]}));
- const b=state.buildings[r.building],used=productionJobs(b).length,slots=productionSlots(b.level),busy=used>=slots;
+ const b=state.buildings[r.building],used=productionJobs(b).length,slots=productionSlots(b.level,r.building),busy=used>=slots;
  const locked=!recipeUnlocked(state,id);
- const maxCount=locked?0:Math.max(0,Math.min(slots-used,...Object.entries(r.input).map(([k,n])=>Math.floor(state.inventory[k]/n))));
- return {canStart:!locked&&!busy&&missing.length===0,missing,busy,used,slots,maxCount,locked};
+ const price=r.coins??0,poor=price>0&&state.coins<price;
+ const maxCount=locked?0:Math.max(0,Math.min(slots-used,...Object.entries(r.input).map(([k,n])=>Math.floor(state.inventory[k]/n)),...(price?[Math.floor(state.coins/price)]:[])));
+ return {canStart:!locked&&!busy&&missing.length===0&&!poor,missing,busy,used,slots,maxCount,locked,price,poor};
 }
 export function startProduction(state,id,now=Date.now(),count=1){
  if(!Number.isInteger(count)||count<1||count>MAX_BUILDING_LEVEL)throw new Error(`Choose 1–${MAX_BUILDING_LEVEL} batches.`);
  const a=recipeAvailability(state,id),r=RECIPES[id];
  if(a.locked)throw new Error(`Unlock this recipe first. ${recipeUnlockHint(state,id)}`);
  if(count>a.slots-a.used)throw new Error('Not enough free production slots. Collect a finished batch first.');
+ if(a.price&&state.coins<a.price*count)throw new Error(`You need ${a.price*count} coins for ${count===1?'this batch':`${count} batches`}.`);
  if(count>a.maxCount)throw new Error('Missing ingredients for this many batches.');
  const batches=Array.from({length:count},()=>startSingleProduction(state,id,now));
  return {...batches[0],count,batches};
@@ -541,7 +564,9 @@ function startSingleProduction(state,id,now=Date.now()){
  const r=RECIPES[id],b=state.buildings[r.building],a=recipeAvailability(state,id);
  if(a.busy)throw new Error('All production slots are occupied. Collect a finished batch first.');
  if(a.missing.length)throw new Error('Missing ingredients: '+a.missing.map(m=>`${m.name} (${m.have}/${m.need})`).join(', ')+'.');
+ if(a.poor)throw new Error(`You need ${r.coins} coins for this batch.`);
  const duration=recipeDuration(state,id,now);
+ state.coins-=a.price;
  for(const [k,n]of Object.entries(r.input))state.inventory[k]-=n;
  b.batchSequence=(b.batchSequence??0)+1;
  const job={id:`${r.building}-${b.batchSequence}`,recipe:id,startedAt:now,readyAt:now+duration,output:{...r.output},xp:r.xp};
@@ -615,7 +640,7 @@ export function claimQuest(state,id){
  return {coins:q.reward,xp:15};
 }
 export function farmSummary(state,now=Date.now()) {
- return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,slots:BUILDINGS[id].type==='production'?productionSlots(b.level):0,jobs:productionJobs(b).map(j=>({id:j.id,recipe:j.recipe,secondsRemaining:Math.max(0,Math.ceil((j.readyAt-now)/1000))})),status:productionJobs(b).some(j=>now>=j.readyAt)?'ready':b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
+ return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,slots:BUILDINGS[id].type==='production'?productionSlots(b.level,id):0,jobs:productionJobs(b).map(j=>({id:j.id,recipe:j.recipe,secondsRemaining:Math.max(0,Math.ceil((j.readyAt-now)/1000))})),status:productionJobs(b).some(j=>now>=j.readyAt)?'ready':b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
 }
 
 export const DAY_MS=86400000;
@@ -643,6 +668,7 @@ export const SINGLE_BATCH_COST=10;
 export function finishSingleBatch(state,building,jobId,expectedCost,now=Date.now()){
  if(expectedCost!==SINGLE_BATCH_COST)throw new Error('The price has changed. Review the current price.');
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production'||!buildingUnlocked(state,building))throw new Error('Choose an open production building.');
+ if(building==='factory')throw new Error('Factory batches are too big to rush with diamonds.');
  const job=productionJobs(state.buildings[building]).find(j=>j.id===jobId);
  if(!job||job.readyAt<=now)throw new Error('Choose a batch that is still running.');
  if(state.diamonds<SINGLE_BATCH_COST)throw new Error(`You need ${SINGLE_BATCH_COST} diamonds.`);
@@ -665,7 +691,7 @@ export const BOOSTS=Object.freeze({
  xp:{name:'Double XP',cost:50,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},
  coins:{name:'Double earnings',cost:100,duration:1800000,art:'coins',description:'Double your market sales and delivery coins for 30 minutes. Passive income and gifts stay the same.'},
  crops:{name:'Instant harvest',cost:150,art:'seeds',description:'Make every currently growing crop ready to harvest. Crops stay in their fields until you collect them.'},
- production:{name:'Finish production',cost:200,art:'boost',description:'Finish all current production batches instantly. Collect the finished goods from their buildings.'},
+ production:{name:'Finish production',cost:200,art:'boost',description:'Finish all current production batches instantly (not the Factory’s big batches). Collect the finished goods from their buildings.'},
  upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires.'}
 });
 export function boostStatus(state,id,now=Date.now()){
@@ -677,7 +703,7 @@ export function boostStatus(state,id,now=Date.now()){
  if(id==='upgrade'&&state.boosts?.upgradeCredits>0)reason='Voucher ready';
  if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>BUILDINGS[key].type==='production'&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
  if(id==='crops'&&!state.plots.some(p=>p.crop&&p.readyAt>now))reason='No crops are growing';
- if(id==='production'&&!Object.values(state.buildings).some(b=>productionJobs(b).some(j=>j.readyAt>now)))reason='No batches are running';
+ if(id==='production'&&!Object.entries(state.buildings).some(([key,b])=>key!=='factory'&&productionJobs(b).some(j=>j.readyAt>now)))reason='No batches are running';
  return {...boost,remaining,reason,canBuy:!reason&&state.diamonds>=boost.cost};
 }
 export function buyBoost(state,id,now=Date.now()){
@@ -689,7 +715,7 @@ export function buyBoost(state,id,now=Date.now()){
  if(id==='upgrade')state.boosts.upgradeCredits=1;
  let affected=0;
  if(id==='crops')for(const p of state.plots)if(p.crop&&p.readyAt>now){p.readyAt=now;affected++;}
- if(id==='production')for(const b of Object.values(state.buildings))for(const job of productionJobs(b))if(job.readyAt>now){job.readyAt=now;affected++;}
+ if(id==='production')for(const [key,b] of Object.entries(state.buildings))if(key!=='factory')for(const job of productionJobs(b))if(job.readyAt>now){job.readyAt=now;affected++;}
  state.diamonds-=status.cost;
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {boost:id,cost:status.cost,affected,expiresAt:status.duration?now+status.duration:null};

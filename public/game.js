@@ -29,6 +29,8 @@ import { createSoundSettings } from './sound-settings.js';
 
 const $ = id => document.getElementById(id);
 const state = structuredClone(window.harvestInitialFarm.state);
+// A server that has not learnt about a new building yet must not break the buildings list (farm-client.js does the same on every reload).
+state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
 const initialChapterReward=window.harvestInitialFarm.chapterReward;
 const initialLevelReward=window.harvestInitialFarm.levelReward;
 window.harvestInitialFarm = null;
@@ -54,7 +56,7 @@ const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bag_003','bucket_001','apiary_001','cart_004','chair_001','firewood_003','firewood_008','hay_002','hay_003','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','barrel_009','cart_001','case_002','case_003','coop_001','water_001','landscape_001','ground_004','road_001'];
 modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
-modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','stall_001','case_001','dray_002','dray_004','prop_029');
+modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','stall_001','case_001','dray_002','dray_004','prop_029','hangar_007','hangar_022','tower_010');
 modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS);
 modelNames.push('coop_002','mountain_001','mountain_007');
 modelNames.push('house_008','pointer_002','table_002','garden_bed_002','firewood_001');
@@ -116,6 +118,9 @@ function decorate(){
  zone('juicepress');addBuilding('juicepress',-1,-20.1,{width:5.5,height:3.7,depth:4.8,rotation:Math.PI/2});
  zone('preserves');addBuilding('preserves',-15.2,-18.6,{width:5.7,height:3.9,depth:5,rotation:Math.PI/2});
  zone('kitchen');addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
+ // The Factory: a long white production hall with a chimney unit at one end and a hopper at the other, south of the pond.
+ zone('factory');addBuilding('factory',16.2,21.9,{width:6.4,height:3.6,depth:13,rotation:Math.PI/2});
+ cloneModel('hangar_022',8.6,21.4,{height:3.6,rotation:Math.PI/2});cloneModel('tower_010',24.2,22.2,{height:5});
  // North-west square, clear of crop expansions and the north-south path at x=-6.
  zone('familyhall');addBuilding('familyhall',-9.3,-20.5,{width:4.2,rotation:Math.PI/2});
  {
@@ -130,6 +135,7 @@ function decorate(){
  zone('juicepress');patch(-1,-20.1,6.9,6.4,0xb6bd88,.008);
  zone('preserves');patch(-15.2,-18.6,7.1,6.6,0xb6bd88,.008);
  zone('kitchen');patch(-12.4,18.2,5.1,4.8,0xb6bd88,.008);
+ zone('factory');patch(16.2,22.3,16.5,6.6,0xb9af8a,.008);
  // Both the mill body and its moving sails are original parts from the supplied pack.
  zone('windmill');
  const sail=cloneModel('tower_020',0,0,{height:5.8});scene.remove(sail);
@@ -197,7 +203,8 @@ function decorate(){
   dairy:[['bucket_003',-1.8,-9.1,{height:.65}],['hay_002',1.2,-9.7,{width:1.2}]],
   coop:[['water_001',17.6,-13.4,{width:1.1}]],
   apiary:[['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}]],
-  silo:[['hay_003',6.4,-7.9,{width:1.3,rotation:-.35}]]
+  silo:[['hay_003',6.4,-7.9,{width:1.3,rotation:-.35}]],
+  factory:[['case_002',12.6,24.9,{width:1.1,rotation:.15}],['bag_003',13.8,25.1,{height:.82,rotation:-.3}],['cart_004',20.4,25,{width:1.7,rotation:Math.PI/2}],['prop_029',18.6,25.2,{width:.55,rotation:.5}]]
 })){zone(yard);for(const [name,x,z,options] of list)cloneModel(name,x,z,options);}
  // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
  // glow since a plain color tint can only darken a texture, never lighten it.
@@ -209,7 +216,7 @@ function decorate(){
  // Trees, bushes and tufts are spread out with the farm and keep clear of every yard.
  zone(null);
  // The western boundary keeps tall foliage clear of the Family Hall roof.
- const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[12,22,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[22.5,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
+ const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[26,12,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[22.5,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  // More trees between the far ones fill the wider ring the spread-out farm needs.
  [[-27,-24,4.4],[-28,-4,5],[-27,17,5.4],[-9,27,5],[9,29,5.8],[27,3,5.6],[27,-12,5.8],[24,-25,6],[12,-31,5.2],[-6,-33,4.6],[-24,-32,5.2],[-10,-30,4.8]].forEach(([x,z,height],i)=>cloneModel(['tree_004','tree_006','tree_001'][i%3],x,z,{height,rotation:i*2.3+.7}));

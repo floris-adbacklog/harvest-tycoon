@@ -10,7 +10,7 @@ export const THEMES=Object.freeze({
 export const YARD_THEME=Object.freeze({
  dairy:'farm',silo:'farm',coop:'farm',windmill:'farm',chores:'farm',stall:'farm',paddock:'farm',
  farmhouse:'home',familyhall:'home',bakery:'home',kitchen:'home',
- preserves:'work',juicepress:'work',packing:'work',mill:'work',tractor:'work',cart:'work',workshop:'work',
+ preserves:'work',juicepress:'work',packing:'work',mill:'work',tractor:'work',cart:'work',workshop:'work',factory:'work',
  greenhouse:'green',apiary:'green',pond:'green'
 });
 export const PROPS_PER_YARD=4,PROPS_AROUND_YARD=[3.4,8.2],ROAD_STEP=7.5,MEADOW_CLUMPS=26;
