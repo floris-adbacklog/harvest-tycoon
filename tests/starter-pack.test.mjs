@@ -1,6 +1,8 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PAYMENT_PACKS,starterEligibility,STARTER_WINDOW,validatePaidSession} from '../game/payments.js';
+import {createFarm as freshFarm,normalizeFarm,xpForLevel,levelOf,STARTER_LEVEL} from '../game/farm-state.js';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {applyFarmAction,choreStatus} from '../game/farm-state.js';
 const start=Date.UTC(2026,8,18),created=new Date(start).toISOString();
@@ -29,3 +31,45 @@ test('seed-box sorting starts at 35%, keeps practice and caps at 60% after 13 at
  assert.equal(choreStatus(s,'sorting',start+13*480000).chance,60);
  assert.equal(choreStatus(s,'fences',start+13*480000).locked,false);
 });
+
+// ---- The Starter Pack opens at level 10 and is then there for 72 hours ----
+const stamp=Date.UTC(2026,8,22,10);
+function coopBatch(s,xp){s.buildings.coop.job={id:'batch',recipe:'eggs',output:{eggs:3},xp,startedAt:stamp-1000,readyAt:stamp};}
+test('a new farmer is not met by the shop: nothing is offered below level 10, however long the account exists',()=>{
+ assert.equal(STARTER_LEVEL,10);
+ const s=freshFarm(stamp);assert.equal(s.starterOffer,undefined);
+ s.xp=xpForLevel(9);coopBatch(s,5);applyFarmAction(s,{type:'collect',building:'coop'},stamp);
+ assert.equal(levelOf(s),9);assert.equal(s.starterOffer,undefined,'still nothing at level 9');
+ assert.equal(starterEligibility(s.starterOffer?.unlockedAt,false,stamp+40*3600000).eligible,false);
+});
+test('the server stamps the moment level 10 is reached, once, and the offer lasts 72 hours from then',()=>{
+ const s=freshFarm(stamp);s.xp=xpForLevel(10)-5;coopBatch(s,10);
+ applyFarmAction(s,{type:'collect',building:'coop'},stamp);
+ assert.equal(levelOf(s),10);assert.deepEqual(s.starterOffer,{unlockedAt:stamp});
+ applyFarmAction(s,{type:'checkin'},stamp+3*3600000);assert.equal(s.starterOffer.unlockedAt,stamp,'later actions never move it');
+ assert.equal(normalizeFarm(structuredClone(s),stamp+1).starterOffer.unlockedAt,stamp,'and a reload keeps it');
+ const offer=(now,claimed=false)=>starterEligibility(s.starterOffer.unlockedAt,claimed,now);
+ assert.equal(offer(stamp-1).eligible,false);assert.equal(offer(stamp).eligible,true);assert.equal(offer(stamp+STARTER_WINDOW-1).eligible,true);
+ assert.equal(offer(stamp+STARTER_WINDOW).eligible,false,'three days later it is over');assert.equal(offer(stamp+1000).expiresAt,stamp+STARTER_WINDOW);
+ assert.equal(offer(stamp+1000,true).eligible,false,'and never twice');
+});
+test('a farm that was already past level 10 when the rule came gets no new offer',()=>{
+ const s=freshFarm(stamp);s.xp=xpForLevel(30);delete s.starterOffer;
+ applyFarmAction(s,{type:'checkin'},stamp);assert.deepEqual(s.starterOffer,{unlockedAt:0});
+ for(const now of [stamp,stamp+3600000])assert.equal(starterEligibility(s.starterOffer.unlockedAt,false,now).eligible,false);
+ assert.equal(starterEligibility(0,false,stamp).expiresAt,0);
+});
+test('an offer moment can be a number or a date, and rubbish means no offer',()=>{
+ assert.equal(starterEligibility(stamp,false,stamp+1).eligible,true);assert.equal(starterEligibility(new Date(stamp).toISOString(),false,stamp+1).eligible,true);
+ for(const bad of [undefined,null,NaN,'nope',-5,{}])assert.equal(starterEligibility(bad,false,stamp+1).eligible,false,String(bad));
+});
+test('the checkout function reads the moment from the farm, not from the account date, and says when the offer opens',()=>{
+ const checkout=readFileSync(new URL('../supabase/functions/diamond-checkout/index.ts',import.meta.url),'utf8');
+ assert.match(checkout,/select\('offer:state->starterOffer'\)\.eq\('player_id',user\.id\)/);
+ assert.match(checkout,/starterEligibility\(offerRow\?\.data\?\.offer\?\.unlockedAt,/);
+ assert.doesNotMatch(checkout,/starterEligibility\(user\.created_at/);
+ assert.match(checkout,/The Starter Pack opens when you reach level 10 and is then available for 72 hours\./);
+ assert.match(checkout,/starter_expires_at:packId==='starter'\?new Date\(starter\.expiresAt\)\.toISOString\(\):null/,'the database still checks the same 72-hour window');
+ for(const dir of ['diamond-checkout','stripe-webhook'])assert.equal(readFileSync(new URL(`../supabase/functions/${dir}/payments.js`,import.meta.url),'utf8'),readFileSync(new URL('../game/payments.js',import.meta.url),'utf8'),dir);
+});
+

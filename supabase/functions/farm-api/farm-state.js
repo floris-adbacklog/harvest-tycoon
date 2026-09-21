@@ -976,6 +976,14 @@ export function upgradeSilo(state){
  if(state.siloLevel>=5)throw new Error('Your silo research is complete.');const cost=SILO_COSTS[state.siloLevel];if(state.coins<cost)throw new Error(`You need ${cost} coins for this research.`);
  state.coins-=cost;state.siloLevel++;state.stats.silo_upgrades=(state.stats.silo_upgrades??0)+1;state.xp+=20;return {level:state.siloLevel,cost};
 }
+// The Starter Pack (a welcome offer, see game/payments.js) opens when a farm reaches level 10, so nobody meets a shop in the first minutes:
+// then it is there for 72 hours. Only the server writes the moment. A farm that is already past level 10 when this is first seen had its
+// moment long ago (unlockedAt 0: never offered again).
+export const STARTER_LEVEL=10;
+function stampStarterOffer(state,levelBefore,now){
+ if(state.starterOffer!==undefined||levelOf(state)<STARTER_LEVEL)return;
+ state.starterOffer={unlockedAt:levelBefore<STARTER_LEVEL?now:0};
+}
 export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRandom){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
  const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state);
@@ -989,6 +997,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  }
  const reward=grantLevelRewards(state,beforeLevel+1);
  if(reward.levels.length)result.levelReward=reward;
+ stampStarterOffer(state,beforeLevel,now);
  refreshProgressionDaily(state,now);
  return result;
 }

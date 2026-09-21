@@ -24,9 +24,11 @@ export function livePaymentConfiguration(key,webhookSecret,enabledFlag){
  const configured=/^[rs]k_live_/.test((key??'').trim())&&Boolean((webhookSecret??'').trim());
  return {mode:'live',configured,enabled:configured&&String(enabledFlag??'').trim().toLowerCase()!=='false'};
 }
-export function starterEligibility(createdAt,claimed=false,now=Date.now()){
- const start=Date.parse(createdAt),expiresAt=start+STARTER_WINDOW;
- return {eligible:Number.isFinite(start)&&now>=start&&now<expiresAt&&!claimed,expiresAt:Number.isFinite(expiresAt)?expiresAt:0,claimed};
+// The welcome offer opens when the farm reaches level 10 (the server stamps that moment in the farm, farm-state.js) and lasts 72 hours.
+// No moment (a farm below level 10, or one that was past it long before this rule: 0) means no offer.
+export function starterEligibility(openedAt,claimed=false,now=Date.now()){
+ const start=typeof openedAt==='number'?openedAt:Date.parse(openedAt),expiresAt=start+STARTER_WINDOW,opened=Number.isFinite(start)&&start>0;
+ return {eligible:opened&&now>=start&&now<expiresAt&&!claimed,expiresAt:opened?expiresAt:0,claimed};
 }
 export const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function paymentPack(id){if(typeof id!=='string'||!Object.hasOwn(RECEIPT_PACKS,id))throw new Error('Choose a diamond pack.');return RECEIPT_PACKS[id];}
