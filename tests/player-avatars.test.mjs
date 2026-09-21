@@ -87,8 +87,25 @@ test('Settings previews without saving, prevents duplicate requests and confirms
 test('Settings retains saved avatar on error, permits retry and rejects wrong-owner replies',async()=>{
  const h=uiHarness();try{
   h.choose('field-keeper');let done=h.submit();h.pending[0].reject(new Error('Offline. Try again.'));await done;
-  assert.equal(h.controller.savedAvatar,'default');assert.equal(h.nodes.get('button').disabled,false);assert.match(h.nodes.get('#avatar-feedback').textContent,/Offline/);
+  assert.equal(h.controller.savedAvatar,'default');assert.equal(h.nodes.get('.avatar-save').disabled,false);assert.match(h.nodes.get('#avatar-feedback').textContent,/Offline/);
   done=h.submit();h.pending[1].resolve({profile:{player_id:'other',avatar_id:'field-keeper'}});await done;
   assert.equal(h.controller.savedAvatar,'default');assert.equal(h.events.length,0);
+ }finally{h.restore();}
+});
+
+test('the Save button is found by its class: the first button in the form is an arrow, and it must stay an arrow',()=>{
+ const html=avatarSettingsMarkup('field-keeper');
+ assert.match(html.match(/<button[^>]*>/)[0],/class="emblem-arrow"/,'the first button of the form is the left arrow');
+ const saves=html.match(/<button[^>]*class="[^"]*avatar-save[^"]*"[^>]*>/g)??[];assert.equal(saves.length,1);assert.match(saves[0],/type="submit"/);
+ const source=readFileSync(new URL('../public/avatar-settings.js',import.meta.url),'utf8');
+ assert.match(source,/save=form\.querySelector\('\.avatar-save'\)/);assert.ok(!/form\.querySelector\('button'\)/.test(source),'never "the first button"');
+});
+test('choosing an avatar enables and labels only the Save button, never "a button"',async()=>{
+ const h=uiHarness();try{
+  h.choose('orchard-grower');assert.equal(h.nodes.get('.avatar-save').disabled,false,'Save can be pressed');assert.equal(h.nodes.get('.avatar-save').textContent,'Save avatar');
+  const done=h.submit();assert.equal(h.nodes.get('.avatar-save').textContent,'Saving…');
+  h.pending[0].resolve({profile:{player_id:'owner',avatar_id:'orchard-grower'}});await done;
+  assert.equal(h.nodes.get('.avatar-save').disabled,true,'nothing new to save');assert.equal(h.nodes.get('.avatar-save').textContent,'Save avatar');
+  assert.ok(![...h.nodes.keys()].includes('button'),'no lookup ever grabbed an arrow');
  }finally{h.restore();}
 });
