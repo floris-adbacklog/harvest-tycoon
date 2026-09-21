@@ -40,7 +40,7 @@ const familyDecor=[],models=new Map(), plots=[], animals=[], particles=[], build
 let familyUI,progression,economy,retention,growth,boosts,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
-const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status');el.hidden=status!=='error';el.textContent=status==='error'?'Connection interrupted · Retry':'';el.disabled=status!=='error';el.classList.toggle('save-error',status==='error');}});
+const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
 const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 // Pacing measurements go to the page around the game (see src/analytics.js); they carry numbers only.
@@ -99,8 +99,8 @@ function decorate(){
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
  zone('exact');
  for(const road of ROADS.slice(0,3))cloneModel('road_001',road.x,road.z,{...roadSize(road),height:road.height,y:road.y});
- zone('fields');patch(2.575,9.85,12.8,22.6,0xa2a66b,.004);
- zone('coop');patch(11,-7.7,10,8.4,0xa4a76e,.007);
+ zone('fields');patch(2.575,14.4,12.8,31.7,0xa2a66b,.004);
+ zone('coop');patch(13,-9.5,15.8,11.6,0xa4a76e,.007);
  zone('mill');patch(-12.5,5.3,8.7,13,0xa9ab73,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
  zone('dairy');addBuilding('dairy',-1,-13.2,{width:6.8,rotation:Math.PI/2});
@@ -113,8 +113,8 @@ function decorate(){
  zone('windmill');
  const windmillPosition={x:12.8,z:-1.5};
  addBuilding('windmill',windmillPosition.x,windmillPosition.z,{height:6.6});
- zone('juicepress');addBuilding('juicepress',-1,-20.1,{width:4,height:2.8,depth:3.5,rotation:Math.PI/2});
- zone('preserves');addBuilding('preserves',-15.2,-18.6,{width:4.2,height:3,depth:3.8,rotation:Math.PI/2});
+ zone('juicepress');addBuilding('juicepress',-1,-20.1,{width:5.5,height:3.7,depth:4.8,rotation:Math.PI/2});
+ zone('preserves');addBuilding('preserves',-15.2,-18.6,{width:5.7,height:3.9,depth:5,rotation:Math.PI/2});
  zone('kitchen');addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
  // North-west square, clear of crop expansions and the north-south path at x=-6.
  zone('familyhall');addBuilding('familyhall',-9.3,-20.5,{width:4.2,rotation:Math.PI/2});
@@ -127,8 +127,8 @@ function decorate(){
   ]){const decor=cloneModel(name,x,z,options);familyDecor.push(decor);}
  }
 
- zone('juicepress');patch(-1,-20.1,5.1,4.8,0xb6bd88,.008);
- zone('preserves');patch(-15.2,-18.6,5.1,4.8,0xb6bd88,.008);
+ zone('juicepress');patch(-1,-20.1,6.9,6.4,0xb6bd88,.008);
+ zone('preserves');patch(-15.2,-18.6,7.1,6.6,0xb6bd88,.008);
  zone('kitchen');patch(-12.4,18.2,5.1,4.8,0xb6bd88,.008);
  // Both the mill body and its moving sails are original parts from the supplied pack.
  zone('windmill');
@@ -168,21 +168,22 @@ function decorate(){
  zone('coop');
  addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
  {const pen=buildingViews.get('coop').object,house=cloneModel('coop_002',13,-9.5,{width:1.8});pen.attach(house);}
- fenceLine(8,-12.5,5);fenceLine(7,-11.4,4,'z');fenceLine(16.6,-11.4,4,'z');fenceLine(9.2,-3.6,4);
+ // The pen is roomy, with the coop in the middle: 15.4 wide and 11 deep around it.
+ fenceLine(6.4,-15,7);fenceLine(6.4,-4,7);fenceLine(5.3,-13.9,5,'z');fenceLine(20.7,-13.9,5,'z');
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
  zone('farmhouse');fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);
  zone(null);fenceLine(-19,-9,8,'z');fenceLine(-18.8,10.8,5);
  // White rail fences run along the two sides of the crops, the same distance from the outer fields; the ends stay open.
  zone('fields');
- fenceLine(-4.4,-.3,11,'z',2.2,'fence_008',0xf2e2bd);fenceLine(9.55,-.3,11,'z',2.2,'fence_008',0xf2e2bd);
+ fenceLine(-4.4,-.3,15,'z',2.2,'fence_008',0xf2e2bd);fenceLine(9.55,-.3,15,'z',2.2,'fence_008',0xf2e2bd);
  zone('coop');
  const animalAt=(model,x,z,options,building,seed)=>{const o=cloneModel(model,x,z,options);o.userData.building=building;const [ax,az]=place(x,z);animals.push({obj:o,x:ax,z:az,seed});return o;};
- animalAt('cow_001',11,-6.6,{width:2.4,rotation:-.6},'dairy',.5);
- animalAt('cow_001',14.5,-5.5,{width:1.85,rotation:2},'dairy',3);
- animalAt('sheep_001',9.1,-9.5,{width:1.6,rotation:.6},'dairy',1.5);
- animalAt('goat_001',14.8,-8.4,{width:1.5,rotation:-1.1},'dairy',4.2);
- zone('stall');
- for(const [x,z,r] of [[-9.1,-1.2,.2],[-11.3,-.9,2.1],[-10.2,1.2,3.1]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
+ animalAt('cow_001',8.6,-6.6,{width:2.4,rotation:-.6},'dairy',.5);
+ animalAt('cow_001',17.6,-6.2,{width:1.85,rotation:2},'dairy',3);
+ animalAt('sheep_001',8.2,-12.2,{width:1.6,rotation:.6},'dairy',1.5);
+ animalAt('goat_001',17.8,-12,{width:1.5,rotation:-1.1},'dairy',4.2);
+ // The chickens live at their coop, in the pen with the other animals.
+ for(const [x,z,r] of [[10.6,-11.6,.2],[9.9,-8.6,2.1],[15.8,-7,3.1]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
@@ -194,9 +195,9 @@ function decorate(){
   bakery:[['firewood_003',-14.1,10.5,{width:1.3}],['case_003',-8.1,13.5,{width:.9,rotation:.35}]],
   farmhouse:[['table_001',-13.9,-5.9,{width:1.6}],['chair_001',-15,-6.3,{height:.85,rotation:1.7}],['garden_bed_001',-17.3,-8,{width:1.8,rotation:Math.PI/2}],['garden_bed_001',-17.3,-5.9,{width:1.8,rotation:Math.PI/2}],['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}]],
   dairy:[['bucket_003',-1.8,-9.1,{height:.65}],['hay_002',1.2,-9.7,{width:1.2}]],
-  coop:[['water_001',14.8,-10.8,{width:1.1}]],
+  coop:[['water_001',17.6,-13.4,{width:1.1}]],
   apiary:[['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}]],
-  silo:[['hay_003',7.4,-7.6,{width:1.3,rotation:-.35}]]
+  silo:[['hay_003',6.4,-7.9,{width:1.3,rotation:-.35}]]
 })){zone(yard);for(const [name,x,z,options] of list)cloneModel(name,x,z,options);}
  // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
  // glow since a plain color tint can only darken a texture, never lighten it.
@@ -208,11 +209,11 @@ function decorate(){
  // Trees, bushes and tufts are spread out with the farm and keep clear of every yard.
  zone(null);
  // The western boundary keeps tall foliage clear of the Family Hall roof.
- const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[12,22,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[20,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
+ const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[12,22,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[22.5,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  // More trees between the far ones fill the wider ring the spread-out farm needs.
  [[-27,-24,4.4],[-28,-4,5],[-27,17,5.4],[-9,27,5],[9,29,5.8],[27,3,5.6],[27,-12,5.8],[24,-25,6],[12,-31,5.2],[-6,-33,4.6],[-24,-32,5.2],[-10,-30,4.8]].forEach(([x,z,height],i)=>cloneModel(['tree_004','tree_006','tree_001'][i%3],x,z,{height,rotation:i*2.3+.7}));
- for(const [x,z] of [[-17,-6],[-16.5,-4],[-18.5,9],[-15,12],[19,-5],[18,2],[21,9],[10,15],[2,20],[-21,-15],[11,-16]])cloneModel('bush_001',x,z,{width:2.2,rotation:x});
+ for(const [x,z] of [[-17,-6],[-16.5,-4],[-18.5,9],[-15,12],[21,-3],[18,2],[21,9],[10,15],[2,20],[-21,-15],[11,-16]])cloneModel('bush_001',x,z,{width:2.2,rotation:x});
  for(const [x,z,r] of [[9.4,12.2,.2],[9.8,9.2,1.1],[-13.7,15.2,2.2],[16,5.2,.6]])cloneModel('bush_003',x,z,{width:1.45,rotation:r});
  // Small tufts from the pack add texture while leaving the fields unobstructed.
  for(let i=0;i<54;i++){
@@ -235,7 +236,7 @@ function addExtraProps(){
   const box=new THREE.Box3().setFromObject(object);if(box.isEmpty()||box.getSize(new THREE.Vector3()).y<.03)continue;
   blocked.push(box);
  }
- const [pondX,pondZ]=placeIn('pond',0,0),pond=[10.4+pondX,10.4+pondZ,24.8+pondX,19.6+pondZ],fields=[-5.6,-3,10.4,23.6];
+ const [pondX,pondZ]=placeIn('pond',0,0),pond=[10.4+pondX,10.4+pondZ,24.8+pondX,19.6+pondZ],fields=[-5.6,-3,10.4,33.6];
  const free=(x,z,r)=>!blocked.some(b=>x>b.min.x-r&&x<b.max.x+r&&z>b.min.z-r&&z<b.max.z+r)
   &&!(x>fields[0]&&x<fields[2]&&z>fields[1]&&z<fields[3])&&!(x>pond[0]-1&&x<pond[2]+1&&z>pond[1]-1&&z<pond[3]+1);
  const anchors=Object.fromEntries(Object.keys(ANCHORS).map(id=>[id,anchorAt(id)]));
@@ -354,7 +355,9 @@ function resize(){
  const bounds=overviewBounds??{minX:-27,maxX:27,minY:-18,maxY:18};
  const usableWidth=Math.max(width*.5,width-padding.left-padding.right),usableHeight=Math.max(height*.5,height-padding.top-padding.bottom);
  const overviewSpan=Math.max((bounds.maxY-bounds.minY+3)*height/usableHeight,(bounds.maxX-bounds.minX+3)*height/usableWidth);
- const fieldSpan=Math.max(21,24/aspect);
+ // The fields view shows every row: the block is 12 wide and 3.2 per row deep, seen diagonally (about .44 of its width plus depth
+ // up and down, 1.4 across), with room for the buttons above and below it.
+ const rows=Math.ceil(state.plots.length/4),fieldSpan=Math.max(21,24/aspect,(10+2.26*rows)/aspect,10.6+rows*2.06);
  const homeSpan=Math.min(overviewSpan,Math.max(fieldSpan,mobile?32/aspect:38));
  const span=(viewMode==='fields'?fieldSpan:viewMode==='home'?homeSpan:overviewSpan)/zoom;
  camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;

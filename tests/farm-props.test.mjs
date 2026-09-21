@@ -39,12 +39,12 @@ test('nothing is placed where the scene says there is no room',()=>{
  assert.deepEqual(scatter({free:()=>false}),[]);
  const blockedEast=(x)=>x<0;const props=scatter({free:x=>blockedEast(x)===false});
  assert(props.length>0&&props.every(p=>p.x>=0),'a blocked half stays empty');
- const fields=[-5.6,-3,10.4,23.6];
+ const fields=[-5.6,-3,10.4,33.6];
  for(const p of scatter({free:(x,z)=>!(x>fields[0]&&x<fields[2]&&z>fields[1]&&z<fields[3])}))assert(!(p.x>fields[0]&&p.x<fields[2]&&p.z>fields[1]&&p.z<fields[3]));
 });
 test('the scene adds the props last, from the real free space',()=>{
  const game=read('public/game.js');
  assert.match(game,/farmLife\.watchProduction\(buildingViews\);\s*addExtraProps\(\);/);
  assert.match(game,/scatterProps\(\{anchors,roads,free,rand:seeded\(20260921\)\}\)/);
- assert.match(game,/\.\.\.\[-5\.6,-3,10\.4,23\.6\]|fields=\[-5\.6,-3,10\.4,23\.6\]/,'the crops are kept clear, with room for 28 fields');
+ assert.match(game,/\.\.\.\[-5\.6,-3,10\.4,23\.6\]|fields=\[-5\.6,-3,10\.4,33\.6\]/,'the crops are kept clear, with room for 40 fields');
 });

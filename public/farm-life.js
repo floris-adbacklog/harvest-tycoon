@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {featureUnlocked,ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 import {art} from './visual-icons.js';
-import {zone,place,placeIn,wide,ROADS,roadSize,onRoad} from './farm-layout.js';
+import {SPREAD,zone,place,placeIn,wide,ROADS,roadSize,onRoad} from './farm-layout.js';
 export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
@@ -31,7 +31,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  zone(null);
  for(const [x,z] of [[-19,-22],[-17,-23],[-14,-25],[12,-23],[17,-23],[-24,16],[-23,19],[-22,22],[22,3],[24,8],[25,14],[-18,25],[-12,26],[25,-17]])scenery(['tree_008','tree_002','tree_005','tree_007'][Math.abs(x+z)%4],x,z,{height:2.8+(Math.abs(x+z)%3)*.3,rotation:x*.3});
  for(const [x,z] of [[-30,-13],[-31,-18],[-26,-25],[-16,-30],[-11,-32],[15,-32],[25,-23],[29,-20],[-32,16],[30,17]])scenery(['fir_tree_003','fir_tree_001','fir_tree_006'][Math.abs(x)%3],x,z,{height:3.4+(Math.abs(x)%3)*.4,rotation:z*.2});
- {const [wx,wz]=place(-18,21.7);zone('fields');for(let i=0;i<Math.round(7*1.45);i++){const cx=wx+i*2.6;if(onRoad(cx-1.3,cx+1.3,wz-.3,wz+.3))continue;scenery(i%3===2?'stone_fence_003':'stone_fence_001',cx,wz,{width:2.6,height:.65});}zone(null);}
+ {const [wx,wz]=place(-18,28.5);zone('fields');for(let i=0;i<Math.round(7*SPREAD);i++){const cx=wx+i*2.6;if(onRoad(cx-1.3,cx+1.3,wz-.3,wz+.3))continue;scenery(i%3===2?'stone_fence_003':'stone_fence_001',cx,wz,{width:2.6,height:.65});}zone(null);}
  // A shallow pond and small bridge create a recognisable corner near the fields.
  zone('pond');
  const shore=new THREE.Mesh(new THREE.CircleGeometry(1,18),new THREE.MeshStandardMaterial({color:0xb4ac89,roughness:1}));shore.rotation.x=-Math.PI/2;shore.scale.set(6.4,4.4,1);{const [px,pz]=place(17.6,15.2);shore.position.set(px,.019,pz);}scene.add(shore);

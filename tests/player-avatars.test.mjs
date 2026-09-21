@@ -1,17 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,existsSync} from 'node:fs';
+import {readFileSync,existsSync,readdirSync} from 'node:fs';
 import {PLAYER_AVATARS,playerAvatar,isPlayerAvatar,avatarImage} from '../public/player-avatars.js';
 import {avatarSettingsMarkup,createAvatarSettings} from '../public/avatar-settings.js';
 import {savePlayerAvatar} from '../supabase/functions/farm-api/avatar-service.js';
 import {handlePlayerDirectory} from '../supabase/functions/farm-api/player-profile-service.js';
 import {renderPlayerProfile,renderPlayerSearch} from '../src/player-profiles.js';
 
-test('20 additional avatars and the original resolve to unique, shipped images',()=>{
- assert.equal(PLAYER_AVATARS.length,21);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.id)).size,21);
- assert.equal(new Set(PLAYER_AVATARS.map(a=>a.src)).size,21);
+test('24 additional avatars and the original resolve to unique, shipped images',()=>{
+ assert.equal(PLAYER_AVATARS.length,25);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.id)).size,25);
+ assert.equal(new Set(PLAYER_AVATARS.map(a=>a.src)).size,25);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.name)).size,25,'no two faces share a name');
  for(const a of PLAYER_AVATARS){assert.ok(existsSync(new URL('../public'+a.src,import.meta.url)),a.src);assert.ok(isPlayerAvatar(a.id));}
  assert.equal(readFileSync(new URL('../public/player-avatars.js',import.meta.url),'utf8'),readFileSync(new URL('../supabase/functions/farm-api/player-avatars.js',import.meta.url),'utf8'));
+});
+test('the database accepts exactly the avatars the game offers',()=>{
+ const migrations=readdirSync(new URL('../supabase/migrations/',import.meta.url)).filter(f=>/player_avatars\.sql$/.test(f)).sort();
+ assert.ok(migrations.length>=2,'the first list and the extension are both in the repo');
+ const latest=readFileSync(new URL(`../supabase/migrations/${migrations.at(-1)}`,import.meta.url),'utf8');
+ const listed=[...latest.match(/check \(avatar_id in \(([^)]*)\)\)/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
+ assert.deepEqual(listed,PLAYER_AVATARS.map(a=>a.id),'same IDs in the same order as public/player-avatars.js');
 });
 test('unknown avatar IDs cannot become an image path or injected HTML',()=>{
  for(const id of [undefined,null,{},'__proto__','../../../secret','https://bad.example/a','" onerror="alert(1)']){
@@ -48,11 +55,13 @@ test('avatar save is authenticated, session-checked and separate from farm rewar
  const index=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');const route=index.indexOf('const saved=await savePlayerAvatar');
  assert.ok(route>index.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<index.indexOf("admin.from('player_farms')"));assert.match(index,/savePlayerAvatar\(\{admin,player:user.id,avatarId:body.avatarId\}\)/);
  assert.match(index,/avatar_id:profile\?\.avatar_id\?\?'default'/);
- const html=avatarSettingsMarkup('field-keeper');assert.equal((html.match(/type="radio"/g)||[]).length,21);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="field-keeper" checked/);
+ const html=avatarSettingsMarkup('field-keeper');assert.equal((html.match(/type="radio" name="avatar"/g)||[]).length,25);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="field-keeper" checked/);
+ assert.equal((html.match(/data-emblem-step=/g)||[]).length,2,'one row of faces with an arrow on each side, not a wall of squares');
+ assert.match(html,/<span>3 of 25<\/span>/);assert(!html.includes('<details'),'no folded-away grid');
 });
 function uiHarness(){
  const nodes=new Map(),events=[],pending=[];
- const node=()=>({listeners:{},textContent:'',disabled:false,addEventListener(k,fn){this.listeners[k]=fn;},setAttribute(){},querySelector(key){if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);}});
+ const node=()=>({listeners:{},textContent:'',disabled:false,addEventListener(k,fn){this.listeners[k]=fn;},setAttribute(){},querySelectorAll(){return [];},querySelector(key){if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);}});
  const root=node();const previous=globalThis.window;
  globalThis.window={addEventListener(){},dispatchEvent(event){events.push(event);}};
  const controller=createAvatarSettings(root,{profile:{avatar_id:'default'},bridge:{playerId:'owner',request(body){return new Promise((resolve,reject)=>pending.push({body,resolve,reject}));}}});

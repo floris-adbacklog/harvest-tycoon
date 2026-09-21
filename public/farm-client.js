@@ -29,5 +29,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
  async function load(){clockOffset=bridge.serverNow-Date.now();onChange();onStatus('saved');return {state};}
  async function refresh(){if(busy)return;replace(await bridge.request({operation:'load'}));}
  window.harvestRefresh=refresh;
+ // The parent reports a connection that is being restored ("Reconnecting…") and tells when it is back.
+ bridge.watchConnection?.(status=>{if(status==='reconnecting')onStatus('reconnecting');else if(status==='ok')onStatus('saved');});
  return {load,runAction,retry:refresh,flush:async()=>{},refresh};
 }

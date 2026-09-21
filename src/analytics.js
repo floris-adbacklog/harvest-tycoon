@@ -49,9 +49,12 @@ export function trackCommerce(event,params={},win=globalThis.window){
 
 // Pacing events from inside the game (how far new farmers get, and where they stop). Only numbers and a few fixed
 // words are accepted, so nothing personal can be sent along.
-const GAME_EVENTS=new Set(['game_session','level_up','guide_step','guide_complete','reminder_prompt']);
+const GAME_EVENTS=new Set(['game_session','level_up','guide_step','guide_complete','reminder_prompt','connection_problem','connection_recovered']);
 const GUIDE_STEPS=new Set(['harvest','sell','plant','water','produce','gift','chore','sell_egg','tend','wheat','collect']);
 const PROMPT_ACTIONS=new Set(['shown','accepted','dismissed','failed']);
+// Connection problems: how it failed (a fixed word, never an error message) and whether it stayed a small "Reconnecting…" or became the pause screen.
+const CONNECTION_REASONS=new Set(['offline','timeout','network','server','other']);
+const CONNECTION_STAGES=new Set(['reconnecting','paused']);
 export function trackGame(event,params={},win=globalThis.window){
  if(!GAME_EVENTS.has(event))return;
  const clean={device:deviceType(win)};
@@ -60,5 +63,7 @@ export function trackGame(event,params={},win=globalThis.window){
  if(GUIDE_STEPS.has(params.step))clean.step=params.step;
  if(PROMPT_ACTIONS.has(params.action))clean.action=params.action;
  if(typeof params.returning==='boolean')clean.returning=params.returning;
+ if(CONNECTION_REASONS.has(params.reason))clean.reason=params.reason;
+ if(CONNECTION_STAGES.has(params.stage))clean.stage=params.stage;
  pushEvent(event,clean,win);
 }

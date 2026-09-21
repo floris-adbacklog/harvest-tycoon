@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,statSync} from 'node:fs';
+import {readFileSync,statSync,existsSync} from 'node:fs';
+import {FAMILY_EMBLEMS} from '../game/farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers,pageStep} from '../public/emblem-picker.js';
 import {renderPlayerProfile} from '../src/player-profiles.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -107,4 +108,33 @@ test('every farmer profile shows the farmer, not a stalk of wheat',()=>{
 });
 test('the Install app button centres its icon and its text',()=>{
  assert.match(read('public/settings.css'),/#install-app\{display:flex;align-items:center;justify-content:center;gap:9px;width:100%/);
+});
+
+test('a picker inside a closed dialog centres the chosen tile as soon as it gets a size',()=>{
+ const page=fakePicker({checked:10});let callback;page.row.clientWidth=0;
+ class Observer{constructor(fn){callback=fn;}observe(){}disconnect(){}}
+ bindEmblemPickers(page.root,{ResizeObserver:Observer});
+ assert.equal(page.row.scrollLeft,0,'nothing to measure while the dialog is closed');
+ page.row.clientWidth=600;callback();
+ assert.equal(page.row.scrollLeft,3+10*66-(600-58)/2);
+ page.row.scrollLeft=0;callback();assert.equal(page.row.scrollLeft,0,'only the first time: later resizes never pull the row back');
+});
+test('the avatar picker is the same row, with the faces as tiles',()=>{
+ const html=emblemPickerMarkup({emblems:[{id:'a'},{id:'b'}],checkedId:'b',legend:'Choose your farmer avatar',nameOf:e=>`Face ${e.id}`,tile:()=>'<span class="avatar-tile"></span>',esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
+ assert.match(html,/<fieldset class="emblem-picker avatar-picker" data-emblem-picker>/);
+ assert.match(html,/type="radio" name="avatar" value="b" checked aria-label="Face b avatar"/);
+ assert.match(html,/aria-label="Show earlier avatars"/);assert.match(html,/aria-label="Show more avatars"/);
+ const css=read('public/player-avatars.css');
+ assert.match(css,/\.avatar-picker \.avatar-tile\{[^}]*width:62px;height:66px/);assert.match(css,/\.avatar-picker \.family-emblems input:checked\+\.avatar-tile/);
+ assert(!/avatar-grid|avatar-choice/.test(css),'the wall of squares is gone');
+});
+test('all 25 family emblems have a picture that ships and a name',()=>{
+ assert.equal(FAMILY_EMBLEMS.length,25);
+ const icons=read('public/visual-icons.js'),ui=read('public/family-ui.js');
+ for(const icon of ['family-fox','family-owl','family-windmill','family-horseshoe']){
+  assert.ok(FAMILY_EMBLEMS.some(e=>e.icon===icon),`${icon} is an emblem`);
+  assert.ok(icons.includes(`'${icon}'`),`${icon} is registered as a picture`);assert.ok(ui.includes(`'${icon}':`),`${icon} has a name`);
+  const file=new URL(`../public/assets/icons/${icon}.png`,import.meta.url);assert.ok(existsSync(file));
+  const bytes=readFileSync(file);assert.equal(bytes.subarray(1,4).toString(),'PNG');assert.ok(bytes.length<150000,'a light picture');
+ }
 });

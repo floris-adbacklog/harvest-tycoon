@@ -203,7 +203,8 @@ test('The four Family pages each use their own generated PNG and a mobile-visibl
 
 test('new emblems preserve existing IDs and only leaders may change them',()=>{
  const old=['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy'];
- assert.deepEqual(FAMILY_EMBLEMS.slice(0,12).map(e=>e.icon),old);assert.equal(FAMILY_EMBLEMS.length,21);
+ assert.deepEqual(FAMILY_EMBLEMS.slice(0,12).map(e=>e.icon),old);assert.equal(FAMILY_EMBLEMS.length,25);
+ assert.deepEqual(FAMILY_EMBLEMS.slice(21).map(e=>[e.id,e.icon]),[['21','family-fox'],['22','family-owl'],['23','family-windmill'],['24','family-horseshoe']],'four new emblems, appended after the old ones');
  let c=join(create());const oldInvite=c.families[0].invite_code;
  for(const e of FAMILY_EMBLEMS.slice(12)){
   const result=run(c,farm(),'alice',{type:'family_emblem',emblem:e.id});assert.equal(result.failed,false);c=result.context;assert.equal(c.families[0].emblem,e.id);assert.equal(c.families[0].invite_code,oldInvite);

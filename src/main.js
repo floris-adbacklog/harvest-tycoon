@@ -6,6 +6,7 @@ import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-for
 import {startPwa} from './pwa.js';
 import {createNotifications} from './notifications.js';
 import {startPlayerCounts} from './player-counts.js';
+import {createConnection,connectionMessage,reasonOf,WAKE_GRACE} from './connection.js';
 const $=id=>document.getElementById(id);
 startPwa();
 startPlayerCounts({functionsUrl});
@@ -13,6 +14,13 @@ let presence=null,notifications=null;
 let mode='register',generation=0,playerId=null,frame=null,submitting=false,checking=false,reopen=false;
 let focusing=false,nameOpen=false,recovering=false,viewTracked=false,confirmKind='signup',pendingEmail='',resendTimer=null;
 const started={};
+// Short connection problems (a laptop waking up, a wifi hand-over, one slow answer) must not close the farm: see connection.js.
+const watchers=new Set();
+const connection=createConnection({
+ isOnline:()=>navigator.onLine,isHidden:()=>document.hidden,track:(event,params)=>trackGame(event,params),probe:probeFarm,
+ onStatus:(next,{reason})=>{for(const watch of watchers)watch(next);if(next==='paused')unavailable(connectionMessage(reason,navigator.onLine),{retrying:true});},
+ onRecovered:from=>{if(from==='paused')openFarm();else void frame?.contentWindow?.harvestRefresh?.();}
+});
 const AUTH_KEY='harvest-tycoon:auth',RETURNING_KEY='harvest-tycoon:returning',CONFIRM_KEY='harvest-tycoon:confirm-pending';
 const store={get(key){try{return localStorage.getItem(key);}catch{return null;}},set(key,value){try{localStorage.setItem(key,value);}catch{}},remove(key){try{localStorage.removeItem(key);}catch{}}};
 // True only when the browser can be read and holds no saved session, so a first-time visitor skips the "Checking your account…" screen.
@@ -25,7 +33,7 @@ const redirectUrl=()=>new URL('/play.html',location.origin).href;
 const inputId=field=>field==='name'?'player-name':field;
 const MESSAGES={register:'Creating your account…',signin:'Opening your farm…',name:'Opening your farm…',forgot:'Sending your link…',recovery:'Saving your password…'};
 function phase(value,message){document.body.dataset.phase=value;$('loading-screen').hidden=value!=='checking';$('welcome').hidden=value==='checking'||value==='authenticated';$('farm-host').hidden=value!=='authenticated';if(message)$('loading-copy').textContent=message;}
-function dispose(){presence?.dispose();presence=null;generation++;frame?.remove();frame=null;playerId=null;delete window.harvestBridge;$('farm-host').replaceChildren();}
+function dispose(){presence?.dispose();presence=null;watchers.clear();generation++;frame?.remove();frame=null;playerId=null;delete window.harvestBridge;$('farm-host').replaceChildren();}
 // Moving focus from code (opening a mode, pointing at a mistake) must not count as the visitor starting the form.
 function focusField(id,options){focusing=true;try{$(id).focus(options);}finally{focusing=false;}}
 function fieldError(field,message=''){$(field+'-error').textContent=message;$(inputId(field)).setAttribute('aria-invalid',String(Boolean(message)));}
@@ -45,9 +53,9 @@ function setMode(next,focus=false){
  document.querySelectorAll('.account-tabs [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
  if(focus){document.querySelector('.account-card').scrollIntoView({behavior:'smooth',block:'start'});if(visible.length)focusField(inputId(visible[0]),{preventScroll:true});}
 }
-function landing(message=''){dispose();setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
-function unavailable(message='Your farm is safe. Reconnect to continue.'){dispose();phase('error');$('account-title').textContent='A little pause.';$('account-copy').hidden=false;$('account-copy').textContent=message;$('account-message').textContent='';$('account-form').hidden=true;$('confirm-panel').hidden=true;$('mode-switch-row').hidden=true;document.querySelector('.account-tabs').hidden=true;$('connection-actions').hidden=false;}
-async function signOut(){if(!supabase){landing();return;}try{await notifications?.push?.detach();}catch{}notifications=null;dispose();phase('checking','Signing you out…');try{const result=await supabase.auth.signOut();if(result.error)throw result.error;}catch{await supabase.auth.signOut({scope:'local'});}finally{landing();$('password').value='';}}
+function landing(message=''){connection.stop();dispose();setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
+function unavailable(message='Your farm is safe. Reconnect to continue.',{retrying=false}={}){dispose();phase('error');$('account-title').textContent='A little pause.';$('account-copy').hidden=false;$('account-copy').textContent=message;$('account-message').textContent=retrying?'We are trying again automatically.':'';$('account-form').hidden=true;$('confirm-panel').hidden=true;$('mode-switch-row').hidden=true;document.querySelector('.account-tabs').hidden=true;$('connection-actions').hidden=false;}
+async function signOut(){if(!supabase){landing();return;}connection.stop();try{await notifications?.push?.detach();}catch{}notifications=null;dispose();phase('checking','Signing you out…');try{const result=await supabase.auth.signOut();if(result.error)throw result.error;}catch{await supabase.auth.signOut({scope:'local'});}finally{landing();$('password').value='';}}
 // "Check your inbox": shown after registering, after asking for a reset link, and when an unconfirmed player tries to sign in.
 function showConfirmation(email,{kind='signup',fresh=true}={}){
  pendingEmail=email;confirmKind=kind;if(kind==='signup')store.set(CONFIRM_KEY,'1');setMode('confirm');
@@ -59,9 +67,9 @@ function startResendCooldown(seconds){
  const tick=()=>{button.disabled=left>0;button.textContent=left>0?`Send the email again (${left}s)`:'Send the email again';if(left<=0)clearInterval(resendTimer);left--;};
  tick();resendTimer=setInterval(tick,1000);
 }
-function startRecovery(){recovering=true;dispose();phase('unauthenticated');setMode('recovery');trackAuth('recovery_open');}
+function startRecovery(){recovering=true;connection.stop();dispose();phase('unauthenticated');setMode('recovery');trackAuth('recovery_open');}
 async function openFarm(){
- if(checking){reopen=true;return;}checking=true;dispose();const ticket=generation;phase('checking','Checking your account…');
+ if(checking){reopen=true;return;}checking=true;connection.stop();dispose();const ticket=generation;phase('checking','Checking your account…');
  try{
   if(!isConfigured)throw new Error('Account access is temporarily unavailable. Please try again later.');
   if(!navigator.onLine)throw new Error('Connect to the internet to open your farm.');
@@ -73,9 +81,17 @@ async function openFarm(){
   presence.setClock?.(initial.serverNow);
   const bridge={playerId,presence,serverNow:initial.serverNow,takeInitial(){const data=initial;initial=null;return data;},signOut,async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');const result=await fetchLeaderboard(supabase,user.id,category);if(ticket!==generation)throw new Error('Your session has ended.');presence?.setRows?.(result.rows);return {...result,...presence?.snapshot()};},async request(body){
    if(ticket!==generation||!navigator.onLine)throw new Error('Your session is paused. Reconnect to continue.');
-   try{const data=await farmRequest(body);if(ticket!==generation||data.profile?.player_id!==user.id)throw new Error('Your session has ended.');return data;}
-   catch(error){if(ticket===generation&&error.code!=='ACTION_REJECTED'&&error.status!==400){if(error.status===401){await supabase.auth.signOut({scope:'local'});landing('Your session has ended. Please sign in again.');}else if(!['player_search','player_profile','avatar'].includes(body.operation))unavailable(error.message);}throw error;}
-  }};
+   try{const data=await farmRequest(body);if(ticket!==generation||data.profile?.player_id!==user.id)throw new Error('Your session has ended.');connection.ok();return data;}
+   catch(error){
+    if(ticket===generation&&error.code!=='ACTION_REJECTED'&&error.status!==400){
+     if(error.status===401){await supabase.auth.signOut({scope:'local'});landing('Your session has ended. Please sign in again.');}
+     else if(error.status===409)unavailable(error.message);
+     // A failed request never closes the farm by itself: the connection shows "Reconnecting…", checks again and only after a minute pauses.
+     else if(!['player_search','player_profile','avatar'].includes(body.operation))connection.problem(reasonOf(error,navigator.onLine));
+    }
+    throw error;
+   }
+  },watchConnection(watch){watchers.add(watch);return()=>watchers.delete(watch);}};
   notifications=bridge.notifications=createNotifications(supabase,{configUrl:functionsUrl&&`${functionsUrl}/notify-hourly?config`});
   void notifications.ready?.then?.(()=>notifications?.push?.sync?.());
   bridge.trackCommerce=(event,params)=>{if(ticket===generation)trackCommerce(event,params);};
@@ -85,7 +101,12 @@ async function openFarm(){
   bridge.paymentReturn=()=>{const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   window.harvestBridge=bridge;frame=document.createElement('iframe');frame.title='Harvest Tycoon farm';frame.src='/farm.html';$('farm-host').append(frame);phase('authenticated');store.set(RETURNING_KEY,'1');
- }catch(error){if(ticket===generation){if(error.status===401){landing('Your session has ended. Please sign in again.');}else unavailable(cloudError(error));}}
+ }catch(error){if(ticket===generation){
+  if(error.status===401){landing('Your session has ended. Please sign in again.');}
+  // The farm could not be reached (a request that was already repeated a few times, or no network at all): the pause screen, which keeps trying by itself.
+  else if(error.transient||navigator.onLine===false)connection.pause(reasonOf(error,navigator.onLine));
+  else unavailable(cloudError(error));
+ }}
  finally{checking=false;if(reopen){reopen=false;queueMicrotask(openFarm);}}
 }
 document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{if(submitting)return;const next=button.dataset.mode;if(next!==mode)trackAuth('mode',{mode:next});setMode(next,true);});
@@ -147,8 +168,9 @@ $('resend-confirmation').onclick=async()=>{
 };
 $('confirm-back').onclick=()=>setMode(confirmKind==='reset'?'forgot':'register',true);
 $('retry-connection').onclick=openFarm;$('leave-account').onclick=signOut;
-window.addEventListener('offline',()=>unavailable());
-window.addEventListener('online',()=>{if(document.body.dataset.phase==='error')openFarm();});
+// "offline" flickers (a wifi hand-over, a laptop waking up): only a farm that stays unreachable pauses, see connection.js.
+window.addEventListener('offline',()=>{if(frame)connection.offline();});
+window.addEventListener('online',()=>{connection.online();if(document.body.dataset.phase==='error'&&connection.status==='ok')setTimeout(openFarm,WAKE_GRACE);});
 if(supabase)supabase.auth.onAuthStateChange((event,session)=>{
  if(event==='PASSWORD_RECOVERY'){startRecovery();return;}
  if(event==='SIGNED_OUT'){landing();return;}
@@ -157,8 +179,24 @@ if(supabase)supabase.auth.onAuthStateChange((event,session)=>{
  if(playerId&&session?.user.id!==playerId){dispose();phase('checking','Checking your account…');}
  if(event==='SIGNED_IN'&&!submitting&&!frame)setTimeout(openFarm,0);
 });
-async function checkSession(){if(!frame||checking)return;const ticket=generation;try{const user=await verifiedUser();if(ticket!==generation)return;if(!user||user.id!==playerId){landing('Please sign in to continue.');return;}if(frame.contentWindow.harvestRefresh)await frame.contentWindow.harvestRefresh();else await window.harvestBridge.request({operation:'load'});}catch(error){if(ticket===generation)unavailable(cloudError(error));}}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkSession();});setInterval(checkSession,60000);
+// Asking the server for the farm is the check: it verifies the sign-in itself (a 401 ends the session in bridge.request), so no separate account lookup.
+// A failure is reported by bridge.request to the connection, which shows "Reconnecting…" and keeps trying; it never closes the farm here.
+async function checkSession(){
+ if(!frame||checking||document.hidden||connection.status!=='ok')return;
+ const ticket=generation;
+ try{if(frame.contentWindow.harvestRefresh)await frame.contentWindow.harvestRefresh();else await window.harvestBridge.request({operation:'load'});}
+ catch{if(ticket!==generation)return;}
+}
+// The connection behind a paused or reconnecting farm: ask the server, without opening or refreshing anything yet.
+async function probeFarm(){
+ if(!frame){
+  const user=await verifiedUser();
+  if(!user){landing('Please sign in to continue.');throw Object.assign(new Error('Signed out'),{fatal:true});}
+ }
+ await farmRequest({operation:'load'},{retry:false});
+}
+// Waking up (a laptop lid, a phone) or switching back to the tab: the network needs a moment, so the check waits a little.
+document.addEventListener('visibilitychange',()=>{if(document.hidden)return;if(connection.status==='ok')setTimeout(checkSession,WAKE_GRACE);else connection.wake();});setInterval(checkSession,60000);
 // Boot: a reset link opens the new-password form, an expired link explains itself, a first-time visitor sees the sign-up card at once.
 const kind=linkKind();
 if(kind==='recovery')startRecovery();

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {SPREAD,ANCHORS,YARD_CLEARANCE,ROADS,zone,currentZone,place,placeIn,wide,anchorAt,clearOfYards,roadRects,roadSize,onRoad,fenceSegments} from '../public/farm-layout.js';
+import {SPREAD,ANCHORS,YARD_CLEARANCE,ROADS,zone,currentZone,place,placeIn,wide,anchorAt,clearOfYards,roadRects,roadSize,onRoad,fenceSegments,FIELD_BLOCK,outsideFields,HOMES} from '../public/farm-layout.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
-const nearest=(position)=>Object.fromEntries(Object.keys(ANCHORS).map(id=>[id,Math.min(...Object.keys(ANCHORS).filter(other=>other!==id).map(other=>distance(position(id),position(other))))]));
+const nearest=(position,ids=Object.keys(ANCHORS))=>Object.fromEntries(ids.map(id=>[id,Math.min(...ids.filter(other=>other!==id).map(other=>distance(position(id),position(other))))]));
 
 test('nothing moves until a zone is chosen: the fields and every later model stay where they are',()=>{
  assert.equal(currentZone(),'fields');assert.deepEqual(place(3.5,-7),[3.5,-7]);
@@ -27,16 +27,16 @@ test('loose pieces are pushed out of every yard',()=>{
  }
  assert.deepEqual(clearOfYards(80,80),[80,80],'far away nothing changes');
 });
-test('everything you can work on has considerably more room than before',()=>{
- const before=nearest(id=>ANCHORS[id]),after=nearest(id=>anchorAt(id));
- for(const id of Object.keys(ANCHORS)){
-  assert(after[id]>=before[id]*1.4,`${id}: ${before[id].toFixed(1)} -> ${after[id].toFixed(1)}`);
-  assert(after[id]>=6,`${id} has room around it`);
- }
- assert(SPREAD>=1.4);
+test('everything you can work on has more room than on the compact grid, without sending the player far to the sides',()=>{
+ // yards that stand where they were designed grow apart by the spread; the ones that were moved only have to keep room
+ const still=Object.keys(ANCHORS).filter(id=>!HOMES[id]);
+ const before=nearest(id=>ANCHORS[id],still),after=nearest(id=>anchorAt(id),still),all=nearest(id=>anchorAt(id));
+ for(const id of still)assert(after[id]>=before[id]*1.25,`${id}: ${before[id].toFixed(1)} -> ${after[id].toFixed(1)}`);
+ for(const id of Object.keys(ANCHORS))assert(all[id]>=5,`${id} has room around it (${all[id].toFixed(1)})`);
+ assert(SPREAD>=1.25&&SPREAD<=1.35,'roomy, but compact enough that there is little to pan sideways');
 });
 test('the fields keep their place and every yard stays clear of them and within reach of the camera',()=>{
- const fields={minX:-3.4,maxX:8.6,minZ:-1,maxZ:20.9};   // 28 plots (7 rows) at 3.15 x 3.2
+ const fields={minX:-3.4,maxX:8.6,minZ:-1,maxZ:30.4};   // 40 plots (10 rows) at 3.15 x 3.2
  const reach=Math.round(20*SPREAD)*2;                     // pan and depth, both directions, from the home view at (1.4, 1.5)
  for(const id of Object.keys(ANCHORS)){
   const [x,z]=anchorAt(id);
@@ -67,7 +67,7 @@ test('the roads are one list, and the long side grows with the farm',()=>{
 test('a fence never stands on a road: where a road crosses, the line has a gap',()=>{
  zone(null);
  const boundary=fenceSegments(-19,-9,8,'z');zone('fields');
- assert.equal(Math.round(8*SPREAD),12);assert(boundary.length<12,'some segments were left out');assert(boundary.length>=9,'only the ones on the road');
+ assert.equal(Math.round(8*SPREAD),10);assert(boundary.length<10,'some segments were left out');assert(boundary.length>=7,'only the ones on the road');
  for(const [cx,cz] of boundary)assert(!onRoad(cx-.3,cx+.3,cz-1.1,cz+1.1),`segment at ${cx.toFixed(1)}, ${cz.toFixed(1)} is on a road`);
  // the far western road and the trunk road it meets
  const near=roadRects();assert(near.some(r=>r.horizontal&&r.minZ<-5.8&&r.maxZ>-5.8&&r.minX<-27.5));
@@ -76,7 +76,7 @@ test('a yard keeps its fence whole, and a fence off the roads keeps all its segm
  zone('coop');const pen=fenceSegments(8,-12.5,5);zone('fields');
  assert.equal(pen.length,5);
  const [ax,az]=anchorAt('coop');assert(Math.abs(pen[0][0]-(8+ANCHORS.coop[0]*(SPREAD-1)))<1e-9&&Math.abs(pen[0][1]-(-12.5+ANCHORS.coop[1]*(SPREAD-1)))<1e-9);
- assert.equal(fenceSegments(9.55,-.3,11,'z').length,11,'the white fences beside the crops');
+ assert.equal(fenceSegments(9.55,-.3,15,'z').length,15,'the white fences beside the crops, long enough for ten rows');
 });
 
 test('the crops have a white fence on the two sides only',()=>{
@@ -87,3 +87,18 @@ test('the crops have a white fence on the two sides only',()=>{
  assert.deepEqual(white.map(args=>Number(args.split(',')[0])),[-4.4,9.55],'the same distance from the outer fields on each side');
 });
 
+
+test('loose scenery never stands in the crops, however far the farm has grown',()=>{
+ // a bush placed at (2,20) lands at z=29 once the scenery is spread out: outside 28 fields, right in the middle of 40
+ zone(null);
+ for(let x=FIELD_BLOCK.minX-2;x<=FIELD_BLOCK.maxX+2;x+=.7)for(let z=FIELD_BLOCK.minZ-2;z<=FIELD_BLOCK.maxZ+2;z+=.7){
+  const [px,pz]=clearOfYards(x,z);assert(outsideFields(px,pz),`(${x.toFixed(1)}, ${z.toFixed(1)}) -> (${px.toFixed(1)}, ${pz.toFixed(1)})`);
+ }
+ assert.deepEqual(clearOfYards(80,80),[80,80]);assert.deepEqual(clearOfYards(-30,-30),clearOfYards(-30,-30));
+ // the same for everything game.js scatters by hand in the trees, bushes and tufts section
+ const game=read('public/game.js'),from=game.indexOf('// Trees, bushes and tufts are spread out'),loose=game.slice(from,game.indexOf('farmLife=createFarmLife(',from));
+ const pieces=[...loose.matchAll(/\[(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,-?\d+(?:\.\d+)?)?\]/g)].map(m=>[Number(m[1]),Number(m[2])]);
+ assert(pieces.length>40,'the hand-placed trees, bushes and tufts were found');
+ for(const [x,z] of pieces){const [px,pz]=place(x,z);assert(outsideFields(px,pz),`piece (${x}, ${z}) ends up at (${px.toFixed(1)}, ${pz.toFixed(1)}) in the crops`);}
+ zone('fields');
+});

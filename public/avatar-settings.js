@@ -1,16 +1,22 @@
 import {PLAYER_AVATARS,playerAvatar} from './player-avatars.js';
+import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 
+const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tile=id=>`<span class="avatar-tile"><img src="${playerAvatar(id).src}" alt="" width="96" height="96" loading="lazy" decoding="async" draggable="false"></span>`;
+
+// One row of faces that pages with arrows, the same picker as the family emblems.
 export function avatarSettingsMarkup(id){
  const current=playerAvatar(id);
- return `<div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${current.name}" width="80" height="80"><div><h3 id="avatar-settings-title">Your farmer avatar</h3><p>Pick a face for your farm.</p><span id="avatar-current-name">${current.name}</span></div></div><details id="avatar-choices"><summary>Change avatar <span>${PLAYER_AVATARS.length} free choices</span></summary><form id="avatar-form"><fieldset class="avatar-grid"><legend class="avatar-sr-only">Choose your farmer avatar</legend>${PLAYER_AVATARS.map(a=>`<label class="avatar-choice"><input type="radio" name="avatar" value="${a.id}" ${a.id===current.id?'checked':''}><span class="avatar-choice-art"><img src="${a.src}" alt="" width="96" height="96" loading="lazy" decoding="async"><span class="avatar-choice-check" aria-hidden="true">✓</span></span><span class="avatar-choice-name">${a.name}</span></label>`).join('')}</fieldset><button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form></details><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
+ const picker=emblemPickerMarkup({emblems:PLAYER_AVATARS,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>a.name,tile,esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
+ return `<div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${esc(current.name)}" width="80" height="80"><div><h3 id="avatar-settings-title">Your farmer avatar</h3><p>Pick a face for your farm.</p></div></div><form id="avatar-form">${picker}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
 }
 
 export function createAvatarSettings(root,{bridge,profile,onSaved=()=>{}}){
  if(!root)return;
  let saved=playerAvatar(profile?.avatar_id).id,selected=saved,busy=false,disposed=false;
- root.innerHTML=avatarSettingsMarkup(saved);
- const form=root.querySelector('form'),preview=root.querySelector('#avatar-preview'),label=root.querySelector('#avatar-current-name'),feedback=root.querySelector('#avatar-feedback'),save=form.querySelector('button'),choices=form.querySelector('fieldset');
- function refresh(){const avatar=playerAvatar(selected);preview.src=avatar.src;preview.alt=avatar.name;label.textContent=avatar.name;save.disabled=busy||selected===saved;choices.disabled=busy;save.textContent=busy?'Saving…':'Save avatar';form.setAttribute('aria-busy',String(busy));}
+ root.innerHTML=avatarSettingsMarkup(saved);bindEmblemPickers(root);
+ const form=root.querySelector('form'),preview=root.querySelector('#avatar-preview'),feedback=root.querySelector('#avatar-feedback'),save=form.querySelector('button'),choices=form.querySelector('fieldset');
+ function refresh(){const avatar=playerAvatar(selected);preview.src=avatar.src;preview.alt=avatar.name;save.disabled=busy||selected===saved;choices.disabled=busy;save.textContent=busy?'Saving…':'Save avatar';form.setAttribute('aria-busy',String(busy));}
  form.addEventListener('change',event=>{if(event.target.name!=='avatar'||busy)return;selected=playerAvatar(event.target.value).id;feedback.textContent=selected===saved?'':'Save to use this avatar.';refresh();});
  form.addEventListener('submit',async event=>{
   event.preventDefault();if(busy||selected===saved)return;busy=true;feedback.textContent='';refresh();

@@ -294,7 +294,7 @@ export const QUESTS = Object.freeze([
  {title:'Pumpkin master',description:'Harvest 250 pumpkin.',stat:'harvest_pumpkin',target:250,reward:6000}
 
 ]);
-export const MAX_PLOTS=28;
+export const MAX_PLOTS=40;
 export function xpForLevel(level){const n=level-1;return 60*n+20*n*(n-1);}
 export function levelOf(state){const total=state.xp+(state.xpOffset??0);return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);}
 export function levelProgress(state){const level=levelOf(state);return {level,current:state.xp+(state.xpOffset??0)-xpForLevel(level),target:60+40*(level-1)};}
@@ -333,7 +333,8 @@ export function unlockEntries(state){return [
  ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,art:key,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
  ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall').map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
  ...Object.entries(FEATURE_NAMES).map(([key,name])=>({id:'feature:'+key,name,art:FEATURE_ART[key]??key,kind:'Activity',level:FEATURE_LEVELS[key],unlocked:featureUnlocked(state,key),hint:featureUnlockHint(key)})),
- ...Object.entries(RECIPES).filter(([,r])=>buildingUnlocked(state,r.building)).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)}))
+ ...Object.entries(RECIPES).filter(([,r])=>buildingUnlocked(state,r.building)).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
+ ...ENDGAME_FIELDS.map((field,i)=>({id:'field:'+(i+29),name:`Field ${i+29} expansion`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+29,hint:`Level ${field.level} · Expand at the Farmhouse with coins and supplies.`}))
  ];}
 function migrateProgression(state){
  if(!guidedFarm(state)||state.progression.version>=2)return;
@@ -384,11 +385,26 @@ export function cropDuration(state,crop,regrowing=false,now=Date.now()){return M
 export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0);}
 export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
 export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
-// Fields 13-24 follow one steep curve; the last four fields (a whole extra row) are a slower, long-term goal.
-const LATE_FIELD_COSTS=Object.freeze([500000,750000,1125000,1690000]);
-export function expansionCost(state){const n=state.plots.length;return n>=MAX_PLOTS?null:n<24?Math.ceil(600*1.75**Math.max(0,n-12)/25)*25:LATE_FIELD_COSTS[n-24];}
+// Fields 13-20 keep their prices. Later coin costs rise steadily; estate materials and levels add the challenge.
+const LATE_FIELD_COSTS=Object.freeze([45000,65000,90000,120000,155000,190000,225000,260000]);
+export const ENDGAME_FIELDS=Object.freeze([
+ {level:40,coins:300000,materials:{bread:100,cheese:80,stew:40}},
+ {level:45,coins:350000,materials:{oil:70,vegetables:70,applejuice:50}},
+ {level:50,coins:410000,materials:{pie:70,berrypreserves:60,beangratin:50}},
+ {level:55,coins:480000,materials:{orchardjuice:90,applecompote:80,orchardsalad:80}},
+ {level:60,coins:560000,materials:{applepie:90,pickledbeans:60,cheese:140}},
+ {level:65,coins:650000,materials:{berrytart:80,applevinegar:100,vegetables:120}},
+ {level:70,coins:750000,materials:{berrysmoothie:120,beangratin:100,oil:140}},
+ {level:75,coins:860000,materials:{berrycheesecake:100,berrypreserves:120,stew:140}},
+ {level:80,coins:980000,materials:{harvesthamper:50,applepie:120,pickledbeans:100}},
+ {level:85,coins:1110000,materials:{harvesthamper:65,berrytart:120,orchardjuice:180}},
+ {level:90,coins:1250000,materials:{harvesthamper:80,berrycheesecake:140,beangratin:160}},
+ {level:95,coins:1400000,materials:{harvesthamper:100,berrycheesecake:160,pickledbeans:180,applevinegar:180}}
+].map(field=>Object.freeze({...field,materials:Object.freeze(field.materials)})));
+export function expansionLevel(state){return ENDGAME_FIELDS[state.plots.length-28]?.level??1;}
+export function expansionCost(state){const n=state.plots.length;return n>=MAX_PLOTS?null:n>=28?ENDGAME_FIELDS[n-28].coins:n<20?Math.ceil(600*1.75**Math.max(0,n-12)/25)*25:LATE_FIELD_COSTS[n-20];}
 const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16},{lettuce:30,flour:18,milk:12},{cauliflower:32,feed:20,eggs:14},{redcabbage:30,cheese:16,bread:18},{pumpkin:36,oil:18,pie:20},{sunflower:40,cheese:20,pie:22},{cauliflower:44,bread:26,eggs:24},{redcabbage:44,oil:22,vegetables:24},{pumpkin:50,pickles:26,milk:28}];
-export function expansionMaterials(state){return state.plots.length>=MAX_PLOTS?{}:{...FIELD_MATERIALS[Math.max(0,state.plots.length-12)]};}
+export function expansionMaterials(state){const n=state.plots.length;return n>=MAX_PLOTS?{}:{...(n>=28?ENDGAME_FIELDS[n-28].materials:FIELD_MATERIALS[Math.max(0,n-12)])};}
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
  const level=state.buildings[building].level;
@@ -549,6 +565,7 @@ export function upgradeBuilding(state,building,currency='coins',expectedCost,exp
 export function expandFarm(state){
  const cost=expansionCost(state),materials=expansionMaterials(state);
  if(cost===null)throw new Error('Your farm is fully expanded.');
+ if(levelOf(state)<expansionLevel(state))throw new Error(`Reach level ${expansionLevel(state)} to unlock field ${state.plots.length+1}.`);
  if(state.coins<cost)throw new Error(`You need ${cost} coins for one more field.`);
  const missing=Object.entries(materials).filter(([key,n])=>(state.inventory[key]??0)<n);
  if(missing.length)throw new Error(`Gather the missing supplies: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
@@ -1096,7 +1113,7 @@ function workActivity(state,action,now){
 // Farm Family rules. Only the authenticated farm-api executes mutations against
 // the service-only context; browser copies expose constants and display helpers.
 export const FAMILY_CONFIG=Object.freeze({MAX_MEMBERS:6,MIN_CONTRIB_POINTS:500,JOIN_COOLDOWN_MS:48*3600000,RENAME_COOLDOWN_MS:7*DAY_MS,ATTEMPTS_PER_HOUR:10,EXTRA_POINTS_CAP:30000,TOURNAMENT_FIRST_MIN:50,TOURNAMENT_FIRST_MAX:300,TOURNAMENT_PER_EXTRA_PLAYER:10,ORDER_PLAYER_WEEK_DIAMOND_CAP:25,TOURNAMENT_MIN_POINTS:1,ORDER_COIN_MULTIPLIER:1.25,ORDER_XP_PER_VALUE:1/100,ORDER_DIAMOND_BASE:1,ORDER_DIAMOND_MAX:3,ORDER_COMPLETION_DIAMONDS:4,REWARD_WEEKS:8,ORDER_MIN_VALUE_PER_MEMBER:16000,ORDER_MAX_VALUE_PER_MEMBER:30000,RANK_WEIGHTS:[1,.6,.4]});
-export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy','family-bee','family-oak','family-barn','pumpkin','greenbeans','cheese','applejuice','berrypreserves','harvesthamper'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
+export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy','family-bee','family-oak','family-barn','pumpkin','greenbeans','cheese','applejuice','berrypreserves','harvesthamper','family-fox','family-owl','family-windmill','family-horseshoe'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
 export function familyUnlocked(state,minLevel=FAMILY_MIN_LEVEL){return levelOf(state)>=minLevel;}
 export function familyUnlockHint(minLevel=FAMILY_MIN_LEVEL){return `Reach level ${minLevel} to unlock Farm Family.`;}
 export function familyWeek(now=Date.now()){return Math.floor((now-4*DAY_MS)/(7*DAY_MS));}
