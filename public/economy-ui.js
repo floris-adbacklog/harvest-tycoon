@@ -77,7 +77,9 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   }else if(!buildingUnlocked(state,key)){
    const eligible=buildingEligible(state,key),needs=constructionNeeds(state,key),preview={...state,buildings:{...state.buildings,[key]:{...bs,built:true}}};
    const previewEntries=Object.entries(RECIPES).filter(([id,r])=>r.building===key&&recipeUnlocked(preview,id));
-   const previewCard=(rid,r)=>`<div>${itemList(r.input)}<b>→</b>${itemList(r.output)}</div>`;
+   // Bottled honey has no input at all — it is bought with coins — so without this it showed as a bare arrow
+   // into a honey icon here, with no hint of the 5,000 coin cost that costList() already shows once built.
+   const previewCard=(rid,r)=>`<div>${itemList(r.input)}${r.coins?`<span class="ingredient">${art('coins')}<span>${number(r.coins)} coins</span></span>`:''}<b>→</b>${itemList(r.output)}</div>`;
    const previewRecipes=key==='factory'?foldFactoryGroups(previewEntries,previewCard):previewEntries.map(([rid,r])=>previewCard(rid,r)).join('');
    content+=`<section class="construction-panel"><span class="eyebrow">NEW PRODUCTION CHAIN</span><h3>${eligible?'Bring this building to life':buildingUnlockHint(state,key)}</h3><p>Open ${b.name} for ${number(buildCost)} coins. Starts at level 1 with one batch slot; upgrades add one slot each.</p>${needs.length?`<p>First open ${needs.map(k=>BUILDINGS[k].name).join(' and ')} to supply this building.</p>`:''}<div class="construction-recipes${key==='factory'?' factory-recipe-list':''}">${previewRecipes}</div><button type="button" id="construct-building" class="primary-button" ${eligible&&state.coins>=buildCost&&!needs.length?'':'disabled'}>Open building · ${number(buildCost)} coins</button>${eligible&&state.coins<buildCost?`<p>You need ${number(buildCost-state.coins)} more coins.</p>`:''}</section>`;
   }else{

@@ -164,3 +164,9 @@ the "Bring this building to life" preview shown before buying it (`.construction
 separate flat list of the same 31 recipes and was untouched — still one very long scroll. Moved the grouping into
 a shared `foldFactoryGroups()` helper (plus `sourceOf`/`sourceLabel`, now declared once at the top of
 `renderBuilding` instead of duplicated) and used it for both lists. Test: `tests/factory.test.mjs`.
+
+Factory preview: bottled honey now shows its coin cost (2026-09-22, live after the client is pushed; no server
+change): the "Bring this building to life" preview (shown while the Factory is still locked/not built) builds its
+rows from `itemList(r.input)` directly, not `costList()` — bottled honey has no ingredients, only a 5,000-coin
+cost, so its row showed as a bare arrow into a honey icon, no coins mentioned at all. `previewCard()` now also
+shows the coin cost when a recipe has one, same as the working recipe list already did.

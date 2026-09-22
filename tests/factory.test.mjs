@@ -147,6 +147,9 @@ test('the building panel shows the coin price of bottled honey, orders the Facto
  assert.match(ui,/a\.poor\?`You need \$\{number\(a\.price\)\} coins for a batch\.`/);
  assert.match(ui,/productionSlots\(b\.level,key\)/);assert.match(ui,/productionSlots\(bs\.level,key\)/);assert.match(ui,/The Factory gets a slot every four levels/);
  assert.match(ui,/sourceOf=r=>r\.base\?buildingOrder\.indexOf\(RECIPES\[r\.base\]\.building\):-1/);
+ // The pre-purchase preview (built from itemList(r.input), not costList()) has no coins of its own — without
+ // this, bottled honey's row showed as a bare arrow into a honey icon, no hint of the 5,000 coin cost.
+ assert.match(ui,/const previewCard=\(rid,r\)=>`<div>\$\{itemList\(r\.input\)\}\$\{r\.coins\?`<span class="ingredient">\$\{art\('coins'\)\}<span>\$\{number\(r\.coins\)\} coins<\/span><\/span>`:''\}<b>→<\/b>\$\{itemList\(r\.output\)\}<\/div>`;/);
 });
 // The Factory repeats every other building's whole recipe list in bulk (31 recipes: see the bulk-version test
 // above), which read as one very long scroll in BOTH of its recipe lists — the pre-purchase preview, before it is
