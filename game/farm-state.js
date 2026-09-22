@@ -146,7 +146,7 @@ export const BEGINNER_QUESTS=Object.freeze([
  {id:'wheat',title:'Bring in the wheat',description:'Harvest one wheat field when it is ready. Water and care make your harvest bigger.',guide:'harvest',icon:'wheat'},
  {id:'collect',title:'Made on your farm',description:'Collect a finished batch from a building. Chicken feed becomes eggs in 5 minutes.',guide:'collect',icon:'package-check'}
 ]);
-function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>q.id==='chore'?{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. Save the coins for your next building. Hands-on jobs open at level 4.',guide:'eggs',icon:'egg'}:q):BEGINNER_QUESTS;}
+function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>q.id==='chore'?{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. Save the coins for your next building. Hands-on jobs open at level 8.',guide:'eggs',icon:'egg'}:q):BEGINNER_QUESTS;}
 export function beginnerProgress(state){
  const guide=state.onboarding??{completed:0,milestones:{}};
  return beginnerQuests(state).map((quest,index)=>({...quest,index,done:index<guide.completed,current:index===guide.completed,ready:!!guide.milestones[quest.id]}));
@@ -335,37 +335,46 @@ export const QUESTS = Object.freeze([
 ]);
 export const STARTER_QUESTS=Object.freeze({first:130,count:20});
 export const MAX_PLOTS=40;
-// XP curve 2. The first ten levels are quick, so the first harvest already reaches level 2 (15 XP; a harvest is worth 5 XP and the first guide
-// step 15 more) and the first hour is full of level-ups. From level 10 on every step is exactly what it was in curve 1 (60 XP for level 2,
-// 100 for the next, then 40 more each time), just 1,130 XP lower in total. Farms of the old curve are converted once, with their level and
-// their progress inside that level kept (migrateXpCurve); until then levelOf reads them with the old curve, so a new client is fine on a farm the server has not
+// XP curves. Curve 1 is the original one (60 XP for level 2, then 40 more than the step before). Curves 2 and 3 make the first ten levels
+// cheaper, so the first harvest already reaches level 2 (15 XP: a harvest is worth 5 XP and the first guide step 15 more); from level 10 on
+// every step is exactly curve 1's step, just lower in total by what the first ten levels save. Curve 3 (the current one) asks 1,315 XP for
+// level 10, curve 1 asked 1,980 and curve 2 (live for a day) 850, which flew an active beginner through the first ten levels in an hour.
+// A farm carries the curve it was counted with (state.xpCurve, none = curve 1) and is converted once by migrateXpCurve, with its level and
+// its progress inside that level kept; until then levelOf reads it with its own curve, so a new client is fine on a farm the server has not
 // converted yet. An old client cannot read a converted farm: deploy the client first, the server after.
-export const XP_CURVE=2;
-const EARLY_GAPS=Object.freeze([15,30,40,60,80,105,135,170,215]);   // XP from level 1 to 2, 2 to 3 ... 9 to 10 (curve 1: 60, 100, 140 ... 380)
+export const XP_CURVE=3;
 const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
-const EARLY_TOTAL=EARLY_GAPS.reduce((sum,gap)=>sum+gap,0);            // 850 XP for level 10 (curve 1: 1,980)
-const CURVE_SHIFT=oldXpForLevel(10)-EARLY_TOTAL;                        // 1,130
-export function xpForLevel(level){
+const EARLY_GAPS=Object.freeze({   // XP from level 1 to 2, 2 to 3 ... 9 to 10 (curve 1: 60, 100, 140 ... 380)
+ 2:Object.freeze([15,30,40,60,80,105,135,170,215]),
+ 3:Object.freeze([15,40,65,95,130,170,215,265,320])
+});
+const curveOf=state=>Object.hasOwn(EARLY_GAPS,state.xpCurve)?Number(state.xpCurve):1;
+const sum=list=>list.reduce((total,n)=>total+n,0);
+function totalForLevel(level,curve){
  if(level<=1)return 0;
- if(level<=EARLY_GAPS.length+1)return EARLY_GAPS.slice(0,level-1).reduce((sum,gap)=>sum+gap,0);
- return oldXpForLevel(level)-CURVE_SHIFT;
+ const gaps=EARLY_GAPS[curve];if(!gaps)return oldXpForLevel(level);
+ if(level<=gaps.length+1)return sum(gaps.slice(0,level-1));
+ return oldXpForLevel(level)-(oldXpForLevel(gaps.length+1)-sum(gaps));
 }
+export const xpForLevel=level=>totalForLevel(level,XP_CURVE);
 function levelFromTotal(total,curve){
- if(curve!==XP_CURVE)return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);
- if(total<EARLY_TOTAL){let level=1,sum=0;for(const gap of EARLY_GAPS){if(total<sum+gap)break;sum+=gap;level++;}return level;}
- return 1+Math.floor((Math.sqrt(1600+80*(total+CURVE_SHIFT))-40)/40);
+ const gaps=EARLY_GAPS[curve];
+ if(!gaps)return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);
+ const early=sum(gaps);
+ if(total<early){let level=1,spent=0;for(const gap of gaps){if(total<spent+gap)break;spent+=gap;level++;}return level;}
+ return 1+Math.floor((Math.sqrt(1600+80*(total+oldXpForLevel(gaps.length+1)-early))-40)/40);
 }
-export function levelOf(state){return levelFromTotal(state.xp+(state.xpOffset??0),state.xpCurve);}
+export function levelOf(state){return levelFromTotal(state.xp+(state.xpOffset??0),curveOf(state));}
 export function levelProgress(state){
- const level=levelOf(state),total=state.xp+(state.xpOffset??0),fresh=state.xpCurve===XP_CURVE,from=fresh?xpForLevel(level):oldXpForLevel(level),to=fresh?xpForLevel(level+1):oldXpForLevel(level+1);
- return {level,current:total-from,target:to-from};
+ const level=levelOf(state),curve=curveOf(state),from=totalForLevel(level,curve),to=totalForLevel(level+1,curve);
+ return {level,current:state.xp+(state.xpOffset??0)-from,target:to-from};
 }
-// One-off conversion of a farm from curve 1 to curve 2: the same level, and the same share of the way to the next one.
+// One-off conversion of a farm to the current curve: the same level, and the same share of the way to the next one.
 function migrateXpCurve(state){
  if(state.xpCurve===XP_CURVE)return;
- const total=Math.max(0,Number.isFinite(state.xp)?state.xp:0)+(Number.isFinite(state.xpOffset)?state.xpOffset:0),level=levelFromTotal(total,1);
- const share=(total-oldXpForLevel(level))/(oldXpForLevel(level+1)-oldXpForLevel(level));
- state.xp=Math.min(xpForLevel(level+1)-1,Math.round(xpForLevel(level)+share*(xpForLevel(level+1)-xpForLevel(level))));state.xpOffset=0;state.xpCurve=XP_CURVE;   // rounding never lifts a farmer into the next level
+ const from=curveOf(state),total=Math.max(0,Number.isFinite(state.xp)?state.xp:0)+(Number.isFinite(state.xpOffset)?state.xpOffset:0),level=levelFromTotal(total,from);
+ const start=totalForLevel(level,from),share=(total-start)/(totalForLevel(level+1,from)-start),next=xpForLevel(level),after=xpForLevel(level+1);
+ state.xp=Math.min(after-1,Math.round(next+share*(after-next)));state.xpOffset=0;state.xpCurve=XP_CURVE;   // rounding never lifts a farmer into the next level
 }
 // Levels 1-10 are bought with coins or diamonds, one slot and a bit more speed per level. Levels 11-20 are estate upgrades for the
 // long game (forty fields need far more processing): a higher farm level and finished goods on top of the price, which is coins
@@ -396,7 +405,7 @@ export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenb
 export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:10,kitchen:12,juicepress:21,preserves:24,factory:FACTORY_LEVEL});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,factory:FACTORY_COST});
 export const RECIPE_LEVELS=Object.freeze({eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:11,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:23,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:25,harvesthamper:25});
-export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:4,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19});
+export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:12});
 export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
@@ -420,12 +429,15 @@ export function unlockEntries(state){return [
  ...Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&buildingUnlocked(state,r.building)).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
  ...ENDGAME_FIELDS.map((field,i)=>({id:'field:'+(i+29),name:`Field ${i+29} expansion`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+29,hint:`Level ${field.level} · Expand at the Farmhouse with coins and supplies.`}))
  ];}
-// Farm chores moved from level 4 to level 10 (progression version 3). A guided farm from before that keeps them if it had reached level 4.
-const CHORES_FIRST_LEVEL=4;
-function migrateChoresLevel(state){
- if(!guidedFarm(state)||(state.progression.version??0)>=3)return;
- if(levelOf(state)>=CHORES_FIRST_LEVEL||(state.stats?.chores??0)>0){const rights=state.progression.kept??={};rights.features=[...new Set([...(rights.features??[]),'chores'])];}
- state.progression.version=3;
+// Two features were moved later on purpose: A helping hand (level 6 -> 8) and farm chores (level 4 -> 10). Moving a feature later would take it
+// from farms that already have it, so a guided farm from before (progression version below 4) keeps what it had: chores from level 4, hands-on
+// jobs from level 6, or as soon as it has done one. It runs once per farm and keeps any other kept rights. New farms are created at version 4.
+const KEPT_FROM_LEVEL=Object.freeze({chores:4,activities:6});
+function migrateFeatureLevels(state){
+ if(!guidedFarm(state)||(state.progression.version??0)>=4)return;
+ const level=levelOf(state),rights=Object.entries(KEPT_FROM_LEVEL).filter(([key,from])=>level>=from||(state.stats?.[key]??0)>0).map(([key])=>key);
+ if(rights.length){const kept=state.progression.kept??={};kept.features=[...new Set([...(kept.features??[]),...rights])];}
+ state.progression.version=4;
 }
 function migrateProgression(state){
  if(!guidedFarm(state)||state.progression.version>=2)return;
@@ -542,7 +554,7 @@ function createBaseFarm(now=Date.now()) {
  ['corn','corn','corn','wheat','wheat'].forEach((crop,id)=>{
   plots[id]={id,crop,plantedAt:now-CROPS[crop].duration*(id<3?1.1:.4),readyAt:now+(id<3?-1000:CROPS[crop].duration*.6),watered:false};
  });
- return {version:14,progression:{mode:'guided',version:3},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
+ return {version:14,progression:{mode:'guided',version:4},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
 }
 export function progress(plot,now=Date.now()) {
  if(!plot.crop)return 0;
@@ -943,7 +955,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
  state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
- state.stats??={};migrateProgression(state);migrateChoresLevel(state);
+ state.stats??={};migrateProgression(state);migrateFeatureLevels(state);
  for(const key of Object.keys(BUILDINGS))if(buildingCost(state,key))state.buildings[key].built??=false;
  // Keep paid-for legacy flour batches intact when milling moves to the Windmill.
  if(oldVersion<6&&state.buildings.mill.job?.recipe==='flour'){

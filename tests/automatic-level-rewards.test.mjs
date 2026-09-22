@@ -21,9 +21,9 @@ test('level-up credits automatically, persists and cannot be manually paid twice
 });
 test('all crossed levels are paid once; coin boost cannot multiply level rewards',()=>{
  const s=createFarm(now);s.boosts.coinsUntil=now+10000;s.boosts.xpUntil=now+10000;
- s.buildings.coop.job={id:'bulk',recipe:'eggs',output:{eggs:3},xp:73,startedAt:now-1000,readyAt:now};
+ s.buildings.coop.job={id:'bulk',recipe:'eggs',output:{eggs:3},xp:108,startedAt:now-1000,readyAt:now};
  const result=act(s,{type:'collect',building:'coop'},now);
- assert.equal(s.xp,146);assert.equal(levelOf(s),5);
+ assert.equal(s.xp,216);assert.equal(levelOf(s),5);
  assert.deepEqual(result.levelReward,{coins:140,diamonds:4,levels:[2,3,4,5]});
  assert.equal(s.coins,STARTER_COINS+140);assert.equal(s.diamonds,4);
 });

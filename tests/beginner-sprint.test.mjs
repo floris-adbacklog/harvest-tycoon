@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,normalizeFarm,applyFarmAction as act,rookieLeft,rookieBoost,ROOKIE_MS,ROOKIE_TIMER_BOOST,cropDuration,recipeDuration,keptStock,sellableStock,STARTER_KEEP,STARTER_ITEMS,CROPS,ITEMS,QUESTS,STARTER_QUESTS,QUEST_XP,levelOf,levelReward} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,applyFarmAction as act,rookieLeft,rookieBoost,ROOKIE_MS,ROOKIE_TIMER_BOOST,cropDuration,recipeDuration,keptStock,sellableStock,STARTER_KEEP,STARTER_ITEMS,CROPS,ITEMS,QUESTS,STARTER_QUESTS,QUEST_XP,levelOf,levelReward,xpForLevel} from '../game/farm-state.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 import {questGroups} from '../public/quests-ui.js';
 import {rookieBadge,rookieLabel,rookieTimeLeft} from '../public/rookie-ui.js';
@@ -105,7 +105,7 @@ test('a new farmer sees the quickest starter quests first, three at a time, and 
  assert.equal(r.coins,20);assert.equal(r.xp,0,'starter quests pay coins, never XP');assert.equal(s.xp,xp);assert.equal(r.levelReward,undefined);assert.equal(s.coins,coins+20);
  assert.throws(()=>act(s,{type:'quest',id:thirsty},now),/already/);
  const titles=questGroups(s).active.map(x=>x.quest.title);assert.equal(titles.length,3);assert(!titles.includes('Thirsty crops'));
- s.xp=225;assert.equal(levelOf(s),6);assert.equal(questGroups(s).active.length,5,'five at a time from level 6');
+ s.xp=xpForLevel(6);assert.equal(levelOf(s),6);assert.equal(questGroups(s).active.length,5,'five at a time from level 6');
  const legacy=createLegacyFarm(now);assert.equal(questGroups(legacy).ready.length+questGroups(legacy).active.length+questGroups(legacy).done.length,150);
 });
 
