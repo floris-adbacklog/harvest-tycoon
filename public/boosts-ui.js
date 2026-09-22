@@ -30,11 +30,11 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   };
   const cropCard=card({picture:'seeds',title:'Finish one crop',text:'One field ready to harvest now.',
    // Nothing to choose from: say so in one chip instead of an empty picker.
-   detail:!growing.length?chip('need','No crops growing right now'):state.diamonds<SINGLE_CROP_COST?chip('need',`Need ${number(SINGLE_CROP_COST-state.diamonds)} more diamonds`):'',
+   detail:!growing.length?chip('need','No crops growing'):state.diamonds<SINGLE_CROP_COST?chip('need',`Need ${number(SINGLE_CROP_COST-state.diamonds)} more diamonds`):'',
    button:`<button id="finish-one-crop" class="boost-buy" ${selectedField===''||state.diamonds<SINGLE_CROP_COST||finishing?'disabled':''} aria-label="Finish the selected crop for ${SINGLE_CROP_COST} diamonds">${price(SINGLE_CROP_COST,finishing?'Finishing…':'Finish crop')}</button>`,
    extra:growing.length?`<span class="field-picker-label">Choose a field</span>${fieldPicker({id:'finish-crop-field',plots:growing,selected:selectedField===''?[]:[selectedField],now:farmNow(),disabled:finishing})}`:''});
   const batchCard=card({picture:'boost',title:'Finish one batch',text:'One running batch ready now.',
-   detail:!batches.length?chip('need','No batches running right now'):state.diamonds<SINGLE_BATCH_COST?chip('need',`Need ${number(SINGLE_BATCH_COST-state.diamonds)} more diamonds`):'',
+   detail:!batches.length?chip('need','No batches running'):state.diamonds<SINGLE_BATCH_COST?chip('need',`Need ${number(SINGLE_BATCH_COST-state.diamonds)} more diamonds`):'',
    button:`<button id="finish-one-batch" class="boost-buy" ${!selection||finishing||state.diamonds<SINGLE_BATCH_COST?'disabled':''} aria-label="Finish the selected batch for ${SINGLE_BATCH_COST} diamonds">${price(SINGLE_BATCH_COST,'Finish batch')}</button>`,
    extra:batches.length?`<span class="field-picker-label">Choose a batch</span>${batchPicker({id:'finish-batch-picker',batches,selectedKey:selectedBatch,now:farmNow(),disabled:finishing})}`:''});
   const finishNow=['crops','production'],entries=Object.entries(BOOSTS);

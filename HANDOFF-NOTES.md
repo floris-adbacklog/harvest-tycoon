@@ -284,3 +284,5 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - **Seed shop**: one compact row per crop (picture, name + pace pill, time · sell price · use, seed price chip), the
   chosen crop framed in gold with a check; intro and yield guide are one line each. Planting floats "Planted" plus the
   seed cost as its own chip.
+- **Diamonds & boosts (phones)**: each boost is one row with its price button on the right, status chips stay on one
+  line, VIP plans sit side by side and the diamond packs are a 2x2 grid (about 27% shorter).
