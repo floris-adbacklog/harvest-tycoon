@@ -281,3 +281,6 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   market offers "Go to your fields" / "Open buildings".
 - **Tractor**: a status pill (Ready / Resting · Ns), the crop you plant as a chip that opens the crop picker, one card
   per job with fields and a coin price (or why there is nothing to do), and the fuel rule as one small line.
+- **Seed shop**: one compact row per crop (picture, name + pace pill, time · sell price · use, seed price chip), the
+  chosen crop framed in gold with a check; intro and yield guide are one line each. Planting floats "Planted" plus the
+  seed cost as its own chip.

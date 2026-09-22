@@ -35,3 +35,9 @@ test('the tractor shows a status pill, the crop as a chip that opens the crop pi
  assert.match(ui,/<button class="tractor-job" data-tractor="\$\{mode\}"/);
  assert.match(css,/\.tractor-seed>span:not\(\.game-art\)\{flex:1;min-width:0\}/,'a crop picture (a span) is never stretched like the text');
 });
+test('the seed shop is one compact row per crop with its price on the right, and planting says what was planted',()=>{
+ const ui=read('public/economy-ui.js');
+ assert.match(ui,/<button class="seed-row crop-\$\{key\} \$\{selectedCrop===key\?'selected':''\}/);
+ assert.match(ui,/<span class="seed-row-price">\$\{art\('coins'\)\}\$\{seedCost\(state,key\)\}<\/span>/);
+ assert.match(read('public/game.js'),/floatChip\(state\.plots\[id\]\.crop\?\?selectedCrop,'Planted'\)\+floatChip\('coins',`−\$\{result\.cost\}`,'is-cost'\)/);
+});
