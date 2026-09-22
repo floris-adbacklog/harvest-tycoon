@@ -1,3 +1,4 @@
+import {welcomeSummary} from '../supabase/functions/farm-api/welcome-service.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -21,7 +22,7 @@ function endpoint({failCommit=false,active=true}={}){
   if(args.p_expected!==row.revision)return {data:false};
   row={...row,state:structuredClone(args.p_state),receipts:structuredClone(args.p_receipts),revision:row.revision+1};commits++;return {data:true};
  }};
- vm.runInNewContext(source,{...rules,savePlayerAvatar,createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,atob,crypto,console:{error(){}},Uint32Array,handleFamily:()=>{throw new Error('unexpected family call');},handlePlayerDirectory:()=>{throw new Error('unexpected directory call');}});
+ vm.runInNewContext(source,{...rules,welcomeSummary,savePlayerAvatar,createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,atob,crypto,console:{error(){}},Uint32Array,handleFamily:()=>{throw new Error('unexpected family call');},handlePlayerDirectory:()=>{throw new Error('unexpected directory call');}});
  return {get avatarWrites(){return avatarWrites;},get row(){return row;},get commits(){return commits;},async send(body,authorized=true){const r=await handler(new Request('https://test.invalid/farm-api',{method:'POST',headers:authorized?{Authorization:`Bearer ${token}`}:{},body:JSON.stringify(body)}));return {status:r.status,data:await r.json()};}};
 }
 const body=(id=requestId)=>({operation:'action',requestId:id,action:{type:'buy_vip',plan:'week',expectedCost:500,expectedExpiresAt:0}});

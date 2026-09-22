@@ -1,0 +1,63 @@
+// Isolated PostgreSQL/WASM integration tests; never connects to Supabase.
+// Install @electric-sql/pglite@0.5.8 in a separate test directory and set HARVEST_PGLITE_MODULE to its dist/index.js.
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const {PGlite}=await import(process.env.HARVEST_PGLITE_MODULE??'@electric-sql/pglite');
+const db=new PGlite();let checks=0;
+const check=(value,message)=>{assert(value,message);checks++;};
+await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;
+create table auth.users(id uuid primary key,created_at timestamptz default now(),email_confirmed_at timestamptz);
+create table public.player_stats(player_id uuid primary key,username text,currency integer,level integer,updated_at timestamptz);
+create table public.player_farms(player_id uuid primary key references auth.users(id),state jsonb,revision bigint default 1,receipts jsonb default '[]',updated_at timestamptz default now());
+create table public.families(id uuid primary key);
+create table public.family_revision(id boolean primary key,revision bigint default 0);insert into public.family_revision values(true,0);
+create table public.family_members(player_id uuid primary key,family_id uuid,joined_at bigint,left_at bigint);`);
+for(let pass=0;pass<2;pass++)for(const name of ['retention-social','live-events'])await db.exec(readFileSync(new URL('../supabase/'+name+'.sql',import.meta.url),'utf8'));
+const ids=Array.from({length:8},(_,i)=>`00000000-0000-0000-0000-${String(i+1).padStart(12,'0')}`),fid=crypto.randomUUID();
+await db.query('insert into public.families values($1)',[fid]);
+for(const id of ids){await db.query(`insert into auth.users values($1,now()-interval '7 days',now())`,[id]);await db.query(`insert into public.player_stats values($1,'Tester',100,10,now())`,[id]);await db.query(`insert into public.player_farms(player_id,state) values($1,'{"coins":100,"diamonds":0,"inventory":{"wheat":100,"corn":10,"feed":10},"stats":{"harvested":0}}')`,[id]);await db.query(`insert into public.family_members values($1,$2,0,null)`,[id,fid]);}
+const social=async(player,action,request=crypto.randomUUID())=>(await db.query('select public.harvest_social($1,$2,$3) result',[player,action,request])).rows[0].result;
+const farm=async id=>(await db.query('select * from public.player_farms where player_id=$1',[id])).rows[0];
+const reject=async(fn,pattern)=>{await assert.rejects(fn,pattern);checks++;};
+const receipt=crypto.randomUUID();await social(ids[0],{kind:'help',recipient:ids[1]},receipt);await social(ids[0],{kind:'help',recipient:ids[1]},receipt);
+check((await farm(ids[0])).state.coins===95&&(await farm(ids[1])).state.coins===105,'help conserves currency and retry is idempotent');
+await reject(()=>social(ids[0],{kind:'help',recipient:ids[1]}),/unique/i);
+await reject(()=>social(ids[0],{kind:'help',recipient:ids[0]}),/another/);
+await social(ids[0],{kind:'gift',recipient:ids[1]});check((await farm(ids[0])).state.inventory.wheat===97&&(await farm(ids[1])).state.inventory.wheat===103,'gift conserves inventory');
+await social(ids[1],{kind:'request',item:'corn',quantity:3});await reject(()=>social(ids[1],{kind:'request',item:'corn',quantity:3}),/unique/i);
+const request=(await social(ids[0],{kind:'read'})).requests[0];await social(ids[0],{kind:'fulfill',request:request.id});await reject(()=>social(ids[2],{kind:'fulfill',request:request.id}),/no longer/);
+check((await farm(ids[0])).state.inventory.corn===7&&(await farm(ids[1])).state.inventory.corn===13,'fulfilment transfers goods exactly once');
+await reject(()=>social(ids[0],{kind:'request',item:'diamonds',quantity:3}),/Request/);
+await db.query('update public.player_farms set state=jsonb_set(state,\'{inventory,wheat}\',\'0\') where player_id=$1',[ids[2]]);
+const before=await farm(ids[2]);await reject(()=>social(ids[2],{kind:'gift',recipient:ids[1]}),/enough/);assert.deepEqual(await farm(ids[2]),before);checks++;
+for(const recipient of ids.slice(2,4))await social(ids[0],{kind:'help',recipient});await reject(()=>social(ids[0],{kind:'help',recipient:ids[4]}),/Daily limit/);
+await social(ids[2],{kind:'help',recipient:ids[1]});await social(ids[3],{kind:'help',recipient:ids[1]});await reject(()=>social(ids[4],{kind:'help',recipient:ids[1]}),/Daily limit/);
+await db.query(`update auth.users set created_at=now() where id=$1`,[ids[5]]);await reject(()=>social(ids[5],{kind:'help',recipient:ids[4]}),/48 hours/);
+await db.query(`update public.family_members set joined_at=extract(epoch from now())*1000 where player_id=$1`,[ids[6]]);await reject(()=>social(ids[6],{kind:'help',recipient:ids[4]}),/24 hours/);
+await db.query(`update public.family_members set left_at=1 where player_id=$1`,[ids[7]]);await reject(()=>social(ids[0],{kind:'gift',recipient:ids[7]}),/eligible/);
+const rewards={coins:60,diamondMin:1,diamondMax:3,participantStep:25,poolCap:100},event=crypto.randomUUID();
+const create=async(id=event,reward=rewards)=>db.query(`insert into public.live_events(id,title,starts_at,ends_at,active,objectives,rewards,created_by) values($1,'Harvest hour',now()-interval '1 hour',now()+interval '1 hour',true,'[{"stat":"harvested","target":30}]',$2,$3)`,[id,reward,ids[0]]);
+await create();await reject(()=>create(crypto.randomUUID()),/overlap/);await reject(()=>db.query(`update public.live_events set rewards=jsonb_set(rewards,'{diamondMax}','999') where id=$1`,[event]),/frozen/);
+const progress=async(id,amount,action='field',requestId=crypto.randomUUID())=>db.query(`update public.player_farms set state=jsonb_set(state,'{stats,harvested}',to_jsonb($2::integer)),receipts=$3 where player_id=$1`,[id,amount,[{id:requestId,eventAction:action}]]);
+await progress(ids[0],10);let p=(await db.query('select * from public.live_event_players where player_id=$1',[ids[0]])).rows[0];check(p.progress.harvested===10&&p.actions===1,'accepted gameplay records progress');
+await progress(ids[0],20);p=(await db.query('select * from public.live_event_players where player_id=$1',[ids[0]])).rows[0];check(p.actions===1,'ten second contribution rate limit');
+await progress(ids[1],30,'admin_grant');check((await db.query('select count(*)::int n from public.live_event_players where player_id=$1',[ids[1]])).rows[0].n===0,'admin grants cannot qualify');
+await progress(ids[5],30);check((await db.query('select count(*)::int n from public.live_event_players where player_id=$1',[ids[5]])).rows[0].n===0,'young accounts excluded');
+const rid=crypto.randomUUID();await db.query(`update public.live_event_players set last_at=now()-interval '11 seconds' where player_id=$1`,[ids[0]]);await progress(ids[0],25,'field',rid);await db.query(`update public.live_event_players set last_at=now()-interval '11 seconds' where player_id=$1`,[ids[0]]);await progress(ids[0],30,'field',rid);check((await db.query('select actions from public.live_event_players where player_id=$1',[ids[0]])).rows[0].actions===2,'reused gameplay receipt does not progress');
+await reject(()=>db.query('select public.harvest_event_claim($1,$2)',[ids[0],event]),/wait/);
+// Clock fixtures modify only this throwaway database, never a deployed game.
+await db.exec(`alter table public.live_events disable trigger harvest_event_validate;update public.live_events set starts_at=now()-interval '3 hours',ends_at=now()-interval '1 hour';alter table public.live_events enable trigger harvest_event_validate;update public.live_event_players set progress='{"harvested":30}',actions=3,joined_at=now()-interval '30 minutes',last_at=now()-interval '10 minutes';`);
+const claim=async(id,eventId)=>(await db.query('select public.harvest_event_claim($1,$2) result',[id,eventId])).rows[0].result;
+const balance=(await farm(ids[0])).state.coins;const reward=await claim(ids[0],event);check(reward.diamonds===1&&reward.coins===60,'participant-scaled reward');await claim(ids[0],event);check((await farm(ids[0])).state.coins===balance+60,'claim replay cannot mint twice');
+// A larger settled event proves total allocation and the per-day wallet ceiling.
+const large=crypto.randomUUID();await db.query(`insert into public.live_events(id,title,starts_at,ends_at,active,objectives,rewards,created_by) values($1,'Large event',now()-interval '3 hours',now()-interval '1 hour',false,'[{"stat":"harvested","target":30}]',$2,$3)`,[large,{...rewards,participantStep:10,poolCap:5},ids[0]]);
+const largePlayers=[...ids.slice(0,5),...Array.from({length:35},()=>crypto.randomUUID())];
+for(const id of largePlayers.slice(5))await db.query('insert into auth.users(id) values($1)',[id]);
+for(const id of largePlayers)await db.query(`insert into public.live_event_players(event_id,player_id,progress,actions,joined_at,last_at) values($1,$2,'{"harvested":30}',3,now()-interval '30 minutes',now()-interval '10 minutes')`,[large,id]);
+await db.query('select public.harvest_event_settle($1)',[large]);check((await db.query('select sum(diamonds)::int n from public.live_event_players where event_id=$1',[large])).rows[0].n<=5,'global event pool ceiling');
+check((await db.query('select max(diamonds)::int n from public.live_event_players where event_id=$1',[large])).rows[0].n===3,'participation scaling reaches the safe individual cap');
+check((await db.query('select count(*)::int n from public.live_event_players where event_id=$1 and diamonds=0',[large])).rows[0].n===38,'pool exhaustion never over-allocates');
+await db.query(`update public.live_event_players set paid_diamonds=6 where player_id=$1 and event_id=$2`,[ids[0],event]);const capped=await claim(ids[0],large);check(capped.diamonds===0,'UTC daily claim ceiling');
+for(const role of ['anon','authenticated'])check((await db.query(`select has_function_privilege($1,'public.harvest_social(uuid,jsonb,uuid)','execute') or has_function_privilege($1,'public.harvest_event_claim(uuid,uuid)','execute') or has_table_privilege($1,'public.live_events','select') as allowed`,[role])).rows[0].allowed===false,'private tables and functions stay private');
+console.log(`PASS: ${checks} PostgreSQL assertions; additive SQL reapplied twice; social transfers, limits, rollback, eligibility, event progress, receipt replay, settlement, pool/daily caps, one-time claims and ACLs.`);
+await db.close();

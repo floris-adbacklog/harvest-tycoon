@@ -1,0 +1,12 @@
+vite v8.0.13 building client environment for production...
+[2Ktransforming...✓ 71 modules transformed.
+rendering chunks...
+computing gzip size...
+public/cloud/supabase-DUL-QDSO.js       0.07 kB │ gzip:  0.08 kB
+public/cloud/leaderboard-Dwg4Bo_W.js   17.73 kB │ gzip:  5.55 kB
+public/cloud/cloud.js                  30.28 kB │ gzip: 10.29 kB
+public/cloud/game-cloud.js            116.92 kB │ gzip: 30.69 kB
+public/cloud/supabase-CrOKe3zT.js     274.26 kB │ gzip: 63.77 kB
+
+✓ built in 469ms
+Standalone static game ready in dist-static/. No application server is required.

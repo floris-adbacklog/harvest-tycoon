@@ -1,0 +1,39 @@
+✔ a new farm gets a 30 minute sprint from its creation, in plain clock time (62.9253ms)
+✔ inside the sprint crops, batches and Care take 80% less time; afterwards everything is normal and running things keep their time (13.828075ms)
+✔ starter corn, animal feed and barley cannot be sold in the first 30 minutes; what grows on top can, and afterwards everything can (21.73782ms)
+✔ every level pays at least one diamond, so the first level-ups are never empty-handed (2.459133ms)
+✔ twenty starter quests are appended after the old ones: small, unique and built on counters the game already keeps (4.820857ms)
+✔ a new farmer sees the quickest starter quests first, three at a time, and ticks them off for coins only (15.629207ms)
+✔ the hourglass sits next to the diamonds like the Family button, opens a screen that closes, and has its own icon (4.075922ms)
+✔ the hourglass says how long is left and that it is temporary (0.845528ms)
+✔ practice unlocks chores in order at their mastery threshold and respects caps (83.33961ms)
+✔ a regular completion earns guaranteed rewards, advances practice, starts cooldown and ignores forged outcome (12.880721ms)
+✔ success boundary is strict and a mastered first chore always succeeds (10.762908ms)
+✔ old farms retain balances and cooldowns without inventing per-chore practice (3.006631ms)
+✔ each hands-on station awards an item and Honey has dedicated artwork (0.791519ms)
+✔ old saves preserve coins, inventory, levels, crop and job deadlines (45.452511ms)
+✔ active care yields three crops versus one passive crop and cannot be repeated (17.969033ms)
+✔ passive earnings accrue only once, cap offline time and do not retroactively use upgrades (12.030265ms)
+✔ chores remain repeatable but do not pay twice during cooldown (9.195402ms)
+✔ mastery counts field harvests, claims once and old crop counts receive credit (3.007445ms)
+✔ estate chapters take over thirteen days even with unlimited funds, then keep repeating (20.08511ms)
+✔ level requirements grow and all twenty building levels keep positive production durations (10.948108ms)
+✔ new quests append to old IDs and keep beginner and claimed progress (31.072413ms)
+✔ new day selections stay fixed through level-ups, upgrades and reloads (12.161564ms)
+✔ old daily progress and order identities survive the migration until midnight (6.863151ms)
+✔ daily rotation covers accessible orders without locked chores or parallel goals for starters (306.36111ms)
+✔ new progress only counts accepted actions; all chores count, ready queues do not (3.445422ms)
+✔ Honey deliveries consume stock once and advance the dedicated quest (3.411592ms)
+✔ late-game quests come as long ladders above what the first players have reached (0.965005ms)
+✔ every late-game quest counts a stat the game keeps (0.90814ms)
+✔ quest rows carry no "New" badge, whichever quest they show (0.88481ms)
+✔ boost tapers continuously to zero, never rewrites running timers (30.683093ms)
+✔ every chore pays coins and XP while its expected payout stays within the previous budget (1.053675ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 788.03986

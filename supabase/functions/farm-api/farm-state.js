@@ -395,12 +395,14 @@ export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undef
 export function productionSpeed(level,building){const speed=level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));return building==='factory'?speed/2:speed;}
 // The first 30 minutes after a farm is created are a sprint: new crops and new batches take 80% less time (corn 15 min -> 3 min), the
 // Care marker comes sooner, and the starter corn and animal feed stay in the barn so nothing is sold by accident. Afterwards
-// everything runs at its normal pace. It is plain clock time from creation (state.rookieUntil); crops and batches that are already
+// the timer boost eases to zero over 90 more minutes. It is plain clock time from creation (state.rookieUntil); crops and batches that are already
 // running keep their times. Only farms created in the guided flow have it: farms from before this simply have no rookieUntil.
 export const ROOKIE_MS=30*60000;
 export const ROOKIE_TIMER_BOOST=.8;
 export const rookieLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil-now):0;
-export const rookieBoost=(state,now=Date.now())=>rookieLeft(state,now)>0?ROOKIE_TIMER_BOOST:0;
+export const ROOKIE_TAPER_MS=90*60000;
+export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)&&state.rookieUntil>0?Math.max(0,state.rookieUntil+ROOKIE_TAPER_MS-now):0;
+export const rookieBoost=(state,now=Date.now())=>ROOKIE_TIMER_BOOST*Math.min(1,rookieBoostLeft(state,now)/ROOKIE_TAPER_MS);
 export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now)));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
@@ -1162,6 +1164,12 @@ export const CHORES=Object.freeze({
  irrigation:{name:'Restore the irrigation',description:'Clear the channels and bring water to the far fields.',icon:'waves',coins:330,xp:65,cooldown:1500000,baseChance:25,maxChance:65,requires:'fences'},
  harvestfair:{name:'Prepare the harvest fair',description:'Arrange a prize-worthy display of the farm’s best goods.',icon:'party-popper',coins:600,xp:120,cooldown:2700000,baseChance:20,maxChance:60,requires:'irrigation'}
 });
+// Guaranteed half of the original starting expected payout; the remaining budget is random.
+// At every practice level expected coins/XP stay at or below the old success-only budget.
+export function choreRewards(chore,bonus=false){
+ const reward=value=>Math.max(1,Math.floor(value*chore.baseChance/200))+(bonus?Math.floor(value/2):0);
+ return {coins:reward(chore.coins),xp:reward(chore.xp)};
+}
 export function choreStatus(state,id,now=Date.now()){
  if(!Object.hasOwn(CHORES,id))throw new Error('Choose a farm chore.');
  const c=CHORES[id],attempts=Math.max(0,Math.floor(state.chorePractice?.[id]??0));
@@ -1203,12 +1211,12 @@ export function doChore(state,id,now=Date.now(),random=secureChoreRandom){
  const chore=choreStatus(state,id,now);
  if(chore.locked)throw new Error(`Master ${CHORES[chore.requires].name} first.`);
  if(chore.remaining)throw new Error(`This chore returns in ${formatDuration(chore.remaining)}.`);
- const success=random()<chore.chance/100;
+ const bonus=random()<chore.chance/100;
  state.chorePractice??={};state.chorePractice[id]=chore.attempts+1;
  state.chores[id]=now+chore.cooldown;
- const coins=success?chore.coins:0,xp=success?chore.xp:0;
- state.coins+=coins;state.xp+=xp;if(success){state.stats.chores++;state.stats['chore_'+id]=(state.stats['chore_'+id]??0)+1;}
- return {success,coins,xp,chance:chore.chance,nextChance:Math.min(chore.maxChance,chore.chance+2),attempts:chore.attempts+1,readyAt:state.chores[id]};
+ const rewards=choreRewards(chore,bonus),{coins,xp}=rewards;
+ state.coins+=coins;state.xp+=xp;{state.stats.chores++;state.stats['chore_'+id]=(state.stats['chore_'+id]??0)+1;}
+ return {success:true,bonus,coins,xp,chance:chore.chance,nextChance:Math.min(chore.maxChance,chore.chance+2),attempts:chore.attempts+1,readyAt:state.chores[id]};
 }
 export function currentProject(state){
  const n=state.estate.completed;if(n<PROJECTS.length)return {...PROJECTS[n],id:n,diamonds:CHAPTER_DIAMONDS[n]};

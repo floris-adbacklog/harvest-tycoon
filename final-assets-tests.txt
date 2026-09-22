@@ -1,0 +1,42 @@
+✔ Family gate uses shared level, supports an override, and also gates legacy saves (45.8734ms)
+✔ UTC family week changes exactly at Monday midnight (0.330522ms)
+✔ Orders are reproducible, scale to snapshots, and fit a level-10 value and production band (69.50835ms)
+✔ Create and join enforce names, emblems, member limit and code privacy (59.190039ms)
+✔ Order member snapshot is fixed after members join (3.209122ms)
+✔ A valid contribution deducts precisely once, tracks base value, and cannot overfill (5.279368ms)
+✔ Completion rewards exclude below-threshold contributions; claim is once and expires (10.779305ms)
+✔ Tournament extras unlock on one full line, consume goods for points only and respect cap (3.644517ms)
+✔ Tournament settles once, pays the top three and gives a solo winner the whole first prize (24.791798ms)
+✔ First prize caps at 300; order diamonds are extra; low scores and tiebreak still work (5.791874ms)
+✔ Guaranteed 50 diamonds exist before entry; a first positive delivery qualifies even for solo play (10.041166ms)
+✔ Missing podium places do not dilute first prize; only occupied top-three places win (0.46436ms)
+✔ Personal and family prize previews exactly match settlement without the old 25-diamond cap (201.443961ms)
+✔ Existing partial order contributions qualify without a reset or completed order (19.305021ms)
+✔ First prize grows with real weekly contributors, never with idle members or past contributions (30.545579ms)
+✔ A 300-diamond solo winning share is credited once in addition to existing order rewards (4.990279ms)
+✔ Settlement excludes departed members; inactive members remain without rewards (1.337427ms)
+✔ Leave passes leadership to oldest member and enforces cooldown and weekly lock (16.448398ms)
+✔ Leader permissions, open joining, kick cooldown, code regeneration and rename cooldown (36.846263ms)
+✔ Failed invite attempts are persisted and limited, including alternating create requests (29.360934ms)
+✔ Public view exposes no player IDs, activity timestamps, balances, emails, or other invite codes (10.362172ms)
+✔ Old saves normalize safely and shared copies and existing presence rule match (28.830097ms)
+✔ Service replay uses permanent receipt without deducting inventory or another commit (27.252478ms)
+✔ Service CAS failure retries; failed joins commit rate limits without marking online (11.203813ms)
+✔ Migration is additive, RLS/service-only, atomic, replay safe and locks settlement weeks (4.24155ms)
+✔ Family read includes the authenticated player identity required by the existing bridge (2.833539ms)
+✔ The four Family pages each use their own generated PNG and a mobile-visible topbar button (2.585623ms)
+✔ new emblems preserve existing IDs and only leaders may change them (26.047667ms)
+✔ family standings expose at most ten ranked families while retaining all contributors for prize sizing (1.144963ms)
+✔ the converted sprite sheets and pictures are served as WebP, are all present on disk, and are meaningfully smaller than their PNG originals (14.894925ms)
+✔ every sprite sheet reference (art() and the welcome-page CSS sheet) points at the .webp file (0.976131ms)
+✔ pictures that were not converted still ask for a plain PNG (the extension swap is per-key, not global) (0.427462ms)
+✔ every hardcoded icon path outside visual-icons.js was updated to match: the VIP badge, the level-up celebration, and the loading screen (4.804239ms)
+✔ ART_KEYS still lists every converted key — nothing lost its entry when its extension changed (0.255385ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1288.200175

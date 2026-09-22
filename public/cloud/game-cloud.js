@@ -1,47 +1,120 @@
-import { a as e, c as t, i as n, l as r, o as i, r as a, s as o, t as s, u as c } from "./leaderboard-DgNNlQbT.js";
-//#region public/avatar-settings.js
-function l(e) {
-	let n = c(e);
-	return `<div class="avatar-settings-header"><img id="avatar-preview" src="${n.src}" alt="${n.name}" width="80" height="80"><div><h3 id="avatar-settings-title">Your farmer avatar</h3><p>Pick a face for your farm.</p><span id="avatar-current-name">${n.name}</span></div></div><details id="avatar-choices"><summary>Change avatar <span>${t.length} free choices</span></summary><form id="avatar-form"><fieldset class="avatar-grid"><legend class="avatar-sr-only">Choose your farmer avatar</legend>${t.map((e) => `<label class="avatar-choice"><input type="radio" name="avatar" value="${e.id}" ${e.id === n.id ? "checked" : ""}><span class="avatar-choice-art"><img src="${e.src}" alt="" width="96" height="96" loading="lazy" decoding="async"><span class="avatar-choice-check" aria-hidden="true">✓</span></span><span class="avatar-choice-name">${e.name}</span></label>`).join("")}</fieldset><button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form></details><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
+import { a as e, c as t, d as n, i as r, l as i, o as a, r as o, s, t as c, u as l } from "./leaderboard-Dwg4Bo_W.js";
+//#region public/emblem-picker.js
+var u = (e) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${e < 0 ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function d({ emblems: e, checkedId: t, legend: n, nameOf: r, tile: i, esc: a, field: o = "emblem", noun: s = "emblem", extraClass: c = "" }) {
+	let l = Math.max(0, e.findIndex((e) => e.id === t)), d = e.map((e, t) => `<label title="${a(r(e))}"><input type="radio" name="${o}" value="${e.id}"${t === l ? " checked" : ""} aria-label="${a(r(e))} ${s}" data-name="${a(r(e))}">${i(e.id)}</label>`).join("");
+	return `<fieldset class="emblem-picker${c ? ` ${c}` : ""}" data-emblem-picker><legend>${n}</legend><div class="emblem-picker-row"><button type="button" class="emblem-arrow" data-emblem-step="-1" aria-label="Show earlier ${s}s">${u(-1)}</button><div class="family-emblems">${d}</div><button type="button" class="emblem-arrow" data-emblem-step="1" aria-label="Show more ${s}s">${u(1)}</button></div><p class="emblem-picked" aria-live="polite"><strong>${a(r(e[l]))}</strong><span>${l + 1} of ${e.length}</span></p></fieldset>`;
 }
-function u(e, { bridge: t, profile: n, onSaved: r = () => {} }) {
-	if (!e) return;
-	let i = c(n?.avatar_id).id, a = i, o = !1, s = !1;
-	e.innerHTML = l(i);
-	let u = e.querySelector("form"), d = e.querySelector("#avatar-preview"), f = e.querySelector("#avatar-current-name"), p = e.querySelector("#avatar-feedback"), m = u.querySelector("button"), h = u.querySelector("fieldset");
-	function g() {
-		let e = c(a);
-		d.src = e.src, d.alt = e.name, f.textContent = e.name, m.disabled = o || a === i, h.disabled = o, m.textContent = o ? "Saving…" : "Save avatar", u.setAttribute("aria-busy", String(o));
+function f(e, t, n) {
+	return n * Math.max(e - t, e * .6);
+}
+function p(e, t = globalThis) {
+	for (let n of e.querySelectorAll("[data-emblem-picker]")) {
+		let e = n.querySelector(".family-emblems"), r = [...n.querySelectorAll("input[type=\"radio\"]")], [i, a] = ["-1", "1"].map((e) => n.querySelector(`[data-emblem-step="${e}"]`)), o = n.querySelector(".emblem-picked strong"), s = n.querySelector(".emblem-picked span"), c = () => {
+			i.disabled = e.scrollLeft <= 1, a.disabled = e.scrollLeft >= e.scrollWidth - e.clientWidth - 1;
+		}, l = () => {
+			let e = r.findIndex((e) => e.checked);
+			e < 0 || (o.textContent = r[e].dataset.name, s.textContent = `${e + 1} of ${r.length}`);
+		}, u = (t) => {
+			let n = Math.min(Math.max(e.scrollLeft + f(e.clientWidth, r[0]?.parentElement.offsetWidth ?? 0, t), 0), e.scrollWidth - e.clientWidth);
+			try {
+				e.scrollTo({
+					left: n,
+					behavior: "smooth"
+				});
+			} catch {
+				e.scrollLeft = n;
+			}
+		};
+		i.onclick = () => u(-1), a.onclick = () => u(1), e.addEventListener("scroll", c, { passive: !0 }), n.addEventListener("change", l);
+		let d = !1, p = () => {
+			if (d || !e.clientWidth) return;
+			let t = r.find((e) => e.checked)?.parentElement;
+			t && (e.scrollLeft = t.offsetLeft - (e.clientWidth - t.offsetWidth) / 2), d = !0;
+		};
+		if (p(), c(), l(), typeof t.ResizeObserver == "function") {
+			let n = new t.ResizeObserver(() => {
+				e.isConnected ? (p(), c()) : n.disconnect();
+			});
+			n.observe(e);
+		}
 	}
-	return u.addEventListener("change", (e) => {
-		e.target.name !== "avatar" || o || (a = c(e.target.value).id, p.textContent = a === i ? "" : "Save to use this avatar.", g());
-	}), u.addEventListener("submit", async (e) => {
-		if (e.preventDefault(), !(o || a === i)) {
-			o = !0, p.textContent = "", g();
+}
+//#endregion
+//#region public/avatar-settings.js
+var m = (e) => String(e).replace(/[&<>"']/g, (e) => ({
+	"&": "&amp;",
+	"<": "&lt;",
+	">": "&gt;",
+	"\"": "&quot;",
+	"'": "&#39;"
+})[e]), h = (e) => `<span class="avatar-tile"><img src="${n(e).src}" alt="" width="96" height="96" loading="lazy" decoding="async" draggable="false"></span>`;
+function g(e) {
+	let t = n(e), r = d({
+		emblems: i,
+		checkedId: t.id,
+		legend: "Choose your farmer avatar",
+		nameOf: (e) => e.name,
+		tile: h,
+		esc: m,
+		field: "avatar",
+		noun: "avatar",
+		extraClass: "avatar-picker"
+	});
+	return `<div class="avatar-settings-header"><img id="avatar-preview" src="${t.src}" alt="${m(t.name)}" width="80" height="80"><div><h3 id="avatar-settings-title">Your farmer avatar</h3><p>Pick a face for your farm.</p></div></div><form id="avatar-form">${r}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
+}
+function _(e, { bridge: t, profile: r, onSaved: i = () => {} }) {
+	if (!e) return;
+	let a = n(r?.avatar_id).id, o = a, s = !1, c = !1;
+	e.innerHTML = g(a), p(e);
+	let l = e.querySelector("form"), u = e.querySelector("#avatar-preview"), d = e.querySelector("#avatar-feedback"), f = l.querySelector(".avatar-save"), m = l.querySelector("fieldset");
+	function h() {
+		let e = n(o);
+		u.src = e.src, u.alt = e.name, f.disabled = s || o === a, m.disabled = s, f.textContent = s ? "Saving…" : "Save avatar", l.setAttribute("aria-busy", String(s));
+	}
+	return l.addEventListener("change", (e) => {
+		e.target.name !== "avatar" || s || (o = n(e.target.value).id, d.textContent = o === a ? "" : "Save to use this avatar.", h());
+	}), l.addEventListener("submit", async (e) => {
+		if (e.preventDefault(), !(s || o === a)) {
+			s = !0, d.textContent = "", h();
 			try {
 				let e = await t.request({
 					operation: "avatar",
-					avatarId: a
+					avatarId: o
 				});
-				if (s) return;
-				if (e.profile?.player_id !== t.playerId || e.profile?.avatar_id !== a) throw Error("Your avatar could not be saved. Please try again.");
-				i = a, r(e.profile), p.textContent = "Avatar saved.", window.dispatchEvent(new CustomEvent("harvest-avatar-changed", { detail: {
+				if (c) return;
+				if (e.profile?.player_id !== t.playerId || e.profile?.avatar_id !== o) throw Error("Your avatar could not be saved. Please try again.");
+				a = o, i(e.profile), d.textContent = "Avatar saved.", window.dispatchEvent(new CustomEvent("harvest-avatar-changed", { detail: {
 					playerId: t.playerId,
-					avatarId: i
+					avatarId: a
 				} }));
 			} catch (e) {
-				s || (p.textContent = e.message || "Your avatar could not be saved. Please try again.");
+				c || (d.textContent = e.message || "Your avatar could not be saved. Please try again.");
 			} finally {
-				o = !1, s || g();
+				s = !1, c || h();
 			}
 		}
 	}), window.addEventListener("pagehide", () => {
-		s = !0;
+		c = !0;
 	}, { once: !0 }), { get savedAvatar() {
-		return i;
+		return a;
 	} };
 }
-var d = Object.freeze({
+//#endregion
+//#region public/confirm-dialog.js
+function v({ title: e, description: t, confirmLabel: n = "Confirm", cancelLabel: r = "Cancel" }) {
+	return new Promise((i) => {
+		let a = document.createElement("dialog");
+		a.className = "diamond-confirm sale-confirm", a.setAttribute("aria-labelledby", "sale-confirm-title"), a.setAttribute("aria-describedby", "sale-confirm-description"), a.innerHTML = "<h2 id=\"sale-confirm-title\"></h2><p id=\"sale-confirm-description\"></p><div class=\"diamond-confirm-actions\"><button type=\"button\" class=\"small-button\" data-cancel autofocus></button><button type=\"button\" class=\"confirm-spend\" data-confirm></button></div>", a.querySelector("h2").textContent = e, a.querySelector("p").textContent = t, a.querySelector("[data-cancel]").textContent = r, a.querySelector("[data-confirm]").textContent = n;
+		let o = document.activeElement, s = !1;
+		a.querySelector("[data-cancel]").onclick = () => a.close(), a.querySelector("[data-confirm]").onclick = () => {
+			s = !0, a.close();
+		}, a.addEventListener("close", () => {
+			a.remove(), o?.isConnected && o.focus(), i(s);
+		}, { once: !0 }), document.body.append(a), a.showModal();
+	});
+}
+var y = Object.freeze({
 	corn: {
 		name: "Corn",
 		cost: 10,
@@ -173,7 +246,7 @@ var d = Object.freeze({
 		minLevel: 10,
 		perennial: !0
 	}
-}), f = Object.freeze({
+}), b = Object.freeze({
 	honey: {
 		name: "Honey",
 		sell: 35,
@@ -342,11 +415,16 @@ var d = Object.freeze({
 		icon: "package-check",
 		color: "gold"
 	}
-});
+}), x = Object.freeze({
+	...y,
+	...b
+}), S = 1e5, C = {
+	coins: 5e3,
+	batch: 50,
+	duration: 81e5,
+	xp: 50
+};
 Object.freeze({
-	...d,
-	...f
-}), Object.freeze({
 	familyhall: {
 		name: "Family Hall",
 		tagline: "Grow together with your Farm Family.",
@@ -440,8 +518,19 @@ Object.freeze({
 		upgradeCost: 850,
 		minLevel: 10,
 		buildCost: 1e4
+	},
+	factory: {
+		name: "Factory",
+		tagline: "Every good in huge batches, for the fields and upgrades of a lasting estate.",
+		icon: "factory",
+		model: "hangar_007",
+		type: "production",
+		upgradeCost: 800,
+		minLevel: 50,
+		buildCost: S
 	}
-}), Object.freeze({
+});
+var w = Object.freeze({
 	grainmeal: {
 		building: "windmill",
 		name: "Grind grain meal",
@@ -764,6 +853,33 @@ Object.freeze({
 		minLevel: 12,
 		requiresBuildings: ["juicepress", "preserves"]
 	}
+}), T = (e) => e.duration <= 36e5 ? 20 : 10, E = (e, t) => Object.freeze(Object.fromEntries(Object.entries(e).map(([e, n]) => [e, n * t]))), D = Object.fromEntries([...Object.entries(w).map(([e, t]) => {
+	let n = T(t);
+	return [`mass_${e}`, Object.freeze({
+		building: "factory",
+		name: `${t.name} ×${n}`,
+		input: E(t.input, n),
+		output: E(t.output, n),
+		duration: t.duration * 2,
+		xp: t.xp * n,
+		base: e,
+		batches: n,
+		minLevel: 50
+	})];
+}), ["mass_honey", Object.freeze({
+	building: "factory",
+	name: `Bottle honey ×${C.batch}`,
+	input: Object.freeze({}),
+	output: Object.freeze({ honey: C.batch }),
+	coins: C.coins,
+	duration: C.duration,
+	xp: C.xp,
+	batches: C.batch,
+	minLevel: 50
+})]]);
+Object.freeze({
+	...w,
+	...D
 }), Object.freeze([
 	{
 		id: "harvest",
@@ -817,7 +933,7 @@ Object.freeze({
 	{
 		id: "tend",
 		title: "Good things need a little care",
-		description: "Use Care on a growing crop once its care marker appears. Wheat needs about 36 seconds.",
+		description: "Use Care on a growing crop once its care marker appears. It comes quickly while you are starting out.",
 		guide: "tend",
 		icon: "leaf"
 	},
@@ -1745,8 +1861,194 @@ Object.freeze({
 		stat: "harvest_pumpkin",
 		target: 250,
 		reward: 6e3
+	},
+	{
+		title: "Thirsty crops",
+		description: "Water 3 growing crops.",
+		stat: "watered",
+		target: 3,
+		reward: 20,
+		xp: 0
+	},
+	{
+		title: "First customers",
+		description: "Sell 5 items at the market.",
+		stat: "sold",
+		target: 5,
+		reward: 25,
+		xp: 0
+	},
+	{
+		title: "Show some care",
+		description: "Give 2 crops extra care.",
+		stat: "tended",
+		target: 2,
+		reward: 25,
+		xp: 0
+	},
+	{
+		title: "Pocket money",
+		description: "Earn 60 coins at the market.",
+		stat: "earned",
+		target: 60,
+		reward: 30,
+		xp: 0
+	},
+	{
+		title: "Morning eggs",
+		description: "Collect 6 eggs.",
+		stat: "made_eggs",
+		target: 6,
+		reward: 30,
+		xp: 0
+	},
+	{
+		title: "Corn on the cob",
+		description: "Harvest 4 corn.",
+		stat: "harvest_corn",
+		target: 4,
+		reward: 30,
+		xp: 0
+	},
+	{
+		title: "Chore time",
+		description: "Complete 2 farm chores.",
+		stat: "chores",
+		target: 2,
+		reward: 40,
+		xp: 0
+	},
+	{
+		title: "A full basket",
+		description: "Harvest 10 crops.",
+		stat: "harvested",
+		target: 10,
+		reward: 45,
+		xp: 0
+	},
+	{
+		title: "First seeds",
+		description: "Plant 3 crops.",
+		stat: "planted",
+		target: 3,
+		reward: 20,
+		xp: 0
+	},
+	{
+		title: "Wheat wave",
+		description: "Harvest 6 wheat.",
+		stat: "harvest_wheat",
+		target: 6,
+		reward: 30,
+		xp: 0
+	},
+	{
+		title: "Salad days",
+		description: "Harvest 4 lettuce.",
+		stat: "harvest_lettuce",
+		target: 4,
+		reward: 35,
+		xp: 0
+	},
+	{
+		title: "Well made",
+		description: "Collect 2 finished production batches.",
+		stat: "produced",
+		target: 2,
+		reward: 35,
+		xp: 0
+	},
+	{
+		title: "Fresh milk",
+		description: "Collect 4 milk.",
+		stat: "made_milk",
+		target: 4,
+		reward: 40,
+		xp: 0
+	},
+	{
+		title: "First challenge",
+		description: "Complete 1 daily challenge.",
+		stat: "dailies",
+		target: 1,
+		reward: 40,
+		xp: 0
+	},
+	{
+		title: "Busy market day",
+		description: "Sell 20 items at the market.",
+		stat: "sold",
+		target: 20,
+		reward: 40,
+		xp: 0
+	},
+	{
+		title: "First order",
+		description: "Complete 1 delivery order.",
+		stat: "deliveries",
+		target: 1,
+		reward: 45,
+		xp: 0
+	},
+	{
+		title: "Feed the flock",
+		description: "Make 6 animal feed at the Mill.",
+		stat: "made_feed",
+		target: 6,
+		reward: 35,
+		xp: 0
+	},
+	{
+		title: "Corn crib",
+		description: "Harvest 12 corn.",
+		stat: "harvest_corn",
+		target: 12,
+		reward: 40,
+		xp: 0
+	},
+	{
+		title: "Say cheese",
+		description: "Collect 2 cheese from the Dairy.",
+		stat: "made_cheese",
+		target: 2,
+		reward: 45,
+		xp: 0
+	},
+	{
+		title: "A small fortune",
+		description: "Earn 300 coins at the market.",
+		stat: "earned",
+		target: 300,
+		reward: 60,
+		xp: 0
 	}
 ]), Object.freeze({
+	first: 130,
+	count: 20
+}), Object.freeze({
+	2: Object.freeze([
+		15,
+		30,
+		40,
+		60,
+		80,
+		105,
+		135,
+		170,
+		215
+	]),
+	3: Object.freeze([
+		15,
+		40,
+		65,
+		95,
+		130,
+		170,
+		215,
+		265,
+		320
+	])
+}), Object.freeze({
 	corn: 1,
 	wheat: 1,
 	lettuce: 3,
@@ -1770,7 +2072,8 @@ Object.freeze({
 	packing: 10,
 	kitchen: 12,
 	juicepress: 21,
-	preserves: 24
+	preserves: 24,
+	factory: 50
 }), Object.freeze({
 	mill: 100,
 	dairy: 300,
@@ -1779,7 +2082,8 @@ Object.freeze({
 	packing: 1400,
 	kitchen: 3500,
 	juicepress: 6500,
-	preserves: 1e4
+	preserves: 1e4,
+	factory: S
 }), Object.freeze({
 	eggs: 1,
 	feed: 2,
@@ -1811,11 +2115,12 @@ Object.freeze({
 	pickledbeans: 25,
 	berrytart: 25,
 	harvesthamper: 25
-}), Object.freeze({
+});
+var O = Object.freeze({
 	challenges: 3,
 	cart: 5,
-	activities: 6,
-	chores: 4,
+	activities: 8,
+	chores: 10,
 	mastery: 7,
 	family: 10,
 	stall: 11,
@@ -1823,16 +2128,251 @@ Object.freeze({
 	boosts: 14,
 	silo: 18,
 	projects: 19
-}), Object.freeze({
+});
+Object.freeze({
 	quick: 5,
 	village: 8,
 	commission: 12
+}), Object.freeze({
+	chores: 4,
+	activities: 6
 }), Object.freeze([
-	5e5,
-	75e4,
-	1125e3,
-	169e4
+	45e3,
+	65e3,
+	9e4,
+	12e4,
+	155e3,
+	19e4,
+	225e3,
+	26e4
 ]), Object.freeze([
+	{
+		level: 40,
+		coins: 3e5,
+		materials: {
+			bread: 100,
+			cheese: 80,
+			stew: 40
+		}
+	},
+	{
+		level: 45,
+		coins: 35e4,
+		materials: {
+			oil: 70,
+			vegetables: 70,
+			applejuice: 50
+		}
+	},
+	{
+		level: 50,
+		coins: 41e4,
+		materials: {
+			pie: 70,
+			berrypreserves: 60,
+			beangratin: 50
+		}
+	},
+	{
+		level: 55,
+		coins: 48e4,
+		materials: {
+			orchardjuice: 90,
+			applecompote: 80,
+			orchardsalad: 80
+		}
+	},
+	{
+		level: 60,
+		coins: 56e4,
+		materials: {
+			applepie: 90,
+			pickledbeans: 60,
+			cheese: 140
+		}
+	},
+	{
+		level: 65,
+		coins: 65e4,
+		materials: {
+			berrytart: 80,
+			applevinegar: 100,
+			vegetables: 120
+		}
+	},
+	{
+		level: 70,
+		coins: 75e4,
+		materials: {
+			berrysmoothie: 120,
+			beangratin: 100,
+			oil: 140
+		}
+	},
+	{
+		level: 75,
+		coins: 86e4,
+		materials: {
+			berrycheesecake: 100,
+			berrypreserves: 120,
+			stew: 140
+		}
+	},
+	{
+		level: 80,
+		coins: 98e4,
+		materials: {
+			harvesthamper: 50,
+			applepie: 120,
+			pickledbeans: 100
+		}
+	},
+	{
+		level: 85,
+		coins: 111e4,
+		materials: {
+			harvesthamper: 65,
+			berrytart: 120,
+			orchardjuice: 180
+		}
+	},
+	{
+		level: 90,
+		coins: 125e4,
+		materials: {
+			harvesthamper: 80,
+			berrycheesecake: 140,
+			beangratin: 160
+		}
+	},
+	{
+		level: 95,
+		coins: 14e5,
+		materials: {
+			harvesthamper: 100,
+			berrycheesecake: 160,
+			pickledbeans: 180,
+			applevinegar: 180
+		}
+	}
+].map((e) => Object.freeze({
+	...e,
+	materials: Object.freeze(e.materials)
+}))), Object.freeze([
+	{
+		level: 26,
+		coins: 4e5,
+		diamonds: 570,
+		materials: {
+			bread: 60,
+			cheese: 40
+		}
+	},
+	{
+		level: 30,
+		coins: 52e4,
+		diamonds: 745,
+		materials: {
+			stew: 30,
+			oil: 30
+		}
+	},
+	{
+		level: 34,
+		coins: 68e4,
+		diamonds: 970,
+		materials: {
+			vegetables: 40,
+			applejuice: 30,
+			pie: 25
+		}
+	},
+	{
+		level: 38,
+		coins: 88e4,
+		diamonds: 1255,
+		materials: {
+			berrypreserves: 30,
+			beangratin: 25,
+			orchardsalad: 25
+		}
+	},
+	{
+		level: 42,
+		coins: 115e4,
+		diamonds: 1645,
+		materials: {
+			applepie: 30,
+			pickledbeans: 20,
+			cheese: 80
+		}
+	},
+	{
+		level: 50,
+		coins: 15e5,
+		diamonds: 2145,
+		materials: {
+			berrytart: 30,
+			orchardjuice: 50,
+			applecompote: 40
+		}
+	},
+	{
+		level: 58,
+		coins: 195e4,
+		diamonds: 2785,
+		materials: {
+			berrysmoothie: 50,
+			berrypreserves: 60,
+			pie: 50
+		}
+	},
+	{
+		level: 66,
+		coins: 255e4,
+		diamonds: 3645,
+		materials: {
+			berrycheesecake: 40,
+			applevinegar: 60,
+			stew: 80
+		}
+	},
+	{
+		level: 75,
+		coins: 33e5,
+		diamonds: 4715,
+		materials: {
+			harvesthamper: 25,
+			applepie: 60,
+			pickledbeans: 50
+		}
+	},
+	{
+		level: 85,
+		coins: 43e5,
+		diamonds: 6145,
+		materials: {
+			harvesthamper: 40,
+			berrycheesecake: 60,
+			berrytart: 60,
+			pickledbeans: 80
+		}
+	}
+].map((e) => Object.freeze({
+	...e,
+	materials: Object.freeze(e.materials)
+})));
+var k = Object.freeze({
+	wheat: 8,
+	corn: 8,
+	feed: 10,
+	barley: 6
+});
+Object.freeze({
+	corn: k.corn,
+	feed: k.feed,
+	barley: k.barley
+}), Object.freeze([
 	25,
 	45,
 	75,
@@ -1843,7 +2383,7 @@ Object.freeze({
 	400,
 	525
 ]);
-var p = 864e5;
+var A = 864e5;
 Object.freeze([
 	2,
 	2,
@@ -1901,7 +2441,7 @@ Object.freeze([
 		name: "Finish production",
 		cost: 200,
 		art: "boost",
-		description: "Finish all current production batches instantly. Collect the finished goods from their buildings."
+		description: "Finish all current production batches instantly (not the Factory’s big batches). Collect the finished goods from their buildings."
 	},
 	upgrade: {
 		name: "Buildings discount",
@@ -1910,7 +2450,7 @@ Object.freeze([
 		description: "Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires."
 	}
 });
-var m = [
+var j = [
 	[
 		{
 			stat: "harvested",
@@ -1980,7 +2520,7 @@ var m = [
 			reward: 45
 		}
 	]
-], h = [
+], M = [
 	[
 		{
 			stat: "harvest_greenbeans",
@@ -2053,7 +2593,7 @@ var m = [
 		minLevel: 10,
 		requiresBuildings: ["preserves"]
 	}]
-], g = [
+], N = [
 	[
 		{
 			stat: "made_orchardjuice",
@@ -2139,10 +2679,10 @@ var m = [
 		requiresBuildings: ["juicepress", "preserves"]
 	}]
 ];
-m.map((e, t) => Object.freeze([
+j.map((e, t) => Object.freeze([
 	...e,
-	...h[t],
-	...g[t],
+	...M[t],
+	...N[t],
 	...[
 		[
 			{
@@ -2825,8 +3365,29 @@ m.map((e, t) => Object.freeze([
 		minBonus: 90,
 		maxBonus: 125
 	}
-});
-var _ = [
+}), Object.freeze([
+	"Rookie farmer",
+	"Green thumb",
+	"Market regular",
+	"Harvest hero",
+	"Farm tycoon",
+	"Estate builder",
+	"Master grower",
+	"Valley supplier",
+	"Orchard keeper",
+	"Crop master",
+	"Factory owner",
+	"Homestead legend",
+	"Regional trader",
+	"Harvest baron",
+	"Valley icon",
+	"Grand cultivator",
+	"Estate mogul",
+	"Farming dynasty",
+	"Valley champion",
+	"Legend of the valley"
+]), O.boosts;
+var ee = [
 	{
 		name: "Bronze",
 		target: 25,
@@ -3067,13 +3628,13 @@ Object.freeze({
 		otherIcon: "check"
 	}
 }), Object.freeze({
-	coins: 0,
+	coins: 250,
 	xp: 60
 }), Object.freeze({
 	MAX_MEMBERS: 6,
 	MIN_CONTRIB_POINTS: 500,
 	JOIN_COOLDOWN_MS: 48 * 36e5,
-	RENAME_COOLDOWN_MS: 7 * p,
+	RENAME_COOLDOWN_MS: 7 * A,
 	ATTEMPTS_PER_HOUR: 10,
 	EXTRA_POINTS_CAP: 3e4,
 	TOURNAMENT_FIRST_MIN: 50,
@@ -3095,7 +3656,7 @@ Object.freeze({
 		.4
 	]
 });
-var v = Object.freeze([
+var te = Object.freeze([
 	"wheat",
 	"corn",
 	"sunflower",
@@ -3116,7 +3677,11 @@ var v = Object.freeze([
 	"cheese",
 	"applejuice",
 	"berrypreserves",
-	"harvesthamper"
+	"harvesthamper",
+	"family-fox",
+	"family-owl",
+	"family-windmill",
+	"family-horseshoe"
 ].map((e, t) => ({
 	id: String(t),
 	icon: e,
@@ -3179,29 +3744,29 @@ Object.freeze([
 		milk: 80,
 		honey: 30
 	}
-]), 7 * p;
-var y = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
+]), 7 * A;
+var P = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
 	"&": "&amp;",
 	"<": "&lt;",
 	">": "&gt;",
 	"\"": "&quot;",
 	"'": "&#39;"
-})[e]), b = (e) => Math.max(0, Number(e) || 0).toLocaleString("en-US"), x = (e) => String(e).padStart(2, "0");
-function S(e) {
+})[e]), F = (e) => Math.max(0, Number(e) || 0).toLocaleString("en-US"), I = (e) => String(e).padStart(2, "0");
+function L(e) {
 	let t = Number(e);
 	if (!Number.isFinite(t) || t <= 0) return null;
-	let n = new Date(t), r = n.getUTCFullYear(), i = x(n.getUTCMonth() + 1), a = x(n.getUTCDate());
+	let n = new Date(t), r = n.getUTCFullYear(), i = I(n.getUTCMonth() + 1), a = I(n.getUTCDate());
 	return {
 		text: `${a}-${i}-${r}`,
 		iso: `${r}-${i}-${a}`
 	};
 }
-var C = (e) => {
-	let t = S(e);
+var ne = (e) => {
+	let t = L(e);
 	return t ? `<p class="farmer-since"><svg class="farmer-since-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3v4M16 3v4M4 10h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>Member since <time datetime="${t.iso}">${t.text}</time></p>` : "";
-}, w = (e) => String(e ?? "Farmer").split(/\s+/).slice(0, 2).map((e) => e[0] ?? "").join("").toUpperCase(), T = (e) => `<span class="farmer-presence"><span class="online-dot${e ? " is-online" : ""}" aria-hidden="true"></span>${e ? "Online" : "Offline"}</span>`;
-function E(t, n = Date.now()) {
-	let r = t.family, i = v.find((e) => e.id === r?.emblem), a = t.stats ?? {}, s = [
+}, re = (e) => String(e ?? "Farmer").split(/\s+/).slice(0, 2).map((e) => e[0] ?? "").join("").toUpperCase(), R = (e) => `<span class="farmer-presence"><span class="online-dot${e ? " is-online" : ""}" aria-hidden="true"></span>${e ? "Online" : "Offline"}</span>`;
+function ie(r, i = Date.now()) {
+	let a = r.family, o = te.find((e) => e.id === a?.emblem), s = r.stats ?? {}, c = [
 		[
 			"harvested_crops",
 			"Crops harvested",
@@ -3222,105 +3787,367 @@ function E(t, n = Date.now()) {
 			"Deliveries completed",
 			"cart"
 		]
-	], l = t.badges ?? [];
-	return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${c(t.avatarId).src}" alt="" width="320" height="363" decoding="async" draggable="false"><span>${y(w(t.username))}</span></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${y(t.username)}${o(t.vipExpiresAt, n)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${e("xp")}Level ${b(t.level)}</span>${T(t.online)}</div>${C(t.memberSince)}${o(t.vipExpiresAt, n, !0)}</div></div>
- <section class="farmer-family" aria-label="Family">${e(i?.icon ?? "familyhall")}<div><span class="eyebrow">FAMILY</span><h4>${y(r?.name ?? "No family yet")}</h4><p>${y(r?.role ?? "Growing at their own pace")}</p></div></section>
- <h3 class="farmer-section-title">Life on the farm</h3><div class="farmer-stat-grid">${s.map(([t, n, r]) => `<div class="farmer-stat">${e(r)}<div><strong>${b(a[t])}</strong><span>${n}</span></div></div>`).join("")}</div>
+	], l = r.badges ?? [];
+	return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${n(r.avatarId).src}" alt="" width="320" height="363" decoding="async" draggable="false"><span>${P(re(r.username))}</span></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${P(r.username)}${t(r.vipExpiresAt, i)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${e("xp")}Level ${F(r.level)}</span>${R(r.online)}</div>${ne(r.memberSince)}${t(r.vipExpiresAt, i, !0)}</div></div>
+ <section class="farmer-family" aria-label="Family">${e(o?.icon ?? "familyhall")}<div><span class="eyebrow">FAMILY</span><h4>${P(a?.name ?? "No family yet")}</h4><p>${P(a?.role ?? "Growing at their own pace")}</p></div></section>
+ <h3 class="farmer-section-title">Life on the farm</h3><div class="farmer-stat-grid">${c.map(([t, n, r]) => `<div class="farmer-stat">${e(r)}<div><strong>${F(s[t])}</strong><span>${n}</span></div></div>`).join("")}</div>
  <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Crop mastery</h3><span>${l.length} / 48 badges</span></div>${l.length ? `<div class="farmer-badge-grid">${l.map((t) => {
-		let n = d[t.crop], r = _[t.tier];
-		return !n || !r ? "" : `<div class="farmer-badge farmer-badge-${Number(t.tier)}" title="${y(r.name)} · ${y(n.name)}">${e(t.crop)}<strong>${y(n.name)}</strong><span>${y(r.name)}</span></div>`;
+		let n = y[t.crop], r = ee[t.tier];
+		return !n || !r ? "" : `<div class="farmer-badge farmer-badge-${Number(t.tier)}" title="${P(r.name)} · ${P(n.name)}">${e(t.crop)}<strong>${P(n.name)}</strong><span>${P(r.name)}</span></div>`;
 	}).join("")}</div>` : "<p class=\"farmer-empty\">Every harvest is a step towards a first mastery badge.</p>"}</section>`;
 }
-function D(e, t = Date.now()) {
-	return e.map((e) => `<button type="button" class="farmer-search-result" data-player-id="${y(e.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${r(e.avatarId)}</span><span class="farmer-search-name"><strong>${y(e.username)}${o(e.vipExpiresAt, t)}</strong><small>${e.family ? y(e.family.name) : "No family yet"} · Level ${b(e.level)}</small></span>${T(e.online)}<span aria-hidden="true">›</span></button>`).join("");
+function ae(e, n = Date.now()) {
+	return e.map((e) => `<button type="button" class="farmer-search-result" data-player-id="${P(e.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${l(e.avatarId)}</span><span class="farmer-search-name"><strong>${P(e.username)}${t(e.vipExpiresAt, n)}</strong><small>${e.family ? P(e.family.name) : "No family yet"} · Level ${F(e.level)}</small></span>${R(e.online)}<span aria-hidden="true">›</span></button>`).join("");
 }
-function O(e) {
-	let t = document.getElementById("leaderboard-dialog"), n = document.createElement("section");
-	n.className = "farmer-search", n.setAttribute("aria-label", "Player search"), n.innerHTML = "<label for=\"farmer-search-input\">Find a farmer</label><div class=\"farmer-search-control\"><input id=\"farmer-search-input\" type=\"search\" maxlength=\"20\" autocomplete=\"off\" spellcheck=\"false\" placeholder=\"Search by player name…\" aria-describedby=\"farmer-search-status\"><button type=\"button\" class=\"small-button\" id=\"farmer-search-clear\" hidden>Clear</button></div><p id=\"farmer-search-status\" role=\"status\">Enter at least 2 characters to search all farmers.</p><div id=\"farmer-search-results\"></div>", t.querySelector(".leaderboard-filter").before(n);
-	let r = document.createElement("dialog");
-	r.id = "player-profile-dialog", r.className = "game-dialog farmer-profile-dialog", r.setAttribute("aria-labelledby", "farmer-profile-title"), r.innerHTML = "<div class=\"dialog-heading\"><div><span class=\"eyebrow\">GROWING TOGETHER</span><h2 id=\"farmer-profile-title\">Farmer profile</h2></div><button class=\"icon-button farmer-profile-close\" aria-label=\"Close player profile\">×</button></div><div id=\"farmer-profile-content\" aria-busy=\"false\"></div><p id=\"farmer-profile-status\" class=\"farmer-profile-status\" role=\"status\"></p><button type=\"button\" class=\"small-button farmer-profile-back\">Back to leaderboard</button>", document.body.append(r);
-	let a = n.querySelector("input"), o = n.querySelector("#farmer-search-clear"), s = n.querySelector("#farmer-search-results"), c = n.querySelector("#farmer-search-status"), l = r.querySelector("#farmer-profile-content"), u = r.querySelector("#farmer-profile-status"), d = 0, f = 0, p, m = null, h, g = !1, _ = Number.isFinite(e.serverNow) ? e.serverNow - Date.now() : 0;
-	function v() {
-		r.close();
+var oe = null;
+function z() {
+	return oe ??= import("./supabase-DUL-QDSO.js").then(({ supabase: e }) => e?.auth.getUser()).then((e) => String(e?.data?.user?.email ?? "").trim().toLowerCase() === "floris@millstone.nl").catch(() => !1);
+}
+var se = `<option value="">None</option><optgroup label="Crops">${Object.entries(y).map(([e, t]) => `<option value="${e}">${P(t.name)}</option>`).join("")}</optgroup><optgroup label="Goods produced">${Object.entries(x).filter(([e]) => !Object.hasOwn(y, e)).map(([e, t]) => `<option value="${e}">${P(t.name)}</option>`).join("")}</optgroup>`;
+function B(t) {
+	let n = document.getElementById("leaderboard-dialog"), r = document.createElement("section");
+	r.className = "farmer-search", r.setAttribute("aria-label", "Player search"), r.innerHTML = "<label for=\"farmer-search-input\">Find a farmer</label><div class=\"farmer-search-control\"><input id=\"farmer-search-input\" type=\"search\" maxlength=\"20\" autocomplete=\"off\" spellcheck=\"false\" placeholder=\"Search by player name…\" aria-describedby=\"farmer-search-status\"><button type=\"button\" class=\"small-button\" id=\"farmer-search-clear\" hidden>Clear</button></div><p id=\"farmer-search-status\" role=\"status\">Enter at least 2 characters to search all farmers.</p><div id=\"farmer-search-results\"></div>", n.querySelector(".leaderboard-filter").before(r);
+	let i = document.createElement("dialog");
+	i.id = "player-profile-dialog", i.className = "game-dialog farmer-profile-dialog", i.setAttribute("aria-labelledby", "farmer-profile-title"), i.innerHTML = "<div class=\"dialog-heading\"><div><span class=\"eyebrow\">GROWING TOGETHER</span><h2 id=\"farmer-profile-title\">Farmer profile</h2></div><button class=\"icon-button farmer-profile-close\" aria-label=\"Close player profile\">×</button></div><div id=\"admin-grant\" class=\"admin-grant\" hidden></div><div id=\"farmer-profile-content\" aria-busy=\"false\"></div><p id=\"farmer-profile-status\" class=\"farmer-profile-status\" role=\"status\"></p><button type=\"button\" class=\"small-button farmer-profile-back\">Back to leaderboard</button>", document.body.append(i);
+	let a = r.querySelector("input"), o = r.querySelector("#farmer-search-clear"), c = r.querySelector("#farmer-search-results"), l = r.querySelector("#farmer-search-status"), u = i.querySelector("#farmer-profile-content"), d = i.querySelector("#farmer-profile-status"), f = i.querySelector("#admin-grant");
+	function p(n) {
+		f.hidden = !1, f.innerHTML = `<strong class="admin-grant-title">${e("gift")}Admin gift</strong><div class="admin-grant-row">
+   <label class="admin-grant-field"><span class="admin-grant-field-label">${e("coins")}Coins</span><input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-coins"></label>
+   <label class="admin-grant-field"><span class="admin-grant-field-label">${e("xp")}XP</span><input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-xp"></label>
+   <label class="admin-grant-field"><span class="admin-grant-field-label">${e("diamonds")}Diamonds</span><input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-diamonds"></label>
+  </div><div class="admin-grant-item-row">
+   <label class="admin-grant-field admin-grant-item-select"><span class="admin-grant-field-label">${e("seeds")}Crop or good</span><select id="admin-grant-item">${se}</select></label>
+   <label class="admin-grant-field admin-grant-item-count"><span class="admin-grant-field-label">Quantity</span><input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-item-count"></label>
+  </div><label class="admin-grant-notify"><input type="checkbox" id="admin-grant-notify"><span>Notify the player — they see a "Donation!" popup with these amounts</span></label><textarea id="admin-grant-message" maxlength="200" rows="2" placeholder="Optional message, shown with the notification" hidden></textarea><button type="button" class="primary-button admin-grant-give" id="admin-grant-give">${e("gift")}Give</button><p id="admin-grant-status" role="status"></p>`;
+		let r = f.querySelector("#admin-grant-coins"), i = f.querySelector("#admin-grant-xp"), a = f.querySelector("#admin-grant-diamonds"), o = f.querySelector("#admin-grant-item"), s = f.querySelector("#admin-grant-item-count"), c = f.querySelector("#admin-grant-notify"), l = f.querySelector("#admin-grant-message"), u = f.querySelector("#admin-grant-give"), d = f.querySelector("#admin-grant-status");
+		c.onchange = () => {
+			l.hidden = !c.checked;
+		}, u.onclick = async () => {
+			let e = Math.max(0, Math.floor(Number(r.value) || 0)), f = Math.max(0, Math.floor(Number(i.value) || 0)), p = Math.max(0, Math.floor(Number(a.value) || 0)), m = o.value || null, h = m ? Math.max(0, Math.floor(Number(s.value) || 0)) : 0;
+			if (!e && !f && !p && !(m && h)) {
+				d.textContent = "Enter at least one amount.";
+				return;
+			}
+			let g = c.checked, _ = g ? l.value.trim() : "", y = [
+				e && `${e} coins`,
+				f && `${f} XP`,
+				p && `${p} diamonds`,
+				m && h && `${h} ${x[m].name}`
+			].filter(Boolean).join(", ");
+			if (await v({
+				title: `Give ${S ?? "this farmer"}?`,
+				description: `${y}.${g ? " They will be notified." : ""}`,
+				confirmLabel: "Give",
+				cancelLabel: "Cancel"
+			})) {
+				u.disabled = !0, d.textContent = "Giving…";
+				try {
+					let c = await t.request({
+						operation: "admin_grant",
+						playerId: n,
+						coins: e,
+						xp: f,
+						diamonds: p,
+						item: m,
+						itemCount: h,
+						notify: g,
+						message: _
+					}), u = c.granted.item ? ` · +${c.granted.itemCount} ${x[c.granted.item].name}` : "";
+					d.textContent = `Given: +${c.granted.coins} coins · +${c.granted.xp} XP · +${c.granted.diamonds} diamonds${u}. New level: ${c.totals.level}.${g ? " Notified." : ""}`, r.value = "0", i.value = "0", a.value = "0", o.value = "", s.value = "0", l.value = "", n === t.playerId && window.harvestRefresh?.().catch(() => {});
+				} catch (e) {
+					d.textContent = e.message;
+				} finally {
+					u.disabled = !1;
+				}
+			}
+		};
 	}
-	r.querySelector(".farmer-profile-close").onclick = v, r.querySelector(".farmer-profile-back").onclick = v, r.addEventListener("close", () => {
-		++f, m = null, g || (h?.isConnected ? h : a).focus();
+	let m = 0, h = 0, g, _ = null, y, b = !1, S = null, C = Number.isFinite(t.serverNow) ? t.serverNow - Date.now() : 0;
+	function w() {
+		i.close();
+	}
+	i.querySelector(".farmer-profile-close").onclick = w, i.querySelector(".farmer-profile-back").onclick = w, i.addEventListener("close", () => {
+		++h, _ = null, b || (y?.isConnected ? y : a).focus();
 	});
-	async function y(e) {
-		g || (h = document.activeElement, m = e, ++f, r.querySelector("#farmer-profile-title").textContent = "Farmer profile", l.innerHTML = "<p class=\"farmer-empty\">Opening this farmer’s gate…</p>", u.textContent = "", r.open || r.showModal(), r.scrollTop = 0, await b(!1));
+	async function T(e) {
+		b || (y = document.activeElement, _ = e, S = null, ++h, i.querySelector("#farmer-profile-title").textContent = "Farmer profile", u.innerHTML = "<p class=\"farmer-empty\">Opening this farmer’s gate…</p>", d.textContent = "", f.hidden = !0, f.innerHTML = "", i.open || i.showModal(), i.scrollTop = 0, z().then((t) => {
+			!b && t && _ === e && i.open && p(e);
+		}), await E(!1));
 	}
-	async function b(t) {
-		let n = m, a = ++f;
+	async function E(e) {
+		let n = _, r = ++h;
 		if (n) {
-			l.setAttribute("aria-busy", "true");
+			u.setAttribute("aria-busy", "true");
 			try {
-				let o = await e.request({
+				let a = await t.request({
 					operation: "player_profile",
 					playerId: n
 				});
-				if (g || a !== f || !r.open) return;
-				let s = r.scrollTop;
-				_ = Number.isFinite(o.serverNow) ? o.serverNow - Date.now() : 0, l.innerHTML = E(o.playerProfile, Date.now() + _), i(r, Date.now() + _), r.querySelector("#farmer-profile-title").textContent = `${o.playerProfile.username}'s profile`, u.textContent = "Online status is based on activity in the last 30 minutes.", t && (r.scrollTop = s);
-			} catch (e) {
-				if (g || a !== f || !r.open) return;
-				if (t || l.replaceChildren(), u.textContent = t ? "Could not refresh this profile. Showing the last update." : e.message, !t) {
+				if (b || r !== h || !i.open) return;
+				let o = i.scrollTop;
+				C = Number.isFinite(a.serverNow) ? a.serverNow - Date.now() : 0, u.innerHTML = ie(a.playerProfile, Date.now() + C), s(i, Date.now() + C), S = a.playerProfile.username, i.querySelector("#farmer-profile-title").textContent = `${a.playerProfile.username}'s profile`, d.textContent = "Online status is based on activity in the last 30 minutes.", e && (i.scrollTop = o);
+			} catch (t) {
+				if (b || r !== h || !i.open) return;
+				if (e || u.replaceChildren(), d.textContent = e ? "Could not refresh this profile. Showing the last update." : t.message, !e) {
 					let e = document.createElement("button");
-					e.className = "small-button", e.textContent = "Try again", e.onclick = () => b(!1), l.append(e);
+					e.className = "small-button", e.textContent = "Try again", e.onclick = () => E(!1), u.append(e);
 				}
 			} finally {
-				a === f && l.setAttribute("aria-busy", "false");
+				r === h && u.setAttribute("aria-busy", "false");
 			}
 		}
 	}
-	async function x(t, n) {
-		if (!(g || t !== d)) {
-			s.setAttribute("aria-busy", "true"), c.textContent = "Looking around the valley…";
+	async function D(e, n) {
+		if (!(b || e !== m)) {
+			c.setAttribute("aria-busy", "true"), l.textContent = "Looking around the valley…";
 			try {
-				let r = await e.request({
+				let r = await t.request({
 					operation: "player_search",
 					query: n
 				});
-				if (g || t !== d) return;
-				_ = Number.isFinite(r.serverNow) ? r.serverNow - Date.now() : _, s.innerHTML = D(r.players, Date.now() + _), c.textContent = r.players.length ? `${r.players.length} farmer${r.players.length === 1 ? "" : "s"} found.${r.hasMore ? " More matches available — keep typing to narrow your search." : ""}` : "No farmers found. Try another name.";
-			} catch (e) {
-				!g && t === d && (s.replaceChildren(), c.textContent = e.message);
+				if (b || e !== m) return;
+				C = Number.isFinite(r.serverNow) ? r.serverNow - Date.now() : C, c.innerHTML = ae(r.players, Date.now() + C), l.textContent = r.players.length ? `${r.players.length} farmer${r.players.length === 1 ? "" : "s"} found.${r.hasMore ? " More matches available — keep typing to narrow your search." : ""}` : "No farmers found. Try another name.";
+			} catch (t) {
+				!b && e === m && (c.replaceChildren(), l.textContent = t.message);
 			} finally {
-				t === d && s.setAttribute("aria-busy", "false");
+				e === m && c.setAttribute("aria-busy", "false");
 			}
 		}
 	}
-	function S() {
-		clearTimeout(p);
-		let e = ++d, t = a.value.trim();
-		if (o.hidden = !a.value, s.replaceChildren(), s.setAttribute("aria-busy", "false"), t.length < 2) {
-			c.textContent = "Enter at least 2 characters to search all farmers.";
+	function O() {
+		clearTimeout(g);
+		let e = ++m, t = a.value.trim();
+		if (o.hidden = !a.value, c.replaceChildren(), c.setAttribute("aria-busy", "false"), t.length < 2) {
+			l.textContent = "Enter at least 2 characters to search all farmers.";
 			return;
 		}
-		c.textContent = "Searching…", p = setTimeout(() => x(e, t), 300);
+		l.textContent = "Searching…", g = setTimeout(() => D(e, t), 300);
 	}
-	a.addEventListener("input", S), o.onclick = () => {
-		a.value = "", S(), a.focus();
-	}, s.onclick = (e) => {
+	a.addEventListener("input", O), o.onclick = () => {
+		a.value = "", O(), a.focus();
+	}, c.onclick = (e) => {
 		let t = e.target.closest("[data-player-id]");
-		t && s.contains(t) && y(t.dataset.playerId);
+		t && c.contains(t) && T(t.dataset.playerId);
 	};
-	let C = setInterval(() => {
-		!g && !document.hidden && i(document, Date.now() + _);
-	}, 1e3), w = setInterval(() => {
-		g || document.hidden || (r.open ? b(!0) : t.open && a.value.trim().length >= 2 && s.children.length && document.activeElement !== a && !s.contains(document.activeElement) && x(++d, a.value.trim()));
+	let k = setInterval(() => {
+		!b && !document.hidden && s(document, Date.now() + C);
+	}, 1e3), A = setInterval(() => {
+		b || document.hidden || (i.open ? E(!0) : n.open && a.value.trim().length >= 2 && c.children.length && document.activeElement !== a && !c.contains(document.activeElement) && D(++m, a.value.trim()));
 	}, 3e4);
 	return window.addEventListener("pagehide", () => {
-		g = !0, ++d, ++f, clearTimeout(p), clearInterval(w), clearInterval(C);
+		b = !0, ++m, ++h, clearTimeout(g), clearInterval(A), clearInterval(k);
 	}, { once: !0 }), {
-		open: y,
+		open: T,
 		get isOpen() {
-			return r.open;
+			return i.open;
 		}
 	};
 }
 //#endregion
+//#region src/admin-events.js
+var V = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
+	"&": "&amp;",
+	"<": "&lt;",
+	">": "&gt;",
+	"\"": "&quot;",
+	"'": "&#39;"
+})[e]), H = (e) => {
+	let t = new Date(e);
+	return (/* @__PURE__ */ new Date(t - t.getTimezoneOffset() * 6e4)).toISOString().slice(0, 16);
+}, U = {
+	harvested: "Harvest crops",
+	produced: "Collect batches",
+	watered: "Water fields",
+	tended: "Care for fields",
+	chores: "Complete chores",
+	deliveries: "Complete deliveries"
+};
+function W(e, t) {
+	let n = [], r = null, i = 0, a = null;
+	e.innerHTML = "<h3><img src=\"/assets/icons/live-events.png\" alt=\"\" width=\"36\" height=\"36\"> Short live events</h3><p>Schedule 1–12 hour events. Started rules are frozen; activation can be paused. All times below use your local timezone.</p><button class=\"small-button\" data-new>New event</button><button class=\"small-button\" data-refresh>Refresh events</button><div data-list></div><div data-editor></div><div data-results></div><p role=\"status\" data-status></p>";
+	let o = e.querySelector("[data-status]"), s = (e) => t.request({
+		operation: "admin_events",
+		...e
+	});
+	async function c(e) {
+		try {
+			o.textContent = "Working…", await e(), o.textContent = "Up to date.";
+		} catch (e) {
+			o.textContent = e.message;
+		}
+	}
+	async function l() {
+		n = (await s({ command: "list" })).events, e.querySelector("[data-list]").innerHTML = n.map((e) => `<article class="admin-card"><strong>${V(e.title)}</strong><p>${new Date(e.starts_at).toLocaleString("en-US")} – ${new Date(e.ends_at).toLocaleString("en-US")} · ${e.settled_at ? "Settled" : Date.parse(e.ends_at) <= Date.now() ? "Ended" : e.active ? Date.parse(e.starts_at) > Date.now() ? "Scheduled" : "Live" : "Inactive"} · ${e.participants} participants</p><button class="small-button" data-edit="${e.id}" ${Date.parse(e.starts_at) <= Date.now() ? "disabled" : ""}>Edit</button><button class="small-button" data-toggle="${e.id}" ${e.settled_at || Date.parse(e.ends_at) <= Date.now() ? "disabled" : ""}>${e.active ? "Deactivate" : "Activate"}</button><button class="small-button" data-results-id="${e.id}">Participation &amp; rewards</button></article>`).join("") || "<p>No events configured.</p>", e.querySelectorAll("[data-edit]").forEach((e) => e.onclick = () => u(n.find((t) => t.id === e.dataset.edit))), e.querySelectorAll("[data-toggle]").forEach((e) => e.onclick = () => c(async () => {
+			let t = n.find((t) => t.id === e.dataset.toggle);
+			await s({
+				command: "toggle",
+				eventId: t.id,
+				active: !t.active
+			}), await l();
+		})), e.querySelectorAll("[data-results-id]").forEach((e) => e.onclick = () => {
+			i = 0, a = e.dataset.resultsId, c(d);
+		});
+	}
+	function u(t) {
+		r = t?.id ?? null;
+		let n = t ?? {
+			title: "Harvest hour",
+			description: "Bring in the harvest together!",
+			starts_at: new Date(Date.now() + 36e5).toISOString(),
+			ends_at: new Date(Date.now() + 3 * 36e5).toISOString(),
+			objectives: [{
+				stat: "harvested",
+				target: 30
+			}, {
+				stat: "watered",
+				target: 10
+			}],
+			rewards: {
+				coins: 60,
+				diamondMin: 1,
+				diamondMax: 3,
+				participantStep: 25,
+				poolCap: 100
+			}
+		};
+		e.querySelector("[data-editor]").innerHTML = `<form class="admin-card"><h3>${t ? "Edit event" : "New event"}</h3><label>Title <input name="title" required minlength="3" maxlength="80" value="${V(n.title)}"></label><label>Description <textarea name="description" maxlength="500">${V(n.description)}</textarea></label><label>Starts <input type="datetime-local" name="starts_at" value="${H(n.starts_at)}" required></label><label>Ends <input type="datetime-local" name="ends_at" value="${H(n.ends_at)}" required></label><fieldset><legend>Objectives (choose 1–4; blank = disabled)</legend>${Object.entries(U).map(([e, t]) => `<label>${t} <input name="objective_${e}" type="number" min="1" max="10000" step="1" value="${n.objectives.find((t) => t.stat === e)?.target ?? ""}"></label>`).join("")}</fieldset><fieldset><legend>Rewards per qualified player</legend>${[
+			[
+				"coins",
+				"Coins",
+				0,
+				300
+			],
+			[
+				"diamondMin",
+				"Base diamonds",
+				0,
+				1
+			],
+			[
+				"diamondMax",
+				"Maximum diamonds",
+				1,
+				3
+			],
+			[
+				"participantStep",
+				"Qualified participants per growth step",
+				10,
+				1e3
+			],
+			[
+				"poolCap",
+				"Maximum event diamond pool",
+				0,
+				200
+			]
+		].map(([e, t, r, i]) => `<label>${t} <input name="${e}" type="number" min="${r}" max="${i}" step="1" value="${n.rewards[e]}" required></label>`).join("")}</fieldset><p>Diamonds = min(maximum, base + floor(sqrt(qualified participants / growth step))). The total pool is capped. Earlier completions receive diamonds first if the pool runs out. Each player can collect at most 6 event diamonds per UTC day; excess is forfeited.</p><p>Qualification: verified account aged 48 hours, level 10, all objectives and at least 3 contributing actions over 10 minutes. Progress updates at most once per 10 seconds.</p><label><input name="active" type="checkbox" ${n.active ? "checked" : ""}> Active</label><button class="primary-button">Save event</button></form>`, e.querySelector("form").onsubmit = (t) => {
+			t.preventDefault();
+			let n = t.target, i = Object.fromEntries(new FormData(n));
+			c(async () => {
+				await s({
+					command: "save",
+					eventId: r,
+					config: {
+						title: i.title,
+						description: i.description,
+						starts_at: new Date(i.starts_at).toISOString(),
+						ends_at: new Date(i.ends_at).toISOString(),
+						active: i.active === "on",
+						objectives: Object.keys(U).filter((e) => i["objective_" + e]).map((e) => ({
+							stat: e,
+							target: Number(i["objective_" + e])
+						})),
+						rewards: Object.fromEntries([
+							"coins",
+							"diamondMin",
+							"diamondMax",
+							"participantStep",
+							"poolCap"
+						].map((e) => [e, Number(i[e])]))
+					}
+				}), e.querySelector("[data-editor]").innerHTML = "", await l();
+			});
+		};
+	}
+	async function d() {
+		let t = await s({
+			command: "results",
+			eventId: a,
+			offset: i
+		});
+		e.querySelector("[data-results]").innerHTML = `<h3>${V(t.event.title)} — participation &amp; distribution</h3><p>${t.total} participants · ${t.event.qualified} qualified · ${t.event.diamond_pool} diamonds allocated · ${t.event.settled_at ? "Settled " + new Date(t.event.settled_at).toLocaleString("en-US") : "Results pending"}</p><div class="admin-table-scroll"><table class="admin-table"><thead><tr><th>Player ID</th><th>Progress</th><th>Actions</th><th>Qualified</th><th>Coins / diamonds</th><th>Paid diamonds</th><th>Claimed</th></tr></thead><tbody>${t.players.map((e) => `<tr><td>${V(e.player_id)}</td><td>${V(JSON.stringify(e.progress))}</td><td>${e.actions}</td><td>${e.qualified ? "Yes" : "No"}</td><td>${e.coins} / ${e.diamonds}</td><td>${e.paid_diamonds}</td><td>${e.claimed_at ? V(new Date(e.claimed_at).toLocaleString("en-US")) : "Pending"}</td></tr>`).join("")}</tbody></table></div><button class="small-button" data-prev ${i === 0 ? "disabled" : ""}>Previous 100</button><button class="small-button" data-next ${i + 100 >= t.total ? "disabled" : ""}>Next 100</button>`, e.querySelector("[data-prev]").onclick = () => {
+			i = Math.max(0, i - 100), c(d);
+		}, e.querySelector("[data-next]").onclick = () => {
+			i += 100, c(d);
+		};
+	}
+	return e.querySelector("[data-new]").onclick = () => u(), e.querySelector("[data-refresh]").onclick = () => c(l), { load: () => c(l) };
+}
+//#endregion
+//#region src/admin-dashboard.js
+var G = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
+	"&": "&amp;",
+	"<": "&lt;",
+	">": "&gt;",
+	"\"": "&quot;",
+	"'": "&#39;"
+})[e]), K = (e) => Number(e ?? 0).toLocaleString("en-US"), ce = (e) => {
+	let t = Date.parse(e);
+	return Number.isFinite(t) ? new Date(t).toLocaleString("en-US", {
+		month: "short",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit"
+	}) : "—";
+}, le = (e) => {
+	let t = Date.parse(`${e}T00:00:00Z`);
+	return Number.isFinite(t) ? new Date(t).toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric"
+	}) : e;
+}, ue = (e) => String(e ?? "?").trim().split(/\s+/).slice(0, 2).map((e) => e[0] ?? "").join("").toUpperCase() || "?", q = (e, t) => `<span class="admin-avatar">${G(ue(e))}${t ? "<span class=\"online-dot is-online\" aria-hidden=\"true\"></span>" : ""}</span>`, de = (e) => e >= 50 ? "admin-heat-good" : e >= 25 ? "admin-heat-ok" : "admin-heat-low";
+function fe(e) {
+	let t = document.getElementById("admin-button");
+	if (!t) return {};
+	let n = document.createElement("dialog");
+	n.id = "admin-dashboard-dialog", n.className = "game-dialog wide-dialog admin-dashboard-dialog", n.setAttribute("aria-labelledby", "admin-dashboard-title"), n.innerHTML = "<div class=\"dialog-heading\"><div><span class=\"eyebrow\">FLORIS@MILLSTONE.NL ONLY</span><h2 id=\"admin-dashboard-title\">Admin dashboard</h2></div><button class=\"icon-button admin-dashboard-close\" aria-label=\"Close\">×</button></div><section class=\"admin-card\"><h3><i data-lucide=\"radio\" data-line-icon></i>Online now <span id=\"admin-online-count\">0</span></h3><p class=\"admin-hint\">Active in the last <span id=\"admin-online-window\">30</span> minutes.</p><ul id=\"admin-online-list\" class=\"admin-online-list\"></ul></section><section class=\"admin-card\"><h3><i data-lucide=\"user-plus\" data-line-icon></i>Last 14 players</h3><div class=\"admin-table-scroll\"><table class=\"admin-table\"><thead><tr><th>Farmer</th><th>Level</th><th>Coins</th><th>Signed up</th></tr></thead><tbody id=\"admin-recent-body\"></tbody></table></div></section><section class=\"admin-card\"><h3><i data-lucide=\"trending-up\" data-line-icon></i>Retention, day 0–7</h3><p class=\"admin-hint\">Per signup day: the share of that day's real accounts whose last activity is at or after \"signup day + N\". An approximation — the game keeps no daily activity log, so this is \"still around by day N\", not exact day-N-active retention.</p><div class=\"admin-table-scroll\"><table class=\"admin-table admin-retention-table\"><thead id=\"admin-retention-head\"></thead><tbody id=\"admin-retention-body\"></tbody></table></div></section><section class=\"admin-card\" id=\"admin-events\"></section><p id=\"admin-dashboard-status\" class=\"admin-hint\" role=\"status\"></p>", document.body.append(n);
+	let r = W(n.querySelector("#admin-events"), e);
+	n.querySelector(".admin-dashboard-close").onclick = () => n.close();
+	let i;
+	n.addEventListener("close", () => clearInterval(i));
+	function o(e) {
+		n.querySelector("#admin-online-count").textContent = K(e.count), n.querySelector("#admin-online-window").textContent = e.windowMinutes, n.querySelector("#admin-online-list").innerHTML = e.players.length ? e.players.map((e) => `<li>${q(e.username, !0)}<span><strong>${G(e.username ?? "Unnamed")}</strong><small>Level ${K(e.level)}</small></span></li>`).join("") : "<li class=\"admin-empty\">Nobody is online right now.</li>";
+	}
+	function s(e) {
+		n.querySelector("#admin-recent-body").innerHTML = e.players.map((e) => `<tr><td class="admin-farmer-cell">${q(e.username, e.online)}${G(e.username ?? "Unnamed")}</td><td>${e.everPlayed ? K(e.level) : "<span class=\"admin-empty\">Never opened a farm</span>"}</td><td>${e.everPlayed ? K(e.coins) : "—"}</td><td>${ce(e.createdAt)}</td></tr>`).join("");
+	}
+	function c(e) {
+		n.querySelector("#admin-retention-head").innerHTML = `<tr><th>Signed up</th><th>Farmers</th>${Array.from({ length: 8 }, (e, t) => `<th>Day ${t}</th>`).join("")}</tr>`, n.querySelector("#admin-retention-body").innerHTML = e.rows.length ? e.rows.map((e) => `<tr><td>${le(e.day)}</td><td>${K(e.size)}</td>${e.days.map((e) => e ? `<td class="${de(e.pct)}" title="${e.retained} / ${e.total} still active">${e.pct}%</td>` : "<td class=\"admin-pending\">—</td>").join("")}</tr>`).join("") : "<tr><td colspan=\"10\" class=\"admin-empty\">No signups in the last week.</td></tr>";
+	}
+	async function l() {
+		let t = n.querySelector("#admin-dashboard-status");
+		t.textContent = "Refreshing…";
+		try {
+			let [n, r, i] = await Promise.all([
+				e.request({ operation: "admin_online" }),
+				e.request({ operation: "admin_recent_players" }),
+				e.request({ operation: "admin_retention" })
+			]);
+			o(n), s(r), c(i), t.textContent = `Updated ${(/* @__PURE__ */ new Date()).toLocaleTimeString("en-US")}`;
+		} catch (e) {
+			t.textContent = e.message;
+		}
+	}
+	return t.onclick = () => {
+		document.querySelectorAll("dialog[open]").forEach((e) => e.close()), a(), n.showModal(), l(), r.load(), clearInterval(i), i = setInterval(l, 6e4);
+	}, z().then((e) => {
+		e && (t.hidden = !1);
+	}), {};
+}
+//#endregion
 //#region public/rank-picker.js
-var k = Object.freeze({
+var pe = Object.freeze({
 	level: "xp",
 	currency: "coins",
 	harvested_crops: "harvest",
@@ -3328,14 +4155,14 @@ var k = Object.freeze({
 	items_sold: "market",
 	badges: "trophy",
 	deliveries: "cart"
-}), A = (e) => e.replace(/^harvested_/, ""), j = (e, t) => e[t]?.group === "crops", M = (e, t, n, r = "") => `<button type="button" class="rank-chip ${r}" data-rank="${t}" aria-pressed="false">${e}<span>${n}</span></button>`;
-function N(e, t) {
-	let n = Object.entries(e), r = n.filter(([t]) => j(e, t));
-	return `<div class="rank-chips" role="group" aria-labelledby="rank-label">${n.filter(([t]) => !j(e, t)).map(([e, n]) => M(t(k[e] ?? "trophy"), e, n.heading)).join("")}<button type="button" class="rank-chip" data-rank-crops aria-pressed="false" aria-expanded="false" aria-controls="rank-crops">${t("wheat")}<span>By crop</span><span class="rank-caret" aria-hidden="true"></span></button></div><div class="rank-crops" id="rank-crops" role="group" aria-label="Choose a crop" hidden>${r.map(([e, n]) => M(t(A(e)), e, n.heading, "rank-chip-small")).join("")}</div>`;
+}), me = (e) => e.replace(/^harvested_/, ""), J = (e, t) => e[t]?.group === "crops", Y = (e, t, n, r = "") => `<button type="button" class="rank-chip ${r}" data-rank="${t}" aria-pressed="false">${e}<span>${n}</span></button>`;
+function he(e, t) {
+	let n = Object.entries(e), r = n.filter(([t]) => J(e, t));
+	return `<div class="rank-chips" role="group" aria-labelledby="rank-label">${n.filter(([t]) => !J(e, t)).map(([e, n]) => Y(t(pe[e] ?? "trophy"), e, n.heading)).join("")}<button type="button" class="rank-chip" data-rank-crops aria-pressed="false" aria-expanded="false" aria-controls="rank-crops">${t("wheat")}<span>By crop</span><span class="rank-caret" aria-hidden="true"></span></button></div><div class="rank-crops" id="rank-crops" role="group" aria-label="Choose a crop" hidden>${r.map(([e, n]) => Y(t(me(e)), e, n.heading, "rank-chip-small")).join("")}</div>`;
 }
-function P(e, t, n) {
-	let { category: r, lastCrop: i } = t, a = t.open ?? j(e, r);
-	return n.crops ? j(e, r) ? a = !a : (r = i, a = !0) : Object.hasOwn(e, n.rank) && (r = n.rank, a = j(e, r)), j(e, r) && (i = r), {
+function X(e, t, n) {
+	let { category: r, lastCrop: i } = t, a = t.open ?? J(e, r);
+	return n.crops ? J(e, r) ? a = !a : (r = i, a = !0) : Object.hasOwn(e, n.rank) && (r = n.rank, a = J(e, r)), J(e, r) && (i = r), {
 		category: r,
 		lastCrop: i,
 		open: a,
@@ -3343,20 +4170,20 @@ function P(e, t, n) {
 		changed: r !== t.category
 	};
 }
-function F(e, { categories: t, field: n, onChange: r }) {
+function ge(e, { categories: t, field: n, onChange: r }) {
 	let i = {
 		category: n.value || "level",
 		lastCrop: "harvested_wheat",
-		open: j(t, n.value || "level")
+		open: J(t, n.value || "level")
 	}, a = () => {
 		for (let t of e.querySelectorAll("[data-rank]")) t.setAttribute("aria-pressed", String(t.dataset.rank === i.category));
 		let n = e.querySelector("[data-rank-crops]");
-		n.setAttribute("aria-pressed", String(j(t, i.category))), n.setAttribute("aria-expanded", String(i.open)), e.querySelector("#rank-crops").hidden = !i.open;
+		n.setAttribute("aria-pressed", String(J(t, i.category))), n.setAttribute("aria-expanded", String(i.open)), e.querySelector("#rank-crops").hidden = !i.open;
 	};
 	return e.addEventListener("click", (o) => {
 		let s = o.target.closest?.("[data-rank],[data-rank-crops]");
 		if (!s) return;
-		let c = P(t, i, s.hasAttribute("data-rank-crops") ? { crops: !0 } : { rank: s.dataset.rank });
+		let c = X(t, i, s.hasAttribute("data-rank-crops") ? { crops: !0 } : { rank: s.dataset.rank });
 		i = {
 			category: c.category,
 			lastCrop: c.lastCrop,
@@ -3367,102 +4194,102 @@ function F(e, { categories: t, field: n, onChange: r }) {
 			behavior: "smooth"
 		}), c.changed && r(c.category);
 	}), a(), { select(e) {
-		i = P(t, i, { rank: e }), n.value = i.category, a();
+		i = X(t, i, { rank: e }), n.value = i.category, a();
 	} };
 }
 //#endregion
 //#region src/ui.js
-var I = (e) => document.getElementById(e);
-function L({ onOpen: t, onName: n, onRetry: r, onSignIn: i, onRegister: a, onSignOut: o, onPlayer: c }) {
+var Z = (e) => document.getElementById(e);
+function _e({ onOpen: t, onName: n, onRetry: r, onSignIn: i, onRegister: a, onSignOut: o, onPlayer: s }) {
 	let l = document.createElement("button");
 	l.id = "leaderboard-button", l.className = "leaderboard-button", l.setAttribute("aria-haspopup", "dialog"), l.innerHTML = "<i data-lucide=\"trophy\"></i><span>Leaderboard</span>", document.querySelector(".tool-dock").append(l);
 	let u = document.createElement("div");
 	u.innerHTML = `<dialog id="auth-dialog" class="game-dialog auth-dialog" aria-labelledby="auth-title"><div class="auth-brand"><img src="/assets/harvest-tycoon-logo.png" alt="" width="92" height="92"><div><span class="eyebrow">WELCOME BACK TO THE FARM</span><h2 id="auth-title">Save your progress</h2></div></div><p class="section-copy">Sign in to access your coins, level, and player name on any device.</p><div class="auth-tabs" role="tablist"><button type="button" role="tab" data-auth-tab="signin" aria-selected="true">Sign in</button><button type="button" role="tab" data-auth-tab="register" aria-selected="false">Create account</button></div><form id="auth-form"><div id="register-name-row" hidden><label for="auth-username">Player name</label><input id="auth-username" autocomplete="nickname" minlength="3" maxlength="20" placeholder="Sunny Acres"></div><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required><p id="auth-message" class="cloud-form-error" role="status"></p><button id="auth-submit" class="primary-button" type="submit">Sign in<i data-lucide="log-in"></i></button></form><p class="auth-note">Your session stays securely saved in this browser.</p></dialog>
- <dialog id="leaderboard-dialog" class="game-dialog wide-dialog" aria-labelledby="leaderboard-title"><div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="leaderboard-title">The valley leaderboard</h2></div><button class="icon-button" data-cloud-close aria-label="Close"><i data-lucide="x"></i></button></div><p class="leaderboard-intro">Meet the farmers of the valley. Tap a name to see their profile. A green dot means they have played in the last 30 minutes.</p><div class="cloud-profile"><span id="player-name">Your farmer profile</span><button class="small-button" id="view-player-profile">Your profile</button><button class="small-button" id="rename-player" hidden>Change name</button><button class="small-button" id="logout-player" hidden>Sign out</button></div><div class="leaderboard-filter" id="leaderboard-filter"><span class="rank-label" id="rank-label">Rank by</span>${N(s, e)}<p id="leaderboard-description">${s.level.description}</p><input type="hidden" id="leaderboard-category" value="level"></div><div class="cloud-sync"><span id="cloud-status" role="status">Connecting…</span><button id="retry-cloud" class="back-button">Refresh</button></div><div id="leaderboard-results" aria-live="polite"></div><p class="cloud-privacy">Your name, online status and public farming achievements appear here. Your diamonds and farm details stay private.</p></dialog>
+ <dialog id="leaderboard-dialog" class="game-dialog wide-dialog" aria-labelledby="leaderboard-title"><div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="leaderboard-title">The valley leaderboard</h2></div><button class="icon-button" data-cloud-close aria-label="Close"><i data-lucide="x"></i></button></div><p class="leaderboard-intro">Meet the farmers of the valley. Tap a name to see their profile. A green dot means they have played in the last 30 minutes.</p><div class="cloud-profile"><span id="player-name">Your farmer profile</span><button class="small-button" id="view-player-profile">Your profile</button><button class="small-button" id="rename-player" hidden>Change name</button><button class="small-button" id="logout-player" hidden>Sign out</button></div><div class="leaderboard-filter" id="leaderboard-filter"><span class="rank-label" id="rank-label">Rank by</span>${he(c, e)}<p id="leaderboard-description">${c.level.description}</p><input type="hidden" id="leaderboard-category" value="level"></div><div class="cloud-sync"><span id="cloud-status" role="status">Connecting…</span><button id="retry-cloud" class="back-button">Refresh</button></div><div id="leaderboard-results" aria-live="polite"></div><p class="cloud-privacy">Your name, online status and public farming achievements appear here. Your diamonds and farm details stay private.</p></dialog>
  <dialog id="username-dialog" class="game-dialog" aria-labelledby="username-title"><div class="dialog-heading"><div><span class="eyebrow">MEET THE OTHER FARMERS</span><h2 id="username-title">What should we call you?</h2></div><button class="icon-button" data-cloud-close aria-label="Keep playing"><i data-lucide="x"></i></button></div><p class="section-copy">Choose the display name other players will see on the leaderboard.</p><form id="username-form"><label for="username-input">Display name</label><input id="username-input" name="username" autocomplete="nickname" minlength="3" maxlength="20" required placeholder="Sunny Acres"><small>3–20 letters, numbers, spaces, underscores or hyphens.</small><p id="username-error" class="cloud-form-error" role="alert"></p><button class="primary-button" type="submit">Join the leaderboard<i data-lucide="arrow-right"></i></button></form></dialog>`, document.body.append(...u.children);
 	let d = "signin";
 	function f(e) {
-		document.querySelectorAll("dialog[open]").forEach((e) => e.close()), I(e).showModal();
+		document.querySelectorAll("dialog[open]").forEach((e) => e.close()), Z(e).showModal();
 	}
 	function p(e) {
-		d = e, document.querySelectorAll("[data-auth-tab]").forEach((e) => e.setAttribute("aria-selected", String(e.dataset.authTab === d))), I("register-name-row").hidden = d !== "register", I("auth-username").required = d === "register", I("auth-password").autocomplete = d === "register" ? "new-password" : "current-password", I("auth-submit").innerHTML = d === "register" ? "Create account<i data-lucide=\"user-plus\"></i>" : "Sign in<i data-lucide=\"log-in\"></i>", I("auth-message").textContent = "", window.lucide?.createIcons();
+		d = e, document.querySelectorAll("[data-auth-tab]").forEach((e) => e.setAttribute("aria-selected", String(e.dataset.authTab === d))), Z("register-name-row").hidden = d !== "register", Z("auth-username").required = d === "register", Z("auth-password").autocomplete = d === "register" ? "new-password" : "current-password", Z("auth-submit").innerHTML = d === "register" ? "Create account<i data-lucide=\"user-plus\"></i>" : "Sign in<i data-lucide=\"log-in\"></i>", Z("auth-message").textContent = "", window.lucide?.createIcons();
 	}
 	function m(e = "") {
-		I("username-input").value = e, I("username-error").textContent = "", f("username-dialog"), I("username-input").focus();
+		Z("username-input").value = e, Z("username-error").textContent = "", f("username-dialog"), Z("username-input").focus();
 	}
 	return document.querySelectorAll("[data-cloud-close]").forEach((e) => e.onclick = () => e.closest("dialog").close()), document.querySelectorAll("[data-auth-tab]").forEach((e) => e.onclick = () => p(e.dataset.authTab)), l.onclick = () => {
 		f("leaderboard-dialog"), t();
-	}, I("retry-cloud").onclick = r, I("leaderboard-category").onchange = () => {
-		I("leaderboard-description").textContent = s[I("leaderboard-category").value].description, t();
-	}, F(I("leaderboard-filter"), {
-		categories: s,
-		field: I("leaderboard-category"),
-		onChange: () => I("leaderboard-category").onchange()
-	}), I("rename-player").onclick = () => m(I("player-name").dataset.username ?? ""), I("logout-player").onclick = o, I("view-player-profile").onclick = c, I("auth-form").onsubmit = async (e) => {
+	}, Z("retry-cloud").onclick = r, Z("leaderboard-category").onchange = () => {
+		Z("leaderboard-description").textContent = c[Z("leaderboard-category").value].description, t();
+	}, ge(Z("leaderboard-filter"), {
+		categories: c,
+		field: Z("leaderboard-category"),
+		onChange: () => Z("leaderboard-category").onchange()
+	}), Z("rename-player").onclick = () => m(Z("player-name").dataset.username ?? ""), Z("logout-player").onclick = o, Z("view-player-profile").onclick = s, Z("auth-form").onsubmit = async (e) => {
 		e.preventDefault();
-		let t = I("auth-submit");
-		t.disabled = !0, I("auth-message").textContent = d === "register" ? "Creating your account…" : "Signing in…";
+		let t = Z("auth-submit");
+		t.disabled = !0, Z("auth-message").textContent = d === "register" ? "Creating your account…" : "Signing in…";
 		try {
-			if (d === "signin") await i(I("auth-email").value, I("auth-password").value);
-			else if ((await a(I("auth-email").value, I("auth-password").value, I("auth-username").value)).confirmationRequired) {
-				I("auth-message").textContent = "Check your inbox and confirm your email address. You will be signed in automatically afterward.";
+			if (d === "signin") await i(Z("auth-email").value, Z("auth-password").value);
+			else if ((await a(Z("auth-email").value, Z("auth-password").value, Z("auth-username").value)).confirmationRequired) {
+				Z("auth-message").textContent = "Check your inbox and confirm your email address. You will be signed in automatically afterward.";
 				return;
 			}
-			I("auth-dialog").close();
+			Z("auth-dialog").close();
 		} catch (e) {
-			I("auth-message").textContent = e.message;
+			Z("auth-message").textContent = e.message;
 		} finally {
 			t.disabled = !1;
 		}
-	}, I("username-form").onsubmit = async (e) => {
+	}, Z("username-form").onsubmit = async (e) => {
 		e.preventDefault();
 		let r = e.currentTarget.querySelector("[type=\"submit\"]");
-		r.disabled = !0, I("username-error").textContent = "";
+		r.disabled = !0, Z("username-error").textContent = "";
 		try {
-			await n(I("username-input").value), f("leaderboard-dialog"), await t();
+			await n(Z("username-input").value), f("leaderboard-dialog"), await t();
 		} catch (e) {
-			I("username-error").textContent = e.message;
+			Z("username-error").textContent = e.message;
 		} finally {
 			r.disabled = !1;
 		}
 	}, window.lucide?.createIcons(), {
 		promptName: m,
 		requireAuth() {
-			I("auth-dialog").open || f("auth-dialog");
+			Z("auth-dialog").open || f("auth-dialog");
 		},
 		authenticated() {
-			I("auth-dialog").open && I("auth-dialog").close();
+			Z("auth-dialog").open && Z("auth-dialog").close();
 		},
 		configurationError() {
-			f("auth-dialog"), I("auth-message").textContent = "The account connection has not been configured yet.";
+			f("auth-dialog"), Z("auth-message").textContent = "The account connection has not been configured yet.";
 		},
 		authMessage(e) {
-			I("auth-dialog").open && (I("auth-message").textContent = e);
+			Z("auth-dialog").open && (Z("auth-message").textContent = e);
 		},
 		setProfile(e, t) {
-			I("player-name").textContent = e ? e.username : "Pick your farmer name", I("player-name").dataset.username = e?.username ?? "", I("rename-player").hidden = !t, I("logout-player").hidden = !t;
+			Z("player-name").textContent = e ? e.username : "Pick your farmer name", Z("player-name").dataset.username = e?.username ?? "", Z("rename-player").hidden = !t, Z("logout-player").hidden = !t;
 		},
 		status(e) {
-			I("cloud-status").textContent = e;
+			Z("cloud-status").textContent = e;
 		},
 		message(e) {
 			let t = document.createElement("p");
-			t.className = "leaderboard-empty", t.textContent = e, I("leaderboard-results").replaceChildren(t);
+			t.className = "leaderboard-empty", t.textContent = e, Z("leaderboard-results").replaceChildren(t);
 		},
 		get category() {
-			return I("leaderboard-category").value;
+			return Z("leaderboard-category").value;
 		},
 		get results() {
-			return I("leaderboard-results");
+			return Z("leaderboard-results");
 		},
 		get open() {
-			return I("leaderboard-dialog").open;
+			return Z("leaderboard-dialog").open;
 		}
 	};
 }
 //#endregion
 //#region src/payment-ui.js
-function R(t) {
+function Q(t) {
 	let n = t.paymentReturn?.();
 	if (!n?.id) return;
 	let r = document.createElement("dialog");
@@ -3523,7 +4350,7 @@ function R(t) {
 }
 //#endregion
 //#region src/starter-pack-ui.js
-async function z(e) {
+async function ve(e) {
 	let { CROPS: t, formatDuration: n } = await import(
 		/* @vite-ignore */
 		"/farm-state.js"
@@ -3576,56 +4403,56 @@ async function z(e) {
 }
 //#endregion
 //#region src/game-cloud.js
-var B;
+var $;
 try {
-	B = window.parent === window ? null : window.parent.harvestBridge;
+	$ = window.parent === window ? null : window.parent.harvestBridge;
 } catch {}
-if (!B) location.replace("/play.html");
-else if (window.harvestInitialFarm = B.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
+if (!$) location.replace("/play.html");
+else if (window.harvestInitialFarm = $.takeInitial(), !window.harvestInitialFarm) location.replace("/play.html");
 else {
 	document.body.hidden = !1;
-	let e = L({
+	let e = _e({
 		onOpen: c,
 		onRetry: c,
-		onPlayer: () => t.open(B.playerId),
+		onPlayer: () => t.open($.playerId),
 		onName: async (t) => {
-			let n = await B.request({
+			let n = await $.request({
 				operation: "rename",
 				username: t
 			});
-			e.setProfile(n.profile, { id: B.playerId });
+			e.setProfile(n.profile, { id: $.playerId });
 		},
-		onSignOut: () => B.signOut()
-	}), t = O(B), r = B.serverNow - Date.now();
-	e.setProfile(window.harvestInitialFarm.profile, { id: B.playerId }), e.status("Live rankings"), u(document.getElementById("avatar-settings"), {
-		bridge: B,
+		onSignOut: () => $.signOut()
+	}), t = B($), n = $.serverNow - Date.now();
+	fe($), e.setProfile(window.harvestInitialFarm.profile, { id: $.playerId }), e.status("Live rankings"), _(document.getElementById("avatar-settings"), {
+		bridge: $,
 		profile: window.harvestInitialFarm.profile,
-		onSaved: (t) => e.setProfile(t, { id: B.playerId })
+		onSaved: (t) => e.setProfile(t, { id: $.playerId })
 	});
-	let i = B.presence?.subscribe((t) => {
-		e.open && n(e.results, {
+	let i = $.presence?.subscribe((t) => {
+		e.open && r(e.results, {
 			...t,
-			now: Date.now() + r
+			now: Date.now() + n
 		});
-	}), o = setInterval(() => {
+	}), a = setInterval(() => {
 		e.open && !t.isOpen && !document.hidden && c(!0);
 	}, 3e4);
 	window.addEventListener("pagehide", () => {
-		i?.(), clearInterval(o);
+		i?.(), clearInterval(a);
 	}, { once: !0 });
 	let s = 0;
-	async function c(n = !1) {
-		let i = ++s, o = e.category;
-		n || e.message("Gathering the latest scores…"), e.results.setAttribute("aria-busy", "true");
+	async function c(r = !1) {
+		let i = ++s, a = e.category;
+		r || e.message("Gathering the latest scores…"), e.results.setAttribute("aria-busy", "true");
 		try {
-			let n = await B.leaderboard(o);
+			let r = await $.leaderboard(a);
 			if (i !== s) return;
-			a(e.results, {
-				...n,
-				now: Date.now() + r
-			}, B.playerId, (e) => t.open(e)), e.status("Up to date");
+			o(e.results, {
+				...r,
+				now: Date.now() + n
+			}, $.playerId, (e) => t.open(e)), e.status("Up to date");
 		} catch (t) {
-			i === s && (n || e.message(t.message), e.status("Could not refresh"));
+			i === s && (r || e.message(t.message), e.status("Could not refresh"));
 		} finally {
 			i === s && e.results.setAttribute("aria-busy", "false");
 		}
@@ -3634,6 +4461,6 @@ else {
 		/* @vite-ignore */
 		"/game.js?v=familyhall-model-2"
 );
-	await l && (R(B), await z(B));
+	await l && (Q($), await ve($));
 }
 //#endregion

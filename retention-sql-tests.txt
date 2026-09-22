@@ -1,0 +1,1 @@
+PASS: 31 PostgreSQL assertions; additive SQL reapplied twice; social transfers, limits, rollback, eligibility, event progress, receipt replay, settlement, pool/daily caps, one-time claims and ACLs.

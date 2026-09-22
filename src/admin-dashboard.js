@@ -1,3 +1,4 @@
+import {mountAdminEvents} from './admin-events.js';
 // The admin-only dashboard: who is online, the newest real accounts and a 7-day retention cohort. A single
 // icon button in the topbar (hidden for everyone else, same gate as the gift panel in player-profiles.js) opens
 // its own dialog inside the game, instead of a separate page — one session, one sign-in, nothing extra to visit.
@@ -22,8 +23,10 @@ export function createAdminDashboard(bridge){
   +'<section class="admin-card"><h3><i data-lucide="radio" data-line-icon></i>Online now <span id="admin-online-count">0</span></h3><p class="admin-hint">Active in the last <span id="admin-online-window">30</span> minutes.</p><ul id="admin-online-list" class="admin-online-list"></ul></section>'
   +'<section class="admin-card"><h3><i data-lucide="user-plus" data-line-icon></i>Last 14 players</h3><div class="admin-table-scroll"><table class="admin-table"><thead><tr><th>Farmer</th><th>Level</th><th>Coins</th><th>Signed up</th></tr></thead><tbody id="admin-recent-body"></tbody></table></div></section>'
   +'<section class="admin-card"><h3><i data-lucide="trending-up" data-line-icon></i>Retention, day 0–7</h3><p class="admin-hint">Per signup day: the share of that day\'s real accounts whose last activity is at or after "signup day + N". An approximation — the game keeps no daily activity log, so this is "still around by day N", not exact day-N-active retention.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
+  +'<section class="admin-card" id="admin-events"></section>'
   +'<p id="admin-dashboard-status" class="admin-hint" role="status"></p>';
  document.body.append(dialog);
+ const liveEvents=mountAdminEvents(dialog.querySelector('#admin-events'),bridge);
  dialog.querySelector('.admin-dashboard-close').onclick=()=>dialog.close();
  let refreshTimer;
  dialog.addEventListener('close',()=>clearInterval(refreshTimer));
@@ -48,7 +51,7 @@ export function createAdminDashboard(bridge){
   }catch(error){status.textContent=error.message;}
  }
  button.onclick=()=>{
-  document.querySelectorAll('dialog[open]').forEach(d=>d.close());refreshArt();dialog.showModal();load();
+  document.querySelectorAll('dialog[open]').forEach(d=>d.close());refreshArt();dialog.showModal();load();liveEvents.load();
   clearInterval(refreshTimer);refreshTimer=setInterval(load,60000);
  };
  checkAdmin().then(admin=>{if(admin)button.hidden=false;});

@@ -1,0 +1,37 @@
+✔ only the one account passes isSuperadmin, matched case-insensitively and never by anything client-supplied (6.466387ms)
+✔ grant amounts must be whole, non-negative, within limits, and at least one must be set (3.98219ms)
+✔ an item grant needs a real item key, a positive whole count within its own cap, or no item at all (0.279227ms)
+✔ a gift message is trimmed, capped at 200 characters, and blank becomes no message at all (0.277335ms)
+✔ a valid grant adds to the existing balance, recomputes the real level, and logs who gave it (37.061629ms)
+✔ a crop gift adds to inventory and counts exactly as a harvest would: the stat, the total, and mastery progress (18.877853ms)
+✔ a produced-good gift adds to inventory and counts as goods_produced plus its own made_<item> stat (4.089103ms)
+✔ an item can be combined with coins/XP/diamonds and included in the pendingGift shown to the player (3.148908ms)
+✔ an invalid item key is rejected before touching the database, even with valid coins alongside it (26.656793ms)
+✔ notify stores a pendingGift on the committed state, ready to be picked up on the farmer's next load; message is optional (17.005927ms)
+✔ without notify, nothing is queued and the audit row says so (13.346228ms)
+✔ notify without a message still queues the gift, just with no note (17.638125ms)
+✔ anyone but the one admin account is rejected before touching the database at all (16.521645ms)
+✔ a malformed player id or an empty/out-of-range gift is rejected before touching the database (28.641637ms)
+✔ a farmer that does not exist returns 404 instead of creating anything (2.989037ms)
+✔ a revision conflict is retried with the fresh revision, not silently dropped or doubled (10.4726ms)
+✔ a farmer that keeps changing at the same moment fails closed after a few tries, never applied twice (10.542014ms)
+✔ the admin_grant operation is wired in, gated on the caller, and reachable without a username set (2.911794ms)
+✔ a waiting gift is picked up and cleared on the farmer's own next load, alongside level/chapter rewards (1.690657ms)
+(node:21) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the actual farm endpoint commits duplicate/concurrent VIP request IDs only once (48.078794ms)
+✔ concurrent different requests with the same VIP quote cannot both spend (7.701868ms)
+✔ commit failure keeps the authoritative diamonds and expiry unchanged (16.891469ms)
+✔ client-supplied farm, player ID, VIP time and balance are never authoritative (14.06928ms)
+✔ VIP requires an authenticated, still-active server session (20.770188ms)
+✔ avatar endpoint rejects missing or expired sessions before writing (13.654594ms)
+✔ avatar choice survives a fresh load and later farm action without changing rewards (21.869351ms)
+✔ actual endpoint rejects forged avatar IDs without touching a farm or profile (3.84113ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1389.591352

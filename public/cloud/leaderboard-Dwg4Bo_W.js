@@ -104,6 +104,26 @@ var e = Object.freeze([
 		id: "farm-mechanic",
 		name: "Farm mechanic",
 		src: "/assets/avatars/farm-mechanic.webp"
+	},
+	{
+		id: "pond-keeper",
+		name: "Pond keeper",
+		src: "/assets/avatars/pond-keeper.webp"
+	},
+	{
+		id: "ranch-hand",
+		name: "Ranch hand",
+		src: "/assets/avatars/ranch-hand.webp"
+	},
+	{
+		id: "cheese-maker",
+		name: "Cheese maker",
+		src: "/assets/avatars/cheese-maker.webp"
+	},
+	{
+		id: "flower-tender",
+		name: "Flower tender",
+		src: "/assets/avatars/flower-tender.webp"
 	}
 ].map(Object.freeze)), t = new Map(e.map((e) => [e.id, e])), n = (e) => t.get(e) ?? t.get("default"), r = (e) => `<img class="player-avatar-thumb" src="${n(e).src}" alt="" width="48" height="48" loading="lazy" decoding="async" draggable="false">`;
 //#endregion
@@ -114,7 +134,7 @@ function i(e) {
 }
 function a(e, t = Date.now(), n = !1) {
 	let r = i(e);
-	return r <= t ? "" : `<span class="vip-badge${n ? " vip-badge-detail" : ""}" data-vip-until="${r}" title="VIP farmer" aria-label="VIP farmer"><img src="/assets/icons/vip.png" alt="" width="24" height="24">${n ? "<span data-vip-remaining></span>" : ""}</span>`;
+	return r <= t ? "" : `<span class="vip-badge${n ? " vip-badge-detail" : ""}" data-vip-until="${r}" title="VIP farmer" aria-label="VIP farmer"><img src="/assets/icons/vip.webp" alt="" width="24" height="24">${n ? "<span data-vip-remaining></span>" : ""}</span>`;
 }
 function o(e, t = Date.now()) {
 	e.querySelectorAll("[data-vip-until]").forEach((e) => {
@@ -134,7 +154,7 @@ function o(e, t = Date.now()) {
 //#region public/visual-icons.js
 var s = [
 	{
-		file: "crops-v2.png",
+		file: "crops-v2.webp",
 		columns: 3,
 		keys: [
 			"wheat",
@@ -149,7 +169,7 @@ var s = [
 		]
 	},
 	{
-		file: "goods-v2.png",
+		file: "goods-v2.webp",
 		columns: 4,
 		keys: [
 			"grainmeal",
@@ -171,7 +191,7 @@ var s = [
 		]
 	},
 	{
-		file: "interface-v2.png",
+		file: "interface-v2.webp",
 		columns: 4,
 		keys: [
 			"farm",
@@ -193,6 +213,8 @@ var s = [
 		]
 	}
 ], c = {
+	"family-sharing": "family-sharing",
+	"live-events": "live-events",
 	vip: "vip",
 	"familyhall-model": "familyhall-model",
 	lock: "lock",
@@ -221,7 +243,11 @@ for (let e of [
 	"rank-bronze",
 	"family-bee",
 	"family-oak",
-	"family-barn"
+	"family-barn",
+	"family-fox",
+	"family-owl",
+	"family-windmill",
+	"family-horseshoe"
 ]) c[e] = e;
 for (let e of [
 	"weeds",
@@ -248,7 +274,8 @@ for (let e of [
 	"stew",
 	"juicepress",
 	"preserves",
-	"kitchen"
+	"kitchen",
+	"factory"
 ]) c[e] = e;
 for (let e of [
 	"orchardjuice",
@@ -267,30 +294,92 @@ var l = new Set([
 	"streak",
 	"settings",
 	"reminders",
-	"farmapp"
+	"farmapp",
+	"hourglass"
 ]);
 for (let e of l) c[e] = e;
 var u = Object.fromEntries(s.flatMap((e) => e.keys.map((t, n) => [t, {
 	...e,
 	index: n
-}])));
+}]))), d = {
+	"lock-keyhole": "lock",
+	lock: "lock",
+	salad: "salad",
+	amphora: "pickles",
+	milk: "milk",
+	egg: "eggs",
+	sandwich: "cheese",
+	croissant: "bread",
+	"cake-slice": "pie",
+	"package-check": "vegetables",
+	"package-open": "feed",
+	droplet: "oil",
+	gem: "diamonds",
+	coins: "coins",
+	star: "xp",
+	droplets: "water",
+	scissors: "harvest",
+	shovel: "care",
+	leaf: "care",
+	gift: "gift",
+	"clipboard-check": "quests",
+	trophy: "trophy",
+	medal: "trophy",
+	sparkles: "boost",
+	sprout: "seeds",
+	hammer: "hammer",
+	wheat: "wheat",
+	house: "farm",
+	factory: "buildings",
+	landmark: "estate",
+	store: "market",
+	tractor: "tractor",
+	warehouse: "silo",
+	truck: "cart",
+	wind: "windmill",
+	"shopping-basket": "vegetables",
+	"land-plot": "seeds",
+	"circle-fading-arrow-up": "hammer",
+	flag: "quests",
+	"circle-help": "guide",
+	"volume-2": "sound",
+	settings: "settings",
+	bell: "reminders",
+	smartphone: "farmapp",
+	flame: "streak"
+};
 Object.freeze([...Object.keys(u), ...Object.keys(c)]);
-function d(e, t = "") {
+function f(e, t = "") {
 	let n = u[e];
 	if (n) {
 		let { file: r, columns: i, index: a } = n, o = a % i / (i - 1) * 100, s = Math.floor(a / i) / (i - 1) * 100;
 		return `<span class="game-art game-art-sprite ${t}" data-art="${e}" aria-hidden="true" style="--art-sheet:url('/assets/icons/${r}');--art-size:${i * 100}%;--art-position:${o}% ${s}%"></span>`;
 	}
-	return c[e] ? `<img class="game-art ${t}" data-art="${e}" src="/assets/icons/${c[e]}.${l.has(e) ? "svg" : "png"}" alt="" draggable="false">` : "";
+	let r = new Set(/* @__PURE__ */ "vip.honey.rank-gold.family-bee.family-barn.rank-bronze.family-weekly-order.family-oak.rank-silver.family-members.familyhall.lock.family-tournament.family-management.berries.berrytart.berrypreserves.chore-harvestfair.pickledbeans.apples.applepie.applejuice.harvesthamper.berrycheesecake.stew.orchardsalad.orchardjuice.family-horseshoe.applecompote.chore-sorting.chore-irrigation.collect-all.activity-greenhouse.activity-apiary.instant-harvest.chore-troughs".split("."));
+	return c[e] ? `<img class="game-art ${t}" data-art="${e}" src="/assets/icons/${c[e]}.${l.has(e) ? "svg" : r.has(e) ? "webp" : "png"}" alt="" draggable="false">` : "";
+}
+function p() {
+	document.querySelectorAll("[data-game-art],[data-lucide],.tiny-coin:not(.game-art)").forEach((e) => {
+		if (e.hasAttribute("data-line-icon")) return;
+		let t = e.getAttribute("data-game-art") ?? (e.classList.contains("tiny-coin") ? "coins" : d[e.getAttribute("data-lucide")]);
+		if (!t) return;
+		let n = document.createElement("template");
+		n.innerHTML = f(t);
+		let r = n.content.firstElementChild;
+		if (r) {
+			for (let t of e.classList) t !== "lucide" && !t.startsWith("lucide-") && r.classList.add(t);
+			e.hasAttribute("title") && r.setAttribute("title", e.getAttribute("title")), e.replaceWith(r);
+		}
+	}), window.lucide?.createIcons();
 }
 //#endregion
 //#region public/rank-art.js
-function f(e) {
+function m(e) {
 	return Number.isInteger(e) && e >= 1 && e <= 3 ? `<span class="rank-trophy" role="img" aria-label="${[
 		"Gold",
 		"Silver",
 		"Bronze"
-	][e - 1]} trophy · Place ${e}">${d([
+	][e - 1]} trophy · Place ${e}">${f([
 		"rank-gold",
 		"rank-silver",
 		"rank-bronze"
@@ -298,7 +387,7 @@ function f(e) {
 }
 //#endregion
 //#region src/leaderboard.js
-var p = Object.freeze({
+var h = Object.freeze({
 	level: {
 		label: "Highest level",
 		heading: "Level",
@@ -426,18 +515,18 @@ var p = Object.freeze({
 		description: "Lifetime berries harvested, including water and care bonuses."
 	}
 });
-function m(e) {
-	if (!Object.hasOwn(p, e)) throw Error("Choose a valid leaderboard category.");
-	return p[e];
+function g(e) {
+	if (!Object.hasOwn(h, e)) throw Error("Choose a valid leaderboard category.");
+	return h[e];
 }
-var h = "player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at,vip_expires_at,avatar_id";
-async function g(e, t, n = "level") {
-	m(n);
-	let { data: r, error: i } = await e.from("player_stats").select(h).order(n, { ascending: !1 }).order("player_id", { ascending: !0 }).limit(10);
+var _ = "player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,last_active_at,vip_expires_at,avatar_id";
+async function v(e, t, n = "level") {
+	g(n);
+	let { data: r, error: i } = await e.from("player_stats").select(_).order(n, { ascending: !1 }).order("player_id", { ascending: !0 }).limit(10);
 	if (i) throw i;
 	let a = r?.find((e) => e.player_id === t) ?? null;
 	if (!a && t) {
-		let n = await e.from("player_stats").select(h).eq("player_id", t).maybeSingle();
+		let n = await e.from("player_stats").select(_).eq("player_id", t).maybeSingle();
 		if (n.error) throw n.error;
 		a = n.data;
 	}
@@ -466,53 +555,53 @@ async function g(e, t, n = "level") {
 		category: n
 	};
 }
-function _(e, t = "level") {
-	return m(t), e.map((e, n) => ({
+function y(e, t = "level") {
+	return g(t), e.map((e, n) => ({
 		row: e,
 		rank: n + 1,
 		score: Number(e[t] ?? 0)
 	}));
 }
-function v(e, { rows: t, own: n, rank: i, category: o = "level", onlinePlayers: s = [], presenceReady: c = !1, now: l = Date.now() }, u, d) {
-	let p = m(o);
+function b(e, { rows: t, own: n, rank: i, category: o = "level", onlinePlayers: s = [], presenceReady: c = !1, now: l = Date.now() }, u, d) {
+	let f = g(o);
 	if (e.replaceChildren(), !t.length) {
 		let t = document.createElement("p");
 		t.className = "leaderboard-empty", t.textContent = "The valley is quiet. Be the first farmer on this board.", e.append(t);
 		return;
 	}
-	let h = document.createElement("table");
-	h.className = "leaderboard-table";
-	let g = document.createElement("caption");
-	g.className = "leaderboard-caption", g.textContent = `${p.label} · Top 10`, h.append(g);
-	let v = document.createElement("thead"), b = document.createElement("tr");
+	let p = document.createElement("table");
+	p.className = "leaderboard-table";
+	let h = document.createElement("caption");
+	h.className = "leaderboard-caption", h.textContent = `${f.label} · Top 10`, p.append(h);
+	let _ = document.createElement("thead"), v = document.createElement("tr");
 	for (let e of [
 		"Rank",
 		"Farmer",
-		p.heading
+		f.heading
 	]) {
 		let t = document.createElement("th");
-		t.scope = "col", t.textContent = e, b.append(t);
+		t.scope = "col", t.textContent = e, v.append(t);
 	}
-	v.append(b), h.append(v);
-	let x = document.createElement("tbody");
-	if (_(t, o).forEach(({ row: e, rank: t, score: n }) => {
+	_.append(v), p.append(_);
+	let b = document.createElement("tbody");
+	if (y(t, o).forEach(({ row: e, rank: t, score: n }) => {
 		let i = document.createElement("tr");
 		i.classList.toggle("is-you", e.player_id === u);
 		let o = document.createElement("td");
-		o.className = "leaderboard-place", o.innerHTML = f(t);
-		let s = document.createElement("td"), c = document.createElement(d ? "button" : "strong"), p = document.createElement("small");
+		o.className = "leaderboard-place", o.innerHTML = m(t);
+		let s = document.createElement("td"), c = document.createElement(d ? "button" : "strong"), f = document.createElement("small");
 		c.textContent = e.username, d && (c.type = "button", c.className = "player-name-link", c.setAttribute("aria-haspopup", "dialog"), c.setAttribute("aria-label", `View ${e.username}'s profile`), c.onclick = () => d(e.player_id));
-		let m = document.createElement("span");
-		m.className = "online-dot", m.dataset.onlinePlayer = e.player_id, m.setAttribute("role", "img"), c.prepend(m);
+		let p = document.createElement("span");
+		p.className = "online-dot", p.dataset.onlinePlayer = e.player_id, p.setAttribute("role", "img"), c.prepend(p);
 		let h = a(e.vip_expires_at, l);
-		h && c.insertAdjacentHTML("beforeend", h), p.textContent = `Level ${e.level}${e.player_id === u ? " · You" : ""}`;
+		h && c.insertAdjacentHTML("beforeend", h), f.textContent = `Level ${e.level}${e.player_id === u ? " · You" : ""}`;
 		let g = document.createElement("div");
 		g.className = "leaderboard-farmer", g.innerHTML = r(e.avatar_id);
 		let _ = document.createElement("div");
-		_.append(c, p), g.append(_), s.append(g);
+		_.append(c, f), g.append(_), s.append(g);
 		let v = document.createElement("td");
-		v.textContent = n.toLocaleString("en-US"), i.append(o, s, v), x.append(i);
-	}), h.append(x), e.append(h), y(e, {
+		v.textContent = n.toLocaleString("en-US"), i.append(o, s, v), b.append(i);
+	}), p.append(b), e.append(p), x(e, {
 		onlinePlayers: s,
 		presenceReady: c,
 		now: l
@@ -522,10 +611,10 @@ function v(e, { rows: t, own: n, rank: i, category: o = "level", onlinePlayers: 
 		let r = document.createElement("strong"), a = document.createElement("span");
 		r.textContent = `Your rank: #${i}`;
 		let s = Number(n[o] ?? 0).toLocaleString("en-US");
-		a.textContent = o === "level" ? `Level ${s} · ${n.username}` : `${s} ${p.unit} · ${n.username}`, t.append(r, a), e.append(t);
+		a.textContent = o === "level" ? `Level ${s} · ${n.username}` : `${s} ${f.unit} · ${n.username}`, t.append(r, a), e.append(t);
 	}
 }
-function y(e, { onlinePlayers: t = [], presenceReady: n = !1, now: r = Date.now() }) {
+function x(e, { onlinePlayers: t = [], presenceReady: n = !1, now: r = Date.now() }) {
 	o(e, r);
 	let i = new Set(t);
 	e.querySelectorAll("[data-online-player]").forEach((e) => {
@@ -534,4 +623,4 @@ function y(e, { onlinePlayers: t = [], presenceReady: n = !1, now: r = Date.now(
 	});
 }
 //#endregion
-export { d as a, e as c, y as i, r as l, g as n, o, v as r, a as s, p as t, n as u };
+export { f as a, a as c, n as d, x as i, e as l, v as n, p as o, b as r, o as s, h as t, r as u };

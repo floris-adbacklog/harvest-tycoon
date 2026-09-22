@@ -1,3 +1,6 @@
+import {handleEvents} from './event-service.js';
+import {handleSocial} from './social-service.js';
+import {welcomeSummary} from './welcome-service.js';
 import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily} from './family-service.js';
@@ -24,7 +27,9 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user});return reply(r.data,r.status);}
+  if(body.operation==='social'){const r=await handleSocial({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='player_search'||body.operation==='player_profile'){
    const directory=await handlePlayerDirectory({admin,body,player:user.id});return reply(directory.data,directory.status);
   }
@@ -74,22 +79,23 @@ Deno.serve(async(req)=>{
     if(!familyResponse)continue;return reply(familyResponse.data,familyResponse.status);
    }
    if(body.operation==='load'){
+    const welcome=welcomeSummary(state,row.updated_at,now);
     const levelReward=grantLevelRewards(state),chapterReward=grantChapterRewards(state);
     // An admin gift waiting on this farm (admin-service.js) is shown once, here, then cleared — the same
     // "picked up on the next load, whether that is right now or after a reconnect" delivery as level/chapter
     // rewards above, so no separate push mechanism is needed for it either.
     const gift=state.pendingGift??null;if(gift)delete state.pendingGift;
-    if(levelReward.levels.length||chapterReward.chapters.length||gift){
+    if(welcome||levelReward.levels.length||chapterReward.chapters.length||gift){
      const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
      if(saved.error)throw saved.error;if(!saved.data)continue;
-     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,revision:row.revision+1,serverNow:now});
+     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,revision:row.revision+1,serverNow:now});
     }
     return reply({state,profile,revision:row.revision,serverNow:now});
    }
    const previous=row.receipts.find((r:{id:string})=>r.id===body.requestId);
    if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now});
    let result;try{result=applyFarmAction(state,body.action,now,random);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
-   const receipts=[...row.receipts,{id:body.requestId,result}].slice(-100);
+   const receipts=[...row.receipts,{id:body.requestId,result,eventAction:body.action.type}].slice(-100);
    const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
    if(saved.error)throw saved.error;
    if(saved.data)return reply({state,profile:{...profile,currency:state.coins,level:levelOf(state)},result,revision:row.revision+1,serverNow:now});

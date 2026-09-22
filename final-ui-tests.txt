@@ -1,0 +1,36 @@
+✔ a new farm gets a 30 minute sprint from its creation, in plain clock time (76.788546ms)
+✔ inside the sprint crops, batches and Care take 80% less time; afterwards everything is normal and running things keep their time (5.163689ms)
+✔ starter corn, animal feed and barley cannot be sold in the first 30 minutes; what grows on top can, and afterwards everything can (25.37445ms)
+✔ every level pays at least one diamond, so the first level-ups are never empty-handed (1.192646ms)
+✔ twenty starter quests are appended after the old ones: small, unique and built on counters the game already keeps (4.891054ms)
+✔ a new farmer sees the quickest starter quests first, three at a time, and ticks them off for coins only (10.450097ms)
+✔ the hourglass sits next to the diamonds like the Family button, opens a screen that closes, and has its own icon (2.314807ms)
+✔ the hourglass says how long is left and that it is temporary (0.432302ms)
+✔ mouse, touch and pen clicks work a field once on release; contact alone never spends or harvests (9.902346ms)
+✔ dragging from a crop pans in both directions without working any field (2.650224ms)
+✔ the isometric farm follows the finger up, down, left, right and diagonally (14.549753ms)
+✔ pinching and lifting fingers never becomes a field tap or an icon click (0.502891ms)
+✔ a cancelled touch gesture does not trigger a purchase or utility (0.50611ms)
+✔ tractor and building icons open once for mouse, touch and pen (0.707809ms)
+✔ dragging with mouse, touch or pen pans from a field, icon or background, even after returning to the starting point (1.371976ms)
+✔ a mouse gesture losing capture does not click, and a subsequent click still works (0.598704ms)
+✔ the Quests navigation button opens directly, resets scroll and can reopen (47.327225ms)
+✔ quest filters expose rewards, new features and completed quests without losing progress (12.131599ms)
+✔ pressed floating buttons retain their position instead of jumping away from the pointer (23.799872ms)
+✔ the ordinary browser is never marked, so the installed-app rules cannot reach it (25.971537ms)
+✔ the installed app is marked, in the page and in the game frame (10.251021ms)
+✔ a layout height that is a status bar short of the screen is measured (8.232829ms)
+✔ a page that fills the screen has no shortfall (2.898797ms)
+✔ other reasons for a shorter page are not mistaken for the quirk (21.220953ms)
+✔ it measures again when the window changes (18.115759ms)
+✔ every installed-app layout rule is scoped to the installed app (4.806588ms)
+✔ the game reads the bottom safe area in one place, which the installed app can correct (22.455267ms)
+✔ the game frame and the page load the installed-app files, before anything is drawn (2.10019ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1050.417634

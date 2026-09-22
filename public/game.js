@@ -1,3 +1,5 @@
+import {createLiveEventsUI} from './live-events-ui.js';
+import {showWelcomeBack} from './welcome-ui.js';
 import {createFamilyUI} from './family-ui.js';
 import {renderFarmGuide} from './farm-guide.js';
 import {createProgressionUI,progressionSnapshot,progressionChange} from './progression-ui.js';
@@ -529,6 +531,7 @@ function bindUI(){
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
  $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'harvest',4:'tend'}[e.key];if(t){e.preventDefault();setTool(t);}});
+ createLiveEventsUI({notify:toast,refreshFarm:()=>client.refresh()});
  familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
  economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
@@ -549,6 +552,7 @@ function bindUI(){
  progression=createProgressionUI({state,isReady:()=>ready&&$('loading').hidden});
  if(initialLevelReward?.levels.length)progression.announce({...progressionChange(progressionSnapshot(state),state,initialLevelReward),catchUp:true});
  if(initialGift)giftPopup(initialGift);
+ showWelcomeBack(window.harvestInitialFarm.welcome,{fields:focusFields,production:()=>economy.openBuilding(Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??'coop'),stall:()=>growth.open('stall'),today:()=>retention.openToday()});
  mobileUI=createMobileUI({openUtility,resetView});
  $('save-status').onclick=()=>client.retry();
  new ResizeObserver(resize).observe(world);icons();

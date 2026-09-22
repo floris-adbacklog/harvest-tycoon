@@ -1,3 +1,5 @@
+Latest retention update: see [RETENTION-RELEASE.md](RETENTION-RELEASE.md) for features, tests, database rollout and rollback. These changes have not been deployed to the live game.
+
 Latest UI update: see [LOADING-SCREEN-UPDATE.md](LOADING-SCREEN-UPDATE.md).
 
 Latest release: see [PANTRY-UPDATE.md](PANTRY-UPDATE.md) for new recipes, artwork and deployment status. Earlier release notes follow.

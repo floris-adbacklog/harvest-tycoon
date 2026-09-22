@@ -48,9 +48,9 @@ test('daily rotation covers accessible orders without locked chores or parallel 
  }
  assert.equal(tasksSeen.size,45);for(const o of ORDER_POOL.filter(o=>o.minLevel===1||Object.keys(o.input).some(k=>k!=='honey'&&PRODUCTS[k])))assert.ok(ordersSeen.has(o.title),o.title);for(const o of COMMISSION_POOL.filter(o=>o.minLevel===16))assert.ok(ordersSeen.has(o.title));
 });
-test('new progress only counts accepted actions; failed chores and ready queues do not count',()=>{
- const s=createFarm(now);act(s,{type:'chore',id:'weeds'},now,()=>.99);assert.equal(s.stats.chore_weeds,0);
- act(s,{type:'chore',id:'weeds'},now+60000,()=>0);assert.equal(s.stats.chore_weeds,1);
+test('new progress only counts accepted actions; all chores count, ready queues do not',()=>{
+ const s=createFarm(now);act(s,{type:'chore',id:'weeds'},now,()=>.99);assert.equal(s.stats.chore_weeds,1);
+ act(s,{type:'chore',id:'weeds'},now+60000,()=>0);assert.equal(s.stats.chore_weeds,2);
  s.buildings.mill.level=2;s.inventory.corn=20;
  act(s,{type:'produce',recipe:'feed'},now);act(s,{type:'produce',recipe:'feed'},now+1);assert.equal(s.stats.parallel_batches,1);
  assert.throws(()=>act(s,{type:'produce',recipe:'feed'},now+2),/slots/);assert.equal(s.stats.parallel_batches,1);

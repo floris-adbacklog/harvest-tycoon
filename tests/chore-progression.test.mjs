@@ -19,25 +19,25 @@ test('practice unlocks chores in order at their mastery threshold and respects c
   assert.equal(choreStatus(s,id,time).chance,c.maxChance);
  }
 });
-test('failure gives nothing, advances practice, starts cooldown and ignores forged outcome',()=>{
+test('a regular completion earns guaranteed rewards, advances practice, starts cooldown and ignores forged outcome',()=>{
  const s=createFarm(now),coins=s.coins,xp=s.xp,inventory=structuredClone(s.inventory);
  s.boosts.xpUntil=now+999999;
  const r=act(s,{type:'chore',id:'weeds',success:true,roll:0,chance:100},now,()=>.99);
- assert.equal(r.success,false);assert.equal(r.coins,0);assert.equal(r.xp,0);
- assert.equal(s.coins,coins);assert.equal(s.xp,xp);assert.deepEqual(s.inventory,inventory);
- assert.equal(s.stats.chores,0);assert.ok(!s.onboarding.milestones.chore);
+ assert.equal(r.success,true);assert.equal(r.coins,5);assert.equal(r.xp,2);
+ assert.equal(s.coins,coins+5);assert.equal(s.xp,xp+2);assert.deepEqual(s.inventory,inventory);
+ assert.equal(s.stats.chores,1);assert.ok(s.onboarding.milestones.chore);
  assert.equal(r.nextChance,62);assert.equal(s.chores.weeds,now+60000);
  assert.throws(()=>act(s,{type:'chore',id:'weeds'},now+59999,()=>{throw Error('must not roll');}),/returns in/);
- assert.equal(s.chorePractice.weeds,1);assert.equal(soundForAction({type:'chore'},r,1,1),null);
+ assert.equal(s.chorePractice.weeds,1);assert.equal(r.bonus,false);
  const restored=normalizeFarm(JSON.parse(JSON.stringify(s)),now);
  assert.equal(restored.chorePractice.weeds,1);
- assert.equal(act(restored,{type:'chore',id:'weeds'},now+60000,()=>0).success,true);
+ assert.equal(act(restored,{type:'chore',id:'weeds'},now+60000,()=>0).bonus,true);
 });
 test('success boundary is strict and a mastered first chore always succeeds',()=>{
- assert.equal(act(createFarm(now),{type:'chore',id:'weeds'},now,()=>.6).success,false);
- assert.equal(act(createFarm(now),{type:'chore',id:'weeds'},now,()=>.5999).success,true);
+ assert.equal(act(createFarm(now),{type:'chore',id:'weeds'},now,()=>.6).bonus,false);
+ assert.equal(act(createFarm(now),{type:'chore',id:'weeds'},now,()=>.5999).bonus,true);
  const s=createFarm(now);s.chorePractice.weeds=20;
- assert.equal(act(s,{type:'chore',id:'weeds'},now,()=>.999999).success,true);
+ assert.equal(act(s,{type:'chore',id:'weeds'},now,()=>.999999).bonus,true);
 });
 test('old farms retain balances and cooldowns without inventing per-chore practice',()=>{
  const s=createFarm(now);delete s.chorePractice;s.stats.chores=100;s.chores.weeds=now+30000;

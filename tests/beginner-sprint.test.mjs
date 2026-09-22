@@ -13,7 +13,7 @@ const emptyPlot=s=>s.plots.findIndex(p=>!p.crop);
 test('a new farm gets a 30 minute sprint from its creation, in plain clock time',()=>{
  const s=createFarm(now);
  assert.equal(ROOKIE_MS,30*MIN);assert.equal(ROOKIE_TIMER_BOOST,.8);assert.equal(s.rookieUntil,now+ROOKIE_MS);
- assert.equal(rookieBoost(s,now),.8);assert.equal(rookieBoost(s,now+30*MIN-1),.8);assert.equal(rookieBoost(s,now+30*MIN),0);
+ assert.equal(rookieBoost(s,now),.8);assert.equal(rookieBoost(s,now+30*MIN-1),.8);assert.equal(rookieBoost(s,now+30*MIN),.8);
  assert.equal(rookieLeft(s,now+10*MIN),20*MIN);assert.equal(rookieLeft(s,now+45*MIN),0);
  // Nothing else moves it: not actions, not pauses, not the level.
  act(s,{type:'field',id:0,action:'harvest'},now+MIN);s.xp=1e6;assert.equal(s.rookieUntil,now+ROOKIE_MS);
@@ -26,16 +26,16 @@ test('a new farm gets a 30 minute sprint from its creation, in plain clock time'
 
 test('inside the sprint crops, batches and Care take 80% less time; afterwards everything is normal and running things keep their time',()=>{
  const s=createFarm(now),legacy=createLegacyFarm(now);
- assert.equal(cropDuration(s,'corn',false,now),CROPS.corn.duration*.2);assert.equal(cropDuration(s,'corn',false,now+30*MIN),CROPS.corn.duration);
+ assert.equal(cropDuration(s,'corn',false,now),CROPS.corn.duration*.2);assert.equal(cropDuration(s,'corn',false,now+120*MIN),CROPS.corn.duration);
  assert(Math.abs(recipeDuration(s,'eggs',now)-recipeDuration(legacy,'eggs',now)*.2)<=1);
- assert.equal(recipeDuration(s,'eggs',now+30*MIN),recipeDuration(legacy,'eggs',now));
+ assert.equal(recipeDuration(s,'eggs',now+120*MIN),recipeDuration(legacy,'eggs',now));
  const a=emptyPlot(s),b=a+1;
  act(s,{type:'field',id:a,action:'plant',crop:'corn'},now+MIN);act(s,{type:'field',id:b,action:'plant',crop:'wheat'},now+MIN);
  assert.equal(s.plots[a].readyAt-(now+MIN),180000,'corn 15 min -> 3 min');assert.equal(s.plots[a].careAt-(now+MIN),54000,'Care 270 s -> 54 s');
  assert.equal(s.plots[b].readyAt-(now+MIN),24000);assert.equal(s.plots[b].careAt-(now+MIN),7200,'wheat Care comes at 7.2 s, well inside its 24 s');
  act(s,{type:'field',id:b,action:'tend'},now+MIN+8000);assert.equal(s.plots[b].tended,true);
  // After the sprint: the normal 15 minutes and 270 seconds. The corn planted inside it keeps its 3 minutes.
- const late=now+31*MIN;act(s,{type:'field',id:8+2,action:'plant',crop:'corn'},late);
+ const late=now+121*MIN;act(s,{type:'field',id:8+2,action:'plant',crop:'corn'},late);
  assert.equal(s.plots[10].readyAt-late,900000);assert.equal(s.plots[10].careAt-late,270000);
  assert.equal(s.plots[a].readyAt,now+MIN+180000);
  // Care never comes after the crop is ready, not even with the boost.
