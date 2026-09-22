@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {handleAdminGrant,isSuperadmin,validGrantAmount,validGrant,sanitizeGiftMessage} from '../supabase/functions/farm-api/admin-service.js';
+import {handleAdminGrant,isSuperadmin,validGrantAmount,validGrant,validItem,sanitizeGiftMessage} from '../supabase/functions/farm-api/admin-service.js';
 import {createFarm,levelOf} from '../game/farm-state.js';
 const id='11111111-1111-4111-8111-111111111111',adminId='22222222-2222-4222-8222-222222222222';
 const now=Date.UTC(2026,8,22,12);
@@ -21,6 +21,16 @@ test('grant amounts must be whole, non-negative, within limits, and at least one
  assert.equal(validGrant({coins:0,xp:0,diamonds:5000}),true,'diamonds allowed up to their own, tighter cap');
  assert.equal(validGrant({coins:0,xp:0,diamonds:5001}),false,'diamonds capped well below the coins/xp limit');
  assert.equal(validGrant({coins:1000001,xp:0,diamonds:0}),false);
+});
+test('an item grant needs a real item key, a positive whole count within its own cap, or no item at all',()=>{
+ assert.equal(validItem(null,undefined),true,'no item, nothing to check');
+ assert.equal(validItem(null,0),true);assert.equal(validItem(null,5),false,'a count with no item makes no sense');
+ assert.equal(validItem('wheat',5),true);assert.equal(validItem('wheat',10000),true,'exactly the cap');
+ assert.equal(validItem('wheat',10001),false);assert.equal(validItem('wheat',0),false,'an item with nothing to give is not a gift');
+ assert.equal(validItem('wheat',-1),false);assert.equal(validItem('wheat',1.5),false);
+ assert.equal(validItem('not-a-real-item',5),false);
+ assert.equal(validGrant({coins:0,xp:0,diamonds:0,item:'wheat',itemCount:5}),true,'an item alone is enough to count as a gift');
+ assert.equal(validGrant({coins:0,xp:0,diamonds:0,item:'not-a-real-item',itemCount:5}),false);
 });
 test('a gift message is trimmed, capped at 200 characters, and blank becomes no message at all',()=>{
  assert.equal(sanitizeGiftMessage('  Enjoy!  '),'Enjoy!');
@@ -52,7 +62,7 @@ test('a valid grant adds to the existing balance, recomputes the real level, and
  const db=database({state});
  const result=await handleAdminGrant({admin:db,body:{playerId:id,coins:50000,xp:1000,diamonds:10},user:admin});
  assert.equal(result.status,200);
- assert.deepEqual(result.data.granted,{coins:50000,xp:1000,diamonds:10});
+ assert.deepEqual(result.data.granted,{coins:50000,xp:1000,diamonds:10,item:null,itemCount:0});
  assert.equal(result.data.totals.coins,50100);assert.equal(result.data.totals.xp,1000);assert.equal(result.data.totals.diamonds,15);
  assert.equal(result.data.totals.level,levelOf({xp:1000,xpOffset:0,xpCurve:state.xpCurve}));
  const rpc=db.calls.find(c=>c.rpc==='harvest_commit_farm').args;
@@ -60,13 +70,48 @@ test('a valid grant adds to the existing balance, recomputes the real level, and
  assert.equal(rpc.p_state.coins,50100);assert.equal(rpc.p_state.xp,1000);assert.equal(rpc.p_state.diamonds,15);
  assert.deepEqual(rpc.p_receipts,[{id:'r1',result:{}}],'the receipt log is carried through untouched, not rewritten');
  const logged=db.calls.find(c=>c.insert)?.insert;
- assert.deepEqual(logged,{player_id:id,granted_by:adminId,coins:50000,xp:1000,diamonds:10,notified:false,message:null},'the audit row records who gave it, separate from the farm state itself');
+ assert.deepEqual(logged,{player_id:id,granted_by:adminId,coins:50000,xp:1000,diamonds:10,item:null,item_count:0,notified:false,message:null},'the audit row records who gave it, separate from the farm state itself');
+});
+test('a crop gift adds to inventory and counts exactly as a harvest would: the stat, the total, and mastery progress',async()=>{
+ const state=createFarm(now);const before=state.inventory.wheat,beforeHarvest=state.stats.harvest_wheat??0,beforeTotal=state.stats.harvested,beforeMastery=state.mastery.harvests.wheat;
+ const db=database({state});
+ const result=await handleAdminGrant({admin:db,body:{playerId:id,coins:0,xp:0,diamonds:0,item:'wheat',itemCount:25},user:admin});
+ assert.equal(result.status,200);assert.deepEqual(result.data.granted,{coins:0,xp:0,diamonds:0,item:'wheat',itemCount:25});
+ const rpc=db.calls.find(c=>c.rpc==='harvest_commit_farm').args;
+ assert.equal(rpc.p_state.inventory.wheat,before+25);
+ assert.equal(rpc.p_state.stats.harvest_wheat,beforeHarvest+25);
+ assert.equal(rpc.p_state.stats.harvested,beforeTotal+25);
+ assert.equal(rpc.p_state.mastery.harvests.wheat,beforeMastery+25);
+ assert.equal(rpc.p_state.stats.goods_produced,state.stats.goods_produced,'a crop never touches the production stat');
+ const logged=db.calls.find(c=>c.insert)?.insert;assert.equal(logged.item,'wheat');assert.equal(logged.item_count,25);
+});
+test('a produced-good gift adds to inventory and counts as goods_produced plus its own made_<item> stat',async()=>{
+ const state=createFarm(now);const before=state.inventory.honey,beforeProduced=state.stats.goods_produced??0,beforeMade=state.stats.made_honey??0;
+ const db=database({state});
+ const result=await handleAdminGrant({admin:db,body:{playerId:id,coins:0,xp:0,diamonds:0,item:'honey',itemCount:8},user:admin});
+ assert.equal(result.status,200);
+ const rpc=db.calls.find(c=>c.rpc==='harvest_commit_farm').args;
+ assert.equal(rpc.p_state.inventory.honey,before+8);
+ assert.equal(rpc.p_state.stats.goods_produced,beforeProduced+8);
+ assert.equal(rpc.p_state.stats.made_honey,beforeMade+8);
+ assert.equal(rpc.p_state.stats.harvested,state.stats.harvested,'a produced good never touches the harvest stat');
+});
+test('an item can be combined with coins/XP/diamonds and included in the pendingGift shown to the player',async()=>{
+ const db=database();
+ await handleAdminGrant({admin:db,body:{playerId:id,coins:50,xp:0,diamonds:0,item:'corn',itemCount:12,notify:true},user:admin});
+ const rpc=db.calls.find(c=>c.rpc==='harvest_commit_farm').args;
+ assert.deepEqual(rpc.p_state.pendingGift,{coins:50,xp:0,diamonds:0,item:'corn',itemCount:12,message:null,at:rpc.p_state.pendingGift.at});
+});
+test('an invalid item key is rejected before touching the database, even with valid coins alongside it',async()=>{
+ const db=database();
+ const result=await handleAdminGrant({admin:db,body:{playerId:id,coins:100,item:'not-a-real-item',itemCount:5},user:admin});
+ assert.equal(result.status,400);assert.equal(db.calls.length,0);
 });
 test('notify stores a pendingGift on the committed state, ready to be picked up on the farmer\'s next load; message is optional',async()=>{
  const db=database();
  await handleAdminGrant({admin:db,body:{playerId:id,coins:100,xp:0,diamonds:0,notify:true,message:'  Thanks for playing!  '},user:admin});
  const rpc=db.calls.find(c=>c.rpc==='harvest_commit_farm').args;
- assert.deepEqual(rpc.p_state.pendingGift,{coins:100,xp:0,diamonds:0,message:'Thanks for playing!',at:rpc.p_state.pendingGift.at});
+ assert.deepEqual(rpc.p_state.pendingGift,{coins:100,xp:0,diamonds:0,item:null,itemCount:0,message:'Thanks for playing!',at:rpc.p_state.pendingGift.at});
  const logged=db.calls.find(c=>c.insert)?.insert;
  assert.equal(logged.notified,true);assert.equal(logged.message,'Thanks for playing!');
 });

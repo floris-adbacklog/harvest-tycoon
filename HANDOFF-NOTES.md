@@ -128,3 +128,24 @@ RLS/grants audit (2026-09-22, already live — read-only checks plus one small a
 Admin gift panel: floris@millstone.nl only, coins/XP/diamonds, with an optional player notification (2026-09-22, live after the client is pushed AND `farm-api` is redeployed): opening any farmer's profile (leaderboard → search → a farmer) now shows an "Admin gift" box above "Back to leaderboard" — but only when signed in as `floris@millstone.nl`; everyone else's dialog is unchanged (`src/player-profiles.js`, `checkAdmin()`, lazily imports `./supabase.js` so every other test that loads this file does not need the real Supabase package installed). Enter any of coins/XP/diamonds, confirm, and it is added to that farmer's balance through the exact same `harvest_commit_farm` RPC every ordinary action already commits through — a new `admin_grant` operation on `farm-api` (`supabase/functions/farm-api/admin-service.js`), gated on `user.email` from the verified JWT (never anything the client claims), with its own per-gift caps (1,000,000 coins/XP, 5,000 diamonds — diamonds are the currency the Stripe packs sell) and a `admin_grants` audit table (who, whom, how much, when; RLS-locked like every other internal table).
 Optional: ticking "Notify the player" (with an optional short message) queues a `state.pendingGift`, delivered once on that farmer's own next load (`farm-api index.ts`, same delivery point as level/chapter rewards — no separate push channel needed) and shown as a small "Donation!" popup with an icon per currency actually given, and the note if there was one (`public/game.js` `giftPopup()`, `#gift-dialog` in `public/farm.html`, styled like the level-up celebration in `public/progression.css`). The message is only ever set with `.textContent`, never interpolated into HTML.
 Tests: `tests/admin-grant.test.mjs` (the service + index.ts wiring), `tests/admin-gift-popup.test.mjs` (the popup), `tests/player-profile-navigation.test.mjs` and `tests/online-client.test.mjs` (extended for the admin box and the gift delivery path).
+
+Admin gift panel: polish + a real bug fix + seeds/goods (2026-09-22, live after the client is pushed AND `farm-api`
+is redeployed): after the first version shipped, live testing turned up that giving coins to yourself showed
+nothing — not even after a hard refresh. Root cause: `farm-api` had not actually been redeployed yet after the
+commit that added `admin_grant` (confirmed on the live project: the deployed function had zero references to it),
+so every grant was silently rejected as "Unknown request." and nothing was ever written. Not a code bug — but
+while investigating, a real one was found alongside it: gifting *yourself* while your own farm is open in the same
+tab does write to the database correctly, but your own already-loaded `state` has no reason to refetch on its own,
+so the coin counter and the "Donation!" popup would still not show until a manual reload. Fixed: `give`'s success
+handler now calls `window.harvestRefresh?.()` when the target is the signed-in player — the same reload path a
+reconnect already uses — so both the balance and the popup (if notify was on) catch up immediately.
+Also, per feedback: the box moved above the farmer's own profile content (the reason the dialog was opened, not an
+afterthought below the stats); every field now carries its own icon (`art()`); the Give button is a proper
+`.primary-button`; the native `confirm()` was replaced with the game's own `confirmAction()` dialog
+(`public/confirm-dialog.js`, already used for the "sell all crops" confirmation); and the "Donation!" popup got a
+big icon at the top, matching the level-up celebration.
+New: the panel can now also give any single crop or production good (a dropdown grouped "Crops" / "Goods
+produced", plus a quantity) — it lands in the target's inventory and counts exactly as actually getting it would:
+a crop bumps `harvest_<crop>`, the `harvested` total and mastery progress (the badges players chase); a produced
+good bumps `goods_produced` and its own `made_<item>` stat. Coins/XP/diamonds still touch no stats, as before.
+Tests: `tests/admin-grant.test.mjs`, `tests/player-profile-navigation.test.mjs`, `tests/admin-gift-popup.test.mjs`.

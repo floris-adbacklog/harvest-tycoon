@@ -4,9 +4,10 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../src/player-profiles.js',import.meta.url),'utf8').split('export function createPlayerProfiles')[1];
 // admin defaults to false so every pre-existing test below (none of which care about it) keeps seeing exactly
-// the dialog it always has; confirmed defaults to true so a Give click does not need a confirm() mock every time.
-function harness({admin=false,confirmed=true}={}){
- let doc,timer;const intervals=[],requests=[],created=[],confirms=[];
+// the dialog it always has; confirmed defaults to true so a Give click does not need a confirm mock every time.
+// playerId is the browser's own signed-in id — only relevant to the self-gift refresh test below.
+function harness({admin=false,confirmed=true,playerId}={}){
+ let doc,timer;const intervals=[],requests=[],created=[],confirms=[],refreshes=[];
  class Element{
   constructor(){this.nodes=new Map();this.listeners={};this.attributes={};this.innerHTML='';this.textContent='';this.children=[];this.isConnected=true;this.value='';this.open=false;}
   querySelector(key){if(!this.nodes.has(key))this.nodes.set(key,new Element());return this.nodes.get(key);}
@@ -21,11 +22,12 @@ function harness({admin=false,confirmed=true}={}){
   contains(el){return this===el||this.children.includes(el);}
  }
  const board=new Element();doc={body:new Element(),activeElement:new Element(),hidden:false,getElementById:()=>board,createElement:()=>new Element()};
- const bridge={request(body){return new Promise((resolve,reject)=>requests.push({body,resolve,reject}));}};
- const context=vm.createContext({document:doc,window:{addEventListener(){}},setTimeout(fn){timer=fn;return 1;},clearTimeout(){timer=null;},setInterval(fn){intervals.push(fn);return 2;},clearInterval(){},refreshVipBadges(){},renderPlayerProfile:p=>p.username,renderPlayerSearch:players=>players.map(p=>p.username).join(','),checkAdmin:()=>Promise.resolve(admin),confirm(message){confirms.push(message);return confirmed;}});
+ const bridge={playerId,request(body){return new Promise((resolve,reject)=>requests.push({body,resolve,reject}));}};
+ const win={addEventListener(){},harvestRefresh:()=>{refreshes.push(Date.now());return Promise.resolve();}};
+ const context=vm.createContext({document:doc,window:win,setTimeout(fn){timer=fn;return 1;},clearTimeout(){timer=null;},setInterval(fn){intervals.push(fn);return 2;},clearInterval(){},refreshVipBadges(){},renderPlayerProfile:p=>p.username,renderPlayerSearch:players=>players.map(p=>p.username).join(','),checkAdmin:()=>Promise.resolve(admin),confirmAction(request){confirms.push(request);return Promise.resolve(confirmed);},art:()=>'',adminGrantItemOptions:'<option value="">None</option><option value="wheat">Wheat</option>',ITEMS:{wheat:{name:'Wheat'}}});
  vm.runInContext(`function createPlayerProfiles${source}`,context);
  const controller=context.createPlayerProfiles(bridge),dialog=doc.body.children[0],search=created[0];
- return {controller,requests,dialog,search,doc,intervals,confirms,tick(){const fn=timer;timer=null;fn?.();}};
+ return {controller,requests,dialog,search,doc,intervals,confirms,refreshes,tick(){const fn=timer;timer=null;fn?.();}};
 }
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 test('a slow first profile cannot overwrite a newer selected farmer',async()=>{
@@ -91,12 +93,12 @@ test('the message field only appears once "notify" is checked',async()=>{
  notify.checked=true;notify.onchange();assert.equal(message.hidden,false);
  notify.checked=false;notify.onchange();assert.equal(message.hidden,true);
 });
-test('declining the confirmation sends nothing to the server',async()=>{
+test('declining the custom confirmation sends nothing to the server',async()=>{
  const h=harness({admin:true,confirmed:false}),pending=h.controller.open('one');
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='500';
  await box.querySelector('#admin-grant-give').onclick();
- assert.equal(h.confirms.length,1);assert.match(h.confirms[0],/Give Tony 500 coins\?/);
+ assert.equal(h.confirms.length,1);assert.equal(h.confirms[0].title,'Give Tony?');assert.equal(h.confirms[0].description,'500 coins.');
  assert.equal(h.requests.length,1,'declined — no grant request was sent');
 });
 test('confirming sends exactly what was entered, including notify and a trimmed message, and reports the result',async()=>{
@@ -106,19 +108,35 @@ test('confirming sends exactly what was entered, including notify and a trimmed 
  box.querySelector('#admin-grant-coins').value='1000';box.querySelector('#admin-grant-xp').value='50';box.querySelector('#admin-grant-diamonds').value='0';
  const notify=box.querySelector('#admin-grant-notify');notify.checked=true;notify.onchange();
  box.querySelector('#admin-grant-message').value='  Well played!  ';
- const done=box.querySelector('#admin-grant-give').onclick();
- assert.equal(h.confirms[0],'Give Tony 1000 coins, 50 XP? They will be notified.');
+ const done=box.querySelector('#admin-grant-give').onclick();await flush();
+ assert.equal(h.confirms[0].title,'Give Tony?');assert.equal(h.confirms[0].description,'1000 coins, 50 XP. They will be notified.');assert.equal(h.confirms[0].confirmLabel,'Give');
  // The body was built inside the vm sandbox, so it is a same-shape but different-realm object; compare by value.
- assert.deepEqual(JSON.parse(JSON.stringify(h.requests[1].body)),{operation:'admin_grant',playerId:'one',coins:1000,xp:50,diamonds:0,notify:true,message:'Well played!'});
+ assert.deepEqual(JSON.parse(JSON.stringify(h.requests[1].body)),{operation:'admin_grant',playerId:'one',coins:1000,xp:50,diamonds:0,item:null,itemCount:0,notify:true,message:'Well played!'});
  h.requests[1].resolve({granted:{coins:1000,xp:50,diamonds:0},totals:{level:12}});await done;
  assert.equal(box.querySelector('#admin-grant-status').textContent,'Given: +1000 coins · +50 XP · +0 diamonds. New level: 12. Notified.');
  assert.equal(box.querySelector('#admin-grant-coins').value,'0');
+});
+test('gifting yourself refreshes your own running farm, so the coin counter and any popup catch up immediately',async()=>{
+ const h=harness({admin:true,playerId:'one'}),pending=h.controller.open('one');
+ h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
+ const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='500';
+ const done=box.querySelector('#admin-grant-give').onclick();await flush();
+ h.requests[1].resolve({granted:{coins:500,xp:0,diamonds:0},totals:{level:12}});await done;
+ assert.equal(h.refreshes.length,1,'window.harvestRefresh was called because the target was the signed-in player');
+});
+test('gifting someone else never touches your own running farm',async()=>{
+ const h=harness({admin:true,playerId:'admin-id'}),pending=h.controller.open('someone-else');
+ h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
+ const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='500';
+ const done=box.querySelector('#admin-grant-give').onclick();await flush();
+ h.requests[1].resolve({granted:{coins:500,xp:0,diamonds:0},totals:{level:12}});await done;
+ assert.equal(h.refreshes.length,0);
 });
 test('a failed grant shows the server\'s own message and leaves the button usable again',async()=>{
  const h=harness({admin:true}),pending=h.controller.open('one');
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='10';
- const give=box.querySelector('#admin-grant-give'),done=give.onclick();
+ const give=box.querySelector('#admin-grant-give'),done=give.onclick();await flush();
  h.requests[1].reject(new Error('This farmer changed at the same moment. Please try again.'));await done;
  assert.equal(box.querySelector('#admin-grant-status').textContent,'This farmer changed at the same moment. Please try again.');
  assert.equal(give.disabled,false);
@@ -128,6 +146,6 @@ test('switching to another farmer before the admin check resolves targets the on
  h.requests[1].resolve({playerProfile:{username:'Second'}});await two;
  h.requests[0].resolve({playerProfile:{username:'First'}});await one;await flush();
  const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='10';
- box.querySelector('#admin-grant-give').onclick();
+ box.querySelector('#admin-grant-give').onclick();await flush();
  assert.equal(h.requests[2].body.playerId,'two','the rendered form targets the farmer actually selected now, not the stale "one"');
 });

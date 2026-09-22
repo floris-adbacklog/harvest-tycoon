@@ -72,10 +72,12 @@ function toast(message){$('toast').textContent=message;$('toast').classList.add(
 // so there is nothing here that needs escaping.
 function giftPopup(gift){
  if(!gift)return;
+ $('gift-icon').innerHTML=art('gift');
  const rewards=[];
  if(gift.coins)rewards.push(`<strong class="reward-coins">${art('coins')}+${gift.coins.toLocaleString('en-US')} coins</strong>`);
  if(gift.xp)rewards.push(`<strong class="reward-xp">${art('xp')}+${gift.xp.toLocaleString('en-US')} XP</strong>`);
  if(gift.diamonds)rewards.push(`<strong class="reward-diamonds">${art('diamonds')}+${gift.diamonds.toLocaleString('en-US')} diamonds</strong>`);
+ if(gift.item&&gift.itemCount&&ITEMS[gift.item])rewards.push(`<strong class="reward-item">${art(gift.item)}+${gift.itemCount.toLocaleString('en-US')} ${ITEMS[gift.item].name}</strong>`);
  $('gift-rewards').innerHTML=rewards.join('');
  const note=$('gift-message');
  if(gift.message){note.textContent=`“${gift.message}”`;note.hidden=false;}else{note.textContent='';note.hidden=true;}
