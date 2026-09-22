@@ -179,3 +179,22 @@ Factory only, at every level (1-9's own base price, and the shared 10-20 steps);
 production speed/slots, and the diamond-upgrade alternative — changed. Deliberately no note about this on the
 upgrade panel itself (asked for, then explicitly withdrawn) — the price shown is simply higher. Test:
 `tests/factory.test.mjs`.
+
+New: a separate admin dashboard at /admin.html — floris@millstone.nl only (2026-09-22, live after the client is
+pushed AND `farm-api` is redeployed): who is online right now (the same 30-minute rule the leaderboard's online
+dot already uses), the last 14 real signups (including one that signed up but never opened a farm — still worth
+seeing), and a 7-day retention cohort. This is its own small page, not part of the main game bundle — it opens
+straight to the dashboard if this browser already has a floris@millstone.nl session (same Supabase session
+play.html keeps, same origin/storage), otherwise a plain sign-in form.
+Three new read-only `farm-api` operations (`admin_online`, `admin_recent_players`, `admin_retention`,
+`supabase/functions/farm-api/admin-analytics-service.js`), gated the same way `admin_grant` is — the account is
+checked server-side from the verified JWT, never anything the page claims about itself. Reading real signup times
+needs `auth.users`, which is not exposed through PostgREST; a narrow `admin_auth_signups` SQL function (additive
+migration, EXECUTE revoked from anon/authenticated, real accounts only) is the only way in, the same pattern
+`notification_subscribe` etc. already use.
+The retention numbers are a stated approximation: "still active by day N" (last_active_at at or after signup-day +
+N), not exact day-N-active retention — the game keeps no daily activity log to reconstruct that after the fact. A
+day-offset that has not elapsed yet shows as "—", never a false 0%.
+Build: `scripts/build-cloud.mjs` now has a third Vite entry (`admin:'src/admin.js'` → `public/cloud/admin.js`),
+alongside the existing `cloud`/`game-cloud` ones — picked up automatically by the normal `npm run build:static`
+Vercel already runs, no extra step. Tests: `tests/admin-analytics.test.mjs`.

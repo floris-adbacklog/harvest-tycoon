@@ -2,6 +2,7 @@ import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily} from './family-service.js';
 import {handleAdminGrant} from './admin-service.js';
+import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention} from './admin-analytics-service.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
@@ -23,12 +24,21 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['load','action','rename','avatar','family','player_search','player_profile','admin_grant'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='player_search'||body.operation==='player_profile'){
    const directory=await handlePlayerDirectory({admin,body,player:user.id});return reply(directory.data,directory.status);
   }
   if(body.operation==='admin_grant'){
    const granted=await handleAdminGrant({admin,body,user});return reply(granted.data,granted.status);
+  }
+  if(body.operation==='admin_online'){
+   const online=await handleAdminOnline({admin,user});return reply(online.data,online.status);
+  }
+  if(body.operation==='admin_recent_players'){
+   const recent=await handleAdminRecentPlayers({admin,user,limit:body.limit});return reply(recent.data,recent.status);
+  }
+  if(body.operation==='admin_retention'){
+   const retention=await handleAdminRetention({admin,user});return reply(retention.data,retention.status);
   }
   if(body.operation==='avatar'){
    const saved=await savePlayerAvatar({admin,player:user.id,avatarId:body.avatarId});return reply(saved.data,saved.status);
