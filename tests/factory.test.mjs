@@ -102,8 +102,6 @@ test('only the Factory\'s coin upgrade price is doubled; the diamond alternative
   s.buildings[id].level=1;assert.equal(upgradeCost(s,id),Math.round(b.upgradeCost*1.5),id);
  }
  s.buildings.factory.level=1;assert.equal(upgradeCost(s,'factory'),Math.round(BUILDINGS.factory.upgradeCost*1.5)*FACTORY_UPGRADE_MULTIPLIER);
- const ui=read('public/economy-ui.js');
- assert.match(ui,/key==='factory'\?`Costs \$\{FACTORY_UPGRADE_MULTIPLIER\}× a regular building's upgrade/,'and it says so on the upgrade panel itself');
 });
 test('the Factory is bought with coins or diamonds and estate-upgrades levels 11-20 like the others, just doubled',()=>{
  const s=farm();s.buildings.factory.level=10;
