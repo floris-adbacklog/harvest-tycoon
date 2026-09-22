@@ -1244,7 +1244,7 @@ export const ACTIVE_STATIONS=Object.freeze({
  paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:0,xp:42,cooldown:180000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',targetIcon:'droplet',otherIcon:'waves'},
  workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:0,xp:48,cooldown:240000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',targetIcon:'wrench',otherIcon:'check'}
 });
-export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:0,xp:60});
+export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:250,xp:60});
 export function activityTargets(station,cycle){
  const offset=(Object.keys(ACTIVE_STATIONS).indexOf(station)+cycle)%6;
  return [0,2,3].map(i=>(i+offset)%6);

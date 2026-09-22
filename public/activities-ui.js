@@ -49,7 +49,7 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
   if(busy)return;busy=true;dialog.querySelectorAll('.activity-tile,#activity-start').forEach(b=>b.disabled=true);
   try{
    const result=await runAction(action);onResult?.(action,result);
-   if(result.finished){feedback=`Job complete! +${result.xp} XP${result.item?` · +${result.itemCount??1} ${ITEMS[result.item].name}`:''}${result.roundComplete?' · Farm round bonus included!':''}`;notify(feedback);}
+   if(result.finished){feedback=`Job complete! +${result.xp} XP${result.item?` · +${result.itemCount??1} ${ITEMS[result.item].name}`:''}${result.roundComplete?` · Farm round bonus: +${ACTIVITY_ROUND_REWARD.coins} coins!`:''}`;notify(feedback);}
    else feedback=action.type==='activity_start'?'Choose the three items that need your help.':'Good work. Keep going!';
   }catch(e){feedback=e.message;}
   finally{busy=false;render();refresh();}
