@@ -1,4 +1,5 @@
 import {createLiveEventsUI} from './live-events-ui.js';
+import {createToast} from './toast-ui.js';
 import {showWelcomeBack} from './welcome-ui.js';
 import {createFamilyUI} from './family-ui.js';
 import {renderFarmGuide} from './farm-guide.js';
@@ -68,8 +69,9 @@ modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS)
 modelNames.push('coop_002','mountain_001','mountain_007');
 modelNames.push('house_008','pointer_002','table_002','garden_bed_002','firewood_001');
 const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
-let toastTimer;
-function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
+
+let showToast;
+function toast(message){showToast??=createToast($('toast'));showToast(message);}
 // A gift from the admin (public/player-profiles.js, floris@millstone.nl only) picked up on this farm's next
 // load and cleared server-side (farm-api index.ts). The message, if any, is set with textContent — never HTML —
 // so there is nothing here that needs escaping.

@@ -266,3 +266,11 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - **Backdrop click** closes every open dialog through one delegated listener (dialogs created later, like events,
   sharing, Welcome Back and the starter pack, were missed). `data-keep-open` opts out (sign-in dialog).
 - **Starter pack** fits a desktop screen without a scrollbar (four crops per row).
+- **Less text** in menus (one short sentence each): quests, market, today, boosts, estate (projects, stall, chores,
+  mastery), windmill/bakery notes, slot and upgrade notes; recipe cards now say "+N coins more than the ingredients".
+- **Diamonds & boosts** opens like every other phone sheet (full width); empty "choose a field/batch" pickers become a
+  single "No crops growing / No batches running" chip.
+- **Toasts** (`public/toast-ui.js`): a painted icon in a tinted circle, a tone (reward, warning, info), "+N coins/XP/
+  diamonds" as chips, a soft spring in and a timer bar. Messages are escaped before chips are added.
+- **Beginner guide**: progress bar with the diamond reward, a timeline where only the current step shows its
+  explanation, and an XP chip on every open step (also on the in-game beginner card).

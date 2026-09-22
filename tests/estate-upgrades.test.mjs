@@ -124,7 +124,7 @@ test('the building panel shows an estate upgrade with what it asks for, and expl
  assert.match(ui,/\$\{estate\?`<div class="ingredients expansion-materials">\$\{itemList\(estate\.materials,true\)\}<\/div>`:''\}/,'the goods it asks for, with what you have');
  assert.match(ui,/!estateLevelOk\|\|!estateSupplies\?'disabled':''/);
  assert.match(ui,/Level \$\{next\} unlocks at farm level \$\{estate\.level\}\. You are level \$\{levelOf\(state\)\}\./);
- assert.match(ui,/\$\{state\.boosts\.upgradeCredits\?'Your 50% upgrade voucher is included in this price\. ':''\}/,'the voucher counts at every level');
+ assert.match(ui,/\$\{state\.boosts\.upgradeCredits\?'50% voucher included\. ':''\}/,'the voucher counts at every level');
  assert.match(ui,/id="upgrade-building-diamonds"[^>]*\$\{mutating\|\|state\.diamonds<diamondCost\|\|!estateLevelOk\|\|!estateSupplies\?'disabled':''\}/,'diamonds wait for the level and the goods, but not for a running batch');
  assert.doesNotMatch(ui,/id="upgrade-building"[^>]*jobs\.length/,'coins do not wait for a running batch either');
  assert.match(ui,/Level \$\{MAX_BUILDING_LEVEL\}: \$\{slots\} simultaneous batches/);

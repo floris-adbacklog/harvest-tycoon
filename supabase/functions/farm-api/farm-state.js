@@ -796,10 +796,10 @@ export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
 }
 export const BOOSTS=Object.freeze({
  xp:{name:'Double XP',cost:50,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},
- coins:{name:'Double earnings',cost:100,duration:1800000,art:'coins',description:'Double your market sales and delivery coins for 30 minutes. Passive income and gifts stay the same.'},
- crops:{name:'Instant harvest',cost:150,art:'seeds',description:'Make every currently growing crop ready to harvest. Crops stay in their fields until you collect them.'},
- production:{name:'Finish production',cost:200,art:'boost',description:'Finish all current production batches instantly (not the Factory’s big batches). Collect the finished goods from their buildings.'},
- upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'Save 50% of the coin cost on your next production-building upgrade. One voucher at a time; it never expires.'}
+ coins:{name:'Double earnings',cost:100,duration:1800000,art:'coins',description:'Double coins from sales and deliveries for 30 minutes.'},
+ crops:{name:'Instant harvest',cost:150,art:'seeds',description:'Every growing crop ready to harvest now.'},
+ production:{name:'Finish production',cost:200,art:'boost',description:'Every running batch ready now (not the Factory).'},
+ upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'50% off your next building upgrade. Never expires.'}
 });
 export function boostStatus(state,id,now=Date.now()){
  if(!Object.hasOwn(BOOSTS,id))throw new Error('Choose a valid boost.');
