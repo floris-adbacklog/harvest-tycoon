@@ -119,7 +119,21 @@ test('the admin_online/admin_recent_players/admin_retention operations are wired
 test('handleAdminOnline/RecentPlayers/Retention each check isSuperadmin, imported from the same place admin_grant uses',()=>{
  const code=read('supabase/functions/farm-api/admin-analytics-service.js');
  assert.match(code,/import \{isSuperadmin\} from '\.\/admin-service\.js';/);
- assert.equal((code.match(/if\(!isSuperadmin\(user\)\)return respond\(\{error:'Not authorized\.'\},403\);/g)??[]).length,3);
+ assert.equal((code.match(/if\(!isSuperadmin\(user\)\)return respond\(user,\{error:'Not authorized\.'\},403\);/g)??[]).length,3);
+});
+// Regression: bridge.request() in src/main.js throws "Your session has ended" for any farm-api response whose
+// profile.player_id does not match the signed-in caller — a response with no profile field at all fails that
+// check too (undefined !== a real uuid), so every admin response, success or error, needs one. This first
+// shipped without it: every admin dashboard call silently looked like a dead session.
+test('every response — success and 403 alike, from all three operations and admin_grant — carries the caller\'s own profile.player_id',async()=>{
+ const analytics=read('supabase/functions/farm-api/admin-analytics-service.js');
+ assert.match(analytics,/const respond=\(user,data,status=200\)=>\(\{status,data:\{\.\.\.data,profile:\{player_id:user\?\.id\}\}\}\);/);
+ const grant=read('supabase/functions/farm-api/admin-service.js');
+ assert.match(grant,/const respond=\(data,status=200\)=>\(\{status,data:\{\.\.\.data,profile:\{player_id:user\?\.id\}\}\}\);/);
+ const okOnline=await handleAdminOnline({admin:database(),user:admin});assert.equal(okOnline.data.profile.player_id,admin.id);
+ const okRecent=await handleAdminRecentPlayers({admin:database(),user:admin});assert.equal(okRecent.data.profile.player_id,admin.id);
+ const okRetention=await handleAdminRetention({admin:database(),user:admin});assert.equal(okRetention.data.profile.player_id,admin.id);
+ const denied=await handleAdminOnline({admin:database(),user:notAdmin});assert.equal(denied.data.profile.player_id,notAdmin.id);
 });
 test('the read-only admin operations are safe to auto-retry, like every other read',()=>{
  const code=read('src/connection.js');

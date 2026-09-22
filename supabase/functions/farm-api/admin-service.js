@@ -23,7 +23,10 @@ export const sanitizeGiftMessage=value=>{const trimmed=String(value??'').trim().
 // atomic, revision-checked write every ordinary farm action already goes through — so nothing about this
 // write is a special or less-safe path; only reaching it is restricted, in index.ts, to the superadmin above.
 export async function handleAdminGrant({admin,body,user}){
- const respond=(data,status=200)=>({status,data});
+ // bridge.request() in src/main.js checks every response's profile.player_id against the signed-in caller (a
+ // stale-tab/concurrent-session guard that every farm-api reply is expected to satisfy) — this is the admin's
+ // own id, not the farmer being granted something.
+ const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:user?.id}}});
  if(!isSuperadmin(user))return respond({error:'Not authorized.'},403);
  const playerId=body.playerId;
  if(typeof playerId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(playerId))return respond({error:'Choose a valid farmer.'},400);

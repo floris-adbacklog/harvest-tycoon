@@ -208,3 +208,13 @@ player-profiles.js, the same check the gift panel already uses) says yes, openin
 player-profile/gift panel). Same three farm-api operations and the same `admin_auth_signups` SQL function as
 before — nothing changed server-side. Tests: `tests/admin-analytics.test.mjs`, `tests/farm-ready.test.mjs`
 (needed a `createAdminDashboard` mock added to its existing game-cloud.js sandbox).
+
+Bug fix: every admin dashboard call showed "Your session has ended" (2026-09-22, live after the client is pushed
+AND `farm-api` is redeployed): `bridge.request()` in `src/main.js` checks every farm-api response's
+`profile.player_id` against the signed-in caller — a stale-tab/concurrent-session guard every reply is expected
+to satisfy (every other handler already injects it: see `player-profile-service.js`'s own `respond()`). The three
+new admin_* operations, and `admin_grant` itself, did not — a response with no `profile` field fails that check
+too (`undefined !== a real uuid`), so a perfectly successful request still looked like a dead session on screen.
+Fixed in both `admin-service.js` and `admin-analytics-service.js`; regression tests added so this cannot silently
+come back. Caught live: the dashboard opened and looked right, but every section stayed empty with "Your session
+has ended." where the data should have loaded.

@@ -63,6 +63,10 @@ test('a valid grant adds to the existing balance, recomputes the real level, and
  const result=await handleAdminGrant({admin:db,body:{playerId:id,coins:50000,xp:1000,diamonds:10},user:admin});
  assert.equal(result.status,200);
  assert.deepEqual(result.data.granted,{coins:50000,xp:1000,diamonds:10,item:null,itemCount:0});
+ // Regression: bridge.request() in src/main.js throws "Your session has ended" for any farm-api response whose
+ // profile.player_id is not the signed-in caller's own id (undefined, missing entirely, fails that check too) —
+ // this shipped without it once, so admin_grant's own success response silently looked like a dead session.
+ assert.equal(result.data.profile.player_id,adminId,'the admin\'s own id, not the farmer who was granted something');
  assert.equal(result.data.totals.coins,50100);assert.equal(result.data.totals.xp,1000);assert.equal(result.data.totals.diamonds,15);
  assert.equal(result.data.totals.level,levelOf({xp:1000,xpOffset:0,xpCurve:state.xpCurve}));
  const rpc=db.calls.find(c=>c.rpc==='harvest_commit_farm').args;
@@ -134,6 +138,7 @@ test('anyone but the one admin account is rejected before touching the database 
   const db=database();
   const result=await handleAdminGrant({admin:db,body:{playerId:id,coins:100,xp:0,diamonds:0},user});
   assert.equal(result.status,403);assert.equal(db.calls.length,0);
+  assert.equal(result.data.profile.player_id,user?.id,'even a 403 carries the caller\'s own id, never undefined by omission');
  }
 });
 test('a malformed player id or an empty/out-of-range gift is rejected before touching the database',async()=>{

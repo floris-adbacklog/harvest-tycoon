@@ -1,23 +1,26 @@
 import {isSuperadmin} from './admin-service.js';
 import {isRecentlyActive,ONLINE_WINDOW} from './presence.js';
 
-const respond=(data,status=200)=>({status,data});
+// bridge.request() in src/main.js checks every response's profile.player_id against the signed-in caller (a
+// stale-tab/concurrent-session guard every farm-api reply is expected to satisfy) — the admin's own id here,
+// not any of the farmers this dashboard reports on.
+const respond=(user,data,status=200)=>({status,data:{...data,profile:{player_id:user?.id}}});
 const DAY_MS=86400000,RETENTION_DAYS=7;
 
 // Who is online right now: the same "active in the last 30 minutes" rule the leaderboard's own online dot and a
 // farmer's public profile already use (presence.js) — nothing new is invented for this dashboard.
 export async function handleAdminOnline({admin,user,now=Date.now()}){
- if(!isSuperadmin(user))return respond({error:'Not authorized.'},403);
+ if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
  const found=await admin.from('player_stats').select('player_id,username,level,last_active_at').order('last_active_at',{ascending:false,nullsFirst:false}).limit(500);
  if(found.error)throw found.error;
  const online=(found.data??[]).filter(row=>isRecentlyActive(row.last_active_at,now));
- return respond({count:online.length,windowMinutes:ONLINE_WINDOW/60000,players:online.map(({player_id,username,level})=>({playerId:player_id,username,level}))});
+ return respond(user,{count:online.length,windowMinutes:ONLINE_WINDOW/60000,players:online.map(({player_id,username,level})=>({playerId:player_id,username,level}))});
 }
 
 // The newest real accounts (never anonymous sessions — see admin_auth_signups), whether or not they ever opened
 // a farm: a signed-up player who never played is exactly the kind of thing this list should surface.
 export async function handleAdminRecentPlayers({admin,user,limit=14,now=Date.now()}){
- if(!isSuperadmin(user))return respond({error:'Not authorized.'},403);
+ if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
  const parsed=Number(limit);
  const n=Math.max(1,Math.min(Number.isFinite(parsed)?Math.floor(parsed):14,100));
  const signups=await admin.rpc('admin_auth_signups',{p_since:'1970-01-01T00:00:00Z',p_limit:n});
@@ -30,7 +33,7 @@ export async function handleAdminRecentPlayers({admin,user,limit=14,now=Date.now
   const stat=byId.get(s.player_id);
   return {playerId:s.player_id,createdAt:s.created_at,username:stat?.username??null,level:stat?.level??null,coins:stat?.currency??null,online:stat?isRecentlyActive(stat.last_active_at,now):false,everPlayed:Boolean(stat)};
  });
- return respond({players});
+ return respond(user,{players});
 }
 
 // A simplified retention cohort: for every UTC day in the last week, the % of that day's real (non-anonymous)
@@ -39,7 +42,7 @@ export async function handleAdminRecentPlayers({admin,user,limit=14,now=Date.now
 // retention — the game keeps no daily activity log, so exact day-by-day presence cannot be reconstructed after
 // the fact. A day still in progress (not enough of it has elapsed for a given N) is reported as null, not 0%.
 export async function handleAdminRetention({admin,user,now=Date.now()}){
- if(!isSuperadmin(user))return respond({error:'Not authorized.'},403);
+ if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
  const since=new Date(now-(RETENTION_DAYS+1)*DAY_MS).toISOString();
  const signups=await admin.rpc('admin_auth_signups',{p_since:since,p_limit:5000});
  if(signups.error)throw signups.error;
@@ -63,5 +66,5 @@ export async function handleAdminRetention({admin,user,now=Date.now()}){
   });
   return {day,size:members.length,days};
  });
- return respond({rows});
+ return respond(user,{rows});
 }
