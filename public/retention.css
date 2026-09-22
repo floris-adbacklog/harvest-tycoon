@@ -213,3 +213,55 @@
 .event-podium li span .game-art{width:18px;height:18px}
 .family-order-line.is-done progress::-webkit-progress-value{background:#5e9b51}
 .family-order-line.is-done progress::-moz-progress-bar{background:#5e9b51}
+
+/* Factory "What shall we make?": each source shows its building, what it makes and how many recipes can start now. */
+.factory-filter{margin:4px 0 12px}
+.factory-filter button span{display:inline-block;min-width:18px;margin-left:4px;padding:0 6px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font-size:12px}
+.factory-filter button:disabled{opacity:.5;cursor:default}
+.factory-recipe-list{display:grid;gap:8px}
+.factory-recipe-group{background:#fbf8f2}
+.factory-recipe-group.has-ready{border-color:#cfe0c3;background:#f8fbf3}
+.factory-recipe-group>summary{gap:12px;padding:10px 14px;color:#453e28}
+.factory-recipe-group>summary::after{content:none}
+.factory-source-art{flex-shrink:0;display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#efe6d8}
+.factory-source-art>.game-art{width:40px;height:40px;object-fit:contain}
+.factory-source-copy{flex:1;min-width:0}
+.factory-source-copy strong{display:block;font:600 16px 'Outfit',sans-serif;line-height:1.25}
+.factory-source-copy small{display:flex;align-items:center;gap:8px;margin-top:3px;font:500 12px 'DM Sans',sans-serif;color:#8f816f}
+.factory-source-goods{display:inline-flex;gap:2px}
+.factory-source-goods .game-art{width:20px;height:20px;object-fit:contain}
+.factory-ready{flex-shrink:0;padding:4px 10px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font:700 12px 'DM Sans',sans-serif;font-style:normal;white-space:nowrap}
+.factory-chevron{flex-shrink:0;width:18px;height:18px;color:#a09684;transition:transform .15s}
+.factory-recipe-group[open] .factory-chevron{transform:rotate(180deg)}
+.factory-recipe-group[open]>summary{border-bottom:1px solid #eee4d6;margin-bottom:12px}
+.factory-ready-list{display:grid;gap:12px}
+.factory-source-copy small{white-space:nowrap}
+
+/* Tool dock: the four tools sit straight in the dock, in the order you work (Plant, Water, Care, Harvest, keys 1-4). The
+   chosen tool only gets a soft fill: no frame, no border, no box inside the box. */
+.tool-dock .tools{padding:0;background:none;box-shadow:none}
+.tool-dock .tools .tool{border-radius:12px;transition:background .15s}
+.tool-dock .tools .tool.active{background:#f1eadf;box-shadow:none;color:#453e28}
+.tool-dock .tools .tool span{font-weight:700;color:#6a6149}
+.tool-dock .tools .tool.active span{color:#453e28}
+@media(min-width:901px){
+ .tool-dock .tools{gap:2px}
+ .tool-dock .tools .tool{width:78px;min-width:78px;height:70px;gap:5px;padding:8px 6px 7px}
+ .tool-dock .tools .tool:hover:not(.active){background:#fbf7f0}
+ .tool-dock .tools .tool>.game-art{width:32px;height:32px}
+ .tool-dock .tools .tool span{font-size:13px}
+ .tool-dock .tools .tool kbd{top:5px;right:6px;min-width:15px;height:15px;padding:0 3px;box-sizing:border-box;border-radius:5px;background:transparent;color:#b3a894;font:700 10px/15px 'DM Sans',sans-serif;text-align:center;opacity:1}
+ .tool-dock .tools .tool.active kbd{color:#8a7a4a}
+}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .tool-dock .tools{gap:2px}
+ .tool-dock .tools .tool{flex-direction:column;justify-content:center;gap:2px;height:50px;padding:4px 2px;border-radius:11px}
+ .tool-dock .tools .tool>.game-art,.tool-dock .tools .tool>svg{width:26px;height:26px}
+ .tool-dock .tools .tool span{font-size:11px;line-height:1.1}
+}
+@media(max-height:550px) and (orientation:landscape) and (pointer:coarse){
+ .tool-dock .tools .tool{height:44px}
+ .tool-dock .tools .tool>.game-art,.tool-dock .tools .tool>svg{width:22px;height:22px}
+}
+/* Phones: the dock is one panel, not a framed card inside the panel. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){.bottom-hud .tool-dock{border-color:transparent;box-shadow:none}}

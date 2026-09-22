@@ -5,3 +5,5 @@
 
 /* Center the narrower offer instead of inheriting the mobile sheet's left alignment. */
 #starter-pack-dialog{margin-inline:auto;left:0;right:0;max-width:calc(100vw - 24px)}
+/* Desktop: a little wider with four crops per row, so the whole offer fits on screen without a scrollbar. */
+@media(min-width:901px){#starter-pack-dialog{width:min(600px,calc(100vw - 24px));padding:22px 26px}.starter-hero{width:72px;height:72px;margin-bottom:4px}#starter-pack-dialog h2{margin:4px 0 6px}.starter-rewards{margin:14px 0}.starter-crops{grid-template-columns:repeat(4,minmax(0,1fr));margin:10px 0}.starter-crops>div{padding:7px 3px}.starter-time{margin:10px 0!important}}

@@ -9,6 +9,7 @@ const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const seconds=formatDuration;
 export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate,onFamily}){
+ const openFactoryGroups=new Set();let factoryFilter='all';
  let currentBuilding=null,marketTab='crops',selectedCrop='wheat',seedFilter='all',lastJobReady='',lastCoinBoost=false,mutating=false;
  let marketSelling=false,renderedMarketDay='',lastMarketDay=utcDay(farmNow());
  const number=n=>n.toLocaleString('en-US');
@@ -58,13 +59,17 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   // building's whole catalogue, so both of its recipe lists get grouped and collapsed by source; every other
   // building's own, much shorter list stays exactly the flat list it always was.
   const buildingOrder=Object.keys(BUILDINGS),sourceOf=r=>r.base?buildingOrder.indexOf(RECIPES[r.base].building):-1;
-  const sourceLabel=r=>r.base?`From the ${BUILDINGS[RECIPES[r.base].building].name}`:'Honey bottling';
-  const foldFactoryGroups=(entries,cardOf)=>{
+  const sourceKey=r=>r.base?RECIPES[r.base].building:'honey';
+  const sourceLabel=r=>r.base?BUILDINGS[RECIPES[r.base].building].name:'Honey bottling';
+  // Each source reads at a glance: its building, what it makes, how many recipes and how many you can start now.
+  // Open groups stay open when the list re-renders (after starting or collecting a batch).
+  const foldFactoryGroups=(entries,cardOf,{ready=()=>false}={})=>{
    const groups=new Map();
    for(const [rid,r] of entries.sort(([,a],[,b])=>sourceOf(a)-sourceOf(b))){
-    const label=sourceLabel(r);if(!groups.has(label))groups.set(label,[]);groups.get(label).push(cardOf(rid,r));
+    const source=sourceKey(r);if(!groups.has(source))groups.set(source,{label:sourceLabel(r),cards:[],outputs:[],ready:0});
+    const g=groups.get(source);g.cards.push(cardOf(rid,r));g.outputs.push(Object.keys(r.output)[0]);if(ready(rid))g.ready++;
    }
-   return [...groups].map(([label,cards])=>`<details class="factory-recipe-group"><summary><span>${label}</span><b>${cards.length}</b></summary><div class="factory-recipe-group-cards">${cards.join('')}</div></details>`).join('');
+   return [...groups].map(([source,g])=>`<details class="factory-recipe-group ${g.ready?'has-ready':''}" data-factory-group="${source}" ${openFactoryGroups.has(source)?'open':''}><summary><span class="factory-source-art">${art(source)}</span><span class="factory-source-copy"><strong>${g.label}</strong><small><span class="factory-source-goods">${[...new Set(g.outputs)].slice(0,4).map(item=>art(item)).join('')}</span>${g.cards.length} ${g.cards.length===1?'recipe':'recipes'}</small></span>${g.ready?`<em class="factory-ready">${g.ready} ready</em>`:''}<i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary><div class="factory-recipe-group-cards">${g.cards.join('')}</div></details>`).join('');
   };
   if(key==='farmhouse'){
    const cost=expansionCost(state),materials=expansionMaterials(state),hasMaterials=Object.entries(materials).every(([k,n])=>state.inventory[k]>=n),needLevel=expansionLevel(state),levelOk=levelOf(state)>=needLevel;
@@ -86,7 +91,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    if(key==='windmill' ||key==='bakery')content+=`<div class="milling-chain"><span>${art('wheat')} Grain</span><b>→</b><span>${art('grainmeal')} Grain meal</span><b>→</b><span>${art('flour')} Flour</span><b>→</b><span>${art('bread')} Fresh baking</span></div><p class="milling-note">${key==='windmill'?'Grind wheat and barley into grain meal, then refine it into flour. Your Bakery turns the flour into higher-value fresh bread and pies.':'Flour now comes from the Windmill. Process flour into bread and pumpkin pie for a better return than selling the ingredients.'}</p>`;
    const jobs=productionJobs(bs),slots=productionSlots(bs.level,key),ready=jobs.filter(j=>j.readyAt<=farmNow());
    lastJobReady=jobs.map(j=>`${j.id}:${farmNow()>=j.readyAt}`).join('|');
-   content+=`<div class="production-capacity"><strong>${jobs.length} / ${slots} production slots used</strong><p>Level ${bs.level} · ${slots} simultaneous ${slots===1?'batch':'batches'}. ${key==='factory'?'The Factory gets a slot every four levels.':'Each building level adds one slot.'} Ready goods keep their slot until collected.</p></div>${ready.length>1?`<section class="collect-all-panel"><div class="collect-all-art">${art('collect-all')}</div><div class="collect-all-copy"><strong>${ready.length} batches ready</strong><span>Gather all finished goods from this building.</span></div><button type="button" id="collect-all-batches" class="primary-button" ${mutating?'disabled':''}>Collect all <span>${ready.length}</span></button></section>`:''}<div class="production-batches">`;
+   content+=`<div class="production-capacity"><strong>${jobs.length} / ${slots} production slots used</strong><p>Level ${bs.level} · ${slots} simultaneous ${slots===1?'batch':'batches'}. ${key==='factory'?'The Factory gets a slot every two levels, up to five.':'Each building level adds one slot.'} Ready goods keep their slot until collected.</p></div>${ready.length>1?`<section class="collect-all-panel"><div class="collect-all-art">${art('collect-all')}</div><div class="collect-all-copy"><strong>${ready.length} batches ready</strong><span>Gather all finished goods from this building.</span></div><button type="button" id="collect-all-batches" class="primary-button" ${mutating?'disabled':''}>Collect all <span>${ready.length}</span></button></section>`:''}<div class="production-batches">`;
    for(const [index,job] of jobs.entries()){
     const recipe=RECIPES[job.recipe],isReady=farmNow()>=job.readyAt;
     content+=`<div class="job-panel ${isReady?'ready':''}" data-production-job="${job.id}"><div class="job-heading"><span class="job-icon"><i data-lucide="${isReady?'package-check':'timer'}"></i></span><div><strong>Batch ${index+1} · ${recipe.name}</strong><span data-job-time="${job.id}">${isReady?'Your batch is ready!':`${seconds(job.readyAt-farmNow())} remaining`}</span></div></div><progress data-job-progress="${job.id}" max="100" value="${Math.max(0,Math.min(100,(farmNow()-job.startedAt)/Math.max(1,job.readyAt-job.startedAt)*100))}" aria-label="Batch ${index+1} production progress"></progress><div class="job-result">${itemList(job.output??recipe.output)}</div><button data-collect-job="${job.id}" class="primary-button" ${isReady?'':'disabled'}>${isReady?'Collect this batch':'Making something good…'}<i data-lucide="shopping-basket"></i></button></div>`;
@@ -102,7 +107,13 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    // means its recipe list is every other building's list combined. Grouped by where each good normally comes
    // from and collapsed (same helper as the pre-purchase preview above), so this reads as a short list of
    // sources instead of one very long scroll. Every other building's own, much shorter list stays flat.
-   content+=key==='factory'?`<div class="recipe-list factory-recipe-list">${foldFactoryGroups(recipeEntries,recipeCard)}</div>`:`<div class="recipe-list">${recipeEntries.map(([rid,r])=>recipeCard(rid,r)).join('')}</div>`;
+   if(key==='factory'){
+    // "Ready now" answers the question you open the Factory with: what can I start right away?
+    const canStart=rid=>recipeAvailability(state,rid).canStart,readyEntries=recipeEntries.filter(([rid])=>canStart(rid));
+    if(factoryFilter==='ready'&&!readyEntries.length)factoryFilter='all';
+    content+=`<div class="market-tabs factory-filter" role="group" aria-label="Show recipes"><button type="button" data-factory-filter="all" aria-pressed="${factoryFilter==='all'}" class="${factoryFilter==='all'?'active':''}">All sources</button><button type="button" data-factory-filter="ready" aria-pressed="${factoryFilter==='ready'}" class="${factoryFilter==='ready'?'active':''}" ${readyEntries.length?'':'disabled'}>Ready now <span>${readyEntries.length}</span></button></div>`;
+    content+=factoryFilter==='ready'?`<div class="recipe-list factory-ready-list">${readyEntries.map(([rid,r])=>recipeCard(rid,r)).join('')}</div>`:`<div class="recipe-list factory-recipe-list">${foldFactoryGroups(recipeEntries,recipeCard,{ready:canStart})}</div>`;
+   }else content+=`<div class="recipe-list">${recipeEntries.map(([rid,r])=>recipeCard(rid,r)).join('')}</div>`;
    if(key==='windmill'){
     const eligible=state.plots.filter(p=>p.crop&&p.readyAt>farmNow()&&!p.fertilized);
     content+=`<section class="fertilizer-panel"><div>${art('fertilizer')}<h3>Give a field a head start</h3></div><p>Use 1 natural fertilizer to remove 35% of a crop’s remaining growing time. Once per growing cycle; watering and extra care still work.</p>${fieldPicker({id:'fertilizer-field-picker',plots:eligible,selected:[...fertilizerFields].filter(id=>eligible.some(p=>p.id===id)),multiple:true,now:farmNow(),available:state.inventory.fertilizer})}<div class="fertilizer-action"><span id="fertilizer-cost">${state.inventory.fertilizer} fertilizer in storage · 0 required</span><button id="fertilize-field" class="small-button" disabled>Fertilize selected fields</button></div></section>`;
@@ -114,6 +125,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   }
   $('building-content').innerHTML=content;$('building-feedback').textContent='';
   const recipeList=$('building-content').querySelector('.recipe-list');if(recipeList&&guidedFarm(state))foldLocked(recipeList,'[data-recipe-card]',card=>recipeAvailability(state,card.dataset.recipeCard).locked,'Coming later');
+  $('building-content').querySelectorAll('[data-factory-filter]').forEach(b=>b.addEventListener('click',()=>{factoryFilter=b.dataset.factoryFilter;renderBuilding();}));
+  $('building-content').querySelectorAll('[data-factory-group]').forEach(g=>g.addEventListener('toggle',()=>{if(g.open)openFactoryGroups.add(g.dataset.factoryGroup);else openFactoryGroups.delete(g.dataset.factoryGroup);}));
   $('construct-building')?.addEventListener('click',()=>mutate(async()=>{await runAction({type:'construct',building:key});return `${b.name} is open. Start your first batch!`;}));
   $('building-content').querySelectorAll('[data-clear-planting]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{await runAction({type:'clear_planting',id:Number(btn.dataset.clearPlanting),expectedPlantedAt:Number(btn.dataset.plantedAt)});onExpand();return 'Planting removed. Your field is ready for a new crop.';})));
   $('farmhouse-estate')?.addEventListener('click',()=>onEstate('projects'));

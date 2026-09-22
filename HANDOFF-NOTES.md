@@ -254,3 +254,15 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   first three to finish an event get +300 coins +2 diamonds, +200 +1, +100 +1 on top of the usual reward. Same
   numbers in `harvest_event_settle`, `PODIUM` (farm-api standings) and `PODIUM_PRIZES` (event screen); a test keeps
   them equal. The 6-event-diamonds-a-day cap at claim still applies.
+- **Factory**: "What shall we make?" shows each source with its building art, the goods it makes, the recipe count and
+  a green "N ready" badge; a "Ready now" filter lists only what can start right away; open groups stay open after an
+  action. Slots: one every two levels, up to five (reached at level 9) — `FACTORY_MAX_SLOTS`; five keeps the rule that a
+  level-20 specialised building always beats the Factory for the same good. Needs a farm-api redeploy (farm-state.js).
+- **Tool dock**: Plant → Water → Care → Harvest (keys 1-4 follow). The tools sit straight in the dock; the chosen one
+  only gets a soft fill (no frame, no box in a box). On phones: icon above the label, and no extra outline around the
+  dock inside the bottom panel.
+- **Installed app (PWA)**: a solid band in the app green behind the white status-bar text (instead of a dark veil over
+  the farm); centred pop-ups stay clear of the notch and home indicator. Not tested on a physical iPhone.
+- **Backdrop click** closes every open dialog through one delegated listener (dialogs created later, like events,
+  sharing, Welcome Back and the starter pack, were missed). `data-keep-open` opts out (sign-in dialog).
+- **Starter pack** fits a desktop screen without a scrollbar (four crops per row).

@@ -51,7 +51,7 @@ test('bottled honey: 100 coins a honey, 50 a batch, 135 minutes (twice what a hi
  assert.ok(recipeValue('mass_honey').added<0,'a coin sink, not a source of income');
 });
 test('a honey batch takes its coins at the start, needs the balance, and scales with the number of batches',()=>{
- const s=farm();s.buildings.factory.level=9;assert.equal(productionSlots(9,'factory'),3);
+ const s=farm();s.buildings.factory.level=9;assert.equal(productionSlots(9,'factory'),5,'all five slots by level 9');
  s.coins=4999;assert.throws(()=>act(s,{type:'produce',recipe:'mass_honey'}),/You need 5000 coins/);assert.equal(s.coins,4999);
  assert.equal(recipeAvailability(s,'mass_honey').poor,true);assert.equal(recipeAvailability(s,'mass_honey').canStart,false);assert.equal(recipeAvailability(s,'mass_honey').maxCount,0);
  s.coins=12000;const a=recipeAvailability(s,'mass_honey');assert.equal(a.maxCount,2,'the balance allows two');assert.equal(a.price,5000);assert.equal(a.canStart,true);
@@ -87,7 +87,7 @@ test('the specialised buildings keep their point: a full Factory adds less than 
  for(let level=1;level<=20;level++){
   const now={quick:factory(level,20),slow:factory(level,10)};
   assert.ok(now.quick>=last.quick&&now.slow>=last.slow,`level ${level} is not weaker than the one before`);last=now;
-  assert.equal(productionSlots(level,'factory'),Math.ceil(level/4));assert.ok(Math.abs(productionSpeed(level,'factory')-productionSpeed(level)/2)<1e-9);
+  assert.equal(productionSlots(level,'factory'),Math.min(5,Math.ceil(level/2)),'a slot every two levels, up to five');assert.ok(Math.abs(productionSpeed(level,'factory')-productionSpeed(level)/2)<1e-9);
  }
  assert.equal(productionSlots(20,'factory'),5);assert.equal(productionSlots(1,'factory'),1);
  assert.ok(factory(20,20)<regular(20)*.9,`a full Factory (${factory(20,20).toFixed(0)}) stays below one full building (${regular(20).toFixed(0)})`);
@@ -107,8 +107,8 @@ test('the Factory is bought with coins or diamonds and estate-upgrades levels 11
  const s=farm();s.buildings.factory.level=10;
  assert.equal(upgradeCost(s,'factory'),400000*FACTORY_UPGRADE_MULTIPLIER,'the same estate step every building shares, doubled for the Factory alone');
  s.buildings.factory.level=20;assert.equal(upgradeCost(s,'factory'),null);
- s.buildings.factory.level=1;const r=act(s,{type:'upgrade',building:'factory'});assert.equal(r.level,2);assert.equal(productionSlots(2,'factory'),1,'level 2 still has one slot');
- s.buildings.factory.level=4;act(s,{type:'upgrade',building:'factory'});assert.equal(s.buildings.factory.level,5);assert.equal(productionSlots(5,'factory'),2,'the second slot comes at level 5');
+ s.buildings.factory.level=1;const r=act(s,{type:'upgrade',building:'factory'});assert.equal(r.level,2);assert.equal(productionSlots(2,'factory'),1,'level 2 still has one slot');assert.equal(productionSlots(3,'factory'),2,'the second slot comes at level 3');
+ s.buildings.factory.level=4;act(s,{type:'upgrade',building:'factory'});assert.equal(s.buildings.factory.level,5);assert.equal(productionSlots(5,'factory'),3,'the third at level 5');
 });
 test('diamonds cannot rush the Factory: a bulk batch is worth 10-20 normal ones for the price of one',()=>{
  const s=farm();s.buildings.factory.level=5;s.inventory.feed=100;s.inventory.corn=100;
@@ -152,7 +152,7 @@ test('the building panel shows the coin price of bottled honey, orders the Facto
  assert.match(ui,/function costList\(id,n=1\)/);assert.match(ui,/r\.coins\?`<span class="ingredient \$\{state\.coins<r\.coins\*n\?'missing':''\}">\$\{art\('coins'\)\}<span>\$\{number\(r\.coins\*n\)\} coins<\/span><\/span>`:''/);
  assert.match(ui,/<div class="ingredients">\$\{costList\(rid\)\}<\/div>/);assert.match(ui,/innerHTML=costList\(id,count\)/);
  assert.match(ui,/a\.poor\?`You need \$\{number\(a\.price\)\} coins for a batch\.`/);
- assert.match(ui,/productionSlots\(b\.level,key\)/);assert.match(ui,/productionSlots\(bs\.level,key\)/);assert.match(ui,/The Factory gets a slot every four levels/);
+ assert.match(ui,/productionSlots\(b\.level,key\)/);assert.match(ui,/productionSlots\(bs\.level,key\)/);assert.match(ui,/The Factory gets a slot every two levels, up to five\./);
  assert.match(ui,/sourceOf=r=>r\.base\?buildingOrder\.indexOf\(RECIPES\[r\.base\]\.building\):-1/);
  // The pre-purchase preview (built from itemList(r.input), not costList()) has no coins of its own — without
  // this, bottled honey's row showed as a bare arrow into a honey icon, no hint of the 5,000 coin cost.
@@ -164,12 +164,15 @@ test('the building panel shows the coin price of bottled honey, orders the Facto
 // other building's short recipe-list (and preview) stays exactly as it was, unwrapped.
 test('only the Factory groups its recipes by source and collapses them; every other building keeps a flat list',()=>{
  const ui=read('public/economy-ui.js');
- assert.match(ui,/const foldFactoryGroups=\(entries,cardOf\)=>\{/,'one shared grouping helper for both of the Factory\'s recipe lists');
- assert.match(ui,/const sourceLabel=r=>r\.base\?`From the \$\{BUILDINGS\[RECIPES\[r\.base\]\.building\]\.name\}`:'Honey bottling';/);
- assert.match(ui,/<details class="factory-recipe-group"><summary><span>\$\{label\}<\/span><b>\$\{cards\.length\}<\/b><\/summary><div class="factory-recipe-group-cards">\$\{cards\.join\(''\)\}<\/div><\/details>/);
+ assert.match(ui,/const foldFactoryGroups=\(entries,cardOf,\{ready=\(\)=>false\}=\{\}\)=>\{/,'one shared grouping helper for both of the Factory\'s recipe lists');
+ assert.match(ui,/const sourceLabel=r=>r\.base\?BUILDINGS\[RECIPES\[r\.base\]\.building\]\.name:'Honey bottling';/);
+ assert.match(ui,/<details class="factory-recipe-group \$\{g\.ready\?'has-ready':''\}" data-factory-group="\$\{source\}" \$\{openFactoryGroups\.has\(source\)\?'open':''\}><summary><span class="factory-source-art">\$\{art\(source\)\}<\/span>/,'each source shows its building, stays open across re-renders');
+ assert.match(ui,/\$\{g\.ready\?`<em class="factory-ready">\$\{g\.ready\} ready<\/em>`:''\}/,'and how many of its recipes you can start now');
  // The working recipe list (once built): grouped only for the Factory, otherwise the same flat list as before.
  assert.match(ui,/const recipeCard=\(rid,r\)=>\{/,'the per-recipe card is a reusable function');
- assert.match(ui,/content\+=key==='factory'\?`<div class="recipe-list factory-recipe-list">\$\{foldFactoryGroups\(recipeEntries,recipeCard\)\}<\/div>`:`<div class="recipe-list">\$\{recipeEntries\.map\(\(\[rid,r\]\)=>recipeCard\(rid,r\)\)\.join\(''\)\}<\/div>`;/);
+ assert.match(ui,/`<div class="recipe-list factory-recipe-list">\$\{foldFactoryGroups\(recipeEntries,recipeCard,\{ready:canStart\}\)\}<\/div>`/);
+ assert.match(ui,/\}else content\+=`<div class="recipe-list">\$\{recipeEntries\.map\(\(\[rid,r\]\)=>recipeCard\(rid,r\)\)\.join\(''\)\}<\/div>`;/,'every other building keeps its flat list');
+ assert.match(ui,/data-factory-filter="ready"[^`]*Ready now <span>\$\{readyEntries\.length\}<\/span>/,'a Ready now filter shows only what can start right away');
  // The pre-purchase preview (construction-recipes): grouped the same way, only for the Factory.
  assert.match(ui,/const previewRecipes=key==='factory'\?foldFactoryGroups\(previewEntries,previewCard\):previewEntries\.map\(\(\[rid,r\]\)=>previewCard\(rid,r\)\)\.join\(''\);/);
  assert.match(ui,/<div class="construction-recipes\$\{key==='factory'\?' factory-recipe-list':''\}">\$\{previewRecipes\}<\/div>/);
@@ -195,7 +198,7 @@ test('a server that does not know the Factory yet cannot break the game, and the
 });
 
 test('the quest lines that count batches are left alone: a bulk batch counts as one batch, however big',()=>{
- const s=farm();s.buildings.factory.level=5;s.inventory.feed=200;assert.equal(productionSlots(5,'factory'),2);
+ const s=farm();s.buildings.factory.level=3;s.inventory.feed=200;assert.equal(productionSlots(3,'factory'),2);
  const first=act(s,{type:'produce',recipe:'mass_eggs'}),second=act(s,{type:'produce',recipe:'mass_eggs'});
  assert.equal(s.stats.parallel_batches,1,'the second one started while the first was running: one, not twenty');
  act(s,{type:'collect',building:'factory',jobId:first.jobId},first.readyAt);act(s,{type:'collect',building:'factory',jobId:second.jobId},second.readyAt);

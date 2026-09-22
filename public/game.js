@@ -523,7 +523,9 @@ function bindUI(){
  $('help-button').addEventListener('click',()=>{renderFarmGuide(state);openDialog('help-dialog');});
  $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());resetView();toast('Back to the heart of your farm.');});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
- document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}}));
+ // A click on the dimmed backdrop closes the open dialog. One delegated listener, so dialogs created later (farm events,
+ // daily sharing, Welcome Back, the starter pack) behave exactly like the ones in farm.html.
+ document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open||d.hasAttribute('data-keep-open'))return;const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();});
  $('sell-all').addEventListener('click',()=>sell());
  const toggleQuest=()=>{if(mobileLayout.matches){beginner.open();return;}const hidden=!$('quest-body').hidden;$('quest-body').hidden=hidden;$('quest-collapse').setAttribute('aria-expanded',String(!hidden));$('quest-collapse').setAttribute('aria-label',hidden?'Expand quest':'Collapse quest');$('quest-collapse').innerHTML=`<i data-lucide="${hidden?'clipboard-check':'chevron-up'}"></i>`;icons();};
  $('quest-collapse').addEventListener('click',toggleQuest);
@@ -531,7 +533,7 @@ function bindUI(){
  soundUI=createSoundSettings(farmAudio);
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
  $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
- window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'harvest',4:'tend'}[e.key];if(t){e.preventDefault();setTool(t);}});
+ window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'tend',4:'harvest'}[e.key];if(t){e.preventDefault();setTool(t);}});
  liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh()});
  familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
  economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});

@@ -385,10 +385,11 @@ function migrateXpCurve(state){
 // or diamonds (and the 50% voucher) exactly as below level 10.
 export const BASE_BUILDING_LEVEL=10;
 export const MAX_BUILDING_LEVEL=20;
-// The Factory is one shared workshop for every good, so it grows slower than the specialised buildings: a slot for every four levels
-// (one to five) and half the speed bonus. Its batches are 10-20 times bigger, so a full Factory still adds about four fifths of one
-// full specialised building, and the levels 11-20 of those buildings stay worth having.
-export function productionSlots(level,building){const n=Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));return building==='factory'?Math.ceil(n/4):n;}
+// The Factory is one shared workshop for every good: a slot every two levels, up to five (reached at level 9), and half the
+// speed bonus. Its batches are 10-20 times bigger, so a full Factory still adds less than one full specialised building, and
+// at the top a specialised building always makes the same good faster, so levels 11-20 of those buildings stay worth having.
+export const FACTORY_MAX_SLOTS=5;
+export function productionSlots(level,building){const n=Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));return building==='factory'?Math.min(FACTORY_MAX_SLOTS,Math.ceil(n/2)):n;}
 // Keep the primary job for older clients; extra jobs run in parallel, not a queue.
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
 export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input)+(r.coins??0),output=value(r.output);return {input,output,added:output-input};}
