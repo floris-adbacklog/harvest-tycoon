@@ -403,10 +403,7 @@
 .seed-row-copy small{display:block;margin-top:3px;font-size:12px;line-height:1.4;color:#807463}
 .seed-row-copy small .game-art{width:14px;height:14px;vertical-align:-2px}
 .seed-row-copy .regrow-hint{color:#5d7d45}
-.seed-pace{padding:1px 7px;border-radius:999px;font:700 10px 'DM Sans',sans-serif;font-style:normal;letter-spacing:.3px;text-transform:uppercase;background:#efe7dc;color:#7c6f5c}
-.seed-pace.is-quick{background:#e3efd9;color:#3f6b2c}
-.seed-pace.is-day{background:#f6ecd0;color:#8a6a2f}
-.seed-pace.is-slow{background:#e6ecfa;color:#39518f}
+.seed-pace{white-space:nowrap;padding:1px 7px;border-radius:999px;font:700 10px 'DM Sans',sans-serif;font-style:normal;letter-spacing:.3px;text-transform:uppercase;background:#efe7dc;color:#7c6f5c}
 .seed-pace.is-regrow{background:#f3e3ec;color:#8a4a6e}
 .seed-row-price{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;padding:5px 10px 5px 6px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:800;font-size:14px;white-space:nowrap}
 .seed-row-price .game-art{width:18px;height:18px}
