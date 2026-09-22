@@ -1,5 +1,6 @@
 import {createLiveEventsUI} from './live-events-ui.js';
 import {createToast} from './toast-ui.js';
+import {haptic} from './haptics.js';
 import {showWelcomeBack} from './welcome-ui.js';
 import {createFamilyUI} from './family-ui.js';
 import {renderFarmGuide} from './farm-guide.js';
@@ -55,7 +56,7 @@ const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 const track=(event,params={})=>{try{window.parent.harvestBridge?.trackGame?.(event,params);}catch{}};
 let sessionTracked=false;
 const nudge=createReminderNudge({state,farmNow,level:()=>levelProgress(state).level,notify:message=>toast(message),track,canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
-const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>farmAudio.play(kind));
+const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
 function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
@@ -352,17 +353,19 @@ function particleBurst(id,water=false){
   mesh.position.set(v.x,.9,v.z);scene.add(mesh);particles.push({mesh,velocity:new THREE.Vector3((Math.random()-.5)*2,1.5+Math.random()*1.5,(Math.random()-.5)*2),life:1});
  }
 }
-function floatReward(id,text){const v=plots[id],p=new THREE.Vector3(v.x,2.4,v.z).project(camera),e=document.createElement('div');e.className='floating-reward';e.textContent=text;e.style.left=`${world.offsetLeft+(p.x*.5+.5)*world.clientWidth}px`;e.style.top=`${world.offsetTop+(-p.y*.5+.5)*world.clientHeight}px`;$('game').append(e);setTimeout(()=>e.remove(),1400);}
+// What an action gave, floating up from the field as small chips with their own picture (markup built here, never from input).
+const floatChip=(key,text,cls='')=>`<span class="float-chip ${cls}">${art(key)}${text}</span>`;
+function floatReward(id,html){const v=plots[id],p=new THREE.Vector3(v.x,2.4,v.z).project(camera),e=document.createElement('div');e.className='floating-reward';e.innerHTML=html;e.style.left=`${world.offsetLeft+(p.x*.5+.5)*world.clientWidth}px`;e.style.top=`${world.offsetTop+(-p.y*.5+.5)*world.clientHeight}px`;$('game').append(e);setTimeout(()=>e.remove(),1400);}
 async function interact(id,forcedAction){
  if(!ready)return;
  const plot=state.plots[id];
  const action=forcedAction??(plot.crop&&farmNow()>=plot.readyAt?'harvest':selectedTool);
  try{
   const result=await runAction({type:'field',id,action,crop:selectedCrop});
-  if(action==='harvest'){particleBurst(id);floatReward(id,`+${result.quantity} ${CROPS[result.crop].name} · +${result.xp} XP`);}
-  if(action==='water'){particleBurst(id,true);floatReward(id,'+1 crop · 20% less waiting');}
-  if(action==='tend'){particleBurst(id);floatReward(id,'Extra care · +1 crop');}
-  if(action==='plant')floatReward(id,`−${result.cost} coins`);
+  if(action==='harvest'){particleBurst(id);floatReward(id,floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
+  if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
+  if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
+  if(action==='plant')floatReward(id,floatChip('coins',`−${result.cost}`,'is-cost'));
   drawCrop(id);renderer.shadowMap.needsUpdate=true;updateUI();icons();return result;
  }catch(e){toast(e.message);return {error:e.message};}
 }
@@ -381,7 +384,7 @@ function updateUI(){
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
  {const next=unlockEntries(state).filter(e=>!e.unlocked&&e.level===lvl+1).map(e=>e.name);$('journal-button').title=next.length?`Level ${lvl+1} unlocks: ${next.slice(0,3).join(', ')}${next.length>3?'…':''}`:'Farm journal & level rewards';}
  nudge?.check();
- $('level').textContent=lvl;$('xp-text').textContent=`${lp.current} / ${lp.target} XP`;$('xp-bar').max=lp.target;$('xp-bar').value=lp.current;
+ $('level').textContent=lvl;$('xp-text').textContent=`${lp.current} / ${lp.target} XP`;$('xp-bar').max=lp.target;$('xp-bar').value=lp.current;$('journal-button').style.setProperty('--xp',String(Math.min(100,Math.round(lp.current/Math.max(1,lp.target)*100))));
  $('level-name').textContent=levelTitle(lvl);
  const count=Object.values(state.inventory).reduce((a,b)=>a+b,0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target);

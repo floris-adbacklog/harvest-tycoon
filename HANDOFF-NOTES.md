@@ -274,3 +274,8 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   diamonds" as chips, a soft spring in and a timer bar. Messages are escaped before chips are added.
 - **Beginner guide**: progress bar with the diamond reward, a timeline where only the current step shows its
   explanation, and an XP chip on every open step (also on the in-game beginner card).
+- **Estate**: one lead line per tab (no big heading + paragraph), all four tabs on one row on phones ("Stall"),
+  compact requirement chips, "The road ahead" folded into a details block, fewer notes.
+- **Juice**: floating field rewards are chips with pictures; phones get an XP ring around the level badge; a short
+  vibration on harvest, sale, reward, diamonds and level-up (`public/haptics.js`, touch devices only); an empty
+  market offers "Go to your fields" / "Open buildings".

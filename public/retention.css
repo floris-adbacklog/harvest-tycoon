@@ -315,3 +315,42 @@
 .beginner-xp .game-art{width:16px;height:16px}
 #quest-xp{margin:2px 0 10px}
 #quest-xp[hidden]{display:none}
+
+/* Estate: one lead line per tab, all four tabs on one row, compact requirement chips, the road ahead folded away. */
+.estate-lead{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:14px;line-height:1.45;color:#6f6453}
+.estate-lead .estate-icon{width:36px;height:36px;min-width:36px;border-radius:11px}
+.estate-lead .estate-icon>.game-art,.estate-lead .estate-icon svg{width:24px;height:24px}
+.project-focus{padding:18px}
+.project-focus h3{font-size:24px}
+.project-focus>p{font-size:14px;line-height:1.55;margin-top:4px}
+.project-requirements{gap:6px;margin-top:14px}
+.project-requirements>span{padding:4px 10px 4px 5px;border-radius:999px;font-size:12px;font-weight:700}
+.project-requirements .game-art,.project-requirements svg{width:20px;height:20px}
+.project-goods{margin:10px 0 14px}
+.estate-road{margin-top:16px;border:1px solid #e4ddd6;border-radius:15px;background:#fbf8f2}
+.estate-road>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
+.estate-road>summary::-webkit-details-marker{display:none}
+.estate-road>summary strong{font:600 16px 'Outfit',sans-serif;color:#453e28}
+.estate-road>summary span{margin-left:auto;font-size:12px;font-weight:600;color:#8f816f}
+.estate-road[open] .factory-chevron{transform:rotate(180deg)}
+.estate-road .estate-roadmap{padding:0 12px 12px}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .estate-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .estate-tabs button{min-height:40px;padding:8px 2px;font-size:12px}
+ .project-focus{padding:15px}
+ .project-focus h3{font-size:21px}
+}
+
+/* Floating rewards over a field: small chips with their picture instead of plain white text. */
+.floating-reward{display:flex;gap:6px;align-items:center;transform:translateX(-50%);color:#453e28;text-shadow:none;font:700 16px 'Outfit',sans-serif;white-space:nowrap}
+.float-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px 3px 4px;border-radius:999px;background:#fffdf5f2;box-shadow:0 4px 12px #3a301c33,0 1px 0 #e8dcc4}
+.float-chip .game-art{width:24px;height:24px;object-fit:contain}
+.float-chip.is-xp{background:#eef2fcf2;color:#39518f}
+.float-chip.is-cost{background:#fbf1dff2;color:#8a5a1c}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){.floating-reward{font-size:14px}.float-chip .game-art{width:20px;height:20px}}
+
+/* Phones hide the XP bar, so the level badge gets a ring that fills toward the next level. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .level-card .level-star{position:relative;overflow:visible}
+ .level-card .level-star::after{content:'';position:absolute;inset:-4px;border-radius:15px;padding:3px;background:conic-gradient(#d99a26 calc(var(--xp,0)*1%),#eadfc9 0);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);pointer-events:none}
+}
