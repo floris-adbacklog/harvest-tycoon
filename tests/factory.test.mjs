@@ -148,6 +148,29 @@ test('the building panel shows the coin price of bottled honey, orders the Facto
  assert.match(ui,/productionSlots\(b\.level,key\)/);assert.match(ui,/productionSlots\(bs\.level,key\)/);assert.match(ui,/The Factory gets a slot every four levels/);
  assert.match(ui,/sourceOf=r=>r\.base\?buildingOrder\.indexOf\(RECIPES\[r\.base\]\.building\):-1/);
 });
+// The Factory repeats every other building's whole recipe list in bulk (31 recipes: see the bulk-version test
+// above), which read as one very long scroll — grouped by source building and collapsed, every other building's
+// short recipe-list stays exactly as it was, unwrapped.
+test('only the Factory groups its recipes by source and collapses them; every other building keeps a flat list',()=>{
+ const ui=read('public/economy-ui.js');
+ assert.match(ui,/const recipeCard=\(rid,r\)=>\{/,'the per-recipe card is now a reusable function, shared by both layouts');
+ assert.match(ui,/if\(key==='factory'\)\{/);
+ assert.match(ui,/const label=r\.base\?`From the \$\{BUILDINGS\[RECIPES\[r\.base\]\.building\]\.name\}`:'Honey bottling';/);
+ assert.match(ui,/<details class="factory-recipe-group"><summary><span>\$\{label\}<\/span><b>\$\{cards\.length\}<\/b><\/summary><div class="factory-recipe-group-cards">\$\{cards\.join\(''\)\}<\/div><\/details>/);
+ assert.match(ui,/\}else\{\s*\n\s*content\+=`<div class="recipe-list">\$\{recipeEntries\.map\(\(\[rid,r\]\)=>recipeCard\(rid,r\)\)\.join\(''\)\}<\/div>`;/,'every other building: no grouping, no collapsing');
+ const css=read('public/styles.css');
+ assert.match(css,/\.factory-recipe-group\{/);assert.match(css,/\.factory-recipe-group>summary\{/);assert.match(css,/\.factory-recipe-group-cards\{/);
+});
+test('the Factory\'s recipe groups are keyed by the building each good normally comes from, one group per source',()=>{
+ const groups=new Map();
+ for(const [,r] of mass){
+  const label=r.base?RECIPES[r.base].building:null;
+  groups.set(label,(groups.get(label)??0)+1);
+ }
+ assert.equal(groups.get(null),1,'bottled honey is the one recipe with no ordinary-building source');
+ assert.ok(groups.size>=6,'goods come from several different buildings, so this is worth grouping at all');
+ for(const [source,count] of groups)if(source)assert.ok(count>=1,source);
+});
 test('a server that does not know the Factory yet cannot break the game, and the server copy of the rules is the same',()=>{
  assert.match(read('public/farm-client.js'),/for\(const key of Object\.keys\(BUILDINGS\)\)state\.buildings\[key\]\?\?=\{level:1,job:null\};/);
  assert.match(read('public/game.js'),/state\.buildings\?\?=\{\};for\(const key of Object\.keys\(BUILDINGS\)\)state\.buildings\[key\]\?\?=\{level:1,job:null\};/);

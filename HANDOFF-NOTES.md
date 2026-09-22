@@ -149,3 +149,11 @@ produced", plus a quantity) — it lands in the target's inventory and counts ex
 a crop bumps `harvest_<crop>`, the `harvested` total and mastery progress (the badges players chase); a produced
 good bumps `goods_produced` and its own `made_<item>` stat. Coins/XP/diamonds still touch no stats, as before.
 Tests: `tests/admin-grant.test.mjs`, `tests/player-profile-navigation.test.mjs`, `tests/admin-gift-popup.test.mjs`.
+
+Factory recipe list: grouped by source building and collapsed (2026-09-22, live after the client is pushed; no
+server change): the Factory repeats every other building's whole recipe catalogue in bulk (31 recipes — one mass
+version of every base recipe, plus bottled honey), which read as one very long scroll; every other building's own,
+short recipe list was already fine as a flat list and stays exactly that. `public/economy-ui.js`'s per-recipe card
+markup is now a shared `recipeCard(rid,r)` function; the Factory alone wraps its cards into `<details>` groups
+("From the Dairy", "From the Bakery", …, "Honey bottling"), collapsed, reusing the same visual language as
+`.future-unlocks`. Tests: `tests/factory.test.mjs`.
