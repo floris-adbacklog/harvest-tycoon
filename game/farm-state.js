@@ -703,7 +703,8 @@ export function upgradeBuilding(state,building,currency='coins',expectedCost,exp
  const cost=currency==='diamonds'?diamondUpgradeCost(state,building):upgradeCost(state,building);
  if(currency==='diamonds'&&(!featureUnlocked(state,'boosts')||expectedCost!==cost||expectedLevel!==b.level))throw new Error('Review the current diamond upgrade price and building level.');
  if(cost===null)throw new Error('This building is fully upgraded.');
- if(productionJobs(b).length)throw new Error('Finish and collect all current batches before upgrading.');
+ // A running batch is unaffected either way: its speed and output were fixed when it started, not read live off b.level. Upgrading only
+ // changes what a NEW batch gets, so there is nothing to protect by making a farmer wait for every slot to empty first.
  if(estate&&levelOf(state)<estate.level)throw new Error(`Reach level ${estate.level} to upgrade this building to level ${b.level+1}.`);
  if(state[currency]<cost)throw new Error(`You need ${cost} ${currency} for this upgrade.`);
  const missing=estate?Object.entries(estate.materials).filter(([key,n])=>(state.inventory[key]??0)<n):[];

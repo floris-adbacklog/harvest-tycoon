@@ -40,10 +40,9 @@ test('the locked card looks the part: greyscale icon, muted text and a lock badg
 // Regression: "A helping hand" was added to the More menu as data-menu-utility="activities", but the generic utility-dialog in
 // retention-ui.js only ever understood 'tractor' (anything else, including 'activities', silently rendered Silo research instead —
 // a tap on "A helping hand" opened an unrelated, often still-locked screen).
-test('"A helping hand" opens the real activities dialog, not the generic tractor/silo one',()=>{
+test('"A helping hand" opens its own hub, not the generic tractor/silo dialog',()=>{
  const game=read('public/game.js');
  const body=game.slice(game.indexOf('function openUtility'),game.indexOf('\n',game.indexOf('function openUtility')+200));
- assert.match(body,/key==='activities'\)activities\.open\(Object\.keys\(ACTIVE_STATIONS\)\[0\]\)/,'activities routes to the activities dialog, not retention.openUtility');
- assert.match(game,/import \{ ACTIVE_STATIONS \} from '\.\/farm-state\.js';/);
+ assert.match(body,/key==='activities'\)activities\.openHub\(\)/,'activities routes to its own hub, not retention.openUtility');
 });
 

@@ -30,13 +30,17 @@ test('diamond upgrade prices rise every level and retain coins and coin vouchers
  assert.throws(()=>act(s,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:null,expectedLevel:10},now),'a stale or missing price is refused');
  assert.throws(()=>act(s,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:570,expectedLevel:10},now),/Reach level 26/,'and the farm level still counts');
 });
-test('stale, underfunded, busy and invalid diamond upgrades leave the farm intact',()=>{
- for(const scenario of ['stale','cost','poor','busy','currency','farmhouse']){
+test('stale, underfunded and invalid diamond upgrades leave the farm intact; a running batch is no longer one of the reasons',()=>{
+ for(const scenario of ['stale','cost','poor','currency','farmhouse']){
   const s=farm(),a={type:'upgrade',building:'coop',currency:'diamonds',expectedCost:25,expectedLevel:1};
   if(scenario==='stale')a.expectedLevel=2;if(scenario==='cost')a.expectedCost=1;if(scenario==='poor')s.diamonds=24;
-  if(scenario==='busy')act(s,{type:'produce',recipe:'eggs'},now);if(scenario==='currency')a.currency='free';if(scenario==='farmhouse')a.building='farmhouse';
+  if(scenario==='currency')a.currency='free';if(scenario==='farmhouse')a.building='farmhouse';
   const before=structuredClone(s);assert.throws(()=>act(s,a,now));assert.deepEqual(s,before);
  }
+ // A busy building upgrades just fine now; the running batch is untouched.
+ const busy=farm();act(busy,{type:'produce',recipe:'eggs'},now);const job=structuredClone(productionJobs(busy.buildings.coop)[0]);
+ act(busy,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:25,expectedLevel:1},now);
+ assert.equal(busy.buildings.coop.level,2);assert.deepEqual(productionJobs(busy.buildings.coop)[0],job);
 });
 test('replacement preserves tier and stock, enforces revisions and daily limit',()=>{
  const s=farm(),inventory=structuredClone(s.inventory);let replaced;

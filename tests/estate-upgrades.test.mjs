@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {applyFarmAction,normalizeFarm,xpForLevel,levelOf,upgradeCost,upgradeRequirements,diamondUpgradeCost,productionSlots,productionSpeed,recipeDuration,recipeAvailability,startProduction,ESTATE_UPGRADES,BASE_BUILDING_LEVEL,MAX_BUILDING_LEVEL,MAX_PLOTS,ENDGAME_FIELDS,RECIPES,BUILDINGS,ITEMS,BOOSTS} from '../game/farm-state.js';
+import {applyFarmAction,normalizeFarm,xpForLevel,levelOf,upgradeCost,upgradeRequirements,diamondUpgradeCost,productionSlots,productionJobs,productionSpeed,recipeDuration,recipeAvailability,startProduction,ESTATE_UPGRADES,BASE_BUILDING_LEVEL,MAX_BUILDING_LEVEL,MAX_PLOTS,ENDGAME_FIELDS,RECIPES,BUILDINGS,ITEMS,BOOSTS} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,21,12);
 function farm(level=1){const s=createFarm(now);s.xp=xpForLevel(level);s.coins=1e9;s.diamonds=1e6;for(const b of Object.values(s.buildings))b.built=true;return s;}
@@ -90,10 +90,14 @@ test('the 50% voucher halves the coins of any of the twenty levels, once',()=>{
  for(const b of Object.values(s.buildings))b.level=20;s.boosts.upgradeCredits=0;assert.throws(()=>act(s,{type:'buy_boost',boost:'upgrade',expectedCost:BOOSTS.upgrade.cost}),/maximum level/,'a voucher is offered until every building is at 20');
  assert.doesNotMatch(BOOSTS.upgrade.description,/level 10/);
 });
-test('an upgrade waits for finished batches, like below level 10',()=>{
+test('an upgrade does not wait for a running batch: it keeps its own time and reward, a new slot is usable at once, like below level 10',()=>{
  const s=farm(50);s.buildings.mill.level=10;supplies(s,ESTATE_UPGRADES[0]);s.inventory.corn=4;
- startProduction(s,'feed',now,1);
- assert.throws(()=>act(s,{type:'upgrade',building:'mill'}),/Finish and collect all current batches/);
+ startProduction(s,'feed',now,1);const job=productionJobs(s.buildings.mill)[0],before=structuredClone(job);
+ const r=act(s,{type:'upgrade',building:'mill'});assert.equal(r.level,11);
+ assert.deepEqual(productionJobs(s.buildings.mill)[0],before,'the running batch keeps its own readyAt, output and xp, untouched by the upgrade');
+ assert.equal(productionSlots(11,'mill'),11);
+ const before2=structuredClone(s.buildings.mill);act(s,{type:'produce',recipe:'feed'},now);
+ assert.equal(productionJobs(s.buildings.mill).length,2,'the extra slot from the upgrade is usable immediately, next to the running batch');
 });
 test('all ten estate steps can be taken in a row and the building ends fully upgraded',()=>{
  const s=farm(95);s.buildings.bakery.level=10;
@@ -121,7 +125,8 @@ test('the building panel shows an estate upgrade with what it asks for, and expl
  assert.match(ui,/!estateLevelOk\|\|!estateSupplies\?'disabled':''/);
  assert.match(ui,/Level \$\{next\} unlocks at farm level \$\{estate\.level\}\. You are level \$\{levelOf\(state\)\}\./);
  assert.match(ui,/\$\{state\.boosts\.upgradeCredits\?'Your 50% upgrade voucher is included in this price\. ':''\}/,'the voucher counts at every level');
- assert.match(ui,/id="upgrade-building-diamonds"[^>]*\$\{mutating\|\|state\.diamonds<diamondCost\|\|jobs\.length\|\|!estateLevelOk\|\|!estateSupplies\?'disabled':''\}/,'diamonds wait for the level and the goods too');
+ assert.match(ui,/id="upgrade-building-diamonds"[^>]*\$\{mutating\|\|state\.diamonds<diamondCost\|\|!estateLevelOk\|\|!estateSupplies\?'disabled':''\}/,'diamonds wait for the level and the goods, but not for a running batch');
+ assert.doesNotMatch(ui,/id="upgrade-building"[^>]*jobs\.length/,'coins do not wait for a running batch either');
  assert.match(ui,/Level \$\{MAX_BUILDING_LEVEL\}: \$\{slots\} simultaneous batches/);
 });
 test('with many slots the batch picker has a Max button that respects what is available',()=>{

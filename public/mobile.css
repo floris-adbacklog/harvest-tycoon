@@ -109,6 +109,13 @@
  .crop-catalog{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.crop-card{min-width:0;padding:11px}.crop-card>strong{font-size:20px}.crop-stats{flex-wrap:wrap;gap:7px}
  .seed-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.seed-filters button{padding:9px 3px;font-size:12px;min-height:48px}
  .building-catalog{grid-template-columns:1fr}.building-card{min-height:100px}.building-card strong{font-size:21px}
+ /* The activities hub keeps its 2x2 on mobile too (four short cards read fine two-up; the Buildings catalog above stays one-up, it carries more text). */
+ #activities-hub-dialog .building-catalog{grid-template-columns:1fr 1fr;gap:8px}
+ #activities-hub-dialog .building-card{flex-direction:column;align-items:flex-start;gap:6px;text-align:left;min-height:0;padding:12px}
+ #activities-hub-dialog .building-card>img{width:44px;height:47px}
+ #activities-hub-dialog .building-card strong{font-size:15px}
+ #activities-hub-dialog .building-card small{font-size:12px;margin:2px 0 6px}
+ #activities-hub-dialog .building-card>svg{display:none}
  .building-hero{gap:12px}.building-image{width:82px;height:90px}.building-image img{width:90px;height:94px}.building-hero h2{font-size:27px}.building-hero p{font-size:14px;line-height:1.5}
  .recipe-flow{display:block}.recipe-arrow{display:block;transform:rotate(90deg);margin:9px 0 9px 12px}.recipe-output{max-width:none}.ingredient{font-size:12px}
  .recipe-title{align-items:flex-start;gap:9px}.recipe-title h4{line-height:1.3}.recipe-title>span{white-space:nowrap;font-size:12px}

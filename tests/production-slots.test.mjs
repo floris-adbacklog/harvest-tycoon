@@ -22,7 +22,8 @@ test('mixed recipes finish independently, targeted collection and replay cannot 
  const snapshot=structuredClone(s);assert.throws(()=>act(s,{type:'collect',building:'mill',jobId:feed.jobId},feed.readyAt),/Nothing/);assert.deepEqual(s,snapshot);
  assert.throws(()=>act(s,{type:'collect',building:'coop',jobId:barley.jobId},barley.readyAt),/Nothing/);
  const next=act(s,{type:'produce',recipe:'feed'},feed.readyAt);assert.notEqual(next.jobId,feed.jobId);assert.equal(productionJobs(s.buildings.mill).length,3);
- assert.throws(()=>act(s,{type:'upgrade',building:'mill'},feed.readyAt),/all current/);
+ const running=structuredClone(productionJobs(s.buildings.mill));act(s,{type:'upgrade',building:'mill'},feed.readyAt);
+ assert.equal(s.buildings.mill.level,4);assert.deepEqual(productionJobs(s.buildings.mill),running,'upgrading mid-batch leaves every running job exactly as it was');
  const summary=farmSummary(s,feed.readyAt).buildings.find(b=>b.id==='mill');assert.equal(summary.jobs.length,3);assert.equal(summary.status,'ready');
 });
 test('ready goods occupy a slot; old clients collect ready jobs; promotion and reload preserve jobs',()=>{
