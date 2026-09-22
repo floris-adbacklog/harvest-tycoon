@@ -1042,6 +1042,10 @@ export function deliverOrder(state,id,day,now=Date.now(),revision=0){
 }
 // Every level pays at least one diamond, so no level-up is ever empty-handed; from level 10 on it grows with every five levels.
 export function levelReward(level){return {coins:10*level,diamonds:Math.max(1,Math.floor(level/5))};}
+// One farmer title every 5 levels, so nobody is stuck reading "Farm tycoon" from level 5 to 100: the fields keep expanding to level 95, so the
+// titles keep going that far too. The last title holds from level 96 on.
+export const LEVEL_TITLES=Object.freeze(['Rookie farmer','Green thumb','Market regular','Harvest hero','Farm tycoon','Estate builder','Master grower','Valley supplier','Orchard keeper','Crop master','Factory owner','Homestead legend','Regional trader','Harvest baron','Valley icon','Grand cultivator','Estate mogul','Farming dynasty','Valley champion','Legend of the valley']);
+export const levelTitle=level=>LEVEL_TITLES[Math.min(LEVEL_TITLES.length-1,Math.max(0,Math.floor((level-1)/5)))];
 export function grantLevelRewards(state,firstLevel=2){
  const highest=levelOf(state),claimed=new Set(state.levelRewards??[1]),levels=[];
  let coins=0,diamonds=0;

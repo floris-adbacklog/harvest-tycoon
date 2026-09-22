@@ -1,5 +1,5 @@
 import {foldLocked} from './progression-ui.js';
-import {sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,diamondUpgradeCost,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked} from './farm-state.js';
+import {sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,diamondUpgradeCost,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt} from './visual-icons.js';
@@ -22,7 +22,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function itemList(items,requirements=false){return Object.entries(items).map(([key,n])=>`<span class="ingredient ${requirements&&state.inventory[key]<n?'missing':''}">${itemArt(key)}<span>${requirements?`${state.inventory[key]}/${n}`:`${n}×`} ${ITEMS[key].name}</span></span>`).join('');}
  function status(key,now=farmNow()){
   const b=state.buildings[key];if(key==='farmhouse')return {text:`${state.plots.length} / ${MAX_PLOTS} fields`,kind:'farm'};
-  if(key==='familyhall')return {text:buildingEligible(state,key)?'Your weekly order & family':'Reach level '+BUILDINGS[key].minLevel,kind:'family'};
+  if(key==='familyhall')return buildingEligible(state,key)?{text:'Your weekly order & family',kind:'family'}:{text:`Locked · ${buildingUnlockHint(state,key)}`,kind:'locked'};
   const jobs=productionJobs(b),slots=productionSlots(b.level,key),ready=jobs.filter(j=>now>=j.readyAt).length;
   if(!buildingUnlocked(state,key))return {text:!buildingEligible(state,key)?`Locked · ${buildingUnlockHint(state,key)}`:`Open for ${number(buildingCost(state,key))} coins`,kind:buildingEligible(state,key)?'available':'locked'};
   if(!jobs.length)return {text:`Ready to work · 0 / ${slots} slots`,kind:'idle'};
@@ -42,7 +42,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  }
  function openSeeds(){renderSeeds();show('seed-dialog');}
  function renderCatalog(){
-  $('building-catalog').innerHTML=Object.entries(BUILDINGS).map(([key,b])=>{const s=status(key),picture=key==='familyhall'?'familyhall-model':key;return `<button class="building-card" data-open-building="${key}"><img src="/assets/icons/${picture}.png" alt=""><span class="building-card-info"><strong>${b.name}</strong><small>${key==='familyhall'?'Weekly orders & tournament':!buildingUnlocked(state,key)?'New production building':`Level ${state.buildings[key].level}${key==='farmhouse'?' · Expand your fields':` · ${Object.entries(RECIPES).filter(([id,r])=>r.building===key&&recipeUnlocked(state,id)).length} recipes ready`}`}</small><span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
+  const buildingLevel=key=>guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1;
+  $('building-catalog').innerHTML=Object.entries(BUILDINGS).sort(([a],[b])=>buildingLevel(a)-buildingLevel(b)).map(([key,b])=>{const s=status(key),picture=key==='familyhall'?'familyhall-model':key;return `<button class="building-card" data-open-building="${key}"><img src="/assets/icons/${picture}.png" alt=""><span class="building-card-info"><strong>${b.name}</strong><small>${key==='familyhall'?'Weekly orders & tournament':!buildingUnlocked(state,key)?'New production building':`Level ${state.buildings[key].level}${key==='farmhouse'?' · Expand your fields':` · ${Object.entries(RECIPES).filter(([id,r])=>r.building===key&&recipeUnlocked(state,id)).length} recipes ready`}`}</small><span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
   if(guidedFarm(state))foldLocked($('building-catalog'),'[data-open-building]',b=>!buildingEligible(state,b.dataset.openBuilding),'Buildings to unlock');
   $('building-catalog').querySelectorAll('[data-open-building]').forEach(b=>b.addEventListener('click',()=>openBuilding(b.dataset.openBuilding)));icons();
  }
