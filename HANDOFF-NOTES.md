@@ -157,3 +157,10 @@ short recipe list was already fine as a flat list and stays exactly that. `publi
 markup is now a shared `recipeCard(rid,r)` function; the Factory alone wraps its cards into `<details>` groups
 ("From the Dairy", "From the Bakery", …, "Honey bottling"), collapsed, reusing the same visual language as
 `.future-unlocks`. Tests: `tests/factory.test.mjs`.
+
+Factory follow-up: the pre-purchase preview had the same huge-scroll problem (2026-09-22, live after the client
+is pushed; no server change): the previous fix only grouped the Factory's *working* recipe list (once built);
+the "Bring this building to life" preview shown before buying it (`.construction-recipes`) builds its own,
+separate flat list of the same 31 recipes and was untouched — still one very long scroll. Moved the grouping into
+a shared `foldFactoryGroups()` helper (plus `sourceOf`/`sourceLabel`, now declared once at the top of
+`renderBuilding` instead of duplicated) and used it for both lists. Test: `tests/factory.test.mjs`.

@@ -54,6 +54,18 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   const picker=$('fertilizer-field-picker'),pickerOpen=picker?.open,pickerScroll=picker?.querySelector('.field-picker-options')?.scrollTop??0;
   const key=currentBuilding,b=BUILDINGS[key],bs=state.buildings[key],buildCost=buildingCost(state,key);
   let content=`<div class="building-hero"><div class="building-image"><img src="/assets/icons/${key}.png" alt=""></div><div><span class="eyebrow">LEVEL ${bs.level}${key==='farmhouse'?' · YOUR HOMESTEAD':' · FARM PRODUCTION'}</span><h2 id="building-title">${b.name}</h2><p>${b.tagline}</p></div></div>`;
+  // Shared by both the pre-purchase preview and the working recipe list below: the Factory repeats every other
+  // building's whole catalogue, so both of its recipe lists get grouped and collapsed by source; every other
+  // building's own, much shorter list stays exactly the flat list it always was.
+  const buildingOrder=Object.keys(BUILDINGS),sourceOf=r=>r.base?buildingOrder.indexOf(RECIPES[r.base].building):-1;
+  const sourceLabel=r=>r.base?`From the ${BUILDINGS[RECIPES[r.base].building].name}`:'Honey bottling';
+  const foldFactoryGroups=(entries,cardOf)=>{
+   const groups=new Map();
+   for(const [rid,r] of entries.sort(([,a],[,b])=>sourceOf(a)-sourceOf(b))){
+    const label=sourceLabel(r);if(!groups.has(label))groups.set(label,[]);groups.get(label).push(cardOf(rid,r));
+   }
+   return [...groups].map(([label,cards])=>`<details class="factory-recipe-group"><summary><span>${label}</span><b>${cards.length}</b></summary><div class="factory-recipe-group-cards">${cards.join('')}</div></details>`).join('');
+  };
   if(key==='farmhouse'){
    const cost=expansionCost(state),materials=expansionMaterials(state),hasMaterials=Object.entries(materials).every(([k,n])=>state.inventory[k]>=n),needLevel=expansionLevel(state),levelOk=levelOf(state)>=needLevel;
    content+=`<div class="expansion-panel"><div class="expansion-summary"><span><i data-lucide="land-plot"></i> Your growing space</span><strong>${state.plots.length}<small> / ${MAX_PLOTS} fields</small></strong></div><div class="field-preview" aria-hidden="true">${Array.from({length:MAX_PLOTS},(_,i)=>`<span class="${i<state.plots.length?'unlocked':'locked'}"><i data-lucide="${i<state.plots.length?'sprout':'lock-keyhole'}"></i></span>`).join('')}</div><h3>${cost?'Make room for one more.':'Your farm is fully expanded.'}</h3><p>${cost?`Unlock one field at a time. Each new field needs more coins and a different mix of farm supplies.${needLevel>1?' The last twelve fields are long-term goals: they also ask for a higher farm level.':''}`:`${MAX_PLOTS} fields, twelve crops and room to build a lasting estate.`}</p>${cost!==null?`<div class="ingredients expansion-materials">${itemList(materials,true)}</div>`:''}<button id="expand-fields" class="primary-button" ${cost===null||!levelOk||state.coins<cost||!hasMaterials?'disabled':''}>${cost?(levelOk?`Unlock 1 field · ${number(cost)} coins`:`Reach level ${needLevel} to unlock`):'All fields unlocked'}<i data-lucide="${cost?(levelOk?'plus':'lock-keyhole'):'check'}"></i></button>${cost!==null&&!levelOk?`<small class="shortfall">Field ${state.plots.length+1} unlocks at level ${needLevel}. You are level ${levelOf(state)}.</small>`:cost!==null&&state.coins<cost?`<small class="shortfall">You need ${number(cost-state.coins)} more coins.</small>`:''}</div>`;
@@ -64,7 +76,10 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    content+=`<section class="construction-panel"><h3>Something to grow towards</h3><p>${buildingUnlockHint(state,key)}</p><p>This building opens automatically when you reach its milestone.</p></section>`;
   }else if(!buildingUnlocked(state,key)){
    const eligible=buildingEligible(state,key),needs=constructionNeeds(state,key),preview={...state,buildings:{...state.buildings,[key]:{...bs,built:true}}};
-   content+=`<section class="construction-panel"><span class="eyebrow">NEW PRODUCTION CHAIN</span><h3>${eligible?'Bring this building to life':buildingUnlockHint(state,key)}</h3><p>Open ${b.name} for ${number(buildCost)} coins. Starts at level 1 with one batch slot; upgrades add one slot each.</p>${needs.length?`<p>First open ${needs.map(k=>BUILDINGS[k].name).join(' and ')} to supply this building.</p>`:''}<div class="construction-recipes">${Object.entries(RECIPES).filter(([id,r])=>r.building===key&&recipeUnlocked(preview,id)).map(([,r])=>`<div>${itemList(r.input)}<b>→</b>${itemList(r.output)}</div>`).join('')}</div><button type="button" id="construct-building" class="primary-button" ${eligible&&state.coins>=buildCost&&!needs.length?'':'disabled'}>Open building · ${number(buildCost)} coins</button>${eligible&&state.coins<buildCost?`<p>You need ${number(buildCost-state.coins)} more coins.</p>`:''}</section>`;
+   const previewEntries=Object.entries(RECIPES).filter(([id,r])=>r.building===key&&recipeUnlocked(preview,id));
+   const previewCard=(rid,r)=>`<div>${itemList(r.input)}<b>→</b>${itemList(r.output)}</div>`;
+   const previewRecipes=key==='factory'?foldFactoryGroups(previewEntries,previewCard):previewEntries.map(([rid,r])=>previewCard(rid,r)).join('');
+   content+=`<section class="construction-panel"><span class="eyebrow">NEW PRODUCTION CHAIN</span><h3>${eligible?'Bring this building to life':buildingUnlockHint(state,key)}</h3><p>Open ${b.name} for ${number(buildCost)} coins. Starts at level 1 with one batch slot; upgrades add one slot each.</p>${needs.length?`<p>First open ${needs.map(k=>BUILDINGS[k].name).join(' and ')} to supply this building.</p>`:''}<div class="construction-recipes${key==='factory'?' factory-recipe-list':''}">${previewRecipes}</div><button type="button" id="construct-building" class="primary-button" ${eligible&&state.coins>=buildCost&&!needs.length?'':'disabled'}>Open building · ${number(buildCost)} coins</button>${eligible&&state.coins<buildCost?`<p>You need ${number(buildCost-state.coins)} more coins.</p>`:''}</section>`;
   }else{
    if(key==='windmill' ||key==='bakery')content+=`<div class="milling-chain"><span>${art('wheat')} Grain</span><b>→</b><span>${art('grainmeal')} Grain meal</span><b>→</b><span>${art('flour')} Flour</span><b>→</b><span>${art('bread')} Fresh baking</span></div><p class="milling-note">${key==='windmill'?'Grind wheat and barley into grain meal, then refine it into flour. Your Bakery turns the flour into higher-value fresh bread and pies.':'Flour now comes from the Windmill. Process flour into bread and pumpkin pie for a better return than selling the ingredients.'}</p>`;
    const jobs=productionJobs(bs),slots=productionSlots(bs.level,key),ready=jobs.filter(j=>j.readyAt<=farmNow());
@@ -76,26 +91,16 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    }
    content+='</div>';
    content+=`<div class="recipe-section-heading"><h3>What shall we make?</h3><span>Ingredients are used when you start.</span></div>`;
-   const buildingOrder=Object.keys(BUILDINGS),sourceOf=r=>r.base?buildingOrder.indexOf(RECIPES[r.base].building):-1;
    const recipeCard=(rid,r)=>{
     const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid,farmNow()),value=recipeValue(rid,farmNow()),count=Math.max(1,Math.min(batchCounts[rid]??1,a.maxCount||1));batchCounts[rid]=count;
     return `<article class="recipe-card" data-recipe-card="${rid}"><div class="recipe-title"><h4>${r.name}</h4><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span></div><div class="recipe-flow"><div class="ingredients">${costList(rid)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div><p class="recipe-value">${r.coins?`Costs ${number(r.coins)} coins · the goods are worth about ${number(value.output)} coins on the market.`:`Today: ingredients ${number(value.input)} coins → goods ${number(value.output)} coins · <strong>${signed(value.added)} coins from processing</strong>`}</p><div class="recipe-footer"><span>${a.locked?`${art('lock','unlock-lock')} Locked · ${recipeUnlockHint(state,rid)}`:a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':a.poor?`You need ${number(a.price)} coins for a batch.`:`Ready to make · +${r.xp} XP`}</span>${a.slots>1?`<div class="batch-picker"><span id="batch-label-${rid}">Batches</span><div class="batch-stepper" role="group" aria-labelledby="batch-label-${rid}"><button type="button" data-batch-step="-1" data-for-recipe="${rid}" aria-label="Fewer batches of ${r.name}" ${count<=1||!a.maxCount?'disabled':''}>−</button><output data-batch-count="${rid}" data-max="${a.maxCount}" aria-live="polite" aria-label="Number of batches for ${r.name}">${count}</output><button type="button" data-batch-step="1" data-for-recipe="${rid}" aria-label="More batches of ${r.name}" ${count>=a.maxCount?'disabled':''}>+</button></div><small>${a.maxCount} available${a.maxCount>2?` · <button type="button" class="batch-max" data-batch-step="max" data-for-recipe="${rid}" aria-label="Start the most batches of ${r.name}">Max</button>`:''}</small></div>`:''}<button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
    };
    const recipeEntries=Object.entries(RECIPES).filter(([,r])=>r.building===key);
-   if(key==='factory'){
-    // Every good any other building makes, in one huge batch — that is the Factory's whole point, but it also
-    // means its recipe list is every other building's list combined. Grouped by where each good normally comes
-    // from and collapsed, so this reads as a short list of sources instead of one very long scroll.
-    const groups=new Map();
-    for(const [rid,r] of recipeEntries.sort(([,a],[,b])=>sourceOf(a)-sourceOf(b))){
-     const label=r.base?`From the ${BUILDINGS[RECIPES[r.base].building].name}`:'Honey bottling';
-     if(!groups.has(label))groups.set(label,[]);
-     groups.get(label).push(recipeCard(rid,r));
-    }
-    content+=`<div class="recipe-list factory-recipe-list">${[...groups].map(([label,cards])=>`<details class="factory-recipe-group"><summary><span>${label}</span><b>${cards.length}</b></summary><div class="factory-recipe-group-cards">${cards.join('')}</div></details>`).join('')}</div>`;
-   }else{
-    content+=`<div class="recipe-list">${recipeEntries.map(([rid,r])=>recipeCard(rid,r)).join('')}</div>`;
-   }
+   // Every good any other building makes, in one huge batch — that is the Factory's whole point, but it also
+   // means its recipe list is every other building's list combined. Grouped by where each good normally comes
+   // from and collapsed (same helper as the pre-purchase preview above), so this reads as a short list of
+   // sources instead of one very long scroll. Every other building's own, much shorter list stays flat.
+   content+=key==='factory'?`<div class="recipe-list factory-recipe-list">${foldFactoryGroups(recipeEntries,recipeCard)}</div>`:`<div class="recipe-list">${recipeEntries.map(([rid,r])=>recipeCard(rid,r)).join('')}</div>`;
    if(key==='windmill'){
     const eligible=state.plots.filter(p=>p.crop&&p.readyAt>farmNow()&&!p.fertilized);
     content+=`<section class="fertilizer-panel"><div>${art('fertilizer')}<h3>Give a field a head start</h3></div><p>Use 1 natural fertilizer to remove 35% of a crop’s remaining growing time. Once per growing cycle; watering and extra care still work.</p>${fieldPicker({id:'fertilizer-field-picker',plots:eligible,selected:[...fertilizerFields].filter(id=>eligible.some(p=>p.id===id)),multiple:true,now:farmNow(),available:state.inventory.fertilizer})}<div class="fertilizer-action"><span id="fertilizer-cost">${state.inventory.fertilizer} fertilizer in storage · 0 required</span><button id="fertilize-field" class="small-button" disabled>Fertilize selected fields</button></div></section>`;

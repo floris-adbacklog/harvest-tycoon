@@ -149,17 +149,23 @@ test('the building panel shows the coin price of bottled honey, orders the Facto
  assert.match(ui,/sourceOf=r=>r\.base\?buildingOrder\.indexOf\(RECIPES\[r\.base\]\.building\):-1/);
 });
 // The Factory repeats every other building's whole recipe list in bulk (31 recipes: see the bulk-version test
-// above), which read as one very long scroll — grouped by source building and collapsed, every other building's
-// short recipe-list stays exactly as it was, unwrapped.
+// above), which read as one very long scroll in BOTH of its recipe lists — the pre-purchase preview, before it is
+// even built, and the working recipe list once it is. Grouped by source building and collapsed in both; every
+// other building's short recipe-list (and preview) stays exactly as it was, unwrapped.
 test('only the Factory groups its recipes by source and collapses them; every other building keeps a flat list',()=>{
  const ui=read('public/economy-ui.js');
- assert.match(ui,/const recipeCard=\(rid,r\)=>\{/,'the per-recipe card is now a reusable function, shared by both layouts');
- assert.match(ui,/if\(key==='factory'\)\{/);
- assert.match(ui,/const label=r\.base\?`From the \$\{BUILDINGS\[RECIPES\[r\.base\]\.building\]\.name\}`:'Honey bottling';/);
+ assert.match(ui,/const foldFactoryGroups=\(entries,cardOf\)=>\{/,'one shared grouping helper for both of the Factory\'s recipe lists');
+ assert.match(ui,/const sourceLabel=r=>r\.base\?`From the \$\{BUILDINGS\[RECIPES\[r\.base\]\.building\]\.name\}`:'Honey bottling';/);
  assert.match(ui,/<details class="factory-recipe-group"><summary><span>\$\{label\}<\/span><b>\$\{cards\.length\}<\/b><\/summary><div class="factory-recipe-group-cards">\$\{cards\.join\(''\)\}<\/div><\/details>/);
- assert.match(ui,/\}else\{\s*\n\s*content\+=`<div class="recipe-list">\$\{recipeEntries\.map\(\(\[rid,r\]\)=>recipeCard\(rid,r\)\)\.join\(''\)\}<\/div>`;/,'every other building: no grouping, no collapsing');
+ // The working recipe list (once built): grouped only for the Factory, otherwise the same flat list as before.
+ assert.match(ui,/const recipeCard=\(rid,r\)=>\{/,'the per-recipe card is a reusable function');
+ assert.match(ui,/content\+=key==='factory'\?`<div class="recipe-list factory-recipe-list">\$\{foldFactoryGroups\(recipeEntries,recipeCard\)\}<\/div>`:`<div class="recipe-list">\$\{recipeEntries\.map\(\(\[rid,r\]\)=>recipeCard\(rid,r\)\)\.join\(''\)\}<\/div>`;/);
+ // The pre-purchase preview (construction-recipes): grouped the same way, only for the Factory.
+ assert.match(ui,/const previewRecipes=key==='factory'\?foldFactoryGroups\(previewEntries,previewCard\):previewEntries\.map\(\(\[rid,r\]\)=>previewCard\(rid,r\)\)\.join\(''\);/);
+ assert.match(ui,/<div class="construction-recipes\$\{key==='factory'\?' factory-recipe-list':''\}">\$\{previewRecipes\}<\/div>/);
  const css=read('public/styles.css');
  assert.match(css,/\.factory-recipe-group\{/);assert.match(css,/\.factory-recipe-group>summary\{/);assert.match(css,/\.factory-recipe-group-cards\{/);
+ assert.match(css,/\.factory-recipe-group-cards>div\{/,'the plain preview rows (no .recipe-card class) still get their flex layout once nested a level deeper');
 });
 test('the Factory\'s recipe groups are keyed by the building each good normally comes from, one group per source',()=>{
  const groups=new Map();
