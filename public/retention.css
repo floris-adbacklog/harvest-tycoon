@@ -442,3 +442,13 @@
 @media(max-width:340px){#boost-dialog .vip-plans{grid-template-columns:1fr}}
 .toast-chip.is-item{background:#e6efdc;color:#42632e}
 .toast-chip .game-art{flex:none}
+
+/* Loose paragraphs directly inside these dialogs are styled by the screen itself: the generic ".wide-dialog>p" rule
+   (16px, a negative top margin) made them bump into the button above. */
+#sharing-dialog>.sharing-rules{margin:22px 0 0;padding-top:14px;border-top:1px solid #e8e0d4;font-size:12px;line-height:1.5;color:#8a7d68}
+#sharing-dialog>.sharing-feedback,#events-dialog>.event-feedback{margin:10px 0 0;font-size:14px;color:#9a4b35}
+#sharing-dialog>.sharing-feedback:empty,#events-dialog>.event-feedback:empty{display:none}
+#events-dialog>.event-summary{margin:0 0 4px;font-size:13px;line-height:1.6;color:#756754}
+#events-dialog>.event-note{margin:0;font-size:14px;line-height:1.55}
+#events-dialog>.event-loading{margin:12px 0;font-size:14px;color:#807463}
+#sharing-dialog>.sharing-empty{margin:12px 0;font-size:14px;color:#807463}

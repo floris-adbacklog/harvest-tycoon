@@ -58,7 +58,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
    +`<section class="sharing-section"><h3>Help your family</h3>${members(today)}</section>`
    +`<section class="sharing-section"><h3>Today’s requests</h3>${requests(today)}</section>`
    +ask()
-   +'<p class="sharing-rules">Opens at level 10, 48 hours after you started your farm and 24 hours after joining this family.</p><p class="sharing-feedback" role="status" data-status></p>';
+   +'<p class="sharing-rules">Opens at level 10, 48 hours after you started your farm and 24 hours in this family.</p><p class="sharing-feedback" role="status" data-status></p>';
   bind();
  }
  function bind(){
