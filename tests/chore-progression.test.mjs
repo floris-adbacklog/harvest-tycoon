@@ -47,5 +47,5 @@ test('old farms retain balances and cooldowns without inventing per-chore practi
 });
 test('each hands-on station awards an item and Honey has dedicated artwork',()=>{
  assert.deepEqual(Object.values(ACTIVE_STATIONS).map(s=>s.item),['lettuce','honey','fertilizer','feed']);
- assert.match(art('honey'),/assets\/icons\/honey.png/);
+ assert.match(art('honey'),/assets\/icons\/honey.webp/);
 });

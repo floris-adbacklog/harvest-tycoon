@@ -93,7 +93,7 @@ test('all historical payment receipts remain valid and every new pack rejects a 
  assert.equal(checkoutPack('600').id,'1250');assert.equal(PAYMENT_PACKS['500'].price,'price_1UI5oE04FdNTUSp4F2BP95IK');
 });
 test('public VIP badges vanish on expiry and never render untrusted attributes',()=>{
- assert.match(vipBadge(now+1000,now),/vip.png/);assert.equal(vipBadge(now,now),'');assert.equal(vipBadge('" onerror="alert(1)',now),'');
+ assert.match(vipBadge(now+1000,now),/vip.webp/);assert.equal(vipBadge(now,now),'');assert.equal(vipBadge('" onerror="alert(1)',now),'');
  let removed=false;const node={dataset:{vipUntil:String(now)},remove(){removed=true;}};refreshVipBadges({querySelectorAll:()=>[node]},now);assert.equal(removed,true);
 });
 test('commerce events whitelist anonymous facts and reject identifiers or raw text',()=>{

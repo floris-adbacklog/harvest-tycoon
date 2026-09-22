@@ -76,10 +76,10 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]){background:#f
 }
 /* Painted game art from the game's own sprite sheets, used sparingly on the sign-in page. */
 .wart{display:inline-block;flex:0 0 auto;aspect-ratio:1;background-image:var(--sheet);background-repeat:no-repeat;background-size:var(--size) var(--size);background-position:var(--pos)}
-.wart-wheat{--sheet:url('/assets/icons/crops-v2.png');--size:300%;--pos:0% 0%}
-.wart-bread{--sheet:url('/assets/icons/goods-v2.png');--size:400%;--pos:66.667% 66.667%}
-.wart-market{--sheet:url('/assets/icons/interface-v2.png');--size:400%;--pos:100% 0%}
-.wart-diamonds{--sheet:url('/assets/icons/interface-v2.png');--size:400%;--pos:33.333% 66.667%}
+.wart-wheat{--sheet:url('/assets/icons/crops-v2.webp');--size:300%;--pos:0% 0%}
+.wart-bread{--sheet:url('/assets/icons/goods-v2.webp');--size:400%;--pos:66.667% 66.667%}
+.wart-market{--sheet:url('/assets/icons/interface-v2.webp');--size:400%;--pos:100% 0%}
+.wart-diamonds{--sheet:url('/assets/icons/interface-v2.webp');--size:400%;--pos:33.333% 66.667%}
 .loop-icons{display:flex;justify-content:center;align-items:center;gap:10px;margin:28px 0 0;padding:0;list-style:none}
 .loop-icons li:not(.loop-arrow){display:inline-flex;align-items:center;gap:8px;padding:5px 17px 5px 8px;border:1px solid #ffffff40;border-radius:99px;background:#fffdf121;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 6px 20px #1f1c0d33;color:#fbf5df;font-size:14px;font-weight:700;letter-spacing:.02em}
 .loop-icons .wart{width:34px;filter:drop-shadow(0 3px 5px #1f1c0d55)}

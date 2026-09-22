@@ -2,7 +2,7 @@
 export function vipTime(value){const n=typeof value==='string'?Date.parse(value):value;return Number.isSafeInteger(n)&&n>0?n:0;}
 export function vipBadge(value,now=Date.now(),details=false){
  const until=vipTime(value);if(until<=now)return '';
- return `<span class="vip-badge${details?' vip-badge-detail':''}" data-vip-until="${until}" title="VIP farmer" aria-label="VIP farmer"><img src="/assets/icons/vip.png" alt="" width="24" height="24">${details?'<span data-vip-remaining></span>':''}</span>`;
+ return `<span class="vip-badge${details?' vip-badge-detail':''}" data-vip-until="${until}" title="VIP farmer" aria-label="VIP farmer"><img src="/assets/icons/vip.webp" alt="" width="24" height="24">${details?'<span data-vip-remaining></span>':''}</span>`;
 }
 export function refreshVipBadges(root,now=Date.now()){
  root.querySelectorAll('[data-vip-until]').forEach(el=>{
