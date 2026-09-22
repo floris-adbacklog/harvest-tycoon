@@ -152,10 +152,29 @@ test('the admin dashboard button exists in the topbar, hidden until checkAdmin()
  assert.match(js,/import \{checkAdmin\} from '\.\/player-profiles\.js';/);
  assert.match(js,/checkAdmin\(\)\.then\(admin=>\{if\(admin\)button\.hidden=false;\}\);/);
 });
+test('each card has its own line icon, converted like every other plain (non-painted) icon in the game',()=>{
+ const js=read('src/admin-dashboard.js');
+ assert.match(js,/import \{refreshArt\} from '\.\.\/public\/visual-icons\.js';/);
+ for(const icon of ['radio','user-plus','trending-up'])assert.match(js,new RegExp(`<i data-lucide="${icon}" data-line-icon></i>`));
+});
+test('online status shows as an initials avatar with a green corner dot, reusing the game\'s own online-dot class',()=>{
+ const js=read('src/admin-dashboard.js');
+ assert.match(js,/const avatar=\(name,online\)=>`<span class="admin-avatar">\$\{esc\(initials\(name\)\)\}\$\{online\?'<span class="online-dot is-online" aria-hidden="true"><\/span>':''\}<\/span>`;/);
+ assert.match(js,/avatar\(p\.username,true\)/,'everyone in the online list is, by definition, online');
+ assert.match(js,/avatar\(p\.username,p\.online\)/,'the recent-players table shows whichever is true for that farmer');
+});
+test('retention percentages are colour-coded so a pattern is visible at a glance, not just readable as numbers',()=>{
+ const js=read('src/admin-dashboard.js');
+ assert.match(js,/const heat=pct=>pct>=50\?'admin-heat-good':pct>=25\?'admin-heat-ok':'admin-heat-low';/);
+ assert.match(js,/<td class="\$\{heat\(d\.pct\)\}" title="\$\{d\.retained\} \/ \$\{d\.total\} still active">\$\{d\.pct\}%<\/td>/);
+ const css=read('public/player-profiles.css');
+ assert.match(css,/\.admin-heat-good\{/);assert.match(css,/\.admin-heat-ok\{/);assert.match(css,/\.admin-heat-low\{/);
+ assert.match(css,/\.admin-avatar\{/);
+});
 test('the dashboard fetches all three admin operations through the same bridge every other request uses',()=>{
  const js=read('src/admin-dashboard.js');
  assert.match(js,/bridge\.request\(\{operation:'admin_online'\}\),bridge\.request\(\{operation:'admin_recent_players'\}\),bridge\.request\(\{operation:'admin_retention'\}\)/);
- assert.match(js,/document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);dialog\.showModal\(\);load\(\);/,'closes whatever else is open first, like every other dialog');
+ assert.match(js,/document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);refreshArt\(\);dialog\.showModal\(\);load\(\);/,'closes whatever else is open first, like every other dialog');
  assert.match(js,/refreshTimer=setInterval\(load,60000\);/);
  assert.match(js,/dialog\.addEventListener\('close',\(\)=>clearInterval\(refreshTimer\)\);/,'stops polling once closed');
 });

@@ -218,3 +218,11 @@ too (`undefined !== a real uuid`), so a perfectly successful request still looke
 Fixed in both `admin-service.js` and `admin-analytics-service.js`; regression tests added so this cannot silently
 come back. Caught live: the dashboard opened and looked right, but every section stayed empty with "Your session
 has ended." where the data should have loaded.
+
+Admin dashboard: visual polish (2026-09-22, live after the client is pushed; no server change): each card now
+has its own line icon in the heading (radio for online, user-plus for recent players, trending-up for retention —
+converted the same way every other plain icon-button in the game already is). Every player, online or in the
+recent-players table, shows as a small initials-avatar circle, with a green corner dot when online (reuses the
+game's own `.online-dot`/`.is-online` class, the same one the leaderboard uses). Retention percentages are now
+colour-coded (green ≥50%, amber ≥25%, red below) so a pattern reads at a glance; the exact "N / total" figure is
+still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
