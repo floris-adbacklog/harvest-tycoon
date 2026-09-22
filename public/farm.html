@@ -106,18 +106,19 @@
   <dialog id="boost-dialog" class="game-dialog wide-dialog" aria-labelledby="boost-title"><div class="dialog-heading"><div><span class="eyebrow">A LITTLE EXTRA GROWING POWER</span><h2 id="boost-title">Diamonds & boosts</h2></div><button class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"></i></button></div><div class="boost-wallet"><i data-lucide="gem"></i><div><strong id="boost-wallet">0</strong><span>diamonds to spend</span></div><button class="small-button" id="boost-daily"><i data-lucide="gift"></i> Earn daily</button></div><p class="section-copy">Earn diamonds from your daily streak, then spend them below.</p><div id="boost-catalog"></div><p id="boost-feedback" class="building-feedback" role="status" aria-live="polite"></p><section class="diamond-store" aria-labelledby="diamond-store-title"><div class="recipe-section-heading"><h3 id="diamond-store-title">More diamonds</h3><span class="beta-badge">Secure checkout</span></div><p>One-time purchases. Diamonds are added after payment confirmation. You can also keep earning diamonds through play.</p><div id="diamond-packs" class="diamond-packs"></div></section></dialog>
   <dialog id="more-dialog" class="game-dialog wide-dialog" aria-labelledby="more-title"><div class="dialog-heading"><div><span class="eyebrow">EVERYTHING ON YOUR FARM</span><h2 id="more-title">Your farm menu</h2></div><button class="icon-button close-dialog" aria-label="Close farm menu"><i data-lucide="x"></i></button></div><div class="mobile-menu-grid">
     <button data-menu-action="today-button"><i data-lucide="gift"></i><span><strong>Daily rewards</strong><small>Collect coins & diamonds</small></span></button>
-    <button data-menu-action="boosts-button"><i data-lucide="gem"></i><span><strong>Boosts</strong><small>A little growing power</small></span></button>
-    <button data-menu-action="estate-button"><i data-lucide="landmark"></i><span><strong>Estate</strong><small>Projects & mastery</small></span></button>
-    <button data-menu-utility="stall"><i data-lucide="store"></i><span><strong>Farm stall</strong><small>Collect passive income</small></span></button>
-    <button data-menu-utility="tractor"><i data-lucide="tractor"></i><span><strong>Tractor</strong><small>Work several fields</small></span></button>
-    <button data-menu-utility="cart"><i data-lucide="truck"></i><span><strong>Deliveries</strong><small>Fill an order</small></span></button>
-    <button data-menu-utility="silo"><i data-lucide="warehouse"></i><span><strong>Silo research</strong><small>Improve your crops</small></span></button>
-    <button data-menu-utility="chores"><i data-lucide="shovel"></i><span><strong>Farm chores</strong><small>Small jobs, extra coins</small></span></button>
     <button data-menu-action="journal-button"><i data-lucide="star"></i><span><strong>Farm journal</strong><small>Level rewards & progress</small></span></button>
     <button data-menu-action="leaderboard-button"><i data-lucide="trophy"></i><span><strong>Profile & leaderboard</strong><small>Your account & sign out</small></span></button>
     <button data-menu-action="all-quests-mobile"><i data-lucide="sprout"></i><span><strong>Beginner guide</strong><small>10 steps · 50 diamond reward</small></span></button>
     <button data-menu-action="help-button"><i data-lucide="circle-help"></i><span><strong>How to play</strong><small>A little farming guide</small></span></button>
     <button data-menu-action="sound-button"><i data-lucide="settings"></i><span><strong id="mobile-sound-label">Settings</strong><small id="mobile-sound-summary">Avatar, sound &amp; app</small></span></button>
+    <button data-menu-utility="cart"><i data-lucide="truck"></i><span><strong>Deliveries</strong><small class="menu-hint">Fill an order</small></span></button>
+    <button data-menu-utility="activities"><i data-game-art="helping-hand"></i><span><strong>A helping hand</strong><small class="menu-hint">Small jobs around the farm</small></span></button>
+    <button data-menu-utility="chores"><i data-lucide="shovel"></i><span><strong>Farm chores</strong><small class="menu-hint">Small jobs, extra coins</small></span></button>
+    <button data-menu-utility="stall"><i data-lucide="store"></i><span><strong>Farm stall</strong><small class="menu-hint">Collect passive income</small></span></button>
+    <button data-menu-utility="tractor"><i data-lucide="tractor"></i><span><strong>Tractor</strong><small class="menu-hint">Work several fields</small></span></button>
+    <button data-menu-action="boosts-button"><i data-lucide="gem"></i><span><strong>Boosts</strong><small class="menu-hint">A little growing power</small></span></button>
+    <button data-menu-utility="silo"><i data-lucide="warehouse"></i><span><strong>Silo research</strong><small class="menu-hint">Improve your crops</small></span></button>
+    <button data-menu-action="estate-button"><i data-lucide="landmark"></i><span><strong>Estate</strong><small class="menu-hint">Projects & mastery</small></span></button>
   </div></dialog>
   <script src="/vendor/lucide.min.js"></script><script>lucide.createIcons();</script>
   <script type="module" src="/cloud/game-cloud.js"></script>

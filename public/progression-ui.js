@@ -1,5 +1,5 @@
 import {art} from './visual-icons.js';
-import {unlockEntries,featureUnlocked,levelOf,levelReward} from './farm-state.js';
+import {unlockEntries,featureUnlocked,featureUnlockHint,FEATURE_LEVELS,levelOf,levelReward} from './farm-state.js';
 export function progressionSnapshot(state){return {level:levelOf(state),ids:new Set(unlockEntries(state).filter(e=>e.unlocked).map(e=>e.id))};}
 export function progressionChange(before,state,reward){return {reward,level:levelOf(state),leveled:levelOf(state)>before.level,entries:unlockEntries(state).filter(e=>e.unlocked&&!before.ids.has(e.id))};}
 export function roadmapMarkup(state){const next=unlockEntries(state).filter(e=>!e.unlocked).sort((a,b)=>a.level-b.level||a.id.localeCompare(b.id)).slice(0,3);return next.length?`<section class="unlock-roadmap"><h3>Next on your farm</h3><p>Your next three milestones. New buildings are purchased with coins.</p>${next.map(e=>`<div class="roadmap-entry">${art(e.art)}<div><strong>${e.name}</strong><span>${e.hint}</span></div></div>`).join('')}</section>`:'';}
@@ -21,10 +21,19 @@ export function createProgressionUI({state,isReady}){
   dialog.querySelector('.level-up-close').onclick=()=>dialog.close();dialog.querySelector('.level-up-done').onclick=()=>dialog.close();dialog.showModal();
  }
  function announce(change){if(!change.leveled&&!change.entries.length&&!change.reward?.levels.length)return;pending=pending?{level:Math.max(pending.level,change.level),catchUp:pending.catchUp||change.catchUp,reward:mergeRewards(pending.reward,change.reward),leveled:pending.leveled||change.leveled,entries:[...new Map([...pending.entries,...change.entries].map(e=>[e.id,e])).values()]}:change;schedule();}
+ // The side-tool bar (desktop) only has room for what is already open, so a locked feature simply is not there yet.
  function refresh(){
-  const gates={'#boosts-button':'boosts','#estate-button':'projects','[data-menu-action="boosts-button"]':'boosts','[data-menu-action="estate-button"]':'projects'};
-  for(const [selector,feature]of Object.entries(gates))document.querySelectorAll(selector).forEach(el=>el.hidden=!featureUnlocked(state,feature));
-  document.querySelectorAll('[data-utility],[data-menu-utility]').forEach(el=>el.hidden=!featureUnlocked(state,el.dataset.utility??el.dataset.menuUtility));
+  const sideTools={'#boosts-button':'boosts','#estate-button':'projects'};
+  for(const [selector,feature]of Object.entries(sideTools))document.querySelectorAll(selector).forEach(el=>el.hidden=!featureUnlocked(state,feature));
+  // The "More" menu (mobile) is everything on the farm, so it always shows every entry: what is not open yet stays visible, gets a lock and
+  // "Reach level N." in place of its usual description, and cannot be tapped, so the game never looks emptier than it is this early.
+  const moreMenuGates={'[data-menu-action="boosts-button"]':'boosts','[data-menu-action="estate-button"]':'projects'};
+  const lockable=[...document.querySelectorAll('[data-menu-utility]')].map(el=>[el,el.dataset.menuUtility]).concat([...document.querySelectorAll('[data-menu-action="boosts-button"],[data-menu-action="estate-button"]')].map(el=>[el,moreMenuGates[`[data-menu-action="${el.dataset.menuAction}"]`]]));
+  for(const [el,feature] of lockable){
+   const unlocked=featureUnlocked(state,feature);el.disabled=!unlocked;el.classList.toggle('locked',!unlocked);
+   const hint=el.querySelector('.menu-hint');if(hint){if(!hint.dataset.open)hint.dataset.open=hint.textContent;hint.textContent=unlocked?hint.dataset.open:`Reach level ${FEATURE_LEVELS[feature]}.`;}
+   el.setAttribute('aria-disabled',String(!unlocked));if(!unlocked)el.title=featureUnlockHint(feature);else el.removeAttribute('title');
+  }
   schedule();
  }
  document.addEventListener('close',schedule,true);
