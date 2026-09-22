@@ -540,13 +540,15 @@ export function upgradeCost(state,building){
  return Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)))*voucher);
 }
 // What a new farm starts with, so the first minutes are not spent waiting: coins for seeds and a second egg slot, corn to sell or to
-// mix into feed at the Mill, wheat, and ten animal feed for the chickens (ten batches of eggs).
+// mix into feed at the Mill, wheat, ten animal feed for the chickens (ten batches of eggs), and barley for the Mill's feed recipe once
+// level 5 opens it (barley itself is not plantable before then, but a beginner already has a first batch waiting).
 export const STARTER_COINS=500;
-export const STARTER_ITEMS=Object.freeze({wheat:8,corn:8,feed:10});   // wheat stays below the 12 of the first new field: that still has to be earned
-// The corn and animal feed a new farm starts with are for the first steps (feed at the Mill, eggs at the Coop), not for the market: a
-// beginner who has not met the market yet sells them by accident and then waits 15 minutes for corn. They cannot be sold during the first 30
-// minutes (the beginner boost window); what is grown or made on top of them can be sold at once, and using them (a batch of eggs) shrinks the kept amount with the stock.
-export const STARTER_KEEP=Object.freeze({corn:STARTER_ITEMS.corn,feed:STARTER_ITEMS.feed});
+export const STARTER_ITEMS=Object.freeze({wheat:8,corn:8,feed:10,barley:6});   // wheat stays below the 12 of the first new field: that still has to be earned
+// The corn, animal feed and barley a new farm starts with are for the first steps (feed and barley feed at the Mill, eggs at the Coop), not
+// for the market: a beginner who has not met the market yet sells them by accident and then waits 15 minutes for corn. They cannot be sold
+// during the first 30 minutes (the beginner boost window); what is grown or made on top of them can be sold at once, and using them (a batch
+// of eggs, a batch of barley feed) shrinks the kept amount with the stock.
+export const STARTER_KEEP=Object.freeze({corn:STARTER_ITEMS.corn,feed:STARTER_ITEMS.feed,barley:STARTER_ITEMS.barley});
 export const keptStock=(state,key,now=Date.now())=>rookieLeft(state,now)>0?Math.min(state.keep?.[key]??0,state.inventory[key]??0):0;
 export const sellableStock=(state,key,now=Date.now())=>Math.max(0,(state.inventory[key]??0)-keptStock(state,key,now));
 function createBaseFarm(now=Date.now()) {

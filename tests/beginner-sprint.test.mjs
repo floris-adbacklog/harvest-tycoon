@@ -42,18 +42,21 @@ test('inside the sprint crops, batches and Care take 80% less time; afterwards e
  for(const key of Object.keys(CROPS))assert(cropDuration(s,key,false,now)*.3>=6000&&Math.max(6000,cropDuration(s,key,false,now)*.3)<cropDuration(s,key,false,now),key);
 });
 
-test('starter corn and animal feed cannot be sold in the first 30 minutes; what grows on top can, and afterwards everything can',()=>{
+test('starter corn, animal feed and barley cannot be sold in the first 30 minutes; what grows on top can, and afterwards everything can',()=>{
  const s=createFarm(now);
- assert.deepEqual(STARTER_KEEP,{corn:8,feed:10});assert.deepEqual(s.keep,STARTER_KEEP);assert.equal(s.inventory.corn,STARTER_ITEMS.corn);
- assert.equal(keptStock(s,'corn',now),8);assert.equal(sellableStock(s,'corn',now),0);assert.equal(keptStock(s,'feed',now),10);assert.equal(keptStock(s,'wheat',now),0,'only corn and feed are kept');
+ assert.deepEqual(STARTER_KEEP,{corn:8,feed:10,barley:6});assert.deepEqual(s.keep,STARTER_KEEP);assert.equal(s.inventory.corn,STARTER_ITEMS.corn);assert.equal(s.inventory.barley,6);
+ assert.equal(keptStock(s,'corn',now),8);assert.equal(sellableStock(s,'corn',now),0);assert.equal(keptStock(s,'feed',now),10);assert.equal(keptStock(s,'barley',now),6);assert.equal(keptStock(s,'wheat',now),0,'only corn, feed and barley are kept');
  const before=structuredClone(s);
  assert.throws(()=>act(s,{type:'sell',item:'corn',quantity:1},now),/Keep your first 8 corn.*first 30 minutes/);
  assert.throws(()=>act(s,{type:'sell',item:'feed',quantity:1},now),/Keep your first 10 animal feed/);
+ assert.throws(()=>act(s,{type:'sell',item:'barley',quantity:1},now),/Keep your first 6 barley.*first 30 minutes/);
  assert.throws(()=>act(s,{type:'sell',item:'corn'},now),/starting corn is kept.*30 minutes/);
  assert.deepEqual(s,before,'a refused sale changes nothing');
- // Selling a whole tab sells everything but the kept goods; a tab with only kept goods says so.
- const sold=act(s,{type:'sell',category:'crops'},now);assert(sold.coins>0);assert.equal(s.inventory.corn,8);assert.equal(s.inventory.wheat,0);
+ // Selling a whole tab sells everything but the kept goods; a tab with only kept goods says so, naming every one of them.
+ const sold=act(s,{type:'sell',category:'crops'},now);assert(sold.coins>0);assert.equal(s.inventory.corn,8);assert.equal(s.inventory.barley,6);assert.equal(s.inventory.wheat,0);
  assert.throws(()=>act(s,{type:'sell',category:'goods'},now),/starting animal feed is kept/);assert.equal(s.inventory.feed,10);
+ const onlyKept=createFarm(now);onlyKept.inventory.wheat=0;
+ assert.throws(()=>act(onlyKept,{type:'sell',category:'crops'},now),/starting corn and barley are kept.*30 minutes/);
  // What is grown on top is free to sell; the kept part stays.
  s.inventory.corn=8+3;assert.equal(sellableStock(s,'corn',now),3);
  assert.throws(()=>act(s,{type:'sell',item:'corn',quantity:4},now),/Keep your first 8 corn/);

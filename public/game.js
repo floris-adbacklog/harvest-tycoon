@@ -51,7 +51,9 @@ const track=(event,params={})=>{try{window.parent.harvestBridge?.trackGame?.(eve
 let sessionTracked=false;
 const nudge=createReminderNudge({state,farmNow,level:()=>levelProgress(state).level,notify:message=>toast(message),track,canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>farmAudio.play(kind));
-function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='stall'||key==='chores')growth.open(key);else retention.openUtility(key);}
+// retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" opens the
+// same activities dialog a station's own 3D pin does, starting at its first stop (Your farm round still shows and tracks all four).
+function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.open(Object.keys(ACTIVE_STATIONS)[0]);else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
