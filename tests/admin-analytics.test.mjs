@@ -125,15 +125,31 @@ test('the read-only admin operations are safe to auto-retry, like every other re
  const code=read('src/connection.js');
  assert.match(code,/'admin_online','admin_recent_players','admin_retention'/);
 });
-test('build-cloud.mjs bundles the admin page as its own entry, and the page exists',()=>{
- assert.match(read('scripts/build-cloud.mjs'),/admin:'src\/admin\.js'/);
- assert.match(read('public/admin.html'),/<script type="module" src="\/cloud\/admin\.js">/);
- assert.match(read('public/admin.html'),/<link rel="stylesheet" href="\/admin\.css">/);
+// Lives inside the game (an icon in the topbar, hidden for everyone else), not a separate page: one session,
+// one sign-in, nothing extra to visit — and it reuses checkAdmin() from player-profiles.js rather than a second
+// admin check.
+test('build-cloud.mjs has no separate admin page: only the original two entries',()=>{
+ assert.match(read('scripts/build-cloud.mjs'),/entry:\{cloud:'src\/main\.js','game-cloud':'src\/game-cloud\.js'\}/);
 });
-test('admin.js gates on a real, non-anonymous session and on the server accepting admin_online, never assuming the account itself',()=>{
- const js=read('src/admin.js');
- assert.match(js,/let user;try\{user=await verifiedUser\(\);\}catch\{user=null;\}/);
- assert.match(js,/if\(!user\)\{show\('admin-signin'\);return;\}/);
- assert.match(js,/try\{await farmRequest\(\{operation:'admin_online'\}\);\}/);
- assert.match(js,/error\.status===403\?'Signed in, but this account cannot open the admin dashboard\.'/);
+test('the admin dashboard button exists in the topbar, hidden until checkAdmin() says otherwise',()=>{
+ const html=read('public/farm.html');
+ assert.match(html,/<button class="icon-button" id="admin-button" aria-label="Open the admin dashboard" aria-haspopup="dialog" title="Admin dashboard" hidden>/);
+ const js=read('src/admin-dashboard.js');
+ assert.match(js,/import \{checkAdmin\} from '\.\/player-profiles\.js';/);
+ assert.match(js,/checkAdmin\(\)\.then\(admin=>\{if\(admin\)button\.hidden=false;\}\);/);
+});
+test('the dashboard fetches all three admin operations through the same bridge every other request uses',()=>{
+ const js=read('src/admin-dashboard.js');
+ assert.match(js,/bridge\.request\(\{operation:'admin_online'\}\),bridge\.request\(\{operation:'admin_recent_players'\}\),bridge\.request\(\{operation:'admin_retention'\}\)/);
+ assert.match(js,/document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);dialog\.showModal\(\);load\(\);/,'closes whatever else is open first, like every other dialog');
+ assert.match(js,/refreshTimer=setInterval\(load,60000\);/);
+ assert.match(js,/dialog\.addEventListener\('close',\(\)=>clearInterval\(refreshTimer\)\);/,'stops polling once closed');
+});
+test('game-cloud.js creates the dashboard once, alongside the player-profile/gift panel it shares checkAdmin with',()=>{
+ const js=read('src/game-cloud.js');
+ assert.match(js,/import \{createAdminDashboard\} from '\.\/admin-dashboard\.js';/);
+ assert.match(js,/const profiles=createPlayerProfiles\(bridge\),serverOffset=bridge\.serverNow-Date\.now\(\);\n\s*createAdminDashboard\(bridge\);/);
+});
+test('checkAdmin is exported from player-profiles.js so admin-dashboard.js does not duplicate the account check',()=>{
+ assert.match(read('src/player-profiles.js'),/export function checkAdmin\(\)\{/);
 });

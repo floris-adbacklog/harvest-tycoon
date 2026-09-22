@@ -50,3 +50,22 @@
 @media(max-width:480px){.farmer-profile-dialog{padding:18px;border-radius:24px}.farmer-identity{gap:13px}.farmer-avatar{flex-basis:70px;height:85px}.farmer-avatar-img{padding:6px 4px 0}.farmer-profile-dialog .eyebrow{font-size:10px;letter-spacing:1px}.farmer-stat{padding:12px 9px;gap:7px}.farmer-stat>.game-art{width:31px;height:31px;flex-basis:31px}.farmer-stat strong{font-size:21px}.farmer-stat-grid{gap:8px}.farmer-badge-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.farmer-search{padding:12px}.farmer-search-result{gap:8px}.farmer-search-avatar{flex-basis:30px;height:34px;font-size:12px}.farmer-search-result .farmer-presence{font-size:11px;gap:4px}.farmer-search-name strong{font-size:14px}.farmer-family{padding:12px}}
 .leaderboard-table .leaderboard-place{width:60px;padding-inline:8px;text-align:center}.leaderboard-place .rank-number{display:inline-grid;place-items:center;min-width:40px;min-height:46px;font-weight:800}.leaderboard-place .rank-trophy>.game-art{width:44px;height:48px}
 @media(max-width:480px){.leaderboard-table .leaderboard-place{width:42px;padding-inline:3px}.leaderboard-place .rank-trophy>.game-art{width:34px;height:40px}.leaderboard-place .rank-number{min-width:34px}.leaderboard-table td{overflow-wrap:anywhere}}
+/* The admin dashboard (floris@millstone.nl only — #admin-button in the topbar stays hidden for everyone else). */
+.admin-dashboard-dialog{max-width:640px}
+.admin-card{border:1px solid #ded2c8;border-radius:16px;padding:16px 18px;margin:16px 0}
+.admin-card h3{font:600 16px 'Outfit',sans-serif;margin:0 0 6px;display:flex;align-items:baseline;gap:8px}
+.admin-card h3>span{font-size:14px;color:#615742;background:#f3c35340;border-radius:8px;padding:1px 9px}
+.admin-hint{font-size:12px;color:#80776b;line-height:1.6;margin:0 0 12px}
+.admin-online-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.admin-online-list li{display:flex;align-items:center;gap:8px;background:#f3f5e9;border:1px solid #dde2cf;border-radius:10px;padding:7px 12px;font-size:13px}
+.admin-online-list li>span{color:#80776b}
+.admin-empty{color:#80776b;font-style:italic}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px}
+.admin-table th{text-align:left;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:#80776b;padding:6px 10px;border-bottom:1px solid #ded2c8}
+.admin-table td{padding:8px 10px;border-bottom:1px solid #ede8dd}
+.admin-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#5f8a52;margin-left:4px}
+.admin-table-scroll{overflow-x:auto}
+.admin-retention-table th,.admin-retention-table td{text-align:center;white-space:nowrap}
+.admin-retention-table th:first-child,.admin-retention-table td:first-child,.admin-retention-table th:nth-child(2),.admin-retention-table td:nth-child(2){text-align:left}
+.admin-pending{color:#c4bcac}
+@media(max-width:480px){.admin-card{padding:12px 14px}}

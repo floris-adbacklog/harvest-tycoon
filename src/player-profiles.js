@@ -36,7 +36,7 @@ export function renderPlayerSearch(players,now=Date.now()){
 // tests that never touch the admin box, in a plain Node run where '@supabase/supabase-js' is not installed
 // (only Vite's build resolves it) — a top-level import would break every one of those tests to serve this one.
 let adminCheck=null;
-function checkAdmin(){
+export function checkAdmin(){
  return adminCheck??=import('./supabase.js').then(({supabase})=>supabase?.auth.getUser()).then(result=>String(result?.data?.user?.email??'').trim().toLowerCase()==='floris@millstone.nl').catch(()=>false);
 }
 // Every seed and production good, grouped the way a farmer already thinks about them.

@@ -198,3 +198,13 @@ day-offset that has not elapsed yet shows as "—", never a false 0%.
 Build: `scripts/build-cloud.mjs` now has a third Vite entry (`admin:'src/admin.js'` → `public/cloud/admin.js`),
 alongside the existing `cloud`/`game-cloud` ones — picked up automatically by the normal `npm run build:static`
 Vercel already runs, no extra step. Tests: `tests/admin-analytics.test.mjs`.
+
+Admin dashboard moved into the game itself, not a separate page (2026-09-22, live after the client is pushed AND
+`farm-api` is redeployed): the earlier /admin.html + its own Vite build entry (src/admin.js, its own sign-in form)
+is removed — one extra page and a second sign-in flow was more than this needed. Instead: a shield icon in the
+topbar (`#admin-button`, hidden for everyone else), shown only once `checkAdmin()` (exported from
+player-profiles.js, the same check the gift panel already uses) says yes, opening a dialog inside the game
+(`src/admin-dashboard.js`, `createAdminDashboard(bridge)`, initialised once in `game-cloud.js` alongside the
+player-profile/gift panel). Same three farm-api operations and the same `admin_auth_signups` SQL function as
+before — nothing changed server-side. Tests: `tests/admin-analytics.test.mjs`, `tests/farm-ready.test.mjs`
+(needed a `createAdminDashboard` mock added to its existing game-cloud.js sandbox).
