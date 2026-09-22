@@ -6,7 +6,7 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  currency:{label:'Most coins',heading:'Coins',unit:'coins',description:'Current coin balance. Spending coins can change your position.'},
 
  harvested_crops:{label:'Most crops harvested',heading:'Crops',unit:'crops harvested',description:'Lifetime harvest of all crop varieties, including extra yield from water and care.'},
- goods_produced:{label:'Most goods produced',heading:'Goods produced',unit:'goods produced',description:'Lifetime production goods collected from every building, from honey to berry tart.'},
+ goods_produced:{label:'Most goods produced',heading:'Goods made',unit:'goods produced',description:'Lifetime production goods collected from every building, from honey to berry tart.'},
  items_sold:{label:'Most items sold',heading:'Items sold',unit:'items sold',description:'Lifetime crops and goods sold at the market. Counts from when this board launched.'},
  badges:{label:'Most badges',heading:'Badges',unit:'badges',description:'Crop mastery medals you have claimed. Up to 48 badges to earn.'},
  deliveries:{label:'Most deliveries',heading:'Deliveries',unit:'deliveries',description:'Total delivery orders completed for your neighbours.'},

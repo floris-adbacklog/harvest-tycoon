@@ -1157,18 +1157,20 @@ function dispatchFarmAction(state,action,now,random){
 export const SILO_COSTS=[140,240,380,15000,65000];
 export const MASTERY_TIERS=[{name:'Bronze',target:25,coins:100,xp:25},{name:'Silver',target:100,coins:350,xp:60},{name:'Gold',target:300,coins:1200,xp:150},{name:'Platinum',target:1000,coins:4000,xp:400}];
 export const CHORES=Object.freeze({
- weeds:{name:'Clear the paths',description:'Pull weeds along the farm paths.',icon:'shovel',coins:18,xp:4,cooldown:60000,baseChance:60,maxChance:100},
- troughs:{name:'Fill the water troughs',description:'Fresh water for the animals.',icon:'droplets',coins:40,xp:8,cooldown:180000,baseChance:40,maxChance:80,requires:'weeds'},
- sorting:{name:'Sort the seed boxes',description:'Get tomorrow’s planting ready.',icon:'package-open',coins:90,xp:16,cooldown:480000,baseChance:35,maxChance:60,requires:'troughs'},
- fences:{name:'Mend the orchard fence',description:'Repair loose rails and keep the orchard safe.',icon:'fence',coins:180,xp:35,cooldown:900000,baseChance:30,maxChance:70,requires:'sorting'},
- irrigation:{name:'Restore the irrigation',description:'Clear the channels and bring water to the far fields.',icon:'waves',coins:330,xp:65,cooldown:1500000,baseChance:25,maxChance:65,requires:'fences'},
- harvestfair:{name:'Prepare the harvest fair',description:'Arrange a prize-worthy display of the farm’s best goods.',icon:'party-popper',coins:600,xp:120,cooldown:2700000,baseChance:20,maxChance:60,requires:'irrigation'}
+ weeds:{name:'Clear the paths',description:'Pull weeds along the farm paths.',icon:'shovel',coins:18,xp:4,cooldown:60000,baseChance:60,maxChance:100,bonus:{item:'wheat',count:2}},
+ troughs:{name:'Fill the water troughs',description:'Fresh water for the animals.',icon:'droplets',coins:40,xp:8,cooldown:180000,baseChance:40,maxChance:80,requires:'weeds',bonus:{item:'lettuce',count:2}},
+ sorting:{name:'Sort the seed boxes',description:'Get tomorrow’s planting ready.',icon:'package-open',coins:90,xp:16,cooldown:480000,baseChance:35,maxChance:60,requires:'troughs',bonus:{item:'corn',count:2}},
+ fences:{name:'Mend the orchard fence',description:'Repair loose rails and keep the orchard safe.',icon:'fence',coins:180,xp:35,cooldown:900000,baseChance:30,maxChance:70,requires:'sorting',bonus:{item:'apples',count:1}},
+ irrigation:{name:'Restore the irrigation',description:'Clear the channels and bring water to the far fields.',icon:'waves',coins:330,xp:65,cooldown:1500000,baseChance:25,maxChance:65,requires:'fences',bonus:{item:'cauliflower',count:1}},
+ harvestfair:{name:'Prepare the harvest fair',description:'Arrange a prize-worthy display of the farm’s best goods.',icon:'party-popper',coins:600,xp:120,cooldown:2700000,baseChance:20,maxChance:60,requires:'irrigation',bonus:{item:'pumpkin',count:1}}
 });
 // Guaranteed half of the original starting expected payout; the remaining budget is random.
 // At every practice level expected coins/XP stay at or below the old success-only budget.
+// Every chore pays a little coins and XP. The bonus roll adds goods from the farm instead of more coins: a few
+// crops or goods worth about what the old coin bonus was, so a lucky chore feels like a find, not a payday.
 export function choreRewards(chore,bonus=false){
- const reward=value=>Math.max(1,Math.floor(value*chore.baseChance/200))+(bonus?Math.floor(value/2):0);
- return {coins:reward(chore.coins),xp:reward(chore.xp)};
+ const reward=value=>Math.max(1,Math.floor(value*chore.baseChance/200));
+ return {coins:reward(chore.coins),xp:reward(chore.xp),items:bonus?{[chore.bonus.item]:chore.bonus.count}:{}};
 }
 export function choreStatus(state,id,now=Date.now()){
  if(!Object.hasOwn(CHORES,id))throw new Error('Choose a farm chore.');
@@ -1214,9 +1216,10 @@ export function doChore(state,id,now=Date.now(),random=secureChoreRandom){
  const bonus=random()<chore.chance/100;
  state.chorePractice??={};state.chorePractice[id]=chore.attempts+1;
  state.chores[id]=now+chore.cooldown;
- const rewards=choreRewards(chore,bonus),{coins,xp}=rewards;
+ const rewards=choreRewards(chore,bonus),{coins,xp,items}=rewards;
  state.coins+=coins;state.xp+=xp;{state.stats.chores++;state.stats['chore_'+id]=(state.stats['chore_'+id]??0)+1;}
- return {success:true,bonus,coins,xp,chance:chore.chance,nextChance:Math.min(chore.maxChance,chore.chance+2),attempts:chore.attempts+1,readyAt:state.chores[id]};
+ for(const [item,count] of Object.entries(items))state.inventory[item]=(state.inventory[item]??0)+count;
+ return {success:true,bonus,coins,xp,items,chance:chore.chance,nextChance:Math.min(chore.maxChance,chore.chance+2),attempts:chore.attempts+1,readyAt:state.chores[id]};
 }
 export function currentProject(state){
  const n=state.estate.completed;if(n<PROJECTS.length)return {...PROJECTS[n],id:n,diamonds:CHAPTER_DIAMONDS[n]};

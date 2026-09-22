@@ -12,7 +12,9 @@ function menuOrder(html){
 }
 test('"Your farm menu" always lists every feature, gated ones in the order they unlock',()=>{
  const html=read('public/farm.html'),order=menuOrder(html);
- assert.equal(order.length,14,'nothing was dropped and Activities was added');
+ assert.equal(order.length,16,'nothing was dropped; Activities, Farm events and the (admin-only) dashboard were added');
+ assert.match(html,/data-menu-action="today-button"[\s\S]{0,200}<\/button>\n    <button data-menu-action="events-button">/,'Farm events sits right next to Daily rewards');
+ assert.match(html,/<button data-menu-action="admin-button" id="admin-menu-entry" hidden>/,'the admin card is hidden for everyone until checkAdmin() allows it');
  assert(order.includes('activities'),'A helping hand has its own entry, it was missing entirely before');
  const gated=order.filter(Boolean);
  assert.deepEqual(gated,[...gated].sort((a,b)=>FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),'gated entries are already in ascending unlock-level order in the markup');

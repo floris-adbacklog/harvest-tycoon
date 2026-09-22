@@ -226,3 +226,31 @@ recent-players table, shows as a small initials-avatar circle, with a green corn
 game's own `.online-dot`/`.is-online` class, the same one the leaderboard uses). Retention percentages are now
 colour-coded (green ≥50%, amber ≥25%, red below) so a pattern reads at a glance; the exact "N / total" figure is
 still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
+
+## 2026-09-22 — ChatGPT retention update, cleaned up
+
+- **Farm events**: the Events button sits next to Quests (desktop side tools) and as a card next to Daily rewards in the
+  More menu (phones); no icon in the topbar. Below level 10 it follows the other locked features: hidden on desktop,
+  greyed with a lock in More. The dialog is built from existing pieces (estate-intro, family-order-line, task-row,
+  family-extra) and shows rewards to collect first, then the live event (or the next one during the break), and the
+  top 10 with what each farmer earns (top 3 as podium cards).
+- **Automatic events** (`supabase/live-events-schedule.sql`, migration `harvest_auto_live_events`, applied live):
+  a 5-hour event starts every 6 hours (00/06/12/18 UTC), then a 1-hour break. pg_cron job `harvest-event-schedule`
+  (every 15 min) creates the running event + the next two (deterministic id per slot) and settles ended ones.
+  Five templates rotate; no deliveries (the order board can run empty). Rewards: 200 coins, 1–2 diamonds, pool 50.
+- **farm-api `events`** (players): only running/upcoming/last-day events plus unclaimed rewards (30 days), a
+  best-effort schedule fallback, `eligibility` (level, 48h, verified) and `standings` (top 10 + your rank).
+- **Daily sharing**: calm entry card on the Family Members tab; its own screen with portraits, per-member Help/Gift,
+  requests with stock checks, an item/quantity picker and a back link to the family.
+- **Welcome Back**: a gift-style card with one button straight to what is waiting; no second "Welcome back" toast.
+- **Chores**: the bonus is now goods (2 wheat, 2 lettuce, 2 corn, 1 apples, 1 cauliflower, 1 pumpkin) instead of
+  extra coins/XP. The bar fills to the chore's own maximum; a find and a plain result look clearly different.
+- **Market**: a card per item in stock (bigger art, coin icons, stock on the right), a compact price list for the rest.
+- **Leaderboard** only ranks; your profile, name change and sign-out moved to the top of Settings. "Goods produced"
+  chip is now "Goods made" (one line).
+- The two new icons were 1.2–1.7 MB PNGs; now 384px with ~30–40 KB WebP versions.
+- Deploy: farm-api (event-service.js, farm-state.js) and the frontend. Migration is already live.
+- **Podium prizes** (migration `harvest_event_podium_prizes`, applied live; `supabase/live-events-podium.sql`): the
+  first three to finish an event get +300 coins +2 diamonds, +200 +1, +100 +1 on top of the usual reward. Same
+  numbers in `harvest_event_settle`, `PODIUM` (farm-api standings) and `PODIUM_PRIZES` (event screen); a test keeps
+  them equal. The 6-event-diamonds-a-day cap at claim still applies.

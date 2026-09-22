@@ -37,9 +37,9 @@
  .rank-chip-small>span:not(.game-art){overflow-wrap:normal;text-align:left}
  #leaderboard-dialog .cloud-sync{padding:8px 0}
  #leaderboard-dialog .leaderboard-filter{margin:12px 0}
- #leaderboard-dialog .cloud-profile{align-items:stretch}
- #leaderboard-dialog .cloud-profile>span{flex:1 0 100%}
- #leaderboard-dialog .cloud-profile button{flex:1 1 0;min-width:0;padding-inline:6px;font-size:clamp(12px,3.5vw,14px);white-space:nowrap}
+ .settings-account .cloud-profile{align-items:stretch}
+ .settings-account .cloud-profile>span{flex:1 0 100%}
+ .settings-account .cloud-profile button{flex:1 1 0;min-width:0;padding-inline:6px;font-size:clamp(12px,3.5vw,14px);white-space:nowrap}
 }
 
 /* Reward amounts come with their coin / XP picture. */
@@ -98,24 +98,3 @@
 .rookie-notes strong{font-size:13px}
 .rookie-notes span{font-size:13px;line-height:1.5;color:#55613f}
 #rookie-dialog .primary-button{width:100%;min-height:46px}
-
-/* Short events reuse the existing painted icon and dialog styling. */
-#live-events-button{width:40px;height:40px;min-width:40px;padding:4px;display:inline-flex;align-items:center;justify-content:center}
-#live-events-button .game-art{width:30px;height:30px;object-fit:contain}
-#admin-events label{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
-#admin-events input:not([type=checkbox]),#admin-events textarea{max-width:100%;padding:8px}
-#admin-events fieldset{border:1px solid #d9c8a0;border-radius:12px;margin:12px 0;padding:12px}
-#admin-events [data-list]{display:grid;gap:10px;margin:12px 0}
-.retention-event-card{padding:16px;border:1px solid #d9c8a0;border-radius:16px;margin:12px 0;background:#fff9ed}
-.retention-event-card>.game-art{width:84px;height:84px;object-fit:contain;float:right;margin:0 0 8px 12px}
-.retention-event-card progress{width:100%}
-@media(max-width:600px){#live-events-button{width:34px;min-width:34px;height:34px}#live-events-button .game-art{width:26px;height:26px}}
-@media(max-width:900px),(max-height:550px) and (pointer:coarse){
- .topbar .resources:has(#live-events-button){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px;gap:4px}
- .topbar .resources:has(#live-events-button):has(#family-button:not([hidden])),.topbar .resources:has(#live-events-button):has(#rookie-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px 34px}
- .topbar .resources:has(#live-events-button):has(#rookie-button:not([hidden])):has(#family-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px 44px 34px}
- #live-events-button{align-self:center}
-}
-
-.social-sharing-art{display:block;width:96px;height:96px;object-fit:contain;margin:4px auto 12px}
-[data-social-open] .game-art{width:30px;height:30px;object-fit:contain;vertical-align:middle}

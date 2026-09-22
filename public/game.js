@@ -44,7 +44,7 @@ let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFram
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
 const familyDecor=[],factoryDecor=[],models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
-let familyUI,progression,economy,retention,growth,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
+let liveEvents,familyUI,progression,economy,retention,growth,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
@@ -383,7 +383,7 @@ function updateUI(){
  $('level-name').textContent=levelTitle(lvl);
  const count=Object.values(state.inventory).reduce((a,b)=>a+b,0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target);
- familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();
+ familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
@@ -532,7 +532,7 @@ function bindUI(){
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
  $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'harvest',4:'tend'}[e.key];if(t){e.preventDefault();setTool(t);}});
- createLiveEventsUI({notify:toast,refreshFarm:()=>client.refresh()});
+ liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh()});
  familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
  economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
@@ -630,7 +630,7 @@ async function init(){
    },
    zoom:ratio=>zoomFarm(zoom*ratio)
   });
-  ready=true;positionBuildingLabels();updateUI();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0)toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  ready=true;positionBuildingLabels();updateUI();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;progression.refresh();resolve();},450));
  showWelcomeBack(initialWelcome,{fields:focusFields,production:()=>economy.openBuilding(Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??'coop'),stall:()=>growth.open('stall'),today:()=>retention.openToday()});
   return ready;

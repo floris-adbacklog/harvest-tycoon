@@ -150,7 +150,7 @@ test('the admin dashboard button exists in the topbar, hidden until checkAdmin()
  assert.match(html,/<button class="icon-button" id="admin-button" aria-label="Open the admin dashboard" aria-haspopup="dialog" title="Admin dashboard" hidden>/);
  const js=read('src/admin-dashboard.js');
  assert.match(js,/import \{checkAdmin\} from '\.\/player-profiles\.js';/);
- assert.match(js,/checkAdmin\(\)\.then\(admin=>\{if\(admin\)button\.hidden=false;\}\);/);
+ assert.match(js,/checkAdmin\(\)\.then\(admin=>\{if\(!admin\)return;button\.hidden=false;const entry=document\.getElementById\('admin-menu-entry'\);if\(entry\)entry\.hidden=false;\}\);/,'the topbar button and the More-menu card appear together, only for the admin');
 });
 test('each card has its own line icon, converted like every other plain (non-painted) icon in the game',()=>{
  const js=read('src/admin-dashboard.js');

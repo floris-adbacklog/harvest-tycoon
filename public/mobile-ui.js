@@ -14,7 +14,8 @@ export function createMobileUI({openUtility,resetView}){
  menu.querySelectorAll('[data-menu-utility]').forEach(button=>button.onclick=()=>{menu.close();openUtility(button.dataset.menuUtility);});
  function badges(){
   const gift=$('today-dot'),quests=$('task-dot'),batches=$('production-count');
-  $('more-dot').hidden=gift.hidden;
+  // A waiting event reward also lights the More dot, since Events lives in that menu on phones.
+  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true);
   $('tasks-button').setAttribute('aria-label',quests.hidden?'Open quests':'Open quests, rewards ready');
   $('buildings-button').setAttribute('aria-label',batches.hidden?'Open buildings':`Open buildings, ${batches.textContent} batches ready`);
  }

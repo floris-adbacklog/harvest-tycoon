@@ -1,0 +1,215 @@
+/* Farm events, daily family sharing, Welcome Back and the chore bonus. Built from the game's own pieces
+   (estate-intro, family-order-line, task-row, family-extra, gift-rewards); this file only fills the gaps. */
+
+/* The admin card in the More menu stays hidden for everyone else. */
+.mobile-menu-grid button[hidden]{display:none}
+
+/* Farm events */
+.event-intro{margin:4px 0 12px}
+.event-intro .estate-icon,.events-dialog .quest-empty .estate-icon{width:64px;height:64px;padding:5px;box-sizing:border-box;background:linear-gradient(145deg,#f7eed8,#ecdcc4);border-radius:18px}
+.event-intro .estate-icon>.game-art,.events-dialog .quest-empty .estate-icon>.game-art{display:block;width:100%;height:100%;object-fit:contain}
+.events-dialog .quest-empty .estate-icon{margin:0 auto 12px}
+.event-intro h3{margin-top:2px}
+.event-intro p{margin-top:4px}
+.event-when{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border-radius:999px;background:#efe7dc;color:#6f624d;font-size:12px;font-weight:700;letter-spacing:.2px}
+.event-when.is-live{background:#e3efd9;color:#3f6b2c}
+.event-when.is-live::before{content:'';width:7px;height:7px;border-radius:50%;background:#5e9b51;box-shadow:0 0 0 3px #cfe3c4}
+.event-summary{font-size:13px;line-height:1.6;color:#756754;margin:0}
+.event-goals .family-line-copy>span{min-height:20px}
+.event-goals .family-done{font-size:13px}
+.event-reward{padding:14px 0;margin:0 0 12px;font-size:13px}
+.event-reward-amounts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 16px}
+.event-reward-amounts .coin-reward{display:inline-flex;align-items:center;gap:6px;margin:0;color:#806322;font-size:15px}
+.event-reward-amounts .coin-reward .game-art{width:22px;height:22px}
+.event-note{margin:0;font-size:14px;line-height:1.55}
+.event-note.is-blocked{border-left-color:#d6ae4b;background:#faf1dc}
+.event-section-title{font:600 20px 'Outfit',sans-serif;margin:26px 0 0}
+.events-dialog .task-row .task-bottom{flex-wrap:wrap}
+.event-history .family-list-row{padding:12px 0}
+.event-history .family-list-row span{color:#7c7d6e}
+.event-rules{margin-top:24px}
+.event-rules ul{margin:12px 0 0;padding-left:18px;font-size:14px;line-height:1.6;color:#6f6a58}
+.event-rules li+li{margin-top:6px}
+.event-feedback{margin:12px 0 0;font-size:14px;color:#9a4b35}
+.event-feedback:empty,.event-loading:empty{display:none}
+
+/* Daily sharing: an entry card on the Members tab, then its own screen. */
+.family-share-entry{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 16px;padding:14px 16px;border:1px solid #e0d5ac;border-radius:18px;background:linear-gradient(140deg,#f9efcc,#f0e5dd);text-align:left;color:inherit;cursor:pointer;box-shadow:0 2px 0 #e4d9b8}
+.family-share-entry:hover{border-color:#cdbb85}
+.family-share-entry>.game-art{width:52px;height:52px;flex-shrink:0;object-fit:contain}
+.family-share-entry>span{flex:1;min-width:0}
+.family-share-entry strong{display:block;font:600 18px 'Outfit',sans-serif;color:#453e28}
+.family-share-entry small{display:block;margin-top:3px;font-size:13px;line-height:1.4;color:#7c6f5c}
+.family-share-entry>svg{width:20px;height:20px;flex-shrink:0;color:#8a7a4a}
+.sharing-back{margin:-4px 0 12px}
+.sharing-intro{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px;border:1px solid #e0d5ac;border-radius:18px;background:linear-gradient(140deg,#f9efcc,#f0e5dd)}
+.sharing-intro>.game-art{width:60px;height:60px;object-fit:contain}
+.sharing-intro strong{display:block;font:600 18px 'Outfit',sans-serif;color:#453e28}
+.sharing-intro span{display:block;margin-top:4px;font-size:13px;line-height:1.5;color:#7c6f5c}
+.sharing-today{display:flex;gap:8px;margin:0}
+.sharing-today div{min-width:64px;padding:8px 10px;border-radius:12px;background:#fffdf5;text-align:center;box-shadow:0 1px 0 #e4d9b8}
+.sharing-today dt{font-size:11px;color:#8a7d68}
+.sharing-today dd{margin:2px 0 0;font:700 20px 'Outfit',sans-serif;color:#4d4635}
+.sharing-section{margin-top:22px}
+.sharing-section h3{font:600 20px 'Outfit',sans-serif;margin:0}
+.sharing-hint{margin:4px 0 12px;font-size:13px;color:#807463}
+.sharing-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #e2ddcf}
+.sharing-row .player-avatar-thumb{width:44px;height:44px}
+.sharing-row>.sharing-item{width:44px;height:44px;flex-shrink:0;object-fit:contain}
+.sharing-who{flex:1;min-width:0}
+.sharing-who strong{display:block;font-size:15px;overflow-wrap:anywhere}
+.sharing-who span{display:block;margin-top:2px;font-size:12px;color:#7c7d6e}
+.sharing-actions{display:flex;gap:6px}
+.sharing-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:6px 12px;border:1px solid #dcd2c6;border-radius:12px;background:#f5efe7;color:#4d4635;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+.sharing-action .game-art{width:22px;height:22px}
+.sharing-action:hover:not(:disabled){border-color:#b9ab97}
+.sharing-action.is-primary{background:var(--green,#615742);border-color:transparent;color:#fff}
+.sharing-action:disabled{opacity:.55;cursor:default}
+.sharing-chip{padding:6px 10px;border-radius:999px;background:#efe7dc;color:#7c6f5c;font-size:12px;font-weight:700;white-space:nowrap}
+.sharing-chip.is-done{background:#e3efd9;color:#3f6b2c}
+.sharing-empty{margin:8px 0 0;font-size:14px;color:#807463}
+.sharing-ask{display:grid;gap:12px}
+.sharing-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sharing-item-choice{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border:1px solid #e2d7cc;border-radius:14px;background:#f5efea;color:#5d5641;font-size:13px;font-weight:700;cursor:pointer}
+.sharing-item-choice .game-art{width:40px;height:40px}
+.sharing-item-choice.is-picked{border-color:#a8935a;background:#fff8e1;box-shadow:0 0 0 2px #e8d499}
+.sharing-stepper{display:flex;align-items:center;justify-content:center;gap:16px}
+.sharing-stepper button{width:44px;height:44px;border:1px solid #dcd2c6;border-radius:12px;background:#f5efe7;color:#4d4635;font-size:22px;font-weight:700;cursor:pointer}
+.sharing-stepper button:disabled{opacity:.45;cursor:default}
+.sharing-stepper output{min-width:40px;text-align:center;font:700 24px 'Outfit',sans-serif;color:#453e28}
+.sharing-ask .primary-button{width:100%;justify-content:center;min-height:48px}
+.sharing-rules{margin:20px 0 0;font-size:12px;line-height:1.5;color:#8a7d68}
+.sharing-feedback{margin:10px 0 0;font-size:14px;color:#9a4b35}
+.sharing-feedback:empty{display:none}
+@media(max-width:600px){
+ .sharing-intro{grid-template-columns:48px minmax(0,1fr);padding:14px}
+ .sharing-intro>.game-art{width:48px;height:48px}
+ .sharing-today{grid-column:1/-1}.sharing-today div{flex:1}
+ .sharing-row{flex-wrap:wrap}
+ .sharing-actions{width:100%;padding-left:56px;box-sizing:border-box}
+ .sharing-actions .sharing-action{flex:1}
+}
+
+/* Welcome Back: the same celebration card as a gift. */
+#welcome-back-dialog{box-sizing:border-box;width:min(400px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:28px 24px 24px;border:1px solid #dfd3ae;border-radius:24px;background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 65%);text-align:center;color:#34432d;overflow:auto;position:relative}
+#welcome-back-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
+#welcome-back-dialog h2{font:700 32px 'Outfit',sans-serif;margin:6px 0}
+#welcome-back-dialog p{font-size:14px;line-height:1.6;color:#5d5641}
+.welcome-back-art{display:grid;place-items:center;width:88px;height:88px;margin:0 auto 10px;border-radius:50%;background:radial-gradient(circle,#fff6dc,#f9e5a8)}
+.welcome-back-art>.game-art{width:62px;height:62px;object-fit:contain}
+.welcome-back-go{width:100%;justify-content:center;min-height:48px;margin-top:22px}
+@media(max-width:600px){#welcome-back-dialog{padding:24px 16px}}
+
+/* Chores: coins, XP and the goods you might find, as one tidy row of chips. */
+.chore-rewards{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.chore-rewards>span{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 6px;border-radius:999px;background:#f3ead5;color:#6b4f0f;font-size:13px;font-weight:700}
+.chore-rewards .game-art{width:20px;height:20px}
+.chore-rewards .chore-bonus{background:#e6efdc;color:#42632e}
+.chore-rewards .chore-bonus em{font-style:normal;font-weight:600;font-size:11px;opacity:.8;margin-left:2px}
+.chore-card .chore-foot{margin:6px 0 0;font-size:12px;color:#8b7d6d}
+.chore-card.is-locked .chore-icon{filter:grayscale(1);opacity:.6}
+.chore-prizes{flex-wrap:wrap}
+.chore-prizes .chore-prize-bonus{background:#e6efdc;color:#42632e}
+.chore-chance.is-mastered progress{accent-color:#5e9b51}
+.chore-chance.is-mastered strong{color:#3f6b2c}
+/* The chore result: gold and the goods up front when you find something, calm and neutral when you do not. */
+.chore-result.is-bonus{background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 70%);border-color:#dfd3ae}
+.chore-result.is-bonus .chore-result-art{background:radial-gradient(circle,#fff6dc,#f9e5a8);border-color:#e8d499;box-shadow:0 0 0 6px #fff3cc}
+.chore-result:not(.is-bonus){background:#fffdf5}
+.chore-result:not(.is-bonus) .chore-prizes strong{background:#f1ece4;color:#5d5641}
+.chore-missed{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:12px 14px;border-radius:14px;background:#f3efe7;text-align:left;font-size:13px;line-height:1.5;color:#6f6a58}
+.chore-missed>.game-art{width:34px;height:34px;flex-shrink:0;filter:grayscale(1);opacity:.55}
+.chore-missed b{color:#453e28}
+/* Event standings: medal, portrait, name and what they earn. */
+.event-section-title.is-first{margin-top:4px}
+.event-divider{height:1px;background:#e2ddcf;margin:18px 0 20px}
+.family-order-line.is-done progress{accent-color:#5e9b51}
+/* Every standings row uses the same four columns (rank, portrait, name, reward) and the same padding, so the
+   podium cards and the plain rows line up exactly; the podium only adds a tinted background. */
+.event-standings{margin-top:6px}
+.event-standings .event-standing{display:grid;grid-template-columns:36px 40px minmax(0,1fr) 100px;align-items:center;gap:10px;margin:0;padding:10px 12px;border:1px solid transparent;border-radius:16px}
+.event-standings .event-standing+.event-standing{border-top-color:transparent;box-shadow:0 -1px 0 #e2ddcf}
+.event-standings .event-standing.is-podium{margin-bottom:6px;box-shadow:none}
+.event-standings .event-standing:not(.is-podium):not(.is-you){border-radius:0}
+.event-standings .event-standing.is-podium+.event-standing{box-shadow:none}
+.event-standing.is-rank-1{background:linear-gradient(135deg,#fff3c8,#fbe7a8);border-color:#ecd48a}
+.event-standing.is-rank-2{background:linear-gradient(135deg,#f5f4f0,#e6e4dd);border-color:#d9d6cc}
+.event-standing.is-rank-3{background:linear-gradient(135deg,#fbeee2,#f1d9c3);border-color:#e6c7a7}
+.event-standings .event-standing.is-you{background:#fff6dc;border-color:#ecd9a0;box-shadow:none}
+.event-standings .event-standing.is-you+.event-standing{box-shadow:none}
+.event-rank{display:grid;place-items:center;width:36px;font:700 16px 'Outfit',sans-serif;color:#8a7d68}
+.event-rank>.game-art{display:block;width:36px;height:36px;object-fit:contain}
+.event-standing .family-member-portrait{width:40px;height:40px}
+.event-standing .player-avatar-thumb{display:block;width:40px;height:40px}
+.event-standing>div{min-width:0}
+.event-standing strong{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event-standing-reward{display:grid;grid-template-columns:minmax(0,1fr) 30px;align-items:center;justify-items:end;column-gap:6px}
+.event-standing-reward b{display:inline-flex;align-items:center;gap:4px;color:#806322;font-size:14px;white-space:nowrap}
+.event-standing-reward .game-art{width:18px;height:18px}
+.event-mini{grid-column:1/-1;width:100%;height:7px;accent-color:#a88a5c}
+.event-standings-gap{margin:0;text-align:center;color:#b3a894;letter-spacing:3px;line-height:1}
+
+/* Farmers' market: a card per thing you can sell, a compact price list for what you do not have. */
+#market-items .market-row.market-card{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:16px 0;border-bottom:1px solid #e8e1da}
+#market-items .market-card>.product-art{grid-column:1;grid-row:1;width:56px;height:56px;margin:0;object-fit:contain}
+#market-items .market-card .market-item-copy{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+#market-items .market-card .market-item-copy>strong{font:600 18px 'Outfit',sans-serif;line-height:1.2}
+#market-items .market-card .market-current-price{margin:0;font-size:13px;font-weight:400;color:#807262}
+#market-items .market-card .market-current-price b{font:700 17px 'Outfit',sans-serif;color:#453e28}
+#market-items .market-card .demand-pill{font-size:11px;padding:3px 8px}
+#market-items .market-card .market-stock{grid-column:3;grid-row:1;min-width:52px;text-align:right}
+#market-items .market-card .market-stock b{display:block;font:700 24px 'Outfit',sans-serif;line-height:1.1;color:#453e28}
+#market-items .market-card .market-stock small{display:block;font-size:11px;color:#867c70}
+#market-items .market-card .market-sale-controls{grid-column:1/-1;grid-row:2;margin-top:6px}
+#market-items .market-card input[type=range]:disabled{display:none}
+.market-empty{margin:8px 0}
+.market-empty>.game-art{width:56px;height:56px}
+.market-empty-title{margin:22px 0 10px;font:600 16px 'Outfit',sans-serif;color:#6f6a58}
+.market-price-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.market-price-tile{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:#f5f0ea}
+.market-price-tile>.product-art{width:34px;height:34px;margin:0;flex-shrink:0;object-fit:contain;opacity:.85}
+.market-price-tile strong{display:block;font-size:13px;line-height:1.3}
+.market-price-tile small{display:flex;align-items:center;gap:6px;font-size:12px;color:#807262}
+.demand-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#c9bfa6}
+.demand-dot.high{background:#5e9b51}
+.demand-dot.low{background:#c56a52}
+@media(max-width:600px){.market-price-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#market-items .market-current-price{display:inline-flex;align-items:center;gap:5px}
+#market-items .market-current-price .game-art,.market-sale-buttons .game-art{width:20px;height:20px;vertical-align:-4px}
+.market-sale-buttons [data-sell]{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.market-price-tile small .game-art{width:15px;height:15px}
+#inventory-value{display:inline-flex;align-items:center;gap:7px}
+#inventory-value .game-art{width:26px;height:26px}
+
+/* Admin: farm events (floris@millstone.nl only). */
+#admin-events h3 img{vertical-align:middle;margin-right:4px}
+#admin-events [data-list]{display:grid;gap:8px;margin:12px 0}
+.admin-event-row{padding:12px 14px;border:1px solid #e2d7cc;border-radius:14px;background:#fffdf5}
+.admin-event-row p{margin:4px 0 8px;font-size:13px;color:#6f6a58}
+.admin-event-tag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font-size:11px;font-weight:700;vertical-align:middle}
+#admin-events form{display:grid;gap:10px}
+#admin-events label{display:grid;gap:4px;font-size:13px;font-weight:600;color:#5d5641}
+#admin-events input:not([type=checkbox]),#admin-events textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #dcd2c6;border-radius:10px;background:#fffef9;font-size:15px}
+#admin-events fieldset{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:12px;border:1px solid #e2d7cc;border-radius:12px}
+#admin-events legend{padding:0 4px;font-size:13px;font-weight:700}
+#admin-events .small-button{margin:4px 6px 0 0}
+
+/* Settings: your account on top, as one quiet block like the avatar picker below it. */
+.settings-account{margin:0 0 20px;padding:0 0 18px;border-bottom:1px solid #e3dad0}
+.settings-account .settings-heading svg{width:22px;height:22px;color:#8a7a4a}
+.settings-account .cloud-profile{padding:0;border:0}
+.settings-account .cloud-profile>span{font:600 20px 'Outfit',sans-serif;margin-bottom:2px}
+
+/* Leaderboard "Rank by" chips: every label on one line, left-aligned next to its icon. */
+.rank-chip>span:not(.game-art){text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Podium prize list under the event reward: medal, place, coins, diamonds. */
+.event-podium{margin:-4px 0 16px;padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,#fff6dc,#fbeecb);border:1px solid #ecd9a0;color:#6b5a2a}
+.event-podium>span{display:block;margin-bottom:4px;font-size:13px;font-weight:700}
+.event-podium ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.event-podium li{display:grid;grid-template-columns:26px 36px 1fr 1fr;align-items:center;gap:8px;font-size:14px}
+.event-podium li>.game-art{width:24px;height:24px}
+.event-podium li b{color:#6b5a2a}
+.event-podium li span{display:inline-flex;align-items:center;gap:4px;font-weight:700;color:#6b4f0f}
+.event-podium li span .game-art{width:18px;height:18px}
+.family-order-line.is-done progress::-webkit-progress-value{background:#5e9b51}
+.family-order-line.is-done progress::-moz-progress-bar{background:#5e9b51}

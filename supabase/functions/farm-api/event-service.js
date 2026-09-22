@@ -10,6 +10,59 @@ export function validateEvent(config,now=Date.now()){
  for(const [key,min,max] of [['coins',0,300],['diamondMin',0,1],['diamondMax',1,3],['participantStep',10,1000],['poolCap',0,200]])if(!Number.isInteger(rewards?.[key])||rewards[key]<min||rewards[key]>max)throw Error(`Set ${key} between ${min} and ${max}.`);
  return {title:config.title.trim(),description:config.description,starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString(),active:config.active===true,objectives:objectives.map(({stat,target})=>({stat,target})),rewards:Object.fromEntries(['coins','diamondMin','diamondMax','participantStep','poolCap'].map(k=>[k,rewards[k]]))};
 }
+const DAY_MS=86400000,MIN_ACTIONS=3,MIN_SPAN=10*60000,TOP=10;
+// The first three farmers to finish win a podium prize on top of the usual reward (same numbers as harvest_event_settle).
+export const PODIUM=Object.freeze([{coins:300,diamonds:2},{coins:200,diamonds:1},{coins:100,diamonds:1}]);
+// The event's top 10, ranked the way settlement pays (live-events.sql): finished farmers first, earliest finish
+// first (the finish time is frozen), then everyone else by how far along they are. Rewards follow the same formula
+// as harvest_event_settle — exact once settled, "if it ended now" while the event runs.
+export function eventStandings(event,rows,now=Date.now()){
+ const settled=Boolean(event.settled_at),goals=event.objectives;
+ const share=r=>goals.reduce((sum,o)=>sum+Math.min(1,(r.progress?.[o.stat]??0)/o.target),0)/goals.length;
+ const finished=r=>settled?r.qualified:goals.every(o=>(r.progress?.[o.stat]??0)>=o.target)&&r.actions>=MIN_ACTIONS&&Date.parse(r.last_at)-Date.parse(r.joined_at)>=MIN_SPAN;
+ const at=r=>Date.parse(r.last_at);
+ const ranked=rows.map(r=>({...r,done:finished(r),share:share(r)})).sort((a,b)=>Number(b.done)-Number(a.done)||(a.done?at(a)-at(b)||String(a.player_id).localeCompare(String(b.player_id)):b.share-a.share||at(a)-at(b)));
+ const n=ranked.filter(r=>r.done).length,{coins,diamondMin,diamondMax,participantStep,poolCap}=event.rewards;
+ const perPlayer=Math.min(diamondMax,diamondMin+Math.floor(Math.sqrt(n/participantStep))),budget=Math.min(poolCap,n*perPlayer);
+ return ranked.map((r,i)=>({rank:i+1,playerId:r.player_id,finished:r.done,progress:Math.round(r.share*100),
+  coins:settled?r.coins:r.done?coins+(PODIUM[i]?.coins??0):0,diamonds:settled?r.diamonds:r.done?Math.max(0,Math.min(perPlayer,budget-i*perPlayer))+(PODIUM[i]?.diamonds??0):0,podium:r.done&&i<PODIUM.length}));
+}
+async function standings(admin,event,user,now){
+ const rows=await admin.from('live_event_players').select('player_id,progress,actions,joined_at,last_at,qualified,coins,diamonds').eq('event_id',event.id).limit(2000);
+ if(rows.error)throw rows.error;
+ const all=eventStandings(event,rows.data,now),top=all.slice(0,TOP),you=all.find(r=>r.playerId===user.id)??null;
+ const ids=[...new Set([...top.map(r=>r.playerId),...(you?[you.playerId]:[])])];
+ const names=ids.length?await admin.from('player_stats').select('player_id,username,level,avatar_id').in('player_id',ids):{data:[]};
+ if(names.error)throw names.error;
+ const byId=new Map(names.data.map(p=>[p.player_id,p]));
+ const dress=r=>({...r,username:byId.get(r.playerId)?.username??'Farmer',level:byId.get(r.playerId)?.level??null,avatarId:byId.get(r.playerId)?.avatar_id??null,isYou:r.playerId===user.id});
+ return {top:top.map(dress),you:you&&you.rank>TOP?dress(you):null,total:all.length};
+}
+// A player sees the running and upcoming events, the last day's results and any reward still waiting to be
+// collected (up to 30 days back) — not every automatic event of the month.
+async function playerEvents(admin,user,now){
+ const recent=()=>admin.from('live_events').select('*').gt('ends_at',new Date(now-DAY_MS).toISOString()).order('starts_at',{ascending:false}).limit(12);
+ let listed=await recent();if(listed.error)return listed;
+ // The pg_cron job normally creates events ahead of time; if it ever lags, fill the schedule here. Best effort:
+ // a failure only means no new event yet, never a broken event screen.
+ if(!listed.data.some(e=>e.active&&Date.parse(e.ends_at)>now)){
+  const scheduled=await admin.rpc('harvest_event_schedule');
+  if(!scheduled.error){listed=await recent();if(listed.error)return listed;}
+ }
+ const owed=await admin.from('live_event_players').select('event_id').eq('player_id',user.id).eq('qualified',true).is('claimed_at',null).limit(20);
+ if(owed.error)return owed;
+ const missing=owed.data.map(r=>r.event_id).filter(id=>!listed.data.some(e=>e.id===id));
+ if(!missing.length)return listed;
+ const older=await admin.from('live_events').select('*').in('id',missing).gt('ends_at',new Date(now-30*DAY_MS).toISOString());
+ if(older.error)return older;
+ return {data:[...listed.data,...older.data]};
+}
+// The same gates as the progress trigger in live-events.sql, so the event screen can say why a farm is not taking part yet.
+async function eligibility(admin,user){
+ const stats=await admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle();
+ if(stats.error)throw stats.error;
+ return {level:stats.data?.level??0,minLevel:10,openAt:Date.parse(user.created_at)+2*DAY_MS,verified:Boolean(user.email_confirmed_at)};
+}
 export async function handleEvents({admin,body,user}){
  const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:user.id}}});
  const managing=body.operation==='admin_events';if(managing&&!isSuperadmin(user))return respond({error:'Not authorized.'},403);
@@ -32,9 +85,9 @@ export async function handleEvents({admin,body,user}){
    const r=await admin.rpc('harvest_event_claim',{p_player:user.id,p_event:body.eventId});if(r.error)throw r.error;return respond({reward:r.data});
   }
   if(body.command&&body.command!=='list')throw Error('Unknown event command.');
-  const now=Date.now();let query=admin.from('live_events').select('*').order('starts_at',{ascending:false}).limit(50);
-  if(!managing)query=query.gt('ends_at',new Date(now-30*86400000).toISOString());
-  const listed=await query;if(listed.error)throw listed.error;
+  const now=Date.now();
+  const listed=managing?await admin.from('live_events').select('*').order('starts_at',{ascending:false}).limit(50):await playerEvents(admin,user,now);
+  if(listed.error)throw listed.error;
   const events=[];
   for(let e of listed.data){
    if(!managing&&!e.active&&Date.parse(e.ends_at)>now)continue;
@@ -43,6 +96,12 @@ export async function handleEvents({admin,body,user}){
    if(player.error)throw player.error;if(count.error)throw count.error;
    events.push({...e,participants:count.count,player:player.data});
   }
-  return respond({events,serverNow:now});
+  // Standings only for the event the screen puts first: the running one, otherwise the one that ended last.
+  if(!managing){
+   const running=events.find(e=>e.active&&Date.parse(e.starts_at)<=now&&Date.parse(e.ends_at)>now);
+   const shown=running??events.filter(e=>Date.parse(e.ends_at)<=now).sort((a,b)=>Date.parse(b.ends_at)-Date.parse(a.ends_at))[0];
+   if(shown)shown.standings=await standings(admin,shown,user,now);
+  }
+  return respond(managing?{events,serverNow:now}:{events,serverNow:now,eligibility:await eligibility(admin,user)});
  }catch(error){if(error.code&&!['P0001','23514','23505','22P02'].includes(error.code))throw error;return respond({error:error.message},422);}
 }

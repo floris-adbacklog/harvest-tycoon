@@ -54,6 +54,7 @@ export function createAdminDashboard(bridge){
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());refreshArt();dialog.showModal();load();liveEvents.load();
   clearInterval(refreshTimer);refreshTimer=setInterval(load,60000);
  };
- checkAdmin().then(admin=>{if(admin)button.hidden=false;});
+ // Phones hide the topbar icons, so the same dashboard also gets a card at the end of the More menu.
+ checkAdmin().then(admin=>{if(!admin)return;button.hidden=false;const entry=document.getElementById('admin-menu-entry');if(entry)entry.hidden=false;});
  return {};
 }

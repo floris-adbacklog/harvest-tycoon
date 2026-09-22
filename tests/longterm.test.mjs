@@ -26,7 +26,7 @@ test('passive earnings accrue only once, cap offline time and do not retroactive
 });
 test('chores remain repeatable but do not pay twice during cooldown',()=>{
  const s=createFarm(now);act(s,{type:'chore',id:'weeds'},now,()=>0);const balance=s.coins;assert.throws(()=>act(s,{type:'chore',id:'weeds'},now),/returns in/);assert.equal(s.coins,balance);
- act(s,{type:'chore',id:'weeds'},now+60000,()=>0);assert.equal(s.stats.chores,2);assert.equal(s.coins,balance+14);
+ const wheat=s.inventory.wheat;act(s,{type:'chore',id:'weeds'},now+60000,()=>0);assert.equal(s.stats.chores,2);assert.equal(s.coins,balance+5);assert.equal(s.inventory.wheat,wheat+2,'the bonus is goods, not coins');
  assert.throws(()=>act(s,{type:'chore',id:'constructor'},now),/Choose/);
 });
 test('mastery counts field harvests, claims once and old crop counts receive credit',()=>{

@@ -79,9 +79,13 @@ begin
  select count(*) into n from public.live_event_players where event_id=p_event and qualified;
  per_player:=least((e.rewards->>'diamondMax')::integer,(e.rewards->>'diamondMin')::integer+floor(sqrt(n::numeric/(e.rewards->>'participantStep')::integer))::integer);
  budget:=least((e.rewards->>'poolCap')::integer,n*per_player);
- -- Completed players are ordered by completion time, UUID as deterministic tie-break.
+ -- Completed players are ordered by completion time, UUID as deterministic tie-break. The first three also win a
+ -- podium prize on top (1st +300 coins +2 diamonds, 2nd +200 +1, 3rd +100 +1); the daily diamond cap still applies at claim.
+ -- Live since 2026-09-22 (migration harvest_event_podium_prizes, also in live-events-podium.sql).
  with ranked as (select player_id,row_number() over(order by last_at,player_id) as rank from public.live_event_players where event_id=p_event and qualified)
- update public.live_event_players p set coins=(e.rewards->>'coins')::integer,diamonds=greatest(0,least(per_player,budget-((r.rank-1)*per_player)::integer)) from ranked r where p.event_id=p_event and p.player_id=r.player_id;
+ update public.live_event_players p set coins=(e.rewards->>'coins')::integer+(case r.rank when 1 then 300 when 2 then 200 when 3 then 100 else 0 end),
+  diamonds=greatest(0,least(per_player,budget-((r.rank-1)*per_player)::integer))+(case r.rank when 1 then 2 when 2 then 1 when 3 then 1 else 0 end)
+  from ranked r where p.event_id=p_event and p.player_id=r.player_id;
  update public.live_events set settled_at=now(),participants=(select count(*) from public.live_event_players where event_id=p_event),qualified=n,diamond_pool=budget where id=p_event;
 end $$;
 create or replace function public.harvest_event_claim(p_player uuid,p_event uuid) returns jsonb language plpgsql security invoker set search_path='' as $$
@@ -101,6 +105,9 @@ begin
  update public.live_event_players set claimed_at=now(),paid_diamonds=paid where event_id=p_event and player_id=p_player;
  return jsonb_build_object('message','Event rewards collected!','coins',p.coins,'diamonds',paid);
 end $$;
+-- Live since 2026-09-22 (migration harvest_retention_account_eligibility_permissions): the progress trigger reads these
+-- three columns as service_role; without them every farm save failed.
+grant select(id,created_at,email_confirmed_at) on auth.users to service_role;
 revoke all on function public.harvest_event_validate(),public.harvest_event_progress(),public.harvest_event_settle(uuid),public.harvest_event_claim(uuid,uuid) from public,anon,authenticated;
 grant execute on function public.harvest_event_validate(),public.harvest_event_progress(),public.harvest_event_settle(uuid),public.harvest_event_claim(uuid,uuid) to service_role;
 commit;
