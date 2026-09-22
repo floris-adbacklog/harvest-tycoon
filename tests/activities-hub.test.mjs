@@ -24,6 +24,11 @@ test('the hub renders all four stops as tappable cards with a live status, and o
  assert.match(ui,/\$\('activities-hub-grid'\)\.querySelectorAll\('\[data-open-station\]'\)\.forEach\(b=>b\.onclick=\(\)=>open\(b\.dataset\.openStation\)\);/,'tapping a card opens that station');
  assert.match(ui,/function stopStatus\(s\)\{/);
  assert.match(ui,/return \{open,openHub,refresh,tick\};/,'openHub is part of the module\'s public surface');
+ // Regression: a card once showed a checkmark in front of "Ready to help" for a stop already counted this round — read as both
+ // done and not done at once. The round strip already has its own checkmark badge for that; the card's own pill just says what
+ // tapping it now would start.
+ const hubGrid=ui.slice(ui.indexOf("$('activities-hub-grid').innerHTML="),ui.indexOf(';',ui.indexOf("$('activities-hub-grid').innerHTML=")+40));
+ assert.doesNotMatch(hubGrid,/inRound/,'the card status pill no longer repeats the round checkmark');
 });
 test('the round strip (in the hub and in a station\'s own dialog) is clickable: tap another stop to jump straight there',()=>{
  const ui=read('public/activities-ui.js');

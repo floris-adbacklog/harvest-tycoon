@@ -27,7 +27,10 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
  function renderHub(){
   const all=statuses(),round=state.activities?.round??[];
   $('activities-hub-round').innerHTML=roundStrip(all,round);bindRoundStrip($('activities-hub-round'));
-  $('activities-hub-grid').innerHTML=all.map(s=>{const status=stopStatus(s);return `<button class="building-card" data-open-station="${s.station}">${art(`activity-${s.station}`)}<span class="building-card-info"><strong>${s.name}</strong><span class="building-status ${status.kind}">${s.inRound?'<i data-lucide="check" data-line-icon aria-hidden="true"></i> ':''}${status.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
+  // Whether a stop already counted toward this round is the strip's job, above (its own colour and a checkmark badge); repeating that
+  // here too, in front of "Ready to help", only made the pill read as if it were both done and still to do. The card just says what
+  // tapping it now would start.
+  $('activities-hub-grid').innerHTML=all.map(s=>{const status=stopStatus(s);return `<button class="building-card" data-open-station="${s.station}">${art(`activity-${s.station}`)}<span class="building-card-info"><strong>${s.name}</strong><span class="building-status ${status.kind}">${status.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
   $('activities-hub-grid').querySelectorAll('[data-open-station]').forEach(b=>b.onclick=()=>open(b.dataset.openStation));
   lastSignature=signature();refreshArt();
  }
