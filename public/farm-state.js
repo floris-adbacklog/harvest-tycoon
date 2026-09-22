@@ -73,6 +73,10 @@ export const FACTORY_LEVEL=50;
 export const FACTORY_COST=100000;
 export const FACTORY_TIME_FACTOR=2;
 export const FACTORY_HONEY={coins:5000,batch:50,duration:8100000,xp:50};   // 100 coins a honey; 135 minutes is twice what a hive needs for 50 (45 an hour)
+// Levels 10-20 otherwise cost every production building the exact same coins to upgrade (see ESTATE_UPGRADES) —
+// fine for a 100-1,400 coin building, but the Factory alone was built for 100,000. Doubled so reaching a full
+// Factory stays a real, distinct investment instead of the cheapest building's own upgrade ladder.
+export const FACTORY_UPGRADE_MULTIPLIER=2;
 export const BUILDINGS = Object.freeze({
  familyhall:{name:'Family Hall',tagline:'Grow together with your Farm Family.',icon:'users',model:'house_008',type:'family',minLevel:FAMILY_MIN_LEVEL},
  farmhouse:{name:'Farmhouse',tagline:'Room for your next big idea.',icon:'house',model:'house_010',type:'farm',upgradeCost:140},
@@ -536,8 +540,9 @@ export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
  const level=state.buildings[building].level;
  const voucher=state.boosts?.upgradeCredits>0?.5:1;
- if(level>=BASE_BUILDING_LEVEL){const step=level<MAX_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]:null;return step?Math.ceil(step.coins*voucher):null;}
- return Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)))*voucher);
+ const factoryPrice=building==='factory'?FACTORY_UPGRADE_MULTIPLIER:1;
+ if(level>=BASE_BUILDING_LEVEL){const step=level<MAX_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]:null;return step?Math.ceil(step.coins*voucher*factoryPrice):null;}
+ return Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)))*voucher*factoryPrice);
 }
 // What a new farm starts with, so the first minutes are not spent waiting: coins for seeds and a second egg slot, corn to sell or to
 // mix into feed at the Mill, wheat, ten animal feed for the chickens (ten batches of eggs), and barley for the Mill's feed recipe once

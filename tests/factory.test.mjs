@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {createLegacyFarm} from './legacy-farm.mjs';
-import {createFarm,applyFarmAction,normalizeFarm,xpForLevel,levelOf,recipeAvailability,recipeUnlocked,recipeUnlockHint,recipeDuration,recipeValue,productionSlots,productionSpeed,productionJobs,upgradeCost,buildingEligible,buildingUnlocked,buildingCost,factoryBatches,marketQuote,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,CROPS,ITEMS,FACTORY_LEVEL,FACTORY_COST,FACTORY_TIME_FACTOR,FACTORY_HONEY,MAX_BUILDING_LEVEL,SINGLE_BATCH_COST,BOOSTS,QUESTS} from '../game/farm-state.js';
+import {createFarm,applyFarmAction,normalizeFarm,xpForLevel,levelOf,recipeAvailability,recipeUnlocked,recipeUnlockHint,recipeDuration,recipeValue,productionSlots,productionSpeed,productionJobs,upgradeCost,buildingEligible,buildingUnlocked,buildingCost,factoryBatches,marketQuote,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,CROPS,ITEMS,FACTORY_LEVEL,FACTORY_COST,FACTORY_TIME_FACTOR,FACTORY_HONEY,FACTORY_UPGRADE_MULTIPLIER,MAX_BUILDING_LEVEL,SINGLE_BATCH_COST,BOOSTS,QUESTS} from '../game/farm-state.js';
 import {ANCHORS,anchorAt} from '../public/farm-layout.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,21,12);
@@ -19,7 +19,7 @@ test('the Factory is an endgame building: level 50, 100,000 coins, twenty levels
  s.xp=xpForLevel(49);assert.equal(buildingEligible(s,'factory'),false);assert.throws(()=>act(s,{type:'construct',building:'factory'}),/level|unlock|open/i);assert.equal(s.coins,1e9);
  s.xp=xpForLevel(50);assert.equal(levelOf(s),50);assert.equal(buildingEligible(s,'factory'),true);assert.equal(buildingCost(s,'factory'),100000);assert.equal(buildingUnlocked(s,'factory'),false,'it has to be bought');
  act(s,{type:'construct',building:'factory'});assert.equal(s.coins,1e9-100000);assert.equal(buildingUnlocked(s,'factory'),true);
- assert.equal(upgradeCost(s,'factory'),Math.round(800*1.5),'it upgrades like every production building');
+ assert.equal(FACTORY_UPGRADE_MULTIPLIER,2);assert.equal(upgradeCost(s,'factory'),Math.round(800*1.5)*FACTORY_UPGRADE_MULTIPLIER,'same curve as every production building, just doubled');
  assert.equal(MAX_BUILDING_LEVEL,20);
 });
 test('every production recipe has one bulk version: quick goods x20, slow goods x10, in twice the time, with the same XP per ingredient',()=>{
@@ -96,9 +96,18 @@ test('the specialised buildings keep their point: a full Factory adds less than 
  assert.ok(regular(10)*10>factory(20,20)*3,'ten specialised buildings at level 10 outproduce a full Factory by far');
  assert.ok(factory(1,20)<regular(10),'a fresh Factory does not replace a level-10 building');
 });
-test('the Factory is bought with coins or diamonds and estate upgrades like the others, with the same levels 11-20',()=>{
+test('only the Factory\'s coin upgrade price is doubled; the diamond alternative and every other building are untouched',()=>{
+ const s=farm();
+ for(const [id,b] of Object.entries(BUILDINGS).filter(([,b])=>b.type==='production'&&b!==BUILDINGS.factory)){
+  s.buildings[id].level=1;assert.equal(upgradeCost(s,id),Math.round(b.upgradeCost*1.5),id);
+ }
+ s.buildings.factory.level=1;assert.equal(upgradeCost(s,'factory'),Math.round(BUILDINGS.factory.upgradeCost*1.5)*FACTORY_UPGRADE_MULTIPLIER);
+ const ui=read('public/economy-ui.js');
+ assert.match(ui,/key==='factory'\?`Costs \$\{FACTORY_UPGRADE_MULTIPLIER\}× a regular building's upgrade/,'and it says so on the upgrade panel itself');
+});
+test('the Factory is bought with coins or diamonds and estate-upgrades levels 11-20 like the others, just doubled',()=>{
  const s=farm();s.buildings.factory.level=10;
- assert.equal(upgradeCost(s,'factory'),400000,'the estate steps are the same for every building');
+ assert.equal(upgradeCost(s,'factory'),400000*FACTORY_UPGRADE_MULTIPLIER,'the same estate step every building shares, doubled for the Factory alone');
  s.buildings.factory.level=20;assert.equal(upgradeCost(s,'factory'),null);
  s.buildings.factory.level=1;const r=act(s,{type:'upgrade',building:'factory'});assert.equal(r.level,2);assert.equal(productionSlots(2,'factory'),1,'level 2 still has one slot');
  s.buildings.factory.level=4;act(s,{type:'upgrade',building:'factory'});assert.equal(s.buildings.factory.level,5);assert.equal(productionSlots(5,'factory'),2,'the second slot comes at level 5');

@@ -170,3 +170,12 @@ change): the "Bring this building to life" preview (shown while the Factory is s
 rows from `itemList(r.input)` directly, not `costList()` — bottled honey has no ingredients, only a 5,000-coin
 cost, so its row showed as a bare arrow into a honey icon, no coins mentioned at all. `previewCard()` now also
 shows the coin cost when a recipe has one, same as the working recipe list already did.
+
+Factory upgrades cost double (2026-09-22, live after the client is pushed AND `farm-api` is redeployed): every
+production building's levels 10-20 upgrade shared the exact same coin price (`ESTATE_UPGRADES`), fine for a
+100-1,400 coin building, but the Factory alone was built for 100,000 coins and effectively substitutes many
+buildings' worth of production. `FACTORY_UPGRADE_MULTIPLIER=2` (`game/farm-state.js`) doubles `upgradeCost` for the
+Factory only, at every level (1-9's own base price, and the shared 10-20 steps); nothing else — construction cost,
+production speed/slots, and the diamond-upgrade alternative — changed. The upgrade panel now also says so directly
+("Costs 2× a regular building's upgrade — one batch here is worth many elsewhere"), rather than a silent price
+difference. Test: `tests/factory.test.mjs`.
