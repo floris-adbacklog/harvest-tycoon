@@ -279,3 +279,5 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - **Juice**: floating field rewards are chips with pictures; phones get an XP ring around the level badge; a short
   vibration on harvest, sale, reward, diamonds and level-up (`public/haptics.js`, touch devices only); an empty
   market offers "Go to your fields" / "Open buildings".
+- **Tractor**: a status pill (Ready / Resting · Ns), the crop you plant as a chip that opens the crop picker, one card
+  per job with fields and a coin price (or why there is nothing to do), and the fuel rule as one small line.

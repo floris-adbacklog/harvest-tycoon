@@ -37,7 +37,7 @@
 .family-share-entry{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 16px;padding:14px 16px;border:1px solid #e0d5ac;border-radius:18px;background:linear-gradient(140deg,#f9efcc,#f0e5dd);text-align:left;color:inherit;cursor:pointer;box-shadow:0 2px 0 #e4d9b8}
 .family-share-entry:hover{border-color:#cdbb85}
 .family-share-entry>.game-art{width:52px;height:52px;flex-shrink:0;object-fit:contain}
-.family-share-entry>span{flex:1;min-width:0}
+.family-share-entry>span:not(.game-art){flex:1;min-width:0}
 .family-share-entry strong{display:block;font:600 18px 'Outfit',sans-serif;color:#453e28}
 .family-share-entry small{display:block;margin-top:3px;font-size:13px;line-height:1.4;color:#7c6f5c}
 .family-share-entry>svg{width:20px;height:20px;flex-shrink:0;color:#8a7a4a}
@@ -354,3 +354,36 @@
  .level-card .level-star{position:relative;overflow:visible}
  .level-card .level-star::after{content:'';position:absolute;inset:-4px;border-radius:15px;padding:3px;background:conic-gradient(#d99a26 calc(var(--xp,0)*1%),#eadfc9 0);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);pointer-events:none}
 }
+
+/* Tractor: a status pill, the crop you plant as a chip, one card per job with its fields and price. */
+.tractor-top{display:flex;align-items:center;gap:12px;margin:0 0 14px}
+.tractor-art{flex-shrink:0;display:grid;place-items:center;width:56px;height:56px;border-radius:16px;background:linear-gradient(145deg,#eef3f8,#dfe8f1)}
+.tractor-art>.game-art{width:46px;height:46px;object-fit:contain}
+.tractor-top>div{flex:1;min-width:0}
+.tractor-art>.game-art,.tractor-job-art>.game-art{flex:none}
+.tractor-top strong{display:block;font:600 17px 'Outfit',sans-serif;color:#453e28}
+.tractor-top div>span{display:block;margin-top:2px;font-size:13px;color:#807463}
+.tractor-state{flex-shrink:0;padding:5px 11px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font-size:12px;font-weight:800;white-space:nowrap}
+.tractor-state.is-resting{background:#f3ebdd;color:#8a6a2f}
+.tractor-seed{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:10px 12px;border:1px solid #ecdcae;border-radius:16px;background:#fff8e4;text-align:left;color:inherit;cursor:pointer}
+.tractor-seed>.game-art{flex:0 0 38px;width:38px;height:38px;object-fit:contain}
+.tractor-seed>span:not(.game-art){flex:1;min-width:0}
+.tractor-seed small{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#9b823a}
+.tractor-seed strong{display:block;font:600 16px 'Outfit',sans-serif;color:#453e28}
+.tractor-seed em{display:inline-flex;align-items:center;gap:4px;font-style:normal;font-size:13px;font-weight:700;color:#806322;white-space:nowrap}
+.tractor-seed em .game-art{width:18px;height:18px}
+.tractor-seed>svg{width:18px;height:18px;color:#a09684;flex-shrink:0}
+.tractor-jobs{display:grid;gap:8px}
+.tractor-job{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2;text-align:left;color:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+.tractor-job:hover:not(:disabled){border-color:#cdbb85;background:#fffaf0}
+.tractor-job:disabled{cursor:default;background:#f6f3ee;border-color:#ece6dc}
+.tractor-job:disabled .tractor-job-art{filter:grayscale(1);opacity:.5}
+.tractor-job:disabled strong{color:#9a9384}
+.tractor-job-art{flex-shrink:0;display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#efe6d8}
+.tractor-job-art>.game-art{width:32px;height:32px;object-fit:contain}
+.tractor-job-copy{flex:1;min-width:0}
+.tractor-job-copy strong{display:block;font:600 15px 'Outfit',sans-serif;color:#453e28}
+.tractor-job-copy small{display:block;margin-top:2px;font-size:12px;color:#807463}
+.tractor-job-cost{display:inline-flex;align-items:center;gap:4px;padding:5px 10px 5px 6px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:800;font-size:14px;white-space:nowrap}
+.tractor-job-cost .game-art{width:18px;height:18px}
+.tractor-foot{margin:14px 0 0;font-size:12px;line-height:1.5;color:#8a7d68}

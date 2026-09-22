@@ -27,3 +27,11 @@ test('an empty market offers the way forward',()=>{
  assert.match(ui,/data-market-empty>\$\{marketTab==='crops'\?'Go to your fields':'Open buildings'\}<\/button>/);
  assert.match(ui,/\[data-market-empty\]'\)\?\.addEventListener\('click',\(\)=>\{\$\('market-dialog'\)\.close\(\);if\(marketTab!=='crops'\)openBuildings\(\);\}\)/);
 });
+test('the tractor shows a status pill, the crop as a chip that opens the crop picker, and one card per job',()=>{
+ const ui=read('public/retention-ui.js'),css=read('public/retention.css');
+ assert.match(ui,/<span id="tractor-timer" class="tractor-state \$\{cooldown\?'is-resting':''\}">\$\{cooldown\?`Resting · \$\{cooldown\}s`:'Ready'\}<\/span>/);
+ assert.match(ui,/\$\('tractor-timer'\)\.textContent=s\?`Resting · \$\{s\}s`:'Ready';/,'the live countdown keeps the same wording');
+ assert.match(ui,/document\.querySelector\('\[data-tractor-crop\]'\)\.onclick=\(\)=>\{\$\('utility-dialog'\)\.close\(\);\$\('selected-crop-button'\)\?\.click\(\);\};/);
+ assert.match(ui,/<button class="tractor-job" data-tractor="\$\{mode\}"/);
+ assert.match(css,/\.tractor-seed>span:not\(\.game-art\)\{flex:1;min-width:0\}/,'a crop picture (a span) is never stretched like the text');
+});
