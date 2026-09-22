@@ -24,3 +24,9 @@ test('every game toast goes through the toast module',()=>{
  assert.match(game,/function toast\(message\)\{showToast\?\?=createToast\(\$\('toast'\)\);showToast\(message\);\}/);
 });
 import {readFileSync} from 'node:fs';
+test('goods and crops become chips too, with no dot between neighbouring chips, and helping-hand jobs get their own picture',()=>{
+ const {icon,html}=toastParts('Job complete! +48 XP · +1 Animal feed');
+ assert.equal(icon,'helping-hand');
+ assert.match(html,/<b class="toast-chip is-xp">[\s\S]*\+48 XP<\/b> <b class="toast-chip is-item">[\s\S]*data-art="feed"[\s\S]*\+1 Animal feed<\/b>/);
+ assert.match(toastParts('Bonus: +2 wheat!').html,/<b class="toast-chip is-item">[\s\S]*\+2 wheat<\/b>!/);
+});

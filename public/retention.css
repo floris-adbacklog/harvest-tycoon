@@ -440,3 +440,5 @@
  #boost-dialog .vip-plan button{white-space:nowrap;padding-inline:6px;font-size:13px}
 }
 @media(max-width:340px){#boost-dialog .vip-plans{grid-template-columns:1fr}}
+.toast-chip.is-item{background:#e6efdc;color:#42632e}
+.toast-chip .game-art{flex:none}
