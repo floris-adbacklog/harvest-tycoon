@@ -4,6 +4,19 @@
 
 .level-up-rewards{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:20px 0 32px}.level-up-rewards strong{padding:12px 16px;background:#f5e5ac;border-radius:14px}.level-up-rewards strong+strong{background:#dfeff7;color:#397391}
 
+/* A gift from the admin (public/player-profiles.js). Same celebration look as level-up, its own small dialog
+   since the content shape (amounts + an optional note, no level/unlocks) does not fit that one. */
+#gift-dialog{box-sizing:border-box;width:min(400px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:28px 24px 24px;border:1px solid #dfd3ae;border-radius:24px;background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 65%);text-align:center;color:#34432d;overflow:auto;position:relative}
+#gift-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
+#gift-dialog h2{font:700 30px 'Outfit',sans-serif;margin:8px 0}#gift-dialog p{font-size:14px;line-height:1.6}
+.gift-rewards{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:18px 0}
+.gift-rewards strong{display:inline-flex;align-items:center;gap:7px;padding:12px 16px;border-radius:14px;background:#eef2df}
+.gift-rewards strong>.game-art{width:22px;height:22px}
+.gift-rewards .reward-coins{background:#f5e5ac}.gift-rewards .reward-xp{background:#e6ecfa;color:#39518f}.gift-rewards .reward-diamonds{background:#dfeff7;color:#397391}
+.gift-message{margin:16px 0 0;padding:14px;border-radius:14px;background:#f2ede3;font-style:italic;color:#5d5641;overflow-wrap:anywhere}
+.gift-done{width:100%;justify-content:center;min-height:48px;margin-top:22px}
+@media(max-width:360px){#gift-dialog{padding:24px 16px}}
+
 #level-up-dialog li{grid-template-columns:48px minmax(0,1fr);align-items:center;text-align:left;gap:12px}#level-up-dialog li>.game-art{width:48px;height:48px;object-fit:contain}#level-up-dialog li>div{min-width:0;display:grid;gap:4px}.unlock-roadmap>.roadmap-entry{display:flex;align-items:center;gap:12px}.roadmap-entry>.game-art{width:40px;height:40px;flex-shrink:0;object-fit:contain}.roadmap-entry>div{display:grid;gap:4px;min-width:0}.roadmap-entry strong{overflow-wrap:anywhere}
 /* Locked content stays readable; artwork and surfaces carry the disabled state. */
 .future-unlocks summary{min-height:44px;display:flex;align-items:center;gap:10px;line-height:1.4;list-style:inside}

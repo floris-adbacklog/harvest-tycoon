@@ -21,6 +21,23 @@ test('failed server writes do not change state or read old browser saves',async(
 test('direct game access cannot create a client without an authenticated parent',()=>{
  globalThis.window={parent:{}};assert.throws(()=>createFarmClient({},{}),/Sign in/);
 });
+test('a gift on the load response is handed to onGift once, alongside the state it arrived with',async()=>{
+ globalThis.localStorage={getItem(){throw new Error('unused');},setItem(){throw new Error('unused');}};
+ globalThis.document={body:{classList:{add(){},remove(){}}}};
+ const gift={coins:500,xp:0,diamonds:0,message:'Enjoy!'};
+ globalThis.window={parent:{harvestBridge:{serverNow:Date.now(),request:async()=>({state:{coins:680},serverNow:Date.now(),gift})}}};
+ const gifts=[],state={coins:180};const client=createFarmClient(state,{onChange(){},onStatus(){},onGift:g=>gifts.push(g)});
+ await client.refresh();
+ assert.deepEqual(gifts,[gift]);assert.equal(state.coins,680);
+});
+test('no gift field means onGift is never called',async()=>{
+ globalThis.localStorage={getItem(){throw new Error('unused');},setItem(){throw new Error('unused');}};
+ globalThis.document={body:{classList:{add(){},remove(){}}}};
+ globalThis.window={parent:{harvestBridge:{serverNow:Date.now(),request:async()=>({state:{coins:180},serverNow:Date.now()})}}};
+ const gifts=[],state={coins:180};const client=createFarmClient(state,{onChange(){},onStatus(){},onGift:g=>gifts.push(g)});
+ await client.refresh();
+ assert.deepEqual(gifts,[]);
+});
 test('an expected game-rule rejection does not show a broken connection',async()=>{
  globalThis.document={body:{classList:{add(){},remove(){}}}};
  globalThis.window={parent:{harvestBridge:{serverNow:Date.now(),request:async()=>{throw Object.assign(new Error('Choose a dry seedling.'),{code:'ACTION_REJECTED'});}}}};

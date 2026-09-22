@@ -34,6 +34,7 @@ const state = structuredClone(window.harvestInitialFarm.state);
 state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
 const initialChapterReward=window.harvestInitialFarm.chapterReward;
 const initialLevelReward=window.harvestInitialFarm.levelReward;
+const initialGift=window.harvestInitialFarm.gift;
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
@@ -43,7 +44,7 @@ const familyDecor=[],factoryDecor=[],models=new Map(), plots=[], animals=[], par
 let familyUI,progression,economy,retention,growth,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
-const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
+const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
 const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 // Pacing measurements go to the page around the game (see src/analytics.js); they carry numbers only.
@@ -66,6 +67,20 @@ modelNames.push('house_008','pointer_002','table_002','garden_bed_002','firewood
 const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
 let toastTimer;
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3200);}
+// A gift from the admin (public/player-profiles.js, floris@millstone.nl only) picked up on this farm's next
+// load and cleared server-side (farm-api index.ts). The message, if any, is set with textContent — never HTML —
+// so there is nothing here that needs escaping.
+function giftPopup(gift){
+ if(!gift)return;
+ const rewards=[];
+ if(gift.coins)rewards.push(`<strong class="reward-coins">${art('coins')}+${gift.coins.toLocaleString('en-US')} coins</strong>`);
+ if(gift.xp)rewards.push(`<strong class="reward-xp">${art('xp')}+${gift.xp.toLocaleString('en-US')} XP</strong>`);
+ if(gift.diamonds)rewards.push(`<strong class="reward-diamonds">${art('diamonds')}+${gift.diamonds.toLocaleString('en-US')} diamonds</strong>`);
+ $('gift-rewards').innerHTML=rewards.join('');
+ const note=$('gift-message');
+ if(gift.message){note.textContent=`“${gift.message}”`;note.hidden=false;}else{note.textContent='';note.hidden=true;}
+ refreshArt();$('gift-dialog').showModal();
+}
 function icons(){refreshArt();}
 
 function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
@@ -531,6 +546,7 @@ function bindUI(){
  }});
  progression=createProgressionUI({state,isReady:()=>ready&&$('loading').hidden});
  if(initialLevelReward?.levels.length)progression.announce({...progressionChange(progressionSnapshot(state),state,initialLevelReward),catchUp:true});
+ if(initialGift)giftPopup(initialGift);
  mobileUI=createMobileUI({openUtility,resetView});
  $('save-status').onclick=()=>client.retry();
  new ResizeObserver(resize).observe(world);icons();

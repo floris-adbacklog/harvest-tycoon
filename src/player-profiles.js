@@ -28,6 +28,16 @@ export function renderPlayerProfile(player,now=Date.now()){
 export function renderPlayerSearch(players,now=Date.now()){
  return players.map(p=>`<button type="button" class="farmer-search-result" data-player-id="${esc(p.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${avatarImage(p.avatarId)}</span><span class="farmer-search-name"><strong>${esc(p.username)}${vipBadge(p.vipExpiresAt,now)}</strong><small>${p.family?esc(p.family.name):'No family yet'} · Level ${fmt(p.level)}</small></span>${presence(p.online)}<span aria-hidden="true">›</span></button>`).join('');
 }
+// Checked once per session and cached: only ever true for the one admin account, and only ever used to decide
+// whether to draw the gift form at all. The real gate is server-side (farm-api rejects anyone else outright), so
+// this cannot be tricked into granting access — at worst a wrong guess here just shows or hides a form.
+// Imported lazily, on first use, rather than at the top of the file: this module is also loaded directly by
+// tests that never touch the admin box, in a plain Node run where '@supabase/supabase-js' is not installed
+// (only Vite's build resolves it) — a top-level import would break every one of those tests to serve this one.
+let adminCheck=null;
+function checkAdmin(){
+ return adminCheck??=import('./supabase.js').then(({supabase})=>supabase?.auth.getUser()).then(result=>String(result?.data?.user?.email??'').trim().toLowerCase()==='floris@millstone.nl').catch(()=>false);
+}
 // Sequence tokens invalidate pending work as soon as the user types, switches
 // players, closes a dialog or leaves the page. Late responses cannot reopen it.
 export function createPlayerProfiles(bridge){
@@ -36,19 +46,45 @@ export function createPlayerProfiles(bridge){
  search.innerHTML='<label for="farmer-search-input">Find a farmer</label><div class="farmer-search-control"><input id="farmer-search-input" type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Search by player name…" aria-describedby="farmer-search-status"><button type="button" class="small-button" id="farmer-search-clear" hidden>Clear</button></div><p id="farmer-search-status" role="status">Enter at least 2 characters to search all farmers.</p><div id="farmer-search-results"></div>';
  board.querySelector('.leaderboard-filter').before(search);
  const dialog=document.createElement('dialog');dialog.id='player-profile-dialog';dialog.className='game-dialog farmer-profile-dialog';dialog.setAttribute('aria-labelledby','farmer-profile-title');
- dialog.innerHTML='<div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="farmer-profile-title">Farmer profile</h2></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="farmer-profile-content" aria-busy="false"></div><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p><button type="button" class="small-button farmer-profile-back">Back to leaderboard</button>';
+ dialog.innerHTML='<div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="farmer-profile-title">Farmer profile</h2></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="farmer-profile-content" aria-busy="false"></div><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p><div id="admin-grant" class="admin-grant" hidden></div><button type="button" class="small-button farmer-profile-back">Back to leaderboard</button>';
  document.body.append(dialog);
  const input=search.querySelector('input'),clear=search.querySelector('#farmer-search-clear'),results=search.querySelector('#farmer-search-results'),status=search.querySelector('#farmer-search-status');
- const content=dialog.querySelector('#farmer-profile-content'),profileStatus=dialog.querySelector('#farmer-profile-status');
- let searchSequence=0,profileSequence=0,timer,selected=null,returnFocus,disposed=false,clockOffset=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
+ const content=dialog.querySelector('#farmer-profile-content'),profileStatus=dialog.querySelector('#farmer-profile-status'),adminGrant=dialog.querySelector('#admin-grant');
+ // Built fresh per farmer, only for the admin account; everyone else never sees this box (still enforced again, for real, by the server).
+ function renderAdminGrant(playerId){
+  adminGrant.hidden=false;
+  adminGrant.innerHTML='<strong class="admin-grant-title">Admin gift</strong><div class="admin-grant-row"><label>Coins<input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-coins"></label><label>XP<input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-xp"></label><label>Diamonds<input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-diamonds"></label></div><label class="admin-grant-notify"><input type="checkbox" id="admin-grant-notify">Notify the player (a "Donation!" popup with the amounts)</label><textarea id="admin-grant-message" maxlength="200" rows="2" placeholder="Optional message, shown with the notification" hidden></textarea><button type="button" class="small-button" id="admin-grant-give">Give</button><p id="admin-grant-status" role="status"></p>';
+  const coinsInput=adminGrant.querySelector('#admin-grant-coins'),xpInput=adminGrant.querySelector('#admin-grant-xp'),diamondsInput=adminGrant.querySelector('#admin-grant-diamonds');
+  const notifyInput=adminGrant.querySelector('#admin-grant-notify'),messageInput=adminGrant.querySelector('#admin-grant-message');
+  const give=adminGrant.querySelector('#admin-grant-give'),grantStatus=adminGrant.querySelector('#admin-grant-status');
+  // The message field only makes sense once notify is on; it stays out of the way otherwise.
+  notifyInput.onchange=()=>{messageInput.hidden=!notifyInput.checked;};
+  give.onclick=async()=>{
+   const coins=Math.max(0,Math.floor(Number(coinsInput.value)||0)),xp=Math.max(0,Math.floor(Number(xpInput.value)||0)),diamonds=Math.max(0,Math.floor(Number(diamondsInput.value)||0));
+   if(!coins&&!xp&&!diamonds){grantStatus.textContent='Enter at least one amount.';return;}
+   const notify=notifyInput.checked,message=notify?messageInput.value.trim():'';
+   const parts=[coins&&`${coins} coins`,xp&&`${xp} XP`,diamonds&&`${diamonds} diamonds`].filter(Boolean).join(', ');
+   if(!confirm(`Give ${profileUsername??'this farmer'} ${parts}?${notify?' They will be notified.':''}`))return;
+   give.disabled=true;grantStatus.textContent='Giving…';
+   try{
+    const data=await bridge.request({operation:'admin_grant',playerId,coins,xp,diamonds,notify,message});
+    grantStatus.textContent=`Given: +${data.granted.coins} coins · +${data.granted.xp} XP · +${data.granted.diamonds} diamonds. New level: ${data.totals.level}.${notify?' Notified.':''}`;
+    coinsInput.value='0';xpInput.value='0';diamondsInput.value='0';messageInput.value='';
+   }catch(error){grantStatus.textContent=error.message;}
+   finally{give.disabled=false;}
+  };
+ }
+ let searchSequence=0,profileSequence=0,timer,selected=null,returnFocus,disposed=false,profileUsername=null,clockOffset=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
  function close(){dialog.close();}
  dialog.querySelector('.farmer-profile-close').onclick=close;dialog.querySelector('.farmer-profile-back').onclick=close;
  dialog.addEventListener('close',()=>{++profileSequence;selected=null;if(!disposed)(returnFocus?.isConnected?returnFocus:input).focus();});
  async function open(playerId){
-  if(disposed)return;returnFocus=document.activeElement;selected=playerId;++profileSequence;
+  if(disposed)return;returnFocus=document.activeElement;selected=playerId;profileUsername=null;++profileSequence;
   dialog.querySelector('#farmer-profile-title').textContent='Farmer profile';
   content.innerHTML='<p class="farmer-empty">Opening this farmer’s gate…</p>';profileStatus.textContent='';
+  adminGrant.hidden=true;adminGrant.innerHTML='';
   if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
+  checkAdmin().then(admin=>{if(!disposed&&admin&&selected===playerId&&dialog.open)renderAdminGrant(playerId);});
   await loadProfile(false);
  }
  async function loadProfile(quiet){
@@ -57,6 +93,7 @@ export function createPlayerProfiles(bridge){
    const data=await bridge.request({operation:'player_profile',playerId:id});
    if(disposed||ticket!==profileSequence||!dialog.open)return;
    const y=dialog.scrollTop;clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset);refreshVipBadges(dialog,Date.now()+clockOffset);
+   profileUsername=data.playerProfile.username;
    dialog.querySelector('#farmer-profile-title').textContent=`${data.playerProfile.username}'s profile`;
    profileStatus.textContent='Online status is based on activity in the last 30 minutes.';
    if(quiet)dialog.scrollTop=y;
