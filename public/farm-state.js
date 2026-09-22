@@ -310,8 +310,8 @@ export const QUESTS = Object.freeze([
  {title:'Corn master',description:'Harvest 750 corn.',stat:'harvest_corn',target:750,reward:6000},
  {title:'Pumpkin master',description:'Harvest 250 pumpkin.',stat:'harvest_pumpkin',target:250,reward:6000},
  // Starter quests: small, quick and paid in coins only (xp:0: with the beginner boost a farmer already levels fast), so the first minutes have
-// something to tick off every minute or two. On a guided
- // farm the quest list shows the cheapest first (see questGroups). Everything after them is unchanged: IDs never move.
+ // something to tick off every minute or two. On a guided farm the quest list shows the cheapest first (see questGroups). Everything after
+ // them is unchanged: IDs never move.
  {title:'Thirsty crops',description:'Water 3 growing crops.',stat:'watered',target:3,reward:20,xp:0},
  {title:'First customers',description:'Sell 5 items at the market.',stat:'sold',target:5,reward:25,xp:0},
  {title:'Show some care',description:'Give 2 crops extra care.',stat:'tended',target:2,reward:25,xp:0},
@@ -607,7 +607,6 @@ export function sellCrops(state,item='all',now=Date.now(),day,category,quantity)
  if(quantity!==undefined&&quantity>sellableStock(state,item,now))throw new Error(`Keep your first ${keptStock(state,item,now)} ${ITEMS[item].name.toLowerCase()} for now: you need them for your first steps. Sell what you grow or make on top of them; the rest is free to sell after your first 30 minutes.`);
  const amounts=Object.fromEntries(keys.map(k=>[k,quantity??sellableStock(state,k,now)]));
  const total=marketSaleValue(state,keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0),now);
-
  if(total===0){const kept=keys.filter(k=>keptStock(state,k,now)>0);throw new Error(kept.length?`Your starting ${kept.map(k=>ITEMS[k].name.toLowerCase()).join(' and ')} ${kept.length>1?'are':'is'} kept for your first steps. Harvest or make more to sell, or wait until your first 30 minutes are up.`:'Your basket is empty. Harvest or produce something first.');}
  const units=keys.reduce((v,k)=>v+amounts[k],0);
  for(const k of keys){state.inventory[k]-=amounts[k];state.stats['sold_'+k]=(state.stats['sold_'+k]??0)+amounts[k];}
