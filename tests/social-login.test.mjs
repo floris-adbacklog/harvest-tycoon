@@ -43,3 +43,9 @@ test('the privacy policy and the deletion page are public, linked from the sign-
   assert.match(text,/floris@millstone\.nl/);assert.match(text,/89795857/);assert.match(text,/<html lang="en">/);
  }
 });
+
+test('unknown pages get a friendly 404 in the same style, with the way back and no tracking',()=>{
+ const html=read('public/404.html');
+ assert.match(html,/<meta name="robots" content="noindex">/);assert.match(html,/<a class="legal-button nf-button" href="\/">Back to the farm<\/a>/);
+ assert.ok(!/<script/i.test(html),'no scripts');assert.match(html,/href="\/legal\.css"/,'absolute paths, so it works at any depth');
+});

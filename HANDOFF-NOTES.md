@@ -407,3 +407,5 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   harvest_purchases.player_id is ON DELETE RESTRICT and family_*, live_event_players, family_social_* and admin_grants
   are NO ACTION. Delete or anonymise those rows first (purchases: keep, the account then stays as an anonymised shell
   with its email changed), or ask for an admin delete function.
+- 404: public/404.html (Vercel serves it for every unknown URL): the farm behind a cream card with the tractor, a big
+  404, "This field is empty." and "Back to the farm"; noindex, no scripts, absolute paths so it works at any depth.
