@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {bindFarmInput,cameraDragDelta} from '../public/farm-input.js';
 import {OrthographicCamera,Vector3} from '../public/vendor/three.module.js';
-import {createQuestsUI,questGroups} from '../public/quests-ui.js';
+import {createQuestsUI,questGroups,questArt} from '../public/quests-ui.js';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {QUESTS,applyFarmAction} from '../game/farm-state.js';
 
@@ -82,16 +82,16 @@ class Element extends EventTarget{
  querySelector(selector){return this.children?.[selector]??null;}
  querySelectorAll(){return this.buttons??[];}
  clickTarget(target=this){const event=new Event('click');Object.defineProperty(event,'target',{value:target});this.dispatchEvent(event);}
- closest(selector){return selector==='[data-claim]'&&this.dataset.claim!==undefined||selector==='[data-quest-filter]'&&this.dataset.questFilter?this:null;}
+ closest(selector){return selector==='[data-claim-all]'&&this.dataset.claimAll!==undefined||selector==='[data-claim]'&&this.dataset.claim!==undefined||selector==='[data-quest-filter]'&&this.dataset.questFilter?this:null;}
 }
-function questFixture(state){
+function questFixture(state,{notify}={}){
  const elements=Object.fromEntries(['tasks-dialog','task-list','tasks-button','all-quests-mobile'].map(id=>[id,new Element()]));
  const close=new Element();elements['tasks-dialog'].children={'.close-dialog':close};
  const toolbar=new Element();toolbar.buttons=['ready','active','done'].map(key=>{const button=new Element();button.dataset.questFilter=key;button.children={span:new Element()};return button;});
  toolbar.children={'#quest-summary':new Element(),...Object.fromEntries(toolbar.buttons.map(b=>[`[data-quest-filter="${b.dataset.questFilter}"]`,b]))};
  const other=new Element();other.open=true;
  const doc={getElementById:id=>elements[id],createElement:()=>toolbar,querySelectorAll:()=>[other,...Object.values(elements).filter(e=>e.open)]};
- const ui=createQuestsUI({state,claim:id=>applyFarmAction(state,{type:'quest',id}),icons:()=>{},document:doc});
+ const ui=createQuestsUI({state,claim:id=>applyFarmAction(state,{type:'quest',id}),icons:()=>{},notify,document:doc});
  return {ui,elements,toolbar,other,close};
 }
 test('the Quests navigation button opens directly, resets scroll and can reopen',()=>{
@@ -115,4 +115,20 @@ test('pressed floating buttons retain their position instead of jumping away fro
  assert.doesNotMatch(pressed,/(?:transform|translate|left|top)\s*:/);
  const normal=css.match(/\.utility-label\{[^}]*transform:([^;}]*)/)[1];
  const active=css.match(/\.utility-label:active\{[^}]*transform:([^;}]*)/)[1];assert.equal(active,normal);
+});
+
+test('Claim all collects every ready quest, also ones a claim reveals, with one toast',async()=>{
+ const state=createFarm();for(const q of QUESTS.slice(0,40))state.stats[q.stat]=Math.max(state.stats[q.stat]??0,q.target);
+ const toasts=[],{elements}=questFixture(state,{notify:m=>toasts.push(m)});
+ elements['tasks-button'].clickTarget();
+ assert.match(elements['task-list'].innerHTML,/data-claim-all>Claim all</);
+ const all=new Element();all.dataset.claimAll='';elements['task-list'].clickTarget(all);
+ for(let i=0;i<200&&!toasts.length;i++)await new Promise(r=>setImmediate(r));
+ assert.equal(questGroups(state).ready.length,0,'nothing left to claim');
+ assert.equal(toasts.length,1);assert.match(toasts[0],new RegExp(`^${state.claimed.length} quests complete! \\+[\\d,]+ coins`));
+});
+test('every quest has its own picture: the crop, good, building or farm job it counts',()=>{
+ assert.match(questArt('made_eggs'),/data-art="eggs"/);assert.match(questArt('harvest_wheat'),/data-art="wheat"/);
+ assert.match(questArt('activity_apiary'),/data-art="activity-apiary"/);assert.match(questArt('watered'),/data-art="water"/);
+ assert.deepEqual([...new Set(QUESTS.map(q=>q.stat))].filter(stat=>questArt(stat).includes('data-art="quests"')),[]);
 });

@@ -392,7 +392,7 @@ function updateUI(){
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
-async function claim(id){try{const r=await runAction({type:'quest',id});updateUI();toast(`Quest complete! +${r.coins} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
+async function claim(id,{quiet=false}={}){try{const r=await runAction({type:'quest',id});updateUI();if(!quiet)toast(`Quest complete! +${r.coins} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;}
 function resize(){
  if(!renderer||!camera)return;
@@ -546,7 +546,7 @@ function bindUI(){
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  rookie=createRookieUI({state});
- quests=createQuestsUI({state,claim,icons});
+ quests=createQuestsUI({state,claim,icons,notify:toast});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,guide:target=>{
   if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':'Tap a ready crop or its basket.');}

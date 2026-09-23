@@ -325,3 +325,13 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   level pill; the explanatory paragraph is gone. tests/journal.test.mjs covers it.
 - Honey in the journal also counts the jars collected at the Apiary (finished Apiary jobs × 3), not only Factory
   honey; the "goods made" tile stays production only, like the Goods produced leaderboard.
+
+## Quests
+- Top: one progress line ("N of 150 quests done" + bar) instead of the intro sentence and the summary text; the
+  Ready/In progress/Completed tabs use the light tab style with a count badge (green for Ready).
+- Each quest is a card with its own picture (questArt: the crop/good/building/job it counts, e.g. made_eggs → eggs,
+  watered → water can), a bar with "3 / 12", and the reward as a coin chip plus an XP chip (quests always paid
+  XP; it was never shown). Ready cards are green with a Claim button; completed cards say "Completed ✓".
+- Claim all (two or more ready): shows the total coins and XP and claims one by one with the normal quest action
+  (no server change), continuing while newly revealed quests are ready too; one toast at the end.
+  game.js claim(id,{quiet}) skips the per-quest toast for this.
