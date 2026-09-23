@@ -730,3 +730,123 @@
  #tasks-dialog .quest-filters button{font-size:12px}
  #tasks-dialog .quest-filters span{margin-left:3px;padding:0 4px;min-width:18px;height:18px}
 }
+
+/* Farm stall: one card with the coins waiting, when it is full and Collect; three facts; the next level as gains. */
+#estate-content .stall-hero{display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:14px;margin:0 0 10px;padding:14px;border:1px solid #e8d7a8;border-radius:18px;background:linear-gradient(135deg,#fbefc8,#fdf8ec)}
+#estate-content .stall-hero.is-full{border-color:#dfb65a;box-shadow:0 0 0 3px #f3cb5e33}
+#estate-content .stall-art{display:grid;place-items:center;width:64px;height:64px;border-radius:16px;background:#fffaf0}
+#estate-content .stall-art>.game-art{width:56px;height:56px;object-fit:contain}
+#estate-content .stall-copy{min-width:0;display:grid;gap:3px}
+#estate-content .stall-copy>span{font-size:12px;color:#8a7550}
+#estate-content #stall-balance{display:flex;align-items:center;gap:6px;font:600 28px/1.1 'Outfit',sans-serif;color:#5d4a22}
+#estate-content #stall-balance>.game-art{flex:none;width:26px;height:26px}
+#estate-content .stall-copy progress{width:100%;height:7px;margin:4px 0 1px}
+#estate-content #stall-capacity{font-size:12px;color:#8a7550}
+#estate-content .stall-hero.is-full #stall-capacity{font-weight:700;color:#9a6a12}
+#estate-content #stall-collect{min-height:44px;padding:8px 18px}
+#estate-content .stall-facts{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+#estate-content .stall-facts>span{display:inline-flex;align-items:center;gap:5px;padding:5px 10px 5px 6px;border:1px solid #e8ded2;border-radius:999px;background:#f6f0e8;font-size:13px;color:#766653}
+#estate-content .stall-facts b{color:#4f4331}
+#estate-content .stall-facts .game-art{width:18px;height:18px}
+#estate-content .stall-facts svg{width:16px;height:16px;color:#9a8367}
+#estate-content .stall-upgrade{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2}
+#estate-content .stall-upgrade>div{min-width:0;display:grid;gap:5px}
+#estate-content .stall-upgrade strong{font:600 16px 'Outfit',sans-serif;color:#453e28}
+#estate-content .stall-upgrade>div>span:not(.stall-gains){font-size:12px;color:#807463}
+#estate-content .stall-gains{display:flex;flex-wrap:wrap;gap:5px}
+#estate-content .stall-gains>b{padding:2px 8px;border-radius:999px;background:#e2ecd6;font-size:12px;color:#3f6b2c}
+#estate-content #stall-upgrade{flex:none;min-height:42px;padding:8px 14px;gap:8px;white-space:nowrap}
+@media(max-width:420px){
+ #estate-content .stall-hero{grid-template-columns:52px minmax(0,1fr)}
+ #estate-content .stall-art{width:52px;height:52px}
+ #estate-content .stall-art>.game-art{width:46px;height:46px}
+ #estate-content #stall-collect{grid-column:1/-1;width:100%}
+ #estate-content .stall-upgrade{flex-wrap:wrap}
+ #estate-content #stall-upgrade{width:100%}
+}
+
+/* Farm buildings: one compact row per building (picture, name, level, a coloured status), two columns on desktop;
+   the tractor, silo and delivery cart as three small tiles underneath. */
+#buildings-dialog .building-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
+#buildings-dialog .building-card{display:flex;align-items:center;gap:12px;min-height:0;margin:0;padding:10px 12px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2;text-align:left;box-shadow:none}
+#buildings-dialog .building-card:hover{border-color:#d8c7ae;background:#fdf9f1}
+#buildings-dialog .building-card-art{flex:none;display:grid;place-items:center;width:56px;height:56px;border-radius:14px;background:#f1e9dc}
+#buildings-dialog .building-card-art>img{width:50px;height:50px;object-fit:contain}
+#buildings-dialog .building-card-info{flex:1;display:grid;gap:2px;justify-items:start}
+#buildings-dialog .building-card strong{font:600 17px/1.2 'Outfit',sans-serif;color:#3f3827}
+#buildings-dialog .building-card small{margin:0;font-size:12px;color:#8a7c69}
+#buildings-dialog .building-card>svg{flex:none;width:18px;height:18px;color:#a8998a}
+#buildings-dialog .building-status{display:inline-flex;align-items:center;gap:4px;max-width:100%;margin-top:3px;padding:2px 8px;border-radius:999px;background:#eee6da;font-size:11px;font-weight:700;color:#766653;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#buildings-dialog .building-status.ready{background:#dcebcf;color:#3f6b2c}
+#buildings-dialog .building-status.working{background:#f6e8c6;color:#8a6624}
+#buildings-dialog .building-status.available{background:#e4ecd5;color:#42632e}
+#buildings-dialog .building-status.family{background:#e3e9f5;color:#3d4a86}
+#buildings-dialog .building-status .game-art{width:13px;height:13px}
+#buildings-dialog .building-card:has(.building-status.ready){border-color:#cfe0c3;background:#f3f9ec}
+#buildings-dialog .future-unlocks{margin-top:8px;padding:10px 12px}
+#buildings-dialog .future-unlocks .building-card{grid-column:auto;min-height:0}
+#buildings-dialog .future-unlocks-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-top:10px}
+#buildings-dialog .utility-shortcuts-title{margin:18px 0 8px;font:600 17px 'Outfit',sans-serif;color:#453e28}
+#buildings-dialog .utility-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}
+#buildings-dialog .utility-shortcuts button{flex-direction:column;justify-content:center;gap:6px;min-height:0;padding:10px 6px;border:1px solid #e6ddd2;border-radius:14px;background:#fbf8f2;font-size:12px;font-weight:700;color:#5b4f3c;text-align:center}
+#buildings-dialog .utility-shortcuts .game-art{width:34px;height:34px}
+@media(max-width:600px){
+ #buildings-dialog .building-catalog,#buildings-dialog .future-unlocks-grid{grid-template-columns:minmax(0,1fr)}
+ #buildings-dialog .building-card-art{width:50px;height:50px}
+ #buildings-dialog .building-card-art>img{width:44px;height:44px}
+ #buildings-dialog .building-card strong{font-size:16px}
+}
+
+/* Reward chips (coins, diamonds, XP), shared by daily challenges and delivery orders. */
+.reward-chips{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.reward-chips>b{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 4px;border:1px solid #ead9ad;border-radius:999px;background:#fff8e6;font-size:13px;color:#7a5d1e;white-space:nowrap}
+.reward-chips>b.is-diamonds{border-color:#c9e1ec;background:#eef7fb;color:#2f6a80}
+.reward-chips>b.is-xp{border-color:#d9def0;background:#f1f3fb;color:#3d4a86}
+.reward-chips .game-art{flex:none;width:18px;height:18px}
+
+/* Daily challenges and delivery orders: the same cards as the quest list. */
+#today-dialog .daily-reset{justify-content:flex-start;align-items:center;gap:6px;margin:10px 0 12px;font-size:12px;color:#8a7c69}
+#today-dialog .daily-reset svg{width:14px;height:14px}
+#today-content .daily-list{display:grid;gap:8px}
+#today-content .daily-bonus-card{display:flex;align-items:center;gap:12px;margin:0 0 10px;padding:10px 12px;border:1px solid #e8d7a8;border-radius:16px;background:linear-gradient(135deg,#fbefc8,#fdf8ec)}
+#today-content .daily-bonus-card.is-done{border-color:#cfe0c3;background:#f3f9ec}
+#today-content .daily-bonus-art{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:#fffaf0}
+#today-content .daily-bonus-art>.game-art{width:34px;height:34px}
+#today-content .daily-bonus-card>span:not(.daily-bonus-art){flex:1;min-width:0;display:grid;gap:5px}
+#today-content .daily-bonus-card strong{font:600 15px 'Outfit',sans-serif;color:#4a3c1c}
+#today-content .daily-bonus-card>b{flex:none;font:600 20px 'Outfit',sans-serif;color:#72521d}
+#today-content .daily-card{display:flex;align-items:flex-start;gap:12px;margin:0;padding:12px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2}
+#today-content .daily-card.is-ready{border-color:#cfe0c3;background:#f3f9ec}
+#today-content .daily-card.completed{opacity:.72;background:#f6f2ec}
+#today-content :is(.daily-card,.daily-order) .quest-art,#today-content .order-icon{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:#f1e9dc}
+#today-content .daily-card.is-ready .quest-art{background:#fffdf6}
+#today-content .quest-art>.game-art,#today-content .order-icon>.game-art{width:36px;height:36px;object-fit:contain}
+#today-content .quest-body{flex:1;min-width:0}
+#today-content .daily-card h3,#today-content .daily-order h3{font:600 17px/1.25 'Outfit',sans-serif;letter-spacing:0;color:#3f3827}
+#today-content .daily-card p{margin:2px 0 0;font-size:13px;line-height:1.45;color:#817463}
+#today-content .quest-meter{display:flex;align-items:center;gap:8px;margin-top:8px}
+#today-content .quest-meter progress{flex:1;min-width:0;height:7px;margin:0}
+#today-content .quest-meter span{flex:none;font-size:12px;font-weight:600;color:#7a6c58}
+#today-content .task-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+#today-content .task-bottom .primary-button{flex:none;min-height:38px;padding:7px 16px}
+#today-content .quest-state{font-size:12px;font-weight:600;color:#5d7a4a;white-space:nowrap}
+#today-content .delivery-summary{margin:0 0 10px;font-size:13px;color:#7a6c58}
+#today-content .delivery-summary b{color:#453e28}
+#today-content .delivery-summary span{font-weight:700;color:#3f6b2c}
+#today-content .daily-order{margin:0;padding:12px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2}
+#today-content .daily-order.commission{border-color:#e8d7a8;background:#fdf8ec}
+#today-content .daily-order.is-ready{border-color:#cfe0c3;background:#f3f9ec}
+#today-content .daily-order.completed{opacity:.72}
+#today-content .order-head{display:flex;align-items:center;gap:12px;margin:0 0 10px}
+#today-content .order-head>div{flex:1;min-width:0}
+#today-content .order-head small{display:block;margin:0 0 1px;font-size:11px;font-weight:600;color:#9a8457;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#today-content .order-head small b{color:#3f6b2c}
+#today-content .daily-order .ingredients{margin:0}
+#today-content .order-replace{margin-top:8px;padding-top:8px;border-top:1px dashed #e0d5c6}
+#today-content .order-replace summary{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#7a6c58;cursor:pointer}
+#today-content .order-replace summary .game-art{width:15px;height:15px}
+#today-content .order-replace p{margin:6px 0 8px;font-size:12px;line-height:1.5;color:#807463}
+@media(max-width:420px){
+ #today-content :is(.daily-card,.daily-order) .quest-art,#today-content .order-icon{width:40px;height:40px}
+ #today-content .quest-art>.game-art,#today-content .order-icon>.game-art{width:31px;height:31px}
+}

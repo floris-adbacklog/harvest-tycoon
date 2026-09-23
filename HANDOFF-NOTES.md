@@ -335,3 +335,17 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - Claim all (two or more ready): shows the total coins and XP and claims one by one with the normal quest action
   (no server change), continuing while newly revealed quests are ready too; one toast at the end.
   game.js claim(id,{quiet}) skips the per-quest toast for this.
+
+## Farm stall, Farm buildings, Daily challenges, Delivery orders
+- Farm stall: one card with the stall picture, coins waiting, a bar and "Full in 3h 12m" / "Full · collect to keep
+  earning" (gold ring when full), Collect beside it; three fact chips (coins an hour, storage, level); the upgrade
+  as "Level N" with gain chips (+18 an hour, +4h storage) and an Upgrade button with the price.
+- Farm buildings: intro sentence and Grow/Produce/Sell strip removed; each building is a compact row (picture,
+  name, level, coloured status pill: green ready, gold working, grey idle), two columns on desktop; "N recipes
+  ready" is gone. Tractor, Silo research and Delivery cart are three small tiles under "Around the farm".
+- Daily challenges: one bonus card ("Finish all three for a bonus" + chips, 0/3), then quest-style cards with a
+  picture (questArt), a bar and coin/diamond/XP chips; Claim only when done, "Collected ✓" after.
+- Delivery orders: one line "3 open orders · 3 ready to deliver"; each order shows tier + "+28% vs market", the
+  title, the goods (missing ones marked), reward chips and Deliver; the story, the explanation paragraph and the
+  "Market sale / Delivery bonus" line are gone. Replace sits in a small fold under the card.
+- Shared: .reward-chips in retention.css (coins, diamonds, XP) and rewardChips() in retention-ui.js.
