@@ -382,7 +382,7 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - public/privacy.html (https://www.harvesttycoon.com/privacy) and public/delete-account.html (/delete-account, for
   Meta's data deletion instructions), shared public/legal.css in the welcome page style. vercel.json rewrites give the
   clean URLs. Neither page loads a script (no GTM, no Pixel); tests/social-login.test.mjs checks that.
-- Controller: Millstone (trading under the name of Floris Meulensteen), Acacialaan 18, 2282 AX Rijswijk, KvK
+- Controller: Millstone, Acacialaan 18, 2282 AX Rijswijk, KvK
   89795857, floris@millstone.nl. Age: 16 and over (decided by the owner).
 - Content is based on the live setup as of 23 Sep 2026: Supabase (eu-central-1, Frankfurt) for auth/database/
   functions, email + password only (212 email identities, no social ones yet), Stripe Checkout, Resend (daily email
