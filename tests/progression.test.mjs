@@ -47,10 +47,11 @@ test('construction enforces ingredient suppliers, purchase price and one-time ow
  assert.throws(()=>act(s,{type:'construct',building:'mill'},now),/already/);assert.equal(s.coins,paid);
  const poor=createFarm(now);level(poor,2);poor.coins=99;assert.throws(()=>act(poor,{type:'construct',building:'mill'},now),/100 coins/);assert.equal(poor.coins,99);assert.ok(!buildingUnlocked(poor,'mill'));
 });
-test('every level has renewable play, every new building has a viable recipe and all chains open by 25',()=>{
- const s=createFarm(now);s.coins=100000;
+test('every level has renewable play, every new building has a viable recipe; the early game opens by 25 and the midgame by 47',()=>{
+ const s=createFarm(now);s.coins=10000000;
  const outputs=new Set();let cropCount=2;
- for(let n=1;n<=25;n++){
+ const early=key=>(BUILDING_LEVELS[key]??1)<=25,earlyRecipe=id=>(RECIPE_LEVELS[id]??1)<=25&&early(RECIPES[id].building);
+ for(let n=1;n<=47;n++){
   level(s,n);buyAvailable(s);
   const crops=Object.keys(CROPS).filter(k=>cropUnlocked(s,k));assert.ok(crops.includes('wheat')&&crops.includes('corn'));assert.ok(crops.length>=cropCount);cropCount=crops.length;
   for(const [key,b]of Object.entries(BUILDINGS))if(BUILDING_LEVELS[key]===n&&b.type==='production')assert.ok(Object.keys(RECIPES).some(id=>RECIPES[id].building===key&&recipeUnlocked(s,id)),`${key} lacks a usable first recipe`);
@@ -58,14 +59,20 @@ test('every level has renewable play, every new building has a viable recipe and
    for(const ingredient of Object.keys(r.input))assert.ok(itemAvailable(s,ingredient)||(ingredient==='feed'&&s.inventory.feed>0),`${n}: ${id} cannot obtain ${ingredient}`);
    Object.keys(r.output).forEach(k=>outputs.add(k));
   }
+  if(n===25){
+   assert.equal(cropCount,12);for(const key of Object.keys(BUILDINGS))if(early(key)&&key!=='factory')assert.ok(buildingUnlocked(s,key),key);
+   for(const id of Object.keys(RECIPES))if(RECIPES[id].building!=='factory'&&earlyRecipe(id))assert.ok(recipeUnlocked(s,id),id);
+   for(const key of Object.keys(FEATURE_NAMES))assert.ok(featureUnlocked(s,key),key);
+   assert.ok(outputs.has('harvesthamper')&&outputs.has('pickledbeans'));
+  }
  }
- assert.equal(cropCount,12);for(const key of Object.keys(BUILDINGS))if(key!=='factory')assert.ok(buildingUnlocked(s,key),key);   // the Factory is an endgame building (level 50)
+ // By 47 the midgame expansion is fully open too; the Factory stays the endgame building (level 50).
+ assert.equal(cropCount,15);for(const key of Object.keys(BUILDINGS))if(key!=='factory')assert.ok(buildingUnlocked(s,key),key);
  for(const id of Object.keys(RECIPES))if(RECIPES[id].building!=='factory')assert.ok(recipeUnlocked(s,id),id);
- for(const key of Object.keys(FEATURE_NAMES))assert.ok(featureUnlocked(s,key),key);
- assert.ok(outputs.has('harvesthamper')&&outputs.has('pickledbeans'));
+ assert.ok(['squashsoup','beeswax','wool','yarn','cloth','cider'].every(k=>outputs.has(k)));
  const levels=Object.entries(CROP_LEVELS).filter(([,n])=>n>1).sort((a,b)=>a[1]-b[1]);
- assert.deepEqual(levels.map(([k])=>k),['lettuce','barley','greenbeans','cabbage','cauliflower','pumpkin','redcabbage','sunflower','apples','berries']);
- assert.equal(new Set(levels.map(([,n])=>n)).size,10);
+ assert.deepEqual(levels.map(([k])=>k),['lettuce','barley','greenbeans','cabbage','cauliflower','pumpkin','redcabbage','sunflower','apples','berries','squash','polebeans','ciderapples']);
+ assert.equal(new Set(levels.map(([,n])=>n)).size,13);
 });
 test('levelled inventory from the Starter Pack cannot bypass seeds, recipes or building locks',()=>{
  const s=createFarm(now);for(const key of Object.keys(s.inventory))s.inventory[key]=100;
@@ -126,7 +133,10 @@ test('pre-update guided and legacy saves retain every prior unlock, balance, tim
   for(const key of access.buildings)assert.ok(buildingUnlocked(s,key),`${name}: ${key}`);
   for(const key of access.features)assert.ok(featureUnlocked(s,key),`${name}: ${key}`);
   for(const key of access.recipes)assert.ok(recipeUnlocked(s,key),`${name}: ${key}`);
-  for(const key of ['coins','diamonds','inventory','claimed','plots','daily','onboarding','levelRewards'])assert.deepEqual(s[key],state[key],`${name}: ${key}`);
+  for(const key of ['coins','diamonds','claimed','plots','daily','onboarding','levelRewards'])assert.deepEqual(s[key],state[key],`${name}: ${key}`);
+  // Every item the save had keeps its count; items added to the game since then start at zero.
+  for(const [key,n] of Object.entries(state.inventory))assert.equal(s.inventory[key],n,`${name}: inventory ${key}`);
+  for(const key of Object.keys(s.inventory))if(!(key in state.inventory))assert.equal(s.inventory[key],0,`${name}: new item ${key}`);
   assert.equal(levelOf(s),levelOf(state),`${name}: the level survives the shorter curve`);
   for(const key of Object.keys(state.buildings))assert.deepEqual(productionJobs(s.buildings[key]),productionJobs(state.buildings[key]),`${name}: jobs`);
   const migrated=structuredClone(s);normalizeFarm(s,now);assert.deepEqual(s,migrated,`${name}: migration must be idempotent`);

@@ -6,7 +6,9 @@ export const SPREAD=1.3;
 export const ANCHORS=Object.freeze({
  dairy:[-1,-13.2],silo:[5.6,-11.8],farmhouse:[-13.8,-10.2],familyhall:[-9.3,-20.5],preserves:[-15.2,-18.6],juicepress:[-1,-20.1],
  greenhouse:[5.6,-19],packing:[11.5,-17.2],coop:[13,-9.5],paddock:[17.9,-7],windmill:[12.8,-1.5],tractor:[-5.2,-.2],cart:[-6.3,3.8],factory:[16.2,21.9],
- chores:[-5.8,-10.7],stall:[-11.3,-2.6],mill:[-12.5,4],bakery:[-10.8,12],kitchen:[-12.4,18.2],apiary:[10.5,13.8],workshop:[-9.1,-14.7],pond:[17.6,15.2]
+ chores:[-5.8,-10.7],stall:[-11.3,-2.6],mill:[-12.5,4],bakery:[-10.8,12],kitchen:[-12.4,18.2],apiary:[10.5,13.8],workshop:[-9.1,-14.7],pond:[17.6,15.2],
+ // The midgame yards stand on new ground east of the coop and the Family Hall, where the trunk road now runs on to.
+ beeyard:[22.7,1.9],sheepbarn:[23.8,-15.4],glasshouse:[28.8,1.2],weaving:[26.2,8.5]
 });
 // Where a yard stands when that is not where it was designed (same compact grid; everything inside a yard moves along with it).
 // The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), the
@@ -18,7 +20,7 @@ export const YARD_CLEARANCE=5.4;
 
 // The roads, as designed on the compact grid: centre, size, height and depth in the ground. The long side grows with the farm.
 export const ROADS=Object.freeze([
- {x:-1,z:-4,width:48,depth:2.9,height:.13,y:-.045},{x:-6,z:3,width:2.9,depth:40,height:.13,y:-.035},{x:6.2,z:26,width:27,depth:2.4,height:.12,y:-.035},
+ {x:4.5,z:-4,width:59,depth:2.9,height:.13,y:-.045},{x:-6,z:3,width:2.9,depth:40,height:.13,y:-.035},{x:6.2,z:26,width:27,depth:2.4,height:.12,y:-.035},
  {x:-21,z:7,width:2.1,depth:41,height:.09,y:0},{x:-1,z:-23.3,width:42,depth:2.2,height:.09,y:0},{x:-1,z:31,width:45,depth:2.2,height:.09,y:0}
 ]);
 export const roadSize=road=>({width:road.width>road.depth?road.width*SPREAD:road.width,depth:road.depth>road.width?road.depth*SPREAD:road.depth});
@@ -37,6 +39,13 @@ export const currentZone=()=>current;
 export const wide=length=>length*SPREAD;
 export const anchorAt=id=>{const [x,z]=HOMES[id]??ANCHORS[id];return [x*SPREAD,z*SPREAD];};
 const yardCentres=Object.keys(ANCHORS).map(anchorAt);
+// Yards that reach further than the clearance around their middle: how far they run from their anchor (world units: west, east,
+// north, south). The Sheep Barn's pasture runs down to the road in front of it. Trees keep three steps clear of the edges, so
+// no crown hangs over a yard.
+export const YARD_EXTENT=Object.freeze({beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-4.2,4.2,-2.6,4.6],weaving:[-3,4.8,-4,5.5]});
+const EXTENT_MARGIN=3;
+const extents=Object.entries(YARD_EXTENT).map(([id,[west,east,north,south]])=>{const [x,z]=anchorAt(id);return [x+west,x+east,z+north,z+south];});
+export const outsideYardExtents=(x,z,margin=EXTENT_MARGIN)=>extents.every(([minX,maxX,minZ,maxZ])=>x<minX-margin||x>maxX+margin||z<minZ-margin||z>maxZ+margin);
 
 // The crops, from fence to fence and down to the last of the forty fields. Loose scenery keeps a step clear of them, however
 // many fields the farm has grown to (a bush that was outside the crops at 28 fields stands in them at 40).
@@ -48,8 +57,9 @@ export const factoryYard=()=>{const [x,z]=anchorAt('factory');return Object.free
 export const outsideFactory=(x,z,margin=0)=>{const r=factoryYard();return x<r.minX-margin||x>r.maxX+margin||z<r.minZ-margin||z>r.maxZ+margin;};
 
 // Moves a loose piece to the nearest free spot outside every yard and the crops, preferring the direction away from the nearest yard.
+// A piece that has to move never lands on a road.
 export function clearOfYards(x,z,clearance=YARD_CLEARANCE){
- const free=(px,pz)=>outsideFields(px,pz,FIELD_MARGIN)&&outsideFactory(px,pz,FIELD_MARGIN)&&yardCentres.every(([ax,az])=>Math.hypot(px-ax,pz-az)>=clearance-1e-6);
+ const free=(px,pz)=>outsideFields(px,pz,FIELD_MARGIN)&&outsideFactory(px,pz,FIELD_MARGIN)&&outsideYardExtents(px,pz)&&yardCentres.every(([ax,az])=>Math.hypot(px-ax,pz-az)>=clearance-1e-6);
  if(free(x,z))return [x,z];
  const [nx,nz]=yardCentres.reduce((best,c)=>Math.hypot(x-c[0],z-c[1])<Math.hypot(x-best[0],z-best[1])?c:best);
  const away=Math.hypot(x-nx,z-nz)<.001?0:Math.atan2(z-nz,x-nx);
@@ -57,7 +67,7 @@ export function clearOfYards(x,z,clearance=YARD_CLEARANCE){
   for(let turn=0;turn<=12;turn++){
    for(const sign of turn?[1,-1]:[1]){
     const angle=away+sign*turn*Math.PI/12,px=x+Math.cos(angle)*radius,pz=z+Math.sin(angle)*radius;
-    if(free(px,pz))return [px,pz];
+    if(free(px,pz)&&!onRoad(px-1,px+1,pz-1,pz+1))return [px,pz];
    }
   }
  }

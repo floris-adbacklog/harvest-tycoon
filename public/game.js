@@ -45,7 +45,7 @@ let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
-const familyDecor=[],factoryDecor=[],models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+const familyDecor=[],factoryDecor=[],yardDecor={beeyard:[],sheepbarn:[],glasshouse:[],weaving:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 let liveEvents,familyUI,progression,economy,retention,growth,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
@@ -69,6 +69,8 @@ modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','
 modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS);
 modelNames.push('coop_002','mountain_001','mountain_007');
 modelNames.push('house_008','pointer_002','table_002','garden_bed_002','firewood_001');
+// The midgame expansion: two crops and the four new yards.
+modelNames.push('plant_009','tree_010','apiary_002','apiary_003','sheep_002','sheep_003','hangar_006','greenhouse_004','house_018');
 const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
 
 let showToast;
@@ -119,13 +121,15 @@ function patch(x,z,width,depth,color,y=.005){
  mesh.rotation.x=-Math.PI/2;{const [px,pz]=place(x,z);mesh.position.set(px,y,pz);}mesh.receiveShadow=true;scene.add(mesh);return mesh;
 }
 function fenceLine(x,z,n,axis='x',size=2.2,style='fence_001',tintColor){
- const before=currentZone(),spots=fenceSegments(x,z,n,axis,size);
+ const before=currentZone(),spots=fenceSegments(x,z,n,axis,size),pieces=[];
  zone('fields');
  for(const [cx,cz] of spots){
   const seg=cloneModel(style,cx,cz,{width:size,rotation:axis==='z'?Math.PI/2:0});
   if(tintColor)tint(seg,tintColor);
+  pieces.push(seg);
  }
  zone(before);
+ return pieces;
 }
 function groundPatch(name,x,z,width,depth,color){
  const p=cloneModel(name,x,z,{width,depth,height:.16,y:.006});
@@ -233,6 +237,27 @@ function decorate(){
  animalAt('goat_001',17.8,-12,{width:1.5,rotation:-1.1},'dairy',4.2);
  // The chickens live at their coop, in the pen with the other animals.
  for(const [x,z,r] of [[10.6,-11.6,.2],[9.9,-8.6,2.1],[15.8,-7,3.1]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
+ // The midgame yards, on the new ground east of the coop and the Family Hall. Like every building that is still to come they
+ // stand there from the start, greyed out, with everything that belongs to them (yardDecor).
+ // The Bee Yard: a cluster of hives among sunflowers, tapped and greyed as one piece.
+ zone('beeyard');
+ addBuilding('beeyard',22.7,1.9,{height:1.5,rotation:.2,parts:[['apiary_003',21.4,2.8,{height:1.4,rotation:-.35}],['apiary_002',24,2.9,{height:1.35,rotation:.55}],['apiary_003',22.8,4,{height:1.3,rotation:.1}],['apiary_002',21.3,.8,{height:1.3,rotation:-.15}]]});
+ patch(22.7,2.4,6.2,5.6,0xb6bd88,.008);
+ for(const [x,z,h] of [[24.6,.4,1.45],[25.4,1.6,1.3],[19.8,2.2,1.4],[20.3,4.1,1.25],[24.9,4.4,1.35]])yardDecor.beeyard.push(cloneModel('plant_007',x,z,{height:h,rotation:-.55+x*.1}));
+ // The Sheep Barn faces its pasture, which runs down to the trunk road; the flock grazes in front of the doors.
+ zone('sheepbarn');
+ addBuilding('sheepbarn',23.8,-15.4,{width:5.4,height:4.4,depth:9});
+ yardDecor.sheepbarn.push(...fenceLine(20.5,-3.6,4),...fenceLine(19.4,-9.1,3,'z'),...fenceLine(28.2,-9.1,3,'z'),...fenceLine(20.5,-10.2,1),...fenceLine(27.1,-10.2,1));
+ for(const [model,x,z,r] of [['sheep_002',21.6,-7.9,.6],['sheep_003',24.4,-5.3,2.4],['sheep_002',26.5,-8.3,-1],['sheep_003',22.4,-5,1.3],['sheep_001',25.6,-6.9,3.6]])yardDecor.sheepbarn.push(animalAt(model,x,z,{width:1.5,rotation:r},'sheepbarn',r));
+ yardDecor.sheepbarn.push(cloneModel('hay_001',27,-4.7,{width:1.3,rotation:.3}),cloneModel('water_001',20.7,-4.8,{width:1.1}));
+ // The Glasshouse lies along the road, with raised beds and fertilizer beside it.
+ zone('glasshouse');
+ addBuilding('glasshouse',28.8,1.2,{width:5,height:2.5,depth:7.8,rotation:Math.PI/2});
+ yardDecor.glasshouse.push(cloneModel('garden_bed_001',25.7,4.7,{width:1.8}),cloneModel('garden_bed_001',27.8,4.7,{width:1.8}),cloneModel('bag_003',31.9,4.2,{height:.8,rotation:-.3}),cloneModel('water_001',32.4,-1.1,{width:1}));
+ // The Weaving Shed, south of the Glasshouse, with wool bales waiting at the door.
+ zone('weaving');
+ addBuilding('weaving',26.2,8.5,{width:4.4,height:3.8,depth:7.6});
+ yardDecor.weaving.push(cloneModel('bag_001',23.4,6.4,{height:.8,rotation:.4}),cloneModel('bag_002',23.2,7.3,{height:.72,rotation:-.2}),cloneModel('cart_004',23.6,11,{width:1.8,rotation:Math.PI/2}),cloneModel('case_003',28.9,5.4,{width:.9,rotation:.3}));
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
@@ -318,7 +343,7 @@ function drawCrop(i){
   if(p.crop){
    const c=CROPS[p.crop];
    if(c.perennial){
-    const o=cloneModel(c.model,0,0,{height:c.height,width:p.crop==='apples'?1.9:1.7,depth:p.crop==='apples'?1.9:1.7,rotation:.5});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
+    const o=cloneModel(c.model,0,0,{height:c.height,width:['apples','ciderapples'].includes(p.crop)?1.9:1.7,depth:['apples','ciderapples'].includes(p.crop)?1.9:1.7,rotation:.5});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
    }else if(p.crop==='pumpkin'){
     const o=cloneModel(c.model,0,0,{width:2.05,rotation:Math.PI/2});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
    }else{
@@ -336,7 +361,7 @@ function drawCrop(i){
  v.soil.traverse(n=>{if(n.isMesh)n.material.color.setHex(p.watered?0x8b8a82:0xc4b39a)});
  if(!p.crop){v.label.innerHTML='';v.label.className='plot-label';v.label.setAttribute('aria-label',`Field ${i+1}, empty. Plant ${CROPS[selectedCrop].name}.`);}
  else if(ripe){
-  if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art(['apples','berries','greenbeans'].includes(p.crop)?p.crop:'vegetables');
+  if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art(['apples','berries','greenbeans','squash','polebeans','ciderapples'].includes(p.crop)?p.crop:'vegetables');
   v.label.className='plot-label ready';v.label.setAttribute('aria-label',`Harvest ${CROPS[p.crop].name} from field ${i+1}`);
  }else{
   const remaining=p.readyAt-farmNow(),time=mobileLayout.matches?(remaining>=3600000?`${Math.ceil(remaining/3600000)}h`:remaining>=60000?`${Math.ceil(remaining/60000)}m`:`${Math.ceil(Math.max(0,remaining)/1000)}s`):formatDuration(remaining);
@@ -493,6 +518,8 @@ function addUtility(key,model,x,z,options){
 }
 function addBuilding(key,x,z,options){
  const object=cloneModel(BUILDINGS[key].model,x,z,options);object.userData.building=key;
+ // A yard of several pieces (the Bee Yard's hives) is one building: tapped, outlined and greyed out as one.
+ for(const [name,px,pz,partOptions] of options.parts??[])object.attach(cloneModel(name,px,pz,partOptions));
  const bounds=new THREE.Box3().setFromObject(object),height=bounds.max.y;
  const size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
  const hit=new THREE.Mesh(new THREE.BoxGeometry(size.x+.4,size.y+.3,size.z+.4),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
@@ -506,6 +533,7 @@ function addBuilding(key,x,z,options){
 function positionBuildingLabels(){
  for(const decor of familyDecor)setLocked(decor,!buildingEligible(state,'familyhall'));
  for(const decor of factoryDecor)setLocked(decor,!buildingEligible(state,'factory'));
+ for(const [key,list] of Object.entries(yardDecor))for(const decor of list)setLocked(decor,!buildingEligible(state,key));
  if(windmillRotor)setLocked(windmillRotor,!buildingEligible(state,'windmill'));
  farmLife?.position(camera,world.clientWidth,world.clientHeight,farmNow());
  for(const [key,v] of utilityViews){

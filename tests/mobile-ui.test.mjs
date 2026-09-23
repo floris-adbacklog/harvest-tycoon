@@ -107,7 +107,7 @@ test('quest filters expose rewards, new features and completed quests without lo
  const claim=new Element();claim.dataset.claim='0';elements['task-list'].clickTarget(claim);assert(state.claimed.includes(0));
  toolbar.clickTarget(toolbar.buttons[2]);assert.match(elements['task-list'].innerHTML,/Completed ✓/);
  toolbar.clickTarget(toolbar.buttons[1]);assert.match(elements['task-list'].innerHTML,new RegExp(QUESTS[32].title));
- const groups=questGroups(state);assert.equal(groups.ready.length+groups.active.length+groups.done.length,150);
+ const groups=questGroups(state);assert.equal(groups.ready.length+groups.active.length+groups.done.length,QUESTS.length);
 });
 test('pressed floating buttons retain their position instead of jumping away from the pointer',()=>{
  const css=readFileSync(new URL('../public/styles.css',import.meta.url),'utf8');

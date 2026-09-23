@@ -61,8 +61,8 @@ test('the scene is laid out through the zones, and the default is restored after
 
 test('the roads are one list, and the long side grows with the farm',()=>{
  const rects=roadRects();assert.equal(rects.length,ROADS.length);
- const first=rects[0],size=roadSize(ROADS[0]);assert.equal(size.width,48*SPREAD);assert.equal(size.depth,2.9);
- assert(Math.abs((first.maxX-first.minX)-48*SPREAD)<1e-9&&first.horizontal);assert(!rects[1].horizontal);
+ const first=rects[0],size=roadSize(ROADS[0]);assert.equal(size.width,59*SPREAD,'the trunk road runs on east to the midgame yards');assert.equal(size.depth,2.9);
+ assert(Math.abs((first.maxX-first.minX)-59*SPREAD)<1e-9&&first.horizontal);assert(!rects[1].horizontal);
 });
 test('a fence never stands on a road: where a road crosses, the line has a gap',()=>{
  zone(null);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction as act,CROPS,BUILDINGS,RECIPES,DAY_MS,xpForLevel,cropDuration,seedCost,recipeValue,dailyTasks,dailyOrders,productionJobs,BOOSTS} from '../game/farm-state.js';
+import {normalizeFarm,applyFarmAction as act,CROPS,STARTER_PACK_CROPS,BUILDINGS,RECIPES,DAY_MS,xpForLevel,cropDuration,seedCost,recipeValue,dailyTasks,dailyOrders,productionJobs,BOOSTS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,19,12),crops=['greenbeans','apples','berries'],buildings=['kitchen','juicepress','preserves'];
 function advanced(){const s=createFarm(now);s.xp=xpForLevel(20);s.coins=100000;s.diamonds=500;return s;}
 function open(s){for(const key of buildings)act(s,{type:'construct',building:key},now);}
@@ -52,7 +52,8 @@ test('Starter Pack SQL awards every crop once and all expansion assets exist',as
  const {readFileSync,existsSync}=await import('node:fs');
  const sql=readFileSync(new URL('../supabase/orchard-expansion.sql',import.meta.url),'utf8');
  const ids=[...sql.match(/foreach crop in array array\[([^\]]+)\]/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
- assert.deepEqual(ids.slice().sort(),Object.keys(CROPS).sort());assert.equal(new Set(ids).size,12);
+ assert.deepEqual(ids.slice().sort(),STARTER_PACK_CROPS.slice().sort());assert.equal(new Set(ids).size,12);
+ assert.deepEqual(STARTER_PACK_CROPS.filter(k=>!CROPS[k]),[],'every starter crop exists');
  for(const id of [...crops,'applejuice','applepie','berrypreserves','berrytart','stew',...buildings])assert.ok(existsSync(new URL(`../public/assets/icons/${id}.png`,import.meta.url)),id);
  for(const model of ['plant_006','tree_009','bush_003','house_011','hangar_005','hangar_002'])assert.ok(existsSync(new URL(`../public/assets/models/${model}.glb`,import.meta.url)),model);
 });

@@ -5,7 +5,7 @@ import {normalizeFarm,applyFarmAction,productionSlots,productionJobs,recipeValue
 import {createProductionCueTracker} from '../public/farm-audio.js';
 import {createBeginnerUI} from '../public/beginner-ui.js';
 const now=1789690000000;
-function farm(){const s=createFarm(now);s.xp=20000;for(const b of Object.values(s.buildings))b.built=true;s.coins=1000000;s.diamonds=500;for(const k of Object.keys(s.inventory))s.inventory[k]=1000;return s;}
+function farm(){const s=createFarm(now);s.xp=200000;for(const b of Object.values(s.buildings))b.built=true;s.coins=1000000;s.diamonds=500;for(const k of Object.keys(s.inventory))s.inventory[k]=1000;return s;}
 const act=(s,a,t=now)=>applyFarmAction(s,a,t);
 test('every production building permits exactly one simultaneous batch per level',()=>{
  for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&id!=='factory'))for(let level=1;level<=10;level++){

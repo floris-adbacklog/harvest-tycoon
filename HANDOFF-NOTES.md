@@ -2,6 +2,15 @@
 
 Work from THIS zip only. Do not restore older files from earlier chats. Run `npm test` before and after (448 tests pass for the avatar release; input ZIP baseline was 437).
 
+## Latest: midgame expansion, wave 1 (levels 28–47, 2026-09-23)
+- **Content** (all in `game/farm-state.js`, synced): crops Squash (L28, `plant_002`), Pole beans (L31, climbing, `plant_009`), Cider apples (L46, tree, `tree_010`); buildings Bee Yard (L34, 18,000), Sheep Barn (L37, 26,000), Glasshouse (L40, 40,000), Weaving Shed (L43, 55,000); goods squash soup, beeswax, wool, yarn, cloth, cider. 11 recipes (squash soup in the Kitchen, cider in the Juice Press). The Glasshouse turns fertilizer + coins into a crate of 6–8 vegetables; the Factory never mass-produces it (`MASS_RECIPES` skips `glasshouse`). 23 quests appended after "A small fortune" (quests are stored by index: append only), 3 daily pools, 7 village orders (L32–47), 5 commissions, and the new goods in late field expansions and estate upgrades.
+- **Farm** (`public/farm-layout.js`, `public/game.js`): the four yards stand on new ground east of the coop and Family Hall; the trunk road (`ROADS[0]`) now runs on to x≈44 and the two eastern backdrop hills in `farm-life.js` moved out. `YARD_EXTENT` keeps loose trees three steps clear of each yard (pasture included) and a tree that has to move never lands on a road. Fences, sunflowers and the flock are greyed out with their yard (`yardDecor`); the Bee Yard's hives are one tappable building (`addBuilding(..., {parts})`).
+- **Art**: item icons painted with ChatGPT (256 px PNG + WebP, `public/assets/icons/`); building pictures are renders of the GLB models. The icons for waves 2–3 (cherries, goat milk/cheese, candles, blanket, cherry jam/pie, prize produce, valley market, trade depot, estate workshop, ranch, grand fair) are already in the folder, unused until those waves.
+- **Supabase**: migration `harvest_midgame_wave1_items` is LIVE (`supabase/midgame-wave1.sql`): family gifts and requests accept the 9 new items, and the leaderboard totals count the new crops and goods. `harvest_commit_farm` untouched. Do not replay.
+- **To deploy**: farm-api (rules changed) and notify-hourly (`names.js` regenerated), then the frontend. Journal: Glasshouse crates count as crops picked, not goods made.
+- Tests: `tests/midgame-expansion.test.mjs` (unlock levels, full chains, Factory, orders timing, yard placement, assets). 688 pass.
+- Still to come: wave 2 (L50–70: Goat Shed, Craft Workshop, Valley Market, cherries, ranch) and wave 3 (L75–90: Estate Workshop, prize produce, Trade Depot + export orders, Grand Valley Fair).
+
 ## Latest: 20 selectable farmer avatars (2026-09-21)
 - Start from this complete ZIP. The authoritative input was `b99c8096-e03e-4563-8752-dd8178777ef1.zip`; none of the older projects was used as source.
 - Settings now starts with **Your farmer avatar**: current preview, expandable picker, 20 newly generated farmers + the original portrait, and an explicit Save avatar button. All are free cosmetics. Responsive 5/4/3-column grid with keyboard-operable radio controls, lazy-loaded transparent WebP assets.

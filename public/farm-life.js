@@ -20,9 +20,10 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=art(`activity-${id}`);label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
   views.set(id,{object,x:object.position.x,z:object.position.z,height,label});return object;
  }
- // Broad, low shapes fill the edges; higher mountains stay behind the farm.
+ // Broad, low shapes fill the edges; higher mountains stay behind the farm. The two in the east moved out to make room for the
+ // midgame yards.
  zone('exact');
- for(const [x,z,w,d,h,rotation] of [[-34,-21,25,20,5,.4],[-24,-34,26,21,6,1.1],[4,-37,30,22,5,-.3],[30,-28,23,22,5,.6],[-37,10,20,24,3,1.5],[31,6,20,24,2.4,.2]])scenery(x>0?'landscape_008':'landscape_004',x,z,{width:wide(w),depth:wide(d),height:h,rotation,y:-.25});
+ for(const [x,z,w,d,h,rotation] of [[-34,-21,25,20,5,.4],[-24,-34,26,21,6,1.1],[4,-37,30,22,5,-.3],[33,-33,23,22,5,.6],[-37,10,20,24,3,1.5],[44,12,20,24,2.4,.2]])scenery(x>0?'landscape_008':'landscape_004',x,z,{width:wide(w),depth:wide(d),height:h,rotation,y:-.25});
  for(const [x,z,w,d,h] of [[-43,-39,37,27,10],[-9,-53,38,23,9],[26,-47,35,22,8]])scenery('mountain_008',x,z,{width:wide(w),depth:wide(d),height:h,y:-.6});
  scenery('mountain_009',-46,-7,{width:wide(21),depth:wide(30),height:5,y:-.2});
  // Neighbouring agricultural strips echo the supplied demo without adding timers.

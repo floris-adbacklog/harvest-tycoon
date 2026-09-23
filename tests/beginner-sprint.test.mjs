@@ -80,8 +80,9 @@ test('every level pays at least one diamond, so the first level-ups are never em
 });
 
 test('twenty starter quests are appended after the old ones: small, unique and built on counters the game already keeps',()=>{
- const starters=QUESTS.slice(STARTER_QUESTS.first);
- assert.equal(STARTER_QUESTS.first,130);assert.equal(starters.length,STARTER_QUESTS.count);assert.equal(starters.length,20);assert.equal(QUESTS.length,150);
+ const starters=QUESTS.slice(STARTER_QUESTS.first,STARTER_QUESTS.first+STARTER_QUESTS.count);
+ assert.equal(STARTER_QUESTS.first,130);assert.equal(starters.length,STARTER_QUESTS.count);assert.equal(starters.length,20);assert.equal(QUESTS.length,173);
+ assert.equal(QUESTS[STARTER_QUESTS.first+STARTER_QUESTS.count].title,'A buzzing corner','the midgame quests come after the starters');
  assert.equal(QUESTS[129].title,'Pumpkin master','the old quests did not move');
  assert.equal(new Set(QUESTS.map(q=>q.title)).size,QUESTS.length,'every title is unique');
  const known=new Set(QUESTS.slice(0,STARTER_QUESTS.first).map(q=>q.stat));
@@ -109,7 +110,7 @@ test('a new farmer sees the quickest starter quests first, three at a time, and 
  assert.throws(()=>act(s,{type:'quest',id:thirsty},now),/already/);
  const titles=questGroups(s).active.map(x=>x.quest.title);assert.equal(titles.length,3);assert(!titles.includes('Thirsty crops'));
  s.xp=xpForLevel(6);assert.equal(levelOf(s),6);assert.equal(questGroups(s).active.length,5,'five at a time from level 6');
- const legacy=createLegacyFarm(now);assert.equal(questGroups(legacy).ready.length+questGroups(legacy).active.length+questGroups(legacy).done.length,150);
+ const legacy=createLegacyFarm(now);assert.equal(questGroups(legacy).ready.length+questGroups(legacy).active.length+questGroups(legacy).done.length,QUESTS.length);
 });
 
 test('the hourglass sits next to the diamonds like the Family button, opens a screen that closes, and has its own icon',()=>{

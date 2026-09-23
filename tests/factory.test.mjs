@@ -7,7 +7,8 @@ import {ANCHORS,anchorAt} from '../public/farm-layout.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,21,12);
 const act=(s,action,t=now)=>applyFarmAction(s,action,t);
-const base=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory');
+// Every production recipe gets a bulk version, except the Glasshouse's: those grow crops, and the Factory never makes crops.
+const base=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&r.building!=='glasshouse');
 const mass=Object.entries(RECIPES).filter(([,r])=>r.building==='factory');
 function farm(level=60){const s=createLegacyFarm(now);s.xp=xpForLevel(level);s.coins=1e9;s.diamonds=1000;for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;return s;}
 
@@ -23,7 +24,8 @@ test('the Factory is an endgame building: level 50, 100,000 coins, twenty levels
  assert.equal(MAX_BUILDING_LEVEL,20);
 });
 test('every production recipe has one bulk version: quick goods x20, slow goods x10, in twice the time, with the same XP per ingredient',()=>{
- assert.equal(base.length,30);assert.equal(mass.length,31,'thirty bulk recipes and the honey');
+ assert.equal(base.length,37);assert.equal(mass.length,38,'thirty-seven bulk recipes and the honey');
+ assert.deepEqual(Object.keys(RECIPES).filter(id=>RECIPES[id].building==='glasshouse'&&RECIPES[`mass_${id}`]),[],'no bulk Glasshouse');
  for(const [id,r] of base){
   const m=RECIPES[`mass_${id}`],n=r.duration<=3600000?20:10;assert.ok(m,id);
   assert.equal(m.building,'factory');assert.equal(m.base,id);assert.equal(m.batches,n);assert.equal(factoryBatches(r),n);
@@ -39,7 +41,7 @@ test('every production recipe has one bulk version: quick goods x20, slow goods 
 });
 test('the Factory only makes production goods: no bulk recipe produces a crop, and nothing is planted or grown there',()=>{
  for(const [id,r] of mass)for(const item of Object.keys(r.output)){assert.ok(!CROPS[item],`${id} makes ${item}`);assert.ok(ITEMS[item],item);}
- assert.equal(mass.filter(([id])=>RECIPES[id].output.honey).length,1,'honey is the one raw good it can bottle');
+ assert.deepEqual(mass.filter(([id])=>RECIPES[id].output.honey).map(([id])=>id),['mass_hives','mass_honey'],'honey is bottled for coins, or comes along with the Bee Yard\'s beeswax');
  assert.ok(!Object.keys(BUILDINGS.factory).some(key=>/plot|field|plant/i.test(key)));
 });
 test('bottled honey: 100 coins a honey, 50 a batch, 135 minutes (twice what a hive needs), no ingredients, a little XP',()=>{

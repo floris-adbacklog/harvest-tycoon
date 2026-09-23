@@ -13,7 +13,9 @@ const WEBP_PICTURES=['vip','honey','rank-gold','family-bee','family-barn','rank-
 'berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice',
 'harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote',
 'chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary',
-'instant-harvest','chore-troughs'];
+'instant-harvest','chore-troughs',
+// The midgame expansion's crops and goods (painted with ChatGPT, delivered as WebP from the start).
+'squash','polebeans','ciderapples','squashsoup','beeswax','wool','yarn','cloth','cider'];
 // level-up.webp is real and converted too, but it is only ever used via a hardcoded <img> in progression-ui.js, never through art().
 const WEBP_STANDALONE=[...WEBP_PICTURES,'level-up'];
 

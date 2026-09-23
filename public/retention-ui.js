@@ -76,14 +76,15 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  function openUtility(key){if(!featureUnlocked(state,key)){notify(featureUnlockHint(key));return;}if(key==='cart'){openToday('orders');return;}utility=key;renderUtility();open('utility-dialog');}
  function renderJournal(){
   const {level,current,target}=levelProgress(state),reward=levelReward(level+1),stats=state.stats,number=n=>Number(n).toLocaleString('en-US');
-  // Lifetime totals the same way the leaderboards count them: every crop picked and every good collected.
-  const total=prefix=>Object.entries(stats).reduce((n,[k,v])=>k.startsWith(prefix)&&Number.isFinite(v)?n+v:n,0);
-  const crops=Math.max(stats.harvested??0,total('harvest_')),goods=Math.max(stats.produced??0,total('made_'));
+  // Lifetime totals: every crop picked and every good collected. The Glasshouse grows crops, not goods, so its crates count
+  // as crops picked (the leaderboards count the fields only).
+  const total=(prefix,keep=()=>true)=>Object.entries(stats).reduce((n,[k,v])=>k.startsWith(prefix)&&keep(k.slice(prefix.length))&&Number.isFinite(v)?n+v:n,0);
+  const crops=Math.max(stats.harvested??0,total('harvest_'))+total('made_',k=>CROPS[k]),goods=Math.max(stats.produced??0,total('made_',k=>!CROPS[k]));
   const tile=(icon,value,label)=>`<div>${art(icon)}<p><strong>${value}</strong><span>${label}</span></p></div>`;
   const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]);
   // Honey also comes from the Apiary (a few jars per finished job), not only from the Factory.
   const apiaryHoney=(stats.activity_apiary??state.activities?.completed?.apiary??0)*(ACTIVE_STATIONS.apiary.itemCount??0);
-  const count=key=>CROPS[key]?stats['harvest_'+key]??0:(stats['made_'+key]??0)+(key==='honey'?apiaryHoney:0);
+  const count=key=>CROPS[key]?(stats['harvest_'+key]??0)+(stats['made_'+key]??0):(stats['made_'+key]??0)+(key==='honey'?apiaryHoney:0);
   const found=keys=>keys.filter(k=>CROPS[k]?state.discovered.includes(k):count(k)>0).length;
   const keys=journalTab==='goods'?goodKeys:cropKeys,verb=journalTab==='goods'?'made':'picked';
   const card=key=>{const n=count(key),seen=CROPS[key]?state.discovered.includes(key):n>0;return `<div class="collection-crop ${seen?'discovered':''}">${art(key,'collection-picture')}<strong>${ITEMS[key].name}</strong><small>${seen?`${number(n)} ${verb}`:'Not yet'}</small></div>`;};

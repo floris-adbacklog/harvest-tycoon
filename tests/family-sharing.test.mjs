@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 import {ITEMS} from '../public/farm-state.js';
 import {sharingMessage,MAX_SHARE} from '../public/social-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-const sql=read('supabase/family-sharing-all-items.sql');
+// The newest definition of harvest_social; the item-name check on requests was added in family-sharing-all-items.sql.
+const sql=read('supabase/midgame-wave1.sql'),constraintSql=read('supabase/family-sharing-all-items.sql');
 
 test('the server accepts exactly the game\'s crops and goods, so a new item needs both lists updated',()=>{
  const list=sql.match(/items constant text\[\]:=array\[([^\]]+)\]/)[1].split(',').map(s=>s.trim().replace(/'/g,''));
@@ -16,7 +17,7 @@ test('gifts and requests are 1–5 of any of them; the daily limits and the old 
  assert.match(sql,/item:=coalesce\(p_action->>'item','wheat'\);quantity:=coalesce\(\(p_action->>'quantity'\)::integer,3\);/,'an older store without an item still sends 3 wheat');
  assert.match(sql,/kind=social\.kind\)>=3 or \(select count\(\*\) from public\.family_social_actions where recipient=social\.recipient and day=d and kind=social\.kind\)>=3/,'3 sent and 3 received a day, unchanged');
  assert.match(sql,/level>=10\) then raise exception 'Daily sharing opens at level 10, after 48 hours on your farm and 24 hours in your family\.'/);
- assert.match(sql,/check \(item ~ '\^\[a-z\]\{2,24\}\$'\)/);
+ assert.match(constraintSql,/check \(item ~ '\^\[a-z\]\{2,24\}\$'\)/);
 });
 test('the toast names what moved, with the item\'s own name',()=>{
  const name=id=>({m1:'Anna'})[id];

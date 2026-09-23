@@ -5,14 +5,14 @@ import {createFarm} from '../public/farm-state.js';
 import {roadmapMarkup} from '../public/progression-ui.js';
 const ui=readFileSync(new URL('../public/retention-ui.js',import.meta.url),'utf8');
 
-test('the farm journal counts goods made next to crops harvested, like the leaderboards do',()=>{
- assert.match(ui,/crops=Math\.max\(stats\.harvested\?\?0,total\('harvest_'\)\),goods=Math\.max\(stats\.produced\?\?0,total\('made_'\)\)/);
+test('the farm journal counts goods made next to crops harvested; Glasshouse crates are crops, not goods',()=>{
+ assert.match(ui,/crops=Math\.max\(stats\.harvested\?\?0,total\('harvest_'\)\)\+total\('made_',k=>CROPS\[k\]\),goods=Math\.max\(stats\.produced\?\?0,total\('made_',k=>!CROPS\[k\]\)\)/);
  assert.match(ui,/tile\('buildings',number\(goods\),'goods made'\)/);
 });
 
-test('the journal collection has a Crops and a Goods tab; a good counts once it has been made (honey also from the Apiary)',()=>{
+test('the journal collection has a Crops and a Goods tab; a good counts once it has been made (honey also from the Apiary), a crop from the fields and the Glasshouse',()=>{
  assert.match(ui,/tabButton\('crops','Crops',cropKeys\)\}\$\{tabButton\('goods','Goods',goodKeys\)/);
- assert.match(ui,/const count=key=>CROPS\[key\]\?stats\['harvest_'\+key\]\?\?0:\(stats\['made_'\+key\]\?\?0\)\+\(key==='honey'\?apiaryHoney:0\);/);
+ assert.match(ui,/const count=key=>CROPS\[key\]\?\(stats\['harvest_'\+key\]\?\?0\)\+\(stats\['made_'\+key\]\?\?0\):\(stats\['made_'\+key\]\?\?0\)\+\(key==='honey'\?apiaryHoney:0\);/);
  assert.match(ui,/apiaryHoney=\(stats\.activity_apiary\?\?state\.activities\?\.completed\?\.apiary\?\?0\)\*\(ACTIVE_STATIONS\.apiary\.itemCount\?\?0\)/,'Apiary honey counts towards Honey');
 });
 
