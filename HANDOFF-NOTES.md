@@ -415,3 +415,4 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   only, so the iPhone home-screen app (no "Safari" in its user agent) keeps Google.
 - Facebook sign-in on the web always uses Facebook's login page in the browser (also Chrome on iPhone); only native
   apps with the Facebook SDK can switch to the Facebook app.
+- Silo research: the five-step track is removed again (owner's request); the next level reads "Level 2 of 5".
