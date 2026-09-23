@@ -30,3 +30,9 @@ test('goods and crops become chips too, with no dot between neighbouring chips, 
  assert.match(html,/<b class="toast-chip is-xp">[\s\S]*\+48 XP<\/b> <b class="toast-chip is-item">[\s\S]*data-art="feed"[\s\S]*\+1 Animal feed<\/b>/);
  assert.match(toastParts('Bonus: +2 wheat!').html,/<b class="toast-chip is-item">[\s\S]*\+2 wheat<\/b>!/);
 });
+test('field tools get their own picture: care, water and planting',()=>{
+ assert.equal(toastParts('Extra care will be available in 2s.').icon,'care');
+ assert.equal(toastParts('This crop was already watered.').icon,'lock','a warning keeps its warning picture');
+ assert.equal(toastParts('Water will be available in 3s.').icon,'water');
+ assert.equal(toastParts('Wheat selected. Choose an empty field to plant.').icon,'seeds');
+});

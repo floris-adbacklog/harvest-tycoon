@@ -6,7 +6,7 @@ import {ITEMS} from './farm-state.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const WARN=/\b(need|needs|cannot|can't|not enough|failed|no longer|already|limit|locked|first|unavailable|try again|reach level|returns in|is still)\b/i;
 const ICONS=[
- [/job complete|helping hand|farm round/i,'helping-hand'],[/diamond/i,'diamonds'],[/\bXP\b|level/i,'xp'],[/harvest|crop|field/i,'harvest'],[/batch|collected|production/i,'buildings'],
+ [/job complete|helping hand|farm round/i,'helping-hand'],[/diamond/i,'diamonds'],[/\bXP\b|level/i,'xp'],[/\bcare\b|\btend/i,'care'],[/\bwater/i,'water'],[/\bplant|\bseed/i,'seeds'],[/harvest|crop|field/i,'harvest'],[/batch|collected|production/i,'buildings'],
  [/upgrade/i,'hammer'],[/event/i,'live-events'],[/family|gift|help/i,'gift'],[/sold|sale|market/i,'market'],[/coin/i,'coins']
 ];
 const REWARD=/\+([\d,]+)\s(coins?|XP|diamonds?)/g;
