@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-import {recipeValue,createFarm,applyFarmAction as act,normalizeFarm,xpForLevel,recipeDuration,cropDuration,productionJobs,featureUnlocked,recipeUnlocked,buildingEligible,itemAvailable,marketSaleValue,dailyOrders,currentProject,familyWeek,familyWeekStart,valleyRestock,ranchSpeedup,depotRestock,exportValue,
+import {availableDaily,recipeValue,createFarm,applyFarmAction as act,normalizeFarm,xpForLevel,recipeDuration,cropDuration,productionJobs,featureUnlocked,recipeUnlocked,buildingEligible,itemAvailable,marketSaleValue,dailyOrders,currentProject,familyWeek,familyWeekStart,valleyRestock,ranchSpeedup,depotRestock,exportValue,
  CROPS,CROP_LEVELS,ENDGAME_FIELDS,IMPROVEMENTS,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,FAIR_CLASSES,FAIR_PREMIUM,VALLEY_RESTOCK,RANCH_SPEEDUP,RECIPES,ITEMS,QUESTS,PROJECTS,CHAPTER_DIAMONDS,DAY_MS,FEATURE_LEVELS} from '../game/farm-state.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 import {ANCHORS,YARD_EXTENT,ROADS,anchorAt,roadRects} from '../public/farm-layout.js';
@@ -160,4 +160,20 @@ test('fields 29-40 open during the expansion, each asking only for goods the far
  assert.ok(levels.filter(n=>n<=50).length>=6,'half of them while the trees start to claim fields');
  for(const field of ENDGAME_FIELDS){const s=farmAt(field.level);for(const k of Object.keys(field.materials))assert.ok(itemAvailable(s,k),`field at ${field.level}: ${k}`);}
  for(const crop of ['polebeans','ciderapples','cherries'])assert.ok(levels.some(n=>n<=CROP_LEVELS[crop]&&n>CROP_LEVELS[crop]-5),`a field opens around the ${crop}`);
+});
+
+test('250 quests: the last 46 carry the expansion ladders to the end of the game, each climbing and shown only when it can be done',()=>{
+ assert.equal(QUESTS.length,250);assert.equal(QUESTS[204].title,'A cellar full of squash','appended after “Legend of the fair”');
+ const added=QUESTS.slice(204);assert.equal(added.length,46);
+ for(const stat of new Set(added.map(q=>q.stat))){
+  const ladder=QUESTS.filter(q=>q.stat===stat);
+  for(let i=1;i<ladder.length;i++){assert.ok(ladder[i].target>ladder[i-1].target,`${stat}: targets climb`);assert.ok(ladder[i].reward>ladder[i-1].reward,`${stat}: rewards climb`);}
+ }
+ const gate={valley_:'valleymarket',depot_:'tradedepot',fair_:'grandfair'};
+ for(const q of added)for(const [prefix,feature] of Object.entries(gate))if(q.stat.startsWith(prefix))assert.ok(q.minLevel>=FEATURE_LEVELS[feature],q.title);
+ assert.equal(QUESTS.find(q=>q.title==='Forty fields').target,40-12,'all 28 fields bought on top of the first 12');
+ const glass=QUESTS.find(q=>q.title==='Sunflowers under glass');
+ assert.equal(availableDaily(farmAt(47),glass),false);assert.equal(availableDaily(farmAt(48),glass),true);
+ assert.equal(availableDaily(farmAt(30),QUESTS.find(q=>q.title==='A river of honey')),false,'honey from the Bee Yard, not the hands-on jobs');
+ const fresh=createFarm(now);for(const q of added)assert.equal(fresh.stats[q.stat],0,`${q.stat} is a counter the game keeps`);
 });

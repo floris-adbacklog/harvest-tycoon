@@ -9,7 +9,7 @@ test('new quests append to old IDs and keep beginner and claimed progress',()=>{
  s.activities.completed={greenhouse:10,apiary:5,paddock:10,workshop:10};s.activities.rounds=3;s.siloLevel=3;
  for(const q of QUESTS.slice(41))delete s.stats[q.stat];
  normalizeFarm(s,now);assert.deepEqual(s.claimed,[0,31,40]);assert.equal(s.onboarding.rewardClaimed,true);
- assert.equal(QUESTS.length,204);assert.equal(QUESTS[31].title,'A lifelong grower');assert.equal(QUESTS[40].title,'Pumpkin perfection');
+ assert.equal(QUESTS.length,250);assert.equal(QUESTS[31].title,'A lifelong grower');assert.equal(QUESTS[40].title,'Pumpkin perfection');
  assert.equal(s.stats.activity_apiary,5);assert.equal(s.stats.activity_rounds,3);assert.equal(s.stats.silo_upgrades,3);
  const id=QUESTS.findIndex(q=>q.title==='A taste of honey');act(s,{type:'quest',id},now);
  assert.throws(()=>act(s,{type:'quest',id},now),/already/);
