@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-import {createFarm,applyFarmAction as act,normalizeFarm,xpForLevel,recipeDuration,cropDuration,productionJobs,featureUnlocked,recipeUnlocked,buildingEligible,itemAvailable,marketSaleValue,dailyOrders,currentProject,familyWeek,familyWeekStart,valleyRestock,ranchSpeedup,depotRestock,exportValue,
+import {recipeValue,createFarm,applyFarmAction as act,normalizeFarm,xpForLevel,recipeDuration,cropDuration,productionJobs,featureUnlocked,recipeUnlocked,buildingEligible,itemAvailable,marketSaleValue,dailyOrders,currentProject,familyWeek,familyWeekStart,valleyRestock,ranchSpeedup,depotRestock,exportValue,
  CROPS,IMPROVEMENTS,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,FAIR_CLASSES,FAIR_PREMIUM,VALLEY_RESTOCK,RANCH_SPEEDUP,RECIPES,ITEMS,QUESTS,PROJECTS,CHAPTER_DIAMONDS,DAY_MS,FEATURE_LEVELS} from '../game/farm-state.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 import {ANCHORS,YARD_EXTENT,ROADS,anchorAt,roadRects} from '../public/farm-layout.js';
@@ -147,4 +147,10 @@ test('sunflowers grow under glass from level 48, and chapter 9 asks for 275 cher
  assert.equal(s.inventory.sunflower,6);assert.equal(s.stats.made_sunflower,6);
  const orchard=PROJECTS.find(p=>p.name==='Orchard and ranch');assert.deepEqual([orchard.input.cherrypie,orchard.input.cherryjam],[25,25]);
  assert.equal(orchard.input.cherrypie*RECIPES.cherrypie.input.cherries+orchard.input.cherryjam*RECIPES.cherryjam.input.cherries,275);
+});
+
+test('prize produce is the best use of a Glasshouse slot, as a prize should be',()=>{
+ const perHour=id=>recipeValue(id).added/(RECIPES[id].duration/3600000);
+ for(const id of Object.keys(RECIPES).filter(id=>RECIPES[id].building==='glasshouse'&&id!=='prizeproduce'))assert.ok(perHour('prizeproduce')>perHour(id),id);
+ assert.ok(perHour('prizeproduce')>=perHour('blanket')*.95,'on a par with the wool blanket, the best good before it');
 });

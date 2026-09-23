@@ -65,7 +65,7 @@ blanket:{"name": "Wool blanket", "sell": 9800, "icon": "package-check", "color":
 cherryjam:{"name": "Cherry jam", "sell": 2300, "icon": "amphora", "color": "gold"},
 cherrypie:{"name": "Cherry pie", "sell": 2500, "icon": "cake-slice", "color": "gold"},
 // Wave 3: the Glasshouse's show basket, for the fair, the export trailers and the best orders.
-prizeproduce:{"name": "Prize produce", "sell": 6800, "icon": "award", "color": "gold"}
+prizeproduce:{"name": "Prize produce", "sell": 9800, "icon": "award", "color": "gold"}
 
 });
 export const ITEMS=Object.freeze({...CROPS,...PRODUCTS});
