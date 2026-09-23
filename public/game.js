@@ -18,6 +18,7 @@ import { createEconomyUI } from './economy-ui.js?v=familyhall-model-2';
 import { createFarmClient, farmNow } from './farm-client.js';
 import { createRetentionUI } from './retention-ui.js';
 import { createGrowthUI } from './growth-ui.js';
+import { createValleyUI } from './valley-ui.js';
 import { createBoostsUI } from './boosts-ui.js';
 import { createRookieUI } from './rookie-ui.js';
 import { art,refreshArt } from './visual-icons.js';
@@ -45,10 +46,10 @@ let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
-const familyDecor=[],factoryDecor=[],yardDecor={beeyard:[],sheepbarn:[],glasshouse:[],weaving:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
-let liveEvents,familyUI,progression,economy,retention,growth,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
+const familyDecor=[],factoryDecor=[],yardDecor={beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+let liveEvents,familyUI,progression,economy,retention,growth,valley,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
-const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'}};
+const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'}};
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
 const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());
@@ -59,7 +60,7 @@ const nudge=createReminderNudge({state,farmNow,level:()=>levelProgress(state).le
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
-function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
+function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -71,6 +72,8 @@ modelNames.push('coop_002','mountain_001','mountain_007');
 modelNames.push('house_008','pointer_002','table_002','garden_bed_002','firewood_001');
 // The midgame expansion: two crops and the four new yards.
 modelNames.push('plant_009','tree_010','apiary_002','apiary_003','sheep_002','sheep_003','hangar_006','greenhouse_004','house_018');
+// Wave 2: the cherry tree, the Goat Shed, the Craft Workshop, the Ranch with its horses and the Valley Market's canopy.
+modelNames.push('tree_011','hangar_015','hangar_019','hangar_001','hangar_009','goat_002','horse_003','horse_004','horse_005');
 const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
 
 let showToast;
@@ -258,6 +261,29 @@ function decorate(){
  zone('weaving');
  addBuilding('weaving',26.2,8.5,{width:4.4,height:3.8,depth:7.6});
  yardDecor.weaving.push(cloneModel('bag_001',23.4,6.4,{height:.8,rotation:.4}),cloneModel('bag_002',23.2,7.3,{height:.72,rotation:-.2}),cloneModel('cart_004',23.6,11,{width:1.8,rotation:Math.PI/2}),cloneModel('case_003',28.9,5.4,{width:.9,rotation:.3}));
+ // Wave 2. The Goat Shed stands beside the Sheep Barn, its pen running down to the road like the sheep's pasture.
+ zone('goatshed');
+ addBuilding('goatshed',31.9,-14.6,{width:5,height:4.6,depth:8});
+ yardDecor.goatshed.push(...fenceLine(28.6,-3.8,4),...fenceLine(27.5,-9.3,3,'z'),...fenceLine(36.3,-9.3,3,'z'),...fenceLine(28.6,-10.4,1),...fenceLine(35.2,-10.4,1));
+ for(const [model,x,z,r] of [['goat_001',29.6,-8.4,.8],['goat_002',32.2,-6.1,2.2],['goat_001',34.6,-8.7,-.9],['goat_002',30.4,-5.2,1.6],['goat_001',33.9,-4.9,3.4]])yardDecor.goatshed.push(animalAt(model,x,z,{width:1.3,rotation:r},'goatshed',r));
+ yardDecor.goatshed.push(cloneModel('hay_002',35.3,-5.1,{width:1.1,rotation:.4}),cloneModel('water_001',28.5,-4.9,{width:1}));
+ // The Craft Workshop, a long low workshop east of the Weaving Shed, with wax and wool at the door.
+ zone('craftshop');
+ addBuilding('craftshop',33.1,9.6,{width:7.5,height:2.6,depth:3.1});
+ yardDecor.craftshop.push(cloneModel('table_001',30.6,12.3,{width:1.5,rotation:.2}),cloneModel('barrel_009',35.6,12.1,{height:.8}),cloneModel('bag_002',36.5,11.4,{height:.7,rotation:.5}),cloneModel('case_003',31.9,12.6,{width:.85,rotation:-.3}));
+ // The Ranch: a big stable with its horse paddock in front, on the green by the pond.
+ zone('ranch');
+ addUtility('ranch','hangar_001',31.5,16.2,{width:5,height:3.6,depth:9,rotation:Math.PI/2});
+ yardDecor.ranch.push(...fenceLine(27.8,25.9,4),...fenceLine(26.7,20.4,3,'z'),...fenceLine(35.5,20.4,3,'z'));
+ for(const [model,x,z,r] of [['horse_003',29.2,22.4,.6],['horse_004',32.6,24.3,2.3],['horse_005',34,21.2,-.8]])yardDecor.ranch.push(cloneModel(model,x,z,{width:2.2,rotation:r}));
+ yardDecor.ranch.push(cloneModel('hay_001',27.9,24.6,{width:1.2,rotation:.3}),cloneModel('water_001',34.6,25,{width:1}));
+ // The Valley Market: a striped canopy over tables of goods, with market stalls beside it, on the top road out of the valley.
+ zone('valleymarket');
+ addUtility('valleymarket','hangar_009',0,-29.2,{width:10});
+ yardDecor.valleymarket.push(cloneModel('table_001',-2.2,-29.6,{width:1.8,rotation:.1}),cloneModel('table_001',2,-28.9,{width:1.8,rotation:-.15}),cloneModel('case_002',-2.4,-29.8,{width:.8,y:.72}),cloneModel('bag_003',2.2,-29,{height:.55,y:.72}),
+  // Two stalls face the road in front of the canopy, where the camera sees them; a cart and a sign at the sides.
+  cloneModel('stall_002',-2.8,-24.2,{width:2.6}),cloneModel('stall_001',2.9,-24.3,{width:2.9}),cloneModel('case_002',2.2,-24.5,{width:.85,rotation:.2}),cloneModel('case_003',3.5,-24.2,{width:.8,rotation:-.3}),cloneModel('bag_003',3,-23.7,{height:.6,rotation:.4}),
+  cloneModel('cart_004',7.6,-26.6,{width:1.9,rotation:.6}),cloneModel('pointer_002',-6.4,-23.8,{height:1.3,rotation:.2}),cloneModel('barrel_001',-6.6,-29.8,{height:.95}),cloneModel('barrel_009',-5.8,-30.6,{height:.8}),cloneModel('case_003',6.6,-31.2,{width:.9,rotation:.4}));
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
@@ -349,7 +375,7 @@ function drawCrop(i){
      for(let j=0;j<3;j++){const pod=new THREE.Mesh(beanPodGeometry,beanPodMaterial);pod.scale.set(.07,.26,.07);pod.position.set(dx+Math.cos(j*2.1)*.15,.5+j*.26,dz+Math.sin(j*2.1)*.15);pod.rotation.z=.2-j*.15;v.cropGroup.add(pod);}
     }
    }else if(c.perennial){
-    const o=cloneModel(c.model,0,0,{height:c.height,width:['apples','ciderapples'].includes(p.crop)?1.9:1.7,depth:['apples','ciderapples'].includes(p.crop)?1.9:1.7,rotation:.5});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
+    const o=cloneModel(c.model,0,0,{height:c.height,width:['apples','ciderapples','cherries'].includes(p.crop)?1.9:1.7,depth:['apples','ciderapples','cherries'].includes(p.crop)?1.9:1.7,rotation:.5});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
    }else if(['pumpkin','squash'].includes(p.crop)){
     // One sprawling vine fills the field; four would spill over onto the next one.
     const o=cloneModel(c.model,0,0,{width:p.crop==='squash'?2.1:2.05,rotation:Math.PI/2});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
@@ -368,7 +394,7 @@ function drawCrop(i){
  v.soil.traverse(n=>{if(n.isMesh)n.material.color.setHex(p.watered?0x8b8a82:0xc4b39a)});
  if(!p.crop){v.label.innerHTML='';v.label.className='plot-label';v.label.setAttribute('aria-label',`Field ${i+1}, empty. Plant ${CROPS[selectedCrop].name}.`);}
  else if(ripe){
-  if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art(['apples','berries','greenbeans','squash','polebeans','ciderapples'].includes(p.crop)?p.crop:'vegetables');
+  if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art(['apples','berries','greenbeans','squash','polebeans','ciderapples','cherries'].includes(p.crop)?p.crop:'vegetables');
   v.label.className='plot-label ready';v.label.setAttribute('aria-label',`Harvest ${CROPS[p.crop].name} from field ${i+1}`);
  }else{
   const remaining=p.readyAt-farmNow(),time=mobileLayout.matches?(remaining>=3600000?`${Math.ceil(remaining/3600000)}h`:remaining>=60000?`${Math.ceil(remaining/60000)}m`:`${Math.ceil(Math.max(0,remaining)/1000)}s`):formatDuration(remaining);
@@ -420,7 +446,7 @@ function updateUI(){
  $('level-name').textContent=levelTitle(lvl);
  const count=Object.values(state.inventory).reduce((a,b)=>a+b,0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target);
- familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
+ familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
@@ -540,7 +566,8 @@ function addBuilding(key,x,z,options){
 function positionBuildingLabels(){
  for(const decor of familyDecor)setLocked(decor,!buildingEligible(state,'familyhall'));
  for(const decor of factoryDecor)setLocked(decor,!buildingEligible(state,'factory'));
- for(const [key,list] of Object.entries(yardDecor))for(const decor of list)setLocked(decor,!buildingEligible(state,key));
+ // A yard's pieces are greyed out with it: a building until its level, the Ranch and the Valley Market until theirs.
+ for(const [key,list] of Object.entries(yardDecor)){const locked=BUILDINGS[key]?!buildingEligible(state,key):!featureUnlocked(state,key);for(const decor of list)setLocked(decor,locked);}
  if(windmillRotor)setLocked(windmillRotor,!buildingEligible(state,'windmill'));
  farmLife?.position(camera,world.clientWidth,world.clientHeight,farmNow());
  for(const [key,v] of utilityViews){
@@ -579,6 +606,7 @@ function bindUI(){
  economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
+ valley=createValleyUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList});
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  rookie=createRookieUI({state});
  quests=createQuestsUI({state,claim,icons,notify:toast});

@@ -15,7 +15,9 @@ const WEBP_PICTURES=['vip','honey','rank-gold','family-bee','family-barn','rank-
 'chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary',
 'instant-harvest','chore-troughs',
 // The midgame expansion's crops and goods (painted with ChatGPT, delivered as WebP from the start).
-'squash','polebeans','ciderapples','squashsoup','beeswax','wool','yarn','cloth','cider'];
+'squash','polebeans','ciderapples','squashsoup','beeswax','wool','yarn','cloth','cider',
+// Wave 2 (same set): cherries, the new goods, and the Valley Market and Ranch pictures.
+'cherries','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','valley-market','ranch'];
 // level-up.webp is real and converted too, but it is only ever used via a hardcoded <img> in progression-ui.js, never through art().
 const WEBP_STANDALONE=[...WEBP_PICTURES,'level-up'];
 

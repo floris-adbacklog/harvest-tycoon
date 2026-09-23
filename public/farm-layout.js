@@ -8,7 +8,10 @@ export const ANCHORS=Object.freeze({
  greenhouse:[5.6,-19],packing:[11.5,-17.2],coop:[13,-9.5],paddock:[17.9,-7],windmill:[12.8,-1.5],tractor:[-5.2,-.2],cart:[-6.3,3.8],factory:[16.2,21.9],
  chores:[-5.8,-10.7],stall:[-11.3,-2.6],mill:[-12.5,4],bakery:[-10.8,12],kitchen:[-12.4,18.2],apiary:[10.5,13.8],workshop:[-9.1,-14.7],pond:[17.6,15.2],
  // The midgame yards stand on new ground east of the coop and the Family Hall, where the trunk road now runs on to.
- beeyard:[22.7,1.9],sheepbarn:[23.8,-15.4],glasshouse:[28.8,1.2],weaving:[26.2,8.5]
+ beeyard:[22.7,1.9],sheepbarn:[23.8,-15.4],glasshouse:[28.8,1.2],weaving:[26.2,8.5],
+ // Wave 2: the goats beside the sheep, the Craft Workshop beside the Weaving Shed, the Ranch and its paddock by the pond, and the
+ // Valley Market behind the Juice Press, on the top road out of the valley.
+ goatshed:[31.9,-14.6],craftshop:[33.1,9.6],ranch:[31.5,16.2],valleymarket:[0,-29.2]
 });
 // Where a yard stands when that is not where it was designed (same compact grid; everything inside a yard moves along with it).
 // The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), the
@@ -42,7 +45,8 @@ const yardCentres=Object.keys(ANCHORS).map(anchorAt);
 // Yards that reach further than the clearance around their middle: how far they run from their anchor (world units: west, east,
 // north, south). The Sheep Barn's pasture runs down to the road in front of it. Trees keep three steps clear of the edges, so
 // no crown hangs over a yard.
-export const YARD_EXTENT=Object.freeze({beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-4.2,4.2,-2.6,4.6],weaving:[-3,4.8,-4,5.5]});
+export const YARD_EXTENT=Object.freeze({beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-4.2,4.2,-2.6,4.6],weaving:[-3,4.8,-4,5.5],
+ goatshed:[-4.8,4.8,-4.4,11],craftshop:[-4.4,4.8,-2.4,3.6],ranch:[-5,5,-3,10.2],valleymarket:[-8.5,9.5,-5,4.5]});
 const EXTENT_MARGIN=3;
 const extents=Object.entries(YARD_EXTENT).map(([id,[west,east,north,south]])=>{const [x,z]=anchorAt(id);return [x+west,x+east,z+north,z+south];});
 export const outsideYardExtents=(x,z,margin=EXTENT_MARGIN)=>extents.every(([minX,maxX,minZ,maxZ])=>x<minX-margin||x>maxX+margin||z<minZ-margin||z>maxZ+margin);

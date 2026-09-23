@@ -20,18 +20,20 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=art(`activity-${id}`);label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
   views.set(id,{object,x:object.position.x,z:object.position.z,height,label});return object;
  }
- // Broad, low shapes fill the edges; higher mountains stay behind the farm. The two in the east moved out to make room for the
- // midgame yards.
+ // Broad, low shapes fill the edges; higher mountains stay behind the farm. The hills behind the Juice Press and behind the barns
+ // made way for the Valley Market and the midgame yards (pushed further out they ran into the mountains), the one in the east moved
+ // out, and two strips of field moved aside.
  zone('exact');
- for(const [x,z,w,d,h,rotation] of [[-34,-21,25,20,5,.4],[-24,-34,26,21,6,1.1],[4,-37,30,22,5,-.3],[33,-33,23,22,5,.6],[-37,10,20,24,3,1.5],[44,12,20,24,2.4,.2]])scenery(x>0?'landscape_008':'landscape_004',x,z,{width:wide(w),depth:wide(d),height:h,rotation,y:-.25});
+ for(const [x,z,w,d,h,rotation] of [[-34,-21,25,20,5,.4],[-24,-34,26,21,6,1.1],[-37,10,20,24,3,1.5],[50,16,20,24,2.4,.2]])scenery(x>0?'landscape_008':'landscape_004',x,z,{width:wide(w),depth:wide(d),height:h,rotation,y:-.25});
  for(const [x,z,w,d,h] of [[-43,-39,37,27,10],[-9,-53,38,23,9],[26,-47,35,22,8]])scenery('mountain_008',x,z,{width:wide(w),depth:wide(d),height:h,y:-.6});
  scenery('mountain_009',-46,-7,{width:wide(21),depth:wide(30),height:5,y:-.2});
  // Neighbouring agricultural strips echo the supplied demo without adding timers.
- for(const [name,x,z,w,d,rotation] of [['field_005',-27,3,12,20,0],['field_004',-27,23,13,15,0],['field_005',17,29,25,11,0],['field_004',-1,-28,20,11,0]])scenery(name,x,z,{width:wide(w),depth:wide(d),height:.45,rotation,y:.01});
+ for(const [name,x,z,w,d,rotation] of [['field_005',-27,3,12,20,0],['field_004',-27,23,13,15,0],['field_005',15,29,25,11,0],['field_004',-13,-32,20,11,0]])scenery(name,x,z,{width:wide(w),depth:wide(d),height:.45,rotation,y:.01});
  for(const road of ROADS.slice(3))scenery('road_001',road.x,road.z,{...roadSize(road),height:road.height});
  zone(null);
  for(const [x,z] of [[-19,-22],[-17,-23],[-14,-25],[12,-23],[17,-23],[-24,16],[-23,19],[-22,22],[22,3],[24,8],[25,14],[-18,25],[-12,26],[25,-17]])scenery(['tree_008','tree_002','tree_005','tree_007'][Math.abs(x+z)%4],x,z,{height:2.8+(Math.abs(x+z)%3)*.3,rotation:x*.3});
- for(const [x,z] of [[-30,-13],[-31,-18],[-26,-25],[-16,-30],[-11,-32],[15,-32],[25,-23],[29,-20],[-32,16],[30,17]])scenery(['fir_tree_003','fir_tree_001','fir_tree_006'][Math.abs(x)%3],x,z,{height:3.4+(Math.abs(x)%3)*.4,rotation:z*.2});
+ // Pines at the foot of the mountains where the two hills were.
+ for(const [x,z] of [[-30,-13],[-31,-18],[-26,-25],[-16,-30],[-11,-32],[15,-32],[25,-23],[29,-20],[-32,16],[30,17],[6,-40],[11,-38],[-2,-42],[33,-32],[36,-29],[38,-35]])scenery(['fir_tree_003','fir_tree_001','fir_tree_006'][Math.abs(x)%3],x,z,{height:3.4+(Math.abs(x)%3)*.4,rotation:z*.2});
  {const [wx,wz]=place(-18,28.5);zone('fields');for(let i=0;i<Math.round(7*SPREAD);i++){const cx=wx+i*2.6;if(onRoad(cx-1.3,cx+1.3,wz-.3,wz+.3))continue;scenery(i%3===2?'stone_fence_003':'stone_fence_001',cx,wz,{width:2.6,height:.65});}zone(null);}
  // A shallow pond and small bridge create a recognisable corner near the fields.
  zone('pond');

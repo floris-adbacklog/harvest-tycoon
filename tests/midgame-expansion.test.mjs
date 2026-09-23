@@ -80,6 +80,6 @@ test('every new model and picture is in place and loaded before the scene is bui
  }
  for(const id of [...CROPS_NEW,...GOODS_NEW])assert.ok(existsSync(new URL(`../public/assets/icons/${id}.webp`,import.meta.url)),`${id}.webp`);
  for(const id of YARDS){assert.ok(existsSync(new URL(`../public/assets/icons/${id}.png`,import.meta.url)),`${id}.png`);assert.match(game,new RegExp(`addBuilding\\('${id}',`));}
- assert.match(game,/for\(const \[key,list\] of Object\.entries\(yardDecor\)\)for\(const decor of list\)setLocked\(decor,!buildingEligible\(state,key\)\);/,'fences, flowers and the flock are greyed out with their yard');
+ assert.match(game,/for\(const \[key,list\] of Object\.entries\(yardDecor\)\)\{const locked=BUILDINGS\[key\]\?!buildingEligible\(state,key\):!featureUnlocked\(state,key\);for\(const decor of list\)setLocked\(decor,locked\);\}/,'fences, flowers and the flock are greyed out with their yard');
  assert.match(read('public/quests-ui.js'),/glasshouse_batches:'glasshouse'/);
 });

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {createLegacyFarm} from './legacy-farm.mjs';
-import {createFarm,applyFarmAction,normalizeFarm,xpForLevel,levelOf,recipeAvailability,recipeUnlocked,recipeUnlockHint,recipeDuration,recipeValue,productionSlots,productionSpeed,productionJobs,upgradeCost,buildingEligible,buildingUnlocked,buildingCost,factoryBatches,marketQuote,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,CROPS,ITEMS,FACTORY_LEVEL,FACTORY_COST,FACTORY_TIME_FACTOR,FACTORY_HONEY,FACTORY_UPGRADE_MULTIPLIER,MAX_BUILDING_LEVEL,SINGLE_BATCH_COST,BOOSTS,QUESTS} from '../game/farm-state.js';
+import {createFarm,applyFarmAction,normalizeFarm,xpForLevel,levelOf,recipeAvailability,recipeUnlocked,recipeUnlockHint,recipeDuration,recipeValue,productionSlots,productionSpeed,productionJobs,upgradeCost,buildingEligible,buildingUnlocked,buildingCost,factoryBatches,marketQuote,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,CROPS,ITEMS,FACTORY_LEVEL,FACTORY_COST,FACTORY_TIME_FACTOR,FACTORY_UPGRADE_MULTIPLIER,MAX_BUILDING_LEVEL,SINGLE_BATCH_COST,BOOSTS,QUESTS} from '../game/farm-state.js';
 import {ANCHORS,anchorAt} from '../public/farm-layout.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,21,12);
@@ -24,7 +24,7 @@ test('the Factory is an endgame building: level 50, 100,000 coins, twenty levels
  assert.equal(MAX_BUILDING_LEVEL,20);
 });
 test('every production recipe has one bulk version: quick goods x20, slow goods x10, in twice the time, with the same XP per ingredient',()=>{
- assert.equal(base.length,37);assert.equal(mass.length,38,'thirty-seven bulk recipes and the honey');
+ assert.equal(base.length,44);assert.equal(mass.length,44,'one bulk recipe for each');
  assert.deepEqual(Object.keys(RECIPES).filter(id=>RECIPES[id].building==='glasshouse'&&RECIPES[`mass_${id}`]),[],'no bulk Glasshouse');
  for(const [id,r] of base){
   const m=RECIPES[`mass_${id}`],n=r.duration<=3600000?20:10;assert.ok(m,id);
@@ -41,27 +41,22 @@ test('every production recipe has one bulk version: quick goods x20, slow goods 
 });
 test('the Factory only makes production goods: no bulk recipe produces a crop, and nothing is planted or grown there',()=>{
  for(const [id,r] of mass)for(const item of Object.keys(r.output)){assert.ok(!CROPS[item],`${id} makes ${item}`);assert.ok(ITEMS[item],item);}
- assert.deepEqual(mass.filter(([id])=>RECIPES[id].output.honey).map(([id])=>id),['mass_hives','mass_honey'],'honey is bottled for coins, or comes along with the Bee Yard\'s beeswax');
+ assert.deepEqual(mass.filter(([id])=>RECIPES[id].output.honey).map(([id])=>id),['mass_hives'],'honey only comes along with the Bee Yard\'s beeswax');
  assert.ok(!Object.keys(BUILDINGS.factory).some(key=>/plot|field|plant/i.test(key)));
 });
-test('bottled honey: 100 coins a honey, 50 a batch, 135 minutes (twice what a hive needs), no ingredients, a little XP',()=>{
- const r=RECIPES.mass_honey;assert.deepEqual(FACTORY_HONEY,{coins:5000,batch:50,duration:8100000,xp:50});
- assert.deepEqual([r.input,r.output,r.coins,r.duration,r.xp,r.name],[{},{honey:50},5000,8100000,50,'Bottle honey ×50']);
- assert.equal(r.coins/r.output.honey,100);
- assert.ok(Math.abs(r.duration-2*(50/45)*3600000)<=180000,'about twice the time one hive needs for 50 honey (45 an hour): 2 h 13 min, rounded to 2 h 15');
- assert.ok(ITEMS.honey.sell<100,'buying honey and selling it again never pays');
- assert.ok(recipeValue('mass_honey').added<0,'a coin sink, not a source of income');
+test('the Factory no longer bottles honey: honey comes from the Bee Yard, and a batch from before still collects',()=>{
+ assert.equal(RECIPES.mass_honey,undefined);assert.ok(mass.every(([,r])=>Object.keys(r.input).length),'every bulk recipe uses ingredients');
+ const s=farm();s.buildings.factory.job={id:'factory-1',recipe:'mass_honey',startedAt:now-9000000,readyAt:now-1000,output:{honey:50},xp:50};
+ const before=s.inventory.honey;act(s,{type:'collect',building:'factory'});assert.equal(s.inventory.honey,before+50);assert.equal(s.stats.made_honey,50);
+ assert.match(read('public/economy-ui.js'),/RECIPES\[job\.recipe\]\?\?\{name:'Finished batch',output:job\.output\?\?\{\}\}/,'the building panel still shows it');
 });
-test('a honey batch takes its coins at the start, needs the balance, and scales with the number of batches',()=>{
- const s=farm();s.buildings.factory.level=9;assert.equal(productionSlots(9,'factory'),5,'all five slots by level 9');
- s.coins=4999;assert.throws(()=>act(s,{type:'produce',recipe:'mass_honey'}),/You need 5000 coins/);assert.equal(s.coins,4999);
- assert.equal(recipeAvailability(s,'mass_honey').poor,true);assert.equal(recipeAvailability(s,'mass_honey').canStart,false);assert.equal(recipeAvailability(s,'mass_honey').maxCount,0);
- s.coins=12000;const a=recipeAvailability(s,'mass_honey');assert.equal(a.maxCount,2,'the balance allows two');assert.equal(a.price,5000);assert.equal(a.canStart,true);
- assert.throws(()=>act(s,{type:'produce',recipe:'mass_honey',count:3}),/You need 15000 coins for 3 batches/);assert.equal(s.coins,12000);
- act(s,{type:'produce',recipe:'mass_honey',count:2});assert.equal(s.coins,2000);assert.equal(productionJobs(s.buildings.factory).length,2);
- const job=productionJobs(s.buildings.factory)[0];assert.deepEqual(job.output,{honey:50});
- assert.throws(()=>act(s,{type:'collect',building:'factory'},now+1000),/still|Nothing/i);
- const before=s.inventory.honey;act(s,{type:'collect',building:'factory',jobId:job.id},job.readyAt);assert.equal(s.inventory.honey,before+50);assert.equal(s.stats.made_honey,50);
+test('a recipe with a coin price takes its coins at the start, needs the balance, and scales with the number of batches',()=>{
+ const s=farm();s.buildings.glasshouse.level=9;s.inventory.fertilizer=10;const price=RECIPES.glasscauliflower.coins;assert.equal(price,260);
+ s.coins=259;assert.throws(()=>act(s,{type:'produce',recipe:'glasscauliflower'}),/You need 260 coins/);assert.equal(s.coins,259);
+ assert.equal(recipeAvailability(s,'glasscauliflower').poor,true);assert.equal(recipeAvailability(s,'glasscauliflower').canStart,false);assert.equal(recipeAvailability(s,'glasscauliflower').maxCount,0);
+ s.coins=600;const a=recipeAvailability(s,'glasscauliflower');assert.equal(a.maxCount,2,'the balance allows two');assert.equal(a.price,260);assert.equal(a.canStart,true);
+ assert.throws(()=>act(s,{type:'produce',recipe:'glasscauliflower',count:3}),/You need 780 coins for 3 batches/);assert.equal(s.coins,600);
+ act(s,{type:'produce',recipe:'glasscauliflower',count:2});assert.equal(s.coins,80);assert.equal(productionJobs(s.buildings.glasshouse).length,2);assert.equal(s.inventory.fertilizer,8);
 });
 test('a bulk batch takes twice the normal time, uses 10-20 batches of ingredients, gives 10-20 batches of goods and collects once',()=>{
  const s=farm();s.buildings.factory.level=1;s.inventory.feed=15;
@@ -188,7 +183,7 @@ test('the Factory\'s recipe groups are keyed by the building each good normally 
   const label=r.base?RECIPES[r.base].building:null;
   groups.set(label,(groups.get(label)??0)+1);
  }
- assert.equal(groups.get(null),1,'bottled honey is the one recipe with no ordinary-building source');
+ assert.equal(groups.get(null),undefined,'every bulk recipe has its ordinary building as source (the honey bottling is gone)');
  assert.ok(groups.size>=6,'goods come from several different buildings, so this is worth grouping at all');
  for(const [source,count] of groups)if(source)assert.ok(count>=1,source);
 });

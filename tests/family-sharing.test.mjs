@@ -5,7 +5,7 @@ import {ITEMS} from '../public/farm-state.js';
 import {sharingMessage,MAX_SHARE} from '../public/social-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // The newest definition of harvest_social; the item-name check on requests was added in family-sharing-all-items.sql.
-const sql=read('supabase/midgame-wave1.sql'),constraintSql=read('supabase/family-sharing-all-items.sql');
+const sql=read('supabase/valley-wave2.sql'),constraintSql=read('supabase/family-sharing-all-items.sql');
 
 test('the server accepts exactly the game\'s crops and goods, so a new item needs both lists updated',()=>{
  const list=sql.match(/items constant text\[\]:=array\[([^\]]+)\]/)[1].split(',').map(s=>s.trim().replace(/'/g,''));

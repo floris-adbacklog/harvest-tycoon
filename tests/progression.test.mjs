@@ -47,11 +47,11 @@ test('construction enforces ingredient suppliers, purchase price and one-time ow
  assert.throws(()=>act(s,{type:'construct',building:'mill'},now),/already/);assert.equal(s.coins,paid);
  const poor=createFarm(now);level(poor,2);poor.coins=99;assert.throws(()=>act(poor,{type:'construct',building:'mill'},now),/100 coins/);assert.equal(poor.coins,99);assert.ok(!buildingUnlocked(poor,'mill'));
 });
-test('every level has renewable play, every new building has a viable recipe; the early game opens by 25 and the midgame by 47',()=>{
+test('every level has renewable play, every new building has a viable recipe; the early game opens by 25, the midgame by 47 and the valley by 70',()=>{
  const s=createFarm(now);s.coins=10000000;
  const outputs=new Set();let cropCount=2;
  const early=key=>(BUILDING_LEVELS[key]??1)<=25,earlyRecipe=id=>(RECIPE_LEVELS[id]??1)<=25&&early(RECIPES[id].building);
- for(let n=1;n<=47;n++){
+ for(let n=1;n<=70;n++){
   level(s,n);buyAvailable(s);
   const crops=Object.keys(CROPS).filter(k=>cropUnlocked(s,k));assert.ok(crops.includes('wheat')&&crops.includes('corn'));assert.ok(crops.length>=cropCount);cropCount=crops.length;
   for(const [key,b]of Object.entries(BUILDINGS))if(BUILDING_LEVELS[key]===n&&b.type==='production')assert.ok(Object.keys(RECIPES).some(id=>RECIPES[id].building===key&&recipeUnlocked(s,id)),`${key} lacks a usable first recipe`);
@@ -62,17 +62,17 @@ test('every level has renewable play, every new building has a viable recipe; th
   if(n===25){
    assert.equal(cropCount,12);for(const key of Object.keys(BUILDINGS))if(early(key)&&key!=='factory')assert.ok(buildingUnlocked(s,key),key);
    for(const id of Object.keys(RECIPES))if(RECIPES[id].building!=='factory'&&earlyRecipe(id))assert.ok(recipeUnlocked(s,id),id);
-   for(const key of Object.keys(FEATURE_NAMES))assert.ok(featureUnlocked(s,key),key);
+   for(const key of Object.keys(FEATURE_NAMES))if(FEATURE_LEVELS[key]<=25)assert.ok(featureUnlocked(s,key),key);else assert.ok(!featureUnlocked(s,key),`${key} waits for its level`);
    assert.ok(outputs.has('harvesthamper')&&outputs.has('pickledbeans'));
   }
  }
- // By 47 the midgame expansion is fully open too; the Factory stays the endgame building (level 50).
- assert.equal(cropCount,15);for(const key of Object.keys(BUILDINGS))if(key!=='factory')assert.ok(buildingUnlocked(s,key),key);
+ // By 70 both expansions are fully open, the Valley Market and the Ranch included.
+ assert.equal(cropCount,16);for(const key of Object.keys(FEATURE_NAMES))assert.ok(featureUnlocked(s,key),key);for(const key of Object.keys(BUILDINGS))if(key!=='factory')assert.ok(buildingUnlocked(s,key),key);
  for(const id of Object.keys(RECIPES))if(RECIPES[id].building!=='factory')assert.ok(recipeUnlocked(s,id),id);
- assert.ok(['squashsoup','beeswax','wool','yarn','cloth','cider'].every(k=>outputs.has(k)));
+ assert.ok(['squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie'].every(k=>outputs.has(k)));
  const levels=Object.entries(CROP_LEVELS).filter(([,n])=>n>1).sort((a,b)=>a[1]-b[1]);
- assert.deepEqual(levels.map(([k])=>k),['lettuce','barley','greenbeans','cabbage','cauliflower','pumpkin','redcabbage','sunflower','apples','berries','squash','polebeans','ciderapples']);
- assert.equal(new Set(levels.map(([,n])=>n)).size,13);
+ assert.deepEqual(levels.map(([k])=>k),['lettuce','barley','greenbeans','cabbage','cauliflower','pumpkin','redcabbage','sunflower','apples','berries','squash','polebeans','ciderapples','cherries']);
+ assert.equal(new Set(levels.map(([,n])=>n)).size,14);
 });
 test('levelled inventory from the Starter Pack cannot bypass seeds, recipes or building locks',()=>{
  const s=createFarm(now);for(const key of Object.keys(s.inventory))s.inventory[key]=100;

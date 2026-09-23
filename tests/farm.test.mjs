@@ -13,9 +13,9 @@ function database(){
  return {sqlite,prepare,batch:async statements=>{sqlite.exec('BEGIN');try{const results=statements.map(s=>({meta:{changes:Number(sqlite.prepare(s._sql).run(...s._args).changes)}}));sqlite.exec('COMMIT');return results;}catch(e){sqlite.exec('ROLLBACK');throw e;}}};
 }
 
-test('all 15 crops can be planted, watered and harvested; collection is unique',()=>{
- const s=createFarm(now);s.coins=10000;s.xp=xpForLevel(50);
- assert.equal(Object.keys(CROPS).length,15);assert.equal(QUESTS.length,173);
+test('all 16 crops can be planted, watered and harvested; collection is unique',()=>{
+ const s=createFarm(now);s.coins=20000;s.xp=xpForLevel(70);
+ assert.equal(Object.keys(CROPS).length,16);assert.equal(QUESTS.length,192);
  for(const [crop,c] of Object.entries(CROPS)){
   apply(s,{type:'field',id:8,action:'plant',crop});apply(s,{type:'field',id:8,action:'water'},now+1000);
   assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+1000),/Still growing/);
@@ -24,13 +24,14 @@ test('all 15 crops can be planted, watered and harvested; collection is unique',
   if(c.perennial)apply(s,{type:'clear_planting',id:8,expectedPlantedAt:s.plots[8].plantedAt},now+c.duration);
   assert.equal(s.stats['harvest_'+crop],2);
  }
- assert.equal(s.stats.varieties,15);assert.equal(s.discovered.length,15);
+ assert.equal(s.stats.varieties,16);assert.equal(s.discovered.length,16);
 });
-test('all 41 recipes require ingredients, persist timed jobs and collect once',()=>{
+test('all 48 recipes require ingredients, persist timed jobs and collect once',()=>{
  const ordinary=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory');   // the Factory's bulk versions have their own tests
- assert.equal(ordinary.length,41);
+ assert.equal(ordinary.length,48);
  for(const [id,r]of ordinary){
-  const s=createFarm(now);s.xp=xpForLevel(50);s.coins=100000;for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;
+  const s=createFarm(now);s.xp=xpForLevel(70);s.coins=100000;for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;
+  normalizeFarm(s,now);   // what every load does: at level 70 the Valley Market's stalls fill up
   const before=structuredClone(s);
   assert.throws(()=>apply(s,{type:'produce',recipe:id}),/Missing ingredients/);assert.deepEqual(s,before);
   Object.assign(s.inventory,r.input);apply(s,{type:'produce',recipe:id});
