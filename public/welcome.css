@@ -117,4 +117,4 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]){background:#f
 .account-legal a{color:#7d6f58}
 .site-legal{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;margin-top:auto;padding:14px 0 18px;font-size:12px;color:#efe6cfcc}
 .site-legal a{color:#fff5da}
-@media(max-width:720px){.site-legal{padding:96px 0 28px}}
+@media(max-width:720px){.site-legal{padding:44px 0 24px}}
