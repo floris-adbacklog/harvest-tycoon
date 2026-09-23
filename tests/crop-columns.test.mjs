@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
-import {CROPS} from '../public/farm-state.js';
+import {CROPS,MASTERY_TIERS} from '../public/farm-state.js';
+import {renderPlayerProfile} from '../src/player-profiles.js';
 import {LEADERBOARD_CATEGORIES} from '../src/leaderboard.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const migrations=readdirSync(new URL('../supabase/',import.meta.url)).filter(f=>f.endsWith('.sql')).map(f=>read(`supabase/${f}`)).join('\n');
@@ -21,4 +22,8 @@ test('every crop has its own harvest column in player_stats, filled on every sav
 test('the crop leaderboards follow the crop list',()=>{
  for(const crop of Object.keys(CROPS))assert.equal(LEADERBOARD_CATEGORIES[`harvested_${crop}`]?.group,'crops',crop);
  assert.equal(Object.values(LEADERBOARD_CATEGORIES).filter(c=>c.group==='crops').length,Object.keys(CROPS).length);
+});
+test('the farmer profile counts the badges of every crop, so a new crop raises the total',()=>{
+ const html=renderPlayerProfile({username:'Farmer',level:66,badges:[{crop:'cherries',tier:0}],stats:{}},Date.now());
+ assert.match(html,new RegExp(`1 / ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges`));assert.match(html,/Cherries/);
 });
