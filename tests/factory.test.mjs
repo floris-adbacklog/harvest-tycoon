@@ -245,3 +245,12 @@ test('what is still to come is shown from the first minute, greyed out with a lo
  assert.match(css,/\.building-label\.locked\{padding:3px;width:32px;/);assert.match(css,/\.building-label\.locked>span:nth-child\(2\)\{display:none\}/);
  assert.match(css,/\.utility-label\.locked\{width:30px;height:30px;/);
 });
+test('a building that is not built yet shows one status line, what it makes, and Build only when it can be built',()=>{
+ const ui=read('public/economy-ui.js');
+ assert.match(ui,/\$\{key==='farmhouse'\|\|buildingUnlocked\(state,key\)\?`LEVEL \$\{bs\.level\}`:'NOT BUILT YET'\}/,'no "Level 1" for a building that is not there');
+ assert.match(ui,/<strong>\$\{level<openLevel\?`Opens at level \$\{openLevel\}`:buildingUnlockHint\(state,key\)\}<\/strong>/);
+ assert.match(ui,/<details class="build-recipes"><summary>See/,'the full recipes are folded away');
+ assert.match(ui,/\$\{eligible\?`<button type="button" id="construct-building" class="primary-button"/,'no greyed-out button while it is still locked');
+ assert.match(ui,/<p class="build-price">\$\{art\('coins'\)\}<span>\$\{number\(buildCost\)\} coins to build<\/span><\/p>/);
+ assert.match(ui,/`Build for \$\{number\(buildingCost\(state,key\)\)\} coins`/);
+});

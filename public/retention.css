@@ -1012,3 +1012,29 @@
 .sharing-gift-actions .primary-button{flex:1;justify-content:center;min-height:46px}
 .sharing-action.is-open{border-color:#a8935a;background:#fff8e1}
 .sharing-gift-actions .link-button{flex:none;min-height:46px;padding:0 10px;border:0;background:none;box-shadow:none;font-size:14px;font-weight:700;color:#7a6c58;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+/* A building that is not built yet: one status line, what it makes as pictures, the recipes folded away, and a Build
+   button only when you can build it (otherwise the price as plain information). */
+#building-content .construction-panel{margin:0 0 12px;padding:14px;border:1px solid #e6ddd2;border-radius:18px;background:#fbf8f2}
+#building-content .construction-panel.is-ready{border-color:#cfe0c3;background:#f3f9ec}
+#building-content .build-status{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+#building-content .build-status-art{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:#fffdf6;border:1px solid #e6dccd}
+#building-content .build-status-art>.game-art{width:32px;height:32px}
+#building-content .build-status-art.is-locked{background:#eee7dc}
+#building-content .build-status>div{min-width:0;display:grid;gap:2px}
+#building-content .build-status strong{font:600 18px/1.2 'Outfit',sans-serif;color:#3f3827}
+#building-content .build-status small{font-size:13px;color:#7f735f}
+#building-content .build-makes{display:grid;gap:6px;margin:0 0 10px}
+#building-content .build-makes>span{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9a8457}
+#building-content .build-makes>div{display:flex;flex-wrap:wrap;gap:6px}
+#building-content .build-makes b{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 5px;border:1px solid #e6dccd;border-radius:999px;background:#fff;font-size:13px;color:#4f4331}
+#building-content .build-makes b .game-art{width:22px;height:22px}
+#building-content .build-makes b.build-more{padding-left:10px;color:#8a7c69}
+#building-content .build-recipes{margin:0 0 12px}
+#building-content .build-recipes>summary{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#6d5a2f;cursor:pointer}
+#building-content .build-recipes .construction-recipes{margin-top:10px}
+#building-content .build-needs{margin:0 0 10px;font-size:13px;color:#8a5a12}
+#building-content #construct-building{width:100%;justify-content:center;gap:8px;min-height:48px}
+#building-content .build-short{margin:8px 0 0;text-align:center;font-size:13px;color:#8a5a12}
+#building-content .build-price{display:flex;align-items:center;justify-content:center;gap:6px;margin:0;padding:10px;border-radius:12px;background:#f1ebe2;font-size:14px;font-weight:700;color:#6f6250}
+#building-content .build-price .game-art{width:20px;height:20px}

@@ -460,3 +460,11 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   up to your stock); Ask for goods lists every crop or good you have unlocked. Toasts name the item ("You sent 4
   Fresh bread to Anna."). The reply now also carries kind, item and quantity.
 - No edge function change: farm-api passes the action through unchanged.
+
+## Buildings that are not built yet
+- The header says "NOT BUILT YET" instead of "LEVEL 1". The panel shows one status line: "Ready to build" (hammer) or
+  "Opens at level 21" with "You are level 20 · almost there" / "30 levels to go" (lock); then "Makes" as picture chips
+  of everything the building can make (six, then "+N more"); the full recipes folded under "See all N recipes"; and a
+  Build button with the coin price only when it can be built ("You need N more coins" below it if short). A locked
+  building shows the price as plain information instead of a greyed-out button. The buildings list says
+  "Build for N coins".
