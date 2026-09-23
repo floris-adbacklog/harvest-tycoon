@@ -584,3 +584,22 @@
 #building-content .job-panel.ready .job-copy progress{accent-color:#5e9b51}
 #building-content .job-panel.ready [data-job-time]{color:#3f6b2c;font-weight:700}
 #building-content .job-collect{flex:none;min-height:40px;padding:8px 14px}
+/* Narrow recipe cards (small phones, larger text): the start button gets its own full-width row under the stepper
+   instead of being squeezed next to it; its label never spills out of the button. */
+#building-content .recipe-card{container-type:inline-size}
+#building-content .recipe-footer .start-recipe{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding-inline:10px}
+@container (max-width:340px){
+ #building-content .recipe-footer{grid-template-columns:1fr}
+ #building-content .recipe-footer .start-recipe{grid-column:1/-1}
+ #building-content .batch-picker{flex-direction:row;justify-content:space-between;width:100%}
+}
+
+/* Farmhouse field map: small plain tiles (soil with a sprout for your fields, the next one marked, the rest faint)
+   instead of forty big seed bags and padlocks. */
+.expansion-panel .field-preview{grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;margin:14px 0}
+.expansion-panel .field-preview>span{height:22px;border-radius:6px}
+.expansion-panel .field-preview>.unlocked{border:1px solid #c9a57f;background:radial-gradient(circle at 50% 42%,#8fbf5a 0 3px,transparent 3.5px),linear-gradient(180deg,#b98a5c,#9c6f45)}
+.expansion-panel .field-preview>.locked{border:1px dashed #e0d6c9;background:#f6f1ea}
+.expansion-panel .field-preview>.is-next{border:1.5px dashed #d0a64a;background:#fff6dc;position:relative}
+.expansion-panel .field-preview>.is-next::after{content:'+';position:absolute;inset:0;display:grid;place-items:center;font:800 14px/1 'Outfit',sans-serif;color:#b08a3c}
+@media(max-width:600px){.expansion-panel .field-preview>span{height:20px}}
