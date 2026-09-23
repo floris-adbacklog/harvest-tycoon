@@ -16,6 +16,14 @@ export async function enabledProviders({url,key,fetchImpl=globalThis.fetch}){
  }catch{return [];}
 }
 
+// Google refuses to sign anyone in from a browser built into another app ("disallowed_useragent"): the Facebook,
+// Instagram, Messenger, Threads, TikTok, Snapchat and LinkedIn apps, and Android web views in general. Visitors from
+// Meta ads arrive in exactly those browsers, so there the Google button is left out; Facebook and email still work.
+// Only named app markers are used: an iPhone home-screen app also lacks the "Safari" word but can use Google fine.
+const EMBEDDED=/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|; wv\)/i;
+export const embeddedBrowser=(userAgent=globalThis.navigator?.userAgent??'')=>EMBEDDED.test(userAgent);
+export const usableProviders=(list,userAgent)=>embeddedBrowser(userAgent)?list.filter(provider=>provider!=='google'):list;
+
 export const providerName=provider=>SOCIAL_PROVIDERS[provider]??'that service';
 
 // Could not even leave for Google or Facebook (a network problem, or the provider was switched off meanwhile).

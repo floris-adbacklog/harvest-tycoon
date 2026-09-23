@@ -409,3 +409,9 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   with its email changed), or ask for an admin delete function.
 - 404: public/404.html (Vercel serves it for every unknown URL): the farm behind a cream card with the tractor, a big
   404, "This field is empty." and "Back to the farm"; noindex, no scripts, absolute paths so it works at any depth.
+- Google blocks OAuth inside in-app browsers ("disallowed_useragent"). Visitors from Meta ads land in the Facebook /
+  Instagram browser, so there (and in Threads, TikTok, Snapchat, LinkedIn and Android web views) the Google button is
+  left out; Facebook and email stay (social-login.js embeddedBrowser/usableProviders). Detection uses named app markers
+  only, so the iPhone home-screen app (no "Safari" in its user agent) keeps Google.
+- Facebook sign-in on the web always uses Facebook's login page in the browser (also Chrome on iPhone); only native
+  apps with the Facebook SDK can switch to the Facebook app.

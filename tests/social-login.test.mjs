@@ -49,3 +49,20 @@ test('unknown pages get a friendly 404 in the same style, with the way back and 
  assert.match(html,/<meta name="robots" content="noindex">/);assert.match(html,/<a class="legal-button nf-button" href="\/">Back to the farm<\/a>/);
  assert.ok(!/<script/i.test(html),'no scripts');assert.match(html,/href="\/legal\.css"/,'absolute paths, so it works at any depth');
 });
+
+test('inside the Facebook, Instagram or other in-app browsers the Google button is left out; elsewhere both stay',async()=>{
+ const {embeddedBrowser,usableProviders}=await import('../src/social-login.js');
+ const ua={
+  facebookIos:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0.0.40.97;FBBV/620000000;FBDV/iPhone15,2;FBMD/iPhone;FBSN/iOS;FBSV/17.5;FBSS/3;FBID/phone;FBLC/nl_NL;FBOP/5]',
+  instagramAndroid:'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP2A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/126.0.6478.71 Mobile Safari/537.36 Instagram 337.0.0.35.102 Android',
+  androidWebView:'Mozilla/5.0 (Linux; Android 13; SM-S911B; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/125.0 Mobile Safari/537.36',
+  chromeIphone:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0.6478.54 Mobile/15E148 Safari/604.1',
+  safariIphone:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+  homeScreenIphone:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+  chromeAndroid:'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+  desktop:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+ };
+ for(const key of ['facebookIos','instagramAndroid','androidWebView']){assert.equal(embeddedBrowser(ua[key]),true,key);assert.deepEqual(usableProviders(['google','facebook'],ua[key]),['facebook'],key);}
+ for(const key of ['chromeIphone','safariIphone','homeScreenIphone','chromeAndroid','desktop']){assert.equal(embeddedBrowser(ua[key]),false,key);assert.deepEqual(usableProviders(['google','facebook'],ua[key]),['google','facebook'],key);}
+ assert.match(read('src/main.js'),/providers=usableProviders\(list,navigator\.userAgent\)/);
+});

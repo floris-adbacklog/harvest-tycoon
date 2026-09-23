@@ -1,6 +1,6 @@
 import {createFarmPresence} from './presence.js';
 import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError,socialProviders} from './supabase.js';
-import {OAUTH_KEY,providerName,oauthStartError,oauthReturnMessage} from './social-login.js';
+import {OAUTH_KEY,providerName,oauthStartError,oauthReturnMessage,usableProviders} from './social-login.js';
 import {fetchLeaderboard} from './leaderboard.js';
 import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
@@ -115,7 +115,7 @@ async function openFarm(){
  finally{checking=false;if(reopen){reopen=false;queueMicrotask(openFarm);}}
 }
 document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{if(submitting)return;const next=button.dataset.mode;if(next!==mode)trackAuth('mode',{mode:next});setMode(next,true);});
-socialProviders().then(list=>{providers=list;document.querySelectorAll('[data-provider]').forEach(b=>{b.hidden=!list.includes(b.dataset.provider);});showSocial();});
+socialProviders().then(list=>{providers=usableProviders(list,navigator.userAgent);document.querySelectorAll('[data-provider]').forEach(b=>{b.hidden=!providers.includes(b.dataset.provider);});showSocial();});
 document.querySelectorAll('[data-provider]').forEach(button=>button.onclick=async()=>{
  if(submitting||!supabase)return;const provider=button.dataset.provider;
  trackAuth('submit',{mode,method:provider});submitting=true;lock(true);$('account-message').textContent=`Opening ${providerName(provider)}…`;
