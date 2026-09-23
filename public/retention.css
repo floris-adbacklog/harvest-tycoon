@@ -525,3 +525,62 @@
 /* Toast text and chips share one centre line with the icon. */
 .toast-text{display:flex;flex-wrap:wrap;align-items:center;column-gap:5px;row-gap:4px}
 .toast-chip{vertical-align:middle;margin:0}
+
+/* Production recipe cards: a head with what you make (picture, name, time, profit), one row of ingredient chips with
+   the result after them, and the batch stepper next to the start button. */
+#building-content .recipe-card{padding:12px;border-radius:18px}
+#building-content .recipe-card.is-ready{border-color:#cfe0c3;background:#f8fbf3}
+#building-content .recipe-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+#building-content .recipe-art{flex:0 0 48px;display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#f1e9dc}
+#building-content .recipe-art>.game-art{flex:none;width:40px;height:40px;object-fit:contain}
+#building-content .recipe-title{display:block;flex:1;min-width:0;margin:0}
+#building-content .recipe-title h4{margin:0;font:600 16px/1.25 'Outfit',sans-serif;color:#453e28}
+#building-content .recipe-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:3px;font-size:12px;color:#807463}
+#building-content .recipe-meta>span{display:inline-flex;align-items:center;gap:4px}
+#building-content .recipe-meta svg{width:14px;height:14px}
+#building-content .recipe-value{display:inline-flex;align-items:center;gap:4px;margin:0;padding:0;border:0;font-size:12px;color:#5d7d45}
+#building-content .recipe-value .game-art{width:16px;height:16px}
+#building-content .recipe-value strong{color:#3f6b2c}
+#building-content .recipe-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0}
+#building-content .recipe-flow .ingredients{flex:0 1 auto;gap:5px}
+#building-content .recipe-flow .ingredient{padding:3px 8px 3px 3px;border-radius:999px;font-size:12px;line-height:1.3}
+#building-content .recipe-flow .ingredient>.product-art,#building-content .recipe-flow .ingredient>img{width:22px;height:22px}
+#building-content .recipe-arrow{display:block;width:16px;height:16px;margin:0 2px;transform:none}
+#building-content .recipe-output{max-width:none}
+#building-content .recipe-footer{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px 10px;margin-top:10px;padding-top:10px;border-top:1px dashed #e6ddd0}
+#building-content .recipe-footer>span{grid-column:1/-1;font-size:12px;color:#807463}
+#building-content .recipe-card.is-ready .recipe-footer>span{color:#39518f;font-weight:700}
+#building-content .batch-picker{display:flex;flex-direction:column;align-items:center;gap:2px;margin:0}
+#building-content .batch-picker>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#building-content .batch-picker small{font-size:11px;white-space:nowrap}
+#building-content .batch-stepper button{min-height:36px;min-width:36px}
+#building-content .batch-stepper output{min-width:30px}
+#building-content .recipe-footer .start-recipe{grid-column:2;width:100%;min-height:44px;margin:0;justify-content:center}
+#building-content .recipe-footer>span+.start-recipe{grid-column:1/-1}
+#building-content .production-capacity{padding:10px 14px}
+#building-content .production-capacity p{margin:2px 0 0;font-size:12px}
+#building-content .recipe-xp{display:inline-flex;align-items:center;gap:3px;color:#39518f;font-weight:700}
+#building-content .recipe-xp .game-art{width:15px;height:15px}
+/* When a recipe is ready, the footer is just the stepper and the button (the XP sits in the head). */
+#building-content .recipe-card.is-ready .recipe-footer>span{display:none}
+#building-content .batch-stepper{height:40px}
+#building-content .batch-stepper output{height:auto}
+/* The start button lines up with the stepper (same top, same height); "12 available" sits under the stepper only. */
+#building-content .recipe-footer{align-items:start}
+#building-content .batch-stepper{height:42px}
+#building-content .batch-stepper button{min-height:42px}
+#building-content .recipe-footer .start-recipe{height:42px;min-height:42px;padding-block:0}
+
+/* Running batches: one row each (picture, name, amount and time, a bar); Collect appears once the batch is ready. */
+#building-content .production-batches{display:grid;gap:8px;margin:0 0 16px}
+#building-content .job-panel{display:flex;align-items:center;gap:12px;margin:0;padding:10px 12px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2}
+#building-content .job-panel.ready{border-color:#cfe0c3;background:#f3f9ec}
+#building-content .job-art{flex:0 0 42px;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#f1e9dc}
+#building-content .job-art>.game-art{flex:none;width:34px;height:34px;object-fit:contain}
+#building-content .job-copy{flex:1;min-width:0}
+#building-content .job-copy strong{display:block;font:600 15px 'Outfit',sans-serif;color:#453e28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#building-content .job-copy>span{display:block;margin:1px 0 5px;font-size:12px;color:#807463}
+#building-content .job-copy progress{display:block;width:100%;height:6px;accent-color:#a88a5c}
+#building-content .job-panel.ready .job-copy progress{accent-color:#5e9b51}
+#building-content .job-panel.ready [data-job-time]{color:#3f6b2c;font-weight:700}
+#building-content .job-collect{flex:none;min-height:40px;padding:8px 14px}

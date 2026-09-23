@@ -304,3 +304,7 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - **Family**: "This week" puts the order first and folds "Your rewards" below it (open when complete); order lines
   without stock show no disabled buttons; a shorter delivery note. Tournament shows one empty-state line instead of
   three empty places and no duplicate prize sentence. The invite search matches the leaderboard's slim search field.
+- **Production buildings**: recipe cards have a head (picture, name, time, profit, XP), one row of small ingredient
+  chips with the result, and the stepper next to an equally tall start button; status only when something is
+  missing. Running batches are one row each (picture, name, amount, time left, bar) with Collect only when ready.
+  Bakery on a phone: 3218 → ~2400 px.
