@@ -8,9 +8,10 @@ test('leaderboard asks for ten ranked stats and computes own rank outside the li
 });
 
 import {LEADERBOARD_CATEGORIES,rankedRows} from '../src/leaderboard.js';
+import {CROPS} from '../public/farm-state.js';
 test('every crop has its own board; only public metrics can be selected',async()=>{
- for(const crop of ['wheat','corn','barley','lettuce','cabbage','cauliflower','pumpkin','redcabbage','sunflower','apples','berries','greenbeans'])assert(LEADERBOARD_CATEGORIES['harvested_'+crop]);
- assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,25);
+ for(const crop of Object.keys(CROPS))assert(LEADERBOARD_CATEGORIES['harvested_'+crop],crop);
+ assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,13+Object.keys(CROPS).length,'thirteen boards plus one per crop');
  for(const key of ['events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects'])assert(LEADERBOARD_CATEGORIES[key],`${key} board`);
  for(const category of ['diamonds','harvested_grain','state','__proto__'])await assert.rejects(fetchLeaderboard({from(){throw new Error('Should not query');}},'self',category),/valid leaderboard/);
  for(const category of Object.keys(LEADERBOARD_CATEGORIES)){

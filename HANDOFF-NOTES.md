@@ -9,6 +9,7 @@ Work from THIS zip only. Do not restore older files from earlier chats. Run `npm
 - **Supabase**: migration `harvest_midgame_wave1_items` is LIVE (`supabase/midgame-wave1.sql`): family gifts and requests accept the 9 new items, and the leaderboard totals count the new crops and goods. `harvest_commit_farm` untouched. Do not replay.
 - **To deploy**: farm-api (rules changed) and notify-hourly (`names.js` regenerated), then the frontend. Journal: Glasshouse crates count as crops picked, not goods made.
 - Tests: `tests/midgame-expansion.test.mjs` (unlock levels, full chains, Factory, orders timing, yard placement, assets). 688 pass.
+- **Hotfix (same day)**: farmer profiles failed after this update because farm-api reads `harvested_<crop>` for every crop and the new crops had no column. Migration `harvest_midgame_crop_columns` is LIVE (`supabase/midgame-crop-columns.sql`): columns + ranking indexes for squash, pole beans, cider apples and (ahead of wave 2) cherries, and `harvest_commit_farm` fills them (live definition + those four columns). The crop leaderboards are now generated from `CROPS` (`src/leaderboard.js`), so a new crop gets its board automatically; `tests/crop-columns.test.mjs` fails when a crop has no column or is not written on save.
 - Still to come: wave 2 (L50–70: Goat Shed, Craft Workshop, Valley Market, cherries, ranch) and wave 3 (L75–90: Estate Workshop, prize produce, Trade Depot + export orders, Grand Valley Fair).
 
 ## Latest: 20 selectable farmer avatars (2026-09-21)

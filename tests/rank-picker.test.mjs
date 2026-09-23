@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {LEADERBOARD_CATEGORIES} from '../src/leaderboard.js';
+import {CROPS} from '../public/farm-state.js';
 import {rankPickerMarkup,nextRank,bindRankPicker,RANK_ART,rankArtKey} from '../public/rank-picker.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const art=key=>`<i data-art="${key}"></i>`;
@@ -10,7 +11,7 @@ test('every board has a chip: thirteen main boards, a "By crop" chip and one chi
  const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art);
  const keys=[...html.matchAll(/data-rank="([a-z_]+)"/g)].map(m=>m[1]);
  assert.deepEqual(keys.sort(),Object.keys(LEADERBOARD_CATEGORIES).sort(),'nothing lost from the old dropdown');
- assert.equal(keys.length,25);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,12);
+ assert.equal(keys.length,13+Object.keys(CROPS).length);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length);
  assert.match(html,/id="rank-crops"[^>]*hidden/,'the crop row starts closed');assert.match(html,/data-rank-crops aria-pressed="false" aria-expanded="false" aria-controls="rank-crops"/);
  for(const key of ['level','currency','harvested_crops','goods_produced','items_sold','badges','deliveries','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects'])assert(RANK_ART[key],`${key} has a picture`);
  assert.match(html,/data-art="wheat"/);assert.match(html,/data-art="berries"/);assert.match(html,/data-art="xp"/);

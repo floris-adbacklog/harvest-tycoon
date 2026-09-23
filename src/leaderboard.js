@@ -1,6 +1,8 @@
 import {avatarImage} from '../public/player-avatars.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {rankArt} from '../public/rank-art.js';
+import {CROPS,CROP_LEVELS,MASTERY_TIERS} from '../public/farm-state.js';
+const CROP_BOARDS=Object.keys(CROPS).sort((a,b)=>(CROP_LEVELS[a]??1)-(CROP_LEVELS[b]??1));
 export const LEADERBOARD_CATEGORIES=Object.freeze({
  level:{label:'Highest level',heading:'Level',unit:'level',description:'Your farmer level, earned through farming experience.'},
  currency:{label:'Most coins',heading:'Coins',unit:'coins',description:'Current coin balance. Spending coins can change your position.'},
@@ -8,7 +10,7 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  harvested_crops:{label:'Most crops harvested',heading:'Crops',unit:'crops harvested',description:'Lifetime harvest of all crop varieties, including extra yield from water and care.'},
  goods_produced:{label:'Most goods produced',heading:'Goods made',unit:'goods produced',description:'Lifetime production goods collected from every building, from honey to berry tart.'},
  items_sold:{label:'Most items sold',heading:'Items sold',unit:'items sold',description:'Lifetime crops and goods sold at the market. Counts from when this board launched.'},
- badges:{label:'Most badges',heading:'Badges',unit:'badges',description:'Crop mastery medals you have claimed. Up to 48 badges to earn.'},
+ badges:{label:'Most badges',heading:'Badges',unit:'badges',description:`Crop mastery medals you have claimed. Up to ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges to earn.`},
  deliveries:{label:'Most deliveries',heading:'Deliveries',unit:'deliveries',description:'Total delivery orders completed for your neighbours.'},
  events_finished:{label:'Most events finished',heading:'Events',unit:'events finished',description:'Farm events you completed and qualified for.'},
  best_streak:{label:'Longest daily streak',heading:'Streak',unit:'days in a row',description:'The most days in a row you came back to collect your daily gift.'},
@@ -16,21 +18,12 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  chores_done:{label:'Most chores',heading:'Chores',unit:'chores done',description:'Farm chores completed.'},
  helping_rounds:{label:'Most helping-hand rounds',heading:'Helping hands',unit:'rounds',description:'Rounds of all four helping-hand jobs finished.'},
  estate_projects:{label:'Most estate projects',heading:'Estate',unit:'projects',description:'Estate chapters and commissions completed.'},
- harvested_wheat:{label:'Wheat harvested',heading:'Wheat',unit:'wheat harvested',group:'crops',description:'Lifetime wheat harvested, including extra yield from water and care.'},
- harvested_corn:{label:'Corn harvested',heading:'Corn',unit:'corn harvested',group:'crops',description:'Lifetime corn harvested, including extra yield from water and care.'},
- harvested_barley:{label:'Barley harvested',heading:'Barley',unit:'barley harvested',group:'crops',description:'Lifetime barley harvested, including extra yield from water and care.'},
- harvested_lettuce:{label:'Lettuce harvested',heading:'Lettuce',unit:'lettuce harvested',group:'crops',description:'Lifetime lettuce harvested, including extra yield from water and care.'},
- harvested_cabbage:{label:'Cabbage harvested',heading:'Cabbage',unit:'cabbage harvested',group:'crops',description:'Lifetime cabbage harvested, including extra yield from water and care.'},
- harvested_cauliflower:{label:'Cauliflower harvested',heading:'Cauliflower',unit:'cauliflower harvested',group:'crops',description:'Lifetime cauliflower harvested, including extra yield from water and care.'},
- harvested_pumpkin:{label:'Pumpkin harvested',heading:'Pumpkin',unit:'pumpkin harvested',group:'crops',description:'Lifetime pumpkin harvested, including extra yield from water and care.'},
- harvested_redcabbage:{label:'Red cabbage harvested',heading:'Red cabbage',unit:'red cabbage harvested',group:'crops',description:'Lifetime red cabbage harvested, including extra yield from water and care.'},
- harvested_sunflower:{label:'Sunflower harvested',heading:'Sunflower',unit:'sunflower harvested',group:'crops',description:'Lifetime sunflower harvested, including extra yield from water and care.'},
- harvested_greenbeans:{label:'Green beans harvested',heading:'Green beans',unit:'green beans harvested',group:'crops',description:'Lifetime green beans harvested, including water and care bonuses.'},
- harvested_apples:{label:'Apples harvested',heading:'Apples',unit:'apples harvested',group:'crops',description:'Lifetime apples harvested, including water and care bonuses.'},
- harvested_berries:{label:'Berries harvested',heading:'Berries',unit:'berries harvested',group:'crops',description:'Lifetime berries harvested, including water and care bonuses.'}
+ // One board per crop, straight from the game's crop list (in the order they unlock), so a new crop gets its board. Each reads the
+ // crop's own column in player_stats, which the crop's migration adds (supabase/midgame-crop-columns.sql for the midgame crops).
+ ...Object.fromEntries(CROP_BOARDS.map(key=>[`harvested_${key}`,{label:`${CROPS[key].name} harvested`,heading:CROPS[key].name,unit:`${CROPS[key].name.toLowerCase()} harvested`,group:'crops',description:`Lifetime ${CROPS[key].name.toLowerCase()} harvested, including extra yield from water and care.`}]))
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}
-const PUBLIC_FIELDS='player_id,username,currency,level,harvested_wheat,harvested_corn,harvested_barley,harvested_lettuce,harvested_cabbage,harvested_cauliflower,harvested_pumpkin,harvested_redcabbage,harvested_sunflower,harvested_greenbeans,harvested_apples,harvested_berries,harvested_crops,badges,deliveries,goods_produced,items_sold,events_finished,best_streak,farm_fields,chores_done,helping_rounds,estate_projects,last_active_at,vip_expires_at,avatar_id';
+const PUBLIC_FIELDS=['player_id','username','currency','level',...CROP_BOARDS.map(key=>`harvested_${key}`),'harvested_crops','badges','deliveries','goods_produced','items_sold','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','last_active_at','vip_expires_at','avatar_id'].join(',');
 export async function fetchLeaderboard(client,playerId,category='level'){
  categoryFor(category);
  const {data,error}=await client.from('player_stats').select(PUBLIC_FIELDS).order(category,{ascending:false}).order('player_id',{ascending:true}).limit(10);
