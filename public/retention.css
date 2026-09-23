@@ -1107,3 +1107,7 @@
 .mastery-card.is-locked small{color:#a09684}
 .mastery-lock{display:grid;place-items:center;align-self:center;width:40px;height:40px;border-radius:12px;background:#efeae1}
 .mastery-lock>.game-art{width:24px;height:24px;opacity:.75}
+
+/* Places in the valley in the Farm buildings list: their own heading across both columns, the painted picture in the card. */
+#buildings-dialog .catalog-heading{grid-column:1/-1;margin:14px 0 2px;font:600 17px 'Outfit',sans-serif;color:#453e28}
+#buildings-dialog .building-card.is-place .building-card-art>.game-art{width:62px;height:62px;object-fit:contain}
