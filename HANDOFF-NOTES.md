@@ -290,3 +290,8 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   old), then refreshed; a failed request is retried after 3 and 10 seconds (it used to wait a minute, so the line
   often only appeared after a refresh); a background tab asks when it is shown; play.html preconnects to Supabase.
   Live logs (24h): p50 300 ms, p90 550 ms, cold starts up to 4.2 s, 8 of 482 requests failed.
+- **Event progress fix** (migration `harvest_event_progress_baseline`, live; `supabase/live-events-baseline.sql`): the
+  trigger skipped every save within 10 s of the last counted one and lost those deltas, so quick field-by-field play
+  barely counted (e.g. 4 care counted after dozens). Each `live_event_players` row now keeps a `baseline`; progress =
+  stats now − baseline. The 10 s only limit the contribution counter. Non-event stat increases (admin gifts,
+  transfers, unrelated actions) move the baseline. Verified on production in a rolled-back transaction.

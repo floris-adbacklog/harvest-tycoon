@@ -39,6 +39,8 @@ begin
 end $$;
 drop trigger if exists harvest_event_validate on public.live_events;
 create trigger harvest_event_validate before insert or update on public.live_events for each row execute function public.harvest_event_validate();
+-- Replaced live on 2026-09-23 by live-events-baseline.sql (progress from a per-player baseline, nothing lost to the
+-- 10-second limit). Kept here as the original version.
 -- Only receipts from an accepted gameplay action count. Admin grants and wallet transfers cannot create event progress.
 create or replace function public.harvest_event_progress() returns trigger language plpgsql security invoker set search_path='' as $$
 declare e public.live_events; p public.live_event_players; o jsonb; receipt jsonb; delta integer; value integer; changed boolean; stat text; action text;

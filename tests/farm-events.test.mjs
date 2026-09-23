@@ -142,3 +142,12 @@ test('the first three finishers win a podium prize on top, the same in settlemen
   assert.match(sql,/\+\(case r\.rank when 1 then 2 when 2 then 1 when 3 then 1 else 0 end\)/,file);
  }
 });
+test('event progress counts every action: a per-player baseline, the 10 seconds only limit contributions',()=>{
+ const sql=read('supabase/live-events-baseline.sql');
+ assert.match(sql,/alter table public\.live_event_players add column if not exists baseline jsonb;/);
+ assert.match(sql,/value:=least\(\(o->>'target'\)::integer,greatest\(0,after_v-coalesce\(\(p\.baseline->>stat\)::integer,before_v\)\)\);/,'progress is stats now minus the baseline');
+ assert.doesNotMatch(sql,/if p\.last_at>now\(\)-interval '10 seconds' then continue;/,'no save is skipped any more');
+ assert.match(sql,/p\.actions\+\(case when p\.last_at<=now\(\)-interval '10 seconds' then 1 else 0 end\)/,'the 10 seconds only limit how often a save counts as a contribution');
+ assert.match(sql,/-- Not an event action: whatever it added to the stats must not count later on\./,'admin gifts and transfers move the baseline');
+ assert.match(sql,/if not mapped then\n    if after_v>before_v then p\.baseline:=jsonb_set/,'an action that does not match the goal moves the baseline too');
+});
