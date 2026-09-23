@@ -177,3 +177,12 @@ test('250 quests: the last 46 carry the expansion ladders to the end of the game
  assert.equal(availableDaily(farmAt(30),QUESTS.find(q=>q.title==='A river of honey')),false,'honey from the Bee Yard, not the hands-on jobs');
  const fresh=createFarm(now);for(const q of added)assert.equal(fresh.stats[q.stat],0,`${q.stat} is a counter the game keeps`);
 });
+
+test('a Factory batch can never be finished with diamonds: the shop does not offer it and the server refuses it',()=>{
+ const ui=read('public/boosts-ui.js');
+ assert.match(ui,/function runningBatches\(\)\{return Object\.entries\(state\.buildings\)\.filter\(\(\[building\]\)=>building!=='factory'\)/);
+ assert.match(ui,/ready to collect now \(not the Factory\)/);
+ const s=farmAt(60,100);s.diamonds=100;act(s,{type:'produce',recipe:'mass_bread'},now);
+ const job=productionJobs(s.buildings.factory)[0];assert.ok(job,'a Factory batch is running');
+ assert.throws(()=>act(s,{type:'finish_batch',building:'factory',jobId:job.id,expectedCost:10},now),/too big to rush/);
+});

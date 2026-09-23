@@ -11,7 +11,8 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  const bridge=()=>window.parent.harvestBridge;
  let previousVip=vipActive(state,farmNow()),observedExpiry=state.vipExpiresAt??0;
  const track=(event,params={})=>bridge()?.trackCommerce?.(event,params);
- function runningBatches(){return Object.entries(state.buildings).flatMap(([building,b])=>productionJobs(b).map((job,index)=>({building,job,number:index+1,key:building+'/'+job.id})).filter(b=>b.job.readyAt>farmNow()));}
+ // Factory batches are too big to finish with diamonds (the server refuses them, like Finish production skips them).
+ function runningBatches(){return Object.entries(state.buildings).filter(([building])=>building!=='factory').flatMap(([building,b])=>productionJobs(b).map((job,index)=>({building,job,number:index+1,key:building+'/'+job.id})).filter(b=>b.job.readyAt>farmNow()));}
  function signature(){return [state.vipExpiresAt,vipActive(state,farmNow()),finishing,...runningBatches().map(b=>b.key),state.diamonds,state.boosts.upgradeCredits,...Object.keys(BOOSTS).map(id=>boostStatus(state,id,farmNow()).reason),...state.plots.filter(p=>p.crop&&p.readyAt>farmNow()).map(p=>`${p.id}:${p.crop}`)].join('|');}
  // Finish crops / batches: the selection, its total price, and the button label and state kept in step with it.
  const FINISH={crop:{cost:SINGLE_CROP_COST,button:'finish-one-crop',one:'crop',many:'crops',selected:()=>selectedFields},batch:{cost:SINGLE_BATCH_COST,button:'finish-one-batch',one:'batch',many:'batches',selected:()=>selectedBatches}};
@@ -59,7 +60,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
    detail:!growing.length?chip('need','No crops growing'):state.diamonds<SINGLE_CROP_COST?chip('need',`Need ${number(SINGLE_CROP_COST-state.diamonds)} more diamonds`):'',
    button:`<button id="finish-one-crop" class="boost-buy">${finishLabel('crop')}</button>`,
    extra:growing.length?`<span class="field-picker-label">Choose fields</span>${fieldPicker({id:'finish-crop-field',plots:growing,selected:selectedFields,multiple:true,available:Math.floor(state.diamonds/SINGLE_CROP_COST),now:farmNow(),disabled:finishing,hint:'Select crops to finish instantly',perItem:`${SINGLE_CROP_COST} diamonds per field`,picture:'harvest'})}`:''});
-  const batchCard=card({picture:'buildings',title:'Finish batches',text:`${SINGLE_BATCH_COST} diamonds a batch, ready to collect now.`,
+  const batchCard=card({picture:'buildings',title:'Finish batches',text:`${SINGLE_BATCH_COST} diamonds a batch, ready to collect now (not the Factory).`,
    detail:!batches.length?chip('need','No batches running'):state.diamonds<SINGLE_BATCH_COST?chip('need',`Need ${number(SINGLE_BATCH_COST-state.diamonds)} more diamonds`):'',
    button:`<button id="finish-one-batch" class="boost-buy">${finishLabel('batch')}</button>`,
    extra:batches.length?`<span class="field-picker-label">Choose batches</span>${batchPicker({id:'finish-batch-picker',batches,selectedKeys:selectedBatches,multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),now:farmNow(),disabled:finishing,perItem:`${SINGLE_BATCH_COST} diamonds per batch`})}`:''});
