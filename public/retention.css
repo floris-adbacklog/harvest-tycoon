@@ -492,3 +492,33 @@
 #leaderboard-dialog .leaderboard-farmer strong,#leaderboard-dialog .leaderboard-farmer .player-name-link{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;font-size:15px}
 #leaderboard-dialog .leaderboard-table small{margin-top:1px;font-size:12px}
 #leaderboard-dialog .your-rank{margin-top:10px;padding:12px 14px;border:1px solid #d9c28d;border-radius:14px;background:#fff6dc}
+
+/* Family "This week": the order first, the reward preview folded below it, no disabled buttons without stock. */
+.family-none{font-size:12px;font-weight:700;color:#a09684}
+.family-rewards-fold{margin:16px 0;border:1px solid #e6dcc0;border-radius:16px;background:#fbf8ee}
+.family-rewards-fold>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
+.family-rewards-fold>summary::-webkit-details-marker{display:none}
+.family-rewards-fold>summary strong{font:600 16px 'Outfit',sans-serif;color:#453e28}
+.family-rewards-fold>summary span{margin-left:auto;font-size:12px;font-weight:600;color:#8f816f}
+.family-rewards-fold[open] .factory-chevron{transform:rotate(180deg)}
+.family-rewards-fold>.family-order-rewards{margin:0 12px 12px}
+.family-line-actions:empty{display:none}
+
+/* Family tournament with no families yet: one calm line instead of three empty places. */
+.family-podium-empty{display:flex;align-items:center;gap:12px;margin:8px 0;padding:14px;border:1px dashed #e0d6c9;border-radius:16px;background:#fbf8f2}
+.family-podium-empty>.game-art{flex:none;width:44px;height:44px;object-fit:contain}
+.family-podium-empty strong{display:block;font:600 15px 'Outfit',sans-serif;color:#453e28}
+.family-podium-empty span{display:block;margin-top:2px;font-size:13px;color:#807463}
+
+/* Family invite: the same slim search field as the leaderboard. */
+.family-name-invite{padding:14px;border:1px solid #e3d8cd;border-radius:18px;background:#fbf8f2}
+.family-invite-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.family-invite-head>.game-art{flex:none;width:44px;height:44px;object-fit:contain}
+.family-invite-head h3{margin:0;font:600 17px 'Outfit',sans-serif;color:#453e28}
+.family-invite-head p{margin:2px 0 0;font-size:13px;line-height:1.4;color:#807463}
+.family-invite-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.family-name-invite input{box-sizing:border-box;width:100%;min-height:44px;padding:10px 14px 10px 40px;border:1px solid #e0d6c9;border-radius:14px;background:#fffdf7 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a8c78' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 13px center/18px}
+.family-name-invite input:focus{border-color:#cdbb85;outline:none;box-shadow:0 0 0 3px #f1e3b8}
+.family-name-invite [data-invite-search-status]{margin:6px 2px 0;font-size:12px;color:#8a7d68}
+.family-name-invite:has(input:placeholder-shown) [data-invite-search-status]{display:none}
+.family-name-invite>small{display:block;margin-top:10px;font-size:11px;color:#a09684}

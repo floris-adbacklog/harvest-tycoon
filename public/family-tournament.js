@@ -29,9 +29,8 @@ export function renderFamilyTournament({view,now,emblem,rewards,preview}){
  </section>
  <section class="family-standings" aria-labelledby="family-standings-heading">
   <div class="family-standings-heading"><h3 id="family-standings-heading">Top 3 families</h3><span>Live standings</span></div>
-  <ol class="family-podium">${Array.from({length:3},(_,i)=>podiumRow(t.top[i],i)).join('')}</ol>
+  ${t.top.length?`<ol class="family-podium">${Array.from({length:3},(_,i)=>podiumRow(t.top[i],i)).join('')}</ol>`:`<div class="family-podium-empty">${art('family-tournament')}<div><strong>No families on the board yet</strong><span>Your first delivery puts your family in first place.</span></div></div>`}
   <p class="family-standings-note">${num(t.activePlayers)} ${t.activePlayers===1?'contributor':'contributors'} · ${num(t.activeFamilies)} ${t.activeFamilies===1?'family':'families'} · ${num(t.pool)} diamonds in prizes</p>
-  <p class="family-tournament-promise">1st place wins ${num(t.firstPrizeMin)}–${num(t.firstPrizeMax)} diamonds. Solo families can win too.</p>
  </section>
  ${preview}${rewards}
  ${t.top.length>3?`<details class="family-rules"><summary>More families</summary>${t.top.slice(3).map((f,i)=>`<div class="family-list-row"><b class="family-rank">${i+4}</b>${emblem(f.emblem)}<div><strong>${esc(f.name)}</strong><span>${num(f.points)} points · ${f.activeMembers} contributors</span></div></div>`).join('')}</details>`:''}

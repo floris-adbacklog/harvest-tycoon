@@ -301,3 +301,6 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   never blocks a save; settlement refreshes `events_finished`. Verified in a rolled-back transaction (0 mismatches).
 - **Leaderboard UI**: a slim search field (helper text only while typing), "Rank by" as one line with the current
   board that folds open, rows as cards with podium tints, the online dot on the portrait and names on one line.
+- **Family**: "This week" puts the order first and folds "Your rewards" below it (open when complete); order lines
+  without stock show no disabled buttons; a shorter delivery note. Tournament shows one empty-state line instead of
+  three empty places and no duplicate prize sentence. The invite search matches the leaderboard's slim search field.
