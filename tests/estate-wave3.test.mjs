@@ -138,3 +138,13 @@ test('the three new places stand on free ground at the end of the trunk road, an
  const html=read('public/farm.html');assert.match(html,/data-menu-utility="estateworkshop"[\s\S]*data-menu-utility="tradedepot"[\s\S]*data-menu-utility="grandfair"/);assert.match(html,/<dialog id="estate-place-dialog"/);
  assert.doesNotMatch(read('public/farm-life.js'),/landscape_008/,'the green hill at the east end is gone');
 });
+
+test('sunflowers grow under glass from level 48, and chapter 9 asks for 275 cherries instead of 440',()=>{
+ assert.equal(recipeUnlocked(farmAt(47),'glasssunflower'),false);
+ const s=farmAt(48);assert.equal(recipeUnlocked(s,'glasssunflower'),true);assert.equal(RECIPES.mass_glasssunflower,undefined,'the Factory never grows crops');
+ s.inventory.fertilizer=2;const coins=s.coins;act(s,{type:'produce',recipe:'glasssunflower'},now);assert.equal(s.coins,coins-RECIPES.glasssunflower.coins);
+ for(const job of productionJobs(s.buildings.glasshouse))job.readyAt=now;act(s,{type:'collect',building:'glasshouse'},now);
+ assert.equal(s.inventory.sunflower,6);assert.equal(s.stats.made_sunflower,6);
+ const orchard=PROJECTS.find(p=>p.name==='Orchard and ranch');assert.deepEqual([orchard.input.cherrypie,orchard.input.cherryjam],[25,25]);
+ assert.equal(orchard.input.cherrypie*RECIPES.cherrypie.input.cherries+orchard.input.cherryjam*RECIPES.cherryjam.input.cherries,275);
+});
