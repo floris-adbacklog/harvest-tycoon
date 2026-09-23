@@ -392,7 +392,7 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   legal basis for those two tools. Dutch cookie rules normally require prior consent for tracking/advertising
   cookies: when a consent banner is added, update section 8 and the legal-basis list.
 - Landing page: a one-line "For players aged 16 and over · Privacy Policy" under the sign-in card and a tiny footer
-  (© 2026 Millstone · Privacy Policy), pushed further down on phones. The deletion page is deliberately not in the
+  (© 2026 Harvest Tycoon · Privacy Policy), pushed further down on phones. The deletion page is deliberately not in the
   footer (it is for Meta); the policy links to it in section 11.
 - Sign in with Google / Facebook: src/social-login.js + main.js. Two compact buttons ("Google", "Facebook", accessible
   names "Continue with …") above a thin "or use your email" line, on the sign-in and create-account cards only.
