@@ -314,3 +314,12 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   button as wide as the row, pushing the text out (phone and desktop). The row button now keeps its own width.
 - Collect all is one calm green row: picture, "N batches ready", what it brings in ("6 Eggs · 2 Milk") and the
   button; on screens under 360px the button gets its own row. Ready batches hide the (full) bar and just say "Ready".
+
+## Farm journal
+- Level card: "Level N in X XP", the XP bar and the level-up reward as coin/diamond chips (no tagline).
+- Four lifetime tiles, counted the way the leaderboards count: crops harvested (all harvest_* quantities), goods
+  made (all made_* quantities, from honey to berry tart), quests done and deliveries. 2×2 on phones.
+- Your collection has two tabs: Crops (discovered crops, "N picked") and Goods (every good, found once made at
+  least once, "N made"). Compact cards, four across on phones.
+- "Next on your farm" became "Coming up": picture, name, what it is (New crop/New building/New field/Recipe) and a
+  level pill; the explanatory paragraph is gone. tests/journal.test.mjs covers it.

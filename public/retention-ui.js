@@ -5,7 +5,7 @@ import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList}){
- let tab='challenges',utility='tractor',lastDay=utcDay(farmNow()),lastTractorReady=true,lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
+ let tab='challenges',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastTractorReady=true,lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
  const open=id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();};
  async function act(action,message){try{const r=await runAction(action);onChange();refresh();notify(typeof message==='function'?message(r):message);return r;}catch(e){notify(e.message);}}
  function gift(){
@@ -62,9 +62,22 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  }
  function openUtility(key){if(!featureUnlocked(state,key)){notify(featureUnlockHint(key));return;}if(key==='cart'){openToday('orders');return;}utility=key;renderUtility();open('utility-dialog');}
  function renderJournal(){
-  const {level,current,target}=levelProgress(state),reward=levelReward(level+1);
-  $('journal-content').innerHTML=`<div class="journal-level"><span class="journal-medallion"><small>LVL</small><b>${level}</b></span><div><h3>One harvest at a time</h3><p>${current} / ${target} XP to level ${level+1}</p><progress max="${target}" value="${current}" aria-label="Level progress"></progress></div></div><div class="level-reward"><strong>Next level: ${reward.coins} coins + ${reward.diamonds} diamonds</strong></div><div class="journal-stats"><div><strong>${state.stats.harvested}</strong><span>crops harvested</span></div><div><strong>${state.claimed.length}/${QUESTS.length}</strong><span>quests complete</span></div><div><strong>${state.stats.deliveries}</strong><span>happy neighbours</span></div></div><div class="recipe-section-heading"><h3>Your crop collection</h3><span>${state.discovered.length} / ${Object.keys(CROPS).length} discovered</span></div><p class="section-copy">Harvest each variety to add it to your journal.</p><div class="collection-grid">${Object.entries(CROPS).map(([key,c])=>`<div class="collection-crop ${state.discovered.includes(key)?'discovered':''}">${art(key,'collection-picture')}<strong>${c.name}</strong><small>${state.discovered.includes(key)?`${state.stats['harvest_'+key]??0} harvested`:'Not harvested yet'}</small></div>`).join('')}</div>`;
-  $('journal-content').insertAdjacentHTML('beforeend',roadmapMarkup(state));
+  const {level,current,target}=levelProgress(state),reward=levelReward(level+1),stats=state.stats,number=n=>Number(n).toLocaleString('en-US');
+  // Lifetime totals the same way the leaderboards count them: every crop picked and every good collected.
+  const total=prefix=>Object.entries(stats).reduce((n,[k,v])=>k.startsWith(prefix)&&Number.isFinite(v)?n+v:n,0);
+  const crops=Math.max(stats.harvested??0,total('harvest_')),goods=Math.max(stats.produced??0,total('made_'));
+  const tile=(icon,value,label)=>`<div>${art(icon)}<p><strong>${value}</strong><span>${label}</span></p></div>`;
+  const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]);
+  const count=key=>CROPS[key]?stats['harvest_'+key]??0:stats['made_'+key]??0;
+  const found=keys=>keys.filter(k=>CROPS[k]?state.discovered.includes(k):count(k)>0).length;
+  const keys=journalTab==='goods'?goodKeys:cropKeys,verb=journalTab==='goods'?'made':'picked';
+  const card=key=>{const n=count(key),seen=CROPS[key]?state.discovered.includes(key):n>0;return `<div class="collection-crop ${seen?'discovered':''}">${art(key,'collection-picture')}<strong>${ITEMS[key].name}</strong><small>${seen?`${number(n)} ${verb}`:'Not yet'}</small></div>`;};
+  const tabButton=(key,label,list)=>`<button type="button" data-journal-tab="${key}" aria-pressed="${journalTab===key}" class="${journalTab===key?'active':''}">${label} <b>${found(list)}/${list.length}</b></button>`;
+  $('journal-content').innerHTML=`<section class="journal-hero"><span class="journal-medallion"><small>LVL</small><b>${level}</b></span><div class="journal-hero-copy"><div class="journal-hero-top"><strong>Level ${level+1} in ${number(Math.max(0,target-current))} XP</strong><small>${number(current)} / ${number(target)} XP</small></div><progress max="${target}" value="${current}" aria-label="Level progress"></progress><div class="journal-next"><span>Level-up reward</span><b>${art('coins')}${number(reward.coins)}</b><b>${art('diamonds')}${reward.diamonds}</b></div></div></section>`
+   +`<div class="journal-tiles">${tile('harvest',number(crops),'crops harvested')}${tile('buildings',number(goods),'goods made')}${tile('quests',`${state.claimed.length}/${QUESTS.length}`,'quests done')}${tile('cart',number(stats.deliveries??0),'deliveries')}</div>`
+   +`<section class="journal-collection"><div class="journal-collection-head"><h3>Your collection</h3><div class="market-tabs journal-tabs" role="group" aria-label="Collection">${tabButton('crops','Crops',cropKeys)}${tabButton('goods','Goods',goodKeys)}</div></div><div class="collection-grid">${keys.map(card).join('')}</div></section>`
+   +roadmapMarkup(state);
+  document.querySelectorAll('[data-journal-tab]').forEach(b=>b.onclick=()=>{journalTab=b.dataset.journalTab;renderJournal();});
   icons();
  }
  function refresh(){

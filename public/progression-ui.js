@@ -2,7 +2,8 @@ import {art} from './visual-icons.js';
 import {unlockEntries,featureUnlocked,featureUnlockHint,FEATURE_LEVELS,levelOf,levelReward} from './farm-state.js';
 export function progressionSnapshot(state){return {level:levelOf(state),ids:new Set(unlockEntries(state).filter(e=>e.unlocked).map(e=>e.id))};}
 export function progressionChange(before,state,reward){return {reward,level:levelOf(state),leveled:levelOf(state)>before.level,entries:unlockEntries(state).filter(e=>e.unlocked&&!before.ids.has(e.id))};}
-export function roadmapMarkup(state){const next=unlockEntries(state).filter(e=>!e.unlocked).sort((a,b)=>a.level-b.level||a.id.localeCompare(b.id)).slice(0,3);return next.length?`<section class="unlock-roadmap"><h3>Next on your farm</h3><p>Your next three milestones. New buildings are purchased with coins.</p>${next.map(e=>`<div class="roadmap-entry">${art(e.art)}<div><strong>${e.name}</strong><span>${e.hint}</span></div></div>`).join('')}</section>`:'';}
+const ROADMAP_KIND={Crop:'New crop','Ready to build':'New building','Ready to expand':'New field'};
+export function roadmapMarkup(state){const next=unlockEntries(state).filter(e=>!e.unlocked).sort((a,b)=>a.level-b.level||a.id.localeCompare(b.id)).slice(0,3);return next.length?`<section class="unlock-roadmap"><h3>Coming up</h3>${next.map(e=>`<div class="roadmap-entry">${art(e.art)}<div><strong>${e.name}</strong><span>${ROADMAP_KIND[e.kind]??e.kind}</span></div><b class="roadmap-level">Level ${e.level}</b></div>`).join('')}</section>`:'';}
 export function foldLocked(container,selector,isLocked,title){
  const locked=[...container.querySelectorAll(selector)].filter(isLocked);if(!locked.length)return;
  const details=document.createElement('details');details.className='future-unlocks';

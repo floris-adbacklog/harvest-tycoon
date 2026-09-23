@@ -624,3 +624,59 @@
  #building-content .collect-all-panel{grid-template-columns:44px minmax(0,1fr)}
  #building-content .collect-all-panel .primary-button{grid-column:1/-1;width:100%}
 }
+
+/* Farm journal: level card with reward chips, four lifetime tiles, the collection (crops or goods) and what is next. */
+#journal-content .journal-hero{display:grid;grid-template-columns:62px minmax(0,1fr);align-items:center;gap:14px;margin:4px 0 12px;padding:14px;border:1px solid #e8d7a8;border-radius:18px;background:linear-gradient(135deg,#fbefc8,#fdf8ec)}
+#journal-content .journal-medallion{display:flex;flex-direction:column;align-items:center;justify-content:center;width:62px;height:66px;border:1px solid #d7b868;border-radius:18px;background:#f8dda0;box-shadow:inset 0 -3px 0 #e6c67a}
+#journal-content .journal-medallion>small{font-size:10px;font-weight:700;letter-spacing:1px;color:#806327}
+#journal-content .journal-medallion>b{font:700 30px/32px 'Outfit',sans-serif;color:#72521d}
+#journal-content .journal-hero-copy{min-width:0}
+#journal-content .journal-hero-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+#journal-content .journal-hero-top strong{font:600 18px 'Outfit',sans-serif;color:#4a3c1c}
+#journal-content .journal-hero-top small{flex:none;font-size:12px;color:#8a7550}
+#journal-content .journal-hero progress{display:block;width:100%;height:8px;margin:7px 0 9px}
+#journal-content .journal-next{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:#806c45}
+#journal-content .journal-next>span{margin-right:2px}
+#journal-content .journal-next>b{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 4px;border:1px solid #ead9ad;border-radius:999px;background:#fffaf0;font-size:13px;color:#5d4a22}
+#journal-content .journal-next .game-art{flex:none;width:18px;height:18px}
+#journal-content .journal-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 20px}
+#journal-content .journal-tiles>div{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:10px 6px;border:1px solid #e8ded2;border-radius:14px;background:#f6f0e8;text-align:center}
+#journal-content .journal-tiles .game-art{flex:none;width:30px;height:30px}
+#journal-content .journal-tiles p{display:grid;min-width:0;margin:0}
+#journal-content .journal-tiles strong{font:600 20px/1.2 'Outfit',sans-serif;color:#5c4d33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#journal-content .journal-tiles span{font-size:11px;line-height:1.3;color:#857663}
+#journal-content .journal-collection-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:0 0 10px}
+#journal-content .journal-collection-head h3{font:600 20px 'Outfit',sans-serif;color:#453e28}
+#journal-content .journal-tabs{flex:0 1 260px;margin:0}
+#journal-content .journal-tabs button{white-space:nowrap}
+#journal-content .journal-tabs b{margin-left:3px;font-weight:600;opacity:.7}
+#journal-content .collection-grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+#journal-content .collection-crop{gap:1px;min-width:0;padding:8px 4px 9px;border:1px dashed #e0d6cc;border-radius:14px;background:#f7f3ee}
+#journal-content .collection-crop>.collection-picture{width:52px;height:52px;margin-bottom:3px}
+#journal-content .collection-crop strong{max-width:100%;margin:0;font:600 13px/1.25 'Outfit',sans-serif;overflow-wrap:anywhere}
+#journal-content .collection-crop small{font-size:11px}
+#journal-content .collection-crop.discovered{border:1px solid #e1d3c2;background:#f5ebe0}
+#journal-content .unlock-roadmap{margin:20px 0 0;padding:12px 14px;border-radius:16px}
+#journal-content .unlock-roadmap h3{margin-bottom:2px;font:600 17px 'Outfit',sans-serif;color:#44503a}
+#journal-content .unlock-roadmap>.roadmap-entry{gap:12px;padding:9px 0}
+#journal-content .roadmap-entry>.game-art{width:36px;height:36px}
+#journal-content .roadmap-entry>div{flex:1;gap:1px}
+#journal-content .roadmap-entry strong{font:600 15px 'Outfit',sans-serif;color:#3f4733}
+#journal-content .roadmap-entry span{font-size:12px}
+#journal-content .roadmap-level{flex:none;padding:4px 9px;border-radius:999px;background:#e2e8d2;font-size:12px;color:#4f5c3d}
+@media(max-width:560px){
+ #journal-content .journal-hero{grid-template-columns:52px minmax(0,1fr);gap:12px;padding:12px}
+ #journal-content .journal-medallion{width:52px;height:56px;border-radius:15px}
+ #journal-content .journal-medallion>b{font-size:25px;line-height:27px}
+ #journal-content .journal-hero-top{flex-wrap:wrap;gap:0 8px}
+ #journal-content .journal-hero-top strong{font-size:16px}
+ #journal-content .journal-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #journal-content .journal-tiles>div{flex-direction:row;gap:9px;padding:9px 10px;text-align:left}
+ #journal-content .journal-tiles strong{font-size:18px}
+ #journal-content .journal-tabs{flex-basis:100%}
+ #journal-content .collection-grid{grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px}
+ #journal-content .collection-crop{padding:7px 3px 8px;border-radius:12px}
+ #journal-content .collection-crop>.collection-picture{width:42px;height:42px}
+ #journal-content .collection-crop strong{font-size:12px}
+ #journal-content .collection-crop small{font-size:10px}
+}
