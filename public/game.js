@@ -342,10 +342,17 @@ function drawCrop(i){
   clearCropVisual(v.cropGroup);v.visualCrop=p.crop;
   if(p.crop){
    const c=CROPS[p.crop];
-   if(c.perennial){
+   if(p.crop==='polebeans'){
+    // Four bean poles, each hung with long green pods.
+    for(const [dx,dz] of [[-.5,-.5],[.5,-.5],[-.5,.5],[.5,.5]]){
+     const o=cloneModel(c.model,0,0,{height:1.45,rotation:.5+dx});scene.remove(o);v.cropGroup.add(o);o.position.set(dx,0,dz);
+     for(let j=0;j<3;j++){const pod=new THREE.Mesh(beanPodGeometry,beanPodMaterial);pod.scale.set(.07,.26,.07);pod.position.set(dx+Math.cos(j*2.1)*.15,.5+j*.26,dz+Math.sin(j*2.1)*.15);pod.rotation.z=.2-j*.15;v.cropGroup.add(pod);}
+    }
+   }else if(c.perennial){
     const o=cloneModel(c.model,0,0,{height:c.height,width:['apples','ciderapples'].includes(p.crop)?1.9:1.7,depth:['apples','ciderapples'].includes(p.crop)?1.9:1.7,rotation:.5});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
-   }else if(p.crop==='pumpkin'){
-    const o=cloneModel(c.model,0,0,{width:2.05,rotation:Math.PI/2});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
+   }else if(['pumpkin','squash'].includes(p.crop)){
+    // One sprawling vine fills the field; four would spill over onto the next one.
+    const o=cloneModel(c.model,0,0,{width:p.crop==='squash'?2.1:2.05,rotation:Math.PI/2});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
    }else{
     const offsets=['wheat','barley'].includes(p.crop)?[-.65,0,.65].flatMap(x=>[-.65,0,.65].map(z=>[x,z])):[[-.55,-.55],[.55,-.55],[-.55,.55],[.55,.55]];
     for(const [dx,dz] of offsets){
