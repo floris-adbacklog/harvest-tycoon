@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {BUILDINGS,BUILDING_LEVELS} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
@@ -31,4 +31,6 @@ test('the places in the valley are listed with the buildings, each with what is 
  for(const key of ['valleymarket','ranch','estateworkshop','tradedepot','grandfair'])assert.match(ui,new RegExp(`${key}:'`),key);
  assert.match(ui,/<h3 class="catalog-heading">Places in the valley<\/h3>/);assert.match(ui,/foldLocked\(\$\('building-catalog'\),'\[data-open-place\]'/);
  assert.match(game,/onPlace:key=>openUtility\(key\)/);
+ assert.match(ui,/<img src="\/assets\/icons\/place-\$\{key\}\.png" alt="">/,'a render of the place, like the building cards, not the painted icon');
+ for(const key of ['valleymarket','ranch','estateworkshop','tradedepot','grandfair'])assert.ok(existsSync(new URL(`../public/assets/icons/place-${key}.png`,import.meta.url)),key);
 });

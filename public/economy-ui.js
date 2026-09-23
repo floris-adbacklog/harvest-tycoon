@@ -46,6 +46,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function openSeeds(){renderSeeds();show('seed-dialog');}
  // The places in the valley that stand on the farm like buildings but work differently (the Valley Market, the Ranch and the
  // three wave-3 places): listed with the buildings, each with one line on what is waiting there, and opened like from the map.
+ // The picture is a render of the place's own models (public/assets/icons/place-<key>.png), like the building cards.
  const PLACES=Object.freeze({valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair'});
  const canPay=items=>Object.entries(items).every(([k,n])=>state.inventory[k]>=n);
  function placeStatus(key,now=farmNow()){
@@ -77,7 +78,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(guidedFarm(state))foldLocked($('building-catalog'),'[data-open-building]',b=>!buildingEligible(state,b.dataset.openBuilding),'Buildings to unlock');
   normalizeFarm(state,farmNow());
   const placeFirst=key=>placeStatus(key).kind==='ready'?0:1,places=Object.keys(PLACES).sort((a,b)=>placeFirst(a)-placeFirst(b)||FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),openPlaces=places.filter(k=>featureUnlocked(state,k));
-  $('building-catalog').insertAdjacentHTML('beforeend',`${openPlaces.length||!guidedFarm(state)?'<h3 class="catalog-heading">Places in the valley</h3>':''}${places.map(key=>{const s=placeStatus(key);return `<button class="building-card is-place" data-open-place="${key}"><span class="building-card-art">${art(PLACES[key])}</span><span class="building-card-info"><strong>${FEATURE_NAMES[key]}</strong><span class="building-status ${s.kind}" data-place-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('')}`);
+  $('building-catalog').insertAdjacentHTML('beforeend',`${openPlaces.length||!guidedFarm(state)?'<h3 class="catalog-heading">Places in the valley</h3>':''}${places.map(key=>{const s=placeStatus(key);return `<button class="building-card is-place" data-open-place="${key}"><span class="building-card-art"><img src="/assets/icons/place-${key}.png" alt=""></span><span class="building-card-info"><strong>${FEATURE_NAMES[key]}</strong><span class="building-status ${s.kind}" data-place-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('')}`);
   if(guidedFarm(state))foldLocked($('building-catalog'),'[data-open-place]',b=>!featureUnlocked(state,b.dataset.openPlace),'Places to unlock');
   $('building-catalog').querySelectorAll('[data-open-building]').forEach(b=>b.addEventListener('click',()=>openBuilding(b.dataset.openBuilding)));
   $('building-catalog').querySelectorAll('[data-open-place]').forEach(b=>b.addEventListener('click',()=>{$('buildings-dialog').close();onPlace?.(b.dataset.openPlace);}));icons();
