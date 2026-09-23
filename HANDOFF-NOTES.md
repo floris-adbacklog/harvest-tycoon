@@ -323,3 +323,5 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   least once, "N made"). Compact cards, four across on phones.
 - "Next on your farm" became "Coming up": picture, name, what it is (New crop/New building/New field/Recipe) and a
   level pill; the explanatory paragraph is gone. tests/journal.test.mjs covers it.
+- Honey in the journal also counts the jars collected at the Apiary (finished Apiary jobs × 3), not only Factory
+  honey; the "goods made" tile stays production only, like the Goods produced leaderboard.

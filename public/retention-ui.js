@@ -1,5 +1,5 @@
 import {roadmapMarkup} from './progression-ui.js';
-import {dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,marketHighlights,marketValue,DELIVERY_TIERS} from './farm-state.js';
+import {dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,marketHighlights,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -68,7 +68,9 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const crops=Math.max(stats.harvested??0,total('harvest_')),goods=Math.max(stats.produced??0,total('made_'));
   const tile=(icon,value,label)=>`<div>${art(icon)}<p><strong>${value}</strong><span>${label}</span></p></div>`;
   const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]);
-  const count=key=>CROPS[key]?stats['harvest_'+key]??0:stats['made_'+key]??0;
+  // Honey also comes from the Apiary (a few jars per finished job), not only from the Factory.
+  const apiaryHoney=(stats.activity_apiary??state.activities?.completed?.apiary??0)*(ACTIVE_STATIONS.apiary.itemCount??0);
+  const count=key=>CROPS[key]?stats['harvest_'+key]??0:(stats['made_'+key]??0)+(key==='honey'?apiaryHoney:0);
   const found=keys=>keys.filter(k=>CROPS[k]?state.discovered.includes(k):count(k)>0).length;
   const keys=journalTab==='goods'?goodKeys:cropKeys,verb=journalTab==='goods'?'made':'picked';
   const card=key=>{const n=count(key),seen=CROPS[key]?state.discovered.includes(key):n>0;return `<div class="collection-crop ${seen?'discovered':''}">${art(key,'collection-picture')}<strong>${ITEMS[key].name}</strong><small>${seen?`${number(n)} ${verb}`:'Not yet'}</small></div>`;};
