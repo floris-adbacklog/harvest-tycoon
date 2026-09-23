@@ -522,3 +522,6 @@
 .family-name-invite [data-invite-search-status]{margin:6px 2px 0;font-size:12px;color:#8a7d68}
 .family-name-invite:has(input:placeholder-shown) [data-invite-search-status]{display:none}
 .family-name-invite>small{display:block;margin-top:10px;font-size:11px;color:#a09684}
+/* Toast text and chips share one centre line with the icon. */
+.toast-text{display:flex;flex-wrap:wrap;align-items:center;column-gap:5px;row-gap:4px}
+.toast-chip{vertical-align:middle;margin:0}

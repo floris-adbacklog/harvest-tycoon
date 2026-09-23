@@ -12,17 +12,21 @@ const ICONS=[
 const REWARD=/\+([\d,]+)\s(coins?|XP|diamonds?)/g;
 // Goods and crops by their game name ("+1 Animal feed", "+2 wheat"), longest names first so "Red cabbage" wins over "cabbage".
 const ITEM_KEYS=new Map(Object.entries(ITEMS).map(([key,item])=>[item.name.toLowerCase(),key]));
-const ITEM=new RegExp(`\\+([\\d,]+)\\s(${[...ITEM_KEYS.keys()].sort((a,b)=>b.length-a.length).map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')})\\b`,'gi');
+const ITEM=new RegExp(`\\+?([\\d,]+)\\s(${[...ITEM_KEYS.keys()].sort((a,b)=>b.length-a.length).map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')})\\b`,'gi');
 export function toastParts(message){
  const text=String(message??'');
  const tone=WARN.test(text)?'warn':REWARD.test(text)?'reward':'info';REWARD.lastIndex=0;
- const icon=tone==='warn'?'lock':(ICONS.find(([re])=>re.test(text))?.[1]??'farm');
+ // Goods in the message ("Collected 3 Eggs") lead with their own picture; otherwise the first matching theme.
+ ITEM.lastIndex=0;const firstItem=ITEM.exec(text);ITEM.lastIndex=0;
+ const themed=ICONS.find(([re])=>re.test(text))?.[1];
+ const icon=tone==='warn'?'lock':themed==='helping-hand'||themed==='diamonds'?themed:firstItem?ITEM_KEYS.get(firstItem[2].toLowerCase()):(themed??'farm');
  const kind=unit=>/coin/i.test(unit)?'coins':/xp/i.test(unit)?'xp':'diamonds';
  const html=esc(text)
   .replace(REWARD,(_,n,unit)=>`<b class="toast-chip is-${kind(unit)}">${art(kind(unit))}+${n}${kind(unit)==='xp'?' XP':''}</b>`)
-  .replace(ITEM,(_,n,name)=>`<b class="toast-chip is-item">${art(ITEM_KEYS.get(name.toLowerCase()))}+${n} ${name}</b>`)
-  // Chips next to each other need no dot between them.
-  .replace(/<\/b>\s·\s<b class="toast-chip/g,'</b> <b class="toast-chip');
+  .replace(/(^|[^+\w,])([\d,]+)\scoins?\b/g,(_,lead,n)=>`${lead}<b class="toast-chip is-coins">${art('coins')}${n}</b>`)
+  .replace(ITEM,(match,n,name)=>`<b class="toast-chip is-item">${art(ITEM_KEYS.get(name.toLowerCase()))}${match.startsWith('+')?'+':''}${n} ${name}</b>`)
+  // No dots between the pieces and no stray full stop after a chip: the chips are the separators.
+  .replace(/\s·\s/g,' ').replace(/<\/b>[.!](?=\s|$)/g,'</b>');
  return {tone,icon,html};
 }
 export function createToast(el,{duration=3200}={}){
