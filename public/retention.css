@@ -929,3 +929,52 @@
  #help-dialog .guide-loop .game-art{width:34px;height:34px}
  #help-dialog .guide-loop span:not(.game-art){font-size:13px}
 }
+
+/* Settings: every part is one calm card (account, avatar, sound, reminders, app); switches instead of tick boxes. */
+#sound-dialog .settings-account,#sound-dialog #avatar-settings,#sound-dialog .settings-section{margin:0 0 10px;padding:14px;border:1px solid #e8ded2;border-radius:18px;background:#fbf8f2}
+#sound-dialog .settings-section{margin-top:0}
+#sound-dialog .settings-heading{margin:0 0 10px;font-size:16px}
+#sound-dialog .settings-heading .game-art,#sound-dialog .settings-heading svg{width:22px;height:22px}
+#sound-dialog .settings-account .settings-heading{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#sound-dialog .account-card{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+#sound-dialog .account-avatar{flex:none;width:72px;height:72px;object-fit:contain;border:1px solid #ded7bc;border-radius:16px;background:linear-gradient(145deg,#f6e6bc,#e7edda)}
+#sound-dialog .account-who{min-width:0;display:grid}
+#sound-dialog .account-who small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9a8457}
+#sound-dialog .account-who #player-name{font:600 21px/1.2 'Outfit',sans-serif;color:#3f3827;overflow-wrap:anywhere}
+#sound-dialog .account-actions{display:flex;gap:6px;padding:0;border:0}
+#sound-dialog .account-actions button{flex:1 1 0;min-width:0;min-height:40px;padding:6px;font-size:13px;white-space:nowrap}
+#sound-dialog .account-actions button[hidden]{display:none}
+#sound-dialog .name-nudge{margin:0 0 12px;padding:14px;border:1px solid #e8d7a8;border-radius:16px;background:linear-gradient(135deg,#fbefc8,#fdf8ec);text-align:center}
+#sound-dialog .name-nudge[hidden]{display:none}
+#sound-dialog .name-nudge strong{display:block;font:600 17px 'Outfit',sans-serif;color:#4a3c1c}
+#sound-dialog .name-nudge p{margin:4px 0 12px;font-size:13px;line-height:1.45;color:#806c45}
+#sound-dialog .name-nudge b{color:#5d4a22;white-space:nowrap}
+#sound-dialog .name-nudge button{width:100%;min-height:44px;justify-content:center}
+#sound-dialog .avatar-settings-header{gap:10px;margin:0 0 8px}
+#sound-dialog .avatar-settings-header>img{width:64px;height:64px;border-radius:16px}
+#sound-dialog .avatar-settings-header h3{margin:0;font-size:17px}
+#sound-dialog .avatar-settings-header p{margin:0;font-size:12px;color:#8a7c69}
+#sound-dialog .avatar-save{width:100%;min-height:40px;margin-top:8px}
+#sound-dialog .avatar-feedback:empty,#sound-dialog .sound-status:empty,#sound-dialog .notify-status:empty{display:none}
+/* One switch style for sound and reminders. */
+#sound-dialog :is(.sound-switch,.notify-row){min-height:0;padding:10px 12px;border-radius:14px;background:#fff;border-color:#ebe3d8}
+#sound-dialog .sound-switch>span{font-size:14px}
+#sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:44px;height:26px;min-height:0;margin:0;padding:0;border:0;border-radius:999px;background:#d9cfc2;cursor:pointer;transition:background .15s}
+#sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #3d392340;transition:transform .15s}
+#sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]:checked{background:#6f8f4e}
+#sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]:checked::after{transform:translateX(18px)}
+#sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]:disabled{opacity:.5}
+#sound-dialog .notify-row{margin:0 0 6px}
+#sound-dialog .sound-volume{padding:10px 2px 0;border:0;gap:2px 12px}
+#sound-dialog .sound-volume label{font-size:13px}
+#sound-dialog .sound-volume input{height:32px}
+#sound-dialog .sound-preview{width:auto;min-height:0;margin:8px auto 0;padding:4px 6px;display:flex;align-items:center;gap:6px;border:0;background:none;box-shadow:none;font-size:13px;font-weight:700;color:#6d5a2f}
+#sound-dialog .sound-preview .game-art{width:18px;height:18px}
+#sound-dialog .sound-preview svg{width:16px;height:16px}
+#sound-dialog .sound-status{margin:6px 0 0;min-height:0}
+/* Sound: the switch sits on the heading's row instead of in a box of its own; its label stays for screen readers. */
+#sound-dialog #sound-settings{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:10px}
+#sound-dialog #sound-settings>:not(.settings-heading):not(.sound-switch){grid-column:1/-1}
+#sound-dialog #sound-settings>.settings-heading{margin:0}
+#sound-dialog #sound-settings>.sound-switch{align-self:center;margin:0;padding:0;border:0;background:none;min-height:0;display:flex}
+#sound-dialog #sound-settings>.sound-switch>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

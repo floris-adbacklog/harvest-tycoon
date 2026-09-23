@@ -14,6 +14,8 @@ export const MODES=Object.freeze({
 
 const ADJECTIVES=['Sunny','Happy','Golden','Cozy','Merry','Breezy','Lucky','Bright','Gentle','Rustic'];
 const NOUNS=['Acres','Meadow','Orchard','Barn','Fields','Hollow','Valley','Harvest','Creek','Farm'];
+// A name picked for the player at sign-up ("Sunny Acres 4821"), not one they chose: Settings invites them to make it their own.
+export const isRandomPlayerName=name=>new RegExp(`^(${ADJECTIVES.join('|')}) (${NOUNS.join('|')}) \\d{4}$`).test(String(name??'').trim());
 // A friendly default player name that always passes the server rule, e.g. "Sunny Acres 4821".
 export function randomPlayerName(random=Math.random){
  const pick=list=>list[Math.floor(random()*list.length)%list.length];

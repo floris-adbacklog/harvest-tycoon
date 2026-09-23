@@ -425,3 +425,13 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - More menu: locked entries line up after the open ones, lowest unlock level first (CSS order on the grid item,
   100 + level), so a locked Farm events card sits with the level-10 entries instead of next to Daily rewards; once open,
   every entry is back in its usual place (events beside Daily rewards).
+
+## Settings
+- Every part is one calm card: account, avatar, sound, reminders, app. The account card shows your avatar (72px) and
+  farmer name with Your profile / Change name / Sign out.
+- A name the game picked at sign-up ("Sunny Acres 4821", account-form.js isRandomPlayerName, same word lists as
+  randomPlayerName) gets a gold "Make the name your own" card with "Choose my farmer name" (empty field; the dialog
+  button says "Save my name" from Settings, "Join the leaderboard" from the leaderboard). The separate Change name
+  button is hidden while that card shows.
+- Sound: the on/off switch sits on the heading's row; the intro sentence and slider descriptions are gone; "Play a test
+  sound" is a small link. Sound and reminder tick boxes are real switches (role="switch").
