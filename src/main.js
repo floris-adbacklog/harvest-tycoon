@@ -1,5 +1,6 @@
 import {createFarmPresence} from './presence.js';
-import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError} from './supabase.js';
+import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError,socialProviders} from './supabase.js';
+import {OAUTH_KEY,providerName,oauthStartError,oauthReturnMessage} from './social-login.js';
 import {fetchLeaderboard} from './leaderboard.js';
 import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
@@ -12,7 +13,7 @@ startPwa();
 startPlayerCounts({functionsUrl});
 let presence=null,notifications=null;
 let mode='register',generation=0,playerId=null,frame=null,submitting=false,checking=false,reopen=false;
-let focusing=false,nameOpen=false,recovering=false,viewTracked=false,confirmKind='signup',pendingEmail='',resendTimer=null;
+let focusing=false,nameOpen=false,recovering=false,viewTracked=false,confirmKind='signup',pendingEmail='',resendTimer=null,providers=[];
 const started={};
 // Short connection problems (a laptop waking up, a wifi hand-over, one slow answer) must not close the farm: see connection.js.
 const watchers=new Set();
@@ -23,6 +24,7 @@ const connection=createConnection({
 });
 const AUTH_KEY='harvest-tycoon:auth',RETURNING_KEY='harvest-tycoon:returning',CONFIRM_KEY='harvest-tycoon:confirm-pending';
 const store={get(key){try{return localStorage.getItem(key);}catch{return null;}},set(key,value){try{localStorage.setItem(key,value);}catch{}},remove(key){try{localStorage.removeItem(key);}catch{}}};
+const tabStore={get(key){try{return sessionStorage.getItem(key);}catch{return null;}},set(key,value){try{sessionStorage.setItem(key,value);}catch{}},remove(key){try{sessionStorage.removeItem(key);}catch{}}};
 // True only when the browser can be read and holds no saved session, so a first-time visitor skips the "Checking your account…" screen.
 const brandNewVisitor=()=>{try{return localStorage.getItem(AUTH_KEY)===null&&localStorage.getItem(RETURNING_KEY)===null;}catch{return false;}};
 const knownPlayer=()=>store.get(RETURNING_KEY)==='1'||store.get(AUTH_KEY)!==null;
@@ -40,7 +42,9 @@ function fieldError(field,message=''){$(field+'-error').textContent=message;$(in
 function clearErrors(){for(const field of ['email','password','name'])fieldError(field);}
 function showFieldErrors(errors){clearErrors();for(const [field,message] of Object.entries(errors))fieldError(field,message);const first=Object.keys(errors)[0];if(first)focusField(inputId(first));}
 function setPasswordVisible(visible){$('password').type=visible?'text':'password';$('toggle-password').textContent=visible?'Hide':'Show';$('toggle-password').setAttribute('aria-label',visible?'Hide password':'Show password');$('toggle-password').setAttribute('aria-pressed',String(visible));}
-function lock(busy){$('account-submit').disabled=busy;document.querySelectorAll('[data-mode]').forEach(b=>b.disabled=busy);}
+function lock(busy){$('account-submit').disabled=busy;document.querySelectorAll('[data-mode],[data-provider]').forEach(b=>b.disabled=busy);}
+// Google / Facebook buttons: only on the sign-in and create-account cards, and only for providers that are switched on.
+function showSocial(){$('social-login').hidden=!providers.length||!['signin','register'].includes(mode);}
 function setMode(next,focus=false){
  mode=next;const m=MODES[mode];if(mode!=='register')nameOpen=false;
  const shows=field=>m.fields.includes(field)||(field==='name'&&mode==='register'&&nameOpen),visible=['email','password','name'].filter(shows);
@@ -49,6 +53,7 @@ function setMode(next,focus=false){
  $('form-eyebrow').textContent=m.eyebrow;$('account-title').textContent=m.title;$('account-copy').textContent=m.copy;$('account-copy').hidden=!m.copy;$('account-submit').textContent=m.submit;$('account-message').textContent='';
  $('account-form').hidden=mode==='confirm';$('confirm-panel').hidden=mode!=='confirm';$('connection-actions').hidden=true;document.querySelector('.account-tabs').hidden=!m.tabs;
  $('forgot-link').hidden=mode!=='signin';$('name-toggle').hidden=!(mode==='register'&&!nameOpen);$('name-optional').hidden=mode==='name';$('name-help').hidden=mode==='name';$('register-promise').hidden=mode!=='register';
+ showSocial();
  $('mode-switch-row').hidden=!m.switch;if(m.switch){$('mode-switch-text').textContent=m.switch.text;$('mode-switch').textContent=m.switch.label;$('mode-switch').dataset.mode=m.switch.to;}
  document.querySelectorAll('.account-tabs [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
  if(focus){document.querySelector('.account-card').scrollIntoView({behavior:'smooth',block:'start'});if(visible.length)focusField(inputId(visible[0]),{preventScroll:true});}
@@ -110,6 +115,13 @@ async function openFarm(){
  finally{checking=false;if(reopen){reopen=false;queueMicrotask(openFarm);}}
 }
 document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{if(submitting)return;const next=button.dataset.mode;if(next!==mode)trackAuth('mode',{mode:next});setMode(next,true);});
+socialProviders().then(list=>{providers=list;document.querySelectorAll('[data-provider]').forEach(b=>{b.hidden=!list.includes(b.dataset.provider);});showSocial();});
+document.querySelectorAll('[data-provider]').forEach(button=>button.onclick=async()=>{
+ if(submitting||!supabase)return;const provider=button.dataset.provider;
+ trackAuth('submit',{mode,method:provider});submitting=true;lock(true);$('account-message').textContent=`Opening ${providerName(provider)}…`;
+ try{tabStore.set(OAUTH_KEY,provider);const {error}=await supabase.auth.signInWithOAuth({provider,options:{redirectTo:redirectUrl()}});if(error)throw error;}
+ catch(error){tabStore.remove(OAUTH_KEY);const problem=oauthStartError(error,provider);trackAuth('error',{mode,reason:problem.reason,method:provider});$('account-message').textContent=problem.message;submitting=false;lock(false);}
+});
 $('forgot-link').onclick=()=>{if(submitting)return;trackAuth('mode',{mode:'forgot'});setMode('forgot',true);};
 $('name-toggle').onclick=()=>{nameOpen=true;setMode('register');focusField('player-name');};
 $('toggle-password').onclick=()=>setPasswordVisible($('password').type==='password');
@@ -198,10 +210,12 @@ async function probeFarm(){
 // Waking up (a laptop lid, a phone) or switching back to the tab: the network needs a moment, so the check waits a little.
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;if(connection.status==='ok')setTimeout(checkSession,WAKE_GRACE);else connection.wake();});setInterval(checkSession,60000);
 // Boot: a reset link opens the new-password form, an expired link explains itself, a first-time visitor sees the sign-up card at once.
-const kind=linkKind();
+const kind=linkKind(),oauthProvider=tabStore.get(OAUTH_KEY);tabStore.remove(OAUTH_KEY);
 if(kind==='recovery')startRecovery();
+else if(linkError()&&oauthProvider){landing(oauthReturnMessage(oauthProvider));trackAuth('error',{mode:'signin',reason:'oauth_return',method:oauthProvider});}
 else if(linkError()){landing('That link has expired or was already used. Sign in, or ask for a new link.');trackAuth('link_error');}
 else{
  if(kind==='signup'){trackAuth('email_confirmed');store.remove(CONFIRM_KEY);}
- if(!kind&&brandNewVisitor())landing();else openFarm();
+ if(oauthProvider)trackAuth('login',{method:oauthProvider});
+ if(!kind&&!oauthProvider&&brandNewVisitor())landing();else openFarm();
 }

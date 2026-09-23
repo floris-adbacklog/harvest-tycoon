@@ -99,3 +99,22 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]){background:#f
 .pc-dot{width:6px;height:6px;border-radius:50%;background:#78dd6c;box-shadow:0 0 8px #78dd6c99}
 .welcome-story h1,.hero-copy{text-wrap:balance}
 .account-card .account-note{align-items:center}
+
+/* Sign in with Google or Facebook: two small buttons side by side (only the providers that are switched on), then a thin
+   "or use your email" line. */
+.social-login{margin:0 0 2px}
+.social-buttons{display:flex;gap:8px}
+.social-button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 12px;border:1px solid #e2d9cf;border-radius:11px;background:#fff;color:#3d3923;font:700 14px 'DM Sans',system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 0 #e7e0d9}
+.social-button[hidden]{display:none}
+.social-button svg{flex:none;width:18px;height:18px}
+.social-button:hover:not(:disabled){background:#faf7f2}
+.social-button:disabled{opacity:.6;cursor:default}
+.social-button:focus-visible{outline:3px solid #d6ae4b;outline-offset:2px}
+.social-divider{display:flex;align-items:center;gap:10px;margin:14px 0 0;font-size:11px;color:#9a8f80}
+.social-divider::before,.social-divider::after{content:'';flex:1;height:1px;background:#e7e0d9}
+/* Privacy link on the sign-in card, and three small legal links at the foot of the page. */
+.account-card .account-legal{margin:10px 0 0;text-align:center;font-size:11px;line-height:1.5;color:#9a8f80}
+.account-legal a{color:#7d6f58}
+.site-legal{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;margin-top:auto;padding:14px 0 18px;font-size:12px;color:#efe6cfcc}
+.site-legal a{color:#fff5da}
+@media(max-width:720px){.site-legal{padding:96px 0 28px}}

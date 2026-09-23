@@ -377,3 +377,33 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   time, +20 XP, matching upgradeSilo) beside Research with the coin price. At level 5: "All research done" and the
   disabled "Research complete ✓". The paragraph and the three stat boxes are gone; "Crops already growing keep
   their time." stays as one small line.
+
+## Privacy policy, account deletion page, Google/Facebook sign-in
+- public/privacy.html (https://www.harvesttycoon.com/privacy) and public/delete-account.html (/delete-account, for
+  Meta's data deletion instructions), shared public/legal.css in the welcome page style. vercel.json rewrites give the
+  clean URLs. Neither page loads a script (no GTM, no Pixel); tests/social-login.test.mjs checks that.
+- Controller: Millstone (trading under the name of Floris Meulensteen), Acacialaan 18, 2282 AX Rijswijk, KvK
+  89795857, floris@millstone.nl. Age: 16 and over (decided by the owner).
+- Content is based on the live setup as of 23 Sep 2026: Supabase (eu-central-1, Frankfurt) for auth/database/
+  functions, email + password only (212 email identities, no social ones yet), Stripe Checkout, Resend (daily email
+  summary is live), web push (live), all reminders opt-in (defaults false), Vercel hosting, self-hosted fonts.
+  GTM-NPF56JVR loads GA4 (G-XKY54Y1YKE) and the Meta Pixel (1378934253927674, PageView) on every visit WITHOUT a
+  consent step; the owner chose to keep them running and describe them honestly. The policy therefore states no
+  legal basis for those two tools. Dutch cookie rules normally require prior consent for tracking/advertising
+  cookies: when a consent banner is added, update section 8 and the legal-basis list.
+- Landing page: a one-line "For players aged 16 and over · Privacy Policy" under the sign-in card and a tiny footer
+  (© 2026 Millstone · Privacy Policy), pushed further down on phones. The deletion page is deliberately not in the
+  footer (it is for Meta); the policy links to it in section 11.
+- Sign in with Google / Facebook: src/social-login.js + main.js. Two compact buttons ("Google", "Facebook", accessible
+  names "Continue with …") above a thin "or use your email" line, on the sign-in and create-account cards only.
+  They stay hidden until the provider is switched on in Supabase (read from /auth/v1/settings), so nothing broken
+  shows before setup. Uses signInWithOAuth with redirectTo /play.html; a new social player without a player name
+  gets the existing "Meet your farmer." step. A cancelled/failed return says "Signing in with Google did not work…"
+  instead of "That link has expired". To switch it on: Supabase → Authentication → Providers → Google / Facebook
+  (client ID + secret from Google Cloud / Meta for Developers; their redirect URI is
+  https://jnmdirvidffzxukbdmij.supabase.co/auth/v1/callback), and keep https://www.harvesttycoon.com/play.html in the
+  allowed redirect URLs.
+- Deletion requests are handled by hand. Deleting a user in the Supabase dashboard currently fails for many players:
+  harvest_purchases.player_id is ON DELETE RESTRICT and family_*, live_event_players, family_social_* and admin_grants
+  are NO ACTION. Delete or anonymise those rows first (purchases: keep, the account then stays as an anonymised shell
+  with its email changed), or ask for an admin delete function.

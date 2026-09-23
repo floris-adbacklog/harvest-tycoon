@@ -1,10 +1,13 @@
 import {createClient} from '@supabase/supabase-js';
 import {describeFailure,connectionMessage,safeToRepeat,withRetry} from './connection.js';
+import {enabledProviders} from './social-login.js';
 const url=import.meta.env.VITE_SUPABASE_URL?.trim();
 const key=import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const isConfigured=Boolean(url&&key);
 export const functionsUrl=url?`${url.replace(/\/$/,'')}/functions/v1`:null;
 export const supabase=isConfigured?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'harvest-tycoon:auth'}}):null;
+// Which of Google / Facebook sign-in are switched on in Supabase (an empty list until they are).
+export const socialProviders=()=>isConfigured?enabledProviders({url,key}):Promise.resolve([]);
 export const validUsername=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
 export function cloudError(error){
  if(error?.code==='invalid_credentials')return 'The email address or password is incorrect.';

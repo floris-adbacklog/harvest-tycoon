@@ -5,6 +5,24 @@
   "buildCommand": "npm run build:static",
   "outputDirectory": "dist-static",
   "cleanUrls": false,
+  "rewrites": [
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/privacy/",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/delete-account",
+      "destination": "/delete-account.html"
+    },
+    {
+      "source": "/delete-account/",
+      "destination": "/delete-account.html"
+    }
+  ],
   "headers": [
     {
       "source": "/",
