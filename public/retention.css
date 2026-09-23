@@ -881,3 +881,33 @@
  #daily-gift .streak-day small{font-size:9px}
  #daily-gift .streak-day b{font-size:12px}
 }
+
+/* Silo research: one line on what it does, the bonus you have now, five steps, the next level as gains + price. */
+#utility-content .silo-lead{display:flex;align-items:center;gap:12px;margin:4px 0 12px;font-size:14px;line-height:1.45;color:#7a6c58}
+#utility-content .silo-lead>.game-art{flex:none;width:44px;height:44px}
+#utility-content .silo-now{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 12px}
+#utility-content .silo-now>div{display:flex;align-items:center;gap:10px;min-width:0;padding:12px;border:1px solid #e8ded2;border-radius:16px;background:#f6f0e8}
+#utility-content .silo-now .game-art{flex:none;width:34px;height:34px}
+#utility-content .silo-now p{display:grid;min-width:0;margin:0}
+#utility-content .silo-now strong{font:600 24px/1.1 'Outfit',sans-serif;color:#3f6b2c}
+#utility-content .silo-now span{font-size:12px;color:#857663}
+#utility-content .silo-steps{display:flex;align-items:center;margin:0 4px 14px;padding:0;list-style:none}
+#utility-content .silo-steps li{flex:1;display:flex;align-items:center}
+#utility-content .silo-steps li:not(:last-child)::after{content:'';flex:1;height:3px;margin:0 4px;border-radius:2px;background:#e6ddd0}
+#utility-content .silo-steps li.is-done:not(:last-child)::after{background:#9bbb7f}
+#utility-content .silo-steps li:last-child{flex:none}
+#utility-content .silo-steps span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#eee6da;font-size:12px;font-weight:700;color:#8a7c69}
+#utility-content .silo-steps .is-done span{background:#7c9a5c;color:#fff}
+#utility-content .silo-steps .is-done svg{width:15px;height:15px;stroke-width:3}
+#utility-content .silo-steps .is-next span{background:#f9dfa0;color:#72521d;box-shadow:0 0 0 3px #e3bb5740}
+#utility-content .silo-next{display:flex;align-items:center;gap:12px;margin:0;padding:12px 14px;border-radius:16px}
+#utility-content .silo-next>div{flex:1;min-width:0;display:grid;gap:6px}
+#utility-content .silo-next h3{font-size:18px}
+#utility-content .silo-next p{margin:0;font-size:13px;line-height:1.5}
+#utility-content .silo-next .reward-chips>b.is-gain{border-color:#cfe0c3;background:#eef6e6;color:#3f6b2c;padding-left:9px}
+#utility-content .silo-next button{flex:none;width:auto;min-height:44px;padding:8px 14px;gap:8px;white-space:nowrap}
+#utility-content .silo-note{margin:8px 0 0;font-size:12px;color:#8a7c69;text-align:center}
+@media(max-width:460px){
+ #utility-content .silo-next{flex-direction:column;align-items:stretch}
+ #utility-content .silo-next button{width:100%}
+}

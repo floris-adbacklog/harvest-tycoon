@@ -370,3 +370,10 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   one after another; it stops at the first problem. A total of 150+ diamonds asks for confirmation first, like
   the big boosts. The batch card now has a building picture and the crop card a harvest picture, so the two are
   easier to tell apart. batchPicker got the same multi-select mode as the fertilizer field picker.
+
+## Silo research
+- One line on what it does (silo picture), the bonus you have now as two tiles (seed price, growing time; "0%"
+  before any research), five steps with checks, and the next level as gain chips (−5% seed price, −10% growing
+  time, +20 XP, matching upgradeSilo) beside Research with the coin price. At level 5: "All research done" and the
+  disabled "Research complete ✓". The paragraph and the three stat boxes are gone; "Crops already growing keep
+  their time." stays as one small line.
