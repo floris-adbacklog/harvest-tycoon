@@ -11,8 +11,11 @@ export function validateEvent(config,now=Date.now()){
  return {title:config.title.trim(),description:config.description,starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString(),active:config.active===true,objectives:objectives.map(({stat,target})=>({stat,target})),rewards:Object.fromEntries(['coins','diamondMin','diamondMax','participantStep','poolCap'].map(k=>[k,rewards[k]]))};
 }
 const DAY_MS=86400000,MIN_ACTIONS=3,MIN_SPAN=10*60000,TOP=10;
-// The first three farmers to finish win a podium prize on top of the usual reward (same numbers as harvest_event_settle).
-export const PODIUM=Object.freeze([{coins:300,diamonds:2},{coins:200,diamonds:1},{coins:100,diamonds:1}]);
+// The first three farmers to finish win a podium prize on top of the usual reward, and every later finisher a small extra
+// (same numbers as harvest_event_settle). At collection a farmer gets at most EVENT_DAY_DIAMONDS event diamonds a day.
+export const PODIUM=Object.freeze([{coins:2000,diamonds:20},{coins:1000,diamonds:10},{coins:500,diamonds:5}]);
+export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:1});
+export const EVENT_DAY_DIAMONDS=30;
 // The event's top 10, ranked the way settlement pays (live-events.sql): finished farmers first, earliest finish
 // first (the finish time is frozen), then everyone else by how far along they are. Rewards follow the same formula
 // as harvest_event_settle — exact once settled, "if it ended now" while the event runs.
@@ -25,7 +28,7 @@ export function eventStandings(event,rows,now=Date.now()){
  const n=ranked.filter(r=>r.done).length,{coins,diamondMin,diamondMax,participantStep,poolCap}=event.rewards;
  const perPlayer=Math.min(diamondMax,diamondMin+Math.floor(Math.sqrt(n/participantStep))),budget=Math.min(poolCap,n*perPlayer);
  return ranked.map((r,i)=>({rank:i+1,playerId:r.player_id,finished:r.done,progress:Math.round(r.share*100),
-  coins:settled?r.coins:r.done?coins+(PODIUM[i]?.coins??0):0,diamonds:settled?r.diamonds:r.done?Math.max(0,Math.min(perPlayer,budget-i*perPlayer))+(PODIUM[i]?.diamonds??0):0,podium:r.done&&i<PODIUM.length}));
+  coins:settled?r.coins:r.done?coins+(PODIUM[i]??FINISHER_PRIZE).coins:0,diamonds:settled?r.diamonds:r.done?Math.max(0,Math.min(perPlayer,budget-i*perPlayer))+(PODIUM[i]??FINISHER_PRIZE).diamonds:0,podium:r.done&&i<PODIUM.length}));
 }
 async function standings(admin,event,user,now){
  const rows=await admin.from('live_event_players').select('player_id,progress,actions,joined_at,last_at,qualified,coins,diamonds').eq('event_id',event.id).limit(2000);

@@ -206,7 +206,7 @@
 .event-podium{margin:-4px 0 16px;padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,#fff6dc,#fbeecb);border:1px solid #ecd9a0;color:#6b5a2a}
 .event-podium>span{display:block;margin-bottom:4px;font-size:13px;font-weight:700}
 .event-podium ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
-.event-podium li{display:grid;grid-template-columns:26px 36px 1fr 1fr;align-items:center;gap:8px;font-size:14px}
+.event-podium li{display:grid;grid-template-columns:26px 48px 1fr 1fr;align-items:center;gap:8px;font-size:14px}
 .event-podium li>.game-art{width:24px;height:24px}
 .event-podium li b{color:#6b5a2a}
 .event-podium li span{display:inline-flex;align-items:center;gap:4px;font-weight:700;color:#6b4f0f}

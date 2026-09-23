@@ -2,6 +2,11 @@
 
 Work from THIS zip only. Do not restore older files from earlier chats. Run `npm test` before and after (448 tests pass for the avatar release; input ZIP baseline was 437).
 
+## Latest: bigger event prizes (2026-09-23)
+- On top of the usual event reward: 1st +2,000 coins +20 diamonds, 2nd +1,000 +10, 3rd +500 +5, every later finisher +100 +1. The daily cap on collected event diamonds went from 6 to 30, so a first place is paid in full.
+- Migration `harvest_event_bigger_prizes` is LIVE (`supabase/live-events-prizes.sql`: `harvest_event_settle` and `harvest_event_claim`, the live definitions with only those numbers changed; the live settle also keeps `events_finished` up to date, which the older SQL files did not have). Same numbers in `PODIUM` / `FINISHER_PRIZE` / `EVENT_DAY_DIAMONDS` (farm-api `event-service.js`) and on the event screen (`public/live-events-ui.js`); `tests/farm-events.test.mjs` keeps them equal.
+- Deploy farm-api so the "if it ended now" standings show the new prizes (payment already uses them).
+
 ## Latest: midgame expansion, wave 2 (levels 54–70, 2026-09-23)
 - **Content** (`game/farm-state.js`, synced): Goat Shed (L54, 72,000, `hangar_015`; goat milk from feed or lettuce + barley), goat cheese in the Dairy Barn (L55), Craft Workshop (L58, 90,000, `hangar_019`; beeswax candles, wool blankets from cloth + wool), cherries (L66, tree `tree_011`, regrows), cherry jam (Preserves, L67) and cherry pie (Bakery, L68). 19 quests appended after "The cider house", 8 dailies, 6 village orders, 6 commissions (L58–70), and the new goods in late fields (60–95) and estate upgrades (66/75/85).
 - **Valley Market** (feature `valleymarket`, L62, free): three stalls, each a customer with one basket: one of the newest goods (`VALLEY_STARS`) plus one or two older goods, worth `valleyBasketValue(level)` (3,000 at 62, +150 a level, max 9,000), paying 1.5× the normal price (VIP and Double earnings apply, it counts as market sales). Sell or send the customer away; either way that stall gets its next customer 4 hours later. Baskets follow from the stall and a running number (`state.valley.serial`), so client and server agree; the rolls use `mixBits` because `calendarHash`'s low bits barely change between near-identical texts. Actions `valley_sell` / `valley_skip` {stall, basket}.

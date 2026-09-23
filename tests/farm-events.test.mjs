@@ -43,7 +43,7 @@ test('standings: finishers first by finish time, then by progress; rewards follo
  const ranked=eventStandings(e,[row('late',10,5,40),row('early',10,5,20),row('almost',9,9,5),row('slow',2,3,50),row('fast-but-short',10,2,1)],now);
  assert.deepEqual(ranked.map(r=>r.playerId),['early','late','fast-but-short','almost','slow']);
  assert.deepEqual(ranked.map(r=>r.finished),[true,true,false,false,false]);
- assert.deepEqual(ranked.slice(0,2).map(r=>[r.coins,r.diamonds]),[[200+300,1+2],[200+200,1+1]],'the usual reward plus the podium prize');
+ assert.deepEqual(ranked.slice(0,2).map(r=>[r.coins,r.diamonds]),[[200+2000,1+20],[200+1000,1+10]],'the usual reward plus the podium prize');
  assert.deepEqual([ranked[3].progress,ranked[3].coins,ranked[3].diamonds],[90,0,0]);
  const settled={...e,settled_at:iso(now)},paid=eventStandings(settled,[{...row('a',10,5,20),qualified:true,coins:200,diamonds:2},{...row('b',10,5,10),qualified:false,coins:0,diamonds:0}],now);
  assert.deepEqual(paid.map(r=>[r.playerId,r.finished,r.coins,r.diamonds]),[['a',true,200,2],['b',false,0,0]],'after settlement the stored qualification and rewards are shown as-is');
@@ -51,7 +51,7 @@ test('standings: finishers first by finish time, then by progress; rewards follo
 test('a pool that runs dry pays pool diamonds to the earliest finishers only; the podium prize comes on top',()=>{
  const e=event('e',now-H,now+H,{rewards:{coins:100,diamondMin:1,diamondMax:1,participantStep:10,poolCap:2}});
  const rows=['a','b','c'].map((id,i)=>({player_id:id,progress:{harvested:10},actions:3,joined_at:iso(now-H),last_at:iso(now-H+(20+i)*M)}));
- assert.deepEqual(eventStandings(e,rows,now).map(r=>r.diamonds),[1+2,1+1,0+1]);
+ assert.deepEqual(eventStandings(e,rows,now).map(r=>r.diamonds),[1+20,1+10,0+5]);
 });
 
 test('automatic events: 5 hours on, 1 hour off, four times a day, created ahead by pg_cron and never impossible',()=>{
@@ -130,17 +130,18 @@ test('the leaderboard only ranks; your profile, name and sign-out live in Settin
  assert.match(ui,/account\.className='settings-account'/);
  assert.match(ui,/\(settings\?\.querySelector\('\.dialog-heading'\)\?\?document\.body\)\.after\(account\);/);
 });
-test('the first three finishers win a podium prize on top, the same in settlement, the projection and the screen',async()=>{
- const {PODIUM}=await import('../supabase/functions/farm-api/event-service.js'),{PODIUM_PRIZES}=await import('../public/live-events-ui.js');
- assert.deepEqual(PODIUM,[{coins:300,diamonds:2},{coins:200,diamonds:1},{coins:100,diamonds:1}]);
- assert.deepEqual(PODIUM_PRIZES,PODIUM,'the screen shows exactly what the server pays');
+test('the first three finishers win a podium prize on top and every later finisher a little extra, the same in settlement, the projection and the screen',async()=>{
+ const server=await import('../supabase/functions/farm-api/event-service.js'),screen=await import('../public/live-events-ui.js');
+ assert.deepEqual(server.PODIUM,[{coins:2000,diamonds:20},{coins:1000,diamonds:10},{coins:500,diamonds:5}]);
+ assert.deepEqual(server.FINISHER_PRIZE,{coins:100,diamonds:1});
+ assert.deepEqual([screen.PODIUM_PRIZES,screen.FINISHER_PRIZE,screen.EVENT_DAY_DIAMONDS],[server.PODIUM,server.FINISHER_PRIZE,server.EVENT_DAY_DIAMONDS],'the screen shows exactly what the server pays');
  const e=event('e',now-H,now+H),rows=['a','b','c','d'].map((id,i)=>({player_id:id,progress:{harvested:10},actions:5,joined_at:iso(now-H),last_at:iso(now-H+(20+i)*M)}));
- assert.deepEqual(eventStandings(e,rows,now).map(r=>[r.coins,r.diamonds,r.podium]),[[500,3,true],[400,2,true],[300,2,true],[200,1,false]]);
- for(const file of ['supabase/live-events.sql','supabase/live-events-podium.sql']){
-  const sql=read(file);
-  assert.match(sql,/coins=\(e\.rewards->>'coins'\)::integer\+\(case r\.rank when 1 then 300 when 2 then 200 when 3 then 100 else 0 end\)/,file);
-  assert.match(sql,/\+\(case r\.rank when 1 then 2 when 2 then 1 when 3 then 1 else 0 end\)/,file);
- }
+ assert.deepEqual(eventStandings(e,rows,now).map(r=>[r.coins,r.diamonds,r.podium]),[[2200,21,true],[1200,11,true],[700,6,true],[300,2,false]]);
+ const sql=read('supabase/live-events-prizes.sql');
+ assert.match(sql,/coins=\(e\.rewards->>'coins'\)::integer\+\(case r\.rank when 1 then 2000 when 2 then 1000 when 3 then 500 else 100 end\)/);
+ assert.match(sql,/\+\(case r\.rank when 1 then 20 when 2 then 10 when 3 then 5 else 1 end\)/);
+ assert.match(sql,/paid:=least\(p\.diamonds,greatest\(0,30-used\)\);/,'a first place is paid in full under the daily cap');
+ assert.ok(server.PODIUM[0].diamonds+2<=server.EVENT_DAY_DIAMONDS);
 });
 test('event progress counts every action: a per-player baseline, the 10 seconds only limit contributions',()=>{
  const sql=read('supabase/live-events-baseline.sql');
