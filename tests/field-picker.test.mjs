@@ -38,3 +38,19 @@ test('disabled selectors cannot be opened by click or keyboard',()=>{
  f.nodes.summary.fire('click',{preventDefault(){prevented=true;}});f.root.fire('keydown',{key:'ArrowDown'});
  assert.equal(prevented,true);assert.equal(f.root.open,false);assert.equal(f.selected,null);
 });
+import {readFileSync} from 'node:fs';
+import {batchPicker} from '../public/field-picker.js';
+test('batches can be picked several at a time, with the price per batch and a quick select limited by diamonds',()=>{
+ const job=(id,recipe)=>({id,recipe,startedAt:0,readyAt:600000});
+ const batches=[{building:'coop',job:job('a','eggs'),key:'coop/a'},{building:'dairy',job:job('b','milk'),key:'dairy/b'}];
+ const html=batchPicker({id:'x',batches,selectedKeys:['dairy/b'],multiple:true,available:1,now:0,perItem:'10 diamonds per batch'});
+ assert.match(html,/1 batch selected/);assert.equal((html.match(/type="checkbox"/g)??[]).length,2);
+ assert.match(html,/data-picker-all >Select 1</);assert.match(html,/10 diamonds per batch/);
+});
+test('finishing several crops or batches is one normal action each, and the button shows the total',()=>{
+ const ui=readFileSync(new URL('../public/boosts-ui.js',import.meta.url),'utf8');
+ assert.match(ui,/type:'finish_crop',id:Number\(item\),expectedCost:SINGLE_CROP_COST/);
+ assert.match(ui,/type:'finish_batch',building:chosen\.building,jobId:chosen\.job\.id,expectedCost:SINGLE_BATCH_COST/);
+ assert.match(ui,/<b>\$\{f\.cost\*Math\.max\(1,n\)\}<\/b>/,'10 per crop or batch, times how many are picked');
+ assert.match(ui,/if\(cost>=150&&!await confirmDiamondSpend/,'a big total asks first, like the big boosts');
+});

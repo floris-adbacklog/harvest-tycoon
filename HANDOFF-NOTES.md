@@ -362,3 +362,11 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   crop", names on hover); one "Buy for €2.99" button and "One purchase per account." The intro sentence, the
   crop names with ×1 and the storage explanation paragraph are gone. src/starter-pack-ui.js (goes live with the
   Vercel build) + public/starter-pack.css. Payment flow, texts while pending and eligibility are unchanged.
+
+## Finish crops / Finish batches (diamond shop)
+- "Finish one crop" / "Finish one batch" became "Finish crops" / "Finish batches": tick one or more fields or
+  batches (Select N picks as many as your diamonds cover, Clear, Done); the button shows the total (10 each, e.g.
+  "20 · Finish 2 crops"). Each one is still the normal finish_crop / finish_batch action (no server change), sent
+  one after another; it stops at the first problem. A total of 150+ diamonds asks for confirmation first, like
+  the big boosts. The batch card now has a building picture and the crop card a harvest picture, so the two are
+  easier to tell apart. batchPicker got the same multi-select mode as the fertilizer field picker.

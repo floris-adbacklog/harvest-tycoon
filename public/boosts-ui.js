@@ -7,18 +7,43 @@ const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
 
 export function createBoostsUI({state,runAction,onChange,notify}){
- let lastStatus='',catalog=null,purchasing='',requests={},selectedField='',selectedBatch='',finishing=false;
+ let lastStatus='',catalog=null,purchasing='',requests={},selectedFields=[],selectedBatches=[],finishing=false;
  const bridge=()=>window.parent.harvestBridge;
  let previousVip=vipActive(state,farmNow()),observedExpiry=state.vipExpiresAt??0;
  const track=(event,params={})=>bridge()?.trackCommerce?.(event,params);
  function runningBatches(){return Object.entries(state.buildings).flatMap(([building,b])=>productionJobs(b).map((job,index)=>({building,job,number:index+1,key:building+'/'+job.id})).filter(b=>b.job.readyAt>farmNow()));}
  function signature(){return [state.vipExpiresAt,vipActive(state,farmNow()),finishing,...runningBatches().map(b=>b.key),state.diamonds,state.boosts.upgradeCredits,...Object.keys(BOOSTS).map(id=>boostStatus(state,id,farmNow()).reason),...state.plots.filter(p=>p.crop&&p.readyAt>farmNow()).map(p=>`${p.id}:${p.crop}`)].join('|');}
+ // Finish crops / batches: the selection, its total price, and the button label and state kept in step with it.
+ const FINISH={crop:{cost:SINGLE_CROP_COST,button:'finish-one-crop',one:'crop',many:'crops',selected:()=>selectedFields},batch:{cost:SINGLE_BATCH_COST,button:'finish-one-batch',one:'batch',many:'batches',selected:()=>selectedBatches}};
+ function finishLabel(kind){const f=FINISH[kind],n=f.selected().length;return `<span class="boost-price">${art('diamonds')}<b>${f.cost*Math.max(1,n)}</b></span><small>${finishing?'Finishing…':`Finish ${n>1?`${n} ${f.many}`:f.one}`}</small>`;}
+ function updateFinish(kind){const f=FINISH[kind],n=f.selected().length,button=$(f.button);if(!button)return;button.innerHTML=finishLabel(kind);button.disabled=!n||finishing||state.diamonds<f.cost*n;button.setAttribute('aria-label',`Finish ${n||'the selected'} ${n===1?f.one:f.many} for ${f.cost*Math.max(1,n)} diamonds`);}
+ // One action per field or batch, the same as finishing them one by one; stops at the first problem.
+ async function finishMany(kind){
+  const f=FINISH[kind],picked=[...f.selected()];if(finishing||!picked.length)return;
+  const cost=f.cost*picked.length;
+  if(cost>=150&&!await confirmDiamondSpend({title:`Finish ${picked.length} ${f.many}`,cost,description:`${f.cost} diamonds each. They are ready right away.`}))return;
+  finishing=true;render();const done=[];
+  try{
+   for(const item of picked){
+    if(kind==='crop')done.push(await runAction({type:'finish_crop',id:Number(item),expectedCost:SINGLE_CROP_COST}));
+    else{const chosen=runningBatches().find(b=>b.key===item);if(!chosen)continue;done.push(await runAction({type:'finish_batch',building:chosen.building,jobId:chosen.job.id,expectedCost:SINGLE_BATCH_COST}));}
+   }
+  }catch(error){$('boost-feedback').textContent=error.message;}
+  finally{
+   finishing=false;
+   if(kind==='crop')selectedFields=[];else selectedBatches=[];
+   if(done.length){
+    onChange();
+    const message=kind==='crop'?(done.length===1?`Field ${done[0].field+1}: ${CROPS[done[0].crop].name} is ready to harvest!`:`${done.length} crops are ready to harvest!`):(done.length===1?'Your batch is ready. Collect it from the building.':`${done.length} batches are ready. Collect them from their buildings.`);
+    if(!$('boost-feedback').textContent)$('boost-feedback').textContent=message;notify(message);
+   }
+   render();
+  }
+ }
  function render(){
   $('boost-wallet').textContent=number(state.diamonds);
-  const batches=runningBatches();if(!batches.some(b=>b.key===selectedBatch))selectedBatch='';
-  const selection=batches.find(b=>b.key===selectedBatch);
-  const growing=state.plots.filter(p=>p.crop&&p.readyAt>farmNow());
-  if(!growing.some(p=>String(p.id)===selectedField))selectedField='';
+  const batches=runningBatches();selectedBatches=selectedBatches.filter(key=>batches.some(b=>b.key===key));
+  const growing=state.plots.filter(p=>p.crop&&p.readyAt>farmNow());selectedFields=selectedFields.filter(id=>growing.some(p=>String(p.id)===id));
   // One card layout for everything: picture, title and text, a status line, and a price button that never changes size.
   const chip=(kind,text,time='')=>`<span class="boost-detail" data-state="${kind}"${time?` data-boost-time="${time}"`:''}>${text}</span>`;
   const price=(cost,verb)=>`<span class="boost-price">${art('diamonds')}<b>${cost}</b></span><small>${verb}</small>`;
@@ -28,21 +53,23 @@ export function createBoostsUI({state,runAction,onChange,notify}){
    const [kind,text]=active?['active',`Active · ${formatDuration(status.remaining)} left`]:status.reason?['blocked',status.reason]:state.diamonds<b.cost?['need',`Need ${number(b.cost-state.diamonds)} more diamonds`]:['ready','Ready to use'];
    return card({cls:active?'boost-active':'',picture:id==='crops'?'instant-harvest':b.art,title:b.name,text:b.description,detail:chip(kind,text,id),button:`<button class="boost-buy" data-buy-boost="${id}" ${status.canBuy&&!finishing?'':'disabled'} aria-label="Activate ${b.name} for ${b.cost} diamonds">${price(b.cost,active?'Active':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate')}</button>`});
   };
-  const cropCard=card({picture:'seeds',title:'Finish one crop',text:'One field ready to harvest now.',
+  // Pick one or more fields (or batches): each costs the same 10 diamonds, the button shows the total.
+  const cropCard=card({picture:'harvest',title:'Finish crops',text:`${SINGLE_CROP_COST} diamonds a field, ready to harvest now.`,
    // Nothing to choose from: say so in one chip instead of an empty picker.
    detail:!growing.length?chip('need','No crops growing'):state.diamonds<SINGLE_CROP_COST?chip('need',`Need ${number(SINGLE_CROP_COST-state.diamonds)} more diamonds`):'',
-   button:`<button id="finish-one-crop" class="boost-buy" ${selectedField===''||state.diamonds<SINGLE_CROP_COST||finishing?'disabled':''} aria-label="Finish the selected crop for ${SINGLE_CROP_COST} diamonds">${price(SINGLE_CROP_COST,finishing?'Finishing…':'Finish crop')}</button>`,
-   extra:growing.length?`<span class="field-picker-label">Choose a field</span>${fieldPicker({id:'finish-crop-field',plots:growing,selected:selectedField===''?[]:[selectedField],now:farmNow(),disabled:finishing})}`:''});
-  const batchCard=card({picture:'boost',title:'Finish one batch',text:'One running batch ready now.',
+   button:`<button id="finish-one-crop" class="boost-buy">${finishLabel('crop')}</button>`,
+   extra:growing.length?`<span class="field-picker-label">Choose fields</span>${fieldPicker({id:'finish-crop-field',plots:growing,selected:selectedFields,multiple:true,available:Math.floor(state.diamonds/SINGLE_CROP_COST),now:farmNow(),disabled:finishing,hint:'Select crops to finish instantly',perItem:`${SINGLE_CROP_COST} diamonds per field`,picture:'harvest'})}`:''});
+  const batchCard=card({picture:'buildings',title:'Finish batches',text:`${SINGLE_BATCH_COST} diamonds a batch, ready to collect now.`,
    detail:!batches.length?chip('need','No batches running'):state.diamonds<SINGLE_BATCH_COST?chip('need',`Need ${number(SINGLE_BATCH_COST-state.diamonds)} more diamonds`):'',
-   button:`<button id="finish-one-batch" class="boost-buy" ${!selection||finishing||state.diamonds<SINGLE_BATCH_COST?'disabled':''} aria-label="Finish the selected batch for ${SINGLE_BATCH_COST} diamonds">${price(SINGLE_BATCH_COST,'Finish batch')}</button>`,
-   extra:batches.length?`<span class="field-picker-label">Choose a batch</span>${batchPicker({id:'finish-batch-picker',batches,selectedKey:selectedBatch,now:farmNow(),disabled:finishing})}`:''});
+   button:`<button id="finish-one-batch" class="boost-buy">${finishLabel('batch')}</button>`,
+   extra:batches.length?`<span class="field-picker-label">Choose batches</span>${batchPicker({id:'finish-batch-picker',batches,selectedKeys:selectedBatches,multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),now:farmNow(),disabled:finishing,perItem:`${SINGLE_BATCH_COST} diamonds per batch`})}`:''});
   const finishNow=['crops','production'],entries=Object.entries(BOOSTS);
   $('boost-catalog').innerHTML=`<section class="shop-section"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section"><h3 class="shop-heading">Boosts</h3><div class="shop-list">${entries.filter(([id])=>!finishNow.includes(id)).map(boostCard).join('')}</div></section>`;
-  if($('finish-batch-picker'))bindFieldPicker($('finish-batch-picker'),{onChange:ids=>{selectedBatch=ids.length?batches[ids[0]]?.key??'':'';$('finish-one-batch').disabled=selectedBatch===''||state.diamonds<SINGLE_BATCH_COST||finishing;}});
-  $('finish-one-batch').onclick=async()=>{const chosen=batches.find(b=>b.key===selectedBatch);if(finishing||!chosen)return;finishing=true;render();try{await runAction({type:'finish_batch',building:chosen.building,jobId:chosen.job.id,expectedCost:SINGLE_BATCH_COST});selectedBatch='';onChange();notify('Your batch is ready. Collect it from the building.');}catch(error){$('boost-feedback').textContent=error.message;}finally{finishing=false;render();}};
-  if($('finish-crop-field'))bindFieldPicker($('finish-crop-field'),{onChange:ids=>{selectedField=String(ids[0]??'');$('finish-one-crop').disabled=selectedField===''||state.diamonds<SINGLE_CROP_COST||finishing;}});
-  $('finish-one-crop').onclick=async()=>{if(finishing||selectedField==='')return;const id=Number(selectedField);finishing=true;render();try{const r=await runAction({type:'finish_crop',id,expectedCost:SINGLE_CROP_COST});selectedField='';onChange();const message=`Field ${r.field+1}: ${CROPS[r.crop].name} is ready to harvest!`;$('boost-feedback').textContent=message;notify(message);}catch(error){$('boost-feedback').textContent=error.message;}finally{finishing=false;render();}};
+  if($('finish-batch-picker'))bindFieldPicker($('finish-batch-picker'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),noun:['batch','batches'],onChange:ids=>{selectedBatches=ids.map(i=>batches[i]?.key).filter(Boolean);updateFinish('batch');}});
+  if($('finish-crop-field'))bindFieldPicker($('finish-crop-field'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_CROP_COST),onChange:ids=>{selectedFields=ids.map(String);updateFinish('crop');}});
+  updateFinish('crop');updateFinish('batch');
+  $('finish-one-crop').onclick=()=>finishMany('crop');
+  $('finish-one-batch').onclick=()=>finishMany('batch');
   $('diamond-packs').innerHTML=DIAMOND_PACKS.map(pack=>`<article class="diamond-pack" data-state="${purchasing===String(pack.amount)?'opening':catalog?.enabled?'available':'unavailable'}">${art('diamonds')}<h3>${number(pack.amount)} <span>diamonds</span></h3><strong>${pack.price}</strong><button type="button" data-diamond-pack="${pack.amount}" aria-label="Buy ${number(pack.amount)} diamonds for ${pack.price}" ${!catalog?.enabled||purchasing?'disabled':''}>${purchasing===String(pack.amount)?'Opening checkout…':catalog?.enabled?(catalog.mode==='test'?'Test checkout':'Buy diamonds'):'Currently unavailable'}</button></article>`).join('');
   $('diamond-packs').querySelectorAll('[data-diamond-pack]').forEach(button=>button.onclick=async()=>{
    if(purchasing||!catalog?.enabled)return;const pack=button.dataset.diamondPack;purchasing=pack;requests[pack]??=crypto.randomUUID();render();
