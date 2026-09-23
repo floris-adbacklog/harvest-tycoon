@@ -131,7 +131,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  function refresh(){
   const next=Boolean(state)&&levelOf(state)<EVENTS_LEVEL;if(next===locked)return;locked=next;
   if(button)button.hidden=locked;
-  if(entry){entry.disabled=locked;entry.classList.toggle('locked',locked);entry.setAttribute('aria-disabled',String(locked));if(locked)entry.title=`Reach level ${EVENTS_LEVEL} to unlock farm events.`;else entry.removeAttribute('title');}
+  if(entry){entry.disabled=locked;entry.classList.toggle('locked',locked);entry.style.order=locked?String(100+EVENTS_LEVEL):'';entry.setAttribute('aria-disabled',String(locked));if(locked)entry.title=`Reach level ${EVENTS_LEVEL} to unlock farm events.`;else entry.removeAttribute('title');}
   if(locked){if(dot)dot.hidden=true;if(hint)hint.textContent=`Reach level ${EVENTS_LEVEL}.`;}
   else if(data)badge();else if(hint)hint.textContent='Short shared goals';
   if(!locked)setTimeout(quiet,3000);

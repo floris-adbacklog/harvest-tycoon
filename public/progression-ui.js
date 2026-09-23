@@ -31,7 +31,8 @@ export function createProgressionUI({state,isReady}){
   const moreMenuGates={'[data-menu-action="boosts-button"]':'boosts','[data-menu-action="estate-button"]':'projects'};
   const lockable=[...document.querySelectorAll('[data-menu-utility]')].map(el=>[el,el.dataset.menuUtility]).concat([...document.querySelectorAll('[data-menu-action="boosts-button"],[data-menu-action="estate-button"]')].map(el=>[el,moreMenuGates[`[data-menu-action="${el.dataset.menuAction}"]`]]));
   for(const [el,feature] of lockable){
-   const unlocked=featureUnlocked(state,feature);el.disabled=!unlocked;el.classList.toggle('locked',!unlocked);
+   // Locked entries line up after the open ones, lowest level first; once open, an entry is back in its usual place.
+   const unlocked=featureUnlocked(state,feature);el.disabled=!unlocked;el.classList.toggle('locked',!unlocked);el.style.order=unlocked?'':String(100+FEATURE_LEVELS[feature]);
    const hint=el.querySelector('.menu-hint');if(hint){if(!hint.dataset.open)hint.dataset.open=hint.textContent;hint.textContent=unlocked?hint.dataset.open:`Reach level ${FEATURE_LEVELS[feature]}.`;}
    el.setAttribute('aria-disabled',String(!unlocked));if(!unlocked)el.title=featureUnlockHint(feature);else el.removeAttribute('title');
   }

@@ -422,3 +422,6 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   short groups ("The basics", "Grow your farm", "Good to know") of cards with one sentence each; features that are not
   open yet show "Level N" (helping hand 8, family 10, events 10). Two columns on desktop. Title "How to play" like the
   menu entry. The water/care line follows harvestYield (+1 crop each, double XP for both).
+- More menu: locked entries line up after the open ones, lowest unlock level first (CSS order on the grid item,
+  100 + level), so a locked Farm events card sits with the level-10 entries instead of next to Daily rewards; once open,
+  every entry is back in its usual place (events beside Daily rewards).
