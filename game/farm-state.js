@@ -620,19 +620,23 @@ export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<6
 export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
 // Fields 13-20 keep their prices. Later coin costs rise steadily; estate materials and levels add the challenge.
 const LATE_FIELD_COSTS=Object.freeze([45000,65000,90000,120000,155000,190000,225000,260000]);
+// Fields 29-40 open during the midgame expansion rather than after it: every four levels from 30 to 50 (while squash, pole beans, the
+// Bee Yard, sheep and cider apples arrive and the trees start to claim fields), every five to 70 (cherries at 66), and the last two at
+// 80 and 90, where the content ends. Each asks coins and goods, the newest goods of its level among them. On 23 Sep 2026 no farm had
+// more than 21 fields, so nobody had met the old schedule (levels 40-95).
 export const ENDGAME_FIELDS=Object.freeze([
- {level:40,coins:300000,materials:{bread:100,cheese:80,stew:40}},
- {level:45,coins:350000,materials:{oil:70,vegetables:70,applejuice:50,squashsoup:10}},
- {level:50,coins:410000,materials:{pie:70,berrypreserves:60,beangratin:50,wool:60}},
- {level:55,coins:480000,materials:{orchardjuice:90,applecompote:80,orchardsalad:80,beeswax:80}},
- {level:60,coins:560000,materials:{applepie:90,pickledbeans:60,cheese:140,yarn:60,goatmilk:60}},
- {level:65,coins:650000,materials:{berrytart:80,applevinegar:100,vegetables:120,cloth:20,candles:20}},
- {level:70,coins:750000,materials:{berrysmoothie:120,beangratin:100,oil:140,cider:40,goatcheese:20}},
- {level:75,coins:860000,materials:{berrycheesecake:100,berrypreserves:120,stew:140,cloth:30,blanket:4}},
- {level:80,coins:980000,materials:{harvesthamper:50,applepie:120,pickledbeans:100,cider:60,cherryjam:20}},
- {level:85,coins:1110000,materials:{harvesthamper:65,berrytart:120,orchardjuice:180,cloth:45,candles:50,prizeproduce:6}},
- {level:90,coins:1250000,materials:{harvesthamper:80,berrycheesecake:140,beangratin:160,squashsoup:60,cherrypie:30,prizeproduce:10}},
- {level:95,coins:1400000,materials:{harvesthamper:100,berrycheesecake:160,pickledbeans:180,applevinegar:180,cloth:60,cider:90,blanket:10,prizeproduce:15}}
+ {level:30,coins:300000,materials:{bread:100,cheese:80,stew:40}},
+ {level:34,coins:350000,materials:{oil:70,vegetables:70,applejuice:50,squashsoup:10}},
+ {level:38,coins:410000,materials:{pie:70,berrypreserves:60,beangratin:50,beeswax:40}},
+ {level:42,coins:480000,materials:{orchardjuice:90,applecompote:80,orchardsalad:80,wool:60}},
+ {level:46,coins:560000,materials:{applepie:90,pickledbeans:60,cheese:140,yarn:40}},
+ {level:50,coins:650000,materials:{berrytart:80,applevinegar:100,vegetables:120,cloth:20,cider:10}},
+ {level:55,coins:750000,materials:{berrysmoothie:120,beangratin:100,oil:140,cider:40,goatmilk:60}},
+ {level:60,coins:860000,materials:{berrycheesecake:100,berrypreserves:120,stew:140,cloth:30,goatcheese:20,candles:20}},
+ {level:65,coins:980000,materials:{harvesthamper:50,applepie:120,pickledbeans:100,cider:60,blanket:4}},
+ {level:70,coins:1110000,materials:{harvesthamper:65,berrytart:120,orchardjuice:180,cloth:45,candles:50,cherryjam:20}},
+ {level:80,coins:1250000,materials:{harvesthamper:80,berrycheesecake:140,beangratin:160,squashsoup:60,cherrypie:30,prizeproduce:6}},
+ {level:90,coins:1400000,materials:{harvesthamper:100,berrycheesecake:160,pickledbeans:180,applevinegar:180,cloth:60,cider:90,blanket:10,prizeproduce:15}}
 ].map(field=>Object.freeze({...field,materials:Object.freeze(field.materials)})));
 export function expansionLevel(state){return ENDGAME_FIELDS[state.plots.length-28]?.level??1;}
 export function expansionCost(state){const n=state.plots.length;return n>=MAX_PLOTS?null:n>=28?ENDGAME_FIELDS[n-28].coins:n<20?Math.ceil(600*1.75**Math.max(0,n-12)/25)*25:LATE_FIELD_COSTS[n-20];}

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {recipeValue,createFarm,applyFarmAction as act,normalizeFarm,xpForLevel,recipeDuration,cropDuration,productionJobs,featureUnlocked,recipeUnlocked,buildingEligible,itemAvailable,marketSaleValue,dailyOrders,currentProject,familyWeek,familyWeekStart,valleyRestock,ranchSpeedup,depotRestock,exportValue,
- CROPS,IMPROVEMENTS,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,FAIR_CLASSES,FAIR_PREMIUM,VALLEY_RESTOCK,RANCH_SPEEDUP,RECIPES,ITEMS,QUESTS,PROJECTS,CHAPTER_DIAMONDS,DAY_MS,FEATURE_LEVELS} from '../game/farm-state.js';
+ CROPS,CROP_LEVELS,ENDGAME_FIELDS,IMPROVEMENTS,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,FAIR_CLASSES,FAIR_PREMIUM,VALLEY_RESTOCK,RANCH_SPEEDUP,RECIPES,ITEMS,QUESTS,PROJECTS,CHAPTER_DIAMONDS,DAY_MS,FEATURE_LEVELS} from '../game/farm-state.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 import {ANCHORS,YARD_EXTENT,ROADS,anchorAt,roadRects} from '../public/farm-layout.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -153,4 +153,11 @@ test('prize produce is the best use of a Glasshouse slot, as a prize should be',
  const perHour=id=>recipeValue(id).added/(RECIPES[id].duration/3600000);
  for(const id of Object.keys(RECIPES).filter(id=>RECIPES[id].building==='glasshouse'&&id!=='prizeproduce'))assert.ok(perHour('prizeproduce')>perHour(id),id);
  assert.ok(perHour('prizeproduce')>=perHour('blanket')*.95,'on a par with the wool blanket, the best good before it');
+});
+
+test('fields 29-40 open during the expansion, each asking only for goods the farm can make by then',()=>{
+ const levels=ENDGAME_FIELDS.map(f=>f.level);assert.equal(levels.at(-1),90,'the last field comes where the content ends');
+ assert.ok(levels.filter(n=>n<=50).length>=6,'half of them while the trees start to claim fields');
+ for(const field of ENDGAME_FIELDS){const s=farmAt(field.level);for(const k of Object.keys(field.materials))assert.ok(itemAvailable(s,k),`field at ${field.level}: ${k}`);}
+ for(const crop of ['polebeans','ciderapples','cherries'])assert.ok(levels.some(n=>n<=CROP_LEVELS[crop]&&n>CROP_LEVELS[crop]-5),`a field opens around the ${crop}`);
 });

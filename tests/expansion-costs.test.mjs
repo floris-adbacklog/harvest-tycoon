@@ -17,11 +17,11 @@ test('each expansion buys exactly one field with increasing coin and mixed suppl
 });
 test('forty fields: the last twelve are long-term goals that need a level, coins and advanced goods',()=>{
  assert.equal(MAX_PLOTS,40);assert.equal(ENDGAME_FIELDS.length,12);
- const s=createFarm(now);s.coins=1e9;s.plots=Array.from({length:28},(_,id)=>({...s.plots[0],id}));s.xp=xpForLevel(39);Object.assign(s.inventory,expansionMaterials(s));
- assert.equal(expansionLevel(s),40);assert.equal(expansionCost(s),300000);
- const before=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'expand'},now),/Reach level 40 to unlock field 29/);assert.deepEqual(s,before,'a level that is too low changes nothing');
- s.xp=xpForLevel(40);applyFarmAction(s,{type:'expand'},now);assert.equal(s.plots.length,29);
- assert.deepEqual(ENDGAME_FIELDS.map(f=>f.level),[40,45,50,55,60,65,70,75,80,85,90,95]);
+ const s=createFarm(now);s.coins=1e9;s.plots=Array.from({length:28},(_,id)=>({...s.plots[0],id}));s.xp=xpForLevel(29);Object.assign(s.inventory,expansionMaterials(s));
+ assert.equal(expansionLevel(s),30);assert.equal(expansionCost(s),300000);
+ const before=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'expand'},now),/Reach level 30 to unlock field 29/);assert.deepEqual(s,before,'a level that is too low changes nothing');
+ s.xp=xpForLevel(30);applyFarmAction(s,{type:"expand"},now);assert.equal(s.plots.length,29);
+ assert.deepEqual(ENDGAME_FIELDS.map(f=>f.level),[30,34,38,42,46,50,55,60,65,70,80,90]);
  assert.deepEqual([ENDGAME_FIELDS[0].coins,ENDGAME_FIELDS[11].coins],[300000,1400000]);
  for(let i=1;i<12;i++){assert(ENDGAME_FIELDS[i].coins>ENDGAME_FIELDS[i-1].coins);assert(ENDGAME_FIELDS[i].level>ENDGAME_FIELDS[i-1].level);}
  for(const field of ENDGAME_FIELDS)for(const item of Object.keys(field.materials))assert(Object.hasOwn(ITEMS,item),item);
