@@ -56,14 +56,14 @@ beeswax:{"name": "Beeswax", "sell": 260, "icon": "hexagon", "color": "gold"},
 wool:{"name": "Wool", "sell": 190, "icon": "cloud", "color": "cream"},
 yarn:{"name": "Yarn", "sell": 420, "icon": "package-check", "color": "cream"},
 cloth:{"name": "Cloth", "sell": 2600, "icon": "package-check", "color": "cream"},
-cider:{"name": "Cider", "sell": 1250, "icon": "package-check", "color": "gold"},
+cider:{"name": "Cider", "sell": 1650, "icon": "package-check", "color": "gold"},
 // Wave 2: goat milk and goat cheese, the Craft Workshop's candles and blankets, and two cherry treats.
-goatmilk:{"name": "Goat milk", "sell": 170, "icon": "milk", "color": "cream"},
-goatcheese:{"name": "Goat cheese", "sell": 1150, "icon": "sandwich", "color": "cream"},
+goatmilk:{"name": "Goat milk", "sell": 185, "icon": "milk", "color": "cream"},
+goatcheese:{"name": "Goat cheese", "sell": 1350, "icon": "sandwich", "color": "cream"},
 candles:{"name": "Beeswax candles", "sell": 1150, "icon": "flame", "color": "gold"},
 blanket:{"name": "Wool blanket", "sell": 9800, "icon": "package-check", "color": "cream"},
-cherryjam:{"name": "Cherry jam", "sell": 2300, "icon": "amphora", "color": "gold"},
-cherrypie:{"name": "Cherry pie", "sell": 2500, "icon": "cake-slice", "color": "gold"},
+cherryjam:{"name": "Cherry jam", "sell": 2700, "icon": "amphora", "color": "gold"},
+cherrypie:{"name": "Cherry pie", "sell": 2900, "icon": "cake-slice", "color": "gold"},
 // Wave 3: the Glasshouse's show basket, for the fair, the export trailers and the best orders.
 prizeproduce:{"name": "Prize produce", "sell": 9800, "icon": "award", "color": "gold"}
 
@@ -159,9 +159,9 @@ harvesthamper:{"building": "packing", "name": "Pack a harvest hamper", "input": 
 // The midgame expansion. The Glasshouse grows crops that already exist, in half their field time and in bigger numbers, for
 // fertilizer and seed money: a sink for the Windmill's fertilizer and a reason to revisit older crops.
 squashsoup:{"building": "kitchen", "name": "Cook squash soup", "input": {"squash": 2, "polebeans": 3, "milk": 2}, "output": {"squashsoup": 1}, "duration": 14400000, "xp": 75, "minLevel": 32},
-hives:{"building": "beeyard", "name": "Let the bees work the sunflowers", "input": {"sunflower": 1}, "output": {"honey": 5, "beeswax": 2}, "duration": 7200000, "xp": 45, "minLevel": 34},
+hives:{"building": "beeyard", "name": "Let the bees work the sunflowers", "input": {"sunflower": 1}, "output": {"honey": 4, "beeswax": 3}, "duration": 7200000, "xp": 45, "minLevel": 34},
 wool:{"building": "sheepbarn", "name": "Shear the flock", "input": {"feed": 2}, "output": {"wool": 2}, "duration": 3600000, "xp": 22, "minLevel": 37},
-grazewool:{"building": "sheepbarn", "name": "Graze the flock on barley", "input": {"barley": 4}, "output": {"wool": 2}, "duration": 4500000, "xp": 24, "minLevel": 39},
+grazewool:{"building": "sheepbarn", "name": "Graze the flock on barley", "input": {"barley": 4}, "output": {"wool": 3}, "duration": 4500000, "xp": 24, "minLevel": 39},
 glasscauliflower:{"building": "glasshouse", "name": "Grow cauliflower under glass", "input": {"fertilizer": 1}, "coins": 260, "output": {"cauliflower": 8}, "duration": 7200000, "xp": 60, "minLevel": 40},
 glasspumpkin:{"building": "glasshouse", "name": "Grow pumpkins under glass", "input": {"fertilizer": 1}, "coins": 380, "output": {"pumpkin": 8}, "duration": 14400000, "xp": 90, "minLevel": 41},
 glassredcabbage:{"building": "glasshouse", "name": "Grow red cabbage under glass", "input": {"fertilizer": 2}, "coins": 520, "output": {"redcabbage": 8}, "duration": 21600000, "xp": 120, "minLevel": 42},
@@ -170,7 +170,7 @@ glasssquash:{"building": "glasshouse", "name": "Grow squash under glass", "input
 glasssunflower:{"building": "glasshouse", "name": "Grow sunflowers under glass", "input": {"fertilizer": 2}, "coins": 760, "output": {"sunflower": 6}, "duration": 28800000, "xp": 130, "minLevel": 48},
 yarn:{"building": "weaving", "name": "Spin wool into yarn", "input": {"wool": 3}, "output": {"yarn": 2}, "duration": 5400000, "xp": 35, "minLevel": 43},
 cloth:{"building": "weaving", "name": "Weave fine cloth", "input": {"yarn": 4}, "output": {"cloth": 1}, "duration": 14400000, "xp": 80, "minLevel": 45},
-cider:{"building": "juicepress", "name": "Press sparkling cider", "input": {"ciderapples": 4, "honey": 2}, "output": {"cider": 1}, "duration": 18000000, "xp": 70, "minLevel": 47},
+cider:{"building": "juicepress", "name": "Press sparkling cider", "input": {"ciderapples": 4, "honey": 2}, "output": {"cider": 1}, "duration": 14400000, "xp": 60, "minLevel": 47},
 // Wave 2. Goat cheese is made in the Dairy Barn, the cherry treats in the Preserves Workshop and the Bakery.
 goatmilk:{"building": "goatshed", "name": "Milk the goats", "input": {"feed": 2}, "output": {"goatmilk": 2}, "duration": 3000000, "xp": 26, "minLevel": 54},
 goatcheese:{"building": "dairy", "name": "Make goat cheese", "input": {"goatmilk": 4}, "output": {"goatcheese": 1}, "duration": 10800000, "xp": 60, "minLevel": 55},

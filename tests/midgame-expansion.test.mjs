@@ -27,7 +27,7 @@ test('the full chains work: hives, wool to yarn to cloth, the Glasshouse and cid
  for(const key of ['kitchen','juicepress',...YARDS])if(!s.buildings[key].built)assert.ok(!act(s,{type:'construct',building:key},now).error,key);
  Object.assign(s.inventory,{sunflower:4,feed:10,fertilizer:6,ciderapples:8,honey:4});
  assert.ok(!act(s,{type:'produce',recipe:'hives'},now).error);finish(s,'beeyard');
- assert.equal(s.inventory.beeswax,2);assert.equal(s.stats.made_beeswax,2);
+ assert.equal(s.inventory.beeswax,3);assert.equal(s.stats.made_beeswax,3);
  assert.ok(!act(s,{type:'produce',recipe:'wool'},now).error);finish(s,'sheepbarn');assert.equal(s.inventory.wool,2);
  s.inventory.wool=12;
  for(let i=0;i<4;i++){assert.ok(!act(s,{type:'produce',recipe:'yarn'},now).error);finish(s,'weaving');}
