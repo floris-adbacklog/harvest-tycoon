@@ -444,3 +444,19 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   the week), online chips, "Newest players" as a list (Level · coins, or "Never opened a farm", and "5h ago"), a
   shorter retention note. The farm-events controls are removed (src/admin-events.js deleted); events are fully
   automatic. The server's admin_events operation is left in place and unused.
+
+## Family sharing with every crop and good (migration harvest_family_sharing_all_items, LIVE)
+- supabase/family-sharing-all-items.sql, built from the live harvest_social read on 23 Sep 2026 and tested on the
+  live database in a rolled-back transaction (gift 4 bread, request + fulfil 2 berry tart, an old gift without item =
+  3 wheat, "diamonds" and 6 refused). Applied as migration harvest_family_sharing_all_items; afterwards the function
+  holds all 40 items, the request item check is a format check, and only service_role can execute it (unchanged).
+- Rules: a gift and a request are 1–5 of any crop or good; help stays 5 coins; all limits unchanged (level 10, 48 h
+  on the farm, 24 h in the family, 3 sent / 3 received per kind a day, once per pair, one request a day). Nothing is
+  created: goods move from one farm to the other.
+- The item list lives in the SQL function (old farms do not all have every inventory key, so "is it in your
+  inventory" is not a safe check). tests/family-sharing.test.mjs fails when ITEMS and that list differ: a new item
+  needs the function updated too.
+- UI (public/social-ui.js): Gift opens a picker under that member (everything you have in storage, with counts, 1–5
+  up to your stock); Ask for goods lists every crop or good you have unlocked. Toasts name the item ("You sent 4
+  Fresh bread to Anna."). The reply now also carries kind, item and quantity.
+- No edge function change: farm-api passes the action through unchanged.
