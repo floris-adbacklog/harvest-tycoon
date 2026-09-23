@@ -27,3 +27,7 @@ test('the farmer profile counts the badges of every crop, so a new crop raises t
  const html=renderPlayerProfile({username:'Farmer',level:66,badges:[{crop:'cherries',tier:0}],stats:{}},Date.now());
  assert.match(html,new RegExp(`1 / ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges`));assert.match(html,/Cherries/);
 });
+test('the mastery list shows every crop: the ones still to come greyed, with the level they open at',()=>{
+ const ui=read('public/growth-ui.js');
+ assert.match(ui,/Object\.keys\(CROPS\)\.filter\(key=>!cropUnlocked\(state,key\)\)/);assert.match(ui,/class="mastery-card is-locked"/);assert.match(ui,/Opens at level \$\{cropLevel\(key\)\}/);
+});

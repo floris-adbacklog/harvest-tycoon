@@ -1099,3 +1099,11 @@
  #estate-place-content .depot-load li>button,#estate-place-content .depot-load li>svg{grid-column:3;grid-row:1/span 2}
  #estate-place-content .depot-load li>.game-art{width:26px;height:26px;grid-row:1/span 2}
 }
+
+/* Crops still to come in the mastery list: greyed, with the level they open at (like the buildings still to come). */
+.mastery-card.is-locked{background:#f6f3ee;border-color:#ebe5da}
+.mastery-card.is-locked>.mastery-picture{filter:grayscale(1);opacity:.5}
+.mastery-card.is-locked h3{color:#9a9384}
+.mastery-card.is-locked small{color:#a09684}
+.mastery-lock{display:grid;place-items:center;align-self:center;width:40px;height:40px;border-radius:12px;background:#efeae1}
+.mastery-lock>.game-art{width:24px;height:24px;opacity:.75}
