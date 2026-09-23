@@ -416,3 +416,9 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - Facebook sign-in on the web always uses Facebook's login page in the browser (also Chrome on iPhone); only native
   apps with the Facebook SDK can switch to the Facebook app.
 - Silo research: the five-step track is removed again (owner's request); the next level reads "Level 2 of 5".
+
+## How to play
+- Rebuilt (public/farm-guide.js, #help-content): the loop Plant › Harvest › Make › Sell in four pictures, then three
+  short groups ("The basics", "Grow your farm", "Good to know") of cards with one sentence each; features that are not
+  open yet show "Level N" (helping hand 8, family 10, events 10). Two columns on desktop. Title "How to play" like the
+  menu entry. The water/care line follows harvestYield (+1 crop each, double XP for both).
