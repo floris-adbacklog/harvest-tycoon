@@ -435,3 +435,12 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   button is hidden while that card shows.
 - Sound: the on/off switch sits on the heading's row; the intro sentence and slider descriptions are gone; "Play a test
   sound" is a small link. Sound and reminder tick boxes are real switches (role="switch").
+
+## Admin dashboard
+- Painted admin icon public/assets/icons/admin.svg (blue shield, gold rim and star), art key 'admin' (svgArt; lucide
+  'shield' maps to it). Used on the More-menu card and in the dashboard heading; the desktop topbar button keeps a
+  line icon like the other topbar buttons.
+- Dashboard: three headline numbers (online now, new today from today's retention row, kept on day 1 weighted over
+  the week), online chips, "Newest players" as a list (Level · coins, or "Never opened a farm", and "5h ago"), a
+  shorter retention note. The farm-events controls are removed (src/admin-events.js deleted); events are fully
+  automatic. The server's admin_events operation is left in place and unused.

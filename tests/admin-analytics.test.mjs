@@ -186,3 +186,11 @@ test('game-cloud.js creates the dashboard once, alongside the player-profile/gif
 test('checkAdmin is exported from player-profiles.js so admin-dashboard.js does not duplicate the account check',()=>{
  assert.match(read('src/player-profiles.js'),/export function checkAdmin\(\)\{/);
 });
+test('the dashboard opens with three headline numbers, lists the newest players, and has no event controls any more',()=>{
+ const js=read('src/admin-dashboard.js'),html=read('public/farm.html'),icons=read('public/visual-icons.js');
+ assert.match(js,/<div class="admin-kpis"><div><strong id="admin-kpi-online">/);assert.match(js,/renderKpis\(online,retention\)/);
+ assert.match(js,/<ul id="admin-recent-list" class="admin-recent-list"><\/ul>/);
+ assert.ok(!/admin-events|mountAdminEvents|liveEvents/.test(js),'farm events run on their own schedule');
+ assert.match(html,/id="admin-menu-entry" hidden><i data-game-art="admin"><\/i><span><strong>Admin dashboard<\/strong><small>Players and retention<\/small>/);
+ assert.match(icons,/svgArt=new Set\(\[[^\]]*'admin'/);assert.match(read('public/assets/icons/admin.svg'),/^<svg[\s\S]*<\/svg>\s*$/);
+});

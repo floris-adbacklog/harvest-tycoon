@@ -978,3 +978,24 @@
 #sound-dialog #sound-settings>.settings-heading{margin:0}
 #sound-dialog #sound-settings>.sound-switch{align-self:center;margin:0;padding:0;border:0;background:none;min-height:0;display:flex}
 #sound-dialog #sound-settings>.sound-switch>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Admin dashboard: the shield in the heading, three headline numbers, then calm cards; the newest players as a list. */
+#admin-dashboard-dialog .admin-title{display:flex;align-items:center;gap:12px}
+#admin-dashboard-dialog .admin-badge{flex:none;display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(145deg,#e3eef6,#f6f1e4);border:1px solid #d6e2ea}
+#admin-dashboard-dialog .admin-badge>.game-art{width:40px;height:40px}
+#admin-dashboard-dialog .admin-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 12px}
+#admin-dashboard-dialog .admin-kpis>div{display:grid;gap:2px;padding:12px 8px;border:1px solid #e8ded2;border-radius:16px;background:#f6f0e8;text-align:center}
+#admin-dashboard-dialog .admin-kpis strong{font:600 26px/1.1 'Outfit',sans-serif;color:#3f3827}
+#admin-dashboard-dialog .admin-kpis span{font-size:11px;font-weight:700;letter-spacing:.04em;color:#857663}
+#admin-dashboard-dialog .admin-card{margin:0 0 10px;padding:14px;border:1px solid #e8ded2;border-radius:18px;background:#fbf8f2}
+#admin-dashboard-dialog .admin-card h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font:600 16px 'Outfit',sans-serif;color:#453e28}
+#admin-dashboard-dialog .admin-card h3 svg{width:18px;height:18px;color:#8a7a4a}
+#admin-dashboard-dialog .admin-card .admin-hint{margin:8px 0 0;font-size:12px;line-height:1.45;color:#8a7c69}
+#admin-dashboard-dialog .admin-recent-list{display:grid;gap:0;margin:0;padding:0;list-style:none}
+#admin-dashboard-dialog .admin-recent-list>li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee6da}
+#admin-dashboard-dialog .admin-recent-list>li:last-child{border-bottom:0}
+#admin-dashboard-dialog .admin-recent-copy{flex:1;min-width:0;display:grid}
+#admin-dashboard-dialog .admin-recent-copy strong{font-size:14px;color:#3f3827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#admin-dashboard-dialog .admin-recent-copy small{font-size:12px;color:#8a7c69}
+#admin-dashboard-dialog .admin-recent-list time{flex:none;font-size:12px;font-weight:700;color:#7a6c58}
+#admin-dashboard-dialog .admin-status{text-align:center;font-size:11px;color:#9a8f80}

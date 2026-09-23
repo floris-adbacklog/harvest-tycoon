@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+ <defs>
+  <linearGradient id="shield" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fb6d8"/><stop offset=".55" stop-color="#3f7fae"/><stop offset="1" stop-color="#23577f"/></linearGradient>
+  <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe083"/><stop offset=".5" stop-color="#f0a92e"/><stop offset="1" stop-color="#b96f14"/></linearGradient>
+  <radialGradient id="star" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#fff2b0"/><stop offset=".55" stop-color="#f6c343"/><stop offset="1" stop-color="#c98617"/></radialGradient>
+ </defs>
+ <ellipse cx="64" cy="121" rx="36" ry="5.5" fill="#6b4a1e" opacity=".18"/>
+ <path d="M64 9 20 25v33c0 29 18 49 44 60 26-11 44-31 44-60V25L64 9z" fill="url(#rim)" stroke="#8a520f" stroke-width="3" stroke-linejoin="round"/>
+ <path d="M64 19 29 32v26c0 23 14 40 35 50 21-10 35-27 35-50V32L64 19z" fill="url(#shield)" stroke="#1d4668" stroke-width="2.6" stroke-linejoin="round"/>
+ <path d="M64 38l7.6 15.4 17 2.5-12.3 12 2.9 16.9L64 76.8 48.8 84.8l2.9-16.9-12.3-12 17-2.5L64 38z" fill="url(#star)" stroke="#8a520f" stroke-width="2.6" stroke-linejoin="round"/>
+ <path d="M38 38v18c0 8 2 15 6 21" stroke="#d8ecf7" stroke-width="4" stroke-linecap="round" fill="none" opacity=".7"/>
+ <path d="M44 32l14-5" stroke="#d8ecf7" stroke-width="3" stroke-linecap="round" fill="none" opacity=".55"/>
+ <path d="M60 50l4-8" stroke="#fffbe0" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".8"/>
+</svg>
