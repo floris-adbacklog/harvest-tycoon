@@ -1,7 +1,9 @@
 // The leaderboard's "Rank by" choice: seven main boards as chips, and one "By crop" chip that opens a row of crop chips.
 // It replaces a 19-item native dropdown. The chosen board is still kept in a hidden field, so the rest of the leaderboard code is unchanged.
-export const RANK_ART=Object.freeze({level:'xp',currency:'coins',harvested_crops:'harvest',goods_produced:'bread',items_sold:'market',badges:'trophy',deliveries:'cart'});
+export const RANK_ART=Object.freeze({level:'xp',currency:'coins',harvested_crops:'harvest',goods_produced:'bread',items_sold:'market',badges:'trophy',deliveries:'cart',events_finished:'live-events',best_streak:'streak',farm_fields:'estate',chores_done:'chores',helping_rounds:'helping-hand',estate_projects:'farmhouse'});
 const cropArt=key=>key.replace(/^harvested_/,'');
+// The picture for any board: its own for the main boards, the crop itself for a crop board.
+export const rankArtKey=key=>RANK_ART[key]??(key.startsWith('harvested_')?cropArt(key):'trophy');
 const isCrop=(categories,key)=>categories[key]?.group==='crops';
 const chip=(art,key,label,extra='')=>`<button type="button" class="rank-chip ${extra}" data-rank="${key}" aria-pressed="false">${art}<span>${label}</span></button>`;
 

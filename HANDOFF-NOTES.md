@@ -295,3 +295,9 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   barely counted (e.g. 4 care counted after dozens). Each `live_event_players` row now keeps a `baseline`; progress =
   stats now − baseline. The 10 s only limit the contribution counter. Non-event stat increases (admin gifts,
   transfers, unrelated actions) move the baseline. Verified on production in a rolled-back transaction.
+- **Six more leaderboards** (migration `harvest_more_leaderboards`, live; `supabase/leaderboard-more.sql`): events
+  finished, longest daily streak (`login.best`), biggest farm (fields), chores, helping-hand rounds, estate projects.
+  `harvest_commit_farm` untouched: a BEFORE trigger `player_stats_extras` fills the columns from the farm state and
+  never blocks a save; settlement refreshes `events_finished`. Verified in a rolled-back transaction (0 mismatches).
+- **Leaderboard UI**: a slim search field (helper text only while typing), "Rank by" as one line with the current
+  board that folds open, rows as cards with podium tints, the online dot on the portrait and names on one line.

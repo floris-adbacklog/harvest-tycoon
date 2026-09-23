@@ -2,17 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {LEADERBOARD_CATEGORIES} from '../src/leaderboard.js';
-import {rankPickerMarkup,nextRank,bindRankPicker,RANK_ART} from '../public/rank-picker.js';
+import {rankPickerMarkup,nextRank,bindRankPicker,RANK_ART,rankArtKey} from '../public/rank-picker.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const art=key=>`<i data-art="${key}"></i>`;
 
-test('every board has a chip: seven main boards, a "By crop" chip and one chip per crop',()=>{
+test('every board has a chip: thirteen main boards, a "By crop" chip and one chip per crop',()=>{
  const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art);
  const keys=[...html.matchAll(/data-rank="([a-z_]+)"/g)].map(m=>m[1]);
  assert.deepEqual(keys.sort(),Object.keys(LEADERBOARD_CATEGORIES).sort(),'nothing lost from the old dropdown');
- assert.equal(keys.length,19);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,12);
+ assert.equal(keys.length,25);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,12);
  assert.match(html,/id="rank-crops"[^>]*hidden/,'the crop row starts closed');assert.match(html,/data-rank-crops aria-pressed="false" aria-expanded="false" aria-controls="rank-crops"/);
- for(const key of ['level','currency','harvested_crops','goods_produced','items_sold','badges','deliveries'])assert(RANK_ART[key],`${key} has a picture`);
+ for(const key of ['level','currency','harvested_crops','goods_produced','items_sold','badges','deliveries','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects'])assert(RANK_ART[key],`${key} has a picture`);
  assert.match(html,/data-art="wheat"/);assert.match(html,/data-art="berries"/);assert.match(html,/data-art="xp"/);
  assert(!/<select|<option/.test(html));
 });
@@ -59,4 +59,11 @@ test('the leaderboard no longer uses a native dropdown, and the rest of the code
  assert.match(ui,/bindRankPicker\(\$\('leaderboard-filter'\)/);assert.match(ui,/\$\('leaderboard-category'\)\.onchange=/);
  const css=read('public/ui-polish.css');assert.match(css,/\.rank-chip\[aria-pressed=true\]/);assert.match(css,/\.game-dialog select\{/);assert.match(css,/\.rank-chip\[aria-expanded=true\] \.rank-caret/);
  assert.match(read('public/farm.html'),/href="\/ui-polish\.css"/);
+});
+
+test('Rank by is one line with the current board; the chips fold open and close again after a choice',()=>{
+ const ui=read('src/ui.js');
+ assert.match(ui,/<details class="rank-drawer" id="rank-drawer"><summary><span class="rank-label" id="rank-label">Rank by<\/span><span class="rank-current" id="rank-current">/);
+ assert.match(ui,/\$\('rank-current'\)\.innerHTML=`\$\{art\(rankArtKey\(key\)\)\}<b>\$\{LEADERBOARD_CATEGORIES\[key\]\.heading\}<\/b>`;\$\('rank-drawer'\)\.open=false;/);
+ assert.equal(rankArtKey('harvested_pumpkin'),'pumpkin');assert.equal(rankArtKey('events_finished'),'live-events');
 });
