@@ -152,3 +152,11 @@ test('event progress counts every action: a per-player baseline, the 10 seconds 
  assert.match(sql,/-- Not an event action: whatever it added to the stats must not count later on\./,'admin gifts and transfers move the baseline');
  assert.match(sql,/if not mapped then\n    if after_v>before_v then p\.baseline:=jsonb_set/,'an action that does not match the goal moves the baseline too');
 });
+test('automatic events pay a fixed base, so the event screen shows one list with exact totals per place',async()=>{
+ const sql=read('supabase/live-events-fixed-base.sql'),rewards=JSON.parse(sql.match(/rewards constant jsonb:='(\{[^']*\})';/)[1]);
+ assert.deepEqual([rewards.coins,rewards.diamondMin,rewards.diamondMax],[200,1,1]);
+ const {PODIUM_PRIZES,FINISHER_PRIZE}=await import('../public/live-events-ui.js');
+ assert.deepEqual([...PODIUM_PRIZES,FINISHER_PRIZE].map(p=>[rewards.coins+p.coins,rewards.diamondMin+p.diamonds]),[[2200,21],[1200,11],[700,6],[300,2]]);
+ const ui=read('public/live-events-ui.js');
+ assert.match(ui,/What you win when you finish/);assert.doesNotMatch(ui,/Reward for finishing|Extra for finishing/,'no second block to add up');
+});
