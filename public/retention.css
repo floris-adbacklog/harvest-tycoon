@@ -603,3 +603,6 @@
 .expansion-panel .field-preview>.is-next{border:1.5px dashed #d0a64a;background:#fff6dc;position:relative}
 .expansion-panel .field-preview>.is-next::after{content:'+';position:absolute;inset:0;display:grid;place-items:center;font:800 14px/1 'Outfit',sans-serif;color:#b08a3c}
 @media(max-width:600px){.expansion-panel .field-preview>span{height:20px}}
+/* Wide cards: the start button keeps its natural size on the right instead of stretching across the card. */
+#building-content .recipe-footer .start-recipe{justify-self:end;width:auto;min-width:150px;padding-inline:20px}
+@container (max-width:340px){#building-content .recipe-footer .start-recipe{justify-self:stretch;width:100%;min-width:0}}
