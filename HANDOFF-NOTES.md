@@ -308,3 +308,9 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   chips with the result, and the stepper next to an equally tall start button; status only when something is
   missing. Running batches are one row each (picture, name, amount, time left, bar) with Collect only when ready.
   Bakery on a phone: 3218 → ~2400 px.
+
+## Collect all fix (production buildings)
+- Since the compact batch rows, the old rule `.job-panel > .primary-button{width:100%}` made each row's Collect
+  button as wide as the row, pushing the text out (phone and desktop). The row button now keeps its own width.
+- Collect all is one calm green row: picture, "N batches ready", what it brings in ("6 Eggs · 2 Milk") and the
+  button; on screens under 360px the button gets its own row. Ready batches hide the (full) bar and just say "Ready".

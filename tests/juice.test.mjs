@@ -46,6 +46,6 @@ test('production: compact recipe cards and one row per running batch, Collect on
  assert.match(ui,/<div class="recipe-head"><span class="recipe-art">\$\{art\(Object\.keys\(r\.output\)\[0\]\)\}<\/span>/);
  assert.match(ui,/<span class="recipe-xp">\$\{art\('xp'\)\}\+\$\{r\.xp\} XP<\/span>/);
  assert.match(ui,/\$\{isReady\?`<button data-collect-job="\$\{job\.id\}" class="primary-button job-collect">Collect<\/button>`:''\}/,'no disabled button while a batch is running');
- assert.match(ui,/time\.textContent=now>=job\.readyAt\?'Ready to collect':`\$\{seconds\(job\.readyAt-now\)\} left`;/);
+ assert.match(ui,/time\.textContent=now>=job\.readyAt\?'Ready':`\$\{seconds\(job\.readyAt-now\)\} left`;/);
  assert.match(css,/#building-content \.recipe-footer \.start-recipe\{height:42px;min-height:42px;padding-block:0\}/,'the start button lines up with the stepper');
 });

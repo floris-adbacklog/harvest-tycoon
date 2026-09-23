@@ -92,13 +92,15 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   }else{
    if(key==='windmill' ||key==='bakery')content+=`<div class="milling-chain"><span>${art('wheat')} Grain</span><b>→</b><span>${art('grainmeal')} Grain meal</span><b>→</b><span>${art('flour')} Flour</span><b>→</b><span>${art('bread')} Fresh baking</span></div><p class="milling-note">${key==='windmill'?'Grain becomes meal, then flour for the Bakery.':'Flour comes from the Windmill.'}</p>`;
    const jobs=productionJobs(bs),slots=productionSlots(bs.level,key),ready=jobs.filter(j=>j.readyAt<=farmNow());
+   // What Collect all brings in, e.g. "6 Eggs · 2 Milk".
+   const readyGoods=list=>Object.entries(list.reduce((sum,j)=>{for(const [k,n] of Object.entries(j.output??RECIPES[j.recipe].output))sum[k]=(sum[k]??0)+n;return sum;},{})).map(([k,n])=>`${number(n)} ${ITEMS[k]?.name??k}`).join(' · ');
    lastJobReady=jobs.map(j=>`${j.id}:${farmNow()>=j.readyAt}`).join('|');
-   content+=`<div class="production-capacity"><strong>${jobs.length} / ${slots} production slots used</strong><p>${key==='factory'?'The Factory gets a slot every two levels, up to five.':'Each building level adds one slot.'}</p></div>${ready.length>1?`<section class="collect-all-panel"><div class="collect-all-art">${art('collect-all')}</div><div class="collect-all-copy"><strong>${ready.length} batches ready</strong><span>Gather all finished goods from this building.</span></div><button type="button" id="collect-all-batches" class="primary-button" ${mutating?'disabled':''}>Collect all <span>${ready.length}</span></button></section>`:''}<div class="production-batches">`;
+   content+=`<div class="production-capacity"><strong>${jobs.length} / ${slots} production slots used</strong><p>${key==='factory'?'The Factory gets a slot every two levels, up to five.':'Each building level adds one slot.'}</p></div>${ready.length>1?`<section class="collect-all-panel"><div class="collect-all-art">${art('collect-all')}</div><div class="collect-all-copy"><strong>${ready.length} batches ready</strong><span>${readyGoods(ready)}</span></div><button type="button" id="collect-all-batches" class="primary-button" ${mutating?'disabled':''}>Collect all <span>${ready.length}</span></button></section>`:''}<div class="production-batches">`;
    for(const [index,job] of jobs.entries()){
     const recipe=RECIPES[job.recipe],isReady=farmNow()>=job.readyAt;
     // One row per running batch: what it makes, a bar and the time left; the Collect button only once it is ready.
     const made=job.output??recipe.output,first=Object.keys(made)[0];
-    content+=`<div class="job-panel ${isReady?'ready':''}" data-production-job="${job.id}"><span class="job-art">${art(first)}</span><div class="job-copy"><strong>${recipe.name}</strong><span><b>${number(made[first])}×</b> · <span data-job-time="${job.id}">${isReady?'Ready to collect':`${seconds(job.readyAt-farmNow())} left`}</span></span><progress data-job-progress="${job.id}" max="100" value="${Math.max(0,Math.min(100,(farmNow()-job.startedAt)/Math.max(1,job.readyAt-job.startedAt)*100))}" aria-label="Batch ${index+1} production progress"></progress></div>${isReady?`<button data-collect-job="${job.id}" class="primary-button job-collect">Collect</button>`:''}</div>`;
+    content+=`<div class="job-panel ${isReady?'ready':''}" data-production-job="${job.id}"><span class="job-art">${art(first)}</span><div class="job-copy"><strong>${recipe.name}</strong><span><b>${number(made[first])}×</b> · <span data-job-time="${job.id}">${isReady?'Ready':`${seconds(job.readyAt-farmNow())} left`}</span></span><progress data-job-progress="${job.id}" max="100" value="${Math.max(0,Math.min(100,(farmNow()-job.startedAt)/Math.max(1,job.readyAt-job.startedAt)*100))}" aria-label="Batch ${index+1} production progress"></progress></div>${isReady?`<button data-collect-job="${job.id}" class="primary-button job-collect">Collect</button>`:''}</div>`;
    }
    content+='</div>';
    content+=`<div class="recipe-section-heading"><h3>What shall we make?</h3><span>Ingredients are used when you start.</span></div>`;
@@ -231,7 +233,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    if(signature!==lastJobReady)renderBuilding();
    else for(const job of jobs){
     const time=document.querySelector(`[data-job-time="${job.id}"]`),progress=document.querySelector(`[data-job-progress="${job.id}"]`);
-    if(time)time.textContent=now>=job.readyAt?'Ready to collect':`${seconds(job.readyAt-now)} left`;
+    if(time)time.textContent=now>=job.readyAt?'Ready':`${seconds(job.readyAt-now)} left`;
     if(progress)progress.value=Math.max(0,Math.min(100,(now-job.startedAt)/Math.max(1,job.readyAt-job.startedAt)*100));
    }
   }

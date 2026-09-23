@@ -583,7 +583,7 @@
 #building-content .job-copy progress{display:block;width:100%;height:6px;accent-color:#a88a5c}
 #building-content .job-panel.ready .job-copy progress{accent-color:#5e9b51}
 #building-content .job-panel.ready [data-job-time]{color:#3f6b2c;font-weight:700}
-#building-content .job-collect{flex:none;min-height:40px;padding:8px 14px}
+#building-content .job-collect{flex:none;width:auto;min-height:40px;padding:8px 16px;white-space:nowrap}
 /* Narrow recipe cards (small phones, larger text): the start button gets its own full-width row under the stepper
    instead of being squeezed next to it; its label never spills out of the button. */
 #building-content .recipe-card{container-type:inline-size}
@@ -608,3 +608,19 @@
 /* Wide cards: the start button keeps its natural size on the right instead of stretching across the card. */
 #building-content .recipe-footer .start-recipe{justify-self:end;width:auto;min-width:150px;padding-inline:20px}
 @container (max-width:340px){#building-content .recipe-footer .start-recipe{justify-self:stretch;width:100%;min-width:0}}
+
+/* Collect all: one calm row above the batches (picture, how many and what, the button), also on phones. */
+#building-content .collect-all-panel{grid-template-columns:44px minmax(0,1fr) auto;gap:12px;padding:10px 12px;margin:0 0 10px;border-color:#cfe0c3;border-radius:16px;background:#f3f9ec;box-shadow:none}
+#building-content .collect-all-art{width:44px;height:44px;border-radius:12px;background:#fffdf6}
+#building-content .collect-all-art .game-art{width:38px;height:38px}
+#building-content .collect-all-copy strong{font-size:16px;color:#3f5a2e}
+#building-content .collect-all-copy>span{margin-top:1px;font-size:12px;line-height:1.4;color:#5f7550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#building-content .collect-all-panel .primary-button{grid-column:auto;width:auto;min-height:42px;padding:8px 14px;gap:8px}
+#building-content .collect-all-panel .primary-button>span{min-width:22px;height:22px;font-size:12px}
+#building-content .job-copy>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#building-content .job-panel.ready .job-copy progress{display:none}
+#building-content .job-panel.ready .job-copy>span{margin-bottom:0}
+@media(max-width:360px){
+ #building-content .collect-all-panel{grid-template-columns:44px minmax(0,1fr)}
+ #building-content .collect-all-panel .primary-button{grid-column:1/-1;width:100%}
+}
