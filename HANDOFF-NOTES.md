@@ -286,3 +286,7 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   seed cost as its own chip.
 - **Diamonds & boosts (phones)**: each boost is one row with its price button on the right, status chips stay on one
   line, VIP plans sit side by side and the diamond packs are a 2x2 grid (about 27% shorter).
+- **Player counts on the sign-in page**: shown at once from the last numbers remembered on the device (at most a day
+  old), then refreshed; a failed request is retried after 3 and 10 seconds (it used to wait a minute, so the line
+  often only appeared after a refresh); a background tab asks when it is shown; play.html preconnects to Supabase.
+  Live logs (24h): p50 300 ms, p90 550 ms, cold starts up to 4.2 s, 8 of 482 requests failed.

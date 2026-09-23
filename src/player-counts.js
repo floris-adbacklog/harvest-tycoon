@@ -12,21 +12,33 @@ export async function loadPlayerCounts(functionsUrl,fetchImpl=globalThis.fetch){
 }
 
 // Refreshes every minute while the sign-in page is showing and stops for good once a farmer is signed in.
-export function startPlayerCounts({functionsUrl,doc=globalThis.document,fetchImpl=globalThis.fetch,interval=60000,timers=globalThis}={}){
+// The last numbers are remembered on this device and shown at once on the next visit, so the line never waits for
+// the app bundle and the function; a failed request is retried after 3 and 10 seconds instead of a whole minute, and a
+// tab that opened in the background asks as soon as it is shown.
+export const COUNTS_KEY='harvest-tycoon:player-counts',RETRY_DELAYS=[3000,10000];
+const readCached=storage=>{try{const saved=JSON.parse(storage?.getItem(COUNTS_KEY)??'null');return Number.isSafeInteger(saved?.players)&&Number.isSafeInteger(saved?.online)&&saved.online<=saved.players&&Date.now()-saved.at<86400000?saved:null;}catch{return null;}};
+export function startPlayerCounts({functionsUrl,doc=globalThis.document,fetchImpl=globalThis.fetch,interval=60000,timers=globalThis,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}={}){
  const panel=doc?.getElementById?.('player-counts');
  if(!panel||!functionsUrl)return ()=>{};
- let stopped=false,timer=null;
+ let stopped=false,timer=null,failures=0;
  const paint=data=>{
   const lines=countLines(data);
   panel.querySelector('[data-count="players"]').textContent=lines.players;
   panel.querySelector('[data-count="online"]').textContent=lines.online;
   panel.hidden=false;
  };
+ const cached=readCached(storage);if(cached)paint(cached);
+ const schedule=delay=>{if(!stopped){timers.clearTimeout?.(timer);timer=timers.setTimeout(tick,delay);}};
  const tick=async()=>{
   if(stopped||doc.body?.dataset?.phase==='authenticated')return;
-  if(!doc.hidden){try{const data=await loadPlayerCounts(functionsUrl,fetchImpl);if(data&&!stopped)paint(data);}catch{}}
-  if(!stopped)timer=timers.setTimeout(tick,interval);
+  if(doc.hidden){schedule(interval);return;}
+  let data=null;try{data=await loadPlayerCounts(functionsUrl,fetchImpl);}catch{}
+  if(stopped)return;
+  if(data){failures=0;paint(data);try{storage?.setItem(COUNTS_KEY,JSON.stringify({...data,at:Date.now()}));}catch{}schedule(interval);}
+  else schedule(RETRY_DELAYS[failures++]??interval);
  };
+ const onVisible=()=>{if(!doc.hidden&&!stopped)tick();};
+ doc.addEventListener?.('visibilitychange',onVisible);
  tick();
- return ()=>{stopped=true;timers.clearTimeout?.(timer);};
+ return ()=>{stopped=true;timers.clearTimeout?.(timer);doc.removeEventListener?.('visibilitychange',onVisible);};
 }

@@ -71,3 +71,29 @@ test('the sign-in page has a small, quiet line that the bundle fills in',()=>{
  assert.match(css,/\.player-counts\{order:2;align-self:center/,'on phones it follows the icon row');
  assert.match(main,/import \{startPlayerCounts\} from '\.\/player-counts\.js';/);assert.match(main,/startPlayerCounts\(\{functionsUrl\}\);/);
 });
+
+test('the last numbers show at once on the next visit, and a fresh answer is remembered',async()=>{
+ const page=fakePage(),store=new Map([['harvest-tycoon:player-counts',JSON.stringify({players:180,online:4,at:Date.now()-60000})]]);
+ const storage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v)};
+ startPlayerCounts({functionsUrl:'https://x/functions/v1',doc:page.doc,storage,fetchImpl:async()=>({ok:true,json:async()=>({players:187,online:6})}),timers:{setTimeout:()=>0,clearTimeout(){}}});
+ assert.equal(page.panel.hidden,false,'shown before any request finishes');assert.equal(page.shown.players,'180 players');
+ await wait();assert.equal(page.shown.players,'187 players');assert.equal(JSON.parse(store.get('harvest-tycoon:player-counts')).online,6);
+ const stale=fakePage();startPlayerCounts({functionsUrl:'https://x/functions/v1',doc:stale.doc,storage:{getItem:()=>JSON.stringify({players:1,online:1,at:Date.now()-2*86400000})},fetchImpl:async()=>{throw Error('x');},timers:{setTimeout:()=>0,clearTimeout(){}}});
+ assert.equal(stale.panel.hidden,true,'numbers older than a day are not shown');
+});
+test('a failed request is retried after 3 and 10 seconds, then every minute',async()=>{
+ const page=fakePage(),scheduled=[];
+ startPlayerCounts({functionsUrl:'https://x/functions/v1',doc:page.doc,storage:null,fetchImpl:async()=>({ok:false}),timers:{setTimeout:(fn,ms)=>{scheduled.push([fn,ms]);return scheduled.length;},clearTimeout(){}}});
+ await wait();await scheduled[0][0]();await scheduled[1][0]();
+ assert.deepEqual(scheduled.map(([,ms])=>ms),[3000,10000,60000]);
+});
+test('a tab that opened in the background asks as soon as it is shown',async()=>{
+ const page=fakePage(),listeners={};let calls=0;page.doc.hidden=true;
+ page.doc.addEventListener=(type,fn)=>{listeners[type]=fn;};
+ startPlayerCounts({functionsUrl:'https://x/functions/v1',doc:page.doc,storage:null,fetchImpl:async()=>{calls++;return {ok:true,json:async()=>({players:5,online:1})};},timers:{setTimeout:()=>0,clearTimeout(){}}});
+ await wait();assert.equal(calls,0);
+ page.doc.hidden=false;listeners.visibilitychange();await wait();assert.equal(calls,1);assert.equal(page.shown.online,'1 online');
+});
+test('the sign-in page opens the connection to Supabase early',()=>{
+ assert.match(read('public/play.html'),/<link rel="preconnect" href="https:\/\/jnmdirvidffzxukbdmij\.supabase\.co" crossorigin>/);
+});
