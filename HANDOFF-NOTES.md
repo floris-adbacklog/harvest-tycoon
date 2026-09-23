@@ -355,3 +355,10 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   instead of a disabled button.
 - The streak leads with diamonds (the reward that matters): day tiles show each day's diamonds (day 7 the gift
   picture), today's gift chips and the check-in toast put diamonds before coins. rewardChips() keeps the order given.
+
+## Starter Pack
+- Rebuilt so it fits a phone without scrolling (558px instead of 905px): picture, name and a "20h left" pill;
+  300 diamonds first (blue) and 10,000 coins; the twelve crops as one strip of small pictures ("+ one of every
+  crop", names on hover); one "Buy for €2.99" button and "One purchase per account." The intro sentence, the
+  crop names with ×1 and the storage explanation paragraph are gone. src/starter-pack-ui.js (goes live with the
+  Vercel build) + public/starter-pack.css. Payment flow, texts while pending and eligibility are unchanged.
