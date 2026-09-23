@@ -18,6 +18,10 @@ for(const id of [...MIDGAME_ITEM_ART,'beeyard','sheepbarn','glasshouse','weaving
 const VALLEY_ITEM_ART=['cherries','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','valley-market','ranch'];
 for(const id of [...VALLEY_ITEM_ART,'goatshed','craftshop'])pictures[id]=id;
 pictures.valleymarket='valley-market';
+// Wave 3: prize produce and the three new places (painted, WebP).
+const ESTATE_ITEM_ART=['prizeproduce','estate-workshop','trade-depot','grand-fair'];
+for(const id of ESTATE_ITEM_ART)pictures[id]=id;
+Object.assign(pictures,{estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair'});
 // Painted-style vector illustrations for the few interface items that had no artwork yet.
 const svgArt=new Set(['guide','sound','streak','settings','reminders','farmapp','hourglass','admin']);
 for(const id of svgArt)pictures[id]=id;
@@ -31,7 +35,7 @@ export function art(key,extra=''){
   return `<span class="game-art game-art-sprite ${extra}" data-art="${key}" aria-hidden="true" style="--art-sheet:url('/assets/icons/${file}');--art-size:${columns*100}%;--art-position:${x}% ${y}%"></span>`;
  }
  // These pictures were re-encoded to WebP (level-up.webp is a separate hardcoded path in progression-ui.js, not routed through art()) (75-86% smaller, no visible difference at this size); every other picture is still a plain PNG.
- const webpPictures=new Set(['live-events','family-sharing','vip','honey','rank-gold','family-bee','family-barn','rank-bronze','family-weekly-order','family-oak','rank-silver','family-members','familyhall','lock','family-tournament','family-management','berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice','harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote','chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary','instant-harvest','chore-troughs',...MIDGAME_ITEM_ART,...VALLEY_ITEM_ART,'valleymarket']);
+ const webpPictures=new Set(['live-events','family-sharing','vip','honey','rank-gold','family-bee','family-barn','rank-bronze','family-weekly-order','family-oak','rank-silver','family-members','familyhall','lock','family-tournament','family-management','berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice','harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote','chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary','instant-harvest','chore-troughs',...MIDGAME_ITEM_ART,...VALLEY_ITEM_ART,'valleymarket',...ESTATE_ITEM_ART,'estateworkshop','tradedepot','grandfair']);
  if(pictures[key])return `<img class="game-art ${extra}" data-art="${key}" src="/assets/icons/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}" alt="" draggable="false">`;
  return '';
 }

@@ -63,7 +63,9 @@ goatcheese:{"name": "Goat cheese", "sell": 1150, "icon": "sandwich", "color": "c
 candles:{"name": "Beeswax candles", "sell": 1150, "icon": "flame", "color": "gold"},
 blanket:{"name": "Wool blanket", "sell": 9800, "icon": "package-check", "color": "cream"},
 cherryjam:{"name": "Cherry jam", "sell": 2300, "icon": "amphora", "color": "gold"},
-cherrypie:{"name": "Cherry pie", "sell": 2500, "icon": "cake-slice", "color": "gold"}
+cherrypie:{"name": "Cherry pie", "sell": 2500, "icon": "cake-slice", "color": "gold"},
+// Wave 3: the Glasshouse's show basket, for the fair, the export trailers and the best orders.
+prizeproduce:{"name": "Prize produce", "sell": 6800, "icon": "award", "color": "gold"}
 
 });
 export const ITEMS=Object.freeze({...CROPS,...PRODUCTS});
@@ -174,7 +176,9 @@ goatbrowse:{"building": "goatshed", "name": "Let the goats browse", "input": {"l
 candles:{"building": "craftshop", "name": "Pour beeswax candles", "input": {"beeswax": 3}, "output": {"candles": 1}, "duration": 6000000, "xp": 40, "minLevel": 58},
 blanket:{"building": "craftshop", "name": "Knot a wool blanket", "input": {"cloth": 2, "wool": 6}, "output": {"blanket": 1}, "duration": 28800000, "xp": 220, "minLevel": 60},
 cherryjam:{"building": "preserves", "name": "Cook cherry jam", "input": {"cherries": 6, "honey": 3}, "output": {"cherryjam": 1}, "duration": 14400000, "xp": 85, "minLevel": 67},
-cherrypie:{"building": "bakery", "name": "Bake a cherry pie", "input": {"cherries": 5, "flour": 4, "eggs": 2}, "output": {"cherrypie": 1}, "duration": 18000000, "xp": 95, "minLevel": 68}
+cherrypie:{"building": "bakery", "name": "Bake a cherry pie", "input": {"cherries": 5, "flour": 4, "eggs": 2}, "output": {"cherrypie": 1}, "duration": 18000000, "xp": 95, "minLevel": 68},
+// Wave 3. Prize produce is grown under glass from the best of the vegetable garden; like every Glasshouse batch it is never made in bulk.
+prizeproduce:{"building": "glasshouse", "name": "Grow prize produce", "input": {"squash": 3, "cauliflower": 6, "redcabbage": 3, "fertilizer": 3}, "output": {"prizeproduce": 1}, "duration": 43200000, "xp": 260, "minLevel": 80}
 
 });
 // One Factory recipe per production recipe: quick goods (a batch of an hour or less) ×20, slow ones ×10, in twice the time of the
@@ -433,7 +437,20 @@ export const QUESTS = Object.freeze([
  {title:'Valley market day',description:'Sell 3 baskets at the Valley Market.',stat:'valley_baskets',target:3,reward:8000,minLevel:62},
  {title:'A regular at the market',description:'Sell 25 baskets at the Valley Market.',stat:'valley_baskets',target:25,reward:22000,minLevel:62},
  {title:'The talk of the valley',description:'Sell 100 baskets at the Valley Market.',stat:'valley_baskets',target:100,reward:60000,minLevel:62},
- {title:'Head of the herd',description:'Choose a herd for your ranch.',stat:'ranch_focus',target:1,reward:10000,minLevel:70}
+ {title:'Head of the herd',description:'Choose a herd for your ranch.',stat:'ranch_focus',target:1,reward:10000,minLevel:70},
+ // Wave 3 (levels 75-90).
+ {title:'The manor workshop',description:'Build an improvement at the Estate Workshop.',stat:'improvements',target:1,reward:15000,minLevel:75},
+ {title:'A well-kept estate',description:'Build 4 improvements at the Estate Workshop.',stat:'improvements',target:4,reward:50000,minLevel:80},
+ {title:'Nothing left to improve',description:'Build all 7 improvements at the Estate Workshop.',stat:'improvements',target:7,reward:120000,minLevel:88},
+ {title:'Blue-ribbon vegetables',description:'Grow 3 prize produce.',stat:'made_prizeproduce',target:3,reward:20000,minLevel:80},
+ {title:'The prize grower',description:'Grow 25 prize produce.',stat:'made_prizeproduce',target:25,reward:60000,minLevel:80},
+ {title:'The first export',description:'Send a full trailer from the Trade Depot.',stat:'depot_shipments',target:1,reward:25000,minLevel:85},
+ {title:'A steady trade',description:'Send 10 full trailers from the Trade Depot.',stat:'depot_shipments',target:10,reward:70000,minLevel:85},
+ {title:'Valley trade baron',description:'Send 40 full trailers from the Trade Depot.',stat:'depot_shipments',target:40,reward:180000,minLevel:85},
+ {title:'A ribbon at the fair',description:'Win a ribbon at the Grand Valley Fair.',stat:'fair_entries',target:1,reward:30000,minLevel:90},
+ {title:'Grand champion',description:'Win all three ribbons at the fair in one week.',stat:'fair_champion',target:1,reward:80000,minLevel:90},
+ {title:'Star of the fair',description:'Collect 20 fair stars.',stat:'fair_stars',target:20,reward:90000,minLevel:90},
+ {title:'Legend of the fair',description:'Collect 100 fair stars.',stat:'fair_stars',target:100,reward:250000,minLevel:90}
 ]);
 export const STARTER_QUESTS=Object.freeze({first:130,count:20});
 export const MAX_PLOTS=40;
@@ -502,17 +519,17 @@ export const rookieLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafe
 export const ROOKIE_TAPER_MS=90*60000;
 export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)&&state.rookieUntil>0?Math.max(0,state.rookieUntil+ROOKIE_TAPER_MS-now):0;
 export const rookieBoost=(state,now=Date.now())=>ROOKIE_TIMER_BOOST*Math.min(1,rookieBoostLeft(state,now)/ROOKIE_TAPER_MS);
-export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-RANCH_SPEEDUP:1));}
+export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-ranchSpeedup(state):1)*(RECIPES[id].building==='glasshouse'&&hasImprovement(state,'heating')?.75:1));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:7,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
 export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:10,kitchen:12,juicepress:21,preserves:24,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST});
-export const RECIPE_LEVELS=Object.freeze({eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:11,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:23,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:25,harvesthamper:25,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68});
-export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19,valleymarket:62,ranch:70});
+export const RECIPE_LEVELS=Object.freeze({eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:11,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:23,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:25,harvesthamper:25,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80});
+export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:12});
-export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch'};
+export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
 const kept=(state,kind,key)=>state.progression?.kept?.[kind]?.includes(key)===true;
 export function buildingCost(state,key){return guidedFarm(state)?BUILDING_COSTS[key]??0:BUILDINGS[key]?.buildCost??0;}
@@ -522,13 +539,14 @@ export function buildingUnlockHint(state,key){return `Reach level ${guidedFarm(s
 export function cropUnlocked(state,crop){return Object.hasOwn(CROPS,crop)&&(kept(state,'crops',crop)||levelOf(state)>=(guidedFarm(state)?CROP_LEVELS[crop]:CROPS[crop].minLevel??1));}
 export function buildingEligible(state,key){return Object.hasOwn(BUILDINGS,key)&&(kept(state,'buildings',key)||levelOf(state)>=(guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1));}
 export function buildingUnlocked(state,key){return buildingEligible(state,key)&&(!buildingCost(state,key)||state.buildings[key]?.built===true);}
-// The Valley Market and the Ranch are new for every farm, old or new: they open at their level, never earlier.
-const LATE_FEATURES=Object.freeze(['valleymarket','ranch']);
+// The Valley Market, the Ranch and the wave-3 places (Estate Workshop, Trade Depot, Grand Valley Fair) are new for every farm,
+// old or new: they open at their level, never earlier.
+const LATE_FEATURES=Object.freeze(['valleymarket','ranch','estateworkshop','tradedepot','grandfair']);
 export function featureUnlocked(state,key){if(key==='family')return familyUnlocked(state);if(LATE_FEATURES.includes(key))return levelOf(state)>=FEATURE_LEVELS[key];return !guidedFarm(state)||kept(state,'features',key)||levelOf(state)>=(FEATURE_LEVELS[key]??1);}
 export function featureUnlockHint(key){return `Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
 export function recipeLevel(state,id){const factory=RECIPES[id]?.building==='factory';if(factory)return Math.max(FACTORY_LEVEL,RECIPES[id].base?recipeLevel(state,RECIPES[id].base):1);return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
 export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
-const FEATURE_ART={challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch'};
+const FEATURE_ART={challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair'};
 export function unlockEntries(state){return [
  ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,art:key,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
  ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall').map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
@@ -594,7 +612,7 @@ export function clearPlanting(state,id,expectedPlantedAt){
 // The care marker shows up after 30 seconds or 30% of the growing time. The beginner boost shortens both: the growing time is
 // already shorter, and the 30-second minimum shrinks with it (6 seconds), so Care fits inside a 24-second wheat field.
 const careDelay=(state,duration,now)=>Math.max(30000*(1-rookieBoost(state,now)),duration*.3);
-export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now)));}
+export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(regrowing&&hasImprovement(state,'ladders')?.8:1));}
 export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0);}
 export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
 export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
@@ -610,16 +628,16 @@ export const ENDGAME_FIELDS=Object.freeze([
  {level:70,coins:750000,materials:{berrysmoothie:120,beangratin:100,oil:140,cider:40,goatcheese:20}},
  {level:75,coins:860000,materials:{berrycheesecake:100,berrypreserves:120,stew:140,cloth:30,blanket:4}},
  {level:80,coins:980000,materials:{harvesthamper:50,applepie:120,pickledbeans:100,cider:60,cherryjam:20}},
- {level:85,coins:1110000,materials:{harvesthamper:65,berrytart:120,orchardjuice:180,cloth:45,candles:50}},
- {level:90,coins:1250000,materials:{harvesthamper:80,berrycheesecake:140,beangratin:160,squashsoup:60,cherrypie:30}},
- {level:95,coins:1400000,materials:{harvesthamper:100,berrycheesecake:160,pickledbeans:180,applevinegar:180,cloth:60,cider:90,blanket:10}}
+ {level:85,coins:1110000,materials:{harvesthamper:65,berrytart:120,orchardjuice:180,cloth:45,candles:50,prizeproduce:6}},
+ {level:90,coins:1250000,materials:{harvesthamper:80,berrycheesecake:140,beangratin:160,squashsoup:60,cherrypie:30,prizeproduce:10}},
+ {level:95,coins:1400000,materials:{harvesthamper:100,berrycheesecake:160,pickledbeans:180,applevinegar:180,cloth:60,cider:90,blanket:10,prizeproduce:15}}
 ].map(field=>Object.freeze({...field,materials:Object.freeze(field.materials)})));
 export function expansionLevel(state){return ENDGAME_FIELDS[state.plots.length-28]?.level??1;}
 export function expansionCost(state){const n=state.plots.length;return n>=MAX_PLOTS?null:n>=28?ENDGAME_FIELDS[n-28].coins:n<20?Math.ceil(600*1.75**Math.max(0,n-12)/25)*25:LATE_FIELD_COSTS[n-20];}
 const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16},{lettuce:30,flour:18,milk:12},{cauliflower:32,feed:20,eggs:14},{redcabbage:30,cheese:16,bread:18},{pumpkin:36,oil:18,pie:20},{sunflower:40,cheese:20,pie:22},{cauliflower:44,bread:26,eggs:24},{redcabbage:44,oil:22,vegetables:24},{pumpkin:50,pickles:26,milk:28}];
 export function expansionMaterials(state){const n=state.plots.length;return n>=MAX_PLOTS?{}:{...(n>=28?ENDGAME_FIELDS[n-28].materials:FIELD_MATERIALS[Math.max(0,n-12)])};}
 // Estate upgrades: target level 11-20. Priced per step, the same for every building (the goods are what differs; from level 42 on
-// they also ask for the midgame goods: wool, soup, yarn, cloth and cider, and from 66 on goat cheese, candles, blankets and cherry pie), and like the
+// they also ask for the midgame goods: wool, soup, yarn, cloth and cider, from 66 on goat cheese, candles, blankets and cherry pie, and at 85 prize produce), and like the
 // last twelve fields they ask for a higher farm level. Ten steps for a farm that can process forty fields of crops.
 // The diamond price continues the curve of levels 1-10 (525 diamonds for level 10, about 700 coins to a diamond).
 export const ESTATE_UPGRADES=Object.freeze([
@@ -632,7 +650,7 @@ export const ESTATE_UPGRADES=Object.freeze([
  {level:58,coins:1950000,diamonds:2785,materials:{berrysmoothie:50,berrypreserves:60,pie:50,yarn:40}},
  {level:66,coins:2550000,diamonds:3645,materials:{berrycheesecake:40,applevinegar:60,stew:80,cloth:20,cider:20,goatcheese:15,candles:15}},
  {level:75,coins:3300000,diamonds:4715,materials:{harvesthamper:25,applepie:60,pickledbeans:50,cloth:30,blanket:5}},
- {level:85,coins:4300000,diamonds:6145,materials:{harvesthamper:40,berrycheesecake:60,berrytart:60,pickledbeans:80,cloth:40,cider:50,cherrypie:20,blanket:8}}
+ {level:85,coins:4300000,diamonds:6145,materials:{harvesthamper:40,berrycheesecake:60,berrytart:60,pickledbeans:80,cloth:40,cider:50,cherrypie:20,blanket:8,prizeproduce:8}}
 ].map(step=>Object.freeze({...step,materials:Object.freeze(step.materials)})));
 // What the next upgrade of a building asks besides coins, or null below level 10 and at the top.
 export function upgradeRequirements(state,building){
@@ -688,7 +706,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  if(action==='water'){
   if(now>=p.readyAt)throw new Error('This crop is ready to harvest!');
   if(p.watered)throw new Error('Already watered. Your crop is growing nicely.');
-  p.readyAt=now+(p.readyAt-now)*.8;p.watered=true;state.stats.watered++;
+  p.readyAt=now+(p.readyAt-now)*(hasImprovement(state,'watertower')?.7:.8);p.watered=true;state.stats.watered++;
   return {action,crop:p.crop};
  }
  if(action==='tend'){
@@ -861,7 +879,7 @@ export const DIAMOND_PACKS=Object.freeze([{amount:150,price:'€1.99'},{amount:5
 export const VIP_PLANS=Object.freeze({week:{name:'VIP · 7 days',cost:500,duration:7*86400000},month:{name:'VIP · 30 days',cost:1500,duration:30*86400000}});
 export function vipActive(state,now=Date.now()){return Number.isSafeInteger(state.vipExpiresAt)&&state.vipExpiresAt>now;}
 export function dailyRewardMultiplier(state,now=Date.now()){return vipActive(state,now)?2:1;}
-export function marketSaleValue(state,base,now=Date.now()){return Math.floor(base*(vipActive(state,now)?1.05:1)*(state.boosts?.coinsUntil>now?2:1));}
+export function marketSaleValue(state,base,now=Date.now()){return Math.floor(base*(vipActive(state,now)?1.05:1)*(state.boosts?.coinsUntil>now?2:1)*(hasImprovement(state,'ledger')?1.1:1));}
 export function buyVip(state,plan,expectedCost,expectedExpiresAt,now=Date.now()){
  if(typeof plan!=='string'||!Object.hasOwn(VIP_PLANS,plan))throw new Error('Choose a VIP plan.');
  const offer=VIP_PLANS[plan],previous=state.vipExpiresAt??0;
@@ -976,8 +994,14 @@ const VALLEY_DAILIES=[
  [{"stat":"made_goatmilk","target":6,"title":"Milking time","description":"Collect 6 goat milk.","reward":380,"minLevel":54,"requiresBuildings":["goatshed"]},{"stat":"made_candles","target":2,"title":"Candle pouring","description":"Pour 2 beeswax candles.","reward":420,"minLevel":58,"requiresBuildings":["craftshop"]},{"stat":"valley_baskets","target":1,"title":"A basket for the valley","description":"Sell 1 basket at the Valley Market.","reward":400,"minLevel":62}],
  [{"stat":"made_goatcheese","target":1,"title":"Cheese day","description":"Make 1 goat cheese.","reward":440,"minLevel":55,"requiresBuildings":["goatshed"]},{"stat":"made_blanket","target":1,"title":"Blanket day","description":"Make 1 wool blanket.","reward":520,"minLevel":60,"requiresBuildings":["craftshop"]},{"stat":"made_cherryjam","target":1,"title":"Jam day","description":"Cook 1 cherry jam.","reward":460,"minLevel":67,"requiresBuildings":["preserves"]},{"stat":"made_cherrypie","target":1,"title":"Pie day","description":"Bake 1 cherry pie.","reward":480,"minLevel":68,"requiresBuildings":["bakery"]}]
 ];
-export const DAILY_POOLS=LEGACY_DAILY_POOLS.map((pool,id)=>Object.freeze([...pool,...ORCHARD_DAILIES[id],...PANTRY_DAILIES[id],...MIDGAME_DAILIES[id],...VALLEY_DAILIES[id],...[[{"stat":"activity_greenhouse","target":2,"title":"Seedling care","description":"Finish 2 Greenhouse jobs.","reward":65},{"stat":"activity_paddock","target":2,"title":"Happy herd","description":"Finish 2 Animal paddock jobs.","reward":65},{"stat":"chore_weeds","target":3,"title":"A tidy start","description":"Successfully clear the paths 3 times.","reward":70},{"stat":"tended","target":4,"title":"More than watering","description":"Give 4 growing crops extra care.","reward":65},{"stat":"harvest_lettuce","target":8,"title":"Leafy little harvest","description":"Harvest 8 lettuce.","reward":55},{"stat":"harvest_corn","target":6,"title":"Golden corn","description":"Harvest 6 corn.","reward":65}],[{"stat":"activity_apiary","target":3,"title":"Honey time","description":"Finish 3 Apiary jobs and collect their Honey.","reward":85},{"stat":"activity_workshop","target":3,"title":"Tools of the trade","description":"Finish 3 Tool workshop jobs.","reward":85},{"stat":"made_feed","target":3,"title":"Feed the farm","description":"Collect 3 animal feed from production.","reward":80},{"stat":"parallel_batches","target":2,"title":"Side by side","description":"Start 2 batches while another batch is still running in the same building.","reward":90,"parallel":true},{"stat":"fertilized","target":2,"title":"A soil boost","description":"Use natural fertilizer on 2 growing fields.","reward":80,"minLevel":3},{"stat":"made_flour","target":4,"title":"Flour power","description":"Collect 4 flour from production.","reward":80,"minLevel":3},{"stat":"made_salad","target":1,"title":"Freshly prepared","description":"Collect 1 fresh salad.","reward":90,"minLevel":4}],[{"stat":"activity_rounds","target":1,"title":"Make the rounds","description":"Finish a full farm round by helping at all four stops.","reward":110},{"stat":"activities","target":6,"title":"A hands-on day","description":"Finish 6 hands-on jobs around the farm.","reward":110},{"stat":"chore_troughs","target":2,"title":"Fresh water rounds","description":"Successfully fill the water troughs twice.","reward":110,"chore":"troughs"},{"stat":"chore_sorting","target":1,"title":"Everything sorted","description":"Successfully sort the seed boxes once.","reward":140,"chore":"sorting"},{"stat":"made_bread","target":2,"title":"Warm from the oven","description":"Collect 2 fresh bread.","reward":100,"minLevel":4},{"stat":"passive_earned","target":30,"title":"Roadside trade","description":"Collect 30 coins from the farm stall.","reward":80,"minLevel":3}]][id]]));
-export const ORDER_POOL=Object.freeze([{"title": "Milk for the café", "input": {"goatmilk": 6, "honey": 4}, "xp": 90, "minLevel": 54}, {"title": "The goat farmer’s table", "input": {"goatcheese": 1, "bread": 2}, "xp": 100, "minLevel": 55}, {"title": "Evening candles", "input": {"candles": 2, "beeswax": 3}, "xp": 100, "minLevel": 58}, {"title": "A cosy winter", "input": {"blanket": 1, "candles": 1}, "xp": 160, "minLevel": 60}, {"title": "Cherry season", "input": {"cherryjam": 1, "cherries": 6}, "xp": 110, "minLevel": 67}, {"title": "The pie stand", "input": {"cherrypie": 1, "applepie": 1}, "xp": 120, "minLevel": 68}, {"title": "Soup kitchen", "input": {"squashsoup": 1, "bread": 2}, "xp": 90, "minLevel": 32}, {"title": "The candle maker", "input": {"beeswax": 4, "honey": 4}, "xp": 70, "minLevel": 34}, {"title": "The village knitters", "input": {"wool": 6}, "xp": 70, "minLevel": 37}, {"title": "Glasshouse greens", "input": {"cauliflower": 8, "salad": 2}, "xp": 75, "minLevel": 40}, {"title": "The tailor’s shelves", "input": {"yarn": 4, "wool": 4}, "xp": 95, "minLevel": 43}, {"title": "Fabric for the fair", "input": {"cloth": 1, "yarn": 2}, "xp": 120, "minLevel": 45}, {"title": "Harvest cider", "input": {"cider": 1, "ciderapples": 4}, "xp": 110, "minLevel": 47}, {"title": "The baker next door", "input": {"wheat": 5}, "xp": 15, "minLevel": 1}, {"title": "A leafy lunch", "input": {"lettuce": 4, "corn": 2}, "xp": 20, "minLevel": 1}, {"title": "Sweet little favour", "input": {"honey": 2, "wheat": 4}, "xp": 20, "minLevel": 1}, {"title": "Breakfast at the inn", "input": {"eggs": 3, "milk": 2}, "xp": 25, "minLevel": 1}, {"title": "The paddock pantry", "input": {"feed": 2, "corn": 2}, "xp": 25, "minLevel": 1}, {"title": "Honey on toast", "input": {"honey": 2, "bread": 2}, "xp": 35, "minLevel": 3}, {"title": "A cream tea", "input": {"honey": 3, "milk": 2, "bread": 1}, "xp": 35, "minLevel": 3}, {"title": "The village grocer", "input": {"corn": 3, "lettuce": 2, "cabbage": 1}, "xp": 25, "minLevel": 3}, {"title": "The millers basket", "input": {"grainmeal": 2, "flour": 4}, "xp": 30, "minLevel": 3}, {"title": "For the garden club", "input": {"fertilizer": 2, "lettuce": 4}, "xp": 30, "minLevel": 3}, {"title": "The animal sanctuary", "input": {"feed": 3, "barley": 3}, "xp": 30, "minLevel": 3}, {"title": "A picnic in the park", "input": {"bread": 2, "salad": 1, "honey": 1}, "xp": 40, "minLevel": 4}, {"title": "The cheese board", "input": {"cheese": 2, "bread": 1}, "xp": 35, "minLevel": 4}, {"title": "A farm-fresh lunch", "input": {"salad": 2, "eggs": 3}, "xp": 35, "minLevel": 4}, {"title": "Sunday lunch", "input": {"cabbage": 2, "pumpkin": 2}, "xp": 35, "minLevel": 5}, {"title": "The harvest kitchen", "input": {"vegetables": 1, "flour": 3}, "xp": 45, "minLevel": 5}, {"title": "A golden afternoon", "input": {"pie": 1, "honey": 2, "milk": 2}, "xp": 50, "minLevel": 6}, {"title": "Autumn pantry", "input": {"redcabbage": 2, "cauliflower": 2}, "xp": 40, "minLevel": 6}, {"title": "The village feast", "input": {"bread": 3, "cheese": 2, "vegetables": 1}, "xp": 65, "minLevel": 7}, {"title": "Pantry provisions", "input": {"pickles": 1, "vegetables": 1}, "xp": 55, "minLevel": 7}, {"title": "A chefs finishing touch", "input": {"oil": 1, "salad": 2, "honey": 2}, "xp": 65, "minLevel": 8}, {"title": "Golden harvest hamper", "input": {"sunflower": 2, "oil": 1}, "xp": 60, "minLevel": 8}, {"title": "The autumn festival", "input": {"pie": 2, "pickles": 1, "honey": 3}, "xp": 75, "minLevel": 8}, {"title": "The estate banquet", "input": {"oil": 1, "vegetables": 2, "cheese": 2, "bread": 2}, "xp": 85, "minLevel": 10}, {"title": "The kitchen garden", "input": {"stew": 2, "bread": 2}, "xp": 80, "minLevel": 6, "requiresBuildings": ["kitchen"]}, {"title": "An orchard picnic", "input": {"applejuice": 2, "applepie": 1}, "xp": 110, "minLevel": 8, "requiresBuildings": ["juicepress"]}, {"title": "Breakfast preserves", "input": {"berrypreserves": 2, "bread": 3}, "xp": 120, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The orchard tea room", "input": {"berrytart": 2, "applepie": 2}, "xp": 160, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "A colourful orchard refreshment", "input": {"orchardjuice": 1, "bread": 2}, "xp": 65, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "Smoothies for the village", "input": {"berrysmoothie": 1, "bread": 2}, "xp": 68, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "A honey-sweet breakfast", "input": {"applecompote": 1, "bread": 2}, "xp": 62, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The pickling pantry", "input": {"applevinegar": 1, "bread": 2}, "xp": 80, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "Beans for the village deli", "input": {"pickledbeans": 1, "bread": 2}, "xp": 100, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "A warming farm supper", "input": {"beangratin": 1, "bread": 2}, "xp": 85, "minLevel": 7, "requiresBuildings": ["kitchen"]}, {"title": "Lunch under the apple trees", "input": {"orchardsalad": 1, "bread": 2}, "xp": 58, "minLevel": 8, "requiresBuildings": []}, {"title": "Cheesecake at the tea room", "input": {"berrycheesecake": 1, "honey": 2}, "xp": 105, "minLevel": 11, "requiresBuildings": []}, {"title": "A gift from the valley", "input": {"harvesthamper": 1, "honey": 2}, "xp": 160, "minLevel": 12, "requiresBuildings": ["juicepress", "preserves"]}]);
+// Wave 3: a big harvest day, a prize basket from the Glasshouse and two blankets.
+const ESTATE_DAILIES=[
+ [{"stat":"harvested","target":40,"title":"The estate harvest","description":"Harvest 40 crops.","reward":600,"minLevel":78}],
+ [{"stat":"made_prizeproduce","target":1,"title":"Show-ready vegetables","description":"Grow 1 prize produce.","reward":650,"minLevel":80,"requiresBuildings":["glasshouse"]}],
+ [{"stat":"made_blanket","target":2,"title":"Two warm blankets","description":"Make 2 wool blankets.","reward":700,"minLevel":82,"requiresBuildings":["craftshop"]}]
+];
+export const DAILY_POOLS=LEGACY_DAILY_POOLS.map((pool,id)=>Object.freeze([...pool,...ORCHARD_DAILIES[id],...PANTRY_DAILIES[id],...MIDGAME_DAILIES[id],...VALLEY_DAILIES[id],...ESTATE_DAILIES[id],...[[{"stat":"activity_greenhouse","target":2,"title":"Seedling care","description":"Finish 2 Greenhouse jobs.","reward":65},{"stat":"activity_paddock","target":2,"title":"Happy herd","description":"Finish 2 Animal paddock jobs.","reward":65},{"stat":"chore_weeds","target":3,"title":"A tidy start","description":"Successfully clear the paths 3 times.","reward":70},{"stat":"tended","target":4,"title":"More than watering","description":"Give 4 growing crops extra care.","reward":65},{"stat":"harvest_lettuce","target":8,"title":"Leafy little harvest","description":"Harvest 8 lettuce.","reward":55},{"stat":"harvest_corn","target":6,"title":"Golden corn","description":"Harvest 6 corn.","reward":65}],[{"stat":"activity_apiary","target":3,"title":"Honey time","description":"Finish 3 Apiary jobs and collect their Honey.","reward":85},{"stat":"activity_workshop","target":3,"title":"Tools of the trade","description":"Finish 3 Tool workshop jobs.","reward":85},{"stat":"made_feed","target":3,"title":"Feed the farm","description":"Collect 3 animal feed from production.","reward":80},{"stat":"parallel_batches","target":2,"title":"Side by side","description":"Start 2 batches while another batch is still running in the same building.","reward":90,"parallel":true},{"stat":"fertilized","target":2,"title":"A soil boost","description":"Use natural fertilizer on 2 growing fields.","reward":80,"minLevel":3},{"stat":"made_flour","target":4,"title":"Flour power","description":"Collect 4 flour from production.","reward":80,"minLevel":3},{"stat":"made_salad","target":1,"title":"Freshly prepared","description":"Collect 1 fresh salad.","reward":90,"minLevel":4}],[{"stat":"activity_rounds","target":1,"title":"Make the rounds","description":"Finish a full farm round by helping at all four stops.","reward":110},{"stat":"activities","target":6,"title":"A hands-on day","description":"Finish 6 hands-on jobs around the farm.","reward":110},{"stat":"chore_troughs","target":2,"title":"Fresh water rounds","description":"Successfully fill the water troughs twice.","reward":110,"chore":"troughs"},{"stat":"chore_sorting","target":1,"title":"Everything sorted","description":"Successfully sort the seed boxes once.","reward":140,"chore":"sorting"},{"stat":"made_bread","target":2,"title":"Warm from the oven","description":"Collect 2 fresh bread.","reward":100,"minLevel":4},{"stat":"passive_earned","target":30,"title":"Roadside trade","description":"Collect 30 coins from the farm stall.","reward":80,"minLevel":3}]][id]]));
+export const ORDER_POOL=Object.freeze([{"title": "The judges’ table", "input": {"prizeproduce": 1, "cherryjam": 1}, "xp": 180, "minLevel": 80}, {"title": "Show day at the inn", "input": {"prizeproduce": 1, "goatcheese": 2}, "xp": 190, "minLevel": 82}, {"title": "Milk for the café", "input": {"goatmilk": 6, "honey": 4}, "xp": 90, "minLevel": 54}, {"title": "The goat farmer’s table", "input": {"goatcheese": 1, "bread": 2}, "xp": 100, "minLevel": 55}, {"title": "Evening candles", "input": {"candles": 2, "beeswax": 3}, "xp": 100, "minLevel": 58}, {"title": "A cosy winter", "input": {"blanket": 1, "candles": 1}, "xp": 160, "minLevel": 60}, {"title": "Cherry season", "input": {"cherryjam": 1, "cherries": 6}, "xp": 110, "minLevel": 67}, {"title": "The pie stand", "input": {"cherrypie": 1, "applepie": 1}, "xp": 120, "minLevel": 68}, {"title": "Soup kitchen", "input": {"squashsoup": 1, "bread": 2}, "xp": 90, "minLevel": 32}, {"title": "The candle maker", "input": {"beeswax": 4, "honey": 4}, "xp": 70, "minLevel": 34}, {"title": "The village knitters", "input": {"wool": 6}, "xp": 70, "minLevel": 37}, {"title": "Glasshouse greens", "input": {"cauliflower": 8, "salad": 2}, "xp": 75, "minLevel": 40}, {"title": "The tailor’s shelves", "input": {"yarn": 4, "wool": 4}, "xp": 95, "minLevel": 43}, {"title": "Fabric for the fair", "input": {"cloth": 1, "yarn": 2}, "xp": 120, "minLevel": 45}, {"title": "Harvest cider", "input": {"cider": 1, "ciderapples": 4}, "xp": 110, "minLevel": 47}, {"title": "The baker next door", "input": {"wheat": 5}, "xp": 15, "minLevel": 1}, {"title": "A leafy lunch", "input": {"lettuce": 4, "corn": 2}, "xp": 20, "minLevel": 1}, {"title": "Sweet little favour", "input": {"honey": 2, "wheat": 4}, "xp": 20, "minLevel": 1}, {"title": "Breakfast at the inn", "input": {"eggs": 3, "milk": 2}, "xp": 25, "minLevel": 1}, {"title": "The paddock pantry", "input": {"feed": 2, "corn": 2}, "xp": 25, "minLevel": 1}, {"title": "Honey on toast", "input": {"honey": 2, "bread": 2}, "xp": 35, "minLevel": 3}, {"title": "A cream tea", "input": {"honey": 3, "milk": 2, "bread": 1}, "xp": 35, "minLevel": 3}, {"title": "The village grocer", "input": {"corn": 3, "lettuce": 2, "cabbage": 1}, "xp": 25, "minLevel": 3}, {"title": "The millers basket", "input": {"grainmeal": 2, "flour": 4}, "xp": 30, "minLevel": 3}, {"title": "For the garden club", "input": {"fertilizer": 2, "lettuce": 4}, "xp": 30, "minLevel": 3}, {"title": "The animal sanctuary", "input": {"feed": 3, "barley": 3}, "xp": 30, "minLevel": 3}, {"title": "A picnic in the park", "input": {"bread": 2, "salad": 1, "honey": 1}, "xp": 40, "minLevel": 4}, {"title": "The cheese board", "input": {"cheese": 2, "bread": 1}, "xp": 35, "minLevel": 4}, {"title": "A farm-fresh lunch", "input": {"salad": 2, "eggs": 3}, "xp": 35, "minLevel": 4}, {"title": "Sunday lunch", "input": {"cabbage": 2, "pumpkin": 2}, "xp": 35, "minLevel": 5}, {"title": "The harvest kitchen", "input": {"vegetables": 1, "flour": 3}, "xp": 45, "minLevel": 5}, {"title": "A golden afternoon", "input": {"pie": 1, "honey": 2, "milk": 2}, "xp": 50, "minLevel": 6}, {"title": "Autumn pantry", "input": {"redcabbage": 2, "cauliflower": 2}, "xp": 40, "minLevel": 6}, {"title": "The village feast", "input": {"bread": 3, "cheese": 2, "vegetables": 1}, "xp": 65, "minLevel": 7}, {"title": "Pantry provisions", "input": {"pickles": 1, "vegetables": 1}, "xp": 55, "minLevel": 7}, {"title": "A chefs finishing touch", "input": {"oil": 1, "salad": 2, "honey": 2}, "xp": 65, "minLevel": 8}, {"title": "Golden harvest hamper", "input": {"sunflower": 2, "oil": 1}, "xp": 60, "minLevel": 8}, {"title": "The autumn festival", "input": {"pie": 2, "pickles": 1, "honey": 3}, "xp": 75, "minLevel": 8}, {"title": "The estate banquet", "input": {"oil": 1, "vegetables": 2, "cheese": 2, "bread": 2}, "xp": 85, "minLevel": 10}, {"title": "The kitchen garden", "input": {"stew": 2, "bread": 2}, "xp": 80, "minLevel": 6, "requiresBuildings": ["kitchen"]}, {"title": "An orchard picnic", "input": {"applejuice": 2, "applepie": 1}, "xp": 110, "minLevel": 8, "requiresBuildings": ["juicepress"]}, {"title": "Breakfast preserves", "input": {"berrypreserves": 2, "bread": 3}, "xp": 120, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The orchard tea room", "input": {"berrytart": 2, "applepie": 2}, "xp": 160, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "A colourful orchard refreshment", "input": {"orchardjuice": 1, "bread": 2}, "xp": 65, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "Smoothies for the village", "input": {"berrysmoothie": 1, "bread": 2}, "xp": 68, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "A honey-sweet breakfast", "input": {"applecompote": 1, "bread": 2}, "xp": 62, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The pickling pantry", "input": {"applevinegar": 1, "bread": 2}, "xp": 80, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "Beans for the village deli", "input": {"pickledbeans": 1, "bread": 2}, "xp": 100, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "A warming farm supper", "input": {"beangratin": 1, "bread": 2}, "xp": 85, "minLevel": 7, "requiresBuildings": ["kitchen"]}, {"title": "Lunch under the apple trees", "input": {"orchardsalad": 1, "bread": 2}, "xp": 58, "minLevel": 8, "requiresBuildings": []}, {"title": "Cheesecake at the tea room", "input": {"berrycheesecake": 1, "honey": 2}, "xp": 105, "minLevel": 11, "requiresBuildings": []}, {"title": "A gift from the valley", "input": {"harvesthamper": 1, "honey": 2}, "xp": 160, "minLevel": 12, "requiresBuildings": ["juicepress", "preserves"]}]);
 export function availableDaily(state,q){
  if(guidedFarm(state)){
   const stat=q.stat??'';
@@ -987,7 +1011,7 @@ export function availableDaily(state,q){
   if(stat==='produced'&&!Object.keys(RECIPES).some(id=>recipeUnlocked(state,id)))return false;
   if(stat.startsWith('built_')&&!buildingEligible(state,stat.slice(6)))return false;
   if(stat==='varieties'&&q.target>Object.keys(CROPS).filter(k=>cropUnlocked(state,k)).length)return false;
-  const gate=stat==='mastery_medals'?'mastery':stat==='projects'?'projects':stat==='silo_upgrades'?'silo':stat==='tractor'?'tractor':stat==='dailies'?'challenges':stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':stat.startsWith('valley_')?'valleymarket':stat==='ranch_focus'?'ranch':null;
+  const gate=stat==='mastery_medals'?'mastery':stat==='projects'?'projects':stat==='silo_upgrades'?'silo':stat==='tractor'?'tractor':stat==='dailies'?'challenges':stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':stat.startsWith('valley_')?'valleymarket':stat==='ranch_focus'?'ranch':stat==='improvements'?'estateworkshop':stat.startsWith('depot_')?'tradedepot':stat.startsWith('fair_')?'grandfair':null;
   if(gate&&!featureUnlocked(state,gate))return false;
   if(stat==='fertilized'&&!itemAvailable(state,'fertilizer'))return false;
  }
@@ -1028,7 +1052,14 @@ export const COMMISSION_POOL=Object.freeze([
 {"title": "The winter market", "customer": "Valley Winter Market", "story": "Warm blankets, candles and yarn for the coldest weeks of the year.", "input": {"blanket": 2, "candles": 4, "yarn": 6}, "xp": 800, "minLevel": 64, "requiresBuildings": ["craftshop", "weaving"]},
 {"title": "The cherry fair", "customer": "Orchard Cherry Fair", "story": "The first cherries of the year, baked, cooked and served with goat cheese.", "input": {"cherrypie": 3, "cherryjam": 3, "goatcheese": 2}, "xp": 850, "minLevel": 68, "requiresBuildings": ["bakery", "preserves", "goatshed"]},
 {"title": "The ranch banquet", "customer": "Valley Ranchers", "story": "The ranchers celebrate the season with cheese, pie and a blanket for the winner.", "input": {"goatcheese": 4, "cherrypie": 2, "blanket": 1}, "xp": 900, "minLevel": 70, "requiresBuildings": ["goatshed", "bakery", "craftshop"]},
-{"title": "The valley wedding", "customer": "The Newlyweds", "story": "Candlelight, cherry pies and blankets for a wedding under the trees.", "input": {"blanket": 2, "candles": 6, "cherrypie": 3}, "xp": 920, "minLevel": 70, "requiresBuildings": ["craftshop", "bakery"]}
+{"title": "The valley wedding", "customer": "The Newlyweds", "story": "Candlelight, cherry pies and blankets for a wedding under the trees.", "input": {"blanket": 2, "candles": 6, "cherrypie": 3}, "xp": 920, "minLevel": 70, "requiresBuildings": ["craftshop", "bakery"]},
+{"title": "The estate open day", "customer": "Hilltop Estate", "story": "The estate opens its gardens: candles on the terrace, pies and cheese in the tent.", "input": {"candles": 8, "cherrypie": 3, "goatcheese": 4}, "xp": 950, "minLevel": 78, "requiresBuildings": ["craftshop", "bakery", "goatshed"]},
+{"title": "The produce show", "customer": "Valley Show Society", "story": "The show society wants prize vegetables, cherry jam and a blanket for the raffle.", "input": {"prizeproduce": 2, "cherryjam": 3, "blanket": 1}, "xp": 1000, "minLevel": 80, "requiresBuildings": ["glasshouse", "preserves", "craftshop"]},
+{"title": "A harvest for the judges", "customer": "Valley Show Society", "story": "Lunch for the judges: prize vegetables, squash soup and a glass of cider.", "input": {"prizeproduce": 2, "squashsoup": 4, "cider": 4}, "xp": 980, "minLevel": 80, "requiresBuildings": ["glasshouse", "kitchen", "juicepress"]},
+{"title": "The export sampler", "customer": "City Merchants", "story": "The city merchants want to taste the valley before they sign.", "input": {"prizeproduce": 3, "blanket": 2, "candles": 6}, "xp": 1100, "minLevel": 85, "requiresBuildings": ["glasshouse", "craftshop"]},
+{"title": "The harbour banquet", "customer": "Harbour Guild", "story": "The harbour guild celebrates the season's first ships.", "input": {"cherrypie": 5, "goatcheese": 6, "cider": 6}, "xp": 1080, "minLevel": 85, "requiresBuildings": ["bakery", "goatshed", "juicepress"]},
+{"title": "The champions' supper", "customer": "Grand Valley Fair", "story": "Supper for this year's champions, with prize vegetables on every plate.", "input": {"prizeproduce": 4, "cherrypie": 4, "blanket": 2}, "xp": 1250, "minLevel": 90, "requiresBuildings": ["glasshouse", "bakery", "craftshop"]},
+{"title": "The fair's closing night", "customer": "Grand Valley Fair", "story": "Candlelight, cherry jam and the best vegetables in the valley to close the fair.", "input": {"prizeproduce": 3, "candles": 10, "cherryjam": 5}, "xp": 1200, "minLevel": 90, "requiresBuildings": ["glasshouse", "craftshop", "preserves"]}
 
 ]);
 export const DELIVERY_TIERS=Object.freeze({quick:{name:'Quick delivery',minBonus:25,maxBonus:40},village:{name:'Village order',minBonus:45,maxBonus:70},commission:{name:'Special commission',minBonus:90,maxBonus:125}});
@@ -1078,6 +1109,8 @@ export function replaceOrder(state,id,day,revision,expectedCost,now=Date.now()){
 // time. The first choice is free; switching to another herd later costs coins.
 export const RANCH_HERDS=Object.freeze({sheepbarn:'Sheep',goatshed:'Goats',dairy:'Cows'});
 export const RANCH_SPEEDUP=.25,RANCH_SWITCH_COST=15000;
+// The Estate Workshop's Big hay loft makes the chosen herd work 35% faster instead of 25%.
+export function ranchSpeedup(state){return hasImprovement(state,'hayloft')?.35:RANCH_SPEEDUP;}
 export function ranchFocus(state){return featureUnlocked(state,'ranch')?state.ranch?.focus??null:null;}
 export function ranchChangeCost(state){return state.ranch?.focus?RANCH_SWITCH_COST:0;}
 export function setRanchFocus(state,focus,expectedCost){
@@ -1095,6 +1128,8 @@ export function setRanchFocus(state,focus,expectedCost){
 // a customer away, that stall gets its next customer four hours later. Baskets follow from the stall and a running number, so the
 // game and the server always agree on them.
 export const VALLEY_STALLS=3,VALLEY_RESTOCK=4*3600000,VALLEY_PREMIUM=1.5;
+// The Estate Workshop's Market wagon brings the next customer after two hours instead of four.
+export function valleyRestock(state){return hasImprovement(state,'wagon')?VALLEY_RESTOCK/2:VALLEY_RESTOCK;}
 export const VALLEY_CUSTOMERS=Object.freeze([
  {name:'The Hilltop Inn',line:'Tonight’s guests want the best of the valley.'},
  {name:'The village school',line:'A basket for the end-of-term picnic.'},
@@ -1108,7 +1143,7 @@ export const VALLEY_CUSTOMERS=Object.freeze([
  {name:'The newlyweds',line:'Filling their very first pantry.'}
 ]);
 // The newest crops and goods: every basket has one of them.
-export const VALLEY_STARS=Object.freeze(['squash','polebeans','ciderapples','cherries','squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie']);
+export const VALLEY_STARS=Object.freeze(['squash','polebeans','ciderapples','cherries','squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','prizeproduce']);
 // calendarHash's lowest bits barely change between near-identical texts (stall 1, 2, 3 would all pick the same good), so the
 // market's rolls get a final mix first.
 const mixBits=h=>{h^=h>>>16;h=Math.imul(h,0x85ebca6b);h^=h>>>13;h=Math.imul(h,0xc2b2ae35);h^=h>>>16;return h>>>0;};
@@ -1141,12 +1176,134 @@ export function valleySell(state,stall,basket,now=Date.now()){
  const coins=marketSaleValue(state,b.coins,now);
  state.coins+=coins;state.xp+=b.xp;state.stats.earned+=coins;state.stats.sold+=units;
  state.stats.valley_baskets=(state.stats.valley_baskets??0)+1;state.stats.valley_coins=(state.stats.valley_coins??0)+coins;
- s.basket=null;s.readyAt=now+VALLEY_RESTOCK;state.valley.sold++;
+ s.basket=null;s.readyAt=now+valleyRestock(state);state.valley.sold++;
  return {coins,xp:b.xp,customer:VALLEY_CUSTOMERS[b.customer].name,readyAt:s.readyAt};
 }
 export function valleySkip(state,stall,basket,now=Date.now()){
- const s=valleyStall(state,stall,basket);s.basket=null;s.readyAt=now+VALLEY_RESTOCK;
+ const s=valleyStall(state,stall,basket);s.basket=null;s.readyAt=now+valleyRestock(state);
  return {readyAt:s.readyAt};
+}
+// The Estate Workshop (level 75): lasting improvements for the whole farm. Each is built once, with coins and goods, and works
+// for good from then on. They open one after another from level 75 to 88.
+export const IMPROVEMENTS=Object.freeze({
+ ladders:{name:'Orchard ladders',effect:'Trees, bushes and climbing plants grow back 20% faster.',art:'apples',level:75,coins:300000,materials:{cider:30,cherryjam:12,applejuice:60}},
+ heating:{name:'Glasshouse heating',effect:'Glasshouse batches take 25% less time.',art:'glasshouse',level:76,coins:350000,materials:{beeswax:120,oil:50,cloth:15}},
+ watertower:{name:'Water tower',effect:'Watering takes 30% off the growing time instead of 20%.',art:'water',level:78,coins:420000,materials:{goatcheese:25,blanket:5,stew:80}},
+ hayloft:{name:'Big hay loft',effect:'Your ranch herd works 35% faster instead of 25%.',art:'ranch',level:80,coins:500000,materials:{wool:300,goatmilk:200,cheese:120}},
+ wagon:{name:'Market wagon',effect:'Valley Market customers come back after 2 hours instead of 4.',art:'valley-market',level:82,coins:600000,materials:{candles:40,cherrypie:20,prizeproduce:3}},
+ crane:{name:'Loading crane',effect:'A new export contract comes 6 hours after a trailer leaves instead of 12.',art:'trade-depot',level:86,coins:750000,materials:{blanket:10,cloth:40,prizeproduce:6}},
+ ledger:{name:'Merchant’s ledger',effect:'Everything you sell at the Market pays 10% more.',art:'market',level:88,coins:900000,materials:{harvesthamper:40,cherryjam:30,prizeproduce:10}}
+});
+export const IMPROVEMENT_XP=250;
+export function hasImprovement(state,id){return Array.isArray(state.improvements)&&state.improvements.includes(id);}
+export function buildImprovement(state,id){
+ if(typeof id!=='string'||!Object.hasOwn(IMPROVEMENTS,id))throw new Error('Choose an improvement.');
+ const x=IMPROVEMENTS[id];
+ if(hasImprovement(state,id))throw new Error(`The ${x.name} is already built.`);
+ if(levelOf(state)<x.level)throw new Error(`Reach level ${x.level} to build the ${x.name}.`);
+ if(state.coins<x.coins)throw new Error(`You need ${x.coins.toLocaleString('en-US')} coins for the ${x.name}.`);
+ const missing=Object.entries(x.materials).filter(([key,n])=>state.inventory[key]<n);
+ if(missing.length)throw new Error(`Gather the missing supplies: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
+ state.coins-=x.coins;for(const [key,n] of Object.entries(x.materials))state.inventory[key]-=n;
+ state.improvements.push(id);state.stats.improvements=(state.stats.improvements??0)+1;state.xp+=IMPROVEMENT_XP;
+ return {improvement:id,name:x.name,coins:x.coins,xp:IMPROVEMENT_XP};
+}
+// The Trade Depot (level 85): one export contract at a time, a trailer to fill with four kinds of goods. Load what you have
+// whenever you like; what is loaded stays loaded. A full trailer leaves at once and pays 1.6× the goods' normal price plus
+// diamonds; the next contract comes 12 hours later (6 with the Loading crane). A contract with nothing loaded yet can be
+// turned down, and the next one comes after the same wait. Contracts follow from a running number, like the Valley Market's
+// baskets, so the game and the server agree on them.
+export const DEPOT_PREMIUM=1.6,DEPOT_RESTOCK=12*3600000,DEPOT_DIAMONDS=10;
+export const EXPORT_DESTINATIONS=Object.freeze([
+ {name:'The city markets',line:'From the valley to the busiest stalls in town.'},
+ {name:'The harbour warehouses',line:'Crates for the ships that sail at dawn.'},
+ {name:'The mountain hotels',line:'The lodges want the best of the valley for the season.'},
+ {name:'The northern mills',line:'Supplies for a long winter up north.'},
+ {name:'The palace kitchens',line:'Only the finest goods for the palace table.'},
+ {name:'The railway company',line:'Stock for the dining cars on the night train.'}
+]);
+export function exportValue(level){return Math.min(120000,60000+4000*Math.max(0,level-FEATURE_LEVELS.tradedepot));}
+export function depotRestock(state){return hasImprovement(state,'crane')?DEPOT_RESTOCK/2:DEPOT_RESTOCK;}
+function exportContract(state,serial){
+ const roll=n=>mixBits(calendarHash(`export-v1:${serial}:${n}`)),target=exportValue(levelOf(state));
+ const goods=Object.keys(PRODUCTS).filter(k=>ITEMS[k].sell>=400&&itemAvailable(state,k)),kinds=Math.min(4,goods.length),input={};
+ if(!kinds)return null;   // nothing the farm can make yet: no trailer until it can
+ for(let i=0;i<kinds;i++){const key=goods.splice(roll(i)%goods.length,1)[0];input[key]=Math.max(2,Math.min(120,Math.round(target/kinds/ITEMS[key].sell)));}
+ const value=Object.entries(input).reduce((sum,[key,n])=>sum+ITEMS[key].sell*n,0);
+ return {id:serial,destination:roll(9)%EXPORT_DESTINATIONS.length,input,loaded:Object.fromEntries(Object.keys(input).map(k=>[k,0])),value,coins:Math.ceil(value*DEPOT_PREMIUM/100)*100,xp:Math.round(value/40),diamonds:DEPOT_DIAMONDS};
+}
+function refreshDepot(state,now){
+ if(!featureUnlocked(state,'tradedepot')||state.depot.contract||now<state.depot.readyAt)return;
+ const contract=exportContract(state,state.depot.serial+1);
+ if(contract){state.depot.serial++;state.depot.contract=contract;}
+}
+function depotContract(state,contract){
+ const c=state.depot.contract;
+ if(!c||c.id!==contract)throw new Error('This contract has changed. Look at the depot again.');
+ return c;
+}
+// Loads one kind of goods (item) or everything the contract still needs (no item), as far as the barn has it.
+export function depotLoad(state,contract,item,now=Date.now()){
+ const c=depotContract(state,contract);
+ if(item!==undefined&&(typeof item!=='string'||!Object.hasOwn(c.input,item)))throw new Error('This contract does not ask for that.');
+ const loaded={};
+ for(const key of item===undefined?Object.keys(c.input):[item]){const n=Math.min(state.inventory[key],c.input[key]-c.loaded[key]);if(n>0){state.inventory[key]-=n;c.loaded[key]+=n;loaded[key]=n;}}
+ const units=Object.values(loaded).reduce((sum,n)=>sum+n,0);
+ if(!units)throw new Error(item===undefined?'You have none of the goods this trailer still needs.':`You have no ${ITEMS[item].name.toLowerCase()} to load.`);
+ state.stats.depot_loaded=(state.stats.depot_loaded??0)+units;
+ if(Object.keys(c.input).some(key=>c.loaded[key]<c.input[key]))return {loaded,units,shipped:false};
+ state.coins+=c.coins;state.xp+=c.xp;state.diamonds+=c.diamonds;state.stats.earned+=c.coins;
+ state.stats.depot_shipments=(state.stats.depot_shipments??0)+1;state.stats.depot_coins=(state.stats.depot_coins??0)+c.coins;
+ state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+c.diamonds;
+ state.depot.shipped++;state.depot.contract=null;state.depot.readyAt=now+depotRestock(state);
+ return {loaded,units,shipped:true,coins:c.coins,xp:c.xp,diamonds:c.diamonds,destination:EXPORT_DESTINATIONS[c.destination].name,readyAt:state.depot.readyAt};
+}
+export function depotSkip(state,contract,now=Date.now()){
+ const c=depotContract(state,contract);
+ if(Object.values(c.loaded).some(n=>n>0))throw new Error('Goods are already on this trailer. Finish loading it.');
+ state.depot.contract=null;state.depot.readyAt=now+depotRestock(state);
+ return {readyAt:state.depot.readyAt};
+}
+// The Grand Valley Fair (level 90): every week (from Monday, UTC) three classes, one entry each. An entry hands over the goods
+// and wins a ribbon: fair stars (they count up for good), coins at half as much again as the goods' normal price, XP and
+// diamonds. A ribbon in all three classes in one week makes you grand champion. The classes follow from the week and are
+// kept for the whole week once the farm first sees them.
+export const FAIR_PREMIUM=1.5;
+export const FAIR_CLASSES=Object.freeze([
+ {name:'Best harvest',stars:1,value:15000,diamonds:5},
+ {name:'Finest goods',stars:2,value:30000,diamonds:5},
+ {name:'Best in show',stars:3,value:50000,diamonds:10}
+]);
+function fairClasses(state,week){
+ const roll=n=>mixBits(calendarHash(`fair-v1:${week}:${n}`)),pick=(list,n)=>list[roll(n)%list.length];
+ const amount=(key,value)=>Math.max(1,Math.round(value/ITEMS[key].sell));
+ const crops=Object.keys(CROPS).filter(k=>CROPS[k].sell>=100&&cropUnlocked(state,k)),products=Object.keys(PRODUCTS).filter(k=>!['prizeproduce','feed','fertilizer','honey'].includes(k)&&ITEMS[k].sell>=200&&itemAvailable(state,k));
+ const fine=products.filter(k=>ITEMS[k].sell>=1000),goods=fine.length?fine:products;
+ if(!crops.length||!goods.length)return null;   // a farm that makes nothing yet waits for its first classes
+ const crop=pick(crops,0),good=pick(goods,1),others=goods.filter(k=>k!==good),show=pick(others.length?others:[good],2);
+ const prize=itemAvailable(state,'prizeproduce')?3:0,rest=FAIR_CLASSES[2].value-prize*ITEMS.prizeproduce.sell;
+ const inputs=[{[crop]:amount(crop,FAIR_CLASSES[0].value)},{[good]:amount(good,FAIR_CLASSES[1].value)},{...(prize?{prizeproduce:prize}:{}),[show]:amount(show,rest)}];
+ return FAIR_CLASSES.map((c,i)=>{const input=inputs[i],value=Object.entries(input).reduce((sum,[key,n])=>sum+ITEMS[key].sell*n,0);return {name:c.name,stars:c.stars,input,value,coins:Math.ceil(value*FAIR_PREMIUM/100)*100,xp:Math.round(value/40),diamonds:c.diamonds};});
+}
+function refreshFair(state,now){
+ if(!featureUnlocked(state,'grandfair'))return;
+ const week=familyWeek(now),classes=state.fair.week===week?null:fairClasses(state,week);
+ if(classes)state.fair={week,classes,entered:[]};
+}
+export function fairEnter(state,index,week,now=Date.now()){
+ if(week!==state.fair.week||week!==familyWeek(now))throw new Error('A new fair week has started. Look at the new classes.');
+ const entry=Number.isInteger(index)?state.fair.classes[index]:undefined;
+ if(!entry)throw new Error('Choose a class at the fair.');
+ if(state.fair.entered.includes(index))throw new Error('You already have a ribbon in this class this week.');
+ const missing=Object.entries(entry.input).filter(([key,n])=>state.inventory[key]<n);
+ if(missing.length)throw new Error('Missing: '+missing.map(([key,n])=>`${ITEMS[key].name} (${state.inventory[key]}/${n})`).join(', ')+'.');
+ for(const [key,n] of Object.entries(entry.input))state.inventory[key]-=n;
+ state.fair.entered.push(index);state.coins+=entry.coins;state.xp+=entry.xp;state.diamonds+=entry.diamonds;state.stats.earned+=entry.coins;
+ state.stats.fair_entries=(state.stats.fair_entries??0)+1;state.stats.fair_stars=(state.stats.fair_stars??0)+entry.stars;
+ state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+entry.diamonds;
+ const champion=state.fair.entered.length===state.fair.classes.length;
+ if(champion)state.stats.fair_champion=(state.stats.fair_champion??0)+1;
+ return {name:entry.name,stars:entry.stars,coins:entry.coins,xp:entry.xp,diamonds:entry.diamonds,champion};
 }
 export function utcDay(now=Date.now()){return new Date(now).toISOString().slice(0,10);}
 export function dayNumber(now=Date.now()){return Math.floor(now/DAY_MS);}
@@ -1193,6 +1350,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.stall??={level:1,since:now,bank:0};state.estate??={completed:0,job:null};state.estate.diamondChapters??=[];state.chores??={};state.chorePractice??={};
  state.activities??={jobs:{},cooldowns:{},completed:{},round:[],rounds:0};
  state.ranch??={focus:null,changes:0};state.valley??={serial:0,sold:0,stalls:[]};
+ if(!Array.isArray(state.improvements))state.improvements=[];state.depot??={serial:0,shipped:0,contract:null,readyAt:0};state.fair??={week:null,classes:[],entered:[]};
  for(const p of state.plots){p.tended??=false;p.fertilized??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*.3);}
  const day=utcDay(now);
  const existingDay=state.daily?.date===day;
@@ -1201,7 +1359,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.daily.replacements??=0;state.daily.orderRevisions??={};
  state.daily.tasks??=oldVersion<10&&existingDay?LEGACY_DAILY_POOLS.map((pool,id)=>({...pool[(d+id)%pool.length]})):featureUnlocked(state,'challenges')?selectDailyTasks(state,d):[];
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
- refreshValley(state,now);
+ refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);
  return state;
 }
 function refreshProgressionDaily(state,now){
@@ -1303,7 +1461,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  recordBeginnerAction(state,action,result,beginnerBefore);
  const earnedXP=state.xp-beforeXP;
  if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
- if(state.boosts.coinsUntil>now&&['delivery'].includes(action.type)){
+ if(state.boosts.coinsUntil>now&&['delivery','depot_load'].includes(action.type)){
   const bonus=state.coins-beforeCoins;if(bonus>0){state.coins+=bonus;state.stats.earned+=bonus;result.coins+=bonus;}
  }
  const reward=grantLevelRewards(state,beforeLevel+1);
@@ -1313,7 +1471,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  return result;
 }
 function dispatchFarmAction(state,action,now,random){
- const gates={buy_vip:'boosts',daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts',valley_sell:'valleymarket',valley_skip:'valleymarket',ranch_focus:'ranch'};
+ const gates={buy_vip:'boosts',daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts',valley_sell:'valleymarket',valley_skip:'valleymarket',ranch_focus:'ranch',improve:'estateworkshop',depot_load:'tradedepot',depot_skip:'tradedepot',fair_enter:'grandfair'};
  const gate=gates[action.type];if(gate&&!featureUnlocked(state,gate))throw new Error(featureUnlockHint(gate));
  switch(action.type){
   case 'buy_vip':return buyVip(state,action.plan,action.expectedCost,action.expectedExpiresAt,now);
@@ -1354,6 +1512,10 @@ function dispatchFarmAction(state,action,now,random){
   case 'valley_sell':return valleySell(state,action.stall,action.basket,now);
   case 'valley_skip':return valleySkip(state,action.stall,action.basket,now);
   case 'ranch_focus':return setRanchFocus(state,action.focus,action.expectedCost);
+  case 'improve':return buildImprovement(state,action.improvement);
+  case 'depot_load':return depotLoad(state,action.contract,action.item,now);
+  case 'depot_skip':return depotSkip(state,action.contract,now);
+  case 'fair_enter':return fairEnter(state,action.entry,action.week,now);
   default:throw new Error('Unknown farm action.');
  }
 }
@@ -1384,14 +1546,20 @@ export function choreStatus(state,id,now=Date.now()){
  return {...c,attempts,chance,mastered:chance===c.maxChance,locked:!!previous&&(previous.locked||!previous.mastered),remaining:Math.max(0,(state.chores[id]??0)-now)};
 }
 function secureChoreRandom(){return globalThis.crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;}
-export const CHAPTER_DIAMONDS=Object.freeze([10,20,35,50,75,100]);
+export const CHAPTER_DIAMONDS=Object.freeze([10,20,35,50,75,100,125,150,175,200]);
 export const PROJECTS=Object.freeze([
  {name:'Rooted homestead',description:'Build a dependable home for your growing farm.',coins:600,input:{wheat:40,milk:12},medals:0,duration:7200000,xp:250},
  {name:'Village supplier',description:'Become the village’s everyday source of fresh food.',coins:3000,input:{corn:40,eggs:36,bread:20},medals:1,duration:28800000,xp:600},
  {name:'Irrigated gardens',description:'Turn your vegetable patch into a thriving garden.',coins:12000,input:{cabbage:50,cauliflower:35,salad:20},medals:3,duration:86400000,xp:1200},
  {name:'Artisan farmstead',description:'Establish a reputation for carefully made farm goods.',coins:45000,input:{bread:100,cheese:50,pie:30},medals:6,duration:172800000,xp:2200},
  {name:'Valley showcase',description:'Prepare a harvest worthy of the whole valley.',coins:140000,input:{sunflower:75,redcabbage:75,oil:20},medals:12,duration:259200000,xp:4000},
- {name:'Harvest estate',description:'Make your farm a lasting part of the countryside.',coins:400000,input:{pickles:100,vegetables:150,pie:100},medals:18,duration:604800000,xp:8000}
+ {name:'Harvest estate',description:'Make your farm a lasting part of the countryside.',coins:400000,input:{pickles:100,vegetables:150,pie:100},medals:18,duration:604800000,xp:8000},
+ // Chapters 7-10 (2026-09-23) are built from the goods of the three expansion waves, so each also waits for its farm level. On
+ // that day no farm had finished more than three chapters, so every farm meets them in order; the ongoing commissions follow.
+ {name:'Golden meadows',description:'Bees among the sunflowers and a flock on the hill: the estate makes its own wax and wool.',level:40,coins:700000,input:{beeswax:80,wool:150,squashsoup:25},medals:24,duration:345600000,xp:11000},
+ {name:'The weavers’ valley',description:'Cloth, cider and goat cheese that the whole valley asks for.',level:55,coins:1100000,input:{cloth:40,cider:40,goatcheese:25},medals:30,duration:432000000,xp:15000},
+ {name:'Orchard and ranch',description:'Cherry trees in bloom, candles in the windows and blankets in the ranch house.',level:70,coins:1700000,input:{cherrypie:40,cherryjam:40,blanket:12,candles:60},medals:36,duration:518400000,xp:20000},
+ {name:'The grand estate',description:'Prize vegetables, full export trailers and a name known far beyond the valley.',level:85,coins:2600000,input:{prizeproduce:30,blanket:25,harvesthamper:80},medals:44,duration:604800000,xp:28000}
 ]);
 export function masteryStatus(state,crop){return MASTERY_TIERS.map((tier,id)=>({...tier,id,progress:Math.min(tier.target,state.mastery.harvests[crop]??0),claimed:state.mastery.claimed.includes(`${crop}:${id}`)}));}
 export function claimMastery(state,crop,tier){
@@ -1432,6 +1600,7 @@ export function currentProject(state){
 }
 export function startProject(state,now=Date.now()){
  if(state.estate.job)throw new Error('Finish your current estate project first.');const project=currentProject(state);
+ if(project.level&&levelOf(state)<project.level)throw new Error(`Reach level ${project.level} for ${project.name}.`);
  if(state.mastery.claimed.length<project.medals)throw new Error(`Earn ${project.medals} crop mastery medals for this project.`);
  if(state.coins<project.coins)throw new Error(`You need ${project.coins.toLocaleString('en-US')} coins for this project.`);
  if(Object.entries(project.input).some(([k,n])=>state.inventory[k]<n))throw new Error('Gather the required goods before starting this project.');

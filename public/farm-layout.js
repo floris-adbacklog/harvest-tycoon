@@ -11,7 +11,10 @@ export const ANCHORS=Object.freeze({
  beeyard:[22.7,1.9],sheepbarn:[23.8,-15.4],glasshouse:[28.8,1.2],weaving:[26.2,8.5],
  // Wave 2: the goats beside the sheep, the Craft Workshop beside the Weaving Shed, the Ranch and its paddock by the pond, and the
  // Valley Market behind the Juice Press, on the top road out of the valley.
- goatshed:[31.9,-14.6],craftshop:[33.1,9.6],ranch:[31.5,16.2],valleymarket:[0,-29.2]
+ goatshed:[31.9,-14.6],craftshop:[33.1,9.6],ranch:[31.5,16.2],valleymarket:[0,-29.2],
+ // Wave 3: a new column at the east end of the trunk road: the Trade Depot where the road ends, the Estate Workshop's manor across
+ // the road, and the Grand Valley Fair's hall and fairground south of it.
+ tradedepot:[42.7,-9.6],estateworkshop:[42.3,3.1],grandfair:[44,13.4]
 });
 // Where a yard stands when that is not where it was designed (same compact grid; everything inside a yard moves along with it).
 // The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), the
@@ -24,7 +27,10 @@ export const YARD_CLEARANCE=5.4;
 // The roads, as designed on the compact grid: centre, size, height and depth in the ground. The long side grows with the farm.
 export const ROADS=Object.freeze([
  {x:4.5,z:-4,width:59,depth:2.9,height:.13,y:-.045},{x:-6,z:3,width:2.9,depth:40,height:.13,y:-.035},{x:6.2,z:26,width:27,depth:2.4,height:.12,y:-.035},
- {x:-21,z:7,width:2.1,depth:41,height:.09,y:0},{x:-1,z:-23.3,width:42,depth:2.2,height:.09,y:0},{x:-1,z:31,width:45,depth:2.2,height:.09,y:0}
+ {x:-21,z:7,width:2.1,depth:41,height:.09,y:0},{x:-1,z:-23.3,width:42,depth:2.2,height:.09,y:0},{x:-1,z:31,width:45,depth:2.2,height:.09,y:0},
+ // The road out of the valley: it lies over the trunk road's tapered end, passes the Trade Depot and runs on to the edge of the
+ // world, where the haze swallows it.
+ {x:50.15,z:-4,width:52,depth:2.9,height:.13,y:-.043,turned:true}
 ]);
 export const roadSize=road=>({width:road.width>road.depth?road.width*SPREAD:road.width,depth:road.depth>road.width?road.depth*SPREAD:road.depth});
 // World rectangles of the roads: {minX,maxX,minZ,maxZ}.
@@ -46,7 +52,8 @@ const yardCentres=Object.keys(ANCHORS).map(anchorAt);
 // north, south). The Sheep Barn's pasture runs down to the road in front of it. Trees keep three steps clear of the edges, so
 // no crown hangs over a yard.
 export const YARD_EXTENT=Object.freeze({beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-4.2,4.2,-2.6,4.6],weaving:[-3,4.8,-4,5.5],
- goatshed:[-4.8,4.8,-4.4,11],craftshop:[-4.4,4.8,-2.4,3.6],ranch:[-5,5,-3,10.2],valleymarket:[-8.5,9.5,-5,4.5]});
+ goatshed:[-4.8,4.8,-4.4,11],craftshop:[-4.4,4.8,-2.4,3.6],ranch:[-5,5,-3,10.2],valleymarket:[-8.5,9.5,-5,4.5],
+ tradedepot:[-7,7.5,-4.5,5],estateworkshop:[-5.5,5.5,-3.5,4.5],grandfair:[-7.5,7.5,-3.5,7.5]});
 const EXTENT_MARGIN=3;
 const extents=Object.entries(YARD_EXTENT).map(([id,[west,east,north,south]])=>{const [x,z]=anchorAt(id);return [x+west,x+east,z+north,z+south];});
 export const outsideYardExtents=(x,z,margin=EXTENT_MARGIN)=>extents.every(([minX,maxX,minZ,maxZ])=>x<minX-margin||x>maxX+margin||z<minZ-margin||z>maxZ+margin);

@@ -37,7 +37,7 @@ test('everything you can work on has more room than on the compact grid, without
 });
 test('the fields keep their place and every yard stays clear of them and within reach of the camera',()=>{
  const fields={minX:-3.4,maxX:8.6,minZ:-1,maxZ:30.4};   // 40 plots (10 rows) at 3.15 x 3.2
- const reach=Math.round(20*SPREAD)*2;                     // pan and depth, both directions, from the home view at (1.4, 1.5)
+ const reach=Math.round(24*SPREAD)*2;                     // pan and depth, both directions, from the home view at (1.4, 1.5)
  for(const id of Object.keys(ANCHORS)){
   const [x,z]=anchorAt(id);
   assert(!(x>fields.minX-2&&x<fields.maxX+2&&z>fields.minZ-2&&z<fields.maxZ+2),`${id} is not on the fields`);
@@ -49,10 +49,10 @@ test('the scene is laid out through the zones, and the default is restored after
  assert.match(game,/import \{ zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments \} from '\.\/farm-layout\.js';/);assert.match(game,/import \{ scatterProps, seeded \} from '\.\/farm-props\.js';/);
  const scene=game.slice(game.indexOf('function decorate(){'),game.indexOf('function createPlots(){'));
  assert(scene.trimEnd().endsWith("farmLife.attach('greenhouse',glasshouse);farmLife.attach('apiary',hive);farmLife.watchProduction(buildingViews);\n}")||/zone\('fields'\);\s*farmLife\.attach/.test(scene),'back to the default before the fields are drawn');
- assert(!/(cloneModel|scenery)\('road_001',-?\d/.test(scene+life),'no road with typed-in numbers: they come from the shared list');assert.match(scene,/for\(const road of ROADS\.slice\(0,3\)\)cloneModel\('road_001'/);assert.match(life,/for\(const road of ROADS\.slice\(3\)\)scenery\('road_001'/);
+ assert(!/(cloneModel|scenery)\('road_001',-?\d/.test(scene+life),'no road with typed-in numbers: they come from the shared list');assert.match(scene,/for\(const road of ROADS\.slice\(0,3\)\)cloneModel\('road_001'/);assert.match(life,/for\(const road of ROADS\.slice\(3\)\)\{const size=roadSize\(road\);scenery\('road_001'/);
  const used=new Set([...scene.matchAll(/zone\('(\w+)'\)/g)].map(m=>m[1]).concat([...scene.matchAll(/\[yard,list\]/g)].length?Object.keys(ANCHORS):[]));
  for(const id of used)assert(id==='fields'||id==='exact'||Object.hasOwn(ANCHORS,id),id);
- assert.match(game,/const limit=Math\.round\(20\*SPREAD\)/,'more room to pan');
+ assert.match(game,/const limit=Math\.round\(24\*SPREAD\)/,'more room to pan, as far as the wave-3 column at the end of the trunk road');
  assert.match(game,/sun\.shadow\.camera\.left=-52/,'shadows cover the wider farm');
  assert.match(game,/utilityViews\.set\(key,\{object,label,info,x:object\.position\.x,z:object\.position\.z,height,locked:false\}\)/);assert.match(game,/buildingViews\.set\(key,\{object,hit,outline,label,pin:label\.querySelector\('\.building-pin'\),pinArt:key==='familyhall'\?'familyhall-model':key,x:object\.position\.x,z:object\.position\.z,height,locked:false\}\)/,'labels follow where things really stand');
  assert.match(life,/zone\('pond'\)/);assert.match(life,/zone\('paddock'\)/);assert.match(life,/zone\('workshop'\)/);assert.match(life,/const beeHome=placeIn\('apiary',10\.4,13\.7\)/);

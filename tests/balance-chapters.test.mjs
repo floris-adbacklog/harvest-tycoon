@@ -34,9 +34,10 @@ test('village orders follow accessible advanced recipes and keep the quick order
   assert.deepEqual(s.daily.orderBoard,board);
  }
 });
-test('all six chapter rewards are paid once, not doubled by XP boosts, then commissions continue',()=>{
- const s=farm();let time=now,chapterDiamonds=0;
- for(let id=0;id<8;id++){
+test('all ten chapter rewards are paid once, not doubled by XP boosts, then commissions continue',()=>{
+ const s=farm();s.xp=xpForLevel(90);s.levelRewards=Array.from({length:90},(_,i)=>i+1);s.mastery.claimed=Array.from({length:44},(_,i)=>String(i));
+ let time=now,chapterDiamonds=0;
+ for(let id=0;id<12;id++){
   const p=currentProject(s),before=s.diamonds;Object.assign(s.inventory,p.input);
   act(s,{type:'project_start'},time);assert.throws(()=>act(s,{type:'project_collect'},time),/still/);assert.equal(s.diamonds,before);
   time+=p.duration;s.boosts.xpUntil=time+1000;
@@ -45,7 +46,7 @@ test('all six chapter rewards are paid once, not doubled by XP boosts, then comm
   assert.equal(s.diamonds-before,expected+(r.levelReward?.diamonds??0));chapterDiamonds+=expected;
   const snapshot=structuredClone(s);assert.throws(()=>act(s,{type:'project_collect'},time),/Start/);assert.deepEqual(s,snapshot);
  }
- assert.equal(chapterDiamonds,290);assert.equal(s.stats.chapter_diamonds,290);assert.equal(s.estate.diamondChapters.length,PROJECTS.length);
+ assert.equal(chapterDiamonds,940);assert.equal(s.stats.chapter_diamonds,940);assert.equal(s.estate.diamondChapters.length,PROJECTS.length);
  assert.equal(currentProject(s).name,'Estate commission 3');assert.deepEqual(grantChapterRewards(s),{chapters:[],diamonds:0});
 });
 test('completed chapters on old saves receive a one-time catch-up without touching other progress',()=>{

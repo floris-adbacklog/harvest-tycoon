@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {featureUnlocked,ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 import {art} from './visual-icons.js';
 import {SPREAD,zone,place,placeIn,wide,ROADS,roadSize,onRoad} from './farm-layout.js';
-export const LIFE_MODELS=['landscape_004','landscape_008','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
+export const LIFE_MODELS=['landscape_004','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
  const views=new Map(),hitAreas=[],moving=[],effects=[],water=[],smoke=[];
@@ -21,15 +21,16 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   views.set(id,{object,x:object.position.x,z:object.position.z,height,label});return object;
  }
  // Broad, low shapes fill the edges; higher mountains stay behind the farm. The hills behind the Juice Press and behind the barns
- // made way for the Valley Market and the midgame yards (pushed further out they ran into the mountains), the one in the east moved
- // out, and two strips of field moved aside.
+ // made way for the Valley Market and the midgame yards (pushed further out they ran into the mountains), the one in the east is gone
+ // (it stood in front of the wave-3 column at the end of the trunk road), and two strips of field moved aside.
  zone('exact');
- for(const [x,z,w,d,h,rotation] of [[-34,-21,25,20,5,.4],[-24,-34,26,21,6,1.1],[-37,10,20,24,3,1.5],[50,16,20,24,2.4,.2]])scenery(x>0?'landscape_008':'landscape_004',x,z,{width:wide(w),depth:wide(d),height:h,rotation,y:-.25});
+ for(const [x,z,w,d,h,rotation] of [[-34,-21,25,20,5,.4],[-24,-34,26,21,6,1.1],[-37,10,20,24,3,1.5]])scenery('landscape_004',x,z,{width:wide(w),depth:wide(d),height:h,rotation,y:-.25});
  for(const [x,z,w,d,h] of [[-43,-39,37,27,10],[-9,-53,38,23,9],[26,-47,35,22,8]])scenery('mountain_008',x,z,{width:wide(w),depth:wide(d),height:h,y:-.6});
  scenery('mountain_009',-46,-7,{width:wide(21),depth:wide(30),height:5,y:-.2});
  // Neighbouring agricultural strips echo the supplied demo without adding timers.
  for(const [name,x,z,w,d,rotation] of [['field_005',-27,3,12,20,0],['field_004',-27,23,13,15,0],['field_005',15,29,25,11,0],['field_004',-13,-32,20,11,0]])scenery(name,x,z,{width:wide(w),depth:wide(d),height:.45,rotation,y:.01});
- for(const road of ROADS.slice(3))scenery('road_001',road.x,road.z,{...roadSize(road),height:road.height});
+ // A turned road runs along the model's own length, so it has no pointed ends (the lane to the Trade Depot).
+ for(const road of ROADS.slice(3)){const size=roadSize(road);scenery('road_001',road.x,road.z,road.turned?{width:size.depth,depth:size.width,height:road.height,y:road.y,rotation:Math.PI/2}:{...size,height:road.height});}
  zone(null);
  for(const [x,z] of [[-19,-22],[-17,-23],[-14,-25],[12,-23],[17,-23],[-24,16],[-23,19],[-22,22],[22,3],[24,8],[25,14],[-18,25],[-12,26],[25,-17]])scenery(['tree_008','tree_002','tree_005','tree_007'][Math.abs(x+z)%4],x,z,{height:2.8+(Math.abs(x+z)%3)*.3,rotation:x*.3});
  // Pines at the foot of the mountains where the two hills were.

@@ -1,4 +1,4 @@
-import {VALLEY_CUSTOMERS,VALLEY_PREMIUM,VALLEY_RESTOCK,RANCH_HERDS,RANCH_SPEEDUP,ranchChangeCost,featureUnlocked,featureUnlockHint,buildingUnlocked,normalizeFarm,marketValue,formatDuration,BUILDINGS,RECIPES,ITEMS} from './farm-state.js';
+import {VALLEY_CUSTOMERS,VALLEY_PREMIUM,valleyRestock,RANCH_HERDS,ranchSpeedup,ranchChangeCost,featureUnlocked,featureUnlockHint,buildingUnlocked,normalizeFarm,marketValue,formatDuration,BUILDINGS,RECIPES,ITEMS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -43,13 +43,13 @@ export function createValleyUI({state,runAction,onChange,notify,itemList}){
    return `<article class="order-card valley-stall ${can?'is-ready':''}"><div class="order-head"><span class="order-icon">${art('valley-market')}</span><div><small>Stall ${i+1}${extra>0?` · <b title="Compared with selling these goods at the market today">+${extra}% vs market</b>`:''}</small><h3>${customer.name}</h3><p class="valley-line">${customer.line}</p></div></div><div class="ingredients">${itemList(b.input,true)}</div><div class="task-bottom">${rewardChips({coins:b.coins,xp:b.xp})}<button class="primary-button" data-valley-sell="${i}" data-basket="${b.id}" ${can?'':'disabled'}>Sell basket</button></div><button type="button" class="text-button valley-skip" data-valley-skip="${i}" data-basket="${b.id}">Send this customer away</button></article>`;
   }).join('');
   const sold=state.stats.valley_baskets??0;
-  return lead('valley-market',`A full basket pays <b>${VALLEY_PREMIUM}×</b> its normal price. Each stall gets a new customer ${formatDuration(VALLEY_RESTOCK)} after a sale.`)
+  return lead('valley-market',`A full basket pays <b>${VALLEY_PREMIUM}×</b> its normal price. Each stall gets a new customer ${formatDuration(valleyRestock(state))} after a sale.`)
    +`<div class="daily-list valley-stalls">${stalls}</div>`
-   +`<p class="valley-footer">${sold?`${number(sold)} ${sold===1?'basket':'baskets'} sold here so far.`:'Every basket has one of your newest goods in it.'} Sending a customer away is free; the next one comes ${formatDuration(VALLEY_RESTOCK)} later.</p>`;
+   +`<p class="valley-footer">${sold?`${number(sold)} ${sold===1?'basket':'baskets'} sold here so far.`:'Every basket has one of your newest goods in it.'} Sending a customer away is free; the next one comes ${formatDuration(valleyRestock(state))} later.</p>`;
  }
  function bindMarket(){
   document.querySelectorAll('[data-valley-sell]').forEach(b=>b.onclick=()=>act({type:'valley_sell',stall:Number(b.dataset.valleySell),basket:Number(b.dataset.basket)},r=>`Sold to ${r.customer}! +${number(r.coins)} coins and +${r.xp} XP.`));
-  document.querySelectorAll('[data-valley-skip]').forEach(b=>b.onclick=()=>act({type:'valley_skip',stall:Number(b.dataset.valleySkip),basket:Number(b.dataset.basket)},()=>`The next customer comes in ${formatDuration(VALLEY_RESTOCK)}.`));
+  document.querySelectorAll('[data-valley-skip]').forEach(b=>b.onclick=()=>act({type:'valley_skip',stall:Number(b.dataset.valleySkip),basket:Number(b.dataset.basket)},()=>`The next customer comes in ${formatDuration(valleyRestock(state))}.`));
  }
  function ranchMarkup(){
   const focus=state.ranch.focus,cost=ranchChangeCost(state);
@@ -60,12 +60,12 @@ export function createValleyUI({state,runAction,onChange,notify,itemList}){
     :`<button class="primary-button" data-ranch="${key}" data-cost="${cost}" ${state.coins<cost?'disabled':''}>${cost?`Switch · ${art('coins')}${number(cost)}`:'Choose'}</button>`;
    return `<article class="order-card ranch-herd ${chosen?'is-ready':''}"><div class="order-head"><span class="order-icon">${art(key)}</span><div><small>${BUILDINGS[key].name}</small><h3>${herd}</h3></div></div><div class="ingredients">${goods}</div><div class="task-bottom">${action}</div></article>`;
   }).join('');
-  return lead('ranch',`Pick one herd. Every new batch in its barn takes <b>${Math.round(RANCH_SPEEDUP*100)}% less time</b>.`)
+  return lead('ranch',`Pick one herd. Every new batch in its barn takes <b>${Math.round(ranchSpeedup(state)*100)}% less time</b>.`)
    +`<div class="daily-list ranch-herds">${cards}</div>`
    +`<p class="valley-footer">${focus?`Switching to another herd costs ${number(cost)} coins. Batches already running keep their time.`:'Your first choice is free.'}</p>`;
  }
  function bindRanch(){
-  document.querySelectorAll('[data-ranch]').forEach(b=>b.onclick=()=>act({type:'ranch_focus',focus:b.dataset.ranch,expectedCost:Number(b.dataset.cost)},r=>`Your ranch now works with the ${RANCH_HERDS[r.focus].toLowerCase()}: batches in the ${BUILDINGS[r.focus].name} take ${Math.round(RANCH_SPEEDUP*100)}% less time.`));
+  document.querySelectorAll('[data-ranch]').forEach(b=>b.onclick=()=>act({type:'ranch_focus',focus:b.dataset.ranch,expectedCost:Number(b.dataset.cost)},r=>`Your ranch now works with the ${RANCH_HERDS[r.focus].toLowerCase()}: batches in the ${BUILDINGS[r.focus].name} take ${Math.round(ranchSpeedup(state)*100)}% less time.`));
  }
  return {open,refresh:()=>{if($('valley-dialog')?.open&&signature()!==shown)render();}};
 }

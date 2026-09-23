@@ -19,6 +19,7 @@ import { createFarmClient, farmNow } from './farm-client.js';
 import { createRetentionUI } from './retention-ui.js';
 import { createGrowthUI } from './growth-ui.js';
 import { createValleyUI } from './valley-ui.js';
+import { createEstateUI } from './estate-ui.js';
 import { createBoostsUI } from './boosts-ui.js';
 import { createRookieUI } from './rookie-ui.js';
 import { art,refreshArt } from './visual-icons.js';
@@ -46,10 +47,10 @@ let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
 let overviewBounds=null;
-const familyDecor=[],factoryDecor=[],yardDecor={beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
-let liveEvents,familyUI,progression,economy,retention,growth,valley,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
+const familyDecor=[],factoryDecor=[],yardDecor={beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+let liveEvents,familyUI,progression,economy,retention,growth,valley,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
-const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'}};
+const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'}};
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
 const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());
@@ -60,7 +61,7 @@ const nudge=createReminderNudge({state,farmNow,level:()=>levelProgress(state).le
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
-function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
+function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(key==='estateworkshop'||key==='tradedepot'||key==='grandfair')estatePlaces.open(key);else if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -74,6 +75,8 @@ modelNames.push('house_008','pointer_002','table_002','garden_bed_002','firewood
 modelNames.push('plant_009','tree_010','apiary_002','apiary_003','sheep_002','sheep_003','hangar_006','greenhouse_004','house_018');
 // Wave 2: the cherry tree, the Goat Shed, the Craft Workshop, the Ranch with its horses and the Valley Market's canopy.
 modelNames.push('tree_011','hangar_015','hangar_019','hangar_001','hangar_009','goat_002','horse_003','horse_004','horse_005');
+// Wave 3: the manor of the Estate Workshop, the Trade Depot's warehouse, trailer, truck and crates, and the fair's long hall and cart.
+modelNames.push('house_005','hangar_008','trailer_003','truck_005','prop_020','prop_021','house_023','dray_003');
 const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
 
 let showToast;
@@ -284,6 +287,25 @@ function decorate(){
   // Two stalls face the road in front of the canopy, where the camera sees them; a cart and a sign at the sides.
   cloneModel('stall_002',-2.8,-24.2,{width:2.6}),cloneModel('stall_001',2.9,-24.3,{width:2.9}),cloneModel('case_002',2.2,-24.5,{width:.85,rotation:.2}),cloneModel('case_003',3.5,-24.2,{width:.8,rotation:-.3}),cloneModel('bag_003',3,-23.7,{height:.6,rotation:.4}),
   cloneModel('cart_004',7.6,-26.6,{width:1.9,rotation:.6}),cloneModel('pointer_002',-6.4,-23.8,{height:1.3,rotation:.2}),cloneModel('barrel_001',-6.6,-29.8,{height:.95}),cloneModel('barrel_009',-5.8,-30.6,{height:.8}),cloneModel('case_003',6.6,-31.2,{width:.9,rotation:.4}));
+ // Wave 3, at the east end of the trunk road. The Trade Depot: a long warehouse where the road ends, the export trailer and a
+ // truck at its doors, and crates waiting to be loaded.
+ zone('tradedepot');
+ addUtility('tradedepot','hangar_008',42.7,-11,{width:5.5,depth:11,height:3.4,rotation:Math.PI/2});
+ yardDecor.tradedepot.push(cloneModel('trailer_003',39.6,-6.9,{width:5,rotation:Math.PI/2}),cloneModel('truck_005',45.6,-6.7,{width:4.6,rotation:-Math.PI/2}),
+  cloneModel('prop_020',36.9,-7.4,{width:.95,rotation:.2}),cloneModel('prop_021',36.8,-8.4,{width:.95,rotation:-.15}),cloneModel('prop_020',36.85,-7.9,{width:.8,y:.9,rotation:.5}),
+  cloneModel('prop_021',42.2,-7.1,{width:.9,rotation:.4}),cloneModel('pointer_002',36.2,-5.2,{height:1.3,rotation:-.3}));
+ // The Estate Workshop: the manor house across the road, with a workbench, timber and tools in the yard.
+ zone('estateworkshop');
+ addUtility('estateworkshop','house_005',42.3,2.6,{width:8.5});
+ yardDecor.estateworkshop.push(cloneModel('table_001',39.1,5.9,{width:1.6,rotation:.15}),cloneModel('firewood_003',45.6,5.6,{width:1.4,rotation:.4}),cloneModel('case_003',38.2,5.2,{width:.85,rotation:-.3}),
+  cloneModel('bag_001',46.4,4.6,{height:.75,rotation:.3}),cloneModel('garden_bed_001',37,1.2,{width:1.8,rotation:Math.PI/2}));
+ // The Grand Valley Fair: a long exhibition hall with its fairground in front: stalls, a produce cart, hay bales and a sign.
+ zone('grandfair');
+ addUtility('grandfair','house_023',44,12.6,{width:13,depth:4.6,height:3.2});
+ groundPatch('ground_006',44,17.2,12,5.2,0xbdb38e);
+ yardDecor.grandfair.push(cloneModel('stall_002',39.9,17.4,{width:2.6,rotation:.1}),cloneModel('stall_001',44,17.9,{width:2.9}),cloneModel('dray_003',48.3,17.2,{width:2.2,rotation:-.5}),
+  cloneModel('hay_003',41.9,19.3,{width:1.1,rotation:.3}),cloneModel('hay_003',46.2,19.5,{width:1.1,rotation:-.4}),cloneModel('table_001',42,16.4,{width:1.5,rotation:-.1}),
+  cloneModel('plant_003',42,16.4,{width:.55,y:.72}),cloneModel('pointer_002',37.6,19.4,{height:1.3,rotation:.4}),cloneModel('barrel_001',49.6,15.6,{height:.9}));
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
@@ -314,6 +336,11 @@ function decorate(){
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  // More trees between the far ones fill the wider ring the spread-out farm needs.
  [[-27,-24,4.4],[-28,-4,5],[-27,17,5.4],[-9,27,5],[9,29,5.8],[27,3,5.6],[27,-12,5.8],[24,-25,6],[12,-31,5.2],[-6,-33,4.6],[-24,-32,5.2],[-10,-30,4.8]].forEach(([x,z,height],i)=>cloneModel(['tree_004','tree_006','tree_001'][i%3],x,z,{height,rotation:i*2.3+.7}));
+ // The east end, around the wave-3 column and along the road out of the valley: big trees in loose groups, young ones between them
+ // and pines towards the mountain, none of them the same size.
+ [[51.5,-11.5,6.2],[60,-12.3,5],[56.5,-14.8,4.2],[50.8,1.5,5.6],[59.2,.8,6.8],[63.8,3.8,4.6],[53,11.5,5.2],[57,15.4,6.4],[50.8,22.3,4.8],[61.5,10,5.8]].forEach(([x,z,height],i)=>cloneModel(['tree_006','tree_001','tree_004'][i%3],x,z,{height,rotation:i*1.7+.4}));
+ [[55.4,-8.2,3],[64.6,-9.2,2.6],[54.6,4.6,3.3],[58,21,2.8],[44.6,22.6,3.6],[66,12.5,3.1]].forEach(([x,z,height],i)=>cloneModel(['tree_008','tree_002','tree_005','tree_007'][i%4],x,z,{height,rotation:x*.3}));
+ [[47.7,-18.5,4.4],[53.8,-17,3.4],[59,-17.5,5.2],[66,-15,3.8]].forEach(([x,z,height],i)=>cloneModel(['fir_tree_003','fir_tree_001','fir_tree_006'][i%3],x,z,{height,rotation:z*.2}));
  for(const [x,z] of [[-17,-6],[-16.5,-4],[-18.5,9],[-15,12],[21,-3],[18,2],[21,9],[10,15],[2,20],[-21,-15],[11,-16]])cloneModel('bush_001',x,z,{width:2.2,rotation:x});
  for(const [x,z,r] of [[9.4,12.2,.2],[9.8,9.2,1.1],[-13.7,15.2,2.2],[16,5.2,.6]])cloneModel('bush_003',x,z,{width:1.45,rotation:r});
  // Small tufts from the pack add texture while leaving the fields unobstructed.
@@ -446,7 +473,7 @@ function updateUI(){
  $('level-name').textContent=levelTitle(lvl);
  const count=Object.values(state.inventory).reduce((a,b)=>a+b,0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target);
- familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
+ familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
@@ -490,7 +517,7 @@ function resize(){
  $('zoom-in').disabled=zoom>=2.2;$('zoom-out').disabled=zoom<=.75;
  positionLabels();positionBuildingLabels();
 }
-function panFarm(delta,depth=0){const limit=Math.round(20*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
+function panFarm(delta,depth=0){const limit=Math.round(24*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
 function zoomFarm(value){zoom=Math.max(.75,Math.min(2.2,value));resize();}
 function resetView(){viewMode='home';zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
 function showOverview(){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}
@@ -607,6 +634,7 @@ function bindUI(){
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  valley=createValleyUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList});
+ estatePlaces=createEstateUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList});
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  rookie=createRookieUI({state});
  quests=createQuestsUI({state,claim,icons,notify:toast});
