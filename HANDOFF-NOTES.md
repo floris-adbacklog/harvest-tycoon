@@ -353,3 +353,5 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   streak number; seven compact day tiles on one row (no side scrolling; check when collected, gift on day 7); today's
   gift as coin/diamond chips beside Collect. After collecting: "Collected today" and a calm "✓ Back tomorrow"
   instead of a disabled button.
+- The streak leads with diamonds (the reward that matters): day tiles show each day's diamonds (day 7 the gift
+  picture), today's gift chips and the check-in toast put diamonds before coins. rewardChips() keeps the order given.

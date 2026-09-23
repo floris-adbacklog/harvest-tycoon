@@ -864,7 +864,7 @@
 #daily-gift .streak-day small{font-size:10px;color:#8f7f6f;white-space:nowrap}
 #daily-gift .streak-day .game-art{width:22px;height:22px}
 #daily-gift .streak-day svg{width:22px;height:22px;padding:3px;border-radius:50%;background:#7c9a5c;color:#fff;stroke-width:3}
-#daily-gift .streak-day b{font:600 14px 'Outfit',sans-serif;color:#6d5a2f}
+#daily-gift .streak-day b{font:600 15px 'Outfit',sans-serif;color:#2f6a80}
 #daily-gift .streak-day.current{border-color:#c59c38;background:#f9dfa0;box-shadow:0 0 0 2px #e3bb5740}
 #daily-gift .streak-day.collected{border-color:#d5dfc6;background:#eef3e5}
 #daily-gift .streak-day.collected b{color:#5d7a4a}

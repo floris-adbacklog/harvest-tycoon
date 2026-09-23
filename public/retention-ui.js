@@ -9,17 +9,20 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  let tab='challenges',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastTractorReady=true,lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
  const open=id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();};
  // Rewards as the same little chips everywhere: coins, diamonds, XP.
- const rewardChips=({coins=0,diamonds=0,xp=0})=>`<span class="reward-chips">${coins?`<b>${art('coins')}${coins.toLocaleString('en-US')}</b>`:''}${diamonds?`<b class="is-diamonds">${art('diamonds')}${diamonds}</b>`:''}${xp?`<b class="is-xp">${art('xp')}${xp} XP</b>`:''}</span>`;
+ // In the order given, so a screen can lead with what matters most there (the streak leads with diamonds).
+ const CHIPS={coins:n=>`<b>${art('coins')}${n.toLocaleString('en-US')}</b>`,diamonds:n=>`<b class="is-diamonds">${art('diamonds')}${n}</b>`,xp:n=>`<b class="is-xp">${art('xp')}${n} XP</b>`};
+ const rewardChips=rewards=>`<span class="reward-chips">${Object.entries(rewards).filter(([,n])=>n).map(([kind,n])=>CHIPS[kind](n)).join('')}</span>`;
  async function act(action,message){try{const r=await runAction(action);onChange();refresh();notify(typeof message==='function'?message(r):message);return r;}catch(e){notify(e.message);}}
  function gift(){
   const now=farmNow(),today=utcDay(now),claimed=state.login.lastDay===today;
   const continuous=claimed||state.login.lastDay===utcDay(now-DAY_MS);
   const streak=continuous?state.login.streak:0,next=claimed?streak:streak+1,day=(next-1)%7;
   const multiplier=dailyRewardMultiplier(state,now),coins=DAILY_REWARDS[day]*multiplier,diamonds=DAILY_DIAMONDS[day]*multiplier;
-  // A streak line, seven small days that always fit, and today's gift as chips next to one Collect button.
-  const days=DAILY_REWARDS.map((reward,i)=>{const got=i<day||claimed&&i===day;return `<li class="streak-day ${i===day&&!claimed?'current':''} ${got?'collected':''}"><small>Day ${i+1}</small>${got?'<i data-lucide="check"></i>':art(i===6?'gift':'coins')}<b>${reward*multiplier}</b></li>`;}).join('');
-  $('daily-gift').innerHTML=`<section class="gift-panel streak-panel ${claimed?'is-claimed':''}"><div class="streak-head">${art('streak','streak-flame')}<div><h3>${streak?`${streak}-day streak`:'Start a streak'}</h3><p>Best ${state.login.best} day${state.login.best===1?'':'s'}${vipActive(state,now)?' · VIP doubles your gifts':''}</p></div><b class="streak-count">${streak}</b></div><ol class="streak-days">${days}</ol><div class="streak-claim"><span><strong>${claimed?'Collected today':`Day ${day+1} gift`}</strong>${rewardChips({coins,diamonds})}</span>${claimed?'<span class="streak-done"><i data-lucide="check"></i>Back tomorrow</span>':'<button id="checkin-gift" class="primary-button">Collect</button>'}</div><small class="gift-note">Miss a day and the streak starts over.</small></section>`;
-  if($('checkin-gift'))$('checkin-gift').onclick=()=>act({type:'checkin'},r=>`Welcome back! +${r.coins} coins and +${r.diamonds} diamonds · ${r.streak}-day streak.`);
+  // A streak line, seven small days that always fit (showing the diamonds, the reward that matters), and today's gift
+  // as chips next to one Collect button.
+  const days=DAILY_DIAMONDS.map((_,i)=>{const got=i<day||claimed&&i===day;return `<li class="streak-day ${i===day&&!claimed?'current':''} ${got?'collected':''}"><small>Day ${i+1}</small>${got?'<i data-lucide="check"></i>':art(i===6?'gift':'diamonds')}<b>${DAILY_DIAMONDS[i]*multiplier}</b></li>`;}).join('');
+  $('daily-gift').innerHTML=`<section class="gift-panel streak-panel ${claimed?'is-claimed':''}"><div class="streak-head">${art('streak','streak-flame')}<div><h3>${streak?`${streak}-day streak`:'Start a streak'}</h3><p>Best ${state.login.best} day${state.login.best===1?'':'s'}${vipActive(state,now)?' · VIP doubles your gifts':''}</p></div><b class="streak-count">${streak}</b></div><ol class="streak-days">${days}</ol><div class="streak-claim"><span><strong>${claimed?'Collected today':`Day ${day+1} gift`}</strong>${rewardChips({diamonds,coins})}</span>${claimed?'<span class="streak-done"><i data-lucide="check"></i>Back tomorrow</span>':'<button id="checkin-gift" class="primary-button">Collect</button>'}</div><small class="gift-note">Miss a day and the streak starts over.</small></section>`;
+  if($('checkin-gift'))$('checkin-gift').onclick=()=>act({type:'checkin'},r=>`Welcome back! +${r.diamonds} diamonds and +${r.coins} coins · ${r.streak}-day streak.`);
  }
  function renderToday(){
   if(tab==='orders'&&!featureUnlocked(state,'cart'))tab='challenges';
