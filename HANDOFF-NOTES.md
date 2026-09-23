@@ -349,3 +349,7 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   title, the goods (missing ones marked), reward chips and Deliver; the story, the explanation paragraph and the
   "Market sale / Delivery bonus" line are gone. Replace sits in a small fold under the card.
 - Shared: .reward-chips in retention.css (coins, diamonds, XP) and rewardChips() in retention-ui.js.
+- Daily streak (top of "A new day on the farm"): the painted streak flame with "N-day streak" and your best, a big
+  streak number; seven compact day tiles on one row (no side scrolling; check when collected, gift on day 7); today's
+  gift as coin/diamond chips beside Collect. After collecting: "Collected today" and a calm "✓ Back tomorrow"
+  instead of a disabled button.

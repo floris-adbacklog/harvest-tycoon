@@ -850,3 +850,34 @@
  #today-content :is(.daily-card,.daily-order) .quest-art,#today-content .order-icon{width:40px;height:40px}
  #today-content .quest-art>.game-art,#today-content .order-icon>.game-art{width:31px;height:31px}
 }
+
+/* Daily streak: a streak line, seven days that always fit on one row, today's gift as chips beside Collect. */
+#daily-gift .streak-panel{padding:14px;margin-bottom:14px;border-radius:18px}
+#daily-gift .streak-head{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+#daily-gift .streak-flame{flex:none;width:40px;height:40px}
+#daily-gift .streak-head>div{flex:1;min-width:0}
+#daily-gift .streak-head h3{font:600 19px/1.2 'Outfit',sans-serif;letter-spacing:0;color:#4a3c1c}
+#daily-gift .streak-head p{margin:2px 0 0;font-size:12px;color:#806e5f}
+#daily-gift .streak-count{flex:none;display:grid;place-items:center;min-width:40px;height:40px;padding:0 8px;border-radius:12px;background:#f3dcb4;font:600 22px 'Outfit',sans-serif;color:#a0621f}
+#daily-gift .streak-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:0 0 12px;padding:0;list-style:none;overflow:visible}
+#daily-gift .streak-day{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;min-height:0;padding:7px 2px;border:1px solid #e3d9bd;border-radius:11px;background:#fffaf0b3;color:#8f7a4c}
+#daily-gift .streak-day small{font-size:10px;color:#8f7f6f;white-space:nowrap}
+#daily-gift .streak-day .game-art{width:22px;height:22px}
+#daily-gift .streak-day svg{width:22px;height:22px;padding:3px;border-radius:50%;background:#7c9a5c;color:#fff;stroke-width:3}
+#daily-gift .streak-day b{font:600 14px 'Outfit',sans-serif;color:#6d5a2f}
+#daily-gift .streak-day.current{border-color:#c59c38;background:#f9dfa0;box-shadow:0 0 0 2px #e3bb5740}
+#daily-gift .streak-day.collected{border-color:#d5dfc6;background:#eef3e5}
+#daily-gift .streak-day.collected b{color:#5d7a4a}
+#daily-gift .streak-claim{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:#fffaf0}
+#daily-gift .streak-claim>span:not(.streak-done){flex:1;min-width:0;display:grid;gap:5px}
+#daily-gift .streak-claim strong{font:600 15px 'Outfit',sans-serif;color:#4a3c1c}
+#daily-gift #checkin-gift{flex:none;width:auto;min-height:42px;padding:8px 18px}
+#daily-gift .streak-done{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#5d7a4a}
+#daily-gift .streak-done svg{width:16px;height:16px}
+#daily-gift .gift-note{margin-top:8px;font-size:11px}
+#daily-gift .streak-panel.is-claimed .streak-claim strong{color:#5d7a4a}
+@media(max-width:360px){
+ #daily-gift .streak-days{gap:3px}
+ #daily-gift .streak-day small{font-size:9px}
+ #daily-gift .streak-day b{font-size:12px}
+}
