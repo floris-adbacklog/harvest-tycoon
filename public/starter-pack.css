@@ -11,11 +11,11 @@
 #starter-pack-dialog h2{margin:2px 0 6px;font-size:28px}
 .starter-time{display:inline-flex;align-items:center;gap:5px;margin:0 0 14px!important;padding:4px 11px;border-radius:999px;background:#f6e3b4;font-size:12px!important;font-weight:700;color:#8a5a12}
 .starter-time:empty{display:none}
-.starter-rewards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 10px}
-.starter-rewards>div{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;align-items:center;gap:0 10px;padding:12px;text-align:left;border:1px solid #e2d7b0;border-radius:16px;background:#f7ecc9}
+.starter-rewards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 10px}
+.starter-rewards>div{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;align-items:center;gap:0 10px;min-width:0;padding:12px;text-align:left;border:1px solid #e2d7b0;border-radius:16px;background:#f7ecc9}
 .starter-rewards>div.is-diamonds{border-color:#bcdbe8;background:linear-gradient(135deg,#e3f3fa,#f4fbfe)}
 .starter-rewards .game-art{grid-row:span 2;width:40px;height:40px;min-width:40px}
-.starter-rewards strong{font:600 24px/1.05 'Outfit',sans-serif}
+.starter-rewards strong{font:600 24px/1.05 'Outfit',sans-serif;white-space:nowrap}
 .starter-rewards .is-diamonds strong{color:#245f76}
 .starter-rewards span:not(.game-art){font-size:12px;color:#7d7060}
 .starter-crops-strip{display:grid;gap:7px;margin:0 0 14px;padding:12px;border:1px solid #e8ded2;border-radius:16px;background:#f7f2ea}
@@ -28,4 +28,7 @@
 .starter-feedback{margin:8px 0 0!important;font-size:13px;color:#785727}
 .starter-feedback:empty{display:none}
 .starter-fine{display:block;margin-top:8px;font-size:11px;color:#877c71}
+/* Narrow phones: a smaller picture and number, so 10,000 always fits inside its tile. */
+@media(max-width:400px){.starter-rewards>div{gap:0 7px;padding:10px 9px}.starter-rewards .game-art{width:32px;height:32px;min-width:32px}.starter-rewards strong{font-size:20px}}
+@media(max-width:340px){#starter-pack-dialog{padding:20px 14px 16px}.starter-rewards>div{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}.starter-rewards .game-art{grid-row:auto}}
 @media(max-height:700px){.starter-hero{width:64px;height:64px}#starter-pack-dialog h2{font-size:25px}}
