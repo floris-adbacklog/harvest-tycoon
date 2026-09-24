@@ -90,7 +90,8 @@ Deno.serve(async(req)=>{
    }
    const state=normalizeFarm(row.state,now);
    profile={player_id:user.id,username,currency:state.coins,level:levelOf(state),avatar_id:profile?.avatar_id??'default'};
-   if(body.operation==='invite')return reply(await handleInvite({admin,player:user.id,username,state,now}));
+   // Every answer names whose farm it is; the game checks that before it trusts the answer (src/main.js).
+   if(body.operation==='invite')return reply({...await handleInvite({admin,player:user.id,username,state,now}),profile});
    if(body.operation==='family'||(body.operation==='action'&&String(body.action.type).startsWith('family_'))){
     const familyResponse=await handleFamily({admin,body,row,state,player:user.id,username});
     if(!familyResponse)continue;return reply(familyResponse.data,familyResponse.status);

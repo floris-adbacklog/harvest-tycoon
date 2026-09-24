@@ -85,6 +85,9 @@ test('the code goes along with the sign-up and the first farm load, and the invi
 test('farm-api: links a brand-new farm only, pays the friend in the level-10 save, pays the inviter on load, and invites into the family',()=>{
  const api=read('supabase/functions/farm-api/index.ts');
  assert.match(api,/'admin_retention','invite'\]\.includes\(body\?\.operation\)/);
+ // The game only trusts an answer that names this player (src/main.js checks profile.player_id).
+ assert.match(api,/if\(body\.operation==='invite'\)return reply\(\{\.\.\.await handleInvite\(\{admin,player:user\.id,username,state,now\}\),profile\}\);/);
+ assert.match(read('src/main.js'),/data\.profile\?\.player_id!==user\.id\)throw new Error\('Your session has ended\.'\)/);
  assert.match(api,/else\{const invite=await linkInvite\(\{admin,player:user\.id,code:body\.inviteCode\?\?user\.user_metadata\?\.invite,now\}\)/,'only when no earlier progress exists (no profile)');
  assert.match(api,/const inviteReward=inviteeReward\(state,now\);if\(inviteReward\)result\.inviteReward=inviteReward;/);
  assert.match(api,/if\(inviteReward\)await qualifyInvite\(admin,user\.id,now\)/);
