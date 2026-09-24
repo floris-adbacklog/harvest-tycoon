@@ -35,7 +35,7 @@
   banner.className='cookie-banner';banner.setAttribute('role','dialog');banner.setAttribute('aria-modal','false');banner.setAttribute('aria-labelledby','cookie-title');
   banner.innerHTML='<span class="wart cookie-art" aria-hidden="true"></span>'
    +'<div class="cookie-copy"><h2 id="cookie-title">Help a new farm game grow</h2>'
-   +'<p>We use cookies to see what farmers enjoy and to measure our ads. The game never sends your email or player name. <a href="/privacy#cookies">Privacy Policy</a></p>'
+   +'<p>We use cookies to see what farmers enjoy and to measure our ads. <a href="/privacy#cookies">Privacy Policy</a></p>'
    +'<div class="cookie-actions"><button type="button" class="cookie-button is-decline" data-cookie="declined">Decline</button><button type="button" class="cookie-button is-accept" data-cookie="accepted">Accept</button></div></div>';
   banner.querySelectorAll('[data-cookie]').forEach(function(button){button.onclick=function(){decide(button.getAttribute('data-cookie'));};});
   document.body.appendChild(banner);

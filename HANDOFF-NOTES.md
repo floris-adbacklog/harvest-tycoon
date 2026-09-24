@@ -556,7 +556,7 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 
 ## Cookie banner (24 Sep 2026; website only)
 - public/cookie-consent.js shows a small card (bottom left, full width on phones): "Help a new farm game grow", "We
-  use cookies to see what farmers enjoy and to measure our ads. The game never sends your email or player name." and
+  use cookies to see what farmers enjoy and to measure our ads." and
   a Privacy Policy link (the policy names the tools). Accept is the filled button (the user asked for emphasis);
   Decline sits next to it at the same size, outlined and clearly readable. Do not shrink, fade or hide Decline: the
   Dutch DPA (AP) treats a hard-to-find or grey reject option as misleading.
