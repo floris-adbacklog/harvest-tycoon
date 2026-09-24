@@ -124,7 +124,9 @@ test('all ten beginner steps still finish in the first session and pay once',()=
  act(s,{type:'sell',item:'corn',quantity:1},now);act(s,{type:'produce',recipe:'eggs'},now);act(s,{type:'checkin'},now);
  act(s,{type:'field',id:6,action:'tend'},now+10000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
- const diamonds=s.diamonds;let levelDiamonds=0;for(const q of beginnerProgress(s)){assert.equal(q.ready,true,q.id);levelDiamonds+=act(s,{type:'beginner_claim',id:q.id},now+300000).levelReward?.diamonds??0;}
+ // Steps finish themselves as they are done (in any order they happened); only the last one, with the diamonds, is claimed.
+ assert.equal(s.onboarding.completed,9);for(const q of beginnerProgress(s))assert.equal(q.ready,true,q.id);
+ const diamonds=s.diamonds;const levelDiamonds=act(s,{type:'beginner_claim',id:'collect'},now+300000).levelReward?.diamonds??0;
  assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+50+levelDiamonds);assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+300000));
 });
 test('pre-update guided and legacy saves retain every prior unlock, balance, timer and paid reward',()=>{

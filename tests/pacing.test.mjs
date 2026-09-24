@@ -9,15 +9,16 @@ test('the guide starts with the money loop: harvest, sell, plant',()=>{
 });
 test('every guide step pays XP, so following the guide takes a new farmer to level 3',()=>{
  const s=createFarm(now);assert.equal(levelOf(s),1);
- const claim=(id,time=now)=>act(s,{type:'beginner_claim',id},time);
- act(s,{type:'field',id:0,action:'harvest'},now);assert.equal(claim('harvest').xp,BEGINNER_STEP_XP);
- act(s,{type:'sell',item:'corn',quantity:1},now);const afterSale=s.xp;claim('sell');assert.equal(s.xp,afterSale+BEGINNER_STEP_XP);
- act(s,{type:'field',id:6,action:'plant',crop:'wheat'},now);claim('plant');act(s,{type:'field',id:6,action:'water'},now);claim('water');
+ // Steps finish themselves with the action that does them; only the last one is collected by hand.
+ assert.equal(act(s,{type:'field',id:0,action:'harvest'},now).guide[0].xp,BEGINNER_STEP_XP);
+ const beforeSale=s.xp,sale=act(s,{type:'sell',item:'corn',quantity:1},now);assert.equal(s.xp,beforeSale+(sale.xp??0)+BEGINNER_STEP_XP);
+ act(s,{type:'field',id:6,action:'plant',crop:'wheat'},now);act(s,{type:'field',id:6,action:'water'},now);
  assert(levelOf(s)>=2,'level 2 arrives after about four steps, in the first minutes');
- act(s,{type:'produce',recipe:'eggs'},now);claim('produce');act(s,{type:'checkin'},now);claim('gift');
+ act(s,{type:'produce',recipe:'eggs'},now);act(s,{type:'checkin'},now);
  act(s,{type:'field',id:6,action:'tend'},now+10000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
- for(const q of beginnerProgress(s))if(!q.done)claim(q.id,now+300000);
+ assert.equal(s.onboarding.completed,BEGINNER_QUESTS.length-1,'nine steps done without a single claim');
+ act(s,{type:'beginner_claim',id:'collect'},now+300000);
  assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds>=BEGINNER_REWARD,true);
  assert(s.xp>=BEGINNER_STEP_XP*BEGINNER_QUESTS.length);assert(levelOf(s)>=3,`level ${levelOf(s)} after the guide`);
 });
@@ -27,7 +28,7 @@ test('levels 1 to 10 need less XP than the original curve, the first harvest rea
  for(let level=10;level<=80;level++)assert.equal(xpForLevel(level+1)-xpForLevel(level),60+40*(level-1),`the step from level ${level} is unchanged`);
  for(let level=1;level<10;level++)assert(xpForLevel(level+1)-xpForLevel(level)<xpForLevel(level+2)-xpForLevel(level+1),`steps grow: ${level}`);
  for(const level of [1,2,5,9,10,12,25]){const s={xp:xpForLevel(level),xpOffset:0,xpCurve:XP_CURVE};assert.equal(levelOf(s),level);assert.equal(levelOf({...s,xp:xpForLevel(level+1)-1}),level);}
- const s=createFarm(now);act(s,{type:'field',id:0,action:'harvest'},now);act(s,{type:'beginner_claim',id:'harvest'},now);
+ const s=createFarm(now);act(s,{type:'field',id:0,action:'harvest'},now);
  assert.equal(levelOf(s),2,'a first harvest and its guide step are enough for level 2');
  assert.deepEqual(levelProgress(s),{level:2,current:s.xp-15,target:40});
 });

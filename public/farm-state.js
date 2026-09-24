@@ -203,7 +203,7 @@ export const BEGINNER_QUESTS=Object.freeze([
  {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
  {id:'water',title:'A little water goes a long way',description:'Use Water on one growing crop. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
  {id:'produce',title:'Put your buildings to work',description:'Start a production batch. Try Feed the chickens in the Chicken Coop using your starter feed.',guide:'produce',icon:'egg'},
- {id:'gift',title:'A gift for showing up',description:'Open Today and collect your daily gift. Come back tomorrow to build your streak.',guide:'today',icon:'gift'},
+ {id:'gift',title:'A gift for showing up',description:'Open Today and collect your daily gift. Come back tomorrow for the next one and 30 minutes of double harvest.',guide:'today',icon:'gift'},
  {id:'chore',title:'A helping hand',description:'Complete one Farm chore for extra coins while your crops and buildings work.',guide:'chores',icon:'shovel'},
  {id:'tend',title:'Good things need a little care',description:'Use Care on a growing crop once its care marker appears. It comes quickly while you are starting out.',guide:'tend',icon:'leaf'},
  {id:'wheat',title:'Bring in the wheat',description:'Harvest one wheat field when it is ready. Water and care make your harvest bigger.',guide:'harvest',icon:'wheat'},
@@ -213,6 +213,15 @@ function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>q
 export function beginnerProgress(state){
  const guide=state.onboarding??{completed:0,milestones:{}};
  return beginnerQuests(state).map((quest,index)=>({...quest,index,done:index<guide.completed,current:index===guide.completed,ready:!!guide.milestones[quest.id]}));
+}
+// Guide steps finish themselves as soon as the farmer has done them (many never found the "Complete step" button and
+// stayed on step 1); only the last step, with the diamonds, is collected by hand.
+function advanceBeginner(state){
+ const guide=state.onboarding,quests=beginnerQuests(state),done=[];
+ while(guide&&!guide.rewardClaimed&&guide.completed<quests.length-1&&guide.milestones[quests[guide.completed].id]){
+  const quest=quests[guide.completed];guide.completed++;state.xp+=BEGINNER_STEP_XP;done.push({step:quest.id,title:quest.title,xp:BEGINNER_STEP_XP});
+ }
+ return done;
 }
 export function claimBeginnerQuest(state,id){
  const guide=state.onboarding,quest=beginnerQuests(state)[guide.completed];
@@ -803,7 +812,8 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
   return {action,crop:p.crop,yield:harvestYield(p)};
  }
  if(now<p.readyAt)throw new Error('Still growing. Give it a little more time.');
- const harvested=p.crop,quantity=harvestQuantity(state,p,now),xp=CROPS[harvested].xp*(p.watered&&p.tended?2:1);
+ // The very first harvest on a farm is a golden one: three times the crop, a first "wow" worth a few coins.
+ const first=guidedFarm(state)&&state.stats.harvested===0,harvested=p.crop,quantity=harvestQuantity(state,p,now)*(first?FIRST_HARVEST_BONUS:1),xp=CROPS[harvested].xp*(p.watered&&p.tended?2:1);
  state.inventory[harvested]+=quantity;state.stats.harvested++;state.stats['harvest_'+harvested]=(state.stats['harvest_'+harvested]??0)+quantity;
  state.mastery.harvests[harvested]=(state.mastery.harvests[harvested]??0)+1;
  if(!state.discovered.includes(harvested))state.discovered.push(harvested);state.stats.varieties=state.discovered.length;state.xp+=xp;
@@ -811,7 +821,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  // One waiting harvest only. A new cycle starts at collection, never at the old deadline.
  if(regrowing){const duration=cropDuration(state,harvested,true,now);Object.assign(p,{plantedAt:now,readyAt:now+duration,careAt:now+careDelay(state,duration,now),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1});}
  else Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
- return {action,crop:harvested,quantity,xp,regrowing};
+ return {action,crop:harvested,quantity,xp,regrowing,...(first?{firstHarvest:FIRST_HARVEST_BONUS}:{})};
 }
 export function sellCrops(state,item='all',now=Date.now(),day,category,quantity) {
  if(day!==undefined&&day!==utcDay(now))throw new Error('Market prices have refreshed. Check today’s prices before selling.');
@@ -958,6 +968,7 @@ export function farmSummary(state,now=Date.now()) {
 
 export const DAY_MS=86400000;
 export const DAILY_REWARDS=[40,55,70,85,100,120,160];
+export const RETURN_BOOST_MS=30*60000,FIRST_HARVEST_BONUS=3;
 export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
 export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]);
 export const DIAMOND_PACKS=Object.freeze([{amount:150,price:'€1.99'},{amount:500,price:'€4.99'},{amount:1250,price:'€9.99'},{amount:3500,price:'€24.99'}]);
@@ -1513,7 +1524,10 @@ export function checkIn(state,now=Date.now()){
  // Day 7 is the top of the streak: after it every day pays the day-7 gift until a day is missed (then back to day 1).
  const index=Math.min(state.login.streak,DAILY_REWARDS.length)-1,coins=DAILY_REWARDS[index]*dailyRewardMultiplier(state,now),diamonds=DAILY_DIAMONDS[index]*dailyRewardMultiplier(state,now),xp=10*dailyRewardMultiplier(state,now);state.coins+=coins;state.diamonds+=diamonds;state.xp+=xp;
  state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
- return {coins,diamonds,streak:state.login.streak,xp};
+ // Coming back on a second day: the gift brings 30 minutes of double harvest as well, once (guided farms).
+ const returnBoost=guidedFarm(state)&&state.login.visits===2;
+ if(returnBoost)state.boosts.harvestUntil=Math.max(state.boosts.harvestUntil??0,now)+RETURN_BOOST_MS;
+ return {coins,diamonds,streak:state.login.streak,xp,...(returnBoost?{returnBoost:RETURN_BOOST_MS/60000}:{})};
 }
 export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('The order board has refreshed. Pick a new order.');
@@ -1611,6 +1625,8 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  if(state.boosts.coinsUntil>now&&['delivery','depot_load'].includes(action.type)){
   const bonus=state.coins-beforeCoins;if(bonus>0){state.coins+=bonus;state.stats.earned+=bonus;result.coins+=bonus;}
  }
+ // After the boosts, so an action's own XP stays its own: the guide step's XP is shown by itself.
+ const guideSteps=advanceBeginner(state);if(guideSteps.length)result.guide=guideSteps;
  const reward=grantLevelRewards(state,beforeLevel+1);
  if(reward.levels.length)result.levelReward=reward;
  stampStarterOffer(state,beforeLevel,now);

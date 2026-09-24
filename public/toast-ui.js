@@ -4,7 +4,8 @@ import {ITEMS} from './farm-state.js';
 // and amounts like "+40 coins" or "+12 XP" become small chips with their own picture. The message is escaped first,
 // so text from other players (names, gift notes) can never become markup.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const WARN=/\b(need|needs|cannot|can't|not enough|failed|no longer|already|limit|locked|first|unavailable|try again|reach level|returns in|is still)\b/i;
+// "first" only as in "Do this first.": "Your first basket" or "a golden first harvest" is good news.
+const WARN=/\b(need|needs|cannot|can't|not enough|failed|no longer|already|limit|locked|first(?=[.!])|unavailable|try again|reach level|returns in|is still)\b/i;
 const ICONS=[
  [/job complete|helping hand|farm round/i,'helping-hand'],[/diamond/i,'diamonds'],[/\bXP\b|level/i,'xp'],[/\bcare\b|\btend/i,'care'],[/\bwater/i,'water'],[/\bplant|\bseed/i,'seeds'],[/harvest|crop|field/i,'harvest'],[/batch|collected|production/i,'buildings'],
  [/upgrade/i,'hammer'],[/event/i,'live-events'],[/family|gift|help/i,'gift'],[/sold|sale|market/i,'market'],[/coin/i,'coins']

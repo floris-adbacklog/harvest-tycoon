@@ -24,7 +24,7 @@ export function createRookieUI({state,document:doc=globalThis.document,now=farmN
     <ul class="rookie-notes"><li><strong>Fast now</strong><span>At full boost, corn takes ${fast} instead of ${normal}, and the Care marker shows up sooner.</span></li>
     <li><strong>Only for a while</strong><span>The boost gradually eases for 90 minutes, beginning ${ROOKIE_MS/60000} minutes after you started your farm. Then waiting times are back to normal; crops and batches that are already running keep their fast times.</span></li>
     <li><strong>Your starter goods</strong><span>Your starter corn and animal feed are kept for your first steps. After 30 minutes they are yours to sell.</span></li></ul>`
-   :`<h2 id="rookie-title">Beginner boost ended</h2><p>Your beginner boost has gently eased to its end. Waiting times are back to normal, and your starter corn and animal feed are free to sell.</p>`)+
+   :`<h2 id="rookie-title">Beginner boost ended</h2><p>Your beginner boost has gently eased to its end. Waiting times are back to normal, and your starter corn and animal feed are free to sell.</p>${(state.login?.visits??0)<2?'<p>Come back tomorrow: your next daily gift brings 30 minutes of double harvest.</p>':''}`)+
    `<button type="button" class="primary-button" data-rookie-close>Got it</button>`;
  }
  function open(){

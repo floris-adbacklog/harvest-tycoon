@@ -7,7 +7,7 @@ import {trackCommerce} from '../src/analytics.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,24,12),MIN=60000,HOUR=60*MIN;
 const TIMED=['xp','harvest','coins'];
-function farm(){const s=createFarm(now);s.xp=xpForLevel(20);s.coins=100000;s.diamonds=5000;return s;}
+function farm(){const s=createFarm(now);s.xp=xpForLevel(20);s.coins=100000;s.diamonds=5000;s.onboarding.completed=10;s.onboarding.rewardClaimed=true;s.stats.harvested=1;return s;}   // past the guide and the first harvest
 // A ripe field: watered (2 crops), watered and cared for (3 crops) or neither (1).
 function ripe(s,id,crop,{watered=true,tended=false}={}){s.plots[id]={...s.plots[id],id,crop,plantedAt:now-HOUR,readyAt:now-MIN,careAt:now-HOUR,watered,tended,fertilized:false,harvestCycles:0};}
 const buy=(s,boost,length,time=now)=>act(s,{type:'buy_boost',boost,...(length?{length}:{}),expectedCost:boostOffer(boost,length).cost},time);

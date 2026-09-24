@@ -145,3 +145,10 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]){background:#f
 .account-invite img{flex:none;width:48px;height:48px;object-fit:contain}
 .account-invite strong{display:block;font:700 15px/1.3 Outfit,'DM Sans',sans-serif;color:#3b4a2c}
 .account-invite span{display:block;margin-top:3px;font-size:12px;line-height:1.45;color:#63714f}
+/* Playing inside Instagram, Facebook or TikTok: a one-time tip to open the game in the phone's own browser (src/browser-tip.js). */
+.browser-tip{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 64px);z-index:60;box-sizing:border-box;max-width:420px;margin:0 auto;padding:14px 16px;border:1px solid #d9e3c6;border-radius:16px;background:#fffdf5;box-shadow:0 10px 30px #3d321c33;color:#3f3827;font:14px/1.45 'DM Sans',sans-serif}
+.browser-tip p{margin:0 0 10px}
+.browser-tip div{display:flex;gap:8px}
+.browser-tip button{min-height:44px;padding:8px 14px;border-radius:12px;font:700 14px 'DM Sans',sans-serif;cursor:pointer}
+.browser-tip-go{flex:1;border:0;background:#5f573f;color:#fffdf5}
+.browser-tip-later{border:1px solid #d8ccba;background:#fff;color:#5f573f}

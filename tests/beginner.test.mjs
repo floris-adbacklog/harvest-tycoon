@@ -1,22 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction,levelReward,BEGINNER_QUESTS,BEGINNER_REWARD,QUESTS,beginnerProgress} from '../game/farm-state.js';
+import {normalizeFarm,applyFarmAction,levelReward,BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,QUESTS,beginnerProgress} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 const act=(state,action,time=now,random=()=>0)=>applyFarmAction(state,action,time,random);
 test('the beginner guide teaches ten achievable starter actions and awards 50 diamonds once',()=>{
  const state=createFarm(now);assert.equal(BEGINNER_QUESTS.length,10);assert.equal(QUESTS.length,250);
  const claim=id=>act(state,{type:'beginner_claim',id});
  assert.throws(()=>claim('harvest'),/farming action/);
- act(state,{type:'field',id:0,action:'harvest'});claim('harvest');
- act(state,{type:'sell',item:'corn'});claim('sell');
- act(state,{type:'field',id:0,action:'plant',crop:'wheat'});claim('plant');
- act(state,{type:'field',id:0,action:'water'});claim('water');
- act(state,{type:'produce',recipe:'eggs'});claim('produce');
- act(state,{type:'checkin'});claim('gift');
- act(state,{type:'chore',id:'weeds'},now,()=>0);claim('chore');
- act(state,{type:'field',id:0,action:'tend'},now+40000);claim('tend');
- act(state,{type:'field',id:0,action:'harvest'},now+120000);claim('wheat');
+ // Steps 1-9 finish themselves with the action that does them (XP included); only the last one is collected by hand.
+ const done=(result,id)=>{assert.deepEqual(result.guide?.map(g=>g.step),[id],id);assert.equal(result.guide[0].xp,BEGINNER_STEP_XP);};
+ done(act(state,{type:'field',id:0,action:'harvest'}),'harvest');
+ done(act(state,{type:'sell',item:'corn'}),'sell');
+ done(act(state,{type:'field',id:0,action:'plant',crop:'wheat'}),'plant');
+ done(act(state,{type:'field',id:0,action:'water'}),'water');
+ done(act(state,{type:'produce',recipe:'eggs'}),'produce');
+ done(act(state,{type:'checkin'}),'gift');
+ done(act(state,{type:'chore',id:'weeds'},now,()=>0),'chore');
+ done(act(state,{type:'field',id:0,action:'tend'},now+40000),'tend');
+ done(act(state,{type:'field',id:0,action:'harvest'},now+120000),'wheat');
  assert.equal(state.onboarding.completed,9);assert.equal(state.onboarding.rewardClaimed,false);
  const before=state.diamonds;
  assert.throws(()=>act(state,{type:'collect',building:'coop'},now+120000),/still being made/);

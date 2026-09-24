@@ -22,7 +22,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   // as chips next to one Collect button.
   const days=DAILY_DIAMONDS.map((_,i)=>{const got=i<day||claimed&&i===day;return `<li class="streak-day ${i===day&&!claimed?'current':''} ${got?'collected':''}"><small>Day ${i+1}</small>${got?'<i data-lucide="check"></i>':art(i===6?'gift':'diamonds')}<b>${DAILY_DIAMONDS[i]*multiplier}</b></li>`;}).join('');
   $('daily-gift').innerHTML=`<section class="gift-panel streak-panel ${claimed?'is-claimed':''}"><div class="streak-head">${art('streak','streak-flame')}<div><h3>${streak?`${streak}-day streak`:'Start a streak'}</h3><p>Best ${state.login.best} day${state.login.best===1?'':'s'}${vipActive(state,now)?' · VIP doubles your gifts':''}</p></div><b class="streak-count">${streak}</b></div><ol class="streak-days">${days}</ol><div class="streak-claim"><span><strong>${claimed?'Collected today':`Day ${day+1} gift`}</strong>${rewardChips({diamonds,coins})}</span>${claimed?'<span class="streak-done"><i data-lucide="check"></i>Back tomorrow</span>':'<button id="checkin-gift" class="primary-button">Collect</button>'}</div><small class="gift-note">Miss a day and the streak starts over.</small></section>`;
-  if($('checkin-gift'))$('checkin-gift').onclick=()=>act({type:'checkin'},r=>`Welcome back! +${r.diamonds} diamonds and +${r.coins} coins · ${r.streak}-day streak.`);
+  if($('checkin-gift'))$('checkin-gift').onclick=()=>act({type:'checkin'},r=>`Welcome back! +${r.diamonds} diamonds and +${r.coins} coins · ${r.streak}-day streak.${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''}`);
  }
  function renderToday(){
   if(tab==='orders'&&!featureUnlocked(state,'cart'))tab='challenges';

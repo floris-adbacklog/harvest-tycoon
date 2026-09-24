@@ -758,3 +758,19 @@ and are not counted as expansions (stats.expansions, Farmhouse level), so every 
 unchanged. They show in the level-up/journal list (`unlockEntries`, only when `progression.fields===8`). The Farmhouse
 panel says "While you start out, every new level opens one more field, up to 12. No supplies needed." Existing farms keep
 their fields. `tests/legacy-farm.mjs` now builds the original 12-field start. Tests: `tests/starter-fields.test.mjs`.
+
+First minutes (2026-09-24, rules NOT live until `farm-api` is redeployed; the client works with either server). Data: of
+289 guided farms 204 never finished guide step 1, and 154 of those had done it but never tapped "Complete step".
+(1) Guide steps 1-9 finish themselves (`advanceBeginner` in `applyFarmAction`, after the boosts so an action's own XP stays
+its own; `result.guide` lists them); farms stuck on ready steps catch up on their next action. The last step (50 diamonds)
+is still claimed by hand: the guide opens once when it is ready (`beginner-ui.js afterAction`), and the claim shows the
+gift popup "Well done, farmer!" with a come-back line (`comeBackNote` in game.js: when everything on the farm is ready,
+plus tomorrow's double harvest). The Complete-step button only shows when a step waits. Toast: "✓ step · +15 XP. Next: …".
+(2) The next unlock is on the level card (desktop, `#level-next`) and on the level-up screen (`nextUnlock`,
+progression-ui.js). (3) The first harvest on a guided farm is golden: 3x the crop (`FIRST_HARVEST_BONUS`, toast + burst).
+(5/7) The daily gift on a farm's second check-in day adds 30 minutes of double harvest (`RETURN_BOOST_MS`, `checkIn`,
+guided farms, once); promised in guide step 6, the rookie "boost ended" screen and the guide's end popup.
+(8) In the Facebook/Instagram/TikTok in-app browser, two minutes after the farm opens, one tip (once per device,
+`harvest-tycoon:browser-tip`) offers Chrome (Android intent link) or copies the link for Safari (`src/browser-tip.js`,
+styles in welcome.css). Toasts no longer treat "first" as a warning unless it is "… first." Tests:
+`tests/first-minutes.test.mjs` (and the guide tests now expect steps to finish themselves).

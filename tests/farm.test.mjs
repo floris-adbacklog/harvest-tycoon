@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,levelReward,levelOf,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel,STARTER_COINS,STARTER_ITEMS} from '../game/farm-state.js';
+import {applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,levelReward,levelOf,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel,STARTER_COINS,STARTER_ITEMS,FIRST_HARVEST_BONUS} from '../game/farm-state.js';
 import {readFarm,transactFarm} from '../game/farm-store.js';
 const now=Date.UTC(2026,8,16,12);
 const apply=(s,a,t=now)=>applyFarmAction(s,a,t);
@@ -94,7 +94,7 @@ test('D1 saves survive reload, isolate users and replay network retries exactly 
 test('simultaneous saves retain both actions and racing gift requests award once',async()=>{
  const db=database();await readFarm(db,'farmer',now);
  await Promise.all([transactFarm(db,'farmer','request-A11111111',[{type:'field',id:0,action:'harvest'}],now),transactFarm(db,'farmer','request-B11111111',[{type:'field',id:1,action:'harvest'}],now)]);
- const s=await readFarm(db,'farmer',now);assert.equal(s.state.inventory.corn,STARTER_ITEMS.corn+2);assert.equal(s.state.stats.harvested,2);
+ const s=await readFarm(db,'farmer',now);assert.equal(s.state.inventory.corn,STARTER_ITEMS.corn+FIRST_HARVEST_BONUS+1,'the first harvest is a golden one');assert.equal(s.state.stats.harvested,2);
  await Promise.all([transactFarm(db,'farmer','request-C11111111',[{type:'checkin'}],now),transactFarm(db,'farmer','request-D11111111',[{type:'checkin'}],now)]);
  const end=await readFarm(db,'farmer',now);assert.equal(levelOf(end.state),2);assert.equal(end.state.coins,STARTER_COINS+40+levelReward(2).coins);assert.equal(end.state.login.visits,1);
  const failed=await transactFarm(db,'farmer','request-E11111111',[{type:'produce',recipe:'__proto__'},{type:'field',id:999,action:'harvest'}],now);

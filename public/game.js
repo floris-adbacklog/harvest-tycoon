@@ -4,7 +4,7 @@ import {haptic} from './haptics.js';
 import {showWelcomeBack} from './welcome-ui.js';
 import {createFamilyUI} from './family-ui.js';
 import {renderFarmGuide} from './farm-guide.js';
-import {createProgressionUI,progressionSnapshot,progressionChange} from './progression-ui.js';
+import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
 import {buildingEligible,featureUnlocked,featureUnlockHint} from './farm-state.js';
 import {createLoadingScreen} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
@@ -63,7 +63,7 @@ const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 const track=(event,params={})=>{try{window.parent.harvestBridge?.trackGame?.(event,params);}catch{}};
 let sessionTracked=false;
 const nudge=createReminderNudge({state,farmNow,level:()=>levelProgress(state).level,notify:message=>toast(message),track,canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
-const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
+const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
 function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(key==='estateworkshop'||key==='tradedepot'||key==='grandfair')estatePlaces.open(key);else if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
@@ -89,7 +89,15 @@ function toast(message){showToast??=createToast($('toast'));showToast(message);}
 // A gift from the admin (public/player-profiles.js, floris@millstone.nl only) picked up on this farm's next
 // load and cleared server-side (farm-api index.ts). The message, if any, is set with textContent — never HTML —
 // so there is nothing here that needs escaping.
-function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift'}={}){
+// The end of the Beginner guide sends the farmer off with a reason to come back: when the farm will be ready, and (until
+// the second day's gift is collected) the double harvest that comes with tomorrow's gift (farm-state.js checkIn).
+function comeBackNote(now=farmNow()){
+ const times=[...state.plots.filter(p=>p.crop&&p.readyAt>now).map(p=>p.readyAt),...Object.values(state.buildings).flatMap(productionJobs).filter(j=>j.readyAt>now).map(j=>j.readyAt)];
+ const last=times.length?Math.max(...times):0,clock=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+ const when=last?`Your farm keeps growing while you are away: everything is ready ${new Date(last).toDateString()===new Date(now).toDateString()?'at':'tomorrow at'} ${clock(last)}.`:'Plant something before you go: your farm keeps growing while you are away.';
+ return (state.login?.visits??0)<2?`${when} Come back tomorrow for your next daily gift and 30 minutes of double harvest.`:when;
+}
+function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',text=''}={}){
  if(!gift)return;
  $('gift-icon').innerHTML=art(icon);document.querySelector('#gift-dialog .eyebrow').textContent=eyebrow;$('gift-title').textContent=title;
  const rewards=[];
@@ -99,7 +107,7 @@ function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift'}
  if(gift.item&&gift.itemCount&&ITEMS[gift.item])rewards.push(`<strong class="reward-item">${art(gift.item)}+${gift.itemCount.toLocaleString('en-US')} ${ITEMS[gift.item].name}</strong>`);
  $('gift-rewards').innerHTML=rewards.join('');
  const note=$('gift-message');
- if(gift.message){note.textContent=`“${gift.message}”`;note.hidden=false;}else{note.textContent='';note.hidden=true;}
+ if(gift.message){note.textContent=`“${gift.message}”`;note.hidden=false;}else{note.textContent=text;note.hidden=!text;}
  refreshArt();$('gift-dialog').showModal();
 }
 // Invite a friend (public/invite-ui.js): the reward popups. A level-up celebration goes first; this one waits for it.
@@ -467,7 +475,7 @@ async function interact(id,forcedAction){
  if(!action){const now=farmNow(),name=CROPS[plot.crop].name;toast(`${name}: ${plot.tended?'fully cared for':`extra care opens in ${formatDuration(plot.careAt-now)}`}. Ready to harvest in ${formatDuration(plot.readyAt-now)}.`);return {error:'nothing to do yet'};}
  try{
   const result=await runAction({type:'field',id,action,crop:selectedCrop});
-  if(action==='harvest'){particleBurst(id);floatReward(id,floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
+  if(action==='harvest'){particleBurst(id);floatReward(id,floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));if(result.firstHarvest){particleBurst(id,true);toast(`A golden first harvest: ${result.firstHarvest}× the crop!`);}}
   if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
   if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
   if(action==='plant')floatReward(id,floatChip(state.plots[id].crop??selectedCrop,'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));
@@ -496,6 +504,8 @@ function updateUI(){
  nudge?.check();
  $('level').textContent=lvl;$('xp-text').textContent=`${lp.current} / ${lp.target} XP`;$('xp-bar').max=lp.target;$('xp-bar').value=lp.current;$('journal-button').style.setProperty('--xp',String(Math.min(100,Math.round(lp.current/Math.max(1,lp.target)*100))));
  $('level-name').textContent=levelTitle(lvl);
+ // What the next level brings, on the level card (computer screens): there is always something just ahead.
+ const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';
  const count=Object.values(state.inventory).reduce((a,b)=>a+b,0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target);
  familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
@@ -694,7 +704,7 @@ function bindUI(){
  rookie=createRookieUI({state});
  quests=createQuestsUI({state,claim,icons,notify:toast});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
- beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,guide:target=>{
+ beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote()}),guide:target=>{
   if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':'Tap a ready crop or its basket.');}
   else if(target==='eggs')economy.openMarket('goods');
   else if(target==='market')openDialog('market-dialog');

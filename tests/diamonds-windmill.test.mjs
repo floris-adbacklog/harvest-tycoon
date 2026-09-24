@@ -22,7 +22,7 @@ test('daily diamond rewards climb to day 7, stay there while the streak holds, r
 });
 test('XP and coin boosts persist, multiply eligible rewards once and expire',()=>{
  let state=createFarm(now);state.diamonds=BOOSTS.xp.cost+BOOSTS.coins.cost;act(state,{type:'buy_boost',boost:'xp'});act(state,{type:'buy_boost',boost:'coins'});
- state=normalizeFarm(JSON.parse(JSON.stringify(state)),now);const before=state.xp;const harvested=act(state,{type:'field',id:0,action:'harvest'});assert.equal(harvested.xp,10);assert.equal(state.xp-before,10);
+ state=normalizeFarm(JSON.parse(JSON.stringify(state)),now);const before=state.xp;const harvested=act(state,{type:'field',id:0,action:'harvest'});assert.equal(harvested.xp,10);assert.equal(state.xp-before,10+harvested.guide[0].xp,'the guide step XP comes on top, not doubled');
  state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'}).coins,marketQuote('wheat',now).price*20);
  const order=dailyOrders(state,now)[0];Object.assign(state.inventory,order.input);const delivery=act(state,{type:'delivery',id:order.id,day:utcDay(now)});assert.equal(delivery.coins,order.coins*2);assert.equal(delivery.xp,order.xp*2);
  const gift=act(state,{type:'checkin'});assert.equal(gift.coins,40);assert.equal(gift.diamonds,4);
