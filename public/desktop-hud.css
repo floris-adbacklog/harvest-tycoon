@@ -1,3 +1,5 @@
+/* Phones keep the logo (hidden there anyway) and have no map. */
+.minimap{display:none}
 /* Computer screens (farm.html): the side tools stay see-through over the map (game.js hides a building name that
    would sit behind them) and may run down to the bottom now the Starter Pack sits next to the diamonds; the camera
    buttons are one row in the bottom-right corner, clear of the Beginner guide. Narrow windows, where that row would
@@ -6,6 +8,11 @@
  .side-tools{max-height:calc(100dvh - 184px)}
  .scene-controls{flex-direction:row;top:auto;right:20px;bottom:20px}
  .beginner-card{max-height:calc(100dvh - 215px)}
+ /* The live farm map takes the logo's place (public/minimap.js). */
+ .topbar .brand{width:210px;height:126px}
+ .topbar .brand>img{display:none}
+ .minimap{display:block;box-sizing:border-box;width:210px;height:126px;padding:4px;border:1px solid #e5ddd4;border-radius:16px;background:#fffdf5;box-shadow:0 6px 18px #44372418}
+ .minimap canvas{display:block;width:100%;height:100%;border-radius:12px;cursor:pointer;touch-action:none}
  /* Building labels: the name, and a second line only when there is news (ready, working, to build, the farmhouse's fields);
     an idle building's "Ready to work · 0 / 5 slots" said nothing and made every label twice as big, and the Family Hall's
     "Your weekly order & family" is known. A little more compact too. */
@@ -14,6 +21,10 @@
  .building-label .building-pin>.game-art{width:26px;height:26px}
  .building-label strong{font-size:12.5px}
  .building-label .building-status.idle,.building-label .building-status.family{display:none}
+}
+/* The logo, small in the bottom-left corner, on screens tall enough that it never meets the side tools. */
+@media(min-width:901px) and (min-height:760px){
+ .topbar .brand>img{display:block;position:fixed;left:22px;top:auto;bottom:14px;width:118px;height:118px;opacity:.96;pointer-events:none}
 }
 @media(min-width:901px) and (max-width:1040px) and (min-height:551px),(min-width:901px) and (max-width:1040px) and (pointer:fine){
  .scene-controls{bottom:124px}

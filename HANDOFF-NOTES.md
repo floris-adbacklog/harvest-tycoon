@@ -824,5 +824,13 @@ them Craft Workshop (58), Ranch (70), Estate Workshop (75); furthest out the Gra
 to the open ground west of the farmhouse, where the Pig Farm first stood. Sheep Barn, Goat Shed and Trade Depot, the core
 (levels 1-24), the Factory and the Valley Market keep their places. Everything stays within the camera's pan reach (x <= 63).
 The Family Hall's map label no longer shows "Your weekly order & family".
-The Grand Valley Fair's hall is bigger (house_023 at 20 x 7 x 4.4, was 13 x 4.6 x 3.2, about its own proportions), with a
-wider fairground in front; its yard moved a little further back (HOMES grandfair [40,24.3], extent [-10.6,10.6,-4.6,9]).
+The Grand Valley Fair is the final building: one great hall (house_023 at 28 x 9.6 x 5.6, was 13 x 4.6 x 3.2), no fairground in
+front; HOMES grandfair [40,24.3], extent [-14.6,14.6,-6,5]. The Ranch is bigger too (hangar_001 at about half its own size,
+like the other barns) and the Estate Workshop turned a quarter to face the camera, one step further east.
+Desktop farm map (2026-09-24): the logo in the top-left corner is replaced on computers by a live map (`public/minimap.js`,
+`#minimap` in farm.html, styles in desktop-hud.css; phones keep the logo, which they hide anyway). The picture is a small
+render of the farm itself from a steeper angle (`shootMinimap` in game.js renders into a corner of the screen buffer with a
+scissor, copies it, and draws the normal view again in the same frame; fog off for it), taken when the farm opens, after the
+scenery arrives, when fields are added and every 30 s. Live on top: a gold ring on buildings with something ready and a white
+frame for what is on screen (`viewCorners`). Click or drag the map to look there (`lookAt`, within the pan limits); pointing
+at a building shows its name.

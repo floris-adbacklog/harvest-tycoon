@@ -13,6 +13,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, productionJobs, unlockEntries, fieldTapAction, canWater, waterUntil } from './farm-state.js';
 import { createReminderNudge } from './reminder-nudge.js';
 import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments } from './farm-layout.js';
+import { createMinimap } from './minimap.js';
 import { scatterProps, seeded } from './farm-props.js';
 import { createEconomyUI } from './economy-ui.js?v=familyhall-model-2';
 import { createFarmClient, farmNow } from './farm-client.js';
@@ -142,7 +143,7 @@ async function addScenery(){
  try{
   const {SCENERY_MODELS,buildScenery}=await import('./scenery.js');
   await loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4);
-  buildScenery({scene,models,mobile:mobileLayout.matches});renderer.shadowMap.needsUpdate=true;
+  buildScenery({scene,models,mobile:mobileLayout.matches});renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
 }
 function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
@@ -331,7 +332,7 @@ function decorate(){
  yardDecor.craftshop.push(cloneModel('table_001',30.6,12.3,{width:1.5,rotation:.2}),cloneModel('barrel_009',35.6,12.1,{height:.8}),cloneModel('bag_002',36.5,11.4,{height:.7,rotation:.5}),cloneModel('case_003',31.9,12.6,{width:.85,rotation:-.3}));
  // The Ranch: a big stable with its horse paddock in front, on the green by the pond.
  zone('ranch');
- addUtility('ranch','hangar_001',31.5,16.2,{width:5,height:3.6,depth:9,rotation:Math.PI/2});
+ addUtility('ranch','hangar_001',31.5,15.2,{width:6.9,height:4.8,depth:11.1,rotation:Math.PI/2});   // about half its own size, like the other barns
  yardDecor.ranch.push(...fenceLine(27.8,25.9,4),...fenceLine(26.7,20.4,3,'z'),...fenceLine(35.5,20.4,3,'z'));
  for(const [model,x,z,r] of [['horse_003',29.2,22.4,.6],['horse_004',32.6,24.3,2.3],['horse_005',34,21.2,-.8]])yardDecor.ranch.push(cloneModel(model,x,z,{width:2.2,rotation:r}));
  yardDecor.ranch.push(cloneModel('hay_001',27.9,24.6,{width:1.2,rotation:.3}),cloneModel('water_001',34.6,25,{width:1}));
@@ -354,13 +355,9 @@ function decorate(){
  addUtility('estateworkshop','house_005',42.3,2.6,{width:8.5,rotation:Math.PI/2});   // porch and windows towards the camera
  yardDecor.estateworkshop.push(cloneModel('table_001',39.1,5.9,{width:1.6,rotation:.15}),cloneModel('firewood_003',45.6,5.6,{width:1.4,rotation:.4}),cloneModel('case_003',38.2,5.2,{width:.85,rotation:-.3}),
   cloneModel('bag_001',46.4,4.6,{height:.75,rotation:.3}),cloneModel('garden_bed_001',37,1.2,{width:1.8,rotation:Math.PI/2}));
- // The Grand Valley Fair: a long exhibition hall with its fairground in front: stalls, a produce cart, hay bales and a sign.
+ // The Grand Valley Fair, the final building: one great exhibition hall, close to its model's own size.
  zone('grandfair');
- addUtility('grandfair','house_023',44,12.6,{width:20,depth:7,height:4.4});
- groundPatch('ground_006',44,18.8,18,5.8,0xbdb38e);
- yardDecor.grandfair.push(cloneModel('stall_002',38.2,19.1,{width:2.8,rotation:.1}),cloneModel('stall_001',44,19.6,{width:3.1}),cloneModel('dray_003',50.2,19,{width:2.4,rotation:-.5}),
-  cloneModel('hay_003',40.8,21,{width:1.2,rotation:.3}),cloneModel('hay_003',47.4,21.2,{width:1.2,rotation:-.4}),cloneModel('table_001',41.4,18.2,{width:1.6,rotation:-.1}),
-  cloneModel('plant_003',41.4,18.2,{width:.55,y:.72}),cloneModel('pointer_002',35.2,20.8,{height:1.4,rotation:.4}),cloneModel('barrel_001',52.4,17.6,{height:.95}));
+ addUtility('grandfair','house_023',44,12.6,{width:28,depth:9.6,height:5.6});
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
@@ -687,7 +684,62 @@ function pinLight(key){
  if(key==='stall'){const now=farmNow(),s=stallStatus(state,now);return s.balance>=s.capacity?'full':stallNotice(state,now)?'ready':'';}
  return economy.placeReady(key)?'ready':'';
 }
+// The live map in the top-left corner on a computer (public/minimap.js): a small render of the farm from high above, with what is
+// ready and the part of the farm on screen, which moves when the map is clicked or dragged. Phones do not show it (and skip it).
+let minimap=null,mapCamera=null,mapBuffer=null,lastMapShot=0;
+const mapShown=()=>!!minimap&&getComputedStyle($('minimap')).display!=='none';
+function setupMinimap(){
+ const root=$('minimap');if(!root)return;
+ const canvas=root.querySelector('canvas');
+ mapBuffer=document.createElement('canvas');mapBuffer.width=canvas.width;mapBuffer.height=canvas.height;
+ mapCamera=new THREE.OrthographicCamera(-1,1,1,-1,.1,500);
+ const nameOf=(key,kind)=>kind==='building'?BUILDINGS[key].name:utilityInfo[key]?.name??key;
+ minimap=createMinimap({root,background:mapBuffer,project:mapProject,unproject:mapUnproject,view:viewCorners,onJump:lookAt,
+  points:()=>[...[...buildingViews].map(([key,v])=>({x:v.x,z:v.z,locked:v.locked,ready:v.label.classList.contains('ready'),name:nameOf(key,'building')})),
+   ...[...utilityViews].map(([key,v])=>({x:v.x,z:v.z,locked:v.locked,ready:v.label.classList.contains('ready'),name:nameOf(key,'place')}))]});
+ shootMinimap();
+}
+// Frame every building, place and field, seen from a steeper angle than the play camera (the same direction, so right on the
+// map is right on screen).
+function frameMapCamera(){
+ const spots=[...buildingViews.values(),...utilityViews.values(),...plots].map(v=>new THREE.Vector3(v.x,0,v.z));
+ const box=new THREE.Box3().setFromPoints(spots),centre=box.getCenter(new THREE.Vector3());
+ mapCamera.position.copy(centre).add(new THREE.Vector3(36,95,36));mapCamera.up.set(0,1,0);mapCamera.lookAt(centre);mapCamera.updateMatrixWorld();
+ let [minX,maxX,minY,maxY]=[Infinity,-Infinity,Infinity,-Infinity];
+ for(const p of spots){const v=p.clone().applyMatrix4(mapCamera.matrixWorldInverse);minX=Math.min(minX,v.x);maxX=Math.max(maxX,v.x);minY=Math.min(minY,v.y);maxY=Math.max(maxY,v.y);}
+ const pad=5,aspect=mapBuffer.width/mapBuffer.height,cx=(minX+maxX)/2,cy=(minY+maxY)/2;
+ let w=maxX-minX+pad*2,h=maxY-minY+pad*2;if(w/h>aspect)h=w/aspect;else w=h*aspect;
+ Object.assign(mapCamera,{left:cx-w/2,right:cx+w/2,top:cy+h/2,bottom:cy-h/2});mapCamera.updateProjectionMatrix();
+}
+// Render the map picture into the corner of the screen buffer, copy it, and draw the farm again, all in one go.
+function shootMinimap(){
+ if(!mapShown()||!renderer)return;
+ frameMapCamera();
+ const ratio=renderer.getPixelRatio(),w=mapBuffer.width,h=mapBuffer.height,fog=scene.fog;
+ renderer.setScissorTest(true);renderer.setViewport(0,0,w/ratio,h/ratio);renderer.setScissor(0,0,w/ratio,h/ratio);
+ scene.fog=null;renderer.render(scene,mapCamera);scene.fog=fog;
+ const out=mapBuffer.getContext('2d');out.clearRect(0,0,w,h);out.drawImage(renderer.domElement,0,renderer.domElement.height-h,w,h,0,0,w,h);
+ renderer.setScissorTest(false);renderer.setViewport(0,0,viewportWidth,viewportHeight);renderer.render(scene,camera);
+ lastMapShot=performance.now();minimap.draw();
+}
+const mapProject=(x,z)=>{const v=new THREE.Vector3(x,0,z).project(mapCamera);return [(v.x+1)/2*mapBuffer.width,(1-v.y)/2*mapBuffer.height];};
+function mapUnproject(cx,cy){
+ const p=new THREE.Vector3(cx/mapBuffer.width*2-1,1-cy/mapBuffer.height*2,-1).unproject(mapCamera),dir=new THREE.Vector3();mapCamera.getWorldDirection(dir);
+ const t=-p.y/dir.y;return [p.x+dir.x*t,p.z+dir.z*t];
+}
+// Where the four corners of the screen meet the ground.
+function viewCorners(){
+ if(!camera)return null;const dir=new THREE.Vector3();camera.getWorldDirection(dir);
+ return [[-1,1],[1,1],[1,-1],[-1,-1]].map(([x,y])=>{const p=new THREE.Vector3(x,y,-1).unproject(camera),t=-p.y/dir.y;return [p.x+dir.x*t,p.z+dir.z*t];});
+}
+// Put a spot of the farm in the middle of the view (the overview becomes the normal view), within the usual panning limits.
+function lookAt(x,z){
+ if(viewMode==='overview')viewMode='home';
+ const [bx,bz]=viewMode==='fields'?[2.575,.25+(Math.ceil(state.plots.length/4)-1)*3.2/2]:[1.4,1.5],limit=Math.round(24*SPREAD),clamp=v=>Math.max(-limit,Math.min(limit,v));
+ pan=clamp(((x-bx)-(z-bz))/2);panDepth=clamp(((x-bx)+(z-bz))/2);resize();
+}
 function positionBuildingLabels(){
+ if(mapShown()){if(performance.now()-lastMapShot>30000)shootMinimap();else minimap.draw();}
  for(const decor of familyDecor)setLocked(decor,!buildingEligible(state,'familyhall'));
  for(const decor of factoryDecor)setLocked(decor,!buildingEligible(state,'factory'));
  // A yard's pieces are greyed out with it: a building until its level, the Ranch and the Valley Market until theirs.
@@ -708,7 +760,7 @@ function positionBuildingLabels(){
   const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera),x=(p.x*.5+.5)*width,y=(-p.y*.5+.5)*height;v.label.style.left=`${x}px`;v.label.style.top=`${y}px`;v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82||behindTools(x,y,80);v.label.classList.toggle('ready',status.kind==='ready');
  }
 }
-function expandVisuals(){if(!ready)return;createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();}
+function expandVisuals(){if(!ready)return;createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
 function bindUI(){
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
@@ -829,7 +881,7 @@ async function init(){
    },
    zoom:ratio=>zoomFarm(zoom*ratio)
   });
-  ready=true;positionBuildingLabels();updateUI();void addScenery();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  ready=true;setupMinimap();positionBuildingLabels();updateUI();void addScenery();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;progression.refresh();resolve();},450));
  showWelcomeBack(initialWelcome,{fields:focusFields,production:()=>economy.openBuilding(Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??'coop'),stall:()=>growth.open('stall'),today:()=>retention.openToday()});
   return ready;

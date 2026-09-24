@@ -1,0 +1,24 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+
+test('on a computer a live farm map takes the logo\'s place; the logo moves small to the bottom-left; phones keep neither',()=>{
+ const html=read('public/farm.html'),css=read('public/desktop-hud.css');
+ assert.match(html,/<div class="minimap" id="minimap" role="img" aria-label="Farm map\. Click a spot to look there\."><canvas width="420" height="252"><\/canvas><\/div>/);
+ assert.match(html,/src="\/assets\/harvest-tycoon-logo\.webp"/,'the logo stays in the page');
+ assert.match(css,/^\.minimap\{display:none\}/m,'no map on phones');
+ assert.match(css,/\.minimap\{display:block;/);
+ assert.match(css,/@media\(min-width:901px\) and \(min-height:760px\)\{\s*\.topbar \.brand>img\{display:block;position:fixed;left:22px;top:auto;bottom:14px;width:118px;height:118px/);
+});
+
+test('the map is a small render of the farm, refreshed now and then, with live rings and the view frame; clicking moves the view',()=>{
+ const game=read('public/game.js'),map=read('public/minimap.js');
+ assert.match(game,/renderer\.setScissorTest\(true\);renderer\.setViewport\(0,0,w\/ratio,h\/ratio\);/,'rendered into a corner of the screen buffer');
+ assert.match(game,/renderer\.setScissorTest\(false\);renderer\.setViewport\(0,0,viewportWidth,viewportHeight\);renderer\.render\(scene,camera\);/,'and the farm drawn again in the same frame');
+ assert.match(game,/if\(mapShown\(\)\)\{if\(performance\.now\(\)-lastMapShot>30000\)shootMinimap\(\);else minimap\.draw\(\);\}/);
+ assert.match(game,/const mapShown=\(\)=>!!minimap&&getComputedStyle\(\$\('minimap'\)\)\.display!=='none';/,'phones never render it');
+ assert.match(game,/pan=clamp\(\(\(x-bx\)-\(z-bz\)\)\/2\);panDepth=clamp\(\(\(x-bx\)\+\(z-bz\)\)\/2\);resize\(\);/);
+ assert.match(map,/if\(!p\.ready\|\|p\.locked\)continue;/,'a gold ring only where something is ready');
+ assert.match(map,/canvas\.addEventListener\('pointerdown',event=>\{dragging=true;/);
+});
