@@ -1,5 +1,4 @@
 /* Invite a friend (public/invite-ui.js). */
-#invite-dialog{width:min(560px,calc(100% - 24px));max-width:calc(100% - 24px)}
 .invite-loading{margin:18px 0;color:#7a705f}
 .invite-hero{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid #d9e3c6;border-radius:18px;background:linear-gradient(120deg,#eef5e3,#fbf8ef)}
 .invite-hero>.game-art{flex:none;width:76px;height:76px;object-fit:contain}

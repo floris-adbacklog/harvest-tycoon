@@ -10,7 +10,7 @@ const STATUS={
 };
 export function createInviteUI({notify}){
  const bridge=()=>window.parent.harvestBridge,host=window.parent??window;
- const dialog=document.createElement('dialog');dialog.id='invite-dialog';dialog.className='game-dialog invite-dialog';dialog.setAttribute('aria-labelledby','invite-title');
+ const dialog=document.createElement('dialog');dialog.id='invite-dialog';dialog.className='game-dialog wide-dialog invite-dialog';dialog.setAttribute('aria-labelledby','invite-title');
  dialog.innerHTML=`<div class="dialog-heading"><div><span class="eyebrow">GROW THE VALLEY</span><h2 id="invite-title">Invite a friend</h2></div><button class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"></i></button></div><div id="invite-content" aria-live="polite"></div>`;
  document.body.append(dialog);dialog.querySelector('.close-dialog').onclick=()=>dialog.close();
  const content=dialog.querySelector('#invite-content');
