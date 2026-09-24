@@ -7,6 +7,8 @@ import {fieldPicker,batchPicker,bindFieldPicker} from './field-picker.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
 const LENGTH_LABELS={'30m':'30 min','1h':'1 hour','1d':'1 day'};
+// The picture of each diamond pack, from a handful to a big chest (painted; plain diamonds until those arrive).
+const PACK_ART=['pack-nest','pack-sack','pack-chest','pack-gold'];
 
 export function createBoostsUI({state,runAction,onChange,notify}){
  let lastStatus='',catalog=null,purchasing='',requests={},selectedFields=[],selectedBatches=[],finishing=false;
@@ -21,7 +23,9 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  // Finish crops / batches: the selection, its total price, and the button label and state kept in step with it.
  const FINISH={crop:{cost:SINGLE_CROP_COST,button:'finish-one-crop',one:'crop',many:'crops',selected:()=>selectedFields},batch:{cost:SINGLE_BATCH_COST,button:'finish-one-batch',one:'batch',many:'batches',selected:()=>selectedBatches}};
  function finishLabel(kind){const f=FINISH[kind],n=f.selected().length;return `<span class="boost-price">${art('diamonds')}<b>${f.cost*Math.max(1,n)}</b></span><small>${finishing?'Finishing…':`Finish ${n>1?`${n} ${f.many}`:f.one}`}</small>`;}
- function updateFinish(kind){const f=FINISH[kind],n=f.selected().length,button=$(f.button);if(!button)return;button.innerHTML=finishLabel(kind);button.disabled=!n||finishing||state.diamonds<f.cost*n;button.setAttribute('aria-label',`Finish ${n||'the selected'} ${n===1?f.one:f.many} for ${f.cost*Math.max(1,n)} diamonds`);}
+ function updateFinish(kind){const f=FINISH[kind],n=f.selected().length,button=$(f.button);if(!button)return;button.innerHTML=finishLabel(kind);button.disabled=!n||finishing||state.diamonds<f.cost*n;
+  // Not even one: the button takes you to the packs instead of sitting there grey.
+  const short=button.parentElement?.querySelector('.boost-card-extra')?f.cost-state.diamonds:0;button.classList.toggle('is-short',short>0);if(short>0){button.dataset.getDiamonds=short;button.disabled=finishing;}else delete button.dataset.getDiamonds;button.setAttribute('aria-label',`Finish ${n||'the selected'} ${n===1?f.one:f.many} for ${f.cost*Math.max(1,n)} diamonds`);}
  // One action per field or batch, the same as finishing them one by one; stops at the first problem.
  async function finishMany(kind){
   const f=FINISH[kind],picked=[...f.selected()];if(finishing||!picked.length)return;
@@ -50,6 +54,9 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   const batches=runningBatches();selectedBatches=selectedBatches.filter(key=>batches.some(b=>b.key===key));
   const growing=state.plots.filter(p=>p.crop&&p.readyAt>farmNow());selectedFields=selectedFields.filter(id=>growing.some(p=>String(p.id)===id));
   // One card layout for everything: picture, title and text, a status line, and a price button that never changes size.
+  // Short of diamonds: the reason, then a plain "Get diamonds" button (the game's own small button; the price button does the
+  // same) that shows the packs with the smallest one that covers it marked.
+  const getMore=short=>short>0?`<button type="button" class="small-button get-diamonds" data-get-diamonds="${short}">${art('diamonds')}Get diamonds</button>`:'';
   const chip=(kind,text,time='')=>`<span class="boost-detail" data-state="${kind}"${time?` data-boost-time="${time}"`:''}>${text}</span>`;
   const price=(cost,verb)=>`<span class="boost-price">${art('diamonds')}<b>${cost}</b></span><small>${verb}</small>`;
   const card=({cls='',picture,title,text,detail='',button,extra=''})=>`<article class="boost-card ${cls}"><div class="boost-card-art">${art(picture)}</div><div class="boost-card-copy"><h3>${title}</h3><p>${text}</p>${detail}</div>${button}${extra?`<div class="boost-card-extra">${extra}</div>`:''}</article>`;
@@ -62,29 +69,43 @@ export function createBoostsUI({state,runAction,onChange,notify}){
    const [kind,text]=active?['active',`Active · ${formatDuration(status.remaining)} left`]:status.reason?['blocked',status.reason]:state.diamonds<status.cost?['need',`Need ${number(status.cost-state.diamonds)} more diamonds`]:['ready','Ready to use'];
    const verb=active?'Extend':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate';
    const label=`${active?'Extend':'Activate'} ${b.name}${length?` for ${BOOST_LENGTH_NAMES[length]}`:''} for ${status.cost} diamonds`;
-   return card({cls:active?'boost-active':'',picture:id==='crops'?'instant-harvest':b.art,title:b.name,text:b.description,detail:length?`<div class="boost-status-row">${lengthSelect(id,b,length)}${chip(kind,text,id)}</div>`:chip(kind,text,id),button:`<button class="boost-buy" data-buy-boost="${id}" ${status.canBuy&&!finishing?'':'disabled'} aria-label="${label}">${price(status.cost,verb)}</button>`});
+   const more=kind==='need'?getMore(status.cost-state.diamonds):'';
+   return card({cls:active?'boost-active':'',picture:id==='crops'?'instant-harvest':b.art,title:b.name,text:b.description,detail:length?`<div class="boost-status-row">${lengthSelect(id,b,length)}${chip(kind,text,id)}${more}</div>`:`<div class="boost-status-row">${chip(kind,text,id)}${more}</div>`,button:kind==='need'?`<button class="boost-buy is-short" data-get-diamonds="${status.cost-state.diamonds}" aria-label="${label}: get ${number(status.cost-state.diamonds)} more diamonds first">${price(status.cost,verb)}</button>`:`<button class="boost-buy" data-buy-boost="${id}" ${status.canBuy&&!finishing?'':'disabled'} aria-label="${label}">${price(status.cost,verb)}</button>`});
   };
   // Pick one or more fields (or batches): each costs the same 10 diamonds, the button shows the total.
   const cropCard=card({picture:'harvest',title:'Finish crops',text:`${SINGLE_CROP_COST} diamonds a field, ready to harvest now.`,
    // Nothing to choose from: say so in one chip instead of an empty picker.
-   detail:!growing.length?chip('need','No crops growing'):state.diamonds<SINGLE_CROP_COST?chip('need',`Need ${number(SINGLE_CROP_COST-state.diamonds)} more diamonds`):'',
+   detail:!growing.length?chip('need','No crops growing'):state.diamonds<SINGLE_CROP_COST?`<div class="boost-status-row">${chip('need',`Need ${number(SINGLE_CROP_COST-state.diamonds)} more diamonds`)}${getMore(SINGLE_CROP_COST-state.diamonds)}</div>`:'',
    button:`<button id="finish-one-crop" class="boost-buy">${finishLabel('crop')}</button>`,
    extra:growing.length?`<span class="field-picker-label">Choose fields</span>${fieldPicker({id:'finish-crop-field',plots:growing,selected:selectedFields,multiple:true,available:Math.floor(state.diamonds/SINGLE_CROP_COST),now:farmNow(),disabled:finishing,hint:'Select crops to finish instantly',perItem:`${SINGLE_CROP_COST} diamonds per field`,picture:'harvest'})}`:''});
   const batchCard=card({picture:'buildings',title:'Finish batches',text:`${SINGLE_BATCH_COST} diamonds a batch, ready to collect now (not the Factory).`,
-   detail:!batches.length?chip('need','No batches running'):state.diamonds<SINGLE_BATCH_COST?chip('need',`Need ${number(SINGLE_BATCH_COST-state.diamonds)} more diamonds`):'',
+   detail:!batches.length?chip('need','No batches running'):state.diamonds<SINGLE_BATCH_COST?`<div class="boost-status-row">${chip('need',`Need ${number(SINGLE_BATCH_COST-state.diamonds)} more diamonds`)}${getMore(SINGLE_BATCH_COST-state.diamonds)}</div>`:'',
    button:`<button id="finish-one-batch" class="boost-buy">${finishLabel('batch')}</button>`,
    extra:batches.length?`<span class="field-picker-label">Choose batches</span>${batchPicker({id:'finish-batch-picker',batches,selectedKeys:selectedBatches,multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),now:farmNow(),disabled:finishing,perItem:`${SINGLE_BATCH_COST} diamonds per batch`})}`:''});
   const finishNow=['crops','production'],entries=Object.entries(BOOSTS);
-  $('boost-catalog').innerHTML=`<section class="shop-section"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section"><h3 class="shop-heading">Boosts</h3><div class="shop-list">${entries.filter(([id])=>!finishNow.includes(id)).map(boostCard).join('')}</div></section>`;
+  $('boost-catalog').innerHTML=`<section class="shop-section" id="shop-finish"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section" id="shop-boosts"><h3 class="shop-heading">Boosts</h3><div class="shop-list">${entries.filter(([id])=>!finishNow.includes(id)).map(boostCard).join('')}</div></section>`;
   if($('finish-batch-picker'))bindFieldPicker($('finish-batch-picker'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),noun:['batch','batches'],onChange:ids=>{selectedBatches=ids.map(i=>batches[i]?.key).filter(Boolean);updateFinish('batch');}});
   if($('finish-crop-field'))bindFieldPicker($('finish-crop-field'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_CROP_COST),onChange:ids=>{selectedFields=ids.map(String);updateFinish('crop');}});
   updateFinish('crop');updateFinish('batch');
   $('finish-one-crop').onclick=()=>finishMany('crop');
   $('finish-one-batch').onclick=()=>finishMany('batch');
-  $('diamond-packs').innerHTML=DIAMOND_PACKS.map(pack=>`<article class="diamond-pack" data-state="${purchasing===String(pack.amount)?'opening':catalog?.enabled?'available':'unavailable'}">${art('diamonds')}<h3>${number(pack.amount)} <span>diamonds</span></h3><strong>${pack.price}</strong><button type="button" data-diamond-pack="${pack.amount}" aria-label="Buy ${number(pack.amount)} diamonds for ${pack.price}" ${!catalog?.enabled||purchasing?'disabled':''}>${purchasing===String(pack.amount)?'Opening checkout…':catalog?.enabled?(catalog.mode==='test'?'Test checkout':'Buy diamonds'):'Currently unavailable'}</button></article>`).join('');
+  // The packs as tappable cards, smallest to largest: how many diamonds, the picture, the price. The biggest is "Best value".
+  // Short of diamonds for something here: the smallest pack that covers it gets a green tab.
+  // Each bigger pack's tab says how many more diamonds per euro it gives than the smallest pack, rounded.
+  const perEuro=pack=>pack.amount/Number(pack.price.replace(/[^0-9.]/g,'')),base=perEuro(DIAMOND_PACKS[0]);
+  const last=DIAMOND_PACKS.length-1,open=Boolean(catalog?.enabled)&&!purchasing;
+  $('diamond-packs').innerHTML=DIAMOND_PACKS.map((pack,i)=>{
+   const best=i===last,suggested=suggestion===pack.amount,opening=purchasing===String(pack.amount);
+   const extra=Math.round((perEuro(pack)/base-1)*100);
+   const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':best?`<span class="pack-ribbon">Best value · +${extra}%</span>`:extra>0?`<span class="pack-ribbon is-extra">+${extra}% extra</span>`:'';
+   const foot=opening?'Opening…':catalog?.enabled?pack.price:catalog?'Unavailable':pack.price;
+   return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':catalog?.enabled?'available':'unavailable'}" aria-label="Buy ${number(pack.amount)} diamonds for ${pack.price}" ${open?'':'disabled'}>${tag}<span class="pack-amount"><b>${number(pack.amount)}</b><small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}<span class="pack-price">${foot}</span></button>`;}).join('')
+   +(catalog?.mode==='test'?'<p class="pack-note">Test checkout: no real payment.</p>':'')
+   +(packError?`<p class="pack-error" role="alert">${packError.message}</p>`:'');
   $('diamond-packs').querySelectorAll('[data-diamond-pack]').forEach(button=>button.onclick=async()=>{
-   if(purchasing||!catalog?.enabled)return;const pack=button.dataset.diamondPack;purchasing=pack;requests[pack]??=crypto.randomUUID();render();
-   try{await bridge().checkout(pack,requests[pack]);}catch(error){$('boost-feedback').textContent=error.message;purchasing='';render();}
+   if(purchasing||!catalog?.enabled)return;const pack=button.dataset.diamondPack;purchasing=pack;packError=null;requests[pack]??=crypto.randomUUID();render();
+   // A problem opening the checkout shows right under the packs.
+   try{await bridge().checkout(pack,requests[pack]);}catch(error){packError={pack,message:String(error.message).replace(/[<>&]/g,'')};purchasing='';render();}
   });
   prettifySelects($('boost-catalog'));
   $('boost-catalog').querySelectorAll('[data-boost-length]').forEach(select=>select.onchange=()=>{
@@ -102,7 +123,12 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   });
   let vipPanel=$('vip-shop');if(!vipPanel){vipPanel=document.createElement('section');vipPanel.id='vip-shop';vipPanel.className='vip-shop';$('boost-catalog').after(vipPanel);}
   const active=vipActive(state,farmNow());
-  vipPanel.innerHTML=`<div class="vip-shop-heading">${art('vip')}<div><h3>A little VIP sunshine</h3><p>Choose the plan that suits you best.</p>${active?`<span class="vip-status" data-vip-status>VIP · ${formatDuration(state.vipExpiresAt-farmNow())} left</span>`:''}</div></div><ul class="vip-benefits" aria-label="VIP benefits">${[['wheat','10% faster crops'],['buildings','10% faster production'],['coins','+5% market coins'],['gift','2x daily rewards']].map(([icon,title])=>`<li>${art(icon)}<strong>${title}</strong></li>`).join('')}</ul><div class="vip-plans">${Object.entries(VIP_PLANS).map(([id,plan])=>`<article class="vip-plan"><div class="vip-plan-copy"><strong>${plan.name}</strong><span>${id==='week'?'A week of VIP extras':'Best value'}</span></div><button type="button" class="small-button" data-buy-vip="${id}" aria-label="${active?'Extend':'Activate'} ${plan.name} for ${number(plan.cost)} diamonds" ${finishing||state.diamonds<plan.cost?'disabled':''}>${art('diamonds')}<span>${active?'Extend':'Activate'} · ${number(plan.cost)}</span></button>${state.diamonds<plan.cost?`<small>Need ${number(plan.cost-state.diamonds)} more diamonds</small>`:''}</article>`).join('')}</div>`;
+  // VIP: what it gives, then the two plans in the same row layout as the boosts (name left, price button right). Short of
+  // diamonds: how many are missing and "Get diamonds" under the name.
+  const vipCost=plan=>`<span class="boost-price">${art('diamonds')}<b>${number(plan.cost)}</b></span>`;
+  vipPanel.innerHTML=`<div class="vip-shop-heading">${art('vip-farmer')}<div><h3>${active?'You are VIP':'Become VIP'}</h3><p>${active?`<span class="vip-status" data-vip-status>VIP · ${formatDuration(state.vipExpiresAt-farmNow())} left</span>`:'Extras for your whole farm while it runs.'}</p></div></div><ul class="vip-benefits" aria-label="VIP benefits">${[['wheat','10% faster crops'],['buildings','10% faster production'],['coins','+5% market coins'],['gift','2x daily rewards']].map(([icon,title])=>`<li>${art(icon)}<strong>${title}</strong></li>`).join('')}</ul><div class="vip-plans">${Object.entries(VIP_PLANS).map(([id,plan])=>{
+   const short=plan.cost-state.diamonds,verb=active?'Extend':'Activate',days=Math.round(plan.duration/86400000);
+   return `<article class="vip-plan${id==='month'?' is-best':''}"><div class="vip-plan-copy"><strong>${days} days${id==='month'?'<span class="vip-best">Best value</span>':''}</strong><span>${short>0?`Need ${number(short)} more diamonds`:id==='week'?'Try every extra for a week':'A whole month of extras'}</span>${getMore(short)}</div><button type="button" class="boost-buy vip-buy${short>0?' is-short':''}" ${short>0?`data-get-diamonds="${short}"`:`data-buy-vip="${id}"`} aria-label="${verb} ${plan.name} for ${number(plan.cost)} diamonds${short>0?`: get ${number(short)} more diamonds first`:''}" ${finishing?'disabled':''}>${vipCost(plan)}<small>${verb}</small></button></article>`;}).join('')}</div>`;
   vipPanel.querySelectorAll('[data-buy-vip]').forEach(button=>button.onclick=async()=>{
    if(finishing)return;const plan=button.dataset.buyVip,offer=VIP_PLANS[plan],expectedExpiresAt=state.vipExpiresAt??0;finishing=true;render();
    try{if(!await confirmDiamondSpend({title:active?'Extend your VIP':'Activate VIP',cost:offer.cost,description:`${offer.name}. ${active?'Adds time after your current VIP expires.':'Starts immediately.'} Your benefits never stack in strength.`,picture:'vip',balance:state.diamonds}))return;
@@ -111,6 +137,19 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   });
   lastStatus=signature();refreshArt();
  }
+ // "Get diamonds": to the packs, with the smallest that covers what is missing marked for a few seconds.
+ let suggestion=0,suggestionTimer=0,packError=null;
+ function showPacks(short){
+  suggestion=(DIAMOND_PACKS.find(p=>p.amount>=short)??DIAMOND_PACKS.at(-1)).amount;render();
+  $('diamond-store').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+  clearTimeout(suggestionTimer);suggestionTimer=setTimeout(()=>{suggestion=0;if($('boost-dialog').open)render();},6000);
+  track('get_diamonds_clicked',{short});
+ }
+ $('boost-dialog').addEventListener('click',event=>{
+  const more=event.target.closest('[data-get-diamonds]');if(more){showPacks(Number(more.dataset.getDiamonds)||0);return;}
+  // The long shop in four parts: a row of small buttons under your balance jumps to each.
+  const jump=event.target.closest('[data-shop-jump]');if(jump)$(jump.dataset.shopJump)?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+ });
  async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();track('diamond_shop_view');try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
  function refresh(){
   $('diamonds').textContent=state.diamonds.toLocaleString('en-US',matchMedia('(max-width: 900px), (max-height: 550px) and (pointer: coarse)').matches?{notation:'compact',maximumFractionDigits:1}:{});

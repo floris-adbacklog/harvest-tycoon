@@ -426,19 +426,10 @@
  #boost-dialog .boost-buy{grid-area:buy;grid-column:auto;align-self:center;width:84px;height:auto;min-height:54px;display:grid;grid-template-rows:auto auto;grid-auto-flow:row;justify-items:center;align-content:center;gap:1px;padding:6px 4px}
  #boost-dialog .boost-buy small{font-size:10px}
  #boost-dialog .boost-price b{font-size:18px}
- #boost-dialog .diamond-packs{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
- #boost-dialog .diamond-pack{display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 10px 12px;text-align:center}
- #boost-dialog .diamond-pack>.game-art{width:44px;height:44px;margin:0 0 2px}
- #boost-dialog .diamond-pack h3{font-size:22px}
- #boost-dialog .diamond-pack h3 span{display:block;font-size:11px;margin-top:0}
- #boost-dialog .diamond-pack>strong{margin:4px 0 8px;font-size:17px}
- #boost-dialog .diamond-pack button{width:100%;min-height:42px;font-size:13px}
 }
 #boost-dialog .boost-detail{white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
- #boost-dialog .vip-plans{grid-template-columns:repeat(2,minmax(0,1fr))}
  #boost-dialog .vip-plan{padding:10px}
- #boost-dialog .vip-plan button{white-space:nowrap;padding-inline:6px;font-size:13px}
 }
 @media(max-width:340px){#boost-dialog .vip-plans{grid-template-columns:1fr}}
 .toast-chip.is-item{background:#e6efdc;color:#42632e}

@@ -30,3 +30,8 @@ test('network errors show safe feedback and permit checking again',async()=>{
 test('expired checkout stops checking and points back to the shop',async()=>{
  const f=fixture({payments:async()=>({status:'expired'})});await settle();assert.equal(f.node('[data-retry]').hidden,true);assert.equal(f.timers.size,0);assert.match(f.node('.payment-message').textContent,/new checkout/);assert.equal(f.confirmations,0);
 });
+test('a closed checkout offers a way straight back to the diamond shop',async()=>{
+ const f=fixture({cancelled:true,payments:async()=>({status:'open'})});await settle();
+ const shop=f.node('[data-shop]');assert.equal(shop.hidden,false);
+ f.dialog.open=true;shop.onclick();assert.equal(f.dialog.open,false);
+});

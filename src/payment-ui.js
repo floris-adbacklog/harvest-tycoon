@@ -4,9 +4,11 @@ export function showPaymentReturn(bridge){
  const purchase=bridge.paymentReturn?.();if(!purchase?.id)return;
  const dialog=document.createElement('dialog');dialog.className='payment-dialog';
  dialog.setAttribute('aria-labelledby','payment-result-title');dialog.setAttribute('aria-describedby','payment-result-message');
- dialog.innerHTML=`<button type="button" class="payment-dismiss" aria-label="Close purchase update"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button><div class="payment-hero">${art('diamonds')}</div><p class="payment-eyebrow">A LITTLE EXTRA GROWING POWER</p><h2 id="payment-result-title">Checking your purchase</h2><p id="payment-result-message" class="payment-message" role="status" aria-live="polite">Just a moment while we check your payment.</p><span class="payment-status">Checking payment</span><div class="payment-actions"><button type="button" data-close autofocus>Back to farm</button><button type="button" data-retry>Check payment</button></div>`;
+ dialog.innerHTML=`<button type="button" class="payment-dismiss" aria-label="Close purchase update"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button><div class="payment-hero">${art('diamonds')}</div><p class="payment-eyebrow">A LITTLE EXTRA GROWING POWER</p><h2 id="payment-result-title">Checking your purchase</h2><p id="payment-result-message" class="payment-message" role="status" aria-live="polite">Just a moment while we check your payment.</p><span class="payment-status">Checking payment</span><div class="payment-actions"><button type="button" class="payment-shop" data-shop hidden>Back to the shop</button><button type="button" data-close autofocus>Back to farm</button><button type="button" data-retry>Check payment</button></div>`;
  document.body.append(dialog);
  const title=dialog.querySelector('h2'),message=dialog.querySelector('.payment-message'),status=dialog.querySelector('.payment-status'),retry=dialog.querySelector('[data-retry]');
+ // A checkout that was closed or expired: straight back to the diamond shop to pick a pack again.
+ const shop=dialog.querySelector('[data-shop]');shop.onclick=()=>{dialog.close();window.harvestShop?.open();};
  let timer,attempts=0,closed=false,checking=false;
  const stop=()=>{closed=true;clearTimeout(timer);};
  dialog.addEventListener('close',()=>{stop();window.removeEventListener('pagehide',stop);bridge.clearPaymentReturn?.();dialog.remove();});
@@ -28,8 +30,8 @@ export function showPaymentReturn(bridge){
     return;
    }
    if(result.status==='test_paid'){display('test','Test payment confirmed','This was a test purchase. No real diamonds were added.','Test complete');retry.hidden=true;return;}
-   if(result.status==='expired'){display('closed','This checkout has expired','You can return to the diamond shop to start a new checkout.','Checkout expired');retry.hidden=true;return;}
-   if(purchase.cancelled)display('closed','Back to your farm','Checkout was closed. If you paid before returning, check your payment status below.','Checkout closed');
+   if(result.status==='expired'){display('closed','This checkout has expired','Pick a pack again in the diamond shop to start a new checkout.','Checkout expired');retry.hidden=true;shop.hidden=false;return;}
+   if(purchase.cancelled){display('closed','Back to your farm','Checkout was closed. If you paid before returning, check your payment status below.','Checkout closed');shop.hidden=false;}
    else display('pending','Confirming your purchase','We’re waiting for payment confirmation. You can return to your farm while we check.','Awaiting confirmation');
    if(!purchase.cancelled&&++attempts<20)timer=setTimeout(check,3000);
   }catch{if(!closed)display('error','Let’s check again','We couldn’t confirm your payment right now. If you paid, check again in a moment.','Connection interrupted');}
