@@ -356,11 +356,11 @@ function decorate(){
   cloneModel('bag_001',46.4,4.6,{height:.75,rotation:.3}),cloneModel('garden_bed_001',37,1.2,{width:1.8,rotation:Math.PI/2}));
  // The Grand Valley Fair: a long exhibition hall with its fairground in front: stalls, a produce cart, hay bales and a sign.
  zone('grandfair');
- addUtility('grandfair','house_023',44,12.6,{width:13,depth:4.6,height:3.2});
- groundPatch('ground_006',44,17.2,12,5.2,0xbdb38e);
- yardDecor.grandfair.push(cloneModel('stall_002',39.9,17.4,{width:2.6,rotation:.1}),cloneModel('stall_001',44,17.9,{width:2.9}),cloneModel('dray_003',48.3,17.2,{width:2.2,rotation:-.5}),
-  cloneModel('hay_003',41.9,19.3,{width:1.1,rotation:.3}),cloneModel('hay_003',46.2,19.5,{width:1.1,rotation:-.4}),cloneModel('table_001',42,16.4,{width:1.5,rotation:-.1}),
-  cloneModel('plant_003',42,16.4,{width:.55,y:.72}),cloneModel('pointer_002',37.6,19.4,{height:1.3,rotation:.4}),cloneModel('barrel_001',49.6,15.6,{height:.9}));
+ addUtility('grandfair','house_023',44,12.6,{width:20,depth:7,height:4.4});
+ groundPatch('ground_006',44,18.8,18,5.8,0xbdb38e);
+ yardDecor.grandfair.push(cloneModel('stall_002',38.2,19.1,{width:2.8,rotation:.1}),cloneModel('stall_001',44,19.6,{width:3.1}),cloneModel('dray_003',50.2,19,{width:2.4,rotation:-.5}),
+  cloneModel('hay_003',40.8,21,{width:1.2,rotation:.3}),cloneModel('hay_003',47.4,21.2,{width:1.2,rotation:-.4}),cloneModel('table_001',41.4,18.2,{width:1.6,rotation:-.1}),
+  cloneModel('plant_003',41.4,18.2,{width:.55,y:.72}),cloneModel('pointer_002',35.2,20.8,{height:1.4,rotation:.4}),cloneModel('barrel_001',52.4,17.6,{height:.95}));
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);

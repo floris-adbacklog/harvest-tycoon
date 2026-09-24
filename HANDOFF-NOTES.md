@@ -823,3 +823,5 @@ them Craft Workshop (58), Ranch (70), Estate Workshop (75); furthest out the Gra
 to the open ground west of the farmhouse, where the Pig Farm first stood. Sheep Barn, Goat Shed and Trade Depot, the core
 (levels 1-24), the Factory and the Valley Market keep their places. Everything stays within the camera's pan reach (x <= 63).
 The Family Hall's map label no longer shows "Your weekly order & family".
+The Grand Valley Fair's hall is bigger (house_023 at 20 x 7 x 4.4, was 13 x 4.6 x 3.2, about its own proportions), with a
+wider fairground in front; its yard moved a little further back (HOMES grandfair [40,24.3], extent [-10.6,10.6,-4.6,9]).
