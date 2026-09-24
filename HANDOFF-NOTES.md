@@ -612,11 +612,35 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   (pictures, "N in stock · N points each"), admin gift item (pictures). Tests: tests/pretty-select.test.mjs.
 
 ## Family tournament prizes raised (24 Sep 2026; farm-api deploy)
-- `FAMILY_CONFIG`: first prize at least 100 diamonds (was 50), +20 per extra weekly contributor across the tournament
-  (was +10), at most 1,000 (was 300), reached from 46 weekly contributors (about 8 full families). Second and third
-  stay 60% and 40% of first (at the maximum 1,000 / 600 / 400). The per-player cap is the same 1,000.
-- The screens read these numbers from the server, so only the rules changed. Settlement happens at the first family
-  action after a week ends, so the week running at deploy time already pays the new prizes.
-- Live on 24 Sep: 7 families, 10 members, 2-4 weekly contributors. A contributor counts from 1 point, so with a higher
-  maximum it becomes more worth making extra level-10 accounts to grow the prize; if that shows up, count contributors
-  only from `MIN_CONTRIB_POINTS` (500).
+- `FAMILY_CONFIG`: first prize at least 100 diamonds (was 50), +25 for every other family that takes part this week
+  (`TOURNAMENT_PER_EXTRA_FAMILY`; it used to grow +10 per contributing player), at most 1,000 (was 300), reached from 37
+  families. A family takes part once a current member contributed; how many members it has does not change the prize.
+  Second and third stay 60% and 40% of first (at the maximum 1,000 / 600 / 400). The per-player cap is the same 1,000.
+- The screens read these numbers from the server (`perExtraFamily`, `familiesForMax`, `placePrizes`), so only the rules
+  changed. Settlement happens at the first family action after a week ends, so the week running at deploy time already
+  pays the new prizes.
+- Live on 24 Sep: 7 families, 10 members, 2-4 families taking part a week (so 125-175 for first place). Making extra
+  solo families with level-10 accounts would grow the prize; if that shows up, count a family only from
+  `MIN_CONTRIB_POINTS` (500).
+
+## Farm Family and farmer profile redesign (24 Sep 2026; client push AND farm-api deploy)
+- Tabs: This week · Sharing · Tournament · Family · Members (Members last, as asked).
+- This week: a summary card (lines complete, your points and place in the family, time left, one progress bar);
+  order lines you can hand in come first, finished lines last; the tournament is one link row to its tab (no second
+  prize card); Tournament goods uses the same + / − expander as the rules.
+- Sharing: Daily sharing (public/social-ui.js) now draws inside the Farm Family dialog (`mount`) instead of its own
+  dialog opened from Members.
+- Tournament: the three prizes (1st/2nd/3rd from the server's `placePrizes`), how first prize grows (+25 per family,
+  `familiesForMax`), and your family's place (points, gap to the family above, your share). The 1st-prize box left
+  the banner (it repeated the ladder).
+- Family (manage): the header shows the family's own emblem; "Look and name" holds the emblem picker and the name with
+  one "Save changes" that only appears after a change (it runs family_emblem and/or family_rename; Undo resets); "Open
+  to new farmers" is a switch; Leave sits quietly at the bottom.
+- Members: sorted by points this week with a small bar; tap a farmer to open their profile ("Back to your family"); a
+  leader's Make leader / Remove from family sit behind a ⋯ menu per row. The family view now carries each member's
+  `playerId` (the same public id the leaderboard and search use).
+- Profile: crop mastery is one card per crop with its best badge and a dot per badge (bronze, silver, gold, platinum),
+  "N more crops to master" below; the family card shows the family's emblem tile; a family leader sees "Invite to
+  <family>" on the profile of a farmer without a family (window.harvestFamilyInvite in family-ui.js,
+  window.harvestProfiles in src/game-cloud.js; the same eligibility rule as the invite search, `inviteBlocker`).
+- The Family button's notification is the same yellow "!" badge as Quests and More.

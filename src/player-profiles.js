@@ -17,14 +17,22 @@ export function formatDate(ms){
 const since=ms=>{const date=formatDate(ms);return date?`<p class="farmer-since"><svg class="farmer-since-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3v4M16 3v4M4 10h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>Member since <time datetime="${date.iso}">${date.text}</time></p>`:'';};
 const initials=name=>String(name??'Farmer').split(/\s+/).slice(0,2).map(part=>part[0]??'').join('').toUpperCase();
 const presence=online=>`<span class="farmer-presence"><span class="online-dot${online?' is-online':''}" aria-hidden="true"></span>${online?'Online':'Offline'}</span>`;
+// Crop mastery: one card per crop with its best badge, and a dot for each of the four badges (bronze, silver, gold, platinum)
+// that is earned. The best crops first, then in the order they unlock.
+export function masteryByCrop(badges){
+ const order=Object.keys(CROPS),byCrop=new Map();
+ for(const b of badges){if(!CROPS[b.crop]||!MASTERY_TIERS[b.tier])continue;const tiers=byCrop.get(b.crop)??new Set();tiers.add(Number(b.tier));byCrop.set(b.crop,tiers);}
+ return [...byCrop].map(([crop,tiers])=>({crop,tiers,best:Math.max(...tiers)})).sort((a,b)=>b.best-a.best||order.indexOf(a.crop)-order.indexOf(b.crop));
+}
+const masteryCard=({crop,tiers,best})=>`<div class="farmer-badge farmer-badge-${best}" title="${esc(MASTERY_TIERS[best].name)} · ${esc(CROPS[crop].name)}">${art(crop)}<strong>${esc(CROPS[crop].name)}</strong><span>${esc(MASTERY_TIERS[best].name)}</span><span class="farmer-badge-pips" role="img" aria-label="${tiers.size} of ${MASTERY_TIERS.length} badges">${MASTERY_TIERS.map((tier,i)=>`<i class="tier-${i}${tiers.has(i)?' is-earned':''}" title="${esc(tier.name)}"></i>`).join('')}</span></div>`;
 export function renderPlayerProfile(player,now=Date.now()){
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem),stats=player.stats??{};
  const tiles=[['harvested_crops','Crops harvested','harvest'],['goods_produced','Goods produced','buildings'],['items_sold','Items sold','market'],['deliveries','Deliveries completed','cart']];
- const badges=player.badges??[];
+ const badges=player.badges??[],mastered=masteryByCrop(badges);
  return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="320" height="363" decoding="async" draggable="false"><span>${esc(initials(player.username))}</span></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${vipBadge(player.vipExpiresAt,now,true)}</div></div>
- <section class="farmer-family" aria-label="Family">${art(emblem?.icon??'familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div></section>
+ <section class="farmer-family" aria-label="Family">${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div><div class="farmer-invite" data-farmer-invite hidden></div></section>
  <h3 class="farmer-section-title">Life on the farm</h3><div class="farmer-stat-grid">${tiles.map(([key,label,icon])=>`<div class="farmer-stat">${art(icon)}<div><strong>${fmt(stats[key])}</strong><span>${label}</span></div></div>`).join('')}</div>
- <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Crop mastery</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges</span></div>${badges.length?`<div class="farmer-badge-grid">${badges.map(b=>{const crop=CROPS[b.crop],tier=MASTERY_TIERS[b.tier];if(!crop||!tier)return '';return `<div class="farmer-badge farmer-badge-${Number(b.tier)}" title="${esc(tier.name)} · ${esc(crop.name)}">${art(b.crop)}<strong>${esc(crop.name)}</strong><span>${esc(tier.name)}</span></div>`;}).join('')}</div>`:'<p class="farmer-empty">Every harvest is a step towards a first mastery badge.</p>'}</section>`;
+ <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Crop mastery</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first mastery badge.</p>'}</section>`;
 }
 export function renderPlayerSearch(players,now=Date.now()){
  return players.map(p=>`<button type="button" class="farmer-search-result" data-player-id="${esc(p.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${avatarImage(p.avatarId)}</span><span class="farmer-search-name"><strong>${esc(p.username)}${vipBadge(p.vipExpiresAt,now)}</strong><small>${p.family?esc(p.family.name):'No family yet'} · Level ${fmt(p.level)}</small></span>${presence(p.online)}<span aria-hidden="true">›</span></button>`).join('');
@@ -97,8 +105,10 @@ export function createPlayerProfiles(bridge){
  function close(){dialog.close();}
  dialog.querySelector('.farmer-profile-close').onclick=close;dialog.querySelector('.farmer-profile-back').onclick=close;
  dialog.addEventListener('close',()=>{++profileSequence;selected=null;if(!disposed)(returnFocus?.isConnected?returnFocus:input).focus();});
- async function open(playerId){
+ // From the leaderboard (the default) or from somewhere else, such as the Family Members list, which names its own way back.
+ async function open(playerId,{back='Back to leaderboard'}={}){
   if(disposed)return;returnFocus=document.activeElement;selected=playerId;profileUsername=null;++profileSequence;
+  dialog.querySelector('.farmer-profile-back').textContent=back;
   dialog.querySelector('#farmer-profile-title').textContent='Farmer profile';
   content.innerHTML='<p class="farmer-empty">Opening this farmer’s gate…</p>';profileStatus.textContent='';
   adminGrant.hidden=true;adminGrant.innerHTML='';
@@ -106,13 +116,25 @@ export function createPlayerProfiles(bridge){
   checkAdmin().then(admin=>{if(!disposed&&admin&&selected===playerId&&dialog.open)renderAdminGrant(playerId);});
   await loadProfile(false);
  }
+ // A family leader sees "Invite to <family>" on the profile of a farmer without a family (public/family-ui.js decides whether
+ // that is possible and sends the invitation; the reason shows on the button when it is not).
+ function showInvite(player){
+  const box=content.querySelector('[data-farmer-invite]'),family=window.harvestFamilyInvite,offer=box&&family?.offer?.(player);
+  if(!offer)return;
+  const label=`Invite to ${offer.familyName}`;
+  box.hidden=false;box.innerHTML=`<button type="button" class="small-button farmer-invite-button" ${offer.reason?'disabled':''}>${esc(offer.reason||label)}</button>`;
+  box.querySelector('button').onclick=async event=>{
+   const button=event.currentTarget;button.disabled=true;button.textContent='Inviting…';
+   const sent=await family.invite(player.playerId);button.textContent=sent?'Invited':label;button.disabled=sent;
+  };
+ }
  async function loadProfile(quiet){
   const id=selected,ticket=++profileSequence;if(!id)return;content.setAttribute('aria-busy','true');
   try{
    const data=await bridge.request({operation:'player_profile',playerId:id});
    if(disposed||ticket!==profileSequence||!dialog.open)return;
    const y=dialog.scrollTop;clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset);refreshVipBadges(dialog,Date.now()+clockOffset);
-   profileUsername=data.playerProfile.username;
+   profileUsername=data.playerProfile.username;showInvite(data.playerProfile);
    dialog.querySelector('#farmer-profile-title').textContent=`${data.playerProfile.username}'s profile`;
    profileStatus.textContent='Online status is based on activity in the last 30 minutes.';
    if(quiet)dialog.scrollTop=y;

@@ -12,9 +12,14 @@ export function renderSentInvitations(view,now,actionButton){
  if(!view.family?.leader)return '';
  return `<section class="family-sent-invitations"><h3>Pending invitations</h3>${view.sentInvitations?.length?view.sentInvitations.map(i=>`<div class="family-sent-invitation"><div><strong>${esc(i.username)}</strong><span>Expires in ${formatDuration(Math.max(0,i.expiresAt-now))}</span></div>${actionButton('family_cancel_invite','Cancel',`data-invitation-id="${esc(i.id)}"`)}</div>`).join(''):'<p>No invitations waiting for a reply.</p>'}</section>`;
 }
+// Why a farmer cannot be invited right now, or '' when they can: the same answer in the invite search and on a profile.
+export function inviteBlocker(view,p,playerId){
+ if(p.playerId===playerId)return 'You';if(p.family)return 'Already in a family';if(p.level<view.config.minLevel)return `Level ${view.config.minLevel} required`;
+ if(view.sentInvitations?.some(i=>i.recipientId===p.playerId))return 'Invited';if(view.family.members>=view.config.maxMembers)return 'Family full';return '';
+}
 export function createFamilyInviteSearch({request,onInvite,getView,playerId,isBusy}){
  let query='',players=[],status='Enter at least 2 characters to find a farmer.',sequence=0,timer,root=null,familyId=null;
- function candidate(p){const view=getView();if(p.playerId===playerId)return 'You';if(p.family)return 'Already in a family';if(p.level<view.config.minLevel)return `Level ${view.config.minLevel} required`;if(view.sentInvitations?.some(i=>i.recipientId===p.playerId))return 'Invited';if(view.family.members>=view.config.maxMembers)return 'Family full';return '';}
+ const candidate=p=>inviteBlocker(getView(),p,playerId);
  function results(){return players.map(p=>{const reason=candidate(p);return `<div class="family-invite-result">${avatarImage(p.avatarId)}<div><strong>${esc(p.username)}</strong><span>Level ${p.level}${p.family?` · ${esc(p.family.name)}`:''}</span></div><button type="button" class="small-button" data-invite-player="${esc(p.playerId)}" ${reason||isBusy()?'disabled':''}>${esc(reason||'Invite')}</button></div>`;}).join('');}
  function paint(){if(!root)return;root.querySelector('[data-invite-search-status]').textContent=status;root.querySelector('[data-invite-search-results]').innerHTML=results();}
  async function search(ticket,value){

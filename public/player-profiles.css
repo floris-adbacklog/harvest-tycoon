@@ -77,3 +77,21 @@
 .admin-heat-low{background:#c56a52}
 .admin-pending{color:#c4bcac}
 @media(max-width:480px){.admin-card{padding:12px 14px}}
+/* The family card shows the family's own emblem tile, and "Invite to <family>" for a leader looking at a farmer without one. */
+.farmer-family-emblem{display:grid;place-items:center;flex:0 0 60px;height:60px;border-radius:17px;background:color-mix(in srgb,var(--family-color) 17%,#fffdf4);border:1px solid color-mix(in srgb,var(--family-color) 45%,#fffdf4)}
+.farmer-family-emblem>.game-art{width:40px;height:40px}
+.farmer-family>div:not(.farmer-invite){flex:1}
+.farmer-invite{flex:none}
+.farmer-invite[hidden]{display:none}
+.farmer-invite-button{min-height:44px;white-space:nowrap}
+.farmer-invite-button:not(:disabled){background:#526f3e;border-color:#526f3e;color:#fffdf5}
+/* Crop mastery: one card per crop, the best badge named, a dot per badge (bronze, silver, gold, platinum). */
+.farmer-badge>span:not(.game-art):not(.farmer-badge-pips){font-size:11px;color:#796b54}
+.farmer-badge-pips{display:flex;gap:4px;margin-top:4px}
+.farmer-badge-pips i{width:7px;height:7px;border-radius:50%;background:#0000;border:1px solid #b9ab94}
+.farmer-badge-pips i.is-earned.tier-0{background:#c98a52;border-color:#c98a52}
+.farmer-badge-pips i.is-earned.tier-1{background:#a9b3b1;border-color:#a9b3b1}
+.farmer-badge-pips i.is-earned.tier-2{background:#e2b53f;border-color:#e2b53f}
+.farmer-badge-pips i.is-earned.tier-3{background:#7fb3a6;border-color:#7fb3a6}
+.farmer-badge-more{margin:10px 2px 0;font-size:12px;color:#7d7561}
+@media(max-width:480px){.farmer-family{flex-wrap:wrap}.farmer-invite{flex-basis:100%}.farmer-invite-button{width:100%}.farmer-family-emblem{flex-basis:48px;height:48px}.farmer-family-emblem>.game-art{width:32px;height:32px}}

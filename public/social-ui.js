@@ -29,8 +29,10 @@ export function sharingToday(social,me){
  };
 }
 
+// It draws into the Sharing tab of Farm Family (mount), or into a dialog of its own (open) where no tab is around.
 export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBack,document:doc=globalThis.document,bridge=globalThis.parent?.harvestBridge}){
- const dialog=doc.createElement('dialog');dialog.id='sharing-dialog';dialog.className='game-dialog wide-dialog sharing-dialog';dialog.setAttribute('aria-labelledby','sharing-title');doc.body.append(dialog);
+ let dialog=null,root=null,embedded=false;
+ function ownDialog(){if(!dialog){dialog=doc.createElement('dialog');dialog.id='sharing-dialog';dialog.className='game-dialog wide-dialog sharing-dialog';dialog.setAttribute('aria-labelledby','sharing-title');doc.body.append(dialog);}return dialog;}
  let social=null,busy=false,error='',pick={item:'wheat',quantity:3},gift={to:null,item:null,quantity:1};
  const me=()=>bridge.playerId,stock=key=>state?.inventory?.[key]??0;
  // The family view keys members by membership row, the sharing list by player; the (unique) farmer name links the two.
@@ -74,10 +76,11 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   return `<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Once a day, up to ${MAX_SHARE} of any crop or good. Any family member can fill it.</p><form class="sharing-ask">${itemPicker({kind:'ask',keys,picked:pick.item,quantity:pick.quantity,max:MAX_SHARE})}<button class="primary-button">Ask for ${pick.quantity} ${esc(ITEMS[pick.item]?.name??pick.item)}</button></form></section>`;
  }
  function render(){
-  const heading=`<div class="dialog-heading"><div><span class="eyebrow">FARM FAMILY</span><h2 id="sharing-title">Daily sharing</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>${onBack?'<button class="back-button sharing-back" data-back><i data-lucide="chevron-left" data-line-icon></i>Back to Farm Family</button>':''}`;
-  if(!social){dialog.innerHTML=heading+`<p class="sharing-empty">${esc(error||'Opening daily sharing…')}</p>`;bind();return;}
+  if(!root)return;
+  const heading=embedded?'':`<div class="dialog-heading"><div><span class="eyebrow">FARM FAMILY</span><h2 id="sharing-title">Daily sharing</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>${onBack?'<button class="back-button sharing-back" data-back><i data-lucide="chevron-left" data-line-icon></i>Back to Farm Family</button>':''}`;
+  if(!social){root.innerHTML=heading+`<p class="sharing-empty">${esc(error||'Opening daily sharing…')}</p>`;bind();return;}
   const today=sharingToday(social,me());
-  dialog.innerHTML=heading+`<section class="sharing-intro">${art('family-sharing')}<div><strong>Share a little of your own farm</strong><span>Help and gifts arrive right away. Up to ${SHARE_LIMIT} of each a day, resets at midnight UTC.</span></div><dl class="sharing-today"><div><dt>Sent</dt><dd>${today.sent}</dd></div><div><dt>Received</dt><dd>${today.received}</dd></div></dl></section>`
+  root.innerHTML=heading+`<section class="sharing-intro">${art('family-sharing')}<div><strong>Share a little of your own farm</strong><span>Help and gifts arrive right away. Up to ${SHARE_LIMIT} of each a day, resets at midnight UTC.</span></div><dl class="sharing-today"><div><dt>Sent</dt><dd>${today.sent}</dd></div><div><dt>Received</dt><dd>${today.received}</dd></div></dl></section>`
    +`<section class="sharing-section"><h3>Help your family</h3>${members(today)}</section>`
    +`<section class="sharing-section"><h3>Today’s requests</h3>${requests(today)}</section>`
    +ask()
@@ -85,25 +88,30 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   bind();
  }
  function bind(){
-  dialog.querySelector('[data-close]').onclick=()=>dialog.close();
-  const back=dialog.querySelector('[data-back]');if(back)back.onclick=()=>{dialog.close();onBack();};
-  dialog.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>act({kind:b.dataset.kind,recipient:b.dataset.recipient,request:b.dataset.request}));
-  dialog.querySelectorAll('[data-pick]').forEach(select=>select.onchange=()=>{const target=select.dataset.pick==='gift'?gift:pick;target.item=select.value;target.quantity=Math.min(target.quantity,select.dataset.pick==='gift'?Math.min(MAX_SHARE,stock(select.value)):MAX_SHARE)||1;render();});
-  dialog.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const target=b.dataset.step==='gift'?gift:pick,max=b.dataset.step==='gift'?Math.min(MAX_SHARE,stock(gift.item)):MAX_SHARE;target.quantity=Math.min(max,Math.max(1,target.quantity+Number(b.dataset.by)));render();});
-  dialog.querySelectorAll('[data-gift-open]').forEach(b=>b.onclick=()=>{const id=b.dataset.giftOpen;if(gift.to===id){gift.to=null;}else{const keys=giftKeys();gift={to:id,item:keys.includes(gift.item)?gift.item:keys[0],quantity:1};}render();});
-  const cancel=dialog.querySelector('[data-gift-cancel]');if(cancel)cancel.onclick=()=>{gift.to=null;render();};
-  const send=dialog.querySelector('[data-send-gift]');if(send)send.onclick=()=>act({kind:'gift',recipient:gift.to,item:gift.item,quantity:gift.quantity});
-  const form=dialog.querySelector('.sharing-ask');if(form)form.onsubmit=e=>{e.preventDefault();act({kind:'request',item:pick.item,quantity:pick.quantity});};
+  const close=root.querySelector('[data-close]');if(close)close.onclick=()=>dialog.close();
+  const back=root.querySelector('[data-back]');if(back)back.onclick=()=>{dialog.close();onBack();};
+  root.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>act({kind:b.dataset.kind,recipient:b.dataset.recipient,request:b.dataset.request}));
+  root.querySelectorAll('[data-pick]').forEach(select=>select.onchange=()=>{const target=select.dataset.pick==='gift'?gift:pick;target.item=select.value;target.quantity=Math.min(target.quantity,select.dataset.pick==='gift'?Math.min(MAX_SHARE,stock(select.value)):MAX_SHARE)||1;render();});
+  root.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const target=b.dataset.step==='gift'?gift:pick,max=b.dataset.step==='gift'?Math.min(MAX_SHARE,stock(gift.item)):MAX_SHARE;target.quantity=Math.min(max,Math.max(1,target.quantity+Number(b.dataset.by)));render();});
+  root.querySelectorAll('[data-gift-open]').forEach(b=>b.onclick=()=>{const id=b.dataset.giftOpen;if(gift.to===id){gift.to=null;}else{const keys=giftKeys();gift={to:id,item:keys.includes(gift.item)?gift.item:keys[0],quantity:1};}render();});
+  const cancel=root.querySelector('[data-gift-cancel]');if(cancel)cancel.onclick=()=>{gift.to=null;render();};
+  const send=root.querySelector('[data-send-gift]');if(send)send.onclick=()=>act({kind:'gift',recipient:gift.to,item:gift.item,quantity:gift.quantity});
+  const form=root.querySelector('.sharing-ask');if(form)form.onsubmit=e=>{e.preventDefault();act({kind:'request',item:pick.item,quantity:pick.quantity});};
   refreshArt();
  }
  async function load(){try{social=(await bridge.request({operation:'social'})).social;error='';}catch(e){error=e.message;}render();}
  async function act(action){
-  if(busy)return;busy=true;dialog.querySelectorAll('button:not([data-close]):not([data-back])').forEach(b=>b.disabled=true);
+  if(busy)return;busy=true;root.querySelectorAll('button:not([data-close]):not([data-back])').forEach(b=>b.disabled=true);
   // Drop the fields a kind does not use, so the server only sees what it expects.
   const clean=Object.fromEntries(Object.entries(action).filter(([,v])=>v!==undefined));
   try{const r=await bridge.request({operation:'social',action:clean,requestId:crypto.randomUUID()});notify?.(sharingMessage(r.social,clean,id=>social?.members.find(m=>m.id===id)?.name??'your family member'));if(clean.kind==='gift')gift.to=null;await refreshFarm?.();await load();}
-  catch(e){render();dialog.querySelector('[data-status]').textContent=e.message;}
+  catch(e){render();const status=root?.querySelector('[data-status]');if(status)status.textContent=e.message;}
   finally{busy=false;}
  }
- return {async open(){doc.querySelectorAll('dialog[open]').forEach(d=>{if(d!==dialog)d.close();});social=null;error='';render();if(!dialog.open)dialog.showModal();await load();}};
+ return {
+  async open(){embedded=false;root=ownDialog();doc.querySelectorAll('dialog[open]').forEach(d=>{if(d!==dialog)d.close();});social=null;error='';render();if(!dialog.open)dialog.showModal();await load();},
+  // Inside the Farm Family dialog: shows what it last knew at once, then today's fresh list.
+  async mount(container){embedded=true;root=container;render();await load();},
+  unmount(){if(embedded)root=null;}
+ };
 }

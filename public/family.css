@@ -1,5 +1,6 @@
-#family-button{position:relative;flex-shrink:0}#family-button .game-art{width:28px;height:28px}#family-dot{position:absolute;right:2px;top:2px;width:10px;height:10px;border:2px solid var(--paper,#fffdf4);border-radius:50%;background:#d09a35}
-#family-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}#family-dialog *{box-sizing:border-box;min-width:0}#family-dialog .dialog-heading{gap:16px}#family-dialog h2{font-size:clamp(26px,4vw,36px)}#family-dialog h3{margin:0 0 8px;font-size:20px}#family-dialog p{font-size:15px;line-height:1.55;margin:8px 0 16px;color:#797767}#family-dialog small{display:block;font-size:12px;line-height:1.5;color:#807b6c}#family-dialog button{cursor:pointer;min-height:44px}#family-dialog button:disabled{cursor:default}#family-dialog .small-button{font-size:13px;padding:10px 13px;white-space:normal}#family-dialog section+section{margin-top:22px}#family-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 0 24px}#family-tabs button{padding:10px 4px;font-size:14px}
+#family-button{position:relative;flex-shrink:0}#family-button .game-art{width:28px;height:28px}/* Something is waiting in the family (an invitation, a reward, or goods you can deliver): the same yellow "!" badge as Quests and More. */
+#family-dot{position:absolute;right:-5px;top:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif;pointer-events:none}
+#family-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}#family-dialog *{box-sizing:border-box;min-width:0}#family-dialog .dialog-heading{gap:16px}#family-dialog h2{font-size:clamp(26px,4vw,36px)}#family-dialog h3{margin:0 0 8px;font-size:20px}#family-dialog p{font-size:15px;line-height:1.55;margin:8px 0 16px;color:#797767}#family-dialog small{display:block;font-size:12px;line-height:1.5;color:#807b6c}#family-dialog button{cursor:pointer;min-height:44px}#family-dialog button:disabled{cursor:default}#family-dialog .small-button{font-size:13px;padding:10px 13px;white-space:normal}#family-dialog section+section{margin-top:22px}#family-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:16px 0 24px}#family-tabs button{padding:10px 4px;font-size:14px}
 .family-emblem{display:inline-flex;width:48px;height:48px;flex-shrink:0;align-items:center;justify-content:center;border-radius:15px;background:color-mix(in srgb,var(--family-color) 17%,#fffdf4);border:1px solid color-mix(in srgb,var(--family-color) 45%,#fffdf4)}.family-emblem .game-art{width:34px;height:34px}.family-welcome{text-align:center;max-width:510px;margin:0 auto 24px}.family-welcome>.game-art{width:70px;height:70px;margin:4px auto 12px}.family-join-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}.family-join-grid form,.family-your-share,.family-extra,.family-invite{border:1px solid #ddd6c5;background:#f6f3e9;border-radius:18px;padding:18px}#family-dialog label,#family-dialog legend{display:block;font-size:14px;font-weight:700;margin-bottom:8px}#family-dialog input:not([type=radio]),#family-dialog select{width:100%;border:1px solid #cbc6b4;border-radius:12px;min-height:46px;padding:10px 12px;background:#fffdf6;color:#393d30;font:inherit;font-size:16px;margin-bottom:14px}#family-dialog fieldset{border:0;padding:0;margin:6px 0 16px}/* Emblem chooser (public/emblem-picker.js): one row of tiles with an arrow on each side. */
 .emblem-picker-row{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:6px}
 .family-emblems{position:relative;display:flex;gap:8px;padding:4px 3px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -95,3 +96,121 @@
 @media(max-width:480px){.family-name-invite,.family-incoming-invitation,.family-invitation-empty{padding:14px}.family-invitation-identity h3{font-size:21px}.family-invite-result button{font-size:12px;padding:9px}.family-join-grid{grid-template-columns:minmax(0,1fr)}}
 
 .family-create-grid{grid-template-columns:minmax(0,1fr)}
+
+/* Redesign (24 Sep 2026): calm cards, one summary per tab, no repeated prize story. */
+/* This week: a short summary above the order lines; what you can hand in comes first. */
+.family-week-summary{margin:14px 0 6px;padding:14px 16px 16px;border:1px solid #e4dccb;border-radius:18px;background:#fbf8f1}
+.family-week-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.family-week-stats>div{display:grid;gap:3px;align-content:start}
+.family-week-stats strong{font:700 20px/1.15 'Outfit',sans-serif;color:#3f3827;font-variant-numeric:tabular-nums}
+.family-week-stats span{font-size:12px;line-height:1.35;color:#857d6b}
+.family-week-summary progress{display:block;width:100%;height:8px;accent-color:#7f9b56}
+.family-order-line.is-done .family-line-copy strong{color:#557448}
+.family-order-line.is-done>.game-art{opacity:.7}
+.family-tournament-link{margin:18px 0 14px}
+.family-tournament-link>.game-art{width:44px;height:44px}
+.family-tournament-link strong{font-size:16px!important}
+/* Tournament goods: the same + / − expander as the rules on the Tournament tab. */
+.family-extra summary{display:flex;align-items:center;gap:12px;list-style:none;min-height:24px}
+.family-extra summary::-webkit-details-marker{display:none}
+.family-extra summary::before{content:'+';flex:none;width:14px;font-size:22px;line-height:1;color:#7f886a}
+.family-extra[open] summary::before{content:'−'}
+.family-extra summary>span{display:block;margin:0;font-size:inherit;color:inherit}
+.family-extra summary strong{display:block;font-size:15px}
+.family-extra summary small{margin-top:3px}
+
+/* Members: tap a farmer for their profile; a leader's actions sit behind the ⋯ menu. */
+.family-members-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:22px 0 4px}
+#family-dialog .family-members-heading h3{margin:0;font-size:18px}
+.family-members-heading>span{font-size:12px;color:#857d6b;white-space:nowrap}
+.family-member{display:flex;align-items:center;gap:6px;border-top:1px solid #ebe4d6}
+.family-member:first-child{border-top:0}
+#family-dialog .family-member-open{flex:1;display:flex;align-items:center;gap:12px;min-width:0;min-height:64px;margin:4px 0;padding:8px 8px 8px 4px;border:0;border-radius:12px;background:none;box-shadow:none;color:inherit;font:inherit;text-align:left}
+#family-dialog .family-member-open:disabled{cursor:default}
+.family-member-open:not(:disabled):hover{background:#f7f2e9}
+.family-member-open:focus-visible{outline:3px solid #c79138;outline-offset:1px}
+.family-member-copy{flex:1;min-width:0;display:grid;gap:3px}
+.family-member-copy strong{display:flex;align-items:center;flex-wrap:wrap;gap:4px 7px;font-size:16px;overflow-wrap:anywhere}
+.family-member-copy em{font-style:normal;font-weight:600;color:#8b8472}
+#family-dialog .family-member-copy small{font-size:12px;color:#7c7d6e}
+.family-role{display:inline-block;padding:1px 8px;border-radius:99px;background:#f3e6bd;color:#6e5418;font-size:11px;font-weight:800}
+.family-member-bar{display:block;height:5px;margin-top:3px;border-radius:99px;background:#ede6d8;overflow:hidden}
+.family-member-bar>span{display:block;height:100%;min-width:0;border-radius:inherit;background:#8fae63}
+.family-member.is-self .family-member-bar>span{background:#d7a64a}
+.family-member-menu{position:relative;flex:none}
+#family-dialog .family-member-menu summary{display:grid;place-items:center;width:44px;height:44px;min-height:0;padding:0;border-radius:12px;list-style:none;cursor:pointer;color:#7a705f}
+.family-member-menu summary::-webkit-details-marker{display:none}
+.family-member-menu summary svg{width:20px;height:20px;fill:currentColor}
+.family-member-menu summary:hover,.family-member-menu[open] summary{background:#f1eadf}
+.family-member-menu summary:focus-visible{outline:3px solid #c79138;outline-offset:1px}
+#family-dialog .family-member-menu-list{position:absolute;z-index:20;right:0;top:calc(100% + 4px);display:grid;gap:2px;min-width:200px;padding:5px;border:1px solid #e3d7c6;border-radius:13px;background:#fffdf7;box-shadow:0 14px 30px #3d321c2b,0 2px 6px #3d321c14}
+#family-dialog .family-member-menu-list button{display:flex;align-items:center;width:100%;min-height:44px;padding:8px 12px;border:0;border-radius:9px;background:none;box-shadow:none;color:#4d4531;font-size:14px;font-weight:650;text-align:left}
+#family-dialog .family-member-menu-list button:hover:not(:disabled){background:#f4ede3}
+#family-dialog .family-member-menu-list button[data-danger]{color:#a0472e}
+#family-dialog .family-footnote{margin:10px 0 0;font-size:12px;color:#8b8472}
+
+/* Tournament: the three prizes, how first prize grows, and your family's place. */
+.family-prizes{margin:0 0 16px}
+.family-prize-ladder{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.family-prize-step{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px 11px;border:1px solid #e5d9c9;border-radius:14px;background:#fffaf2}
+.family-prize-step .rank-trophy>.game-art{width:30px;height:34px}
+.family-prize-step>span:not(.rank-trophy){font-size:11px;color:#8b846b}
+.family-prize-step strong{display:inline-flex;align-items:center;gap:4px;font:700 19px/1.1 'Outfit',sans-serif;color:#40543c;font-variant-numeric:tabular-nums}
+.family-prize-step strong .game-art{width:18px;height:18px}
+.family-prize-growth{display:grid;gap:8px;margin-top:12px;padding:0 2px}
+.family-prize-growth strong{display:block;font-size:13px;color:#4b513d}
+.family-prize-growth span{display:block;margin-top:2px;font-size:12px;line-height:1.45;color:#857d6b}
+.family-prize-growth progress{display:block;width:100%;height:6px;accent-color:#6fa0bd}
+.family-your-place{display:flex;align-items:center;gap:12px;margin:0 0 22px;padding:12px 14px;border:1px solid #cbdac1;border-radius:16px;background:#edf4ec}
+.family-your-place>.rank-trophy>.game-art{width:32px;height:36px}
+.family-your-place>.rank-number{display:grid;place-items:center;min-width:32px;font-weight:800;font-size:18px;color:#6b7a5e}
+.family-your-place>div:not(.family-your-place-prize){flex:1;min-width:0}
+.family-your-place strong{display:block;font-size:16px}
+.family-your-place span{display:block;margin-top:2px;font-size:12px;color:#637358}
+.family-your-place-prize{flex:none;text-align:right}
+.family-your-place-prize strong{display:inline-flex;align-items:center;gap:4px;font:700 20px 'Outfit',sans-serif;color:#426b7b}
+.family-your-place-prize .game-art{width:20px;height:20px}
+.family-tournament-banner{grid-template-columns:60px minmax(0,1fr)}
+
+/* Family (manage): one card per subject; leaving sits quietly at the bottom. */
+.family-card{margin:20px 0;padding:18px;border:1px solid #e4dccb;border-radius:18px;background:#fbf8f1}
+#family-dialog .family-card>h3{margin:0 0 12px;font-size:18px}
+.family-card .family-emblem-settings{margin:0 0 20px}
+.family-open-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+#family-dialog .family-open-row p{margin:4px 0 0;font-size:13px}
+#family-dialog input.family-switch{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:44px;height:26px;min-height:0;margin:0;padding:0;border:0;border-radius:999px;background:#d9cfc2;cursor:pointer;transition:background .15s}
+#family-dialog input.family-switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #3d392340;transition:transform .15s}
+#family-dialog input.family-switch:checked{background:#6f8f4e}
+#family-dialog input.family-switch:checked::after{transform:translateX(18px)}
+#family-dialog input.family-switch:disabled{opacity:.5;cursor:default}
+#family-dialog input.family-switch:focus-visible{outline:2px solid #d3a032;outline-offset:3px}
+#family-dialog .family-leave{margin-top:30px;padding-top:18px;border-top:1px solid #e8dfd3}
+#family-dialog .family-leave h3{font-size:16px}
+#family-dialog .family-leave p{font-size:13px}
+#family-dialog .family-leave button{color:#9b4a33;background:#fffdf7;border:1px solid #e6cfc4;box-shadow:none}
+@media(max-width:600px){
+ .family-week-stats strong{font-size:17px}.family-week-stats span{font-size:11px}
+ .family-prize-step strong{font-size:17px}.family-your-place{padding:11px 12px}
+ .family-tournament-banner{grid-template-columns:48px minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){#family-dialog input.family-switch,#family-dialog input.family-switch::after{transition:none}}
+
+/* Sharing tab: Daily sharing (public/social-ui.js) drawn inside Farm Family. */
+.family-sharing>.sharing-rules{margin:22px 0 0;padding-top:14px;border-top:1px solid #e8e0d4;font-size:12px;line-height:1.5;color:#8a7d68}
+.family-sharing>.sharing-feedback{margin:10px 0 0;font-size:14px;color:#9a4b35}
+.family-sharing>.sharing-feedback:empty{display:none}
+.family-sharing>.sharing-empty{margin:12px 0;font-size:14px;color:#807463}
+.family-sharing>.sharing-intro{margin-top:0}
+@media(max-width:600px){#family-tabs button{font-size:11px;padding:8px 2px}#family-tabs .game-art{width:28px;height:28px}}
+/* Look and name: the header shows the family's own emblem (a live preview while choosing); one Save changes button appears
+   only once something has changed. */
+.family-settings-header>[data-look-emblem]>.family-emblem{width:64px;height:64px;border-radius:18px}
+.family-settings-header>[data-look-emblem]>.family-emblem .game-art{width:44px;height:44px}
+.family-look fieldset{margin:0 0 18px}
+#family-dialog .family-look legend{font-size:14px;margin-bottom:10px}
+.family-look .emblem-picked{margin-top:8px}
+#family-dialog .family-look input[name="name"]{margin-bottom:6px}
+.family-look small{margin:0}
+.family-look-save{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid #ebe3d6}
+.family-look-save[hidden]{display:none}
+#family-dialog .family-look-save .primary-button{min-height:46px;padding:10px 20px}

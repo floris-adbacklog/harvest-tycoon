@@ -67,13 +67,13 @@ test('Tournament extras unlock on one full line, consume goods for points only a
  assert.throws(()=>run(r.context,s,'alice',{type:'family_tournament_goods',week,item:'wheat',count:10000}),/weekly/);
 });
 test('Tournament settles once, pays the top three and gives a solo winner the whole first prize',()=>{
- const c=tournamentContext();assert.equal(familyTournament(c,week).pool,400);settleFamilyWeeks(c,familyWeekStart(week+1));
- assert.deepEqual(c.results.map(r=>r.diamonds_pool),[200,120,80]);assert.equal(c.rewards.reduce((n,r)=>n+r.diamonds,0),400);assert.ok(c.rewards.every(r=>r.diamonds>=1));
+ const c=tournamentContext();assert.equal(familyTournament(c,week).pool,300);settleFamilyWeeks(c,familyWeekStart(week+1));
+ assert.deepEqual(c.results.map(r=>r.diamonds_pool),[150,90,60]);assert.equal(c.rewards.reduce((n,r)=>n+r.diamonds,0),300);assert.ok(c.rewards.every(r=>r.diamonds>=1));
  const saved=structuredClone(c);assert.deepEqual(settleFamilyWeeks(c,familyWeekStart(week+1)+1),[]);assert.deepEqual(c,saved);
  const solo=tournamentContext([1],[20000]);settleFamilyWeeks(solo,familyWeekStart(week+1));assert.equal(solo.rewards.length,1);assert.equal(solo.rewards[0].diamonds,100);
- const only=tournamentContext([2],[20000]);settleFamilyWeeks(only,familyWeekStart(week+1));assert.equal(only.rewards.reduce((n,r)=>n+r.diamonds,0),120);
+ const only=tournamentContext([2],[20000]);settleFamilyWeeks(only,familyWeekStart(week+1));assert.equal(only.rewards.reduce((n,r)=>n+r.diamonds,0),100,'two players in one family: still one family, so 100');
 });
-test('First prize caps at 1,000 (from 46 weekly contributors); order diamonds are extra; low scores and tiebreak still work',()=>{
+test('First prize caps at 1,000 (from 37 families taking part); order diamonds are extra; low scores and tiebreak still work',()=>{
  const c=tournamentContext(Array(40).fill(2),Array(40).fill(2000));assert.equal(familyTournament(c,week).firstPrize,1000);assert.equal(familyTournament(c,week).pool,2000);
  c.rewards.push({id:'old',player_id:'p0-0',week,kind:'order',coins:0,xp:0,diamonds:7});settleFamilyWeeks(c,familyWeekStart(week+1));
  assert.deepEqual(c.results.slice(0,3).map(r=>r.diamonds_pool),[1000,600,400]);
@@ -91,9 +91,9 @@ test('Guaranteed 100 diamonds exist before entry; a first positive delivery qual
 });
 test('Missing podium places do not dilute first prize; only occupied top-three places win',()=>{
  const c=tournamentContext([1,1],[100,50]);settleFamilyWeeks(c,familyWeekStart(week+1));
- assert.deepEqual(c.results.map(r=>r.diamonds_pool),[120,72]);assert.equal(c.rewards.reduce((n,r)=>n+r.diamonds,0),192);
+ assert.deepEqual(c.results.map(r=>r.diamonds_pool),[125,75]);assert.equal(c.rewards.reduce((n,r)=>n+r.diamonds,0),200);
  const four=tournamentContext([1,1,1,1],[400,300,200,100]);settleFamilyWeeks(four,familyWeekStart(week+1));
- assert.deepEqual(four.results.map(r=>r.diamonds_pool),[160,96,64,0]);assert.equal(four.rewards.length,3);
+ assert.deepEqual(four.results.map(r=>r.diamonds_pool),[175,105,70,0]);assert.equal(four.rewards.length,3);
 });
 test('Personal and family prize previews exactly match settlement without the old 25-diamond cap',()=>{
  const c=tournamentContext(Array(40).fill(2),Array(40).fill(2000));
@@ -116,26 +116,28 @@ test('Existing partial order contributions qualify without a reset or completed 
  assert.equal(s.diamonds,before.diamonds+100);assert.equal(s.coins,before.coins);assert.equal(s.xp,before.xp);assert.ok(result.context.rewards[0].claimed_at);
  assert.throws(()=>run(result.context,s,'p0-0',{type:'family_claim',rewardId:reward.id},familyWeekStart(week+1)),/already/);
 });
-test('First prize grows with real weekly contributors, never with idle members or past contributions',()=>{
- for(let count=1;count<=60;count++){
+test('First prize grows with every family taking part, never with family size, idle members or past contributions',()=>{
+ for(let count=1;count<=45;count++){
   const c=tournamentContext(Array(count).fill(1),Array(count).fill(100));
   const board=familyTournament(c,week);
-  assert.equal(board.activePlayers,count);assert.equal(board.firstPrize,Math.min(1000,100+(count-1)*20));
-  if(count>=46)assert.equal(board.firstPrize,1000,'the maximum from 46 weekly contributors');
+  assert.equal(board.qualifying.length,count);assert.equal(board.firstPrize,Math.min(1000,100+(count-1)*25));
+  if(count>=37)assert.equal(board.firstPrize,1000,'the maximum from 37 families');
   assert.equal(board.prizes[0].diamonds,board.firstPrize);
  }
+ // Six contributors in one family grow nothing: it is one family.
+ assert.equal(familyTournament(tournamentContext([6],[100]),week).firstPrize,100);assert.equal(familyTournament(tournamentContext([6,1],[100,50]),week).firstPrize,125);
  const c=tournamentContext([3],[100]);c.contributions[1].week=week-1;c.contributions[2].points=0;
  c.members.push({player_id:'idle',family_id:'f0',left_at:null});
  assert.equal(familyTournament(c,week).activePlayers,1);assert.equal(familyTournament(c,week).firstPrize,100);
  c.members[0].left_at=now;assert.equal(familyTournament(c,week).activePlayers,0);
 });
-test('A 600-diamond solo winning share is credited once in addition to existing order rewards',()=>{
+test('A 725-diamond solo winning share is credited once in addition to existing order rewards',()=>{
  const c=tournamentContext(Array(26).fill(1),Array(26).fill(100));
  c.rewards.push({id:'old-order',player_id:'p0-0',week,kind:'order',coins:0,xp:0,diamonds:7,created_at:now,expires_at:now+20*DAY_MS,claimed_at:now});
  settleFamilyWeeks(c,familyWeekStart(week+1));
- const reward=c.rewards.find(r=>r.player_id==='p0-0'&&r.kind==='tournament');assert.equal(reward.diamonds,600);
+ const reward=c.rewards.find(r=>r.player_id==='p0-0'&&r.kind==='tournament');assert.equal(reward.diamonds,725);
  const s=farm();s.levelRewards=Array.from({length:levelOf(s)},(_,i)=>i+1);const before=s.diamonds;
- const claimed=run(c,s,'p0-0',{type:'family_claim',rewardId:reward.id},familyWeekStart(week+1));assert.equal(s.diamonds,before+600);
+ const claimed=run(c,s,'p0-0',{type:'family_claim',rewardId:reward.id},familyWeekStart(week+1));assert.equal(s.diamonds,before+725);
  assert.throws(()=>run(claimed.context,s,'p0-0',{type:'family_claim',rewardId:reward.id},familyWeekStart(week+1)),/already/);
 });
 test('Settlement excludes departed members; inactive members remain without rewards',()=>{
@@ -167,7 +169,8 @@ test('Failed invite attempts are persisted and limited, including alternating cr
 test('Public view exposes no player IDs, activity timestamps, balances, emails, or other invite codes',()=>{
  let c=join(create());c.players=c.members.map(m=>({player_id:m.player_id,username:m.player_id,level:10,online:true,last_active_at:'secret-time',email:'secret-email',diamonds:900,currency:800}));c.families.push({id:'secret-family',name:'Private',emblem:'1',invite_code:'SECRET',is_open:false,deleted_at:null});
  const v=familyPublicView(c,'alice',farm(),now),json=JSON.stringify(v);for(const secret of ['player_id','last_active','secret-time','secret-email','currency','SECRET'])assert.ok(!json.includes(secret),secret);
- assert.deepEqual(Object.keys(v.members[0]).sort(),['avatarId','id','isSelf','level','online','points','role','username','vipExpiresAt'].sort());assert.equal(v.members[0].online,true);
+ // playerId is the same public id the leaderboard and player search already use to open a profile (tap a member to see theirs).
+ assert.deepEqual(Object.keys(v.members[0]).sort(),['avatarId','id','isSelf','level','online','playerId','points','role','username','vipExpiresAt'].sort());assert.equal(v.members[0].online,true);
 });
 test('Old saves normalize safely and shared copies and existing presence rule match',()=>{
  const s=farm();delete s.family;const b=structuredClone(s);normalizeFarm(s,now);assert.deepEqual(s.family,{familyId:null,unclaimedCount:0});assert.equal(s.coins,b.coins);assert.equal(s.diamonds,b.diamonds);
@@ -216,5 +219,5 @@ test('new emblems preserve existing IDs and only leaders may change them',()=>{
 });
 test('family standings expose at most ten ranked families while retaining all contributors for prize sizing',()=>{
  const c=tournamentContext(Array(12).fill(1),Array.from({length:12},(_,i)=>1000-i));
- const v=familyPublicView(c,'p0-0',farm(),now);assert.equal(v.tournament.top.length,10);assert.equal(v.tournament.activePlayers,12);assert.equal(v.tournament.top[0].diamonds,320);assert.equal(v.tournament.top[9].diamonds,0);
+ const v=familyPublicView(c,'p0-0',farm(),now);assert.equal(v.tournament.top.length,10);assert.equal(v.tournament.activePlayers,12);assert.equal(v.tournament.top[0].diamonds,375);assert.equal(v.tournament.top[9].diamonds,0);
 });

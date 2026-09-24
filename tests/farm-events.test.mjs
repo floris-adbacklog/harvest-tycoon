@@ -105,11 +105,14 @@ test('daily sharing knows what was already sent today, per member and per kind',
  assert.equal(today.full('help'),true);assert.equal(today.full('gift'),false);
  assert.equal(today.done('help','a'),true);assert.equal(today.done('gift','a'),false);
 });
-test('the Members tab opens daily sharing from a calm card, and sharing comes back to it',()=>{
- const family=read('public/family-ui.js');
- assert.match(family,/<button type="button" class="family-share-entry" data-social-open>/);
- assert.doesNotMatch(family,/class="primary-button" data-social-open/);
- assert.match(family,/onBack:\(\)=>\{tab='members';open\(\);\}/);
+test('Daily sharing is a tab of its own in Farm Family, drawn inside the dialog',()=>{
+ const family=read('public/family-ui.js'),social=read('public/social-ui.js'),html=read('public/farm.html');
+ assert.deepEqual([...html.matchAll(/data-family-tab="([a-z]+)"/g)].map(m=>m[1]),['week','sharing','tournament','family','members'],'Members last');
+ assert.match(family,/\{week,sharing,members,tournament,family:settings\}\[tab\]/);
+ assert.match(family,/if\(sharingRoot\)void social\.mount\(sharingRoot\);/);
+ assert.doesNotMatch(family,/data-social-open/,'no separate card or dialog from Members any more');
+ assert.match(social,/async mount\(container\)\{embedded=true;root=container;render\(\);await load\(\);\}/);
+ assert.match(read('public/family.css'),/#family-tabs\{display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\);/);
 });
 test('Welcome Back offers one button that goes straight to what is waiting',()=>{
  assert.equal(welcomeAction({crops:3,batches:2,stall:10}),'Harvest your fields');
