@@ -1,7 +1,8 @@
-// The cookie choice. Google Tag Manager (which runs Google Analytics and the Meta Pixel) only loads after "Accept": the
+// The cookie choice. The banner names the purposes; the privacy policy it links to names the tools. Google Tag Manager (which runs Google Analytics and the Meta Pixel) only loads after "Accept": the
 // loader at the top of play.html reads the same choice. The choice is kept for 12 months in local storage and can be
 // changed at any time: "Cookie settings" at the bottom of the home page, in the game's Settings, or /?cookie-settings.
-// Declining is exactly as easy as accepting (same place, same size), as the Dutch Data Protection Authority requires.
+// Accept is the filled button; Decline sits next to it at the same size and stays clearly readable (outlined), so declining
+// is as easy as accepting, as the Dutch Data Protection Authority requires.
 (function(){
  var KEY='harvest-tycoon:cookies',KEEP=365*864e5;
  var TRACKING=/^(_ga|_ga_.+|_gid|_gat.*|_gcl_.+|_fbp|_fbc)$/;
@@ -30,14 +31,12 @@
  }
  function open(){
   close();
-  var now=choice();
   banner=document.createElement('section');
   banner.className='cookie-banner';banner.setAttribute('role','dialog');banner.setAttribute('aria-modal','false');banner.setAttribute('aria-labelledby','cookie-title');
   banner.innerHTML='<span class="wart cookie-art" aria-hidden="true"></span>'
    +'<div class="cookie-copy"><h2 id="cookie-title">Help a new farm game grow</h2>'
-   +'<p>With your OK, Google Analytics and the Meta Pixel show us what farmers enjoy and which ads work. The game never sends your email or player name. <a href="/privacy#cookies">Privacy Policy</a></p>'
-   +(now?'<p class="cookie-now">Your choice now: <strong>'+(now==='accepted'?'accepted':'declined')+'</strong></p>':'')
-   +'<div class="cookie-actions"><button type="button" class="cookie-button" data-cookie="declined">Decline</button><button type="button" class="cookie-button" data-cookie="accepted">Accept</button></div></div>';
+   +'<p>We use cookies to see what farmers enjoy and to measure our ads. The game never sends your email or player name. <a href="/privacy#cookies">Privacy Policy</a></p>'
+   +'<div class="cookie-actions"><button type="button" class="cookie-button is-decline" data-cookie="declined">Decline</button><button type="button" class="cookie-button is-accept" data-cookie="accepted">Accept</button></div></div>';
   banner.querySelectorAll('[data-cookie]').forEach(function(button){button.onclick=function(){decide(button.getAttribute('data-cookie'));};});
   document.body.appendChild(banner);
  }

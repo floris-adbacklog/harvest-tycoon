@@ -32,15 +32,18 @@ const press=(p,text)=>p.shown().buttons.find(b=>b.text===text).onclick();
 test('a first visit shows the choice and loads nothing until the visitor answers',()=>{
  const p=page();
  assert.ok(p.shown(),'the banner is shown');assert.equal(p.win.gtm,0,'Tag Manager waits');
- assert.match(p.shown().html,/Google Analytics and the Meta Pixel/);assert.match(p.shown().html,/href="\/privacy#cookies"/);
+ // The purposes on the banner; the tools themselves are named in the privacy policy it links to.
+ assert.match(p.shown().html,/We use cookies to see what farmers enjoy and to measure our ads\./);assert.match(p.shown().html,/href="\/privacy#cookies"/);
 });
-test('Decline and Accept are the same kind of button, side by side, so declining is as easy as accepting',()=>{
+test('Accept is the filled button; Decline sits next to it at the same size, outlined and clearly readable',()=>{
  const [decline,accept]=page().shown().buttons;
  assert.deepEqual([decline.text,accept.text],['Decline','Accept']);
- assert.equal(decline.attrs.replace('declined','X'),accept.attrs.replace('accepted','X'),'identical apart from the choice itself');
+ assert.match(decline.attrs,/class="cookie-button is-decline"/);assert.match(accept.attrs,/class="cookie-button is-accept"/);
  const css=read('public/welcome.css');
- assert.match(css,/\.cookie-actions\{display:grid;grid-template-columns:1fr 1fr/,'two equal columns');
- assert.doesNotMatch(css,/\.cookie-button\[data-cookie/,'no extra styling for one of the two');
+ assert.match(css,/\.cookie-actions\{display:grid;grid-template-columns:1fr 1fr/,'two equal columns: the same size');
+ const outlined=css.match(/\.cookie-button\.is-decline\{([^}]*)\}/)[1];
+ assert.match(outlined,/color:#4d4531/);assert.match(outlined,/border:1\.5px solid #8f8261/,'a visible outline, not a grey or hidden link');
+ assert.doesNotMatch(outlined,/display:none|opacity|font-size|min-height|padding/,'never hidden, faded or smaller');
 });
 test('Accept remembers the choice and starts Tag Manager at once; the banner closes',()=>{
  const p=page();press(p,'Accept');
@@ -56,7 +59,7 @@ test('Decline remembers the choice, removes Google and Meta cookies from our dom
 test('withdrawing an earlier yes reloads the page, so the tools that were running stop',()=>{
  const p=page({saved:{choice:'accepted',at:Date.now()}});
  assert.equal(p.shown(),undefined,'no banner while the choice stands');
- p.win.harvestConsent.open();assert.match(p.shown().html,/Your choice now: <strong>accepted<\/strong>/);
+ p.win.harvestConsent.open();assert.ok(p.shown());assert.doesNotMatch(p.shown().html,/Your choice now/);
  press(p,'Decline');assert.equal(p.saved().choice,'declined');assert.equal(p.win.reloads,1);
 });
 test('the choice is kept for 12 months, then asked again',()=>{

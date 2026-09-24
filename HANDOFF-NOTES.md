@@ -555,11 +555,11 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   changed file always gets a new name.
 
 ## Cookie banner (24 Sep 2026; website only)
-- public/cookie-consent.js shows a small card (bottom left, full width on phones): "Help a new farm game grow", one
-  sentence on what Google Analytics and the Meta Pixel are for, "the game never sends your email or player name",
-  a Privacy Policy link, and Decline / Accept as two identical buttons side by side. The friendly wording is the
-  nudge; Decline stays exactly as easy as Accept, which the Dutch DPA (AP) requires (no bright Accept next to a grey
-  or hidden Decline, no pre-ticked boxes).
+- public/cookie-consent.js shows a small card (bottom left, full width on phones): "Help a new farm game grow", "We
+  use cookies to see what farmers enjoy and to measure our ads. The game never sends your email or player name." and
+  a Privacy Policy link (the policy names the tools). Accept is the filled button (the user asked for emphasis);
+  Decline sits next to it at the same size, outlined and clearly readable. Do not shrink, fade or hide Decline: the
+  Dutch DPA (AP) treats a hard-to-find or grey reject option as misleading.
 - Google Tag Manager (and so GA and the Meta Pixel) now only loads after Accept: the loader at the top of play.html
   runs for a saved "accepted" younger than 12 months, and the banner starts it on Accept. The noscript GTM iframe is
   gone (it loaded GTM without asking). dataLayer events from before the choice wait in the page and are only sent if
