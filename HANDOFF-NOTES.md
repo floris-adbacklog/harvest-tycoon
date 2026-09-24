@@ -610,3 +610,13 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   there is no room below.
 - Used by: boost lengths, reminder email hour, gift/request picker (pictures, "N in storage"), Family Order extra goods
   (pictures, "N in stock · N points each"), admin gift item (pictures). Tests: tests/pretty-select.test.mjs.
+
+## Family tournament prizes raised (24 Sep 2026; farm-api deploy)
+- `FAMILY_CONFIG`: first prize at least 100 diamonds (was 50), +20 per extra weekly contributor across the tournament
+  (was +10), at most 1,000 (was 300), reached from 46 weekly contributors (about 8 full families). Second and third
+  stay 60% and 40% of first (at the maximum 1,000 / 600 / 400). The per-player cap is the same 1,000.
+- The screens read these numbers from the server, so only the rules changed. Settlement happens at the first family
+  action after a week ends, so the week running at deploy time already pays the new prizes.
+- Live on 24 Sep: 7 families, 10 members, 2-4 weekly contributors. A contributor counts from 1 point, so with a higher
+  maximum it becomes more worth making extra level-10 accounts to grow the prize; if that shows up, count contributors
+  only from `MIN_CONTRIB_POINTS` (500).
