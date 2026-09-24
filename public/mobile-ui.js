@@ -30,8 +30,8 @@ export function createMobileUI({openUtility,resetView}){
   // The same "!" on the tiles as on the side tools, so a waiting reward stands out in the menu too.
   menu.querySelector('[data-menu-action="today-button"]')?.classList.toggle('has-dot',!gift.hidden);
   menu.querySelector('[data-menu-action="events-button"]')?.classList.toggle('has-dot',!($('events-dot')?.hidden??true));
-  // A waiting event reward also lights the More dot, since Events lives in that menu on phones.
-  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true);
+  // A waiting event reward or a stall worth emptying (growth-ui.js) also lights the More dot, since both live in that menu on phones.
+  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot');
   $('tasks-button').setAttribute('aria-label',quests.hidden?'Open quests':'Open quests, rewards ready');
   $('buildings-button').setAttribute('aria-label',batches.hidden?'Open buildings':`Open buildings, ${batches.textContent} batches ready`);
  }

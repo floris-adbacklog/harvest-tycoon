@@ -727,3 +727,10 @@ when the game starts, when the offer is opened, after a purchase (`harvest-purch
 farm reaches `STARTER_LEVEL` (watching `#level`); while the offer runs also every 15 minutes and on returning to the
 tab (at most every 15 minutes). A farm without a running offer is not asked again; the countdown runs locally.
 Tests: `tests/starter-pack-checks.test.mjs`.
+
+Stall "!" (2026-09-24): the old "G" on the Estate button (shown from 100 coins, which is 1-2% of a high-level stall, and
+only on desktop from level 19) is gone. One rule: a yellow "!" once the stall is a quarter full (`stallNotice`,
+`STALL_NOTICE_SHARE` in `game/farm-state.js`: 6 hours at stall level 1, 12 at the top), from level 11. It shows on the
+stall's pin on the map (`.utility-label[data-utility="stall"].has-dot`, `public/icons.css`), the Farm stall tile in the
+phone menu and so the More button, and the Estate button (which then opens on the stall tab; a finished chapter still
+lights it too). `public/growth-ui.js` `notices()`. Tests: `tests/stall-notice.test.mjs`.

@@ -1,11 +1,22 @@
-import {cropUnlocked,featureUnlocked,featureUnlockHint,CROPS,ITEMS,CHORES,choreRewards,choreStatus,CHAPTER_DIAMONDS,PROJECTS,MASTERY_TIERS,masteryStatus,stallStatus,currentProject,formatDuration,levelOf,CROP_LEVELS,guidedFarm} from './farm-state.js';
+import {cropUnlocked,featureUnlocked,featureUnlockHint,CROPS,ITEMS,CHORES,choreRewards,choreStatus,CHAPTER_DIAMONDS,PROJECTS,MASTERY_TIERS,masteryStatus,stallStatus,stallNotice,currentProject,formatDuration,levelOf,CROP_LEVELS,guidedFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const number=n=>n.toLocaleString('en-US');
-export function createGrowthUI({state,runAction,onChange,notify,itemList}){
- let tab='projects',lastReadiness='';
+export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotice}){
+ let tab='projects',lastReadiness='',stallWaiting=null;
+ const projectReady=()=>Boolean(state.estate.job&&farmNow()>=state.estate.job.readyAt);
+ // The same yellow "!" wherever the stall is, from a quarter full (stallNotice, farm-state.js): its pin on the map, its
+ // tile in the phone menu (and so the More button) and the Estate button, whose screen holds the stall. A finished
+ // Estate chapter lights the Estate button too.
+ function notices(){
+  const waiting=stallNotice(state,farmNow());
+  $('estate-dot').hidden=!projectReady()&&!waiting;
+  document.querySelector('[data-menu-utility="stall"]')?.classList.toggle('has-dot',waiting);
+  document.querySelector('.utility-label[data-utility="stall"]')?.classList.toggle('has-dot',waiting);
+  if(waiting!==stallWaiting){stallWaiting=waiting;onNotice?.();}
+ }
  async function act(action,message){try{const result=await runAction(action);onChange();render();$('estate-feedback').textContent=typeof message==='function'?message(result):message;notify($('estate-feedback').textContent);}catch(error){$('estate-feedback').textContent=error.message;notify(error.message);}}
  function open(section='projects'){
   if(!featureUnlocked(state,section)){notify(featureUnlockHint(section));return;}
@@ -64,20 +75,18 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList}){
  }
  function readiness(){return [tab,state.estate.job&&farmNow()>=state.estate.job.readyAt,...Object.keys(CHORES).map(id=>farmNow()>=(state.chores[id]??0))].join('|');}
  function refresh(){
-  const s=stallStatus(state,farmNow()),readyProject=state.estate.job&&farmNow()>=state.estate.job.readyAt;
-  $('estate-dot').hidden=!readyProject&&s.available<Math.min(100,s.capacity);
-  $('estate-dot').textContent=readyProject?'!':'G';
+  notices();
   if($('estate-dialog').open)render();
  }
  function tick(){
-  const s=stallStatus(state,farmNow());$('estate-dot').hidden=!(state.estate.job&&farmNow()>=state.estate.job.readyAt)&&s.available<Math.min(100,s.capacity);
+  notices();const s=stallStatus(state,farmNow());
   if(!$('estate-dialog').open)return;
   if(lastReadiness!==readiness()){render();return;}
   if(tab==='stall'){$('stall-balance').innerHTML=`${art('coins')}${number(s.available)}`;$('stall-meter').value=s.balance;$('stall-capacity').textContent=stallNote(s);$('stall-collect').disabled=s.available<1;document.querySelector('.stall-hero')?.classList.toggle('is-full',s.balance>=s.capacity);}
   if(tab==='chores')document.querySelectorAll('[data-chore]').forEach(b=>{const s=choreStatus(state,b.dataset.chore,farmNow());b.textContent=s.locked?'Locked':s.remaining?formatDuration(s.remaining):'Do chore';b.disabled=s.locked||s.remaining>0;});
   if(tab==='projects'&&state.estate.job){const job=state.estate.job;$('project-clock').textContent=farmNow()>=job.readyAt?'Ready to complete':`${formatDuration(job.readyAt-farmNow())} remaining`;$('project-progress').value=Math.min(100,(farmNow()-job.startedAt)/(job.readyAt-job.startedAt)*100);}
  }
- $('estate-button').onclick=()=>open();
+ $('estate-button').onclick=()=>open(!projectReady()&&stallNotice(state,farmNow())?'stall':'projects');
  document.querySelectorAll('[data-estate-tab]').forEach(b=>b.onclick=()=>open(b.dataset.estateTab));
  return {open,refresh,tick};
 }

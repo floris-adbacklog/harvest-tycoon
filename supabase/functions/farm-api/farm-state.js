@@ -1713,6 +1713,12 @@ export function stallStatus(state,now=Date.now()){
  const balance=Math.min(capacity,Math.max(0,state.stall.bank)+Math.max(0,now-state.stall.since)/3600000*rate);
  return {level,rate,capacityHours,capacity,balance,available:Math.floor(balance+1e-8),upgradeCost:level>=8?null:Math.round(800*2.4**(level-1))};
 }
+// The stall asks to be emptied (the yellow "!") once it is a quarter full: after 6 hours at stall level 1, 12 at the top.
+export const STALL_NOTICE_SHARE=.25;
+export function stallNotice(state,now=Date.now()){
+ if(!featureUnlocked(state,'stall'))return false;
+ const s=stallStatus(state,now);return s.balance>=s.capacity*STALL_NOTICE_SHARE;
+}
 function settleStall(state,now){state.stall.bank=stallStatus(state,now).balance;state.stall.since=now;}
 export function collectStall(state,now=Date.now()){
  const available=stallStatus(state,now).available;if(available<1)throw new Error('Your stall is just getting started. Come back for your first coin.');

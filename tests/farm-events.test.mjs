@@ -88,7 +88,7 @@ test('Events sits next to Quests on desktop, in the More menu on phones; below l
  assert.doesNotMatch(read('public/game.js')+ui,/family-button'\)\.after\(button\)/,'no extra icon squeezed into the topbar');
  assert.match(ui,/if\(button\)button\.hidden=locked;/,'hidden on the desktop side-tool bar, like Boosts and Estate');
  assert.match(ui,/entry\.disabled=locked;entry\.classList\.toggle\('locked',locked\)/,'greyed with a lock in the More menu, like every locked card');
- assert.match(read('public/mobile-ui.js'),/\$\('more-dot'\)\.hidden=gift\.hidden&&\(\$\('events-dot'\)\?\.hidden\?\?true\);/);
+ assert.match(read('public/mobile-ui.js'),/\$\('more-dot'\)\.hidden=gift\.hidden&&\(\$\('events-dot'\)\?\.hidden\?\?true\)&&/);
 });
 test('the new icons are small WebP files, not megabyte PNGs',()=>{
  for(const name of ['live-events','family-sharing']){
