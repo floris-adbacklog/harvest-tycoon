@@ -6,6 +6,13 @@
  .side-tools{max-height:calc(100dvh - 184px)}
  .scene-controls{flex-direction:row;top:auto;right:20px;bottom:20px}
  .beginner-card{max-height:calc(100dvh - 215px)}
+ /* Building labels: the name, and a second line only when there is news (ready, working, to build, the farmhouse's fields);
+    an idle building's "Ready to work · 0 / 5 slots" said nothing and made every label twice as big. A little more compact too. */
+ .building-label{gap:6px;padding:4px 10px 4px 4px;border-radius:10px}
+ .building-label .building-pin{width:28px;height:28px;border-radius:8px}
+ .building-label .building-pin>.game-art{width:26px;height:26px}
+ .building-label strong{font-size:12.5px}
+ .building-label .building-status.idle{display:none}
 }
 @media(min-width:901px) and (max-width:1040px) and (min-height:551px),(min-width:901px) and (max-width:1040px) and (pointer:fine){
  .scene-controls{bottom:124px}

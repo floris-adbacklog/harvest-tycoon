@@ -803,8 +803,8 @@ time change. Styles at the end of `public/retention.css`. Tests in `tests/scener
 
 Pig Farm (2026-09-24, NOT live until pushed, `supabase/pig-farm.sql` applied, and `farm-api` + `notify-hourly` deployed):
 a level-29 production building (`pigfarm`, model house_019, 14,000 coins, upgrade 900, levels 1-20 like the others) west of
-the farmhouse across the west road (ANCHORS.pigfarm, YARD_EXTENT, yardDecor: pen with fence_001, three pigs, trough, hay;
-greyed until level 29). Pigs dig up truffles: "Let the pigs hunt truffles" 2 feed -> 2 truffles in 80 min (~173/h) and
+the farmhouse across the west road (ANCHORS.pigfarm, YARD_EXTENT, yardDecor): the barn (8.2 long, turned side-on) with a
+white-fenced pen (fence_008, closed all round) beside it, three pigs, a trough and hay; greyed until level 29. Pigs dig up truffles: "Let the pigs hunt truffles" 2 feed -> 2 truffles in 80 min (~173/h) and
 "A vegetable feast for the pigs" 6 corn + 8 lettuce -> 3 truffles in 100 min (~174/h, level 31); truffles sell for 230. The
 Farm Kitchen cooks "truffle omelettes" (level 30): 4 eggs, 2 cheese, 2 truffles -> 2 omelettes (880 each) in 3 h (~213/h).
 The Factory gets its bulk versions automatically. Family Order: new goods only from week 2960 (Mon 28 Sep 2026,
@@ -814,3 +814,5 @@ unaffected; the market highlight may pick truffles. Family sharing: `supabase/pi
 harvest_social items list and to "goods produced" (harvest_public_metrics); live bodies matched estate-wave3.sql on
 24 Sep. Icons: truffles/truffleomelette (painted, WebP 256) and pigfarm (render, PNG 512). The scenery pigsty is gone.
 Tests: `tests/scenery.test.mjs` (Pig Farm and start-up models), counts in factory/farm tests.
+Desktop building labels (2026-09-24): compact, and an idle building shows only its name (`.building-status.idle` hidden in
+`public/desktop-hud.css`); ready, working, to-build and the farmhouse's fields keep their second line.

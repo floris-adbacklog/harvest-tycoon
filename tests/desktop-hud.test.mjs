@@ -35,3 +35,9 @@ test('the Starter Pack is a small button next to the diamonds on a computer, the
  assert.match(css,/\(min-width:901px\) and \(min-height:551px\),\(min-width:901px\) and \(pointer:fine\)\{#starter-pack-button\{display:none\}\}/);
  assert.match(css,/\(max-width:900px\),\(max-height:550px\) and \(pointer:coarse\)\{#starter-pack-chip\{display:none\}\}/);
 });
+
+test('desktop building labels are compact: the name, and a second line only when there is news',()=>{
+ const css=read('public/desktop-hud.css');
+ assert.match(css,/\.building-label \.building-status\.idle\{display:none\}/,'"Ready to work · 0 / 5 slots" said nothing');
+ assert.match(css,/\.building-label\{gap:6px;padding:4px 10px 4px 4px;border-radius:10px\}/);
+});

@@ -15,8 +15,9 @@ export const ANCHORS=Object.freeze({
  // Wave 3: a new column at the east end of the trunk road: the Trade Depot where the road ends, the Estate Workshop's manor across
  // the road, and the Grand Valley Fair's hall and fairground south of it.
  tradedepot:[42.7,-9.6],estateworkshop:[42.3,3.1],grandfair:[44,13.4],
- // The Pig Farm (level 29) on the open ground west of the farmhouse, across the west road: the barn, and its pen towards the road.
- pigfarm:[-31.54,-9.23]
+ // The Pig Farm (level 29) on the open ground west of the farmhouse, across the west road: a white-fenced pen, with the barn
+ // turned side-on beside it.
+ pigfarm:[-24.92,-9.08]
 });
 // Where a yard stands when that is not where it was designed (same compact grid; everything inside a yard moves along with it).
 // The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), the
@@ -54,7 +55,7 @@ const yardCentres=Object.keys(ANCHORS).map(anchorAt);
 // north, south). The Sheep Barn's pasture runs down to the road in front of it. Trees keep three steps clear of the edges, so
 // no crown hangs over a yard.
 export const YARD_EXTENT=Object.freeze({beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-4.2,4.2,-2.6,4.6],weaving:[-3,4.8,-4,5.5],
- goatshed:[-4.8,4.8,-4.4,11],pigfarm:[-3.8,11.6,-5,3],craftshop:[-4.4,4.8,-2.4,3.6],ranch:[-5,5,-3,10.2],valleymarket:[-8.5,9.5,-5,4.5],
+ goatshed:[-4.8,4.8,-4.4,11],pigfarm:[-13.5,4.6,-3.6,5.6],craftshop:[-4.4,4.8,-2.4,3.6],ranch:[-5,5,-3,10.2],valleymarket:[-8.5,9.5,-5,4.5],
  tradedepot:[-7,7.5,-4.5,5],estateworkshop:[-5.5,5.5,-3.5,4.5],grandfair:[-7.5,7.5,-3.5,7.5]});
 const EXTENT_MARGIN=3;
 const extents=Object.entries(YARD_EXTENT).map(([id,[west,east,north,south]])=>{const [x,z]=anchorAt(id);return [x+west,x+east,z+north,z+south];});
