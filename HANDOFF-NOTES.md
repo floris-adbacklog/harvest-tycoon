@@ -801,7 +801,8 @@ crop's picture, the time left (phones: 36m, 1h20) and a drop (watered) or leaf (
 glows gold and the leaf gently pulses. Built once per planting (`dataset.crop`), each tick only the fill (`--grow`) and the
 time change. Styles at the end of `public/retention.css`. Tests in `tests/scenery.test.mjs`.
 
-Pig Farm (2026-09-24, NOT live until pushed, `supabase/pig-farm.sql` applied, and `farm-api` + `notify-hourly` deployed):
+Pig Farm (2026-09-24, live: pushed, farm-api v89 + notify-hourly deployed, `supabase/pig-farm.sql` applied as migration
+harvest_pig_farm the same evening after the live function bodies were checked unchanged):
 a level-29 production building (`pigfarm`, model house_019, 14,000 coins, upgrade 900, levels 1-20 like the others) west of
 the farmhouse across the west road (ANCHORS.pigfarm, YARD_EXTENT, yardDecor): the barn (8.2 long, turned side-on) with a
 white-fenced pen (fence_008, closed all round) in front of its west end, towards the camera (so the barn never hides the
