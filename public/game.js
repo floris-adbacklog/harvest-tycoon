@@ -49,6 +49,7 @@ const initialWelcome=window.harvestInitialFarm.welcome;
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
+const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
 // On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide.
 const startView=()=>mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)?'fields':'home';
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
@@ -479,17 +480,16 @@ function drawCrop(i){
   v.label.className='plot-label ready';v.label.setAttribute('aria-label',`Harvest ${CROPS[p.crop].name} from field ${i+1}`);
  }else{
   const remaining=p.readyAt-farmNow(),time=mobileLayout.matches?(remaining>=3600000?(m=>`${Math.floor(m/60)}h${m%60?String(m%60).padStart(2,'0'):''}`)(Math.ceil(remaining/60000)):remaining>=60000?`${Math.ceil(remaining/60000)}m`:`${Math.ceil(Math.max(0,remaining)/1000)}s`):formatDuration(remaining);
-  // A ring that fills as the crop grows, with the crop's picture, the time left, and a drop (watered) or a leaf (cared for).
-  // Built once per planting; each tick only the time and the fill change.
-  if(v.label.dataset.crop!==p.crop||!v.label.querySelector('.plot-timer-ring')){v.label.innerHTML=`<span class="plot-timer-ring">${art(p.crop)}</span><b class="plot-timer-time"></b><span class="plot-timer-badge"></span>`;v.label.dataset.crop=p.crop;}
-  const grown=Math.min(1,Math.max(0,(farmNow()-p.plantedAt)/Math.max(1,p.readyAt-p.plantedAt))),careReady=!p.tended&&farmNow()>=p.careAt,badge=p.tended||careReady?'care':p.watered?'water':'';
+  // A ring that fills as the crop grows, with the crop's picture and the time left: small, so it covers little of the field.
+  // When extra care opens, the ring pulses. Built once per planting; each tick only the time and the fill change.
+  if(v.label.dataset.crop!==p.crop||!v.label.querySelector('.plot-timer-ring')){v.label.innerHTML=`<span class="plot-timer-ring">${art(p.crop)}</span><b class="plot-timer-time"></b>`;v.label.dataset.crop=p.crop;}
+  const grown=Math.min(1,Math.max(0,(farmNow()-p.plantedAt)/Math.max(1,p.readyAt-p.plantedAt))),careReady=!p.tended&&farmNow()>=p.careAt;
   v.label.style.setProperty('--grow',(grown*100).toFixed(1));v.label.querySelector('.plot-timer-time').textContent=time;
-  const holder=v.label.querySelector('.plot-timer-badge');if(holder.dataset.badge!==badge){holder.dataset.badge=badge;holder.innerHTML=badge?art(badge):'';}
   v.label.className=`plot-label plot-timer${p.watered?' watered':''}${careReady?' care-ready':''}${p.tended?' tended':''}`;v.label.setAttribute('aria-label',`${CROPS[p.crop].name}, field ${i+1}, ${formatDuration(p.readyAt-farmNow())} remaining${p.watered?', watered':''}`);
  }
  v.lastReady=ripe;
 }
-function highlight(id){hovered=id;plots.forEach((v,i)=>v.ring.visible=i===id);for(const [key,v] of buildingViews)v.outline.visible=key===id;world.style.cursor=id!==-1?'pointer':'grab';}
+function highlight(id){hovered=id;plots.forEach((v,i)=>v.ring.visible=i===id||swept.has(i));for(const [key,v] of buildingViews)v.outline.visible=key===id;world.style.cursor=id!==-1?'pointer':'grab';}
 function particleBurst(id,water=false){
  if(reducedMotion)return;
  const v=plots[id];
@@ -519,6 +519,29 @@ async function interact(id,forcedAction){
   if(!forcedAction)showTool(action);
   drawCrop(id);renderer.shadowMap.needsUpdate=true;updateUI();icons();return result;
  }catch(e){toast(e.message);return {error:e.message};}
+}
+// The fields of one swipe (farm-input.js), in one save; then the same bursts a tap shows and one sum of what it brought in.
+async function workSwept(action,ids){
+ for(let tries=0;;tries++){
+  try{
+   const result=await runAction({type:'fields',action,ids});
+   const crops={};let xp=0,golden=0;
+   for(const f of result.fields){
+    particleBurst(f.id,action==='water');drawCrop(f.id);
+    if(action==='harvest'){crops[f.crop]=(crops[f.crop]??0)+f.quantity;xp+=f.xp;if(f.firstHarvest){golden=f.firstHarvest;particleBurst(f.id,true);}}
+   }
+   const last=result.fields.at(-1).id;
+   if(action==='harvest')floatReward(last,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+floatChip('xp',`+${xp} XP`,'is-xp'));
+   if(action==='water')floatReward(last,floatChip('water',result.count>1?`${result.count} fields · faster`:'+1 crop · faster'));
+   if(action==='tend')floatReward(last,floatChip('care',`+${result.count} crop${result.count>1?'s':''}`));
+   break;
+  }catch(e){
+   // A tap that was still saving finishes first; then the swipe goes.
+   if(/still saving/i.test(e.message)&&tries<20){await new Promise(r=>setTimeout(r,250));continue;}
+   toast(e.message);break;
+  }
+ }
+ swept.clear();highlight(hovered);renderer.shadowMap.needsUpdate=true;updateUI();icons();
 }
 function showTool(tool){if(tool!==selectedTool)setTool(tool);const button=document.querySelector(`[data-tool="${tool}"]`);if(!button)return;button.classList.remove('just-used');void button.offsetWidth;button.classList.add('just-used');}
 function setTool(tool){selectedTool=tool;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
@@ -881,6 +904,12 @@ async function init(){
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);
+   },
+   // A swipe from a field with work to do: the fields light up as the finger passes, and all of them are worked in one save.
+   sweep:{
+    action:target=>{const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool):null;return a==='harvest'||a==='water'||a==='tend'?a:null;},
+    add:target=>{swept.add(target.id);const v=plots[target.id];if(v)v.ring.visible=true;},
+    end:(action,ids)=>{void workSwept(action,ids);}
    },
    zoom:(ratio,x,y)=>{
     const before=zoom;zoomFarm(zoom*ratio);

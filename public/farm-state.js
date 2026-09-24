@@ -830,6 +830,21 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  else Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
  return {action,crop:harvested,quantity,xp,regrowing,...(first?{firstHarvest:FIRST_HARVEST_BONUS}:{})};
 }
+// A swipe over several fields (game.js): the same hand work on each, in the order they were swiped, in one save. A field where it
+// cannot be done right now (not ready yet, already watered, care not open yet) is skipped. Free, just like tapping them one by one.
+export const SWIPE_MAX_FIELDS=60;
+export function workFields(state,action,ids,now=Date.now()){
+ if(!['harvest','water','tend'].includes(action))throw new Error('Choose a valid tool.');
+ if(!Array.isArray(ids)||!ids.length||ids.length>SWIPE_MAX_FIELDS)throw new Error('Choose some fields.');
+ const fields=[],seen=new Set();
+ for(const id of ids){
+  if(!Number.isInteger(id)||id<0||id>=state.plots.length||seen.has(id))continue;seen.add(id);
+  if(fieldTapAction(state.plots[id],now,action)!==action)continue;
+  fields.push({id,...actOnPlot(state,id,action,'corn',now)});
+ }
+ if(!fields.length)throw new Error(action==='harvest'?'No crops are ready to harvest there yet.':'Nothing to do on these fields right now.');
+ return {action,fields,count:fields.length};
+}
 export function sellCrops(state,item='all',now=Date.now(),day,category,quantity) {
  if(day!==undefined&&day!==utcDay(now))throw new Error('Market prices have refreshed. Check today’s prices before selling.');
  if(category!==undefined&&!['crops','goods'].includes(category))throw new Error('Choose a market category.');
@@ -1681,6 +1696,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'project_start':return startProject(state,now);
   case 'project_collect':return completeProject(state,now);
   case 'field':return actOnPlot(state,action.id,action.action,action.crop??'corn',now);
+  case 'fields':return workFields(state,action.action,action.ids,now);
   case 'sell':return sellCrops(state,action.item??'all',now,action.day,action.category,action.quantity);
   case 'produce':return startProduction(state,action.recipe,now,action.count);
   case 'collect':return collectProduction(state,action.building,now,action.jobId);

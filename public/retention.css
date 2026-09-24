@@ -1119,10 +1119,10 @@
 .plot-label.plot-timer.watered .plot-timer-ring{background:conic-gradient(#5aa0c8 calc(var(--grow,0)*1%),#e1e8ea 0)}
 .plot-label.plot-timer.care-ready{border-color:#e0b04a;box-shadow:0 0 0 2px #f3d27a99,0 2px 6px #3e342226}
 .plot-label.plot-timer.care-ready::before{content:none}
-.plot-label.plot-timer.care-ready .plot-timer-badge{animation:care-ask 1.6s ease-in-out infinite}
+.plot-label.plot-timer.care-ready .plot-timer-ring{animation:care-ask 1.6s ease-in-out infinite}
 @keyframes care-ask{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.plot-label.plot-timer{font-size:11px;padding:3px 7px 3px 3px}.plot-timer-ring{width:24px;height:24px}.plot-timer-ring>.game-art{width:16px;height:16px}}
-@media(prefers-reduced-motion:reduce){.plot-label.plot-timer.care-ready .plot-timer-badge{animation:none}}
+@media(prefers-reduced-motion:reduce){.plot-label.plot-timer.care-ready .plot-timer-ring{animation:none}}
 
 /* Keyboard play (Tab from field to field, Enter to work it): the field's own ring lights up (game.js highlight on focus), so the
    label gets a soft gold edge instead of a brown box, and an empty field shows no stray yellow square. */

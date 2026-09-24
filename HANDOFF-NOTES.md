@@ -888,3 +888,9 @@ Payments fix (24 Sep 2026): the €4.99 pack (500 diamonds) could never be bough
 allow 499 cents (every attempt: "Checkout is unavailable", Postgres 23514). Fixed live (migration harvest_purchases_allow_499,
 `supabase/purchases-499.sql`). When a pack price changes, update game/payments.js, the Stripe price, harvest_pack_amount_matches
 AND harvest_purchases_amount_cents_check.
+Swipe to harvest (24 Sep 2026; needs farm-api deployed BEFORE the site is pushed, the swipe uses the new action): a drag that starts
+on a field with work to do (ripe → harvest, water, care; never planting) works every field the finger passes over (public/farm-input.js
+`sweep`, checked every 10 px so a quick swipe misses none); a drag from grass or a field with nothing to do still moves the map; a
+second finger turns it into a pinch. The fields are saved in one action `{type:'fields',action,ids}` (workFields in game/farm-state.js:
+skips fields where the work does not fit, each once, at most 60, free like tapping). Timer labels lost their outer water/care icon;
+the ring pulses when care opens. Tests: tests/swipe-harvest.test.mjs.
