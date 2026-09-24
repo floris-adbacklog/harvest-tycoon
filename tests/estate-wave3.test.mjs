@@ -186,3 +186,13 @@ test('a Factory batch can never be finished with diamonds: the shop does not off
  const job=productionJobs(s.buildings.factory)[0];assert.ok(job,'a Factory batch is running');
  assert.throws(()=>act(s,{type:'finish_batch',building:'factory',jobId:job.id,expectedCost:10},now),/too big to rush/);
 });
+
+test('orders only ask for what the farm can make now, on older farms too, and the Factory is never a source by itself',()=>{
+ const s=createLegacyFarm(now);s.xp=xpForLevel(59);for(const k of ['beeyard','sheepbarn','glasshouse','weaving','kitchen','juicepress','preserves','factory'])s.buildings[k].built=true;normalizeFarm(s,now);
+ assert.equal(itemAvailable(s,'candles'),false,'no Craft Workshop, so no candles, even with a Factory');assert.equal(itemAvailable(s,'goatcheese'),false);assert.equal(itemAvailable(s,'cloth'),true);
+ for(let d=0;d<40;d++)for(const o of dailyOrders(s,now+d*DAY_MS))for(const k of Object.keys(o.input))assert.ok(itemAvailable(s,k),`${o.title}: ${k}`);
+ const t=createLegacyFarm(now);t.xp=xpForLevel(59);t.buildings.beeyard.built=true;normalizeFarm(t,now);
+ t.daily.orderBoard[1]={title:'Evening candles',tier:'village',input:{beeswax:6,candles:4},minLevel:58,coins:9761,xp:200,diamonds:4};
+ const [,swapped]=dailyOrders(t,now);assert.notEqual(swapped.title,'Evening candles','an order it cannot make is swapped');assert.equal(swapped.revision,1);
+ for(const k of Object.keys(swapped.input))assert.ok(itemAvailable(t,k),k);
+});
