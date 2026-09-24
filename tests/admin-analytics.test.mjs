@@ -111,15 +111,15 @@ test('admin_retention: a day-offset that has not elapsed yet is null, never a fa
 
 test('the admin_online/admin_recent_players/admin_retention operations are wired in, gated, and reachable before a username is required',()=>{
  const code=read('supabase/functions/farm-api/index.ts');
- assert.match(code,/import \{handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention\} from '\.\/admin-analytics-service\.js';/);
+ assert.match(code,/import \{handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites\} from '\.\/admin-analytics-service\.js';/);
  for(const op of ['admin_online','admin_recent_players','admin_retention'])assert.match(code,new RegExp(`'${op}'`));
  const before=code.indexOf('if(!username)return reply');
  for(const marker of ["body.operation==='admin_online'","body.operation==='admin_recent_players'","body.operation==='admin_retention'"])assert.ok(code.indexOf(marker)<before,marker);
 });
-test('handleAdminOnline/RecentPlayers/Retention each check isSuperadmin, imported from the same place admin_grant uses',()=>{
+test('handleAdminOnline/RecentPlayers/Retention/Invites each check isSuperadmin, imported from the same place admin_grant uses',()=>{
  const code=read('supabase/functions/farm-api/admin-analytics-service.js');
  assert.match(code,/import \{isSuperadmin\} from '\.\/admin-service\.js';/);
- assert.equal((code.match(/if\(!isSuperadmin\(user\)\)return respond\(user,\{error:'Not authorized\.'\},403\);/g)??[]).length,3);
+ assert.equal((code.match(/if\(!isSuperadmin\(user\)\)return respond\(user,\{error:'Not authorized\.'\},403\);/g)??[]).length,4);
 });
 // Regression: bridge.request() in src/main.js throws "Your session has ended" for any farm-api response whose
 // profile.player_id does not match the signed-in caller — a response with no profile field at all fails that
@@ -193,4 +193,23 @@ test('the dashboard opens with three headline numbers, lists the newest players,
  assert.ok(!/admin-events|mountAdminEvents|liveEvents/.test(js),'farm events run on their own schedule');
  assert.match(html,/id="admin-menu-entry" hidden><i data-game-art="admin"><\/i><span><strong>Admin dashboard<\/strong><small>Players and retention<\/small>/);
  assert.match(icons,/svgArt=new Set\(\[[^\]]*'admin'/);assert.match(read('public/assets/icons/admin.svg'),/^<svg[\s\S]*<\/svg>\s*$/);
+});
+
+test('the Invite a friend log: who invited whom, how far the friend is, and whether each side really got its diamonds',async()=>{
+ const {handleAdminInvites}=await import('../supabase/functions/farm-api/admin-analytics-service.js');
+ const day=86400000,A='a0000000-0000-4000-8000-000000000001',B='b0000000-0000-4000-8000-000000000002',C='c0000000-0000-4000-8000-000000000003',D='d0000000-0000-4000-8000-000000000004';
+ const tables={
+  referrals:[{invitee_id:B,referrer_id:A,created_at:now-2*day,qualified_at:now-day,referrer_diamonds:150},{invitee_id:C,referrer_id:A,created_at:now-3*day,qualified_at:null,referrer_diamonds:0},{invitee_id:D,referrer_id:A,created_at:now-40*day,qualified_at:null,referrer_diamonds:0}],
+  player_stats:[{player_id:A,username:'Tony',level:30},{player_id:B,username:'Bram',level:12},{player_id:C,username:'Chris',level:6},{player_id:D,username:'Dewi',level:4}],
+  player_farms:[{player_id:A,invite:null,paid:[B]},{player_id:B,invite:{by:A,at:now-2*day,rewardedAt:now-day},paid:null},{player_id:C,invite:{by:A},paid:null},{player_id:D,invite:{by:A},paid:null}]
+ };
+ const db={from(table){let rows=tables[table]??[];const q={select(v,opts){if(opts?.head)return Promise.resolve({count:8,data:null,error:null});return this;},order(){return this;},limit(){return this;},in(k,v){rows=rows.filter(r=>v.includes(r[k]));return this;},then(r){return Promise.resolve({data:rows,error:null}).then(r);}};return q;}};
+ assert.equal((await handleAdminInvites({admin:db,user:notAdmin,now})).status,403);
+ const {status,data}=await handleAdminInvites({admin:db,user:admin,now});
+ assert.equal(status,200);assert.equal(data.profile.player_id,admin.id);
+ assert.deepEqual(data.totals,{links:8,friends:3,qualified:1,diamondsPaid:300});
+ assert.deepEqual(data.invites.map(i=>[i.friend,i.inviter,i.status,i.friendPaid,i.inviterPaid]),[['Bram','Tony','qualified',true,true],['Chris','Tony','playing',false,false],['Dewi','Tony','expired',false,false]]);
+ const dash=read('src/admin-dashboard.js');
+ assert.match(dash,/bridge\.request\(\{operation:'admin_invites'\}\)\.catch\(\(\)=>null\)/,'the rest of the dashboard still loads before farm-api knows it');
+ assert.match(read('supabase/functions/farm-api/index.ts'),/if\(body\.operation==='admin_invites'\)\{/);
 });

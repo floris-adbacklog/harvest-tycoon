@@ -1,5 +1,5 @@
-// The admin-only dashboard: three headline numbers, who is online, the newest real accounts and a 7-day retention
-// cohort. Farm events run on their own schedule (live-events-schedule.sql), so they have no controls here. A single
+// The admin-only dashboard: three headline numbers, who is online, the newest real accounts, a 7-day retention
+// cohort and the Invite a friend log. Farm events run on their own schedule (live-events-schedule.sql), so they have no controls here. A single
 // icon button in the topbar (hidden for everyone else, same gate as the gift panel in player-profiles.js) opens
 // its own dialog inside the game, instead of a separate page — one session, one sign-in, nothing extra to visit.
 import {checkAdmin} from './player-profiles.js';
@@ -27,6 +27,7 @@ export function createAdminDashboard(bridge){
   +'<section class="admin-card"><h3><i data-lucide="radio" data-line-icon></i>Online now <span id="admin-online-count">0</span></h3><ul id="admin-online-list" class="admin-online-list"></ul><p class="admin-hint">Active in the last <span id="admin-online-window">30</span> minutes.</p></section>'
   +'<section class="admin-card"><h3><i data-lucide="user-plus" data-line-icon></i>Newest players</h3><ul id="admin-recent-list" class="admin-recent-list"></ul></section>'
   +'<section class="admin-card"><h3><i data-lucide="trending-up" data-line-icon></i>Retention, day 0–7</h3><p class="admin-hint">Share of each day’s signups still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
+  +'<section class="admin-card"><h3><i data-lucide="gift" data-line-icon></i>Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
   +'<p id="admin-dashboard-status" class="admin-hint admin-status" role="status"></p>';
  document.body.append(dialog);
  dialog.querySelector('.admin-dashboard-close').onclick=()=>dialog.close();
@@ -53,11 +54,20 @@ export function createAdminDashboard(bridge){
   dialog.querySelector('#admin-retention-head').innerHTML=`<tr><th>Signed up</th><th>Farmers</th>${Array.from({length:8},(_,i)=>`<th>Day ${i}</th>`).join('')}</tr>`;
   dialog.querySelector('#admin-retention-body').innerHTML=data.rows.length?data.rows.map(row=>`<tr><td>${fmtDay(row.day)}</td><td>${number(row.size)}</td>${row.days.map(d=>d?`<td class="${heat(d.pct)}" title="${d.retained} / ${d.total} still active">${d.pct}%</td>`:'<td class="admin-pending">—</td>').join('')}</tr>`).join(''):'<tr><td colspan="10" class="admin-empty">No signups in the last week.</td></tr>';
  }
+ // Invite a friend: the totals, then every friend who started with someone's link and whether each side has its diamonds.
+ function renderInvites(data){
+  const t=data.totals,reward=data.rules?.reward??150;
+  dialog.querySelector('#admin-invite-totals').innerHTML=`<span><strong>${number(t.links)}</strong> links</span><span><strong>${number(t.friends)}</strong> friends joined</span><span><strong>${number(t.qualified)}</strong> reached level ${data.rules?.level??10}</span><span><strong>${number(t.diamondsPaid)}</strong> diamonds paid</span>`;
+  const paid=(yes,amount)=>amount>0?(yes?`<b class="admin-paid">+${amount} paid</b>`:`<b class="admin-pending-pay">+${amount} pending</b>`):'<b class="admin-none">none</b>';
+  const state=i=>i.status==='qualified'?`Reached level 10 ${ago(new Date(i.qualifiedAt).toISOString())} · friend ${paid(i.friendPaid,reward)} · inviter ${paid(i.inviterPaid,i.inviterReward)}${i.inviterReward===0?' (inviter used all 10 rewards)':''}`
+   :i.status==='expired'?`Did not reach level 10 within 30 days (level ${number(i.friendLevel)})`:`Playing · level ${number(i.friendLevel)} of 10`;
+  dialog.querySelector('#admin-invite-list').innerHTML=data.invites.length?data.invites.map(i=>`<li>${avatar(i.friend,false)}<span class="admin-recent-copy"><strong>${esc(i.friend)} <small>invited by ${esc(i.inviter)}</small></strong><small>${state(i)}</small></span><small class="admin-when" title="${esc(fmtDate(new Date(i.joinedAt).toISOString()))}">${ago(new Date(i.joinedAt).toISOString())}</small></li>`).join(''):'<li class="admin-empty">No friend has joined with an invite link yet.</li>';
+ }
  async function load(){
   const status=dialog.querySelector('#admin-dashboard-status');status.textContent='Refreshing…';
   try{
-   const [online,recent,retention]=await Promise.all([bridge.request({operation:'admin_online'}),bridge.request({operation:'admin_recent_players'}),bridge.request({operation:'admin_retention'})]);
-   renderOnline(online);renderRecent(recent);renderRetention(retention);renderKpis(online,retention);
+   const [online,recent,retention,invites]=await Promise.all([bridge.request({operation:'admin_online'}),bridge.request({operation:'admin_recent_players'}),bridge.request({operation:'admin_retention'}),bridge.request({operation:'admin_invites'}).catch(()=>null)]);
+   renderOnline(online);renderRecent(recent);renderRetention(retention);renderKpis(online,retention);if(invites)renderInvites(invites);
    status.textContent=`Updated ${new Date().toLocaleTimeString('en-US')}`;
   }catch(error){status.textContent=error.message;}
  }

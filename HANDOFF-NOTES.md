@@ -855,3 +855,9 @@ notification_settings/push_subscriptions (their policies only return the reader'
 cron.* is Supabase's own.
 The windmill has a yard extent (YARD_EXTENT windmill), so a tree moved out of the east street no longer lands in its sails;
 the short loose rail fence by the Bakery is gone.
+Admin: Invite a friend log (2026-09-24, NOT live until farm-api is deployed; the rest of the dashboard keeps working before):
+farm-api `admin_invites` (`handleAdminInvites`, admin-analytics-service.js, superadmin only) lists the newest 200 referrals
+with inviter, friend, the friend's level, status (playing / reached level 10 / expired after 30 days) and whether each side's
+150 diamonds are really in their farm (friend: state.invite.rewardedAt; inviter: state.inviteRewards contains the friend), plus
+totals (personal links made = rows in player_invite_codes, friends joined, reached level 10, diamonds paid). Shown as the
+"Invite a friend" card in the admin dashboard (src/admin-dashboard.js). Tests: tests/admin-analytics.test.mjs.

@@ -1128,3 +1128,12 @@
    label gets a soft gold edge instead of a brown box, and an empty field shows no stray yellow square. */
 .plot-label:focus-visible{outline:none;box-shadow:0 0 0 2px #fffdf5,0 0 0 4.5px #f3c353,0 2px 8px #3e342240}
 .plot-label:empty:focus-visible{opacity:0}
+
+/* Admin dashboard: the Invite a friend log (src/admin-dashboard.js renderInvites). */
+#admin-dashboard-dialog .admin-invite-totals{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 8px;font-size:13px;color:#6c604a}
+#admin-dashboard-dialog .admin-invite-totals strong{color:#3f3827;font-size:15px}
+#admin-dashboard-dialog .admin-invite-list strong small{font-weight:500;color:#857d6b}
+#admin-dashboard-dialog .admin-invite-list .admin-when{margin-left:auto;flex:none;color:#857d6b}
+#admin-dashboard-dialog .admin-paid{color:#3f7a3a}
+#admin-dashboard-dialog .admin-pending-pay{color:#a8741c}
+#admin-dashboard-dialog .admin-none{color:#9a8f7c;font-weight:600}
