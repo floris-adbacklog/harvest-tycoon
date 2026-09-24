@@ -884,3 +884,7 @@ VIP mark and Moderator shield after names; profile: Send message, Block, staff t
 Players (gift for everyone, online, newest), Growth, Settings (admin: news, moderators, chat levels). Icons painted by the user:
 chat, bell, sound, cookie, letter, send, admin (shield with key), guide (book), settings (gear), starter-pack.webp. Privacy page
 updated. Tests: tests/chat.test.mjs (+ updated admin, notifications, menu tests).
+Payments fix (24 Sep 2026): the €4.99 pack (500 diamonds) could never be bought: harvest_purchases_amount_cents_check did not
+allow 499 cents (every attempt: "Checkout is unavailable", Postgres 23514). Fixed live (migration harvest_purchases_allow_499,
+`supabase/purchases-499.sql`). When a pack price changes, update game/payments.js, the Stripe price, harvest_pack_amount_matches
+AND harvest_purchases_amount_cents_check.
