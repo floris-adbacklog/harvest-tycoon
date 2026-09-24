@@ -351,7 +351,7 @@ function decorate(){
   cloneModel('prop_021',42.2,-7.1,{width:.9,rotation:.4}),cloneModel('pointer_002',36.2,-5.2,{height:1.3,rotation:-.3}));
  // The Estate Workshop: the manor house across the road, with a workbench, timber and tools in the yard.
  zone('estateworkshop');
- addUtility('estateworkshop','house_005',42.3,2.6,{width:8.5});
+ addUtility('estateworkshop','house_005',42.3,2.6,{width:8.5,rotation:Math.PI/2});   // porch and windows towards the camera
  yardDecor.estateworkshop.push(cloneModel('table_001',39.1,5.9,{width:1.6,rotation:.15}),cloneModel('firewood_003',45.6,5.6,{width:1.4,rotation:.4}),cloneModel('case_003',38.2,5.2,{width:.85,rotation:-.3}),
   cloneModel('bag_001',46.4,4.6,{height:.75,rotation:.3}),cloneModel('garden_bed_001',37,1.2,{width:1.8,rotation:Math.PI/2}));
  // The Grand Valley Fair: a long exhibition hall with its fairground in front: stalls, a produce cart, hay bales and a sign.
