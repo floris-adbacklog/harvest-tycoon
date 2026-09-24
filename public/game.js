@@ -280,7 +280,7 @@ function decorate(){
  fenceLine(6.4,-15,7);fenceLine(6.4,-4,7);fenceLine(5.3,-13.9,5,'z');fenceLine(20.7,-13.9,5,'z');
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
  zone('farmhouse');fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);
- zone(null);fenceLine(-19,-9,8,'z');fenceLine(-18.8,10.8,5);
+ zone(null);fenceLine(-19,-9,8,'z');   // (the short rail by the Bakery is gone: it fenced nothing)
  // White rail fences run along the two sides of the crops, the same distance from the outer fields; the ends stay open.
  zone('fields');
  fenceLine(-4.4,-.3,15,'z',2.2,'fence_008',0xf2e2bd);fenceLine(9.55,-.3,15,'z',2.2,'fence_008',0xf2e2bd);

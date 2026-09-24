@@ -853,3 +853,5 @@ Remaining Supabase advisor notices are expected: "RLS enabled, no policy" on the
 notification_* functions callable by signed-in players (on purpose, they check auth.uid()); "anonymous access" on
 notification_settings/push_subscriptions (their policies only return the reader's own rows, and anonymous players have none);
 cron.* is Supabase's own.
+The windmill has a yard extent (YARD_EXTENT windmill), so a tree moved out of the east street no longer lands in its sails;
+the short loose rail fence by the Bakery is gone.

@@ -60,7 +60,7 @@ const yardCentres=Object.keys(ANCHORS).map(anchorAt);
 // Yards that reach further than the clearance around their middle: how far they run from their anchor (world units: west, east,
 // north, south). The Sheep Barn's pasture runs down to the road in front of it. Trees keep three steps clear of the edges, so
 // no crown hangs over a yard.
-export const YARD_EXTENT=Object.freeze({coop:[-7.9,7.9,-5.8,5.8],beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-4.2,4.2,-2.6,4.6],weaving:[-3,4.8,-4,5.5],
+export const YARD_EXTENT=Object.freeze({coop:[-7.9,7.9,-5.8,5.8],windmill:[-4.6,4.6,-4.6,4.6],beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-4.2,4.2,-2.6,4.6],weaving:[-3,4.8,-4,5.5],
  goatshed:[-4.8,4.8,-4.4,11],pigfarm:[-12.6,4.6,-3.6,12.5],craftshop:[-4.4,4.8,-2.4,3.6],ranch:[-6,6,-5.2,10.2],valleymarket:[-8.5,9.5,-5,4.5],
  tradedepot:[-7,7.5,-4.5,5],estateworkshop:[-5.5,5.5,-3.5,4.5],grandfair:[-13.8,13.8,-5.4,5]});
 const EXTENT_MARGIN=3;
