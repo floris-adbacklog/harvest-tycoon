@@ -1,6 +1,6 @@
 // Scenery that makes the valley feel lived in. It is added after the farm is on screen (game.js addScenery), so the first
-// load is not slower, and everything in it stands still. Around the valley: a belt of firs with soft green hills behind, between the farm's trees and the mountains. Beside the roads: strips of sunflowers. On the farm: a
-// pigsty, chicks and a rooster at the coop, a spotted cow, and the odd tool around the farmhouse and the fields. Grass tufts
+// load is not slower, and everything in it stands still. Around the valley: a belt of firs with soft green hills behind, between the farm's trees and the mountains. Beside the roads: strips of sunflowers. On the farm:
+// chicks and a rooster at the coop, a spotted cow, and the odd tool around the farmhouse and the fields. Grass tufts
 // across the outer meadows, which were bare ground, and at the front (towards the camera) only low things: bushes, young
 // trees, hay and clumps of sunflowers.
 // Spots are fixed (a seeded generator), so the farm looks the same on every device, and a piece only goes where nothing
@@ -11,9 +11,9 @@ import {seeded} from './farm-props.js';
 import {SPREAD,roadRects,onRoad,placeIn,anchorAt} from './farm-layout.js';
 
 const FIRS=['fir_tree_001','fir_tree_003','fir_tree_004','fir_tree_006','fir_tree_007','fir_tree_010'];
-const FARM_PIECES=['pig_002','pig_003','pig_005','chicken_002','chicken_003','cow_003','toilet_001','firewood_005','cart_003','cart_006','lawn_mower_001','car_005','dray_001','trailer_002','tower_004'];
+const FARM_PIECES=['chicken_002','chicken_003','cow_003','toilet_001','firewood_005','cart_003','cart_006','lawn_mower_001','car_005','dray_001','trailer_002','tower_004'];
 const FRONT=['bush_001','bush_002','bush_003','bush_004','tree_002','tree_005','tree_007','tree_008','hay_001','hay_002'];
-export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','mountain_007','mountain_008','mountain_009','plant_008','grass_001','grass_004','landscape_008','landscape_011','fence_008','water_001',...FARM_PIECES]);
+export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','mountain_007','mountain_008','mountain_009','plant_008','grass_001','grass_004','landscape_008','landscape_011',...FARM_PIECES]);
 
 // The same ring as the mountains (scene-polish.js): laid out in screen directions around the home view, sides and back only,
 // so nothing stands between the camera and the farm.
@@ -146,14 +146,6 @@ export function buildScenery({scene,models,mobile=false}){
   for(let d=0;d<=max;d+=.8){const n=d?Math.max(6,Math.round(2*Math.PI*d/.8)):1;for(let i=0;i<n;i++){const a=i/n*Math.PI*2,px=x+Math.cos(a)*d,pz=z+Math.sin(a)*d;if(free(px,pz,r))return [px,pz];}}
   return null;
  };
- // A pigsty with three pigs and a trough, across the road west of the farmhouse, where there is open ground.
- const sty=nearestFree(near('farmhouse',-13,0),3.4,12);
- if(sty){
-  const [sx,sz]=sty;claim(sx,sz,3.4);
-  for(const [dx,dz,rot] of [[-2.2,-2.6,0],[0,-2.6,0],[2.2,-2.6,0],[-2.2,2.6,0],[0,2.6,0],[2.2,2.6,0],[-3.3,-1.3,Math.PI/2],[-3.3,1.3,Math.PI/2],[3.3,-1.3,Math.PI/2],[3.3,1.3,Math.PI/2]])put('fence_008',sx+dx,sz+dz,{width:2.2,rotation:rot});
-  put('pig_003',sx-1.2,sz-.6,{height:.85,rotation:.7});put('pig_002',sx+1,sz+.9,{height:.8,rotation:2.6});put('pig_005',sx+.4,sz-1.3,{height:.55,rotation:-.8});
-  put('water_001',sx-1.6,sz+1.4,{width:1,rotation:.3});
- }
  // [model, where it belongs, how far it may look, room it needs, size and turn]
  for(const [name,from,max,r,options] of [
   ['chicken_002',near('coop',-2,-2.4),5,.5,{height:.42,rotation:.6}],

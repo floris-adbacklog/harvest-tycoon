@@ -40,3 +40,22 @@ test('a growing crop shows a ring that fills as it grows, its picture, the time 
  assert.match(css,/\.plot-timer-ring\{[^}]*conic-gradient\(#7fae4e calc\(var\(--grow,0\)\*1%\),#e9e1d0 0\)/);
  assert.match(css,/\.plot-label\.plot-timer\.care-ready\{border-color:#e0b04a;/);
 });
+
+test('every model the farm loads at the start is in the pack (a missing one stops the whole farm)',()=>{
+ const game=read('public/game.js');
+ const names=new Set([...game.matchAll(/modelNames(?:\.push\(|=\[)([^;]*)/g)].flatMap(m=>[...m[1].matchAll(/'([a-z]+(?:_[a-z]+)*_\d{3})'/g)].map(x=>x[1])));
+ assert(names.has('house_019')&&names.has('pig_003'),'the Pig Farm');
+ for(const name of names)assert(existsSync(new URL(`../public/assets/models/${name}.glb`,import.meta.url)),name);
+});
+
+test('the Pig Farm: level 29, truffles at the pace of the other animal buildings, an omelette in the Farm Kitchen',async()=>{
+ const m=await import('../game/farm-state.js');
+ const value=o=>Object.entries(o).reduce((sum,[k,n])=>sum+m.ITEMS[k].sell*n,0),perHour=id=>{const r=m.RECIPES[id];return (value(r.output)-value(r.input))/(r.duration/3600000);};
+ assert.equal(m.BUILDING_LEVELS.pigfarm,29);assert.equal(m.BUILDINGS.pigfarm.model,'house_019');
+ for(const id of ['trufflehunt','vegetablefeast'])assert(perHour(id)>150&&perHour(id)<200,`${id} ${perHour(id)}`);
+ assert(perHour('truffleomelette')>200&&perHour('truffleomelette')<240,'like the other Farm Kitchen dishes');
+ assert.equal(m.itemUnlockLevel('truffles'),29);assert.equal(m.itemUnlockLevel('truffleomelette'),30);
+ // New goods join the Family Order from the week after release, so this week's orders stay the same for every family.
+ assert.deepEqual(m.FAMILY_ORDER_FROM_WEEK,{truffles:2960,truffleomelette:2960});
+ for(let week=2940;week<2960;week++)for(const k of Object.keys(m.familyOrder('f',week,3).lines))assert(!k.startsWith('truffle'),`week ${week}`);
+});

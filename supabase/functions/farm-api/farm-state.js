@@ -60,6 +60,9 @@ cider:{"name": "Cider", "sell": 1650, "icon": "package-check", "color": "gold"},
 // Wave 2: goat milk and goat cheese, the Craft Workshop's candles and blankets, and two cherry treats.
 goatmilk:{"name": "Goat milk", "sell": 185, "icon": "milk", "color": "cream"},
 goatcheese:{"name": "Goat cheese", "sell": 1350, "icon": "sandwich", "color": "cream"},
+// The Pig Farm: pigs with clever noses dig up truffles, and the Farm Kitchen turns one into an omelette.
+truffles:{"name": "Truffles", "sell": 230, "icon": "package-check", "color": "wheat"},
+truffleomelette:{"name": "Truffle omelette", "sell": 880, "icon": "egg", "color": "gold"},
 candles:{"name": "Beeswax candles", "sell": 1150, "icon": "flame", "color": "gold"},
 blanket:{"name": "Wool blanket", "sell": 9800, "icon": "package-check", "color": "cream"},
 cherryjam:{"name": "Cherry jam", "sell": 2700, "icon": "amphora", "color": "gold"},
@@ -121,6 +124,7 @@ export const BUILDINGS = Object.freeze({
  glasshouse:{"name": "Glasshouse", "tagline": "Warm beds under glass: a crate of vegetables or sunflowers from fertilizer, no field needed.", "icon": "sprout", "model": "greenhouse_004", "type": "production", "upgradeCost": 1200, "minLevel": 40, "buildCost": 40000},
  weaving:{"name": "Weaving Shed", "tagline": "Spin wool into yarn and weave it into fine cloth.", "icon": "package-check", "model": "house_018", "type": "production", "upgradeCost": 1300, "minLevel": 43, "buildCost": 55000},
  // Wave 2: goats beside the sheep, and a workshop for the Bee Yard's wax and the Weaving Shed's cloth.
+ pigfarm:{"name": "Pig Farm", "tagline": "Happy pigs with clever noses, digging up truffles.", "icon": "package-check", "model": "house_019", "type": "production", "upgradeCost": 900, "minLevel": 29, "buildCost": 14000},
  goatshed:{"name": "Goat Shed", "tagline": "Curious goats, creamy milk and a cheese to be proud of.", "icon": "milk", "model": "hangar_015", "type": "production", "upgradeCost": 1400, "minLevel": 54, "buildCost": 72000},
  craftshop:{"name": "Craft Workshop", "tagline": "Hand-poured beeswax candles and warm wool blankets.", "icon": "flame", "model": "hangar_019", "type": "production", "upgradeCost": 1500, "minLevel": 58, "buildCost": 90000},
  factory:{"name": "Factory", "tagline": "Every good in huge batches, for the fields and upgrades of a lasting estate.", "icon": "factory", "model": "hangar_007", "type": "production", "upgradeCost": 800, "minLevel": FACTORY_LEVEL, "buildCost": FACTORY_COST}
@@ -172,6 +176,9 @@ yarn:{"building": "weaving", "name": "Spin wool into yarn", "input": {"wool": 3}
 cloth:{"building": "weaving", "name": "Weave fine cloth", "input": {"yarn": 4}, "output": {"cloth": 1}, "duration": 14400000, "xp": 80, "minLevel": 45},
 cider:{"building": "juicepress", "name": "Press sparkling cider", "input": {"ciderapples": 4, "honey": 2}, "output": {"cider": 1}, "duration": 14400000, "xp": 60, "minLevel": 47},
 // Wave 2. Goat cheese is made in the Dairy Barn, the cherry treats in the Preserves Workshop and the Bakery.
+trufflehunt:{"building": "pigfarm", "name": "Let the pigs hunt truffles", "input": {"feed": 2}, "output": {"truffles": 2}, "duration": 4800000, "xp": 28, "minLevel": 29},
+vegetablefeast:{"building": "pigfarm", "name": "A vegetable feast for the pigs", "input": {"corn": 6, "lettuce": 8}, "output": {"truffles": 3}, "duration": 6000000, "xp": 32, "minLevel": 31},
+truffleomelette:{"building": "kitchen", "name": "Cook truffle omelettes", "input": {"eggs": 4, "cheese": 2, "truffles": 2}, "output": {"truffleomelette": 2}, "duration": 10800000, "xp": 55, "minLevel": 30},
 goatmilk:{"building": "goatshed", "name": "Milk the goats", "input": {"feed": 2}, "output": {"goatmilk": 2}, "duration": 3000000, "xp": 26, "minLevel": 54},
 goatcheese:{"building": "dairy", "name": "Make goat cheese", "input": {"goatmilk": 4}, "output": {"goatcheese": 1}, "duration": 10800000, "xp": 60, "minLevel": 55},
 goatbrowse:{"building": "goatshed", "name": "Let the goats browse", "input": {"lettuce": 6, "barley": 2}, "output": {"goatmilk": 3}, "duration": 4200000, "xp": 30, "minLevel": 56},
@@ -583,9 +590,9 @@ export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:7,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
-export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:10,kitchen:12,juicepress:21,preserves:24,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL});
-export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST});
-export const RECIPE_LEVELS=Object.freeze({eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:11,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:23,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:25,harvesthamper:25,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80});
+export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:10,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL});
+export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST});
+export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:31,eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:11,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:23,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:25,harvesthamper:25,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80});
 export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:11,tractor:12,boosts:14,silo:18,projects:19,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:12});
 export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair'};
@@ -1868,9 +1875,12 @@ export function familyLineCap(item){
  return Math.max(1,Math.floor(FAMILY_LINE_HOURS*3600000/perUnit));
 }
 const niceCount=n=>n<10?Math.max(1,Math.round(n)):n<50?Math.round(n/5)*5:Math.round(n/10)*10;
+// Goods added to the game join the Family Order from a later week: the draw picks from the list of goods, so a longer list
+// would give a family that opens its order late in the week a different order than the families before it.
+export const FAMILY_ORDER_FROM_WEEK=Object.freeze({truffles:2960,truffleomelette:2960});   // week 2960 starts Monday 28 September 2026
 export function familyOrder(familyId,week,members,config=FAMILY_CONFIG){
  if(!Number.isInteger(members)||members<1||members>config.MAX_MEMBERS)throw new Error('Choose a valid family size.');
- const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0),picked=[];let draw=0;
+ const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
  const next=()=>pool[calendarHash(`family-order-v2:${week}:${draw++}`)%pool.length];
  // At most one of the dearest goods (5,000+ coins each, such as a blanket) in one week.
  const dear=k=>ITEMS[k].sell>=5000;

@@ -24,7 +24,7 @@ test('the Factory is an endgame building: level 50, 100,000 coins, twenty levels
  assert.equal(MAX_BUILDING_LEVEL,20);
 });
 test('every production recipe has one bulk version: quick goods x20, slow goods x10, in twice the time, with the same XP per ingredient',()=>{
- assert.equal(base.length,44);assert.equal(mass.length,44,'one bulk recipe for each');
+ assert.equal(base.length,47);assert.equal(mass.length,47,'one bulk recipe for each');
  assert.deepEqual(Object.keys(RECIPES).filter(id=>RECIPES[id].building==='glasshouse'&&RECIPES[`mass_${id}`]),[],'no bulk Glasshouse');
  for(const [id,r] of base){
   const m=RECIPES[`mass_${id}`],n=r.duration<=3600000?20:10;assert.ok(m,id);

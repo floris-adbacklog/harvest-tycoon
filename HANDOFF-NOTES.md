@@ -800,3 +800,17 @@ Crop timers (2026-09-24): a growing crop's label is a pill with a ring that fill
 crop's picture, the time left (phones: 36m, 1h20) and a drop (watered) or leaf (cared for) icon; when Care is ready the pill
 glows gold and the leaf gently pulses. Built once per planting (`dataset.crop`), each tick only the fill (`--grow`) and the
 time change. Styles at the end of `public/retention.css`. Tests in `tests/scenery.test.mjs`.
+
+Pig Farm (2026-09-24, NOT live until pushed, `supabase/pig-farm.sql` applied, and `farm-api` + `notify-hourly` deployed):
+a level-29 production building (`pigfarm`, model house_019, 14,000 coins, upgrade 900, levels 1-20 like the others) west of
+the farmhouse across the west road (ANCHORS.pigfarm, YARD_EXTENT, yardDecor: pen with fence_001, three pigs, trough, hay;
+greyed until level 29). Pigs dig up truffles: "Let the pigs hunt truffles" 2 feed -> 2 truffles in 80 min (~173/h) and
+"A vegetable feast for the pigs" 6 corn + 8 lettuce -> 3 truffles in 100 min (~174/h, level 31); truffles sell for 230. The
+Farm Kitchen cooks "truffle omelettes" (level 30): 4 eggs, 2 cheese, 2 truffles -> 2 omelettes (880 each) in 3 h (~213/h).
+The Factory gets its bulk versions automatically. Family Order: new goods only from week 2960 (Mon 28 Sep 2026,
+`FAMILY_ORDER_FROM_WEEK`), because the draw picks from the list of goods and a longer list would change this week's order
+for families that open it late (stored orders never change). The Grand Fair only picks goods of 1,000+ coins, so it is
+unaffected; the market highlight may pick truffles. Family sharing: `supabase/pig-farm.sql` adds both goods to the
+harvest_social items list and to "goods produced" (harvest_public_metrics); live bodies matched estate-wave3.sql on
+24 Sep. Icons: truffles/truffleomelette (painted, WebP 256) and pigfarm (render, PNG 512). The scenery pigsty is gone.
+Tests: `tests/scenery.test.mjs` (Pig Farm and start-up models), counts in factory/farm tests.

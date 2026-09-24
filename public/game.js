@@ -52,7 +52,7 @@ let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFram
 const startView=()=>mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)?'fields':'home';
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
 let overviewBounds=null;
-const familyDecor=[],factoryDecor=[],yardDecor={beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+const familyDecor=[],factoryDecor=[],yardDecor={pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 let liveEvents,familyUI,progression,economy,retention,growth,valley,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'}};
@@ -76,6 +76,8 @@ modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','
 modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS);
 modelNames.push('coop_002','mountain_001','mountain_007');
 modelNames.push('house_008','pointer_002','table_002','garden_bed_002','firewood_001');
+// The Pig Farm: its barn and three pigs.
+modelNames.push('house_019','pig_002','pig_003','pig_005');
 // The midgame expansion: two crops and the four new yards.
 modelNames.push('plant_009','tree_010','apiary_002','apiary_003','sheep_002','sheep_003','hangar_006','greenhouse_004','house_018');
 // Wave 2: the cherry tree, the Goat Shed, the Craft Workshop, the Ranch with its horses and the Valley Market's canopy.
@@ -314,6 +316,12 @@ function decorate(){
  yardDecor.goatshed.push(...fenceLine(28.6,-3.8,4),...fenceLine(27.5,-9.3,3,'z'),...fenceLine(36.3,-9.3,3,'z'),...fenceLine(28.6,-10.4,1),...fenceLine(35.2,-10.4,1));
  for(const [model,x,z,r] of [['goat_001',29.6,-8.4,.8],['goat_002',32.2,-6.1,2.2],['goat_001',34.6,-8.7,-.9],['goat_002',30.4,-5.2,1.6],['goat_001',33.9,-4.9,3.4]])yardDecor.goatshed.push(animalAt(model,x,z,{width:1.3,rotation:r},'goatshed',r));
  yardDecor.goatshed.push(cloneModel('hay_002',35.3,-5.1,{width:1.1,rotation:.4}),cloneModel('water_001',28.5,-4.9,{width:1}));
+ // The Pig Farm: a pink barn west of the farmhouse and a pen towards the road, where the pigs dig for truffles.
+ zone('pigfarm');
+ addBuilding('pigfarm',-31.54,-9.23,{width:6.2});
+ yardDecor.pigfarm.push(...fenceLine(-25.74,-13.43,3),...fenceLine(-25.74,-9.03,3),...fenceLine(-26.84,-12.33,2,'z'),...fenceLine(-20.24,-12.33,2,'z'));
+ for(const [model,x,z,height,r] of [['pig_003',-24.54,-11.73,.95,.8],['pig_002',-22.54,-10.43,.9,2.6],['pig_005',-23.74,-12.63,.6,-.7]])yardDecor.pigfarm.push(animalAt(model,x,z,{height,rotation:r},'pigfarm',r));
+ yardDecor.pigfarm.push(cloneModel('water_001',-25.9,-9.9,{width:1,rotation:.3}),cloneModel('hay_002',-35.4,-7.2,{width:1.1,rotation:.5}));
  // The Craft Workshop, a long low workshop east of the Weaving Shed, with wax and wool at the door.
  zone('craftshop');
  addBuilding('craftshop',33.1,9.6,{width:7.5,height:2.6,depth:3.1});

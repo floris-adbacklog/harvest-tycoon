@@ -13,7 +13,7 @@ export const YARD_THEME=Object.freeze({
  preserves:'work',juicepress:'work',packing:'work',mill:'work',tractor:'work',cart:'work',workshop:'work',factory:'work',
  greenhouse:'green',apiary:'green',pond:'green',
  beeyard:'green',sheepbarn:'farm',glasshouse:'green',weaving:'work',
- goatshed:'farm',craftshop:'work',ranch:'farm',valleymarket:'road',
+ goatshed:'farm',pigfarm:'farm',craftshop:'work',ranch:'farm',valleymarket:'road',
  estateworkshop:'home',tradedepot:'work',grandfair:'road'
 });
 export const PROPS_PER_YARD=4,PROPS_AROUND_YARD=[3.4,8.2],ROAD_STEP=7.5,MEADOW_CLUMPS=26;

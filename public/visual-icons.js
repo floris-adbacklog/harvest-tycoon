@@ -22,6 +22,8 @@ pictures.valleymarket='valley-market';
 const ESTATE_ITEM_ART=['prizeproduce','estate-workshop','trade-depot','grand-fair'];
 for(const id of ESTATE_ITEM_ART)pictures[id]=id;
 Object.assign(pictures,{estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair'});
+// The Pig Farm: truffles and the truffle omelette (painted, WebP) and a render of the building's model (PNG).
+for(const id of ['truffles','truffleomelette','pigfarm'])pictures[id]=id;
 // Painted-style vector illustrations for the few interface items that had no artwork yet.
 const svgArt=new Set(['guide','sound','streak','settings','reminders','farmapp','hourglass','admin']);
 for(const id of svgArt)pictures[id]=id;
@@ -34,7 +36,7 @@ const LARGE_PICTURES=['familyhall-model','helping-hand','windmill','family-fox',
 // Renders of the valley places, shown only in the Buildings list (economy-ui.js).
 const PLACE_RENDERS=['valleymarket','ranch','estateworkshop','tradedepot','grandfair'].map(key=>`place-${key}`);
 // These pictures were re-encoded to WebP (level-up.webp is a separate hardcoded path in progression-ui.js, not routed through art()) (75-86% smaller, no visible difference at this size); every other picture is still a plain PNG.
-const webpPictures=new Set(['live-events','family-sharing','double-harvest','invite-friends','vip','honey','rank-gold','family-bee','family-barn','rank-bronze','family-weekly-order','family-oak','rank-silver','family-members','familyhall','lock','family-tournament','family-management','berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice','harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote','chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary','instant-harvest','chore-troughs',...MIDGAME_ITEM_ART,...VALLEY_ITEM_ART,'valleymarket',...ESTATE_ITEM_ART,'estateworkshop','tradedepot','grandfair',...LARGE_PICTURES,...PLACE_RENDERS]);
+const webpPictures=new Set(['live-events','family-sharing','double-harvest','invite-friends','vip','honey','rank-gold','family-bee','family-barn','rank-bronze','family-weekly-order','family-oak','rank-silver','family-members','familyhall','lock','family-tournament','family-management','berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice','harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote','chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary','instant-harvest','chore-troughs',...MIDGAME_ITEM_ART,...VALLEY_ITEM_ART,'valleymarket',...ESTATE_ITEM_ART,'estateworkshop','tradedepot','grandfair',...LARGE_PICTURES,...PLACE_RENDERS,'truffles','truffleomelette']);
 // A picture by its file name, for the screens that show one without art() (the Buildings list and a building's page).
 export const pictureFile=name=>`/assets/icons/${name}.${webpPictures.has(name)?'webp':'png'}`;
 export function art(key,extra=''){
