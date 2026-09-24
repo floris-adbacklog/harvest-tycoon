@@ -5,4 +5,6 @@ await import('./build-cloud.mjs');
 rmSync('dist-static',{recursive:true,force:true});mkdirSync('dist-static',{recursive:true});cpSync('public','dist-static',{recursive:true});
 const html=readFileSync('public/play.html','utf8').replace('data-legacy-migration="true"','data-legacy-migration="false"');
 writeFileSync('dist-static/index.html',html);writeFileSync('dist-static/play.html',html);
+// The public farm wiki (/wiki), made from the game rules on every deploy.
+const {buildWiki}=await import('./build-wiki.mjs');await buildWiki('dist-static');
 console.log('Standalone static game ready in dist-static/. No application server is required.');

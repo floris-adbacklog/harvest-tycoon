@@ -21,6 +21,18 @@
     {
       "source": "/delete-account/",
       "destination": "/delete-account.html"
+    },
+    {
+      "source": "/wiki",
+      "destination": "/wiki/index.html"
+    },
+    {
+      "source": "/wiki/",
+      "destination": "/wiki/index.html"
+    },
+    {
+      "source": "/wiki/:topic([a-z-]+)",
+      "destination": "/wiki/:topic.html"
     }
   ],
   "headers": [

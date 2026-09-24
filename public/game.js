@@ -3,7 +3,7 @@ import {createToast} from './toast-ui.js';
 import {haptic} from './haptics.js';
 import {showWelcomeBack} from './welcome-ui.js';
 import {createFamilyUI} from './family-ui.js';
-import {renderFarmGuide} from './farm-guide.js';
+import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
 import {buildingEligible,featureUnlocked,featureUnlockHint} from './farm-state.js';
 import {createLoadingScreen} from './loading-screen.js';
@@ -798,7 +798,7 @@ function bindUI(){
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
  $('market-button').addEventListener('click',()=>openDialog('market-dialog'));
- $('help-button').addEventListener('click',()=>{renderFarmGuide(state);openDialog('help-dialog');});
+ $('help-button').addEventListener('click',()=>{renderWiki(state);openDialog('help-dialog');});
  $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());resetView();toast('Back to the heart of your farm.');});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
  // A click on the dimmed backdrop closes the open dialog. One delegated listener, so dialogs created later (farm events,

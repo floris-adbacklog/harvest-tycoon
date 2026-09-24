@@ -1,0 +1,216 @@
+import {CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,DAILY_REWARDS,DAILY_DIAMONDS,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_MS,ROOKIE_TIMER_BOOST} from './farm-state.js';
+import {art} from './visual-icons.js';
+import {EVENTS_LEVEL} from './live-events-ui.js';
+
+// The farm wiki: the same topics in How to play (public/wiki-ui.js) and on the website (/wiki, scripts/build-wiki.mjs).
+// Every number and table comes from the game rules, so a balance change never leaves the wiki behind. In the game, things
+// above your level say "From level X"; on the website every level is just shown.
+export const WIKI_TOPICS=Object.freeze([
+ {id:'getting-started',title:'Getting started',art:'farm',blurb:'Your first minutes on the farm, and how to move around.',keywords:'start beginner guide rookie controls swipe zoom tutorial new'},
+ {id:'crops',title:'Fields and crops',art:'wheat',blurb:'Planting, watering, more fields and every crop in the game.',keywords:'plant water care harvest field seeds grow mastery silo trees'},
+ {id:'buildings',title:'Buildings and goods',art:'buildings',blurb:'What each building makes, from what, and how long it takes.',keywords:'production recipe goods upgrade factory batch collect'},
+ {id:'market',title:'Market',art:'market',blurb:'Selling crops and goods, and prices that change every day.',keywords:'sell price demand coins stall'},
+ {id:'quests',title:'Quests and levels',art:'quests',blurb:'Goals, XP, levels and what opens when.',keywords:'xp level unlock journal quest claim'},
+ {id:'daily',title:'Daily rewards and orders',art:'gift',blurb:'The daily gift, challenges and delivery orders.',keywords:'streak gift challenges deliveries orders cart commission'},
+ {id:'family',title:'Farm family',art:'familyhall',blurb:'Playing together: weekly orders, sharing and the tournament.',keywords:'family team guild members tournament sharing invite'},
+ {id:'events',title:'Farm events',art:'live-events',blurb:'Short shared goals every six hours.',keywords:'event goals qualify podium'},
+ {id:'helpers',title:'Farm helpers',art:'tractor',blurb:'Tractor, silo research, farm stall, chores and a helping hand.',keywords:'tractor silo stall chores helping hand greenhouse apiary paddock workshop'},
+ {id:'estate',title:'Estate and Valley',art:'estate',blurb:'Big goals for later: projects, the Valley Market and more.',keywords:'estate projects valley market ranch workshop trade depot fair improvements'},
+ {id:'diamonds',title:'Diamonds, boosts and VIP',art:'diamonds',blurb:'How to earn diamonds and what they do.',keywords:'diamonds boosts vip shop packs starter pack buy premium'},
+ {id:'chat',title:'Chat and house rules',art:'chat',blurb:'Talking with other farmers, and keeping it friendly.',keywords:'chat messages private block report rules moderator'},
+ {id:'account',title:'Account and settings',art:'settings',blurb:'Your account, settings, invites and privacy.',keywords:'account password settings avatar sound reminders invite delete privacy app'}
+]);
+const TOPIC=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,t]));
+
+const number=n=>Number(n).toLocaleString('en-US');
+export function wikiTime(ms){
+ const minutes=Math.round(ms/60000);if(minutes<60)return `${minutes} min`;
+ const hours=Math.floor(minutes/60),rest=minutes%60;if(hours<24)return rest?`${hours} h ${rest} min`:`${hours} h`;
+ const days=Math.floor(hours/24),h=hours%24;return h?`${days} d ${h} h`:`${days} d`;
+}
+const itemName=key=>ITEMS[key]?.name??PRODUCTS[key]?.name??CROPS[key]?.name??key;
+const item=(key,count)=>`<span class="wiki-item">${art(key)}<span>${count>1?`${number(count)} `:''}${itemName(key)}</span></span>`;
+const items=list=>Object.entries(list).map(([key,count])=>item(key,count)).join('');
+const section=(title,body)=>`<section class="wiki-section"><h3>${title}</h3>${body}</section>`;
+const table=(head,rows,cls='')=>`<div class="wiki-table-wrap"><table class="wiki-table ${cls}"><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+const facts=list=>`<ul class="wiki-facts">${list.map(([picture,title,text])=>`<li>${art(picture)}<div><strong>${title}</strong><p>${text}</p></div></li>`).join('')}</ul>`;
+
+export const cropLevel=key=>CROP_LEVELS[key]??CROPS[key].minLevel??1;
+export const buildingLevel=key=>BUILDING_LEVELS[key]??BUILDINGS[key].minLevel??1;
+export const recipeLevel=key=>{const r=RECIPES[key];return r.building==='factory'?Math.max(FACTORY_LEVEL,RECIPE_LEVELS[r.base]??1):RECIPE_LEVELS[key]??buildingLevel(r.building);};
+
+// ctx: {level: the player's level, or null on the website; href: id => link to a topic}.
+function helpers(ctx){
+ const level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`);
+ const locked=n=>level!=null&&n>level;
+ const lvl=n=>`<span class="wiki-level${locked(n)?' is-locked':''}">${locked(n)?'From level':'Level'} ${n}</span>`;
+ const row=(n,cells)=>`<tr${locked(n)?' class="is-locked"':''}>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+ const link=(id,text=TOPIC[id].title)=>`<a href="${href(id)}" data-wiki-topic="${id}">${text}</a>`;
+ return {level,href,locked,lvl,row,link};
+}
+
+const BODIES={
+ 'getting-started'(h){
+  const loop=[['seeds','Plant'],['harvest','Harvest'],['buildings','Make'],['market','Sell']].map(([p,l],i)=>`${i?'<i class="wiki-arrow" aria-hidden="true">›</i>':''}<li>${art(p)}<span>${l}</span></li>`).join('');
+  return section('The whole game in four steps',`<ol class="wiki-loop">${loop}</ol><p>Plant crops, harvest them, turn them into goods in your buildings and sell them at the ${h.link('market')}. Everything else helps your farm grow.</p>`)
+  +section('Your first minutes',facts([
+   ['quests','Beginner guide',`Ten small steps that show you the farm. After all ten you get ${BEGINNER_REWARD} diamonds.`],
+   ['boost','Rookie boost',`For the first ${Math.round(ROOKIE_MS/60000)} minutes after you create your account, waiting times are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter.`],
+   ['gift','A gift every day',`Come back every day for coins and diamonds. See ${h.link('daily')}.`]
+  ]))
+  +section('Moving around',facts([
+   ['farm','Look around','Drag to move the farm. Pinch, or scroll with a mouse, to zoom in and out.'],
+   ['harvest','Swipe across fields',`With a tool picked, swipe across your fields to plant, water, care for or harvest many at once, up to ${SWIPE_MAX_FIELDS} in one swipe.`],
+   ['care','Tools at the bottom','Pick Plant, Water, Care or Harvest at the bottom of the screen, then tap or swipe your fields.']
+  ]))
+  +section('Saved for you','<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>');
+ },
+ crops(h){
+  const regrowing=Object.entries(CROPS).filter(([,c])=>c.regrow).map(([k])=>CROPS[k].name);
+  const rows=Object.entries(CROPS).sort(([a],[b])=>cropLevel(a)-cropLevel(b)||CROPS[a].duration-CROPS[b].duration).map(([key,c])=>h.row(cropLevel(key),[
+   item(key,1),h.lvl(cropLevel(key)),`${art('coins')}${number(c.cost)}`,wikiTime(c.duration),`${art('coins')}${number(c.sell)}`,number(c.xp),c.regrow?`every ${wikiTime(c.regrow)}`:'–',c.use??'–']));
+  const early=EARLY_FIELDS.map(f=>number(f.coins)).join(', ');
+  return section('Planting','<p>Pick a crop in the seed shop, then tap an empty field. Quick crops are good while you play; longer ones grow while you are away.</p>')
+  +section('Water and care',`<p>A harvest gives 1 crop. Water a field for 2 crops, water and care for 3. Both also make the crop grow faster, and doing both gives double XP.</p>`)
+  +section('Trees and bushes',`<p>${regrowing.join(', ')} grow back after you harvest them, so you only plant them once.</p>`)
+  +section('More fields',`<p>You start with ${STARTER_FIELDS} fields. While you start out, each new level lets you open one more for coins (${early}). After that the Farmhouse adds fields, up to ${MAX_PLOTS} in total. See ${h.link('buildings')}.</p>`)
+  +section('Crop mastery',`<p>${h.lvl(FEATURE_LEVELS.mastery)} Harvest the same crop often for a reward at every tier.</p>`+table(['Tier','Harvests','Reward'],MASTERY_TIERS.map(t=>`<tr><td>${t.name}</td><td>${number(t.target)}</td><td>${art('coins')}${number(t.coins)} · ${number(t.xp)} XP</td></tr>`)))
+  +section('Silo research',`<p>${h.lvl(FEATURE_LEVELS.silo)} Five research steps, each paid with coins (${SILO_COSTS.map(number).join(', ')}). Together they make crops grow up to 40% faster and seeds up to 25% cheaper. Crops already growing keep their time.</p>`)
+  +section('Every crop',table(['Crop','Opens','Seed','Grows in','Sells for','XP','Grows back','Used for'],rows,'wiki-crops'));
+ },
+ buildings(h){
+  const production=Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').sort(([a],[b])=>buildingLevel(a)-buildingLevel(b));
+  const blocks=production.map(([key,b])=>{
+   const recipes=Object.entries(RECIPES).filter(([,r])=>r.building===key).sort(([a],[b])=>recipeLevel(a)-recipeLevel(b));
+   if(!recipes.length)return '';
+   const cost=key==='factory'?FACTORY_COST:BUILDING_COSTS[key];
+   const rows=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return h.row(recipeLevel(id),[out?item(out,count):r.name,items(r.input),wikiTime(r.duration),out&&PRODUCTS[out]?.sell?`${art('coins')}${number(PRODUCTS[out].sell)}`:'–',h.lvl(recipeLevel(id))]);});
+   return `<section class="wiki-section wiki-building" id="building-${key}"><h3>${art(key)}${b.name}</h3><p class="wiki-meta">${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:' · ready from the start'}</p>${b.tagline?`<p>${b.tagline}</p>`:''}${table(['Makes','Needs','Time','Sells for (each)','Opens'],rows)}</section>`;
+  }).join('');
+  return section('How buildings work',facts([
+   ['buildings','Build','Each building opens at a level and costs coins once. Tap it to start a batch: it turns crops (or other goods) into goods that sell for more.'],
+   ['hammer','Upgrade',`Better buildings run more batches at the same time, up to level ${MAX_BUILDING_LEVEL}.`],
+   ['collect-all','Collect','When a batch is ready, tap the building to collect it, or use Collect all.'],
+   ['boost','Factory',`From level ${FACTORY_LEVEL} the Factory (${number(FACTORY_COST)} coins) makes the finest goods from what your other buildings make.`]
+  ]))+section('Contents',`<ul class="wiki-chips">${production.filter(([key])=>Object.values(RECIPES).some(r=>r.building===key)).map(([key,b])=>`<li><a href="#building-${key}">${art(key)}${b.name}</a></li>`).join('')}</ul>`)+blocks;
+ },
+ market(h){
+  return section('Selling',facts([
+   ['market','Prices change every day','At 00:00 UTC the market sets new prices. Today’s market pick is in high demand and pays extra, and the outlook shows what is wanted tomorrow.'],
+   ['coins','Sell some or sell all','Choose how many to sell, or sell all of one crop. The basket at the bottom shows what all your crops are worth.'],
+   ['buildings','Goods pay more',`Crops made into goods sell for more than the crops that went in. See ${h.link('buildings')}.`],
+   ['quests','Keep what you need',`Orders and your family ask for crops and goods, and often pay more than the market. See ${h.link('daily')} and ${h.link('family')}.`]
+  ]))+section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Your stall earns coins by itself. Collect them from time to time.</p>`);
+ },
+ quests(h){
+  const opens=[...Object.entries(FEATURE_LEVELS).map(([key,n])=>[n,featureTitle(key)]),[EVENTS_LEVEL,'Farm events'],[INVITE_LEVEL,'Invite a friend'],[STARTER_LEVEL,'Starter Pack']].sort((a,b)=>a[0]-b[0]);
+  return section('Quests',facts([
+   ['quests','One little goal at a time','Quests ask for things like harvesting 12 wheat. When one is done, claim its coins and XP.'],
+   ['xp','XP and levels',`Almost everything you do gives XP. Each new level opens new crops, buildings and things to do, and the journal shows your level rewards.`]
+  ]))+section('What opens when',table(['Level','What opens'],opens.map(([n,name])=>h.row(n,[h.lvl(n),name])))+`<p>New crops and buildings are in ${h.link('crops')} and ${h.link('buildings')}.</p>`);
+ },
+ daily(h){
+  const days=DAILY_REWARDS.map((coins,i)=>`<tr><td>Day ${i+1}</td><td>${art('coins')}${number(coins)}</td><td>${art('diamonds')}${number(DAILY_DIAMONDS[i])}</td></tr>`);
+  const tiers=Object.entries(DELIVERY_TIERS).map(([key,t])=>h.row(DELIVERY_LEVELS[key],[t.name,h.lvl(DELIVERY_LEVELS[key]),`${t.minBonus}–${t.maxBonus}% more than the market`]));
+  return section('A gift every day',`<p>Open the farm every day and collect your gift. Seven days in a row make a streak; miss a day and it starts over.</p>`+table(['Day','Coins','Diamonds'],days))
+  +section('Daily challenges',`<p>${h.lvl(FEATURE_LEVELS.challenges)} Three small goals every day. Finish all three for a bonus.</p>`)
+  +section('Delivery orders',`<p>${h.lvl(FEATURE_LEVELS.cart)} Customers ask for crops and goods and pay more than the market. Don’t like an order? Replace it for ${REPLACE_ORDER_COST} diamonds.</p>`+table(['Order','Opens','Pays'],tiers))
+  +section('A new day','<p>Gifts, challenges, orders and market prices refresh at 00:00 UTC.</p>');
+ },
+ family(h){
+  return section('Together is better',`<p>${h.lvl(FAMILY_MIN_LEVEL)} Start a Farm family or join one, with up to ${FAMILY_CONFIG.MAX_MEMBERS} farmers. A family can be open to everyone or invite-only.</p>`)
+  +section('The family pages',facts([
+   ['family-weekly-order','This week','A big order for the whole family. Everyone delivers what they can; each line you complete pays coins, XP and diamonds. Deliveries cannot be taken back.'],
+   ['family-sharing','Sharing','Ask your family for crops or goods you need, and send gifts to each other.'],
+   ['family-tournament','Tournament','Every week families compete. Your deliveries count as points, and the best families win rewards.'],
+   ['family-members','Members','See who is online and how much everyone did this week. The leader can invite farmers.']
+  ]))
+  +section('Family chat',`<p>Your family has its own chat. See ${h.link('chat')}.</p>`)
+  +section('Changing family',`<p>After you leave a family you can join another after ${Math.round(FAMILY_CONFIG.JOIN_COOLDOWN_MS/3600000)} hours.</p>`);
+ },
+ events(h){
+  return section('Short shared goals',`<p>${h.lvl(EVENTS_LEVEL)} Every six hours a new farm event starts. Everyone plays toward the same goals; reach them for coins and diamonds.</p>`)
+  +section('How it works',facts([
+   ['live-events','Goals','Each event has a few goals, like harvesting or making certain things. Your progress shows in the event window.'],
+   ['trophy','Rewards','Finish the goals for the rewards. The best farmers of an event also get a place on the podium.'],
+   ['gift','Next event','When an event ends, the window shows when the next one starts and what it gives.']
+  ]));
+ },
+ helpers(h){
+  const chores=Object.values(CHORES).map(c=>c.name);
+  return section('Tractor',`<p>${h.lvl(FEATURE_LEVELS.tractor)} The tractor plants, waters or harvests all your fields in one go. Planting costs a little fuel on top of the seeds, and afterwards the tractor needs a short rest.</p>`)
+  +section('Silo research',`<p>${h.lvl(FEATURE_LEVELS.silo)} Better seeds: crops grow faster and seeds cost less. See ${h.link('crops')}.</p>`)
+  +section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Passive income: your stall earns coins by itself. Collect them now and then.</p>`)
+  +section('Farm chores',`<p>${h.lvl(FEATURE_LEVELS.chores)} Small jobs for extra coins and XP, and sometimes a few crops: ${chores.join(', ')}. After a chore it takes a little while before you can do it again.</p>`)
+  +section('A helping hand',`<p>${h.lvl(FEATURE_LEVELS.activities)} Help out at the Greenhouse, the Apiary, the paddock and the workshop for coins, goods and XP. Visit all four stops for a bonus.</p>`);
+ },
+ estate(h){
+  const later=[['projects','Estate projects','estate','Big projects that make your estate grow.'],['valleymarket','Valley Market','valley-market','Fill baskets for customers from the valley.'],['ranch','The Ranch','ranch',`One herd works faster: ${Object.values(RANCH_HERDS).join(', ')}.`],['estateworkshop','Estate Workshop','estate-workshop','Improvements that last for good.'],['tradedepot','Trade Depot','trade-depot','Fill an export trailer for big rewards.'],['grandfair','Grand Valley Fair','grand-fair','Win ribbons every week.']];
+  const improvements=Object.values(IMPROVEMENTS).sort((a,b)=>a.level-b.level).map(i=>h.row(i.level,[`${art(i.art)}${i.name}`,i.effect,h.lvl(i.level),`${art('coins')}${number(i.coins)} + ${items(i.materials)}`]));
+  return section('Something to grow towards',`<ul class="wiki-facts">${later.map(([key,name,picture,text])=>`<li>${art(picture)}<div><strong>${name} ${h.lvl(FEATURE_LEVELS[key])}</strong><p>${text}</p></div></li>`).join('')}</ul>`)
+  +section('Estate Workshop improvements',table(['Improvement','What it does','Opens','Costs'],improvements));
+ },
+ diamonds(h){
+  const boosts=Object.values(BOOSTS).map(b=>`<tr><td>${art(b.art)}${b.name}</td><td>${b.description}</td><td>${b.prices?Object.entries(b.prices).map(([length,cost])=>`${length.replace('m',' min').replace('h',' hour').replace('d',' day')}: ${number(cost)}`).join(' · '):number(b.cost)}</td></tr>`);
+  const vip=Object.values(VIP_PLANS).map(p=>`<tr><td>${p.name}</td><td>${art('diamonds')}${number(p.cost)}</td></tr>`);
+  const packs=DIAMOND_PACKS.map(p=>`<tr><td>${art('diamonds')}${number(p.amount)}</td><td>${p.price}</td></tr>`);
+  return section('Earning diamonds',facts([
+   ['gift','Every day',`Your daily gift and daily challenges. See ${h.link('daily')}.`],
+   ['quests','Beginner guide and levels',`${BEGINNER_REWARD} diamonds for the beginner guide, and diamonds with many level rewards.`],
+   ['live-events','Events and family',`${h.link('events','Farm events')} and your ${h.link('family','Farm family')} give diamonds too.`],
+   ['invite-friends','Invite a friend',`From level ${INVITE_LEVEL}: ${INVITE_REWARD} diamonds for you both.`]
+  ]))
+  +section('Finish now',`<p>Finish a growing field for ${SINGLE_CROP_COST} diamonds, or a running batch for ${SINGLE_BATCH_COST} (not in the Factory).</p>`)
+  +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+table(['Boost','What it does','Diamonds'],boosts))
+  +section('VIP',`<p>VIP gives 10% faster crops, 10% faster production, 5% more coins at the market and double daily rewards. Buying again adds time; it never gets stronger.</p>`+table(['Plan','Diamonds'],vip))
+  +section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL} there is also a Starter Pack for a limited time.</p>`+table(['Diamonds','Price'],packs));
+ },
+ chat(h){
+  return section('The chat',facts([
+   ['bell','Notifications','News from the Harvest Tycoon team, and gifts.'],
+   ['chat','Global','Everyone in the valley. Be kind: new farmers read along too.'],
+   ['familyhall','Family',`Only your ${h.link('family','Farm family')}.`],
+   ['letter','Private','One-to-one messages. Search a farmer by name, or open their profile.']
+  ]))
+  +section('Your choice',facts([
+   ['settings','Private messages off','In Settings you can switch private messages off. Then nobody can start one with you, and you cannot start one either.'],
+   ['block','Block','Blocked farmers can no longer send you private messages.'],
+   ['alert','Report','Report a message or a farmer and a moderator will look at it.']
+  ]))
+  +section('House rules',`<ul class="wiki-list"><li>Be friendly. No insults, threats or discrimination.</li><li>No spam, advertising or selling accounts.</li><li>Keep personal details to yourself: no phone numbers, addresses or passwords.</li><li>Moderators can remove messages and close the chat for someone for a while or for good. That only ever closes the chat, never your farm.</li></ul><p>Chat not open for you yet? The chat says from which level it opens.</p>`);
+ },
+ account(h){
+  return section('Your account',facts([
+   ['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app.'],
+   ['bell','Reminders','Push or email reminders stay off until you switch them on in Settings.']
+  ]))
+  +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
+  +section('Invite a friend',`<p>From level ${INVITE_LEVEL}, share your invite link. When your friend starts farming you both get ${INVITE_REWARD} diamonds.</p>`)
+  +section('Privacy',`<p>Read how we handle your data in the <a href="/privacy">Privacy Policy</a>. Want to stop? You can <a href="/delete-account">delete your account</a>.</p>`);
+ }
+};
+const featureTitle=key=>({family:'Farm family',boosts:'Diamond boosts'})[key]??{challenges:'Daily challenges',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair'}[key]??key;
+
+const RELATED={'getting-started':['crops','daily','quests'],crops:['buildings','market','helpers'],buildings:['crops','market','daily'],market:['buildings','daily','family'],quests:['getting-started','crops','buildings'],daily:['market','events','diamonds'],family:['chat','events','daily'],events:['family','daily','diamonds'],helpers:['crops','estate','buildings'],estate:['helpers','buildings','quests'],diamonds:['daily','events','account'],chat:['family','account','events'],account:['chat','diamonds','getting-started']};
+
+export function wikiArticle(id,ctx={}){
+ const topic=TOPIC[id];if(!topic)return null;const h=helpers(ctx);
+ return {...topic,html:BODIES[id](h),related:(RELATED[id]??[]).map(r=>TOPIC[r])};
+}
+// "Read next" under a topic: a short row per topic, picture and title.
+export const wikiNext=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-next" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><i aria-hidden="true">›</i></a>`;};
+export const wikiTile=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-tile" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><span>${topic.blurb}</span></a>`;};
+
+// Search: topic titles, blurbs and keywords, plus every crop, building and product by name (pointing to its topic).
+const INDEX=[
+ ...WIKI_TOPICS.map(t=>({topic:t.id,label:t.title,art:t.art,text:`${t.title} ${t.blurb} ${t.keywords}`.toLowerCase()})),
+ ...Object.entries(CROPS).map(([k,c])=>({topic:'crops',label:c.name,art:k,text:c.name.toLowerCase()})),
+ ...Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').map(([k,b])=>({topic:'buildings',label:b.name,art:k,text:b.name.toLowerCase(),anchor:`building-${k}`})),
+ ...Object.entries(RECIPES).flatMap(([,r])=>Object.keys(r.output).map(out=>({topic:'buildings',label:itemName(out),art:out,text:itemName(out).toLowerCase(),anchor:`building-${r.building}`})))
+];
+export function wikiSearch(query){
+ const words=String(query).toLowerCase().trim().split(/\s+/).filter(Boolean);if(!words.length)return [];
+ const seen=new Set(),hits=[];
+ for(const entry of INDEX){if(!words.every(w=>entry.text.includes(w)))continue;const key=`${entry.topic}:${entry.label}`;if(seen.has(key))continue;seen.add(key);hits.push({...entry,topicTitle:TOPIC[entry.topic].title});}
+ return hits.slice(0,12);
+}

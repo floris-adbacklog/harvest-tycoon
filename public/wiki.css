@@ -1,0 +1,98 @@
+/* The farm wiki, in How to play and on the website (/wiki): a search box and topic tiles, then topic pages with short
+   sections, fact lists and tables made from the game rules. */
+.wiki{color:#3d392b;font-family:'DM Sans',sans-serif}
+.wiki .game-art{display:inline-block;flex:none;width:22px;height:22px;object-fit:contain;vertical-align:-5px}
+.wiki .game-art-sprite{aspect-ratio:1;background-color:transparent;background-image:var(--art-sheet);background-size:var(--art-size) var(--art-size);background-position:var(--art-position);background-repeat:no-repeat}
+.wiki a{color:#3f6b4a;font-weight:700;text-decoration:none}
+.wiki a:hover{text-decoration:underline}
+
+/* Home: search and tiles */
+.wiki-search{display:flex;align-items:center;gap:10px;min-height:52px;margin:0 0 14px;padding:0 14px;border:1px solid #e3d6c1;border-radius:14px;background:#fffdf5;box-shadow:inset 0 2px 0 #f1e9dc}
+.wiki-search .game-art{width:26px;height:26px}
+.wiki-search input{flex:1;min-width:0;height:48px;border:0;background:none;color:#3d392b;font:500 16px 'DM Sans',sans-serif;outline:none}
+.wiki-search:focus-within{border-color:#c2912d;box-shadow:0 0 0 3px #f1dfb4}
+.wiki-results{margin:-4px 0 16px;padding:6px;border:1px solid #e3d6c1;border-radius:14px;background:#fffdf5}
+.wiki-results ul{display:grid;gap:2px;margin:0;padding:0;list-style:none}
+.wiki-results a{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;color:#3d392b}
+.wiki-results a:hover{background:#f7f0e3;text-decoration:none}
+.wiki-results a .game-art{width:28px;height:28px}
+.wiki-results a span{color:#8a7a5a;font-size:12.5px;font-weight:600}
+.wiki-results p{margin:8px 10px;color:#7a705f;font-size:14px}
+.wiki-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.wiki-tiles.is-small{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.wiki .wiki-tile{display:grid;grid-template-columns:48px minmax(0,1fr);grid-template-rows:auto auto;column-gap:12px;row-gap:2px;align-items:center;padding:12px 14px;border:1px solid #e3d6c1;border-radius:14px;background:#fffdf5;box-shadow:0 3px 0 #ece2d0;color:#3d392b;transition:transform .12s,box-shadow .12s}
+.wiki .wiki-tile:hover{transform:translateY(-2px);box-shadow:0 5px 0 #ece2d0;text-decoration:none}
+.wiki .wiki-tile:active{transform:translateY(1px);box-shadow:0 1px 0 #ece2d0}
+.wiki-tile .game-art{grid-row:1/3;width:46px;height:46px}
+.wiki-tile strong{font:700 16px/1.2 'Outfit',sans-serif}
+.wiki-tile span{color:#7a705f;font-size:12.5px;font-weight:500;line-height:1.35}
+.wiki-note{margin:16px 0 0;color:#8a7a5a;font-size:13px;text-align:center}
+
+/* A topic page */
+.wiki-back{margin:0 0 12px}
+.wiki-head{display:flex;align-items:center;gap:14px;margin:0 0 6px}
+.wiki-head .game-art{width:60px;height:60px}
+.wiki-head h3{margin:0;font:700 26px/1.1 'Outfit',sans-serif;letter-spacing:-.3px}
+.wiki-head p{margin:4px 0 0;color:#7a705f;font-size:14px}
+.wiki-section{margin:18px 0 0;padding:16px 0 0;border-top:1px solid #efe6d8}
+.wiki-section h3{display:flex;align-items:center;gap:8px;margin:0 0 8px;font:700 18px/1.2 'Outfit',sans-serif}
+.wiki-section h3 .game-art{width:32px;height:32px}
+.wiki-section p{margin:0 0 10px;font-size:14.5px;line-height:1.6}
+.wiki-meta{color:#7a705f}
+.wiki-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:0;padding:0;list-style:none}
+.wiki-facts li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:start;padding:12px;border:1px solid #eee5d6;border-radius:12px;background:#fffdf5}
+.wiki-facts li>.game-art{width:38px;height:38px}
+.wiki-facts strong{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14.5px}
+.wiki-facts p{margin:3px 0 0;color:#5d5641;font-size:13.5px;line-height:1.5}
+.wiki-list{margin:0 0 10px;padding-left:20px;font-size:14.5px;line-height:1.6}
+.wiki-level{display:inline-block;padding:2px 8px;border-radius:999px;background:#e6efdc;color:#42632e;font-size:11.5px;font-weight:800;white-space:nowrap;vertical-align:1px}
+.wiki-level.is-locked{background:#f1ebe2;color:#8a7a5a}
+.wiki-loop{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 0 10px;padding:12px;border-radius:14px;background:#f7f0e3;list-style:none}
+.wiki-loop li{display:grid;justify-items:center;gap:4px;font:700 14px 'Outfit',sans-serif}
+.wiki-loop .game-art{width:44px;height:44px}
+.wiki-arrow{color:#b3a283;font-size:22px;font-style:normal}
+.wiki-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.wiki-chips a{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid #e3d6c1;border-radius:999px;background:#fffdf5;color:#5b4520;font-size:13px}
+.wiki-building{scroll-margin-top:12px}
+
+/* Tables: scroll sideways on a phone instead of squeezing. */
+.wiki-table-wrap{overflow-x:auto;margin:6px 0 4px;border:1px solid #eee5d6;border-radius:12px;background:#fffdf5;-webkit-overflow-scrolling:touch}
+.wiki-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.wiki-table th{padding:9px 10px;background:#f7f0e3;color:#7a6a4a;font-size:11px;font-weight:800;letter-spacing:.05em;text-align:left;text-transform:uppercase;white-space:nowrap}
+.wiki-table td{padding:8px 10px;border-top:1px solid #f1e9dc;vertical-align:middle}
+.wiki-table td:first-child{font-weight:700;white-space:nowrap}
+.wiki-table tr.is-locked td{opacity:.55}
+.wiki-table tr.is-locked td:last-child,.wiki-table tr.is-locked .wiki-level{opacity:1}
+.wiki-item{display:inline-flex;align-items:center;gap:5px;margin:2px 10px 2px 0;white-space:nowrap}
+.wiki-crops td{white-space:nowrap}
+
+.wiki-related{margin:24px 0 0;padding:16px 0 0;border-top:1px solid #efe6d8}
+.wiki-related h3{margin:0 0 10px;font:700 18px 'Outfit',sans-serif}
+.wiki-next-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.wiki .wiki-next{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 12px 6px 8px;border:1px solid #e3d6c1;border-radius:12px;background:#fffdf5;color:#3d392b}
+.wiki .wiki-next:hover{background:#f7f0e3;text-decoration:none}
+.wiki-next .game-art{width:34px;height:34px}
+.wiki-next strong{flex:1;min-width:0;font:700 15px/1.2 'Outfit',sans-serif}
+.wiki-next i{color:#b3a283;font-size:20px;font-style:normal}
+
+@media(max-width:600px){
+ .wiki-tiles{grid-template-columns:1fr}
+ .wiki-head .game-art{width:48px;height:48px}.wiki-head h3{font-size:23px}
+ .wiki-facts{grid-template-columns:1fr}
+ .wiki-loop{padding:10px 8px}.wiki-loop .game-art{width:36px;height:36px}.wiki-loop li{font-size:12.5px}
+}
+@media(prefers-reduced-motion:reduce){.wiki .wiki-tile{transition:none}}
+
+/* The website pages (/wiki): the privacy page's frame, a little wider for the tables. Lists keep the wiki's own spacing
+   (the privacy page indents its lists), and bold text gets the real bold font. */
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/dm-sans-bold.ttf') format('truetype')}
+.wiki-page .wiki-facts,.wiki-page .wiki-chips,.wiki-page .wiki-next-list{margin-left:0;padding-left:0}
+.wiki-page .wiki-facts li,.wiki-page .wiki-chips li{margin:0}
+.wiki-page .legal-card{width:min(980px,calc(100% - 32px))}
+.wiki-page .wiki-crumbs{margin:0 0 14px;font-size:14px}
+.wiki-page .wiki-cta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 0;padding:16px;border-radius:14px;background:#eef5e6}
+.wiki-page .wiki-cta p{margin:0;font-weight:700}
+.wiki-page .wiki-cta a{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border:1px solid #2d5137;border-radius:12px;background:#3f6b4a;box-shadow:0 3px 0 #25462e;color:#fffef3;text-decoration:none}
+
+/* "Back to my farm" under the wiki gets room to breathe. */
+#help-dialog .guide-done{margin-top:24px}

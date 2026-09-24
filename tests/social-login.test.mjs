@@ -36,7 +36,7 @@ test('the privacy policy and the deletion page are public, linked from the sign-
  const html=read('public/play.html'),vercel=JSON.parse(read('vercel.json'));
  assert.match(html,/class="account-legal">For players aged 16 and over · <a href="\/privacy">Privacy Policy<\/a>/);
  assert.match(html,/<footer class="site-legal">.*href="\/privacy"/);assert.ok(!/<footer class="site-legal">[^\n]*delete-account/.test(html),'the deletion page is for Meta, not the footer');
- assert.deepEqual(vercel.rewrites.filter(r=>!r.source.endsWith('/')).map(r=>[r.source,r.destination]),[['/privacy','/privacy.html'],['/delete-account','/delete-account.html']]);
+ assert.deepEqual(vercel.rewrites.filter(r=>!r.source.endsWith('/')).map(r=>[r.source,r.destination]),[['/privacy','/privacy.html'],['/delete-account','/delete-account.html'],['/wiki','/wiki/index.html'],['/wiki/:topic([a-z-]+)','/wiki/:topic.html']]);
  for(const page of ['public/privacy.html','public/delete-account.html']){
   const text=read(page);
   assert.ok(!/googletagmanager|gtag\(|fbq\(|<script/i.test(text),`${page} loads no scripts`);
