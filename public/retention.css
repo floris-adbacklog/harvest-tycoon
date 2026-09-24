@@ -714,10 +714,6 @@
 #task-list .quest-rewards .game-art{flex:none;width:18px;height:18px}
 #task-list .quest-item .primary-button{flex:none;min-height:38px;padding:7px 16px}
 #task-list .quest-state{font-size:12px;font-weight:600;color:#5d7a4a}
-#task-list .quest-claim-all{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #cfe0c3;border-radius:16px;background:linear-gradient(115deg,#e9f4de,#f7fbf1)}
-#task-list .quest-claim-all>span{flex:1;min-width:0;display:grid;gap:5px}
-#task-list .quest-claim-all strong{font:600 16px 'Outfit',sans-serif;color:#3f5a2e}
-#task-list .quest-claim-all .primary-button{flex:none;min-height:42px;padding:8px 16px}
 #task-list .quest-empty{padding:28px 16px}
 #task-list .quest-empty>.game-art{display:block;width:56px;height:56px;margin:0 auto 10px}
 #task-list .quest-empty h3{font-size:20px}

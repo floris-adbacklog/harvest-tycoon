@@ -117,15 +117,18 @@ test('pressed floating buttons retain their position instead of jumping away fro
  const active=css.match(/\.utility-label:active\{[^}]*transform:([^;}]*)/)[1];assert.equal(active,normal);
 });
 
-test('Claim all collects every ready quest, also ones a claim reveals, with one toast',async()=>{
+test('quests are claimed one by one: no Claim all, and one tap claims one quest',async()=>{
  const state=createFarm();for(const q of QUESTS.slice(0,40))state.stats[q.stat]=Math.max(state.stats[q.stat]??0,q.target);
- const toasts=[],{elements}=questFixture(state,{notify:m=>toasts.push(m)});
+ const {elements}=questFixture(state,{notify(){}});
  elements['tasks-button'].clickTarget();
- assert.match(elements['task-list'].innerHTML,/data-claim-all>Claim all</);
- const all=new Element();all.dataset.claimAll='';elements['task-list'].clickTarget(all);
- for(let i=0;i<200&&!toasts.length;i++)await new Promise(r=>setImmediate(r));
- assert.equal(questGroups(state).ready.length,0,'nothing left to claim');
- assert.equal(toasts.length,1);assert.match(toasts[0],new RegExp(`^${state.claimed.length} quests complete! \\+[\\d,]+ coins`));
+ const html=elements['task-list'].innerHTML,ready=questGroups(state).ready.length;
+ assert.ok(ready>1);assert.doesNotMatch(html,/Claim all|data-claim-all/);
+ assert.equal((html.match(/data-claim="/g)??[]).length,ready,'each ready quest has its own button');
+ const one=new Element();one.dataset.claim=String(questGroups(state).ready[0].id);elements['task-list'].clickTarget(one);
+ for(let i=0;i<50&&state.claimed.length===0;i++)await new Promise(r=>setImmediate(r));
+ assert.equal(state.claimed.length,1,'one tap, one quest');
+ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+ assert.doesNotMatch(read('public/quests-ui.js'),/claimAll|data-claim-all/);assert.doesNotMatch(read('public/retention.css'),/quest-claim-all/);
 });
 test('every quest has its own picture: the crop, good, building or farm job it counts',()=>{
  assert.match(questArt('made_eggs'),/data-art="eggs"/);assert.match(questArt('harvest_wheat'),/data-art="wheat"/);

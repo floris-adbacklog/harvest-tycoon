@@ -644,3 +644,7 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   <family>" on the profile of a farmer without a family (window.harvestFamilyInvite in family-ui.js,
   window.harvestProfiles in src/game-cloud.js; the same eligibility rule as the invite search, `inviteBlocker`).
 - The Family button's notification is the same yellow "!" badge as Quests and More.
+
+## Quests: no Claim all (24 Sep 2026; client only)
+- Every ready quest is claimed on its own with its own Claim button (more satisfying, as asked). The Claim all bar,
+  its code in public/quests-ui.js and its styles in retention.css are gone. Test: tests/mobile-ui.test.mjs.

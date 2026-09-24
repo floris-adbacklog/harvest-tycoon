@@ -41,24 +41,9 @@ export function createQuestsUI({state,claim,icons,notify,document:doc=globalThis
    button.setAttribute('aria-pressed',String(button.dataset.questFilter===filter));
    button.querySelector('span').textContent=groups[button.dataset.questFilter].length;
   });
-  // Several rewards waiting: one button collects them all, with the total on it.
-  const ready=groups.ready,total=ready.reduce((sum,{quest:q})=>({coins:sum.coins+q.reward,xp:sum.xp+(q.xp??QUEST_XP)}),{coins:0,xp:0});
-  const claimAll=filter==='ready'&&ready.length>1?`<div class="quest-claim-all"><span><strong>${ready.length} rewards ready</strong><span class="quest-rewards"><b>${art('coins')}${number(total.coins)}</b>${total.xp?`<b class="is-xp">${art('xp')}${number(total.xp)} XP</b>`:''}</span></span><button class="primary-button" data-claim-all>Claim all</button></div>`:'';
-  list.innerHTML=claimAll+(groups[filter].map(entry=>row(entry,filter)).join('')||`<div class="quest-empty">${art(filter==='done'?'trophy':'quests')}<h3>${filter==='ready'?'No rewards waiting':filter==='done'?'Your journey starts here':'All caught up!'}</h3><p>${filter==='ready'?'Finish a quest in progress to claim it here.':filter==='done'?'Claimed quests are kept here.':'New quests arrive as your farm grows.'}</p></div>`);
+  // Every reward is claimed on its own, one tap per quest: that is the satisfying part.
+  list.innerHTML=(groups[filter].map(entry=>row(entry,filter)).join('')||`<div class="quest-empty">${art(filter==='done'?'trophy':'quests')}<h3>${filter==='ready'?'No rewards waiting':filter==='done'?'Your journey starts here':'All caught up!'}</h3><p>${filter==='ready'?'Finish a quest in progress to claim it here.':filter==='done'?'Claimed quests are kept here.':'New quests arrive as your farm grows.'}</p></div>`);
   icons();
- }
- async function claimAll(button){
-  // Keep going while rewards are ready: on a guided farm a claim can reveal a next quest that is already done.
-  let coins=0,xp=0,claimed=0,next;
-  button.disabled=true;
-  while((next=questGroups(state).ready[0])&&claimed<QUESTS.length){
-   button.textContent=`Claiming ${claimed+1}…`;
-   const result=await claim(next.id,{quiet:true});
-   if(!result||result.error)break;
-   coins+=result.coins??0;xp+=result.xp??0;claimed++;
-  }
-  if(claimed)notify?.(`${claimed} quest${claimed===1?'':'s'} complete! +${number(coins)} coins${xp?` and +${number(xp)} XP`:''}.`);
-  render();
  }
  function open(){
   filter=questGroups(state).ready.length?'ready':'active';
@@ -71,7 +56,6 @@ export function createQuestsUI({state,claim,icons,notify,document:doc=globalThis
   filter=button.dataset.questFilter;render();
  });
  list.addEventListener('click',async event=>{
-  const all=event.target.closest('[data-claim-all]');if(all&&!all.disabled){await claimAll(all);return;}
   const button=event.target.closest('[data-claim]');if(!button||button.disabled)return;
   button.disabled=true;await claim(Number(button.dataset.claim));render();
   (list.querySelector('[data-claim]')??toolbar.querySelector(`[data-quest-filter="${filter}"]`))?.focus({preventScroll:true});
