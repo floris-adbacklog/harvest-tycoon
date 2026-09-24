@@ -836,3 +836,5 @@ frame for what is on screen (`viewCorners`). Click or drag the map to look there
 at a building shows its name.
 The ground is 600 x 600 (was 200): its edge was in view when panning far right or zooming out; the grass texture keeps its
 22-unit tile (scene-polish.js). The map's gold ready ring is steady (it blinked).
+Trees keep out of the whole coop yard (YARD_EXTENT coop), and `clearOfYards` searches up to 32 units (was 20): in the east
+street the yards stand close on both sides of the road, so a displaced tree could find no free spot and stayed put.
