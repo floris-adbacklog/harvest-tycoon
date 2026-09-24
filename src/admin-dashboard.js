@@ -30,6 +30,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<div data-admin-panel="chat">'
   +'<section class="admin-card admin-guide"><h3><i data-lucide="heart-handshake" data-line-icon></i>Keeping the valley friendly</h3><ul><li><strong>Delete</strong> a message that is rude, hurtful or shares personal details (an address, a phone number).</li><li><strong>Mute for a day</strong> when someone keeps it up after a message is deleted.</li><li><strong>Ban from chat</strong> only for serious or repeated abuse. It closes the chat, never the farm.</li><li>Not sure? Choose <strong>Nothing wrong</strong> or leave it for the admin.</li></ul></section>'
   +'<section class="admin-card" id="admin-reports" hidden><h3><i data-lucide="flag" data-line-icon></i>Chat reports <span id="admin-report-count">0</span></h3><ul id="admin-report-list" class="admin-recent-list admin-report-list"></ul><p class="admin-hint">Delete removes the message for everyone. Mute and ban only close the chat for that farmer, never their farm.</p></section>'
+  +'<section class="admin-card" id="admin-report-log" hidden><h3><i data-lucide="scroll-text" data-line-icon></i>Report log</h3><p class="admin-hint">Every reported message, newest first, and what the staff did with it.</p><ul id="admin-log-list" class="admin-recent-list admin-log-list"></ul></section>'
   +'</div><div data-admin-panel="players" hidden>'
   +'<section class="admin-card" id="admin-donate" hidden><h3><i data-lucide="gift" data-line-icon></i>A gift for everyone</h3><form id="admin-donate-form" class="admin-donate"><label><span>'+art('diamonds')+'Diamonds</span><input type="number" id="admin-donate-diamonds" min="0" max="50" step="1" value="0" inputmode="numeric"></label><label><span>'+art('coins')+'Coins</span><input type="number" id="admin-donate-coins" min="0" max="500" step="10" value="0" inputmode="numeric"></label><label class="admin-donate-message"><span>Message</span><input type="text" id="admin-donate-message" maxlength="120" placeholder="Thanks for playing!"></label><button type="submit" class="primary-button">Send to everyone</button></form><p class="admin-hint" id="admin-donate-room"></p></section>'
   +'<section class="admin-card"><h3><i data-lucide="radio" data-line-icon></i>Online now <span id="admin-online-count">0</span></h3><ul id="admin-online-list" class="admin-online-list"></ul><p class="admin-hint">Active in the last <span id="admin-online-window">30</span> minutes.</p></section>'
@@ -92,6 +93,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   }catch(error){status.textContent=error.message;}
  }
  // The chat: open reports for the staff; news, moderators and chat levels for the admin.
+ const ACTIONS={deleted:'Deleted',dismissed:'Nothing wrong',muted:'Muted',banned:'Banned from chat'};
+ const verdict=r=>r.open?'<b class="admin-log-open">Open</b>':`<b class="admin-log-done">${esc(ACTIONS[r.action]??'Handled')}${r.handledBy?` · ${esc(r.handledBy)}`:''}</b>`;
  const where=channel=>channel==='global'?'Global chat':String(channel).startsWith('family:')?'Family chat':'Private message';
  async function loadChat(){
   const client=bridge.chat;if(!client||!role)return;
@@ -101,6 +104,10 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    dialog.querySelector('#admin-reports').hidden=false;dialog.querySelector('#admin-report-count').textContent=number(reports.length);dialog.querySelector('#admin-kpi-reports').textContent=number(reports.length);
    dialog.querySelector('#admin-report-list').innerHTML=reports.length?reports.map(r=>`<li>${avatar(r.senderName,false)}<span class="admin-recent-copy"><strong>${esc(r.senderName??'A farmer')} <small>${where(r.channel)} · ${number(r.reports)} report${r.reports===1?'':'s'}${r.present?'':' · already gone'}</small></strong><small class="admin-report-body">“${esc(r.body)}”</small><span class="admin-report-actions">${r.present?`<button type="button" class="small-button" data-report="delete" data-id="${esc(r.messageId)}">Delete</button>`:''}<button type="button" class="small-button" data-report="mute" data-id="${esc(r.messageId)}" data-player="${esc(r.sender)}">Mute 1 day</button><button type="button" class="small-button" data-report="ban" data-id="${esc(r.messageId)}" data-player="${esc(r.sender)}">Ban from chat</button><button type="button" class="small-button" data-report="dismiss" data-id="${esc(r.messageId)}">Nothing wrong</button></span></span></li>`).join(''):'<li class="admin-empty">No open reports. The valley is friendly today.</li>';
   }catch(error){dialog.querySelector('#admin-reports').hidden=false;dialog.querySelector('#admin-report-list').innerHTML=`<li class="admin-empty">${esc(error.message)}</li>`;}
+  try{
+   const log=await client.reportLog();dialog.querySelector('#admin-report-log').hidden=false;
+   dialog.querySelector('#admin-log-list').innerHTML=log.length?log.map(r=>`<li>${avatar(r.senderName,false)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-profile="${esc(r.sender)}">${esc(r.senderName??'A farmer')}</button> <small>${where(r.channel)} · ${number(r.reports)} report${r.reports===1?'':'s'}</small></strong><small class="admin-report-body">“${esc(r.body)}”</small><small>${verdict(r)}</small></span><small class="admin-when" title="${esc(fmtDate(r.lastAt))}">${ago(r.lastAt)}</small></li>`).join(''):'<li class="admin-empty">No reports yet.</li>';
+  }catch{}
   try{showRoom(await client.donationRoom());}catch{}
   if(role!=='admin')return;
   dialog.querySelector('#admin-chat-settings').hidden=false;
@@ -111,6 +118,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    if(levels&&document.activeElement?.closest?.('#admin-levels-form')==null){dialog.querySelector('#admin-level-global').value=levels.global;dialog.querySelector('#admin-level-dm').value=levels.dm;}
   }catch(error){chatStatus.textContent=error.message;}
  }
+ // A name in the log opens that farmer's profile (with the chat buttons: mute, ban), on top of the dashboard.
+ dialog.querySelector('#admin-log-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
  dialog.querySelector('#admin-report-list').addEventListener('click',async event=>{
   const action=event.target.closest('[data-report]');if(!action||!bridge.chat)return;
   const {report:kind,id,player}=action.dataset;action.disabled=true;

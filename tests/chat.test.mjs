@@ -133,9 +133,17 @@ test('after sending, the cursor stays in the message box for the next message (o
 
 test('Report sits next to Block, in a private chat and on a profile, and reports the farmer\'s latest message you can read',()=>{
  const ui=read('src/chat-ui.js');
- assert.match(ui,/<button type="button" class="chat-report" hidden>\$\{art\('alert'\)\}<\/button><button type="button" class="chat-block" hidden>/);
- assert.match(ui,/data-chat="report">\$\{art\('alert'\)\}Report<\/button><button type="button" class="small-button" data-chat="\$\{status\.blocked\?'unblock':'block'\}">/);
+ assert.match(ui,/<button type="button" class="chat-report" hidden>\$\{art\('alert'\)\}<\/button><button type="button" class="chat-block" hidden>\$\{art\('block'\)\}<\/button>/);
+ assert.match(ui,/data-chat="report">\$\{art\('alert'\)\}Report<\/button><button type="button" class="small-button farmer-chat-report" data-chat="\$\{status\.blocked\?'unblock':'block'\}">\$\{art\('block'\)\}/);
  const fn=sql.slice(sql.indexOf('create or replace function public.chat_report_player'));
  assert.match(fn,/x\.sender=p_player and public\.chat_can_read\(x\.channel\) order by x\.created_at desc limit 1/);
  assert.match(fn,/perform public\.chat_report\(m,p_reason\);/,'the same limits as reporting one message');
+});
+
+test('the dashboard keeps a report log (reports only, not every message): what was reported, how often, and who did what',()=>{
+ const fn=sql.slice(sql.indexOf('create or replace function public.chat_mod_log'));
+ assert.match(fn.slice(0,400),/if public\.chat_staff_role\(\(select auth\.uid\(\)\)\) is null then raise exception 'Not authorized\.'/,'staff only');
+ assert.match(fn,/from public\.chat_reports r group by r\.message_id/,'built from the reports, never from all messages');
+ const dash=read('src/admin-dashboard.js');
+ assert.match(dash,/client\.reportLog\(\)/);assert.match(dash,/deleted:'Deleted',dismissed:'Nothing wrong',muted:'Muted',banned:'Banned from chat'/);
 });

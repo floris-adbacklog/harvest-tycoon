@@ -266,6 +266,18 @@ begin
   from public.chat_reports r where r.resolved_at is null group by r.message_id limit 100) x),'[]'::jsonb);
 end $f$;
 
+-- Staff: the report log, open and handled, newest first: what was reported, how often, and what the staff did with it (and who).
+create or replace function public.chat_mod_log() returns jsonb language plpgsql stable security definer set search_path to '' as $f$
+begin
+ if public.chat_staff_role((select auth.uid())) is null then raise exception 'Not authorized.' using errcode='42501'; end if;
+ return coalesce((select jsonb_agg(x order by x."lastAt" desc) from (
+  select r.message_id as "messageId", min(r.channel) as channel, min(r.sender::text)::uuid as sender, min(r.sender_name) as "senderName", min(r.body) as body,
+   count(*) as reports, max(r.created_at) as "lastAt", bool_or(r.resolved_at is null) as open, max(r.resolved_at) as "handledAt",
+   (array_agg(r.action order by r.resolved_at desc nulls last))[1] as action,
+   (select ps.username from public.player_stats ps where ps.player_id=(array_agg(r.resolved_by order by r.resolved_at desc nulls last))[1]) as "handledBy"
+  from public.chat_reports r group by r.message_id order by max(r.created_at) desc limit 100) x),'[]'::jsonb);
+end $f$;
+
 -- Staff: remove a message (and close its reports).
 create or replace function public.chat_mod_delete(p_message uuid) returns void language plpgsql security definer set search_path to '' as $f$
 declare me uuid:=(select auth.uid());
@@ -351,7 +363,7 @@ do $g$
 declare f text;
 begin
  foreach f in array array['chat_overview()','chat_send(text,text)','chat_mark_read(text)','chat_block(uuid,boolean)','chat_report(uuid,text)','chat_report_player(uuid,text)','chat_player_status(uuid)','chat_my_role()','chat_set_private(boolean)',
-  'chat_mod_reports()','chat_mod_delete(uuid)','chat_mod_dismiss(uuid)','chat_mod_sanction(uuid,integer,boolean,text)','staff_set_moderator(uuid,boolean)','chat_post_news(text,integer)','staff_list()','chat_set_levels(integer,integer)'] loop
+  'chat_mod_reports()','chat_mod_log()','chat_mod_delete(uuid)','chat_mod_dismiss(uuid)','chat_mod_sanction(uuid,integer,boolean,text)','staff_set_moderator(uuid,boolean)','chat_post_news(text,integer)','staff_list()','chat_set_levels(integer,integer)'] loop
   execute format('revoke execute on function public.%s from public, anon', f);
   execute format('grant execute on function public.%s to authenticated', f);
  end loop;
