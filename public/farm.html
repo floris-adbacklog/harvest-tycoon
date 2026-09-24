@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="/retention.css">
   <link rel="stylesheet" href="/pretty-select.css">
   <link rel="stylesheet" href="/invite.css">
+  <link rel="stylesheet" href="/more-menu.css">
   <link rel="stylesheet" href="/pwa-layout.css">
   <link rel="preload" as="image" href="/assets/farm-welcome.webp">
   <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
@@ -115,28 +116,34 @@
   <dialog id="estate-dialog" class="game-dialog wide-dialog" aria-labelledby="estate-title"><div class="dialog-heading"><div><span class="eyebrow">SOMETHING TO GROW TOWARDS</span><h2 id="estate-title">Your growing estate</h2></div><button class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"></i></button></div><div class="market-tabs estate-tabs" role="group" aria-label="Estate activities"><button data-estate-tab="projects" aria-pressed="true">Projects</button><button data-estate-tab="stall" aria-pressed="false">Stall</button><button data-estate-tab="chores" aria-pressed="false">Chores</button><button data-estate-tab="mastery" aria-pressed="false">Mastery</button></div><div id="estate-content"></div><p id="estate-feedback" class="building-feedback" role="status" aria-live="polite"></p></dialog>
   <dialog id="boost-dialog" class="game-dialog wide-dialog" aria-labelledby="boost-title"><div class="dialog-heading"><div><span class="eyebrow">A LITTLE EXTRA GROWING POWER</span><h2 id="boost-title">Diamonds & boosts</h2></div><button class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"></i></button></div><div class="boost-wallet"><i data-lucide="gem"></i><div><strong id="boost-wallet">0</strong><span>diamonds to spend</span></div><button class="small-button" id="boost-daily"><i data-lucide="gift"></i> Earn daily</button></div><div id="boost-catalog"></div><p id="boost-feedback" class="building-feedback" role="status" aria-live="polite"></p><section class="diamond-store" aria-labelledby="diamond-store-title"><div class="recipe-section-heading"><h3 id="diamond-store-title">More diamonds</h3><span class="beta-badge">Secure checkout</span></div><p>One-time purchases, added after payment.</p><div id="diamond-packs" class="diamond-packs"></div></section></dialog>
   <dialog id="more-dialog" class="game-dialog wide-dialog" aria-labelledby="more-title"><div class="dialog-heading"><div><span class="eyebrow">EVERYTHING ON YOUR FARM</span><h2 id="more-title">Your farm menu</h2></div><button class="icon-button close-dialog" aria-label="Close farm menu"><i data-lucide="x"></i></button></div><div class="mobile-menu-grid">
+    <h3 class="menu-section" data-section-heading="daily">Every day</h3>
     <button data-menu-action="today-button"><i data-lucide="gift"></i><span><strong>Daily rewards</strong><small>Collect coins & diamonds</small></span></button>
     <button data-menu-action="events-button"><i data-game-art="live-events"></i><span><strong>Farm events</strong><small id="mobile-events-hint">Short shared goals</small></span></button>
     <button data-menu-action="journal-button"><i data-lucide="star"></i><span><strong>Farm journal</strong><small>Level rewards & progress</small></span></button>
-    <button data-menu-action="leaderboard-button"><i data-lucide="trophy"></i><span><strong>Leaderboard</strong><small>The top farmers of the valley</small></span></button>
-    <button data-menu-action="invite-button"><i data-game-art="invite-friends"></i><span><strong>Invite a friend</strong><small>150 diamonds for you both</small></span></button>
-    <button data-menu-action="all-quests-mobile"><i data-lucide="sprout"></i><span><strong>Beginner guide</strong><small>10 steps · 50 diamond reward</small></span></button>
-    <button data-menu-action="help-button"><i data-lucide="circle-help"></i><span><strong>How to play</strong><small>A little farming guide</small></span></button>
-    <button data-menu-action="sound-button"><i data-lucide="settings"></i><span><strong id="mobile-sound-label">Settings</strong><small id="mobile-sound-summary">Account, avatar, sound &amp; app</small></span></button>
     <button data-menu-utility="cart"><i data-lucide="truck"></i><span><strong>Deliveries</strong><small class="menu-hint">Fill an order</small></span></button>
+    <h3 class="menu-section" data-section-heading="farm">On the farm</h3>
     <button data-menu-utility="activities"><i data-game-art="helping-hand"></i><span><strong>A helping hand</strong><small class="menu-hint">Small jobs around the farm</small></span></button>
     <button data-menu-utility="chores"><i data-lucide="shovel"></i><span><strong>Farm chores</strong><small class="menu-hint">Small jobs, extra coins</small></span></button>
     <button data-menu-utility="stall"><i data-lucide="store"></i><span><strong>Farm stall</strong><small class="menu-hint">Collect passive income</small></span></button>
     <button data-menu-utility="tractor"><i data-lucide="tractor"></i><span><strong>Tractor</strong><small class="menu-hint">Work several fields</small></span></button>
     <button data-menu-action="boosts-button"><i data-lucide="gem"></i><span><strong>Boosts</strong><small class="menu-hint">A little growing power</small></span></button>
     <button data-menu-utility="silo"><i data-lucide="warehouse"></i><span><strong>Silo research</strong><small class="menu-hint">Improve your crops</small></span></button>
+    <h3 class="menu-section" data-section-heading="estate">Estate &amp; valley</h3>
     <button data-menu-action="estate-button"><i data-lucide="landmark"></i><span><strong>Estate</strong><small class="menu-hint">Projects & mastery</small></span></button>
     <button data-menu-utility="valleymarket"><i data-game-art="valley-market"></i><span><strong>Valley Market</strong><small class="menu-hint">Baskets for the valley</small></span></button>
     <button data-menu-utility="ranch"><i data-game-art="ranch"></i><span><strong>The Ranch</strong><small class="menu-hint">One herd works faster</small></span></button>
     <button data-menu-utility="estateworkshop"><i data-game-art="estate-workshop"></i><span><strong>Estate Workshop</strong><small class="menu-hint">Improvements that last</small></span></button>
     <button data-menu-utility="tradedepot"><i data-game-art="trade-depot"></i><span><strong>Trade Depot</strong><small class="menu-hint">Fill an export trailer</small></span></button>
     <button data-menu-utility="grandfair"><i data-game-art="grand-fair"></i><span><strong>Grand Valley Fair</strong><small class="menu-hint">Ribbons every week</small></span></button>
+    <h3 class="menu-section" data-section-heading="friends">Friends</h3>
+    <button data-menu-action="leaderboard-button"><i data-lucide="trophy"></i><span><strong>Leaderboard</strong><small>The top farmers of the valley</small></span></button>
+    <button data-menu-action="invite-button"><i data-game-art="invite-friends"></i><span><strong>Invite a friend</strong><small>150 diamonds for you both</small></span></button>
+    <h3 class="menu-section" data-section-heading="help">Help &amp; settings</h3>
+    <button data-menu-action="all-quests-mobile"><i data-lucide="sprout"></i><span><strong>Beginner guide</strong><small>10 steps · 50 diamond reward</small></span></button>
+    <button data-menu-action="help-button"><i data-lucide="circle-help"></i><span><strong>How to play</strong><small>A little farming guide</small></span></button>
+    <button data-menu-action="sound-button"><i data-lucide="settings"></i><span><strong id="mobile-sound-label">Settings</strong><small id="mobile-sound-summary">Account, avatar, sound &amp; app</small></span></button>
     <button data-menu-action="admin-button" id="admin-menu-entry" hidden><i data-game-art="admin"></i><span><strong>Admin dashboard</strong><small>Players and retention</small></span></button>
+    <button type="button" class="menu-later" data-menu-later aria-expanded="false" hidden><span>Coming later</span><b data-later-count>0</b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
   </div></dialog>
   <script src="/vendor/lucide.min.js"></script><script>lucide.createIcons();</script>
   <script type="module" src="/cloud/game-cloud.js"></script>

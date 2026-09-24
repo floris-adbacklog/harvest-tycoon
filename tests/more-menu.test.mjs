@@ -48,3 +48,19 @@ test('"A helping hand" opens its own hub, not the generic tractor/silo dialog',(
  assert.match(body,/key==='activities'\)activities\.openHub\(\)/,'activities routes to its own hub, not retention.openUtility');
 });
 
+test('the menu is grouped under small headings, with compact tiles and the locked ones folded under "Coming later"',()=>{
+ const html=read('public/farm.html'),grid=html.slice(html.indexOf('<div class="mobile-menu-grid">'),html.indexOf('</div>',html.indexOf('data-menu-later')));
+ const headings=[...grid.matchAll(/<h3 class="menu-section" data-section-heading="([a-z]+)">([^<]+)<\/h3>/g)].map(m=>m[2]);
+ assert.deepEqual(headings,['Every day','On the farm','Estate &amp; valley','Friends','Help &amp; settings']);
+ const section=name=>{const start=grid.indexOf(`data-section-heading="${name}"`),end=grid.indexOf('<h3',start+10);return grid.slice(start,end<0?undefined:end);};
+ assert.match(section('friends'),/leaderboard-button[\s\S]*invite-button/);assert.match(section('help'),/all-quests-mobile[\s\S]*help-button[\s\S]*sound-button/,'the Beginner guide sits with How to play');assert.match(section('daily'),/today-button[\s\S]*events-button/);
+ assert.match(grid,/<button type="button" class="menu-later" data-menu-later aria-expanded="false" hidden><span>Coming later<\/span><b data-later-count>0<\/b>/);
+ const ui=read('public/mobile-ui.js');
+ assert.match(ui,/later\.onclick=\(\)=>\{grid\.classList\.toggle\('show-later'\);arrange\(\);\};/);
+ assert.match(ui,/for\(const \[el,any\] of open\)el\.hidden=!any;/,'a heading hides when everything under it is locked');
+ assert.match(ui,/classList\.toggle\('has-dot',!gift\.hidden\)/,'a waiting reward shows the yellow "!" on its tile');
+ const css=read('public/more-menu.css');
+ assert.match(css,/#more-dialog \.mobile-menu-grid\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(css,/#more-dialog \.mobile-menu-grid:not\(\.show-later\) button\.locked\{display:none\}/);
+ assert.ok(html.indexOf('/more-menu.css')<html.indexOf('/pwa-layout.css'));
+});

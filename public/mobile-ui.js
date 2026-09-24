@@ -3,8 +3,21 @@ export const mobileLayout=matchMedia('(max-width: 900px), (max-height: 550px) an
 
 export function createMobileUI({openUtility,resetView}){
  const $=id=>document.getElementById(id),menu=$('more-dialog');
+ // The menu in groups (farm.html): a heading hides when everything under it is still locked; locked tiles wait, folded, under one
+ // "Coming later" row at the bottom (progression-ui.js greys them and moves them there).
+ const grid=menu.querySelector('.mobile-menu-grid'),later=grid.querySelector('[data-menu-later]');
+ function arrange(){
+  let heading=null;const open=new Map();
+  for(const el of grid.children){if(el.matches('[data-section-heading]')){heading=el;open.set(el,false);}else if(heading&&el.tagName==='BUTTON'&&!el.hidden&&!el.classList.contains('locked')&&!el.matches('[data-menu-later]'))open.set(heading,true);}
+  for(const [el,any] of open)el.hidden=!any;
+  const locked=grid.querySelectorAll('button.locked:not([hidden])').length;
+  later.hidden=!locked;later.querySelector('[data-later-count]').textContent=locked;
+  if(!locked)grid.classList.remove('show-later');later.setAttribute('aria-expanded',String(grid.classList.contains('show-later')));
+ }
+ later.onclick=()=>{grid.classList.toggle('show-later');arrange();};
  $('more-button').onclick=()=>{
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+  grid.classList.remove('show-later');arrange();
   menu.showModal();menu.scrollTop=0;refreshArt();
  };
  menu.querySelectorAll('[data-menu-action]').forEach(button=>button.onclick=()=>{
@@ -14,6 +27,9 @@ export function createMobileUI({openUtility,resetView}){
  menu.querySelectorAll('[data-menu-utility]').forEach(button=>button.onclick=()=>{menu.close();openUtility(button.dataset.menuUtility);});
  function badges(){
   const gift=$('today-dot'),quests=$('task-dot'),batches=$('production-count');
+  // The same "!" on the tiles as on the side tools, so a waiting reward stands out in the menu too.
+  menu.querySelector('[data-menu-action="today-button"]')?.classList.toggle('has-dot',!gift.hidden);
+  menu.querySelector('[data-menu-action="events-button"]')?.classList.toggle('has-dot',!($('events-dot')?.hidden??true));
   // A waiting event reward also lights the More dot, since Events lives in that menu on phones.
   $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true);
   $('tasks-button').setAttribute('aria-label',quests.hidden?'Open quests':'Open quests, rewards ready');

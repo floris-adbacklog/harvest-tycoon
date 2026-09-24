@@ -1,0 +1,24 @@
+/* "Your farm menu" on phones (farm.html #more-dialog, public/mobile-ui.js): groups with a small heading, compact tiles three to a
+   row (picture and name; the "!" badge says when something is waiting), and everything still locked folded under one
+   "Coming later" row at the bottom. */
+#more-dialog .mobile-menu-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#more-dialog .menu-section{grid-column:1/-1;margin:12px 2px 0;font:800 11px/1.3 'DM Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#9a8b73}
+#more-dialog .menu-section:first-child{margin-top:0}
+#more-dialog .menu-section[hidden]{display:none}
+#more-dialog .mobile-menu-grid>button:not(.menu-later){position:relative;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;min-height:0;padding:12px 6px 10px;border-radius:14px;text-align:center}
+#more-dialog .mobile-menu-grid>button>.game-art,#more-dialog .mobile-menu-grid>button>svg{width:34px;height:34px;flex:none}
+#more-dialog .mobile-menu-grid>button>span{display:block;width:100%}
+#more-dialog .mobile-menu-grid strong{font-size:12.5px;line-height:1.25}
+#more-dialog .mobile-menu-grid small{display:none}
+#more-dialog .mobile-menu-grid button.locked small{display:block;margin-top:3px;font-size:10.5px;line-height:1.3}
+#more-dialog .mobile-menu-grid:not(.show-later) button.locked{display:none}
+#more-dialog .mobile-menu-grid button.locked::after{top:6px;right:6px;width:18px;height:18px}
+/* A waiting reward: the same yellow "!" as on the side tools and the bottom bar. */
+#more-dialog .mobile-menu-grid button.has-dot::before{content:'!';position:absolute;top:6px;right:8px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif}
+#more-dialog .menu-later{grid-column:1/-1;order:99;display:flex;flex-direction:row;justify-content:flex-start;align-items:center;gap:8px;min-height:44px;margin-top:12px;padding:8px 12px;border:1px dashed #d8ccba;border-radius:12px;background:#faf6ef;color:#7a705f;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+#more-dialog .menu-later[hidden]{display:none}
+#more-dialog .menu-later span{flex:1;text-align:left}
+#more-dialog .menu-later b{display:grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:99px;background:#ece4d6;color:#6c604a;font-size:12px}
+#more-dialog .menu-later svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+#more-dialog .menu-later[aria-expanded="true"] svg{transform:rotate(180deg)}
+@media(prefers-reduced-motion:reduce){#more-dialog .menu-later svg{transition:none}}

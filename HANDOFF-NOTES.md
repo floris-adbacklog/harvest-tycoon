@@ -704,3 +704,11 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - Also in this change: Seed shop button removed from the tool dock (the crop button opens the same shop); the desktop
   tool hint and the "Click to work" line are hidden (phones never showed them).
 - Tests: tests/invite-friend.test.mjs.
+
+## "Your farm menu" (More, phones) regrouped (24 Sep 2026; client only)
+- Headings: Every day (Daily rewards, Farm events, Farm journal, Deliveries) · On the farm (A helping hand, Chores, Farm
+  stall, Tractor, Boosts, Silo research) · Estate & valley (Estate and the valley places) · Friends (Leaderboard, Invite a
+  friend) · Help & settings (Beginner guide, How to play, Settings, admin). Compact tiles three to a row (picture and
+  name; descriptions only on locked tiles). Everything still locked is folded under one "Coming later · N" row at the
+  bottom (progression-ui.js still greys and orders them); a heading hides when all its entries are locked. Daily rewards
+  and Farm events show the yellow "!" when something waits. The page is about 30% shorter. Styles: public/more-menu.css.
