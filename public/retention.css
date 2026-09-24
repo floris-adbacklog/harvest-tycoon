@@ -1123,3 +1123,8 @@
 @keyframes care-ask{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.plot-label.plot-timer{font-size:11px;padding:3px 7px 3px 3px}.plot-timer-ring{width:24px;height:24px}.plot-timer-ring>.game-art{width:16px;height:16px}}
 @media(prefers-reduced-motion:reduce){.plot-label.plot-timer.care-ready .plot-timer-badge{animation:none}}
+
+/* Keyboard play (Tab from field to field, Enter to work it): the field's own ring lights up (game.js highlight on focus), so the
+   label gets a soft gold edge instead of a brown box, and an empty field shows no stray yellow square. */
+.plot-label:focus-visible{outline:none;box-shadow:0 0 0 2px #fffdf5,0 0 0 4.5px #f3c353,0 2px 8px #3e342240}
+.plot-label:empty:focus-visible{opacity:0}

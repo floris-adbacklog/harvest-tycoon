@@ -29,3 +29,9 @@ test('the gold ring on the map stands still (no blinking), and the ground runs o
  assert.match(game,/const ground=patch\(0,0,600,600,0x8aa64e,0\);/,'no edge of the world in view');
  assert.match(read('public/scene-polish.js'),/600\/22\)/,'the same grass tile on the wider ground');
 });
+
+test('Tab from field to field: the field ring lights up, the label gets a soft edge, an empty field no stray square',()=>{
+ assert.match(read('public/game.js'),/label\.addEventListener\('focus',\(\)=>highlight\(i\)\);label\.addEventListener\('blur',\(\)=>highlight\(-1\)\);/);
+ const css=read('public/retention.css');
+ assert.match(css,/\.plot-label:focus-visible\{outline:none;box-shadow:0 0 0 2px #fffdf5,0 0 0 4\.5px #f3c353/);assert.match(css,/\.plot-label:empty:focus-visible\{opacity:0\}/);
+});
