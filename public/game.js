@@ -718,7 +718,8 @@ function shootMinimap(){
  const ratio=renderer.getPixelRatio(),w=mapBuffer.width,h=mapBuffer.height,fog=scene.fog;
  renderer.setScissorTest(true);renderer.setViewport(0,0,w/ratio,h/ratio);renderer.setScissor(0,0,w/ratio,h/ratio);
  scene.fog=null;renderer.render(scene,mapCamera);scene.fog=fog;
- const out=mapBuffer.getContext('2d');out.clearRect(0,0,w,h);out.drawImage(renderer.domElement,0,renderer.domElement.height-h,w,h,0,0,w,h);
+ // Grass first, and the render taken from just inside its edge: rounding can leave the outer pixel row unrendered.
+ const out=mapBuffer.getContext('2d');out.fillStyle='#b7cd86';out.fillRect(0,0,w,h);out.drawImage(renderer.domElement,2,renderer.domElement.height-h+2,w-4,h-4,0,0,w,h);
  renderer.setScissorTest(false);renderer.setViewport(0,0,viewportWidth,viewportHeight);renderer.render(scene,camera);
  lastMapShot=performance.now();minimap.draw();
 }

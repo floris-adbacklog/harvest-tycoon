@@ -7,7 +7,7 @@ export function createMinimap({root,background,project,unproject,points,view,onJ
  let pulse=0;
  function draw(){
   const dpr=canvas.width/Math.max(1,canvas.clientWidth||canvas.width);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#b7cd86';ctx.fillRect(0,0,canvas.width,canvas.height);   // grass under the picture, so no edge ever shows white
   ctx.drawImage(background,0,0,canvas.width,canvas.height);
   pulse=(pulse+1)%2;
   for(const p of points()){
