@@ -733,3 +733,10 @@ only on desktop from level 19) is gone. One rule: a yellow "!" once the stall is
 `STALL_NOTICE_SHARE` in `game/farm-state.js`: 6 hours at stall level 1, 12 at the top), from level 11. It shows on the
 Farm stall tile in the phone menu and so the More button (not on the stall's pin on the map, on purpose), and the Estate button (which then opens on the stall tab; a finished chapter still
 lights it too). `public/growth-ui.js` `notices()`. Tests: `tests/stall-notice.test.mjs`.
+
+Map colours and seed memory (2026-09-24): on the map yellow means ready, as on a building whose batch is done; there is no
+"!" on the map. `pinLight` in `public/game.js`: the Farm stall pin is yellow from a quarter full and red once full (it
+stops earning); valley places (Valley Market, Ranch, Estate Workshop, Trade Depot, Grand Fair) are yellow when their
+status is "ready" (`economy.placeReady`, the same status the Buildings list sorts by). Styles `.utility-label.ready/.full`
+in `public/icons.css`. The last chosen seed is remembered per device (`harvest-tycoon:seed`, listed in privacy.html) and
+restored on load when that crop is unlocked. Tests: `tests/stall-notice.test.mjs`.

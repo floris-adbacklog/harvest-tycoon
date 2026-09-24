@@ -289,5 +289,5 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  $('buildings-button').addEventListener('click',openBuildings);$('all-buildings').addEventListener('click',openBuildings);
  document.querySelectorAll('[data-seed-filter]').forEach(b=>b.addEventListener('click',()=>{seedFilter=b.dataset.seedFilter;renderSeeds();}));
  document.querySelectorAll('[data-market-tab]').forEach(b=>b.addEventListener('click',()=>{marketTab=b.dataset.marketTab;renderMarket();}));
- return {openMarket:(tab='crops')=>{marketTab=tab;renderMarket();show('market-dialog');},openBuilding,openBuildings,openSeeds,renderBuilding,renderMarket,sell,refresh,tick,status,chooseCrop,itemList};
+ return {openMarket:(tab='crops')=>{marketTab=tab;renderMarket();show('market-dialog');},placeReady:key=>key in PLACES&&placeStatus(key).kind==='ready',openBuilding,openBuildings,openSeeds,renderBuilding,renderMarket,sell,refresh,tick,status,chooseCrop,itemList};
 }

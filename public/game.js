@@ -30,7 +30,7 @@ import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
 import { createScenePolish } from './scene-polish.js';
 import { createActivitiesUI } from './activities-ui.js';
-import { ACTIVE_STATIONS } from './farm-state.js';
+import { ACTIVE_STATIONS,cropUnlocked,stallStatus,stallNotice } from './farm-state.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { watchSelects } from './pretty-select.js';
@@ -476,7 +476,9 @@ async function interact(id,forcedAction){
 }
 function showTool(tool){if(tool!==selectedTool)setTool(tool);const button=document.querySelector(`[data-tool="${tool}"]`);if(!button)return;button.classList.remove('just-used');void button.offsetWidth;button.classList.add('just-used');}
 function setTool(tool){selectedTool=tool;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
-function setCrop(crop){selectedCrop=crop;setTool('plant');if(ready)plots.forEach((_,i)=>drawCrop(i));updateHint();}
+// The seed you chose last is still chosen after a reload on this device (privacy.html lists the key).
+const CROP_KEY='harvest-tycoon:seed';
+function setCrop(crop){selectedCrop=crop;try{localStorage.setItem(CROP_KEY,crop);}catch{}setTool('plant');if(ready)plots.forEach((_,i)=>drawCrop(i));updateHint();}
 function updateHint(){
  let text=selectedTool==='tend'?'Give growing crops extra care when the green marker appears. Earn +1 crop.':selectedTool==='water'?'Water growing crops for +1 crop and 20% less waiting.':selectedTool==='harvest'?'Click a ready crop to harvest. Hold and drag to move the view.':`Click an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water it and give extra care when it is ready. Hold and drag to move the view.`;
  if(!state.stats.harvested&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt))text='Your first crops are ready. Click a crop or its basket to harvest!';
@@ -605,7 +607,7 @@ function pointerTarget(event){
 function addUtility(key,model,x,z,options){
  const object=cloneModel(model,x,z,options);object.userData.utility=key;
  const height=new THREE.Box3().setFromObject(object).max.y,info=utilityInfo[key];
- const label=document.createElement('button');label.className='utility-label';label.title=`${info.name} · ${info.hint}`;label.setAttribute('aria-label',`Open ${info.name}`);label.innerHTML=art(key);label.onclick=()=>openUtility(key);$('building-labels').append(label);
+ const label=document.createElement('button');label.className='utility-label';label.dataset.utility=key;label.title=`${info.name} · ${info.hint}`;label.setAttribute('aria-label',`Open ${info.name}`);label.innerHTML=art(key);label.onclick=()=>openUtility(key);$('building-labels').append(label);
  utilityViews.set(key,{object,label,info,x:object.position.x,z:object.position.z,height,locked:false});
 }
 function addBuilding(key,x,z,options){
@@ -622,6 +624,12 @@ function addBuilding(key,x,z,options){
  label.addEventListener('click',()=>economy.openBuilding(key));label.addEventListener('mouseenter',()=>highlight(key));label.addEventListener('mouseleave',()=>highlight(-1));label.addEventListener('focus',()=>highlight(key));label.addEventListener('blur',()=>highlight(-1));$('building-labels').append(label);
  buildingViews.set(key,{object,hit,outline,label,pin:label.querySelector('.building-pin'),pinArt:key==='familyhall'?'familyhall-model':key,x:object.position.x,z:object.position.z,height,locked:false});
 }
+// On the map yellow means ready, as on a building whose batch is done: the Farm stall from a quarter full (red once it is
+// full and stops earning) and a valley place with something waiting (the status the Buildings list sorts by).
+function pinLight(key){
+ if(key==='stall'){const now=farmNow(),s=stallStatus(state,now);return s.balance>=s.capacity?'full':stallNotice(state,now)?'ready':'';}
+ return economy.placeReady(key)?'ready':'';
+}
 function positionBuildingLabels(){
  for(const decor of familyDecor)setLocked(decor,!buildingEligible(state,'familyhall'));
  for(const decor of factoryDecor)setLocked(decor,!buildingEligible(state,'factory'));
@@ -633,6 +641,7 @@ function positionBuildingLabels(){
  for(const [key,v] of utilityViews){
   const locked=!featureUnlocked(state,key);setLocked(v.object,locked);
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.label.innerHTML=art(locked?'lock':key);v.label.setAttribute('aria-label',locked?`${v.info.name} (locked)`:`Open ${v.info.name}`);v.label.title=locked?`${v.info.name} · ${featureUnlockHint(key)}`:`${v.info.name} · ${v.info.hint}`;}
+  const light=locked?'':pinLight(key);v.label.classList.toggle('ready',light==='ready');v.label.classList.toggle('full',light==='full');
   const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera),x=(p.x*.5+.5)*width,y=(-p.y*.5+.5)*height;v.label.style.left=`${x}px`;v.label.style.top=`${y}px`;v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.82||behindTools(x,y,22);
  }
  for(const [key,v]of buildingViews){
@@ -666,6 +675,8 @@ function bindUI(){
  liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh()});
  familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
  economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
+ let savedCrop=null;try{savedCrop=localStorage.getItem(CROP_KEY);}catch{}
+ if(savedCrop&&CROPS[savedCrop]&&cropUnlocked(state,savedCrop))economy.chooseCrop(savedCrop);
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList});
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},onNotice:()=>mobileUI?.refresh(),notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  valley=createValleyUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList});

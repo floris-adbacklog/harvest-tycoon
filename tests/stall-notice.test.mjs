@@ -31,3 +31,21 @@ test('the "!" sits on the phone menu tile, the More button and the Estate button
  assert.match(read('public/mobile-ui.js'),/&&!menu\.querySelector\('\[data-menu-utility="stall"\]'\)\?\.classList\.contains\('has-dot'\)/);
  assert.doesNotMatch(read('public/icons.css'),/\.utility-label\.has-dot/);
 });
+
+test('on the map yellow means ready: the stall pin from a quarter full, red when full; valley places when something waits',()=>{
+ const game=read('public/game.js'),css=read('public/icons.css');
+ assert.match(game,/if\(key==='stall'\)\{const now=farmNow\(\),s=stallStatus\(state,now\);return s\.balance>=s\.capacity\?'full':stallNotice\(state,now\)\?'ready':'';\}/);
+ assert.match(game,/return economy\.placeReady\(key\)\?'ready':'';/);
+ assert.match(game,/const light=locked\?'':pinLight\(key\);v\.label\.classList\.toggle\('ready',light==='ready'\);v\.label\.classList\.toggle\('full',light==='full'\);/);
+ assert.match(read('public/economy-ui.js'),/placeReady:key=>key in PLACES&&placeStatus\(key\)\.kind==='ready'/,'the same status the Buildings list sorts by');
+ assert.match(css,/\.utility-label\.ready\{border:2px solid #e3be55;background:#fff5ce\}/);
+ assert.match(css,/\.utility-label\.full\{border:2px solid #d9695a;background:#fde6e1\}/);
+});
+
+test('the seed you chose last is still chosen after a reload (only one you can plant)',()=>{
+ const game=read('public/game.js');
+ assert.match(game,/const CROP_KEY='harvest-tycoon:seed';/);
+ assert.match(game,/function setCrop\(crop\)\{selectedCrop=crop;try\{localStorage\.setItem\(CROP_KEY,crop\);\}catch\{\}/);
+ assert.match(game,/if\(savedCrop&&CROPS\[savedCrop\]&&cropUnlocked\(state,savedCrop\)\)economy\.chooseCrop\(savedCrop\);/);
+ assert.match(read('public/privacy.html'),/<code>harvest-tycoon:seed<\/code>/,'listed on the privacy page');
+});
