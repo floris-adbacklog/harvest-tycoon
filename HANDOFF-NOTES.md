@@ -844,8 +844,12 @@ and push devices, and (signed in, not anonymous) the leaderboard table player_st
 Everything else is service_role only (farm-api, notify-hourly, stripe-webhook). No storage buckets; no realtime tables.
 Security-definer functions: only notification_save/subscribe/unsubscribe are callable by players, and they use auth.uid() and
 refuse anonymous users. Stripe webhook verifies the signature; checkout checks the price server-side; purchases are credited
-once (harvest_credit_purchase). Changes: `supabase/security-hardening.sql` (revoke table rights that RLS already refused, push
+once (harvest_credit_purchase). Changes: `supabase/security-hardening.sql` (live as migration harvest_security_hardening, 24 Sep; revoke table rights that RLS already refused, push
 endpoints must be a known https push service, referral function with an empty search_path) and the superadmin must have a
 confirmed e-mail (`isSuperadmin`, needs farm-api deployed). Open, by choice: notify-hourly can be triggered by anyone but
 runs at most once per clock hour; "Leaked password protection" is a switch in the Supabase dashboard (Auth > Providers >
 Email / Password security). Tests: `tests/security-hardening.test.mjs`.
+Remaining Supabase advisor notices are expected: "RLS enabled, no policy" on the service-role-only tables; the three
+notification_* functions callable by signed-in players (on purpose, they check auth.uid()); "anonymous access" on
+notification_settings/push_subscriptions (their policies only return the reader's own rows, and anonymous players have none);
+cron.* is Supabase's own.
