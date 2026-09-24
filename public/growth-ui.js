@@ -7,14 +7,13 @@ const number=n=>n.toLocaleString('en-US');
 export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotice}){
  let tab='projects',lastReadiness='',stallWaiting=null;
  const projectReady=()=>Boolean(state.estate.job&&farmNow()>=state.estate.job.readyAt);
- // The same yellow "!" wherever the stall is, from a quarter full (stallNotice, farm-state.js): its pin on the map, its
- // tile in the phone menu (and so the More button) and the Estate button, whose screen holds the stall. A finished
- // Estate chapter lights the Estate button too.
+ // The same yellow "!" as elsewhere once the stall is a quarter full (stallNotice, farm-state.js): on its tile in the
+ // phone menu (and so the More button) and on the Estate button, whose screen holds the stall; not on its map pin. A
+ // finished Estate chapter lights the Estate button too.
  function notices(){
   const waiting=stallNotice(state,farmNow());
   $('estate-dot').hidden=!projectReady()&&!waiting;
   document.querySelector('[data-menu-utility="stall"]')?.classList.toggle('has-dot',waiting);
-  document.querySelector('.utility-label[data-utility="stall"]')?.classList.toggle('has-dot',waiting);
   if(waiting!==stallWaiting){stallWaiting=waiting;onNotice?.();}
  }
  async function act(action,message){try{const result=await runAction(action);onChange();render();$('estate-feedback').textContent=typeof message==='function'?message(result):message;notify($('estate-feedback').textContent);}catch(error){$('estate-feedback').textContent=error.message;notify(error.message);}}

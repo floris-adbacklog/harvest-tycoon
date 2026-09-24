@@ -605,7 +605,7 @@ function pointerTarget(event){
 function addUtility(key,model,x,z,options){
  const object=cloneModel(model,x,z,options);object.userData.utility=key;
  const height=new THREE.Box3().setFromObject(object).max.y,info=utilityInfo[key];
- const label=document.createElement('button');label.className='utility-label';label.dataset.utility=key;label.title=`${info.name} · ${info.hint}`;label.setAttribute('aria-label',`Open ${info.name}`);label.innerHTML=art(key);label.onclick=()=>openUtility(key);$('building-labels').append(label);
+ const label=document.createElement('button');label.className='utility-label';label.title=`${info.name} · ${info.hint}`;label.setAttribute('aria-label',`Open ${info.name}`);label.innerHTML=art(key);label.onclick=()=>openUtility(key);$('building-labels').append(label);
  utilityViews.set(key,{object,label,info,x:object.position.x,z:object.position.z,height,locked:false});
 }
 function addBuilding(key,x,z,options){
