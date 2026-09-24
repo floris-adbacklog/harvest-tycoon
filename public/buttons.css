@@ -1,11 +1,12 @@
 /* One button style for the whole game, loaded after the screens' own styles:
-   main (green) for the thing to do, second (cream) for the other choices, gold for real money, red for what is hard to undo,
-   and the round icon buttons. All share the corners, bold text and an edge underneath that sinks when pressed; a button that
+   main (green) for the thing to do, second (cream) for the other choices, light blue for spending diamonds, gold for real
+   money, red for what is hard to undo, and the round icon buttons. All share the corners, bold text and an edge underneath that sinks when pressed; a button that
    is off looks the same everywhere. Sizes and spacing stay with each screen. */
 :root{
  --btn-radius:12px;
  --btn-main:#3f6b4a;--btn-main-hover:#365e42;--btn-main-line:#2d5137;--btn-main-edge:#25462e;--btn-main-text:#fffef3;
  --btn-second:#f7f0e3;--btn-second-hover:#f0e5d1;--btn-second-line:#d9c7a4;--btn-second-edge:#e2d3b3;--btn-second-text:#5b4520;
+ --btn-diamond:#e3f3fd;--btn-diamond-hover:#cdeafb;--btn-diamond-line:#9fc4da;--btn-diamond-edge:#b8d6e6;--btn-diamond-text:#1f5877;
  --btn-gold:#e3a53c;--btn-gold-hover:#d8982d;--btn-gold-line:#b07a22;--btn-gold-edge:#9c6214;--btn-gold-text:#3f2806;
  --btn-red:#b4513f;--btn-red-hover:#a3473a;--btn-red-line:#96402f;--btn-red-edge:#7d3526;--btn-red-text:#fff;
  --btn-off:#ede7dc;--btn-off-line:#ddd3c4;--btn-off-text:#a39784;
@@ -18,8 +19,7 @@
 .diamond-confirm .confirm-spend,
 .sharing-action.is-primary,
 .payment-dialog [data-close],
-.market-sale-buttons [data-sell],
-#boost-dialog .boost-buy{
+.market-sale-buttons [data-sell]{
  background:var(--btn-main);border:1px solid var(--btn-main-line);border-radius:var(--btn-radius);color:var(--btn-main-text);
  box-shadow:0 3px 0 var(--btn-main-edge);font-weight:700;transition:background .12s,box-shadow .12s,transform .12s
 }
@@ -28,8 +28,14 @@
 .diamond-confirm .confirm-spend:hover:not(:disabled),
 .sharing-action.is-primary:hover:not(:disabled),
 .payment-dialog [data-close]:hover,
-.market-sale-buttons [data-sell]:hover:not(:disabled),
-#boost-dialog .boost-buy:not(:disabled):hover{background:var(--btn-main-hover)}
+.market-sale-buttons [data-sell]:hover:not(:disabled){background:var(--btn-main-hover)}
+
+/* Diamonds: the price boxes in the shop, light blue like the diamonds themselves. */
+#boost-dialog .boost-buy{
+ background:var(--btn-diamond);border:1px solid var(--btn-diamond-line);border-radius:var(--btn-radius);color:var(--btn-diamond-text);
+ box-shadow:0 3px 0 var(--btn-diamond-edge);font-weight:700;transition:background .12s,box-shadow .12s,transform .12s
+}
+#boost-dialog .boost-buy:not(:disabled):hover{background:var(--btn-diamond-hover)}
 #boost-dialog .boost-buy .boost-price,#boost-dialog .boost-buy small{color:inherit}
 
 /* Second */
@@ -71,6 +77,7 @@
 .diamond-confirm .confirm-spend:active:not(:disabled),
 .payment-dialog .payment-actions button:active:not(:disabled),
 #boost-dialog .boost-buy:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-main-edge)}
+#boost-dialog .boost-buy:not(:disabled):active{box-shadow:0 1px 0 var(--btn-diamond-edge)}
 .small-button:active:not(:disabled),
 .secondary-button:active:not(:disabled),
 .sharing-action:not(.is-primary):active:not(:disabled),
@@ -133,3 +140,18 @@
  .primary-button,.small-button,.secondary-button,.sharing-action,.icon-button,.diamond-confirm .confirm-spend,#boost-dialog .boost-buy{transition:none}
  .primary-button:active,.small-button:active,.secondary-button:active,.sharing-action:active,.icon-button:active,#boost-dialog .boost-buy:active{transform:none}
 }
+
+/* Tabs in the same style: a slightly sunken track, and the chosen tab a raised cream button with the edge of the second
+   buttons. Covers every tab bar (market, quests, Farm family, daily, chat, admin, estate, journal, seeds, factory). */
+.market-tabs,.chat-tabs,.auth-tabs{background:#efe6d8;border:1px solid #e3d6c1;border-radius:14px;padding:4px;box-shadow:inset 0 2px 0 #e6dac7}
+.market-tabs button,.chat-tabs button,.auth-tabs button{border:1px solid transparent;border-radius:10px;font-weight:700;color:#857660;transition:background .12s,color .12s,box-shadow .12s}
+.market-tabs button:not(.active):not([aria-selected="true"]):not([aria-pressed="true"]):not(:disabled):hover,
+.chat-tabs button:not(.active):hover,
+.auth-tabs button:not([aria-selected="true"]):hover{background:#f7f0e3;color:#5b4520}
+.market-tabs button.active,
+.market-tabs button[aria-selected="true"],
+.market-tabs button[aria-pressed="true"],
+#tasks-dialog .quest-filters button[aria-pressed="true"],
+.chat-tabs button.active,
+.auth-tabs button[aria-selected="true"]{background:#fffdf5;border-color:#d9c7a4;color:#5b4520;box-shadow:0 3px 0 #e2d3b3}
+@media(prefers-reduced-motion:reduce){.market-tabs button,.chat-tabs button,.auth-tabs button{transition:none}}
