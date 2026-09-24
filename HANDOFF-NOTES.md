@@ -745,3 +745,7 @@ Desktop start view (2026-09-24): the home and fields views centre the farm in th
 side tools and, while it is open, the Beginner guide (`hudShift` in `measureTools`, applied as a horizontal frustum
 shift in `resize()`, `public/game.js`; phones and the overview are unchanged). Re-measured when the side tools or the
 guide change size (ResizeObserver). Tests: `tests/desktop-hud.test.mjs`.
+
+New players on phones (2026-09-24): while the Beginner guide is not done, phones start in the fields view (bigger fields,
+where the first steps happen) and "My farm" returns there; after the guide the whole-farm home view as before
+(`startView` in `public/game.js`). Desktop unchanged. Tests: `tests/new-player-view.test.mjs`.

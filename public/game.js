@@ -30,7 +30,7 @@ import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
 import { createScenePolish } from './scene-polish.js';
 import { createActivitiesUI } from './activities-ui.js';
-import { ACTIVE_STATIONS,cropUnlocked,stallStatus,stallNotice } from './farm-state.js';
+import { ACTIVE_STATIONS,cropUnlocked,stallStatus,stallNotice,beginnerProgress } from './farm-state.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { watchSelects } from './pretty-select.js';
@@ -48,7 +48,9 @@ const initialWelcome=window.harvestInitialFarm.welcome;
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
-let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode='home';
+// On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide.
+const startView=()=>mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)?'fields':'home';
+let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
 let overviewBounds=null;
 const familyDecor=[],factoryDecor=[],yardDecor={beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 let liveEvents,familyUI,progression,economy,retention,growth,valley,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
@@ -558,7 +560,7 @@ function resize(){
 }
 function panFarm(delta,depth=0){const limit=Math.round(24*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
 function zoomFarm(value){zoom=Math.max(.75,Math.min(2.2,value));resize();}
-function resetView(){viewMode='home';zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
+function resetView(){viewMode=startView();zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
 function showOverview(){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}
 function focusFields(){viewMode='fields';zoom=1;pan=0;panDepth=0;resize();}
 function measureFarm(){
