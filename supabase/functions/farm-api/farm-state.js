@@ -72,9 +72,10 @@ prizeproduce:{"name": "Prize produce", "sell": 9800, "icon": "award", "color": "
 
 });
 export const ITEMS=Object.freeze({...CROPS,...PRODUCTS});
-// The Starter Pack (level 14) gives one of each of these twelve crops; the server grants exactly this list (orchard-expansion.sql).
-// Crops added later (the midgame expansion) are not part of it.
-export const STARTER_PACK_CROPS=Object.freeze(['corn','wheat','cabbage','pumpkin','sunflower','barley','lettuce','redcabbage','cauliflower','greenbeans','apples','berries']);
+// The Starter Pack (level 14) gives one of every crop in the game. The payment itself is credited by the database
+// (harvest_credit_purchase, supabase/starter-pack-all-crops.sql), which lists the same crops: a test keeps the two equal, so a
+// new crop cannot be left out.
+export const STARTER_PACK_CROPS=Object.freeze(Object.keys(CROPS));
 // Calendar-based quotes are shared by every player and evaluated with server time.
 // Common prices sit near normal; the outer bands are deliberately uncommon.
 export const MARKET_PAYOUT_MULTIPLIER=0.8;

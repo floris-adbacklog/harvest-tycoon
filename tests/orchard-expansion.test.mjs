@@ -48,11 +48,12 @@ test('new tasks and orders wait for buildings and rotate after unlocking',()=>{
  for(const k of ['applejuice','applepie','berrypreserves','berrytart','stew']){assert.ok(seen.has(k),k);assert.ok(tasks.has('made_'+k),k);}
 });
 
-test('Starter Pack SQL awards every crop once and all expansion assets exist',async()=>{
+test('Starter Pack SQL awards every crop in the game once and all expansion assets exist',async()=>{
  const {readFileSync,existsSync}=await import('node:fs');
- const sql=readFileSync(new URL('../supabase/orchard-expansion.sql',import.meta.url),'utf8');
+ const sql=readFileSync(new URL('../supabase/starter-pack-all-crops.sql',import.meta.url),'utf8');
  const ids=[...sql.match(/foreach crop in array array\[([^\]]+)\]/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
- assert.deepEqual(ids.slice().sort(),STARTER_PACK_CROPS.slice().sort());assert.equal(new Set(ids).size,12);
+ assert.deepEqual(ids.slice().sort(),STARTER_PACK_CROPS.slice().sort());assert.equal(new Set(ids).size,ids.length);
+ assert.deepEqual(STARTER_PACK_CROPS.slice().sort(),Object.keys(CROPS).sort(),'every crop, the newer ones too');
  assert.deepEqual(STARTER_PACK_CROPS.filter(k=>!CROPS[k]),[],'every starter crop exists');
  for(const id of [...crops,'applejuice','applepie','berrypreserves','berrytart','stew',...buildings])assert.ok(existsSync(new URL(`../public/assets/icons/${id}.png`,import.meta.url)),id);
  for(const model of ['plant_006','tree_009','bush_003','house_011','hangar_005','hangar_002'])assert.ok(existsSync(new URL(`../public/assets/models/${model}.glb`,import.meta.url)),model);
