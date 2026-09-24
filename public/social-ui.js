@@ -41,7 +41,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
  // A picker for any crop or good: one native list grouped into Crops and Goods (easy on phones), the chosen item's
  // picture beside it, and a 1–5 stepper.
  function itemPicker({kind,keys,picked,quantity,max,withStock=false}){
-  const option=k=>`<option value="${k}" ${k===picked?'selected':''}>${esc(ITEMS[k].name)}${withStock?` (${stock(k)})`:''}</option>`,crops=keys.filter(k=>CROPS[k]),goods=keys.filter(k=>!CROPS[k]);
+  const option=k=>`<option value="${k}" data-art="${k}"${withStock?` data-note="${stock(k)} in storage"`:''} ${k===picked?'selected':''}>${esc(ITEMS[k].name)}</option>`,crops=keys.filter(k=>CROPS[k]),goods=keys.filter(k=>!CROPS[k]);
   return `<div class="sharing-picker"><span class="sharing-picker-art">${art(picked)}</span><select data-pick="${kind}" aria-label="Choose a crop or good">${crops.length?`<optgroup label="Crops">${crops.map(option).join('')}</optgroup>`:''}${goods.length?`<optgroup label="Goods">${goods.map(option).join('')}</optgroup>`:''}</select><div class="sharing-stepper" aria-label="Quantity"><button type="button" data-step="${kind}" data-by="-1" aria-label="One less" ${quantity<=1?'disabled':''}>−</button><output>${quantity}</output><button type="button" data-step="${kind}" data-by="1" aria-label="One more" ${quantity>=max?'disabled':''}>+</button></div></div>`;
  }
  const giftKeys=()=>Object.keys(ITEMS).filter(k=>stock(k)>0);

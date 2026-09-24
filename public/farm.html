@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="/shop.css">
   <link rel="stylesheet" href="/ui-polish.css">
   <link rel="stylesheet" href="/retention.css">
+  <link rel="stylesheet" href="/pretty-select.css">
   <link rel="stylesheet" href="/pwa-layout.css">
   <link rel="preload" as="image" href="/assets/farm-welcome.webp">
   <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
@@ -89,7 +90,7 @@
     </div>
     <div id="notify-email-rows" hidden>
      <label class="notify-row" for="notify-email"><span><strong>Daily email summary</strong><small>One email a day, only when something is waiting. You can unsubscribe from any email.</small></span><input id="notify-email" type="checkbox" role="switch"></label>
-     <div id="notify-email-time" class="notify-time" hidden><label for="notify-hour">Send it around</label><select id="notify-hour"></select></div>
+     <div id="notify-email-time" class="notify-time" hidden><label for="notify-hour">Send it around</label><select id="notify-hour" data-pretty="compact"></select></div>
     </div>
     <p id="notify-status" class="notify-status" role="status" aria-live="polite"></p></section>
    <section id="app-settings" class="settings-section" hidden><h3 class="settings-heading"><i data-lucide="smartphone"></i>Farm app</h3><p id="install-copy" class="install-copy"></p><ol id="install-steps" class="install-steps" hidden></ol><button id="install-app" class="small-button" type="button" hidden><i data-lucide="download" data-line-icon></i>Install app</button></section>

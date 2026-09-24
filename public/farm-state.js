@@ -668,6 +668,9 @@ export function clearPlanting(state,id,expectedPlantedAt){
 const careDelay=(state,duration,now)=>Math.max(30000*(1-rookieBoost(state,now)),duration*.3);
 export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(regrowing&&hasImprovement(state,'ladders')?.8:1));}
 export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0);}
+// What a harvest gives right now: Double harvest doubles every harvest while it runs (also a crop that ripened before it started).
+export function harvestBoostActive(state,now=Date.now()){return state.boosts?.harvestUntil>now;}
+export function harvestQuantity(state,plot,now=Date.now()){return harvestYield(plot)*(harvestBoostActive(state,now)?2:1);}
 export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
 export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
 // Fields 13-20 keep their prices. Later coin costs rise steadily; estate materials and levels add the challenge.
@@ -775,7 +778,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
   return {action,crop:p.crop,yield:harvestYield(p)};
  }
  if(now<p.readyAt)throw new Error('Still growing. Give it a little more time.');
- const harvested=p.crop,quantity=harvestYield(p),xp=CROPS[harvested].xp*(p.watered&&p.tended?2:1);
+ const harvested=p.crop,quantity=harvestQuantity(state,p,now),xp=CROPS[harvested].xp*(p.watered&&p.tended?2:1);
  state.inventory[harvested]+=quantity;state.stats.harvested++;state.stats['harvest_'+harvested]=(state.stats['harvest_'+harvested]??0)+quantity;
  state.mastery.harvests[harvested]=(state.mastery.harvests[harvested]??0)+1;
  if(!state.discovered.includes(harvested))state.discovered.push(harvested);state.stats.varieties=state.discovered.length;state.xp+=xp;
@@ -972,38 +975,52 @@ export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {field:id,crop:plot.crop,cost:SINGLE_CROP_COST,affected:1};
 }
+// Timed boosts run 30 minutes, 1 hour or 1 day. Longer is cheaper per hour (1 hour costs 1.8x and 1 day 6x the 30-minute price):
+// nobody plays a whole day. Buying one that is still running adds the time after it, like VIP. `cost` and `duration` are the
+// 30-minute offer, which is also what an older game gets when it sends no length.
+export const BOOST_DURATIONS=Object.freeze({'30m':1800000,'1h':3600000,'1d':86400000});
+export const BOOST_LENGTH_NAMES=Object.freeze({'30m':'30 minutes','1h':'1 hour','1d':'1 day'});
+const BOOST_UNTIL=Object.freeze({xp:'xpUntil',harvest:'harvestUntil',coins:'coinsUntil'});
 export const BOOSTS=Object.freeze({
- xp:{name:'Double XP',cost:50,duration:1800000,art:'xp',description:'Earn twice the XP from farm actions for 30 minutes.'},
- coins:{name:'Double earnings',cost:100,duration:1800000,art:'coins',description:'Double coins from sales and deliveries for 30 minutes.'},
+ xp:{name:'Double XP',cost:50,duration:1800000,prices:Object.freeze({'30m':50,'1h':90,'1d':300}),art:'xp',description:'Earn twice the XP from farm actions.'},
+ // Between Double XP and Double earnings: it doubles crops only, not goods or deliveries, and at most one waiting harvest per field.
+ harvest:{name:'Double harvest',cost:75,duration:1800000,prices:Object.freeze({'30m':75,'1h':135,'1d':450}),art:'double-harvest',description:'Twice the crops from every harvest.'},
+ coins:{name:'Double earnings',cost:100,duration:1800000,prices:Object.freeze({'30m':100,'1h':180,'1d':600}),art:'coins',description:'Double coins from sales and deliveries.'},
  crops:{name:'Instant harvest',cost:150,art:'seeds',description:'Every growing crop ready to harvest now.'},
  production:{name:'Finish production',cost:200,art:'boost',description:'Every running batch ready now (not the Factory).'},
  upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'50% off your next building upgrade. Never expires.'}
 });
-export function boostStatus(state,id,now=Date.now()){
+// The price and running time of one boost: a timed boost for the chosen length, any other boost as it is.
+export function boostOffer(id,length='30m'){
  if(!Object.hasOwn(BOOSTS,id))throw new Error('Choose a valid boost.');
- const boost=BOOSTS[id],until=id==='xp'?state.boosts?.xpUntil:id==='coins'?state.boosts?.coinsUntil:0;
+ const boost=BOOSTS[id];
+ if(!boost.prices)return {cost:boost.cost,duration:0,length:null};
+ if(typeof length!=='string'||!Object.hasOwn(BOOST_DURATIONS,length))throw new Error('Choose 30 minutes, 1 hour or 1 day.');
+ return {cost:boost.prices[length],duration:BOOST_DURATIONS[length],length};
+}
+export function boostStatus(state,id,now=Date.now(),length='30m'){
+ const boost=BOOSTS[id],offer=boostOffer(id,length),until=BOOST_UNTIL[id]?state.boosts?.[BOOST_UNTIL[id]]:0;
  const remaining=Math.max(0,(until??0)-now);
  let reason='';
- if(remaining)reason='Already active';
  if(id==='upgrade'&&state.boosts?.upgradeCredits>0)reason='Voucher ready';
  if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>BUILDINGS[key].type==='production'&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
  if(id==='crops'&&!state.plots.some(p=>p.crop&&p.readyAt>now))reason='No crops are growing';
  if(id==='production'&&!Object.entries(state.buildings).some(([key,b])=>key!=='factory'&&productionJobs(b).some(j=>j.readyAt>now)))reason='No batches are running';
- return {...boost,remaining,reason,canBuy:!reason&&state.diamonds>=boost.cost};
+ return {...boost,...offer,remaining,reason,canBuy:!reason&&state.diamonds>=offer.cost};
 }
-export function buyBoost(state,id,now=Date.now()){
- const status=boostStatus(state,id,now);
+export function buyBoost(state,id,now=Date.now(),length='30m'){
+ const status=boostStatus(state,id,now,length);
  if(status.reason)throw new Error(status.reason+'.');
  if(state.diamonds<status.cost)throw new Error(`You need ${status.cost} diamonds. Earn more from daily gifts and challenges.`);
- if(id==='xp')state.boosts.xpUntil=now+status.duration;
- if(id==='coins')state.boosts.coinsUntil=now+status.duration;
+ const key=BOOST_UNTIL[id];
+ if(key)state.boosts[key]=Math.max(now,state.boosts[key]??0)+status.duration;
  if(id==='upgrade')state.boosts.upgradeCredits=1;
  let affected=0;
  if(id==='crops')for(const p of state.plots)if(p.crop&&p.readyAt>now){p.readyAt=now;affected++;}
  if(id==='production')for(const [key,b] of Object.entries(state.buildings))if(key!=='factory')for(const job of productionJobs(b))if(job.readyAt>now){job.readyAt=now;affected++;}
  state.diamonds-=status.cost;
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
- return {boost:id,cost:status.cost,affected,expiresAt:status.duration?now+status.duration:null};
+ return {boost:id,length:status.length,cost:status.cost,affected,expiresAt:key?state.boosts[key]:null};
 }
 export function fertilizeFields(state,ids,now=Date.now()){
  if(!Array.isArray(ids)||!ids.length||ids.length>MAX_PLOTS||new Set(ids).size!==ids.length)throw new Error('Select unique growing fields to fertilize.');
@@ -1375,7 +1392,7 @@ export function normalizeFarm(state,now=Date.now()){
  if(state.rookieUntil!==undefined)state.rookieUntil=Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil):0;
  state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
- state.boosts??={};for(const key of ['xpUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
+ state.boosts??={};for(const key of ['xpUntil','harvestUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
  state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
  state.stats??={};migrateProgression(state);migrateFeatureLevels(state);
@@ -1556,8 +1573,10 @@ function dispatchFarmAction(state,action,now,random){
   case 'finish_crop':return finishSingleCrop(state,action.id,action.expectedCost,now);
   case 'buy_boost':{
    if(!Object.hasOwn(BOOSTS,action.boost))throw new Error('Choose a valid boost.');
-   if(action.expectedCost!==BOOSTS[action.boost].cost)throw new Error('Boost prices have changed. Reload the game to see current prices.');
-   return buyBoost(state,action.boost,now);
+   // An older game sends no length: that is the 30-minute boost it always was.
+   const length=action.length??'30m';
+   if(action.expectedCost!==boostOffer(action.boost,length).cost)throw new Error('Boost prices have changed. Reload the game to see current prices.');
+   return buyBoost(state,action.boost,now,length);
   }
   case 'fertilize':return action.ids===undefined?fertilizeField(state,action.id,now):fertilizeFields(state,action.ids,now);
   case 'stall_collect':return collectStall(state,now);

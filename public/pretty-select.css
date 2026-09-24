@@ -1,0 +1,45 @@
+/* Dropdowns (public/pretty-select.js): a soft button with the chosen option and a chevron, and a short menu under it. The picked
+   option is light blue like the buy buttons. data-pretty="compact" is a small pill (boost lengths, the reminder hour). */
+.pretty-select-native{display:none!important}
+.pretty-select{position:relative;display:block;min-width:0}
+.pretty-select[hidden]{display:none}
+.pretty-select-toggle{display:flex;align-items:center;gap:8px;width:100%;min-height:46px;margin:0;padding:9px 12px 9px 14px;border:1px solid #d8ccba;border-radius:12px;background:#fffdf7;box-shadow:0 1px 0 #ebe2d4;color:#3f3827;font-family:inherit;font-size:15px;font-weight:650;line-height:1.3;text-align:left;cursor:pointer;transition:border-color .15s,background .15s}
+.pretty-select-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pretty-select-chevron{flex:none;width:16px;height:16px;fill:none;stroke:#6c604a;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+.pretty-select.is-open .pretty-select-chevron{transform:rotate(180deg)}
+.pretty-select-toggle:hover:not(:disabled),.pretty-select.is-open .pretty-select-toggle{border-color:#bfae93;background:#fff}
+.pretty-select-toggle:focus-visible{outline:2px solid #6aa7c9;outline-offset:2px}
+.pretty-select-toggle:disabled{opacity:.6;cursor:default}
+
+/* The small pill. It looks as low as a status chip; on phones the tap area stays 44 px high (an invisible margin around it). */
+.pretty-select.is-compact{display:inline-block}
+.pretty-select.is-compact .pretty-select-toggle{position:relative;width:auto;min-height:28px;gap:5px;padding:3px 9px 3px 11px;border-radius:99px;font-size:12px;font-weight:750;line-height:1.4}
+.pretty-select.is-compact .pretty-select-toggle::after{content:'';position:absolute;inset:-8px -4px}
+.pretty-select.is-compact .pretty-select-chevron{width:13px;height:13px}
+.game-dialog .pretty-select.is-compact .pretty-select-toggle{min-height:28px}
+
+.pretty-select-menu{position:absolute;z-index:30;top:calc(100% + 6px);left:0;display:grid;align-content:start;gap:2px;min-width:100%;padding:5px;overflow-y:auto;overscroll-behavior:contain;border:1px solid #e3d7c6;border-radius:13px;background:#fffdf7;box-shadow:0 14px 30px #3d321c2b,0 2px 6px #3d321c14;animation:pretty-select-in .12s ease-out}
+.pretty-select.is-compact .pretty-select-menu{min-width:172px}
+.pretty-select-menu.is-up{top:auto;bottom:calc(100% + 6px)}
+.pretty-select-menu.is-end{left:auto;right:0}
+.pretty-select-group{padding:9px 10px 3px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9a8b73}
+.pretty-select-option{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;margin:0;padding:7px 10px;border:0;border-radius:9px;background:none;color:#4d4531;font-family:inherit;font-size:14px;font-weight:650;line-height:1.3;text-align:left;cursor:pointer}
+.pretty-select-option-art{flex:none;display:grid;place-items:center;width:30px;height:30px}
+.pretty-select-option-art .game-art{width:28px;height:28px;object-fit:contain}
+.pretty-select-option-text{flex:1;min-width:0;display:grid;gap:1px}
+.pretty-select-option-text small{font-size:12px;font-weight:600;color:#8a7d68}
+.pretty-select-detail{flex:none;display:inline-flex;align-items:center;gap:4px;font-weight:800;color:#3d392b}
+.pretty-select-detail .game-art{width:15px;height:15px}
+.pretty-select-option:hover,.pretty-select-option:focus-visible{background:#f4ede3;outline:none}
+.pretty-select-option[aria-selected="true"]{background:#e3f3fd;color:#1f5877}
+.pretty-select-option[aria-selected="true"] :is(.pretty-select-detail,small){color:#1f5877}
+.pretty-select-option:disabled{opacity:.45;cursor:default}
+@keyframes pretty-select-in{from{opacity:0;transform:translateY(-4px)}}
+.pretty-select-menu.is-up{animation-name:pretty-select-up}
+@keyframes pretty-select-up{from{opacity:0;transform:translateY(4px)}}
+@media(prefers-reduced-motion:reduce){.pretty-select-menu{animation:none}.pretty-select-chevron{transition:none}}
+
+/* Where a <select> had its own place in a layout, the dropdown takes that place. */
+.sharing-picker .pretty-select{grid-area:select}
+.family-extra .pretty-select{grid-column:1;grid-row:2;margin-bottom:14px}
+.admin-grant-field .pretty-select{margin-top:5px}

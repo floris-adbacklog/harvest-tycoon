@@ -1,13 +1,17 @@
 import {confirmDiamondSpend} from './diamond-confirm.js';
-import {VIP_PLANS,vipActive,BUILDINGS,RECIPES,productionJobs,SINGLE_BATCH_COST,featureUnlocked,featureUnlockHint,BOOSTS,DIAMOND_PACKS,SINGLE_CROP_COST,CROPS,boostStatus,formatDuration} from './farm-state.js';
+import {VIP_PLANS,vipActive,BUILDINGS,RECIPES,productionJobs,SINGLE_BATCH_COST,featureUnlocked,featureUnlockHint,BOOSTS,DIAMOND_PACKS,SINGLE_CROP_COST,CROPS,boostStatus,boostOffer,BOOST_DURATIONS,BOOST_LENGTH_NAMES,formatDuration} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
+import {prettifySelects} from './pretty-select.js';
 import {fieldPicker,batchPicker,bindFieldPicker} from './field-picker.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
+const LENGTH_LABELS={'30m':'30 min','1h':'1 hour','1d':'1 day'};
 
 export function createBoostsUI({state,runAction,onChange,notify}){
  let lastStatus='',catalog=null,purchasing='',requests={},selectedFields=[],selectedBatches=[],finishing=false;
+ // The length picked on each timed boost: 30 minutes every time the shop opens and after each purchase.
+ let lengths={};const lengthOf=id=>BOOSTS[id].prices?lengths[id]??'30m':undefined;
  const bridge=()=>window.parent.harvestBridge;
  let previousVip=vipActive(state,farmNow()),observedExpiry=state.vipExpiresAt??0;
  const track=(event,params={})=>bridge()?.trackCommerce?.(event,params);
@@ -49,10 +53,16 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   const chip=(kind,text,time='')=>`<span class="boost-detail" data-state="${kind}"${time?` data-boost-time="${time}"`:''}>${text}</span>`;
   const price=(cost,verb)=>`<span class="boost-price">${art('diamonds')}<b>${cost}</b></span><small>${verb}</small>`;
   const card=({cls='',picture,title,text,detail='',button,extra=''})=>`<article class="boost-card ${cls}"><div class="boost-card-art">${art(picture)}</div><div class="boost-card-copy"><h3>${title}</h3><p>${text}</p>${detail}</div>${button}${extra?`<div class="boost-card-extra">${extra}</div>`:''}</article>`;
+  // A timed boost (Double XP, Double harvest, Double earnings) has a small "30 min ⌄" dropdown next to its status (the game's own
+  // dropdown, public/pretty-select.js): 30 min, 1 hour or 1 day, each with its price. The button buys the one picked; while the boost
+  // runs, buying again adds that time after it.
+  const lengthSelect=(id,b,picked)=>`<select class="boost-length" data-boost-length="${id}" data-pretty="compact" aria-label="How long" ${finishing?'disabled':''}>${Object.keys(BOOST_DURATIONS).map(length=>`<option value="${length}" data-detail="${number(b.prices[length])}" data-detail-art="diamonds" ${length===picked?'selected':''}>${LENGTH_LABELS[length]}</option>`).join('')}</select>`;
   const boostCard=([id,b])=>{
-   const status=boostStatus(state,id,farmNow()),active=Boolean(status.remaining);
-   const [kind,text]=active?['active',`Active · ${formatDuration(status.remaining)} left`]:status.reason?['blocked',status.reason]:state.diamonds<b.cost?['need',`Need ${number(b.cost-state.diamonds)} more diamonds`]:['ready','Ready to use'];
-   return card({cls:active?'boost-active':'',picture:id==='crops'?'instant-harvest':b.art,title:b.name,text:b.description,detail:chip(kind,text,id),button:`<button class="boost-buy" data-buy-boost="${id}" ${status.canBuy&&!finishing?'':'disabled'} aria-label="Activate ${b.name} for ${b.cost} diamonds">${price(b.cost,active?'Active':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate')}</button>`});
+   const length=lengthOf(id),status=boostStatus(state,id,farmNow(),length),active=Boolean(status.remaining);
+   const [kind,text]=active?['active',`Active · ${formatDuration(status.remaining)} left`]:status.reason?['blocked',status.reason]:state.diamonds<status.cost?['need',`Need ${number(status.cost-state.diamonds)} more diamonds`]:['ready','Ready to use'];
+   const verb=active?'Extend':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate';
+   const label=`${active?'Extend':'Activate'} ${b.name}${length?` for ${BOOST_LENGTH_NAMES[length]}`:''} for ${status.cost} diamonds`;
+   return card({cls:active?'boost-active':'',picture:id==='crops'?'instant-harvest':b.art,title:b.name,text:b.description,detail:length?`<div class="boost-status-row">${lengthSelect(id,b,length)}${chip(kind,text,id)}</div>`:chip(kind,text,id),button:`<button class="boost-buy" data-buy-boost="${id}" ${status.canBuy&&!finishing?'':'disabled'} aria-label="${label}">${price(status.cost,verb)}</button>`});
   };
   // Pick one or more fields (or batches): each costs the same 10 diamonds, the button shows the total.
   const cropCard=card({picture:'harvest',title:'Finish crops',text:`${SINGLE_CROP_COST} diamonds a field, ready to harvest now.`,
@@ -76,12 +86,17 @@ export function createBoostsUI({state,runAction,onChange,notify}){
    if(purchasing||!catalog?.enabled)return;const pack=button.dataset.diamondPack;purchasing=pack;requests[pack]??=crypto.randomUUID();render();
    try{await bridge().checkout(pack,requests[pack]);}catch(error){$('boost-feedback').textContent=error.message;purchasing='';render();}
   });
+  prettifySelects($('boost-catalog'));
+  $('boost-catalog').querySelectorAll('[data-boost-length]').forEach(select=>select.onchange=()=>{
+   const id=select.dataset.boostLength;lengths[id]=select.value;render();
+   $('boost-catalog').querySelector(`[data-boost-length="${id}"]`)?.nextElementSibling?.querySelector('.pretty-select-toggle')?.focus();
+  });
   $('boost-catalog').querySelectorAll('[data-buy-boost]').forEach(button=>button.onclick=async()=>{
-   if(finishing)return;const id=button.dataset.buyBoost,offer=BOOSTS[id];finishing=true;render();
+   if(finishing)return;const id=button.dataset.buyBoost,boost=BOOSTS[id],length=lengthOf(id),offer=boostOffer(id,length),running=boostStatus(state,id,farmNow(),length).remaining>0,time=length&&BOOST_LENGTH_NAMES[length];finishing=true;render();
    try{
-    if(offer.cost>=150&&!await confirmDiamondSpend({title:offer.name,cost:offer.cost,description:offer.description}))return;
-    const result=await runAction({type:'buy_boost',boost:id,expectedCost:offer.cost});onChange();
-    const message=id==='crops'?`${result.affected} crops are ready to harvest!`:id==='production'?`${result.affected} batches are ready to collect!`:id==='upgrade'?'Your next production-building upgrade costs 50% less.':`${offer.name} is active for 30 minutes.`;
+    if(offer.cost>=150&&!await confirmDiamondSpend({title:time?`${boost.name} · ${time}`:boost.name,cost:offer.cost,description:time?(running?`Adds ${time} after your current ${boost.name} ends.`:`${boost.description} Starts now and runs for ${time}.`):boost.description}))return;
+    const result=await runAction({type:'buy_boost',boost:id,...(length?{length}:{}),expectedCost:offer.cost});delete lengths[id];onChange();
+    const message=id==='crops'?`${result.affected} crops are ready to harvest!`:id==='production'?`${result.affected} batches are ready to collect!`:id==='upgrade'?'Your next production-building upgrade costs 50% less.':running?`${boost.name} extended by ${time}.`:`${boost.name} is active for ${time}.`;
     $('boost-feedback').textContent=message;notify(message);
    }catch(error){$('boost-feedback').textContent=error.message;notify(error.message);}finally{finishing=false;render();}
   });
@@ -96,7 +111,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   });
   lastStatus=signature();refreshArt();
  }
- async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};render();$('boost-dialog').showModal();track('diamond_shop_view');try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
+ async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();track('diamond_shop_view');try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
  function refresh(){
   $('diamonds').textContent=state.diamonds.toLocaleString('en-US',matchMedia('(max-width: 900px), (max-height: 550px) and (pointer: coarse)').matches?{notation:'compact',maximumFractionDigits:1}:{});
   $('diamond-button').setAttribute('aria-label',`${number(state.diamonds)} diamonds. Open boosts and diamond shop.`);
@@ -109,7 +124,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   if(isVip)active.push(`VIP · ${formatDuration(state.vipExpiresAt-now)}`);
   const vipStatus=document.querySelector('[data-vip-status]');if(vipStatus&&isVip)vipStatus.textContent=`VIP · ${formatDuration(state.vipExpiresAt-now)} left`;
 
-  for(const [id,label,until] of [['xp','2× XP',state.boosts.xpUntil],['coins','2× coins',state.boosts.coinsUntil]]){
+  for(const [id,label,until] of [['xp','2× XP',state.boosts.xpUntil],['harvest','2× harvest',state.boosts.harvestUntil],['coins','2× coins',state.boosts.coinsUntil]]){
    if(until>now)active.push(`${label} · ${formatDuration(until-now)}`);
    const el=document.querySelector(`[data-boost-time="${id}"]`);if(el&&until>now)el.textContent=`Active · ${formatDuration(until-now)} left`;
   }

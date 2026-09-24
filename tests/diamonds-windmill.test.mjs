@@ -26,7 +26,8 @@ test('XP and coin boosts persist, multiply eligible rewards once and expire',()=
  state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'}).coins,marketQuote('wheat',now).price*20);
  const order=dailyOrders(state,now)[0];Object.assign(state.inventory,order.input);const delivery=act(state,{type:'delivery',id:order.id,day:utcDay(now)});assert.equal(delivery.coins,order.coins*2);assert.equal(delivery.xp,order.xp*2);
  const gift=act(state,{type:'checkin'});assert.equal(gift.coins,40);assert.equal(gift.diamonds,4);
- const balance=state.diamonds;assert.throws(()=>act(state,{type:'buy_boost',boost:'xp'}),/Already active/);assert.equal(state.diamonds,balance);
+ // A running boost can be extended (tests/double-harvest.test.mjs); with 4 diamonds left this one cannot be bought, and nothing changes.
+ const balance=state.diamonds;assert.throws(()=>act(state,{type:'buy_boost',boost:'xp'}),/You need 50 diamonds/);assert.equal(state.diamonds,balance);
  state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'},now+BOOSTS.coins.duration).coins,marketQuote('wheat',now+BOOSTS.coins.duration).price*10);
  assert.equal(act(state,{type:'field',id:1,action:'harvest'},now+BOOSTS.xp.duration).xp,5);
 });

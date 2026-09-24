@@ -35,6 +35,9 @@
 #boost-dialog .boost-card-extra .field-picker-label{display:block;margin:0 0 6px;font-size:12px;font-weight:700;color:#8a7d68}
 #boost-dialog .boost-card-extra .field-picker{margin:0;width:100%;max-width:none}
 #boost-dialog .boost-card-extra .field-picker summary{min-height:58px;background:#fffdf7}
+/* Timed boosts: the "30 min ⌄" dropdown (public/pretty-select.css) sits on the status line, before the status chip. */
+.boost-status-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px}
+.boost-status-row .boost-detail{margin:0}
 /* VIP and diamond packs: same rhythm as the sections above. */
 #boost-dialog .vip-shop{margin-top:22px}
 #boost-dialog .diamond-store{margin-top:26px;padding-top:16px}

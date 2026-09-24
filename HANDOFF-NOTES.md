@@ -571,3 +571,42 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - Privacy policy updated to match (24 Sep 2026): the "In short" line, the purpose and legal basis (consent), section
   8 (only after Accept, how to change it, what Decline removes) and the storage table.
 - Tests: tests/cookie-consent.test.mjs; tests/analytics.test.mjs now expects one consent-gated loader.
+
+## Double harvest booster and boost lengths (24 Sep 2026; client push AND farm-api deploy)
+- New timed booster **Double harvest** (`BOOSTS.harvest`, art `double-harvest`, made by ChatGPT, 256 px WebP + PNG): every
+  harvest while it runs gives twice the crops (1/2/3 become 2/4/6), also a crop that ripened before it started, regrowing
+  crops and the tractor. XP per harvest is unchanged (that is Double XP); crop counters (quests, stats) count the real
+  amount. It stacks with Double earnings and Instant harvest. Stored as `state.boosts.harvestUntil`.
+- Timed boosts (Double XP, Double harvest, Double earnings) now run 30 min, 1 hour or 1 day (`BOOST_DURATIONS`,
+  `BOOSTS[id].prices`):
+
+  | Boost | 30 min | 1 hour | 1 day |
+  |---|---|---|---|
+  | Double XP | 50 | 90 | 300 |
+  | Double harvest | 75 | 135 | 450 |
+  | Double earnings | 100 | 180 | 600 |
+
+  1 hour = 1.8x and 1 day = 6x the 30-minute price (nobody plays a whole day). Double harvest sits between XP and
+  earnings: it doubles crops only, at most one waiting harvest per field, while Double earnings can double a whole
+  warehouse. A loyal free player earns about 225 diamonds a week (day-7 gift 24/day + challenges 8/day), so 30 minutes is
+  reachable 2-3 times a week; the day is mostly for buyers. Guard test: tests/double-harvest.test.mjs.
+- Buying a timed boost that is still running adds the time after it (like VIP); "Already active" is gone.
+- `buy_boost` takes an optional `length` ('30m', '1h', '1d'); an older game that sends none gets the 30-minute boost
+  at the old price, so the old client keeps working. Push the client, then deploy farm-api straight away (until then
+  the server refuses Double harvest and the longer lengths).
+- Boosts screen: a small "30 min ⌄" dropdown before the status chip, each length with its price; the buy button shows
+  the price of the one picked and says Extend while it runs. The pick resets to 30 minutes when the shop opens and
+  after a purchase. The top bar shows "2× harvest · 24m". The field tooltip shows the doubled amount. Analytics:
+  `diamond_action_completed` carries `action: 'harvest'` and `length`.
+
+## Dropdowns (24 Sep 2026)
+- public/pretty-select.js + pretty-select.css give every `<select>` in the game the game look: a soft button with a
+  chevron and a short menu (group headings, pictures via `data-art`, a small second line via `data-note`, a price via
+  `data-detail` + `data-detail-art`; the picked option is light blue). `data-pretty="compact"` is a small pill (boost
+  lengths, the reminder hour); `data-native` would keep the browser's own control (nothing uses it).
+- The real `<select>` stays in the page, hidden: forms still submit it, code that reads or sets `.value` works (setting
+  it updates the button), and picking fires `input` and `change`. `watchSelects()` (game.js) also dresses selects that
+  are drawn later. Keyboard: arrows, Home/End, typing to jump, Enter; Escape closes only the menu. It opens upward when
+  there is no room below.
+- Used by: boost lengths, reminder email hour, gift/request picker (pictures, "N in storage"), Family Order extra goods
+  (pictures, "N in stock · N points each"), admin gift item (pictures). Tests: tests/pretty-select.test.mjs.

@@ -25,7 +25,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
    const result=data.result;
    if(action.type==='beginner_claim'){bridge.trackGame?.('guide_step',{step:action.id,index:result.completed-1});if(result.diamonds)bridge.trackGame?.('guide_complete');}
    if(action.type==='buy_vip'){bridge.trackCommerce?.('vip_purchase_completed',{plan:result.plan,cost:result.cost});if(result.extended)bridge.trackCommerce?.('vip_extended',{plan:result.plan});}
-   else if(['buy_boost','finish_crop','finish_batch','replace_order'].includes(action.type))bridge.trackCommerce?.('diamond_action_completed',{action:action.boost??action.type,cost:result.cost});
+   else if(['buy_boost','finish_crop','finish_batch','replace_order'].includes(action.type))bridge.trackCommerce?.('diamond_action_completed',{action:action.boost??action.type,length:action.length,cost:result.cost});
    return result;}
   catch(error){onStatus(error.code==='ACTION_REJECTED'?'saved':'error');throw error;}
   finally{busy=false;document.body.classList.remove('farm-saving');}

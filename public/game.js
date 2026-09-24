@@ -10,7 +10,7 @@ import {createLoadingScreen} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestYield, productionJobs, unlockEntries } from './farm-state.js';
+import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, productionJobs, unlockEntries } from './farm-state.js';
 import { createReminderNudge } from './reminder-nudge.js';
 import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments } from './farm-layout.js';
 import { scatterProps, seeded } from './farm-props.js';
@@ -33,6 +33,7 @@ import { createActivitiesUI } from './activities-ui.js';
 import { ACTIVE_STATIONS } from './farm-state.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
+import { watchSelects } from './pretty-select.js';
 
 const $ = id => document.getElementById(id);
 const state = structuredClone(window.harvestInitialFarm.state);
@@ -628,6 +629,8 @@ function bindUI(){
  $('quest-collapse').addEventListener('click',toggleQuest);
  document.querySelector('.quest-heading')?.addEventListener('click',event=>{if(event.target.closest('#quest-collapse'))return;if(mobileLayout.matches)beginner.open();});
  soundUI=createSoundSettings(farmAudio);
+ // Every dropdown in the game gets the game look, also the ones that are drawn later (public/pretty-select.js).
+ watchSelects();
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
  $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'tend',4:'harvest'}[e.key];if(t){e.preventDefault();setTool(t);}});
@@ -718,7 +721,7 @@ async function init(){
    if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
    else if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
    else if(target.type==='building'){const b=BUILDINGS[target.id];tooltip.innerHTML=`<strong>${b.name}</strong><span>${economy.status(target.id).text} · click to open</span>`;}
-   else{const p=state.plots[target.id];tooltip.innerHTML=`<strong>${p.crop?CROPS[p.crop].name:'Empty field'}</strong><span>${!p.crop?`Plant ${CROPS[selectedCrop].name.toLowerCase()} · ${seedCost(state,selectedCrop)} coins`:farmNow()>=p.readyAt?'Ready to harvest!':`${formatDuration(p.readyAt-farmNow())} · ${harvestYield(p)} crop${harvestYield(p)>1?'s':''}${!p.tended&&farmNow()>=p.careAt?' · extra care ready':p.tended?' · fully cared for':' · water & care for more'}`}</span>`;}
+   else{const p=state.plots[target.id];tooltip.innerHTML=`<strong>${p.crop?CROPS[p.crop].name:'Empty field'}</strong><span>${!p.crop?`Plant ${CROPS[selectedCrop].name.toLowerCase()} · ${seedCost(state,selectedCrop)} coins`:farmNow()>=p.readyAt?'Ready to harvest!':`${formatDuration(p.readyAt-farmNow())} · ${harvestQuantity(state,p,farmNow())} crop${harvestQuantity(state,p,farmNow())>1?'s':''}${!p.tended&&farmNow()>=p.careAt?' · extra care ready':p.tended?' · fully cared for':' · water & care for more'}`}</span>`;}
    const r=world.getBoundingClientRect();tooltip.style.left=`${Math.min(r.width-130,Math.max(130,e.clientX-r.left))}px`;tooltip.style.top=`${e.clientY-r.top-16}px`;
   });
   renderer.domElement.addEventListener('pointerleave',()=>{highlight(-1);$('tooltip').hidden=true;});
