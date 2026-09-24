@@ -666,3 +666,15 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   family_orders member_count check. Dry-run on live in a rolled-back transaction on 24 Sep: works, grants unchanged.
   Applied on 24 Sep 2026 as migration harvest_family_max_10 (checked afterwards: one ">10" check, no ">6", order
   check 1-10, EXECUTE still only postgres and service_role).
+
+## Field taps, water window and care (24 Sep 2026; client push AND farm-api deploy)
+- A tap on a field does what it can use now (`fieldTapAction`): plant an empty field, harvest a ripe one, give a growing
+  crop extra care once it is ready (care first, it has its own moment), otherwise water. A tool picked on purpose (Water
+  or Care) goes first when it fits that field; otherwise the tap still helps. Nothing to do: a toast with the time left.
+- Water belongs to planting: a crop takes water until its extra care opens (30% of the growing time) and always in its
+  first minute (`waterUntil`, `canWater`; new farmers' crops grow in seconds). The server refuses later water ("Water right
+  after planting…"), and the tractor's water job only takes fields that can still be watered and says how long is left
+  ("3 fields · 4m left to water"). Care is unchanged: from 30% of the growing time until harvest, once per cycle, +1 crop
+  and 15% less waiting; water +1 crop and 20% less waiting; both = 3 crops and double XP.
+- The field tooltip says what is next: "water now · 4m left", "extra care in 3m", "extra care ready", "fully cared for".
+- Tests: tests/field-tap.test.mjs.

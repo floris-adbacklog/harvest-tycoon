@@ -10,7 +10,7 @@ import {createLoadingScreen} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, productionJobs, unlockEntries } from './farm-state.js';
+import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, productionJobs, unlockEntries, fieldTapAction, canWater, waterUntil } from './farm-state.js';
 import { createReminderNudge } from './reminder-nudge.js';
 import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments } from './farm-layout.js';
 import { scatterProps, seeded } from './farm-props.js';
@@ -445,7 +445,9 @@ function floatReward(id,html){const v=plots[id],p=new THREE.Vector3(v.x,2.4,v.z)
 async function interact(id,forcedAction){
  if(!ready)return;
  const plot=state.plots[id];
- const action=forcedAction??(plot.crop&&farmNow()>=plot.readyAt?'harvest':selectedTool);
+ // A tap does what the field can use now (fieldTapAction): care once it is ready, water, harvest or plant.
+ const action=forcedAction??fieldTapAction(plot,farmNow(),selectedTool);
+ if(!action){toast(`${CROPS[plot.crop].name} is growing · ${formatDuration(plot.readyAt-farmNow())} left${plot.tended?'':' · extra care comes a little later'}.`);return {error:'nothing to do yet'};}
  try{
   const result=await runAction({type:'field',id,action,crop:selectedCrop});
   if(action==='harvest'){particleBurst(id);floatReward(id,floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
@@ -458,10 +460,10 @@ async function interact(id,forcedAction){
 function setTool(tool){selectedTool=tool;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
 function setCrop(crop){selectedCrop=crop;setTool('plant');if(ready)plots.forEach((_,i)=>drawCrop(i));updateHint();}
 function updateHint(){
- let text=selectedTool==='tend'?'Give growing crops extra care when the green marker appears. Earn +1 crop.':selectedTool==='water'?'Water growing crops for +1 crop and 20% less waiting.':selectedTool==='harvest'?'Click a ready crop to harvest. Hold and drag to move the view.':`Click an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}. Hold and drag to move the view.`;
+ let text=selectedTool==='tend'?'Give growing crops extra care when the green marker appears. Earn +1 crop.':selectedTool==='water'?'Water growing crops for +1 crop and 20% less waiting.':selectedTool==='harvest'?'Click a ready crop to harvest. Hold and drag to move the view.':`Click an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water it and give extra care when it is ready. Hold and drag to move the view.`;
  if(!state.stats.harvested&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt))text='Your first crops are ready. Click a crop or its basket to harvest!';
  if(selectedTool==='plant'&&state.stats.harvested>=3&&state.stats.produced===0)text='Your farm can do more. Click a building to start producing!';
- if(mobileLayout.matches)text=selectedTool==='plant'?`Tap an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}. Drag to move the view.`:`Tap a field to ${selectedTool==='tend'?'give extra care':selectedTool}. Drag to move the view.`;
+ if(mobileLayout.matches)text=selectedTool==='plant'?`Tap an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water and care for it. Drag to move the view.`:`Tap a field to ${selectedTool==='tend'?'give extra care':selectedTool}. Drag to move the view.`;
  $('hint-text').textContent=text;
 }
 function updateUI(){
@@ -721,7 +723,7 @@ async function init(){
    if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
    else if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
    else if(target.type==='building'){const b=BUILDINGS[target.id];tooltip.innerHTML=`<strong>${b.name}</strong><span>${economy.status(target.id).text} · click to open</span>`;}
-   else{const p=state.plots[target.id];tooltip.innerHTML=`<strong>${p.crop?CROPS[p.crop].name:'Empty field'}</strong><span>${!p.crop?`Plant ${CROPS[selectedCrop].name.toLowerCase()} · ${seedCost(state,selectedCrop)} coins`:farmNow()>=p.readyAt?'Ready to harvest!':`${formatDuration(p.readyAt-farmNow())} · ${harvestQuantity(state,p,farmNow())} crop${harvestQuantity(state,p,farmNow())>1?'s':''}${!p.tended&&farmNow()>=p.careAt?' · extra care ready':p.tended?' · fully cared for':' · water & care for more'}`}</span>`;}
+   else{const p=state.plots[target.id];tooltip.innerHTML=`<strong>${p.crop?CROPS[p.crop].name:'Empty field'}</strong><span>${!p.crop?`Plant ${CROPS[selectedCrop].name.toLowerCase()} · ${seedCost(state,selectedCrop)} coins`:farmNow()>=p.readyAt?'Ready to harvest!':`${formatDuration(p.readyAt-farmNow())} · ${harvestQuantity(state,p,farmNow())} crop${harvestQuantity(state,p,farmNow())>1?'s':''}${canWater(p,farmNow())?` · water now · ${formatDuration(waterUntil(p)-farmNow())} left`:p.tended?' · fully cared for':farmNow()>=p.careAt?' · extra care ready':` · extra care in ${formatDuration(p.careAt-farmNow())}`}`}</span>`;}
    const r=world.getBoundingClientRect();tooltip.style.left=`${Math.min(r.width-130,Math.max(130,e.clientX-r.left))}px`;tooltip.style.top=`${e.clientY-r.top-16}px`;
   });
   renderer.domElement.addEventListener('pointerleave',()=>{highlight(-1);$('tooltip').hidden=true;});

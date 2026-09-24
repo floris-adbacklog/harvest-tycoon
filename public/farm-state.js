@@ -667,6 +667,22 @@ export function clearPlanting(state,id,expectedPlantedAt){
 // already shorter, and the 30-second minimum shrinks with it (6 seconds), so Care fits inside a 24-second wheat field.
 const careDelay=(state,duration,now)=>Math.max(30000*(1-rookieBoost(state,now)),duration*.3);
 export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(regrowing&&hasImprovement(state,'ladders')?.8:1));}
+// What a tap on a field does: plant an empty one, harvest a ripe one, and give a growing crop what it can use now, extra care
+// first once it is ready (it has its own moment), then water. A tool the farmer picked on purpose (Water or Care) goes
+// first when it fits this field. null: nothing to do yet (the crop is watered and cared for, or care is not ready).
+// Water belongs to planting: a crop takes water until its extra care opens (30% of the growing time) and at least in its first
+// minute (so new farmers, whose crops grow in seconds, can still follow the guide). Care comes after that, until harvest.
+export const WATER_MIN_MS=60000;
+export function waterUntil(plot){return Math.max(plot.careAt??plot.plantedAt??0,(plot.plantedAt??0)+WATER_MIN_MS);}
+export function canWater(plot,now=Date.now()){return !!plot.crop&&!plot.watered&&now<plot.readyAt&&now<waterUntil(plot);}
+export function fieldTapAction(plot,now=Date.now(),tool='plant'){
+ if(!plot.crop)return 'plant';
+ if(now>=plot.readyAt)return 'harvest';
+ const canTend=!plot.tended&&now>=(plot.careAt??plot.plantedAt),watering=canWater(plot,now);
+ if(tool==='water'&&watering)return 'water';
+ if(tool==='tend'&&canTend)return 'tend';
+ return canTend?'tend':watering?'water':null;
+}
 export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0);}
 // What a harvest gives right now: Double harvest doubles every harvest while it runs (also a crop that ripened before it started).
 export function harvestBoostActive(state,now=Date.now()){return state.boosts?.harvestUntil>now;}
@@ -767,6 +783,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  if(action==='water'){
   if(now>=p.readyAt)throw new Error('This crop is ready to harvest!');
   if(p.watered)throw new Error('Already watered. Your crop is growing nicely.');
+  if(!canWater(p,now))throw new Error('Water right after planting. This crop is past that; give it extra care instead.');
   p.readyAt=now+(p.readyAt-now)*(hasImprovement(state,'watertower')?.7:.8);p.watered=true;state.stats.watered++;
   return {action,crop:p.crop};
  }
@@ -1516,7 +1533,7 @@ export function grantLevelRewards(state,firstLevel=2){
 // repeat claims after automatic payment; the new UI has no claim button.
 export function claimLevelRewards(state){const reward=grantLevelRewards(state);if(!reward.levels.length)throw new Error('Level rewards are already added automatically.');return reward;}
 export function tractorQuote(state,mode,crop='corn',now=Date.now()){
- const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?p.crop&&!p.watered&&p.readyAt>now:p.crop&&p.readyAt<=now);
+ const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?canWater(p,now):p.crop&&p.readyAt<=now);
  const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-12)/(seedCost(state,crop)+2)))):eligible.length;
  const fuel=count?12+count*2:0,seeds=mode==='plant'?count*seedCost(state,crop):0;
  return {count,fuel,seeds,total:fuel+seeds,ids:eligible.slice(0,count).map(p=>p.id)};
