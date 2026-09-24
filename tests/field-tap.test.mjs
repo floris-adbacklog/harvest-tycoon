@@ -41,4 +41,6 @@ test('the game uses it for every tap, and says so in the hint',()=>{
  const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
  assert.match(game,/const action=forcedAction\?\?fieldTapAction\(plot,farmNow\(\),selectedTool\);/);
  assert.match(game,/or a growing crop to water it and give extra care when it is ready/);
+ // Nothing to do yet: what comes next and when, in two plain sentences.
+ assert.match(game,/toast\(`\$\{name\}: \$\{plot\.tended\?'fully cared for':`extra care opens in \$\{formatDuration\(plot\.careAt-now\)\}`\}\. Ready to harvest in \$\{formatDuration\(plot\.readyAt-now\)\}\.`\)/);
 });

@@ -447,7 +447,8 @@ async function interact(id,forcedAction){
  const plot=state.plots[id];
  // A tap does what the field can use now (fieldTapAction): care once it is ready, water, harvest or plant.
  const action=forcedAction??fieldTapAction(plot,farmNow(),selectedTool);
- if(!action){toast(`${CROPS[plot.crop].name} is growing · ${formatDuration(plot.readyAt-farmNow())} left${plot.tended?'':' · extra care comes a little later'}.`);return {error:'nothing to do yet'};}
+ // Nothing to do yet: say plainly what comes next and when (toasts drop "·", so two short sentences).
+ if(!action){const now=farmNow(),name=CROPS[plot.crop].name;toast(`${name}: ${plot.tended?'fully cared for':`extra care opens in ${formatDuration(plot.careAt-now)}`}. Ready to harvest in ${formatDuration(plot.readyAt-now)}.`);return {error:'nothing to do yet'};}
  try{
   const result=await runAction({type:'field',id,action,crop:selectedCrop});
   if(action==='harvest'){particleBurst(id);floatReward(id,floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
