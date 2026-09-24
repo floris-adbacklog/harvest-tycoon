@@ -229,7 +229,7 @@ test('what is still to come is shown from the first minute, greyed out with a lo
  assert.doesNotMatch(game,/v\.hit\.visible=v\.object\.visible/,'and it can be tapped to see what it needs');
  assert.match(game,/const locked=!buildingEligible\(state,key\),status=economy\.status\(key\);setLocked\(v\.object,locked\);/);
  assert.match(game,/v\.pin\.innerHTML=art\(locked\?'lock':v\.pinArt\)/);
- assert.match(game,/v\.label\.hidden=Math\.abs\(p\.x\)>\.92\|\|Math\.abs\(p\.y\)>\.82;/,'a label only hides when it is off screen');
+ assert.match(game,/v\.label\.hidden=Math\.abs\(p\.x\)>\.92\|\|Math\.abs\(p\.y\)>\.82\|\|behindTools\(x,y,80\);/,'a label only hides when it is off screen or behind the side tools (desktop-hud.test.mjs), never for being locked');
  assert.match(game,/const hint=locked\?`\$\{BUILDINGS\[key\]\.name\} · \$\{status\.text\}`:'';/,'the name and the hint wait in the tooltip');
  // helpers (tractor, cart, stall, silo, chores)
  assert.match(game,/const locked=!featureUnlocked\(state,key\);setLocked\(v\.object,locked\);/);assert.match(game,/v\.label\.innerHTML=art\(locked\?'lock':key\)/);

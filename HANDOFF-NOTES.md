@@ -714,8 +714,8 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   and Farm events show the yellow "!" when something waits. The page is about 30% shorter. Styles: public/more-menu.css.
 
 Desktop layout (2026-09-24): on a computer (`public/desktop-hud.css`, desktop = min-width 901px and not a short touch
-screen) the side tools sit on one light panel like the tool dock, so map building labels no longer show between the
-tiles; the camera buttons are one row in the bottom-right corner (lifted above the dock when the window is 1040px or
+screen) the side tools stay see-through over the map; a building name or place marker that would sit behind them is
+hidden until the map moves (`measureTools`/`behindTools` in `public/game.js`, measured on resize, not every frame); the camera buttons are one row in the bottom-right corner (lifted above the dock when the window is 1040px or
 narrower) and the Beginner guide ends above them. The Leaderboard left the tool dock and is a side tool after Invite
 (`src/ui.js`; hidden on phones, which open it from the More menu). The Starter Pack is a small button with a €2.99 tag
 next to the diamonds (`#starter-pack-chip`, `src/starter-pack-ui.js`); phones keep the corner tile. Invite a friend is a

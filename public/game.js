@@ -500,8 +500,17 @@ function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
 async function claim(id,{quiet=false}={}){try{const r=await runAction({type:'quest',id});updateUI();if(!quiet)toast(`Quest complete! +${r.coins} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;}
+// On a computer the side tools float over the map: a building name that would sit behind them is hidden until the map
+// moves (desktop-hud.css keeps the tools see-through). Measured when the window or the tools change, not every frame.
+let toolsBox=null;
+function measureTools(){
+ const tools=document.querySelector('.side-tools');if(!tools||mobileLayout.matches){toolsBox=null;return;}
+ const t=tools.getBoundingClientRect(),w=world.getBoundingClientRect();toolsBox={left:t.left-w.left,right:t.right-w.left,top:t.top-w.top,bottom:t.bottom-w.top};
+}
+const behindTools=(x,y,half)=>Boolean(toolsBox)&&x+half>toolsBox.left&&x-half<toolsBox.right&&y>toolsBox.top&&y-50<toolsBox.bottom;
 function resize(){
  if(!renderer||!camera)return;
+ measureTools();
  const width=world.clientWidth,height=world.clientHeight;if(width<=0||height<=0)return;const aspect=width/height;
  const ratio=Math.min(devicePixelRatio,mobileLayout.matches?1.5:1.75);
  if(ratio!==viewportRatio){renderer.setPixelRatio(ratio);viewportRatio=ratio;}
@@ -624,13 +633,13 @@ function positionBuildingLabels(){
  for(const [key,v] of utilityViews){
   const locked=!featureUnlocked(state,key);setLocked(v.object,locked);
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.label.innerHTML=art(locked?'lock':key);v.label.setAttribute('aria-label',locked?`${v.info.name} (locked)`:`Open ${v.info.name}`);v.label.title=locked?`${v.info.name} · ${featureUnlockHint(key)}`:`${v.info.name} · ${v.info.hint}`;}
-  const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*width}px`;v.label.style.top=`${(-p.y*.5+.5)*height}px`;v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.82;
+  const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera),x=(p.x*.5+.5)*width,y=(-p.y*.5+.5)*height;v.label.style.left=`${x}px`;v.label.style.top=`${y}px`;v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.82||behindTools(x,y,22);
  }
  for(const [key,v]of buildingViews){
   const locked=!buildingEligible(state,key),status=economy.status(key);setLocked(v.object,locked);
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.pin.innerHTML=art(locked?'lock':v.pinArt);v.label.setAttribute('aria-label',locked?`${BUILDINGS[key].name} (locked)`:`Open ${BUILDINGS[key].name}`);}
   const hint=locked?`${BUILDINGS[key].name} · ${status.text}`:'';if(v.label.title!==hint)v.label.title=hint;
-  const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*width}px`;v.label.style.top=`${(-p.y*.5+.5)*height}px`;v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82;v.label.classList.toggle('ready',status.kind==='ready');
+  const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera),x=(p.x*.5+.5)*width,y=(-p.y*.5+.5)*height;v.label.style.left=`${x}px`;v.label.style.top=`${y}px`;v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82||behindTools(x,y,80);v.label.classList.toggle('ready',status.kind==='ready');
  }
 }
 function expandVisuals(){if(!ready)return;createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();}
@@ -681,7 +690,7 @@ function bindUI(){
  createInviteUI({notify:toast});
  mobileUI=createMobileUI({openUtility,resetView});
  $('save-status').onclick=()=>client.retry();
- new ResizeObserver(resize).observe(world);icons();
+ new ResizeObserver(resize).observe(world);const sideTools=document.querySelector('.side-tools');if(sideTools)new ResizeObserver(measureTools).observe(sideTools);icons();
 }
 function frame(now){
  requestAnimationFrame(frame);if(!ready||document.hidden)return;
