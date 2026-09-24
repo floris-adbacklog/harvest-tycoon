@@ -1,3 +1,4 @@
+import {confirmAction} from './confirm-dialog.js';
 import {createSocialUI} from './social-ui.js';
 import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
@@ -94,9 +95,11 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   if(!view){content.innerHTML=`<p class="family-loading">${error?'Your family could not be loaded.':'Opening the Family Hall…'}</p><button id="family-retry" class="small-button">Try again</button>`;content.querySelector('#family-retry').onclick=()=>load(true);return;}
   social.unmount();
   content.innerHTML=view.family?({week,sharing,members,tournament,family:settings}[tab])():landing();
-  content.querySelectorAll('[data-family-action]').forEach(b=>b.onclick=()=>{
+  content.querySelectorAll('[data-family-action]').forEach(b=>b.onclick=async()=>{
    const type=b.dataset.familyAction;
-   if(['family_leave','family_kick','family_promote'].includes(type)&&!confirm({family_leave:'Leave this family? Joining another family will be unavailable for 48 hours.',family_kick:'Remove this farmer from your family? They wait 48 hours before joining a family again.',family_promote:'Give this member leadership? You will become a regular member.'}[type]))return;
+   // The game's own confirmation (not the browser's), red for what is hard to undo.
+   const ask={family_leave:{title:'Leave this family?',description:'You cannot join another family for 48 hours.',confirmLabel:'Leave family',tone:'danger'},family_kick:{title:'Remove this farmer?',description:'They cannot join a family again for 48 hours.',confirmLabel:'Remove',tone:'danger'},family_promote:{title:'Make them the leader?',description:'You will become a regular member.',confirmLabel:'Make leader'}}[type];
+   if(ask&&!await confirmAction({...ask,cancelLabel:'Cancel',picture:'family-members'}))return;
    act({type,week:view.week,item:b.dataset.item,count:Number(b.dataset.count),invitationId:b.dataset.invitationId,memberId:b.dataset.memberId,rewardId:b.dataset.rewardId,familyId:b.dataset.familyId,open:b.dataset.open==='true'});
   });
   content.querySelectorAll('form[data-family-form]').forEach(form=>form.onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(form));const kind=form.dataset.familyForm;act(kind==='extra'?{type:'family_tournament_goods',week:view.week,item:d.item,count:Number(d.count)}:{type:'family_'+kind,...d});});

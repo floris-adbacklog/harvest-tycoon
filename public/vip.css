@@ -12,3 +12,21 @@
 @media(max-width:900px){.diamond-packs{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:480px){.vip-shop{padding:12px}.vip-shop h3{font-size:21px}.vip-shop-heading>img{width:44px;height:44px}.vip-shop-heading p{font-size:12px}.vip-benefits{gap:6px;margin:10px 0}.vip-benefits li{gap:6px;padding:8px;min-height:54px}.vip-benefits .game-art{width:24px;height:24px}.vip-benefits strong{font-size:12px}.vip-plans{grid-template-columns:1fr}.vip-plan{padding:10px;gap:6px}.diamond-packs{grid-template-columns:1fr!important}.diamond-confirm{padding:20px}#boost-dialog .boost-card{grid-template-columns:52px minmax(0,1fr);gap:12px}#boost-dialog .boost-buy{grid-column:1/-1;min-height:48px;width:100%;display:flex;justify-content:center;gap:8px;align-items:center}#boost-dialog .boost-card-art{width:52px;height:52px}#boost-dialog .boost-card-art img{max-width:100%;max-height:100%}}
 @media(max-width:360px){.vip-benefits li{flex-direction:column;justify-content:center;gap:4px;text-align:center}.vip-shop h3{font-size:20px}}
+/* Every confirmation (diamond-confirm.js, confirm-dialog.js) in the look of the other pop-ups: compact and centred, a
+   picture, the question, one line, then the buttons; diamonds get a price block with what you keep. Red for what is hard
+   to undo. */
+.diamond-confirm{width:min(360px,calc(100vw - 40px));padding:22px 20px 18px;text-align:center;background:radial-gradient(ellipse at top,#fdf3d3,#fffdf5 62%)}
+.diamond-confirm:not(.sale-confirm){background:radial-gradient(ellipse at top,#e2f0f7,#fffdf5 62%)}
+.diamond-confirm h2{margin:0 0 6px;color:#34432d;font:700 23px/1.2 'Outfit',sans-serif}
+.diamond-confirm p{max-width:300px;margin:0 auto;color:#5d5641;font-size:14px;line-height:1.5}
+.diamond-confirm-art{display:grid;place-items:center;width:72px;height:72px;margin:0 auto 10px;border-radius:50%;background:radial-gradient(circle,#fffdf5,#f3e6c2)}
+.diamond-confirm:not(.sale-confirm) .diamond-confirm-art{background:radial-gradient(circle,#fff,#d7ebf5)}
+.diamond-confirm-art>.game-art{width:46px;height:46px;object-fit:contain}
+.diamond-confirm-cost{display:grid;justify-items:center;gap:5px;margin-top:14px}
+.diamond-confirm-cost strong{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:14px;background:#dfeff7;color:#285e78;font:700 22px 'Outfit',sans-serif}
+.diamond-confirm-cost strong>.game-art{width:26px;height:26px;object-fit:contain}
+.diamond-confirm-cost small{color:#7a705f;font-size:12px}
+.diamond-confirm-actions{gap:10px;margin-top:18px}
+.diamond-confirm-actions button{min-height:46px}
+.diamond-confirm .confirm-spend{padding:11px 13px;border:1px solid #504833;border-radius:11px;background:#61573f;box-shadow:0 3px 0 #443d2b;color:#fffdf5;font-weight:700}
+.diamond-confirm.is-danger .confirm-spend{border-color:#96402f;background:#b4513f;box-shadow:0 3px 0 #7d3526}

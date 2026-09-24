@@ -26,7 +26,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  async function finishMany(kind){
   const f=FINISH[kind],picked=[...f.selected()];if(finishing||!picked.length)return;
   const cost=f.cost*picked.length;
-  if(cost>=150&&!await confirmDiamondSpend({title:`Finish ${picked.length} ${f.many}`,cost,description:`${f.cost} diamonds each. They are ready right away.`}))return;
+  if(cost>=150&&!await confirmDiamondSpend({title:`Finish ${picked.length} ${f.many}`,cost,description:`${f.cost} diamonds each. They are ready right away.`,picture:kind==='crop'?'harvest':'buildings',balance:state.diamonds}))return;
   finishing=true;render();const done=[];
   try{
    for(const item of picked){
@@ -94,7 +94,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   $('boost-catalog').querySelectorAll('[data-buy-boost]').forEach(button=>button.onclick=async()=>{
    if(finishing)return;const id=button.dataset.buyBoost,boost=BOOSTS[id],length=lengthOf(id),offer=boostOffer(id,length),running=boostStatus(state,id,farmNow(),length).remaining>0,time=length&&BOOST_LENGTH_NAMES[length];finishing=true;render();
    try{
-    if(offer.cost>=150&&!await confirmDiamondSpend({title:time?`${boost.name} · ${time}`:boost.name,cost:offer.cost,description:time?(running?`Adds ${time} after your current ${boost.name} ends.`:`${boost.description} Starts now and runs for ${time}.`):boost.description}))return;
+    if(offer.cost>=150&&!await confirmDiamondSpend({title:time?`${boost.name} · ${time}`:boost.name,cost:offer.cost,description:time?(running?`Adds ${time} after your current ${boost.name} ends.`:`${boost.description} Starts now and runs for ${time}.`):boost.description,picture:id==='crops'?'instant-harvest':boost.art,balance:state.diamonds}))return;
     const result=await runAction({type:'buy_boost',boost:id,...(length?{length}:{}),expectedCost:offer.cost});delete lengths[id];onChange();
     const message=id==='crops'?`${result.affected} crops are ready to harvest!`:id==='production'?`${result.affected} batches are ready to collect!`:id==='upgrade'?'Your next production-building upgrade costs 50% less.':running?`${boost.name} extended by ${time}.`:`${boost.name} is active for ${time}.`;
     $('boost-feedback').textContent=message;notify(message);
@@ -105,7 +105,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   vipPanel.innerHTML=`<div class="vip-shop-heading">${art('vip')}<div><h3>A little VIP sunshine</h3><p>Choose the plan that suits you best.</p>${active?`<span class="vip-status" data-vip-status>VIP · ${formatDuration(state.vipExpiresAt-farmNow())} left</span>`:''}</div></div><ul class="vip-benefits" aria-label="VIP benefits">${[['wheat','10% faster crops'],['buildings','10% faster production'],['coins','+5% market coins'],['gift','2x daily rewards']].map(([icon,title])=>`<li>${art(icon)}<strong>${title}</strong></li>`).join('')}</ul><div class="vip-plans">${Object.entries(VIP_PLANS).map(([id,plan])=>`<article class="vip-plan"><div class="vip-plan-copy"><strong>${plan.name}</strong><span>${id==='week'?'A week of VIP extras':'Best value'}</span></div><button type="button" class="small-button" data-buy-vip="${id}" aria-label="${active?'Extend':'Activate'} ${plan.name} for ${number(plan.cost)} diamonds" ${finishing||state.diamonds<plan.cost?'disabled':''}>${art('diamonds')}<span>${active?'Extend':'Activate'} · ${number(plan.cost)}</span></button>${state.diamonds<plan.cost?`<small>Need ${number(plan.cost-state.diamonds)} more diamonds</small>`:''}</article>`).join('')}</div>`;
   vipPanel.querySelectorAll('[data-buy-vip]').forEach(button=>button.onclick=async()=>{
    if(finishing)return;const plan=button.dataset.buyVip,offer=VIP_PLANS[plan],expectedExpiresAt=state.vipExpiresAt??0;finishing=true;render();
-   try{if(!await confirmDiamondSpend({title:active?'Extend your VIP':'Activate VIP',cost:offer.cost,description:`${offer.name}. ${active?'Adds time after your current VIP expires.':'Starts immediately.'} Your benefits never stack in strength.`}))return;
+   try{if(!await confirmDiamondSpend({title:active?'Extend your VIP':'Activate VIP',cost:offer.cost,description:`${offer.name}. ${active?'Adds time after your current VIP expires.':'Starts immediately.'} Your benefits never stack in strength.`,picture:'vip',balance:state.diamonds}))return;
     track('vip_purchase_started',{plan,cost:offer.cost});await runAction({type:'buy_vip',plan,expectedCost:offer.cost,expectedExpiresAt});onChange();notify(active?'Your VIP time has been extended.':'Welcome to VIP! Your extras are active.');
    }catch(error){$('boost-feedback').textContent=error.message;notify(error.message);}finally{finishing=false;render();}
   });

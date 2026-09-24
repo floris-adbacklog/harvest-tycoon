@@ -84,7 +84,7 @@ export function createPlayerProfiles(bridge){
    if(!coins&&!xp&&!diamonds&&!(item&&itemCount)){grantStatus.textContent='Enter at least one amount.';return;}
    const notify=notifyInput.checked,message=notify?messageInput.value.trim():'';
    const parts=[coins&&`${coins} coins`,xp&&`${xp} XP`,diamonds&&`${diamonds} diamonds`,item&&itemCount&&`${itemCount} ${ITEMS[item].name}`].filter(Boolean).join(', ');
-   const sure=await confirmAction({title:`Give ${profileUsername??'this farmer'}?`,description:`${parts}.${notify?' They will be notified.':''}`,confirmLabel:'Give',cancelLabel:'Cancel'});
+   const sure=await confirmAction({title:`Give ${profileUsername??'this farmer'}?`,description:`${parts}.${notify?' They will be notified.':''}`,confirmLabel:'Give',cancelLabel:'Cancel',picture:'gift'});
    if(!sure)return;
    give.disabled=true;grantStatus.textContent='Giving…';
    try{

@@ -774,3 +774,11 @@ guided farms, once); promised in guide step 6, the rookie "boost ended" screen a
 `harvest-tycoon:browser-tip`) offers Chrome (Android intent link) or copies the link for Safari (`src/browser-tip.js`,
 styles in welcome.css). Toasts no longer treat "first" as a warning unless it is "… first." Tests:
 `tests/first-minutes.test.mjs` (and the guide tests now expect steps to finish themselves).
+
+Confirmations (2026-09-24): every confirmation uses the game's own dialog in one look (styles at the end of
+`public/vip.css`): a picture, the question, one line, Cancel/Keep (focused) and the confirm button; red (`tone:'danger'`)
+for what is hard to undo. `public/diamond-confirm.js` adds a price block with the diamond and "You keep N diamonds"
+(`balance`), used by Finish crops/batches, the boosts and VIP (`public/boosts-ui.js`). `public/confirm-dialog.js`
+(`confirmAction`, optional `picture`/`tone`) serves Sell all (market), the family's leave/remove/make leader (was the
+browser's plain confirm()), Remove planting at the Farmhouse (was an inline details block) and the admin gift. Both close
+on a tap outside. Tests: `tests/confirmations.test.mjs` (also: no plain confirm() anywhere in public/ or src/).
