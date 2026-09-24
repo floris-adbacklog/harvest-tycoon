@@ -7,9 +7,9 @@ import {savePlayerAvatar} from '../supabase/functions/farm-api/avatar-service.js
 import {handlePlayerDirectory} from '../supabase/functions/farm-api/player-profile-service.js';
 import {renderPlayerProfile,renderPlayerSearch} from '../src/player-profiles.js';
 
-test('24 additional avatars and the original resolve to unique, shipped images',()=>{
- assert.equal(PLAYER_AVATARS.length,25);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.id)).size,25);
- assert.equal(new Set(PLAYER_AVATARS.map(a=>a.src)).size,25);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.name)).size,25,'no two faces share a name');
+test('19 additional avatars and the original resolve to unique, shipped images',()=>{
+ assert.equal(PLAYER_AVATARS.length,20);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.id)).size,20);
+ assert.equal(new Set(PLAYER_AVATARS.map(a=>a.src)).size,20);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.name)).size,20,'no two faces share a name');
  for(const a of PLAYER_AVATARS){assert.ok(existsSync(new URL('../public'+a.src,import.meta.url)),a.src);assert.ok(isPlayerAvatar(a.id));}
  assert.equal(readFileSync(new URL('../public/player-avatars.js',import.meta.url),'utf8'),readFileSync(new URL('../supabase/functions/farm-api/player-avatars.js',import.meta.url),'utf8'));
 });
@@ -41,10 +41,10 @@ function db({missing=false,error=null}={}){
 test('avatar writes only the authenticated owner and cosmetic data, safely repeatable',async()=>{
  const admin=db(),now=Date.UTC(2026,8,21);
  for(let i=0;i<2;i++){
-  const r=await savePlayerAvatar({admin,player:'owner',avatarId:'field-keeper',now,playerId:'someone-else',coins:999});
-  assert.equal(r.status,200);assert.equal(r.data.profile.player_id,'owner');assert.equal(r.data.profile.avatar_id,'field-keeper');assert.equal(r.data.profile.currency,123);
+  const r=await savePlayerAvatar({admin,player:'owner',avatarId:'berry-gardener',now,playerId:'someone-else',coins:999});
+  assert.equal(r.status,200);assert.equal(r.data.profile.player_id,'owner');assert.equal(r.data.profile.avatar_id,'berry-gardener');assert.equal(r.data.profile.currency,123);
  }
- for(const patch of admin.calls.filter(c=>typeof c==='object'))assert.deepEqual(patch,{avatar_id:'field-keeper',last_active_at:new Date(now).toISOString()});
+ for(const patch of admin.calls.filter(c=>typeof c==='object'))assert.deepEqual(patch,{avatar_id:'berry-gardener',last_active_at:new Date(now).toISOString()});
 });
 test('invalid choices never write; missing profiles and database errors are not successes',async()=>{
  const admin=db();for(const avatarId of ['',null,{},'vip-only','/assets/farmer-avatar.webp'])assert.equal((await savePlayerAvatar({admin,player:'owner',avatarId})).status,400);
@@ -64,9 +64,9 @@ test('avatar save is authenticated, session-checked and separate from farm rewar
  const index=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');const route=index.indexOf('const saved=await savePlayerAvatar');
  assert.ok(route>index.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<index.indexOf("admin.from('player_farms')"));assert.match(index,/savePlayerAvatar\(\{admin,player:user.id,avatarId:body.avatarId\}\)/);
  assert.match(index,/avatar_id:profile\?\.avatar_id\?\?'default'/);
- const html=avatarSettingsMarkup('field-keeper');assert.equal((html.match(/type="radio" name="avatar"/g)||[]).length,25);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="field-keeper" checked/);
+ const html=avatarSettingsMarkup('berry-gardener');assert.equal((html.match(/type="radio" name="avatar"/g)||[]).length,20);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="berry-gardener" checked/);
  assert.equal((html.match(/data-emblem-step=/g)||[]).length,2,'one row of faces with an arrow on each side, not a wall of squares');
- assert.match(html,/<span>3 of 25<\/span>/);assert(!html.includes('<details'),'no folded-away grid');
+ assert.match(html,/<span>3 of 20<\/span>/);assert(!html.includes('<details'),'no folded-away grid');
 });
 function uiHarness(){
  const nodes=new Map(),events=[],pending=[];
@@ -86,15 +86,15 @@ test('Settings previews without saving, prevents duplicate requests and confirms
 });
 test('Settings retains saved avatar on error, permits retry and rejects wrong-owner replies',async()=>{
  const h=uiHarness();try{
-  h.choose('field-keeper');let done=h.submit();h.pending[0].reject(new Error('Offline. Try again.'));await done;
+  h.choose('berry-gardener');let done=h.submit();h.pending[0].reject(new Error('Offline. Try again.'));await done;
   assert.equal(h.controller.savedAvatar,'default');assert.equal(h.nodes.get('.avatar-save').disabled,false);assert.match(h.nodes.get('#avatar-feedback').textContent,/Offline/);
-  done=h.submit();h.pending[1].resolve({profile:{player_id:'other',avatar_id:'field-keeper'}});await done;
+  done=h.submit();h.pending[1].resolve({profile:{player_id:'other',avatar_id:'berry-gardener'}});await done;
   assert.equal(h.controller.savedAvatar,'default');assert.equal(h.events.length,0);
  }finally{h.restore();}
 });
 
 test('the Save button is found by its class: the first button in the form is an arrow, and it must stay an arrow',()=>{
- const html=avatarSettingsMarkup('field-keeper');
+ const html=avatarSettingsMarkup('berry-gardener');
  assert.match(html.match(/<button[^>]*>/)[0],/class="emblem-arrow"/,'the first button of the form is the left arrow');
  const saves=html.match(/<button[^>]*class="[^"]*avatar-save[^"]*"[^>]*>/g)??[];assert.equal(saves.length,1);assert.match(saves[0],/type="submit"/);
  const source=readFileSync(new URL('../public/avatar-settings.js',import.meta.url),'utf8');

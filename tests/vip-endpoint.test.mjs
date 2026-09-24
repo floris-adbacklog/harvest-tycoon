@@ -51,14 +51,14 @@ test('VIP requires an authenticated, still-active server session',async()=>{
 });
 
 test('avatar endpoint rejects missing or expired sessions before writing',async()=>{
- for(const [options,authorized] of [[{},false],[{active:false},true]]){const api=endpoint(options);assert.equal((await api.send({operation:'avatar',avatarId:'field-keeper'},authorized)).status,401);assert.equal(api.avatarWrites,0);}
+ for(const [options,authorized] of [[{},false],[{active:false},true]]){const api=endpoint(options);assert.equal((await api.send({operation:'avatar',avatarId:'berry-gardener'},authorized)).status,401);assert.equal(api.avatarWrites,0);}
 });
 test('avatar choice survives a fresh load and later farm action without changing rewards',async()=>{
  const api=endpoint(),before=structuredClone(api.row);
- const saved=await api.send({operation:'avatar',avatarId:'field-keeper',player_id:'another-player',currency:999999});
- assert.equal(saved.status,200);assert.equal(saved.data.profile.player_id,user);assert.equal(saved.data.profile.avatar_id,'field-keeper');assert.deepEqual(api.row,before);assert.equal(api.commits,0);
- const loaded=await api.send({operation:'load'});assert.equal(loaded.status,200);assert.equal(loaded.data.profile.avatar_id,'field-keeper');
- const played=await api.send(body());assert.equal(played.status,200);assert.equal(played.data.profile.avatar_id,'field-keeper');assert.equal(api.row.state.diamonds,1500);
+ const saved=await api.send({operation:'avatar',avatarId:'berry-gardener',player_id:'another-player',currency:999999});
+ assert.equal(saved.status,200);assert.equal(saved.data.profile.player_id,user);assert.equal(saved.data.profile.avatar_id,'berry-gardener');assert.deepEqual(api.row,before);assert.equal(api.commits,0);
+ const loaded=await api.send({operation:'load'});assert.equal(loaded.status,200);assert.equal(loaded.data.profile.avatar_id,'berry-gardener');
+ const played=await api.send(body());assert.equal(played.status,200);assert.equal(played.data.profile.avatar_id,'berry-gardener');assert.equal(api.row.state.diamonds,1500);
 });
 test('actual endpoint rejects forged avatar IDs without touching a farm or profile',async()=>{
  const api=endpoint(),before=structuredClone(api.row);const r=await api.send({operation:'avatar',avatarId:'../../secret'});

@@ -1,4 +1,4 @@
-// Public cosmetic choices. Keep IDs stable; accounts store only the ID (player_stats.avatar_id has a CHECK on the list, see the player_avatars migrations).
+// Public cosmetic choices: 20 painted farmers (the first is everyone's default). Keep IDs stable; accounts store only the ID (player_stats.avatar_id has a CHECK on the list, see the player_avatars migrations).
 export const PLAYER_AVATARS=Object.freeze([
   {
     "id": "default",
@@ -11,19 +11,9 @@ export const PLAYER_AVATARS=Object.freeze([
     "src": "/assets/avatars/orchard-grower.webp"
   },
   {
-    "id": "field-keeper",
-    "name": "Field keeper",
-    "src": "/assets/avatars/field-keeper.webp"
-  },
-  {
     "id": "berry-gardener",
     "name": "Berry gardener",
     "src": "/assets/avatars/berry-gardener.webp"
-  },
-  {
-    "id": "mill-worker",
-    "name": "Mill worker",
-    "src": "/assets/avatars/mill-worker.webp"
   },
   {
     "id": "sunflower-grower",
@@ -46,11 +36,6 @@ export const PLAYER_AVATARS=Object.freeze([
     "src": "/assets/avatars/greenhouse-grower.webp"
   },
   {
-    "id": "beekeeper",
-    "name": "Beekeeper",
-    "src": "/assets/avatars/beekeeper.webp"
-  },
-  {
     "id": "market-gardener",
     "name": "Market gardener",
     "src": "/assets/avatars/market-gardener.webp"
@@ -59,11 +44,6 @@ export const PLAYER_AVATARS=Object.freeze([
     "id": "dairy-farmer",
     "name": "Dairy farmer",
     "src": "/assets/avatars/dairy-farmer.webp"
-  },
-  {
-    "id": "meadow-keeper",
-    "name": "Meadow keeper",
-    "src": "/assets/avatars/meadow-keeper.webp"
   },
   {
     "id": "apple-picker",
@@ -84,11 +64,6 @@ export const PLAYER_AVATARS=Object.freeze([
     "id": "flower-grower",
     "name": "Flower grower",
     "src": "/assets/avatars/flower-grower.webp"
-  },
-  {
-    "id": "harvest-helper",
-    "name": "Harvest helper",
-    "src": "/assets/avatars/harvest-helper.webp"
   },
   {
     "id": "valley-grower",
