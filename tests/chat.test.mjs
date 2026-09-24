@@ -154,3 +154,12 @@ test('"Forgot your password?" has a Back button at the top, back to the start of
  assert.match(main,/\$\('account-back'\)\.hidden=mode!=='forgot';/);
  assert.match(main,/\$\('account-back'\)\.onclick=\(\)=>\{if\(submitting\)return;setMode\(knownPlayer\(\)\?'signin':'register',true\);\};/);
 });
+
+test('the VIP mark follows the farmer as they are now, also on messages from before they became VIP',async()=>{
+ const {createChatClient}=await import('../src/chat-client.js');
+ const now=Date.now(),rows=[{id:'1',sender:'a',sender_vip:false},{id:'2',sender:'b',sender_vip:true},{id:'3',sender:'a',sender_vip:false}];
+ const query=result=>({select(){return this;},eq(){return this;},order(){return this;},limit(){return this;},in(){return this;},then:(ok,fail)=>Promise.resolve(result).then(ok,fail)});
+ const supabase={from:table=>table==='chat_messages'?query({data:rows,error:null}):query({data:[{player_id:'a',vip_expires_at:new Date(now+86400000).toISOString()},{player_id:'b',vip_expires_at:new Date(now-1000).toISOString()}],error:null})};
+ const list=await createChatClient(supabase,{playerId:'me'}).messages('global');
+ assert.deepEqual(list.map(m=>[m.id,m.sender_vip]),[['1',true],['2',false],['3',true]],'a is VIP now (both messages), b no longer');
+});

@@ -28,7 +28,18 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   dmChannel:other=>dmChannel(playerId,other),
   overview:()=>rpc('chat_overview'),
   myRole:()=>rpc('chat_my_role'),
-  messages:(name,limit=50)=>rows(supabase.from('chat_messages').select(MESSAGE_COLUMNS).eq('channel',name).order('created_at',{ascending:false}).limit(limit)),
+  async messages(name,limit=50){
+   const list=await rows(supabase.from('chat_messages').select(MESSAGE_COLUMNS).eq('channel',name).order('created_at',{ascending:false}).limit(limit));
+   // The VIP mark belongs to the farmer, not the message: it shows as they are now, on older messages too.
+   const ids=[...new Set(list.map(m=>m.sender))];
+   if(ids.length){
+    try{
+     const {data,error}=await supabase.from('player_stats').select('player_id,vip_expires_at').in('player_id',ids);
+     if(!error){const now=Date.now(),vip=new Set((data??[]).filter(r=>Date.parse(r.vip_expires_at)>now).map(r=>r.player_id));for(const m of list)m.sender_vip=vip.has(m.sender);}
+    }catch{}
+   }
+   return list;
+  },
   notices:(limit=30)=>rows(supabase.from('player_notices').select('id,player_id,kind,body,created_at').order('created_at',{ascending:false}).limit(limit)),
   send:(name,body)=>rpc('chat_send',{p_channel:name,p_body:body}),
   markRead:name=>rpc('chat_mark_read',{p_channel:name}),
