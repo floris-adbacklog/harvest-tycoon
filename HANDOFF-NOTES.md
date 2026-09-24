@@ -782,3 +782,17 @@ for what is hard to undo. `public/diamond-confirm.js` adds a price block with th
 (`confirmAction`, optional `picture`/`tone`) serves Sell all (market), the family's leave/remove/make leader (was the
 browser's plain confirm()), Remove planting at the Farmhouse (was an inline details block) and the admin gift. Both close
 on a tap outside. Tests: `tests/confirmations.test.mjs` (also: no plain confirm() anywhere in public/ or src/).
+
+Graphics (2026-09-24): (1) Fresher daylight and greener grass (`game.js`: cool sky hemisphere, green ground bounce, softer
+warm sun, exposure 1.06, light green haze #e4ecd3; ground #8aa64e and greener yard patches; mountain haze in
+scene-polish.js). (2+3) `public/scenery.js`, built after the farm is on screen (`addScenery` in game.js, models loaded
+then, ~1 MB; a failure only logs a warning): green hills and a second row of taller mountains at the sides and back (put
+down first, and counted as terrain with the mountain ring of scene-polish.js), a belt of firs (only on flat ground or gentle
+hills, never against a slope), sunflower strips beside the roads, grass tufts out to the haze, low things only at the front (bushes, young trees, hay, sunflower clumps), and
+on the farm a pigsty with three pigs west of the farmhouse, chicks and a rooster at the coop, a spotted cow, an outhouse,
+log pile, wheelbarrows, lawn mower, pickup, wagon, plough and water tower. Everything stands still. Spots are seeded and a
+piece only goes where nothing stands (mesh boxes in a grid; rays for the wide landscape pieces), searching outwards from
+where it belongs. Repeated pieces are InstancedMesh (one per model). New models were copied from the pack into
+public/assets/models. Tests: `tests/scenery.test.mjs`.
+The camera's far plane is 300 so the edge mountains are not cut off when zoomed out; the big tree between the camera and
+the Family Hall was removed.

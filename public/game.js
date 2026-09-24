@@ -124,6 +124,25 @@ function inviteLoadPopup(invite){
 }
 function icons(){refreshArt();}
 
+// One model from the pack, centred on its footprint and standing on the ground, kept once and cloned where it is used.
+let gltfLoader=null;
+async function loadModel(name){
+ gltfLoader??=new GLTFLoader();
+ const gltf=await gltfLoader.loadAsync(`/assets/models/${name}.glb`),object=gltf.scene;
+ const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+ object.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));const group=new THREE.Group();group.add(object);
+ object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});
+ models.set(name,{object:group,size});
+}
+// The forest belt, hills, sunflowers, pigsty and the other extras (public/scenery.js) come after the farm is on screen, so the
+// first load is not slower; if any of it fails the farm simply stays as it is.
+async function addScenery(){
+ try{
+  const {SCENERY_MODELS,buildScenery}=await import('./scenery.js');
+  await loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4);
+  buildScenery({scene,models,mobile:mobileLayout.matches});renderer.shadowMap.needsUpdate=true;
+ }catch(error){console.warn('The extra scenery was skipped.',error);}
+}
 function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
  const entry=models.get(name);if(!entry)throw new Error(`Missing model: ${name}`);
  const obj=entry.object.clone(true),d=entry.size;
@@ -356,8 +375,8 @@ function decorate(){
  zone('bakery');lighten(cloneModel('stall_001',-9.5,14.8,{width:2.2,rotation:.4}),0x3a2a16,.28);
  // Trees, bushes and tufts are spread out with the farm and keep clear of every yard.
  zone(null);
- // The western boundary keeps tall foliage clear of the Family Hall roof.
- const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[26,12,5.2],[14,15,5.4],[19,8,6],[21,1,5.7],[22.5,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
+ // The western boundary keeps tall foliage clear of the Family Hall roof, and no big tree stands between the camera and the hall.
+ const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[26,12,5.2],[14,15,5.4],[21,1,5.7],[22.5,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  // More trees between the far ones fill the wider ring the spread-out farm needs.
  [[-27,-24,4.4],[-28,-4,5],[-27,17,5.4],[-9,27,5],[9,29,5.8],[27,3,5.6],[27,-12,5.8],[24,-25,6],[12,-31,5.2],[-6,-33,4.6],[-24,-32,5.2],[-10,-30,4.8]].forEach(([x,z,height],i)=>cloneModel(['tree_004','tree_006','tree_001'][i%3],x,z,{height,rotation:i*2.3+.7}));
@@ -763,20 +782,14 @@ async function init(){
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;});
-  scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,180);
+  scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,300);   // far enough for the mountains at the edge when zoomed out
   // Fresh daylight: a cool sky, a green bounce from the grass and a soft warm sun, so greens and reds read clearly (the old
   // warm-yellow sky, sun and haze made the whole valley beige).
   const hemi=new THREE.HemisphereLight(0xeaf4ff,0x6d8a46,2.25);scene.add(hemi);
   const sun=new THREE.DirectionalLight(0xfff1d6,3.2);sun.position.set(-24,26,15);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
   scene.fog=new THREE.Fog(0xe4ecd3,52,140);
-  const loader=new GLTFLoader();let loaded=0;
-  await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{
-   const gltf=await loader.loadAsync(`/assets/models/${name}.glb`),object=gltf.scene;
-   const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
-   object.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));const group=new THREE.Group();group.add(object);
-   object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});
-   models.set(name,{object:group,size});loaded++;loadingUI.modelsReady(loaded);
-  },4)]);
+  let loaded=0;
+  await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);},4)]);
   decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});measureFarm();resize();icons();
   renderer.domElement.addEventListener('pointermove',e=>{
    if(e.pointerType!=='mouse'||e.buttons){highlight(-1);$('tooltip').hidden=true;return;}
@@ -799,7 +812,7 @@ async function init(){
    },
    zoom:ratio=>zoomFarm(zoom*ratio)
   });
-  ready=true;positionBuildingLabels();updateUI();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  ready=true;positionBuildingLabels();updateUI();void addScenery();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;progression.refresh();resolve();},450));
  showWelcomeBack(initialWelcome,{fields:focusFields,production:()=>economy.openBuilding(Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??'coop'),stall:()=>growth.open('stall'),today:()=>retention.openToday()});
   return ready;
