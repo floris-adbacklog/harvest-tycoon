@@ -7,7 +7,8 @@ import {formatDuration,levelOf} from './farm-state.js';
 // one during the break, plus any reward still waiting to be collected.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
-export const EVENT_GOALS={harvested:{label:'Harvest crops',art:'harvest'},produced:{label:'Collect batches',art:'buildings'},watered:{label:'Water fields',art:'water'},tended:{label:'Care for fields',art:'care'},chores:{label:'Finish chores',art:'chores'},deliveries:{label:'Complete deliveries',art:'cart'}};
+export const EVENT_GOALS={harvested:{label:'Harvest crops',art:'harvest'},produced:{label:'Collect batches',art:'buildings'},watered:{label:'Water fields',art:'water'},tended:{label:'Care for fields',art:'care'},chores:{label:'Finish chores',art:'chores'},deliveries:{label:'Complete deliveries',art:'cart'},
+ harvest_wheat:{label:'Harvest wheat',art:'wheat'},harvest_corn:{label:'Harvest corn',art:'corn'},harvest_lettuce:{label:'Harvest lettuce',art:'lettuce'},harvest_barley:{label:'Harvest barley',art:'barley'},harvest_greenbeans:{label:'Harvest green beans',art:'greenbeans'},harvest_cabbage:{label:'Harvest cabbage',art:'cabbage'},made_eggs:{label:'Collect eggs',art:'eggs'}};
 const MIN_ACTIONS=3,MIN_SPAN=10*60000;
 // Same level as the server gate (player_stats.level>=10 in live-events.sql): below it the button stays visible but greyed.
 export const EVENTS_LEVEL=10;

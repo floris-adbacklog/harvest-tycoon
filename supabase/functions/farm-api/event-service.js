@@ -1,5 +1,6 @@
 import {isSuperadmin} from './admin-service.js';
-export const EVENT_STATS=['harvested','produced','watered','tended','chores','deliveries'];
+// Goals open to every farm from level 10, when events open: the farm-wide counters, the crops unlocked by level 9 and eggs.
+export const EVENT_STATS=['harvested','produced','watered','tended','chores','deliveries','harvest_wheat','harvest_corn','harvest_lettuce','harvest_barley','harvest_greenbeans','harvest_cabbage','made_eggs'];
 export function validateEvent(config,now=Date.now()){
  if(!config||typeof config.title!=='string'||config.title.trim().length<3||config.title.length>80||typeof config.description!=='string'||config.description.length>500)throw Error('Enter a title (3–80 characters) and description (up to 500).');
  const start=Date.parse(config.starts_at),end=Date.parse(config.ends_at);

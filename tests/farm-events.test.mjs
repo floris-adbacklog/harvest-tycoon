@@ -160,3 +160,20 @@ test('automatic events pay a fixed base, so the event screen shows one list with
  const ui=read('public/live-events-ui.js');
  assert.match(ui,/What you win when you finish/);assert.doesNotMatch(ui,/Reward for finishing|Extra for finishing/,'no second block to add up');
 });
+test('twelve automatic events, the new ones about one crop or eggs, and every goal open to every farm from level 10',async()=>{
+ const sql=read('supabase/live-events-more.sql'),templates=JSON.parse(sql.match(/templates constant jsonb:='(\[[\s\S]*?\])';/)[1]);
+ assert.equal(templates.length,12);assert.ok(templates.some(t=>t.title==='The wheat race'));
+ const {EVENT_STATS}=await import('../supabase/functions/farm-api/event-service.js'),{EVENT_GOALS}=await import('../public/live-events-ui.js');
+ const {CROP_LEVELS,createFarm,xpForLevel,cropUnlocked,normalizeFarm}=await import('../game/farm-state.js');
+ const s=createFarm(now);s.xp=xpForLevel(10);normalizeFarm(s,now);
+ for(const t of templates){
+  validateEvent({...t,starts_at:iso(now+H),ends_at:iso(now+6*H),active:true,rewards:{coins:200,diamondMin:1,diamondMax:1,participantStep:25,poolCap:50}},now);
+  for(const o of t.objectives){
+   assert.ok(EVENT_STATS.includes(o.stat)&&EVENT_GOALS[o.stat],`${t.title}: ${o.stat} is allowed and has a label`);
+   if(o.stat.startsWith('harvest_'))assert.ok(cropUnlocked(s,o.stat.slice(8))&&CROP_LEVELS[o.stat.slice(8)]<=9,`${t.title}: ${o.stat} is open at level 10`);
+   if(o.stat.startsWith('made_'))assert.equal(o.stat,'made_eggs','only eggs: the coop is free, the Bakery and Dairy Barn are not');
+  }
+ }
+ for(const stat of EVENT_STATS)assert.match(sql,new RegExp(`'${stat}'`),`${stat} is allowed by harvest_event_validate`);
+ assert.match(sql,/or \(stat like 'harvest\\_%' and action in \('field','tractor'\)\) or \(stat like 'made\\_%' and action in \('collect','collect_all'\)\);/,'progress counts a crop on harvest and eggs on collecting');
+});
