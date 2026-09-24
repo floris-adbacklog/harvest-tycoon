@@ -8,6 +8,7 @@ import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-for
 import {startPwa} from './pwa.js';
 import {createNotifications} from './notifications.js';
 import {createChatClient} from './chat-client.js';
+import {startLoadingTips,ACCOUNT_STEPS} from '../public/loading-screen.js';
 import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
 import {createConnection,connectionMessage,reasonOf,WAKE_GRACE} from './connection.js';
@@ -46,7 +47,11 @@ const linkError=()=>/error_code=|error=access_denied/.test(linkText());
 const redirectUrl=()=>new URL('/play.html',location.origin).href;
 const inputId=field=>field==='name'?'player-name':field;
 const MESSAGES={register:'Creating your account…',signin:'Opening your farm…',name:'Opening your farm…',forgot:'Sending your link…',recovery:'Saving your password…'};
-function phase(value,message){document.body.dataset.phase=value;$('loading-screen').hidden=value!=='checking';$('welcome').hidden=value==='checking'||value==='authenticated';$('farm-host').hidden=value!=='authenticated';if(message)$('loading-copy').textContent=message;}
+// The loading screen before the farm: the same layout as the farm's own, and its bar covers the first few percent (the farm goes on
+// from there), so checking the account and loading the farm read as one screen.
+let stopTips=null;
+function phase(value,message){document.body.dataset.phase=value;$('loading-screen').hidden=value!=='checking';$('welcome').hidden=value==='checking'||value==='authenticated';$('farm-host').hidden=value!=='authenticated';if(message){$('loading-copy').textContent=message;const step=ACCOUNT_STEPS[message]??6;$('loading-progress').value=step;$('loading-percent').textContent=`${step}%`;}
+ if(value==='checking')stopTips??=startLoadingTips(document);else{stopTips?.();stopTips=null;}}
 function dispose(){presence?.dispose();presence=null;chat?.dispose();chat=null;watchers.clear();generation++;frame?.remove();frame=null;playerId=null;delete window.harvestBridge;$('farm-host').replaceChildren();}
 // Moving focus from code (opening a mode, pointing at a mistake) must not count as the visitor starting the form.
 function focusField(id,options){focusing=true;try{$(id).focus(options);}finally{focusing=false;}}

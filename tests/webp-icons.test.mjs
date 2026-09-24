@@ -55,8 +55,8 @@ test('every hardcoded icon path outside visual-icons.js was updated to match: th
  for(const file of ['public/play.html','public/farm.html']){
   const html=read(file);
   assert.match(html,/\/assets\/icons\/apples\.webp/,`${file} loading screen`);
-  // wheat and corn were never part of this conversion batch (they are small, below the threshold) — they must stay PNG.
-  assert.match(html,/\/assets\/icons\/wheat\.png/);assert.match(html,/\/assets\/icons\/corn\.png/);
+  // The loading screen's tip picture is a WebP; the old row of crop icons (wheat and corn as PNG) is gone.
+  assert.doesNotMatch(html,/\/assets\/icons\/(wheat|corn)\.png/,`${file} loading screen`);
  }
 });
 test('ART_KEYS still lists every converted key — nothing lost its entry when its extension changed',()=>{

@@ -6,7 +6,7 @@ import {createFamilyUI} from './family-ui.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
 import {buildingEligible,featureUnlocked,featureUnlockHint} from './farm-state.js';
-import {createLoadingScreen} from './loading-screen.js';
+import {createLoadingScreen,startLoadingTips} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -878,7 +878,7 @@ function registerAgentTools(){
  window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
 }
 async function init(){
- const loadingUI=createLoadingScreen(document,modelNames.length);
+ const loadingUI=createLoadingScreen(document,modelNames.length),stopTips=startLoadingTips(document);
  try{
   bindUI();updateUI();
   renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
@@ -931,7 +931,9 @@ async function init(){
    }
   });
   ready=true;setupMinimap();positionBuildingLabels();updateUI();void addScenery();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
-  await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;progression.refresh();resolve();},450));
+  // The loading screen fades into the farm instead of disappearing at once.
+  $('loading').classList.add('fade');
+  await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;stopTips();progression.refresh();resolve();},450));
  showWelcomeBack(initialWelcome,{fields:focusFields,production:()=>economy.openBuilding(Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??'coop'),stall:()=>growth.open('stall'),today:()=>retention.openToday()});
   return ready;
  }catch(error){console.error('Farm initialization failed',error);if(renderer)$('error-message').textContent=error.message||'Your saved farm could not load. Please try again.';$('loading').hidden=true;$('error').hidden=false;if(!renderer)$('error-message').textContent='This game needs WebGL 2. Try a current browser with hardware acceleration enabled.';return false;}
