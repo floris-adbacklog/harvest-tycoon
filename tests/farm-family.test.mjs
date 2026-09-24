@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {FAMILY_MIN_LEVEL,FAMILY_CONFIG as C,FAMILY_EMBLEMS,emptyFamilyContext,familyMutate,familyOrder,familyWeek,familyWeekStart,familyUnlocked,familyUnlockHint,familyPublicView,familyTournament,settleFamilyWeeks,familyShares,createFarm,normalizeFarm,xpForLevel,levelOf,featureUnlocked,featureUnlockHint,unlockEntries,buildingEligible,ITEMS,CROPS,RECIPES,recipeAvailability,cropUnlocked,DAY_MS} from '../game/farm-state.js';
+import {FAMILY_MIN_LEVEL,FAMILY_CONFIG as C,FAMILY_EMBLEMS,emptyFamilyContext,familyMutate,familyOrder,familyWeek,familyWeekStart,familyUnlocked,familyUnlockHint,familyPublicView,familyTournament,settleFamilyWeeks,familyShares,createFarm,normalizeFarm,xpForLevel,levelOf,featureUnlocked,featureUnlockHint,unlockEntries,buildingEligible,ITEMS,CROPS,RECIPES,recipeAvailability,cropUnlocked,DAY_MS,itemUnlockLevel,familyLineCap} from '../game/farm-state.js';
 import {handleFamily,familyChanges} from '../supabase/functions/farm-api/family-service.js';
 const now=Date.parse('2026-09-15T12:00:00Z'),week=familyWeek(now);
 const farm=(level=FAMILY_MIN_LEVEL)=>{const s=createFarm(now);s.xp=xpForLevel(level);s.stats.bread=1;s.stats.made_bread=1;s.stats.sold_eggs=1;return normalizeFarm(s,now);};
@@ -21,15 +21,23 @@ test('Family gate uses shared level, supports an override, and also gates legacy
  const s2=farm();assert.equal(featureUnlocked(s2,'family'),true);assert.ok(unlockEntries(s2).some(e=>e.id==='feature:family'&&e.unlocked));
 });
 test('UTC family week changes exactly at Monday midnight',()=>{const monday=Date.parse('2026-09-21T00:00:00Z');assert.equal(familyWeek(monday-1)+1,familyWeek(monday));assert.equal(familyWeekStart(familyWeek(monday)),monday);});
-test('Orders are reproducible, scale to snapshots, and fit a level-10 value and production band',()=>{
- const s=farm();for(const b of Object.values(s.buildings))b.built=true;
- for(let day=0;day<150;day++)for(const size of [1,2,6]){
-  const order=familyOrder('family-'+day,week+day,size),solo=familyOrder('family-'+day,week+day,1);
-  assert.deepEqual(order,familyOrder('family-'+day,week+day,size));assert.equal(order.value,solo.value*size);
-  assert.ok(order.value/size>=C.ORDER_MIN_VALUE_PER_MEMBER&&order.value/size<=C.ORDER_MAX_VALUE_PER_MEMBER);
-  assert.equal(Object.keys(order.lines).length,4);assert.ok(order.lines.honey);
-  for(const [key,count]of Object.entries(order.lines)){assert.equal(count,solo.lines[key]*size);if(CROPS[key])assert.ok(cropUnlocked(s,key),key);else if(key!=='honey')assert.ok(Object.entries(RECIPES).some(([id,r])=>r.output[key]&&!recipeAvailability(s,id).locked),key);}
+test('Every family gets the same weekly order: four random crops or goods from the whole game, scaled by size, in the value band',()=>{
+ const seen=new Set();
+ for(let day=0;day<400;day++)for(const size of [1,2,6]){
+  const order=familyOrder('family-'+day,week+day,size),solo=familyOrder('other-family',week+day,1);
+  assert.deepEqual(Object.keys(order.lines).sort(),Object.keys(solo.lines).sort(),'the same goods for every family');
+  assert.deepEqual(order,familyOrder('family-'+day,week+day,size));
+  assert.ok(solo.value>=C.ORDER_MIN_VALUE_PER_MEMBER&&solo.value<=C.ORDER_MAX_VALUE_PER_MEMBER,String(solo.value));
+  assert.equal(Object.keys(order.lines).length,4);
+  for(const [key,count]of Object.entries(order.lines)){
+   assert.ok(solo.lines[key]>=1&&solo.lines[key]<=150,key);assert.ok(Number.isFinite(itemUnlockLevel(key)),`${key} can be made outside the Factory`);seen.add(key);
+   // Realistic in one week, also when one member makes it all: at most 3 days of production on one slot (or 12 fields).
+   assert.ok(count>=solo.lines[key]&&count<=solo.lines[key]*size&&count<=Math.max(solo.lines[key],familyLineCap(key)),`${key} ${count}`);
+   const hours=CROPS[key]?count/2/12*CROPS[key].duration/3600000:count*Math.min(...Object.values(RECIPES).filter(r=>r.output[key]&&r.building!=='factory').map(r=>r.duration/r.output[key]))/3600000;
+   assert.ok(hours<=72,`${key}: ${hours} hours`);
+  }
  }
+ assert.equal(seen.size,Object.keys(ITEMS).length,'over time every crop and good turns up');
 });
 test('Create and join enforce names, emblems, member limit and code privacy',()=>{
  let c=create();assert.equal(c.families[0].is_open,false);assert.match(c.families[0].invite_code,/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
@@ -60,11 +68,12 @@ test('Completion rewards exclude below-threshold contributions; claim is once an
  assert.throws(()=>run(c,bob,'bob',{type:'family_claim',rewardId:r.id}),/unavailable/);
  assert.throws(()=>run(c,alice,'alice',{type:'family_claim',rewardId:r.id},r.expires_at),/expired/);
 });
-test('Tournament extras unlock on one full line, consume goods for points only and respect cap',()=>{
+test('Tournament extras unlock on one full line, consume goods for points only, as many as a farmer likes',()=>{
  let c=create(),s=farm();s.inventory.wheat=100000;assert.throws(()=>run(c,s,'alice',{type:'family_tournament_goods',week,item:'wheat',count:1}),/Fill one/);
  const [item,count]=Object.entries(c.orders[0].lines)[0];c=contribution(c,'alice',item,count,s).context;const prev=structuredClone(s);
  const r=run(c,s,'alice',{type:'family_tournament_goods',week,item:'wheat',count:10});assert.equal(s.inventory.wheat,prev.inventory.wheat-10);for(const k of ['coins','xp','diamonds'])assert.equal(s[k],prev[k]);assert.equal(r.context.contributions[0].extra_points,ITEMS.wheat.sell*10);
- assert.throws(()=>run(r.context,s,'alice',{type:'family_tournament_goods',week,item:'wheat',count:10000}),/weekly/);
+ // No weekly limit: keep handing in goods for tournament points as long as you want.
+ const more=run(r.context,s,'alice',{type:'family_tournament_goods',week,item:'wheat',count:10000});assert.equal(more.context.contributions[0].extra_points,ITEMS.wheat.sell*10010);for(const k of ['coins','xp','diamonds'])assert.equal(s[k],prev[k]);
 });
 test('Tournament settles once, pays the top three and gives a solo winner the whole first prize',()=>{
  const c=tournamentContext();assert.equal(familyTournament(c,week).pool,300);settleFamilyWeeks(c,familyWeekStart(week+1));

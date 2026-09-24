@@ -85,7 +85,7 @@ begin
  for r in select * from jsonb_populate_recordset(null::public.family_rewards,coalesce(p_changes->'rewards','[]')) where claimed_at is not null loop
   insert into public.family_claims(reward_id,player_id,claimed_at) values(r.id,r.player_id,r.claimed_at);
  end loop;
- if exists(select 1 from public.family_members where left_at is null and family_id is not null group by family_id having count(*)>6 or count(*) filter(where role='leader')<>1) then raise exception 'Invalid family membership'; end if;
+ if exists(select 1 from public.family_members where left_at is null and family_id is not null group by family_id having count(*)>10 or count(*) filter(where role='leader')<>1) then raise exception 'Invalid family membership'; end if;
  if exists(select 1 from public.family_orders o, lateral jsonb_each_text(o.filled) f where not (o.lines ? f.key) or f.value::bigint<0 or f.value::bigint>(o.lines->>f.key)::bigint) then raise exception 'Order overflow'; end if;
  if p_request is not null then
   insert into public.family_receipts values(p_player,p_request,p_result,p_failed,floor(extract(epoch from clock_timestamp())*1000)::bigint);

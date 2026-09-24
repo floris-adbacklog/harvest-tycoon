@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,normalizeFarm,applyFarmAction as act,CROPS,BUILDINGS,RECIPES,CROP_LEVELS,BUILDING_LEVELS,FEATURE_LEVELS,BUILDING_COSTS,RECIPE_LEVELS,FEATURE_NAMES,cropUnlocked,buildingUnlocked,buildingEligible,buildingCost,constructionNeeds,featureUnlocked,recipeUnlocked,itemAvailable,beginnerProgress,xpForLevel,levelOf,dailyTasks,dailyOrders,DAY_MS,productionJobs,availableDaily,familyOrder,marketHighlights,unlockEntries,formatDuration} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,applyFarmAction as act,CROPS,BUILDINGS,RECIPES,CROP_LEVELS,BUILDING_LEVELS,FEATURE_LEVELS,BUILDING_COSTS,RECIPE_LEVELS,FEATURE_NAMES,cropUnlocked,buildingUnlocked,buildingEligible,buildingCost,constructionNeeds,featureUnlocked,recipeUnlocked,itemAvailable,beginnerProgress,xpForLevel,levelOf,dailyTasks,dailyOrders,DAY_MS,productionJobs,availableDaily,familyOrder,marketHighlights,unlockEntries,formatDuration,itemUnlockLevel} from '../game/farm-state.js';
 import {progressionSnapshot,progressionChange,roadmapMarkup} from '../public/progression-ui.js';
 import {ART_KEYS} from '../public/visual-icons.js';
 const now=Date.UTC(2026,8,20,12);
@@ -100,12 +100,12 @@ test('new delivery tiers append without changing paid, replaced or existing orde
  level(s,12);buyAvailable(s);const all=dailyOrders(s,now);assert.equal(all.length,3);assert.equal(all[2].tier,'commission');
  const frozen=structuredClone(s.daily);normalizeFarm(s,now);dailyOrders(s,now);assert.deepEqual(s.daily,frozen);
 });
-test('level-10 families receive affordable chains; high-level families retain advanced orders',()=>{
- for(const n of [10,17,25]){const s=createFarm(now);s.coins=100000;level(s,n);buyAvailable(s);
-  for(let week=0;week<30;week++)for(const members of [1,6]){
-   const order=familyOrder('test-family',week,members,undefined,n);assert.ok(order.value/members>=16000&&order.value/members<=30000);
-   for(const item of Object.keys(order.lines))assert.ok(itemAvailable(s,item),`${n}: ${item}`);
-  }
+test('the family order does not depend on level: anything can be asked, and the unlock level says when a farm can make it',()=>{
+ // A solo family's order sits in the usual value band; a bigger one scales up until a line would need more than 3 days of work.
+ for(let week=0;week<30;week++){const solo=familyOrder('test-family',week,1),six=familyOrder('test-family',week,6);assert.ok(solo.value>=16000&&solo.value<=30000);assert.ok(six.value>=solo.value&&six.value<=solo.value*6);}
+ // The level a line shows ("unlocks at level N") matches when a guided farm really can make it.
+ for(const n of [10,25,40,70]){const s=createFarm(now);s.coins=10000000;level(s,n);buyAvailable(s);
+  for(const item of ['bread','cheese','honey','applejuice','candles','blanket','cherrypie'])if(itemUnlockLevel(item)<=n)assert.ok(itemAvailable(s,item),`${n}: ${item}`);
  }
 });
 test('level-up and roadmap use existing painted art and name the crop as it unlocks',()=>{

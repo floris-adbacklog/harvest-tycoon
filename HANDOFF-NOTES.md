@@ -648,3 +648,20 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 ## Quests: no Claim all (24 Sep 2026; client only)
 - Every ready quest is claimed on its own with its own Claim button (more satisfying, as asked). The Claim all bar,
   its code in public/quests-ui.js and its styles in retention.css are gone. Test: tests/mobile-ui.test.mjs.
+
+## One weekly Family Order for everyone, anything possible; families of 10; tournament goods without a limit (24 Sep 2026)
+- `familyOrder`: every family gets the same four lines each week, drawn at random from all 57 crops and goods
+  (`family-order-v2:<week>`), whatever the family can make yet: a farmer who cannot make a line sees "unlocks at level N"
+  (`itemUnlockLevel`) or "needs the <building>" (`itemBuilding`), so there is a reason to unlock more and to share.
+  Amounts follow value: about 20,000 coins of goods per member, at most 150 of one thing per member, cheap lines first
+  so the rest of the value goes to the dearer ones; four cheap draws swap the last for a dearer good; never two of the
+  dearest goods (5,000+ each) in one week. Realistic in a week, also when one member makes a line alone: a whole line
+  never needs more than 72 hours of production from one farm (`familyLineCap`: one slot for a good, 12 fields at 2 per
+  harvest for a crop), so a bigger family gets a little less than size x the solo amount. Simulated over 50,000 weeks:
+  solo 17,800-26,800 per member, no line above 72 hours, all 57 items turn up. Orders already made this week stay.
+- Tournament goods: no weekly limit any more (EXTRA_POINTS_CAP removed); still unlocked by one full order line, still
+  tournament points only (no coins, XP or diamonds).
+- Families of up to 10 members (`MAX_MEMBERS`, was 6). The database also had a 6: supabase/family-max-10.sql patches
+  the live harvest_family_commit (only "count(*)>6" becomes ">10", taken from the live definition) and the
+  family_orders member_count check. Dry-run on live in a rolled-back transaction on 24 Sep: works, grants unchanged.
+  Order: apply the migration, then push the client and deploy farm-api.

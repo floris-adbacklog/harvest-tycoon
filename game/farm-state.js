@@ -1768,30 +1768,61 @@ function workActivity(state,action,now){
 
 // Farm Family rules. Only the authenticated farm-api executes mutations against
 // the service-only context; browser copies expose constants and display helpers.
-export const FAMILY_CONFIG=Object.freeze({MAX_MEMBERS:6,MIN_CONTRIB_POINTS:500,JOIN_COOLDOWN_MS:48*3600000,RENAME_COOLDOWN_MS:7*DAY_MS,ATTEMPTS_PER_HOUR:10,EXTRA_POINTS_CAP:30000,TOURNAMENT_FIRST_MIN:100,TOURNAMENT_FIRST_MAX:1000,TOURNAMENT_PER_EXTRA_FAMILY:25,ORDER_PLAYER_WEEK_DIAMOND_CAP:25,TOURNAMENT_MIN_POINTS:1,ORDER_COIN_MULTIPLIER:1.25,ORDER_XP_PER_VALUE:1/100,ORDER_DIAMOND_BASE:1,ORDER_DIAMOND_MAX:3,ORDER_COMPLETION_DIAMONDS:4,REWARD_WEEKS:8,ORDER_MIN_VALUE_PER_MEMBER:16000,ORDER_MAX_VALUE_PER_MEMBER:30000,RANK_WEIGHTS:[1,.6,.4]});
+export const FAMILY_CONFIG=Object.freeze({MAX_MEMBERS:10,MIN_CONTRIB_POINTS:500,JOIN_COOLDOWN_MS:48*3600000,RENAME_COOLDOWN_MS:7*DAY_MS,ATTEMPTS_PER_HOUR:10,TOURNAMENT_FIRST_MIN:100,TOURNAMENT_FIRST_MAX:1000,TOURNAMENT_PER_EXTRA_FAMILY:25,ORDER_PLAYER_WEEK_DIAMOND_CAP:25,TOURNAMENT_MIN_POINTS:1,ORDER_COIN_MULTIPLIER:1.25,ORDER_XP_PER_VALUE:1/100,ORDER_DIAMOND_BASE:1,ORDER_DIAMOND_MAX:3,ORDER_COMPLETION_DIAMONDS:4,REWARD_WEEKS:8,ORDER_MIN_VALUE_PER_MEMBER:16000,ORDER_MAX_VALUE_PER_MEMBER:30000,RANK_WEIGHTS:[1,.6,.4]});
 export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy','family-bee','family-oak','family-barn','pumpkin','greenbeans','cheese','applejuice','berrypreserves','harvesthamper','family-fox','family-owl','family-windmill','family-horseshoe'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
 export function familyUnlocked(state,minLevel=FAMILY_MIN_LEVEL){return levelOf(state)>=minLevel;}
 export function familyUnlockHint(minLevel=FAMILY_MIN_LEVEL){return `Reach level ${minLevel} to unlock Farm Family.`;}
 export function familyWeek(now=Date.now()){return Math.floor((now-4*DAY_MS)/(7*DAY_MS));}
 export function familyWeekStart(week){return 4*DAY_MS+week*7*DAY_MS;}
-const FAMILY_ORDER_TEMPLATES=Object.freeze([
- {wheat:100,bread:30,oil:6,honey:30},
- {corn:80,vegetables:6,cheese:30,honey:30},
- {barley:60,pie:8,eggs:100,honey:30},
- {cabbage:50,pickles:8,milk:80,honey:30}
-]);
-const FAMILY_STARTER_ORDERS=Object.freeze([
- {wheat:150,bread:30,eggs:100,honey:30},
- {corn:80,salad:12,cheese:30,honey:30},
- {barley:60,bread:24,eggs:100,honey:30},
- {cabbage:50,salad:12,milk:80,honey:30}
-]);
-export function familyOrder(familyId,week,members,config=FAMILY_CONFIG,minimumLevel=FAMILY_MIN_LEVEL){
+// The weekly Family Order is the same for every family: four crops or goods drawn at random from everything in the game
+// (every crop and good, whatever a family can make yet), so there is always a reason to unlock more and to share. The
+// amounts follow the value: about 20,000 coins of goods per member, at most 150 of one thing per member, cheap things
+// first so the rest of the value moves to the dearer lines; four cheap draws swap the last for a dearer good, and a week
+// never asks for two of the dearest goods.
+const FAMILY_ORDER_VALUE=20000,FAMILY_ORDER_MAX_COUNT=150,FAMILY_ORDER_LINES=4;
+// Realistic in one week, also when only one member can make a thing: a whole line never needs more than 3 days (72 hours) of
+// production from one farm, on one production slot for a good or on 12 fields for a crop (2 per harvest). Solo families never
+// reach this; a bigger family then gets a little less than size x the solo amount.
+const FAMILY_LINE_HOURS=72,FAMILY_LINE_FIELDS=12;
+export function familyLineCap(item){
+ if(CROPS[item])return FAMILY_LINE_FIELDS*Math.max(1,Math.floor(FAMILY_LINE_HOURS*3600000/CROPS[item].duration))*2;
+ const perUnit=Math.min(...Object.values(RECIPES).filter(r=>r.output[item]&&r.building!=='factory').map(r=>r.duration/r.output[item]));
+ return Math.max(1,Math.floor(FAMILY_LINE_HOURS*3600000/perUnit));
+}
+const niceCount=n=>n<10?Math.max(1,Math.round(n)):n<50?Math.round(n/5)*5:Math.round(n/10)*10;
+export function familyOrder(familyId,week,members,config=FAMILY_CONFIG){
  if(!Number.isInteger(members)||members<1||members>config.MAX_MEMBERS)throw new Error('Choose a valid family size.');
- const templates=minimumLevel<17?FAMILY_STARTER_ORDERS:FAMILY_ORDER_TEMPLATES;
- const template=templates[calendarHash(`family-v1:${familyId}:${week}`)%templates.length];
- const lines=Object.fromEntries(Object.entries(template).map(([k,n])=>[k,n*members]));
+ const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0),picked=[];let draw=0;
+ const next=()=>pool[calendarHash(`family-order-v2:${week}:${draw++}`)%pool.length];
+ // At most one of the dearest goods (5,000+ coins each, such as a blanket) in one week.
+ const dear=k=>ITEMS[k].sell>=5000;
+ while(picked.length<FAMILY_ORDER_LINES){const k=next();if(!picked.includes(k)&&!(dear(k)&&picked.some(dear)))picked.push(k);}
+ if(picked.every(k=>ITEMS[k].sell<300))for(;;){const k=next();if(!picked.includes(k)&&ITEMS[k].sell>=300){picked[FAMILY_ORDER_LINES-1]=k;break;}}
+ let budget=FAMILY_ORDER_VALUE;const perMember={};
+ [...picked].sort((a,b)=>ITEMS[a].sell-ITEMS[b].sell).forEach((k,i,list)=>{const n=Math.max(1,Math.min(FAMILY_ORDER_MAX_COUNT,familyLineCap(k),niceCount(budget/(list.length-i)/ITEMS[k].sell)));perMember[k]=n;budget-=n*ITEMS[k].sell;});
+ const lines=Object.fromEntries(Object.entries(perMember).map(([k,n])=>[k,Math.max(n,Math.min(n*members,familyLineCap(k)))]));
  return {lines,value:Object.entries(lines).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0),members};
+}
+// From which level a guided farm can grow or make an item (Infinity: only the Factory makes it). The Family Order shows it on
+// a line a farmer cannot make yet.
+// The building of the easiest way to make a good (null for a crop): "needs the Mill" on a line a farmer has the level for.
+export function itemBuilding(item){
+ if(CROPS[item])return null;
+ let best=null,level=Infinity;
+ for(const [id,r] of Object.entries(RECIPES)){if(!r.output[item]||r.building==='factory')continue;const needs=Math.max(BUILDING_LEVELS[r.building]??1,RECIPE_LEVELS[id]??1,...Object.keys(r.input).map(k=>itemUnlockLevel(k)));if(needs<level){level=needs;best=r.building;}}
+ return best;
+}
+export function itemUnlockLevel(item,seen=new Set()){
+ if(CROPS[item])return CROP_LEVELS[item]??1;
+ if(seen.has(item))return Infinity;
+ const path=new Set([...seen,item]);
+ let level=['honey','feed','fertilizer'].includes(item)?FEATURE_LEVELS.activities:Infinity;
+ for(const [id,r] of Object.entries(RECIPES)){
+  if(!r.output[item]||r.building==='factory')continue;
+  const needs=[BUILDING_LEVELS[r.building]??1,RECIPE_LEVELS[id]??1,...(r.requiresBuildings??[]).map(k=>BUILDING_LEVELS[k]??1),...Object.keys(r.input).map(k=>itemUnlockLevel(k,path))];
+  level=Math.min(level,Math.max(...needs));
+ }
+ return level;
 }
 export function familyShares(budget,members,cap=Infinity,minimum=0){
  const result=Object.fromEntries(members.map(m=>[m.player_id,0]));
@@ -1849,7 +1880,7 @@ export function settleFamilyWeeks(c,now,config=FAMILY_CONFIG){
 }
 function ensureFamilyOrder(c,f,week,now,config){
  let order=c.orders.find(o=>o.family_id===f.id&&o.week===week);
- if(!order){const members=familyMembers(c,f.id),minimumLevel=Math.min(...members.map(m=>c.players.find(p=>p.player_id===m.player_id)?.level??FAMILY_MIN_LEVEL));const generated=familyOrder(f.id,week,members.length,config,minimumLevel);order={family_id:f.id,week,lines:generated.lines,filled:{},member_count:generated.members,value:generated.value,created_at:now,completed_at:null};c.orders.push(order);}
+ if(!order){const members=familyMembers(c,f.id);const generated=familyOrder(f.id,week,members.length,config);order={family_id:f.id,week,lines:generated.lines,filled:{},member_count:generated.members,value:generated.value,created_at:now,completed_at:null};c.orders.push(order);}
  return order;
 }
 function completeFamilyOrder(c,order,now,config){
@@ -1955,7 +1986,6 @@ export function familyMutate(original,state,player,action,now,options={}){
    if(type==='family_contribute'&&(!Object.hasOwn(order.lines,action.item)||action.count>needed))throw new Error('This exceeds what the order still needs.');
    if(type==='family_tournament_goods'){
     if(!Object.entries(order.lines).some(([k,n])=>(order.filled[k]??0)>=n))throw new Error('Fill one order line to unlock Tournament goods.');
-    if((entry?.extra_points??0)+points>config.EXTRA_POINTS_CAP)throw new Error('This exceeds your weekly Tournament goods limit.');
    }
    if((state.inventory[action.item]??0)<action.count)throw new Error('You do not have enough in stock.');
    if(!entry){entry={family_id:family.id,week,player_id:player,points:0,order_points:0,extra_points:0,lines:{},last_at:now};c.contributions.push(entry);}
@@ -1990,5 +2020,5 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  const invitation=incoming?{id:incoming.id,family:card(invitedFamily),invitedBy:c.players.find(p=>p.player_id===incoming.invited_by)?.username??'Family leader',expiresAt:incoming.expires_at,canAccept:!family&&(me?.cooldown_until??0)<=now&&familyMembers(c,invitedFamily.id).length<config.MAX_MEMBERS}:null;
  const sentInvitations=family&&me?.role==='leader'?pending.filter(i=>i.family_id===family.id).map(i=>({id:i.id,recipientId:i.recipient_id,username:c.players.find(p=>p.player_id===i.recipient_id)?.username??'Farmer',expiresAt:i.expires_at})):[];
 
- return {invitation,sentInvitations,week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,extraCap:config.EXTRA_POINTS_CAP,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:family.is_open,leader:me.role==='leader',renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,cooldownUntil:me?.cooldown_until??0,openFamilies:c.families.filter(f=>!f.deleted_at&&f.is_open&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview:{coins:Math.floor((current?.order_points??0)*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER),xp:Math.floor((current?.order_points??0)*config.ORDER_XP_PER_VALUE),diamonds:Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor((current?.order_points??0)/10000)),completionBonus:config.ORDER_COMPLETION_DIAMONDS},tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraFamily:config.TOURNAMENT_PER_EXTRA_FAMILY,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),placePrizes:config.RANK_WEIGHTS.map(weight=>Math.floor(board.firstPrize*weight)),familiesForMax:Math.ceil((config.TOURNAMENT_FIRST_MAX-config.TOURNAMENT_FIRST_MIN)/config.TOURNAMENT_PER_EXTRA_FAMILY)+1,familyPoints:place>=0?board.qualifying[place].points:0,pointsBehind:above?above.points-board.qualifying[place].points:0,top:board.qualifying.slice(0,10).map((f,i)=>({name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
+ return {invitation,sentInvitations,week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:family.is_open,leader:me.role==='leader',renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,cooldownUntil:me?.cooldown_until??0,openFamilies:c.families.filter(f=>!f.deleted_at&&f.is_open&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview:{coins:Math.floor((current?.order_points??0)*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER),xp:Math.floor((current?.order_points??0)*config.ORDER_XP_PER_VALUE),diamonds:Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor((current?.order_points??0)/10000)),completionBonus:config.ORDER_COMPLETION_DIAMONDS},tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraFamily:config.TOURNAMENT_PER_EXTRA_FAMILY,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),placePrizes:config.RANK_WEIGHTS.map(weight=>Math.floor(board.firstPrize*weight)),familiesForMax:Math.ceil((config.TOURNAMENT_FIRST_MAX-config.TOURNAMENT_FIRST_MIN)/config.TOURNAMENT_PER_EXTRA_FAMILY)+1,familyPoints:place>=0?board.qualifying[place].points:0,pointsBehind:above?above.points-board.qualifying[place].points:0,top:board.qualifying.slice(0,10).map((f,i)=>({name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
 }
