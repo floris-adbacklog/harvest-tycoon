@@ -159,16 +159,18 @@ test('the admin dashboard button exists in the topbar, hidden until checkAdmin()
  assert.match(js,/Promise\.all\(\[checkAdmin\(\),chat\?\.whenReady\?\.\(\)\.then\(overview=>overview\?\.role\?\?null\)\.catch\(\(\)=>null\)\]\)\.then\(\(\[admin,chatRole\]\)=>\{\n  role=admin\|\|chatRole==='admin'\?'admin':chatRole==='moderator'\?'moderator':null;if\(!role\)return;/);
  assert.match(js,/button\.hidden=false;const entry=document\.getElementById\('admin-menu-entry'\);if\(entry\)entry\.hidden=false;/,'the topbar button and the More-menu card appear together, only for the admin');
 });
-test('each card has its own line icon, converted like every other plain (non-painted) icon in the game',()=>{
+test('every card, number and tab has a painted icon, like the rest of the game (no thin line icons any more)',()=>{
  const js=read('src/admin-dashboard.js');
  assert.match(js,/import \{refreshArt\} from '\.\.\/public\/visual-icons\.js';/);
- for(const icon of ['radio','user-plus','trending-up'])assert.match(js,new RegExp(`<i data-lucide="${icon}" data-line-icon></i>`));
+ assert.ok(!js.includes('data-line-icon'),'no line icons left');
+ for(const key of ['family-members','invite-friends','xp','alert','quests','gift','bell','chat'])assert.ok(js.includes(`art('${key}')`),key);
 });
-test('online status shows as an initials avatar with a green corner dot, reusing the game\'s own online-dot class',()=>{
+test('players show their own picture (initials only when there is none), with the game\'s green online dot',()=>{
  const js=read('src/admin-dashboard.js');
- assert.match(js,/const avatar=\(name,online\)=>`<span class="admin-avatar">\$\{esc\(initials\(name\)\)\}\$\{online\?'<span class="online-dot is-online" aria-hidden="true"><\/span>':''\}<\/span>`;/);
- assert.match(js,/avatar\(p\.username,true\)/,'everyone in the online list is, by definition, online');
- assert.match(js,/avatar\(p\.username,p\.online\)/,'the recent-players table shows whichever is true for that farmer');
+ assert.match(js,/const avatar=\(name,online,id\)=>\{const face=id&&faces\.get\(id\);return `<span class="admin-avatar\$\{face\?' has-face':''\}">\$\{face\?avatarImage\(face\):esc\(initials\(name\)\)\}\$\{online\?'<span class="online-dot is-online" aria-hidden="true"><\/span>':''\}<\/span>`;\};/);
+ assert.match(js,/avatar\(p\.username,true,p\.playerId\)/,'everyone in the online list is, by definition, online');
+ assert.match(js,/avatar\(p\.username,p\.online,p\.playerId\)/,'the newest players show whichever is true for that farmer');
+ assert.match(js,/await loadFaces\(\[\.\.\.online\.players,\.\.\.recent\.players\]\.map\(p=>p\.playerId\)\);/);
 });
 test('retention percentages are colour-coded so a pattern is visible at a glance, not just readable as numbers',()=>{
  const js=read('src/admin-dashboard.js');
@@ -195,7 +197,7 @@ test('checkAdmin is exported from player-profiles.js so admin-dashboard.js does 
 });
 test('the dashboard opens with three headline numbers, lists the newest players, and has no event controls any more',()=>{
  const js=read('src/admin-dashboard.js'),html=read('public/farm.html'),icons=read('public/visual-icons.js');
- assert.match(js,/<div class="admin-kpis"><div><strong id="admin-kpi-online">/);assert.match(js,/renderKpis\(online,retention\)/);
+ assert.match(js,/<div class="admin-kpis"><div>'\+art\('family-members'\)\+'<strong id="admin-kpi-online">/);assert.match(js,/renderKpis\(online,retention\)/);
  assert.match(js,/<ul id="admin-recent-list" class="admin-recent-list"><\/ul>/);
  assert.ok(!/admin-events|mountAdminEvents|liveEvents/.test(js),'farm events run on their own schedule');
  assert.match(html,/id="admin-menu-entry" hidden><i data-game-art="admin"><\/i><span><strong>Admin dashboard<\/strong><small>Players and retention<\/small>/);

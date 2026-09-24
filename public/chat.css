@@ -178,3 +178,14 @@ span.chat-avatar{cursor:default}
 .admin-log-open{color:#a8741c}
 .admin-log-done{color:#3f7a3a}
 .admin-log-list li{align-items:flex-start}
+/* The dashboard in the game's own look: painted icons on the numbers, the tabs and every heading; farmers' own pictures. */
+#admin-dashboard-dialog .admin-card h3{display:flex;align-items:center;gap:9px}
+#admin-dashboard-dialog .admin-card h3>.game-art{flex:none;width:28px;height:28px;object-fit:contain}
+#admin-dashboard-dialog .admin-kpis>div>.game-art{justify-self:center;width:30px;height:30px;margin-bottom:2px;object-fit:contain}
+.admin-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.admin-tabs button>.game-art{flex:none;width:20px;height:20px;object-fit:contain}
+.admin-avatar.has-face{overflow:hidden;background:#f1e7de}
+.admin-avatar.has-face>img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
+.admin-avatar.has-face>.online-dot{position:absolute}
+/* A heading's count badge style (h3>span) must not wipe a sprite-sheet icon in the same heading. */
+#admin-dashboard-dialog .admin-card h3>span.game-art-sprite{padding:0;margin:0;border-radius:0;background-color:transparent;background-image:var(--art-sheet);background-size:var(--art-size) var(--art-size);background-position:var(--art-position);background-repeat:no-repeat}

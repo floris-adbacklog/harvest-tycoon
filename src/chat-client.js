@@ -48,6 +48,12 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   reportPlayer:(player,reason=null)=>rpc('chat_report_player',{p_player:player,p_reason:reason}),
   playerStatus:player=>rpc('chat_player_status',{p_player:player}),
   setPrivate:on=>rpc('chat_set_private',{p_on:on}),
+  // Farmers' pictures (the same public table as the leaderboard), for the staff dashboard's lists.
+  async faces(ids){
+   const unique=[...new Set(ids.filter(Boolean))];if(!unique.length)return new Map();
+   const {data,error}=await supabase.from('player_stats').select('player_id,avatar_id').in('player_id',unique.slice(0,200));
+   return error?new Map():new Map((data??[]).map(r=>[r.player_id,r.avatar_id]));
+  },
   // Staff (moderators and the admin); the database refuses anyone else.
   reports:()=>rpc('chat_mod_reports'),
   reportLog:()=>rpc('chat_mod_log'),
