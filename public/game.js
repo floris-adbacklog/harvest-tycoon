@@ -357,7 +357,7 @@ function decorate(){
   cloneModel('bag_001',46.4,4.6,{height:.75,rotation:.3}),cloneModel('garden_bed_001',37,1.2,{width:1.8,rotation:Math.PI/2}));
  // The Grand Valley Fair, the final building: one great exhibition hall, close to its model's own size.
  zone('grandfair');
- addUtility('grandfair','house_023',44,12.6,{width:28,depth:9.6,height:5.6});
+ addUtility('grandfair','house_023',44,12.6,{width:24,depth:8.2,height:4.8});
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);

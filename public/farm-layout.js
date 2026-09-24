@@ -29,7 +29,7 @@ export const ANCHORS=Object.freeze({
 // farmhouse, where the Pig Farm first stood. Sheep Barn, Goat Shed and Trade Depot keep their places across the road.
 export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[-25.77,-6.92],stall:[-8,23.4],cart:[-9.7,-10.45],paddock:[1.7,-8.6],
  pigfarm:[23.46,1.46],beeyard:[30.46,1.69],glasshouse:[37.62,1.23],weaving:[44.62,2],
- craftshop:[28.62,11.15],ranch:[37.31,11.15],estateworkshop:[46.92,11.15],grandfair:[40,24.3]});
+ craftshop:[28.62,11.15],ranch:[37.31,11.15],estateworkshop:[46.92,11.15],grandfair:[40,27.5]});
 // Trees, bushes and other loose pieces keep this far from the middle of a yard.
 export const YARD_CLEARANCE=5.4;
 
@@ -62,7 +62,7 @@ const yardCentres=Object.keys(ANCHORS).map(anchorAt);
 // no crown hangs over a yard.
 export const YARD_EXTENT=Object.freeze({beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-4.2,4.2,-2.6,4.6],weaving:[-3,4.8,-4,5.5],
  goatshed:[-4.8,4.8,-4.4,11],pigfarm:[-12.6,4.6,-3.6,12.5],craftshop:[-4.4,4.8,-2.4,3.6],ranch:[-6,6,-5.2,10.2],valleymarket:[-8.5,9.5,-5,4.5],
- tradedepot:[-7,7.5,-4.5,5],estateworkshop:[-5.5,5.5,-3.5,4.5],grandfair:[-14.6,14.6,-6,5]});
+ tradedepot:[-7,7.5,-4.5,5],estateworkshop:[-5.5,5.5,-3.5,4.5],grandfair:[-12.6,12.6,-5,4.6]});
 const EXTENT_MARGIN=3;
 const extents=Object.entries(YARD_EXTENT).map(([id,[west,east,north,south]])=>{const [x,z]=anchorAt(id);return [x+west,x+east,z+north,z+south];});
 export const outsideYardExtents=(x,z,margin=EXTENT_MARGIN)=>extents.every(([minX,maxX,minZ,maxZ])=>x<minX-margin||x>maxX+margin||z<minZ-margin||z>maxZ+margin);
