@@ -475,7 +475,8 @@ async function interact(id,forcedAction){
  if(!action){const now=farmNow(),name=CROPS[plot.crop].name;toast(`${name}: ${plot.tended?'fully cared for':`extra care opens in ${formatDuration(plot.careAt-now)}`}. Ready to harvest in ${formatDuration(plot.readyAt-now)}.`);return {error:'nothing to do yet'};}
  try{
   const result=await runAction({type:'field',id,action,crop:selectedCrop});
-  if(action==='harvest'){particleBurst(id);floatReward(id,floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));if(result.firstHarvest){particleBurst(id,true);toast(`A golden first harvest: ${result.firstHarvest}× the crop!`);}}
+  // The golden first harvest shows on the field itself, so the toast stays free for the guide step it completes.
+  if(action==='harvest'){particleBurst(id);if(result.firstHarvest)particleBurst(id,true);floatReward(id,(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
   if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
   if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
   if(action==='plant')floatReward(id,floatChip(state.plots[id].crop??selectedCrop,'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));

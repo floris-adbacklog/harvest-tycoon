@@ -31,7 +31,10 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   const markup=steps.map(q=>`<article class="beginner-step ${q.done?'done':q.current?'current':'upcoming'}" ${q.current?'aria-current="step"':''}><span class="beginner-step-number">${q.done?'✓':q.index+1}</span><div><h3>${q.title}</h3>${q.current?`<p>${q.description}</p>`:''}<span class="beginner-status">${q.done?'Completed':q.current?q.ready?'Ready to complete':'Your current step':q.ready?'Done early · finish the steps before it':''}${q.done?'':xp}</span>${q.current?`<div class="beginner-actions"><button class="small-button" data-beginner-help>Show me</button>${q.ready?`<button class="primary-button" data-beginner-claim ${busy?'disabled':''}>${q.index===9?`Claim ${BEGINNER_REWARD} diamonds`:'Complete step'}</button>`:''}</div>`:''}</div></article>`).join('');
   if(markup!==lastMarkup){$('beginner-list').innerHTML=markup;lastMarkup=markup;icons();}
  }
- function open(){if(state.onboarding?.rewardClaimed&&state.onboarding.completed>=BEGINNER_QUESTS.length)return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();refresh();dialog.scrollTop=0;dialog.querySelector('.close-dialog').focus({preventScroll:true});}
+ function open(){if(state.onboarding?.rewardClaimed&&state.onboarding.completed>=BEGINNER_QUESTS.length)return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();refresh();dialog.scrollTop=0;
+  // A step that waits (the last one, with the diamonds) is shown right away, its button in reach.
+  const waiting=beginnerProgress(state).find(q=>q.current)?.ready&&dialog.querySelector('.beginner-step.current');
+  if(waiting){waiting.scrollIntoView?.({block:'center'});dialog.querySelector('[data-beginner-claim]')?.focus({preventScroll:true});}else dialog.querySelector('.close-dialog').focus({preventScroll:true});}
  async function claim(){
   const current=beginnerProgress(state).find(q=>q.current);if(busy||!current?.ready)return;
   busy=true;refresh();

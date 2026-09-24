@@ -49,7 +49,7 @@ test('the screens: steps announce themselves, the finale opens once, a promise a
  assert.match(game,/beginner\?\.afterAction\(result\);/);
  assert.match(game,/onFinished:result=>giftPopup\(\{xp:result\.xp,diamonds:result\.diamonds\},\{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote\(\)\}\)/);
  assert.match(game,/Come back tomorrow for your next daily gift and 30 minutes of double harvest\./);
- assert.match(game,/if\(result\.firstHarvest\)\{particleBurst\(id,true\);toast\(`A golden first harvest: \$\{result\.firstHarvest\}× the crop!`\);\}/);
+ assert.match(game,/result\.firstHarvest\?floatChip\('harvest',`Golden first harvest ×\$\{result\.firstHarvest\}`,'is-golden'\)/,'on the field, so the toast is free for the guide');
  assert.match(progression,/export const nextUnlock=state=>upcoming\(state\)\[0\]\?\?null;/);
  assert.match(progression,/Next at level \$\{next\.level\}: <strong>\$\{next\.name\}<\/strong>/,'on the level-up screen');
  assert.match(game,/\$\('level-next'\)\.textContent=next\?`Next at level \$\{next\.level\}: \$\{next\.name\}`:'';/,'and on the level card');

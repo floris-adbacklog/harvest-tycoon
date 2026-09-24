@@ -347,6 +347,7 @@
 .float-chip .game-art{width:24px;height:24px;object-fit:contain}
 .float-chip.is-xp{background:#eef2fcf2;color:#39518f}
 .float-chip.is-cost{background:#fbf1dff2;color:#8a5a1c}
+.float-chip.is-golden{background:#f7d77af2;color:#6b4712;font-weight:800}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.floating-reward{font-size:14px}.float-chip .game-art{width:20px;height:20px}}
 
 /* Phones hide the XP bar, so the level badge gets a ring that fills toward the next level. */

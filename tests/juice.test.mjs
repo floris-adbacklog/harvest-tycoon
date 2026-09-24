@@ -16,7 +16,7 @@ test('a short buzz on good moments, only on touch devices that support it, never
 test('floating rewards over a field are chips with their own picture',()=>{
  const game=read('public/game.js');
  assert.match(game,/const floatChip=\(key,text,cls=''\)=>`<span class="float-chip \$\{cls\}">\$\{art\(key\)\}\$\{text\}<\/span>`;/);
- assert.match(game,/floatReward\(id,floatChip\(result\.crop,`\+\$\{result\.quantity\}`\)\+floatChip\('xp',`\+\$\{result\.xp\} XP`,'is-xp'\)\)/);
+ assert.match(game,/floatChip\(result\.crop,`\+\$\{result\.quantity\}`\)\+floatChip\('xp',`\+\$\{result\.xp\} XP`,'is-xp'\)\)/);
 });
 test('phones show XP progress as a ring around the level badge',()=>{
  assert.match(read('public/game.js'),/\$\('journal-button'\)\.style\.setProperty\('--xp',/);
