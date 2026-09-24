@@ -28,7 +28,7 @@
 .diamond-confirm .confirm-spend:hover:not(:disabled),
 .sharing-action.is-primary:hover:not(:disabled),
 .payment-dialog [data-close]:hover,
-.market-sale-buttons [data-sell]:hover:not(:disabled){background:var(--btn-main-hover)}
+.market-sale-buttons [data-sell]:hover:not(:disabled){background:var(--btn-main-hover);border-color:var(--btn-main-line)}
 
 /* Diamonds: the price boxes in the shop, light blue like the diamonds themselves. */
 #boost-dialog .boost-buy{
@@ -53,13 +53,13 @@
 .sharing-action:hover:not(:disabled),
 .payment-dialog [data-retry]:hover:not(:disabled),
 .payment-dialog .payment-shop:hover,
-#boost-dialog .boost-buy.is-short:hover{background:var(--btn-second-hover);border-color:var(--btn-second-line)}
+#boost-dialog .boost-buy.is-short:hover{background:var(--btn-second-hover)}
 /* A gift picker that is open keeps its gold edge. */
 .sharing-action.is-open{border-color:#c9a45a;background:#fff8e1}
 
 /* Gold: real money */
 .primary-button.starter-buy{background:var(--btn-gold);border-color:var(--btn-gold-line);color:var(--btn-gold-text);box-shadow:0 3px 0 var(--btn-gold-edge)}
-.primary-button.starter-buy:hover:not(:disabled){background:var(--btn-gold-hover)}
+.primary-button.starter-buy:hover:not(:disabled){background:var(--btn-gold-hover);border-color:var(--btn-gold-line)}
 
 /* Red: hard to undo */
 .small-button.is-danger,
@@ -67,7 +67,7 @@
 .diamond-confirm.is-danger .confirm-spend{background:var(--btn-red);border-color:var(--btn-red-line);color:var(--btn-red-text);box-shadow:0 3px 0 var(--btn-red-edge)}
 .small-button.is-danger:hover:not(:disabled),
 .primary-button.is-danger:hover:not(:disabled),
-.diamond-confirm.is-danger .confirm-spend:hover:not(:disabled){background:var(--btn-red-hover)}
+.diamond-confirm.is-danger .confirm-spend:hover:not(:disabled){background:var(--btn-red-hover);border-color:var(--btn-red-line)}
 
 /* Pressed: the button sinks onto its edge. */
 .primary-button:active:not(:disabled),
@@ -84,6 +84,7 @@
 .payment-dialog [data-retry]:active:not(:disabled),
 .payment-dialog .payment-shop:active,
 #boost-dialog .boost-buy.is-short:active{box-shadow:0 1px 0 var(--btn-second-edge)}
+.market-sale-buttons [data-sell]:active:not(:disabled){box-shadow:0 1px 0 var(--btn-main-edge)}
 .small-button.is-danger:active:not(:disabled),.diamond-confirm.is-danger .confirm-spend:active:not(:disabled){box-shadow:0 1px 0 var(--btn-red-edge)}
 .primary-button.starter-buy:active:not(:disabled){box-shadow:0 1px 0 var(--btn-gold-edge)}
 

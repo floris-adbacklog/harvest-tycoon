@@ -32,3 +32,8 @@ test('tabs share the style: a sunken track and the chosen tab raised like a seco
  for(const chosen of ['.market-tabs button.active','.market-tabs button[aria-selected="true"]','.market-tabs button[aria-pressed="true"]','#tasks-dialog .quest-filters button[aria-pressed="true"]','.chat-tabs button.active'])assert.ok(css.includes(chosen),chosen);
  assert.match(css,/color:#5b4520;box-shadow:0 3px 0 #e2d3b3\}/);
 });
+
+test('hovering or pressing a green or red small button keeps its own border and edge',()=>{
+ assert.doesNotMatch(css,/:hover\{background:var\(--btn-second-hover\);border-color/);
+ assert.match(css,/\.market-sale-buttons \[data-sell\]:active:not\(:disabled\)\{box-shadow:0 1px 0 var\(--btn-main-edge\)\}/);
+});
