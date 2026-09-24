@@ -174,3 +174,13 @@ test('events: a trophy only for a real finisher; every goal done but not qualifi
  assert.equal(qualifyHint({actions:1,joined_at:'2026-09-24T19:30:00Z'},t),'2 more farm actions and you qualify.');
  assert.equal(qualifyHint({actions:4,joined_at:'2026-09-24T19:30:00Z'},t),'Your next farm action qualifies you.');
 });
+
+test('Farm Family: the family\'s own name and emblem on top, four tabs with a "!" where something waits, a Later fold and one Deliver button',()=>{
+ const html=read('public/farm.html'),ui=read('public/family-ui.js');
+ assert.match(html,/<span class="family-heading-emblem" id="family-heading-emblem" hidden><\/span>/);
+ assert.equal((html.match(/<b class="family-tab-dot" hidden>!<\/b>/g)??[]).length,4);
+ assert.match(ui,/document\.getElementById\('family-chat'\)\.onclick=\(\)=>\{dialog\.close\(\);window\.harvestChat\?\.open\(\{tab:'family'\}\);\};/);
+ assert.match(ui,/class="primary-button family-deliver" data-family-action="family_contribute"/);
+ assert.match(ui,/later=l=>waitsLater\(l\)&&open\.some\(x=>!waitsLater\(x\)\)/,'nothing is folded away when every open line waits');
+ assert.match(ui,/const invite=view\.family\.leader\?`\$\{inviteSearch\.html\(\)\}/,'the leader invites from Members');
+});

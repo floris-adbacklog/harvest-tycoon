@@ -16,6 +16,8 @@ if(!bridge){location.replace('/play.html');}else{
   const profiles=createPlayerProfiles(bridge),serverOffset=bridge.serverNow-Date.now();
   // The chat (header button, next to Farm Family) and the Admin dashboard, which the moderators may open too.
   const chat=createChatUI({bridge,profiles});
+  // Farm Family's chat button (public/family-ui.js) opens it on the family's own tab.
+  window.harvestChat=chat;
   createAdminDashboard(bridge,{chat});
   // The Family Members list opens a farmer's profile too (public/family-ui.js).
   window.harvestProfiles=profiles;

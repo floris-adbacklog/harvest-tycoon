@@ -210,7 +210,8 @@ test('Family read includes the authenticated player identity required by the exi
 });
 test('The four Family pages each use their own generated PNG and a mobile-visible topbar button',()=>{
  const html=readFileSync('public/farm.html','utf8'),css=readFileSync('public/family.css','utf8');
- for(const key of ['family-weekly-order','family-members','family-tournament','family-management']){assert.ok(html.includes(`data-game-art="${key}"`));assert.ok(readFileSync(`public/assets/icons/${key}.png`).length>1000);}
+ const family=readFileSync('public/family-ui.js','utf8');
+ for(const key of ['family-weekly-order','family-members','family-tournament','family-management']){assert.ok(html.includes(`data-game-art="${key}"`)||family.includes(`art('${key}')`),key);assert.ok(readFileSync(`public/assets/icons/${key}.png`).length>1000);}
  assert.match(css,/#family-button:not\(\[hidden\]\)\{display:flex/);assert.match(css,/#family-button\[hidden\]/);
 });
 

@@ -1,6 +1,6 @@
 #family-button{position:relative;flex-shrink:0}#family-button .game-art{width:28px;height:28px}/* Something is waiting in the family (an invitation, a reward, or goods you can deliver): the same yellow "!" badge as Quests and More. */
 #family-dot{position:absolute;right:-5px;top:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif;pointer-events:none}
-#family-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}#family-dialog *{box-sizing:border-box;min-width:0}#family-dialog .dialog-heading{gap:16px}#family-dialog h2{font-size:clamp(26px,4vw,36px)}#family-dialog h3{margin:0 0 8px;font-size:20px}#family-dialog p{font-size:15px;line-height:1.55;margin:8px 0 16px;color:#797767}#family-dialog small{display:block;font-size:12px;line-height:1.5;color:#807b6c}#family-dialog button{cursor:pointer;min-height:44px}#family-dialog button:disabled{cursor:default}#family-dialog .small-button{font-size:13px;padding:10px 13px;white-space:normal}#family-dialog section+section{margin-top:22px}#family-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:16px 0 24px}#family-tabs button{padding:10px 4px;font-size:14px}
+#family-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}#family-dialog *{box-sizing:border-box;min-width:0}#family-dialog .dialog-heading{gap:16px}#family-dialog h2{font-size:clamp(26px,4vw,36px)}#family-dialog h3{margin:0 0 8px;font-size:20px}#family-dialog p{font-size:15px;line-height:1.55;margin:8px 0 16px;color:#797767}#family-dialog small{display:block;font-size:12px;line-height:1.5;color:#807b6c}#family-dialog button{cursor:pointer;min-height:44px}#family-dialog button:disabled{cursor:default}#family-dialog .small-button{font-size:13px;padding:10px 13px;white-space:normal}#family-dialog section+section{margin-top:22px}#family-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 0 24px}#family-tabs button{padding:10px 4px;font-size:14px}
 .family-emblem{display:inline-flex;width:48px;height:48px;flex-shrink:0;align-items:center;justify-content:center;border-radius:15px;background:color-mix(in srgb,var(--family-color) 17%,#fffdf4);border:1px solid color-mix(in srgb,var(--family-color) 45%,#fffdf4)}.family-emblem .game-art{width:34px;height:34px}.family-welcome{text-align:center;max-width:510px;margin:0 auto 24px}.family-welcome>.game-art{width:70px;height:70px;margin:4px auto 12px}.family-join-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}.family-join-grid form,.family-your-share,.family-extra,.family-invite{border:1px solid #ddd6c5;background:#f6f3e9;border-radius:18px;padding:18px}#family-dialog label,#family-dialog legend{display:block;font-size:14px;font-weight:700;margin-bottom:8px}#family-dialog input:not([type=radio]),#family-dialog select{width:100%;border:1px solid #cbc6b4;border-radius:12px;min-height:46px;padding:10px 12px;background:#fffdf6;color:#393d30;font:inherit;font-size:16px;margin-bottom:14px}#family-dialog fieldset{border:0;padding:0;margin:6px 0 16px}/* Emblem chooser (public/emblem-picker.js): one row of tiles with an arrow on each side. */
 .emblem-picker-row{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:6px}
 .family-emblems{position:relative;display:flex;gap:8px;padding:4px 3px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -222,3 +222,31 @@
 #family-tabs button{flex-direction:row;gap:7px;min-height:46px;padding:6px 10px}
 #family-tabs .game-art{width:24px;height:24px}
 @media(max-width:600px){#family-tabs button{flex-direction:column;gap:3px;min-height:54px;padding:5px 2px;font-size:11px}#family-tabs .game-art{width:22px;height:22px}}
+/* The family's own emblem and name on top, with the chat and the settings next to the close button. */
+.family-heading{align-items:center;gap:14px}
+.family-heading>div:not(.family-heading-actions){flex:1;min-width:0}
+.family-heading-emblem{flex:none}
+.family-heading-emblem[hidden],.family-heading-meta[hidden]{display:none}
+.family-heading-emblem .family-emblem{width:56px;height:56px}
+.family-heading-meta{margin:4px 0 0;color:#80776b;font-size:13px;font-weight:600}
+.family-heading-actions{display:flex;align-items:center;gap:8px;flex:none}
+.family-heading-actions .icon-button[hidden]{display:none}
+.family-heading-actions .icon-button .game-art{width:26px;height:26px;object-fit:contain}
+#family-settings.active{box-shadow:0 0 0 2px #c9a45a}
+/* A "!" on the tab where something waits for you. */
+#family-tabs button{position:relative}
+.family-tab-dot{position:absolute;right:6px;top:4px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif}
+.family-tab-dot[hidden]{display:none}
+/* This week: one clear Deliver button; lines you cannot help with yet folded under "Later". */
+.family-deliver{width:auto;min-height:38px;padding:8px 14px;font-size:13px}
+.family-later{margin:6px 0 14px;border:1px dashed #d8ccbd;border-radius:14px;background:#f8f4ee}
+.family-later>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;list-style:none;cursor:pointer}
+.family-later>summary::-webkit-details-marker{display:none}
+.family-later>summary>span{display:grid;flex:1}
+.family-later>summary small{color:#8a7c6a;font-size:12px}
+.family-later>summary .factory-chevron{width:18px;height:18px;color:#8a7c6a}
+.family-later[open]>summary .factory-chevron{transform:rotate(180deg)}
+.family-later .family-order{padding:0 10px 8px;opacity:.72}
+@media(max-width:600px){.family-heading-emblem .family-emblem{width:44px;height:44px}.family-heading-actions{gap:6px}.family-heading-actions .icon-button{width:40px;height:40px}}
+.family-settings-title{display:flex;align-items:center;gap:10px;margin:0 0 14px;font:700 19px 'Outfit',sans-serif}
+.family-settings-title .game-art{width:34px;height:34px}

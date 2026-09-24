@@ -894,3 +894,11 @@ on a field with work to do (ripe → harvest, water, care; never planting) works
 second finger turns it into a pinch. The fields are saved in one action `{type:'fields',action,ids}` (workFields in game/farm-state.js:
 skips fields where the work does not fit, each once, at most 60, free like tapping). Timer labels lost their outer water/care icon;
 the ring pulses when care opens. Tests: tests/swipe-harvest.test.mjs.
+Farm Family redesign (24 Sep 2026): the header is the family's own emblem and name with "4/10 farmers · 3 online · Invite-only",
+a chat button (opens the chat on Family, window.harvestChat) and a gear (Family settings: look and name, open or not, leave). Four
+tabs (This week, Sharing, Tournament, Members) with a yellow "!" where something waits (order rewards or goods you can deliver;
+tournament rewards). Inviting moved to the top of Members (leader), "Invite a friend" to its bottom. This week: one "Deliver N"
+button (+1 beside it); lines you cannot help with yet fold under "Later (n)" unless every open line waits. Events: a trophy only
+for a real finisher; "All goals done · qualifying" with what is missing (qualifyHint) and, for you, the coming reward. Chat tab
+counts sit on the tab corner on phones. Note: public/cloud/, cloud/ and dist-static/ in git are old build output (22 Sep);
+Vercel rebuilds everything, so they are never served live.

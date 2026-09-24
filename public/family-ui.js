@@ -46,15 +46,21 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const place=[...view.members].sort((a,b)=>b.points-a.points).findIndex(m=>m.isSelf)+1;
   // What you can hand in now comes first, then what still needs stock, and finished lines last.
   const order=([k,n])=>isDone([k,n])?2:!locked&&(state.inventory[k]??0)>0?0:1;
+  // A line you cannot help with yet (the good unlocks later, or needs a building you do not have) waits in one grey "Later" fold.
+  const waitsLater=([key,target])=>(o.filled[key]??0)<target&&(state.inventory[key]??0)<1&&!itemAvailable(state,key);
+  // …unless every open line waits: then nothing is folded away and the order shows as it is.
+  const open=lines.filter(l=>!isDone(l)),later=l=>waitsLater(l)&&open.some(x=>!waitsLater(x));
   const line=([key,target])=>{
    const filled=o.filled[key]??0,stock=state.inventory[key]??0,max=Math.min(stock,target-filled),done=filled>=target;
-   const actions=done?'<span class="family-done">✓ Complete</span>':locked?'':stock<1?'':[1,5,'max'].map(n=>actionButton('family_contribute',n==='max'?`Max (${num(max)})`:`+${n}`,`data-item="${key}" data-count="${n==='max'?max:n}"`,max<(n==='max'?1:n))).join('');
+   // One clear button for everything you can hand in now, and +1 beside it for a careful farmer.
+   const actions=done?'<span class="family-done">✓ Complete</span>':locked||stock<1?'':`${max>1?actionButton('family_contribute','+1',`data-item="${key}" data-count="1"`):''}<button type="button" class="primary-button family-deliver" data-family-action="family_contribute" data-item="${key}" data-count="${max}" ${disabled(max<1)}>Deliver ${num(max)}</button>`;
    return `<article class="family-order-line${done?' is-done':order([key,target])===0?' is-ready':''}">${art(key)}<div class="family-line-copy"><strong>${ITEMS[key].name}</strong><span>${num(filled)} / ${num(target)} delivered · ${stock<1&&!done&&!itemAvailable(state,key)?(levelOf(state)<itemUnlockLevel(key)?`unlocks at level ${itemUnlockLevel(key)}`:`needs the ${BUILDINGS[itemBuilding(key)]?.name??'right building'}`):`${num(stock)} in stock`}</span><progress max="${target}" value="${filled}" aria-label="${ITEMS[key].name} delivered"></progress></div><div class="family-line-actions">${actions}</div></article>`;
   };
   return `${rewardCards()}<section class="family-week-intro"><div><span class="eyebrow">${o.completed?'ORDER COMPLETE':'GROW SOMETHING TOGETHER'}</span><h3>This week’s Family Order</h3><p>Ends Monday, 00:00 UTC</p></div>${art('family-weekly-order')}</section>
   <section class="family-week-summary" aria-label="This week so far"><div class="family-week-stats"><div><strong>${complete} / ${lines.length}</strong><span>lines complete</span></div><div><strong>${num(view.yourPoints)}</strong><span>${view.yourPoints>0&&place?`your points · #${place} in family`:'your points'}</span></div><div><strong data-family-countdown>${formatDuration(Math.max(0,view.endsAt-farmNow()))}</strong><span>left</span></div></div><progress max="${Math.max(1,total)}" value="${delivered}" aria-label="Family Order delivered"></progress></section>
   <p class="family-notice">${locked?'You have already contributed to another family this week. You can help this family next week.':'Deliveries also count for the tournament. They cannot be taken back.'}</p>
-  <div class="family-order">${[...lines].sort((a,b)=>order(a)-order(b)).map(line).join('')}</div>
+  <div class="family-order">${lines.filter(l=>!later(l)).sort((a,b)=>order(a)-order(b)).map(line).join('')}</div>
+  ${lines.some(later)?`<details class="family-later"><summary><span><strong>Later (${lines.filter(later).length})</strong><small>These open with a higher level or another building</small></span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary><div class="family-order">${lines.filter(later).map(line).join('')}</div></details>`:''}
   <details class="family-rewards-fold" ${o.completed?'open':''}><summary><strong>Your rewards</strong><span>${complete} / ${lines.length} lines complete</span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary>${renderFamilyOrderRewards(view)}</details>
   ${tournamentLink()}
   <details class="family-extra"><summary><span><strong>Tournament goods</strong><small>${extrasOpen?'Extra points for your family':'Fill an order line to unlock'}</small></span></summary><p>Extra goods count for the weekly tournament only (no coins, XP or diamonds), as many as you like. They are handed in permanently.</p>${extrasOpen&&available.length?`<form data-family-form="extra"><label for="family-extra-item">Goods to contribute</label><select id="family-extra-item" name="item">${available.map(([key,item])=>`<option value="${key}" data-art="${key}" data-note="${num(state.inventory[key])} in stock · ${num(item.sell)} points each">${esc(item.name)}</option>`).join('')}</select><label for="family-extra-count">Quantity</label><input id="family-extra-count" name="count" type="number" inputmode="numeric" min="1" step="1" value="1" required><button class="small-button" ${disabled(locked)}>Contribute goods</button></form>`:extrasOpen?'<p>No spare goods in storage yet.</p>':''}</details>`;
@@ -64,20 +70,22 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const best=Math.max(1,...view.members.map(m=>m.points)),online=view.members.filter(m=>m.online).length,profiles=!!window.harvestProfiles;
   const menu=m=>view.family.leader&&!m.isSelf?`<details class="family-member-menu"><summary aria-label="Options for ${esc(m.username)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></summary><div class="family-member-menu-list">${actionButton('family_promote','Make leader',`data-member-id="${m.id}"`)}${actionButton('family_kick','Remove from family',`data-member-id="${m.id}" data-danger`)}</div></details>`:'';
   const row=m=>`<article class="family-member${m.isSelf?' is-self':''}"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId??'')}" ${profiles&&m.playerId?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online':'Offline'}"></span></span><span class="family-member-copy"><strong>${esc(m.username)}${vipBadge(m.vipExpiresAt,farmNow())}${m.isSelf?' <em>(you)</em>':''}${m.role==='leader'?'<span class="family-role">Leader</span>':''}</strong><small>Level ${m.level} · ${num(m.points)} points this week</small><span class="family-member-bar" aria-hidden="true"><span style="width:${Math.round(m.points/best*100)}%"></span></span></span>${profiles&&m.playerId?'<span class="family-sr-only">Open profile</span>':''}</button>${menu(m)}</article>`;
-  return `<div class="family-members-heading"><h3>Members</h3><span>${view.members.length} / ${view.config.maxMembers} farmers · ${online} online</span></div><div class="family-member-list">${[...view.members].sort((a,b)=>b.points-a.points||a.username.localeCompare(b.username)).map(row).join('')}</div><p class="family-footnote">A green dot means a farm action in the last 30 minutes.</p>`;
+  // The leader invites farmers right here, above the list; anyone can bring a friend who is new to the game (below it).
+  const invite=view.family.leader?`${inviteSearch.html()}${renderSentInvitations(view,farmNow(),actionButton)}`:'';
+  return `${invite}<div class="family-members-heading"><h3>Members</h3><span>${view.members.length} / ${view.config.maxMembers} farmers · ${online} online</span></div><div class="family-member-list">${[...view.members].sort((a,b)=>Number(b.online)-Number(a.online)||b.points-a.points||a.username.localeCompare(b.username)).map(row).join('')}</div><p class="family-footnote">A green dot means a farm action in the last 30 minutes.</p>${friendEntry}`;
  }
  // Help, gifts and requests (public/social-ui.js draws into this box and keeps it up to date itself).
  function sharing(){return '<div class="family-sharing" data-sharing-root aria-live="polite"></div>';}
  function tournament(){return renderFamilyTournament({view,now:farmNow(),emblem,rewards:rewardCards(),preview:prizePreview()});}
- // Managing the family, in blocks: invite, look and name, who can join, and leaving (quietly at the bottom).
+ // Anyone can bring a friend who is new to Harvest Tycoon (public/invite-ui.js), leader or not (bottom of Members).
+ const friendEntry=`<button type="button" class="family-share-entry family-invite-friend" data-invite-friend>${art('invite-friends')}<span><strong>Invite a friend to Harvest Tycoon</strong><small>At level 10 you both get 150 diamonds</small></span><i data-lucide="chevron-right" data-line-icon></i></button>`;
+ // The gear in the header (settings): look and name, who can join, and leaving (quietly at the bottom).
  function settings(){
   const f=view.family,renameLater=f.renameAt>farmNow();
-  const header=`<div class="family-settings-header"><span data-look-emblem>${emblem(f.emblem)}</span><div><h3 data-look-name>${esc(f.name)}</h3><p>${f.members} / ${view.config.maxMembers} farmers · ${f.open?'Open to new farmers':'Invite-only'}</p></div></div>`;
+  const header=`<h3 class="family-settings-title">${art('family-management')}Family settings</h3><div class="family-settings-header"><span data-look-emblem>${emblem(f.emblem)}</span><div><h3 data-look-name>${esc(f.name)}</h3><p>${f.members} / ${view.config.maxMembers} farmers · ${f.open?'Open to new farmers':'Invite-only'}</p></div></div>`;
   const leave=`<section class="family-leave"><h3>Leave this family</h3><p>You will wait 48 hours before joining or creating another family. This week’s contributions stay with this family.${f.leader?' Leadership passes to the longest-standing member.':''}</p>${actionButton('family_leave','Leave family')}</section>`;
-  // Anyone can bring a friend who is new to Harvest Tycoon (public/invite-ui.js), leader or not.
-  const friend=`<button type="button" class="family-share-entry family-invite-friend" data-invite-friend>${art('invite-friends')}<span><strong>Invite a friend to Harvest Tycoon</strong><small>At level 10 you both get 150 diamonds</small></span><i data-lucide="chevron-right" data-line-icon></i></button>`;
-  if(!f.leader)return `${header}<p class="family-notice">Your family leader can invite farmers, choose the emblem and rename the family.</p>${friend}${leave}`;
-  return `${header}${inviteSearch.html()}${friend}${renderSentInvitations(view,farmNow(),actionButton)}
+  if(!f.leader)return `${header}<p class="family-notice">Your family leader can invite farmers, choose the emblem and rename the family.</p>${leave}`;
+  return `${header}
   <form data-family-look class="family-card family-look"><h3>Look and name</h3>${emblemPickerMarkup({emblems:FAMILY_EMBLEMS,checkedId:f.emblem,legend:'Choose an emblem',nameOf:emblemName,tile:emblem,esc})}
   <label for="family-rename">Family name</label><input id="family-rename" name="name" value="${esc(f.name)}" minlength="3" maxlength="20" required ${renameLater?'disabled':''}><small>${renameLater?`You can rename again in ${formatDuration(f.renameAt-farmNow())}.`:'You can rename once every seven days.'}</small>
   <div class="family-look-save" data-look-save hidden><button type="button" class="link-button" data-look-undo>Undo</button><button class="primary-button">Save changes</button></div></form>
@@ -88,13 +96,19 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   if(!dialog.open)return;
   inviteSearch.unmount();
   const focused=document.activeElement,focusId=focused?.id,selection=focused?.selectionStart;
-  const heading=document.getElementById('family-subtitle');heading.textContent=view?.family?view.family.name:'A place to grow together';
+  // The family's own emblem and name on top, with who is in it; the chat and the settings sit beside the close button.
+  const f=view?.family,heading=document.getElementById('family-subtitle');
+  heading.textContent=f?'FARM FAMILY':'A place to grow together';document.getElementById('family-title').textContent=f?f.name:'Farm Family';
+  const badge=document.getElementById('family-heading-emblem');badge.hidden=!f;if(f)badge.innerHTML=emblem(f.emblem);
+  const meta=document.getElementById('family-meta');meta.hidden=!f;if(f)meta.textContent=`${view.members.length} / ${view.config.maxMembers} farmers · ${view.members.filter(m=>m.online).length} online · ${f.open?'Open to new farmers':'Invite-only'}`;
+  document.getElementById('family-chat').hidden=!f||!window.harvestChat;document.getElementById('family-settings').hidden=!f;
+  dialog.querySelector('#family-settings').classList.toggle('active',tab==='settings');
   document.getElementById('family-feedback').textContent=error;
   document.getElementById('family-tabs').hidden=!view?.family;
   document.querySelectorAll('[data-family-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.familyTab===tab);b.setAttribute('aria-selected',String(b.dataset.familyTab===tab));});
   if(!view){content.innerHTML=`<p class="family-loading">${error?'Your family could not be loaded.':'Opening the Family Hall…'}</p><button id="family-retry" class="small-button">Try again</button>`;content.querySelector('#family-retry').onclick=()=>load(true);return;}
   social.unmount();
-  content.innerHTML=view.family?({week,sharing,members,tournament,family:settings}[tab])():landing();
+  content.innerHTML=view.family?(({week,sharing,members,tournament,settings}[tab])??week)():landing();
   content.querySelectorAll('[data-family-action]').forEach(b=>b.onclick=async()=>{
    const type=b.dataset.familyAction;
    // The game's own confirmation (not the browser's), red for what is hard to undo.
@@ -146,8 +160,13 @@ export function createFamilyUI({state,runAction,notify,isReady}){
    if(tab!=='sharing'&&(!content.contains(document.activeElement)||!(['INPUT','SELECT'].includes(document.activeElement.tagName)||document.activeElement.closest('[data-emblem-picker]'))))render();
   }catch(e){if(ticket===generation){error=e.message;lastRead=Date.now();render();}}finally{reading=false;refresh();}
  }
+ // A "!" on the tab where something waits for you: a reward to collect, or goods you can deliver to the order.
+ function tabDots(){
+  const waiting={week:Boolean(view?.rewards?.some(r=>r.kind==='order')||view?.order&&!view.contributionLocked&&Object.entries(view.order.lines).some(([k,n])=>(view.order.filled[k]??0)<n&&(state.inventory[k]??0)>0)),tournament:Boolean(view?.rewards?.some(r=>r.kind!=='order'))};
+  document.querySelectorAll('[data-family-tab]').forEach(b=>{const d=b.querySelector('.family-tab-dot');if(d)d.hidden=!waiting[b.dataset.familyTab];});
+ }
  function refresh(){
-  refreshVipBadges(dialog,farmNow());
+  refreshVipBadges(dialog,farmNow());tabDots();
   button.hidden=!familyUnlocked(state);if(button.hidden)return;
   dot.hidden=!(view?.invitation||view?.rewards.length||view?.order&&!view.contributionLocked&&Object.entries(view.order.lines).some(([k,n])=>(view.order.filled[k]??0)<n&&(state.inventory[k]??0)>0));
   const countdown=dialog.querySelector('[data-family-countdown]');if(countdown&&view)countdown.textContent=formatDuration(Math.max(0,view.endsAt-farmNow()));
@@ -163,6 +182,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  document.addEventListener('pointerdown',event=>{if(!event.target.closest?.('.family-member-menu'))content.querySelectorAll('.family-member-menu[open]').forEach(menu=>menu.open=false);});
  dialog.addEventListener('keydown',event=>{const open=content.querySelector('.family-member-menu[open]');if(event.key==='Escape'&&open){event.preventDefault();event.stopPropagation();open.open=false;open.querySelector('summary').focus();}});
  button.onclick=open;document.querySelectorAll('[data-family-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.familyTab;error='';render();});
+ document.getElementById('family-settings').onclick=()=>{tab=tab==='settings'?'members':'settings';error='';render();content.scrollTop=0;dialog.scrollTop=0;};
+ document.getElementById('family-chat').onclick=()=>{dialog.close();window.harvestChat?.open({tab:'family'});};
  window.addEventListener('harvest-avatar-changed',()=>{lastRead=0;void load(true);});
  const timer=setInterval(refresh,1000);window.addEventListener('pagehide',()=>{clearInterval(timer);inviteSearch.unmount();},{once:true});
  return {open,refresh};
