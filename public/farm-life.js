@@ -27,8 +27,8 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  for(const [x,z,w,d,h,rotation] of [[-34,-21,25,20,5,.4],[-24,-34,26,21,6,1.1],[-37,10,20,24,3,1.5]])scenery('landscape_004',x,z,{width:wide(w),depth:wide(d),height:h,rotation,y:-.25});
  for(const [x,z,w,d,h] of [[-43,-39,37,27,10],[-9,-53,38,23,9],[26,-47,35,22,8]])scenery('mountain_008',x,z,{width:wide(w),depth:wide(d),height:h,y:-.6});
  scenery('mountain_009',-46,-7,{width:wide(21),depth:wide(30),height:5,y:-.2});
- // Neighbouring agricultural strips echo the supplied demo without adding timers.
- for(const [name,x,z,w,d,rotation] of [['field_005',-27,3,12,20,0],['field_004',-27,23,13,15,0],['field_005',15,29,25,11,0],['field_004',-13,-32,20,11,0]])scenery(name,x,z,{width:wide(w),depth:wide(d),height:.45,rotation,y:.01});
+ // Neighbouring agricultural strips echo the supplied demo without adding timers. (The west one stops short of the Pig Farm's pen.)
+ for(const [name,x,z,w,d,rotation] of [['field_005',-27,5.8,12,14.4,0],['field_004',-27,23,13,15,0],['field_005',15,29,25,11,0],['field_004',-13,-32,20,11,0]])scenery(name,x,z,{width:wide(w),depth:wide(d),height:.45,rotation,y:.01});
  // A turned road runs along the model's own length, so it has no pointed ends (the lane to the Trade Depot).
  for(const road of ROADS.slice(3)){const size=roadSize(road);scenery('road_001',road.x,road.z,road.turned?{width:size.depth,depth:size.width,height:road.height,y:road.y,rotation:Math.PI/2}:{...size,height:road.height});}
  zone(null);
