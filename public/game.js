@@ -522,9 +522,10 @@ function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.q
 let toolsBox=null,hudShift=0;
 function measureTools(){
  const tools=document.querySelector('.side-tools');if(!tools||mobileLayout.matches){toolsBox=null;hudShift=0;return;}
- const t=tools.getBoundingClientRect(),w=world.getBoundingClientRect();toolsBox={left:t.left-w.left,right:t.right-w.left,top:t.top-w.top,bottom:t.bottom-w.top};
- const guide=document.querySelector('.beginner-card'),open=guide&&!guide.hidden&&$('quest-collapse')?.getAttribute('aria-expanded')!=='false';
- hudShift=(toolsBox.right-(open?w.right-guide.getBoundingClientRect().left:0))/2;
+ const t=tools.getBoundingClientRect(),w=world.getBoundingClientRect();if(!t.width){toolsBox=null;hudShift=0;return;}   // not on screen
+ toolsBox={left:t.left-w.left,right:t.right-w.left,top:t.top-w.top,bottom:t.bottom-w.top};
+ const guide=document.querySelector('.beginner-card'),g=guide&&!guide.hidden&&$('quest-collapse')?.getAttribute('aria-expanded')!=='false'?guide.getBoundingClientRect():null;
+ hudShift=(toolsBox.right-(g?.width?w.right-g.left:0))/2;
 }
 const behindTools=(x,y,half)=>Boolean(toolsBox)&&x+half>toolsBox.left&&x-half<toolsBox.right&&y>toolsBox.top&&y-50<toolsBox.bottom;
 function resize(){
