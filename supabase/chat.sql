@@ -220,6 +220,18 @@ begin
   values(m.id,m.channel,m.sender,m.sender_name,m.body,me,left(nullif(btrim(coalesce(p_reason,'')),''),120)) on conflict (message_id,reporter) do nothing;
 end $f$;
 
+-- Report a farmer (from their profile or a private chat): a report on their latest message you can read, so a moderator sees what
+-- they wrote. The same limits as reporting one message.
+create or replace function public.chat_report_player(p_player uuid, p_reason text) returns void language plpgsql security definer set search_path to '' as $f$
+declare me uuid:=(select auth.uid()); m uuid;
+begin
+ if me is null or coalesce((select auth.jwt()->>'is_anonymous')::boolean,false) then raise exception 'Sign in to use the chat.' using errcode='28000'; end if;
+ if p_player is null or p_player=me then raise exception 'Choose another farmer.' using errcode='22023'; end if;
+ select x.id into m from public.chat_messages x where x.sender=p_player and public.chat_can_read(x.channel) order by x.created_at desc limit 1;
+ if m is null then raise exception 'There is nothing from this farmer in your chats to report.' using errcode='22023'; end if;
+ perform public.chat_report(m,p_reason);
+end $f$;
+
 -- What a profile shows about chat: the moderator badge (the admin shows the same one), whether you blocked this farmer, whether
 -- you can send a private message, and for staff the farmer's chat status.
 create or replace function public.chat_player_status(p_player uuid) returns jsonb language plpgsql stable security definer set search_path to '' as $f$
@@ -338,7 +350,7 @@ end $f$;
 do $g$
 declare f text;
 begin
- foreach f in array array['chat_overview()','chat_send(text,text)','chat_mark_read(text)','chat_block(uuid,boolean)','chat_report(uuid,text)','chat_player_status(uuid)','chat_my_role()','chat_set_private(boolean)',
+ foreach f in array array['chat_overview()','chat_send(text,text)','chat_mark_read(text)','chat_block(uuid,boolean)','chat_report(uuid,text)','chat_report_player(uuid,text)','chat_player_status(uuid)','chat_my_role()','chat_set_private(boolean)',
   'chat_mod_reports()','chat_mod_delete(uuid)','chat_mod_dismiss(uuid)','chat_mod_sanction(uuid,integer,boolean,text)','staff_set_moderator(uuid,boolean)','chat_post_news(text,integer)','staff_list()','chat_set_levels(integer,integer)'] loop
   execute format('revoke execute on function public.%s from public, anon', f);
   execute format('grant execute on function public.%s to authenticated', f);

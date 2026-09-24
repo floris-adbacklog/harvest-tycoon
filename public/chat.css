@@ -35,7 +35,11 @@
 .chat-title-name{padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
 .chat-title-name:hover{text-decoration:underline;text-underline-offset:3px}
 .chat-back,.chat-block{flex-shrink:0;display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid #e1d6ca;border-radius:12px;background:#f6efe7;color:#6b5e49;cursor:pointer}
-.chat-back[hidden],.chat-block[hidden]{display:none}
+.chat-back[hidden],.chat-block[hidden],.chat-report[hidden]{display:none}
+.chat-report{flex-shrink:0;display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid #e1d6ca;border-radius:12px;background:#f6efe7;color:#6b5e49;cursor:pointer}
+.chat-report:hover{color:#a8741c;border-color:#e6cf9f}
+.chat-report svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.chat-report .game-art{width:26px;height:26px;object-fit:contain}
 .chat-back svg,.chat-block svg,.chat-more svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .chat-block:hover{color:#b3402a;border-color:#e8c3b8}
 .chat-block.is-on{background:#fbe6e0;border-color:#e8c3b8;color:#b3402a}

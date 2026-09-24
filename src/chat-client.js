@@ -34,6 +34,7 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   markRead:name=>rpc('chat_mark_read',{p_channel:name}),
   block:(player,on)=>rpc('chat_block',{p_player:player,p_on:on}),
   report:(message,reason=null)=>rpc('chat_report',{p_message:message,p_reason:reason}),
+  reportPlayer:(player,reason=null)=>rpc('chat_report_player',{p_player:player,p_reason:reason}),
   playerStatus:player=>rpc('chat_player_status',{p_player:player}),
   setPrivate:on=>rpc('chat_set_private',{p_on:on}),
   // Staff (moderators and the admin); the database refuses anyone else.

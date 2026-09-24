@@ -31,6 +31,7 @@ const EMPTY={
 const ICON={
  back:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>',
  block:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg>',
+ report:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
  more:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>'
 };
 
@@ -45,7 +46,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   <button type="button" role="tab" data-chat-tab="family">Family<b class="chat-count" hidden></b></button>
   <button type="button" role="tab" data-chat-tab="private">Private<b class="chat-count" hidden></b></button>
  </div><button type="button" class="icon-button chat-close" aria-label="Close chat"><i data-lucide="x"></i></button></div>
- <div class="chat-head"><button type="button" class="chat-back" aria-label="All private chats" hidden>${ICON.back}</button><h2 id="chat-title">Global chat</h2><button type="button" class="chat-block" hidden>${ICON.block}</button></div>
+ <div class="chat-head"><button type="button" class="chat-back" aria-label="All private chats" hidden>${ICON.back}</button><h2 id="chat-title">Global chat</h2><button type="button" class="chat-report" hidden>${ICON.report}</button><button type="button" class="chat-block" hidden>${ICON.block}</button></div>
  <form class="chat-compose" hidden><input type="text" maxlength="200" autocomplete="off" enterkeyhint="send" aria-label="Your message"><select class="chat-hours" aria-label="Show the news for" title="How long everyone sees it" hidden><option value="6">6 h</option><option value="12">12 h</option><option value="24" selected>24 h</option><option value="48">48 h</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select><button type="submit" class="chat-send" aria-label="Send">${art('send')}</button></form>
  <div class="chat-find" hidden><input type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Find a farmer to message…" aria-label="Find a farmer to message"></div>
  <p class="chat-note" role="status" hidden></p>
@@ -53,7 +54,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  doc.body.append(dialog);
  const $=selector=>dialog.querySelector(selector);
  const form=$('.chat-compose'),input=form.querySelector('input'),hours=form.querySelector('.chat-hours'),sendButton=form.querySelector('.chat-send'),list=$('.chat-list'),noteEl=$('.chat-note');
- const title=$('#chat-title'),head=$('.chat-head'),back=$('.chat-back'),blockButton=$('.chat-block'),find=$('.chat-find'),findInput=find.querySelector('input');
+ const title=$('#chat-title'),head=$('.chat-head'),back=$('.chat-back'),blockButton=$('.chat-block'),reportButton=$('.chat-report'),find=$('.chat-find'),findInput=find.querySelector('input');
  // The Private tab: find any farmer by name and write to them, without opening their profile first (the same search as the leaderboard).
  let found=null,findTimer=null,findTicket=0;
 
@@ -134,10 +135,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  }
  function paint(){
   dialog.querySelectorAll('[data-chat-tab]').forEach(tabButton=>{const on=tabButton.dataset.chatTab===tab;tabButton.classList.toggle('active',on);tabButton.setAttribute('aria-selected',String(on));});
-  back.hidden=!(tab==='private'&&thread);blockButton.hidden=back.hidden;
+  back.hidden=!(tab==='private'&&thread);blockButton.hidden=reportButton.hidden=back.hidden;
   find.hidden=!(tab==='private'&&!thread&&overview?.privateOn!==false);
   // The tab already says where you are: a heading only for a family (its name) and a private chat (who with).
   head.classList.toggle('is-quiet',!((tab==='family'&&overview?.family)||(tab==='private'&&thread)));
+  if(thread){reportButton.setAttribute('aria-label',`Report ${thread.otherName}`);reportButton.title=reportButton.getAttribute('aria-label');}
   if(thread){const off=blocked().has(thread.otherId);blockButton.setAttribute('aria-label',off?`Unblock ${thread.otherName}`:`Block ${thread.otherName}`);blockButton.title=blockButton.getAttribute('aria-label');blockButton.classList.toggle('is-on',off);}
   title.innerHTML=tab==='family'?esc(overview?.family?.name??'Family chat'):tab==='private'&&thread?`Chat with ${profileButton(thread.otherId,`Open ${thread.otherName}’s profile`,esc(thread.otherName),'chat-title-name')}`:esc(TITLES[tab]);
   const compose=composeState();
@@ -228,6 +230,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // again straight away (Send message on a profile opened from the chat) that report must not stop the new one.
  dialog.addEventListener('close',()=>{closeMenu();if(!dialog.open){loading++;busy=false;}});
  blockButton.onclick=()=>thread&&setBlock(thread.otherId,thread.otherName,!blocked().has(thread.otherId));
+ reportButton.onclick=()=>thread&&reportPlayer(thread.otherId,thread.otherName);
  list.addEventListener('click',event=>{
   const profile=event.target.closest('[data-profile]'),threadButton=event.target.closest('[data-thread]'),more=event.target.closest('[data-more]');
   if(more){openMenu(more);return;}
@@ -288,6 +291,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    paint();scheduleOverview(200);note(on?`${name} is blocked.`:`${name} is unblocked.`);return true;
   }catch(error){note(error.message);return false;}
  }
+ // Report a farmer: the moderators get their latest message you can see.
+ async function reportPlayer(id,name){
+  if(!await confirmAction({title:`Report ${name}?`,description:'A moderator will read what they wrote to you or in the chat. Thank you for keeping the valley friendly.',confirmLabel:'Report',picture:'admin'}))return false;
+  try{await chat.reportPlayer(id);note('Thanks, a moderator will take a look.');return true;}catch(error){note(error.message);return false;}
+ }
  async function sanction(id,name,minutes,ban,{lift=false}={}){
   const what=lift?`Let ${name} chat again?`:ban?`Ban ${name} from the chat?`:`Mute ${name} for ${minutes>=1440?'1 day':'1 hour'}?`;
   if(!await confirmAction({title:what,description:lift?'They can send messages again straight away.':'Only the chat: their farm is not affected. They get a note about it.',confirmLabel:lift?'Allow':ban?'Ban':'Mute',tone:lift?'':'danger',picture:'admin'}))return false;
@@ -309,7 +317,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    const staffTools=status.staff&&!status.moderator,admin=role()==='admin';
    const chatState=status.banned?'Chat closed (banned)':status.mutedUntil?`Muted until ${new Date(status.mutedUntil).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'Can chat';
    box.hidden=false;
-   box.innerHTML=`<div class="farmer-chat-row">${status.canMessage?`<button type="button" class="primary-button farmer-chat-send" data-chat="message">${art('letter')}Send message</button>`:''}<button type="button" class="small-button" data-chat="${status.blocked?'unblock':'block'}">${status.blocked?'Unblock':'Block'}</button></div>`
+   box.innerHTML=`<div class="farmer-chat-row">${status.canMessage?`<button type="button" class="primary-button farmer-chat-send" data-chat="message">${art('letter')}Send message</button>`:''}<button type="button" class="small-button" data-chat="report">Report</button><button type="button" class="small-button" data-chat="${status.blocked?'unblock':'block'}">${status.blocked?'Unblock':'Block'}</button></div>`
     +(staffTools||(admin&&status.moderator)?`<div class="farmer-mod-tools"><span class="farmer-mod-title">${art('admin')}Moderation${staffTools?` · <b>${esc(chatState)}</b>`:''}</span><div class="farmer-mod-buttons">${staffTools?`<button type="button" class="small-button" data-chat="mute60">Mute 1 hour</button><button type="button" class="small-button" data-chat="mute1440">Mute 1 day</button>${status.banned||status.mutedUntil?'<button type="button" class="small-button" data-chat="lift">Allow chat</button>':'<button type="button" class="small-button is-danger" data-chat="ban">Ban from chat</button>'}`:''}${admin?`<button type="button" class="small-button" data-chat="${status.moderator?'unmod':'mod'}">${status.moderator?'Remove moderator':'Make moderator'}</button>`:''}</div></div>`:'');
    refreshArt();
    box.onclick=async event=>{
@@ -317,6 +325,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
     const name=player.username,redraw=()=>{statusCache.delete(id);if(isCurrent())decorateProfile(player,content,{isCurrent});};
     try{
      if(key==='message'){open({with:{id,name,avatar:player.avatarId}});return;}
+     if(key==='report'){if(await reportPlayer(id,name)){const s=content.ownerDocument.getElementById('farmer-profile-status');if(s)s.textContent='Thanks, a moderator will take a look.';}return;}
      if(key==='block'||key==='unblock'){if(await setBlock(id,name,key==='block'))redraw();return;}
      if(key==='mod'||key==='unmod'){
       if(!await confirmAction({title:key==='mod'?`Make ${name} a moderator?`:`Remove ${name} as moderator?`,description:key==='mod'?'They can delete messages, mute and ban farmers from the chat, and open the Admin dashboard. They cannot give anything.':'They become a regular farmer again.',confirmLabel:key==='mod'?'Make moderator':'Remove',picture:'admin'}))return;
