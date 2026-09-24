@@ -244,7 +244,7 @@ function recordBeginnerAction(state,action,result,before){
  const m=state.onboarding.milestones;
  if(state.stats.harvested>before.harvested)m.harvest=true;
  if((state.stats.harvest_wheat??0)>before.wheat)m.wheat=true;
- if(action.type==='field'&&action.action==='plant'&&result.crop==='wheat'||action.type==='tractor'&&action.mode==='plant'&&action.crop==='wheat')m.plant=true;
+ if(action.type==='field'&&action.action==='plant'&&result.crop==='wheat'||action.type==='fields'&&action.action==='plant'&&result.crop==='wheat'||action.type==='tractor'&&action.mode==='plant'&&action.crop==='wheat')m.plant=true;
  if(state.stats.watered>before.watered)m.water=true;
  if(state.stats.tended>before.tended)m.tend=true;
  if(action.type==='sell'&&result.coins>0)m.sell=true;
@@ -831,19 +831,22 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  return {action,crop:harvested,quantity,xp,regrowing,...(first?{firstHarvest:FIRST_HARVEST_BONUS}:{})};
 }
 // A swipe over several fields (game.js): the same hand work on each, in the order they were swiped, in one save. A field where it
-// cannot be done right now (not ready yet, already watered, care not open yet) is skipped. Free, just like tapping them one by one.
+// cannot be done right now (not ready yet, already watered, care not open yet, already planted) is skipped. It costs what tapping
+// them one by one costs: nothing, or the seeds when planting (planting stops when the coins run out).
 export const SWIPE_MAX_FIELDS=60;
-export function workFields(state,action,ids,now=Date.now()){
- if(!['harvest','water','tend'].includes(action))throw new Error('Choose a valid tool.');
+export function workFields(state,action,ids,now=Date.now(),crop='corn'){
+ if(!['plant','harvest','water','tend'].includes(action))throw new Error('Choose a valid tool.');
  if(!Array.isArray(ids)||!ids.length||ids.length>SWIPE_MAX_FIELDS)throw new Error('Choose some fields.');
- const fields=[],seen=new Set();
+ if(action==='plant'){if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a valid crop.');if(!cropUnlocked(state,crop))throw new Error(cropUnlockHint(state,crop));}
+ const fields=[],seen=new Set();let short=false;
  for(const id of ids){
   if(!Number.isInteger(id)||id<0||id>=state.plots.length||seen.has(id))continue;seen.add(id);
   if(fieldTapAction(state.plots[id],now,action)!==action)continue;
-  fields.push({id,...actOnPlot(state,id,action,'corn',now)});
+  if(action==='plant'&&state.coins<seedCost(state,crop)){short=true;break;}
+  fields.push({id,...actOnPlot(state,id,action,crop,now)});
  }
- if(!fields.length)throw new Error(action==='harvest'?'No crops are ready to harvest there yet.':'Nothing to do on these fields right now.');
- return {action,fields,count:fields.length};
+ if(!fields.length)throw new Error(action==='harvest'?'No crops are ready to harvest there yet.':action==='plant'?(short?'Not enough coins. Sell some produce at the market.':'These fields are already planted.'):'Nothing to do on these fields right now.');
+ return {action,fields,count:fields.length,...(action==='plant'?{crop,cost:fields.reduce((sum,f)=>sum+f.cost,0),short}:{})};
 }
 export function sellCrops(state,item='all',now=Date.now(),day,category,quantity) {
  if(day!==undefined&&day!==utcDay(now))throw new Error('Market prices have refreshed. Check today’s prices before selling.');
@@ -1696,7 +1699,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'project_start':return startProject(state,now);
   case 'project_collect':return completeProject(state,now);
   case 'field':return actOnPlot(state,action.id,action.action,action.crop??'corn',now);
-  case 'fields':return workFields(state,action.action,action.ids,now);
+  case 'fields':return workFields(state,action.action,action.ids,now,action.crop??'corn');
   case 'sell':return sellCrops(state,action.item??'all',now,action.day,action.category,action.quantity);
   case 'produce':return startProduction(state,action.recipe,now,action.count);
   case 'collect':return collectProduction(state,action.building,now,action.jobId);

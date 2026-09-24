@@ -47,14 +47,25 @@ test('the server works the swiped fields in one save: only where the work fits, 
  assert.deepEqual(r.fields.map(f=>f.id),[0,1]);assert.equal(r.count,2);assert.ok(s.inventory.wheat>before);
  assert.equal(s.plots[0].crop,null);assert.equal(s.plots[2].crop,'wheat','the growing field is left alone');
  assert.throws(()=>applyFarmAction(s,{type:'fields',action:'harvest',ids:[2]},now),/No crops are ready/);
- assert.throws(()=>applyFarmAction(s,{type:'fields',action:'plant',ids:[3]},now),/valid tool/,'planting is never swiped (it costs coins)');
+ const empty=s.plots.findIndex((f,i)=>i>2&&!f.crop),coins=s.coins,p=applyFarmAction(s,{type:'fields',action:'plant',crop:'wheat',ids:[0,2,empty]},now);
+ assert.deepEqual(p.fields.map(f=>f.id),[0,empty],'field 2 is still growing');assert.equal(s.coins,coins-p.cost);assert.equal(s.plots[empty].crop,'wheat');
+ s.coins=0;
+ assert.throws(()=>applyFarmAction(s,{type:'fields',action:'plant',crop:'wheat',ids:[1]},now),/Not enough coins/,'planting stops when the coins run out');
+ assert.throws(()=>applyFarmAction(s,{type:'fields',action:'dig',ids:[1]},now),/valid tool/);
  assert.throws(()=>applyFarmAction(s,{type:'fields',action:'water',ids:Array.from({length:SWIPE_MAX_FIELDS+1},(_,i)=>i)},now),/Choose some fields/);
  const w=applyFarmAction(s,{type:'fields',action:'water',ids:[2]},now);assert.equal(w.count,1);assert.equal(s.plots[2].watered,true);
 });
 
 test('the game wires the swipe to one save and lights the swiped fields; labels lost their extra icon',()=>{
  const game=read('public/game.js');
- assert.match(game,/const result=await runAction\(\{type:'fields',action,ids\}\);/);
- assert.match(game,/return a==='harvest'\|\|a==='water'\|\|a==='tend'\?a:null;/,'harvest, water and care; never planting');
+  assert.match(game,/return a==='plant'\|\|a==='harvest'\|\|a==='water'\|\|a==='tend'\?a:null;/,'plant, harvest, water and care');
+ assert.match(game,/runAction\(\{type:'fields',action,ids,crop:selectedCrop\}\)/,'planting uses the chosen seed');
  assert.match(read('public/farm-audio.js'),/if\(action\.type==='fields'\)return/);
+});
+
+test('on a phone every timer stays visible: one that would cover another shrinks to just its ring',()=>{
+ const game=read('public/game.js'),css=read('public/retention.css');
+ assert.match(game,/const shrink=v\.label\.classList\.contains\('plot-timer'\)&&overlaps\(full\);/);
+ assert.ok(!/if\(overlaps\)v\.label\.hidden=true/.test(game),'no timer is hidden for overlapping any more');
+ assert.match(css,/\.plot-label\.plot-timer\.is-compact \.plot-timer-time\{display:none\}/);
 });

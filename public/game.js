@@ -524,7 +524,7 @@ async function interact(id,forcedAction){
 async function workSwept(action,ids){
  for(let tries=0;;tries++){
   try{
-   const result=await runAction({type:'fields',action,ids});
+   const result=await runAction({type:'fields',action,ids,crop:selectedCrop});
    const crops={};let xp=0,golden=0;
    for(const f of result.fields){
     particleBurst(f.id,action==='water');drawCrop(f.id);
@@ -534,6 +534,7 @@ async function workSwept(action,ids){
    if(action==='harvest')floatReward(last,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+floatChip('xp',`+${xp} XP`,'is-xp'));
    if(action==='water')floatReward(last,floatChip('water',result.count>1?`${result.count} fields · faster`:'+1 crop · faster'));
    if(action==='tend')floatReward(last,floatChip('care',`+${result.count} crop${result.count>1?'s':''}`));
+   if(action==='plant'){floatReward(last,floatChip(result.crop,result.count>1?`${result.count} planted`:'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));if(result.short)toast('Out of coins for more seeds. Sell some produce at the market.');}
    break;
   }catch(e){
    // A tap that was still saving finishes first; then the swipe goes.
@@ -656,15 +657,21 @@ function positionLabels(){
   v.label.hidden=point.z>1||point.z< -1||Math.abs(point.x)>1||Math.abs(point.y)>1;
  }
  if(mobileLayout.matches){
-  // Keep each label attached to its own plot; hide overlaps instead of moving
-  // a timer onto a neighbouring field. Harvest markers take priority.
-  const occupied=[];
+  // Keep each label attached to its own plot and never hide a timer: one that would cover another shrinks to just its ring (the
+  // crop and how far it has grown; a tap still works its field). Harvest markers come first. All sizes are read before any label
+  // changes, so the page is laid out once per pass.
+  const occupied=[],changes=[],COMPACT=30;
+  const overlaps=r=>occupied.some(o=>r.left<o.right+2&&r.right>o.left-2&&r.top<o.bottom+2&&r.bottom>o.top-2);
   const candidates=plots.map((v,i)=>({v,i})).filter(({v,i})=>state.plots[i].crop&&!v.label.hidden).sort((a,b)=>Number(b.v.lastReady)-Number(a.v.lastReady)||a.i-b.i);
   for(const {v} of candidates){
-   const rect=v.label.getBoundingClientRect();
-   const overlaps=occupied.some(r=>rect.left<r.right+4&&rect.right>r.left-4&&rect.top<r.bottom+4&&rect.bottom>r.top-4);
-   if(overlaps)v.label.hidden=true;else occupied.push(rect);
+   const now=v.label.getBoundingClientRect(),cx=(now.left+now.right)/2,compact=v.label.classList.contains('is-compact');
+   if(!compact){v.fullWidth=now.width;v.fullHeight=now.height;}
+   const w=v.fullWidth??now.width,h=v.fullHeight??now.height,full={left:cx-w/2,right:cx+w/2,top:now.bottom-h,bottom:now.bottom};
+   const shrink=v.label.classList.contains('plot-timer')&&overlaps(full);
+   occupied.push(shrink?{left:cx-COMPACT/2,right:cx+COMPACT/2,top:now.bottom-COMPACT,bottom:now.bottom}:full);
+   if(shrink!==compact)changes.push([v.label,shrink]);
   }
+  for(const [label,shrink] of changes)label.classList.toggle('is-compact',shrink);
  }
 }
 function pointerTarget(event){
@@ -905,9 +912,10 @@ async function init(){
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);
    },
-   // A swipe from a field with work to do: the fields light up as the finger passes, and all of them are worked in one save.
+   // A swipe from a field with work to do (plant, water, care, harvest): the fields light up as the finger passes, and all of them
+   // are worked in one save.
    sweep:{
-    action:target=>{const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool):null;return a==='harvest'||a==='water'||a==='tend'?a:null;},
+    action:target=>{const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool):null;return a==='plant'||a==='harvest'||a==='water'||a==='tend'?a:null;},
     add:target=>{swept.add(target.id);const v=plots[target.id];if(v)v.ring.visible=true;},
     end:(action,ids)=>{void workSwept(action,ids);}
    },
