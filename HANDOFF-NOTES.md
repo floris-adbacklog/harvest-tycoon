@@ -720,3 +720,10 @@ narrower) and the Beginner guide ends above them. The Leaderboard left the tool 
 (`src/ui.js`; hidden on phones, which open it from the More menu). The Starter Pack is a small button with a €2.99 tag
 next to the diamonds (`#starter-pack-chip`, `src/starter-pack-ui.js`); phones keep the corner tile. Invite a friend is a
 wide dialog like the other screens. Tests: `tests/desktop-hud.test.mjs`.
+
+Starter Pack server checks (2026-09-24): `src/starter-pack-ui.js` asked `diamond-checkout` for the catalog every minute
+for every open game (about 9,400 of 32,500 Edge Function calls a day, the Free plan allows 500,000 a month). It now asks
+when the game starts, when the offer is opened, after a purchase (`harvest-purchase-confirmed`) and 1.5 s after the
+farm reaches `STARTER_LEVEL` (watching `#level`); while the offer runs also every 15 minutes and on returning to the
+tab (at most every 15 minutes). A farm without a running offer is not asked again; the countdown runs locally.
+Tests: `tests/starter-pack-checks.test.mjs`.
