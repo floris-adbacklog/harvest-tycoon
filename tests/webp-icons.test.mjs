@@ -43,7 +43,8 @@ test('every sprite sheet reference (art() and the welcome-page CSS sheet) points
  for(const name of WEBP_SHEETS)assert.match(welcome,new RegExp(`/assets/icons/${name}\\.webp`));
 });
 test('pictures that were not converted still ask for a plain PNG (the extension swap is per-key, not global)',()=>{
- for(const key of ['familyhall-model','farmhouse','mill','dairy','coop','bakery','packing','windmill','stall','chores']){
+ // (The Family Hall render and the windmill joined the second, larger batch: see tests/speed-seo.test.mjs.)
+ for(const key of ['farmhouse','mill','dairy','coop','bakery','packing','stall','chores']){
   assert.match(art(key),new RegExp(`/assets/icons/${key}\\.png"`),`art('${key}') should still be a PNG`);
  }
 });

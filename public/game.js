@@ -536,10 +536,12 @@ function measureFarm(){
 }
 function positionLabels(){
  if(!camera)return;
+ // Read the view size once: reading it after moving a label would make the browser lay the page out again for every label.
+ const width=world.clientWidth,height=world.clientHeight;
  for(let i=0;i<plots.length;i++){
   const v=plots[i],p=state.plots[i],y=p.crop?Math.max(.7,(CROPS[p.crop].height+.55)*(CROPS[p.crop].perennial&&p.harvestCycles>0?1:progress(p,farmNow()))):0.4;
   const point=new THREE.Vector3(v.x,y,v.z).project(camera);
-  v.label.style.left=`${(point.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-point.y*.5+.5)*world.clientHeight}px`;
+  v.label.style.left=`${(point.x*.5+.5)*width}px`;v.label.style.top=`${(-point.y*.5+.5)*height}px`;
   v.label.hidden=point.z>1||point.z< -1||Math.abs(point.x)>1||Math.abs(point.y)>1;
  }
  if(mobileLayout.matches){
@@ -596,17 +598,18 @@ function positionBuildingLabels(){
  // A yard's pieces are greyed out with it: a building until its level, the Ranch and the Valley Market until theirs.
  for(const [key,list] of Object.entries(yardDecor)){const locked=BUILDINGS[key]?!buildingEligible(state,key):!featureUnlocked(state,key);for(const decor of list)setLocked(decor,locked);}
  if(windmillRotor)setLocked(windmillRotor,!buildingEligible(state,'windmill'));
- farmLife?.position(camera,world.clientWidth,world.clientHeight,farmNow());
+ const width=world.clientWidth,height=world.clientHeight;
+ farmLife?.position(camera,width,height,farmNow());
  for(const [key,v] of utilityViews){
   const locked=!featureUnlocked(state,key);setLocked(v.object,locked);
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.label.innerHTML=art(locked?'lock':key);v.label.setAttribute('aria-label',locked?`${v.info.name} (locked)`:`Open ${v.info.name}`);v.label.title=locked?`${v.info.name} · ${featureUnlockHint(key)}`:`${v.info.name} · ${v.info.hint}`;}
-  const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.82;
+  const p=new THREE.Vector3(v.x,v.height+.3,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*width}px`;v.label.style.top=`${(-p.y*.5+.5)*height}px`;v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.82;
  }
  for(const [key,v]of buildingViews){
   const locked=!buildingEligible(state,key),status=economy.status(key);setLocked(v.object,locked);
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.pin.innerHTML=art(locked?'lock':v.pinArt);v.label.setAttribute('aria-label',locked?`${BUILDINGS[key].name} (locked)`:`Open ${BUILDINGS[key].name}`);}
   const hint=locked?`${BUILDINGS[key].name} · ${status.text}`:'';if(v.label.title!==hint)v.label.title=hint;
-  const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*world.clientWidth}px`;v.label.style.top=`${(-p.y*.5+.5)*world.clientHeight}px`;v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82;v.label.classList.toggle('ready',status.kind==='ready');
+  const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera);v.label.style.left=`${(p.x*.5+.5)*width}px`;v.label.style.top=`${(-p.y*.5+.5)*height}px`;v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82;v.label.classList.toggle('ready',status.kind==='ready');
  }
 }
 function expandVisuals(){if(!ready)return;createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();}

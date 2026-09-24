@@ -1,10 +1,18 @@
 import {productionJobs} from './farm-state.js';
 // Original continuous music and procedural effects. No third-party recordings.
-const MUSIC_URL=new URL('./assets/audio/harvest-meadow.wav',import.meta.url);
+// The same 144-second loop twice: the FLAC is lossless (every sample identical, so the seamless loop stays seamless) at under a
+// quarter of the WAV's size. The WAV stays as the fallback for a browser that cannot fetch or decode the FLAC.
+const MUSIC_URLS=['./assets/audio/harvest-meadow.flac','./assets/audio/harvest-meadow.wav'].map(path=>new URL(path,import.meta.url));
 async function loadFarmMusic(context){
- const response=await fetch(MUSIC_URL);
- if(!response.ok)throw new Error('Music unavailable');
- return context.decodeAudioData(await response.arrayBuffer());
+ let failure;
+ for(const url of MUSIC_URLS){
+  try{
+   const response=await fetch(url);
+   if(!response.ok)throw new Error('Music unavailable');
+   return await context.decodeAudioData(await response.arrayBuffer());
+  }catch(error){failure=error;}
+ }
+ throw failure;
 }
 export const AUDIO_DEFAULTS=Object.freeze({enabled:true,ambience:22,effects:48});
 export const AUDIO_STORAGE_KEY='harvest-tycoon-audio-v1';

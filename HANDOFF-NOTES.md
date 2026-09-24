@@ -514,3 +514,42 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   Build button with the coin price only when it can be built ("You need N more coins" below it if short). A locked
   building shows the price as plain information instead of a greyed-out button. The buildings list says
   "Build for N coins".
+
+## Speed pass and home-page SEO (24 Sep 2026; website only, no farm-api deploy needed)
+- Music: public/assets/audio/harvest-meadow.flac (1.5 MB) is loaded first, the WAV (6.9 MB, sent uncompressed by
+  Vercel) only if the FLAC cannot be fetched or decoded. FLAC is lossless: its built-in checksum equals the WAV's
+  sample data, and Chrome decodes it with 0 samples different, so the seamless loop is unchanged.
+- Pictures: the 23 remaining pictures of 40 KB or more and the 5 place renders are now WebP (same pixel size, about a
+  quarter of the weight; checked side by side at 2x). The Buildings list and a building page ask
+  `pictureFile(name)` in public/visual-icons.js instead of hardcoding `.png` (it opened ~815 KB of PNG before). The
+  small building pictures (farmhouse, mill, dairy, coop, bakery, packing, stall, chores, factory) stay PNG. Every PNG
+  original stays on disk. A new picture: add the WebP next to the PNG and its name to the list in visual-icons.js.
+- Logo: every `<img>` uses harvest-tycoon-logo.webp (192 KB, full 1024 px) instead of the 696 KB PNG.
+- Code: refreshArt() only calls lucide.createIcons() when an icon is still undrawn (Lucide keeps data-lucide on its
+  svg, so it redrew every icon twice a second from the game loop). The map labels read the view size once per update
+  instead of once per label (a drag step went from about 3.2 to 1.65 ms here). The building status lines are only
+  written when their text changes.
+- SEO (public/play.html, which the build also serves as /): title "Harvest Tycoon — Free Online 3D Farming Game",
+  a 151-character description, canonical https://www.harvesttycoon.com/, Open Graph and Twitter card with
+  public/assets/og-image.jpg (1200×630: the welcome farm with the logo), and WebSite structured data.
+  public/robots.txt (everything open except the bare /farm.html frame) and public/sitemap.xml (/ and /privacy).
+- Favicon: /favicon.ico (16, 32, 48 px) and /assets/favicon-96.png (Google wants a multiple of 48 px), both made from
+  the app icon (assets/pwa/icon-512.png), linked from every page. Before, the tab icon was the 696 KB logo and
+  /favicon.ico was a 404.
+- Guard tests: tests/speed-seo.test.mjs.
+- Files that are not used by the live site (reported only, nothing removed):
+  - dist-static/ (304 files, 35 MB): build output. Vercel deletes and rebuilds it on every deploy, so the copy in git is
+    stale.
+  - public/cloud/ (5 files): also rebuilt on every deploy (vite, emptyOutDir).
+  - The old copies from before public/: assets/ (113 files, 20 MB), 29 .js/.css/.html files in the root, cloud/.
+  - About 60 release notes and test or build outputs in the root (*-TEST-OUTPUT.txt, *-BUILD-OUTPUT.txt,
+    EXPORT-CHECKSUMS.json, two rollback-test .sql files).
+  - The Next.js/vinext scaffold from the Sites era: app/, components/, hooks/, lib/, db/, drizzle/, examples/, build/,
+    vite.config.ts (it imports .openai/hosting.json, which does not exist), next.config.ts, drizzle.config.ts.
+    `npm run build/dev/start` use it; Vercel only runs build:static. Its packages (next, react, radix-ui, wrangler, ...)
+    are still installed on every Vercel build.
+  - public/file.svg, globe.svg, window.svg and favicon.svg (template leftovers).
+  - 9 tracked .DS_Store files. There is no .gitignore.
+- Not done, on purpose: long browser caching for /assets. Pictures have been replaced under the same name before
+  (coop.png, family-sharing.png, live-events.png), so a long cache would show old art after a deploy. Safe only if a
+  changed file always gets a new name.

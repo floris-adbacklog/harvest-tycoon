@@ -6,7 +6,8 @@
   <meta name="theme-color" content="#2f543b">
   <title>Harvest Tycoon — Grow your own little empire</title>
   <meta name="description" content="Your little farm. Your big adventure. Plant, water and harvest in a cozy 3D farming game.">
-  <link rel="icon" type="image/png" href="/assets/harvest-tycoon-logo.png">
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon-96.png">
   <script src="/app-mode.js"></script>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/beta.css">
@@ -38,7 +39,7 @@
     <div class="vignette" aria-hidden="true"></div>
     <div id="plot-labels"></div><div id="building-labels"></div>
     <header class="topbar">
-      <div class="brand"><img draggable="false" src="/assets/harvest-tycoon-logo.png" alt="Harvest Tycoon" width="260" height="260"></div>
+      <div class="brand"><img draggable="false" src="/assets/harvest-tycoon-logo.webp" alt="Harvest Tycoon" width="260" height="260"></div>
       <button id="journal-button" class="level-card" aria-label="Open farm journal and level rewards" aria-haspopup="dialog"><span class="level-star"><small class="level-caption">LVL</small><b id="level">1</b></span><div class="level-info"><div><strong id="level-name">Rookie farmer</strong><span id="xp-text">0 / 60 XP</span></div><progress id="xp-bar" max="60" value="0" aria-label="Experience toward the next level"></progress></div></button>
       <div class="resources"><div class="coin-counter" title="Coins"><span class="coin-icon"><i data-lucide="coins"></i></span><strong id="coins">180</strong><span class="resource-label">coins</span></div><button id="diamond-button" class="diamond-counter" aria-haspopup="dialog" aria-label="Open diamonds and boosts"><i data-lucide="gem"></i><strong id="diamonds">0</strong><span class="resource-label">diamonds</span><span aria-hidden="true">+</span></button><button class="icon-button" id="rookie-button" data-rookie-open aria-label="Beginner boost: fast starts with a gradual transition" aria-haspopup="dialog" title="Beginner boost" hidden><i data-game-art="hourglass"></i><span id="rookie-time" data-rookie-time></span></button><button class="icon-button" id="family-button" aria-label="Open Farm Family" aria-haspopup="dialog" title="Farm Family" hidden><i data-game-art="family-members"></i><span id="family-dot" hidden></span></button><button class="icon-button" id="sound-button" aria-label="Settings" aria-haspopup="dialog" title="Settings"><i data-lucide="settings" data-line-icon></i></button><button class="icon-button" id="help-button" aria-label="How to play" title="How to play"><i data-lucide="circle-help" data-line-icon></i></button><button class="icon-button" id="admin-button" aria-label="Open the admin dashboard" aria-haspopup="dialog" title="Admin dashboard" hidden><i data-lucide="shield" data-line-icon></i></button></div>
     </header>
@@ -69,7 +70,7 @@
     <div id="tooltip" class="plot-tooltip" hidden></div>
     <div id="loading" class="loading farm-loading" aria-labelledby="load-heading"><div class="farm-loading-card">
  <p class="farm-loading-eyebrow">A LITTLE FARM. BIG POSSIBILITIES.</p>
- <img class="farm-loading-logo" src="/assets/harvest-tycoon-logo.png" alt="Harvest Tycoon" width="1024" height="1024" fetchpriority="high" draggable="false">
+ <img class="farm-loading-logo" src="/assets/harvest-tycoon-logo.webp" alt="Harvest Tycoon" width="1024" height="1024" fetchpriority="high" draggable="false">
  <div class="farm-loading-crops" aria-hidden="true"><img src="/assets/icons/wheat.png" alt="" width="52" height="52"><img src="/assets/icons/apples.webp" alt="" width="52" height="52"><img src="/assets/icons/corn.png" alt="" width="52" height="52"></div>
  <h2 class="farm-loading-title" id="load-heading" role="status">Your farm is taking root.</h2><p class="farm-loading-subtitle">A little sunshine. A whole lot to grow.</p>
  <div class="farm-loading-progress"><div class="farm-loading-meta"><span id="load-text">Getting the fields ready</span><span id="load-percent" aria-hidden="true">0%</span></div><progress max="100" value="0" id="load-progress" aria-label="Farm loading progress"></progress></div>

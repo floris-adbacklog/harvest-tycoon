@@ -31,6 +31,7 @@ test('the places in the valley are listed with the buildings, each with what is 
  for(const key of ['valleymarket','ranch','estateworkshop','tradedepot','grandfair'])assert.match(ui,new RegExp(`${key}:'`),key);
  assert.match(ui,/<h3 class="catalog-heading">Places in the valley<\/h3>/);assert.match(ui,/foldLocked\(\$\('building-catalog'\),'\[data-open-place\]'/);
  assert.match(game,/onPlace:key=>openUtility\(key\)/);
- assert.match(ui,/<img src="\/assets\/icons\/place-\$\{key\}\.png" alt="">/,'a render of the place, like the building cards, not the painted icon');
- for(const key of ['valleymarket','ranch','estateworkshop','tradedepot','grandfair'])assert.ok(existsSync(new URL(`../public/assets/icons/place-${key}.png`,import.meta.url)),key);
+ assert.match(ui,/<img src="\$\{pictureFile\(`place-\$\{key\}`\)\}" alt="">/,'a render of the place, like the building cards, not the painted icon');
+ // Served as WebP; the PNG render it was made from stays on disk.
+ for(const key of ['valleymarket','ranch','estateworkshop','tradedepot','grandfair'])for(const ext of ['png','webp'])assert.ok(existsSync(new URL(`../public/assets/icons/place-${key}.${ext}`,import.meta.url)),`place-${key}.${ext}`);
 });

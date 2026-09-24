@@ -2,7 +2,7 @@ import {foldLocked} from './progression-ui.js';
 import {sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,diamondUpgradeCost,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rookieTimeLeft} from './rookie-ui.js';
-import {art,refreshArt} from './visual-icons.js';
+import {art,refreshArt,pictureFile} from './visual-icons.js';
 import {fieldPicker,bindFieldPicker} from './field-picker.js';
 import {confirmAction} from './confirm-dialog.js';
 const $=id=>document.getElementById(id);
@@ -46,7 +46,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function openSeeds(){renderSeeds();show('seed-dialog');}
  // The places in the valley that stand on the farm like buildings but work differently (the Valley Market, the Ranch and the
  // three wave-3 places): listed with the buildings, each with one line on what is waiting there, and opened like from the map.
- // The picture is a render of the place's own models (public/assets/icons/place-<key>.png), like the building cards.
+ // The picture is a render of the place's own models (public/assets/icons/place-<key>, served as WebP), like the building cards.
  const PLACES=Object.freeze({valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair'});
  const canPay=items=>Object.entries(items).every(([k,n])=>state.inventory[k]>=n);
  function placeStatus(key,now=farmNow()){
@@ -74,11 +74,11 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   const buildingLevel=key=>guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1;
   // Buildings with finished batches come first, so collecting is one tap away; the rest in the order they unlock.
   const readyFirst=key=>status(key).kind==='ready'?0:1;
-  $('building-catalog').innerHTML=Object.entries(BUILDINGS).sort(([a],[b])=>readyFirst(a)-readyFirst(b)||buildingLevel(a)-buildingLevel(b)).map(([key,b])=>{const s=status(key),picture=key==='familyhall'?'familyhall-model':key;const sub=key==='familyhall'?'':!buildingUnlocked(state,key)?'<small>Not built yet</small>':`<small>Level ${state.buildings[key].level}</small>`;return `<button class="building-card" data-open-building="${key}"><span class="building-card-art"><img src="/assets/icons/${picture}.png" alt=""></span><span class="building-card-info"><strong>${b.name}</strong>${sub}<span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
+  $('building-catalog').innerHTML=Object.entries(BUILDINGS).sort(([a],[b])=>readyFirst(a)-readyFirst(b)||buildingLevel(a)-buildingLevel(b)).map(([key,b])=>{const s=status(key),picture=key==='familyhall'?'familyhall-model':key;const sub=key==='familyhall'?'':!buildingUnlocked(state,key)?'<small>Not built yet</small>':`<small>Level ${state.buildings[key].level}</small>`;return `<button class="building-card" data-open-building="${key}"><span class="building-card-art"><img src="${pictureFile(picture)}" alt=""></span><span class="building-card-info"><strong>${b.name}</strong>${sub}<span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
   if(guidedFarm(state))foldLocked($('building-catalog'),'[data-open-building]',b=>!buildingEligible(state,b.dataset.openBuilding),'Buildings to unlock');
   normalizeFarm(state,farmNow());
   const placeFirst=key=>placeStatus(key).kind==='ready'?0:1,places=Object.keys(PLACES).sort((a,b)=>placeFirst(a)-placeFirst(b)||FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),openPlaces=places.filter(k=>featureUnlocked(state,k));
-  $('building-catalog').insertAdjacentHTML('beforeend',`${openPlaces.length||!guidedFarm(state)?'<h3 class="catalog-heading">Places in the valley</h3>':''}${places.map(key=>{const s=placeStatus(key);return `<button class="building-card is-place" data-open-place="${key}"><span class="building-card-art"><img src="/assets/icons/place-${key}.png" alt=""></span><span class="building-card-info"><strong>${FEATURE_NAMES[key]}</strong><span class="building-status ${s.kind}" data-place-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('')}`);
+  $('building-catalog').insertAdjacentHTML('beforeend',`${openPlaces.length||!guidedFarm(state)?'<h3 class="catalog-heading">Places in the valley</h3>':''}${places.map(key=>{const s=placeStatus(key);return `<button class="building-card is-place" data-open-place="${key}"><span class="building-card-art"><img src="${pictureFile(`place-${key}`)}" alt=""></span><span class="building-card-info"><strong>${FEATURE_NAMES[key]}</strong><span class="building-status ${s.kind}" data-place-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('')}`);
   if(guidedFarm(state))foldLocked($('building-catalog'),'[data-open-place]',b=>!featureUnlocked(state,b.dataset.openPlace),'Places to unlock');
   $('building-catalog').querySelectorAll('[data-open-building]').forEach(b=>b.addEventListener('click',()=>openBuilding(b.dataset.openBuilding)));
   $('building-catalog').querySelectorAll('[data-open-place]').forEach(b=>b.addEventListener('click',()=>{$('buildings-dialog').close();onPlace?.(b.dataset.openPlace);}));icons();
@@ -89,7 +89,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(!currentBuilding)return;
   const picker=$('fertilizer-field-picker'),pickerOpen=picker?.open,pickerScroll=picker?.querySelector('.field-picker-options')?.scrollTop??0;
   const key=currentBuilding,b=BUILDINGS[key],bs=state.buildings[key],buildCost=buildingCost(state,key);
-  let content=`<div class="building-hero"><div class="building-image"><img src="/assets/icons/${key}.png" alt=""></div><div><span class="eyebrow">${key==='farmhouse'||buildingUnlocked(state,key)?`LEVEL ${bs.level}`:'NOT BUILT YET'}${key==='farmhouse'?' · YOUR HOMESTEAD':' · FARM PRODUCTION'}</span><h2 id="building-title">${b.name}</h2><p>${b.tagline}</p></div></div>`;
+  let content=`<div class="building-hero"><div class="building-image"><img src="${pictureFile(key)}" alt=""></div><div><span class="eyebrow">${key==='farmhouse'||buildingUnlocked(state,key)?`LEVEL ${bs.level}`:'NOT BUILT YET'}${key==='farmhouse'?' · YOUR HOMESTEAD':' · FARM PRODUCTION'}</span><h2 id="building-title">${b.name}</h2><p>${b.tagline}</p></div></div>`;
   // Shared by both the pre-purchase preview and the working recipe list below: the Factory repeats every other
   // building's whole catalogue, so both of its recipe lists get grouped and collapsed by source; every other
   // building's own, much shorter list stays exactly the flat list it always was.
@@ -268,7 +268,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(day!==lastMarketDay){lastMarketDay=day;if($('market-dialog').open)renderMarket();if($('seed-dialog').open)renderSeeds();if($('building-dialog').open)renderBuilding();}
   if($('market-dialog').open)marketCountdown(now);
   const coinBoost=`${state.boosts.coinsUntil>now}:${vipActive(state,now)}`;if(lastCoinBoost!==coinBoost){lastCoinBoost=coinBoost;if($('market-dialog').open)renderMarket();if($('seed-dialog').open)renderSeeds();if($('building-dialog').open)renderBuilding();}
-  document.querySelectorAll('[data-building-status]').forEach(el=>{const s=status(el.dataset.buildingStatus,now);el.textContent=s.text;el.className=`building-status ${s.kind}`;});
+  document.querySelectorAll('[data-building-status]').forEach(el=>{const s=status(el.dataset.buildingStatus,now),kind=`building-status ${s.kind}`;if(el.textContent!==s.text)el.textContent=s.text;if(el.className!==kind)el.className=kind;});
   // A building that finishes while the list is open moves to the top; the places keep their line up to date.
   const readyKeys=Object.keys(BUILDINGS).filter(key=>status(key,now).kind==='ready').join();
   if($('buildings-dialog').open&&readyKeys!==lastReadyKeys){const y=$('buildings-dialog').scrollTop;renderCatalog();$('buildings-dialog').scrollTop=y;}

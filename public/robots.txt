@@ -1,0 +1,5 @@
+User-agent: *
+# The farm itself (/farm.html) only works inside the signed-in page; on its own it is an empty screen.
+Disallow: /farm.html
+
+Sitemap: https://www.harvesttycoon.com/sitemap.xml
