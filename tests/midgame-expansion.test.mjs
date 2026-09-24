@@ -67,7 +67,9 @@ test('the four yards stand on the new ground east of the coop, clear of the road
   assert.ok(!roadRects().some(r=>x+east>r.minX&&x+west<r.maxX&&z+south>r.minZ&&z+north<r.maxZ),`${id} is off the roads`);
   for(const other of YARDS.filter(o=>o!==id)){const [ox,oz]=anchorAt(other);assert.ok(Math.hypot(x-ox,z-oz)>=7,`${id} and ${other}`);}
  }
- const trunk=roadRects()[0];assert.ok(trunk.maxX>=Math.max(...YARDS.map(id=>anchorAt(id)[0])),'the trunk road runs on to them');
+ // The trunk road, and after it the road out of the valley on the same line, run on past them.
+ const east=Math.max(...roadRects().filter(r=>r.horizontal&&Math.abs((r.minZ+r.maxZ)/2-roadRects()[0].minZ-(roadRects()[0].maxZ-roadRects()[0].minZ)/2)<1).map(r=>r.maxX));
+ assert.ok(east>=Math.max(...YARDS.map(id=>anchorAt(id)[0])),'the road runs on to them');
  // A tree that falls in a yard is moved out of it, and the spot it gets is not on a road.
  for(const id of YARDS){const [x,z]=anchorAt(id),[px,pz]=clearOfYards(x+1,z+1);assert.ok(outsideYardExtents(px,pz),id);}
 });

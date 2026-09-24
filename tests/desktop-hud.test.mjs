@@ -38,6 +38,6 @@ test('the Starter Pack is a small button next to the diamonds on a computer, the
 
 test('desktop building labels are compact: the name, and a second line only when there is news',()=>{
  const css=read('public/desktop-hud.css');
- assert.match(css,/\.building-label \.building-status\.idle\{display:none\}/,'"Ready to work · 0 / 5 slots" said nothing');
+ assert.match(css,/\.building-label \.building-status\.idle,\.building-label \.building-status\.family\{display:none\}/,'"Ready to work · 0 / 5 slots" and the Family Hall line said nothing new');
  assert.match(css,/\.building-label\{gap:6px;padding:4px 10px 4px 4px;border-radius:10px\}/);
 });

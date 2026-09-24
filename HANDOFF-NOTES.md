@@ -817,3 +817,9 @@ harvest_social items list and to "goods produced" (harvest_public_metrics); live
 Tests: `tests/scenery.test.mjs` (Pig Farm and start-up models), counts in factory/farm tests.
 Desktop building labels (2026-09-24): compact, and an idle building shows only its name (`.building-status.idle` hidden in
 `public/desktop-hud.css`); ready, working, to-build and the farmhouse's fields keep their second line.
+Layout by level (2026-09-24): the east is a street that climbs in level as you pan right (HOMES in `public/farm-layout.js`,
+each yard moves as one piece): along the trunk road Pig Farm (29), Bee Yard (34), Glasshouse (40), Weaving Shed (43); behind
+them Craft Workshop (58), Ranch (70), Estate Workshop (75); furthest out the Grand Valley Fair (90). The Family Hall (10) moved
+to the open ground west of the farmhouse, where the Pig Farm first stood. Sheep Barn, Goat Shed and Trade Depot, the core
+(levels 1-24), the Factory and the Valley Market keep their places. Everything stays within the camera's pan reach (x <= 63).
+The Family Hall's map label no longer shows "Your weekly order & family".

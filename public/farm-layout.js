@@ -23,7 +23,13 @@ export const ANCHORS=Object.freeze({
 // The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), the
 // market waits by the road out at the front, the delivery cart stands at the open end of the farmhouse fence where it can be seen,
 // and the animal paddock stands beside the trunk road below the dairy barn.
-export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[15.8,5],stall:[-8,23.4],cart:[-9.7,-10.45],paddock:[1.7,-8.6]});
+// The east is a street that climbs in level as you pan right, so a new farmer finds everything close by: along the trunk road the
+// Pig Farm (29), Bee Yard (34), Glasshouse (40) and Weaving Shed (43); behind them the Craft Workshop (58), the Ranch (70) and the
+// Estate Workshop (75); furthest out the Grand Valley Fair (90). The Family Hall (10) moved to the open ground west of the
+// farmhouse, where the Pig Farm first stood. Sheep Barn, Goat Shed and Trade Depot keep their places across the road.
+export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[-25.77,-6.92],stall:[-8,23.4],cart:[-9.7,-10.45],paddock:[1.7,-8.6],
+ pigfarm:[23.46,1.46],beeyard:[30.46,1.69],glasshouse:[37.62,1.23],weaving:[44.62,2],
+ craftshop:[28.62,11.15],ranch:[37.31,11.15],estateworkshop:[45.77,11.15],grandfair:[40,23.08]});
 // Trees, bushes and other loose pieces keep this far from the middle of a yard.
 export const YARD_CLEARANCE=5.4;
 
