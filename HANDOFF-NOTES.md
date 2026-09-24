@@ -838,3 +838,14 @@ The ground is 600 x 600 (was 200): its edge was in view when panning far right o
 22-unit tile (scene-polish.js). The map's gold ready ring is steady (it blinked).
 Trees keep out of the whole coop yard (YARD_EXTENT coop), and `clearOfYards` searches up to 32 units (was 20): in the east
 street the yards stand close on both sides of the road, so a displaced tree could find no free spot and stayed put.
+
+Security review (24 Sep 2026): all 26 public tables have RLS on; players can read only their own farm, notification settings
+and push devices, and (signed in, not anonymous) the leaderboard table player_stats (no e-mail or other private data in it).
+Everything else is service_role only (farm-api, notify-hourly, stripe-webhook). No storage buckets; no realtime tables.
+Security-definer functions: only notification_save/subscribe/unsubscribe are callable by players, and they use auth.uid() and
+refuse anonymous users. Stripe webhook verifies the signature; checkout checks the price server-side; purchases are credited
+once (harvest_credit_purchase). Changes: `supabase/security-hardening.sql` (revoke table rights that RLS already refused, push
+endpoints must be a known https push service, referral function with an empty search_path) and the superadmin must have a
+confirmed e-mail (`isSuperadmin`, needs farm-api deployed). Open, by choice: notify-hourly can be triggered by anyone but
+runs at most once per clock hour; "Leaked password protection" is a switch in the Supabase dashboard (Auth > Providers >
+Email / Password security). Tests: `tests/security-hardening.test.mjs`.

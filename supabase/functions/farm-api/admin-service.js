@@ -4,7 +4,9 @@ import {normalizeFarm,levelOf,ITEMS,CROPS} from './farm-state.js';
 // authenticated, server-verified user (index.ts already resolved this from a real Supabase JWT) — never against
 // anything the client claims about itself.
 const SUPERADMINS=new Set(['floris@millstone.nl']);
-export const isSuperadmin=user=>SUPERADMINS.has(String(user?.email??'').trim().toLowerCase());
+// The address must also be confirmed: an account that only claims it (never confirmed, or from a provider that does not vouch for
+// it) is not the admin.
+export const isSuperadmin=user=>SUPERADMINS.has(String(user?.email??'').trim().toLowerCase())&&Boolean(user?.email_confirmed_at);
 
 // Generous enough for a real reward, small enough that an extra typed zero cannot hand out a fortune by accident.
 // Diamonds are capped tighter: they are the currency the diamond-checkout Stripe packs sell, topping out at 3500.

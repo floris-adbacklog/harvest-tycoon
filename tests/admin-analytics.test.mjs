@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention} from '../supabase/functions/farm-api/admin-analytics-service.js';
 import {ONLINE_WINDOW} from '../supabase/functions/farm-api/presence.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-const admin={id:'22222222-2222-4222-8222-222222222222',email:'floris@millstone.nl'};
+const admin={id:'22222222-2222-4222-8222-222222222222',email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z'};
 const notAdmin={id:'x',email:'someone.else@millstone.nl'};
 const now=Date.UTC(2026,8,22,12);
 const iso=ms=>new Date(ms).toISOString();
