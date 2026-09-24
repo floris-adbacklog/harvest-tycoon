@@ -749,3 +749,12 @@ guide change size (ResizeObserver). Tests: `tests/desktop-hud.test.mjs`.
 New players on phones (2026-09-24): while the Beginner guide is not done, phones start in the fields view (bigger fields,
 where the first steps happen) and "My farm" returns there; after the guide the whole-farm home view as before
 (`startView` in `public/game.js`). Desktop unchanged. Tests: `tests/new-player-view.test.mjs`.
+
+8 starting fields (2026-09-24, NOT live until `farm-api` is redeployed; only new farms): live data showed 63% of guided
+farms stop before their 10th harvest and those farms use about 4 of their 12 fields. New farms now start with 8 fields
+(`STARTER_FIELDS`, `createBaseFarm`): 3 ripe corn, 3 wheat ripening 30/60/90 s after the start, 2 empty (the "plant"
+step). Fields 9-12 (`EARLY_FIELDS`) open one per level (2/3/4/5) for 100/150/200/250 coins, no supplies, +20 XP each,
+and are not counted as expansions (stats.expansions, Farmhouse level), so every quest and price from field 13 on is
+unchanged. They show in the level-up/journal list (`unlockEntries`, only when `progression.fields===8`). The Farmhouse
+panel says "While you start out, every new level opens one more field, up to 12. No supplies needed." Existing farms keep
+their fields. `tests/legacy-farm.mjs` now builds the original 12-field start. Tests: `tests/starter-fields.test.mjs`.

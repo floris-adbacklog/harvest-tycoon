@@ -12,10 +12,10 @@ test('every guide step pays XP, so following the guide takes a new farmer to lev
  const claim=(id,time=now)=>act(s,{type:'beginner_claim',id},time);
  act(s,{type:'field',id:0,action:'harvest'},now);assert.equal(claim('harvest').xp,BEGINNER_STEP_XP);
  act(s,{type:'sell',item:'corn',quantity:1},now);const afterSale=s.xp;claim('sell');assert.equal(s.xp,afterSale+BEGINNER_STEP_XP);
- act(s,{type:'field',id:8,action:'plant',crop:'wheat'},now);claim('plant');act(s,{type:'field',id:8,action:'water'},now);claim('water');
+ act(s,{type:'field',id:6,action:'plant',crop:'wheat'},now);claim('plant');act(s,{type:'field',id:6,action:'water'},now);claim('water');
  assert(levelOf(s)>=2,'level 2 arrives after about four steps, in the first minutes');
  act(s,{type:'produce',recipe:'eggs'},now);claim('produce');act(s,{type:'checkin'},now);claim('gift');
- act(s,{type:'field',id:8,action:'tend'},now+10000);act(s,{type:'field',id:8,action:'harvest'},now+120000);
+ act(s,{type:'field',id:6,action:'tend'},now+10000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
  for(const q of beginnerProgress(s))if(!q.done)claim(q.id,now+300000);
  assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds>=BEGINNER_REWARD,true);

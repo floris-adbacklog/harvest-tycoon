@@ -35,8 +35,8 @@ test('inside the sprint crops, batches and Care take 80% less time; afterwards e
  assert.equal(s.plots[b].readyAt-(now+MIN),24000);assert.equal(s.plots[b].careAt-(now+MIN),7200,'wheat Care comes at 7.2 s, well inside its 24 s');
  act(s,{type:'field',id:b,action:'tend'},now+MIN+8000);assert.equal(s.plots[b].tended,true);
  // After the sprint: the normal 15 minutes and 270 seconds. The corn planted inside it keeps its 3 minutes.
- const late=now+121*MIN;act(s,{type:'field',id:8+2,action:'plant',crop:'corn'},late);
- assert.equal(s.plots[10].readyAt-late,900000);assert.equal(s.plots[10].careAt-late,270000);
+ const late=now+121*MIN;act(s,{type:'field',id:0,action:'harvest'},late);act(s,{type:'field',id:0,action:'plant',crop:'corn'},late);
+ assert.equal(s.plots[0].readyAt-late,900000);assert.equal(s.plots[0].careAt-late,270000);
  assert.equal(s.plots[a].readyAt,now+MIN+180000);
  // Care never comes after the crop is ready, not even with the boost.
  for(const key of Object.keys(CROPS))assert(cropDuration(s,key,false,now)*.3>=6000&&Math.max(6000,cropDuration(s,key,false,now)*.3)<cropDuration(s,key,false,now),key);
@@ -102,6 +102,7 @@ test('a new farmer sees the quickest starter quests first, three at a time, and 
  const s=createFarm(now);
  assert.deepEqual(questGroups(s).active.map(x=>x.quest.title),['Thirsty crops','First seeds','First customers']);
  assert.equal(questGroups(s).ready.length,0);
+ for(const id of [0,1,2])act(s,{type:'field',id,action:'harvest'},now);   // the ripe corn makes room: a new farm has two empty fields
  for(let i=0;i<3;i++){const id=emptyPlot(s);act(s,{type:'field',id,action:'plant',crop:'wheat'},now);act(s,{type:'field',id,action:'water'},now);}
  const ready=questGroups(s).ready.map(x=>x.quest.title);assert(ready.includes('Thirsty crops')&&ready.includes('First seeds'),ready.join());
  const thirsty=QUESTS.findIndex(q=>q.title==='Thirsty crops'),coins=s.coins,xp=s.xp;

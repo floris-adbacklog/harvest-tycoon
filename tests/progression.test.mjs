@@ -19,7 +19,7 @@ test('new farm starts with two crops, one production building and only a daily g
  assert.equal(act(s,{type:'checkin'},now).xp,10);
 });
 test('locked actions and premature construction cannot spend balances or goods',()=>{
- for(const action of [{type:'construct',building:'mill'},{type:'construct',building:'bakery'},{type:'field',id:8,action:'plant',crop:'cabbage'},{type:'produce',recipe:'milk'},{type:'upgrade',building:'bakery'},{type:'chore',id:'weeds'},{type:'activity_start',station:'greenhouse'},{type:'tractor',mode:'plant',crop:'wheat'},{type:'silo_upgrade'},{type:'project_start'},{type:'buy_boost',boost:'xp',expectedCost:25},{type:'daily',id:0}]){
+ for(const action of [{type:'construct',building:'mill'},{type:'construct',building:'bakery'},{type:'field',id:6,action:'plant',crop:'cabbage'},{type:'produce',recipe:'milk'},{type:'upgrade',building:'bakery'},{type:'chore',id:'weeds'},{type:'activity_start',station:'greenhouse'},{type:'tractor',mode:'plant',crop:'wheat'},{type:'silo_upgrade'},{type:'project_start'},{type:'buy_boost',boost:'xp',expectedCost:25},{type:'daily',id:0}]){
   const s=createFarm(now),before=structuredClone(s);assert.throws(()=>act(s,action,now));assert.deepEqual(s,before,JSON.stringify(action));
  }
 });
@@ -78,7 +78,7 @@ test('every level has renewable play, every new building has a viable recipe; th
 test('levelled inventory from the Starter Pack cannot bypass seeds, recipes or building locks',()=>{
  const s=createFarm(now);for(const key of Object.keys(s.inventory))s.inventory[key]=100;
  assert.equal(cropUnlocked(s,'berries'),false);assert.equal(recipeUnlocked(s,'berrytart'),false);assert.equal(buildingEligible(s,'preserves'),false);
- assert.throws(()=>act(s,{type:'field',id:8,action:'plant',crop:'apples'},now));
+ assert.throws(()=>act(s,{type:'field',id:6,action:'plant',crop:'apples'},now));
  act(s,{type:'sell',item:'apples',quantity:1},now);assert.equal(s.inventory.apples,99);
 });
 test('daily boards respect unlocks and owned production at all 25 levels',()=>{
@@ -120,9 +120,9 @@ test('market highlights only suggest currently obtainable goods or items already
 });
 test('all ten beginner steps still finish in the first session and pay once',()=>{
  const s=createFarm(now);
- act(s,{type:'field',id:0,action:'harvest'},now);act(s,{type:'field',id:8,action:'plant',crop:'wheat'},now);act(s,{type:'field',id:8,action:'water'},now);
+ act(s,{type:'field',id:0,action:'harvest'},now);act(s,{type:'field',id:6,action:'plant',crop:'wheat'},now);act(s,{type:'field',id:6,action:'water'},now);
  act(s,{type:'sell',item:'corn',quantity:1},now);act(s,{type:'produce',recipe:'eggs'},now);act(s,{type:'checkin'},now);
- act(s,{type:'field',id:8,action:'tend'},now+10000);act(s,{type:'field',id:8,action:'harvest'},now+120000);
+ act(s,{type:'field',id:6,action:'tend'},now+10000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
  const diamonds=s.diamonds;let levelDiamonds=0;for(const q of beginnerProgress(s)){assert.equal(q.ready,true,q.id);levelDiamonds+=act(s,{type:'beginner_claim',id:q.id},now+300000).levelReward?.diamonds??0;}
  assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+50+levelDiamonds);assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+300000));

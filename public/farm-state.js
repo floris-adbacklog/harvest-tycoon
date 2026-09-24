@@ -602,6 +602,8 @@ export function unlockEntries(state){return [
  ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall').map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
  ...Object.entries(FEATURE_NAMES).map(([key,name])=>({id:'feature:'+key,name,art:FEATURE_ART[key]??key,kind:'Activity',level:FEATURE_LEVELS[key],unlocked:featureUnlocked(state,key),hint:featureUnlockHint(key)})),
  ...Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&buildingUnlocked(state,r.building)).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
+ // Fields 9-12 only for farms that started with 8 (a farm that has more than 8 but fewer than 12 fields, or 8).
+ ...(state.plots.length<12||state.progression?.fields===STARTER_FIELDS?EARLY_FIELDS.map((field,i)=>({id:'field:'+(i+9),name:`Field ${i+9}`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+9,hint:`Level ${field.level} · Expand at the Farmhouse for ${field.coins} coins.`})):[]),
  ...ENDGAME_FIELDS.map((field,i)=>({id:'field:'+(i+29),name:`Field ${i+29} expansion`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+29,hint:`Level ${field.level} · Expand at the Farmhouse with coins and supplies.`}))
  ];}
 // Two features were moved later on purpose: A helping hand (level 6 -> 8) and farm chores (level 4 -> 10). Moving a feature later would take it
@@ -709,10 +711,15 @@ export const ENDGAME_FIELDS=Object.freeze([
  {level:80,coins:1250000,materials:{harvesthamper:80,berrycheesecake:140,beangratin:160,squashsoup:60,cherrypie:30,prizeproduce:6}},
  {level:90,coins:1400000,materials:{harvesthamper:100,berrycheesecake:160,pickledbeans:180,applevinegar:180,cloth:60,cider:90,blanket:10,prizeproduce:15}}
 ].map(field=>Object.freeze({...field,materials:Object.freeze(field.materials)})));
-export function expansionLevel(state){return ENDGAME_FIELDS[state.plots.length-28]?.level??1;}
-export function expansionCost(state){const n=state.plots.length;return n>=MAX_PLOTS?null:n>=28?ENDGAME_FIELDS[n-28].coins:n<20?Math.ceil(600*1.75**Math.max(0,n-12)/25)*25:LATE_FIELD_COSTS[n-20];}
+// New farms start with 8 fields (STARTER_FIELDS) and earn fields 9-12 back in the first half hour: one per level, cheap, no
+// supplies. Field 13 on is the same for every farm, and only those count as expansions (quests, Farmhouse level).
+export const STARTER_FIELDS=8;
+export const EARLY_FIELDS=Object.freeze([{level:2,coins:100},{level:3,coins:150},{level:4,coins:200},{level:5,coins:250}].map(Object.freeze));
+const earlyField=state=>EARLY_FIELDS[state.plots.length-STARTER_FIELDS];
+export function expansionLevel(state){return earlyField(state)?.level??ENDGAME_FIELDS[state.plots.length-28]?.level??1;}
+export function expansionCost(state){const n=state.plots.length;if(earlyField(state))return earlyField(state).coins;return n>=MAX_PLOTS?null:n>=28?ENDGAME_FIELDS[n-28].coins:n<20?Math.ceil(600*1.75**Math.max(0,n-12)/25)*25:LATE_FIELD_COSTS[n-20];}
 const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16},{lettuce:30,flour:18,milk:12},{cauliflower:32,feed:20,eggs:14},{redcabbage:30,cheese:16,bread:18},{pumpkin:36,oil:18,pie:20},{sunflower:40,cheese:20,pie:22},{cauliflower:44,bread:26,eggs:24},{redcabbage:44,oil:22,vegetables:24},{pumpkin:50,pickles:26,milk:28}];
-export function expansionMaterials(state){const n=state.plots.length;return n>=MAX_PLOTS?{}:{...(n>=28?ENDGAME_FIELDS[n-28].materials:FIELD_MATERIALS[Math.max(0,n-12)])};}
+export function expansionMaterials(state){const n=state.plots.length;return n>=MAX_PLOTS||earlyField(state)?{}:{...(n>=28?ENDGAME_FIELDS[n-28].materials:FIELD_MATERIALS[Math.max(0,n-12)])};}
 // Estate upgrades: target level 11-20. Priced per step, the same for every building (the goods are what differs; from level 42 on
 // they also ask for the midgame goods: wool, soup, yarn, cloth and cider, from 66 on goat cheese, candles, blankets and cherry pie, and at 85 prize produce), and like the
 // last twelve fields they ask for a higher farm level. Ten steps for a farm that can process forty fields of crops.
@@ -747,7 +754,7 @@ export function upgradeCost(state,building){
 // mix into feed at the Mill, wheat, ten animal feed for the chickens (ten batches of eggs), and barley for the Mill's feed recipe once
 // level 5 opens it (barley itself is not plantable before then, but a beginner already has a first batch waiting).
 export const STARTER_COINS=500;
-export const STARTER_ITEMS=Object.freeze({wheat:8,corn:8,feed:10,barley:6});   // wheat stays below the 12 of the first new field: that still has to be earned
+export const STARTER_ITEMS=Object.freeze({wheat:8,corn:8,feed:10,barley:6});   // wheat stays below the 12 that field 13 asks for: that still has to be earned
 // The corn, animal feed and barley a new farm starts with are for the first steps (feed and barley feed at the Mill, eggs at the Coop), not
 // for the market: a beginner who has not met the market yet sells them by accident and then waits 15 minutes for corn. They cannot be sold
 // during the first 30 minutes (the beginner boost window); what is grown or made on top of them can be sold at once, and using them (a batch
@@ -756,11 +763,12 @@ export const STARTER_KEEP=Object.freeze({corn:STARTER_ITEMS.corn,feed:STARTER_IT
 export const keptStock=(state,key,now=Date.now())=>rookieLeft(state,now)>0?Math.min(state.keep?.[key]??0,state.inventory[key]??0):0;
 export const sellableStock=(state,key,now=Date.now())=>Math.max(0,(state.inventory[key]??0)-keptStock(state,key,now));
 function createBaseFarm(now=Date.now()) {
- const plots=Array.from({length:12},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
- ['corn','corn','corn','wheat','wheat'].forEach((crop,id)=>{
-  plots[id]={id,crop,plantedAt:now-CROPS[crop].duration*(id<3?1.1:.4),readyAt:now+(id<3?-1000:CROPS[crop].duration*.6),watered:false};
- });
- return {version:14,progression:{mode:'guided',version:4},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
+ // Three ripe corn for the first basket, three wheat that ripen one by one while you take the first steps (30, 60 and 90
+ // seconds), and two empty fields to plant.
+ const plots=Array.from({length:STARTER_FIELDS},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
+ for(const id of [0,1,2])plots[id]={id,crop:'corn',plantedAt:now-CROPS.corn.duration*1.1,readyAt:now-1000,watered:false};
+ [30000,60000,90000].forEach((left,i)=>{plots[3+i]={id:3+i,crop:'wheat',plantedAt:now+left-CROPS.wheat.duration,readyAt:now+left,watered:false};});
+ return {version:14,progression:{mode:'guided',version:4,fields:STARTER_FIELDS},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
 }
 export function progress(plot,now=Date.now()) {
  if(!plot.crop)return 0;
@@ -922,7 +930,7 @@ export function upgradeBuilding(state,building,currency='coins',expectedCost,exp
  return {building,level:b.level,cost,currency,materials:estate?{...estate.materials}:{}};
 }
 export function expandFarm(state){
- const cost=expansionCost(state),materials=expansionMaterials(state);
+ const cost=expansionCost(state),materials=expansionMaterials(state),early=Boolean(earlyField(state));
  if(cost===null)throw new Error('Your farm is fully expanded.');
  if(levelOf(state)<expansionLevel(state))throw new Error(`Reach level ${expansionLevel(state)} to unlock field ${state.plots.length+1}.`);
  if(state.coins<cost)throw new Error(`You need ${cost} coins for one more field.`);
@@ -930,7 +938,7 @@ export function expandFarm(state){
  if(missing.length)throw new Error(`Gather the missing supplies: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
  state.coins-=cost;for(const [key,n] of Object.entries(materials))state.inventory[key]-=n;
  state.plots.push({id:state.plots.length,crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false});
- state.stats.expansions++;state.xp+=20;state.buildings.farmhouse.level++;
+ state.xp+=20;if(!early){state.stats.expansions++;state.buildings.farmhouse.level++;}
  return {fields:state.plots.length,cost,materials};
 }
 // Every quest pays 15 XP unless it says otherwise; the starter quests pay coins only (xp:0).
