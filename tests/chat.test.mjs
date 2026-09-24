@@ -73,7 +73,7 @@ test('a gift for everyone: 500 coins and 50 diamonds a day for all staff togethe
 
 test('a private message reaches a phone only when it should, and never blocks the message itself',()=>{
  const push=sql.slice(sql.indexOf('create or replace function public.chat_dm_push'),sql.indexOf('create or replace function public.chat_push_claim'));
- for(const rule of ['public.push_subscriptions p where p.player_id=other','not s.push_messages','b.blocked_id=new.sender',"r.last_read_at>now()-interval '2 minutes'","s.pushed_at<now()-interval '3 minutes'"])assert.ok(push.includes(rule),rule);
+ for(const rule of ['public.push_subscriptions p where p.player_id=other','s.player_id=other and s.push_messages) then return null','b.blocked_id=new.sender',"r.last_read_at>now()-interval '2 minutes'","s.pushed_at<now()-interval '3 minutes'"])assert.ok(push.includes(rule),rule);
  assert.match(push,/exception when others then return null;/);
  assert.match(sql,/for each row when \(new\.channel like 'dm:%'\)/,'not for the family or global chat');
  const service=read('supabase/functions/notify-hourly/index.ts');

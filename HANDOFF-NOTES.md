@@ -877,7 +877,7 @@ dashboard (farm-api `isStaff` for the read-only admin_* ops; admin_grant stays s
 sent receives it on its next load within 7 days (farm-api load, `receiveDonations`, ids kept in state.donations), shown in the
 "Donation!" pop-up; the "donation" news note makes an open game refresh. An admin gift with "notify" also leaves a note under
 Notifications. Private message push: trigger chat_dm_push (pg_net) → notify-hourly `?dm` → chat_push_claim (service role, once
-per message); only with a device, the "New private message" switch on (default on), not blocked, not reading the chat now, at
+per message); only with a device, the "New private message" switch on (off until the player switches it on), not blocked, not reading the chat now, at
 most once per chat per 3 minutes. UI: src/chat-ui.js + public/chat.css (left panel, tabs bell/Global/Family/Private, Global
 first and without a red count; on phones the chat replaces the Family header button and Farm family moves to More › Friends;
 VIP mark and Moderator shield after names; profile: Send message, Block, staff tools). Dashboard: tabs Chat (guide, reports),

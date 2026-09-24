@@ -135,7 +135,7 @@ span.chat-avatar{cursor:default}
 .admin-guide{background:#f3f7ec;border-color:#dce8cc}
 .admin-guide ul{display:grid;gap:6px;margin:8px 0 0;padding-left:18px;color:#4f5a3c;font-size:13px;line-height:1.45}
 @media(max-width:600px){#admin-dashboard-dialog .admin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-/* Settings: the envelope on the two private-message switches. */
+/* Settings: a picture on every switch (the envelope for private messages). */
 .notify-row-art>.game-art{flex:none;width:34px;height:34px;margin-right:2px;object-fit:contain}
 .notify-row-art{justify-content:flex-start;gap:12px}.notify-row-art>span{flex:1;min-width:0}
 .chat-vip{display:inline-flex;flex-shrink:0}
@@ -153,3 +153,5 @@ span.chat-avatar{cursor:default}
 #admin-button .game-art{width:28px;height:28px;object-fit:contain}
 /* The header's painted icons (settings gear, How to play book) at the same size as the chat and the shield. */
 #sound-button .game-art,#help-button .game-art{width:28px;height:28px;object-fit:contain}
+.admin-donate label>span{display:flex;align-items:center;gap:6px}
+.admin-donate label>span .game-art{width:20px;height:20px;flex:none}

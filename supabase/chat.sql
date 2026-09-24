@@ -368,10 +368,11 @@ $c$);
 insert into public.staff_roles(player_id,role) values('4744af19-aef1-406c-9bb2-2fc9bda17efb','moderator') on conflict (player_id) do nothing;
 
 -- A private message also reaches the other farmer's phone or computer as a notification (not the family or global chat). Only
--- when they have notifications on for a device (push_subscriptions) and the Private messages switch in Settings on (on unless
--- they turn it off), when they have not blocked the sender and are not reading that chat right now, and at most once per chat
+-- when they have notifications on for a device (push_subscriptions) and the New private message switch in Settings on (off
+-- until they switch it on), when they have not blocked the sender and are not reading that chat right now, and at most once per chat
 -- every 3 minutes. The trigger checks all that in the database, so the notification service is only called for a real push.
-alter table public.notification_settings add column if not exists push_messages boolean not null default true;
+alter table public.notification_settings add column if not exists push_messages boolean not null default false;
+alter table public.notification_settings alter column push_messages set default false;
 create table if not exists public.chat_push_state(
  player_id uuid not null references auth.users(id) on delete cascade, channel text not null,
  message_id uuid not null, claimed boolean not null default false, pushed_at timestamptz not null default now(),
@@ -389,7 +390,7 @@ begin
  if p_digest_hour is null or p_digest_hour < 0 or p_digest_hour > 23 then raise exception 'Choose an hour between 0 and 23.' using errcode = '22023'; end if;
  if p_timezone is null or not exists (select 1 from pg_catalog.pg_timezone_names where name = p_timezone) then raise exception 'Unknown time zone.' using errcode = '22023'; end if;
  insert into public.notification_settings as s (player_id, push_crops, push_production, push_daily, email_digest, digest_hour, timezone, push_messages)
-  values (v_player, coalesce(p_push_crops, false), coalesce(p_push_production, false), coalesce(p_push_daily, false), coalesce(p_email_digest, false), p_digest_hour, p_timezone, coalesce(p_push_messages, true))
+  values (v_player, coalesce(p_push_crops, false), coalesce(p_push_production, false), coalesce(p_push_daily, false), coalesce(p_email_digest, false), p_digest_hour, p_timezone, coalesce(p_push_messages, false))
   on conflict (player_id) do update set push_crops = excluded.push_crops, push_production = excluded.push_production, push_daily = excluded.push_daily,
    email_digest = excluded.email_digest, digest_hour = excluded.digest_hour, timezone = excluded.timezone,
    push_messages = coalesce(p_push_messages, s.push_messages), updated_at = now();
@@ -402,7 +403,7 @@ declare other uuid;
 begin
  other:=(case when split_part(new.channel,':',2)=new.sender::text then split_part(new.channel,':',3) else split_part(new.channel,':',2) end)::uuid;
  if not exists(select 1 from public.push_subscriptions p where p.player_id=other) then return null; end if;
- if exists(select 1 from public.notification_settings s where s.player_id=other and not s.push_messages) then return null; end if;
+ if not exists(select 1 from public.notification_settings s where s.player_id=other and s.push_messages) then return null; end if;
  if exists(select 1 from public.chat_blocks b where b.player_id=other and b.blocked_id=new.sender) then return null; end if;
  if exists(select 1 from public.chat_reads r where r.player_id=other and r.channel=new.channel and r.last_read_at>now()-interval '2 minutes') then return null; end if;
  insert into public.chat_push_state as s(player_id,channel,message_id,claimed,pushed_at) values(other,new.channel,new.id,false,now())
