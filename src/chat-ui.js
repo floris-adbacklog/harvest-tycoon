@@ -141,7 +141,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(thread){const off=blocked().has(thread.otherId);blockButton.setAttribute('aria-label',off?`Unblock ${thread.otherName}`:`Block ${thread.otherName}`);blockButton.title=blockButton.getAttribute('aria-label');blockButton.classList.toggle('is-on',off);}
   title.innerHTML=tab==='family'?esc(overview?.family?.name??'Family chat'):tab==='private'&&thread?`Chat with ${profileButton(thread.otherId,`Open ${thread.otherName}’s profile`,esc(thread.otherName),'chat-title-name')}`:esc(TITLES[tab]);
   const compose=composeState();
-  form.hidden=!compose.show;input.disabled=sendButton.disabled=Boolean(compose.blocked)||sending;
+  // While a message is on its way only the send button waits: the box stays usable, so the cursor (and a phone's keyboard) stays
+  // put for the next message.
+  form.hidden=!compose.show;input.disabled=Boolean(compose.blocked);sendButton.disabled=Boolean(compose.blocked)||sending;
   input.placeholder=compose.blocked??compose.placeholder??'';input.maxLength=compose.max??200;hours.hidden=tab!=='notices';form.classList.toggle('is-blocked',Boolean(compose.blocked));
   if(busy){list.innerHTML='<li class="chat-empty"><p>Opening the chat…</p></li>';return;}
   if(tab==='notices')list.innerHTML=notices.length?notices.map((n,i)=>noticeRow(n,i<freshNotices)).join(''):empty(EMPTY.notices);

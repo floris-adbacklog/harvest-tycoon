@@ -124,3 +124,9 @@ test('the Private tab finds any farmer by name to write to, without the profile,
  assert.match(ui,/\.filter\(p=>p\.playerId!==me\)/);
  assert.match(ui,/find\.hidden=!\(tab==='private'&&!thread&&overview\?\.privateOn!==false\);/,'not when your own private messages are off');
 });
+
+test('after sending, the cursor stays in the message box for the next message (only the send button waits)',()=>{
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/input\.disabled=Boolean\(compose\.blocked\);sendButton\.disabled=Boolean\(compose\.blocked\)\|\|sending;/);
+ assert.match(ui,/if\(dialog\.open\)input\.focus\(\{preventScroll:true\}\);/);
+});
