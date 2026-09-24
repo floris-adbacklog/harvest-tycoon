@@ -60,3 +60,8 @@
    to fit them, instead of wrapping the title and pushing the XP bar out of the card. */
 @media(min-width:721px){.topbar .level-card{flex:none}.level-info{min-width:0}.level-info>div{align-items:baseline}.level-info strong{white-space:nowrap}.level-info progress{display:block;width:100%}}
 @media(min-width:901px) and (max-width:1000px){.topbar{gap:10px}.topbar .resources{gap:4px}.topbar .coin-counter{padding-left:8px;padding-right:8px}}
+
+/* After a tap, the tool that matches what it did (plant, water, care, harvest) lights up with a short pop (game.js showTool). */
+.tool.just-used{animation:tool-pop .45s ease-out}
+@keyframes tool-pop{40%{transform:scale(1.08)}}
+@media(prefers-reduced-motion:reduce){.tool.just-used{animation:none}}

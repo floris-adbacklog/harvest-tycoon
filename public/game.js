@@ -455,9 +455,12 @@ async function interact(id,forcedAction){
   if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
   if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
   if(action==='plant')floatReward(id,floatChip(state.plots[id].crop??selectedCrop,'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));
+  // The tool that matches what the tap just did lights up, with a short pop, so it is clear it watered or gave care.
+  if(!forcedAction)showTool(action);
   drawCrop(id);renderer.shadowMap.needsUpdate=true;updateUI();icons();return result;
  }catch(e){toast(e.message);return {error:e.message};}
 }
+function showTool(tool){if(tool!==selectedTool)setTool(tool);const button=document.querySelector(`[data-tool="${tool}"]`);if(!button)return;button.classList.remove('just-used');void button.offsetWidth;button.classList.add('just-used');}
 function setTool(tool){selectedTool=tool;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
 function setCrop(crop){selectedCrop=crop;setTool('plant');if(ready)plots.forEach((_,i)=>drawCrop(i));updateHint();}
 function updateHint(){
