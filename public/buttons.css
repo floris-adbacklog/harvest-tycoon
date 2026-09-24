@@ -1,0 +1,135 @@
+/* One button style for the whole game, loaded after the screens' own styles:
+   main (green) for the thing to do, second (cream) for the other choices, gold for real money, red for what is hard to undo,
+   and the round icon buttons. All share the corners, bold text and an edge underneath that sinks when pressed; a button that
+   is off looks the same everywhere. Sizes and spacing stay with each screen. */
+:root{
+ --btn-radius:12px;
+ --btn-main:#3f6b4a;--btn-main-hover:#365e42;--btn-main-line:#2d5137;--btn-main-edge:#25462e;--btn-main-text:#fffef3;
+ --btn-second:#f7f0e3;--btn-second-hover:#f0e5d1;--btn-second-line:#d9c7a4;--btn-second-edge:#e2d3b3;--btn-second-text:#5b4520;
+ --btn-gold:#e3a53c;--btn-gold-hover:#d8982d;--btn-gold-line:#b07a22;--btn-gold-edge:#9c6214;--btn-gold-text:#3f2806;
+ --btn-red:#b4513f;--btn-red-hover:#a3473a;--btn-red-line:#96402f;--btn-red-edge:#7d3526;--btn-red-text:#fff;
+ --btn-off:#ede7dc;--btn-off-line:#ddd3c4;--btn-off-text:#a39784;
+ --btn-icon:#fffdf5;--btn-icon-hover:#f7f0e3;--btn-icon-line:#ddd2c7;--btn-icon-edge:#e6dccb;--btn-icon-text:#5b4520
+}
+
+/* Main */
+.primary-button,
+.collect-all-panel .primary-button,
+.diamond-confirm .confirm-spend,
+.sharing-action.is-primary,
+.payment-dialog [data-close],
+.market-sale-buttons [data-sell],
+#boost-dialog .boost-buy{
+ background:var(--btn-main);border:1px solid var(--btn-main-line);border-radius:var(--btn-radius);color:var(--btn-main-text);
+ box-shadow:0 3px 0 var(--btn-main-edge);font-weight:700;transition:background .12s,box-shadow .12s,transform .12s
+}
+.primary-button:hover:not(:disabled),
+.collect-all-panel .primary-button:hover:not(:disabled),
+.diamond-confirm .confirm-spend:hover:not(:disabled),
+.sharing-action.is-primary:hover:not(:disabled),
+.payment-dialog [data-close]:hover,
+.market-sale-buttons [data-sell]:hover:not(:disabled),
+#boost-dialog .boost-buy:not(:disabled):hover{background:var(--btn-main-hover)}
+#boost-dialog .boost-buy .boost-price,#boost-dialog .boost-buy small{color:inherit}
+
+/* Second */
+.small-button,
+.secondary-button,
+.sharing-action,
+.payment-dialog [data-retry],
+.payment-dialog .payment-shop,
+#boost-dialog .boost-buy.is-short{
+ background:var(--btn-second);border:1px solid var(--btn-second-line);border-radius:var(--btn-radius);color:var(--btn-second-text);
+ box-shadow:0 3px 0 var(--btn-second-edge);font-weight:700;transition:background .12s,box-shadow .12s,transform .12s
+}
+.small-button:hover:not(:disabled),
+.secondary-button:hover:not(:disabled),
+.sharing-action:hover:not(:disabled),
+.payment-dialog [data-retry]:hover:not(:disabled),
+.payment-dialog .payment-shop:hover,
+#boost-dialog .boost-buy.is-short:hover{background:var(--btn-second-hover);border-color:var(--btn-second-line)}
+/* A gift picker that is open keeps its gold edge. */
+.sharing-action.is-open{border-color:#c9a45a;background:#fff8e1}
+
+/* Gold: real money */
+.primary-button.starter-buy{background:var(--btn-gold);border-color:var(--btn-gold-line);color:var(--btn-gold-text);box-shadow:0 3px 0 var(--btn-gold-edge)}
+.primary-button.starter-buy:hover:not(:disabled){background:var(--btn-gold-hover)}
+
+/* Red: hard to undo */
+.small-button.is-danger,
+.primary-button.is-danger,
+.diamond-confirm.is-danger .confirm-spend{background:var(--btn-red);border-color:var(--btn-red-line);color:var(--btn-red-text);box-shadow:0 3px 0 var(--btn-red-edge)}
+.small-button.is-danger:hover:not(:disabled),
+.primary-button.is-danger:hover:not(:disabled),
+.diamond-confirm.is-danger .confirm-spend:hover:not(:disabled){background:var(--btn-red-hover)}
+
+/* Pressed: the button sinks onto its edge. */
+.primary-button:active:not(:disabled),
+.small-button:active:not(:disabled),
+.secondary-button:active:not(:disabled),
+.sharing-action:active:not(:disabled),
+.diamond-confirm .confirm-spend:active:not(:disabled),
+.payment-dialog .payment-actions button:active:not(:disabled),
+#boost-dialog .boost-buy:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-main-edge)}
+.small-button:active:not(:disabled),
+.secondary-button:active:not(:disabled),
+.sharing-action:not(.is-primary):active:not(:disabled),
+.payment-dialog [data-retry]:active:not(:disabled),
+.payment-dialog .payment-shop:active,
+#boost-dialog .boost-buy.is-short:active{box-shadow:0 1px 0 var(--btn-second-edge)}
+.small-button.is-danger:active:not(:disabled),.diamond-confirm.is-danger .confirm-spend:active:not(:disabled){box-shadow:0 1px 0 var(--btn-red-edge)}
+.primary-button.starter-buy:active:not(:disabled){box-shadow:0 1px 0 var(--btn-gold-edge)}
+
+/* Off */
+.primary-button:disabled,
+.job-panel>.primary-button:disabled,
+.collect-all-panel .primary-button:disabled,
+.small-button:disabled,
+.secondary-button:disabled,
+.sharing-action:disabled,
+.diamond-confirm .confirm-spend:disabled,
+.payment-dialog .payment-actions button:disabled,
+#boost-dialog .boost-buy:disabled{
+ background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;transform:none;cursor:default
+}
+
+/* Round icon buttons: the close × of every pop-up and the other icon buttons, one shape. The small map controls keep their
+   own flat look. */
+.icon-button,
+.dialog-heading .icon-button,
+.game-dialog .dialog-heading .icon-button,
+.payment-dialog .payment-dismiss,
+.starter-close,
+.rookie-close,
+.level-up-close,
+#level-up-dialog .level-up-close{
+ background:var(--btn-icon);border:1px solid var(--btn-icon-line);border-radius:14px;color:var(--btn-icon-text);
+ box-shadow:0 3px 0 var(--btn-icon-edge);transition:background .12s,box-shadow .12s,transform .12s
+}
+.dialog-heading .icon-button,.game-dialog .dialog-heading .icon-button{width:42px;height:42px}
+.icon-button:hover:not(:disabled),
+.payment-dialog .payment-dismiss:hover,
+.starter-close:hover,
+.rookie-close:hover,
+.level-up-close:hover{background:var(--btn-icon-hover)}
+.icon-button:active:not(:disabled),
+.payment-dialog .payment-dismiss:active,
+.starter-close:active,
+.rookie-close:active,
+.level-up-close:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-icon-edge)}
+.scene-controls .icon-button,.mobile-pan-controls .icon-button{box-shadow:none;transform:none}
+
+/* Keyboard focus, the same ring everywhere. */
+.primary-button:focus-visible,
+.small-button:focus-visible,
+.secondary-button:focus-visible,
+.sharing-action:focus-visible,
+.icon-button:focus-visible,
+.diamond-confirm .confirm-spend:focus-visible,
+.payment-dialog button:focus-visible,
+#boost-dialog .boost-buy:focus-visible{outline:3px solid #c2912d;outline-offset:2px}
+
+@media(prefers-reduced-motion:reduce){
+ .primary-button,.small-button,.secondary-button,.sharing-action,.icon-button,.diamond-confirm .confirm-spend,#boost-dialog .boost-buy{transition:none}
+ .primary-button:active,.small-button:active,.secondary-button:active,.sharing-action:active,.icon-button:active,#boost-dialog .boost-buy:active{transform:none}
+}
