@@ -106,3 +106,9 @@ test('the Admin dashboard opens for moderators too, reading only; giving stays w
  assert.match(dash,/'ONLY FOR YOU':'FOR THE MODERATORS'/);
  assert.match(read('src/player-profiles.js'),/checkAdmin\(\)\.then\(admin=>\{if\(!disposed&&admin&&selected===playerId&&dialog\.open\)renderAdminGrant\(playerId\);\}\);/,'the gift form on a profile is still only for the admin');
 });
+
+test('a gift note shows the diamond and the coin in front of the amounts',()=>{
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/n\.kind==='gift'\|\|n\.kind==='donation'\?withAmounts\(n\.body\):esc\(n\.body\)/);
+ assert.match(ui,/const withAmounts=text=>esc\(text\)\.replace\(/,'escaped first, then only the amounts get a picture');
+});

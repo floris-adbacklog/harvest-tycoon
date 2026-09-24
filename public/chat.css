@@ -155,3 +155,6 @@ span.chat-avatar{cursor:default}
 #sound-button .game-art,#help-button .game-art{width:28px;height:28px;object-fit:contain}
 .admin-donate label>span{display:flex;align-items:center;gap:6px}
 .admin-donate label>span .game-art{width:20px;height:20px;flex:none}
+.chat-amount{white-space:nowrap}
+.chat-amount .game-art{display:inline-block;width:18px;height:18px;margin-right:3px;vertical-align:-3px}
+.chat-amount b{font-weight:800}
