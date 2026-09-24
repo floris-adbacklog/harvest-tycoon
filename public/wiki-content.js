@@ -12,7 +12,7 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'market',title:'Market',art:'market',blurb:'Selling crops and goods, and prices that change every day.',keywords:'sell price demand coins stall'},
  {id:'quests',title:'Quests and levels',art:'quests',blurb:'Goals, XP, levels and what opens when.',keywords:'xp level unlock journal quest claim'},
  {id:'daily',title:'Daily rewards and orders',art:'gift',blurb:'The daily gift, challenges and delivery orders.',keywords:'streak gift challenges deliveries orders cart commission'},
- {id:'family',title:'Farm family',art:'familyhall',blurb:'Playing together: weekly orders, sharing and the tournament.',keywords:'family team guild members tournament sharing invite'},
+ {id:'family',title:'Farm family',art:'family-members',blurb:'Playing together: weekly orders, sharing and the tournament.',keywords:'family team guild members tournament sharing invite'},
  {id:'events',title:'Farm events',art:'live-events',blurb:'Short shared goals every six hours.',keywords:'event goals qualify podium'},
  {id:'helpers',title:'Farm helpers',art:'tractor',blurb:'Tractor, silo research, farm stall, chores and a helping hand.',keywords:'tractor silo stall chores helping hand greenhouse apiary paddock workshop'},
  {id:'estate',title:'Estate and Valley',art:'estate',blurb:'Big goals for later: projects, the Valley Market and more.',keywords:'estate projects valley market ranch workshop trade depot fair improvements'},
@@ -169,7 +169,7 @@ const BODIES={
   return section('The chat',facts([
    ['bell','Notifications','News from the Harvest Tycoon team, and gifts.'],
    ['chat','Global','Everyone in the valley. Be kind: new farmers read along too.'],
-   ['familyhall','Family',`Only your ${h.link('family','Farm family')}.`],
+   ['family-members','Family',`Only your ${h.link('family','Farm family')}.`],
    ['letter','Private','One-to-one messages. Search a farmer by name, or open their profile.']
   ]))
   +section('Your choice',facts([
