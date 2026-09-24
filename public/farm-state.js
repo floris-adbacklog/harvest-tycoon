@@ -325,7 +325,7 @@ export const QUESTS = Object.freeze([
 {"title": "Berry preserves specialist", "description": "Produce 6 berry preserves.", "stat": "made_berrypreserves", "target": 6, "reward": 1200},
 {"title": "Berry tart specialist", "description": "Produce 6 berry tart.", "stat": "made_berrytart", "target": 6, "reward": 1200},
 {"title": "Twelve tastes of the valley", "description": "Discover all 12 crops by harvesting them.", "stat": "varieties", "target": 12, "reward": 2000},
-{"title": "A complete crop collection", "description": "Claim all 48 crop mastery medals.", "stat": "mastery_medals", "target": 48, "reward": 30000},
+{"title": "A grand crop collection", "description": "Claim 48 crop mastery medals.", "stat": "mastery_medals", "target": 48, "reward": 30000},
 {"title": "Apple & Berry Juice specialist", "description": "Collect 3 batches of Apple & Berry Juice.", "stat": "made_orchardjuice", "target": 3, "reward": 310},
 {"title": "Berry Smoothie specialist", "description": "Collect 3 batches of Berry Smoothie.", "stat": "made_berrysmoothie", "target": 3, "reward": 300},
 {"title": "Honey Apple Compote specialist", "description": "Collect 3 batches of Honey Apple Compote.", "stat": "made_applecompote", "target": 3, "reward": 300},
