@@ -834,3 +834,5 @@ scissor, copies it, and draws the normal view again in the same frame; fog off f
 scenery arrives, when fields are added and every 30 s. Live on top: a gold ring on buildings with something ready and a white
 frame for what is on screen (`viewCorners`). Click or drag the map to look there (`lookAt`, within the pan limits); pointing
 at a building shows its name.
+The ground is 600 x 600 (was 200): its edge was in view when panning far right or zooming out; the grass texture keeps its
+22-unit tile (scene-polish.js). The map's gold ready ring is steady (it blinked).

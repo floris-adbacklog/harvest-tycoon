@@ -141,10 +141,10 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
  const rand=mulberry(20260919),group=new THREE.Group();group.name='Scene polish';group.userData.polish=true;scene.add(group);
  scene.updateMatrixWorld(true);
 
- // 1. Ground: mottled grass, tiled every 22 world units.
+ // 1. Ground: mottled grass, tiled every 22 world units (the ground is 600 wide, game.js).
  const ground=scene.getObjectByName('Farm ground');
  if(ground?.material){
-  ground.material.map=groundTexture(mobile?256:512,rand,Math.min(anisotropy,4),200/22);
+  ground.material.map=groundTexture(mobile?256:512,rand,Math.min(anisotropy,4),600/22);   // the same 22-unit tile on the wider ground
   ground.material.color.multiplyScalar(1.07);ground.material.needsUpdate=true;
  }
 

@@ -196,7 +196,9 @@ function lighten(obj,color,intensity=.3){obj.traverse(n=>{if(n.isMesh){n.materia
 function decorate(){
  // Layout zones (public/farm-layout.js): each yard moves as one piece, the fields stay where they are.
  zone('fields');
- const ground=patch(0,0,200,200,0x8aa64e,0);ground.name='Farm ground';   // grass green, like the painted valley of the loading screen
+ // Grass green, like the painted valley of the loading screen, and wide enough that its edge is never in view: it runs on
+ // into the haze however far you pan or zoom out.
+ const ground=patch(0,0,600,600,0x8aa64e,0);ground.name='Farm ground';
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
  zone('exact');
  for(const road of ROADS.slice(0,3))cloneModel('road_001',road.x,road.z,{...roadSize(road),height:road.height,y:road.y});

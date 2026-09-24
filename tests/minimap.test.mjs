@@ -22,3 +22,10 @@ test('the map is a small render of the farm, refreshed now and then, with live r
  assert.match(map,/if\(!p\.ready\|\|p\.locked\)continue;/,'a gold ring only where something is ready');
  assert.match(map,/canvas\.addEventListener\('pointerdown',event=>\{dragging=true;/);
 });
+
+test('the gold ring on the map stands still (no blinking), and the ground runs on into the haze',()=>{
+ const map=read('public/minimap.js'),game=read('public/game.js');
+ assert.doesNotMatch(map,/pulse/);assert.match(map,/ctx\.arc\(x,y,6\.5\*dpr,0,Math\.PI\*2\)/);
+ assert.match(game,/const ground=patch\(0,0,600,600,0x8aa64e,0\);/,'no edge of the world in view');
+ assert.match(read('public/scene-polish.js'),/600\/22\)/,'the same grass tile on the wider ground');
+});
