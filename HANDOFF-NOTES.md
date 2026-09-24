@@ -712,3 +712,11 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   name; descriptions only on locked tiles). Everything still locked is folded under one "Coming later · N" row at the
   bottom (progression-ui.js still greys and orders them); a heading hides when all its entries are locked. Daily rewards
   and Farm events show the yellow "!" when something waits. The page is about 30% shorter. Styles: public/more-menu.css.
+
+Desktop layout (2026-09-24): on a computer (`public/desktop-hud.css`, desktop = min-width 901px and not a short touch
+screen) the side tools sit on one light panel like the tool dock, so map building labels no longer show between the
+tiles; the camera buttons are one row in the bottom-right corner (lifted above the dock when the window is 1040px or
+narrower) and the Beginner guide ends above them. The Leaderboard left the tool dock and is a side tool after Invite
+(`src/ui.js`; hidden on phones, which open it from the More menu). The Starter Pack is a small button with a €2.99 tag
+next to the diamonds (`#starter-pack-chip`, `src/starter-pack-ui.js`); phones keep the corner tile. Invite a friend is a
+wide dialog like the other screens. Tests: `tests/desktop-hud.test.mjs`.

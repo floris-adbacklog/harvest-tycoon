@@ -1,5 +1,12 @@
 #starter-pack-button{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(20px,var(--safe-bottom));z-index:12;width:72px;min-height:84px;display:flex;align-items:center;flex-direction:column;gap:2px;padding:5px 4px 7px;border:2px solid #d4b365;border-radius:19px;background:#fff8de;box-shadow:0 3px 0 #ab904d,0 5px 15px #3a372726;color:#514939;touch-action:manipulation}
 #starter-pack-button img{width:48px;height:48px}#starter-pack-button span{font-size:9px;font-weight:800;white-space:nowrap}#starter-pack-button small{font-size:12px;font-weight:800;color:#806322}
+/* On a computer: a small button next to the diamonds instead of the tile in the corner (starter-pack-ui.js). */
+#starter-pack-chip{position:relative;flex-shrink:0;overflow:visible;background:#fff8de;border-color:#e2c77f}
+#starter-pack-chip img{width:30px;height:30px}
+#starter-pack-chip small{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);padding:1px 5px;border:1px solid #e2c77f;border-radius:99px;background:#fffdf5;color:#806322;font:800 9.5px/1.3 'DM Sans',sans-serif;white-space:nowrap}
+#starter-pack-chip[hidden]{display:none}
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){#starter-pack-button{display:none}}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){#starter-pack-chip{display:none}}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#starter-pack-button{bottom:calc(var(--mobile-bottom,190px) + 12px);left:max(10px,env(safe-area-inset-left));width:62px;min-height:74px;border-radius:17px}#starter-pack-button img{width:40px;height:40px}#starter-pack-button span{font-size:8px}}
 
 /* The offer: picture, name and time left, the diamonds first, the crops as one strip of pictures, one Buy button.

@@ -1,0 +1,12 @@
+/* Computer screens (farm.html): the side tools sit on one light panel, like the tool dock, so the map's building
+   labels no longer peek through between them; the camera buttons are one row in the bottom-right corner, clear of
+   the Beginner guide. Narrow windows, where that row would touch the dock, lift it above the dock. */
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
+ .side-tools{padding:12px 10px;border:1px solid #e5ddd4;border-radius:22px;background:#fffdf5f2;box-shadow:0 6px 18px #44372414;max-height:calc(100dvh - 184px)}
+ .scene-controls{flex-direction:row;top:auto;right:20px;bottom:20px}
+ .beginner-card{max-height:calc(100dvh - 215px)}
+}
+@media(min-width:901px) and (max-width:1040px) and (min-height:551px),(min-width:901px) and (max-width:1040px) and (pointer:fine){
+ .scene-controls{bottom:124px}
+ .beginner-card{max-height:calc(100dvh - 320px)}
+}
