@@ -1465,7 +1465,8 @@ export function checkIn(state,now=Date.now()){
  if(state.login.lastDay===day)throw new Error('Your daily gift is already collected.');
  state.login.streak=state.login.lastDay===utcDay(now-DAY_MS)?state.login.streak+1:1;
  state.login.lastDay=day;state.login.best=Math.max(state.login.best,state.login.streak);state.login.visits++;
- const index=(state.login.streak-1)%7,coins=DAILY_REWARDS[index]*dailyRewardMultiplier(state,now),diamonds=DAILY_DIAMONDS[index]*dailyRewardMultiplier(state,now),xp=10*dailyRewardMultiplier(state,now);state.coins+=coins;state.diamonds+=diamonds;state.xp+=xp;
+ // Day 7 is the top of the streak: after it every day pays the day-7 gift until a day is missed (then back to day 1).
+ const index=Math.min(state.login.streak,DAILY_REWARDS.length)-1,coins=DAILY_REWARDS[index]*dailyRewardMultiplier(state,now),diamonds=DAILY_DIAMONDS[index]*dailyRewardMultiplier(state,now),xp=10*dailyRewardMultiplier(state,now);state.coins+=coins;state.diamonds+=diamonds;state.xp+=xp;
  state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
  return {coins,diamonds,streak:state.login.streak,xp};
 }

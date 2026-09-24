@@ -12,10 +12,10 @@ test('old farms gain diamonds, boosts and a windmill without losing progress',()
  normalizeFarm(state,now);assert.equal(state.coins,5432);assert.equal(state.diamonds,0);assert.equal(state.buildings.windmill.level,1);assert.deepEqual(state.plots,plots);assert.equal(state.buildings.mill.job.readyAt,job.readyAt);assert.deepEqual(state.buildings.mill.job.output,{flour:1});
  assert.equal(state.inventory.fertilizer,0);assert.equal(state.boosts.upgradeCredits,0);
 });
-test('daily diamond rewards cycle, reset and reject repeat claims',()=>{
+test('daily diamond rewards climb to day 7, stay there while the streak holds, reset and reject repeat claims',()=>{
  const state=createFarm(now);let total=0;
  for(let day=0;day<9;day++){
-  const result=act(state,{type:'checkin'},now+day*DAY_MS);total+=DAILY_DIAMONDS[day%7]+(result.levelReward?.diamonds??0);assert.equal(result.diamonds,DAILY_DIAMONDS[day%7]);assert.equal(state.diamonds,total);
+  const result=act(state,{type:'checkin'},now+day*DAY_MS);total+=DAILY_DIAMONDS[Math.min(day,6)]+(result.levelReward?.diamonds??0);assert.equal(result.diamonds,DAILY_DIAMONDS[Math.min(day,6)],'day 8 and 9 pay the day-7 gift');assert.equal(state.diamonds,total);
   assert.throws(()=>act(state,{type:'checkin'},now+day*DAY_MS),/already collected/);assert.equal(state.diamonds,total);
  }
  const last=act(state,{type:'checkin'},now+11*DAY_MS);assert.equal(state.login.streak,1);assert.equal(state.diamonds,total+DAILY_DIAMONDS[0]+(last.levelReward?.diamonds??0));

@@ -16,7 +16,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  function gift(){
   const now=farmNow(),today=utcDay(now),claimed=state.login.lastDay===today;
   const continuous=claimed||state.login.lastDay===utcDay(now-DAY_MS);
-  const streak=continuous?state.login.streak:0,next=claimed?streak:streak+1,day=(next-1)%7;
+  const streak=continuous?state.login.streak:0,next=claimed?streak:streak+1,day=Math.min(next,DAILY_DIAMONDS.length)-1;   // day 7 repeats while the streak holds
   const multiplier=dailyRewardMultiplier(state,now),coins=DAILY_REWARDS[day]*multiplier,diamonds=DAILY_DIAMONDS[day]*multiplier;
   // A streak line, seven small days that always fit (showing the diamonds, the reward that matters), and today's gift
   // as chips next to one Collect button.

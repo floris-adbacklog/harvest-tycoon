@@ -42,9 +42,9 @@ test('all 50 recipes require ingredients, persist timed jobs and collect once',(
   assert.throws(()=>apply(restored,{type:'collect',building:r.building},now+r.duration),/Nothing to collect/);
  }
 });
-test('login gifts cross UTC boundaries, cannot repeat, cycle and reset without losing farm',()=>{
+test('login gifts cross UTC boundaries, cannot repeat, stay at day 7 and reset without losing farm',()=>{
  const s=createFarm(now);for(let i=0;i<8;i++){
-  const result=apply(s,{type:'checkin'},now+i*DAY_MS);assert.equal(result.coins,DAILY_REWARDS[i%7]);assert.equal(result.streak,i+1);
+  const result=apply(s,{type:'checkin'},now+i*DAY_MS);assert.equal(result.coins,DAILY_REWARDS[Math.min(i,6)]);assert.equal(result.streak,i+1);
   const balance=s.coins;assert.throws(()=>apply(s,{type:'checkin'},now+i*DAY_MS),/already collected/);assert.equal(s.coins,balance);
  }
  const plots=structuredClone(s.plots),balance=s.coins;
