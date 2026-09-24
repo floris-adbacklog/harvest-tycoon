@@ -32,6 +32,13 @@ export function eventView(events=[],now=Date.now()){
 export function goalsDone(e,player=e.player){return e.objectives.every(o=>(player?.progress?.[o.stat]??0)>=o.target);}
 // Mirrors the settlement rule in live-events.sql: every goal full, at least 3 contributions over 10 minutes.
 export function hasQualified(e,player=e.player){return Boolean(player)&&goalsDone(e,player)&&player.actions>=MIN_ACTIONS&&Date.parse(player.last_at)-Date.parse(player.joined_at)>=MIN_SPAN;}
+// What still stands between a farmer with every goal done and qualifying: 3 contributions, the last one at least 10 minutes after
+// the first. One plain sentence.
+export function qualifyHint(player,now=Date.now()){
+ const more=Math.max(0,MIN_ACTIONS-(player?.actions??0)),wait=Math.max(0,Date.parse(player?.joined_at)+MIN_SPAN-now),min=Math.ceil(wait/60000);
+ if(wait>0)return more>1?`${more} more farm actions, the last one after about ${min} min, and you qualify.`:`After about ${min} min, your next farm action qualifies you.`;
+ return more>1?`${more} more farm actions and you qualify.`:'Your next farm action qualifies you.';
+}
 // Why this farm is not taking part yet, in one sentence — or null when it can.
 export function eligibilityNote(eligibility,now=Date.now()){
  if(!eligibility)return null;
@@ -67,7 +74,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const blocked=eligibilityNote(data?.eligibility,now()),p=e.player;
   if(blocked)return `<p class="family-notice event-note is-blocked">${esc(blocked)}</p>`;
   if(hasQualified(e))return '<p class="family-notice event-note">You qualified! Collect your reward here when the event ends.</p>';
-  if(p&&goalsDone(e))return '<p class="family-notice event-note">Every goal is complete. Keep farming for a few more minutes to qualify.</p>';
+  if(p&&goalsDone(e))return `<p class="family-notice event-note">Every goal is complete. ${esc(qualifyHint(p,now()))}</p>`;
   if(p)return `<p class="family-notice event-note">You are taking part · ${num(p.actions)} contribution${p.actions===1?'':'s'} so far.</p>`;
   return '<p class="family-notice event-note">Just play your farm: harvesting, watering and collecting count automatically.</p>';
  }
@@ -75,7 +82,12 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  // The top 10 with what each farmer earns: exact after the event, "if it ended now" while it runs.
  function standings(e,{final=false}={}){
   const s=e?.standings;if(!s?.top?.length)return '';
-  const row=r=>`<article class="family-list-row event-standing ${r.rank<=3?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.rank<=3?art(MEDALS[r.rank-1]):r.rank}</span><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${esc(r.username)}${r.isYou?' (you)':''}</strong><span>${r.podium?`${['1st','2nd','3rd'][r.rank-1]} place`:r.finished?'✓ Finished':`${r.progress}% done`}</span></div><span class="event-standing-reward">${r.finished?`<b>${art('coins')}${num(r.coins)}</b>${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:`<progress class="event-mini" max="100" value="${r.progress}" aria-label="${esc(r.username)}: ${r.progress}% done"></progress>`}</span></article>`;
+  // A trophy only for someone who really finished in the top three. Every goal done but not qualified yet: "qualifying", and for
+  // you the reward of the next free place (faded), so 100% never looks like nothing.
+  const next=PODIUM_PRIZES[s.top.filter(r=>r.finished).length]??FINISHER_PRIZE,{coins:base,diamondMin,diamondMax}=e.rewards??{coins:0,diamondMin:0,diamondMax:0};
+  const soon=r=>r.isYou?`<span class="event-soon" title="When you qualify">${art('coins')}${num(base+next.coins)}${art('diamonds')}${range(diamondMin+next.diamonds,diamondMax+next.diamonds)}<small>when you qualify</small></span>`:'<span class="event-qualifying">Qualifying</span>';
+  const label=r=>r.podium?`${['1st','2nd','3rd'][r.rank-1]} place`:r.finished?'✓ Finished':r.progress>=100?'All goals done · qualifying':`${r.progress}% done`;
+  const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${esc(r.username)}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div><span class="event-standing-reward">${r.finished?`<b>${art('coins')}${num(r.coins)}</b>${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:r.progress>=100?soon(r):`<progress class="event-mini" max="100" value="${r.progress}" aria-label="${esc(r.username)}: ${r.progress}% done"></progress>`}</span></article>`;
   return `<h3 class="event-section-title">${final?`Final standings · ${esc(e.title)}`:'Top farmers'}</h3><p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:'Rewards if the event ended now. The first three to finish win a podium prize.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
  }
  function hero(){

@@ -1140,3 +1140,7 @@
 /* A timer that would cover another on a phone shows as just its ring (game.js positionLabels): every field keeps its marker. */
 .plot-label.plot-timer.is-compact{gap:0;padding:3px}
 .plot-label.plot-timer.is-compact .plot-timer-time{display:none}
+/* Every goal done, not qualified yet: your coming reward, faded, and a small "Qualifying" for the others. */
+.event-standing-reward .event-soon{grid-column:1/-1;display:inline-flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px;color:#806322;font-size:14px;font-weight:800;opacity:.62;white-space:nowrap}
+.event-soon small{flex-basis:100%;text-align:right;color:#8a7c6a;font-size:11px;font-weight:700}
+.event-standing-reward .event-qualifying{grid-column:1/-1;padding:3px 10px;border-radius:999px;background:#f3ecd9;color:#806322;font-size:12px;font-weight:800;white-space:nowrap}
