@@ -740,3 +740,8 @@ stops earning); valley places (Valley Market, Ranch, Estate Workshop, Trade Depo
 status is "ready" (`economy.placeReady`, the same status the Buildings list sorts by). Styles `.utility-label.ready/.full`
 in `public/icons.css`. The last chosen seed is remembered per device (`harvest-tycoon:seed`, listed in privacy.html) and
 restored on load when that crop is unlocked. Tests: `tests/stall-notice.test.mjs`.
+
+Desktop start view (2026-09-24): the home and fields views centre the farm in the free part of the screen between the
+side tools and, while it is open, the Beginner guide (`hudShift` in `measureTools`, applied as a horizontal frustum
+shift in `resize()`, `public/game.js`; phones and the overview are unchanged). Re-measured when the side tools or the
+guide change size (ResizeObserver). Tests: `tests/desktop-hud.test.mjs`.

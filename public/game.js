@@ -504,10 +504,14 @@ async function claim(id,{quiet=false}={}){try{const r=await runAction({type:'que
 function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;}
 // On a computer the side tools float over the map: a building name that would sit behind them is hidden until the map
 // moves (desktop-hud.css keeps the tools see-through). Measured when the window or the tools change, not every frame.
-let toolsBox=null;
+// The home and fields views centre the farm between the side tools and, while it is open, the Beginner guide on the right
+// (hudShift, in pixels).
+let toolsBox=null,hudShift=0;
 function measureTools(){
- const tools=document.querySelector('.side-tools');if(!tools||mobileLayout.matches){toolsBox=null;return;}
+ const tools=document.querySelector('.side-tools');if(!tools||mobileLayout.matches){toolsBox=null;hudShift=0;return;}
  const t=tools.getBoundingClientRect(),w=world.getBoundingClientRect();toolsBox={left:t.left-w.left,right:t.right-w.left,top:t.top-w.top,bottom:t.bottom-w.top};
+ const guide=document.querySelector('.beginner-card'),open=guide&&!guide.hidden&&$('quest-collapse')?.getAttribute('aria-expanded')!=='false';
+ hudShift=(toolsBox.right-(open?w.right-guide.getBoundingClientRect().left:0))/2;
 }
 const behindTools=(x,y,half)=>Boolean(toolsBox)&&x+half>toolsBox.left&&x-half<toolsBox.right&&y>toolsBox.top&&y-50<toolsBox.bottom;
 function resize(){
@@ -529,7 +533,10 @@ function resize(){
  const rows=Math.ceil(state.plots.length/4),fieldSpan=Math.max(21,24/aspect,(10+2.26*rows)/aspect,10.6+rows*2.06);
  const homeSpan=Math.min(overviewSpan,Math.max(fieldSpan,mobile?32/aspect:38));
  const span=(viewMode==='fields'?fieldSpan:viewMode==='home'?homeSpan:overviewSpan)/zoom;
- camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;
+ // On a computer the side tools (and an open Beginner guide) cover the edges of the map: the home and fields views centre
+ // the farm in the free part between them (the overview already keeps its own margins).
+ const shift=!mobile&&viewMode!=='overview'?hudShift*span/height:0;
+ camera.left=-span*aspect/2-shift;camera.right=span*aspect/2-shift;camera.top=span/2;camera.bottom=-span/2;
  let focus;
  if(viewMode==='fields'){
   const fieldCenter=.25+(Math.ceil(state.plots.length/4)-1)*3.2/2;
@@ -701,7 +708,7 @@ function bindUI(){
  createInviteUI({notify:toast});
  mobileUI=createMobileUI({openUtility,resetView});
  $('save-status').onclick=()=>client.retry();
- new ResizeObserver(resize).observe(world);const sideTools=document.querySelector('.side-tools');if(sideTools)new ResizeObserver(measureTools).observe(sideTools);icons();
+ new ResizeObserver(resize).observe(world);const sideTools=document.querySelector('.side-tools');if(sideTools)new ResizeObserver(resize).observe(sideTools);const guideCard=document.querySelector('.beginner-card');if(guideCard)new ResizeObserver(resize).observe(guideCard);icons();
 }
 function frame(now){
  requestAnimationFrame(frame);if(!ready||document.hidden)return;
