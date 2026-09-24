@@ -112,3 +112,15 @@ test('a gift note shows the diamond and the coin in front of the amounts',()=>{
  assert.match(ui,/n\.kind==='gift'\|\|n\.kind==='donation'\?withAmounts\(n\.body\):esc\(n\.body\)/);
  assert.match(ui,/const withAmounts=text=>esc\(text\)\.replace\(/,'escaped first, then only the amounts get a picture');
 });
+
+test('Send message on a profile opened from the chat really opens that private chat (the late close report does not stop it)',()=>{
+ assert.match(read('src/chat-ui.js'),/dialog\.addEventListener\('close',\(\)=>\{closeMenu\(\);if\(!dialog\.open\)\{loading\+\+;busy=false;\}\}\);/);
+});
+
+test('the Private tab finds any farmer by name to write to, without the profile, and not yourself',()=>{
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/placeholder="Find a farmer to message…"/);
+ assert.match(ui,/bridge\.request\(\{operation:'player_search',query\}\)/,'the same search as the leaderboard');
+ assert.match(ui,/\.filter\(p=>p\.playerId!==me\)/);
+ assert.match(ui,/find\.hidden=!\(tab==='private'&&!thread&&overview\?\.privateOn!==false\);/,'not when your own private messages are off');
+});

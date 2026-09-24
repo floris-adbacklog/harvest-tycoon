@@ -158,3 +158,10 @@ span.chat-avatar{cursor:default}
 .chat-amount{white-space:nowrap}
 .chat-amount .game-art{display:inline-block;width:18px;height:18px;margin-right:3px;vertical-align:-3px}
 .chat-amount b{font-weight:800}
+/* Private tab: find a farmer to write to. */
+.chat-find{padding:14px 16px;border-bottom:1px solid #eee4d9}
+.chat-find[hidden]{display:none}
+.chat-find input{width:100%;min-height:46px;box-sizing:border-box;padding:0 14px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:500 15px 'DM Sans',sans-serif}
+.chat-find input:focus{outline:3px solid #f3c35355;border-color:#c9a45a}
+.chat-write{color:#6b7f3e;font-size:12.5px;font-weight:750}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){.chat-find{padding:12px}}

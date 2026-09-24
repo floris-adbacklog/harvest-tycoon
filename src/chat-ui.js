@@ -47,12 +47,15 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  </div><button type="button" class="icon-button chat-close" aria-label="Close chat"><i data-lucide="x"></i></button></div>
  <div class="chat-head"><button type="button" class="chat-back" aria-label="All private chats" hidden>${ICON.back}</button><h2 id="chat-title">Global chat</h2><button type="button" class="chat-block" hidden>${ICON.block}</button></div>
  <form class="chat-compose" hidden><input type="text" maxlength="200" autocomplete="off" enterkeyhint="send" aria-label="Your message"><select class="chat-hours" aria-label="Show the news for" title="How long everyone sees it" hidden><option value="6">6 h</option><option value="12">12 h</option><option value="24" selected>24 h</option><option value="48">48 h</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select><button type="submit" class="chat-send" aria-label="Send">${art('send')}</button></form>
+ <div class="chat-find" hidden><input type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Find a farmer to message…" aria-label="Find a farmer to message"></div>
  <p class="chat-note" role="status" hidden></p>
  <ol class="chat-list"></ol>`;
  doc.body.append(dialog);
  const $=selector=>dialog.querySelector(selector);
  const form=$('.chat-compose'),input=form.querySelector('input'),hours=form.querySelector('.chat-hours'),sendButton=form.querySelector('.chat-send'),list=$('.chat-list'),noteEl=$('.chat-note');
- const title=$('#chat-title'),head=$('.chat-head'),back=$('.chat-back'),blockButton=$('.chat-block');
+ const title=$('#chat-title'),head=$('.chat-head'),back=$('.chat-back'),blockButton=$('.chat-block'),find=$('.chat-find'),findInput=find.querySelector('input');
+ // The Private tab: find any farmer by name and write to them, without opening their profile first (the same search as the leaderboard).
+ let found=null,findTimer=null,findTicket=0;
 
  let overview=null,tab='global',thread=null,messages=[],notices=[],freshNotices=0,loading=0,busy=false,sending=false,connected=false,disposed=false;
  let overviewTimer=null,pollTimer=null;const readTimers=new Map(),statusCache=new Map();
@@ -110,6 +113,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const picture=n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':'bell');
   return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text">${n.kind==='gift'||n.kind==='donation'?withAmounts(n.body):esc(n.body)}</p></div></li>`;
  }
+ function foundRow(p){
+  return `<li><button type="button" class="chat-thread" data-start="${esc(p.playerId)}"><span class="chat-avatar">${avatarImage(p.avatarId)}</span><span class="chat-thread-copy"><strong>${esc(p.username)}</strong><small>Level ${esc(p.level)}${p.family?` · ${esc(p.family.name)}`:''}</small></span><span class="chat-thread-side"><small class="chat-write">Write</small></span></button></li>`;
+ }
  const empty=(text,extra='')=>`<li class="chat-empty"><p>${esc(text)}</p>${extra}</li>`;
 
  // Who may write here, and if not, why (shown instead of the box).
@@ -129,6 +135,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  function paint(){
   dialog.querySelectorAll('[data-chat-tab]').forEach(tabButton=>{const on=tabButton.dataset.chatTab===tab;tabButton.classList.toggle('active',on);tabButton.setAttribute('aria-selected',String(on));});
   back.hidden=!(tab==='private'&&thread);blockButton.hidden=back.hidden;
+  find.hidden=!(tab==='private'&&!thread&&overview?.privateOn!==false);
   // The tab already says where you are: a heading only for a family (its name) and a private chat (who with).
   head.classList.toggle('is-quiet',!((tab==='family'&&overview?.family)||(tab==='private'&&thread)));
   if(thread){const off=blocked().has(thread.otherId);blockButton.setAttribute('aria-label',off?`Unblock ${thread.otherName}`:`Block ${thread.otherName}`);blockButton.title=blockButton.getAttribute('aria-label');blockButton.classList.toggle('is-on',off);}
@@ -142,6 +149,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    const familyButton=doc.getElementById('family-button');
    list.innerHTML=empty(familyButton&&!familyButton.hidden?'Join a family to chat with its farmers.':'Families open at level 10. Then you can chat with yours here.',familyButton&&!familyButton.hidden?'<button type="button" class="small-button" data-open-family>Find a family</button>':'');
   }
+  else if(tab==='private'&&!thread&&found&&!find.hidden)list.innerHTML=found.loading?'<li class="chat-empty"><p>Looking around the valley…</p></li>':found.players.length?found.players.map(foundRow).join(''):empty('No farmers found. Try another name.');
   else if(tab==='private'&&!thread){const threads=(overview?.threads??[]).filter(t=>!blocked().has(t.otherId));list.innerHTML=(overview?.privateOn===false?'<li class="chat-empty chat-off"><p>Your private messages are off. You can turn them on in Settings, under Chat.</p></li>':'')+(threads.length?threads.map(threadRow).join(''):overview?.privateOn===false?'':empty(EMPTY.private));}
   else{const shown=messages.filter(m=>!blocked().has(m.sender));list.innerHTML=shown.length?shown.map(messageRow).join(''):empty(thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
   refreshArt();
@@ -162,7 +170,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(ticket!==loading)return;busy=false;paint();markRead(name);
  }
  function show(next,{keepThread=false}={}){
-  tab=next;if(!keepThread)thread=null;messages=[];load();
+  tab=next;if(!keepThread)thread=null;messages=[];found=null;findInput.value='';load();
   if(!matchMedia('(pointer:coarse)').matches&&!form.hidden)input.focus({preventScroll:true});
  }
  async function open({tab:wanted,with:other}={}){
@@ -214,14 +222,28 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  $('.chat-close').onclick=()=>dialog.close();
  // A tap on the dimmed game next to the panel closes it.
  dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();});
- dialog.addEventListener('close',()=>{closeMenu();loading++;});
+ // Closing stops a chat that is still loading. The browser reports the close a moment later, so when the chat was closed and opened
+ // again straight away (Send message on a profile opened from the chat) that report must not stop the new one.
+ dialog.addEventListener('close',()=>{closeMenu();if(!dialog.open){loading++;busy=false;}});
  blockButton.onclick=()=>thread&&setBlock(thread.otherId,thread.otherName,!blocked().has(thread.otherId));
  list.addEventListener('click',event=>{
   const profile=event.target.closest('[data-profile]'),threadButton=event.target.closest('[data-thread]'),more=event.target.closest('[data-more]');
   if(more){openMenu(more);return;}
   if(profile){profiles?.open(profile.dataset.profile,{back:null});return;}
+  const start=event.target.closest('[data-start]');
+  if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}
   if(threadButton){const t=overview?.threads?.find(x=>x.channel===threadButton.dataset.thread);if(!t)return;thread={channel:t.channel,otherId:t.otherId,otherName:t.otherName,otherAvatar:t.otherAvatar};show('private',{keepThread:true});return;}
   if(event.target.closest('[data-open-family]')){dialog.close();doc.getElementById('family-button')?.click();}
+ });
+ findInput.addEventListener('input',()=>{
+  clearTimeout(findTimer);const query=findInput.value.trim(),ticket=++findTicket;
+  if(query.length<2){found=null;paint();return;}
+  found={loading:true,players:[]};paint();
+  findTimer=setTimeout(async()=>{
+   try{const data=await bridge.request({operation:'player_search',query});if(ticket!==findTicket)return;found={players:(data.players??[]).filter(p=>p.playerId!==me)};}
+   catch(error){if(ticket!==findTicket)return;found={players:[]};note(error.message);}
+   if(dialog.open&&tab==='private'&&!thread)paint();
+  },300);
  });
  title.addEventListener('click',event=>{const profile=event.target.closest('[data-profile]');if(profile)profiles?.open(profile.dataset.profile,{back:null});});
 
