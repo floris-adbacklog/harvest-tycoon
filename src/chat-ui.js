@@ -31,7 +31,6 @@ const EMPTY={
 const ICON={
  back:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>',
  block:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg>',
- report:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
  more:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>'
 };
 
@@ -46,7 +45,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   <button type="button" role="tab" data-chat-tab="family">Family<b class="chat-count" hidden></b></button>
   <button type="button" role="tab" data-chat-tab="private">Private<b class="chat-count" hidden></b></button>
  </div><button type="button" class="icon-button chat-close" aria-label="Close chat"><i data-lucide="x"></i></button></div>
- <div class="chat-head"><button type="button" class="chat-back" aria-label="All private chats" hidden>${ICON.back}</button><h2 id="chat-title">Global chat</h2><button type="button" class="chat-report" hidden>${ICON.report}</button><button type="button" class="chat-block" hidden>${ICON.block}</button></div>
+ <div class="chat-head"><button type="button" class="chat-back" aria-label="All private chats" hidden>${ICON.back}</button><h2 id="chat-title">Global chat</h2><button type="button" class="chat-report" hidden>${art('alert')}</button><button type="button" class="chat-block" hidden>${ICON.block}</button></div>
  <form class="chat-compose" hidden><input type="text" maxlength="200" autocomplete="off" enterkeyhint="send" aria-label="Your message"><select class="chat-hours" aria-label="Show the news for" title="How long everyone sees it" hidden><option value="6">6 h</option><option value="12">12 h</option><option value="24" selected>24 h</option><option value="48">48 h</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select><button type="submit" class="chat-send" aria-label="Send">${art('send')}</button></form>
  <div class="chat-find" hidden><input type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Find a farmer to message…" aria-label="Find a farmer to message"></div>
  <p class="chat-note" role="status" hidden></p>
@@ -317,7 +316,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    const staffTools=status.staff&&!status.moderator,admin=role()==='admin';
    const chatState=status.banned?'Chat closed (banned)':status.mutedUntil?`Muted until ${new Date(status.mutedUntil).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'Can chat';
    box.hidden=false;
-   box.innerHTML=`<div class="farmer-chat-row">${status.canMessage?`<button type="button" class="primary-button farmer-chat-send" data-chat="message">${art('letter')}Send message</button>`:''}<button type="button" class="small-button" data-chat="report">Report</button><button type="button" class="small-button" data-chat="${status.blocked?'unblock':'block'}">${status.blocked?'Unblock':'Block'}</button></div>`
+   box.innerHTML=`<div class="farmer-chat-row">${status.canMessage?`<button type="button" class="primary-button farmer-chat-send" data-chat="message">${art('letter')}Send message</button>`:''}<button type="button" class="small-button farmer-chat-report" data-chat="report">${art('alert')}Report</button><button type="button" class="small-button" data-chat="${status.blocked?'unblock':'block'}">${status.blocked?'Unblock':'Block'}</button></div>`
     +(staffTools||(admin&&status.moderator)?`<div class="farmer-mod-tools"><span class="farmer-mod-title">${art('admin')}Moderation${staffTools?` · <b>${esc(chatState)}</b>`:''}</span><div class="farmer-mod-buttons">${staffTools?`<button type="button" class="small-button" data-chat="mute60">Mute 1 hour</button><button type="button" class="small-button" data-chat="mute1440">Mute 1 day</button>${status.banned||status.mutedUntil?'<button type="button" class="small-button" data-chat="lift">Allow chat</button>':'<button type="button" class="small-button is-danger" data-chat="ban">Ban from chat</button>'}`:''}${admin?`<button type="button" class="small-button" data-chat="${status.moderator?'unmod':'mod'}">${status.moderator?'Remove moderator':'Make moderator'}</button>`:''}</div></div>`:'');
    refreshArt();
    box.onclick=async event=>{
