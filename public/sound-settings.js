@@ -21,5 +21,7 @@ export function createSoundSettings(audio){
  $('effects-volume').oninput=()=>audio.setSettings({effects:Number($('effects-volume').value)});
  $('effects-volume').onchange=()=>{void audio.unlock().then(()=>audio.play('plant'));};
  $('sound-preview').onclick=()=>{void audio.unlock().then(()=>audio.play('levelup'));};
+ // The cookie choice lives on the page around the game (public/cookie-consent.js).
+ const cookies=$('cookie-settings');if(cookies)cookies.onclick=()=>{dialog.close();window.parent?.harvestConsent?.open();};
  refresh();return {open,refresh};
 }

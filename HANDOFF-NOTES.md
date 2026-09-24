@@ -553,3 +553,21 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - Not done, on purpose: long browser caching for /assets. Pictures have been replaced under the same name before
   (coop.png, family-sharing.png, live-events.png), so a long cache would show old art after a deploy. Safe only if a
   changed file always gets a new name.
+
+## Cookie banner (24 Sep 2026; website only)
+- public/cookie-consent.js shows a small card (bottom left, full width on phones): "Help a new farm game grow", one
+  sentence on what Google Analytics and the Meta Pixel are for, "the game never sends your email or player name",
+  a Privacy Policy link, and Decline / Accept as two identical buttons side by side. The friendly wording is the
+  nudge; Decline stays exactly as easy as Accept, which the Dutch DPA (AP) requires (no bright Accept next to a grey
+  or hidden Decline, no pre-ticked boxes).
+- Google Tag Manager (and so GA and the Meta Pixel) now only loads after Accept: the loader at the top of play.html
+  runs for a saved "accepted" younger than 12 months, and the banner starts it on Accept. The noscript GTM iframe is
+  gone (it loaded GTM without asking). dataLayer events from before the choice wait in the page and are only sent if
+  the visitor accepts.
+- Choice: local storage harvest-tycoon:cookies = {choice, at}, kept 12 months, then asked again. Change it with
+  "Cookie settings" in the home-page footer, under Privacy in the game's Settings, or /?cookie-settings (linked from
+  the privacy policy). Decline removes _ga, _ga_*, _gid, _gat*, _gcl_*, _fbp and _fbc from our domain; declining after
+  an earlier Accept reloads the page so the running tools stop.
+- Privacy policy updated to match (24 Sep 2026): the "In short" line, the purpose and legal basis (consent), section
+  8 (only after Accept, how to change it, what Decline removes) and the storage table.
+- Tests: tests/cookie-consent.test.mjs; tests/analytics.test.mjs now expects one consent-gated loader.

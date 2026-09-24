@@ -19,12 +19,12 @@ test('an already-registered address is not counted as a registration',()=>{
  assert.equal(isNewRegistration({user:{identities:[{provider:'email'}]}}),true);
  assert.equal(isNewRegistration({user:{}}),true);assert.equal(isNewRegistration({}),true);
 });
-test('Tag Manager is installed once, on the page shell only (not in the game iframe)',()=>{
+test('Tag Manager is installed once, on the page shell only (not in the game iframe), and only after consent',()=>{
  const play=readFileSync(new URL('../public/play.html',import.meta.url),'utf8'),farm=readFileSync(new URL('../public/farm.html',import.meta.url),'utf8');
- assert.equal(play.split('GTM-NPF56JVR').length-1,2,'one head script and one noscript iframe');
+ assert.equal(play.split('GTM-NPF56JVR').length-1,1,'one head loader; it only runs after cookies are accepted (tests/cookie-consent.test.mjs)');
  assert(play.indexOf('googletagmanager.com/gtm.js')<play.indexOf('<meta name="viewport"'),'script sits at the top of the head');
  assert(play.indexOf('<meta charset="utf-8">')<play.indexOf('googletagmanager.com/gtm.js')&&play.indexOf('googletagmanager.com/gtm.js')<1024,'charset stays inside the first 1024 bytes');
- assert(play.indexOf('<body data-phase="checking">\n<!-- Google Tag Manager (noscript) -->')>0,'noscript directly after <body>');
+ assert(!play.includes('googletagmanager.com/ns.html'),'no noscript iframe: it would load Tag Manager without asking');
  assert(!farm.includes('googletagmanager'),'farm.html is loaded inside play.html; a second container would double-count');
 });
 test('sign-up funnel steps carry the device and only whitelisted, anonymous parameters',()=>{
