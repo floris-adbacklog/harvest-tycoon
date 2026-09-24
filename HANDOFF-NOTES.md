@@ -664,4 +664,5 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - Families of up to 10 members (`MAX_MEMBERS`, was 6). The database also had a 6: supabase/family-max-10.sql patches
   the live harvest_family_commit (only "count(*)>6" becomes ">10", taken from the live definition) and the
   family_orders member_count check. Dry-run on live in a rolled-back transaction on 24 Sep: works, grants unchanged.
-  Order: apply the migration, then push the client and deploy farm-api.
+  Applied on 24 Sep 2026 as migration harvest_family_max_10 (checked afterwards: one ">10" check, no ">6", order
+  check 1-10, EXECUTE still only postgres and service_role).
