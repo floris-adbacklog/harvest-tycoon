@@ -796,3 +796,7 @@ where it belongs. Repeated pieces are InstancedMesh (one per model). New models 
 public/assets/models. Tests: `tests/scenery.test.mjs`.
 The camera's far plane is 300 so the edge mountains are not cut off when zoomed out; the big tree between the camera and
 the Family Hall was removed.
+Crop timers (2026-09-24): a growing crop's label is a pill with a ring that fills as it grows (blue once watered) around the
+crop's picture, the time left (phones: 36m, 1h20) and a drop (watered) or leaf (cared for) icon; when Care is ready the pill
+glows gold and the leaf gently pulses. Built once per planting (`dataset.crop`), each tick only the fill (`--grow`) and the
+time change. Styles at the end of `public/retention.css`. Tests in `tests/scenery.test.mjs`.

@@ -29,3 +29,14 @@ test('repeated pieces are instanced, everything stands still, and the front keep
  assert.match(source,/if\(Math\.max\(Math\.abs\(p\.x\),Math\.abs\(p\.z\)\)>74\)continue;/,'never over the edge of the ground');
  assert.match(source,/const free=\(x,z,r=1\)=>!\(x>fields\[0\]-r/,'never on a field, the pond, a road or anything that stands');
 });
+
+test('a growing crop shows a ring that fills as it grows, its picture, the time and a drop or leaf; gold when Care is ready',()=>{
+ const game=read('public/game.js'),css=read('public/retention.css');
+ assert.match(game,/<span class="plot-timer-ring">\$\{art\(p\.crop\)\}<\/span><b class="plot-timer-time"><\/b><span class="plot-timer-badge"><\/span>/,'built once per planting');
+ assert.match(game,/v\.label\.style\.setProperty\('--grow',\(grown\*100\)\.toFixed\(1\)\);v\.label\.querySelector\('\.plot-timer-time'\)\.textContent=time;/,'each tick only the fill and the time');
+ assert.match(game,/badge=p\.tended\|\|careReady\?'care':p\.watered\?'water':''/);
+ assert.doesNotMatch(game,/'✦ '|'↟ '/,'no more cryptic signs');
+ assert.match(game,/\$\{Math\.floor\(m\/60\)\}h\$\{m%60\?String\(m%60\)\.padStart\(2,'0'\):''\}/,'phones show 1h20, not 2h');
+ assert.match(css,/\.plot-timer-ring\{[^}]*conic-gradient\(#7fae4e calc\(var\(--grow,0\)\*1%\),#e9e1d0 0\)/);
+ assert.match(css,/\.plot-label\.plot-timer\.care-ready\{border-color:#e0b04a;/);
+});

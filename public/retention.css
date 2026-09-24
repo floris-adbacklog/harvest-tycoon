@@ -1107,3 +1107,19 @@
 
 /* Places in the valley in the Farm buildings list: their own heading across both columns. */
 #buildings-dialog .catalog-heading{grid-column:1/-1;margin:14px 0 2px;font:600 17px 'Outfit',sans-serif;color:#453e28}
+
+/* Growing crops (game.js drawCrop): a small ring that fills as the crop grows, with the crop's picture, the time left and, when
+   it applies, a drop (watered) or a leaf (cared for). When Care is ready the pill glows gold and its leaf asks to be tapped. */
+.plot-label.plot-timer{display:inline-flex;align-items:center;gap:4px;min-width:0;min-height:0;padding:3px 8px 3px 3px;border:1px solid #e6dccb;border-radius:999px;background:#fffdf5f2;box-shadow:0 2px 6px #3e342226;color:#4f4632;font:800 11px/1 'DM Sans',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.plot-timer-ring{position:relative;display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:conic-gradient(#7fae4e calc(var(--grow,0)*1%),#e9e1d0 0)}
+.plot-timer-ring::after{content:'';position:absolute;inset:2.5px;border-radius:50%;background:#fffdf5}
+.plot-timer-ring>.game-art{position:relative;z-index:1;width:15px;height:15px;object-fit:contain}
+.plot-timer-badge:empty{display:none}
+.plot-timer-badge>.game-art{display:block;width:14px;height:14px;object-fit:contain}
+.plot-label.plot-timer.watered .plot-timer-ring{background:conic-gradient(#5aa0c8 calc(var(--grow,0)*1%),#e1e8ea 0)}
+.plot-label.plot-timer.care-ready{border-color:#e0b04a;box-shadow:0 0 0 2px #f3d27a99,0 2px 6px #3e342226}
+.plot-label.plot-timer.care-ready::before{content:none}
+.plot-label.plot-timer.care-ready .plot-timer-badge{animation:care-ask 1.6s ease-in-out infinite}
+@keyframes care-ask{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){.plot-label.plot-timer{font-size:11px;padding:3px 7px 3px 3px}.plot-timer-ring{width:24px;height:24px}.plot-timer-ring>.game-art{width:16px;height:16px}}
+@media(prefers-reduced-motion:reduce){.plot-label.plot-timer.care-ready .plot-timer-badge{animation:none}}

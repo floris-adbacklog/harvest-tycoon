@@ -463,13 +463,19 @@ function drawCrop(i){
  v.cropGroup.scale.setScalar(scale);
  const ripe=p.crop&&farmNow()>=p.readyAt;
  v.soil.traverse(n=>{if(n.isMesh)n.material.color.setHex(p.watered?0x8b8a82:0xc4b39a)});
- if(!p.crop){v.label.innerHTML='';v.label.className='plot-label';v.label.setAttribute('aria-label',`Field ${i+1}, empty. Plant ${CROPS[selectedCrop].name}.`);}
+ if(!p.crop){v.label.innerHTML='';v.label.dataset.crop='';v.label.className='plot-label';v.label.setAttribute('aria-label',`Field ${i+1}, empty. Plant ${CROPS[selectedCrop].name}.`);}
  else if(ripe){
   if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art(['apples','berries','greenbeans','squash','polebeans','ciderapples','cherries'].includes(p.crop)?p.crop:'vegetables');
   v.label.className='plot-label ready';v.label.setAttribute('aria-label',`Harvest ${CROPS[p.crop].name} from field ${i+1}`);
  }else{
-  const remaining=p.readyAt-farmNow(),time=mobileLayout.matches?(remaining>=3600000?`${Math.ceil(remaining/3600000)}h`:remaining>=60000?`${Math.ceil(remaining/60000)}m`:`${Math.ceil(Math.max(0,remaining)/1000)}s`):formatDuration(remaining);
-  v.label.textContent=mobileLayout.matches?time:`${p.tended?'✦ ':p.watered?'↟ ':''}${time}`;v.label.className=`plot-label${p.watered?' watered':''}${!p.tended&&farmNow()>=p.careAt?' care-ready':''}`;v.label.setAttribute('aria-label',`${CROPS[p.crop].name}, field ${i+1}, ${formatDuration(p.readyAt-farmNow())} remaining${p.watered?', watered':''}`);
+  const remaining=p.readyAt-farmNow(),time=mobileLayout.matches?(remaining>=3600000?(m=>`${Math.floor(m/60)}h${m%60?String(m%60).padStart(2,'0'):''}`)(Math.ceil(remaining/60000)):remaining>=60000?`${Math.ceil(remaining/60000)}m`:`${Math.ceil(Math.max(0,remaining)/1000)}s`):formatDuration(remaining);
+  // A ring that fills as the crop grows, with the crop's picture, the time left, and a drop (watered) or a leaf (cared for).
+  // Built once per planting; each tick only the time and the fill change.
+  if(v.label.dataset.crop!==p.crop||!v.label.querySelector('.plot-timer-ring')){v.label.innerHTML=`<span class="plot-timer-ring">${art(p.crop)}</span><b class="plot-timer-time"></b><span class="plot-timer-badge"></span>`;v.label.dataset.crop=p.crop;}
+  const grown=Math.min(1,Math.max(0,(farmNow()-p.plantedAt)/Math.max(1,p.readyAt-p.plantedAt))),careReady=!p.tended&&farmNow()>=p.careAt,badge=p.tended||careReady?'care':p.watered?'water':'';
+  v.label.style.setProperty('--grow',(grown*100).toFixed(1));v.label.querySelector('.plot-timer-time').textContent=time;
+  const holder=v.label.querySelector('.plot-timer-badge');if(holder.dataset.badge!==badge){holder.dataset.badge=badge;holder.innerHTML=badge?art(badge):'';}
+  v.label.className=`plot-label plot-timer${p.watered?' watered':''}${careReady?' care-ready':''}${p.tended?' tended':''}`;v.label.setAttribute('aria-label',`${CROPS[p.crop].name}, field ${i+1}, ${formatDuration(p.readyAt-farmNow())} remaining${p.watered?', watered':''}`);
  }
  v.lastReady=ripe;
 }
