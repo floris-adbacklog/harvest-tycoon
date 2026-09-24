@@ -53,7 +53,7 @@ test('the menu is grouped under small headings, with compact tiles and the locke
  const headings=[...grid.matchAll(/<h3 class="menu-section" data-section-heading="([a-z]+)">([^<]+)<\/h3>/g)].map(m=>m[2]);
  assert.deepEqual(headings,['Every day','On the farm','Estate &amp; valley','Friends','Help &amp; settings']);
  const section=name=>{const start=grid.indexOf(`data-section-heading="${name}"`),end=grid.indexOf('<h3',start+10);return grid.slice(start,end<0?undefined:end);};
- assert.match(section('friends'),/leaderboard-button[\s\S]*invite-button/);assert.match(section('help'),/all-quests-mobile[\s\S]*help-button[\s\S]*sound-button/,'the Beginner guide sits with How to play');assert.match(section('daily'),/today-button[\s\S]*events-button/);
+ assert.match(section('friends'),/leaderboard-button[\s\S]*invite-button/);assert.match(section('daily'),/all-quests-mobile/,'the Beginner guide is an everyday thing');assert.match(section('help'),/help-button[\s\S]*sound-button/);assert.match(section('daily'),/today-button[\s\S]*events-button/);
  assert.match(grid,/<button type="button" class="menu-later" data-menu-later aria-expanded="false" hidden><span>Coming later<\/span><b data-later-count>0<\/b>/);
  const ui=read('public/mobile-ui.js');
  assert.match(ui,/later\.onclick=\(\)=>\{grid\.classList\.toggle\('show-later'\);arrange\(\);\};/);
