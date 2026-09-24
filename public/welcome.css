@@ -152,3 +152,8 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]){background:#f
 .browser-tip button{min-height:44px;padding:8px 14px;border-radius:12px;font:700 14px 'DM Sans',sans-serif;cursor:pointer}
 .browser-tip-go{flex:1;border:0;background:#5f573f;color:#fffdf5}
 .browser-tip-later{border:1px solid #d8ccba;background:#fff;color:#5f573f}
+/* "Forgot your password?": a way back at the top of the card. */
+.account-back{display:inline-flex;align-items:center;gap:4px;margin:0 0 10px -6px;padding:6px 10px 6px 6px;min-height:36px;border:0;border-radius:10px;background:none;color:#5b5336;font:800 14px 'DM Sans',sans-serif;cursor:pointer;touch-action:manipulation}
+.account-back:hover{background:#f3ece2}
+.account-back svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.account-back[hidden]{display:none}

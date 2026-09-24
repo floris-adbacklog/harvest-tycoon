@@ -147,3 +147,10 @@ test('the dashboard keeps a report log (reports only, not every message): what w
  const dash=read('src/admin-dashboard.js');
  assert.match(dash,/client\.reportLog\(\)/);assert.match(dash,/deleted:'Deleted',dismissed:'Nothing wrong',muted:'Muted',banned:'Banned from chat'/);
 });
+
+test('"Forgot your password?" has a Back button at the top, back to the start of the card',()=>{
+ const html=read('public/play.html'),main=read('src/main.js');
+ assert.match(html,/<button type="button" id="account-back" class="account-back" hidden>[\s\S]*?Back<\/button><h2 id="account-title">/);
+ assert.match(main,/\$\('account-back'\)\.hidden=mode!=='forgot';/);
+ assert.match(main,/\$\('account-back'\)\.onclick=\(\)=>\{if\(submitting\)return;setMode\(knownPlayer\(\)\?'signin':'register',true\);\};/);
+});
