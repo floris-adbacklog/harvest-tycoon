@@ -174,13 +174,13 @@ function lighten(obj,color,intensity=.3){obj.traverse(n=>{if(n.isMesh){n.materia
 function decorate(){
  // Layout zones (public/farm-layout.js): each yard moves as one piece, the fields stay where they are.
  zone('fields');
- const ground=patch(0,0,200,200,0xacae5c,0);ground.name='Farm ground';
+ const ground=patch(0,0,200,200,0x8aa64e,0);ground.name='Farm ground';   // grass green, like the painted valley of the loading screen
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
  zone('exact');
  for(const road of ROADS.slice(0,3))cloneModel('road_001',road.x,road.z,{...roadSize(road),height:road.height,y:road.y});
- zone('fields');patch(2.575,14.4,12.8,31.7,0xa2a66b,.004);
- zone('coop');patch(13,-9.5,15.8,11.6,0xa4a76e,.007);
- zone('mill');patch(-12.5,5.3,8.7,13,0xa9ab73,.004);
+ zone('fields');patch(2.575,14.4,12.8,31.7,0x97a863,.004);
+ zone('coop');patch(13,-9.5,15.8,11.6,0x9fac6c,.007);
+ zone('mill');patch(-12.5,5.3,8.7,13,0xa3ae70,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
  zone('dairy');addBuilding('dairy',-1,-13.2,{width:6.8,rotation:Math.PI/2});
  zone('silo');addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
@@ -759,14 +759,16 @@ async function init(){
  try{
   bindUI();updateUI();
   renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
-  renderer.setClearColor(0xf3dda6);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;
+  renderer.setClearColor(0xe4ecd3);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.06;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;});
   scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,180);
-  const hemi=new THREE.HemisphereLight(0xffedc0,0x8a7a4a,2.35);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xffd9a0,3.05);sun.position.set(-24,26,15);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
-  scene.fog=new THREE.Fog(0xf3dda6,46,128);
+  // Fresh daylight: a cool sky, a green bounce from the grass and a soft warm sun, so greens and reds read clearly (the old
+  // warm-yellow sky, sun and haze made the whole valley beige).
+  const hemi=new THREE.HemisphereLight(0xeaf4ff,0x6d8a46,2.25);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xfff1d6,3.2);sun.position.set(-24,26,15);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  scene.fog=new THREE.Fog(0xe4ecd3,52,140);
   const loader=new GLTFLoader();let loaded=0;
   await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{
    const gltf=await loader.loadAsync(`/assets/models/${name}.glb`),object=gltf.scene;

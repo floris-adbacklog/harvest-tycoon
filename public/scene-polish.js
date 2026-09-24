@@ -132,7 +132,7 @@ function mountainRing({cloneModel,group,rand,mobile}){
   const name=names[i++%names.length],w=30+rand()*10,d=12+rand()*5,h=(name==='mountain_008'?8:9.5)+rand()*4.5+Math.max(0,Math.sin(phi))*2.5;
   const o=cloneModel(name,x,z,{width:w,depth:d,height:h,y:-.8,rotation:Math.atan2(-dz,dx)+(rand()-.5)*.5});
   // Distant rock fades toward the sky colour, like the rest of the valley's haze.
-  o.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;n.material=n.material.clone();n.material.emissive=new THREE.Color(0xf0d9a4);n.material.emissiveIntensity=.24;}});
+  o.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;n.material=n.material.clone();n.material.emissive=new THREE.Color(0xe2ead0);n.material.emissiveIntensity=.24;}});
   group.add(o);
  }
 }
