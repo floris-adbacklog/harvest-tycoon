@@ -316,13 +316,15 @@ function decorate(){
  yardDecor.goatshed.push(...fenceLine(28.6,-3.8,4),...fenceLine(27.5,-9.3,3,'z'),...fenceLine(36.3,-9.3,3,'z'),...fenceLine(28.6,-10.4,1),...fenceLine(35.2,-10.4,1));
  for(const [model,x,z,r] of [['goat_001',29.6,-8.4,.8],['goat_002',32.2,-6.1,2.2],['goat_001',34.6,-8.7,-.9],['goat_002',30.4,-5.2,1.6],['goat_001',33.9,-4.9,3.4]])yardDecor.goatshed.push(animalAt(model,x,z,{width:1.3,rotation:r},'goatshed',r));
  yardDecor.goatshed.push(cloneModel('hay_002',35.3,-5.1,{width:1.1,rotation:.4}),cloneModel('water_001',28.5,-4.9,{width:1}));
- // The Pig Farm: a white-fenced pen, closed all round, where the pigs dig for truffles, and the pink barn turned side-on beside it.
+ // The Pig Farm: the pink barn turned side-on, and in front of it a white-fenced pen, closed all round, where the pigs dig for
+ // truffles.
  zone('pigfarm');
  addBuilding('pigfarm',-24.92,-9.08,{width:8.2,rotation:Math.PI/2});
- const [penX,penZ]=[-34.6,-9.08];
+ // In front of the barn's west end (towards the camera), so the barn never hides the fence.
+ const [penX,penZ]=[-33.72,-3.38];
  for(const [dx,dz,rotation] of [[-2.2,-2.6,0],[0,-2.6,0],[2.2,-2.6,0],[-2.2,2.6,0],[0,2.6,0],[2.2,2.6,0],[-3.3,-1.3,Math.PI/2],[-3.3,1.3,Math.PI/2],[3.3,-1.3,Math.PI/2],[3.3,1.3,Math.PI/2]])yardDecor.pigfarm.push(cloneModel('fence_008',penX+dx,penZ+dz,{width:2.2,rotation}));
  for(const [model,dx,dz,height,r] of [['pig_003',-1.2,-.6,.9,.7],['pig_002',1,.9,.85,2.6],['pig_005',.4,-1.3,.58,-.8]])yardDecor.pigfarm.push(animalAt(model,penX+dx,penZ+dz,{height,rotation:r},'pigfarm',r));
- yardDecor.pigfarm.push(cloneModel('water_001',penX-1.6,penZ+1.4,{width:1,rotation:.3}),cloneModel('hay_002',-23.72,-3.88,{width:1.2,rotation:.5}));
+ yardDecor.pigfarm.push(cloneModel('water_001',penX-1.6,penZ+1.4,{width:1,rotation:.3}),cloneModel('hay_002',-26.4,-4.6,{width:1.2,rotation:.5}));
  // The Craft Workshop, a long low workshop east of the Weaving Shed, with wax and wool at the door.
  zone('craftshop');
  addBuilding('craftshop',33.1,9.6,{width:7.5,height:2.6,depth:3.1});

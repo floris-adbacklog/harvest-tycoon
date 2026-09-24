@@ -804,7 +804,8 @@ time change. Styles at the end of `public/retention.css`. Tests in `tests/scener
 Pig Farm (2026-09-24, NOT live until pushed, `supabase/pig-farm.sql` applied, and `farm-api` + `notify-hourly` deployed):
 a level-29 production building (`pigfarm`, model house_019, 14,000 coins, upgrade 900, levels 1-20 like the others) west of
 the farmhouse across the west road (ANCHORS.pigfarm, YARD_EXTENT, yardDecor): the barn (8.2 long, turned side-on) with a
-white-fenced pen (fence_008, closed all round) beside it, three pigs, a trough and hay; greyed until level 29. Pigs dig up truffles: "Let the pigs hunt truffles" 2 feed -> 2 truffles in 80 min (~173/h) and
+white-fenced pen (fence_008, closed all round) in front of its west end, towards the camera (so the barn never hides the
+fence and the pen stays off the hills; the yard extent keeps trees clear of it), three pigs, a trough and hay; greyed until level 29. Pigs dig up truffles: "Let the pigs hunt truffles" 2 feed -> 2 truffles in 80 min (~173/h) and
 "A vegetable feast for the pigs" 6 corn + 8 lettuce -> 3 truffles in 100 min (~174/h, level 31); truffles sell for 230. The
 Farm Kitchen cooks "truffle omelettes" (level 30): 4 eggs, 2 cheese, 2 truffles -> 2 omelettes (880 each) in 3 h (~213/h).
 The Factory gets its bulk versions automatically. Family Order: new goods only from week 2960 (Mon 28 Sep 2026,
