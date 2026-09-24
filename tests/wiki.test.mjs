@@ -63,3 +63,18 @@ test('the website gets a page per topic, in the sitemap, linked from the footer'
  assert.match(read('scripts/build-static.mjs'),/await buildWiki\('dist-static'\)/);
  for(const page of ['public/play.html','public/privacy.html','public/delete-account.html','public/404.html'])assert.match(read(page),/href="\/wiki">Game wiki</,page);
 });
+
+test('topic pages have a coloured header and a jump bar; phones get cards; the home page has three groups',async()=>{
+ const {wikiHero,wikiJump,wikiGroups,WIKI_GROUPS}=await import('../public/wiki-content.js');
+ const buildings=wikiArticle('buildings');
+ assert.match(wikiHero(buildings),/class="wiki-hero" style="--tint:#/);
+ const jump=wikiJump(buildings);assert.match(jump,/data-wiki-jump="sec-how-buildings-work"/);assert.match(jump,/data-wiki-jump="building-bakery"/);
+ const crops=wikiArticle('crops').html;assert.match(crops,/<div class="wiki-dual"><div class="wiki-table-wrap">/);
+ assert.equal((crops.match(/class="wiki-card(?:"| is-locked")/g)??[]).length,Object.keys(CROPS).length);
+ assert.equal((buildings.html.match(/class="wiki-card(?:"| is-locked")/g)??[]).length,Object.keys(RECIPES).length);
+ assert.deepEqual(WIKI_GROUPS.flatMap(g=>g.ids).sort(),WIKI_TOPICS.map(t=>t.id).sort(),'every topic in exactly one group');
+ assert.match(wikiGroups(),/class="wiki-tile is-featured" href="\/wiki\/getting-started"/);
+ const css=read('public/wiki.css');
+ assert.match(css,/\.wiki-dual \.wiki-table-wrap\{display:none\}\.wiki-dual \.wiki-cards\{display:grid\}/);
+ assert.match(css,/\.wiki-jump\{position:sticky;top:var\(--wiki-sticky,0px\)/);
+});

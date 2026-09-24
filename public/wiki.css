@@ -55,6 +55,43 @@
 .wiki-chips a{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid #e3d6c1;border-radius:999px;background:#fffdf5;color:#5b4520;font-size:13px}
 .wiki-building{scroll-margin-top:12px}
 
+/* A topic's header: its own soft colour and a big picture. */
+.wiki-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 12px;padding:18px 18px 18px 20px;border-radius:18px;background:linear-gradient(135deg,var(--tint),#fffaf0 120%);overflow:hidden}
+.wiki-hero h3{margin:0;font:700 27px/1.1 'Outfit',sans-serif;letter-spacing:-.3px;color:#3b2c12}
+.wiki-hero p{margin:6px 0 0;color:#5d5641;font-size:14.5px;line-height:1.45}
+.wiki-hero .game-art{width:86px;height:86px;flex:none;filter:drop-shadow(0 6px 10px #5a432022)}
+
+/* The jump bar: a chip per section, staying at the top while you scroll. */
+.wiki-jump{position:sticky;top:var(--wiki-sticky,0px);z-index:2;display:flex;gap:6px;margin:0 -2px 4px;padding:8px 2px;overflow-x:auto;background:#fffdf5;box-shadow:0 6px 8px -8px #5a432040;scrollbar-width:none}
+.wiki-jump::-webkit-scrollbar{display:none}
+.wiki .wiki-jump a{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:34px;padding:4px 12px;border:1px solid #e3d6c1;border-radius:999px;background:#f7f0e3;color:#5b4520;font-size:13px;font-weight:700;white-space:nowrap}
+.wiki .wiki-jump a:hover{background:#f0e5d1;text-decoration:none}
+.wiki-jump .game-art{width:22px;height:22px}
+.wiki-section{scroll-margin-top:calc(var(--wiki-sticky,0px) + 58px)}
+
+/* On a phone the long tables become cards. */
+.wiki-cards{display:none;gap:8px;margin:6px 0 4px;padding:0;list-style:none}
+.wiki-card{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:start;padding:10px 12px;border:1px solid #eee5d6;border-radius:12px;background:#fffdf5}
+.wiki-card>.game-art{width:42px;height:42px}
+.wiki-card strong{margin-right:6px;font:700 15px/1.3 'Outfit',sans-serif}
+.wiki-card.is-locked>.game-art,.wiki-card.is-locked strong,.wiki-card.is-locked .wiki-stats{opacity:.55}
+.wiki-stats{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.wiki-stats span{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:#f3ecdf;color:#5d5641;font-size:12px;font-weight:700}
+.wiki-stats .game-art{width:16px;height:16px}
+.wiki-card small{display:block;margin-top:6px;color:#7a705f;font-size:12.5px;line-height:1.5}
+.wiki-card small .wiki-item{margin-right:6px}
+
+/* Home: groups, quick searches and the one to read first. */
+.wiki-quick{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 16px}
+.wiki-quick button{min-height:32px;padding:4px 12px;border:1px solid #e3d6c1;border-radius:999px;background:#f7f0e3;color:#5b4520;font:700 13px 'DM Sans',sans-serif;cursor:pointer}
+.wiki-quick button:hover{background:#f0e5d1}
+.wiki-group{margin:0 0 18px}
+.wiki-group>h3{margin:0 0 8px;color:#8a7a5a;font:800 11.5px/1.2 'DM Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.wiki .wiki-tile.is-featured{grid-column:1/-1;grid-template-columns:64px minmax(0,1fr);border-color:#b9d3a3;background:linear-gradient(135deg,#eef6e6,#fffdf5);box-shadow:0 3px 0 #cfe2bd}
+.wiki-tile.is-featured .game-art{width:60px;height:60px}
+.wiki-tile.is-featured strong{font-size:18px}
+.wiki-tile.is-featured strong::after{content:'Read first';margin-left:8px;padding:2px 8px;border-radius:999px;background:#3f6b4a;color:#fffef3;font:800 10.5px/1.4 'DM Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;vertical-align:3px}
+
 /* Tables: scroll sideways on a phone instead of squeezing. */
 .wiki-table-wrap{overflow-x:auto;margin:6px 0 4px;border:1px solid #eee5d6;border-radius:12px;background:#fffdf5;-webkit-overflow-scrolling:touch}
 .wiki-table{width:100%;border-collapse:collapse;font-size:13.5px}
@@ -76,6 +113,8 @@
 .wiki-next i{color:#b3a283;font-size:20px;font-style:normal}
 
 @media(max-width:600px){
+ .wiki-dual .wiki-table-wrap{display:none}.wiki-dual .wiki-cards{display:grid}
+ .wiki-hero{padding:14px 14px 14px 16px}.wiki-hero h3{font-size:23px}.wiki-hero .game-art{width:64px;height:64px}
  .wiki-tiles{grid-template-columns:1fr}
  .wiki-head .game-art{width:48px;height:48px}.wiki-head h3{font-size:23px}
  .wiki-facts{grid-template-columns:1fr}
@@ -86,8 +125,10 @@
 /* The website pages (/wiki): the privacy page's frame, a little wider for the tables. Lists keep the wiki's own spacing
    (the privacy page indents its lists), and bold text gets the real bold font. */
 @font-face{font-family:'DM Sans';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/dm-sans-bold.ttf') format('truetype')}
-.wiki-page .wiki-facts,.wiki-page .wiki-chips,.wiki-page .wiki-next-list{margin-left:0;padding-left:0}
-.wiki-page .wiki-facts li,.wiki-page .wiki-chips li{margin:0}
+.wiki-page .wiki-facts,.wiki-page .wiki-chips,.wiki-page .wiki-next-list,.wiki-page .wiki-cards{margin-left:0;padding-left:0}
+.wiki-page .wiki-facts li,.wiki-page .wiki-chips li,.wiki-page .wiki-cards li{margin:0}
+.wiki-page .wiki-jump{margin:0 -8px 8px;padding:10px 8px}
+.wiki-page .wiki-group>h3{margin-top:4px}
 .wiki-page .legal-card{width:min(980px,calc(100% - 32px))}
 .wiki-page .wiki-crumbs{margin:0 0 14px;font-size:14px}
 .wiki-page .wiki-cta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 0;padding:16px;border-radius:14px;background:#eef5e6}

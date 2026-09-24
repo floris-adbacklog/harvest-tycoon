@@ -21,6 +21,14 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'account',title:'Account and settings',art:'settings',blurb:'Your account, settings, invites and privacy.',keywords:'account password settings avatar sound reminders invite delete privacy app'}
 ]);
 const TOPIC=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,t]));
+// The home page in three groups; "Getting started" leads as the one to read first.
+export const WIKI_GROUPS=Object.freeze([
+ {title:'Start here',ids:['getting-started','crops','buildings']},
+ {title:'Grow your farm',ids:['market','daily','quests','helpers']},
+ {title:'Together and extras',ids:['family','events','chat','diamonds','estate','account']}
+]);
+// Each topic's header has its own soft colour.
+const TINTS={'getting-started':'#e3efd6',crops:'#f6e7b8',buildings:'#f3d9cf',market:'#f6dfc4',quests:'#efe4cf',daily:'#f5d9dc',family:'#dcebd3',events:'#e6def0',helpers:'#d8e7f0',estate:'#dbe9e2',diamonds:'#d9ebf7',chat:'#e1eed8',account:'#ebe5dc'};
 
 const number=n=>Number(n).toLocaleString('en-US');
 export function wikiTime(ms){
@@ -31,7 +39,11 @@ export function wikiTime(ms){
 const itemName=key=>ITEMS[key]?.name??PRODUCTS[key]?.name??CROPS[key]?.name??key;
 const item=(key,count)=>`<span class="wiki-item">${art(key)}<span>${count>1?`${number(count)} `:''}${itemName(key)}</span></span>`;
 const items=list=>Object.entries(list).map(([key,count])=>item(key,count)).join('');
-const section=(title,body)=>`<section class="wiki-section"><h3>${title}</h3>${body}</section>`;
+const slug=text=>'sec-'+text.toLowerCase().replace(/<[^>]+>/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const section=(title,body)=>`<section class="wiki-section" id="${slug(title)}"><h3>${title}</h3>${body}</section>`;
+// On a phone the long tables become cards (CSS shows one or the other).
+const dual=(tableHtml,cards)=>`<div class="wiki-dual">${tableHtml}<ul class="wiki-cards">${cards.join('')}</ul></div>`;
+const card=({picture,title,badge='',stats=[],note='',locked=false})=>`<li class="wiki-card${locked?' is-locked':''}">${art(picture)}<div><strong>${title}</strong>${badge}${stats.length?`<div class="wiki-stats">${stats.map(x=>`<span>${x}</span>`).join('')}</div>`:''}${note?`<small>${note}</small>`:''}</div></li>`;
 const table=(head,rows,cls='')=>`<div class="wiki-table-wrap"><table class="wiki-table ${cls}"><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
 const facts=list=>`<ul class="wiki-facts">${list.map(([picture,title,text])=>`<li>${art(picture)}<div><strong>${title}</strong><p>${text}</p></div></li>`).join('')}</ul>`;
 
@@ -67,8 +79,10 @@ const BODIES={
  },
  crops(h){
   const regrowing=Object.entries(CROPS).filter(([,c])=>c.regrow).map(([k])=>CROPS[k].name);
-  const rows=Object.entries(CROPS).sort(([a],[b])=>cropLevel(a)-cropLevel(b)||CROPS[a].duration-CROPS[b].duration).map(([key,c])=>h.row(cropLevel(key),[
+  const sorted=Object.entries(CROPS).sort(([a],[b])=>cropLevel(a)-cropLevel(b)||CROPS[a].duration-CROPS[b].duration);
+  const rows=sorted.map(([key,c])=>h.row(cropLevel(key),[
    item(key,1),h.lvl(cropLevel(key)),`${art('coins')}${number(c.cost)}`,wikiTime(c.duration),`${art('coins')}${number(c.sell)}`,number(c.xp),c.regrow?`every ${wikiTime(c.regrow)}`:'–',c.use??'–']));
+  const cards=sorted.map(([key,c])=>card({picture:key,title:c.name,badge:h.lvl(cropLevel(key)),locked:h.locked(cropLevel(key)),stats:[`Grows in ${wikiTime(c.duration)}`,`Seed ${art('coins')}${number(c.cost)}`,`Sells ${art('coins')}${number(c.sell)}`,`${number(c.xp)} XP`,...(c.regrow?[`Grows back every ${wikiTime(c.regrow)}`]:[])],note:c.use?`Used for ${c.use.toLowerCase()}`:''}));
   const early=EARLY_FIELDS.map(f=>number(f.coins)).join(', ');
   return section('Planting','<p>Pick a crop in the seed shop, then tap an empty field. Quick crops are good while you play; longer ones grow while you are away.</p>')
   +section('Water and care',`<p>A harvest gives 1 crop. Water a field for 2 crops, water and care for 3. Both also make the crop grow faster, and doing both gives double XP.</p>`)
@@ -76,7 +90,7 @@ const BODIES={
   +section('More fields',`<p>You start with ${STARTER_FIELDS} fields. While you start out, each new level lets you open one more for coins (${early}). After that the Farmhouse adds fields, up to ${MAX_PLOTS} in total. See ${h.link('buildings')}.</p>`)
   +section('Crop mastery',`<p>${h.lvl(FEATURE_LEVELS.mastery)} Harvest the same crop often for a reward at every tier.</p>`+table(['Tier','Harvests','Reward'],MASTERY_TIERS.map(t=>`<tr><td>${t.name}</td><td>${number(t.target)}</td><td>${art('coins')}${number(t.coins)} · ${number(t.xp)} XP</td></tr>`)))
   +section('Silo research',`<p>${h.lvl(FEATURE_LEVELS.silo)} Five research steps, each paid with coins (${SILO_COSTS.map(number).join(', ')}). Together they make crops grow up to 40% faster and seeds up to 25% cheaper. Crops already growing keep their time.</p>`)
-  +section('Every crop',table(['Crop','Opens','Seed','Grows in','Sells for','XP','Grows back','Used for'],rows,'wiki-crops'));
+  +section('Every crop',dual(table(['Crop','Opens','Seed','Grows in','Sells for','XP','Grows back','Used for'],rows,'wiki-crops'),cards));
  },
  buildings(h){
   const production=Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').sort(([a],[b])=>buildingLevel(a)-buildingLevel(b));
@@ -85,14 +99,15 @@ const BODIES={
    if(!recipes.length)return '';
    const cost=key==='factory'?FACTORY_COST:BUILDING_COSTS[key];
    const rows=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return h.row(recipeLevel(id),[out?item(out,count):r.name,items(r.input),wikiTime(r.duration),out&&PRODUCTS[out]?.sell?`${art('coins')}${number(PRODUCTS[out].sell)}`:'–',h.lvl(recipeLevel(id))]);});
-   return `<section class="wiki-section wiki-building" id="building-${key}"><h3>${art(key)}${b.name}</h3><p class="wiki-meta">${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:' · ready from the start'}</p>${b.tagline?`<p>${b.tagline}</p>`:''}${table(['Makes','Needs','Time','Sells for (each)','Opens'],rows)}</section>`;
+   const cards=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return card({picture:out??key,title:out?`${count>1?`${number(count)} `:''}${itemName(out)}`:r.name,badge:h.lvl(recipeLevel(id)),locked:h.locked(recipeLevel(id)),stats:[wikiTime(r.duration),...(out&&PRODUCTS[out]?.sell?[`Sells ${art('coins')}${number(PRODUCTS[out].sell)} each`]:[])],note:`Needs ${items(r.input)}`});});
+   return `<section class="wiki-section wiki-building" id="building-${key}"><h3>${art(key)}${b.name}</h3><p class="wiki-meta">${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:' · ready from the start'}</p>${b.tagline?`<p>${b.tagline}</p>`:''}${dual(table(['Makes','Needs','Time','Sells for (each)','Opens'],rows),cards)}</section>`;
   }).join('');
   return section('How buildings work',facts([
    ['buildings','Build','Each building opens at a level and costs coins once. Tap it to start a batch: it turns crops (or other goods) into goods that sell for more.'],
    ['hammer','Upgrade',`Better buildings run more batches at the same time, up to level ${MAX_BUILDING_LEVEL}.`],
    ['collect-all','Collect','When a batch is ready, tap the building to collect it, or use Collect all.'],
    ['boost','Factory',`From level ${FACTORY_LEVEL} the Factory (${number(FACTORY_COST)} coins) makes the finest goods from what your other buildings make.`]
-  ]))+section('Contents',`<ul class="wiki-chips">${production.filter(([key])=>Object.values(RECIPES).some(r=>r.building===key)).map(([key,b])=>`<li><a href="#building-${key}">${art(key)}${b.name}</a></li>`).join('')}</ul>`)+blocks;
+  ]))+blocks;
  },
  market(h){
   return section('Selling',facts([
@@ -146,12 +161,16 @@ const BODIES={
  },
  estate(h){
   const later=[['projects','Estate projects','estate','Big projects that make your estate grow.'],['valleymarket','Valley Market','valley-market','Fill baskets for customers from the valley.'],['ranch','The Ranch','ranch',`One herd works faster: ${Object.values(RANCH_HERDS).join(', ')}.`],['estateworkshop','Estate Workshop','estate-workshop','Improvements that last for good.'],['tradedepot','Trade Depot','trade-depot','Fill an export trailer for big rewards.'],['grandfair','Grand Valley Fair','grand-fair','Win ribbons every week.']];
-  const improvements=Object.values(IMPROVEMENTS).sort((a,b)=>a.level-b.level).map(i=>h.row(i.level,[`${art(i.art)}${i.name}`,i.effect,h.lvl(i.level),`${art('coins')}${number(i.coins)} + ${items(i.materials)}`]));
+  const list=Object.values(IMPROVEMENTS).sort((a,b)=>a.level-b.level);
+  const improvements=list.map(i=>h.row(i.level,[`${art(i.art)}${i.name}`,i.effect,h.lvl(i.level),`${art('coins')}${number(i.coins)} + ${items(i.materials)}`]));
+  const improvementCards=list.map(i=>card({picture:i.art,title:i.name,badge:h.lvl(i.level),locked:h.locked(i.level),stats:[i.effect],note:`Costs ${art('coins')}${number(i.coins)} + ${items(i.materials)}`}));
   return section('Something to grow towards',`<ul class="wiki-facts">${later.map(([key,name,picture,text])=>`<li>${art(picture)}<div><strong>${name} ${h.lvl(FEATURE_LEVELS[key])}</strong><p>${text}</p></div></li>`).join('')}</ul>`)
-  +section('Estate Workshop improvements',table(['Improvement','What it does','Opens','Costs'],improvements));
+  +section('Estate Workshop improvements',dual(table(['Improvement','What it does','Opens','Costs'],improvements),improvementCards));
  },
  diamonds(h){
-  const boosts=Object.values(BOOSTS).map(b=>`<tr><td>${art(b.art)}${b.name}</td><td>${b.description}</td><td>${b.prices?Object.entries(b.prices).map(([length,cost])=>`${length.replace('m',' min').replace('h',' hour').replace('d',' day')}: ${number(cost)}`).join(' · '):number(b.cost)}</td></tr>`);
+  const boostPrice=b=>b.prices?Object.entries(b.prices).map(([length,cost])=>`${length.replace('m',' min').replace('h',' hour').replace('d',' day')}: ${number(cost)}`).join(' · '):number(b.cost);
+  const boosts=Object.values(BOOSTS).map(b=>`<tr><td>${art(b.art)}${b.name}</td><td>${b.description}</td><td>${boostPrice(b)}</td></tr>`);
+  const boostCards=Object.values(BOOSTS).map(b=>card({picture:b.art,title:b.name,stats:[`${art('diamonds')}${boostPrice(b)}`],note:b.description}));
   const vip=Object.values(VIP_PLANS).map(p=>`<tr><td>${p.name}</td><td>${art('diamonds')}${number(p.cost)}</td></tr>`);
   const packs=DIAMOND_PACKS.map(p=>`<tr><td>${art('diamonds')}${number(p.amount)}</td><td>${p.price}</td></tr>`);
   return section('Earning diamonds',facts([
@@ -161,7 +180,7 @@ const BODIES={
    ['invite-friends','Invite a friend',`From level ${INVITE_LEVEL}: ${INVITE_REWARD} diamonds for you both.`]
   ]))
   +section('Finish now',`<p>Finish a growing field for ${SINGLE_CROP_COST} diamonds, or a running batch for ${SINGLE_BATCH_COST} (not in the Factory).</p>`)
-  +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+table(['Boost','What it does','Diamonds'],boosts))
+  +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+dual(table(['Boost','What it does','Diamonds'],boosts),boostCards))
   +section('VIP',`<p>VIP gives 10% faster crops, 10% faster production, 5% more coins at the market and double daily rewards. Buying again adds time; it never gets stronger.</p>`+table(['Plan','Diamonds'],vip))
   +section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL} there is also a Starter Pack for a limited time.</p>`+table(['Diamonds','Price'],packs));
  },
@@ -197,6 +216,13 @@ export function wikiArticle(id,ctx={}){
  const topic=TOPIC[id];if(!topic)return null;const h=helpers(ctx);
  return {...topic,html:BODIES[id](h),related:(RELATED[id]??[]).map(r=>TOPIC[r])};
 }
+export const wikiHero=topic=>`<header class="wiki-hero" style="--tint:${TINTS[topic.id]??'#efe6d8'}"><div><h3>${topic.title}</h3><p>${topic.blurb}</p></div>${art(topic.art)}</header>`;
+// The jump bar: one chip per section of the page (a building's chip has its picture).
+export function wikiJump(article){
+ const chips=[...article.html.matchAll(/<section class="wiki-section[^"]*" id="([^"]+)"><h3>(.*?)<\/h3>/g)].map(([,id,label])=>`<a href="#${id}" data-wiki-jump="${id}">${label}</a>`);
+ return chips.length>1?`<nav class="wiki-jump" aria-label="On this page">${chips.join('')}</nav>`:'';
+}
+export const wikiGroups=(ctx={},{featured=true}={})=>WIKI_GROUPS.map(g=>`<section class="wiki-group"><h3>${g.title}</h3><div class="wiki-tiles">${g.ids.map(id=>wikiTile(TOPIC[id],ctx).replace('class="wiki-tile"',featured&&id==='getting-started'?'class="wiki-tile is-featured"':'class="wiki-tile"')).join('')}</div></section>`).join('');
 // "Read next" under a topic: a short row per topic, picture and title.
 export const wikiNext=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-next" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><i aria-hidden="true">›</i></a>`;};
 export const wikiTile=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-tile" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><span>${topic.blurb}</span></a>`;};

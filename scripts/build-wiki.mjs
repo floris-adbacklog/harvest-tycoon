@@ -36,13 +36,13 @@ ${body}
 }
 
 export async function buildWiki(outDir,{contentUrl=new URL('../public/wiki-content.js',import.meta.url)}={}){
- const {WIKI_TOPICS,wikiArticle,wikiTile,wikiNext}=await import(contentUrl.href);
+ const {WIKI_TOPICS,wikiArticle,wikiNext,wikiJump,wikiGroups}=await import(contentUrl.href);
  mkdirSync(join(outDir,'wiki'),{recursive:true});
- const tiles=WIKI_TOPICS.map(t=>wikiTile(t)).join('');
- writeFileSync(join(outDir,'wiki','index.html'),page({path:'/wiki',title:'Harvest Tycoon wiki: crops, buildings, recipes and tips',heading:'The farm wiki',description:'Everything about Harvest Tycoon: every crop, building and recipe, the market, Farm family, events, diamonds and more.',body:` <div class="wiki-tiles">${tiles}</div>`}));
+ writeFileSync(join(outDir,'wiki','index.html'),page({path:'/wiki',title:'Harvest Tycoon wiki: crops, buildings, recipes and tips',heading:'The farm wiki',description:'Everything about Harvest Tycoon: every crop, building and recipe, the market, Farm family, events, diamonds and more.',body:` ${wikiGroups()}`}));
  for(const topic of WIKI_TOPICS){
   const article=wikiArticle(topic.id);
   const body=` <nav class="wiki-crumbs" aria-label="Breadcrumb"><a href="/wiki">Wiki</a> › ${esc(article.title)}</nav>
+ ${wikiJump(article)}
  <article class="wiki-article">${article.html}</article>
  <section class="wiki-related"><h3>Read next</h3><div class="wiki-next-list">${article.related.map(t=>wikiNext(t)).join('')}</div></section>`;
   writeFileSync(join(outDir,'wiki',`${topic.id}.html`),page({path:`/wiki/${topic.id}`,title:`${article.title} — Harvest Tycoon wiki`,heading:article.title,description:article.blurb,body}));
