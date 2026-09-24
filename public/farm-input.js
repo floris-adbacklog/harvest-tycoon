@@ -44,6 +44,14 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom}){
   }
   if(point.moved||point.multi)pan(point.x-previous.x,point.y-previous.y);
  });
+ // The mouse wheel (and a trackpad pinch, which arrives as a wheel event with ctrlKey) zooms, towards the pointer.
+ canvas.addEventListener('wheel',event=>{
+  if(!isReady())return;
+  event.preventDefault();
+  const step=event.deltaMode===1?event.deltaY*16:event.deltaMode===2?event.deltaY*400:event.deltaY;
+  const ratio=Math.exp(-Math.max(-120,Math.min(120,step))*(event.ctrlKey?.01:.0015));
+  zoom(ratio,event.clientX,event.clientY);
+ },{passive:false});
  canvas.addEventListener('pointerup',event=>release(event));
  canvas.addEventListener('pointercancel',event=>release(event,true));
  canvas.addEventListener('lostpointercapture',event=>release(event,true));

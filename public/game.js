@@ -882,7 +882,14 @@ async function init(){
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);
    },
-   zoom:ratio=>zoomFarm(zoom*ratio)
+   zoom:(ratio,x,y)=>{
+    const before=zoom;zoomFarm(zoom*ratio);
+    // Scrolling zooms towards the pointer: the spot under the mouse stays under the mouse.
+    const r=zoom/before;if(x==null||r===1)return;
+    const rect=world.getBoundingClientRect(),dx=x-(rect.left+rect.width/2),dy=y-(rect.top+rect.height/2);
+    const shift=cameraDragDelta(dx*(1-r),dy*(1-r),camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
+    panFarm(shift.side,shift.depth);
+   }
   });
   ready=true;setupMinimap();positionBuildingLabels();updateUI();void addScenery();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;progression.refresh();resolve();},450));
