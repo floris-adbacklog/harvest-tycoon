@@ -286,7 +286,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    }
   }
  }
- $('selected-crop-button').addEventListener('click',openSeeds);$('seed-shop-button').addEventListener('click',openSeeds);
+ // The crop button ("Wheat ⌄") opens the seed shop; there is no separate Seed shop button any more.
+ $('selected-crop-button').addEventListener('click',openSeeds);
  $('buildings-button').addEventListener('click',openBuildings);$('all-buildings').addEventListener('click',openBuildings);
  document.querySelectorAll('[data-seed-filter]').forEach(b=>b.addEventListener('click',()=>{seedFilter=b.dataset.seedFilter;renderSeeds();}));
  document.querySelectorAll('[data-market-tab]').forEach(b=>b.addEventListener('click',()=>{marketTab=b.dataset.marketTab;renderMarket();}));

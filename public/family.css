@@ -214,3 +214,7 @@
 .family-look-save{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid #ebe3d6}
 .family-look-save[hidden]{display:none}
 #family-dialog .family-look-save .primary-button{min-height:46px;padding:10px 20px}
+
+/* Invite a friend to Harvest Tycoon, under Invite a farmer (public/invite-ui.js). */
+.family-invite-friend{margin:16px 0}
+.family-invite-friend>.game-art{width:48px;height:48px}

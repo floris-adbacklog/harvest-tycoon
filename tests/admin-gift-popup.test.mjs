@@ -18,7 +18,8 @@ test('the gift dialog exists, styled like the level-up celebration, with its own
 });
 test('giftPopup fills in only the amounts (and item, if any) that were actually given, as plain text via textContent for the message',()=>{
  const js=read('public/game.js');
- assert.match(js,/function giftPopup\(gift\)\{/);
+ // The same popup also carries Invite a friend rewards, with its own heading and picture (defaults: a gift).
+ assert.match(js,/function giftPopup\(gift,\{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift'\}=\{\}\)\{/);
  assert.match(js,/if\(gift\.coins\)rewards\.push\(`<strong class="reward-coins">\$\{art\('coins'\)\}\+\$\{gift\.coins\.toLocaleString\('en-US'\)\} coins<\/strong>`\);/);
  assert.match(js,/if\(gift\.xp\)rewards\.push\(`<strong class="reward-xp">\$\{art\('xp'\)\}\+\$\{gift\.xp\.toLocaleString\('en-US'\)\} XP<\/strong>`\);/);
  assert.match(js,/if\(gift\.diamonds\)rewards\.push\(`<strong class="reward-diamonds">\$\{art\('diamonds'\)\}\+\$\{gift\.diamonds\.toLocaleString\('en-US'\)\} diamonds<\/strong>`\);/);

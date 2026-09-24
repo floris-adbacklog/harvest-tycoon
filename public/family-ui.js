@@ -73,8 +73,10 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const f=view.family,renameLater=f.renameAt>farmNow();
   const header=`<div class="family-settings-header"><span data-look-emblem>${emblem(f.emblem)}</span><div><h3 data-look-name>${esc(f.name)}</h3><p>${f.members} / ${view.config.maxMembers} farmers · ${f.open?'Open to new farmers':'Invite-only'}</p></div></div>`;
   const leave=`<section class="family-leave"><h3>Leave this family</h3><p>You will wait 48 hours before joining or creating another family. This week’s contributions stay with this family.${f.leader?' Leadership passes to the longest-standing member.':''}</p>${actionButton('family_leave','Leave family')}</section>`;
-  if(!f.leader)return `${header}<p class="family-notice">Your family leader can invite farmers, choose the emblem and rename the family.</p>${leave}`;
-  return `${header}${inviteSearch.html()}${renderSentInvitations(view,farmNow(),actionButton)}
+  // Anyone can bring a friend who is new to Harvest Tycoon (public/invite-ui.js), leader or not.
+  const friend=`<button type="button" class="family-share-entry family-invite-friend" data-invite-friend>${art('invite-friends')}<span><strong>Invite a friend to Harvest Tycoon</strong><small>At level 10 you both get 150 diamonds</small></span><i data-lucide="chevron-right" data-line-icon></i></button>`;
+  if(!f.leader)return `${header}<p class="family-notice">Your family leader can invite farmers, choose the emblem and rename the family.</p>${friend}${leave}`;
+  return `${header}${inviteSearch.html()}${friend}${renderSentInvitations(view,farmNow(),actionButton)}
   <form data-family-look class="family-card family-look"><h3>Look and name</h3>${emblemPickerMarkup({emblems:FAMILY_EMBLEMS,checkedId:f.emblem,legend:'Choose an emblem',nameOf:emblemName,tile:emblem,esc})}
   <label for="family-rename">Family name</label><input id="family-rename" name="name" value="${esc(f.name)}" minlength="3" maxlength="20" required ${renameLater?'disabled':''}><small>${renameLater?`You can rename again in ${formatDuration(f.renameAt-farmNow())}.`:'You can rename once every seven days.'}</small>
   <div class="family-look-save" data-look-save hidden><button type="button" class="link-button" data-look-undo>Undo</button><button class="primary-button">Save changes</button></div></form>
@@ -98,6 +100,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
    act({type,week:view.week,item:b.dataset.item,count:Number(b.dataset.count),invitationId:b.dataset.invitationId,memberId:b.dataset.memberId,rewardId:b.dataset.rewardId,familyId:b.dataset.familyId,open:b.dataset.open==='true'});
   });
   content.querySelectorAll('form[data-family-form]').forEach(form=>form.onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(form));const kind=form.dataset.familyForm;act(kind==='extra'?{type:'family_tournament_goods',week:view.week,item:d.item,count:Number(d.count)}:{type:'family_'+kind,...d});});
+  content.querySelector('[data-invite-friend]')?.addEventListener('click',()=>window.harvestInvite?.open());
   const sharingRoot=content.querySelector('[data-sharing-root]');if(sharingRoot)void social.mount(sharingRoot);
   content.querySelector('[data-family-goto]')?.addEventListener('click',event=>{tab=event.currentTarget.dataset.familyGoto;render();content.scrollTop=0;dialog.scrollTop=0;});
   content.querySelectorAll('[data-player-profile]').forEach(b=>b.onclick=()=>{if(b.dataset.playerProfile)window.harvestProfiles?.open(b.dataset.playerProfile,{back:'Back to your family'});});

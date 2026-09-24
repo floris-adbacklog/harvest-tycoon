@@ -678,3 +678,29 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   and 15% less waiting; water +1 crop and 20% less waiting; both = 3 crops and double XP.
 - The field tooltip says what is next: "water now · 4m left", "extra care in 3m", "extra care ready", "fully cared for".
 - Tests: tests/field-tap.test.mjs.
+
+## Invite a friend (24 Sep 2026; migration + client push + farm-api AND player-counts deploy)
+- Every farmer has a short personal code (name + 2 letters, e.g. TONYK7) and link https://www.harvesttycoon.com/?invite=CODE.
+  A friend who starts a brand-new farm with it and reaches level 10 within 30 days gets 150 diamonds, and so does the
+  inviter, for at most 10 friends per inviter in total (after that the friend still gets theirs). Rules and amounts:
+  `INVITE_*` in game/farm-state.js.
+- Where: "Invite" side tool under Events (desktop), "Invite a friend" in the More menu (phones), and "Invite a friend to
+  Harvest Tycoon" in the Family tab (everyone, under Invite a farmer). Screen: public/invite-ui.js + invite.css (link,
+  Share via the device's share sheet or Copy, friends rewarded x of 10, each friend's status, who invited you).
+- Sign-in page (src/invite-link.js): ?invite=CODE is remembered 30 days on the device (not when this browser already
+  played), shown as "Tony invited you to Harvest Tycoon" on the sign-up card (name from player-counts ?invite=CODE),
+  sent in the sign-up metadata (a confirmation link opened on another device still counts) and with the first load
+  (Google/Facebook). Cleared once the farm exists.
+- farm-api (invite-service.js): a code is linked only when a brand-new farm is created (no earlier progress); your own
+  code and unknown codes are ignored. The friend's 150 is paid in the save that reaches level 10 (or on load, e.g. after
+  a family reward), then harvest_referral_qualify marks it and decides the inviter's reward under a per-inviter lock.
+  The inviter is paid on their next load (each friend once: `state.inviteRewards`), with a popup; if the inviter leads a
+  family with room, the friend gets a family invitation in the same go (the leader's own family_invite, all family
+  rules apply). A problem with invites never stops a farm from loading.
+- Database: supabase/invite-a-friend.sql (player_invite_codes, referrals, harvest_referral_qualify; RLS on, service
+  only). Dry-run on live in a rolled-back transaction on 24 Sep: first friend 150, 11th 0, never twice, anon and players
+  cannot read or call.
+- Privacy policy: what the inviter and friend see of each other, and the harvest-tycoon:invite storage item.
+- Also in this change: Seed shop button removed from the tool dock (the crop button opens the same shop); the desktop
+  tool hint and the "Click to work" line are hidden (phones never showed them).
+- Tests: tests/invite-friend.test.mjs.

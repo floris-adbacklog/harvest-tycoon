@@ -56,7 +56,11 @@ test('the function counts players and those active in the last 30 minutes, the s
  assert.deepEqual(normaliseCounts(null,undefined),{players:0,online:0});assert.deepEqual(normaliseCounts(-4,'x'),{players:0,online:0});assert.deepEqual(normaliseCounts(7.9,2.2),{players:7,online:2});
 });
 test('the public function returns two numbers, from the leaderboard table only, and answers GET',()=>{
- const code=read('supabase/functions/player-counts/index.ts');
+ const all=read('supabase/functions/player-counts/index.ts');
+ // ?invite=CODE answers only the player name behind a code its owner shared (Invite a friend); the counts part stays as it was.
+ const invite=all.slice(all.indexOf("searchParams.get('invite')"),all.indexOf('if(cached&&now-cached.at<CACHE_MS)'));
+ assert.match(invite,/JSON\.stringify\(\{inviter\}\)/);assert.match(invite,/select\('player_id'\)\.eq\('code',code\)/);assert.match(invite,/select\('username'\)/);assert(!/email|auth\.admin|level|currency/.test(invite));
+ const code=all.replace(invite,'');
  assert.match(code,/verify_jwt is off/);assert.equal((code.match(/admin\.from\(/g)??[]).length,2);assert.equal((code.match(/admin\.from\('player_stats'\)/g)??[]).length,2);
  assert.match(code,/select\('player_id',\{count:'exact',head:true\}\)/,'counts only, no rows are read');assert.match(code,/\.gte\('last_active_at',onlineSince\(now\)\)/);
  assert.match(code,/request\.method!=='GET'/);assert.match(code,/normaliseCounts\(total\.count,online\.count\)/);assert.match(code,/now-cached\.at<CACHE_MS/);

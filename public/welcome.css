@@ -138,3 +138,10 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]){background:#f
 @keyframes cookie-in{from{opacity:0;transform:translateY(14px)}}
 @media(max-width:720px){.cookie-banner{left:10px;right:10px;width:auto;bottom:calc(10px + env(safe-area-inset-bottom));padding:14px 14px 12px;gap:10px}.cookie-banner .cookie-art{width:40px}}
 @media(prefers-reduced-motion:reduce){.cookie-banner{animation:none}}
+
+/* Invite a friend: "Tony invited you to Harvest Tycoon" on the sign-up card (src/invite-link.js). */
+.account-invite{display:flex;align-items:center;gap:12px;margin:14px 0 4px;padding:12px 14px;border:1px solid #d9e3c6;border-radius:14px;background:#f1f6e8}
+.account-invite[hidden]{display:none}
+.account-invite img{flex:none;width:48px;height:48px;object-fit:contain}
+.account-invite strong{display:block;font:700 15px/1.3 Outfit,'DM Sans',sans-serif;color:#3b4a2c}
+.account-invite span{display:block;margin-top:3px;font-size:12px;line-height:1.45;color:#63714f}

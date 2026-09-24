@@ -65,3 +65,6 @@
 .tool.just-used{animation:tool-pop .45s ease-out}
 @keyframes tool-pop{40%{transform:scale(1.08)}}
 @media(prefers-reduced-motion:reduce){.tool.just-used{animation:none}}
+/* More room for the farm: the tool hint and the "Click to work" line under the tools are gone on desktop too (phones never
+   showed them). The tools themselves light up to show what a tap did. */
+.bottom-hud .context-hint,.bottom-hud .bottom-note{display:none}

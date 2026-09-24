@@ -34,6 +34,7 @@ import { ACTIVE_STATIONS } from './farm-state.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { watchSelects } from './pretty-select.js';
+import { createInviteUI } from './invite-ui.js';
 
 const $ = id => document.getElementById(id);
 const state = structuredClone(window.harvestInitialFarm.state);
@@ -42,6 +43,7 @@ state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key
 const initialChapterReward=window.harvestInitialFarm.chapterReward;
 const initialLevelReward=window.harvestInitialFarm.levelReward;
 const initialGift=window.harvestInitialFarm.gift;
+const initialInvite=window.harvestInitialFarm.invite;
 const initialWelcome=window.harvestInitialFarm.welcome;
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
@@ -59,7 +61,7 @@ const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 const track=(event,params={})=>{try{window.parent.harvestBridge?.trackGame?.(event,params);}catch{}};
 let sessionTracked=false;
 const nudge=createReminderNudge({state,farmNow,level:()=>levelProgress(state).level,notify:message=>toast(message),track,canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
-const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
+const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
 function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(key==='estateworkshop'||key==='tradedepot'||key==='grandfair')estatePlaces.open(key);else if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
@@ -85,9 +87,9 @@ function toast(message){showToast??=createToast($('toast'));showToast(message);}
 // A gift from the admin (public/player-profiles.js, floris@millstone.nl only) picked up on this farm's next
 // load and cleared server-side (farm-api index.ts). The message, if any, is set with textContent — never HTML —
 // so there is nothing here that needs escaping.
-function giftPopup(gift){
+function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift'}={}){
  if(!gift)return;
- $('gift-icon').innerHTML=art('gift');
+ $('gift-icon').innerHTML=art(icon);document.querySelector('#gift-dialog .eyebrow').textContent=eyebrow;$('gift-title').textContent=title;
  const rewards=[];
  if(gift.coins)rewards.push(`<strong class="reward-coins">${art('coins')}+${gift.coins.toLocaleString('en-US')} coins</strong>`);
  if(gift.xp)rewards.push(`<strong class="reward-xp">${art('xp')}+${gift.xp.toLocaleString('en-US')} XP</strong>`);
@@ -97,6 +99,18 @@ function giftPopup(gift){
  const note=$('gift-message');
  if(gift.message){note.textContent=`“${gift.message}”`;note.hidden=false;}else{note.textContent='';note.hidden=true;}
  refreshArt();$('gift-dialog').showModal();
+}
+// Invite a friend (public/invite-ui.js): the reward popups. A level-up celebration goes first; this one waits for it.
+function afterCelebration(show){setTimeout(()=>{const levelUp=document.getElementById('level-up-dialog');if(levelUp?.open)levelUp.addEventListener('close',()=>setTimeout(show,300),{once:true});else show();},450);}
+function inviteRewardPopup(reward){afterCelebration(()=>giftPopup({diamonds:reward.diamonds,message:''},{eyebrow:'INVITE A FRIEND',title:`Thanks to ${reward.from}!`,icon:'invite-friends'}));}
+// On load: your own reward (reached level 10 through a family reward) and friends you invited who reached level 10.
+function inviteLoadPopup(invite){
+ if(invite.reward)inviteRewardPopup(invite.reward);
+ const friends=invite.friends??[];if(!friends.length)return;
+ const diamonds=friends.reduce((n,f)=>n+f.diamonds,0),family=friends.filter(f=>f.invitedToFamily).map(f=>f.name);
+ const title=friends.length===1?`${friends[0].name} reached level 10!`:`${friends.length} friends reached level 10!`;
+ const note=family.length?`We sent ${family.join(', ')} an invitation to your family.`:'';
+ afterCelebration(()=>{giftPopup({diamonds,message:''},{eyebrow:'INVITE A FRIEND',title,icon:'invite-friends'});const m=$('gift-message');if(note){m.textContent=note;m.hidden=false;}});
 }
 function icons(){refreshArt();}
 
@@ -663,6 +677,8 @@ function bindUI(){
  progression=createProgressionUI({state,isReady:()=>ready&&$('loading').hidden});
  if(initialLevelReward?.levels.length)progression.announce({...progressionChange(progressionSnapshot(state),state,initialLevelReward),catchUp:true});
  if(initialGift)giftPopup(initialGift);
+ if(initialInvite)inviteLoadPopup(initialInvite);
+ createInviteUI({notify:toast});
  mobileUI=createMobileUI({openUtility,resetView});
  $('save-status').onclick=()=>client.retry();
  new ResizeObserver(resize).observe(world);icons();

@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {savePlayerAvatar} from '../supabase/functions/farm-api/avatar-service.js';
+import * as invites from '../supabase/functions/farm-api/invite-service.js';
 import * as rules from '../game/farm-state.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 const source=stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8').replace(/^import .*;\n/gm,''));
@@ -22,7 +23,7 @@ function endpoint({failCommit=false,active=true}={}){
   if(args.p_expected!==row.revision)return {data:false};
   row={...row,state:structuredClone(args.p_state),receipts:structuredClone(args.p_receipts),revision:row.revision+1};commits++;return {data:true};
  }};
- vm.runInNewContext(source,{...rules,welcomeSummary,savePlayerAvatar,createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,atob,crypto,console:{error(){}},Uint32Array,handleFamily:()=>{throw new Error('unexpected family call');},handlePlayerDirectory:()=>{throw new Error('unexpected directory call');}});
+ vm.runInNewContext(source,{...rules,...invites,welcomeSummary,savePlayerAvatar,createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,atob,crypto,console:{error(){}},Uint32Array,handleFamily:()=>{throw new Error('unexpected family call');},handlePlayerDirectory:()=>{throw new Error('unexpected directory call');}});
  return {get avatarWrites(){return avatarWrites;},get row(){return row;},get commits(){return commits;},async send(body,authorized=true){const r=await handler(new Request('https://test.invalid/farm-api',{method:'POST',headers:authorized?{Authorization:`Bearer ${token}`}:{},body:JSON.stringify(body)}));return {status:r.status,data:await r.json()};}};
 }
 const body=(id=requestId)=>({operation:'action',requestId:id,action:{type:'buy_vip',plan:'week',expectedCost:500,expectedExpiresAt:0}});

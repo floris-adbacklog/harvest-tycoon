@@ -2,11 +2,12 @@ import {createFarmPresence} from './presence.js';
 import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError,socialProviders} from './supabase.js';
 import {OAUTH_KEY,providerName,oauthStartError,oauthReturnMessage,usableProviders} from './social-login.js';
 import {fetchLeaderboard} from './leaderboard.js';
-import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth} from './analytics.js';
+import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInvite} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
 import {createNotifications} from './notifications.js';
 import {startPlayerCounts} from './player-counts.js';
+import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
 import {createConnection,connectionMessage,reasonOf,WAKE_GRACE} from './connection.js';
 const $=id=>document.getElementById(id);
 startPwa();
@@ -28,6 +29,15 @@ const tabStore={get(key){try{return sessionStorage.getItem(key);}catch{return nu
 // True only when the browser can be read and holds no saved session, so a first-time visitor skips the "Checking your account…" screen.
 const brandNewVisitor=()=>{try{return localStorage.getItem(AUTH_KEY)===null&&localStorage.getItem(RETURNING_KEY)===null;}catch{return false;}};
 const knownPlayer=()=>store.get(RETURNING_KEY)==='1'||store.get(AUTH_KEY)!==null;
+// Invite a friend: remember ?invite=CODE (src/invite-link.js) and show who invited this visitor on the sign-up card.
+const localStore=(()=>{try{return localStorage;}catch{return null;}})();
+takeInviteFromUrl({location:globalThis.location,history:globalThis.history,storage:localStore,known:knownPlayer()});
+async function showInviter(){
+ const code=pendingInvite(localStore),box=document.getElementById('account-invite');if(!code||!box)return;
+ const name=await inviterName(functionsUrl,code);if(!name||pendingInvite(localStore)!==code)return;
+ const text=inviteBannerText(name);box.querySelector('strong').textContent=text.title;box.querySelector('span').textContent=text.body;box.hidden=false;
+}
+void showInviter();
 const linkText=()=>`${globalThis.location?.hash??''}&${globalThis.location?.search??''}`;
 const linkKind=()=>/type=(recovery|signup|magiclink|invite|email_change)/.exec(linkText())?.[1]??'';
 const linkError=()=>/error_code=|error=access_denied/.test(linkText());
@@ -80,7 +90,7 @@ async function openFarm(){
   if(!navigator.onLine)throw new Error('Connect to the internet to open your farm.');
   const user=await verifiedUser();if(ticket!==generation)return;
   if(!user){landing();return;}playerId=user.id;phase('checking','Opening your farm…');
-  let initial;try{initial=await farmRequest({operation:'load'});}catch(error){if(ticket!==generation)return;if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
+  let initial;try{const inviteCode=pendingInvite(localStore);initial=await farmRequest({operation:'load',...(inviteCode?{inviteCode}:{})});clearInvite(localStore);}catch(error){if(ticket!==generation)return;if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
   if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){reopen=true;return;}
   presence=createFarmPresence(supabase,user.id);
   presence.setClock?.(initial.serverNow);
@@ -101,6 +111,7 @@ async function openFarm(){
   void notifications.ready?.then?.(()=>notifications?.push?.sync?.());
   bridge.trackCommerce=(event,params)=>{if(ticket===generation)trackCommerce(event,params);};
   bridge.trackGame=(event,params)=>{if(ticket===generation)trackGame(event,params);};
+  bridge.trackInvite=event=>{if(ticket===generation)trackInvite(event);};
   bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
   bridge.checkout=async(pack,requestId)=>{bridge.trackCommerce('diamond_pack_started',{pack});const data=await bridge.payments({operation:'create',pack,requestId});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
   bridge.paymentReturn=()=>{const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
@@ -146,7 +157,8 @@ $('account-form').onsubmit=async event=>{
   else if(mode==='register'){
    // The player name is optional: a friendly one is picked here and can be changed in the leaderboard.
    if(!name)name=randomPlayerName();
-   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username:name},emailRedirectTo:redirectUrl()}});
+   const invite=pendingInvite(localStore);if(invite)trackInvite('invite_signup');
+   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username:name,...(invite?{invite}:{})},emailRedirectTo:redirectUrl()}});
    if(error)throw error;
    if(isNewRegistration(data))trackSignUp({confirmationRequired:!data.session});
    store.set(RETURNING_KEY,'1');

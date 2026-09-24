@@ -55,6 +55,9 @@ const PROMPT_ACTIONS=new Set(['shown','accepted','dismissed','failed']);
 // Connection problems: how it failed (a fixed word, never an error message) and whether it stayed a small "Reconnecting…" or became the pause screen.
 const CONNECTION_REASONS=new Set(['offline','timeout','network','server','other']);
 const CONNECTION_STAGES=new Set(['reconnecting','paused']);
+// Invite a friend: the screen opened, the link shared or copied, a sign-up that came with a code. Never a name or code.
+const INVITE_EVENTS=new Set(['invite_open','invite_share','invite_copy','invite_signup']);
+export function trackInvite(event,win=globalThis.window){if(INVITE_EVENTS.has(event))pushEvent(event,{device:deviceType(win)},win);}
 export function trackGame(event,params={},win=globalThis.window){
  if(!GAME_EVENTS.has(event))return;
  const clean={device:deviceType(win)};

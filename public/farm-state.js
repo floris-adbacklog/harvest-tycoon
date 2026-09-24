@@ -1401,6 +1401,9 @@ export function utcDay(now=Date.now()){return new Date(now).toISOString().slice(
 export function dayNumber(now=Date.now()){return Math.floor(now/DAY_MS);}
 export function seedCost(state,crop){return Math.max(1,Math.ceil(CROPS[crop].cost*(1-siloBonus(state.siloLevel??0).seeds)));}
 export function normalizeFarm(state,now=Date.now()){
+ // Invite a friend: who invited this farm (set once when it was created) and which friends already paid out.
+ if(state.invite&&!(typeof state.invite.code==='string'&&typeof state.invite.by==='string'&&Number.isFinite(state.invite.at)))delete state.invite;
+ state.inviteRewards=Array.isArray(state.inviteRewards)?state.inviteRewards.filter(id=>typeof id==='string').slice(-500):[];
  const oldVersion=state.version??0;
  if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=oldXpForLevel(previousLevel)-60*(previousLevel-1);}
  migrateXpCurve(state);
@@ -1517,6 +1520,34 @@ export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  return {coins:order.coins,xp:order.xp,diamonds:order.diamonds};
 }
 // Every level pays at least one diamond, so no level-up is ever empty-handed; from level 10 on it grows with every five levels.
+// Invite a friend: every farmer has a short personal code (harvesttycoon.com/?invite=CODE). A friend who starts a new farm with
+// it and reaches level 10 within 30 days earns 150 diamonds, and so does the farmer who invited them, for at most 10 friends.
+// The friend's reward is paid in their own farm when they reach the level; the inviter's on their next load.
+export const INVITE_REWARD=150,INVITE_LEVEL=10,INVITE_LIMIT=10,INVITE_DAYS=30;
+export const INVITE_CODE=/^[A-Z0-9]{4,12}$/;
+const INVITE_LETTERS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+// A readable code from the player name plus two random letters, e.g. "Tony" -> "TONY7K".
+export function inviteCodeFrom(name,random=Math.random){
+ const base=String(name??'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+ return (base.length>=2?base:'FARM')+Array.from({length:2},()=>INVITE_LETTERS[Math.floor(random()*INVITE_LETTERS.length)]).join('');
+}
+// The invited friend's reward, once, when they are at level 10 within 30 days of starting. Returns what was paid or null.
+export function inviteeReward(state,now=Date.now()){
+ const invite=state.invite;
+ if(!invite||invite.rewardedAt||levelOf(state)<INVITE_LEVEL||now-invite.at>INVITE_DAYS*DAY_MS)return null;
+ invite.rewardedAt=now;state.diamonds+=INVITE_REWARD;
+ return {diamonds:INVITE_REWARD,from:invite.by};
+}
+// The inviter's rewards for friends who reached level 10 (rows from the referrals table), each paid once: the friend's id is
+// kept in the farm, so a retry or a second tab never pays twice.
+export function inviterRewards(state,rows){
+ state.inviteRewards??=[];const paid=[];
+ for(const row of rows){
+  if(!(row.referrer_diamonds>0)||state.inviteRewards.includes(row.invitee_id))continue;
+  state.inviteRewards.push(row.invitee_id);state.diamonds+=row.referrer_diamonds;paid.push({playerId:row.invitee_id,name:row.username??'A friend',diamonds:row.referrer_diamonds});
+ }
+ return paid;
+}
 export function levelReward(level){return {coins:10*level,diamonds:Math.max(1,Math.floor(level/5))};}
 // One farmer title every 5 levels, so nobody is stuck reading "Farm tycoon" from level 5 to 100: the fields keep expanding to level 95, so the
 // titles keep going that far too. The last title holds from level 96 on.
