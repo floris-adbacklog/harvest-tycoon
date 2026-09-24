@@ -7,6 +7,13 @@ const SUPERADMINS=new Set(['floris@millstone.nl']);
 // The address must also be confirmed: an account that only claims it (never confirmed, or from a provider that does not vouch for
 // it) is not the admin.
 export const isSuperadmin=user=>SUPERADMINS.has(String(user?.email??'').trim().toLowerCase())&&Boolean(user?.email_confirmed_at);
+// The admin or a moderator (staff_roles, supabase/chat.sql): may read the Admin dashboard. Giving anything stays isSuperadmin only.
+export async function isStaff(admin,user){
+ if(isSuperadmin(user))return true;
+ if(!user?.id)return false;
+ try{const found=await admin.from('staff_roles').select('player_id').eq('player_id',user.id).limit(1);return !found.error&&(found.data?.length??0)>0;}
+ catch{return false;}
+}
 
 // Generous enough for a real reward, small enough that an extra typed zero cannot hand out a fortune by accident.
 // Diamonds are capped tighter: they are the currency the diamond-checkout Stripe packs sell, topping out at 3500.
@@ -19,6 +26,12 @@ export function validGrant({coins,xp,diamonds,item,itemCount}){
 }
 // A short, optional note; the player always sees the amounts once notify is on, the note is extra. Rendered as
 // plain text on the client (never HTML), so nothing here needs escaping — trimming and a length cap are enough.
+// "Donation: you received 50 diamonds + 1,000 coins + 3 Corn." and the admin's note, for the Notifications tab.
+const amount=n=>Number(n).toLocaleString('en-US');
+export function giftNotice({coins,xp,diamonds,item,itemCount,message}){
+ const parts=[diamonds&&`${amount(diamonds)} diamonds`,coins&&`${amount(coins)} coins`,xp&&`${amount(xp)} XP`,item&&itemCount&&`${amount(itemCount)} ${ITEMS[item]?.name??item}`].filter(Boolean);
+ return `Donation: you received ${parts.join(' + ')}.${message?` “${message}”`:''}`.slice(0,400);
+}
 export const sanitizeGiftMessage=value=>{const trimmed=String(value??'').trim().slice(0,MAX_MESSAGE);return trimmed||null;};
 
 // Adds to a farmer's coins/XP/diamonds and logs who gave it. Reuses harvest_commit_farm — the exact same
@@ -68,6 +81,8 @@ export async function handleAdminGrant({admin,body,user}){
   if(saved.data){
    const logged=await admin.from('admin_grants').insert({player_id:playerId,granted_by:user.id,coins,xp,diamonds,item,item_count:itemCount,notified:notify,message});
    if(logged.error)throw logged.error;
+   // With notify on, the gift also stays under Notifications in the chat (supabase/chat.sql). Best effort: the gift itself is saved.
+   if(notify)try{await admin.from('player_notices').insert({player_id:playerId,kind:'gift',body:giftNotice({coins,xp,diamonds,item,itemCount,message})});}catch{}
    return respond({granted:{coins,xp,diamonds,item,itemCount},totals:{coins:state.coins,xp:state.xp,diamonds:state.diamonds,level}});
   }
  }

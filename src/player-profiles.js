@@ -30,6 +30,7 @@ export function renderPlayerProfile(player,now=Date.now()){
  const tiles=[['harvested_crops','Crops harvested','harvest'],['goods_produced','Goods produced','buildings'],['items_sold','Items sold','market'],['deliveries','Deliveries completed','cart']];
  const badges=player.badges??[],mastered=masteryByCrop(badges);
  return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="320" height="363" decoding="async" draggable="false"><span>${esc(initials(player.username))}</span></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${vipBadge(player.vipExpiresAt,now,true)}</div></div>
+ <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div><div class="farmer-invite" data-farmer-invite hidden></div></section>
  <h3 class="farmer-section-title">Life on the farm</h3><div class="farmer-stat-grid">${tiles.map(([key,label,icon])=>`<div class="farmer-stat">${art(icon)}<div><strong>${fmt(stats[key])}</strong><span>${label}</span></div></div>`).join('')}</div>
  <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Crop mastery</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first mastery badge.</p>'}</section>`;
@@ -101,14 +102,17 @@ export function createPlayerProfiles(bridge){
    finally{give.disabled=false;}
   };
  }
+ // The chat (src/chat-ui.js) adds the Moderator badge, Send message, Block and the staff's chat buttons after every draw.
+ let chatExtras=null;
  let searchSequence=0,profileSequence=0,timer,selected=null,returnFocus,disposed=false,profileUsername=null,clockOffset=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
  function close(){dialog.close();}
  dialog.querySelector('.farmer-profile-close').onclick=close;dialog.querySelector('.farmer-profile-back').onclick=close;
  dialog.addEventListener('close',()=>{++profileSequence;selected=null;if(!disposed)(returnFocus?.isConnected?returnFocus:input).focus();});
  // From the leaderboard (the default) or from somewhere else, such as the Family Members list, which names its own way back.
+ // back:null (the chat) shows no way back at all: closing the profile is the way back.
  async function open(playerId,{back='Back to leaderboard'}={}){
   if(disposed)return;returnFocus=document.activeElement;selected=playerId;profileUsername=null;++profileSequence;
-  dialog.querySelector('.farmer-profile-back').textContent=back;
+  const backButton=dialog.querySelector('.farmer-profile-back');backButton.hidden=back===null;if(back!==null)backButton.textContent=back;
   dialog.querySelector('#farmer-profile-title').textContent='Farmer profile';
   content.innerHTML='<p class="farmer-empty">Opening this farmer’s gate…</p>';profileStatus.textContent='';
   adminGrant.hidden=true;adminGrant.innerHTML='';
@@ -135,6 +139,7 @@ export function createPlayerProfiles(bridge){
    if(disposed||ticket!==profileSequence||!dialog.open)return;
    const y=dialog.scrollTop;clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset);refreshVipBadges(dialog,Date.now()+clockOffset);
    profileUsername=data.playerProfile.username;showInvite(data.playerProfile);
+   chatExtras?.(data.playerProfile,content,{isCurrent:()=>!disposed&&selected===id&&dialog.open});
    dialog.querySelector('#farmer-profile-title').textContent=`${data.playerProfile.username}'s profile`;
    profileStatus.textContent='Online status is based on activity in the last 30 minutes.';
    if(quiet)dialog.scrollTop=y;
@@ -169,5 +174,5 @@ export function createPlayerProfiles(bridge){
   else if(board.open&&input.value.trim().length>=2&&results.children.length&&document.activeElement!==input&&!results.contains(document.activeElement))searchPlayers(++searchSequence,input.value.trim());
  },30000);
  window.addEventListener('pagehide',()=>{disposed=true;++searchSequence;++profileSequence;clearTimeout(timer);clearInterval(refresh);clearInterval(vipTimer);},{once:true});
- return {open,get isOpen(){return dialog.open;}};
+ return {open,get isOpen(){return dialog.open;},setChatExtras(fn){chatExtras=fn;}};
 }

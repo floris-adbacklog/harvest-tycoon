@@ -861,3 +861,26 @@ with inviter, friend, the friend's level, status (playing / reached level 10 / e
 150 diamonds are really in their farm (friend: state.invite.rewardedAt; inviter: state.inviteRewards contains the friend), plus
 totals (personal links made = rows in player_invite_codes, friends joined, reached level 10, diamonds paid). Shown as the
 "Invite a friend" card in the admin dashboard (src/admin-dashboard.js). Tests: tests/admin-analytics.test.mjs.
+
+Chat, notifications and moderators (2026-09-24; NOT live until `supabase/chat.sql` is applied, then the site pushed, then
+farm-api and notify-hourly deployed). Database: `supabase/chat.sql` (re-runnable). Tables chat_messages (30 days), player_notices
+(news for everyone when player_id is null, `expires_at` for news with an end; 60 days), chat_reads, chat_blocks, chat_sanctions,
+chat_reports, chat_settings (private messages off), chat_config (levels, 1 for now), staff_roles (moderators), chat_push_state,
+staff_donations. Players only SELECT messages/notices through RLS (chat_can_read: global = everyone signed in, family = members,
+dm = the two farmers); everything else goes through security-definer chat_* functions. Realtime (postgres_changes) on
+chat_messages and player_notices, one channel per session (src/chat-client.js, bridge.chat in src/main.js). Staff = the confirmed
+floris@millstone.nl account ('admin') or staff_roles ('moderator'; Boer Slak 4744af19… is the first). Staff can delete messages
+and mute/ban from the chat only (never the farm; staff cannot be sanctioned); the admin appoints moderators (profile button),
+posts news (chat Notifications tab or dashboard, with how many hours it shows) and sets chat levels. Moderators may open the
+dashboard (farm-api `isStaff` for the read-only admin_* ops; admin_grant stays superadmin-only). Gift for everyone
+(`staff_donate`): all staff together at most 500 coins + 50 diamonds a day in at most 5 gifts; a farm that existed when it was
+sent receives it on its next load within 7 days (farm-api load, `receiveDonations`, ids kept in state.donations), shown in the
+"Donation!" pop-up; the "donation" news note makes an open game refresh. An admin gift with "notify" also leaves a note under
+Notifications. Private message push: trigger chat_dm_push (pg_net) → notify-hourly `?dm` → chat_push_claim (service role, once
+per message); only with a device, the "New private message" switch on (default on), not blocked, not reading the chat now, at
+most once per chat per 3 minutes. UI: src/chat-ui.js + public/chat.css (left panel, tabs bell/Global/Family/Private, Global
+first and without a red count; on phones the chat replaces the Family header button and Farm family moves to More › Friends;
+VIP mark and Moderator shield after names; profile: Send message, Block, staff tools). Dashboard: tabs Chat (guide, reports),
+Players (gift for everyone, online, newest), Growth, Settings (admin: news, moderators, chat levels). Icons painted by the user:
+chat, bell, sound, cookie, letter, send, admin (shield with key), guide (book), settings (gear), starter-pack.webp. Privacy page
+updated. Tests: tests/chat.test.mjs (+ updated admin, notifications, menu tests).

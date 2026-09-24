@@ -8,7 +8,7 @@ import {handleAdminGrant} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards} from './farm-state.js';
+import {createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
@@ -105,7 +105,17 @@ Deno.serve(async(req)=>{
     // An admin gift waiting on this farm (admin-service.js) is shown once, here, then cleared — the same
     // "picked up on the next load, whether that is right now or after a reconnect" delivery as level/chapter
     // rewards above, so no separate push mechanism is needed for it either.
-    const gift=state.pendingGift??null;if(gift)delete state.pendingGift;
+    let gift=state.pendingGift??null;if(gift)delete state.pendingGift;
+    // A gift for everyone from the staff (staff_donate in supabase/chat.sql), sent after this farmer signed up, in the last 7 days:
+    // added once, shown in the same "Donation!" pop-up.
+    const since=new Date(Math.max(now-7*86400000,Date.parse(user.created_at??'')||now)).toISOString();
+    let donated:unknown[]=[];
+    try{const found=await admin.from('staff_donations').select('id,coins,diamonds,message').gt('created_at',since).order('created_at').limit(40);if(!found.error)donated=found.data??[];}catch{}
+    const donations=receiveDonations(state,donated);
+    if(donations.length){
+     const coins=donations.reduce((sum,d)=>sum+d.coins,0),diamonds=donations.reduce((sum,d)=>sum+d.diamonds,0),message=donations.findLast(d=>d.message)?.message??null;
+     gift=gift?{...gift,coins:(gift.coins??0)+coins,diamonds:(gift.diamonds??0)+diamonds,message:gift.message??message}:{coins,xp:0,diamonds,item:null,itemCount:0,message,at:now};
+    }
     // Invite a friend: this farm's own reward at level 10 (also when it got there through a family reward), and the
     // rewards for friends it invited who reached level 10 since the last visit.
     const inviteReward=inviteeReward(state,now),friends=inviterRewards(state,await qualifiedFriends(admin,user.id).catch(()=>[]));

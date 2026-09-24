@@ -59,10 +59,10 @@ test('the service worker is never cached by the host and may control the whole s
 });
 test('settings: a gear replaces the sound button on desktop and a drawn gear is used in the mobile menu',()=>{
  const farm=read('public/farm.html'),icons=read('public/visual-icons.js');
- assert.match(farm,/id="sound-button" aria-label="Settings"[^>]*title="Settings"><i data-lucide="settings" data-line-icon>/);
+ assert.match(farm,/id="sound-button" aria-label="Settings"[^>]*title="Settings"><i data-game-art="settings"><\/i>/,'the painted gold gear, like the chat and the shield next to it');
  assert.match(farm,/data-menu-action="sound-button"><i data-lucide="settings"><\/i>[\s\S]*Settings<\/strong>/,'mobile: no data-line-icon, so the drawn gear is swapped in');
- assert.match(icons,/svgArt=new Set\(\[[^\]]*'settings'/);assert.match(icons,/settings:'settings'/);
- assert(existsSync(new URL('public/assets/icons/settings.svg',root)));
+ assert.match(icons,/for\(const id of \[[^\]]*'settings'[^\]]*\]\)pictures\[id\]=id;/,'the painted gold gear (WebP)');assert.match(icons,/settings:'settings'/);
+ assert(existsSync(new URL('public/assets/icons/settings.webp',root)));
  assert.match(farm,/<h2 id="sound-title">Settings<\/h2>/);assert(!/Sound settings/.test(farm),'no leftover "Sound settings" text');
  assert.match(farm,/id="app-settings"[^>]*hidden/);assert.match(farm,/href="\/settings\.css"/);
  assert(!/volume-x|volume-2/.test(read('public/sound-settings.js')),'the button no longer flips between speaker icons');
@@ -86,7 +86,7 @@ test('settings headings use drawn icons: a golden bell for reminders and a phone
  const farm=read('public/farm.html'),icons=read('public/visual-icons.js');
  assert.match(farm,/settings-heading"><i data-lucide="bell"><\/i>Reminders/);assert.match(farm,/settings-heading"><i data-lucide="smartphone"><\/i>Farm app/);
  assert(!/data-lucide="(bell|smartphone)" data-line-icon/.test(farm),'no line icons left on these headings');
- assert.match(icons,/svgArt=new Set\(\[[^\]]*'reminders'[^\]]*'farmapp'/);assert.match(icons,/bell:'reminders'/);assert.match(icons,/smartphone:'farmapp'/);
+ assert.match(icons,/svgArt=new Set\(\[[^\]]*'reminders'[^\]]*'farmapp'/);assert.match(icons,/bell:'bell'/,'the painted bell, the same as the chat\'s Notifications tab');assert.match(icons,/smartphone:'farmapp'/);
  for(const file of ['reminders','farmapp']){const svg=read(`public/assets/icons/${file}.svg`);assert.match(svg,/viewBox="0 0 128 128"/);assert(!/<script|onload=|href=/i.test(svg),'a plain drawing');}
 });
 test('the game frame fills the whole screen and the sign-in card keeps clear of the notch and the home indicator',()=>{

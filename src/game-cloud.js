@@ -1,6 +1,7 @@
 import {createAvatarSettings} from '../public/avatar-settings.js';
 import {createPlayerProfiles} from './player-profiles.js';
 import {createAdminDashboard} from './admin-dashboard.js';
+import {createChatUI} from './chat-ui.js';
 import {createCloudUI} from './ui.js';
 import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
 import {showPaymentReturn} from './payment-ui.js';
@@ -13,7 +14,9 @@ if(!bridge){location.replace('/play.html');}else{
   document.body.hidden=false;
   const ui=createCloudUI({onOpen:openBoard,onRetry:openBoard,onPlayer:()=>profiles.open(bridge.playerId),onName:async username=>{const data=await bridge.request({operation:'rename',username});ui.setProfile(data.profile,{id:bridge.playerId});},onSignOut:()=>bridge.signOut()});
   const profiles=createPlayerProfiles(bridge),serverOffset=bridge.serverNow-Date.now();
-  createAdminDashboard(bridge);
+  // The chat (header button, next to Farm Family) and the Admin dashboard, which the moderators may open too.
+  const chat=createChatUI({bridge,profiles});
+  createAdminDashboard(bridge,{chat});
   // The Family Members list opens a farmer's profile too (public/family-ui.js).
   window.harvestProfiles=profiles;
   ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');

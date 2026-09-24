@@ -9,12 +9,12 @@ const notAdmin={id:'x',email:'someone.else@millstone.nl'};
 const now=Date.UTC(2026,8,22,12);
 const iso=ms=>new Date(ms).toISOString();
 
-function database({stats=[],signups=[]}={}){
+function database({stats=[],signups=[],staff=[]}={}){
  const calls=[];
  return {calls,
   from(table){
    const call={table,eq:[],in:null};calls.push(call);
-   let rows=table==='player_stats'?stats:[];
+   let rows=table==='player_stats'?stats:table==='staff_roles'?staff:[];
    return {
     select(v){call.select=v;return this;},
     eq(k,v){call.eq.push([k,v]);rows=rows.filter(r=>r[k]===v);return this;},
@@ -31,11 +31,14 @@ function database({stats=[],signups=[]}={}){
  };
 }
 
-test('every admin analytics operation is rejected for anyone but floris@millstone.nl, before touching the database',async()=>{
+test('every admin analytics operation is rejected for anyone but the admin and the moderators; a farmer only costs one staff lookup',async()=>{
  for(const handler of [handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention]){
   const db=database();
   const result=await handler({admin:db,user:notAdmin});
-  assert.equal(result.status,403);assert.equal(db.calls.length,0);
+  assert.equal(result.status,403);assert.deepEqual(db.calls.map(c=>c.table),['staff_roles']);
+  const asModerator=await handler({admin:database({staff:[{player_id:notAdmin.id}]}),user:notAdmin});
+  assert.equal(asModerator.status,200,'a moderator (staff_roles) may read the dashboard');
+  const asAdmin=database();await handler({admin:asAdmin,user:admin});assert.ok(!asAdmin.calls.some(c=>c.table==='staff_roles'),'the admin needs no lookup');
  }
 });
 
@@ -116,10 +119,13 @@ test('the admin_online/admin_recent_players/admin_retention operations are wired
  const before=code.indexOf('if(!username)return reply');
  for(const marker of ["body.operation==='admin_online'","body.operation==='admin_recent_players'","body.operation==='admin_retention'"])assert.ok(code.indexOf(marker)<before,marker);
 });
-test('handleAdminOnline/RecentPlayers/Retention/Invites each check isSuperadmin, imported from the same place admin_grant uses',()=>{
+test('handleAdminOnline/RecentPlayers/Retention/Invites each check isStaff (the admin or a moderator), from the same place admin_grant uses; giving stays admin-only',()=>{
  const code=read('supabase/functions/farm-api/admin-analytics-service.js');
- assert.match(code,/import \{isSuperadmin\} from '\.\/admin-service\.js';/);
- assert.equal((code.match(/if\(!isSuperadmin\(user\)\)return respond\(user,\{error:'Not authorized\.'\},403\);/g)??[]).length,4);
+ assert.match(code,/import \{isStaff\} from '\.\/admin-service\.js';/);
+ assert.equal((code.match(/if\(!\(await isStaff\(admin,user\)\)\)return respond\(user,\{error:'Not authorized\.'\},403\);/g)??[]).length,4);
+ const grant=read('supabase/functions/farm-api/admin-service.js');
+ assert.match(grant,/export async function isStaff\(admin,user\)\{\n if\(isSuperadmin\(user\)\)return true;/);
+ assert.match(grant,/if\(!isSuperadmin\(user\)\)return respond\(\{error:'Not authorized\.'\},403\);/,'admin_grant: still only the admin');
 });
 // Regression: bridge.request() in src/main.js throws "Your session has ended" for any farm-api response whose
 // profile.player_id does not match the signed-in caller — a response with no profile field at all fails that
@@ -150,7 +156,8 @@ test('the admin dashboard button exists in the topbar, hidden until checkAdmin()
  assert.match(html,/<button class="icon-button" id="admin-button" aria-label="Open the admin dashboard" aria-haspopup="dialog" title="Admin dashboard" hidden>/);
  const js=read('src/admin-dashboard.js');
  assert.match(js,/import \{checkAdmin\} from '\.\/player-profiles\.js';/);
- assert.match(js,/checkAdmin\(\)\.then\(admin=>\{if\(!admin\)return;button\.hidden=false;const entry=document\.getElementById\('admin-menu-entry'\);if\(entry\)entry\.hidden=false;\}\);/,'the topbar button and the More-menu card appear together, only for the admin');
+ assert.match(js,/Promise\.all\(\[checkAdmin\(\),chat\?\.whenReady\?\.\(\)\.then\(overview=>overview\?\.role\?\?null\)\.catch\(\(\)=>null\)\]\)\.then\(\(\[admin,chatRole\]\)=>\{\n  role=admin\|\|chatRole==='admin'\?'admin':chatRole==='moderator'\?'moderator':null;if\(!role\)return;/);
+ assert.match(js,/button\.hidden=false;const entry=document\.getElementById\('admin-menu-entry'\);if\(entry\)entry\.hidden=false;/,'the topbar button and the More-menu card appear together, only for the admin');
 });
 test('each card has its own line icon, converted like every other plain (non-painted) icon in the game',()=>{
  const js=read('src/admin-dashboard.js');
@@ -181,7 +188,7 @@ test('the dashboard fetches all three admin operations through the same bridge e
 test('game-cloud.js creates the dashboard once, alongside the player-profile/gift panel it shares checkAdmin with',()=>{
  const js=read('src/game-cloud.js');
  assert.match(js,/import \{createAdminDashboard\} from '\.\/admin-dashboard\.js';/);
- assert.match(js,/const profiles=createPlayerProfiles\(bridge\),serverOffset=bridge\.serverNow-Date\.now\(\);\n\s*createAdminDashboard\(bridge\);/);
+ assert.match(js,/const profiles=createPlayerProfiles\(bridge\),serverOffset=bridge\.serverNow-Date\.now\(\);[\s\S]*const chat=createChatUI\(\{bridge,profiles\}\);\n\s*createAdminDashboard\(bridge,\{chat\}\);/);
 });
 test('checkAdmin is exported from player-profiles.js so admin-dashboard.js does not duplicate the account check',()=>{
  assert.match(read('src/player-profiles.js'),/export function checkAdmin\(\)\{/);
@@ -192,7 +199,7 @@ test('the dashboard opens with three headline numbers, lists the newest players,
  assert.match(js,/<ul id="admin-recent-list" class="admin-recent-list"><\/ul>/);
  assert.ok(!/admin-events|mountAdminEvents|liveEvents/.test(js),'farm events run on their own schedule');
  assert.match(html,/id="admin-menu-entry" hidden><i data-game-art="admin"><\/i><span><strong>Admin dashboard<\/strong><small>Players and retention<\/small>/);
- assert.match(icons,/svgArt=new Set\(\[[^\]]*'admin'/);assert.match(read('public/assets/icons/admin.svg'),/^<svg[\s\S]*<\/svg>\s*$/);
+ assert.match(icons,/for\(const id of \[[^\]]*'admin'[^\]]*\]\)pictures\[id\]=id;/,'the painted shield with the key (WebP)');assert.ok(!/svgArt=new Set\(\[[^\]]*'admin'/.test(icons));
 });
 
 test('the Invite a friend log: who invited whom, how far the friend is, and whether each side really got its diamonds',async()=>{

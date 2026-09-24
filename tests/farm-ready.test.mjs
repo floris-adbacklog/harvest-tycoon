@@ -18,7 +18,7 @@ function start(){
   createCloudUI:()=>({setProfile(){},status(){}}),
   createAvatarSettings:()=>{},
   createPlayerProfiles:()=>({open(){},isOpen:false}),
-  createAdminDashboard:()=>({}),
+  createAdminDashboard:()=>({}),createChatUI:()=>null,
   setInterval:()=>1,clearInterval(){},
   loadGame:async()=>({farmReady}),
   showPaymentReturn:()=>calls.push('payment'),

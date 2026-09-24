@@ -1,7 +1,7 @@
 // The "Reminders" block of the settings dialog. It talks to window.parent.harvestBridge.notifications
 // (src/notifications.js) and stays hidden until the notification service is switched on.
 import {refreshArt} from './visual-icons.js';
-const IDS={pushCrops:'notify-crops',pushProduction:'notify-production',pushDaily:'notify-daily',emailDigest:'notify-email'};
+const IDS={pushMessages:'notify-messages',pushCrops:'notify-crops',pushProduction:'notify-production',pushDaily:'notify-daily',emailDigest:'notify-email'};
 const DEVICE={
  unsupported:'This browser cannot receive notifications.',
  'install-first':'On iPhone, first add Harvest Tycoon to your home screen (see Farm app below). Then come back here to turn notifications on.',

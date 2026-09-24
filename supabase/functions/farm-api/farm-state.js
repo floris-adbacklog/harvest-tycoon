@@ -1430,6 +1430,7 @@ export function normalizeFarm(state,now=Date.now()){
  // Invite a friend: who invited this farm (set once when it was created) and which friends already paid out.
  if(state.invite&&!(typeof state.invite.code==='string'&&typeof state.invite.by==='string'&&Number.isFinite(state.invite.at)))delete state.invite;
  state.inviteRewards=Array.isArray(state.inviteRewards)?state.inviteRewards.filter(id=>typeof id==='string').slice(-500):[];
+ state.donations=Array.isArray(state.donations)?state.donations.filter(id=>typeof id==='string').slice(-50):[];
  const oldVersion=state.version??0;
  if((state.version??0)<4){const previousLevel=1+Math.floor(state.xp/60);state.xpOffset=oldXpForLevel(previousLevel)-60*(previousLevel-1);}
  migrateXpCurve(state);
@@ -1576,6 +1577,19 @@ export function inviterRewards(state,rows){
   state.inviteRewards.push(row.invitee_id);state.diamonds+=row.referrer_diamonds;paid.push({playerId:row.invitee_id,name:row.username??'A friend',diamonds:row.referrer_diamonds});
  }
  return paid;
+}
+// A gift for everyone from the staff (staff_donate, supabase/chat.sql): each one is received once, on the next load, by farms that
+// already existed when it was sent. The ids received are kept (the last 50; at most 5 gifts a day, looked up for 7 days).
+export function receiveDonations(state,rows){
+ state.donations??=[];const got=[];
+ for(const row of rows??[]){
+  if(typeof row?.id!=='string'||state.donations.includes(row.id))continue;
+  const coins=Math.max(0,Math.min(500,Math.floor(Number(row.coins)||0))),diamonds=Math.max(0,Math.min(50,Math.floor(Number(row.diamonds)||0)));
+  state.donations.push(row.id);state.coins+=coins;state.diamonds+=diamonds;
+  got.push({coins,diamonds,message:typeof row.message==='string'&&row.message?row.message.slice(0,120):null});
+ }
+ state.donations=state.donations.slice(-50);
+ return got;
 }
 export function levelReward(level){return {coins:10*level,diamonds:Math.max(1,Math.floor(level/5))};}
 // One farmer title every 5 levels, so nobody is stuck reading "Farm tycoon" from level 5 to 100: the fields keep expanding to level 95, so the

@@ -23,6 +23,6 @@ test('Settings invites a made-up name to become your own, and the name dialog th
 test('sound and reminders use switches, and the sound part is a card of its own',()=>{
  const html=read('public/farm.html');
  assert.match(html,/<section id="sound-settings" class="settings-section"/);
- assert.equal((html.match(/type="checkbox" role="switch"/g)??[]).length,5);
+ assert.equal((html.match(/type="checkbox" role="switch"/g)??[]).length,7,'sound, private messages (chat), and five notification switches');
  assert.ok(!html.includes('Settle into a gentle melody'),'no intro sentence');
 });

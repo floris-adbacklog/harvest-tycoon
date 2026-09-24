@@ -62,6 +62,25 @@ Deno.serve(async(req)=>{
   return page('Unsubscribe from the daily email?',`<p>You will not get the daily summary of your farm any more.</p><form method="post" action="?unsubscribe=${token}"><button type="submit" style="background:#685e3f;color:#fffdf0;border:0;border-radius:12px;padding:14px 22px;font-size:16px;font-weight:700;cursor:pointer;">Unsubscribe</button></form>`);
  }
  if(req.method!=='POST')return json({error:'Use POST.'},405);
+ // A new private message (the chat_dm_push trigger in supabase/chat.sql): one notification to the other farmer's devices. The
+ // trigger already checked their switch, their devices and the pace; chat_push_claim hands out each message once, so calling
+ // this again, by anyone, sends nothing.
+ if(query.has('dm')){
+  if(!pushOn)return json({sent:0});
+  let id='';try{id=String((await req.json())?.message??'');}catch{}
+  if(!tokenOk(id))return json({sent:0});
+  const {data:claim,error}=await admin.rpc('chat_push_claim',{p_message:id});
+  if(error||!claim)return json({sent:0});
+  const payload=JSON.stringify({title:`Message from ${claim.senderName}`,body:claim.body,tag:`chat-${claim.channel}`,url:'/play.html'});
+  let sent=0;
+  for(const sub of claim.subscriptions??[]){
+   const outcome=await sendPush(sub,payload);
+   if(outcome.ok){sent++;await db.markSuccess(sub.endpoint);}
+   else if(outcome.status===404||outcome.status===410)await db.removeSubscription(sub.endpoint);
+   else await db.markFailure(sub.endpoint);
+  }
+  return json({sent});
+ }
  if(!pushOn&&!emailOn)return json({ran:false,reason:'not configured'},503);
  try{
   const stats=await runJob({db,sendPush:pushOn?sendPush:null,sendEmail:emailOn?sendEmail:null,names:{crops:CROP_NAMES,buildings:BUILDING_NAMES},log:(m:string)=>console.error(m)});

@@ -7,13 +7,14 @@ import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInv
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
 import {createNotifications} from './notifications.js';
+import {createChatClient} from './chat-client.js';
 import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
 import {createConnection,connectionMessage,reasonOf,WAKE_GRACE} from './connection.js';
 const $=id=>document.getElementById(id);
 startPwa();
 startPlayerCounts({functionsUrl});
-let presence=null,notifications=null;
+let presence=null,notifications=null,chat=null;
 let mode='register',generation=0,playerId=null,frame=null,submitting=false,checking=false,reopen=false;
 let focusing=false,nameOpen=false,recovering=false,viewTracked=false,confirmKind='signup',pendingEmail='',resendTimer=null,providers=[];
 const started={};
@@ -46,7 +47,7 @@ const redirectUrl=()=>new URL('/play.html',location.origin).href;
 const inputId=field=>field==='name'?'player-name':field;
 const MESSAGES={register:'Creating your account…',signin:'Opening your farm…',name:'Opening your farm…',forgot:'Sending your link…',recovery:'Saving your password…'};
 function phase(value,message){document.body.dataset.phase=value;$('loading-screen').hidden=value!=='checking';$('welcome').hidden=value==='checking'||value==='authenticated';$('farm-host').hidden=value!=='authenticated';if(message)$('loading-copy').textContent=message;}
-function dispose(){presence?.dispose();presence=null;watchers.clear();generation++;frame?.remove();frame=null;playerId=null;delete window.harvestBridge;$('farm-host').replaceChildren();}
+function dispose(){presence?.dispose();presence=null;chat?.dispose();chat=null;watchers.clear();generation++;frame?.remove();frame=null;playerId=null;delete window.harvestBridge;$('farm-host').replaceChildren();}
 // Moving focus from code (opening a mode, pointing at a mistake) must not count as the visitor starting the form.
 function focusField(id,options){focusing=true;try{$(id).focus(options);}finally{focusing=false;}}
 function fieldError(field,message=''){$(field+'-error').textContent=message;$(inputId(field)).setAttribute('aria-invalid',String(Boolean(message)));}
@@ -108,6 +109,8 @@ async function openFarm(){
     throw error;
    }
   },watchConnection(watch){watchers.add(watch);return()=>watchers.delete(watch);}};
+  // The chat window and the notifications (src/chat-client.js): straight to the database, live through Realtime.
+  chat?.dispose();chat=bridge.chat=createChatClient(supabase,{playerId:user.id,alive:()=>ticket===generation});
   notifications=bridge.notifications=createNotifications(supabase,{configUrl:functionsUrl&&`${functionsUrl}/notify-hourly?config`});
   void notifications.ready?.then?.(()=>notifications?.push?.sync?.());
   bridge.trackCommerce=(event,params)=>{if(ticket===generation)trackCommerce(event,params);};

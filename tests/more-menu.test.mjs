@@ -12,7 +12,7 @@ function menuOrder(html){
 }
 test('"Your farm menu" always lists every feature, gated ones in the order they unlock',()=>{
  const html=read('public/farm.html'),order=menuOrder(html);
- assert.equal(order.length,22,'nothing was dropped; Activities, Farm events, the (admin-only) dashboard, the Valley Market, the Ranch, the Estate Workshop, the Trade Depot, the fair and Invite a friend were added');
+ assert.equal(order.length,23,'nothing was dropped; Activities, Farm events, the (admin-only) dashboard, the Valley Market, the Ranch, the Estate Workshop, the Trade Depot, the fair, Invite a friend and (phones: the chat has its header spot) Farm family were added; Invite a friend were added');
  assert.match(html,/data-menu-action="today-button"[\s\S]{0,200}<\/button>\n    <button data-menu-action="events-button">/,'Farm events sits right next to Daily rewards');
  assert.match(html,/<button data-menu-action="admin-button" id="admin-menu-entry" hidden>/,'the admin card is hidden for everyone until checkAdmin() allows it');
  assert(order.includes('activities'),'A helping hand has its own entry, it was missing entirely before');
@@ -53,7 +53,7 @@ test('the menu is grouped under small headings, with compact tiles and the locke
  const headings=[...grid.matchAll(/<h3 class="menu-section" data-section-heading="([a-z]+)">([^<]+)<\/h3>/g)].map(m=>m[2]);
  assert.deepEqual(headings,['Every day','On the farm','Estate &amp; valley','Friends','Help &amp; settings']);
  const section=name=>{const start=grid.indexOf(`data-section-heading="${name}"`),end=grid.indexOf('<h3',start+10);return grid.slice(start,end<0?undefined:end);};
- assert.match(section('friends'),/leaderboard-button[\s\S]*invite-button/);assert.match(section('daily'),/all-quests-mobile/,'the Beginner guide is an everyday thing');assert.match(section('help'),/help-button[\s\S]*sound-button/);assert.match(section('daily'),/today-button[\s\S]*events-button/);
+ assert.match(section('friends'),/leaderboard-button[\s\S]*family-button[\s\S]*invite-button/);assert.match(section('daily'),/all-quests-mobile/,'the Beginner guide is an everyday thing');assert.match(section('help'),/help-button[\s\S]*sound-button/);assert.match(section('daily'),/today-button[\s\S]*events-button/);
  assert.match(grid,/<button type="button" class="menu-later" data-menu-later aria-expanded="false" hidden><span>Coming later<\/span><b data-later-count>0<\/b>/);
  const ui=read('public/mobile-ui.js');
  assert.match(ui,/later\.onclick=\(\)=>\{grid\.classList\.toggle\('show-later'\);arrange\(\);\};/);

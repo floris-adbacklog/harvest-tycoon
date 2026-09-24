@@ -1,4 +1,4 @@
-import {isSuperadmin} from './admin-service.js';
+import {isStaff} from './admin-service.js';
 import {isRecentlyActive,ONLINE_WINDOW} from './presence.js';
 
 // bridge.request() in src/main.js checks every response's profile.player_id against the signed-in caller (a
@@ -10,7 +10,7 @@ const DAY_MS=86400000,RETENTION_DAYS=7;
 // Who is online right now: the same "active in the last 30 minutes" rule the leaderboard's own online dot and a
 // farmer's public profile already use (presence.js) — nothing new is invented for this dashboard.
 export async function handleAdminOnline({admin,user,now=Date.now()}){
- if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
+ if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  const found=await admin.from('player_stats').select('player_id,username,level,last_active_at').order('last_active_at',{ascending:false,nullsFirst:false}).limit(500);
  if(found.error)throw found.error;
  const online=(found.data??[]).filter(row=>isRecentlyActive(row.last_active_at,now));
@@ -20,7 +20,7 @@ export async function handleAdminOnline({admin,user,now=Date.now()}){
 // The newest real accounts (never anonymous sessions — see admin_auth_signups), whether or not they ever opened
 // a farm: a signed-up player who never played is exactly the kind of thing this list should surface.
 export async function handleAdminRecentPlayers({admin,user,limit=14,now=Date.now()}){
- if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
+ if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  const parsed=Number(limit);
  const n=Math.max(1,Math.min(Number.isFinite(parsed)?Math.floor(parsed):14,100));
  const signups=await admin.rpc('admin_auth_signups',{p_since:'1970-01-01T00:00:00Z',p_limit:n});
@@ -42,7 +42,7 @@ export async function handleAdminRecentPlayers({admin,user,limit=14,now=Date.now
 // retention — the game keeps no daily activity log, so exact day-by-day presence cannot be reconstructed after
 // the fact. A day still in progress (not enough of it has elapsed for a given N) is reported as null, not 0%.
 export async function handleAdminRetention({admin,user,now=Date.now()}){
- if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
+ if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  const since=new Date(now-(RETENTION_DAYS+1)*DAY_MS).toISOString();
  const signups=await admin.rpc('admin_auth_signups',{p_since:since,p_limit:5000});
  if(signups.error)throw signups.error;
@@ -74,7 +74,7 @@ export async function handleAdminRetention({admin,user,now=Date.now()}){
 // farm stamps invite.rewardedAt, the inviter's farm lists the friend in inviteRewards (farm-state.js), so this shows what was
 // really credited, not only what was earned. Also the totals and how many personal links exist.
 export async function handleAdminInvites({admin,user,now=Date.now(),reward=150,level=10,days=30}){
- if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
+ if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  const found=await admin.from('referrals').select('invitee_id,referrer_id,created_at,qualified_at,referrer_diamonds').order('created_at',{ascending:false}).limit(200);
  if(found.error)throw found.error;
  const rows=found.data??[],ids=[...new Set(rows.flatMap(r=>[r.invitee_id,r.referrer_id]))];

@@ -39,3 +39,5 @@
 @media(max-width:400px){.starter-rewards>div{gap:0 7px;padding:10px 9px}.starter-rewards .game-art{width:32px;height:32px;min-width:32px}.starter-rewards strong{font-size:20px}}
 @media(max-width:340px){#starter-pack-dialog{padding:20px 14px 16px}.starter-rewards>div{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}.starter-rewards .game-art{grid-row:auto}}
 @media(max-height:700px){.starter-hero{width:64px;height:64px}#starter-pack-dialog h2{font-size:25px}}
+/* A low landscape screen has the side tools as a rail on the left: the Starter Pack waits just right of it, above the tools. */
+@media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){#starter-pack-button{left:calc(86px + env(safe-area-inset-left))}}

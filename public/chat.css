@@ -1,0 +1,155 @@
+/* The chat (src/chat-ui.js): a panel on the left, full height, with the farm still in view next to it (a tap there closes it). The
+   box you type in on top, the newest message right under it. The same cream, brown and soft tabs as the rest of the game. */
+#chat-button{position:relative;flex-shrink:0}
+#chat-button .game-art{width:28px;height:28px}
+#chat-dot{position:absolute;right:-6px;top:-6px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border:2px solid #fffdf5;border-radius:999px;background:#e0533d;box-shadow:0 1px 3px #47372333;color:#fff;font:800 10px/15px 'DM Sans',sans-serif;text-align:center;pointer-events:none}
+#chat-button[hidden],#chat-dot[hidden]{display:none}
+/* Phones: the chat takes the Family button's place in the header (Farm Family is in the More menu, under Friends). */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .topbar .resources:has(#chat-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;gap:6px}
+ .topbar .resources:has(#chat-button:not([hidden])):has(#rookie-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px 44px}
+ .topbar .resources:has(#chat-button:not([hidden])) #family-button{display:none}
+ #chat-button:not([hidden]){display:flex;align-items:center;justify-content:center;width:44px;height:48px;padding:5px;border-radius:14px}
+ #chat-button .game-art{width:32px;height:32px}
+}
+
+#chat-dialog{position:fixed;inset:14px auto 14px 14px;margin:0;width:min(420px,calc(100vw - 28px));height:auto;max-height:none;box-sizing:border-box;padding:0;display:none;flex-direction:column;overflow:hidden;border:1px solid #d1c6ba;border-radius:22px;background:var(--cream,#fffdf5);color:var(--ink,#3d382a);text-align:left;box-shadow:0 25px 80px #302d1938}
+#chat-dialog[open]{display:flex;animation:chat-in .18s ease-out}
+@keyframes chat-in{from{transform:translateX(-28px);opacity:0}}
+@media(prefers-reduced-motion:reduce){#chat-dialog[open]{animation:none}}
+#chat-dialog::backdrop{background:#1f2a1a30;backdrop-filter:none;-webkit-backdrop-filter:none}
+.chat-top{display:flex;align-items:center;gap:8px;padding:14px 14px 0}
+.chat-tabs{flex:1;display:flex;gap:4px;min-width:0;padding:4px;border-radius:12px;background:#f0e8e0}
+.chat-tabs button{position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-width:0;min-height:38px;padding:6px 8px;border:0;border-radius:9px;background:none;color:#887a69;font:650 14px/1 'DM Sans',sans-serif;cursor:pointer}
+.chat-tabs button[data-chat-tab="notices"]{flex:0 0 auto;min-width:48px}
+.chat-tabs button .game-art{width:24px;height:24px;object-fit:contain}
+.chat-tabs button.active{background:#fffdf5;box-shadow:0 2px 5px #43362214;color:#5e523a}
+.chat-tabs button:not(.active):hover{color:#5e523a}
+.chat-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:6px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e0533d;color:#fff;font:800 10px/1 'DM Sans',sans-serif}
+.chat-count[hidden]{display:none}
+.chat-close{flex-shrink:0;width:40px;height:40px;border:0;background:none;box-shadow:none;color:#8a7c6a}
+.chat-close:hover{background:#f0e8e0;color:#5e523a}
+.chat-head{display:flex;align-items:center;gap:10px;padding:14px 16px 0;min-height:40px}
+.chat-head.is-quiet{position:absolute;width:1px;height:1px;min-height:0;padding:0;overflow:hidden;clip-path:inset(50%)}
+.chat-head h2{flex:1;min-width:0;margin:0;font:750 21px/1.2 'Outfit','DM Sans',sans-serif;color:#3d382a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-title-name{padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
+.chat-title-name:hover{text-decoration:underline;text-underline-offset:3px}
+.chat-back,.chat-block{flex-shrink:0;display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid #e1d6ca;border-radius:12px;background:#f6efe7;color:#6b5e49;cursor:pointer}
+.chat-back[hidden],.chat-block[hidden]{display:none}
+.chat-back svg,.chat-block svg,.chat-more svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.chat-block:hover{color:#b3402a;border-color:#e8c3b8}
+.chat-block.is-on{background:#fbe6e0;border-color:#e8c3b8;color:#b3402a}
+.chat-compose{display:flex;gap:8px;padding:14px 16px;border-bottom:1px solid #eee4d9}
+.chat-compose[hidden]{display:none}
+.chat-compose input{flex:1;min-width:0;min-height:46px;box-sizing:border-box;padding:0 14px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:500 15px 'DM Sans',sans-serif}
+.chat-compose input::placeholder{color:#a3968a}
+.chat-compose input:focus{outline:3px solid #f3c35355;border-color:#c9a45a}
+.chat-send{flex-shrink:0;display:grid;place-items:center;width:52px;height:46px;padding:0;border:1px solid #d4c7b8;border-radius:12px;background:#f1e7de;box-shadow:0 3px 0 #dccdbb;cursor:pointer}
+.chat-send .game-art{width:32px;height:32px;object-fit:contain}
+.chat-send:hover{background:#f6eee6}
+.chat-send:active{transform:translateY(2px);box-shadow:0 1px 0 #dccdbb}
+.chat-send:disabled{opacity:.6;cursor:default}
+.chat-compose.is-blocked input{background:#f3ede6;border-color:#e3d8cc}
+.chat-compose.is-blocked input::placeholder{color:#8a5a2b}
+.chat-compose.is-blocked .chat-send{display:none}
+.chat-note{margin:10px 16px 0;padding:8px 12px;border-radius:10px;background:#fff4df;color:#7a5424;font-size:13px;font-weight:600}
+.chat-note[hidden]{display:none}
+.chat-list{flex:1;min-height:0;margin:0;padding:6px 8px 18px;list-style:none;overflow-y:auto;overscroll-behavior:contain}
+.chat-msg{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr);gap:11px;padding:10px;border-radius:14px}
+.chat-msg.is-mine{background:#f2f6e8}
+.chat-avatar{display:block;width:42px;height:42px;padding:0;border:0;border-radius:50%;background:#f1e7de;overflow:hidden;cursor:pointer}
+span.chat-avatar{cursor:default}
+.chat-avatar img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
+.chat-msg-main{min-width:0}
+.chat-msg-top{display:flex;align-items:center;gap:6px;min-height:22px}
+.chat-name{min-width:0;padding:0;border:0;background:none;color:#3d382a;font:750 14px/1.2 'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.chat-name:hover{text-decoration:underline;text-underline-offset:2px}
+.chat-mod{display:inline-flex;flex-shrink:0}
+.chat-mod .game-art{width:17px;height:17px}
+.chat-msg-top time{margin-left:auto;flex-shrink:0;color:#9a8d7c;font-size:12px;font-variant-numeric:tabular-nums}
+.chat-more{flex-shrink:0;display:grid;place-items:center;width:28px;height:24px;margin:-2px -4px -2px 0;padding:0;border:0;border-radius:8px;background:none;color:#9a8d7c;cursor:pointer}
+.chat-more:hover,.chat-more:focus-visible{background:#efe6da;color:#5e523a}
+@media(hover:hover) and (pointer:fine){.chat-more{opacity:0}.chat-msg:hover .chat-more,.chat-more:focus-visible,.chat-msg:has(.chat-menu) .chat-more{opacity:1}}
+.chat-text{margin:3px 0 0;color:#4a4232;font:500 15px/1.4 'DM Sans',sans-serif;overflow-wrap:anywhere}
+.chat-menu{position:absolute;right:8px;top:36px;z-index:3;display:grid;min-width:176px;padding:5px;border:1px solid #e0d4c6;border-radius:12px;background:#fffdf5;box-shadow:0 10px 30px #3a2f1f26}
+.chat-menu button{padding:9px 12px;border:0;border-radius:8px;background:none;color:#4a4232;font:650 14px 'DM Sans',sans-serif;text-align:left;cursor:pointer}
+.chat-menu button:hover,.chat-menu button:focus-visible{background:#f4ece2}
+.chat-menu button.is-danger{color:#b3402a}
+.chat-thread{display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;padding:10px;border:0;border-radius:14px;background:none;text-align:left;cursor:pointer}
+.chat-thread:hover{background:#f6efe7}
+.chat-thread .chat-avatar{width:46px;height:46px}
+.chat-thread-copy{display:grid;gap:3px;min-width:0}
+.chat-thread-copy strong{color:#3d382a;font:700 15px/1.2 'DM Sans',sans-serif}
+.chat-thread-copy small{color:#8a7c6a;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-thread.is-unread strong{font-weight:800}
+.chat-thread.is-unread small{color:#4a4232;font-weight:600}
+.chat-thread-side{display:grid;justify-items:end;gap:5px}
+.chat-thread-side time{color:#9a8d7c;font-size:12px}
+.chat-thread-side .chat-count{position:static}
+.chat-notice{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:14px 10px}
+.chat-notice+.chat-notice{border-top:1px solid #f0e7dc}
+.chat-notice.is-new .chat-msg-top strong::before{content:'';display:inline-block;width:7px;height:7px;margin:0 7px 1px 0;border-radius:50%;background:#e0533d;vertical-align:middle}
+.chat-notice-art img,.chat-notice-art .game-art{display:block;width:40px;height:40px;object-fit:contain}
+.chat-notice .chat-msg-top strong{color:#3d382a;font:750 14px 'DM Sans',sans-serif}
+.chat-empty{padding:40px 22px;color:#8a7c6a;font-size:14.5px;line-height:1.45;text-align:center}
+.chat-empty p{margin:0 auto;max-width:280px}
+.chat-empty .small-button{margin-top:14px}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ #chat-dialog{inset:0 auto 0 0;width:min(420px,calc(100vw - 44px));height:100%;max-height:none;padding-top:env(safe-area-inset-top);border-left:0;border-radius:0 22px 22px 0}
+ .chat-top{padding:12px 8px 0 12px}.chat-head{padding:12px 12px 0}.chat-compose{padding:12px}.chat-tabs button{font-size:13.5px;padding:6px 4px}.chat-tabs button[data-chat-tab="notices"]{min-width:40px}.chat-count{margin-left:4px}
+ .chat-list{padding-bottom:calc(18px + var(--safe-bottom,0px))}
+ .chat-more{width:32px;height:28px}
+}
+
+/* The profile: the Moderator badge (the admin wears the same), Send message and Block, the staff's chat buttons. */
+.farmer-profile-back[hidden]{display:none}
+.farmer-mod-badge{display:inline-flex;align-items:center;gap:5px;margin-left:8px;padding:3px 10px 3px 5px;border:1px solid #c5dbeb;border-radius:999px;background:#eaf2f9;color:#23577f;font:800 12px/1.4 'DM Sans',sans-serif;letter-spacing:.2px;vertical-align:middle;white-space:nowrap}
+.farmer-mod-badge .game-art{width:18px;height:18px}
+.farmer-chat{display:grid;gap:10px;margin:0 0 18px}
+.farmer-chat[hidden]{display:none}
+.farmer-chat-row{display:flex;gap:8px}
+.farmer-chat-row .small-button{min-height:46px;padding:0 16px}
+.farmer-chat-send{flex:1;width:auto}
+.farmer-chat-send .game-art{width:22px;height:22px}
+.farmer-mod-tools{display:grid;gap:10px;padding:12px;border-radius:14px;background:#f6f1ea;text-align:left}
+.farmer-mod-title{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:#5e523a;font:700 13px 'DM Sans',sans-serif}
+.farmer-mod-title .game-art{width:18px;height:18px}
+.farmer-mod-title b{color:#8a5a2b}
+.farmer-mod-buttons{display:flex;flex-wrap:wrap;gap:6px}
+.farmer-mod-buttons .small-button{width:auto;min-height:38px;padding:6px 12px;font-size:13px;grid-column:auto}
+.small-button.is-danger{color:#b3402a}
+
+/* The dashboard: chat reports for the staff; news, moderators and chat levels for the admin. */
+.admin-report-body{display:block;margin-top:3px;white-space:normal;font-style:italic}
+.admin-report-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.admin-report-actions .small-button{width:auto;min-height:34px;padding:5px 10px;font-size:12.5px;grid-column:auto}
+.admin-news textarea{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:10px 12px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:500 14px/1.4 'DM Sans',sans-serif;resize:vertical}
+#admin-chat-settings h3:not(:first-child){margin-top:20px}
+.admin-levels{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
+.admin-levels label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:650}
+.admin-levels input{width:96px;min-height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 14px 'DM Sans',sans-serif}
+.admin-levels .small-button{width:auto;min-height:40px}
+#admin-dashboard-dialog .admin-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.admin-tabs{margin:0 0 12px}
+[data-admin-panel][hidden],.admin-tabs button[hidden]{display:none}
+.admin-guide{background:#f3f7ec;border-color:#dce8cc}
+.admin-guide ul{display:grid;gap:6px;margin:8px 0 0;padding-left:18px;color:#4f5a3c;font-size:13px;line-height:1.45}
+@media(max-width:600px){#admin-dashboard-dialog .admin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Settings: the envelope on the two private-message switches. */
+.notify-row-art>.game-art{flex:none;width:34px;height:34px;margin-right:2px;object-fit:contain}
+.notify-row-art{justify-content:flex-start;gap:12px}.notify-row-art>span{flex:1;min-width:0}
+.chat-vip{display:inline-flex;flex-shrink:0}
+.chat-vip img{display:block;width:18px;height:18px;object-fit:contain}
+.chat-thread-copy strong .chat-vip{display:inline-flex;margin-left:5px;vertical-align:-3px}
+.admin-donate{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px}
+.admin-donate label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:650}
+.admin-donate input{min-height:42px;box-sizing:border-box;padding:0 12px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 14px 'DM Sans',sans-serif}
+.admin-donate-message,.admin-donate .primary-button{grid-column:1/-1}
+.chat-hours{flex:0 0 auto;min-height:46px;padding:0 8px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#5e523a;font:650 13px 'DM Sans',sans-serif}
+.chat-hours[hidden]{display:none}
+.admin-news-hours{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:#5e523a;font-size:13px;font-weight:650}
+.admin-news-hours select{min-height:38px;padding:0 8px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 13px 'DM Sans',sans-serif}
+/* The staff's dashboard button sits right next to the chat (computers; phones find it in the More menu). */
+#admin-button .game-art{width:28px;height:28px;object-fit:contain}
+/* The header's painted icons (settings gear, How to play book) at the same size as the chat and the shield. */
+#sound-button .game-art,#help-button .game-art{width:28px;height:28px;object-fit:contain}

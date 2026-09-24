@@ -17,7 +17,7 @@ export function createMobileUI({openUtility,resetView}){
  later.onclick=()=>{grid.classList.toggle('show-later');arrange();};
  $('more-button').onclick=()=>{
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());
-  grid.classList.remove('show-later');arrange();
+  grid.classList.remove('show-later');badges();arrange();
   menu.showModal();menu.scrollTop=0;refreshArt();
  };
  menu.querySelectorAll('[data-menu-action]').forEach(button=>button.onclick=()=>{
@@ -30,14 +30,19 @@ export function createMobileUI({openUtility,resetView}){
   // The same "!" on the tiles as on the side tools, so a waiting reward stands out in the menu too.
   menu.querySelector('[data-menu-action="today-button"]')?.classList.toggle('has-dot',!gift.hidden);
   menu.querySelector('[data-menu-action="events-button"]')?.classList.toggle('has-dot',!($('events-dot')?.hidden??true));
-  // A waiting event reward or a stall worth emptying (growth-ui.js) also lights the More dot, since both live in that menu on phones.
-  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot');
+  // Farm Family: on phones the chat takes its button in the header, so it lives here (under Friends) and follows that button.
+  const family=$('family-button'),familyTile=menu.querySelector('[data-menu-action="family-button"]');
+  if(family&&familyTile){familyTile.hidden=family.hidden;familyTile.classList.toggle('has-dot',!family.hidden&&!($('family-dot')?.hidden??true));}
+  const familyWaiting=mobileLayout.matches&&familyTile?.classList.contains('has-dot')&&!$('chat-button')?.hidden;
+  // A waiting event reward, a stall worth emptying (growth-ui.js) or something in the family also lights the More dot, since they
+  // live in that menu on phones.
+  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!familyWaiting;
   $('tasks-button').setAttribute('aria-label',quests.hidden?'Open quests':'Open quests, rewards ready');
   $('buildings-button').setAttribute('aria-label',batches.hidden?'Open buildings':`Open buildings, ${batches.textContent} batches ready`);
  }
  mobileLayout.addEventListener('change',resetView);
  // Primary navigation stays selected while its sheet is open, then returns to Farm.
- const sections={'tasks-dialog':'tasks-button','buildings-dialog':'buildings-button','building-dialog':'buildings-button','market-dialog':'market-button','more-dialog':'more-button'};
+ const sections={'tasks-dialog':'tasks-button','buildings-dialog':'buildings-button','building-dialog':'buildings-button','market-dialog':'market-button','more-dialog':'more-button','chat-dialog':''};
  const observer=new MutationObserver(()=>{
   const current=document.querySelector('dialog[open]'),active=current?(sections[current.id]??'more-button'):'farm-button';
   document.querySelectorAll('.side-tool').forEach(button=>{
