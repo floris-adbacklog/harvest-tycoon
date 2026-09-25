@@ -1,10 +1,12 @@
 import {playerAvatar} from './player-avatars.js';
 import {isRecentlyActive} from './presence.js';
-import {CROPS,MASTERY_TIERS} from './farm-state.js';
+import {CROPS,ITEMS,MASTERY_TIERS} from './farm-state.js';
 
-const cropKeys=Object.keys(CROPS);
-const metrics=['harvested_crops','goods_produced','items_sold','deliveries','badges'];
-export const PLAYER_PUBLIC_FIELDS=['player_id','username','level','last_active_at','vip_expires_at','avatar_id',...metrics,...cropKeys.map(key=>`harvested_${key}`)].join(',');
+const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key));
+// The profile's stat pages (src/player-profiles.js): the same public numbers as the leaderboards, coins included (the "Most coins"
+// board already shows them). Diamonds and the rest of the account stay private.
+const metrics=['harvested_crops','goods_produced','items_sold','deliveries','badges','farm_fields','building_upgrades','best_streak','events_finished','chores_done','helping_rounds','estate_projects','quests_done','currency'];
+export const PLAYER_PUBLIC_FIELDS=['player_id','username','level','last_active_at','vip_expires_at','avatar_id',...metrics,'goods_made',...cropKeys.map(key=>`harvested_${key}`)].join(',');
 const number=value=>Number.isFinite(Number(value))?Math.max(0,Math.floor(Number(value))):0;
 export const escapePlayerSearch=value=>value.replace(/[\\%_]/g,'\\$&');
 async function read(query){const result=await query;if(result.error)throw result.error;return result.data;}
@@ -41,5 +43,5 @@ export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
   if(typeof id!=='string')return [];const [crop,tier,...extra]=id.split(':');
   return !extra.length&&cropKeys.includes(crop)&&/^[0-3]$/.test(tier)&&MASTERY_TIERS[Number(tier)]?[{crop,tier:Number(tier)}]:[];
  });
- return respond({playerProfile:{...summary(row,families,now),memberSince:await memberSince(admin,row.player_id),stats:Object.fromEntries(metrics.map(key=>[key,number(row[key])])),harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges}});
+ return respond({playerProfile:{...summary(row,families,now),memberSince:await memberSince(admin,row.player_id),stats:{...Object.fromEntries(metrics.map(key=>[key,number(row[key])])),goods_kinds:goodKeys.filter(key=>number(row.goods_made?.[key])>0).length},harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges}});
 }

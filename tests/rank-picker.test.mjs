@@ -7,14 +7,14 @@ import {rankPickerMarkup,nextRank,bindRankPicker,RANK_ART,rankArtKey} from '../p
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const art=key=>`<i data-art="${key}"></i>`;
 
-test('every board has a chip: fourteen main boards, "By crop" and "By good" chips and one chip per crop and per good',()=>{
+test('every board has a chip: fifteen main boards, "By crop" and "By good" chips and one chip per crop and per good',()=>{
  const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art),goods=Object.keys(ITEMS).filter(k=>!CROPS[k]).length;
  const keys=[...html.matchAll(/data-rank="([a-z_]+)"/g)].map(m=>m[1]);
  assert.deepEqual(keys.sort(),Object.keys(LEADERBOARD_CATEGORIES).sort(),'nothing lost from the old dropdown');
- assert.equal(keys.length,14+Object.keys(CROPS).length+goods);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length+goods);
+ assert.equal(keys.length,15+Object.keys(CROPS).length+goods);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length+goods);
  assert.match(html,/data-rank-goods aria-pressed="false" aria-expanded="false" aria-controls="rank-goods"/);assert.match(html,/id="rank-goods"[^>]*aria-label="Choose a good" hidden/);assert.match(html,/data-art="bread"/);
  assert.match(html,/id="rank-crops"[^>]*hidden/,'the crop row starts closed');assert.match(html,/data-rank-crops aria-pressed="false" aria-expanded="false" aria-controls="rank-crops"/);
- for(const key of ['level','currency','harvested_crops','goods_produced','items_sold','badges','deliveries','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades'])assert(RANK_ART[key],`${key} has a picture`);
+ for(const key of ['level','currency','harvested_crops','goods_produced','items_sold','badges','deliveries','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades','quests_done'])assert(RANK_ART[key],`${key} has a picture`);
  assert.match(html,/data-art="wheat"/);assert.match(html,/data-art="berries"/);assert.match(html,/data-art="xp"/);
  assert(!/<select|<option/.test(html));
 });

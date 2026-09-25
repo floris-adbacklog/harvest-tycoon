@@ -5,7 +5,7 @@ import {handlePlayerDirectory,escapePlayerSearch,PLAYER_PUBLIC_FIELDS} from '../
 import {renderPlayerProfile,renderPlayerSearch,formatDate} from '../src/player-profiles.js';
 const id='11111111-1111-4111-8111-111111111111',self='22222222-2222-4222-8222-222222222222';
 const now=Date.UTC(2026,8,20,12);
-function database({stats=[{player_id:id,username:'Sunny <script>',level:21,last_active_at:new Date(now-1000).toISOString(),harvested_crops:500,goods_produced:21,items_sold:33,deliveries:9,harvested_wheat:42,diamonds:999,email:'private@example.com',currency:9999}],members=[],families=[],claimed=['wheat:0','wheat:0','berries:3','wheat:4','notcrop:0','wheat:0:extra','wheat:00',null]}={}){
+function database({stats=[{player_id:id,username:'Sunny <script>',level:21,last_active_at:new Date(now-1000).toISOString(),harvested_crops:500,goods_produced:21,items_sold:33,deliveries:9,harvested_wheat:42,diamonds:4321,email:'private@example.com',currency:9999,quests_done:47,goods_made:{bread:5,flour:0,notagood:3}}],members=[],families=[],claimed=['wheat:0','wheat:0','berries:3','wheat:4','notcrop:0','wheat:0:extra','wheat:00',null]}={}){
  const calls=[];
  return {calls,from(table){
   const call={table};calls.push(call);let rows={player_stats:stats,family_members:members,families,player_farms:[{player_id:id,claimed}]}[table];
@@ -18,8 +18,9 @@ test('player profile whitelists public data and mastery without reading the comp
  assert.equal(response.status,200);const p=response.data.playerProfile;
  assert.equal(response.data.profile.player_id,self);assert.equal(p.playerId,id);assert.equal(p.online,true);assert.equal(p.family,null);
  assert.equal(p.stats.harvested_crops,500);assert.equal(p.harvests.wheat,42);assert.deepEqual(p.badges,[{crop:'wheat',tier:0},{crop:'berries',tier:3}]);
- const json=JSON.stringify(response);for(const privateValue of ['9999','999','private@example.com','last_active_at','receipts','invite_code'])assert.ok(!json.includes(privateValue));
- assert.equal(admin.calls.find(c=>c.table==='player_farms').select,'claimed:state->mastery->claimed');assert.ok(!PLAYER_PUBLIC_FIELDS.includes('currency'));assert.ok(admin.calls.every(c=>c.select!=='*'));
+ const json=JSON.stringify(response);for(const privateValue of ['4321','private@example.com','last_active_at','receipts','invite_code'])assert.ok(!json.includes(privateValue));
+ assert.equal(admin.calls.find(c=>c.table==='player_farms').select,'claimed:state->mastery->claimed');assert.ok(!PLAYER_PUBLIC_FIELDS.includes('diamonds'));
+ assert.equal(p.stats.currency,9999,'coins are public, like the Most coins board');assert.equal(p.stats.quests_done,47);assert.equal(p.stats.goods_kinds,1,'only real goods made at least once');assert.equal(p.stats.helping_rounds,0);assert.ok(admin.calls.every(c=>c.select!=='*'));
 });
 test('profile includes only current, non-deleted family membership',async()=>{
  const admin=database({members:[{player_id:id,family_id:'old',role:'leader',left_at:now-1},{player_id:id,family_id:'current',role:'leader',left_at:null}],families:[{id:'old',name:'Old family',deleted_at:null},{id:'current',name:'Sunny family',emblem:'2',deleted_at:null,invite_code:'secret-code'}]});

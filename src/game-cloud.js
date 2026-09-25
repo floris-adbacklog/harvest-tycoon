@@ -16,7 +16,7 @@ if(!bridge){location.replace('/play.html');}else{
  if(!window.harvestInitialFarm){location.replace('/play.html');}else{
   document.body.hidden=false;
   const ui=createCloudUI({onOpen:openBoard,onRetry:openBoard,onPlayer:()=>profiles.open(bridge.playerId),onName:async username=>{const data=await bridge.request({operation:'rename',username});ui.setProfile(data.profile,{id:bridge.playerId});},onSignOut:()=>bridge.signOut()});
-  const profiles=createPlayerProfiles(bridge),serverOffset=bridge.serverNow-Date.now();
+  const profiles=createPlayerProfiles(bridge,{showBoard:key=>ui.showBoard(key)}),serverOffset=bridge.serverNow-Date.now();
   // The chat (header button, next to Farm Family) and the Admin dashboard, which the moderators may open too.
   const chat=createChatUI({bridge,profiles});
   // Farm Family's chat button (public/family-ui.js) opens it on the family's own tab.

@@ -196,7 +196,7 @@ test('the dashboard fetches all three admin operations through the same bridge e
 test('game-cloud.js creates the dashboard once, alongside the player-profile/gift panel it shares checkAdmin with',()=>{
  const js=read('src/game-cloud.js');
  assert.match(js,/import \{createAdminDashboard\} from '\.\/admin-dashboard\.js';/);
- assert.match(js,/const profiles=createPlayerProfiles\(bridge\),serverOffset=bridge\.serverNow-Date\.now\(\);[\s\S]*const chat=createChatUI\(\{bridge,profiles\}\);[\s\S]*?createAdminDashboard\(bridge,\{chat\}\);/);
+ assert.match(js,/const profiles=createPlayerProfiles\(bridge,\{showBoard:key=>ui\.showBoard\(key\)\}\),serverOffset=bridge\.serverNow-Date\.now\(\);[\s\S]*const chat=createChatUI\(\{bridge,profiles\}\);[\s\S]*?createAdminDashboard\(bridge,\{chat\}\);/);
 });
 test('checkAdmin is exported from player-profiles.js so admin-dashboard.js does not duplicate the account check',()=>{
  assert.match(read('src/player-profiles.js'),/export function checkAdmin\(\)\{/);

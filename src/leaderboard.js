@@ -1,7 +1,7 @@
 import {avatarImage} from '../public/player-avatars.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {rankArt} from '../public/rank-art.js';
-import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS} from '../public/farm-state.js';
+import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS} from '../public/farm-state.js';
 const CROP_BOARDS=Object.keys(CROPS).sort((a,b)=>(CROP_LEVELS[a]??1)-(CROP_LEVELS[b]??1));
 // The level at which a good can first be made: its earliest recipe outside the Factory (the building's level or the recipe's own).
 const goodLevel=key=>Math.min(...Object.values(RECIPES).filter(r=>r.building!=='factory'&&r.output[key]).map(r=>Math.max(BUILDING_LEVELS[r.building]??1,r.minLevel??1)),Infinity);
@@ -15,6 +15,7 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  building_upgrades:{label:'Most building upgrades',heading:'Upgrades',unit:'upgrades',description:'Every building upgrade counts the same: level 1 to 2 as much as level 9 to 10.'},
  items_sold:{label:'Most items sold',heading:'Items sold',unit:'items sold',description:'Lifetime crops and goods sold at the market. Counts from when this board launched.'},
  badges:{label:'Most badges',heading:'Badges',unit:'badges',description:`Crop mastery medals you have claimed. Up to ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges to earn.`},
+ quests_done:{label:'Most quests done',heading:'Quests',unit:'quests done',description:`Quests finished and claimed, out of ${QUESTS.length}.`},
  deliveries:{label:'Most deliveries',heading:'Deliveries',unit:'deliveries',description:'Total delivery orders completed for your neighbours.'},
  events_finished:{label:'Most events finished',heading:'Events',unit:'events finished',description:'Farm events you completed and qualified for.'},
  best_streak:{label:'Longest daily streak',heading:'Streak',unit:'days in a row',description:'The most days in a row you came back to collect your daily gift.'},
@@ -33,7 +34,7 @@ function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw ne
 // A good's board reads one key of goods_made ("goods_made->bread" to the database); every other board is its own column.
 const columnOf=category=>{const config=categoryFor(category);return config.good?`goods_made->${config.good}`:category;};
 export const scoreOf=(row,category)=>{const config=categoryFor(category);return Number((config.good?row?.goods_made?.[config.good]:row?.[category])??0);};
-const PUBLIC_FIELDS=['player_id','username','currency','level',...CROP_BOARDS.map(key=>`harvested_${key}`),'harvested_crops','badges','deliveries','goods_produced','items_sold','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades','last_active_at','vip_expires_at','avatar_id'].join(',');
+const PUBLIC_FIELDS=['player_id','username','currency','level',...CROP_BOARDS.map(key=>`harvested_${key}`),'harvested_crops','badges','deliveries','goods_produced','items_sold','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades','quests_done','last_active_at','vip_expires_at','avatar_id'].join(',');
 export async function fetchLeaderboard(client,playerId,category='level'){
  const config=categoryFor(category),column=columnOf(category),fields=config.good?`${PUBLIC_FIELDS},goods_made`:PUBLIC_FIELDS;
  const {data,error}=await client.from('player_stats').select(fields).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(10);
