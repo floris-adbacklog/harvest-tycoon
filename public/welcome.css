@@ -160,3 +160,8 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]),html[data-app
 .account-back:hover{background:#f3ece2}
 .account-back svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .account-back[hidden]{display:none}
+
+/* Our Facebook page: a small "f" at the end of the footer, in the footer's own colour. */
+.footer-social{display:inline-flex;align-items:center;justify-content:center;align-self:center;width:20px;height:20px;border-radius:50%;opacity:.85;text-decoration:none}
+.footer-social:hover,.footer-social:focus-visible{opacity:1}
+.footer-social svg{display:block}

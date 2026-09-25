@@ -79,3 +79,8 @@ body.not-found::before{content:'';position:fixed;inset:0;z-index:-1;background:l
 .nf-button{width:100%;margin:4px 0 0}
 .nf-footer{display:flex;gap:16px;font-size:12px;color:#efe6cfcc}
 .nf-footer a{color:#fff5da}
+
+/* Our Facebook page: a small "f" at the end of the footer, in the footer's own colour. */
+.footer-social{display:inline-flex;align-items:center;justify-content:center;align-self:center;width:20px;height:20px;border-radius:50%;opacity:.85;text-decoration:none}
+.footer-social:hover,.footer-social:focus-visible{opacity:1}
+.footer-social svg{display:block}

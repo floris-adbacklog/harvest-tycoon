@@ -98,3 +98,8 @@ test('the wiki explains the app, and App is the first quick search',()=>{
  assert.match(read('public/wiki-ui.js'),/const QUICK=\[\{label:'App',topic:'getting-started',anchor:'sec-play-it-as-an-app'\},'Corn'/);
  assert.match(read('public/wiki-content.js'),/section\('Play it as an app',facts\(\[/);
 });
+test('our Facebook page: a small icon in every logged-out footer, opening in a new tab',()=>{
+ for(const path of ['public/play.html','public/404.html','public/privacy.html','public/delete-account.html','scripts/build-wiki.mjs'])
+  assert.match(read(path),/<a class="footer-social" href="https:\/\/www\.facebook\.com\/harvesttycoon\/" target="_blank" rel="noopener" aria-label="Harvest Tycoon on Facebook"[^>]*><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"/,path);
+ for(const css of ['public/welcome.css','public/legal.css'])assert.match(read(css),/\.footer-social\{display:inline-flex;[^}]*width:20px;height:20px/,css);
+});
