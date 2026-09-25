@@ -70,7 +70,18 @@
 .field-row.is-ready .field-row-bar>i{background:#d9a531}.field-row.is-ready small{color:#8a6414;font-weight:800}
 .field-row-remove{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;margin:0;padding:0;border:1px solid #e7cfc4;border-radius:12px;background:#fff8f4;color:#b0452d;cursor:pointer}
 .field-row-remove:hover{background:#fbe9e1;border-color:#d9a896}.field-row-remove svg{width:18px;height:18px}
-/* Upgrading with diamonds pays for everything (coins and goods): when you have enough, it is the filled, first choice. */
-.upgrade-pay-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}
-.upgrade-payments .diamond-option.is-affordable{border:2px solid #6fb3cc;background:#eaf6fb;color:#2f6a80}
-.upgrade-payments .diamond-option.is-affordable:hover:not(:disabled){background:#dff0f7}
+/* Upgrade (economy-ui.js): one row per way to pay, with what it costs, its own Upgrade button and what is still missing for it.
+   The diamond row, which skips the coins and the goods, gets a soft blue edge when you can pay it. */
+.upgrade-payments{gap:10px}
+.upgrade-option{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;padding:10px 12px;border:1px solid #e6dccd;border-radius:14px;background:#fffaf1;text-align:left}
+.upgrade-option .upgrade-cost{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.upgrade-option .upgrade-price{display:inline-flex;align-items:center;gap:6px;font:700 17px 'Outfit',sans-serif;color:#453e28}
+.upgrade-option .upgrade-price .game-art{width:24px;height:24px}
+.upgrade-option .upgrade-plus{color:#9a8b74;font-weight:700}
+.upgrade-option .upgrade-cost .ingredients{margin:0}
+.upgrade-option .upgrade-cost>small{font-size:12px;color:#5f8395}
+.upgrade-payments .upgrade-option>button{width:auto;min-width:104px;min-height:44px}
+.upgrade-option>.shortfall{grid-column:1/-1;margin:0;text-align:left}
+.upgrade-option.is-diamonds{background:#f3f9fc;border-color:#cfe4ee}
+.upgrade-option.is-diamonds.is-affordable{border:2px solid #6fb3cc}
+.upgrade-option.is-diamonds>button:not(:disabled){background:#e3f1f7;color:#2f6a80;border-color:#b7d8e6}
