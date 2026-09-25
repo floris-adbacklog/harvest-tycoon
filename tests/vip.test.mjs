@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm} from './legacy-farm.mjs';
-import {VIP_PLANS,vipActive,normalizeFarm,applyFarmAction,cropDuration,recipeDuration,marketSaleValue,marketQuote,dailyTasks,dailyOrders,utcDay,levelReward,upgradeCost,diamondUpgradeCost,DAY_MS,DAILY_REWARDS,DAILY_DIAMONDS,BOOSTS} from '../game/farm-state.js';
+import {VIP_PLANS,vipActive,normalizeFarm,applyFarmAction,cropDuration,recipeDuration,marketSaleValue,marketQuote,dailyTasks,dailyOrders,utcDay,levelReward,upgradeCost,DAY_MS,DAILY_REWARDS,DAILY_DIAMONDS,BOOSTS} from '../game/farm-state.js';
 import {PAYMENT_PACKS,paymentPack,checkoutPack,validatePaidSession} from '../game/payments.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {trackCommerce} from '../src/analytics.js';
@@ -80,7 +80,7 @@ test('VIP expiry before a daily claim pays regular rewards; upgrades and level r
  const s=farm(),regular=farm();purchase(s);const expiry=s.vipExpiresAt;
  const v=dailyOrders(s,expiry),b=dailyOrders(regular,expiry);assert.deepEqual(v,b);
  const gift=applyFarmAction(s,{type:'checkin'},expiry);assert.equal(gift.coins,40);assert.equal(gift.diamonds,4);assert.equal(gift.xp,10);
- assert.equal(upgradeCost(s,'mill'),upgradeCost(regular,'mill'));assert.equal(diamondUpgradeCost(s,'mill'),diamondUpgradeCost(regular,'mill'));
+ assert.equal(upgradeCost(s,'mill'),upgradeCost(regular,'mill'));
  assert.deepEqual(levelReward(20),{coins:200,diamonds:4});
  assert.deepEqual(Object.values(BOOSTS).map(b=>b.cost),[50,75,100,150,200,250]);
 });

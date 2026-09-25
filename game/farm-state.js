@@ -855,8 +855,8 @@ export const ESTATE_UPGRADES=Object.freeze([
 ].map(step=>Object.freeze({...step,materials:Object.freeze(step.materials)})));
 // Upgrading asks for goods the building makes itself (26 Sep 2026): from the upgrade to level 4 on, 2 × the level in batches of its
 // first product (a Dairy Barn at level 6 hands in 24 milk to reach level 7). The Factory, which makes everything, asks for a mix of
-// flour, cheese and cloth. Upgrading with diamonds pays for everything: no coins and no goods. Up to level 3 it is coins only, so
-// the beginner guide's first upgrade stays one tap.
+// flour, cheese and cloth. Up to level 3 it is coins only, so the beginner guide's first upgrade stays one tap. Upgrades are paid with
+// coins and goods only (not diamonds, so the game does not feel pay to win); the Buildings discount boost (diamonds) halves both.
 export const UPGRADE_GOODS_FROM=3;
 let firstProducts=null;
 export function upgradeGoods(building,level){
@@ -865,10 +865,12 @@ export function upgradeGoods(building,level){
  firstProducts??=Object.fromEntries(Object.keys(BUILDINGS).map(key=>[key,Object.entries(RECIPES).filter(([,r])=>r.building===key).sort(([a],[b])=>(RECIPE_LEVELS[a]??0)-(RECIPE_LEVELS[b]??0))[0]?.[1]]).filter(([,r])=>r).map(([key,r])=>[key,Object.entries(r.output)[0]]));
  const product=firstProducts[building];return product?{[product[0]]:2*level*product[1]}:{};
 }
-// What the next upgrade of a building asks besides coins: its goods (level is the farm level it needs: none any more), or null.
+// What the next upgrade of a building asks besides coins: its goods, halved by the Buildings discount voucher (level is the farm
+// level it needs: none any more), or null.
 export function upgradeRequirements(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
- const materials=upgradeGoods(building,state.buildings[building].level);
+ const voucher=state.boosts?.upgradeCredits>0;
+ const materials=Object.fromEntries(Object.entries(upgradeGoods(building,state.buildings[building].level)).map(([item,n])=>[item,voucher?Math.ceil(n/2):n]));
  return Object.keys(materials).length?{level:1,materials}:null;
 }
 // Upgrade prices below level 10 (26 Sep 2026). Each building follows its own curve (2.7× a level), but:
@@ -878,11 +880,11 @@ export function upgradeRequirements(state,building){
 //   rises every level and never jumps to millions before dropping back to 400,000 at level 10 (the Craft Workshop's 9 -> 10
 //   used to cost 7.0 million). The buildings that open first (Coop to Kitchen) keep their early prices; the ladder only trims
 //   their last steps before level 10.
-// - and the upgrades to level 5-10 cost twice that in coins (26 Sep 2026, when level 10 became the top and the 17 million coins
-//   of levels 11-20 were gone). Up to level 4 nothing changed for new farmers; the diamond price stayed the same.
+// - and the upgrades to level 5-10 cost 1.5× that in coins (26 Sep 2026, when level 10 became the top and the 17 million coins
+//   of levels 11-20 were gone). Up to level 4 nothing changed for new farmers.
 export const UPGRADE_BUILD_SHARE=.05;
 export const UPGRADE_LADDER_STEP=1.3;
-export const UPGRADE_LATE_LEVEL=4,UPGRADE_LATE_MULTIPLIER=2;
+export const UPGRADE_LATE_LEVEL=4,UPGRADE_LATE_MULTIPLIER=1.5;
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
  const level=state.buildings[building].level;
@@ -1071,15 +1073,12 @@ export function collectAllProduction(state,building,now=Date.now()){
  }
  return result;
 }
-export const DIAMOND_UPGRADE_COSTS=Object.freeze([25,45,75,110,160,225,300,400,525]);
-export function diamondUpgradeCost(state,building){if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;const level=state.buildings[building].level;if(level>=MAX_BUILDING_LEVEL)return null;return level>=BASE_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]?.diamonds??null:DIAMOND_UPGRADE_COSTS[level-1]??null;}
 export function upgradeBuilding(state,building,currency='coins',expectedCost,expectedLevel){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')throw new Error('Choose a production building.');
  if(!buildingUnlocked(state,building))throw new Error('Open this building before upgrading it.');
- if(!['coins','diamonds'].includes(currency))throw new Error('Choose coins or diamonds.');
- const b=state.buildings[building],estate=currency==='diamonds'?null:upgradeRequirements(state,building);   // diamonds pay for the goods too
- const cost=currency==='diamonds'?diamondUpgradeCost(state,building):upgradeCost(state,building);
- if(currency==='diamonds'&&(!featureUnlocked(state,'boosts')||expectedCost!==cost||expectedLevel!==b.level))throw new Error('Review the current diamond upgrade price and building level.');
+ if(currency!=='coins')throw new Error('Upgrades are paid with coins and goods.');   // since 26 Sep 2026, not with diamonds
+ const b=state.buildings[building],estate=upgradeRequirements(state,building);
+ const cost=upgradeCost(state,building);
  if(cost===null)throw new Error('This building is fully upgraded.');
  // A running batch is unaffected either way: its speed and output were fixed when it started, not read live off b.level. Upgrading only
  // changes what a NEW batch gets, so there is nothing to protect by making a farmer wait for every slot to empty first.
@@ -1089,7 +1088,7 @@ export function upgradeBuilding(state,building,currency='coins',expectedCost,exp
  if(missing.length)throw new Error(`Make the goods first: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}. Or upgrade with diamonds.`);
  state[currency]-=cost;if(estate)for(const [key,n] of Object.entries(estate.materials))state.inventory[key]-=n;
  b.level++;state.stats.upgrades++;state.xp+=15;
- if(currency==='coins'&&state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
+ if(state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
  if(building==='windmill')state.stats.windmill_upgrades=(state.stats.windmill_upgrades??0)+1;
  return {building,level:b.level,cost,currency,materials:estate?{...estate.materials}:{}};
 }
@@ -1187,7 +1186,7 @@ export const BOOSTS=Object.freeze({
  coins:{name:'Double earnings',cost:100,duration:1800000,prices:Object.freeze({'30m':100,'1h':180,'1d':600}),art:'coins',description:'Double coins from sales and deliveries.'},
  crops:{name:'Instant harvest',cost:150,art:'seeds',description:'Every growing crop ready to harvest now.'},
  production:{name:'Finish production',cost:200,art:'boost',description:'Every running batch ready now (not the Factory).'},
- upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'50% off your next building upgrade. Never expires.'}
+ upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'50% off the coins and goods of your next building upgrade. Never expires.'}
 });
 // The price and running time of one boost: a timed boost for the chosen length, any other boost as it is.
 export function boostOffer(id,length='30m'){

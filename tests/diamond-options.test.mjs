@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm} from './legacy-farm.mjs';
-import {applyFarmAction as act,normalizeFarm,productionJobs,diamondUpgradeCost,SINGLE_BATCH_COST,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,replacementOptions,dailyOrders,utcDay,DAY_MS,xpForLevel,BUILDINGS,DIAMOND_UPGRADE_COSTS,RECIPES} from '../game/farm-state.js';
+import {applyFarmAction as act,normalizeFarm,productionJobs,SINGLE_BATCH_COST,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,replacementOptions,dailyOrders,utcDay,DAY_MS,xpForLevel,BUILDINGS,RECIPES} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,19,12);
 function farm(){const s=createLegacyFarm(now);s.diamonds=10000;s.coins=100000;s.xp=xpForLevel(20);s.levelRewards=Array.from({length:20},(_,i)=>i+1);for(const k in s.inventory)s.inventory[k]=100;for(const k in BUILDINGS)if(BUILDINGS[k].buildCost)s.buildings[k].built=true;delete s.daily;return normalizeFarm(s,now);}
 test('finish one batch charges 10 once, preserves other jobs and does not collect',()=>{
@@ -18,28 +18,15 @@ test('invalid batch quotes, foreign jobs and insufficient balance spend nothing'
   const before=structuredClone(s);assert.throws(()=>act(s,{type:'finish_batch',building:'coop',jobId:s.buildings.coop.job.id,expectedCost:10,...extra},now));assert.deepEqual(s,before);
  }
 });
-test('diamond upgrade prices rise every level and retain coins and coin vouchers',()=>{
- const s=farm();s.boosts.upgradeCredits=1;let previous=0;
- for(let level=1;level<10;level++){
-  const cost=diamondUpgradeCost(s,'coop'),coins=s.coins,diamonds=s.diamonds;
-  assert.ok(cost>previous);assert.equal(cost,DIAMOND_UPGRADE_COSTS[level-1]);
-  act(s,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:cost,expectedLevel:level},now);
-  assert.equal(s.buildings.coop.level,level+1);assert.equal(s.coins,coins);assert.equal(s.diamonds,diamonds-cost);assert.equal(s.boosts.upgradeCredits,1);previous=cost;
- }
- assert.equal(diamondUpgradeCost(s,'coop'),null,'level 10 is the top');
- assert.throws(()=>act(s,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:null,expectedLevel:10},now),'a fully upgraded building cannot be upgraded');
- assert.equal(s.buildings.coop.level,10);
-});
-test('stale, underfunded and invalid diamond upgrades leave the farm intact; a running batch is no longer one of the reasons',()=>{
- for(const scenario of ['stale','cost','poor','currency','farmhouse']){
+test('buildings are upgraded with coins and goods, never with diamonds (26 Sep 2026: less pay to win); a failed try changes nothing',()=>{
+ for(const scenario of ['diamonds','currency','farmhouse']){
   const s=farm(),a={type:'upgrade',building:'coop',currency:'diamonds',expectedCost:25,expectedLevel:1};
-  if(scenario==='stale')a.expectedLevel=2;if(scenario==='cost')a.expectedCost=1;if(scenario==='poor')s.diamonds=24;
-  if(scenario==='currency')a.currency='free';if(scenario==='farmhouse')a.building='farmhouse';
-  const before=structuredClone(s);assert.throws(()=>act(s,a,now));assert.deepEqual(s,before);
+  if(scenario==='currency')a.currency='free';if(scenario==='farmhouse'){a.building='farmhouse';a.currency='coins';}
+  const before=structuredClone(s);assert.throws(()=>act(s,a,now),scenario==='farmhouse'?/production building/:/Upgrades are paid with coins and goods/);assert.deepEqual(s,before);
  }
- // A busy building upgrades just fine now; the running batch is untouched.
+ // A busy building upgrades just fine; the running batch is untouched.
  const busy=farm();act(busy,{type:'produce',recipe:'eggs'},now);const job=structuredClone(productionJobs(busy.buildings.coop)[0]);
- act(busy,{type:'upgrade',building:'coop',currency:'diamonds',expectedCost:25,expectedLevel:1},now);
+ act(busy,{type:'upgrade',building:'coop'},now);
  assert.equal(busy.buildings.coop.level,2);assert.deepEqual(productionJobs(busy.buildings.coop)[0],job);
 });
 test('replacement preserves tier and stock, enforces revisions and daily limit',()=>{

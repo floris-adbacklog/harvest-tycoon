@@ -101,7 +101,7 @@ test('only the Factory\'s coin upgrade price is doubled; the diamond alternative
 });
 test('the Factory is bought with coins or diamonds and ends at level 10 like the others',()=>{
  const s=farm();s.buildings.factory.level=9;
- assert.equal(upgradeCost(s,'factory'),1230768,'the price ladder, doubled for the Factory alone and doubled again for level 5-10');
+ assert.equal(upgradeCost(s,'factory'),923076,'the price ladder, doubled for the Factory alone and 1.5× for level 5-10');
  s.buildings.factory.level=10;assert.equal(upgradeCost(s,'factory'),null);
  s.buildings.factory.level=1;const r=act(s,{type:'upgrade',building:'factory'});assert.equal(r.level,2);assert.equal(productionSlots(2,'factory'),1,'level 2 still has one slot');assert.equal(productionSlots(3,'factory'),2,'the second slot comes at level 3');
  s.buildings.factory.level=4;Object.assign(s.inventory,{flour:32,cheese:8,cloth:4});act(s,{type:'upgrade',building:'factory'});assert.equal(s.buildings.factory.level,5);assert.equal(productionSlots(5,'factory'),3,'the third at level 5');

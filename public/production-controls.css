@@ -70,8 +70,8 @@
 .field-row.is-ready .field-row-bar>i{background:#d9a531}.field-row.is-ready small{color:#8a6414;font-weight:800}
 .field-row-remove{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;margin:0;padding:0;border:1px solid #e7cfc4;border-radius:12px;background:#fff8f4;color:#b0452d;cursor:pointer}
 .field-row-remove:hover{background:#fbe9e1;border-color:#d9a896}.field-row-remove svg{width:18px;height:18px}
-/* Upgrade (economy-ui.js): one row per way to pay, with what it costs, its own Upgrade button and what is still missing for it.
-   The diamond row, which skips the coins and the goods, gets a soft blue edge when you can pay it. */
+/* Upgrade (economy-ui.js): one row with what it costs (coins and the building's own goods), the Upgrade button and what is still
+   missing for it. */
 .upgrade-payments{gap:10px}
 .upgrade-option{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;padding:10px 12px;border:1px solid #e6dccd;border-radius:14px;background:#fffaf1;text-align:left}
 .upgrade-option .upgrade-cost{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
@@ -82,6 +82,4 @@
 .upgrade-option .upgrade-cost>small{font-size:12px;color:#5f8395}
 .upgrade-payments .upgrade-option>button{width:auto;min-width:104px;min-height:44px}
 .upgrade-option>.shortfall{grid-column:1/-1;margin:0;text-align:left}
-.upgrade-option.is-diamonds{background:#f3f9fc;border-color:#cfe4ee}
-.upgrade-option.is-diamonds.is-affordable{border:2px solid #6fb3cc}
-.upgrade-option.is-diamonds>button:not(:disabled){background:#e3f1f7;color:#2f6a80;border-color:#b7d8e6}
+

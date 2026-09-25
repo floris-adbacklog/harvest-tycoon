@@ -2,21 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {applyFarmAction,normalizeFarm,xpForLevel,upgradeCost,upgradeRequirements,diamondUpgradeCost,productionSlots,productionJobs,productionSpeed,recipeDuration,recipeAvailability,startProduction,BASE_BUILDING_LEVEL,MAX_BUILDING_LEVEL,RECIPES,BUILDINGS,BOOSTS} from '../game/farm-state.js';
+import {applyFarmAction,normalizeFarm,xpForLevel,upgradeCost,upgradeRequirements,productionSlots,productionJobs,productionSpeed,recipeDuration,recipeAvailability,startProduction,BASE_BUILDING_LEVEL,MAX_BUILDING_LEVEL,RECIPES,BUILDINGS,BOOSTS} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,26,12);
 function farm(level=1){const s=createFarm(now);s.xp=xpForLevel(level);s.coins=1e9;s.diamonds=1e6;for(const b of Object.values(s.buildings))b.built=true;return s;}
 const act=(s,action)=>applyFarmAction(s,action,now);
 
 // Level 10 is a fully upgraded building since 26 Sep 2026 (the estate upgrades to level 20 are gone; nobody had passed level 7).
-test('level 10 is a fully upgraded building: ten slots, no coin or diamond price above it',()=>{
+test('level 10 is a fully upgraded building: ten slots, no price above it',()=>{
  assert.equal(MAX_BUILDING_LEVEL,10);assert.equal(BASE_BUILDING_LEVEL,10);
  for(let level=1;level<=10;level++)assert.equal(productionSlots(level),level,'each level adds one slot');
  assert.equal(productionSlots(25),10,'never more than the top level');
  const s=farm(90);s.buildings.mill.level=10;
- assert.equal(upgradeCost(s,'mill'),null);assert.equal(diamondUpgradeCost(s,'mill'),null);assert.equal(upgradeRequirements(s,'mill'),null);
+ assert.equal(upgradeCost(s,'mill'),null);assert.equal(upgradeRequirements(s,'mill'),null);
  assert.throws(()=>act(s,{type:'upgrade',building:'mill'}),/fully upgraded/);
- assert.throws(()=>act(s,{type:'upgrade',building:'mill',currency:'diamonds',expectedCost:570,expectedLevel:10}),/fully upgraded|Review the current diamond upgrade price/);
  assert.equal(s.buildings.mill.level,10);assert.equal(s.coins,1e9);assert.equal(s.diamonds,1e6);
  for(const b of Object.values(s.buildings))b.level=10;
  assert.throws(()=>act(s,{type:'buy_boost',boost:'upgrade',expectedCost:BOOSTS.upgrade.cost}),/maximum level/,'no upgrade voucher once everything is at 10');
@@ -29,10 +28,6 @@ test('speeds of levels 1 to 10 are as they were, and every level has a positive 
   s.buildings[building].level=level;const id=Object.entries(RECIPES).find(([,r])=>r.building===building)[0];
   const duration=recipeDuration(s,id,now);assert.ok(duration>0&&duration<=RECIPES[id].duration,`${id} at level ${level}`);
  }
-});
-test('diamond prices rise every level up to 10',()=>{
- const s=farm(90);let last=0;
- for(let level=1;level<10;level++){s.buildings.mill.level=level;const price=diamondUpgradeCost(s,'mill');assert.ok(price>last,`level ${level} to ${level+1}`);last=price;}
 });
 test('the 50% voucher halves the coins of any level, once',()=>{
  const s=farm(95);
@@ -83,31 +78,28 @@ test('from the upgrade to level 4 a building also asks for its own goods: 2 × t
  assert.deepEqual(upgradeGoods('mill',10),{},'nothing above the top');
  for(const [key,b] of Object.entries(BUILDINGS).filter(([,b])=>b.type==='production'))for(const item of Object.keys(upgradeGoods(key,5)))assert.ok(Object.values(RECIPES).some(r=>r.output[item]&&(r.building===key||key==='factory')),`${key} makes ${item}`);
 });
-test('coins: an upgrade takes the goods too; diamonds pay for everything, no coins and no goods; prices double for level 5-10',()=>{
+test('an upgrade takes the coins and the goods; the Buildings discount halves both; level 5-10 cost 1.5× the coins',()=>{
  const s=farm(40);s.buildings.dairy.level=5;s.inventory.milk=0;
  assert.deepEqual(upgradeRequirements(s,'dairy'),{level:1,materials:{milk:20}});
- assert.throws(()=>act(s,{type:'upgrade',building:'dairy'}),/Make the goods first: 20 Milk\. Or upgrade with diamonds\./);assert.equal(s.coins,1e9);
+ assert.throws(()=>act(s,{type:'upgrade',building:'dairy'}),/Make the goods first: 20 Milk\./);assert.equal(s.coins,1e9);
  s.inventory.milk=25;const coins=s.coins,price=upgradeCost(s,'dairy');act(s,{type:'upgrade',building:'dairy'});
  assert.equal(s.inventory.milk,5);assert.equal(s.coins,coins-price);assert.equal(s.buildings.dairy.level,6);
- s.inventory.milk=0;const cost=diamondUpgradeCost(s,'dairy'),diamonds=s.diamonds;
- const r=act(s,{type:'upgrade',building:'dairy',currency:'diamonds',expectedCost:cost,expectedLevel:6});
- assert.deepEqual(r,{building:'dairy',level:7,cost,currency:'diamonds',materials:{}});assert.equal(s.diamonds,diamonds-cost);assert.equal(s.inventory.milk,0,'no goods');assert.equal(s.coins,coins-price,'no coins');
+ assert.throws(()=>act(s,{type:'upgrade',building:'dairy',currency:'diamonds',expectedCost:225,expectedLevel:6}),/Upgrades are paid with coins and goods/,'not with diamonds');
+ s.boosts.upgradeCredits=1;s.inventory.milk=12;const full=Math.round(upgradeCost(s,'dairy')*2);
+ assert.deepEqual(upgradeRequirements(s,'dairy'),{level:1,materials:{milk:12}},'the voucher halves the goods (24 -> 12)');
+ act(s,{type:'upgrade',building:'dairy'});assert.equal(s.inventory.milk,0);assert.equal(s.boosts.upgradeCredits,0,'used up');assert.ok(Math.abs(coins-price-s.coins-full/2)<=1,'and the coins');
  const t=farm(40);
  const craft=[1,2,3,4,5,6,7,8,9].map(level=>{t.buildings.craftshop.level=level;return upgradeCost(t,'craftshop');});
- assert.deepEqual(craft,[4500,12150,32805,165740,215464,280102,364132,473372,615384],'level 1-4 as before, level 5-10 twice the ladder');
+ assert.deepEqual(craft,[4500,12150,32805,124305,161598,210077,273099,355029,461538],'level 1-4 as before, level 5-10 1.5× the ladder');
  t.buildings.coop.level=2;assert.equal(upgradeCost(t,'coop'),Math.round(BUILDINGS.coop.upgradeCost*3),'a new farmer\'s early upgrades are unchanged');
 });
-test('the upgrade panel: one row per way to pay, with its cost, its own Upgrade button and what is still missing for it',()=>{
+test('the upgrade panel: one row with the coins and the goods, the Upgrade button and what is still missing; no diamond option',()=>{
  const ui=read('public/economy-ui.js');
  assert.match(ui,/\$\{cost\?`Upgrade to level \$\{next\}`:'Fully upgraded'\}/);
  assert.match(ui,/<div class="upgrade-option"><div class="upgrade-cost"><span class="upgrade-price">\$\{art\('coins'\)\}<b>\$\{number\(cost\)\}<\/b><\/span>\$\{estate\?`<span class="upgrade-plus">\+<\/span><div class="ingredients expansion-materials">\$\{itemList\(estate\.materials,true\)\}<\/div>`:''\}<\/div>/,'coins plus the goods, with what you have');
- assert.match(ui,/<small class="shortfall">Still needed: \$\{stillNeeded\.join\(' and '\)\}\.<\/small>/,'exactly what is missing for coins');
- assert.match(ui,/<div class="upgrade-option is-diamonds\$\{state\.diamonds>=diamondCost\?' is-affordable':''\}"><div class="upgrade-cost"><span class="upgrade-price">\$\{art\('diamonds'\)\}<b>\$\{number\(diamondCost\)\}<\/b><\/span><\/div>/,'just the diamonds, no extra words');
- assert.match(ui,/const sure=await confirmAction\(\{title:`Upgrade the \$\{b\.name\} with diamonds\?`,description:`Are you sure you want to spend \$\{number\(price\)\} diamonds to upgrade the \$\{b\.name\} to level \$\{level\+1\}\?`,confirmLabel:`Spend \$\{number\(price\)\} diamonds`,cancelLabel:'Keep my diamonds',picture:'diamonds'\}\);\n   if\(!sure\)return;/,'spending diamonds is confirmed first');
- assert.match(ui,/id="upgrade-building-diamonds" class="small-button diamond-option" \$\{mutating\|\|state\.diamonds<diamondCost\?'disabled':''\}/,'diamonds do not wait for the goods');
- assert.match(ui,/You need \$\{number\(diamondCost-state\.diamonds\)\} more diamonds\./);
- assert.doesNotMatch(ui,/Upgrade now · |Diamonds skip the coins/);
- const css=read('public/production-controls.css');
- assert.match(css,/\.upgrade-option\{display:grid;grid-template-columns:minmax\(0,1fr\) auto;/);assert.match(css,/\.upgrade-option\.is-diamonds\.is-affordable\{border:2px solid #6fb3cc\}/);
- assert.match(read('public/wiki-content.js'),/From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn\. With diamonds you pay for all of it at once: no coins and no goods\./);
+ assert.match(ui,/<small class="shortfall">Still needed: \$\{stillNeeded\.join\(' and '\)\}\.<\/small>/,'exactly what is missing');
+ assert.doesNotMatch(ui,/upgrade-building-diamonds|diamondUpgradeCost|Upgrade now · /);
+ assert.match(ui,/\$\{cost===null\?'':`<div class="upgrade-payments">\$\{coinRow\}<\/div>`\}/);
+ assert.match(read('public/production-controls.css'),/\.upgrade-option\{display:grid;grid-template-columns:minmax\(0,1fr\) auto;/);
+ assert.match(read('public/wiki-content.js'),/From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn\. The Buildings discount boost halves the coins and goods of your next upgrade\./);
 });
