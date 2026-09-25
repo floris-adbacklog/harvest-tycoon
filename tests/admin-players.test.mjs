@@ -18,6 +18,7 @@ function database(tables={}){
    const call={table,filters:[]};calls.push(call);
    let rows=[...(tables[table]??[])],head=false,single=false;
    const q={
+    range(from,to){call.ranges=[...(call.ranges??[]),[from,to]];rows=rows.slice(from,to+1);return q;},
     select(v,opts){call.select=v;head=Boolean(opts?.head);return q;},
     eq(k,v){call.filters.push(['eq',k,v]);rows=rows.filter(r=>r[k]===v);return q;},
     is(k,v){call.filters.push(['is',k,v]);rows=rows.filter(r=>(r[k]??null)===v);return q;},
@@ -29,9 +30,13 @@ function database(tables={}){
    };
    return q;
   },
-  async rpc(name,args){calls.push({rpc:name,args});
+  rpc(name,args){const call={rpc:name,args};calls.push(call);
    if(name!=='admin_player_accounts')throw new Error(`unexpected rpc ${name}`);
-   const all=tables.accounts??[];return {data:args.p_player?all.filter(a=>a.player_id===args.p_player):all,error:null};
+   // The database joins the player name from player_stats; p_player and p_ip narrow it down.
+   const names=new Map((tables.player_stats??[]).map(s=>[s.player_id,s.username]));
+   let rows=(tables.accounts??[]).map(a=>({...a,username:names.get(a.player_id)??null})).filter(a=>(!args.p_player||a.player_id===args.p_player)&&(!args.p_ip||a.ip===args.p_ip));
+   const q={range(from,to){call.ranges=[...(call.ranges??[]),[from,to]];rows=rows.slice(from,to+1);return q;},then(resolve){return Promise.resolve({data:rows,error:null}).then(resolve);}};
+   return q;
   }
  };
 }
@@ -67,6 +72,16 @@ test('admin_players: every account with its farm, last activity, sign-in, guide 
  assert.equal(tony.country,'NL');assert.equal(tony.ip,'81.2.3.4');assert.equal(tony.device,'iPhone · Safari');
  assert.equal(idle.online,false);assert.equal(idle.family,null);assert.equal(idle.country,null);
  assert.equal(fresh.everPlayed,false);assert.equal(fresh.username,null);assert.equal(fresh.provider,'facebook');
+});
+test('admin_players: every page is read, however many farmers there are (PostgREST answers at most 1,000 rows at a time)',async()=>{
+ const db=database(tables),result=await handleAdminPlayers({admin:db,user:owner,now,page:2});
+ assert.deepEqual(result.data.players.map(p=>p.playerId),[P1,P2,P3],'three accounts over two pages of two');
+ const pages=db.calls.filter(c=>c.rpc==='admin_player_accounts').map(c=>c.ranges);
+ assert.deepEqual(pages,[[[0,1]],[[2,3]],[[3,4]]],'each page its own request, until one comes back empty');
+ assert.deepEqual(db.calls.filter(c=>c.table==='player_stats').map(c=>c.ranges),[[[0,1]],[[2,3]]]);
+ const code=read('supabase/functions/farm-api/admin-analytics-service.js');
+ assert.doesNotMatch(code.slice(code.indexOf('export async function handleAdminPlayers'),code.indexOf('export async function handleAdminPlayer(')),/\.limit\(/,'no cap on the list');
+ assert.doesNotMatch(read('supabase/admin-player-accounts-paging.sql'),/limit 5000/);
 });
 test('admin_players and admin_player: the IP address, country and device are for the admin only, never for a moderator',async()=>{
  const list=await handleAdminPlayers({admin:database(tables),user:moderator,now});

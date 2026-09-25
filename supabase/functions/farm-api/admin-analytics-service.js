@@ -119,22 +119,33 @@ export function deviceName(agent){
  return `${system} · ${browser}`;
 }
 const num=value=>Number.isFinite(Number(value))?Number(value):0;
+// Every row of a query, however many: PostgREST answers at most 1,000 rows per request, so this asks for the next page until one
+// comes back empty (which also holds if the project's own page limit is smaller). `query` makes a fresh request for each page, in a
+// fixed order.
+export async function allRows(query,page=1000){
+ const rows=[];
+ for(;;){
+  const found=await query().range(rows.length,rows.length+page-1);
+  if(found.error)throw found.error;
+  if(!found.data?.length)return rows;
+  rows.push(...found.data);
+ }
+}
 
 // Every farmer in one list, for the Players tab and the new-player funnel (src/admin-dashboard.js): when they joined and how they
 // sign in, when they were last active, their level, days played, beginner guide step, VIP and family. The country, IP address and
 // device are for the admin only, never for the moderators.
-export async function handleAdminPlayers({admin,user,now=Date.now()}){
+export async function handleAdminPlayers({admin,user,now=Date.now(),page=1000}){
  if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  const owner=isSuperadmin(user);
  const [accounts,stats,farms,families]=await Promise.all([
-  admin.rpc('admin_player_accounts',{p_player:null}),
-  admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id').limit(5000),
-  admin.from('player_farms').select('player_id,diamonds:state->diamonds,visits:state->login->visits,streak:state->login->streak,guide:state->onboarding->completed,guideDone:state->onboarding->rewardClaimed,family:state->family->familyId').limit(5000),
-  admin.from('families').select('id,name').limit(5000)
+  allRows(()=>admin.rpc('admin_player_accounts',{}),page),
+  allRows(()=>admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id').order('player_id'),page),
+  allRows(()=>admin.from('player_farms').select('player_id,diamonds:state->diamonds,visits:state->login->visits,streak:state->login->streak,guide:state->onboarding->completed,guideDone:state->onboarding->rewardClaimed,family:state->family->familyId').order('player_id'),page),
+  allRows(()=>admin.from('families').select('id,name').order('id'),page)
  ]);
- for(const found of [accounts,stats,farms,families])if(found.error)throw found.error;
- const stat=new Map((stats.data??[]).map(s=>[s.player_id,s])),farm=new Map((farms.data??[]).map(f=>[f.player_id,f])),family=new Map((families.data??[]).map(f=>[f.id,f.name]));
- const players=(accounts.data??[]).map(a=>{
+ const stat=new Map(stats.map(s=>[s.player_id,s])),farm=new Map(farms.map(f=>[f.player_id,f])),family=new Map(families.map(f=>[f.id,f.name]));
+ const players=accounts.map(a=>{
   const s=stat.get(a.player_id),f=farm.get(a.player_id);
   return {playerId:a.player_id,username:s?.username??null,level:s?.level??null,coins:s?.currency??null,diamonds:f?num(f.diamonds):null,avatarId:s?.avatar_id??null,
    createdAt:a.created_at,lastActiveAt:s?.last_active_at??null,lastSignInAt:a.last_sign_in_at??null,provider:a.provider??'email',
@@ -159,7 +170,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
  const owner=isSuperadmin(user),id=String(playerId);
  const quiet=promise=>Promise.resolve(promise).then(found=>found?.error?null:found).catch(()=>null);
  const [account,stat,farm,purchases,events,messages,reports,sanction,invitedBy,invited,membership]=await Promise.all([
-  admin.rpc('admin_player_accounts',{p_player:null}),
+  admin.rpc('admin_player_accounts',{p_player:id}),
   admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id,events_finished').eq('player_id',id).maybeSingle(),
   admin.from('player_farms').select('state').eq('player_id',id).maybeSingle(),
   quiet(admin.from('harvest_purchases').select('pack,status,amount_cents,diamonds,livemode,created_at').eq('player_id',id).order('created_at',{ascending:false}).limit(20)),
@@ -172,15 +183,14 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   quiet(admin.from('family_members').select('family_id,role').eq('player_id',id).is('left_at',null).limit(1))
  ]);
  for(const found of [account,stat,farm])if(found.error)throw found.error;
- const a=(account.data??[]).find(row=>row.player_id===id);if(!a)return respond(user,{error:'Unknown farmer.'},404);
- const shared=a.ip?(account.data??[]).filter(row=>row.ip===a.ip&&row.player_id!==id).slice(0,20):[];
+ const a=account.data?.[0];if(!a)return respond(user,{error:'Unknown farmer.'},404);
  const s=stat.data,state=farm.data?.state??null,stats=state?.stats??{},member=membership?.data?.[0]??null,inviter=invitedBy?.data?.referrer_id??null;
- const [familyRow,inviterRow,sharedRows]=await Promise.all([
+ const [familyRow,inviterRow,network]=await Promise.all([
   member?quiet(admin.from('families').select('name').eq('id',member.family_id).maybeSingle()):null,
   inviter?quiet(admin.from('player_stats').select('username').eq('player_id',inviter).maybeSingle()):null,
-  shared.length?quiet(admin.from('player_stats').select('player_id,username').in('player_id',shared.map(row=>row.player_id))):null
+  a.ip?quiet(admin.rpc('admin_player_accounts',{p_ip:a.ip}).range(0,20)):null
  ]);
- const sharedNames=new Map((sharedRows?.data??[]).map(row=>[row.player_id,row.username]));
+ const shared=(network?.data??[]).filter(row=>row.player_id!==id).slice(0,20);
  const joined=events?.data??[],friends=invited?.data??[],muted=Date.parse(sanction?.data?.muted_until)>now;
  const player={playerId:id,username:s?.username??null,level:s?.level??null,avatarId:s?.avatar_id??null,coins:s?.currency??null,diamonds:state?num(state.diamonds):null,xp:state?num(state.xp):null,
   createdAt:a.created_at,lastActiveAt:s?.last_active_at??null,lastSignInAt:a.last_sign_in_at??null,provider:a.provider??'email',online:s?isRecentlyActive(s.last_active_at,now):false,everPlayed:Boolean(s),
@@ -195,7 +205,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   events:{joined:joined.length,finished:joined.filter(e=>e.qualified).length,diamonds:joined.reduce((sum,e)=>sum+num(e.diamonds),0)},
   chat:{messages:messages?.count??null,reported:reports?.count??null,muted,banned:sanction?.data?.banned===true},
   invites:{invitedBy:inviter?inviterRow?.data?.username??'A farmer':null,friends:friends.length,qualified:friends.filter(f=>f.qualified_at).length},
-  sameNetwork:!a.ip?null:shared.map(row=>({playerId:row.player_id,username:sharedNames.get(row.player_id)??null,everPlayed:sharedNames.has(row.player_id)})),
+  sameNetwork:!a.ip?null:shared.map(row=>({playerId:row.player_id,username:row.username??null,everPlayed:row.username!=null})),
   ...(owner?{country:a.country??null,ip:a.ip??null,device:deviceName(a.device),userAgent:a.device??null,seenAt:a.seen_at??null,
    starter:{offeredAt:num(state?.starterOffer?.unlockedAt)||null,bought:state?.starterPackClaimed===true},
    purchases:(purchases?.data??[]).map(p=>({pack:p.pack,status:p.status,euros:num(p.amount_cents)/100,diamonds:num(p.diamonds),test:!p.livemode,createdAt:p.created_at}))}:{})};
