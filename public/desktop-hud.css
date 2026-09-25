@@ -30,3 +30,18 @@
  .scene-controls{bottom:124px}
  .beginner-card{max-height:calc(100dvh - 320px)}
 }
+/* Windows with a long list (the market, the seed shop, a building's recipes, the day's challenges and orders) are wider
+   on a computer, with the list in two columns and nearly the full screen height, so you see four crops instead of one
+   without scrolling. Windows with text keep their reading width; phones and tablets keep the phone layout. */
+@media(min-width:1200px) and (pointer:fine){
+ :is(#market-dialog,#seed-dialog,#today-dialog,#building-dialog:has(.recipe-list)){width:min(1000px,calc(100% - 96px));max-width:none;max-height:calc(100dvh - 56px)}
+ #market-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+ :is(#crop-catalog,#building-dialog .recipe-list,#today-content .daily-list){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ :is(#crop-catalog,#building-dialog .recipe-list)>.future-unlocks{grid-column:1/-1}
+ :is(#crop-catalog,#building-dialog .recipe-list) .future-unlocks-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #building-dialog .future-unlocks .recipe-card{grid-column:auto}
+ /* The Factory's groups: an open one takes the whole row, its recipes side by side, so the group next to it keeps its size. */
+ #building-dialog .recipe-list>.factory-recipe-group{align-self:start}
+ #building-dialog .recipe-list>.factory-recipe-group[open]{grid-column:1/-1}
+ #building-dialog .factory-recipe-group[open] .factory-recipe-group-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+}
