@@ -67,6 +67,7 @@ test('the logo is a WebP at the full 1024 px everywhere it is shown; the favicon
 });
 
 test('Google can load the favicon: /favicon.ico (16, 32 and 48 px) and a 96 px PNG (a multiple of 48), linked from every page',()=>{
+ assert.ok(!existsSync(new URL('../public/favicon.svg',import.meta.url)),'no leftover template icon (the blue starter logo) for a crawler to find');
  const ico=bytes('public/favicon.ico');
  assert.equal(ico.readUInt16LE(0),0);assert.equal(ico.readUInt16LE(2),1,'an icon file');
  const sizes=Array.from({length:ico.readUInt16LE(4)},(_,i)=>ico[6+i*16]);assert.deepEqual(sizes,[16,32,48]);
