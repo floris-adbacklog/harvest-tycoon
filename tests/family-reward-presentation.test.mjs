@@ -8,8 +8,11 @@ test('family reward preview separates personal earnings and the shared completio
  const html=renderFamilyOrderRewards(view);
  for(const key of ['gift','coins','xp','diamonds'])assert.ok(html.includes(`data-art="${key}"`));
  assert.ok(html.includes('6,385'));assert.ok(html.includes('>63<'));assert.ok(html.includes('>diamond<'));assert.ok(!html.includes('1 diamonds'));
- assert.ok(html.includes('4 diamonds · family completion bonus'));assert.ok(html.includes('Shared between eligible contributors'));assert.ok(html.includes('1 / 2 goods complete'));
- const pending=renderFamilyOrderRewards({...view,yourOrderPoints:20});assert.ok(pending.includes('480 more order points'));assert.ok(pending.includes('keep delivering to qualify'));
+ assert.ok(html.includes('+ 4 diamonds family bonus, shared by everyone who helped'));
+ assert.ok(!html.includes('goods complete')&&!html.includes('order points from you')&&!html.includes('<progress'),'the lines, your points and a bar are in the summary above, not repeated (26 Sep 2026)');
+ assert.ok(!html.includes('available above'));
+ const pending=renderFamilyOrderRewards({...view,yourOrderPoints:20});assert.ok(pending.includes('480 more order points'));assert.ok(pending.includes('Keep delivering to qualify'));
+ assert.ok(renderFamilyOrderRewards({...view,order:{...view.order,completed:true}}).includes('Your order rewards'));
 });
 test('the first three places share trophy artwork, places four through ten use numbers',()=>{
  for(const [index,key] of ['rank-gold','rank-silver','rank-bronze'].entries())assert.ok(rankArt(index+1).includes(`data-art="${key}"`));

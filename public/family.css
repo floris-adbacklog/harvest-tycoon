@@ -250,3 +250,22 @@
 @media(max-width:600px){.family-heading-emblem .family-emblem{width:44px;height:44px}.family-heading-actions{gap:6px}.family-heading-actions .icon-button{width:40px;height:40px}}
 .family-settings-title{display:flex;align-items:center;gap:10px;margin:0 0 14px;font:700 19px 'Outfit',sans-serif}
 .family-settings-title .game-art{width:34px;height:34px}
+/* This week (family-ui.js week, 26 Sep 2026): delivered lines as small chips, the rewards in one compact block. */
+.family-done-chips{display:flex;flex-wrap:wrap;gap:6px}
+.family-done-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 5px;border:1px solid #d3e2c4;border-radius:999px;background:#eef4e6;font-size:13px;font-weight:600;color:#3f5a30}
+.family-done-chip>.game-art{width:22px;height:22px;flex:none;object-fit:contain}
+.family-done-row{display:grid;gap:6px;margin:12px 0 4px}.family-done-row>span{font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#7c8a6a}
+.family-done-fold{margin:12px 0;border:1px solid #d3e2c4;border-radius:14px;background:#f6f9f1}
+.family-done-fold>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer;list-style:none;color:#3f5a30}
+.family-done-fold>summary::-webkit-details-marker{display:none}.family-done-fold[open]>summary .factory-chevron{transform:rotate(180deg)}
+.family-done-fold>.family-done-chips{padding:0 14px 14px}
+.family-order-rewards.is-compact{padding:14px 16px;margin:12px 0 16px}
+.family-order-rewards.is-compact .family-order-rewards-heading>.game-art{width:40px;height:40px;flex-basis:40px}
+.family-order-rewards.is-compact .family-order-rewards-heading h3{font-size:19px;margin:0}
+.family-order-rewards.is-compact .family-reward-caption{margin:2px 0 0;font-size:13px}
+.family-order-rewards.is-compact .family-order-reward-grid{margin:12px 0 10px;gap:8px}
+.family-order-rewards.is-compact .family-order-reward-cell{padding:8px 6px}
+.family-order-rewards.is-compact .family-order-reward-cell>.game-art{width:28px;height:28px}
+.family-order-rewards.is-compact .family-order-reward-cell strong{font-size:clamp(18px,3.2vw,22px)}
+.family-order-rewards.is-compact .family-completion-bonus{display:flex;align-items:center;gap:8px;margin:0;padding:8px 10px;font-size:13px;font-weight:600;color:#4f6541}
+.family-order-rewards.is-compact .family-completion-bonus>.game-art{width:20px;height:20px;flex-basis:20px}
