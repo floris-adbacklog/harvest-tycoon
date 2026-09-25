@@ -169,5 +169,5 @@ Deno.serve(async(req)=>{
    }
   }
   return reply({error:'Your farm changed in another tab. Please try again.'},409);
- }catch(error){console.error('Farm request failed',error.code??error.name);return reply({error:'Your farm could not be reached. Please try again.',code:'SERVER_UNAVAILABLE'},503);}
+ }catch(error){console.error('Farm request failed',error?.code||error?.name||'',String(error?.message??'').slice(0,200));return reply({error:'Your farm could not be reached. Please try again.',code:'SERVER_UNAVAILABLE'},503);}
 });

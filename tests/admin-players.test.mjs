@@ -203,7 +203,7 @@ test('one farmer\'s page lists the other accounts on the same network, and leave
 });
 test('the dashboard: the list replaces the newest players, the funnel and countries sit in Growth, the policy names what is kept',()=>{
  const dash=read('src/admin-dashboard.js');
- assert.match(dash,/bridge\.request\(\{operation:'admin_players'\}\)\.catch\(\(\)=>null\)/);
+ assert.match(dash,/\['admin_players','All players'\]/);assert.match(dash,/bridge\.request\(\{operation\}\)\.catch\(\(\)=>null\)/);
  assert.match(dash,/bridge\.request\(\{operation:'admin_player',playerId:id\}\)/);
  assert.match(dash,/id="admin-funnel"/);assert.match(dash,/id="admin-countries" hidden/);
  assert.doesNotMatch(dash,/admin_recent_players/);

@@ -188,7 +188,7 @@ test('retention percentages are colour-coded so a pattern is visible at a glance
 });
 test('the dashboard fetches all three admin operations through the same bridge every other request uses',()=>{
  const js=read('src/admin-dashboard.js');
- assert.match(js,/bridge\.request\(\{operation:'admin_online'\}\),bridge\.request\(\{operation:'admin_players'\}\)\.catch\(\(\)=>null\),bridge\.request\(\{operation:'admin_retention'\}\)/);
+ assert.match(js,/\[\['admin_online','Online now'\],\['admin_players','All players'\],\['admin_retention','Retention'\],\['admin_invites','Invites'\]\]/);assert.match(js,/bridge\.request\(\{operation\}\)/);
  assert.match(js,/document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);refreshArt\(\);dialog\.showModal\(\);load\(\);/,'closes whatever else is open first, like every other dialog');
  assert.match(js,/refreshTimer=setInterval\(load,60000\);/);
  assert.match(js,/dialog\.addEventListener\('close',\(\)=>clearInterval\(refreshTimer\)\);/,'stops polling once closed');
@@ -225,6 +225,29 @@ test('the Invite a friend log: who invited whom, how far the friend is, and whet
  assert.deepEqual(data.totals,{links:8,friends:3,qualified:1,diamondsPaid:300});
  assert.deepEqual(data.invites.map(i=>[i.friend,i.inviter,i.status,i.friendPaid,i.inviterPaid]),[['Bram','Tony','qualified',true,true],['Chris','Tony','playing',false,false],['Dewi','Tony','expired',false,false]]);
  const dash=read('src/admin-dashboard.js');
- assert.match(dash,/bridge\.request\(\{operation:'admin_invites'\}\)\.catch\(\(\)=>null\)/,'the rest of the dashboard still loads before farm-api knows it');
+ assert.match(dash,/\['admin_invites','Invites'\]/,'the rest of the dashboard still loads before farm-api knows it');
  assert.match(read('supabase/functions/farm-api/index.ts'),/if\(body\.operation==='admin_invites'\)\{/);
+});
+
+// 25 Sep 2026: the retention request asked for the 383 farmers of the last week in one address (15 KB); PostgREST echoes the address
+// in a response header, the Edge runtime's fetch failed on it, and the whole dashboard stayed empty. Lists go in batches of 100 now.
+test('long lists of farmers are asked for 100 at a time, and retention still counts every one of them',async()=>{
+ const signups=Array.from({length:383},(_,i)=>({player_id:`p${String(i).padStart(3,'0')}`,created_at:iso(now-2*86400000+i*1000)}));
+ const stats=signups.map(s=>({player_id:s.player_id,last_active_at:iso(now-60000)}));
+ const db=database({stats,signups});
+ const r=await handleAdminRetention({admin:db,user:admin,now});
+ assert.equal(r.status,200);
+ const lookups=db.calls.filter(c=>c.table==='player_stats'&&c.in);
+ assert.deepEqual(lookups.map(c=>c.in[1].length),[100,100,100,83]);
+ assert.equal(new Set(lookups.flatMap(c=>c.in[1])).size,383,'nobody is asked for twice or left out');
+ assert.equal(r.data.rows.reduce((sum,row)=>sum+row.size,0),383);
+ assert.ok(r.data.rows.every(row=>row.days[0].retained===row.size),'everyone active today counts as kept');
+ const source=read('supabase/functions/farm-api/admin-analytics-service.js');
+ assert.doesNotMatch(source,/\.in\('player_id',ids\)/,'no admin list asks for every id in one request');
+});
+test('the dashboard shows what did load when one part fails, and says which part is missing',()=>{
+ const dash=read('src/admin-dashboard.js');
+ assert.match(dash,/PARTS\.map\(\(\[operation\]\)=>bridge\.request\(\{operation\}\)\.catch\(\(\)=>null\)\)/);
+ assert.match(dash,/could not be loaded\. Please try again\./);
+ assert.doesNotMatch(dash,/bridge\.request\(\{operation:'admin_(online|retention)'\}\)\)?,/,'no part can take the others down');
 });

@@ -124,13 +124,16 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  async function load(){
   const status=dialog.querySelector('#admin-dashboard-status');status.textContent='Refreshing…';
   void loadChat();
-  try{
-   const [online,players,retention,invites]=await Promise.all([bridge.request({operation:'admin_online'}),bridge.request({operation:'admin_players'}).catch(()=>null),bridge.request({operation:'admin_retention'}),bridge.request({operation:'admin_invites'}).catch(()=>null)]);
-   if(players)showPlayers(players);
-   await loadFaces(online.players.map(p=>p.playerId));
-   renderOnline(online);renderRetention(retention);renderKpis(online,retention);if(invites)renderInvites(invites);
-   status.textContent=`Updated ${clock(new Date().toISOString())} (Amsterdam time)`;
-  }catch(error){status.textContent=error.message;}
+  // Every part loads on its own: one that fails leaves the others showing, and the line at the bottom says which one is missing.
+  const PARTS=[['admin_online','Online now'],['admin_players','All players'],['admin_retention','Retention'],['admin_invites','Invites']];
+  const [online,players,retention,invites]=await Promise.all(PARTS.map(([operation])=>bridge.request({operation}).catch(()=>null)));
+  if(players)showPlayers(players);
+  if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}
+  if(retention)renderRetention(retention);
+  if(online&&retention)renderKpis(online,retention);
+  if(invites)renderInvites(invites);
+  const missing=PARTS.filter((_,i)=>![online,players,retention,invites][i]).map(([,name])=>name);
+  status.textContent=missing.length?`${missing.join(', ')} could not be loaded. Please try again.`:`Updated ${clock(new Date().toISOString())} (Amsterdam time)`;
  }
  // The chat: open reports for the staff; news, moderators and chat levels for the admin.
  const ACTIONS={deleted:'Deleted',dismissed:'Nothing wrong',muted:'Muted',banned:'Banned from chat'};

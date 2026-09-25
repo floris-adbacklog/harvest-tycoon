@@ -17,6 +17,16 @@ export const zoneDay=ms=>dayFormat.format(ms);
 const zoneOffset=ms=>{const p=Object.fromEntries(partsFormat.formatToParts(ms).map(x=>[x.type,x.value]));return Date.UTC(+p.year,p.month-1,+p.day,+p.hour,+p.minute,+p.second)-Math.floor(ms/1000)*1000;};
 export const dayStart=day=>{const clock=Date.parse(`${day}T00:00:00Z`);return clock-zoneOffset(clock-zoneOffset(clock));};
 
+// The rows for a long list of farmers, 100 at a time. A list of ids goes in the request's address, and PostgREST sends that address
+// back in a response header; the Edge runtime cannot read a response whose headers pass about 16 KB. On 25 Sep 2026 one request for
+// the 383 farmers of the last week (a 15 KB address) failed that way, and the whole Admin dashboard with it.
+export const ID_BATCH=100;
+export async function rowsFor(query,ids,column='player_id'){
+ const found=await Promise.all(Array.from({length:Math.ceil(ids.length/ID_BATCH)},(_,i)=>query().in(column,ids.slice(i*ID_BATCH,(i+1)*ID_BATCH))));
+ for(const f of found)if(f.error)throw f.error;
+ return found.flatMap(f=>f.data??[]);
+}
+
 // Who is online right now: the same "active in the last 30 minutes" rule the leaderboard's own online dot and a
 // farmer's public profile already use (presence.js) — nothing new is invented for this dashboard.
 export async function handleAdminOnline({admin,user,now=Date.now()}){
@@ -36,9 +46,8 @@ export async function handleAdminRecentPlayers({admin,user,limit=14,now=Date.now
  const signups=await admin.rpc('admin_auth_signups',{p_since:'1970-01-01T00:00:00Z',p_limit:n});
  if(signups.error)throw signups.error;
  const ids=(signups.data??[]).map(r=>r.player_id);
- const stats=ids.length?await admin.from('player_stats').select('player_id,username,level,currency,last_active_at').in('player_id',ids):{data:[]};
- if(stats.error)throw stats.error;
- const byId=new Map((stats.data??[]).map(s=>[s.player_id,s]));
+ const stats=await rowsFor(()=>admin.from('player_stats').select('player_id,username,level,currency,last_active_at'),ids);
+ const byId=new Map(stats.map(s=>[s.player_id,s]));
  const players=(signups.data??[]).map(s=>{
   const stat=byId.get(s.player_id);
   return {playerId:s.player_id,createdAt:s.created_at,username:stat?.username??null,level:stat?.level??null,coins:stat?.currency??null,online:stat?isRecentlyActive(stat.last_active_at,now):false,everPlayed:Boolean(stat)};
@@ -57,9 +66,8 @@ export async function handleAdminRetention({admin,user,now=Date.now()}){
  const signups=await admin.rpc('admin_auth_signups',{p_since:since,p_limit:5000});
  if(signups.error)throw signups.error;
  const ids=[...new Set((signups.data??[]).map(r=>r.player_id))];
- const stats=ids.length?await admin.from('player_stats').select('player_id,last_active_at').in('player_id',ids):{data:[]};
- if(stats.error)throw stats.error;
- const lastActive=new Map((stats.data??[]).map(s=>[s.player_id,s.last_active_at?Date.parse(s.last_active_at):null]));
+ const stats=await rowsFor(()=>admin.from('player_stats').select('player_id,last_active_at'),ids);
+ const lastActive=new Map(stats.map(s=>[s.player_id,s.last_active_at?Date.parse(s.last_active_at):null]));
  const cohorts=new Map();
  for(const s of signups.data??[]){
   const day=zoneDay(Date.parse(s.created_at));
@@ -89,12 +97,11 @@ export async function handleAdminInvites({admin,user,now=Date.now(),reward=150,l
  if(found.error)throw found.error;
  const rows=found.data??[],ids=[...new Set(rows.flatMap(r=>[r.invitee_id,r.referrer_id]))];
  const codes=await admin.from('player_invite_codes').select('player_id',{count:'exact',head:true});
- const [stats,farms]=ids.length?await Promise.all([
-  admin.from('player_stats').select('player_id,username,level').in('player_id',ids),
-  admin.from('player_farms').select('player_id,invite:state->invite,paid:state->inviteRewards').in('player_id',ids)
- ]):[{data:[]},{data:[]}];
- if(stats.error)throw stats.error;if(farms.error)throw farms.error;
- const who=new Map((stats.data??[]).map(s=>[s.player_id,s])),farm=new Map((farms.data??[]).map(f=>[f.player_id,f]));
+ const [stats,farms]=await Promise.all([
+  rowsFor(()=>admin.from('player_stats').select('player_id,username,level'),ids),
+  rowsFor(()=>admin.from('player_farms').select('player_id,invite:state->invite,paid:state->inviteRewards'),ids)
+ ]);
+ const who=new Map(stats.map(s=>[s.player_id,s])),farm=new Map(farms.map(f=>[f.player_id,f]));
  const invites=rows.map(r=>{
   const friend=who.get(r.invitee_id),inviter=who.get(r.referrer_id);
   const friendPaid=Boolean(farm.get(r.invitee_id)?.invite?.rewardedAt),inviterPaid=(farm.get(r.referrer_id)?.paid??[]).includes(r.invitee_id);
