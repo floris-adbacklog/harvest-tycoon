@@ -141,6 +141,25 @@ export function countriesHtml({rows,unknown}){
  return (list||'<li class="admin-empty">No countries yet: they fill in as farmers open the game.</li>')+(unknown?`<li class="admin-funnel-split">${number(unknown)} not seen since countries were added</li>`:'');
 }
 
+// Phone, tablet or computer: from the device each farmer last opened the game on (admin-analytics-service.js deviceName, for the
+// admin only, like the country). Mobile is a phone or a tablet. Counted over every farmer who played, and over this week's.
+export function deviceKind(device){const s=String(device??'');if(!s)return null;return /^(iPhone|Android phone)/.test(s)?'phone':/^(iPad|Android tablet)/.test(s)?'tablet':'computer';}
+export function deviceCounts(players,{since=null}={}){
+ const counts={phone:0,tablet:0,computer:0};let unknown=0;
+ for(const p of players){if(!p.everPlayed||(since!==null&&!(Date.parse(p.lastActiveAt)>=since)))continue;const kind=deviceKind(p.device);if(kind)counts[kind]++;else unknown++;}
+ return {...counts,total:counts.phone+counts.tablet+counts.computer,unknown};
+}
+const share=(n,total)=>total?Math.round(n/total*100):0;
+export function devicesHtml(all,week){
+ if(!all.total)return '<p class="admin-empty">No devices yet: they fill in as farmers open the game.</p>';
+ const mobile=all.phone+all.tablet,split=c=>`<strong>${share(c.phone+c.tablet,c.total)}%</strong> mobile · <strong>${share(c.computer,c.total)}%</strong> desktop`;
+ const bar=(label,n)=>`<li><span>${label}</span><i aria-hidden="true"><b style="width:${share(n,all.total)}%"></b></i><strong>${share(n,all.total)}%</strong></li>`;
+ return `<p class="admin-device-split">${split(all)} <small>${number(mobile)} of ${number(all.total)} farmers</small></p>`
+  +`<ul class="admin-bars">${bar('Phone',all.phone)}${bar('Tablet',all.tablet)}${bar('Computer',all.computer)}</ul>`
+  +(week.total?`<p class="admin-device-week">Active this week: ${split(week)} <small>${number(week.total)} farmers</small></p>`:'')
+  +(all.unknown?`<p class="admin-funnel-split">${number(all.unknown)} not seen since devices were added</p>`:'');
+}
+
 // A staff gift to whom (supabase/staff-gift-audience.sql decides the list when it is sent; these are the same rules, for the counts on
 // the screen): everyone, the farmers active in the last 7 days, the farmers online now (the online dot) or one farmer.
 export const GIFT_AUDIENCES=Object.freeze([['all','Everyone'],['active','Active this week'],['online','Online now'],['player','One farmer']]);

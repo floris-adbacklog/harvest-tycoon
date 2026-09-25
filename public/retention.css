@@ -1203,3 +1203,7 @@
 @media(max-width:600px){
  #admin-dashboard-dialog .admin-bars>li:not(.admin-empty):not(.admin-funnel-split){grid-template-columns:minmax(0,1fr) 70px auto}
 }
+/* Mobile or desktop (src/admin-players.js devicesHtml): the split in one line, the three bars, this week's split below. */
+#admin-dashboard-dialog .admin-device-split{margin:0 0 10px;font-size:15px;color:#4a4232}#admin-dashboard-dialog .admin-device-split strong{font:700 20px 'Outfit',sans-serif;color:#3f5a30}
+#admin-dashboard-dialog .admin-device-split small,#admin-dashboard-dialog .admin-device-week small{margin-left:6px;color:#8a7c69;font-size:12px}
+#admin-dashboard-dialog .admin-device-week{margin:10px 0 0;font-size:13px;color:#5d5140}

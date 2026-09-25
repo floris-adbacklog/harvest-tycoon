@@ -221,3 +221,20 @@ test('staff go both ways: the dashboard opens a profile, and a profile opens tha
  assert.match(dash,/window\.harvestStaff=\{role:\(\)=>role,showFarmer\};/);
  assert.match(dash,/data-open-profile/,'and the other way, as before');
 });
+
+test('mobile or desktop: phone and tablet are mobile, everything else a computer; over all farmers and this week\'s',async()=>{
+ const {deviceKind,deviceCounts,devicesHtml}=await import('../src/admin-players.js');
+ assert.equal(deviceKind('iPhone · Safari'),'phone');assert.equal(deviceKind('Android phone · Chrome'),'phone');
+ assert.equal(deviceKind('iPad · Safari'),'tablet');assert.equal(deviceKind('Android tablet · Chrome'),'tablet');
+ assert.equal(deviceKind('Windows · Edge'),'computer');assert.equal(deviceKind('Mac · Chrome'),'computer');assert.equal(deviceKind(null),null);
+ const now=Date.UTC(2026,8,26),recent=new Date(now-86400000).toISOString(),old=new Date(now-30*86400000).toISOString();
+ const players=[{everPlayed:true,device:'iPhone · Safari',lastActiveAt:recent},{everPlayed:true,device:'Android phone · Chrome',lastActiveAt:old},{everPlayed:true,device:'iPad · Safari',lastActiveAt:old},{everPlayed:true,device:'Windows · Chrome',lastActiveAt:recent},{everPlayed:true,device:null,lastActiveAt:recent},{everPlayed:false,device:'Mac · Safari'}];
+ const all=deviceCounts(players),week=deviceCounts(players,{since:now-7*86400000});
+ assert.deepEqual(all,{phone:2,tablet:1,computer:1,total:4,unknown:1});assert.deepEqual(week,{phone:1,tablet:0,computer:1,total:2,unknown:1});
+ const html=devicesHtml(all,week);
+ assert.match(html,/<strong>75%<\/strong> mobile · <strong>25%<\/strong> desktop <small>3 of 4 farmers<\/small>/);
+ assert.match(html,/Active this week: <strong>50%<\/strong> mobile · <strong>50%<\/strong> desktop/);assert.match(html,/1 not seen since devices were added/);
+ assert.match(devicesHtml({phone:0,tablet:0,computer:0,total:0,unknown:0},{total:0}),/No devices yet/);
+ const dash=readFileSync(new URL('../src/admin-dashboard.js',import.meta.url),'utf8');
+ assert.match(dash,/box\.hidden=!view\.owner;if\(view\.owner\)dialog\.querySelector\('#admin-device-box'\)\.innerHTML=devicesHtml\(/,'for the admin only, like the countries');
+});

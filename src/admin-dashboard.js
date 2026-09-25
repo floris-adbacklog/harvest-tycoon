@@ -9,7 +9,7 @@ import {refreshArt} from '../public/visual-icons.js';
 import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {avatarImage} from '../public/player-avatars.js';
-import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml,dateTime,clock,zoneDay} from './admin-players.js';
+import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
@@ -45,6 +45,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'</div><div data-admin-panel="growth" hidden>'
   +'<section class="admin-card" id="admin-funnel"><h3>'+art('quests')+'New players: where do they stop?</h3><div class="admin-filters" role="group" aria-label="Period">'+FUNNEL_PERIODS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-funnel-period="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-funnel-list" class="admin-bars admin-funnel"></ul><p class="admin-hint">Of everyone who made an account in the period, how many got this far. Coming back counts only farmers who joined long enough ago, from their last activity.</p></section>'
   +'<section class="admin-card" id="admin-countries" hidden><h3>'+art('invite-friends')+'Where players come from</h3><ul id="admin-country-list" class="admin-bars"></ul><p class="admin-hint">The country of each farmer’s device time zone, the last time they opened the game.</p></section>'
+  +'<section class="admin-card" id="admin-devices" hidden><h3>'+art('farmapp')+'Mobile or desktop</h3><div id="admin-device-box"></div><p class="admin-hint">The device each farmer last opened the game on. Mobile is a phone or a tablet.</p></section>'
   +'<section class="admin-card"><h3>'+art('xp')+'Retention, day 0–7</h3><p class="admin-hint">Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
   +'<section class="admin-card"><h3>'+art('gift')+'Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
   +'</div><div data-admin-panel="settings" hidden>'
@@ -77,7 +78,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const more=dialog.querySelector('#admin-player-more');more.hidden=found.length<=view.shown;more.textContent=`Show more (${number(found.length-view.shown)} left)`;
  }
  function renderFunnel(){dialog.querySelector('#admin-funnel-list').innerHTML=funnelHtml(funnel(view.players,view.period));}
- function renderCountries(){const box=dialog.querySelector('#admin-countries');box.hidden=!view.owner;if(view.owner)dialog.querySelector('#admin-country-list').innerHTML=countriesHtml(countryCounts(view.players));}
+ function renderCountries(){const box=dialog.querySelector('#admin-countries');box.hidden=!view.owner;if(view.owner)dialog.querySelector('#admin-country-list').innerHTML=countriesHtml(countryCounts(view.players));renderDevices();}
+ function renderDevices(){const box=dialog.querySelector('#admin-devices');box.hidden=!view.owner;if(view.owner)dialog.querySelector('#admin-device-box').innerHTML=devicesHtml(deviceCounts(view.players),deviceCounts(view.players,{since:Date.now()-7*86400000}));}
  function showPlayers(data){
   view.players=data.players??[];view.owner=Boolean(data.owner);view.guideSteps=data.guideSteps??GUIDE_STEPS.length;
   faces=new Map([...faces,...view.players.filter(p=>p.avatarId).map(p=>[p.playerId,p.avatarId])]);
