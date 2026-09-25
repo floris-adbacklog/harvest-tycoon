@@ -1,6 +1,6 @@
 // The leaderboard's "Rank by" choice: the main boards as chips, and a "By crop" and a "By good" chip that each open a row of boards.
 // It replaces a 19-item native dropdown. The chosen board is still kept in a hidden field, so the rest of the leaderboard code is unchanged.
-export const RANK_ART=Object.freeze({level:'xp',currency:'coins',harvested_crops:'harvest',goods_produced:'bread',items_sold:'market',badges:'trophy',deliveries:'cart',events_finished:'live-events',best_streak:'streak',farm_fields:'estate',chores_done:'chores',helping_rounds:'helping-hand',estate_projects:'farmhouse'});
+export const RANK_ART=Object.freeze({level:'xp',currency:'coins',harvested_crops:'harvest',goods_produced:'bread',items_sold:'market',badges:'trophy',deliveries:'cart',events_finished:'live-events',best_streak:'streak',farm_fields:'estate',chores_done:'chores',helping_rounds:'helping-hand',estate_projects:'farmhouse',building_upgrades:'hammer'});
 // A crop board shows the crop, a good's board the good.
 export const rankArtKey=key=>RANK_ART[key]??(key.startsWith('harvested_')?key.slice(10):key.startsWith('made_')?key.slice(5):'trophy');
 // "By crop" and "By good": each chip opens its own row of boards and remembers the last one you looked at there.

@@ -12,9 +12,9 @@ import {CROPS,ITEMS} from '../public/farm-state.js';
 test('every crop has its own board; only public metrics can be selected',async()=>{
  for(const crop of Object.keys(CROPS))assert(LEADERBOARD_CATEGORIES['harvested_'+crop],crop);
  const goods=Object.keys(ITEMS).filter(k=>!CROPS[k]);
- assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,13+Object.keys(CROPS).length+goods.length,'thirteen boards plus one per crop and one per good');
+ assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,14+Object.keys(CROPS).length+goods.length,'fourteen boards plus one per crop and one per good');
  for(const good of goods)assert.equal(LEADERBOARD_CATEGORIES['made_'+good]?.group,'goods',good);
- for(const key of ['events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects'])assert(LEADERBOARD_CATEGORIES[key],`${key} board`);
+ for(const key of ['events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades'])assert(LEADERBOARD_CATEGORIES[key],`${key} board`);
  for(const category of ['diamonds','harvested_grain','state','__proto__'])await assert.rejects(fetchLeaderboard({from(){throw new Error('Should not query');}},'self',category),/valid leaderboard/);
  for(const category of Object.keys(LEADERBOARD_CATEGORIES)){
   const calls=[];let i=0,good=LEADERBOARD_CATEGORIES[category].good,column=good?`goods_made->${good}`:category;
@@ -31,4 +31,13 @@ test('tied scores receive distinct ordinal places in the stable server order',()
  const rows=[{badges:4,harvested_wheat:50},{badges:4,harvested_wheat:20},{badges:1,harvested_wheat:20}];
  assert.deepEqual(rankedRows(rows,'badges').map(r=>r.rank),[1,2,3]);
  assert.deepEqual(rankedRows(rows,'harvested_wheat').map(r=>r.rank),[1,2,3]);
+});
+
+test('Most building upgrades: every upgrade counts the same, read from the farm on every save (the Farmhouse and Family Hall not)',async()=>{
+ const {readFileSync}=await import('node:fs');
+ assert.deepEqual(LEADERBOARD_CATEGORIES.building_upgrades,{label:'Most building upgrades',heading:'Upgrades',unit:'upgrades',description:'Every building upgrade counts the same: level 1 to 2 as much as level 9 to 10.'});
+ const sql=readFileSync(new URL('../supabase/leaderboard-building-upgrades.sql',import.meta.url),'utf8');
+ assert.match(sql,/add column if not exists building_upgrades integer not null default 0;\ngrant select \(building_upgrades\) on public\.player_stats to authenticated;/);
+ assert.match(sql,/select coalesce\(sum\(greatest\(0,\(b\.value->>'level'\)::integer-1\)\),0\) into new\.building_upgrades\n  from jsonb_each\(farm->'buildings'\) b where b\.key not in \('farmhouse','familyhall'\)/);
+ assert.match(readFileSync(new URL('../src/leaderboard.js',import.meta.url),'utf8'),/'estate_projects','building_upgrades','last_active_at'/,'the board can read its column');
 });

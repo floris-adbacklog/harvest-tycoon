@@ -12,6 +12,7 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
 
  harvested_crops:{label:'Most crops harvested',heading:'Crops',unit:'crops harvested',description:'Lifetime harvest of all crop varieties, including extra yield from water and care.'},
  goods_produced:{label:'Most goods produced',heading:'Goods made',unit:'goods produced',description:'Lifetime production goods collected from every building, from honey to berry tart.'},
+ building_upgrades:{label:'Most building upgrades',heading:'Upgrades',unit:'upgrades',description:'Every building upgrade counts the same: level 1 to 2 as much as level 9 to 10.'},
  items_sold:{label:'Most items sold',heading:'Items sold',unit:'items sold',description:'Lifetime crops and goods sold at the market. Counts from when this board launched.'},
  badges:{label:'Most badges',heading:'Badges',unit:'badges',description:`Crop mastery medals you have claimed. Up to ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges to earn.`},
  deliveries:{label:'Most deliveries',heading:'Deliveries',unit:'deliveries',description:'Total delivery orders completed for your neighbours.'},
@@ -32,7 +33,7 @@ function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw ne
 // A good's board reads one key of goods_made ("goods_made->bread" to the database); every other board is its own column.
 const columnOf=category=>{const config=categoryFor(category);return config.good?`goods_made->${config.good}`:category;};
 export const scoreOf=(row,category)=>{const config=categoryFor(category);return Number((config.good?row?.goods_made?.[config.good]:row?.[category])??0);};
-const PUBLIC_FIELDS=['player_id','username','currency','level',...CROP_BOARDS.map(key=>`harvested_${key}`),'harvested_crops','badges','deliveries','goods_produced','items_sold','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','last_active_at','vip_expires_at','avatar_id'].join(',');
+const PUBLIC_FIELDS=['player_id','username','currency','level',...CROP_BOARDS.map(key=>`harvested_${key}`),'harvested_crops','badges','deliveries','goods_produced','items_sold','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades','last_active_at','vip_expires_at','avatar_id'].join(',');
 export async function fetchLeaderboard(client,playerId,category='level'){
  const config=categoryFor(category),column=columnOf(category),fields=config.good?`${PUBLIC_FIELDS},goods_made`:PUBLIC_FIELDS;
  const {data,error}=await client.from('player_stats').select(fields).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(10);
