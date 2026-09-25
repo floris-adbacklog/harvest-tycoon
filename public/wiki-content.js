@@ -1,5 +1,6 @@
 import {ACTIVE_STATIONS,CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,DAILY_REWARDS,DAILY_DIAMONDS,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,INVITE_DAYS,INVITE_LIMIT,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,EMAIL_BONUS} from './farm-state.js';
 import {art} from './visual-icons.js';
+import {PLAYER_AVATARS} from './player-avatars.js';
 import {EVENTS_LEVEL,EVENT_DAY_DIAMONDS,PODIUM_PRIZES,FINISHER_PRIZE} from './live-events-ui.js';
 
 // The farm wiki: the same topics in How to play (public/wiki-ui.js) and on the website (/wiki, scripts/build-wiki.mjs).
@@ -210,7 +211,7 @@ const BODIES={
    ['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app: press and hold its icon for Chat, Daily gift and the leaderboard, and on Android or a computer you can play full screen (Settings, Farm app).'],
    ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages and the daily gift are then on, the rest you choose. Email reminders stay off until you switch them on.']
   ]))
-  +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
+  +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p><p>${PLAYER_AVATARS.filter(a=>!a.level).length} avatars are yours from the start. ${PLAYER_AVATARS.filter(a=>a.level).length} more open as you grow, one at every 10 levels: ${PLAYER_AVATARS.filter(a=>a.level).map(a=>`${a.name} (${a.level})`).join(', ')}. Until then an avatar shows grey with a lock and its level.</p>`)
   +section('Confirm your email',`<p>Signed up with your email address? Confirm it once for ${EMAIL_BONUS} diamonds: tap “Confirm your email” in the menu and type the code we send you. Google and Facebook accounts get the diamonds straight away.</p>`)
   +section('Invite a friend',`<p>Share your invite link. When your friend reaches level ${INVITE_LEVEL} within ${INVITE_DAYS} days, you both get ${INVITE_REWARD} diamonds, for up to ${INVITE_LIMIT} friends.</p>`)
   +section('Privacy',`<p>Read how we handle your data in the <a href="/privacy">Privacy Policy</a>. Want to stop? You can <a href="/delete-account">delete your account</a>.</p>`);

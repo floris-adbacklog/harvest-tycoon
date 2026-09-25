@@ -9,7 +9,13 @@
 #avatar-form{margin:0}.avatar-picker{margin:0;padding:0;border:0;min-width:0}
 .avatar-picker>legend{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .avatar-picker .avatar-tile{display:block;width:62px;height:66px;padding:4px;box-sizing:border-box;border:2px solid transparent;border-radius:15px;background:#eee7d9;transition:background .15s,border-color .15s}
-.avatar-picker .avatar-tile>img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.avatar-picker .avatar-tile{position:relative}.avatar-picker .avatar-tile>img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+/* A level avatar (avatar-settings.js): grey with a closed lock and its level until the farm gets there, then a gold badge. */
+.avatar-picker .avatar-tile.is-locked>img{filter:grayscale(1);opacity:.55}
+.avatar-level{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:2px;padding:1px 5px 1px 4px;border-radius:999px;font:800 10px/1.35 'DM Sans',sans-serif;white-space:nowrap;pointer-events:none;box-shadow:0 1px 2px rgba(60,50,20,.25)}
+.avatar-level>svg{width:10px;height:10px;flex:0 0 auto}
+.avatar-level.is-locked{background:#8d887c;color:#fff}
+.avatar-level.is-open{background:linear-gradient(180deg,#f4d175,#d9a531);color:#5b3f06;border:1px solid #c28f22}
 .avatar-picker label:hover .avatar-tile{background:#e9eddd}
 .avatar-picker .family-emblems input:checked+.avatar-tile{border-color:#608046;background:#e7efda;box-shadow:0 0 0 1px #608046}
 .avatar-picker .family-emblems input:focus-visible+.avatar-tile{outline:3px solid #d8a338;outline-offset:2px}

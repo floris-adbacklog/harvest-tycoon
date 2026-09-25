@@ -1,0 +1,5 @@
+-- Ten level avatars (25 September 2026): one opens at every 10 levels, 10 to 100. The database accepts the IDs; farm-api
+-- (avatar-service.js) saves one only when player_stats.level has reached it, and players cannot write avatar_id themselves.
+-- The IDs are stable database keys: the pictures, names and levels live in public/player-avatars.js.
+alter table public.player_stats drop constraint if exists player_stats_avatar_id_check;
+alter table public.player_stats add constraint player_stats_avatar_id_check check (avatar_id in ('default','orchard-grower','berry-gardener','sunflower-grower','village-gardener','old-hand','greenhouse-grower','market-gardener','dairy-farmer','apple-picker','herb-gardener','barn-builder','flower-grower','valley-grower','orchard-veteran','farm-mechanic','pond-keeper','ranch-hand','cheese-maker','flower-tender','family-farmer','tractor-driver','truffle-hunter','beekeeper','estate-manager','master-weaver','ranch-owner','prize-grower','fair-host','valley-legend'));
