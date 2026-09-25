@@ -5,7 +5,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 test('on a computer the side tools stay see-through and the camera buttons are one row in the bottom-right corner',()=>{
  const html=read('public/farm.html'),css=read('public/desktop-hud.css');
- assert.match(html,/href="\/more-menu.css">\s*<link rel="stylesheet" href="\/desktop-hud.css">\s*<link rel="stylesheet" href="\/pwa-layout.css">/,'after the other game styles, pwa-layout.css stays last');
+ assert.match(html,/href="\/more-menu.css">\s*<link rel="stylesheet" href="\/desktop-hud.css">\s*<link rel="stylesheet" href="\/mobile-windows.css">\s*<link rel="stylesheet" href="\/pwa-layout.css">/,'after the other game styles, pwa-layout.css stays last');
  assert.doesNotMatch(css,/\.side-tools\{[^}]*background/,'no panel behind the side tools');
  const game=read('public/game.js');
  assert.match(game,/behindTools\(x,y,80\)/,'a building name behind the side tools is hidden');

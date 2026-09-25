@@ -1,0 +1,77 @@
+/* Windows on a phone (26 Sep 2026): less scrolling and less empty space, since most farmers play on a phone.
+   Same screens as mobile.css (phones, and a phone turned sideways); computers and tablets keep their layout. */
+/* On a computer the market keeps its slider and both buttons open; the phone's row buttons are not needed there. */
+.market-quick,.market-kept{display:none}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ /* The heading that stays on top while you scroll: only the title. The small line above it ("FRESH FROM YOUR FIELDS")
+    is decoration and cost every window a line. */
+ .game-dialog .dialog-heading .eyebrow{display:none}
+ .game-dialog .dialog-heading{min-height:0;padding:12px 0 10px;margin-bottom:12px}
+
+ /* Farm Family: the family's emblem, name and buttons on one row, who is in it on one row below. The name no longer
+    wraps over two lines next to three buttons, so the heading is half as tall (it stays on top while you scroll). */
+ #family-dialog .family-heading{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:10px;row-gap:0}
+ #family-dialog .family-heading>div:not(.family-heading-actions){display:contents}
+ #family-dialog .family-heading-emblem{grid-column:1;grid-row:1}
+ #family-dialog .family-heading h2{grid-column:2;grid-row:1;margin:0;font-size:23px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #family-dialog .family-heading-emblem[hidden]+div h2{grid-column:1/3}
+ #family-dialog .family-heading-actions{grid-column:3;grid-row:1;gap:6px}
+ #family-dialog .family-heading-actions .icon-button{width:44px;height:44px;min-width:44px;min-height:44px}
+ #family-dialog .family-heading-meta{grid-column:1/-1;grid-row:2;margin:6px 0 0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+ /* The market: one row per crop or good with its price and "Sell all"; "Pick amount" opens the slider for a part. */
+ #market-items .market-row.market-card{grid-template-columns:44px minmax(0,1fr) auto;gap:0 12px;padding:12px 0}
+ #market-items .market-card>.product-art{width:44px;height:44px}
+ #market-items .market-card .market-item-copy{gap:3px}
+ #market-items .market-card .market-item-copy>strong{font-size:16px}
+ #market-items .market-card .market-current-price{font-size:12px}
+ #market-items .market-card .market-current-price b{font-size:15px}
+ #market-items .market-card .demand-pill{font-size:11px;padding:2px 7px}
+ #market-items .market-card .market-stock{display:none}
+ #market-items .market-card .market-kept{display:block}
+ #market-items .market-quick{grid-column:3;grid-row:1;display:flex;flex-direction:column;align-items:stretch;gap:0}
+ #market-items .market-quick-sell{min-height:40px;padding:8px 14px;white-space:nowrap}
+ #market-items .market-amount-toggle{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:40px;padding:4px 6px;border:0;background:none;color:#6d6048;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
+ #market-items .market-amount-toggle::after{content:'';width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:translateY(-2px) rotate(45deg);transition:transform .15s}
+ #market-items .market-card.is-open .market-amount-toggle::after{transform:translateY(1px) rotate(-135deg)}
+ #market-items .market-card .market-sale-controls{display:none;margin-top:10px}
+ #market-items .market-card.is-open .market-sale-controls{display:block}
+ #market-items .market-card .market-sale-buttons [data-sell-item-all]{display:none}
+ /* Today's market pick above the list, smaller, so a small phone shows more rows; the countdown in it already says
+    that prices change every day. */
+ #market-dialog>p{display:none}
+ #market-outlook{margin:0 0 12px;padding:11px 12px}
+ #market-outlook .market-highlight{margin:8px 0}
+ #market-outlook .market-highlight>.game-art{width:36px;height:36px}
+ #market-outlook .market-highlight strong{font-size:17px}
+ #market-outlook .market-highlight>div>span{margin-top:1px;line-height:1.4}
+ #market-outlook .market-forecast{padding-top:8px;line-height:1.45}
+ /* "This basket is worth" above the number, so the number and "Sell all crops" share one row. */
+ .market-total{flex-wrap:nowrap}
+ #inventory-value{display:flex;margin-top:2px}
+
+ /* A building: the picture, the chain and the slots take less room, so the recipes start higher up. */
+ #building-content .building-hero{gap:12px;padding-bottom:12px;margin-bottom:12px}
+ #building-content .building-hero .building-image{width:64px;height:64px;min-width:64px;border-radius:14px}
+ #building-content .building-hero .building-image img{width:68px;height:68px}
+ #building-content .building-hero h2{font-size:23px;margin:2px 0}
+ #building-content .building-hero p{font-size:13px;line-height:1.45}
+ #building-content .milling-chain{padding:8px 6px}
+ #building-content .milling-chain .game-art{width:28px;height:28px}
+ #building-content .milling-chain>span{gap:2px;font-size:11px}
+ #building-content .milling-note{margin:6px 0 10px;font-size:12.5px;line-height:1.5}
+ #building-content .production-capacity{padding:8px 12px;margin-bottom:10px}
+ #building-content .production-capacity strong{font-size:14px}
+ #building-content .recipe-section-heading{margin:14px 0 10px;gap:2px}
+ #building-content .recipe-section-heading h3{font-size:19px}
+
+ /* Nothing smaller than 10px (the small capitals) or 11px (the rest). */
+ .game-dialog .eyebrow,#building-content .building-hero .eyebrow{font-size:10px;letter-spacing:1px}
+ .today-market-card>span>small{font-size:10px}
+ #daily-gift .streak-day small,#journal-content .collection-crop small{font-size:11px}
+ .avatar-level{font-size:10px}
+
+ /* Buttons you tap are at least 40px high. */
+ .wiki-quick button{min-height:40px;padding:6px 14px}
+ #sound-dialog .sound-preview{min-height:40px}
+}
