@@ -692,9 +692,12 @@ export function constructBuilding(state,key){
  state.coins-=cost;state.buildings[key].built=true;state.stats['built_'+key]=1;
  return {building:key,cost};
 }
+// Removes whatever grows on a field (a crop, a tree, a bush or a climbing plant), ripe or not, and gives nothing back: no harvest,
+// no XP, no seed coins (25 Sep 2026: any crop, not only the ones that regrow). expectedPlantedAt makes sure it is still the planting
+// the farmer saw.
 export function clearPlanting(state,id,expectedPlantedAt){
  const p=state.plots[id];
- if(!Number.isInteger(id)||!p||!CROPS[p.crop]?.perennial)throw new Error('Choose a tree, bush or climbing plant.');
+ if(!Number.isInteger(id)||!p||!CROPS[p.crop])throw new Error('Choose a field with something growing on it.');
  if(p.plantedAt!==expectedPlantedAt)throw new Error('This planting has changed. Review it before removing.');
  const crop=p.crop;Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
  return {id,crop};

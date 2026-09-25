@@ -46,11 +46,27 @@
  .field-picker-toolbar button,.field-picker-bottom button{min-height:44px}.fertilizer-action{flex-direction:column;align-items:stretch;gap:9px}.fertilizer-action>span{text-align:left}.fertilizer-action button{width:100%;justify-content:center}
 }
 
-.crop-card:disabled{opacity:.68;cursor:default}.orchard-management,.construction-panel{padding:22px;margin-top:20px;background:#f1f5e8;border:1px solid #d5dfc6;border-radius:22px}.orchard-management>p,.construction-panel>p{line-height:1.6;color:#667956}.orchard-field{display:flex;gap:16px;padding:18px 0;border-top:1px solid #d5dfc6}.orchard-field>.game-art{width:64px;height:64px;flex-shrink:0;object-fit:contain}.orchard-field>div{min-width:0;flex:1}.orchard-field strong,.orchard-field small{display:block}.orchard-field small{color:#697a60;margin-top:5px}.remove-planting{margin-top:10px}.construction-recipes>div{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:18px 0}.construction-panel .primary-button{margin-top:14px;min-height:48px}.building-status.locked{color:#86692c;background:#f5ebcc}.construction-recipes .ingredient{white-space:normal}
-@media(max-width:600px){.orchard-management,.construction-panel{padding:16px}.orchard-field{gap:10px}.orchard-field>.game-art{width:48px;height:48px}.construction-panel .primary-button{width:100%}}
+.crop-card:disabled{opacity:.68;cursor:default}.construction-panel{padding:22px;margin-top:20px;background:#f1f5e8;border:1px solid #d5dfc6;border-radius:22px}.construction-panel>p{line-height:1.6;color:#667956}.construction-recipes>div{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:18px 0}.construction-panel .primary-button{margin-top:14px;min-height:48px}.building-status.locked{color:#86692c;background:#f5ebcc}.construction-recipes .ingredient{white-space:normal}
+@media(max-width:600px){.construction-panel{padding:16px}.construction-panel .primary-button{width:100%}}
 
 .crop-card .regrow-hint{display:block;font-size:.72rem;line-height:1.4;color:#5c6c50;padding:4px 10px 10px;white-space:normal}
 
 .diamond-option{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;background:#e7f2f7;color:#35697d;border:1px solid #bad9e4;white-space:normal!important}.diamond-option .game-art{width:23px;height:23px;min-width:23px}.job-panel>.diamond-option{margin-top:10px;width:100%}.upgrade-payments{display:grid;gap:8px;text-align:center;min-width:0;max-width:100%}.upgrade-payments>span,.upgrade-payments>small{font-size:11px;color:#867b69;line-height:1.5}.upgrade-payments button{width:100%;margin:0}.order-replace{margin-top:14px;padding-top:12px;border-top:1px solid #e0d8c7}.order-replace summary{font-size:13px;cursor:pointer;min-height:32px;color:#527184}.order-replace p,.order-replace small{display:block;font-size:12px;line-height:1.6;margin:8px 0;color:#807760}.batch-select{border:1px solid #c9d8bd;border-radius:12px;margin-top:12px;background:#fffdf5}.batch-select summary{cursor:pointer;padding:14px;font-size:14px}.batch-select>div{max-height:240px;overflow:auto;padding:4px 10px 10px}.batch-select [data-batch-choice]{display:grid;gap:5px;width:100%;min-height:48px;text-align:left;padding:12px;margin:6px 0;border:1px solid #e1ddcc;border-radius:10px;background:#f6f4e8;white-space:normal}.batch-select small{font-size:12px;color:#7a816a}@media(max-width:720px){.upgrade-panel .upgrade-payments{flex-basis:100%;width:100%;margin:8px 0 0;grid-column:1/-1}.upgrade-panel .upgrade-payments button{margin:0;min-width:0}}
 
 .project-kicker{flex-wrap:wrap}.project-rewards{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;max-width:100%}.project-rewards .game-art{width:21px;height:21px;flex:0 0 21px}.estate-step small{overflow-wrap:anywhere}
+
+/* Your fields (economy-ui.js, the Farmhouse): one compact row per planted field, with its progress and a remove button. */
+.field-list{margin-top:20px;padding:18px 18px 8px;background:#f1f5e8;border:1px solid #d5dfc6;border-radius:22px}
+.field-list-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.field-list-head h3{margin:0}.field-list-head span{color:#697a60;font-size:13px;font-weight:700;white-space:nowrap}
+.field-list>p{margin:4px 0 10px;color:#667956;font-size:13.5px;line-height:1.5}
+.field-list ul{margin:0;padding:0;list-style:none}
+.field-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid #dde5d0}
+.field-row>.game-art{width:40px;height:40px;flex:0 0 40px;object-fit:contain}
+.field-row-copy{display:grid;gap:4px;min-width:0;flex:1}
+.field-row-copy strong{display:flex;align-items:center;gap:7px;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field-row-copy em{flex:none;padding:1px 7px;border-radius:999px;background:#e2ecd2;color:#56703f;font-size:11px;font-style:normal;font-weight:800}
+.field-row-copy small{color:#697a60;font-size:12.5px;font-weight:600}
+.field-row-bar{display:block;height:6px;border-radius:999px;background:#dfe6d3;overflow:hidden}.field-row-bar>i{display:block;height:100%;border-radius:inherit;background:#7fa25a}
+.field-row.is-ready .field-row-bar>i{background:#d9a531}.field-row.is-ready small{color:#8a6414;font-weight:800}
+.field-row-remove{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;margin:0;padding:0;border:1px solid #e7cfc4;border-radius:12px;background:#fff8f4;color:#b0452d;cursor:pointer}
+.field-row-remove:hover{background:#fbe9e1;border-color:#d9a896}.field-row-remove svg{width:18px;height:18px}

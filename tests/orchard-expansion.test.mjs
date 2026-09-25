@@ -28,7 +28,7 @@ for(const crop of ['apples','berries'])test(`${crop} holds only one harvest whil
  const t=p.readyAt,result=act(s,{type:'field',id:8,action:'harvest'},t);assert.equal(result.quantity,3);assert.equal(result.xp,CROPS[crop].xp*2);assert.equal(s.inventory[crop],4);assert.equal(s.mastery.harvests[crop],2);assert.equal(s.stats['harvest_'+crop],4);
  assert.equal(p.watered,false);assert.equal(p.tended,false);assert.equal(p.fertilized,false);assert.equal(p.harvestCycles,2);assert.equal(p.readyAt,t+cropDuration(s,crop,true));
 });
-test('normal crops clear; removing perennials validates the current cycle and awards nothing',()=>{
+test('normal crops clear; removing a planting validates the current cycle and awards nothing',()=>{
  const s=advanced();act(s,{type:'field',id:8,action:'plant',crop:'greenbeans'},now);act(s,{type:'field',id:8,action:'harvest'},s.plots[8].readyAt);assert.equal(s.plots[8].crop,null);
  act(s,{type:'field',id:8,action:'plant',crop:'apples'},now+DAY_MS);const before=structuredClone(s);assert.throws(()=>act(s,{type:'clear_planting',id:8,expectedPlantedAt:now},now+DAY_MS),/changed/);assert.deepEqual(s,before);
  act(s,{type:'clear_planting',id:8,expectedPlantedAt:now+DAY_MS},now+DAY_MS);assert.equal(s.plots[8].crop,null);for(const k of ['inventory','coins','diamonds','xp','mastery'])assert.deepEqual(s[k],before[k]);
@@ -57,4 +57,23 @@ test('Starter Pack SQL awards every crop in the game once and all expansion asse
  assert.deepEqual(STARTER_PACK_CROPS.filter(k=>!CROPS[k]),[],'every starter crop exists');
  for(const id of [...crops,'applejuice','applepie','berrypreserves','berrytart','stew',...buildings])assert.ok(existsSync(new URL(`../public/assets/icons/${id}.png`,import.meta.url)),id);
  for(const model of ['plant_006','tree_009','bush_003','house_011','hangar_005','hangar_002'])assert.ok(existsSync(new URL(`../public/assets/models/${model}.glb`,import.meta.url)),model);
+});
+
+// 25 Sep 2026: any crop can be removed from the Farmhouse, ripe or not, and it gives nothing back.
+test('any crop can be removed, ripe or growing, and nothing comes back',()=>{
+ const s=advanced();act(s,{type:'field',id:8,action:'plant',crop:'wheat'},now);const growing=structuredClone(s);
+ act(s,{type:'clear_planting',id:8,expectedPlantedAt:now},now+1000);assert.equal(s.plots[8].crop,null);
+ for(const k of ['inventory','coins','diamonds','xp','mastery','stats'])assert.deepEqual(s[k],growing[k],`${k} unchanged`);
+ act(s,{type:'field',id:8,action:'plant',crop:'wheat'},now+2000);const planted=s.plots[8].plantedAt,ripe=structuredClone(s);
+ act(s,{type:'clear_planting',id:8,expectedPlantedAt:planted},s.plots[8].readyAt+60000);assert.equal(s.plots[8].crop,null,'a ripe crop is thrown away, not harvested');
+ for(const k of ['inventory','coins','xp','stats'])assert.deepEqual(s[k],ripe[k],`${k} unchanged`);
+ assert.throws(()=>act(s,{type:'clear_planting',id:8,expectedPlantedAt:planted},now+3000),/something growing/,'an empty field has nothing to remove');
+});
+test('the Farmhouse lists every planted field in a compact row with a remove button, and the wiki explains it',async()=>{
+ const {readFileSync:read}=await import('node:fs');const ui=read(new URL('../public/economy-ui.js',import.meta.url),'utf8');
+ assert.match(ui,/const planted=state\.plots\.filter\(p=>CROPS\[p\.crop\]\)/,'every crop, not only trees and bushes');
+ assert.match(ui,/<button type="button" class="field-row-remove" data-clear-planting="\$\{p\.id\}" data-planted-at="\$\{p\.plantedAt\}" aria-label="Remove the \$\{c\.name\.toLowerCase\(\)\} from field \$\{p\.id\+1\}"/);
+ assert.match(ui,/You get nothing back: no harvest, no XP and no seed coins\.\$\{ready\?' It is ready now: harvest it instead to keep it\.':''\}/);
+ const {wikiArticle}=await import('../public/wiki-content.js');const wiki=JSON.stringify(wikiArticle('crops'));
+ assert.match(wiki,/under Your fields, you can remove any crop, ripe or not/);assert.match(wiki,/for up to 3 fruit instead of 1/);
 });

@@ -18,7 +18,7 @@ test('the confirmations share one look: a picture, the question, a line, two but
  assert.equal((boosts.match(/balance:state\.diamonds/g)??[]).length,3,'every diamond confirmation shows what you keep');
  const family=read('public/family-ui.js');assert.match(family,/if\(ask&&!await confirmAction\(\{\.\.\.ask,cancelLabel:'Cancel',picture:'family-members'\}\)\)return;/);
  assert.match(family,/family_leave:\{title:'Leave this family\?'[^}]*tone:'danger'\}/);
- const economy=read('public/economy-ui.js');assert.match(economy,/confirmLabel:'Remove planting',cancelLabel:'Keep it',picture:p\.crop,tone:'danger'/);
+ const economy=read('public/economy-ui.js');assert.match(economy,/confirmLabel:'Remove',cancelLabel:'Keep it',picture:p\.crop,tone:'danger'/);
  assert.match(economy,/cancelLabel:'Keep them',picture:'market'/);
  assert.match(read('src/player-profiles.js'),/cancelLabel:'Cancel',picture:'gift'/);
 });
