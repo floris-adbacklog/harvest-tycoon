@@ -140,7 +140,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  const verdict=r=>r.open?'<b class="admin-log-open">Open</b>':`<b class="admin-log-done">${esc(ACTIONS[r.action]??'Handled')}${r.handledBy?` · ${esc(r.handledBy)}`:''}</b>`;
  const where=channel=>channel==='global'?'Global chat':String(channel).startsWith('family:')?'Family chat':'Private message';
  // The farmers' pictures for the lists (kept between refreshes, so a list never flickers back to initials).
- async function loadFaces(ids){try{const found=await bridge.chat?.faces?.(ids.filter(id=>!faces.has(id)));if(found)faces=new Map([...faces,...found]);}catch{}}
+ // Asked again on every refresh, so a farmer who picks a new avatar shows it here too; your own shows at once.
+ async function loadFaces(ids){try{const found=await bridge.chat?.faces?.(ids);if(found)faces=new Map([...faces,...found]);}catch{}}
+ window.addEventListener('harvest-avatar-changed',event=>{const {playerId,avatarId}=event.detail??{};if(playerId&&avatarId)faces.set(playerId,avatarId);});
  async function loadChat(){
   const client=bridge.chat;if(!client||!role)return;
   const chatStatus=dialog.querySelector('#admin-chat-status');

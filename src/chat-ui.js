@@ -61,6 +61,18 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
 
  let overview=null,tab='global',thread=null,messages=[],notices=[],freshNotices=0,loading=0,busy=false,sending=false,connected=false,disposed=false;
  let overviewTimer=null,pollTimer=null;const readTimers=new Map(),statusCache=new Map();
+ // A message keeps the avatar its sender had when it was sent (chat_messages.sender_avatar); the chat shows the sender's avatar of now
+ // instead: looked up for every farmer on screen when a chat opens (at most once a minute, then only farmers not seen yet), and changed
+ // at once when you save a new one in Settings.
+ const faces=new Map();let facesAt=0;
+ const faceOf=m=>faces.get(m.sender)??m.sender_avatar;
+ async function freshFaces(ids,all=false){
+  const wanted=[...new Set(ids)].filter(id=>id&&(all||!faces.has(id)));if(!wanted.length)return;if(all)facesAt=Date.now();
+  let found;try{found=await chat.faces(wanted);}catch{return;}
+  let changed=false;for(const [id,avatar] of found){if(avatar&&faces.get(id)!==avatar){faces.set(id,avatar);changed=true;}}
+  if(changed&&dialog.open&&!disposed)paint();
+ }
+ win.addEventListener?.('harvest-avatar-changed',event=>{const {playerId,avatarId}=event.detail??{};if(!playerId||!avatarId)return;faces.set(playerId,avatarId);if(dialog.open&&!disposed)paint();});
  const unread=()=>overview?.unread??{notices:0,global:0,family:0,dm:0};
  const role=()=>overview?.role??null;
  const blocked=()=>new Set(overview?.blocked??[]);
@@ -105,7 +117,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const profileButton=(id,label,inner,cls)=>`<button type="button" class="${cls}" data-profile="${esc(id)}" aria-label="${esc(label)}">${inner}</button>`;
  function messageRow(m){
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
-  return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(m.sender_avatar),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?`<span class="chat-mod" title="Moderator">${art('admin')}</span>`:''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:''}</div><p class="chat-text">${esc(m.body)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}</p></div></li>`;
+  return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?`<span class="chat-mod" title="Moderator">${art('admin')}</span>`:''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:''}</div><p class="chat-text">${esc(m.body)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}</p></div></li>`;
  }
  function threadRow(t){
   return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${esc(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}${esc(t.last?.body??'')}</small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
@@ -174,7 +186,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const name=channelOf();if(!name){messages=[];paint();return;}
   busy=true;paint();
   try{const rows=await chat.messages(name);if(ticket!==loading)return;messages=rows;}catch(error){if(ticket===loading){messages=[];note(error.message);}}
-  if(ticket!==loading)return;busy=false;paint();markRead(name);
+  if(ticket!==loading)return;busy=false;paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);
  }
  function show(next,{keepThread=false}={}){
   tab=next;if(!keepThread)thread=null;messages=[];found=null;findInput.value='';load();
@@ -209,7 +221,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    return;
   }
   const m=event.message;if(!m||blocked().has(m.sender))return;
-  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,100);paint();}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:'))scheduleOverview();return;}
+  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,100);paint();void freshFaces([m.sender]);}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:'))scheduleOverview();return;}
   if(m.sender===me)return;
   if(m.channel==='global')overview.unread.global=Math.min(99,(overview.unread.global??0)+1);
   else if(m.channel===overview.family?.channel)overview.unread.family=Math.min(99,(overview.unread.family??0)+1);
