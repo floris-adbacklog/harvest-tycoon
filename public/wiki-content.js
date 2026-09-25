@@ -204,7 +204,7 @@ const BODIES={
  account(h){
   return section('Your account',facts([
    ['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app.'],
-   ['bell','Reminders','Push or email reminders stay off until you switch them on in Settings.']
+   ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages and the daily gift are then on, the rest you choose. Email reminders stay off until you switch them on.']
   ]))
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
   +section('Confirm your email',`<p>Signed up with your email address? Confirm it once for ${EMAIL_BONUS} diamonds: tap “Confirm your email” in the menu and type the code we send you. Google and Facebook accounts get the diamonds straight away.</p>`)

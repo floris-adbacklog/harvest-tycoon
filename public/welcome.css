@@ -43,7 +43,10 @@ input[aria-invalid=true]{border-color:#c4634b;background:#fff8f5}
 #welcome{padding-top:env(safe-area-inset-top)}
 @media(max-width:720px){#welcome{padding-top:calc(12px + env(safe-area-inset-top));padding-bottom:calc(12px + env(safe-area-inset-bottom))}}
 /* Installed app: when the page's layout height is short of the screen (see app-mode.js), the strip below it shows the colour of the game's bottom bar. */
-html[data-app-mode=standalone]:has(body[data-phase=authenticated]){background:#fffdf5}
+/* The installed app on iOS: fixed layers (the game frame) stop one status-bar height above the bottom of the screen, and the page
+   shows below them. With the farm open that strip is the game's own cream, so it reads as the bottom bar running to the edge. Both
+   html and body: the body is what fills the strip. */
+html[data-app-mode=standalone]:has(body[data-phase=authenticated]),html[data-app-mode=standalone] body[data-phase=authenticated]{background:#fffdf5}
 /* "New game" banner above the headline of the sign-in page: small, calm and dated. */
 .launch-banner{display:inline-flex;align-items:center;gap:11px;margin:0 0 18px;padding:4px 15px 4px 4px;border:1px solid #ffffff40;border-radius:99px;background:#fffdf121;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 6px 20px #1f1c0d33;color:#fbf5df;font-size:13px;font-weight:600;line-height:1}
 .launch-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 11px 7px 9px;border-radius:99px;background:linear-gradient(135deg,#fbe39a,#e6b445);color:#3d3822;font-size:10px;font-weight:800;letter-spacing:.11em}
