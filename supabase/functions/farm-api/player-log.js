@@ -16,7 +16,7 @@ const batches=count=>`${number(count)} ${count===1?'batch':'batches'}`;
 // What a farm has before and after an action; the difference is what the log line says it gave or cost.
 export function snapshot(state){return {coins:state.coins,diamonds:state.diamonds,xp:state.xp,level:levelOf(state),inventory:{...state.inventory}};}
 export function changes(before,after){
- const parts=[],signed=(value,label)=>{if(value)parts.push(`${value>0?'+':'−'}${number(Math.abs(value))} ${label}`);};
+ const parts=[],single={coins:'coin',diamonds:'diamond'},signed=(value,label)=>{if(value)parts.push(`${value>0?'+':'−'}${number(Math.abs(value))} ${Math.abs(value)===1?single[label]??label:label}`);};
  signed(after.coins-before.coins,'coins');signed(after.diamonds-before.diamonds,'diamonds');
  const xp=after.xp-before.xp;if(xp>0)parts.push(`+${number(xp)} XP`);
  const items=Object.keys({...before.inventory,...after.inventory}).map(key=>[key,(after.inventory[key]??0)-(before.inventory[key]??0)]).filter(([,count])=>count).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
@@ -91,6 +91,10 @@ export function loadLog({away,gift,inviteReward,emailBonus}){
 }
 function awayText(ms){const h=Math.floor(ms/3600000),d=Math.floor(h/24);return d?`${d} ${d===1?'day':'days'}`:h?`${h} ${h===1?'hour':'hours'}`:`${Math.round(ms/60000)} minutes`;}
 export const accountLog=(action,text)=>[line('account',action,text)];
+// A farm event's reward, when the farmer collects it (event-service.js): the event's name and what it paid.
+export function eventRewardLog(title,reward){
+ return [line('rewards','event_reward',`Collected the reward of the farm event ${title?`“${title}”`:''}`.trim(),changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:reward?.coins??0,diamonds:reward?.diamonds??0,xp:0,inventory:{}}))];
+}
 export function adminGrantLog(granted){
  return [line('staff','admin_grant','Received a gift from the admin',changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:granted.coins??0,diamonds:granted.diamonds??0,xp:granted.xp??0,inventory:granted.item?{[granted.item]:granted.itemCount}:{}}))];
 }

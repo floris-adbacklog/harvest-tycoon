@@ -1,5 +1,7 @@
+import {writeLog,eventRewardLog} from './player-log.js';
 import {isSuperadmin} from './admin-service.js';
-// Goals open to every farm from level 10, when events open: the farm-wide counters, the crops unlocked by level 9 and eggs.
+// The goals an event may use: the 24 Sep list (farm-wide counters, crops unlocked by level 9, eggs) and the 30 kinds of the mixed
+// events (supabase/live-events-mixed.sql), all open to every farm at level 15, when events open.
 export const EVENT_STATS=['harvested','produced','watered','tended','chores','deliveries','harvest_wheat','harvest_corn','harvest_lettuce','harvest_barley','harvest_greenbeans','harvest_cabbage','made_eggs',
  'planted','sold','earned','coins_spent','diamonds_spent','activities','upgrades','made_feed','made_milk','made_cheese','made_flour','fertilized','harvest_cauliflower','made_grainmeal','made_bread','parallel_batches','boosts_used','activity_rounds'];
 export function validateEvent(config,now=Date.now()){
@@ -148,7 +150,10 @@ export async function handleEvents({admin,body,user}){
   if(!managing&&body.command==='email_send')return respond(await sendEmailCode({admin,user}));
   if(!managing&&body.command==='email_confirm')return respond(await confirmEmailCode({admin,user,code:body.code}));
   if(!managing&&body.command==='claim'){
-   const r=await admin.rpc('harvest_event_claim',{p_player:user.id,p_event:body.eventId});if(r.error)throw r.error;return respond({reward:r.data});
+   const r=await admin.rpc('harvest_event_claim',{p_player:user.id,p_event:body.eventId});if(r.error)throw r.error;
+   // In the farmer's log (player-log.js), after the reply: the event's name and what it paid.
+   if(r.data?.coins||r.data?.diamonds)globalThis.EdgeRuntime?.waitUntil?.(logEventReward(admin,user.id,body.eventId,r.data));
+   return respond({reward:r.data});
   }
   if(body.command&&body.command!=='list')throw Error('Unknown event command.');
   const now=Date.now();
@@ -170,4 +175,10 @@ export async function handleEvents({admin,body,user}){
   }
   return respond(managing?{events,serverNow:now}:{events,serverNow:now,eligibility:await eligibility(admin,user)});
  }catch(error){if(error.code&&!['P0001','23514','23505','22P02'].includes(error.code))throw error;return respond({error:error.message},422);}
+}
+
+async function logEventReward(admin,playerId,eventId,reward){
+ let title=null;
+ try{const found=await admin.from('live_events').select('title').eq('id',eventId).maybeSingle();title=found.data?.title??null;}catch{}
+ await writeLog(admin,playerId,eventRewardLog(title,reward));
 }

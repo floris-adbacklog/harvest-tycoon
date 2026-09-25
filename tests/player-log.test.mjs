@@ -120,3 +120,11 @@ test('the Farm log has its own icon, a small WebP like the others',()=>{
  assert.equal(readFileSync(new URL('../public/assets/icons/log.png',import.meta.url)).subarray(1,4).toString(),'PNG');
  assert.match(read('src/player-profiles.js'),/logBox\.querySelector\('\.farmer-log-icon'\)\.innerHTML=art\('log'\);/);
 });
+
+test('a collected farm event reward is in the log with the event\'s name, one coin and one diamond read naturally',async()=>{
+ const {eventRewardLog}=await import('../supabase/functions/farm-api/player-log.js');
+ assert.deepEqual(eventRewardLog('Harvest rush',{coins:200,diamonds:1}).map(r=>[r.category,r.action,r.text]),[['rewards','event_reward','Collected the reward of the farm event “Harvest rush” · +200 coins · +1 diamond']]);
+ assert.equal(eventRewardLog(null,{coins:1,diamonds:0})[0].text,'Collected the reward of the farm event · +1 coin');
+ const events=read('supabase/functions/farm-api/event-service.js');
+ assert.match(events,/if\(r\.data\?\.coins\|\|r\.data\?\.diamonds\)globalThis\.EdgeRuntime\?\.waitUntil\?\.\(logEventReward\(admin,user\.id,body\.eventId,r\.data\)\);\n   return respond\(\{reward:r\.data\}\);/,'only a reward that paid, after the reply');
+});
