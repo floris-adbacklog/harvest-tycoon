@@ -10,3 +10,4 @@ public/cloud/
 node_modules/
 .wrangler/
 .vercel/
+supabase/.temp/
