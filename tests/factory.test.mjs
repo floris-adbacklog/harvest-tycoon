@@ -59,8 +59,8 @@ test('a recipe with a coin price takes its coins at the start, needs the balance
  act(s,{type:'produce',recipe:'glasscauliflower',count:2});assert.equal(s.coins,80);assert.equal(productionJobs(s.buildings.glasshouse).length,2);assert.equal(s.inventory.fertilizer,8);
 });
 test('a bulk batch takes twice the normal time, uses 10-20 batches of ingredients, gives 10-20 batches of goods and collects once',()=>{
- const s=farm();s.buildings.factory.level=1;s.inventory.feed=15;
- assert.throws(()=>act(s,{type:'produce',recipe:'mass_eggs'}),/Missing ingredients/,'20 feed are needed');s.inventory.feed=45;
+ const s=farm();s.buildings.factory.level=1;s.buildings.coop.level=10;s.inventory.feed=15;
+ assert.throws(()=>act(s,{type:'produce',recipe:'mass_eggs'}),/Missing ingredients/,'20 feed are needed with a level-10 Coop');s.inventory.feed=45;
  const started=act(s,{type:'produce',recipe:'mass_eggs'});assert.equal(s.inventory.feed,25);
  assert.equal(started.readyAt-now,10*60000,'twice the five minutes of one batch');assert.equal(recipeDuration(s,'mass_eggs',now),10*60000);
  assert.throws(()=>act(s,{type:'collect',building:'factory'},now+9*60000),/still/);
@@ -195,7 +195,7 @@ test('a server that does not know the Factory yet cannot break the game, and the
 });
 
 test('the quest lines that count batches are left alone: a bulk batch counts as one batch, however big',()=>{
- const s=farm();s.buildings.factory.level=3;s.inventory.feed=200;assert.equal(productionSlots(3,'factory'),2);
+ const s=farm();s.buildings.factory.level=3;s.buildings.coop.level=10;s.inventory.feed=200;assert.equal(productionSlots(3,'factory'),2);
  const first=act(s,{type:'produce',recipe:'mass_eggs'}),second=act(s,{type:'produce',recipe:'mass_eggs'});
  assert.equal(s.stats.parallel_batches,1,'the second one started while the first was running: one, not twenty');
  act(s,{type:'collect',building:'factory',jobId:first.jobId},first.readyAt);act(s,{type:'collect',building:'factory',jobId:second.jobId},second.readyAt);

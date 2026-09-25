@@ -18,7 +18,10 @@ test('levels 1 to 10 are exactly what they were',()=>{
  const before={1:0,2:.2,3:.4,4:.44,5:.48,6:.52,7:.56,8:.6,9:.64,10:.68};
  for(const [level,speed] of Object.entries(before))assert.ok(Math.abs(productionSpeed(Number(level))-speed)<1e-9,`speed at ${level}`);
  const s=farm(5);s.buildings.mill.level=2;assert.equal(upgradeCost(s,'mill'),Math.ceil(BUILDINGS.mill.upgradeCost*3));
- s.buildings.mill.level=9;assert.equal(upgradeCost(s,'mill'),Math.ceil(Math.round(BUILDINGS.mill.upgradeCost*12*2.7**6)));
+ s.buildings.mill.level=8;assert.equal(upgradeCost(s,'mill'),Math.ceil(Math.round(BUILDINGS.mill.upgradeCost*12*2.7**5)));
+ s.buildings.mill.level=9;assert.equal(upgradeCost(s,'mill'),400000,'the curve would ask 418,414; no step below 10 costs more than 10 -> 11');
+ s.buildings.craftshop.level=9;assert.equal(upgradeCost(s,'craftshop'),400000,'not 7.0 million');s.buildings.craftshop.level=10;assert.equal(upgradeCost(s,'craftshop'),400000);
+ s.buildings.factory.level=9;assert.equal(upgradeCost(s,'factory'),800000,'the Factory: doubled, like its step from 10 to 11');
  assert.equal(upgradeRequirements(s,'mill'),null,'nothing but coins below level 10');
  assert.equal(diamondUpgradeCost(s,'mill'),525);s.buildings.mill.level=10;assert.equal(diamondUpgradeCost(s,'mill'),570,'and the curve goes on above level 10');
 });

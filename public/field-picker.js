@@ -1,4 +1,4 @@
-import {CROPS,BUILDINGS,RECIPES,formatDuration} from './farm-state.js';
+import {CROPS,BUILDINGS,RECIPES,formatDuration,jobName} from './farm-state.js';
 import {art} from './visual-icons.js';
 
 // Native disclosure and form controls retain keyboard and screen-reader support.
@@ -17,10 +17,10 @@ export function fieldPicker({id,plots,selected=[],multiple=false,now,disabled=fa
 export function batchPicker({id,batches,selectedKey='',selectedKeys=[],multiple=false,now,disabled=false,available=0,perItem=''}){
  const chosen=new Set(multiple?selectedKeys:[selectedKey]),current=multiple?null:batches.find(b=>b.key===selectedKey),picture=batch=>Object.keys(RECIPES[batch.job.recipe].output)[0];
  const empty=!batches.length,off=disabled||empty,count=batches.filter(b=>chosen.has(b.key)).length;
- const title=empty?'No batches running':multiple?`${count} ${count===1?'batch':'batches'} selected`:current?`${BUILDINGS[current.building].name} · ${RECIPES[current.job.recipe].name}`:'Choose a running batch';
+ const title=empty?'No batches running':multiple?`${count} ${count===1?'batch':'batches'} selected`:current?`${BUILDINGS[current.building].name} · ${jobName(current.job)}`:'Choose a running batch';
  const hint=current?`${formatDuration(current.job.readyAt-now)} remaining`:empty?'Start a batch in one of your buildings':multiple?'Select batches to finish instantly':'Select one batch to finish instantly';
- const copy=b=>`<span class="field-choice-art">${art(picture(b))}</span><span class="field-choice-copy"><strong>${BUILDINGS[b.building].name} <span>· ${RECIPES[b.job.recipe].name}</span></strong><small>${formatDuration(b.job.readyAt-now)} remaining</small></span><span class="field-choice-check" aria-hidden="true"></span>`;
- const options=batches.map((b,i)=>multiple?`<label class="field-choice"><input type="checkbox" data-field-choice="${i}" ${chosen.has(b.key)?'checked':''} aria-label="${BUILDINGS[b.building].name}, ${RECIPES[b.job.recipe].name}">${copy(b)}</label>`:`<button type="button" class="field-choice" data-field-choice="${i}" aria-pressed="${b.key===selectedKey}">${copy(b)}</button>`).join('');
+ const copy=b=>`<span class="field-choice-art">${art(picture(b))}</span><span class="field-choice-copy"><strong>${BUILDINGS[b.building].name} <span>· ${jobName(b.job)}</span></strong><small>${formatDuration(b.job.readyAt-now)} remaining</small></span><span class="field-choice-check" aria-hidden="true"></span>`;
+ const options=batches.map((b,i)=>multiple?`<label class="field-choice"><input type="checkbox" data-field-choice="${i}" ${chosen.has(b.key)?'checked':''} aria-label="${BUILDINGS[b.building].name}, ${jobName(b.job)}">${copy(b)}</label>`:`<button type="button" class="field-choice" data-field-choice="${i}" aria-pressed="${b.key===selectedKey}">${copy(b)}</button>`).join('');
  return `<details class="field-picker" id="${id}" ${off?'data-disabled="true"':''}><summary ${off?'aria-disabled="true" tabindex="-1"':''}><span class="field-picker-art">${art(current?picture(current):'buildings')}</span><span class="field-picker-copy"><strong data-picker-title>${title}</strong><small>${hint}</small></span><span class="picker-chevron" aria-hidden="true"></span></summary><div class="field-picker-body">${multiple?`<div class="field-picker-toolbar"><span>${batches.length} running</span><button type="button" data-picker-all ${!available?'disabled':''}>Select ${Math.min(available,batches.length)}</button><button type="button" data-picker-clear>Clear</button></div>`:''}<div class="field-picker-options" aria-label="${multiple?'Running batches':'Choose one running batch'}">${options}</div>${multiple?`<div class="field-picker-bottom"><span>${perItem}</span><button type="button" data-picker-done>Done</button></div>`:''}</div></details>`;
 }
 

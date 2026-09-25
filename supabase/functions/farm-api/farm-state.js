@@ -99,7 +99,8 @@ export function marketHighlights(now=Date.now(),state){
  return {today:sorted(now)[0],tomorrow:sorted(now+DAY_MS)[0]};
 }
 // The Factory: an endgame building (farm level 50, 100,000 coins, levels 1-20 like every production building) that makes every
-// production good in bulk, in twice the time of one normal batch. Crops are still grown by hand.
+// production good in bulk, in twice the time of one normal batch, as many batches at once as the building that normally makes
+// the good allows (factoryBatchCount). Crops are still grown by hand.
 export const FACTORY_LEVEL=50;
 export const FACTORY_COST=100000;
 export const FACTORY_TIME_FACTOR=2;
@@ -191,8 +192,8 @@ cherrypie:{"building": "bakery", "name": "Bake a cherry pie", "input": {"cherrie
 prizeproduce:{"building": "glasshouse", "name": "Grow prize produce", "input": {"squash": 3, "cauliflower": 6, "redcabbage": 3, "fertilizer": 3}, "output": {"prizeproduce": 1}, "duration": 43200000, "xp": 260, "minLevel": 80}
 
 });
-// One Factory recipe per production recipe: quick goods (a batch of an hour or less) ×20, slow ones ×10, in twice the time of the
-// normal batch, so a slot of the Factory does the work of 10-20 slots. Ingredients, goods and XP scale the same way (the XP per
+// One Factory recipe per production recipe: quick goods (a batch of an hour or less) at most ×20, slow ones at most ×10, in twice the
+// time of the normal batch. RECIPES holds that largest size; recipeFor() gives the size for one farm (factoryBatchCount). Ingredients, goods and XP scale the same way (the XP per
 // ingredient stays what it was). Only production goods: the Glasshouse (the one building that grows crops) is left out. Honey
 // comes from the Bee Yard (and its bulk version here): the Factory no longer bottles honey for coins.
 export const factoryBatches=recipe=>recipe.duration<=3600000?20:10;
@@ -201,6 +202,29 @@ const MASS_RECIPES=Object.fromEntries([
  ...Object.entries(BASE_RECIPES).filter(([,r])=>r.building!=='glasshouse').map(([id,r])=>{const n=factoryBatches(r);return [`mass_${id}`,Object.freeze({building:'factory',name:`${r.name} ×${n}`,input:scaled(r.input,n),output:scaled(r.output,n),duration:r.duration*FACTORY_TIME_FACTOR,xp:r.xp*n,base:id,batches:n,minLevel:FACTORY_LEVEL})];}),
 ]);
 export const RECIPES=Object.freeze({...BASE_RECIPES,...MASS_RECIPES});
+// How big a Factory batch is on this farm (26 Sep 2026): twice the level of the building that normally makes the good, up to ×20;
+// goods that take over an hour its level, up to ×10. A level-5 Dairy makes cheese ×10 in the Factory, a level-10 one ×20. Before,
+// every Factory batch was ×20 (×10): balanced for level-20 buildings, it did the work of four to fifteen of the level 3-7 buildings
+// farmers really have at level 50-65, and upgrading those buildings had no point left. Now an upgrade grows the Factory batch too.
+export const FACTORY_BATCHES_PER_LEVEL=Object.freeze({quick:2,slow:1});
+export function factoryBatchCount(state,id){
+ const r=RECIPES[id];if(r?.building!=='factory')return 1;
+ const quick=r.batches===20,level=Math.max(1,state?.buildings?.[RECIPES[r.base].building]?.level??1);
+ return Math.min(r.batches,level*(quick?FACTORY_BATCHES_PER_LEVEL.quick:FACTORY_BATCHES_PER_LEVEL.slow));
+}
+// The recipe as this farm makes it: the same for every building, the Factory's sized by factoryBatchCount.
+export function recipeFor(state,id){
+ const r=RECIPES[id];if(r?.building!=='factory')return r;
+ const n=factoryBatchCount(state,id);if(n===r.batches)return r;
+ const base=RECIPES[r.base];
+ return Object.freeze({...r,name:`${base.name} ×${n}`,input:scaled(base.input,n),output:scaled(base.output,n),xp:base.xp*n,batches:n});
+}
+// The name of a running or finished batch, with its real size (a Factory batch keeps the size it was started with).
+export function jobName(job){
+ const r=RECIPES[job?.recipe];if(!r)return 'Finished batch';if(r.building!=='factory'||!job.output||!r.base)return r.name;
+ const base=RECIPES[r.base],item=Object.keys(base.output)[0],n=Math.round((job.output[item]??0)/base.output[item]);
+ return n>0?`${base.name} ×${n}`:r.name;
+}
 // This introductory track is deliberately independent of the regular QUESTS IDs/stats.
 export const BEGINNER_REWARD=50;
 // Every finished guide step also pays XP: following the guide takes a new farmer to level 3 in about ten minutes.
@@ -568,13 +592,13 @@ function migrateXpCurve(state){
 export const BASE_BUILDING_LEVEL=10;
 export const MAX_BUILDING_LEVEL=20;
 // The Factory is one shared workshop for every good: a slot every two levels, up to five (reached at level 9), and half the
-// speed bonus. Its batches are 10-20 times bigger, so a full Factory still adds less than one full specialised building, and
-// at the top a specialised building always makes the same good faster, so levels 11-20 of those buildings stay worth having.
+// speed bonus. Its batches are as big as the source building allows (factoryBatchCount, at most ×20), so a full Factory adds
+// about one to two buildings of the farm's own level, and at the top a specialised building always makes the same good faster.
 export const FACTORY_MAX_SLOTS=5;
 export function productionSlots(level,building){const n=Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));return building==='factory'?Math.min(FACTORY_MAX_SLOTS,Math.ceil(n/2)):n;}
 // Keep the primary job for older clients; extra jobs run in parallel, not a queue.
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
-export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input)+(r.coins??0),output=value(r.output);return {input,output,added:output-input};}
+export function recipeValue(id,now,state){const r=state?recipeFor(state,id):RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input)+(r.coins??0),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level,building){const speed=level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));return building==='factory'?speed/2:speed;}
 // The beginner boost: when a farm is created, new crops and new batches take 80% less time (corn 15 min -> 3 min). It gets smaller
 // quickly at first and then slowly (the square of the time left), and is gone after the first day (ROOKIE_BOOST_MS): about 45% after
@@ -785,7 +809,10 @@ export function upgradeCost(state,building){
  const voucher=state.boosts?.upgradeCredits>0?.5:1;
  const factoryPrice=building==='factory'?FACTORY_UPGRADE_MULTIPLIER:1;
  if(level>=BASE_BUILDING_LEVEL){const step=level<MAX_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]:null;return step?Math.ceil(step.coins*voucher*factoryPrice):null;}
- return Math.ceil(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)))*voucher*factoryPrice);
+ // Below level 10 the price grows 2.7× a level, but never past the step from 10 to 11 (26 Sep 2026): a Craft Workshop's 9 -> 10
+ // cost 7.0 million, then 10 -> 11 cost 400,000. Now level 10, where a building's Factory batch is full size, is within reach.
+ const price=Math.min(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3))),ESTATE_UPGRADES[0].coins);
+ return Math.ceil(price*voucher*factoryPrice);
 }
 // What a new farm starts with, so the first minutes are not spent waiting: coins for seeds and a second egg slot, corn to sell or to
 // mix into feed at the Mill, wheat, ten animal feed for the chickens (ten batches of eggs), and barley for the Mill's feed recipe once
@@ -905,7 +932,7 @@ export function recipeUnlockHint(state,id){
 }
 export function recipeAvailability(state,id){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
- const r=RECIPES[id];
+ const r=recipeFor(state,id);
  const missing=Object.entries(r.input).filter(([k,n])=>state.inventory[k]<n).map(([k,n])=>({item:k,name:ITEMS[k].name,need:n,have:state.inventory[k]}));
  const b=state.buildings[r.building],used=productionJobs(b).length,slots=productionSlots(b.level,r.building),busy=used>=slots;
  const locked=!recipeUnlocked(state,id);
@@ -925,7 +952,7 @@ export function startProduction(state,id,now=Date.now(),count=1){
 }
 function startSingleProduction(state,id,now=Date.now()){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
- const r=RECIPES[id],b=state.buildings[r.building],a=recipeAvailability(state,id);
+ const r=recipeFor(state,id),b=state.buildings[r.building],a=recipeAvailability(state,id);
  if(a.busy)throw new Error('All production slots are occupied. Collect a finished batch first.');
  if(a.missing.length)throw new Error('Missing ingredients: '+a.missing.map(m=>`${m.name} (${m.have}/${m.need})`).join(', ')+'.');
  if(a.poor)throw new Error(`You need ${r.coins} coins for this batch.`);

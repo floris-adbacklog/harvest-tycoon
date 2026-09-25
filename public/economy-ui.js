@@ -1,5 +1,5 @@
 import {foldLocked} from './progression-ui.js';
-import {sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,diamondUpgradeCost,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
+import {sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,diamondUpgradeCost,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt,pictureFile} from './visual-icons.js';
@@ -21,7 +21,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function itemArt(key){return art(key,'product-art');}
  function show(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();}
  // What a batch costs: the ingredients, and for a recipe with a coin price the coins (the Glasshouse).
- function costList(id,n=1){const r=RECIPES[id];return itemList(Object.fromEntries(Object.entries(r.input).map(([k,v])=>[k,v*n])),true)+(r.coins?`<span class="ingredient ${state.coins<r.coins*n?'missing':''}">${art('coins')}<span>${number(r.coins*n)} coins</span></span>`:'');}
+ function costList(id,n=1){const r=recipeFor(state,id);return itemList(Object.fromEntries(Object.entries(r.input).map(([k,v])=>[k,v*n])),true)+(r.coins?`<span class="ingredient ${state.coins<r.coins*n?'missing':''}">${art('coins')}<span>${number(r.coins*n)} coins</span></span>`:'');}
  function itemList(items,requirements=false){return Object.entries(items).map(([key,n])=>`<span class="ingredient ${requirements&&state.inventory[key]<n?'missing':''}">${itemArt(key)}<span>${requirements?`${state.inventory[key]}/${n}`:`${n}×`} ${ITEMS[key].name}</span></span>`).join('');}
  function status(key,now=farmNow()){
   const b=state.buildings[key];if(key==='farmhouse')return {text:`${state.plots.length} / ${MAX_PLOTS} fields`,kind:'farm'};
@@ -122,7 +122,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    content+=`<section class="construction-panel"><h3>Something to grow towards</h3><p>${buildingUnlockHint(state,key)}</p><p>This building opens automatically when you reach its milestone.</p></section>`;
   }else if(!buildingUnlocked(state,key)){
    const eligible=buildingEligible(state,key),needs=constructionNeeds(state,key),preview={...state,buildings:{...state.buildings,[key]:{...bs,built:true}}};
-   const previewEntries=Object.entries(RECIPES).filter(([id,r])=>r.building===key&&recipeUnlocked(preview,id));
+   const previewEntries=Object.entries(RECIPES).filter(([id,r])=>r.building===key&&recipeUnlocked(preview,id)).map(([id])=>[id,recipeFor(state,id)]);
    // Bottled honey has no input at all — it is bought with coins — so without this it showed as a bare arrow
    // into a honey icon here, with no hint of the 5,000 coin cost that costList() already shows once built.
    const previewCard=(rid,r)=>`<div>${itemList(r.input)}${r.coins?`<span class="ingredient">${art('coins')}<span>${number(r.coins)} coins</span></span>`:''}<b>→</b>${itemList(r.output)}</div>`;
@@ -140,21 +140,21 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    // What Collect all brings in, e.g. "6 Eggs · 2 Milk".
    const readyGoods=list=>Object.entries(list.reduce((sum,j)=>{for(const [k,n] of Object.entries(j.output??RECIPES[j.recipe].output))sum[k]=(sum[k]??0)+n;return sum;},{})).map(([k,n])=>`${number(n)} ${ITEMS[k]?.name??k}`).join(' · ');
    lastJobReady=jobs.map(j=>`${j.id}:${farmNow()>=j.readyAt}`).join('|');
-   content+=`<div class="production-capacity"><strong>${jobs.length} / ${slots} production slots used</strong><p>${key==='factory'?'The Factory gets a slot every two levels, up to five.':'Each building level adds one slot.'}</p></div>${ready.length>1?`<section class="collect-all-panel"><div class="collect-all-art">${art('collect-all')}</div><div class="collect-all-copy"><strong>${ready.length} batches ready</strong><span>${readyGoods(ready)}</span></div><button type="button" id="collect-all-batches" class="primary-button" ${mutating?'disabled':''}>Collect all <span>${ready.length}</span></button></section>`:''}<div class="production-batches">`;
+   content+=`<div class="production-capacity"><strong>${jobs.length} / ${slots} production slots used</strong><p>${key==='factory'?'The Factory gets a slot every two levels, up to five. A batch is twice the level of the building that normally makes it, up to ×20 (a level-5 Dairy: cheese ×10). Goods that take over an hour: its level, up to ×10.':'Each building level adds one slot.'}</p></div>${ready.length>1?`<section class="collect-all-panel"><div class="collect-all-art">${art('collect-all')}</div><div class="collect-all-copy"><strong>${ready.length} batches ready</strong><span>${readyGoods(ready)}</span></div><button type="button" id="collect-all-batches" class="primary-button" ${mutating?'disabled':''}>Collect all <span>${ready.length}</span></button></section>`:''}<div class="production-batches">`;
    for(const [index,job] of jobs.entries()){
     // A batch keeps its goods even when its recipe was later retired (the Factory's honey bottling).
     const recipe=RECIPES[job.recipe]??{name:'Finished batch',output:job.output??{}},isReady=farmNow()>=job.readyAt;
     // One row per running batch: what it makes, a bar and the time left; the Collect button only once it is ready.
     const made=job.output??recipe.output,first=Object.keys(made)[0];
-    content+=`<div class="job-panel ${isReady?'ready':''}" data-production-job="${job.id}"><span class="job-art">${art(first)}</span><div class="job-copy"><strong>${recipe.name}</strong><span><b>${number(made[first])}×</b> · <span data-job-time="${job.id}">${isReady?'Ready':`${seconds(job.readyAt-farmNow())} left`}</span></span><progress data-job-progress="${job.id}" max="100" value="${Math.max(0,Math.min(100,(farmNow()-job.startedAt)/Math.max(1,job.readyAt-job.startedAt)*100))}" aria-label="Batch ${index+1} production progress"></progress></div>${isReady?`<button data-collect-job="${job.id}" class="primary-button job-collect">Collect</button>`:''}</div>`;
+    content+=`<div class="job-panel ${isReady?'ready':''}" data-production-job="${job.id}"><span class="job-art">${art(first)}</span><div class="job-copy"><strong>${jobName(job)}</strong><span><b>${number(made[first])}×</b> · <span data-job-time="${job.id}">${isReady?'Ready':`${seconds(job.readyAt-farmNow())} left`}</span></span><progress data-job-progress="${job.id}" max="100" value="${Math.max(0,Math.min(100,(farmNow()-job.startedAt)/Math.max(1,job.readyAt-job.startedAt)*100))}" aria-label="Batch ${index+1} production progress"></progress></div>${isReady?`<button data-collect-job="${job.id}" class="primary-button job-collect">Collect</button>`:''}</div>`;
    }
    content+='</div>';
    content+=`<div class="recipe-section-heading"><h3>What shall we make?</h3><span>Ingredients are used when you start.</span></div>`;
    const recipeCard=(rid,r)=>{
-    const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid,farmNow()),value=recipeValue(rid,farmNow()),count=Math.max(1,Math.min(batchCounts[rid]??1,a.maxCount||1));batchCounts[rid]=count;
+    const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid,farmNow()),value=recipeValue(rid,farmNow(),state),count=Math.max(1,Math.min(batchCounts[rid]??1,a.maxCount||1));batchCounts[rid]=count;
     return `<article class="recipe-card ${a.canStart?'is-ready':''}" data-recipe-card="${rid}"><div class="recipe-head"><span class="recipe-art">${art(Object.keys(r.output)[0])}</span><div class="recipe-title"><h4>${r.name}</h4><div class="recipe-meta"><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span><p class="recipe-value">${r.coins?`Costs ${number(r.coins)} coins`:`${art('coins')}<strong>${signed(value.added)}</strong> profit`}</p><span class="recipe-xp">${art('xp')}+${r.xp} XP</span></div></div></div><div class="recipe-flow-wrap"><div class="recipe-flow"><div class="ingredients">${costList(rid)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div></div><div class="recipe-footer"><span>${a.locked?`${art('lock','unlock-lock')} Locked · ${recipeUnlockHint(state,rid)}`:a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':a.poor?`You need ${number(a.price)} coins for a batch.`:`+${r.xp} XP`}</span>${a.slots>1?`<div class="batch-picker"><span id="batch-label-${rid}">Batches</span><div class="batch-stepper" role="group" aria-labelledby="batch-label-${rid}"><button type="button" data-batch-step="-1" data-for-recipe="${rid}" aria-label="Fewer batches of ${r.name}" ${count<=1||!a.maxCount?'disabled':''}>−</button><output data-batch-count="${rid}" data-max="${a.maxCount}" aria-live="polite" aria-label="Number of batches for ${r.name}">${count}</output><button type="button" data-batch-step="1" data-for-recipe="${rid}" aria-label="More batches of ${r.name}" ${count>=a.maxCount?'disabled':''}>+</button></div><small>${a.maxCount} available${a.maxCount>2?` · <button type="button" class="batch-max" data-batch-step="max" data-for-recipe="${rid}" aria-label="Start the most batches of ${r.name}">Max</button>`:''}</small></div>`:''}<button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
    };
-   const recipeEntries=Object.entries(RECIPES).filter(([,r])=>r.building===key);
+   const recipeEntries=Object.entries(RECIPES).filter(([,r])=>r.building===key).map(([id])=>[id,recipeFor(state,id)]);
    // Every good any other building makes, in one huge batch — that is the Factory's whole point, but it also
    // means its recipe list is every other building's list combined. Grouped by where each good normally comes
    // from and collapsed (same helper as the pre-purchase preview above), so this reads as a short list of
@@ -205,9 +205,9 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   const selectedFields=$('fertilizer-field-picker')?bindFieldPicker($('fertilizer-field-picker'),{multiple:true,available:state.inventory.fertilizer,onChange:updateFertilizer}):()=>[];
   if($('fertilizer-field-picker')){updateFertilizer(selectedFields());$('fertilizer-field-picker').open=!!pickerOpen;$('fertilizer-field-picker').querySelector('.field-picker-options').scrollTop=pickerScroll;}
   $('fertilize-field')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'fertilize',ids:selectedFields()});onExpand();return `${r.count} fields fertilized! Used ${r.cost} fertilizer · +${r.xp} XP.`;}));
-  $('building-content').querySelectorAll('[data-recipe]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'produce',recipe:btn.dataset.recipe,count:batchCounts[btn.dataset.recipe]??1});return `${r.count} ${r.count===1?'batch':'batches'} of ${RECIPES[r.recipe].name} started.`;})));
+  $('building-content').querySelectorAll('[data-recipe]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'produce',recipe:btn.dataset.recipe,count:batchCounts[btn.dataset.recipe]??1});return `${r.count} ${r.count===1?'batch':'batches'} of ${recipeFor(state,r.recipe).name} started.`;})));
   function updateBatch(output){
-   const id=output.dataset.batchCount,count=batchCounts[id],r=RECIPES[id],card=output.closest('.recipe-card'),max=Number(output.dataset.max);
+   const id=output.dataset.batchCount,count=batchCounts[id],r=recipeFor(state,id),card=output.closest('.recipe-card'),max=Number(output.dataset.max);
    output.textContent=count;
    card.querySelector('[data-batch-step="-1"]').disabled=mutating||count<=1||!max;
    card.querySelector('[data-batch-step="1"]').disabled=mutating||count>=max;
@@ -216,7 +216,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    card.querySelector('.recipe-flow .ingredients').innerHTML=costList(id,count);
    card.querySelector('.recipe-output').innerHTML=itemList(multiply(r.output));
    if(max)card.querySelector('.recipe-footer>span').textContent=`+${r.xp*count} XP`;
-   const value=recipeValue(id,farmNow());
+   const value=recipeValue(id,farmNow(),state);
    card.querySelector('.recipe-value').innerHTML=RECIPES[id].coins?`Costs ${number(RECIPES[id].coins*count)} coins`:`${art('coins')}<strong>${signed(value.added*count)}</strong> profit`;
    card.querySelector('[data-recipe]').textContent=`Start ${count} ${count===1?'batch':'batches'}`;
   }
