@@ -44,6 +44,19 @@ export function renderPlayerSearch(players,now=Date.now()){
 // tests that never touch the admin box, in a plain Node run where '@supabase/supabase-js' is not installed
 // (only Vite's build resolves it) — a top-level import would break every one of those tests to serve this one.
 let adminCheck=null;
+// The farm log (supabase/functions/farm-api/player-log.js): newest first, grouped by day, each line with its time and category, and
+// who of the staff did it when that was not the farmer. Your own on your profile; the admin and the moderators see everyone's.
+export const LOG_LABELS=Object.freeze({all:'All',account:'Account',farm:'Farm',production:'Production',market:'Market',rewards:'Rewards',diamonds:'Diamonds',social:'Social',staff:'Staff',purchase:'Purchases'});
+const logDay=(ms,now)=>{const day=new Date(ms),today=new Date(now);const key=d=>d.toDateString();if(key(day)===key(today))return 'Today';const yesterday=new Date(now-86400000);if(key(day)===key(yesterday))return 'Yesterday';return day.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});};
+export function renderLogEntries(entries,now=Date.now()){
+ let html='',day=null;
+ for(const e of entries){
+  const at=Date.parse(e.at),label=logDay(at,now);
+  if(label!==day){if(day!==null)html+='</ol>';html+=`<h4 class="farmer-log-day">${esc(label)}</h4><ol class="farmer-log-list">`;day=label;}
+  html+=`<li class="farmer-log-row" data-log-category="${esc(e.category)}"><span class="farmer-log-dot" aria-hidden="true"></span><div><p>${esc(e.text)}</p><small><time datetime="${esc(e.at)}">${new Date(at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</time> · ${esc(LOG_LABELS[e.category]??e.category)}${e.by?` · by ${esc(e.by)}`:''}</small></div></li>`;
+ }
+ return day===null?'':html+'</ol>';
+}
 export function checkAdmin(){
  return adminCheck??=import('./supabase.js').then(({supabase})=>supabase?.auth.getUser()).then(result=>String(result?.data?.user?.email??'').trim().toLowerCase()==='floris@millstone.nl').catch(()=>false);
 }
@@ -57,7 +70,7 @@ export function createPlayerProfiles(bridge){
  search.innerHTML='<label for="farmer-search-input">Find a farmer</label><div class="farmer-search-control"><input id="farmer-search-input" type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Search by player name…" aria-describedby="farmer-search-status"><button type="button" class="small-button" id="farmer-search-clear" hidden>Clear</button></div><p id="farmer-search-status" role="status">Enter at least 2 characters to search all farmers.</p><div id="farmer-search-results"></div>';
  (board.querySelector('.rank-drawer')??board.querySelector('.leaderboard-filter')).before(search);
  const dialog=document.createElement('dialog');dialog.id='player-profile-dialog';dialog.className='game-dialog farmer-profile-dialog';dialog.setAttribute('aria-labelledby','farmer-profile-title');
- dialog.innerHTML='<div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="farmer-profile-title">Farmer profile</h2></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="farmer-staff-view" class="farmer-staff-view" hidden><button type="button" class="small-button" data-staff-view>Open in dashboard</button></div><div id="admin-grant" class="admin-grant" hidden></div><div id="farmer-profile-content" aria-busy="false"></div><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p><button type="button" class="small-button farmer-profile-back">Back to leaderboard</button>';
+ dialog.innerHTML='<div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="farmer-profile-title">Farmer profile</h2></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="farmer-staff-view" class="farmer-staff-view" hidden><button type="button" class="small-button" data-staff-view>Open in dashboard</button></div><div id="admin-grant" class="admin-grant" hidden></div><div id="farmer-profile-content" aria-busy="false"></div><section id="farmer-log" class="farmer-log" aria-labelledby="farmer-log-title" hidden><div class="farmer-section-heading"><h3 class="farmer-section-title" id="farmer-log-title"><span class="farmer-log-icon"></span>Farm log</h3><span>Last 90 days</span></div><div class="farmer-log-filters" role="group" aria-label="Show"></div><div class="farmer-log-entries" aria-live="polite"></div><button type="button" class="small-button farmer-log-more" hidden>Show older</button></section><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p><button type="button" class="small-button farmer-profile-back">Back to leaderboard</button>';
  document.body.append(dialog);
  const input=search.querySelector('input'),clear=search.querySelector('#farmer-search-clear'),results=search.querySelector('#farmer-search-results'),status=search.querySelector('#farmer-search-status');
  const content=dialog.querySelector('#farmer-profile-content'),profileStatus=dialog.querySelector('#farmer-profile-status'),adminGrant=dialog.querySelector('#admin-grant');
@@ -101,6 +114,31 @@ export function createPlayerProfiles(bridge){
    finally{give.disabled=false;}
   };
  }
+ const logBox=dialog.querySelector('#farmer-log'),logEntries=logBox.querySelector('.farmer-log-entries'),logMore=logBox.querySelector('.farmer-log-more'),logFilters=logBox.querySelector('.farmer-log-filters');
+ logBox.querySelector('.farmer-log-icon').innerHTML=art('log');
+ const log={player:null,category:'all',entries:[],more:false,ticket:0};
+ async function loadLog(older=false){
+  const ticket=++log.ticket,player=log.player;if(!player)return;
+  if(!older){log.entries=[];logEntries.innerHTML='<p class="farmer-empty">Reading the log…</p>';}
+  logMore.disabled=true;
+  try{
+   const data=await bridge.request({operation:'player_log',playerId:player,category:log.category==='all'?null:log.category,before:older?log.entries.at(-1)?.id:null});
+   if(disposed||ticket!==log.ticket||log.player!==player||!dialog.open)return;
+   log.entries=[...log.entries,...(data.entries??[])];log.more=Boolean(data.more);
+   logFilters.innerHTML=['all',...(data.categories??[])].map(c=>`<button type="button" data-log-filter="${c}" aria-pressed="${c===log.category}">${esc(LOG_LABELS[c]??c)}</button>`).join('');
+   logEntries.innerHTML=log.entries.length?renderLogEntries(log.entries,Date.now()+clockOffset):`<p class="farmer-empty">${log.category==='all'?'Nothing in the log yet. It fills up as the farm is played.':'Nothing in this category yet.'}</p>`;
+   logMore.hidden=!log.more;
+  }catch(error){if(ticket===log.ticket&&!older)logEntries.innerHTML=`<p class="farmer-empty">${esc(error.message)}</p>`;}
+  finally{if(ticket===log.ticket)logMore.disabled=false;}
+ }
+ logFilters.addEventListener('click',event=>{const button=event.target.closest('[data-log-filter]');if(!button||button.dataset.logFilter===log.category)return;log.category=button.dataset.logFilter;logFilters.querySelectorAll('[data-log-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));loadLog(false);});
+ logMore.onclick=()=>loadLog(true);
+ // Your own log, or anyone's for the admin and the moderators (the server checks it again).
+ function showLog(playerId){
+  const allowed=playerId===bridge.playerId||Boolean(window.harvestStaff?.role?.());
+  log.player=allowed?playerId:null;log.category='all';log.entries=[];++log.ticket;logBox.hidden=!allowed;logFilters.innerHTML='';logMore.hidden=true;
+  if(allowed)loadLog(false);
+ }
  // The chat (src/chat-ui.js) adds the Moderator badge, Send message, Block and the staff's chat buttons after every draw.
  let chatExtras=null;
  let searchSequence=0,profileSequence=0,timer,selected=null,returnFocus,disposed=false,profileUsername=null,clockOffset=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
@@ -121,7 +159,8 @@ export function createPlayerProfiles(bridge){
   staffView.querySelector('[data-staff-view]').onclick=()=>staff?.showFarmer(playerId);
   if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
   checkAdmin().then(admin=>{if(!disposed&&admin&&selected===playerId&&dialog.open)renderAdminGrant(playerId);});
-  await loadProfile(false);
+  // The profile first, the log right behind it (it sits below the profile).
+  const loading=loadProfile(false);showLog(playerId);await loading;
  }
  // A family leader sees "Invite to <family>" on the profile of a farmer without a family (public/family-ui.js decides whether
  // that is possible and sends the invitation; the reason shows on the button when it is not).

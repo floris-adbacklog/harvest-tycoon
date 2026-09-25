@@ -7,11 +7,14 @@ import {handleFamily} from './family-service.js';
 import {handleAdminGrant} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
+import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
+// Work that may finish after the reply (the log, where the farm was opened): the game never waits for it.
+const later=(work:Promise<unknown>)=>(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(work);
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 Deno.serve(async(req)=>{
  if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
@@ -28,14 +31,19 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_players','admin_player','invite'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_players','admin_player','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='social'){const r=await handleSocial({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='player_search'||body.operation==='player_profile'){
    const directory=await handlePlayerDirectory({admin,body,player:user.id});return reply(directory.data,directory.status);
   }
   if(body.operation==='admin_grant'){
-   const granted=await handleAdminGrant({admin,body,user});return reply(granted.data,granted.status);
+   const granted=await handleAdminGrant({admin,body,user});
+   if(granted.status===200&&granted.data?.granted)later(writeLog(admin,String(body.playerId),adminGrantLog(granted.data.granted),user.id));
+   return reply(granted.data,granted.status);
+  }
+  if(body.operation==='player_log'){
+   const log=await handlePlayerLog({admin,user,body});return reply(log.data,log.status);
   }
   if(body.operation==='admin_online'){
    const online=await handleAdminOnline({admin,user});return reply(online.data,online.status);
@@ -56,7 +64,9 @@ Deno.serve(async(req)=>{
    const invites=await handleAdminInvites({admin,user});return reply(invites.data,invites.status);
   }
   if(body.operation==='avatar'){
-   const saved=await savePlayerAvatar({admin,player:user.id,avatarId:body.avatarId});return reply(saved.data,saved.status);
+   const saved=await savePlayerAvatar({admin,player:user.id,avatarId:body.avatarId});
+   if(saved.status===200)later(writeLog(admin,user.id,accountLog('avatar','Picked a new face')));
+   return reply(saved.data,saved.status);
   }
   const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished').eq('player_id',user.id).maybeSingle();
   if(profileResponse.error)throw profileResponse.error;
@@ -80,7 +90,9 @@ Deno.serve(async(req)=>{
   if(body.operation==='rename'){
    if(!nameValid(body.username))return reply({error:'Use 3–20 letters, numbers, spaces, underscores or hyphens.'},400);
    const renamed=await admin.from('player_stats').update({username:body.username.trim()}).eq('player_id',user.id).select('player_id,username,currency,level,avatar_id').single();
-   if(renamed.error)throw renamed.error;return reply({profile:renamed.data});
+   if(renamed.error)throw renamed.error;
+   later(writeLog(admin,user.id,accountLog('rename',`Changed the farmer name to ${body.username.trim()}`)));
+   return reply({profile:renamed.data});
   }
   if(body.operation==='action'&&(!/^[0-9a-f-]{36}$/i.test(body.requestId??'')||!body.action||typeof body.action!=='object'))return reply({error:'Invalid farm action.'},400);
   // Keep one server-owned roll across optimistic concurrency retries.
@@ -106,8 +118,10 @@ Deno.serve(async(req)=>{
    // Every answer names whose farm it is; the game checks that before it trusts the answer (src/main.js).
    if(body.operation==='invite')return reply({...await handleInvite({admin,player:user.id,username,state,now}),profile});
    if(body.operation==='family'||(body.operation==='action'&&String(body.action.type).startsWith('family_'))){
-    const familyResponse=await handleFamily({admin,body,row,state,player:user.id,username});
-    if(!familyResponse)continue;return reply(familyResponse.data,familyResponse.status);
+    const familyBefore=snapshot(state),familyResponse=await handleFamily({admin,body,row,state,player:user.id,username});
+    if(!familyResponse)continue;
+    if(familyResponse.status===200&&body.operation==='action'){const after=(familyResponse.data as {state?:unknown})?.state;later(writeLog(admin,user.id,familyLog(body.action,familyBefore,after??null)));}
+    return reply(familyResponse.data,familyResponse.status);
    }
    if(body.operation==='load'){
     const welcome=welcomeSummary(state,row.updated_at,now);
@@ -122,7 +136,7 @@ Deno.serve(async(req)=>{
     const since=new Date(Math.max(now-7*86400000,Date.parse(user.created_at??'')||now)).toISOString();
     let donated:unknown[]=[];
     try{const found=await admin.from('staff_donations').select('id,coins,diamonds,message').gt('created_at',since).or(`recipients.is.null,recipients.cs.{${user.id}}`).order('created_at').limit(40);if(!found.error)donated=found.data??[];}catch{}
-    const donations=receiveDonations(state,donated);
+    const donations=receiveDonations(state,donated),fromStaff={coins:donations.reduce((sum,d)=>sum+d.coins,0),diamonds:donations.reduce((sum,d)=>sum+d.diamonds,0)};
     if(donations.length){
      const coins=donations.reduce((sum,d)=>sum+d.coins,0),diamonds=donations.reduce((sum,d)=>sum+d.diamonds,0),message=donations.findLast(d=>d.message)?.message??null;
      gift=gift?{...gift,coins:(gift.coins??0)+coins,diamonds:(gift.diamonds??0)+diamonds,message:gift.message??message}:{coins,xp:0,diamonds,item:null,itemCount:0,message,at:now};
@@ -141,9 +155,11 @@ Deno.serve(async(req)=>{
       if((user.app_metadata?.provider??'email')==='email'){const message='Thanks for confirming your email!';gift=gift?{...gift,diamonds:(gift.diamonds??0)+EMAIL_BONUS,message:gift.message??message}:{coins:0,xp:0,diamonds:EMAIL_BONUS,item:null,itemCount:0,message,at:now};}
      }
     }
+    const logged=loadLog({away:now-(Date.parse(row.updated_at)||now),gift:donations.length?fromStaff:null,inviteReward,emailBonus:emailBonusPaid});
     if(welcome||levelReward.levels.length||chapterReward.chapters.length||gift||inviteReward||friends.length||emailBonusPaid){
      const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
      if(saved.error)throw saved.error;if(!saved.data)continue;
+     later(writeLog(admin,user.id,logged));
      if(inviteReward)await qualifyInvite(admin,user.id,now).catch((error:{code?:string})=>console.error('Invite qualify failed',error?.code));
      const invite=inviteReward||friends.length?{reward:inviteReward,friends}:null;
      // A family leader's friend who reached level 10 gets an invitation to that family (the leader's own family action, so
@@ -154,10 +170,12 @@ Deno.serve(async(req)=>{
      }
      return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(state),revision:row.revision+1,serverNow:now});
     }
+    later(writeLog(admin,user.id,logged));
     return reply({state,profile,emailCheck:emailCheck(state),revision:row.revision,serverNow:now});
    }
    const previous=row.receipts.find((r:{id:string})=>r.id===body.requestId);
    if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now});
+   const before=snapshot(state);
    let result;try{result=applyFarmAction(state,body.action,now,random);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
    // Invite a friend: the action that brings an invited farm to level 10 pays its reward in the same save.
    const inviteReward=inviteeReward(state,now);if(inviteReward)result.inviteReward=inviteReward;
@@ -166,6 +184,7 @@ Deno.serve(async(req)=>{
    if(saved.error)throw saved.error;
    if(saved.data){
     if(inviteReward)await qualifyInvite(admin,user.id,now).catch((error:{code?:string})=>console.error('Invite qualify failed',error?.code));
+    later(writeLog(admin,user.id,farmLog(body.action,before,state,result)));
     return reply({state,profile:{...profile,currency:state.coins,level:levelOf(state)},result,revision:row.revision+1,serverNow:now});
    }
   }

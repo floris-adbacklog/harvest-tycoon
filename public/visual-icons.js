@@ -26,6 +26,8 @@ Object.assign(pictures,{estateworkshop:'estate-workshop',tradedepot:'trade-depot
 for(const id of ['truffles','truffleomelette','pigfarm'])pictures[id]=id;
 // The chat (header button, Notifications tab) and the Settings headings: painted, WebP.
 for(const id of ['chat','bell','sound','cookie','letter','send','admin','guide','settings','alert','block'])pictures[id]=id;
+// The farm log on a profile (src/player-profiles.js), 26 Sep 2026.
+pictures.log='log';
 // The four diamond packs in the shop, smallest to largest, and the VIP farmer above the VIP plans (painted, WebP).
 const PACK_ART=['pack-nest','pack-sack','pack-chest','pack-gold','vip-farmer'];
 for(const id of PACK_ART)pictures[id]=id;
@@ -41,7 +43,7 @@ const LARGE_PICTURES=['familyhall-model','helping-hand','windmill','family-fox',
 // Renders of the valley places, shown only in the Buildings list (economy-ui.js).
 const PLACE_RENDERS=['valleymarket','ranch','estateworkshop','tradedepot','grandfair'].map(key=>`place-${key}`);
 // These pictures were re-encoded to WebP (level-up.webp is a separate hardcoded path in progression-ui.js, not routed through art()) (75-86% smaller, no visible difference at this size); every other picture is still a plain PNG.
-const webpPictures=new Set(['live-events','family-sharing','double-harvest','invite-friends','vip','honey','rank-gold','family-bee','family-barn','rank-bronze','family-weekly-order','family-oak','rank-silver','family-members','familyhall','lock','family-tournament','family-management','berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice','harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote','chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary','instant-harvest','chore-troughs',...MIDGAME_ITEM_ART,...VALLEY_ITEM_ART,'valleymarket',...ESTATE_ITEM_ART,'estateworkshop','tradedepot','grandfair',...LARGE_PICTURES,...PLACE_RENDERS,'truffles','truffleomelette','chat','bell','sound','cookie','letter','send','admin','guide','settings','alert','block',...PACK_ART]);
+const webpPictures=new Set(['live-events','family-sharing','double-harvest','invite-friends','vip','honey','rank-gold','family-bee','family-barn','rank-bronze','family-weekly-order','family-oak','rank-silver','family-members','familyhall','lock','family-tournament','family-management','berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice','harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote','chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary','instant-harvest','chore-troughs',...MIDGAME_ITEM_ART,...VALLEY_ITEM_ART,'valleymarket',...ESTATE_ITEM_ART,'estateworkshop','tradedepot','grandfair',...LARGE_PICTURES,...PLACE_RENDERS,'truffles','truffleomelette','chat','bell','sound','cookie','letter','send','admin','guide','settings','alert','block',...PACK_ART,'log']);
 // A picture by its file name, for the screens that show one without art() (the Buildings list and a building's page).
 export const pictureFile=name=>`/assets/icons/${name}.${webpPictures.has(name)?'webp':'png'}`;
 export function art(key,extra=''){

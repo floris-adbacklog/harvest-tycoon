@@ -24,7 +24,7 @@ function harness({admin=false,confirmed=true,playerId}={}){
  const board=new Element();doc={body:new Element(),activeElement:new Element(),hidden:false,getElementById:()=>board,createElement:()=>new Element()};
  const bridge={playerId,request(body){return new Promise((resolve,reject)=>requests.push({body,resolve,reject}));}};
  const win={addEventListener(){},harvestRefresh:()=>{refreshes.push(Date.now());return Promise.resolve();}};
- const context=vm.createContext({document:doc,window:win,setTimeout(fn){timer=fn;return 1;},clearTimeout(){timer=null;},setInterval(fn){intervals.push(fn);return 2;},clearInterval(){},refreshVipBadges(){},renderPlayerProfile:p=>p.username,renderPlayerSearch:players=>players.map(p=>p.username).join(','),checkAdmin:()=>Promise.resolve(admin),confirmAction(request){confirms.push(request);return Promise.resolve(confirmed);},art:()=>'',adminGrantItemOptions:'<option value="">None</option><option value="wheat">Wheat</option>',ITEMS:{wheat:{name:'Wheat'}}});
+ const context=vm.createContext({document:doc,window:win,setTimeout(fn){timer=fn;return 1;},clearTimeout(){timer=null;},setInterval(fn){intervals.push(fn);return 2;},clearInterval(){},refreshVipBadges(){},renderPlayerProfile:p=>p.username,renderPlayerSearch:players=>players.map(p=>p.username).join(','),checkAdmin:()=>Promise.resolve(admin),confirmAction(request){confirms.push(request);return Promise.resolve(confirmed);},art:()=>'',esc:value=>String(value??''),renderLogEntries:()=>'',LOG_LABELS:{},adminGrantItemOptions:'<option value="">None</option><option value="wheat">Wheat</option>',ITEMS:{wheat:{name:'Wheat'}}});
  vm.runInContext(`function createPlayerProfiles${source}`,context);
  const controller=context.createPlayerProfiles(bridge),dialog=doc.body.children[0],search=created[0];
  return {controller,requests,dialog,search,doc,intervals,confirms,refreshes,tick(){const fn=timer;timer=null;fn?.();}};
@@ -121,8 +121,9 @@ test('gifting yourself refreshes your own running farm, so the coin counter and 
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='500';
  const done=box.querySelector('#admin-grant-give').onclick();await flush();
- h.requests[1].resolve({granted:{coins:500,xp:0,diamonds:0},totals:{level:12}});await done;
+ h.requests.find(r=>r.body.operation==='admin_grant').resolve({granted:{coins:500,xp:0,diamonds:0},totals:{level:12}});await done;
  assert.equal(h.refreshes.length,1,'window.harvestRefresh was called because the target was the signed-in player');
+ assert.deepEqual(h.requests.map(r=>r.body.operation),['player_profile','player_log','admin_grant'],'your own profile also reads your farm log, right after the profile');
 });
 test('gifting someone else never touches your own running farm',async()=>{
  const h=harness({admin:true,playerId:'admin-id'}),pending=h.controller.open('someone-else');
