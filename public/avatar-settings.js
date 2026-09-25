@@ -18,7 +18,7 @@ const tile=level=>id=>`<span class="avatar-tile${locked(id,level)?' is-locked':'
 export function avatarSettingsMarkup(id,level=1){
  const current=playerAvatar(id);
  const picker=emblemPickerMarkup({emblems:PLAYER_AVATARS,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>labelOf(a,level),tile:tile(level),esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
- return `<div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${esc(current.name)}" width="80" height="80"><div><h3 id="avatar-settings-title">Avatar</h3><p>Pick a face for your farm. Every 10 levels opens a new one.</p></div></div><form id="avatar-form">${picker}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
+ return `<div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${esc(current.name)}" width="80" height="80"><div><h3 id="avatar-settings-title">Avatar</h3><p>Pick a face for your farm.</p></div></div><form id="avatar-form">${picker}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
 }
 
 // A locked face can still be picked to see it large; it cannot be saved until the farm reaches its level (avatar-service.js checks
