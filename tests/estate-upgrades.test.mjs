@@ -97,12 +97,18 @@ test('coins: an upgrade takes the goods too; diamonds pay for everything, no coi
  assert.deepEqual(craft,[4500,12150,32805,165740,215464,280102,364132,473372,615384],'level 1-4 as before, level 5-10 twice the ladder');
  t.buildings.coop.level=2;assert.equal(upgradeCost(t,'coop'),Math.round(BUILDINGS.coop.upgradeCost*3),'a new farmer\'s early upgrades are unchanged');
 });
-test('the upgrade panel: goods with what you have, and diamonds as the filled first choice when you can pay them, with what they save',()=>{
+test('the upgrade panel: goods with what you have, two calm buttons side by side, diamonds lit up when you can pay them',()=>{
  const ui=read('public/economy-ui.js');
  assert.match(ui,/\$\{cost\?`Upgrade to level \$\{next\}`:'Fully upgraded'\}/);
- assert.match(ui,/class="small-button diamond-option\$\{state\.diamonds>=diamondCost\?' is-affordable':''\}" \$\{mutating\|\|state\.diamonds<diamondCost\?'disabled':''\}>/,'diamonds do not wait for the goods');
- assert.match(ui,/\$\{estate\?'No coins and no goods needed\.':'No coins needed\.'\} Saves \$\{number\(cost\)\} coins/);
+ assert.match(ui,/<div class="upgrade-pay-row"><button id="upgrade-building" class="small-button"/);
+ assert.match(ui,/>\$\{cost\?`\$\{art\('coins'\)\} \$\{number\(cost\)\}`:'Max level'\}<\/button>/,'just the coin picture and the price');
+ assert.match(ui,/class="small-button diamond-option\$\{state\.diamonds>=diamondCost\?' is-affordable':''\}" \$\{mutating\|\|state\.diamonds<diamondCost\?'disabled':''\}/,'diamonds do not wait for the goods');
+ assert.match(ui,/>\$\{art\('diamonds'\)\} \$\{number\(diamondCost\)\}<\/button>/,'just the diamond picture and the price');
+ assert.match(ui,/\$\{estate\?'Diamonds skip the coins and goods\.':'Diamonds skip the coins\.'\}/,'one short line says what diamonds do');
+ assert.doesNotMatch(ui,/Upgrade now · /);
  assert.match(ui,/Make the goods above first\$\{diamondCost!==null&&featureUnlocked\(state,'boosts'\)\?', or upgrade with diamonds':''\}\./);
- assert.match(read('public/production-controls.css'),/\.upgrade-payments \.diamond-option\.is-affordable\{/);
+ const css=read('public/production-controls.css');
+ assert.match(css,/\.upgrade-pay-row\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(0,1fr\)\);gap:8px\}/);
+ assert.match(css,/\.upgrade-payments \.diamond-option\.is-affordable\{border:2px solid #6fb3cc;/);
  assert.match(read('public/wiki-content.js'),/From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn\. With diamonds you pay for all of it at once: no coins and no goods\./);
 });
