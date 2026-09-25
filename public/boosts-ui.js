@@ -1,6 +1,7 @@
 import {confirmDiamondSpend} from './diamond-confirm.js';
 import {VIP_PLANS,vipActive,BUILDINGS,RECIPES,productionJobs,SINGLE_BATCH_COST,featureUnlocked,featureUnlockHint,BOOSTS,DIAMOND_PACKS,SINGLE_CROP_COST,CROPS,boostStatus,boostOffer,BOOST_DURATIONS,BOOST_LENGTH_NAMES,formatDuration} from './farm-state.js';
 import {farmNow} from './farm-client.js';
+import {fitText} from './fit-text.js';
 import {art,refreshArt} from './visual-icons.js';
 import {prettifySelects} from './pretty-select.js';
 import {fieldPicker,batchPicker,bindFieldPicker} from './field-picker.js';
@@ -153,6 +154,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();track('diamond_shop_view');try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
  function refresh(){
   $('diamonds').textContent=state.diamonds.toLocaleString('en-US',matchMedia('(max-width: 900px), (max-height: 550px) and (pointer: coarse)').matches?{notation:'compact',maximumFractionDigits:1}:{});
+  fitText($('diamonds'));
   $('diamond-button').setAttribute('aria-label',`${number(state.diamonds)} diamonds. Open boosts and diamond shop.`);
   if($('boost-dialog').open)render();tick();
  }

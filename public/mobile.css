@@ -48,7 +48,10 @@
  .resources .coin-counter,.resources .diamond-counter{height:48px;min-height:48px;min-width:0;width:100%;gap:5px;padding:6px 9px;border-radius:14px;justify-content:center}
  .coin-counter strong,.diamond-counter strong{font-size:21px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  .coin-icon{width:28px;height:32px;flex-shrink:0}.coin-icon>.game-art,.diamond-counter>.game-art{width:32px;height:32px}
- .resources .resource-label{display:none}.diamond-counter>span:last-child{display:block;font-size:18px;margin-left:0}
+ .resources .resource-label{display:none}
+ /* Diamonds on a phone: the + is a small badge on the pill's corner, so the number (1.2K, 12K) has the room (25 Sep 2026). */
+ .resources .diamond-counter{position:relative;gap:4px;padding:6px 7px}.diamond-counter>.game-art{width:28px;height:28px}
+ .diamond-counter>span:last-child{position:absolute;top:-5px;right:-5px;display:grid;place-items:center;width:19px;height:19px;margin:0;border-radius:50%;background:#3884a0;color:#fff;font-size:15px;line-height:1;box-shadow:0 1px 2px rgba(20,60,80,.3)}
  .save-status{top:calc(65px + env(safe-area-inset-top));left:14px;right:auto;padding:3px 6px;font-size:10px;max-width:45%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:20px}
  .save-status.save-error{min-height:36px;top:calc(59px + env(safe-area-inset-top));z-index:14}
  .active-boosts{z-index:12;top:calc(62px + env(safe-area-inset-top));right:12px;max-width:49%;min-height:26px;max-height:29px;overflow:hidden;font-size:10px;white-space:nowrap;text-overflow:ellipsis;padding:5px 7px}
@@ -142,3 +145,5 @@
  .save-status,.active-boosts,.touch-instructions{display:none}.save-status.save-error{display:block;left:calc(90px + env(safe-area-inset-left));top:58px}.scene-controls{right:max(10px,env(safe-area-inset-right));bottom:84px;gap:4px}.mobile-pan-controls{left:calc(88px + env(safe-area-inset-left));bottom:84px;gap:4px}.scene-controls .icon-button,.mobile-pan-controls .icon-button{width:44px;height:44px}
  .game-dialog,.wide-dialog{max-height:calc(100dvh - 8px);padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right));border-radius:18px 18px 0 0}.mobile-menu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.mobile-menu-grid button{min-height:100px}.crop-catalog{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+/* The smallest phones (320 wide): the pills keep only the number, which the pill colour already explains. */
+@media(max-width:340px){.resources .coin-icon,.resources .diamond-counter>.game-art{display:none}}

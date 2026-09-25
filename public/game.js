@@ -37,6 +37,7 @@ import { createFarmAudio,withActionSounds,createProductionCueTracker } from './f
 import { createSoundSettings } from './sound-settings.js';
 import { watchSelects } from './pretty-select.js';
 import { createInviteUI } from './invite-ui.js';
+import { fitText } from './fit-text.js';
 
 const $ = id => document.getElementById(id);
 const state = structuredClone(window.harvestInitialFarm.state);
@@ -574,7 +575,7 @@ function updateHint(){
  $('hint-text').textContent=text;
 }
 function updateUI(){
- $('coins').textContent=state.coins.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});$('coins').parentElement.title=`${state.coins.toLocaleString('en-US')} coins`;
+ $('coins').textContent=state.coins.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});fitText($('coins'));$('coins').parentElement.title=`${state.coins.toLocaleString('en-US')} coins`;
  const lp=levelProgress(state),lvl=lp.level;
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
  {const next=unlockEntries(state).filter(e=>!e.unlocked&&e.level===lvl+1).map(e=>e.name);$('journal-button').title=next.length?`Level ${lvl+1} unlocks: ${next.slice(0,3).join(', ')}${next.length>3?'…':''}`:'Farm journal & level rewards';}
