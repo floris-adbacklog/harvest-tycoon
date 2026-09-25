@@ -1,0 +1,12 @@
+# macOS folder settings
+.DS_Store
+
+# Build output: Vercel builds these itself on every deploy (npm run build:static), so they never belong in the repository.
+dist-static/
+dist/
+public/cloud/
+
+# Local tools
+node_modules/
+.wrangler/
+.vercel/
