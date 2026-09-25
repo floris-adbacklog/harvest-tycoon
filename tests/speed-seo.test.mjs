@@ -125,3 +125,14 @@ test('the map labels read the view size once per update, not once per label (eac
   assert.equal(code.match(/world\.clientWidth/g).length,1,name);assert.equal(code.match(/world\.clientHeight/g).length,1,name);
  }
 });
+// 25 Sep 2026: pictures, models and sounds were asked for again on every open (max-age=0); now a phone keeps them for a day and
+// checks for a newer one in the background, while the game code itself stays fresh.
+test('a phone keeps the pictures, models and sounds for a day; the code is always checked; the pictures are light',()=>{
+ const headers=JSON.parse(read('vercel.json')).headers,rule=source=>headers.find(h=>h.source===source)?.headers.find(x=>x.key==='Cache-Control')?.value;
+ assert.equal(rule('/assets/(.*)'),'public, max-age=86400, stale-while-revalidate=604800');
+ assert.equal(rule('/assets/fonts/(.*)'),'public, max-age=31536000, immutable');
+ assert.equal(rule('/cloud/(.*)'),'no-cache','the game code is never kept stale');
+ assert.ok(!headers.some(h=>/\.js|\/\(\.\*\)\.js/.test(h.source)&&/max-age=[1-9]/.test(JSON.stringify(h.headers))),'no long cache for loose scripts');
+ for(const [file,max] of [['public/assets/farm-welcome.webp',400000],['public/assets/icons/crops-v2.webp',300000],['public/assets/icons/goods-v2.webp',300000],['public/assets/icons/interface-v2.webp',300000]])
+  assert.ok(statSync(new URL(`../${file}`,import.meta.url)).size<max,`${file} is light`);
+});

@@ -1,5 +1,7 @@
 import {cpSync,mkdirSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 await import('./sync-game.mjs');
+// Only the line icons the game uses (public/lucide-icons.js), made again on every deploy so a new icon is never missing.
+await import('./build-lucide-subset.mjs');
 process.env.HARVEST_REQUIRE_CLOUD='1';
 await import('./build-cloud.mjs');
 rmSync('dist-static',{recursive:true,force:true});mkdirSync('dist-static',{recursive:true});cpSync('public','dist-static',{recursive:true});
