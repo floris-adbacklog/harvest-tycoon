@@ -13,7 +13,7 @@ import {SPREAD,roadRects,onRoad,placeIn,anchorAt} from './farm-layout.js';
 const FIRS=['fir_tree_001','fir_tree_003','fir_tree_004','fir_tree_006','fir_tree_007','fir_tree_010'];
 const FARM_PIECES=['chicken_002','chicken_003','cow_003','toilet_001','firewood_005','cart_003','cart_006','lawn_mower_001','car_005','dray_001','trailer_002'];
 const FRONT=['bush_001','bush_002','bush_003','bush_004','tree_002','tree_005','tree_007','tree_008'];
-export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','mountain_007','mountain_008','mountain_009','plant_008','grass_001','grass_004','landscape_008','landscape_011',...FARM_PIECES]);
+export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','mountain_007','mountain_008','plant_008','grass_001','grass_004',...FARM_PIECES]);
 
 // The same ring as the mountains (scene-polish.js): laid out in screen directions around the home view, sides and back only,
 // so nothing stands between the camera and the farm.
@@ -73,16 +73,13 @@ export function buildScenery({scene,models,mobile=false}){
  }
  const claim=(x,z,r)=>taken.push([x,z,r]);
 
- // 1. Soft green hills behind the firs, fading into the haze. They and the extra mountains (2) are put down first and
- // join the terrain, so the firs after them stand on their slopes instead of inside them.
- for(let a=10;a<=180;a+=mobile?40:24){
-  const p=ringPoint(a+(rand()-.5)*6,(48+rand()*3)*RING,(45+rand()*3)*RING);
-  const hill=put(rand()<.5?'landscape_008':'landscape_011',p.x,p.z,{width:15+rand()*8,rotation:p.angle+(rand()-.5)*.6,y:-.2,shadow:false});
-  hill?.updateMatrixWorld(true);hill?.traverse(n=>{if(n.isMesh)terrain.push(n);});
- }
+ // 1. (Green hills stood here, between the firs and the mountain ring: big smooth lumps that poked through the rock. The firs and the
+ // ring fill that edge on their own. The broad hill at the farm's own edge is farm-life.js's.) The extra mountains (2) are put
+ // down first and join the terrain, so the firs after them stand on their slopes instead of inside them.
  // 2. More mountains: a second, taller row behind the ring at the sides and back. (Not at the front: lone peaks there stood
  // on the open plain like boulders.)
- const peaks=['mountain_001','mountain_007','mountain_008','mountain_009'].filter(n=>models.has(n));
+ // Rock only: mountain_009 is a green hill (farm-life.js uses it low, as one), and scaled up to a peak it looked like green jelly.
+ const peaks=['mountain_001','mountain_007','mountain_008'].filter(n=>models.has(n));
  const hazy=o=>o?.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;n.material=n.material.clone();n.material.emissive=new THREE.Color(0xe2ead0);n.material.emissiveIntensity=.3;}});
  // The ground ends 100 from the middle: a mountain whose far side would hang over that edge is left out.
  const range=(from,to,every,a,b,height)=>{for(let deg=from;deg<=to;deg+=every){const p=ringPoint(deg+(rand()-.5)*8,(a+rand()*4)*RING,(b+rand()*4)*RING);if(Math.max(Math.abs(p.x),Math.abs(p.z))>74)continue;const peak=put(peaks[Math.floor(rand()*peaks.length)],p.x,p.z,{width:32+rand()*14,depth:13+rand()*6,height:height(),y:-.8,rotation:p.angle+(rand()-.5)*.5,shadow:false});hazy(peak);peak?.updateMatrixWorld(true);peak?.traverse(n=>{if(n.isMesh)terrain.push(n);});}};
@@ -118,7 +115,9 @@ export function buildScenery({scene,models,mobile=false}){
  const tufts={grass_001:[],grass_004:[]};
  for(let i=0,made=0,want=mobile?320:900;i<want*6&&made<want;i++){
   // All the way round and out to where the haze takes over: flat, so it hides nothing.
-  const t=Math.sqrt(rand()),p=ringPoint(rand()*360,(22+t*46)*RING,(20+t*44)*RING);
+  const t=Math.sqrt(rand()),deg=rand()*360,p=ringPoint(deg,(22+t*46)*RING,(20+t*44)*RING);
+  // Not beyond the mountain ring (its peaks stand from -8 to 196 degrees, from about 42 out): a tuft there seemed to float above the peaks.
+  if(22+t*46>40&&(deg<205||deg>345))continue;
   if(!free(p.x,p.z,.3))continue;made++;
   (rand()<.7?tufts.grass_001:tufts.grass_004).push([p.x,p.z,.28+rand()*.3,rand()*Math.PI*2]);
  }
