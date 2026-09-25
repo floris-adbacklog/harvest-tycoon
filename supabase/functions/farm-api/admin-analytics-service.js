@@ -1,6 +1,7 @@
 import {isStaff,isSuperadmin} from './admin-service.js';
 import {isRecentlyActive,ONLINE_WINDOW} from './presence.js';
 import {BEGINNER_QUESTS} from './farm-state.js';
+import {zoneCountry} from './time-zones.js';
 
 // bridge.request() in src/main.js checks every response's profile.player_id against the signed-in caller (a
 // stale-tab/concurrent-session guard every farm-api reply is expected to satisfy) — the admin's own id here,
@@ -98,16 +99,18 @@ export async function handleAdminInvites({admin,user,now=Date.now(),reward=150,l
  return respond(user,{totals,invites,rules:{reward,level,days}});
 }
 
-// Where and on what a farmer opened the game, for the admin (supabase/admin-player-insights.sql): the country Cloudflare reads from the
-// IP address, the IP address and the browser. One row per farmer, replaced on every load; a failure here never stops a farm opening.
+// Where and on what a farmer opened the game, for the admin (supabase/admin-player-insights.sql): the country of the device's own time
+// zone (sent with every load, time-zones.js; never worked out from the IP address), the IP address and the browser. One row per
+// farmer, replaced on every load; a failure here never stops a farm opening.
 const IPV4=/^\d{1,3}(\.\d{1,3}){3}$/,IPV6=/^[0-9a-f:.]{2,45}$/i;
-export function seenFrom(headers){
+export function seenFrom(headers,timeZone){
  const get=name=>String(headers?.get?.(name)??'').trim();
- const country=get('cf-ipcountry').toUpperCase(),ip=get('cf-connecting-ip')||get('x-real-ip')||get('x-forwarded-for').split(',')[0].trim();
- return {country:/^[A-Z]{2}$/.test(country)&&country!=='XX'?country:null,ip:IPV4.test(ip)||IPV6.test(ip)&&ip.includes(':')?ip:null,device:get('user-agent').slice(0,300)||null};
+ const ip=get('cf-connecting-ip')||get('x-real-ip')||get('x-forwarded-for').split(',')[0].trim();
+ return {country:zoneCountry(timeZone),ip:IPV4.test(ip)||IPV6.test(ip)&&ip.includes(':')?ip:null,device:get('user-agent').slice(0,300)||null};
 }
-export async function recordSeen({admin,player,headers,now=Date.now()}){
- const seen=seenFrom(headers);
+// Only what this visit knows is written: a load without a time zone (a game tab from before this) keeps the country saved earlier.
+export async function recordSeen({admin,player,headers,timeZone,now=Date.now()}){
+ const seen=Object.fromEntries(Object.entries(seenFrom(headers,timeZone)).filter(([,value])=>value!=null));
  const saved=await admin.from('player_seen').upsert({player_id:player,...seen,seen_at:new Date(now).toISOString()});
  if(saved.error)throw saved.error;
 }

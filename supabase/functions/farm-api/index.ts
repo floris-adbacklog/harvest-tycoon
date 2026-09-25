@@ -64,7 +64,7 @@ Deno.serve(async(req)=>{
   const username=profile?.username??(nameValid(user.user_metadata?.username)?user.user_metadata.username.trim():null);
   if(!username)return reply({error:'Choose a player name to open your farm.',code:'USERNAME_REQUIRED'},409);
   // Where and on what the farm was opened, for the admin dashboard (admin-analytics-service.js): runs beside the load, never holds it up.
-  if(body.operation==='load'){const seen=Promise.resolve().then(()=>recordSeen({admin,player:user.id,headers:req.headers})).catch(()=>{});(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(seen);}
+  if(body.operation==='load'){const seen=Promise.resolve().then(()=>recordSeen({admin,player:user.id,headers:req.headers,timeZone:body.timeZone})).catch(()=>{});(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(seen);}
   // Sends each friend an invitation to this farmer's family, as this farmer's own family action; true when one was sent.
   async function inviteFriendsToFamily(friends:{playerId:string,invitedToFamily?:boolean}[]){
    let sent=false;

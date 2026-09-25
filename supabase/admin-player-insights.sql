@@ -1,5 +1,5 @@
--- Admin dashboard: player insights (25 Sep 2026). Where and on what a farmer last opened the game: the country Cloudflare reads
--- from the IP address (the cf-ipcountry header on every request), the IP address and the browser's user agent. farm-api writes
+-- Admin dashboard: player insights (25 Sep 2026). Where and on what a farmer last opened the game: the country of the device's time
+-- zone (farm-api time-zones.js; Supabase does not pass Cloudflare's country header on), the IP address and the browser's user agent. farm-api writes
 -- one row per farmer on every load (the previous visit is replaced, no history); nobody but the server can read or write it.
 create table if not exists public.player_seen(
  player_id uuid primary key references auth.users(id) on delete cascade,

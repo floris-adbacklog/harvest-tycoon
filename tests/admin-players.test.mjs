@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {handleAdminPlayers,handleAdminPlayer,seenFrom,recordSeen,deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
 import {filterPlayers,funnel,funnelHtml,playerRow,playerDetail,countryCounts,country,GUIDE_STEPS} from '../src/admin-players.js';
 import {BEGINNER_QUESTS} from '../game/farm-state.js';
+import {zoneCountry,ZONE_COUNTRY} from '../supabase/functions/farm-api/time-zones.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const owner={id:'22222222-2222-4222-8222-222222222222',email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z'};
 const moderator={id:'33333333-3333-4333-8333-333333333333',email:'mod@example.com'};
@@ -111,25 +112,36 @@ test('admin_player: one farmer in full — account, progress, activity, purchase
  assert.equal((await handleAdminPlayer({admin:database(tables),user:owner,playerId:'99999999-9999-4999-8999-999999999999',now})).status,404);
 });
 
-test('seenFrom: Cloudflare country and IP from the request headers; nothing made up when a header is missing or odd',()=>{
+test('seenFrom: the country comes from the device time zone, never from the IP address; nothing made up when something is missing',()=>{
  const headers=values=>new Headers(values);
- assert.deepEqual(seenFrom(headers({'cf-ipcountry':'nl','cf-connecting-ip':'81.2.3.4','user-agent':'UA'})),{country:'NL',ip:'81.2.3.4',device:'UA'});
- assert.deepEqual(seenFrom(headers({'cf-ipcountry':'XX','x-forwarded-for':'2a02:a45::1, 10.0.0.1'})),{country:null,ip:'2a02:a45::1',device:null});
- assert.deepEqual(seenFrom(headers({'cf-ipcountry':'T1','cf-connecting-ip':'not an ip'})),{country:null,ip:null,device:null});
+ assert.deepEqual(seenFrom(headers({'cf-ipcountry':'IN','cf-connecting-ip':'81.2.3.4','user-agent':'UA'}),'Europe/Amsterdam'),{country:'NL',ip:'81.2.3.4',device:'UA'},'the time zone decides, not the IP');
+ assert.deepEqual(seenFrom(headers({'cf-ipcountry':'NL','x-forwarded-for':'2a02:a45::1, 10.0.0.1'})),{country:null,ip:'2a02:a45::1',device:null},'no time zone, no country');
+ assert.deepEqual(seenFrom(headers({'cf-connecting-ip':'not an ip'}),'UTC'),{country:null,ip:null,device:null});
  assert.equal(seenFrom(headers({'user-agent':'x'.repeat(500)})).device.length,300);
- assert.deepEqual(seenFrom(undefined),{country:null,ip:null,device:null});
+ assert.deepEqual(seenFrom(undefined,'Nowhere/Special'),{country:null,ip:null,device:null});
 });
-test('recordSeen keeps one row per farmer (an upsert), and farm-api runs it beside the load without waiting for it',async()=>{
+test('the time zone table: every zone of the tz database plus the older names browsers still report',()=>{
+ assert.equal(zoneCountry('Europe/Amsterdam'),'NL');assert.equal(zoneCountry('Europe/Brussels'),'BE');assert.equal(zoneCountry('America/New_York'),'US');
+ assert.equal(zoneCountry('Europe/Kiev'),'UA','live notification settings still say Europe/Kiev');assert.equal(zoneCountry('Europe/Kyiv'),'UA');assert.equal(zoneCountry('Asia/Calcutta'),'IN');
+ assert.equal(zoneCountry('UTC'),null);assert.equal(zoneCountry('toString'),null,'only real zones, nothing from the object itself');assert.equal(zoneCountry(null),null);
+ assert.ok(Object.keys(ZONE_COUNTRY).length>400);assert.ok(Object.values(ZONE_COUNTRY).every(c=>/^[A-Z]{2}$/.test(c)));
+ assert.match(read('scripts/build-time-zones.mjs'),/zone\.tab/);
+});
+test('recordSeen keeps one row per farmer (an upsert) with only what the visit knows, and farm-api runs it beside the load',async()=>{
  const db=database();
- await recordSeen({admin:db,player:P1,headers:new Headers({'cf-ipcountry':'BE','cf-connecting-ip':'1.2.3.4'}),now});
- assert.deepEqual(db.calls[0].upsert,{player_id:P1,country:'BE',ip:'1.2.3.4',device:null,seen_at:iso(now)});
+ await recordSeen({admin:db,player:P1,headers:new Headers({'cf-connecting-ip':'1.2.3.4'}),timeZone:'Europe/Brussels',now});
+ assert.deepEqual(db.calls[0].upsert,{player_id:P1,country:'BE',ip:'1.2.3.4',seen_at:iso(now)});
+ const older=database();await recordSeen({admin:older,player:P1,headers:new Headers({'cf-connecting-ip':'1.2.3.4'}),now});
+ assert.ok(!('country' in older.calls[0].upsert),'a load without a time zone keeps the country saved before');
  const api=read('supabase/functions/farm-api/index.ts');
- assert.match(api,/if\(body\.operation==='load'\)\{const seen=Promise\.resolve\(\)\.then\(\(\)=>recordSeen\(\{admin,player:user\.id,headers:req\.headers\}\)\)\.catch\(\(\)=>\{\}\);/,'even a synchronous failure never stops the load');
+ assert.match(api,/if\(body\.operation==='load'\)\{const seen=Promise\.resolve\(\)\.then\(\(\)=>recordSeen\(\{admin,player:user\.id,headers:req\.headers,timeZone:body\.timeZone\}\)\)\.catch\(\(\)=>\{\}\);/,'even a synchronous failure never stops the load');
  assert.match(api,/EdgeRuntime\?\.waitUntil\?\.\(seen\)/);
  assert.match(api,/'admin_players','admin_player'/);assert.match(read('src/connection.js'),/'admin_invites','admin_players','admin_player'\]/,'read-only, so safe to retry');
+ assert.match(read('src/supabase.js'),/const sent=body\?\.operation==='load'\?\{\.\.\.body,timeZone:deviceTimeZone\(\)\}:body;/,'every farm load sends the device time zone');
  const sql=read('supabase/admin-player-insights.sql');
  assert.match(sql,/alter table public\.player_seen enable row level security;\s*revoke all on public\.player_seen from anon, authenticated;/);
- assert.match(sql,/revoke all on function public\.admin_player_accounts\(uuid\) from public, anon, authenticated;\s*grant execute on function public\.admin_player_accounts\(uuid\) to service_role;/);
+ const paging=read('supabase/admin-player-accounts-paging.sql');
+ assert.match(paging,/revoke all on function public\.admin_player_accounts\(uuid, text\) from public, anon, authenticated;\s*grant execute on function public\.admin_player_accounts\(uuid, text\) to service_role;/);
 });
 test('deviceName: a short system and browser from the user agent',()=>{
  assert.equal(deviceName('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36'),'Windows · Chrome');
@@ -191,5 +203,5 @@ test('the dashboard: the list replaces the newest players, the funnel and countr
  assert.match(dash,/bridge\.request\(\{operation:'admin_player',playerId:id\}\)/);
  assert.match(dash,/id="admin-funnel"/);assert.match(dash,/id="admin-countries" hidden/);
  assert.doesNotMatch(dash,/admin_recent_players/);
- assert.match(read('public/privacy.html'),/your IP address, the country it belongs to, and your browser and device type/);
+ assert.match(read('public/privacy.html'),/your IP address, your browser and device type, and the country of your device’s time zone/);
 });

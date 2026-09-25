@@ -16,7 +16,7 @@ const PROVIDERS={email:'Email',google:'Google',facebook:'Facebook'};
 export const provider=id=>PROVIDERS[id]??String(id??'Email');
 let regions=null;
 try{regions=new Intl.DisplayNames(['en'],{type:'region'});}catch{}
-// "🇳🇱 Netherlands" from "NL" (Cloudflare's country for the IP address).
+// "🇳🇱 Netherlands" from "NL" (the country of the device's time zone).
 export function country(code){
  if(!/^[A-Z]{2}$/.test(code??''))return null;
  let name=code;try{name=regions?.of(code)??code;}catch{}
@@ -116,7 +116,7 @@ export function funnelHtml({total,rows,back}){
  return rows.map(bar).join('')+'<li class="admin-funnel-split">Coming back</li>'+back.map(bar).join('');
 }
 
-// Where players come from (admin only): the countries of their last visit, most first.
+// Where players come from (admin only): the country of each device's time zone at the last visit, most first.
 export function countryCounts(players){
  const counts=new Map();let unknown=0;
  for(const p of players){if(!p.everPlayed)continue;if(p.country)counts.set(p.country,(counts.get(p.country)??0)+1);else unknown++;}

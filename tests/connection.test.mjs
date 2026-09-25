@@ -153,7 +153,7 @@ test('analytics get a fixed reason and stage, never an error message',()=>{
 test('the request code repeats safe requests, marks each failure and never repeats the checks it is asked to repeat itself',()=>{
  const supabase=read('src/supabase.js');
  assert.match(supabase,/import \{describeFailure,connectionMessage,safeToRepeat,withRetry\} from '\.\/connection\.js';/);
- assert.match(supabase,/export function farmRequest\(body,\{retry=true\}=\{\}\)\{return withRetry\(\(\)=>farmRequestOnce\(body\),\{repeatable:retry&&safeToRepeat\(body\)\}\);\}/);
+ assert.match(supabase,/export function farmRequest\(body,\{retry=true\}=\{\}\)\{const sent=body\?\.operation==='load'\?\{\.\.\.body,timeZone:deviceTimeZone\(\)\}:body;return withRetry\(\(\)=>farmRequestOnce\(sent\),\{repeatable:retry&&safeToRepeat\(sent\)\}\);\}/);
  assert.match(supabase,/Object\.assign\(failure,\{status,code,kind,transient\}\)/);
  assert.match(supabase,/connectionMessage\(kind,globalThis\.navigator\?\.onLine\)/,'a specific message instead of the one for everything');
  assert(!/could not be reached\. Check your connection and try again/.test(supabase));
