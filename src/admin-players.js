@@ -8,9 +8,21 @@ const DAY=86400000;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
 const time=iso=>{const t=Date.parse(iso);return Number.isFinite(t)?t:null;};
-// "Sep 25, 14:32": the date and the time, on a 24-hour clock.
-export const dateTime=iso=>{const t=time(iso);return t==null?'—':new Date(t).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});};
-const day=iso=>{const t=time(iso);return t==null?'—':new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});};
+// Every time in the dashboard is Amsterdam time on a 24-hour clock, wherever the device is: the admin and the moderators are in the
+// Netherlands (farm-api counts its days the same way, admin-analytics-service.js).
+export const ADMIN_ZONE='Europe/Amsterdam';
+const at=(options)=>new Intl.DateTimeFormat('en-US',{timeZone:ADMIN_ZONE,hourCycle:'h23',...options});
+const DATE_TIME=at({month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}),DATE=at({month:'short',day:'numeric',year:'numeric'}),CLOCK=at({hour:'2-digit',minute:'2-digit'});
+// "Sep 25, 14:32", "Sep 25, 2026" and "14:32".
+export const dateTime=iso=>{const t=time(iso);return t==null?'—':DATE_TIME.format(t);};
+const day=iso=>{const t=time(iso);return t==null?'—':DATE.format(t);};
+export const clock=iso=>{const t=time(iso);return t==null?'—':CLOCK.format(t);};
+// "2026-09-25" and the instant that day began in Amsterdam (summer or winter time), for "Today".
+const DAY_KEY=new Intl.DateTimeFormat('en-CA',{timeZone:ADMIN_ZONE,year:'numeric',month:'2-digit',day:'2-digit'});
+const PARTS=at({year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'});
+const offset=ms=>{const p=Object.fromEntries(PARTS.formatToParts(ms).map(x=>[x.type,x.value]));return Date.UTC(+p.year,p.month-1,+p.day,+p.hour,+p.minute,+p.second)-Math.floor(ms/1000)*1000;};
+export const zoneDay=ms=>DAY_KEY.format(ms);
+export const zoneMidnight=ms=>{const start=Date.parse(`${zoneDay(ms)}T00:00:00Z`);return start-offset(start-offset(start));};
 export const ago=(iso,now=Date.now())=>{const t=time(iso);if(t==null)return 'never';const m=Math.floor((now-t)/60000);return m<1?'just now':m<60?`${m}m ago`:m<1440?`${Math.floor(m/60)}h ago`:`${Math.floor(m/1440)}d ago`;};
 const PROVIDERS={email:'Email',google:'Google',facebook:'Facebook'};
 export const provider=id=>PROVIDERS[id]??String(id??'Email');
@@ -27,9 +39,9 @@ const name=p=>p.username??(p.everPlayed?'Unnamed':'Never opened a farm');
 
 // The list: a filter, a search box (name, and for the admin also country and IP) and an order.
 export const PLAYER_FILTERS=Object.freeze([['all','All'],['online','Online'],['today','Today'],['week','This week'],['quiet','Gone quiet'],['new','New'],['never','Never played']]);
-export const PLAYER_SORTS=Object.freeze([['active','Last active'],['new','Newest'],['level','Level'],['days','Days played']]);
+export const PLAYER_SORTS=Object.freeze([['active','Last action'],['new','Newest'],['level','Level'],['days','Days played']]);
 export function filterPlayers(players,{filter='all',search='',sort='active'}={},now=Date.now()){
- const midnight=new Date(now).setHours(0,0,0,0),active=p=>time(p.lastActiveAt)??-Infinity,joined=p=>time(p.createdAt)??-Infinity;
+ const midnight=zoneMidnight(now),active=p=>time(p.lastActiveAt)??-Infinity,joined=p=>time(p.createdAt)??-Infinity;
  const keep={all:()=>true,online:p=>p.online,today:p=>active(p)>=midnight,week:p=>active(p)>=now-7*DAY,
   quiet:p=>p.everPlayed&&active(p)<now-7*DAY,new:p=>joined(p)>=now-7*DAY,never:p=>!p.everPlayed}[filter]??(()=>true);
  const words=search.trim().toLowerCase();
@@ -37,11 +49,12 @@ export function filterPlayers(players,{filter='all',search='',sort='active'}={},
  const order={active:(a,b)=>active(b)-active(a),new:(a,b)=>joined(b)-joined(a),level:(a,b)=>(b.level??0)-(a.level??0),days:(a,b)=>b.daysPlayed-a.daysPlayed}[sort]??((a,b)=>active(b)-active(a));
  return players.filter(p=>keep(p)&&found(p)).sort((a,b)=>order(a,b)||joined(b)-joined(a));
 }
-// One row: face, name and chips; level, days played, guide step and family; joined, sign-in, country and IP; last active at the end.
+// One row: face, name and chips; level, days played, guide step and family; joined, sign-in, country and IP; at the end when they last
+// did something (online: "Online" with the time of the last action under it).
 export function playerRow(p,{guideSteps=10,now=Date.now()}={}){
  const facts=p.everPlayed?[`Level ${number(p.level)}`,`${number(p.daysPlayed)} day${p.daysPlayed===1?'':'s'} played`,p.guide>=guideSteps?'Guide done':`Guide ${number(p.guide)}/${guideSteps}`,p.family&&esc(p.family)]:['Never opened a farm'];
  const where=[`Joined ${esc(dateTime(p.createdAt))}`,provider(p.provider),country(p.country),p.ip&&`IP ${esc(p.ip)}`].filter(Boolean);
- return `<li><button type="button" class="admin-player-row" data-player="${esc(p.playerId)}">${face(p)}<span class="admin-recent-copy"><strong>${esc(name(p))}${p.vip?' <b class="admin-chip is-vip">VIP</b>':''}</strong><small>${facts.filter(Boolean).join(' · ')}</small><small>${where.join(' · ')}</small></span><span class="admin-last-active"><b>${p.online?'Online':esc(ago(p.lastActiveAt,now))}</b><time datetime="${esc(p.lastActiveAt??'')}">${esc(dateTime(p.lastActiveAt))}</time></span></button></li>`;
+ return `<li><button type="button" class="admin-player-row" data-player="${esc(p.playerId)}">${face(p)}<span class="admin-recent-copy"><strong>${esc(name(p))}${p.vip?' <b class="admin-chip is-vip">VIP</b>':''}</strong><small>${facts.filter(Boolean).join(' · ')}</small><small>${where.join(' · ')}</small></span><span class="admin-last-active${p.online?' is-online':''}"><b>${p.online?'Online':esc(ago(p.lastActiveAt,now))}</b><time datetime="${esc(p.lastActiveAt??'')}" title="Last action (Amsterdam time)">${p.online?`Last action ${esc(clock(p.lastActiveAt))} (${esc(ago(p.lastActiveAt,now))})`:esc(dateTime(p.lastActiveAt))}</time></span></button></li>`;
 }
 
 // One farmer. The other accounts that last played from the same IP address are listed for the staff (a shared home, school or phone
@@ -55,7 +68,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now()}={}){
  const guide=!p.everPlayed?'—':p.guide>=p.guideTotal?'Finished':`Step ${number(p.guide)} of ${p.guideTotal}${next?` <small>(next: ${esc(next)})</small>`:''}`;
  const account=[
   fact('Joined',`${esc(day(p.createdAt))} <small>(${esc(ago(p.createdAt,now))})</small>`),
-  fact('Last active',p.online?'<b class="admin-paid">Online now</b>':since(p.lastActiveAt)),
+  fact('Last action',`${p.online?'<b class="admin-paid">Online now</b> · ':''}${since(p.lastActiveAt)}`),
   fact('Last sign-in',since(p.lastSignInAt)),
   fact('Signs in with',`${provider(p.provider)}${p.provider==='email'?` <small>(email ${p.emailBonus?'confirmed':'not confirmed'})</small>`:''}`),
   fact('Days played',`${number(p.daysPlayed)} <small>(streak ${number(p.streak)}, best ${number(p.bestStreak)})</small>`),
@@ -81,12 +94,12 @@ export function playerDetail(p,{guideSteps=[],now=Date.now()}={}){
   fact('Earned in total',`${number(p.earned.coins)} coins · ${number(p.earned.diamonds)} diamonds`)
  ].join('');
  return `<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button><button type="button" class="small-button" data-open-profile="${esc(p.playerId)}">Open profile</button></div>`
-  +`<div class="admin-detail-head">${face(p)}<div><h3>${esc(name(p))}${p.vipUntil?' <b class="admin-chip is-vip">VIP</b>':''}</h3><small>${p.everPlayed?`Level ${number(p.level)} · `:''}${p.online?'Online now':`Last active ${esc(ago(p.lastActiveAt,now))}`}</small></div></div>`
+  +`<div class="admin-detail-head">${face(p)}<div><h3>${esc(name(p))}${p.vipUntil?' <b class="admin-chip is-vip">VIP</b>':''}</h3><small>${p.everPlayed?`Level ${number(p.level)} · `:''}${p.online?'Online now':`Last action ${esc(ago(p.lastActiveAt,now))}`}</small></div></div>`
   +`<h4>Account</h4><dl class="admin-facts">${account}</dl><h4>Progress</h4><dl class="admin-facts">${progress}</dl>`
   +`<h4>What they do</h4><ul class="admin-bars">${activity}</ul>`
   +(p.purchases?`<h4>Purchases</h4><ul class="admin-recent-list admin-purchases">${purchases}</ul>`:'')
   +`<h4>Events, chat and friends</h4><dl class="admin-facts">${social}</dl>`
-  +'<p class="admin-hint">Last active is the last time the farm saved. Days played counts the days the daily gift was opened. Same network: the accounts that last played from the same IP address; a home, school or phone network is often shared, so it is a hint, not proof. Open profile for a gift or the chat buttons.</p>';
+  +'<p class="admin-hint">Times are Amsterdam time. Last action is the last time the farm saved. Days played counts the days the daily gift was opened. Same network: the accounts that last played from the same IP address; a home, school or phone network is often shared, so it is a hint, not proof. Open profile for a gift or the chat buttons.</p>';
 }
 
 // Where new players stop: of everyone who made an account in the period, how many got how far. The guide steps follow

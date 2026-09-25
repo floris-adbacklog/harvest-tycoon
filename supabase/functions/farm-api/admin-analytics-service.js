@@ -8,6 +8,14 @@ import {zoneCountry} from './time-zones.js';
 // not any of the farmers this dashboard reports on.
 const respond=(user,data,status=200)=>({status,data:{...data,profile:{player_id:user?.id}}});
 const DAY_MS=86400000,RETENTION_DAYS=7;
+// The staff are in the Netherlands: the dashboard's days run from midnight to midnight Amsterdam time (src/admin-players.js shows
+// every time in it too). zoneDay gives "2026-09-25" for an instant; dayStart the instant that day began, summer or winter time.
+export const ADMIN_ZONE='Europe/Amsterdam';
+const dayFormat=new Intl.DateTimeFormat('en-CA',{timeZone:ADMIN_ZONE,year:'numeric',month:'2-digit',day:'2-digit'});
+const partsFormat=new Intl.DateTimeFormat('en-US',{timeZone:ADMIN_ZONE,hourCycle:'h23',year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'});
+export const zoneDay=ms=>dayFormat.format(ms);
+const zoneOffset=ms=>{const p=Object.fromEntries(partsFormat.formatToParts(ms).map(x=>[x.type,x.value]));return Date.UTC(+p.year,p.month-1,+p.day,+p.hour,+p.minute,+p.second)-Math.floor(ms/1000)*1000;};
+export const dayStart=day=>{const clock=Date.parse(`${day}T00:00:00Z`);return clock-zoneOffset(clock-zoneOffset(clock));};
 
 // Who is online right now: the same "active in the last 30 minutes" rule the leaderboard's own online dot and a
 // farmer's public profile already use (presence.js) — nothing new is invented for this dashboard.
@@ -38,7 +46,7 @@ export async function handleAdminRecentPlayers({admin,user,limit=14,now=Date.now
  return respond(user,{players});
 }
 
-// A simplified retention cohort: for every UTC day in the last week, the % of that day's real (non-anonymous)
+// A simplified retention cohort: for every day in the last week (Amsterdam time), the % of that day's real (non-anonymous)
 // signups whose most recent activity is at or after "signup day + N days", for N = 0..7. This is a "still
 // around by day N" cohort (a rolling floor on their one last-activity timestamp), not exact day-N-active
 // retention — the game keeps no daily activity log, so exact day-by-day presence cannot be reconstructed after
@@ -54,14 +62,14 @@ export async function handleAdminRetention({admin,user,now=Date.now()}){
  const lastActive=new Map((stats.data??[]).map(s=>[s.player_id,s.last_active_at?Date.parse(s.last_active_at):null]));
  const cohorts=new Map();
  for(const s of signups.data??[]){
-  const day=new Date(s.created_at).toISOString().slice(0,10);
+  const day=zoneDay(Date.parse(s.created_at));
   if(!cohorts.has(day))cohorts.set(day,[]);
   cohorts.get(day).push(s.player_id);
  }
  const rows=[...cohorts.entries()].sort(([a],[b])=>a<b?-1:a>b?1:0).map(([day,members])=>{
-  const dayStart=Date.parse(`${day}T00:00:00Z`);
+  const start=dayStart(day);
   const days=Array.from({length:RETENTION_DAYS+1},(_,offset)=>{
-   const mark=dayStart+offset*DAY_MS;
+   const mark=start+offset*DAY_MS;
    if(now<mark)return null;
    const retained=members.filter(id=>{const active=lastActive.get(id);return active!=null&&active>=mark;}).length;
    return {retained,total:members.length,pct:Math.round(retained/members.length*100)};

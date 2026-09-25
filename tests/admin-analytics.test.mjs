@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention} from '../supabase/functions/farm-api/admin-analytics-service.js';
+import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,zoneDay,dayStart} from '../supabase/functions/farm-api/admin-analytics-service.js';
 import {ONLINE_WINDOW} from '../supabase/functions/farm-api/presence.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const admin={id:'22222222-2222-4222-8222-222222222222',email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z'};
@@ -85,25 +85,31 @@ test('admin_recent_players: the limit is clamped to a sane range',async()=>{
  }
 });
 
-test('admin_retention: grouped by UTC signup day, retained means last_active_at at or after signup-day + N days',async()=>{
- const day='2026-09-15',dayStart=Date.parse(`${day}T00:00:00Z`);
+test('admin_retention: grouped by signup day in Amsterdam time, retained means last_active_at at or after signup-day + N days',async()=>{
+ const day='2026-09-15',utcStart=Date.parse(`${day}T00:00:00Z`);
  const signups=[
-  {player_id:'a',created_at:iso(dayStart+3600000)},   // 01:00 that day
-  {player_id:'b',created_at:iso(dayStart+20*3600000)} // 20:00 that day — same UTC-day cohort
+  {player_id:'a',created_at:iso(utcStart+3600000)},    // 03:00 in Amsterdam that day
+  {player_id:'b',created_at:iso(utcStart+20*3600000)}, // 22:00 in Amsterdam: same day
+  {player_id:'c',created_at:iso(utcStart+22.5*3600000)} // 22:30 UTC is 00:30 the next day in Amsterdam: the next cohort
  ];
  const stats=[
-  {player_id:'a',last_active_at:iso(dayStart+3*86400000)},  // still active on day 3
-  {player_id:'b',last_active_at:iso(dayStart+1000)}          // never came back after signing up
+  {player_id:'a',last_active_at:iso(utcStart+3*86400000)},  // still active on day 3
+  {player_id:'b',last_active_at:iso(utcStart+1000)}          // never came back after signing up
  ];
  const db=database({signups,stats});
- const result=await handleAdminRetention({admin:db,user:admin,now:dayStart+4*86400000});
- assert.equal(result.status,200);assert.equal(result.data.rows.length,1);
- const row=result.data.rows[0];assert.equal(row.day,day);assert.equal(row.size,2);
+ const result=await handleAdminRetention({admin:db,user:admin,now:utcStart+4*86400000});
+ assert.equal(result.status,200);assert.deepEqual(result.data.rows.map(r=>[r.day,r.size]),[[day,2],['2026-09-16',1]]);
+ const row=result.data.rows[0];
  assert.deepEqual(row.days[0],{retained:2,total:2,pct:100},'day 0: both had at least signed up');
  assert.deepEqual(row.days[3],{retained:1,total:2,pct:50},'day 3: only a is still active by then');
 });
+test('the dashboard\'s days run midnight to midnight in Amsterdam, summer and winter time',()=>{
+ assert.equal(zoneDay(Date.UTC(2026,8,24,21,59)),'2026-09-24');assert.equal(zoneDay(Date.UTC(2026,8,24,22,0)),'2026-09-25','midnight in Amsterdam is 22:00 UTC in summer');
+ assert.equal(dayStart('2026-09-25'),Date.UTC(2026,8,24,22));assert.equal(dayStart('2026-01-06'),Date.UTC(2026,0,5,23),'and 23:00 UTC in winter');
+ assert.equal(dayStart('2026-10-25'),Date.UTC(2026,9,24,22),'the day the clocks go back still starts in summer time');
+});
 test('admin_retention: a day-offset that has not elapsed yet is null, never a false 0%',async()=>{
- const today=new Date(now).toISOString().slice(0,10);
+ const today=zoneDay(now);
  const signups=[{player_id:'z',created_at:iso(now)}];
  const db=database({signups,stats:[]});
  const result=await handleAdminRetention({admin:db,user:admin,now});

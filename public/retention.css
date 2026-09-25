@@ -1168,6 +1168,7 @@
 #admin-dashboard-dialog .admin-player-row small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #admin-dashboard-dialog .admin-last-active{flex:none;display:grid;justify-items:end;gap:1px;text-align:right}
 #admin-dashboard-dialog .admin-last-active b{font-size:12.5px;color:#4f472f}
+#admin-dashboard-dialog .admin-last-active.is-online b{color:#3f7a3a}
 #admin-dashboard-dialog .admin-last-active time{font-size:11.5px;font-weight:600;color:#8a7c69;font-variant-numeric:tabular-nums}
 #admin-dashboard-dialog .admin-chip{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;vertical-align:1px}
 #admin-dashboard-dialog .admin-chip.is-vip{background:#f7e3a3;color:#7a5a10}

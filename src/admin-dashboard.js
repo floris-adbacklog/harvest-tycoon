@@ -9,12 +9,13 @@ import {refreshArt} from '../public/visual-icons.js';
 import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {avatarImage} from '../public/player-avatars.js';
-import {PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml} from './admin-players.js';
+import {PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
-const fmtDate=iso=>{const time=Date.parse(iso);return Number.isFinite(time)?new Date(time).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';};
-const fmtDay=day=>{const time=Date.parse(`${day}T00:00:00Z`);return Number.isFinite(time)?new Date(time).toLocaleDateString('en-US',{month:'short',day:'numeric'}):day;};
+// Every time is Amsterdam time on a 24-hour clock (admin-players.js); a retention day is already an Amsterdam date ("2026-09-25").
+const fmtDate=dateTime;
+const fmtDay=day=>{const time=Date.parse(`${day}T00:00:00Z`);return Number.isFinite(time)?new Date(time).toLocaleDateString('en-US',{timeZone:'UTC',month:'short',day:'numeric'}):day;};
 const initials=name=>String(name??'?').trim().split(/\s+/).slice(0,2).map(part=>part[0]??'').join('').toUpperCase()||'?';
 // A farmer's own picture when we know it (the same as on the leaderboard), otherwise their initials.
 let faces=new Map();
@@ -39,12 +40,12 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'</div><div data-admin-panel="players" hidden>'
   +'<section class="admin-card" id="admin-donate" hidden><h3>'+art('gift')+'A gift for everyone</h3><form id="admin-donate-form" class="admin-donate"><label><span>'+art('diamonds')+'Diamonds</span><input type="number" id="admin-donate-diamonds" min="0" max="50" step="1" value="0" inputmode="numeric"></label><label><span>'+art('coins')+'Coins</span><input type="number" id="admin-donate-coins" min="0" max="500" step="10" value="0" inputmode="numeric"></label><label class="admin-donate-message"><span>Message</span><input type="text" id="admin-donate-message" maxlength="120" placeholder="Thanks for playing!"></label><button type="submit" class="primary-button">Send to everyone</button></form><p class="admin-hint" id="admin-donate-room"></p></section>'
   +'<section class="admin-card"><h3>'+art('family-members')+'Online now <span id="admin-online-count">0</span></h3><ul id="admin-online-list" class="admin-online-list"></ul><p class="admin-hint">Active in the last <span id="admin-online-window">30</span> minutes.</p></section>'
-  +'<section class="admin-card" id="admin-players"><h3>'+art('family-members')+'All players <span id="admin-players-count">0</span></h3><div class="admin-player-tools"><input type="search" id="admin-player-search" placeholder="Search by name" aria-label="Search players" autocomplete="off"><select id="admin-player-sort" aria-label="Order">'+PLAYER_SORTS.map(([id,label])=>`<option value="${id}">${label}</option>`).join('')+'</select></div><div class="admin-filters" role="group" aria-label="Show">'+PLAYER_FILTERS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-player-filter="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-player-list" class="admin-recent-list admin-player-list"></ul><button type="button" id="admin-player-more" class="small-button admin-more" hidden>Show more</button><p class="admin-hint">Last active: the last time the farm saved. Gone quiet: played before, not active for 7 days or more. New: joined in the last 7 days.</p></section>'
+  +'<section class="admin-card" id="admin-players"><h3>'+art('family-members')+'All players <span id="admin-players-count">0</span></h3><div class="admin-player-tools"><input type="search" id="admin-player-search" placeholder="Search by name" aria-label="Search players" autocomplete="off"><select id="admin-player-sort" aria-label="Order">'+PLAYER_SORTS.map(([id,label])=>`<option value="${id}">${label}</option>`).join('')+'</select></div><div class="admin-filters" role="group" aria-label="Show">'+PLAYER_FILTERS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-player-filter="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-player-list" class="admin-recent-list admin-player-list"></ul><button type="button" id="admin-player-more" class="small-button admin-more" hidden>Show more</button><p class="admin-hint">Times are Amsterdam time. Last action: the last time the farm saved. Gone quiet: played before, not active for 7 days or more. New: joined in the last 7 days.</p></section>'
   +'<section class="admin-card admin-player-detail" id="admin-player-detail" hidden></section>'
   +'</div><div data-admin-panel="growth" hidden>'
   +'<section class="admin-card" id="admin-funnel"><h3>'+art('quests')+'New players: where do they stop?</h3><div class="admin-filters" role="group" aria-label="Period">'+FUNNEL_PERIODS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-funnel-period="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-funnel-list" class="admin-bars admin-funnel"></ul><p class="admin-hint">Of everyone who made an account in the period, how many got this far. Coming back counts only farmers who joined long enough ago, from their last activity.</p></section>'
   +'<section class="admin-card" id="admin-countries" hidden><h3>'+art('invite-friends')+'Where players come from</h3><ul id="admin-country-list" class="admin-bars"></ul><p class="admin-hint">The country of each farmer’s device time zone, the last time they opened the game.</p></section>'
-  +'<section class="admin-card"><h3>'+art('xp')+'Retention, day 0–7</h3><p class="admin-hint">Share of each day’s signups still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
+  +'<section class="admin-card"><h3>'+art('xp')+'Retention, day 0–7</h3><p class="admin-hint">Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
   +'<section class="admin-card"><h3>'+art('gift')+'Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
   +'</div><div data-admin-panel="settings" hidden>'
   +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News for everyone</h3><form id="admin-news-form" class="admin-news"><textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… Everyone sees it under Notifications in the chat."></textarea><label class="admin-news-hours">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Post news</button></form>'
@@ -101,7 +102,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  // Headline numbers: who is on now, today's signups (today's retention row) and how many of the recent signups came
  // back the next day, weighted by cohort size.
  function renderKpis(online,retention){
-  const today=new Date().toISOString().slice(0,10),row=retention.rows.find(r=>r.day===today),day1=retention.rows.map(r=>r.days[1]).filter(Boolean);
+  const today=zoneDay(Date.now()),row=retention.rows.find(r=>r.day===today),day1=retention.rows.map(r=>r.days[1]).filter(Boolean);
   const kept=day1.reduce((sum,d)=>({retained:sum.retained+d.retained,total:sum.total+d.total}),{retained:0,total:0});
   dialog.querySelector('#admin-kpi-online').textContent=number(online.count);
   dialog.querySelector('#admin-kpi-new').textContent=number(row?.size??0);
@@ -128,7 +129,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    if(players)showPlayers(players);
    await loadFaces(online.players.map(p=>p.playerId));
    renderOnline(online);renderRetention(retention);renderKpis(online,retention);if(invites)renderInvites(invites);
-   status.textContent=`Updated ${new Date().toLocaleTimeString('en-US')}`;
+   status.textContent=`Updated ${clock(new Date().toISOString())} (Amsterdam time)`;
   }catch(error){status.textContent=error.message;}
  }
  // The chat: open reports for the staff; news, moderators and chat levels for the admin.

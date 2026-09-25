@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {handleAdminPlayers,handleAdminPlayer,seenFrom,recordSeen,deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
-import {filterPlayers,funnel,funnelHtml,playerRow,playerDetail,countryCounts,country,GUIDE_STEPS} from '../src/admin-players.js';
+import {filterPlayers,funnel,funnelHtml,playerRow,playerDetail,countryCounts,country,dateTime,zoneMidnight,GUIDE_STEPS} from '../src/admin-players.js';
 import {BEGINNER_QUESTS} from '../game/farm-state.js';
 import {zoneCountry,ZONE_COUNTRY} from '../supabase/functions/farm-api/time-zones.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -161,6 +161,7 @@ test('the player list: filters, search (also by country and IP) and orders',()=>
  const ids=(o)=>filterPlayers(list,o,now).map(p=>p.playerId);
  assert.deepEqual(ids({}),['a','b','c','d'],'last active first, never active last');
  assert.deepEqual(ids({filter:'online'}),['a']);
+ assert.equal(zoneMidnight(now),Date.UTC(2026,8,24,22),'"Today" starts at midnight in Amsterdam');
  assert.deepEqual(ids({filter:'week'}),['a','b']);
  assert.deepEqual(ids({filter:'quiet'}),['c'],'played before, not active for 7 days');
  assert.deepEqual(ids({filter:'new'}),['a','b','d']);
@@ -168,9 +169,12 @@ test('the player list: filters, search (also by country and IP) and orders',()=>
  assert.deepEqual(ids({search:'belg'}),['b'],'the country name');assert.deepEqual(ids({search:'1.1.1'}),['a'],'the IP address');
  assert.deepEqual(ids({sort:'new'}),['d','a','b','c']);assert.deepEqual(ids({sort:'level'}),['a','b','c','d']);
 });
-test('a list row shows last active as a date and a time, and the IP only when the admin has it',()=>{
+test('a list row shows the last action as a date and a time in Amsterdam time, and the IP only when the admin has it',()=>{
  const row=playerRow(list[1],{now});
- assert.match(row,/3d ago/);assert.match(row,/Sep 22, \d\d:\d\d/);assert.match(row,/IP 2\.2\.2\.2/);assert.match(row,/Belgium/);assert.match(row,/Guide 6\/10/);
+ assert.match(row,/3d ago/);assert.match(row,/Sep 22, 14:00/,'12:00 UTC is 14:00 in Amsterdam');
+ const online=playerRow(list[0],{now});
+ assert.match(online,/<b>Online<\/b><time[^>]*>Last action 13:59 \(1m ago\)<\/time>/,'online players show when they last did something');
+ assert.equal(dateTime(iso(Date.UTC(2026,0,5,23,30))),'Jan 6, 00:30','winter time');assert.match(row,/IP 2\.2\.2\.2/);assert.match(row,/Belgium/);assert.match(row,/Guide 6\/10/);
  const {ip,country:c,...forModerator}=list[1];
  assert.doesNotMatch(playerRow(forModerator,{now}),/IP /);
  assert.equal(country('NL'),'🇳🇱 Netherlands');assert.equal(country(null),null);
