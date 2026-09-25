@@ -216,3 +216,17 @@ test('in-game purchases: a notice for the admin when a purchase is credited, wit
  assert.match(ui,/purchase:'In-game purchase'/);assert.match(ui,/n\.kind==='purchase'\?'diamonds'/);
  assert.match(read('src/chat-client.js'),/setPurchaseAlerts:on=>rpc\('chat_set_purchase_alerts',\{p_on:on\}\)/);
 });
+test('in-game purchases reach the admin\'s phone too, once, and can never block the purchase itself',async()=>{
+ const sql=read('supabase/purchase-alerts-push.sql');
+ assert.match(sql,/perform net\.http_post\(url:='https:\/\/jnmdirvidffzxukbdmij\.supabase\.co\/functions\/v1\/notify-hourly\?notice'/,'only when the admin has a device that allows notifications');
+ assert.match(sql,/if exists\(select 1 from public\.push_subscriptions p where p\.player_id=admin_id\) then/);
+ assert.match(sql,/exception when others then return new;   -- a notice never stands in the way of the purchase itself/);
+ assert.match(sql,/update public\.player_notices set pushed_at=now\(\)\n  where id=p_notice and kind='purchase' and player_id is not null and pushed_at is null and created_at>now\(\)-interval '10 minutes'/,'each notice once');
+ assert.match(sql,/revoke execute on function public\.notice_push_claim\(uuid\) from public, anon, authenticated;/,'the notification service only');
+ const fn=read('supabase/functions/notify-hourly/index.ts');
+ assert.match(fn,/if\(query\.has\('notice'\)\)\{/);assert.match(fn,/admin\.rpc\('notice_push_claim',\{p_notice:id\}\)/);assert.match(fn,/url:'\/\?open=chat&channel=notices'/);
+ const {openIntent}=await import('../public/app-links.js');
+ assert.deepEqual(openIntent('?open=chat&channel=notices'),{open:'chat',channel:'notices'},'tapping it opens the Notifications tab');
+ assert.deepEqual(openIntent('?open=chat&channel=nonsense'),{open:'chat'});
+ assert.match(read('src/chat-ui.js'),/else if\(channel==='notices'\)wanted='notices';/);
+});

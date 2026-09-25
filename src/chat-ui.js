@@ -200,6 +200,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(!overview)return;
   if(channel?.startsWith('dm:')){const t=overview.threads?.find(x=>x.channel===channel);if(t)other={id:t.otherId,name:t.otherName,avatar:t.otherAvatar};else wanted='private';}
   else if(channel?.startsWith('family:'))wanted='family';
+  else if(channel==='notices')wanted='notices';
   // Always Global first (a private chat only when you came to write to someone); the counts on the tabs show what is new elsewhere.
   const first=other?'private':wanted??'global';
   if(other)thread={channel:chat.dmChannel(other.id),otherId:other.id,otherName:other.name,otherAvatar:other.avatar};

@@ -82,6 +82,25 @@ Deno.serve(async(req)=>{
   }
   return json({sent});
  }
+ // An in-game purchase, for the admin (supabase/purchase-alerts-push.sql): the same notice as in the chat's Notifications, on the
+ // admin's devices. notice_push_claim hands each notice out once. Tapping it opens the chat on Notifications.
+ if(query.has('notice')){
+  if(!pushOn)return json({sent:0});
+  let id='';try{id=String((await req.json())?.notice??'');}catch{}
+  if(!tokenOk(id))return json({sent:0});
+  const {data:claim,error}=await admin.rpc('notice_push_claim',{p_notice:id});
+  if(error||!claim)return json({sent:0});
+  const text=String(claim.body??''),test=text.startsWith('Test purchase');
+  const payload=JSON.stringify({title:test?'Test purchase':'In-game purchase',body:text.replace(/^(In-game purchase|Test purchase \(no money\)): /,''),tag:`purchase-${claim.id}`,url:'/?open=chat&channel=notices'});
+  let sent=0;
+  for(const sub of claim.subscriptions??[]){
+   const outcome=await sendPush(sub,payload);
+   if(outcome.ok){sent++;await db.markSuccess(sub.endpoint);}
+   else if(outcome.status===404||outcome.status===410)await db.removeSubscription(sub.endpoint);
+   else await db.markFailure(sub.endpoint);
+  }
+  return json({sent});
+ }
  if(!pushOn&&!emailOn)return json({ran:false,reason:'not configured'},503);
  try{
   const stats=await runJob({db,sendPush:pushOn?sendPush:null,sendEmail:emailOn?sendEmail:null,names:{crops:CROP_NAMES,buildings:BUILDING_NAMES},log:(m:string)=>console.error(m)});
