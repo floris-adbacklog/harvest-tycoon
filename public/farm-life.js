@@ -27,7 +27,8 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  zone('exact');
  for(const [x,z,w,d,h] of [[-43,-39,37,27,10],[-9,-53,38,23,9],[26,-47,35,22,8]])scenery('mountain_008',x,z,{width:wide(w),depth:wide(d),height:h,y:-.6});
  // Neighbouring agricultural strips echo the supplied demo without adding timers. (The west one stops short of the Pig Farm's pen.)
- for(const [name,x,z,w,d,rotation] of [['field_005',-27,5.8,12,14.4,0],['field_004',-27,23,13,15,0],['field_005',15,29,25,11,0],['field_004',-13,-32,20,11,0]])scenery(name,x,z,{width:wide(w),depth:wide(d),height:.45,rotation,y:.01});
+ // (The two strips on the west made way for the level 25-50 yards, and the one in front of the Factory for a grove, 25 Sep 2026.)
+ for(const [name,x,z,w,d,rotation] of [['field_004',-13,-32,20,11,0]])scenery(name,x,z,{width:wide(w),depth:wide(d),height:.45,rotation,y:.01});
  // A turned road runs along the model's own length, so it has no pointed ends (the lane to the Trade Depot).
  for(const road of ROADS.slice(3)){const size=roadSize(road);scenery('road_001',road.x,road.z,road.turned?{width:size.depth,depth:size.width,height:road.height,y:road.y,rotation:Math.PI/2}:{...size,height:road.height});}
  zone(null);
@@ -69,6 +70,9 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
     const wall=scenery(i%3===2?'stone_fence_003':'stone_fence_001',wx,wz,{width:2.6,height:.65,rotation:alongX?0:Math.PI/2});taken.push(new THREE.Box3().setFromObject(wall));
    }
   }
+  // A grove where the big wheat field in front of the Factory was (25 Sep 2026): trees on both sides of the road there.
+  for(const [x,z,h,i] of [[6,34.5,4.6,0],[11.5,36,5.2,1],[30.5,35,4.8,2],[35,38,5.4,3],[7.5,44.5,5,1],[13.5,46.5,4.4,2],[21,44,5.6,0],[28.5,45.5,4.9,3],[35.5,44,4.5,1]])
+   scenery(['tree_008','tree_002','tree_005','tree_007'][i],x,z,{height:h,rotation:x*.37});
   zone(null);
   // No tree grows on a field: the farm's own trees (game.js) and the ones above were placed without looking at the fields.
   const fieldBoxes=scene.children.filter(o=>/^field_/.test(o.userData.model??'')).map(o=>new THREE.Box3().setFromObject(o).expandByScalar(-.3));

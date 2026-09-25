@@ -59,17 +59,20 @@ test('quests, orders and late upgrades ask for the new goods only once they can 
  assert.ok(!['Soup kitchen','Harvest cider','Fabric for the fair'].some(t=>early.has(t)),'and never before');
 });
 
-test('the four yards stand on the new ground east of the coop, clear of the roads, the crops and each other',()=>{
+// 25 Sep 2026: the valley is sorted by level: levels 0-25 in the middle, 25-50 on the west side (screen left), 50+ in the east
+// (screen right). The Glasshouse (40) stayed east, where it has room along the trunk road.
+test('the level 25-50 yards stand on the west side, the Glasshouse east; all clear of the roads, the crops and each other',()=>{
  for(const id of YARDS){
   assert.ok(ANCHORS[id]&&YARD_EXTENT[id]&&YARD_THEME[id],id);
-  const [x,z]=anchorAt(id);assert.ok(x>25,`${id} is east of the old farm`);
+  const [x,z]=anchorAt(id);assert.ok(id==='glasshouse'?x>25:x<-30,`${id} stands on its side of the valley`);
+  assert.ok(id==='glasshouse'||x+YARD_EXTENT[id][0]>-49,`${id} stays clear of the mountains`);
   const [west,east,north,south]=YARD_EXTENT[id];
   assert.ok(!roadRects().some(r=>x+east>r.minX&&x+west<r.maxX&&z+south>r.minZ&&z+north<r.maxZ),`${id} is off the roads`);
   for(const other of YARDS.filter(o=>o!==id)){const [ox,oz]=anchorAt(other);assert.ok(Math.hypot(x-ox,z-oz)>=7,`${id} and ${other}`);}
  }
- // The trunk road, and after it the road out of the valley on the same line, run on past them.
- const east=Math.max(...roadRects().filter(r=>r.horizontal&&Math.abs((r.minZ+r.maxZ)/2-roadRects()[0].minZ-(roadRects()[0].maxZ-roadRects()[0].minZ)/2)<1).map(r=>r.maxX));
- assert.ok(east>=Math.max(...YARDS.map(id=>anchorAt(id)[0])),'the road runs on to them');
+ // Every level 50+ yard stands east (screen right), apart from the Factory and the Valley Market, which stayed in the middle.
+ for(const id of ['goatshed','craftshop','ranch','estateworkshop','tradedepot','grandfair'])assert.ok(anchorAt(id)[0]>25,`${id} is east`);
+ for(const id of ['pigfarm','beeyard','sheepbarn','weaving']){const [x,z]=anchorAt(id),[w,e,n,so]=YARD_EXTENT[id];for(const other of ['pigfarm','beeyard','sheepbarn','weaving'].filter(o=>o!==id)){const [ox,oz]=anchorAt(other),[ow,oe,on,os]=YARD_EXTENT[other];assert.ok(x+e<=ox+ow||ox+oe<=x+w||z+so<=oz+on||oz+os<=z+n,`${id} and ${other} do not overlap`);}}
  // A tree that falls in a yard is moved out of it, and the spot it gets is not on a road.
  for(const id of YARDS){const [x,z]=anchorAt(id),[px,pz]=clearOfYards(x+1,z+1);assert.ok(outsideYardExtents(px,pz),id);}
 });

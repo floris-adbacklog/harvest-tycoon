@@ -23,12 +23,14 @@ export const ANCHORS=Object.freeze({
 // The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), the
 // market waits by the road out at the front, the delivery cart stands at the open end of the farmhouse fence where it can be seen,
 // and the animal paddock stands beside the trunk road below the dairy barn.
-// The east is a street that climbs in level as you pan right, so a new farmer finds everything close by: along the trunk road the
-// Pig Farm (29), Bee Yard (34), Glasshouse (40) and Weaving Shed (43); behind them the Craft Workshop (58), the Ranch (70) and the
-// Estate Workshop (75); furthest out the Grand Valley Fair (90). The Family Hall (10) moved to the open ground west of the
-// farmhouse, where the Pig Farm first stood. Sheep Barn, Goat Shed and Trade Depot keep their places across the road.
+// The valley is sorted by level (25 Sep 2026): what opens up to level 25 in the middle, levels 25-50 on the west side (the left of
+// the screen) and 50+ in the east (the right). West, beyond the Family Hall (10) and the west road: the Pig Farm (29) by the trunk
+// road, then the Bee Yard (34) and the Sheep Barn (37) with its pasture, and the Weaving Shed (43) at the foot of the mountains.
+// East, along the trunk road: the Glasshouse (40, which has more room there), the Goat Shed (54) and the Trade Depot (85) across
+// the road, the Craft Workshop (58), the Ranch (70) and the Estate Workshop (75) behind, the Grand Valley Fair (90) furthest out.
+// The Factory (50) and the Valley Market (62) stay in the middle, at the front and on the road out at the back.
 export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[-25.77,-6.92],stall:[-8,23.4],cart:[-9.7,-10.45],paddock:[1.7,-8.6],
- pigfarm:[23.46,1.46],beeyard:[30.46,1.69],glasshouse:[37.62,1.23],weaving:[44.62,2],
+ pigfarm:[-26.15,0.77],beeyard:[-33.85,14.62],sheepbarn:[-26.15,16.15],glasshouse:[37.62,1.23],weaving:[-33.46,22.69],
  craftshop:[28.62,11.15],ranch:[37.31,11.15],estateworkshop:[46.92,11.15],grandfair:[40,28.1]});
 // Trees, bushes and other loose pieces keep this far from the middle of a yard.
 export const YARD_CLEARANCE=5.4;
@@ -60,8 +62,8 @@ const yardCentres=Object.keys(ANCHORS).map(anchorAt);
 // Yards that reach further than the clearance around their middle: how far they run from their anchor (world units: west, east,
 // north, south). The Sheep Barn's pasture runs down to the road in front of it. Trees keep three steps clear of the edges, so
 // no crown hangs over a yard.
-export const YARD_EXTENT=Object.freeze({coop:[-7.9,7.9,-5.8,5.8],windmill:[-4.6,4.6,-4.6,4.6],beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-4.2,4.2,-2.6,4.6],weaving:[-3,4.8,-4,5.5],
- goatshed:[-4.8,4.8,-4.4,11],pigfarm:[-12.6,4.6,-3.6,12.5],craftshop:[-4.4,4.8,-2.4,3.6],ranch:[-6,6,-5.2,10.2],valleymarket:[-8.5,9.5,-5,4.5],
+export const YARD_EXTENT=Object.freeze({coop:[-7.9,7.9,-5.8,5.8],windmill:[-4.6,4.6,-4.6,4.6],beeyard:[-3.5,3.5,-2.5,3.5],sheepbarn:[-4.6,4.6,-4.8,12.2],glasshouse:[-5.4,5.9,-3.4,5.6],weaving:[-3,4.8,-4,5.5],
+ goatshed:[-4.8,4.8,-4.4,11],pigfarm:[-12.6,4.6,-3.6,12.5],craftshop:[-5.4,5.8,-2.9,4.1],ranch:[-6,6,-5.2,10.2],valleymarket:[-8.5,9.5,-5,4.5],
  tradedepot:[-7,7.5,-4.5,5],estateworkshop:[-5.5,5.5,-3.5,4.5],grandfair:[-13.8,13.8,-5.4,5]});
 const EXTENT_MARGIN=3;
 const extents=Object.entries(YARD_EXTENT).map(([id,[west,east,north,south]])=>{const [x,z]=anchorAt(id);return [x+west,x+east,z+north,z+south];});

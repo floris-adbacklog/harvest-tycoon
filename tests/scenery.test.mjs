@@ -89,3 +89,12 @@ test('the valley: a patchwork of neighbouring fields in front, a forest edge alo
  assert.match(scenery,/count=mobile\?3\+Math\.floor\(rand\(\)\*2\):5\+Math\.floor\(rand\(\)\*4\)/,'stands of firs close together');
  assert.match(scenery,/const front=ringPoint\(deg\+\(rand\(\)-\.5\)\*4,\(37\+rand\(\)\*2\)\*RING,\(34\+rand\(\)\*2\)\*RING\);/,'and young firs in front of them');
 });
+// 25 Sep 2026: the smaller buildings were brought up to the scale of the farmhouse and the barns, and a grove replaced the big
+// wheat field in front of the Factory.
+test('the smaller buildings are in scale with the rest, and trees stand where the Factory field was',()=>{
+ const game=read('public/game.js'),life=read('public/farm-life.js');
+ for(const [id,size] of [['mill','width:6.2'],['bakery','width:6.8'],['packing','width:5.1'],['kitchen','width:5.5,height:3.9,depth:4.8'],['familyhall','width:5.7'],['coop','width:4.25'],['glasshouse','width:6.5,height:3.25,depth:10.1'],['craftshop','width:9.4,height:3.25,depth:3.9']])
+  assert.match(game,new RegExp(`addBuilding\\('${id}',[-\\d.]+,[-\\d.]+,\\{${size.replace(/\./g,'\\.')}`),id);
+ assert.doesNotMatch(life,/\['field_005',15,29,25,11,0\]/,'no wheat field in front of the Factory');
+ assert.match(life,/A grove where the big wheat field in front of the Factory was/);
+});

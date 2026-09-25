@@ -214,28 +214,28 @@ function decorate(){
  zone('dairy');addBuilding('dairy',-1,-13.2,{width:6.8,rotation:Math.PI/2});
  zone('silo');addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
  zone('farmhouse');addBuilding('farmhouse',-13.8,-10.2,{width:6.5,rotation:Math.PI/2});
- zone('mill');addBuilding('mill',-12.5,4,{width:4.8,rotation:Math.PI/2});
+ zone('mill');addBuilding('mill',-12.5,4,{width:6.2,rotation:Math.PI/2});
  cloneModel('tower_005',-17,3,{height:4.5});
- zone('bakery');addBuilding('bakery',-10.8,12,{width:5.2,rotation:Math.PI/2});
- zone('packing');addBuilding('packing',11.5,-17.2,{width:4.4,rotation:-Math.PI/2});
+ zone('bakery');addBuilding('bakery',-10.8,12,{width:6.8,rotation:Math.PI/2});
+ zone('packing');addBuilding('packing',11.5,-17.2,{width:5.1,rotation:-Math.PI/2});
  zone('windmill');
  const windmillPosition={x:12.8,z:-1.5};
  addBuilding('windmill',windmillPosition.x,windmillPosition.z,{height:6.6});
  zone('juicepress');addBuilding('juicepress',-1,-20.1,{width:5.5,height:3.7,depth:4.8,rotation:Math.PI/2});
  zone('preserves');addBuilding('preserves',-15.2,-18.6,{width:5.7,height:3.9,depth:5,rotation:Math.PI/2});
- zone('kitchen');addBuilding('kitchen',-12.4,18.2,{width:4.2,height:3,depth:3.7,rotation:Math.PI/2});
+ zone('kitchen');addBuilding('kitchen',-12.4,18.2,{width:5.5,height:3.9,depth:4.8,rotation:Math.PI/2});
  // The Factory: a long white production hall with a chimney unit at one end and a hopper at the other, south of the pond.
  zone('factory');addBuilding('factory',16.2,21.9,{width:6.4,height:3.6,depth:13,rotation:Math.PI/2});
  // The chimney and the hopper are greyed out with the hall until level 50, like every building that is still to come.
  factoryDecor.push(cloneModel('hangar_022',8.6,21.4,{height:3.6,rotation:Math.PI/2}),cloneModel('tower_010',24.2,22.2,{height:5}));
  // North-west square, clear of crop expansions and the north-south path at x=-6.
- zone('familyhall');addBuilding('familyhall',-9.3,-20.5,{width:4.2,rotation:Math.PI/2});
+ zone('familyhall');addBuilding('familyhall',-9.3,-20.5,{width:5.7,rotation:Math.PI/2});
  {
   // Independent decor is excluded from the raycast target lists.
   for(const [name,x,z,options] of [
-   ['pointer_002',-6.8,-18.2,{height:1.3}],
+   ['pointer_002',-5.9,-17.5,{height:1.3}],
    ['table_002',-9.6,-16.9,{width:1.5}],
-   ['firewood_001',-12.2,-20.6,{width:1.1}]
+   ['firewood_001',-13.2,-20.6,{width:1.1}]
   ]){const decor=cloneModel(name,x,z,options);familyDecor.push(decor);}
  }
 
@@ -279,7 +279,7 @@ function decorate(){
  addUtility('stall','stall_002',-11.3,-2.6,{width:2.9,rotation:.15});
  cloneModel('prop_023',-9.2,-2.7,{width:.8});
  zone('coop');
- addBuilding('coop',13,-9.5,{width:3.4,rotation:-Math.PI/2});
+ addBuilding('coop',13,-9.5,{width:4.25,rotation:-Math.PI/2});
  {const pen=buildingViews.get('coop').object,house=cloneModel('coop_002',13,-9.5,{width:1.8});pen.attach(house);}
  // The pen is roomy, with the coop in the middle: 15.4 wide and 11 deep around it.
  fenceLine(6.4,-15,7);fenceLine(6.4,-4,7);fenceLine(5.3,-13.9,5,'z');fenceLine(20.7,-13.9,5,'z');
@@ -315,8 +315,8 @@ function decorate(){
  yardDecor.sheepbarn.push(cloneModel('hay_001',27,-4.7,{width:1.3,rotation:.3}),cloneModel('water_001',20.7,-4.8,{width:1.1}));
  // The Glasshouse lies along the road, with raised beds and fertilizer beside it.
  zone('glasshouse');
- addBuilding('glasshouse',28.8,1.2,{width:5,height:2.5,depth:7.8,rotation:Math.PI/2});
- yardDecor.glasshouse.push(cloneModel('garden_bed_001',25.7,4.7,{width:1.8}),cloneModel('garden_bed_001',27.8,4.7,{width:1.8}),cloneModel('bag_003',31.9,4.2,{height:.8,rotation:-.3}),cloneModel('water_001',32.4,-1.1,{width:1}));
+ addBuilding('glasshouse',28.8,1.2,{width:6.5,height:3.25,depth:10.1,rotation:Math.PI/2});
+ yardDecor.glasshouse.push(cloneModel('garden_bed_001',25.4,5.6,{width:1.8}),cloneModel('garden_bed_001',27.5,5.6,{width:1.8}),cloneModel('bag_003',30.6,5.5,{height:.8,rotation:-.3}),cloneModel('water_001',34.2,-1.4,{width:1}));
  // The Weaving Shed, south of the Glasshouse, with wool bales waiting at the door.
  zone('weaving');
  addBuilding('weaving',26.2,8.5,{width:4.4,height:3.8,depth:7.6});
@@ -338,7 +338,7 @@ function decorate(){
  yardDecor.pigfarm.push(cloneModel('water_001',penX-1.6,penZ+1.4,{width:1,rotation:.3}),cloneModel('hay_002',-26.4,-4.6,{width:1.2,rotation:.5}));
  // The Craft Workshop, a long low workshop east of the Weaving Shed, with wax and wool at the door.
  zone('craftshop');
- addBuilding('craftshop',33.1,9.6,{width:7.5,height:2.6,depth:3.1});
+ addBuilding('craftshop',33.1,9.6,{width:9.4,height:3.25,depth:3.9});
  yardDecor.craftshop.push(cloneModel('table_001',30.6,12.3,{width:1.5,rotation:.2}),cloneModel('barrel_009',35.6,12.1,{height:.8}),cloneModel('bag_002',36.5,11.4,{height:.7,rotation:.5}),cloneModel('case_003',31.9,12.6,{width:.85,rotation:-.3}));
  // The Ranch: a big stable with its horse paddock in front, on the green by the pond.
  zone('ranch');
@@ -393,7 +393,7 @@ function decorate(){
  // Trees, bushes and tufts are spread out with the farm and keep clear of every yard.
  zone(null);
  // The western boundary keeps tall foliage clear of the Family Hall roof, and no big tree stands between the camera and the hall.
- const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[26,12,5.2],[14,15,5.4],[21,1,5.7],[22.5,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[24,15,6.4],[-25,-1,6.4],[25,-17,7]];
+ const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[26,12,5.2],[14,15,5.4],[21,1,5.7],[22.5,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  // More trees between the far ones fill the wider ring the spread-out farm needs.
  [[-27,-24,4.4],[-28,-4,5],[-27,17,5.4],[-9,27,5],[9,29,5.8],[27,3,5.6],[27,-12,5.8],[24,-25,6],[12,-31,5.2],[-6,-33,4.6],[-24,-32,5.2],[-10,-30,4.8]].forEach(([x,z,height],i)=>cloneModel(['tree_004','tree_006','tree_001'][i%3],x,z,{height,rotation:i*2.3+.7}));
