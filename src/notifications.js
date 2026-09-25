@@ -1,14 +1,16 @@
 import {createPush} from './push.js';
 // Reminder preferences for the settings dialog. Reads go through row-level security (a player only sees their
 // own row) and writes go through the notification_save function, which validates everything on the server.
-export const DEFAULT_PREFS=Object.freeze({pushCrops:false,pushProduction:false,pushDaily:false,emailDigest:false,digestHour:9,pushMessages:false});
+// New private messages and the daily gift & streak reminder are on unless a farmer switches them off; crops, production and the
+// email summary stay off until switched on. Push itself still needs the farmer's own yes on the device.
+export const DEFAULT_PREFS=Object.freeze({pushCrops:false,pushProduction:false,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true});
 
 export function browserTimezone(){
  try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}catch{return 'UTC';}
 }
 const validHour=value=>Number.isInteger(value)&&value>=0&&value<=23;
 
-// No row yet means every reminder is off: nothing is ever switched on for a player.
+// No row yet means the defaults above.
 export function prefsFromRow(row){
  if(!row)return {...DEFAULT_PREFS};
  return {pushCrops:row.push_crops===true,pushProduction:row.push_production===true,pushDaily:row.push_daily===true,emailDigest:row.email_digest===true,digestHour:validHour(row.digest_hour)?row.digest_hour:DEFAULT_PREFS.digestHour,pushMessages:row.push_messages===true};

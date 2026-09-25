@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const sql=read('supabase/notifications.sql');
 
 test('a player without a saved row has every reminder off, the note about a new private message too',()=>{
- assert.deepEqual(prefsFromRow(null),DEFAULT_PREFS);assert.deepEqual(prefsFromRow(undefined),{pushCrops:false,pushProduction:false,pushDaily:false,emailDigest:false,digestHour:9,pushMessages:false});
+ assert.deepEqual(prefsFromRow(null),DEFAULT_PREFS);assert.deepEqual(prefsFromRow(undefined),{pushCrops:false,pushProduction:false,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true},'private messages and the daily gift are on by default');
  assert.deepEqual(prefsFromRow({push_crops:true,push_production:null,push_daily:'yes',email_digest:true,digest_hour:7}),{pushCrops:true,pushProduction:false,pushDaily:false,emailDigest:true,digestHour:7,pushMessages:false},'only a real true switches something on');
  assert.equal(prefsFromRow({push_messages:true}).pushMessages,true);
  assert.equal(prefsFromRow({digest_hour:99}).digestHour,9);
