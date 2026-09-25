@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {featureUnlocked,ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 import {art} from './visual-icons.js';
 import {SPREAD,zone,place,placeIn,wide,ROADS,roadSize,onRoad} from './farm-layout.js';
-export const LIFE_MODELS=['landscape_004','mountain_008','mountain_009','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
+export const LIFE_MODELS=['mountain_008','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
  const views=new Map(),hitAreas=[],moving=[],effects=[],water=[],smoke=[];
@@ -20,13 +20,12 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=art(`activity-${id}`);label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
   views.set(id,{object,x:object.position.x,z:object.position.z,height,label});return object;
  }
- // Broad, low shapes fill the edges; higher mountains stay behind the farm. The hills behind the Juice Press and behind the barns
- // made way for the Valley Market and the midgame yards (pushed further out they ran into the mountains), the one in the east is gone
- // (it stood in front of the wave-3 column at the end of the trunk road), and two strips of field moved aside.
+  // Higher mountains stay behind the farm; the edges around it are open meadow with pines and strips of field. (Broad smooth green
+ // hills stood here too, until 25 Sep 2026: they did not match the angular rest of the valley, hid the trees behind them, and the
+ // pines at their foot stood half inside them. The hills behind the Juice Press and the barns had already made way for the Valley
+ // Market and the midgame yards, and two strips of field moved aside.)
  zone('exact');
- for(const [x,z,w,d,h,rotation] of [[-34,-21,25,20,5,.4],[-24,-34,26,21,6,1.1],[-37,10,20,24,3,1.5]])scenery('landscape_004',x,z,{width:wide(w),depth:wide(d),height:h,rotation,y:-.25});
  for(const [x,z,w,d,h] of [[-43,-39,37,27,10],[-9,-53,38,23,9],[26,-47,35,22,8]])scenery('mountain_008',x,z,{width:wide(w),depth:wide(d),height:h,y:-.6});
- scenery('mountain_009',-46,-7,{width:wide(21),depth:wide(30),height:5,y:-.2});
  // Neighbouring agricultural strips echo the supplied demo without adding timers. (The west one stops short of the Pig Farm's pen.)
  for(const [name,x,z,w,d,rotation] of [['field_005',-27,5.8,12,14.4,0],['field_004',-27,23,13,15,0],['field_005',15,29,25,11,0],['field_004',-13,-32,20,11,0]])scenery(name,x,z,{width:wide(w),depth:wide(d),height:.45,rotation,y:.01});
  // A turned road runs along the model's own length, so it has no pointed ends (the lane to the Trade Depot).

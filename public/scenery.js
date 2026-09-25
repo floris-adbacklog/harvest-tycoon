@@ -78,7 +78,7 @@ export function buildScenery({scene,models,mobile=false}){
  // down first and join the terrain, so the firs after them stand on their slopes instead of inside them.
  // 2. More mountains: a second, taller row behind the ring at the sides and back. (Not at the front: lone peaks there stood
  // on the open plain like boulders.)
- // Rock only: mountain_009 is a green hill (farm-life.js uses it low, as one), and scaled up to a peak it looked like green jelly.
+ // Rock only: mountain_009 is a green hill, and scaled up to a peak it looked like green jelly.
  const peaks=['mountain_001','mountain_007','mountain_008'].filter(n=>models.has(n));
  const hazy=o=>o?.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;n.material=n.material.clone();n.material.emissive=new THREE.Color(0xe2ead0);n.material.emissiveIntensity=.3;}});
  // The ground ends 100 from the middle: a mountain whose far side would hang over that edge is left out.
