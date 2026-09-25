@@ -32,6 +32,10 @@
 .confirm-type{display:grid;gap:6px;margin:16px 0 0;text-align:left;color:#5d5641;font-size:13px;font-weight:650}
 .confirm-type input{width:100%;min-height:44px;box-sizing:border-box;padding:0 12px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 15px 'DM Sans',sans-serif}
 .confirm-type input:focus{outline:2px solid #a8935a;outline-offset:1px}
+/* A short text to change (confirm-dialog.js promptText): a text box and its character count. */
+.prompt-text-field{display:block;width:100%;min-height:88px;box-sizing:border-box;margin:14px 0 0;padding:10px 12px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:500 15px/1.4 'DM Sans',sans-serif;text-align:left;resize:vertical}
+.prompt-text-field:focus{outline:2px solid #a8935a;outline-offset:1px}
+.prompt-text-count{display:block;margin-top:4px;text-align:right;color:#8a7c69;font-size:11.5px}
 /* VIP plans in the row layout of the boost cards: days and a line on the left, the price button on the right. The month plan
    has a small gold "Best value" badge next to its days. */
 #boost-dialog .vip-plans{gap:12px}

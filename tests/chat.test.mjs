@@ -184,3 +184,18 @@ test('Farm Family: the family\'s own name and emblem on top, four tabs with a "!
  assert.match(ui,/later=l=>waitsLater\(l\)&&open\.some\(x=>!waitsLater\(x\)\)/,'nothing is folded away when every open line waits');
  assert.match(ui,/const invite=view\.family\.leader\?`\$\{inviteSearch\.html\(\)\}/,'the leader invites from Members');
 });
+
+test('the staff can edit a message: same rules as sending, live for everyone, marked as edited, every edit kept for the admin',()=>{
+ const sql=read('supabase/chat-edit-message.sql');
+ assert.match(sql,/if public\.chat_staff_role\(me\) is null then raise exception 'Not authorized\.'/);
+ assert.match(sql,/char_length\(clean\)<1 or char_length\(clean\)>200/);assert.match(sql,/Links are not allowed in the chat\./);assert.match(sql,/public\.chat_is_rude\(clean\)/);
+ assert.match(sql,/insert into public\.chat_message_edits\(message_id,editor,before,after\)/);assert.match(sql,/edited_by_moderator=\(me<>msg\.sender\)/);
+ assert.match(sql,/alter table public\.chat_message_edits enable row level security;\s*revoke all on public\.chat_message_edits from anon, authenticated;/,'the edit log is for the admin only');
+ const client=read('src/chat-client.js');
+ assert.match(client,/,edited_at,edited_by_moderator';/);assert.match(client,/\{event:'UPDATE',schema:'public',table:'chat_messages'\},payload=>emit\(\{type:'edited',message:payload\.new\}\)/);
+ assert.match(client,/editMessage:\(message,body\)=>rpc\('chat_mod_edit',\{p_message:message,p_body:body\}\)/);
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/if\(staff\)items\.push\(\['edit','Edit message'\],\['delete','Delete message'\]\);/);
+ assert.match(ui,/\(\$\{m\.edited_by_moderator\?'edited by a moderator':'edited'\}\)/);
+ assert.match(ui,/if\(event\.type==='edited'\)/);assert.match(ui,/messages=withEdit\(messages,await chat\.editMessage\(m\.id,body\)\);/);
+});

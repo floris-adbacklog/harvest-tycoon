@@ -196,3 +196,5 @@ span.chat-avatar{cursor:default}
  .chat-count{position:absolute;right:1px;top:-7px;min-width:16px;height:16px;margin:0;padding:0 4px;border:2px solid #f0e8e0;font-size:9px;line-height:1}
  .chat-tabs button[data-chat-tab="notices"]{min-width:38px}
 }
+/* A message the staff changed (chat-edit-message.sql): a quiet mark after the text. */
+.chat-edited{color:#8a7c69;font-size:12px;font-weight:600;white-space:nowrap}

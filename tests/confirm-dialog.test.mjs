@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {confirmAction} from '../public/confirm-dialog.js';
+import {confirmAction,promptText} from '../public/confirm-dialog.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 function fakeDocument(){
@@ -11,7 +11,7 @@ function fakeDocument(){
   activeElement:{isConnected:true,focus(){state.focused++;}},
   body:{append(dialog){dialog.appended=true;}},
   createElement(tag){
-   const dialog={tag,className:'',attrs:{},parts:{h2:element(),p:element(),'[data-cancel]':element(),'[data-confirm]':element(),'[data-type]':{...element(),value:''},'[data-type-label]':element()},listeners:{},shown:false,removed:false,
+   const dialog={tag,className:'',attrs:{},parts:{h2:element(),p:element(),'[data-cancel]':element(),'[data-confirm]':element(),'[data-type]':{...element(),value:''},'[data-type-label]':element(),'[data-text]':{...element(),value:''},'[data-count]':element()},listeners:{},shown:false,removed:false,
     setAttribute(key,value){this.attrs[key]=value;},set innerHTML(value){this.html=value;},querySelector(selector){return this.parts[selector];},
     addEventListener(name,fn){this.listeners[name]=fn;},remove(){this.removed=true;},showModal(){this.shown=true;},close(){this.shown=false;this.listeners.close?.();}};
    made.push(dialog);return dialog;
@@ -49,6 +49,18 @@ test('making a moderator asks for the farmer\'s name; removing one is a plain co
  const chat=read('src/chat-ui.js');
  assert.match(chat,/confirmLabel:key==='mod'\?'Make moderator':'Remove',picture:'admin',\.\.\.\(key==='mod'\?\{typeToConfirm:name\}:\{\}\)\}/);
  assert.match(read('public/vip.css'),/\.confirm-type input\{/);
+});
+test('promptText: the text to change, a count, Save off while empty; Enter saves, Cancel gives null',async()=>{
+ const f=fakeDocument();globalThis.document=f.document;
+ let promise=promptText({title:'Edit this message',description:'Everyone sees the new text.',value:'Call me on 0612345678',maxLength:200});
+ let d=f.made[0],field=d.parts['[data-text]'];
+ assert.equal(field.value,'Call me on 0612345678');assert.equal(field.maxLength,200);assert.equal(d.parts['[data-count]'].textContent,'21 / 200');assert.match(d.html,/<textarea[^>]*autofocus>/);
+ field.value='   ';field.oninput();assert.equal(d.parts['[data-confirm]'].disabled,true,'an empty message cannot be saved');
+ field.value='Call me in the game';field.oninput();assert.equal(d.parts['[data-confirm]'].disabled,false);
+ field.onkeydown({key:'Enter',shiftKey:true});assert.equal(d.shown,true,'Shift+Enter is a new line');
+ field.onkeydown({key:'Enter'});assert.equal(await promise,'Call me in the game');
+ promise=promptText({title:'Edit',value:'x'});d=f.made[1];d.parts['[data-cancel]'].onclick();assert.equal(await promise,null);
+ delete globalThis.document;
 });
 test('selling a whole market tab asks first, with the total; selling one item does not',()=>{
  const source=read('public/economy-ui.js');

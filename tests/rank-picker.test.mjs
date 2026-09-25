@@ -2,16 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {LEADERBOARD_CATEGORIES} from '../src/leaderboard.js';
-import {CROPS} from '../public/farm-state.js';
+import {CROPS,ITEMS} from '../public/farm-state.js';
 import {rankPickerMarkup,nextRank,bindRankPicker,RANK_ART,rankArtKey} from '../public/rank-picker.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const art=key=>`<i data-art="${key}"></i>`;
 
-test('every board has a chip: thirteen main boards, a "By crop" chip and one chip per crop',()=>{
- const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art);
+test('every board has a chip: thirteen main boards, "By crop" and "By good" chips and one chip per crop and per good',()=>{
+ const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art),goods=Object.keys(ITEMS).filter(k=>!CROPS[k]).length;
  const keys=[...html.matchAll(/data-rank="([a-z_]+)"/g)].map(m=>m[1]);
  assert.deepEqual(keys.sort(),Object.keys(LEADERBOARD_CATEGORIES).sort(),'nothing lost from the old dropdown');
- assert.equal(keys.length,13+Object.keys(CROPS).length);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length);
+ assert.equal(keys.length,13+Object.keys(CROPS).length+goods);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length+goods);
+ assert.match(html,/data-rank-goods aria-pressed="false" aria-expanded="false" aria-controls="rank-goods"/);assert.match(html,/id="rank-goods"[^>]*aria-label="Choose a good" hidden/);assert.match(html,/data-art="bread"/);
  assert.match(html,/id="rank-crops"[^>]*hidden/,'the crop row starts closed');assert.match(html,/data-rank-crops aria-pressed="false" aria-expanded="false" aria-controls="rank-crops"/);
  for(const key of ['level','currency','harvested_crops','goods_produced','items_sold','badges','deliveries','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects'])assert(RANK_ART[key],`${key} has a picture`);
  assert.match(html,/data-art="wheat"/);assert.match(html,/data-art="berries"/);assert.match(html,/data-art="xp"/);
@@ -28,7 +29,13 @@ test('a tap picks a board; "By crop" opens the crops and remembers the last one'
  next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn',open:false},{crops:true});assert.deepEqual([next.changed,next.showCrops],[false,true],'and tapping it once more opens the row again');
  next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn',open:false},{rank:'harvested_barley'});assert.equal(next.showCrops,true,'picking a crop shows the crops');
  next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn',open:false},{rank:'badges'});assert.equal(next.showCrops,false);
- assert.equal(nextRank(c,state,{rank:'made_up'}).category,'level','an unknown board is ignored');
+ assert.equal(nextRank(c,state,{rank:'made_upx'}).category,'level','an unknown board is ignored');
+ next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn'},{group:'goods'});assert.deepEqual([next.category,next.showGoods,next.showCrops,next.changed],['made_bread',true,false,true],'"By good" opens the goods, starting at bread');
+ next=nextRank(c,{category:'made_bread',lastCrop:'harvested_corn',lastGood:'made_bread'},{rank:'made_cheese'});assert.deepEqual([next.lastGood,next.showGoods],['made_cheese',true]);
+ next=nextRank(c,{category:'made_cheese',lastCrop:'harvested_corn',lastGood:'made_cheese'},{crops:true});assert.deepEqual([next.category,next.showCrops,next.showGoods],['harvested_corn',true,false],'the crop you had, and the goods row closes');
+ next=nextRank(c,{category:'harvested_corn',lastCrop:'harvested_corn',lastGood:'made_cheese',open:'crops'},{group:'goods'});assert.equal(next.category,'made_cheese','back to the good you had');
+ next=nextRank(c,{category:'made_cheese',lastGood:'made_cheese',open:'goods'},{group:'goods'});assert.deepEqual([next.changed,next.showGoods],[false,false],'"By good" again closes its row');
+ assert.equal(rankArtKey('made_cheese'),'cheese');
 });
 function fakeRoot(){
  const buttons=[...Object.keys(LEADERBOARD_CATEGORIES).map(k=>({dataset:{rank:k},attrs:{},hasAttribute:n=>n==='data-rank',setAttribute(n,v){this.attrs[n]=v;}})),{dataset:{},attrs:{},hasAttribute:n=>n==='data-rank-crops',setAttribute(n,v){this.attrs[n]=v;}}];

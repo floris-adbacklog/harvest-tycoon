@@ -1,8 +1,11 @@
 import {avatarImage} from '../public/player-avatars.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {rankArt} from '../public/rank-art.js';
-import {CROPS,CROP_LEVELS,MASTERY_TIERS} from '../public/farm-state.js';
+import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS} from '../public/farm-state.js';
 const CROP_BOARDS=Object.keys(CROPS).sort((a,b)=>(CROP_LEVELS[a]??1)-(CROP_LEVELS[b]??1));
+// The level at which a good can first be made: its earliest recipe outside the Factory (the building's level or the recipe's own).
+const goodLevel=key=>Math.min(...Object.values(RECIPES).filter(r=>r.building!=='factory'&&r.output[key]).map(r=>Math.max(BUILDING_LEVELS[r.building]??1,r.minLevel??1)),Infinity);
+const GOOD_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]).sort((a,b)=>goodLevel(a)-goodLevel(b)||ITEMS[a].name.localeCompare(ITEMS[b].name));
 export const LEADERBOARD_CATEGORIES=Object.freeze({
  level:{label:'Highest level',heading:'Level',unit:'level',description:'Your farmer level, earned through farming experience.'},
  currency:{label:'Most coins',heading:'Coins',unit:'coins',description:'Current coin balance. Spending coins can change your position.'},
@@ -20,22 +23,28 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  estate_projects:{label:'Most estate projects',heading:'Estate',unit:'projects',description:'Estate chapters and commissions completed.'},
  // One board per crop, straight from the game's crop list (in the order they unlock), so a new crop gets its board. Each reads the
  // crop's own column in player_stats, which the crop's migration adds (supabase/midgame-crop-columns.sql for the midgame crops).
- ...Object.fromEntries(CROP_BOARDS.map(key=>[`harvested_${key}`,{label:`${CROPS[key].name} harvested`,heading:CROPS[key].name,unit:`${CROPS[key].name.toLowerCase()} harvested`,group:'crops',description:`Lifetime ${CROPS[key].name.toLowerCase()} harvested, including extra yield from water and care.`}]))
+ ...Object.fromEntries(CROP_BOARDS.map(key=>[`harvested_${key}`,{label:`${CROPS[key].name} harvested`,heading:CROPS[key].name,unit:`${CROPS[key].name.toLowerCase()} harvested`,group:'crops',description:`Lifetime ${CROPS[key].name.toLowerCase()} harvested, including extra yield from water and care.`}])),
+ // One board per good, in the order the goods unlock. Each reads the good's count in player_stats.goods_made (the farm journal's
+ // numbers, kept up to date on every save: supabase/leaderboard-goods.sql).
+ ...Object.fromEntries(GOOD_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'goods',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} collected from your buildings.`}]))
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}
+// A good's board reads one key of goods_made ("goods_made->bread" to the database); every other board is its own column.
+const columnOf=category=>{const config=categoryFor(category);return config.good?`goods_made->${config.good}`:category;};
+export const scoreOf=(row,category)=>{const config=categoryFor(category);return Number((config.good?row?.goods_made?.[config.good]:row?.[category])??0);};
 const PUBLIC_FIELDS=['player_id','username','currency','level',...CROP_BOARDS.map(key=>`harvested_${key}`),'harvested_crops','badges','deliveries','goods_produced','items_sold','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','last_active_at','vip_expires_at','avatar_id'].join(',');
 export async function fetchLeaderboard(client,playerId,category='level'){
- categoryFor(category);
- const {data,error}=await client.from('player_stats').select(PUBLIC_FIELDS).order(category,{ascending:false}).order('player_id',{ascending:true}).limit(10);
+ const config=categoryFor(category),column=columnOf(category),fields=config.good?`${PUBLIC_FIELDS},goods_made`:PUBLIC_FIELDS;
+ const {data,error}=await client.from('player_stats').select(fields).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(10);
  if(error)throw error;
  let own=data?.find(row=>row.player_id===playerId)??null;
- if(!own&&playerId){const response=await client.from('player_stats').select(PUBLIC_FIELDS).eq('player_id',playerId).maybeSingle();if(response.error)throw response.error;own=response.data;}
+ if(!own&&playerId){const response=await client.from('player_stats').select(fields).eq('player_id',playerId).maybeSingle();if(response.error)throw response.error;own=response.data;}
  let rank=null;
- if(own){const listed=data?.findIndex(row=>row.player_id===playerId)??-1;if(listed>=0)rank=listed+1;else{const result=await client.from('player_stats').select('player_id',{count:'exact',head:true}).gt(category,own[category]);if(result.error)throw result.error;const ties=await client.from('player_stats').select('player_id',{count:'exact',head:true}).eq(category,own[category]).lt('player_id',own.player_id);if(ties.error)throw ties.error;rank=(result.count??0)+(ties.count??0)+1;}}
+ if(own){const listed=data?.findIndex(row=>row.player_id===playerId)??-1;if(listed>=0)rank=listed+1;else{const result=await client.from('player_stats').select('player_id',{count:'exact',head:true}).gt(column,scoreOf(own,category));if(result.error)throw result.error;const ties=await client.from('player_stats').select('player_id',{count:'exact',head:true}).eq(column,scoreOf(own,category)).lt('player_id',own.player_id);if(ties.error)throw ties.error;rank=(result.count??0)+(ties.count??0)+1;}}
  return {rows:data??[],own,rank,category};
 }
 export function rankedRows(rows,category='level'){
- categoryFor(category);return rows.map((row,i)=>({row,rank:i+1,score:Number(row[category]??0)}));
+ categoryFor(category);return rows.map((row,i)=>({row,rank:i+1,score:scoreOf(row,category)}));
 }
 export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false,now=Date.now()},playerId,onPlayer){
  const config=categoryFor(category);container.replaceChildren();
@@ -51,7 +60,7 @@ export function renderLeaderboard(container,{rows,own,rank,category='level',onli
   const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');strong.textContent=row.username;if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',`View ${row.username}'s profile`);strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;const identity=document.createElement('div');identity.className='leaderboard-farmer';identity.innerHTML=`<span class="leaderboard-portrait">${avatarImage(row.avatar_id)}</span>`;identity.firstElementChild.append(dot);const copy=document.createElement('div');copy.append(strong,small);identity.append(copy);name.append(identity);
   const score=document.createElement('td');score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
  });table.append(tbody);container.append(table);updateOnlineIndicators(container,{onlinePlayers,presenceReady,now});
- if(own&&rank){const line=document.createElement('div');line.className='your-rank';const label=document.createElement('strong'),value=document.createElement('span');label.textContent=`Your rank: #${rank}`;const score=Number(own[category]??0).toLocaleString('en-US');value.textContent=category==='level'?`Level ${score} · ${own.username}`:`${score} ${config.unit} · ${own.username}`;line.append(label,value);container.append(line);}
+ if(own&&rank){const line=document.createElement('div');line.className='your-rank';const label=document.createElement('strong'),value=document.createElement('span');label.textContent=`Your rank: #${rank}`;const score=scoreOf(own,category).toLocaleString('en-US');value.textContent=category==='level'?`Level ${score} · ${own.username}`:`${score} ${config.unit} · ${own.username}`;line.append(label,value);container.append(line);}
 }
 
 export function updateOnlineIndicators(container,{onlinePlayers=[],presenceReady=false,now=Date.now()}){

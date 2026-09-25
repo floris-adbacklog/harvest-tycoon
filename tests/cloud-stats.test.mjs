@@ -7,20 +7,23 @@ test('leaderboard asks for ten ranked stats and computes own rank outside the li
  const result=await fetchLeaderboard(client,'self');assert.equal(result.rank,24);assert.equal(result.own.player_id,'self');assert(calls[0].steps.some(x=>x[0]==='limit'&&x[1]===10));assert(calls[0].steps.some(x=>x[0]==='order'&&x[1]==='level'&&x[2].ascending===false));assert(calls.every(x=>x.table==='player_stats'));
 });
 
-import {LEADERBOARD_CATEGORIES,rankedRows} from '../src/leaderboard.js';
-import {CROPS} from '../public/farm-state.js';
+import {LEADERBOARD_CATEGORIES,rankedRows,scoreOf} from '../src/leaderboard.js';
+import {CROPS,ITEMS} from '../public/farm-state.js';
 test('every crop has its own board; only public metrics can be selected',async()=>{
  for(const crop of Object.keys(CROPS))assert(LEADERBOARD_CATEGORIES['harvested_'+crop],crop);
- assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,13+Object.keys(CROPS).length,'thirteen boards plus one per crop');
+ const goods=Object.keys(ITEMS).filter(k=>!CROPS[k]);
+ assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,13+Object.keys(CROPS).length+goods.length,'thirteen boards plus one per crop and one per good');
+ for(const good of goods)assert.equal(LEADERBOARD_CATEGORIES['made_'+good]?.group,'goods',good);
  for(const key of ['events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects'])assert(LEADERBOARD_CATEGORIES[key],`${key} board`);
  for(const category of ['diamonds','harvested_grain','state','__proto__'])await assert.rejects(fetchLeaderboard({from(){throw new Error('Should not query');}},'self',category),/valid leaderboard/);
  for(const category of Object.keys(LEADERBOARD_CATEGORIES)){
-  const calls=[];let i=0;
-  const row={player_id:'self',username:'Farmer',level:3,[category]:7};
+  const calls=[];let i=0,good=LEADERBOARD_CATEGORIES[category].good,column=good?`goods_made->${good}`:category;
+  const row={player_id:'self',username:'Farmer',level:3,...(good?{goods_made:{[good]:7}}:{[category]:7})};
   const responses=[{data:[row],error:null},{count:2,error:null}];
   const client={from(){const n=i++,q={};for(const name of ['select','order','limit','eq','maybeSingle','gt','lt'])q[name]=(...args)=>{calls.push([name,...args]);return q;};q.then=resolve=>Promise.resolve(responses[n]).then(resolve);return q;}};
   const result=await fetchLeaderboard(client,'self',category);assert.equal(result.category,category);assert.equal(result.rank,1);
-  assert(calls.some(c=>c[0]==='order'&&c[1]===category));assert(calls.some(c=>c[0]==='limit'&&c[1]===10));
+  assert(calls.some(c=>c[0]==='order'&&c[1]===column&&c[2].nullsFirst===false),'a good\'s board orders by its key in goods_made, farmers without any last');assert(calls.some(c=>c[0]==='limit'&&c[1]===10));
+  assert.equal(scoreOf(row,category),7);if(good)assert(calls.some(c=>c[0]==='select'&&c[1].endsWith(',goods_made')));else assert(!calls.some(c=>c[0]==='select'&&c[1].includes('goods_made')),'other boards never ask for goods_made');
   assert(calls.filter(c=>c[0]==='select').every(c=>!c[1].includes('diamonds')&&!c[1].includes('*')));
  }
 });

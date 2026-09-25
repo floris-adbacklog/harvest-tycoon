@@ -4,9 +4,11 @@
 // scrolled. A name or picture opens that farmer's profile. Data and live updates: bridge.chat (src/chat-client.js).
 import {avatarImage} from '../public/player-avatars.js';
 import {art,refreshArt} from '../public/visual-icons.js';
-import {confirmAction} from '../public/confirm-dialog.js';
+import {confirmAction,promptText} from '../public/confirm-dialog.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
+const withEdit=(list,changed)=>list.map(m=>m.id===changed?.id?{...m,body:changed.body,edited_at:changed.edited_at,edited_by_moderator:changed.edited_by_moderator}:m);
 // "now", "5m", "3h", "2d": short enough for a line of chat; the exact time is in the tooltip.
 export function ago(iso,now=Date.now()){
  const seconds=Math.floor((now-Date.parse(iso))/1000);if(!Number.isFinite(seconds))return '';
@@ -100,7 +102,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const profileButton=(id,label,inner,cls)=>`<button type="button" class="${cls}" data-profile="${esc(id)}" aria-label="${esc(label)}">${inner}</button>`;
  function messageRow(m){
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
-  return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(m.sender_avatar),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?`<span class="chat-mod" title="Moderator">${art('admin')}</span>`:''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:''}</div><p class="chat-text">${esc(m.body)}</p></div></li>`;
+  return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(m.sender_avatar),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?`<span class="chat-mod" title="Moderator">${art('admin')}</span>`:''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:''}</div><p class="chat-text">${esc(m.body)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}</p></div></li>`;
  }
  function threadRow(t){
   return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${esc(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}${esc(t.last?.body??'')}</small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
@@ -191,6 +193,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(event.type==='connected'){if(connected){void refreshOverview();if(dialog.open)void load();}connected=true;return;}
   if(!overview)return;
   if(event.type==='deleted'){if(messages.some(m=>m.id===event.id)){messages=messages.filter(m=>m.id!==event.id);if(dialog.open)paint();}return;}
+  if(event.type==='edited'){const changed=event.message;if(changed&&messages.some(m=>m.id===changed.id)){messages=withEdit(messages,changed);if(dialog.open)paint();}return;}
   if(event.type==='notice'){
    // A gift for everyone: an open game fetches it now (the farm adds it on load), a few seconds apart so not everyone asks at once.
    if(event.notice?.kind==='donation')setTimeout(()=>{void win.harvestRefresh?.()?.catch?.(()=>{});},1000+Math.random()*9000);
@@ -258,7 +261,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const m=messages.find(x=>x.id===anchor.dataset.more);if(!m)return;
   const mine=m.sender===me,staff=role()!==null,items=[];
   if(!mine)items.push(['report','Report message'],['block',`Block ${m.sender_name}`]);
-  if(staff)items.push(['delete','Delete message']);
+  if(staff)items.push(['edit','Edit message'],['delete','Delete message']);
   if(staff&&!mine&&!m.sender_staff)items.push(['mute60','Mute 1 hour'],['mute1440','Mute 1 day'],['ban','Ban from chat']);
   if(!items.length)return;
   menuEl=doc.createElement('div');menuEl.className='chat-menu';menuEl.setAttribute('role','menu');
@@ -274,7 +277,12 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
     if(!await confirmAction({title:'Report this message?',description:'A moderator will read it. Thank you for keeping the valley friendly.',confirmLabel:'Report',picture:'admin'}))return;
     await chat.report(m.id);note('Thanks, a moderator will take a look.');
    }else if(key==='block')await setBlock(m.sender,m.sender_name,true);
-   else if(key==='delete'){
+   else if(key==='edit'){
+    // The staff can change a message (to take out a phone number, say) instead of deleting it; the chat rules still apply.
+    const body=await promptText({title:'Edit this message',description:m.sender===me?'Everyone sees the new text, marked “edited”.':`Everyone sees the new text, marked “edited by a moderator”.`,value:m.body,maxLength:200,confirmLabel:'Save',picture:'admin'});
+    if(body==null||body.trim()===m.body)return;
+    messages=withEdit(messages,await chat.editMessage(m.id,body));paint();
+   }else if(key==='delete'){
     if(!await confirmAction({title:'Delete this message?',description:`“${m.body}” disappears for everyone.`,confirmLabel:'Delete',tone:'danger'}))return;
     await chat.deleteMessage(m.id);messages=messages.filter(x=>x.id!==m.id);paint();
    }else await sanction(m.sender,m.sender_name,key==='ban'?0:Number(key.slice(4)),key==='ban');

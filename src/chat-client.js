@@ -2,7 +2,7 @@
 // farmer only ever receives the chats they belong to, Realtime included), writing through the chat_* functions, which check who
 // may say what. One Realtime channel per signed-in session brings new messages and notices in while the farm is open.
 export const dmChannel=(a,b)=>{const [x,y]=[String(a),String(b)].sort();return `dm:${x}:${y}`;};
-const MESSAGE_COLUMNS='id,channel,sender,sender_name,sender_avatar,sender_staff,sender_vip,body,created_at';
+const MESSAGE_COLUMNS='id,channel,sender,sender_name,sender_avatar,sender_staff,sender_vip,body,created_at,edited_at,edited_by_moderator';
 // The database says why in plain words ("Slow down a little."); a lost connection gets a sentence of its own.
 export function chatError(error){
  const message=String(error?.message??'');
@@ -20,6 +20,7 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   channel=supabase.channel(`chat:${playerId}`)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},payload=>emit({type:'message',message:payload.new}))
    .on('postgres_changes',{event:'DELETE',schema:'public',table:'chat_messages'},payload=>emit({type:'deleted',id:payload.old?.id}))
+   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_messages'},payload=>emit({type:'edited',message:payload.new}))
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'player_notices'},payload=>emit({type:'notice',notice:payload.new}))
    .subscribe(status=>{if(status==='SUBSCRIBED')emit({type:'connected'});});
  }
@@ -58,6 +59,8 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   reports:()=>rpc('chat_mod_reports'),
   reportLog:()=>rpc('chat_mod_log'),
   deleteMessage:message=>rpc('chat_mod_delete',{p_message:message}),
+  // Staff only (supabase/chat-edit-message.sql): the same rules as sending; everyone sees it marked as edited.
+  editMessage:(message,body)=>rpc('chat_mod_edit',{p_message:message,p_body:body}),
   dismissReports:message=>rpc('chat_mod_dismiss',{p_message:message}),
   sanction:(player,minutes,ban,reason=null)=>rpc('chat_mod_sanction',{p_player:player,p_minutes:minutes,p_ban:ban,p_reason:reason}),
   donationRoom:()=>rpc('staff_donation_room'),
