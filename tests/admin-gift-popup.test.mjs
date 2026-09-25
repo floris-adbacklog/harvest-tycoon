@@ -43,6 +43,6 @@ test('the celebration styling exists for the amount badges, one colour per curre
 });
 test('createFarmClient forwards a load response\'s gift to onGift (see tests/online-client.test.mjs for behaviour)',()=>{
  const js=read('public/farm-client.js');
- assert.match(js,/onGift\}\)\{/);
+ assert.match(js,/onGift,onEmailCheck\}\)\{/);
  assert.match(js,/if\(data\.gift\)onGift\?\.\(data\.gift\);/);
 });

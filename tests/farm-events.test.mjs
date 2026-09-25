@@ -35,7 +35,7 @@ test('the screen says in one sentence why a farm cannot join yet',()=>{
  assert.equal(EVENTS_LEVEL,10);
  assert.match(eligibilityNote({level:7,minLevel:10,openAt:0,verified:true},now),/open at level 10\. You are level 7/);
  assert.equal(eligibilityNote({level:12,minLevel:10,openAt:now+2*H,verified:true},now),null,'no waiting time after level 10: events open as soon as a farm reaches it');
- assert.match(eligibilityNote({level:12,minLevel:10,openAt:0,verified:false},now),/Confirm your email/);
+ assert.equal(eligibilityNote({level:12,minLevel:10,openAt:0,verified:false},now),null,'no email needed for events');
  assert.equal(eligibilityNote({level:12,minLevel:10,openAt:0,verified:true},now),null);
 });
 test('standings: finishers first by finish time, then by progress; rewards follow the settlement formula',()=>{
@@ -43,7 +43,7 @@ test('standings: finishers first by finish time, then by progress; rewards follo
  const ranked=eventStandings(e,[row('late',10,5,40),row('early',10,5,20),row('almost',9,9,5),row('slow',2,3,50),row('fast-but-short',10,2,1)],now);
  assert.deepEqual(ranked.map(r=>r.playerId),['early','late','fast-but-short','almost','slow']);
  assert.deepEqual(ranked.map(r=>r.finished),[true,true,false,false,false]);
- assert.deepEqual(ranked.slice(0,2).map(r=>[r.coins,r.diamonds]),[[200+2000,1+20],[200+1000,1+10]],'the usual reward plus the podium prize');
+ assert.deepEqual(ranked.slice(0,2).map(r=>[r.coins,r.diamonds]),[[200+2000,50],[200+1000,30]],'the event\'s coins plus the podium coins, and the fixed podium diamonds');
  assert.deepEqual([ranked[3].progress,ranked[3].coins,ranked[3].diamonds],[90,0,0]);
  const settled={...e,settled_at:iso(now)},paid=eventStandings(settled,[{...row('a',10,5,20),qualified:true,coins:200,diamonds:2},{...row('b',10,5,10),qualified:false,coins:0,diamonds:0}],now);
  assert.deepEqual(paid.map(r=>[r.playerId,r.finished,r.coins,r.diamonds]),[['a',true,200,2],['b',false,0,0]],'after settlement the stored qualification and rewards are shown as-is');
@@ -51,7 +51,7 @@ test('standings: finishers first by finish time, then by progress; rewards follo
 test('a pool that runs dry pays pool diamonds to the earliest finishers only; the podium prize comes on top',()=>{
  const e=event('e',now-H,now+H,{rewards:{coins:100,diamondMin:1,diamondMax:1,participantStep:10,poolCap:2}});
  const rows=['a','b','c'].map((id,i)=>({player_id:id,progress:{harvested:10},actions:3,joined_at:iso(now-H),last_at:iso(now-H+(20+i)*M)}));
- assert.deepEqual(eventStandings(e,rows,now).map(r=>r.diamonds),[1+20,1+10,0+5]);
+ assert.deepEqual(eventStandings(e,rows,now).map(r=>r.diamonds),[50,30,20],'no pool any more: the places pay their fixed diamonds');
 });
 
 test('automatic events: 5 hours on, 1 hour off, four times a day, created ahead by pg_cron and never impossible',()=>{
@@ -136,16 +136,20 @@ test('the leaderboard only ranks; your profile, name and sign-out live in Settin
 });
 test('the first three finishers win a podium prize on top and every later finisher a little extra, the same in settlement, the projection and the screen',async()=>{
  const server=await import('../supabase/functions/farm-api/event-service.js'),screen=await import('../public/live-events-ui.js');
- assert.deepEqual(server.PODIUM,[{coins:2000,diamonds:20},{coins:1000,diamonds:10},{coins:500,diamonds:5}]);
- assert.deepEqual(server.FINISHER_PRIZE,{coins:100,diamonds:1});
+ assert.deepEqual(server.PODIUM,[{coins:2000,diamonds:50},{coins:1000,diamonds:30},{coins:500,diamonds:20}]);
+ assert.deepEqual(server.FINISHER_PRIZE,{coins:100,diamonds:5});
  assert.deepEqual([screen.PODIUM_PRIZES,screen.FINISHER_PRIZE,screen.EVENT_DAY_DIAMONDS],[server.PODIUM,server.FINISHER_PRIZE,server.EVENT_DAY_DIAMONDS],'the screen shows exactly what the server pays');
  const e=event('e',now-H,now+H),rows=['a','b','c','d'].map((id,i)=>({player_id:id,progress:{harvested:10},actions:5,joined_at:iso(now-H),last_at:iso(now-H+(20+i)*M)}));
- assert.deepEqual(eventStandings(e,rows,now).map(r=>[r.coins,r.diamonds,r.podium]),[[2200,21,true],[1200,11,true],[700,6,true],[300,2,false]]);
+ assert.deepEqual(eventStandings(e,rows,now).map(r=>[r.coins,r.diamonds,r.podium]),[[2200,50,true],[1200,30,true],[700,20,true],[300,5,false]],'fixed diamonds per place, whatever the number of farmers');
+ assert.deepEqual(eventStandings({...e,participants:40},rows,now).map(r=>r.diamonds),[50,30,20,5]);
  const sql=read('supabase/live-events-prizes.sql');
  assert.match(sql,/coins=\(e\.rewards->>'coins'\)::integer\+\(case r\.rank when 1 then 2000 when 2 then 1000 when 3 then 500 else 100 end\)/);
  assert.match(sql,/\+\(case r\.rank when 1 then 20 when 2 then 10 when 3 then 5 else 1 end\)/);
  assert.match(sql,/paid:=least\(p\.diamonds,greatest\(0,30-used\)\);/,'a first place is paid in full under the daily cap');
- assert.ok(server.PODIUM[0].diamonds+2<=server.EVENT_DAY_DIAMONDS);
+ assert.ok(server.PODIUM[0].diamonds<=server.EVENT_DAY_DIAMONDS,'a first place on its own is paid in full');assert.equal(server.EVENT_DAY_DIAMONDS,50);
+ const bigger=read('supabase/live-events-bigger-prizes.sql');
+ assert.match(bigger,/'diamonds=\(case r\.rank when 1 then 50 when 2 then 30 when 3 then 20 else 5 end\)'/);
+ assert.match(bigger,/'paid:=least\(p\.diamonds,greatest\(0,50-used\)\);'/);
 });
 test('event progress counts every action: a per-player baseline, the 10 seconds only limit contributions',()=>{
  const sql=read('supabase/live-events-baseline.sql');
@@ -160,7 +164,7 @@ test('automatic events pay a fixed base, so the event screen shows one list with
  const sql=read('supabase/live-events-fixed-base.sql'),rewards=JSON.parse(sql.match(/rewards constant jsonb:='(\{[^']*\})';/)[1]);
  assert.deepEqual([rewards.coins,rewards.diamondMin,rewards.diamondMax],[200,1,1]);
  const {PODIUM_PRIZES,FINISHER_PRIZE}=await import('../public/live-events-ui.js');
- assert.deepEqual([...PODIUM_PRIZES,FINISHER_PRIZE].map(p=>[rewards.coins+p.coins,rewards.diamondMin+p.diamonds]),[[2200,21],[1200,11],[700,6],[300,2]]);
+ assert.deepEqual([...PODIUM_PRIZES,FINISHER_PRIZE].map(p=>[rewards.coins+p.coins,p.diamonds]),[[2200,50],[1200,30],[700,20],[300,5]]);
  const ui=read('public/live-events-ui.js');
  assert.match(ui,/What you win when you finish/);assert.doesNotMatch(ui,/Reward for finishing|Extra for finishing/,'no second block to add up');
 });
@@ -181,16 +185,11 @@ test('twelve automatic events, the new ones about one crop or eggs, and every go
  for(const stat of EVENT_STATS)assert.match(sql,new RegExp(`'${stat}'`),`${stat} is allowed by harvest_event_validate`);
  assert.match(sql,/or \(stat like 'harvest\\_%' and action in \('field','tractor'\)\) or \(stat like 'made\\_%' and action in \('collect','collect_all'\)\);/,'progress counts a crop on harvest and eggs on collecting');
 });
-test('events open at level 10 with an email the game checked itself (a code), without the 48-hour wait',()=>{
- const sql=readFileSync(new URL('../supabase/event-email-check.sql',import.meta.url),'utf8');
- assert.match(sql,/create table if not exists public\.email_checks/);
- assert.match(sql,/coalesce\(u\.raw_app_meta_data->>'provider','email'\)<>'email'/,'Google and Facebook count as checked');
- assert.match(sql,/'not public\.harvest_email_checked\(new\.player_id\)'/,'the trigger gate: the checked email instead of the account age');
- assert.match(sql,/revoke all on public\.email_checks from anon, authenticated;/);
- assert.match(sql,/grant execute on function public\.harvest_email_checked\(uuid\) to service_role;/);
+test('events are open to every farm from level 10: no email check and no waiting time',()=>{
+ const sql=readFileSync(new URL('../supabase/live-events-level-only.sql',import.meta.url),'utf8');
+ assert.match(sql,/replace\(definition,'if not public\.harvest_email_checked\(new\.player_id\) or not exists\(','if not exists\('\)/);
  const api=readFileSync(new URL('../supabase/functions/farm-api/event-service.js',import.meta.url),'utf8');
- assert.match(api,/minLevel:10,openAt:0,verified:checked\.data===true/);
+ assert.match(api,/return \{level:stats\.data\?\.level\?\?0,minLevel:10,openAt:0,verified:true\};/);
  const ui=readFileSync(new URL('../public/live-events-ui.js',import.meta.url),'utf8');
- assert.doesNotMatch(ui,/48 hours/);assert.match(ui,/Open from level 10\./);
- assert.match(ui,/if\(dialog\.open&&needsEmail\(\)&&!emailAsked\)\{emailAsked=true;emailCheck\.open\(\);\}/,'the pop-up comes up by itself once');
+ assert.doesNotMatch(ui,/48 hours|Confirm your email|createEmailCheck/);assert.match(ui,/Open from level 10\./);
 });

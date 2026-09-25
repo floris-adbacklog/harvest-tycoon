@@ -45,3 +45,19 @@ test('an account that is already checked (or Google/Facebook) gets no email',asy
  assert.deepEqual(r,{verified:true});assert.equal(sent.length,0);
  assert.match(emailCodeMessage('042042').text,/within 30 minutes/);
 });
+
+test('a confirmed email pays 10 diamonds once, only through the server\'s load, and the entry shows only for email sign-ups',async()=>{
+ const {createFarm,grantEmailBonus,EMAIL_BONUS,normalizeFarm}=await import('../game/farm-state.js');
+ const s=createFarm(Date.UTC(2026,8,25)),before=s.diamonds;
+ assert.equal(EMAIL_BONUS,10);assert.equal(grantEmailBonus(s,1),10);assert.equal(s.diamonds,before+10);
+ assert.equal(grantEmailBonus(s,2),0,'only once');assert.equal(s.diamonds,before+10);
+ const t=createFarm(0);t.emailBonus='soon';normalizeFarm(t,0);assert.equal(t.emailBonus,undefined);
+ const {readFileSync}=await import('node:fs');const read=p=>readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
+ const api=read('supabase/functions/farm-api/index.ts');
+ assert.match(api,/if\(!checked\.error&&checked\.data===true&&grantEmailBonus\(state,now\)\)\{/);
+ assert.match(api,/const emailCheck=\(farm:\{emailBonus\?:number\}\)=>\(\{needed:\(user\.app_metadata\?\.provider\?\?'email'\)==='email'&&!farm\.emailBonus/);
+ const html=read('public/farm.html');
+ assert.match(html,/<button class="side-tool" id="email-button"[^>]*hidden><span><i data-game-art="letter"><\/i><\/span><b>Verify<\/b><\/button>/);
+ assert.match(html,/<button data-menu-action="email-button" id="email-menu-entry" hidden><i data-game-art="letter"><\/i><span><strong>Confirm your email<\/strong><small>10 diamonds for you<\/small>/);
+ assert.match(read('public/game.js'),/const hide=!emailAccount\.needed;\$\('email-button'\)\.hidden=hide;\$\('email-menu-entry'\)\.hidden=hide;/);
+});

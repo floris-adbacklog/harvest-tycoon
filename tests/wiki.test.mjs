@@ -92,8 +92,9 @@ test('the wiki matches the rules it explains: family payouts, invites, events an
  assert.match(wikiArticle('diamonds').html,/When a friend you invite reaches level 10 within 30 days: 150 diamonds for you both\./);
  assert.match(wikiArticle('account').html,/When your friend reaches level 10 within 30 days, you both get 150 diamonds, for up to 10 friends\./);
  assert.doesNotMatch(wikiArticle('quests').html,/Invite a friend/,'inviting is not a level unlock');
- assert.match(wikiArticle('events').html,/Events open as soon as you reach level 10\. Confirm your email address once, with a code we send you from the event screen/);assert.doesNotMatch(wikiArticle('events').html,/48 hours/);
- assert.match(wikiArticle('events').html,/at most 30 event diamonds a day/);
+ assert.match(wikiArticle('events').html,/Events open as soon as you reach level 10\./);assert.doesNotMatch(wikiArticle('events').html,/email/);
+ assert.match(wikiArticle('account').html,/Confirm it once for 10 diamonds/);assert.match(wikiArticle('diamonds').html,/Confirm your email/);assert.doesNotMatch(wikiArticle('events').html,/48 hours/);
+ assert.match(wikiArticle('events').html,/The first three win 50, 30 and 20 diamonds, every other finisher 5\. You can collect at most 50 event diamonds a day\./);
  assert.match(wikiArticle('diamonds').html,/at least 1 diamond with every level-up/);
  assert.match(wikiArticle('buildings').html,/Dairy Barn needs the Feed Mill first/);
 });

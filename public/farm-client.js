@@ -3,7 +3,7 @@ import {BUILDINGS} from './farm-state.js';
 // the most recently committed server state; it never persists game data.
 let clockOffset=0;
 export const farmNow=()=>Date.now()+clockOffset;
-export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapterReward,onGift}){
+export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapterReward,onGift,onEmailCheck}){
  const bridge=window.parent.harvestBridge;
  if(!bridge)throw new Error('Sign in to open your farm.');
  let busy=false;
@@ -17,6 +17,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
   if(data.chapterReward?.chapters?.length)onChapterReward?.(data.chapterReward);
   if(data.levelReward?.levels?.length)onLevelReward?.(data.levelReward);
   if(data.gift)onGift?.(data.gift);
+  if(data.emailCheck)onEmailCheck?.(data.emailCheck);
  }
  async function runAction(action){
   if(busy)throw new Error('Your previous action is still saving.');

@@ -14,9 +14,10 @@ const MIN_ACTIONS=3,MIN_SPAN=10*60000;
 export const EVENTS_LEVEL=10;
 // The podium prize for the first three finishers and the extra for every later finisher, on top of the usual reward, and the
 // most event diamonds a farmer collects in a day (same numbers as harvest_event_settle and harvest_event_claim).
-export const PODIUM_PRIZES=Object.freeze([{coins:2000,diamonds:20},{coins:1000,diamonds:10},{coins:500,diamonds:5}]);
-export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:1});
-export const EVENT_DAY_DIAMONDS=30;
+// Fixed diamonds per place (harvest_event_settle): 50, 30, 20, and 5 for every other finisher. Coins come on top of the event's own.
+export const PODIUM_PRIZES=Object.freeze([{coins:2000,diamonds:50},{coins:1000,diamonds:30},{coins:500,diamonds:20}]);
+export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:5});
+export const EVENT_DAY_DIAMONDS=50;
 const MEDALS=['rank-gold','rank-silver','rank-bronze'];
 
 // Sorts the server list into what the screen shows: the running event, the next one, rewards to collect and a
@@ -43,7 +44,6 @@ export function qualifyHint(player,now=Date.now()){
 export function eligibilityNote(eligibility,now=Date.now()){
  if(!eligibility)return null;
  if(eligibility.level<eligibility.minLevel)return `Farm events open at level ${eligibility.minLevel}. You are level ${eligibility.level}.`;
- if(!eligibility.verified)return 'Confirm your email address to join farm events.';
  return null;
 }
 
@@ -51,18 +51,13 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const button=doc.getElementById('events-button'),dot=doc.getElementById('events-dot'),hint=doc.getElementById('mobile-events-hint'),entry=doc.querySelector('[data-menu-action="events-button"]');
  let locked=null;
  const dialog=doc.createElement('dialog');dialog.id='events-dialog';dialog.className='game-dialog wide-dialog events-dialog';dialog.setAttribute('aria-labelledby','events-title');doc.body.append(dialog);
- let data=null,busy=false,error='',reloadTimer=0,clock=0,background=0,emailAsked=false;
- const needsEmail=()=>Boolean(data?.eligibility)&&data.eligibility.level>=data.eligibility.minLevel&&!data.eligibility.verified;
- const emailButton=()=>needsEmail()?'<button type="button" class="primary-button event-email-open" data-email-open>Confirm your email</button>':'';
- const emailCheck=createEmailCheck({doc,bridge,email:()=>data?.eligibility?.email??'',onDone:async()=>{notify?.('Email confirmed! Your farm actions now count for farm events.');await load().catch(()=>{});}});
+ let data=null,busy=false,error='',reloadTimer=0,clock=0,background=0;
 
  const countdown=at=>`<span data-countdown="${at}">${formatDuration(at-now())}</span>`;
- // One list of what a farmer wins in total per place: the event's own reward plus the podium prize, or the extra that every
- // later finisher gets. A range only when an event's base diamonds are not fixed.
- const range=(a,b)=>a===b?num(a):`${num(a)}–${num(b)}`;
+ // One list of what a farmer wins per place: the event's own coins plus the place's coins, and the place's fixed diamonds.
  const rewards=e=>{
-  const {coins,diamondMin,diamondMax}=e.rewards;
-  const row=(p,medal,place)=>`<li>${medal}<b>${place}</b><span>${art('coins')}${num(coins+p.coins)}</span><span>${art('diamonds')}${range(diamondMin+p.diamonds,diamondMax+p.diamonds)}</span></li>`;
+  const {coins}=e.rewards;
+  const row=(p,medal,place)=>`<li>${medal}<b>${place}</b><span>${art('coins')}${num(coins+p.coins)}</span><span>${art('diamonds')}${num(p.diamonds)}</span></li>`;
   return `<div class="event-podium"><span>What you win when you finish</span><ol>${PODIUM_PRIZES.map((p,i)=>row(p,art(MEDALS[i]),['1st','2nd','3rd'][i])).join('')}${row(FINISHER_PRIZE,'<i aria-hidden="true"></i>','Everyone else')}</ol></div>`;
  };
  // Goals use the Family Order line: picture, name, "41 / 60" and a bar.
@@ -74,7 +69,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  }
  function status(e){
   const blocked=eligibilityNote(data?.eligibility,now()),p=e.player;
-  if(blocked)return `<p class="family-notice event-note is-blocked">${esc(blocked)}</p>${emailButton()}`;
+  if(blocked)return `<p class="family-notice event-note is-blocked">${esc(blocked)}</p>`;
   if(hasQualified(e))return '<p class="family-notice event-note">You qualified! Collect your reward here when the event ends.</p>';
   if(p&&goalsDone(e))return `<p class="family-notice event-note">Every goal is complete. ${esc(qualifyHint(p,now()))}</p>`;
   if(p)return `<p class="family-notice event-note">You are taking part · ${num(p.actions)} contribution${p.actions===1?'':'s'} so far.</p>`;
@@ -86,8 +81,8 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const s=e?.standings;if(!s?.top?.length)return '';
   // A trophy only for someone who really finished in the top three. Every goal done but not qualified yet: "qualifying", and for
   // you the reward of the next free place (faded), so 100% never looks like nothing.
-  const next=PODIUM_PRIZES[s.top.filter(r=>r.finished).length]??FINISHER_PRIZE,{coins:base,diamondMin,diamondMax}=e.rewards??{coins:0,diamondMin:0,diamondMax:0};
-  const soon=r=>r.isYou?`<span class="event-soon" title="When you qualify">${art('coins')}${num(base+next.coins)}${art('diamonds')}${range(diamondMin+next.diamonds,diamondMax+next.diamonds)}<small>when you qualify</small></span>`:'<span class="event-qualifying">Qualifying</span>';
+  const next=PODIUM_PRIZES[s.top.filter(r=>r.finished).length]??FINISHER_PRIZE,{coins:base}=e.rewards??{coins:0};
+  const soon=r=>r.isYou?`<span class="event-soon" title="When you qualify">${art('coins')}${num(base+next.coins)}${art('diamonds')}${num(next.diamonds)}<small>when you qualify</small></span>`:'<span class="event-qualifying">Qualifying</span>';
   const label=r=>r.podium?`${['1st','2nd','3rd'][r.rank-1]} place`:r.finished?'✓ Finished':r.progress>=100?'All goals done · qualifying':`${r.progress}% done`;
   const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${esc(r.username)}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div><span class="event-standing-reward">${r.finished?`<b>${art('coins')}${num(r.coins)}</b>${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:r.progress>=100?soon(r):`<progress class="event-mini" max="100" value="${r.progress}" aria-label="${esc(r.username)}: ${r.progress}% done"></progress>`}</span></article>`;
   return `<h3 class="event-section-title">${final?`Final standings · ${esc(e.title)}`:'Top farmers'}</h3><p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:'Rewards if the event ended now. The first three to finish win a podium prize.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
@@ -95,7 +90,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  function hero(){
   const {live,next}=eventView(data.events,now());
   if(live)return intro(live,`Live · ends in ${countdown(Date.parse(live.ends_at))}`,true)+`<p class="event-summary">${num(live.participants)} farmer${live.participants===1?'':'s'} taking part</p>`+goals(live)+rewards(live)+status(live)+standings(live);
-  if(next){const blocked=eligibilityNote(data.eligibility,now());return intro(next,`Next event in ${countdown(Date.parse(next.starts_at))}`,false)+'<p class="event-summary">A short break between events. Here is what comes next.</p>'+goals(next,{preview:true})+rewards(next)+(blocked?`<p class="family-notice event-note is-blocked">${esc(blocked)}</p>${emailButton()}`:'')+standings(data.events.find(e=>e.standings),{final:true});}
+  if(next){const blocked=eligibilityNote(data.eligibility,now());return intro(next,`Next event in ${countdown(Date.parse(next.starts_at))}`,false)+'<p class="event-summary">A short break between events. Here is what comes next.</p>'+goals(next,{preview:true})+rewards(next)+(blocked?`<p class="family-notice event-note is-blocked">${esc(blocked)}</p>`:'')+standings(data.events.find(e=>e.standings),{final:true});}
   return `<div class="quest-empty"><span class="estate-icon">${art('live-events')}</span><h3>The next farm event is on its way</h3><p>Check back soon.</p></div>`;
  }
  function collect(){
@@ -115,7 +110,6 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:`<p class="event-loading">${esc(error||'Opening farm events…')}</p>`)+'<p class="event-feedback" role="status" data-status></p>';
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();
   dialog.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>claim(b));
-  dialog.querySelectorAll('[data-email-open]').forEach(b=>b.onclick=()=>emailCheck.open());
   refreshArt();
  }
  async function claim(b){
@@ -135,8 +129,6 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  async function load(){
   try{data=await bridge.request({operation:'events'});error='';}catch(e){error=e.message;if(!data)throw e;}
   badge();if(dialog.open)render();
-  // A farm at level 10 whose email is not checked yet: the pop-up comes up by itself once per visit.
-  if(dialog.open&&needsEmail()&&!emailAsked){emailAsked=true;emailCheck.open();}
  }
  function tick(){
   let due=false;
@@ -167,39 +159,3 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  return {open,load,refresh,dispose(){clearInterval(background);clearInterval(clock);clearInterval(reloadTimer);}};
 }
 
-// Farm events need an email address the game has checked: a pop-up sends a 6-digit code to the farmer's address and takes it back.
-// Google and Facebook accounts never see it (those are checked already).
-export function createEmailCheck({doc=globalThis.document,bridge,email,onDone,timers=globalThis}){
- const dialog=doc.createElement('dialog');dialog.id='event-email-dialog';dialog.className='game-dialog email-check-dialog';dialog.setAttribute('aria-labelledby','event-email-title');doc.body.append(dialog);
- let sent=false,busy=false,waitUntil=0,timer=0,message='';
- const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
- function render(){
-  const wait=Math.max(0,Math.ceil((waitUntil-Date.now())/1000));
-  dialog.innerHTML=`<button type="button" class="icon-button close-dialog email-check-close" data-email-close aria-label="Close"><i data-lucide="x"></i></button>${art('letter')}<p class="eyebrow">FARM EVENTS</p><h2 id="event-email-title">Confirm your email</h2>`
-   +(sent?`<p>We sent a 6-digit code to <b>${esc(email())}</b>. Type it here to join farm events.</p><form class="email-check-form" data-email-form><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456" aria-label="The 6-digit code" data-email-code><button type="submit" class="primary-button" ${busy?'disabled':''}>Confirm</button></form><button type="button" class="link-button email-check-resend" data-email-send ${busy||wait?'disabled':''}>${wait?`Send a new code in ${wait}s`:'Send a new code'}</button>`
-    :`<p>To join farm events, confirm your email address once. We send a 6-digit code to <b>${esc(email())}</b>.</p><button type="button" class="primary-button" data-email-send ${busy?'disabled':''}>Send code</button>`)
-   +`<p class="email-check-status" role="status">${esc(message)}</p>`;
-  dialog.querySelector('[data-email-close]').onclick=()=>dialog.close();
-  dialog.querySelector('[data-email-send]')?.addEventListener('click',send);
-  dialog.querySelector('[data-email-form]')?.addEventListener('submit',event=>{event.preventDefault();checkCode();});
-  refreshArt();
- }
- async function send(){
-  if(busy)return;busy=true;message='';render();
-  try{const r=await bridge.request({operation:'events',command:'email_send'});if(r.verified){busy=false;dialog.close();await onDone?.();return;}sent=true;waitUntil=Date.now()+(r.waitMs??60000);message='Code sent. Check your inbox (and the spam folder).';}
-  catch(e){message=e.message;}
-  busy=false;render();dialog.querySelector('[data-email-code]')?.focus();
-  timers.clearInterval(timer);timer=timers.setInterval(()=>{if(!dialog.open||Date.now()>waitUntil){timers.clearInterval(timer);}const b=dialog.querySelector('.email-check-resend');if(b&&!busy){const w=Math.max(0,Math.ceil((waitUntil-Date.now())/1000));b.disabled=w>0;b.textContent=w?`Send a new code in ${w}s`:'Send a new code';}},1000);
- }
- async function checkCode(){
-  const code=dialog.querySelector('[data-email-code]')?.value.trim()??'';if(busy)return;
-  if(!/^\d{6}$/.test(code)){message='Type the 6 digits from the email.';render();return;}
-  busy=true;message='';render();
-  try{await bridge.request({operation:'events',command:'email_confirm',code});busy=false;dialog.close();await onDone?.();return;}
-  catch(e){message=e.message;}
-  busy=false;render();const input=dialog.querySelector('[data-email-code]');if(input){input.value=code;input.focus();}
- }
- function open(){if(!dialog.open){message='';render();dialog.showModal();}}
- dialog.addEventListener('close',()=>timers.clearInterval(timer));
- return {open,dialog};
-}

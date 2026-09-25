@@ -1458,6 +1458,7 @@ export function normalizeFarm(state,now=Date.now()){
  migrateXpCurve(state);
  state.progression??={mode:'legacy'};
  if(state.keep!==undefined)state.keep=Object.fromEntries(Object.entries(state.keep&&typeof state.keep==='object'?state.keep:{}).filter(([k,v])=>Object.hasOwn(ITEMS,k)&&Number.isSafeInteger(v)&&v>0));
+ if(state.emailBonus!==undefined&&!Number.isSafeInteger(state.emailBonus))delete state.emailBonus;
  if(state.rookieUntil!==undefined)state.rookieUntil=Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil):0;
  state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
@@ -1602,6 +1603,10 @@ export function inviterRewards(state,rows){
 }
 // A gift for everyone from the staff (staff_donate, supabase/chat.sql): each one is received once, on the next load, by farms that
 // already existed when it was sent. The ids received are kept (the last 50; at most 5 gifts a day, looked up for 7 days).
+// A confirmed email address pays 10 diamonds, once: a Google or Facebook account at once (those check the address), an email
+// sign-up after confirming it with a code (farm-api, events: email_send / email_confirm). Only the server grants it, on a load.
+export const EMAIL_BONUS=10;
+export function grantEmailBonus(state,now=Date.now()){if(state.emailBonus)return 0;state.emailBonus=now;state.diamonds+=EMAIL_BONUS;return EMAIL_BONUS;}
 export function receiveDonations(state,rows){
  state.donations??=[];const got=[];
  for(const row of rows??[]){

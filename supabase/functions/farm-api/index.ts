@@ -8,7 +8,7 @@ import {handleAdminGrant} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations} from './farm-state.js';
+import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
@@ -92,6 +92,8 @@ Deno.serve(async(req)=>{
     if(created.error)throw created.error;continue;
    }
    const state=normalizeFarm(row.state,now);
+   // Whether this account can still confirm its email for the bonus: only email sign-ups, until the bonus is paid.
+   const emailCheck=(farm:{emailBonus?:number})=>({needed:(user.app_metadata?.provider??'email')==='email'&&!farm.emailBonus,email:user.email??''});
    profile={player_id:user.id,username,currency:state.coins,level:levelOf(state),avatar_id:profile?.avatar_id??'default'};
    // Every answer names whose farm it is; the game checks that before it trusts the answer (src/main.js).
    if(body.operation==='invite')return reply({...await handleInvite({admin,player:user.id,username,state,now}),profile});
@@ -119,6 +121,15 @@ Deno.serve(async(req)=>{
     // Invite a friend: this farm's own reward at level 10 (also when it got there through a family reward), and the
     // rewards for friends it invited who reached level 10 since the last visit.
     const inviteReward=inviteeReward(state,now),friends=inviterRewards(state,await qualifiedFriends(admin,user.id).catch(()=>[]));
+    // A confirmed email pays EMAIL_BONUS diamonds once (farm-state.js): Google and Facebook at once, an email sign-up after its code.
+    // A problem with this check never stops the farm from opening: the bonus simply waits for the next load.
+    if(!state.emailBonus){
+     const checked=await Promise.resolve().then(()=>admin.rpc('harvest_email_checked',{p_player:user.id})).catch(()=>({error:true,data:null}));
+     if(!checked.error&&checked.data===true&&grantEmailBonus(state,now)){
+      const social=(user.app_metadata?.provider??'email')!=='email',message=social?'Your account is verified. A little welcome gift!':'Thanks for confirming your email!';
+      gift=gift?{...gift,diamonds:(gift.diamonds??0)+EMAIL_BONUS,message:gift.message??message}:{coins:0,xp:0,diamonds:EMAIL_BONUS,item:null,itemCount:0,message,at:now};
+     }
+    }
     if(welcome||levelReward.levels.length||chapterReward.chapters.length||gift||inviteReward||friends.length){
      const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
      if(saved.error)throw saved.error;if(!saved.data)continue;
@@ -128,11 +139,11 @@ Deno.serve(async(req)=>{
      // every family rule applies: leader, room, no family yet). Then the reply carries the farm as it is after that.
      if(friends.length&&await inviteFriendsToFamily(friends)){
       const latest=await admin.from('player_farms').select('state,revision').eq('player_id',user.id).maybeSingle();
-      if(!latest.error&&latest.data){const fresh=normalizeFarm(latest.data.state,now);return reply({state:fresh,profile:{...profile,currency:fresh.coins},levelReward,chapterReward,gift,welcome,invite,revision:latest.data.revision,serverNow:now});}
+      if(!latest.error&&latest.data){const fresh=normalizeFarm(latest.data.state,now);return reply({state:fresh,profile:{...profile,currency:fresh.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(fresh),revision:latest.data.revision,serverNow:now});}
      }
-     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,invite,revision:row.revision+1,serverNow:now});
+     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(state),revision:row.revision+1,serverNow:now});
     }
-    return reply({state,profile,revision:row.revision,serverNow:now});
+    return reply({state,profile,emailCheck:emailCheck(state),revision:row.revision,serverNow:now});
    }
    const previous=row.receipts.find((r:{id:string})=>r.id===body.requestId);
    if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now});

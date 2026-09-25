@@ -13,10 +13,11 @@ export function validateEvent(config,now=Date.now()){
 }
 const DAY_MS=86400000,MIN_ACTIONS=3,MIN_SPAN=10*60000,TOP=10;
 // The first three farmers to finish win a podium prize on top of the usual reward, and every later finisher a small extra
-// (same numbers as harvest_event_settle). At collection a farmer gets at most EVENT_DAY_DIAMONDS event diamonds a day.
-export const PODIUM=Object.freeze([{coins:2000,diamonds:20},{coins:1000,diamonds:10},{coins:500,diamonds:5}]);
-export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:1});
-export const EVENT_DAY_DIAMONDS=30;
+// (same numbers as harvest_event_settle, live-events-bigger-prizes.sql). Diamonds are a fixed prize per place, nothing else; coins
+// come on top of the event's own coins. At collection a farmer gets at most EVENT_DAY_DIAMONDS event diamonds a day.
+export const PODIUM=Object.freeze([{coins:2000,diamonds:50},{coins:1000,diamonds:30},{coins:500,diamonds:20}]);
+export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:5});
+export const EVENT_DAY_DIAMONDS=50;
 // The event's top 10, ranked the way settlement pays (live-events.sql): finished farmers first, earliest finish
 // first (the finish time is frozen), then everyone else by how far along they are. Rewards follow the same formula
 // as harvest_event_settle — exact once settled, "if it ended now" while the event runs.
@@ -26,10 +27,9 @@ export function eventStandings(event,rows,now=Date.now()){
  const finished=r=>settled?r.qualified:goals.every(o=>(r.progress?.[o.stat]??0)>=o.target)&&r.actions>=MIN_ACTIONS&&Date.parse(r.last_at)-Date.parse(r.joined_at)>=MIN_SPAN;
  const at=r=>Date.parse(r.last_at);
  const ranked=rows.map(r=>({...r,done:finished(r),share:share(r)})).sort((a,b)=>Number(b.done)-Number(a.done)||(a.done?at(a)-at(b)||String(a.player_id).localeCompare(String(b.player_id)):b.share-a.share||at(a)-at(b)));
- const n=ranked.filter(r=>r.done).length,{coins,diamondMin,diamondMax,participantStep,poolCap}=event.rewards;
- const perPlayer=Math.min(diamondMax,diamondMin+Math.floor(Math.sqrt(n/participantStep))),budget=Math.min(poolCap,n*perPlayer);
+ const {coins}=event.rewards;
  return ranked.map((r,i)=>({rank:i+1,playerId:r.player_id,finished:r.done,progress:Math.round(r.share*100),
-  coins:settled?r.coins:r.done?coins+(PODIUM[i]??FINISHER_PRIZE).coins:0,diamonds:settled?r.diamonds:r.done?Math.max(0,Math.min(perPlayer,budget-i*perPlayer))+(PODIUM[i]??FINISHER_PRIZE).diamonds:0,podium:r.done&&i<PODIUM.length}));
+  coins:settled?r.coins:r.done?coins+(PODIUM[i]??FINISHER_PRIZE).coins:0,diamonds:settled?r.diamonds:r.done?(PODIUM[i]??FINISHER_PRIZE).diamonds:0,podium:r.done&&i<PODIUM.length}));
 }
 async function standings(admin,event,user,now){
  const rows=await admin.from('live_event_players').select('player_id,progress,actions,joined_at,last_at,qualified,coins,diamonds').eq('event_id',event.id).limit(2000);
@@ -61,21 +61,21 @@ async function playerEvents(admin,user,now){
  if(older.error)return older;
  return {data:[...listed.data,...older.data]};
 }
-// The same gates as the progress trigger (event-email-check.sql): level 10 and an email address the game has checked, so the
-// event screen can say why a farm is not taking part yet, and offer the code to confirm it.
+// The same gate as the progress trigger (live-events-level-only.sql): level 10, so the event screen can say why a farm is not
+// taking part yet.
 async function eligibility(admin,user){
- const [stats,checked]=await Promise.all([admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle(),admin.rpc('harvest_email_checked',{p_player:user.id})]);
- if(stats.error)throw stats.error;if(checked.error)throw checked.error;
- return {level:stats.data?.level??0,minLevel:10,openAt:0,verified:checked.data===true,email:user.email??''};
+ const stats=await admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle();
+ if(stats.error)throw stats.error;
+ return {level:stats.data?.level??0,minLevel:10,openAt:0,verified:true};
 }
 
-// Confirming the email address for events: a 6-digit code by email, valid for 30 minutes, 5 tries per code, at most one email a
-// minute and 5 a day. Only a hash of the code is stored.
+// Confirming the email address (for EMAIL_BONUS diamonds, farm-state.js): a 6-digit code by email, valid for 30 minutes, 5 tries
+// per code, at most one email a minute and 5 a day. Only a hash of the code is stored.
 export const EMAIL_CODE=Object.freeze({validMs:30*60000,waitMs:60000,perDay:5,tries:5});
 async function codeHash(player,code){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`${player}:${code}`));return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');}
 // The same look as the reminder email (notify-hourly/mail.js): the logo, a cream card and the game's colours.
 export function emailCodeMessage(code,appUrl='https://www.harvesttycoon.com'){
- const text=`Your code to confirm your email for Harvest Tycoon farm events: ${code}\n\nType it in the game within 30 minutes. If you did not ask for this, you can ignore this email.`;
+ const text=`Your code to confirm your email for Harvest Tycoon: ${code}\n\nType it in the game within 30 minutes. If you did not ask for this, you can ignore this email.`;
  const font="'DM Sans',Helvetica,Arial,sans-serif";
  const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Harvest Tycoon code</title></head>
 <body style="margin:0;padding:0;background:#f3e8e0;">
@@ -84,7 +84,7 @@ export function emailCodeMessage(code,appUrl='https://www.harvesttycoon.com'){
 <tr><td align="center" style="padding:24px 28px 0;"><img src="${appUrl}/assets/harvest-tycoon-logo.png" width="130" height="130" alt="Harvest Tycoon" style="display:block;border:0;width:130px;height:auto;"></td></tr>
 <tr><td align="center" style="padding:8px 32px 0;font-family:${font};color:#3d3923;">
 <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#3d3923;">Confirm your email</h1>
-<p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#5d573f;">Type this code in the game to join farm events:</p>
+<p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#5d573f;">Type this code in the game to confirm your email:</p>
 <p style="margin:0 0 18px;"><span style="display:inline-block;padding:14px 24px;border-radius:14px;background:#eef5e6;border:1px solid #cfe2bd;font-size:34px;font-weight:700;letter-spacing:8px;color:#2f5a33;font-family:${font};">${code}</span></p>
 <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#5d573f;">The code works for 30 minutes.</p></td></tr>
 <tr><td style="padding:18px 32px 28px;font-family:${font};font-size:12px;line-height:1.6;color:#857d70;text-align:center;">You get this email because someone asked for a code in Harvest Tycoon with this address. If that was not you, you can ignore it.</td></tr>

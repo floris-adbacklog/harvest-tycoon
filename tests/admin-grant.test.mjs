@@ -181,5 +181,5 @@ test('a waiting gift is picked up and cleared on the farmer\'s own next load, al
  const load=code.slice(code.indexOf("body.operation==='load'"),code.indexOf("body.operation==='load'")+4500);
  assert.match(load,/let gift=state\.pendingGift\?\?null;if\(gift\)delete state\.pendingGift;/,'read once, then removed from the state that gets committed');
  assert.match(load,/if\(welcome\|\|levelReward\.levels\.length\|\|chapterReward\.chapters\.length\|\|gift\|\|inviteReward\|\|friends\.length\)\{/,'a waiting gift alone is enough to trigger the commit, like a level or chapter reward (or an invite reward)');
- assert.match(load,/return reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins\},levelReward,chapterReward,gift,welcome,invite,revision:row\.revision\+1,serverNow:now\}\);/);
+ assert.match(load,/return reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins\},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck\(state\),revision:row\.revision\+1,serverNow:now\}\);/);
 });
