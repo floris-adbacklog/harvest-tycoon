@@ -18,14 +18,14 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
 });
 const RECEIPT_PACKS=Object.freeze({...LEGACY_PAYMENT_PACKS,...PAYMENT_PACKS});
 const CHECKOUT_PACK_ALIASES=Object.freeze({'50':'150','100':'150','300':'1250','600':'1250','1000':'3500','2000':'3500'});
-export const STARTER_WINDOW=72*60*60*1000;
+export const STARTER_WINDOW=7*24*60*60*1000;
 // This deployed storefront is live. Keep an explicit emergency off switch.
 export function livePaymentConfiguration(key,webhookSecret,enabledFlag){
  const configured=/^[rs]k_live_/.test((key??'').trim())&&Boolean((webhookSecret??'').trim());
  return {mode:'live',configured,enabled:configured&&String(enabledFlag??'').trim().toLowerCase()!=='false'};
 }
 // The welcome offer opens when the farm reaches the level where diamond boosts unlock (STARTER_LEVEL, 14; the server stamps that moment in
-// the farm, farm-state.js) and lasts 72 hours. No moment (a farm below that level, or one that was past it long before this rule: 0) means no offer.
+// the farm, farm-state.js) and lasts 7 days. No moment (a farm below that level, or one that was past it long before this rule: 0) means no offer.
 export function starterEligibility(openedAt,claimed=false,now=Date.now()){
  const start=typeof openedAt==='number'?openedAt:Date.parse(openedAt),expiresAt=start+STARTER_WINDOW,opened=Number.isFinite(start)&&start>0;
  return {eligible:opened&&now>=start&&now<expiresAt&&!claimed,expiresAt:opened?expiresAt:0,claimed};

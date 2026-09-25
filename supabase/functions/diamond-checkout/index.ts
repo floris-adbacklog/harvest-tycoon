@@ -35,7 +35,7 @@ Deno.serve(async req=>{
   let pack;try{pack=checkoutPack(body.pack);}catch{return reply({error:'Choose a diamond pack.'},400);}
   const packId=pack.id;
   if(!UUID.test(body.requestId??''))return reply({error:'Invalid purchase request.'},400);
-  if(packId==='starter'&&!starter.eligible)return reply({error:starter.claimed?'You have already received the Starter Pack.':'The Starter Pack opens when you reach level 14 and is then available for 72 hours.'},409);
+  if(packId==='starter'&&!starter.eligible)return reply({error:starter.claimed?'You have already received the Starter Pack.':'The Starter Pack opens when you reach level 14 and is then available for 7 days.'},409);
   const farm=await admin.from('player_farms').select('player_id').eq('player_id',user.id).maybeSingle();if(farm.error)throw farm.error;if(!farm.data)return reply({error:'Open your farm before buying diamonds.'},409);
   const stripe=new Stripe(key,{apiVersion:'2026-07-29.dahlia',httpClient:Stripe.createFetchHttpClient(),maxNetworkRetries:2});
   const priceId=pack.price;

@@ -1647,7 +1647,7 @@ export function upgradeSilo(state){
  state.coins-=cost;state.siloLevel++;state.stats.silo_upgrades=(state.stats.silo_upgrades??0)+1;state.xp+=20;return {level:state.siloLevel,cost};
 }
 // The Starter Pack (a welcome offer, see game/payments.js) opens when diamond boosts unlock (level 14): a pack of diamonds is only a shop in the
-// way until there is something to spend them on. Then it is there for 72 hours. Only the server writes the moment. A farm that is already past
+// way until there is something to spend them on. Then it is there for 7 days. Only the server writes the moment. A farm that is already past
 // that level when this is first seen had its moment long ago (unlockedAt 0: never offered again); a farm below it gets its moment on the way up.
 export const STARTER_LEVEL=FEATURE_LEVELS.boosts;
 function stampStarterOffer(state,levelBefore,now){
