@@ -93,7 +93,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now()}={}){
   fact('Invites',`${p.invites.invitedBy?`Invited by ${esc(p.invites.invitedBy)} · `:''}${number(p.invites.friends)} friend${p.invites.friends===1?'':'s'} invited${p.invites.friends?` (${number(p.invites.qualified)} reached level 10)`:''}`),
   fact('Earned in total',`${number(p.earned.coins)} coins · ${number(p.earned.diamonds)} diamonds`)
  ].join('');
- return `<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button><button type="button" class="small-button" data-open-profile="${esc(p.playerId)}">Open profile</button></div>`
+ return `<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button><button type="button" class="small-button" data-open-profile="${esc(p.playerId)}">Open profile</button><button type="button" class="small-button" data-gift-player="${esc(p.playerId)}">Send a gift</button></div>`
   +`<div class="admin-detail-head">${face(p)}<div><h3>${esc(name(p))}${p.vipUntil?' <b class="admin-chip is-vip">VIP</b>':''}</h3><small>${p.everPlayed?`Level ${number(p.level)} · `:''}${p.online?'Online now':`Last action ${esc(ago(p.lastActiveAt,now))}`}</small></div></div>`
   +`<h4>Account</h4><dl class="admin-facts">${account}</dl><h4>Progress</h4><dl class="admin-facts">${progress}</dl>`
   +`<h4>What they do</h4><ul class="admin-bars">${activity}</ul>`
@@ -139,4 +139,29 @@ export function countriesHtml({rows,unknown}){
  const top=Math.max(1,rows[0]?.count??0);
  const list=rows.slice(0,12).map(r=>`<li><span>${esc(country(r.code))}</span><i aria-hidden="true"><b style="width:${Math.round(r.count/top*100)}%"></b></i><strong>${number(r.count)}</strong></li>`).join('');
  return (list||'<li class="admin-empty">No countries yet: they fill in as farmers open the game.</li>')+(unknown?`<li class="admin-funnel-split">${number(unknown)} not seen since countries were added</li>`:'');
+}
+
+// A staff gift to whom (supabase/staff-gift-audience.sql decides the list when it is sent; these are the same rules, for the counts on
+// the screen): everyone, the farmers active in the last 7 days, the farmers online now (the online dot) or one farmer.
+export const GIFT_AUDIENCES=Object.freeze([['all','Everyone'],['active','Active this week'],['online','Online now'],['player','One farmer']]);
+const WEEK_MS=7*86400000;
+export function giftCount(players,audience,now=Date.now()){
+ const list=players??[];
+ if(audience==='active')return list.filter(p=>now-Date.parse(p.lastActiveAt)<WEEK_MS).length;
+ if(audience==='online')return list.filter(p=>p.online).length;
+ if(audience==='player')return 1;
+ return list.length;
+}
+// Farmers whose name contains what was typed, most recently active first (names are not unique: the level tells two apart).
+export function giftMatches(players,query,limit=6){
+ const q=String(query??'').trim().toLowerCase();if(!q)return [];
+ return (players??[]).filter(p=>p.username&&p.username.toLowerCase().includes(q))
+  .sort((a,b)=>(Date.parse(b.lastActiveAt)||0)-(Date.parse(a.lastActiveAt)||0)).slice(0,limit);
+}
+export function giftLabel(audience,{count=null,player=null}={}){
+ const n=count==null?'':`${number(count)} `,farmers=count===1?'farmer':'farmers';
+ if(audience==='active')return `Send to ${n}${farmers} active this week`;
+ if(audience==='online')return `Send to ${n}${farmers} online now`;
+ if(audience==='player')return player?`Send to ${player.username}`:'Choose a farmer first';
+ return 'Send to everyone';
 }

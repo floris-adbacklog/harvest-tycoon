@@ -198,3 +198,13 @@ span.chat-avatar{cursor:default}
 }
 /* A message the staff changed (chat-edit-message.sql): a quiet mark after the text. */
 .chat-edited{color:#8a7c69;font-size:12px;font-weight:600;white-space:nowrap}
+/* A gift, to whom (admin-dashboard.js): Everyone, Active this week, Online now or One farmer, with a name search for one farmer. */
+.admin-gift-to{grid-column:1/-1;display:grid;gap:6px;color:#5e523a;font-size:13px;font-weight:650}
+.admin-gift-to .admin-filters{display:flex;flex-wrap:wrap;gap:6px}
+.admin-gift-player{display:grid;gap:6px;margin-top:4px}
+.admin-gift-results{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.admin-gift-results button,.admin-gift-results .is-chosen{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;margin:0;padding:6px 10px;border:1px solid #e3d6c1;border-radius:12px;background:#fffdf7;color:#3d382a;text-align:left;font:inherit}
+.admin-gift-results button:hover{background:#f7f0e3}
+.admin-gift-results .is-chosen{border-color:#608046;background:#eef4e3}
+.admin-gift-results span{display:grid;min-width:0}.admin-gift-results strong{font-size:14px}.admin-gift-results small{color:#80776b;font-size:12px;font-weight:600}
+.admin-donate .primary-button:disabled{opacity:.55;cursor:default}
