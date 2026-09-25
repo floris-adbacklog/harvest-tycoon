@@ -164,7 +164,7 @@ test('the level-up screen shows the avatar a level opened, and the wiki lists th
  assert.deepEqual(newAvatars({from:30,level:30,reward:{levels:[30]}}).map(a=>a.id),['truffle-hunter'],'a catch-up reward for level 30 names it too');
  assert.deepEqual(newAvatars({from:21,level:22}),[]);
  const ui=readFileSync(new URL('../public/progression-ui.js',import.meta.url),'utf8');
- assert.match(ui,/New avatar · pick it in Settings/);assert.match(ui,/new CustomEvent\('harvest-level',\{detail:\{level\}\}\)/);
+ assert.match(ui,/New avatar · pick it in Settings/);assert.match(ui,/new CustomEvent\('harvest-level',\{detail:\{level,state\}\}\)/);
  const wiki=JSON.stringify(wikiArticle('account'));
  assert.match(wiki,/20 avatars are yours from the start\. 10 more open as you grow, one at every 10 levels: Family farmer \(10\), Tractor driver \(20\)/);assert.match(wiki,/Valley legend \(100\)/);
 });

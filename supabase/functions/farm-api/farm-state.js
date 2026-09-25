@@ -1015,7 +1015,11 @@ export const RETURN_BOOST_MS=30*60000,FIRST_HARVEST_BONUS=3;
 export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
 export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]);
 export const DIAMOND_PACKS=Object.freeze([{amount:150,price:'€1.99'},{amount:500,price:'€4.99'},{amount:1250,price:'€9.99'},{amount:3500,price:'€24.99'}]);
-// VIP has a single server-owned expiry. New purchases extend time, never strength.
+// Every diamond spent goes through here, so the farm keeps the total (stats.diamonds_spent: the Gem collector avatar,
+// public/player-avatars.js). Counted from 25 Sep 2026; spending before that was not kept.
+export function spendDiamonds(state,amount){state.diamonds-=amount;state.stats.diamonds_spent=(state.stats.diamonds_spent??0)+amount;}
+// VIP has a single server-owned expiry. New purchases extend time, never strength. stats.vip_days adds up every day bought (the Velvet
+// farmer avatar), from 25 Sep 2026.
 export const VIP_PLANS=Object.freeze({week:{name:'VIP · 7 days',cost:500,duration:7*86400000},month:{name:'VIP · 30 days',cost:1500,duration:30*86400000}});
 export function vipActive(state,now=Date.now()){return Number.isSafeInteger(state.vipExpiresAt)&&state.vipExpiresAt>now;}
 export function dailyRewardMultiplier(state,now=Date.now()){return vipActive(state,now)?2:1;}
@@ -1028,7 +1032,7 @@ export function buyVip(state,plan,expectedCost,expectedExpiresAt,now=Date.now())
  if(state.diamonds<offer.cost)throw new Error(`You need ${offer.cost} diamonds.`);
  const expiresAt=Math.max(now,previous)+offer.duration;
  if(!Number.isSafeInteger(expiresAt))throw new Error('VIP cannot be extended further.');
- state.diamonds-=offer.cost;state.vipExpiresAt=expiresAt;
+ spendDiamonds(state,offer.cost);state.vipExpiresAt=expiresAt;state.stats.vip_days=(state.stats.vip_days??0)+Math.round(offer.duration/86400000);
  return {plan,cost:offer.cost,vipExpiresAt:expiresAt,extended:previous>now};
 }
 export const SINGLE_BATCH_COST=10;
@@ -1039,7 +1043,7 @@ export function finishSingleBatch(state,building,jobId,expectedCost,now=Date.now
  const job=productionJobs(state.buildings[building]).find(j=>j.id===jobId);
  if(!job||job.readyAt<=now)throw new Error('Choose a batch that is still running.');
  if(state.diamonds<SINGLE_BATCH_COST)throw new Error(`You need ${SINGLE_BATCH_COST} diamonds.`);
- state.diamonds-=SINGLE_BATCH_COST;job.readyAt=now;
+ spendDiamonds(state,SINGLE_BATCH_COST);job.readyAt=now;
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {building,jobId,cost:SINGLE_BATCH_COST,affected:1};
 }
@@ -1050,7 +1054,7 @@ export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
  const plot=state.plots[id];
  if(!plot.crop||plot.readyAt<=now)throw new Error('Choose a crop that is still growing.');
  if(state.diamonds<SINGLE_CROP_COST)throw new Error(`You need ${SINGLE_CROP_COST} diamonds.`);
- state.diamonds-=SINGLE_CROP_COST;plot.readyAt=now;
+ spendDiamonds(state,SINGLE_CROP_COST);plot.readyAt=now;
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {field:id,crop:plot.crop,cost:SINGLE_CROP_COST,affected:1};
 }
@@ -1097,7 +1101,7 @@ export function buyBoost(state,id,now=Date.now(),length='30m'){
  let affected=0;
  if(id==='crops')for(const p of state.plots)if(p.crop&&p.readyAt>now){p.readyAt=now;affected++;}
  if(id==='production')for(const [key,b] of Object.entries(state.buildings))if(key!=='factory')for(const job of productionJobs(b))if(job.readyAt>now){job.readyAt=now;affected++;}
- state.diamonds-=status.cost;
+ spendDiamonds(state,status.cost);
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {boost:id,length:status.length,cost:status.cost,affected,expiresAt:key?state.boosts[key]:null};
 }
@@ -1256,7 +1260,7 @@ export function replaceOrder(state,id,day,revision,expectedCost,now=Date.now()){
  const options=replacementOptions(state,id,now);if(!options.length)throw new Error('No alternative order is available for this difficulty yet.');
  if(state.diamonds<REPLACE_ORDER_COST)throw new Error(`You need ${REPLACE_ORDER_COST} diamonds.`);
  const roll=calendarHash(`replace:${day}:${id}:${state.daily.replacements}`),order=quoteTierOrder(options[roll%options.length],state.daily.orderBoard[id].tier,now,roll);
- state.diamonds-=REPLACE_ORDER_COST;state.daily.orderBoard[id]=order;state.daily.orderRevisions[id]=(state.daily.orderRevisions[id]??0)+1;state.daily.replacements++;
+ spendDiamonds(state,REPLACE_ORDER_COST);state.daily.orderBoard[id]=order;state.daily.orderRevisions[id]=(state.daily.orderRevisions[id]??0)+1;state.daily.replacements++;
  return {id,title:order.title,cost:REPLACE_ORDER_COST,remaining:DAILY_ORDER_REPLACEMENTS-state.daily.replacements};
 }
 // The Ranch (level 70): choose one herd to specialise in. Its barn works a quarter faster: every new batch there takes 25% less
@@ -1496,7 +1500,7 @@ export function normalizeFarm(state,now=Date.now()){
   for(const [key,n] of Object.entries(recovered)){state.stats[key]??=n;if(state.daily?.baseline)state.daily.baseline[key]??=state.stats[key];}
  }
  for(const q of QUESTS)state.stats[q.stat]??=0;
- for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals','sold'])state.stats[k]??=0;
+ for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals','sold','diamonds_spent','vip_days'])state.stats[k]??=0;
  state.family??={familyId:null,unclaimedCount:0};
  state.discovered??=[];state.siloLevel??=0;state.tractorReadyAt??=0;
  state.login??={lastDay:null,streak:0,best:0,visits:0};state.levelRewards??=[1];

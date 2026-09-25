@@ -1,6 +1,7 @@
-// Public cosmetic choices: 20 painted farmers (the first is everyone's default), then 10 that open at levels 10, 20 … 100 (`level`;
-// avatar-service.js refuses one below it, the picker shows it grey with a lock). Keep IDs stable; accounts store only the ID
-// (player_stats.avatar_id has a CHECK on the list, see the player_avatars migrations).
+// Public cosmetic choices: 20 painted farmers (the first is everyone's default), 10 that open at levels 10, 20 … 100 (`level`), and
+// achievement avatars earned with a goal (AVATAR_GOALS). avatar-service.js refuses one that is not open yet; the picker shows it grey
+// with a lock. Keep IDs stable; accounts store only the ID (player_stats.avatar_id has a CHECK on the list, see the player_avatars
+// migrations).
 export const PLAYER_AVATARS=Object.freeze([
   {
     "id": "default",
@@ -170,4 +171,25 @@ export const playerAvatar=id=>byId.get(id)??byId.get(DEFAULT_AVATAR);
 // The level an avatar opens at: 1 for the 20 everyone has.
 export const avatarLevel=id=>playerAvatar(id).level??1;
 export const avatarUnlocked=(id,level)=>Number(level)>=avatarLevel(id);
+
+// What earns each achievement avatar, read from the farm itself: `farm` is {state, events}, the farm's own state (farm-state.js keeps
+// these numbers on the server) and player_stats.events_finished. Every number only goes up, so a goal once reached stays reached.
+// diamonds_spent and vip_days are counted from 25 Sep 2026. A crop medal of tier 3 is Platinum, the highest (MASTERY_TIERS); there are
+// 64 medals, 4 for each of the 16 crops (tests/player-avatars.test.mjs checks both against the rules).
+export const AVATAR_GOALS=Object.freeze({
+ 'gem-collector':{text:'Spend 1,000 diamonds',target:1000,count:f=>f.state?.stats?.diamonds_spent},
+ 'velvet-farmer':{text:'Be VIP for 90 days in total',target:90,count:f=>f.state?.stats?.vip_days},
+ 'crop-master':{text:'Earn a Platinum crop medal',target:1,count:f=>(f.state?.mastery?.claimed??[]).filter(medal=>String(medal).endsWith(':3')).length},
+ 'early-riser':{text:'Log in 30 days in a row',target:30,count:f=>f.state?.login?.best},
+ 'event-champion':{text:'Finish 25 farm events',target:25,count:f=>f.events},
+ 'grand-champion':{text:'Become grand champion of the fair',target:1,count:f=>f.state?.stats?.fair_champion},
+ 'good-neighbor':{text:'Have 3 invited friends reach level 10',target:3,count:f=>f.state?.inviteRewards?.length},
+ 'seed-keeper':{text:'Earn all 64 crop medals',target:64,count:f=>f.state?.stats?.mastery_medals},
+ 'coin-baron':{text:'Earn 5,000,000 coins',target:5000000,count:f=>f.state?.stats?.earned},
+ 'valley-regular':{text:'Play on 100 days',target:100,count:f=>f.state?.login?.visits}
+});
+export const avatarGoal=id=>Object.hasOwn(AVATAR_GOALS,id)?AVATAR_GOALS[id]:null;
+export const goalCount=(id,farm)=>{const goal=avatarGoal(id);return goal?Math.max(0,Math.floor(Number(goal.count(farm??{}))||0)):0;};
+// Whether a farmer may use an avatar: `farm` is {level, state, events}.
+export function avatarOpen(id,farm={}){const goal=avatarGoal(id);return goal?goalCount(id,farm)>=goal.target:avatarUnlocked(id,farm.level??1);}
 export const avatarImage=id=>`<img class="player-avatar-thumb" src="${playerAvatar(id).src}" alt="" width="48" height="48" loading="lazy" decoding="async" draggable="false">`;

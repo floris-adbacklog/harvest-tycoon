@@ -1,6 +1,6 @@
 import {art} from './visual-icons.js';
 import {unlockEntries,featureUnlocked,featureUnlockHint,FEATURE_LEVELS,levelOf,levelReward} from './farm-state.js';
-import {PLAYER_AVATARS} from './player-avatars.js';
+import {PLAYER_AVATARS,avatarGoal,avatarOpen} from './player-avatars.js';
 export function progressionSnapshot(state){return {level:levelOf(state),ids:new Set(unlockEntries(state).filter(e=>e.unlocked).map(e=>e.id))};}
 export function progressionChange(before,state,reward){return {reward,from:before.level,level:levelOf(state),leveled:levelOf(state)>before.level,entries:unlockEntries(state).filter(e=>e.unlocked&&!before.ids.has(e.id))};}
 const ROADMAP_KIND={Crop:'New crop','Ready to build':'New building','Ready to expand':'New field'};
@@ -14,7 +14,7 @@ export function foldLocked(container,selector,isLocked,title){
  const summary=document.createElement('summary');summary.innerHTML=art('lock','unlock-lock');const label=document.createElement('span');label.textContent=`${title} · ${locked.length}`;summary.append(label);
  const grid=document.createElement('div');grid.className='future-unlocks-grid';grid.append(...locked);details.append(summary,grid);container.append(details);
 }
-// The level avatars (player-avatars.js) a level-up has opened: every level passed since \`from\`, and every level the rewards were for.
+// The level avatars (player-avatars.js) a level-up has opened: every level passed since `from`, and every level the rewards were for.
 export function newAvatars(p){const levels=new Set(p.reward?.levels??[]);for(let l=(p.from??p.level)+1;l<=p.level;l++)levels.add(l);return PLAYER_AVATARS.filter(a=>levels.has(a.level));}
 export function mergeRewards(a,b){const levels=[...new Set([...(a?.levels??[]),...(b?.levels??[])])].sort((x,y)=>x-y);return {levels,...levels.reduce((sum,l)=>{const r=levelReward(l);return {coins:sum.coins+r.coins,diamonds:sum.diamonds+r.diamonds};},{coins:0,diamonds:0})};}
 export function createProgressionUI({state,isReady}){
@@ -23,15 +23,22 @@ export function createProgressionUI({state,isReady}){
  function schedule(){clearTimeout(timer);timer=setTimeout(flush,100);}
  function flush(){
   if(!pending||!isReady()||document.querySelector('dialog[open]'))return;
-  const p=pending;pending=null;const faces=newAvatars(p);
+  const p=pending;pending=null;const faces=[...newAvatars(p),...(p.avatars??[])];
   dialog.innerHTML=`<button class="level-up-close" aria-label="Close celebration">×</button><img class="level-up-art" src="/assets/icons/level-up.webp" alt=""><p class="eyebrow">${p.leveled?'LOOK HOW YOU HAVE GROWN':'A NEW POSSIBILITY'}</p><h2 id="level-up-title">${p.catchUp?'Your level rewards':p.leveled?`Level ${p.level}!`:'Unlocked!'}</h2><p>${p.leveled?'One harvest at a time, your farm is growing.':'Your hard work has opened something new.'}</p>${p.entries.length||faces.length?`<ul>${p.entries.map(e=>`<li>${art(e.art)}<div><strong>${e.name}</strong><span>${e.kind==='Ready to build'?'Ready to build · open Buildings':e.kind==='Ready to expand'?'New field · buy it at the Farmhouse':e.kind+' unlocked'}</span></div></li>`).join('')}${faces.map(a=>`<li><img class="level-up-avatar" src="${a.src}" alt="" width="40" height="44"><div><strong>${a.name}</strong><span>New avatar · pick it in Settings</span></div></li>`).join('')}</ul>`:'<p>Keep planting, making and trading. Your next milestone is ahead.</p>'}${p.reward?.levels.length?`<div class="level-up-rewards"><strong class="reward-coins">${art('coins')}+${p.reward.coins.toLocaleString('en-US')} coins</strong><strong class="reward-diamonds">${art('diamonds')}+${p.reward.diamonds} ${p.reward.diamonds===1?'diamond':'diamonds'}</strong></div>${p.reward.levels.length>1?`<p class="level-up-note">Rewards for levels ${p.reward.levels[0]}–${p.reward.levels.at(-1)}.</p>`:''}`:''}${(next=>next?`<p class="level-up-next">${art(next.art)}<span>Next at level ${next.level}: <strong>${next.name}</strong></span></p>`:'')(nextUnlock(state))}<button class="primary-button level-up-done">Keep growing</button>`;
   dialog.querySelector('.level-up-close').onclick=()=>dialog.close();dialog.querySelector('.level-up-done').onclick=()=>dialog.close();dialog.showModal();
  }
- function announce(change){if(!change.leveled&&!change.entries.length&&!change.reward?.levels.length)return;pending=pending?{from:Math.min(pending.from??pending.level,change.from??change.level),level:Math.max(pending.level,change.level),catchUp:pending.catchUp||change.catchUp,reward:mergeRewards(pending.reward,change.reward),leveled:pending.leveled||change.leveled,entries:[...new Map([...pending.entries,...change.entries].map(e=>[e.id,e])).values()]}:change;schedule();}
+ function announce(change){if(!change.leveled&&!change.entries.length&&!change.reward?.levels.length&&!change.avatars?.length)return;pending=pending?{avatars:[...new Map([...(pending.avatars??[]),...(change.avatars??[])].map(a=>[a.id,a])).values()],from:Math.min(pending.from??pending.level,change.from??change.level),level:Math.max(pending.level,change.level),catchUp:pending.catchUp||change.catchUp,reward:mergeRewards(pending.reward,change.reward),leveled:pending.leveled||change.leveled,entries:[...new Map([...pending.entries,...change.entries].map(e=>[e.id,e])).values()]}:change;schedule();}
  // The side-tool bar (desktop) only has room for what is already open, so a locked feature simply is not there yet.
- // The avatar picker (avatar-settings.js) opens a level avatar as soon as the farm gets there.
- let toldLevel=0;
- function tellLevel(){const level=levelOf(state);if(level>toldLevel){toldLevel=level;window.dispatchEvent(new CustomEvent('harvest-level',{detail:{level}}));}}
+ // The avatar picker (avatar-settings.js) opens a level or achievement avatar as soon as the farm gets there; an achievement avatar
+ // earned while playing is also announced here, like an unlock (the ones the farm already had when the game opened are not).
+ let toldLevel=0,toldGoals=null;
+ function tellLevel(){
+  const level=levelOf(state),goals=PLAYER_AVATARS.filter(a=>avatarGoal(a.id)&&avatarOpen(a.id,{state}));
+  const earned=toldGoals?goals.filter(a=>!toldGoals.has(a.id)):[];
+  if(level>toldLevel||earned.length){toldLevel=Math.max(toldLevel,level);window.dispatchEvent(new CustomEvent('harvest-level',{detail:{level,state}}));}
+  if(earned.length)announce({leveled:false,level,entries:[],reward:null,avatars:earned});
+  toldGoals=new Set(goals.map(a=>a.id));
+ }
  function refresh(){
   tellLevel();
   const sideTools={'#boosts-button':'boosts','#estate-button':'projects'};

@@ -58,7 +58,7 @@ Deno.serve(async(req)=>{
   if(body.operation==='avatar'){
    const saved=await savePlayerAvatar({admin,player:user.id,avatarId:body.avatarId});return reply(saved.data,saved.status);
   }
-  const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id').eq('player_id',user.id).maybeSingle();
+  const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished').eq('player_id',user.id).maybeSingle();
   if(profileResponse.error)throw profileResponse.error;
   let profile=profileResponse.data;
   const username=profile?.username??(nameValid(user.user_metadata?.username)?user.user_metadata.username.trim():null);
