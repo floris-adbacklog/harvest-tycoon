@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createFarm,rookieBoost,cropDuration,CHORES,ITEMS,choreRewards} from '../game/farm-state.js';
-test('the beginner boost eases evenly from 80% to zero over the first day, never rewrites running timers',()=>{
+test('the beginner boost starts at 80%, drops quickly and then slowly, and is gone after the first day; it never rewrites running timers',()=>{
  const start=1e12,H=3600000,s=createFarm(start),ready=s.plots[0].readyAt,near=(a,b)=>Math.abs(a-b)<1e-9;
- assert.equal(rookieBoost(s,start),.8);assert(near(rookieBoost(s,start+6*H),.6));assert(near(rookieBoost(s,start+12*H),.4));assert(near(rookieBoost(s,start+18*H),.2));assert.equal(rookieBoost(s,start+24*H),0);
+ assert.equal(rookieBoost(s,start),.8);assert(near(rookieBoost(s,start+6*H),.45));assert(near(rookieBoost(s,start+12*H),.2));assert(near(rookieBoost(s,start+18*H),.05));assert.equal(rookieBoost(s,start+24*H),0);
  let previous=0;for(let h=0;h<=26;h++){const duration=cropDuration(s,'corn',false,start+h*H);assert(duration>=previous);previous=duration;}
  assert.equal(s.plots[0].readyAt,ready);assert(Math.abs(rookieBoost(s,start+H-1)-rookieBoost(s,start+H+1))<.000001);
 });

@@ -83,5 +83,17 @@ test('the wiki states the current rules: the Starter Pack window and the day-lon
  const {STARTER_WINDOW}=await import('../game/payments.js');const {STARTER_DAYS}=await import('../public/wiki-content.js');
  assert.equal(STARTER_DAYS*24*60*60*1000,STARTER_WINDOW);
  assert.match(wikiArticle('diamonds').html,/there is also a Starter Pack for 7 days\./);
- assert.match(wikiArticle('getting-started').html,/eases evenly back to normal over your first 24 hours\./);
+ assert.match(wikiArticle('getting-started').html,/gets smaller quickly at first, then slowly, and is gone after your first 24 hours\./);
+});
+
+test('the wiki matches the rules it explains: family payouts, invites, events and building needs',()=>{
+ assert.match(wikiArticle('family').html,/When the whole order is done, everyone who delivered at least 500 points’ worth gets coins, XP and diamonds/);
+ assert.doesNotMatch(wikiArticle('family').html,/each line you complete pays/);
+ assert.match(wikiArticle('diamonds').html,/When a friend you invite reaches level 10 within 30 days: 150 diamonds for you both\./);
+ assert.match(wikiArticle('account').html,/When your friend reaches level 10 within 30 days, you both get 150 diamonds, for up to 10 friends\./);
+ assert.doesNotMatch(wikiArticle('quests').html,/Invite a friend/,'inviting is not a level unlock');
+ assert.match(wikiArticle('events').html,/48 hours after you started your farm, once your email address is confirmed/);
+ assert.match(wikiArticle('events').html,/at most 30 event diamonds a day/);
+ assert.match(wikiArticle('diamonds').html,/at least 1 diamond with every level-up/);
+ assert.match(wikiArticle('buildings').html,/Dairy Barn needs the Feed Mill first/);
 });

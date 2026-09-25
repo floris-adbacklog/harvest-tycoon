@@ -13,7 +13,7 @@ const emptyPlot=s=>s.plots.findIndex(p=>!p.crop);
 test('a new farm gets a beginner boost for its first day, in plain clock time, and keeps its starter goods for 30 minutes',()=>{
  const s=createFarm(now);
  assert.equal(ROOKIE_MS,30*MIN);assert.equal(ROOKIE_BOOST_MS,24*60*MIN);assert.equal(ROOKIE_TIMER_BOOST,.8);assert.equal(s.rookieUntil,now+ROOKIE_MS);
- assert.equal(rookieBoost(s,now),.8);assert(Math.abs(rookieBoost(s,now+12*60*MIN)-.4)<1e-9);assert.equal(rookieBoost(s,now+24*60*MIN),0);
+ assert.equal(rookieBoost(s,now),.8);assert(Math.abs(rookieBoost(s,now+12*60*MIN)-.2)<1e-9);assert.equal(rookieBoost(s,now+24*60*MIN),0);
  assert.equal(rookieLeft(s,now+10*MIN),20*MIN);assert.equal(rookieLeft(s,now+45*MIN),0);
  // Nothing else moves it: not actions, not pauses, not the level.
  act(s,{type:'field',id:0,action:'harvest'},now+MIN);s.xp=1e6;assert.equal(s.rookieUntil,now+ROOKIE_MS);

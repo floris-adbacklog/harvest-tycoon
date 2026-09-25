@@ -20,10 +20,10 @@ export function createRookieUI({state,document:doc=globalThis.document,now=farmN
  function render(left){
   const on=left>0,currentPercent=Math.round(rookieBoost(state,now())*100);phase=on?'on':'ended';
   dialog.innerHTML=`<button type="button" class="rookie-close" data-rookie-close aria-label="Close">×</button>${art('hourglass','rookie-art')}<p class="eyebrow">BEGINNER BOOST</p>`+
-   (on?`<h2 id="rookie-title"><span data-rookie-percent>${currentPercent}</span>% shorter waiting times</h2><p>Your first day is a head start: waiting times start ${percent}% shorter and ease back to normal over ${ROOKIE_BOOST_MS/3600000} hours.</p>
+   (on?`<h2 id="rookie-title"><span data-rookie-percent>${currentPercent}</span>% shorter waiting times</h2><p>Your first day is a head start: waiting times start ${percent}% shorter. The boost gets smaller quickly at first, then slowly, and is gone after ${ROOKIE_BOOST_MS/3600000} hours.</p>
     <div class="rookie-clock"><progress max="${ROOKIE_BOOST_MS}" value="${left}" aria-label="Time left of your beginner boost"></progress><b data-rookie-left>${rookieTimeLeft(left)} left</b></div>
     <ul class="rookie-notes"><li><strong>Fast now</strong><span>Right now corn takes <b data-rookie-corn>${minutes(CROPS.corn.duration*(1-rookieBoost(state,now())))}</b> instead of ${normal}, and the Care marker shows up sooner.</span></li>
-    <li><strong>Easing over the day</strong><span>The boost gets a little smaller every hour until ${ROOKIE_BOOST_MS/3600000} hours after you started your farm. Crops and batches that are already running keep their times.</span></li>
+    <li><strong>Easing over the day</strong><span>Strongest in your first hours, then a little less every hour until ${ROOKIE_BOOST_MS/3600000} hours after you started your farm. Crops and batches that are already running keep their times.</span></li>
     <li><strong>Your starter goods</strong><span>Your starter corn and animal feed are kept for your first steps. After ${ROOKIE_MS/60000} minutes they are yours to sell.</span></li></ul>`
    :`<h2 id="rookie-title">Beginner boost ended</h2><p>Your beginner boost has gently eased to its end. Waiting times are back to normal, and your starter corn and animal feed are free to sell.</p>${(state.login?.visits??0)<2?'<p>Come back tomorrow: your next daily gift brings 30 minutes of double harvest.</p>':''}`)+
    `<button type="button" class="primary-button" data-rookie-close>Got it</button>`;
