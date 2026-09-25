@@ -34,7 +34,7 @@ test('qualifying mirrors the settlement rule: every goal full, 3 contributions o
 test('the screen says in one sentence why a farm cannot join yet',()=>{
  assert.equal(EVENTS_LEVEL,10);
  assert.match(eligibilityNote({level:7,minLevel:10,openAt:0,verified:true},now),/open at level 10\. You are level 7/);
- assert.match(eligibilityNote({level:12,minLevel:10,openAt:now+2*H,verified:true},now),/in 2h \(48 hours after you started\)/);
+ assert.equal(eligibilityNote({level:12,minLevel:10,openAt:now+2*H,verified:true},now),null,'no waiting time after level 10: events open as soon as a farm reaches it');
  assert.match(eligibilityNote({level:12,minLevel:10,openAt:0,verified:false},now),/Confirm your email/);
  assert.equal(eligibilityNote({level:12,minLevel:10,openAt:0,verified:true},now),null);
 });
@@ -180,4 +180,12 @@ test('twelve automatic events, the new ones about one crop or eggs, and every go
  }
  for(const stat of EVENT_STATS)assert.match(sql,new RegExp(`'${stat}'`),`${stat} is allowed by harvest_event_validate`);
  assert.match(sql,/or \(stat like 'harvest\\_%' and action in \('field','tractor'\)\) or \(stat like 'made\\_%' and action in \('collect','collect_all'\)\);/,'progress counts a crop on harvest and eggs on collecting');
+});
+test('events open as soon as a farm reaches level 10: no 48-hour wait in the trigger, farm-api or the event screen',()=>{
+ const sql=readFileSync(new URL('../supabase/live-events-no-wait.sql',import.meta.url),'utf8');
+ assert.match(sql,/replace\(definition,'created_at<now\(\)-interval ''48 hours'' and ',''\)/);
+ assert.match(sql,/raise exception 'harvest_event_progress: the 48-hour condition was not found'/);
+ assert.match(readFileSync(new URL('../supabase/functions/farm-api/event-service.js',import.meta.url),'utf8'),/minLevel:10,openAt:0,verified:/);
+ const ui=readFileSync(new URL('../public/live-events-ui.js',import.meta.url),'utf8');
+ assert.doesNotMatch(ui,/48 hours/);assert.match(ui,/Open from level 10\./);
 });

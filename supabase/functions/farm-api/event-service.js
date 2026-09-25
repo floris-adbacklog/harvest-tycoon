@@ -61,11 +61,12 @@ async function playerEvents(admin,user,now){
  if(older.error)return older;
  return {data:[...listed.data,...older.data]};
 }
-// The same gates as the progress trigger in live-events.sql, so the event screen can say why a farm is not taking part yet.
+// The same gates as the progress trigger (live-events.sql, live-events-no-wait.sql): level 10 and a confirmed email address, so the
+// event screen can say why a farm is not taking part yet.
 async function eligibility(admin,user){
  const stats=await admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle();
  if(stats.error)throw stats.error;
- return {level:stats.data?.level??0,minLevel:10,openAt:Date.parse(user.created_at)+2*DAY_MS,verified:Boolean(user.email_confirmed_at)};
+ return {level:stats.data?.level??0,minLevel:10,openAt:0,verified:Boolean(user.email_confirmed_at)};
 }
 export async function handleEvents({admin,body,user}){
  const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:user.id}}});

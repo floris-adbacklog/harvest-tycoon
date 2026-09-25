@@ -43,7 +43,6 @@ export function qualifyHint(player,now=Date.now()){
 export function eligibilityNote(eligibility,now=Date.now()){
  if(!eligibility)return null;
  if(eligibility.level<eligibility.minLevel)return `Farm events open at level ${eligibility.minLevel}. You are level ${eligibility.level}.`;
- if(eligibility.openAt>now)return `Your farm can join events in ${formatDuration(eligibility.openAt-now)} (48 hours after you started).`;
  if(!eligibility.verified)return 'Confirm your email address to join farm events.';
  return null;
 }
@@ -107,7 +106,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const result=e=>!e.settled_at?'Results coming up':e.player?.claimed_at?`Collected · ${num(e.player.coins)} coins${e.player.paid_diamonds?` + ${num(e.player.paid_diamonds)} diamond${e.player.paid_diamonds===1?'':'s'}`:''}`:e.player?'Not qualified':'You did not take part';
   return `<h3 class="event-section-title">Recent events</h3><div class="family-member-list event-history">${past.map(e=>`<article class="family-list-row"><div><strong>${esc(e.title)}</strong><span>${result(e)}${e.settled_at?` · ${num(e.qualified)} of ${num(e.participants)} qualified`:''}</span></div></article>`).join('')}</div>`;
  }
- const rules=`<details class="family-extra event-rules"><summary>How farm events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and contribute at least 3 times over 10 minutes to qualify.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You can collect at most ${EVENT_DAY_DIAMONDS} event diamonds a day.</li><li>Open from level 10, 48 hours after you started your farm.</li></ul></details>`;
+ const rules=`<details class="family-extra event-rules"><summary>How farm events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and contribute at least 3 times over 10 minutes to qualify.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You can collect at most ${EVENT_DAY_DIAMONDS} event diamonds a day.</li><li>Open from level 10.</li></ul></details>`;
  function render(){
   const heading='<div class="dialog-heading"><div><span class="eyebrow">PLAY TOGETHER, FOR A LITTLE WHILE</span><h2 id="events-title">Farm events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
   dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:`<p class="event-loading">${esc(error||'Opening farm events…')}</p>`)+'<p class="event-feedback" role="status" data-status></p>';

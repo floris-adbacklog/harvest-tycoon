@@ -146,7 +146,7 @@ const BODIES={
   +section('Changing family',`<p>After you leave a family you can join another after ${Math.round(FAMILY_CONFIG.JOIN_COOLDOWN_MS/3600000)} hours.</p>`);
  },
  events(h){
-  return section('Short shared goals',`<p>${h.lvl(EVENTS_LEVEL)} A farm event runs for 5 hours, then there is a 1-hour break before the next one. Everyone plays toward the same goals. Events open from level ${EVENTS_LEVEL}, 48 hours after you started your farm, once your email address is confirmed.</p>`)
+  return section('Short shared goals',`<p>${h.lvl(EVENTS_LEVEL)} A farm event runs for 5 hours, then there is a 1-hour break before the next one. Everyone plays toward the same goals. Events open as soon as you reach level ${EVENTS_LEVEL} (with a confirmed email address).</p>`)
   +section('How it works',facts([
    ['live-events','Goals','Each event has a few goals, like harvesting or making certain things. Your progress shows in the event window.'],
    ['trophy','Rewards',`Complete every goal and help at least 3 times over 10 minutes to qualify. Everyone who finishes wins coins and diamonds; the sooner you finish, the more. You can collect at most ${EVENT_DAY_DIAMONDS} event diamonds a day.`],
