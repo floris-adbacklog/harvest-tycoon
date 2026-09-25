@@ -15,7 +15,7 @@ function database(){
 
 test('all 16 crops can be planted, watered and harvested; collection is unique',()=>{
  const s=createFarm(now);s.coins=20000;s.xp=xpForLevel(70);
- assert.equal(Object.keys(CROPS).length,16);assert.equal(QUESTS.length,250);
+ assert.equal(Object.keys(CROPS).length,16);assert.equal(QUESTS.length,300);
  for(const [crop,c] of Object.entries(CROPS)){
   apply(s,{type:'field',id:8,action:'plant',crop});apply(s,{type:'field',id:8,action:'water'},now+1000);
   assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+1000),/Still growing/);

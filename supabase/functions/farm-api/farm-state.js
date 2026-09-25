@@ -541,7 +541,60 @@ export const QUESTS = Object.freeze([
  {title:'Forty fields',description:'Grow your farm to all 40 fields.',stat:'expansions',target:28,reward:150000,minLevel:90},
  {title:'Master of every crop',description:'Earn all 64 crop mastery medals.',stat:'mastery_medals',target:64,reward:150000,minLevel:66},
  {title:'A hundred upgrades',description:'Upgrade your buildings 100 times.',stat:'upgrades',target:100,reward:25000},
- {title:'Every building at its best',description:'Upgrade your buildings 300 times.',stat:'upgrades',target:300,reward:90000}
+ {title:'Every building at its best',description:'Upgrade your buildings 300 times.',stat:'upgrades',target:300,reward:90000},
+ // 50 more (26 Sep 2026), 250 -> 300: the crops and goods that had one quest, the middle of the game (Pig Farm to Craft Workshop),
+ // spending coins and diamonds, and the gaps between existing goals. Always appended: a quest's place in this list is its id.
+ // Rewards follow the existing quests (between two of the same goal, or 15% of the market value of what is asked).
+ {title:'A mountain of lettuce',description:'Harvest 1,000 lettuce.',stat:'harvest_lettuce',target:1000,reward:3000,minLevel:3},
+ {title:'Barley by the cartload',description:'Harvest 250 barley.',stat:'harvest_barley',target:250,reward:3200,minLevel:5},
+ {title:'Bean counter',description:'Harvest 150 green beans.',stat:'harvest_greenbeans',target:150,reward:2000,minLevel:7},
+ {title:'Cabbage king',description:'Harvest 200 cabbages.',stat:'harvest_cabbage',target:200,reward:3300,minLevel:9},
+ {title:'A thousand heads',description:'Harvest 1,000 cabbages.',stat:'harvest_cabbage',target:1000,reward:17000,minLevel:9},
+ {title:'Snow-white harvest',description:'Harvest 150 cauliflowers.',stat:'harvest_cauliflower',target:150,reward:3900,minLevel:11},
+ {title:'Deep purple',description:'Harvest 100 red cabbages.',stat:'harvest_redcabbage',target:100,reward:5100,minLevel:15},
+ {title:'Facing the sun',description:'Harvest 100 sunflowers.',stat:'harvest_sunflower',target:100,reward:3100,minLevel:17},
+ {title:'An apple a day',description:'Harvest 150 apples.',stat:'harvest_apples',target:150,reward:2300,minLevel:20},
+ {title:'Berry picker',description:'Harvest 150 berries.',stat:'harvest_berries',target:150,reward:2900,minLevel:23},
+ {title:'Sea of gold',description:'Harvest 5,000 wheat.',stat:'harvest_wheat',target:5000,reward:6000},
+ {title:'Beanstalk',description:'Harvest 1,000 pole beans.',stat:'harvest_polebeans',target:1000,reward:24000,minLevel:31},
+ {title:'The miller’s pride',description:'Make 500 flour at the Windmill.',stat:'made_flour',target:500,reward:4500,minLevel:6},
+ {title:'Daily bread',description:'Bake 200 fresh bread.',stat:'made_bread',target:200,reward:10000,minLevel:8},
+ {title:'Cheese cellar',description:'Make 100 farmhouse cheese.',stat:'made_cheese',target:100,reward:3500,minLevel:9},
+ {title:'Salad bar',description:'Pack 60 fresh salads.',stat:'made_salad',target:60,reward:4100,minLevel:11},
+ {title:'Veggie boxes',description:'Pack 40 vegetable boxes.',stat:'made_vegetables',target:40,reward:10000,minLevel:11},
+ {title:'Hearty stew',description:'Cook 40 pots of stew.',stat:'made_stew',target:40,reward:6600,minLevel:12},
+ {title:'Pie season',description:'Bake 60 pumpkin pies.',stat:'made_pie',target:60,reward:11000,minLevel:13},
+ {title:'Pressed apples',description:'Press 40 apple juices.',stat:'made_applejuice',target:40,reward:3900,minLevel:21},
+ {title:'Jars on the shelf',description:'Make 40 berry preserves.',stat:'made_berrypreserves',target:40,reward:4800,minLevel:24},
+ {title:'Truffle hunters',description:'Let the pigs find 60 truffles.',stat:'made_truffles',target:60,reward:2100,minLevel:29},
+ {title:'Fancy breakfast',description:'Cook 20 truffle omelettes.',stat:'made_truffleomelette',target:20,reward:2600,minLevel:30},
+ {title:'Sweet tooth',description:'Bake 25 berry cheesecakes.',stat:'made_berrycheesecake',target:25,reward:8400,minLevel:33},
+ {title:'Busy bees',description:'Collect 100 honey from the Bee Yard.',stat:'made_honey',target:100,reward:530,minLevel:34},
+ {title:'Gift baskets',description:'Pack 25 harvest hampers.',stat:'made_harvesthamper',target:25,reward:22000,minLevel:35},
+ {title:'Market legend',description:'Sell 50,000 crops and goods.',stat:'sold',target:50000,reward:120000},
+ {title:'The egg seller',description:'Sell 500 eggs at the market.',stat:'sold_eggs',target:500,reward:3800},
+ {title:'Cheese stall',description:'Sell 100 farmhouse cheese at the market.',stat:'sold_cheese',target:100,reward:3500,minLevel:9},
+ {title:'Money well spent',description:'Spend 10,000 coins on your farm.',stat:'coins_spent',target:10000,reward:1500,minLevel:10},
+ {title:'Investor',description:'Spend 100,000 coins on your farm.',stat:'coins_spent',target:100000,reward:12000,minLevel:25},
+ {title:'Tycoon',description:'Spend 1,000,000 coins on your farm.',stat:'coins_spent',target:1000000,reward:90000,minLevel:50},
+ {title:'A little sparkle',description:'Spend 100 diamonds.',stat:'diamonds_spent',target:100,reward:1500,minLevel:14},
+ {title:'Diamond hands',description:'Spend 500 diamonds.',stat:'diamonds_spent',target:500,reward:8000,minLevel:30},
+ {title:'Piggy business',description:'Build the Pig Farm.',stat:'built_pigfarm',target:1,reward:3000,minLevel:29},
+ {title:'Industrial farmer',description:'Build the Factory.',stat:'built_factory',target:1,reward:20000,minLevel:50},
+ {title:'Round and round',description:'Finish 100 batches at the Windmill.',stat:'windmill_batches',target:100,reward:2000,minLevel:6},
+ {title:'Rich soil',description:'Fertilize 50 fields.',stat:'fertilized',target:50,reward:1500,minLevel:9},
+ {title:'Master gardener',description:'Fertilize 250 fields.',stat:'fertilized',target:250,reward:6000,minLevel:9},
+ {title:'Handyman',description:'Upgrade your buildings 25 times.',stat:'upgrades',target:25,reward:2500},
+ {title:'Master builder',description:'Upgrade your buildings 50 times.',stat:'upgrades',target:50,reward:8000},
+ {title:'Full research',description:'Finish all five silo research steps.',stat:'silo_upgrades',target:5,reward:15000,minLevel:26},
+ {title:'Twenty-five chores',description:'Finish 25 farm chores.',stat:'chores',target:25,reward:200,minLevel:10},
+ {title:'Always helping',description:'Lend a helping hand 50 times.',stat:'activities',target:50,reward:1200,minLevel:8},
+ {title:'On the road',description:'Deliver 25 orders.',stat:'deliveries',target:25,reward:1300,minLevel:5},
+ {title:'Medal collector',description:'Earn 18 crop mastery medals.',stat:'mastery_medals',target:18,reward:5500,minLevel:7},
+ {title:'Decorated farmer',description:'Earn 27 crop mastery medals.',stat:'mastery_medals',target:27,reward:12000,minLevel:7},
+ {title:'Every seed in the shop',description:'Harvest every one of the 16 crops at least once.',stat:'varieties',target:16,reward:40000,minLevel:66},
+ {title:'Boost lover',description:'Use 25 boosts.',stat:'boosts_used',target:25,reward:5200,minLevel:14},
+ {title:'Stall keeper',description:'Earn 100,000 coins at your farm stall.',stat:'passive_earned',target:100000,reward:15000,minLevel:19}
 ]);
 export const STARTER_QUESTS=Object.freeze({first:130,count:20});
 export const MAX_PLOTS=40;
@@ -1035,12 +1088,17 @@ export function expandFarm(state){
 }
 // Every quest pays 15 XP unless it says otherwise; the starter quests pay coins only (xp:0).
 export const QUEST_XP=15;
+// A quest's XP (26 Sep 2026): 15 for every quest up to 1,000 coins (all the early ones, as before), then growing with the reward,
+// 15 × √(coins ÷ 1,000), at most 250 (about a tenth of a level at level 60). Players up to level 28 only claim quests of 1,000 coins or
+// less, so nobody levels faster; a 150,000-coin quest no longer pays the same XP as "harvest 3 crops". A quest's own xp (the starter
+// quests' 0) still wins.
+export function questXp(q){if(q.xp!==undefined)return q.xp;return q.reward<=1000?QUEST_XP:Math.min(250,Math.round(QUEST_XP*Math.sqrt(q.reward/1000)));}
 export function claimQuest(state,id){
  if(!Number.isInteger(id)||!QUESTS[id])throw new Error('Choose a valid quest.');
  const q=QUESTS[id];
  if(state.claimed.includes(id))throw new Error('This reward has already been claimed.');
  if((state.stats[q.stat]??0)<q.target)throw new Error('Finish this quest to claim your reward.');
- const xp=q.xp??QUEST_XP;
+ const xp=questXp(q);
  state.claimed.push(id);state.coins+=q.reward;state.xp+=xp;
  return {coins:q.reward,xp};
 }

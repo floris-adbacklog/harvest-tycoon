@@ -81,7 +81,7 @@ test('every level pays at least one diamond, so the first level-ups are never em
 
 test('twenty starter quests are appended after the old ones: small, unique and built on counters the game already keeps',()=>{
  const starters=QUESTS.slice(STARTER_QUESTS.first,STARTER_QUESTS.first+STARTER_QUESTS.count);
- assert.equal(STARTER_QUESTS.first,130);assert.equal(starters.length,STARTER_QUESTS.count);assert.equal(starters.length,20);assert.equal(QUESTS.length,250);
+ assert.equal(STARTER_QUESTS.first,130);assert.equal(starters.length,STARTER_QUESTS.count);assert.equal(starters.length,20);assert.equal(QUESTS.length,300);
  assert.equal(QUESTS[STARTER_QUESTS.first+STARTER_QUESTS.count].title,'A buzzing corner','the midgame quests come after the starters');
  assert.equal(QUESTS[129].title,'Pumpkin master','the old quests did not move');
  assert.equal(new Set(QUESTS.map(q=>q.title)).size,QUESTS.length,'every title is unique');

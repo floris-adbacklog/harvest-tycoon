@@ -1,4 +1,4 @@
-import {QUESTS,QUEST_XP,levelOf,guidedFarm,availableDaily} from './farm-state.js';
+import {QUESTS,questXp,levelOf,guidedFarm,availableDaily} from './farm-state.js';
 import {art} from './visual-icons.js';
 
 export function questGroups(state){
@@ -15,9 +15,9 @@ export function questGroups(state){
 }
 
 // One picture per quest, from what it counts: the crop or good itself, the building, or the farm job.
-const QUEST_ART={harvested:'harvest',planted:'seeds',varieties:'seeds',watered:'water',tended:'care',fertilized:'fertilizer',earned:'coins',passive_earned:'stall',sold:'market',produced:'buildings',parallel_batches:'buildings',bread:'bread',upgrades:'hammer',windmill_upgrades:'windmill',windmill_batches:'windmill',silo_upgrades:'silo',expansions:'estate',projects:'estate',deliveries:'cart',crafted_deliveries:'cart',honey_deliveries:'honey',tractor:'tractor',dailies:'gift',glasshouse_batches:'glasshouse',valley_baskets:'valley-market',ranch_focus:'ranch',improvements:'estate-workshop',depot_shipments:'trade-depot',depot_loaded:'trade-depot',depot_coins:'trade-depot',valley_coins:'valley-market',fair_entries:'grand-fair',fair_stars:'grand-fair',fair_champion:'grand-fair',chores:'chores',mastery_medals:'trophy',diamonds_earned:'diamonds',boosts_used:'boost',activities:'helping-hand',activity_rounds:'helping-hand'};
+const QUEST_ART={coins_spent:'coins',diamonds_spent:'diamonds',harvested:'harvest',planted:'seeds',varieties:'seeds',watered:'water',tended:'care',fertilized:'fertilizer',earned:'coins',passive_earned:'stall',sold:'market',produced:'buildings',parallel_batches:'buildings',bread:'bread',upgrades:'hammer',windmill_upgrades:'windmill',windmill_batches:'windmill',silo_upgrades:'silo',expansions:'estate',projects:'estate',deliveries:'cart',crafted_deliveries:'cart',honey_deliveries:'honey',tractor:'tractor',dailies:'gift',glasshouse_batches:'glasshouse',valley_baskets:'valley-market',ranch_focus:'ranch',improvements:'estate-workshop',depot_shipments:'trade-depot',depot_loaded:'trade-depot',depot_coins:'trade-depot',valley_coins:'valley-market',fair_entries:'grand-fair',fair_stars:'grand-fair',fair_champion:'grand-fair',chores:'chores',mastery_medals:'trophy',diamonds_earned:'diamonds',boosts_used:'boost',activities:'helping-hand',activity_rounds:'helping-hand'};
 export function questArt(stat){
- const [, kind, key]=stat.match(/^(made|harvest|built|activity|chore)_(.+)$/)??[];
+ const [, kind, key]=stat.match(/^(made|harvest|built|activity|chore|sold)_(.+)$/)??[];
  const pick=QUEST_ART[stat]??(kind==='activity'?`activity-${key}`:kind==='chore'?`chore-${key}`:key);
  return art(pick)||art('quests');
 }
@@ -30,7 +30,7 @@ export function createQuestsUI({state,claim,icons,notify,document:doc=globalThis
  toolbar.innerHTML='<div id="quest-summary" role="status"></div><div class="market-tabs quest-filters" role="group" aria-label="Quest status"><button data-quest-filter="ready" aria-pressed="false">Ready <span>0</span></button><button data-quest-filter="active" aria-pressed="true">In progress <span>0</span></button><button data-quest-filter="done" aria-pressed="false">Completed <span>0</span></button></div>';
  list.before(toolbar);
  function row({id,quest:q,value},group){
-  const xp=q.xp??QUEST_XP,rewards=`<span class="quest-rewards"><b>${art('coins')}${number(q.reward)}</b>${xp?`<b class="is-xp">${art('xp')}${xp} XP</b>`:''}</span>`;
+  const xp=questXp(q),rewards=`<span class="quest-rewards"><b>${art('coins')}${number(q.reward)}</b>${xp?`<b class="is-xp">${art('xp')}${xp} XP</b>`:''}</span>`;
   const end=group==='ready'?`<button class="primary-button" data-claim="${id}">Claim</button>`:group==='done'?'<span class="quest-state">Completed ✓</span>':'';
   return `<article class="task-row quest-item is-${group}"><span class="quest-art">${questArt(q.stat)}</span><div class="quest-body"><div class="quest-row-heading"><h3>${q.title}</h3></div><p>${q.description}</p>${group==='done'?'':`<div class="quest-meter"><progress value="${value}" max="${q.target}" aria-label="${q.title} progress"></progress><span>${number(value)} / ${number(q.target)}</span></div>`}<div class="task-bottom">${rewards}${end}</div></div></article>`;
  }

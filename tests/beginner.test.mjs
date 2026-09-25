@@ -7,7 +7,7 @@ const act=(state,action,time=now,random=()=>0)=>applyFarmAction(state,action,tim
 // Chores pay enough XP to level up a young farm; level-ups pay their own coins and diamonds on top.
 const levelGain=(from,to,key)=>{let sum=0;for(let l=from+1;l<=to;l++)sum+=levelReward(l)[key];return sum;};
 test('the beginner guide teaches ten achievable starter actions and awards 50 diamonds once',()=>{
- const state=createFarm(now);assert.equal(BEGINNER_QUESTS.length,10);assert.equal(QUESTS.length,250);
+ const state=createFarm(now);assert.equal(BEGINNER_QUESTS.length,10);assert.equal(QUESTS.length,300);
  const claim=id=>act(state,{type:'beginner_claim',id});
  assert.throws(()=>claim('harvest'),/farming action/);
  // Steps 1-9 finish themselves with the action that does them (XP included); only the last one is collected by hand.
