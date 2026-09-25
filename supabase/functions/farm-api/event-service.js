@@ -73,9 +73,23 @@ async function eligibility(admin,user){
 // minute and 5 a day. Only a hash of the code is stored.
 export const EMAIL_CODE=Object.freeze({validMs:30*60000,waitMs:60000,perDay:5,tries:5});
 async function codeHash(player,code){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`${player}:${code}`));return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');}
-export function emailCodeMessage(code){
+// The same look as the reminder email (notify-hourly/mail.js): the logo, a cream card and the game's colours.
+export function emailCodeMessage(code,appUrl='https://www.harvesttycoon.com'){
  const text=`Your code to confirm your email for Harvest Tycoon farm events: ${code}\n\nType it in the game within 30 minutes. If you did not ask for this, you can ignore this email.`;
- return {subject:`Your Harvest Tycoon code: ${code}`,text,html:`<div style="font-family:Arial,sans-serif;color:#3b2c12;max-width:460px"><h2 style="margin:0 0 12px">Confirm your email</h2><p>Your code to join farm events in Harvest Tycoon:</p><p style="font-size:32px;font-weight:700;letter-spacing:6px;margin:16px 0">${code}</p><p>Type it in the game within 30 minutes. If you did not ask for this, you can ignore this email.</p></div>`};
+ const font="'DM Sans',Helvetica,Arial,sans-serif";
+ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Harvest Tycoon code</title></head>
+<body style="margin:0;padding:0;background:#f3e8e0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3e8e0;padding:28px 12px;"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fffdf6;border-radius:22px;border:1px solid #eadfd4;">
+<tr><td align="center" style="padding:24px 28px 0;"><img src="${appUrl}/assets/harvest-tycoon-logo.png" width="130" height="130" alt="Harvest Tycoon" style="display:block;border:0;width:130px;height:auto;"></td></tr>
+<tr><td align="center" style="padding:8px 32px 0;font-family:${font};color:#3d3923;">
+<h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#3d3923;">Confirm your email</h1>
+<p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#5d573f;">Type this code in the game to join farm events:</p>
+<p style="margin:0 0 18px;"><span style="display:inline-block;padding:14px 24px;border-radius:14px;background:#eef5e6;border:1px solid #cfe2bd;font-size:34px;font-weight:700;letter-spacing:8px;color:#2f5a33;font-family:${font};">${code}</span></p>
+<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#5d573f;">The code works for 30 minutes.</p></td></tr>
+<tr><td style="padding:18px 32px 28px;font-family:${font};font-size:12px;line-height:1.6;color:#857d70;text-align:center;">You get this email because someone asked for a code in Harvest Tycoon with this address. If that was not you, you can ignore it.</td></tr>
+</table></td></tr></table></body></html>`;
+ return {subject:`Your Harvest Tycoon code: ${code}`,text,html};
 }
 async function resendMail(to,message){
  const env=globalThis.Deno?.env,key=env?.get('RESEND_API_KEY')??'',from=env?.get('MAIL_FROM')??'Harvest Tycoon <noreply@harvesttycoon.com>';
