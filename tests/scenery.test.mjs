@@ -76,3 +76,16 @@ test('the farm is tidier: fewer props, kept off roads and fields and clear of th
  for(const r of turns)assert.ok(off(r)<=.75,`rotation ${r} faces the camera or away from it`);
  assert.doesNotMatch(game,/dairy:\[\[[^\]]*hay_002/,'no hay right behind the paddock horse');assert.doesNotMatch(game,/silo:\[\['hay_003'/,'nor inside the hay stack');
 });
+// 25 Sep 2026: after the green hills went, the valley became farmland with a forest edge; and no tree stands on a field.
+test('the valley: a patchwork of neighbouring fields in front, a forest edge along the mountains, and nothing growing on a field',()=>{
+ const life=read('public/farm-life.js'),scenery=read('public/scenery.js');
+ assert.doesNotMatch(life,/landscape_004|mountain_009/,'no smooth green hills');
+ const spots=life.match(/for\(const \[x0,z0,w,d,kind\] of (\[\[.*?\]\])\)/)[1];
+ assert.equal(JSON.parse(spots.replace(/'/g,'"')).length,5,'five fields');
+ assert.match(life,/KINDS=\{wheat:\['field_005',0xd7b654,false\],green:\['field_004',null,true\],ploughed:\['field_004',0x9c7a52,false\]\}/);
+ assert.match(life,/return \(deg>-16&&deg<204\)\?\(sx\/A\)\*\*2\+\(sb\/B\)\*\*2<1:true;/,'clear of the mountain ring, which runs round to the left front');
+ assert.match(life,/if\(\/\^\(tree\|fir_tree\|bush\)_\/\.test\(o\.userData\.model\?\?''\)&&fieldBoxes\.some/,'the fixed trees keep off the fields');
+ assert.match(scenery,/if\(size\.x\*size\.z>120&&!\/\^field_\/\.test\(o\.userData\.model\?\?''\)\)\{terrain\.push\(mesh\);return;\}/,'a field is not ground for the forest to grow on');
+ assert.match(scenery,/count=mobile\?3\+Math\.floor\(rand\(\)\*2\):5\+Math\.floor\(rand\(\)\*4\)/,'stands of firs close together');
+ assert.match(scenery,/const front=ringPoint\(deg\+\(rand\(\)-\.5\)\*4,\(37\+rand\(\)\*2\)\*RING,\(34\+rand\(\)\*2\)\*RING\);/,'and young firs in front of them');
+});

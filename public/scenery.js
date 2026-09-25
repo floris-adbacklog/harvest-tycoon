@@ -36,7 +36,8 @@ export function buildScenery({scene,models,mobile=false}){
   o.traverseVisible(mesh=>{
    if(!mesh.isMesh)return;
    box.setFromObject(mesh);if(box.isEmpty())return;box.getSize(size);if(size.y<.03)return;
-   if(size.x*size.z>120){terrain.push(mesh);return;}
+   // Big shapes are ground to stand on, except a field: nothing grows on a field.
+   if(size.x*size.z>120&&!/^field_/.test(o.userData.model??'')){terrain.push(mesh);return;}
    const b=box.clone();cells(b.min.x,b.max.x,b.min.z,b.max.z,key=>{if(!grid.has(key))grid.set(key,[]);grid.get(key).push(b);});
   });
  }
@@ -85,16 +86,17 @@ export function buildScenery({scene,models,mobile=false}){
  const range=(from,to,every,a,b,height)=>{for(let deg=from;deg<=to;deg+=every){const p=ringPoint(deg+(rand()-.5)*8,(a+rand()*4)*RING,(b+rand()*4)*RING);if(Math.max(Math.abs(p.x),Math.abs(p.z))>74)continue;const peak=put(peaks[Math.floor(rand()*peaks.length)],p.x,p.z,{width:32+rand()*14,depth:13+rand()*6,height:height(),y:-.8,rotation:p.angle+(rand()-.5)*.5,shadow:false});hazy(peak);peak?.updateMatrixWorld(true);peak?.traverse(n=>{if(n.isMesh)terrain.push(n);});}};
  if(peaks.length)range(-4,192,mobile?28:17,57,53,()=>10+rand()*5);
 
- // 3. The forest belt: clusters of firs of different kinds and heights.
+ // 3. The forest edge at the foot of the mountains: stands of firs close together, tall ones at the back and young ones in front, so
+ // every mountain gets a green hem (where the green hills were until 25 Sep 2026). Two rows: the stands against the rock, and a
+ // looser row of young firs a little further in.
  const firs=Object.fromEntries(FIRS.map(n=>[n,[]]));
- const step=mobile?12:7;
+ const fir=(x,z,r,height)=>{if(!freeForTree(x,z,r))return;claim(x,z,r);firs[FIRS[Math.floor(rand()*FIRS.length)]].push([x,z,height,rand()*Math.PI*2,groundAt(x,z)]);};
+ const step=mobile?11:6;
  for(let a=-6;a<=192;a+=step){
-  const centre=ringPoint(a+(rand()-.5)*4,(41+rand()*4)*RING,(38+rand()*4)*RING),count=mobile?2+Math.floor(rand()*2):3+Math.floor(rand()*3);
-  for(let i=0;i<count;i++){
-   const x=centre.x+(rand()-.5)*7,z=centre.z+(rand()-.5)*7;
-   if(!freeForTree(x,z,1.1))continue;claim(x,z,1.1);
-   firs[FIRS[Math.floor(rand()*FIRS.length)]].push([x,z,3.6+rand()*3.4,rand()*Math.PI*2,groundAt(x,z)]);
-  }
+  const deg=a+(rand()-.5)*4,centre=ringPoint(deg,(42+rand()*3)*RING,(39+rand()*3)*RING),count=mobile?3+Math.floor(rand()*2):5+Math.floor(rand()*4);
+  for(let i=0;i<count;i++)fir(centre.x+(rand()-.5)*6,centre.z+(rand()-.5)*6,1,4.4+rand()*3);
+  const front=ringPoint(deg+(rand()-.5)*4,(37+rand()*2)*RING,(34+rand()*2)*RING);
+  for(let i=0,n=mobile?1:2+Math.floor(rand()*2);i<n;i++)fir(front.x+(rand()-.5)*5,front.z+(rand()-.5)*5,.8,2.4+rand()*1.6);
  }
  for(const [name,list] of Object.entries(firs))instanced(name,list);
  // 4. Sunflower strips beside the roads: a row every so often, on the side where there is room.

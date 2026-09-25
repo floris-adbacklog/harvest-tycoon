@@ -35,6 +35,45 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  // Pines at the foot of the mountains where the two hills were.
  for(const [x,z] of [[-30,-13],[-31,-18],[-26,-25],[-16,-30],[-11,-32],[15,-32],[25,-23],[29,-20],[-32,16],[30,17],[6,-40],[11,-38],[-2,-42],[33,-32],[36,-29],[38,-35]])scenery(['fir_tree_003','fir_tree_001','fir_tree_006'][Math.abs(x)%3],x,z,{height:3.4+(Math.abs(x)%3)*.4,rotation:z*.2});
  {const [wx,wz]=place(-18,28.5);zone('fields');for(let i=0;i<Math.round(7*SPREAD);i++){const cx=wx+i*2.6;if(onRoad(cx-1.3,cx+1.3,wz-.3,wz+.3))continue;scenery(i%3===2?'stone_fence_003':'stone_fence_001',cx,wz,{width:2.6,height:.65});}zone(null);}
+ // Neighbouring farms: a patchwork of field strips in the open meadow in front of the farm (wheat, green rows, ploughed earth), each
+ // with a low stone wall on the side that faces the farm, so the valley reads as farmland. (The back and the sides are the forest
+ // edge's, scenery.js.) Each goes to the first free
+ // spot near where it belongs: not on a road, a building, a tree or another field, and well inside the ring of mountains that
+ // scene-polish.js puts around the valley later. They are here, before the grass and the loose props, so those keep off them.
+ {
+  zone('fields');
+  const RING=1+(SPREAD-1)*.85,K=Math.SQRT1_2,box=new THREE.Box3(),size=new THREE.Vector3();
+  const taken=[];
+  for(const o of scene.children){
+   if(o.isLight||o.isCamera||o.name==='Farm ground'||o.userData.model==='road_001')continue;
+   box.setFromObject(o);if(box.isEmpty()||box.getSize(size).y<.03)continue;taken.push(box.clone());
+  }
+  // Clear of the mountain ring: its peaks stand from about 50 (to the sides) and 46 (to the back) out, in screen directions, all the
+  // way from the right (-8 degrees) round the back to the left front (196); only the front is open.
+  const insideRing=(x,z)=>{const sx=((x-1.4)-(z-1.5))*K,sb=(-(x-1.4)-(z-1.5))*K,A=44*RING,B=40*RING,deg=Math.atan2(sb/B,sx/A)*180/Math.PI;
+   return (deg>-16&&deg<204)?(sx/A)**2+(sb/B)**2<1:true;};
+  const clear=(x,z,w,d)=>[[-1,-1],[1,-1],[-1,1],[1,1]].every(([a,b])=>insideRing(x+a*w/2,z+b*d/2)&&Math.max(Math.abs(x+a*w/2),Math.abs(z+b*d/2))<70)
+   &&!onRoad(x-w/2-1,x+w/2+1,z-d/2-1,z+d/2+1)&&!taken.some(t=>x+w/2+.8>t.min.x&&x-w/2-.8<t.max.x&&z+d/2+.8>t.min.z&&z-d/2-.8<t.max.z);
+  const KINDS={wheat:['field_005',0xd7b654,false],green:['field_004',null,true],ploughed:['field_004',0x9c7a52,false]};
+  for(const [x0,z0,w,d,kind] of [[-20,55,13,8,'green'],[-3,60,11,9,'wheat'],[15,56,14,7,'ploughed'],[31,63,10,8,'green'],[47,53,10,8,'wheat']]){
+   let spot=null;
+   for(let r=0;r<=8&&!spot;r+=2)for(const [dx,dz] of r?[[r,0],[-r,0],[0,r],[0,-r],[r,r],[-r,r],[r,-r],[-r,-r]]:[[0,0]])if(!spot&&clear(x0+dx,z0+dz,w,d))spot=[x0+dx,z0+dz];
+   if(!spot)continue;const [x,z]=spot,[model,color,keepMap]=KINDS[kind];
+   const field=cloneModel(model,x,z,{width:w,depth:d,height:.45,y:.01});
+   field.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;if(color!=null){n.material=n.material.clone();if(!keepMap)n.material.map=null;n.material.color.setHex(color);}}});
+   field.userData.neighbour=true;taken.push(new THREE.Box3().setFromObject(field));
+   // The wall along the long side towards the middle of the farm.
+   const alongX=w>=d,side=alongX?(z>0?-1:1):(x>0?-1:1),length=alongX?w:d;
+   for(let i=0;i<Math.floor(length/2.6);i++){
+    const t=-length/2+1.3+i*2.6,wx=alongX?x+t:x+side*(w/2+.5),wz=alongX?z+side*(d/2+.5):z+t;
+    const wall=scenery(i%3===2?'stone_fence_003':'stone_fence_001',wx,wz,{width:2.6,height:.65,rotation:alongX?0:Math.PI/2});taken.push(new THREE.Box3().setFromObject(wall));
+   }
+  }
+  zone(null);
+  // No tree grows on a field: the farm's own trees (game.js) and the ones above were placed without looking at the fields.
+  const fieldBoxes=scene.children.filter(o=>/^field_/.test(o.userData.model??'')).map(o=>new THREE.Box3().setFromObject(o).expandByScalar(-.3));
+  for(const o of [...scene.children])if(/^(tree|fir_tree|bush)_/.test(o.userData.model??'')&&fieldBoxes.some(b=>o.position.x>b.min.x&&o.position.x<b.max.x&&o.position.z>b.min.z&&o.position.z<b.max.z))o.removeFromParent();
+ }
  // A shallow pond and small bridge create a recognisable corner near the fields.
  zone('pond');
  const shore=new THREE.Mesh(new THREE.CircleGeometry(1,18),new THREE.MeshStandardMaterial({color:0xb4ac89,roughness:1}));shore.rotation.x=-Math.PI/2;shore.scale.set(6.4,4.4,1);{const [px,pz]=place(17.6,15.2);shore.position.set(px,.019,pz);}scene.add(shore);
