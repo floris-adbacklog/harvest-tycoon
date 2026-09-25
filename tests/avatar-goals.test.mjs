@@ -44,7 +44,8 @@ test('in the picker an achievement avatar carries a trophy: grey with a lock unt
  assert.match(ui,/if\(earned\.length\)announce\(\{leveled:false,level,entries:\[\],reward:null,avatars:earned\}\);/,'an avatar earned while playing is announced');
  assert.match(ui,/const earned=toldGoals\?goals\.filter/,'not the ones the farm already had when the game opened');
 });
-test('the server saves an achievement avatar only when the farm has earned it',{skip:!isPlayerAvatar('gem-collector')&&'the ten pictures are not in the list yet'},async()=>{
+test('the server saves an achievement avatar only when the farm has earned it',async()=>{
+ assert.ok(Object.keys(AVATAR_GOALS).every(isPlayerAvatar),'all ten are in the list');
  function db({spent,events=0}){
   return {from(table){const q={select(){return q;},eq(){return q;},gte(){return q;},update(value){q.value=value;return q;},
    async maybeSingle(){if(table==='player_farms')return {data:{stats:{diamonds_spent:spent},login:{},claimed:[],invites:[]},error:null};

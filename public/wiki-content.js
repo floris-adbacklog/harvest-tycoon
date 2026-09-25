@@ -47,6 +47,8 @@ const section=(title,body)=>`<section class="wiki-section" id="${slug(title)}"><
 // On a phone the long tables become cards (CSS shows one or the other).
 const dual=(tableHtml,cards)=>`<div class="wiki-dual">${tableHtml}<ul class="wiki-cards">${cards.join('')}</ul></div>`;
 const card=({picture,title,badge='',stats=[],note='',locked=false})=>`<li class="wiki-card${locked?' is-locked':''}">${art(picture)}<div><strong>${title}</strong>${badge}${stats.length?`<div class="wiki-stats">${stats.map(x=>`<span>${x}</span>`).join('')}</div>`:''}${note?`<small>${note}</small>`:''}</div></li>`;
+// An avatar in a table: its small picture and its name (the Avatars section).
+const avatarCell=a=>`<span class="wiki-avatar"><img src="${a.src}" alt="" width="34" height="36" loading="lazy" decoding="async">${a.name}</span>`;
 const table=(head,rows,cls='')=>`<div class="wiki-table-wrap"><table class="wiki-table ${cls}"><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
 const facts=list=>`<ul class="wiki-facts">${list.map(([picture,title,text])=>`<li>${art(picture)}<div><strong>${title}</strong><p>${text}</p></div></li>`).join('')}</ul>`;
 
@@ -211,7 +213,11 @@ const BODIES={
    ['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app: press and hold its icon for Chat, Daily gift and the leaderboard, and on Android or a computer you can play full screen (Settings, Farm app).'],
    ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages and the daily gift are then on, the rest you choose. Email reminders stay off until you switch them on.']
   ]))
-  +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p><p>${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} avatars are yours from the start. ${PLAYER_AVATARS.filter(a=>a.level).length} more open as you grow, one at every 10 levels: ${PLAYER_AVATARS.filter(a=>a.level).map(a=>`${a.name} (${a.level})`).join(', ')}. Until then an avatar shows grey with a lock and its level.</p>${(goals=>goals.length?`<p>${goals.length} more are earned with a goal: ${goals.map(a=>`${a.name} (${avatarGoal(a.id).text.toLowerCase()})`).join(', ')}. Diamonds spent and VIP days count from 25 September 2026.</p>`:'')(PLAYER_AVATARS.filter(a=>avatarGoal(a.id)))}`)
+  +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
+  +section('Avatars',`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`
+   +table(['Avatar','Opens at'],PLAYER_AVATARS.filter(a=>a.level).map(a=>`<tr><td>${avatarCell(a)}</td><td>Level ${a.level}</td></tr>`))
+   +table(['Avatar','How to earn it'],PLAYER_AVATARS.filter(a=>avatarGoal(a.id)).map(a=>`<tr><td>${avatarCell(a)}</td><td>${avatarGoal(a.id).text}</td></tr>`))
+   +'<p>Diamonds spent and VIP days count from 25 September 2026.</p>')
   +section('Confirm your email',`<p>Signed up with your email address? Confirm it once for ${EMAIL_BONUS} diamonds: tap “Confirm your email” in the menu and type the code we send you. Google and Facebook accounts get the diamonds straight away.</p>`)
   +section('Invite a friend',`<p>Share your invite link. When your friend reaches level ${INVITE_LEVEL} within ${INVITE_DAYS} days, you both get ${INVITE_REWARD} diamonds, for up to ${INVITE_LIMIT} friends.</p>`)
   +section('Privacy',`<p>Read how we handle your data in the <a href="/privacy">Privacy Policy</a>. Want to stop? You can <a href="/delete-account">delete your account</a>.</p>`);
@@ -240,6 +246,7 @@ export const wikiTile=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wi
 const INDEX=[
  ...WIKI_TOPICS.map(t=>({topic:t.id,label:t.title,art:t.art,text:`${t.title} ${t.blurb} ${t.keywords}`.toLowerCase()})),
  ...Object.entries(CROPS).map(([k,c])=>({topic:'crops',label:c.name,art:k,text:c.name.toLowerCase()})),
+ ...PLAYER_AVATARS.filter(a=>a.level||avatarGoal(a.id)).map(a=>({topic:'account',label:a.name,art:'settings',text:`${a.name} avatar`.toLowerCase(),anchor:'sec-avatars'})),
  ...Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').map(([k,b])=>({topic:'buildings',label:b.name,art:k,text:b.name.toLowerCase(),anchor:`building-${k}`})),
  ...Object.entries(RECIPES).flatMap(([,r])=>Object.keys(r.output).map(out=>({topic:'buildings',label:itemName(out),art:out,text:itemName(out).toLowerCase(),anchor:`building-${r.building}`})))
 ];

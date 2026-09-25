@@ -162,6 +162,56 @@ export const PLAYER_AVATARS=Object.freeze([
     "name": "Valley legend",
     "src": "/assets/avatars/valley-legend.webp",
     "level": 100
+  },
+  {
+    "id": "gem-collector",
+    "name": "Gem collector",
+    "src": "/assets/avatars/gem-collector.webp"
+  },
+  {
+    "id": "velvet-farmer",
+    "name": "Velvet farmer",
+    "src": "/assets/avatars/velvet-farmer.webp"
+  },
+  {
+    "id": "crop-master",
+    "name": "Crop master",
+    "src": "/assets/avatars/crop-master.webp"
+  },
+  {
+    "id": "early-riser",
+    "name": "Early riser",
+    "src": "/assets/avatars/early-riser.webp"
+  },
+  {
+    "id": "event-champion",
+    "name": "Event champion",
+    "src": "/assets/avatars/event-champion.webp"
+  },
+  {
+    "id": "grand-champion",
+    "name": "Grand champion",
+    "src": "/assets/avatars/grand-champion.webp"
+  },
+  {
+    "id": "good-neighbor",
+    "name": "Good neighbor",
+    "src": "/assets/avatars/good-neighbor.webp"
+  },
+  {
+    "id": "seed-keeper",
+    "name": "Seed keeper",
+    "src": "/assets/avatars/seed-keeper.webp"
+  },
+  {
+    "id": "coin-baron",
+    "name": "Coin baron",
+    "src": "/assets/avatars/coin-baron.webp"
+  },
+  {
+    "id": "valley-regular",
+    "name": "Valley regular",
+    "src": "/assets/avatars/valley-regular.webp"
   }
 ].map(Object.freeze));
 export const DEFAULT_AVATAR='default';

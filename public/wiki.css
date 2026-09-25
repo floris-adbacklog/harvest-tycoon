@@ -141,3 +141,6 @@
 
 /* "Back to my farm" under the wiki gets room to breathe. */
 #help-dialog .guide-done{margin-top:24px}
+
+/* The Avatars section: each avatar's small picture beside its name. */
+.wiki-avatar{display:flex;align-items:center;gap:10px}.wiki-avatar>img{flex:0 0 auto;width:34px;height:36px;object-fit:contain;border-radius:9px;background:#eee6d6}

@@ -9,9 +9,9 @@ import {savePlayerAvatar} from '../supabase/functions/farm-api/avatar-service.js
 import {handlePlayerDirectory} from '../supabase/functions/farm-api/player-profile-service.js';
 import {renderPlayerProfile,renderPlayerSearch} from '../src/player-profiles.js';
 
-test('19 additional avatars, the original and 10 level avatars resolve to unique, shipped images',()=>{
- assert.equal(PLAYER_AVATARS.length,30);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.id)).size,30);
- assert.equal(new Set(PLAYER_AVATARS.map(a=>a.src)).size,30);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.name)).size,30,'no two faces share a name');
+test('19 additional avatars, the original, 10 level avatars and 10 achievement avatars resolve to unique, shipped images',()=>{
+ assert.equal(PLAYER_AVATARS.length,40);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.id)).size,40);
+ assert.equal(new Set(PLAYER_AVATARS.map(a=>a.src)).size,40);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.name)).size,40,'no two faces share a name');
  for(const a of PLAYER_AVATARS){assert.ok(existsSync(new URL('../public'+a.src,import.meta.url)),a.src);assert.ok(isPlayerAvatar(a.id));}
  assert.equal(readFileSync(new URL('../public/player-avatars.js',import.meta.url),'utf8'),readFileSync(new URL('../supabase/functions/farm-api/player-avatars.js',import.meta.url),'utf8'));
 });
@@ -66,9 +66,9 @@ test('avatar save is authenticated, session-checked and separate from farm rewar
  const index=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');const route=index.indexOf('const saved=await savePlayerAvatar');
  assert.ok(route>index.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<index.indexOf("admin.from('player_farms')"));assert.match(index,/savePlayerAvatar\(\{admin,player:user.id,avatarId:body.avatarId\}\)/);
  assert.match(index,/avatar_id:profile\?\.avatar_id\?\?'default'/);
- const html=avatarSettingsMarkup('berry-gardener');assert.equal((html.match(/type="radio" name="avatar"/g)||[]).length,30);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="berry-gardener" checked/);
+ const html=avatarSettingsMarkup('berry-gardener');assert.equal((html.match(/type="radio" name="avatar"/g)||[]).length,40);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="berry-gardener" checked/);
  assert.equal((html.match(/data-emblem-step=/g)||[]).length,2,'one row of faces with an arrow on each side, not a wall of squares');
- assert.match(html,/<span>3 of 30<\/span>/);assert(!html.includes('<details'),'no folded-away grid');
+ assert.match(html,/<span>3 of 40<\/span>/);assert(!html.includes('<details'),'no folded-away grid');
 });
 function uiHarness(){
  const nodes=new Map(),events=[],pending=[];
@@ -114,14 +114,15 @@ test('choosing an avatar enables and labels only the Save button, never "a butto
 
 test('one avatar opens at every 10 levels, 10 to 100; the first 20 are open from the start',()=>{
  assert.deepEqual(PLAYER_AVATARS.slice(0,20).map(a=>avatarLevel(a.id)),Array(20).fill(1));
- assert.deepEqual(PLAYER_AVATARS.slice(20).map(a=>[a.id,a.level]),[['family-farmer',10],['tractor-driver',20],['truffle-hunter',30],['beekeeper',40],['estate-manager',50],['master-weaver',60],['ranch-owner',70],['prize-grower',80],['fair-host',90],['valley-legend',100]]);
+ assert.deepEqual(PLAYER_AVATARS.slice(20,30).map(a=>[a.id,a.level]),[['family-farmer',10],['tractor-driver',20],['truffle-hunter',30],['beekeeper',40],['estate-manager',50],['master-weaver',60],['ranch-owner',70],['prize-grower',80],['fair-host',90],['valley-legend',100]]);
  assert.equal(avatarUnlocked('tractor-driver',19),false);assert.equal(avatarUnlocked('tractor-driver',20),true);assert.equal(avatarUnlocked('default',1),true);
  assert.equal(avatarLevel('../../secret'),1,'an unknown id is the default face, not a level avatar');
 });
 test('the picker: the 10 level avatars are grey with a lock and "Lv. N" until reached, then a gold badge with an open lock; the others carry no badge',()=>{
  const html=avatarSettingsMarkup('default',25);
  assert.equal((html.match(/class="avatar-level is-open"/g)||[]).length,2,'Family farmer and Tractor driver are open at level 25');
- assert.equal((html.match(/class="avatar-level is-locked"/g)||[]).length,8);assert.equal((html.match(/class="avatar-tile is-locked"/g)||[]).length,8);
+ assert.equal((html.match(/class="avatar-level is-locked"><svg[^]*?<\/svg>Lv\./g)||[]).length,8,'eight level avatars still closed');
+ assert.equal((html.match(/class="avatar-tile is-locked"/g)||[]).length,18,'and the ten achievement avatars of a new farm');
  assert.match(html,/value="truffle-hunter"[^>]*aria-label="Truffle hunter, opens at level 30 avatar"/);
  assert.match(avatarBadge('truffle-hunter',25),/is-locked"><svg[^]*<\/svg>Lv\. 30<\/span>$/);assert.match(avatarBadge('family-farmer',25),/is-open"><svg[^]*<\/svg>Lv\. 10<\/span>$/);
  assert.equal(avatarBadge('berry-gardener',1),'');
@@ -166,5 +167,8 @@ test('the level-up screen shows the avatar a level opened, and the wiki lists th
  const ui=readFileSync(new URL('../public/progression-ui.js',import.meta.url),'utf8');
  assert.match(ui,/New avatar · pick it in Settings/);assert.match(ui,/new CustomEvent\('harvest-level',\{detail:\{level,state\}\}\)/);
  const wiki=JSON.stringify(wikiArticle('account'));
- assert.match(wiki,/20 avatars are yours from the start\. 10 more open as you grow, one at every 10 levels: Family farmer \(10\), Tractor driver \(20\)/);assert.match(wiki,/Valley legend \(100\)/);
+ assert.match(wiki,/Pick your avatar in Settings\. 20 are yours from the start; the others you earn by playing\./);
+ assert.match(wiki,/Family farmer<\/span><\/td><td>Level 10<\/td>/);assert.match(wiki,/Valley legend<\/span><\/td><td>Level 100<\/td>/);
+ assert.match(wiki,/Velvet farmer<\/span><\/td><td>Be VIP for 90 days in total<\/td>/);assert.match(wiki,/Valley regular<\/span><\/td><td>Play on 100 days<\/td>/);
+ assert.match(wiki,/Diamonds spent and VIP days count from 25 September 2026\./);
 });

@@ -1,0 +1,5 @@
+-- Ten achievement avatars (25 September 2026), each earned with a goal read from the farm itself (public/player-avatars.js
+-- AVATAR_GOALS; farm-api avatar-service.js checks it before saving). The database accepts the IDs; players cannot write avatar_id
+-- themselves. The IDs are stable database keys: the pictures, names and goals live in public/player-avatars.js.
+alter table public.player_stats drop constraint if exists player_stats_avatar_id_check;
+alter table public.player_stats add constraint player_stats_avatar_id_check check (avatar_id in ('default','orchard-grower','berry-gardener','sunflower-grower','village-gardener','old-hand','greenhouse-grower','market-gardener','dairy-farmer','apple-picker','herb-gardener','barn-builder','flower-grower','valley-grower','orchard-veteran','farm-mechanic','pond-keeper','ranch-hand','cheese-maker','flower-tender','family-farmer','tractor-driver','truffle-hunter','beekeeper','estate-manager','master-weaver','ranch-owner','prize-grower','fair-host','valley-legend','gem-collector','velvet-farmer','crop-master','early-riser','event-champion','grand-champion','good-neighbor','seed-keeper','coin-baron','valley-regular'));
