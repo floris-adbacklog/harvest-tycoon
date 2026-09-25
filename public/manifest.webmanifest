@@ -1,7 +1,7 @@
 {
   "name": "Harvest Tycoon",
   "short_name": "Harvest Tycoon",
-  "description": "Grow a little farm into a thriving estate.",
+  "description": "Grow a little farm into a thriving estate: plant, harvest, run your buildings and trade with farmers from all over the valley.",
   "id": "/",
   "start_url": "/?source=pwa",
   "scope": "/",
@@ -11,9 +11,19 @@
   "theme_color": "#214d36",
   "lang": "en",
   "categories": ["games"],
+  "launch_handler": {"client_mode": ["focus-existing", "auto"]},
   "icons": [
     {"src": "/assets/pwa/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
     {"src": "/assets/pwa/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
     {"src": "/assets/pwa/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "screenshots": [
+    {"src": "/assets/pwa/screenshot-narrow.webp", "sizes": "1080x2338", "type": "image/webp", "form_factor": "narrow", "label": "Your farm on a phone: fields, buildings and animals"},
+    {"src": "/assets/pwa/screenshot-wide.webp", "sizes": "1920x1080", "type": "image/webp", "form_factor": "wide", "label": "Your farm on a computer: the whole valley at a glance"}
+  ],
+  "shortcuts": [
+    {"name": "Chat", "short_name": "Chat", "description": "Talk with the valley and your friends", "url": "/?open=chat", "icons": [{"src": "/assets/pwa/shortcuts/chat-96.png", "sizes": "96x96", "type": "image/png"}, {"src": "/assets/pwa/shortcuts/chat-192.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Daily gift", "short_name": "Daily gift", "description": "Your daily gift, challenges and orders", "url": "/?open=today", "icons": [{"src": "/assets/pwa/shortcuts/gift-96.png", "sizes": "96x96", "type": "image/png"}, {"src": "/assets/pwa/shortcuts/gift-192.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Leaderboard", "short_name": "Leaderboard", "description": "See how your farm ranks", "url": "/?open=leaderboard", "icons": [{"src": "/assets/pwa/shortcuts/leaderboard-96.png", "sizes": "96x96", "type": "image/png"}, {"src": "/assets/pwa/shortcuts/leaderboard-192.png", "sizes": "192x192", "type": "image/png"}]}
   ]
 }

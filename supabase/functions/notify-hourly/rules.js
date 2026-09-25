@@ -67,6 +67,7 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
    const streak=number(login.streak)??0;
    if(local.hour===CONFIG.DAILY_EVENING_HOUR&&login.lastDay===utcDay(now-DAY_MS)&&streak>=CONFIG.STREAK_MIN&&player.daily_evening_on!==today){parts.push(`Collect your gift to keep your ${streak}-day streak`);onSend.daily_evening_on=today;}
   }
+  const giftParts=parts.length;
   if(!quiet){
    if(player.push_crops){const fresh=ready.filter(c=>c.readyAt>seenCrops);if(fresh.length)parts.push(cropsText(ready,names.crops));}
    if(player.push_production){const fresh=jobsReady.filter(j=>j.readyAt>seenJobs);if(fresh.length)parts.push(jobsText(jobsReady,names.buildings));}
@@ -74,7 +75,8 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
   const gapOk=!player.last_push_at||now-Date.parse(player.last_push_at)>=CONFIG.MIN_PUSH_GAP_MS;
   const sentToday=player.push_day===today?Number(player.push_count)||0:0;
   if(parts.length&&gapOk&&sentToday<CONFIG.MAX_PUSH_PER_DAY){
-   result.push={title:'Harvest Tycoon',body:parts.join(' · '),tag:'harvest-tycoon',url:'/?source=push'};
+   // Only about the daily gift: tapping it opens Daily rewards. Anything about the fields or buildings opens the farm.
+   result.push={title:'Harvest Tycoon',body:parts.join(' · '),tag:'harvest-tycoon',url:giftParts===parts.length?'/?source=push&open=today':'/?source=push'};
    result.patchOnSend={...onSend,crops_seen_at:now,production_seen_at:now,last_push_at:new Date(now).toISOString(),push_day:today,push_count:sentToday+1};
   }
  }

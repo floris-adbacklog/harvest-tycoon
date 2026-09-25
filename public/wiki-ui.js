@@ -7,7 +7,9 @@ import {wikiArticle,wikiNext,wikiSearch,wikiHero,wikiJump,wikiGroups} from './wi
 // website's /wiki (public/wiki-content.js); in the game, what is above your level says "From level X".
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 let farm=null,bound=false;
-const QUICK=['Corn','Apples','Cheese','Tractor','VIP','Farm family'];
+// Quick searches under the search box. App comes first and goes straight to how to install it: many players do not know there is one.
+const QUICK=[{label:'App',topic:'getting-started',anchor:'sec-play-it-as-an-app'},'Corn','Apples','Cheese','Tractor','VIP','Farm family'];
+const quickChip=q=>typeof q==='string'?`<button type="button" data-wiki-query="${q}">${q}</button>`:`<button type="button" data-wiki-topic="${q.topic}" data-wiki-anchor="${q.anchor}">${q.label}</button>`;
 
 function root(){return document.getElementById('help-content');}
 function ctx(){return {level:farm?levelOf(farm):null,href:id=>`#wiki-${id}`};}
@@ -17,7 +19,7 @@ function stickyOffset(){const el=root(),head=el?.closest('dialog')?.querySelecto
 
 function home(){
  const el=root();if(!el)return;
- el.innerHTML=`<div class="wiki" data-wiki-view="home"><label class="wiki-search">${art('guide')}<input type="search" id="wiki-search" placeholder="Search the wiki: corn, cheese, tractor…" aria-label="Search the wiki" autocomplete="off"></label><div class="wiki-quick" aria-label="Quick searches">${QUICK.map(q=>`<button type="button" data-wiki-query="${q}">${q}</button>`).join('')}</div><div id="wiki-results" class="wiki-results" hidden></div>${wikiGroups(ctx(),{featured:!farm||levelOf(farm)<15})}<p class="wiki-note">Your farm is saved to your account. You need an internet connection to play.</p></div>`;
+ el.innerHTML=`<div class="wiki" data-wiki-view="home"><label class="wiki-search">${art('guide')}<input type="search" id="wiki-search" placeholder="Search the wiki: corn, cheese, tractor…" aria-label="Search the wiki" autocomplete="off"></label><div class="wiki-quick" aria-label="Quick searches">${QUICK.map(quickChip).join('')}</div><div id="wiki-results" class="wiki-results" hidden></div>${wikiGroups(ctx(),{featured:!farm||levelOf(farm)<15})}<p class="wiki-note">Your farm is saved to your account. You need an internet connection to play.</p></div>`;
  const input=el.querySelector('#wiki-search'),results=el.querySelector('#wiki-results');
  input.addEventListener('input',()=>{
   const q=input.value.trim(),hits=wikiSearch(q);results.hidden=!q;

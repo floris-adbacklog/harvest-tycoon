@@ -48,9 +48,13 @@ test('play.html links the manifest and the iPhone app tags, and the theme colour
  assert.match(play,/<link rel="manifest" href="\/manifest\.webmanifest">/);assert.match(play,/<link rel="apple-touch-icon" href="\/assets\/pwa\/apple-touch-icon\.png">/);
  assert.match(play,/apple-mobile-web-app-capable/);assert(play.includes(`<meta name="theme-color" content="${m.theme_color}">`));
 });
-test('the service worker caches nothing and never answers requests itself',()=>{
+test('the service worker caches nothing of the game: only a page that cannot load at all gets the small offline page',()=>{
  const sw=read('public/sw.js').replace(/\/\/.*$/gm,'');
- assert(!/caches|respondWith|cache\.add|indexedDB/.test(sw));assert.match(sw,/skipWaiting/);assert.match(sw,/clients\.claim/);
+ assert.match(sw,/cache\.addAll\(\[OFFLINE_PAGE,'\/assets\/pwa\/icon-192\.png'\]\)/,'the offline page and its picture, nothing else');
+ assert.match(sw,/if\(event\.request\.mode!=='navigate'\)return;\n event\.respondWith\(fetch\(event\.request\)\.catch\(/,'pages come from the network first; everything else is left alone');
+ assert.equal((sw.match(/respondWith/g)??[]).length,1);assert(!/indexedDB/.test(sw));assert.match(sw,/skipWaiting/);assert.match(sw,/clients\.claim/);
+ assert.match(sw,/key\.startsWith\('harvest-offline-'\)&&key!==OFFLINE_CACHE/,'an older offline page is removed');
+ const page=read('public/offline.html');assert(!/<link|<script src/.test(page),'self-contained: nothing on it needs the network');assert.match(page,/No connection/);assert.match(page,/location\.reload\(\)/);
 });
 test('the service worker is never cached by the host and may control the whole site',()=>{
  const rules=JSON.parse(read('vercel.json')).headers,get=source=>Object.fromEntries(rules.find(r=>r.source===source).headers.map(h=>[h.key,h.value]));

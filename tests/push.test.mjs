@@ -62,8 +62,8 @@ test('push is only offered when the service has it switched on',async()=>{
 });
 
 test('service worker: every push shows a notification and a tap opens the game',async()=>{
- const listeners={},shown=[],opened=[],focused=[];
- const clientsList=[{url:'https://www.harvesttycoon.com/',focus:async()=>focused.push('focused')}];
+ const listeners={},shown=[],opened=[],focused=[],told=[];
+ const clientsList=[{url:'https://www.harvesttycoon.com/farm.html',frameType:'nested',focus:async()=>focused.push('frame')},{url:'https://www.harvesttycoon.com/',frameType:'top-level',focus:async()=>focused.push('focused'),postMessage:message=>told.push(message)}];
  const self={addEventListener:(name,fn)=>{listeners[name]=fn;},skipWaiting(){},clients:{claim(){},matchAll:async()=>clientsList,openWindow:async url=>opened.push(url)},registration:{showNotification:async(title,options)=>shown.push([title,options])},location:{origin:'https://www.harvesttycoon.com'}};
  vm.runInNewContext(read('public/sw.js'),{self,URL,JSON,console});
  const run=async fn=>{let p;fn({waitUntil:x=>{p=x;}});await p;};
@@ -73,7 +73,8 @@ test('service worker: every push shows a notification and a tap opens the game',
  assert.equal(shown[1][0],'Harvest Tycoon');assert.equal(shown[1][1].data.url,'/');
  const evil={data:{json:()=>({body:'x',url:'https://evil.example/'})},waitUntil:x=>{evil.p=x;}};listeners.push(evil);await evil.p;assert.equal(shown[2][1].data.url,'/','only same-site paths are followed');
  let closed=false;const click={notification:{close(){closed=true;},data:{url:'/?source=push'}},waitUntil:x=>{click.p=x;}};listeners.notificationclick(click);await click.p;
- assert(closed);assert.deepEqual(focused,['focused'],'an open game is focused instead of opening a second one');assert.equal(opened.length,0);
+ assert(closed);assert.deepEqual(focused,['focused'],'an open game (the page, not its farm frame) is focused instead of opening a second one');assert.equal(opened.length,0);
+ assert.equal(JSON.stringify(told),JSON.stringify([{type:'open',url:'https://www.harvesttycoon.com/?source=push'}]),'and told which screen to show');
  clientsList.length=0;const again={notification:{close(){},data:{url:'/?source=push'}},waitUntil:x=>{again.p=x;}};listeners.notificationclick(again);await again.p;assert.deepEqual(opened,['https://www.harvesttycoon.com/?source=push']);
 });
 

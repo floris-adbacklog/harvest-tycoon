@@ -32,6 +32,14 @@ if(!bridge){location.replace('/play.html');}else{
   if(await farmReady){
    showPaymentReturn(bridge);
    await createStarterPackUI(bridge);
+   // One screen from a notification, a shortcut on the app icon or a link (public/app-links.js). src/main.js keeps it until the farm is
+   // ready, and hands over what arrives later.
+   window.harvestOpen=intent=>{
+    if(intent?.open==='chat')void chat.open(intent.channel?{channel:intent.channel}:{});
+    else if(intent?.open==='today')window.harvestToday?.();
+    else if(intent?.open==='leaderboard')document.getElementById('leaderboard-button')?.click();
+   };
+   const waiting=window.parent?.harvestTakeOpen?.();if(waiting)window.harvestOpen(waiting);
   }
  }
 }

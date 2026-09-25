@@ -71,7 +71,8 @@ Deno.serve(async(req)=>{
   if(!tokenOk(id))return json({sent:0});
   const {data:claim,error}=await admin.rpc('chat_push_claim',{p_message:id});
   if(error||!claim)return json({sent:0});
-  const payload=JSON.stringify({title:`Message from ${claim.senderName}`,body:claim.body,tag:`chat-${claim.channel}`,url:'/play.html'});
+  // Tapping it opens that conversation (public/app-links.js).
+  const payload=JSON.stringify({title:`Message from ${claim.senderName}`,body:claim.body,tag:`chat-${claim.channel}`,url:`/?open=chat&channel=${encodeURIComponent(claim.channel)}`});
   let sent=0;
   for(const sub of claim.subscriptions??[]){
    const outcome=await sendPush(sub,payload);

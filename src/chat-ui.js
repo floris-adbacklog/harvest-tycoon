@@ -5,6 +5,7 @@
 import {avatarImage} from '../public/player-avatars.js';
 import {art,refreshArt} from '../public/visual-icons.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
+import {setAppBadge} from '../public/app-badge.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
@@ -67,9 +68,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const showing=channel=>dialog.open&&channelOf()===channel;
  function note(text=''){noteEl.textContent=text;noteEl.hidden=!text;}
 
- // The header pill and the numbers on the tabs.
+ // The header pill, the numbers on the tabs and the number on the app icon (private and family messages; public/app-badge.js).
+ let iconCount=null;
  function counts(){
-  const u=unread(),total=headerCount(u);
+  const u=unread(),total=headerCount(u),onIcon=(u.dm??0)+(u.family??0);
+  if(onIcon!==iconCount){iconCount=onIcon;void setAppBadge(onIcon);}
   dot.hidden=total<1;dot.textContent=pillText(total);
   button.setAttribute('aria-label',total?`Open chat, ${total} unread`:'Open chat');
   // Global never gets a red count: with the whole valley talking it would never go away. News, Family and Private do.
@@ -177,10 +180,14 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   tab=next;if(!keepThread)thread=null;messages=[];found=null;findInput.value='';load();
   if(!matchMedia('(pointer:coarse)').matches&&!form.hidden)input.focus({preventScroll:true});
  }
- async function open({tab:wanted,with:other}={}){
+ // A channel comes from a notification or a link (public/app-links.js): a private chat opens that conversation, a family chat the
+ // Family tab.
+ async function open({tab:wanted,with:other,channel}={}){
   doc.querySelectorAll('dialog[open]').forEach(d=>d.close());
-  if(!overview)await refreshOverview();
+  if(!overview||channel)await refreshOverview();
   if(!overview)return;
+  if(channel?.startsWith('dm:')){const t=overview.threads?.find(x=>x.channel===channel);if(t)other={id:t.otherId,name:t.otherName,avatar:t.otherAvatar};else wanted='private';}
+  else if(channel?.startsWith('family:'))wanted='family';
   // Always Global first (a private chat only when you came to write to someone); the counts on the tabs show what is new elsewhere.
   const first=other?'private':wanted??'global';
   if(other)thread={channel:chat.dmChannel(other.id),otherId:other.id,otherName:other.name,otherAvatar:other.avatar};

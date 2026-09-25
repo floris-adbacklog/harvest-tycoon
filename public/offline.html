@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#214d36">
+<title>No connection — Harvest Tycoon</title>
+<style>
+ /* Shown by sw.js when the game cannot load at all. Self-contained: nothing here needs the network. */
+ :root{color-scheme:light}
+ html,body{margin:0;height:100%;background:#214d36;color:#fffdf2;font:500 16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif}
+ main{min-height:100%;box-sizing:border-box;display:grid;place-items:center;align-content:center;gap:14px;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));text-align:center}
+ img{width:96px;height:96px;border-radius:22px;box-shadow:0 10px 30px #0000004d}
+ h1{margin:6px 0 0;font-size:26px;line-height:1.2}
+ p{margin:0;max-width:320px;color:#fffdf2d9}
+ button{margin-top:10px;min-height:48px;padding:0 26px;border:1px solid #d9c7a4;border-radius:14px;background:#fffdf5;color:#3f5a2c;font:700 16px system-ui,-apple-system,sans-serif;box-shadow:0 3px 0 #b9a47c;cursor:pointer}
+ button:active{transform:translateY(2px);box-shadow:0 1px 0 #b9a47c}
+</style>
+</head>
+<body>
+<main>
+ <img src="/assets/pwa/icon-192.png" alt="" width="96" height="96">
+ <h1>No connection</h1>
+ <p>Harvest Tycoon needs the internet. Your farm is safe: it keeps growing on our server.</p>
+ <button type="button" onclick="location.reload()">Try again</button>
+</main>
+<script>addEventListener('online',()=>location.reload());</script>
+</body>
+</html>

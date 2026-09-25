@@ -16,10 +16,19 @@ export function createInstallSection(){
   section.hidden=state.kind==='unsupported';if(section.hidden)return;
   $('install-copy').textContent=COPY[state.kind]??'';
   $('install-steps').hidden=state.kind!=='ios';$('install-steps').innerHTML=state.kind==='ios'?IOS_STEPS.map(step=>`<li>${step}</li>`).join(''):'';
-  $('install-app').hidden=state.kind!=='prompt';refreshArt();
+  $('install-app').hidden=state.kind!=='prompt';
+  // Full screen: where the browser can (not on an iPhone), on or off as remembered on this device.
+  const full=api?.fullscreen,row=$('app-fullscreen-row');
+  if(row){row.hidden=!full?.supported?.();if(!row.hidden)$('app-fullscreen').checked=full.wanted();}
+  refreshArt();
  }
  const button=$('install-app');
  if(button)button.onclick=async()=>{button.disabled=true;try{await pwa()?.install();}finally{button.disabled=false;refresh();}};
+ const toggle=$('app-fullscreen');
+ if(toggle)toggle.onchange=async()=>{await pwa()?.fullscreen?.set(toggle.checked);refresh();};
+ // A remembered "full screen" comes back with the first tap in the game (browsers need a tap for it).
+ const full=pwa()?.fullscreen;
+ if(full?.supported?.()&&full.wanted()&&!full.active())document.addEventListener('pointerup',()=>{if(full.wanted()&&!full.active())void full.enter();},{once:true});
  pwa()?.subscribe?.(refresh);
  refresh();
  return {refresh};

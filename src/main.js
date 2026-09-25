@@ -6,6 +6,8 @@ import {fetchLeaderboard} from './leaderboard.js';
 import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInvite} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
+import {openIntent,withoutOpen} from '../public/app-links.js';
+import {startUpdateCheck} from './app-update.js';
 import {createNotifications} from './notifications.js';
 import {createChatClient} from './chat-client.js';
 import {startLoadingTips,ACCOUNT_STEPS} from '../public/loading-screen.js';
@@ -13,7 +15,20 @@ import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
 import {createConnection,connectionMessage,reasonOf,WAKE_GRACE} from './connection.js';
 const $=id=>document.getElementById(id);
-startPwa();
+startPwa();startUpdateCheck();
+// A screen to open once the farm is there: from a notification, a shortcut on the app icon or ?open= (public/app-links.js). The farm
+// frame takes it when it is ready (harvestTakeOpen); a notification tapped while the game is open arrives from sw.js as a message.
+let pendingOpen=openIntent(location.search);
+if(pendingOpen)history.replaceState(null,'',withoutOpen(location.href));
+window.harvestTakeOpen=()=>{const intent=pendingOpen;pendingOpen=null;return intent;};
+function openScreen(intent){
+ if(!intent)return;
+ try{const open=frame?.contentWindow?.harvestOpen;if(typeof open==='function'){open(intent);return;}}catch{}
+ pendingOpen=intent;
+}
+navigator.serviceWorker?.addEventListener?.('message',event=>{if(event.data?.type!=='open')return;try{openScreen(openIntent(new URL(String(event.data.url),location.origin).search));}catch{}});
+// A shortcut on the app icon while the app is already open comes to this window (manifest launch_handler: focus-existing).
+window.launchQueue?.setConsumer?.(params=>{try{openScreen(openIntent(new URL(params.targetURL).search));}catch{}});
 startPlayerCounts({functionsUrl});
 let presence=null,notifications=null,chat=null;
 let mode='register',generation=0,playerId=null,frame=null,submitting=false,checking=false,reopen=false;

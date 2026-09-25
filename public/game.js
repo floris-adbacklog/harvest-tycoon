@@ -835,6 +835,8 @@ function bindUI(){
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  // The purchase pop-up after a cancelled or expired checkout (src/payment-ui.js) offers a way straight back to the shop.
  window.harvestShop={open:()=>boosts.open()};
+ // A notification or a shortcut on the app icon can open Daily rewards (src/game-cloud.js harvestOpen).
+ window.harvestToday=()=>retention.openToday();
  rookie=createRookieUI({state});
  quests=createQuestsUI({state,claim,icons,notify:toast});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});

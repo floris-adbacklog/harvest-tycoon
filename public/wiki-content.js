@@ -77,7 +77,11 @@ const BODIES={
    ['harvest','Swipe across fields',`With a tool picked, swipe across your fields to plant, water, care for or harvest many at once, up to ${SWIPE_MAX_FIELDS} in one swipe.`],
    ['care','Tools at the bottom','Pick Plant, Water, Care or Harvest at the bottom of the screen, then tap or swipe your fields.']
   ]))
-  +section('Saved for you','<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>');
+  +section('Saved for you','<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>')
+  +section('Play it as an app',facts([
+   ['farm','Why the app','One tap from your home screen, without the browser bar. Reminders when your farm needs you, a number on the icon for new messages, and press and hold the icon for Chat, Daily gift and the leaderboard.']
+  ])+'<ul class="wiki-list"><li><strong>Android:</strong> in Chrome, tap the menu (⋮) and choose “Install app” or “Add to Home screen”.</li><li><strong>iPhone and iPad:</strong> in Safari, tap Share, then “Add to Home Screen”, then “Add”.</li><li><strong>Computer:</strong> in Chrome or Edge, click the install icon at the right of the address bar.</li></ul>'
+  +facts([['settings','In the game','Settings, Farm app shows the steps for your device, or installs it in one tap. There you can also switch on full screen (Android and computers).']]));
  },
  crops(h){
   const regrowing=Object.entries(CROPS).filter(([,c])=>c.regrow).map(([k])=>CROPS[k].name);
@@ -203,7 +207,7 @@ const BODIES={
  },
  account(h){
   return section('Your account',facts([
-   ['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app.'],
+   ['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app: press and hold its icon for Chat, Daily gift and the leaderboard, and on Android or a computer you can play full screen (Settings, Farm app).'],
    ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages and the daily gift are then on, the rest you choose. Email reminders stay off until you switch them on.']
   ]))
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
