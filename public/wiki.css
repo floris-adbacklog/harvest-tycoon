@@ -45,6 +45,8 @@
 .wiki-facts strong{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14.5px}
 .wiki-facts p{margin:3px 0 0;color:#5d5641;font-size:13.5px;line-height:1.5}
 .wiki-list{margin:0 0 10px;padding-left:20px;font-size:14.5px;line-height:1.6}
+/* How to install the app (Getting started): between two fact cards, with room around it and between the steps. */
+.wiki-app-steps{display:grid;gap:10px;margin:20px 0}
 .wiki-level{display:inline-block;padding:2px 8px;border-radius:999px;background:#e6efdc;color:#42632e;font-size:11.5px;font-weight:800;white-space:nowrap;vertical-align:1px}
 .wiki-level.is-locked{background:#f1ebe2;color:#8a7a5a}
 .wiki-loop{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 0 10px;padding:12px;border-radius:14px;background:#f7f0e3;list-style:none}
