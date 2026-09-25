@@ -155,7 +155,7 @@ const BODIES={
  events(h){
   return section('Short shared goals',`<p>${h.lvl(EVENTS_LEVEL)} A farm event runs for 5 hours, then there is a 1-hour break before the next one. Everyone plays toward the same goals. Events open as soon as you reach level ${EVENTS_LEVEL}.</p>`)
   +section('How it works',facts([
-   ['live-events','Goals','Each event has a few goals, like harvesting or making certain things. Your progress shows in the event window.'],
+   ['live-events','Goals','Every event mixes 3 goals from 30 kinds, each in an easy, medium or hard size: harvesting and crops, animals and buildings, the market, coins and diamonds, and life on the farm. The 3 goals always come from 3 different kinds of play, and an event is never three hard goals. Your progress shows in the event window.'],
    ['trophy','Rewards',`Complete every goal and help at least 3 times over 10 minutes to qualify. Everyone who finishes wins coins and diamonds; the sooner you finish, the more. The first three win ${PODIUM_PRIZES.map(p=>p.diamonds).join(', ').replace(/, (\d+)$/,' and $1')} diamonds, every other finisher ${FINISHER_PRIZE.diamonds}. You can collect at most ${EVENT_DAY_DIAMONDS} event diamonds a day.`],
    ['gift','Next event','When an event ends, the window shows when the next one starts and what it gives.']
   ]));

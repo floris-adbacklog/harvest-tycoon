@@ -1724,6 +1724,8 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state);
  const beginnerBefore={harvested:state.stats.harvested,wheat:state.stats.harvest_wheat??0,watered:state.stats.watered,tended:state.stats.tended};
  const result=dispatchFarmAction(state,action,now,random);
+ // Coins spent (seeds, buildings, upgrades, fields, research…), for the farm events' "Spend coins" goal (26 Sep 2026).
+ const spent=beforeCoins-state.coins;if(spent>0)state.stats.coins_spent=(state.stats.coins_spent??0)+spent;
  recordBeginnerAction(state,action,result,beginnerBefore);
  const earnedXP=state.xp-beforeXP;
  if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}

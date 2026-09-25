@@ -1,6 +1,7 @@
 import {isSuperadmin} from './admin-service.js';
 // Goals open to every farm from level 10, when events open: the farm-wide counters, the crops unlocked by level 9 and eggs.
-export const EVENT_STATS=['harvested','produced','watered','tended','chores','deliveries','harvest_wheat','harvest_corn','harvest_lettuce','harvest_barley','harvest_greenbeans','harvest_cabbage','made_eggs'];
+export const EVENT_STATS=['harvested','produced','watered','tended','chores','deliveries','harvest_wheat','harvest_corn','harvest_lettuce','harvest_barley','harvest_greenbeans','harvest_cabbage','made_eggs',
+ 'planted','sold','earned','coins_spent','diamonds_spent','activities','upgrades','made_feed','made_milk','made_cheese','made_flour','fertilized','harvest_cauliflower','made_grainmeal','made_bread','parallel_batches','boosts_used','activity_rounds'];
 export function validateEvent(config,now=Date.now()){
  if(!config||typeof config.title!=='string'||config.title.trim().length<3||config.title.length>80||typeof config.description!=='string'||config.description.length>500)throw Error('Enter a title (3–80 characters) and description (up to 500).');
  const start=Date.parse(config.starts_at),end=Date.parse(config.ends_at);
@@ -61,12 +62,12 @@ async function playerEvents(admin,user,now){
  if(older.error)return older;
  return {data:[...listed.data,...older.data]};
 }
-// The same gate as the progress trigger (live-events-level-only.sql): level 10, so the event screen can say why a farm is not
+// The same gate as the progress trigger (live-events-mixed.sql): level 15, so the event screen can say why a farm is not
 // taking part yet.
 async function eligibility(admin,user){
  const stats=await admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle();
  if(stats.error)throw stats.error;
- return {level:stats.data?.level??0,minLevel:10,openAt:0,verified:true};
+ return {level:stats.data?.level??0,minLevel:15,openAt:0,verified:true};
 }
 
 // Confirming the email address (for EMAIL_BONUS diamonds, farm-state.js): a 6-digit code by email, valid for 30 minutes, 5 tries

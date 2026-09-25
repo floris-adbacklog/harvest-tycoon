@@ -32,11 +32,11 @@ test('qualifying mirrors the settlement rule: every goal full, 3 contributions o
  assert.equal(goalsDone(e,p(10,1,0)),true);
 });
 test('the screen says in one sentence why a farm cannot join yet',()=>{
- assert.equal(EVENTS_LEVEL,10);
- assert.match(eligibilityNote({level:7,minLevel:10,openAt:0,verified:true},now),/open at level 10\. You are level 7/);
- assert.equal(eligibilityNote({level:12,minLevel:10,openAt:now+2*H,verified:true},now),null,'no waiting time after level 10: events open as soon as a farm reaches it');
- assert.equal(eligibilityNote({level:12,minLevel:10,openAt:0,verified:false},now),null,'no email needed for events');
- assert.equal(eligibilityNote({level:12,minLevel:10,openAt:0,verified:true},now),null);
+ assert.equal(EVENTS_LEVEL,15,'level 15 since the mixed events (live-events-mixed.sql): spending diamonds opens at 14');
+ assert.match(eligibilityNote({level:12,minLevel:15,openAt:0,verified:true},now),/open at level 15\. You are level 12/);
+ assert.equal(eligibilityNote({level:16,minLevel:15,openAt:now+2*H,verified:true},now),null,'no waiting time after level 15: events open as soon as a farm reaches it');
+ assert.equal(eligibilityNote({level:16,minLevel:15,openAt:0,verified:false},now),null,'no email needed for events');
+ assert.equal(eligibilityNote({level:16,minLevel:15,openAt:0,verified:true},now),null);
 });
 test('standings: finishers first by finish time, then by progress; rewards follow the settlement formula',()=>{
  const e=event('e',now-H,now+H),row=(player_id,harvested,actions,last)=>({player_id,progress:{harvested},actions,joined_at:iso(now-H),last_at:iso(now-H+last*M)});
@@ -168,7 +168,7 @@ test('automatic events pay a fixed base, so the event screen shows one list with
  const ui=read('public/live-events-ui.js');
  assert.match(ui,/What you win when you finish/);assert.doesNotMatch(ui,/Reward for finishing|Extra for finishing/,'no second block to add up');
 });
-test('twelve automatic events, the new ones about one crop or eggs, and every goal open to every farm from level 10',async()=>{
+test('the twelve fixed events of 24 Sep (live-events-more.sql, before the mix) were open to every farm from level 10',async()=>{
  const sql=read('supabase/live-events-more.sql'),templates=JSON.parse(sql.match(/templates constant jsonb:='(\[[\s\S]*?\])';/)[1]);
  assert.equal(templates.length,12);assert.ok(templates.some(t=>t.title==='The wheat race'));
  const {EVENT_STATS}=await import('../supabase/functions/farm-api/event-service.js'),{EVENT_GOALS}=await import('../public/live-events-ui.js');
@@ -182,14 +182,15 @@ test('twelve automatic events, the new ones about one crop or eggs, and every go
    if(o.stat.startsWith('made_'))assert.equal(o.stat,'made_eggs','only eggs: the coop is free, the Bakery and Dairy Barn are not');
   }
  }
- for(const stat of EVENT_STATS)assert.match(sql,new RegExp(`'${stat}'`),`${stat} is allowed by harvest_event_validate`);
+ const mixed=read('supabase/live-events-mixed.sql');
+ for(const stat of EVENT_STATS)assert.match(sql+mixed,new RegExp(`'${stat}'`),`${stat} is allowed by harvest_event_validate`);
  assert.match(sql,/or \(stat like 'harvest\\_%' and action in \('field','tractor'\)\) or \(stat like 'made\\_%' and action in \('collect','collect_all'\)\);/,'progress counts a crop on harvest and eggs on collecting');
 });
-test('events are open to every farm from level 10: no email check and no waiting time',()=>{
+test('events are open to every farm from level 15: no email check and no waiting time',()=>{
  const sql=readFileSync(new URL('../supabase/live-events-level-only.sql',import.meta.url),'utf8');
  assert.match(sql,/replace\(definition,'if not public\.harvest_email_checked\(new\.player_id\) or not exists\(','if not exists\('\)/);
  const api=readFileSync(new URL('../supabase/functions/farm-api/event-service.js',import.meta.url),'utf8');
- assert.match(api,/return \{level:stats\.data\?\.level\?\?0,minLevel:10,openAt:0,verified:true\};/);
+ assert.match(api,/return \{level:stats\.data\?\.level\?\?0,minLevel:15,openAt:0,verified:true\};/);
  const ui=readFileSync(new URL('../public/live-events-ui.js',import.meta.url),'utf8');
- assert.doesNotMatch(ui,/48 hours|Confirm your email|createEmailCheck/);assert.match(ui,/Open from level 10\./);
+ assert.doesNotMatch(ui,/48 hours|Confirm your email|createEmailCheck/);assert.match(ui,/<li>Open from level \$\{EVENTS_LEVEL\}\.<\/li>/);
 });

@@ -8,10 +8,16 @@ import {formatDuration,levelOf} from './farm-state.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
 export const EVENT_GOALS={harvested:{label:'Harvest crops',art:'harvest'},produced:{label:'Collect batches',art:'buildings'},watered:{label:'Water fields',art:'water'},tended:{label:'Care for fields',art:'care'},chores:{label:'Finish chores',art:'chores'},deliveries:{label:'Complete deliveries',art:'cart'},
- harvest_wheat:{label:'Harvest wheat',art:'wheat'},harvest_corn:{label:'Harvest corn',art:'corn'},harvest_lettuce:{label:'Harvest lettuce',art:'lettuce'},harvest_barley:{label:'Harvest barley',art:'barley'},harvest_greenbeans:{label:'Harvest green beans',art:'greenbeans'},harvest_cabbage:{label:'Harvest cabbage',art:'cabbage'},made_eggs:{label:'Collect eggs',art:'eggs'}};
+ harvest_wheat:{label:'Harvest wheat',art:'wheat'},harvest_corn:{label:'Harvest corn',art:'corn'},harvest_lettuce:{label:'Harvest lettuce',art:'lettuce'},harvest_barley:{label:'Harvest barley',art:'barley'},harvest_greenbeans:{label:'Harvest green beans',art:'greenbeans'},harvest_cabbage:{label:'Harvest cabbage',art:'cabbage'},made_eggs:{label:'Collect eggs',art:'eggs'},
+ // The mixed events (supabase/live-events-mixed.sql, 26 Sep 2026): 30 kinds of goal, three drawn per event.
+ planted:{label:'Plant fields',art:'seeds'},fertilized:{label:'Fertilize fields',art:'fertilizer'},harvest_cauliflower:{label:'Harvest cauliflower',art:'cauliflower'},
+ made_feed:{label:'Make animal feed',art:'feed'},made_milk:{label:'Make milk',art:'milk'},made_cheese:{label:'Make cheese',art:'cheese'},made_flour:{label:'Make flour',art:'flour'},made_grainmeal:{label:'Make grain meal',art:'grainmeal'},made_bread:{label:'Bake bread',art:'bread'},parallel_batches:{label:'Start batches side by side',art:'buildings'},
+ sold:{label:'Sell at the market',art:'market'},earned:{label:'Earn coins',art:'coins'},coins_spent:{label:'Spend coins',art:'coins'},diamonds_spent:{label:'Spend diamonds',art:'diamonds'},boosts_used:{label:'Use a boost',art:'boost'},
+ activities:{label:'Lend a helping hand',art:'helping-hand'},activity_rounds:{label:'Finish a helping-hand round',art:'helping-hand'},upgrades:{label:'Upgrade buildings',art:'hammer'}};
 const MIN_ACTIONS=3,MIN_SPAN=10*60000;
-// Same level as the server gate (player_stats.level>=10 in live-events.sql): below it the button stays visible but greyed.
-export const EVENTS_LEVEL=10;
+// Same level as the server gate (player_stats.level>=15, live-events-mixed.sql; 10 until 26 Sep 2026, when spending diamonds, which
+// opens at 14, became a goal): below it the button stays visible but greyed.
+export const EVENTS_LEVEL=15;
 // The podium prize for the first three finishers and the extra for every later finisher, on top of the usual reward, and the
 // most event diamonds a farmer collects in a day (same numbers as harvest_event_settle and harvest_event_claim).
 // Fixed diamonds per place (harvest_event_settle): 50, 30, 20, and 5 for every other finisher. Coins come on top of the event's own.
@@ -105,7 +111,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const result=e=>!e.settled_at?'Results coming up':e.player?.claimed_at?`Collected · ${num(e.player.coins)} coins${e.player.paid_diamonds?` + ${num(e.player.paid_diamonds)} diamond${e.player.paid_diamonds===1?'':'s'}`:''}`:e.player?'Not qualified':'You did not take part';
   return `<h3 class="event-section-title">Recent events</h3><div class="family-member-list event-history">${past.map(e=>`<article class="family-list-row"><div><strong>${esc(e.title)}</strong><span>${result(e)}${e.settled_at?` · ${num(e.qualified)} of ${num(e.participants)} qualified`:''}</span></div></article>`).join('')}</div>`;
  }
- const rules=`<details class="family-extra event-rules"><summary>How farm events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and contribute at least 3 times over 10 minutes to qualify.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You can collect at most ${EVENT_DAY_DIAMONDS} event diamonds a day.</li><li>Open from level 10.</li></ul></details>`;
+ const rules=`<details class="family-extra event-rules"><summary>How farm events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and contribute at least 3 times over 10 minutes to qualify.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You can collect at most ${EVENT_DAY_DIAMONDS} event diamonds a day.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  function render(){
   const heading='<div class="dialog-heading"><div><span class="eyebrow">PLAY TOGETHER, FOR A LITTLE WHILE</span><h2 id="events-title">Farm events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
   dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:`<p class="event-loading">${esc(error||'Opening farm events…')}</p>`)+'<p class="event-feedback" role="status" data-status></p>';
@@ -144,7 +150,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  }
  dialog.addEventListener('close',()=>{clearInterval(clock);clearInterval(reloadTimer);});
  if(button)button.onclick=open;
- // Below level 10, the same rule as every other locked feature: the desktop side tool is simply not there yet, while the
+ // Below level 15 (EVENTS_LEVEL), the same rule as every other locked feature: the desktop side tool is simply not there yet, while the
  // More-menu card stays visible, greyed and unclickable, with the level it needs.
  function refresh(){
   const next=Boolean(state)&&levelOf(state)<EVENTS_LEVEL;if(next===locked)return;locked=next;
