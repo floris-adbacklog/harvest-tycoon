@@ -122,15 +122,17 @@ Deno.serve(async(req)=>{
     // rewards for friends it invited who reached level 10 since the last visit.
     const inviteReward=inviteeReward(state,now),friends=inviterRewards(state,await qualifiedFriends(admin,user.id).catch(()=>[]));
     // A confirmed email pays EMAIL_BONUS diamonds once (farm-state.js): Google and Facebook at once, an email sign-up after its code.
-    // A problem with this check never stops the farm from opening: the bonus simply waits for the next load.
+    // A problem with this check never stops the farm from opening: the bonus simply waits for the next load. Google and Facebook
+    // accounts get it quietly; an email sign-up that just typed its code sees it in the gift pop-up.
+    let emailBonusPaid=false;
     if(!state.emailBonus){
      const checked=await Promise.resolve().then(()=>admin.rpc('harvest_email_checked',{p_player:user.id})).catch(()=>({error:true,data:null}));
      if(!checked.error&&checked.data===true&&grantEmailBonus(state,now)){
-      const social=(user.app_metadata?.provider??'email')!=='email',message=social?'Your account is verified. A little welcome gift!':'Thanks for confirming your email!';
-      gift=gift?{...gift,diamonds:(gift.diamonds??0)+EMAIL_BONUS,message:gift.message??message}:{coins:0,xp:0,diamonds:EMAIL_BONUS,item:null,itemCount:0,message,at:now};
+      emailBonusPaid=true;
+      if((user.app_metadata?.provider??'email')==='email'){const message='Thanks for confirming your email!';gift=gift?{...gift,diamonds:(gift.diamonds??0)+EMAIL_BONUS,message:gift.message??message}:{coins:0,xp:0,diamonds:EMAIL_BONUS,item:null,itemCount:0,message,at:now};}
      }
     }
-    if(welcome||levelReward.levels.length||chapterReward.chapters.length||gift||inviteReward||friends.length){
+    if(welcome||levelReward.levels.length||chapterReward.chapters.length||gift||inviteReward||friends.length||emailBonusPaid){
      const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
      if(saved.error)throw saved.error;if(!saved.data)continue;
      if(inviteReward)await qualifyInvite(admin,user.id,now).catch((error:{code?:string})=>console.error('Invite qualify failed',error?.code));

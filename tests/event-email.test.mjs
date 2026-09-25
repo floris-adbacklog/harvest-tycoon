@@ -55,6 +55,8 @@ test('a confirmed email pays 10 diamonds once, only through the server\'s load, 
  const {readFileSync}=await import('node:fs');const read=p=>readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
  const api=read('supabase/functions/farm-api/index.ts');
  assert.match(api,/if\(!checked\.error&&checked\.data===true&&grantEmailBonus\(state,now\)\)\{/);
+ assert.match(api,/emailBonusPaid=true;\n      if\(\(user\.app_metadata\?\.provider\?\?'email'\)==='email'\)\{const message='Thanks for confirming your email!';/,'only an email sign-up sees a pop-up; Google and Facebook are paid quietly');
+ assert.match(api,/friends\.length\|\|emailBonusPaid\)\{/,'a quiet payment is still saved');
  assert.match(api,/const emailCheck=\(farm:\{emailBonus\?:number\}\)=>\(\{needed:\(user\.app_metadata\?\.provider\?\?'email'\)==='email'&&!farm\.emailBonus/);
  const html=read('public/farm.html');
  assert.match(html,/<button class="side-tool" id="email-button"[^>]*hidden><span><i data-game-art="letter"><\/i><\/span><b>Verify<\/b><\/button>/);
