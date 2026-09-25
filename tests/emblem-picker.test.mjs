@@ -99,8 +99,9 @@ test('the emblem row is compact, scrolls sideways and keeps big tap targets',()=
 test('every farmer profile shows the farmer, not a stalk of wheat',()=>{
  const html=renderPlayerProfile({username:'Floris',level:41,online:true,stats:{},badges:[],family:null});
  const avatar=html.slice(html.indexOf('class="farmer-avatar"'),html.indexOf('</div>',html.indexOf('class="farmer-avatar"')));
- assert.match(avatar,/<img class="farmer-avatar-img" src="\/assets\/farmer-avatar\.webp" alt="" width="320" height="363"/);
- assert(!avatar.includes('data-art="wheat"'));assert.match(avatar,/<span>F<\/span>/,'the initial stays as a small badge');
+ assert.match(avatar,/<img class="farmer-avatar-img" src="\/assets\/farmer-avatar\.webp" alt="" width="384" height="384"/);
+ assert(!avatar.includes('data-art="wheat"'));assert.doesNotMatch(avatar,/<span>/,'no letter on the picture: every farmer has their own avatar now');
+ assert.match(read('public/player-profiles.css'),/\.farmer-avatar\{[^}]*flex:0 0 100px;height:100px;/,'a square tile, like the square avatars, so no empty strip above the head');
  const file=readFileSync(new URL('../public/assets/farmer-avatar.webp',import.meta.url));
  assert.equal(file.subarray(0,4).toString(),'RIFF');assert.equal(file.subarray(8,12).toString(),'WEBP');
  assert(statSync(new URL('../public/assets/farmer-avatar.webp',import.meta.url)).size<80000,'a light picture');
