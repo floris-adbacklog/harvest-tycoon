@@ -165,3 +165,6 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]),html[data-app
 .footer-social{display:inline-flex;align-items:center;justify-content:center;align-self:center;width:20px;height:20px;border-radius:50%;opacity:.85;text-decoration:none}
 .footer-social:hover,.footer-social:focus-visible{opacity:1}
 .footer-social svg{display:block}
+
+/* Signed in, the page around the game frame does not zoom either (src/page-zoom.js); the home page stays zoomable. */
+html:has(body[data-phase=authenticated]),body[data-phase=authenticated]{touch-action:pan-x pan-y}

@@ -6,6 +6,9 @@ import {createCloudUI} from './ui.js';
 import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
 import {showPaymentReturn} from './payment-ui.js';
 import {createStarterPackUI} from './starter-pack-ui.js';
+import {stopPageZoom} from './page-zoom.js';
+// The game frame never zooms as a page: only the 3D field does (src/page-zoom.js).
+stopPageZoom(document);
 let bridge;
 try{bridge=window.parent!==window?window.parent.harvestBridge:null;}catch{}
 if(!bridge){location.replace('/play.html');}else{

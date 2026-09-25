@@ -16,7 +16,7 @@ function start(){
   window:{parent:{harvestBridge:bridge},addEventListener(){}},
   document:{body:{hidden:true},getElementById:()=>null},location:{replace:()=>calls.push('redirect')},
   createCloudUI:()=>({setProfile(){},status(){}}),
-  createAvatarSettings:()=>{},
+  createAvatarSettings:()=>{},stopPageZoom:()=>{},
   createPlayerProfiles:()=>({open(){},isOpen:false}),
   createAdminDashboard:()=>({}),createChatUI:()=>null,
   setInterval:()=>1,clearInterval(){},
