@@ -31,7 +31,7 @@ export const ANCHORS=Object.freeze({
 // The Factory (50) and the Valley Market (62) stay in the middle, at the front and on the road out at the back.
 export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[-25.77,-6.92],stall:[-8,23.4],cart:[-9.7,-10.45],paddock:[1.7,-8.6],
  pigfarm:[-26.15,0.77],beeyard:[-33.85,14.62],sheepbarn:[-26.15,16.15],glasshouse:[37.62,1.23],weaving:[-33.46,22.69],
- craftshop:[23.46,1.69],ranch:[37.31,11.15],estateworkshop:[46.92,11.15],grandfair:[40,28.1]});
+ craftshop:[23.46,1.69],ranch:[33.85,13.46],estateworkshop:[46.92,11.15],grandfair:[40,28.1]});
 // Trees, bushes and other loose pieces keep this far from the middle of a yard.
 export const YARD_CLEARANCE=5.4;
 
