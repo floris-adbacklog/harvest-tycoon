@@ -20,7 +20,7 @@ test('the Factory is an endgame building: level 50, 100,000 coins, twenty levels
  s.xp=xpForLevel(49);assert.equal(buildingEligible(s,'factory'),false);assert.throws(()=>act(s,{type:'construct',building:'factory'}),/level|unlock|open/i);assert.equal(s.coins,1e9);
  s.xp=xpForLevel(50);assert.equal(levelOf(s),50);assert.equal(buildingEligible(s,'factory'),true);assert.equal(buildingCost(s,'factory'),100000);assert.equal(buildingUnlocked(s,'factory'),false,'it has to be bought');
  act(s,{type:'construct',building:'factory'});assert.equal(s.coins,1e9-100000);assert.equal(buildingUnlocked(s,'factory'),true);
- assert.equal(FACTORY_UPGRADE_MULTIPLIER,2);assert.equal(upgradeCost(s,'factory'),Math.round(800*1.5)*FACTORY_UPGRADE_MULTIPLIER,'same curve as every production building, just doubled');
+ assert.equal(FACTORY_UPGRADE_MULTIPLIER,2);assert.equal(upgradeCost(s,'factory'),5000,'at least 5% of its 100,000 build price, like every late building');
  assert.equal(MAX_BUILDING_LEVEL,20);
 });
 test('every production recipe has one bulk version: quick goods x20, slow goods x10, in twice the time, with the same XP per ingredient',()=>{
@@ -96,9 +96,9 @@ test('the specialised buildings keep their point: a full Factory adds less than 
 test('only the Factory\'s coin upgrade price is doubled; the diamond alternative and every other building are untouched',()=>{
  const s=farm();
  for(const [id,b] of Object.entries(BUILDINGS).filter(([,b])=>b.type==='production'&&b!==BUILDINGS.factory)){
-  s.buildings[id].level=1;assert.equal(upgradeCost(s,id),Math.round(b.upgradeCost*1.5),id);
+  s.buildings[id].level=1;assert.equal(upgradeCost(s,id),Math.max(Math.round(b.upgradeCost*1.5),Math.round((BUILDING_COSTS[id]??0)*.05)),id);
  }
- s.buildings.factory.level=1;assert.equal(upgradeCost(s,'factory'),Math.round(BUILDINGS.factory.upgradeCost*1.5)*FACTORY_UPGRADE_MULTIPLIER);
+ s.buildings.factory.level=1;assert.equal(upgradeCost(s,'factory'),Math.round(BUILDING_COSTS.factory/FACTORY_UPGRADE_MULTIPLIER*.05)*FACTORY_UPGRADE_MULTIPLIER);
 });
 test('the Factory is bought with coins or diamonds and estate-upgrades levels 11-20 like the others, just doubled',()=>{
  const s=farm();s.buildings.factory.level=10;

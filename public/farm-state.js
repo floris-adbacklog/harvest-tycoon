@@ -803,16 +803,25 @@ export function upgradeRequirements(state,building){
  const level=state.buildings[building].level,step=ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL];
  return level<BASE_BUILDING_LEVEL||level>=MAX_BUILDING_LEVEL||!step?null:{level:step.level,materials:{...step.materials}};
 }
+// Upgrade prices below level 10 (26 Sep 2026). Each building follows its own curve (2.7× a level), but:
+// - a first upgrade costs at least 5% of what the building cost to build, growing 2.7× a level from there, so the late buildings
+//   (a 90,000 coin Craft Workshop) no longer upgrade for 2,300 coins while the Mill's first upgrades cost more than the Mill;
+// - no step costs more than the ladder into the estate steps: 1.3× less for every level below 10 -> 11 (400,000), so a price
+//   rises every level and never jumps to millions before dropping back to 400,000 at level 10 (the Craft Workshop's 9 -> 10
+//   used to cost 7.0 million). The buildings that open first (Coop to Kitchen) keep their early prices; the ladder only trims
+//   their last steps before level 10.
+export const UPGRADE_BUILD_SHARE=.05;
+export const UPGRADE_LADDER_STEP=1.3;
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
  const level=state.buildings[building].level;
  const voucher=state.boosts?.upgradeCredits>0?.5:1;
  const factoryPrice=building==='factory'?FACTORY_UPGRADE_MULTIPLIER:1;
  if(level>=BASE_BUILDING_LEVEL){const step=level<MAX_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]:null;return step?Math.ceil(step.coins*voucher*factoryPrice):null;}
- // Below level 10 the price grows 2.7× a level, but never past the step from 10 to 11 (26 Sep 2026): a Craft Workshop's 9 -> 10
- // cost 7.0 million, then 10 -> 11 cost 400,000. Now level 10, where a building's Factory batch is full size, is within reach.
- const price=Math.min(Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3))),ESTATE_UPGRADES[0].coins);
- return Math.ceil(price*voucher*factoryPrice);
+ const curve=Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)));
+ const floor=Math.round((BUILDING_COSTS[building]??0)/factoryPrice*UPGRADE_BUILD_SHARE*2.7**(level-1));
+ const ceiling=Math.round(ESTATE_UPGRADES[0].coins/UPGRADE_LADDER_STEP**(BASE_BUILDING_LEVEL-level));
+ return Math.ceil(Math.min(Math.max(curve,floor),ceiling)*voucher*factoryPrice);
 }
 // What a new farm starts with, so the first minutes are not spent waiting: coins for seeds and a second egg slot, corn to sell or to
 // mix into feed at the Mill, wheat, ten animal feed for the chickens (ten batches of eggs), and barley for the Mill's feed recipe once

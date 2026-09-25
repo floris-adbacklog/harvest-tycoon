@@ -19,9 +19,12 @@ test('levels 1 to 10 are exactly what they were',()=>{
  for(const [level,speed] of Object.entries(before))assert.ok(Math.abs(productionSpeed(Number(level))-speed)<1e-9,`speed at ${level}`);
  const s=farm(5);s.buildings.mill.level=2;assert.equal(upgradeCost(s,'mill'),Math.ceil(BUILDINGS.mill.upgradeCost*3));
  s.buildings.mill.level=8;assert.equal(upgradeCost(s,'mill'),Math.ceil(Math.round(BUILDINGS.mill.upgradeCost*12*2.7**5)));
- s.buildings.mill.level=9;assert.equal(upgradeCost(s,'mill'),400000,'the curve would ask 418,414; no step below 10 costs more than 10 -> 11');
- s.buildings.craftshop.level=9;assert.equal(upgradeCost(s,'craftshop'),400000,'not 7.0 million');s.buildings.craftshop.level=10;assert.equal(upgradeCost(s,'craftshop'),400000);
- s.buildings.factory.level=9;assert.equal(upgradeCost(s,'factory'),800000,'the Factory: doubled, like its step from 10 to 11');
+ s.buildings.mill.level=9;assert.equal(upgradeCost(s,'mill'),307692,'the curve would ask 418,414; the ladder: 400,000 / 1.3');
+ const craft=[1,2,3,4,5,6,7,8,9,10].map(level=>{s.buildings.craftshop.level=level;return upgradeCost(s,'craftshop');});
+ assert.deepEqual(craft,[4500,12150,32805,82870,107732,140051,182066,236686,307692,400000],'at least 5% of the 90,000 build price at first, then the ladder: no more 7.0 million at 9 -> 10');
+ for(let i=1;i<craft.length;i++)assert.ok(craft[i]>craft[i-1],'every level costs more than the one before');
+ s.buildings.factory.level=9;assert.equal(upgradeCost(s,'factory'),615384,'the Factory: the same ladder, doubled');
+ s.buildings.kitchen.level=5;assert.equal(upgradeCost(s,'kitchen'),Math.round(BUILDINGS.kitchen.upgradeCost*12*2.7**2),'a building that opens early keeps its own curve');
  assert.equal(upgradeRequirements(s,'mill'),null,'nothing but coins below level 10');
  assert.equal(diamondUpgradeCost(s,'mill'),525);s.buildings.mill.level=10;assert.equal(diamondUpgradeCost(s,'mill'),570,'and the curve goes on above level 10');
 });
