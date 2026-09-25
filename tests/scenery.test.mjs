@@ -24,7 +24,8 @@ test('repeated pieces are instanced, everything stands still, and the front keep
  assert.match(source,/instanced\('plant_008',flowers,\{shadow:false\}\)/);
  assert.doesNotMatch(source,/requestAnimationFrame|\.tick|mixer/,'no animation: the animals stand still');
  assert.match(source,/ringPoint\(200\+rand\(\)\*150,/,'the front meadows');
- assert.match(source,/kind<\.62\?\[FRONT\[Math\.floor\(rand\(\)\*4\)\],\.7\+rand\(\)\*\.9,\.9\]:kind<\.85\?\[FRONT\[4\+Math\.floor\(rand\(\)\*4\)\],2\.2\+rand\(\)\*1\.4,1\.2\]/,'bushes and young trees of at most 3.6');
+ assert.match(source,/kind<\.7\?\[FRONT\[Math\.floor\(rand\(\)\*4\)\],\.7\+rand\(\)\*\.9,\.9\]:\[FRONT\[4\+Math\.floor\(rand\(\)\*4\)\],2\.2\+rand\(\)\*1\.4,1\.2\]/,'bushes and young trees of at most 3.6');
+ assert.doesNotMatch(source.match(/const FRONT=\[[^\]]*\]/)[0],/hay/,'no hay in the meadows, where no tractor comes');
  assert.match(source,/if\(peaks\.length\)range\(-4,192,mobile\?28:17,57,53,/,'a second row of mountains at the sides and back only');
  assert.match(source,/if\(Math\.max\(Math\.abs\(p\.x\),Math\.abs\(p\.z\)\)>74\)continue;/,'never over the edge of the ground');
  assert.match(source,/const free=\(x,z,r=1\)=>!\(x>fields\[0\]-r/,'never on a field, the pond, a road or anything that stands');
@@ -59,4 +60,19 @@ test('the Pig Farm: level 29, truffles at the pace of the other animal buildings
  // New goods join the Family Order from the week after release, so this week's orders stay the same for every family.
  assert.deepEqual(m.FAMILY_ORDER_FROM_WEEK,{truffles:2960,truffleomelette:2960});
  for(let week=2940;week<2960;week++)for(const k of Object.keys(m.familyOrder('f',week,3).lines))assert(!k.startsWith('truffle'),`week ${week}`);
+});
+// 25 Sep 2026: fewer loose props, none on a road or in a field, room around the animals, and the animals sideways to the camera.
+test('the farm is tidier: fewer props, kept off roads and fields and clear of the animals, and the animals turned sideways',async()=>{
+ const {PROPS_PER_YARD,ROAD_STEP,MEADOW_CLUMPS}=await import('../public/farm-props.js');
+ assert.deepEqual([PROPS_PER_YARD,ROAD_STEP,MEADOW_CLUMPS],[2,14,18]);
+ const game=read('public/game.js');
+ assert.match(game,/const ANIMAL=\/\^\(cow\|horse\|pig\|sheep\|goat\|chicken\)_\/,FLAT_BLOCKS=\/\^\(road\|field\)_\/;/);
+ assert.match(game,/blocked\.push\(ANIMAL\.test\(model\)\?box\.expandByScalar\(1\.2\):box\);/);
+ // every animal faces left (about -0.8) or right (about 2.4) with a small margin, never head-on or from behind (0.8, -2.4)
+ const turns=[...game.matchAll(/animalAt\('(?:cow|sheep|goat)_00\d',[-\d.]+,[-\d.]+,\{[^}]*rotation:([-\d.]+)\}/g)].map(m=>Number(m[1]))
+  .concat([...game.matchAll(/\['(?:sheep|goat|horse)_00\d',[-\d.]+,[-\d.]+,([-\d.]+)\]/g)].map(m=>Number(m[1])),[...game.matchAll(/\['pig_00\d',[-\d.]+,[-\d.]+,[\d.]+,([-\d.]+)\]/g)].map(m=>Number(m[1])));
+ assert.ok(turns.length>=15,`found ${turns.length} animals`);
+ const off=r=>Math.min(...[-.8,2.4].map(side=>{const d=Math.abs(((r-side)%(2*Math.PI)+3*Math.PI)%(2*Math.PI)-Math.PI);return d;}));
+ for(const r of turns)assert.ok(off(r)<=.75,`rotation ${r} faces the camera or away from it`);
+ assert.doesNotMatch(game,/dairy:\[\[[^\]]*hay_002/,'no hay right behind the paddock horse');assert.doesNotMatch(game,/silo:\[\['hay_003'/,'nor inside the hay stack');
 });

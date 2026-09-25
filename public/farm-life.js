@@ -50,7 +50,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  zone(null);scenery('trailer_001',-19,-20,{width:2.2,rotation:.25});zone('paddock');
  // The existing glasshouse and hives receive real activities through attach().
  const horse=station('paddock',cloneModel('horse_002',17.9,-8.5,{width:2.2,rotation:-.7}),17.9,-8.5);
- const pig=cloneModel('pig_001',17.9,-5.6,{width:1.3,rotation:1.2});pig.userData.activity='paddock';
+ const pig=cloneModel('pig_001',17.9,-5.6,{width:1.3,rotation:2.4});pig.userData.activity='paddock';
  {const [hx,hz]=place(17.9,-8.5),[gx,gz]=place(17.9,-5.6);moving.push({obj:horse,x:hx,z:hz,kind:'animal',phase:0},{obj:pig,x:gx,z:gz,kind:'animal',phase:3});}
  // Three standard 2.2-unit segments, like every other fence on the farm (one 5.8-wide piece made the posts oversized).
  for(const z of [-9.2,-7,-4.8])scenery('fence_001',19.5,z,{width:2.2,rotation:Math.PI/2});scenery('water_001',18.4,-10.6,{width:1.4});scenery('hay_002',17.7,-3.2,{width:1.8});zone(null);

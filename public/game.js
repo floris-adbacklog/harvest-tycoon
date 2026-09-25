@@ -148,7 +148,7 @@ async function addScenery(){
  try{
   const {SCENERY_MODELS,buildScenery}=await import('./scenery.js');
   await loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4);
-  buildScenery({scene,models,mobile:mobileLayout.matches});renderer.shadowMap.needsUpdate=true;shootMinimap();
+  buildScenery({scene,models,mobile:mobileLayout.matches});clearPropsFromMountains();renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
 }
 function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
@@ -234,7 +234,7 @@ function decorate(){
   // Independent decor is excluded from the raycast target lists.
   for(const [name,x,z,options] of [
    ['pointer_002',-6.8,-18.2,{height:1.3}],
-   ['table_002',-9.6,-16.9,{width:1.5}],['garden_bed_002',-11.8,-17,{width:1.3,height:.28,depth:1.6}],
+   ['table_002',-9.6,-16.9,{width:1.5}],
    ['firewood_001',-12.2,-20.6,{width:1.1}]
   ]){const decor=cloneModel(name,x,z,options);familyDecor.push(decor);}
  }
@@ -262,19 +262,19 @@ function decorate(){
  zone('bakery');
  cloneModel('cart_004',-14.8,12.4,{width:2.2,rotation:.35});
  cloneModel('table_001',-12.7,13.4,{width:1.8,rotation:-.2});
- cloneModel('chair_001',-11.4,13.7,{height:1.05,rotation:-2.4});
  zone('apiary');
  const hive=cloneModel('apiary_001',10.1,13.8,{height:1.35,rotation:.15});
  cloneModel('apiary_001',11.4,14.2,{height:1.25,rotation:-.2});
- zone('farmhouse');cloneModel('firewood_003',-15.4,-5.8,{width:1.7,rotation:Math.PI/2});
+ zone('farmhouse');
  zone('silo');
  cloneModel('hay_001',4.6,-7.8,{width:1.9});
  cloneModel('hay_001',6.2,-8.1,{width:1.7,rotation:.4});
  cloneModel('hay_001',5.35,-7.9,{width:1.5,y:1.2});
  cloneModel('hay_002',3.7,-8.4,{width:1.45,rotation:.2});
  zone('chores');
- addUtility('chores','barrel_001',-5.8,-10.7,{height:1.1});
- cloneModel('barrel_001',-6.7,-10.3,{height:1.05});
+ // Just beside the road that runs past (x -9.3 to -6.4), not on it.
+ addUtility('chores','barrel_001',-3.4,-10.7,{height:1.1});
+ cloneModel('barrel_001',-2.6,-10.2,{height:1.05});
  zone('stall');
  addUtility('stall','stall_002',-11.3,-2.6,{width:2.9,rotation:.15});
  cloneModel('prop_023',-9.2,-2.7,{width:.8});
@@ -291,12 +291,15 @@ function decorate(){
  fenceLine(-4.4,-.3,15,'z',2.2,'fence_008',0xf2e2bd);fenceLine(9.55,-.3,15,'z',2.2,'fence_008',0xf2e2bd);
  zone('coop');
  const animalAt=(model,x,z,options,building,seed)=>{const o=cloneModel(model,x,z,options);o.userData.building=building;const [ax,az]=place(x,z);animals.push({obj:o,x:ax,z:az,seed});return o;};
- animalAt('cow_001',8.6,-6.6,{width:2.4,rotation:-.6},'dairy',.5);
- animalAt('cow_001',17.6,-6.2,{width:1.85,rotation:2},'dairy',3);
- animalAt('sheep_001',8.2,-12.2,{width:1.6,rotation:.6},'dairy',1.5);
+ // The animals stand sideways to the camera (which looks from +x,+z): at about -0.8 they face left, at 2.4 right. Seen head-on or
+ // from behind, a low-poly animal looks twisted from up here. The cow only faces right: its head is turned a little, and seen from
+ // its left side it seems to stare at the sky.
+ animalAt('cow_001',8.6,-6.6,{width:2.4,rotation:2.1},'dairy',.5);
+ animalAt('cow_001',17.6,-6.2,{width:1.85,rotation:2.4},'dairy',3);
+ animalAt('sheep_001',8.2,-12.2,{width:1.6,rotation:2.3},'dairy',1.5);
  animalAt('goat_001',17.8,-12,{width:1.5,rotation:-1.1},'dairy',4.2);
  // The chickens live at their coop, in the pen with the other animals.
- for(const [x,z,r] of [[10.6,-11.6,.2],[9.9,-8.6,2.1],[15.8,-7,3.1]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
+ for(const [x,z,r] of [[10.6,-11.6,.2],[9.9,-8.6,2.1]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
  // The midgame yards, on the new ground east of the coop and the Family Hall. Like every building that is still to come they
  // stand there from the start, greyed out, with everything that belongs to them (yardDecor).
  // The Bee Yard: a cluster of hives among sunflowers, tapped and greyed as one piece.
@@ -308,7 +311,7 @@ function decorate(){
  zone('sheepbarn');
  addBuilding('sheepbarn',23.8,-15.4,{width:5.4,height:4.4,depth:9});
  yardDecor.sheepbarn.push(...fenceLine(20.5,-3.6,4),...fenceLine(19.4,-9.1,3,'z'),...fenceLine(28.2,-9.1,3,'z'),...fenceLine(20.5,-10.2,1),...fenceLine(27.1,-10.2,1));
- for(const [model,x,z,r] of [['sheep_002',21.6,-7.9,.6],['sheep_003',24.4,-5.3,2.4],['sheep_002',26.5,-8.3,-1],['sheep_003',22.4,-5,1.3],['sheep_001',25.6,-6.9,3.6]])yardDecor.sheepbarn.push(animalAt(model,x,z,{width:1.5,rotation:r},'sheepbarn',r));
+ for(const [model,x,z,r] of [['sheep_002',21.6,-7.9,2.2],['sheep_003',24.4,-5.3,2.4],['sheep_002',26.5,-8.3,-1],['sheep_003',22.4,-5,2],['sheep_001',25.6,-6.9,-.6]])yardDecor.sheepbarn.push(animalAt(model,x,z,{width:1.5,rotation:r},'sheepbarn',r));
  yardDecor.sheepbarn.push(cloneModel('hay_001',27,-4.7,{width:1.3,rotation:.3}),cloneModel('water_001',20.7,-4.8,{width:1.1}));
  // The Glasshouse lies along the road, with raised beds and fertilizer beside it.
  zone('glasshouse');
@@ -322,7 +325,7 @@ function decorate(){
  zone('goatshed');
  addBuilding('goatshed',31.9,-14.6,{width:5,height:4.6,depth:8});
  yardDecor.goatshed.push(...fenceLine(28.6,-3.8,4),...fenceLine(27.5,-9.3,3,'z'),...fenceLine(36.3,-9.3,3,'z'),...fenceLine(28.6,-10.4,1),...fenceLine(35.2,-10.4,1));
- for(const [model,x,z,r] of [['goat_001',29.6,-8.4,.8],['goat_002',32.2,-6.1,2.2],['goat_001',34.6,-8.7,-.9],['goat_002',30.4,-5.2,1.6],['goat_001',33.9,-4.9,3.4]])yardDecor.goatshed.push(animalAt(model,x,z,{width:1.3,rotation:r},'goatshed',r));
+ for(const [model,x,z,r] of [['goat_001',29.6,-8.4,2.6],['goat_002',32.2,-6.1,2.2],['goat_001',34.6,-8.7,-.9],['goat_002',30.4,-5.2,1.9],['goat_001',33.9,-4.9,-1]])yardDecor.goatshed.push(animalAt(model,x,z,{width:1.3,rotation:r},'goatshed',r));
  yardDecor.goatshed.push(cloneModel('hay_002',35.3,-5.1,{width:1.1,rotation:.4}),cloneModel('water_001',28.5,-4.9,{width:1}));
  // The Pig Farm: the pink barn turned side-on, and in front of it a white-fenced pen, closed all round, where the pigs dig for
  // truffles.
@@ -331,7 +334,7 @@ function decorate(){
  // In front of the barn's west end (towards the camera), so the barn never hides the fence.
  const [penX,penZ]=[-33.72,-3.38];
  for(const [dx,dz,rotation] of [[-2.2,-2.6,0],[0,-2.6,0],[2.2,-2.6,0],[-2.2,2.6,0],[0,2.6,0],[2.2,2.6,0],[-3.3,-1.3,Math.PI/2],[-3.3,1.3,Math.PI/2],[3.3,-1.3,Math.PI/2],[3.3,1.3,Math.PI/2]])yardDecor.pigfarm.push(cloneModel('fence_008',penX+dx,penZ+dz,{width:2.2,rotation}));
- for(const [model,dx,dz,height,r] of [['pig_003',-1.2,-.6,.9,.7],['pig_002',1,.9,.85,2.6],['pig_005',.4,-1.3,.58,-.8]])yardDecor.pigfarm.push(animalAt(model,penX+dx,penZ+dz,{height,rotation:r},'pigfarm',r));
+ for(const [model,dx,dz,height,r] of [['pig_003',-1.2,-.6,.9,2.5],['pig_002',1,.9,.85,2.6],['pig_005',.4,-1.3,.58,-.8]])yardDecor.pigfarm.push(animalAt(model,penX+dx,penZ+dz,{height,rotation:r},'pigfarm',r));
  yardDecor.pigfarm.push(cloneModel('water_001',penX-1.6,penZ+1.4,{width:1,rotation:.3}),cloneModel('hay_002',-26.4,-4.6,{width:1.2,rotation:.5}));
  // The Craft Workshop, a long low workshop east of the Weaving Shed, with wax and wool at the door.
  zone('craftshop');
@@ -341,7 +344,7 @@ function decorate(){
  zone('ranch');
  addUtility('ranch','hangar_001',31.5,15.2,{width:6.9,height:4.8,depth:11.1,rotation:Math.PI/2});   // about half its own size, like the other barns
  yardDecor.ranch.push(...fenceLine(27.8,25.9,4),...fenceLine(26.7,20.4,3,'z'),...fenceLine(35.5,20.4,3,'z'));
- for(const [model,x,z,r] of [['horse_003',29.2,22.4,.6],['horse_004',32.6,24.3,2.3],['horse_005',34,21.2,-.8]])yardDecor.ranch.push(cloneModel(model,x,z,{width:2.2,rotation:r}));
+ for(const [model,x,z,r] of [['horse_003',29.2,22.4,2.2],['horse_004',32.6,24.3,2.3],['horse_005',34,21.2,-.8]])yardDecor.ranch.push(cloneModel(model,x,z,{width:2.2,rotation:r}));
  yardDecor.ranch.push(cloneModel('hay_001',27.9,24.6,{width:1.2,rotation:.3}),cloneModel('water_001',34.6,25,{width:1}));
  // The Valley Market: a striped canopy over tables of goods, with market stalls beside it, on the top road out of the valley.
  zone('valleymarket');
@@ -349,7 +352,7 @@ function decorate(){
  yardDecor.valleymarket.push(cloneModel('table_001',-2.2,-29.6,{width:1.8,rotation:.1}),cloneModel('table_001',2,-28.9,{width:1.8,rotation:-.15}),cloneModel('case_002',-2.4,-29.8,{width:.8,y:.72}),cloneModel('bag_003',2.2,-29,{height:.55,y:.72}),
   // Two stalls face the road in front of the canopy, where the camera sees them; a cart and a sign at the sides.
   cloneModel('stall_002',-2.8,-24.2,{width:2.6}),cloneModel('stall_001',2.9,-24.3,{width:2.9}),cloneModel('case_002',2.2,-24.5,{width:.85,rotation:.2}),cloneModel('case_003',3.5,-24.2,{width:.8,rotation:-.3}),cloneModel('bag_003',3,-23.7,{height:.6,rotation:.4}),
-  cloneModel('cart_004',7.6,-26.6,{width:1.9,rotation:.6}),cloneModel('pointer_002',-6.4,-23.8,{height:1.3,rotation:.2}),cloneModel('barrel_001',-6.6,-29.8,{height:.95}),cloneModel('barrel_009',-5.8,-30.6,{height:.8}),cloneModel('case_003',6.6,-31.2,{width:.9,rotation:.4}));
+  cloneModel('cart_004',7.6,-26.6,{width:1.9,rotation:.6}),cloneModel('pointer_002',-6.4,-23.8,{height:1.3,rotation:.2}),cloneModel('barrel_001',6.6,-30.2,{height:.95}),cloneModel('barrel_009',7.4,-30.9,{height:.8}),cloneModel('case_003',6.6,-31.2,{width:.9,rotation:.4}));
  // Wave 3, at the east end of the trunk road. The Trade Depot: a long warehouse where the road ends, the export trailer and a
  // truck at its doors, and crates waiting to be loaded.
  zone('tradedepot');
@@ -375,10 +378,9 @@ function decorate(){
   mill:[['barrel_002',-15.7,6.5,{height:.95}],['bag_001',-10.2,6.4,{height:.8}],['bag_002',-10.8,6.7,{height:.7}],['bucket_001',-7.7,1,{height:.65}],['bush_003',-8.4,8,{width:1.1}],['grass_004',-8.2,8.9,{height:.3}]],
   bakery:[['firewood_003',-14.1,10.5,{width:1.3}],['case_003',-8.1,13.5,{width:.9,rotation:.35}]],
   farmhouse:[['table_001',-13.9,-5.9,{width:1.6}],['chair_001',-15,-6.3,{height:.85,rotation:1.7}],['garden_bed_001',-17.3,-8,{width:1.8,rotation:Math.PI/2}],['garden_bed_001',-17.3,-5.9,{width:1.8,rotation:Math.PI/2}],['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}]],
-  dairy:[['bucket_003',-1.8,-9.1,{height:.65}],['hay_002',1.2,-9.7,{width:1.2}]],
+  dairy:[['bucket_003',-1.8,-9.1,{height:.65}]],
   coop:[['water_001',17.6,-13.4,{width:1.1}]],
   apiary:[['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}]],
-  silo:[['hay_003',6.4,-7.9,{width:1.3,rotation:-.35}]],
   factory:[['case_002',12.6,24.9,{width:1.1,rotation:.15}],['bag_003',13.8,25.1,{height:.82,rotation:-.3}],['cart_004',20.4,25,{width:1.7,rotation:Math.PI/2}],['prop_029',18.6,25.2,{width:.55,rotation:.5}]]
 })){zone(yard);for(const [name,x,z,options] of list){const piece=cloneModel(name,x,z,options);if(yard==='factory')factoryDecor.push(piece);}}
  // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
@@ -414,14 +416,15 @@ function decorate(){
  addExtraProps();
 }
 // Small props from the model pack fill the room between the yards. Spots are taken only where nothing stands: not on a
-// building, road, fence, field or the pond.
+// building, road, fence, field or the pond, and with room around every animal, so nothing seems to sit on its back from up here.
+const ANIMAL=/^(cow|horse|pig|sheep|goat|chicken)_/,FLAT_BLOCKS=/^(road|field)_/;
 function addExtraProps(){
  scene.updateMatrixWorld(true);
  const blocked=[];
  for(const object of scene.children){
   if(object.isLight||object.isCamera||object===scene.getObjectByName('Farm ground'))continue;
-  const box=new THREE.Box3().setFromObject(object);if(box.isEmpty()||box.getSize(new THREE.Vector3()).y<.03)continue;
-  blocked.push(box);
+  const box=new THREE.Box3().setFromObject(object),model=object.userData.model??'';if(box.isEmpty()||box.getSize(new THREE.Vector3()).y<.03&&!FLAT_BLOCKS.test(model))continue;
+  blocked.push(ANIMAL.test(model)?box.expandByScalar(1.2):box);
  }
  const [pondX,pondZ]=placeIn('pond',0,0),pond=[10.4+pondX,10.4+pondZ,24.8+pondX,19.6+pondZ],fields=[-5.6,-3,10.4,33.6];
  const free=(x,z,r)=>!blocked.some(b=>x>b.min.x-r&&x<b.max.x+r&&z>b.min.z-r&&z<b.max.z+r)
@@ -429,7 +432,17 @@ function addExtraProps(){
  const anchors=Object.fromEntries(Object.keys(ANCHORS).map(id=>[id,anchorAt(id)]));
  // The roadside props follow the roads of the layout, along their length.
  const roads=roadRects().slice(0,3).map(r=>r.horizontal?[r.minX+3,(r.minZ+r.maxZ)/2,r.maxX-3,(r.minZ+r.maxZ)/2]:[(r.minX+r.maxX)/2,r.minZ+3,(r.minX+r.maxX)/2,r.maxZ-3]);
- for(const p of scatterProps({anchors,roads,free,rand:seeded(20260921)}))cloneModel(p.name,p.x,p.z,p.options);
+ for(const p of scatterProps({anchors,roads,free,rand:seeded(20260921)}))extraProps.push(cloneModel(p.name,p.x,p.z,p.options));
+}
+// The mountains around the valley come after the props (scene-polish.js, scenery.js): a prop that ended up where a peak now stands
+// is taken away again.
+const extraProps=[];
+function clearPropsFromMountains(){
+ const rock=[];scene.traverse(n=>{if(/^mountain_/.test(n.userData?.model??n.userData?.scenery??''))n.traverse(m=>{if(m.isMesh)rock.push(m);});});
+ if(!rock.length)return;
+ const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0),from=new THREE.Vector3();
+ for(let i=extraProps.length-1;i>=0;i--){const {x,z}=extraProps[i].position;ray.set(from.set(x,80,z),down);
+  if((ray.intersectObjects(rock,false)[0]?.point.y??0)>.25){extraProps[i].removeFromParent();extraProps.splice(i,1);}}
 }
 function createPlots(){
  while(plots.length>state.plots.length){
@@ -905,7 +918,7 @@ async function init(){
   scene.fog=new THREE.Fog(0xe4ecd3,52,140);
   let loaded=0;
   await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);},4)]);
-  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});measureFarm();resize();icons();
+  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});clearPropsFromMountains();measureFarm();resize();icons();
   renderer.domElement.addEventListener('pointermove',e=>{
    if(e.pointerType!=='mouse'||e.buttons){highlight(-1);$('tooltip').hidden=true;return;}
    const target=pointerTarget(e);highlight(target?.id??-1);const tooltip=$('tooltip');

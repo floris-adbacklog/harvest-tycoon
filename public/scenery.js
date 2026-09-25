@@ -2,7 +2,7 @@
 // load is not slower, and everything in it stands still. Around the valley: a belt of firs with soft green hills behind, between the farm's trees and the mountains. Beside the roads: strips of sunflowers. On the farm:
 // chicks and a rooster at the coop, a spotted cow, and the odd tool around the farmhouse and the fields. Grass tufts
 // across the outer meadows, which were bare ground, and at the front (towards the camera) only low things: bushes, young
-// trees, hay and clumps of sunflowers.
+// trees and clumps of sunflowers.
 // Spots are fixed (a seeded generator), so the farm looks the same on every device, and a piece only goes where nothing
 // else stands: not on a building, fence, road, field (all 40 of them) or the pond. Repeated pieces (trees, sunflowers) are
 // drawn as one instanced mesh per model, so a hundred of them cost a handful of draw calls.
@@ -11,8 +11,8 @@ import {seeded} from './farm-props.js';
 import {SPREAD,roadRects,onRoad,placeIn,anchorAt} from './farm-layout.js';
 
 const FIRS=['fir_tree_001','fir_tree_003','fir_tree_004','fir_tree_006','fir_tree_007','fir_tree_010'];
-const FARM_PIECES=['chicken_002','chicken_003','cow_003','toilet_001','firewood_005','cart_003','cart_006','lawn_mower_001','car_005','dray_001','trailer_002','tower_004'];
-const FRONT=['bush_001','bush_002','bush_003','bush_004','tree_002','tree_005','tree_007','tree_008','hay_001','hay_002'];
+const FARM_PIECES=['chicken_002','chicken_003','cow_003','toilet_001','firewood_005','cart_003','cart_006','lawn_mower_001','car_005','dray_001','trailer_002'];
+const FRONT=['bush_001','bush_002','bush_003','bush_004','tree_002','tree_005','tree_007','tree_008'];
 export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','mountain_007','mountain_008','mountain_009','plant_008','grass_001','grass_004','landscape_008','landscape_011',...FARM_PIECES]);
 
 // The same ring as the mountains (scene-polish.js): laid out in screen directions around the home view, sides and back only,
@@ -124,17 +124,17 @@ export function buildScenery({scene,models,mobile=false}){
  }
  for(const [name,list] of Object.entries(tufts))instanced(name,list,{shadow:false});
 
- // 6. The front meadows, towards the camera: only low things there (bushes, young trees, hay, clumps of sunflowers), so
- // nothing hides the farm behind them.
+ // 6. The front meadows, towards the camera: only low things there (bushes, young trees, clumps of sunflowers), so
+ // nothing hides the farm behind them. No hay out here: a bale belongs where a tractor can bring it, by the yards and the roads.
  const front=Object.fromEntries(FRONT.map(n=>[n,[]]));
- for(let i=0,made=0,want=mobile?40:95;i<want*8&&made<want;i++){
+ for(let i=0,made=0,want=mobile?34:80;i<want*8&&made<want;i++){
   const p=ringPoint(200+rand()*150,(21+rand()*24)*RING,(19+rand()*23)*RING),kind=rand();
   if(kind<.12){   // a clump of sunflowers
    if(!free(p.x,p.z,1.2))continue;claim(p.x,p.z,1.2);made++;
    for(let k=0;k<6;k++){const a=k/6*Math.PI*2+rand(),d=.35+rand()*.6;flowers.push([p.x+Math.cos(a)*d,p.z+Math.sin(a)*d,.95+rand()*.45,rand()*Math.PI*2]);}
    continue;
   }
-  const [name,height,r]=kind<.62?[FRONT[Math.floor(rand()*4)],.7+rand()*.9,.9]:kind<.85?[FRONT[4+Math.floor(rand()*4)],2.2+rand()*1.4,1.2]:[FRONT[8+Math.floor(rand()*2)],.9+rand()*.3,.8];
+  const [name,height,r]=kind<.7?[FRONT[Math.floor(rand()*4)],.7+rand()*.9,.9]:[FRONT[4+Math.floor(rand()*4)],2.2+rand()*1.4,1.2];
   if(!free(p.x,p.z,r))continue;claim(p.x,p.z,r);made++;front[name].push([p.x,p.z,height,rand()*Math.PI*2]);
  }
  for(const [name,list] of Object.entries(front))instanced(name,list,{shadow:!name.startsWith('hay')});
@@ -151,7 +151,7 @@ export function buildScenery({scene,models,mobile=false}){
   ['chicken_002',near('coop',-2,-2.4),5,.5,{height:.42,rotation:.6}],
   ['chicken_002',near('coop',-1,-3.4),5,.5,{height:.38,rotation:2.2}],
   ['chicken_003',near('coop',3,-1.6),5,.6,{height:.85,rotation:-.9}],
-  ['cow_003',near('paddock',0,2),6,1,{height:1.25,rotation:1.2}],
+  ['cow_003',near('paddock',0,2),6,1,{height:1.25,rotation:2.4}],
   ['toilet_001',near('farmhouse',-6,-4),7,.9,{height:2.1,rotation:.4}],
   ['firewood_005',near('farmhouse',-4,-5.5),7,.8,{width:1.5,rotation:1.1}],
   ['cart_003',near('farmhouse',4,4),7,.8,{width:1.3,rotation:2.3}],
@@ -159,8 +159,7 @@ export function buildScenery({scene,models,mobile=false}){
   ['car_005',near('farmhouse',6.5,-2.5),9,1.8,{width:3.4,rotation:.9}],
   ['dray_001',near('dairy',-5,-3.5),13,1.3,{width:2.6,rotation:-.5}],
   ['cart_006',near('greenhouse',-3.5,3),7,.8,{width:1.2,rotation:.8}],
-  ['trailer_002',[12.8,9],7,1.7,{width:3,rotation:Math.PI/2}],
-  ['tower_004',near('silo',5,3),15,1.4,{height:4.6,rotation:.3}]
+  ['trailer_002',[12.8,9],7,1.7,{width:3,rotation:Math.PI/2}]
  ]){const spot=nearestFree(from,r,max);if(spot){claim(...spot,r);put(name,...spot,options);}}
  return group;
 }

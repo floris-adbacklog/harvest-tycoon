@@ -16,7 +16,8 @@ export const YARD_THEME=Object.freeze({
  goatshed:'farm',pigfarm:'farm',craftshop:'work',ranch:'farm',valleymarket:'road',
  estateworkshop:'home',tradedepot:'work',grandfair:'road'
 });
-export const PROPS_PER_YARD=4,PROPS_AROUND_YARD=[3.4,8.2],ROAD_STEP=7.5,MEADOW_CLUMPS=26;
+// Two props per yard, one every 14 m or so along a road: enough to make the farm lived in without cluttering it (25 Sep 2026).
+export const PROPS_PER_YARD=2,PROPS_AROUND_YARD=[3.4,8.2],ROAD_STEP=14,MEADOW_CLUMPS=18;
 
 export const seeded=seed=>{let a=seed>>>0;return ()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};};
 const pick=(list,rand)=>list[Math.floor(rand()*list.length)];
