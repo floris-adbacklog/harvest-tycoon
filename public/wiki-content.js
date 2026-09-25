@@ -139,7 +139,7 @@ const BODIES={
   for(const [id,r] of Object.entries(RECIPES))if(r.building!=='factory'&&recipeLevel(id)>buildingLevel(r.building))add(recipeLevel(id),chip(Object.keys(r.output)[0],r.name,'recipe'));
   return section('Quests',facts([
    ['quests','One little goal at a time',`${number(QUESTS.length)} quests, from your first harvest to the Grand Valley Fair. They ask for things like harvesting 12 wheat. When one is done, claim its coins and XP.`],
-   ['trophy','Bigger quests, more XP',`Quests up to ${number(1000)} coins give ${QUEST_XP} XP. Bigger ones give more, up to 250 XP for the biggest, so the long goals are worth it without making you level up much faster.`],
+   ['trophy','Bigger quests, more XP',`Quests up to ${number(1000)} coins give ${QUEST_XP} XP. Bigger ones give more, up to 250 XP for the biggest.`],
    ['xp','XP and levels',`Almost everything you do gives XP. Each new level opens new crops, buildings and things to do, and the journal shows your level rewards.`]
   ]))+section('What opens when',table(['Level','What opens'],[...opens].sort((a,b)=>a[0]-b[0]).map(([n,list])=>h.row(n,[h.lvl(n),`<span class="wiki-opens">${list.join('')}</span>`])),'wiki-opens-table')+`<p>More about each one in ${h.link('crops')} and ${h.link('buildings')}.</p>`);
  },
