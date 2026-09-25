@@ -49,6 +49,8 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   reportPlayer:(player,reason=null)=>rpc('chat_report_player',{p_player:player,p_reason:reason}),
   playerStatus:player=>rpc('chat_player_status',{p_player:player}),
   setPrivate:on=>rpc('chat_set_private',{p_on:on}),
+  // The admin only: a notice in Notifications for every in-game purchase (supabase/purchase-alerts.sql).
+  setPurchaseAlerts:on=>rpc('chat_set_purchase_alerts',{p_on:on}),
   // Farmers' pictures (the same public table as the leaderboard), for the staff dashboard's lists.
   async faces(ids){
    const unique=[...new Set(ids.filter(Boolean))];if(!unique.length)return new Map();

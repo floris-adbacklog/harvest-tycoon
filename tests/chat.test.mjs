@@ -200,3 +200,19 @@ test('the staff can edit a message: same rules as sending, live for everyone, ma
  assert.match(ui,/\(\$\{m\.edited_by_moderator\?'edited by a moderator':'edited'\}\)/);
  assert.match(ui,/if\(event\.type==='edited'\)/);assert.match(ui,/messages=withEdit\(messages,await chat\.editMessage\(m\.id,body\)\);/);
 });
+
+// 25 Sep 2026: the admin can have a notice in Notifications for every in-game purchase, and turn it off in Settings, Chat.
+test('in-game purchases: a notice for the admin when a purchase is credited, with a switch only the admin sees',()=>{
+ const sql=read('supabase/purchase-alerts.sql');
+ assert.match(sql,/create trigger harvest_purchase_alert after update of status on public\.harvest_purchases\n for each row when \(old\.status='pending' and new\.status in \('credited','test_paid'\)\)/,'once, when Stripe has been paid');
+ assert.match(sql,/where public\.chat_staff_role\(u\.id\)='admin'\n  and not exists\(select 1 from public\.chat_settings c where c\.player_id=u\.id and c\.purchase_alerts_off\)/,'the admin only, unless turned off');
+ assert.match(sql,/'Test purchase \(no money\): '/,'a test payment says so');
+ assert.match(sql,/if public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'/,'nobody else may flip the switch');
+ assert.match(sql,/''purchaseAlerts'',case when public\.chat_staff_role\(me\)=''admin'' then/,'the overview tells only the admin');
+ const html=read('public/farm.html');
+ assert.match(html,/<label class="notify-row notify-row-art" for="chat-purchases" id="chat-purchases-row" hidden>/,'hidden until the chat says you are the admin');
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/const admin=typeof overview\.purchaseAlerts==='boolean';if\(purchaseRow\)purchaseRow\.hidden=!admin;/);
+ assert.match(ui,/purchase:'In-game purchase'/);assert.match(ui,/n\.kind==='purchase'\?'diamonds'/);
+ assert.match(read('src/chat-client.js'),/setPurchaseAlerts:on=>rpc\('chat_set_purchase_alerts',\{p_on:on\}\)/);
+});

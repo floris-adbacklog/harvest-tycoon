@@ -23,7 +23,7 @@ export const pillText=count=>count>9?'9+':String(count);
 // The header button counts news and notes, your family and your private messages. The global chat only lights its own tab:
 // with the whole valley talking, a number on the button would never go away.
 export const headerCount=unread=>(unread?.notices??0)+(unread?.family??0)+(unread?.dm??0);
-const NOTICES={news:'News',moderation:'From the moderators',gift:'A gift for you',donation:'A gift for you'};
+const NOTICES={news:'News',moderation:'From the moderators',gift:'A gift for you',donation:'A gift for you',purchase:'In-game purchase'};
 const TITLES={notices:'Notifications',global:'Global chat',private:'Private chats'};
 const EMPTY={
  notices:'No news yet. New features and events show up here.',
@@ -126,7 +126,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const AMOUNT_ART={diamonds:'diamonds',coins:'coins',XP:'xp'};
  const withAmounts=text=>esc(text).replace(/\b(\d{1,3}(?:,\d{3})+|\d+) (diamonds|coins|XP)\b/g,(all,amount,what)=>`<span class="chat-amount">${art(AMOUNT_ART[what])}<b>${amount}</b> ${what}</span>`);
  function noticeRow(n,fresh){
-  const picture=n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':'bell');
+  const picture=n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':n.kind==='purchase'?'diamonds':'bell');
   return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text">${n.kind==='gift'||n.kind==='donation'?withAmounts(n.body):esc(n.body)}</p></div></li>`;
  }
  function foundRow(p){
@@ -364,9 +364,20 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  }
  profiles?.setChatExtras?.(decorateProfile);
 
- // Settings, Chat: private messages on or off (the section shows once the chat has answered).
+ // Settings, Chat: private messages on or off (the section shows once the chat has answered), and for the admin only a notice for
+ // every in-game purchase (supabase/purchase-alerts.sql: the overview says purchaseAlerts true or false to the admin, null to anyone else).
  const privateSwitch=doc.getElementById('chat-private'),privateStatus=doc.getElementById('chat-settings-status');let privateBusy=false;
- function settings(){const section=doc.getElementById('chat-settings');if(!section||!privateSwitch||!overview)return;section.hidden=false;if(!privateBusy)privateSwitch.checked=overview.privateOn!==false;}
+ const purchaseRow=doc.getElementById('chat-purchases-row'),purchaseSwitch=doc.getElementById('chat-purchases');let purchaseBusy=false;
+ function settings(){
+  const section=doc.getElementById('chat-settings');if(!section||!privateSwitch||!overview)return;section.hidden=false;if(!privateBusy)privateSwitch.checked=overview.privateOn!==false;
+  const admin=typeof overview.purchaseAlerts==='boolean';if(purchaseRow)purchaseRow.hidden=!admin;if(admin&&purchaseSwitch&&!purchaseBusy)purchaseSwitch.checked=overview.purchaseAlerts;
+ }
+ purchaseSwitch?.addEventListener('change',async()=>{
+  const on=purchaseSwitch.checked;purchaseBusy=true;purchaseSwitch.disabled=true;if(privateStatus)privateStatus.textContent='Saving…';
+  try{await chat.setPurchaseAlerts(on);overview.purchaseAlerts=on;if(privateStatus)privateStatus.textContent=on?'You get a notice for every in-game purchase.':'No notices for in-game purchases.';}
+  catch(error){purchaseSwitch.checked=!on;if(privateStatus)privateStatus.textContent=error.message;}
+  finally{purchaseBusy=false;purchaseSwitch.disabled=false;}
+ });
  privateSwitch?.addEventListener('change',async()=>{
   const on=privateSwitch.checked;privateBusy=true;privateSwitch.disabled=true;if(privateStatus)privateStatus.textContent='Saving…';
   try{await chat.setPrivate(on);overview.privateOn=on;statusCache.clear();if(privateStatus)privateStatus.textContent=on?'Private messages are on.':'Private messages are off. Nobody can write to you privately.';if(dialog.open)paint();}

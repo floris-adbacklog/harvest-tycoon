@@ -23,6 +23,6 @@ test('Settings invites a made-up name to become your own, and the name dialog th
 test('sound and reminders use switches, and the sound part is a card of its own',()=>{
  const html=read('public/farm.html');
  assert.match(html,/<section id="sound-settings" class="settings-section"/);
- assert.equal((html.match(/type="checkbox" role="switch"/g)??[]).length,8,'sound, private messages (chat), five notification switches and full screen');
+ assert.equal((html.match(/type="checkbox" role="switch"/g)??[]).length,9,'sound, private messages (chat), in-game purchases (the admin only), five notification switches and full screen');
  assert.ok(!html.includes('Settle into a gentle melody'),'no intro sentence');
 });
