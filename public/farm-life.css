@@ -23,3 +23,38 @@
 .activity-dialog-icon>.game-art{display:block;width:100%;height:100%;object-fit:contain;margin:0;flex:none}
 .round-stop{width:36px;height:36px;flex-basis:36px}
 .round-stop>.game-art{display:block;width:28px;height:28px;object-fit:contain;margin:0;flex:none}
+
+/* A helping hand, clearer: hub cards with the reward, one state pill (Ready / Working with a bar / Back in …) and the round's
+   checkmark on the picture; the job screen with the round strip on top, name-only tiles, three dots, and a result card with
+   the way to the next stop. The line icons on the tiles stay as they are. */
+#activities-hub-grid .activity-stop{align-items:center}
+.activity-stop-art{position:relative;display:grid;place-items:center;flex:none}
+.activity-stop-art>.round-tick{position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;padding:3px;border-radius:50%;background:#3f6b4a;color:#fff;box-shadow:0 0 0 2px #fffdf5}
+.activity-chips{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0}
+.activity-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:#f3ecdf;color:#5d5641;font-size:12px;font-weight:700;white-space:nowrap}
+.activity-chip .game-art{width:16px;height:16px}
+.activity-chip.is-bonus{background:#fff1c9;color:#7a5510}
+#activities-hub-grid .building-status.available{background:#e3efd6;color:#3f6b2c}
+#activities-hub-grid .building-status.working{background:#fff1d0;color:#7a5a17}
+.activity-stop-bar{display:block;width:100%;max-width:140px;height:5px;margin-top:6px;border-radius:99px;background:#ece3d4;overflow:hidden}
+.activity-stop-bar>i{display:block;height:100%;border-radius:inherit;background:#d9a23b}
+.activity-round.is-compact{margin:0 0 14px;padding:10px 12px}
+.activity-round.is-compact .activity-round-heading{margin-bottom:6px}
+.activity-job-progress{justify-content:flex-start;gap:10px}
+.activity-dots{display:inline-flex;gap:5px}
+.activity-dots>i{width:10px;height:10px;border-radius:50%;background:#e6dccb}
+.activity-dots>i.is-done{background:#3f6b4a}
+.activity-tile{min-height:96px}
+.activity-tile.needs-care{animation:activity-call 2.2s ease-in-out infinite}
+.activity-tile.done{background:#e8f1df;border-color:#b9d3a3;color:#3f6b2c}
+@keyframes activity-call{0%,100%{box-shadow:0 0 0 0 #e2c88a00}50%{box-shadow:0 0 0 4px #e2c88a66}}
+.activity-result{display:grid;justify-items:center;gap:8px;padding:18px 14px;border-radius:16px;background:linear-gradient(#f1f7ea,#fffdf5);border:1px solid #cfe2bd;text-align:center}
+.activity-result>strong{font:700 22px/1.2 'Outfit',sans-serif;color:#2f5a33}
+.activity-result.is-round{background:linear-gradient(#fff4d6,#fffdf5);border-color:#e7c77a}
+.activity-result.is-round>strong{color:#7a5510}
+.activity-nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin-top:14px}
+.activity-nav .primary-button{flex:1;justify-content:center;min-width:180px}
+.activity-wait{margin:6px 0 0;padding:14px;border-radius:14px;background:#f6f0e6;color:#5d5641;font-size:14px;text-align:center}
+@media(prefers-reduced-motion:reduce){.activity-tile.needs-care{animation:none}}
+.activity-stop-art>.game-art{display:block;width:72px;height:72px;object-fit:contain}
+@media(max-width:600px){.activity-stop-art>.game-art{width:54px;height:54px}}

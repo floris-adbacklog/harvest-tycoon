@@ -47,3 +47,19 @@ test('refresh() and tick() keep the hub live too, not just the station dialog',(
  assert.match(ui,/function refresh\(\)\{if\(dialog\.open&&!busy\)render\(\);else if\(hubDialog\.open\)renderHub\(\);\}/);
  assert.match(ui,/if\(hubDialog\.open&&signature\(\)!==lastSignature\)renderHub\(\);/);
 });
+test('clearer helping hand: rewards and state on the hub cards, a job starts on opening, and a finished job leads to the next stop',()=>{
+ const ui=read('public/activities-ui.js'),html=read('public/farm.html');
+ assert.match(ui,/<span class="activity-chips">\$\{rewardChips\(s\)\}<\/span><span class="building-status \$\{status\.kind\}">/,'each hub card shows what the stop gives, then one state pill');
+ assert.match(ui,/if\(s\.remaining\)return \{text:`Back in \$\{formatDuration\(s\.remaining\)\}`,kind:'locked'\};/);
+ assert.match(ui,/class="activity-stop-bar"/,'a job in progress shows a small bar');
+ assert.match(ui,/if\(!s\.job&&!s\.remaining\)void act\(\{type:'activity_start',station:id\}\);/,'opening a ready stop starts it: no separate Start step');
+ assert.match(ui,/function nextStop\(from\)\{/);
+ assert.match(ui,/data-activity-next="\$\{next\.station\}">Next stop: \$\{next\.name\} ›<\/button>/);
+ assert.match(ui,/data-activity-hub>‹ All stops<\/button>/);
+ assert.match(ui,/result\.roundComplete\?'Round complete!':'Job complete!'/);
+ assert.doesNotMatch(ui,/Leave as it is|Your progress is kept if you leave/,'the instruction is said once, at the top');
+ const job=html.slice(html.indexOf('id="activities-dialog"'),html.indexOf('</dialog>',html.indexOf('id="activities-dialog"')));
+ assert.ok(job.indexOf('id="activity-round"')<job.indexOf('id="activity-work"'),'the round strip sits above the job');
+ const hub=html.slice(html.indexOf('id="activities-hub-dialog"'),html.indexOf('</dialog>',html.indexOf('id="activities-hub-dialog"')));
+ assert.match(hub,/aria-label="Close"><i data-lucide="x"><\/i><\/button>/,'a normal close button');
+});
