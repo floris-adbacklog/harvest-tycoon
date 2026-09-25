@@ -9,7 +9,7 @@ function level(s,n){s.xp=xpForLevel(n);s.xpOffset=0;}
 function produce(s,recipe,t=now){act(s,{type:'produce',recipe},t);const key=RECIPES[recipe].building,job=productionJobs(s.buildings[key]).at(-1);act(s,{type:'collect',building:key,jobId:job.id},job.readyAt);return job.readyAt;}
 function buyAvailable(s,t=now){for(const key of Object.keys(BUILDINGS).sort((a,b)=>BUILDING_LEVELS[a]-BUILDING_LEVELS[b]))if(buildingCost(s,key)&&buildingEligible(s,key)&&!buildingUnlocked(s,key))act(s,{type:'construct',building:key},t);}
 test('new farm starts with two crops, one production building and only a daily gift',()=>{
- const s=createFarm(now);assert.equal(s.progression.version,4);
+ const s=createFarm(now);assert.equal(s.progression.version,5);
  assert.deepEqual(Object.keys(CROPS).filter(k=>cropUnlocked(s,k)),['corn','wheat']);
  assert.deepEqual(Object.keys(BUILDINGS).filter(k=>buildingUnlocked(s,k)),['farmhouse','coop']);
  assert.ok(s.plots.every(p=>!p.crop||['wheat','corn'].includes(p.crop)));
@@ -38,7 +38,7 @@ test('buying through the feed, milk, grain and bread chain uses only earlier ing
  level(s,6);act(s,{type:'construct',building:'windmill'},now);s.inventory.wheat=8;s.inventory.barley=4;produce(s,'grainmeal');produce(s,'flour');
  level(s,8);act(s,{type:'construct',building:'bakery'},now);produce(s,'bread');assert.equal(s.inventory.bread,2);
  level(s,9);assert.ok(cropUnlocked(s,'cabbage'));assert.ok(recipeUnlocked(s,'cheese'));
- const withoutBread=createFarm(now);level(withoutBread,10);assert.ok(cropUnlocked(withoutBread,'cabbage'));assert.ok(buildingEligible(withoutBread,'packing'));
+ const withoutBread=createFarm(now);level(withoutBread,10);assert.ok(cropUnlocked(withoutBread,'cabbage'));assert.ok(!buildingEligible(withoutBread,'packing'),'the Packing shed waits for level 11');level(withoutBread,11);assert.ok(buildingEligible(withoutBread,'packing'));
 });
 test('construction enforces ingredient suppliers, purchase price and one-time ownership',()=>{
  const s=createFarm(now);level(s,8);s.coins=5000;const coins=s.coins;
@@ -64,7 +64,7 @@ test('every level has renewable play, every new building has a viable recipe; th
    assert.equal(cropCount,12);for(const key of Object.keys(BUILDINGS))if(early(key)&&key!=='factory')assert.ok(buildingUnlocked(s,key),key);
    for(const id of Object.keys(RECIPES))if(RECIPES[id].building!=='factory'&&earlyRecipe(id))assert.ok(recipeUnlocked(s,id),id);
    for(const key of Object.keys(FEATURE_NAMES))if(FEATURE_LEVELS[key]<=25)assert.ok(featureUnlocked(s,key),key);else assert.ok(!featureUnlocked(s,key),`${key} waits for its level`);
-   assert.ok(outputs.has('harvesthamper')&&outputs.has('pickledbeans'));
+   assert.ok(outputs.has('pickledbeans')&&outputs.has('berrysmoothie')&&!outputs.has('harvesthamper'),'the harvest hamper waits for level 35');
   }
  }
  // By 90 every expansion is fully open: the Valley Market, the Ranch, the Estate Workshop, the Trade Depot and the fair included.
@@ -97,7 +97,8 @@ test('new delivery tiers append without changing paid, replaced or existing orde
  const first=structuredClone(dailyOrders(s,now)[0]);assert.equal(s.daily.orderBoard.length,1);s.daily.orders=[0];s.daily.orderRevisions[0]=1;
  level(s,8);buyAvailable(s);dailyOrders(s,now);assert.equal(s.daily.orderBoard.length,2);
  assert.deepEqual(s.daily.orderBoard[0].input,first.input);assert.equal(s.daily.orderBoard[0].coins,first.coins);assert.deepEqual(s.daily.orders,[0]);assert.equal(s.daily.orderRevisions[0],1);
- level(s,12);buyAvailable(s);const all=dailyOrders(s,now);assert.equal(all.length,3);assert.equal(all[2].tier,'commission');
+ level(s,15);buyAvailable(s);assert.equal(dailyOrders(s,now).length,2,'commission orders wait for level 16');
+ level(s,16);buyAvailable(s);const all=dailyOrders(s,now);assert.equal(all.length,3);assert.equal(all[2].tier,'commission');
  const frozen=structuredClone(s.daily);normalizeFarm(s,now);dailyOrders(s,now);assert.deepEqual(s.daily,frozen);
 });
 test('the family order does not depend on level: anything can be asked, and the unlock level says when a farm can make it',()=>{

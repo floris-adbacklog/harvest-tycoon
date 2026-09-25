@@ -19,7 +19,7 @@ test('A helping hand opens at level 8, with all four stops at once',()=>{
 });
 
 test('farm chores open at level 10 for a new farm',()=>{
- assert.equal(FEATURE_LEVELS.chores,10);assert.equal(createFarm(now).progression.version,4);
+ assert.equal(FEATURE_LEVELS.chores,10);assert.equal(createFarm(now).progression.version,5);
  const s=at(9);assert.equal(featureUnlocked(s,'chores'),false);
  assert.throws(()=>act(s,{type:'chore',id:'weeds'},now,()=>0),/Reach level 10 to unlock Farm chores/);
  assert.equal(availableDaily(s,quest('Chore time')),false);
@@ -32,7 +32,7 @@ test('a farm from before keeps what it already had: chores from level 4, hands-o
   for(const version of [2,3]){
    const old=beforeThisChange(level,version);
    assert.equal(featureUnlocked(old,'chores'),chores,`level ${level} v${version} chores`);assert.equal(featureUnlocked(old,'activities'),jobs,`level ${level} v${version} jobs`);
-   assert.equal(old.progression.version,4);
+   assert.equal(old.progression.version,5,'and then the later spread of unlocks (version 5)');
    const again=structuredClone(old);normalizeFarm(again,now);assert.deepEqual(again,old,'migrating twice changes nothing');
   }
  }
