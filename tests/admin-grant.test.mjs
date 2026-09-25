@@ -180,6 +180,6 @@ test('a waiting gift is picked up and cleared on the farmer\'s own next load, al
  const code=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');
  const load=code.slice(code.indexOf("body.operation==='load'"),code.indexOf("body.operation==='load'")+4500);
  assert.match(load,/let gift=state\.pendingGift\?\?null;if\(gift\)delete state\.pendingGift;/,'read once, then removed from the state that gets committed');
- assert.match(load,/if\(welcome\|\|levelReward\.levels\.length\|\|chapterReward\.chapters\.length\|\|gift\|\|inviteReward\|\|friends\.length\)\{/,'a waiting gift alone is enough to trigger the commit, like a level or chapter reward (or an invite reward)');
+ assert.match(load,/if\(welcome\|\|levelReward\.levels\.length\|\|chapterReward\.chapters\.length\|\|gift\|\|inviteReward\|\|friends\.length\|\|emailBonusPaid\)\{/,'a waiting gift alone is enough to trigger the commit, like a level or chapter reward (or an invite reward)');
  assert.match(load,/return reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins\},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck\(state\),revision:row\.revision\+1,serverNow:now\}\);/);
 });
