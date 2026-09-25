@@ -24,12 +24,12 @@ test('Starter Pack verifies €2.99, 300 diamonds and 10000 coins against exact 
  assert.throws(()=>validatePaidSession(s,{...p,coins:0},items));
  assert.throws(()=>validatePaidSession(s,p,{...items,data:[{quantity:1,price:{id:PAYMENT_PACKS['1250'].price}}]}));
 });
-test('seed-box sorting starts at 35%, keeps practice and caps at 60% after 13 attempts',()=>{
- const s=createFarm(start);s.chorePractice={weeds:20,troughs:20,sorting:0};
+test('seed-box sorting starts at 35%, keeps practice and caps at 60% after 7 attempts',()=>{
+ const s=createFarm(start);s.chorePractice={weeds:20,troughs:20,sorting:0};const rest=1200000;
  assert.equal(choreStatus(s,'sorting',start).chance,35);
- for(let n=0;n<13;n++)applyFarmAction(s,{type:'chore',id:'sorting'},start+n*480000,()=>0);
- assert.equal(choreStatus(s,'sorting',start+13*480000).chance,60);
- assert.equal(choreStatus(s,'fences',start+13*480000).locked,false);
+ for(let n=0;n<7;n++)applyFarmAction(s,{type:'chore',id:'sorting'},start+n*rest,()=>0);
+ assert.equal(choreStatus(s,'sorting',start+7*rest).chance,60);
+ assert.equal(choreStatus(s,'fences',start+7*rest).locked,false);
 });
 
 // ---- The Starter Pack opens at level 14 (where diamond boosts unlock) and is then there for 7 days ----

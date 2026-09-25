@@ -158,7 +158,7 @@ const BODIES={
   return section('Tractor',`<p>${h.lvl(FEATURE_LEVELS.tractor)} The tractor plants, waters or harvests all your fields in one go. Planting costs a little fuel on top of the seeds, and afterwards the tractor needs a short rest.</p>`)
   +section('Silo research',`<p>${h.lvl(FEATURE_LEVELS.silo)} Better seeds: crops grow faster and seeds cost less. See ${h.link('crops')}.</p>`)
   +section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Passive income: your stall earns coins by itself. Collect them now and then.</p>`)
-  +section('Farm chores',`<p>${h.lvl(FEATURE_LEVELS.chores)} Small jobs for extra coins and XP, and sometimes a few crops: ${chores.join(', ')}. After a chore it takes a little while before you can do it again.</p>`)
+  +section('Farm chores',`<p>${h.lvl(FEATURE_LEVELS.chores)} Small jobs for extra coins and XP, and sometimes a few crops: ${chores.join(', ')}. After a chore it rests before you can do it again: from ${wikiTime(Math.min(...Object.values(CHORES).map(c=>c.cooldown)))} for the quickest to ${wikiTime(Math.max(...Object.values(CHORES).map(c=>c.cooldown)))} for the biggest, which pays the most XP.</p>`)
   +section('A helping hand',`<p>${h.lvl(FEATURE_LEVELS.activities)} Help out at the Greenhouse, the Apiary, the paddock and the workshop for coins, goods and XP. Visit all four stops for a bonus.</p>`);
  },
  estate(h){

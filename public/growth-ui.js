@@ -1,4 +1,4 @@
-import {cropUnlocked,featureUnlocked,featureUnlockHint,CROPS,ITEMS,CHORES,choreRewards,choreStatus,CHAPTER_DIAMONDS,PROJECTS,MASTERY_TIERS,masteryStatus,stallStatus,stallNotice,currentProject,formatDuration,levelOf,CROP_LEVELS,guidedFarm} from './farm-state.js';
+import {cropUnlocked,featureUnlocked,featureUnlockHint,CROPS,ITEMS,CHORES,CHORE_PRACTICE_STEP,choreRewards,choreStatus,CHAPTER_DIAMONDS,PROJECTS,MASTERY_TIERS,masteryStatus,stallStatus,stallNotice,currentProject,formatDuration,levelOf,CROP_LEVELS,guidedFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -47,7 +47,7 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
   $('stall-upgrade').onclick=()=>act({type:'stall_upgrade'},r=>`Your farm stall is now level ${r.level}.`);
  }
  function renderChores(){
-  const mastery=c=>Math.ceil((c.maxChance-c.baseChance)/2);
+  const mastery=c=>Math.ceil((c.maxChance-c.baseChance)/CHORE_PRACTICE_STEP);
   $('estate-content').innerHTML=`${lead('shovel','Coins and XP every time, sometimes extra goods.')}<div class="chore-list">${Object.entries(CHORES).map(([key,c])=>{
    const status=choreStatus(state,key,farmNow()),remaining=status.remaining,base=choreRewards(c),item=c.bonus.item;
    const foot=status.locked?`Master ${CHORES[c.requires].name} first`:status.mastered?`Mastered · every ${formatDuration(c.cooldown)}`:`${Math.min(mastery(c),status.attempts)} / ${mastery(c)} to mastery · every ${formatDuration(c.cooldown)}`;

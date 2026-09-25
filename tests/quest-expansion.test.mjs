@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction as act,QUESTS,DAILY_POOLS,ORDER_POOL,ITEMS,DAY_MS,utcDay,dailyTasks,dailyOrders,xpForLevel,dayNumber,marketValue,COMMISSION_POOL,PRODUCTS} from '../game/farm-state.js';
+import {CHORES,normalizeFarm,applyFarmAction as act,QUESTS,DAILY_POOLS,ORDER_POOL,ITEMS,DAY_MS,utcDay,dailyTasks,dailyOrders,xpForLevel,dayNumber,marketValue,COMMISSION_POOL,PRODUCTS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,18,12);
 test('new quests append to old IDs and keep beginner and claimed progress',()=>{
  const s=createFarm(now);s.version=9;s.claimed=[0,31,40];s.onboarding.completed=10;s.onboarding.rewardClaimed=true;
@@ -50,7 +50,7 @@ test('daily rotation covers accessible orders without locked chores or parallel 
 });
 test('new progress only counts accepted actions; all chores count, ready queues do not',()=>{
  const s=createFarm(now);act(s,{type:'chore',id:'weeds'},now,()=>.99);assert.equal(s.stats.chore_weeds,1);
- act(s,{type:'chore',id:'weeds'},now+60000,()=>0);assert.equal(s.stats.chore_weeds,2);
+ act(s,{type:'chore',id:'weeds'},now+CHORES.weeds.cooldown,()=>0);assert.equal(s.stats.chore_weeds,2);
  s.buildings.mill.level=2;s.inventory.corn=20;
  act(s,{type:'produce',recipe:'feed'},now);act(s,{type:'produce',recipe:'feed'},now+1);assert.equal(s.stats.parallel_batches,1);
  assert.throws(()=>act(s,{type:'produce',recipe:'feed'},now+2),/slots/);assert.equal(s.stats.parallel_batches,1);

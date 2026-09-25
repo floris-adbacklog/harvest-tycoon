@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {xpForLevel,normalizeFarm,applyFarmAction as act,levelOf,levelProgress,CROPS,RECIPES,recipeDuration,PROJECTS,currentProject,stallStatus,masteryStatus,DAY_MS} from '../game/farm-state.js';
+import {CHORES,levelReward,xpForLevel,normalizeFarm,applyFarmAction as act,levelOf,levelProgress,CROPS,RECIPES,recipeDuration,PROJECTS,currentProject,stallStatus,masteryStatus,DAY_MS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12),hour=3600000;
+// Chores pay enough XP to level up a young farm; level-ups pay their own coins and diamonds on top.
+const levelGain=(from,to,key)=>{let sum=0;for(let l=from+1;l<=to;l++)sum+=levelReward(l)[key];return sum;};
 test('old saves preserve coins, inventory, levels, crop and job deadlines',()=>{
  const s=createFarm(now);s.version=3;s.xp=2017;s.coins=8123;s.inventory.wheat=67;s.buildings.mill.job={recipe:'flour',startedAt:now-10000,readyAt:now+5000};delete s.mastery;delete s.stall;delete s.estate;delete s.xpOffset;
  const original=structuredClone(s);normalizeFarm(s,now);
@@ -26,7 +28,7 @@ test('passive earnings accrue only once, cap offline time and do not retroactive
 });
 test('chores remain repeatable but do not pay twice during cooldown',()=>{
  const s=createFarm(now);act(s,{type:'chore',id:'weeds'},now,()=>0);const balance=s.coins;assert.throws(()=>act(s,{type:'chore',id:'weeds'},now),/returns in/);assert.equal(s.coins,balance);
- const wheat=s.inventory.wheat;act(s,{type:'chore',id:'weeds'},now+60000,()=>0);assert.equal(s.stats.chores,2);assert.equal(s.coins,balance+5);assert.equal(s.inventory.wheat,wheat+2,'the bonus is goods, not coins');
+ const wheat=s.inventory.wheat,level=levelOf(s);act(s,{type:'chore',id:'weeds'},now+CHORES.weeds.cooldown,()=>0);assert.equal(s.stats.chores,2);assert.equal(s.coins,balance+27+levelGain(level,levelOf(s),'coins'));assert.equal(s.inventory.wheat,wheat+2,'the bonus is goods, not coins');
  assert.throws(()=>act(s,{type:'chore',id:'constructor'},now),/Choose/);
 });
 test('mastery counts field harvests, claims once and old crop counts receive credit',()=>{

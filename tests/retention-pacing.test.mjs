@@ -7,10 +7,11 @@ test('the beginner boost eases evenly from 80% to zero over the first day, never
  let previous=0;for(let h=0;h<=26;h++){const duration=cropDuration(s,'corn',false,start+h*H);assert(duration>=previous);previous=duration;}
  assert.equal(s.plots[0].readyAt,ready);assert(Math.abs(rookieBoost(s,start+H-1)-rookieBoost(s,start+H+1))<.000001);
 });
-test('every chore pays coins and XP; the bonus adds a few goods instead of more coins, worth no more than the full old reward',()=>{
+test('every chore pays coins and its full XP; the bonus adds a few goods instead of more coins, worth no more than the full old reward',()=>{
  for(const c of Object.values(CHORES))for(let chance=c.baseChance;chance<=c.maxChance;chance+=2){
   const base=choreRewards(c),bonus=choreRewards(c,true);
-  for(const key of ['coins','xp']){assert(base[key]>=1);assert.equal(bonus[key],base[key],'the bonus never adds coins or XP');assert(base[key]<=c[key]*chance/100+1e-9);}
+  assert.equal(base.xp,c.xp,'XP is paid in full every time');assert.equal(bonus.xp,base.xp,'the bonus never adds XP');
+  assert(base.coins>=1);assert.equal(bonus.coins,base.coins,'the bonus never adds coins');assert(base.coins<=c.coins*chance/100+1e-9);
   assert.deepEqual(base.items,{});assert.deepEqual(bonus.items,{[c.bonus.item]:c.bonus.count});
   assert(ITEMS[c.bonus.item].sell*c.bonus.count<=c.coins,'a lucky find stays below what a full old success paid');
  }
