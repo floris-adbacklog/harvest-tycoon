@@ -167,7 +167,8 @@ test('the VIP mark follows the farmer as they are now, also on messages from bef
 test('events: a trophy only for a real finisher; every goal done but not qualified says so, with what is missing and the coming reward',async()=>{
  const ui=read('public/live-events-ui.js');
  assert.match(ui,/<span class="event-rank">\$\{r\.podium\?art\(MEDALS\[r\.rank-1\]\):r\.rank\}<\/span>/);
- assert.match(ui,/r\.progress>=100\?'All goals done · qualifying'/);
+ assert.match(ui,/r\.progress>=100\?\(final\?'All goals done, not qualified':'All goals done · qualifying'\)/,'after the event nobody is still qualifying');
+ assert.match(ui,/r\.progress>=100\?\(final\?'':soon\(r\)\)/,'and a final standing shows no Qualifying chip or coming prize');
  const {qualifyHint}=await import('../public/live-events-ui.js');
  const t=Date.parse('2026-09-24T20:00:00Z');
  assert.equal(qualifyHint({actions:5,joined_at:'2026-09-24T19:54:00Z'},t),'After about 4 min, your next farm action qualifies you.');

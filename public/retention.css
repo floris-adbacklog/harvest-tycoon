@@ -143,7 +143,7 @@
 .event-standing .player-avatar-thumb{display:block;width:40px;height:40px}
 .event-standing>div{min-width:0}
 .event-standing strong{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.event-standing-reward{display:grid;grid-template-columns:minmax(0,1fr) 30px;align-items:center;justify-items:end;column-gap:6px}
+.event-standing-reward{display:grid;grid-template-columns:minmax(0,1fr) 40px;align-items:center;justify-items:end;column-gap:6px}
 .event-standing-reward b{display:inline-flex;align-items:center;gap:4px;color:#806322;font-size:14px;white-space:nowrap}
 .event-standing-reward .game-art{width:18px;height:18px}
 .event-mini{grid-column:1/-1;width:100%;height:7px;accent-color:#a88a5c}
