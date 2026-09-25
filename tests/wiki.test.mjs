@@ -78,3 +78,10 @@ test('topic pages have a coloured header and a jump bar; phones get cards; the h
  assert.match(css,/\.wiki-dual \.wiki-table-wrap\{display:none\}\.wiki-dual \.wiki-cards\{display:grid\}/);
  assert.match(css,/\.wiki-jump\{position:sticky;top:var\(--wiki-sticky,0px\)/);
 });
+
+test('the wiki states the current rules: the Starter Pack window and the day-long beginner boost',async()=>{
+ const {STARTER_WINDOW}=await import('../game/payments.js');const {STARTER_DAYS}=await import('../public/wiki-content.js');
+ assert.equal(STARTER_DAYS*24*60*60*1000,STARTER_WINDOW);
+ assert.match(wikiArticle('diamonds').html,/there is also a Starter Pack for 7 days\./);
+ assert.match(wikiArticle('getting-started').html,/eases evenly back to normal over your first 24 hours\./);
+});

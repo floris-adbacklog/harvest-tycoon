@@ -1,4 +1,4 @@
-import {CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,DAILY_REWARDS,DAILY_DIAMONDS,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_MS,ROOKIE_TIMER_BOOST} from './farm-state.js';
+import {CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,DAILY_REWARDS,DAILY_DIAMONDS,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST} from './farm-state.js';
 import {art} from './visual-icons.js';
 import {EVENTS_LEVEL} from './live-events-ui.js';
 
@@ -21,6 +21,8 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'account',title:'Account and settings',art:'settings',blurb:'Your account, settings, invites and privacy.',keywords:'account password settings avatar sound reminders invite delete privacy app'}
 ]);
 const TOPIC=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,t]));
+// How long the Starter Pack is open (game/payments.js STARTER_WINDOW; the wiki test keeps the two equal).
+export const STARTER_DAYS=7;
 // The home page in three groups; "Getting started" leads as the one to read first.
 export const WIKI_GROUPS=Object.freeze([
  {title:'Start here',ids:['getting-started','crops','buildings']},
@@ -67,7 +69,7 @@ const BODIES={
   return section('The whole game in four steps',`<ol class="wiki-loop">${loop}</ol><p>Plant crops, harvest them, turn them into goods in your buildings and sell them at the ${h.link('market')}. Everything else helps your farm grow.</p>`)
   +section('Your first minutes',facts([
    ['quests','Beginner guide',`Ten small steps that show you the farm. After all ten you get ${BEGINNER_REWARD} diamonds.`],
-   ['boost','Rookie boost',`For the first ${Math.round(ROOKIE_MS/60000)} minutes after you create your account, waiting times are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter.`],
+   ['boost','Beginner boost',`When you create your account, waiting times are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter. The boost eases evenly back to normal over your first ${Math.round(ROOKIE_BOOST_MS/3600000)} hours.`],
    ['gift','A gift every day',`Come back every day for coins and diamonds. See ${h.link('daily')}.`]
   ]))
   +section('Moving around',facts([
@@ -182,7 +184,7 @@ const BODIES={
   +section('Finish now',`<p>Finish a growing field for ${SINGLE_CROP_COST} diamonds, or a running batch for ${SINGLE_BATCH_COST} (not in the Factory).</p>`)
   +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+dual(table(['Boost','What it does','Diamonds'],boosts),boostCards))
   +section('VIP',`<p>VIP gives 10% faster crops, 10% faster production, 5% more coins at the market and double daily rewards. Buying again adds time; it never gets stronger.</p>`+table(['Plan','Diamonds'],vip))
-  +section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL} there is also a Starter Pack for a limited time.</p>`+table(['Diamonds','Price'],packs));
+  +section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.</p>`+table(['Diamonds','Price'],packs));
  },
  chat(h){
   return section('The chat',facts([

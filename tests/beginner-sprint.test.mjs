@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,normalizeFarm,applyFarmAction as act,rookieLeft,rookieBoost,ROOKIE_MS,ROOKIE_TIMER_BOOST,cropDuration,recipeDuration,keptStock,sellableStock,STARTER_KEEP,STARTER_ITEMS,CROPS,ITEMS,QUESTS,STARTER_QUESTS,QUEST_XP,levelOf,levelReward,xpForLevel} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,applyFarmAction as act,rookieLeft,rookieBoost,ROOKIE_MS,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,cropDuration,recipeDuration,keptStock,sellableStock,STARTER_KEEP,STARTER_ITEMS,CROPS,ITEMS,QUESTS,STARTER_QUESTS,QUEST_XP,levelOf,levelReward,xpForLevel} from '../game/farm-state.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 import {questGroups} from '../public/quests-ui.js';
 import {rookieBadge,rookieLabel,rookieTimeLeft} from '../public/rookie-ui.js';
@@ -10,10 +10,10 @@ const now=Date.UTC(2026,8,22,12),MIN=60000;
 const read=name=>readFileSync(new URL(`../public/${name}`,import.meta.url),'utf8');
 const emptyPlot=s=>s.plots.findIndex(p=>!p.crop);
 
-test('a new farm gets a 30 minute sprint from its creation, in plain clock time',()=>{
+test('a new farm gets a beginner boost for its first day, in plain clock time, and keeps its starter goods for 30 minutes',()=>{
  const s=createFarm(now);
- assert.equal(ROOKIE_MS,30*MIN);assert.equal(ROOKIE_TIMER_BOOST,.8);assert.equal(s.rookieUntil,now+ROOKIE_MS);
- assert.equal(rookieBoost(s,now),.8);assert.equal(rookieBoost(s,now+30*MIN-1),.8);assert.equal(rookieBoost(s,now+30*MIN),.8);
+ assert.equal(ROOKIE_MS,30*MIN);assert.equal(ROOKIE_BOOST_MS,24*60*MIN);assert.equal(ROOKIE_TIMER_BOOST,.8);assert.equal(s.rookieUntil,now+ROOKIE_MS);
+ assert.equal(rookieBoost(s,now),.8);assert(Math.abs(rookieBoost(s,now+12*60*MIN)-.4)<1e-9);assert.equal(rookieBoost(s,now+24*60*MIN),0);
  assert.equal(rookieLeft(s,now+10*MIN),20*MIN);assert.equal(rookieLeft(s,now+45*MIN),0);
  // Nothing else moves it: not actions, not pauses, not the level.
  act(s,{type:'field',id:0,action:'harvest'},now+MIN);s.xp=1e6;assert.equal(s.rookieUntil,now+ROOKIE_MS);
@@ -24,20 +24,20 @@ test('a new farm gets a 30 minute sprint from its creation, in plain clock time'
  assert.equal(cropDuration(legacy,'corn',false,now),CROPS.corn.duration);
 });
 
-test('inside the sprint crops, batches and Care take 80% less time; afterwards everything is normal and running things keep their time',()=>{
- const s=createFarm(now),legacy=createLegacyFarm(now);
- assert.equal(cropDuration(s,'corn',false,now),CROPS.corn.duration*.2);assert.equal(cropDuration(s,'corn',false,now+120*MIN),CROPS.corn.duration);
+test('at the start crops, batches and Care take 80% less time; after the first day everything is normal and running things keep their time',()=>{
+ const s=createFarm(now),legacy=createLegacyFarm(now),DAY=24*60*MIN;
+ assert.equal(cropDuration(s,'corn',false,now),CROPS.corn.duration*.2);assert.equal(cropDuration(s,'corn',false,now+DAY),CROPS.corn.duration);
  assert(Math.abs(recipeDuration(s,'eggs',now)-recipeDuration(legacy,'eggs',now)*.2)<=1);
- assert.equal(recipeDuration(s,'eggs',now+120*MIN),recipeDuration(legacy,'eggs',now));
+ assert.equal(recipeDuration(s,'eggs',now+DAY),recipeDuration(legacy,'eggs',now));
  const a=emptyPlot(s),b=a+1;
- act(s,{type:'field',id:a,action:'plant',crop:'corn'},now+MIN);act(s,{type:'field',id:b,action:'plant',crop:'wheat'},now+MIN);
- assert.equal(s.plots[a].readyAt-(now+MIN),180000,'corn 15 min -> 3 min');assert.equal(s.plots[a].careAt-(now+MIN),54000,'Care 270 s -> 54 s');
- assert.equal(s.plots[b].readyAt-(now+MIN),24000);assert.equal(s.plots[b].careAt-(now+MIN),7200,'wheat Care comes at 7.2 s, well inside its 24 s');
- act(s,{type:'field',id:b,action:'tend'},now+MIN+8000);assert.equal(s.plots[b].tended,true);
- // After the sprint: the normal 15 minutes and 270 seconds. The corn planted inside it keeps its 3 minutes.
- const late=now+121*MIN;act(s,{type:'field',id:0,action:'harvest'},late);act(s,{type:'field',id:0,action:'plant',crop:'corn'},late);
+ act(s,{type:'field',id:a,action:'plant',crop:'corn'},now);act(s,{type:'field',id:b,action:'plant',crop:'wheat'},now);
+ assert.equal(s.plots[a].readyAt-now,180000,'corn 15 min -> 3 min');assert.equal(s.plots[a].careAt-now,54000,'Care 270 s -> 54 s');
+ assert.equal(s.plots[b].readyAt-now,24000);assert.equal(s.plots[b].careAt-now,7200,'wheat Care comes at 7.2 s, well inside its 24 s');
+ act(s,{type:'field',id:b,action:'tend'},now+8000);assert.equal(s.plots[b].tended,true);
+ // After the first day: the normal 15 minutes and 270 seconds. The corn planted at the start keeps its 3 minutes.
+ const late=now+DAY+MIN;act(s,{type:'field',id:0,action:'harvest'},late);act(s,{type:'field',id:0,action:'plant',crop:'corn'},late);
  assert.equal(s.plots[0].readyAt-late,900000);assert.equal(s.plots[0].careAt-late,270000);
- assert.equal(s.plots[a].readyAt,now+MIN+180000);
+ assert.equal(s.plots[a].readyAt,now+180000);
  // Care never comes after the crop is ready, not even with the boost.
  for(const key of Object.keys(CROPS))assert(cropDuration(s,key,false,now)*.3>=6000&&Math.max(6000,cropDuration(s,key,false,now)*.3)<cropDuration(s,key,false,now),key);
 });
@@ -129,5 +129,6 @@ test('the hourglass says how long is left and that it is temporary',()=>{
  assert.equal(rookieBadge(24*MIN-1),'24m');assert.equal(rookieBadge(30*MIN),'30m');assert.equal(rookieBadge(30000),'<1m');
  assert.equal(rookieTimeLeft(45000),'45s');assert.equal(rookieTimeLeft(24*MIN-1),'24 min');
  assert.equal(rookieLabel(24*MIN-1),'80% shorter waiting · 24 min left');
- assert.match(read('rookie-ui.js'),/minutes after you started your farm/);assert.match(read('rookie-ui.js'),/Beginner boost ended/);
+ assert.equal(rookieBadge(23*60*MIN),'23h');assert.equal(rookieTimeLeft(90*MIN),'1 h 30 min');assert.equal(rookieTimeLeft(24*60*MIN),'24 h');
+ assert.match(read('rookie-ui.js'),/hours after you started your farm/);assert.match(read('rookie-ui.js'),/Beginner boost ended/);
 });

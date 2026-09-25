@@ -576,16 +576,18 @@ export function productionSlots(level,building){const n=Math.max(1,Math.min(MAX_
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
 export function recipeValue(id,now){const r=RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input)+(r.coins??0),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level,building){const speed=level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));return building==='factory'?speed/2:speed;}
-// The first 30 minutes after a farm is created are a sprint: new crops and new batches take 80% less time (corn 15 min -> 3 min), the
-// Care marker comes sooner, and the starter corn and animal feed stay in the barn so nothing is sold by accident. Afterwards
-// the timer boost eases to zero over 90 more minutes. It is plain clock time from creation (state.rookieUntil); crops and batches that are already
-// running keep their times. Only farms created in the guided flow have it: farms from before this simply have no rookieUntil.
+// The beginner boost: when a farm is created, new crops and new batches take 80% less time (corn 15 min -> 3 min), and the boost
+// eases evenly back to normal over the first day (ROOKIE_BOOST_MS), so a farmer who comes back later that day still feels it.
+// Separately, for the first 30 minutes (ROOKIE_MS, until state.rookieUntil) the starter corn and animal feed stay in the barn so nothing
+// is sold by accident. Both are plain clock time from creation; the boost counts from the same start (rookieUntil - ROOKIE_MS), so
+// farms made before the boost lasted a day get the whole day too. Crops and batches that are already running keep their times.
+// Only farms created in the guided flow have it: farms from before this simply have no rookieUntil.
 export const ROOKIE_MS=30*60000;
 export const ROOKIE_TIMER_BOOST=.8;
+export const ROOKIE_BOOST_MS=24*60*60000;
 export const rookieLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil-now):0;
-export const ROOKIE_TAPER_MS=90*60000;
-export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)&&state.rookieUntil>0?Math.max(0,state.rookieUntil+ROOKIE_TAPER_MS-now):0;
-export const rookieBoost=(state,now=Date.now())=>ROOKIE_TIMER_BOOST*Math.min(1,rookieBoostLeft(state,now)/ROOKIE_TAPER_MS);
+export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)&&state.rookieUntil>0?Math.max(0,state.rookieUntil-ROOKIE_MS+ROOKIE_BOOST_MS-now):0;
+export const rookieBoost=(state,now=Date.now())=>ROOKIE_TIMER_BOOST*Math.min(1,rookieBoostLeft(state,now)/ROOKIE_BOOST_MS);
 export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-ranchSpeedup(state):1)*(RECIPES[id].building==='glasshouse'&&hasImprovement(state,'heating')?.75:1));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
