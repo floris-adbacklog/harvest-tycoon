@@ -28,6 +28,10 @@
 .diamond-confirm-actions button{min-height:46px}
 .diamond-confirm .confirm-spend{padding:11px 13px;border:1px solid #504833;border-radius:11px;background:#61573f;box-shadow:0 3px 0 #443d2b;color:#fffdf5;font-weight:700}
 .diamond-confirm.is-danger .confirm-spend{border-color:#96402f;background:#b4513f;box-shadow:0 3px 0 #7d3526}
+/* Type-to-confirm (confirm-dialog.js typeToConfirm): the name to type, then a plain field. */
+.confirm-type{display:grid;gap:6px;margin:16px 0 0;text-align:left;color:#5d5641;font-size:13px;font-weight:650}
+.confirm-type input{width:100%;min-height:44px;box-sizing:border-box;padding:0 12px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 15px 'DM Sans',sans-serif}
+.confirm-type input:focus{outline:2px solid #a8935a;outline-offset:1px}
 /* VIP plans in the row layout of the boost cards: days and a line on the left, the price button on the right. The month plan
    has a small gold "Best value" badge next to its days. */
 #boost-dialog .vip-plans{gap:12px}

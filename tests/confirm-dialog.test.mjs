@@ -11,7 +11,7 @@ function fakeDocument(){
   activeElement:{isConnected:true,focus(){state.focused++;}},
   body:{append(dialog){dialog.appended=true;}},
   createElement(tag){
-   const dialog={tag,className:'',attrs:{},parts:{h2:element(),p:element(),'[data-cancel]':element(),'[data-confirm]':element()},listeners:{},shown:false,removed:false,
+   const dialog={tag,className:'',attrs:{},parts:{h2:element(),p:element(),'[data-cancel]':element(),'[data-confirm]':element(),'[data-type]':{...element(),value:''},'[data-type-label]':element()},listeners:{},shown:false,removed:false,
     setAttribute(key,value){this.attrs[key]=value;},set innerHTML(value){this.html=value;},querySelector(selector){return this.parts[selector];},
     addEventListener(name,fn){this.listeners[name]=fn;},remove(){this.removed=true;},showModal(){this.shown=true;},close(){this.shown=false;this.listeners.close?.();}};
    made.push(dialog);return dialog;
@@ -32,6 +32,23 @@ test('the confirmation shows the question and the amount, and only Confirm says 
 test('Cancel, Escape and closing the dialog all mean no',async()=>{
  assert.equal((await run(d=>d.parts['[data-cancel]'].onclick())).result,false);
  assert.equal((await run(d=>d.close())).result,false,'Escape closes a dialog without confirming');
+});
+test('type to confirm: Confirm stays off until the name is typed exactly; then the button or Enter says yes',async()=>{
+ const f=fakeDocument();globalThis.document=f.document;
+ const promise=confirmAction({title:'Make Tony a moderator?',description:'…',confirmLabel:'Make moderator',typeToConfirm:'Tony'});
+ const d=f.made[0],input=d.parts['[data-type]'],button=d.parts['[data-confirm]'];
+ assert.match(d.html,/<input type="text" data-type[^>]*autofocus>/);assert.match(d.html,/data-cancel><\/button>/,'the field takes the focus, not Cancel');
+ assert.equal(d.parts['[data-type-label]'].textContent,'Type “Tony” to confirm');assert.equal(button.disabled,true);
+ button.onclick();assert.equal(d.shown,true,'a click on the switched-off button does nothing');
+ input.value='tony';input.oninput();assert.equal(button.disabled,true,'the name exactly, capitals too');
+ input.onkeydown({key:'Enter'});assert.equal(d.shown,true,'Enter does nothing before it matches');
+ input.value=' Tony ';input.oninput();assert.equal(button.disabled,false);
+ input.onkeydown({key:'Enter'});assert.equal(await promise,true);delete globalThis.document;
+});
+test('making a moderator asks for the farmer\'s name; removing one is a plain confirmation',()=>{
+ const chat=read('src/chat-ui.js');
+ assert.match(chat,/confirmLabel:key==='mod'\?'Make moderator':'Remove',picture:'admin',\.\.\.\(key==='mod'\?\{typeToConfirm:name\}:\{\}\)\}/);
+ assert.match(read('public/vip.css'),/\.confirm-type input\{/);
 });
 test('selling a whole market tab asks first, with the total; selling one item does not',()=>{
  const source=read('public/economy-ui.js');

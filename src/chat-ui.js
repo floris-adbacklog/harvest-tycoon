@@ -326,7 +326,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
      if(key==='report'){if(await reportPlayer(id,name)){const s=content.ownerDocument.getElementById('farmer-profile-status');if(s)s.textContent='Thanks, a moderator will take a look.';}return;}
      if(key==='block'||key==='unblock'){if(await setBlock(id,name,key==='block'))redraw();return;}
      if(key==='mod'||key==='unmod'){
-      if(!await confirmAction({title:key==='mod'?`Make ${name} a moderator?`:`Remove ${name} as moderator?`,description:key==='mod'?'They can delete messages, mute and ban farmers from the chat, and open the Admin dashboard. They cannot give anything.':'They become a regular farmer again.',confirmLabel:key==='mod'?'Make moderator':'Remove',picture:'admin'}))return;
+      // Making a moderator can never happen by accident: the admin types the farmer's name first.
+      if(!await confirmAction({title:key==='mod'?`Make ${name} a moderator?`:`Remove ${name} as moderator?`,description:key==='mod'?'They can delete messages, mute and ban farmers from the chat, and open the Moderator dashboard with the player list. They cannot give anything or see IP addresses.':'They become a regular farmer again.',confirmLabel:key==='mod'?'Make moderator':'Remove',picture:'admin',...(key==='mod'?{typeToConfirm:name}:{})}))return;
       await chat.setModerator(id,key==='mod');redraw();return;
      }
      if(await sanction(id,name,key==='ban'?0:Number(key.slice(4)),key==='ban',{lift:key==='lift'}))redraw();
