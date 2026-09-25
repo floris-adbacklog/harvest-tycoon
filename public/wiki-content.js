@@ -127,11 +127,20 @@ const BODIES={
   ]))+section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Your stall earns coins by itself. Collect them from time to time.</p>`);
  },
  quests(h){
-  const opens=[...Object.entries(FEATURE_LEVELS).map(([key,n])=>[n,featureTitle(key)]),[EVENTS_LEVEL,'Farm events'],[STARTER_LEVEL,'Starter Pack']].sort((a,b)=>a[0]-b[0]);
+  // Everything a level opens, not only the features: buildings, crops and the recipes that come later than their building (26 Sep 2026;
+  // between level 27 and 62 only buildings, crops and recipes open, and a features-only list looked empty there).
+  const opens=new Map(),add=(n,html)=>{if(n>1)(opens.get(n)??opens.set(n,[]).get(n)).push(html);};
+  const chip=(picture,name,kind)=>`<span class="wiki-open">${art(picture)||art('gift')}<span>${name}</span>${kind?`<small>${kind}</small>`:''}</span>`;
+  const featureArt={challenges:'quests',mastery:'trophy',activities:'helping-hand',family:'familyhall',boosts:'boost',projects:'estate'};
+  for(const [key,n] of Object.entries(FEATURE_LEVELS))add(n,chip(featureArt[key]??key,featureTitle(key)));
+  add(EVENTS_LEVEL,chip('live-events','Farm events'));add(STARTER_LEVEL,chip('gift','Starter Pack'));
+  for(const [key,b] of Object.entries(BUILDINGS))if(b.type==='production')add(buildingLevel(key),chip(key,b.name,'building'));
+  for(const [key,c] of Object.entries(CROPS))add(cropLevel(key),chip(key,c.name,'crop'));
+  for(const [id,r] of Object.entries(RECIPES))if(r.building!=='factory'&&recipeLevel(id)>buildingLevel(r.building))add(recipeLevel(id),chip(Object.keys(r.output)[0],r.name,'recipe'));
   return section('Quests',facts([
    ['quests','One little goal at a time','Quests ask for things like harvesting 12 wheat. When one is done, claim its coins and XP.'],
    ['xp','XP and levels',`Almost everything you do gives XP. Each new level opens new crops, buildings and things to do, and the journal shows your level rewards.`]
-  ]))+section('What opens when',table(['Level','What opens'],opens.map(([n,name])=>h.row(n,[h.lvl(n),name])))+`<p>New crops and buildings are in ${h.link('crops')} and ${h.link('buildings')}.</p>`);
+  ]))+section('What opens when',table(['Level','What opens'],[...opens].sort((a,b)=>a[0]-b[0]).map(([n,list])=>h.row(n,[h.lvl(n),`<span class="wiki-opens">${list.join('')}</span>`])),'wiki-opens-table')+`<p>More about each one in ${h.link('crops')} and ${h.link('buildings')}.</p>`);
  },
  daily(h){
   const days=DAILY_REWARDS.map((coins,i)=>`<tr><td>Day ${i+1}</td><td>${art('coins')}${number(coins)}</td><td>${art('diamonds')}${number(DAILY_DIAMONDS[i])}</td></tr>`);

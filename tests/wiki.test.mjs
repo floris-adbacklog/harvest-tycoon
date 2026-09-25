@@ -99,3 +99,11 @@ test('the wiki matches the rules it explains: family payouts, invites, events an
  assert.match(wikiArticle('diamonds').html,/at least 1 diamond with every level-up/);
  assert.match(wikiArticle('buildings').html,/Dairy Barn needs the Feed Mill first/);
 });
+
+test('What opens when lists every level\'s features, buildings, crops and later recipes, so 27 to 62 is not empty',async()=>{
+ const {wikiArticle}=await import('../public/wiki-content.js');
+ const html=wikiArticle('quests').html;
+ assert.match(html,/class="wiki-table wiki-opens-table"/);
+ for(const name of ['Pig Farm','Bee Yard','Sheep Barn','Glasshouse','Weaving Shed','Factory','Goat Shed','Craft Workshop','Cider apples','Squash','Valley Market'])assert.ok(html.includes(`<span>${name}</span>`),name);
+ assert.match(html,/<small>building<\/small>/);assert.match(html,/<small>crop<\/small>/);assert.match(html,/<small>recipe<\/small>/);
+});

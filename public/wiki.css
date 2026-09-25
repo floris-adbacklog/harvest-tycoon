@@ -144,3 +144,9 @@
 
 /* The Avatars section: each avatar's small picture beside its name. */
 .wiki-avatar{display:flex;align-items:center;gap:10px}.wiki-avatar>img{flex:0 0 auto;width:34px;height:36px;object-fit:contain;border-radius:9px;background:#eee6d6}
+/* What opens when (wiki-content.js quests): every level's features, buildings, crops and recipes as small chips. */
+.wiki-opens{display:flex;flex-wrap:wrap;gap:6px}
+.wiki-open{display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 4px;border:1px solid #eadfcd;border-radius:999px;background:#fffaf0;font-size:13px;line-height:1.3;color:#4a4232}
+.wiki-open>.game-art{width:22px;height:22px;flex:none;object-fit:contain}
+.wiki-open small{font-size:10.5px;letter-spacing:.3px;color:#9a8b74;text-transform:uppercase}
+.wiki-opens-table td:first-child{width:1%;white-space:nowrap;vertical-align:top}
