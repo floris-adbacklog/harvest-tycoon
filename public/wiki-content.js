@@ -139,7 +139,7 @@ const BODIES={
   +section('The family pages',facts([
    ['family-weekly-order','This week',`A big order for the whole family. Everyone delivers what they can. When the whole order is done, everyone who delivered at least ${number(FAMILY_CONFIG.MIN_CONTRIB_POINTS)} points’ worth gets coins, XP and diamonds for what they delivered. Deliveries cannot be taken back.`],
    ['family-sharing','Sharing','Ask your family for crops or goods you need, and send gifts to each other.'],
-   ['family-tournament','Tournament','Every week families compete. Your deliveries count as points, and the best families win rewards.'],
+   ['family-tournament','Tournament',`Every week families compete; your deliveries count as points. First place wins ${number(FAMILY_CONFIG.TOURNAMENT_FIRST_MIN)} diamonds, plus ${FAMILY_CONFIG.TOURNAMENT_PER_EXTRA_FAMILY} for every other family taking part (up to ${number(FAMILY_CONFIG.TOURNAMENT_FIRST_MAX)}); second ${Math.round(FAMILY_CONFIG.RANK_WEIGHTS[1]*100)}% of that, third ${Math.round(FAMILY_CONFIG.RANK_WEIGHTS[2]*100)}%. The prize is shared by what each member delivered.`],
    ['family-members','Members','See who is online and how much everyone did this week. The leader can invite farmers.']
   ]))
   +section('Family chat',`<p>Your family has its own chat. See ${h.link('chat')}.</p>`)

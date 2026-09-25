@@ -89,6 +89,7 @@ test('the wiki states the current rules: the Starter Pack window and the day-lon
 test('the wiki matches the rules it explains: family payouts, invites, events and building needs',()=>{
  assert.match(wikiArticle('family').html,/When the whole order is done, everyone who delivered at least 500 points’ worth gets coins, XP and diamonds/);
  assert.doesNotMatch(wikiArticle('family').html,/each line you complete pays/);
+ assert.match(wikiArticle('family').html,/First place wins 100 diamonds, plus 25 for every other family taking part \(up to 5,000\); second 60% of that, third 40%\. The prize is shared by what each member delivered\./);
  assert.match(wikiArticle('diamonds').html,/When a friend you invite reaches level 10 within 30 days: 150 diamonds for you both\./);
  assert.match(wikiArticle('account').html,/When your friend reaches level 10 within 30 days, you both get 150 diamonds, for up to 10 friends\./);
  assert.doesNotMatch(wikiArticle('quests').html,/Invite a friend/,'inviting is not a level unlock');

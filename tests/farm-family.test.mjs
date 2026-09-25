@@ -82,11 +82,11 @@ test('Tournament settles once, pays the top three and gives a solo winner the wh
  const solo=tournamentContext([1],[20000]);settleFamilyWeeks(solo,familyWeekStart(week+1));assert.equal(solo.rewards.length,1);assert.equal(solo.rewards[0].diamonds,100);
  const only=tournamentContext([2],[20000]);settleFamilyWeeks(only,familyWeekStart(week+1));assert.equal(only.rewards.reduce((n,r)=>n+r.diamonds,0),100,'two players in one family: still one family, so 100');
 });
-test('First prize caps at 1,000 (from 37 families taking part); order diamonds are extra; low scores and tiebreak still work',()=>{
- const c=tournamentContext(Array(40).fill(2),Array(40).fill(2000));assert.equal(familyTournament(c,week).firstPrize,1000);assert.equal(familyTournament(c,week).pool,2000);
+test('First prize caps at 5,000 (from 197 families taking part); order diamonds are extra; low scores and tiebreak still work',()=>{
+ const c=tournamentContext(Array(200).fill(2),Array(200).fill(2000));assert.equal(familyTournament(c,week).firstPrize,5000);assert.equal(familyTournament(c,week).pool,10000);
  c.rewards.push({id:'old',player_id:'p0-0',week,kind:'order',coins:0,xp:0,diamonds:7});settleFamilyWeeks(c,familyWeekStart(week+1));
- assert.deepEqual(c.results.slice(0,3).map(r=>r.diamonds_pool),[1000,600,400]);
- assert.equal(c.rewards.filter(r=>r.player_id==='p0-0').reduce((n,r)=>n+r.diamonds,0),507);
+ assert.deepEqual(c.results.slice(0,3).map(r=>r.diamonds_pool),[5000,3000,2000]);
+ assert.equal(c.rewards.filter(r=>r.player_id==='p0-0').reduce((n,r)=>n+r.diamonds,0),2507);
  const tie=tournamentContext([2,2],[2000,2000]);assert.equal(familyTournament(tie,week).qualifying[0].family_id,'f0');
  const low=tournamentContext([2],[1]);assert.equal(familyTournament(low,week).qualifying.length,1);
  const empty=tournamentContext([2],[0]);assert.equal(familyTournament(empty,week).qualifying.length,0);
@@ -108,7 +108,7 @@ test('Personal and family prize previews exactly match settlement without the ol
  const c=tournamentContext(Array(40).fill(2),Array(40).fill(2000));
  c.rewards.push({id:'existing-order',player_id:'p0-0',week,kind:'order',coins:0,xp:0,diamonds:7,expires_at:now+DAY_MS});
  const expected=c.members.map(m=>({player:m.player_id,...familyPublicView(c,m.player_id,farm(),now).tournament}));
- assert.equal(expected[0].yourDiamonds,500);
+ assert.equal(expected[0].yourDiamonds,538,'40 families: a first prize of 1,075, shared by two members');
  settleFamilyWeeks(c,familyWeekStart(week+1));
  for(const p of expected){
   assert.equal(p.yourDiamonds,c.rewards.find(r=>r.player_id===p.player&&r.kind==='tournament')?.diamonds??0);
@@ -129,8 +129,7 @@ test('First prize grows with every family taking part, never with family size, i
  for(let count=1;count<=45;count++){
   const c=tournamentContext(Array(count).fill(1),Array(count).fill(100));
   const board=familyTournament(c,week);
-  assert.equal(board.qualifying.length,count);assert.equal(board.firstPrize,Math.min(1000,100+(count-1)*25));
-  if(count>=37)assert.equal(board.firstPrize,1000,'the maximum from 37 families');
+  assert.equal(board.qualifying.length,count);assert.equal(board.firstPrize,Math.min(5000,100+(count-1)*25));
   assert.equal(board.prizes[0].diamonds,board.firstPrize);
  }
  // Six contributors in one family grow nothing: it is one family.
