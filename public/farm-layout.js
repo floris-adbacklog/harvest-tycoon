@@ -27,11 +27,11 @@ export const ANCHORS=Object.freeze({
 // the screen) and 50+ in the east (the right). West, beyond the Family Hall (10) and the west road: the Pig Farm (29) by the trunk
 // road, then the Bee Yard (34) and the Sheep Barn (37) with its pasture, and the Weaving Shed (43) at the foot of the mountains.
 // East, along the trunk road: the Glasshouse (40, which has more room there), the Goat Shed (54) and the Trade Depot (85) across
-// the road, the Craft Workshop (58), the Ranch (70) and the Estate Workshop (75) behind, the Grand Valley Fair (90) furthest out.
+// the road, the Craft Workshop (58) first along the road, the Ranch (70) and the Estate Workshop (75) behind, the Grand Valley Fair (90) furthest out.
 // The Factory (50) and the Valley Market (62) stay in the middle, at the front and on the road out at the back.
 export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[-25.77,-6.92],stall:[-8,23.4],cart:[-9.7,-10.45],paddock:[1.7,-8.6],
  pigfarm:[-26.15,0.77],beeyard:[-33.85,14.62],sheepbarn:[-26.15,16.15],glasshouse:[37.62,1.23],weaving:[-33.46,22.69],
- craftshop:[28.62,11.15],ranch:[37.31,11.15],estateworkshop:[46.92,11.15],grandfair:[40,28.1]});
+ craftshop:[23.46,1.69],ranch:[37.31,11.15],estateworkshop:[46.92,11.15],grandfair:[40,28.1]});
 // Trees, bushes and other loose pieces keep this far from the middle of a yard.
 export const YARD_CLEARANCE=5.4;
 
