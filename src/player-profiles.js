@@ -57,7 +57,7 @@ export function createPlayerProfiles(bridge){
  search.innerHTML='<label for="farmer-search-input">Find a farmer</label><div class="farmer-search-control"><input id="farmer-search-input" type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Search by player name…" aria-describedby="farmer-search-status"><button type="button" class="small-button" id="farmer-search-clear" hidden>Clear</button></div><p id="farmer-search-status" role="status">Enter at least 2 characters to search all farmers.</p><div id="farmer-search-results"></div>';
  (board.querySelector('.rank-drawer')??board.querySelector('.leaderboard-filter')).before(search);
  const dialog=document.createElement('dialog');dialog.id='player-profile-dialog';dialog.className='game-dialog farmer-profile-dialog';dialog.setAttribute('aria-labelledby','farmer-profile-title');
- dialog.innerHTML='<div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="farmer-profile-title">Farmer profile</h2></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="admin-grant" class="admin-grant" hidden></div><div id="farmer-profile-content" aria-busy="false"></div><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p><button type="button" class="small-button farmer-profile-back">Back to leaderboard</button>';
+ dialog.innerHTML='<div class="dialog-heading"><div><span class="eyebrow">GROWING TOGETHER</span><h2 id="farmer-profile-title">Farmer profile</h2></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="farmer-staff-view" class="farmer-staff-view" hidden><button type="button" class="small-button" data-staff-view>Open in dashboard</button></div><div id="admin-grant" class="admin-grant" hidden></div><div id="farmer-profile-content" aria-busy="false"></div><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p><button type="button" class="small-button farmer-profile-back">Back to leaderboard</button>';
  document.body.append(dialog);
  const input=search.querySelector('input'),clear=search.querySelector('#farmer-search-clear'),results=search.querySelector('#farmer-search-results'),status=search.querySelector('#farmer-search-status');
  const content=dialog.querySelector('#farmer-profile-content'),profileStatus=dialog.querySelector('#farmer-profile-status'),adminGrant=dialog.querySelector('#admin-grant');
@@ -115,6 +115,10 @@ export function createPlayerProfiles(bridge){
   dialog.querySelector('#farmer-profile-title').textContent='Farmer profile';
   content.innerHTML='<p class="farmer-empty">Opening this farmer’s gate…</p>';profileStatus.textContent='';
   adminGrant.hidden=true;adminGrant.innerHTML='';
+  // The admin and the moderators can jump to this farmer in their dashboard (src/admin-dashboard.js), like its "Open profile" comes here.
+  const staffView=dialog.querySelector('#farmer-staff-view'),staff=window.harvestStaff;
+  staffView.hidden=!staff?.role?.();
+  staffView.querySelector('[data-staff-view]').onclick=()=>staff?.showFarmer(playerId);
   if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
   checkAdmin().then(admin=>{if(!disposed&&admin&&selected===playerId&&dialog.open)renderAdminGrant(playerId);});
   await loadProfile(false);

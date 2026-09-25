@@ -239,10 +239,19 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const global=Math.round(Number(dialog.querySelector('#admin-level-global').value)),dm=Math.round(Number(dialog.querySelector('#admin-level-dm').value));
   try{await bridge.chat.setLevels(global,dm);chatStatus.textContent=`Saved: global chat from level ${global}, private messages from level ${dm}.`;}catch(error){chatStatus.textContent=error.message;}
  });
- button.onclick=()=>{
+ function openDashboard(){
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());refreshArt();dialog.showModal();load();
   clearInterval(refreshTimer);refreshTimer=setInterval(load,60000);
- };
+ }
+ button.onclick=openDashboard;
+ // "Open in dashboard" on a farmer's profile (src/player-profiles.js): the Players tab, on that farmer's details. From the
+ // dashboard's own "Open profile" the dashboard is still open underneath, so only the profile closes.
+ function showFarmer(id){
+  if(!role||!id)return;
+  if(dialog.open)document.querySelectorAll('dialog[open]').forEach(d=>{if(d!==dialog)d.close();});else openDashboard();
+  showTab('players');openPlayer(id);
+ }
+ window.harvestStaff={role:()=>role,showFarmer};
  // For the admin (checked by e-mail, as before) and the moderators (their role comes with the chat). Phones hide the topbar
  // icons, so the same dashboard also gets a card at the end of the More menu. The server checks every request again.
  let role=null;

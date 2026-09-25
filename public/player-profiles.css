@@ -96,3 +96,4 @@
 .farmer-badge-pips i.is-earned.tier-3{background:#7fb3a6;border-color:#7fb3a6}
 .farmer-badge-more{margin:10px 2px 0;font-size:12px;color:#7d7561}
 @media(max-width:480px){.farmer-family{flex-wrap:wrap}.farmer-invite{flex-basis:100%}.farmer-invite-button{width:100%}.farmer-family-emblem{flex-basis:48px;height:48px}.farmer-family-emblem>.game-art{width:32px;height:32px}}
+.farmer-staff-view{display:flex;justify-content:flex-end;margin:-4px 0 12px}.farmer-staff-view[hidden]{display:none}

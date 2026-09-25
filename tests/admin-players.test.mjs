@@ -209,3 +209,15 @@ test('the dashboard: the list replaces the newest players, the funnel and countr
  assert.doesNotMatch(dash,/admin_recent_players/);
  assert.match(read('public/privacy.html'),/your IP address, your browser and device type, and the country of your device’s time zone/);
 });
+
+test('staff go both ways: the dashboard opens a profile, and a profile opens that farmer in the dashboard',()=>{
+ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+ const profiles=read('src/player-profiles.js'),dash=read('src/admin-dashboard.js');
+ assert.match(profiles,/<div id="farmer-staff-view" class="farmer-staff-view" hidden><button type="button" class="small-button" data-staff-view>Open in dashboard<\/button><\/div>/);
+ assert.match(profiles,/staffView\.hidden=!staff\?\.role\?\.\(\);/,'only the admin and the moderators see it');
+ assert.match(profiles,/onclick=\(\)=>staff\?\.showFarmer\(playerId\)/);
+ assert.match(dash,/function showFarmer\(id\)\{\n  if\(!role\|\|!id\)return;/);
+ assert.match(dash,/if\(dialog\.open\)document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>\{if\(d!==dialog\)d\.close\(\);\}\);else openDashboard\(\);\n  showTab\('players'\);openPlayer\(id\);/);
+ assert.match(dash,/window\.harvestStaff=\{role:\(\)=>role,showFarmer\};/);
+ assert.match(dash,/data-open-profile/,'and the other way, as before');
+});
