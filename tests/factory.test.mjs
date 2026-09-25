@@ -21,7 +21,7 @@ test('the Factory is an endgame building: level 50, 100,000 coins, twenty levels
  s.xp=xpForLevel(50);assert.equal(levelOf(s),50);assert.equal(buildingEligible(s,'factory'),true);assert.equal(buildingCost(s,'factory'),100000);assert.equal(buildingUnlocked(s,'factory'),false,'it has to be bought');
  act(s,{type:'construct',building:'factory'});assert.equal(s.coins,1e9-100000);assert.equal(buildingUnlocked(s,'factory'),true);
  assert.equal(FACTORY_UPGRADE_MULTIPLIER,2);assert.equal(upgradeCost(s,'factory'),5000,'at least 5% of its 100,000 build price, like every late building');
- assert.equal(MAX_BUILDING_LEVEL,20);
+ assert.equal(MAX_BUILDING_LEVEL,10,'ten levels, like every production building since 26 Sep 2026');
 });
 test('every production recipe has one bulk version: quick goods x20, slow goods x10, in twice the time, with the same XP per ingredient',()=>{
  assert.equal(base.length,47);assert.equal(mass.length,47,'one bulk recipe for each');
@@ -77,21 +77,20 @@ test('bulk recipes need the Factory and the normal recipe: a locked recipe stays
  s.xp=xpForLevel(3);assert.equal(recipeUnlocked(s,'mass_grainmeal'),false,'below the level of the grind recipe');
  assert.ok(recipeAvailability(s,'mass_grainmeal').locked);
 });
-test('the specialised buildings keep their point: a full Factory adds less than one full specialised building',()=>{
+test('at level 10 a full Factory makes one good about 2.4 times as fast as that good\'s own level-10 building, and far less than all buildings together',()=>{
+ // Since 26 Sep 2026 level 10 is the top (was 20, where a specialised building beat the Factory): the batch rule
+ // (factory-batch-size.test.mjs) keeps the Factory in step with the farm's own buildings below that.
  const regular=level=>productionSlots(level)/(1-productionSpeed(level));
  const factory=(level,perBatch)=>productionSlots(level,'factory')*(perBatch/FACTORY_TIME_FACTOR)/(1-productionSpeed(level,'factory'));
  let last={quick:0,slow:0};
- for(let level=1;level<=20;level++){
+ for(let level=1;level<=10;level++){
   const now={quick:factory(level,20),slow:factory(level,10)};
   assert.ok(now.quick>=last.quick&&now.slow>=last.slow,`level ${level} is not weaker than the one before`);last=now;
   assert.equal(productionSlots(level,'factory'),Math.min(5,Math.ceil(level/2)),'a slot every two levels, up to five');assert.ok(Math.abs(productionSpeed(level,'factory')-productionSpeed(level)/2)<1e-9);
  }
- assert.equal(productionSlots(20,'factory'),5);assert.equal(productionSlots(1,'factory'),1);
- assert.ok(factory(20,20)<regular(20)*.9,`a full Factory (${factory(20,20).toFixed(0)}) stays below one full building (${regular(20).toFixed(0)})`);
- assert.ok(factory(20,10)<regular(20)*.5,'and for slow goods well below');
- assert.ok(regular(20)>regular(10)*3,'so levels 11-20 of a specialised building still triple its output');
- assert.ok(regular(10)*10>factory(20,20)*3,'ten specialised buildings at level 10 outproduce a full Factory by far');
- assert.ok(factory(1,20)<regular(10),'a fresh Factory does not replace a level-10 building');
+ const worth=factory(10,20)/regular(10);assert.ok(worth>2.3&&worth<2.5,worth);
+ const buildings=Object.values(BUILDINGS).filter(b=>b.type==='production'&&b!==BUILDINGS.factory).length;
+ assert.ok(factory(10,20)<regular(10)*buildings/5,'a full Factory is less than a fifth of all the specialised buildings at level 10');
 });
 test('only the Factory\'s coin upgrade price is doubled; the diamond alternative and every other building are untouched',()=>{
  const s=farm();
@@ -100,12 +99,12 @@ test('only the Factory\'s coin upgrade price is doubled; the diamond alternative
  }
  s.buildings.factory.level=1;assert.equal(upgradeCost(s,'factory'),Math.round(BUILDING_COSTS.factory/FACTORY_UPGRADE_MULTIPLIER*.05)*FACTORY_UPGRADE_MULTIPLIER);
 });
-test('the Factory is bought with coins or diamonds and estate-upgrades levels 11-20 like the others, just doubled',()=>{
- const s=farm();s.buildings.factory.level=10;
- assert.equal(upgradeCost(s,'factory'),400000*FACTORY_UPGRADE_MULTIPLIER,'the same estate step every building shares, doubled for the Factory alone');
- s.buildings.factory.level=20;assert.equal(upgradeCost(s,'factory'),null);
+test('the Factory is bought with coins or diamonds and ends at level 10 like the others',()=>{
+ const s=farm();s.buildings.factory.level=9;
+ assert.equal(upgradeCost(s,'factory'),1230768,'the price ladder, doubled for the Factory alone and doubled again for level 5-10');
+ s.buildings.factory.level=10;assert.equal(upgradeCost(s,'factory'),null);
  s.buildings.factory.level=1;const r=act(s,{type:'upgrade',building:'factory'});assert.equal(r.level,2);assert.equal(productionSlots(2,'factory'),1,'level 2 still has one slot');assert.equal(productionSlots(3,'factory'),2,'the second slot comes at level 3');
- s.buildings.factory.level=4;act(s,{type:'upgrade',building:'factory'});assert.equal(s.buildings.factory.level,5);assert.equal(productionSlots(5,'factory'),3,'the third at level 5');
+ s.buildings.factory.level=4;Object.assign(s.inventory,{flour:32,cheese:8,cloth:4});act(s,{type:'upgrade',building:'factory'});assert.equal(s.buildings.factory.level,5);assert.equal(productionSlots(5,'factory'),3,'the third at level 5');
 });
 test('diamonds cannot rush the Factory: a bulk batch is worth 10-20 normal ones for the price of one',()=>{
  const s=farm();s.buildings.factory.level=5;s.inventory.feed=100;s.inventory.corn=100;
@@ -211,15 +210,6 @@ test('a bulk quest goal still needs the same ingredients: the Factory makes good
  }
  assert.equal(recipeValue('mass_bread').added,recipeValue('bread').added*20,'the same margin per ingredient');
 });
-test('at the top a specialised building always beats the Factory for the same goods, so nobody stops upgrading',()=>{
- for(const [id,r] of base){
-  const m=RECIPES[`mass_${id}`],per=Object.values(r.output)[0];
-  const regular=productionSlots(20,r.building)*per/(r.duration*(1-productionSpeed(20)));
-  const factory=productionSlots(20,'factory')*m.output[Object.keys(r.output)[0]]/(m.duration*(1-productionSpeed(20,'factory')));
-  assert.ok(regular>factory*1.15,`${id}: a level-20 ${r.building} makes ${regular.toFixed(5)} a ms, a level-20 Factory ${factory.toFixed(5)}`);
- }
-});
-
 test('what is still to come is shown from the first minute, greyed out with a lock, and stays calm',()=>{
  const game=read('public/game.js'),css=read('public/ui-polish.css');
  assert.match(game,/const greyedMaterials=new Map\(\);/);assert.match(game,/function setLocked\(object,locked\)/);

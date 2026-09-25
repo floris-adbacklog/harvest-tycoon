@@ -104,7 +104,7 @@ export function marketHighlights(now=Date.now(),state){
 export const FACTORY_LEVEL=50;
 export const FACTORY_COST=100000;
 export const FACTORY_TIME_FACTOR=2;
-// Levels 10-20 otherwise cost every production building the exact same coins to upgrade (see ESTATE_UPGRADES) —
+// (Until 26 Sep 2026) levels 10-20 cost every production building the exact same coins to upgrade (see ESTATE_UPGRADES) —
 // fine for a 100-1,400 coin building, but the Factory alone was built for 100,000. Doubled so reaching a full
 // Factory stays a real, distinct investment instead of the cheapest building's own upgrade ladder.
 export const FACTORY_UPGRADE_MULTIPLIER=2;
@@ -541,7 +541,7 @@ export const QUESTS = Object.freeze([
  {title:'Forty fields',description:'Grow your farm to all 40 fields.',stat:'expansions',target:28,reward:150000,minLevel:90},
  {title:'Master of every crop',description:'Earn all 64 crop mastery medals.',stat:'mastery_medals',target:64,reward:150000,minLevel:66},
  {title:'A hundred upgrades',description:'Upgrade your buildings 100 times.',stat:'upgrades',target:100,reward:25000},
- {title:'Every building at its best',description:'Upgrade your buildings 300 times.',stat:'upgrades',target:300,reward:90000},
+ {title:'Every building at its best',description:'Upgrade all 17 production buildings to level 10.',stat:'upgrades',target:153,reward:90000},
  // 50 more (26 Sep 2026), 250 -> 300: the crops and goods that had one quest, the middle of the game (Pig Farm to Craft Workshop),
  // spending coins and diamonds, and the gaps between existing goals. Always appended: a quest's place in this list is its id.
  // Rewards follow the existing quests (between two of the same goal, or 15% of the market value of what is asked).
@@ -643,7 +643,10 @@ function migrateXpCurve(state){
 // long game (forty fields need far more processing): a higher farm level and finished goods on top of the price, which is coins
 // or diamonds (and the 50% voucher) exactly as below level 10.
 export const BASE_BUILDING_LEVEL=10;
-export const MAX_BUILDING_LEVEL=20;
+// Level 10 is a fully upgraded building (26 Sep 2026; was 20): with every building at 10 a farm has more production slots than its
+// fields can fill, the Factory's batches are full size there, and levels 11-20 (17 million coins a building) were out of reach. No
+// building in the game was above level 7. ESTATE_UPGRADES below is kept only for the price ladder's top (its first step).
+export const MAX_BUILDING_LEVEL=10;
 // The Factory is one shared workshop for every good: a slot every two levels, up to five (reached at level 9), and half the
 // speed bonus. Its batches are as big as the source building allows (factoryBatchCount, at most ×20), so a full Factory adds
 // about one to two buildings of the farm's own level, and at the top a specialised building always makes the same good faster.
@@ -834,7 +837,7 @@ export function expansionLevel(state){return earlyField(state)?.level??ENDGAME_F
 export function expansionCost(state){const n=state.plots.length;if(earlyField(state))return earlyField(state).coins;return n>=MAX_PLOTS?null:n>=28?ENDGAME_FIELDS[n-28].coins:n<20?Math.ceil(600*1.75**Math.max(0,n-12)/25)*25:LATE_FIELD_COSTS[n-20];}
 const FIELD_MATERIALS=[{wheat:12,corn:6},{wheat:20,barley:10},{barley:18,cabbage:10},{corn:24,cauliflower:12,flour:8},{cabbage:24,pumpkin:12,bread:10},{redcabbage:20,sunflower:12,cheese:12},{pumpkin:24,oil:10,vegetables:12},{sunflower:30,pickles:16,pie:16},{lettuce:30,flour:18,milk:12},{cauliflower:32,feed:20,eggs:14},{redcabbage:30,cheese:16,bread:18},{pumpkin:36,oil:18,pie:20},{sunflower:40,cheese:20,pie:22},{cauliflower:44,bread:26,eggs:24},{redcabbage:44,oil:22,vegetables:24},{pumpkin:50,pickles:26,milk:28}];
 export function expansionMaterials(state){const n=state.plots.length;return n>=MAX_PLOTS||earlyField(state)?{}:{...(n>=28?ENDGAME_FIELDS[n-28].materials:FIELD_MATERIALS[Math.max(0,n-12)])};}
-// Estate upgrades: target level 11-20. Priced per step, the same for every building (the goods are what differs; from level 42 on
+// Estate upgrades (retired 26 Sep 2026, when level 10 became the top; the first step's 400,000 coins is the upgrade price ladder's top): target level 11-20. Priced per step, the same for every building (the goods are what differs; from level 42 on
 // they also ask for the midgame goods: wool, soup, yarn, cloth and cider, from 66 on goat cheese, candles, blankets and cherry pie, and at 85 prize produce), and like the
 // last twelve fields they ask for a higher farm level. Ten steps for a farm that can process forty fields of crops.
 // The diamond price continues the curve of levels 1-10 (525 diamonds for level 10, about 700 coins to a diamond).
@@ -850,11 +853,23 @@ export const ESTATE_UPGRADES=Object.freeze([
  {level:75,coins:3300000,diamonds:4715,materials:{harvesthamper:25,applepie:60,pickledbeans:50,cloth:30,blanket:5}},
  {level:85,coins:4300000,diamonds:6145,materials:{harvesthamper:40,berrycheesecake:60,berrytart:60,pickledbeans:80,cloth:40,cider:50,cherrypie:20,blanket:8,prizeproduce:8}}
 ].map(step=>Object.freeze({...step,materials:Object.freeze(step.materials)})));
-// What the next upgrade of a building asks besides coins, or null below level 10 and at the top.
+// Upgrading asks for goods the building makes itself (26 Sep 2026): from the upgrade to level 4 on, 2 × the level in batches of its
+// first product (a Dairy Barn at level 6 hands in 24 milk to reach level 7). The Factory, which makes everything, asks for a mix of
+// flour, cheese and cloth. Upgrading with diamonds pays for everything: no coins and no goods. Up to level 3 it is coins only, so
+// the beginner guide's first upgrade stays one tap.
+export const UPGRADE_GOODS_FROM=3;
+let firstProducts=null;
+export function upgradeGoods(building,level){
+ if(!BUILDINGS[building]||BUILDINGS[building].type!=='production'||level<UPGRADE_GOODS_FROM||level>=MAX_BUILDING_LEVEL)return {};
+ if(building==='factory')return {flour:8*level,cheese:2*level,cloth:level};
+ firstProducts??=Object.fromEntries(Object.keys(BUILDINGS).map(key=>[key,Object.entries(RECIPES).filter(([,r])=>r.building===key).sort(([a],[b])=>(RECIPE_LEVELS[a]??0)-(RECIPE_LEVELS[b]??0))[0]?.[1]]).filter(([,r])=>r).map(([key,r])=>[key,Object.entries(r.output)[0]]));
+ const product=firstProducts[building];return product?{[product[0]]:2*level*product[1]}:{};
+}
+// What the next upgrade of a building asks besides coins: its goods (level is the farm level it needs: none any more), or null.
 export function upgradeRequirements(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
- const level=state.buildings[building].level,step=ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL];
- return level<BASE_BUILDING_LEVEL||level>=MAX_BUILDING_LEVEL||!step?null:{level:step.level,materials:{...step.materials}};
+ const materials=upgradeGoods(building,state.buildings[building].level);
+ return Object.keys(materials).length?{level:1,materials}:null;
 }
 // Upgrade prices below level 10 (26 Sep 2026). Each building follows its own curve (2.7× a level), but:
 // - a first upgrade costs at least 5% of what the building cost to build, growing 2.7× a level from there, so the late buildings
@@ -863,8 +878,11 @@ export function upgradeRequirements(state,building){
 //   rises every level and never jumps to millions before dropping back to 400,000 at level 10 (the Craft Workshop's 9 -> 10
 //   used to cost 7.0 million). The buildings that open first (Coop to Kitchen) keep their early prices; the ladder only trims
 //   their last steps before level 10.
+// - and the upgrades to level 5-10 cost twice that in coins (26 Sep 2026, when level 10 became the top and the 17 million coins
+//   of levels 11-20 were gone). Up to level 4 nothing changed for new farmers; the diamond price stayed the same.
 export const UPGRADE_BUILD_SHARE=.05;
 export const UPGRADE_LADDER_STEP=1.3;
+export const UPGRADE_LATE_LEVEL=4,UPGRADE_LATE_MULTIPLIER=2;
 export function upgradeCost(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
  const level=state.buildings[building].level;
@@ -874,7 +892,8 @@ export function upgradeCost(state,building){
  const curve=Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)));
  const floor=Math.round((BUILDING_COSTS[building]??0)/factoryPrice*UPGRADE_BUILD_SHARE*2.7**(level-1));
  const ceiling=Math.round(ESTATE_UPGRADES[0].coins/UPGRADE_LADDER_STEP**(BASE_BUILDING_LEVEL-level));
- return Math.ceil(Math.min(Math.max(curve,floor),ceiling)*voucher*factoryPrice);
+ const late=level>=UPGRADE_LATE_LEVEL?UPGRADE_LATE_MULTIPLIER:1;
+ return Math.ceil(Math.min(Math.max(curve,floor),ceiling)*late*voucher*factoryPrice);
 }
 // What a new farm starts with, so the first minutes are not spent waiting: coins for seeds and a second egg slot, corn to sell or to
 // mix into feed at the Mill, wheat, ten animal feed for the chickens (ten batches of eggs), and barley for the Mill's feed recipe once
@@ -1053,12 +1072,12 @@ export function collectAllProduction(state,building,now=Date.now()){
  return result;
 }
 export const DIAMOND_UPGRADE_COSTS=Object.freeze([25,45,75,110,160,225,300,400,525]);
-export function diamondUpgradeCost(state,building){if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;const level=state.buildings[building].level;return level>=BASE_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]?.diamonds??null:DIAMOND_UPGRADE_COSTS[level-1]??null;}
+export function diamondUpgradeCost(state,building){if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;const level=state.buildings[building].level;if(level>=MAX_BUILDING_LEVEL)return null;return level>=BASE_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]?.diamonds??null:DIAMOND_UPGRADE_COSTS[level-1]??null;}
 export function upgradeBuilding(state,building,currency='coins',expectedCost,expectedLevel){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')throw new Error('Choose a production building.');
  if(!buildingUnlocked(state,building))throw new Error('Open this building before upgrading it.');
  if(!['coins','diamonds'].includes(currency))throw new Error('Choose coins or diamonds.');
- const b=state.buildings[building],estate=upgradeRequirements(state,building);
+ const b=state.buildings[building],estate=currency==='diamonds'?null:upgradeRequirements(state,building);   // diamonds pay for the goods too
  const cost=currency==='diamonds'?diamondUpgradeCost(state,building):upgradeCost(state,building);
  if(currency==='diamonds'&&(!featureUnlocked(state,'boosts')||expectedCost!==cost||expectedLevel!==b.level))throw new Error('Review the current diamond upgrade price and building level.');
  if(cost===null)throw new Error('This building is fully upgraded.');
@@ -1067,7 +1086,7 @@ export function upgradeBuilding(state,building,currency='coins',expectedCost,exp
  if(estate&&levelOf(state)<estate.level)throw new Error(`Reach level ${estate.level} to upgrade this building to level ${b.level+1}.`);
  if(state[currency]<cost)throw new Error(`You need ${cost} ${currency} for this upgrade.`);
  const missing=estate?Object.entries(estate.materials).filter(([key,n])=>(state.inventory[key]??0)<n):[];
- if(missing.length)throw new Error(`Gather the missing supplies: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
+ if(missing.length)throw new Error(`Make the goods first: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}. Or upgrade with diamonds.`);
  state[currency]-=cost;if(estate)for(const [key,n] of Object.entries(estate.materials))state.inventory[key]-=n;
  b.level++;state.stats.upgrades++;state.xp+=15;
  if(currency==='coins'&&state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
@@ -1589,6 +1608,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const [key,b] of Object.entries(state.buildings)){
   b.extraJobs??=[];b.batchSequence??=0;
   for(const job of productionJobs(b))if(!job.id)job.id=`${key}-${++b.batchSequence}`;
+  if(BUILDINGS[key]?.type==='production'&&b.level>MAX_BUILDING_LEVEL)b.level=MAX_BUILDING_LEVEL;   // level 10 is the top since 26 Sep 2026
  }
  state.stats??={};
  if(oldVersion<10){
