@@ -96,6 +96,8 @@
 
 /* Tables: scroll sideways on a phone instead of squeezing. */
 .wiki-table-wrap{overflow-x:auto;margin:6px 0 4px;border:1px solid #eee5d6;border-radius:12px;background:#fffdf5;-webkit-overflow-scrolling:touch}
+/* Text, a list or cards under a table get the same room as under a paragraph. */
+.wiki-table-wrap+:is(p,.wiki-list,.wiki-facts,.wiki-cards){margin-top:14px}
 .wiki-table{width:100%;border-collapse:collapse;font-size:13.5px}
 .wiki-table th{padding:9px 10px;background:#f7f0e3;color:#7a6a4a;font-size:11px;font-weight:800;letter-spacing:.05em;text-align:left;text-transform:uppercase;white-space:nowrap}
 .wiki-table td{padding:8px 10px;border-top:1px solid #f1e9dc;vertical-align:middle}
