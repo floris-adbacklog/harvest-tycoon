@@ -51,7 +51,10 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const button=doc.getElementById('events-button'),dot=doc.getElementById('events-dot'),hint=doc.getElementById('mobile-events-hint'),entry=doc.querySelector('[data-menu-action="events-button"]');
  let locked=null;
  const dialog=doc.createElement('dialog');dialog.id='events-dialog';dialog.className='game-dialog wide-dialog events-dialog';dialog.setAttribute('aria-labelledby','events-title');doc.body.append(dialog);
- let data=null,busy=false,error='',reloadTimer=0,clock=0,background=0;
+ let data=null,busy=false,error='',reloadTimer=0,clock=0,background=0,emailAsked=false;
+ const needsEmail=()=>Boolean(data?.eligibility)&&data.eligibility.level>=data.eligibility.minLevel&&!data.eligibility.verified;
+ const emailButton=()=>needsEmail()?'<button type="button" class="primary-button event-email-open" data-email-open>Confirm your email</button>':'';
+ const emailCheck=createEmailCheck({doc,bridge,email:()=>data?.eligibility?.email??'',onDone:async()=>{notify?.('Email confirmed! Your farm actions now count for farm events.');await load().catch(()=>{});}});
 
  const countdown=at=>`<span data-countdown="${at}">${formatDuration(at-now())}</span>`;
  // One list of what a farmer wins in total per place: the event's own reward plus the podium prize, or the extra that every
@@ -71,7 +74,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  }
  function status(e){
   const blocked=eligibilityNote(data?.eligibility,now()),p=e.player;
-  if(blocked)return `<p class="family-notice event-note is-blocked">${esc(blocked)}</p>`;
+  if(blocked)return `<p class="family-notice event-note is-blocked">${esc(blocked)}</p>${emailButton()}`;
   if(hasQualified(e))return '<p class="family-notice event-note">You qualified! Collect your reward here when the event ends.</p>';
   if(p&&goalsDone(e))return `<p class="family-notice event-note">Every goal is complete. ${esc(qualifyHint(p,now()))}</p>`;
   if(p)return `<p class="family-notice event-note">You are taking part · ${num(p.actions)} contribution${p.actions===1?'':'s'} so far.</p>`;
@@ -92,7 +95,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  function hero(){
   const {live,next}=eventView(data.events,now());
   if(live)return intro(live,`Live · ends in ${countdown(Date.parse(live.ends_at))}`,true)+`<p class="event-summary">${num(live.participants)} farmer${live.participants===1?'':'s'} taking part</p>`+goals(live)+rewards(live)+status(live)+standings(live);
-  if(next){const blocked=eligibilityNote(data.eligibility,now());return intro(next,`Next event in ${countdown(Date.parse(next.starts_at))}`,false)+'<p class="event-summary">A short break between events. Here is what comes next.</p>'+goals(next,{preview:true})+rewards(next)+(blocked?`<p class="family-notice event-note is-blocked">${esc(blocked)}</p>`:'')+standings(data.events.find(e=>e.standings),{final:true});}
+  if(next){const blocked=eligibilityNote(data.eligibility,now());return intro(next,`Next event in ${countdown(Date.parse(next.starts_at))}`,false)+'<p class="event-summary">A short break between events. Here is what comes next.</p>'+goals(next,{preview:true})+rewards(next)+(blocked?`<p class="family-notice event-note is-blocked">${esc(blocked)}</p>${emailButton()}`:'')+standings(data.events.find(e=>e.standings),{final:true});}
   return `<div class="quest-empty"><span class="estate-icon">${art('live-events')}</span><h3>The next farm event is on its way</h3><p>Check back soon.</p></div>`;
  }
  function collect(){
@@ -112,6 +115,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:`<p class="event-loading">${esc(error||'Opening farm events…')}</p>`)+'<p class="event-feedback" role="status" data-status></p>';
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();
   dialog.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>claim(b));
+  dialog.querySelectorAll('[data-email-open]').forEach(b=>b.onclick=()=>emailCheck.open());
   refreshArt();
  }
  async function claim(b){
@@ -131,6 +135,8 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  async function load(){
   try{data=await bridge.request({operation:'events'});error='';}catch(e){error=e.message;if(!data)throw e;}
   badge();if(dialog.open)render();
+  // A farm at level 10 whose email is not checked yet: the pop-up comes up by itself once per visit.
+  if(dialog.open&&needsEmail()&&!emailAsked){emailAsked=true;emailCheck.open();}
  }
  function tick(){
   let due=false;
@@ -159,4 +165,41 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const quiet=()=>{if(!locked&&!dialog.open&&!doc.hidden)load().catch(()=>{});};
  refresh();background=setInterval(quiet,600000);
  return {open,load,refresh,dispose(){clearInterval(background);clearInterval(clock);clearInterval(reloadTimer);}};
+}
+
+// Farm events need an email address the game has checked: a pop-up sends a 6-digit code to the farmer's address and takes it back.
+// Google and Facebook accounts never see it (those are checked already).
+export function createEmailCheck({doc=globalThis.document,bridge,email,onDone,timers=globalThis}){
+ const dialog=doc.createElement('dialog');dialog.id='event-email-dialog';dialog.className='game-dialog email-check-dialog';dialog.setAttribute('aria-labelledby','event-email-title');doc.body.append(dialog);
+ let sent=false,busy=false,waitUntil=0,timer=0,message='';
+ const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+ function render(){
+  const wait=Math.max(0,Math.ceil((waitUntil-Date.now())/1000));
+  dialog.innerHTML=`<button type="button" class="icon-button close-dialog email-check-close" data-email-close aria-label="Close"><i data-lucide="x"></i></button>${art('letter')}<p class="eyebrow">FARM EVENTS</p><h2 id="event-email-title">Confirm your email</h2>`
+   +(sent?`<p>We sent a 6-digit code to <b>${esc(email())}</b>. Type it here to join farm events.</p><form class="email-check-form" data-email-form><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456" aria-label="The 6-digit code" data-email-code><button type="submit" class="primary-button" ${busy?'disabled':''}>Confirm</button></form><button type="button" class="link-button email-check-resend" data-email-send ${busy||wait?'disabled':''}>${wait?`Send a new code in ${wait}s`:'Send a new code'}</button>`
+    :`<p>To join farm events, confirm your email address once. We send a 6-digit code to <b>${esc(email())}</b>.</p><button type="button" class="primary-button" data-email-send ${busy?'disabled':''}>Send code</button>`)
+   +`<p class="email-check-status" role="status">${esc(message)}</p>`;
+  dialog.querySelector('[data-email-close]').onclick=()=>dialog.close();
+  dialog.querySelector('[data-email-send]')?.addEventListener('click',send);
+  dialog.querySelector('[data-email-form]')?.addEventListener('submit',event=>{event.preventDefault();checkCode();});
+  refreshArt();
+ }
+ async function send(){
+  if(busy)return;busy=true;message='';render();
+  try{const r=await bridge.request({operation:'events',command:'email_send'});if(r.verified){busy=false;dialog.close();await onDone?.();return;}sent=true;waitUntil=Date.now()+(r.waitMs??60000);message='Code sent. Check your inbox (and the spam folder).';}
+  catch(e){message=e.message;}
+  busy=false;render();dialog.querySelector('[data-email-code]')?.focus();
+  timers.clearInterval(timer);timer=timers.setInterval(()=>{if(!dialog.open||Date.now()>waitUntil){timers.clearInterval(timer);}const b=dialog.querySelector('.email-check-resend');if(b&&!busy){const w=Math.max(0,Math.ceil((waitUntil-Date.now())/1000));b.disabled=w>0;b.textContent=w?`Send a new code in ${w}s`:'Send a new code';}},1000);
+ }
+ async function checkCode(){
+  const code=dialog.querySelector('[data-email-code]')?.value.trim()??'';if(busy)return;
+  if(!/^\d{6}$/.test(code)){message='Type the 6 digits from the email.';render();return;}
+  busy=true;message='';render();
+  try{await bridge.request({operation:'events',command:'email_confirm',code});busy=false;dialog.close();await onDone?.();return;}
+  catch(e){message=e.message;}
+  busy=false;render();const input=dialog.querySelector('[data-email-code]');if(input){input.value=code;input.focus();}
+ }
+ function open(){if(!dialog.open){message='';render();dialog.showModal();}}
+ dialog.addEventListener('close',()=>timers.clearInterval(timer));
+ return {open,dialog};
 }

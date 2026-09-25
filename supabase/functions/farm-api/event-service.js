@@ -61,12 +61,56 @@ async function playerEvents(admin,user,now){
  if(older.error)return older;
  return {data:[...listed.data,...older.data]};
 }
-// The same gates as the progress trigger (live-events.sql, live-events-no-wait.sql): level 10 and a confirmed email address, so the
-// event screen can say why a farm is not taking part yet.
+// The same gates as the progress trigger (event-email-check.sql): level 10 and an email address the game has checked, so the
+// event screen can say why a farm is not taking part yet, and offer the code to confirm it.
 async function eligibility(admin,user){
- const stats=await admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle();
- if(stats.error)throw stats.error;
- return {level:stats.data?.level??0,minLevel:10,openAt:0,verified:Boolean(user.email_confirmed_at)};
+ const [stats,checked]=await Promise.all([admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle(),admin.rpc('harvest_email_checked',{p_player:user.id})]);
+ if(stats.error)throw stats.error;if(checked.error)throw checked.error;
+ return {level:stats.data?.level??0,minLevel:10,openAt:0,verified:checked.data===true,email:user.email??''};
+}
+
+// Confirming the email address for events: a 6-digit code by email, valid for 30 minutes, 5 tries per code, at most one email a
+// minute and 5 a day. Only a hash of the code is stored.
+export const EMAIL_CODE=Object.freeze({validMs:30*60000,waitMs:60000,perDay:5,tries:5});
+async function codeHash(player,code){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`${player}:${code}`));return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');}
+export function emailCodeMessage(code){
+ const text=`Your code to confirm your email for Harvest Tycoon farm events: ${code}\n\nType it in the game within 30 minutes. If you did not ask for this, you can ignore this email.`;
+ return {subject:`Your Harvest Tycoon code: ${code}`,text,html:`<div style="font-family:Arial,sans-serif;color:#3b2c12;max-width:460px"><h2 style="margin:0 0 12px">Confirm your email</h2><p>Your code to join farm events in Harvest Tycoon:</p><p style="font-size:32px;font-weight:700;letter-spacing:6px;margin:16px 0">${code}</p><p>Type it in the game within 30 minutes. If you did not ask for this, you can ignore this email.</p></div>`};
+}
+async function resendMail(to,message){
+ const env=globalThis.Deno?.env,key=env?.get('RESEND_API_KEY')??'',from=env?.get('MAIL_FROM')??'Harvest Tycoon <noreply@harvesttycoon.com>';
+ if(!key)throw Error('Email is not available right now. Try again later.');
+ const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({from,to:[to],subject:message.subject,html:message.html,text:message.text})});
+ if(!response.ok)throw Error('The email could not be sent. Try again in a moment.');
+}
+export async function sendEmailCode({admin,user,now=Date.now(),mail=resendMail,random=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
+ if(!user.email)throw Error('Your account has no email address.');
+ const checked=await admin.rpc('harvest_email_checked',{p_player:user.id});if(checked.error)throw checked.error;
+ if(checked.data===true)return {verified:true};
+ const row=await admin.from('email_checks').select('*').eq('player_id',user.id).maybeSingle();if(row.error)throw row.error;
+ const r=row.data,day=new Date(now).toISOString().slice(0,10),sends=r?.send_day===day?r.sends_today:0;
+ if(r?.sent_at&&now-Date.parse(r.sent_at)<EMAIL_CODE.waitMs)throw Error('Wait a minute before asking for a new code.');
+ if(sends>=EMAIL_CODE.perDay)throw Error('You asked for 5 codes today. Try again tomorrow.');
+ const code=String(random()%1000000).padStart(6,'0');
+ const saved=await admin.from('email_checks').upsert({player_id:user.id,email:user.email,code_hash:await codeHash(user.id,code),code_expires_at:new Date(now+EMAIL_CODE.validMs).toISOString(),attempts:0,sent_at:new Date(now).toISOString(),send_day:day,sends_today:sends+1,confirmed_at:null});
+ if(saved.error)throw saved.error;
+ await mail(user.email,emailCodeMessage(code));
+ return {sent:true,email:user.email,waitMs:EMAIL_CODE.waitMs};
+}
+export async function confirmEmailCode({admin,user,code,now=Date.now()}){
+ if(!/^\d{6}$/.test(String(code??'')))throw Error('Type the 6 digits from the email.');
+ const row=await admin.from('email_checks').select('*').eq('player_id',user.id).maybeSingle();if(row.error)throw row.error;
+ const r=row.data;
+ if(!r?.code_hash||!r.code_expires_at||Date.parse(r.code_expires_at)<=now)throw Error('This code has expired. Ask for a new one.');
+ if(r.attempts>=EMAIL_CODE.tries)throw Error('Too many tries. Ask for a new code.');
+ if(r.email?.toLowerCase()!==String(user.email??'').toLowerCase())throw Error('Your email address changed. Ask for a new code.');
+ if(await codeHash(user.id,code)!==r.code_hash){
+  const left=EMAIL_CODE.tries-r.attempts-1;
+  const u=await admin.from('email_checks').update({attempts:r.attempts+1}).eq('player_id',user.id);if(u.error)throw u.error;
+  throw Error(left>0?`That code is not right. ${left} ${left===1?'try':'tries'} left.`:'Too many tries. Ask for a new code.');
+ }
+ const u=await admin.from('email_checks').update({confirmed_at:new Date(now).toISOString(),code_hash:null,code_expires_at:null,attempts:0}).eq('player_id',user.id);if(u.error)throw u.error;
+ return {verified:true};
 }
 export async function handleEvents({admin,body,user}){
  const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:user.id}}});
@@ -86,6 +130,8 @@ export async function handleEvents({admin,body,user}){
    const [event,players,count]=await Promise.all([admin.from('live_events').select('*').eq('id',body.eventId).single(),admin.from('live_event_players').select('*').eq('event_id',body.eventId).order('player_id').range(Math.max(0,Math.floor(Number(body.offset)||0)),Math.max(0,Math.floor(Number(body.offset)||0))+99),admin.from('live_event_players').select('*',{count:'exact',head:true}).eq('event_id',body.eventId)]);
    for(const r of [event,players,count])if(r.error)throw r.error;return respond({event:event.data,players:players.data,total:count.count});
   }
+  if(!managing&&body.command==='email_send')return respond(await sendEmailCode({admin,user}));
+  if(!managing&&body.command==='email_confirm')return respond(await confirmEmailCode({admin,user,code:body.code}));
   if(!managing&&body.command==='claim'){
    const r=await admin.rpc('harvest_event_claim',{p_player:user.id,p_event:body.eventId});if(r.error)throw r.error;return respond({reward:r.data});
   }

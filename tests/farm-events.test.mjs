@@ -181,11 +181,16 @@ test('twelve automatic events, the new ones about one crop or eggs, and every go
  for(const stat of EVENT_STATS)assert.match(sql,new RegExp(`'${stat}'`),`${stat} is allowed by harvest_event_validate`);
  assert.match(sql,/or \(stat like 'harvest\\_%' and action in \('field','tractor'\)\) or \(stat like 'made\\_%' and action in \('collect','collect_all'\)\);/,'progress counts a crop on harvest and eggs on collecting');
 });
-test('events open as soon as a farm reaches level 10: no 48-hour wait in the trigger, farm-api or the event screen',()=>{
- const sql=readFileSync(new URL('../supabase/live-events-no-wait.sql',import.meta.url),'utf8');
- assert.match(sql,/replace\(definition,'created_at<now\(\)-interval ''48 hours'' and ',''\)/);
- assert.match(sql,/raise exception 'harvest_event_progress: the 48-hour condition was not found'/);
- assert.match(readFileSync(new URL('../supabase/functions/farm-api/event-service.js',import.meta.url),'utf8'),/minLevel:10,openAt:0,verified:/);
+test('events open at level 10 with an email the game checked itself (a code), without the 48-hour wait',()=>{
+ const sql=readFileSync(new URL('../supabase/event-email-check.sql',import.meta.url),'utf8');
+ assert.match(sql,/create table if not exists public\.email_checks/);
+ assert.match(sql,/coalesce\(u\.raw_app_meta_data->>'provider','email'\)<>'email'/,'Google and Facebook count as checked');
+ assert.match(sql,/'not public\.harvest_email_checked\(new\.player_id\)'/,'the trigger gate: the checked email instead of the account age');
+ assert.match(sql,/revoke all on public\.email_checks from anon, authenticated;/);
+ assert.match(sql,/grant execute on function public\.harvest_email_checked\(uuid\) to service_role;/);
+ const api=readFileSync(new URL('../supabase/functions/farm-api/event-service.js',import.meta.url),'utf8');
+ assert.match(api,/minLevel:10,openAt:0,verified:checked\.data===true/);
  const ui=readFileSync(new URL('../public/live-events-ui.js',import.meta.url),'utf8');
  assert.doesNotMatch(ui,/48 hours/);assert.match(ui,/Open from level 10\./);
+ assert.match(ui,/if\(dialog\.open&&needsEmail\(\)&&!emailAsked\)\{emailAsked=true;emailCheck\.open\(\);\}/,'the pop-up comes up by itself once');
 });

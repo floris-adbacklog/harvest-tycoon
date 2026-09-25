@@ -1,0 +1,47 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {sendEmailCode,confirmEmailCode,EMAIL_CODE,emailCodeMessage} from '../supabase/functions/farm-api/event-service.js';
+
+// A tiny stand-in for the email_checks table and the harvest_email_checked check.
+function db({checked=false}={}){
+ let row=null;
+ const table={
+  select(){return this;},eq(){return this;},
+  async maybeSingle(){return {data:row?{...row}:null,error:null};},
+  async upsert(value){row={...value};return {error:null};},
+  update(patch){return {eq:async()=>{row={...row,...patch};return {error:null};}};}
+ };
+ return {row:()=>row,rpc:async()=>({data:checked||Boolean(row?.confirmed_at),error:null}),from:()=>table};
+}
+const user={id:'00000000-0000-4000-8000-000000000001',email:'farmer@example.com'};
+
+test('a code goes to the farmer\'s own address, at most once a minute and 5 times a day, and only its hash is kept',async()=>{
+ const admin=db(),sent=[];const mail=async(to,m)=>sent.push({to,m});let t=Date.UTC(2026,8,25,10);
+ const r=await sendEmailCode({admin,user,now:t,mail,random:()=>123456});
+ assert.equal(r.sent,true);assert.equal(sent[0].to,user.email);assert.match(sent[0].m.subject,/123456/);
+ assert.ok(!JSON.stringify(admin.row()).includes('123456'),'the code itself is never stored');
+ await assert.rejects(()=>sendEmailCode({admin,user,now:t+30000,mail}),/Wait a minute/);
+ for(let i=1;i<EMAIL_CODE.perDay;i++){t+=EMAIL_CODE.waitMs;await sendEmailCode({admin,user,now:t,mail});}
+ await assert.rejects(()=>sendEmailCode({admin,user,now:t+EMAIL_CODE.waitMs,mail}),/5 codes today/);
+ assert.equal(sent.length,EMAIL_CODE.perDay);
+});
+
+test('the right code within 30 minutes confirms; wrong codes count down, and an old code expires',async()=>{
+ const admin=db(),t=Date.UTC(2026,8,25,10);
+ await sendEmailCode({admin,user,now:t,mail:async()=>{},random:()=>654321});
+ await assert.rejects(()=>confirmEmailCode({admin,user,code:'12',now:t}),/6 digits/);
+ await assert.rejects(()=>confirmEmailCode({admin,user,code:'111111',now:t}),/4 tries left/);
+ assert.deepEqual(await confirmEmailCode({admin,user,code:'654321',now:t+60000}),{verified:true});
+ assert.ok(admin.row().confirmed_at);assert.equal(admin.row().code_hash,null);
+ const late=db();await sendEmailCode({admin:late,user,now:t,mail:async()=>{},random:()=>1});
+ await assert.rejects(()=>confirmEmailCode({admin:late,user,code:'000001',now:t+EMAIL_CODE.validMs}),/expired/);
+ const many=db();await sendEmailCode({admin:many,user,now:t,mail:async()=>{},random:()=>2});
+ for(let i=0;i<EMAIL_CODE.tries;i++)await confirmEmailCode({admin:many,user,code:'999999',now:t}).catch(()=>{});
+ await assert.rejects(()=>confirmEmailCode({admin:many,user,code:'000002',now:t}),/Too many tries/);
+});
+
+test('an account that is already checked (or Google/Facebook) gets no email',async()=>{
+ const sent=[];const r=await sendEmailCode({admin:db({checked:true}),user,mail:async()=>sent.push(1)});
+ assert.deepEqual(r,{verified:true});assert.equal(sent.length,0);
+ assert.match(emailCodeMessage('042042').text,/within 30 minutes/);
+});
