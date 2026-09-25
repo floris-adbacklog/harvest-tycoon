@@ -1,5 +1,6 @@
-// The staff dashboard (the admin and the moderators): three headline numbers, the chat reports, who is online, the newest real
-// accounts, a 7-day retention cohort and the Invite a friend log; for the admin also news for everyone, the moderators and the
+// The staff dashboard (the admin and the moderators): three headline numbers, the chat reports, who is online, every farmer with
+// when they were last active and one farmer's details (src/admin-players.js), where new players stop, a 7-day retention cohort
+// and the Invite a friend log; for the admin also news for everyone, the moderators and the
 // levels from which farmers may chat (supabase/chat.sql). Giving coins, XP, diamonds or goods stays admin-only (the profile). Farm events run on their own schedule (live-events-schedule.sql), so they have no controls here. A single
 // icon button in the topbar (hidden for everyone else, same gate as the gift panel in player-profiles.js) opens
 // its own dialog inside the game, instead of a separate page — one session, one sign-in, nothing extra to visit.
@@ -8,6 +9,7 @@ import {refreshArt} from '../public/visual-icons.js';
 import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {avatarImage} from '../public/player-avatars.js';
+import {PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml} from './admin-players.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
@@ -37,8 +39,11 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'</div><div data-admin-panel="players" hidden>'
   +'<section class="admin-card" id="admin-donate" hidden><h3>'+art('gift')+'A gift for everyone</h3><form id="admin-donate-form" class="admin-donate"><label><span>'+art('diamonds')+'Diamonds</span><input type="number" id="admin-donate-diamonds" min="0" max="50" step="1" value="0" inputmode="numeric"></label><label><span>'+art('coins')+'Coins</span><input type="number" id="admin-donate-coins" min="0" max="500" step="10" value="0" inputmode="numeric"></label><label class="admin-donate-message"><span>Message</span><input type="text" id="admin-donate-message" maxlength="120" placeholder="Thanks for playing!"></label><button type="submit" class="primary-button">Send to everyone</button></form><p class="admin-hint" id="admin-donate-room"></p></section>'
   +'<section class="admin-card"><h3>'+art('family-members')+'Online now <span id="admin-online-count">0</span></h3><ul id="admin-online-list" class="admin-online-list"></ul><p class="admin-hint">Active in the last <span id="admin-online-window">30</span> minutes.</p></section>'
-  +'<section class="admin-card"><h3>'+art('invite-friends')+'Newest players</h3><ul id="admin-recent-list" class="admin-recent-list"></ul></section>'
+  +'<section class="admin-card" id="admin-players"><h3>'+art('family-members')+'All players <span id="admin-players-count">0</span></h3><div class="admin-player-tools"><input type="search" id="admin-player-search" placeholder="Search by name" aria-label="Search players" autocomplete="off"><select id="admin-player-sort" aria-label="Order">'+PLAYER_SORTS.map(([id,label])=>`<option value="${id}">${label}</option>`).join('')+'</select></div><div class="admin-filters" role="group" aria-label="Show">'+PLAYER_FILTERS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-player-filter="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-player-list" class="admin-recent-list admin-player-list"></ul><button type="button" id="admin-player-more" class="small-button admin-more" hidden>Show more</button><p class="admin-hint">Last active: the last time the farm saved. Gone quiet: played before, not active for 7 days or more. New: joined in the last 7 days.</p></section>'
+  +'<section class="admin-card admin-player-detail" id="admin-player-detail" hidden></section>'
   +'</div><div data-admin-panel="growth" hidden>'
+  +'<section class="admin-card" id="admin-funnel"><h3>'+art('quests')+'New players: where do they stop?</h3><div class="admin-filters" role="group" aria-label="Period">'+FUNNEL_PERIODS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-funnel-period="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-funnel-list" class="admin-bars admin-funnel"></ul><p class="admin-hint">Of everyone who made an account in the period, how many got this far. Coming back counts only farmers who joined long enough ago, from their last activity.</p></section>'
+  +'<section class="admin-card" id="admin-countries" hidden><h3>'+art('invite-friends')+'Where players come from</h3><ul id="admin-country-list" class="admin-bars"></ul><p class="admin-hint">The country of the IP address the last time each farmer opened the game.</p></section>'
   +'<section class="admin-card"><h3>'+art('xp')+'Retention, day 0–7</h3><p class="admin-hint">Share of each day’s signups still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
   +'<section class="admin-card"><h3>'+art('gift')+'Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
   +'</div><div data-admin-panel="settings" hidden>'
@@ -61,8 +66,37 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   dialog.querySelector('#admin-online-window').textContent=data.windowMinutes;
   dialog.querySelector('#admin-online-list').innerHTML=data.players.length?data.players.map(p=>`<li>${avatar(p.username,true,p.playerId)}<span><strong>${esc(p.username??'Unnamed')}</strong><small>Level ${number(p.level)}</small></span></li>`).join(''):'<li class="admin-empty">Nobody is online right now.</li>';
  }
- function renderRecent(data){
-  dialog.querySelector('#admin-recent-list').innerHTML=data.players.length?data.players.map(p=>`<li>${avatar(p.username,p.online,p.playerId)}<span class="admin-recent-copy"><strong>${esc(p.username??'Unnamed')}</strong><small>${p.everPlayed?`Level ${number(p.level)} · ${number(p.coins)} coins`:'Never opened a farm'}</small></span><time datetime="${esc(p.createdAt)}" title="${esc(fmtDate(p.createdAt))}">${ago(p.createdAt)}</time></li>`).join(''):'<li class="admin-empty">No players yet.</li>';
+ // All players: the filter, search and order stay as they are when the list refreshes; one farmer's details replace the list
+ // until "All players". The funnel and the countries read the same list.
+ const view={filter:'all',search:'',sort:'active',shown:60,period:'7',players:[],owner:false,guideSteps:GUIDE_STEPS.length,detail:null};
+ function renderPlayers(){
+  const found=filterPlayers(view.players,view),list=dialog.querySelector('#admin-player-list');
+  dialog.querySelector('#admin-players-count').textContent=found.length===view.players.length?number(found.length):`${number(found.length)} of ${number(view.players.length)}`;
+  list.innerHTML=found.length?found.slice(0,view.shown).map(p=>playerRow(p,{guideSteps:view.guideSteps})).join(''):'<li class="admin-empty">No farmers match.</li>';
+  const more=dialog.querySelector('#admin-player-more');more.hidden=found.length<=view.shown;more.textContent=`Show more (${number(found.length-view.shown)} left)`;
+ }
+ function renderFunnel(){dialog.querySelector('#admin-funnel-list').innerHTML=funnelHtml(funnel(view.players,view.period));}
+ function renderCountries(){const box=dialog.querySelector('#admin-countries');box.hidden=!view.owner;if(view.owner)dialog.querySelector('#admin-country-list').innerHTML=countriesHtml(countryCounts(view.players));}
+ function showPlayers(data){
+  view.players=data.players??[];view.owner=Boolean(data.owner);view.guideSteps=data.guideSteps??GUIDE_STEPS.length;
+  faces=new Map([...faces,...view.players.filter(p=>p.avatarId).map(p=>[p.playerId,p.avatarId])]);
+  dialog.querySelector('#admin-player-search').placeholder=view.owner?'Search by name, country or IP':'Search by name';
+  renderPlayers();renderFunnel();renderCountries();
+ }
+ function pressed(buttons,on){buttons.forEach(b=>{const yes=b===on;b.classList.toggle('active',yes);b.setAttribute('aria-pressed',String(yes));});}
+ // One farmer: the list and the other cards step aside; "All players" brings them back where they were.
+ async function openPlayer(id){
+  const box=dialog.querySelector('#admin-player-detail'),panel=dialog.querySelector('[data-admin-panel="players"]');
+  view.detail=id;panel.querySelectorAll(':scope>section:not(#admin-player-detail)').forEach(s=>s.classList.add('is-behind'));
+  box.hidden=false;box.innerHTML='<p class="admin-hint">Loading the farmer…</p>';box.scrollIntoView?.({block:'start'});
+  try{
+   const {player}=await bridge.request({operation:'admin_player',playerId:id});if(view.detail!==id)return;
+   box.innerHTML=playerDetail(player,{guideSteps:GUIDE_STEPS});refreshArt();
+  }catch(error){box.innerHTML=`<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button></div><p class="admin-hint">${esc(error.message)}</p>`;}
+ }
+ function closePlayer(){
+  view.detail=null;const panel=dialog.querySelector('[data-admin-panel="players"]');
+  dialog.querySelector('#admin-player-detail').hidden=true;panel.querySelectorAll('.is-behind').forEach(s=>s.classList.remove('is-behind'));
  }
  // Headline numbers: who is on now, today's signups (today's retention row) and how many of the recent signups came
  // back the next day, weighted by cohort size.
@@ -90,9 +124,10 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const status=dialog.querySelector('#admin-dashboard-status');status.textContent='Refreshing…';
   void loadChat();
   try{
-   const [online,recent,retention,invites]=await Promise.all([bridge.request({operation:'admin_online'}),bridge.request({operation:'admin_recent_players'}),bridge.request({operation:'admin_retention'}),bridge.request({operation:'admin_invites'}).catch(()=>null)]);
-   await loadFaces([...online.players,...recent.players].map(p=>p.playerId));
-   renderOnline(online);renderRecent(recent);renderRetention(retention);renderKpis(online,retention);if(invites)renderInvites(invites);
+   const [online,players,retention,invites]=await Promise.all([bridge.request({operation:'admin_online'}),bridge.request({operation:'admin_players'}).catch(()=>null),bridge.request({operation:'admin_retention'}),bridge.request({operation:'admin_invites'}).catch(()=>null)]);
+   if(players)showPlayers(players);
+   await loadFaces(online.players.map(p=>p.playerId));
+   renderOnline(online);renderRetention(retention);renderKpis(online,retention);if(invites)renderInvites(invites);
    status.textContent=`Updated ${new Date().toLocaleTimeString('en-US')}`;
   }catch(error){status.textContent=error.message;}
  }
@@ -124,6 +159,16 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    if(levels&&document.activeElement?.closest?.('#admin-levels-form')==null){dialog.querySelector('#admin-level-global').value=levels.global;dialog.querySelector('#admin-level-dm').value=levels.dm;}
   }catch(error){chatStatus.textContent=error.message;}
  }
+ dialog.querySelector('#admin-player-search').addEventListener('input',event=>{view.search=event.target.value;view.shown=60;renderPlayers();});
+ dialog.querySelector('#admin-player-sort').addEventListener('change',event=>{view.sort=event.target.value;renderPlayers();});
+ dialog.querySelectorAll('[data-player-filter]').forEach(b=>b.onclick=()=>{view.filter=b.dataset.playerFilter;view.shown=60;pressed(dialog.querySelectorAll('[data-player-filter]'),b);renderPlayers();});
+ dialog.querySelectorAll('[data-funnel-period]').forEach(b=>b.onclick=()=>{view.period=b.dataset.funnelPeriod;pressed(dialog.querySelectorAll('[data-funnel-period]'),b);renderFunnel();});
+ dialog.querySelector('#admin-player-more').onclick=()=>{view.shown+=60;renderPlayers();};
+ dialog.querySelector('[data-admin-panel="players"]').addEventListener('click',event=>{
+  const row=event.target.closest('[data-player]');if(row){void openPlayer(row.dataset.player);return;}
+  if(event.target.closest('[data-player-back]')){closePlayer();return;}
+  const profile=event.target.closest('[data-open-profile]');if(profile)window.harvestProfiles?.open(profile.dataset.openProfile,{back:null});
+ });
  // A name in the log opens that farmer's profile (with the chat buttons: mute, ban), on top of the dashboard.
  dialog.querySelector('#admin-log-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
  dialog.querySelector('#admin-report-list').addEventListener('click',async event=>{

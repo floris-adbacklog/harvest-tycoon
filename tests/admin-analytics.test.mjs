@@ -114,15 +114,15 @@ test('admin_retention: a day-offset that has not elapsed yet is null, never a fa
 
 test('the admin_online/admin_recent_players/admin_retention operations are wired in, gated, and reachable before a username is required',()=>{
  const code=read('supabase/functions/farm-api/index.ts');
- assert.match(code,/import \{handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites\} from '\.\/admin-analytics-service\.js';/);
- for(const op of ['admin_online','admin_recent_players','admin_retention'])assert.match(code,new RegExp(`'${op}'`));
+ assert.match(code,/import \{handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,recordSeen\} from '\.\/admin-analytics-service\.js';/);
+ for(const op of ['admin_online','admin_recent_players','admin_retention','admin_players','admin_player'])assert.match(code,new RegExp(`'${op}'`));
  const before=code.indexOf('if(!username)return reply');
- for(const marker of ["body.operation==='admin_online'","body.operation==='admin_recent_players'","body.operation==='admin_retention'"])assert.ok(code.indexOf(marker)<before,marker);
+ for(const marker of ["body.operation==='admin_online'","body.operation==='admin_recent_players'","body.operation==='admin_retention'","body.operation==='admin_players'","body.operation==='admin_player'"])assert.ok(code.indexOf(marker)<before,marker);
 });
 test('handleAdminOnline/RecentPlayers/Retention/Invites each check isStaff (the admin or a moderator), from the same place admin_grant uses; giving stays admin-only',()=>{
  const code=read('supabase/functions/farm-api/admin-analytics-service.js');
- assert.match(code,/import \{isStaff\} from '\.\/admin-service\.js';/);
- assert.equal((code.match(/if\(!\(await isStaff\(admin,user\)\)\)return respond\(user,\{error:'Not authorized\.'\},403\);/g)??[]).length,4);
+ assert.match(code,/import \{isStaff,isSuperadmin\} from '\.\/admin-service\.js';/);
+ assert.equal((code.match(/if\(!\(await isStaff\(admin,user\)\)\)return respond\(user,\{error:'Not authorized\.'\},403\);/g)??[]).length,6);
  const grant=read('supabase/functions/farm-api/admin-service.js');
  assert.match(grant,/export async function isStaff\(admin,user\)\{\n if\(isSuperadmin\(user\)\)return true;/);
  assert.match(grant,/if\(!isSuperadmin\(user\)\)return respond\(\{error:'Not authorized\.'\},403\);/,'admin_grant: still only the admin');
@@ -169,8 +169,8 @@ test('players show their own picture (initials only when there is none), with th
  const js=read('src/admin-dashboard.js');
  assert.match(js,/const avatar=\(name,online,id\)=>\{const face=id&&faces\.get\(id\);return `<span class="admin-avatar\$\{face\?' has-face':''\}">\$\{face\?avatarImage\(face\):esc\(initials\(name\)\)\}\$\{online\?'<span class="online-dot is-online" aria-hidden="true"><\/span>':''\}<\/span>`;\};/);
  assert.match(js,/avatar\(p\.username,true,p\.playerId\)/,'everyone in the online list is, by definition, online');
- assert.match(js,/avatar\(p\.username,p\.online,p\.playerId\)/,'the newest players show whichever is true for that farmer');
- assert.match(js,/await loadFaces\(\[\.\.\.online\.players,\.\.\.recent\.players\]\.map\(p=>p\.playerId\)\);/);
+ assert.match(read('src/admin-players.js'),/const face=p=>`<span class="admin-avatar\$\{p\.avatarId\?' has-face':''\}">\$\{p\.avatarId\?avatarImage\(p\.avatarId\)/,'the player list shows whichever is true for that farmer');
+ assert.match(js,/await loadFaces\(online\.players\.map\(p=>p\.playerId\)\);/);
 });
 test('retention percentages are colour-coded so a pattern is visible at a glance, not just readable as numbers',()=>{
  const js=read('src/admin-dashboard.js');
@@ -182,7 +182,7 @@ test('retention percentages are colour-coded so a pattern is visible at a glance
 });
 test('the dashboard fetches all three admin operations through the same bridge every other request uses',()=>{
  const js=read('src/admin-dashboard.js');
- assert.match(js,/bridge\.request\(\{operation:'admin_online'\}\),bridge\.request\(\{operation:'admin_recent_players'\}\),bridge\.request\(\{operation:'admin_retention'\}\)/);
+ assert.match(js,/bridge\.request\(\{operation:'admin_online'\}\),bridge\.request\(\{operation:'admin_players'\}\)\.catch\(\(\)=>null\),bridge\.request\(\{operation:'admin_retention'\}\)/);
  assert.match(js,/document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);refreshArt\(\);dialog\.showModal\(\);load\(\);/,'closes whatever else is open first, like every other dialog');
  assert.match(js,/refreshTimer=setInterval\(load,60000\);/);
  assert.match(js,/dialog\.addEventListener\('close',\(\)=>clearInterval\(refreshTimer\)\);/,'stops polling once closed');
@@ -195,10 +195,10 @@ test('game-cloud.js creates the dashboard once, alongside the player-profile/gif
 test('checkAdmin is exported from player-profiles.js so admin-dashboard.js does not duplicate the account check',()=>{
  assert.match(read('src/player-profiles.js'),/export function checkAdmin\(\)\{/);
 });
-test('the dashboard opens with three headline numbers, lists the newest players, and has no event controls any more',()=>{
+test('the dashboard opens with three headline numbers, lists every player, and has no event controls any more',()=>{
  const js=read('src/admin-dashboard.js'),html=read('public/farm.html'),icons=read('public/visual-icons.js');
  assert.match(js,/<div class="admin-kpis"><div>'\+art\('family-members'\)\+'<strong id="admin-kpi-online">/);assert.match(js,/renderKpis\(online,retention\)/);
- assert.match(js,/<ul id="admin-recent-list" class="admin-recent-list"><\/ul>/);
+ assert.match(js,/<ul id="admin-player-list" class="admin-recent-list admin-player-list"><\/ul>/);
  assert.ok(!/admin-events|mountAdminEvents|liveEvents/.test(js),'farm events run on their own schedule');
  assert.match(html,/id="admin-menu-entry" hidden><i data-game-art="admin"><\/i><span><strong>Admin dashboard<\/strong><small>Players and retention<\/small>/);
  assert.match(icons,/for\(const id of \[[^\]]*'admin'[^\]]*\]\)pictures\[id\]=id;/,'the painted shield with the key (WebP)');assert.ok(!/svgArt=new Set\(\[[^\]]*'admin'/.test(icons));

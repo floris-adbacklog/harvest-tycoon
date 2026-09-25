@@ -51,7 +51,7 @@ export function safeToRepeat(body){
  const operation=body?.operation;
  if(operation==='action')return typeof body.requestId==='string'&&body.requestId.length>0;
  if(operation==='family')return Object.keys(body).length===1;
- return ['load','player_search','player_profile','rename','avatar','admin_online','admin_recent_players','admin_retention','admin_invites'].includes(operation);
+ return ['load','player_search','player_profile','rename','avatar','admin_online','admin_recent_players','admin_retention','admin_invites','admin_players','admin_player'].includes(operation);
 }
 
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));

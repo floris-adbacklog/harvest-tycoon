@@ -1151,3 +1151,54 @@
 .email-check-status{min-height:20px;margin:10px 0 0!important;font-size:13px!important;color:#7a5510!important}
 .email-check-status:empty{display:none}
 .event-email-open{margin:10px 0 0}
+
+/* Admin dashboard: every farmer with when they were last active, one farmer's details, where new players stop and where players
+   come from (src/admin-players.js). The filters are small chips in the tabs' own style. */
+#admin-dashboard-dialog .admin-player-tools{display:flex;gap:8px;margin:0 0 8px}
+#admin-dashboard-dialog .admin-player-tools input{flex:1;min-width:0;min-height:40px;box-sizing:border-box;padding:0 12px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:500 14px 'DM Sans',sans-serif}
+#admin-dashboard-dialog .admin-player-tools select{flex:none;min-height:40px;padding:0 8px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 13px 'DM Sans',sans-serif}
+#admin-dashboard-dialog .admin-filters{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+#admin-dashboard-dialog .admin-filter{min-height:32px;padding:4px 12px;border:1px solid #e3d6c1;border-radius:999px;background:#efe6d8;color:#857660;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer}
+#admin-dashboard-dialog .admin-filter:not(.active):hover{background:#f7f0e3;color:#5b4520}
+#admin-dashboard-dialog .admin-filter.active{background:#fffdf5;border-color:#d9c7a4;color:#5b4520;box-shadow:0 2px 0 #e2d3b3}
+#admin-dashboard-dialog .admin-player-list>li{padding:0}
+#admin-dashboard-dialog .admin-player-row{display:flex;align-items:center;gap:10px;width:100%;padding:9px 4px;border:0;border-radius:10px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+#admin-dashboard-dialog .admin-player-row:hover{background:#f3ecdf}
+#admin-dashboard-dialog .admin-player-row .admin-avatar{width:36px;height:36px}
+#admin-dashboard-dialog .admin-player-row small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#admin-dashboard-dialog .admin-last-active{flex:none;display:grid;justify-items:end;gap:1px;text-align:right}
+#admin-dashboard-dialog .admin-last-active b{font-size:12.5px;color:#4f472f}
+#admin-dashboard-dialog .admin-last-active time{font-size:11.5px;font-weight:600;color:#8a7c69;font-variant-numeric:tabular-nums}
+#admin-dashboard-dialog .admin-chip{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;vertical-align:1px}
+#admin-dashboard-dialog .admin-chip.is-vip{background:#f7e3a3;color:#7a5a10}
+#admin-dashboard-dialog .admin-chip.is-drop{background:#f6d9cf;color:#9a4a2c}
+#admin-dashboard-dialog .admin-more{display:block;width:auto;margin:10px auto 0}
+#admin-dashboard-dialog .is-behind{display:none}
+#admin-dashboard-dialog .admin-detail-top{display:flex;justify-content:space-between;gap:8px;margin:0 0 12px}
+#admin-dashboard-dialog .admin-detail-top .small-button{width:auto}
+#admin-dashboard-dialog .admin-detail-head{display:flex;align-items:center;gap:12px;margin:0 0 6px}
+#admin-dashboard-dialog .admin-detail-head .admin-avatar{width:56px;height:56px;font-size:16px}
+#admin-dashboard-dialog .admin-detail-head h3{margin:0}
+#admin-dashboard-dialog .admin-detail-head small{font-size:13px;color:#7a6c58}
+#admin-dashboard-dialog .admin-player-detail h4{margin:16px 0 6px;font:600 14px 'Outfit',sans-serif;letter-spacing:.02em;color:#6b5d44}
+#admin-dashboard-dialog .admin-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;margin:0;border:1px solid #eee6da;border-radius:12px;overflow:hidden;background:#eee6da}
+#admin-dashboard-dialog .admin-facts>div{padding:8px 10px;background:#fffdf7;min-width:0}
+#admin-dashboard-dialog .admin-facts>div:last-child:nth-child(odd){grid-column:1/-1}
+#admin-dashboard-dialog .admin-facts dt{font-size:11px;font-weight:700;letter-spacing:.03em;color:#8a7c69}
+#admin-dashboard-dialog .admin-facts dd{margin:2px 0 0;font-size:13.5px;font-weight:600;color:#3f3827;overflow-wrap:anywhere}
+#admin-dashboard-dialog .admin-facts dd small{font-weight:500;color:#8a7c69}
+#admin-dashboard-dialog .admin-link{display:inline;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:#5b6f3a;font:inherit;font-weight:700;line-height:inherit;vertical-align:baseline;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+#admin-dashboard-dialog .admin-bars{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+#admin-dashboard-dialog .admin-bars>li:not(.admin-empty):not(.admin-funnel-split){display:grid;grid-template-columns:minmax(0,11fr) minmax(0,9fr) auto;align-items:center;gap:10px;font-size:13px;color:#4f472f}
+#admin-dashboard-dialog .admin-bars>li>span small{color:#8a7c69}
+#admin-dashboard-dialog .admin-bars i{display:block;height:10px;border-radius:99px;background:#efe6d8;overflow:hidden}
+#admin-dashboard-dialog .admin-bars i>b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#8fb35c,#6f9a45)}
+#admin-dashboard-dialog .admin-bars strong{min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
+#admin-dashboard-dialog .admin-bars strong small{display:block;font-size:11px;font-weight:600;color:#8a7c69}
+#admin-dashboard-dialog .admin-bars>li.is-worst i>b{background:linear-gradient(90deg,#e0a064,#c9713f)}
+#admin-dashboard-dialog .admin-funnel-split{margin-top:8px;padding-top:8px;border-top:1px solid #eee6da;font-size:12px;font-weight:700;color:#8a7c69}
+#admin-dashboard-dialog .admin-purchases>li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:13px}
+#admin-dashboard-dialog .admin-purchases>li>small{grid-column:1/-1;color:#8a7c69}
+@media(max-width:600px){
+ #admin-dashboard-dialog .admin-bars>li:not(.admin-empty):not(.admin-funnel-split){grid-template-columns:minmax(0,1fr) 70px auto}
+}

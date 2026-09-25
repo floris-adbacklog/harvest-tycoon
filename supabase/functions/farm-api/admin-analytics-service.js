@@ -1,5 +1,6 @@
-import {isStaff} from './admin-service.js';
+import {isStaff,isSuperadmin} from './admin-service.js';
 import {isRecentlyActive,ONLINE_WINDOW} from './presence.js';
+import {BEGINNER_QUESTS} from './farm-state.js';
 
 // bridge.request() in src/main.js checks every response's profile.player_id against the signed-in caller (a
 // stale-tab/concurrent-session guard every farm-api reply is expected to satisfy) — the admin's own id here,
@@ -95,4 +96,108 @@ export async function handleAdminInvites({admin,user,now=Date.now(),reward=150,l
  const totals={links:codes.count??0,friends:invites.length,qualified:invites.filter(i=>i.status==='qualified').length,
   diamondsPaid:invites.reduce((sum,i)=>sum+(i.friendPaid?i.friendReward:0)+(i.inviterPaid?i.inviterReward:0),0)};
  return respond(user,{totals,invites,rules:{reward,level,days}});
+}
+
+// Where and on what a farmer opened the game, for the admin (supabase/admin-player-insights.sql): the country Cloudflare reads from the
+// IP address, the IP address and the browser. One row per farmer, replaced on every load; a failure here never stops a farm opening.
+const IPV4=/^\d{1,3}(\.\d{1,3}){3}$/,IPV6=/^[0-9a-f:.]{2,45}$/i;
+export function seenFrom(headers){
+ const get=name=>String(headers?.get?.(name)??'').trim();
+ const country=get('cf-ipcountry').toUpperCase(),ip=get('cf-connecting-ip')||get('x-real-ip')||get('x-forwarded-for').split(',')[0].trim();
+ return {country:/^[A-Z]{2}$/.test(country)&&country!=='XX'?country:null,ip:IPV4.test(ip)||IPV6.test(ip)&&ip.includes(':')?ip:null,device:get('user-agent').slice(0,300)||null};
+}
+export async function recordSeen({admin,player,headers,now=Date.now()}){
+ const seen=seenFrom(headers);
+ const saved=await admin.from('player_seen').upsert({player_id:player,...seen,seen_at:new Date(now).toISOString()});
+ if(saved.error)throw saved.error;
+}
+// "iPhone · Safari", "Windows · Chrome", "Android phone · Facebook app": enough to tell devices apart, from the user agent.
+export function deviceName(agent){
+ const s=String(agent??'');if(!s)return null;
+ const system=/iPad/.test(s)?'iPad':/iPhone|iPod/.test(s)?'iPhone':/Android/.test(s)?(/Mobile/.test(s)?'Android phone':'Android tablet'):/CrOS/.test(s)?'Chromebook':/Windows/.test(s)?'Windows':/Macintosh|Mac OS X/.test(s)?'Mac':/Linux/.test(s)?'Linux':'Other';
+ const browser=/FBAN|FBAV|FB_IAB/.test(s)?'Facebook app':/Instagram/.test(s)?'Instagram app':/EdgA?\/|EdgiOS/.test(s)?'Edge':/SamsungBrowser/.test(s)?'Samsung Internet':/OPR\/|Opera/.test(s)?'Opera':/Firefox|FxiOS/.test(s)?'Firefox':/CriOS|Chrome\//.test(s)?'Chrome':/Safari\//.test(s)?'Safari':'Browser';
+ return `${system} · ${browser}`;
+}
+const num=value=>Number.isFinite(Number(value))?Number(value):0;
+
+// Every farmer in one list, for the Players tab and the new-player funnel (src/admin-dashboard.js): when they joined and how they
+// sign in, when they were last active, their level, days played, beginner guide step, VIP and family. The country, IP address and
+// device are for the admin only, never for the moderators.
+export async function handleAdminPlayers({admin,user,now=Date.now()}){
+ if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
+ const owner=isSuperadmin(user);
+ const [accounts,stats,farms,families]=await Promise.all([
+  admin.rpc('admin_player_accounts',{p_player:null}),
+  admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id').limit(5000),
+  admin.from('player_farms').select('player_id,diamonds:state->diamonds,visits:state->login->visits,streak:state->login->streak,guide:state->onboarding->completed,guideDone:state->onboarding->rewardClaimed,family:state->family->familyId').limit(5000),
+  admin.from('families').select('id,name').limit(5000)
+ ]);
+ for(const found of [accounts,stats,farms,families])if(found.error)throw found.error;
+ const stat=new Map((stats.data??[]).map(s=>[s.player_id,s])),farm=new Map((farms.data??[]).map(f=>[f.player_id,f])),family=new Map((families.data??[]).map(f=>[f.id,f.name]));
+ const players=(accounts.data??[]).map(a=>{
+  const s=stat.get(a.player_id),f=farm.get(a.player_id);
+  return {playerId:a.player_id,username:s?.username??null,level:s?.level??null,coins:s?.currency??null,diamonds:f?num(f.diamonds):null,avatarId:s?.avatar_id??null,
+   createdAt:a.created_at,lastActiveAt:s?.last_active_at??null,lastSignInAt:a.last_sign_in_at??null,provider:a.provider??'email',
+   online:s?isRecentlyActive(s.last_active_at,now):false,everPlayed:Boolean(s),vip:Date.parse(s?.vip_expires_at)>now,
+   daysPlayed:num(f?.visits),streak:num(f?.streak),guide:num(f?.guide),guideDone:f?.guideDone===true,family:f?.family?family.get(f.family)??'A family':null,
+   ...(owner?{country:a.country??null,ip:a.ip??null,device:deviceName(a.device)}:{})};
+ });
+ return respond(user,{players,owner,guideSteps:BEGINNER_QUESTS.length});
+}
+
+// One farmer: the account, time played, progress, what they spend their time on (the farm's own statistics), farm events, chat and
+// invites, and the other accounts that last played from the same IP address (a second account dodging a chat ban shows up here). A
+// moderator gets what moderating the chat needs: everything except the IP address itself, the country, the device, the Starter Pack
+// and the purchases.
+// Anything that fails to load beside the farm itself is left out, not fatal.
+const ACTIVITY=[['harvested','Crops harvested'],['planted','Crops planted'],['watered','Crops watered'],['tended','Crops cared for'],['produced','Goods made'],['sold','Items sold'],
+ ['deliveries','Orders delivered'],['dailies','Daily tasks'],['chores','Farm chores'],['activity_rounds','Helping hand rounds'],['tractor','Tractor fields'],['upgrades','Upgrades'],
+ ['expansions','Field expansions'],['projects','Estate projects'],['boosts_used','Boosts used']];
+export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
+ if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
+ if(!/^[0-9a-f-]{36}$/i.test(String(playerId??'')))return respond(user,{error:'Unknown farmer.'},400);
+ const owner=isSuperadmin(user),id=String(playerId);
+ const quiet=promise=>Promise.resolve(promise).then(found=>found?.error?null:found).catch(()=>null);
+ const [account,stat,farm,purchases,events,messages,reports,sanction,invitedBy,invited,membership]=await Promise.all([
+  admin.rpc('admin_player_accounts',{p_player:null}),
+  admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id,events_finished').eq('player_id',id).maybeSingle(),
+  admin.from('player_farms').select('state').eq('player_id',id).maybeSingle(),
+  quiet(admin.from('harvest_purchases').select('pack,status,amount_cents,diamonds,livemode,created_at').eq('player_id',id).order('created_at',{ascending:false}).limit(20)),
+  quiet(admin.from('live_event_players').select('qualified,diamonds,joined_at').eq('player_id',id).limit(500)),
+  quiet(admin.from('chat_messages').select('id',{count:'exact',head:true}).eq('sender',id)),
+  quiet(admin.from('chat_reports').select('id',{count:'exact',head:true}).eq('sender',id)),
+  quiet(admin.from('chat_sanctions').select('muted_until,banned').eq('player_id',id).maybeSingle()),
+  quiet(admin.from('referrals').select('referrer_id').eq('invitee_id',id).maybeSingle()),
+  quiet(admin.from('referrals').select('invitee_id,qualified_at').eq('referrer_id',id).limit(200)),
+  quiet(admin.from('family_members').select('family_id,role').eq('player_id',id).is('left_at',null).limit(1))
+ ]);
+ for(const found of [account,stat,farm])if(found.error)throw found.error;
+ const a=(account.data??[]).find(row=>row.player_id===id);if(!a)return respond(user,{error:'Unknown farmer.'},404);
+ const shared=a.ip?(account.data??[]).filter(row=>row.ip===a.ip&&row.player_id!==id).slice(0,20):[];
+ const s=stat.data,state=farm.data?.state??null,stats=state?.stats??{},member=membership?.data?.[0]??null,inviter=invitedBy?.data?.referrer_id??null;
+ const [familyRow,inviterRow,sharedRows]=await Promise.all([
+  member?quiet(admin.from('families').select('name').eq('id',member.family_id).maybeSingle()):null,
+  inviter?quiet(admin.from('player_stats').select('username').eq('player_id',inviter).maybeSingle()):null,
+  shared.length?quiet(admin.from('player_stats').select('player_id,username').in('player_id',shared.map(row=>row.player_id))):null
+ ]);
+ const sharedNames=new Map((sharedRows?.data??[]).map(row=>[row.player_id,row.username]));
+ const joined=events?.data??[],friends=invited?.data??[],muted=Date.parse(sanction?.data?.muted_until)>now;
+ const player={playerId:id,username:s?.username??null,level:s?.level??null,avatarId:s?.avatar_id??null,coins:s?.currency??null,diamonds:state?num(state.diamonds):null,xp:state?num(state.xp):null,
+  createdAt:a.created_at,lastActiveAt:s?.last_active_at??null,lastSignInAt:a.last_sign_in_at??null,provider:a.provider??'email',online:s?isRecentlyActive(s.last_active_at,now):false,everPlayed:Boolean(s),
+  vipUntil:Date.parse(s?.vip_expires_at)>now?s.vip_expires_at:null,
+  daysPlayed:num(state?.login?.visits),streak:num(state?.login?.streak),bestStreak:num(state?.login?.best),
+  guide:num(state?.onboarding?.completed),guideDone:state?.onboarding?.rewardClaimed===true,guideTotal:BEGINNER_QUESTS.length,
+  fields:Array.isArray(state?.plots)?state.plots.length:0,buildings:Object.values(state?.buildings??{}).filter(b=>b&&b.built!==false).length,
+  family:member?{name:familyRow?.data?.name??'A family',role:member.role??'member'}:null,
+  emailBonus:Boolean(state?.emailBonus),
+  activity:ACTIVITY.map(([key,label])=>({key,label,count:num(stats[key])})).concat([{key:'events',label:'Farm events finished',count:num(s?.events_finished)}]),
+  earned:{coins:num(stats.earned),diamonds:num(stats.diamonds_earned)},
+  events:{joined:joined.length,finished:joined.filter(e=>e.qualified).length,diamonds:joined.reduce((sum,e)=>sum+num(e.diamonds),0)},
+  chat:{messages:messages?.count??null,reported:reports?.count??null,muted,banned:sanction?.data?.banned===true},
+  invites:{invitedBy:inviter?inviterRow?.data?.username??'A farmer':null,friends:friends.length,qualified:friends.filter(f=>f.qualified_at).length},
+  sameNetwork:!a.ip?null:shared.map(row=>({playerId:row.player_id,username:sharedNames.get(row.player_id)??null,everPlayed:sharedNames.has(row.player_id)})),
+  ...(owner?{country:a.country??null,ip:a.ip??null,device:deviceName(a.device),userAgent:a.device??null,seenAt:a.seen_at??null,
+   starter:{offeredAt:num(state?.starterOffer?.unlockedAt)||null,bought:state?.starterPackClaimed===true},
+   purchases:(purchases?.data??[]).map(p=>({pack:p.pack,status:p.status,euros:num(p.amount_cents)/100,diamonds:num(p.diamonds),test:!p.livemode,createdAt:p.created_at}))}:{})};
+ return respond(user,{player,owner});
 }

@@ -5,7 +5,7 @@ import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily} from './family-service.js';
 import {handleAdminGrant} from './admin-service.js';
-import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites} from './admin-analytics-service.js';
+import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations} from './farm-state.js';
@@ -28,7 +28,7 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','invite'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_players','admin_player','invite'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='social'){const r=await handleSocial({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='player_search'||body.operation==='player_profile'){
@@ -46,6 +46,12 @@ Deno.serve(async(req)=>{
   if(body.operation==='admin_retention'){
    const retention=await handleAdminRetention({admin,user});return reply(retention.data,retention.status);
   }
+  if(body.operation==='admin_players'){
+   const players=await handleAdminPlayers({admin,user});return reply(players.data,players.status);
+  }
+  if(body.operation==='admin_player'){
+   const player=await handleAdminPlayer({admin,user,playerId:body.playerId});return reply(player.data,player.status);
+  }
   if(body.operation==='admin_invites'){
    const invites=await handleAdminInvites({admin,user});return reply(invites.data,invites.status);
   }
@@ -57,6 +63,8 @@ Deno.serve(async(req)=>{
   let profile=profileResponse.data;
   const username=profile?.username??(nameValid(user.user_metadata?.username)?user.user_metadata.username.trim():null);
   if(!username)return reply({error:'Choose a player name to open your farm.',code:'USERNAME_REQUIRED'},409);
+  // Where and on what the farm was opened, for the admin dashboard (admin-analytics-service.js): runs beside the load, never holds it up.
+  if(body.operation==='load'){const seen=Promise.resolve().then(()=>recordSeen({admin,player:user.id,headers:req.headers})).catch(()=>{});(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(seen);}
   // Sends each friend an invitation to this farmer's family, as this farmer's own family action; true when one was sent.
   async function inviteFriendsToFamily(friends:{playerId:string,invitedToFamily?:boolean}[]){
    let sent=false;
