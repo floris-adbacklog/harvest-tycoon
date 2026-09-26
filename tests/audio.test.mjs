@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 import {createFarmAudio,AUDIO_DEFAULTS,AUDIO_STORAGE_KEY,audioSettings,soundForAction,withActionSounds,createProductionCueTracker,SOUND_CUES} from '../public/farm-audio.js';
+import {CUE_ORDER,CUE_VARIANTS} from '../public/sound-kit.js';
 class Param{
  value=0;events=[];
  setValueAtTime(v,t){assert(Number.isFinite(v));this.value=v;this.events.push(['set',v,t]);}
@@ -25,11 +27,11 @@ class Context{
  async resume(){this.state='running';}async suspend(){this.state='suspended';}async close(){this.state='closed';}
 }
 function setup(saved,loader){
- const doc=new EventTarget();doc.hidden=false;const win=new EventTarget(),ctx=new Context(),writes=[];let created=0,loads=0;
- const audio=createFarmAudio({contextFactory:()=>{created++;return ctx;},storage:{getItem:()=>saved??null,setItem:(...args)=>writes.push(args)},documentRef:doc,windowRef:win,loadMusic:context=>{loads++;return loader?loader(context):Promise.resolve({duration:144});}});
+ const doc=new EventTarget();doc.hidden=false;const win=new EventTarget(),ctx=new Context(),writes=[];let created=0,loads=0,renderedFor=0;
+ const audio=createFarmAudio({contextFactory:()=>{created++;return ctx;},storage:{getItem:()=>saved??null,setItem:(...args)=>writes.push(args)},documentRef:doc,windowRef:win,renderSounds:(w,accept)=>{renderedFor++;for(const k of CUE_ORDER)for(let v=0;v<(CUE_VARIANTS[k]??1);v++)accept(k,v,new Float32Array(64),8000);},loadMusic:context=>{loads++;return loader?loader(context):Promise.resolve({duration:144});}});
  // Music loops; the effects (sound-kit.js buffers, or plain oscillator notes as the fallback) do not.
  const music=()=>ctx.buffers.filter(n=>n.loop),effects=()=>[...ctx.oscillators,...ctx.buffers.filter(n=>!n.loop)];
- return {audio,doc,win,ctx,writes,music,effects,created:()=>created,loads:()=>loads};
+ return {audio,doc,win,ctx,writes,music,effects,created:()=>created,loads:()=>loads,renderedFor:()=>renderedFor};
 }
 test('quiet defaults, validation and a saved mute preference are respected before any gesture',async()=>{
  assert.deepEqual(audioSettings({ambience:Infinity,effects:-20,enabled:'yes'}),{enabled:true,ambience:16,effects:0});
@@ -124,4 +126,16 @@ test('the effects are real little sounds (sound-kit.js): one per cue, short, nev
   assert.ok(Math.abs(loudness(a,24000)-CUE_LOUDNESS[kind])<.004,`${kind}: as loud as intended`);
  }
  assert.ok(CUE_LOUDNESS.levelup>CUE_LOUDNESS.harvest&&CUE_LOUDNESS.harvest>CUE_LOUDNESS.plant,'big moments a little louder than small ones');
+});
+test('the effects are made in the background (a worker), never while the farm is drawn; until one is ready its plain notes play',async()=>{
+ const s=setup();await s.audio.unlock();assert.equal(s.renderedFor(),1,'rendered once, when the sound first comes on');
+ await s.audio.unlock();assert.equal(s.renderedFor(),1);s.audio.dispose();
+ const audio=read('public/farm-audio.js'),worker=read('public/sound-worker.js');
+ assert.doesNotMatch(audio,/renderCue\(kind,ctx\.sampleRate/,'no sound is computed on the spot any more');
+ assert.match(audio,/new windowRef\.Worker\(new URL\('\.\/sound-worker\.js',import\.meta\.url\),\{type:'module'\}\)/);
+ assert.match(worker,/self\.postMessage\(\{kind,variant,rate,data\},\[data\.buffer\]\)/,'handed over without copying');
+ const {CUE_ORDER:order,CUE_LENGTH,SFX_RATE}=await import('../public/sound-kit.js');
+ assert.deepEqual([...order].sort(),Object.keys(CUE_LENGTH).sort(),'every cue is made');assert.equal(SFX_RATE,24000);
+ const quiet=setup(),notes=quiet.ctx.oscillators;
+ quiet.audio.dispose();assert.equal(notes.length,0);
 });

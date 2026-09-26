@@ -55,13 +55,15 @@ export function renderCue(kind,rate=48000,variant=0){
   case 'diamond': // glassy shimmer
    [88,95,100].forEach((m,i)=>{add(i*.1,bell(hz(m),.8,.22,.4));add(i*.1+.004,bell(hz(m)*1.004,.8,.12,.4));});add(.05,hiss(.7,8000,3,.25,.08));break;
   case 'tractor':{
-   const putt=(start,f,volume)=>{const pulse=sweep(.08,f,f*.82,.03,.55,x=>Math.sign(Math.sin(x))*.6+Math.sin(x)*.4);lowpass(pulse,rate,500);add(start,pulse,volume);add(start,hiss(.05,300,1,.02,.25),volume);};
+   // One stroke of a small engine: a buzzy pulse around 120-200 Hz with its overtones (phone and laptop speakers play nothing much
+   // below 150 Hz, so the body of the sound sits above that) and a puff of exhaust.
+   const putt=(start,f,volume)=>{const pulse=sweep(.085,f,f*.85,.035,.6,x=>Math.sign(Math.sin(x))*.55+Math.sin(x)*.3+Math.sin(2*x)*.25);lowpass(pulse,rate,2200);add(start,pulse,volume);add(start,hiss(.06,650,1.4,.022,.5),volume);};
    if(variant===1){ // the engine picks up speed, with a little pop from the exhaust at the end
-    let at=0;for(let p=0;p<9;p++){putt(at,80+p*9,.55+p*.06);at+=.1-p*.007;}add(at+.02,hiss(.07,900,1.2,.015,1.1));add(at+.02,sweep(.06,160,90,.02,.5));
+    let at=0;for(let p=0;p<9;p++){putt(at,125+p*14,.55+p*.06);at+=.1-p*.007;}add(at+.02,hiss(.07,900,1.2,.015,1.1));add(at+.02,sweep(.06,160,90,.02,.5));
    }else if(variant===2){ // toot-toot on the horn over a ticking-over engine
-    for(let p=0;p<5;p++)putt(p*.09,78,.6-p*.06);
+    for(let p=0;p<5;p++)putt(p*.09,120,.6-p*.06);
     for(const [start,len] of [[.05,.12],[.23,.2]]){const f=415,b=buffer(len+.04);for(let i=0;i<b.length;i++){const t=i/rate,env=Math.min(1,t/.012)*(t<len?1:Math.exp(-(t-len)/.012));b[i]=(Math.sin(TAU*f*t)+.6*Math.sin(TAU*f*1.26*t)+.35*Math.sin(TAU*f*2*t)+.2*Math.sin(TAU*f*2.52*t))*env*.5;}lowpass(b,rate,2400);add(start,b);}
-   }else for(let p=0;p<6;p++)putt(p*.075,85,1-p*.12); // putt-putt
+   }else for(let p=0;p<6;p++)putt(p*.075,165,1-p*.12); // putt-putt
    break;}
   case 'levelup': // a little fanfare with a bell and a shimmer on the last chord
    [[72,0,.16],[76,.14,.16],[79,.28,.16],[84,.42,.7]].forEach(([m,start,len])=>{
@@ -76,6 +78,9 @@ export function renderCue(kind,rate=48000,variant=0){
  return out;
 }
 export const CUE_VARIANTS={tractor:3};
+// Rendered at 24 kHz (half the work of 48; nothing in these sounds needs more), most frequent first (sound-worker.js).
+export const SFX_RATE=24000;
+export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','reward','upgrade','diamond','levelup'];
 export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,upgrade:.9,reward:.95,diamond:1.1,tractor:1,levelup:1.45};
-export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,upgrade:.053,reward:.052,diamond:.038,tractor:.027,levelup:.056};
+export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,upgrade:.053,reward:.052,diamond:.038,tractor:.034,levelup:.056};
 export function loudness(data,rate){const w=Math.min(data.length,Math.round(.15*rate)),step=Math.max(1,Math.round(w/4));let best=0;for(let i=0;i+w<=data.length;i+=step){let e=0;for(let j=i;j<i+w;j++)e+=data[j]*data[j];best=Math.max(best,Math.sqrt(e/w));}return best;}

@@ -1,5 +1,5 @@
 import {productionJobs} from './farm-state.js';
-import {renderCue,CUE_VARIANTS} from './sound-kit.js';
+import {renderCue,CUE_VARIANTS,CUE_ORDER,SFX_RATE} from './sound-kit.js';
 // Original continuous music and procedural effects. No third-party recordings.
 // "Sunny Acres" (scripts/generate-farm-music.mjs, 26 Sep 2026: an upbeat folk loop in place of the calm Harvest Meadow piano).
 // The same 107-second loop twice: the FLAC is lossless (every sample identical, so the seamless loop stays seamless) at under half
@@ -55,7 +55,20 @@ export function createProductionCueTracker(buildings,now){
  reset(buildings,now);
  return {reset,check(current,time){let fresh=false;for(const [id,b] of Object.entries(current))for(const job of productionJobs(b)){if(previous.get(key(id,job))===false&&job.readyAt<=time)fresh=true;}reset(current,time);return fresh;}};
 }
-export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic}={}){
+// The effects are rendered in a worker (sound-worker.js), away from the game; without workers, one cue per idle moment instead.
+function renderInBackground(windowRef,accept){
+ try{
+  const worker=new windowRef.Worker(new URL('./sound-worker.js',import.meta.url),{type:'module'});
+  worker.onmessage=({data})=>accept(data.kind,data.variant,data.data,data.rate);worker.onerror=()=>worker.terminate();
+  worker.postMessage({rate:SFX_RATE});return ()=>worker.terminate();
+ }catch{
+  const jobs=CUE_ORDER.flatMap(kind=>Array.from({length:CUE_VARIANTS[kind]??1},(_,variant)=>[kind,variant]));let stopped=false;
+  const later=fn=>windowRef?.requestIdleCallback?windowRef.requestIdleCallback(fn,{timeout:2000}):setTimeout(fn,50);
+  const next=()=>{if(stopped)return;const job=jobs.shift();if(!job)return;accept(job[0],job[1],renderCue(job[0],SFX_RATE,job[1]),SFX_RATE);later(next);};
+  later(next);return ()=>{stopped=true;};
+ }
+}
+export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic,renderSounds=renderInBackground}={}){
  let settings={...AUDIO_DEFAULTS},ctx,master,ambientBus,effectBus,musicBuffer=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;
  let nextEffectAt=0,priorityUntil=0,resuming=null;
  const voices=new Set(),lastPlayed=new Map();
@@ -81,15 +94,18 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   const compressor=ctx.createDynamicsCompressor();compressor.threshold.value=-16;compressor.knee.value=12;compressor.ratio.value=8;compressor.attack.value=.006;compressor.release.value=.18;
   ambientBus=ctx.createGain();ambientBus.gain.value=0;effectBus=ctx.createGain();effectBus.gain.value=settings.effects/100;
   ambientBus.connect(compressor);effectBus.connect(compressor);compressor.connect(master);master.connect(ctx.destination);
+  prepareSounds();
  }
- // The effects themselves (sound-kit.js: soil, water, leaves, coins, wood, bells), rendered once per cue the first time it plays.
- // A cue that cannot be rendered falls back to its plain notes (SOUND_CUES).
+ // The effects themselves (sound-kit.js: soil, water, leaves, coins, wood, bells), rendered in the background once the sound is on.
+ // Until a cue is ready (a second or two), or if it cannot be made, it plays its plain notes (SOUND_CUES).
  // A cue with several versions (the tractor) plays them in turn.
- const rendered=new Map(),turns=new Map();
+ const rendered=new Map(),turns=new Map();let stopRendering=null;
+ function prepareSounds(){
+  if(stopRendering)return;
+  stopRendering=renderSounds(windowRef,(kind,variant,data,rate)=>{if(!ctx||disposed)return;try{const buffer=ctx.createBuffer(1,data.length,rate);buffer.getChannelData(0).set(data);rendered.set(`${kind}:${variant}`,buffer);}catch{}})??(()=>{});
+ }
  function sample(kind,when){
-  const variant=(turns.get(kind)??0)%(CUE_VARIANTS[kind]??1),key=`${kind}:${variant}`;turns.set(kind,variant+1);
-  let buffer=rendered.get(key);
-  if(buffer===undefined){try{const data=renderCue(kind,ctx.sampleRate,variant);buffer=ctx.createBuffer(1,data.length,ctx.sampleRate);buffer.getChannelData(0).set(data);}catch{buffer=null;}rendered.set(key,buffer);}
+  const variant=(turns.get(kind)??0)%(CUE_VARIANTS[kind]??1),buffer=rendered.get(`${kind}:${variant}`);turns.set(kind,variant+1);
   if(!buffer)return false;
   if(voices.size>=16)return true;
   const source=ctx.createBufferSource(),voice={source,cleanup:()=>{voices.delete(voice);source.disconnect();}};
@@ -158,7 +174,7 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  function visibility(){if(documentRef.hidden)silence();else if(unlocked)void unlock();}
  function pagehide(event){if(event.persisted)silence();else dispose();}
  function pageshow(event){if(event.persisted&&unlocked)void unlock();}
- function dispose(){if(disposed)return;disposed=true;silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);musicBuffer=null;if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
+ function dispose(){if(disposed)return;disposed=true;stopRendering?.();silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);musicBuffer=null;if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
  documentRef?.addEventListener('pointerup',gesture,true);documentRef?.addEventListener('keydown',gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
  return {settings:read,setSettings,unlock,play,dispose};
 }
