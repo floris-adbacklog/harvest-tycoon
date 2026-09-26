@@ -72,7 +72,7 @@ Deno.serve(async(req)=>{
    const invites=await handleAdminInvites({admin,user});return reply(invites.data,invites.status);
   }
   if(body.operation==='avatar'){
-   const saved=await savePlayerAvatar({admin,player:user.id,avatarId:body.avatarId});
+   const saved=await savePlayerAvatar({admin,player:user.id,avatarId:body.avatarId,owner:isSuperadmin(user)});
    if(saved.status===200)later(writeLog(admin,user.id,accountLog('avatar','Picked a new face')));
    return reply(saved.data,saved.status);
   }

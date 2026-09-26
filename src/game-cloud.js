@@ -1,7 +1,7 @@
 import {createAvatarSettings} from '../public/avatar-settings.js';
 import {createPlayerProfiles} from './player-profiles.js';
 import {createAdminDashboard} from './admin-dashboard.js';
-import {loadStaff} from './staff-badge.js';
+import {loadStaff,staffRole} from './staff-badge.js';
 import {createChatUI} from './chat-ui.js';
 import {createCloudUI} from './ui.js';
 import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
@@ -29,7 +29,7 @@ if(!bridge){location.replace('/play.html');}else{
   // The Family Members list opens a farmer's profile too (public/family-ui.js).
   window.harvestProfiles=profiles;
   ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');
-  createAvatarSettings(document.getElementById('avatar-settings'),{bridge,profile:window.harvestInitialFarm.profile,state:window.harvestInitialFarm.state,onSaved:profile=>ui.setProfile(profile,{id:bridge.playerId})});
+  createAvatarSettings(document.getElementById('avatar-settings'),{bridge,profile:window.harvestInitialFarm.profile,state:window.harvestInitialFarm.state,owner:loadStaff(bridge.chat).then(()=>staffRole(bridge.playerId)==='admin'),onSaved:profile=>ui.setProfile(profile,{id:bridge.playerId})});
   const stopPresence=bridge.presence?.subscribe(snapshot=>{if(ui.open)updateOnlineIndicators(ui.results,{...snapshot,now:Date.now()+serverOffset});});
   const boardRefresh=setInterval(()=>{if(ui.open&&!profiles.isOpen&&!document.hidden)openBoard(true);},30000);
   window.addEventListener('pagehide',()=>{stopPresence?.();clearInterval(boardRefresh);},{once:true});

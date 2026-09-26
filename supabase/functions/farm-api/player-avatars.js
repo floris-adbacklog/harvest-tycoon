@@ -215,8 +215,12 @@ export const PLAYER_AVATARS=Object.freeze([
   }
 ].map(Object.freeze));
 export const DEFAULT_AVATAR='default';
-const byId=new Map(PLAYER_AVATARS.map(avatar=>[avatar.id,avatar]));
-export const isPlayerAvatar=id=>typeof id==='string'&&byId.has(id);
+// The admin's own face (Tony, the maker of the game, 27 Sep 2026): everyone sees it beside the admin's name, but it is never offered
+// to other farmers (their picker lists only PLAYER_AVATARS, still 40) and avatar-service.js lets only the admin account save it.
+export const OWNER_AVATAR=Object.freeze({id:'owner',name:'Tony, the maker',src:'/assets/avatars/owner.webp'});
+const byId=new Map([...PLAYER_AVATARS,OWNER_AVATAR].map(avatar=>[avatar.id,avatar]));
+const publicIds=new Set(PLAYER_AVATARS.map(avatar=>avatar.id));
+export const isPlayerAvatar=id=>typeof id==='string'&&publicIds.has(id);
 export const playerAvatar=id=>byId.get(id)??byId.get(DEFAULT_AVATAR);
 // The level an avatar opens at: 1 for the 20 everyone has.
 export const avatarLevel=id=>playerAvatar(id).level??1;

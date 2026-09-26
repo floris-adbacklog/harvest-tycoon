@@ -1,4 +1,4 @@
-import {PLAYER_AVATARS,playerAvatar,avatarLevel,avatarGoal,goalCount,avatarOpen} from './player-avatars.js';
+import {PLAYER_AVATARS,OWNER_AVATAR,playerAvatar,avatarLevel,avatarGoal,goalCount,avatarOpen} from './player-avatars.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -28,20 +28,22 @@ function lockedText(id,farm){
 const tile=farm=>id=>`<span class="avatar-tile${locked(id,farm)?' is-locked':''}"><img src="${playerAvatar(id).src}" alt="" width="96" height="96" loading="lazy" decoding="async" draggable="false">${avatarBadge(id,farm)}</span>`;
 
 // One row of faces that pages with arrows, the same picker as the family emblems.
-export function avatarSettingsMarkup(id,farm=1){
+// The admin also gets the maker's own face, first in the row (owner); every other farmer sees the 40 of PLAYER_AVATARS.
+export function avatarSettingsMarkup(id,farm=1,{owner=false}={}){
  const current=playerAvatar(id),known=asFarm(farm);
- const picker=emblemPickerMarkup({emblems:PLAYER_AVATARS,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>labelOf(a,known),tile:tile(known),esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
+ const picker=emblemPickerMarkup({emblems:owner?[OWNER_AVATAR,...PLAYER_AVATARS]:PLAYER_AVATARS,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>labelOf(a,known),tile:tile(known),esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
  return `<div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${esc(current.name)}" width="80" height="80"><div><h3 id="avatar-settings-title">Avatar</h3><p>Pick a face for your farm.</p></div></div><form id="avatar-form">${picker}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
 }
 
 // A locked face can still be picked to see it large; it cannot be saved until it is earned (avatar-service.js checks that too). The
 // game sends harvest-level with the level and the farm (progression-ui.js), so a face opens here without reloading.
-export function createAvatarSettings(root,{bridge,profile,state=null,onSaved=()=>{}}){
+// owner: whether this is the admin account (a promise is fine: src/game-cloud.js asks the staff list); the picker then adds the maker's face.
+export function createAvatarSettings(root,{bridge,profile,state=null,onSaved=()=>{},owner=false}){
  if(!root)return;
- let saved=playerAvatar(profile?.avatar_id).id,selected=saved,busy=false,disposed=false;
+ let saved=playerAvatar(profile?.avatar_id).id,selected=saved,busy=false,disposed=false,withOwner=saved===OWNER_AVATAR.id;
  const farm={level:Math.max(1,Number(profile?.level)||1),state,events:Number(profile?.events_finished)||0};
- root.innerHTML=avatarSettingsMarkup(saved,farm);bindEmblemPickers(root);
- const form=root.querySelector('form'),preview=root.querySelector('#avatar-preview'),feedback=root.querySelector('#avatar-feedback'),save=form.querySelector('.avatar-save'),choices=form.querySelector('fieldset');
+ root.innerHTML=avatarSettingsMarkup(saved,farm,{owner:withOwner});bindEmblemPickers(root);
+ let form=root.querySelector('form'),preview=root.querySelector('#avatar-preview'),feedback=root.querySelector('#avatar-feedback'),save=form.querySelector('.avatar-save'),choices=form.querySelector('fieldset');
  const waiting=()=>locked(selected,farm)?lockedText(selected,farm):selected===saved?'':'Save to use this avatar.';
  function refresh(){const avatar=playerAvatar(selected);preview.src=avatar.src;preview.alt=avatar.name;save.disabled=busy||selected===saved||locked(selected,farm);choices.disabled=busy;save.textContent=busy?'Saving…':'Save avatar';form.setAttribute('aria-busy',String(busy));}
  function update({level,state:next}={}){
@@ -54,6 +56,7 @@ export function createAvatarSettings(root,{bridge,profile,state=null,onSaved=()=
   const picked=form.querySelector('.emblem-picked strong');if(picked)picked.textContent=form.querySelector('input[name="avatar"]:checked')?.dataset?.name??'';
   if(!busy&&feedback.textContent!=='Avatar saved.')feedback.textContent=waiting();refresh();
  }
+ function bind(){
  form.addEventListener('change',event=>{if(event.target.name!=='avatar'||busy)return;selected=playerAvatar(event.target.value).id;feedback.textContent=waiting();refresh();});
  form.addEventListener('submit',async event=>{
   event.preventDefault();if(busy||selected===saved||locked(selected,farm))return;busy=true;feedback.textContent='';refresh();
@@ -66,6 +69,15 @@ export function createAvatarSettings(root,{bridge,profile,state=null,onSaved=()=
   }catch(error){if(!disposed)feedback.textContent=error.message||'Your avatar could not be saved. Please try again.';}
   finally{busy=false;if(!disposed)refresh();}
  });
+ }
+ bind();
+ // The admin account: once the staff list says so, the row is drawn again with the maker's face first.
+ Promise.resolve(owner).then(yes=>{
+  if(!yes||withOwner||disposed||busy)return;withOwner=true;
+  root.innerHTML=avatarSettingsMarkup(saved,farm,{owner:true});bindEmblemPickers(root);
+  form=root.querySelector('form');preview=root.querySelector('#avatar-preview');feedback=root.querySelector('#avatar-feedback');save=form.querySelector('.avatar-save');choices=form.querySelector('fieldset');
+  selected=saved;bind();refresh();
+ }).catch(()=>{});
  const onLevel=event=>update({level:Number(event.detail?.level),state:event.detail?.state});
  window.addEventListener('harvest-level',onLevel);
  window.addEventListener('pagehide',()=>{disposed=true;window.removeEventListener('harvest-level',onLevel);},{once:true});

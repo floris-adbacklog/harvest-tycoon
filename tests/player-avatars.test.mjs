@@ -64,7 +64,7 @@ test('profile directory returns the saved avatar in both search and profile',asy
 });
 test('avatar save is authenticated, session-checked and separate from farm rewards',()=>{
  const index=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');const route=index.indexOf('const saved=await savePlayerAvatar');
- assert.ok(route>index.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<index.indexOf("admin.from('player_farms')"));assert.match(index,/savePlayerAvatar\(\{admin,player:user.id,avatarId:body.avatarId\}\)/);
+ assert.ok(route>index.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<index.indexOf("admin.from('player_farms')"));assert.match(index,/savePlayerAvatar\(\{admin,player:user.id,avatarId:body.avatarId,owner:isSuperadmin\(user\)\}\)/);
  assert.match(index,/avatar_id:profile\?\.avatar_id\?\?'default'/);
  const html=avatarSettingsMarkup('berry-gardener');assert.equal((html.match(/type="radio" name="avatar"/g)||[]).length,40);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="berry-gardener" checked/);
  assert.equal((html.match(/data-emblem-step=/g)||[]).length,2,'one row of faces with an arrow on each side, not a wall of squares');
@@ -171,4 +171,16 @@ test('the level-up screen shows the avatar a level opened, and the wiki lists th
  assert.match(wiki,/Family farmer<\/span><\/td><td>Level 10<\/td>/);assert.match(wiki,/Valley legend<\/span><\/td><td>Level 100<\/td>/);
  assert.match(wiki,/Velvet farmer<\/span><\/td><td>Be VIP for 90 days in total<\/td>/);assert.match(wiki,/Valley regular<\/span><\/td><td>Play on 100 days<\/td>/);
  assert.match(wiki,/Diamonds spent and VIP days count from 25 September 2026\./);
+});
+test('the maker\'s own face: everyone sees it on the admin, only the admin can pick it, other farmers still have 40',async()=>{
+ const {OWNER_AVATAR,playerAvatar:face,isPlayerAvatar:known}=await import('../public/player-avatars.js');
+ assert.equal(OWNER_AVATAR.id,'owner');assert.ok(existsSync(new URL('../public'+OWNER_AVATAR.src,import.meta.url)));
+ assert.equal(face('owner').src,'/assets/avatars/owner.webp','shown beside the admin\'s name everywhere');
+ assert.equal(known('owner'),false,'not one of the farmers\' avatars');assert.equal(PLAYER_AVATARS.length,40);
+ assert.equal((avatarSettingsMarkup('default').match(/type="radio" name="avatar"/g)||[]).length,40);
+ assert.equal((avatarSettingsMarkup('default',1,{owner:true}).match(/type="radio" name="avatar"/g)||[]).length,41,'the admin gets it first in the row');
+ const service=readFileSync(new URL('../supabase/functions/farm-api/avatar-service.js',import.meta.url),'utf8');
+ assert.match(service,/if\(avatarId===OWNER_AVATAR\.id\)\{\n  if\(!owner\)return \{status:403/);
+ assert.match(readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8'),/savePlayerAvatar\(\{admin,player:user\.id,avatarId:body\.avatarId,owner:isSuperadmin\(user\)\}\)/);
+ assert.match(readFileSync(new URL('../supabase/owner-avatar.sql',import.meta.url),'utf8'),/ARRAY\[''default''::text, ''owner''::text,/);
 });
