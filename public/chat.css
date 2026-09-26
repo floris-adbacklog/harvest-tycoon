@@ -239,7 +239,8 @@ span.chat-avatar{cursor:default}
 .admin-popup-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:10px;background:#f6efe7}
 .admin-popup-ended{flex-shrink:0;color:#8a7c6a}
 /* The admin's mark (src/staff-badge.js): the word Admin beside the icon, in the chat, on profiles and on the leaderboard. */
-.chat-mod.is-admin{align-items:center;gap:3px;padding:1px 7px 1px 3px;border-radius:999px;background:#fdf1d8;color:#8a5a12;font:800 11px/1.4 'DM Sans',sans-serif;white-space:nowrap}
+.chat-mod.is-admin,.chat-mod.is-moderator{align-items:center;gap:3px;padding:1px 7px 1px 3px;border-radius:999px;background:#fdf1d8;color:#8a5a12;font:800 11px/1.4 'DM Sans',sans-serif;white-space:nowrap}
+.chat-mod.is-moderator{background:#eaf2f9;color:#23577f}
 .farmer-mod-badge.is-admin{border-color:#ecd39c;background:#fdf1d8;color:#8a5a12}
 .staff-badge{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 7px 1px 3px;border-radius:999px;background:#eaf2f9;color:#23577f;font:800 11px/1.4 'DM Sans',sans-serif;vertical-align:middle;white-space:nowrap}
 .staff-badge.is-admin{background:#fdf1d8;color:#8a5a12}.staff-badge .game-art{width:15px;height:15px}

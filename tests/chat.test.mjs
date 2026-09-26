@@ -239,7 +239,7 @@ test('the admin shows as Admin (not Moderator) in the chat, on profiles and on t
  const src=readFileSync(new URL('../src/staff-badge.js',import.meta.url),'utf8');
  assert.match(src,/admin:\{label:'Admin',title:'Admin: the maker of Harvest Tycoon'\},moderator:\{label:'Moderator'/);
  const ui=readFileSync(new URL('../src/chat-ui.js',import.meta.url),'utf8'),board=readFileSync(new URL('../src/leaderboard.js',import.meta.url),'utf8');
- assert.match(ui,/sender_staff\?\(staffRole\(m\.sender\)==='admin'\?staffBadge\('admin','chat-mod'\)/);
+ assert.match(ui,/sender_staff\?staffBadge\(staffRole\(m\.sender\)\?\?'moderator','chat-mod'\):''\}/,'in the chat both carry their word: Admin or Moderator');
  assert.match(board,/if\(vip\)strong\.insertAdjacentHTML\('beforeend',vip\);const role=staffRole\(row\.player_id\);if\(role\)strong\.insertAdjacentHTML\('beforeend',staffBadge\(role\)\);/,'VIP and staff both show');
  const sql=readFileSync(new URL('../supabase/chat-staff-list.sql',import.meta.url),'utf8');
  assert.match(sql,/''role'',public\.chat_staff_role\(p_player\)/);assert.doesNotMatch(sql,/@/,'no e-mail address in the list');
