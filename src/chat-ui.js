@@ -1,5 +1,6 @@
 // The chat window. Its button sits next to Farm Family in the header; on a phone it takes the Family button's place (Family moves
 import {linkify} from './popup-ui.js';
+import {loadStaff,staffRole,staffBadge,STAFF_LABELS} from './staff-badge.js';
 // into the More menu, under Friends). Four tabs: Notifications (news from the admin and the odd personal note from the staff),
 // Global, Family and Private. The box you type in is at the top and the newest message right under it, so nothing has to be
 // scrolled. A name or picture opens that farmer's profile. Data and live updates: bridge.chat (src/chat-client.js).
@@ -58,6 +59,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const chat=bridge?.chat,button=doc.getElementById('chat-button'),dot=doc.getElementById('chat-dot');
  if(!chat||!button)return null;
  const me=bridge.playerId;
+ // Staff marks: the admin shows as Admin (src/staff-badge.js); drawn again once the list is in.
+ void loadStaff(chat).then(()=>{if(dialog?.open)paint();});
  const dialog=doc.createElement('dialog');dialog.id='chat-dialog';dialog.className='game-dialog chat-dialog';dialog.setAttribute('aria-labelledby','chat-title');dialog.tabIndex=-1;
  dialog.innerHTML=`<div class="chat-top"><div class="chat-tabs" role="tablist" aria-label="Chat">
   <button type="button" role="tab" data-chat-tab="notices" aria-label="Notifications" title="Notifications">${art('bell')}<b class="chat-count" hidden></b></button>
@@ -141,7 +144,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const text=`${m.sender_staff?linkify(m.body):esc(m.body)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`;
   // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
   if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${esc(m.sender_name)}: </span>${text}</p></div>${more}</li>`;
-  return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?`<span class="chat-mod" title="Moderator">${art('admin')}</span>`:''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div><p class="chat-text">${text}</p></div></li>`;
+  return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?(staffRole(m.sender)==='admin'?staffBadge('admin','chat-mod'):`<span class="chat-mod" title="Moderator">${art('admin')}</span>`):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div><p class="chat-text">${text}</p></div></li>`;
  }
  function threadRow(t){
   return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${esc(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}${esc(t.last?.body??'')}</small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
@@ -379,7 +382,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   chat.playerStatus(id).then(status=>{statusCache.set(id,{status,at:Date.now()});if(isCurrent()&&content.isConnected)apply(status);}).catch(()=>{});
   function apply(status){
    const heading=content.querySelector('.farmer-identity h3');
-   if(status.moderator&&heading&&!heading.querySelector('.farmer-mod-badge'))heading.insertAdjacentHTML('beforeend',`<span class="farmer-mod-badge" title="Moderator of the valley chat">${art('admin')}Moderator</span>`);
+   const role=STAFF_LABELS[status.role]?status.role:status.moderator?'moderator':null;
+   if(role&&heading&&!heading.querySelector('.farmer-mod-badge'))heading.insertAdjacentHTML('beforeend',staffBadge(role,'farmer-mod-badge'));
    const box=content.querySelector('[data-farmer-chat]');if(!box)return;
    if(id===me){box.hidden=true;return;}
    const staffTools=status.staff&&!status.moderator,admin=role()==='admin';

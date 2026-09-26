@@ -101,7 +101,7 @@ test('the chat window: Global first, no red count on Global, names open a profil
  assert.match(ui,/profiles\?\.open\(profile\.dataset\.profile,\{back:null\}\)/);
  assert.match(profiles,/backButton\.hidden=back===null;/);
  assert.match(ui,/\$\{m\.sender_vip\?VIP:''\}\$\{m\.sender_staff\?/);
- assert.match(ui,/farmer-mod-badge" title="Moderator of the valley chat">\$\{art\('admin'\)\}Moderator/,'the admin wears the same Moderator badge');
+ assert.match(ui,/if\(role&&heading&&!heading\.querySelector\('\.farmer-mod-badge'\)\)heading\.insertAdjacentHTML\('beforeend',staffBadge\(role,'farmer-mod-badge'\)\);/,'the admin shows as Admin, a moderator as Moderator (26 Sep 2026)');
  assert.ok(!/innerHTML=[^;]*\$\{m\.body\}/.test(ui),'a message is always escaped');
 });
 
@@ -234,4 +234,13 @@ test('in-game purchases reach the admin\'s phone too, once, and can never block 
  assert.deepEqual(openIntent('?open=chat&channel=notices'),{open:'chat',channel:'notices'},'tapping it opens the Notifications tab');
  assert.deepEqual(openIntent('?open=chat&channel=nonsense'),{open:'chat'});
  assert.match(read('src/chat-ui.js'),/else if\(channel==='notices'\)wanted='notices';/);
+});
+test('the admin shows as Admin (not Moderator) in the chat, on profiles and on the leaderboard; a VIP mark sits beside it',async()=>{
+ const src=readFileSync(new URL('../src/staff-badge.js',import.meta.url),'utf8');
+ assert.match(src,/admin:\{label:'Admin',title:'Admin: the maker of Harvest Tycoon'\},moderator:\{label:'Moderator'/);
+ const ui=readFileSync(new URL('../src/chat-ui.js',import.meta.url),'utf8'),board=readFileSync(new URL('../src/leaderboard.js',import.meta.url),'utf8');
+ assert.match(ui,/sender_staff\?\(staffRole\(m\.sender\)==='admin'\?staffBadge\('admin','chat-mod'\)/);
+ assert.match(board,/if\(vip\)strong\.insertAdjacentHTML\('beforeend',vip\);const role=staffRole\(row\.player_id\);if\(role\)strong\.insertAdjacentHTML\('beforeend',staffBadge\(role\)\);/,'VIP and staff both show');
+ const sql=readFileSync(new URL('../supabase/chat-staff-list.sql',import.meta.url),'utf8');
+ assert.match(sql,/''role'',public\.chat_staff_role\(p_player\)/);assert.doesNotMatch(sql,/@/,'no e-mail address in the list');
 });
