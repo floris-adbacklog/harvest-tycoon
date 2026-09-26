@@ -72,3 +72,6 @@ test('goods: a tap on a building\'s yellow name collects everything ready on the
  assert.match(game,/else if\(target\.type==='building'\)\{if\(target\.label\)tapBuilding\(target\.id\);else economy\.openBuilding\(target\.id\);\}/,'a tap on the building itself opens its window');
  assert.match(read('public/wiki-content.js'),/tap the name to collect everything that is ready\. Or open the building and use Collect all\./);
 });
+test('no flat water tiles anywhere: flat squares on the ground flickered when zooming and read as loose grey or cyan plates',()=>{
+ for(const file of ['public/game.js','public/farm-life.js','public/farm-props.js','public/scenery.js'])assert.doesNotMatch(read(file),/water_001/,file);
+});

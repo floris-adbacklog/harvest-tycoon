@@ -89,7 +89,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  const pig=cloneModel('pig_001',17.9,-5.6,{width:1.3,rotation:2.4});pig.userData.activity='paddock';
  {const [hx,hz]=place(17.9,-8.5),[gx,gz]=place(17.9,-5.6);moving.push({obj:horse,x:hx,z:hz,kind:'animal',phase:0},{obj:pig,x:gx,z:gz,kind:'animal',phase:3});}
  // Three standard 2.2-unit segments, like every other fence on the farm (one 5.8-wide piece made the posts oversized).
- for(const z of [-9.2,-7,-4.8])scenery('fence_001',19.5,z,{width:2.2,rotation:Math.PI/2});scenery('water_001',18.4,-10.6,{width:1.4});scenery('hay_002',17.7,-3.2,{width:1.8});zone(null);
+ for(const z of [-9.2,-7,-4.8])scenery('fence_001',19.5,z,{width:2.2,rotation:Math.PI/2});scenery('hay_002',17.7,-3.2,{width:1.8});zone(null);
  // A few bees, kept away from the crop labels.
  const beeHome=placeIn('apiary',10.4,13.7);
  for(let i=0;i<5;i++){const bee=new THREE.Mesh(new THREE.SphereGeometry(.06,4,3),new THREE.MeshBasicMaterial({color:0xf5c64c}));scene.add(bee);moving.push({obj:bee,kind:'bee',phase:i*1.8});}

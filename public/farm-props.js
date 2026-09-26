@@ -5,7 +5,7 @@ export const THEMES=Object.freeze({
  home:[['table_001',{width:1.6}],['chair_001',{height:.95}],['garden_bed_001',{width:1.7}],['garden_bed_002',{width:1.3,height:.28,depth:1.6}],['bush_003',{width:1.2}],['firewood_003',{width:1.3}],['bucket_001',{height:.62}],['stall_001',{width:2}]],
  work:[['cart_004',{width:2}],['dray_004',{width:1.9}],['case_001',{width:.95}],['case_003',{width:.9}],['firewood_008',{width:1.4}],['barrel_002',{height:1}],['bag_003',{height:.8}],['prop_029',{width:.55}],['prop_023',{width:.9}]],
  green:[['bush_001',{width:2}],['bush_003',{width:1.3}],['bush_002',{width:1.6}],['bush_004',{width:1.7}],['grass_004',{height:.5}],['grass_001',{height:.4}],['tree_009',{height:3.2}]],
- road:[['pointer_002',{height:1.3}],['barrel_009',{height:.85}],['case_002',{width:1}],['bush_003',{width:1.2}],['hay_003',{width:1.3}],['bag_002',{height:.72}],['water_001',{width:1.1}]]
+ road:[['pointer_002',{height:1.3}],['barrel_009',{height:.85}],['case_002',{width:1}],['bush_003',{width:1.2}],['hay_003',{width:1.3}],['bag_002',{height:.72}],['bucket_001',{height:.6}]]
 });
 export const YARD_THEME=Object.freeze({
  dairy:'farm',silo:'farm',coop:'farm',windmill:'farm',chores:'farm',stall:'farm',paddock:'farm',

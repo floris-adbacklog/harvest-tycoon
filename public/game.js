@@ -81,7 +81,7 @@ function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHin
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bag_003','bucket_001','apiary_001','cart_004','chair_001','firewood_003','firewood_008','hay_002','hay_003','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','barrel_009','cart_001','case_002','case_003','coop_001','water_001','landscape_001','ground_004','road_001'];
+const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bag_003','bucket_001','apiary_001','cart_004','chair_001','firewood_003','firewood_008','hay_002','hay_003','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','barrel_009','cart_001','case_002','case_003','coop_001','landscape_001','ground_004','road_001'];
 modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
 modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','stall_001','case_001','dray_002','dray_004','prop_029','hangar_007','hangar_022','tower_010');
 modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS);
@@ -318,11 +318,11 @@ function decorate(){
  addBuilding('sheepbarn',23.8,-15.4,{width:5.4,height:4.4,depth:9});
  yardDecor.sheepbarn.push(...fenceLine(20.5,-3.6,4),...fenceLine(19.4,-9.1,3,'z'),...fenceLine(28.2,-9.1,3,'z'),...fenceLine(20.5,-10.2,1),...fenceLine(27.1,-10.2,1));
  for(const [model,x,z,r] of [['sheep_002',21.6,-7.9,2.2],['sheep_003',24.4,-5.3,2.4],['sheep_002',26.5,-8.3,-1],['sheep_003',22.4,-5,2],['sheep_001',25.6,-6.9,-.6]])yardDecor.sheepbarn.push(animalAt(model,x,z,{width:1.5,rotation:r},'sheepbarn',r));
- yardDecor.sheepbarn.push(cloneModel('hay_001',27,-4.7,{width:1.3,rotation:.3}),cloneModel('water_001',20.7,-4.8,{width:1.1}));
+ yardDecor.sheepbarn.push(cloneModel('hay_001',27,-4.7,{width:1.3,rotation:.3}));
  // The Glasshouse lies along the road, with raised beds and fertilizer beside it.
  zone('glasshouse');
  addBuilding('glasshouse',28.8,1.2,{width:6.5,height:3.25,depth:10.1,rotation:Math.PI/2});
- yardDecor.glasshouse.push(cloneModel('garden_bed_001',25.4,5.6,{width:1.8}),cloneModel('garden_bed_001',27.5,5.6,{width:1.8}),cloneModel('bag_003',30.6,5.5,{height:.8,rotation:-.3}),cloneModel('water_001',34.2,-1.4,{width:1}));
+ yardDecor.glasshouse.push(cloneModel('garden_bed_001',25.4,5.6,{width:1.8}),cloneModel('garden_bed_001',27.5,5.6,{width:1.8}),cloneModel('bag_003',30.6,5.5,{height:.8,rotation:-.3}));
  // The Weaving Shed, south of the Glasshouse, with wool bales waiting at the door.
  zone('weaving');
  addBuilding('weaving',26.2,8.5,{width:4.4,height:3.8,depth:7.6});
@@ -332,7 +332,7 @@ function decorate(){
  addBuilding('goatshed',31.9,-14.6,{width:5,height:4.6,depth:8});
  yardDecor.goatshed.push(...fenceLine(28.6,-3.8,4),...fenceLine(27.5,-9.3,3,'z'),...fenceLine(36.3,-9.3,3,'z'),...fenceLine(28.6,-10.4,1),...fenceLine(35.2,-10.4,1));
  for(const [model,x,z,r] of [['goat_001',29.6,-8.4,2.6],['goat_002',32.2,-6.1,2.2],['goat_001',34.6,-8.7,-.9],['goat_002',30.4,-5.2,1.9],['goat_001',33.9,-4.9,-1]])yardDecor.goatshed.push(animalAt(model,x,z,{width:1.3,rotation:r},'goatshed',r));
- yardDecor.goatshed.push(cloneModel('hay_002',35.3,-5.1,{width:1.1,rotation:.4}),cloneModel('water_001',28.5,-4.9,{width:1}));
+ yardDecor.goatshed.push(cloneModel('hay_002',35.3,-5.1,{width:1.1,rotation:.4}));
  // The Pig Farm: the pink barn turned side-on, and in front of it a white-fenced pen, closed all round, where the pigs dig for
  // truffles.
  zone('pigfarm');
@@ -341,7 +341,7 @@ function decorate(){
  const [penX,penZ]=[-33.72,-3.38];
  for(const [dx,dz,rotation] of [[-2.2,-2.6,0],[0,-2.6,0],[2.2,-2.6,0],[-2.2,2.6,0],[0,2.6,0],[2.2,2.6,0],[-3.3,-1.3,Math.PI/2],[-3.3,1.3,Math.PI/2],[3.3,-1.3,Math.PI/2],[3.3,1.3,Math.PI/2]])yardDecor.pigfarm.push(cloneModel('fence_008',penX+dx,penZ+dz,{width:2.2,rotation}));
  for(const [model,dx,dz,height,r] of [['pig_003',-1.2,-.6,.9,2.5],['pig_002',1,.9,.85,2.6],['pig_005',.4,-1.3,.58,-.8]])yardDecor.pigfarm.push(animalAt(model,penX+dx,penZ+dz,{height,rotation:r},'pigfarm',r));
- yardDecor.pigfarm.push(cloneModel('water_001',penX-1.6,penZ+1.4,{width:1,rotation:.3}),cloneModel('hay_002',-26.4,-4.6,{width:1.2,rotation:.5}));
+ yardDecor.pigfarm.push(cloneModel('hay_002',-26.4,-4.6,{width:1.2,rotation:.5}));
  // The Craft Workshop, a long low workshop east of the Weaving Shed, with wax and wool at the door.
  zone('craftshop');
  addBuilding('craftshop',33.1,9.6,{width:9.4,height:3.25,depth:3.9});
@@ -351,7 +351,7 @@ function decorate(){
  addUtility('ranch','hangar_001',31.5,15.2,{width:6.9,height:4.8,depth:11.1,rotation:Math.PI/2});   // about half its own size, like the other barns
  yardDecor.ranch.push(...fenceLine(27.8,25.9,4),...fenceLine(26.7,20.4,3,'z'),...fenceLine(35.5,20.4,3,'z'));
  for(const [model,x,z,r] of [['horse_003',29.2,22.4,2.2],['horse_004',32.6,24.3,2.3],['horse_005',34,21.2,-.8]])yardDecor.ranch.push(cloneModel(model,x,z,{width:2.2,rotation:r}));
- yardDecor.ranch.push(cloneModel('hay_001',27.9,24.6,{width:1.2,rotation:.3}),cloneModel('water_001',34.6,25,{width:1}));
+ yardDecor.ranch.push(cloneModel('hay_001',27.9,24.6,{width:1.2,rotation:.3}));
  // The Valley Market: a striped canopy over tables of goods, with market stalls beside it, on the top road out of the valley.
  zone('valleymarket');
  addUtility('valleymarket','hangar_009',0,-29.2,{width:10});
@@ -385,7 +385,6 @@ function decorate(){
   bakery:[['firewood_003',-14.1,10.5,{width:1.3}],['case_003',-8.1,13.5,{width:.9,rotation:.35}]],
   farmhouse:[['table_001',-13.9,-5.9,{width:1.6}],['chair_001',-15,-6.3,{height:.85,rotation:1.7}],['garden_bed_001',-17.3,-8,{width:1.8,rotation:Math.PI/2}],['garden_bed_001',-17.3,-5.9,{width:1.8,rotation:Math.PI/2}],['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}]],
   dairy:[['bucket_003',-1.8,-9.1,{height:.65}]],
-  coop:[['water_001',17.6,-13.4,{width:1.1}]],
   apiary:[['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}]],
   factory:[['case_002',12.6,24.9,{width:1.1,rotation:.15}],['bag_003',13.8,25.1,{height:.82,rotation:-.3}],['cart_004',20.4,25,{width:1.7,rotation:Math.PI/2}],['prop_029',18.6,25.2,{width:.55,rotation:.5}]]
 })){zone(yard);for(const [name,x,z,options] of list){const piece=cloneModel(name,x,z,options);if(yard==='factory')factoryDecor.push(piece);}}
