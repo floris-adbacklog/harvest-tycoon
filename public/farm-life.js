@@ -36,8 +36,8 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  // Pines at the foot of the mountains where the two hills were.
  for(const [x,z] of [[-30,-13],[-31,-18],[-26,-25],[-16,-30],[-11,-32],[15,-32],[25,-23],[29,-20],[-32,16],[30,17],[6,-40],[11,-38],[-2,-42],[33,-32],[36,-29],[38,-35]])scenery(['fir_tree_003','fir_tree_001','fir_tree_006'][Math.abs(x)%3],x,z,{height:3.4+(Math.abs(x)%3)*.4,rotation:z*.2});
  {const [wx,wz]=place(-18,28.5);zone('fields');for(let i=0;i<Math.round(7*SPREAD);i++){const cx=wx+i*2.6;if(onRoad(cx-1.3,cx+1.3,wz-.3,wz+.3))continue;scenery(i%3===2?'stone_fence_003':'stone_fence_001',cx,wz,{width:2.6,height:.65});}zone(null);}
- // Neighbouring farms: a patchwork of field strips in the open meadow in front of the farm (wheat, green rows, ploughed earth), each
- // with a low stone wall on the side that faces the farm, so the valley reads as farmland. (The back and the sides are the forest
+ // Neighbouring farms: a patchwork of field strips in the open meadow in front of the farm (wheat, green rows, ploughed earth),
+ // so the valley reads as farmland (26 Sep 2026: without the loose stone walls on one side, which looked scattered). (The back and the sides are the forest
  // edge's, scenery.js.) Each goes to the first free
  // spot near where it belongs: not on a road, a building, a tree or another field, and well inside the ring of mountains that
  // scene-polish.js puts around the valley later. They are here, before the grass and the loose props, so those keep off them.
@@ -63,12 +63,6 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
    const field=cloneModel(model,x,z,{width:w,depth:d,height:.45,y:.01});
    field.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;if(color!=null){n.material=n.material.clone();if(!keepMap)n.material.map=null;n.material.color.setHex(color);}}});
    field.userData.neighbour=true;taken.push(new THREE.Box3().setFromObject(field));
-   // The wall along the long side towards the middle of the farm.
-   const alongX=w>=d,side=alongX?(z>0?-1:1):(x>0?-1:1),length=alongX?w:d;
-   for(let i=0;i<Math.floor(length/2.6);i++){
-    const t=-length/2+1.3+i*2.6,wx=alongX?x+t:x+side*(w/2+.5),wz=alongX?z+side*(d/2+.5):z+t;
-    const wall=scenery(i%3===2?'stone_fence_003':'stone_fence_001',wx,wz,{width:2.6,height:.65,rotation:alongX?0:Math.PI/2});taken.push(new THREE.Box3().setFromObject(wall));
-   }
   }
   // A grove where the big wheat field in front of the Factory was (25 Sep 2026): trees on both sides of the road there.
   for(const [x,z,h,i] of [[6,34.5,4.6,0],[11.5,36,5.2,1],[30.5,35,4.8,2],[35,38,5.4,3],[7.5,44.5,5,1],[13.5,46.5,4.4,2],[21,44,5.6,0],[28.5,45.5,4.9,3],[35.5,44,4.5,1]])

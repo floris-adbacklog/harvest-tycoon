@@ -11,7 +11,7 @@ const smooth=t=>t*t*(3-2*t);
 const clamp01=v=>Math.min(1,Math.max(0,v));
 
 // Wrap-around value noise, so the ground texture tiles without visible seams.
-function tileableNoise(size,cells,rand){
+export function tileableNoise(size,cells,rand){
  const grid=Array.from({length:cells*cells},rand),out=new Float32Array(size*size);
  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
   const fx=x/size*cells,fy=y/size*cells,x0=Math.floor(fx),y0=Math.floor(fy),tx=smooth(fx-x0),ty=smooth(fy-y0);
@@ -36,14 +36,25 @@ function groundTexture(size,rand,anisotropy,tile){
  const n1=tileableNoise(size,4,rand),n2=tileableNoise(size,9,rand),n3=tileableNoise(size,24,rand);
  const canvas=makeCanvas(size),ctx=canvas.getContext('2d'),img=ctx.createImageData(size,size);
  for(let i=0;i<size*size;i++){
-  const v=.5*n1[i]+.3*n2[i]+.2*n3[i],shade=.9+.13*clamp01((v-.25)*2);
-  img.data[i*4]=Math.min(255,shade*(1+(n2[i]-.5)*.07)*255);
+  const v=.5*n1[i]+.3*n2[i]+.2*n3[i],shade=.86+.19*clamp01((v-.25)*2);
+  img.data[i*4]=Math.min(255,shade*(1+(n2[i]-.5)*.12)*255);
   img.data[i*4+1]=Math.min(255,shade*255);
-  img.data[i*4+2]=Math.min(255,shade*(1-(n1[i]-.5)*.14)*255);
+  img.data[i*4+2]=Math.min(255,shade*(1-(n1[i]-.5)*.2)*255);
   img.data[i*4+3]=255;
  }
  ctx.putImageData(img,0,0);
  return canvasTexture(canvas,{repeat:tile,anisotropy});
+}
+
+// Mown stripes on the meadow where the fields grow, like the striped fields of the demo: soft light and dark bands with a
+// little grain. Values stay near white because the material colour multiplies them.
+function stripeTexture(rand,anisotropy){
+ const w=128,h=64,canvas=makeCanvas(w,h),ctx=canvas.getContext('2d'),img=ctx.createImageData(w,h);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+  const band=.5+.5*Math.cos(x/w*Math.PI*2),shade=.9+.1*smooth(clamp01((band-.2)/.6))+(rand()-.5)*.035;
+  const i=(y*w+x)*4;img.data[i]=Math.min(255,shade*255);img.data[i+1]=Math.min(255,shade*1.01*255);img.data[i+2]=Math.min(255,shade*.97*255);img.data[i+3]=255;
+ }
+ ctx.putImageData(img,0,0);return canvasTexture(canvas,{anisotropy});
 }
 
 // Parallel furrows, as in the demo's striped fields. Transparent, so the soil keeps its colour.
@@ -69,11 +80,6 @@ function yardTexture(rand){
   img.data[(y*size+x)*4]=clamp01(.80+grain)*255;img.data[(y*size+x)*4+1]=clamp01(.66+grain)*255;img.data[(y*size+x)*4+2]=clamp01(.47+grain)*255;img.data[(y*size+x)*4+3]=alpha*255;
  }
  ctx.putImageData(img,0,0);return canvasTexture(canvas);
-}
-function softBlobTexture(){
- const canvas=makeCanvas(128),ctx=canvas.getContext('2d'),g=ctx.createRadialGradient(64,64,4,64,64,62);
- g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.55,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');
- ctx.fillStyle=g;ctx.fillRect(0,0,128,128);return canvasTexture(canvas,{srgb:false});
 }
 
 // Three crossed blades per tuft, darker at the root and lighter at the tip.
@@ -147,6 +153,14 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
   ground.material.map=groundTexture(mobile?256:512,rand,Math.min(anisotropy,4),600/22);   // the same 22-unit tile on the wider ground
   ground.material.color.multiplyScalar(1.07);ground.material.needsUpdate=true;
  }
+ // The meadow under the fields gets mown stripes (1.6 wide each, running along the rows), so the room for more fields reads
+ // as farmland instead of an empty lawn.
+ const meadowPatch=scene.getObjectByName('Crop meadow');
+ if(meadowPatch?.material){
+  const stripes=stripeTexture(rand,Math.min(anisotropy,4));stripes.wrapS=stripes.wrapT=THREE.RepeatWrapping;
+  const size=meadowPatch.geometry.parameters;stripes.repeat.set(size.width/3.2,size.height/6);
+  meadowPatch.material.map=stripes;meadowPatch.material.needsUpdate=true;
+ }
 
  hideClippedScenery(scene);
 
@@ -186,7 +200,7 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
 
  // 5. Grass tufts and wildflowers, clustered rather than sprinkled evenly.
  const meadow=[];
- const tuftCount=Math.round((mobile?640:1500)*SPREAD*SPREAD),tuftMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
+ const tuftCount=Math.round((mobile?900:2200)*SPREAD*SPREAD),tuftMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
  const tufts=new THREE.InstancedMesh(tuftGeometry(),tuftMaterial,tuftCount),dummy=new THREE.Object3D(),tint=new THREE.Color();
  const greens=[0x8fae4a,0x9db752,0x7ea043,0xb2b95a,0xa6a94a,0xc0b45c];
  let placed=0,guard=0;
@@ -235,12 +249,7 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
    const [cx,cz]=spots[Math.floor(rand()*spots.length)];
    butterflies.push({g,left,right,cx,cz,rx:2.2+rand()*2.4,rz:1.8+rand()*2.2,sx:.16+rand()*.12,sz:.13+rand()*.1,phase:rand()*6.28,bob:.9+rand()*.5});
   }
-  const blob=softBlobTexture();
-  for(let i=0;i<3;i++){
-   const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:blob,color:0x5a3d10,transparent:true,opacity:.13,depthWrite:false}));
-   m.rotation.x=-Math.PI/2;m.scale.set(26+rand()*14,15+rand()*8,1);m.position.y=.25;m.renderOrder=2;group.add(m);
-   cloudShadows.push({m,offset:i*57,lane:-30+i*26+rand()*8,speed:.32+rand()*.16});
-  }
+  // (The drifting cloud shadows live in farm-atmosphere.js since 26 Sep 2026: one tiled sheet instead of three blobs.)
   if(!mobile){
    const count=46,positions=new Float32Array(count*3);moteData=[];
    for(let i=0;i<count;i++){positions.set([(rand()-.5)*44*SPREAD,.5+rand()*4.5,(rand()-.5)*40*SPREAD],i*3);moteData.push({v:.08+rand()*.1,ph:rand()*6.28});}

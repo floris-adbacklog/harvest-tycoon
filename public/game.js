@@ -31,6 +31,10 @@ import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
 import { createScenePolish } from './scene-polish.js';
+import { shareAtlas } from './model-atlas.js';
+import { createAtmosphere } from './farm-atmosphere.js';
+import { buildRows, createCropMotion, isRowCrop } from './crop-rows.js';
+import { flyHarvest, bump } from './harvest-fly.js';
 import { createActivitiesUI } from './activities-ui.js';
 import { ACTIVE_STATIONS,cropUnlocked,stallStatus,stallNotice,beginnerProgress } from './farm-state.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
@@ -60,7 +64,7 @@ const startView=()=>mobileLayout.matches&&!beginnerProgress(state).every(q=>q.do
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
 let overviewBounds=null;
 const familyDecor=[],factoryDecor=[],yardDecor={pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
-let liveEvents,familyUI,progression,economy,retention,growth,valley,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,farmLife,activities,soundUI,scenePolish;
+let liveEvents,familyUI,progression,economy,retention,growth,valley,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'}};
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onEmailCheck:c=>setEmailCheck(c),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
@@ -141,6 +145,7 @@ async function loadModel(name){
  const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
  object.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));const group=new THREE.Group();group.add(object);
  object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});
+ shareAtlas(object,name);
  models.set(name,{object:group,size});
 }
 // The forest belt, hills, sunflowers, pigsty and the other extras (public/scenery.js) come after the farm is on screen, so the
@@ -204,11 +209,11 @@ function decorate(){
  zone('fields');
  // Grass green, like the painted valley of the loading screen, and wide enough that its edge is never in view: it runs on
  // into the haze however far you pan or zoom out.
- const ground=patch(0,0,600,600,0x8aa64e,0);ground.name='Farm ground';
+ const ground=patch(0,0,600,600,0x84ab4c,0);ground.name='Farm ground';
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
  zone('exact');
  for(const road of ROADS.slice(0,3))cloneModel('road_001',road.x,road.z,{...roadSize(road),height:road.height,y:road.y});
- zone('fields');patch(2.575,14.4,12.8,31.7,0x97a863,.004);
+ zone('fields');patch(2.575,14.4,12.8,31.7,0x9cb160,.004).name='Crop meadow';
  zone('coop');patch(13,-9.5,15.8,11.6,0x9fac6c,.007);
  zone('mill');patch(-12.5,5.3,8.7,13,0xa3ae70,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
@@ -462,10 +467,15 @@ function createPlots(){
   plots.push({x,z,soil,hit,ring,label,cropGroup,visualCrop:undefined,lastReady:false});
  }
 }
+// A building is busy while one of its batches is still being made (the Windmill's sails turn).
+const buildingBusy=key=>productionJobs(state.buildings[key]).some(j=>j.readyAt>farmNow());
 function drawCrop(i){
  const p=state.plots[i],v=plots[i];
  if(v.visualCrop!==p.crop){
-  clearCropVisual(v.cropGroup);v.visualCrop=p.crop;
+  // A ripe crop that leaves its field was harvested: its plants are picked, going down into the soil (cropMotion tidies them up).
+  const picked=v.visualCrop&&v.lastReady&&cropMotion.pick(v.cropGroup),fresh=v.visualCrop!==undefined;
+  if(!picked)v.rows?.dispose();
+  v.rows=null;clearCropVisual(v.cropGroup);v.visualCrop=p.crop;
   if(p.crop){
    const c=CROPS[p.crop];
    if(p.crop==='polebeans'){
@@ -479,6 +489,10 @@ function drawCrop(i){
    }else if(['pumpkin','squash'].includes(p.crop)){
     // One sprawling vine fills the field; four would spill over onto the next one.
     const o=cloneModel(c.model,0,0,{width:p.crop==='squash'?2.1:2.05,rotation:Math.PI/2});scene.remove(o);v.cropGroup.add(o);o.position.set(0,0,0);
+   }else if(isRowCrop(p.crop)){
+    // Rows of plants, one instanced mesh per field (crop-rows.js): grain as a dense field of stalks, the rest 3 by 3.
+    v.rows=buildRows({crop:p.crop,entry:models.get(c.model),height:c.height,tint:c.tint,seed:i+1,pods:p.crop==='greenbeans'?{geometry:beanPodGeometry,material:beanPodMaterial}:null,fresh,motion:cropMotion});
+    v.cropGroup.add(v.rows.mesh);if(v.rows.podMesh)v.cropGroup.add(v.rows.podMesh);
    }else{
     const offsets=['wheat','barley'].includes(p.crop)?[-.65,0,.65].flatMap(x=>[-.65,0,.65].map(z=>[x,z])):[[-.55,-.55],[.55,-.55],[-.55,.55],[.55,.55]];
     for(const [dx,dz] of offsets){
@@ -488,9 +502,15 @@ function drawCrop(i){
   }
  }
  v.cropGroup.position.set(v.x,.25,v.z);
- const pg=progress(p,farmNow()),scale=p.crop ? (CROPS[p.crop].perennial&&p.harvestCycles>0?.85+.15*pg:.12+.88*Math.pow(pg,.6)) : 1;
- v.cropGroup.scale.setScalar(scale);
- const ripe=p.crop&&farmNow()>=p.readyAt;
+ const pg=progress(p,farmNow()),ripe=p.crop&&farmNow()>=p.readyAt;
+ if(v.rows){v.cropGroup.scale.setScalar(1);v.rows.update(pg,ripe);}
+ else{
+  // Trees, vines and bean poles grow as one, and wiggle once when they are ready (the rows do the same in crop-rows.js).
+  v.groupScale=p.crop?(CROPS[p.crop].perennial&&p.harvestCycles>0?.85+.15*pg:.12+.88*Math.pow(pg,.6)):1;
+  if(p.crop&&ripe&&v.lastReady===false&&v.seen)cropMotion.hopGroup(v,'ripe');
+  if(!cropMotion.isHopping(v))v.cropGroup.scale.setScalar(v.groupScale);
+ }
+ v.seen=true;
  v.soil.traverse(n=>{if(n.isMesh)n.material.color.setHex(p.watered?0x8b8a82:0xc4b39a)});
  if(!p.crop){v.label.innerHTML='';v.label.dataset.crop='';v.label.className='plot-label';v.label.setAttribute('aria-label',`Field ${i+1}, empty. Plant ${CROPS[selectedCrop].name}.`);}
  else if(ripe){
@@ -516,9 +536,34 @@ function particleBurst(id,water=false){
   mesh.position.set(v.x,.9,v.z);scene.add(mesh);particles.push({mesh,velocity:new THREE.Vector3((Math.random()-.5)*2,1.5+Math.random()*1.5,(Math.random()-.5)*2),life:1});
  }
 }
+// The harvest flies from the field to the Market button (harvest-fly.js), where it goes into your stock.
+function harvestFlight(id,crop,count,delay=0){if(crop)flyToMarket(plots[id].x,1,plots[id].z,art(crop),count,delay);}
+function flyToMarket(x,y,z,html,count,delay=0){
+ if(reducedMotion)return;
+ const market=[...document.querySelectorAll('#market-button')].find(b=>b.offsetParent);if(!market)return;
+ const p=new THREE.Vector3(x,y,z).project(camera),r=world.getBoundingClientRect(),m=market.getBoundingClientRect();
+ const from={x:r.left+(p.x*.5+.5)*r.width,y:r.top+(-p.y*.5+.5)*r.height},to={x:m.left+m.width/2,y:m.top+m.height/2};
+ setTimeout(()=>flyHarvest({from,to,html,count,onArrive:()=>bump(market)}),delay);
+}
+// Tapping a building's name while batches are ready collects them all right on the farm (as Collect all in its window does), and
+// the goods fly to the Market button. With nothing ready, or a tap on the building itself, its window opens.
+let collecting=false;
+async function tapBuilding(key){
+ if(!ready||collecting)return;
+ if(economy.status(key).kind!=='ready'){economy.openBuilding(key);return;}
+ collecting=true;
+ try{
+  const result=await runAction({type:'collect_all',building:key}),v=buildingViews.get(key),goods=Object.keys(result.items);
+  flyToMarket(v.x,v.height,v.z,goods.map(item=>art(item,'product-art')),Math.min(3,Math.max(result.count,goods.length)));
+  floatAt(v.x,v.height+.8,v.z,Object.entries(result.items).map(([item,n])=>floatChip(item,`+${n}`)).join('')+floatChip('xp',`+${result.xp} XP`,'is-xp'));
+  updateUI();icons();
+ }catch(e){toast(e.message);}
+ finally{collecting=false;}
+}
 // What an action gave, floating up from the field as small chips with their own picture (markup built here, never from input).
 const floatChip=(key,text,cls='')=>`<span class="float-chip ${cls}">${art(key)}${text}</span>`;
-function floatReward(id,html){const v=plots[id],p=new THREE.Vector3(v.x,2.4,v.z).project(camera),e=document.createElement('div');e.className='floating-reward';e.innerHTML=html;e.style.left=`${world.offsetLeft+(p.x*.5+.5)*world.clientWidth}px`;e.style.top=`${world.offsetTop+(-p.y*.5+.5)*world.clientHeight}px`;$('game').append(e);setTimeout(()=>e.remove(),1400);}
+function floatReward(id,html){const v=plots[id];floatAt(v.x,2.4,v.z,html);}
+function floatAt(x,y,z,html){const p=new THREE.Vector3(x,y,z).project(camera),e=document.createElement('div');e.className='floating-reward';e.innerHTML=html;e.style.left=`${world.offsetLeft+(p.x*.5+.5)*world.clientWidth}px`;e.style.top=`${world.offsetTop+(-p.y*.5+.5)*world.clientHeight}px`;$('game').append(e);setTimeout(()=>e.remove(),1400);}
 async function interact(id,forcedAction){
  if(!ready)return;
  const plot=state.plots[id];
@@ -526,10 +571,12 @@ async function interact(id,forcedAction){
  const action=forcedAction??fieldTapAction(plot,farmNow(),selectedTool);
  // Nothing to do yet: say plainly what comes next and when (toasts drop "·", so two short sentences).
  if(!action){const now=farmNow(),name=CROPS[plot.crop].name;toast(`${name}: ${plot.tended?'fully cared for':`extra care opens in ${formatDuration(plot.careAt-now)}`}. Ready to harvest in ${formatDuration(plot.readyAt-now)}.`);return {error:'nothing to do yet'};}
+ // One picture flies to the Market for the harvest, one more if the field was watered and one more for extra care.
+ const flightCount=1+(plot.watered?1:0)+(plot.tended?1:0);
  try{
   const result=await runAction({type:'field',id,action,crop:selectedCrop});
   // The golden first harvest shows on the field itself, so the toast stays free for the guide step it completes.
-  if(action==='harvest'){particleBurst(id);if(result.firstHarvest)particleBurst(id,true);floatReward(id,(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
+  if(action==='harvest'){particleBurst(id);harvestFlight(id,result.crop,flightCount);if(result.firstHarvest)particleBurst(id,true);floatReward(id,(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
   if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
   if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
   if(action==='plant')floatReward(id,floatChip(state.plots[id].crop??selectedCrop,'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));
@@ -540,13 +587,14 @@ async function interact(id,forcedAction){
 }
 // The fields of one swipe (farm-input.js), in one save; then the same bursts a tap shows and one sum of what it brought in.
 async function workSwept(action,ids){
+ const flights=new Map(ids.map(id=>[id,1+(state.plots[id]?.watered?1:0)+(state.plots[id]?.tended?1:0)]));
  for(let tries=0;;tries++){
   try{
    const result=await runAction({type:'fields',action,ids,crop:selectedCrop});
    const crops={};let xp=0,golden=0;
    for(const f of result.fields){
     particleBurst(f.id,action==='water');drawCrop(f.id);
-    if(action==='harvest'){crops[f.crop]=(crops[f.crop]??0)+f.quantity;xp+=f.xp;if(f.firstHarvest){golden=f.firstHarvest;particleBurst(f.id,true);}}
+    if(action==='harvest'){if(result.fields.indexOf(f)<6)harvestFlight(f.id,f.crop,flights.get(f.id)??1,result.fields.indexOf(f)*70);crops[f.crop]=(crops[f.crop]??0)+f.quantity;xp+=f.xp;if(f.firstHarvest){golden=f.firstHarvest;particleBurst(f.id,true);}}
    }
    const last=result.fields.at(-1).id;
    if(action==='harvest')floatReward(last,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+floatChip('xp',`+${xp} XP`,'is-xp'));
@@ -697,7 +745,7 @@ function pointerTarget(event){
  for(let i=0;i<plots.length;i++){const v=plots[i];if(!state.plots[i].crop||v.label.hidden)continue;const box=v.label.getBoundingClientRect();if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type:'plot',id:i};}
  for(const [type,views] of [['building',buildingViews],['utility',utilityViews],['activity',farmLife?.views??new Map()]])for(const [id,v] of views){
   if(v.label.hidden)continue;const box=v.label.getBoundingClientRect();
-  if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type,id};
+  if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type,id,label:true};
  }
  const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);
  // Hands-on stations have dedicated solid hit volumes: glass, open roofs and
@@ -725,7 +773,7 @@ function addBuilding(key,x,z,options){
  const outline=new THREE.BoxHelper(object,0xffdc76);outline.material.transparent=true;outline.material.opacity=.75;outline.visible=false;scene.add(outline);
  const label=document.createElement('button');label.className='building-label';label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
  label.innerHTML=`<span class="building-pin">${art(key==='familyhall'?'familyhall-model':key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">${key==='farmhouse'?'Expand your fields':'Ready to work'}</small></span>`;
- label.addEventListener('click',()=>economy.openBuilding(key));label.addEventListener('mouseenter',()=>highlight(key));label.addEventListener('mouseleave',()=>highlight(-1));label.addEventListener('focus',()=>highlight(key));label.addEventListener('blur',()=>highlight(-1));$('building-labels').append(label);
+ label.addEventListener('click',()=>tapBuilding(key));label.addEventListener('mouseenter',()=>highlight(key));label.addEventListener('mouseleave',()=>highlight(-1));label.addEventListener('focus',()=>highlight(key));label.addEventListener('blur',()=>highlight(-1));$('building-labels').append(label);
  buildingViews.set(key,{object,hit,outline,label,pin:label.querySelector('.building-pin'),pinArt:key==='familyhall'?'familyhall-model':key,x:object.position.x,z:object.position.z,height,locked:false});
 }
 // On the map yellow means ready, as on a building whose batch is done: the Farm stall from a quarter full (red once it is
@@ -767,7 +815,7 @@ function shootMinimap(){
  frameMapCamera();
  const ratio=renderer.getPixelRatio(),w=mapBuffer.width,h=mapBuffer.height,fog=scene.fog;
  renderer.setScissorTest(true);renderer.setViewport(0,0,w/ratio,h/ratio);renderer.setScissor(0,0,w/ratio,h/ratio);
- scene.fog=null;renderer.render(scene,mapCamera);scene.fog=fog;
+ scene.fog=null;atmosphere?.hide(true);renderer.render(scene,mapCamera);atmosphere?.hide(false);scene.fog=fog;
  // Grass first, and the render taken from just inside its edge: rounding can leave the outer pixel row unrendered.
  const out=mapBuffer.getContext('2d');out.fillStyle='#b7cd86';out.fillRect(0,0,w,h);out.drawImage(renderer.domElement,2,renderer.domElement.height-h+2,w-4,h-4,0,0,w,h);
  renderer.setScissorTest(false);renderer.setViewport(0,0,viewportWidth,viewportHeight);renderer.render(scene,camera);
@@ -809,6 +857,7 @@ function positionBuildingLabels(){
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.pin.innerHTML=art(locked?'lock':v.pinArt);v.label.setAttribute('aria-label',locked?`${BUILDINGS[key].name} (locked)`:`Open ${BUILDINGS[key].name}`);}
   const hint=locked?`${BUILDINGS[key].name} · ${status.text}`:'';if(v.label.title!==hint)v.label.title=hint;
   const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera),x=(p.x*.5+.5)*width,y=(-p.y*.5+.5)*height;v.label.style.left=`${x}px`;v.label.style.top=`${y}px`;v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82||behindTools(x,y,80);v.label.classList.toggle('ready',status.kind==='ready');
+  if(!locked){const aria=`${status.kind==='ready'?'Collect from':'Open'} ${BUILDINGS[key].name}`;if(v.label.getAttribute('aria-label')!==aria)v.label.setAttribute('aria-label',aria);}
  }
 }
 function expandVisuals(){if(!ready)return;createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
@@ -877,10 +926,11 @@ function bindUI(){
 function frame(now){
  requestAnimationFrame(frame);if(!ready||document.hidden)return;
  if(now-lastFrame<32)return;const dt=Math.min((now-lastFrame)/1000,.1);lastFrame=now;
- if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
+ if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();atmosphere?.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
  if(!reducedMotion){
-  if(windmillRotor)windmillRotor.rotation.z-=dt*.28;
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());scenePolish?.animate(t);
+  // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
+  if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -909,19 +959,20 @@ async function init(){
  try{
   bindUI();updateUI();
   renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
-  renderer.setClearColor(0xe4ecd3);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.06;
+  renderer.setClearColor(0xdcebea);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.3;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;});
   scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,300);   // far enough for the mountains at the edge when zoomed out
   // Fresh daylight: a cool sky, a green bounce from the grass and a soft warm sun, so greens and reds read clearly (the old
   // warm-yellow sky, sun and haze made the whole valley beige).
-  const hemi=new THREE.HemisphereLight(0xeaf4ff,0x6d8a46,2.25);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xfff1d6,3.2);sun.position.set(-24,26,15);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
-  scene.fog=new THREE.Fog(0xe4ecd3,52,140);
+  const hemi=new THREE.HemisphereLight(0xe4f0ff,0x6f8c46,2);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xffeccb,3.2);sun.position.set(-26,22,14);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  cropMotion=createCropMotion({scene,reducedMotion});
+  scene.fog=new THREE.Fog(0xdcebea,60,150);
   let loaded=0;
   await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);},4)]);
-  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});clearPropsFromMountains();measureFarm();resize();icons();
+  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
   renderer.domElement.addEventListener('pointermove',e=>{
    if(e.pointerType!=='mouse'||e.buttons){highlight(-1);$('tooltip').hidden=true;return;}
    const target=pointerTarget(e);highlight(target?.id??-1);const tooltip=$('tooltip');
@@ -929,14 +980,14 @@ async function init(){
    tooltip.hidden=false;
    if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
    else if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
-   else if(target.type==='building'){const b=BUILDINGS[target.id];tooltip.innerHTML=`<strong>${b.name}</strong><span>${economy.status(target.id).text} · click to open</span>`;}
+   else if(target.type==='building'){const b=BUILDINGS[target.id];tooltip.innerHTML=`<strong>${b.name}</strong><span>${economy.status(target.id).text} · ${target.label&&economy.status(target.id).kind==='ready'?'click to collect':'click to open'}</span>`;}
    else{const p=state.plots[target.id];tooltip.innerHTML=`<strong>${p.crop?CROPS[p.crop].name:'Empty field'}</strong><span>${!p.crop?`Plant ${CROPS[selectedCrop].name.toLowerCase()} · ${seedCost(state,selectedCrop)} coins`:farmNow()>=p.readyAt?'Ready to harvest!':`${formatDuration(p.readyAt-farmNow())} · ${harvestQuantity(state,p,farmNow())} crop${harvestQuantity(state,p,farmNow())>1?'s':''}${canWater(p,farmNow())?` · water now · ${formatDuration(waterUntil(p)-farmNow())} left`:p.tended?' · fully cared for':farmNow()>=p.careAt?' · extra care ready':` · extra care in ${formatDuration(p.careAt-farmNow())}`}`}</span>`;}
    const r=world.getBoundingClientRect();tooltip.style.left=`${Math.min(r.width-130,Math.max(130,e.clientX-r.left))}px`;tooltip.style.top=`${e.clientY-r.top-16}px`;
   });
   renderer.domElement.addEventListener('pointerleave',()=>{highlight(-1);$('tooltip').hidden=true;});
   const canvas=renderer.domElement;
   bindFarmInput({canvas,isReady:()=>ready,pick:pointerTarget,
-   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building')economy.openBuilding(target.id);else if(target.type==='utility')openUtility(target.id);else if(target.type==='activity')activities.open(target.id);},
+   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='activity')activities.open(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);

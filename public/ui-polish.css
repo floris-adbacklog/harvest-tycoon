@@ -102,3 +102,8 @@
 .active-boost .game-art{flex:none;width:20px;height:20px}
 .active-boost b{font-weight:750;font-variant-numeric:tabular-nums}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.active-boosts:not([hidden]){gap:7px}.active-boost{gap:3px}.active-boost .game-art{width:16px;height:16px}}
+
+/* The harvest flying from a field to the Market button (harvest-fly.js). */
+.harvest-fly{position:fixed;width:38px;height:38px;margin:-19px 0 0 -19px;pointer-events:none;z-index:80}
+.harvest-fly-art{width:100%;height:100%;filter:drop-shadow(0 3px 4px #3d2f1a55)}
+.harvest-fly-art>*{width:100%;height:100%;display:block}

@@ -50,3 +50,7 @@
  #building-dialog .recipe-list>.factory-recipe-group[open]{grid-column:1/-1}
  #building-dialog .factory-recipe-group[open] .factory-recipe-group-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 }
+/* The names under the side buttons are white with a soft dark shadow, readable over the fuller colours of the farm (26 Sep 2026). */
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
+ .side-tools .side-tool b,.side-tools .side-tool.active b{color:#fff;text-shadow:0 1px 2px #1c2616d9,0 0 7px #1c261699}
+}
