@@ -244,3 +244,10 @@ test('the admin shows as Admin (not Moderator) in the chat, on profiles and on t
  const sql=readFileSync(new URL('../supabase/chat-staff-list.sql',import.meta.url),'utf8');
  assert.match(sql,/''role'',public\.chat_staff_role\(p_player\)/);assert.doesNotMatch(sql,/@/,'no e-mail address in the list');
 });
+test('the chat client has no method twice: a second staffList once emptied the Admin dashboard\'s moderator list',()=>{
+ const src=readFileSync(new URL('../src/chat-client.js',import.meta.url),'utf8');
+ const names=[...src.matchAll(/^\s{2}([A-Za-z]+):/gm)].map(m=>m[1]),twice=names.filter((n,i)=>names.indexOf(n)!==i);
+ assert.deepEqual(twice,[],'each method once');
+ assert.match(src,/staffList:\(\)=>rpc\('staff_list'\)/);assert.match(src,/staffRoles:\(\)=>rpc\('chat_staff_list'\)/);
+ assert.match(readFileSync(new URL('../src/staff-badge.js',import.meta.url),'utf8'),/chat\?\.staffRoles\?\.\(\)/);
+});

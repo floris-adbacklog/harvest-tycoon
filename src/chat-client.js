@@ -72,7 +72,8 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   setModerator:(player,on)=>rpc('staff_set_moderator',{p_player:player,p_on:on}),
   staffList:()=>rpc('staff_list'),
   postNews:(body,hours=24)=>rpc('chat_post_news',{p_body:body,p_hours:hours}),
-  staffList:()=>rpc('chat_staff_list'),
+  // Who is admin or moderator, for the mark beside their name (src/staff-badge.js); not the Admin dashboard's staffList above.
+  staffRoles:()=>rpc('chat_staff_list'),
   // The admin's welcome message to every new farmer (supabase/welcome-dm.sql).
   welcomeGet:()=>rpc('welcome_dm_get'),
   welcomeSave:({enabled,body,delay})=>rpc('welcome_dm_save',{p_enabled:enabled,p_body:body,p_delay:delay}),
