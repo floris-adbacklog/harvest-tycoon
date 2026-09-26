@@ -57,16 +57,20 @@ export function createProductionCueTracker(buildings,now){
 }
 // The effects are rendered in a worker (sound-worker.js), away from the game; without workers, one cue per idle moment instead.
 function renderInBackground(windowRef,accept){
- try{
-  const worker=new windowRef.Worker(new URL('./sound-worker.js',import.meta.url),{type:'module'});
-  worker.onmessage=({data})=>accept(data.kind,data.variant,data.data,data.rate);worker.onerror=()=>worker.terminate();
-  worker.postMessage({rate:SFX_RATE});return ()=>worker.terminate();
- }catch{
-  const jobs=CUE_ORDER.flatMap(kind=>Array.from({length:CUE_VARIANTS[kind]??1},(_,variant)=>[kind,variant]));let stopped=false;
+ const jobs=CUE_ORDER.flatMap(kind=>Array.from({length:CUE_VARIANTS[kind]??1},(_,variant)=>[kind,variant])),done=new Set();let stopped=false,worker=null;
+ // Without a worker (or if it fails to start, as in an older browser): one cue per idle moment, only the ones still missing.
+ const idle=()=>{
+  worker?.terminate();worker=null;
   const later=fn=>windowRef?.requestIdleCallback?windowRef.requestIdleCallback(fn,{timeout:2000}):setTimeout(fn,50);
-  const next=()=>{if(stopped)return;const job=jobs.shift();if(!job)return;accept(job[0],job[1],renderCue(job[0],SFX_RATE,job[1]),SFX_RATE);later(next);};
-  later(next);return ()=>{stopped=true;};
- }
+  const next=()=>{if(stopped)return;const job=jobs.find(([k,v])=>!done.has(`${k}:${v}`));if(!job)return;done.add(`${job[0]}:${job[1]}`);accept(job[0],job[1],renderCue(job[0],SFX_RATE,job[1]),SFX_RATE);later(next);};
+  later(next);
+ };
+ try{
+  worker=new windowRef.Worker(new URL('./sound-worker.js',import.meta.url),{type:'module'});
+  worker.onmessage=({data})=>{done.add(`${data.kind}:${data.variant}`);accept(data.kind,data.variant,data.data,data.rate);};worker.onerror=idle;
+  worker.postMessage({rate:SFX_RATE});
+ }catch{idle();}
+ return ()=>{stopped=true;worker?.terminate();};
 }
 export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic,renderSounds=renderInBackground}={}){
  let settings={...AUDIO_DEFAULTS},ctx,master,ambientBus,effectBus,musicBuffer=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;

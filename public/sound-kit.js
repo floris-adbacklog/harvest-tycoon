@@ -63,7 +63,10 @@ export function renderCue(kind,rate=48000,variant=0){
    }else if(variant===2){ // toot-toot on the horn over a ticking-over engine
     for(let p=0;p<5;p++)putt(p*.09,120,.6-p*.06);
     for(const [start,len] of [[.05,.12],[.23,.2]]){const f=415,b=buffer(len+.04);for(let i=0;i<b.length;i++){const t=i/rate,env=Math.min(1,t/.012)*(t<len?1:Math.exp(-(t-len)/.012));b[i]=(Math.sin(TAU*f*t)+.6*Math.sin(TAU*f*1.26*t)+.35*Math.sin(TAU*f*2*t)+.2*Math.sin(TAU*f*2.52*t))*env*.5;}lowpass(b,rate,2400);add(start,b);}
-   }else for(let p=0;p<6;p++)putt(p*.075,165,1-p*.12); // putt-putt
+   }else{ // the engine starts: the starter whirs, the engine catches and runs
+    {const w=sweep(.34,240,330,.3,.35,x=>Math.sin(x)+.5*Math.sin(2*x)+.3*Math.sin(3*x));for(let i=0;i<w.length;i++)w[i]*=.6+.4*Math.sin(TAU*14*i/rate);lowpass(w,rate,1800);add(0,w);}
+    add(.3,hiss(.08,900,1.2,.02,1));let at=.34;for(let p=0;p<6;p++){putt(at,150+p*6,.9-p*.08);at+=.085;}
+   }
    break;}
   case 'levelup': // a little fanfare with a bell and a shimmer on the last chord
    [[72,0,.16],[76,.14,.16],[79,.28,.16],[84,.42,.7]].forEach(([m,start,len])=>{
