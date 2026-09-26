@@ -207,11 +207,12 @@ test('Family read includes the authenticated player identity required by the exi
  const response=await handleFamily({admin,body:{operation:'family'},row:{revision:1,receipts:[]},state:farm(),player:'alice',username:'Alice'});
  assert.equal(response.data.profile.player_id,'alice');assert.ok(response.data.family);assert.equal(response.data.state,undefined);
 });
-test('The four Family pages each use their own generated PNG and a mobile-visible topbar button',()=>{
+test('The four Family pages each use their own generated PNG; on phones Farm Family is in More, not in the header',()=>{
  const html=readFileSync('public/farm.html','utf8'),css=readFileSync('public/family.css','utf8');
  const family=readFileSync('public/family-ui.js','utf8');
  for(const key of ['family-weekly-order','family-members','family-tournament','family-management']){assert.ok(html.includes(`data-game-art="${key}"`)||family.includes(`art('${key}')`),key);assert.ok(readFileSync(`public/assets/icons/${key}.png`).length>1000);}
- assert.match(css,/#family-button:not\(\[hidden\]\)\{display:flex/);assert.match(css,/#family-button\[hidden\]/);
+ assert.match(css,/@media\(max-width:900px\),\(max-height:550px\) and \(pointer:coarse\)\{#family-button\{display:none\}\}/);assert.doesNotMatch(css,/#family-button:not\(\[hidden\]\)\{display:flex/);assert.match(css,/#family-button\[hidden\]/);
+ assert.match(html,/<button data-menu-action="family-button" id="family-menu-entry" hidden>/,'its place on a phone');
 });
 
 test('new emblems preserve existing IDs and only leaders may change them',()=>{

@@ -77,7 +77,6 @@
 #rookie-button[hidden],#rookie-time:empty{display:none}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  .topbar .resources:has(#rookie-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;gap:6px}
- .topbar .resources:has(#rookie-button:not([hidden])):has(#family-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px 44px}
  #rookie-button:not([hidden]){display:flex;align-items:center;justify-content:center;width:44px;height:48px;padding:5px;border-radius:14px}
  #rookie-button .game-art{width:32px;height:32px}
 }
@@ -93,8 +92,7 @@
 .rookie-clock progress::-webkit-progress-value{background:linear-gradient(90deg,#f3c455,#e59d2c);border-radius:99px}
 .rookie-clock progress::-moz-progress-bar{background:linear-gradient(90deg,#f3c455,#e59d2c);border-radius:99px}
 .rookie-clock b{font-size:14px;color:#8a5a1c;white-space:nowrap}
-.rookie-notes{list-style:none;padding:0;margin:0 0 20px;display:grid;gap:8px;text-align:left}
-.rookie-notes li{display:grid;gap:3px;padding:11px 13px;border-radius:12px;background:#eef2df}
-.rookie-notes strong{font-size:13px}
-.rookie-notes span{font-size:13px;line-height:1.5;color:#55613f}
+.rookie-notes{list-style:none;margin:0 0 18px;padding:11px 14px 11px 30px;display:grid;gap:5px;border-radius:12px;background:#eef2df;text-align:left}
+.rookie-notes li{position:relative;font-size:13px;line-height:1.45;color:#55613f}.rookie-notes li::before{content:'';position:absolute;left:-13px;top:.6em;width:6px;height:6px;border-radius:50%;background:#e59d2c}
 #rookie-dialog .primary-button{width:100%;min-height:46px}
+@media(max-width:600px){#rookie-dialog{padding:20px 18px 18px}#rookie-dialog .rookie-art{width:76px;height:76px;margin-bottom:4px}#rookie-dialog h2{font-size:24px;margin:4px 0 6px}.rookie-clock{margin:12px 0}}

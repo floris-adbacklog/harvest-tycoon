@@ -15,11 +15,8 @@
 @media(max-width:600px){#family-dialog{padding:18px 16px;width:calc(100% - 20px);max-width:calc(100% - 20px);max-height:calc(100dvh - 24px)}#family-dialog .dialog-heading{align-items:flex-start}#family-dialog .dialog-heading .icon-button{width:42px;height:42px;flex-shrink:0}#family-tabs button{font-size:12px}.family-join-grid{grid-template-columns:1fr}.family-emblems .family-emblem{width:52px;height:52px}.family-emblems .game-art{width:34px;height:34px}.emblem-picker-row{gap:4px}.family-list-row{flex-wrap:wrap}.family-member-actions{width:100%;padding-left:24px}.family-reward{flex-wrap:wrap}.family-reward>button{width:100%}.family-line-actions{grid-column:1/-1}.family-line-actions button{flex:1}.family-week-intro>.game-art{width:52px;height:52px}.family-setting-row{align-items:flex-start}.family-inline{flex-wrap:wrap}.family-inline button{width:100%}.family-pool strong{font-size:22px}#family-button{width:34px;height:36px}#family-button .game-art{width:25px;height:25px}}
 
 #family-tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:78px}#family-tabs .game-art{width:34px;height:34px;flex-shrink:0}.family-page-icon>.game-art{width:68px;height:68px;display:block;margin:0 auto 16px}.family-settings-header>.game-art{width:68px;height:68px;flex-shrink:0}@media(max-width:600px){#family-tabs button{min-height:70px;font-size:11px;gap:6px}#family-tabs .game-art{width:30px;height:30px}}
-@media(max-width:900px),(max-height:550px) and (pointer:coarse){
- .topbar .resources:has(#family-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;gap:6px}
- #family-button:not([hidden]){display:flex;align-items:center;justify-content:center;width:44px;height:48px;padding:5px;border-radius:14px}
- #family-button .game-art{width:32px;height:32px}
-}
+/* Phones (26 Sep 2026): Farm Family lives in the More menu, under Friends, like the chat; the header keeps coins and diamonds. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){#family-button{display:none}}
 #family-button[hidden],#family-dot[hidden],#family-tabs[hidden]{display:none}
 
 /* The leading families and their prizes stay together on every screen size. */

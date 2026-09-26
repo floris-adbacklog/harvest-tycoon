@@ -121,7 +121,7 @@ test('the hourglass sits next to the diamonds like the Family button, opens a sc
  assert.match(read('assets/icons/hourglass.svg'),/^<svg[\s\S]*<\/svg>\s*$/);assert(ART_KEYS.includes('hourglass'));
  const ui=read('rookie-ui.js');assert.match(ui,/showModal/);assert.match(ui,/data-rookie-close/);assert.match(ui,/aria-labelledby/);assert.match(ui,/\[data-rookie-open\]/);
  assert.match(read('game.js'),/createRookieUI\(\{state\}\)/);assert.match(read('game.js'),/rookie\.tick\(\)/);assert.match(read('game.js'),/rookie\?\.refresh\(\)/);
- const css=read('ui-polish.css');assert.match(css,/#rookie-button/);assert.match(css,/:has\(#rookie-button:not\(\[hidden\]\)\):has\(#family-button:not\(\[hidden\]\)\)/,'room for both buttons on a phone');
+ const css=read('ui-polish.css');assert.match(css,/#rookie-button/);assert.match(css,/\.topbar \.resources:has\(#rookie-button:not\(\[hidden\]\)\)\{grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\) 44px;gap:6px\}/,'room for the boost on a phone');assert.doesNotMatch(css,/:has\(#family-button:not\(\[hidden\]\)\)/,'Farm Family is no longer in a phone header');
  assert.match(read('economy-ui.js'),/sellableStock\(state,key,now\)/);assert.match(read('economy-ui.js'),/kept, free in/);
 });
 
@@ -130,5 +130,14 @@ test('the hourglass says how long is left and that it is temporary',()=>{
  assert.equal(rookieTimeLeft(45000),'45s');assert.equal(rookieTimeLeft(24*MIN-1),'24 min');
  assert.equal(rookieLabel(24*MIN-1),'80% shorter waiting · 24 min left');
  assert.equal(rookieBadge(23*60*MIN),'23h');assert.equal(rookieTimeLeft(90*MIN),'1 h 30 min');assert.equal(rookieTimeLeft(24*60*MIN),'24 h');
- assert.match(read('rookie-ui.js'),/hours after you started your farm/);assert.match(read('rookie-ui.js'),/Beginner boost ended/);
+ assert.match(read('rookie-ui.js'),/ease back to normal over your first/);assert.match(read('rookie-ui.js'),/Beginner boost ended/);
+});
+
+test('the beginner boost screen is short enough for a small phone: one line, the clock and three short notes, Got it in view',()=>{
+ const ui=read('rookie-ui.js'),css=read('ui-polish.css');
+ assert.match(ui,/% shorter waiting<\/h2><p>Waiting times start \$\{percent\}% shorter and ease back to normal over your first \$\{ROOKIE_BOOST_MS\/3600000\} hours\.<\/p>/);
+ assert.match(ui,/<li>Corn now takes <b data-rookie-corn>/);assert.match(ui,/<li>Crops and batches already running keep their times\.<\/li>/);
+ assert.match(ui,/\$\{rookieLeft\(state,now\(\)\)>0\?`<li>Your starter corn and feed can be sold after \$\{ROOKIE_MS\/60000\} minutes\.<\/li>`:''\}/,'only while the starter goods are still kept');
+ assert.doesNotMatch(ui,/Easing over the day|Your first day is a head start/);
+ assert.match(css,/@media\(max-width:600px\)\{#rookie-dialog\{padding:20px 18px 18px\}#rookie-dialog \.rookie-art\{width:76px;height:76px;/);
 });
