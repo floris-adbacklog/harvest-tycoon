@@ -5,12 +5,12 @@ import {readFileSync,readdirSync} from 'node:fs';
 const root=new URL('../',import.meta.url),read=path=>readFileSync(new URL(path,root),'utf8');
 
 // Runs public/app-mode.js against a fake page. `safeTop` is what env(safe-area-inset-top) resolves to.
-function run({standalone=true,parentStandalone=false,inFrame=false,parentShortfall=' 0px',width=402,height=874,screen={width:402,height:874},safeTop=62}={}){
+function run({standalone=true,parentStandalone=false,inFrame=false,parentShortfall=' 0px',fixed=null,width=402,height=874,screen={width:402,height:874},safeTop=62}={}){
  const listeners={window:{},document:{}},vars={},attrs={};
  const page={innerWidth:width,innerHeight:height,matchMedia:()=>({matches:standalone}),navigator:{standalone:false},
   addEventListener:(name,fn)=>{listeners.window[name]=fn;}};
  const html={setAttribute:(key,value)=>{attrs[key]=value;},style:{setProperty:(key,value)=>{vars[key]=value;}},appendChild(){},removeChild(){}};
- page.document={documentElement:html,createElement:()=>({style:{}}),addEventListener:(name,fn)=>{listeners.document[name]=fn;}};
+ page.document={documentElement:html,createElement:()=>({style:{},getBoundingClientRect:()=>({height:fixed??page.innerHeight})}),addEventListener:(name,fn)=>{listeners.document[name]=fn;}};
  page.parent=inFrame?{matchMedia:()=>({matches:parentStandalone}),navigator:{standalone:false},document:{documentElement:{}},getComputedStyle:()=>({getPropertyValue:()=>parentShortfall})}:page;
  // The script reads bare `window`, `document`, `screen` and `getComputedStyle`.
  vm.runInNewContext(read('public/app-mode.js'),{window:page,document:page.document,screen,getComputedStyle:()=>({paddingTop:`${safeTop}px`}),setTimeout:()=>0});
@@ -86,4 +86,13 @@ test('the game frame reaches over the strip, and keeps its buttons above it',()=
  const short=run({standalone:false,inFrame:true,parentStandalone:true,height:812,parentShortfall:' 62px'});
  assert.equal(short.vars['--viewport-shortfall'],'62px');assert.equal(short.vars['--frame-strip'],'0px','a frame that is itself short already keeps clear of the strip: no double room');
  assert.equal(run({height:874}).vars['--frame-strip'],'0px','the page itself');
+});
+
+// 26 Sep 2026: on the user's iPhone the fix did nothing: window.innerHeight was the full screen, the full-screen box was not.
+test('a full-screen box that ends a status bar short counts, even when window.innerHeight says full screen; the admin can read the numbers',()=>{
+ const page=run({height:874,fixed:812});
+ assert.equal(page.vars['--viewport-shortfall'],'62px');
+ assert.deepEqual({...page.fake.harvestViewport},{screen:'402×874',window:'402×874',fixed:812,statusBar:62,shortfall:62,strip:0});
+ assert.equal(run({height:874,fixed:874}).vars['--viewport-shortfall'],'0px','a box that fills the screen: nothing to fix');
+ assert.match(read('src/admin-dashboard.js'),/This device: screen \$\{page\.screen\}, window \$\{page\.window\}, full-screen box \$\{page\.fixed\}/);
 });

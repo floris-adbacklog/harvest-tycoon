@@ -62,7 +62,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<p class="admin-popup-note">Every farmer sees it once, when nothing else is open, and never in their first half hour. It ends with the news, or after 30 days.</p></div>'
   +'<label class="admin-news-hours">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Post news</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
   +'<h3>'+art('admin')+'Moderators</h3><ul id="admin-mod-list" class="admin-recent-list"></ul><p class="admin-hint">Make a farmer a moderator (or not) on their profile.</p>'
-  +'<h3>'+art('chat')+'Who may chat</h3><form id="admin-levels-form" class="admin-levels"><label>Global chat from level<input type="number" id="admin-level-global" min="1" max="200" step="1" inputmode="numeric"></label><label>Private messages from level<input type="number" id="admin-level-dm" min="1" max="200" step="1" inputmode="numeric"></label><button type="submit" class="small-button">Save</button></form><p id="admin-chat-status" class="admin-hint" role="status"></p></section></div>'
+  +'<h3>'+art('chat')+'Who may chat</h3><form id="admin-levels-form" class="admin-levels"><label>Global chat from level<input type="number" id="admin-level-global" min="1" max="200" step="1" inputmode="numeric"></label><label>Private messages from level<input type="number" id="admin-level-dm" min="1" max="200" step="1" inputmode="numeric"></label><button type="submit" class="small-button">Save</button></form><p id="admin-chat-status" class="admin-hint" role="status"></p><p id="admin-device" class="admin-hint admin-device"></p></section></div>'
   +'<p id="admin-dashboard-status" class="admin-hint admin-status" role="status"></p>';
  document.body.append(dialog);
  dialog.querySelector('.admin-dashboard-close').onclick=()=>dialog.close();
@@ -171,6 +171,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   try{showRoom(await client.donationRoom());}catch{}
   if(role!=='admin')return;
   dialog.querySelector('#admin-chat-settings').hidden=false;void showPopups();
+  // This device, as the installed app sees it (public/app-mode.js): to check the bottom of the screen on a real phone.
+  const viewport=w=>{try{return w.harvestViewport??null;}catch{return null;}},page=viewport(window.parent),frame=viewport(window);
+  dialog.querySelector('#admin-device').textContent=page?`This device: screen ${page.screen}, window ${page.window}, full-screen box ${page.fixed}, status bar ${page.statusBar}, strip ${page.shortfall}. Game: window ${frame?.window??'?'}, box ${frame?.fixed??'?'}, kept clear ${frame?.strip??0}.`:'This device: not the installed app.';
   try{
    const [staff,overview]=await Promise.all([client.staffList(),chat?.whenReady?.()]);await loadFaces(staff.map(s=>s.playerId));
    dialog.querySelector('#admin-mod-list').innerHTML=staff.length?staff.map(s=>`<li>${avatar(s.name,false,s.playerId)}<span class="admin-recent-copy"><strong>${esc(s.name)}</strong><small>Moderator since ${esc(fmtDate(s.since))}</small></span></li>`).join(''):'<li class="admin-empty">No moderators yet.</li>';
