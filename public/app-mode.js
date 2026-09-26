@@ -42,7 +42,8 @@
   // iOS does not draw a fixed element below that line, so welcome.css then places the game frame in the page itself instead.
   if(own>0)html.setAttribute('data-viewport-short','');else html.removeAttribute('data-viewport-short');
   // The game frame (26 Sep 2026): the page stretches it over that strip (welcome.css), so the farm reaches the bottom of the screen.
-  // The frame then measures no gap of its own, but the strip may still not take taps: --frame-strip keeps the buttons above it.
+  // The frame then measures no gap of its own; --frame-strip is the page's strip, only for the admin's device line (the buttons
+  // were kept above it at first, which left an empty band under the bottom bar).
   var strip=0;
   try{if(window.parent!==window&&own===0)strip=parseFloat(window.parent.getComputedStyle(window.parent.document.documentElement).getPropertyValue('--viewport-shortfall'))||0;}catch(e){}
   html.style.setProperty('--frame-strip',strip+'px');

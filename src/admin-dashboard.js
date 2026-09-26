@@ -173,7 +173,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   dialog.querySelector('#admin-chat-settings').hidden=false;void showPopups();
   // This device, as the installed app sees it (public/app-mode.js): to check the bottom of the screen on a real phone.
   const viewport=w=>{try{return w.harvestViewport??null;}catch{return null;}},page=viewport(window.parent),frame=viewport(window);
-  dialog.querySelector('#admin-device').textContent=page?`This device: screen ${page.screen}, window ${page.window}, full-screen box ${page.fixed}, status bar ${page.statusBar}, strip ${page.shortfall}. Game: window ${frame?.window??'?'}, box ${frame?.fixed??'?'}, kept clear ${frame?.strip??0}.`:'This device: not the installed app.';
+  dialog.querySelector('#admin-device').textContent=page?`This device: screen ${page.screen}, window ${page.window}, full-screen box ${page.fixed}, status bar ${page.statusBar}, strip ${page.shortfall}. Game: window ${frame?.window??'?'}, box ${frame?.fixed??'?'}, page strip ${frame?.strip??0}.`:'This device: not the installed app.';
   try{
    const [staff,overview]=await Promise.all([client.staffList(),chat?.whenReady?.()]);await loadFaces(staff.map(s=>s.playerId));
    dialog.querySelector('#admin-mod-list').innerHTML=staff.length?staff.map(s=>`<li>${avatar(s.name,false,s.playerId)}<span class="admin-recent-copy"><strong>${esc(s.name)}</strong><small>Moderator since ${esc(fmtDate(s.since))}</small></span></li>`).join(''):'<li class="admin-empty">No moderators yet.</li>';

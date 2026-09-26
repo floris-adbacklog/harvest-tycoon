@@ -64,7 +64,7 @@ test('every installed-app layout rule is scoped to the installed app',()=>{
 test('the game reads the bottom safe area in one place, which the installed app can correct',()=>{
  const base=read('public/styles.css');
  assert.match(base,/^:root\{--safe-bottom:env\(safe-area-inset-bottom,0px\)\}/,'the browser keeps the plain safe area');
- assert.match(read('public/pwa-layout.css'),/html\[data-app-mode=standalone\]\{--safe-bottom:max\(0px,calc\(env\(safe-area-inset-bottom,0px\) - var\(--viewport-shortfall,0px\)\),var\(--frame-strip,0px\)\)\}/);
+ assert.match(read('public/pwa-layout.css'),/html\[data-app-mode=standalone\]\{--safe-bottom:max\(0px,calc\(env\(safe-area-inset-bottom,0px\) - var\(--viewport-shortfall,0px\)\)\)\}/);
  const own=new Set(['styles.css','welcome.css','pwa-layout.css','loading-screen.css']);
  for(const file of readdirSync(new URL('public/',root)).filter(name=>name.endsWith('.css')&&!own.has(name)))
   assert(!/env\(safe-area-inset-bottom\)/.test(read(`public/${file}`)),`${file} reads the bottom safe area directly`);
@@ -80,13 +80,15 @@ test('the game frame and the page load the installed-app files, before anything 
 
 // 26 Sep 2026: the page stretches the game frame over the strip, so the farm reaches the bottom of the screen; inside the frame the
 // buttons stay above the strip, in case it takes no taps.
-test('the game frame reaches over the strip, and keeps its buttons above it',()=>{
+test('the game frame reaches over the strip, and its bottom bar sits on the home indicator like an app',()=>{
  // iOS draws no fixed element below the short layout (seen on an iPhone): the frame is then part of the page, a strip taller.
  assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\]\[data-viewport-short\] #farm-host\{position:absolute;top:0;right:0;bottom:auto;left:0;height:calc\(100% \+ var\(--viewport-shortfall,0px\)\)\}/);
+ assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\]\[data-viewport-short\] #loading-screen\{position:absolute;top:0;right:0;bottom:auto;left:0;height:calc\(100% \+ var\(--viewport-shortfall,0px\)\);min-height:0\}/,'and the loading screen before the farm opens');
  assert.equal(run({height:812}).attrs['data-viewport-short'],'');assert.equal(run({height:874}).attrs['data-viewport-short'],undefined,'only when the layout is short');
  assert.equal(run({height:874}).viewport(),'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover','the installed app starts with the game viewport and keeps it');
  const stretched=run({standalone:false,inFrame:true,parentStandalone:true,height:874,parentShortfall:' 62px'});
- assert.equal(stretched.vars['--viewport-shortfall'],'0px','the stretched frame fills the screen');assert.equal(stretched.vars['--frame-strip'],'62px','the strip of the page around it');
+ assert.equal(stretched.vars['--viewport-shortfall'],'0px','the stretched frame fills the screen');assert.equal(stretched.vars['--frame-strip'],'62px','the strip of the page around it (for the admin\'s device line)');
+ assert.doesNotMatch(read('public/pwa-layout.css'),/var\(--frame-strip/,'the buttons are no longer kept above it: that left an empty band');
  const short=run({standalone:false,inFrame:true,parentStandalone:true,height:812,parentShortfall:' 62px'});
  assert.equal(short.vars['--viewport-shortfall'],'62px');assert.equal(short.vars['--frame-strip'],'0px','a frame that is itself short already keeps clear of the strip: no double room');
  assert.equal(run({height:874}).vars['--frame-strip'],'0px','the page itself');
