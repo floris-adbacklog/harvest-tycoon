@@ -30,7 +30,7 @@ function setup(saved,loader){
  return {audio,doc,win,ctx,writes,created:()=>created,loads:()=>loads};
 }
 test('quiet defaults, validation and a saved mute preference are respected before any gesture',async()=>{
- assert.deepEqual(audioSettings({ambience:Infinity,effects:-20,enabled:'yes'}),{enabled:true,ambience:22,effects:0});
+ assert.deepEqual(audioSettings({ambience:Infinity,effects:-20,enabled:'yes'}),{enabled:true,ambience:16,effects:0});
  assert.deepEqual(audioSettings(null),AUDIO_DEFAULTS);
  const s=setup(JSON.stringify({enabled:false,ambience:10,effects:35}));assert.equal(s.created(),0);assert.equal(await s.audio.unlock(),false);assert.equal(s.created(),0);assert.equal(s.audio.play('levelup'),false);
  s.audio.setSettings({enabled:true});await s.audio.unlock();assert.equal(s.created(),1);assert.equal(s.ctx.state,'running');assert.equal(s.writes[0][0],AUDIO_STORAGE_KEY);assert.equal(s.audio.settings().effects,35);s.audio.dispose();
@@ -102,10 +102,10 @@ test('a failed music load leaves game sounds available and avoids request spam',
  assert.equal(s.audio.settings().musicStatus,'unavailable');assert(s.audio.play('harvest'));
  for(let i=0;i<10;i++)await s.audio.unlock();await settle();assert.equal(s.loads(),1);s.audio.dispose();
 });
-test('the shipped 144-second PCM loop has no silent windows or discontinuous seam',()=>{
- const wav=readFileSync(new URL('../public/assets/audio/harvest-meadow.wav',import.meta.url));
+test('the shipped music loop (Sunny Acres, 48 bars at 108 BPM) has no silent windows or discontinuous seam',()=>{
+ const wav=readFileSync(new URL('../public/assets/audio/sunny-acres.wav',import.meta.url));
  assert.equal(wav.toString('ascii',0,4),'RIFF');assert.equal(wav.readUInt16LE(20),1);assert.equal(wav.readUInt16LE(22),1);assert.equal(wav.readUInt32LE(24),24000);assert.equal(wav.readUInt16LE(34),16);
- const count=(wav.length-44)/2;assert.equal(count/24000,144);let peak=0,minRms=1,maxStep=0,last=0;
- for(let i=0;i<count;i+=1200){let energy=0;for(let j=i;j<i+1200;j++){const sample=wav.readInt16LE(44+j*2)/32768;energy+=sample*sample;peak=Math.max(peak,Math.abs(sample));if(j)maxStep=Math.max(maxStep,Math.abs(sample-last));last=sample;}minRms=Math.min(minRms,Math.sqrt(energy/1200));}
+ const count=(wav.length-44)/2;assert.equal(count,Math.round(48*4*60/108*24000));let peak=0,minRms=1,maxStep=0,last=0;
+ for(let i=0;i+1200<=count;i+=1200){let energy=0;for(let j=i;j<i+1200;j++){const sample=wav.readInt16LE(44+j*2)/32768;energy+=sample*sample;peak=Math.max(peak,Math.abs(sample));if(j)maxStep=Math.max(maxStep,Math.abs(sample-last));last=sample;}minRms=Math.min(minRms,Math.sqrt(energy/1200));}
  assert(peak<.3);assert(minRms>.01,'no quiet gap even in a 50ms window');const seam=Math.abs(wav.readInt16LE(44)-wav.readInt16LE(wav.length-2))/32768;assert(seam<.002);assert(seam<maxStep);
 });

@@ -1,8 +1,9 @@
 import {productionJobs} from './farm-state.js';
 // Original continuous music and procedural effects. No third-party recordings.
-// The same 144-second loop twice: the FLAC is lossless (every sample identical, so the seamless loop stays seamless) at under a
-// quarter of the WAV's size. The WAV stays as the fallback for a browser that cannot fetch or decode the FLAC.
-const MUSIC_URLS=['./assets/audio/harvest-meadow.flac','./assets/audio/harvest-meadow.wav'].map(path=>new URL(path,import.meta.url));
+// "Sunny Acres" (scripts/generate-farm-music.mjs, 26 Sep 2026: an upbeat folk loop in place of the calm Harvest Meadow piano).
+// The same 107-second loop twice: the FLAC is lossless (every sample identical, so the seamless loop stays seamless) at under half
+// the WAV's size. The WAV stays as the fallback for a browser that cannot fetch or decode the FLAC.
+const MUSIC_URLS=['./assets/audio/sunny-acres.flac','./assets/audio/sunny-acres.wav'].map(path=>new URL(path,import.meta.url));
 async function loadFarmMusic(context){
  let failure;
  for(const url of MUSIC_URLS){
@@ -14,7 +15,8 @@ async function loadFarmMusic(context){
  }
  throw failure;
 }
-export const AUDIO_DEFAULTS=Object.freeze({enabled:true,ambience:22,effects:48});
+// Music starts a little softer (16%, was 22%) now that Sunny Acres is livelier than the old piano; a farmer's own setting stays.
+export const AUDIO_DEFAULTS=Object.freeze({enabled:true,ambience:16,effects:48});
 export const AUDIO_STORAGE_KEY='harvest-tycoon-audio-v1';
 export function audioSettings(value={}){
  const percent=(v,fallback)=>typeof v==='number'&&Number.isFinite(v)?Math.max(0,Math.min(100,Math.round(v))):fallback;

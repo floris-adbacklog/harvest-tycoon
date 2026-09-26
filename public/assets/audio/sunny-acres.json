@@ -1,0 +1,11 @@
+{
+  "duration_seconds": 106.66666666666667,
+  "sample_rate": 24000,
+  "frames": 2560000,
+  "peak": 0.27,
+  "rms": 0.061720714730293925,
+  "quietest_50ms_rms": 0.015382757856271622,
+  "seam_step": 0.0011880603779682447,
+  "max_adjacent_step": 0.1893569282275747,
+  "composition": "Original Sunny Acres — 48 bars in six sections, 108 BPM, G major: banjo, upright bass, guitar, shaker, whistle, fiddle, birds"
+}

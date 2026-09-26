@@ -902,3 +902,13 @@ button (+1 beside it); lines you cannot help with yet fold under "Later (n)" unl
 for a real finisher; "All goals done · qualifying" with what is missing (qualifyHint) and, for you, the coming reward. Chat tab
 counts sit on the tab corner on phones. Note: public/cloud/, cloud/ and dist-static/ in git are old build output (22 Sep);
 Vercel rebuilds everything, so they are never served live.
+
+## New background music: Sunny Acres (26 Sep 2026; client only, no server change)
+- public/assets/audio/sunny-acres.flac (2.2 MB) plays instead of harvest-meadow: an upbeat folk loop at 108 BPM in G major
+  (banjo rolls, upright bass, guitar on the off-beat, shaker and soft kick, a whistled tune, a fiddle, a soft accordion
+  bed, now and then a bird). 48 bars, 106.7 s, every note synthesised by scripts/generate-farm-music.mjs, with tails and
+  room reflections wrapped round the loop, so it repeats without a seam (seam step 0.0012, no 50 ms window below 0.015 RMS).
+- Rebuild: `node scripts/generate-farm-music.mjs && afconvert -f flac -d flac public/assets/audio/sunny-acres.wav
+  public/assets/audio/sunny-acres.flac` (afconvert writes the samples' MD5, which the test compares with the WAV).
+- Unused now, kept (nothing deleted): public/assets/audio/harvest-meadow.flac (1.5 MB), .wav (6.9 MB), .json and
+  scripts/generate-farm-music.py (the old calm piano loop).
