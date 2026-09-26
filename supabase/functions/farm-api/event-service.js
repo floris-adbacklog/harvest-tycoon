@@ -40,10 +40,11 @@ async function standings(admin,event,user,now){
  if(rows.error)throw rows.error;
  const all=eventStandings(event,rows.data,now),top=all.slice(0,TOP),you=all.find(r=>r.playerId===user.id)??null;
  const ids=[...new Set([...top.map(r=>r.playerId),...(you?[you.playerId]:[])])];
- const names=ids.length?await admin.from('player_stats').select('player_id,username,level,avatar_id').in('player_id',ids):{data:[]};
+ const names=ids.length?await admin.from('player_stats').select('player_id,username,level,avatar_id,vip_expires_at').in('player_id',ids):{data:[]};
  if(names.error)throw names.error;
  const byId=new Map(names.data.map(p=>[p.player_id,p]));
- const dress=r=>({...r,username:byId.get(r.playerId)?.username??'Farmer',level:byId.get(r.playerId)?.level??null,avatarId:byId.get(r.playerId)?.avatar_id??null,isYou:r.playerId===user.id});
+ // The VIP mark as on the leaderboard (26 Sep 2026), and the id opens the farmer's profile in the game.
+ const dress=r=>({...r,username:byId.get(r.playerId)?.username??'Farmer',level:byId.get(r.playerId)?.level??null,avatarId:byId.get(r.playerId)?.avatar_id??null,vipExpiresAt:Date.parse(byId.get(r.playerId)?.vip_expires_at)||0,isYou:r.playerId===user.id});
  return {top:top.map(dress),you:you&&you.rank>TOP?dress(you):null,total:all.length};
 }
 // A player sees the running and upcoming events, the last day's results and any reward still waiting to be

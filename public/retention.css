@@ -127,7 +127,7 @@
 /* Every standings row uses the same four columns (rank, portrait, name, reward) and the same padding, so the
    podium cards and the plain rows line up exactly; the podium only adds a tinted background. */
 .event-standings{margin-top:6px}
-.event-standings .event-standing{display:grid;grid-template-columns:36px 40px minmax(0,1fr) 100px;align-items:center;gap:10px;margin:0;padding:10px 12px;border:1px solid transparent;border-radius:16px}
+.event-standings .event-standing{display:grid;grid-template-columns:36px minmax(0,1fr) 100px;align-items:center;gap:10px;margin:0;padding:10px 12px;border:1px solid transparent;border-radius:16px}
 .event-standings .event-standing+.event-standing{border-top-color:transparent;box-shadow:0 -1px 0 #e2ddcf}
 .event-standings .event-standing.is-podium{margin-bottom:6px;box-shadow:none}
 .event-standings .event-standing:not(.is-podium):not(.is-you){border-radius:0}
@@ -142,6 +142,10 @@
 .event-standing .family-member-portrait{width:40px;height:40px}
 .event-standing .player-avatar-thumb{display:block;width:40px;height:40px}
 .event-standing>div{min-width:0}
+/* The farmer (picture and name) opens their profile (26 Sep 2026). */
+.event-standing-who{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:10px;min-width:0;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.event-standing-who>div{min-width:0}.event-standing-who:hover strong{text-decoration:underline;text-underline-offset:2px}.event-standing-who:focus-visible{outline:3px solid #6c8f3f;outline-offset:2px;border-radius:10px}
+.event-standing-who span:not(.family-member-portrait):not(.vip-badge){display:block}
 .event-standing strong{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .event-standing-reward{display:grid;grid-template-columns:minmax(0,1fr) 40px;align-items:center;justify-items:end;column-gap:6px}
 .event-standing-reward b{display:inline-flex;align-items:center;gap:4px;color:#806322;font-size:14px;white-space:nowrap}

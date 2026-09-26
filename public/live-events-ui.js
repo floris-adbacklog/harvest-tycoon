@@ -1,5 +1,6 @@
 import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
+import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {farmNow} from './farm-client.js';
 import {formatDuration,levelOf} from './farm-state.js';
 // Farm events: a short shared goal (usually 5 hours, then a 1-hour break before the next one). The Events button
@@ -91,7 +92,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const next=PODIUM_PRIZES[s.top.filter(r=>r.finished).length]??FINISHER_PRIZE,{coins:base}=e.rewards??{coins:0};
   const soon=r=>r.isYou?`<span class="event-soon" title="When you qualify">${art('coins')}${num(base+next.coins)}${art('diamonds')}${num(next.diamonds)}<small>when you qualify</small></span>`:'<span class="event-qualifying">Qualifying</span>';
   const label=r=>r.podium?`${['1st','2nd','3rd'][r.rank-1]} place`:r.finished?'✓ Finished':r.progress>=100?(final?'All goals done, not qualified':'All goals done · qualifying'):`${r.progress}% done`;
-  const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${esc(r.username)}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div><span class="event-standing-reward">${r.finished?`<b>${art('coins')}${num(r.coins)}</b>${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:r.progress>=100?(final?'':soon(r)):`<progress class="event-mini" max="100" value="${r.progress}" aria-label="${esc(r.username)}: ${r.progress}% done"></progress>`}</span></article>`;
+  const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><button type="button" class="event-standing-who" data-event-profile="${esc(r.playerId)}" aria-label="Open ${esc(r.username)}’s profile"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${esc(r.username)}${vipBadge(r.vipExpiresAt,farmNow())}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div></button><span class="event-standing-reward">${r.finished?`<b>${art('coins')}${num(r.coins)}</b>${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:r.progress>=100?(final?'':soon(r)):`<progress class="event-mini" max="100" value="${r.progress}" aria-label="${esc(r.username)}: ${r.progress}% done"></progress>`}</span></article>`;
   return `<h3 class="event-section-title">${final?`Final standings · ${esc(e.title)}`:'Top farmers'}</h3><p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:'Rewards if the event ended now. The first three to finish win a podium prize.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
  }
  function hero(){
@@ -117,6 +118,9 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:`<p class="event-loading">${esc(error||'Opening farm events…')}</p>`)+'<p class="event-feedback" role="status" data-status></p>';
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();
   dialog.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>claim(b));
+  // A farmer in the standings opens their profile on top of the event; its back button returns here (26 Sep 2026).
+  dialog.querySelectorAll('[data-event-profile]').forEach(b=>b.onclick=()=>window.harvestProfiles?.open(b.dataset.eventProfile,{back:'Back to the event'}));
+  refreshVipBadges(dialog,farmNow());
   refreshArt();
  }
  async function claim(b){
