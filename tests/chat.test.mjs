@@ -90,7 +90,7 @@ test('the header: chat next to Farm Family and the staff dashboard next to the c
  const mobile=read('public/mobile-ui.js');
  assert.match(mobile,/familyTile\.hidden=family\.hidden;/,'the Family tile follows the Family button');
  assert.match(mobile,/chatTile\.hidden=chat\.hidden;chatPill\.hidden=chat\.hidden\|\|\(chatDot\?\.hidden\?\?true\);chatPill\.textContent=chatDot\?\.textContent\?\?'';/,'the Chat tile carries the unread count as a pill');
- assert.match(mobile,/&&!familyWaiting&&!chatWaiting;/,'and lights the More dot');
+ assert.match(mobile,/&&!familyWaiting&&!chatWaiting&&!emailWaiting;/,'and lights the More dot');
  assert.match(mobile,/for\(const id of \['chat-button','chat-dot'\]\)if\(\$\(id\)\)chatWatch\.observe/,'live, as messages come in');
 });
 

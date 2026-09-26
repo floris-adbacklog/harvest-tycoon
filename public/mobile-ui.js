@@ -38,9 +38,13 @@ export function createMobileUI({openUtility,resetView}){
   const chat=$('chat-button'),chatDot=$('chat-dot'),chatTile=$('chat-menu-entry'),chatPill=$('chat-menu-pill');
   if(chat&&chatTile){chatTile.hidden=chat.hidden;chatPill.hidden=chat.hidden||(chatDot?.hidden??true);chatPill.textContent=chatDot?.textContent??'';chatTile.setAttribute('aria-label',chat.getAttribute('aria-label')??'Open chat');}
   const chatWaiting=mobileLayout.matches&&Boolean(chatPill&&!chatPill.hidden);
+  // Confirm your email (10 diamonds): on phones only in this menu (26 Sep 2026: as a sixth bottom button it pushed More off the
+  // screen), so its tile and the More dot say it is waiting.
+  const emailTile=$('email-menu-entry');emailTile?.classList.toggle('has-dot',Boolean(emailTile&&!emailTile.hidden));
+  const emailWaiting=mobileLayout.matches&&Boolean(emailTile&&!emailTile.hidden);
   // A waiting event reward, a stall worth emptying (growth-ui.js) or something in the family also lights the More dot, since they
   // live in that menu on phones.
-  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!familyWaiting&&!chatWaiting;
+  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!familyWaiting&&!chatWaiting&&!emailWaiting;
   $('tasks-button').setAttribute('aria-label',quests.hidden?'Open quests':'Open quests, rewards ready');
   $('buildings-button').setAttribute('aria-label',batches.hidden?'Open buildings':`Open buildings, ${batches.textContent} batches ready`);
  }
