@@ -1,4 +1,5 @@
 // The chat window. Its button sits next to Farm Family in the header; on a phone it takes the Family button's place (Family moves
+import {linkify} from './popup-ui.js';
 // into the More menu, under Friends). Four tabs: Notifications (news from the admin and the odd personal note from the staff),
 // Global, Family and Private. The box you type in is at the top and the newest message right under it, so nothing has to be
 // scrolled. A name or picture opens that farmer's profile. Data and live updates: bridge.chat (src/chat-client.js).
@@ -149,7 +150,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const withAmounts=text=>esc(text).replace(/\b(\d{1,3}(?:,\d{3})+|\d+) (diamonds|coins|XP)\b/g,(all,amount,what)=>`<span class="chat-amount">${art(AMOUNT_ART[what])}<b>${amount}</b> ${what}</span>`);
  function noticeRow(n,fresh){
   const picture=n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':n.kind==='purchase'?'diamonds':'bell');
-  return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text">${n.kind==='gift'||n.kind==='donation'?withAmounts(n.body):esc(n.body)}</p></div></li>`;
+  return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text">${n.kind==='gift'||n.kind==='donation'?withAmounts(n.body):n.kind==='news'?linkify(n.body):esc(n.body)}</p></div></li>`;
  }
  function foundRow(p){
   return `<li><button type="button" class="chat-thread" data-start="${esc(p.playerId)}"><span class="chat-avatar">${avatarImage(p.avatarId)}</span><span class="chat-thread-copy"><strong>${esc(p.username)}</strong><small>Level ${esc(p.level)}${p.family?` · ${esc(p.family.name)}`:''}</small></span><span class="chat-thread-side"><small class="chat-write">Write</small></span></button></li>`;

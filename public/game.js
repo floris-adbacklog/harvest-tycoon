@@ -817,6 +817,8 @@ function bindUI(){
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
  $('market-button').addEventListener('click',()=>openDialog('market-dialog'));
  $('help-button').addEventListener('click',()=>{renderWiki(state);openDialog('help-dialog');});
+ // A topic of How to play, and a spot in it (a pop-up's button opens how to install the app: src/popup-ui.js).
+ window.harvestWiki=(id,anchor='')=>{openDialog('help-dialog');renderWiki(state,id,anchor);};
  $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());resetView();toast('Back to the heart of your farm.');});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
  // A click on the dimmed backdrop closes the open dialog. One delegated listener, so dialogs created later (farm events,

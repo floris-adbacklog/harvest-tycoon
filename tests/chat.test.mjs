@@ -114,7 +114,7 @@ test('the Admin dashboard opens for moderators too, reading only; giving stays w
 
 test('a gift note shows the diamond and the coin in front of the amounts',()=>{
  const ui=read('src/chat-ui.js');
- assert.match(ui,/n\.kind==='gift'\|\|n\.kind==='donation'\?withAmounts\(n\.body\):esc\(n\.body\)/);
+ assert.match(ui,/n\.kind==='gift'\|\|n\.kind==='donation'\?withAmounts\(n\.body\):n\.kind==='news'\?linkify\(n\.body\):esc\(n\.body\)/);
  assert.match(ui,/const withAmounts=text=>esc\(text\)\.replace\(/,'escaped first, then only the amounts get a picture');
 });
 

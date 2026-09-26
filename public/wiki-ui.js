@@ -47,4 +47,4 @@ function bind(){
  });
 }
 
-export function renderWiki(state,id=null){farm=state;bind();if(id)topic(id);else home();}
+export function renderWiki(state,id=null,anchor=''){farm=state;bind();if(id)topic(id,anchor);else home();}

@@ -12,4 +12,4 @@ html[data-app-mode=standalone] body::before{content:'';position:fixed;top:0;left
 
 /* Centred pop-ups (gift, level-up, Welcome Back, chore result, beginner boost, starter pack) stay clear of the notch and
    the home indicator. (Bottom sheets already keep clear of the status bar in mobile.css.) */
-html[data-app-mode=standalone] :is(#gift-dialog,#level-up-dialog,#welcome-back-dialog,#chore-result,#rookie-dialog,#starter-pack-dialog){max-height:calc(100dvh - env(safe-area-inset-top,0px) - var(--safe-bottom) - 24px)}
+html[data-app-mode=standalone] :is(#gift-dialog,#level-up-dialog,#welcome-back-dialog,#chore-result,#rookie-dialog,#starter-pack-dialog,#popup-dialog){max-height:calc(100dvh - env(safe-area-inset-top,0px) - var(--safe-bottom) - 24px)}

@@ -7,6 +7,7 @@ import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
 import {showPaymentReturn} from './payment-ui.js';
 import {createStarterPackUI} from './starter-pack-ui.js';
 import {stopPageZoom} from './page-zoom.js';
+import {createPopupUI} from './popup-ui.js';
 // The game frame never zooms as a page: only the 3D field does (src/page-zoom.js).
 stopPageZoom(document);
 let bridge;
@@ -15,6 +16,8 @@ if(!bridge){location.replace('/play.html');}else{
  window.harvestInitialFarm=bridge.takeInitial();
  if(!window.harvestInitialFarm){location.replace('/play.html');}else{
   document.body.hidden=false;
+  // The game takes the first farm over (and clears harvestInitialFarm); the pop-ups only need its start time (the first half hour).
+  const firstState=window.harvestInitialFarm.state;
   const ui=createCloudUI({onOpen:openBoard,onRetry:openBoard,onPlayer:()=>profiles.open(bridge.playerId),onName:async username=>{const data=await bridge.request({operation:'rename',username});ui.setProfile(data.profile,{id:bridge.playerId});},onSignOut:()=>bridge.signOut()});
   const profiles=createPlayerProfiles(bridge,{showBoard:key=>ui.showBoard(key)}),serverOffset=bridge.serverNow-Date.now();
   // The chat (header button, next to Farm Family) and the Admin dashboard, which the moderators may open too.
@@ -34,6 +37,8 @@ if(!bridge){location.replace('/play.html');}else{
   const {farmReady}=await import(/* @vite-ignore */ '/game.js?v=familyhall-model-2');
   if(await farmReady){
    showPaymentReturn(bridge);
+   // A pop-up from the admin (news with a button), once, when nothing else is open. It does not wait for the Starter Pack's catalog.
+   void createPopupUI({client:bridge.chat,chat,state:firstState}).start();
    await createStarterPackUI(bridge);
    // One screen from a notification, a shortcut on the app icon or a link (public/app-links.js). src/main.js keeps it until the farm is
    // ready, and hands over what arrives later.

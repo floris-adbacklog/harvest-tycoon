@@ -8,6 +8,7 @@ import {checkAdmin} from './player-profiles.js';
 import {refreshArt} from '../public/visual-icons.js';
 import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
+import {POPUP_SCREENS,POPUP_AUDIENCES} from './popup-ui.js';
 import {avatarImage} from '../public/player-avatars.js';
 import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 
@@ -49,7 +50,17 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<section class="admin-card"><h3>'+art('xp')+'Retention, day 0–7</h3><p class="admin-hint">Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
   +'<section class="admin-card"><h3>'+art('gift')+'Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
   +'</div><div data-admin-panel="settings" hidden>'
-  +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News for everyone</h3><form id="admin-news-form" class="admin-news"><textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… Everyone sees it under Notifications in the chat."></textarea><label class="admin-news-hours">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Post news</button></form>'
+  +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News for everyone</h3><form id="admin-news-form" class="admin-news"><textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… Everyone sees it under Notifications in the chat."></textarea>'
+  // The admin only: the same news also as a pop-up, once per farmer, with an optional button (src/popup-ui.js, supabase/popups.sql).
+  +'<label class="admin-popup-toggle"><input type="checkbox" id="admin-popup-on"> Also as a pop-up</label><div class="admin-popup-fields" id="admin-popup-fields" hidden>'
+  +'<label>Title<input id="admin-popup-title" maxlength="60" placeholder="Play it as an app"></label>'
+  +'<label>Button<input id="admin-popup-label" maxlength="30" placeholder="Show me how (leave empty for no button)"></label>'
+  +'<label>The button opens<select id="admin-popup-target">'+Object.entries(POPUP_SCREENS).map(([key,name])=>`<option value="screen:${key}">${name}</option>`).join('')+'<option value="link">A web page (new tab)</option></select></label>'
+  +'<label id="admin-popup-link-row" hidden>Web address<input id="admin-popup-link" type="url" maxlength="300" placeholder="https://"></label>'
+  +'<label>Who sees it<select id="admin-popup-audience">'+Object.entries(POPUP_AUDIENCES).map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'
+  +'<label>From level<input id="admin-popup-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label>'
+  +'<p class="admin-popup-note">Every farmer sees it once, when nothing else is open, and never in their first half hour. It ends with the news, or after 30 days.</p></div>'
+  +'<label class="admin-news-hours">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Post news</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
   +'<h3>'+art('admin')+'Moderators</h3><ul id="admin-mod-list" class="admin-recent-list"></ul><p class="admin-hint">Make a farmer a moderator (or not) on their profile.</p>'
   +'<h3>'+art('chat')+'Who may chat</h3><form id="admin-levels-form" class="admin-levels"><label>Global chat from level<input type="number" id="admin-level-global" min="1" max="200" step="1" inputmode="numeric"></label><label>Private messages from level<input type="number" id="admin-level-dm" min="1" max="200" step="1" inputmode="numeric"></label><button type="submit" class="small-button">Save</button></form><p id="admin-chat-status" class="admin-hint" role="status"></p></section></div>'
   +'<p id="admin-dashboard-status" class="admin-hint admin-status" role="status"></p>';
@@ -159,7 +170,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   }catch{}
   try{showRoom(await client.donationRoom());}catch{}
   if(role!=='admin')return;
-  dialog.querySelector('#admin-chat-settings').hidden=false;
+  dialog.querySelector('#admin-chat-settings').hidden=false;void showPopups();
   try{
    const [staff,overview]=await Promise.all([client.staffList(),chat?.whenReady?.()]);await loadFaces(staff.map(s=>s.playerId));
    dialog.querySelector('#admin-mod-list').innerHTML=staff.length?staff.map(s=>`<li>${avatar(s.name,false,s.playerId)}<span class="admin-recent-copy"><strong>${esc(s.name)}</strong><small>Moderator since ${esc(fmtDate(s.since))}</small></span></li>`).join(''):'<li class="admin-empty">No moderators yet.</li>';
@@ -231,10 +242,34 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    dialog.querySelector('#admin-donate-diamonds').value='0';dialog.querySelector('#admin-donate-coins').value='0';dialog.querySelector('#admin-donate-message').value='';
   }catch(error){room.textContent=error.message;}
  });
+ // Pop-ups: the fields open with "Also as a pop-up", the web address with "A web page"; below the form the last ten, with who saw them.
+ dialog.querySelector('#admin-popup-on').addEventListener('change',event=>{dialog.querySelector('#admin-popup-fields').hidden=!event.target.checked;});
+ dialog.querySelector('#admin-popup-target').addEventListener('change',event=>{dialog.querySelector('#admin-popup-link-row').hidden=event.target.value!=='link';});
+ async function showPopups(){
+  const list=dialog.querySelector('#admin-popup-list');
+  try{
+   const popups=await bridge.chat.popupList();list.hidden=!popups.length;
+   list.innerHTML=popups.map(p=>`<li><span class="admin-recent-copy"><strong>${esc(p.title)}</strong><small>${esc(POPUP_AUDIENCES[p.audience]??p.audience)}${p.minLevel>1?` · from level ${p.minLevel}`:''} · seen by ${number(p.seen)} farmer${p.seen===1?'':'s'}</small></span>${p.active?`<button type="button" class="small-button" data-popup-stop="${esc(p.id)}">Stop</button>`:'<small class="admin-popup-ended">Ended</small>'}</li>`).join('');
+  }catch{list.hidden=true;}
+ }
+ dialog.querySelector('#admin-popup-list').addEventListener('click',async event=>{
+  const stop=event.target.closest('[data-popup-stop]');if(!stop)return;
+  if(!await confirmAction({title:'Stop this pop-up?',description:'Farmers who have not seen it yet will not get it. The news stays in Notifications.',confirmLabel:'Stop',tone:'danger'}))return;
+  try{await bridge.chat.stopPopup(stop.dataset.popupStop);}catch(error){dialog.querySelector('#admin-chat-status').textContent=error.message;}
+  void showPopups();
+ });
  dialog.querySelector('#admin-news-form').addEventListener('submit',async event=>{
   event.preventDefault();const text=dialog.querySelector('#admin-news-text'),chatStatus=dialog.querySelector('#admin-chat-status'),body=text.value.trim();if(!body)return;
   const hours=Number(dialog.querySelector('#admin-news-hours').value)||0;
-  try{await bridge.chat.postNews(body,hours);text.value='';chatStatus.textContent=hours?`Posted. Everyone sees it under Notifications for ${hours>=48&&hours%24===0?`${hours/24} days`:`${hours} hours`}.`:'Posted. Everyone sees it under Notifications.';}catch(error){chatStatus.textContent=error.message;}
+  const popup=dialog.querySelector('#admin-popup-on').checked,$p=id=>dialog.querySelector(`#admin-popup-${id}`);
+  try{
+   if(popup){
+    const label=$p('label').value.trim(),target=$p('target').value==='link'?$p('link').value.trim():$p('target').value;
+    await bridge.chat.postPopup({title:$p('title').value.trim(),body,buttonLabel:label||null,buttonTarget:label?target:null,audience:$p('audience').value,minLevel:Number($p('level').value)||1,hours});
+    for(const id of ['title','label','link'])$p(id).value='';$p('on').checked=false;$p('fields').hidden=true;void showPopups();
+   }else await bridge.chat.postNews(body,hours);
+   text.value='';chatStatus.textContent=`Posted${popup?' as news and a pop-up':''}. Everyone sees it under Notifications${hours?` for ${hours>=48&&hours%24===0?`${hours/24} days`:`${hours} hours`}`:''}.`;
+  }catch(error){chatStatus.textContent=error.message;}
  });
  dialog.querySelector('#admin-levels-form').addEventListener('submit',async event=>{
   event.preventDefault();const chatStatus=dialog.querySelector('#admin-chat-status');
