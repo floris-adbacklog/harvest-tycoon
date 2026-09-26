@@ -9,12 +9,13 @@ function run({standalone=true,parentStandalone=false,inFrame=false,parentShortfa
  const listeners={window:{},document:{}},vars={},attrs={};
  const page={innerWidth:width,innerHeight:height,matchMedia:()=>({matches:standalone}),navigator:{standalone:false},
   addEventListener:(name,fn)=>{listeners.window[name]=fn;}};
- const html={setAttribute:(key,value)=>{attrs[key]=value;},style:{setProperty:(key,value)=>{vars[key]=value;}},appendChild(){},removeChild(){}};
- page.document={documentElement:html,createElement:()=>({style:{},getBoundingClientRect:()=>({height:fixed??page.innerHeight})}),addEventListener:(name,fn)=>{listeners.document[name]=fn;}};
+ const html={setAttribute:(key,value)=>{attrs[key]=value;},removeAttribute:key=>{delete attrs[key];},hasAttribute:key=>key in attrs,style:{setProperty:(key,value)=>{vars[key]=value;}},appendChild(){},removeChild(){}};
+ let viewport='width=device-width, initial-scale=1, viewport-fit=cover';const meta={getAttribute:()=>viewport,setAttribute:(key,value)=>{viewport=value;}};
+ page.document={documentElement:html,querySelector:()=>meta,createElement:()=>({style:{},getBoundingClientRect:()=>({height:fixed??page.innerHeight})}),addEventListener:(name,fn)=>{listeners.document[name]=fn;}};
  page.parent=inFrame?{matchMedia:()=>({matches:parentStandalone}),navigator:{standalone:false},document:{documentElement:{}},getComputedStyle:()=>({getPropertyValue:()=>parentShortfall})}:page;
  // The script reads bare `window`, `document`, `screen` and `getComputedStyle`.
  vm.runInNewContext(read('public/app-mode.js'),{window:page,document:page.document,screen,getComputedStyle:()=>({paddingTop:`${safeTop}px`}),setTimeout:()=>0});
- return {attrs,vars,listeners,fake:page};
+ return {attrs,vars,listeners,fake:page,viewport:()=>viewport};
 }
 const shortfall=options=>run(options).vars['--viewport-shortfall'];
 
@@ -80,7 +81,10 @@ test('the game frame and the page load the installed-app files, before anything 
 // 26 Sep 2026: the page stretches the game frame over the strip, so the farm reaches the bottom of the screen; inside the frame the
 // buttons stay above the strip, in case it takes no taps.
 test('the game frame reaches over the strip, and keeps its buttons above it',()=>{
- assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\] #farm-host\{bottom:calc\(0px - var\(--viewport-shortfall,0px\)\)\}/);
+ // iOS draws no fixed element below the short layout (seen on an iPhone): the frame is then part of the page, a strip taller.
+ assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\]\[data-viewport-short\] #farm-host\{position:absolute;top:0;right:0;bottom:auto;left:0;height:calc\(100% \+ var\(--viewport-shortfall,0px\)\)\}/);
+ assert.equal(run({height:812}).attrs['data-viewport-short'],'');assert.equal(run({height:874}).attrs['data-viewport-short'],undefined,'only when the layout is short');
+ assert.equal(run({height:874}).viewport(),'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover','the installed app starts with the game viewport and keeps it');
  const stretched=run({standalone:false,inFrame:true,parentStandalone:true,height:874,parentShortfall:' 62px'});
  assert.equal(stretched.vars['--viewport-shortfall'],'0px','the stretched frame fills the screen');assert.equal(stretched.vars['--frame-strip'],'62px','the strip of the page around it');
  const short=run({standalone:false,inFrame:true,parentStandalone:true,height:812,parentShortfall:' 62px'});

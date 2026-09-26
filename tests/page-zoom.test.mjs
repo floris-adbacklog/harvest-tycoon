@@ -14,9 +14,10 @@ test('in the game only the 3D field zooms: the frame and the signed-in page scro
  assert.match(read('src/game-cloud.js'),/stopPageZoom\(document\);/);
 });
 test('signed in the viewport forbids zoom (and so undoes one), signed out it allows it again; Safari pinch events are stopped only in the game',()=>{
- let content=PAGE_VIEWPORT;const doc={querySelector(){return {setAttribute(k,v){assert.equal(k,'content');content=v;}};},listeners:{},addEventListener(type,fn,opts){this.listeners[type]=fn;assert.equal(opts.passive,false);}};
+ let content=PAGE_VIEWPORT;const doc={querySelector(){return {getAttribute:()=>content,setAttribute(k,v){assert.equal(k,'content');content=v;}};},listeners:{},addEventListener(type,fn,opts){this.listeners[type]=fn;assert.equal(opts.passive,false);}};
  gameViewport(true,doc);assert.equal(content,GAME_VIEWPORT);assert.match(content,/maximum-scale=1, user-scalable=no/);
  gameViewport(false,doc);assert.equal(content,PAGE_VIEWPORT);assert.doesNotMatch(content,/user-scalable/);
+ doc.documentElement={dataset:{appMode:'standalone'}};content=GAME_VIEWPORT;gameViewport(false,doc);assert.equal(content,GAME_VIEWPORT,'the installed app keeps one viewport');delete doc.documentElement;
  assert.match(read('public/play.html'),new RegExp(`<meta name="viewport" content="${PAGE_VIEWPORT}">`),'the page starts zoomable, as before');
  let playing=false;stopPageZoom(doc,()=>playing);
  for(const type of ['gesturestart','gesturechange']){

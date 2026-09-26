@@ -9,4 +9,10 @@ export function stopPageZoom(doc=document,inGame=()=>true){
  const stop=event=>{if(inGame())event.preventDefault();};
  for(const type of ['gesturestart','gesturechange'])doc.addEventListener(type,stop,{passive:false});
 }
-export function gameViewport(on,doc=document){doc.querySelector('meta[name="viewport"]')?.setAttribute('content',on?GAME_VIEWPORT:PAGE_VIEWPORT);}
+// The installed app keeps one viewport from the start (app-mode.js sets it; 26 Sep 2026): changing the viewport while it runs may be
+// what makes iOS lay the page out a status bar short. Nothing changes when the content is already right.
+export function gameViewport(on,doc=document){
+ const meta=doc.querySelector('meta[name="viewport"]');if(!meta)return;
+ const content=on||doc.documentElement?.dataset?.appMode==='standalone'?GAME_VIEWPORT:PAGE_VIEWPORT;
+ if(meta.getAttribute('content')!==content)meta.setAttribute('content',content);
+}

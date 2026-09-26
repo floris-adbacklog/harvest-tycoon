@@ -11,6 +11,8 @@
  try{if(!installed&&window.parent!==window)installed=standalone(window.parent);}catch(e){}
  if(!installed)return;
  html.setAttribute('data-app-mode','standalone');
+ // One viewport for the whole time the installed app runs (the game's, without page zoom; src/page-zoom.js keeps it): no change later.
+ try{var meta=document.querySelector('meta[name="viewport"]');var game='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';if(meta&&meta.getAttribute('content')!==game)meta.setAttribute('content',game);}catch(e){}
 
  function statusBar(){
   var probe=document.createElement('div');
@@ -37,6 +39,8 @@
   // Only a gap that is exactly the status bar counts: a split-screen window or a page below an opaque status bar is not this quirk.
   var own=bar>0&&gap>0&&Math.abs(gap-bar)<=2?gap:0;
   html.style.setProperty('--viewport-shortfall',own+'px');
+  // iOS does not draw a fixed element below that line, so welcome.css then places the game frame in the page itself instead.
+  if(own>0)html.setAttribute('data-viewport-short','');else html.removeAttribute('data-viewport-short');
   // The game frame (26 Sep 2026): the page stretches it over that strip (welcome.css), so the farm reaches the bottom of the screen.
   // The frame then measures no gap of its own, but the strip may still not take taps: --frame-strip keeps the buttons above it.
   var strip=0;
@@ -50,4 +54,7 @@
  window.addEventListener('pageshow',measure);
  window.addEventListener('resize',function(){measure();setTimeout(measure,120);});
  window.addEventListener('orientationchange',measure);
+ // With the game frame in the page (not fixed), iOS may scroll the page up to show a text field over the keyboard: back to the top
+ // once the keyboard is gone.
+ try{if(window.visualViewport&&window.parent===window)window.visualViewport.addEventListener('resize',function(){if(html.hasAttribute('data-viewport-short')&&window.visualViewport.height>=window.innerHeight-1&&window.scrollY)window.scrollTo(0,0);});}catch(e){}
 })();
