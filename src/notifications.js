@@ -1,9 +1,9 @@
 import {createPush} from './push.js';
 // Reminder preferences for the settings dialog. Reads go through row-level security (a player only sees their
 // own row) and writes go through the notification_save function, which validates everything on the server.
-// New private messages and the daily gift & streak reminder are on unless a farmer switches them off; crops, production and the
-// email summary stay off until switched on. Push itself still needs the farmer's own yes on the device.
-export const DEFAULT_PREFS=Object.freeze({pushCrops:false,pushProduction:false,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true});
+// New private messages, the daily gift & streak reminder and crops & goods ready (one switch, 26 Sep 2026) are on unless a farmer
+// switches them off; the email summary stays off until switched on. Push itself still needs the farmer's own yes on the device.
+export const DEFAULT_PREFS=Object.freeze({pushCrops:true,pushProduction:true,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true});
 
 export function browserTimezone(){
  try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}catch{return 'UTC';}

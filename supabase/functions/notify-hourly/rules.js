@@ -3,7 +3,7 @@
 export const DAY_MS=86400000,HOUR_MS=3600000;
 export const CONFIG=Object.freeze({
  QUIET_START:22,QUIET_END:8,          // no crop or production reminders from 22:00 until 08:00 local time
- MAX_PUSH_PER_DAY:4,                  // per player, per local day
+ MAX_PUSH_PER_DAY:14,                 // per player, per local day: one an hour from 08:00 to 22:00 (26 Sep 2026, was 4)
  MIN_PUSH_GAP_MS:50*60000,            // at most one push per hour
  ACTIVE_SKIP_MS:10*60000,             // the game is open right now: they can see it themselves
  INACTIVE_STOP_MS:7*DAY_MS,           // nothing for players who have not played for a week
@@ -33,6 +33,8 @@ export function cropsText(crops,names,max=CONFIG.MAX_KINDS){
  const kinds=tally(crops,'crop'),shown=kinds.slice(0,max).map(([key,n])=>`${n} ${(names[key]??key).toLowerCase()}`);
  return `${crops.length} ${plural(crops.length,'crop')} ready to harvest${kinds.length>0?`: ${shown.join(', ')}${kinds.length>max?'…':''}`:''}`;
 }
+// The push says it plainly (26 Sep 2026): one line for crops and goods together; the email summary keeps the details below.
+export function readyText(crops,goods){return crops&&goods?'Your crops and goods are ready':crops?'Your crops are ready to harvest':'Your goods are ready to collect';}
 export function jobsText(jobs,names){
  const kinds=tally(jobs,'building'),label=key=>names[key]??key;
  if(kinds.length===1)return `${label(kinds[0][0])}: ${jobs.length} ${plural(jobs.length,'batch','batches')} ready`;
@@ -69,8 +71,9 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
   }
   const giftParts=parts.length;
   if(!quiet){
-   if(player.push_crops){const fresh=ready.filter(c=>c.readyAt>seenCrops);if(fresh.length)parts.push(cropsText(ready,names.crops));}
-   if(player.push_production){const fresh=jobsReady.filter(j=>j.readyAt>seenJobs);if(fresh.length)parts.push(jobsText(jobsReady,names.buildings));}
+   // Crops and goods are one setting in the game and one line in the push: only when something new is ready since the last one.
+   const crops=Boolean(player.push_crops)&&ready.some(c=>c.readyAt>seenCrops),goods=Boolean(player.push_production)&&jobsReady.some(j=>j.readyAt>seenJobs);
+   if(crops||goods)parts.push(readyText(crops,goods));
   }
   const gapOk=!player.last_push_at||now-Date.parse(player.last_push_at)>=CONFIG.MIN_PUSH_GAP_MS;
   const sentToday=player.push_day===today?Number(player.push_count)||0:0;
@@ -81,8 +84,10 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
   }
  }
 
- // Daily email summary: once a day at the hour the player chose, and only when something is waiting.
- if(player.email_digest&&player.email&&!inactive&&local.hour===number(player.digest_hour)&&player.digest_on!==today){
+ // Daily email summary: once a day, from the hour the player chose, and only when something is waiting. When nothing waits at that
+ // hour (or the mail did not go out), the next hours try again until 22:00 (26 Sep 2026: at 12:00 on the dot it was skipped all day).
+ const digestHour=number(player.digest_hour);
+ if(player.email_digest&&player.email&&!inactive&&digestHour!==null&&local.hour>=digestHour&&local.hour<CONFIG.QUIET_START&&player.digest_on!==today){
   const giftWaiting=login.lastDay!==utcDay(now);
   if(ready.length||jobsReady.length||giftWaiting){
    result.digest={username:player.username??'farmer',crops:ready,jobs:jobsReady,giftWaiting,streak:number(login.streak)??0};

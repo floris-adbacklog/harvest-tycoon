@@ -1,7 +1,8 @@
 // The "Reminders" block of the settings dialog. It talks to window.parent.harvestBridge.notifications
 // (src/notifications.js) and stays hidden until the notification service is switched on.
 import {refreshArt} from './visual-icons.js';
-const IDS={pushMessages:'notify-messages',pushCrops:'notify-crops',pushProduction:'notify-production',pushDaily:'notify-daily',emailDigest:'notify-email'};
+// Crops and goods are one switch (26 Sep 2026): it sets both of the server's settings, and shows on when either is on.
+const IDS={pushMessages:'notify-messages',pushDaily:'notify-daily',emailDigest:'notify-email'};
 const DEVICE={
  unsupported:'This browser cannot receive notifications.',
  'install-first':'On iPhone, first add Harvest Tycoon to your home screen (see Farm app below). Then come back here to turn notifications on.',
@@ -19,14 +20,16 @@ export function createNotificationsSection(){
  function read(){
   const prefs={digestHour:Number(select.value)};
   for(const [key,id] of Object.entries(IDS))prefs[key]=$(id).checked;
+  prefs.pushCrops=prefs.pushProduction=$('notify-ready').checked;
   return prefs;
  }
  function paint(prefs){
   current=prefs;
   for(const [key,id] of Object.entries(IDS))$(id).checked=prefs[key];
+  $('notify-ready').checked=Boolean(prefs.pushCrops||prefs.pushProduction);
   select.value=String(prefs.digestHour);$('notify-email-time').hidden=!prefs.emailDigest;
  }
- function busy(on){saving=on;for(const id of [...Object.values(IDS),'notify-hour'])$(id).disabled=on;}
+ function busy(on){saving=on;for(const id of [...Object.values(IDS),'notify-ready','notify-hour'])$(id).disabled=on;}
  async function device(){
   const push=api()?.push;if(!push)return;
   let kind='unsupported';try{kind=(await push.status()).kind;}catch{}
@@ -54,10 +57,14 @@ export function createNotificationsSection(){
  async function deviceAction(action,done=''){
   const push=api()?.push;if(!push)return;
   for(const id of ['notify-enable','notify-test','notify-disable'])$(id).disabled=true;
-  try{await push[action]();status(done);}catch(error){status(error?.message||'That did not work. Please try again.');}
+  try{
+   await push[action]();status(done);
+   // Allowing notifications saves the settings on screen (the defaults the first time): without them the server sends nothing.
+   if(action==='enable'&&current&&!saving)await api()?.save(read()).then(paint).catch(()=>{});
+  }catch(error){status(error?.message||'That did not work. Please try again.');}
   finally{for(const id of ['notify-enable','notify-test','notify-disable'])$(id).disabled=false;await device();}
  }
- for(const id of [...Object.values(IDS),'notify-hour']){const el=$(id);if(el)el.onchange=change;}
+ for(const id of [...Object.values(IDS),'notify-ready','notify-hour']){const el=$(id);if(el)el.onchange=change;}
  if($('notify-enable'))$('notify-enable').onclick=()=>deviceAction('enable','');
  if($('notify-test'))$('notify-test').onclick=()=>deviceAction('test','Test sent. It should appear in a moment.');
  if($('notify-disable'))$('notify-disable').onclick=()=>deviceAction('disable','Notifications are off in this browser or app.');

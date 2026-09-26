@@ -58,7 +58,7 @@ test('every installed-app layout rule is scoped to the installed app',()=>{
  // The strip below the fixed game frame (iOS) shows the body: with the farm open both html and body are the bottom bar's cream.
  assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\]:has\(body\[data-phase=authenticated\]\),html\[data-app-mode=standalone\] body\[data-phase=authenticated\]\{background:#fffdf5\}/);
  assert.match(read('public/mobile.css'),/\.side-tools\{position:absolute;inset:auto 0 0;[^}]*background:#fffdf5/,'the same cream as the bottom bar on phones');
- assert.match(read('public/farm.html'),/First allow notifications on this device: private messages and your daily gift are then on, the rest you choose below\./,'the reminders text matches the defaults (messages and daily gift on)');
+ assert.match(read('public/farm.html'),/First allow notifications on this device: private messages, your daily gift and crops &amp; goods ready are then on\. You can switch each one off below\./,'the reminders text matches the defaults');
  assert.doesNotMatch(read('public/privacy.html'),/switched off by default/);
 });
 test('the game reads the bottom safe area in one place, which the installed app can correct',()=>{

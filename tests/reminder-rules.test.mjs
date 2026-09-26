@@ -24,14 +24,14 @@ test('local time follows the player, including daylight saving and the date chan
 test('crops: one push with the total, naming what is ready',()=>{
  const p=player({},{plots:plots(['wheat',MORNING-30*MIN],['wheat',MORNING-20*MIN],['corn',MORNING-5*MIN],['lettuce',MORNING+HOUR]),login:{lastDay:'2026-09-21'}});
  const plan=planPlayer(p,MORNING,names);
- assert.equal(plan.push.body,'3 crops ready to harvest: 2 wheat, 1 corn');assert.equal(plan.push.title,'Harvest Tycoon');assert.equal(plan.push.tag,'harvest-tycoon');
+ assert.equal(plan.push.body,'Your crops are ready to harvest','one plain line (26 Sep 2026)');assert.equal(plan.push.title,'Harvest Tycoon');assert.equal(plan.push.tag,'harvest-tycoon');
  assert.equal(plan.patchOnSend.crops_seen_at,MORNING);assert.equal(plan.patchOnSend.push_count,1);assert.equal(plan.patchOnSend.push_day,'2026-09-21');assert.equal(plan.patchOnSend.last_push_at,new Date(MORNING).toISOString());
  assert.equal(cropsText([{crop:'wheat'}],names.crops),'1 crop ready to harvest: 1 wheat');
 });
 test('crops: only NEW ones trigger, so an unharvested crop does not repeat every hour',()=>{
  const old=player({crops_seen_at:MORNING-10*MIN},{plots:plots(['wheat',MORNING-HOUR])});
  assert.equal(planPlayer(old,MORNING,names).push,null);
- assert.equal(planPlayer(player({crops_seen_at:MORNING-2*HOUR},{plots:plots(['wheat',MORNING-HOUR])}),MORNING,names).push.body.startsWith('1 crop ready'),true);
+ assert.equal(planPlayer(player({crops_seen_at:MORNING-2*HOUR},{plots:plots(['wheat',MORNING-HOUR])}),MORNING,names).push.body,'Your crops are ready to harvest');
  assert.equal(planPlayer(player({push_crops:false,push_daily:false},{plots:plots(['wheat',MORNING-HOUR])}),MORNING,names).push,null,'switched off');
 });
 test('the first look only sets a baseline: switching reminders on never announces what was already waiting',()=>{
@@ -43,7 +43,7 @@ test('quiet hours hold reminders back without forgetting them',()=>{
  const p=player({crops_seen_at:night-2*HOUR,last_active_at:new Date(night-9*HOUR).toISOString(),push_daily:false},{plots:plots(['wheat',night-30*MIN])});
  const held=planPlayer(p,night,names);assert.equal(held.push,null);assert.equal('crops_seen_at' in held.patchAlways,false,'marker stays put');
  const morning=at('2026-09-22T06:05:00Z');                          // 08:05 local
- const later=planPlayer({...p,last_active_at:new Date(night-9*HOUR).toISOString()},morning,names);assert.equal(later.push.body,'1 crop ready to harvest: 1 wheat');
+ const later=planPlayer({...p,last_active_at:new Date(night-9*HOUR).toISOString()},morning,names);assert.equal(later.push.body,'Your crops are ready to harvest');
  assert.equal(CONFIG.QUIET_START,22);assert.equal(CONFIG.QUIET_END,8);
 });
 test('nothing while the game is open, for players away for a week, or without a device',()=>{
@@ -52,19 +52,20 @@ test('nothing while the game is open, for players away for a week, or without a 
  const away=planPlayer(player({last_active_at:new Date(MORNING-8*24*HOUR).toISOString(),email_digest:true},farm),MORNING,names);assert.equal(away.push,null);assert.equal(away.digest,null);assert.equal(away.patchAlways.crops_seen_at,MORNING,'no burst when they return');
  const none=planPlayer(player({subscriptions:[]},farm),MORNING,names);assert.equal(none.push,null);assert.equal(none.patchAlways.crops_seen_at,MORNING);
 });
-test('at most one push an hour and four a day',()=>{
+test('at most one push an hour, fourteen a day (one an hour from 08:00 to 22:00)',()=>{
+ assert.equal(CONFIG.MAX_PUSH_PER_DAY,14);
  const farm={plots:plots(['wheat',MORNING-10*MIN])},base={crops_seen_at:MORNING-HOUR,push_daily:false};
  assert.equal(planPlayer(player({...base,last_push_at:new Date(MORNING-20*MIN).toISOString()},farm),MORNING,names).push,null);
  assert(planPlayer(player({...base,last_push_at:new Date(MORNING-55*MIN).toISOString()},farm),MORNING,names).push);
- assert.equal(planPlayer(player({...base,push_day:'2026-09-21',push_count:4},farm),MORNING,names).push,null);
- assert.equal(planPlayer(player({...base,push_day:'2026-09-21',push_count:3},farm),MORNING,names).patchOnSend.push_count,4);
- assert.equal(planPlayer(player({...base,push_day:'2026-09-20',push_count:4},farm),MORNING,names).patchOnSend.push_count,1,'a new day starts again');
+ assert.equal(planPlayer(player({...base,push_day:'2026-09-21',push_count:14},farm),MORNING,names).push,null);
+ assert.equal(planPlayer(player({...base,push_day:'2026-09-21',push_count:13},farm),MORNING,names).patchOnSend.push_count,14);
+ assert.equal(planPlayer(player({...base,push_day:'2026-09-20',push_count:14},farm),MORNING,names).patchOnSend.push_count,1,'a new day starts again');
 });
 test('production follows the same rules as crops and joins them in ONE push',()=>{
  const farm={plots:plots(['corn',MORNING-10*MIN]),buildings:{bakery:{job:{readyAt:MORNING-8*MIN},extraJobs:[{readyAt:MORNING-2*MIN},{readyAt:MORNING+HOUR}]},dairy:{job:{readyAt:MORNING-3*MIN}}}};
  const both=planPlayer(player({push_daily:false},farm),MORNING,names);
- assert.equal(both.push.body,'1 crop ready to harvest: 1 corn · 3 batches ready (Bakery 2, Dairy Barn 1)');
- const only=planPlayer(player({push_crops:false,push_daily:false},{buildings:{bakery:{job:{readyAt:MORNING-8*MIN},extraJobs:[{readyAt:MORNING-2*MIN}]}}}),MORNING,names);assert.equal(only.push.body,'Bakery: 2 batches ready');
+ assert.equal(both.push.body,'Your crops and goods are ready');
+ const only=planPlayer(player({push_crops:false,push_daily:false},{buildings:{bakery:{job:{readyAt:MORNING-8*MIN},extraJobs:[{readyAt:MORNING-2*MIN}]}}}),MORNING,names);assert.equal(only.push.body,'Your goods are ready to collect');
  assert.equal(jobsText([{building:'bakery'}],names.buildings),'Bakery: 1 batch ready');
  assert.equal(planPlayer(player({production_seen_at:MORNING-MIN,push_crops:false,push_daily:false},farm),MORNING,names).push,null,'older than the last look');
  assert.equal(planPlayer(player({push_production:false,push_crops:false,push_daily:false},farm),MORNING,names).push,null);
@@ -91,6 +92,10 @@ test('daily email: at the chosen hour, once a day, and only when something is wa
  assert.equal(planPlayer(player(on,{plots:[],login:{lastDay:'2026-09-21'}}),MORNING,names).digest,null,'nothing waiting, no email');
  assert.equal(planPlayer(player({...on,email:null},farm),MORNING,names).digest,null);
  assert.equal(planPlayer(player(on,{plots:[],login:{lastDay:'2026-09-20',streak:3}}),MORNING,names).digest.giftWaiting,true);
+ // 26 Sep 2026: from the chosen hour on, not only at it: nothing waiting at 07:00 (or a refused mail) is tried again at 08:00, 09:00...
+ assert.ok(planPlayer(player({...on,digest_hour:7},farm),MORNING,names).digest,'two hours after the chosen hour, not sent yet today');
+ assert.equal(planPlayer(player({...on,digest_hour:7,digest_on:'2026-09-21'},farm),MORNING,names).digest,null,'still once a day');
+ assert.equal(planPlayer(player({...on,digest_hour:7,last_active_at:new Date(MORNING+13*HOUR-2*HOUR).toISOString()},farm),MORNING+13*HOUR,names).digest,null,'not from 22:00');
 });
 test('the email is escaped, has an unsubscribe link and a plain-text version',()=>{
  const digest={username:'<b>Tony</b>',crops:[{crop:'wheat'},{crop:'wheat'}],jobs:[],giftWaiting:true,streak:4};
@@ -112,7 +117,7 @@ function deps(rows,{run={run:true,emails_sent:0},sendPush=async()=>({ok:true,sta
 const waiting=(over={})=>player({push_daily:false,...over},{plots:plots(['wheat',MORNING-10*MIN])});
 test('job: delivers, then remembers what it sent',async()=>{
  const {log,deps:d}=deps([waiting()]);const stats=await runJob(d,MORNING);
- assert.deepEqual([stats.ran,stats.players,stats.pushes,stats.errors],[true,1,1,0]);assert.equal(log.pushes[0][1].body,'1 crop ready to harvest: 1 wheat');assert.deepEqual(log.ok,['https://push.example/1']);
+ assert.deepEqual([stats.ran,stats.players,stats.pushes,stats.errors],[true,1,1,0]);assert.equal(log.pushes[0][1].body,'Your crops are ready to harvest');assert.deepEqual(log.ok,['https://push.example/1']);
  assert.equal(log.saved[0][1].push_count,1);assert.equal(log.saved[0][1].crops_seen_at,MORNING);
 });
 test('job: a run is skipped when this hour already ran',async()=>{

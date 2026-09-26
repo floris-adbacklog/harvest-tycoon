@@ -43,6 +43,8 @@ async function sendEmail(row:Record<string,any>,digest:unknown){
  const unsubscribeUrl=`${functionUrl}?unsubscribe=${row.unsubscribe_token}`;
  const mail=digestEmail({digest,names:{crops:CROP_NAMES,buildings:BUILDING_NAMES},appUrl:APP_URL,unsubscribeUrl});
  const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${RESEND_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:MAIL_FROM,to:[row.email],subject:mail.subject,html:mail.html,text:mail.text,headers:{'List-Unsubscribe':`<${unsubscribeUrl}>`,'List-Unsubscribe-Post':'List-Unsubscribe=One-Click'}})});
+ // A refused mail is logged (not the address): the job tries again next hour, and the log shows why it did not go out.
+ if(!response.ok)console.error(`digest mail refused: ${response.status} ${(await response.text().catch(()=>'')).slice(0,200)}`);
  return response.ok;
 }
 

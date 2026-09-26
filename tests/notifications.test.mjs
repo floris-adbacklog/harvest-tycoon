@@ -5,8 +5,8 @@ import {DEFAULT_PREFS,prefsFromRow,paramsFromPrefs,createNotifications} from '..
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const sql=read('supabase/notifications.sql');
 
-test('a player without a saved row has every reminder off, the note about a new private message too',()=>{
- assert.deepEqual(prefsFromRow(null),DEFAULT_PREFS);assert.deepEqual(prefsFromRow(undefined),{pushCrops:false,pushProduction:false,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true},'private messages and the daily gift are on by default');
+test('a player without a saved row has private messages, the daily gift and crops & goods on (26 Sep 2026), the email off',()=>{
+ assert.deepEqual(prefsFromRow(null),DEFAULT_PREFS);assert.deepEqual(prefsFromRow(undefined),{pushCrops:true,pushProduction:true,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true},'private messages, the daily gift and crops & goods are on by default');
  assert.deepEqual(prefsFromRow({push_crops:true,push_production:null,push_daily:'yes',email_digest:true,digest_hour:7}),{pushCrops:true,pushProduction:false,pushDaily:false,emailDigest:true,digestHour:7,pushMessages:false},'only a real true switches something on');
  assert.equal(prefsFromRow({push_messages:true}).pushMessages,true);
  assert.equal(prefsFromRow({digest_hour:99}).digestHour,9);
@@ -52,7 +52,7 @@ test('database: the functions are locked to the signed-in player',()=>{
 
 function domFor(){
  const els={};const el=id=>els[id]??=({id,hidden:false,checked:false,value:'',disabled:false,textContent:'',innerHTML:'',children:[]});
- for(const id of ['notify-settings','notify-device','notify-device-copy','notify-enable','notify-test','notify-disable','notify-push-rows','notify-email-rows','notify-messages','notify-crops','notify-production','notify-daily','notify-email','notify-hour','notify-email-time','notify-status'])el(id);
+ for(const id of ['notify-settings','notify-device','notify-device-copy','notify-enable','notify-test','notify-disable','notify-push-rows','notify-email-rows','notify-messages','notify-ready','notify-daily','notify-email','notify-hour','notify-email-time','notify-status'])el(id);
  els['notify-hour'].children=[];return {els,document:{getElementById:el,querySelectorAll:()=>[]}};
 }
 function bridgeFor(over={}){
@@ -70,12 +70,12 @@ test('the reminders block stays hidden until the service is on, then shows the s
  assert.match(els['notify-hour'].innerHTML,/<option value="0">00:00<\/option>/);assert.match(els['notify-hour'].innerHTML,/<option value="23">23:00<\/option>/);
  await section.refresh();assert.equal(els['notify-settings'].hidden,true,'service not on yet');
  bridge.available=true;await section.refresh();
- assert.equal(els['notify-settings'].hidden,false);assert.equal(els['notify-crops'].checked,true);assert.equal(els['notify-daily'].checked,false);assert.equal(els['notify-hour'].value,'20');assert.equal(els['notify-email-time'].hidden,false);
- els['notify-daily'].checked=true;els['notify-email'].checked=false;await els['notify-crops'].onchange();
- assert.deepEqual(state.stored,{digestHour:20,pushMessages:true,pushCrops:true,pushProduction:false,pushDaily:true,emailDigest:false});assert.equal(els['notify-status'].textContent,'Saved.');assert.equal(els['notify-email-time'].hidden,true,'the time only matters with the email on');assert.equal(els['notify-crops'].disabled,false);
+ assert.equal(els['notify-settings'].hidden,false);assert.equal(els['notify-ready'].checked,true,'on when either setting is on');assert.equal(els['notify-daily'].checked,false);assert.equal(els['notify-hour'].value,'20');assert.equal(els['notify-email-time'].hidden,false);
+ els['notify-daily'].checked=true;els['notify-email'].checked=false;await els['notify-ready'].onchange();
+ assert.deepEqual(state.stored,{digestHour:20,pushMessages:true,pushDaily:true,emailDigest:false,pushCrops:true,pushProduction:true},'one switch sets both');assert.equal(els['notify-status'].textContent,'Saved.');assert.equal(els['notify-email-time'].hidden,true,'the time only matters with the email on');assert.equal(els['notify-ready'].disabled,false);
  bridge.save=async()=>{throw new Error('Unknown time zone.');};
- els['notify-production'].checked=true;await els['notify-production'].onchange();
- assert.equal(els['notify-production'].checked,false,'a failed save puts the switch back');assert.equal(els['notify-status'].textContent,'Unknown time zone.');
+ els['notify-ready'].checked=false;await els['notify-ready'].onchange();
+ assert.equal(els['notify-ready'].checked,true,'a failed save puts the switch back');assert.equal(els['notify-status'].textContent,'Unknown time zone.');
  delete globalThis.document;delete globalThis.window;
 });
 test('only what the service offers is shown: push rows for push, the email rows for email',async()=>{
@@ -99,9 +99,10 @@ test('the device block tells the truth per device and its buttons work',async()=
 test('the settings dialog carries the reminders block, hidden by default, and never claims delivery it cannot do',()=>{
  const farm=read('public/farm.html');
  assert.match(farm,/<section id="notify-settings"[^>]*hidden>/);
- for(const id of ['notify-crops','notify-production','notify-daily','notify-email','notify-hour','notify-device','notify-enable','notify-test','notify-disable'])assert(farm.includes(`id="${id}"`),id);
- assert.match(farm,/id="notify-push-rows" hidden/);assert.match(farm,/id="notify-email-rows" hidden/);assert.match(farm,/Production ready[\s\S]*At most once an hour/,'production follows the crop rule');
- for(const id of ['notify-crops','notify-production','notify-daily','notify-email'])assert(!new RegExp(`id="${id}"[^>]*checked`).test(farm),`${id} starts off`);
+ for(const id of ['notify-ready','notify-daily','notify-email','notify-hour','notify-device','notify-enable','notify-test','notify-disable'])assert(farm.includes(`id="${id}"`),id);
+ for(const id of ['notify-crops','notify-production'])assert(!farm.includes(`id="${id}"`),`${id} became one switch`);
+ assert.match(farm,/id="notify-push-rows" hidden/);assert.match(farm,/id="notify-email-rows" hidden/);assert.match(farm,/<strong>Crops &amp; goods ready<\/strong><small>One reminder when new crops or goods are ready, at most once an hour and not between 22:00 and 08:00\.<\/small>/);
+ for(const id of ['notify-ready','notify-daily','notify-email'])assert(!new RegExp(`id="${id}"[^>]*checked`).test(farm),`${id} starts off`);
  assert.match(read('public/sound-settings.js'),/createNotificationsSection/);
  assert.match(read('src/main.js'),/bridge\.notifications=createNotifications\(supabase/);
 });

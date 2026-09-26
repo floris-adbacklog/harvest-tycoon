@@ -221,7 +221,7 @@ const BODIES={
  account(h){
   return section('Your account',facts([
    ['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app: press and hold its icon for Chat, Daily gift and the leaderboard, and on Android or a computer you can play full screen (Settings, Farm app).'],
-   ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages and the daily gift are then on, the rest you choose. Email reminders stay off until you switch them on.']
+   ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. Email reminders stay off until you switch them on.']
   ]))
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
   +section('Avatars',`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`
