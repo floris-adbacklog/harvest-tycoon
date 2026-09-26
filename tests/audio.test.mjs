@@ -27,7 +27,9 @@ class Context{
 function setup(saved,loader){
  const doc=new EventTarget();doc.hidden=false;const win=new EventTarget(),ctx=new Context(),writes=[];let created=0,loads=0;
  const audio=createFarmAudio({contextFactory:()=>{created++;return ctx;},storage:{getItem:()=>saved??null,setItem:(...args)=>writes.push(args)},documentRef:doc,windowRef:win,loadMusic:context=>{loads++;return loader?loader(context):Promise.resolve({duration:144});}});
- return {audio,doc,win,ctx,writes,created:()=>created,loads:()=>loads};
+ // Music loops; the effects (sound-kit.js buffers, or plain oscillator notes as the fallback) do not.
+ const music=()=>ctx.buffers.filter(n=>n.loop),effects=()=>[...ctx.oscillators,...ctx.buffers.filter(n=>!n.loop)];
+ return {audio,doc,win,ctx,writes,music,effects,created:()=>created,loads:()=>loads};
 }
 test('quiet defaults, validation and a saved mute preference are respected before any gesture',async()=>{
  assert.deepEqual(audioSettings({ambience:Infinity,effects:-20,enabled:'yes'}),{enabled:true,ambience:16,effects:0});
@@ -37,21 +39,21 @@ test('quiet defaults, validation and a saved mute preference are respected befor
 });
 test('music loads once and loops without restarting on actions or volume changes',async()=>{
  const s=setup();assert.equal(s.loads(),0);await s.audio.unlock();await settle();await s.audio.unlock();
- assert.equal(s.created(),1);assert.equal(s.loads(),1);assert.equal(s.ctx.buffers.length,1);
- const source=s.ctx.buffers[0];assert(source.loop);assert.equal(source.loopStart,0);assert.equal(source.loopEnd,144);assert.equal(source.offset,0);assert.equal(source.stopAt,undefined);
- s.audio.setSettings({ambience:35,effects:77});s.audio.play('harvest');await settle();assert.equal(s.ctx.buffers.length,1);assert.equal(s.ctx.gains[2].gain.value,.77);
+ assert.equal(s.created(),1);assert.equal(s.loads(),1);assert.equal(s.music().length,1);
+ const source=s.music()[0];assert(source.loop);assert.equal(source.loopStart,0);assert.equal(source.loopEnd,144);assert.equal(source.offset,0);assert.equal(source.stopAt,undefined);
+ s.audio.setSettings({ambience:35,effects:77});s.audio.play('harvest');await settle();assert.equal(s.music().length,1);assert.equal(s.effects().length,1,'one buffer for the richer harvest sound');assert.equal(s.ctx.gains[2].gain.value,.77);
  s.ctx.currentTime+=37;s.audio.setSettings({ambience:0});assert(source.stopped&&source.disconnected);
- s.audio.setSettings({ambience:22});await settle();assert.equal(s.ctx.buffers[1].offset,37);assert.equal(s.loads(),1);
- s.audio.setSettings({enabled:false});assert.equal(s.ctx.state,'suspended');assert(s.ctx.oscillators.every(n=>n.stopped&&n.disconnected));assert.equal(s.audio.play('levelup'),false);s.audio.dispose();
+ s.audio.setSettings({ambience:22});await settle();assert.equal(s.music()[1].offset,37);assert.equal(s.loads(),1);
+ s.audio.setSettings({enabled:false});assert.equal(s.ctx.state,'suspended');assert(s.effects().every(n=>n.stopped&&n.disconnected));assert.equal(s.audio.play('levelup'),false);s.audio.dispose();
 });
 test('hidden tabs suspend, then resume the same music position without an effect backlog',async()=>{
  const s=setup();await s.audio.unlock();await settle();s.audio.play('harvest');s.ctx.currentTime+=151;s.doc.hidden=true;s.doc.dispatchEvent(new Event('visibilitychange'));
- assert.equal(s.ctx.state,'suspended');assert(s.ctx.buffers[0].stopped);assert.equal(s.audio.play('reward'),false);const count=s.ctx.oscillators.length;
- s.doc.hidden=false;s.doc.dispatchEvent(new Event('visibilitychange'));await settle();assert.equal(s.ctx.state,'running');assert.equal(s.ctx.oscillators.length,count);assert.equal(s.ctx.buffers[1].offset,7);assert.equal(s.loads(),1);s.audio.dispose();assert.equal(s.ctx.state,'closed');assert(s.ctx.buffers.every(n=>n.stopped));
+ assert.equal(s.ctx.state,'suspended');assert(s.music()[0].stopped);assert.equal(s.audio.play('reward'),false);const count=s.effects().length;
+ s.doc.hidden=false;s.doc.dispatchEvent(new Event('visibilitychange'));await settle();assert.equal(s.ctx.state,'running');assert.equal(s.effects().length,count);assert.equal(s.music()[1].offset,7);assert.equal(s.loads(),1);s.audio.dispose();assert.equal(s.ctx.state,'closed');assert(s.ctx.buffers.every(n=>n.stopped));
 });
 test('fast actions are throttled, level-up takes priority, and completed nodes are disconnected',async()=>{
  const s=setup();await s.audio.unlock();assert(s.audio.play('harvest'));assert.equal(s.audio.play('harvest'),false);assert(s.audio.play('levelup'));assert.equal(s.audio.play('sell'),false);
- assert(s.ctx.oscillators.slice(0,3).every(n=>n.stopped));for(const n of s.ctx.oscillators)n.onended?.();assert(s.ctx.oscillators.every(n=>n.disconnected));s.ctx.currentTime+=2;assert(s.audio.play('water'));s.audio.dispose();
+ assert(s.effects().length>0&&s.effects().slice(0,1).every(n=>n.stopped),'the level-up stops the harvest sound');for(const n of s.effects())n.onended?.();assert(s.effects().every(n=>n.disconnected));s.ctx.currentTime+=2;assert(s.audio.play('water'));s.audio.dispose();
 });
 test('successful actions have one cue and failures, unknown actions and refreshes have none',async()=>{
  let level=1;const sounds=[];const run=withActionSounds(async action=>{if(action.type==='bad')throw Error('Rejected');if(action.level)level=action.level;return {coins:8};},()=>level,s=>sounds.push(s));
@@ -79,7 +81,7 @@ test('effects stay brief with soft envelopes and moderate frequencies',()=>{
 });
 test('rapid successful actions keep the voice count bounded until old notes finish',async()=>{
  const s=setup();await s.audio.unlock();for(let i=0;i<100;i++){s.ctx.currentTime+=.2;s.audio.play('harvest');}
- assert(s.ctx.oscillators.length<=16);assert(s.ctx.oscillators.length>0);s.audio.dispose();assert(s.ctx.oscillators.every(n=>n.disconnected));
+ assert(s.effects().length<=16);assert(s.effects().length>0);s.audio.dispose();assert(s.effects().every(n=>n.disconnected));
 });
 test('muting during a pending browser resume cannot restart the background',async()=>{
  let resolve;const ctx=new Context();ctx.resume=()=>new Promise(r=>{resolve=()=>{ctx.state='running';r();};});
@@ -108,4 +110,16 @@ test('the shipped music loop (Sunny Acres, 48 bars at 108 BPM) has no silent win
  const count=(wav.length-44)/2;assert.equal(count,Math.round(48*4*60/108*24000));let peak=0,minRms=1,maxStep=0,last=0;
  for(let i=0;i+1200<=count;i+=1200){let energy=0;for(let j=i;j<i+1200;j++){const sample=wav.readInt16LE(44+j*2)/32768;energy+=sample*sample;peak=Math.max(peak,Math.abs(sample));if(j)maxStep=Math.max(maxStep,Math.abs(sample-last));last=sample;}minRms=Math.min(minRms,Math.sqrt(energy/1200));}
  assert(peak<.3);assert(minRms>.01,'no quiet gap even in a 50ms window');const seam=Math.abs(wav.readInt16LE(44)-wav.readInt16LE(wav.length-2))/32768;assert(seam<.002);assert(seam<maxStep);
+});
+test('the effects are real little sounds (sound-kit.js): one per cue, short, never clipping or clicking, as loud as intended',async()=>{
+ const {renderCue,CUE_LENGTH,CUE_LOUDNESS,loudness}=await import('../public/sound-kit.js');
+ assert.deepEqual(Object.keys(CUE_LENGTH).sort(),Object.keys(SOUND_CUES).sort(),'every cue has its sound, and the plain notes stay as the fallback');
+ for(const kind of Object.keys(SOUND_CUES)){
+  const a=renderCue(kind,24000),b=renderCue(kind,24000);
+  assert.deepEqual(a,b,`${kind}: the same every time`);assert.ok(a.length/24000<=1.5,`${kind}: short`);
+  let peak=0;for(const v of a)peak=Math.max(peak,Math.abs(v));assert.ok(peak<=.5,`${kind}: far from clipping`);
+  assert.ok(Math.abs(a.at(-1))<1e-4,`${kind}: ends in silence, no click`);
+  assert.ok(Math.abs(loudness(a,24000)-CUE_LOUDNESS[kind])<.004,`${kind}: as loud as intended`);
+ }
+ assert.ok(CUE_LOUDNESS.levelup>CUE_LOUDNESS.harvest&&CUE_LOUDNESS.harvest>CUE_LOUDNESS.plant,'big moments a little louder than small ones');
 });

@@ -1,4 +1,5 @@
 import {productionJobs} from './farm-state.js';
+import {renderCue} from './sound-kit.js';
 // Original continuous music and procedural effects. No third-party recordings.
 // "Sunny Acres" (scripts/generate-farm-music.mjs, 26 Sep 2026: an upbeat folk loop in place of the calm Harvest Meadow piano).
 // The same 107-second loop twice: the FLAC is lossless (every sample identical, so the seamless loop stays seamless) at under half
@@ -81,6 +82,17 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   ambientBus=ctx.createGain();ambientBus.gain.value=0;effectBus=ctx.createGain();effectBus.gain.value=settings.effects/100;
   ambientBus.connect(compressor);effectBus.connect(compressor);compressor.connect(master);master.connect(ctx.destination);
  }
+ // The effects themselves (sound-kit.js: soil, water, leaves, coins, wood, bells), rendered once per cue the first time it plays.
+ // A cue that cannot be rendered falls back to its plain notes (SOUND_CUES).
+ const rendered=new Map();
+ function sample(kind,when){
+  let buffer=rendered.get(kind);
+  if(buffer===undefined){try{const data=renderCue(kind,ctx.sampleRate);buffer=ctx.createBuffer(1,data.length,ctx.sampleRate);buffer.getChannelData(0).set(data);}catch{buffer=null;}rendered.set(kind,buffer);}
+  if(!buffer)return false;
+  if(voices.size>=16)return true;
+  const source=ctx.createBufferSource(),voice={source,cleanup:()=>{voices.delete(voice);source.disconnect();}};
+  source.buffer=buffer;source.connect(effectBus);source.onended=voice.cleanup;voices.add(voice);source.start(when);return true;
+ }
  // Every short voice disconnects when it ends; rapid actions cannot pile up.
  function note(frequency,when,duration,volume,bus,type='sine',glide=1){
   if(voices.size>=16)return;
@@ -131,7 +143,7 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   try{
    if(isLevel){for(const v of [...voices])stopVoice(v);priorityUntil=now+1.4;ramp(ambientBus.gain,settings.ambience/100*.35,.08);ambientBus.gain.setTargetAtTime(settings.ambience/100,now+1.4,.5);}
    lastPlayed.set(kind,now);nextEffectAt=now+.14;
-   cue.notes.forEach((f,i)=>note(f,now+.015+i*cue.step,cue.duration,cue.volume,effectBus,cue.type??'sine',cue.glide??1));return true;
+   if(!sample(kind,now+.015))cue.notes.forEach((f,i)=>note(f,now+.015+i*cue.step,cue.duration,cue.volume,effectBus,cue.type??'sine',cue.glide??1));return true;
   }catch{return false;}
  }
  function setSettings(next){
