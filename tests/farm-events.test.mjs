@@ -182,7 +182,7 @@ test('the twelve fixed events of 24 Sep (live-events-more.sql, before the mix) w
    if(o.stat.startsWith('made_'))assert.equal(o.stat,'made_eggs','only eggs: the coop is free, the Bakery and Dairy Barn are not');
   }
  }
- const mixed=read('supabase/live-events-mixed.sql');
+ const mixed=read('supabase/live-events-mixed.sql')+read('supabase/live-events-sell-wheat.sql');
  for(const stat of EVENT_STATS)assert.match(sql+mixed,new RegExp(`'${stat}'`),`${stat} is allowed by harvest_event_validate`);
  assert.match(sql,/or \(stat like 'harvest\\_%' and action in \('field','tractor'\)\) or \(stat like 'made\\_%' and action in \('collect','collect_all'\)\);/,'progress counts a crop on harvest and eggs on collecting');
 });
@@ -193,4 +193,16 @@ test('events are open to every farm from level 15: no email check and no waiting
  assert.match(api,/return \{level:stats\.data\?\.level\?\?0,minLevel:15,openAt:0,verified:true\};/);
  const ui=readFileSync(new URL('../public/live-events-ui.js',import.meta.url),'utf8');
  assert.doesNotMatch(ui,/48 hours|Confirm your email|createEmailCheck/);assert.match(ui,/<li>Open from level \$\{EVENTS_LEVEL\}\.<\/li>/);
+});
+
+test('"Sell wheat" replaces "Use a boost" in the pool: a boost costs more diamonds than finishing an event gives',async()=>{
+ const sql=read('supabase/live-events-sell-wheat.sql');
+ assert.match(sql,/\$s\$\{"stat":"boosts_used","targets":\[1,1,2\][^$]*\$s\$,\n  \$s\$\{"stat":"sold_wheat","targets":\[40,70,100\],"titles":\[\["Wheat market",/);
+ assert.match(sql,/'boosts_used','activity_rounds','sold_wheat'\)/,'allowed by harvest_event_validate');
+ assert.match(sql,/or stat in \('sold','sold_wheat','earned','coins_spent','diamonds_spent'\)/,'counted like any sale');
+ assert.match(sql,/raise exception 'harvest_event_pick: the boost goal was not found'/);
+ const {EVENT_STATS}=await import('../supabase/functions/farm-api/event-service.js'),{EVENT_GOALS,FINISHER_PRIZE}=await import('../public/live-events-ui.js'),{BOOSTS}=await import('../game/farm-state.js');
+ assert.ok(EVENT_STATS.includes('sold_wheat')&&EVENT_STATS.includes('boosts_used'),'an event that already has the boost goal still counts');
+ assert.deepEqual(EVENT_GOALS.sold_wheat,{label:'Sell wheat',art:'wheat'});
+ assert.ok(Math.min(...Object.values(BOOSTS).map(b=>b.cost))>FINISHER_PRIZE.diamonds,'why the boost goal left the pool');
 });

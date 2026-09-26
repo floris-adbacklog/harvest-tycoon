@@ -74,7 +74,7 @@ test('from the upgrade to level 4 a building also asks for its own goods: 2 × t
  assert.deepEqual([3,6,9].map(l=>upgradeGoods('coop',l)),[{eggs:18},{eggs:36},{eggs:54}]);
  assert.deepEqual([3,6,9].map(l=>upgradeGoods('dairy',l)),[{milk:12},{milk:24},{milk:36}]);
  assert.deepEqual(upgradeGoods('kitchen',9),{stew:18});assert.deepEqual(upgradeGoods('glasshouse',3),{cauliflower:48});
- assert.deepEqual(upgradeGoods('factory',9),{flour:72,cheese:18,cloth:9},'the Factory makes everything, so a mix');
+ assert.deepEqual(upgradeGoods('factory',9),{flour:144,cheese:36,cloth:18,harvesthamper:9,squashsoup:9,cider:9},'the Factory makes everything, so goods from across the valley');
  assert.deepEqual(upgradeGoods('mill',10),{},'nothing above the top');
  for(const [key,b] of Object.entries(BUILDINGS).filter(([,b])=>b.type==='production'))for(const item of Object.keys(upgradeGoods(key,5)))assert.ok(Object.values(RECIPES).some(r=>r.output[item]&&(r.building===key||key==='factory')),`${key} makes ${item}`);
 });
@@ -101,5 +101,5 @@ test('the upgrade panel: one row with the coins and the goods, the Upgrade butto
  assert.doesNotMatch(ui,/upgrade-building-diamonds|diamondUpgradeCost|Upgrade now · /);
  assert.match(ui,/\$\{cost===null\?'':`<div class="upgrade-payments">\$\{coinRow\}<\/div>`\}/);
  assert.match(read('public/production-controls.css'),/\.upgrade-option\{display:grid;grid-template-columns:minmax\(0,1fr\) auto;/);
- assert.match(read('public/wiki-content.js'),/From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn\. The Buildings discount boost halves the coins and goods of your next upgrade\./);
+ assert.match(read('public/wiki-content.js'),/From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn\. The Factory asks for goods from across the valley from its first upgrade\. The Buildings discount boost halves the coins and goods of your next upgrade\./);
 });

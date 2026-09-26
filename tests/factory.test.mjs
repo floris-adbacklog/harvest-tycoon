@@ -103,8 +103,8 @@ test('the Factory is bought with coins or diamonds and ends at level 10 like the
  const s=farm();s.buildings.factory.level=9;
  assert.equal(upgradeCost(s,'factory'),923076,'the price ladder, doubled for the Factory alone and 1.5× for level 5-10');
  s.buildings.factory.level=10;assert.equal(upgradeCost(s,'factory'),null);
- s.buildings.factory.level=1;const r=act(s,{type:'upgrade',building:'factory'});assert.equal(r.level,2);assert.equal(productionSlots(2,'factory'),1,'level 2 still has one slot');assert.equal(productionSlots(3,'factory'),2,'the second slot comes at level 3');
- s.buildings.factory.level=4;Object.assign(s.inventory,{flour:32,cheese:8,cloth:4});act(s,{type:'upgrade',building:'factory'});assert.equal(s.buildings.factory.level,5);assert.equal(productionSlots(5,'factory'),3,'the third at level 5');
+ s.buildings.factory.level=1;Object.assign(s.inventory,{flour:16,cheese:4,cloth:2});const r=act(s,{type:'upgrade',building:'factory'});assert.equal(r.level,2);assert.equal(productionSlots(2,'factory'),1,'level 2 still has one slot');assert.equal(productionSlots(3,'factory'),2,'the second slot comes at level 3');
+ s.buildings.factory.level=4;Object.assign(s.inventory,{flour:64,cheese:16,cloth:8,harvesthamper:4});act(s,{type:'upgrade',building:'factory'});assert.equal(s.buildings.factory.level,5);assert.equal(productionSlots(5,'factory'),3,'the third at level 5');
 });
 test('diamonds cannot rush the Factory: a bulk batch is worth 10-20 normal ones for the price of one',()=>{
  const s=farm();s.buildings.factory.level=5;s.inventory.feed=100;s.inventory.corn=100;
@@ -240,4 +240,22 @@ test('a building that is not built yet shows one status line, what it makes, and
  assert.match(ui,/\$\{eligible\?`<button type="button" id="construct-building" class="primary-button"/,'no greyed-out button while it is still locked');
  assert.match(ui,/<p class="build-price">\$\{art\('coins'\)\}<span>\$\{number\(buildCost\)\} coins to build<\/span><\/p>/);
  assert.match(ui,/`Build for \$\{number\(buildingCost\(state,key\)\)\} coins`/);
+});
+
+test('a Factory upgrade asks for goods from across the valley from the first one: flour, cheese and cloth, then hampers, soup and cider',async()=>{
+ const {upgradeGoods,upgradeRequirements,BUILDING_LEVELS,RECIPES,CROP_LEVELS,FACTORY_LEVEL}=await import('../game/farm-state.js');
+ assert.deepEqual(upgradeGoods('factory',1),{flour:16,cheese:4,cloth:2},'already at the first upgrade');
+ assert.deepEqual(upgradeGoods('factory',3),{flour:48,cheese:12,cloth:6});
+ assert.deepEqual(upgradeGoods('factory',4),{flour:64,cheese:16,cloth:8,harvesthamper:4},'hampers from the upgrade to level 5');
+ assert.deepEqual(upgradeGoods('factory',6),{flour:96,cheese:24,cloth:12,harvesthamper:6,squashsoup:6},'squash soup from the upgrade to level 7');
+ assert.deepEqual(upgradeGoods('factory',8),{flour:128,cheese:32,cloth:16,harvesthamper:8,squashsoup:8,cider:8},'cider from the upgrade to level 9');
+ assert.deepEqual(upgradeGoods('factory',10),{},'nothing above the top');
+ // Every good can be made by the time the Factory opens: its building, its recipe and the crops in it.
+ for(const item of Object.keys(upgradeGoods('factory',9))){
+  const opens=Math.min(...Object.entries(RECIPES).filter(([,r])=>r.output[item]&&r.building!=='factory').map(([,r])=>Math.max(BUILDING_LEVELS[r.building]??1,r.minLevel??1,...Object.keys(r.input).map(k=>CROP_LEVELS[k]??0))));
+  assert.ok(opens<=FACTORY_LEVEL,`${item} opens at ${opens}`);
+ }
+ const s=farm();s.buildings.factory.level=6;s.boosts.upgradeCredits=1;
+ assert.deepEqual(upgradeRequirements(s,'factory').materials,{flour:48,cheese:12,cloth:6,harvesthamper:3,squashsoup:3},'the Buildings discount halves every good');
+ const other=farm();other.buildings.dairy.level=2;assert.deepEqual(upgradeRequirements(other,'dairy'),null,'other buildings still start at the upgrade to level 4');
 });

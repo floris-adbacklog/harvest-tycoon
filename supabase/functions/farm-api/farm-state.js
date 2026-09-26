@@ -854,14 +854,19 @@ export const ESTATE_UPGRADES=Object.freeze([
  {level:85,coins:4300000,diamonds:6145,materials:{harvesthamper:40,berrycheesecake:60,berrytart:60,pickledbeans:80,cloth:40,cider:50,cherrypie:20,blanket:8,prizeproduce:8}}
 ].map(step=>Object.freeze({...step,materials:Object.freeze(step.materials)})));
 // Upgrading asks for goods the building makes itself (26 Sep 2026): from the upgrade to level 4 on, 2 × the level in batches of its
-// first product (a Dairy Barn at level 6 hands in 24 milk to reach level 7). The Factory, which makes everything, asks for a mix of
-// flour, cheese and cloth. Up to level 3 it is coins only, so the beginner guide's first upgrade stays one tap. Upgrades are paid with
-// coins and goods only (not diamonds, so the game does not feel pay to win); the Buildings discount boost (diamonds) halves both.
+// first product (a Dairy Barn at level 6 hands in 24 milk to reach level 7). Up to level 3 it is coins only, so the beginner guide's
+// first upgrade stays one tap. Upgrades are paid with coins and goods only (not diamonds, so the game does not feel pay to win); the
+// Buildings discount boost (diamonds) halves both.
+// The Factory (26 Sep 2026, far stronger late in the game than one building) asks for goods from across the valley from its first
+// upgrade: 16 flour, 4 cheese and 2 cloth per level, plus as many harvest hampers as its level from level 4, squash soup from 6 and
+// cider from 8. All of them can be made by level 50, when the Factory opens, and they come from seven buildings, so upgrading
+// those makes the Factory's upgrades quicker. 9 -> 10: 144 flour, 36 cheese, 18 cloth, 9 hampers, 9 soup and 9 cider.
 export const UPGRADE_GOODS_FROM=3;
 let firstProducts=null;
 export function upgradeGoods(building,level){
- if(!BUILDINGS[building]||BUILDINGS[building].type!=='production'||level<UPGRADE_GOODS_FROM||level>=MAX_BUILDING_LEVEL)return {};
- if(building==='factory')return {flour:8*level,cheese:2*level,cloth:level};
+ if(!BUILDINGS[building]||BUILDINGS[building].type!=='production'||level<1||level>=MAX_BUILDING_LEVEL)return {};
+ if(building==='factory')return {flour:16*level,cheese:4*level,cloth:2*level,...(level>=4?{harvesthamper:level}:{}),...(level>=6?{squashsoup:level}:{}),...(level>=8?{cider:level}:{})};
+ if(level<UPGRADE_GOODS_FROM)return {};
  firstProducts??=Object.fromEntries(Object.keys(BUILDINGS).map(key=>[key,Object.entries(RECIPES).filter(([,r])=>r.building===key).sort(([a],[b])=>(RECIPE_LEVELS[a]??0)-(RECIPE_LEVELS[b]??0))[0]?.[1]]).filter(([,r])=>r).map(([key,r])=>[key,Object.entries(r.output)[0]]));
  const product=firstProducts[building];return product?{[product[0]]:2*level*product[1]}:{};
 }

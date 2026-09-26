@@ -12,7 +12,7 @@ export const EVENT_GOALS={harvested:{label:'Harvest crops',art:'harvest'},produc
  // The mixed events (supabase/live-events-mixed.sql, 26 Sep 2026): 30 kinds of goal, three drawn per event.
  planted:{label:'Plant fields',art:'seeds'},fertilized:{label:'Fertilize fields',art:'fertilizer'},harvest_cauliflower:{label:'Harvest cauliflower',art:'cauliflower'},
  made_feed:{label:'Make animal feed',art:'feed'},made_milk:{label:'Make milk',art:'milk'},made_cheese:{label:'Make cheese',art:'cheese'},made_flour:{label:'Make flour',art:'flour'},made_grainmeal:{label:'Make grain meal',art:'grainmeal'},made_bread:{label:'Bake bread',art:'bread'},parallel_batches:{label:'Start batches side by side',art:'buildings'},
- sold:{label:'Sell at the market',art:'market'},earned:{label:'Earn coins',art:'coins'},coins_spent:{label:'Spend coins',art:'coins'},diamonds_spent:{label:'Spend diamonds',art:'diamonds'},boosts_used:{label:'Use a boost',art:'boost'},
+ sold:{label:'Sell at the market',art:'market'},earned:{label:'Earn coins',art:'coins'},coins_spent:{label:'Spend coins',art:'coins'},diamonds_spent:{label:'Spend diamonds',art:'diamonds'},boosts_used:{label:'Use a boost',art:'boost'},sold_wheat:{label:'Sell wheat',art:'wheat'},
  activities:{label:'Lend a helping hand',art:'helping-hand'},activity_rounds:{label:'Finish a helping-hand round',art:'helping-hand'},upgrades:{label:'Upgrade buildings',art:'hammer'}};
 const MIN_ACTIONS=3,MIN_SPAN=10*60000;
 // Same level as the server gate (player_stats.level>=15, live-events-mixed.sql; 10 until 26 Sep 2026, when spending diamonds, which
