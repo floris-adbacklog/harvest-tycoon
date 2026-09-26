@@ -137,7 +137,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
   // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
   const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
-  const text=`${esc(m.body)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`;
+  // Staff messages can carry an https link (an admin's message to many farmers, e.g. a feedback form); nobody else's can.
+  const text=`${m.sender_staff?linkify(m.body):esc(m.body)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`;
   // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
   if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${esc(m.sender_name)}: </span>${text}</p></div>${more}</li>`;
   return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?`<span class="chat-mod" title="Moderator">${art('admin')}</span>`:''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div><p class="chat-text">${text}</p></div></li>`;

@@ -41,7 +41,8 @@ test('the game shows it once, when nothing else is open, never in a farmer\'s fi
 });
 test('the admin form: send a notification, a pop-up or both; a web page asks for its address',()=>{
  const admin=read('src/admin-dashboard.js');
- assert.match(admin,/Send as<select id="admin-send-as"><option value="news">Notification<\/option><option value="popup">Pop-up<\/option><option value="both">Notification and pop-up<\/option><\/select><\/label><div class="admin-popup-fields" id="admin-popup-fields" hidden>/);
+ assert.match(admin,/Send as<select id="admin-send-as"><option value="news">Notification<\/option><option value="popup">Pop-up<\/option><option value="both">Notification and pop-up<\/option><option value="dm">Private message \(they can reply\)<\/option><\/select><\/label>/);
+ assert.match(admin,/<div class="admin-popup-fields" id="admin-popup-fields" hidden>/);
  assert.match(admin,/hours,news:mode==='both'\}\);/,'a pop-up alone posts no news');
  const sql=read('supabase/popups-send-as.sql');
  assert.match(sql,/if coalesce\(p_news,true\) then\n  insert into public\.player_notices/);assert.match(sql,/check \(audience in \('all','browser','phone_browser','phone','desktop'\)\)/);
@@ -50,4 +51,17 @@ test('the admin form: send a notification, a pop-up or both; a web page asks for
  assert.match(admin,/await bridge\.chat\.postPopup\(\{title:\$p\('title'\)\.value\.trim\(\),body,buttonLabel:label\|\|null,buttonTarget:label\?target:null,/);
  assert.match(admin,/data-popup-stop=/);assert.match(read('src/chat-client.js'),/postPopup:\(\{title,body,buttonLabel=null,buttonTarget=null,audience='all',minLevel=1,hours=24,news=true\}\)=>rpc\('popup_post'/);
  assert.match(read('public/pwa-layout.css'),/#starter-pack-dialog,#popup-dialog\)\{/,'clear of the notch in the installed app');
+});
+test('the admin can send one private message to many farmers: online now, active this week or everyone; they can reply',()=>{
+ const admin=read('src/admin-dashboard.js'),sql=read('supabase/chat-broadcast-dm.sql');
+ assert.match(admin,/<option value="online">Online now<\/option><option value="week" selected>Active this week<\/option><option value="all">Everyone<\/option>/);
+ assert.match(admin,/const n=await bridge\.chat\.broadcastDm\(\{audience\}\);note\.textContent=`Goes to/,'the count before sending');
+ assert.match(admin,/confirmAction\(\{title:`Send a private message to/,'asked once more before it goes');
+ assert.match(read('src/chat-client.js'),/broadcastDm:\(\{body='',audience,send=false\}\)=>rpc\('chat_broadcast_dm'/);
+ assert.match(sql,/if me is null or public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'/,'only the admin');
+ assert.match(sql,/p_audience='online' and ps\.last_active_at>now\(\)-interval '30 minutes'/,'online: the same 30 minutes as the green dot');
+ assert.match(sql,/not exists\(select 1 from public\.chat_blocks b where b\.player_id=ps\.player_id and b\.blocked_id=p_sender\)/,'not to farmers who blocked the admin');
+ assert.match(sql,/if coalesce\(current_setting\('harvest\.broadcast',true\),''\)='on' then return null; end if;/,'no push storm: hundreds of Edge Function calls');
+ assert.match(sql,/m\.body=msg and m\.created_at>now\(\)-interval '10 minutes'\) then raise exception 'You sent this message a moment ago\.'/,'a double click sends once');
+ assert.match(read('src/chat-ui.js'),/m\.sender_staff\?linkify\(m\.body\):esc\(m\.body\)/,'a link in the admin\'s message works');
 });

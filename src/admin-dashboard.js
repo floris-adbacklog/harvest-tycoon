@@ -52,7 +52,10 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'</div><div data-admin-panel="settings" hidden>'
   +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News and pop-ups</h3><form id="admin-news-form" class="admin-news"><textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… As a notification everyone sees it under Notifications in the chat."></textarea>'
   // The admin only: the same news also as a pop-up, once per farmer, with an optional button (src/popup-ui.js, supabase/popups.sql).
-  +'<label class="admin-news-hours admin-send-as">Send as<select id="admin-send-as"><option value="news">Notification</option><option value="popup">Pop-up</option><option value="both">Notification and pop-up</option></select></label><div class="admin-popup-fields" id="admin-popup-fields" hidden>'
+  +'<label class="admin-news-hours admin-send-as">Send as<select id="admin-send-as"><option value="news">Notification</option><option value="popup">Pop-up</option><option value="both">Notification and pop-up</option><option value="dm">Private message (they can reply)</option></select></label>'
+  // The admin's private message to many farmers: who gets it, and how many that is right now (supabase/chat-broadcast-dm.sql).
+  +'<div class="admin-popup-fields" id="admin-dm-fields" hidden><label>Who gets it<select id="admin-dm-audience"><option value="online">Online now</option><option value="week" selected>Active this week</option><option value="all">Everyone</option></select></label><p class="admin-popup-note" id="admin-dm-count">Counting farmers…</p><p class="admin-popup-note">Every farmer gets it as a private message from you and can reply; the replies come in under your private messages. No push notification: they see it in the chat. Links (https) work.</p></div>'
+  +'<div class="admin-popup-fields" id="admin-popup-fields" hidden>'
   +'<label>Title<input id="admin-popup-title" maxlength="60" placeholder="Play it as an app"></label>'
   +'<label>Button<input id="admin-popup-label" maxlength="30" placeholder="Show me how (leave empty for no button)"></label>'
   +'<label>The button opens<select id="admin-popup-target">'+Object.entries(POPUP_SCREENS).map(([key,name])=>`<option value="screen:${key}">${name}</option>`).join('')+'<option value="link">A web page (new tab)</option></select></label>'
@@ -60,7 +63,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label>Who sees it<select id="admin-popup-audience">'+Object.entries(POPUP_AUDIENCES).map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'
   +'<label>From level<input id="admin-popup-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label>'
   +'<p class="admin-popup-note">Every farmer sees the pop-up once, when nothing else is open, and never in their first half hour. It ends after the time below, or after 30 days. Who installed the app is only known on the device: phones and browsers are checked when the game opens.</p></div>'
-  +'<label class="admin-news-hours">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Send</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
+  +'<label class="admin-news-hours" id="admin-news-hours-row">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Send</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
   +'<h3>'+art('admin')+'Moderators</h3><ul id="admin-mod-list" class="admin-recent-list"></ul><p class="admin-hint">Make a farmer a moderator (or not) on their profile.</p>'
   +'<h3>'+art('chat')+'Who may chat</h3><form id="admin-levels-form" class="admin-levels"><label>Global chat from level<input type="number" id="admin-level-global" min="1" max="200" step="1" inputmode="numeric"></label><label>Private messages from level<input type="number" id="admin-level-dm" min="1" max="200" step="1" inputmode="numeric"></label><button type="submit" class="small-button">Save</button></form><p id="admin-chat-status" class="admin-hint" role="status"></p><p id="admin-device" class="admin-hint admin-device"></p></section></div>'
   +'<p id="admin-dashboard-status" class="admin-hint admin-status" role="status"></p>';
@@ -246,7 +249,13 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   }catch(error){room.textContent=error.message;}
  });
  // Pop-ups: the fields open with "Also as a pop-up", the web address with "A web page"; below the form the last ten, with who saw them.
- dialog.querySelector('#admin-send-as').addEventListener('change',event=>{dialog.querySelector('#admin-popup-fields').hidden=event.target.value==='news';});
+ dialog.querySelector('#admin-send-as').addEventListener('change',event=>{const mode=event.target.value;dialog.querySelector('#admin-popup-fields').hidden=mode==='news'||mode==='dm';dialog.querySelector('#admin-dm-fields').hidden=mode!=='dm';dialog.querySelector('#admin-news-hours-row').hidden=mode==='dm';if(mode==='dm')void countDm();});
+ // How many farmers a private message to all would reach right now.
+ async function countDm(){
+  const note=dialog.querySelector('#admin-dm-count'),audience=dialog.querySelector('#admin-dm-audience').value;note.textContent='Counting farmers…';
+  try{const n=await bridge.chat.broadcastDm({audience});note.textContent=`Goes to ${n.toLocaleString('en-US')} farmer${n===1?'':'s'}.`;note.dataset.count=String(n);}catch(error){note.textContent=error.message;delete note.dataset.count;}
+ }
+ dialog.querySelector('#admin-dm-audience').addEventListener('change',()=>void countDm());
  dialog.querySelector('#admin-popup-target').addEventListener('change',event=>{dialog.querySelector('#admin-popup-link-row').hidden=event.target.value!=='link';});
  async function showPopups(){
   const list=dialog.querySelector('#admin-popup-list');
@@ -264,8 +273,14 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-news-form').addEventListener('submit',async event=>{
   event.preventDefault();const text=dialog.querySelector('#admin-news-text'),chatStatus=dialog.querySelector('#admin-chat-status'),body=text.value.trim();if(!body)return;
   const hours=Number(dialog.querySelector('#admin-news-hours').value)||0;
-  const mode=dialog.querySelector('#admin-send-as').value,popup=mode!=='news',$p=id=>dialog.querySelector(`#admin-popup-${id}`);
+  const mode=dialog.querySelector('#admin-send-as').value,popup=mode==='popup'||mode==='both',$p=id=>dialog.querySelector(`#admin-popup-${id}`);
   try{
+   if(mode==='dm'){
+    const audience=dialog.querySelector('#admin-dm-audience'),n=Number(dialog.querySelector('#admin-dm-count').dataset.count??0),who=audience.options[audience.selectedIndex].text.toLowerCase();
+    if(!await confirmAction({title:`Send a private message to ${n.toLocaleString('en-US')} farmers?`,description:`Every farmer${audience.value==='all'?'':` ${who}`} gets “${body}” from you and can reply.`,confirmLabel:'Send',cancelLabel:'Cancel',picture:'bell'}))return;
+    const sent=await bridge.chat.broadcastDm({body,audience:audience.value,send:true});
+    text.value='';chatStatus.textContent=`Sent to ${sent.toLocaleString('en-US')} farmers. Their replies come in under your private messages.`;return;
+   }
    if(popup){
     const label=$p('label').value.trim(),target=$p('target').value==='link'?$p('link').value.trim():$p('target').value;
     await bridge.chat.postPopup({title:$p('title').value.trim(),body,buttonLabel:label||null,buttonTarget:label?target:null,audience:$p('audience').value,minLevel:Number($p('level').value)||1,hours,news:mode==='both'});
