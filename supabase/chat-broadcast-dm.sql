@@ -2,14 +2,14 @@
 -- (a farm action in the last 30 minutes, the same rule as the green dot), active this week, or everyone. Each farmer gets it as a
 -- private message from the admin and can simply reply. Farmers who blocked the admin, banned farmers and farmers below the
 -- private-message level are left out. Only the admin; the same text cannot be sent twice within 10 minutes (a double click).
--- No push for these: one push per farmer would be hundreds of Edge Function calls at once. Farmers see it in the chat.
+-- Farmers with notifications on for messages also get a push, as for any private message (26 Sep 2026: at first there was none,
+-- for fear of hundreds of Edge Function calls; but the push trigger only calls out for farmers with notifications on, 10 today).
 
--- 1. The DM push trigger skips messages sent by a broadcast (built on the live chat_dm_push, read on 26 Sep 2026).
+-- 1. The DM push trigger as it was before (the broadcast no longer asks it to stay quiet).
 create or replace function public.chat_dm_push()
  returns trigger language plpgsql security definer set search_path to '' as $function$
 declare other uuid;
 begin
- if coalesce(current_setting('harvest.broadcast',true),'')='on' then return null; end if;
  other:=(case when split_part(new.channel,':',2)=new.sender::text then split_part(new.channel,':',3) else split_part(new.channel,':',2) end)::uuid;
  if not exists(select 1 from public.push_subscriptions p where p.player_id=other) then return null; end if;
  if not exists(select 1 from public.notification_settings s where s.player_id=other and s.push_messages) then return null; end if;
@@ -49,12 +49,10 @@ begin
  perform pg_advisory_xact_lock(hashtextextended('broadcast:'||me::text,0));
  if exists(select 1 from public.chat_messages m where m.sender=me and m.channel like 'dm:%' and m.body=msg and m.created_at>now()-interval '10 minutes') then raise exception 'You sent this message a moment ago.' using errcode='54000'; end if;
  select ps.username, ps.avatar_id, coalesce(ps.vip_expires_at>now(),false) into nm, av, vip from public.player_stats ps where ps.player_id=me;
- perform set_config('harvest.broadcast','on',true);
  insert into public.chat_messages(channel,sender,sender_name,sender_avatar,sender_staff,sender_vip,body)
   select 'dm:'||(case when me::text<t.player_id::text then me::text||':'||t.player_id::text else t.player_id::text||':'||me::text end),me,nm,av,true,vip,msg
   from public.chat_broadcast_targets(me,p_audience) t;
  get diagnostics n=row_count;
- perform set_config('harvest.broadcast','off',true);
  -- The admin's own side counts as read, so hundreds of chats do not light up as unread for them.
  insert into public.chat_reads(player_id,channel,last_read_at)
   select me,'dm:'||(case when me::text<t.player_id::text then me::text||':'||t.player_id::text else t.player_id::text||':'||me::text end),now() from public.chat_broadcast_targets(me,p_audience) t

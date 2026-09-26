@@ -61,7 +61,8 @@ test('the admin can send one private message to many farmers: online now, active
  assert.match(sql,/if me is null or public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'/,'only the admin');
  assert.match(sql,/p_audience='online' and ps\.last_active_at>now\(\)-interval '30 minutes'/,'online: the same 30 minutes as the green dot');
  assert.match(sql,/not exists\(select 1 from public\.chat_blocks b where b\.player_id=ps\.player_id and b\.blocked_id=p_sender\)/,'not to farmers who blocked the admin');
- assert.match(sql,/if coalesce\(current_setting\('harvest\.broadcast',true\),''\)='on' then return null; end if;/,'no push storm: hundreds of Edge Function calls');
+ assert.doesNotMatch(sql,/harvest\.broadcast/,'a push as for any private message: the trigger only calls out for farmers with notifications on');
+ assert.match(sql,/if not exists\(select 1 from public\.push_subscriptions p where p\.player_id=other\) then return null; end if;/);
  assert.match(sql,/m\.body=msg and m\.created_at>now\(\)-interval '10 minutes'\) then raise exception 'You sent this message a moment ago\.'/,'a double click sends once');
  assert.match(read('src/chat-ui.js'),/m\.sender_staff\?linkify\(m\.body\):esc\(m\.body\)/,'a link in the admin\'s message works');
 });
