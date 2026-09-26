@@ -188,7 +188,7 @@ test('Farm Family: the family\'s own name and emblem on top, four tabs with a "!
  assert.match(ui,/document\.getElementById\('family-chat'\)\.onclick=\(\)=>\{dialog\.close\(\);window\.harvestChat\?\.open\(\{tab:'family'\}\);\};/);
  assert.match(ui,/class="primary-button family-deliver" data-family-action="family_contribute"/);
  assert.match(ui,/later=l=>waitsLater\(l\)&&open\.some\(x=>!waitsLater\(x\)\)/,'nothing is folded away when every open line waits');
- assert.match(ui,/const invite=view\.family\.leader\?`\$\{inviteSearch\.html\(\)\}/,'the leader invites from Members');
+ assert.match(ui,/const invite=view\.family\.leader\?\(view\.family\.mode==='closed'\?`<p class="family-notice">Your family is closed to new farmers\. To invite someone, change who can join in Family settings\.<\/p>`:`\$\{joinRequests\(\)\}\$\{inviteSearch\.html\(\)\}/,'the leader invites from Members');
 });
 
 test('the staff can edit a message: same rules as sending, live for everyone, marked as edited, every edit kept for the admin',()=>{

@@ -154,7 +154,7 @@ const BODIES={
   +section('A new day','<p>Gifts, challenges, orders and market prices refresh at 00:00 UTC.</p>');
  },
  family(h){
-  return section('Together is better',`<p>${h.lvl(FAMILY_MIN_LEVEL)} Start a Farm family or join one, with up to ${FAMILY_CONFIG.MAX_MEMBERS} farmers. A family can be open to everyone or invite-only.</p>`)
+  return section('Together is better',`<p>${h.lvl(FAMILY_MIN_LEVEL)} Start a Farm family or join one, with up to ${FAMILY_CONFIG.MAX_MEMBERS} farmers. The leader chooses who can join: <strong>Open</strong> (anyone joins at once), <strong>Request to join</strong> (you ask, the leader accepts or declines within 3 days), <strong>Invite only</strong> (the leader invites you by your player name) or <strong>Closed</strong> (nobody new). You can ask one family at a time.</p>`)
   +section('The family pages',facts([
    ['family-weekly-order','This week',`A big order for the whole family. Everyone delivers what they can. When the whole order is done, everyone who delivered at least ${number(FAMILY_CONFIG.MIN_CONTRIB_POINTS)} points’ worth gets coins, XP and diamonds for what they delivered. Deliveries cannot be taken back.`],
    ['family-sharing','Sharing',`From level 10 you share with your family every day, up to ${SHARE_LIMIT} times each. Help a member with coins: it costs you your level × 25 coins (level 10: ${number(helpCoins(10))}, level 30: ${number(helpCoins(30))}) and they get all of it. Gifts and requests hold up to 5 crops or goods for every 10 levels (level 10: ${maxShare(10)}, level 30: ${maxShare(30)}).`],

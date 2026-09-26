@@ -41,7 +41,7 @@ export function messageLayout(shown){
 // The header button counts news and notes, your family and your private messages. The global chat only lights its own tab:
 // with the whole valley talking, a number on the button would never go away.
 export const headerCount=unread=>(unread?.notices??0)+(unread?.family??0)+(unread?.dm??0);
-const NOTICES={news:'News',moderation:'From the moderators',gift:'A gift for you',donation:'A gift for you',purchase:'In-game purchase'};
+const NOTICES={news:'News',moderation:'From the moderators',gift:'A gift for you',donation:'A gift for you',purchase:'In-game purchase',family:'Farm Family'};
 const TITLES={notices:'Notifications',global:'Global chat',private:'Private chats'};
 const EMPTY={
  notices:'No news yet. New features and events show up here.',
@@ -149,7 +149,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const AMOUNT_ART={diamonds:'diamonds',coins:'coins',XP:'xp'};
  const withAmounts=text=>esc(text).replace(/\b(\d{1,3}(?:,\d{3})+|\d+) (diamonds|coins|XP)\b/g,(all,amount,what)=>`<span class="chat-amount">${art(AMOUNT_ART[what])}<b>${amount}</b> ${what}</span>`);
  function noticeRow(n,fresh){
-  const picture=n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':n.kind==='purchase'?'diamonds':'bell');
+  const picture=n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':n.kind==='purchase'?'diamonds':n.kind==='family'?'family-members':'bell');
   return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text">${n.kind==='gift'||n.kind==='donation'?withAmounts(n.body):n.kind==='news'?linkify(n.body):esc(n.body)}</p></div></li>`;
  }
  function foundRow(p){

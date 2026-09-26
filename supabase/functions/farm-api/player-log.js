@@ -63,7 +63,7 @@ const FARM_ACTIONS={
  buy_boost:['diamonds',(a)=>`Used the boost ${BOOSTS[a.boost]?.name??''}`.trim()],
  buy_vip:['diamonds',()=>'Bought VIP']
 };
-const FAMILY_ACTIONS={family_create:'Started a family',family_join:'Joined a family',family_accept_invite:'Accepted a family invitation',
+const FAMILY_ACTIONS={family_create:'Started a family',family_join:'Joined a family',family_accept_invite:'Accepted a family invitation',family_request:'Asked to join a family',family_request_cancel:'Cancelled a request to join',family_request_accept:'Accepted a request to join',family_request_decline:'Declined a request to join',family_join_mode:'Changed who can join the family',
  family_decline_invite:'Declined a family invitation',family_leave:'Left the family',family_kick:'Removed a member from the family',
  family_promote:'Changed a member\'s role in the family',family_invite:'Invited a farmer to the family',family_cancel_invite:'Cancelled a family invitation',
  family_contribute:'Delivered to the Family Order',family_claim:'Claimed a family reward',family_tournament_goods:'Delivered goods for the family tournament',

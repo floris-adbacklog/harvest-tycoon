@@ -1,6 +1,6 @@
 import {familyMutate,familyPublicView,familyWeek,levelOf} from './farm-state.js';
 import {isRecentlyActive} from './presence.js';
-const keys={families:['id'],members:['player_id'],invitations:['id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
+const keys={families:['id'],members:['player_id'],invitations:['id'],requests:['id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
 export function familyChanges(before,after){
  const changed={};
  for(const [table,fields] of Object.entries(keys)){
@@ -13,6 +13,17 @@ function publicView(context,player,state,now){
  // Use the exact existing online-status rule, and expose only the boolean.
  context.players=context.players.map(p=>({...p,online:isRecentlyActive(p.last_active_at,now)}));
  return familyPublicView(context,player,state,now);
+}
+// Join requests reach the other farmer in Notifications: the leader hears of a new request, the farmer hears the answer. A notice
+// that cannot be written never undoes the action itself.
+async function requestNotice(admin,action,result,context,player,username,now){
+ const family=id=>context.families.find(f=>f.id===id);
+ let to=null,body='';
+ if(action.type==='family_request'){const f=family(result.requestedFamily);to=context.members.find(m=>m.family_id===f?.id&&m.role==='leader'&&!m.left_at)?.player_id;body=`${username} asked to join ${f?.name}. Open Farm Family to accept or decline.`;}
+ else if(result.accepted){to=result.accepted;const f=family(context.members.find(m=>m.player_id===player&&!m.left_at)?.family_id);body=`Welcome! ${f?.name} accepted your request to join.`;}
+ else if(result.declined){to=result.declined;const f=family(context.members.find(m=>m.player_id===player&&!m.left_at)?.family_id);body=`${f?.name} declined your request to join. You can ask another family.`;}
+ if(!to||to===player)return;
+ try{await admin.from('player_notices').insert({player_id:to,kind:'family',body:body.slice(0,400),expires_at:new Date(now+7*86400000).toISOString()});}catch{}
 }
 // null tells the existing farm-api revision loop to reload and retry.
 export async function handleFamily({admin,body,row,state,player,username}){
@@ -38,6 +49,7 @@ export async function handleFamily({admin,body,row,state,player,username}){
  const receipts=writeFarm?[...row.receipts,{id:body.requestId,result}].slice(-100):row.receipts;
  const saved=await admin.rpc('harvest_family_commit',{p_player:player,p_expected_family:before.revision,p_expected_farm:row.revision,p_week:familyWeek(now),p_changes:changes,p_settled:settled,p_write_farm:writeFarm,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state),p_request:reading?null:body.requestId,p_result:result,p_failed:failed});
  if(saved.error)throw saved.error;if(!saved.data)return null;
+ if(writeFarm)await requestNotice(admin,body.action,result,context,player,username,now);
  // A successful action sets online status through the existing commit function.
  if(writeFarm){const p=context.players.find(p=>p.player_id===player);if(p){p.level=levelOf(state);p.last_active_at=new Date(now).toISOString();}else context.players.push({player_id:player,username,level:levelOf(state),last_active_at:new Date(now).toISOString()});}
  return response(context,result,failed,writeFarm);
