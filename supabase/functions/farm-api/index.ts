@@ -12,7 +12,6 @@ import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
-const ADMIN_LOCKED=new Set(['field','fields','tractor','fertilize','clear_planting','clear_plantings','finish_crop','produce','collect','collect_all','finish_batch','upgrade','construct','expand']);
 const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
 // Farmer names are unique, whatever the capitals (supabase/unique-farmer-names.sql). A new farm whose chosen name was taken in the
 // meantime gets the first free "Name 2", "Name 3"… so it always opens.
@@ -109,8 +108,9 @@ Deno.serve(async(req)=>{
   }
   if(body.operation==='action'&&(!/^[0-9a-f-]{36}$/i.test(body.requestId??'')||!body.action||typeof body.action!=='object'))return reply({error:'Invalid farm action.'},400);
   // The admin account runs the game; the admin plays on a farmer account of their own (26 Sep 2026). So that nothing is played on
-  // it by accident, its fields and buildings refuse to work (the Admin dashboard, chat and everything else still do).
-  if(body.operation==='action'&&isSuperadmin(user)&&ADMIN_LOCKED.has(String(body.action.type)))return reply({error:'This is your admin account: its fields and buildings are locked. Play on your own farmer account.',code:'ACTION_REJECTED'},422);
+  // it by accident, it takes no farm action at all: no fields, buildings, market, streaks, daily rewards, quests or deliveries.
+  // The Admin dashboard, chat, messages and gifts to farmers are other operations and still work.
+  if(body.operation==='action'&&isSuperadmin(user))return reply({error:'This is your admin account, so playing is locked here. Play on your own farmer account.',code:'ACTION_REJECTED'},422);
   // Keep one server-owned roll across optimistic concurrency retries.
   let choreRoll:number|undefined;
   const random=()=>choreRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);
