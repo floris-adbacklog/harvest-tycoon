@@ -1,5 +1,5 @@
 import {productionJobs} from './farm-state.js';
-import {renderCue} from './sound-kit.js';
+import {renderCue,CUE_VARIANTS} from './sound-kit.js';
 // Original continuous music and procedural effects. No third-party recordings.
 // "Sunny Acres" (scripts/generate-farm-music.mjs, 26 Sep 2026: an upbeat folk loop in place of the calm Harvest Meadow piano).
 // The same 107-second loop twice: the FLAC is lossless (every sample identical, so the seamless loop stays seamless) at under half
@@ -84,10 +84,12 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  }
  // The effects themselves (sound-kit.js: soil, water, leaves, coins, wood, bells), rendered once per cue the first time it plays.
  // A cue that cannot be rendered falls back to its plain notes (SOUND_CUES).
- const rendered=new Map();
+ // A cue with several versions (the tractor) plays them in turn.
+ const rendered=new Map(),turns=new Map();
  function sample(kind,when){
-  let buffer=rendered.get(kind);
-  if(buffer===undefined){try{const data=renderCue(kind,ctx.sampleRate);buffer=ctx.createBuffer(1,data.length,ctx.sampleRate);buffer.getChannelData(0).set(data);}catch{buffer=null;}rendered.set(kind,buffer);}
+  const variant=(turns.get(kind)??0)%(CUE_VARIANTS[kind]??1),key=`${kind}:${variant}`;turns.set(kind,variant+1);
+  let buffer=rendered.get(key);
+  if(buffer===undefined){try{const data=renderCue(kind,ctx.sampleRate,variant);buffer=ctx.createBuffer(1,data.length,ctx.sampleRate);buffer.getChannelData(0).set(data);}catch{buffer=null;}rendered.set(key,buffer);}
   if(!buffer)return false;
   if(voices.size>=16)return true;
   const source=ctx.createBufferSource(),voice={source,cleanup:()=>{voices.delete(voice);source.disconnect();}};

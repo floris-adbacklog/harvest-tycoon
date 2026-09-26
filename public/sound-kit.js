@@ -11,8 +11,9 @@ function bandpass(data,rate,centre,q){
 }
 function lowpass(data,rate,cutoff){const k=1-Math.exp(-TAU*cutoff/rate);let y=0;for(let i=0;i<data.length;i++){y+=k*(data[i]-y);data[i]=y;}return data;}
 
-export function renderCue(kind,rate=48000){
- const length=Math.round((CUE_LENGTH[kind]??.8)*rate),out=new Float32Array(length),rand=seeded([...kind].reduce((h,c)=>h*31+c.charCodeAt(0),7)>>>0);
+// Some cues have a few versions (CUE_VARIANTS) that take turns, so a sound heard all the time does not wear thin.
+export function renderCue(kind,rate=48000,variant=0){
+ const length=Math.round((CUE_LENGTH[kind]??.8)*rate),out=new Float32Array(length),rand=seeded([...kind].reduce((h,c)=>h*31+c.charCodeAt(0),7+variant*101)>>>0);
  const add=(start,data,volume=1)=>{const s=Math.round(start*rate);for(let i=0;i<data.length&&s+i<length;i++)out[s+i]+=data[i]*volume;};
  const buffer=seconds=>new Float32Array(Math.round(seconds*rate));
  // A struck bell or chime: a few inharmonic partials, the higher ones dying first.
@@ -53,8 +54,15 @@ export function renderCue(kind,rate=48000){
    add(0,hiss(.6,7000,2,.2,.1));[84,88,91,96].forEach((m,i)=>add(i*.085,bell(hz(m),.6,.25)));break;
   case 'diamond': // glassy shimmer
    [88,95,100].forEach((m,i)=>{add(i*.1,bell(hz(m),.8,.22,.4));add(i*.1+.004,bell(hz(m)*1.004,.8,.12,.4));});add(.05,hiss(.7,8000,3,.25,.08));break;
-  case 'tractor': // putt-putt
-   for(let p=0;p<6;p++){const pulse=sweep(.08,85,70,.03,.55,x=>Math.sign(Math.sin(x))*.6+Math.sin(x)*.4);lowpass(pulse,rate,500);add(p*.075,pulse,1-p*.12);add(p*.075,hiss(.05,300,1,.02,.25),1-p*.12);}break;
+  case 'tractor':{
+   const putt=(start,f,volume)=>{const pulse=sweep(.08,f,f*.82,.03,.55,x=>Math.sign(Math.sin(x))*.6+Math.sin(x)*.4);lowpass(pulse,rate,500);add(start,pulse,volume);add(start,hiss(.05,300,1,.02,.25),volume);};
+   if(variant===1){ // the engine picks up speed, with a little pop from the exhaust at the end
+    let at=0;for(let p=0;p<9;p++){putt(at,80+p*9,.55+p*.06);at+=.1-p*.007;}add(at+.02,hiss(.07,900,1.2,.015,1.1));add(at+.02,sweep(.06,160,90,.02,.5));
+   }else if(variant===2){ // toot-toot on the horn over a ticking-over engine
+    for(let p=0;p<5;p++)putt(p*.09,78,.6-p*.06);
+    for(const [start,len] of [[.05,.12],[.23,.2]]){const f=415,b=buffer(len+.04);for(let i=0;i<b.length;i++){const t=i/rate,env=Math.min(1,t/.012)*(t<len?1:Math.exp(-(t-len)/.012));b[i]=(Math.sin(TAU*f*t)+.6*Math.sin(TAU*f*1.26*t)+.35*Math.sin(TAU*f*2*t)+.2*Math.sin(TAU*f*2.52*t))*env*.5;}lowpass(b,rate,2400);add(start,b);}
+   }else for(let p=0;p<6;p++)putt(p*.075,85,1-p*.12); // putt-putt
+   break;}
   case 'levelup': // a little fanfare with a bell and a shimmer on the last chord
    [[72,0,.16],[76,.14,.16],[79,.28,.16],[84,.42,.7]].forEach(([m,start,len])=>{
     const f=hz(m),b=buffer(len+.25);for(let i=0;i<b.length;i++){const t=i/rate,env=Math.min(1,t/.02)*(t<len?1:Math.exp(-(t-len)/.08))*Math.exp(-t*.9);let s=0;for(let n=1;n<=6;n++)s+=Math.sin(TAU*f*n*t)/n*(n<=3?1:.6);b[i]=s*env*.13;}
@@ -67,6 +75,7 @@ export function renderCue(kind,rate=48000){
  const fade=Math.min(length,Math.round(.01*rate));for(let i=0;i<fade;i++)out[length-1-i]*=i/fade;
  return out;
 }
-export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,upgrade:.9,reward:.95,diamond:1.1,tractor:.55,levelup:1.45};
+export const CUE_VARIANTS={tractor:3};
+export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,upgrade:.9,reward:.95,diamond:1.1,tractor:1,levelup:1.45};
 export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,upgrade:.053,reward:.052,diamond:.038,tractor:.027,levelup:.056};
 export function loudness(data,rate){const w=Math.min(data.length,Math.round(.15*rate)),step=Math.max(1,Math.round(w/4));let best=0;for(let i=0;i+w<=data.length;i+=step){let e=0;for(let j=i;j<i+w;j++)e+=data[j]*data[j];best=Math.max(best,Math.sqrt(e/w));}return best;}

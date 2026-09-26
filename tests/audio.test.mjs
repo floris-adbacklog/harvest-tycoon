@@ -114,8 +114,10 @@ test('the shipped music loop (Sunny Acres, 48 bars at 108 BPM) has no silent win
 test('the effects are real little sounds (sound-kit.js): one per cue, short, never clipping or clicking, as loud as intended',async()=>{
  const {renderCue,CUE_LENGTH,CUE_LOUDNESS,loudness}=await import('../public/sound-kit.js');
  assert.deepEqual(Object.keys(CUE_LENGTH).sort(),Object.keys(SOUND_CUES).sort(),'every cue has its sound, and the plain notes stay as the fallback');
- for(const kind of Object.keys(SOUND_CUES)){
-  const a=renderCue(kind,24000),b=renderCue(kind,24000);
+ const {CUE_VARIANTS}=await import('../public/sound-kit.js');
+ assert.equal(CUE_VARIANTS.tractor,3,'the tractor, heard all the time, has three sounds that take turns');
+ for(const [kind,variant] of Object.keys(SOUND_CUES).flatMap(k=>Array.from({length:CUE_VARIANTS[k]??1},(_,v)=>[k,v]))){
+  const a=renderCue(kind,24000,variant),b=renderCue(kind,24000,variant);
   assert.deepEqual(a,b,`${kind}: the same every time`);assert.ok(a.length/24000<=1.5,`${kind}: short`);
   let peak=0;for(const v of a)peak=Math.max(peak,Math.abs(v));assert.ok(peak<=.5,`${kind}: far from clipping`);
   assert.ok(Math.abs(a.at(-1))<1e-4,`${kind}: ends in silence, no click`);
