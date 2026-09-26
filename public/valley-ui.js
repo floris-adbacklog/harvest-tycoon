@@ -57,7 +57,7 @@ export function createValleyUI({state,runAction,onChange,notify,itemList}){
    const open=buildingUnlocked(state,key),chosen=focus===key;
    const goods=herdGoods(key).map(k=>`<span class="ingredient">${art(k,'product-art')}<span>${ITEMS[k].name}</span></span>`).join('');
    const action=chosen?'<span class="quest-state">Your herd ✓</span>':!open?`<small class="ranch-closed">Open the ${BUILDINGS[key].name} first.</small>`
-    :`<button class="primary-button" data-ranch="${key}" data-cost="${cost}" ${state.coins<cost?'disabled':''}>${cost?`Switch · ${art('coins')}${number(cost)}`:'Choose'}</button>`;
+    :`<button class="primary-button" data-ranch="${key}" data-cost="${cost}" ${state.coins<cost?'disabled':''}>${cost?`Switch for ${art('coins')}${number(cost)}`:'Choose'}</button>`;
    return `<article class="order-card ranch-herd ${chosen?'is-ready':''}"><div class="order-head"><span class="order-icon">${art(key)}</span><div><small>${BUILDINGS[key].name}</small><h3>${herd}</h3></div></div><div class="ingredients">${goods}</div><div class="task-bottom">${action}</div></article>`;
   }).join('');
   return lead('ranch',`Pick one herd. Every new batch in its barn takes <b>${Math.round(ranchSpeedup(state)*100)}% less time</b>.`)
