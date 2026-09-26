@@ -65,4 +65,5 @@ test('the admin can send one private message to many farmers: online now, active
  assert.match(sql,/if not exists\(select 1 from public\.push_subscriptions p where p\.player_id=other\) then return null; end if;/);
  assert.match(sql,/m\.body=msg and m\.created_at>now\(\)-interval '10 minutes'\) then raise exception 'You sent this message a moment ago\.'/,'a double click sends once');
  assert.match(read('src/chat-ui.js'),/m\.sender_staff\?linkify\(m\.body\):esc\(m\.body\)/,'a link in the admin\'s message works');
+ assert.match(sql,/add constraint chat_messages_body_check check \(char_length\(body\) between 1 and 500\);/,'the table takes the admin\'s 500 characters (it allowed 200)');
 });

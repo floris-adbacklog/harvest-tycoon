@@ -5,6 +5,11 @@
 -- Farmers with notifications on for messages also get a push, as for any private message (26 Sep 2026: at first there was none,
 -- for fear of hundreds of Edge Function calls; but the push trigger only calls out for farmers with notifications on, 10 today).
 
+-- 0. Room for the admin's longer message: the table allowed 200 characters, the most a farmer may write (chat_send keeps that
+-- limit for everyone else); the admin's message to many farmers may be up to 500 (the first one, about 355, was refused).
+alter table public.chat_messages drop constraint if exists chat_messages_body_check,
+ add constraint chat_messages_body_check check (char_length(body) between 1 and 500);
+
 -- 1. The DM push trigger as it was before (the broadcast no longer asks it to stay quiet).
 create or replace function public.chat_dm_push()
  returns trigger language plpgsql security definer set search_path to '' as $function$
