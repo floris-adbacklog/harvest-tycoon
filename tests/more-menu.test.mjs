@@ -12,7 +12,7 @@ function menuOrder(html){
 }
 test('"Your farm menu" always lists every feature, gated ones in the order they unlock',()=>{
  const html=read('public/farm.html'),order=menuOrder(html);
- assert.equal(order.length,24,'nothing was dropped (Confirm your email is the newest, shown only until an email sign-up is paid its diamonds); Activities, Farm events, the (admin-only) dashboard, the Valley Market, the Ranch, the Estate Workshop, the Trade Depot, the fair, Invite a friend and (phones: the chat has its header spot) Farm family were added; Invite a friend were added');
+ assert.equal(order.length,25,'nothing was dropped (the Chat is the newest: on phones it left the header on 26 Sep 2026; before it Confirm your email, shown only until an email sign-up is paid its diamonds); Activities, Farm events, the (admin-only) dashboard, the Valley Market, the Ranch, the Estate Workshop, the Trade Depot, the fair, Invite a friend and Farm family were added');
  assert.match(html,/data-menu-action="today-button"[\s\S]{0,200}<\/button>\n    <button data-menu-action="events-button">/,'Farm events sits right next to Daily rewards');
  assert.match(html,/<button data-menu-action="admin-button" id="admin-menu-entry" hidden>/,'the admin card is hidden for everyone until checkAdmin() allows it');
  assert(order.includes('activities'),'A helping hand has its own entry, it was missing entirely before');

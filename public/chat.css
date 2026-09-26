@@ -4,14 +4,9 @@
 #chat-button .game-art{width:28px;height:28px}
 #chat-dot{position:absolute;right:-6px;top:-6px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border:2px solid #fffdf5;border-radius:999px;background:#e0533d;box-shadow:0 1px 3px #47372333;color:#fff;font:800 10px/15px 'DM Sans',sans-serif;text-align:center;pointer-events:none}
 #chat-button[hidden],#chat-dot[hidden]{display:none}
-/* Phones: the chat takes the Family button's place in the header (Farm Family is in the More menu, under Friends). */
-@media(max-width:900px),(max-height:550px) and (pointer:coarse){
- .topbar .resources:has(#chat-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;gap:6px}
- .topbar .resources:has(#chat-button:not([hidden])):has(#rookie-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px 44px}
- .topbar .resources:has(#chat-button:not([hidden])) #family-button{display:none}
- #chat-button:not([hidden]){display:flex;align-items:center;justify-content:center;width:44px;height:48px;padding:5px;border-radius:14px}
- #chat-button .game-art{width:32px;height:32px}
-}
+/* Phones (26 Sep 2026): a clean header. The chat lives in the More menu, under Friends, with a pill for what is unread; the header
+   keeps the coins, the diamonds and the beginner boost. The desktop keeps its chat button in the header. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){#chat-button{display:none}}
 
 #chat-dialog{position:fixed;inset:14px auto 14px 14px;margin:0;width:min(420px,calc(100vw - 28px));height:auto;max-height:none;box-sizing:border-box;padding:0;display:none;flex-direction:column;overflow:hidden;border:1px solid #d1c6ba;border-radius:22px;background:var(--cream,#fffdf5);color:var(--ink,#3d382a);text-align:left;box-shadow:0 25px 80px #302d1938}
 #chat-dialog[open]{display:flex;animation:chat-in .18s ease-out}
@@ -62,6 +57,17 @@
 .chat-list{flex:1;min-height:0;margin:0;padding:6px 8px 18px;list-style:none;overflow-y:auto;overscroll-behavior:contain}
 .chat-msg{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr);gap:11px;padding:10px;border-radius:14px}
 .chat-msg.is-mine{background:#f2f6e8}
+/* 26 Sep 2026: messages in a row from one farmer share one name and picture, and each day starts with a divider. */
+.chat-msg.is-cont{padding-top:2px;border-top-left-radius:0;border-top-right-radius:0}
+.chat-msg:has(+ .chat-msg.is-cont){padding-bottom:4px;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.chat-msg.is-cont .chat-text{margin-top:0}
+.chat-msg.is-cont>.chat-more{position:absolute;top:2px;right:10px}
+.chat-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.chat-day{display:flex;align-items:center;gap:10px;margin:12px 6px 4px;color:#9a8d7c;font:700 12px 'DM Sans',sans-serif;letter-spacing:.2px}
+.chat-day:first-child{margin-top:4px}
+.chat-day::before,.chat-day::after{content:'';flex:1;height:1px;background:#eadfd2}
+/* A phone: no "•••" on every message (it stays there for a screen reader); a long press opens the menu, which can copy the text. */
+@media(pointer:coarse){.chat-more-space{display:none}.chat-more,.chat-msg.is-cont>.chat-more{position:absolute;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip-path:inset(50%)}.chat-msg{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}}
 .chat-avatar{display:block;width:42px;height:42px;padding:0;border:0;border-radius:50%;background:#f1e7de;overflow:hidden;cursor:pointer}
 span.chat-avatar{cursor:default}
 .chat-avatar img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
@@ -74,6 +80,7 @@ span.chat-avatar{cursor:default}
 .chat-msg-top time{margin-left:auto;flex-shrink:0;color:#9a8d7c;font-size:12px;font-variant-numeric:tabular-nums}
 .chat-more{flex-shrink:0;display:grid;place-items:center;width:28px;height:24px;margin:-2px -4px -2px 0;padding:0;border:0;border-radius:8px;background:none;color:#9a8d7c;cursor:pointer}
 .chat-more:hover,.chat-more:focus-visible{background:#efe6da;color:#5e523a}
+.chat-more-space{flex-shrink:0;width:28px;margin-right:-4px}.chat-msg.is-cont>.chat-more-space{display:none}
 @media(hover:hover) and (pointer:fine){.chat-more{opacity:0}.chat-msg:hover .chat-more,.chat-more:focus-visible,.chat-msg:has(.chat-menu) .chat-more{opacity:1}}
 .chat-text{margin:3px 0 0;color:#4a4232;font:500 15px/1.4 'DM Sans',sans-serif;overflow-wrap:anywhere}
 .chat-menu{position:absolute;right:8px;top:36px;z-index:3;display:grid;min-width:176px;padding:5px;border:1px solid #e0d4c6;border-radius:12px;background:#fffdf5;box-shadow:0 10px 30px #3a2f1f26}
@@ -103,7 +110,7 @@ span.chat-avatar{cursor:default}
  #chat-dialog{inset:0 auto 0 0;width:min(420px,calc(100vw - 44px));height:100%;max-height:none;padding-top:env(safe-area-inset-top);border-left:0;border-radius:0 22px 22px 0}
  .chat-top{padding:12px 8px 0 12px}.chat-head{padding:12px 12px 0}.chat-compose{padding:12px}.chat-tabs button{font-size:13.5px;padding:6px 4px}.chat-tabs button[data-chat-tab="notices"]{min-width:40px}.chat-count{margin-left:4px}
  .chat-list{padding-bottom:calc(18px + var(--safe-bottom,0px))}
- .chat-more{width:32px;height:28px}
+ .chat-more{width:32px;height:28px}.chat-more-space{width:32px}
 }
 /* A phone: the chat fills the screen (26 Sep 2026), no strip of farm beside it. */
 @media(max-width:600px){#chat-dialog{inset:0;width:100%;height:100%;border:0;border-radius:0}}

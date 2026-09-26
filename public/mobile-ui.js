@@ -30,13 +30,17 @@ export function createMobileUI({openUtility,resetView}){
   // The same "!" on the tiles as on the side tools, so a waiting reward stands out in the menu too.
   menu.querySelector('[data-menu-action="today-button"]')?.classList.toggle('has-dot',!gift.hidden);
   menu.querySelector('[data-menu-action="events-button"]')?.classList.toggle('has-dot',!($('events-dot')?.hidden??true));
-  // Farm Family: on phones the chat takes its button in the header, so it lives here (under Friends) and follows that button.
+  // Farm Family and the chat: on phones the header keeps only coins and diamonds, so both live here (under Friends) and follow their
+  // header buttons. The chat tile carries the same unread count as the desktop chat button, as a pill.
   const family=$('family-button'),familyTile=menu.querySelector('[data-menu-action="family-button"]');
   if(family&&familyTile){familyTile.hidden=family.hidden;familyTile.classList.toggle('has-dot',!family.hidden&&!($('family-dot')?.hidden??true));}
-  const familyWaiting=mobileLayout.matches&&familyTile?.classList.contains('has-dot')&&!$('chat-button')?.hidden;
+  const familyWaiting=mobileLayout.matches&&familyTile?.classList.contains('has-dot');
+  const chat=$('chat-button'),chatDot=$('chat-dot'),chatTile=$('chat-menu-entry'),chatPill=$('chat-menu-pill');
+  if(chat&&chatTile){chatTile.hidden=chat.hidden;chatPill.hidden=chat.hidden||(chatDot?.hidden??true);chatPill.textContent=chatDot?.textContent??'';chatTile.setAttribute('aria-label',chat.getAttribute('aria-label')??'Open chat');}
+  const chatWaiting=mobileLayout.matches&&Boolean(chatPill&&!chatPill.hidden);
   // A waiting event reward, a stall worth emptying (growth-ui.js) or something in the family also lights the More dot, since they
   // live in that menu on phones.
-  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!familyWaiting;
+  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!familyWaiting&&!chatWaiting;
   $('tasks-button').setAttribute('aria-label',quests.hidden?'Open quests':'Open quests, rewards ready');
   $('buildings-button').setAttribute('aria-label',batches.hidden?'Open buildings':`Open buildings, ${batches.textContent} batches ready`);
  }
@@ -51,5 +55,8 @@ export function createMobileUI({openUtility,resetView}){
   });
  });
  document.querySelectorAll('dialog').forEach(dialog=>observer.observe(dialog,{attributes:true,attributeFilter:['open']}));
+ // The chat counts on its own (src/chat-ui.js, live messages): its tile and the More dot follow its button and its dot.
+ const chatWatch=new MutationObserver(()=>{badges();if(menu.open)arrange();});
+ for(const id of ['chat-button','chat-dot'])if($(id))chatWatch.observe($(id),{attributes:true,attributeFilter:['hidden','aria-label'],childList:true,characterData:true,subtree:true});
  return {refresh:badges};
 }

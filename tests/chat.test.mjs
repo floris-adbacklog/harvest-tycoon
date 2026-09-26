@@ -80,13 +80,18 @@ test('a private message reaches a phone only when it should, and never blocks th
  assert.match(service,/if\(query\.has\('dm'\)\)\{/);assert.match(service,/admin\.rpc\('chat_push_claim',\{p_message:id\}\)/);
 });
 
-test('the header: chat next to Farm Family and the staff dashboard next to the chat; on phones the chat takes the Family spot',()=>{
+test('the header: chat next to Farm Family and the staff dashboard next to the chat; on phones both live in More, under Friends',()=>{
  const html=read('public/farm.html'),css=read('public/chat.css');
  assert.match(html,/id="family-dot" aria-hidden="true" hidden>!<\/span><\/button><button class="icon-button" id="chat-button"[^>]*hidden><i data-game-art="chat"><\/i><span id="chat-dot" aria-hidden="true" hidden><\/span><\/button><button class="icon-button" id="admin-button"/);
- assert.match(css,/\.topbar \.resources:has\(#chat-button:not\(\[hidden\]\)\) #family-button\{display:none\}/);
+ assert.match(css,/@media\(max-width:900px\),\(max-height:550px\) and \(pointer:coarse\)\{#chat-button\{display:none\}\}/,'a clean header on phones');
+ assert.doesNotMatch(css,/#chat-button:not\(\[hidden\]\)\{display:flex/);
+ assert.match(html,/<button data-menu-action="chat-button" id="chat-menu-entry" hidden><i data-game-art="chat"><\/i><span><strong>Chat<\/strong><small>Talk with the valley<\/small><\/span><b class="menu-pill" id="chat-menu-pill" hidden><\/b><\/button>\n    <button data-menu-action="family-button"/);
  assert.match(html,/data-section-heading="friends">Friends<\/h3>[\s\S]*?<button data-menu-action="family-button" id="family-menu-entry" hidden><i data-game-art="family-members"><\/i><span><strong>Farm family<\/strong>/);
  const mobile=read('public/mobile-ui.js');
  assert.match(mobile,/familyTile\.hidden=family\.hidden;/,'the Family tile follows the Family button');
+ assert.match(mobile,/chatTile\.hidden=chat\.hidden;chatPill\.hidden=chat\.hidden\|\|\(chatDot\?\.hidden\?\?true\);chatPill\.textContent=chatDot\?\.textContent\?\?'';/,'the Chat tile carries the unread count as a pill');
+ assert.match(mobile,/&&!familyWaiting&&!chatWaiting;/,'and lights the More dot');
+ assert.match(mobile,/for\(const id of \['chat-button','chat-dot'\]\)if\(\$\(id\)\)chatWatch\.observe/,'live, as messages come in');
 });
 
 test('the chat window: Global first, no red count on Global, names open a profile without a way back, VIP and Moderator marks',()=>{

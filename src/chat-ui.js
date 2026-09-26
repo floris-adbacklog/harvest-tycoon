@@ -20,6 +20,23 @@ export function ago(iso,now=Date.now()){
 const VIP='<span class="chat-vip" title="VIP farmer"><img src="/assets/icons/vip.webp" alt="VIP" width="18" height="18" draggable="false"></span>';
 const exact=iso=>{const time=Date.parse(iso);return Number.isFinite(time)?new Date(time).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';};
 export const pillText=count=>count>9?'9+':String(count);
+// The messages of one farmer in a row (at most 10 minutes apart, the same day) show their name and picture once, and every day starts
+// with a divider: Today, Yesterday, then the date. The list shows the newest first, so a group's name sits above its newest message.
+const GROUP_GAP=10*60*1000;
+const dayKey=iso=>{const d=new Date(Date.parse(iso));return Number.isFinite(d.getTime())?`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`:'';};
+export function dayLabel(iso,now=Date.now()){
+ const key=dayKey(iso),today=new Date(now),yesterday=new Date(now-86400000);
+ if(key===dayKey(today.toISOString()))return 'Today';
+ if(key===dayKey(yesterday.toISOString()))return 'Yesterday';
+ const time=Date.parse(iso);return Number.isFinite(time)?new Date(time).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}):'';
+}
+export function messageLayout(shown){
+ return shown.map((m,i)=>{
+  const newer=shown[i-1],day=!newer||dayKey(newer.created_at)!==dayKey(m.created_at);
+  const cont=Boolean(newer)&&!day&&newer.sender===m.sender&&Date.parse(newer.created_at)-Date.parse(m.created_at)<=GROUP_GAP;
+  return {m,day,cont};
+ });
+}
 // The header button counts news and notes, your family and your private messages. The global chat only lights its own tab:
 // with the whole valley talking, a number on the button would never go away.
 export const headerCount=unread=>(unread?.notices??0)+(unread?.family??0)+(unread?.dm??0);
@@ -115,9 +132,14 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  }
 
  const profileButton=(id,label,inner,cls)=>`<button type="button" class="${cls}" data-profile="${esc(id)}" aria-label="${esc(label)}">${inner}</button>`;
- function messageRow(m){
+ function messageRow(m,{cont=false}={}){
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
-  return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?`<span class="chat-mod" title="Moderator">${art('admin')}</span>`:''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:''}</div><p class="chat-text">${esc(m.body)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}</p></div></li>`;
+  // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
+  const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
+  const text=`${esc(m.body)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`;
+  // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
+  if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${esc(m.sender_name)}: </span>${text}</p></div>${more}</li>`;
+  return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?`<span class="chat-mod" title="Moderator">${art('admin')}</span>`:''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div><p class="chat-text">${text}</p></div></li>`;
  }
  function threadRow(t){
   return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${esc(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}${esc(t.last?.body??'')}</small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
@@ -170,7 +192,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   }
   else if(tab==='private'&&!thread&&found&&!find.hidden)list.innerHTML=found.loading?'<li class="chat-empty"><p>Looking around the valley…</p></li>':found.players.length?found.players.map(foundRow).join(''):empty('No farmers found. Try another name.');
   else if(tab==='private'&&!thread){const threads=(overview?.threads??[]).filter(t=>!blocked().has(t.otherId));list.innerHTML=(overview?.privateOn===false?'<li class="chat-empty chat-off"><p>Your private messages are off. You can turn them on in Settings, under Chat.</p></li>':'')+(threads.length?threads.map(threadRow).join(''):overview?.privateOn===false?'':empty(EMPTY.private));}
-  else{const shown=messages.filter(m=>!blocked().has(m.sender));list.innerHTML=shown.length?shown.map(messageRow).join(''):empty(thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
+  else{const shown=messages.filter(m=>!blocked().has(m.sender));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join(''):empty(thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
   refreshArt();
  }
  async function load(){
@@ -254,8 +276,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  blockButton.onclick=()=>thread&&setBlock(thread.otherId,thread.otherName,!blocked().has(thread.otherId));
  reportButton.onclick=()=>thread&&reportPlayer(thread.otherId,thread.otherName);
  list.addEventListener('click',event=>{
+  if(pressed){pressed=false;return;}   // the tap that ends a long press opened the menu already
   const profile=event.target.closest('[data-profile]'),threadButton=event.target.closest('[data-thread]'),more=event.target.closest('[data-more]');
-  if(more){openMenu(more);return;}
+  if(more){openMenu(more.closest('.chat-msg'));return;}
   if(profile){profiles?.open(profile.dataset.profile,{back:null});return;}
   const start=event.target.closest('[data-start]');
   if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}
@@ -277,27 +300,43 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // The little menu on a message: report or block for everyone; delete, mute and ban (the chat only) for the staff.
  let menuEl=null;
  function closeMenu(){menuEl?.remove();menuEl=null;}
- function openMenu(anchor){
+ const touch=()=>win.matchMedia?.('(pointer:coarse)').matches;
+ function openMenu(row){
   closeMenu();
-  const m=messages.find(x=>x.id===anchor.dataset.more);if(!m)return;
+  const m=row&&messages.find(x=>x.id===row.dataset.id);if(!m)return;
   const mine=m.sender===me,staff=role()!==null,items=[];
+  // A long press replaces the phone's own text selection, so the menu can copy the text there.
+  if(touch())items.push(['copy','Copy text']);
   if(!mine)items.push(['report','Report message'],['block',`Block ${m.sender_name}`]);
   if(staff)items.push(['edit','Edit message'],['delete','Delete message']);
   if(staff&&!mine&&!m.sender_staff)items.push(['mute60','Mute 1 hour'],['mute1440','Mute 1 day'],['ban','Ban from chat']);
   if(!items.length)return;
   menuEl=doc.createElement('div');menuEl.className='chat-menu';menuEl.setAttribute('role','menu');
   menuEl.innerHTML=items.map(([key,label])=>`<button type="button" role="menuitem" data-menu="${key}"${['block','delete','ban'].includes(key)?' class="is-danger"':''}>${esc(label)}</button>`).join('');
-  anchor.closest('.chat-msg').append(menuEl);menuEl.querySelector('button').focus();
+  row.append(menuEl);menuEl.querySelector('button').focus({preventScroll:true});
   menuEl.onclick=event=>{const key=event.target.closest('[data-menu]')?.dataset.menu;if(!key)return;closeMenu();void act(key,m);};
  }
  dialog.addEventListener('pointerdown',event=>{if(menuEl&&!menuEl.contains(event.target)&&!event.target.closest('[data-more]'))closeMenu();});
+ // On a phone the "•••" is not shown: a long press on a message (half a second, without moving) opens its menu.
+ let pressTimer=null,pressed=false,pressStart=null;
+ const endPress=()=>{clearTimeout(pressTimer);pressTimer=null;};
+ list.addEventListener('pointerdown',event=>{
+  pressed=false;endPress();if(event.pointerType!=='touch')return;
+  const row=event.target.closest('.chat-msg');if(!row||event.target.closest('button,a'))return;
+  pressStart={x:event.clientX,y:event.clientY};
+  pressTimer=setTimeout(()=>{pressTimer=null;pressed=true;openMenu(row);win.navigator?.vibrate?.(10);},500);
+ });
+ list.addEventListener('pointermove',event=>{if(pressTimer&&Math.hypot(event.clientX-pressStart.x,event.clientY-pressStart.y)>10)endPress();});
+ for(const type of ['pointerup','pointercancel','scroll'])list.addEventListener(type,endPress,{passive:true});
+ list.addEventListener('contextmenu',event=>{if(touch()&&event.target.closest('.chat-msg'))event.preventDefault();});
  dialog.addEventListener('keydown',event=>{if(event.key==='Escape'&&menuEl){event.preventDefault();closeMenu();}});
  async function act(key,m){
   try{
    if(key==='report'){
     if(!await confirmAction({title:'Report this message?',description:'A moderator will read it. Thank you for keeping the valley friendly.',confirmLabel:'Report',picture:'admin'}))return;
     await chat.report(m.id);note('Thanks, a moderator will take a look.');
-   }else if(key==='block')await setBlock(m.sender,m.sender_name,true);
+   }else if(key==='copy'){await win.navigator.clipboard.writeText(m.body);note('Copied.');setTimeout(()=>note(),1500);}
+   else if(key==='block')await setBlock(m.sender,m.sender_name,true);
    else if(key==='edit'){
     // The staff can change a message (to take out a phone number, say) instead of deleting it; the chat rules still apply.
     const body=await promptText({title:'Edit this message',description:m.sender===me?'Everyone sees the new text, marked “edited”.':`Everyone sees the new text, marked “edited by a moderator”.`,value:m.body,maxLength:200,confirmLabel:'Save',picture:'admin'});

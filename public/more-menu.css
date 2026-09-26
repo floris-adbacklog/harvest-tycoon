@@ -22,3 +22,7 @@
 #more-dialog .menu-later svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
 #more-dialog .menu-later[aria-expanded="true"] svg{transform:rotate(180deg)}
 @media(prefers-reduced-motion:reduce){#more-dialog .menu-later svg{transition:none}}
+/* The chat's unread count on its tile (the same red pill as on the desktop chat button). */
+#more-dialog .mobile-menu-grid button{position:relative}
+#more-dialog .menu-pill{position:absolute;top:6px;right:8px;min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border:2px solid #fffdf5;border-radius:999px;background:#e0533d;box-shadow:0 1px 3px #47372333;color:#fff;font:800 11px/16px 'DM Sans',sans-serif;text-align:center}
+#more-dialog .menu-pill[hidden]{display:none}
