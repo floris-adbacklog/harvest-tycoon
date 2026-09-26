@@ -19,12 +19,13 @@ function endpoint({failCommit=false,active=true}={}){
  let avatarWrites=0;
  const admin={auth:{async getUser(){return {data:{user:{id:user,user_metadata:{username:'Test farmer'}}}};}},from(table){let patch=null;return {select(){return this;},update(value){patch=value;return this;},eq(column,value){assert.equal(column,'player_id');assert.equal(value,user);return this;},async maybeSingle(){if(patch){assert.equal(table,'player_stats');Object.assign(profile,patch);avatarWrites++;}return {data:table==='player_farms'?structuredClone(row):structuredClone(profile)};}};},async rpc(name,args){
   if(name==='harvest_session_active')return {data:active};
+  if(name==='username_available')return {data:true};
   assert.equal(name,'harvest_commit_farm');assert.equal(args.p_player,user);
   if(failCommit)return {error:{code:'SIMULATED_FAILURE'}};
   if(args.p_expected!==row.revision)return {data:false};
   row={...row,state:structuredClone(args.p_state),receipts:structuredClone(args.p_receipts),revision:row.revision+1};commits++;return {data:true};
  }};
- vm.runInNewContext(source,{...rules,...invites,...playerLog,welcomeSummary,savePlayerAvatar,createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,atob,crypto,console:{error(){}},Uint32Array,handleFamily:()=>{throw new Error('unexpected family call');},handlePlayerDirectory:()=>{throw new Error('unexpected directory call');}});
+ vm.runInNewContext(source,{...rules,...invites,...playerLog,welcomeSummary,savePlayerAvatar,isSuperadmin:()=>false,createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,atob,crypto,console:{error(){}},Uint32Array,handleFamily:()=>{throw new Error('unexpected family call');},handlePlayerDirectory:()=>{throw new Error('unexpected directory call');}});
  return {get avatarWrites(){return avatarWrites;},get row(){return row;},get commits(){return commits;},async send(body,authorized=true){const r=await handler(new Request('https://test.invalid/farm-api',{method:'POST',headers:authorized?{Authorization:`Bearer ${token}`}:{},body:JSON.stringify(body)}));return {status:r.status,data:await r.json()};}};
 }
 const body=(id=requestId)=>({operation:'action',requestId:id,action:{type:'buy_vip',plan:'week',expectedCost:500,expectedExpiresAt:0}});

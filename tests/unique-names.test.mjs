@@ -17,3 +17,9 @@ test('farmer names are unique whatever the capitals: the database refuses a take
  assert.match(api,/if\(!own&&!\(await nameFree\(admin,wanted\)\)\)return reply\(\{error:'That farmer name is taken\. Try another one\.'\},409\);/);
  assert.match(api,/renamed\.error\?\.code==='23505'/,'two at the same moment: the database decides');
 });
+test('the admin account\'s fields and buildings are locked, so the admin never plays there by accident',()=>{
+ const api=read('supabase/functions/farm-api/index.ts');
+ assert.match(api,/const ADMIN_LOCKED=new Set\(\['field','fields','tractor','fertilize','clear_planting','clear_plantings','finish_crop','produce','collect','collect_all','finish_batch','upgrade','construct','expand'\]\);/);
+ assert.match(api,/if\(body\.operation==='action'&&isSuperadmin\(user\)&&ADMIN_LOCKED\.has\(String\(body\.action\.type\)\)\)return reply\(\{error:'This is your admin account: its fields and buildings are locked\. Play on your own farmer account\.'/);
+ assert.match(read('supabase/functions/farm-api/admin-service.js'),/const SUPERADMINS=new Set\(\['floris@millstone\.nl'\]\);/,'only the admin, by confirmed e-mail');
+});

@@ -169,7 +169,7 @@ test('a farmer that keeps changing at the same moment fails closed after a few t
 
 test('the admin_grant operation is wired in, gated on the caller, and reachable without a username set',()=>{
  const code=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');
- assert.match(code,/import \{handleAdminGrant\} from '\.\/admin-service\.js';/);
+ assert.match(code,/import \{handleAdminGrant,isSuperadmin\} from '\.\/admin-service\.js';/);
  assert.match(code,/\[.*'admin_grant'.*\]\.includes\(body\?\.operation\)/);
  const branch=code.indexOf("body.operation==='admin_grant'");
  assert.ok(branch>0);
