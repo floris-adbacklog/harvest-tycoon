@@ -139,3 +139,8 @@ test('the effects are made in the background (a worker), never while the farm is
  const quiet=setup(),notes=quiet.ctx.oscillators;
  quiet.audio.dispose();assert.equal(notes.length,0);
 });
+test('a chore sounds happier when it also found an extra resource',()=>{
+ assert.equal(soundForAction({type:'chore',id:'weeds'},{success:true,bonus:true,coins:5},1,1),'chorebonus');
+ assert.equal(soundForAction({type:'chore',id:'weeds'},{success:true,bonus:false,coins:5},1,1),'chore');
+ assert.equal(soundForAction({type:'chore',id:'weeds'},{success:true,bonus:true},1,2),'levelup','a level-up still comes first');
+});

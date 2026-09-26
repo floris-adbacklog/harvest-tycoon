@@ -48,6 +48,8 @@ export function renderCue(kind,rate=48000,variant=0){
    add(0,bell(hz(88),.75,.24,.7));add(.2,bell(hz(84),.85,.22,.7));break;
   case 'chore': // two knocks of a tool on wood
    add(0,knock(620,.7));add(.12,knock(560,.6));break;
+  case 'chorebonus': // the same knocks, then two rising bells and a sparkle: an extra resource turned up
+   add(0,knock(620,.7));add(.12,knock(560,.6));add(.24,bell(hz(84),.45,.3));add(.33,bell(hz(91),.5,.3));add(.3,hiss(.35,6500,2,.1,.12));break;
   case 'upgrade': // two hammer taps, then rising chimes
    add(0,knock(900,.55));add(.1,knock(1000,.5));[79,83,86,91].forEach((m,i)=>add(.2+i*.08,bell(hz(m),.6,.24)));break;
   case 'reward': // a bright sparkle of bells
@@ -83,7 +85,7 @@ export function renderCue(kind,rate=48000,variant=0){
 export const CUE_VARIANTS={tractor:3};
 // Rendered at 24 kHz (half the work of 48; nothing in these sounds needs more), most frequent first (sound-worker.js).
 export const SFX_RATE=24000;
-export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','reward','upgrade','diamond','levelup'];
-export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,upgrade:.9,reward:.95,diamond:1.1,tractor:1,levelup:1.45};
-export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,upgrade:.053,reward:.052,diamond:.038,tractor:.034,levelup:.056};
+export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','chorebonus','reward','upgrade','diamond','levelup'];
+export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,chorebonus:.85,upgrade:.9,reward:.95,diamond:1.1,tractor:1,levelup:1.45};
+export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,chorebonus:.042,upgrade:.053,reward:.052,diamond:.038,tractor:.034,levelup:.056};
 export function loudness(data,rate){const w=Math.min(data.length,Math.round(.15*rate)),step=Math.max(1,Math.round(w/4));let best=0;for(let i=0;i+w<=data.length;i+=step){let e=0;for(let j=i;j<i+w;j++)e+=data[j]*data[j];best=Math.max(best,Math.sqrt(e/w));}return best;}

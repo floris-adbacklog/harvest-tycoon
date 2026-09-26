@@ -33,6 +33,7 @@ export const SOUND_CUES=Object.freeze({
  collect:{notes:[587.33,739.99,880],step:.09,duration:.32,volume:.10},
  ready:{notes:[659.25,783.99],step:.15,duration:.38,volume:.055},
  chore:{notes:[261.63,392],step:.08,duration:.16,volume:.07,type:'triangle'},
+ chorebonus:{notes:[261.63,392,659.25,783.99],step:.08,duration:.2,volume:.075,type:'triangle'},
  upgrade:{notes:[392,523.25,659.25,783.99],step:.1,duration:.35,volume:.11},
  reward:{notes:[523.25,659.25,783.99,1046.5],step:.1,duration:.38,volume:.105},
  diamond:{notes:[659.25,987.77,1318.51],step:.11,duration:.42,volume:.08},
@@ -42,6 +43,8 @@ export const SOUND_CUES=Object.freeze({
 export function soundForAction(action,result,beforeLevel,afterLevel){
  if(action.type==='chore'&&result.success===false)return null;
  if(afterLevel>beforeLevel)return 'levelup';
+ // A chore always pays; one that also found an extra resource (bonus) sounds happier.
+ if(action.type==='chore')return result.bonus?'chorebonus':'chore';
  if(action.type==='field')return {plant:'plant',water:'water',harvest:'harvest',tend:'care'}[action.action]??null;
  if(action.type==='fields')return {plant:'plant',water:'water',harvest:'harvest',tend:'care'}[action.action]??null;
  if(action.type==='activity_work')return result.roundComplete?'reward':result.finished?'collect':{greenhouse:'water',apiary:'collect',paddock:'water',workshop:'chore'}[action.station]??'chore';
