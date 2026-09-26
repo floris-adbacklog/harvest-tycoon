@@ -10,12 +10,12 @@ const inviteModule=readFileSync(new URL('../src/invite-link.js',import.meta.url)
 const browserTipModule=readFileSync(new URL('../src/browser-tip.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const settle=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};}
-function fixture({user=null,load,online=true,storage,authApi={},location={origin:'https://farm.example'}}={}){
+function fixture({user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'}}={}){
  const nodes=new Map(),events={},frames=[],calls=[],analytics=[],game=[],timers=[],lookups=[];let authCallback,currentUser=user,clock=1_000_000,nextTimer=1;
  const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},focus(){},scrollIntoView(){},replaceChildren(...items){this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},contentWindow:{}});return nodes.get(id);};
  const document={body:{dataset:{}},hidden:false,getElementById:element,querySelector:element,querySelectorAll:()=>[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
  const window={addEventListener(name,fn){events[name]=fn;}};
- const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};},...authApi}};
+ const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};},...authApi},...(rpc?{rpc}:{})};
  const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,queueMicrotask,
   // A delay of 0 runs at once; a real delay waits until the test moves the clock (see advance).
   setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,socialProviders:async()=>[],cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},openIntent:()=>null,withoutOpen:href=>href,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
@@ -218,4 +218,12 @@ test('a rejected action or a name that is taken is not a connection problem',asy
  state.fail=Object.assign(new Error('Not enough coins.'),{status:200,code:'ACTION_REJECTED'});await request();
  state.fail=Object.assign(new Error('Invalid'),{status:400});await request();
  assert.deepEqual(statuses,[]);assert.equal(f.document.body.dataset.phase,'authenticated');
+});
+test('a farmer name that is taken is refused before the account is made; a free one goes through',async()=>{
+ const sent=[],asked=[];const f=fixture({storage:{},rpc:async(name,args)=>{asked.push(args.p_name);return {data:args.p_name!=='Taken Farm',error:null};},authApi:{async signUp(body){sent.push(body);return {data:{user:{identities:[{}]},session:null},error:null};}}});await settle();
+ f.nodes.get('name-toggle').onclick();
+ await submit(f,{email:'a@b.nl',password:'secret1','player-name':'Taken Farm'});
+ assert.equal(sent.length,0,'no account');assert.match(f.nodes.get('name-error').textContent,/taken/);
+ await submit(f,{email:'a@b.nl',password:'secret1','player-name':'Free Farm'});
+ assert.equal(sent.length,1);assert.equal(sent[0].options.data.username,'Free Farm');assert.deepEqual(asked,['Taken Farm','Free Farm']);
 });

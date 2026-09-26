@@ -13,6 +13,14 @@ import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,lev
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
+// Farmer names are unique, whatever the capitals (supabase/unique-farmer-names.sql). A new farm whose chosen name was taken in the
+// meantime gets the first free "Name 2", "Name 3"… so it always opens.
+const nameFree=async(admin:any,name:string)=>{const {data,error}=await admin.rpc('username_available',{p_name:name});if(error)throw error;return data===true;};
+async function freeName(admin:any,name:string){
+ if(await nameFree(admin,name))return name;
+ for(let n=2;n<1000;n++){const suffix=` ${n}`,candidate=`${name.slice(0,20-suffix.length).trim()}${suffix}`;if(await nameFree(admin,candidate))return candidate;}
+ return name;
+}
 // Work that may finish after the reply (the log, where the farm was opened): the game never waits for it.
 const later=(work:Promise<unknown>)=>(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(work);
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -71,7 +79,8 @@ Deno.serve(async(req)=>{
   const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished').eq('player_id',user.id).maybeSingle();
   if(profileResponse.error)throw profileResponse.error;
   let profile=profileResponse.data;
-  const username=profile?.username??(nameValid(user.user_metadata?.username)?user.user_metadata.username.trim():null);
+  const chosen=profile?.username??(nameValid(user.user_metadata?.username)?user.user_metadata.username.trim():null);
+  const username=profile?.username??(chosen?await freeName(admin,chosen):null);
   if(!username)return reply({error:'Choose a player name to open your farm.',code:'USERNAME_REQUIRED'},409);
   // Where and on what the farm was opened, for the admin dashboard (admin-analytics-service.js): runs beside the load, never holds it up.
   if(body.operation==='load'){const seen=Promise.resolve().then(()=>recordSeen({admin,player:user.id,headers:req.headers,timeZone:body.timeZone})).catch(()=>{});(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(seen);}
@@ -89,7 +98,10 @@ Deno.serve(async(req)=>{
   }
   if(body.operation==='rename'){
    if(!nameValid(body.username))return reply({error:'Use 3–20 letters, numbers, spaces, underscores or hyphens.'},400);
-   const renamed=await admin.from('player_stats').update({username:body.username.trim()}).eq('player_id',user.id).select('player_id,username,currency,level,avatar_id').single();
+   const wanted=body.username.trim(),own=profile?.username?.trim().toLowerCase()===wanted.toLowerCase();
+   if(!own&&!(await nameFree(admin,wanted)))return reply({error:'That farmer name is taken. Try another one.'},409);
+   const renamed=await admin.from('player_stats').update({username:wanted}).eq('player_id',user.id).select('player_id,username,currency,level,avatar_id').single();
+   if(renamed.error?.code==='23505')return reply({error:'That farmer name is taken. Try another one.'},409);
    if(renamed.error)throw renamed.error;
    later(writeLog(admin,user.id,accountLog('rename',`Changed the farmer name to ${body.username.trim()}`)));
    return reply({profile:renamed.data});

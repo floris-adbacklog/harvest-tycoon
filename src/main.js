@@ -182,10 +182,14 @@ $('account-form').onsubmit=async event=>{
  trackAuth('submit',{mode});
  submitting=true;lock(true);$('account-message').textContent=MESSAGES[mode];
  try{
+  // Farmer names are unique (supabase/unique-farmer-names.sql): a taken one is refused here, before the account is made.
+  // If the check itself fails, the name counts as free: the server still gives a new farm the first free "Name 2".
+  const free=async value=>{try{const {data,error}=await supabase.rpc('username_available',{p_name:value});return error?true:data!==false;}catch{return true;}};
+  if(name&&(mode==='name'||mode==='register')&&!(await free(name))){$('account-message').textContent='';showFieldErrors({name:'That farmer name is taken. Try another one.'});trackAuth('error',{mode,reason:'validation',field:'name'});return;}
   if(mode==='name'){const {error}=await supabase.auth.updateUser({data:{username:name}});if(error)throw error;}
   else if(mode==='register'){
    // The player name is optional: a friendly one is picked here and can be changed in the leaderboard.
-   if(!name)name=randomPlayerName();
+   if(!name){name=randomPlayerName();for(let i=0;i<5&&!(await free(name));i++)name=randomPlayerName();}
    const invite=pendingInvite(localStore);if(invite)trackInvite('invite_signup');
    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username:name,...(invite?{invite}:{})},emailRedirectTo:redirectUrl()}});
    if(error)throw error;
