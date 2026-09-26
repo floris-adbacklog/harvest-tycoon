@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {ITEMS} from '../public/farm-state.js';
-import {sharingMessage,MAX_SHARE} from '../public/social-ui.js';
+import {sharingMessage,maxShare,helpCoins} from '../public/social-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // The newest definition of harvest_social; the item-name check on requests was added in family-sharing-all-items.sql.
 const sql=read('supabase/pig-farm.sql'),constraintSql=read('supabase/family-sharing-all-items.sql');
@@ -12,7 +12,7 @@ test('the server accepts exactly the game\'s crops and goods, so a new item need
  assert.deepEqual(list,Object.keys(ITEMS));
 });
 test('gifts and requests are 1–5 of any of them; the daily limits and the old 3-wheat gift stay',()=>{
- assert.equal(MAX_SHARE,5);
+ assert.deepEqual([10,19,20,30,60].map(maxShare),[5,5,10,15,30],'up to 5 per 10 levels (26 Sep 2026)');assert.deepEqual([10,11,30,60].map(helpCoins),[250,275,750,1500],'help: level × 25 coins');
  assert.match(sql,/if item is null or not \(item=any\(items\)\) or quantity is null or quantity not between 1 and 5 then raise exception 'Ask for 1–5 of a crop or good\.';/);
  assert.match(sql,/item:=coalesce\(p_action->>'item','wheat'\);quantity:=coalesce\(\(p_action->>'quantity'\)::integer,3\);/,'an older store without an item still sends 3 wheat');
  assert.match(sql,/kind=social\.kind\)>=3 or \(select count\(\*\) from public\.family_social_actions where recipient=social\.recipient and day=d and kind=social\.kind\)>=3/,'3 sent and 3 received a day, unchanged');

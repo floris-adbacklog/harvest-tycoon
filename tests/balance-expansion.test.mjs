@@ -19,9 +19,12 @@ test('later goods pay better: each wave beats the one before it',()=>{
  assert.ok(perHour('cider')>perHour('applejuice'),'cider beats the apple juice it grew up from');
 });
 test('grazing the flock is a real choice: more wool per hour in the Sheep Barn than feeding it, but more barley per wool',()=>{
- assert.ok(perHour('grazewool')>perHour('wool'));
+ // Wool per hour, not coins: since 26 Sep 2026 feed is cheaper (sells for 60), so the coin value of a fed batch went up.
+ const woolPerHour=id=>RECIPES[id].output.wool/(RECIPES[id].duration/3600000);
+ assert.ok(woolPerHour('grazewool')>woolPerHour('wool'));
  const viaFeed=RECIPES.windfeed.input.barley/RECIPES.windfeed.output.feed*RECIPES.wool.input.feed/RECIPES.wool.output.wool,grazing=RECIPES.grazewool.input.barley/RECIPES.grazewool.output.wool;
- assert.ok(grazing>viaFeed&&grazing<2*viaFeed,`${grazing.toFixed(2)} barley a wool by grazing, ${viaFeed.toFixed(2)} through the Windmill`);
+ assert.ok(grazing>viaFeed&&grazing<2.5*viaFeed,   // the Windmill makes 13 feed of 8 barley since 26 Sep 2026 (was 10)
+  `${grazing.toFixed(2)} barley a wool by grazing, ${viaFeed.toFixed(2)} through the Windmill`);
 });
 test('a candle costs at most one sunflower, the slowest crop on the farm',()=>{
  assert.ok(RECIPES.candles.input.beeswax/RECIPES.hives.output.beeswax*RECIPES.hives.input.sunflower<=1);

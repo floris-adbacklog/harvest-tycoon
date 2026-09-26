@@ -6,13 +6,13 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const sql=read('supabase/notifications.sql');
 
 test('a player without a saved row has private messages, the daily gift and crops & goods on (26 Sep 2026), the email off',()=>{
- assert.deepEqual(prefsFromRow(null),DEFAULT_PREFS);assert.deepEqual(prefsFromRow(undefined),{pushCrops:true,pushProduction:true,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true},'private messages, the daily gift and crops & goods are on by default');
- assert.deepEqual(prefsFromRow({push_crops:true,push_production:null,push_daily:'yes',email_digest:true,digest_hour:7}),{pushCrops:true,pushProduction:false,pushDaily:false,emailDigest:true,digestHour:7,pushMessages:false},'only a real true switches something on');
+ assert.deepEqual(prefsFromRow(null),DEFAULT_PREFS);assert.deepEqual(prefsFromRow(undefined),{pushCrops:true,pushProduction:true,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true,emailMarketing:false},'private messages, the daily gift and crops & goods are on by default; news & offers by email is off');
+ assert.deepEqual(prefsFromRow({push_crops:true,push_production:null,push_daily:'yes',email_digest:true,digest_hour:7}),{pushCrops:true,pushProduction:false,pushDaily:false,emailDigest:true,digestHour:7,emailMarketing:false,pushMessages:false},'only a real true switches something on');
  assert.equal(prefsFromRow({push_messages:true}).pushMessages,true);
  assert.equal(prefsFromRow({digest_hour:99}).digestHour,9);
 });
 test('saving sends strict booleans, a valid hour and the time zone',()=>{
- assert.deepEqual(paramsFromPrefs({pushCrops:true,pushProduction:1,emailDigest:true,digestHour:18},'Europe/Amsterdam'),{p_push_crops:true,p_push_production:false,p_push_daily:false,p_email_digest:true,p_digest_hour:18,p_timezone:'Europe/Amsterdam',p_push_messages:false});
+ assert.deepEqual(paramsFromPrefs({pushCrops:true,pushProduction:1,emailDigest:true,digestHour:18},'Europe/Amsterdam'),{p_push_crops:true,p_push_production:false,p_push_daily:false,p_email_digest:true,p_digest_hour:18,p_timezone:'Europe/Amsterdam',p_push_messages:false,p_email_marketing:false});
  assert.equal(paramsFromPrefs({pushMessages:true,digestHour:9},'UTC').p_push_messages,true);
  assert.equal(paramsFromPrefs({digestHour:'x'},'UTC').p_digest_hour,9);assert.equal(paramsFromPrefs({digestHour:24},'UTC').p_digest_hour,9);assert.equal(paramsFromPrefs({digestHour:0},'UTC').p_digest_hour,0);
 });
@@ -31,7 +31,7 @@ test('loading reads the own row and saving calls the validated function',async()
  const n=createNotifications(supabase,{timezone:()=>'Europe/Amsterdam'});
  assert.equal((await n.get()).pushCrops,true);assert.equal(calls[0][1],'notification_settings');assert(!calls[0][2].includes('unsubscribe_token'),'the token is not needed in the browser');
  const saved=await n.save({pushCrops:false,pushDaily:true,emailDigest:true,digestHour:20});
- assert.equal(calls[1][1],'notification_save');assert.equal(calls[1][2].p_timezone,'Europe/Amsterdam');assert.deepEqual(saved,{pushCrops:false,pushProduction:false,pushDaily:true,emailDigest:true,digestHour:20,pushMessages:false});
+ assert.equal(calls[1][1],'notification_save');assert.equal(calls[1][2].p_timezone,'Europe/Amsterdam');assert.deepEqual(saved,{pushCrops:false,pushProduction:false,pushDaily:true,emailDigest:true,digestHour:20,pushMessages:false,emailMarketing:false});
  const failing=createNotifications({from:()=>({select:()=>({maybeSingle:async()=>({data:null,error:new Error('nope')})})}),rpc:async()=>({error:new Error('bad')})});
  await assert.rejects(()=>failing.get(),/nope/);await assert.rejects(()=>failing.save({}),/bad/);
 });
@@ -52,7 +52,7 @@ test('database: the functions are locked to the signed-in player',()=>{
 
 function domFor(){
  const els={};const el=id=>els[id]??=({id,hidden:false,checked:false,value:'',disabled:false,textContent:'',innerHTML:'',children:[]});
- for(const id of ['notify-settings','notify-device','notify-device-copy','notify-enable','notify-test','notify-disable','notify-push-rows','notify-email-rows','notify-messages','notify-ready','notify-daily','notify-email','notify-hour','notify-email-time','notify-status'])el(id);
+ for(const id of ['notify-settings','notify-device','notify-device-copy','notify-enable','notify-test','notify-disable','notify-push-rows','notify-email-rows','notify-messages','notify-ready','notify-daily','notify-email','notify-marketing','notify-hour','notify-email-time','notify-status'])el(id);
  els['notify-hour'].children=[];return {els,document:{getElementById:el,querySelectorAll:()=>[]}};
 }
 function bridgeFor(over={}){
@@ -72,7 +72,7 @@ test('the reminders block stays hidden until the service is on, then shows the s
  bridge.available=true;await section.refresh();
  assert.equal(els['notify-settings'].hidden,false);assert.equal(els['notify-ready'].checked,true,'on when either setting is on');assert.equal(els['notify-daily'].checked,false);assert.equal(els['notify-hour'].value,'20');assert.equal(els['notify-email-time'].hidden,false);
  els['notify-daily'].checked=true;els['notify-email'].checked=false;await els['notify-ready'].onchange();
- assert.deepEqual(state.stored,{digestHour:20,pushMessages:true,pushDaily:true,emailDigest:false,pushCrops:true,pushProduction:true},'one switch sets both');assert.equal(els['notify-status'].textContent,'Saved.');assert.equal(els['notify-email-time'].hidden,true,'the time only matters with the email on');assert.equal(els['notify-ready'].disabled,false);
+ assert.deepEqual(state.stored,{digestHour:20,pushMessages:true,pushDaily:true,emailDigest:false,emailMarketing:false,pushCrops:true,pushProduction:true},'one switch sets both');assert.equal(els['notify-status'].textContent,'Saved.');assert.equal(els['notify-email-time'].hidden,true,'the time only matters with the email on');assert.equal(els['notify-ready'].disabled,false);
  bridge.save=async()=>{throw new Error('Unknown time zone.');};
  els['notify-ready'].checked=false;await els['notify-ready'].onchange();
  assert.equal(els['notify-ready'].checked,true,'a failed save puts the switch back');assert.equal(els['notify-status'].textContent,'Unknown time zone.');

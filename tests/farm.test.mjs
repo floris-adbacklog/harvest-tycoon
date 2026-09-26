@@ -26,9 +26,9 @@ test('all 16 crops can be planted, watered and harvested; collection is unique',
  }
  assert.equal(s.stats.varieties,16);assert.equal(s.discovered.length,16);
 });
-test('all 53 recipes require ingredients, persist timed jobs and collect once',()=>{
+test('all 54 recipes require ingredients, persist timed jobs and collect once',()=>{
  const ordinary=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory');   // the Factory's bulk versions have their own tests
- assert.equal(ordinary.length,53);
+ assert.equal(ordinary.length,54,'wheat feed joined on 26 Sep 2026');
  for(const [id,r]of ordinary){
   const s=createFarm(now);s.xp=xpForLevel(90);s.coins=100000;for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;
   normalizeFarm(s,now);   // what every load does: at level 90 the Valley Market's stalls, the export trailer and the fair fill up

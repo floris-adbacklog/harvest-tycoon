@@ -1,5 +1,6 @@
 import {QUESTS,QUEST_XP,ACTIVE_STATIONS,CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,DAILY_REWARDS,DAILY_DIAMONDS,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,INVITE_DAYS,INVITE_LIMIT,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,EMAIL_BONUS} from './farm-state.js';
 import {art} from './visual-icons.js';
+import {helpCoins,maxShare,SHARE_LIMIT} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
 import {EVENTS_LEVEL,EVENT_DAY_DIAMONDS,PODIUM_PRIZES,FINISHER_PRIZE} from './live-events-ui.js';
 
@@ -115,6 +116,7 @@ const BODIES={
    ['buildings','Build',`Each building opens at a level and costs coins once; the ${BUILDINGS.dairy.name} needs the ${BUILDINGS.mill.name} first, the ${BUILDINGS.bakery.name} the ${BUILDINGS.dairy.name} and the ${BUILDINGS.windmill.name}. Tap a building to start a batch: it turns crops (or other goods) into goods that sell for more.`],
    ['hammer','Upgrade',`Better buildings run more batches at the same time, up to level ${MAX_BUILDING_LEVEL}. Level ${MAX_BUILDING_LEVEL} is fully upgraded. Every level costs more than the one before, and a building that costs more to build costs more to upgrade. From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn. The Factory asks for goods from across the valley from its first upgrade. The Buildings discount boost halves the coins and goods of your next upgrade.`],
    ['collect-all','Collect','When a batch is ready, tap the building to collect it, or use Collect all.'],
+   ['feed','Animal feed',`Chickens, cows, sheep, goats and pigs eat animal feed. Mix it at the ${BUILDINGS.mill.name}: ${RECIPES.feed.input.corn} corn make ${RECIPES.feed.output.feed}, ${RECIPES.barleyfeed.input.barley} barley make ${RECIPES.barleyfeed.output.feed} and ${RECIPES.wheatfeed.input.wheat} wheat make ${RECIPES.wheatfeed.output.feed}. At the ${BUILDINGS.windmill.name}, ${RECIPES.windfeed.input.barley} barley make ${RECIPES.windfeed.output.feed}. Feed sells for ${ITEMS.feed.sell} coins.`],
    ['boost','Factory',`From level ${FACTORY_LEVEL} the Factory (${number(FACTORY_COST)} coins) makes the goods of your other buildings in bulk, in twice the time of one batch. A bulk batch is twice the level of the building that normally makes it, up to ×20: a level-5 Dairy makes cheese ×10. Goods that take over an hour: its level, up to ×10. Upgrade a building and its bulk batch grows too. Upgrading the Factory itself asks for flour, cheese and cloth, plus harvest hampers from the upgrade to level 5, squash soup from level 7 and cider from level 9.`]
   ]))+blocks;
  },
@@ -155,7 +157,7 @@ const BODIES={
   return section('Together is better',`<p>${h.lvl(FAMILY_MIN_LEVEL)} Start a Farm family or join one, with up to ${FAMILY_CONFIG.MAX_MEMBERS} farmers. A family can be open to everyone or invite-only.</p>`)
   +section('The family pages',facts([
    ['family-weekly-order','This week',`A big order for the whole family. Everyone delivers what they can. When the whole order is done, everyone who delivered at least ${number(FAMILY_CONFIG.MIN_CONTRIB_POINTS)} points’ worth gets coins, XP and diamonds for what they delivered. Deliveries cannot be taken back.`],
-   ['family-sharing','Sharing','Ask your family for crops or goods you need, and send gifts to each other.'],
+   ['family-sharing','Sharing',`From level 10 you share with your family every day, up to ${SHARE_LIMIT} times each. Help a member with coins: it costs you your level × 25 coins (level 10: ${number(helpCoins(10))}, level 30: ${number(helpCoins(30))}) and they get all of it. Gifts and requests hold up to 5 crops or goods for every 10 levels (level 10: ${maxShare(10)}, level 30: ${maxShare(30)}).`],
    ['family-tournament','Tournament',`Every week families compete; your deliveries count as points. First place wins ${number(FAMILY_CONFIG.TOURNAMENT_FIRST_MIN)} diamonds, plus ${FAMILY_CONFIG.TOURNAMENT_PER_EXTRA_FAMILY} for every other family taking part (up to ${number(FAMILY_CONFIG.TOURNAMENT_FIRST_MAX)}); second ${Math.round(FAMILY_CONFIG.RANK_WEIGHTS[1]*100)}% of that, third ${Math.round(FAMILY_CONFIG.RANK_WEIGHTS[2]*100)}%. The prize is shared by what each member delivered.`],
    ['family-members','Members','See who is online and how much everyone did this week. The leader can invite farmers.']
   ]))
@@ -221,7 +223,7 @@ const BODIES={
  account(h){
   return section('Your account',facts([
    ['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app: press and hold its icon for Chat, Daily gift and the leaderboard, and on Android or a computer you can play full screen (Settings, Farm app).'],
-   ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. Email reminders stay off until you switch them on.']
+   ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. Email reminders, and news and offers by email, stay off until you switch them on.']
   ]))
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
   +section('Avatars',`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`

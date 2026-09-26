@@ -27,7 +27,10 @@ export const PRODUCTS = Object.freeze({
  salad:{name:'Fresh salad',sell:450,icon:'salad',color:'green'},
  pickles:{name:'Pickled cabbage',sell:1100,icon:'amphora',color:'coral'},
  flour:{name:'Flour',sell:60,icon:'wheat',color:'wheat'},
- feed:{name:'Animal feed',sell:115,icon:'package-open',color:'wheat'},
+ // Animal feed (26 Sep 2026): feed for your animals, not a trade good, so it sells for 60 (was 115), and every feed recipe gives more:
+ // corn 2 -> 2, barley 2 -> 3 and 8 -> 13 (the Windmill stays the most barley-efficient), and wheat 5 -> 1 (new). Turning crops into
+ // feed still earns a little more than selling them.
+ feed:{name:'Animal feed',sell:60,icon:'package-open',color:'wheat'},
  oil:{name:'Sunflower oil',sell:1600,icon:'droplet',color:'gold'},
  milk:{name:'Milk',sell:80,icon:'milk',color:'blue'},
  eggs:{name:'Eggs',sell:50,icon:'egg',color:'cream'},
@@ -135,12 +138,13 @@ const BASE_RECIPES=Object.freeze({
  grainmeal:{building:'windmill',name:'Grind grain meal',input:{wheat:8,barley:4},output:{grainmeal:3},duration:1200000,xp:30},
  fertilizer:{building:'windmill',name:'Mix natural fertilizer',input:{grainmeal:2,cabbage:2},output:{fertilizer:3},duration:1800000,xp:40},
  windflour:{building:'windmill',name:'Mill a large flour batch',input:{grainmeal:3},output:{flour:14},duration:720000,xp:24},
- windfeed:{building:'windmill',name:'Wind-milled barley feed',input:{barley:8},output:{feed:10},duration:1200000,xp:32},
- barleyfeed:{building:'mill',name:'Mix barley feed',input:{barley:2},output:{feed:2},duration:120000,xp:6},
+ windfeed:{building:'windmill',name:'Wind-milled barley feed',input:{barley:8},output:{feed:13},duration:1200000,xp:32},
+ barleyfeed:{building:'mill',name:'Mix barley feed',input:{barley:2},output:{feed:3},duration:120000,xp:6},
  salad:{building:'packing',name:'Prepare a fresh salad',input:{lettuce:4,cabbage:2},output:{salad:1},duration:900000,xp:14},
  pickles:{building:'packing',name:'Pickle red cabbage',input:{redcabbage:2},output:{pickles:1},duration:10800000,xp:60},
  flour:{building:'windmill',name:'Refine grain meal into flour',input:{grainmeal:1},output:{flour:4},duration:240000,xp:8},
- feed:{building:'mill',name:'Mix animal feed',input:{corn:2},output:{feed:1},duration:120000,xp:4},
+ feed:{building:'mill',name:'Mix animal feed',input:{corn:2},output:{feed:2},duration:120000,xp:4},
+ wheatfeed:{building:'mill',name:'Mix wheat feed',input:{wheat:5},output:{feed:1},duration:120000,xp:3},
  oil:{building:'mill',name:'Press sunflower oil',input:{sunflower:2},output:{oil:1},duration:14400000,xp:80},
  milk:{building:'dairy',name:'Feed the cows',input:{feed:1},output:{milk:2},duration:600000,xp:10},
  cheese:{building:'dairy',name:'Make farmhouse cheese',input:{milk:2},output:{cheese:1},duration:3600000,xp:24},
@@ -686,7 +690,7 @@ export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:7,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
 export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST});
-export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80});
+export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80});
 export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:14,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:16});
 export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair'};

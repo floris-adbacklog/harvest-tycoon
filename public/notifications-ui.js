@@ -2,7 +2,7 @@
 // (src/notifications.js) and stays hidden until the notification service is switched on.
 import {refreshArt} from './visual-icons.js';
 // Crops and goods are one switch (26 Sep 2026): it sets both of the server's settings, and shows on when either is on.
-const IDS={pushMessages:'notify-messages',pushDaily:'notify-daily',emailDigest:'notify-email'};
+const IDS={pushMessages:'notify-messages',pushDaily:'notify-daily',emailDigest:'notify-email',emailMarketing:'notify-marketing'};
 const DEVICE={
  unsupported:'This browser cannot receive notifications.',
  'install-first':'On iPhone, first add Harvest Tycoon to your home screen (see Farm app below). Then come back here to turn notifications on.',
@@ -25,7 +25,7 @@ export function createNotificationsSection(){
  }
  function paint(prefs){
   current=prefs;
-  for(const [key,id] of Object.entries(IDS))$(id).checked=prefs[key];
+  for(const [key,id] of Object.entries(IDS))$(id).checked=Boolean(prefs[key]);
   $('notify-ready').checked=Boolean(prefs.pushCrops||prefs.pushProduction);
   select.value=String(prefs.digestHour);$('notify-email-time').hidden=!prefs.emailDigest;
  }

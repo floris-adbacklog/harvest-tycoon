@@ -1142,6 +1142,7 @@
 .email-check-dialog h2{margin:2px 0 8px;font:700 24px/1.2 'Outfit',sans-serif}
 .email-check-dialog p{margin:0 0 14px;color:#5d5641;font-size:14.5px;line-height:1.5}
 .email-check-dialog .email-check-close{position:absolute;top:12px;right:12px}
+.email-check-news{display:flex;align-items:flex-start;gap:10px;margin:16px 0 4px;color:#5d5641;font-size:13px;line-height:1.45;text-align:left;cursor:pointer}.email-check-news input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#3f6b33}
 .email-check-dialog>.primary-button{width:100%;justify-content:center}
 .email-check-form{display:flex;gap:8px;margin:0 0 10px}
 .email-check-form input{flex:1;min-width:0;height:48px;padding:0 12px;border:1px solid #d9c7a4;border-radius:12px;background:#fffdf5;font:700 22px 'Outfit',sans-serif;letter-spacing:6px;text-align:center}

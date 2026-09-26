@@ -54,7 +54,9 @@ test('the Pig Farm: level 29, truffles at the pace of the other animal buildings
  const m=await import('../game/farm-state.js');
  const value=o=>Object.entries(o).reduce((sum,[k,n])=>sum+m.ITEMS[k].sell*n,0),perHour=id=>{const r=m.RECIPES[id];return (value(r.output)-value(r.input))/(r.duration/3600000);};
  assert.equal(m.BUILDING_LEVELS.pigfarm,29);assert.equal(m.BUILDINGS.pigfarm.model,'house_019');
- for(const id of ['trufflehunt','vegetablefeast'])assert(perHour(id)>150&&perHour(id)<200,`${id} ${perHour(id)}`);
+ assert(perHour('vegetablefeast')>150&&perHour('vegetablefeast')<200,`vegetablefeast ${perHour('vegetablefeast')}`);
+ // Feed is cheaper since 26 Sep 2026 (60, was 115), so the feed-fed truffle hunt now earns like the other feed-fed animals.
+ assert(perHour('trufflehunt')>200&&perHour('trufflehunt')<300,`trufflehunt ${perHour('trufflehunt')}`);
  assert(perHour('truffleomelette')>200&&perHour('truffleomelette')<240,'like the other Farm Kitchen dishes');
  assert.equal(m.itemUnlockLevel('truffles'),29);assert.equal(m.itemUnlockLevel('truffleomelette'),30);
  // New goods join the Family Order from the week after release, so this week's orders stay the same for every family.

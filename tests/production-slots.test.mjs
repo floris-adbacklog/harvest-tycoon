@@ -18,7 +18,7 @@ test('every production building permits exactly one simultaneous batch per level
 test('mixed recipes finish independently, targeted collection and replay cannot steal another batch',()=>{
  const s=farm();s.buildings.mill.level=3;const oil=act(s,{type:'produce',recipe:'oil'}),feed=act(s,{type:'produce',recipe:'feed'}),barley=act(s,{type:'produce',recipe:'barleyfeed'});
  assert.throws(()=>act(s,{type:'collect',building:'mill',jobId:oil.jobId},feed.readyAt),/still/);
- const before=s.inventory.feed;act(s,{type:'collect',building:'mill',jobId:feed.jobId},feed.readyAt);assert.equal(s.inventory.feed,before+1);assert.equal(s.stats.produced,1);
+ const before=s.inventory.feed;act(s,{type:'collect',building:'mill',jobId:feed.jobId},feed.readyAt);assert.equal(s.inventory.feed,before+2,'2 corn make 2 feed (26 Sep 2026)');assert.equal(s.stats.produced,1);
  const snapshot=structuredClone(s);assert.throws(()=>act(s,{type:'collect',building:'mill',jobId:feed.jobId},feed.readyAt),/Nothing/);assert.deepEqual(s,snapshot);
  assert.throws(()=>act(s,{type:'collect',building:'coop',jobId:barley.jobId},barley.readyAt),/Nothing/);
  const next=act(s,{type:'produce',recipe:'feed'},feed.readyAt);assert.notEqual(next.jobId,feed.jobId);assert.equal(productionJobs(s.buildings.mill).length,3);

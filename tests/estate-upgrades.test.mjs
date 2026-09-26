@@ -37,7 +37,7 @@ test('the 50% voucher halves the coins of any level, once',()=>{
  assert.doesNotMatch(BOOSTS.upgrade.description,/level 20/);
 });
 test('an upgrade does not wait for a running batch: it keeps its own time and reward, and the new slot is usable at once',()=>{
- const s=farm(50);s.buildings.mill.level=5;s.inventory.corn=12;
+ const s=farm(50);s.buildings.mill.level=5;s.inventory.corn=12;s.inventory.feed=20;   // the upgrade's own goods: 2 × 5 batches of 2 feed
  startProduction(s,'feed',now,5);const job=productionJobs(s.buildings.mill)[0],before=structuredClone(job);
  const r=act(s,{type:'upgrade',building:'mill'});assert.equal(r.level,6);
  assert.deepEqual(productionJobs(s.buildings.mill)[0],before,'the running batch keeps its own readyAt, output and xp');

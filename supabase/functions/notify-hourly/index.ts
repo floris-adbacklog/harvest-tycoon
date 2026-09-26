@@ -57,11 +57,13 @@ Deno.serve(async(req)=>{
   const token=query.get('unsubscribe');if(!tokenOk(token))return page('This link is not valid','<p>Open Settings in the game to change your reminders.</p>');
   // Opening the link (mail scanners do that) changes nothing; the button, or a mail app\'s one-click request, does.
   if(req.method==='POST'){
-   const {error}=await admin.from('notification_settings').update({email_digest:false,updated_at:new Date().toISOString()}).eq('unsubscribe_token',token);
+   // Any email's link stops every email that is not about the account: the daily summary and news & offers (26 Sep 2026).
+   const at=new Date().toISOString();
+   const {error}=await admin.from('notification_settings').update({email_digest:false,email_marketing:false,marketing_changed_at:at,updated_at:at}).eq('unsubscribe_token',token);
    if(error)return page('Something went wrong','<p>Please try again in a moment, or switch the summary off in Settings.</p>');
-   return page('You are unsubscribed','<p>You will not get the daily email summary any more. You can switch it back on in the game under Settings.</p>');
+   return page('You are unsubscribed','<p>You will not get the daily email summary or news and offers any more. You can switch them back on in the game under Settings.</p>');
   }
-  return page('Unsubscribe from the daily email?',`<p>You will not get the daily summary of your farm any more.</p><form method="post" action="?unsubscribe=${token}"><button type="submit" style="background:#685e3f;color:#fffdf0;border:0;border-radius:12px;padding:14px 22px;font-size:16px;font-weight:700;cursor:pointer;">Unsubscribe</button></form>`);
+  return page('Unsubscribe from our emails?',`<p>You will not get the daily summary of your farm or news and offers any more. Emails about your account, such as a sign-in code, still arrive.</p><form method="post" action="?unsubscribe=${token}"><button type="submit" style="background:#685e3f;color:#fffdf0;border:0;border-radius:12px;padding:14px 22px;font-size:16px;font-weight:700;cursor:pointer;">Unsubscribe</button></form>`);
  }
  if(req.method!=='POST')return json({error:'Use POST.'},405);
  // A new private message (the chat_dm_push trigger in supabase/chat.sql): one notification to the other farmer's devices. The

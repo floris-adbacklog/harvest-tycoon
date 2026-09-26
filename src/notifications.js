@@ -3,7 +3,8 @@ import {createPush} from './push.js';
 // own row) and writes go through the notification_save function, which validates everything on the server.
 // New private messages, the daily gift & streak reminder and crops & goods ready (one switch, 26 Sep 2026) are on unless a farmer
 // switches them off; the email summary stays off until switched on. Push itself still needs the farmer's own yes on the device.
-export const DEFAULT_PREFS=Object.freeze({pushCrops:true,pushProduction:true,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true});
+// News & offers by email (26 Sep 2026) starts off and only comes on with the farmer's own yes (supabase/email-marketing-consent.sql).
+export const DEFAULT_PREFS=Object.freeze({pushCrops:true,pushProduction:true,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true,emailMarketing:false});
 
 export function browserTimezone(){
  try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}catch{return 'UTC';}
@@ -13,11 +14,11 @@ const validHour=value=>Number.isInteger(value)&&value>=0&&value<=23;
 // No row yet means the defaults above.
 export function prefsFromRow(row){
  if(!row)return {...DEFAULT_PREFS};
- return {pushCrops:row.push_crops===true,pushProduction:row.push_production===true,pushDaily:row.push_daily===true,emailDigest:row.email_digest===true,digestHour:validHour(row.digest_hour)?row.digest_hour:DEFAULT_PREFS.digestHour,pushMessages:row.push_messages===true};
+ return {pushCrops:row.push_crops===true,pushProduction:row.push_production===true,pushDaily:row.push_daily===true,emailDigest:row.email_digest===true,digestHour:validHour(row.digest_hour)?row.digest_hour:DEFAULT_PREFS.digestHour,emailMarketing:row.email_marketing===true,pushMessages:row.push_messages===true};
 }
 export function paramsFromPrefs(prefs,timezone=browserTimezone()){
  const hour=Number(prefs.digestHour);
- return {p_push_crops:prefs.pushCrops===true,p_push_production:prefs.pushProduction===true,p_push_daily:prefs.pushDaily===true,p_email_digest:prefs.emailDigest===true,p_digest_hour:validHour(hour)?hour:DEFAULT_PREFS.digestHour,p_timezone:timezone,p_push_messages:prefs.pushMessages===true};
+ return {p_push_crops:prefs.pushCrops===true,p_push_production:prefs.pushProduction===true,p_push_daily:prefs.pushDaily===true,p_email_digest:prefs.emailDigest===true,p_digest_hour:validHour(hour)?hour:DEFAULT_PREFS.digestHour,p_timezone:timezone,p_push_messages:prefs.pushMessages===true,p_email_marketing:prefs.emailMarketing===true};
 }
 
 // `available` only turns true when the notification service answers its config request. Until then the
@@ -36,13 +37,13 @@ export function createNotifications(supabase,{configUrl=null,fetchImpl=globalThi
   // Device notifications, only when the service has push switched on.
   get push(){return config?.push?push:null;},
   async get(){
-   const {data,error}=await supabase.from('notification_settings').select('push_crops,push_production,push_daily,email_digest,digest_hour,push_messages').maybeSingle();
+   const {data,error}=await supabase.from('notification_settings').select('push_crops,push_production,push_daily,email_digest,digest_hour,push_messages,email_marketing').maybeSingle();
    if(error)throw error;return prefsFromRow(data);
   },
   async save(prefs){
    const params=paramsFromPrefs(prefs,timezone());
    const {error}=await supabase.rpc('notification_save',params);if(error)throw error;
-   return {pushCrops:params.p_push_crops,pushProduction:params.p_push_production,pushDaily:params.p_push_daily,emailDigest:params.p_email_digest,digestHour:params.p_digest_hour,pushMessages:params.p_push_messages};
+   return {pushCrops:params.p_push_crops,pushProduction:params.p_push_production,pushDaily:params.p_push_daily,emailDigest:params.p_email_digest,digestHour:params.p_digest_hour,pushMessages:params.p_push_messages,emailMarketing:params.p_email_marketing};
   }
  };
 }

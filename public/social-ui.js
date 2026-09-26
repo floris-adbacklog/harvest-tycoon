@@ -1,11 +1,15 @@
 import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
-import {ITEMS,CROPS,itemAvailable} from './farm-state.js';
-// Daily sharing inside a Farm Family: help a member with 5 coins, send a gift of 1–5 of any crop or good, ask for 1–5
+import {ITEMS,CROPS,itemAvailable,levelOf} from './farm-state.js';
+// Daily sharing inside a Farm Family: help a member with coins, send a gift of any crop or good, ask for any crop or good
 // of any crop or good you have unlocked, and fill someone else's request. Everything comes out of your own farm (harvest_social in retention-social.sql moves it),
 // so this screen only has to make the choices clear and say up front what cannot be done today.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export const SHARE_LIMIT=3,HELP_COINS=5,MAX_SHARE=5;
+export const SHARE_LIMIT=3;
+// Both grow with your level (26 Sep 2026; harvest_social checks the same, supabase/family-sharing-by-level.sql): help costs you
+// level × 25 coins and gives them to the member, and a gift or a request is up to 5 per 10 levels (level 10: 5, level 30: 15).
+export const helpCoins=level=>25*Math.max(10,Math.floor(Number(level)||0));
+export const maxShare=level=>5*Math.max(1,Math.floor((Number(level)||0)/10));
 const itemName=key=>(ITEMS[key]?.name??key).toLowerCase();
 
 // What the toast says after sharing, with the item's own name ("You sent 4 Fresh bread to Anna.").
@@ -34,7 +38,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
  let dialog=null,root=null,embedded=false;
  function ownDialog(){if(!dialog){dialog=doc.createElement('dialog');dialog.id='sharing-dialog';dialog.className='game-dialog wide-dialog sharing-dialog';dialog.setAttribute('aria-labelledby','sharing-title');doc.body.append(dialog);}return dialog;}
  let social=null,busy=false,error='',pick={item:'wheat',quantity:3},gift={to:null,item:null,quantity:1};
- const me=()=>bridge.playerId,stock=key=>state?.inventory?.[key]??0;
+ const me=()=>bridge.playerId,stock=key=>state?.inventory?.[key]??0,myLevel=()=>state?levelOf(state):10;
  // The family view keys members by membership row, the sharing list by player; the (unique) farmer name links the two.
  const member=id=>{const name=social?.members.find(m=>m.id===id)?.name;return name?getMembers().find(m=>m.username===name):undefined;};
  const portrait=id=>`<span class="family-member-portrait">${avatarImage(member(id)?.avatarId)}${member(id)?`<span class="online-dot ${member(id).online?'is-online':''}" aria-hidden="true"></span>`:''}</span>`;
@@ -53,14 +57,14 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
    const done=today.done(kind,id);
    return `<button class="sharing-action" data-kind="${kind}" data-recipient="${esc(id)}" ${done||blocked?'disabled':''} title="${esc(blocked&&!done?blocked:'')}">${done?'✓ Sent':`${art(icon)}<span>${label}</span>`}</button>`;
   };
-  const helpBlocked=today.full('help')?'You have helped 3 times today.':(state?.coins??0)<HELP_COINS?`You need ${HELP_COINS} coins.`:'';
+  const helpBlocked=today.full('help')?'You have helped 3 times today.':(state?.coins??0)<helpCoins(myLevel())?`You need ${helpCoins(myLevel())} coins.`:'';
   const giftBlocked=today.full('gift')?'You have sent 3 gifts today.':!giftKeys().length?'Nothing in storage to give yet.':'';
   const composer=m=>{
    if(gift.to!==m.id||today.done('gift',m.id)||giftBlocked)return '';
-   const max=Math.min(MAX_SHARE,stock(gift.item));
+   const max=Math.min(maxShare(myLevel()),stock(gift.item));
    return `<div class="sharing-gift">${itemPicker({kind:'gift',keys:giftKeys(),picked:gift.item,quantity:gift.quantity,max,withStock:true})}<div class="sharing-gift-actions"><button type="button" class="link-button" data-gift-cancel>Cancel</button><button type="button" class="primary-button" data-send-gift>Send ${gift.quantity} ${esc(ITEMS[gift.item].name)}</button></div></div>`;
   };
-  return `<div class="sharing-list">${social.members.map(m=>`<article class="sharing-row">${portrait(m.id)}<div class="sharing-who"><strong>${esc(m.name)}</strong><span>${member(m.id)?`Level ${member(m.id).level}`:'Family member'}</span></div><div class="sharing-actions">${action('help',m.id,`Help · ${HELP_COINS}`,'coins',helpBlocked)}${today.done('gift',m.id)?'<button class="sharing-action" disabled>✓ Sent</button>':`<button class="sharing-action ${gift.to===m.id?'is-open':''}" data-gift-open="${esc(m.id)}" ${giftBlocked?'disabled':''} title="${esc(giftBlocked)}" aria-expanded="${gift.to===m.id}">${art('gift')}<span>Gift</span></button>`}</div></article>${composer(m)}`).join('')}</div>`;
+  return `<div class="sharing-list">${social.members.map(m=>`<article class="sharing-row">${portrait(m.id)}<div class="sharing-who"><strong>${esc(m.name)}</strong><span>${member(m.id)?`Level ${member(m.id).level}`:'Family member'}</span></div><div class="sharing-actions">${action('help',m.id,`Help · ${helpCoins(myLevel())}`,'coins',helpBlocked)}${today.done('gift',m.id)?'<button class="sharing-action" disabled>✓ Sent</button>':`<button class="sharing-action ${gift.to===m.id?'is-open':''}" data-gift-open="${esc(m.id)}" ${giftBlocked?'disabled':''} title="${esc(giftBlocked)}" aria-expanded="${gift.to===m.id}">${art('gift')}<span>Gift</span></button>`}</div></article>${composer(m)}`).join('')}</div>`;
  }
  function requests(today){
   const open=social.requests;
@@ -73,7 +77,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
  function ask(){
   if(social.requests.some(r=>r.player_id===me()))return '';
   const keys=Object.keys(ITEMS).filter(k=>itemAvailable(state,k));if(!keys.includes(pick.item))pick.item=keys[0]??'wheat';
-  return `<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Once a day, up to ${MAX_SHARE} of any crop or good. Any family member can fill it.</p><form class="sharing-ask">${itemPicker({kind:'ask',keys,picked:pick.item,quantity:pick.quantity,max:MAX_SHARE})}<button class="primary-button">Ask for ${pick.quantity} ${esc(ITEMS[pick.item]?.name??pick.item)}</button></form></section>`;
+  return `<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Once a day, up to ${maxShare(myLevel())} of any crop or good. Any family member can fill it.</p><form class="sharing-ask">${itemPicker({kind:'ask',keys,picked:pick.item,quantity:pick.quantity,max:maxShare(myLevel())})}<button class="primary-button">Ask for ${pick.quantity} ${esc(ITEMS[pick.item]?.name??pick.item)}</button></form></section>`;
  }
  function render(){
   if(!root)return;
@@ -91,8 +95,8 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   const close=root.querySelector('[data-close]');if(close)close.onclick=()=>dialog.close();
   const back=root.querySelector('[data-back]');if(back)back.onclick=()=>{dialog.close();onBack();};
   root.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>act({kind:b.dataset.kind,recipient:b.dataset.recipient,request:b.dataset.request}));
-  root.querySelectorAll('[data-pick]').forEach(select=>select.onchange=()=>{const target=select.dataset.pick==='gift'?gift:pick;target.item=select.value;target.quantity=Math.min(target.quantity,select.dataset.pick==='gift'?Math.min(MAX_SHARE,stock(select.value)):MAX_SHARE)||1;render();});
-  root.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const target=b.dataset.step==='gift'?gift:pick,max=b.dataset.step==='gift'?Math.min(MAX_SHARE,stock(gift.item)):MAX_SHARE;target.quantity=Math.min(max,Math.max(1,target.quantity+Number(b.dataset.by)));render();});
+  root.querySelectorAll('[data-pick]').forEach(select=>select.onchange=()=>{const target=select.dataset.pick==='gift'?gift:pick;target.item=select.value;target.quantity=Math.min(target.quantity,select.dataset.pick==='gift'?Math.min(maxShare(myLevel()),stock(select.value)):maxShare(myLevel()))||1;render();});
+  root.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const target=b.dataset.step==='gift'?gift:pick,max=b.dataset.step==='gift'?Math.min(maxShare(myLevel()),stock(gift.item)):maxShare(myLevel());target.quantity=Math.min(max,Math.max(1,target.quantity+Number(b.dataset.by)));render();});
   root.querySelectorAll('[data-gift-open]').forEach(b=>b.onclick=()=>{const id=b.dataset.giftOpen;if(gift.to===id){gift.to=null;}else{const keys=giftKeys();gift={to:id,item:keys.includes(gift.item)?gift.item:keys[0],quantity:1};}render();});
   const cancel=root.querySelector('[data-gift-cancel]');if(cancel)cancel.onclick=()=>{gift.to=null;render();};
   const send=root.querySelector('[data-send-gift]');if(send)send.onclick=()=>act({kind:'gift',recipient:gift.to,item:gift.item,quantity:gift.quantity});
