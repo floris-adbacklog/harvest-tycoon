@@ -229,7 +229,6 @@ span.chat-avatar{cursor:default}
 #popup-dialog .popup-later{display:block;width:100%;min-height:44px;margin-top:6px;border:0;background:none;color:#7a6c57;font:650 14px 'DM Sans',sans-serif;cursor:pointer}
 #popup-dialog .popup-close{position:absolute;right:12px;top:12px;width:44px;height:44px;border:0;border-radius:14px;background:#efe6da;color:#5e523a;font-size:28px;line-height:1;cursor:pointer}
 /* The admin's pop-up fields under the news, and the last ten pop-ups with who saw them. */
-.admin-popup-toggle{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:#5e523a;font:650 13px 'DM Sans',sans-serif}
 .admin-popup-fields{display:grid;gap:8px;margin:0 0 10px;padding:12px;border:1px solid #e6dccd;border-radius:12px;background:#fffaf1}
 .admin-popup-fields[hidden],.admin-popup-fields [hidden]{display:none}
 .admin-popup-fields label{display:grid;gap:4px;color:#5e523a;font:650 13px 'DM Sans',sans-serif}

@@ -2,16 +2,17 @@ import {refreshArt} from '../public/visual-icons.js';
 import {rookieLeft} from '../public/farm-state.js';
 
 // Pop-ups from the admin (supabase/popups.sql, 26 Sep 2026): news that also opens once as a pop-up, with an optional button to a
-// screen of the game or to a web page (in a new tab). Who sees it: everyone, farmers without the installed app, phones or computers
-// (decided here, on the device) and from a farm level (decided by the server). Never in a farmer's first half hour, and never over
+// screen of the game or to a web page (in a new tab); the admin can also send it without the news. Who sees it: everyone, phones in
+// the browser, anyone in the browser, phones or computers (decided here, on the device: nothing records who installed the app), and
+// from a farm level (decided by the server). Never in a farmer's first half hour, and never over
 // another window: it waits until nothing else is open.
 export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Farm events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play'});
-export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',no_app:'Not using the app yet',phone:'Phones only',desktop:'Computers only'});
+export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only'});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text).
 export const linkify=text=>esc(text).replace(/https:\/\/[^\s<]+[^\s<.,!?;:)'"]/g,url=>`<a href="${url}" target="_blank" rel="noopener noreferrer">${url.replace(/^https:\/\//,'')}</a>`);
 export function fitsDevice(audience,{installed,phone}){
- return audience==='all'||(audience==='no_app'&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone);
+ return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone);
 }
 
 export function createPopupUI({client,chat,state,doc=document,win=window,now=()=>Date.now()}){

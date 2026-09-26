@@ -73,7 +73,7 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   staffList:()=>rpc('staff_list'),
   postNews:(body,hours=24)=>rpc('chat_post_news',{p_body:body,p_hours:hours}),
   // Pop-ups (supabase/popups.sql): news that also opens once as a pop-up. Posting, the list and stopping are for the admin only.
-  postPopup:({title,body,buttonLabel=null,buttonTarget=null,audience='all',minLevel=1,hours=24})=>rpc('popup_post',{p_title:title,p_body:body,p_button_label:buttonLabel,p_button_target:buttonTarget,p_audience:audience,p_min_level:minLevel,p_hours:hours}),
+  postPopup:({title,body,buttonLabel=null,buttonTarget=null,audience='all',minLevel=1,hours=24,news=true})=>rpc('popup_post',{p_title:title,p_body:body,p_button_label:buttonLabel,p_button_target:buttonTarget,p_audience:audience,p_min_level:minLevel,p_hours:hours,p_news:news}),
   popupList:()=>rpc('popup_list'),
   stopPopup:id=>rpc('popup_stop',{p_id:id}),
   popups:()=>rpc('popup_next'),

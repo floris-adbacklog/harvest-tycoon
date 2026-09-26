@@ -10,10 +10,10 @@ test('web addresses in news and pop-ups open in a new tab; only https, and the r
  assert.doesNotMatch(linkify('https://x.com/"><script>'),/<script>|"></);
  assert.match(read('src/chat-ui.js'),/n\.kind==='news'\?linkify\(n\.body\):esc\(n\.body\)/,'news in Notifications too');
 });
-test('who sees it: everyone, farmers without the installed app, phones or computers',()=>{
+test('who sees it: everyone, phones in the browser, anyone in the browser, phones or computers',()=>{
  const app={installed:true,phone:true},browserPhone={installed:false,phone:true},computer={installed:false,phone:false};
- assert.deepEqual(['all','no_app','phone','desktop'].map(a=>[app,browserPhone,computer].map(d=>fitsDevice(a,d))),[[true,true,true],[false,true,true],[true,true,false],[false,false,true]]);
- assert.deepEqual(Object.keys(POPUP_AUDIENCES),['all','no_app','phone','desktop']);
+ assert.deepEqual(['all','phone_browser','browser','phone','desktop'].map(a=>[app,browserPhone,computer].map(d=>fitsDevice(a,d))),[[true,true,true],[false,true,false],[false,true,true],[true,true,false],[false,false,true]]);
+ assert.deepEqual(POPUP_AUDIENCES,{all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only'});
  assert.deepEqual(Object.keys(POPUP_SCREENS),['install','today','events','leaderboard','chat','shop','family','wiki']);
 });
 test('the server: only the admin posts, lists and stops; a pop-up always ends; every farmer gets each one once',()=>{
@@ -39,11 +39,15 @@ test('the game shows it once, when nothing else is open, never in a farmer\'s fi
  assert.match(read('public/wiki-ui.js'),/export function renderWiki\(state,id=null,anchor=''\)\{farm=state;bind\(\);if\(id\)topic\(id,anchor\);else home\(\);\}/);
  assert.match(read('public/wiki-content.js'),/section\('Play it as an app'/,'the anchor sec-play-it-as-an-app exists');
 });
-test('the admin form: "Also as a pop-up" opens the fields; a web page asks for its address',()=>{
+test('the admin form: send a notification, a pop-up or both; a web page asks for its address',()=>{
  const admin=read('src/admin-dashboard.js');
- assert.match(admin,/<input type="checkbox" id="admin-popup-on"> Also as a pop-up<\/label><div class="admin-popup-fields" id="admin-popup-fields" hidden>/);
+ assert.match(admin,/Send as<select id="admin-send-as"><option value="news">Notification<\/option><option value="popup">Pop-up<\/option><option value="both">Notification and pop-up<\/option><\/select><\/label><div class="admin-popup-fields" id="admin-popup-fields" hidden>/);
+ assert.match(admin,/hours,news:mode==='both'\}\);/,'a pop-up alone posts no news');
+ const sql=read('supabase/popups-send-as.sql');
+ assert.match(sql,/if coalesce\(p_news,true\) then\n  insert into public\.player_notices/);assert.match(sql,/check \(audience in \('all','browser','phone_browser','phone','desktop'\)\)/);
+ assert.match(sql,/drop function if exists public\.popup_post\(text,text,text,text,text,integer,integer\);/,'one version of the function');
  assert.match(admin,/<option value="link">A web page \(new tab\)<\/option>/);
  assert.match(admin,/await bridge\.chat\.postPopup\(\{title:\$p\('title'\)\.value\.trim\(\),body,buttonLabel:label\|\|null,buttonTarget:label\?target:null,/);
- assert.match(admin,/data-popup-stop=/);assert.match(read('src/chat-client.js'),/postPopup:\(\{title,body,buttonLabel=null,buttonTarget=null,audience='all',minLevel=1,hours=24\}\)=>rpc\('popup_post'/);
+ assert.match(admin,/data-popup-stop=/);assert.match(read('src/chat-client.js'),/postPopup:\(\{title,body,buttonLabel=null,buttonTarget=null,audience='all',minLevel=1,hours=24,news=true\}\)=>rpc\('popup_post'/);
  assert.match(read('public/pwa-layout.css'),/#starter-pack-dialog,#popup-dialog\)\{/,'clear of the notch in the installed app');
 });

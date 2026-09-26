@@ -50,17 +50,17 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<section class="admin-card"><h3>'+art('xp')+'Retention, day 0–7</h3><p class="admin-hint">Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
   +'<section class="admin-card"><h3>'+art('gift')+'Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
   +'</div><div data-admin-panel="settings" hidden>'
-  +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News for everyone</h3><form id="admin-news-form" class="admin-news"><textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… Everyone sees it under Notifications in the chat."></textarea>'
+  +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News and pop-ups</h3><form id="admin-news-form" class="admin-news"><textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… As a notification everyone sees it under Notifications in the chat."></textarea>'
   // The admin only: the same news also as a pop-up, once per farmer, with an optional button (src/popup-ui.js, supabase/popups.sql).
-  +'<label class="admin-popup-toggle"><input type="checkbox" id="admin-popup-on"> Also as a pop-up</label><div class="admin-popup-fields" id="admin-popup-fields" hidden>'
+  +'<label class="admin-news-hours admin-send-as">Send as<select id="admin-send-as"><option value="news">Notification</option><option value="popup">Pop-up</option><option value="both">Notification and pop-up</option></select></label><div class="admin-popup-fields" id="admin-popup-fields" hidden>'
   +'<label>Title<input id="admin-popup-title" maxlength="60" placeholder="Play it as an app"></label>'
   +'<label>Button<input id="admin-popup-label" maxlength="30" placeholder="Show me how (leave empty for no button)"></label>'
   +'<label>The button opens<select id="admin-popup-target">'+Object.entries(POPUP_SCREENS).map(([key,name])=>`<option value="screen:${key}">${name}</option>`).join('')+'<option value="link">A web page (new tab)</option></select></label>'
   +'<label id="admin-popup-link-row" hidden>Web address<input id="admin-popup-link" type="url" maxlength="300" placeholder="https://"></label>'
   +'<label>Who sees it<select id="admin-popup-audience">'+Object.entries(POPUP_AUDIENCES).map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'
   +'<label>From level<input id="admin-popup-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label>'
-  +'<p class="admin-popup-note">Every farmer sees it once, when nothing else is open, and never in their first half hour. It ends with the news, or after 30 days.</p></div>'
-  +'<label class="admin-news-hours">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Post news</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
+  +'<p class="admin-popup-note">Every farmer sees the pop-up once, when nothing else is open, and never in their first half hour. It ends after the time below, or after 30 days. Who installed the app is only known on the device: phones and browsers are checked when the game opens.</p></div>'
+  +'<label class="admin-news-hours">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Send</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
   +'<h3>'+art('admin')+'Moderators</h3><ul id="admin-mod-list" class="admin-recent-list"></ul><p class="admin-hint">Make a farmer a moderator (or not) on their profile.</p>'
   +'<h3>'+art('chat')+'Who may chat</h3><form id="admin-levels-form" class="admin-levels"><label>Global chat from level<input type="number" id="admin-level-global" min="1" max="200" step="1" inputmode="numeric"></label><label>Private messages from level<input type="number" id="admin-level-dm" min="1" max="200" step="1" inputmode="numeric"></label><button type="submit" class="small-button">Save</button></form><p id="admin-chat-status" class="admin-hint" role="status"></p><p id="admin-device" class="admin-hint admin-device"></p></section></div>'
   +'<p id="admin-dashboard-status" class="admin-hint admin-status" role="status"></p>';
@@ -246,7 +246,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   }catch(error){room.textContent=error.message;}
  });
  // Pop-ups: the fields open with "Also as a pop-up", the web address with "A web page"; below the form the last ten, with who saw them.
- dialog.querySelector('#admin-popup-on').addEventListener('change',event=>{dialog.querySelector('#admin-popup-fields').hidden=!event.target.checked;});
+ dialog.querySelector('#admin-send-as').addEventListener('change',event=>{dialog.querySelector('#admin-popup-fields').hidden=event.target.value==='news';});
  dialog.querySelector('#admin-popup-target').addEventListener('change',event=>{dialog.querySelector('#admin-popup-link-row').hidden=event.target.value!=='link';});
  async function showPopups(){
   const list=dialog.querySelector('#admin-popup-list');
@@ -264,14 +264,15 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-news-form').addEventListener('submit',async event=>{
   event.preventDefault();const text=dialog.querySelector('#admin-news-text'),chatStatus=dialog.querySelector('#admin-chat-status'),body=text.value.trim();if(!body)return;
   const hours=Number(dialog.querySelector('#admin-news-hours').value)||0;
-  const popup=dialog.querySelector('#admin-popup-on').checked,$p=id=>dialog.querySelector(`#admin-popup-${id}`);
+  const mode=dialog.querySelector('#admin-send-as').value,popup=mode!=='news',$p=id=>dialog.querySelector(`#admin-popup-${id}`);
   try{
    if(popup){
     const label=$p('label').value.trim(),target=$p('target').value==='link'?$p('link').value.trim():$p('target').value;
-    await bridge.chat.postPopup({title:$p('title').value.trim(),body,buttonLabel:label||null,buttonTarget:label?target:null,audience:$p('audience').value,minLevel:Number($p('level').value)||1,hours});
-    for(const id of ['title','label','link'])$p(id).value='';$p('on').checked=false;$p('fields').hidden=true;void showPopups();
+    await bridge.chat.postPopup({title:$p('title').value.trim(),body,buttonLabel:label||null,buttonTarget:label?target:null,audience:$p('audience').value,minLevel:Number($p('level').value)||1,hours,news:mode==='both'});
+    for(const id of ['title','label','link'])$p(id).value='';dialog.querySelector('#admin-send-as').value='news';$p('fields').hidden=true;void showPopups();
    }else await bridge.chat.postNews(body,hours);
-   text.value='';chatStatus.textContent=`Posted${popup?' as news and a pop-up':''}. Everyone sees it under Notifications${hours?` for ${hours>=48&&hours%24===0?`${hours/24} days`:`${hours} hours`}`:''}.`;
+   const span=hours?` for ${hours>=48&&hours%24===0?`${hours/24} days`:`${hours} hours`}`:'';
+   text.value='';chatStatus.textContent=mode==='popup'?`Sent as a pop-up${span}.`:`Sent${mode==='both'?' as a notification and a pop-up':''}. Everyone sees it under Notifications${span}.`;
   }catch(error){chatStatus.textContent=error.message;}
  });
  dialog.querySelector('#admin-levels-form').addEventListener('submit',async event=>{
