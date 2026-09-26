@@ -1,4 +1,4 @@
-import {IMPROVEMENTS,hasImprovement,EXPORT_DESTINATIONS,DEPOT_PREMIUM,depotRestock,featureUnlocked,featureUnlockHint,familyWeek,familyWeekStart,levelOf,normalizeFarm,marketValue,formatDuration,ITEMS} from './farm-state.js';
+import {IMPROVEMENTS,FAIR_CHAMPION_DIAMONDS,hasImprovement,EXPORT_DESTINATIONS,DEPOT_PREMIUM,depotRestock,featureUnlocked,featureUnlockHint,familyWeek,familyWeekStart,levelOf,normalizeFarm,marketValue,formatDuration,ITEMS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -71,7 +71,7 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
    return `<article class="order-card fair-class ${done?'is-ready':''}"><div class="order-head"><span class="order-icon">${art('grand-fair')}</span><div><small><span class="fair-stars" aria-label="${entry.stars} ${entry.stars===1?'star':'stars'}">${stars(entry.stars)}</span></small><h3>${entry.name}</h3></div></div><div class="ingredients">${itemList(entry.input,!done)}</div><div class="task-bottom">${rewardChips({coins:entry.coins,diamonds:entry.diamonds,xp:entry.xp})}${done?'<span class="quest-state">Ribbon won ✓</span>':`<button class="primary-button" data-fair-enter="${i}" ${can?'':'disabled'}>Enter</button>`}</div></article>`;
   }).join('')||'<p class="valley-next">The classes for this week are being set up. Make some goods and come back.</p>';
   const week=familyWeek(now),next=familyWeekStart(week+1);
-  return lead('grand-fair',`Three classes a week. Enter each one once to win a ribbon: <b>fair stars</b>, coins and diamonds. Win all three for grand champion.`)
+  return lead('grand-fair',`Three classes a week. Enter each one once to win a ribbon: <b>fair stars</b>, coins and diamonds. Win all three in one week for grand champion: <b>+${number(FAIR_CHAMPION_DIAMONDS)} diamonds</b>.`)
    +`<p class="fair-tally"><span class="fair-stars">★</span><b>${number(total)}</b> fair ${total===1?'star':'stars'}${champion?` · grand champion ${champion===1?'once':`${number(champion)} times`}`:''}</p>`
    +`<div class="daily-list">${cards}</div><p class="valley-footer">New classes in ${formatDuration(next-now)}, every Monday.</p>`;
  }
@@ -82,7 +82,7 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
   document.querySelectorAll('[data-depot-load]').forEach(b=>b.onclick=()=>act({type:'depot_load',contract:c.id,item:b.dataset.depotLoad},shipped));
   document.querySelectorAll('[data-depot-all]').forEach(b=>b.onclick=()=>act({type:'depot_load',contract:c.id},shipped));
   document.querySelectorAll('[data-depot-skip]').forEach(b=>b.onclick=()=>act({type:'depot_skip',contract:c.id},()=>`Contract turned down. The next one comes in ${formatDuration(depotRestock(state))}.`));
-  document.querySelectorAll('[data-fair-enter]').forEach(b=>b.onclick=()=>act({type:'fair_enter',entry:Number(b.dataset.fairEnter),week:state.fair.week},r=>`A ribbon for ${r.name}! +${r.stars} fair ${r.stars===1?'star':'stars'}, +${number(r.coins)} coins and +${r.diamonds} diamonds.${r.champion?' You are this week’s grand champion!':''}`));
+  document.querySelectorAll('[data-fair-enter]').forEach(b=>b.onclick=()=>act({type:'fair_enter',entry:Number(b.dataset.fairEnter),week:state.fair.week},r=>`A ribbon for ${r.name}! +${r.stars} fair ${r.stars===1?'star':'stars'}, +${number(r.coins)} coins and +${r.diamonds} diamonds.${r.champion?` You are this week’s grand champion! +${number(r.championDiamonds)} diamonds.`:''}`));
  }
  return {open,refresh:()=>{if($('estate-place-dialog')?.open&&signature()!==shown)render();}};
 }

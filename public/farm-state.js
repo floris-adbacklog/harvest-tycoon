@@ -1569,13 +1569,15 @@ export function depotSkip(state,contract,now=Date.now()){
 }
 // The Grand Valley Fair (level 90): every week (from Monday, UTC) three classes, one entry each. An entry hands over the goods
 // and wins a ribbon: fair stars (they count up for good), coins at half as much again as the goods' normal price, XP and
-// diamonds. A ribbon in all three classes in one week makes you grand champion. The classes follow from the week and are
-// kept for the whole week once the farm first sees them.
-export const FAIR_PREMIUM=1.5;
+// diamonds. A ribbon in all three classes in one week makes you grand champion, with a bonus of diamonds. The classes follow from
+// the week and are kept for the whole week once the farm first sees them.
+// 27 Sep 2026: bigger and better paid (was 15,000 / 30,000 / 50,000 at 1.5× with 5/5/10 diamonds and 3 prize produce): about a
+// day of fields and a day of production spread over the week, two in the heaviest weeks, for twice the goods' price.
+export const FAIR_PREMIUM=2,FAIR_PRIZE_PRODUCE=6,FAIR_CHAMPION_DIAMONDS=100;
 export const FAIR_CLASSES=Object.freeze([
- {name:'Best harvest',stars:1,value:15000,diamonds:5},
- {name:'Finest goods',stars:2,value:30000,diamonds:5},
- {name:'Best in show',stars:3,value:50000,diamonds:10}
+ {name:'Best harvest',stars:1,value:30000,diamonds:15},
+ {name:'Finest goods',stars:2,value:90000,diamonds:25},
+ {name:'Best in show',stars:3,value:150000,diamonds:40}
 ]);
 function fairClasses(state,week){
  const roll=n=>mixBits(calendarHash(`fair-v1:${week}:${n}`)),pick=(list,n)=>list[roll(n)%list.length];
@@ -1584,7 +1586,7 @@ function fairClasses(state,week){
  const fine=products.filter(k=>ITEMS[k].sell>=1000),goods=fine.length?fine:products;
  if(!crops.length||!goods.length)return null;   // a farm that makes nothing yet waits for its first classes
  const crop=pick(crops,0),good=pick(goods,1),others=goods.filter(k=>k!==good),show=pick(others.length?others:[good],2);
- const prize=itemAvailable(state,'prizeproduce')?3:0,rest=FAIR_CLASSES[2].value-prize*ITEMS.prizeproduce.sell;
+ const prize=itemAvailable(state,'prizeproduce')?FAIR_PRIZE_PRODUCE:0,rest=FAIR_CLASSES[2].value-prize*ITEMS.prizeproduce.sell;
  const inputs=[{[crop]:amount(crop,FAIR_CLASSES[0].value)},{[good]:amount(good,FAIR_CLASSES[1].value)},{...(prize?{prizeproduce:prize}:{}),[show]:amount(show,rest)}];
  return FAIR_CLASSES.map((c,i)=>{const input=inputs[i],value=Object.entries(input).reduce((sum,[key,n])=>sum+ITEMS[key].sell*n,0);return {name:c.name,stars:c.stars,input,value,coins:Math.ceil(value*FAIR_PREMIUM/100)*100,xp:Math.round(value/40),diamonds:c.diamonds};});
 }
@@ -1604,9 +1606,9 @@ export function fairEnter(state,index,week,now=Date.now()){
  state.fair.entered.push(index);state.coins+=entry.coins;state.xp+=entry.xp;state.diamonds+=entry.diamonds;state.stats.earned+=entry.coins;
  state.stats.fair_entries=(state.stats.fair_entries??0)+1;state.stats.fair_stars=(state.stats.fair_stars??0)+entry.stars;
  state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+entry.diamonds;
- const champion=state.fair.entered.length===state.fair.classes.length;
- if(champion)state.stats.fair_champion=(state.stats.fair_champion??0)+1;
- return {name:entry.name,stars:entry.stars,coins:entry.coins,xp:entry.xp,diamonds:entry.diamonds,champion};
+ const champion=state.fair.entered.length===state.fair.classes.length,bonus=champion?FAIR_CHAMPION_DIAMONDS:0;
+ if(champion){state.stats.fair_champion=(state.stats.fair_champion??0)+1;state.diamonds+=bonus;state.stats.diamonds_earned+=bonus;}
+ return {name:entry.name,stars:entry.stars,coins:entry.coins,xp:entry.xp,diamonds:entry.diamonds,champion,championDiamonds:bonus};
 }
 export function utcDay(now=Date.now()){return new Date(now).toISOString().slice(0,10);}
 export function dayNumber(now=Date.now()){return Math.floor(now/DAY_MS);}

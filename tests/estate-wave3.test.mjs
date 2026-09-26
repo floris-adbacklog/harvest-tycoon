@@ -90,15 +90,15 @@ test('a farm that makes nothing yet gets no empty trailer and no empty fair',()=
 test('the Grand Valley Fair: three classes a week, one ribbon each, stars that add up and a grand champion',()=>{
  const s=farmAt(90,0),week=familyWeek(now),classes=s.fair.classes;
  assert.equal(s.fair.week,week);assert.deepEqual(classes.map(c=>c.stars),[1,2,3]);assert.deepEqual(classes.map(c=>c.name),FAIR_CLASSES.map(c=>c.name));
- assert.ok(Object.keys(classes[0].input).every(k=>CROPS[k]),'the first class is a crop');assert.equal(classes[2].input.prizeproduce,3,'best in show asks for prize produce');
+ assert.ok(Object.keys(classes[0].input).every(k=>CROPS[k]),'the first class is a crop');assert.equal(classes[2].input.prizeproduce,6,'best in show asks for 6 prize produce');
  for(const c of classes){for(const k of Object.keys(c.input))assert.ok(itemAvailable(s,k),k);assert.equal(c.coins,Math.ceil(c.value*FAIR_PREMIUM/100)*100);}
  assert.throws(()=>act(s,{type:'fair_enter',entry:0,week},now),/Missing/);
  for(const c of classes)for(const [k,n] of Object.entries(c.input))s.inventory[k]+=n;
  const r0=act(s,{type:'fair_enter',entry:0,week},now);assert.equal(r0.champion,false);assert.equal(s.stats.fair_stars,1);
  assert.throws(()=>act(s,{type:'fair_enter',entry:0,week},now),/already have a ribbon/);
  assert.throws(()=>act(s,{type:'fair_enter',entry:1,week:week-1},now),/new fair week/);
- act(s,{type:'fair_enter',entry:1,week},now);const r2=act(s,{type:'fair_enter',entry:2,week},now);
- assert.equal(r2.champion,true);assert.equal(s.stats.fair_stars,6);assert.equal(s.stats.fair_entries,3);assert.equal(s.stats.fair_champion,1);
+ act(s,{type:'fair_enter',entry:1,week},now);const before=s.diamonds;const r2=act(s,{type:'fair_enter',entry:2,week},now);
+ assert.equal(r2.champion,true);assert.equal(r2.championDiamonds,100);assert.equal(s.diamonds-before,classes[2].diamonds+100,'the grand champion bonus');assert.equal(s.stats.fair_stars,6);assert.equal(s.stats.fair_entries,3);assert.equal(s.stats.fair_champion,1);
  const next=familyWeekStart(week+1);normalizeFarm(s,next);assert.equal(s.fair.week,week+1);assert.deepEqual(s.fair.entered,[]);
  const weeks=new Set();for(let w=0;w<8;w++){normalizeFarm(s,next+w*7*DAY_MS);weeks.add(JSON.stringify(s.fair.classes.map(c=>c.input)));}assert.ok(weeks.size>=6,'the classes change from week to week');
 });
@@ -196,4 +196,9 @@ test('orders only ask for what the farm can make now, on older farms too, and th
  t.daily.orderBoard[1]={title:'Evening candles',tier:'village',input:{beeswax:6,candles:4},minLevel:58,coins:9761,xp:200,diamonds:4};
  const [,swapped]=dailyOrders(t,now);assert.notEqual(swapped.title,'Evening candles','an order it cannot make is swapped');assert.equal(swapped.revision,1);
  for(const k of Object.keys(swapped.input))assert.ok(itemAvailable(t,k),k);
+});
+test('the fair is a week\'s goal (27 Sep 2026): bigger classes, twice the goods\' price, more diamonds and a champion bonus',()=>{
+ assert.deepEqual(FAIR_CLASSES.map(c=>[c.value,c.diamonds]),[[30000,15],[90000,25],[150000,40]]);assert.equal(FAIR_PREMIUM,2);
+ const s=farmAt(90,0),total=s.fair.classes.reduce((sum,c)=>sum+c.coins,0);
+ assert.ok(total>=500000&&total<=600000,`about 540,000 coins a week, got ${total}`);
 });
