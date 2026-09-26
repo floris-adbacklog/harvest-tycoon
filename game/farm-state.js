@@ -1085,7 +1085,7 @@ export function upgradeBuilding(state,building,currency='coins',expectedCost,exp
  if(estate&&levelOf(state)<estate.level)throw new Error(`Reach level ${estate.level} to upgrade this building to level ${b.level+1}.`);
  if(state[currency]<cost)throw new Error(`You need ${cost} ${currency} for this upgrade.`);
  const missing=estate?Object.entries(estate.materials).filter(([key,n])=>(state.inventory[key]??0)<n):[];
- if(missing.length)throw new Error(`Make the goods first: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}. Or upgrade with diamonds.`);
+ if(missing.length)throw new Error(`Make the goods first: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
  state[currency]-=cost;if(estate)for(const [key,n] of Object.entries(estate.materials))state.inventory[key]-=n;
  b.level++;state.stats.upgrades++;state.xp+=15;
  if(state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;

@@ -81,7 +81,7 @@ test('from the upgrade to level 4 a building also asks for its own goods: 2 × t
 test('an upgrade takes the coins and the goods; the Buildings discount halves both; level 5-10 cost 1.5× the coins',()=>{
  const s=farm(40);s.buildings.dairy.level=5;s.inventory.milk=0;
  assert.deepEqual(upgradeRequirements(s,'dairy'),{level:1,materials:{milk:20}});
- assert.throws(()=>act(s,{type:'upgrade',building:'dairy'}),/Make the goods first: 20 Milk\./);assert.equal(s.coins,1e9);
+ assert.throws(()=>act(s,{type:'upgrade',building:'dairy'}),{message:'Make the goods first: 20 Milk.'},'no diamond route to mention');assert.equal(s.coins,1e9);
  s.inventory.milk=25;const coins=s.coins,price=upgradeCost(s,'dairy');act(s,{type:'upgrade',building:'dairy'});
  assert.equal(s.inventory.milk,5);assert.equal(s.coins,coins-price);assert.equal(s.buildings.dairy.level,6);
  assert.throws(()=>act(s,{type:'upgrade',building:'dairy',currency:'diamonds',expectedCost:225,expectedLevel:6}),/Upgrades are paid with coins and goods/,'not with diamonds');
