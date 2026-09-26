@@ -223,7 +223,7 @@ function decorate(){
  zone('mill');addBuilding('mill',-12.5,4,{width:6.2,rotation:Math.PI/2});
  cloneModel('tower_005',-17,3,{height:4.5});
  zone('bakery');addBuilding('bakery',-10.8,12,{width:6.8,rotation:Math.PI/2});
- zone('packing');addBuilding('packing',11.5,-17.2,{width:5.1,rotation:-Math.PI/2});
+ zone('packing');addBuilding('packing',11.5,-17.2,{width:5.1,rotation:Math.PI/2});   // its front with the windows towards the camera (26 Sep 2026)
  zone('windmill');
  const windmillPosition={x:12.8,z:-1.5};
  addBuilding('windmill',windmillPosition.x,windmillPosition.z,{height:6.6});
