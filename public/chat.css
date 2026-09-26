@@ -105,6 +105,9 @@ span.chat-avatar{cursor:default}
  .chat-list{padding-bottom:calc(18px + var(--safe-bottom,0px))}
  .chat-more{width:32px;height:28px}
 }
+/* A phone: the chat fills the screen (26 Sep 2026), no strip of farm beside it. */
+@media(max-width:600px){#chat-dialog{inset:0;width:100%;height:100%;border:0;border-radius:0}}
+#chat-dialog:focus{outline:none}
 
 /* The profile: the Moderator badge (the admin wears the same), Send message and Block, the staff's chat buttons. */
 .farmer-profile-back[hidden]{display:none}

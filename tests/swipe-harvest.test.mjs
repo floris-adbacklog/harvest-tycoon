@@ -1,24 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {bindFarmInput} from '../public/farm-input.js';
+import {bindFarmInput,SWIPE_HOLD_MS} from '../public/farm-input.js';
 import {createFarm,normalizeFarm,applyFarmAction,SWIPE_MAX_FIELDS} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // A row of fields 50 px wide: field n covers x from n*50 to n*50+49, grass below y 100.
-function setup(work){
- const handlers={},log={pan:0,opened:[],added:[],ended:null};
+// A touch swipe waits for a short hold: hold() runs the waiting timer, as if the finger stayed on the field.
+function setup(work,pointerType='touch'){
+ const handlers={},log={pan:0,opened:[],added:[],ended:null};let waiting=null;
  const canvas={addEventListener:(type,fn)=>{handlers[type]=fn;},setPointerCapture(){},hasPointerCapture:()=>false,releasePointerCapture(){}};
  const pick=e=>e.clientY<100?{type:'plot',id:Math.floor(e.clientX/50)}:null;
  bindFarmInput({canvas,isReady:()=>true,pick,open:t=>log.opened.push(t.id),pan:()=>log.pan++,zoom(){},
-  sweep:{action:t=>work[t.id]??null,add:t=>log.added.push(t.id),end:(action,ids)=>{log.ended={action,ids};}}});
- const at=(type,x,y,id=1)=>handlers[type]({pointerId:id,pointerType:'touch',button:0,clientX:x,clientY:y,preventDefault(){}});
- return {log,at};
+  sweep:{action:t=>work[t.id]??null,add:t=>log.added.push(t.id),end:(action,ids)=>{log.ended={action,ids};}},
+  later:(fn,ms)=>{assert.equal(ms,SWIPE_HOLD_MS);waiting=fn;return 7;},cancelLater:id=>{if(id===7)waiting=null;}});
+ const at=(type,x,y,id=1)=>handlers[type]({pointerId:id,pointerType,button:0,clientX:x,clientY:y,preventDefault(){}});
+ return {log,at,hold:()=>{const fn=waiting;waiting=null;fn?.();}};
 }
 
 test('a swipe that starts on a ripe field harvests every ripe field it passes, even on a quick swipe, and does not move the map',()=>{
- const {log,at}=setup({0:'harvest',1:'harvest',2:'water',3:'harvest',4:'harvest'});
- at('pointerdown',20,50);at('pointermove',120,50);at('pointermove',230,50);at('pointerup',230,50);
+ const {log,at,hold}=setup({0:'harvest',1:'harvest',2:'water',3:'harvest',4:'harvest'});
+ at('pointerdown',20,50);hold();assert.deepEqual(log.added,[0],'the held field lights up');at('pointermove',120,50);at('pointermove',230,50);at('pointerup',230,50);
  assert.deepEqual(log.ended,{action:'harvest',ids:[0,1,3,4]},'field 2 only needs water, so it is skipped');
  assert.deepEqual(log.added,[0,1,3,4]);assert.equal(log.pan,0);assert.deepEqual(log.opened,[]);
 });
@@ -30,6 +32,20 @@ test('a drag that starts on grass or on a field with nothing to do still moves t
  assert.ok(s.log.pan>0,'a growing field with nothing to do: the map moves');assert.equal(s.log.ended,null);
  s=setup({0:'harvest'});s.at('pointerdown',20,50);s.at('pointerup',22,51);
  assert.deepEqual(s.log.opened,[0]);assert.equal(s.log.ended,null,'a tap is a tap');
+});
+
+test('on a touchscreen a quick drag from a ripe or empty field moves the farm: only a short hold starts a swipe',()=>{
+ let s=setup({0:'harvest',1:'harvest',2:'plant'});
+ s.at('pointerdown',20,50);s.at('pointermove',120,50);s.hold();s.at('pointermove',140,50);s.at('pointerup',140,50);
+ assert.ok(s.log.pan>0,'scrolling past the fields');assert.equal(s.log.ended,null,'nothing harvested');assert.deepEqual(s.log.added,[]);
+ s=setup({2:'plant'});s.at('pointerdown',120,50);s.at('pointermove',128,52);s.hold();s.at('pointermove',180,50);s.at('pointerup',180,50);
+ assert.deepEqual(s.log.ended,{action:'plant',ids:[2]},'a small wobble during the hold still counts as holding');assert.equal(s.log.pan,0);
+ s=setup({0:'harvest'});s.at('pointerdown',20,50);s.hold();s.at('pointerup',20,50);
+ assert.deepEqual(s.log.ended,{action:'harvest',ids:[0]},'hold and let go: that one field');assert.deepEqual(s.log.opened,[]);
+ s=setup({0:'harvest',1:'harvest'},'mouse');s.at('pointerdown',20,50);s.at('pointermove',120,50);s.at('pointerup',120,50);
+ assert.deepEqual(s.log.ended,{action:'harvest',ids:[0,1]},'a mouse swipes straight away, as before');
+ const texts=read('public/wiki-content.js')+read('public/loading-screen.js');
+ assert.match(texts,/hold a field for a moment/i,'the wiki and the tips say how');
 });
 
 test('a second finger turns a swipe that has not started into a pinch',()=>{

@@ -60,6 +60,7 @@
 .field-list-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.field-list-head h3{margin:0}.field-list-head span{color:#697a60;font-size:13px;font-weight:700;white-space:nowrap}
 .field-list>p{margin:4px 0 10px;color:#667956;font-size:13.5px;line-height:1.5}
 .field-list ul{margin:0;padding:0;list-style:none}
+.field-clear-all{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}.field-list .field-clear-button{width:auto;min-height:40px;padding:8px 14px;border-color:#e7cfc4;background:#fff8f4;color:#b0452d}.field-list .field-clear-button:hover{background:#fbe9e1;border-color:#d9a896}
 .field-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid #dde5d0}
 .field-row>.game-art{width:40px;height:40px;flex:0 0 40px;object-fit:contain}
 .field-row-copy{display:grid;gap:4px;min-width:0;flex:1}

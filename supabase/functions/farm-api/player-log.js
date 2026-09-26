@@ -33,6 +33,7 @@ const FARM_ACTIONS={
  silo_upgrade:['farm',(a,s)=>`Silo research step ${s.siloLevel}`],
  improve:['farm',(a)=>`Built ${IMPROVEMENTS[a.id]?.name??'an estate improvement'}`],
  clear_planting:['farm',()=>'Removed a crop from a field'],
+ clear_plantings:['farm',(a,s,r)=>`Removed ${r?.cleared?.length??''} crops from the fields`],
  ranch_focus:['farm',()=>'Changed the ranch focus'],
  produce:['production',(a,s,r)=>`Started ${batches(r?.count??1)} of ${recipeFor(s,a.recipe)?.name??'a recipe'}`],
  collect:['production',(a)=>`Collected a batch at the ${building(a.building)}`],

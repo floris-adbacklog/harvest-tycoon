@@ -77,7 +77,7 @@ const BODIES={
   ]))
   +section('Moving around',facts([
    ['farm','Look around','Drag to move the farm. Pinch, or scroll with a mouse, to zoom in and out.'],
-   ['harvest','Swipe across fields',`With a tool picked, swipe across your fields to plant, water, care for or harvest many at once, up to ${SWIPE_MAX_FIELDS} in one swipe.`],
+   ['harvest','Swipe across fields',`With a tool picked, hold a field for a moment until it lights up, then swipe across your fields to plant, water, care for or harvest many at once, up to ${SWIPE_MAX_FIELDS} in one swipe. A quick swipe moves the farm instead. With a mouse, just drag from a field.`],
    ['care','Tools at the bottom','Pick Plant, Water, Care or Harvest at the bottom of the screen, then tap or swipe your fields.']
   ]))
   +section('Saved for you','<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>')

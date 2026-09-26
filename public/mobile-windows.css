@@ -75,3 +75,5 @@
  .wiki-quick button{min-height:40px;padding:6px 14px}
  #sound-dialog .sound-preview{min-height:40px}
 }
+/* A touchscreen: no text field under 16px, or iOS zooms the whole game in when you tap it (26 Sep 2026: the chat felt jumpy). */
+@media(pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select{font-size:max(16px,1em)}}

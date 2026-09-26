@@ -22,6 +22,11 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function show(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();}
  // What a batch costs: the ingredients, and for a recipe with a coin price the coins (the Glasshouse).
  function costList(id,n=1){const r=recipeFor(state,id);return itemList(Object.fromEntries(Object.entries(r.input).map(([k,v])=>[k,v*n])),true)+(r.coins?`<span class="ingredient ${state.coins<r.coins*n?'missing':''}">${art('coins')}<span>${number(r.coins*n)} coins</span></span>`:'');}
+ // Two buttons above Your fields: all crops, or only the ones that do not regrow (shown when there are both kinds).
+ function fieldClearButtons(planted){
+  const annual=planted.filter(p=>!CROPS[p.crop].perennial).length,both=annual>0&&annual<planted.length;
+  return `<div class="field-clear-all">${both?`<button type="button" class="small-button field-clear-button" data-clear-all="annual">Remove all but regrowing (${annual})</button>`:''}<button type="button" class="small-button field-clear-button" data-clear-all="all">Remove all (${planted.length})</button></div>`;
+ }
  function itemList(items,requirements=false){return Object.entries(items).map(([key,n])=>`<span class="ingredient ${requirements&&state.inventory[key]<n?'missing':''}">${itemArt(key)}<span>${requirements?`${state.inventory[key]}/${n}`:`${n}×`} ${ITEMS[key].name}</span></span>`).join('');}
  function status(key,now=farmNow()){
   const b=state.buildings[key];if(key==='farmhouse')return {text:`${state.plots.length} / ${MAX_PLOTS} fields`,kind:'farm'};
@@ -116,7 +121,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    const planted=state.plots.filter(p=>CROPS[p.crop]),now=farmNow();
    const fieldRow=p=>{const c=CROPS[p.crop],ready=p.readyAt<=now,pct=ready?100:Math.max(3,Math.min(100,Math.round((now-p.plantedAt)/Math.max(1,p.readyAt-p.plantedAt)*100)));
     return `<li class="field-row${ready?' is-ready':''}">${art(p.crop)}<div class="field-row-copy"><strong>Field ${p.id+1} · ${c.name}${c.perennial?'<em>Regrows</em>':''}</strong><span class="field-row-bar" aria-hidden="true"><i style="width:${pct}%"></i></span><small>${ready?'Ready to harvest':`${seconds(p.readyAt-now)} to go`}</small></div><button type="button" class="field-row-remove" data-clear-planting="${p.id}" data-planted-at="${p.plantedAt}" aria-label="Remove the ${c.name.toLowerCase()} from field ${p.id+1}" title="Remove"><i data-lucide="trash-2"></i></button></li>`;};
-   if(planted.length)content+=`<section class="field-list"><div class="field-list-head"><h3>Your fields</h3><span>${planted.length} of ${state.plots.length} planted</span></div><p>Remove a crop to free its field. You get nothing back.</p><ul>${planted.map(fieldRow).join('')}</ul></section>`;
+   if(planted.length)content+=`<section class="field-list"><div class="field-list-head"><h3>Your fields</h3><span>${planted.length} of ${state.plots.length} planted</span></div><p>Remove a crop to free its field. You get nothing back.</p>${fieldClearButtons(planted)}<ul>${planted.map(fieldRow).join('')}</ul></section>`;
    content+=`<button ${featureUnlocked(state,'projects')?'':'hidden'} id="farmhouse-estate" class="estate-entry"><i data-lucide="landmark"></i><span><strong>Your next chapter</strong><small>Estate projects, passive income and mastery</small></span><i data-lucide="chevron-right"></i></button>`;
   }else if(!buildingUnlocked(state,key)&&!buildCost){
    content+=`<section class="construction-panel"><h3>Something to grow towards</h3><p>${buildingUnlockHint(state,key)}</p><p>This building opens automatically when you reach its milestone.</p></section>`;
@@ -184,6 +189,15 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   $('building-content').querySelectorAll('[data-factory-filter]').forEach(b=>b.addEventListener('click',()=>{factoryFilter=b.dataset.factoryFilter;renderBuilding();}));
   $('building-content').querySelectorAll('[data-factory-group]').forEach(g=>g.addEventListener('toggle',()=>{if(g.open)openFactoryGroups.add(g.dataset.factoryGroup);else openFactoryGroups.delete(g.dataset.factoryGroup);}));
   $('construct-building')?.addEventListener('click',()=>mutate(async()=>{await runAction({type:'construct',building:key});return `${b.name} is open. Start your first batch!`;}));
+  // "Remove all" and "Remove all but regrowing": one save for every field, after typing ALL. The fields go as they were shown; if one
+  // changed in the meantime, nothing is removed.
+  $('building-content').querySelectorAll('[data-clear-all]').forEach(btn=>btn.addEventListener('click',async()=>{
+   const keep=btn.dataset.clearAll==='annual',fields=state.plots.filter(p=>CROPS[p.crop]&&!(keep&&CROPS[p.crop].perennial));if(!fields.length)return;
+   const regrowing=fields.filter(p=>CROPS[p.crop].perennial).length,ripe=fields.filter(p=>p.readyAt<=farmNow()).length;
+   const description=`${fields.length} field${fields.length===1?'':'s'} ${fields.length===1?'is':'are'} empty right away. You get nothing back: no harvest, no XP and no seed coins.${keep?' Crops that regrow stay.':regrowing?` ${regrowing} of them regrow${regrowing===1?'s':''}: planting ${regrowing===1?'it':'them'} again costs coins.`:''}${ripe?` ${ripe} ${ripe===1?'is':'are'} ready now: harvest first to keep ${ripe===1?'it':'them'}.`:''}`;
+   if(!await confirmAction({title:keep?`Remove ${fields.length} crop${fields.length===1?'':'s'} that do not regrow?`:`Remove all ${fields.length} crops?`,description,confirmLabel:'Remove',cancelLabel:'Keep them',picture:'harvest',tone:'danger',typeToConfirm:'ALL'}))return;
+   mutate(async()=>{const r=await runAction({type:'clear_plantings',fields:fields.map(p=>({id:p.id,expectedPlantedAt:p.plantedAt}))});onExpand();return `${r.cleared.length} field${r.cleared.length===1?' is':'s are'} empty. Plant something new.`;});
+  }));
   $('building-content').querySelectorAll('[data-clear-planting]').forEach(btn=>btn.addEventListener('click',async()=>{
    // Removing a crop throws it away, ripe or not: the same red confirmation as leaving a family.
    const p=state.plots[Number(btn.dataset.clearPlanting)];if(!p?.crop)return;

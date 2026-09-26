@@ -605,22 +605,32 @@ export const MAX_PLOTS=40;
 // A farm carries the curve it was counted with (state.xpCurve, none = curve 1) and is converted once by migrateXpCurve, with its level and
 // its progress inside that level kept; until then levelOf reads it with its own curve, so a new client is fine on a farm the server has not
 // converted yet. An old client cannot read a converted farm: deploy the client first, the server after.
-export const XP_CURVE=3;
+// Curve 4 (26 Sep 2026) is curve 3 up to level 50; from there every step asks 4% more per level above 50 (50 -> 51 as before, 60 -> 61
+// +40%, 90 -> 91 +160%), and from level 100 6% more per level (100 -> 101 +200%, 110 -> 111 +260%). The top farmers went from 60 to 70
+// in about ten hours of play, and a farmer past 50 is in for the long game: 50 -> 90 (the last unlock) takes about twice as long,
+// roughly 80 hours of play at the fastest pace seen. Nobody goes back: a farm keeps its level and its share of the way to the next one,
+// and below level 50 nothing changes.
+export const XP_CURVE=4;
+export const LATE_XP_FROM=50,LATE_XP_STEP=.04,LATER_XP_FROM=100,LATER_XP_STEP=.06;
 const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
 const EARLY_GAPS=Object.freeze({   // XP from level 1 to 2, 2 to 3 ... 9 to 10 (curve 1: 60, 100, 140 ... 380)
  2:Object.freeze([15,30,40,60,80,105,135,170,215]),
- 3:Object.freeze([15,40,65,95,130,170,215,265,320])
+ 3:Object.freeze([15,40,65,95,130,170,215,265,320]),
+ 4:Object.freeze([15,40,65,95,130,170,215,265,320])
 });
+const lateStep=level=>Math.round((40*level+20)*(1+(Math.min(level,LATER_XP_FROM)-LATE_XP_FROM)*LATE_XP_STEP+Math.max(0,level-LATER_XP_FROM)*LATER_XP_STEP));   // level -> level+1, from level 50
 const curveOf=state=>Object.hasOwn(EARLY_GAPS,state.xpCurve)?Number(state.xpCurve):1;
 const sum=list=>list.reduce((total,n)=>total+n,0);
 function totalForLevel(level,curve){
  if(level<=1)return 0;
  const gaps=EARLY_GAPS[curve];if(!gaps)return oldXpForLevel(level);
  if(level<=gaps.length+1)return sum(gaps.slice(0,level-1));
+ if(curve>=4&&level>LATE_XP_FROM){let total=totalForLevel(LATE_XP_FROM,3);for(let l=LATE_XP_FROM;l<level;l++)total+=lateStep(l);return total;}
  return oldXpForLevel(level)-(oldXpForLevel(gaps.length+1)-sum(gaps));
 }
 export const xpForLevel=level=>totalForLevel(level,XP_CURVE);
 function levelFromTotal(total,curve){
+ if(curve>=4&&total>=totalForLevel(LATE_XP_FROM,3)){let level=LATE_XP_FROM,next=totalForLevel(LATE_XP_FROM,3)+lateStep(LATE_XP_FROM);while(total>=next&&level<10000){level++;next+=lateStep(level);}return level;}
  const gaps=EARLY_GAPS[curve];
  if(!gaps)return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);
  const early=sum(gaps);
@@ -781,6 +791,17 @@ export function clearPlanting(state,id,expectedPlantedAt){
  if(p.plantedAt!==expectedPlantedAt)throw new Error('This planting has changed. Review it before removing.');
  const crop=p.crop;Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
  return {id,crop};
+}
+// Several crops at once, in one save (26 Sep 2026: "Remove all" and "Remove all but regrowing" in Your fields). Each field comes with
+// the planting the player saw; if any of them changed, nothing is removed.
+export function clearPlantings(state,fields){
+ if(!Array.isArray(fields)||fields.length<1||fields.length>state.plots.length||new Set(fields.map(f=>f?.id)).size!==fields.length)throw new Error('Choose the fields to clear.');
+ for(const f of fields){
+  const p=state.plots[f?.id];
+  if(!Number.isInteger(f.id)||!p||!CROPS[p.crop])throw new Error('Choose fields with something growing on them.');
+  if(p.plantedAt!==f.expectedPlantedAt)throw new Error('A planting has changed. Review your fields before removing.');
+ }
+ return {cleared:fields.map(f=>clearPlanting(state,f.id,f.expectedPlantedAt).id)};
 }
 // The care marker shows up after 30 seconds or 30% of the growing time. The beginner boost shortens both: the growing time is
 // already shorter, and the 30-second minimum shrinks with it (6 seconds), so Care fits inside a 24-second wheat field.
@@ -1829,6 +1850,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'buy_vip':return buyVip(state,action.plan,action.expectedCost,action.expectedExpiresAt,now);
   case 'construct':return constructBuilding(state,action.building);
   case 'clear_planting':return clearPlanting(state,action.id,action.expectedPlantedAt);
+  case 'clear_plantings':return clearPlantings(state,action.fields);
   case 'finish_batch':return finishSingleBatch(state,action.building,action.jobId,action.expectedCost,now);
   case 'replace_order':return replaceOrder(state,action.id,action.day,action.revision,action.expectedCost,now);
   case 'finish_crop':return finishSingleCrop(state,action.id,action.expectedCost,now);

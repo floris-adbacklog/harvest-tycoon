@@ -40,7 +40,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const chat=bridge?.chat,button=doc.getElementById('chat-button'),dot=doc.getElementById('chat-dot');
  if(!chat||!button)return null;
  const me=bridge.playerId;
- const dialog=doc.createElement('dialog');dialog.id='chat-dialog';dialog.className='game-dialog chat-dialog';dialog.setAttribute('aria-labelledby','chat-title');
+ const dialog=doc.createElement('dialog');dialog.id='chat-dialog';dialog.className='game-dialog chat-dialog';dialog.setAttribute('aria-labelledby','chat-title');dialog.tabIndex=-1;
  dialog.innerHTML=`<div class="chat-top"><div class="chat-tabs" role="tablist" aria-label="Chat">
   <button type="button" role="tab" data-chat-tab="notices" aria-label="Notifications" title="Notifications">${art('bell')}<b class="chat-count" hidden></b></button>
   <button type="button" role="tab" data-chat-tab="global">Global<b class="chat-count" hidden></b></button>
@@ -204,7 +204,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // Always Global first (a private chat only when you came to write to someone); the counts on the tabs show what is new elsewhere.
   const first=other?'private':wanted??'global';
   if(other)thread={channel:chat.dmChannel(other.id),otherId:other.id,otherName:other.name,otherAvatar:other.avatar};
-  dialog.showModal();show(first,{keepThread:Boolean(other)});void refreshOverview();
+  // The chat itself takes the focus, not its first button (the bell showed a focus ring on every open); Tab still reaches everything.
+  dialog.showModal();dialog.focus({preventScroll:true});show(first,{keepThread:Boolean(other)});void refreshOverview();
  }
 
  // Live: a message in the chat on screen appears at the top; anything else raises a count.
