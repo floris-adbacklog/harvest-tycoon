@@ -64,6 +64,11 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label>From level<input id="admin-popup-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label>'
   +'<p class="admin-popup-note">Every farmer sees the pop-up once, when nothing else is open, and never in their first half hour. It ends after the time below, or after 30 days. Who installed the app is only known on the device: phones and browsers are checked when the game opens.</p></div>'
   +'<label class="admin-news-hours" id="admin-news-hours-row">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Send</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
+  // A private message from the admin to every new farmer, a few minutes after they sign up (supabase/welcome-dm.sql).
+  +'<h3>'+art('chat')+'Welcome message</h3><form id="admin-welcome-form" class="admin-news admin-welcome" hidden><label class="admin-welcome-on"><input type="checkbox" role="switch" class="family-switch" id="admin-welcome-on"><span>Send new farmers a private message from you</span></label>'
+  +'<textarea id="admin-welcome-text" maxlength="500" rows="4" placeholder="Hi {name}, welcome to Harvest Tycoon!"></textarea><p class="admin-popup-note">{name} becomes their farmer name. They can reply; the replies come in under your private messages. Only farmers who sign up after you switch it on get it, each once.</p>'
+  +'<label class="admin-news-hours">Send it<select id="admin-welcome-delay"><option value="1">1 minute after sign-up</option><option value="3">3 minutes after sign-up</option><option value="5">5 minutes after sign-up</option><option value="10">10 minutes after sign-up</option><option value="30">30 minutes after sign-up</option></select></label>'
+  +'<button type="submit" class="primary-button">Save</button><p class="admin-hint" id="admin-welcome-status"></p></form>'
   +'<h3>'+art('admin')+'Moderators</h3><ul id="admin-mod-list" class="admin-recent-list"></ul><p class="admin-hint">Make a farmer a moderator (or not) on their profile.</p>'
   +'<h3>'+art('chat')+'Who may chat</h3><form id="admin-levels-form" class="admin-levels"><label>Global chat from level<input type="number" id="admin-level-global" min="1" max="200" step="1" inputmode="numeric"></label><label>Private messages from level<input type="number" id="admin-level-dm" min="1" max="200" step="1" inputmode="numeric"></label><button type="submit" class="small-button">Save</button></form><p id="admin-chat-status" class="admin-hint" role="status"></p><p id="admin-device" class="admin-hint admin-device"></p></section></div>'
   +'<p id="admin-dashboard-status" class="admin-hint admin-status" role="status"></p>';
@@ -173,7 +178,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   }catch{}
   try{showRoom(await client.donationRoom());}catch{}
   if(role!=='admin')return;
-  dialog.querySelector('#admin-chat-settings').hidden=false;void showPopups();
+  dialog.querySelector('#admin-chat-settings').hidden=false;void showPopups();void showWelcome();
   // This device, as the installed app sees it (public/app-mode.js): to check the bottom of the screen on a real phone.
   const viewport=w=>{try{return w.harvestViewport??null;}catch{return null;}},page=viewport(window.parent),frame=viewport(window);
   dialog.querySelector('#admin-device').textContent=page?`This device: screen ${page.screen}, window ${page.window}, full-screen box ${page.fixed}, status bar ${page.statusBar}, strip ${page.shortfall}. Game: window ${frame?.window??'?'}, box ${frame?.fixed??'?'}, page strip ${frame?.strip??0}.`:'This device: not the installed app.';
@@ -257,6 +262,27 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  }
  dialog.querySelector('#admin-dm-audience').addEventListener('change',()=>void countDm());
  dialog.querySelector('#admin-popup-target').addEventListener('change',event=>{dialog.querySelector('#admin-popup-link-row').hidden=event.target.value!=='link';});
+ // The welcome message: its setting, and how many new farmers got it.
+ function welcomeStatus(w){
+  const last=w.lastSentAt?` · last one ${new Date(w.lastSentAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
+  return `${w.enabled?'On':'Off'} · sent to ${Number(w.sent??0).toLocaleString('en-US')} new farmer${w.sent===1?'':'s'}${last}`;
+ }
+ async function showWelcome(){
+  const form=dialog.querySelector('#admin-welcome-form');if(!bridge.chat?.welcomeGet)return;
+  try{
+   const w=await bridge.chat.welcomeGet();form.hidden=false;
+   dialog.querySelector('#admin-welcome-on').checked=!!w.enabled;dialog.querySelector('#admin-welcome-text').value=w.body??'';
+   const delay=dialog.querySelector('#admin-welcome-delay');delay.value=String(w.delayMinutes??3);if(delay.value!==String(w.delayMinutes??3))delay.value='3';
+   dialog.querySelector('#admin-welcome-status').textContent=welcomeStatus(w);
+  }catch(error){form.hidden=false;dialog.querySelector('#admin-welcome-status').textContent=error.message;}
+ }
+ dialog.querySelector('#admin-welcome-form').addEventListener('submit',async event=>{
+  event.preventDefault();const status=dialog.querySelector('#admin-welcome-status');
+  try{
+   const w=await bridge.chat.welcomeSave({enabled:dialog.querySelector('#admin-welcome-on').checked,body:dialog.querySelector('#admin-welcome-text').value.trim(),delay:Number(dialog.querySelector('#admin-welcome-delay').value)});
+   status.textContent=`Saved. ${welcomeStatus(w)}`;
+  }catch(error){status.textContent=error.message;}
+ });
  async function showPopups(){
   const list=dialog.querySelector('#admin-popup-list');
   try{

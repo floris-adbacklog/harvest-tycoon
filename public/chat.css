@@ -244,3 +244,6 @@ span.chat-avatar{cursor:default}
 .farmer-mod-badge.is-admin{border-color:#ecd39c;background:#fdf1d8;color:#8a5a12}
 .staff-badge{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 7px 1px 3px;border-radius:999px;background:#eaf2f9;color:#23577f;font:800 11px/1.4 'DM Sans',sans-serif;vertical-align:middle;white-space:nowrap}
 .staff-badge.is-admin{background:#fdf1d8;color:#8a5a12}.staff-badge .game-art{width:15px;height:15px}
+/* The welcome message for new farmers (Admin dashboard, Settings; supabase/welcome-dm.sql). */
+.admin-welcome-on{display:flex;align-items:center;gap:10px;margin:0 0 10px;color:#3d382a;font-size:14px;font-weight:700}
+.admin-welcome .admin-popup-note{margin:0 0 10px}

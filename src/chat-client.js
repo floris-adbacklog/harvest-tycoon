@@ -73,6 +73,9 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   staffList:()=>rpc('staff_list'),
   postNews:(body,hours=24)=>rpc('chat_post_news',{p_body:body,p_hours:hours}),
   staffList:()=>rpc('chat_staff_list'),
+  // The admin's welcome message to every new farmer (supabase/welcome-dm.sql).
+  welcomeGet:()=>rpc('welcome_dm_get'),
+  welcomeSave:({enabled,body,delay})=>rpc('welcome_dm_save',{p_enabled:enabled,p_body:body,p_delay:delay}),
   // The admin's private message to many farmers at once (supabase/chat-broadcast-dm.sql): count first, then send.
   broadcastDm:({body='',audience,send=false})=>rpc('chat_broadcast_dm',{p_body:body,p_audience:audience,p_send:send}),
   // Pop-ups (supabase/popups.sql): news that also opens once as a pop-up. Posting, the list and stopping are for the admin only.

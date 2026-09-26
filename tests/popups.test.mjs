@@ -67,3 +67,15 @@ test('the admin can send one private message to many farmers: online now, active
  assert.match(read('src/chat-ui.js'),/m\.sender_staff\?linkify\(m\.body\):esc\(m\.body\)/,'a link in the admin\'s message works');
  assert.match(sql,/add constraint chat_messages_body_check check \(char_length\(body\) between 1 and 500\);/,'the table takes the admin\'s 500 characters (it allowed 200)');
 });
+test('a welcome message from the admin to every new farmer, a few minutes after sign-up; set up in the Admin dashboard',()=>{
+ const sql=read('supabase/welcome-dm.sql'),admin=read('src/admin-dashboard.js');
+ assert.match(sql,/if me is null or public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'/,'only the admin sets it');
+ assert.match(sql,/enabled_since=case when coalesce\(p_enabled,false\) and not enabled then now\(\) else enabled_since end/,'switching it on starts from now: nobody from before gets it');
+ assert.match(sql,/u\.created_at>=greatest\(c\.enabled_since,now\(\)-interval '1 day'\) and u\.created_at<=now\(\)-make_interval\(mins=>c\.delay_minutes\)/,'a few minutes after sign-up');
+ assert.match(sql,/insert into public\.welcome_dm_sent\(player_id\) values\(r\.id\) on conflict do nothing;\n  if not found then continue; end if;/,'each farmer once');
+ assert.match(sql,/replace\(c\.body,'\{name\}',r\.username\)/,'{name} becomes their farmer name');
+ assert.match(sql,/cron\.schedule\('harvest-welcome-dm','\* \* \* \* \*','select public\.welcome_dm_run\(\)'\)/,'checked every minute');
+ assert.match(sql,/revoke all on function public\.welcome_dm_run\(\) from public, anon, authenticated;/,'only the clock runs it');
+ assert.match(admin,/<option value="3">3 minutes after sign-up<\/option>/);assert.match(admin,/\{name\} becomes their farmer name\./);
+ assert.match(admin,/await bridge\.chat\.welcomeSave\(\{enabled:dialog\.querySelector\('#admin-welcome-on'\)\.checked,/);
+});
