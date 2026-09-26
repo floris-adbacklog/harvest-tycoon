@@ -1952,8 +1952,12 @@ export function claimMastery(state,crop,tier){
  const goal=masteryStatus(state,crop)[tier];if(goal.claimed)throw new Error('This mastery reward is already collected.');if(goal.progress<goal.target)throw new Error('Keep harvesting this crop to earn its medal.');
  state.mastery.claimed.push(`${crop}:${tier}`);state.stats.mastery_medals++;state.coins+=goal.coins;state.xp+=goal.xp;return {crop,tier,coins:goal.coins,xp:goal.xp};
 }
+// What each finished estate chapter adds to the stall, in coins an hour (26 Sep 2026, was 6 for every chapter): about a month of the
+// stall pays back the chapter's coins (45,000 for chapter 4 -> +60 an hour); the XP and diamonds come on top.
+export const CHAPTER_STALL_INCOME=Object.freeze([10,20,30,60,180,500,900,1400,2200,3400]);
+export const chapterIncome=completed=>CHAPTER_STALL_INCOME.slice(0,Math.max(0,Math.min(CHAPTER_STALL_INCOME.length,Math.floor(Number(completed)||0)))).reduce((sum,n)=>sum+n,0);
 export function stallStatus(state,now=Date.now()){
- const level=state.stall.level,rate=36+(level-1)*18+state.estate.completed*6,capacityHours=24+Math.min(24,(level-1)*4),capacity=rate*capacityHours;
+ const level=state.stall.level,rate=36+(level-1)*18+chapterIncome(state.estate.completed),capacityHours=24+Math.min(24,(level-1)*4),capacity=rate*capacityHours;
  const balance=Math.min(capacity,Math.max(0,state.stall.bank)+Math.max(0,now-state.stall.since)/3600000*rate);
  return {level,rate,capacityHours,capacity,balance,available:Math.floor(balance+1e-8),upgradeCost:level>=8?null:Math.round(800*2.4**(level-1))};
 }
@@ -2013,7 +2017,7 @@ export function grantChapterRewards(state){
 }
 export function completeProject(state,now=Date.now()){
  const job=state.estate.job;if(!job)throw new Error('Start an estate project first.');if(now<job.readyAt)throw new Error('Your project is still being built.');
- const project=currentProject(state);settleStall(state,now);state.estate.completed++;state.estate.job=null;state.stats.projects++;state.xp+=project.xp;const reward=grantChapterRewards(state);return {name:project.name,xp:project.xp,diamonds:reward.diamonds,chapters:reward.chapters,completed:state.estate.completed};
+ const project=currentProject(state);settleStall(state,now);state.estate.completed++;state.estate.job=null;state.stats.projects++;state.xp+=project.xp;const reward=grantChapterRewards(state);return {name:project.name,xp:project.xp,income:CHAPTER_STALL_INCOME[state.estate.completed-1]??0,diamonds:reward.diamonds,chapters:reward.chapters,completed:state.estate.completed};
 }
 
 // Small hands-on jobs run alongside crops and production. Only server time and
