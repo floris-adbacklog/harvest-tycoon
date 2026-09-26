@@ -5,15 +5,15 @@ import {readFileSync,readdirSync} from 'node:fs';
 const root=new URL('../',import.meta.url),read=path=>readFileSync(new URL(path,root),'utf8');
 
 // Runs public/app-mode.js against a fake page. `safeTop` is what env(safe-area-inset-top) resolves to.
-function run({standalone=true,parentStandalone=false,inFrame=false,width=402,height=874,screen={width:402,height:874},safeTop=62}={}){
+function run({standalone=true,parentStandalone=false,inFrame=false,parentShortfall=' 0px',width=402,height=874,screen={width:402,height:874},safeTop=62}={}){
  const listeners={window:{},document:{}},vars={},attrs={};
  const page={innerWidth:width,innerHeight:height,matchMedia:()=>({matches:standalone}),navigator:{standalone:false},
   addEventListener:(name,fn)=>{listeners.window[name]=fn;}};
  const html={setAttribute:(key,value)=>{attrs[key]=value;},style:{setProperty:(key,value)=>{vars[key]=value;}},appendChild(){},removeChild(){}};
  page.document={documentElement:html,createElement:()=>({style:{}}),addEventListener:(name,fn)=>{listeners.document[name]=fn;}};
- page.parent=inFrame?{matchMedia:()=>({matches:parentStandalone}),navigator:{standalone:false}}:page;
+ page.parent=inFrame?{matchMedia:()=>({matches:parentStandalone}),navigator:{standalone:false},document:{documentElement:{}},getComputedStyle:()=>({getPropertyValue:()=>parentShortfall})}:page;
  // The script reads bare `window`, `document`, `screen` and `getComputedStyle`.
- vm.runInNewContext(read('public/app-mode.js'),{window:page,document:page.document,screen,getComputedStyle:()=>({paddingTop:`${safeTop}px`})});
+ vm.runInNewContext(read('public/app-mode.js'),{window:page,document:page.document,screen,getComputedStyle:()=>({paddingTop:`${safeTop}px`}),setTimeout:()=>0});
  return {attrs,vars,listeners,fake:page};
 }
 const shortfall=options=>run(options).vars['--viewport-shortfall'];
@@ -63,7 +63,7 @@ test('every installed-app layout rule is scoped to the installed app',()=>{
 test('the game reads the bottom safe area in one place, which the installed app can correct',()=>{
  const base=read('public/styles.css');
  assert.match(base,/^:root\{--safe-bottom:env\(safe-area-inset-bottom,0px\)\}/,'the browser keeps the plain safe area');
- assert.match(read('public/pwa-layout.css'),/html\[data-app-mode=standalone\]\{--safe-bottom:max\(0px,calc\(env\(safe-area-inset-bottom,0px\) - var\(--viewport-shortfall,0px\)\)\)\}/);
+ assert.match(read('public/pwa-layout.css'),/html\[data-app-mode=standalone\]\{--safe-bottom:max\(0px,calc\(env\(safe-area-inset-bottom,0px\) - var\(--viewport-shortfall,0px\)\),var\(--frame-strip,0px\)\)\}/);
  const own=new Set(['styles.css','welcome.css','pwa-layout.css','loading-screen.css']);
  for(const file of readdirSync(new URL('public/',root)).filter(name=>name.endsWith('.css')&&!own.has(name)))
   assert(!/env\(safe-area-inset-bottom\)/.test(read(`public/${file}`)),`${file} reads the bottom safe area directly`);
@@ -75,4 +75,15 @@ test('the game frame and the page load the installed-app files, before anything 
  const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(match=>match[1]);
  assert.equal(sheets.at(-1),'/pwa-layout.css','loaded last, so it can correct the rules before it');
  assert(play.indexOf('/app-mode.js')>0&&play.indexOf('/app-mode.js')<play.indexOf('/welcome.css'));
+});
+
+// 26 Sep 2026: the page stretches the game frame over the strip, so the farm reaches the bottom of the screen; inside the frame the
+// buttons stay above the strip, in case it takes no taps.
+test('the game frame reaches over the strip, and keeps its buttons above it',()=>{
+ assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\] #farm-host\{bottom:calc\(0px - var\(--viewport-shortfall,0px\)\)\}/);
+ const stretched=run({standalone:false,inFrame:true,parentStandalone:true,height:874,parentShortfall:' 62px'});
+ assert.equal(stretched.vars['--viewport-shortfall'],'0px','the stretched frame fills the screen');assert.equal(stretched.vars['--frame-strip'],'62px','the strip of the page around it');
+ const short=run({standalone:false,inFrame:true,parentStandalone:true,height:812,parentShortfall:' 62px'});
+ assert.equal(short.vars['--viewport-shortfall'],'62px');assert.equal(short.vars['--frame-strip'],'0px','a frame that is itself short already keeps clear of the strip: no double room');
+ assert.equal(run({height:874}).vars['--frame-strip'],'0px','the page itself');
 });

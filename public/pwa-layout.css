@@ -4,7 +4,7 @@
    with env(safe-area-inset-*), and --safe-bottom is the one place where the bottom inset is read. */
 
 /* If the layout viewport ends above the bottom of the screen, that strip (see app-mode.js) already keeps the buttons clear of the home indicator. */
-html[data-app-mode=standalone]{--safe-bottom:max(0px,calc(env(safe-area-inset-bottom,0px) - var(--viewport-shortfall,0px)))}
+html[data-app-mode=standalone]{--safe-bottom:max(0px,calc(env(safe-area-inset-bottom,0px) - var(--viewport-shortfall,0px)),var(--frame-strip,0px))}
 
 /* The status bar has white text: a solid band in the app's own green (manifest theme_color) sits behind it, like a native
    app, instead of a dark veil over the farm. It is exactly as tall as the status bar, so nothing below moves. */

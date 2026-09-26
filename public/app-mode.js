@@ -24,11 +24,17 @@
   var landscape=window.innerWidth>window.innerHeight,screenLong=Math.max(screen.width,screen.height),screenShort=Math.min(screen.width,screen.height);
   var gap=Math.round((landscape?screenShort:screenLong)-window.innerHeight),bar=statusBar();
   // Only a gap that is exactly the status bar counts: a split-screen window or a page below an opaque status bar is not this quirk.
-  html.style.setProperty('--viewport-shortfall',(bar>0&&gap>0&&Math.abs(gap-bar)<=2?gap:0)+'px');
+  var own=bar>0&&gap>0&&Math.abs(gap-bar)<=2?gap:0;
+  html.style.setProperty('--viewport-shortfall',own+'px');
+  // The game frame (26 Sep 2026): the page stretches it over that strip (welcome.css), so the farm reaches the bottom of the screen.
+  // The frame then measures no gap of its own, but the strip may still not take taps: --frame-strip keeps the buttons above it.
+  var strip=0;
+  try{if(window.parent!==window&&own===0)strip=parseFloat(window.parent.getComputedStyle(window.parent.document.documentElement).getPropertyValue('--viewport-shortfall'))||0;}catch(e){}
+  html.style.setProperty('--frame-strip',strip+'px');
  }
  measure();
  document.addEventListener('DOMContentLoaded',measure);
  window.addEventListener('pageshow',measure);
- window.addEventListener('resize',measure);
+ window.addEventListener('resize',function(){measure();setTimeout(measure,120);});
  window.addEventListener('orientationchange',measure);
 })();
