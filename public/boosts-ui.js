@@ -158,19 +158,25 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   $('diamond-button').setAttribute('aria-label',`${number(state.diamonds)} diamonds. Open boosts and diamond shop.`);
   if($('boost-dialog').open)render();tick();
  }
+ // The active boosts in one small pill under the top bar (phone and computer): a picture and the time left for each, so it is clear
+ // which ones run (26 Sep 2026: pictures instead of "2× XP · 45m"). The pill is rebuilt only when the set changes; the times tick.
+ let pillKey='';
  function tick(){
-  const now=farmNow(),active=[],isVip=vipActive(state,now);
+  const now=farmNow(),chips=[],isVip=vipActive(state,now);
   if(previousVip&&!isVip&&observedExpiry===state.vipExpiresAt)track('vip_expired');
   previousVip=isVip;observedExpiry=state.vipExpiresAt??0;
-  if(isVip)active.push(`VIP · ${formatDuration(state.vipExpiresAt-now)}`);
+  if(isVip)chips.push({id:'vip',picture:'vip',label:'VIP',time:formatDuration(state.vipExpiresAt-now)});
   const vipStatus=document.querySelector('[data-vip-status]');if(vipStatus&&isVip)vipStatus.textContent=`VIP · ${formatDuration(state.vipExpiresAt-now)} left`;
 
-  for(const [id,label,until] of [['xp','2× XP',state.boosts.xpUntil],['harvest','2× harvest',state.boosts.harvestUntil],['coins','2× coins',state.boosts.coinsUntil]]){
-   if(until>now)active.push(`${label} · ${formatDuration(until-now)}`);
+  for(const [id,label,until,picture] of [['xp','2× XP',state.boosts.xpUntil,'double-xp'],['harvest','2× harvest',state.boosts.harvestUntil,'double-harvest'],['coins','2× coins',state.boosts.coinsUntil,'double-coins']]){
+   if(until>now)chips.push({id,picture,label,time:formatDuration(until-now)});
    const el=document.querySelector(`[data-boost-time="${id}"]`);if(el&&until>now)el.textContent=`Active · ${formatDuration(until-now)} left`;
   }
-  if(state.boosts.upgradeCredits)active.push('50% upgrade voucher');
-  $('active-boosts').hidden=!active.length;$('active-boosts').textContent=active.join(' · ');
+  if(state.boosts.upgradeCredits)chips.push({id:'upgrade',picture:'hammer',label:'50% upgrade voucher',time:'50%'});
+  const pill=$('active-boosts'),key=chips.map(c=>c.id).join(',');pill.hidden=!chips.length;
+  if(key!==pillKey){pillKey=key;pill.innerHTML=chips.map(c=>`<span class="active-boost" data-active-boost="${c.id}" title="${c.label}">${art(c.picture)}<b></b></span>`).join('');refreshArt();}
+  for(const c of chips){const time=pill.querySelector(`[data-active-boost="${c.id}"] b`);if(time&&time.textContent!==c.time)time.textContent=c.time;}
+  pill.setAttribute('aria-label',chips.length?`Active boosts: ${chips.map(c=>c.id==='upgrade'?c.label:`${c.label}, ${c.time} left`).join('; ')}. Open the shop.`:'View active boosts');
   if($('boost-dialog').open&&signature()!==lastStatus)render();
  }
  $('diamond-button').onclick=open;

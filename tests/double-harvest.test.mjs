@@ -91,7 +91,7 @@ test('the boosts screen offers the three lengths with prices, extends a running 
  assert.match(ui,/requests=\{\};lengths=\{\};/,'back to 30 minutes when the shop opens');
  assert.match(ui,/runAction\(\{type:'buy_boost',boost:id,\.\.\.\(length\?\{length\}:\{\}\),expectedCost:offer\.cost\}\)/,'sends the length, and none for boosts without one');
  assert.match(ui,/const verb=active\?'Extend'/);assert.match(ui,/Adds \$\{time\} after your current \$\{boost\.name\} ends\./);
- assert.match(ui,/\['harvest','2× harvest',state\.boosts\.harvestUntil\]/);
+ assert.match(ui,/\['harvest','2× harvest',state\.boosts\.harvestUntil,'double-harvest'\]/);
  assert.match(read('public/shop.css'),/\.boost-status-row\{display:flex/);
  assert.match(read('public/visual-icons.js'),/'double-harvest':'double-harvest'/);
  assert.match(read('public/game.js'),/harvestQuantity\(state,p,farmNow\(\)\)\} crop/,'the field tooltip shows the doubled amount');
@@ -103,4 +103,14 @@ test('analytics knows Double harvest and the length, and still drops anything el
  trackCommerce('diamond_action_completed',{action:'harvest',length:'forever',cost:450},win);
  assert.deepEqual(win.dataLayer,[{event:'diamond_action_completed',device:'desktop',action:'harvest',length:'1d',cost:450},{event:'diamond_action_completed',device:'desktop',action:'harvest',cost:450}]);
  assert.match(read('public/farm-client.js'),/\{action:action\.boost\?\?action\.type,length:action\.length,cost:result\.cost\}/);
+});
+
+test('Double XP and Double earnings have their own pictures; the pill shows a picture and the time left per boost, on phones and computers',async()=>{
+ const {BOOSTS}=await import('../game/farm-state.js'),{ART_KEYS}=await import('../public/visual-icons.js');const {readFileSync:rf,statSync}=await import('node:fs');
+ assert.equal(BOOSTS.xp.art,'double-xp');assert.equal(BOOSTS.coins.art,'double-coins');
+ for(const key of ['double-xp','double-coins']){assert.ok(ART_KEYS.includes(key),key);assert.ok(statSync(new URL(`../public/assets/icons/${key}.webp`,import.meta.url)).size>1000);}
+ const ui=read('public/boosts-ui.js');
+ assert.match(ui,/pill\.innerHTML=chips\.map\(c=>`<span class="active-boost" data-active-boost="\$\{c\.id\}" title="\$\{c\.label\}">\$\{art\(c\.picture\)\}<b><\/b><\/span>`\)\.join\(''\)/);
+ assert.match(ui,/\['xp','2× XP',state\.boosts\.xpUntil,'double-xp'\]/);assert.match(ui,/\['coins','2× coins',state\.boosts\.coinsUntil,'double-coins'\]/);
+ assert.match(read('public/desktop-hud.css'),/\.active-boosts\{top:92px;padding:4px 11px;border-radius:999px\}/,'on a computer just under the top-right buttons, clear of the guide card');
 });

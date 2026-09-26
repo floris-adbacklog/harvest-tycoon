@@ -1206,10 +1206,10 @@ export const BOOST_DURATIONS=Object.freeze({'30m':1800000,'1h':3600000,'1d':8640
 export const BOOST_LENGTH_NAMES=Object.freeze({'30m':'30 minutes','1h':'1 hour','1d':'1 day'});
 const BOOST_UNTIL=Object.freeze({xp:'xpUntil',harvest:'harvestUntil',coins:'coinsUntil'});
 export const BOOSTS=Object.freeze({
- xp:{name:'Double XP',cost:50,duration:1800000,prices:Object.freeze({'30m':50,'1h':90,'1d':300}),art:'xp',description:'Earn twice the XP from farm actions.'},
+ xp:{name:'Double XP',cost:50,duration:1800000,prices:Object.freeze({'30m':50,'1h':90,'1d':300}),art:'double-xp',description:'Earn twice the XP from farm actions.'},
  // Between Double XP and Double earnings: it doubles crops only, not goods or deliveries, and at most one waiting harvest per field.
  harvest:{name:'Double harvest',cost:75,duration:1800000,prices:Object.freeze({'30m':75,'1h':135,'1d':450}),art:'double-harvest',description:'Twice the crops from every harvest.'},
- coins:{name:'Double earnings',cost:100,duration:1800000,prices:Object.freeze({'30m':100,'1h':180,'1d':600}),art:'coins',description:'Double coins from sales and deliveries.'},
+ coins:{name:'Double earnings',cost:100,duration:1800000,prices:Object.freeze({'30m':100,'1h':180,'1d':600}),art:'double-coins',description:'Double coins from sales and deliveries.'},
  crops:{name:'Instant harvest',cost:150,art:'seeds',description:'Every growing crop ready to harvest now.'},
  production:{name:'Finish production',cost:200,art:'boost',description:'Every running batch ready now (not the Factory).'},
  upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'50% off the coins and goods of your next building upgrade. Never expires.'}

@@ -5,6 +5,8 @@
    buttons are one row in the bottom-right corner, clear of the Beginner guide. Narrow windows, where that row would
    touch the dock, lift it above the dock. */
 @media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
+ /* The boosts pill sits just under the top-right buttons, clear of the Beginner guide card below it (26 Sep 2026). */
+ .active-boosts{top:92px;padding:4px 11px;border-radius:999px}
  .side-tools{max-height:calc(100dvh - 184px)}
  .scene-controls{flex-direction:row;top:auto;right:20px;bottom:20px}
  .beginner-card{max-height:calc(100dvh - 215px)}

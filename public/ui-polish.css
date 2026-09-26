@@ -96,3 +96,9 @@
 .rookie-notes li{position:relative;font-size:13px;line-height:1.45;color:#55613f}.rookie-notes li::before{content:'';position:absolute;left:-13px;top:.6em;width:6px;height:6px;border-radius:50%;background:#e59d2c}
 #rookie-dialog .primary-button{width:100%;min-height:46px}
 @media(max-width:600px){#rookie-dialog{padding:20px 18px 18px}#rookie-dialog .rookie-art{width:76px;height:76px;margin-bottom:4px}#rookie-dialog h2{font-size:24px;margin:4px 0 6px}.rookie-clock{margin:12px 0}}
+/* The active boosts (boosts-ui.js, 26 Sep 2026): a picture and the time left for each boost in one small pill. */
+.active-boosts:not([hidden]){display:flex;align-items:center;gap:10px}
+.active-boost{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.active-boost .game-art{flex:none;width:20px;height:20px}
+.active-boost b{font-weight:750;font-variant-numeric:tabular-nums}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){.active-boosts:not([hidden]){gap:7px}.active-boost{gap:3px}.active-boost .game-art{width:16px;height:16px}}
