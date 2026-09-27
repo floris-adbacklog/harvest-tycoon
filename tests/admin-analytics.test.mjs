@@ -283,3 +283,10 @@ test('checkout shows local currencies (Adaptive Pricing) while the webhook still
  assert.match(checkout,/price\.currency!=='eur'/,'the prices stay in euro');
  assert.match(webhook,/if\(session\.currency!=='eur'\|\|session\.amount_total!==purchase\.amount_cents/,'the paid session is still checked in euro');
 });
+
+// 27 Sep 2026: the game's own name, icon and button colour on its payment page only (the Stripe account also sells other things).
+test('the payment page shows Harvest Tycoon for this game only',()=>{
+ const checkout=read('supabase/functions/diamond-checkout/index.ts');
+ assert.match(checkout,/branding_settings:\{display_name:'Harvest Tycoon',icon:\{type:'url',url:`\$\{origin\}\/assets\/pwa\/icon-512\.png`\}/);
+ assert.ok(read('public/assets/pwa/icon-512.png').length>0,'the icon ships with the site');
+});

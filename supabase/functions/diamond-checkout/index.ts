@@ -59,6 +59,9 @@ Deno.serve(async req=>{
    // in presentment_details), so the webhook's check on the exact euro amount stays as it is.
    payment_intent_data:{metadata},adaptive_pricing:{enabled:true},
    integration_identifier:'harvest_tycoon_xqbnrjka',
+   // The payment page looks like the game (27 Sep 2026), for this session only: the Stripe account (Millstone) also sells other
+   // things, so its own name and branding stay as they are everywhere else. The name only changes the top of the page.
+   branding_settings:{display_name:'Harvest Tycoon',icon:{type:'url',url:`${origin}/assets/pwa/icon-512.png`},button_color:'#2f5d3a',border_style:'rounded'},
    success_url:`${origin}/play.html?purchase=${p.id}`,cancel_url:`${origin}/play.html?purchase=${p.id}&checkout=cancelled`
   },{idempotencyKey:`harvest-${live?'live':'test'}-${p.id}`});
   if(session.status==='expired'){
