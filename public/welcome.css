@@ -175,3 +175,7 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]),html[data-app
 
 /* Signed in, the page around the game frame does not zoom either (src/page-zoom.js); the home page stays zoomable. */
 html:has(body[data-phase=authenticated]),body[data-phase=authenticated]{touch-action:pan-x pan-y}
+/* The footer links, the Cookie settings button and the Facebook icon on one line, centred (27 Sep 2026: the button sat lower). */
+.site-legal{align-items:center}
+.site-legal-button{min-height:0;height:auto;margin:0;line-height:inherit}
+.site-legal .footer-social{display:inline-flex;align-items:center}
