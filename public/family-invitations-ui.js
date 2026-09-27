@@ -4,7 +4,8 @@ import {formatDuration} from './farm-state.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function renderFamilyInvitation(view,now,emblem,actionButton){
  const i=view.invitation;
- if(!i)return `<section class="family-invitation-empty">${art('family-members')}<div><h3>Your invitation</h3><p>No pending invitation. A family leader can find your player name and invite you here.</p><small>You can have one pending invitation at a time.</small></div></section>`;
+ // No invitation: nothing (27 Sep 2026: an empty card above the list of families; the list already says how invitations work).
+ if(!i)return '';
  const canAccept=i.canAccept&&i.expiresAt>now;
  return `<section class="family-incoming-invitation" aria-labelledby="family-invitation-heading"><span class="eyebrow">YOU ARE INVITED</span><div class="family-invitation-identity">${emblem(i.family.emblem)}<div><h3 id="family-invitation-heading">${esc(i.family.name)}</h3><p>Invited by ${esc(i.invitedBy)} · ${i.family.members} / ${view.config.maxMembers} farmers</p></div></div><p>Join this family to work on weekly orders and earn tournament rewards together.</p><small>Expires in ${formatDuration(Math.max(0,i.expiresAt-now))}</small>${canAccept?'':`<p class="family-notice">${i.family.members>=view.config.maxMembers?'This family is full right now.':view.cooldownUntil>now?`You can join in ${formatDuration(view.cooldownUntil-now)}.`:'This invitation is no longer available.'}</p>`}<div class="family-invitation-actions">${actionButton('family_accept_invite','Accept invitation',`data-invitation-id="${esc(i.id)}"`,!canAccept)}${actionButton('family_decline_invite','Decline',`data-invitation-id="${esc(i.id)}"`)}</div></section>`;
 }

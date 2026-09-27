@@ -321,3 +321,36 @@
 .family-reward>.game-art{object-fit:contain}
 @media(max-width:600px){.family-chest-head>.game-art{width:56px;height:56px}.family-chest-head h3{font-size:16px}.family-chest-track{margin:20px 12px 8px}.family-chest-marker,.family-chest-marker .game-art{width:28px;height:28px}}
 .family-list-row strong .family-level-chip{display:inline-block;width:auto;max-width:max-content;margin:0 0 0 6px;vertical-align:2px}
+
+/* A calmer Family screen (27 Sep 2026). */
+/* 1. The family level as a gold badge on the emblem in the heading. */
+.family-heading-emblem{position:relative}
+.family-level-badge{position:absolute;right:-6px;bottom:-6px;display:grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border:2px solid #fffdf4;border-radius:99px;background:#e7b43e;color:#4a2d08;font:800 11.5px/1 'Outfit',sans-serif;box-shadow:0 1px 3px #3c2f1433}
+/* 2. The Family Order as one card: picture, title, one line of where it stands, and the bar. */
+.family-order-card{margin:0 0 12px;padding:14px 16px;border:1px solid #ebe0c4;border-radius:18px;background:#fffdf6}
+.family-order-head{display:flex;align-items:center;gap:12px}
+.family-order-head>.game-art{flex:none;width:58px;height:58px;object-fit:contain}
+.family-order-head h3{margin:2px 0 4px;font:700 18px/1.25 'Outfit',sans-serif;color:#3d3522}
+.family-order-head p{margin:0;font-size:12.5px;color:#7a6b4b}
+.family-order-head p b{color:#3d3522}
+.family-order-head .eyebrow{font-size:10.5px;letter-spacing:.08em;color:#7c9a5c}
+.family-order-card progress{appearance:none;-webkit-appearance:none;display:block;width:100%;height:10px;margin-top:12px;border:0;border-radius:99px;background:#e6e2cf;overflow:hidden}
+.family-order-card progress::-webkit-progress-bar{background:#e6e2cf;border-radius:99px}
+.family-order-card progress::-webkit-progress-value{background:linear-gradient(90deg,#7c9a5c,#9dbb72);border-radius:99px}
+.family-order-card progress::-moz-progress-bar{background:linear-gradient(90deg,#7c9a5c,#9dbb72);border-radius:99px}
+.family-order-card .family-notice{margin:12px 0 0}
+/* 3. Rewards in small rows: the chest's on the chest card, the others in a light card on top. */
+#family-dialog .family-rewards{margin:0 0 14px;padding:10px 14px;border:1px solid #ead9ad;border-radius:16px;background:#fffaf0;box-shadow:none}
+#family-dialog .family-rewards h3{margin:2px 0 4px;font-size:14px;color:#7a5d1e}
+#family-dialog .family-reward{display:flex;align-items:center;gap:10px;padding:8px 0}
+#family-dialog .family-reward>.game-art{width:36px;height:36px;object-fit:contain}
+#family-dialog .family-reward small{display:block;font-size:11px;color:#9a8d6f}
+#family-dialog .family-reward>button{width:auto;flex:none}
+.family-chest-ready{margin:10px 0 4px;padding:2px 12px;border:1px solid #e3d3a4;border-radius:14px;background:#fffdf6}
+.family-chest-ready .family-reward+.family-reward{border-top:1px solid #efe6cf}
+/* 4. Without a family: one short welcome line; the list of families comes right under it. */
+.family-welcome.is-compact{display:flex;align-items:center;gap:12px;max-width:none;margin:0 0 16px;text-align:left}
+.family-welcome.is-compact>.game-art{flex:none;width:52px;height:52px;margin:0}
+.family-welcome.is-compact h3{margin:0 0 3px;font:700 18px/1.25 'Outfit',sans-serif}
+.family-welcome.is-compact p{margin:0;font-size:13px;color:#7a6b4b}
+@media(max-width:600px){.family-order-head>.game-art{width:46px;height:46px}.family-order-head h3{font-size:16px}.family-chest-head{gap:10px}.family-chest-head>.game-art{width:48px;height:48px}#family-dialog .family-reward>.game-art{width:32px;height:32px}}

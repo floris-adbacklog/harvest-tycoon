@@ -129,8 +129,8 @@ test('the avatar picker is the same row, with the faces as tiles',()=>{
  assert.match(css,/\.avatar-picker \.avatar-tile\{[^}]*width:62px;height:66px/);assert.match(css,/\.avatar-picker \.family-emblems input:checked\+\.avatar-tile/);
  assert(!/avatar-grid|avatar-choice/.test(css),'the wall of squares is gone');
 });
-test('all 59 family emblems have a picture that ships and a name',async()=>{
- assert.equal(FAMILY_EMBLEMS.length,59);
+test('all 60 family emblems have a picture that ships and a name',async()=>{
+ assert.equal(FAMILY_EMBLEMS.length,60);
  const {artSource}=await import('../public/visual-icons.js');for(const e of FAMILY_EMBLEMS)assert.ok(artSource(e.icon),`${e.icon} has a picture`);
  const icons=read('public/visual-icons.js'),ui=read('public/family-ui.js');
  for(const icon of ['family-fox','family-owl','family-windmill','family-horseshoe']){
