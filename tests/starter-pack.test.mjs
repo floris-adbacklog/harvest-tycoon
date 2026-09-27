@@ -14,14 +14,16 @@ test('starter eligibility is server-time bounded to 7 days and unavailable after
  assert.equal(starterEligibility('invalid',false,start).eligible,false);
  assert.equal(starterEligibility(created,false,start-1).eligible,false);
 });
-test('Starter Pack verifies €2.99, 300 diamonds and 10000 coins against exact price',()=>{
- const pack=PAYMENT_PACKS.starter;
- const p={id:'purchase',player_id:'player',pack:'starter',diamonds:300,coins:10000,amount_cents:299,price_id:pack.price,livemode:true,stripe_session_id:'cs_starter'};
+test('Starter Pack verifies €2.99, 500 diamonds and 10000 coins against exact price',()=>{
+ const pack=PAYMENT_PACKS.starter;assert.equal(pack.diamonds,500,'as many as the €4.99 pack (27 Sep 2026)');
+ const p={id:'purchase',player_id:'player',pack:'starter',diamonds:500,coins:10000,amount_cents:299,price_id:pack.price,livemode:true,stripe_session_id:'cs_starter'};
  const s={id:'cs_starter',mode:'payment',status:'complete',payment_status:'paid',livemode:true,client_reference_id:'player',metadata:{app:'harvest-tycoon',purchase_id:'purchase',player_id:'player'},currency:'eur',amount_total:299,amount_subtotal:299,payment_intent:'pi_starter'};
  const items={has_more:false,data:[{quantity:1,price:{id:pack.price}}]};
  assert.equal(validatePaidSession(s,p,items),'pi_starter');
  assert.throws(()=>validatePaidSession({...s,amount_total:199},p,items));
  assert.throws(()=>validatePaidSession(s,{...p,coins:0},items));
+ // A checkout opened with the old 300 diamonds and paid after the change still counts (it credits its own 300); other amounts do not.
+ assert.equal(validatePaidSession(s,{...p,diamonds:300},items),'pi_starter');assert.throws(()=>validatePaidSession(s,{...p,diamonds:400},items));
  assert.throws(()=>validatePaidSession(s,p,{...items,data:[{quantity:1,price:{id:PAYMENT_PACKS['1250'].price}}]}));
 });
 test('seed-box sorting starts at 35%, keeps practice and caps at 60% after 7 attempts',()=>{

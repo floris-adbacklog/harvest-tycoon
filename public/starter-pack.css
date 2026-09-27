@@ -41,3 +41,6 @@
 @media(max-height:700px){.starter-hero{width:64px;height:64px}#starter-pack-dialog h2{font-size:25px}}
 /* A low landscape screen has the side tools as a rail on the left: the Starter Pack waits just right of it, above the tools. */
 @media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){#starter-pack-button{left:calc(86px + env(safe-area-inset-left))}}
+/* The value line (27 Sep 2026): what the same diamonds cost in the shop. */
+.starter-value{margin:4px 0 10px!important;font-size:14px!important;font-weight:700;color:#3f6b33}
+.starter-value[hidden]{display:none}

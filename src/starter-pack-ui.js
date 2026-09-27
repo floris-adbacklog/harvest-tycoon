@@ -9,15 +9,21 @@ export async function createStarterPackUI(bridge){
  const dialog=document.createElement('dialog');dialog.id='starter-pack-dialog';dialog.className='game-dialog';dialog.setAttribute('aria-labelledby','starter-pack-title');
  // Picture, name and time left; the diamonds first (the real value), then the coins; the twelve crops as one strip
  // of pictures; one Buy button that fits on a phone without scrolling.
- dialog.innerHTML=`<button type="button" class="starter-close" aria-label="Close Starter Pack">×</button><img class="starter-hero" src="/assets/icons/starter-pack.webp" alt=""><span class="eyebrow">A LITTLE HEAD START</span><h2 id="starter-pack-title">Starter Pack</h2><p class="starter-time"></p><div class="starter-rewards"><div class="is-diamonds">${art('diamonds')}<strong>300</strong><span>diamonds</span></div><div>${art('coins')}<strong>10,000</strong><span>coins</span></div></div><div class="starter-crops-strip"><strong>+ one of ${STARTER_PACK_CROPS.length} crops</strong><div class="starter-crops">${STARTER_PACK_CROPS.map(key=>`<span title="${CROPS[key].name}">${art(key)}</span>`).join('')}</div><small>They go straight to your storage.</small></div><button class="primary-button starter-buy" disabled>Buy for €2.99</button><p class="starter-feedback" role="status" aria-live="polite"></p><small class="starter-fine">One purchase per account.</small>`;
+ dialog.innerHTML=`<button type="button" class="starter-close" aria-label="Close Starter Pack">×</button><img class="starter-hero" src="/assets/icons/starter-pack.webp" alt=""><span class="eyebrow">A LITTLE HEAD START</span><h2 id="starter-pack-title">Starter Pack</h2><div class="starter-rewards"><div class="is-diamonds">${art('diamonds')}<strong data-starter-diamonds>500</strong><span>diamonds</span></div><div>${art('coins')}<strong>10,000</strong><span>coins</span></div></div><div class="starter-crops-strip"><strong>+ one of ${STARTER_PACK_CROPS.length} crops</strong><div class="starter-crops">${STARTER_PACK_CROPS.map(key=>`<span title="${CROPS[key].name}">${art(key)}</span>`).join('')}</div><small>They go straight to your storage.</small></div><p class="starter-value" hidden></p><p class="starter-time"></p><button class="primary-button starter-buy" disabled>Buy for €2.99</button><p class="starter-feedback" role="status" aria-live="polite"></p><small class="starter-fine">One purchase per account.</small>`;
  document.body.append(button,dialog);document.getElementById('diamond-button')?.after(chip);refreshArt();
- const buy=dialog.querySelector('.starter-buy'),feedback=dialog.querySelector('.starter-feedback'),time=dialog.querySelector('.starter-time');
+ const buy=dialog.querySelector('.starter-buy'),feedback=dialog.querySelector('.starter-feedback'),time=dialog.querySelector('.starter-time'),value=dialog.querySelector('.starter-value');
+ // What the pack is worth, from the shop's own prices (the server catalogue): the pack of as many diamonds as the Starter Pack (27 Sep
+ // 2026). A plain comparison, never a made-up "was" price.
+ const euro=cents=>`€${(cents/100).toFixed(2)}`;
  let catalog=null,offset=0,pending=false,disposed=false,requestId='',refreshing=false,checkedAt=0;
  function render(){
   const offer=catalog?.starter,remaining=(offer?.expiresAt??0)-(Date.now()+offset),eligible=offer?.eligible&&remaining>0;
   button.hidden=chip.hidden=!eligible;buy.disabled=pending||!eligible||!catalog?.enabled;
   buy.textContent=pending?'Opening secure checkout…':catalog?.mode==='test'?'Test purchase · €2.99':'Buy for €2.99';
-  time.textContent=offer?.claimed?'Already received':eligible?`${formatDuration(remaining)} left`:'This offer has ended';
+  time.textContent=offer?.claimed?'Already received':eligible?`Only in your first week at level ${STARTER_LEVEL} · ${formatDuration(remaining)} left`:'This offer has ended';
+  const pack=catalog?.packs?.find(p=>p.id==='starter'),same=pack&&catalog.packs.find(p=>p.id!=='starter'&&!p.coins&&p.diamonds===pack.diamonds);
+  if(pack)dialog.querySelector('[data-starter-diamonds]').textContent=pack.diamonds.toLocaleString('en-US');
+  value.hidden=!same;if(same)value.textContent=`The ${pack.diamonds.toLocaleString('en-US')} diamonds alone cost ${euro(same.cents)} in the shop.`;
   if(!catalog?.enabled&&!pending)feedback.textContent='Purchases are not available yet. Please check back later.';
   else if(catalog?.enabled&&feedback.textContent==='Purchases are not available yet. Please check back later.')feedback.textContent='';
  }

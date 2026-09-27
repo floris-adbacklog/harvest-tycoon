@@ -4,7 +4,8 @@ export const PAYMENT_PACKS=Object.freeze({
  '500':{diamonds:500,cents:499,price:'price_1UI5oE04FdNTUSp4F2BP95IK'},
  '1250':{diamonds:1250,cents:999,price:'price_1UH5Gv04FdNTUSp4kabIfp0Y'},
  '3500':{diamonds:3500,cents:2499,price:'price_1UH5HL04FdNTUSp41DLz2C1B'},
- starter:{diamonds:300,coins:10000,cents:299,product:'prod_VHfWRMcedF9ShZ',price:'price_1UH6BG04FdNTUSp4Mg5Zl4pD'}
+ // 27 Sep 2026: 500 diamonds instead of 300, as many as the €4.99 pack, so the value line is plain (src/starter-pack-ui.js).
+ starter:{diamonds:500,coins:10000,cents:299,product:'prod_VHfWRMcedF9ShZ',price:'price_1UH6BG04FdNTUSp4Mg5Zl4pD'}
 });
 // Keep validating checkouts that were opened before the doubled packs went live.
 // These packs are receipt-only and are never returned by the catalogue endpoint.
@@ -18,6 +19,8 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
 });
 const RECEIPT_PACKS=Object.freeze({...LEGACY_PAYMENT_PACKS,...PAYMENT_PACKS});
 const CHECKOUT_PACK_ALIASES=Object.freeze({'50':'150','100':'150','300':'1250','600':'1250','1000':'3500','2000':'3500'});
+// A Starter Pack checkout opened before 27 Sep 2026 held 300 diamonds; paid later, it still counts, and credits the 300 it showed.
+export const STARTER_DIAMONDS_BEFORE=300;
 export const STARTER_WINDOW=7*24*60*60*1000;
 // This deployed storefront is live. Keep an explicit emergency off switch.
 export function livePaymentConfiguration(key,webhookSecret,enabledFlag){
@@ -43,7 +46,7 @@ export function validatePaidSession(session,purchase,items){
  if(session.payment_status!=='paid'||session.status!=='complete')throw new Error('Payment is not complete.');
  if(session.mode!=='payment'||session.livemode!==purchase.livemode)throw new Error('Payment mode mismatch.');
  if(session.id!==purchase.stripe_session_id||session.client_reference_id!==purchase.player_id||session.metadata?.purchase_id!==purchase.id||session.metadata?.player_id!==purchase.player_id||session.metadata?.app!=='harvest-tycoon')throw new Error('Purchase ownership mismatch.');
- if(session.currency!=='eur'||session.amount_total!==purchase.amount_cents||session.amount_subtotal!==purchase.amount_cents||purchase.amount_cents!==pack.cents||purchase.diamonds!==pack.diamonds)throw new Error('Payment amount mismatch.');
+ if(session.currency!=='eur'||session.amount_total!==purchase.amount_cents||session.amount_subtotal!==purchase.amount_cents||purchase.amount_cents!==pack.cents||purchase.diamonds!==pack.diamonds&&!(purchase.pack==='starter'&&purchase.diamonds===STARTER_DIAMONDS_BEFORE))throw new Error('Payment amount mismatch.');
  if((purchase.coins??0)!==(pack.coins??0))throw new Error('Coin reward mismatch.');
  if(purchase.price_id!==pack.price||items.has_more||items.data?.length!==1||items.data[0].quantity!==1||items.data[0].price?.id!==purchase.price_id)throw new Error('Payment items mismatch.');
  if(typeof session.payment_intent!=='string'||!session.payment_intent.startsWith('pi_'))throw new Error('Missing payment reference.');
