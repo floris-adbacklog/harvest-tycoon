@@ -1233,3 +1233,7 @@
 #admin-dashboard-dialog .admin-device-split{margin:0 0 10px;font-size:15px;color:#4a4232}#admin-dashboard-dialog .admin-device-split strong{font:700 20px 'Outfit',sans-serif;color:#3f5a30}
 #admin-dashboard-dialog .admin-device-split small,#admin-dashboard-dialog .admin-device-week small{margin-left:6px;color:#8a7c69;font-size:12px}
 #admin-dashboard-dialog .admin-device-week{margin:10px 0 0;font-size:13px;color:#5d5140}
+/* Farm events: the family bonus under the prizes (27 Sep 2026). */
+.event-family-bonus{display:flex;align-items:center;gap:8px;margin:10px 0 0;padding:8px 10px;border-radius:12px;background:#f2f6ea;font-size:12.5px;color:#4d6b3a}
+.event-family-bonus>.game-art{flex:none;width:30px;height:30px}
+.event-family-bonus .game-art:not(:first-child){width:15px;height:15px;vertical-align:-2px}

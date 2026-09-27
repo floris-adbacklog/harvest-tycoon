@@ -40,7 +40,7 @@ test('Every family gets the same weekly order: four random crops or goods from t
  assert.equal(seen.size,Object.keys(ITEMS).length,'over time every crop and good turns up');
 });
 test('Create and join enforce names, emblems, member limit and code privacy',()=>{
- let c=create();assert.equal(c.families[0].is_open,false);assert.match(c.families[0].invite_code,/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
+ let c=create();assert.equal(c.families[0].is_open,true,'a new family is open (27 Sep 2026)');assert.match(c.families[0].invite_code,/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
  assert.ok(run(c,farm(),'other',{type:'family_create',name:'meadow friends',emblem:'0'}).failed);
  assert.ok(run(c,farm(),'other',{type:'family_create',name:'Bad<script>',emblem:'0'}).failed);
  assert.ok(run(c,farm(),'other',{type:'family_create',name:'Valid farm',emblem:'unknown'}).failed);
@@ -217,8 +217,9 @@ test('The four Family pages each use their own generated PNG; on phones Farm Fam
 
 test('new emblems preserve existing IDs and only leaders may change them',()=>{
  const old=['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy'];
- assert.deepEqual(FAMILY_EMBLEMS.slice(0,12).map(e=>e.icon),old);assert.equal(FAMILY_EMBLEMS.length,25);
- assert.deepEqual(FAMILY_EMBLEMS.slice(21).map(e=>[e.id,e.icon]),[['21','family-fox'],['22','family-owl'],['23','family-windmill'],['24','family-horseshoe']],'four new emblems, appended after the old ones');
+ assert.deepEqual(FAMILY_EMBLEMS.slice(0,12).map(e=>e.icon),old);assert.equal(FAMILY_EMBLEMS.length,59);
+ assert.deepEqual(FAMILY_EMBLEMS.slice(21,25).map(e=>[e.id,e.icon]),[['21','family-fox'],['22','family-owl'],['23','family-windmill'],['24','family-horseshoe']],'four new emblems, appended after the old ones');
+ assert.deepEqual(FAMILY_EMBLEMS.slice(25,27).map(e=>[e.id,e.icon]),[['25','lettuce'],['26','barley']],'27 Sep 2026: 34 more, appended again');
  let c=join(create());const oldInvite=c.families[0].invite_code;
  for(const e of FAMILY_EMBLEMS.slice(12)){
   const result=run(c,farm(),'alice',{type:'family_emblem',emblem:e.id});assert.equal(result.failed,false);c=result.context;assert.equal(c.families[0].emblem,e.id);assert.equal(c.families[0].invite_code,oldInvite);

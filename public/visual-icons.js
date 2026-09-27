@@ -46,8 +46,17 @@ const LARGE_PICTURES=['familyhall-model','helping-hand','windmill','family-fox',
 const PLACE_RENDERS=['valleymarket','ranch','estateworkshop','tradedepot','grandfair'].map(key=>`place-${key}`);
 // These pictures were re-encoded to WebP (level-up.webp is a separate hardcoded path in progression-ui.js, not routed through art()) (75-86% smaller, no visible difference at this size); every other picture is still a plain PNG.
 const webpPictures=new Set(['live-events','family-sharing','double-harvest','double-xp','double-coins','invite-friends','vip','honey','rank-gold','family-bee','family-barn','rank-bronze','family-weekly-order','family-oak','rank-silver','family-members','familyhall','lock','family-tournament','family-management','berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice','harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote','chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary','instant-harvest','chore-troughs',...MIDGAME_ITEM_ART,...VALLEY_ITEM_ART,'valleymarket',...ESTATE_ITEM_ART,'estateworkshop','tradedepot','grandfair',...LARGE_PICTURES,...PLACE_RENDERS,'truffles','truffleomelette','chat','bell','sound','cookie','letter','send','admin','guide','settings','alert','block',...PACK_ART,'log']);
+// The Family Chest in its four tiers, and open (27 Sep 2026, painted, WebP).
+for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver','family-chest-gold','family-chest-open']){pictures[key]=key;webpPictures.add(key);}
 // A picture by its file name, for the screens that show one without art() (the Buildings list and a building's page).
 export const pictureFile=name=>`/assets/icons/${name}.${webpPictures.has(name)?'webp':'png'}`;
+// Where a picture lives, for drawing it on a canvas (the family flag, game.js): a file, and for a sprite its cell in the sheet.
+export function artSource(key){
+ const e=spriteEntries[key];
+ if(e)return {src:`/assets/icons/${e.file}`,columns:e.columns,index:e.index};
+ if(pictures[key])return {src:`/assets/icons/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}`,columns:1,index:0};
+ return null;
+}
 export function art(key,extra=''){
  const entry=spriteEntries[key];
  if(entry){

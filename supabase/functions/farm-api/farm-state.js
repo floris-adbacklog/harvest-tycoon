@@ -2113,11 +2113,41 @@ function workActivity(state,action,now){
 // Farm Family rules. Only the authenticated farm-api executes mutations against
 // the service-only context; browser copies expose constants and display helpers.
 export const FAMILY_CONFIG=Object.freeze({MAX_MEMBERS:10,MIN_CONTRIB_POINTS:500,JOIN_COOLDOWN_MS:48*3600000,RENAME_COOLDOWN_MS:7*DAY_MS,ATTEMPTS_PER_HOUR:10,TOURNAMENT_FIRST_MIN:100,TOURNAMENT_FIRST_MAX:5000,TOURNAMENT_PER_EXTRA_FAMILY:25,ORDER_PLAYER_WEEK_DIAMOND_CAP:25,TOURNAMENT_MIN_POINTS:1,ORDER_COIN_MULTIPLIER:1.25,ORDER_XP_PER_VALUE:1/100,ORDER_DIAMOND_BASE:1,ORDER_DIAMOND_MAX:3,ORDER_COMPLETION_DIAMONDS:4,REWARD_WEEKS:8,ORDER_MIN_VALUE_PER_MEMBER:16000,ORDER_MAX_VALUE_PER_MEMBER:30000,RANK_WEIGHTS:[1,.6,.4]});
-export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy','family-bee','family-oak','family-barn','pumpkin','greenbeans','cheese','applejuice','berrypreserves','harvesthamper','family-fox','family-owl','family-windmill','family-horseshoe'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
+export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy','family-bee','family-oak','family-barn','pumpkin','greenbeans','cheese','applejuice','berrypreserves','harvesthamper','family-fox','family-owl','family-windmill','family-horseshoe',
+ // 27 Sep 2026: 34 more, from the crops and goods added since. Always added at the end: an emblem's id is its place in this list.
+ 'lettuce','barley','cabbage','cauliflower','redcabbage','squash','polebeans','ciderapples','cherries','flour','pie','pickles','oil','stew','applepie','berrytart','orchardjuice','squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','prizeproduce','truffles','vegetables','silo','cart'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
 export function familyUnlocked(state,minLevel=FAMILY_MIN_LEVEL){return levelOf(state)>=minLevel;}
 export function familyUnlockHint(minLevel=FAMILY_MIN_LEVEL){return `Reach level ${minLevel} to unlock Farm Family.`;}
 export function familyWeek(now=Date.now()){return Math.floor((now-4*DAY_MS)/(7*DAY_MS));}
 export function familyWeekStart(week){return 4*DAY_MS+week*7*DAY_MS;}
+// The Family Chest (27 Sep 2026): one chest a week for the whole family, filled by what every member does on their own farm. A
+// database trigger counts it after each farm action (family-chest.sql, with the same points): a harvest 1 point, a collected batch
+// 2, a delivery 10, a chore 3, a helping-hand job 2. At each of four tiers every member with at least FAMILY_CHEST_MIN points that
+// week gets diamonds and coins that grow with their own level. A new chest every Monday. A bigger, busier family fills it further:
+// a keen farmer alone reaches the wooden chest, a family of five the silver one, and gold takes a full family.
+export const FAMILY_CHEST_POINTS=Object.freeze({harvested:1,produced:2,deliveries:10,chores:3,activities:2});
+export const FAMILY_CHEST_TIERS=Object.freeze([
+ Object.freeze({id:'wood',name:'Wooden chest',points:1500,diamonds:3,coinsPerLevel:20}),
+ Object.freeze({id:'iron',name:'Iron chest',points:5000,diamonds:6,coinsPerLevel:50}),
+ Object.freeze({id:'silver',name:'Silver chest',points:12000,diamonds:12,coinsPerLevel:100}),
+ Object.freeze({id:'gold',name:'Golden chest',points:25000,diamonds:25,coinsPerLevel:200})
+]);
+export const FAMILY_CHEST_MIN=300;
+export const familyChestTiers=points=>FAMILY_CHEST_TIERS.filter(t=>points>=t.points).length;
+// Family level: every chest tier a family opens (in any week) is a step up. Each level above 1 adds FAMILY_LEVEL_BONUS to the
+// rewards of the chest and of the weekly Family Order for every member.
+export const FAMILY_LEVEL_STEPS=Object.freeze([0,3,8,15,24,35,48,63,80,100]);   // tiers opened for level 1, 2 ... 10
+export const FAMILY_LEVEL_BONUS=.1;
+export function familyLevelFrom(tiers){let level=1;FAMILY_LEVEL_STEPS.forEach((need,i)=>{if(tiers>=need)level=i+1;});return level;}
+export function familyStanding(c,familyId){
+ const tiers=(c.chests??[]).filter(r=>r.family_id===familyId).reduce((n,r)=>n+familyChestTiers(Number(r.points)||0),0),level=familyLevelFrom(tiers);
+ return {tiers,level,next:FAMILY_LEVEL_STEPS[level]??null,bonus:(level-1)*FAMILY_LEVEL_BONUS};
+}
+// A family event bonus (harvest_event_settle, family-chest.sql): when this many members of one family finish the same farm event,
+// each of them gets this on top of their own prize.
+export const FAMILY_EVENT_BONUS=Object.freeze({finishers:3,coins:200,diamonds:5});
+// A farmer counts as active in a family list when they did something on their farm in the last three days.
+const FAMILY_ACTIVE_MS=3*DAY_MS;
 // The weekly Family Order is the same for every family: four crops or goods drawn at random from everything in the game
 // (every crop and good, whatever a family can make yet), so there is always a reason to unlock more and to share. The
 // amounts follow the value: about 20,000 coins of goods per member, at most 150 of one thing per member, cheap things
@@ -2201,14 +2231,14 @@ export function familyTournament(context,week,config=FAMILY_CONFIG){
  const pool=qualifying.length?prizes.reduce((n,p)=>n+p.diamonds,0):firstPrize;
  return {pool,firstPrize,activePlayers,entries,qualifying,prizes};
 }
-export function emptyFamilyContext(){return {revision:0,families:[],members:[],invitations:[],requests:[],orders:[],contributions:[],results:[],rewards:[],attempts:[],weeks:[],players:[],receipt:null};}
+export function emptyFamilyContext(){return {revision:0,families:[],members:[],invitations:[],requests:[],orders:[],contributions:[],results:[],rewards:[],attempts:[],weeks:[],players:[],chests:[],chestPlayers:[],receipt:null};}
 const familyMember=(c,p)=>c.members.find(m=>m.player_id===p);
 const familyCurrent=(c,p)=>{const m=familyMember(c,p);return m&&!m.left_at&&m.family_id?c.families.find(f=>f.id===m.family_id&&!f.deleted_at):null;};
 const familyMembers=(c,id)=>c.members.filter(m=>m.family_id===id&&!m.left_at);
 function addFamilyReward(c,p,week,kind,coins,xp,diamonds,now,config){
  if(c.rewards.some(r=>r.player_id===p&&r.week===week&&r.kind===kind))return;
  const allocated=c.rewards.filter(r=>r.player_id===p&&r.week===week&&r.kind===kind).reduce((n,r)=>n+r.diamonds,0);
- const cap=kind==='tournament'?config.TOURNAMENT_FIRST_MAX:config.ORDER_PLAYER_WEEK_DIAMOND_CAP;
+ const cap=kind==='tournament'?config.TOURNAMENT_FIRST_MAX:kind.startsWith('chest-')?Infinity:config.ORDER_PLAYER_WEEK_DIAMOND_CAP;
  c.rewards.push({id:`${week}:${kind}:${p}`,player_id:p,week,kind,coins:Math.floor(coins),xp:Math.floor(xp),diamonds:Math.max(0,Math.min(diamonds,cap-allocated)),created_at:now,expires_at:familyWeekStart(week+1)+config.REWARD_WEEKS*7*DAY_MS,claimed_at:null});
 }
 export function settleFamilyWeeks(c,now,config=FAMILY_CONFIG){
@@ -2236,9 +2266,22 @@ function completeFamilyOrder(c,order,now,config){
  const eligible=c.contributions.filter(x=>x.family_id===order.family_id&&x.week===order.week&&x.order_points>=config.MIN_CONTRIB_POINTS).map(x=>({...x,points:x.order_points}));
  // Reward only the value personally supplied by eligible contributors; never
  // redistribute a departing or below-threshold member's goods as extra coins.
- const bonus=familyShares(config.ORDER_COMPLETION_DIAMONDS,eligible,Infinity,0);
- for(const m of eligible)addFamilyReward(c,m.player_id,order.week,'order',m.order_points*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER,m.order_points*config.ORDER_XP_PER_VALUE,Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor(m.order_points/10000))+(bonus[m.player_id]??0),now,config);
+ const bonus=familyShares(config.ORDER_COMPLETION_DIAMONDS,eligible,Infinity,0),extra=1+familyStanding(c,order.family_id).bonus;
+ for(const m of eligible)addFamilyReward(c,m.player_id,order.week,'order',m.order_points*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER*extra,m.order_points*config.ORDER_XP_PER_VALUE*extra,Math.floor((Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor(m.order_points/10000))+(bonus[m.player_id]??0))*extra),now,config);
  return true;
+}
+// Every member with enough points gets each tier the chest has reached, this week or last week (a farmer who opens the family
+// on Monday still gets last week's). Coins follow the member's own level; the family level adds its bonus to both.
+function grantFamilyChest(c,familyId,week,now,config){
+ const extra=1+familyStanding(c,familyId).bonus;
+ for(const w of [week-1,week]){
+  const points=Number((c.chests??[]).find(r=>r.family_id===familyId&&r.week===w)?.points)||0,reached=FAMILY_CHEST_TIERS.slice(0,familyChestTiers(points));
+  if(!reached.length)continue;
+  for(const m of (c.chestPlayers??[]).filter(r=>r.family_id===familyId&&r.week===w&&(Number(r.points)||0)>=FAMILY_CHEST_MIN)){
+   const level=c.players.find(p=>p.player_id===m.player_id)?.level??1;
+   for(const t of reached)addFamilyReward(c,m.player_id,w,`chest-${t.id}`,t.coinsPerLevel*level*extra,0,Math.floor(t.diamonds*extra),now,config);
+  }
+ }
 }
 function familyCode(c,random){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(let attempt=0;attempt<30;attempt++){const code=Array.from({length:6},()=>alphabet[Math.floor(random()*alphabet.length)]).join('');if(!c.families.some(f=>f.invite_code===code&&!f.deleted_at))return code;}throw new Error('Please try creating the invite code again.');}
 export const FAMILY_INVITATION_LIFETIME=7*DAY_MS;
@@ -2288,9 +2331,9 @@ export function familyMutate(original,state,player,action,now,options={}){
    joinable();if(!validName(action.name))throw new Error('Use 3–20 letters, numbers, spaces, apostrophes, underscores or hyphens.');
    const name=action.name.trim();if(c.families.some(f=>!f.deleted_at&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('That family name is taken.');
    if(!FAMILY_EMBLEMS.some(e=>e.id===action.emblem))throw new Error('Choose a family emblem.');
-   family={id:uuid(),name,emblem:action.emblem,invite_code:familyCode(c,random),is_open:false,join_mode:'invite',created_at:now,renamed_at:null,deleted_at:null};c.families.push(family);
+   family={id:uuid(),name,emblem:action.emblem,invite_code:familyCode(c,random),is_open:true,join_mode:'open',created_at:now,renamed_at:null,deleted_at:null};c.families.push(family);   // open from the start (27 Sep 2026; was invite only, and most families stayed a family of one)
    const next={id:member?.id??uuid(),player_id:player,family_id:family.id,role:'leader',joined_at:now,left_at:null,cooldown_until:null};if(member)Object.assign(member,next);else c.members.push(next);member=next;
-   result={message:'Your Farm Family is ready.'};
+   result={message:'Your Farm Family is ready. Anyone can join it; you can change that in Family settings.'};
   }else if(type==='family_join'){
    joinable();
    if(action.code)throw new Error('Invite codes have been replaced. Ask the family leader to invite your player name.');
@@ -2329,9 +2372,11 @@ export function familyMutate(original,state,player,action,now,options={}){
   }else if(['family_leave','family_kick'].includes(type)){
    needFamily();if(type==='family_kick')leader();const target=type==='family_leave'?member:c.members.find(m=>m.id===action.memberId&&m.family_id===family.id&&!m.left_at);
    if(!target||type==='family_kick'&&target.player_id===player)throw new Error('Choose another family member.');
-   const wasLeader=target.role==='leader';target.family_id=null;target.left_at=now;target.cooldown_until=now+config.JOIN_COOLDOWN_MS;target.role='member';
+   // A farmer who was the only member does not wait before joining another family (27 Sep 2026: help families of one find others).
+   const alone=type==='family_leave'&&familyMembers(c,family.id).length===1;
+   const wasLeader=target.role==='leader';target.family_id=null;target.left_at=now;target.cooldown_until=alone?null:now+config.JOIN_COOLDOWN_MS;target.role='member';
    const remaining=familyMembers(c,family.id).sort((a,b)=>a.joined_at-b.joined_at||a.id.localeCompare(b.id));if(!remaining.length)family.deleted_at=now;else if(wasLeader)remaining[0].role='leader';
-   result={message:type==='family_leave'?'You left the family. Joining is available again in 48 hours.':'Member removed. A 48-hour join cooldown applies.'};
+   result={message:type==='family_leave'?(alone?'You left your family. You can join another family right away.':'You left the family. Joining is available again in 48 hours.'):'Member removed. A 48-hour join cooldown applies.'};
   }else if(type==='family_promote'){
    leader();const target=c.members.find(m=>m.id===action.memberId&&m.family_id===family.id&&!m.left_at&&m.player_id!==player);if(!target)throw new Error('Choose another family member.');member.role='member';target.role='leader';result={message:'Family leadership transferred.'};
   }else if(type==='family_rename'){
@@ -2393,8 +2438,9 @@ export function familyMutate(original,state,player,action,now,options={}){
   }else if(type!=='family_read')throw new Error('Choose a valid family action.');
  }catch(error){if(['family_create','family_join','family_invite','family_accept_invite','family_request'].includes(type))return {context:c,result:{error:error.message},settled,failed:true};throw error;}
  refreshFamilyInvitations(c,now);
- family=familyCurrent(c,player);if(family)ensureFamilyOrder(c,family,week,now,config);
- state.family={familyId:family?.id??null,unclaimedCount:c.rewards.filter(r=>r.player_id===player&&!r.claimed_at&&r.expires_at>now).length};
+ family=familyCurrent(c,player);if(family){ensureFamilyOrder(c,family,week,now,config);grantFamilyChest(c,family.id,week,now,config);}
+ // The farm shows a family flag by the Family Hall (game.js): the name, emblem and level travel with the farm.
+ state.family={familyId:family?.id??null,unclaimedCount:c.rewards.filter(r=>r.player_id===player&&!r.claimed_at&&r.expires_at>now).length,...(family?{name:family.name,emblem:family.emblem,level:familyStanding(c,family.id).level}:{})};
  return {context:c,result,settled,failed:false};
 }
 export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
@@ -2406,7 +2452,7 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  const place=board.qualifying.findIndex(f=>f.family_id===family?.id),above=place>0?board.qualifying[place-1]:null;
  const rewards=c.rewards.filter(r=>r.player_id===player&&!r.claimed_at&&r.expires_at>now).map(({id,week,kind,coins,xp,diamonds,expires_at})=>({id,week,kind,coins,xp,diamonds,expiresAt:expires_at}));
  const members=family?familyMembers(c,family.id).map(m=>{const p=c.players.find(p=>p.player_id===m.player_id),points=c.contributions.find(r=>r.family_id===family.id&&r.player_id===m.player_id&&r.week===week)?.points??0;return {id:m.id,playerId:m.player_id,username:p?.username??'Farmer',avatarId:p?.avatar_id??'default',level:p?.level??1,vipExpiresAt:Date.parse(p?.vip_expires_at)||0,online:p?.online===true,points,role:m.role,isSelf:m.player_id===player};}):[];
- const card=f=>{const members=familyMembers(c,f.id).length;return {id:f.id,name:f.name,emblem:f.emblem,members,mode:familyJoinMode(f),full:members>=config.MAX_MEMBERS};};
+ const card=f=>{const list=familyMembers(c,f.id),members=list.length,active=list.filter(m=>now-Date.parse(c.players.find(p=>p.player_id===m.player_id)?.last_active_at??0)<FAMILY_ACTIVE_MS).length;return {id:f.id,name:f.name,emblem:f.emblem,members,active,level:familyStanding(c,f.id).level,mode:familyJoinMode(f),full:members>=config.MAX_MEMBERS};};
  c.requests??=[];const liveRequest=r=>r.status==='pending'&&r.expires_at>now&&c.families.some(f=>f.id===r.family_id&&!f.deleted_at&&familyJoinMode(f)==='request');
  const mine=c.requests.find(r=>r.player_id===player&&liveRequest(r)&&!family);
  const MODE_ORDER={open:0,request:1,invite:2,closed:3};
@@ -2417,8 +2463,16 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  const sentInvitations=family&&me?.role==='leader'?pending.filter(i=>i.family_id===family.id).map(i=>({id:i.id,recipientId:i.recipient_id,username:c.players.find(p=>p.player_id===i.recipient_id)?.username??'Farmer',expiresAt:i.expires_at})):[];
 
  // Every family for a farmer without one (who can join, and how), open ones first; the farmer's own request; a leader's requests.
- const families=family?[]:c.families.filter(f=>!f.deleted_at).map(card).sort((a,b)=>MODE_ORDER[a.mode]-MODE_ORDER[b.mode]||Number(a.full)-Number(b.full)||b.members-a.members||a.name.localeCompare(b.name)).slice(0,60);
+ // Families you can join (open or taking requests, with room) first, the busiest of them on top (27 Sep 2026).
+ const joinableCard=f=>!f.full&&(f.mode==='open'||f.mode==='request');
+ const families=family?[]:c.families.filter(f=>!f.deleted_at).map(card).sort((a,b)=>Number(joinableCard(b))-Number(joinableCard(a))||b.active-a.active||b.level-a.level||MODE_ORDER[a.mode]-MODE_ORDER[b.mode]||b.members-a.members||a.name.localeCompare(b.name)).slice(0,60);
  const myRequest=mine?{id:mine.id,family:card(c.families.find(f=>f.id===mine.family_id)),expiresAt:mine.expires_at}:null;
  const joinRequests=family&&me?.role==='leader'?c.requests.filter(r=>r.family_id===family.id&&liveRequest(r)&&!familyCurrent(c,r.player_id)).sort((a,b)=>a.created_at-b.created_at).map(r=>{const p=c.players.find(p=>p.player_id===r.player_id);return {id:r.id,playerId:r.player_id,username:p?.username??'Farmer',level:p?.level??1,avatarId:p?.avatar_id??'default',createdAt:r.created_at,expiresAt:r.expires_at};}):[];
- return {invitation,sentInvitations,families,myRequest,joinRequests,week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:familyJoinMode(family)==='open',leader:me.role==='leader',renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,cooldownUntil:me?.cooldown_until??0,openFamilies:c.families.filter(f=>!f.deleted_at&&familyJoinMode(f)==='open'&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview:{coins:Math.floor((current?.order_points??0)*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER),xp:Math.floor((current?.order_points??0)*config.ORDER_XP_PER_VALUE),diamonds:Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor((current?.order_points??0)/10000)),completionBonus:config.ORDER_COMPLETION_DIAMONDS},tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraFamily:config.TOURNAMENT_PER_EXTRA_FAMILY,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),placePrizes:config.RANK_WEIGHTS.map(weight=>Math.floor(board.firstPrize*weight)),familiesForMax:Math.ceil((config.TOURNAMENT_FIRST_MAX-config.TOURNAMENT_FIRST_MIN)/config.TOURNAMENT_PER_EXTRA_FAMILY)+1,familyPoints:place>=0?board.qualifying[place].points:0,pointsBehind:above?above.points-board.qualifying[place].points:0,top:board.qualifying.slice(0,10).map((f,i)=>({name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
+ // The Family Chest this week (points, the four tiers and what each gives you), the family level, and whether you are its only member
+ // (the Family screen then suggests finding a busier family).
+ const standing=family?familyStanding(c,family.id):null,extra=1+(standing?.bonus??0),myLevel=levelOf(state);
+ const chestPoints=family?Number(c.chests?.find(r=>r.family_id===family.id&&r.week===week)?.points)||0:0,myChest=family?Number(c.chestPlayers?.find(r=>r.family_id===family.id&&r.week===week&&r.player_id===player)?.points)||0:0;
+ const chest=family?{points:chestPoints,mine:myChest,minPoints:FAMILY_CHEST_MIN,tiers:FAMILY_CHEST_TIERS.map(t=>({id:t.id,name:t.name,points:t.points,reached:chestPoints>=t.points,diamonds:Math.floor(t.diamonds*extra),coins:Math.floor(t.coinsPerLevel*myLevel*extra)}))}:null;
+ const alone=!!family&&familyMembers(c,family.id).length===1&&now-(me?.joined_at??now)>=FAMILY_ACTIVE_MS;
+ return {chest,standing,alone,invitation,sentInvitations,families,myRequest,joinRequests,week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:familyJoinMode(family)==='open',leader:me.role==='leader',renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,cooldownUntil:me?.cooldown_until??0,openFamilies:c.families.filter(f=>!f.deleted_at&&familyJoinMode(f)==='open'&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview:{coins:Math.floor((current?.order_points??0)*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER),xp:Math.floor((current?.order_points??0)*config.ORDER_XP_PER_VALUE),diamonds:Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor((current?.order_points??0)/10000)),completionBonus:config.ORDER_COMPLETION_DIAMONDS},tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraFamily:config.TOURNAMENT_PER_EXTRA_FAMILY,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),placePrizes:config.RANK_WEIGHTS.map(weight=>Math.floor(board.firstPrize*weight)),familiesForMax:Math.ceil((config.TOURNAMENT_FIRST_MAX-config.TOURNAMENT_FIRST_MIN)/config.TOURNAMENT_PER_EXTRA_FAMILY)+1,familyPoints:place>=0?board.qualifying[place].points:0,pointsBehind:above?above.points-board.qualifying[place].points:0,top:board.qualifying.slice(0,10).map((f,i)=>({name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
 }

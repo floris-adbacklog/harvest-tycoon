@@ -25,6 +25,7 @@ import { createEstateUI } from './estate-ui.js';
 import { createBoostsUI } from './boosts-ui.js';
 import { createRookieUI } from './rookie-ui.js';
 import { art,refreshArt } from './visual-icons.js';
+import { createFamilyFlag } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI } from './quests-ui.js';
 import { createBeginnerUI } from './beginner-ui.js';
@@ -63,6 +64,7 @@ const swept=new Set();   // the fields of a swipe in progress keep their ring un
 const startView=()=>mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)?'fields':'home';
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
 let overviewBounds=null;
+let familyFlag=null;
 const familyDecor=[],factoryDecor=[],yardDecor={pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 let liveEvents,familyUI,progression,economy,retention,growth,valley,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
@@ -245,6 +247,8 @@ function decorate(){
    ['table_002',-9.6,-16.9,{width:1.5}],
    ['firewood_001',-13.2,-20.6,{width:1.1}]
   ]){const decor=cloneModel(name,x,z,options);familyDecor.push(decor);}
+  // The family's own flag by the hall (public/family-flag.js), for a farmer in a Farm Family.
+  {const [fx,fz]=place(-6.9,-23.7);familyFlag=createFamilyFlag(scene,fx,fz,{height:4.4,turn:Math.PI/4});}
  }
 
  zone('juicepress');patch(-1,-20.1,6.9,6.4,0xb6bd88,.008);
@@ -844,6 +848,7 @@ function lookAt(x,z){
 function positionBuildingLabels(){
  if(mapShown()){if(performance.now()-lastMapShot>30000)shootMinimap();else minimap.draw();}
  for(const decor of familyDecor)setLocked(decor,!buildingEligible(state,'familyhall'));
+ void familyFlag?.update(buildingEligible(state,'familyhall')?state.family:null);
  for(const decor of factoryDecor)setLocked(decor,!buildingEligible(state,'factory'));
  // A yard's pieces are greyed out with it: a building until its level, the Ranch and the Valley Market until theirs.
  for(const [key,list] of Object.entries(yardDecor)){const locked=BUILDINGS[key]?!buildingEligible(state,key):!featureUnlocked(state,key);for(const decor of list)setLocked(decor,locked);}
@@ -933,7 +938,7 @@ function frame(now){
  requestAnimationFrame(frame);if(!ready||document.hidden)return;
  if(now-lastFrame<32)return;const dt=Math.min((now-lastFrame)/1000,.1);lastFrame=now;
  if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();atmosphere?.tick();icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
- if(!reducedMotion){
+ if(!reducedMotion){familyFlag?.tick(now/1000);
   // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
   if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}
   const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;

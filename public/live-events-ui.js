@@ -2,7 +2,7 @@ import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {farmNow} from './farm-client.js';
-import {formatDuration,levelOf} from './farm-state.js';
+import {formatDuration,levelOf,FAMILY_EVENT_BONUS} from './farm-state.js';
 // Farm events: a short shared goal (usually 5 hours, then a 1-hour break before the next one). The Events button
 // sits next to Quests on desktop and in the More menu on phones; the screen shows the running event, or the next
 // one during the break, plus any reward still waiting to be collected.
@@ -65,7 +65,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const rewards=e=>{
   const {coins}=e.rewards;
   const row=(p,medal,place)=>`<li>${medal}<b>${place}</b><span>${art('coins')}${num(coins+p.coins)}</span><span>${art('diamonds')}${num(p.diamonds)}</span></li>`;
-  return `<div class="event-podium"><span>What you win when you finish</span><ol>${PODIUM_PRIZES.map((p,i)=>row(p,art(MEDALS[i]),['1st','2nd','3rd'][i])).join('')}${row(FINISHER_PRIZE,'<i aria-hidden="true"></i>','Everyone else')}</ol></div>`;
+  return `<div class="event-podium"><span>What you win when you finish</span><ol>${PODIUM_PRIZES.map((p,i)=>row(p,art(MEDALS[i]),['1st','2nd','3rd'][i])).join('')}${row(FINISHER_PRIZE,'<i aria-hidden="true"></i>','Everyone else')}</ol><p class="event-family-bonus">${art('family-members')}<span>Family bonus: when ${FAMILY_EVENT_BONUS.finishers} or more of your Farm Family finish, you each get ${art('coins')}${num(FAMILY_EVENT_BONUS.coins)} and ${art('diamonds')}${num(FAMILY_EVENT_BONUS.diamonds)} more.</span></p></div>`;
  };
  // Goals use the Family Order line: picture, name, "41 / 60" and a bar.
  function goals(e,{preview=false}={}){

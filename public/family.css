@@ -275,3 +275,49 @@
 .family-requests .family-list-row{gap:10px}.family-requests .family-member-portrait{width:40px;height:40px;flex-shrink:0}
 .family-requests .family-member-portrait img{width:100%;height:100%;border-radius:50%}
 .family-open-row select{flex-shrink:0;min-width:170px}
+
+/* The Family Chest (27 Sep 2026): a warm card on top of the week, one bar with the four chests along it, and what each gives. */
+.family-chest{margin:0 0 16px;padding:14px 16px;border:1px solid #ead9ad;border-radius:18px;background:linear-gradient(160deg,#fff6dc,#fffaf0 60%)}
+.family-chest-head{display:flex;align-items:center;gap:12px}
+.family-chest-head>.game-art{flex:none;width:68px;height:68px;object-fit:contain}
+.family-chest-head h3{margin:2px 0 4px;font:700 18px/1.25 'Outfit',sans-serif;color:#3d3522}
+.family-chest-head p{margin:0;font-size:12.5px;line-height:1.45;color:#7a6b4b}
+.family-chest-head .eyebrow{font-size:10.5px;letter-spacing:.08em;color:#a17a26}
+.family-chest-track{position:relative;margin:22px 14px 8px}
+.family-chest-track progress{appearance:none;-webkit-appearance:none;display:block;width:100%;height:12px;border:0;border-radius:99px;background:#eadfc2;overflow:hidden}
+.family-chest-track progress::-webkit-progress-bar{background:#eadfc2;border-radius:99px}
+.family-chest-track progress::-webkit-progress-value{background:linear-gradient(90deg,#e0a93a,#f1c64f);border-radius:99px}
+.family-chest-track progress::-moz-progress-bar{background:linear-gradient(90deg,#e0a93a,#f1c64f);border-radius:99px}
+.family-chest-marker{position:absolute;top:50%;width:34px;height:34px;transform:translate(-50%,-50%);filter:grayscale(.85) opacity(.75);transition:filter .3s}
+.family-chest-marker.is-reached{filter:none}
+.family-chest-marker .game-art{width:34px;height:34px;object-fit:contain}
+.family-chest-mine{margin:14px 0 6px;font-size:12.5px;color:#6b5d3f}
+.family-chest-fold summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;color:#5a4b2c;list-style:none}
+.family-chest-fold summary::-webkit-details-marker{display:none}
+.family-chest-tiers{display:grid;gap:6px;margin:10px 0 6px;padding:0;list-style:none}
+.family-chest-tiers li{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:10px;padding:6px 10px;border:1px solid #efe4c8;border-radius:12px;background:#fffdf6}
+.family-chest-tiers li.is-reached{border-color:#d5dfc6;background:#f2f6ea}
+.family-chest-tiers li>.game-art{width:40px;height:40px;object-fit:contain}
+.family-chest-tiers strong{display:block;font-size:14px;color:#3d3522}
+.family-chest-tiers span{font-size:12px;color:#7a6b4b}
+.family-chest-gives{display:flex;gap:6px}
+.family-chest-gives b{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;color:#5a4b2c;white-space:nowrap}
+.family-chest-gives .game-art{width:16px;height:16px}
+.family-chest-check{position:absolute;top:-6px;right:-6px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#7c9a5c;color:#fff;font:700 12px/1 sans-serif;font-style:normal}
+/* A family of one: a quiet line with a way out. */
+.family-alone{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:12px 14px;border:1px dashed #d8c48f;border-radius:16px;background:#fffaf0}
+.family-alone>.game-art{flex:none;width:44px;height:44px}
+.family-alone div{flex:1;min-width:0;display:grid;gap:3px}
+.family-alone strong{font-size:14px;color:#3d3522}
+.family-alone span{font-size:12.5px;color:#7a6b4b}
+/* The family list leads; starting your own family is folded below it. */
+.family-browse-lead{margin:-4px 0 10px;font-size:13px;color:#7a6b4b}
+.family-level-chip{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:99px;background:#f6ecd0;color:#8a6a22;font:700 11px/1.5 'DM Sans',sans-serif;vertical-align:1px}
+.family-create-fold{margin-top:14px;border:1px solid #ebe0c4;border-radius:16px;background:#fffdf6}
+.family-create-fold>summary{display:grid;gap:2px;padding:12px 14px;cursor:pointer;list-style:none}
+.family-create-fold>summary::-webkit-details-marker{display:none}
+.family-create-fold>summary span{font-size:12.5px;color:#7a6b4b}
+.family-create-fold .family-create-grid{padding:0 14px 14px}
+.family-reward>.game-art{object-fit:contain}
+@media(max-width:600px){.family-chest-head>.game-art{width:56px;height:56px}.family-chest-head h3{font-size:16px}.family-chest-track{margin:20px 12px 8px}.family-chest-marker,.family-chest-marker .game-art{width:28px;height:28px}}
+.family-list-row strong .family-level-chip{display:inline-block;width:auto;max-width:max-content;margin:0 0 0 6px;vertical-align:2px}

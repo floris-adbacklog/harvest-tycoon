@@ -17,9 +17,9 @@ function family(mode){
 }
 const fid=c=>c.families[0].id;
 
-test('four ways in: open, request to join, invite only, closed; a new family is invite-only and an older one reads its is_open',()=>{
+test('four ways in: open, request to join, invite only, closed; a new family is open (27 Sep 2026) and an older one reads its is_open',()=>{
  assert.deepEqual(Object.keys(FAMILY_JOIN_MODES),['open','request','invite','closed']);
- assert.equal(familyJoinMode(family().families[0]),'invite');
+ assert.equal(familyJoinMode(family().families[0]),'open');assert.equal(family().families[0].is_open,true);
  assert.equal(familyJoinMode({is_open:true}),'open');assert.equal(familyJoinMode({is_open:false}),'invite');assert.equal(familyJoinMode({is_open:true,join_mode:'closed'}),'closed');
  const c=family('request');assert.equal(c.families[0].join_mode,'request');assert.equal(c.families[0].is_open,false);
  assert.equal(family('open').families[0].is_open,true,'an older farm-api still sees an open family as open');
