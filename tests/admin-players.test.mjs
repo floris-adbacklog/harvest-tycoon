@@ -136,7 +136,7 @@ test('recordSeen keeps one row per farmer (an upsert) with only what the visit k
  const api=read('supabase/functions/farm-api/index.ts');
  assert.match(api,/if\(body\.operation==='load'\)\{const seen=Promise\.resolve\(\)\.then\(\(\)=>recordSeen\(\{admin,player:user\.id,headers:req\.headers,timeZone:body\.timeZone\}\)\)\.catch\(\(\)=>\{\}\);/,'even a synchronous failure never stops the load');
  assert.match(api,/EdgeRuntime\?\.waitUntil\?\.\(seen\)/);
- assert.match(api,/'admin_players','admin_player'/);assert.match(read('src/connection.js'),/'admin_invites','admin_players','admin_player'\]/,'read-only, so safe to retry');
+ assert.match(api,/'admin_players','admin_player'/);assert.match(read('src/connection.js'),/'admin_invites','admin_players','admin_player','admin_purchases'\]/,'read-only, so safe to retry');
  assert.match(read('src/supabase.js'),/const sent=body\?\.operation==='load'\?\{\.\.\.body,timeZone:deviceTimeZone\(\)\}:body;/,'every farm load sends the device time zone');
  const sql=read('supabase/admin-player-insights.sql');
  assert.match(sql,/alter table public\.player_seen enable row level security;\s*revoke all on public\.player_seen from anon, authenticated;/);

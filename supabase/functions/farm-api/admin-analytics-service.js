@@ -229,3 +229,16 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
    purchases:(purchases?.data??[]).map(p=>({pack:p.pack,status:p.status,euros:num(p.amount_cents)/100,diamonds:num(p.diamonds),test:!p.livemode,createdAt:p.created_at}))}:{})};
  return respond(user,{player,owner});
 }
+// Every checkout (27 Sep 2026), paid or not, newest first, with the farmer who started it: for the admin only, not the moderators
+// (money). A checkout stays 'pending' until Stripe confirms the payment; a farmer who closes the payment page leaves it there.
+export async function handleAdminPurchases({admin,user,limit=500}){
+ if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
+ const found=await admin.from('harvest_purchases').select('id,player_id,pack,diamonds,coins,amount_cents,livemode,status,created_at,credited_at').order('created_at',{ascending:false}).limit(limit);
+ if(found.error)throw found.error;
+ const rows=found.data??[],ids=[...new Set(rows.map(r=>r.player_id).filter(Boolean))];
+ const stats=await rowsFor(()=>admin.from('player_stats').select('player_id,username,level'),ids);
+ const who=new Map(stats.map(s=>[s.player_id,s]));
+ const purchases=rows.map(r=>({id:r.id,playerId:r.player_id,username:who.get(r.player_id)?.username??'Farmer',level:who.get(r.player_id)?.level??null,pack:r.pack,diamonds:r.diamonds??0,coins:r.coins??0,amountCents:r.amount_cents??0,live:r.livemode!==false,status:r.status,createdAt:r.created_at,creditedAt:r.credited_at}));
+ const paid=purchases.filter(p=>p.status==='credited'&&p.live);
+ return respond(user,{purchases,totals:{started:purchases.length,paid:paid.length,notFinished:purchases.filter(p=>p.status!=='credited').length,revenueCents:paid.reduce((n,p)=>n+p.amountCents,0),players:new Set(purchases.map(p=>p.playerId)).size}});
+}

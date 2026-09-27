@@ -33,7 +33,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  const dialog=document.createElement('dialog');dialog.id='admin-dashboard-dialog';dialog.className='game-dialog wide-dialog admin-dashboard-dialog';dialog.setAttribute('aria-labelledby','admin-dashboard-title');
  dialog.innerHTML=`<div class="dialog-heading"><div class="admin-title"><span class="admin-badge">${art('admin')}</span><div><span class="eyebrow" id="admin-dashboard-eyebrow">ONLY FOR YOU</span><h2 id="admin-dashboard-title">Admin dashboard</h2></div></div><button class="icon-button admin-dashboard-close" aria-label="Close"><i data-lucide="x"></i></button></div>`
   +'<div class="admin-kpis"><div>'+art('family-members')+'<strong id="admin-kpi-online">–</strong><span>Online now</span></div><div>'+art('invite-friends')+'<strong id="admin-kpi-new">–</strong><span>New today</span></div><div>'+art('rank-gold')+'<strong id="admin-kpi-day1">–</strong><span>Kept on day 1</span></div><div>'+art('alert')+'<strong id="admin-kpi-reports">–</strong><span>Open reports</span></div></div>'
-  +'<div class="market-tabs admin-tabs" role="tablist" aria-label="Dashboard"><button type="button" role="tab" data-admin-tab="chat" class="active" aria-selected="true">'+art('chat')+'Chat</button><button type="button" role="tab" data-admin-tab="players" aria-selected="false">'+art('family-members')+'Players</button><button type="button" role="tab" data-admin-tab="growth" aria-selected="false">'+art('xp')+'Growth</button><button type="button" role="tab" data-admin-tab="settings" aria-selected="false" hidden>'+art('settings')+'Settings</button></div>'
+  +'<div class="market-tabs admin-tabs" role="tablist" aria-label="Dashboard"><button type="button" role="tab" data-admin-tab="chat" class="active" aria-selected="true">'+art('chat')+'Chat</button><button type="button" role="tab" data-admin-tab="players" aria-selected="false">'+art('family-members')+'Players</button><button type="button" role="tab" data-admin-tab="growth" aria-selected="false">'+art('xp')+'Growth</button><button type="button" role="tab" data-admin-tab="purchases" aria-selected="false" hidden>'+art('diamonds')+'Purchases</button><button type="button" role="tab" data-admin-tab="settings" aria-selected="false" hidden>'+art('settings')+'Settings</button></div>'
   +'<div data-admin-panel="chat">'
   +'<section class="admin-card admin-guide"><h3>'+art('admin')+'Keeping the valley friendly</h3><ul><li><strong>Delete</strong> a message that is rude, hurtful or shares personal details (an address, a phone number).</li><li><strong>Mute for a day</strong> when someone keeps it up after a message is deleted.</li><li><strong>Ban from chat</strong> only for serious or repeated abuse. It closes the chat, never the farm.</li><li>Not sure? Choose <strong>Nothing wrong</strong> or leave it for the admin.</li></ul></section>'
   +'<section class="admin-card" id="admin-reports" hidden><h3>'+art('alert')+'Chat reports <span id="admin-report-count">0</span></h3><ul id="admin-report-list" class="admin-recent-list admin-report-list"></ul><p class="admin-hint">Delete removes the message for everyone. Mute and ban only close the chat for that farmer, never their farm.</p></section>'
@@ -49,6 +49,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<section class="admin-card" id="admin-devices" hidden><h3>'+art('farmapp')+'Mobile or desktop</h3><div id="admin-device-box"></div><p class="admin-hint">The device each farmer last opened the game on. Mobile is a phone or a tablet.</p></section>'
   +'<section class="admin-card"><h3>'+art('xp')+'Retention, day 0–7</h3><p class="admin-hint">Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
   +'<section class="admin-card"><h3>'+art('gift')+'Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
+  // Purchases (27 Sep 2026, the admin only): every checkout, paid or not, newest first.
+  +'</div><div data-admin-panel="purchases" hidden>'
+  +'<section class="admin-card"><h3>'+art('diamonds')+'Purchases</h3><div id="admin-purchase-totals" class="admin-invite-totals"></div><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-purchase-filter="all" aria-pressed="true">All</button><button type="button" class="admin-filter" data-purchase-filter="paid" aria-pressed="false">Paid</button><button type="button" class="admin-filter" data-purchase-filter="open" aria-pressed="false">Not finished</button></div><ul id="admin-purchase-list" class="admin-recent-list admin-purchase-list"></ul><p class="admin-hint">Every checkout, newest first (Amsterdam time). “Not finished”: the farmer opened the payment page but did not pay, or the page is still open. Test payments are marked.</p></section>'
   +'</div><div data-admin-panel="settings" hidden>'
   +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News and pop-ups</h3><form id="admin-news-form" class="admin-news"><textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… As a notification everyone sees it under Notifications in the chat."></textarea>'
   // The admin only: the same news also as a pop-up, once per farmer, with an optional button (src/popup-ui.js, supabase/popups.sql).
@@ -144,12 +147,27 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    :i.status==='expired'?`Did not reach level 10 within 30 days (level ${number(i.friendLevel)})`:`Playing · level ${number(i.friendLevel)} of 10`;
   dialog.querySelector('#admin-invite-list').innerHTML=data.invites.length?data.invites.map(i=>`<li>${avatar(i.friend,false,i.friendId)}<span class="admin-recent-copy"><strong>${who(i.friend,i.friendId)} <small>invited by ${who(i.inviter,i.inviterId)}</small></strong><small>${state(i)}</small></span><small class="admin-when" title="${esc(fmtDate(new Date(i.joinedAt).toISOString()))}">${ago(new Date(i.joinedAt).toISOString())}</small></li>`).join(''):'<li class="admin-empty">No friend has joined with an invite link yet.</li>';
  }
+ // Purchases: the totals, then one row per checkout with who, what, the price and whether it was paid.
+ let purchases=null,purchaseFilter='all';
+ const PURCHASE_STATUS={credited:['Paid','is-paid'],pending:['Not finished','is-open'],expired:['Expired','is-expired']};
+ const euro=cents=>`€${(cents/100).toFixed(2)}`;
+ function renderPurchases(data){
+  if(data)purchases=data;if(!purchases)return;const t=purchases.totals;
+  dialog.querySelector('#admin-purchase-totals').innerHTML=`<span><strong>${number(t.started)}</strong> checkouts</span><span><strong>${number(t.paid)}</strong> paid</span><span><strong>${number(t.notFinished)}</strong> not finished</span><span><strong>${euro(t.revenueCents)}</strong> earned</span><span><strong>${number(t.players)}</strong> farmers</span>`;
+  const shown=purchases.purchases.filter(p=>purchaseFilter==='all'||(purchaseFilter==='paid'?p.status==='credited':p.status!=='credited'));
+  const what=p=>p.pack==='starter'?`Starter Pack · ${number(p.diamonds)} diamonds${p.coins?` + ${number(p.coins)} coins`:''}`:`${number(p.diamonds)} diamonds`;
+  dialog.querySelector('#admin-purchase-list').innerHTML=shown.length?shown.map(p=>{const [label,cls]=PURCHASE_STATUS[p.status]??[p.status,'is-open'];
+   return `<li>${avatar(p.username,false,p.playerId)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-profile="${esc(p.playerId)}">${esc(p.username)}</button> <small>${p.level?`Level ${p.level}`:''}</small></strong><small>${what(p)} · ${euro(p.amountCents)}${p.live?'':' · test'}</small></span><span class="admin-purchase-status ${cls}">${label}</span><small class="admin-when" title="${esc(fmtDate(p.createdAt))}">${ago(p.createdAt)}</small></li>`;}).join(''):'<li class="admin-empty">No checkouts here yet.</li>';
+ }
+ dialog.querySelectorAll('[data-purchase-filter]').forEach(b=>b.onclick=()=>{purchaseFilter=b.dataset.purchaseFilter;dialog.querySelectorAll('[data-purchase-filter]').forEach(x=>{const on=x===b;x.classList.toggle('active',on);x.setAttribute('aria-pressed',String(on));});renderPurchases();});
+ dialog.querySelector('#admin-purchase-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
  async function load(){
   const status=dialog.querySelector('#admin-dashboard-status');status.textContent='Refreshing…';
   void loadChat();
   // Every part loads on its own: one that fails leaves the others showing, and the line at the bottom says which one is missing.
   const PARTS=[['admin_online','Online now'],['admin_players','All players'],['admin_retention','Retention'],['admin_invites','Invites']];
   const [online,players,retention,invites]=await Promise.all(PARTS.map(([operation])=>bridge.request({operation}).catch(()=>null)));
+  if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(renderPurchases).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
   if(players)showPlayers(players);
   if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}
   if(retention)renderRetention(retention);
@@ -344,7 +362,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   role=admin||chatRole==='admin'?'admin':chatRole==='moderator'?'moderator':null;if(!role)return;
   dialog.querySelector('#admin-dashboard-eyebrow').textContent=role==='admin'?'ONLY FOR YOU':'FOR THE MODERATORS';
   dialog.querySelector('#admin-dashboard-title').textContent=role==='admin'?'Admin dashboard':'Moderator dashboard';
-  dialog.querySelector('[data-admin-tab="settings"]').hidden=role!=='admin';
+  dialog.querySelector('[data-admin-tab="settings"]').hidden=role!=='admin';dialog.querySelector('[data-admin-tab="purchases"]').hidden=role!=='admin';
   button.hidden=false;const entry=document.getElementById('admin-menu-entry');if(entry)entry.hidden=false;
  });
  return {};

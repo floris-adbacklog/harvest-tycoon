@@ -5,7 +5,7 @@ import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily} from './family-service.js';
 import {handleAdminGrant,isSuperadmin} from './admin-service.js';
-import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,recordSeen} from './admin-analytics-service.js';
+import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
@@ -67,6 +67,9 @@ Deno.serve(async(req)=>{
   }
   if(body.operation==='admin_player'){
    const player=await handleAdminPlayer({admin,user,playerId:body.playerId});return reply(player.data,player.status);
+  }
+  if(body.operation==='admin_purchases'){
+   const purchases=await handleAdminPurchases({admin,user});return reply(purchases.data,purchases.status);
   }
   if(body.operation==='admin_invites'){
    const invites=await handleAdminInvites({admin,user});return reply(invites.data,invites.status);

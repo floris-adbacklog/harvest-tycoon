@@ -1237,3 +1237,9 @@
 .event-family-bonus{display:flex;align-items:center;gap:8px;margin:10px 0 0;padding:8px 10px;border-radius:12px;background:#f2f6ea;font-size:12.5px;color:#4d6b3a}
 .event-family-bonus>.game-art{flex:none;width:30px;height:30px}
 .event-family-bonus .game-art:not(:first-child){width:15px;height:15px;vertical-align:-2px}
+/* Purchases (27 Sep 2026): a small status label per checkout. */
+.admin-purchase-list li{align-items:center}
+.admin-purchase-status{flex:none;padding:2px 9px;border-radius:99px;font:700 11.5px/1.6 'DM Sans',sans-serif;white-space:nowrap}
+.admin-purchase-status.is-paid{background:#e4efd9;color:#3f6b33}
+.admin-purchase-status.is-open{background:#fbefd3;color:#8a6414}
+.admin-purchase-status.is-expired{background:#ece7de;color:#7d7060}

@@ -120,7 +120,7 @@ test('admin_retention: a day-offset that has not elapsed yet is null, never a fa
 
 test('the admin_online/admin_recent_players/admin_retention operations are wired in, gated, and reachable before a username is required',()=>{
  const code=read('supabase/functions/farm-api/index.ts');
- assert.match(code,/import \{handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,recordSeen\} from '\.\/admin-analytics-service\.js';/);
+ assert.match(code,/import \{handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,recordSeen\} from '\.\/admin-analytics-service\.js';/);
  for(const op of ['admin_online','admin_recent_players','admin_retention','admin_players','admin_player'])assert.match(code,new RegExp(`'${op}'`));
  const before=code.indexOf('if(!username)return reply');
  for(const marker of ["body.operation==='admin_online'","body.operation==='admin_recent_players'","body.operation==='admin_retention'","body.operation==='admin_players'","body.operation==='admin_player'"])assert.ok(code.indexOf(marker)<before,marker);
@@ -250,4 +250,28 @@ test('the dashboard shows what did load when one part fails, and says which part
  assert.match(dash,/PARTS\.map\(\(\[operation\]\)=>bridge\.request\(\{operation\}\)\.catch\(\(\)=>null\)\)/);
  assert.match(dash,/could not be loaded\. Please try again\./);
  assert.doesNotMatch(dash,/bridge\.request\(\{operation:'admin_(online|retention)'\}\)\)?,/,'no part can take the others down');
+});
+
+// 27 Sep 2026: every checkout in the Admin dashboard, paid or not; the admin only (money), not the moderators.
+test('the Purchases tab: every checkout newest first, with who, what, the price and the status; the admin only',async()=>{
+ const {handleAdminPurchases}=await import('../supabase/functions/farm-api/admin-analytics-service.js');
+ const A='a0000000-0000-4000-8000-000000000001',B='b0000000-0000-4000-8000-000000000002';
+ const tables={
+  harvest_purchases:[
+   {id:'p1',player_id:A,pack:'starter',diamonds:300,coins:10000,amount_cents:299,livemode:true,status:'credited',created_at:'2026-09-27T10:00:00Z',credited_at:'2026-09-27T10:01:00Z'},
+   {id:'p2',player_id:B,pack:'100',diamonds:100,coins:0,amount_cents:199,livemode:true,status:'pending',created_at:'2026-09-26T09:00:00Z',credited_at:null},
+   {id:'p3',player_id:B,pack:'50',diamonds:50,coins:0,amount_cents:99,livemode:false,status:'credited',created_at:'2026-09-25T09:00:00Z',credited_at:'2026-09-25T09:00:30Z'}],
+  player_stats:[{player_id:A,username:'Anna',level:14},{player_id:B,username:'Bram',level:9}]
+ };
+ const db={from(table){let rows=tables[table]??[];const q={select(){return this;},order(){return this;},limit(){return this;},in(k,v){rows=rows.filter(r=>v.includes(r[k]));return this;},then(r){return Promise.resolve({data:rows,error:null}).then(r);}};return q;}};
+ assert.equal((await handleAdminPurchases({admin:db,user:notAdmin})).status,403,'a moderator or anyone else: no');
+ const {status,data}=await handleAdminPurchases({admin:db,user:admin});
+ assert.equal(status,200);assert.equal(data.profile.player_id,admin.id);
+ assert.deepEqual(data.totals,{started:3,paid:1,notFinished:1,revenueCents:299,players:2},'a test payment is not revenue');
+ assert.deepEqual(data.purchases.map(p=>[p.username,p.pack,p.amountCents,p.status,p.live]),[['Anna','starter',299,'credited',true],['Bram','100',199,'pending',true],['Bram','50',99,'credited',false]]);
+ const code=read('supabase/functions/farm-api/admin-analytics-service.js'),index=read('supabase/functions/farm-api/index.ts'),dash=read('src/admin-dashboard.js');
+ assert.match(code,/export async function handleAdminPurchases\(\{admin,user,limit=500\}\)\{\n if\(!isSuperadmin\(user\)\)return respond/);
+ assert.match(index,/body\.operation==='admin_purchases'/);assert.ok(index.indexOf("body.operation==='admin_purchases'")<index.indexOf('if(!username)return reply'),'reachable for the admin account without a farmer name');
+ assert.match(dash,/dialog\.querySelector\('\[data-admin-tab="purchases"\]'\)\.hidden=role!=='admin';/,'the tab only for the admin');
+ assert.match(dash,/if\(role==='admin'\)void bridge\.request\(\{operation:'admin_purchases'\}\)/,'loaded only for the admin');
 });
