@@ -271,7 +271,15 @@ test('the Purchases tab: every checkout newest first, with who, what, the price 
  assert.deepEqual(data.purchases.map(p=>[p.username,p.pack,p.amountCents,p.status,p.live]),[['Anna','starter',299,'credited',true],['Bram','100',199,'pending',true],['Bram','50',99,'credited',false]]);
  const code=read('supabase/functions/farm-api/admin-analytics-service.js'),index=read('supabase/functions/farm-api/index.ts'),dash=read('src/admin-dashboard.js');
  assert.match(code,/export async function handleAdminPurchases\(\{admin,user,limit=500\}\)\{\n if\(!isSuperadmin\(user\)\)return respond/);
- assert.match(index,/body\.operation==='admin_purchases'/);assert.ok(index.indexOf("body.operation==='admin_purchases'")<index.indexOf('if(!username)return reply'),'reachable for the admin account without a farmer name');
+ assert.match(index,/body\.operation==='admin_purchases'/);assert.match(index,/if\(!\[[^\]]*'admin_purchases'[^\]]*\]\.includes\(body\?\.operation\)\)/,'on the list of operations farm-api accepts');assert.ok(index.indexOf("body.operation==='admin_purchases'")<index.indexOf('if(!username)return reply'),'reachable for the admin account without a farmer name');
  assert.match(dash,/dialog\.querySelector\('\[data-admin-tab="purchases"\]'\)\.hidden=role!=='admin';/,'the tab only for the admin');
  assert.match(dash,/if\(role==='admin'\)void bridge\.request\(\{operation:'admin_purchases'\}\)/,'loaded only for the admin');
+});
+
+// 27 Sep 2026: Adaptive Pricing on; the webhook keeps checking the exact euro amount, which Stripe keeps on the session.
+test('checkout shows local currencies (Adaptive Pricing) while the webhook still insists on the exact euro price',()=>{
+ const checkout=read('supabase/functions/diamond-checkout/index.ts'),webhook=read('supabase/functions/stripe-webhook/payments.js');
+ assert.match(checkout,/adaptive_pricing:\{enabled:true\}/);
+ assert.match(checkout,/price\.currency!=='eur'/,'the prices stay in euro');
+ assert.match(webhook,/if\(session\.currency!=='eur'\|\|session\.amount_total!==purchase\.amount_cents/,'the paid session is still checked in euro');
 });

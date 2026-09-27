@@ -54,7 +54,10 @@ Deno.serve(async req=>{
   const metadata={app:'harvest-tycoon',purchase_id:p.id,player_id:user.id};
   const session=p.stripe_session_id?await stripe.checkout.sessions.retrieve(p.stripe_session_id):await stripe.checkout.sessions.create({
    mode:'payment',line_items:[{price:priceId,quantity:1}],client_reference_id:user.id,metadata,
-   payment_intent_data:{metadata},adaptive_pricing:{enabled:false},
+   // Adaptive Pricing (27 Sep 2026): a farmer abroad sees and pays the euro price in their own currency (₹, $, zł …), converted by
+   // Stripe, which also opens local methods such as UPI and BLIK. The session and the payment still show euros (the local amount is
+   // in presentment_details), so the webhook's check on the exact euro amount stays as it is.
+   payment_intent_data:{metadata},adaptive_pricing:{enabled:true},
    integration_identifier:'harvest_tycoon_xqbnrjka',
    success_url:`${origin}/play.html?purchase=${p.id}`,cancel_url:`${origin}/play.html?purchase=${p.id}&checkout=cancelled`
   },{idempotencyKey:`harvest-${live?'live':'test'}-${p.id}`});

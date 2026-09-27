@@ -39,7 +39,7 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_players','admin_player','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='social'){const r=await handleSocial({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='player_search'||body.operation==='player_profile'){
