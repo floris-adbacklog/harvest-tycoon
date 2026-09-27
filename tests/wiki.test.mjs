@@ -120,6 +120,6 @@ test('the wiki shows what the helpers, chapters, market, levels and challenges p
  assert.match(helpers,new RegExp(`rests ${rules.TRACTOR_REST_MS/1000} seconds`));assert.match(helpers,/round bonus/);
  const estate=text('estate');for(const p of rules.PROJECTS)assert.ok(estate.includes(p.name.replace('’','\\u2019'))||estate.includes(p.name),p.name);
  assert.match(estate,new RegExp(`${rules.DEPOT_PREMIUM}× the goods`));assert.match(estate,/switching to another herd costs/);
- assert.match(text('market'),/How far prices move/);assert.match(text('market'),/160% of normal/);
+ assert.match(text('market'),/How far prices move/);assert.match(text('market'),/160% of normal/);assert.doesNotMatch(text('market'),/Sunflower oil/);
  assert.match(text('quests'),/Level rewards/);assert.match(text('daily'),new RegExp(`bonus of .*${rules.DAILY_BONUS.coins}`));
 });

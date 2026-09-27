@@ -85,11 +85,12 @@ export const MARKET_PAYOUT_MULTIPLIER=0.8;
 const reducedMarketPrice=value=>Math.max(1,Math.round(value*MARKET_PAYOUT_MULTIPLIER));
 const MARKET_CURVE=[0,.12,.22,.30,.36,.41,.45,.48,.50,.50,.50,.52,.55,.59,.64,.70,.78,.88,1];
 function calendarHash(text){let h=2166136261;for(let i=0;i<text.length;i++)h=Math.imul(h^text.charCodeAt(i),16777619);h^=h>>>16;h=Math.imul(h,0x7feb352d);h^=h>>>15;return h>>>0;}
-// How far a price can move from normal in a day (the wiki reads these): crops a little, goods more, sunflower oil the most.
-export const MARKET_RANGES=Object.freeze({crops:Object.freeze([.85,1.15]),goods:Object.freeze([.7,1.6]),oil:Object.freeze([.5,2])});
+// How far a price can move from normal in a day (the wiki reads these): crops a little, goods more. Sunflower oil swung 0.5-2x as
+// the market's gamble until 27 Sep 2026; now it moves like every other good.
+export const MARKET_RANGES=Object.freeze({crops:Object.freeze([.85,1.15]),goods:Object.freeze([.7,1.6])});
 export function marketQuote(item,now=Date.now()){
  if(!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid market item.');
- const base=ITEMS[item].sell,range=item==='oil'?MARKET_RANGES.oil:Object.hasOwn(CROPS,item)?MARKET_RANGES.crops:MARKET_RANGES.goods;
+ const base=ITEMS[item].sell,range=Object.hasOwn(CROPS,item)?MARKET_RANGES.crops:MARKET_RANGES.goods;
  const baseMin=Math.max(1,Math.round(base*range[0])),baseMax=Math.round(base*range[1]);
  const position=MARKET_CURVE[calendarHash(`market-v1:${utcDay(now)}:${item}`)%MARKET_CURVE.length];
  const originalPrice=Math.round(position<=.5?baseMin+(base-baseMin)*position*2:base+(baseMax-base)*(position-.5)*2);
