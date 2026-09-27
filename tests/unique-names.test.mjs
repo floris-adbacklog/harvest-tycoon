@@ -13,7 +13,7 @@ test('farmer names are unique whatever the capitals: the database refuses a take
  assert.match(main,/showFieldErrors\(\{name:'That farmer name is taken\. Try another one\.'\}\)/);
  assert.match(main,/if\(!name\)\{name=randomPlayerName\(\);for\(let i=0;i<5&&!\(await free\(name\)\);i\+\+\)name=randomPlayerName\(\);\}/,'a random name that is taken is picked again');
  const api=read('supabase/functions/farm-api/index.ts');
- assert.match(api,/const username=profile\?\.username\?\?\(chosen\?await freeName\(admin,chosen\):null\);/,'a new farm always opens, with the first free Name 2');
+ assert.match(api,/const username=profile\?\.username\?\?await freeName\(admin,chosen\);/,'a new farm always opens, with the first free Name 2');
  assert.match(api,/if\(!own&&!\(await nameFree\(admin,wanted\)\)\)return reply\(\{error:'That farmer name is taken\. Try another one\.'\},409\);/);
  assert.match(api,/renamed\.error\?\.code==='23505'/,'two at the same moment: the database decides');
 });

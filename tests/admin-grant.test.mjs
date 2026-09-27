@@ -173,7 +173,7 @@ test('the admin_grant operation is wired in, gated on the caller, and reachable 
  assert.match(code,/\[.*'admin_grant'.*\]\.includes\(body\?\.operation\)/);
  const branch=code.indexOf("body.operation==='admin_grant'");
  assert.ok(branch>0);
- assert.ok(branch<code.indexOf("if(!username)return reply"),'reachable before the caller needs their own username set, like player_search/player_profile');
+ assert.ok(branch<code.indexOf("const username=profile?.username"),'reachable before the caller needs their own username set, like player_search/player_profile');
  assert.match(code,/const granted=await handleAdminGrant\(\{admin,body,user\}\);\n   if\(granted\.status===200&&granted\.data\?\.granted\)later\(writeLog\(admin,String\(body\.playerId\),adminGrantLog\(granted\.data\.granted\),user\.id\)\);\n   return reply\(granted\.data,granted\.status\);/,'and the farmer\'s log says who gave what (player-log.js)');
 });
 test('a waiting gift is picked up and cleared on the farmer\'s own next load, alongside level/chapter rewards',()=>{

@@ -9,6 +9,7 @@ import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAd
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
+import {randomPlayerName} from './account-form.js';
 import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -82,9 +83,10 @@ Deno.serve(async(req)=>{
   const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished').eq('player_id',user.id).maybeSingle();
   if(profileResponse.error)throw profileResponse.error;
   let profile=profileResponse.data;
-  const chosen=profile?.username??(nameValid(user.user_metadata?.username)?user.user_metadata.username.trim():null);
-  const username=profile?.username??(chosen?await freeName(admin,chosen):null);
-  if(!username)return reply({error:'Choose a player name to open your farm.',code:'USERNAME_REQUIRED'},409);
+  // A farmer who signed in with Facebook or Google brings no name: they get a friendly one ("Sunny Acres 4821"), as an email
+  // sign-up without a name does, and go straight to their farm. Settings invites them to make it their own.
+  const chosen=profile?.username??(nameValid(user.user_metadata?.username)?user.user_metadata.username.trim():randomPlayerName());
+  const username=profile?.username??await freeName(admin,chosen);
   // Where and on what the farm was opened, for the admin dashboard (admin-analytics-service.js): runs beside the load, never holds it up.
   if(body.operation==='load'){const seen=Promise.resolve().then(()=>recordSeen({admin,player:user.id,headers:req.headers,timeZone:body.timeZone})).catch(()=>{});(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(seen);}
   // Sends each friend an invitation to this farmer's family, as this farmer's own family action; true when one was sent.

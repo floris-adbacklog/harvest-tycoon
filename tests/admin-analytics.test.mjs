@@ -122,7 +122,7 @@ test('the admin_online/admin_recent_players/admin_retention operations are wired
  const code=read('supabase/functions/farm-api/index.ts');
  assert.match(code,/import \{handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,recordSeen\} from '\.\/admin-analytics-service\.js';/);
  for(const op of ['admin_online','admin_recent_players','admin_retention','admin_players','admin_player'])assert.match(code,new RegExp(`'${op}'`));
- const before=code.indexOf('if(!username)return reply');
+ const before=code.indexOf('const username=profile?.username');
  for(const marker of ["body.operation==='admin_online'","body.operation==='admin_recent_players'","body.operation==='admin_retention'","body.operation==='admin_players'","body.operation==='admin_player'"])assert.ok(code.indexOf(marker)<before,marker);
 });
 test('handleAdminOnline/RecentPlayers/Retention/Invites each check isStaff (the admin or a moderator), from the same place admin_grant uses; giving stays admin-only',()=>{
@@ -271,7 +271,7 @@ test('the Purchases tab: every checkout newest first, with who, what, the price 
  assert.deepEqual(data.purchases.map(p=>[p.username,p.pack,p.amountCents,p.status,p.live]),[['Anna','starter',299,'credited',true],['Bram','100',199,'pending',true],['Bram','50',99,'credited',false]]);
  const code=read('supabase/functions/farm-api/admin-analytics-service.js'),index=read('supabase/functions/farm-api/index.ts'),dash=read('src/admin-dashboard.js');
  assert.match(code,/export async function handleAdminPurchases\(\{admin,user,limit=500\}\)\{\n if\(!isSuperadmin\(user\)\)return respond/);
- assert.match(index,/body\.operation==='admin_purchases'/);assert.match(index,/if\(!\[[^\]]*'admin_purchases'[^\]]*\]\.includes\(body\?\.operation\)\)/,'on the list of operations farm-api accepts');assert.ok(index.indexOf("body.operation==='admin_purchases'")<index.indexOf('if(!username)return reply'),'reachable for the admin account without a farmer name');
+ assert.match(index,/body\.operation==='admin_purchases'/);assert.match(index,/if\(!\[[^\]]*'admin_purchases'[^\]]*\]\.includes\(body\?\.operation\)\)/,'on the list of operations farm-api accepts');assert.ok(index.indexOf("body.operation==='admin_purchases'")<index.indexOf('const username=profile?.username'),'reachable for the admin account without a farmer name');
  assert.match(dash,/dialog\.querySelector\('\[data-admin-tab="purchases"\]'\)\.hidden=role!=='admin';/,'the tab only for the admin');
  assert.match(dash,/if\(role==='admin'\)void bridge\.request\(\{operation:'admin_purchases'\}\)/,'loaded only for the admin');
 });

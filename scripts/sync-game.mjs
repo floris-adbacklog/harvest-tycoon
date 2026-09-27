@@ -6,6 +6,9 @@ copyFileSync(new URL('../game/farm-state.js',import.meta.url),new URL('../supaba
 
 copyFileSync(new URL('../src/presence.js',import.meta.url),new URL('../supabase/functions/farm-api/presence.js',import.meta.url));
 
+// The friendly default name ("Sunny Acres 4821") for a farmer who signed in with Facebook or Google and brought none.
+copyFileSync(new URL('../src/account-form.js',import.meta.url),new URL('../supabase/functions/farm-api/account-form.js',import.meta.url));
+
 copyFileSync(new URL('../public/player-avatars.js',import.meta.url),new URL('../supabase/functions/farm-api/player-avatars.js',import.meta.url));
 
 // The reminder job only needs the display names of crops and buildings, not the whole game.
