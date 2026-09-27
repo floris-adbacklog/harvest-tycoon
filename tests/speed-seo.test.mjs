@@ -89,9 +89,9 @@ test('the home page has a search title and description, a canonical address, and
  assert.match(html,new RegExp(`<link rel="canonical" href="${SITE}/">`));
  assert.equal(meta('property','og:url'),`${SITE}/`);assert.equal(meta('property','og:type'),'website');
  for(const name of ['og:title','og:description','og:image:alt','twitter:title','twitter:description'])assert.ok(meta(name.startsWith('og')?'property':'name',name)?.length>10,name);
- assert.equal(meta('property','og:image'),`${SITE}/assets/og-image.jpg`);assert.equal(meta('name','twitter:image'),`${SITE}/assets/og-image.jpg`);
+ assert.equal(meta('property','og:image'),`${SITE}/assets/og-image-farm.jpg`);assert.equal(meta('name','twitter:image'),`${SITE}/assets/og-image-farm.jpg`);
  assert.equal(meta('name','twitter:card'),'summary_large_image');
- assert.deepEqual(size('public/assets/og-image.jpg'),{w:1200,h:630});
+ assert.deepEqual(size('public/assets/og-image-farm.jpg'),{w:1200,h:630});
  assert.equal(meta('property','og:image:width'),'1200');assert.equal(meta('property','og:image:height'),'630');
  const data=JSON.parse(html.match(/<script type="application\/ld\+json">(.+?)<\/script>/)[1]);
  assert.deepEqual(data,{'@context':'https://schema.org','@type':'WebSite',name:'Harvest Tycoon',url:`${SITE}/`});

@@ -531,7 +531,7 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
   written when their text changes.
 - SEO (public/play.html, which the build also serves as /): title "Harvest Tycoon — Free Online 3D Farming Game",
   a 151-character description, canonical https://www.harvesttycoon.com/, Open Graph and Twitter card with
-  public/assets/og-image.jpg (1200×630: the welcome farm with the logo), and WebSite structured data.
+  public/assets/og-image-farm.jpg (1200×630: the loading screen, the farm at dusk with the logo; the older og-image.jpg stays for links shared before 27 Sep 2026), and WebSite structured data.
   public/robots.txt (everything open except the bare /farm.html frame) and public/sitemap.xml (/ and /privacy).
 - Favicon: /favicon.ico (16, 32, 48 px) and /assets/favicon-96.png (Google wants a multiple of 48 px), both made from
   the app icon (assets/pwa/icon-512.png), linked from every page. Before, the tab icon was the 696 KB logo and
