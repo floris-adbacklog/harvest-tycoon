@@ -106,13 +106,14 @@ export function playerDetail(p,{guideSteps=[],now=Date.now()}={}){
 // BEGINNER_QUESTS (game/farm-state.js); a guided farm sells an egg at step 7 where an older farm does a chore.
 export const GUIDE_STEPS=Object.freeze(['First harvest','First sale','Plant wheat','Water a crop','Start production','Daily gift','A chore or an egg sale','Care for a crop','Harvest wheat','Collect goods and the guide reward']);
 export const FUNNEL_PERIODS=Object.freeze([['7','Last 7 days'],['30','Last 30 days'],['all','Everyone']]);
-const LEVEL_NOTES={10:'farm events open',14:'Starter Pack and diamond boosts'};
+// The levels the funnel follows (27 Sep 2026: 1, 10, 15, 20, 50, with no note on what each opens; those notes went out of date).
+export const FUNNEL_LEVELS=Object.freeze([1,10,15,20,50]);
 export function funnel(players,period='7',now=Date.now()){
  const since=period==='all'?-Infinity:now-Number(period)*DAY,group=players.filter(p=>(time(p.createdAt)??-Infinity)>=since),total=group.length;
  const step=(label,count,note=null)=>({label,count,total,pct:total?Math.round(count/total*100):0,note});
  const rows=[step('Made an account',total),step('Opened their farm',group.filter(p=>p.everPlayed).length),
   ...GUIDE_STEPS.map((label,i)=>step(`Guide ${i+1}: ${label}`,group.filter(p=>p.guide>i).length)),
-  ...[3,5,10,14].map(level=>step(`Level ${level}`,group.filter(p=>(p.level??0)>=level).length,LEVEL_NOTES[level]??null))];
+  ...FUNNEL_LEVELS.map(level=>step(`Level ${level}`,group.filter(p=>(p.level??0)>=level).length))];
  let worst=0;
  for(let i=1;i<rows.length;i++)if(rows[i-1].count-rows[i].count>(worst?rows[worst-1].count-rows[worst].count:0))worst=i;
  if(worst)rows[worst].worst=true;
