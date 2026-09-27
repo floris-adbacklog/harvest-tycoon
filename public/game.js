@@ -416,7 +416,7 @@ function decorate(){
  zone('farmhouse');
  lighten(cloneModel('dray_004',-18.5,-6.5,{width:2,rotation:.4}),0x3a2a16,.28);
  lighten(cloneModel('dray_002',-18.6,-11.2,{width:1.9,rotation:.5}),0x3a2a16,.28);
- zone('bakery');lighten(cloneModel('stall_001',-9.5,14.8,{width:2.2,rotation:.4}),0x3a2a16,.28);
+ // (The Bakery's little stall stood half inside the building; it went, 27 Sep 2026.)
  // Trees, bushes and tufts are spread out with the farm and keep clear of every yard.
  zone(null);
  // The western boundary keeps tall foliage clear of the Family Hall roof, and no big tree stands between the camera and the hall.
