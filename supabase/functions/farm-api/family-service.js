@@ -1,4 +1,4 @@
-import {familyMutate,familyPublicView,familyWeek,levelOf} from './farm-state.js';
+import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf} from './farm-state.js';
 import {isRecentlyActive} from './presence.js';
 const keys={families:['id'],members:['player_id'],invitations:['id'],requests:['id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
 export function familyChanges(before,after){
@@ -24,6 +24,16 @@ async function requestNotice(admin,action,result,context,player,username,now){
  else if(result.declined){to=result.declined;const f=family(context.members.find(m=>m.player_id===player&&!m.left_at)?.family_id);body=`${f?.name} declined your request to join. You can ask another family.`;}
  if(!to||to===player)return;
  try{await admin.from('player_notices').insert({player_id:to,kind:'family',body:body.slice(0,400),expires_at:new Date(now+7*86400000).toISOString()});}catch{}
+}
+// A family's profile (familyProfile, farm-state.js): read only, so it never settles a week or writes anything.
+export async function handleFamilyProfile({admin,body,state,player}){
+ if(typeof body.familyId!=='string'||!body.familyId||body.familyId.length>64)return {status:422,data:{error:'Choose a family.',code:'ACTION_REJECTED'}};
+ const fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:null});
+ if(fetched.error)throw fetched.error;
+ const context=fetched.data,now=context.now;
+ context.players=context.players.map(p=>({...p,online:isRecentlyActive(p.last_active_at,now)}));
+ const profile=familyProfile(context,body.familyId,player,state,now);
+ return profile?{status:200,data:{familyProfile:profile,profile:{player_id:player},serverNow:now}}:{status:422,data:{error:'This family is no longer around.',code:'ACTION_REJECTED'}};
 }
 // null tells the existing farm-api revision loop to reload and retry.
 export async function handleFamily({admin,body,row,state,player,username}){

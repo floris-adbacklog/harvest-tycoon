@@ -15,7 +15,7 @@ function harness({admin=false,confirmed=true,playerId}={}){
   addEventListener(key,fn){this.listeners[key]=fn;}
   before(el){created.push(el);}
   append(el){this.children.push(el);}
-  replaceChildren(){this.children=[];this.innerHTML='';}
+  replaceChildren(...els){this.children=[...els];this.innerHTML='';}
   focus(){doc.activeElement=this;}
   showModal(){this.open=true;}
   close(){this.open=false;this.listeners.close?.();}
@@ -54,8 +54,10 @@ test('clearing search discards pending results and resets busy state',async()=>{
 });
 test('profile lookup errors remain in the dialog with a working retry',async()=>{
  const h=harness(),pending=h.controller.open('missing');h.requests[0].reject(new Error('Farmer not found'));await pending;
- assert.equal(h.controller.isOpen,true);assert.equal(h.dialog.querySelector('#farmer-profile-status').textContent,'Farmer not found');
- const retry=h.dialog.querySelector('#farmer-profile-content').children[0];const again=retry.onclick();h.requests[1].resolve({playerProfile:{username:'Now available'}});await again;
+ assert.equal(h.controller.isOpen,true);
+ // The reason stands right above Try again, not in the status line at the bottom under the farm log (27 Sep 2026).
+ const [why,retry]=h.dialog.querySelector('#farmer-profile-content').children;assert.equal(why.textContent,'Farmer not found');assert.equal(retry.textContent,'Try again');
+ assert.equal(h.dialog.querySelector('#farmer-profile-status').textContent,'');const again=retry.onclick();h.requests[1].resolve({playerProfile:{username:'Now available'}});await again;
  assert.equal(h.dialog.querySelector('#farmer-profile-content').innerHTML,'Now available');
 });
 

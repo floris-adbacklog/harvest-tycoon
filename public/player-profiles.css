@@ -125,3 +125,9 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 [data-log-category="farm"]{--log-dot:#6f9a4a}[data-log-category="production"]{--log-dot:#b0773e}[data-log-category="market"]{--log-dot:#d4a337}
 [data-log-category="rewards"]{--log-dot:#8c6bb1}[data-log-category="diamonds"]{--log-dot:#3884a0}[data-log-category="social"]{--log-dot:#4aa39a}
 [data-log-category="staff"]{--log-dot:#c45b4b}[data-log-category="purchase"]{--log-dot:#2f6a3f}
+/* With a family, the family card is a button to its profile (family-profile.js, 27 Sep 2026). */
+.farmer-family-open{flex:1;display:flex;align-items:center;gap:16px;min-width:0;padding:0;border:0;background:none;box-shadow:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.farmer-family-open>div{flex:1;min-width:0}
+.farmer-family-open>.game-art{width:60px;height:60px;flex:0 0 60px}
+.farmer-family-more{flex-shrink:0;font-size:28px;line-height:1;color:#7a8b6c}
+.farmer-family-open:hover h4{text-decoration:underline;text-underline-offset:3px}

@@ -16,7 +16,7 @@ async function familiesFor(admin,ids){
  const familyIds=[...new Set((members??[]).map(m=>m.family_id))];if(!familyIds.length)return result;
  const families=await read(admin.from('families').select('id,name,emblem').in('id',familyIds).is('deleted_at',null));
  const byId=new Map((families??[]).map(f=>[f.id,f]));
- for(const member of members??[]){const f=byId.get(member.family_id);if(f)result.set(member.player_id,{name:f.name,emblem:f.emblem,role:member.role==='leader'?'Leader':'Member'});}
+ for(const member of members??[]){const f=byId.get(member.family_id);if(f)result.set(member.player_id,{id:f.id,name:f.name,emblem:f.emblem,role:member.role==='leader'?'Leader':'Member'});}
  return result;
 }
 async function memberSince(admin,playerId){

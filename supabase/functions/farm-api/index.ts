@@ -3,7 +3,7 @@ import {handleSocial} from './social-service.js';
 import {welcomeSummary} from './welcome-service.js';
 import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
-import {handleFamily} from './family-service.js';
+import {handleFamily,handleFamilyProfile} from './family-service.js';
 import {handleAdminGrant,isSuperadmin} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
@@ -40,7 +40,7 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','rename','avatar','family','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','rename','avatar','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='social'){const r=await handleSocial({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='player_search'||body.operation==='player_profile'){
@@ -138,6 +138,7 @@ Deno.serve(async(req)=>{
    profile={player_id:user.id,username,currency:state.coins,level:levelOf(state),avatar_id:profile?.avatar_id??'default'};
    // Every answer names whose farm it is; the game checks that before it trusts the answer (src/main.js).
    if(body.operation==='invite')return reply({...await handleInvite({admin,player:user.id,username,state,now}),profile});
+   if(body.operation==='family_profile'){const shown=await handleFamilyProfile({admin,body,state,player:user.id});return reply(shown.data,shown.status);}
    if(body.operation==='family'||(body.operation==='action'&&String(body.action.type).startsWith('family_'))){
     const familyBefore=snapshot(state),familyResponse=await handleFamily({admin,body,row,state,player:user.id,username});
     if(!familyResponse)continue;

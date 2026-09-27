@@ -1,6 +1,6 @@
 #family-button{position:relative;flex-shrink:0}#family-button .game-art{width:28px;height:28px}/* Something is waiting in the family (an invitation, a reward, or goods you can deliver): the same yellow "!" badge as Quests and More. */
 #family-dot{position:absolute;right:-5px;top:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif;pointer-events:none}
-#family-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}#family-dialog *{box-sizing:border-box;min-width:0}#family-dialog .dialog-heading{gap:16px}#family-dialog h2{font-size:clamp(26px,4vw,36px)}#family-dialog h3{margin:0 0 8px;font-size:20px}#family-dialog p{font-size:15px;line-height:1.55;margin:8px 0 16px;color:#797767}#family-dialog small{display:block;font-size:12px;line-height:1.5;color:#807b6c}#family-dialog button{cursor:pointer;min-height:44px}#family-dialog button:disabled{cursor:default}#family-dialog .small-button{font-size:13px;padding:10px 13px;white-space:normal}#family-dialog section+section{margin-top:22px}#family-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 0 24px}#family-tabs button{padding:10px 4px;font-size:14px}
+#family-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}#family-dialog *{box-sizing:border-box;min-width:0}#family-dialog .dialog-heading{gap:16px}#family-dialog h2{font-size:clamp(26px,4vw,36px)}#family-dialog h3{margin:0 0 8px;font-size:20px}#family-dialog p{font-size:15px;line-height:1.55;margin:8px 0 16px;color:#797767}#family-dialog small{display:block;font-size:12px;line-height:1.5;color:#807b6c}#family-dialog button,#family-profile-dialog button{cursor:pointer;min-height:44px}#family-dialog button:disabled,#family-profile-dialog button:disabled{cursor:default}#family-dialog .small-button,#family-profile-dialog .small-button{font-size:13px;padding:10px 13px;white-space:normal}#family-dialog section+section{margin-top:22px}#family-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 0 24px}#family-tabs button{padding:10px 4px;font-size:14px}
 .family-emblem{display:inline-flex;width:48px;height:48px;flex-shrink:0;align-items:center;justify-content:center;border-radius:15px;background:color-mix(in srgb,var(--family-color) 17%,#fffdf4);border:1px solid color-mix(in srgb,var(--family-color) 45%,#fffdf4)}.family-emblem .game-art{width:34px;height:34px}.family-welcome{text-align:center;max-width:510px;margin:0 auto 24px}.family-welcome>.game-art{width:70px;height:70px;margin:4px auto 12px}.family-join-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}.family-join-grid form,.family-your-share,.family-extra,.family-invite{border:1px solid #ddd6c5;background:#f6f3e9;border-radius:18px;padding:18px}#family-dialog label,#family-dialog legend{display:block;font-size:14px;font-weight:700;margin-bottom:8px}#family-dialog input:not([type=radio]),#family-dialog select{width:100%;border:1px solid #cbc6b4;border-radius:12px;min-height:46px;padding:10px 12px;background:#fffdf6;color:#393d30;font:inherit;font-size:16px;margin-bottom:14px}#family-dialog fieldset{border:0;padding:0;margin:6px 0 16px}/* Emblem chooser (public/emblem-picker.js): one row of tiles with an arrow on each side. */
 .emblem-picker-row{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:6px}
 .family-emblems{position:relative;display:flex;gap:8px;padding:4px 3px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -122,14 +122,14 @@
 .family-members-heading>span{font-size:12px;color:#857d6b;white-space:nowrap}
 .family-member{display:flex;align-items:center;gap:6px;border-top:1px solid #ebe4d6}
 .family-member:first-child{border-top:0}
-#family-dialog .family-member-open{flex:1;display:flex;align-items:center;gap:12px;min-width:0;min-height:64px;margin:4px 0;padding:8px 8px 8px 4px;border:0;border-radius:12px;background:none;box-shadow:none;color:inherit;font:inherit;text-align:left}
-#family-dialog .family-member-open:disabled{cursor:default}
+#family-dialog .family-member-open,#family-profile-dialog .family-member-open{flex:1;display:flex;align-items:center;gap:12px;min-width:0;min-height:64px;margin:4px 0;padding:8px 8px 8px 4px;border:0;border-radius:12px;background:none;box-shadow:none;color:inherit;font:inherit;text-align:left}
+#family-dialog .family-member-open:disabled,#family-profile-dialog .family-member-open:disabled{cursor:default}
 .family-member-open:not(:disabled):hover{background:#f7f2e9}
 .family-member-open:focus-visible{outline:3px solid #c79138;outline-offset:1px}
 .family-member-copy{flex:1;min-width:0;display:grid;gap:3px}
 .family-member-copy strong{display:flex;align-items:center;flex-wrap:wrap;gap:4px 7px;font-size:16px;overflow-wrap:anywhere}
 .family-member-copy em{font-style:normal;font-weight:600;color:#8b8472}
-#family-dialog .family-member-copy small{font-size:12px;color:#7c7d6e}
+#family-dialog .family-member-copy small,#family-profile-dialog .family-member-copy small{font-size:12px;color:#7c7d6e}
 .family-role{display:inline-block;padding:1px 8px;border-radius:99px;background:#f3e6bd;color:#6e5418;font-size:11px;font-weight:800}
 .family-member-bar{display:block;height:5px;margin-top:3px;border-radius:99px;background:#ede6d8;overflow:hidden}
 .family-member-bar>span{display:block;height:100%;min-width:0;border-radius:inherit;background:#8fae63}
@@ -354,3 +354,36 @@
 .family-welcome.is-compact h3{margin:0 0 3px;font:700 18px/1.25 'Outfit',sans-serif}
 .family-welcome.is-compact p{margin:0;font-size:13px;color:#7a6b4b}
 @media(max-width:600px){.family-order-head>.game-art{width:46px;height:46px}.family-order-head h3{font-size:16px}.family-chest-head{gap:10px}.family-chest-head>.game-art{width:48px;height:48px}#family-dialog .family-reward>.game-art{width:32px;height:32px}}
+/* The family profile (family-profile.js, 27 Sep 2026): emblem and level, how it has done, its farmers and recent tournaments. */
+.family-profile-dialog{width:min(560px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}
+.family-profile{display:grid;gap:14px}
+.family-profile-hero{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid #d9e1cb;border-radius:20px;background:#eaf0df}
+.family-profile-emblem{position:relative;flex-shrink:0}
+.family-profile-emblem .family-emblem{width:72px;height:72px;border-radius:20px}
+.family-profile-emblem .family-emblem>.game-art{width:48px;height:48px}
+.family-profile-hero>div{min-width:0}
+.family-profile-hero h3{margin:0;font:800 22px/1.15 'Outfit',sans-serif;overflow-wrap:anywhere}
+.family-profile-hero p{margin:4px 0 8px;color:#6b7b60;font-size:14px}
+.family-profile-tags{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.family-profile-tags small{color:#7a6b4b;font-size:12.5px}
+.family-profile-level{display:grid;gap:8px;padding:14px 16px;border:1px solid #ebe4d6;border-radius:16px;background:#fffdf7}
+.family-profile-level>div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.family-profile-level span{color:#6b6353;font-size:13px}
+.family-profile-level small{color:#8a7d62;font-size:12.5px}
+.family-profile-bar{display:block;height:10px;border-radius:99px;background:#efe8da;overflow:hidden}
+.family-profile-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#e7b43e,#d69a2a)}
+.family-profile-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.family-profile-stat{display:grid;justify-items:center;align-content:start;gap:4px;padding:12px 8px;border:1px solid #ebe4d6;border-radius:16px;background:#fffdf7;text-align:center}
+.family-profile-stat>.game-art{width:36px;height:36px}
+.family-profile-stat strong{font:800 20px/1.1 'Outfit',sans-serif;color:#3d4a2e}
+.family-profile-stat span{font-size:12px;line-height:1.3;color:#7a6b4b}
+.family-profile-members h3,.family-profile-recent h3{margin:6px 0 4px;font:800 17px/1.2 'Outfit',sans-serif}
+.family-profile-empty{margin:4px 0;color:#7a6b4b;font-size:13.5px}
+.family-profile-actions{display:grid;gap:8px}
+.family-profile-actions .primary-button,.family-profile-actions .small-button{width:100%;min-height:48px}
+@media(max-width:600px){.family-profile-dialog{padding:18px 16px;width:calc(100% - 20px);max-width:calc(100% - 20px);max-height:calc(100dvh - 24px)}.family-profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.family-profile-emblem .family-emblem{width:60px;height:60px}}
+/* Names and emblems that open a family's profile: in the list of families, the tournament and your own family's heading. */
+.family-list-open{flex:1;display:flex;align-items:center;gap:14px;min-width:0;padding:0;border:0;background:none;box-shadow:none;color:inherit;font:inherit;text-align:left}
+button.family-list-open,button.family-podium-identity,.family-profile-link{cursor:pointer}
+button.family-podium-identity{min-width:0;padding:0;border:0;background:none;box-shadow:none;color:inherit;font:inherit;text-align:left}
+button.family-list-open:hover strong,button.family-podium-identity:hover strong,#family-title.family-profile-link:hover{text-decoration:underline;text-underline-offset:3px}

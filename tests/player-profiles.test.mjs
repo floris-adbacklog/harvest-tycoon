@@ -24,7 +24,7 @@ test('player profile whitelists public data and mastery without reading the comp
 });
 test('profile includes only current, non-deleted family membership',async()=>{
  const admin=database({members:[{player_id:id,family_id:'old',role:'leader',left_at:now-1},{player_id:id,family_id:'current',role:'leader',left_at:null}],families:[{id:'old',name:'Old family',deleted_at:null},{id:'current',name:'Sunny family',emblem:'2',deleted_at:null,invite_code:'secret-code'}]});
- const {data}=await request(admin,{operation:'player_profile',playerId:id});assert.deepEqual(data.playerProfile.family,{name:'Sunny family',emblem:'2',role:'Leader'});assert.ok(!JSON.stringify(data).includes('secret-code'));
+ const {data}=await request(admin,{operation:'player_profile',playerId:id});assert.deepEqual(data.playerProfile.family,{id:'current',name:'Sunny family',emblem:'2',role:'Leader'},'the family id opens its profile (27 Sep 2026)');assert.ok(!JSON.stringify(data).includes('secret-code'));
  const deleted=database({members:[{player_id:id,family_id:'gone',role:'member',left_at:null}],families:[{id:'gone',name:'Gone',deleted_at:now}]});assert.equal((await request(deleted,{operation:'player_profile',playerId:id})).data.playerProfile.family,null);
 });
 test('directory online status expires at 30 minutes and rejects future timestamps',async()=>{

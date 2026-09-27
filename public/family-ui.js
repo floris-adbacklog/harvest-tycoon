@@ -5,6 +5,7 @@ import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {renderFamilyInvitation,renderSentInvitations,createFamilyInviteSearch,inviteBlocker} from './family-invitations-ui.js';
 import {renderFamilyOrderRewards} from './family-order-rewards.js';
 import {renderFamilyTournament} from './family-tournament.js';
+import {createFamilyProfile} from './family-profile.js';
 import {FAMILY_MIN_LEVEL,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
@@ -20,6 +21,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  const social=createSocialUI({state,notify,refreshFarm:()=>window.harvestRefresh(),getMembers:()=>view?.members??[]});
  const dialog=document.getElementById('family-dialog'),content=document.getElementById('family-content'),button=document.getElementById('family-button'),dot=document.getElementById('family-dot');
  let view=null,tab='week',busy=false,reading=false,lastRead=0,generation=0,error='';
+ const familyProfile=createFamilyProfile({emblem,act,openFamily:()=>open()});
  const inviteSearch=createFamilyInviteSearch({request:body=>window.parent.harvestBridge.request(body),onInvite:act,getView:()=>view,playerId:window.parent.harvestBridge.playerId,isBusy:()=>busy});
  const disabled=condition=>condition||busy?'disabled':'';
  const actionButton=(type,label,data='',condition=false)=>`<button type="button" class="small-button" data-family-action="${type}" ${data} ${disabled(condition)}>${label}</button>`;
@@ -42,7 +44,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
    :f.mode==='request'?(mine?.family.id===f.id?actionButton('family_request_cancel','Cancel request',`data-request-id="${esc(mine.id)}"`):actionButton('family_request','Ask to join',`data-family-id="${esc(f.id)}"`,cooldown||!!mine))
    :`<span class="family-mode-chip">${FAMILY_JOIN_MODES[f.mode]}</span>`;
   const note=mine?`<p class="family-notice">You asked to join ${esc(mine.family.name)}. Their leader can accept it for ${formatDuration(mine.expiresAt-farmNow())}.</p>`:'';
-  return `<section class="family-browse"><h3>Join a family</h3><p class="family-browse-lead">Busy families you can join come first. Together you fill the Family Chest faster.</p>${note}${list.length?list.map(f=>`<div class="family-list-row${mine?.family.id===f.id?' is-requested':''}">${emblem(f.emblem)}<div><strong>${esc(f.name)} <small class="family-level-chip">Level ${f.level??1}</small></strong><span>${f.members} / ${view.config.maxMembers} farmers · ${f.active??0} active</span></div>${action(f)}</div>`).join(''):'<p>No families yet. Create the first one!</p>'}<p class="family-footnote">Open: join straight away. Request to join: the leader decides. Invite only: the leader invites you by your player name.</p></section>`;
+  return `<section class="family-browse"><h3>Join a family</h3><p class="family-browse-lead">Busy families you can join come first. Together you fill the Family Chest faster.</p>${note}${list.length?list.map(f=>`<div class="family-list-row${mine?.family.id===f.id?' is-requested':''}"><button type="button" class="family-list-open" data-family-profile="${esc(f.id)}">${emblem(f.emblem)}<div><strong>${esc(f.name)} <small class="family-level-chip">Level ${f.level??1}</small></strong><span>${f.members} / ${view.config.maxMembers} farmers · ${f.active??0} active</span></div></button>${action(f)}</div>`).join(''):'<p>No families yet. Create the first one!</p>'}<p class="family-footnote">Open: join straight away. Request to join: the leader decides. Invite only: the leader invites you by your player name.</p></section>`;
  }
  function prizePreview(){
   const t=view.tournament;
@@ -148,6 +150,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const f=view?.family,heading=document.getElementById('family-subtitle');
   heading.textContent=f?'FARM FAMILY':'A place to grow together';document.getElementById('family-title').textContent=f?f.name:'Farm Family';
   const badge=document.getElementById('family-heading-emblem');badge.hidden=!f;if(f)badge.innerHTML=`${emblem(f.emblem)}<b class="family-level-badge" title="Family level ${view.standing?.level??1}">${view.standing?.level??1}</b>`;
+  // Your family's emblem and name open its profile, as other families' do in the list and the tournament.
+  for(const el of [badge,document.getElementById('family-title')]){el.classList.toggle('family-profile-link',!!f);if(f){el.setAttribute('role','button');el.tabIndex=0;el.title='Family profile';el.onclick=()=>familyProfile.open(f.id);el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();familyProfile.open(f.id);}};}else{el.removeAttribute('role');el.removeAttribute('tabindex');el.removeAttribute('title');el.onclick=el.onkeydown=null;}}
   const meta=document.getElementById('family-meta');meta.hidden=!f;if(f)meta.textContent=`${view.members.length} / ${view.config.maxMembers} farmers · ${view.members.filter(m=>m.online).length} online`;
   document.getElementById('family-chat').hidden=!f||!window.harvestChat;document.getElementById('family-settings').hidden=!f;
   dialog.querySelector('#family-settings').classList.toggle('active',tab==='settings');
@@ -169,6 +173,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const sharingRoot=content.querySelector('[data-sharing-root]');if(sharingRoot)void social.mount(sharingRoot);
   content.querySelector('[data-family-goto]')?.addEventListener('click',event=>{tab=event.currentTarget.dataset.familyGoto;render();content.scrollTop=0;dialog.scrollTop=0;});
   content.querySelectorAll('[data-player-profile]').forEach(b=>b.onclick=()=>{if(b.dataset.playerProfile)window.harvestProfiles?.open(b.dataset.playerProfile,{back:'Back to your family'});});
+  content.querySelectorAll('[data-family-profile]').forEach(b=>b.onclick=()=>familyProfile.open(b.dataset.familyProfile));
   content.querySelectorAll('.family-member-menu').forEach(menu=>menu.addEventListener('toggle',()=>{if(menu.open)content.querySelectorAll('.family-member-menu[open]').forEach(other=>{if(other!==menu)other.open=false;});}));
   // Look and name: the header above shows the picked emblem and the typed name at once; Save changes only appears once
   // something has changed, and saves the emblem and the name together.

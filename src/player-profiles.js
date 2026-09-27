@@ -25,12 +25,17 @@ export function masteryByCrop(badges){
  return [...byCrop].map(([crop,tiers])=>({crop,tiers,best:Math.max(...tiers)})).sort((a,b)=>b.best-a.best||order.indexOf(a.crop)-order.indexOf(b.crop));
 }
 const masteryCard=({crop,tiers,best})=>`<div class="farmer-badge farmer-badge-${best}" title="${esc(MASTERY_TIERS[best].name)} · ${esc(CROPS[crop].name)}">${art(crop)}<strong>${esc(CROPS[crop].name)}</strong><span>${esc(MASTERY_TIERS[best].name)}</span><span class="farmer-badge-pips" role="img" aria-label="${tiers.size} of ${MASTERY_TIERS.length} badges">${MASTERY_TIERS.map((tier,i)=>`<i class="tier-${i}${tiers.has(i)?' is-earned':''}" title="${esc(tier.name)}"></i>`).join('')}</span></div>`;
+// The family card: with a family, a button to its profile (public/family-profile.js, 27 Sep 2026).
+function familyCard(family,emblem){
+ const inner=`${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div>`;
+ return family?.id?`<button type="button" class="farmer-family-open" data-family-profile="${esc(family.id)}" aria-label="${esc(family.name)}: family profile">${inner}<span class="farmer-family-more" aria-hidden="true">›</span></button>`:inner;
+}
 export function renderPlayerProfile(player,now=Date.now(),{statPage=0}={}){
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem);
  const badges=player.badges??[],mastered=masteryByCrop(badges);
  return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${vipBadge(player.vipExpiresAt,now,true)}</div></div>
  <div class="farmer-chat" data-farmer-chat hidden></div>
- <section class="farmer-family" aria-label="Family">${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div><div class="farmer-invite" data-farmer-invite hidden></div></section>
+ <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
  ${renderStatPages(player,now,statPage)}
  <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Crop mastery</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first mastery badge.</p>'}</section>`;
 }
@@ -186,14 +191,19 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
    // The stat pages keep the page you were on when the profile refreshes (every 30 seconds).
    bindStatPages(content,{page:statPage,onPage:page=>{statPage=page;},onBoard:key=>showBoard?.(key)});
    profileUsername=data.playerProfile.username;showInvite(data.playerProfile);
+   content.querySelector('[data-family-profile]')?.addEventListener('click',event=>window.harvestFamilyProfile?.open(event.currentTarget.dataset.familyProfile));
    chatExtras?.(data.playerProfile,content,{isCurrent:()=>!disposed&&selected===id&&dialog.open});
    dialog.querySelector('#farmer-profile-title').textContent=`${data.playerProfile.username}'s profile`;
    profileStatus.textContent='Online status is based on activity in the last 30 minutes.';
    if(quiet)dialog.scrollTop=y;
   }catch(error){
    if(disposed||ticket!==profileSequence||!dialog.open)return;
-   if(!quiet)content.replaceChildren();profileStatus.textContent=quiet?'Could not refresh this profile. Showing the last update.':error.message;
-   if(!quiet){const retry=document.createElement('button');retry.className='small-button';retry.textContent='Try again';retry.onclick=()=>loadProfile(false);content.append(retry);}
+   // The reason stands right above Try again (the status line sits at the very bottom, under the farm log, 27 Sep 2026).
+   if(quiet){profileStatus.textContent='Could not refresh this profile. Showing the last update.';return;}
+   console.warn('The farmer profile could not load.',error);
+   const why=document.createElement('p');why.className='farmer-empty';why.textContent=error?.message||'This profile could not be loaded.';
+   const retry=document.createElement('button');retry.className='small-button';retry.textContent='Try again';retry.onclick=()=>loadProfile(false);
+   content.replaceChildren(why,retry);profileStatus.textContent='';
   }finally{if(ticket===profileSequence)content.setAttribute('aria-busy','false');}
  }
  async function searchPlayers(ticket,query){
