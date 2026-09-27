@@ -101,7 +101,7 @@ test('the chat window: Global first, no red count on Global, names open a profil
  assert.match(ui,/profiles\?\.open\(profile\.dataset\.profile,\{back:null\}\)/);
  assert.match(profiles,/backButton\.hidden=back===null;/);
  assert.match(ui,/\$\{m\.sender_vip\?VIP:''\}\$\{m\.sender_staff\?/);
- assert.match(ui,/if\(role&&heading&&!heading\.querySelector\('\.farmer-mod-badge'\)\)heading\.insertAdjacentHTML\('beforeend',staffBadge\(role,'farmer-mod-badge'\)\);/,'the admin shows as Admin, a moderator as Moderator (26 Sep 2026)');
+ assert.match(ui,/if\(badge&&heading&&!heading\.querySelector\('\.farmer-mod-badge'\)\)heading\.insertAdjacentHTML\('beforeend',staffBadge\(badge,'farmer-mod-badge'\)\);/,'the admin shows as Admin, a moderator as Moderator (26 Sep 2026)');
  assert.ok(!/innerHTML=[^;]*\$\{m\.body\}/.test(ui),'a message is always escaped');
 });
 

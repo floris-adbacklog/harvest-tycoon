@@ -387,8 +387,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   chat.playerStatus(id).then(status=>{statusCache.set(id,{status,at:Date.now()});if(isCurrent()&&content.isConnected)apply(status);}).catch(()=>{});
   function apply(status){
    const heading=content.querySelector('.farmer-identity h3');
-   const role=STAFF_LABELS[status.role]?status.role:status.moderator?'moderator':null;
-   if(role&&heading&&!heading.querySelector('.farmer-mod-badge'))heading.insertAdjacentHTML('beforeend',staffBadge(role,'farmer-mod-badge'));
+   // Their staff badge (not named role: role() is who you are, used just below; the clash broke every profile, 27 Sep 2026).
+   const badge=STAFF_LABELS[status.role]?status.role:status.moderator?'moderator':null;
+   if(badge&&heading&&!heading.querySelector('.farmer-mod-badge'))heading.insertAdjacentHTML('beforeend',staffBadge(badge,'farmer-mod-badge'));
    const box=content.querySelector('[data-farmer-chat]');if(!box)return;
    if(id===me){box.hidden=true;return;}
    const staffTools=status.staff&&!status.moderator,admin=role()==='admin';
