@@ -38,8 +38,26 @@ test('on the map yellow means ready: the stall pin from a quarter full, red when
  assert.match(game,/return economy\.placeReady\(key\)\?'ready':'';/);
  assert.match(game,/const light=locked\?'':pinLight\(key\);v\.label\.classList\.toggle\('ready',light==='ready'\);v\.label\.classList\.toggle\('full',light==='full'\);/);
  assert.match(read('public/economy-ui.js'),/placeReady:key=>key in PLACES&&placeStatus\(key\)\.kind==='ready'/,'the same status the Buildings list sorts by');
- assert.match(css,/\.utility-label\.ready\{border:2px solid #e3be55;background:#fff5ce\}/);
+ assert.match(css,/\.utility-label\.ready\{border:2px solid #e3b447;background:#fff0b2\}/);
  assert.match(css,/\.utility-label\.full\{border:2px solid #d9695a;background:#fde6e1\}/);
+});
+
+// 27 Sep 2026: the Farm chores pin is yellow only while every chore open to the farmer can be done; after one it stays white.
+test('the Farm chores pin is yellow when all open chores are ready, white while any of them rests',async()=>{
+ const game=read('public/game.js');
+ const code=game.match(/ if\(key==='chores'\)\{(.+?)\}\n/)[1];
+ const {CHORES,choreStatus,createFarm}=await import('../game/farm-state.js');
+ const light=(state,now)=>new Function('state','farmNow','CHORES','choreStatus',code)(state,()=>now,CHORES,choreStatus);
+ const now=Date.now(),s=createFarm(now);s.chores={};s.chorePractice=Object.fromEntries(Object.keys(CHORES).map(id=>[id,1000]));   // every chore mastered, so all are open
+ const open=Object.keys(CHORES).filter(id=>!choreStatus(s,id,now).locked);
+ assert(open.length>=2,'at least two chores to try it with');
+ assert.equal(light(s,now),'ready','none done: yellow');
+ s.chores[open[0]]=now+60000;
+ assert.equal(light(s,now),'','one resting: white');
+ for(const id of open)s.chores[id]=now+60000;
+ assert.equal(light(s,now),'','all resting: white');
+ for(const id of open)s.chores[id]=now-1;
+ assert.equal(light(s,now),'ready','all back: yellow');
 });
 
 test('the seed you chose last is still chosen after a reload (only one you can plant)',()=>{

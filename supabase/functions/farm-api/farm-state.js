@@ -614,13 +614,18 @@ export const MAX_PLOTS=40;
 // in about ten hours of play, and a farmer past 50 is in for the long game: 50 -> 90 (the last unlock) takes about twice as long,
 // roughly 80 hours of play at the fastest pace seen. Nobody goes back: a farm keeps its level and its share of the way to the next one,
 // and below level 50 nothing changes.
-export const XP_CURVE=4;
+// Curve 5 (27 Sep 2026) is curve 4 with levels 10 to 30 cheaper: after 320 XP for level 10 the next step asked 420, and 10 -> 20 as a
+// whole 6,000 XP, four and a half times levels 1 to 10, just as the beginner boost runs out; experienced players had nothing new to
+// do. Now 10 -> 20 asks about 4,550 XP (a quarter less), the steps grow smoothly on from level 9, and between 20 and 30 they grow
+// back to curve 4's steps (about a tenth less there), so there is no new jump at 20. From level 30 every step is as before.
+export const XP_CURVE=5;
 export const LATE_XP_FROM=50,LATE_XP_STEP=.04,LATER_XP_FROM=100,LATER_XP_STEP=.06;
 const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
-const EARLY_GAPS=Object.freeze({   // XP from level 1 to 2, 2 to 3 ... 9 to 10 (curve 1: 60, 100, 140 ... 380)
+const EARLY_GAPS=Object.freeze({   // XP from level 1 to 2, 2 to 3 ... 9 to 10 (curve 1: 60, 100, 140 ... 380); curve 5 on to level 30
  2:Object.freeze([15,30,40,60,80,105,135,170,215]),
  3:Object.freeze([15,40,65,95,130,170,215,265,320]),
- 4:Object.freeze([15,40,65,95,130,170,215,265,320])
+ 4:Object.freeze([15,40,65,95,130,170,215,265,320]),
+ 5:Object.freeze([15,40,65,95,130,170,215,265,320,  330,355,380,405,435,465,495,525,560,595,  640,690,745,800,860,920,985,1050,1115,1175])   // to level 30
 });
 const lateStep=level=>Math.round((40*level+20)*(1+(Math.min(level,LATER_XP_FROM)-LATE_XP_FROM)*LATE_XP_STEP+Math.max(0,level-LATER_XP_FROM)*LATER_XP_STEP));   // level -> level+1, from level 50
 const curveOf=state=>Object.hasOwn(EARLY_GAPS,state.xpCurve)?Number(state.xpCurve):1;
@@ -629,12 +634,12 @@ function totalForLevel(level,curve){
  if(level<=1)return 0;
  const gaps=EARLY_GAPS[curve];if(!gaps)return oldXpForLevel(level);
  if(level<=gaps.length+1)return sum(gaps.slice(0,level-1));
- if(curve>=4&&level>LATE_XP_FROM){let total=totalForLevel(LATE_XP_FROM,3);for(let l=LATE_XP_FROM;l<level;l++)total+=lateStep(l);return total;}
+ if(curve>=4&&level>LATE_XP_FROM){let total=totalForLevel(LATE_XP_FROM,curve);for(let l=LATE_XP_FROM;l<level;l++)total+=lateStep(l);return total;}
  return oldXpForLevel(level)-(oldXpForLevel(gaps.length+1)-sum(gaps));
 }
 export const xpForLevel=level=>totalForLevel(level,XP_CURVE);
 function levelFromTotal(total,curve){
- if(curve>=4&&total>=totalForLevel(LATE_XP_FROM,3)){let level=LATE_XP_FROM,next=totalForLevel(LATE_XP_FROM,3)+lateStep(LATE_XP_FROM);while(total>=next&&level<10000){level++;next+=lateStep(level);}return level;}
+ if(curve>=4&&total>=totalForLevel(LATE_XP_FROM,curve)){let level=LATE_XP_FROM,next=totalForLevel(LATE_XP_FROM,curve)+lateStep(LATE_XP_FROM);while(total>=next&&level<10000){level++;next+=lateStep(level);}return level;}
  const gaps=EARLY_GAPS[curve];
  if(!gaps)return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);
  const early=sum(gaps);

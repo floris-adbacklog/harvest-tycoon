@@ -6,7 +6,7 @@ const now=Date.UTC(2026,8,17,12),hour=3600000;
 // Chores pay enough XP to level up a young farm; level-ups pay their own coins and diamonds on top.
 const levelGain=(from,to,key)=>{let sum=0;for(let l=from+1;l<=to;l++)sum+=levelReward(l)[key];return sum;};
 test('old saves preserve coins, inventory, levels, crop and job deadlines',()=>{
- const s=createFarm(now);s.version=3;s.xp=2017;s.coins=8123;s.inventory.wheat=67;s.buildings.mill.job={recipe:'flour',startedAt:now-10000,readyAt:now+5000};delete s.mastery;delete s.stall;delete s.estate;delete s.xpOffset;
+ const s=createFarm(now);s.version=3;s.xp=2017;s.coins=8123;s.inventory.wheat=67;s.buildings.mill.job={recipe:'flour',startedAt:now-10000,readyAt:now+5000};delete s.mastery;delete s.stall;delete s.estate;delete s.xpOffset;delete s.xpCurve;
  const original=structuredClone(s);normalizeFarm(s,now);
  assert.equal(levelOf(s),1+Math.floor(original.xp/60));assert.equal(s.coins,original.coins);assert.deepEqual(s.inventory,original.inventory);assert.equal(s.plots[5].readyAt,original.plots[5].readyAt);assert.equal(s.buildings.mill.job.readyAt,original.buildings.mill.job.readyAt);assert.deepEqual(s.buildings.mill.job.output,{flour:1});
  const again=structuredClone(s);normalizeFarm(s,now);assert.deepEqual(s,again);

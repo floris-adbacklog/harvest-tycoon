@@ -36,7 +36,7 @@ import { createAtmosphere } from './farm-atmosphere.js';
 import { buildRows, createCropMotion, isRowCrop } from './crop-rows.js';
 import { flyHarvest, bump } from './harvest-fly.js';
 import { createActivitiesUI } from './activities-ui.js';
-import { ACTIVE_STATIONS,cropUnlocked,stallStatus,stallNotice,beginnerProgress } from './farm-state.js';
+import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress } from './farm-state.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { watchSelects } from './pretty-select.js';
@@ -776,9 +776,12 @@ function addBuilding(key,x,z,options){
  buildingViews.set(key,{object,hit,outline,label,pin:label.querySelector('.building-pin'),pinArt:key==='familyhall'?'familyhall-model':key,x:object.position.x,z:object.position.z,height,locked:false});
 }
 // On the map yellow means ready, as on a building whose batch is done: the Farm stall from a quarter full (red once it is
-// full and stops earning) and a valley place with something waiting (the status the Buildings list sorts by).
+// full and stops earning), the Farm chores when every chore that is open to the farmer can be done again (none of them is
+// resting; after one chore it stays white until all are back), and a valley place with something waiting (the status the
+// Buildings list sorts by).
 function pinLight(key){
  if(key==='stall'){const now=farmNow(),s=stallStatus(state,now);return s.balance>=s.capacity?'full':stallNotice(state,now)?'ready':'';}
+ if(key==='chores'){const now=farmNow(),open=Object.keys(CHORES).map(id=>choreStatus(state,id,now)).filter(s=>!s.locked);return open.length&&open.every(s=>!s.remaining)?'ready':'';}
  return economy.placeReady(key)?'ready':'';
 }
 // The live map in the top-left corner on a computer (public/minimap.js): a small render of the farm from high above, with what is

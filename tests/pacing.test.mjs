@@ -22,11 +22,11 @@ test('every guide step pays XP, so following the guide takes a new farmer to lev
  assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds>=BEGINNER_REWARD,true);
  assert(s.xp>=BEGINNER_STEP_XP*BEGINNER_QUESTS.length);assert(levelOf(s)>=3,`level ${levelOf(s)} after the guide`);
 });
-test('levels 1 to 10 need less XP than the original curve, the first harvest reaches level 2, and levels 10 to 50 keep their old distances',()=>{
- assert.deepEqual([1,2,3,4,5,6,7,8,9,10,11,12,20].map(xpForLevel),[0,15,55,120,215,345,515,730,995,1315,1735,2195,7315]);
- assert.equal(XP_CURVE,4);assert(xpForLevel(10)<xpForLevelOld(10)&&xpForLevel(10)>850,'between the flying curve of a day (850) and the original (1,980)');
- for(let level=10;level<=50;level++)assert.equal(xpForLevel(level+1)-xpForLevel(level),60+40*(level-1),`the step from level ${level} is unchanged`);
- for(let level=1;level<10;level++)assert(xpForLevel(level+1)-xpForLevel(level)<xpForLevel(level+2)-xpForLevel(level+1),`steps grow: ${level}`);
+test('levels 1 to 10 need less XP than the original curve, the first harvest reaches level 2, and levels 30 to 50 keep their old distances',()=>{
+ assert.deepEqual([1,2,3,4,5,6,7,8,9,10,11,12,20,30].map(xpForLevel),[0,15,55,120,215,345,515,730,995,1315,1645,2000,5860,14840]);
+ assert.equal(XP_CURVE,5);assert(xpForLevel(10)<xpForLevelOld(10)&&xpForLevel(10)>850,'between the flying curve of a day (850) and the original (1,980)');
+ for(let level=30;level<=50;level++)assert.equal(xpForLevel(level+1)-xpForLevel(level),60+40*(level-1),`the step from level ${level} is unchanged`);
+ for(let level=1;level<60;level++)assert(xpForLevel(level+1)-xpForLevel(level)<xpForLevel(level+2)-xpForLevel(level+1),`steps grow: ${level}`);
  for(const level of [1,2,5,9,10,12,25]){const s={xp:xpForLevel(level),xpOffset:0,xpCurve:XP_CURVE};assert.equal(levelOf(s),level);assert.equal(levelOf({...s,xp:xpForLevel(level+1)-1}),level);}
  const s=createFarm(now);act(s,{type:'field',id:0,action:'harvest'},now);
  assert.equal(levelOf(s),2,'a first harvest and its guide step are enough for level 2');
@@ -76,19 +76,44 @@ test('nothing else unlocks later than before, so every existing player keeps wha
  for(const [key,level] of Object.entries(before))assert(FEATURE_LEVELS[key]<=level,key);
 });
 
+// 27 Sep 2026 (curve 5): levels 10 to 30 cheaper. 10 -> 20 felt four and a half times as long as 1 -> 10, right as the beginner boost ran out.
+test('levels 10 to 20 ask a quarter less XP, the steps grow smoothly on from level 9 and back to the old ones by level 30',()=>{
+ const step=level=>xpForLevel(level+1)-xpForLevel(level),old=level=>60+40*(level-1);
+ assert.deepEqual([9,10,11,12,13,14,15,16,17,18,19].map(step),[320,330,355,380,405,435,465,495,525,560,595]);
+ assert.equal(xpForLevel(20)-xpForLevel(10),4545,'was 6,000');
+ assert.equal(xpForLevel(30)-xpForLevel(20),8980,'was 10,000');
+ for(let level=10;level<30;level++){assert(step(level)<old(level),`level ${level} is cheaper`);assert(step(level)/step(level-1)<1.1,`no jump at ${level}`);}
+ assert.equal(step(30),old(30),'from level 30 as before');
+ for(const level of [1,9,10])assert.equal(xpForLevel(level),[0,995,1315][[1,9,10].indexOf(level)],'levels 1 to 10 unchanged');
+ // A curve-4 farm keeps its level and its share of the way to the next one.
+ const curve4=level=>{const n=level-1;return 60*n+20*n*(n-1)-665;};
+ for(const [level,share] of [[9,.5],[10,0],[10,.5],[14,.2],[16,.4],[19,.99],[20,0],[25,.3],[29,.7],[30,.2],[49,.5]]){
+  const xp=Math.round(curve4(level)+share*(curve4(level+1)-curve4(level))),s={...createFarm(now),xp,xpOffset:0,xpCurve:4},before=levelProgress(s);
+  normalizeFarm(s,now);const after=levelProgress(s);
+  assert.equal(before.level,level);assert.equal(after.level,level);assert.ok(Math.abs(after.current/after.target-before.current/before.target)<.005,`level ${level}: same share`);
+  if(level<10)assert.equal(s.xp,xp,`level ${level}: untouched`);
+  if(level>=30)assert.equal(s.xp,xp-2475,`level ${level}: the same XP into the level`);
+ }
+});
 // 26 Sep 2026: from level 50 every step asks 4% more per level above 50, from level 100 6% more per level (curve 4).
 test('from level 50 each level asks 4% more per level above 50, from 100 6% more; nobody loses a level or progress',()=>{
  const step=level=>xpForLevel(level+1)-xpForLevel(level),old=level=>60+40*(level-1);
  assert.equal(step(50),old(50),'50 -> 51 as before');
  assert.equal(step(60),Math.round(old(60)*1.4));assert.equal(step(90),Math.round(old(90)*2.6));assert.equal(step(100),Math.round(old(100)*3));assert.equal(step(110),Math.round(old(110)*3.6));
  for(let level=50;level<200;level++)assert(step(level+1)>step(level),`steps keep growing: ${level}`);
- for(let level=2;level<=250;level++){assert.equal(levelOf({xp:xpForLevel(level),xpOffset:0,xpCurve:4}),level);assert.equal(levelOf({xp:xpForLevel(level)-1,xpOffset:0,xpCurve:4}),level-1);}
+ for(let level=2;level<=250;level++){assert.equal(levelOf({xp:xpForLevel(level),xpOffset:0,xpCurve:XP_CURVE}),level);assert.equal(levelOf({xp:xpForLevel(level)-1,xpOffset:0,xpCurve:XP_CURVE}),level-1);}
  // A curve-3 farm: the same level and the same share of the way to the next one; below level 50 the XP does not change at all.
  const curve3=level=>{const n=level-1;return 60*n+20*n*(n-1)-665;};
  for(const [level,share] of [[20,.3],[49,.99],[50,0],[50,.5],[65,.4],[69,.4],[70,.95],[99,.1],[120,.7]]){
   const xp=Math.round(curve3(level)+share*(curve3(level+1)-curve3(level))),s={...createFarm(now),xp,xpOffset:0,xpCurve:3},before=levelProgress(s);
   normalizeFarm(s,now);const after=levelProgress(s);
   assert.equal(after.level,level);assert.equal(before.level,level);assert.ok(Math.abs(after.current/after.target-before.current/before.target)<.001,`level ${level}: same share`);
-  if(level<50)assert.equal(s.xp,xp,`level ${level}: untouched`);
+  if(level<10)assert.equal(s.xp,xp,`level ${level}: untouched`);
+ }
+ // A farm past 50 on curve 4 keeps its level and share on curve 5 as well.
+ for(const [level,share] of [[50,.5],[65,.4],[120,.7]]){
+  const s={...createFarm(now),xp:0,xpOffset:0,xpCurve:4};s.xp=Math.round(xpForLevel(level)+2475+share*step(level));const before=levelProgress(s);
+  normalizeFarm(s,now);const after=levelProgress(s);
+  assert.equal(before.level,level);assert.equal(after.level,level);assert.ok(Math.abs(after.current/after.target-before.current/before.target)<.001);
  }
 });

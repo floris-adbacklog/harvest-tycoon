@@ -83,5 +83,5 @@
 @media(max-width:900px){.gift-icon{width:40px;height:40px;min-width:40px;padding:6px}}
 /* On the map yellow means ready, as on a building whose batch is done (game.js pinLight): the Farm stall from a quarter
    full and a valley place with something waiting; red when the stall is full and has stopped earning. */
-.utility-label.ready{border:2px solid #e3be55;background:#fff5ce}
+.utility-label.ready{border:2px solid #e3b447;background:#fff0b2}
 .utility-label.full{border:2px solid #d9695a;background:#fde6e1}
