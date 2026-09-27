@@ -73,7 +73,7 @@ const BODIES={
   return section('The whole game in four steps',`<ol class="wiki-loop">${loop}</ol><p>Plant crops, harvest them, turn them into goods in your buildings and sell them at the ${h.link('market')}. Everything else helps your farm grow.</p>`)
   +section('Your first minutes',facts([
    ['quests','Beginner guide',`Ten small steps that show you the farm. After all ten you get ${BEGINNER_REWARD} diamonds.`],
-   ['boost','Beginner boost',`When you create your account, waiting times are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter. The boost gets smaller quickly at first, then slowly, and is gone after your first ${Math.round(ROOKIE_BOOST_MS/3600000)} hours.`],
+   ['boost','Beginner boost',`When you create your account, waiting times are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter. The boost gets smaller evenly, hour by hour, and stops after your first ${Math.round(ROOKIE_BOOST_MS/3600000)} hours.`],
    ['gift','A gift every day',`Come back every day for coins and diamonds. See ${h.link('daily')}.`]
   ]))
   +section('Moving around',facts([

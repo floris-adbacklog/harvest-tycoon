@@ -9,6 +9,10 @@ const percent=Math.round(ROOKIE_TIMER_BOOST*100);
 // Under an hour in minutes, then hours and minutes (the boost now lasts a day); the small badge shows whole hours.
 export const rookieTimeLeft=ms=>{if(ms<60000)return `${Math.max(1,Math.ceil(ms/1000))}s`;const m=Math.ceil(ms/60000);if(m<60)return `${m} min`;const h=Math.floor(m/60),rest=m%60;return rest?`${h} h ${rest} min`:`${h} h`;};
 export const rookieBadge=ms=>ms<60000?'<1m':ms<3600000?`${Math.ceil(ms/60000)}m`:`${Math.ceil(ms/3600000)}h`;
+// The boost falls in a straight line to 0% at the end of the first day; its last few minutes are under half a percent and would read
+// "0% shorter waiting" (27 Sep 2026). From then on it counts as over here: the hourglass goes and the clock runs to that moment.
+export const ROOKIE_FADED_MS=Math.ceil(ROOKIE_BOOST_MS*.005/ROOKIE_TIMER_BOOST);
+export const rookieShownLeft=(state,now)=>Math.max(0,rookieBoostLeft(state,now)-ROOKIE_FADED_MS);
 export const rookieLabel=(ms,boost=ROOKIE_TIMER_BOOST)=>`${Math.round(boost*100)}% shorter waiting · ${rookieTimeLeft(ms)} left`;
 
 export function createRookieUI({state,document:doc=globalThis.document,now=farmNow}){
@@ -17,19 +21,21 @@ export function createRookieUI({state,document:doc=globalThis.document,now=farmN
  let phase='';
  const minutes=ms=>{const n=Math.round(ms/60000);return `${n} minute${n===1?'':'s'}`;};
  const normal=minutes(CROPS.corn.duration);
+ // The corn example only while it shows a difference ("15 minutes instead of 15 minutes" says nothing).
+ const corn=()=>minutes(CROPS.corn.duration*(1-rookieBoost(state,now())));
  function render(left){
   const on=left>0,currentPercent=Math.round(rookieBoost(state,now())*100);phase=on?'on':'ended';
   dialog.innerHTML=`<button type="button" class="rookie-close" data-rookie-close aria-label="Close">×</button>${art('hourglass','rookie-art')}<p class="eyebrow">BEGINNER BOOST</p>`+
    // Short on purpose (26 Sep 2026): the whole screen fits a small phone, Got it included, without scrolling.
    (on?`<h2 id="rookie-title"><span data-rookie-percent>${currentPercent}</span>% shorter waiting</h2><p>Waiting times start ${percent}% shorter and ease back to normal over your first ${ROOKIE_BOOST_MS/3600000} hours.</p>
-    <div class="rookie-clock"><progress max="${ROOKIE_BOOST_MS}" value="${left}" aria-label="Time left of your beginner boost"></progress><b data-rookie-left>${rookieTimeLeft(left)} left</b></div>
-    <ul class="rookie-notes"><li>Corn now takes <b data-rookie-corn>${minutes(CROPS.corn.duration*(1-rookieBoost(state,now())))}</b> instead of ${normal}.</li><li>Crops and batches already running keep their times.</li>${rookieLeft(state,now())>0?`<li>Your starter corn and feed can be sold after ${ROOKIE_MS/60000} minutes.</li>`:''}</ul>`
+    <div class="rookie-clock"><progress max="${ROOKIE_BOOST_MS-ROOKIE_FADED_MS}" value="${left}" aria-label="Time left of your beginner boost"></progress><b data-rookie-left>${rookieTimeLeft(left)} left</b></div>
+    <ul class="rookie-notes"><li${corn()===normal?' hidden':''}>Corn now takes <b data-rookie-corn>${corn()}</b> instead of ${normal}.</li><li>Crops and batches already running keep their times.</li>${rookieLeft(state,now())>0?`<li>Your starter corn and feed can be sold after ${ROOKIE_MS/60000} minutes.</li>`:''}</ul>`
    :`<h2 id="rookie-title">Beginner boost ended</h2><p>Waiting times are back to normal, and your starter corn and feed are free to sell.</p>${(state.login?.visits??0)<2?'<p>Come back tomorrow: your next daily gift brings 30 minutes of double harvest.</p>':''}`)+
    `<button type="button" class="primary-button" data-rookie-close>Got it</button>`;
  }
  function open(){
   doc.querySelectorAll('dialog[open]').forEach(other=>{if(other!==dialog)other.close();});
-  render(rookieBoostLeft(state,now()));if(!dialog.open)dialog.showModal();
+  render(rookieShownLeft(state,now()));if(!dialog.open)dialog.showModal();
   dialog.querySelector('.primary-button')?.focus({preventScroll:true});
  }
  // The hourglass buttons and the chip only need [data-rookie-open]; nothing else has to know about this screen.
@@ -40,13 +46,13 @@ export function createRookieUI({state,document:doc=globalThis.document,now=farmN
  });
  // Called with the other screens: shows or hides the hourglass and keeps every clock in step.
  function tick(){
-  const left=rookieBoostLeft(state,now());
+  const left=rookieShownLeft(state,now());
   const button=doc.getElementById('rookie-button'),badge=doc.getElementById('rookie-time');
   if(button){button.hidden=left<=0;button.title=left>0?`Beginner boost · ${rookieLabel(left,rookieBoost(state,now()))}`:'Beginner boost';}
   if(badge){const text=left>0?rookieBadge(left):'';if(badge.textContent!==text)badge.textContent=text;}
   if(!dialog.open)return;
   if((left>0?'on':'ended')!==phase)render(left);
-  else if(left>0){dialog.querySelector('[data-rookie-left]').textContent=`${rookieTimeLeft(left)} left`;dialog.querySelector('progress').value=left;dialog.querySelector('[data-rookie-percent]').textContent=Math.round(rookieBoost(state,now())*100);const corn=dialog.querySelector('[data-rookie-corn]');if(corn)corn.textContent=minutes(CROPS.corn.duration*(1-rookieBoost(state,now())));}
+  else if(left>0){dialog.querySelector('[data-rookie-left]').textContent=`${rookieTimeLeft(left)} left`;dialog.querySelector('progress').value=left;dialog.querySelector('[data-rookie-percent]').textContent=Math.round(rookieBoost(state,now())*100);const line=dialog.querySelector('[data-rookie-corn]');if(line){line.textContent=corn();line.parentElement.hidden=corn()===normal;}}
  }
  tick();
  return {open,tick,refresh:tick};

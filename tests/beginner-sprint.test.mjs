@@ -13,7 +13,7 @@ const emptyPlot=s=>s.plots.findIndex(p=>!p.crop);
 test('a new farm gets a beginner boost for its first day, in plain clock time, and keeps its starter goods for 30 minutes',()=>{
  const s=createFarm(now);
  assert.equal(ROOKIE_MS,30*MIN);assert.equal(ROOKIE_BOOST_MS,24*60*MIN);assert.equal(ROOKIE_TIMER_BOOST,.8);assert.equal(s.rookieUntil,now+ROOKIE_MS);
- assert.equal(rookieBoost(s,now),.8);assert(Math.abs(rookieBoost(s,now+12*60*MIN)-.2)<1e-9);assert.equal(rookieBoost(s,now+24*60*MIN),0);
+ assert.equal(rookieBoost(s,now),.8);assert(Math.abs(rookieBoost(s,now+12*60*MIN)-.4)<1e-9,'a straight line to 0% after a day (27 Sep 2026)');assert.equal(rookieBoost(s,now+24*60*MIN),0);
  assert.equal(rookieLeft(s,now+10*MIN),20*MIN);assert.equal(rookieLeft(s,now+45*MIN),0);
  // Nothing else moves it: not actions, not pauses, not the level.
  act(s,{type:'field',id:0,action:'harvest'},now+MIN);s.xp=1e6;assert.equal(s.rookieUntil,now+ROOKIE_MS);
@@ -136,7 +136,7 @@ test('the hourglass says how long is left and that it is temporary',()=>{
 test('the beginner boost screen is short enough for a small phone: one line, the clock and three short notes, Got it in view',()=>{
  const ui=read('rookie-ui.js'),css=read('ui-polish.css');
  assert.match(ui,/% shorter waiting<\/h2><p>Waiting times start \$\{percent\}% shorter and ease back to normal over your first \$\{ROOKIE_BOOST_MS\/3600000\} hours\.<\/p>/);
- assert.match(ui,/<li>Corn now takes <b data-rookie-corn>/);assert.match(ui,/<li>Crops and batches already running keep their times\.<\/li>/);
+ assert.match(ui,/<li\$\{corn\(\)===normal\?' hidden':''\}>Corn now takes <b data-rookie-corn>/);assert.match(ui,/<li>Crops and batches already running keep their times\.<\/li>/);
  assert.match(ui,/\$\{rookieLeft\(state,now\(\)\)>0\?`<li>Your starter corn and feed can be sold after \$\{ROOKIE_MS\/60000\} minutes\.<\/li>`:''\}/,'only while the starter goods are still kept');
  assert.doesNotMatch(ui,/Easing over the day|Your first day is a head start/);
  assert.match(css,/@media\(max-width:600px\)\{#rookie-dialog\{padding:20px 18px 18px\}#rookie-dialog \.rookie-art\{width:76px;height:76px;/);

@@ -85,7 +85,7 @@ test('the wiki states the current rules: the Starter Pack window and the day-lon
  const {STARTER_WINDOW}=await import('../game/payments.js');const {STARTER_DAYS}=await import('../public/wiki-content.js');
  assert.equal(STARTER_DAYS*24*60*60*1000,STARTER_WINDOW);
  assert.match(wikiArticle('diamonds').html,/there is also a Starter Pack for 7 days\./);
- assert.match(wikiArticle('getting-started').html,/gets smaller quickly at first, then slowly, and is gone after your first 24 hours\./);
+ assert.match(wikiArticle('getting-started').html,/gets smaller evenly, hour by hour, and stops after your first 24 hours\./);
 });
 
 test('the wiki matches the rules it explains: family payouts, invites, events and building needs',()=>{
