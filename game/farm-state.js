@@ -85,9 +85,11 @@ export const MARKET_PAYOUT_MULTIPLIER=0.8;
 const reducedMarketPrice=value=>Math.max(1,Math.round(value*MARKET_PAYOUT_MULTIPLIER));
 const MARKET_CURVE=[0,.12,.22,.30,.36,.41,.45,.48,.50,.50,.50,.52,.55,.59,.64,.70,.78,.88,1];
 function calendarHash(text){let h=2166136261;for(let i=0;i<text.length;i++)h=Math.imul(h^text.charCodeAt(i),16777619);h^=h>>>16;h=Math.imul(h,0x7feb352d);h^=h>>>15;return h>>>0;}
+// How far a price can move from normal in a day (the wiki reads these): crops a little, goods more, sunflower oil the most.
+export const MARKET_RANGES=Object.freeze({crops:Object.freeze([.85,1.15]),goods:Object.freeze([.7,1.6]),oil:Object.freeze([.5,2])});
 export function marketQuote(item,now=Date.now()){
  if(!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid market item.');
- const base=ITEMS[item].sell,range=item==='oil'?[.5,2]:Object.hasOwn(CROPS,item)?[.85,1.15]:[.7,1.6];
+ const base=ITEMS[item].sell,range=item==='oil'?MARKET_RANGES.oil:Object.hasOwn(CROPS,item)?MARKET_RANGES.crops:MARKET_RANGES.goods;
  const baseMin=Math.max(1,Math.round(base*range[0])),baseMax=Math.round(base*range[1]);
  const position=MARKET_CURVE[calendarHash(`market-v1:${utcDay(now)}:${item}`)%MARKET_CURVE.length];
  const originalPrice=Math.round(position<=.5?baseMin+(base-baseMin)*position*2:base+(baseMax-base)*(position-.5)*2);
@@ -348,7 +350,7 @@ export const QUESTS = Object.freeze([
  {"title":"Crafted with care","description":"Complete 15 delivery orders containing processed farm goods.","stat":"crafted_deliveries","target":15,"reward":600},
  {"title":"A familiar daily rhythm","description":"Complete 30 daily challenges.","stat":"dailies","target":30,"reward":600},
  {"title":"The roadside regular","description":"Collect 2,000 coins from the farm stall.","stat":"passive_earned","target":2000,"reward":400},
- {"title":"Prepared for the season","description":"Upgrade silo research 3 times.","stat":"silo_upgrades","target":3,"reward":400},
+ {"title":"Prepared for the season","description":"Upgrade silo research 3 times.","stat":"silo_upgrades","target":3,"reward":2000},
  {"title":"Wheat specialist","description":"Harvest 100 wheat.","stat":"harvest_wheat","target":100,"reward":300},
  {"title":"Corn specialist","description":"Harvest 75 corn.","stat":"harvest_corn","target":75,"reward":500},
  {"title":"Lettuce specialist","description":"Harvest 100 lettuce.","stat":"harvest_lettuce","target":100,"reward":300},
@@ -1168,7 +1170,7 @@ export const DAILY_REWARDS=[40,55,70,85,100,120,160];
 export const RETURN_BOOST_MS=30*60000,FIRST_HARVEST_BONUS=3;
 export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
 export const DAILY_BOOSTS=Object.freeze({3:'xp',5:'harvest',7:'coins'}),DAILY_BOOST_MS=30*60000,STREAK_SAVE_DAYS=7;
-export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]);
+export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]),DAILY_BONUS=Object.freeze({coins:60,xp:15});   // the bonus for all three
 export const DIAMOND_PACKS=Object.freeze([{amount:150,price:'€1.99'},{amount:500,price:'€4.99'},{amount:1250,price:'€9.99'},{amount:3500,price:'€24.99'}]);
 // Every diamond spent goes through here, so the farm keeps the total (stats.diamonds_spent: the Gem collector avatar,
 // public/player-avatars.js). Counted from 25 Sep 2026; spending before that was not kept.
@@ -1720,8 +1722,8 @@ export function claimDaily(state,id,day,now=Date.now()){
  if(q.claimed)throw new Error('You already claimed this daily reward.');if(q.progress<q.target)throw new Error('Finish this daily challenge first.');
  state.daily.claimed.push(id);state.coins+=q.reward;state.diamonds+=q.diamonds;state.xp+=q.xp;state.stats.dailies++;
  state.stats.challenge_diamonds=(state.stats.challenge_diamonds??0)+q.diamonds;
- let bonus=0;if(state.daily.claimed.length===3&&!state.daily.bonusClaimed){bonus=60*dailyRewardMultiplier(state,now);state.daily.bonusClaimed=true;state.coins+=bonus;state.xp+=15*dailyRewardMultiplier(state,now);}
- return {coins:q.reward+bonus,diamonds:q.diamonds,xp:q.xp+(bonus?15*dailyRewardMultiplier(state,now):0),bonus};
+ let bonus=0;if(state.daily.claimed.length===3&&!state.daily.bonusClaimed){bonus=DAILY_BONUS.coins*dailyRewardMultiplier(state,now);state.daily.bonusClaimed=true;state.coins+=bonus;state.xp+=DAILY_BONUS.xp*dailyRewardMultiplier(state,now);}
+ return {coins:q.reward+bonus,diamonds:q.diamonds,xp:q.xp+(bonus?DAILY_BONUS.xp*dailyRewardMultiplier(state,now):0),bonus};
 }
 // Where the streak stands today: collected already, going on from yesterday, going on over one missed day with the save (once
 // in STREAK_SAVE_DAYS days), or starting again at day 1.
@@ -1828,10 +1830,12 @@ export function grantLevelRewards(state,firstLevel=2){
 // Compatibility for an already-open older client. The same ledger prevents
 // repeat claims after automatic payment; the new UI has no claim button.
 export function claimLevelRewards(state){const reward=grantLevelRewards(state);if(!reward.levels.length)throw new Error('Level rewards are already added automatically.');return reward;}
+// The tractor's fuel: a fixed start plus a little per field (planting pays the seeds on top); then it rests (the wiki reads these).
+export const TRACTOR_FUEL_BASE=12,TRACTOR_FUEL_PER_FIELD=2,TRACTOR_REST_MS=15000;
 export function tractorQuote(state,mode,crop='corn',now=Date.now()){
  const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?canWater(p,now):p.crop&&p.readyAt<=now);
- const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-12)/(seedCost(state,crop)+2)))):eligible.length;
- const fuel=count?12+count*2:0,seeds=mode==='plant'?count*seedCost(state,crop):0;
+ const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-TRACTOR_FUEL_BASE)/(seedCost(state,crop)+TRACTOR_FUEL_PER_FIELD)))):eligible.length;
+ const fuel=count?TRACTOR_FUEL_BASE+count*TRACTOR_FUEL_PER_FIELD:0,seeds=mode==='plant'?count*seedCost(state,crop):0;
  return {count,fuel,seeds,total:fuel+seeds,ids:eligible.slice(0,count).map(p=>p.id)};
 }
 export function useTractor(state,mode,crop='corn',now=Date.now()){
@@ -1843,7 +1847,7 @@ export function useTractor(state,mode,crop='corn',now=Date.now()){
  if(state.coins<quote.total)throw new Error(`You need ${quote.fuel} coins for tractor fuel. Working by hand is free.`);
  state.coins-=quote.fuel;
  for(const id of quote.ids)actOnPlot(state,id,mode,crop,now);
- state.tractorReadyAt=now+15000;state.stats.tractor++;return {count:quote.count,mode,cost:quote.total,fuel:quote.fuel};
+ state.tractorReadyAt=now+TRACTOR_REST_MS;state.stats.tractor++;return {count:quote.count,mode,cost:quote.total,fuel:quote.fuel};
 }
 export function upgradeSilo(state){
  if(state.siloLevel>=5)throw new Error('Your silo research is complete.');const cost=SILO_COSTS[state.siloLevel];if(state.coins<cost)throw new Error(`You need ${cost} coins for this research.`);
@@ -1932,7 +1936,10 @@ function dispatchFarmAction(state,action,now,random){
  }
 }
 
-export const SILO_COSTS=[140,240,380,15000,65000];
+// Silo research opens at level 26 (the unlock spread, 25 Sep 2026). 27 Sep 2026: the first three steps cost 140, 240 and 380 from the
+// days it opened early, so 30% quicker crops cost 760 coins at level 26; now 2,000, 4,000 and 8,000, rising to the 15,000 and 65,000 of the
+// last two. A farm keeps every step it already has.
+export const SILO_COSTS=[2000,4000,8000,15000,65000];
 export const MASTERY_TIERS=[{name:'Bronze',target:25,coins:100,xp:25},{name:'Silver',target:100,coins:350,xp:60},{name:'Gold',target:300,coins:1200,xp:150},{name:'Platinum',target:1000,coins:4000,xp:400}];
 // Chores pay XP straight (a helping-hand job's worth for the quickest, more for the longer ones) and rest 5 minutes to an hour: few,
 // worthwhile clicks instead of one every minute, so an autoclicker gains little. Coins per hour are what they were before the longer
@@ -1987,10 +1994,13 @@ export function claimMastery(state,crop,tier){
 // stall pays back the chapter's coins (45,000 for chapter 4 -> +60 an hour); the XP and diamonds come on top.
 export const CHAPTER_STALL_INCOME=Object.freeze([10,20,30,60,180,500,900,1400,2200,3400]);
 export const chapterIncome=completed=>CHAPTER_STALL_INCOME.slice(0,Math.max(0,Math.min(CHAPTER_STALL_INCOME.length,Math.floor(Number(completed)||0)))).reduce((sum,n)=>sum+n,0);
+// One stall level on its own (the wiki's table): coins an hour before estate chapters, how many hours it holds, and the next upgrade.
+export const STALL_MAX_LEVEL=8;
+export function stallLevel(level){return {rate:36+(level-1)*18,capacityHours:24+Math.min(24,(level-1)*4),upgradeCost:level>=STALL_MAX_LEVEL?null:Math.round(800*2.4**(level-1))};}
 export function stallStatus(state,now=Date.now()){
- const level=state.stall.level,rate=36+(level-1)*18+chapterIncome(state.estate.completed),capacityHours=24+Math.min(24,(level-1)*4),capacity=rate*capacityHours;
+ const level=state.stall.level,own=stallLevel(level),rate=own.rate+chapterIncome(state.estate.completed),capacityHours=own.capacityHours,capacity=rate*capacityHours;
  const balance=Math.min(capacity,Math.max(0,state.stall.bank)+Math.max(0,now-state.stall.since)/3600000*rate);
- return {level,rate,capacityHours,capacity,balance,available:Math.floor(balance+1e-8),upgradeCost:level>=8?null:Math.round(800*2.4**(level-1))};
+ return {level,rate,capacityHours,capacity,balance,available:Math.floor(balance+1e-8),upgradeCost:own.upgradeCost};
 }
 // The stall asks to be emptied (the yellow "!") once it is a quarter full: after 6 hours at stall level 1, 12 at the top.
 export const STALL_NOTICE_SHARE=.25;

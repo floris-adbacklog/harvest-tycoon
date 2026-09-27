@@ -150,3 +150,6 @@
 .wiki-open>.game-art{width:22px;height:22px;flex:none;object-fit:contain}
 .wiki-open small{font-size:10.5px;letter-spacing:.3px;color:#9a8b74;text-transform:uppercase}
 .wiki-opens-table td:first-child{width:1%;white-space:nowrap;vertical-align:top}
+/* The daily gift's boost in its table: the picture and a short name (×2 XP), which fits beside four other columns on a phone. */
+.wiki-boost{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+@media(max-width:560px){.wiki-boost>span{display:none}}

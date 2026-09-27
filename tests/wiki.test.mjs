@@ -109,3 +109,17 @@ test('What opens when lists every level\'s features, buildings, crops and later 
  for(const name of ['Pig Farm','Bee Yard','Sheep Barn','Glasshouse','Weaving Shed','Factory','Goat Shed','Craft Workshop','Cider apples','Squash','Valley Market'])assert.ok(html.includes(`<span>${name}</span>`),name);
  assert.match(html,/<small>building<\/small>/);assert.match(html,/<small>crop<\/small>/);assert.match(html,/<small>recipe<\/small>/);
 });
+
+// 27 Sep 2026: the helpers, estate, market, levels and challenges got their numbers, all read from the game rules.
+test('the wiki shows what the helpers, chapters, market, levels and challenges pay and cost, straight from the rules',async()=>{
+ const rules=await import('../game/farm-state.js');
+ const text=id=>JSON.stringify(wikiArticle(id));
+ const helpers=text('helpers');
+ assert.match(helpers,/Earns an hour/);assert.match(helpers,new RegExp(`${rules.stallLevel(8).rate}<`));assert.match(helpers,/Top level/);
+ for(const c of Object.values(rules.CHORES))assert.ok(helpers.includes(c.name)&&helpers.includes(`${c.baseChance}% → ${c.maxChance}%`),c.name);
+ assert.match(helpers,new RegExp(`rests ${rules.TRACTOR_REST_MS/1000} seconds`));assert.match(helpers,/round bonus/);
+ const estate=text('estate');for(const p of rules.PROJECTS)assert.ok(estate.includes(p.name.replace('’','\\u2019'))||estate.includes(p.name),p.name);
+ assert.match(estate,new RegExp(`${rules.DEPOT_PREMIUM}× the goods`));assert.match(estate,/switching to another herd costs/);
+ assert.match(text('market'),/How far prices move/);assert.match(text('market'),/160% of normal/);
+ assert.match(text('quests'),/Level rewards/);assert.match(text('daily'),new RegExp(`bonus of .*${rules.DAILY_BONUS.coins}`));
+});

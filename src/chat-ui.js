@@ -183,7 +183,10 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   head.classList.toggle('is-quiet',!((tab==='family'&&overview?.family)||(tab==='private'&&thread)));
   if(thread){reportButton.setAttribute('aria-label',`Report ${thread.otherName}`);reportButton.title=reportButton.getAttribute('aria-label');}
   if(thread){const off=blocked().has(thread.otherId);blockButton.setAttribute('aria-label',off?`Unblock ${thread.otherName}`:`Block ${thread.otherName}`);blockButton.title=blockButton.getAttribute('aria-label');blockButton.classList.toggle('is-on',off);}
-  title.innerHTML=tab==='family'?esc(overview?.family?.name??'Family chat'):tab==='private'&&thread?`Chat with ${profileButton(thread.otherId,`Open ${thread.otherName}’s profile`,esc(thread.otherName),'chat-title-name')}`:esc(TITLES[tab]);
+  // A private chat shows just the other farmer's name (27 Sep 2026): "Chat with" and a long automatic name ("Gentle Farm 6170")
+  // did not fit on a phone next to Report and Block, and the whole name fell away behind "…". Screen readers still hear "Chat with".
+  title.innerHTML=tab==='family'?esc(overview?.family?.name??'Family chat'):tab==='private'&&thread?profileButton(thread.otherId,`Open ${thread.otherName}’s profile`,esc(thread.otherName),'chat-title-name'):esc(TITLES[tab]);
+  if(tab==='private'&&thread)title.setAttribute('aria-label',`Chat with ${thread.otherName}`);else title.removeAttribute('aria-label');
   const compose=composeState();
   // While a message is on its way only the send button waits: the box stays usable, so the cursor (and a phone's keyboard) stays
   // put for the next message.

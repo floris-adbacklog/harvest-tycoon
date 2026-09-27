@@ -77,8 +77,10 @@
 #rookie-button[hidden],#rookie-time:empty{display:none}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  .topbar .resources:has(#rookie-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;gap:6px}
- #rookie-button:not([hidden]){display:flex;align-items:center;justify-content:center;width:44px;height:48px;padding:5px;border-radius:14px}
+ #rookie-button:not([hidden]){display:flex;align-items:center;justify-content:center;align-self:center;width:44px;height:48px;margin:0;padding:5px;border-radius:14px}
  #rookie-button .game-art{width:32px;height:32px}
+ /* On the phone bar the time sits top right, like the + on the diamonds, so nothing hangs below the bar (27 Sep 2026). */
+ #rookie-time{top:-6px;right:-6px;bottom:auto}
 }
 #rookie-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:26px 24px 22px;border:1px solid #cfe3bf;border-radius:24px;background:radial-gradient(ellipse at top,#eaf7dc,#fffdf4 68%);text-align:center;color:#34432d;overflow:auto}
 #rookie-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
