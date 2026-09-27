@@ -42,5 +42,5 @@ test('from a farmer\'s page: Send a gift reaches the gift card, Edit reaches the
  assert.match(dashboard,/function giftTo\(player\)\{closePlayer\(\);/);
  assert.match(dashboard,/playerDetail\(player,\{guideSteps:GUIDE_STEPS,owner:view\.owner\}\)/);
  assert.match(dashboard,/window\.harvestProfiles\?\.open\(edit\.dataset\.editPlayer,\{back:null,gift:true\}\)/);
- assert.match(profiles,/if\(gift&&await granting&&selected===playerId&&dialog\.open\)\{adminGrant\.scrollIntoView/);
+ assert.match(profiles,/async function open\(playerId,\{back='Back to leaderboard',gift=false\}=\{\}\)/);assert.match(profiles,/if\(!disposed&&gift&&admin&&selected===playerId&&dialog\.open\)\{renderAdminGrant/,'only via Edit, not on every profile');assert.match(profiles,/if\(await granting&&selected===playerId&&dialog\.open\)\{adminGrant\.scrollIntoView/);
 });

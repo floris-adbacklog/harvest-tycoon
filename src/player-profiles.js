@@ -159,10 +159,11 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   staffView.hidden=!staff?.role?.();
   staffView.querySelector('[data-staff-view]').onclick=()=>staff?.showFarmer(playerId);
   if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
-  const granting=checkAdmin().then(admin=>{if(!disposed&&admin&&selected===playerId&&dialog.open){renderAdminGrant(playerId);return true;}return false;});
+  // The Admin gift only when the admin came for it (Edit on the farmer's page in the dashboard), not on every profile they open.
+  const granting=checkAdmin().then(admin=>{if(!disposed&&gift&&admin&&selected===playerId&&dialog.open){renderAdminGrant(playerId);return true;}return false;});
   // The profile first, the log right behind it (it sits below the profile).
   const loading=loadProfile(false);showLog(playerId);await loading;
-  if(gift&&await granting&&selected===playerId&&dialog.open){adminGrant.scrollIntoView?.({block:'center',behavior:'smooth'});adminGrant.querySelector('#admin-grant-diamonds')?.focus?.({preventScroll:true});}
+  if(await granting&&selected===playerId&&dialog.open){adminGrant.scrollIntoView?.({block:'center',behavior:'smooth'});adminGrant.querySelector('#admin-grant-diamonds')?.focus?.({preventScroll:true});}
  }
  // A family leader sees "Invite to <family>" on the profile of a farmer without a family (public/family-ui.js decides whether
  // that is possible and sends the invitation; the reason shows on the button when it is not).

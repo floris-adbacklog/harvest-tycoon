@@ -67,8 +67,15 @@ test('the admin gift form stays hidden and empty for anyone but the admin accoun
  const box=h.dialog.querySelector('#admin-grant');
  assert.equal(box.hidden,true);assert.equal(box.innerHTML,'');
 });
-test('the admin gift form appears for the admin account, above the leaderboard button in the markup',async()=>{
+// 27 Sep 2026: the Admin gift only when the admin comes for it, with Edit on the farmer's page in the dashboard.
+test('the admin opening a profile the usual way sees no gift form',async()=>{
  const h=harness({admin:true}),pending=h.controller.open('one');
+ h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
+ const box=h.dialog.querySelector('#admin-grant');
+ assert.equal(box.hidden,true);assert.equal(box.innerHTML,'');
+});
+test('the admin gift form appears for the admin account who came with Edit, above the leaderboard button in the markup',async()=>{
+ const h=harness({admin:true}),pending=h.controller.open('one',{gift:true});
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');
  assert.equal(box.hidden,false);assert.match(box.innerHTML,/admin-grant-give/);
@@ -77,7 +84,7 @@ test('the admin gift form appears for the admin account, above the leaderboard b
  assert.ok(full.indexOf('id="admin-grant"')<full.indexOf('farmer-profile-back">Back to leaderboard'));
 });
 test('an empty gift is rejected locally: no confirm, no request',async()=>{
- const h=harness({admin:true}),pending=h.controller.open('one');
+ const h=harness({admin:true}),pending=h.controller.open('one',{gift:true});
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');
  await box.querySelector('#admin-grant-give').onclick();
@@ -85,7 +92,7 @@ test('an empty gift is rejected locally: no confirm, no request',async()=>{
  assert.equal(h.confirms.length,0);assert.equal(h.requests.length,1,'only the profile fetch, nothing for the grant');
 });
 test('the message field only appears once "notify" is checked',async()=>{
- const h=harness({admin:true}),pending=h.controller.open('one');
+ const h=harness({admin:true}),pending=h.controller.open('one',{gift:true});
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');
  assert.match(box.innerHTML,/id="admin-grant-message"[^>]*hidden/,'starts hidden in the template — most gifts have no note');
@@ -94,7 +101,7 @@ test('the message field only appears once "notify" is checked',async()=>{
  notify.checked=false;notify.onchange();assert.equal(message.hidden,true);
 });
 test('declining the custom confirmation sends nothing to the server',async()=>{
- const h=harness({admin:true,confirmed:false}),pending=h.controller.open('one');
+ const h=harness({admin:true,confirmed:false}),pending=h.controller.open('one',{gift:true});
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='500';
  await box.querySelector('#admin-grant-give').onclick();
@@ -102,7 +109,7 @@ test('declining the custom confirmation sends nothing to the server',async()=>{
  assert.equal(h.requests.length,1,'declined — no grant request was sent');
 });
 test('confirming sends exactly what was entered, including notify and a trimmed message, and reports the result',async()=>{
- const h=harness({admin:true}),pending=h.controller.open('one');
+ const h=harness({admin:true}),pending=h.controller.open('one',{gift:true});
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');
  box.querySelector('#admin-grant-coins').value='1000';box.querySelector('#admin-grant-xp').value='50';box.querySelector('#admin-grant-diamonds').value='0';
@@ -117,7 +124,7 @@ test('confirming sends exactly what was entered, including notify and a trimmed 
  assert.equal(box.querySelector('#admin-grant-coins').value,'');
 });
 test('gifting yourself refreshes your own running farm, so the coin counter and any popup catch up immediately',async()=>{
- const h=harness({admin:true,playerId:'one'}),pending=h.controller.open('one');
+ const h=harness({admin:true,playerId:'one'}),pending=h.controller.open('one',{gift:true});
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='500';
  const done=box.querySelector('#admin-grant-give').onclick();await flush();
@@ -126,7 +133,7 @@ test('gifting yourself refreshes your own running farm, so the coin counter and 
  assert.deepEqual(h.requests.map(r=>r.body.operation),['player_profile','player_log','admin_grant'],'your own profile also reads your farm log, right after the profile');
 });
 test('gifting someone else never touches your own running farm',async()=>{
- const h=harness({admin:true,playerId:'admin-id'}),pending=h.controller.open('someone-else');
+ const h=harness({admin:true,playerId:'admin-id'}),pending=h.controller.open('someone-else',{gift:true});
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='500';
  const done=box.querySelector('#admin-grant-give').onclick();await flush();
@@ -134,7 +141,7 @@ test('gifting someone else never touches your own running farm',async()=>{
  assert.equal(h.refreshes.length,0);
 });
 test('a failed grant shows the server\'s own message and leaves the button usable again',async()=>{
- const h=harness({admin:true}),pending=h.controller.open('one');
+ const h=harness({admin:true}),pending=h.controller.open('one',{gift:true});
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='10';
  const give=box.querySelector('#admin-grant-give'),done=give.onclick();await flush();
@@ -143,7 +150,7 @@ test('a failed grant shows the server\'s own message and leaves the button usabl
  assert.equal(give.disabled,false);
 });
 test('switching to another farmer before the admin check resolves targets the one now open, not the stale one',async()=>{
- const h=harness({admin:true}),one=h.controller.open('one');const two=h.controller.open('two');
+ const h=harness({admin:true}),one=h.controller.open('one',{gift:true});const two=h.controller.open('two',{gift:true});
  h.requests[1].resolve({playerProfile:{username:'Second'}});await two;
  h.requests[0].resolve({playerProfile:{username:'First'}});await one;await flush();
  const box=h.dialog.querySelector('#admin-grant');box.querySelector('#admin-grant-coins').value='10';
