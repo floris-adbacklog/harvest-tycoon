@@ -225,6 +225,8 @@ span.chat-avatar{cursor:default}
 #popup-dialog h2{margin:4px 0 8px;font:700 24px/1.2 'Outfit',sans-serif}
 #popup-dialog p{margin:0 0 18px;font:500 15px/1.5 'DM Sans',sans-serif;color:#4a4232;overflow-wrap:anywhere}
 #popup-dialog p a,.chat-notice .chat-text a{color:#3f6b33;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+/* News and pop-ups keep the admin's line breaks (27 Sep 2026: a list with • read as one long line). */
+.chat-notice .chat-text,#popup-dialog p{white-space:pre-line}
 #popup-dialog .primary-button{width:100%;min-height:46px}
 #popup-dialog .popup-later{display:block;width:100%;min-height:44px;margin-top:6px;border:0;background:none;color:#7a6c57;font:650 14px 'DM Sans',sans-serif;cursor:pointer}
 #popup-dialog .popup-close{position:absolute;right:12px;top:12px;width:44px;height:44px;border:0;border-radius:14px;background:#efe6da;color:#5e523a;font-size:28px;line-height:1;cursor:pointer}
