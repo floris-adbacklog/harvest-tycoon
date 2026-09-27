@@ -68,7 +68,8 @@ test('every level has renewable play, every new building has a viable recipe; th
   }
  }
  // By 90 every expansion is fully open: the Valley Market, the Ranch, the Estate Workshop, the Trade Depot and the fair included.
- assert.equal(cropCount,16);for(const key of Object.keys(FEATURE_NAMES))assert.ok(featureUnlocked(s,key),key);for(const key of Object.keys(BUILDINGS))if(key!=='factory')assert.ok(buildingUnlocked(s,key),key);
+ // (The five after-90 activities, 27 Sep 2026, open at 91-95.)
+ assert.equal(cropCount,16);for(const key of Object.keys(FEATURE_NAMES))assert.equal(featureUnlocked(s,key),FEATURE_LEVELS[key]<=90,key);for(const key of Object.keys(BUILDINGS))if(key!=='factory')assert.ok(buildingUnlocked(s,key),key);
  for(const id of Object.keys(RECIPES))if(RECIPES[id].building!=='factory')assert.ok(recipeUnlocked(s,id),id);
  assert.ok(['squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','prizeproduce'].every(k=>outputs.has(k)));
  const levels=Object.entries(CROP_LEVELS).filter(([,n])=>n>1).sort((a,b)=>a[1]-b[1]);

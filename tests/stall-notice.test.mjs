@@ -22,7 +22,7 @@ test('no stall "!" before the stall is unlocked',()=>{
 
 test('the "!" sits on the phone menu tile, the More button and the Estate button, not on the map pin, never a "G"',()=>{
  const growth=read('public/growth-ui.js');
- assert.match(growth,/\$\('estate-dot'\)\.hidden=!projectReady\(\)&&!waiting;/);
+ assert.match(growth,/\$\('estate-dot'\)\.hidden=!projectReady\(\)&&!waiting&&!master;/);
  assert.match(growth,/\[data-menu-utility="stall"\]'\)\?\.classList\.toggle\('has-dot',waiting\)/);
  assert.doesNotMatch(growth,/utility-label/,'the map pin stays a plain picture');
  assert.doesNotMatch(growth,/'G'/);

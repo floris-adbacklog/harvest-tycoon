@@ -115,7 +115,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const total=(prefix,keep=()=>true)=>Object.entries(stats).reduce((n,[k,v])=>k.startsWith(prefix)&&keep(k.slice(prefix.length))&&Number.isFinite(v)?n+v:n,0);
   const crops=Math.max(stats.harvested??0,total('harvest_'))+total('made_',k=>CROPS[k]),goods=Math.max(stats.produced??0,total('made_',k=>!CROPS[k]));
   const tile=(icon,value,label)=>`<div>${art(icon)}<p><strong>${value}</strong><span>${label}</span></p></div>`;
-  const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]);
+  const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom);
   // Honey also comes from the Apiary (a few jars per finished job), not only from the Factory.
   const apiaryHoney=(stats.activity_apiary??state.activities?.completed?.apiary??0)*(ACTIVE_STATIONS.apiary.itemCount??0);
   const count=key=>CROPS[key]?(stats['harvest_'+key]??0)+(stats['made_'+key]??0):(stats['made_'+key]??0)+(key==='honey'?apiaryHoney:0);

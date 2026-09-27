@@ -50,7 +50,8 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   const option=k=>`<option value="${k}" data-art="${k}"${withStock?` data-note="${stock(k)} in storage"`:''} ${k===picked?'selected':''}>${esc(ITEMS[k].name)}</option>`,crops=keys.filter(k=>CROPS[k]),goods=keys.filter(k=>!CROPS[k]);
   return `<div class="sharing-picker"><span class="sharing-picker-art">${art(picked)}</span><select data-pick="${kind}" aria-label="Choose a crop or good">${crops.length?`<optgroup label="Crops">${crops.map(option).join('')}</optgroup>`:''}${goods.length?`<optgroup label="Goods">${goods.map(option).join('')}</optgroup>`:''}</select><div class="sharing-stepper" aria-label="Quantity"><button type="button" data-step="${kind}" data-by="-1" aria-label="One less" ${quantity<=1?'disabled':''}>−</button><output>${quantity}</output><button type="button" data-step="${kind}" data-by="1" aria-label="One more" ${quantity>=max?'disabled':''}>+</button></div></div>`;
  }
- const giftKeys=()=>Object.keys(ITEMS).filter(k=>stock(k)>0);
+ // Heirlooms (the Seed Lab) are not shared: the database's list is the crops and goods (supabase/family-sharing-all-items.sql).
+ const giftKeys=()=>Object.keys(ITEMS).filter(k=>stock(k)>0&&!ITEMS[k].heirloom);
  function members(today){
   if(!social.members.length)return '<p class="sharing-empty">Invite a farmer to your family to start sharing.</p>';
   const action=(kind,id,label,icon,blocked)=>{
@@ -76,7 +77,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
  }
  function ask(){
   if(social.requests.some(r=>r.player_id===me()))return '';
-  const keys=Object.keys(ITEMS).filter(k=>itemAvailable(state,k));if(!keys.includes(pick.item))pick.item=keys[0]??'wheat';
+  const keys=Object.keys(ITEMS).filter(k=>itemAvailable(state,k)&&!ITEMS[k].heirloom);if(!keys.includes(pick.item))pick.item=keys[0]??'wheat';
   return `<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Once a day, up to ${maxShare(myLevel())} of any crop or good. Any family member can fill it.</p><form class="sharing-ask">${itemPicker({kind:'ask',keys,picked:pick.item,quantity:pick.quantity,max:maxShare(myLevel())})}<button class="primary-button">Ask for ${pick.quantity} ${esc(ITEMS[pick.item]?.name??pick.item)}</button></form></section>`;
  }
  function render(){

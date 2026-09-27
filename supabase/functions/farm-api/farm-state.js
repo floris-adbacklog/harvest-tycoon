@@ -74,7 +74,22 @@ cherrypie:{"name": "Cherry pie", "sell": 2900, "icon": "cake-slice", "color": "g
 prizeproduce:{"name": "Prize produce", "sell": 9800, "icon": "award", "color": "gold"}
 
 });
-export const ITEMS=Object.freeze({...CROPS,...PRODUCTS});
+// Heirloom varieties (the Seed Lab, level 92; 27 Sep 2026): a cross of two crops, grown in the lab's test beds, never on a field, so
+// they are not crops of the farm (no seeds, no mastery, not in the Starter Pack). Five open every two levels. A cross takes a set
+// amount of each parent (about 2,400 coins' worth, 5 to 120 of it) and gives 4 heirlooms worth half as much again as the parents.
+export const LAB_PARENT_VALUE=2400,LAB_YIELD=4,LAB_PREMIUM=1.5;
+const HEIRLOOM_LIST=[
+ ['savoycabbage','Savoy cabbage','cabbage','lettuce',92],['romanesco','Romanesco','cauliflower','cabbage',92],['goldenwheat','Golden wheat','wheat','sunflower',92],['rainbowcorn','Rainbow corn','corn','sunflower',92],['speckledlettuce','Speckled lettuce','lettuce','redcabbage',92],
+ ['ghostpumpkin','Ghost pumpkin','pumpkin','cauliflower',94],['purplecauliflower','Purple cauliflower','cauliflower','redcabbage',94],['bluecorn','Blue corn','corn','berries',94],['stripedsquash','Striped squash','squash','pumpkin',94],['dragonbeans','Dragon tongue beans','greenbeans','redcabbage',94],
+ ['bluepumpkin','Blue pumpkin','pumpkin','berries',96],['blackbarley','Black barley','barley','cherries',96],['purplebeans','Purple beans','polebeans','berries',96],['goldenapple','Golden apple','apples','sunflower',96],['goldenraspberries','Golden raspberries','berries','sunflower',96],
+ ['redsunflower','Red sunflower','sunflower','cherries',98],['scarletrunners','Scarlet runner beans','polebeans','cherries',98],['pinkpearl','Pink pearl apple','apples','cherries',98],['russetapple','Russet apple','ciderapples','apples',98],['rainiercherries','Rainier cherries','cherries','ciderapples',98]
+];
+export const labParentCount=crop=>Math.max(5,Math.min(120,Math.round(LAB_PARENT_VALUE/CROPS[crop].sell)));
+export const HEIRLOOMS=Object.freeze(Object.fromEntries(HEIRLOOM_LIST.map(([key,name,a,b,level])=>{
+ const input={[a]:labParentCount(a),[b]:labParentCount(b)},value=Object.entries(input).reduce((sum,[k,n])=>sum+CROPS[k].sell*n,0);
+ return [key,Object.freeze({name,parents:Object.freeze([a,b]),input:Object.freeze(input),level,sell:Math.round(value*LAB_PREMIUM/LAB_YIELD/10)*10,heirloom:true})];
+})));
+export const ITEMS=Object.freeze({...CROPS,...PRODUCTS,...HEIRLOOMS});
 // The Starter Pack (level 14) gives one of every crop in the game. The payment itself is credited by the database
 // (harvest_credit_purchase, supabase/starter-pack-all-crops.sql), which lists the same crops: a test keeps the two equal, so a
 // new crop cannot be left out.
@@ -90,7 +105,7 @@ function calendarHash(text){let h=2166136261;for(let i=0;i<text.length;i++)h=Mat
 export const MARKET_RANGES=Object.freeze({crops:Object.freeze([.85,1.15]),goods:Object.freeze([.7,1.6])});
 export function marketQuote(item,now=Date.now()){
  if(!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid market item.');
- const base=ITEMS[item].sell,range=Object.hasOwn(CROPS,item)?MARKET_RANGES.crops:MARKET_RANGES.goods;
+ const base=ITEMS[item].sell,range=Object.hasOwn(CROPS,item)||Object.hasOwn(HEIRLOOMS,item)?MARKET_RANGES.crops:MARKET_RANGES.goods;
  const baseMin=Math.max(1,Math.round(base*range[0])),baseMax=Math.round(base*range[1]);
  const position=MARKET_CURVE[calendarHash(`market-v1:${utcDay(now)}:${item}`)%MARKET_CURVE.length];
  const originalPrice=Math.round(position<=.5?baseMin+(base-baseMin)*position*2:base+(baseMax-base)*(position-.5)*2);
@@ -692,7 +707,7 @@ export const ROOKIE_BOOST_MS=24*60*60000;
 export const rookieLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil-now):0;
 export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)&&state.rookieUntil>0?Math.max(0,state.rookieUntil-ROOKIE_MS+ROOKIE_BOOST_MS-now):0;
 export const rookieBoost=(state,now=Date.now())=>ROOKIE_TIMER_BOOST*Math.min(1,rookieBoostLeft(state,now)/ROOKIE_BOOST_MS);
-export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-ranchSpeedup(state):1)*(RECIPES[id].building==='glasshouse'&&hasImprovement(state,'heating')?.75:1));}
+export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-ranchSpeedup(state):1)*(RECIPES[id].building==='glasshouse'&&hasImprovement(state,'heating')?.75:1)*(1-masterBonus(state,'production'))*(['windmill','mill'].includes(RECIPES[id].building)?1-valleyProjectBonus(state,'watermill'):1));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
@@ -700,9 +715,9 @@ export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenb
 export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST});
 export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80});
-export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:14,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90});
+export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:14,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:16});
-export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair'};
+export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
 const kept=(state,kind,key)=>state.progression?.kept?.[kind]?.includes(key)===true;
 export function buildingCost(state,key){return guidedFarm(state)?BUILDING_COSTS[key]??0:BUILDINGS[key]?.buildCost??0;}
@@ -714,12 +729,12 @@ export function buildingEligible(state,key){return Object.hasOwn(BUILDINGS,key)&
 export function buildingUnlocked(state,key){return buildingEligible(state,key)&&(!buildingCost(state,key)||state.buildings[key]?.built===true);}
 // The Valley Market, the Ranch and the wave-3 places (Estate Workshop, Trade Depot, Grand Valley Fair) are new for every farm,
 // old or new: they open at their level, never earlier.
-const LATE_FEATURES=Object.freeze(['valleymarket','ranch','estateworkshop','tradedepot','grandfair']);
+const LATE_FEATURES=Object.freeze(['valleymarket','ranch','estateworkshop','tradedepot','grandfair','master','seedlab','visitors','giantpumpkin','valleyprojects']);
 export function featureUnlocked(state,key){if(key==='family')return familyUnlocked(state);if(LATE_FEATURES.includes(key))return levelOf(state)>=FEATURE_LEVELS[key];return !guidedFarm(state)||kept(state,'features',key)||levelOf(state)>=(FEATURE_LEVELS[key]??1);}
 export function featureUnlockHint(key){return `Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
 export function recipeLevel(state,id){const factory=RECIPES[id]?.building==='factory';if(factory)return Math.max(FACTORY_LEVEL,RECIPES[id].base?recipeLevel(state,RECIPES[id].base):1);return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
 export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
-const FEATURE_ART={challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair'};
+const FEATURE_ART={challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',master:'master',seedlab:'seedlab',visitors:'visitors',giantpumpkin:'giantpumpkin',valleyprojects:'valleyprojects'};
 export function unlockEntries(state){return [
  ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,art:key,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
  ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall').map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
@@ -778,6 +793,7 @@ function migrateProgression(state){
 export function itemAvailable(state,item,seen=new Set()){
  if(seen.has(item))return false;
  if(CROPS[item])return cropUnlocked(state,item);
+ if(HEIRLOOMS[item])return heirloomFound(state,item);
  if(['honey','feed','fertilizer'].includes(item)&&featureUnlocked(state,'activities'))return true;
  if(item==='eggs'&&state.inventory.feed>0)return true;
  const path=new Set([...seen,item]);
@@ -819,7 +835,7 @@ export function clearPlantings(state,fields){
 // The care marker shows up after 30 seconds or 30% of the growing time. The beginner boost shortens both: the growing time is
 // already shorter, and the 30-second minimum shrinks with it (6 seconds), so Care fits inside a 24-second wheat field.
 const careDelay=(state,duration,now)=>Math.max(30000*(1-rookieBoost(state,now)),duration*.3);
-export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(regrowing&&hasImprovement(state,'ladders')?.8:1));}
+export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(regrowing&&hasImprovement(state,'ladders')?.8:1)*(1-masterBonus(state,'growth'))*(1-valleyProjectBonus(state,'canal'))*(regrowing?1-valleyProjectBonus(state,'terraces'):1));}
 // What a tap on a field does: plant an empty one, harvest a ripe one, and give a growing crop what it can use now, extra care
 // first once it is ready (it has its own moment), then water. A tool the farmer picked on purpose (Water or Care) goes
 // first when it fits this field. null: nothing to do yet (the crop is watered and cared for, or care is not ready).
@@ -1022,7 +1038,7 @@ export function sellCrops(state,item='all',now=Date.now(),day,category,quantity)
  if(day!==undefined&&day!==utcDay(now))throw new Error('Market prices have refreshed. Check today’s prices before selling.');
  if(category!==undefined&&!['crops','goods'].includes(category))throw new Error('Choose a market category.');
  if(item!=='all'&&!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid item.');
- const keys=category?Object.keys(category==='crops'?CROPS:PRODUCTS):item==='all'?Object.keys(ITEMS):[item];
+ const keys=category?(category==='crops'?[...Object.keys(CROPS),...Object.keys(HEIRLOOMS)]:Object.keys(PRODUCTS)):item==='all'?Object.keys(ITEMS):[item];   // heirlooms sell with the crops
  if(quantity!==undefined&&(item==='all'||category!==undefined||!Number.isSafeInteger(quantity)||quantity<1||quantity>state.inventory[item]))throw new Error('Choose a valid quantity within your stock.');
  if(quantity!==undefined&&quantity>sellableStock(state,item,now))throw new Error(`Keep your first ${keptStock(state,item,now)} ${ITEMS[item].name.toLowerCase()} for now: you need them for your first steps. Sell what you grow or make on top of them; the rest is free to sell after your first 30 minutes.`);
  const amounts=Object.fromEntries(keys.map(k=>[k,quantity??sellableStock(state,k,now)]));
@@ -1182,7 +1198,7 @@ export function spendDiamonds(state,amount){state.diamonds-=amount;state.stats.d
 export const VIP_PLANS=Object.freeze({week:{name:'VIP · 7 days',cost:500,duration:7*86400000},month:{name:'VIP · 30 days',cost:1500,duration:30*86400000}});
 export function vipActive(state,now=Date.now()){return Number.isSafeInteger(state.vipExpiresAt)&&state.vipExpiresAt>now;}
 export function dailyRewardMultiplier(state,now=Date.now()){return vipActive(state,now)?2:1;}
-export function marketSaleValue(state,base,now=Date.now()){return Math.floor(base*(vipActive(state,now)?1.05:1)*(state.boosts?.coinsUntil>now?2:1)*(hasImprovement(state,'ledger')?1.1:1));}
+export function marketSaleValue(state,base,now=Date.now()){return Math.floor(base*(vipActive(state,now)?1.05:1)*(state.boosts?.coinsUntil>now?2:1)*(hasImprovement(state,'ledger')?1.1:1)*(1+masterBonus(state,'market')+valleyProjectBonus(state,'barn')));}
 export function buyVip(state,plan,expectedCost,expectedExpiresAt,now=Date.now()){
  if(typeof plan!=='string'||!Object.hasOwn(VIP_PLANS,plan))throw new Error('Choose a VIP plan.');
  const offer=VIP_PLANS[plan],previous=state.vipExpiresAt??0;
@@ -1627,6 +1643,211 @@ export function fairEnter(state,index,week,now=Date.now()){
 export function utcDay(now=Date.now()){return new Date(now).toISOString().slice(0,10);}
 export function dayNumber(now=Date.now()){return Math.floor(now/DAY_MS);}
 export function seedCost(state,crop){return Math.max(1,Math.ceil(CROPS[crop].cost*(1-siloBonus(state.siloLevel??0).seeds)));}
+// ——— After the last building (27 Sep 2026) ———————————————————————————————————————————————————————————————————————————————
+// The Grand Valley Fair (level 90) is the last new building, so five things keep the game going without new unlocks: Master points
+// (91), the Seed Lab (92), visitors on the road (93), a giant pumpkin at the fair (94) and valley projects (95). All five are for one
+// farm on its own; none of them needs other players.
+
+// Master points: every level after 90 gives one, spent on a small lasting bonus. Four branches of ten ranks (level 130 fills them).
+export const MASTER_FROM=90;
+// The after-90 places stay out of sight (map, Buildings menu, Market) until the farm reaches the fair's level, so they take no room
+// before they matter; from 90 they show greyed out until their own level, like every place.
+export const ENDGAME_PLACES=Object.freeze(['seedlab','visitors','valleyprojects']);
+export const endgameInSight=state=>levelOf(state)>=FEATURE_LEVELS.grandfair;
+export const MASTER_BRANCHES=Object.freeze({
+ growth:Object.freeze({name:'Green fingers',effect:'Crops grow 1% faster per rank.',per:.01,max:10,art:'seeds'}),
+ production:Object.freeze({name:'Busy hands',effect:'Batches take 1% less time per rank.',per:.01,max:10,art:'hammer'}),
+ market:Object.freeze({name:'Sharp trader',effect:'The Market pays 1% more per rank.',per:.01,max:10,art:'market'}),
+ visitors:Object.freeze({name:'Warm welcome',effect:'Visitors pay 2% more per rank.',per:.02,max:10,art:'visitors'})
+});
+export const masterPoints=state=>Math.max(0,levelOf(state)-MASTER_FROM);
+export const masterRank=(state,branch)=>state.master?.[branch]??0;
+export const masterSpent=state=>Object.keys(MASTER_BRANCHES).reduce((sum,b)=>sum+masterRank(state,b),0);
+export const masterFree=state=>Math.max(0,masterPoints(state)-masterSpent(state));
+export const masterBonus=(state,branch)=>masterRank(state,branch)*MASTER_BRANCHES[branch].per;
+export function masterSpend(state,branch){
+ if(typeof branch!=='string'||!Object.hasOwn(MASTER_BRANCHES,branch))throw new Error('Choose a Master branch.');
+ const b=MASTER_BRANCHES[branch];
+ if(masterRank(state,branch)>=b.max)throw new Error(`${b.name} is at its highest rank.`);
+ if(masterFree(state)<1)throw new Error('Reach the next level for a new Master point.');
+ state.master[branch]=masterRank(state,branch)+1;
+ return {branch,name:b.name,rank:state.master[branch],free:masterFree(state)};
+}
+
+// The Seed Lab (in the Glasshouse): two test beds. Choose an heirloom that is open at your level and give the parent crops; the
+// first cross of a variety takes a day and discovers it (+15 diamonds, +200 more when all 20 are found), every cross after that
+// 8 hours. A bed gives 4 heirlooms.
+export const LAB_BEDS=2,LAB_DISCOVER_MS=24*3600000,LAB_GROW_MS=8*3600000,LAB_DISCOVER_DIAMONDS=15,LAB_COMPLETE_DIAMONDS=200;
+export const heirloomFound=(state,key)=>Array.isArray(state.lab?.found)&&state.lab.found.includes(key);
+export const heirloomOpen=(state,key)=>featureUnlocked(state,'seedlab')&&levelOf(state)>=HEIRLOOMS[key].level;
+export function labCross(state,bed,heirloom,now=Date.now()){
+ if(!Number.isInteger(bed)||bed<0||bed>=LAB_BEDS)throw new Error('Choose a test bed.');
+ if(typeof heirloom!=='string'||!Object.hasOwn(HEIRLOOMS,heirloom))throw new Error('Choose an heirloom variety.');
+ const h=HEIRLOOMS[heirloom];
+ if(!heirloomOpen(state,heirloom))throw new Error(`Reach level ${h.level} to cross ${h.name.toLowerCase()}.`);
+ if(state.lab.beds[bed])throw new Error('This test bed is already growing something.');
+ const missing=Object.entries(h.input).filter(([k,n])=>state.inventory[k]<n);
+ if(missing.length)throw new Error('Missing: '+missing.map(([k,n])=>`${ITEMS[k].name} (${state.inventory[k]}/${n})`).join(', ')+'.');
+ for(const [k,n] of Object.entries(h.input))state.inventory[k]-=n;
+ const discover=!heirloomFound(state,heirloom);
+ state.lab.beds[bed]={heirloom,startedAt:now,readyAt:now+(discover?LAB_DISCOVER_MS:LAB_GROW_MS)};
+ return {heirloom,name:h.name,discover,readyAt:state.lab.beds[bed].readyAt};
+}
+export function labCollect(state,bed,now=Date.now()){
+ const b=Number.isInteger(bed)?state.lab.beds[bed]:null;
+ if(!b)throw new Error('This test bed is empty.');
+ if(now<b.readyAt)throw new Error(`Still growing: ready in ${formatDuration(b.readyAt-now)}.`);
+ const h=HEIRLOOMS[b.heirloom],discovered=!heirloomFound(state,b.heirloom);
+ state.inventory[b.heirloom]+=LAB_YIELD;state.lab.beds[bed]=null;
+ const xp=Math.round(h.sell*LAB_YIELD/40);state.xp+=xp;state.stats.lab_crosses=(state.stats.lab_crosses??0)+1;
+ let diamonds=0,complete=false;
+ if(discovered){state.lab.found.push(b.heirloom);diamonds+=LAB_DISCOVER_DIAMONDS;complete=state.lab.found.length===Object.keys(HEIRLOOMS).length;if(complete)diamonds+=LAB_COMPLETE_DIAMONDS;}
+ if(diamonds){state.diamonds+=diamonds;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;}
+ return {heirloom:b.heirloom,name:h.name,count:LAB_YIELD,xp,discovered,diamonds,complete,found:state.lab.found.length};
+}
+
+// Visitors: someone comes up the road with a rush order: two kinds of goods and, once you have found any, an heirloom. Deliver
+// everything within 12 hours. Every visitor served in a row adds 10% to the next order (up to double) and to the pay, which starts
+// at 1.8x the goods' normal price, with 5 diamonds plus 1 for each in the run (at most 15); one who leaves unserved, or is sent away, ends the run. The next one comes 3 hours later, from
+// the moment you are on the farm again. Orders follow a running number, like the trade depot's, so the game and the server agree.
+export const VISITORS=Object.freeze([
+ Object.freeze({id:'cook',name:'The count’s cook',line:'The count has guests tonight. Can your farm help me out?'}),
+ Object.freeze({id:'merchant',name:'A travelling merchant',line:'My wagon leaves at dawn and it is still half empty.'}),
+ Object.freeze({id:'innkeeper',name:'The innkeeper',line:'A wedding party took every room. My larder is bare!'}),
+ Object.freeze({id:'captain',name:'The ship’s captain',line:'Supplies for a long voyage, and quickly please.'}),
+ Object.freeze({id:'organiser',name:'The festival organiser',line:'The harvest festival opens tomorrow. I need the very best.'}),
+ Object.freeze({id:'gardener',name:'The royal gardener',line:'The queen asked for something rare from the valley.'})
+]);
+export const VISITOR_VALUE=40000,VISITOR_STAY=12*3600000,VISITOR_WAIT=3*3600000,VISITOR_STREAK_MAX=10,VISITOR_PREMIUM=1.8;
+export const visitorStreakBonus=streak=>Math.min(streak,VISITOR_STREAK_MAX)*.1;
+export function visitorPay(state){return 1+masterBonus(state,'visitors')+valleyProjectBonus(state,'bridge');}
+function visitorOrder(state,serial,streak,now){
+ const roll=n=>mixBits(calendarHash(`visitor-v1:${serial}:${n}`)),bonus=visitorStreakBonus(streak),target=VISITOR_VALUE*(1+bonus);
+ const goods=Object.keys(PRODUCTS).filter(k=>ITEMS[k].sell>=300&&itemAvailable(state,k)),found=Object.keys(HEIRLOOMS).filter(k=>heirloomFound(state,k));
+ if(goods.length<2)return null;
+ const keys=[goods.splice(roll(0)%goods.length,1)[0],goods.splice(roll(1)%goods.length,1)[0]];
+ keys.push(found.length?found[roll(2)%found.length]:goods[roll(2)%goods.length]);
+ const input={};for(const k of keys)input[k]=(input[k]??0)+Math.max(1,Math.min(200,Math.round(target/keys.length/ITEMS[k].sell)));
+ const value=Object.entries(input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
+ return {id:serial,visitor:roll(3)%VISITORS.length,input,value,coins:Math.ceil(value*(VISITOR_PREMIUM+bonus)*visitorPay(state)/100)*100,xp:Math.round(value/40),diamonds:5+Math.min(streak,VISITOR_STREAK_MAX),arrivedAt:now,leavesAt:now+VISITOR_STAY};
+}
+function refreshVisitors(state,now){
+ if(!featureUnlocked(state,'visitors'))return;
+ const v=state.visitors;
+ if(v.current&&now>=v.current.leavesAt){v.nextAt=v.current.leavesAt+VISITOR_WAIT;v.current=null;v.streak=0;v.missed=(v.missed??0)+1;}
+ if(!v.current&&now>=v.nextAt){const order=visitorOrder(state,v.serial+1,v.streak,now);if(order){v.serial++;v.current=order;}}
+}
+function visitorCurrent(state,id){const c=state.visitors.current;if(!c||c.id!==id)throw new Error('This visitor has gone. Look at the road again.');return c;}
+export function visitorServe(state,id,now=Date.now()){
+ const c=visitorCurrent(state,id),missing=Object.entries(c.input).filter(([k,n])=>state.inventory[k]<n);
+ if(missing.length)throw new Error('Missing: '+missing.map(([k,n])=>`${ITEMS[k].name} (${state.inventory[k]}/${n})`).join(', ')+'.');
+ for(const [k,n] of Object.entries(c.input))state.inventory[k]-=n;
+ const v=state.visitors;v.streak++;v.best=Math.max(v.best??0,v.streak);v.served=(v.served??0)+1;v.current=null;v.nextAt=now+VISITOR_WAIT;
+ state.coins+=c.coins;state.xp+=c.xp;state.diamonds+=c.diamonds;state.stats.earned+=c.coins;state.stats.visitors_served=(state.stats.visitors_served??0)+1;
+ state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+c.diamonds;
+ return {name:VISITORS[c.visitor].name,coins:c.coins,xp:c.xp,diamonds:c.diamonds,streak:v.streak,nextAt:v.nextAt};
+}
+export function visitorDecline(state,id,now=Date.now()){
+ visitorCurrent(state,id);const v=state.visitors;v.current=null;v.streak=0;v.nextAt=now+VISITOR_WAIT;
+ return {nextAt:v.nextAt};
+}
+
+// The giant pumpkin (at the fair): one a week. Tend it once every 8 hours: each tending adds 10 kg plus 1 kg for every tending
+// before it this week, and 10 kg more when you feed it 10 natural fertilizer. Weigh it in whenever you like; the scale pays by the
+// kilo, a new personal record (from 100 kg) adds 25 diamonds. A pumpkin still on the vine on Monday is weighed in by itself.
+export const GIANT_TEND_MS=8*3600000,GIANT_TEND_KG=10,GIANT_FEED_KG=10,GIANT_FEED=Object.freeze({fertilizer:10}),GIANT_COINS_PER_KG=400,GIANT_RECORD_DIAMONDS=25;
+export const GIANT_RECORD_MIN=100;   // a record counts from 100 kg, so a tiny first pumpkin is not one
+export const giantDiamonds=kg=>Math.min(40,Math.floor(kg/10));
+function giantPayout(state,g){
+ const kg=g.kg,record=kg>=GIANT_RECORD_MIN&&kg>(g.record??0),coins=kg*GIANT_COINS_PER_KG,diamonds=giantDiamonds(kg)+(record&&kg>0?GIANT_RECORD_DIAMONDS:0),xp=kg*5;
+ state.coins+=coins;state.xp+=xp;state.diamonds+=diamonds;state.stats.earned+=coins;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
+ state.stats.giant_weighed=(state.stats.giant_weighed??0)+1;if(record)g.record=kg;
+ g.last={week:g.week,kg,coins,diamonds,xp,record};g.weighed=true;
+ return g.last;
+}
+function refreshGiant(state,now){
+ if(!featureUnlocked(state,'giantpumpkin'))return;
+ const g=state.giant,week=familyWeek(now);if(g.week===week)return;
+ if(g.week!==null&&!g.weighed&&g.kg>0)giantPayout(state,g);
+ Object.assign(g,{week,kg:0,tends:0,lastTendAt:0,weighed:false});
+}
+export function giantTend(state,feed=false,now=Date.now()){
+ const g=state.giant;
+ if(g.weighed)throw new Error('This week’s pumpkin is weighed in. A new one grows from Monday.');
+ if(g.lastTendAt&&now-g.lastTendAt<GIANT_TEND_MS)throw new Error(`Tend it again in ${formatDuration(g.lastTendAt+GIANT_TEND_MS-now)}.`);
+ if(feed&&Object.entries(GIANT_FEED).some(([k,n])=>state.inventory[k]<n))throw new Error(`Feeding takes ${GIANT_FEED.fertilizer} natural fertilizer.`);
+ if(feed)for(const [k,n] of Object.entries(GIANT_FEED))state.inventory[k]-=n;
+ const added=GIANT_TEND_KG+g.tends+(feed?GIANT_FEED_KG:0);g.kg+=added;g.tends++;g.lastTendAt=now;
+ return {added,kg:g.kg,fed:!!feed,nextAt:now+GIANT_TEND_MS};
+}
+export function giantWeigh(state){
+ const g=state.giant;
+ if(g.weighed)throw new Error('This week’s pumpkin is already weighed in.');
+ if(g.kg<=0)throw new Error('Tend your pumpkin first.');
+ return giantPayout(state,g);
+}
+
+// Valley projects: five works in the valley, three levels each. Hand in the goods a level asks for bit by bit (what you give stays
+// given), then pay the coins to finish it; every level adds a lasting bonus. Heirlooms are asked for from level 2.
+export const VALLEY_PROJECTS=Object.freeze({
+ bridge:{name:'Stone bridge',art:'project-bridge',effect:'Visitors pay 5% more per level.',per:.05,levels:[
+  {coins:250000,materials:{cloth:40,pickledbeans:40,candles:40}},
+  {coins:500000,materials:{blanket:15,cherryjam:50,savoycabbage:30,romanesco:30}},
+  {coins:900000,materials:{blanket:30,harvesthamper:40,cherrypie:60,ghostpumpkin:40,bluecorn:40}}]},
+ watermill:{name:'Water mill',art:'project-watermill',effect:'The Windmill and the Feed Mill work 15% faster per level.',per:.15,levels:[
+  {coins:250000,materials:{oil:80,flour:400,grainmeal:200}},
+  {coins:500000,materials:{oil:150,squashsoup:40,goldenwheat:40,rainbowcorn:30}},
+  {coins:900000,materials:{oil:250,prizeproduce:10,blackbarley:40,stripedsquash:40}}]},
+ terraces:{name:'Orchard terraces',art:'project-terraces',effect:'Trees, bushes and climbing plants grow back 5% faster per level.',per:.05,levels:[
+  {coins:250000,materials:{applepie:60,berrytart:30,cider:40}},
+  {coins:500000,materials:{cherrypie:50,orchardjuice:150,goldenapple:30,goldenraspberries:30}},
+  {coins:900000,materials:{cherryjam:120,berrycheesecake:80,pinkpearl:40,russetapple:40,rainiercherries:40}}]},
+ canal:{name:'Irrigation canal',art:'project-canal',effect:'Crops grow 3% faster per level.',per:.03,levels:[
+  {coins:250000,materials:{vegetables:80,pickles:80,salad:200}},
+  {coins:500000,materials:{beangratin:80,squashsoup:40,speckledlettuce:30,dragonbeans:30}},
+  {coins:900000,materials:{harvesthamper:40,pickledbeans:80,purplecauliflower:40,purplebeans:40,scarletrunners:40}}]},
+ barn:{name:'Harvest barn',art:'project-barn',effect:'The Market pays 2% more per level.',per:.02,levels:[
+  {coins:250000,materials:{cheese:400,wool:300,goatcheese:40}},
+  {coins:500000,materials:{harvesthamper:30,cloth:60,bluepumpkin:30,savoycabbage:30}},
+  {coins:900000,materials:{blanket:25,prizeproduce:15,redsunflower:40,goldenwheat:60,romanesco:40}}]}
+});
+export const VALLEY_PROJECT_XP=2000,VALLEY_PROJECT_DIAMONDS=40;
+export const valleyProjectLevel=(state,id)=>state.valleyProjects?.[id]?.level??0;
+export const valleyProjectBonus=(state,id)=>valleyProjectLevel(state,id)*VALLEY_PROJECTS[id].per;
+function valleyProjectStep(state,id){
+ if(typeof id!=='string'||!Object.hasOwn(VALLEY_PROJECTS,id))throw new Error('Choose a valley project.');
+ const p=VALLEY_PROJECTS[id],level=valleyProjectLevel(state,id);
+ if(level>=p.levels.length)throw new Error(`The ${p.name.toLowerCase()} is finished.`);
+ return {p,level,step:p.levels[level],given:state.valleyProjects[id].given};
+}
+export function valleyProjectGive(state,id,item){
+ const {p,step,given}=valleyProjectStep(state,id);
+ if(item!==undefined&&(typeof item!=='string'||!Object.hasOwn(step.materials,item)))throw new Error(`The ${p.name.toLowerCase()} does not need that.`);
+ const handed={};
+ for(const key of item===undefined?Object.keys(step.materials):[item]){const n=Math.min(state.inventory[key],step.materials[key]-(given[key]??0));if(n>0){state.inventory[key]-=n;given[key]=(given[key]??0)+n;handed[key]=n;}}
+ const units=Object.values(handed).reduce((sum,n)=>sum+n,0);
+ if(!units)throw new Error(item===undefined?'You have none of the goods this project still needs.':`You have no ${ITEMS[item].name.toLowerCase()} to give.`);
+ return {handed,units,ready:Object.entries(step.materials).every(([k,n])=>(given[k]??0)>=n)};
+}
+export function valleyProjectFinish(state,id){
+ const {p,level,step,given}=valleyProjectStep(state,id);
+ if(Object.entries(step.materials).some(([k,n])=>(given[k]??0)<n))throw new Error('Hand in all the goods first.');
+ if(state.coins<step.coins)throw new Error(`You need ${step.coins.toLocaleString('en-US')} coins to finish it.`);
+ state.coins-=step.coins;state.valleyProjects[id]={level:level+1,given:{}};
+ const xp=VALLEY_PROJECT_XP*(level+1),diamonds=VALLEY_PROJECT_DIAMONDS*(level+1);state.xp+=xp;state.diamonds+=diamonds;
+ state.stats.valley_projects=(state.stats.valley_projects??0)+1;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
+ return {project:id,name:p.name,level:level+1,xp,diamonds};
+}
+function normalizeEndgame(state){
+ const master=state.master&&typeof state.master==='object'?state.master:{};state.master={};
+ for(const [b,x] of Object.entries(MASTER_BRANCHES)){const n=master[b];if(Number.isInteger(n)&&n>0)state.master[b]=Math.min(n,x.max);}
+ const lab=state.lab??{};state.lab={beds:Array.from({length:LAB_BEDS},(_,i)=>{const b=lab.beds?.[i];return b&&Object.hasOwn(HEIRLOOMS,b.heirloom)&&Number.isSafeInteger(b.readyAt)?b:null;}),found:[...new Set((lab.found??[]).filter(k=>Object.hasOwn(HEIRLOOMS,k)))]};
+ state.visitors??={serial:0,streak:0,best:0,served:0,missed:0,current:null,nextAt:0};
+ state.giant??={week:null,kg:0,tends:0,lastTendAt:0,weighed:false,record:0,last:null};
+ const projects=state.valleyProjects&&typeof state.valleyProjects==='object'?state.valleyProjects:{};state.valleyProjects={};
+ for(const [id,p] of Object.entries(VALLEY_PROJECTS)){const x=projects[id]??{};state.valleyProjects[id]={level:Math.max(0,Math.min(p.levels.length,Number.isInteger(x.level)?x.level:0)),given:x.given&&typeof x.given==='object'?{...x.given}:{}};}
+}
+
 export function normalizeFarm(state,now=Date.now()){
  // Invite a friend: who invited this farm (set once when it was created) and which friends already paid out.
  if(state.invite&&!(typeof state.invite.code==='string'&&typeof state.invite.by==='string'&&Number.isFinite(state.invite.at)))delete state.invite;
@@ -1684,7 +1905,8 @@ export function normalizeFarm(state,now=Date.now()){
  state.daily.replacements??=0;state.daily.orderRevisions??={};
  state.daily.tasks??=oldVersion<10&&existingDay?LEGACY_DAILY_POOLS.map((pool,id)=>({...pool[(d+id)%pool.length]})):featureUnlocked(state,'challenges')?selectDailyTasks(state,d):[];
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
- refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);
+ normalizeEndgame(state);
+ refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);
  return state;
 }
 // An order on today's board that the farm cannot make (picked before a rule changed, or a building it has not built) is swapped,
@@ -1885,7 +2107,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  return result;
 }
 function dispatchFarmAction(state,action,now,random){
- const gates={buy_vip:'boosts',daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts',valley_sell:'valleymarket',valley_skip:'valleymarket',ranch_focus:'ranch',improve:'estateworkshop',depot_load:'tradedepot',depot_skip:'tradedepot',fair_enter:'grandfair'};
+ const gates={buy_vip:'boosts',daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts',valley_sell:'valleymarket',valley_skip:'valleymarket',ranch_focus:'ranch',improve:'estateworkshop',master_spend:'master',lab_cross:'seedlab',lab_collect:'seedlab',visitor_serve:'visitors',visitor_decline:'visitors',giant_tend:'giantpumpkin',giant_weigh:'giantpumpkin',vproject_give:'valleyprojects',vproject_finish:'valleyprojects',depot_load:'tradedepot',depot_skip:'tradedepot',fair_enter:'grandfair'};
  const gate=gates[action.type];if(gate&&!featureUnlocked(state,gate))throw new Error(featureUnlockHint(gate));
  switch(action.type){
   case 'buy_vip':return buyVip(state,action.plan,action.expectedCost,action.expectedExpiresAt,now);
@@ -1934,6 +2156,15 @@ function dispatchFarmAction(state,action,now,random){
   case 'depot_load':return depotLoad(state,action.contract,action.item,now);
   case 'depot_skip':return depotSkip(state,action.contract,now);
   case 'fair_enter':return fairEnter(state,action.entry,action.week,now);
+  case 'master_spend':return masterSpend(state,action.branch);
+  case 'lab_cross':return labCross(state,action.bed,action.heirloom,now);
+  case 'lab_collect':return labCollect(state,action.bed,now);
+  case 'visitor_serve':return visitorServe(state,action.visitor,now);
+  case 'visitor_decline':return visitorDecline(state,action.visitor,now);
+  case 'giant_tend':return giantTend(state,action.feed===true,now);
+  case 'giant_weigh':return giantWeigh(state);
+  case 'vproject_give':return valleyProjectGive(state,action.project,action.item);
+  case 'vproject_finish':return valleyProjectFinish(state,action.project);
   default:throw new Error('Unknown farm action.');
  }
 }
@@ -2170,7 +2401,7 @@ const niceCount=n=>n<10?Math.max(1,Math.round(n)):n<50?Math.round(n/5)*5:Math.ro
 export const FAMILY_ORDER_FROM_WEEK=Object.freeze({truffles:2960,truffleomelette:2960});   // week 2960 starts Monday 28 September 2026
 export function familyOrder(familyId,week,members,config=FAMILY_CONFIG){
  if(!Number.isInteger(members)||members<1||members>config.MAX_MEMBERS)throw new Error('Choose a valid family size.');
- const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
+ const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&!ITEMS[k].heirloom&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
  const next=()=>pool[calendarHash(`family-order-v2:${week}:${draw++}`)%pool.length];
  // At most one of the dearest goods (5,000+ coins each, such as a blanket) in one week.
  const dear=k=>ITEMS[k].sell>=5000;

@@ -1,3 +1,4 @@
+import {HEIRLOOMS} from './farm-state.js';
 // Every item has one explicit image. Square sprite cells cannot reveal neighbouring art.
 const sheets=[
  {file:'crops-v2.webp',columns:3,keys:['wheat','lettuce','corn','barley','cabbage','cauliflower','pumpkin','redcabbage','sunflower']},
@@ -38,6 +39,12 @@ const svgArt=new Set(['streak','reminders','farmapp','hourglass']);
 for(const id of svgArt)pictures[id]=id;
 const spriteEntries=Object.fromEntries(sheets.flatMap(sheet=>sheet.keys.map((key,index)=>[key,{...sheet,index}])));
 const symbolMap={'lock-keyhole':'lock',lock:'lock',salad:'salad',amphora:'pickles',milk:'milk',egg:'eggs',sandwich:'cheese',croissant:'bread','cake-slice':'pie','package-check':'vegetables','package-open':'feed',droplet:'oil',gem:'diamonds',coins:'coins',star:'xp',droplets:'water',scissors:'harvest',shovel:'care',leaf:'care',gift:'gift','clipboard-check':'quests',trophy:'trophy',medal:'trophy',sparkles:'boost',sprout:'seeds',hammer:'hammer',wheat:'wheat',house:'farm',factory:'buildings',landmark:'estate',store:'market',tractor:'tractor',warehouse:'silo',truck:'cart',wind:'windmill','shopping-basket':'vegetables','land-plot':'seeds','circle-fading-arrow-up':'hammer',flag:'quests','circle-help':'guide','volume-2':'sound',settings:'settings',bell:'bell',smartphone:'farmapp',shield:'admin',flame:'streak'};
+// After level 90 (27 Sep 2026), painted by the user: the 20 heirlooms of the Seed Lab, the visitors, the valley projects, the giant
+// pumpkin and a picture for each of the five activities (all WebP, marked below).
+const ENDGAME_PICTURES=['visitor-cook','visitor-merchant','visitor-innkeeper','visitor-captain','visitor-organiser','visitor-gardener','project-bridge','project-watermill','project-terraces','project-canal','project-barn','giant-small','giant-big','giant-prize','giant-scale','endgame-master-star','endgame-seed-lab','endgame-visitors'];
+for(const key of Object.keys(HEIRLOOMS))pictures[key]=`heirloom-${key}`;
+for(const key of ENDGAME_PICTURES)pictures[key]=key;
+Object.assign(pictures,{master:'endgame-master-star',seedlab:'endgame-seed-lab',visitors:'endgame-visitors',giantpumpkin:'giant-prize',valleyprojects:'project-watermill'});
 export const ART_KEYS=Object.freeze([...Object.keys(spriteEntries),...Object.keys(pictures)]);
 // The second batch re-encoded to WebP (every picture of 40 KB or more that was still a PNG; the PNGs stay on disk): same pixel size,
 // 64-79% smaller, no visible difference side by side at 2x. The small building pictures (farmhouse, mill, ...) stay PNG.
@@ -48,6 +55,7 @@ const PLACE_RENDERS=['valleymarket','ranch','estateworkshop','tradedepot','grand
 const webpPictures=new Set(['live-events','family-sharing','double-harvest','double-xp','double-coins','invite-friends','vip','honey','rank-gold','family-bee','family-barn','rank-bronze','family-weekly-order','family-oak','rank-silver','family-members','familyhall','lock','family-tournament','family-management','berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice','harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote','chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary','instant-harvest','chore-troughs',...MIDGAME_ITEM_ART,...VALLEY_ITEM_ART,'valleymarket',...ESTATE_ITEM_ART,'estateworkshop','tradedepot','grandfair',...LARGE_PICTURES,...PLACE_RENDERS,'truffles','truffleomelette','chat','bell','sound','cookie','letter','send','admin','guide','settings','alert','block',...PACK_ART,'log']);
 // The Family Chest in its four tiers, and open (27 Sep 2026, painted, WebP).
 for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver','family-chest-gold','family-chest-open']){pictures[key]=key;webpPictures.add(key);}
+for(const key of [...Object.keys(HEIRLOOMS),...ENDGAME_PICTURES,'master','seedlab','visitors','giantpumpkin','valleyprojects'])webpPictures.add(key);   // looked up by the short name
 // Family rank badges (27 Sep 2026), painted by the user; public/family-profile.js shows each one that is here beside the rank's name.
 for(const key of ['family-rank-leader','family-rank-coleader','family-rank-honorary','family-rank-member','family-rank-top']){pictures[key]=key;webpPictures.add(key);}
 // A picture by its file name, for the screens that show one without art() (the Buildings list and a building's page).

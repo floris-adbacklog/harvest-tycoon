@@ -6,7 +6,7 @@ import {createEmailCheck} from './email-check-ui.js';
 import {createFamilyUI} from './family-ui.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
-import {buildingEligible,featureUnlocked,featureUnlockHint} from './farm-state.js';
+import {buildingEligible,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight} from './farm-state.js';
 import {createLoadingScreen,startLoadingTips} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
@@ -68,7 +68,7 @@ let familyFlag=null;
 const familyDecor=[],factoryDecor=[],yardDecor={pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 let liveEvents,familyUI,progression,economy,retention,growth,valley,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
-const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'}};
+const utilityInfo={stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onEmailCheck:c=>setEmailCheck(c),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
 const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
 // For the parts of the game outside the farm's own actions (src/chat-ui.js: a private message; src/payment-ui.js: diamonds bought).
@@ -81,7 +81,7 @@ const nudge=createReminderNudge({state,farmNow,level:()=>levelProgress(state).le
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
-function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(key==='estateworkshop'||key==='tradedepot'||key==='grandfair')estatePlaces.open(key);else if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
+function openUtility(key){if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -396,6 +396,11 @@ function decorate(){
  addUtility('grandfair','house_023',44,12.6,{width:26.5,depth:9.1,height:5.3});
  // Market stalls in front of the hall (Village pack, 27 Sep 2026), greyed out with it until the Fair opens.
  yardDecor.grandfair.push(...[['village_stall_001',34.5],['village_stall_002',40.5],['village_stall_003',47],['village_stall_004',53.5]].map(([name,x])=>cloneModel(name,x,20.2,{width:3.6})),cloneModel('village_melons_001',37.6,19.6,{width:1.1}),cloneModel('village_barrels_001',50.2,19.8,{width:1.6}));
+ // After level 90 (27 Sep 2026): the Seed Lab's two test beds beside the Glasshouse, a visitor's horse cart by the road at the Trade
+ // Depot, and the signpost to the valley projects by the pond. Greyed out until they open, like every place.
+ zone('glasshouse');addUtility('seedlab','garden_bed_002',22.2,5.4,{width:1.9,rotation:Math.PI/2+.1});yardDecor.seedlab=[cloneModel('garden_bed_002',22.3,7.6,{width:1.9,rotation:Math.PI/2-.08})];
+ zone('tradedepot');addUtility('visitors','dray_003',49.4,-7.1,{width:3.2,rotation:Math.PI/2});
+ zone('pond');addUtility('valleyprojects','pointer_002',12.6,6.8,{height:1.9,rotation:.4});
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
@@ -872,6 +877,8 @@ function positionBuildingLabels(){
  const width=world.clientWidth,height=world.clientHeight;
  farmLife?.position(camera,width,height,farmNow());
  for(const [key,v] of utilityViews){
+  // The after-90 places (seed lab, visitors, valley projects) are hidden, models and pins, until the farm reaches level 90.
+  if(ENDGAME_PLACES.includes(key)){const shown=endgameInSight(state);v.object.visible=shown;for(const d of yardDecor[key]??[])d.visible=shown;if(!shown){v.label.hidden=true;continue;}}
   const locked=!featureUnlocked(state,key);setLocked(v.object,locked);
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.label.innerHTML=art(locked?'lock':key);v.label.setAttribute('aria-label',locked?`${v.info.name} (locked)`:`Open ${v.info.name}`);v.label.title=locked?`${v.info.name} · ${featureUnlockHint(key)}`:`${v.info.name} · ${v.info.hint}`;}
   const light=locked?'':pinLight(key);v.label.classList.toggle('ready',light==='ready');v.label.classList.toggle('full',light==='full');

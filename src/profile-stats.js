@@ -4,7 +4,7 @@ import {CROPS,ITEMS,MASTERY_TIERS,QUESTS} from '../game/farm-state.js';
 
 // A farmer's stats on the profile (src/player-profiles.js): two pages of nine, "On the farm" and "In the valley", with arrows (and a
 // swipe on a phone). A stat that has its own leaderboard is a button that opens that board. Zero stays visible, but greyed.
-const CROP_COUNT=Object.keys(CROPS).length,GOOD_COUNT=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)).length;
+const CROP_COUNT=Object.keys(CROPS).length,GOOD_COUNT=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom).length;
 const DAY=24*60*60*1000;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const whole=value=>Math.max(0,Math.floor(Number(value)||0));

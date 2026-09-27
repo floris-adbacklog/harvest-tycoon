@@ -1,4 +1,4 @@
-import {cropUnlocked,featureUnlocked,featureUnlockHint,CROPS,ITEMS,CHORES,CHORE_PRACTICE_STEP,choreRewards,choreStatus,CHAPTER_DIAMONDS,PROJECTS,MASTERY_TIERS,masteryStatus,stallStatus,stallNotice,currentProject,formatDuration,levelOf,CROP_LEVELS,guidedFarm,CHAPTER_STALL_INCOME,chapterIncome} from './farm-state.js';
+import {MASTER_BRANCHES,MASTER_FROM,masterPoints,masterFree,masterRank,masterBonus,cropUnlocked,featureUnlocked,featureUnlockHint,CROPS,ITEMS,CHORES,CHORE_PRACTICE_STEP,choreRewards,choreStatus,CHAPTER_DIAMONDS,PROJECTS,MASTERY_TIERS,masteryStatus,stallStatus,stallNotice,currentProject,formatDuration,levelOf,CROP_LEVELS,guidedFarm,CHAPTER_STALL_INCOME,chapterIncome} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -12,7 +12,9 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  // finished Estate chapter lights the Estate button too.
  function notices(){
   const waiting=stallNotice(state,farmNow());
-  $('estate-dot').hidden=!projectReady()&&!waiting;
+  // A Master point to spend (from level 91) lights it too.
+  const master=featureUnlocked(state,'master')&&masterFree(state)>0;
+  $('estate-dot').hidden=!projectReady()&&!waiting&&!master;
   document.querySelector('[data-menu-utility="stall"]')?.classList.toggle('has-dot',waiting);
   if(waiting!==stallWaiting){stallWaiting=waiting;onNotice?.();}
  }
@@ -26,7 +28,7 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  function render(){
   document.querySelectorAll('[data-estate-tab]').forEach(b=>{b.hidden=!featureUnlocked(state,b.dataset.estateTab);b.classList.toggle('active',b.dataset.estateTab===tab);b.setAttribute('aria-pressed',String(b.dataset.estateTab===tab));});
   $('estate-feedback').textContent='';
-  if(tab==='projects')renderProjects();if(tab==='stall')renderStall();if(tab==='chores')renderChores();if(tab==='mastery')renderMastery();
+  if(tab==='projects')renderProjects();if(tab==='stall')renderStall();if(tab==='chores')renderChores();if(tab==='mastery')renderMastery();if(tab==='master')renderMaster();
   lastReadiness=readiness();icons();
  }
  function renderProjects(){
@@ -71,6 +73,14 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  function renderMastery(){
   $('estate-content').innerHTML=`${lead('medal',`Medals at ${MASTERY_TIERS.map(t=>number(t.target)).join(', ')} harvests per crop.`)}<div class="mastery-total"><strong>${state.mastery.claimed.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals</strong><span>Across ${Object.keys(CROPS).length} crop varieties</span></div><div class="mastery-list">${Object.entries(CROPS).filter(([key])=>cropUnlocked(state,key)).map(([key,c])=>{const all=masteryStatus(state,key),next=all.find(t=>!t.claimed),count=state.mastery.harvests[key]??0;return `<article class="mastery-card">${art(key,'mastery-picture')}<div><h3>${c.name}</h3><span class="mastery-medals">${all.map(t=>`<i class="${t.claimed?'earned':''}" title="${t.name}: ${number(t.target)} harvests" data-lucide="medal"></i>`).join('')}</span><small>${number(count)} fields harvested${next?` · ${number(next.target)} for ${next.name}`:' · Full mastery'}</small><progress max="${next?.target??1000}" value="${count}" aria-label="${c.name} mastery progress"></progress></div><button class="small-button" data-mastery="${key}" data-tier="${next?.id??0}" ${!next||next.progress<next.target?'disabled':''}>${!next?'Mastered':next.progress>=next.target?`Claim ${next.name}`:`${number(next.coins)} coins`}</button></article>`;}).join('')}${Object.keys(CROPS).filter(key=>!cropUnlocked(state,key)).sort((x,y)=>cropLevel(x)-cropLevel(y)).map(key=>`<article class="mastery-card is-locked">${art(key,'mastery-picture')}<div><h3>${CROPS[key].name}</h3><small>Opens at level ${cropLevel(key)}</small></div><span class="mastery-lock" aria-label="Locked">${art('lock')}</span></article>`).join('')}</div>`;
   document.querySelectorAll('[data-mastery]').forEach(b=>b.onclick=()=>act({type:'mastery',crop:b.dataset.mastery,tier:Number(b.dataset.tier)},r=>`${MASTERY_TIERS[r.tier].name} mastery! +${number(r.coins)} coins and +${r.xp} XP.`));
+ }
+ // Master points (27 Sep 2026): one for every level after 90, each spent on a lasting bonus, ten ranks per branch.
+ function renderMaster(){
+  const free=masterFree(state),total=masterPoints(state);
+  const cards=Object.entries(MASTER_BRANCHES).map(([id,b])=>{const rank=masterRank(state,id),full=rank>=b.max;
+   return `<article class="order-card master-branch${full?' is-ready':''}"><div class="order-head"><span class="order-icon">${art(b.art)}</span><div><small>Rank ${rank} of ${b.max}${rank?` · now +${Math.round(masterBonus(state,id)*100)}%`:''}</small><h3>${b.name}</h3><p class="valley-line">${b.effect}</p></div></div><div class="master-pips" aria-hidden="true">${Array.from({length:b.max},(_,i)=>`<i class="${i<rank?'is-on':''}"></i>`).join('')}</div><div class="task-bottom">${full?'<span class="quest-state">Highest rank ✓</span>':`<button class="primary-button" data-master="${id}" ${free?'':'disabled'}>Spend a point</button>`}</div></article>`;}).join('');
+  $('estate-content').innerHTML=`${lead('star',`Every level after ${MASTER_FROM} gives a Master point. Spend each one on a bonus that lasts.`)}<div class="mastery-total"><strong>${free} ${free===1?'point':'points'} to spend</strong><span>${total} earned in all · the next one at level ${MASTER_FROM+total+1}</span></div><div class="daily-list">${cards}</div>`;
+  document.querySelectorAll('[data-master]').forEach(b=>b.onclick=()=>act({type:'master_spend',branch:b.dataset.master},r=>`${r.name} is now rank ${r.rank}.${r.free?` ${r.free} ${r.free===1?'point':'points'} left.`:''}`));
  }
  function readiness(){return [tab,state.estate.job&&farmNow()>=state.estate.job.readyAt,...Object.keys(CHORES).map(id=>farmNow()>=(state.chores[id]??0))].join('|');}
  function refresh(){

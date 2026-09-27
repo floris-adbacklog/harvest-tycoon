@@ -8,7 +8,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const art=key=>`<i data-art="${key}"></i>`;
 
 test('every board has a chip: fifteen main boards, "By crop" and "By good" chips and one chip per crop and per good',()=>{
- const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art),goods=Object.keys(ITEMS).filter(k=>!CROPS[k]).length;
+ const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art),goods=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom).length;
  const keys=[...html.matchAll(/data-rank="([a-z_]+)"/g)].map(m=>m[1]);
  assert.deepEqual(keys.sort(),Object.keys(LEADERBOARD_CATEGORIES).sort(),'nothing lost from the old dropdown');
  assert.equal(keys.length,15+Object.keys(CROPS).length+goods);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length+goods);

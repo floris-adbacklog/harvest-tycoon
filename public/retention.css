@@ -1243,3 +1243,36 @@
 .admin-purchase-status.is-paid{background:#e4efd9;color:#3f6b33}
 .admin-purchase-status.is-open{background:#fbefd3;color:#8a6414}
 .admin-purchase-status.is-expired{background:#ece7de;color:#7d7060}
+/* After level 90 (27 Sep 2026): the Seed Lab, visitors, the giant pumpkin, valley projects and Master points. */
+.heirloom.is-unknown .order-icon .game-art{filter:grayscale(1) brightness(.72) contrast(.9);opacity:.8}
+.lab-bed .depot-progress{margin-top:8px}
+.lab-bed.is-empty .order-icon .game-art{opacity:.55}
+.heirloom-list{margin-top:4px}
+.visitor-portrait{width:64px;height:64px;flex:0 0 64px;border-radius:50%;overflow:hidden;background:#f6ecd9}
+.visitor-portrait .game-art{width:64px;height:64px}
+.giant-card{display:grid;gap:10px}
+.giant-hero{display:flex;align-items:center;gap:16px}
+.giant-hero .giant-art{width:96px;height:96px;flex:0 0 96px}
+.giant-hero strong{display:block;font:800 30px/1.05 'Outfit',sans-serif;color:#3d4a2e}
+.giant-hero span{font-size:13px;color:#7a6b4b}
+.giant-actions{display:flex;flex-wrap:wrap;gap:8px}
+.giant-actions button{flex:1 1 180px}
+.fair-tabs{margin:0 0 12px}
+.project-pips,.master-pips{display:inline-flex;gap:4px;vertical-align:middle;margin-right:6px}
+.project-pips i,.master-pips i{display:block;width:10px;height:10px;border-radius:50%;background:#e8dfcd;border:1px solid #d6c9ad}
+.project-pips i.is-on,.master-pips i.is-on{background:#e7b43e;border-color:#b98a22}
+.master-pips{margin:8px 0 2px}
+/* The Estate tabs in one row whatever their number (a fifth, Master, opens at level 91). */
+#estate-dialog .estate-tabs{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+/* Master point cards in the Estate screen, laid out like the valley places. */
+#estate-content .master-branch{margin:0;padding:12px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2}
+#estate-content .master-branch.is-ready{border-color:#cfe0c3;background:#f3f9ec}
+#estate-content .master-branch .order-head{display:flex;align-items:center;gap:12px;margin:0 0 6px}
+#estate-content .master-branch .order-head>div{flex:1;min-width:0}
+#estate-content .master-branch .order-head small{display:block;font-size:11px;font-weight:600;color:#9a8457}
+#estate-content .master-branch .order-head h3{margin:0;font:600 17px/1.25 'Outfit',sans-serif;color:#3f3827}
+#estate-content .master-branch .order-icon{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:#f1e9dc}
+#estate-content .master-branch .order-icon>.game-art{width:36px;height:36px;object-fit:contain}
+#estate-content .master-branch .valley-line{margin:2px 0 0;font-size:13px;color:#6f6450}
+#estate-content .master-branch .task-bottom{display:flex;justify-content:flex-end;margin-top:8px}
+#estate-content .daily-list{display:grid;gap:8px}

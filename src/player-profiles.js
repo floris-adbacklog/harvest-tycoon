@@ -66,7 +66,7 @@ export function checkAdmin(){
  return adminCheck??=import('./supabase.js').then(({supabase})=>supabase?.auth.getUser()).then(result=>String(result?.data?.user?.email??'').trim().toLowerCase()==='floris@millstone.nl').catch(()=>false);
 }
 // Every seed and production good, grouped the way a farmer already thinks about them.
-const adminGrantItemOptions=`<option value="">None</option><optgroup label="Crops">${Object.entries(CROPS).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup><optgroup label="Goods produced">${Object.entries(ITEMS).filter(([key])=>!Object.hasOwn(CROPS,key)).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup>`;
+const adminGrantItemOptions=`<option value="">None</option><optgroup label="Crops">${Object.entries(CROPS).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup><optgroup label="Goods produced">${Object.entries(ITEMS).filter(([key,c])=>!Object.hasOwn(CROPS,key)&&!c.heirloom).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup><optgroup label="Heirlooms (Seed Lab)">${Object.entries(ITEMS).filter(([,c])=>c.heirloom).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup>`;
 // Sequence tokens invalidate pending work as soon as the user types, switches
 // players, closes a dialog or leaves the page. Late responses cannot reopen it.
 // showBoard(category) opens the leaderboard on that board (src/ui.js): a tap on a stat with its own board.

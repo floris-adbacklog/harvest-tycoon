@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {FAMILY_MIN_LEVEL,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_CHEST_POINTS,FAMILY_LEVEL_STEPS,FAMILY_LEVEL_BONUS,FAMILY_EVENT_BONUS,familyChestTiers,familyLevelFrom,familyStanding,familyWeek,emptyFamilyContext,familyMutate,familyPublicView,createFarm,normalizeFarm,xpForLevel} from '../public/farm-state.js';
 
 // 27 Sep 2026: families of one were the rule (12 of 14). New families are open, the list leads with busy families you can join, a
@@ -94,4 +95,12 @@ test('three or more finishers from one family share a family bonus at the end of
  assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,coins:200,diamonds:5});
  const sql=(await import('node:fs')).readFileSync(new URL('../supabase/family-chest.sql',import.meta.url),'utf8');
  assert.match(sql,/having count\(\*\)>=3/);assert.match(sql,/coins=p\.coins\+200,diamonds=p\.diamonds\+5/);
+});
+
+// 27 Sep 2026: the database refused the chest rewards (family_rewards_kind_check allowed only 'order' and 'tournament'), so a family
+// that opened its first tier had every family request fail. Every reward kind the game writes must be allowed there.
+test('the database allows every family reward kind the game writes',()=>{
+ const sql=readFileSync(new URL('../supabase/family-chest.sql',import.meta.url),'utf8');
+ const allowed=/family_rewards_kind_check check \(kind in \(([^)]*)\)\)/.exec(sql)[1].split(',').map(s=>s.trim().replace(/'/g,''));
+ for(const kind of ['order','tournament',...FAMILY_CHEST_TIERS.map(t=>`chest-${t.id}`)])assert.ok(allowed.includes(kind),kind);
 });

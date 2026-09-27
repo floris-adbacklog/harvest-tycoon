@@ -44,7 +44,8 @@ test('all ten chapter rewards are paid once, not doubled by XP boosts, then comm
   const r=act(s,{type:'project_collect'},time),expected=CHAPTER_DIAMONDS[id]??0;
   assert.equal(r.diamonds,expected);assert.equal(r.xp,p.xp*2);
   assert.equal(s.diamonds-before,expected+(r.levelReward?.diamonds??0));chapterDiamonds+=expected;
-  const snapshot=structuredClone(s);assert.throws(()=>act(s,{type:'project_collect'},time),/Start/);assert.deepEqual(s,snapshot);
+  // Refreshed first: levelling past 93 on the way brings a visitor up the road at the next refresh (27 Sep 2026), which is not the action's doing.
+  normalizeFarm(s,time);const snapshot=structuredClone(s);assert.throws(()=>act(s,{type:'project_collect'},time),/Start/);assert.deepEqual(s,snapshot);
  }
  assert.equal(chapterDiamonds,940);assert.equal(s.stats.chapter_diamonds,940);assert.equal(s.estate.diamondChapters.length,PROJECTS.length);
  assert.equal(currentProject(s).name,'Estate commission 3');assert.deepEqual(grantChapterRewards(s),{chapters:[],diamonds:0});

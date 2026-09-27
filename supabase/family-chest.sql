@@ -108,3 +108,8 @@ begin
  update public.player_stats s set events_finished=(select count(*) from public.live_event_players lp where lp.player_id=s.player_id and lp.qualified)
   where s.player_id in (select player_id from public.live_event_players where event_id=p_event and qualified);
 end $function$;
+
+-- 4. (27 Sep 2026, fix) The chest tiers are rewards too: family_rewards only allowed 'order' and 'tournament', so the first family to
+--    open a tier (Berry Cool Farmers, 20:45 that evening) had every family request fail until this was run.
+alter table public.family_rewards drop constraint if exists family_rewards_kind_check;
+alter table public.family_rewards add constraint family_rewards_kind_check check (kind in ('order','tournament','chest-wood','chest-iron','chest-silver','chest-gold'));

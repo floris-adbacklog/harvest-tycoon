@@ -48,7 +48,7 @@ test('each dropdown uses it: boost lengths and the reminder hour as pills, crops
  assert.match(read('public/farm.html'),/<select id="notify-hour" data-pretty="compact"><\/select>/);
  assert.match(read('public/social-ui.js'),/<option value="\$\{k\}" data-art="\$\{k\}"\$\{withStock\?` data-note="\$\{stock\(k\)\} in storage"`:''\}/);
  assert.match(read('public/family-ui.js'),/<option value="\$\{key\}" data-art="\$\{key\}" data-note="\$\{num\(state\.inventory\[key\]\)\} in stock · \$\{num\(item\.sell\)\} points each">\$\{esc\(item\.name\)\}<\/option>/);
- assert.equal(read('src/player-profiles.js').match(/<option value="\$\{key\}" data-art="\$\{key\}">/g).length,2,'crops and goods in the admin gift');
+ assert.equal(read('src/player-profiles.js').match(/<option value="\$\{key\}" data-art="\$\{key\}">/g).length,3,'crops, goods and heirlooms in the admin gift');
  // Where a <select> had its own place in a layout, the dropdown takes it.
  for(const rule of ['.sharing-picker .pretty-select{grid-area:select}','.family-extra .pretty-select{grid-column:1;grid-row:2;margin-bottom:14px}','.admin-grant-field .pretty-select{margin-top:5px}'])assert.ok(css.includes(rule),rule);
 });

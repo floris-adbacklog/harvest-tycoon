@@ -9,7 +9,7 @@ const sql=read('supabase/pig-farm.sql'),constraintSql=read('supabase/family-shar
 
 test('the server accepts exactly the game\'s crops and goods, so a new item needs both lists updated',()=>{
  const list=sql.match(/items constant text\[\]:=array\[([^\]]+)\]/)[1].split(',').map(s=>s.trim().replace(/'/g,''));
- assert.deepEqual(list,Object.keys(ITEMS));
+ assert.deepEqual(list,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom),'heirlooms (the Seed Lab, 27 Sep 2026) are not shared');
 });
 test('gifts and requests are 1–5 of any of them; the daily limits and the old 3-wheat gift stay',()=>{
  assert.deepEqual([10,19,20,30,60].map(maxShare),[5,5,10,15,30],'up to 5 per 10 levels (26 Sep 2026)');assert.deepEqual([10,11,30,60].map(helpCoins),[250,275,750,1500],'help: level × 25 coins');
@@ -29,6 +29,6 @@ test('the toast names what moved, with the item\'s own name',()=>{
 test('a gift sends the chosen item and amount; the request list is every crop or good you have unlocked',()=>{
  const ui=read('public/social-ui.js');
  assert.match(ui,/act\(\{kind:'gift',recipient:gift\.to,item:gift\.item,quantity:gift\.quantity\}\)/);
- assert.match(ui,/const keys=Object\.keys\(ITEMS\)\.filter\(k=>itemAvailable\(state,k\)\)/);
- assert.match(ui,/const giftKeys=\(\)=>Object\.keys\(ITEMS\)\.filter\(k=>stock\(k\)>0\)/,'you can only give what you have');
+ assert.match(ui,/const keys=Object\.keys\(ITEMS\)\.filter\(k=>itemAvailable\(state,k\)&&!ITEMS\[k\]\.heirloom\)/);
+ assert.match(ui,/const giftKeys=\(\)=>Object\.keys\(ITEMS\)\.filter\(k=>stock\(k\)>0&&!ITEMS\[k\]\.heirloom\)/,'you can only give what you have');
 });

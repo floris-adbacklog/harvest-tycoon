@@ -1,5 +1,5 @@
 import {foldLocked} from './progression-ui.js';
-import {sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
+import {VALLEY_PROJECTS,valleyProjectLevel,HEIRLOOMS,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt,pictureFile} from './visual-icons.js';
@@ -55,7 +55,9 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  // The places in the valley that stand on the farm like buildings but work differently (the Valley Market, the Ranch and the
  // three wave-3 places): listed with the buildings, each with one line on what is waiting there, and opened like from the map.
  // The picture is a render of the place's own models (public/assets/icons/place-<key>, served as WebP), like the building cards.
- const PLACES=Object.freeze({valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair'});
+ const PLACES=Object.freeze({valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',seedlab:'seedlab',visitors:'visitors',valleyprojects:'valleyprojects'});
+ // The after-90 places (27 Sep 2026) show their painted icon instead of a render of models.
+ const PLACE_PICTURES=Object.freeze({seedlab:'endgame-seed-lab',visitors:'endgame-visitors',valleyprojects:'project-watermill'});
  const canPay=items=>Object.entries(items).every(([k,n])=>state.inventory[k]>=n);
  function placeStatus(key,now=farmNow()){
   if(!featureUnlocked(state,key))return {text:`Locked · Reach level ${FEATURE_LEVELS[key]}.`,kind:'locked'};
@@ -68,6 +70,22 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(key==='estateworkshop'){
    const list=Object.entries(IMPROVEMENTS),built=list.filter(([id])=>hasImprovement(state,id)).length,buildable=list.filter(([id,x])=>!hasImprovement(state,id)&&levelOf(state)>=x.level&&state.coins>=x.coins&&canPay(x.materials)).length;
    return buildable?{text:`${buildable} ready to build · ${built} / ${list.length} built`,kind:'ready'}:{text:`${built} / ${list.length} improvements built`,kind:'idle'};
+  }
+  if(key==='seedlab'){
+   const beds=state.lab?.beds??[],ready=beds.filter(b=>b&&now>=b.readyAt).length,free=beds.filter(b=>!b).length;
+   if(ready)return {text:`${ready} ${ready===1?'bed':'beds'} ready to collect`,kind:'ready'};
+   if(free)return {text:`${free} test ${free===1?'bed':'beds'} free`,kind:'ready'};
+   return {text:`Growing · ready in ${seconds(Math.min(...beds.map(b=>b.readyAt))-now)}`,kind:'working'};
+  }
+  if(key==='visitors'){
+   const c=state.visitors?.current;
+   if(!c)return state.visitors?.nextAt>now?{text:`Next visitor in ${seconds(state.visitors.nextAt-now)}`,kind:'working'}:{text:'Waiting for a visitor',kind:'idle'};
+   return canPay(c.input)?{text:'A visitor can be served',kind:'ready'}:{text:`A visitor waits · ${seconds(Math.max(0,c.leavesAt-now))} left`,kind:'working'};
+  }
+  if(key==='valleyprojects'){
+   const finish=Object.entries(VALLEY_PROJECTS).some(([id,p])=>{const level=valleyProjectLevel(state,id),step=p.levels[level];return step&&state.coins>=step.coins&&Object.entries(step.materials).every(([k,n])=>(state.valleyProjects[id].given[k]??0)>=n);});
+   const built=Object.keys(VALLEY_PROJECTS).reduce((sum,id)=>sum+valleyProjectLevel(state,id),0);
+   return finish?{text:'A project is ready to finish',kind:'ready'}:{text:`${built} of 15 levels built`,kind:'idle'};
   }
   if(key==='tradedepot'){
    const c=state.depot?.contract;
@@ -85,8 +103,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   $('building-catalog').innerHTML=Object.entries(BUILDINGS).sort(([a],[b])=>readyFirst(a)-readyFirst(b)||buildingLevel(a)-buildingLevel(b)).map(([key,b])=>{const s=status(key),picture=key==='familyhall'?'familyhall-model':key;const sub=key==='familyhall'?'':!buildingUnlocked(state,key)?'<small>Not built yet</small>':`<small>Level ${state.buildings[key].level}</small>`;return `<button class="building-card" data-open-building="${key}"><span class="building-card-art"><img src="${pictureFile(picture)}" alt=""></span><span class="building-card-info"><strong>${b.name}</strong>${sub}<span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
   foldLocked($('building-catalog'),'[data-open-building]',b=>!buildingEligible(state,b.dataset.openBuilding),'Buildings to unlock');
   normalizeFarm(state,farmNow());
-  const placeFirst=key=>placeStatus(key).kind==='ready'?0:1,places=Object.keys(PLACES).sort((a,b)=>placeFirst(a)-placeFirst(b)||FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),openPlaces=places.filter(k=>featureUnlocked(state,k));
-  $('building-catalog').insertAdjacentHTML('beforeend',`${openPlaces.length?'<h3 class="catalog-heading">Places in the valley</h3>':''}${places.map(key=>{const s=placeStatus(key);return `<button class="building-card is-place" data-open-place="${key}"><span class="building-card-art"><img src="${pictureFile(`place-${key}`)}" alt=""></span><span class="building-card-info"><strong>${FEATURE_NAMES[key]}</strong><span class="building-status ${s.kind}" data-place-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('')}`);
+  const placeFirst=key=>placeStatus(key).kind==='ready'?0:1,places=Object.keys(PLACES).filter(k=>!ENDGAME_PLACES.includes(k)||endgameInSight(state)).sort((a,b)=>placeFirst(a)-placeFirst(b)||FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),openPlaces=places.filter(k=>featureUnlocked(state,k));
+  $('building-catalog').insertAdjacentHTML('beforeend',`${openPlaces.length?'<h3 class="catalog-heading">Places in the valley</h3>':''}${places.map(key=>{const s=placeStatus(key);return `<button class="building-card is-place" data-open-place="${key}"><span class="building-card-art"><img src="${pictureFile(PLACE_PICTURES[key]??`place-${key}`)}" alt=""></span><span class="building-card-info"><strong>${FEATURE_NAMES[key]}</strong><span class="building-status ${s.kind}" data-place-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('')}`);
   foldLocked($('building-catalog'),'[data-open-place]',b=>!featureUnlocked(state,b.dataset.openPlace),'Places to unlock');
   $('building-catalog').querySelectorAll('[data-open-building]').forEach(b=>b.addEventListener('click',()=>openBuilding(b.dataset.openBuilding)));
   $('building-catalog').querySelectorAll('[data-open-place]').forEach(b=>b.addEventListener('click',()=>{$('buildings-dialog').close();onPlace?.(b.dataset.openPlace);}));icons();
@@ -267,7 +285,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  }
  function marketCountdown(now){const el=$('market-countdown');if(el)el.textContent=`New prices in ${seconds(marketQuote('oil',now).resetsAt-now)} · 00:00 UTC`;}
  // What "Sell all" would bring in right now for the tab that is open.
- function marketEntries(){return Object.entries(marketTab==='crops'?CROPS:PRODUCTS).filter(([key])=>!guidedFarm(state)||state.inventory[key]>0||itemAvailable(state,key));}
+ // Heirlooms from the Seed Lab sell with the crops, once found or in stock (27 Sep 2026).
+ function marketEntries(){return Object.entries(marketTab==='crops'?{...CROPS,...HEIRLOOMS}:PRODUCTS).filter(([key])=>HEIRLOOMS[key]?state.inventory[key]>0||itemAvailable(state,key):!guidedFarm(state)||state.inventory[key]>0||itemAvailable(state,key));}
  function categoryTotal(now=farmNow()){return marketSaleValue(state,marketEntries().reduce((v,[k])=>v+sellableStock(state,k,now)*marketQuote(k,now).price,0),now);}
  let confirmingSale=false;
  async function sell(key='category',quantity){
