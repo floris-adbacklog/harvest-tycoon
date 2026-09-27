@@ -148,7 +148,7 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
  dialog.addEventListener('close',()=>{++profileSequence;selected=null;if(!disposed)(returnFocus?.isConnected?returnFocus:input).focus();});
  // From the leaderboard (the default) or from somewhere else, such as the Family Members list, which names its own way back.
  // back:null (the chat) shows no way back at all: closing the profile is the way back.
- async function open(playerId,{back='Back to leaderboard'}={}){
+ async function open(playerId,{back='Back to leaderboard',gift=false}={}){
   if(disposed)return;returnFocus=document.activeElement;selected=playerId;profileUsername=null;statPage=0;++profileSequence;
   const backButton=dialog.querySelector('.farmer-profile-back');backButton.hidden=back===null;if(back!==null)backButton.textContent=back;
   dialog.querySelector('#farmer-profile-title').textContent='Farmer profile';
@@ -159,9 +159,10 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   staffView.hidden=!staff?.role?.();
   staffView.querySelector('[data-staff-view]').onclick=()=>staff?.showFarmer(playerId);
   if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
-  checkAdmin().then(admin=>{if(!disposed&&admin&&selected===playerId&&dialog.open)renderAdminGrant(playerId);});
+  const granting=checkAdmin().then(admin=>{if(!disposed&&admin&&selected===playerId&&dialog.open){renderAdminGrant(playerId);return true;}return false;});
   // The profile first, the log right behind it (it sits below the profile).
   const loading=loadProfile(false);showLog(playerId);await loading;
+  if(gift&&await granting&&selected===playerId&&dialog.open){adminGrant.scrollIntoView?.({block:'center',behavior:'smooth'});adminGrant.querySelector('#admin-grant-diamonds')?.focus?.({preventScroll:true});}
  }
  // A family leader sees "Invite to <family>" on the profile of a farmer without a family (public/family-ui.js decides whether
  // that is possible and sends the invitation; the reason shows on the button when it is not).

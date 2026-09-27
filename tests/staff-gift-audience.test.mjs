@@ -31,3 +31,16 @@ test('the database fixes who gets it when it is sent, keeps the daily room, and 
  const dash=read('src/admin-dashboard.js');
  assert.match(dash,/bridge\.chat\.donate\(coins,diamonds,message\|\|null,gift\.audience,gift\.audience==='player'\?gift\.player\.playerId:null\)/,'one farmer by id: names are not unique');
 });
+
+// 27 Sep 2026: Send a gift from a farmer's page first steps back to the list, where the gift card waits; beside it, for the admin
+// only, Edit opens the farmer's profile straight at the Admin gift (any amount, XP, crops and goods, no daily room).
+test('from a farmer\'s page: Send a gift reaches the gift card, Edit reaches the Admin gift for the admin only',()=>{
+ const farmer={playerId:'b',username:'Bram',level:5,activity:[],earned:{},events:{},chat:{},invites:{}};
+ assert.match(playerDetail(farmer,{guideSteps:GUIDE_STEPS,now,owner:true}),/data-gift-player="b">Send a gift<\/button><button type="button" class="small-button" data-edit-player="b">Edit<\/button>/);
+ assert.doesNotMatch(playerDetail(farmer,{guideSteps:GUIDE_STEPS,now}),/data-edit-player/,'a moderator has no Admin gift, so no Edit');
+ const dashboard=read('src/admin-dashboard.js'),profiles=read('src/player-profiles.js');
+ assert.match(dashboard,/function giftTo\(player\)\{closePlayer\(\);/);
+ assert.match(dashboard,/playerDetail\(player,\{guideSteps:GUIDE_STEPS,owner:view\.owner\}\)/);
+ assert.match(dashboard,/window\.harvestProfiles\?\.open\(edit\.dataset\.editPlayer,\{back:null,gift:true\}\)/);
+ assert.match(profiles,/if\(gift&&await granting&&selected===playerId&&dialog\.open\)\{adminGrant\.scrollIntoView/);
+});

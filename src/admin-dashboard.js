@@ -116,7 +116,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   box.hidden=false;box.innerHTML='<p class="admin-hint">Loading the farmer…</p>';box.scrollIntoView?.({block:'start'});
   try{
    const {player}=await bridge.request({operation:'admin_player',playerId:id});if(view.detail!==id)return;
-   box.innerHTML=playerDetail(player,{guideSteps:GUIDE_STEPS});refreshArt();
+   box.innerHTML=playerDetail(player,{guideSteps:GUIDE_STEPS,owner:view.owner});refreshArt();
   }catch(error){box.innerHTML=`<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button></div><p class="admin-hint">${esc(error.message)}</p>`;}
  }
  function closePlayer(){
@@ -219,6 +219,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(event.target.closest('[data-player-back]')){closePlayer();return;}
   const giftButton=event.target.closest('[data-gift-player]');if(giftButton){const p=view.players.find(x=>x.playerId===giftButton.dataset.giftPlayer);if(p)giftTo(p);return;}
   const profile=event.target.closest('[data-open-profile]');if(profile)window.harvestProfiles?.open(profile.dataset.openProfile,{back:null});
+  // Edit: the same profile, straight to its Admin gift (any amount, XP, crops and goods; Send a gift has daily limits).
+  const edit=event.target.closest('[data-edit-player]');if(edit)window.harvestProfiles?.open(edit.dataset.editPlayer,{back:null,gift:true});
  });
  // A name in the log opens that farmer's profile (with the chat buttons: mute, ban), on top of the dashboard.
  dialog.querySelector('#admin-log-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
@@ -249,7 +251,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   dialog.querySelector('#admin-gift-results').innerHTML=gift.player&&!found.length?`<li class="is-chosen">${avatar(gift.player.username,gift.player.online,gift.player.playerId)}<span><strong>${esc(gift.player.username)}</strong><small>Level ${number(gift.player.level)}</small></span></li>`
    :found.map(p=>`<li><button type="button" data-gift-pick="${esc(p.playerId)}" aria-pressed="${gift.player?.playerId===p.playerId}">${avatar(p.username,p.online,p.playerId)}<span><strong>${esc(p.username)}</strong><small>Level ${number(p.level)}</small></span></button></li>`).join('');
  }
- function giftTo(player){gift.audience='player';gift.player=player;dialog.querySelector('#admin-gift-search').value='';paintGift();dialog.querySelector('#admin-donate').scrollIntoView({behavior:'smooth',block:'start'});}
+ // From a farmer's page: back to the list first, since the gift card waits behind that page.
+ function giftTo(player){closePlayer();gift.audience='player';gift.player=player;dialog.querySelector('#admin-gift-search').value='';paintGift();dialog.querySelector('#admin-donate').scrollIntoView({behavior:'smooth',block:'start'});}
  dialog.querySelector('#admin-donate').addEventListener('click',event=>{
   const choice=event.target.closest('[data-gift-audience]');if(choice){gift.audience=choice.dataset.giftAudience;paintGift();if(gift.audience==='player'&&!gift.player)dialog.querySelector('#admin-gift-search').focus();return;}
   const pick=event.target.closest('[data-gift-pick]');if(pick){gift.player=view.players.find(p=>p.playerId===pick.dataset.giftPick)??null;dialog.querySelector('#admin-gift-search').value='';paintGift();}

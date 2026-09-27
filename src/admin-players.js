@@ -62,7 +62,7 @@ export function playerRow(p,{guideSteps=10,now=Date.now()}={}){
 const PURCHASE={credited:'Paid',test_paid:'Test payment',pending:'Checkout opened, not paid'};
 const pack=id=>id==='starter'?'Starter Pack':`${number(id)} diamonds`;
 const fact=(label,value)=>`<div><dt>${label}</dt><dd>${value}</dd></div>`;
-export function playerDetail(p,{guideSteps=[],now=Date.now()}={}){
+export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
  const since=iso=>time(iso)==null?'—':`${esc(dateTime(iso))} <small>(${esc(ago(iso,now))})</small>`;
  const next=guideSteps[p.guide],sameNetwork=p.sameNetwork;
  const guide=!p.everPlayed?'—':p.guide>=p.guideTotal?'Finished':`Step ${number(p.guide)} of ${p.guideTotal}${next?` <small>(next: ${esc(next)})</small>`:''}`;
@@ -93,7 +93,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now()}={}){
   fact('Invites',`${p.invites.invitedBy?`Invited by ${esc(p.invites.invitedBy)} · `:''}${number(p.invites.friends)} friend${p.invites.friends===1?'':'s'} invited${p.invites.friends?` (${number(p.invites.qualified)} reached level 10)`:''}`),
   fact('Earned in total',`${number(p.earned.coins)} coins · ${number(p.earned.diamonds)} diamonds`)
  ].join('');
- return `<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button><button type="button" class="small-button" data-open-profile="${esc(p.playerId)}">Open profile</button><button type="button" class="small-button" data-gift-player="${esc(p.playerId)}">Send a gift</button></div>`
+ return `<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button><button type="button" class="small-button" data-open-profile="${esc(p.playerId)}">Open profile</button><button type="button" class="small-button" data-gift-player="${esc(p.playerId)}">Send a gift</button>${owner?`<button type="button" class="small-button" data-edit-player="${esc(p.playerId)}">Edit</button>`:''}</div>`
   +`<div class="admin-detail-head">${face(p)}<div><h3>${esc(name(p))}${p.vipUntil?' <b class="admin-chip is-vip">VIP</b>':''}</h3><small>${p.everPlayed?`Level ${number(p.level)} · `:''}${p.online?'Online now':`Last action ${esc(ago(p.lastActiveAt,now))}`}</small></div></div>`
   +`<h4>Account</h4><dl class="admin-facts">${account}</dl><h4>Progress</h4><dl class="admin-facts">${progress}</dl>`
   +`<h4>What they do</h4><ul class="admin-bars">${activity}</ul>`
