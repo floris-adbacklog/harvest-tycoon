@@ -44,11 +44,12 @@ test('all 54 recipes require ingredients, persist timed jobs and collect once',(
 });
 test('login gifts cross UTC boundaries, cannot repeat, stay at day 7 and reset without losing farm',()=>{
  const s=createFarm(now);for(let i=0;i<8;i++){
-  const result=apply(s,{type:'checkin'},now+i*DAY_MS);assert.equal(result.coins,DAILY_REWARDS[Math.min(i,6)]);assert.equal(result.streak,i+1);
+  const coins=Math.round(DAILY_REWARDS[Math.min(i,6)]*Math.max(1,levelOf(s)/2)/5)*5;   // the coins grow with the level (× level/2)
+  const result=apply(s,{type:'checkin'},now+i*DAY_MS);assert.equal(result.coins,coins);assert(coins>=DAILY_REWARDS[Math.min(i,6)]);assert.equal(result.streak,i+1);
   const balance=s.coins;assert.throws(()=>apply(s,{type:'checkin'},now+i*DAY_MS),/already collected/);assert.equal(s.coins,balance);
  }
  const plots=structuredClone(s.plots),balance=s.coins;
- const late=apply(s,{type:'checkin'},now+10*DAY_MS);assert.equal(s.login.streak,1);assert.equal(s.login.best,8);assert.deepEqual(s.plots,plots);assert.equal(s.coins,balance+40+(late.levelReward?.coins??0));
+ const first=Math.round(40*Math.max(1,levelOf(s)/2)/5)*5,late=apply(s,{type:'checkin'},now+10*DAY_MS);assert.equal(s.login.streak,1);assert.equal(s.login.best,8);assert.deepEqual(s.plots,plots);assert.equal(s.coins,balance+first+(late.levelReward?.coins??0));
  const midnight=Date.UTC(2026,8,30),b=createFarm(midnight-1);apply(b,{type:'checkin'},midnight-1);apply(b,{type:'checkin'},midnight);assert.equal(b.login.streak,2);
 });
 test('daily progress starts today, all-three bonus pays once, old claims fail',()=>{

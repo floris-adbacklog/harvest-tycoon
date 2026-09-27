@@ -37,6 +37,7 @@ export const SOUND_CUES=Object.freeze({
  upgrade:{notes:[392,523.25,659.25,783.99],step:.1,duration:.35,volume:.11},
  reward:{notes:[523.25,659.25,783.99,1046.5],step:.1,duration:.38,volume:.105},
  diamond:{notes:[659.25,987.77,1318.51],step:.11,duration:.42,volume:.08},
+ dailygift:{notes:[659.25,783.99,987.77,1174.66,1567.98],step:.07,duration:.45,volume:.1},
  tractor:{notes:[98,123.47,146.83],step:.085,duration:.16,volume:.06,type:'triangle'},
  levelup:{notes:[523.25,659.25,783.99,1046.5,1318.51,1046.5],step:.14,duration:.52,volume:.12},
 });
@@ -48,7 +49,8 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
  if(action.type==='field')return {plant:'plant',water:'water',harvest:'harvest',tend:'care'}[action.action]??null;
  if(action.type==='fields')return {plant:'plant',water:'water',harvest:'harvest',tend:'care'}[action.action]??null;
  if(action.type==='activity_work')return result.roundComplete?'reward':result.finished?'collect':{greenhouse:'water',apiary:'collect',paddock:'water',workshop:'chore'}[action.station]??'chore';
- if(['daily','checkin','beginner_claim'].includes(action.type))return result.diamonds>0?'diamond':'reward';
+ if(action.type==='checkin')return 'dailygift';   // the daily gift has its own, fuller sound
+ if(['daily','beginner_claim'].includes(action.type))return result.diamonds>0?'diamond':'reward';
  return {sell:'sell',produce:'produce',collect:'collect',collect_all:'collect',upgrade:'upgrade',expand:'upgrade',quest:'reward',mastery:'reward',level_rewards:'reward',delivery:'sell',tractor:'tractor',chore:'chore',fertilize:'care',stall_collect:'sell',stall_upgrade:'upgrade',project_start:'produce',project_collect:'reward',silo_upgrade:'upgrade',buy_boost:'diamond'}[action.type]??null;
 }
 export function createProductionCueTracker(buildings,now){

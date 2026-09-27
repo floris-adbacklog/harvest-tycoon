@@ -70,6 +70,14 @@ export function renderCue(kind,rate=48000,variant=0){
     add(.3,hiss(.08,900,1.2,.02,1));let at=.34;for(let p=0;p<6;p++){putt(at,150+p*6,.9-p*.08);at+=.085;}
    }
    break;}
+  case 'dailygift': // the daily gift (27 Sep 2026): a ribbon whoosh and the lid popping off, coins tumbling out, a run of rising
+   // bells and a warm, shimmering chord to finish, so collecting it feels like opening a present
+   add(0,hiss(.2,1600,.9,.07,.35));add(.02,hiss(.16,3800,1.4,.05,.18));
+   add(.09,sweep(.07,360,940,.028,.7));add(.1,knock(520,.35));
+   for(let c=0;c<6;c++)add(.16+c*.045+rand()*.012,coin(.24-c*.025));
+   [79,83,86,91,95].forEach((m,i)=>add(.2+i*.07,bell(hz(m),.6,.22)));
+   [[91,.24],[95,.18],[98,.13]].forEach(([m,v])=>{add(.58,bell(hz(m),1.1,v,.55));add(.584,bell(hz(m)*1.003,1.1,v*.4,.4));});
+   add(.56,hiss(.85,7600,1.6,.32,.13));break;
   case 'levelup': // a little fanfare with a bell and a shimmer on the last chord
    [[72,0,.16],[76,.14,.16],[79,.28,.16],[84,.42,.7]].forEach(([m,start,len])=>{
     const f=hz(m),b=buffer(len+.25);for(let i=0;i<b.length;i++){const t=i/rate,env=Math.min(1,t/.02)*(t<len?1:Math.exp(-(t-len)/.08))*Math.exp(-t*.9);let s=0;for(let n=1;n<=6;n++)s+=Math.sin(TAU*f*n*t)/n*(n<=3?1:.6);b[i]=s*env*.13;}
@@ -85,7 +93,7 @@ export function renderCue(kind,rate=48000,variant=0){
 export const CUE_VARIANTS={tractor:3};
 // Rendered at 24 kHz (half the work of 48; nothing in these sounds needs more), most frequent first (sound-worker.js).
 export const SFX_RATE=24000;
-export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','chorebonus','reward','upgrade','diamond','levelup'];
-export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,chorebonus:.85,upgrade:.9,reward:.95,diamond:1.1,tractor:1,levelup:1.45};
-export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,chorebonus:.042,upgrade:.053,reward:.052,diamond:.038,tractor:.034,levelup:.056};
+export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','chorebonus','reward','upgrade','diamond','dailygift','levelup'];
+export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,chorebonus:.85,upgrade:.9,reward:.95,diamond:1.1,dailygift:1.45,tractor:1,levelup:1.45};
+export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,chorebonus:.042,upgrade:.053,reward:.052,diamond:.038,dailygift:.055,tractor:.034,levelup:.056};
 export function loudness(data,rate){const w=Math.min(data.length,Math.round(.15*rate)),step=Math.max(1,Math.round(w/4));let best=0;for(let i=0;i+w<=data.length;i+=step){let e=0;for(let j=i;j<i+w;j++)e+=data[j]*data[j];best=Math.max(best,Math.sqrt(e/w));}return best;}

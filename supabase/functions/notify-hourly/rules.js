@@ -10,6 +10,17 @@ export const CONFIG=Object.freeze({
  DAILY_MORNING_HOUR:9,DAILY_EVENING_HOUR:19,STREAK_MIN:3,MAX_KINDS:3
 });
 export const utcDay=ms=>new Date(ms).toISOString().slice(0,10);
+// The daily gift's boost (game/farm-state.js DAILY_BOOSTS, 27 Sep 2026): days 3, 5 and 7 of every streak week. The push names the
+// boost, not how long it lasts (VIP doubles it, and this job does not read VIP).
+export const GIFT_BOOSTS=Object.freeze({3:'double XP',5:'double harvest',7:'double earnings'}),STREAK_SAVE_DAYS=7;
+// The streak day today's gift would be, as game/farm-state.js streakToday counts it: on from yesterday, on over one missed day with
+// the weekly save (login.savedDay), otherwise day 1.
+export function giftStreak(login,now){
+ const streak=Number(login?.streak)||0,saved=login?.savedDay;
+ if(login?.lastDay===utcDay(now-DAY_MS))return streak+1;
+ if(login?.lastDay===utcDay(now-2*DAY_MS)&&streak>0&&(!saved||Date.parse(utcDay(now))-Date.parse(saved)>=STREAK_SAVE_DAYS*DAY_MS))return streak+1;
+ return 1;
+}
 const knownZone=zone=>{try{new Intl.DateTimeFormat('en',{timeZone:zone});return zone;}catch{return 'UTC';}};
 
 // Calendar date and hour (0-23) on the player's own clock, daylight saving included.
@@ -65,9 +76,10 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
  if(canPush&&!active){
   const parts=[],onSend={},quiet=local.hour>=CONFIG.QUIET_START||local.hour<CONFIG.QUIET_END;
   if(player.push_daily&&login.lastDay!==utcDay(now)){
-   if(local.hour===CONFIG.DAILY_MORNING_HOUR&&player.daily_morning_on!==today){parts.push('Your daily gift is waiting');onSend.daily_morning_on=today;}
-   const streak=number(login.streak)??0;
-   if(local.hour===CONFIG.DAILY_EVENING_HOUR&&login.lastDay===utcDay(now-DAY_MS)&&streak>=CONFIG.STREAK_MIN&&player.daily_evening_on!==today){parts.push(`Collect your gift to keep your ${streak}-day streak`);onSend.daily_evening_on=today;}
+   const day=giftStreak(login,now),boost=GIFT_BOOSTS[(day-1)%7+1];
+   if(local.hour===CONFIG.DAILY_MORNING_HOUR&&player.daily_morning_on!==today){parts.push(boost?`Your daily gift is waiting, with ${boost}`:'Your daily gift is waiting');onSend.daily_morning_on=today;}
+   const streak=day>1?day-1:0;
+   if(local.hour===CONFIG.DAILY_EVENING_HOUR&&streak>=CONFIG.STREAK_MIN&&player.daily_evening_on!==today){parts.push(`Collect your gift to keep your ${streak}-day streak`);onSend.daily_evening_on=today;}
   }
   const giftParts=parts.length;
   if(!quiet){

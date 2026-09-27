@@ -1,28 +1,61 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt} from './quests-ui.js';
-import {dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,canWater,waterUntil,formatDuration,marketHighlights,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {streakToday,dailyGift,saveReady,BOOSTS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,canWater,waterUntil,formatDuration,marketHighlights,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
-export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList}){
+export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList,celebrate=()=>{}}){
  let tab='challenges',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastTractorReady=true,lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
  const open=id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();};
  // Rewards as the same little chips everywhere: coins, diamonds, XP.
  // In the order given, so a screen can lead with what matters most there (the streak leads with diamonds).
  const CHIPS={coins:n=>`<b>${art('coins')}${n.toLocaleString('en-US')}</b>`,diamonds:n=>`<b class="is-diamonds">${art('diamonds')}${n}</b>`,xp:n=>`<b class="is-xp">${art('xp')}${n} XP</b>`};
- const rewardChips=rewards=>`<span class="reward-chips">${Object.entries(rewards).filter(([,n])=>n).map(([kind,n])=>CHIPS[kind](n)).join('')}</span>`;
+ const rewardChips=(rewards,extra='')=>`<span class="reward-chips">${Object.entries(rewards).filter(([,n])=>n).map(([kind,n])=>CHIPS[kind](n)).join('')}${extra}</span>`;
  async function act(action,message){try{const r=await runAction(action);onChange();refresh();notify(typeof message==='function'?message(r):message);return r;}catch(e){notify(e.message);}}
+ // Today's place in the streak (farm-state.js streakToday: yesterday, or one missed day with the weekly save) and its gift, or null
+ // once collected. The Today window and the Welcome back card (welcome-ui.js) both show it and collect it through collectGift.
+ function giftOffer(now=farmNow()){const today=streakToday(state,now);return today.claimed?null:{...dailyGift(state,today.streak,now),day:today.streak,saved:today.saved};}
+ const boostName=(kind,ms)=>`${ms>=3600000?`${ms/3600000} h`:`${ms/60000} min`} ${BOOSTS[kind].name.toLowerCase()}`;
+ const boostChip=(kind,ms)=>`<b class="is-boost">${art(BOOSTS[kind].art)}${boostName(kind,ms)}</b>`;
+ const giftChips=g=>rewardChips({diamonds:g.diamonds,coins:g.coins},g.boost?boostChip(g.boost,g.boostMs):'');
+ async function collectGift(){
+  const r=await act({type:'checkin'},r=>`Welcome back! +${r.diamonds} diamonds and +${r.coins.toLocaleString('en-US')} coins · ${r.streak}-day streak${r.saved?' (saved)':''}.${r.boost?` Plus ${boostName(r.boost,r.boostMinutes*60000)}!`:''}${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''}`);
+  // Every seventh day of a streak (7, 14, 21 ...) gets its own little celebration.
+  if(r&&r.streak%7===0)celebrate(r);
+  return r;
+ }
  function gift(){
-  const now=farmNow(),today=utcDay(now),claimed=state.login.lastDay===today;
-  const continuous=claimed||state.login.lastDay===utcDay(now-DAY_MS);
-  const streak=continuous?state.login.streak:0,next=claimed?streak:streak+1,day=Math.min(next,DAILY_DIAMONDS.length)-1;   // day 7 repeats while the streak holds
-  const multiplier=dailyRewardMultiplier(state,now),coins=DAILY_REWARDS[day]*multiplier,diamonds=DAILY_DIAMONDS[day]*multiplier;
-  // A streak line, seven small days that always fit (showing the diamonds, the reward that matters), and today's gift
-  // as chips next to one Collect button.
-  const days=DAILY_DIAMONDS.map((_,i)=>{const got=i<day||claimed&&i===day;return `<li class="streak-day ${i===day&&!claimed?'current':''} ${got?'collected':''}"><small>Day ${i+1}</small>${got?'<i data-lucide="check"></i>':art(i===6?'gift':'diamonds')}<b>${DAILY_DIAMONDS[i]*multiplier}</b></li>`;}).join('');
-  $('daily-gift').innerHTML=`<section class="gift-panel streak-panel ${claimed?'is-claimed':''}"><div class="streak-head">${art('streak','streak-flame')}<div><h3>${streak?`${streak}-day streak`:'Start a streak'}</h3><p>Best ${state.login.best} day${state.login.best===1?'':'s'}${vipActive(state,now)?' · VIP doubles your gifts':''}</p></div><b class="streak-count">${streak}</b></div><ol class="streak-days">${days}</ol><div class="streak-claim"><span><strong>${claimed?'Collected today':`Day ${day+1} gift`}</strong>${rewardChips({diamonds,coins})}</span>${claimed?'<span class="streak-done"><i data-lucide="check"></i>Back tomorrow</span>':'<button id="checkin-gift" class="primary-button">Collect</button>'}</div><small class="gift-note">Miss a day and the streak starts over.</small></section>`;
-  if($('checkin-gift'))$('checkin-gift').onclick=()=>act({type:'checkin'},r=>`Welcome back! +${r.diamonds} diamonds and +${r.coins} coins · ${r.streak}-day streak.${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''}`);
+  // The seven days of the current streak week: day 1-7, then 8-14 and so on, each with its diamonds and, on days 3, 5 and 7, its boost.
+  const now=farmNow(),today=streakToday(state,now),claimed=today.claimed;
+  const streak=claimed?today.streak:today.streak-1,week=Math.floor((today.streak-1)/7)*7;
+  const days=Array.from({length:7},(_,i)=>{const n=week+i+1,g=dailyGift(state,n,now),got=n<today.streak||claimed&&n===today.streak,current=n===today.streak&&!claimed;
+   return `<li class="streak-day ${current?'current':''} ${got?'collected':''}"${g.boost?` title="${BOOSTS[g.boost].name} for ${g.boostMs/60000} minutes"`:''}><small>Day ${n}</small>${got?'<i data-lucide="check"></i>':art(n%7===0?'gift':'diamonds')}<b>${g.diamonds}</b>${g.boost?`<span class="streak-boost">${art(BOOSTS[g.boost].art)}</span>`:''}</li>`;}).join('');
+  const rule=saveReady(state,now)?'Coins grow with your level. Miss one day and your streak is kept, once a week.':'Coins grow with your level. Your streak was saved this week: miss another day and it starts over.';
+  // Collected: tomorrow's gift instead of an empty "come back", and (where reminders can work but are off) one tap to be reminded.
+  const offer=giftOffer(now),next=claimed?dailyGift(state,today.streak+1,now+DAY_MS):null;
+  const claim=claimed?`<span><strong>Tomorrow · day ${today.streak+1}</strong>${giftChips(next)}</span><span class="streak-done"><i data-lucide="check"></i>Collected</span>`
+   :`<span><strong>Day ${offer.day} gift${offer.saved?' · streak saved':''}</strong>${giftChips(offer)}</span><button id="checkin-gift" class="primary-button">Collect</button>`;
+  $('daily-gift').innerHTML=`<section class="gift-panel streak-panel ${claimed?'is-claimed':''}"><div class="streak-head">${art('streak','streak-flame')}<div><h3>${streak?`${streak}-day streak`:'Start a streak'}</h3><p>Best ${state.login.best} day${state.login.best===1?'':'s'}${vipActive(state,now)?' · VIP doubles your gifts':''}</p></div><b class="streak-count">${streak}</b></div><ol class="streak-days">${days}</ol><div class="streak-claim">${claim}</div>${claimed?'<button type="button" class="gift-remind" id="gift-remind" hidden><i data-lucide="bell"></i>Remind me when tomorrow’s gift is ready</button>':''}<small class="gift-note">${rule}</small></section>`;
+  if($('checkin-gift'))$('checkin-gift').onclick=()=>void collectGift();
+  if(claimed)void offerReminder();
+ }
+ // The daily reminder already exists (notify-hourly: 09:00 "your gift is waiting", 19:00 for a streak of 3 or more); this only offers
+ // to switch notifications on, where they can work and are off, right after a gift. The settings keep every other choice.
+ const notifications=()=>{try{return window.parent?.harvestBridge?.notifications??null;}catch{return null;}};
+ async function offerReminder(){
+  const button=$('gift-remind'),api=notifications();if(!button||!api)return;
+  try{await api.ready;if(!api.available||!api.config?.push||!api.push||(await api.push.status()).kind!=='off')return;}catch{return;}
+  button.hidden=false;
+  button.onclick=async()=>{
+   button.disabled=true;
+   try{
+    const result=await api.push.enable();
+    if(result?.kind!=='on'){notify(result?.kind==='blocked'?'Notifications are blocked for this site. You can allow them in your browser settings.':'Reminders could not be turned on here.');return;}
+    await api.save({...await api.get(),pushDaily:true});button.hidden=true;notify('Reminders are on. We will let you know when your next gift is ready.');
+   }catch{notify('Reminders could not be turned on. You can try again in Settings.');}
+   finally{button.disabled=false;}
+  };
  }
  function renderToday(){
   if(tab==='orders'&&!featureUnlocked(state,'cart'))tab='challenges';
@@ -97,7 +130,17 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   document.querySelectorAll('[data-journal-tab]').forEach(b=>b.onclick=()=>{journalTab=b.dataset.journalTab;renderJournal();});
   icons();
  }
+ // A streak of 3 or more that is not collected yet, in the evening on the farmer's own clock: the Today button shows a flame
+ // instead of the "!", so the streak is not lost by accident.
+ let lastDanger=null;
+ function streakDanger(){
+  const now=farmNow(),today=streakToday(state,now),danger=!today.claimed&&today.streak-1>=3&&new Date().getHours()>=18,dot=$('today-dot');
+  if(danger===lastDanger||!dot)return;lastDanger=danger;
+  dot.classList.toggle('is-streak',danger);dot.innerHTML=danger?art('streak','today-flame'):'!';
+  $('today-button').title=danger?`Collect today’s gift to keep your ${today.streak-1}-day streak`:'';
+ }
  function refresh(){
+  streakDanger();
   const tasks=dailyTasks(state,farmNow());$('today-dot').hidden=state.login.lastDay===utcDay(farmNow())&&(!featureUnlocked(state,'challenges')||!tasks.some(q=>!q.claimed&&q.progress>=q.target))&&(!featureUnlocked(state,'cart')||!dailyOrders(state,farmNow()).some(o=>!o.done&&Object.entries(o.input).every(([k,n])=>state.inventory[k]>=n)));
   $('journal-button').classList.remove('has-reward');
   if($('today-dialog').open)renderToday();if($('utility-dialog').open)renderUtility();if($('journal-dialog').open)renderJournal();
@@ -110,11 +153,11 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  function tick(){
   const coinBoost=`${state.boosts.coinsUntil>farmNow()}:${vipActive(state,farmNow())}`;if(lastCoinBoost!==coinBoost){lastCoinBoost=coinBoost;if($('today-dialog').open)renderToday();}
   const xpBoost=state.boosts.xpUntil>farmNow();if(lastXPBoost!==xpBoost){lastXPBoost=xpBoost;if($('today-dialog').open)renderToday();}
-  const day=utcDay(farmNow());if(day!==lastDay){lastDay=day;refresh();}countdown();
+  const day=utcDay(farmNow());if(day!==lastDay){lastDay=day;refresh();}countdown();streakDanger();
   if($('utility-dialog').open&&utility==='tractor'){const s=Math.max(0,Math.ceil((state.tractorReadyAt-farmNow())/1000));if(lastTractorReady!==(s===0)||lastFieldStatus!==fieldStatus())renderUtility();else if($('tractor-timer'))$('tractor-timer').textContent=s?`Resting · ${s}s`:'Ready';}
  }
  $('today-button').onclick=()=>openToday();$('journal-button').onclick=()=>{renderJournal();open('journal-dialog');};
  document.querySelectorAll('[data-today-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.todayTab;renderToday();});
  document.querySelectorAll('[data-utility]').forEach(b=>b.onclick=()=>openUtility(b.dataset.utility));
- return {refresh,tick,openToday,openUtility};
+ return {refresh,tick,openToday,openUtility,giftOffer,collectGift,giftChips};
 }

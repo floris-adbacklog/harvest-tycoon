@@ -73,7 +73,7 @@ test('production follows the same rules as crops and joins them in ONE push',()=
 });
 test('daily gift: a morning reminder once a day, and an evening one only when a real streak is at risk',()=>{
  const open={login:{lastDay:'2026-09-20',streak:6}};
- const morning=planPlayer(player({},open),MORNING,names);assert.equal(morning.push.body,'Your daily gift is waiting');assert.equal(morning.patchOnSend.daily_morning_on,'2026-09-21');
+ const morning=planPlayer(player({},open),MORNING,names);assert.equal(morning.push.body,'Your daily gift is waiting, with double earnings','day 7 of the streak brings double earnings');assert.equal(morning.patchOnSend.daily_morning_on,'2026-09-21');
  assert.equal(planPlayer(player({daily_morning_on:'2026-09-21'},open),MORNING,names).push,null,'once per local day');
  assert.equal(planPlayer(player({},{login:{lastDay:'2026-09-21',streak:6}}),MORNING,names).push,null,'already collected');
  assert.equal(planPlayer(player({},open),MORNING+HOUR,names).push,null,'only in the 09:00 hour');
@@ -82,6 +82,12 @@ test('daily gift: a morning reminder once a day, and an evening one only when a 
  assert.equal(planPlayer(player({last_active_at:new Date(evening-9*HOUR).toISOString()},{login:{lastDay:'2026-09-20',streak:2}}),evening,names).push,null,'a streak of 2 is not worth a nudge');
  assert.equal(planPlayer(player({last_active_at:new Date(evening-9*HOUR).toISOString()},{login:{lastDay:'2026-09-18',streak:9}}),evening,names).push,null,'the streak is already broken');
  assert.equal(planPlayer(player({push_daily:false},open),MORNING,names).push,null);
+ // 27 Sep 2026: the morning push names the day's boost (days 3, 5, 7 of a streak week); one missed day with the weekly save still counts.
+ assert.equal(planPlayer(player({},{login:{lastDay:'2026-09-15',streak:4}}),MORNING,names).push.body,'Your daily gift is waiting','day 1 again: no boost');
+ assert.equal(planPlayer(player({},{login:{lastDay:'2026-09-20',streak:2}}),MORNING,names).push.body,'Your daily gift is waiting, with double XP');
+ assert.equal(planPlayer(player({},{login:{lastDay:'2026-09-20',streak:11}}),MORNING,names).push.body,'Your daily gift is waiting, with double harvest');
+ assert.equal(planPlayer(player({last_active_at:new Date(evening-9*HOUR).toISOString()},{login:{lastDay:'2026-09-19',streak:5}}),evening,names).push.body,'Collect your gift to keep your 5-day streak','saved over one missed day');
+ assert.equal(planPlayer(player({last_active_at:new Date(evening-9*HOUR).toISOString()},{login:{lastDay:'2026-09-19',streak:5,savedDay:'2026-09-17'}}),evening,names).push,null,'the save was used this week');
 });
 test('daily email: at the chosen hour, once a day, and only when something is waiting',()=>{
  const farm={plots:plots(['wheat',MORNING-HOUR]),login:{lastDay:'2026-09-21',streak:4}};

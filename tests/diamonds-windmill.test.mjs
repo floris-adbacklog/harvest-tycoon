@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction,DAILY_DIAMONDS,DAY_MS,BOOSTS,upgradeCost,RECIPES,BUILDINGS,MAX_BUILDING_LEVEL,utcDay,dailyOrders,QUESTS,ITEMS,marketQuote} from '../game/farm-state.js';
+import {normalizeFarm,applyFarmAction,levelOf,DAILY_DIAMONDS,DAY_MS,BOOSTS,upgradeCost,RECIPES,BUILDINGS,MAX_BUILDING_LEVEL,utcDay,dailyOrders,QUESTS,ITEMS,marketQuote} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 const act=(state,action,time=now)=>applyFarmAction(state,action.type==='buy_boost'?{expectedCost:BOOSTS[action.boost]?.cost,...action}:action,time);
 
@@ -25,7 +25,7 @@ test('XP and coin boosts persist, multiply eligible rewards once and expire',()=
  state=normalizeFarm(JSON.parse(JSON.stringify(state)),now);const before=state.xp;const harvested=act(state,{type:'field',id:0,action:'harvest'});assert.equal(harvested.xp,10);assert.equal(state.xp-before,10+harvested.guide[0].xp,'the guide step XP comes on top, not doubled');
  state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'}).coins,marketQuote('wheat',now).price*20);
  const order=dailyOrders(state,now)[0];Object.assign(state.inventory,order.input);const delivery=act(state,{type:'delivery',id:order.id,day:utcDay(now)});assert.equal(delivery.coins,order.coins*2);assert.equal(delivery.xp,order.xp*2);
- const gift=act(state,{type:'checkin'});assert.equal(gift.coins,40);assert.equal(gift.diamonds,4);
+ const coins=Math.round(40*Math.max(1,levelOf(state)/2)/5)*5,gift=act(state,{type:'checkin'});assert.equal(gift.coins,coins,'the daily gift is not doubled by a coin boost');assert.equal(gift.diamonds,4);
  // A running boost can be extended (tests/double-harvest.test.mjs); with 4 diamonds left this one cannot be bought, and nothing changes.
  const balance=state.diamonds;assert.throws(()=>act(state,{type:'buy_boost',boost:'xp'}),/You need 50 diamonds/);assert.equal(state.diamonds,balance);
  state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'},now+BOOSTS.coins.duration).coins,marketQuote('wheat',now+BOOSTS.coins.duration).price*10);

@@ -1160,9 +1160,14 @@ export function farmSummary(state,now=Date.now()) {
 }
 
 export const DAY_MS=86400000;
+// The daily gift, day 1 to 7 of a streak (day 7 repeats while the streak holds). 27 Sep 2026: the coins grow with the farm level
+// (× level/2, never below these, in fives: 40-160 at level 2, 400-1,600 at level 20), because a fixed 160 coins was less than one
+// pumpkin from level 10 on; days 3, 5 and 7 of every streak week bring a 30-minute boost (double XP, double harvest, double
+// earnings, rising like their shop prices, and no double harvest right after the second day's welcome one; VIP doubles the whole gift, so an hour); and one missed day a week keeps the streak (the save). The diamonds stay.
 export const DAILY_REWARDS=[40,55,70,85,100,120,160];
 export const RETURN_BOOST_MS=30*60000,FIRST_HARVEST_BONUS=3;
 export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
+export const DAILY_BOOSTS=Object.freeze({3:'xp',5:'harvest',7:'coins'}),DAILY_BOOST_MS=30*60000,STREAK_SAVE_DAYS=7;
 export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]);
 export const DIAMOND_PACKS=Object.freeze([{amount:150,price:'€1.99'},{amount:500,price:'€4.99'},{amount:1250,price:'€9.99'},{amount:3500,price:'€24.99'}]);
 // Every diamond spent goes through here, so the farm keeps the total (stats.diamonds_spent: the Gem collector avatar,
@@ -1656,7 +1661,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals','sold','diamonds_spent','vip_days'])state.stats[k]??=0;
  state.family??={familyId:null,unclaimedCount:0};
  state.discovered??=[];state.siloLevel??=0;state.tractorReadyAt??=0;
- state.login??={lastDay:null,streak:0,best:0,visits:0};state.levelRewards??=[1];
+ state.login??={lastDay:null,streak:0,best:0,visits:0};if(state.login.savedDay!==undefined&&!(typeof state.login.savedDay==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(state.login.savedDay)))delete state.login.savedDay;state.levelRewards??=[1];
  // Existing farms keep every regular quest, inventory item and timer. A past daily gift
  // counts so returning players never have to wait a day to finish the introduction.
  state.onboarding??={completed:0,milestones:{gift:state.login.visits>0},rewardClaimed:false};
@@ -1718,18 +1723,37 @@ export function claimDaily(state,id,day,now=Date.now()){
  let bonus=0;if(state.daily.claimed.length===3&&!state.daily.bonusClaimed){bonus=60*dailyRewardMultiplier(state,now);state.daily.bonusClaimed=true;state.coins+=bonus;state.xp+=15*dailyRewardMultiplier(state,now);}
  return {coins:q.reward+bonus,diamonds:q.diamonds,xp:q.xp+(bonus?15*dailyRewardMultiplier(state,now):0),bonus};
 }
+// Where the streak stands today: collected already, going on from yesterday, going on over one missed day with the save (once
+// in STREAK_SAVE_DAYS days), or starting again at day 1.
+export function streakToday(state,now=Date.now()){
+ const day=utcDay(now),last=state.login?.lastDay,streak=state.login?.streak??0;
+ if(last===day)return {streak,claimed:true,saved:false};
+ if(last===utcDay(now-DAY_MS))return {streak:streak+1,claimed:false,saved:false};
+ if(last===utcDay(now-2*DAY_MS)&&streak>0&&saveReady(state,now))return {streak:streak+1,claimed:false,saved:true};
+ return {streak:1,claimed:false,saved:false};
+}
+export function saveReady(state,now=Date.now()){const saved=state.login?.savedDay;return !saved||Date.parse(utcDay(now))-Date.parse(saved)>=STREAK_SAVE_DAYS*DAY_MS;}
+// The gift for a day of the streak (1, 2 ...): day 7 and on pay day 7's coins and diamonds; the boost follows the day of the week.
+// The coins of a streak day at a farm level (before VIP): the day's coins × half the level, never less, in fives.
+export function giftCoins(streak,level){return Math.round(DAILY_REWARDS[Math.min(Math.max(1,streak),DAILY_REWARDS.length)-1]*Math.max(1,level/2)/5)*5;}
+export function dailyGift(state,streak,now=Date.now()){
+ const index=Math.min(Math.max(1,streak),DAILY_REWARDS.length)-1,multiplier=dailyRewardMultiplier(state,now);
+ return {coins:giftCoins(streak,levelOf(state))*multiplier,diamonds:DAILY_DIAMONDS[index]*multiplier,xp:10*multiplier,
+  boost:DAILY_BOOSTS[(Math.max(1,streak)-1)%7+1]??null,boostMs:DAILY_BOOST_MS*multiplier};   // VIP doubles the gift: an hour
+}
 export function checkIn(state,now=Date.now()){
- normalizeFarm(state,now);const day=utcDay(now);
- if(state.login.lastDay===day)throw new Error('Your daily gift is already collected.');
- state.login.streak=state.login.lastDay===utcDay(now-DAY_MS)?state.login.streak+1:1;
+ normalizeFarm(state,now);const day=utcDay(now),today=streakToday(state,now);
+ if(today.claimed)throw new Error('Your daily gift is already collected.');
+ const {coins,diamonds,xp,boost,boostMs}=dailyGift(state,today.streak,now);   // the level before this gift's XP
+ state.login.streak=today.streak;if(today.saved)state.login.savedDay=day;
  state.login.lastDay=day;state.login.best=Math.max(state.login.best,state.login.streak);state.login.visits++;
- // Day 7 is the top of the streak: after it every day pays the day-7 gift until a day is missed (then back to day 1).
- const index=Math.min(state.login.streak,DAILY_REWARDS.length)-1,coins=DAILY_REWARDS[index]*dailyRewardMultiplier(state,now),diamonds=DAILY_DIAMONDS[index]*dailyRewardMultiplier(state,now),xp=10*dailyRewardMultiplier(state,now);state.coins+=coins;state.diamonds+=diamonds;state.xp+=xp;
+ state.coins+=coins;state.diamonds+=diamonds;state.xp+=xp;
+ if(boost)state.boosts[BOOST_UNTIL[boost]]=Math.max(state.boosts[BOOST_UNTIL[boost]]??0,now)+boostMs;
  state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
  // Coming back on a second day: the gift brings 30 minutes of double harvest as well, once (guided farms).
  const returnBoost=guidedFarm(state)&&state.login.visits===2;
  if(returnBoost)state.boosts.harvestUntil=Math.max(state.boosts.harvestUntil??0,now)+RETURN_BOOST_MS;
- return {coins,diamonds,streak:state.login.streak,xp,...(returnBoost?{returnBoost:RETURN_BOOST_MS/60000}:{})};
+ return {coins,diamonds,streak:state.login.streak,xp,...(boost?{boost,boostMinutes:boostMs/60000}:{}),...(today.saved?{saved:true}:{}),...(returnBoost?{returnBoost:RETURN_BOOST_MS/60000}:{})};
 }
 export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('The order board has refreshed. Pick a new order.');
