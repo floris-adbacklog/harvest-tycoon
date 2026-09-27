@@ -185,7 +185,7 @@ test('the funnel: how far new players got, the biggest drop marked, "came back" 
  assert.equal(week.total,3);
  const row=label=>week.rows.find(r=>r.label.startsWith(label));
  assert.equal(row('Opened their farm').count,2);assert.equal(row('Guide 1:').count,2);assert.equal(row('Guide 7:').count,1);
- assert.deepEqual(['Level 1','Level 10','Level 15','Level 20','Level 50'].map(l=>week.rows.find(r=>r.label===l)?.count),[2,1,0,0,0]);assert.ok(week.rows.every(r=>!r.note),'no notes on what a level opens');
+ assert.deepEqual(['Level 1','Level 5','Level 10','Level 15','Level 20','Level 50'].map(l=>week.rows.find(r=>r.label===l)?.count),[2,2,1,0,0,0]);assert.ok(week.rows.every(r=>!r.note),'no notes on what a level opens');
  assert.equal(week.rows.filter(r=>r.worst).length,1);assert.equal(row('Opened their farm').worst,true,'the one who never opened the farm is the biggest drop');
  const [day1,day3,day7]=week.back;
  assert.deepEqual([day1.count,day1.total],[2,2]);assert.deepEqual([day3.count,day3.total],[0,1]);assert.equal(day7.total,0);
