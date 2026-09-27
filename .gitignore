@@ -11,3 +11,7 @@ node_modules/
 .wrangler/
 .vercel/
 supabase/.temp/
+
+# Bought 3D packs as downloaded (ITHappy Village): only the models the game uses go into public/assets/models;
+# the full pack may not be shared as-is (ITHappy license).
+assets-source/

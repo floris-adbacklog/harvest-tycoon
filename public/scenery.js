@@ -8,7 +8,7 @@
 // drawn as one instanced mesh per model, so a hundred of them cost a handful of draw calls.
 import * as THREE from 'three';
 import {seeded} from './farm-props.js';
-import {SPREAD,roadRects,onRoad,placeIn,anchorAt} from './farm-layout.js';
+import {SPREAD,roadRects,onRoad,anchorAt,pondBounds} from './farm-layout.js';
 
 const FIRS=['fir_tree_001','fir_tree_003','fir_tree_004','fir_tree_006','fir_tree_007','fir_tree_010'];
 const FARM_PIECES=['chicken_002','chicken_003','cow_003','toilet_001','firewood_005','cart_003','cart_006','lawn_mower_001','car_005','dray_001'];
@@ -44,7 +44,7 @@ export function buildScenery({scene,models,mobile=false}){
  const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0),from=new THREE.Vector3();
  const groundAt=(x,z)=>{if(!terrain.length)return 0;ray.set(from.set(x,60,z),down);return ray.intersectObjects(terrain,false)[0]?.point.y??0;};
  const rises=(x,z)=>groundAt(x,z)>.12;
- const [pondX,pondZ]=placeIn('pond',0,0),pond=[10.4+pondX,10.4+pondZ,24.8+pondX,19.6+pondZ],fields=[-5.6,-3,10.4,33.6];
+ const pond=pondBounds(),fields=[-5.6,-3,10.4,33.6];
  const taken=[];
  const touches=(x,z,r)=>{let hit=false;cells(x-r,x+r,z-r,z+r,key=>{if(!hit)hit=(grid.get(key)??[]).some(b=>x>b.min.x-r&&x<b.max.x+r&&z>b.min.z-r&&z<b.max.z+r);});return hit;};
  const free=(x,z,r=1)=>!(x>fields[0]-r&&x<fields[2]+r&&z>fields[1]-r&&z<fields[3]+r)&&!(x>pond[0]-r&&x<pond[2]+r&&z>pond[1]-r&&z<pond[3]+r)

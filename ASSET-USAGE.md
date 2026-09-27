@@ -6,11 +6,10 @@ The game now loads **75 distinct model files**, up from 55. Loading every variat
 
 | Additional models | Purpose |
 | --- | --- |
-| landscape_004, landscape_008, mountain_008, mountain_009 | Hills and the distant valley ridge |
+| mountain_008 | The distant valley ridge |
 | field_004, field_005 | Green and golden neighbouring fields; scenery, with no misleading crop timers |
-| bridge_001 | Bridge across the pond |
 | horse_002, pig_001 | Animal paddock; tap for animal-care activities |
-| lawn_mower_001, house_024 | Workshop and its hands-on repair activity |
+| lawn_mower_001 | Workshop and its hands-on repair activity |
 | trailer_001 | Parked equipment beside the workshop |
 | fir_tree_003, tree_008, stone_fence_001 | Forest edges and low boundary walls |
 | case_002, case_003, bag_003, barrel_009 | Recognisable wooden crates, a grain sack and a barrel replacing four plain white block props |
@@ -34,3 +33,22 @@ A new model from the pack gets the same shade in two steps (Blender is needed fo
 
 A shaded model is marked (asset.extras.bakedShade), so running the second step again never darkens it twice. tests/scene-look.test.mjs
 checks that every model has its shade.
+
+## Village pack props (27 Sep 2026)
+
+Ten props from the ithappy Studios **Village** pack (Summer version), bought by the user: https://ithappystudios.com/environment/village/
+The download stays out of the repository (`assets-source/`, in .gitignore): the license does not allow sharing the pack as it is.
+The Village buildings were tried and left out: their plank roofs did not match the Farm pack.
+
+| Model (source) | Purpose |
+| --- | --- |
+| village_pier_001 (Building_006), village_boat_001 (props_023), village_rowboat_001 (props_027), village_stones_001 (stones_003) | The pond: a pier with a moored boat, a rowing boat, stones on the shore |
+| village_stall_001 (props_052) | Farm stall and Valley Market |
+| village_stall_002–004 (animal_015, props_053, props_047), village_melons_001 (props_050), village_barrels_001 (props_055) | Market stalls in front of the Grand Valley Fair |
+
+The Village models paint from their own small palette: model-atlas.js lets them share that one, never the Farm palette.
+They carry the same baked shade (the steps above, with SRC pointing at renamed copies of the source files).
+
+Thirteen model files that no code used any more were removed at the same time (git keeps them): bridge_001, stall_002,
+trailer_002, mountain_009, landscape_004, landscape_008, landscape_011, tower_004, tower_008, stone_fence_002, stone_fence_005,
+house_024 and water_001.

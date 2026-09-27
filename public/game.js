@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, productionJobs, unlockEntries, fieldTapAction, canWater, waterUntil } from './farm-state.js';
 import { createReminderNudge } from './reminder-nudge.js';
-import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments } from './farm-layout.js';
+import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments, pondBounds } from './farm-layout.js';
 import { createMinimap } from './minimap.js';
 import { scatterProps, seeded } from './farm-props.js';
 import { createEconomyUI } from './economy-ui.js?v=familyhall-model-2';
@@ -86,10 +86,12 @@ const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THRE
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const modelNames=['plant_001','plant_002','plant_003','plant_004','plant_005','plant_006','plant_007','plant_010','plant_011','garden_bed_001','bag_001','bag_002','bag_003','bucket_001','apiary_001','cart_004','chair_001','firewood_003','firewood_008','hay_002','hay_003','table_001','grass_004','bush_003','hangar_003','house_027','house_030','tower_005','house_010','hangar_004','tower_002','tractor_001','tree_001','tree_004','tree_006','fence_001','cow_001','chicken_001','sheep_001','hay_001','bush_001','grass_001','barrel_001','barrel_009','cart_001','case_002','case_003','coop_001','landscape_001','ground_004','road_001'];
-modelNames.push('tower_001','tower_020','stall_002','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
+modelNames.push('tower_001','tower_020','village_stall_001','greenhouse_003','prop_023','barrel_002','bucket_003','goat_001');
 modelNames.push('fence_008','fence_015','ground_002','ground_006','ground_007','stall_001','case_001','dray_002','dray_004','prop_029','hangar_007','hangar_022','tower_010');
 modelNames.push('tree_009','hangar_005','hangar_002','house_011',...LIFE_MODELS);
 modelNames.push('coop_002','mountain_001','mountain_007');
+// The market stalls in front of the Grand Valley Fair (Village pack, 27 Sep 2026).
+modelNames.push('village_stall_002','village_stall_003','village_stall_004','village_melons_001','village_barrels_001');
 modelNames.push('house_008','pointer_002','table_002','garden_bed_002','firewood_001');
 // The Pig Farm: its barn and three pigs.
 modelNames.push('house_019','pig_002','pig_003','pig_005');
@@ -288,7 +290,7 @@ function decorate(){
  addUtility('chores','barrel_001',-3.4,-10.7,{height:1.1});
  cloneModel('barrel_001',-2.6,-10.2,{height:1.05});
  zone('stall');
- addUtility('stall','stall_002',-11.3,-2.6,{width:2.9,rotation:.15});
+ addUtility('stall','village_stall_001',-11.3,-2.6,{width:2.9,rotation:.15});
  cloneModel('prop_023',-9.2,-2.7,{width:.8});
  zone('coop');
  addBuilding('coop',13,-9.5,{width:4.25,rotation:-Math.PI/2});
@@ -363,7 +365,7 @@ function decorate(){
  addUtility('valleymarket','hangar_009',0,-29.2,{width:10});
  yardDecor.valleymarket.push(cloneModel('table_001',-2.2,-29.6,{width:1.8,rotation:.1}),cloneModel('table_001',2,-28.9,{width:1.8,rotation:-.15}),cloneModel('case_002',-2.4,-29.8,{width:.8,y:.72}),cloneModel('bag_003',2.2,-29,{height:.55,y:.72}),
   // Two stalls face the road in front of the canopy, where the camera sees them; a cart and a sign at the sides.
-  cloneModel('stall_002',-2.8,-24.2,{width:2.6}),cloneModel('stall_001',2.9,-24.3,{width:2.9}),cloneModel('case_002',2.2,-24.5,{width:.85,rotation:.2}),cloneModel('case_003',3.5,-24.2,{width:.8,rotation:-.3}),cloneModel('bag_003',3,-23.7,{height:.6,rotation:.4}),
+  cloneModel('village_stall_001',-2.8,-24.2,{width:2.6}),cloneModel('stall_001',2.9,-24.3,{width:2.9}),cloneModel('case_002',2.2,-24.5,{width:.85,rotation:.2}),cloneModel('case_003',3.5,-24.2,{width:.8,rotation:-.3}),cloneModel('bag_003',3,-23.7,{height:.6,rotation:.4}),
   cloneModel('cart_004',7.6,-26.6,{width:1.9,rotation:.6}),cloneModel('pointer_002',-6.4,-23.8,{height:1.3,rotation:.2}),cloneModel('barrel_001',6.6,-30.2,{height:.95}),cloneModel('barrel_009',7.4,-30.9,{height:.8}),cloneModel('case_003',6.6,-31.2,{width:.9,rotation:.4}));
  // Wave 3, at the east end of the trunk road. The Trade Depot: a long warehouse where the road ends, the export trailer and a
  // truck at its doors, and crates waiting to be loaded.
@@ -374,12 +376,14 @@ function decorate(){
   cloneModel('prop_021',42.2,-7.1,{width:.9,rotation:.4}),cloneModel('pointer_002',36.2,-5.2,{height:1.3,rotation:-.3}));
  // The Estate Workshop: the manor house across the road, with a workbench, timber and tools in the yard.
  zone('estateworkshop');
- addUtility('estateworkshop','house_005',42.3,2.6,{width:8.5,rotation:Math.PI/2});   // porch and windows towards the camera
+ addUtility('estateworkshop','house_005',42.3,2.2,{width:10.2,rotation:Math.PI/2});   // porch and windows towards the camera; a fifth bigger since 27 Sep 2026
  yardDecor.estateworkshop.push(cloneModel('table_001',39.1,5.9,{width:1.6,rotation:.15}),cloneModel('firewood_003',45.6,5.6,{width:1.4,rotation:.4}),cloneModel('case_003',38.2,5.2,{width:.85,rotation:-.3}),
   cloneModel('bag_001',46.4,4.6,{height:.75,rotation:.3}),cloneModel('garden_bed_001',37,1.2,{width:1.8,rotation:Math.PI/2}));
  // The Grand Valley Fair, the final building: one great exhibition hall, close to its model's own size.
  zone('grandfair');
  addUtility('grandfair','house_023',44,12.6,{width:26.5,depth:9.1,height:5.3});
+ // Market stalls in front of the hall (Village pack, 27 Sep 2026), greyed out with it until the Fair opens.
+ yardDecor.grandfair.push(...[['village_stall_001',34.5],['village_stall_002',40.5],['village_stall_003',47],['village_stall_004',53.5]].map(([name,x])=>cloneModel(name,x,20.2,{width:3.6})),cloneModel('village_melons_001',37.6,19.6,{width:1.1}),cloneModel('village_barrels_001',50.2,19.8,{width:1.6}));
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
@@ -437,7 +441,7 @@ function addExtraProps(){
   const box=new THREE.Box3().setFromObject(object),model=object.userData.model??'';if(box.isEmpty()||box.getSize(new THREE.Vector3()).y<.03&&!FLAT_BLOCKS.test(model))continue;
   blocked.push(ANIMAL.test(model)?box.expandByScalar(1.2):box);
  }
- const [pondX,pondZ]=placeIn('pond',0,0),pond=[10.4+pondX,10.4+pondZ,24.8+pondX,19.6+pondZ],fields=[-5.6,-3,10.4,33.6];
+ const pond=pondBounds(),fields=[-5.6,-3,10.4,33.6];
  const free=(x,z,r)=>!blocked.some(b=>x>b.min.x-r&&x<b.max.x+r&&z>b.min.z-r&&z<b.max.z+r)
   &&!(x>fields[0]&&x<fields[2]&&z>fields[1]&&z<fields[3])&&!(x>pond[0]-1&&x<pond[2]+1&&z>pond[1]-1&&z<pond[3]+1);
  const anchors=Object.fromEntries(Object.keys(ANCHORS).map(id=>[id,anchorAt(id)]));

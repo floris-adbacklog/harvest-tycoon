@@ -5,7 +5,9 @@ import {softenRed} from './soft-red.js';
 // one palette on the graphics card instead of one per model (about 5 MB each), and buildings get a twin with a lighter, softer
 // red: in the fuller light the red barns read as a deep crimson.
 const BUILDING=/^(house|hangar|tower|coop|stall|greenhouse)_/;
-let base=null,soft=null;
+// The Village pack (village_*, 27 Sep 2026: stalls, boats, a pier) paints from its own small palette; its models share that one.
+const VILLAGE=/^village_/;
+let base=null,soft=null,villageBase=null;
 
 function softTwin(texture){
  const image=texture.image,canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
@@ -18,12 +20,15 @@ export function shareAtlas(object,name){
   if(!mesh.isMesh)return;
   for(const material of [mesh.material].flat()){
    const map=material.map;if(!map)continue;
-   base??=map;
-   let shared=base;
-   if(BUILDING.test(name)){try{soft??=softTwin(base);shared=soft;}catch{}}
+   let shared;
+   if(VILLAGE.test(name))shared=villageBase??=map;
+   else {
+    shared=base??=map;
+    if(BUILDING.test(name)){try{soft??=softTwin(base);shared=soft;}catch{}}
+   }
    if(map===shared)continue;
    material.map=shared;
-   if(map!==base){map.dispose();map.image?.close?.();}
+   if(map!==base&&map!==villageBase){map.dispose();map.image?.close?.();}
   }
  });
 }

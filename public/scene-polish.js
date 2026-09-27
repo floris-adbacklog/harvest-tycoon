@@ -1,4 +1,4 @@
-import {SPREAD,placeIn} from './farm-layout.js';
+import {SPREAD,pondBounds} from './farm-layout.js';
 import * as THREE from 'three';
 
 // Purely decorative layer for the 3D farm. It never reads or writes game state,
@@ -172,7 +172,7 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
   if(box.getSize(new THREE.Vector3()).y<.03)continue;
   blocked.push(box.expandByVector(new THREE.Vector3(.45,0,.45)));
  }
- const [pondX,pondZ]=placeIn('pond',0,0),fieldRect=[-4.6,-2,9.4,32],pondRect=[10.4+pondX,10.4+pondZ,24.8+pondX,19.6+pondZ];
+ const fieldRect=[-4.6,-2,9.4,32],pondRect=pondBounds();
  const free=(x,z)=>!blocked.some(b=>x>b.min.x&&x<b.max.x&&z>b.min.z&&z<b.max.z)
   &&!(x>fieldRect[0]&&x<fieldRect[2]&&z>fieldRect[1]&&z<fieldRect[3])
   &&!(x>pondRect[0]&&x<pondRect[2]&&z>pondRect[1]&&z<pondRect[3]);

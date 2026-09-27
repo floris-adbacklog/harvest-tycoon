@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import {featureUnlocked,ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 import {art} from './visual-icons.js';
-import {SPREAD,zone,place,placeIn,wide,ROADS,roadSize,onRoad} from './farm-layout.js';
-export const LIFE_MODELS=['mountain_008','field_004','field_005','bridge_001','horse_002','pig_001','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
+import {SPREAD,zone,place,placeIn,wide,ROADS,roadSize,onRoad,roadRects,POND} from './farm-layout.js';
+export const LIFE_MODELS=['mountain_008','field_004','field_005','village_pier_001','village_boat_001','village_rowboat_001','village_stones_001','horse_002','pig_001','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
  const views=new Map(),hitAreas=[],moving=[],effects=[],water=[],smoke=[];
@@ -72,14 +72,26 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   const fieldBoxes=scene.children.filter(o=>/^field_/.test(o.userData.model??'')).map(o=>new THREE.Box3().setFromObject(o).expandByScalar(-.3));
   for(const o of [...scene.children])if(/^(tree|fir_tree|bush)_/.test(o.userData.model??'')&&fieldBoxes.some(b=>o.position.x>b.min.x&&o.position.x<b.max.x&&o.position.z>b.min.z&&o.position.z<b.max.z))o.removeFromParent();
  }
- // A shallow pond and small bridge create a recognisable corner near the fields.
+ // The pond (27 Sep 2026): bigger and in the middle of the open green (POND, farm-layout.js), with a pier and a moored boat at the
+ // front, a rowing boat on the water and stones on the far shore, from the Village pack. It took the place of a long plank bridge.
  zone('pond');
- const shore=new THREE.Mesh(new THREE.CircleGeometry(1,18),new THREE.MeshStandardMaterial({color:0xb4ac89,roughness:1}));shore.rotation.x=-Math.PI/2;shore.scale.set(6.4,4.4,1);{const [px,pz]=place(17.6,15.2);shore.position.set(px,.019,pz);}scene.add(shore);
- const pond=new THREE.Mesh(new THREE.CircleGeometry(1,24),new THREE.MeshStandardMaterial({color:0x62bfc0,roughness:.35,metalness:.05}));pond.rotation.x=-Math.PI/2;pond.scale.set(5.8,3.8,1);{const [px,pz]=place(17.6,15.2);pond.position.set(px,.027,pz);}scene.add(pond);
- scenery('bridge_001',17.5,16.2,{width:11.9,depth:1.7,height:.7,rotation:0,y:.05});
- for(let i=0;i<3;i++){const r=new THREE.Mesh(new THREE.RingGeometry(.48,.51,32),new THREE.MeshBasicMaterial({color:0xd6f1da,transparent:true,opacity:.35,side:THREE.DoubleSide}));r.rotation.x=-Math.PI/2;{const [px,pz]=place(14.9+i*1.6,14.6-i*.45);r.position.set(px,.032,pz);}scene.add(r);water.push(r);}
- for(const [x,z] of [[12.5,15.5],[14,18.5],[21,17.8],[22.3,13.8]]){scenery('bush_003',x,z,{width:1.4});scenery('grass_004',x+.7,z-.4,{height:.6});}
+ const shoreAt=(deg,k)=>[POND.x+POND.rx*k*Math.cos(deg*Math.PI/180),POND.z+POND.rz*k*Math.sin(deg*Math.PI/180)];
+ const oval=(rx,rz,segments,material,y)=>{const m=new THREE.Mesh(new THREE.CircleGeometry(1,segments),material);m.rotation.x=-Math.PI/2;m.scale.set(rx,rz,1);const [px,pz]=place(POND.x,POND.z);m.position.set(px,y,pz);scene.add(m);};
+ oval(POND.rx+.6,POND.rz+.6,24,new THREE.MeshStandardMaterial({color:0xb4ac89,roughness:1}),.019);
+ oval(POND.rx,POND.rz,32,new THREE.MeshStandardMaterial({color:0x62bfc0,roughness:.35,metalness:.05}),.027);
+ scenery('village_pier_001',POND.x+4.8,POND.z+3,{width:3.4,rotation:-.55,y:.02});
+ scenery('village_boat_001',POND.x+3.2,POND.z+4,{width:2.2,rotation:1,y:.03});
+ scenery('village_rowboat_001',POND.x-2.6,POND.z-1.8,{width:2.6,rotation:.4,y:.03});
+ for(const [deg,width,rotation] of [[215,2.4,.9],[330,2,-.8]]){const [x,z]=shoreAt(deg,1.05);scenery('village_stones_001',x,z,{width,rotation});}
+ for(let i=0;i<3;i++){const r=new THREE.Mesh(new THREE.RingGeometry(.48,.51,32),new THREE.MeshBasicMaterial({color:0xd6f1da,transparent:true,opacity:.35,side:THREE.DoubleSide}));r.rotation.x=-Math.PI/2;{const [px,pz]=place(POND.x-.8+i*1.9,POND.z-.6-i*.5);r.position.set(px,.032,pz);}scene.add(r);water.push(r);}
+ for(const deg of [150,200,250,300,20,95]){const [x,z]=shoreAt(deg,1.12);scenery('bush_003',x,z,{width:1.4});scenery('grass_004',x+.7,z-.4,{height:.6});}
  scenery('bush_004',10.4,17.6,{width:1.9});scenery('bush_002',23.9,17,{width:1.7});
+ // A tree or bush placed elsewhere without knowing the pond does not stand in the water or lean over the pier.
+ {const [cx,cz]=place(POND.x,POND.z);for(const o of [...scene.children]){const model=o.userData.model??'',reach=/^(tree|fir_tree)_/.test(model)?1.3:/^(bush|grass|plant)_/.test(model)?.97:0;if(!reach)continue;const dx=(o.position.x-cx)/POND.rx,dz=(o.position.z-cz)/POND.rz;if(dx*dx+dz*dz<reach*reach)o.removeFromParent();}}
+ // The bend where the lane past the Farm stall meets the south road (ROADS, farm-layout.js), with a tree in front of it.
+ zone('exact');scenery('tree_008',-4.7,27.9,{height:3.4,rotation:.8});scenery('bush_003',-3.9,27.4,{width:1.3});
+ // Nothing grows on a road: trees, bushes and grass placed without knowing the roads step aside.
+ {const rects=roadRects();for(const o of [...scene.children]){if(!/^(tree|fir_tree|bush|grass|plant)_/.test(o.userData.model??''))continue;const {x,z}=o.position;if(rects.some(r=>x>r.minX-.2&&x<r.maxX+.2&&z>r.minZ-.2&&z<r.maxZ+.2))o.removeFromParent();}}
  zone('workshop');
  // Open approach to the Family Hall; the workshop stays directly tappable.
  station('workshop',cloneModel('lawn_mower_001',-9.1,-14.7,{width:1.25,rotation:.5}),-9.1,-14.7);

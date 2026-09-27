@@ -29,21 +29,31 @@ export const ANCHORS=Object.freeze({
 // East, along the trunk road: the Glasshouse (40, which has more room there), the Goat Shed (54) and the Trade Depot (85) across
 // the road, the Craft Workshop (58) first along the road, the Ranch (70) and the Estate Workshop (75) behind, the Grand Valley Fair (90) furthest out.
 // The Factory (50) and the Valley Market (62) stay in the middle, at the front and on the road out at the back.
-export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[-25.77,-6.92],stall:[-8,23.4],cart:[-9.7,-10.45],paddock:[1.7,-8.6],
+export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[-25.77,-6.92],stall:[-10.4,24],cart:[-9.7,-10.45],paddock:[1.7,-8.6],
  pigfarm:[-26.15,0.77],beeyard:[-33.85,14.62],sheepbarn:[-26.15,16.15],glasshouse:[37.62,1.23],weaving:[-33.46,22.69],
  craftshop:[23.46,1.69],ranch:[33.85,13.46],estateworkshop:[46.92,11.15],grandfair:[40,28.1]});
 // Trees, bushes and other loose pieces keep this far from the middle of a yard.
 export const YARD_CLEARANCE=5.4;
 
 // The roads, as designed on the compact grid: centre, size, height and depth in the ground. The long side grows with the farm.
+// The lane past the Farm stall runs on to meet the south road in a bend, with a tree in front of it (farm-life.js); the road
+// below the fields that led nowhere is gone (27 Sep 2026).
 export const ROADS=Object.freeze([
- {x:4.5,z:-4,width:59,depth:2.9,height:.13,y:-.045},{x:-6,z:3,width:2.9,depth:40,height:.13,y:-.035},{x:6.2,z:26,width:27,depth:2.4,height:.12,y:-.035},
- {x:-21,z:7,width:2.1,depth:41,height:.09,y:0},{x:-1,z:-23.3,width:42,depth:2.2,height:.09,y:0},{x:-1,z:31,width:45,depth:2.2,height:.09,y:0},
+ {x:4.5,z:-4,width:59,depth:2.9,height:.13,y:-.045},{x:-6,z:4.96,width:2.9,depth:43.92,height:.13,y:-.035},{x:6.29,z:26,width:26.815,depth:2.4,height:.12,y:-.035},
+ {x:-21,z:7,width:2.1,depth:41,height:.09,y:0},{x:-1,z:-23.3,width:42,depth:2.2,height:.09,y:0},
  // The road out of the valley: it lies over the trunk road's tapered end, passes the Trade Depot and runs on to the edge of the
  // world, where the haze swallows it.
  {x:50.15,z:-4,width:52,depth:2.9,height:.13,y:-.043,turned:true}
 ]);
 export const roadSize=road=>({width:road.width>road.depth?road.width*SPREAD:road.width,depth:road.depth>road.width?road.depth*SPREAD:road.depth});
+// The pond (farm-life.js draws it): an oval in the open green between the Factory, the Windmill and the Ranch, in the pond yard's own
+// coordinates (bigger and moved there from beside the Factory, 27 Sep 2026). pondBounds() is the box around it in the world, with a
+// margin: trees, props and animals keep out of it.
+export const POND=Object.freeze({x:20.4,z:10.6,rx:7.4,rz:4.8});
+export function pondBounds(){
+ const [px,pz]=placeIn('pond',0,0);
+ return [POND.x-POND.rx-1.4+px,POND.z-POND.rz-1+pz,POND.x+POND.rx+1.4+px,POND.z+POND.rz+.6+pz];
+}
 // World rectangles of the roads: {minX,maxX,minZ,maxZ}.
 export const roadRects=()=>ROADS.map(road=>{const {width,depth}=roadSize(road),cx=road.x*SPREAD,cz=road.z*SPREAD;return {minX:cx-width/2,maxX:cx+width/2,minZ:cz-depth/2,maxZ:cz+depth/2,horizontal:width>depth};});
 // True when a box (a fence segment, a prop) stands on a road.
