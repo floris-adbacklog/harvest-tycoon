@@ -70,6 +70,49 @@ export function renderCue(kind,rate=48000,variant=0){
     add(.3,hiss(.08,900,1.2,.02,1));let at=.34;for(let p=0;p<6;p++){putt(at,150+p*6,.9-p*.08);at+=.085;}
    }
    break;}
+  // 27 Sep 2026: every moment that was silent or borrowed another's sound got its own.
+  case 'construct': // a new building: three hammer blows, two strokes of a saw, then a bright little ta-da
+   add(0,knock(900,.6));add(.12,knock(1000,.55));add(.24,knock(940,.6));
+   add(.36,hiss(.14,2600,2.5,.08,.45));add(.52,hiss(.14,2300,2.5,.08,.4));
+   [79,84,91].forEach((m,i)=>add(.72+i*.1,bell(hz(m),.6+i*.1,.26-i*.01)));add(.9,hiss(.4,7500,1.6,.15,.1));break;
+  case 'purchase': // diamonds bought: a treasure chest creaks open, a shower of coins and a shimmering chord
+   {const creak=sweep(.3,170,260,.25,.4,x=>Math.sin(x)+.5*Math.sin(2*x)+.3*Math.sin(3*x));lowpass(creak,rate,1400);add(0,creak);}
+   add(.28,knock(260,.7));
+   for(let c=0;c<8;c++)add(.34+c*.04+rand()*.012,coin(.26-c*.02));
+   [84,88,91,96].forEach((m,i)=>add(.4+i*.06,bell(hz(m),.8,.2,.5)));
+   [[96,.22],[100,.16],[103,.12]].forEach(([m,v])=>{add(.72,bell(hz(m),.72,v,.45));add(.724,bell(hz(m)*1.004,.72,v*.4,.4));});
+   add(.7,hiss(.75,8000,2,.3,.12));break;
+  case 'message': // a private message: a soft letter-box ding, two notes
+   add(0,hiss(.08,3000,1.2,.02,.15));add(.01,bell(hz(86),.45,.24,.5));add(.1,bell(hz(91),.45,.2,.5));break;
+  case 'finish': // finished at once with diamonds: a magic whoosh that rises, and a quick sparkle
+   for(let k=0;k<6;k++)add(k*.045,hiss(.12,900*1.45**k,2,.045,.28));
+   [91,96,100].forEach((m,i)=>add(.3+i*.05,bell(hz(m),.5,.2,.5)));add(.3,hiss(.5,8000,2,.18,.1));break;
+  case 'quest': // a quest claimed: a rustle of paper, a stamp, two little bells
+   add(0,hiss(.12,3500,1.2,.04,.35));add(.1,sweep(.1,130,70,.04,.8));add(.1,knock(300,.5));
+   add(.2,bell(hz(84),.4,.24));add(.28,bell(hz(88),.45,.22));break;
+  case 'delivery': // an order delivered: the clip-clop of the cart horse, a cart bell and coins
+   [[0,700],[.11,820],[.22,700],[.33,820]].forEach(([t,f],i)=>add(t,knock(f,.5+i*.04)));
+   add(.44,bell(hz(81),.5,.24));for(let c=0;c<3;c++)add(.52+c*.05,coin(.24-c*.04));add(.64,bell(hz(86),.45,.2));break;
+  case 'stall': // the farm stall emptied: the till clacks, the drawer slides out, ka-ching
+   add(0,knock(1200,.45));add(0,hiss(.04,5000,1.5,.01,.3));add(.07,hiss(.18,1300,1,.07,.4));
+   add(.2,bell(hz(96),.55,.3,1.2));add(.2,bell(hz(100),.55,.18));for(let c=0;c<3;c++)add(.26+c*.045,coin(.2-c*.04));break;
+  case 'boost': // a boost switched on: a rising power-up and a quick run of bells
+   {const up=sweep(.45,300,1200,.6,.3,x=>Math.sin(x)+.4*Math.sin(2*x)+.2*Math.sin(3*x));lowpass(up,rate,3000);add(0,up);}
+   [79,84,88,91].forEach((m,i)=>add(.26+i*.05,bell(hz(m),.45,.2)));add(.4,hiss(.4,7000,2,.14,.1));break;
+  case 'expand': // new land: two spadefuls of earth, a fence gate that clicks shut, a bell
+   for(const t of [0,.18]){add(t,hiss(.12,900,1.2,.05,.6));add(t,sweep(.1,110,60,.04,.7));}
+   add(.4,knock(700,.5));add(.48,knock(760,.45));add(.58,bell(hz(84),.5,.25));break;
+  case 'valley': // a sale at the Valley Market: the shop door's bell and a couple of coins
+   add(0,bell(hz(93),.5,.24,1));add(.07,bell(hz(98),.5,.2,1));add(.14,bell(hz(93),.45,.12,1));for(let c=0;c<2;c++)add(.22+c*.06,coin(.22));break;
+  case 'depot': // an export trailer sent: two toots of a truck horn, crates settling, a bell
+   for(const [start,len] of [[0,.12],[.17,.22]]){const b=buffer(len+.04);for(let i=0;i<b.length;i++){const t=i/rate,env=Math.min(1,t/.012)*(t<len?1:Math.exp(-(t-len)/.012));b[i]=(Math.sin(TAU*330*t)+.6*Math.sin(TAU*415*t)+.3*Math.sin(TAU*660*t)+.18*Math.sin(TAU*830*t))*env*.45;}lowpass(b,rate,2200);add(start,b);}
+   add(.46,knock(380,.6));add(.56,knock(330,.55));add(.7,bell(hz(84),.55,.24));break;
+  case 'fair': // a ribbon at the fair: a short burst of applause and a little fanfare of bells
+   for(let c=0;c<30;c++){const t=.02+(rand()+1)/2*.75;add(t,hiss(.04,1400+(rand()+1)/2*1400,1.1,.012,.55*(1-t/1.1)));}
+   [84,88,91,96].forEach((m,i)=>add(.3+i*.09,bell(hz(m),.6,.22)));add(.6,hiss(.6,7500,1.6,.2,.1));break;
+  case 'improve': // an estate improvement: two taps of a chisel and warm, slow rising chimes
+   add(0,knock(800,.5));add(.13,knock(860,.45));
+   [76,81,86].forEach((m,i)=>add(.3+i*.13,bell(hz(m),.75,.25,.7)));add(.6,hiss(.45,6500,1.6,.16,.08));break;
   case 'dailygift': // the daily gift (27 Sep 2026): a ribbon whoosh and the lid popping off, coins tumbling out, a run of rising
    // bells and a warm, shimmering chord to finish, so collecting it feels like opening a present
    add(0,hiss(.2,1600,.9,.07,.35));add(.02,hiss(.16,3800,1.4,.05,.18));
@@ -93,7 +136,7 @@ export function renderCue(kind,rate=48000,variant=0){
 export const CUE_VARIANTS={tractor:3};
 // Rendered at 24 kHz (half the work of 48; nothing in these sounds needs more), most frequent first (sound-worker.js).
 export const SFX_RATE=24000;
-export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','chorebonus','reward','upgrade','diamond','dailygift','levelup'];
-export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,chorebonus:.85,upgrade:.9,reward:.95,diamond:1.1,dailygift:1.45,tractor:1,levelup:1.45};
-export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,chorebonus:.042,upgrade:.053,reward:.052,diamond:.038,dailygift:.055,tractor:.034,levelup:.056};
+export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','chorebonus','quest','delivery','stall','reward','upgrade','expand','boost','finish','diamond','dailygift','construct','message','valley','depot','fair','improve','purchase','levelup'];
+export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,chorebonus:.85,upgrade:.9,reward:.95,diamond:1.1,dailygift:1.45,tractor:1,levelup:1.45,construct:1.3,purchase:1.45,message:.55,finish:.9,quest:.6,delivery:1.,stall:.8,boost:.9,expand:.9,valley:.7,depot:1.3,fair:1.4,improve:1.};
+export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,chorebonus:.042,upgrade:.053,reward:.052,diamond:.038,dailygift:.055,tractor:.034,levelup:.056,construct:.052,purchase:.056,message:.03,finish:.045,quest:.045,delivery:.045,stall:.047,boost:.048,expand:.045,valley:.04,depot:.046,fair:.05,improve:.048};
 export function loudness(data,rate){const w=Math.min(data.length,Math.round(.15*rate)),step=Math.max(1,Math.round(w/4));let best=0;for(let i=0;i+w<=data.length;i+=step){let e=0;for(let j=i;j<i+w;j++)e+=data[j]*data[j];best=Math.max(best,Math.sqrt(e/w));}return best;}

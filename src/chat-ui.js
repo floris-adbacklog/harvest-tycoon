@@ -250,6 +250,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    return;
   }
   const m=event.message;if(!m||blocked().has(m.sender))return;
+  // A private message from someone else gets its own soft ding, open or not (the sound settings decide if it plays).
+  if(m.sender!==me&&m.channel.startsWith('dm:'))win.harvestSound?.('message');
   if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,100);paint();void freshFaces([m.sender]);}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:'))scheduleOverview();return;}
   if(m.sender===me)return;
   if(m.channel==='global')overview.unread.global=Math.min(99,(overview.unread.global??0)+1);

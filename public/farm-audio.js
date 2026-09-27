@@ -38,6 +38,19 @@ export const SOUND_CUES=Object.freeze({
  reward:{notes:[523.25,659.25,783.99,1046.5],step:.1,duration:.38,volume:.105},
  diamond:{notes:[659.25,987.77,1318.51],step:.11,duration:.42,volume:.08},
  dailygift:{notes:[659.25,783.99,987.77,1174.66,1567.98],step:.07,duration:.45,volume:.1},
+ construct:{notes:[392,523.25,659.25,783.99],step:.1,duration:.35,volume:.1,type:'triangle'},
+ purchase:{notes:[523.25,659.25,783.99,1046.5,1318.51],step:.09,duration:.45,volume:.11},
+ message:{notes:[1174.66,1567.98],step:.09,duration:.25,volume:.06},
+ finish:{notes:[783.99,1046.5,1396.91],step:.06,duration:.3,volume:.08},
+ quest:{notes:[523.25,659.25,1046.5],step:.08,duration:.26,volume:.09},
+ delivery:{notes:[440,523.25,659.25,880],step:.09,duration:.28,volume:.09},
+ stall:{notes:[1174.66,1567.98,1174.66],step:.07,duration:.25,volume:.08},
+ boost:{notes:[392,523.25,659.25,783.99,1046.5],step:.06,duration:.28,volume:.09},
+ expand:{notes:[196,293.66,587.33],step:.1,duration:.25,volume:.09,type:'triangle'},
+ valley:{notes:[1244.51,1567.98],step:.07,duration:.3,volume:.07},
+ depot:{notes:[329.63,415.3,659.25],step:.15,duration:.3,volume:.08,type:'triangle'},
+ fair:{notes:[523.25,659.25,783.99,1046.5],step:.09,duration:.35,volume:.1},
+ improve:{notes:[392,523.25,698.46],step:.13,duration:.4,volume:.09},
  tractor:{notes:[98,123.47,146.83],step:.085,duration:.16,volume:.06,type:'triangle'},
  levelup:{notes:[523.25,659.25,783.99,1046.5,1318.51,1046.5],step:.14,duration:.52,volume:.12},
 });
@@ -51,7 +64,10 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
  if(action.type==='activity_work')return result.roundComplete?'reward':result.finished?'collect':{greenhouse:'water',apiary:'collect',paddock:'water',workshop:'chore'}[action.station]??'chore';
  if(action.type==='checkin')return 'dailygift';   // the daily gift has its own, fuller sound
  if(['daily','beginner_claim'].includes(action.type))return result.diamonds>0?'diamond':'reward';
- return {sell:'sell',produce:'produce',collect:'collect',collect_all:'collect',upgrade:'upgrade',expand:'upgrade',quest:'reward',mastery:'reward',level_rewards:'reward',delivery:'sell',tractor:'tractor',chore:'chore',fertilize:'care',stall_collect:'sell',stall_upgrade:'upgrade',project_start:'produce',project_collect:'reward',silo_upgrade:'upgrade',buy_boost:'diamond'}[action.type]??null;
+  // A load that fills the export trailer sends it off (horn); a part load is just crates going on.
+ if(action.type==='depot_load')return result.shipped?'depot':'produce';
+ return {sell:'sell',produce:'produce',collect:'collect',collect_all:'collect',upgrade:'upgrade',expand:'expand',quest:'quest',mastery:'reward',level_rewards:'reward',delivery:'delivery',tractor:'tractor',chore:'chore',fertilize:'care',stall_collect:'stall',stall_upgrade:'upgrade',project_start:'produce',project_collect:'reward',silo_upgrade:'upgrade',buy_boost:'boost',
+  construct:'construct',finish_crop:'finish',finish_batch:'finish',valley_sell:'valley',fair_enter:'fair',improve:'improve'}[action.type]??null;
 }
 export function createProductionCueTracker(buildings,now){
  let previous=new Map();
