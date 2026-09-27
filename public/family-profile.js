@@ -5,7 +5,7 @@
 import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
-import {FAMILY_JOIN_MODES,FAMILY_MIN_LEVEL} from './farm-state.js';
+import {FAMILY_JOIN_MODES,FAMILY_MIN_LEVEL,FAMILY_RANKS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rankArt} from './rank-art.js';
 
@@ -14,6 +14,11 @@ const num=n=>Number(n??0).toLocaleString('en-US');
 const place=rank=>({1:'1st',2:'2nd',3:'3rd'}[rank]??`${rank}th`);
 const day=ms=>new Date(ms).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short',year:'numeric'});
 const weekOf=week=>new Date((week*7+4)*86400000).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short'});
+
+// A member's rank (Leader, Co-leader, Honorary; members wear none) and the crown of this week's top farmer: the member with the
+// most Family Chest points (27 Sep 2026). Also used by the member list in the Family window.
+const RANK_ICONS=new Set(['leader','coleader','honorary']);   // the rank badges painted so far (public/assets/icons/family-rank-*.webp)
+export const rankChip=m=>`${m.role&&m.role!=='member'&&FAMILY_RANKS[m.role]?`<span class="family-role family-role-${m.role}">${RANK_ICONS.has(m.role)?art(`family-rank-${m.role}`):''}${FAMILY_RANKS[m.role]}</span>`:''}${m.top?`<span class="family-top" title="Top farmer of the week: the most Family Chest points">${art('family-rank-top')}Top farmer</span>`:''}`;
 
 // What the farmer looking can do here, in the same words as the list of families.
 export function familyProfileAction(p){
@@ -24,17 +29,17 @@ export function familyProfileAction(p){
  if(p.full)return {note:'This family is full.'};
  if(p.mode==='open')return v.cooldown?{note:'You recently left a family; you can join again soon.'}:{button:'family_join',label:'Join'};
  if(p.mode==='request'){
-  if(v.requestId)return {button:'family_request_cancel',label:'Cancel request',note:'You asked to join. Their leader can accept or decline.'};
+  if(v.requestId)return {button:'family_request_cancel',label:'Cancel request',note:'You asked to join. Their leader or a co-leader can accept or decline.'};
   if(v.requestElsewhere)return {note:'You already asked another family to join.'};
   return v.cooldown?{note:'You recently left a family; you can ask again soon.'}:{button:'family_request',label:'Ask to join'};
  }
- return {note:p.mode==='closed'?'This family is not taking new farmers.':'Invite only: the leader invites farmers by name.'};
+ return {note:p.mode==='closed'?'This family is not taking new farmers.':'Invite only: the leader or a co-leader invites farmers by name.'};
 }
 
 export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
  const s=p.standing,next=s.next,progress=next?Math.min(100,Math.round(s.tiers/next*100)):100;
  const tile=(picture,value,label)=>`<div class="family-profile-stat">${art(picture)}<strong>${value}</strong><span>${label}</span></div>`;
- const member=m=>`<article class="family-member"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId)}" ${profiles?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online':'Offline'}"></span></span><span class="family-member-copy"><strong>${esc(m.username)}${vipBadge(m.vipExpiresAt,now)}${m.leader?'<span class="family-role">Leader</span>':''}</strong><small>Level ${num(m.level)}</small></span>${profiles?'<span class="family-sr-only">Open profile</span>':''}</button></article>`;
+ const member=m=>`<article class="family-member"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId)}" ${profiles?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online':'Offline'}"></span></span><span class="family-member-copy"><strong>${esc(m.username)}${vipBadge(m.vipExpiresAt,now)}${rankChip(m)}</strong><small>Level ${num(m.level)}</small></span>${profiles?'<span class="family-sr-only">Open profile</span>':''}</button></article>`;
  const action=familyProfileAction(p);
  return `<section class="family-profile-hero">
   <span class="family-profile-emblem">${emblem(p.emblem)}<b class="family-level-badge" title="Family level ${s.level}">${s.level}</b></span>

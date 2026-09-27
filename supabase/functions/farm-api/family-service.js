@@ -14,16 +14,16 @@ function publicView(context,player,state,now){
  context.players=context.players.map(p=>({...p,online:isRecentlyActive(p.last_active_at,now)}));
  return familyPublicView(context,player,state,now);
 }
-// Join requests reach the other farmer in Notifications: the leader hears of a new request, the farmer hears the answer. A notice
-// that cannot be written never undoes the action itself.
+// Join requests reach the other farmer in Notifications: the leader and the co-leaders hear of a new request (they can all accept it,
+// 27 Sep 2026), the farmer hears the answer. A notice that cannot be written never undoes the action itself.
 async function requestNotice(admin,action,result,context,player,username,now){
  const family=id=>context.families.find(f=>f.id===id);
- let to=null,body='';
- if(action.type==='family_request'){const f=family(result.requestedFamily);to=context.members.find(m=>m.family_id===f?.id&&m.role==='leader'&&!m.left_at)?.player_id;body=`${username} asked to join ${f?.name}. Open Farm Family to accept or decline.`;}
- else if(result.accepted){to=result.accepted;const f=family(context.members.find(m=>m.player_id===player&&!m.left_at)?.family_id);body=`Welcome! ${f?.name} accepted your request to join.`;}
- else if(result.declined){to=result.declined;const f=family(context.members.find(m=>m.player_id===player&&!m.left_at)?.family_id);body=`${f?.name} declined your request to join. You can ask another family.`;}
- if(!to||to===player)return;
- try{await admin.from('player_notices').insert({player_id:to,kind:'family',body:body.slice(0,400),expires_at:new Date(now+7*86400000).toISOString()});}catch{}
+ let to=[],body='';
+ if(action.type==='family_request'){const f=family(result.requestedFamily);to=context.members.filter(m=>m.family_id===f?.id&&(m.role==='leader'||m.role==='coleader')&&!m.left_at).map(m=>m.player_id);body=`${username} asked to join ${f?.name}. Open Farm Family to accept or decline.`;}
+ else if(result.accepted){to=[result.accepted];const f=family(context.members.find(m=>m.player_id===player&&!m.left_at)?.family_id);body=`Welcome! ${f?.name} accepted your request to join.`;}
+ else if(result.declined){to=[result.declined];const f=family(context.members.find(m=>m.player_id===player&&!m.left_at)?.family_id);body=`${f?.name} declined your request to join. You can ask another family.`;}
+ to=to.filter(id=>id&&id!==player);if(!to.length)return;
+ try{await admin.from('player_notices').insert(to.map(id=>({player_id:id,kind:'family',body:body.slice(0,400),expires_at:new Date(now+7*86400000).toISOString()})));}catch{}
 }
 // A family's profile (familyProfile, farm-state.js): read only, so it never settles a week or writes anything.
 export async function handleFamilyProfile({admin,body,state,player}){

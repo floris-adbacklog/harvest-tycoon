@@ -68,7 +68,7 @@ test('the Families list: every family with who can join, open ones first; your o
  const ui=read('public/family-ui.js');
  assert.match(ui,/f\.mode==='request'\?\(mine\?\.family\.id===f\.id\?actionButton\('family_request_cancel','Cancel request'/);
  assert.match(ui,/<select data-family-mode aria-label="Who can join"/);assert.match(ui,/act\(\{type:'family_join_mode',mode:event\.currentTarget\.value\}\)/);
- assert.match(ui,/actionButton\('family_request_accept','Accept'/);assert.match(ui,/offer\(player\)\{if\(!view\?\.family\?\.leader\|\|view\.family\.mode==='closed'\|\|/,'a closed family shows no invite button on profiles');assert.match(ui,/view\?\.joinRequests\?\.length\|\|/,'the Family dot lights up for a leader with requests');
+ assert.match(ui,/actionButton\('family_request_accept','Accept'/);assert.match(ui,/offer\(player\)\{if\(!view\?\.family\?\.manager\|\|view\.family\.mode==='closed'\|\|/,'a closed family shows no invite button on profiles');assert.match(ui,/view\?\.joinRequests\?\.length\|\|/,'the Family dot lights up for a leader with requests');
 });
 
 test('the database: join_mode beside is_open, a requests table only the server reaches, loaded and saved with the family',()=>{
