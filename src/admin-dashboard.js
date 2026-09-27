@@ -138,9 +138,11 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const t=data.totals,reward=data.rules?.reward??150;
   dialog.querySelector('#admin-invite-totals').innerHTML=`<span><strong>${number(t.links)}</strong> links</span><span><strong>${number(t.friends)}</strong> friends joined</span><span><strong>${number(t.qualified)}</strong> reached level ${data.rules?.level??10}</span><span><strong>${number(t.diamondsPaid)}</strong> diamonds paid</span>`;
   const paid=(yes,amount)=>amount>0?(yes?`<b class="admin-paid">+${amount} paid</b>`:`<b class="admin-pending-pay">+${amount} pending</b>`):'<b class="admin-none">none</b>';
+  // Both names open that farmer's profile, as in the chat log.
+  const who=(name,id)=>id?`<button type="button" class="admin-log-name" data-profile="${esc(id)}">${esc(name)}</button>`:esc(name);
   const state=i=>i.status==='qualified'?`Reached level 10 ${ago(new Date(i.qualifiedAt).toISOString())} · friend ${paid(i.friendPaid,reward)} · inviter ${paid(i.inviterPaid,i.inviterReward)}${i.inviterReward===0?' (inviter used all 10 rewards)':''}`
    :i.status==='expired'?`Did not reach level 10 within 30 days (level ${number(i.friendLevel)})`:`Playing · level ${number(i.friendLevel)} of 10`;
-  dialog.querySelector('#admin-invite-list').innerHTML=data.invites.length?data.invites.map(i=>`<li>${avatar(i.friend,false)}<span class="admin-recent-copy"><strong>${esc(i.friend)} <small>invited by ${esc(i.inviter)}</small></strong><small>${state(i)}</small></span><small class="admin-when" title="${esc(fmtDate(new Date(i.joinedAt).toISOString()))}">${ago(new Date(i.joinedAt).toISOString())}</small></li>`).join(''):'<li class="admin-empty">No friend has joined with an invite link yet.</li>';
+  dialog.querySelector('#admin-invite-list').innerHTML=data.invites.length?data.invites.map(i=>`<li>${avatar(i.friend,false,i.friendId)}<span class="admin-recent-copy"><strong>${who(i.friend,i.friendId)} <small>invited by ${who(i.inviter,i.inviterId)}</small></strong><small>${state(i)}</small></span><small class="admin-when" title="${esc(fmtDate(new Date(i.joinedAt).toISOString()))}">${ago(new Date(i.joinedAt).toISOString())}</small></li>`).join(''):'<li class="admin-empty">No friend has joined with an invite link yet.</li>';
  }
  async function load(){
   const status=dialog.querySelector('#admin-dashboard-status');status.textContent='Refreshing…';
@@ -202,6 +204,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  });
  // A name in the log opens that farmer's profile (with the chat buttons: mute, ban), on top of the dashboard.
  dialog.querySelector('#admin-log-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
+ dialog.querySelector('#admin-invite-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
  dialog.querySelector('#admin-report-list').addEventListener('click',async event=>{
   const action=event.target.closest('[data-report]');if(!action||!bridge.chat)return;
   const {report:kind,id,player}=action.dataset;action.disabled=true;

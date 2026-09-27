@@ -106,7 +106,7 @@ export async function handleAdminInvites({admin,user,now=Date.now(),reward=150,l
   const friend=who.get(r.invitee_id),inviter=who.get(r.referrer_id);
   const friendPaid=Boolean(farm.get(r.invitee_id)?.invite?.rewardedAt),inviterPaid=(farm.get(r.referrer_id)?.paid??[]).includes(r.invitee_id);
   const status=r.qualified_at?'qualified':now-Number(r.created_at)>days*86400000?'expired':'playing';
-  return {inviter:inviter?.username??'Unknown',friend:friend?.username??'New farmer',friendLevel:friend?.level??1,joinedAt:Number(r.created_at),qualifiedAt:r.qualified_at?Number(r.qualified_at):null,
+  return {inviter:inviter?.username??'Unknown',inviterId:r.referrer_id,friend:friend?.username??'New farmer',friendId:r.invitee_id,friendLevel:friend?.level??1,joinedAt:Number(r.created_at),qualifiedAt:r.qualified_at?Number(r.qualified_at):null,
    status,friendReward:status==='qualified'?reward:0,inviterReward:r.referrer_diamonds??0,friendPaid,inviterPaid};
  });
  const totals={links:codes.count??0,friends:invites.length,qualified:invites.filter(i=>i.status==='qualified').length,
