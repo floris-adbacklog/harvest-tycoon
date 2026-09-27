@@ -145,9 +145,21 @@ function icons(){refreshArt();}
 
 // One model from the pack, centred on its footprint and standing on the ground, kept once and cloned where it is used.
 let gltfLoader=null;
+// A model that cannot be fetched (a deploy still going live, or a "not found" the browser remembers: vercel.json caches /assets/ for
+// a day, 404s included) is asked for once more past that cache. If it still fails, an invisible stand-in of 1x1x1 takes its place,
+// so the farm opens without that one model instead of not at all (27 Sep 2026).
+async function fetchModel(name){
+ try{return await gltfLoader.loadAsync(`/assets/models/${name}.glb`);}
+ catch{
+  try{return await gltfLoader.loadAsync(`/assets/models/${name}.glb?fresh=${Date.now()}`);}
+  catch(error){console.warn(`The model ${name} could not load; the farm opens without it.`,error);return null;}
+ }
+}
 async function loadModel(name){
  gltfLoader??=new GLTFLoader();
- const gltf=await gltfLoader.loadAsync(`/assets/models/${name}.glb`),object=gltf.scene;
+ const gltf=await fetchModel(name);
+ if(!gltf){const group=new THREE.Group(),stand=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({visible:false}));stand.position.y=.5;group.add(stand);models.set(name,{object:group,size:new THREE.Vector3(1,1,1)});return;}
+ const object=gltf.scene;
  const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
  object.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));const group=new THREE.Group();group.add(object);
  object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});

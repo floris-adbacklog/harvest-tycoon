@@ -57,3 +57,14 @@ test('Village stalls at the Farm stall, the Valley Market and in front of the Gr
  assert.doesNotMatch(game,/'stall_002'/,'the old stall is no longer used');
  assert.match(game,/addUtility\('estateworkshop','house_005',42\.3,2\.2,\{width:10\.2,/,'the Estate Workshop is a fifth bigger');
 });
+
+// 27 Sep 2026: during the deploy a player got "Your farm could not load" for village_rowboat_001.glb. A 404 under /assets/ is cached
+// for a day (vercel.json), so one missing decorative model kept the whole farm shut. Now it is asked for once more past the cache,
+// and if it still fails the farm opens without it.
+test('one model that will not load never keeps the farm shut',()=>{
+ const game=read('public/game.js');
+ assert.match(game,/try\{return await gltfLoader\.loadAsync\(`\/assets\/models\/\$\{name\}\.glb`\);\}/);
+ assert.match(game,/try\{return await gltfLoader\.loadAsync\(`\/assets\/models\/\$\{name\}\.glb\?fresh=\$\{Date\.now\(\)\}`\);\}/,'the second try goes past the browser cache');
+ assert.match(game,/if\(!gltf\)\{const group=new THREE\.Group\(\),stand=new THREE\.Mesh\(new THREE\.BoxGeometry\(1,1,1\),new THREE\.MeshBasicMaterial\(\{visible:false\}\)\);/,'an invisible stand-in keeps every size and tap area working');
+ assert.match(read('vercel.json'),/"source": "\/assets\/\(\.\*\)"/,'this is why: /assets/ is cached for a day');
+});
