@@ -54,6 +54,8 @@ test('the website gets a page per topic, in the sitemap, linked from the footer'
  const pages=readdirSync(join(out,'wiki'));assert.equal(pages.length,WIKI_TOPICS.length+1);
  const crops=readFileSync(join(out,'wiki','crops.html'),'utf8');
  assert.match(crops,/<link rel="canonical" href="https:\/\/www\.harvesttycoon\.com\/wiki\/crops">/);
+ // A shared wiki link shows the same share card as the home page (27 Sep 2026; it showed the square logo).
+ assert.match(crops,/<meta property="og:image" content="https:\/\/www\.harvesttycoon\.com\/assets\/og-image\.jpg">/);assert.match(crops,/<meta name="twitter:card" content="summary_large_image">/);
  assert.match(crops,/<a href="\/wiki">Game wiki<\/a>/);assert.match(crops,/href="\/wiki\/buildings" data-wiki-topic="buildings"/);
  const sitemap=readFileSync(join(out,'sitemap.xml'),'utf8');
  assert.equal((sitemap.match(/\/wiki<\/loc>/g)??[]).length,1,'added once');assert.match(sitemap,/\/wiki\/crops<\/loc>/);
