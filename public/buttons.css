@@ -156,3 +156,11 @@
 .chat-tabs button.active,
 .auth-tabs button[aria-selected="true"]{background:#fffdf5;border-color:#d9c7a4;color:#5b4520;box-shadow:0 3px 0 #e2d3b3}
 @media(prefers-reduced-motion:reduce){.market-tabs button,.chat-tabs button,.auth-tabs button{transition:none}}
+
+/* A checkout that was closed or expired (27 Sep 2026): the way back to the shop is the main button, the farm the second, and
+   "Check payment" a small link underneath (nothing was paid in most of these). */
+.payment-dialog[data-state="closed"] .payment-shop{background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text);box-shadow:0 3px 0 var(--btn-main-edge)}
+.payment-dialog[data-state="closed"] .payment-shop:hover{background:var(--btn-main-hover)}
+.payment-dialog[data-state="closed"] [data-close]{background:var(--btn-second);border-color:var(--btn-second-line);color:var(--btn-second-text);box-shadow:0 3px 0 var(--btn-second-edge)}
+.payment-dialog[data-state="closed"] [data-close]:hover{background:var(--btn-second-hover)}
+.payment-dialog[data-state="closed"] .payment-actions [data-retry]{min-height:0;padding:6px;border:0;background:none;box-shadow:none;color:#7a6b4b;font-weight:600;text-decoration:underline;text-underline-offset:3px}

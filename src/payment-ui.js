@@ -31,8 +31,8 @@ export function showPaymentReturn(bridge){
     return;
    }
    if(result.status==='test_paid'){display('test','Test payment confirmed','This was a test purchase. No real diamonds were added.','Test complete');retry.hidden=true;return;}
-   if(result.status==='expired'){display('closed','This checkout has expired','Pick a pack again in the diamond shop to start a new checkout.','Checkout expired');retry.hidden=true;shop.hidden=false;return;}
-   if(purchase.cancelled){display('closed','Back to your farm','Checkout was closed. If you paid before returning, check your payment status below.','Checkout closed');shop.hidden=false;}
+   if(result.status==='expired'){display('closed','This checkout has expired','Pick a pack again in the diamond shop to start a new checkout.','Checkout expired');retry.hidden=true;shop.hidden=false;shop.focus?.();return;}
+   if(purchase.cancelled){display('closed','Back to your farm','Checkout was closed. If you paid before returning, check your payment status below.','Checkout closed');shop.hidden=false;shop.focus?.();}
    else display('pending','Confirming your purchase','We’re waiting for payment confirmation. You can return to your farm while we check.','Awaiting confirmation');
    if(!purchase.cancelled&&++attempts<20)timer=setTimeout(check,3000);
   }catch{if(!closed)display('error','Let’s check again','We couldn’t confirm your payment right now. If you paid, check again in a moment.','Connection interrupted');}
