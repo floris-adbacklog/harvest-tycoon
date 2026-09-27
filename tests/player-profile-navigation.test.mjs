@@ -114,7 +114,7 @@ test('confirming sends exactly what was entered, including notify and a trimmed 
  assert.deepEqual(JSON.parse(JSON.stringify(h.requests[1].body)),{operation:'admin_grant',playerId:'one',coins:1000,xp:50,diamonds:0,item:null,itemCount:0,notify:true,message:'Well played!'});
  h.requests[1].resolve({granted:{coins:1000,xp:50,diamonds:0},totals:{level:12}});await done;
  assert.equal(box.querySelector('#admin-grant-status').textContent,'Given: +1000 coins · +50 XP · +0 diamonds. New level: 12. Notified.');
- assert.equal(box.querySelector('#admin-grant-coins').value,'0');
+ assert.equal(box.querySelector('#admin-grant-coins').value,'');
 });
 test('gifting yourself refreshes your own running farm, so the coin counter and any popup catch up immediately',async()=>{
  const h=harness({admin:true,playerId:'one'}),pending=h.controller.open('one');

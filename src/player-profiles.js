@@ -79,12 +79,12 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
  function renderAdminGrant(playerId){
   adminGrant.hidden=false;
   adminGrant.innerHTML=`<strong class="admin-grant-title">${art('gift')}Admin gift</strong><div class="admin-grant-row">
-   <label class="admin-grant-field"><span class="admin-grant-field-label">${art('coins')}Coins</span><input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-coins"></label>
-   <label class="admin-grant-field"><span class="admin-grant-field-label">${art('xp')}XP</span><input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-xp"></label>
-   <label class="admin-grant-field"><span class="admin-grant-field-label">${art('diamonds')}Diamonds</span><input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-diamonds"></label>
+   <label class="admin-grant-field"><span class="admin-grant-field-label">${art('coins')}Coins</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" id="admin-grant-coins"></label>
+   <label class="admin-grant-field"><span class="admin-grant-field-label">${art('xp')}XP</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" id="admin-grant-xp"></label>
+   <label class="admin-grant-field"><span class="admin-grant-field-label">${art('diamonds')}Diamonds</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" id="admin-grant-diamonds"></label>
   </div><div class="admin-grant-item-row">
    <label class="admin-grant-field admin-grant-item-select"><span class="admin-grant-field-label">${art('seeds')}Crop or good</span><select id="admin-grant-item">${adminGrantItemOptions}</select></label>
-   <label class="admin-grant-field admin-grant-item-count"><span class="admin-grant-field-label">Quantity</span><input type="number" inputmode="numeric" min="0" step="1" value="0" id="admin-grant-item-count"></label>
+   <label class="admin-grant-field admin-grant-item-count"><span class="admin-grant-field-label">Quantity</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" id="admin-grant-item-count"></label>
   </div><label class="admin-grant-notify"><input type="checkbox" id="admin-grant-notify"><span>Notify the player — they see a "Donation!" popup with these amounts</span></label><textarea id="admin-grant-message" maxlength="200" rows="2" placeholder="Optional message, shown with the notification" hidden></textarea><button type="button" class="primary-button admin-grant-give" id="admin-grant-give">${art('gift')}Give</button><p id="admin-grant-status" role="status"></p>`;
   const coinsInput=adminGrant.querySelector('#admin-grant-coins'),xpInput=adminGrant.querySelector('#admin-grant-xp'),diamondsInput=adminGrant.querySelector('#admin-grant-diamonds');
   const itemSelect=adminGrant.querySelector('#admin-grant-item'),itemCountInput=adminGrant.querySelector('#admin-grant-item-count');
@@ -105,7 +105,7 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
     const data=await bridge.request({operation:'admin_grant',playerId,coins,xp,diamonds,item,itemCount,notify,message});
     const itemPart=data.granted.item?` · +${data.granted.itemCount} ${ITEMS[data.granted.item].name}`:'';
     grantStatus.textContent=`Given: +${data.granted.coins} coins · +${data.granted.xp} XP · +${data.granted.diamonds} diamonds${itemPart}. New level: ${data.totals.level}.${notify?' Notified.':''}`;
-    coinsInput.value='0';xpInput.value='0';diamondsInput.value='0';itemSelect.value='';itemCountInput.value='0';messageInput.value='';
+    coinsInput.value='';xpInput.value='';diamondsInput.value='';itemSelect.value='';itemCountInput.value='';messageInput.value='';
     // Gifting yourself: your own running farm (same window, farm.html's own script) still has the old balance
     // in memory and no reason of its own to refetch — force the same reload a reconnect would do, so the coin
     // counter catches up and, if notify was on, the "Donation!" popup actually shows instead of silently waiting
