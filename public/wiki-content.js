@@ -2,7 +2,7 @@ import {CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_XP,ACTIVE_STATI
 import {art} from './visual-icons.js';
 import {helpCoins,maxShare,SHARE_LIMIT} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
-import {EVENTS_LEVEL,EVENT_DAY_DIAMONDS,PODIUM_PRIZES,FINISHER_PRIZE} from './live-events-ui.js';
+import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE} from './live-events-ui.js';
 
 // The farm wiki: the same topics in How to play (public/wiki-ui.js) and on the website (/wiki, scripts/build-wiki.mjs).
 // Every number and table comes from the game rules, so a balance change never leaves the wiki behind. In the game, things
@@ -179,7 +179,7 @@ const BODIES={
   return section('Short shared goals',`<p>${h.lvl(EVENTS_LEVEL)} A farm event runs for 5 hours, then there is a 1-hour break before the next one. Everyone plays toward the same goals. Events open as soon as you reach level ${EVENTS_LEVEL}.</p>`)
   +section('How it works',facts([
    ['live-events','Goals','Every event mixes 3 goals from 30 kinds, each in an easy, medium or hard size: harvesting and crops, animals and buildings, the market, coins and diamonds, and life on the farm. The 3 goals always come from 3 different kinds of play, and an event is never three hard goals. Your progress shows in the event window.'],
-   ['trophy','Rewards',`Complete every goal and help at least 3 times over 10 minutes to qualify. Everyone who finishes wins coins and diamonds; the sooner you finish, the more. The first three win ${PODIUM_PRIZES.map(p=>p.diamonds).join(', ').replace(/, (\d+)$/,' and $1')} diamonds, every other finisher ${FINISHER_PRIZE.diamonds}. You can collect at most ${EVENT_DAY_DIAMONDS} event diamonds a day.`],
+   ['trophy','Rewards',`Complete every goal and help at least 3 times over 10 minutes to qualify. Everyone who finishes wins coins and diamonds; the sooner you finish, the more. The first three win ${PODIUM_PRIZES.map(p=>p.diamonds).join(', ').replace(/, (\d+)$/,' and $1')} diamonds, every other finisher ${FINISHER_PRIZE.diamonds}.`],
    ['family-members','Family bonus',`When ${FAMILY_EVENT_BONUS.finishers} or more members of one Farm family finish the same event, each of them gets ${number(FAMILY_EVENT_BONUS.coins)} coins and ${FAMILY_EVENT_BONUS.diamonds} diamonds more.`],
    ['gift','Next event','When an event ends, the window shows when the next one starts and what it gives.']
   ]));

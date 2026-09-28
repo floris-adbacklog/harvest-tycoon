@@ -19,12 +19,11 @@ const MIN_ACTIONS=3,MIN_SPAN=10*60000;
 // Same level as the server gate (player_stats.level>=15, live-events-mixed.sql; 10 until 26 Sep 2026, when spending diamonds, which
 // opens at 14, became a goal): below it the button stays visible but greyed.
 export const EVENTS_LEVEL=15;
-// The podium prize for the first three finishers and the extra for every later finisher, on top of the usual reward, and the
-// most event diamonds a farmer collects in a day (same numbers as harvest_event_settle and harvest_event_claim).
+// The podium prize for the first three finishers and the extra for every later finisher, on top of the usual reward (same numbers as
+// harvest_event_settle). No daily limit on event diamonds since 28 Sep 2026 (supabase/live-events-no-day-cap.sql).
 // Fixed diamonds per place (harvest_event_settle): 50, 30, 20, and 5 for every other finisher. Coins come on top of the event's own.
 export const PODIUM_PRIZES=Object.freeze([{coins:2000,diamonds:50},{coins:1000,diamonds:30},{coins:500,diamonds:20}]);
 export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:5});
-export const EVENT_DAY_DIAMONDS=50;
 const MEDALS=['rank-gold','rank-silver','rank-bronze'];
 
 // Sorts the server list into what the screen shows: the running event, the next one, rewards to collect and a
@@ -112,7 +111,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const result=e=>!e.settled_at?'Results coming up':e.player?.claimed_at?`Collected · ${num(e.player.coins)} coins${e.player.paid_diamonds?` + ${num(e.player.paid_diamonds)} diamond${e.player.paid_diamonds===1?'':'s'}`:''}`:e.player?'Not qualified':'You did not take part';
   return `<h3 class="event-section-title">Recent events</h3><div class="family-member-list event-history">${past.map(e=>`<article class="family-list-row"><div><strong>${esc(e.title)}</strong><span>${result(e)}${e.settled_at?` · ${num(e.qualified)} of ${num(e.participants)} qualified`:''}</span></div></article>`).join('')}</div>`;
  }
- const rules=`<details class="family-extra event-rules"><summary>How farm events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and contribute at least 3 times over 10 minutes to qualify.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You can collect at most ${EVENT_DAY_DIAMONDS} event diamonds a day.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
+ const rules=`<details class="family-extra event-rules"><summary>How farm events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and contribute at least 3 times over 10 minutes to qualify.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  function render(){
   const heading='<div class="dialog-heading"><div><span class="eyebrow">PLAY TOGETHER, FOR A LITTLE WHILE</span><h2 id="events-title">Farm events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
   dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:`<p class="event-loading">${esc(error||'Opening farm events…')}</p>`)+'<p class="event-feedback" role="status" data-status></p>';

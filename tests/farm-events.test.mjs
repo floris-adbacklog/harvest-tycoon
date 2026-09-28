@@ -138,7 +138,7 @@ test('the first three finishers win a podium prize on top and every later finish
  const server=await import('../supabase/functions/farm-api/event-service.js'),screen=await import('../public/live-events-ui.js');
  assert.deepEqual(server.PODIUM,[{coins:2000,diamonds:50},{coins:1000,diamonds:30},{coins:500,diamonds:20}]);
  assert.deepEqual(server.FINISHER_PRIZE,{coins:100,diamonds:5});
- assert.deepEqual([screen.PODIUM_PRIZES,screen.FINISHER_PRIZE,screen.EVENT_DAY_DIAMONDS],[server.PODIUM,server.FINISHER_PRIZE,server.EVENT_DAY_DIAMONDS],'the screen shows exactly what the server pays');
+ assert.deepEqual([screen.PODIUM_PRIZES,screen.FINISHER_PRIZE],[server.PODIUM,server.FINISHER_PRIZE],'the screen shows exactly what the server pays');
  const e=event('e',now-H,now+H),rows=['a','b','c','d'].map((id,i)=>({player_id:id,progress:{harvested:10},actions:5,joined_at:iso(now-H),last_at:iso(now-H+(20+i)*M)}));
  assert.deepEqual(eventStandings(e,rows,now).map(r=>[r.coins,r.diamonds,r.podium]),[[2200,50,true],[1200,30,true],[700,20,true],[300,5,false]],'fixed diamonds per place, whatever the number of farmers');
  assert.deepEqual(eventStandings({...e,participants:40},rows,now).map(r=>r.diamonds),[50,30,20,5]);
@@ -146,7 +146,9 @@ test('the first three finishers win a podium prize on top and every later finish
  assert.match(sql,/coins=\(e\.rewards->>'coins'\)::integer\+\(case r\.rank when 1 then 2000 when 2 then 1000 when 3 then 500 else 100 end\)/);
  assert.match(sql,/\+\(case r\.rank when 1 then 20 when 2 then 10 when 3 then 5 else 1 end\)/);
  assert.match(sql,/paid:=least\(p\.diamonds,greatest\(0,30-used\)\);/,'a first place is paid in full under the daily cap');
- assert.ok(server.PODIUM[0].diamonds<=server.EVENT_DAY_DIAMONDS,'a first place on its own is paid in full');assert.equal(server.EVENT_DAY_DIAMONDS,50);
+ // No daily limit on event diamonds since 28 Sep 2026: the claim pays the whole prize, and nothing says otherwise.
+ assert.equal(server.EVENT_DAY_DIAMONDS,undefined);assert.equal(screen.EVENT_DAY_DIAMONDS,undefined);
+ const claim=readFileSync(new URL('../supabase/live-events-no-day-cap.sql',import.meta.url),'utf8');const body=claim.slice(claim.indexOf('CREATE OR REPLACE'));assert.match(body,/paid:=greatest\(0,p\.diamonds\);/);assert.doesNotMatch(body,/-used/);
  const bigger=read('supabase/live-events-bigger-prizes.sql');
  assert.match(bigger,/'diamonds=\(case r\.rank when 1 then 50 when 2 then 30 when 3 then 20 else 5 end\)'/);
  assert.match(bigger,/'paid:=least\(p\.diamonds,greatest\(0,50-used\)\);'/);

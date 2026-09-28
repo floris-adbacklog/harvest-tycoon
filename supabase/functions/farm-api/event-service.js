@@ -18,10 +18,9 @@ export function validateEvent(config,now=Date.now()){
 const DAY_MS=86400000,MIN_ACTIONS=3,MIN_SPAN=10*60000,TOP=10;
 // The first three farmers to finish win a podium prize on top of the usual reward, and every later finisher a small extra
 // (same numbers as harvest_event_settle, live-events-bigger-prizes.sql). Diamonds are a fixed prize per place, nothing else; coins
-// come on top of the event's own coins. At collection a farmer gets at most EVENT_DAY_DIAMONDS event diamonds a day.
+// come on top of the event's own coins. Every event diamond is paid out: no daily limit since 28 Sep 2026.
 export const PODIUM=Object.freeze([{coins:2000,diamonds:50},{coins:1000,diamonds:30},{coins:500,diamonds:20}]);
 export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:5});
-export const EVENT_DAY_DIAMONDS=50;
 // The event's top 10, ranked the way settlement pays (live-events.sql): finished farmers first, earliest finish
 // first (the finish time is frozen), then everyone else by how far along they are. Rewards follow the same formula
 // as harvest_event_settle — exact once settled, "if it ended now" while the event runs.
