@@ -1,5 +1,6 @@
-import {writeLog,eventRewardLog} from './player-log.js';
+import {writeLog,eventRewardLog,accountLog} from './player-log.js';
 import {isSuperadmin} from './admin-service.js';
+import {validEmail} from './account-form.js';
 // The goals an event may use: the 24 Sep list (farm-wide counters, crops unlocked by level 9, eggs) and the 30 kinds of the mixed
 // events (supabase/live-events-mixed.sql), all open to every farm at level 15, when events open. Since 26 Sep 2026 the pool has
 // "Sell wheat" instead of "Use a boost" (supabase/live-events-sell-wheat.sql); boosts_used stays valid for events made by hand.
@@ -110,7 +111,7 @@ export async function sendEmailCode({admin,user,now=Date.now(),mail=resendMail,r
  if(r?.sent_at&&now-Date.parse(r.sent_at)<EMAIL_CODE.waitMs)throw Error('Wait a minute before asking for a new code.');
  if(sends>=EMAIL_CODE.perDay)throw Error('You asked for 5 codes today. Try again tomorrow.');
  const code=String(random()%1000000).padStart(6,'0');
- const saved=await admin.from('email_checks').upsert({player_id:user.id,email:user.email,code_hash:await codeHash(user.id,code),code_expires_at:new Date(now+EMAIL_CODE.validMs).toISOString(),attempts:0,sent_at:new Date(now).toISOString(),send_day:day,sends_today:sends+1,confirmed_at:null});
+ const saved=await admin.from('email_checks').upsert({player_id:user.id,email:user.email,new_email:null,code_hash:await codeHash(user.id,code),code_expires_at:new Date(now+EMAIL_CODE.validMs).toISOString(),attempts:0,sent_at:new Date(now).toISOString(),send_day:day,sends_today:sends+1,confirmed_at:null});
  if(saved.error)throw saved.error;
  await mail(user.email,emailCodeMessage(code));
  return {sent:true,email:user.email,waitMs:EMAIL_CODE.waitMs};
@@ -121,7 +122,7 @@ export async function confirmEmailCode({admin,user,code,now=Date.now()}){
  const r=row.data;
  if(!r?.code_hash||!r.code_expires_at||Date.parse(r.code_expires_at)<=now)throw Error('This code has expired. Ask for a new one.');
  if(r.attempts>=EMAIL_CODE.tries)throw Error('Too many tries. Ask for a new code.');
- if(r.email?.toLowerCase()!==String(user.email??'').toLowerCase())throw Error('Your email address changed. Ask for a new code.');
+ if(r.new_email||r.email?.toLowerCase()!==String(user.email??'').toLowerCase())throw Error('Your email address changed. Ask for a new code.');
  if(await codeHash(user.id,code)!==r.code_hash){
   const left=EMAIL_CODE.tries-r.attempts-1;
   const u=await admin.from('email_checks').update({attempts:r.attempts+1}).eq('player_id',user.id);if(u.error)throw u.error;
@@ -130,7 +131,55 @@ export async function confirmEmailCode({admin,user,code,now=Date.now()}){
  const u=await admin.from('email_checks').update({confirmed_at:new Date(now).toISOString(),code_hash:null,code_expires_at:null,attempts:0}).eq('player_id',user.id);if(u.error)throw u.error;
  return {verified:true};
 }
-export async function handleEvents({admin,body,user}){
+// Changing the email address (28 Sep 2026). An email sign-up is not checked when the account is made (fewer steps), so a typo is
+// common, and then neither a password reset nor a reminder reaches the farmer. The farmer types the new address and their
+// password; a 6-digit code goes to the new address (email_checks.new_email, supabase/email-change.sql) and only that code moves the
+// account there. So a typo or someone else's address never sticks, and whoever finds a signed-in phone cannot move the account
+// without the password. Until then the current address, confirmed or not, stays as it is. Google and Facebook accounts keep their
+// provider's address. The confirmation limits apply (a minute apart, five a day) and a wrong password uses one of the five, so a
+// password cannot be guessed here.
+const emailProvider=user=>(user.app_metadata?.provider??'email')==='email';
+export async function sendEmailChange({admin,user,email,password,passwordOk,now=Date.now(),mail=resendMail,random=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
+ if(!emailProvider(user))throw Error('You sign in with Google or Facebook, so your email address comes from there.');
+ const next=String(email??'').trim().toLowerCase();
+ if(!validEmail(next)||next.length>254)throw Error('Enter a valid email address, like you@example.com.');
+ if(next===String(user.email??'').trim().toLowerCase())throw Error('That is already your email address.');
+ if(isSuperadmin({email:next,email_confirmed_at:true}))throw Error('This email address cannot be used.');
+ if(typeof password!=='string'||!password||password.length>200)throw Error('Type your password.');
+ const row=await admin.from('email_checks').select('*').eq('player_id',user.id).maybeSingle();if(row.error)throw row.error;
+ const r=row.data,day=new Date(now).toISOString().slice(0,10),sends=r?.send_day===day?r.sends_today:0;
+ if(r?.sent_at&&now-Date.parse(r.sent_at)<EMAIL_CODE.waitMs)throw Error('Wait a minute before asking for a new code.');
+ if(sends>=EMAIL_CODE.perDay)throw Error('You asked for 5 codes today. Try again tomorrow.');
+ const counted=await admin.from('email_checks').upsert({player_id:user.id,email:r?.email??user.email,sent_at:new Date(now).toISOString(),send_day:day,sends_today:sends+1});if(counted.error)throw counted.error;
+ if(!await passwordOk(user.email,password))throw Error('That password is not right.');
+ const code=String(random()%1000000).padStart(6,'0');
+ const saved=await admin.from('email_checks').update({new_email:next,code_hash:await codeHash(user.id,code),code_expires_at:new Date(now+EMAIL_CODE.validMs).toISOString(),attempts:0}).eq('player_id',user.id);
+ if(saved.error)throw saved.error;
+ await mail(next,emailCodeMessage(code));
+ return {sent:true,email:next,waitMs:EMAIL_CODE.waitMs};
+}
+export async function confirmEmailChange({admin,user,code,now=Date.now()}){
+ if(!emailProvider(user))throw Error('You sign in with Google or Facebook, so your email address comes from there.');
+ if(!/^\d{6}$/.test(String(code??'')))throw Error('Type the 6 digits from the email.');
+ const row=await admin.from('email_checks').select('*').eq('player_id',user.id).maybeSingle();if(row.error)throw row.error;
+ const r=row.data;
+ if(!r?.new_email)throw Error('Ask for a code for your new address first.');
+ if(!r.code_hash||!r.code_expires_at||Date.parse(r.code_expires_at)<=now)throw Error('This code has expired. Ask for a new one.');
+ if(r.attempts>=EMAIL_CODE.tries)throw Error('Too many tries. Ask for a new code.');
+ if(await codeHash(user.id,code)!==r.code_hash){
+  const left=EMAIL_CODE.tries-r.attempts-1;
+  const u=await admin.from('email_checks').update({attempts:r.attempts+1}).eq('player_id',user.id);if(u.error)throw u.error;
+  throw Error(left>0?`That code is not right. ${left} ${left===1?'try':'tries'} left.`:'Too many tries. Ask for a new code.');
+ }
+ const moved=await admin.auth.admin.updateUserById(user.id,{email:r.new_email,email_confirm:true});
+ if(moved.error){
+  if(moved.error.code==='email_exists'||/already (been )?registered|already exists/i.test(moved.error.message??''))throw Error('This email address belongs to another account. Sign in with that one, or use another address.');
+  throw moved.error;
+ }
+ const u=await admin.from('email_checks').update({email:r.new_email,new_email:null,confirmed_at:new Date(now).toISOString(),code_hash:null,code_expires_at:null,attempts:0}).eq('player_id',user.id);if(u.error)throw u.error;
+ return {changed:true,email:r.new_email};
+}
+export async function handleEvents({admin,body,user,passwordOk}){
  const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:user.id}}});
  const managing=body.operation==='admin_events';if(managing&&!isSuperadmin(user))return respond({error:'Not authorized.'},403);
  try{
@@ -150,6 +199,12 @@ export async function handleEvents({admin,body,user}){
   }
   if(!managing&&body.command==='email_send')return respond(await sendEmailCode({admin,user}));
   if(!managing&&body.command==='email_confirm')return respond(await confirmEmailCode({admin,user,code:body.code}));
+  if(!managing&&body.command==='email_change_send')return respond(await sendEmailChange({admin,user,email:body.email,password:body.password,passwordOk}));
+  if(!managing&&body.command==='email_change_confirm'){
+   const changed=await confirmEmailChange({admin,user,code:body.code});
+   globalThis.EdgeRuntime?.waitUntil?.(writeLog(admin,user.id,accountLog('email_change','Changed the email address')));
+   return respond(changed);
+  }
   if(!managing&&body.command==='claim'){
    const r=await admin.rpc('harvest_event_claim',{p_player:user.id,p_event:body.eventId});if(r.error)throw r.error;
    // In the farmer's log (player-log.js), after the reply: the event's name and what it paid.

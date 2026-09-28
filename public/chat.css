@@ -251,3 +251,10 @@ span.chat-avatar{cursor:default}
 /* The welcome message for new farmers (Admin dashboard, Settings; supabase/welcome-dm.sql). */
 .admin-welcome-on{display:flex;align-items:center;gap:10px;margin:0 0 10px;color:#3d382a;font-size:14px;font-weight:700}
 .admin-welcome .admin-popup-note{margin:0 0 10px}
+/* The admin changes a farmer's email address (28 Sep 2026): a small form under Account. */
+.admin-email-form{display:grid;gap:6px;margin:4px 0 12px;padding:12px;border:1px solid #e4d8c6;border-radius:12px;background:#fbf7ef}
+.admin-email-form[hidden]{display:none}
+.admin-email-form label{font-size:13px;font-weight:650;color:#5e523a}
+.admin-email-form>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.admin-email-form input{flex:1 1 200px;min-width:0;min-height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 14px 'DM Sans',sans-serif}
+.admin-email-form .admin-hint{margin:0}

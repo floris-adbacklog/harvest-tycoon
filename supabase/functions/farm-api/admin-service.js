@@ -1,4 +1,5 @@
 import {normalizeFarm,levelOf,ITEMS,CROPS} from './farm-state.js';
+import {validEmail} from './account-form.js';
 
 // The only account that may ever give coins, XP, diamonds or goods to another farmer. Checked against the
 // authenticated, server-verified user (index.ts already resolved this from a real Supabase JWT) — never against
@@ -87,4 +88,29 @@ export async function handleAdminGrant({admin,body,user}){
   }
  }
  return respond({error:'This farmer changed at the same moment. Please try again.'},409);
+}
+
+// The admin, never a moderator, can move a farmer's account to another email address (28 Sep 2026): for a farmer who signed up with
+// a typo and asks for help. It takes effect at once, counts as confirmed (the admin checked it with the farmer) and sends no email.
+// Google and Facebook accounts keep their provider's address; an address another account has is refused by Supabase itself.
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export async function handleAdminEmail({admin,body,user,now=Date.now()}){
+ const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:user?.id}}});
+ if(!isSuperadmin(user))return respond({error:'Not authorized.'},403);
+ const playerId=body.playerId,next=String(body.email??'').trim().toLowerCase();
+ if(typeof playerId!=='string'||!UUID.test(playerId))return respond({error:'Choose a valid farmer.'},400);
+ if(!validEmail(next)||next.length>254)return respond({error:'Enter a valid email address, like you@example.com.'},400);
+ if(isSuperadmin({email:next,email_confirmed_at:true}))return respond({error:'This email address cannot be used.'},400);
+ const found=await admin.auth.admin.getUserById(playerId);
+ const target=found.data?.user;if(found.error||!target)return respond({error:'This farmer could not be found.'},404);
+ if((target.app_metadata?.provider??'email')!=='email')return respond({error:'This farmer signs in with Google or Facebook, so the address comes from there.'},400);
+ if(String(target.email??'').toLowerCase()===next)return respond({error:'That is already their email address.'},400);
+ const moved=await admin.auth.admin.updateUserById(playerId,{email:next,email_confirm:true});
+ if(moved.error){
+  if(moved.error.code==='email_exists'||/already (been )?registered|already exists/i.test(moved.error.message??''))return respond({error:'Another account already uses this email address.'},409);
+  throw moved.error;
+ }
+ const checked=await admin.from('email_checks').upsert({player_id:playerId,email:next,new_email:null,code_hash:null,code_expires_at:null,attempts:0,confirmed_at:new Date(now).toISOString()});
+ if(checked.error)throw checked.error;
+ return respond({email:next});
 }

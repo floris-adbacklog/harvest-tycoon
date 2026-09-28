@@ -187,7 +187,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
  if(!/^[0-9a-f-]{36}$/i.test(String(playerId??'')))return respond(user,{error:'Unknown farmer.'},400);
  const owner=isSuperadmin(user),id=String(playerId);
  const quiet=promise=>Promise.resolve(promise).then(found=>found?.error?null:found).catch(()=>null);
- const [account,stat,farm,purchases,events,messages,reports,sanction,invitedBy,invited,membership]=await Promise.all([
+ const [account,stat,farm,purchases,events,messages,reports,sanction,invitedBy,invited,membership,authUser]=await Promise.all([
   admin.rpc('admin_player_accounts',{p_player:id}),
   admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id,events_finished').eq('player_id',id).maybeSingle(),
   admin.from('player_farms').select('state').eq('player_id',id).maybeSingle(),
@@ -198,7 +198,9 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   quiet(admin.from('chat_sanctions').select('muted_until,banned').eq('player_id',id).maybeSingle()),
   quiet(admin.from('referrals').select('referrer_id').eq('invitee_id',id).maybeSingle()),
   quiet(admin.from('referrals').select('invitee_id,qualified_at').eq('referrer_id',id).limit(200)),
-  quiet(admin.from('family_members').select('family_id,role').eq('player_id',id).is('left_at',null).limit(1))
+  quiet(admin.from('family_members').select('family_id,role').eq('player_id',id).is('left_at',null).limit(1)),
+  // The email address, for the admin only (to change it for a farmer who signed up with a typo, admin-service.js handleAdminEmail).
+  owner?quiet(Promise.resolve().then(()=>admin.auth.admin.getUserById(id))):null
  ]);
  for(const found of [account,stat,farm])if(found.error)throw found.error;
  const a=account.data?.[0];if(!a)return respond(user,{error:'Unknown farmer.'},404);
@@ -224,7 +226,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   chat:{messages:messages?.count??null,reported:reports?.count??null,muted,banned:sanction?.data?.banned===true},
   invites:{invitedBy:inviter?inviterRow?.data?.username??'A farmer':null,friends:friends.length,qualified:friends.filter(f=>f.qualified_at).length},
   sameNetwork:!a.ip?null:shared.map(row=>({playerId:row.player_id,username:row.username??null,everPlayed:row.username!=null})),
-  ...(owner?{country:a.country??null,ip:a.ip??null,device:deviceName(a.device),userAgent:a.device??null,seenAt:a.seen_at??null,
+  ...(owner?{email:authUser?.data?.user?.email??null,country:a.country??null,ip:a.ip??null,device:deviceName(a.device),userAgent:a.device??null,seenAt:a.seen_at??null,
    starter:{offeredAt:num(state?.starterOffer?.unlockedAt)||null,bought:state?.starterPackClaimed===true},
    purchases:(purchases?.data??[]).map(p=>({pack:p.pack,status:p.status,euros:num(p.amount_cents)/100,diamonds:num(p.diamonds),test:!p.livemode,createdAt:p.created_at}))}:{})};
  return respond(user,{player,owner});

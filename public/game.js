@@ -57,7 +57,9 @@ const initialEmailCheck=window.harvestInitialFarm.emailCheck;
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
 let emailAccount={needed:false,email:''},emailCheckUI=null;
-function setEmailCheck(check){if(check)emailAccount=check;const hide=!emailAccount.needed;$('email-button').hidden=hide;$('email-menu-entry').hidden=hide;}
+function setEmailCheck(check){if(check)emailAccount=check;const hide=!emailAccount.needed;$('email-button').hidden=hide;$('email-menu-entry').hidden=hide;
+ // Settings, Email address (28 Sep 2026): email sign-ups see their address, can change it, and are reminded to confirm it.
+ $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
 // On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide.
@@ -918,8 +920,10 @@ function bindUI(){
  liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh()});
  // Confirm your email for 10 diamonds: a button in the left sidebar (desktop) and a card in the More menu, only for an email sign-up
  // that has not been paid yet. After the code, a farm reload pays the diamonds (the gift pop-up) and both disappear.
- emailCheckUI=createEmailCheck({bridge:window.parent.harvestBridge,email:()=>emailAccount.email,onDone:()=>client.refresh()});
+ emailCheckUI=createEmailCheck({bridge:window.parent.harvestBridge,email:()=>emailAccount.email,canChange:()=>emailAccount.canChange===true,onDone:()=>client.refresh(),
+  onChanged:async next=>{setEmailCheck({...emailAccount,email:next});toast(`Your email address is now ${next}.`);await client.refresh();}});
  $('email-button').onclick=()=>emailCheckUI.open();
+ $('email-settings-change').onclick=()=>emailCheckUI.open({change:true});$('email-settings-confirm').onclick=()=>emailCheckUI.open();
  setEmailCheck(initialEmailCheck);
  familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
  economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});

@@ -1276,3 +1276,19 @@
 #estate-content .master-branch .valley-line{margin:2px 0 0;font-size:13px;color:#6f6450}
 #estate-content .master-branch .task-bottom{display:flex;justify-content:flex-end;margin-top:8px}
 #estate-content .daily-list{display:grid;gap:8px}
+/* Change your email (28 Sep 2026): the new address and the password, then the code sent to the new address. */
+.email-change-form{display:grid;gap:10px;margin:0 0 10px;text-align:left}
+.email-change-form label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:650}
+.email-change-form input{height:46px;box-sizing:border-box;padding:0 12px;border:1px solid #d9c7a4;border-radius:12px;background:#fffdf5;font:600 16px 'DM Sans',sans-serif}
+.email-change-form input:focus{outline:3px solid #c2912d;outline-offset:1px}
+.email-change-form .primary-button{width:100%;justify-content:center}
+.email-check-change{display:block;margin:10px auto 0;font-size:13px}
+.email-settings-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.email-settings-row>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650;color:#4f4632}
+.email-settings-row .small-button{flex:none}
+#email-settings-note{margin:8px 0 0}
+.email-check-dialog .link-button,#email-settings-note .link-button{display:inline-block;min-height:40px;padding:8px 6px;border:0;background:none;box-shadow:none;font:700 13px 'DM Sans',sans-serif;color:#6b5d44;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+#email-settings-note .link-button{min-height:0;padding:0}
+.email-check-dialog .link-button:disabled{opacity:.55;cursor:default;text-decoration:none}
+/* Phones: the email pop-up is the same full-width sheet as every other dialog (its 380px desktop width left a gap on the right). */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){.email-check-dialog{width:100%}}

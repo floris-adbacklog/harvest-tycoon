@@ -221,6 +221,19 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const profile=event.target.closest('[data-open-profile]');if(profile)window.harvestProfiles?.open(profile.dataset.openProfile,{back:null});
   // Edit: the same profile, straight to its Admin gift (any amount, XP, crops and goods; Send a gift has daily limits).
   const edit=event.target.closest('[data-edit-player]');if(edit)window.harvestProfiles?.open(edit.dataset.editPlayer,{back:null,gift:true});
+  // Email (the admin only): Change opens a small form under Account; Cancel closes it.
+  const form=dialog.querySelector('[data-email-form]');
+  if(event.target.closest('[data-email-edit]')&&form){form.hidden=false;form.querySelector('input').focus();return;}
+  if(event.target.closest('[data-email-cancel]')&&form){form.hidden=true;return;}
+ });
+ dialog.querySelector('[data-admin-panel="players"]').addEventListener('submit',async event=>{
+  const form=event.target.closest('[data-email-form]');if(!form)return;event.preventDefault();
+  const id=view.detail,email=form.querySelector('input').value.trim(),status=form.querySelector('[data-email-status]'),name=dialog.querySelector('.admin-detail-head h3')?.textContent?.trim()||'this farmer';
+  if(!id||!email)return;
+  if(!await confirmAction({title:'Change the email address?',description:`${name} signs in with ${email} from now on. No email is sent.`,confirmLabel:'Change',cancelLabel:'Cancel',picture:'letter'}))return;
+  form.querySelectorAll('button,input').forEach(el=>el.disabled=true);status.textContent='Saving…';
+  try{await bridge.request({operation:'admin_email',playerId:id,email});if(view.detail===id)await openPlayer(id);}
+  catch(error){status.textContent=error.message;form.querySelectorAll('button,input').forEach(el=>el.disabled=false);}
  });
  // A name in the log opens that farmer's profile (with the chat buttons: mute, ban), on top of the dashboard.
  dialog.querySelector('#admin-log-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});

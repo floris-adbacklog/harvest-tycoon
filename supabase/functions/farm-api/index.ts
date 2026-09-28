@@ -4,7 +4,7 @@ import {welcomeSummary} from './welcome-service.js';
 import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily,handleFamilyProfile} from './family-service.js';
-import {handleAdminGrant,isSuperadmin} from './admin-service.js';
+import {handleAdminGrant,handleAdminEmail,isSuperadmin} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
@@ -25,6 +25,17 @@ async function freeName(admin:any,name:string){
 // Work that may finish after the reply (the log, where the farm was opened): the game never waits for it.
 const later=(work:Promise<unknown>)=>(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(work);
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+// Changing the email asks for the password (event-service.js sendEmailChange): a separate sign-in with the public key, whose session
+// is ended straight away. The farmer's own session is not touched. Too many sign-ins from here is said as such, not as a wrong password.
+async function passwordOk(email:string,password:string){
+ const key=Deno.env.get('SUPABASE_ANON_KEY')??'';if(!key)throw Error('Changing your email is not available right now.');
+ const check=createClient(Deno.env.get('SUPABASE_URL')!,key,{auth:{persistSession:false,autoRefreshToken:false}});
+ const {data,error}=await check.auth.signInWithPassword({email,password});
+ if(error?.status===429)throw Error('Too many attempts. Please wait a few minutes and try again.');
+ if(error||!data?.session)return false;
+ await check.auth.signOut({scope:'local'}).catch(()=>{});
+ return true;
+}
 Deno.serve(async(req)=>{
  if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
  if(req.method!=='POST')return reply({error:'Use POST.'},405);
@@ -40,8 +51,13 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','rename','avatar','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
-  if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user});return reply(r.data,r.status);}
+  if(!['events','admin_events','social','load','action','rename','avatar','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
+  if(body.operation==='admin_email'){
+   const r=await handleAdminEmail({admin,body,user});
+   if(r.status===200)later(writeLog(admin,String(body.playerId),accountLog('email_change','The admin changed the email address'),user.id));
+   return reply(r.data,r.status);
+  }
   if(body.operation==='social'){const r=await handleSocial({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='player_search'||body.operation==='player_profile'){
    const directory=await handlePlayerDirectory({admin,body,player:user.id});return reply(directory.data,directory.status);
@@ -134,7 +150,7 @@ Deno.serve(async(req)=>{
    }
    const state=normalizeFarm(row.state,now);
    // Whether this account can still confirm its email for the bonus: only email sign-ups, until the bonus is paid.
-   const emailCheck=(farm:{emailBonus?:number})=>({needed:(user.app_metadata?.provider??'email')==='email'&&!farm.emailBonus,email:user.email??''});
+   const emailCheck=(farm:{emailBonus?:number})=>({needed:(user.app_metadata?.provider??'email')==='email'&&!farm.emailBonus,email:user.email??'',canChange:(user.app_metadata?.provider??'email')==='email'});
    profile={player_id:user.id,username,currency:state.coins,level:levelOf(state),avatar_id:profile?.avatar_id??'default'};
    // Every answer names whose farm it is; the game checks that before it trusts the answer (src/main.js).
    if(body.operation==='invite')return reply({...await handleInvite({admin,player:user.id,username,state,now}),profile});

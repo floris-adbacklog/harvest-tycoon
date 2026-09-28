@@ -71,6 +71,8 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
   fact('Last action',`${p.online?'<b class="admin-paid">Online now</b> · ':''}${since(p.lastActiveAt)}`),
   fact('Last sign-in',since(p.lastSignInAt)),
   fact('Signs in with',`${provider(p.provider)}${p.provider==='email'?` <small>(email ${p.emailBonus?'confirmed':'not confirmed'})</small>`:''}`),
+  // The address and Change, for the admin only (28 Sep 2026): for a farmer who signed up with a typo (farm-api handleAdminEmail).
+  ...('email' in p?[fact('Email',`${p.email?esc(p.email):'—'}${p.provider==='email'?' <button type="button" class="admin-link" data-email-edit>Change</button>':''}`)]:[]),
   fact('Days played',`${number(p.daysPlayed)} <small>(streak ${number(p.streak)}, best ${number(p.bestStreak)})</small>`),
   ...('ip' in p?[fact('Country',esc(country(p.country)??'Not known yet')),fact('IP address',p.ip?esc(p.ip):'—'),
    fact('Device',p.device?`<span title="${esc(p.userAgent??'')}">${esc(p.device)}</span>`:'—')]:[]),
@@ -95,7 +97,9 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
  ].join('');
  return `<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button><button type="button" class="small-button" data-open-profile="${esc(p.playerId)}">Open profile</button><button type="button" class="small-button" data-gift-player="${esc(p.playerId)}">Send a gift</button>${owner?`<button type="button" class="small-button" data-edit-player="${esc(p.playerId)}">Edit</button>`:''}</div>`
   +`<div class="admin-detail-head">${face(p)}<div><h3>${esc(name(p))}${p.vipUntil?' <b class="admin-chip is-vip">VIP</b>':''}</h3><small>${p.everPlayed?`Level ${number(p.level)} · `:''}${p.online?'Online now':`Last action ${esc(ago(p.lastActiveAt,now))}`}</small></div></div>`
-  +`<h4>Account</h4><dl class="admin-facts">${account}</dl><h4>Progress</h4><dl class="admin-facts">${progress}</dl>`
+  +`<h4>Account</h4><dl class="admin-facts">${account}</dl>`
+  +('email' in p&&p.provider==='email'?`<form class="admin-email-form" data-email-form hidden><label for="admin-email-input">New email address</label><div><input id="admin-email-input" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="254" required value="${esc(p.email??'')}"><button type="submit" class="small-button">Save</button><button type="button" class="link-button" data-email-cancel>Cancel</button></div><p class="admin-hint">Takes effect at once and counts as confirmed. No email is sent; they sign in with the new address and their own password.</p><p class="admin-hint" data-email-status role="status"></p></form>`:'')
+  +`<h4>Progress</h4><dl class="admin-facts">${progress}</dl>`
   +`<h4>What they do</h4><ul class="admin-bars">${activity}</ul>`
   +(p.purchases?`<h4>Purchases</h4><ul class="admin-recent-list admin-purchases">${purchases}</ul>`:'')
   +`<h4>Events, chat and friends</h4><dl class="admin-facts">${social}</dl>`
