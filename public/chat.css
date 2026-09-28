@@ -261,3 +261,9 @@ span.chat-avatar{cursor:default}
 /* Who reported a message (28 Sep 2026): one line under the message, each name opens that farmer's profile. */
 .admin-report-by{display:block;margin-top:2px;color:#7a6f5c}
 .admin-report-by .admin-log-name{font-weight:700;color:#5b6f3a}
+/* Send a gift: fixed coins or coins per level (28 Sep 2026), with what a few levels would get. */
+.admin-coin-kind{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.admin-coin-kind .admin-filters{margin:0}
+.admin-coin-kind .admin-hint{margin:0}
+.admin-donate label>span b{font-weight:inherit}
+.admin-donate input{width:100%;min-width:0}

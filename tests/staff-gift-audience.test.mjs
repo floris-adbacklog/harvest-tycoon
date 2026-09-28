@@ -27,9 +27,9 @@ test('the database fixes who gets it when it is sent, keeps the daily room, and 
  assert.match(sql,/else insert into public\.player_notices\(player_id,kind,body\) select f,'donation',note from unnest\(farmers\) f; end if;/,'only they see the notice');
  assert.match(sql,/drop function if exists public\.staff_donate\(integer,integer,text\);/,'one function, so an older open game still sends to everyone');
  assert.match(read('supabase/functions/farm-api/index.ts'),/\.or\(`recipients\.is\.null,recipients\.cs\.\{\$\{user\.id\}\}`\)/);
- assert.match(read('src/chat-client.js'),/donate:\(coins,diamonds,message,audience='all',player=null\)=>rpc\('staff_donate',\{p_coins:coins,p_diamonds:diamonds,p_message:message,p_audience:audience,p_player:player\}\)/);
+ assert.match(read('src/chat-client.js'),/donate:\(coins,diamonds,message,audience='all',player=null,perLevel=false\)=>rpc\('staff_donate',\{p_coins:coins,p_diamonds:diamonds,p_message:message,p_audience:audience,p_player:player,p_per_level:perLevel===true\}\)/);
  const dash=read('src/admin-dashboard.js');
- assert.match(dash,/bridge\.chat\.donate\(coins,diamonds,message\|\|null,gift\.audience,gift\.audience==='player'\?gift\.player\.playerId:null\)/,'one farmer by id: names are not unique');
+ assert.match(dash,/bridge\.chat\.donate\(coins,diamonds,message\|\|null,gift\.audience,gift\.audience==='player'\?gift\.player\.playerId:null,gift\.perLevel\)/,'one farmer by id: names are not unique');
 });
 
 // 27 Sep 2026: Send a gift from a farmer's page first steps back to the list, where the gift card waits; beside it, for the admin

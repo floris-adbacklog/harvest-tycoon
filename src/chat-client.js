@@ -67,7 +67,7 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   sanction:(player,minutes,ban,reason=null)=>rpc('chat_mod_sanction',{p_player:player,p_minutes:minutes,p_ban:ban,p_reason:reason}),
   donationRoom:()=>rpc('staff_donation_room'),
   // To whom: 'all', 'active' (this week), 'online' (now) or 'player' with that farmer's id (supabase/staff-gift-audience.sql).
-  donate:(coins,diamonds,message,audience='all',player=null)=>rpc('staff_donate',{p_coins:coins,p_diamonds:diamonds,p_message:message,p_audience:audience,p_player:player}),
+  donate:(coins,diamonds,message,audience='all',player=null,perLevel=false)=>rpc('staff_donate',{p_coins:coins,p_diamonds:diamonds,p_message:message,p_audience:audience,p_player:player,p_per_level:perLevel===true}),
   // The admin only.
   setModerator:(player,on)=>rpc('staff_set_moderator',{p_player:player,p_on:on}),
   staffList:()=>rpc('staff_list'),

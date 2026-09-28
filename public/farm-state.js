@@ -2028,11 +2028,15 @@ export function inviterRewards(state,rows){
 // sign-up after confirming it with a code (farm-api, events: email_send / email_confirm). Only the server grants it, on a load.
 export const EMAIL_BONUS=10;
 export function grantEmailBonus(state,now=Date.now()){if(state.emailBonus)return 0;state.emailBonus=now;state.diamonds+=EMAIL_BONUS;return EMAIL_BONUS;}
+// Since 28 Sep 2026 the sender chooses fixed coins (at most 1,000) or coins per level (at most 50, supabase/staff-gift-per-level.sql):
+// per level, the farmer gets them times their level when the gift arrives, so late farms get a gift that still counts.
+export const STAFF_GIFT_COINS=1000,STAFF_GIFT_COINS_PER_LEVEL=50;
 export function receiveDonations(state,rows){
- state.donations??=[];const got=[];
+ state.donations??=[];const got=[],level=levelOf(state);
  for(const row of rows??[]){
   if(typeof row?.id!=='string'||state.donations.includes(row.id))continue;
-  const coins=Math.max(0,Math.min(500,Math.floor(Number(row.coins)||0))),diamonds=Math.max(0,Math.min(50,Math.floor(Number(row.diamonds)||0)));
+  const typed=Math.max(0,Math.floor(Number(row.coins)||0));
+  const coins=row.per_level===true?Math.min(STAFF_GIFT_COINS_PER_LEVEL,typed)*level:Math.min(STAFF_GIFT_COINS,typed),diamonds=Math.max(0,Math.min(50,Math.floor(Number(row.diamonds)||0)));
   state.donations.push(row.id);state.coins+=coins;state.diamonds+=diamonds;
   got.push({coins,diamonds,message:typeof row.message==='string'&&row.message?row.message.slice(0,120):null});
  }

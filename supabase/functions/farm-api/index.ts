@@ -175,7 +175,7 @@ Deno.serve(async(req)=>{
     // "Donation!" pop-up.
     const since=new Date(Math.max(now-7*86400000,Date.parse(user.created_at??'')||now)).toISOString();
     let donated:unknown[]=[];
-    try{const found=await admin.from('staff_donations').select('id,coins,diamonds,message').gt('created_at',since).or(`recipients.is.null,recipients.cs.{${user.id}}`).order('created_at').limit(40);if(!found.error)donated=found.data??[];}catch{}
+    try{const found=await admin.from('staff_donations').select('id,coins,diamonds,message,per_level').gt('created_at',since).or(`recipients.is.null,recipients.cs.{${user.id}}`).order('created_at').limit(40);if(!found.error)donated=found.data??[];}catch{}
     const donations=receiveDonations(state,donated),fromStaff={coins:donations.reduce((sum,d)=>sum+d.coins,0),diamonds:donations.reduce((sum,d)=>sum+d.diamonds,0)};
     if(donations.length){
      const coins=donations.reduce((sum,d)=>sum+d.coins,0),diamonds=donations.reduce((sum,d)=>sum+d.diamonds,0),message=donations.findLast(d=>d.message)?.message??null;

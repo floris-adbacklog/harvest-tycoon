@@ -39,7 +39,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<section class="admin-card" id="admin-reports" hidden><h3>'+art('alert')+'Chat reports <span id="admin-report-count">0</span></h3><ul id="admin-report-list" class="admin-recent-list admin-report-list"></ul><p class="admin-hint">Delete removes the message for everyone. Mute and ban only close the chat for that farmer, never their farm.</p></section>'
   +'<section class="admin-card" id="admin-report-log" hidden><h3>'+art('quests')+'Report log</h3><p class="admin-hint">Every reported message, newest first: who reported it and what the staff did with it.</p><ul id="admin-log-list" class="admin-recent-list admin-log-list"></ul></section>'
   +'</div><div data-admin-panel="players" hidden>'
-  +'<section class="admin-card" id="admin-donate" hidden><h3>'+art('gift')+'Send a gift</h3><form id="admin-donate-form" class="admin-donate"><div class="admin-gift-to"><span>Send to</span><div class="admin-filters" role="group" aria-label="Send to">'+GIFT_AUDIENCES.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-gift-audience="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><div id="admin-gift-player" class="admin-gift-player" hidden><input type="search" id="admin-gift-search" placeholder="Find a farmer by name" aria-label="Find a farmer" autocomplete="off"><ul id="admin-gift-results" class="admin-gift-results"></ul></div></div><label><span>'+art('diamonds')+'Diamonds</span><input type="number" id="admin-donate-diamonds" min="0" max="50" step="1" placeholder="0" inputmode="numeric"></label><label><span>'+art('coins')+'Coins</span><input type="number" id="admin-donate-coins" min="0" max="500" step="10" placeholder="0" inputmode="numeric"></label><label class="admin-donate-message"><span>Message</span><input type="text" id="admin-donate-message" maxlength="120" placeholder="Thanks for playing!"></label><button type="submit" class="primary-button" id="admin-donate-send">Send to everyone</button></form><p class="admin-hint" id="admin-donate-room"></p></section>'
+  +'<section class="admin-card" id="admin-donate" hidden><h3>'+art('gift')+'Send a gift</h3><form id="admin-donate-form" class="admin-donate"><div class="admin-gift-to"><span>Send to</span><div class="admin-filters" role="group" aria-label="Send to">'+GIFT_AUDIENCES.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-gift-audience="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><div id="admin-gift-player" class="admin-gift-player" hidden><input type="search" id="admin-gift-search" placeholder="Find a farmer by name" aria-label="Find a farmer" autocomplete="off"><ul id="admin-gift-results" class="admin-gift-results"></ul></div></div><label><span>'+art('diamonds')+'Diamonds</span><input type="number" id="admin-donate-diamonds" min="0" max="50" step="1" placeholder="0" inputmode="numeric"></label><label><span>'+art('coins')+'<b id="admin-donate-coins-label">Coins</b></span><input type="number" id="admin-donate-coins" min="0" max="1000" step="10" placeholder="0" inputmode="numeric"></label><div class="admin-coin-kind"><div class="admin-filters" role="group" aria-label="Coins"><button type="button" class="admin-filter active" data-coin-kind="fixed" aria-pressed="true">Fixed</button><button type="button" class="admin-filter" data-coin-kind="level" aria-pressed="false">Per level</button></div><p class="admin-hint" id="admin-donate-preview">Every farmer gets the same.</p></div><label class="admin-donate-message"><span>Message</span><input type="text" id="admin-donate-message" maxlength="120" placeholder="Thanks for playing!"></label><button type="submit" class="primary-button" id="admin-donate-send">Send to everyone</button></form><p class="admin-hint" id="admin-donate-room"></p></section>'
   +'<section class="admin-card"><h3>'+art('family-members')+'Online now <span id="admin-online-count">0</span></h3><ul id="admin-online-list" class="admin-online-list"></ul><p class="admin-hint">Active in the last <span id="admin-online-window">30</span> minutes.</p></section>'
   +'<section class="admin-card" id="admin-players"><h3>'+art('family-members')+'All players <span id="admin-players-count">0</span></h3><div class="admin-player-tools"><input type="search" id="admin-player-search" placeholder="Search by name" aria-label="Search players" autocomplete="off"><select id="admin-player-sort" aria-label="Order">'+PLAYER_SORTS.map(([id,label])=>`<option value="${id}">${label}</option>`).join('')+'</select></div><div class="admin-filters" role="group" aria-label="Show">'+PLAYER_FILTERS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-player-filter="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-player-list" class="admin-recent-list admin-player-list"></ul><button type="button" id="admin-player-more" class="small-button admin-more" hidden>Show more</button><p class="admin-hint">Times are Amsterdam time. Last action: the last time the farm saved. Gone quiet: played before, not active for 7 days or more. New: joined in the last 7 days.</p></section>'
   +'<section class="admin-card admin-player-detail" id="admin-player-detail" hidden></section>'
@@ -253,11 +253,20 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   }catch(error){action.disabled=false;dialog.querySelector('#admin-dashboard-status').textContent=error.message;}
  });
  // A gift from the staff, to everyone, the farmers active this week, the farmers online now or one farmer (the database decides the list
- // when it is sent). All staff together give at most 5 gifts, 50 diamonds and 500 coins a day (the database keeps count).
- const gift={audience:'all',player:null};
+ // when it is sent). All staff together give at most 5 gifts, 50 diamonds and 1,000 coins or 50 coins per level a day (the database keeps count).
+ // Coins: a fixed amount (at most 1,000 a day) or an amount per level (at most 50 a day), which each farmer gets times their level
+ // (28 Sep 2026, supabase/staff-gift-per-level.sql), so a late farm gets a gift that still counts.
+ const gift={audience:'all',player:null,perLevel:false};
+ function paintCoins(){
+  dialog.querySelectorAll('[data-coin-kind]').forEach(b=>{const on=(b.dataset.coinKind==='level')===gift.perLevel;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
+  const input=dialog.querySelector('#admin-donate-coins'),per=Math.max(0,Math.floor(Number(input.value)||0));
+  input.max=gift.perLevel?'50':'1000';input.step=gift.perLevel?'5':'10';dialog.querySelector('#admin-donate-coins-label').textContent=gift.perLevel?'Coins per level':'Coins';
+  dialog.querySelector('#admin-donate-preview').textContent=!gift.perLevel?'Every farmer gets the same.'
+   :per?`Level 5 gets ${number(5*per)}, level 25 gets ${number(25*per)}, level 80 gets ${number(80*per)} coins.`:'Times their level: 20 per level is about one daily gift.';
+ }
  function showRoom(room,sent=''){
   dialog.querySelector('#admin-donate').hidden=false;
-  dialog.querySelector('#admin-donate-room').textContent=`${sent}Left today, for all staff together: ${number(room.diamonds)} diamonds, ${number(room.coins)} coins, ${number(room.gifts)} gift${room.gifts===1?'':'s'}. Farmers get it the next time their farm opens (open games at once), and see it under Notifications.`;
+  dialog.querySelector('#admin-donate-room').textContent=`${sent}Left today, for all staff together: ${number(room.diamonds)} diamonds, ${number(room.coins)} coins${room.perLevel!=null?`, ${number(room.perLevel)} coins per level`:''}, ${number(room.gifts)} gift${room.gifts===1?'':'s'}. Farmers get it the next time their farm opens (open games at once), and see it under Notifications.`;
  }
  function paintGift(){
   dialog.querySelectorAll('[data-gift-audience]').forEach(b=>{const on=b.dataset.giftAudience===gift.audience;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
@@ -271,10 +280,12 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  // From a farmer's page: back to the list first, since the gift card waits behind that page.
  function giftTo(player){closePlayer();gift.audience='player';gift.player=player;dialog.querySelector('#admin-gift-search').value='';paintGift();dialog.querySelector('#admin-donate').scrollIntoView({behavior:'smooth',block:'start'});}
  dialog.querySelector('#admin-donate').addEventListener('click',event=>{
+  const kind=event.target.closest('[data-coin-kind]');if(kind){gift.perLevel=kind.dataset.coinKind==='level';paintCoins();return;}
   const choice=event.target.closest('[data-gift-audience]');if(choice){gift.audience=choice.dataset.giftAudience;paintGift();if(gift.audience==='player'&&!gift.player)dialog.querySelector('#admin-gift-search').focus();return;}
   const pick=event.target.closest('[data-gift-pick]');if(pick){gift.player=view.players.find(p=>p.playerId===pick.dataset.giftPick)??null;dialog.querySelector('#admin-gift-search').value='';paintGift();}
  });
  dialog.querySelector('#admin-gift-search').addEventListener('input',paintGift);
+ dialog.querySelector('#admin-donate-coins').addEventListener('input',paintCoins);
  // Enter in the name box picks the first farmer found, instead of sending the form.
  dialog.querySelector('#admin-gift-search').addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const first=giftMatches(view.players,event.target.value)[0];if(first){gift.player=first;event.target.value='';paintGift();}});
  dialog.querySelector('#admin-donate-form').addEventListener('submit',async event=>{
@@ -283,15 +294,15 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const message=dialog.querySelector('#admin-donate-message').value.trim(),room=dialog.querySelector('#admin-donate-room');
   if(!diamonds&&!coins){room.textContent='Enter some diamonds or coins.';return;}
   if(gift.audience==='player'&&!gift.player){room.textContent='Choose the farmer who gets the gift.';return;}
-  const parts=[diamonds&&`${number(diamonds)} diamonds`,coins&&`${number(coins)} coins`].filter(Boolean).join(' + ');
+  const parts=[diamonds&&`${number(diamonds)} diamonds`,coins&&`${number(coins)} coins${gift.perLevel?' for every level':''}`].filter(Boolean).join(' + ');
   const count=view.players?.length?giftCount(view.players,gift.audience):null;
   const to=gift.audience==='player'?gift.player.username:gift.audience==='active'?`the ${count==null?'':`${number(count)} `}farmers active this week`:gift.audience==='online'?`the ${count==null?'':`${number(count)} `}farmers online now`:'everyone';
   const who=gift.audience==='player'?`${gift.player.username} receives`:gift.audience==='all'?'Every farmer receives':'Each of them receives';
   if(!await confirmAction({title:`Send a gift to ${to}?`,description:`${who} ${parts}.${message?` “${message}”`:''}`,confirmLabel:'Send',picture:'gift'}))return;
   try{
-   const result=await bridge.chat.donate(coins,diamonds,message||null,gift.audience,gift.audience==='player'?gift.player.playerId:null);
+   const result=await bridge.chat.donate(coins,diamonds,message||null,gift.audience,gift.audience==='player'?gift.player.playerId:null,gift.perLevel);
    showRoom(result,result.farmers==null?'Sent to everyone. ':`Sent to ${number(result.farmers)} farmer${result.farmers===1?'':'s'}. `);
-   dialog.querySelector('#admin-donate-diamonds').value='';dialog.querySelector('#admin-donate-coins').value='';dialog.querySelector('#admin-donate-message').value='';
+   dialog.querySelector('#admin-donate-diamonds').value='';dialog.querySelector('#admin-donate-coins').value='';dialog.querySelector('#admin-donate-message').value='';paintCoins();
   }catch(error){room.textContent=error.message;}
  });
  // Pop-ups: the fields open with "Also as a pop-up", the web address with "A web page"; below the form the last ten, with who saw them.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {dmChannel,chatError} from '../src/chat-client.js';
-import {receiveDonations,normalizeFarm,createFarm} from '../game/farm-state.js';
+import {receiveDonations,normalizeFarm,createFarm,xpForLevel} from '../game/farm-state.js';
 import {giftNotice} from '../supabase/functions/farm-api/admin-service.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const sql=read('supabase/chat.sql');
@@ -62,8 +62,8 @@ test('a gift for everyone: 500 coins and 50 diamonds a day for all staff togethe
  assert.match(sql,/coins integer not null default 0 check \(coins between 0 and 500\), diamonds integer not null default 0 check \(diamonds between 0 and 50\)/);
  const farm=normalizeFarm(createFarm(0),0),coins=farm.coins,diamonds=farm.diamonds;
  const got=receiveDonations(farm,[{id:'a',coins:500,diamonds:50,message:'Thanks!'},{id:'a',coins:500,diamonds:50},{id:'b',coins:9999,diamonds:9999}]);
- assert.deepEqual(got,[{coins:500,diamonds:50,message:'Thanks!'},{coins:500,diamonds:50,message:null}],'the same gift twice pays once, and no row pays more than the cap');
- assert.equal(farm.coins,coins+1000);assert.equal(farm.diamonds,diamonds+100);
+ assert.deepEqual(got,[{coins:500,diamonds:50,message:'Thanks!'},{coins:1000,diamonds:50,message:null}],'the same gift twice pays once, and no row pays more than the cap (1,000 since 28 Sep 2026)');
+ assert.equal(farm.coins,coins+1500);assert.equal(farm.diamonds,diamonds+100);
  assert.deepEqual(receiveDonations(farm,[{id:'a',coins:500,diamonds:50}]),[],'a later load does not pay it again');
  assert.deepEqual(normalizeFarm(structuredClone(farm),0).donations,['a','b'],'the ids are kept with the farm');
  const api=read('supabase/functions/farm-api/index.ts');
@@ -263,4 +263,16 @@ test('the staff see who reported a message, with the reason, in the open reports
  assert.equal((sql.match(/if public\.chat_staff_role\(\(select auth\.uid\(\)\)\) is null then raise exception 'Not authorized\.'/g)??[]).length,2,'staff only');
  assert.equal((dash.match(/<\/small>\$\{reportedBy\(r\)\}/g)??[]).length,2);
  assert.match(dash,/#admin-report-list'\)\.addEventListener\('click',async event=>\{\n  const name=event\.target\.closest\('\[data-profile\]'\);if\(name\)\{window\.harvestProfiles\?\.open\(/);
+});
+test('a gift per level pays the coins times the farmer\'s level when it arrives; a fixed one the same for everyone',()=>{
+ const farm=normalizeFarm(createFarm(0),0);farm.xp=xpForLevel(30);const coins=farm.coins;
+ const got=receiveDonations(farm,[{id:'p',coins:20,diamonds:10,per_level:true},{id:'q',coins:999,diamonds:0,per_level:true},{id:'f',coins:900,diamonds:0}]);
+ assert.deepEqual(got.map(g=>g.coins),[600,50*30,900],'20 x level 30; per level at most 50; a fixed gift as it is');assert.equal(farm.coins,coins+600+1500+900);
+ const sql=read('supabase/staff-gift-per-level.sql'),dash=read('src/admin-dashboard.js');
+ assert.match(sql,/if per and l\+p_coins>50 then raise exception/);assert.match(sql,/if not per and c\+p_coins>1000 then raise exception/);
+ assert.match(sql,/drop function if exists public\.staff_donate\(integer,integer,text,text,uuid\);/,'one version, so older games still call it');
+ assert.match(sql,/check \(coins>=0 and coins<=case when per_level then 50 else 1000 end\)/);
+ assert.match(read('supabase/functions/farm-api/index.ts'),/select\('id,coins,diamonds,message,per_level'\)/);
+ assert.match(dash,/data-coin-kind="fixed" aria-pressed="true">Fixed<\/button><button type="button" class="admin-filter" data-coin-kind="level" aria-pressed="false">Per level<\/button>/);
+ assert.match(dash,/gift\.audience==='player'\?gift\.player\.playerId:null,gift\.perLevel\)/);
 });
