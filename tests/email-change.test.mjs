@@ -25,6 +25,7 @@ test('the new address and the password first; nothing is sent for a wrong or odd
  await assert.rejects(()=>ask({user:{...farmer,app_metadata:{provider:'facebook'}}}),/Google or Facebook/);
  for(const [email,why] of [['not-an-address',/valid email/],['FARMER@exampel.com ',/already your email/],['floris@millstone.nl',/cannot be used/]])await assert.rejects(()=>ask({email}),why,email);
  await assert.rejects(()=>ask({password:''}),/Type your password/);
+ await assert.rejects(()=>ask({user:{id:'00000000-0000-4000-8000-0000000000aa',email:'floris@millstone.nl',email_confirmed_at:'2026-09-01T00:00:00Z',app_metadata:{provider:'email'}}}),/admin account/,'the admin never moves its own address from the game');
  assert.equal(sent.length,0);assert.equal(admin.row(),null,'nothing counted for a request that never reached the password');
 });
 test('a wrong password uses one of the day\'s five and waits a minute, so it cannot be guessed',async()=>{

@@ -141,6 +141,8 @@ export async function confirmEmailCode({admin,user,code,now=Date.now()}){
 const emailProvider=user=>(user.app_metadata?.provider??'email')==='email';
 export async function sendEmailChange({admin,user,email,password,passwordOk,now=Date.now(),mail=resendMail,random=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
  if(!emailProvider(user))throw Error('You sign in with Google or Facebook, so your email address comes from there.');
+ // The admin's address is what makes it the admin (admin-service.js): moving it here would lock the admin out of the dashboard.
+ if(isSuperadmin(user))throw Error('This is the admin account. Change its address in Supabase.');
  const next=String(email??'').trim().toLowerCase();
  if(!validEmail(next)||next.length>254)throw Error('Enter a valid email address, like you@example.com.');
  if(next===String(user.email??'').trim().toLowerCase())throw Error('That is already your email address.');
