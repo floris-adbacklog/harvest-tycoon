@@ -89,3 +89,14 @@ test('the profile says "Member since" only when the date is known',()=>{
  assert.ok(!/\d{2}:\d{2}/.test(html.slice(html.indexOf('farmer-since'),html.indexOf('farmer-since')+400)),'no time of day');
  for(const missing of [{},{memberSince:null},{memberSince:0}])assert.ok(!renderPlayerProfile({...player,...missing}).includes('Member since'));
 });
+// Last online (28 Sep 2026): the day the farm last saved, under "Member since"; not while the farmer is online.
+test('the profile shows the last online day while the farmer is offline',async()=>{
+ const {data}=await request(database(),{operation:'player_profile',playerId:id});
+ assert.ok(Number.isFinite(data.playerProfile.lastOnline)&&data.playerProfile.lastOnline>0,'the profile carries the last save as a time');
+ const player={username:'Tony',level:12,stats:{},badges:[],family:null,memberSince:Date.parse(signedUp),lastOnline:Date.parse('2026-09-27T22:40:00Z')};
+ const html=renderPlayerProfile({...player,online:false});
+ assert.match(html,/Member since <time datetime="2026-09-16">16-09-2026<\/time><\/p><p class="farmer-since farmer-last-online">.*Last online <time datetime="2026-09-27">27-09-2026<\/time><\/p>/);
+ assert.ok(!html.includes('22:40'),'the day only, never the time');
+ assert.ok(!renderPlayerProfile({...player,online:true}).includes('Last online'),'online: the green dot says it');
+ for(const missing of [null,0,undefined])assert.ok(!renderPlayerProfile({...player,online:false,lastOnline:missing}).includes('Last online'));
+});

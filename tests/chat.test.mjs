@@ -251,3 +251,8 @@ test('the chat client has no method twice: a second staffList once emptied the A
  assert.match(src,/staffList:\(\)=>rpc\('staff_list'\)/);assert.match(src,/staffRoles:\(\)=>rpc\('chat_staff_list'\)/);
  assert.match(readFileSync(new URL('../src/staff-badge.js',import.meta.url),'utf8'),/chat\?\.staffRoles\?\.\(\)/);
 });
+test('phones show the dashboard tabs as icons only; each tab keeps its name',()=>{
+ const dash=readFileSync(new URL('../src/admin-dashboard.js',import.meta.url),'utf8'),css=readFileSync(new URL('../public/chat.css',import.meta.url),'utf8');
+ for(const [tab,name] of [['chat','Chat'],['players','Players'],['growth','Growth'],['purchases','Purchases'],['settings','Settings']])assert.match(dash,new RegExp(`data-admin-tab="${tab}" aria-label="${name}"[^>]*>'\\+art\\('[\\w-]+'\\)\\+'<span class="admin-tab-name">${name}</span></button>`),tab);
+ assert.match(css,/@media\(max-width:600px\)\{\.admin-tab-name\{display:none\}/,'only the words hide, never a sprite icon (a span too)');
+});

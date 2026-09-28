@@ -194,6 +194,8 @@ span.chat-avatar{cursor:default}
 #admin-dashboard-dialog .admin-kpis>div>.game-art{justify-self:center;width:30px;height:30px;margin-bottom:2px;object-fit:contain}
 .admin-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .admin-tabs button>.game-art{flex:none;width:20px;height:20px;object-fit:contain}
+/* Phones: the five tabs as icons only (the words no longer fit); each keeps its name for screen readers. */
+@media(max-width:600px){.admin-tab-name{display:none}.admin-tabs button>.game-art{width:26px;height:26px}}
 .admin-avatar.has-face{overflow:hidden;background:#f1e7de}
 .admin-avatar.has-face>img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
 .admin-avatar.has-face>.online-dot{position:absolute}

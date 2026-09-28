@@ -22,7 +22,7 @@
 .farmer-identity-meta{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
 .farmer-since{display:flex;align-items:center;gap:7px;margin:10px 0 0;font-size:13px;color:#7d7561}
 .farmer-since-icon{width:15px;height:15px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.farmer-since time{font-weight:700;color:#5d5641}.farmer-level{display:inline-flex;gap:6px;align-items:center;font-weight:800}.farmer-level .game-art{width:26px;height:26px}
+.farmer-since time{font-weight:700;color:#5d5641}.farmer-since+.farmer-last-online{margin-top:4px}.farmer-level{display:inline-flex;gap:6px;align-items:center;font-weight:800}.farmer-level .game-art{width:26px;height:26px}
 .farmer-family{display:flex;gap:16px;align-items:center;background:#eaf0df;border:1px solid #d9e1cb;border-radius:20px;padding:16px}.farmer-family>.game-art{width:60px;height:60px;flex:0 0 60px}.farmer-family>div{min-width:0}.farmer-family h4{font-size:21px;overflow-wrap:anywhere;margin:4px 0}.farmer-family p{margin:0;color:#6b7b60;font-size:14px}
 .farmer-section-title{font-size:20px;margin:24px 0 13px}
 /* The stat pages (src/profile-stats.js): two pages of 3 x 3, arrows in the heading, a swipe that snaps to a page on a phone. */

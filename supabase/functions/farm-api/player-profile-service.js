@@ -25,7 +25,8 @@ async function memberSince(admin,playerId){
 function summary(row,families,now){return {playerId:row.player_id,username:row.username,avatarId:playerAvatar(row.avatar_id).id,level:number(row.level),vipExpiresAt:Date.parse(row.vip_expires_at)||0,online:isRecentlyActive(row.last_active_at,now),family:families.get(row.player_id)??null};}
 // Auth/session validation happens in index.ts before this read-only directory is reached.
 // Never load or return a complete farm, account record, membership or family record. The one account fact a profile
-// shows is the sign-up date ("member since"); the rest of the account is not read out.
+// shows is the sign-up date ("member since"); the rest of the account is not read out. Last online (28 Sep 2026) is the day
+// the farm last saved, from the public player_stats row; the profile shows the day only, never the time.
 export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
  const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:player},serverNow:now}});
  if(body.operation==='player_search'){
@@ -43,5 +44,5 @@ export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
   if(typeof id!=='string')return [];const [crop,tier,...extra]=id.split(':');
   return !extra.length&&cropKeys.includes(crop)&&/^[0-3]$/.test(tier)&&MASTERY_TIERS[Number(tier)]?[{crop,tier:Number(tier)}]:[];
  });
- return respond({playerProfile:{...summary(row,families,now),memberSince:await memberSince(admin,row.player_id),stats:{...Object.fromEntries(metrics.map(key=>[key,number(row[key])])),goods_kinds:goodKeys.filter(key=>number(row.goods_made?.[key])>0).length},harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges}});
+ return respond({playerProfile:{...summary(row,families,now),memberSince:await memberSince(admin,row.player_id),lastOnline:Date.parse(row.last_active_at)||null,stats:{...Object.fromEntries(metrics.map(key=>[key,number(row[key])])),goods_kinds:goodKeys.filter(key=>number(row.goods_made?.[key])>0).length},harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges}});
 }

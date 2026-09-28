@@ -15,7 +15,10 @@ export function formatDate(ms){
  const day=new Date(time),year=day.getUTCFullYear(),month=two(day.getUTCMonth()+1),date=two(day.getUTCDate());
  return {text:`${date}-${month}-${year}`,iso:`${year}-${month}-${date}`};
 }
-const since=ms=>{const date=formatDate(ms);return date?`<p class="farmer-since"><svg class="farmer-since-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3v4M16 3v4M4 10h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>Member since <time datetime="${date.iso}">${date.text}</time></p>`:'';};
+const dateLine=(ms,label,icon,extra='')=>{const date=formatDate(ms);return date?`<p class="farmer-since${extra}"><svg class="farmer-since-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${icon}</svg>${label} <time datetime="${date.iso}">${date.text}</time></p>`:'';};
+const since=ms=>dateLine(ms,'Member since','<path d="M8 3v4M16 3v4M4 10h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/>');
+// Last online (28 Sep 2026): the day the farm last saved. Left out while the farmer is online; the green dot already says so.
+const lastOnline=(ms,online)=>online?'':dateLine(ms,'Last online','<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',' farmer-last-online');
 const presence=online=>`<span class="farmer-presence"><span class="online-dot${online?' is-online':''}" aria-hidden="true"></span>${online?'Online':'Offline'}</span>`;
 // Crop mastery: one card per crop with its best badge, and a dot for each of the four badges (bronze, silver, gold, platinum)
 // that is earned. The best crops first, then in the order they unlock.
@@ -33,7 +36,7 @@ function familyCard(family,emblem){
 export function renderPlayerProfile(player,now=Date.now(),{statPage=0}={}){
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem);
  const badges=player.badges??[],mastered=masteryByCrop(badges);
- return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${vipBadge(player.vipExpiresAt,now,true)}</div></div>
+ return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${vipBadge(player.vipExpiresAt,now,true)}</div></div>
  <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
  ${renderStatPages(player,now,statPage)}
