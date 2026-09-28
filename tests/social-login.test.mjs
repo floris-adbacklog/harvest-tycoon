@@ -40,7 +40,7 @@ test('the privacy policy and the deletion page are public, linked from the sign-
  for(const page of ['public/privacy.html','public/delete-account.html']){
   const text=read(page);
   assert.ok(!/googletagmanager|gtag\(|fbq\(|<script/i.test(text),`${page} loads no scripts`);
-  assert.match(text,/floris@millstone\.nl/);assert.match(text,/89795857/);assert.match(text,/<html lang="en">/);
+  assert.match(text,/info@harvesttycoon\.com/);assert.doesNotMatch(text,/floris@millstone/);assert.match(text,/89795857/);assert.match(text,/<html lang="en">/);
  }
 });
 
