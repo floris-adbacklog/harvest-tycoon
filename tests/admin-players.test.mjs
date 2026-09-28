@@ -6,7 +6,7 @@ import {filterPlayers,funnel,funnelHtml,playerRow,playerDetail,countryCounts,cou
 import {BEGINNER_QUESTS} from '../game/farm-state.js';
 import {zoneCountry,ZONE_COUNTRY} from '../supabase/functions/farm-api/time-zones.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-const owner={id:'22222222-2222-4222-8222-222222222222',email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z'};
+const owner={id:'22222222-2222-4222-8222-222222222222',email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z',signInMethods:['oauth']};
 const moderator={id:'33333333-3333-4333-8333-333333333333',email:'mod@example.com'};
 const now=Date.UTC(2026,8,25,12),DAY=86400000,iso=ms=>new Date(ms).toISOString();
 const P1='11111111-1111-4111-8111-111111111111',P2='44444444-4444-4444-8444-444444444444',P3='55555555-5555-4555-8555-555555555555';

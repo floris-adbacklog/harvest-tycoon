@@ -1,5 +1,5 @@
 import {writeLog,eventRewardLog,accountLog} from './player-log.js';
-import {isSuperadmin} from './admin-service.js';
+import {isSuperadmin,isAdminAccount,isAdminAddress} from './admin-service.js';
 import {validEmail} from './account-form.js';
 // The goals an event may use: the 24 Sep list (farm-wide counters, crops unlocked by level 9, eggs) and the 30 kinds of the mixed
 // events (supabase/live-events-mixed.sql), all open to every farm at level 15, when events open. Since 26 Sep 2026 the pool has
@@ -142,11 +142,11 @@ const emailProvider=user=>(user.app_metadata?.provider??'email')==='email';
 export async function sendEmailChange({admin,user,email,password,passwordOk,now=Date.now(),mail=resendMail,random=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
  if(!emailProvider(user))throw Error('You sign in with Google or Facebook, so your email address comes from there.');
  // The admin's address is what makes it the admin (admin-service.js): moving it here would lock the admin out of the dashboard.
- if(isSuperadmin(user))throw Error('This is the admin account. Change its address in Supabase.');
+ if(isAdminAccount(user))throw Error('This is the admin account. Change its address in Supabase.');
  const next=String(email??'').trim().toLowerCase();
  if(!validEmail(next)||next.length>254)throw Error('Enter a valid email address, like you@example.com.');
  if(next===String(user.email??'').trim().toLowerCase())throw Error('That is already your email address.');
- if(isSuperadmin({email:next,email_confirmed_at:true}))throw Error('This email address cannot be used.');
+ if(isAdminAddress(next))throw Error('This email address cannot be used.');
  if(typeof password!=='string'||!password||password.length>200)throw Error('Type your password.');
  const row=await admin.from('email_checks').select('*').eq('player_id',user.id).maybeSingle();if(row.error)throw row.error;
  const r=row.data,day=new Date(now).toISOString().slice(0,10),sends=r?.send_day===day?r.sends_today:0;

@@ -4,7 +4,7 @@ import {welcomeSummary} from './welcome-service.js';
 import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily,handleFamilyProfile} from './family-service.js';
-import {handleAdminGrant,handleAdminEmail,isSuperadmin} from './admin-service.js';
+import {handleAdminGrant,handleAdminEmail,isSuperadmin,isAdminAccount} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
@@ -46,6 +46,8 @@ Deno.serve(async(req)=>{
   if(authError||!user||user.is_anonymous)return reply({error:'Please sign in with your account.'},401);
   const claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
   if(!claims.session_id)return reply({error:'Your session has ended. Please sign in again.'},401);
+  // How this session was signed in (password, oauth, otp…): the admin's powers need Google (admin-service.js isSuperadmin).
+  (user as {signInMethods?:string[]}).signInMethods=Array.isArray(claims.amr)?claims.amr.map((a:{method?:string})=>String(a?.method??'')).filter(Boolean):[];
   const active=await admin.rpc('harvest_session_active',{p_player:user.id,p_session:claims.session_id});
   if(active.error)throw active.error;
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
@@ -131,7 +133,7 @@ Deno.serve(async(req)=>{
   // The admin account runs the game; the admin plays on a farmer account of their own (26 Sep 2026). So that nothing is played on
   // it by accident, it takes no farm action at all: no fields, buildings, market, streaks, daily rewards, quests or deliveries.
   // The Admin dashboard, chat, messages and gifts to farmers are other operations and still work.
-  if(body.operation==='action'&&isSuperadmin(user))return reply({error:'This is your admin account, so playing is locked here. Play on your own farmer account.',code:'ACTION_REJECTED'},422);
+  if(body.operation==='action'&&isAdminAccount(user))return reply({error:'This is your admin account, so playing is locked here. Play on your own farmer account.',code:'ACTION_REJECTED'},422);
   // Keep one server-owned roll across optimistic concurrency retries.
   let choreRoll:number|undefined;
   const random=()=>choreRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);

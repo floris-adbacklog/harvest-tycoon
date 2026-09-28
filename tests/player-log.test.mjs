@@ -69,7 +69,7 @@ test('your own log for you, anyone\'s for the staff; purchases only for yourself
  admin=fakeAdmin({staff:[{player_id:ME}]});
  assert.deepEqual((await handlePlayerLog({admin,user:{id:ME},body:{playerId:OTHER,category:'purchase'}})).data.entries,[]);
  admin=fakeAdmin();
- const boss=await handlePlayerLog({admin,user:{id:ME,email:'floris@millstone.nl',email_confirmed_at:'2026-01-01'},body:{playerId:OTHER,category:'purchase'}});
+ const boss=await handlePlayerLog({admin,user:{id:ME,email:'floris@millstone.nl',email_confirmed_at:'2026-01-01',signInMethods:['oauth']},body:{playerId:OTHER,category:'purchase'}});
  assert.equal(boss.status,200);assert.deepEqual(admin.queries.find(x=>x.table==='player_logs').calls.find(([m])=>m==='eq'&&true),['eq','player_id',OTHER]);
  assert.equal((await handlePlayerLog({admin,user:{id:ME},body:{playerId:'not-an-id'}})).status,400);
 });

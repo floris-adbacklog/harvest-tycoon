@@ -5,9 +5,15 @@ import {validEmail} from './account-form.js';
 // authenticated, server-verified user (index.ts already resolved this from a real Supabase JWT) — never against
 // anything the client claims about itself.
 const SUPERADMINS=new Set(['floris@millstone.nl']);
-// The address must also be confirmed: an account that only claims it (never confirmed, or from a provider that does not vouch for
-// it) is not the admin.
-export const isSuperadmin=user=>SUPERADMINS.has(String(user?.email??'').trim().toLowerCase())&&Boolean(user?.email_confirmed_at);
+export const isAdminAddress=email=>SUPERADMINS.has(String(email??'').trim().toLowerCase());
+// The admin account itself: the address, confirmed (an account that only claims it is not the admin). It never plays (index.ts)
+// and never moves its own address from the game (event-service.js), however it signed in.
+export const isAdminAccount=user=>isAdminAddress(user?.email)&&Boolean(user?.email_confirmed_at);
+// The admin's powers (28 Sep 2026): only in a session signed in with Google, where the address has two-step verification
+// (millstone.nl is Google Workspace). A password session of the same account is an ordinary farmer's. index.ts copies the
+// session's sign-in methods (the verified JWT's amr) onto the user as signInMethods; supabase/admin-google-only.sql does the same
+// for the chat's staff powers.
+export const isSuperadmin=user=>isAdminAccount(user)&&Array.isArray(user?.signInMethods)&&user.signInMethods.includes('oauth');
 // The admin or a moderator (staff_roles, supabase/chat.sql): may read the Admin dashboard. Giving anything stays isSuperadmin only.
 export async function isStaff(admin,user){
  if(isSuperadmin(user))return true;
@@ -100,7 +106,7 @@ export async function handleAdminEmail({admin,body,user,now=Date.now()}){
  const playerId=body.playerId,next=String(body.email??'').trim().toLowerCase();
  if(typeof playerId!=='string'||!UUID.test(playerId))return respond({error:'Choose a valid farmer.'},400);
  if(!validEmail(next)||next.length>254)return respond({error:'Enter a valid email address, like you@example.com.'},400);
- if(isSuperadmin({email:next,email_confirmed_at:true}))return respond({error:'This email address cannot be used.'},400);
+ if(isAdminAddress(next))return respond({error:'This email address cannot be used.'},400);
  const found=await admin.auth.admin.getUserById(playerId);
  const target=found.data?.user;if(found.error||!target)return respond({error:'This farmer could not be found.'},404);
  if((target.app_metadata?.provider??'email')!=='email')return respond({error:'This farmer signs in with Google or Facebook, so the address comes from there.'},400);

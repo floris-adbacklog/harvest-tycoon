@@ -5,12 +5,12 @@ import {handleAdminGrant,isSuperadmin,validGrantAmount,validGrant,validItem,sani
 import {createFarm,levelOf} from '../game/farm-state.js';
 const id='11111111-1111-4111-8111-111111111111',adminId='22222222-2222-4222-8222-222222222222';
 const now=Date.UTC(2026,8,22,12);
-const admin={id:adminId,email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z'};
+const admin={id:adminId,email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z',signInMethods:['oauth']};
 
 test('only the one account passes isSuperadmin, matched case-insensitively and never by anything client-supplied',()=>{
- assert.equal(isSuperadmin({email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z'}),true);
- assert.equal(isSuperadmin({email:'Floris@Millstone.NL',email_confirmed_at:'2026-09-16T21:12:00Z'}),true);
- assert.equal(isSuperadmin({email:' floris@millstone.nl ',email_confirmed_at:'2026-09-16T21:12:00Z'}),true);
+ assert.equal(isSuperadmin({email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z',signInMethods:['oauth']}),true);
+ assert.equal(isSuperadmin({email:'Floris@Millstone.NL',email_confirmed_at:'2026-09-16T21:12:00Z',signInMethods:['oauth']}),true);
+ assert.equal(isSuperadmin({email:' floris@millstone.nl ',email_confirmed_at:'2026-09-16T21:12:00Z',signInMethods:['oauth']}),true);
  for(const user of [{email:'floris@millstone.nl'},{email:'floris@millstone.nl',email_confirmed_at:null},{email:'someone.else@millstone.nl'},{email:'floris@millstone.nl.evil.com'},{email:undefined},{},null,undefined])assert.equal(isSuperadmin(user),false);
 });
 test('grant amounts must be whole, non-negative, within limits, and at least one must be set',()=>{
@@ -169,7 +169,7 @@ test('a farmer that keeps changing at the same moment fails closed after a few t
 
 test('the admin_grant operation is wired in, gated on the caller, and reachable without a username set',()=>{
  const code=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');
- assert.match(code,/import \{handleAdminGrant,handleAdminEmail,isSuperadmin\} from '\.\/admin-service\.js';/);
+ assert.match(code,/import \{handleAdminGrant,handleAdminEmail,isSuperadmin,isAdminAccount\} from '\.\/admin-service\.js';/);
  assert.match(code,/\[.*'admin_grant'.*\]\.includes\(body\?\.operation\)/);
  const branch=code.indexOf("body.operation==='admin_grant'");
  assert.ok(branch>0);

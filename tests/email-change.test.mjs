@@ -56,7 +56,7 @@ test('an address another account has is refused with a clear message, and the ac
  assert.equal(admin.row().email,farmer.email);assert.equal(admin.row().new_email,'taken@example.com');
 });
 test('the admin, and nobody else, can put a farmer on another address at once, without an email',async()=>{
- const owner={id:'00000000-0000-4000-8000-0000000000aa',email:'floris@millstone.nl',email_confirmed_at:'2026-09-01T00:00:00Z'};
+ const owner={id:'00000000-0000-4000-8000-0000000000aa',email:'floris@millstone.nl',email_confirmed_at:'2026-09-01T00:00:00Z',signInMethods:['oauth']};
  const users={[farmer.id]:farmer,'00000000-0000-4000-8000-000000000002':{id:'00000000-0000-4000-8000-000000000002',email:'g@example.com',app_metadata:{provider:'google'}}};
  const moderator={id:'00000000-0000-4000-8000-0000000000bb',email:'mod@example.com',email_confirmed_at:'2026-09-01T00:00:00Z'};
  assert.equal((await handleAdminEmail({admin:db({users}),body:{playerId:farmer.id,email:'farmer@example.com'},user:moderator})).status,403);

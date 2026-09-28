@@ -19,7 +19,7 @@ test('farmer names are unique whatever the capitals: the database refuses a take
 });
 test('the admin account plays nothing (fields, buildings, market, streaks, rewards), so the admin never plays there by accident',()=>{
  const api=read('supabase/functions/farm-api/index.ts');
- assert.match(api,/if\(body\.operation==='action'&&isSuperadmin\(user\)\)return reply\(\{error:'This is your admin account, so playing is locked here\. Play on your own farmer account\.'/);
+ assert.match(api,/if\(body\.operation==='action'&&isAdminAccount\(user\)\)return reply\(\{error:'This is your admin account, so playing is locked here\. Play on your own farmer account\.'/);
  assert.doesNotMatch(api,/ADMIN_LOCKED/,'every farm action, not a list that misses one');
  assert.match(read('supabase/functions/farm-api/admin-service.js'),/const SUPERADMINS=new Set\(\['floris@millstone\.nl'\]\);/,'only the admin, by confirmed e-mail');
 });
