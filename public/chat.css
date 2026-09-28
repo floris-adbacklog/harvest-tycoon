@@ -258,3 +258,6 @@ span.chat-avatar{cursor:default}
 .admin-email-form>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .admin-email-form input{flex:1 1 200px;min-width:0;min-height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 14px 'DM Sans',sans-serif}
 .admin-email-form .admin-hint{margin:0}
+/* Who reported a message (28 Sep 2026): one line under the message, each name opens that farmer's profile. */
+.admin-report-by{display:block;margin-top:2px;color:#7a6f5c}
+.admin-report-by .admin-log-name{font-weight:700;color:#5b6f3a}

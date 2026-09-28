@@ -256,3 +256,11 @@ test('phones show the dashboard tabs as icons only; each tab keeps its name',()=
  for(const [tab,name] of [['chat','Chat'],['players','Players'],['growth','Growth'],['purchases','Purchases'],['settings','Settings']])assert.match(dash,new RegExp(`data-admin-tab="${tab}" aria-label="${name}"[^>]*>'\\+art\\('[\\w-]+'\\)\\+'<span class="admin-tab-name">${name}</span></button>`),tab);
  assert.match(css,/@media\(max-width:600px\)\{\.admin-tab-name\{display:none\}/,'only the words hide, never a sprite icon (a span too)');
 });
+test('the staff see who reported a message, with the reason, in the open reports and the log',()=>{
+ const sql=readFileSync(new URL('../supabase/chat-report-reporters.sql',import.meta.url),'utf8'),dash=readFileSync(new URL('../src/admin-dashboard.js',import.meta.url),'utf8');
+ assert.equal((sql.match(/jsonb_build_object\('id',q\.reporter,'name',ps\.username,'reason',q\.reason\) order by q\.created_at/g)??[]).length,2,'both lists');
+ assert.match(sql,/where q\.message_id=r\.message_id and q\.resolved_at is null\) as reporters/,'the open list: only the open reports');
+ assert.equal((sql.match(/if public\.chat_staff_role\(\(select auth\.uid\(\)\)\) is null then raise exception 'Not authorized\.'/g)??[]).length,2,'staff only');
+ assert.equal((dash.match(/<\/small>\$\{reportedBy\(r\)\}/g)??[]).length,2);
+ assert.match(dash,/#admin-report-list'\)\.addEventListener\('click',async event=>\{\n  const name=event\.target\.closest\('\[data-profile\]'\);if\(name\)\{window\.harvestProfiles\?\.open\(/);
+});
