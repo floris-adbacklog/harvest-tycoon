@@ -10,13 +10,13 @@ const inviteModule=readFileSync(new URL('../src/invite-link.js',import.meta.url)
 const browserTipModule=readFileSync(new URL('../src/browser-tip.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const settle=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};}
-function fixture({user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'}}={}){
+function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'}}={}){
  const nodes=new Map(),events={},frames=[],calls=[],analytics=[],game=[],timers=[],lookups=[];let authCallback,currentUser=user,clock=1_000_000,nextTimer=1;
- const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},focus(){},scrollIntoView(){},replaceChildren(...items){this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},contentWindow:{}});return nodes.get(id);};
+ const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},toggleAttribute(name,on){(this.attrs??={})[name]=Boolean(on);},removeAttribute(name){if(this.attrs)delete this.attrs[name];},focus(){},scrollIntoView(){},replaceChildren(...items){this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},contentWindow:{}});return nodes.get(id);};
  const document={body:{dataset:{}},hidden:false,getElementById:element,querySelector:element,querySelectorAll:()=>[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
  const window={addEventListener(name,fn){events[name]=fn;}};
  const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};},...authApi},...(rpc?{rpc}:{})};
- const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,queueMicrotask,
+ const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online,userAgent:ua},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,queueMicrotask,
   // A delay of 0 runs at once; a real delay waits until the test moves the clock (see advance).
   setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,socialProviders:async()=>[],cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},openIntent:()=>null,withoutOpen:href=>href,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
 
@@ -226,4 +226,42 @@ test('a farmer name that is taken is refused before the account is made; a free 
  assert.equal(sent.length,0,'no account');assert.match(f.nodes.get('name-error').textContent,/taken/);
  await submit(f,{email:'a@b.nl',password:'secret1','player-name':'Free Farm'});
  assert.equal(sent.length,1);assert.equal(sent[0].options.data.username,'Free Farm');assert.deepEqual(asked,['Taken Farm','Free Farm']);
+});
+
+// 28 Sep 2026: inside the Facebook or Instagram app the sign-up card first offers the phone's own browser (src/browser-tip.js).
+const ANDROID_FB='Mozilla/5.0 (Linux; Android 14; SM-A546B Build/UP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/484.0.0.66.73;]';
+const IPHONE_IG='Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 400.0.0.0';
+const page={origin:'https://www.harvesttycoon.com',pathname:'/play.html',search:'?utm_source=facebook',hash:''};
+test('inside Facebook on Android the card offers Chrome, and the first visit hands the page to Chrome by itself, once',async()=>{
+ const storage={},f=fixture({ua:ANDROID_FB,storage,location:{...page}});await settle();
+ const card=f.nodes.get('.account-card');assert.equal(card.attrs['data-gate'],true);assert.equal(f.nodes.get('gate-open').textContent,'Open in Chrome');
+ assert.equal(f.context.location.href,'intent://www.harvesttycoon.com/play.html?utm_source=facebook#Intent;scheme=https;package=com.android.chrome;end');
+ assert.equal(storage['harvest-tycoon:browser-escape'],'shown');
+ const again=fixture({ua:ANDROID_FB,storage,location:{...page}});await settle();
+ assert.equal(again.context.location.href,undefined,'the second visit waits for a tap');assert.equal(again.nodes.get('.account-card').attrs['data-gate'],true);
+ again.nodes.get('gate-open').onclick();assert.match(again.context.location.href,/^intent:\/\//);
+ await again.advance(1500);assert.equal(again.nodes.get('gate-help').hidden,false,'still here: where the app keeps its own "open in browser"');assert.match(again.nodes.get('gate-help').textContent,/Open in Chrome/);
+});
+test('on an iPhone the card tries Safari only on a tap; "Play here instead" is remembered and ends the later tip too',async()=>{
+ const storage={},f=fixture({ua:IPHONE_IG,storage,location:{...page}});await settle();
+ assert.equal(f.context.location.href,undefined,'an iPhone is never sent anywhere by itself');assert.equal(f.nodes.get('gate-open').textContent,'Open in Safari');
+ f.nodes.get('gate-open').onclick();assert.equal(f.context.location.href,'x-safari-https://www.harvesttycoon.com/play.html?utm_source=facebook');
+ f.nodes.get('gate-stay').onclick();
+ assert.equal(storage['harvest-tycoon:browser-escape'],'stay');assert.equal(storage['harvest-tycoon:browser-tip'],'1');assert.equal(f.nodes.get('.account-card').attrs['data-gate'],undefined);
+ const later=fixture({ua:IPHONE_IG,storage,location:{...page}});await settle();assert.equal(later.nodes.get('.account-card').attrs?.['data-gate'],false,'the sign-up form straight away');
+});
+test('a phone browser, and every screen that is not sign-in or sign-up, never shows the browser step',async()=>{
+ const chrome=fixture({ua:'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/129.0 Mobile Safari/537.36',storage:{},location:{...page}});await settle();
+ assert.equal(chrome.nodes.get('.account-card').attrs?.['data-gate'],false);assert.equal(chrome.context.location.href,undefined);
+ const reset=fixture({ua:ANDROID_FB,user:{id:'A'},storage:{'harvest-tycoon:browser-escape':'shown'},location:{...page,hash:'#access_token=t&type=recovery'}});await settle();
+ assert.notEqual(reset.nodes.get('.account-card').attrs?.['data-gate'],true,'a password reset opened in the app still works');
+});
+test('the page shows the browser step before the script loads, for the same apps, and keeps a friend\'s invite in the link',async()=>{
+ const play=readFileSync(new URL('../public/play.html',import.meta.url),'utf8'),tip=await import('../src/browser-tip.js');
+ assert.ok(play.includes(`if(${tip.META_APP}.test(navigator.userAgent)&&localStorage.getItem('${tip.ESCAPE_KEY}')!=='stay')document.querySelector('.account-card').setAttribute('data-gate','');`));
+ for(const ua of [ANDROID_FB,IPHONE_IG,'… [FBAN/FBIOS;FBAV/500.0]','… Barcelona 350.0'])assert.ok(tip.metaApp(ua),ua);
+ for(const ua of ['Mozilla/5.0 (iPhone) Version/18.0 Mobile Safari/604.1','Mozilla/5.0 (Linux; Android 14) Chrome/129.0 Mobile Safari/537.36','… musical_ly'])assert.ok(!tip.metaApp(ua),ua);
+ assert.equal(tip.escapeTarget({origin:'https://www.harvesttycoon.com',pathname:'/play.html',search:'?code=abc&error=x&utm_campaign=eu'},'FARM2026'),'https://www.harvesttycoon.com/play.html?utm_campaign=eu&invite=FARM2026','no sign-in answer, the invite back in');
+ assert.ok(/\.account-card\[data-gate\]>:not\(\.card-top\):not\(\.browser-gate\):not\(\.account-legal\)\{display:none!important\}/.test(readFileSync(new URL('../public/welcome.css',import.meta.url),'utf8')));
+ assert.match(readFileSync(new URL('../public/privacy.html',import.meta.url),'utf8'),/<code>harvest-tycoon:browser-escape<\/code>/);
 });

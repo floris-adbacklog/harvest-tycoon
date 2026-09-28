@@ -39,6 +39,12 @@ async function sendPush(sub:{endpoint:string;p256dh:string;auth:string},payload:
  try{await webpush.sendNotification({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},payload,{TTL:3600,urgency:'normal'});return {ok:true,status:201};}
  catch(error){return {ok:false,status:Number((error as {statusCode?:number}).statusCode)||0};}
 }
+// The same check as the 10-diamond email confirmation (supabase: harvest_email_checked): a Google or Facebook sign-up, or an
+// address confirmed with the 6-digit code. Anything else (or an error) is not mailed.
+async function emailConfirmed(row:Record<string,any>){
+ const {data,error}=await admin.rpc('harvest_email_checked',{p_player:row.player_id});
+ return !error&&data===true;
+}
 async function sendEmail(row:Record<string,any>,digest:unknown){
  const unsubscribeUrl=`${functionUrl}?unsubscribe=${row.unsubscribe_token}`;
  const mail=digestEmail({digest,names:{crops:CROP_NAMES,buildings:BUILDING_NAMES},appUrl:APP_URL,unsubscribeUrl});
@@ -107,7 +113,7 @@ Deno.serve(async(req)=>{
  }
  if(!pushOn&&!emailOn)return json({ran:false,reason:'not configured'},503);
  try{
-  const stats=await runJob({db,sendPush:pushOn?sendPush:null,sendEmail:emailOn?sendEmail:null,names:{crops:CROP_NAMES,buildings:BUILDING_NAMES},log:(m:string)=>console.error(m)});
+  const stats=await runJob({db,sendPush:pushOn?sendPush:null,sendEmail:emailOn?sendEmail:null,emailConfirmed,names:{crops:CROP_NAMES,buildings:BUILDING_NAMES},log:(m:string)=>console.error(m)});
   return json(stats);
  }catch(error){console.error(error);return json({error:'The reminder job failed.'},500);}
 });

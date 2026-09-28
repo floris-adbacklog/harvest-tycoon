@@ -160,3 +160,18 @@ test('the names file is generated from the game, and sync copies it',async()=>{
  for(const [key,building] of Object.entries(game.BUILDINGS))assert.equal(BUILDING_NAMES[key],building.name,key);
  assert.equal(utcDay(MORNING),'2026-09-21');
 });
+test('job: when the email allowance runs short, the most recently active farmers get it first',async()=>{
+ const farm={plots:plots(['wheat',MORNING-HOUR]),login:{lastDay:'2026-09-20',streak:1}},on={email_digest:true,push_crops:false,push_production:false,push_daily:false,subscriptions:[]};
+ const seen=hours=>new Date(MORNING-hours*HOUR).toISOString();
+ const rows=[player({...on,player_id:'quiet 5 days',last_active_at:seen(120)},farm),player({...on,player_id:'yesterday',last_active_at:seen(14)},farm),player({...on,player_id:'never saved',last_active_at:null},farm),player({...on,player_id:'two days',last_active_at:seen(40)},farm)];
+ const {log,deps:d}=deps(rows,{emailCap:2});await runJob(d,MORNING);
+ assert.deepEqual(log.mails,['yesterday','two days']);
+});
+test('job: the daily email only goes to a confirmed address, and an unconfirmed one uses none of the allowance',async()=>{
+ const farm={plots:plots(['wheat',MORNING-HOUR]),login:{lastDay:'2026-09-20',streak:1}},on={email_digest:true,push_crops:false,push_production:false,push_daily:false,subscriptions:[]};
+ const rows=[player({...on,player_id:'typo'},farm),player({...on,player_id:'checked'},farm)];
+ const {log,deps:d}=deps(rows,{emailCap:1});d.emailConfirmed=async row=>row.player_id==='checked';await runJob(d,MORNING);
+ assert.deepEqual(log.mails,['checked']);assert.ok(!log.saved.some(s=>s[0]==='typo'&&s[1].digest_on),'tried again next hour, once confirmed');
+ const source=readFileSync(new URL('../supabase/functions/notify-hourly/index.ts',import.meta.url),'utf8');
+ assert.match(source,/admin\.rpc\('harvest_email_checked',\{p_player:row\.player_id\}\)/);assert.match(source,/sendEmail:emailOn\?sendEmail:null,emailConfirmed,/);
+});

@@ -179,3 +179,13 @@ html:has(body[data-phase=authenticated]),body[data-phase=authenticated]{touch-ac
 .site-legal{align-items:center}
 .site-legal-button{min-height:0;height:auto;margin:0;line-height:inherit}
 .site-legal .footer-social{display:inline-flex;align-items:center}
+/* Inside the Facebook or Instagram app (28 Sep 2026): before the account form, one step to the phone's own browser (src/main.js browserGate). */
+.browser-gate{display:none;text-align:center}
+.account-card[data-gate]>:not(.card-top):not(.browser-gate):not(.account-legal){display:none!important}
+.account-card[data-gate]>.browser-gate{display:grid;justify-items:center;gap:10px;padding:6px 0 4px}
+.browser-gate-art{width:64px;height:64px}
+.browser-gate h2{margin:0;font-size:25px}
+.browser-gate p{margin:0;font-size:14px;line-height:1.5;color:#6f6450}
+.browser-gate .primary{width:100%;margin-top:6px}.browser-gate .primary:after{content:none}
+.browser-gate .gate-help{padding:10px 12px;border-radius:12px;background:#f6eed9;color:#5d5236;font-size:13px}
+.browser-gate .link-button{margin-top:2px}

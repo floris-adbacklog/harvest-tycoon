@@ -35,3 +35,25 @@ function showBrowserTip({doc,win,storage}){
   go.remove();later.textContent='Got it';
  };
 }
+
+// Before sign-up (28 Sep 2026): of the EU players who stayed in the Facebook or Instagram browser, 2 in 96 came back on a second
+// day, against 22 in 92 in a phone's own browser. So the sign-up card first offers Meta's in-app visitors the phone's own browser,
+// where they make their account: Android hands the page to Chrome (on the first visit by itself, once), an iPhone tries Safari
+// (x-safari-https, iOS 17 and later) and otherwise shows where the app's own "open in browser" is. "Play here instead" stays.
+export const ESCAPE_KEY='harvest-tycoon:browser-escape';
+export const META_APP=/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona/i;
+export const metaApp=(ua='')=>META_APP.test(ua);
+export const safariUrl=href=>`x-safari-${href}`;
+// The page itself, without an OAuth answer or error in it, and with a friend's invite code put back (invite-link.js keeps it on
+// this device only, and the phone's browser is another device as far as storage goes).
+export function escapeTarget(loc,invite=null){
+ const url=new URL((loc.pathname??'/')+(loc.search??''),loc.origin);
+ for(const key of ['code','error','error_code','error_description'])url.searchParams.delete(key);
+ if(invite&&!url.searchParams.has('invite'))url.searchParams.set('invite',invite);
+ return url.href;
+}
+export function gateText(ua=''){
+ const android=/Android/i.test(ua),browser=android?'Chrome':'Safari';
+ return {android,app:inAppName(ua),browser,action:`Open in ${browser}`,
+  help:android?'Nothing happened? Tap ⋮ at the top of the screen and choose Open in Chrome or Open in browser.':'Tap ••• at the top of the screen and choose Open in browser. The link is copied too, so you can paste it in Safari.'};
+}

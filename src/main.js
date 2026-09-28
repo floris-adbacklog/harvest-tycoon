@@ -1,7 +1,7 @@
 import {createFarmPresence} from './presence.js';
 import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError,socialProviders} from './supabase.js';
 import {OAUTH_KEY,providerName,oauthStartError,oauthReturnMessage,usableProviders,embeddedBrowser} from './social-login.js';
-import {scheduleBrowserTip} from './browser-tip.js';
+import {scheduleBrowserTip,metaApp,gateText,escapeTarget,chromeIntent,safariUrl,ESCAPE_KEY,BROWSER_TIP_KEY} from './browser-tip.js';
 import {fetchLeaderboard} from './leaderboard.js';
 import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInvite} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
@@ -80,7 +80,7 @@ function lock(busy){$('account-submit').disabled=busy;document.querySelectorAll(
 // Google / Facebook buttons: only on the sign-in and create-account cards, and only for providers that are switched on.
 function showSocial(){$('social-login').hidden=!providers.length||!['signin','register'].includes(mode);}
 function setMode(next,focus=false){
- mode=next;const m=MODES[mode];if(mode!=='register')nameOpen=false;
+ mode=next;const m=MODES[mode];if(!['signin','register'].includes(mode))document.querySelector('.account-card')?.removeAttribute('data-gate');if(mode!=='register')nameOpen=false;
  const shows=field=>m.fields.includes(field)||(field==='name'&&mode==='register'&&nameOpen),visible=['email','password','name'].filter(shows);
  for(const field of ['email','password','name']){$(field+'-row').hidden=!shows(field);$(inputId(field)).required=shows(field)&&(field!=='name'||mode==='name');$(inputId(field)).setAttribute('enterkeyhint',field===visible.at(-1)?'go':'next');}
  clearErrors();setPasswordVisible(false);$('password').autocomplete=mode==='signin'?'current-password':'new-password';
@@ -92,7 +92,23 @@ function setMode(next,focus=false){
  document.querySelectorAll('.account-tabs [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
  if(focus){document.querySelector('.account-card').scrollIntoView({behavior:'smooth',block:'start'});if(visible.length)focusField(inputId(visible[0]),{preventScroll:true});}
 }
-function landing(message=''){connection.stop();dispose();setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
+// Inside the Facebook or Instagram app, the sign-up card first offers the phone's own browser (src/browser-tip.js, 28 Sep 2026).
+let gateTimer=null;
+function browserGate(){
+ const card=document.querySelector('.account-card'),ua=navigator.userAgent,on=metaApp(ua)&&store.get(ESCAPE_KEY)!=='stay';
+ card.toggleAttribute('data-gate',on);if(!on)return;
+ const text=gateText(ua),target=escapeTarget(location,pendingInvite(localStore)),help=$('gate-help');
+ document.querySelectorAll('[data-gate-browser]').forEach(el=>el.textContent=text.browser);document.querySelectorAll('[data-gate-app]').forEach(el=>el.textContent=text.app);$('gate-open').textContent=text.action;
+ const leave=()=>{location.href=text.android?chromeIntent(target):safariUrl(target);};
+ $('gate-open').onclick=()=>{
+  trackAuth('browser_gate',{reason:'open'});leave();clearTimeout(gateTimer);
+  // Still here a moment later: the app kept the page. Show where its own "open in browser" is (and copy the link on an iPhone).
+  gateTimer=setTimeout(()=>{if(document.hidden)return;help.textContent=text.help;help.hidden=false;if(!text.android)void navigator.clipboard?.writeText(target).catch(()=>{});},1500);
+ };
+ $('gate-stay').onclick=()=>{store.set(ESCAPE_KEY,'stay');store.set(BROWSER_TIP_KEY,'1');card.removeAttribute('data-gate');trackAuth('browser_gate',{reason:'stay'});};
+ if(!store.get(ESCAPE_KEY)){store.set(ESCAPE_KEY,'shown');trackAuth('browser_gate',{reason:'shown'});if(text.android)leave();}
+}
+function landing(message=''){connection.stop();dispose();setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');browserGate();$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
 function unavailable(message='Your farm is safe. Reconnect to continue.',{retrying=false}={}){dispose();phase('error');$('account-title').textContent='A little pause.';$('account-copy').hidden=false;$('account-copy').textContent=message;$('account-message').textContent=retrying?'We are trying again automatically.':'';$('account-form').hidden=true;$('confirm-panel').hidden=true;$('mode-switch-row').hidden=true;document.querySelector('.account-tabs').hidden=true;$('connection-actions').hidden=false;}
 async function signOut(){if(!supabase){landing();return;}connection.stop();try{await notifications?.push?.detach();}catch{}notifications=null;dispose();phase('checking','Signing you out…');try{const result=await supabase.auth.signOut();if(result.error)throw result.error;}catch{await supabase.auth.signOut({scope:'local'});}finally{landing();$('password').value='';}}
 // "Check your inbox": shown after registering, after asking for a reset link, and when an unconfirmed player tries to sign in.

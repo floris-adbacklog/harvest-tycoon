@@ -1,8 +1,8 @@
 import {refreshArt} from './visual-icons.js';
 import {createInstallSection} from './install-ui.js';
 import {createNotificationsSection} from './notifications-ui.js';
-export function createSoundSettings(audio){
- const $=id=>document.getElementById(id),dialog=$('sound-dialog'),install=createInstallSection(),reminders=createNotificationsSection();
+export function createSoundSettings(audio,{onEmailOn}={}){
+ const $=id=>document.getElementById(id),dialog=$('sound-dialog'),install=createInstallSection(),reminders=createNotificationsSection({onEmailOn});
  function refresh(){
   const s=audio.settings(),audible=s.enabled&&(s.ambience>0||s.effects>0);
   $('sound-enabled').checked=s.enabled;$('sound-enabled').disabled=!s.available;

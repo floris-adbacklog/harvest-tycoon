@@ -11,7 +11,8 @@ const DEVICE={
  on:'Notifications are on in this browser or app.'
 };
 const hourLabel=hour=>`${String(hour).padStart(2,'0')}:00`;
-export function createNotificationsSection(){
+// onEmailOn: the daily email was just switched on (game.js opens the email check for an address that is not confirmed yet).
+export function createNotificationsSection({onEmailOn}={}){
  const $=id=>document.getElementById(id),api=()=>{try{return window.parent?.harvestBridge?.notifications??null;}catch{return null;}};
  let saving=false,current=null;
  const select=$('notify-hour');
@@ -50,7 +51,7 @@ export function createNotificationsSection(){
  async function change(){
   if(saving)return;const bridge=api(),before=current;if(!bridge)return;
   const next=read();$('notify-email-time').hidden=!next.emailDigest;busy(true);status('Saving…');
-  try{paint(await bridge.save(next));status('Saved.');}
+  try{paint(await bridge.save(next));status('Saved.');if(next.emailDigest&&!before?.emailDigest)onEmailOn?.();}
   catch(error){if(before)paint(before);status(error?.message||'Could not save. Please try again.');}
   finally{busy(false);}
  }
