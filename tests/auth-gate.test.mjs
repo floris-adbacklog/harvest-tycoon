@@ -262,6 +262,6 @@ test('the page shows the browser step before the script loads, for the same apps
  for(const ua of [ANDROID_FB,IPHONE_IG,'… [FBAN/FBIOS;FBAV/500.0]','… Barcelona 350.0'])assert.ok(tip.metaApp(ua),ua);
  for(const ua of ['Mozilla/5.0 (iPhone) Version/18.0 Mobile Safari/604.1','Mozilla/5.0 (Linux; Android 14) Chrome/129.0 Mobile Safari/537.36','… musical_ly'])assert.ok(!tip.metaApp(ua),ua);
  assert.equal(tip.escapeTarget({origin:'https://www.harvesttycoon.com',pathname:'/play.html',search:'?code=abc&error=x&utm_campaign=eu'},'FARM2026'),'https://www.harvesttycoon.com/play.html?utm_campaign=eu&invite=FARM2026','no sign-in answer, the invite back in');
- assert.ok(/\.account-card\[data-gate\]>:not\(\.card-top\):not\(\.browser-gate\):not\(\.account-legal\)\{display:none!important\}/.test(readFileSync(new URL('../public/welcome.css',import.meta.url),'utf8')));
+ assert.ok(/\.account-card\[data-gate\]>:not\(\.card-top\):not\(\.browser-gate\)\{display:none!important\}/.test(readFileSync(new URL('../public/welcome.css',import.meta.url),'utf8')));
  assert.match(readFileSync(new URL('../public/privacy.html',import.meta.url),'utf8'),/<code>harvest-tycoon:browser-escape<\/code>/);
 });
