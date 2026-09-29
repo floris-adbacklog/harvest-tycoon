@@ -11,7 +11,7 @@ export function renderLanguageSwitch(host=document.getElementById('language-swit
  if(!host)return;
  const ready=LANGUAGES.filter(l=>l.ready);
  if(ready.length<2){host.hidden=true;return;}
- const current=chosenLanguage(),name=ready.find(l=>l.code===current)?.name??'English';
+ const current=chosenLanguage(),name=(ready.find(l=>l.code===current)??ready[0]).name;
  host.innerHTML=`<button type="button" class="language-button" aria-haspopup="listbox" aria-expanded="false">${flag(current)}<span lang="${current}">${name}</span>${chevron}</button>`
   +`<ul class="language-menu${ready.length>6?' is-wide':''}" role="listbox" aria-label="Language" hidden>${ready.map(({code,name})=>`<li role="option" tabindex="-1" data-code="${code}" lang="${code}" aria-selected="${code===current}">${flag(code)}<span>${name}</span>${code===current?check:''}</li>`).join('')}</ul>`;
  host.hidden=false;
