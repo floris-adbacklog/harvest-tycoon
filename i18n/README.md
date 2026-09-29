@@ -151,6 +151,27 @@ Preserves Workshop 保存食工房 · Trade Depot 交易所 · The Ranch 牧場 
 rush order 急ぎの注文 · delivery order 配達注文 · Squash ズッキーニ · Green beans さやいんげん · Pole beans つるインゲン ·
 Cherries さくらんぼ · specialist 名人 · Starter Pack スターターパック · leaderboard ランキング · report 通報.
 
+### Türkçe (informal "sen")
+
+No plural after a number ("5 elmas"). Percent before the number (%10, +%{0}), thousands with a dot, decimals with a comma (1.000,
+1,6×). A suffix never goes on a placeholder, because it depends on how the value sounds: write "Tarla {1}: {0} hasat et",
+"Önce şunu aç: {0}", "{0}. seviye" (ordinal) instead. Loose parts around a name or number keep Turkish word order with a colon
+("Oyunu şurada aç:" + browser).
+coins altın · diamonds elmas · field tarla · crop mahsul · goods ürün · harvest hasat · plant ek · water sula · care bakım ·
+fertilize gübrele · batch parti · slot yuva · building bina · upgrade yükselt · level seviye (Sv) · rank rütbe ·
+Market Pazar · Quests Görevler · More Daha fazla · My farm Çiftliğim · boost güçlendirici · streak seri · daily gift günlük hediye ·
+daily challenge günlük meydan okuma · qualify hak kazan · Farm Family Çiftlik Ailesi · Family Chest Aile Sandığı ·
+Family Order Aile Siparişi · Family Hall Aile Salonu · leader/co-leader lider/yardımcı lider · honorary onursal üye ·
+tournament turnuva · chore çiftlik işi · helping hand yardım (stop durak, round tur) · Estate Malikâne · Valley Vadi ·
+Valley Market Vadi Pazarı · farm stall çiftlik tezgâhı · storage depo · natural fertilizer doğal gübre · animal feed hayvan yemi ·
+heirloom ata tohumu · test bed deneme tarhı · Seed Lab Tohum Laboratuvarı · Glasshouse Cam Sera · Greenhouse (stop) Sera ·
+Apiary Arılık · Bee Yard Arı Bahçesi · Animal paddock Hayvan Ağılı · Tool workshop Alet Atölyesi · The Ranch Hayvan Çiftliği ·
+herd sürü · Grand Valley Fair Büyük Vadi Fuarı · fair star fuar yıldızı · Farmhouse Çiftlik Evi · Dairy Barn Süt Ahırı ·
+Windmill Yel Değirmeni · Feed Mill Yem Değirmeni · Juice Press Meyve Suyu Presi · Preserves Workshop Konserve Atölyesi ·
+Trade Depot Ticaret Deposu · trailer römork · visitor ziyaretçi · customer müşteri · rush order acil sipariş ·
+delivery order teslimat siparişi · Berries orman meyvesi · Squash kabak · Pumpkin bal kabağı · Cider sider ·
+specialist uzmanı · Starter Pack Başlangıç Paketi · leaderboard sıralama · report bildir.
+
 ### Русский (informal "ты", three plural forms)
 
 Counts use plural objects (`one`/`few`/`many`/`other`); the runtime picks the form from the first number in the text.

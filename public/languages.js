@@ -11,7 +11,7 @@ export const LANGUAGES=Object.freeze([
  {code:'hu',name:'Magyar'},
  {code:'nl',name:'Nederlands',ready:true},
  {code:'pt',name:'Português',ready:true},
- {code:'tr',name:'Türkçe'},
+ {code:'tr',name:'Türkçe',ready:true},
  {code:'ru',name:'Русский',ready:true},
  {code:'uk',name:'Українська'},
  {code:'hi',name:'हिन्दी',ready:true},
