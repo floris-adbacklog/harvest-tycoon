@@ -13,6 +13,5 @@ export const LANGUAGES=Object.freeze([
  {code:'ru',name:'Русский'},
  {code:'ar',name:'العربية'},
  {code:'hi',name:'हिन्दी',ready:true},
- {code:'zh',name:'中文'},
  {code:'ja',name:'日本語'}
 ].map(Object.freeze));
