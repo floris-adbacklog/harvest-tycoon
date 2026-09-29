@@ -33,3 +33,30 @@ test('the card: the family icon, the good\'s picture, a Give button for the othe
  assert.match(client,/const CARD_COLUMNS=`\$\{MESSAGE_COLUMNS\},kind,meta`/);
  assert.match(client,/if\(first\.error\?\.code==='42703'\)cards=false;/,'without the new columns the chat reads the old ones');
 });
+
+test('a new rank in the family writes a card with the rank\'s badge; joining another family or leaving does not',()=>{
+ const sql=read('supabase/family-rank-chat.sql');
+ assert.match(sql,/check \(kind in \('message','request','rank','top'\)\)/);
+ assert.match(sql,/after update of role on public\.family_members for each row\s+when \(old\.role is distinct from new\.role and old\.family_id=new\.family_id and old\.left_at is null and new\.left_at is null\)/);
+ assert.match(sql,/jsonb_build_object\('from',old\.role,'to',new\.role\)/);
+ assert.match(sql,/exception when others then return new;/);
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/if\(m\.kind==='rank'\)return rankRow\(m\);/);
+ assert.match(ui,/art\(`family-rank-\$\{RANK_ORDER\[to\]\?to:'member'\}`\)/);
+ assert.match(ui,/\$\{up\?'Promoted':'Demoted'\}/);
+ const at=minute=>new Date(Date.UTC(2026,8,29,10,minute)).toISOString();
+ assert.deepEqual(messageLayout([{sender:'a',created_at:at(2)},{sender:'a',kind:'rank',created_at:at(1)}]).map(x=>x.cont),[false,false]);
+});
+
+test('a new top farmer is checked once an hour and gets a card; the first run only writes down who is on top',()=>{
+ const sql=read('supabase/family-top-chat.sql');
+ assert.match(sql,/select cron\.schedule\('harvest-family-top','35 \* \* \* \*','select public\.family_top_check\(\)'\);/,'once an hour');
+ assert.match(sql,/order by cp\.family_id, cp\.points desc, cp\.player_id::text/,'the game\'s rule: most points, a tie to the lowest player ID');
+ assert.match(sql,/m\.left_at is null/);assert.match(sql,/cp\.points>0/);
+ assert.match(sql,/if found and \(prev\.week<>wk or prev\.player_id<>r\.player_id\) then/,'a card only when it changed, never on the first run');
+ assert.match(sql,/floor\(\(extract\(epoch from now\(\)\)\*1000-4\*86400000\)\/\(7\*86400000\)\)/,'the game\'s week (familyWeek)');
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/if\(m\.kind==='top'\)return topRow\(m\);/);
+ assert.match(ui,/art\('family-rank-top'\)/);
+ for(const file of ['supabase/family-rank-chat.sql','supabase/family-top-chat.sql'])assert.match(read(file),/check \(kind in \('message','request','rank','top'\)\)/,`${file}: the same kinds, whichever runs last`);
+});

@@ -37,8 +37,9 @@ export function dayLabel(iso,now=Date.now()){
 export function messageLayout(shown){
  return shown.map((m,i)=>{
   const newer=shown[i-1],day=!newer||dayKey(newer.created_at)!==dayKey(m.created_at);
-  // A request card stands on its own: it never folds into the messages around it.
-  const cont=Boolean(newer)&&!day&&newer.kind!=='request'&&m.kind!=='request'&&newer.sender===m.sender&&Date.parse(newer.created_at)-Date.parse(m.created_at)<=GROUP_GAP;
+  // A card (a request, a new rank) stands on its own: it never folds into the messages around it.
+  const card=x=>Boolean(x.kind)&&x.kind!=='message';
+  const cont=Boolean(newer)&&!day&&!card(newer)&&!card(m)&&newer.sender===m.sender&&Date.parse(newer.created_at)-Date.parse(m.created_at)<=GROUP_GAP;
   return {m,day,cont};
  });
 }
@@ -148,8 +149,23 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const give=!given&&!mine&&r.request?`<button type="button" class="primary-button chat-request-give" data-give="${esc(r.request)}"${known&&have<qty?' disabled':''}>Give ${qty} ${esc(name)}</button>`:'';
   return `<li class="chat-request${given?' is-given':''}" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Family request</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(r.item)}</span><div><p class="chat-text">${esc(given?`${m.sender_name} asked for ${qty} ${name}`:`${m.sender_name} asks for ${qty} ${name}`)}</p>${status?`<small class="chat-request-status">${esc(status)}</small>`:''}</div></div>${give}</li>`;
  }
+ // A new rank in the family (supabase/family-rank-chat.sql): a card with the rank's badge, a promotion in the warm colour, a
+ // demotion in grey.
+ const RANK_ORDER={member:1,honorary:2,coleader:3,leader:4};
+ const RANK_TEXT={leader:'{0} is now the leader.',coleader:'{0} is now a co-leader.',honorary:'{0} is now an honorary member.',member:'{0} is now a member.'};
+ function rankRow(m){
+  const {from,to}=m.meta??{},up=(RANK_ORDER[to]??0)>=(RANK_ORDER[from]??0),text=(RANK_TEXT[to]??'{0} is now a member.').replace('{0}',m.sender_name);
+  return `<li class="chat-request chat-rank${up?'':' is-given'}" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}${up?'Promoted':'Demoted'}</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(`family-rank-${RANK_ORDER[to]?to:'member'}`)}</span><div><p class="chat-text">${esc(text)}</p></div></div></li>`;
+ }
+ // A new top farmer of the week (supabase/family-top-chat.sql, checked once an hour): the crown and their chest points.
+ function topRow(m){
+  const points=Number(m.meta?.points)||0;
+  return `<li class="chat-request chat-top-farmer" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Top farmer</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art('family-rank-top')}</span><div><p class="chat-text">${esc(`${m.sender_name} is now the top farmer of the week.`)}</p>${points?`<small class="chat-request-status">${esc(`${points} points`)}</small>`:''}</div></div></li>`;
+ }
  function messageRow(m,{cont=false}={}){
   if(m.kind==='request')return requestRow(m);
+  if(m.kind==='rank')return rankRow(m);
+  if(m.kind==='top')return topRow(m);
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
   // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
   const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
