@@ -1,6 +1,7 @@
 import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
 import {ITEMS,CROPS,itemAvailable,levelOf} from './farm-state.js';
+import {showCenterNotice} from './center-notice.js';
 // Daily sharing inside a Farm Family: help a member with coins, send a gift of any crop or good, ask for any crop or good
 // of any crop or good you have unlocked, and fill someone else's request. Everything comes out of your own farm (harvest_social in retention-social.sql moves it),
 // so this screen only has to make the choices clear and say up front what cannot be done today.
@@ -105,12 +106,14 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   refreshArt();
  }
  async function load(){try{social=(await bridge.request({operation:'social'})).social;error='';}catch(e){error=e.message;}render();}
+ // What a Help or gift did, or why it was refused, in the middle of the screen over the window (center-notice.js).
+ const say=(message,refused=false)=>{const host=root?.closest('dialog')??root;if(host)showCenterNotice(host,message,{refused});else notify?.(message);};
  async function act(action){
   if(busy)return;busy=true;root.querySelectorAll('button:not([data-close]):not([data-back])').forEach(b=>b.disabled=true);
   // Drop the fields a kind does not use, so the server only sees what it expects.
   const clean=Object.fromEntries(Object.entries(action).filter(([,v])=>v!==undefined));
-  try{const r=await bridge.request({operation:'social',action:clean,requestId:crypto.randomUUID()});notify?.(sharingMessage(r.social,clean,id=>social?.members.find(m=>m.id===id)?.name??'your family member'));if(clean.kind==='gift')gift.to=null;await refreshFarm?.();await load();}
-  catch(e){render();const status=root?.querySelector('[data-status]');if(status)status.textContent=e.message;}
+  try{const r=await bridge.request({operation:'social',action:clean,requestId:crypto.randomUUID()});say(sharingMessage(r.social,clean,id=>social?.members.find(m=>m.id===id)?.name??'your family member'));if(clean.kind==='gift')gift.to=null;await refreshFarm?.();await load();}
+  catch(e){render();say(e.message,true);}
   finally{busy=false;}
  }
  return {
