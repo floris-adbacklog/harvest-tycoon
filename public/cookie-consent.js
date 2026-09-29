@@ -1,4 +1,4 @@
-// The cookie choice. The banner names the purposes; the privacy policy it links to names the tools. Google Tag Manager (which runs Google Analytics, the Meta Pixel and the ChatGPT Ads pixel) only loads after "Accept": the
+// The cookie choice. The banner names the purposes; the privacy policy it links to names the tools. Google Tag Manager (which runs Google Analytics and the Meta Pixel) only loads after "Accept": the
 // loader at the top of play.html reads the same choice. The choice is kept for 12 months in local storage and can be
 // changed at any time: "Cookie settings" at the bottom of the home page, in the game's Settings, or /?cookie-settings.
 // Accept is the filled button; Decline sits next to it at the same size and stays clearly readable (outlined), so declining
