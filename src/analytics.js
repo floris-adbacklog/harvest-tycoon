@@ -38,12 +38,14 @@ export function trackSignUp({confirmationRequired=false}={},win){
 }
 
 const COMMERCE_EVENTS=new Set(['diamond_shop_view','diamond_pack_started','diamond_pack_completed','diamond_action_completed','vip_purchase_started','vip_purchase_completed','vip_extended','vip_expired']);
-const COMMERCE_VALUES={pack:new Set(['50','100','150','300','500','600','1000','1250','2000','3500','starter']),plan:new Set(['week','month']),length:new Set(['30m','1h','1d']),action:new Set(['finish_crop','finish_batch','xp','harvest','coins','crops','production','upgrade','replace_order'])};
+const COMMERCE_VALUES={pack:new Set(['50','100','150','300','500','600','1000','1250','2000','3500','starter','offer']),plan:new Set(['week','month']),length:new Set(['30m','1h','1d']),action:new Set(['finish_crop','finish_batch','xp','harvest','coins','crops','production','upgrade','replace_order'])};
 export function trackCommerce(event,params={},win=globalThis.window){
  if(!COMMERCE_EVENTS.has(event))return;
  const clean={device:deviceType(win)};
  for(const [key,values] of Object.entries(COMMERCE_VALUES))if(values.has(params[key]))clean[key]=params[key];
- for(const key of ['cost','diamonds'])if(Number.isSafeInteger(params[key])&&params[key]>=0&&params[key]<=10000)clean[key]=params[key];
+ for(const key of ['cost','diamonds','amount_cents'])if(Number.isSafeInteger(params[key])&&params[key]>=0&&params[key]<=10000)clean[key]=params[key];
+ // A price paid is in euro cents (30 Sep 2026: for the ChatGPT Ads pixel's order_created in Tag Manager).
+ if('amount_cents' in clean)clean.currency='EUR';
  pushEvent(event,clean,win);
 }
 

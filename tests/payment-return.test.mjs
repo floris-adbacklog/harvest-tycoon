@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-const source=readFileSync(new URL('../src/payment-ui.js',import.meta.url),'utf8').replace(/^import .*;\n/,'').replace('export function','function');
+const source=readFileSync(new URL('../src/payment-ui.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace('export function','function');
 const settle=async()=>{for(let n=0;n<15;n++)await Promise.resolve();};
 function fixture({cancelled=false,payments,refresh}={}){
  const nodes=new Map(),listeners={},timers=new Map();let counter=0,cleared=0,confirmations=0;
@@ -10,7 +10,7 @@ function fixture({cancelled=false,payments,refresh}={}){
  const dialog={dataset:{},setAttribute(){},querySelector:node,addEventListener(name,fn){listeners[name]=fn;},showModal(){this.open=true;},close(){this.open=false;listeners.close();},remove(){this.removed=true;}};
  const window=new EventTarget();window.harvestRefresh=refresh;window.addEventListener('harvest-purchase-confirmed',()=>confirmations++);
  const bridge={paymentReturn:()=>({id:'purchase',cancelled}),payments,clearPaymentReturn(){cleared++;}};
- vm.runInNewContext(source+'\nshowPaymentReturn(bridge);',{document:{createElement:()=>dialog,body:{append(){}}},window,bridge,Event,art:()=>'',setTimeout(fn){timers.set(++counter,fn);return counter;},clearTimeout(id){timers.delete(id);}});
+ vm.runInNewContext(source+'\nshowPaymentReturn(bridge);',{document:{createElement:()=>dialog,body:{append(){}}},window,bridge,Event,art:()=>'',paymentPack:()=>({cents:499}),setTimeout(fn){timers.set(++counter,fn);return counter;},clearTimeout(id){timers.delete(id);}});
  return {dialog,node,timers,get cleared(){return cleared;},get confirmations(){return confirmations;}};
 }
 test('server confirmation wins over a cancelled URL and a failed farm refresh',async()=>{

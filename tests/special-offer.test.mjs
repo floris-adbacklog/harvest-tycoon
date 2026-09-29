@@ -85,3 +85,10 @@ test('the offer window: its cards, once per device, a sound, and the Diamond sho
  assert.match(read('src/starter-pack-ui.js'),/window\.dispatchEvent\(new CustomEvent\('harvest-catalog',\{detail:data\}\)\);/,'no second catalogue request');
  assert.match(read('public/sound-kit.js'),/case 'offer':/);
 });
+
+test('a paid offer reaches Tag Manager with its price in euro cents (the ChatGPT Ads pixel)',async()=>{
+ const {trackCommerce}=await import('../src/analytics.js');
+ const win={innerWidth:390};trackCommerce('diamond_pack_completed',{pack:'offer',diamonds:3000,amount_cents:499,playerId:'private'},win);
+ assert.deepEqual(win.dataLayer,[{event:'diamond_pack_completed',device:'mobile',pack:'offer',diamonds:3000,amount_cents:499,currency:'EUR'}]);
+ assert.match(read('src/payment-ui.js'),/amount=paymentPack\(result\.pack\)\.cents;/);
+});

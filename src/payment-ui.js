@@ -1,4 +1,5 @@
 import {art} from '../public/visual-icons.js';
+import {paymentPack} from '../game/payments.js';
 
 export function showPaymentReturn(bridge){
  const purchase=bridge.paymentReturn?.();if(!purchase?.id)return;
@@ -21,7 +22,7 @@ export function showPaymentReturn(bridge){
    const result=await bridge.payments({operation:'status',purchaseId:purchase.id});if(closed)return;
    if(result.status==='credited'){
     // Local deduplication only; no purchase or account identifier is sent to analytics.
-    try{const key='harvest-payment-event:'+purchase.id;if(!sessionStorage.getItem(key)){bridge.trackCommerce?.('diamond_pack_completed',{pack:result.pack,diamonds:result.diamonds});sessionStorage.setItem(key,'1');}}catch{}
+    try{const key='harvest-payment-event:'+purchase.id;if(!sessionStorage.getItem(key)){let amount;try{amount=paymentPack(result.pack).cents;}catch{}bridge.trackCommerce?.('diamond_pack_completed',{pack:result.pack,diamonds:result.diamonds,amount_cents:amount});sessionStorage.setItem(key,'1');}}catch{}
 
     // A special offer: what was added, in the order of the offer window (src/offer-ui.js), as a list joined with " · " so every
     // part is translated on its own (public/i18n.js).
