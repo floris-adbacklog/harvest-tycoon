@@ -115,17 +115,19 @@ export async function handleAdminInvites({admin,user,now=Date.now(),reward=150,l
 }
 
 // Where and on what a farmer opened the game, for the admin (supabase/admin-player-insights.sql): the country of the device's own time
-// zone (sent with every load, time-zones.js; never worked out from the IP address), the IP address and the browser. One row per
-// farmer, replaced on every load; a failure here never stops a farm opening.
+// zone (sent with every load, time-zones.js; never worked out from the IP address), the IP address, the browser and the language the
+// game is in ("nl", sent with every load, src/supabase.js). One row per farmer, replaced on every load; a failure here never stops a
+// farm opening.
 const IPV4=/^\d{1,3}(\.\d{1,3}){3}$/,IPV6=/^[0-9a-f:.]{2,45}$/i;
-export function seenFrom(headers,timeZone){
+export function seenFrom(headers,timeZone,language){
  const get=name=>String(headers?.get?.(name)??'').trim();
  const ip=get('cf-connecting-ip')||get('x-real-ip')||get('x-forwarded-for').split(',')[0].trim();
- return {country:zoneCountry(timeZone),ip:IPV4.test(ip)||IPV6.test(ip)&&ip.includes(':')?ip:null,device:get('user-agent').slice(0,300)||null};
+ return {country:zoneCountry(timeZone),ip:IPV4.test(ip)||IPV6.test(ip)&&ip.includes(':')?ip:null,device:get('user-agent').slice(0,300)||null,
+  language:/^[a-z]{2}$/.test(language??'')?language:null};
 }
-// Only what this visit knows is written: a load without a time zone (a game tab from before this) keeps the country saved earlier.
-export async function recordSeen({admin,player,headers,timeZone,now=Date.now()}){
- const seen=Object.fromEntries(Object.entries(seenFrom(headers,timeZone)).filter(([,value])=>value!=null));
+// Only what this visit knows is written: a load without a time zone or language (a game tab from before this) keeps what was saved.
+export async function recordSeen({admin,player,headers,timeZone,language,now=Date.now()}){
+ const seen=Object.fromEntries(Object.entries(seenFrom(headers,timeZone,language)).filter(([,value])=>value!=null));
  const saved=await admin.from('player_seen').upsert({player_id:player,...seen,seen_at:new Date(now).toISOString()});
  if(saved.error)throw saved.error;
 }
@@ -151,8 +153,8 @@ export async function allRows(query,page=1000){
 }
 
 // Every farmer in one list, for the Players tab and the new-player funnel (src/admin-dashboard.js): when they joined and how they
-// sign in, when they were last active, their level, days played, beginner guide step, VIP and family. The country, IP address and
-// device are for the admin only, never for the moderators.
+// sign in, when they were last active, their level, days played, beginner guide step, VIP, family and the language they play in. The
+// country, IP address and device are for the admin only, never for the moderators.
 export async function handleAdminPlayers({admin,user,now=Date.now(),page=1000}){
  if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  const owner=isSuperadmin(user);
@@ -169,7 +171,7 @@ export async function handleAdminPlayers({admin,user,now=Date.now(),page=1000}){
    createdAt:a.created_at,lastActiveAt:s?.last_active_at??null,lastSignInAt:a.last_sign_in_at??null,provider:a.provider??'email',
    online:s?isRecentlyActive(s.last_active_at,now):false,everPlayed:Boolean(s),vip:Date.parse(s?.vip_expires_at)>now,
    daysPlayed:num(f?.visits),streak:num(f?.streak),guide:num(f?.guide),guideDone:f?.guideDone===true,family:f?.family?family.get(f.family)??'A family':null,
-   ...(owner?{country:a.country??null,ip:a.ip??null,device:deviceName(a.device)}:{})};
+   language:a.language??null,...(owner?{country:a.country??null,ip:a.ip??null,device:deviceName(a.device)}:{})};
  });
  return respond(user,{players,owner,guideSteps:BEGINNER_QUESTS.length});
 }
@@ -225,6 +227,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   events:{joined:joined.length,finished:joined.filter(e=>e.qualified).length,diamonds:joined.reduce((sum,e)=>sum+num(e.diamonds),0)},
   chat:{messages:messages?.count??null,reported:reports?.count??null,muted,banned:sanction?.data?.banned===true},
   invites:{invitedBy:inviter?inviterRow?.data?.username??'A farmer':null,friends:friends.length,qualified:friends.filter(f=>f.qualified_at).length},
+  language:a.language??null,
   sameNetwork:!a.ip?null:shared.map(row=>({playerId:row.player_id,username:row.username??null,everPlayed:row.username!=null})),
   ...(owner?{email:authUser?.data?.user?.email??null,country:a.country??null,ip:a.ip??null,device:deviceName(a.device),userAgent:a.device??null,seenAt:a.seen_at??null,
    starter:{offeredAt:num(state?.starterOffer?.unlockedAt)||null,bought:state?.starterPackClaimed===true},

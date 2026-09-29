@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {handleAdminPlayers,handleAdminPlayer,seenFrom,recordSeen,deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
-import {filterPlayers,funnel,funnelHtml,playerRow,playerDetail,countryCounts,country,dateTime,zoneMidnight,GUIDE_STEPS} from '../src/admin-players.js';
+import {filterPlayers,funnel,funnelHtml,playerRow,playerDetail,countryCounts,country,gameLanguage,languageCounts,languagesHtml,dateTime,zoneMidnight,GUIDE_STEPS} from '../src/admin-players.js';
 import {BEGINNER_QUESTS} from '../game/farm-state.js';
 import {zoneCountry,ZONE_COUNTRY} from '../supabase/functions/farm-api/time-zones.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -42,7 +42,7 @@ function database(tables={}){
  };
 }
 const accounts=[
- {player_id:P1,created_at:iso(now-2*DAY),provider:'google',last_sign_in_at:iso(now-3600000),country:'NL',ip:'81.2.3.4',device:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',seen_at:iso(now-60000)},
+ {player_id:P1,created_at:iso(now-2*DAY),provider:'google',last_sign_in_at:iso(now-3600000),country:'NL',ip:'81.2.3.4',device:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',seen_at:iso(now-60000),language:'nl'},
  {player_id:P2,created_at:iso(now-10*DAY),provider:'email',last_sign_in_at:iso(now-9*DAY),country:null,ip:'81.2.3.4',device:null,seen_at:null},
  {player_id:P3,created_at:iso(now-DAY/2),provider:'facebook',last_sign_in_at:null,country:null,ip:null,device:null,seen_at:null}
 ];
@@ -70,8 +70,8 @@ test('admin_players: every account with its farm, last activity, sign-in, guide 
  const [tony,idle,fresh]=result.data.players;
  assert.equal(tony.username,'Tony');assert.equal(tony.online,true);assert.equal(tony.vip,true);assert.equal(tony.provider,'google');assert.equal(tony.family,'Sunny Acres');
  assert.equal(tony.daysPlayed,5);assert.equal(tony.guide,10);assert.equal(tony.guideDone,true);assert.equal(tony.lastActiveAt,iso(now-60000));
- assert.equal(tony.country,'NL');assert.equal(tony.ip,'81.2.3.4');assert.equal(tony.device,'iPhone · Safari');
- assert.equal(idle.online,false);assert.equal(idle.family,null);assert.equal(idle.country,null);
+ assert.equal(tony.country,'NL');assert.equal(tony.ip,'81.2.3.4');assert.equal(tony.device,'iPhone · Safari');assert.equal(tony.language,'nl');
+ assert.equal(idle.online,false);assert.equal(idle.family,null);assert.equal(idle.country,null);assert.equal(idle.language,null);
  assert.equal(fresh.everPlayed,false);assert.equal(fresh.username,null);assert.equal(fresh.provider,'facebook');
 });
 test('admin_players: every page is read, however many farmers there are (PostgREST answers at most 1,000 rows at a time)',async()=>{
@@ -88,8 +88,10 @@ test('admin_players and admin_player: the IP address, country and device are for
  const list=await handleAdminPlayers({admin:database(tables),user:moderator,now});
  assert.equal(list.status,200);assert.equal(list.data.owner,false);
  for(const p of list.data.players)for(const key of ['ip','country','device'])assert.ok(!(key in p),`a moderator never gets ${key}`);
+ assert.equal(list.data.players[0].language,'nl','the language is for all staff');
  const one=await handleAdminPlayer({admin:database(tables),user:moderator,playerId:P1,now});
  assert.equal(one.status,200);for(const key of ['ip','country','device','userAgent','seenAt','purchases','starter'])assert.ok(!(key in one.data.player),`a moderator never gets ${key}`);
+ assert.equal(one.data.player.language,'nl');
  assert.deepEqual(one.data.player.sameNetwork,[{playerId:P2,username:'Idle',everPlayed:true}],'but does see which accounts share the network, for a second account dodging a ban');
  assert.match(playerDetail(one.data.player,{now}),/Same network as<\/dt><dd><button type="button" class="admin-link" data-player="[^"]+">Idle<\/button>/);
  const farmer=await handleAdminPlayers({admin:database(tables),user:{id:'x',email:'someone@example.com'},now});
@@ -114,11 +116,11 @@ test('admin_player: one farmer in full — account, progress, activity, purchase
 
 test('seenFrom: the country comes from the device time zone, never from the IP address; nothing made up when something is missing',()=>{
  const headers=values=>new Headers(values);
- assert.deepEqual(seenFrom(headers({'cf-ipcountry':'IN','cf-connecting-ip':'81.2.3.4','user-agent':'UA'}),'Europe/Amsterdam'),{country:'NL',ip:'81.2.3.4',device:'UA'},'the time zone decides, not the IP');
- assert.deepEqual(seenFrom(headers({'cf-ipcountry':'NL','x-forwarded-for':'2a02:a45::1, 10.0.0.1'})),{country:null,ip:'2a02:a45::1',device:null},'no time zone, no country');
- assert.deepEqual(seenFrom(headers({'cf-connecting-ip':'not an ip'}),'UTC'),{country:null,ip:null,device:null});
+ assert.deepEqual(seenFrom(headers({'cf-ipcountry':'IN','cf-connecting-ip':'81.2.3.4','user-agent':'UA'}),'Europe/Amsterdam','nl'),{country:'NL',ip:'81.2.3.4',device:'UA',language:'nl'},'the time zone decides, not the IP');
+ assert.deepEqual(seenFrom(headers({'cf-ipcountry':'NL','x-forwarded-for':'2a02:a45::1, 10.0.0.1'})),{country:null,ip:'2a02:a45::1',device:null,language:null},'no time zone, no country');
+ assert.deepEqual(seenFrom(headers({'cf-connecting-ip':'not an ip'}),'UTC','Dutch'),{country:null,ip:null,device:null,language:null},'only a two-letter language code');
  assert.equal(seenFrom(headers({'user-agent':'x'.repeat(500)})).device.length,300);
- assert.deepEqual(seenFrom(undefined,'Nowhere/Special'),{country:null,ip:null,device:null});
+ assert.deepEqual(seenFrom(undefined,'Nowhere/Special'),{country:null,ip:null,device:null,language:null});
 });
 test('the time zone table: every zone of the tz database plus the older names browsers still report',()=>{
  assert.equal(zoneCountry('Europe/Amsterdam'),'NL');assert.equal(zoneCountry('Europe/Brussels'),'BE');assert.equal(zoneCountry('America/New_York'),'US');
@@ -129,15 +131,19 @@ test('the time zone table: every zone of the tz database plus the older names br
 });
 test('recordSeen keeps one row per farmer (an upsert) with only what the visit knows, and farm-api runs it beside the load',async()=>{
  const db=database();
- await recordSeen({admin:db,player:P1,headers:new Headers({'cf-connecting-ip':'1.2.3.4'}),timeZone:'Europe/Brussels',now});
- assert.deepEqual(db.calls[0].upsert,{player_id:P1,country:'BE',ip:'1.2.3.4',seen_at:iso(now)});
+ await recordSeen({admin:db,player:P1,headers:new Headers({'cf-connecting-ip':'1.2.3.4'}),timeZone:'Europe/Brussels',language:'fr',now});
+ assert.deepEqual(db.calls[0].upsert,{player_id:P1,country:'BE',ip:'1.2.3.4',language:'fr',seen_at:iso(now)});
  const older=database();await recordSeen({admin:older,player:P1,headers:new Headers({'cf-connecting-ip':'1.2.3.4'}),now});
  assert.ok(!('country' in older.calls[0].upsert),'a load without a time zone keeps the country saved before');
+ assert.ok(!('language' in older.calls[0].upsert),'and one without a language keeps the language');
  const api=read('supabase/functions/farm-api/index.ts');
- assert.match(api,/if\(body\.operation==='load'\)\{const seen=Promise\.resolve\(\)\.then\(\(\)=>recordSeen\(\{admin,player:user\.id,headers:req\.headers,timeZone:body\.timeZone\}\)\)\.catch\(\(\)=>\{\}\);/,'even a synchronous failure never stops the load');
+ assert.match(api,/if\(body\.operation==='load'\)\{const seen=Promise\.resolve\(\)\.then\(\(\)=>recordSeen\(\{admin,player:user\.id,headers:req\.headers,timeZone:body\.timeZone,language:body\.language\}\)\)\.catch\(\(\)=>\{\}\);/,'even a synchronous failure never stops the load');
  assert.match(api,/EdgeRuntime\?\.waitUntil\?\.\(seen\)/);
  assert.match(api,/'admin_players','admin_player'/);assert.match(read('src/connection.js'),/'admin_invites','admin_players','admin_player','admin_purchases'\]/,'read-only, so safe to retry');
- assert.match(read('src/supabase.js'),/const sent=body\?\.operation==='load'\?\{\.\.\.body,timeZone:deviceTimeZone\(\)\}:body;/,'every farm load sends the device time zone');
+ assert.match(read('src/supabase.js'),/const sent=body\?\.operation==='load'\?\{\.\.\.body,timeZone:deviceTimeZone\(\),language:chosenLanguage\(\)\}:body;/,'every farm load sends the device time zone and the game language');
+ const languageSql=read('supabase/admin-player-language.sql');
+ assert.match(languageSql,/alter table public\.player_seen add column if not exists language text check \(language ~ '\^\[a-z\]\{2\}\$'\);/);
+ assert.match(languageSql,/seen_at timestamptz, language text\)/);assert.match(languageSql,/grant execute on function public\.admin_player_accounts\(uuid, text\) to service_role;/);
  const sql=read('supabase/admin-player-insights.sql');
  assert.match(sql,/alter table public\.player_seen enable row level security;\s*revoke all on public\.player_seen from anon, authenticated;/);
  const paging=read('supabase/admin-player-accounts-paging.sql');
@@ -152,8 +158,8 @@ test('deviceName: a short system and browser from the user agent',()=>{
 });
 
 const list=[
- {playerId:'a',username:'Anna',level:14,online:true,everPlayed:true,createdAt:iso(now-2*DAY),lastActiveAt:iso(now-60000),guide:10,daysPlayed:3,country:'NL',ip:'1.1.1.1'},
- {playerId:'b',username:'Bram',level:5,online:false,everPlayed:true,createdAt:iso(now-5*DAY),lastActiveAt:iso(now-3*DAY),guide:6,daysPlayed:2,country:'BE',ip:'2.2.2.2'},
+ {playerId:'a',username:'Anna',level:14,online:true,everPlayed:true,createdAt:iso(now-2*DAY),lastActiveAt:iso(now-60000),guide:10,daysPlayed:3,country:'NL',ip:'1.1.1.1',language:'nl'},
+ {playerId:'b',username:'Bram',level:5,online:false,everPlayed:true,createdAt:iso(now-5*DAY),lastActiveAt:iso(now-3*DAY),guide:6,daysPlayed:2,country:'BE',ip:'2.2.2.2',language:'fr'},
  {playerId:'c',username:'Cees',level:2,online:false,everPlayed:true,createdAt:iso(now-40*DAY),lastActiveAt:iso(now-20*DAY),guide:2,daysPlayed:1,country:null,ip:null},
  {playerId:'d',username:null,level:null,online:false,everPlayed:false,createdAt:iso(now-DAY/4),lastActiveAt:null,guide:0,daysPlayed:0}
 ];
@@ -166,7 +172,7 @@ test('the player list: filters, search (also by country and IP) and orders',()=>
  assert.deepEqual(ids({filter:'quiet'}),['c'],'played before, not active for 7 days');
  assert.deepEqual(ids({filter:'new'}),['a','b','d']);
  assert.deepEqual(ids({filter:'never'}),['d']);
- assert.deepEqual(ids({search:'belg'}),['b'],'the country name');assert.deepEqual(ids({search:'1.1.1'}),['a'],'the IP address');
+ assert.deepEqual(ids({search:'belg'}),['b'],'the country name');assert.deepEqual(ids({search:'french'}),['b'],'the language');assert.deepEqual(ids({search:'1.1.1'}),['a'],'the IP address');
  assert.deepEqual(ids({sort:'new'}),['d','a','b','c']);assert.deepEqual(ids({sort:'level'}),['a','b','c','d']);
 });
 test('a list row shows the last action as a date and a time in Amsterdam time, and the IP only when the admin has it',()=>{
@@ -174,7 +180,8 @@ test('a list row shows the last action as a date and a time in Amsterdam time, a
  assert.match(row,/3d ago/);assert.match(row,/Sep 22, 14:00/,'12:00 UTC is 14:00 in Amsterdam');
  const online=playerRow(list[0],{now});
  assert.match(online,/<b>Online<\/b><time[^>]*>Last action 13:59 \(1m ago\)<\/time>/,'online players show when they last did something');
- assert.equal(dateTime(iso(Date.UTC(2026,0,5,23,30))),'Jan 6, 00:30','winter time');assert.match(row,/IP 2\.2\.2\.2/);assert.match(row,/Belgium/);assert.match(row,/Guide 6\/10/);
+ assert.equal(dateTime(iso(Date.UTC(2026,0,5,23,30))),'Jan 6, 00:30','winter time');assert.match(row,/IP 2\.2\.2\.2/);assert.match(row,/Belgium/);assert.match(row,/Guide 6\/10/);assert.match(row,/Plays in French/);
+ assert.doesNotMatch(playerRow(list[2],{now}),/Plays in/,'no language known: nothing made up');
  const {ip,country:c,...forModerator}=list[1];
  assert.doesNotMatch(playerRow(forModerator,{now}),/IP /);
  assert.equal(country('NL'),'🇳🇱 Netherlands');assert.equal(country(null),null);
@@ -192,23 +199,28 @@ test('the funnel: how far new players got, the biggest drop marked, "came back" 
  assert.equal(funnel(list,'all',now).total,4);
  assert.match(funnelHtml(week),/Biggest drop/);assert.match(funnelHtml(funnel([],'7',now)),/Nobody made an account/);
  assert.deepEqual(countryCounts(list),{rows:[{code:'BE',count:1},{code:'NL',count:1}],unknown:1});
+ assert.deepEqual(languageCounts([...list,{everPlayed:true,language:'nl'}]),{rows:[{code:'nl',count:2},{code:'fr',count:1}],unknown:1});
+ assert.equal(gameLanguage('nl'),'Dutch');assert.equal(gameLanguage('pt'),'Portuguese');assert.equal(gameLanguage('NL'),null);assert.equal(gameLanguage(null),null);
+ const bars=languagesHtml(languageCounts(list));
+ assert.match(bars,/<span>Dutch<\/span>/);assert.match(bars,/1 not seen since languages were added/);assert.match(languagesHtml({rows:[],unknown:0}),/No languages yet/);
 });
 test('one farmer\'s page lists the other accounts on the same network, and leaves out what a moderator may not see',()=>{
  const detail={playerId:'a',username:'Anna',level:14,xp:1,coins:1,diamonds:1,avatarId:null,createdAt:iso(now-2*DAY),lastActiveAt:iso(now-60000),lastSignInAt:null,provider:'email',online:true,everPlayed:true,
   vipUntil:null,daysPlayed:3,streak:1,bestStreak:2,guide:4,guideDone:false,guideTotal:10,fields:8,buildings:3,family:null,emailBonus:false,starter:{offeredAt:null,bought:false},
   activity:[{key:'harvested',label:'Crops harvested',count:10}],earned:{coins:0,diamonds:0},events:{joined:0,finished:0,diamonds:0},purchases:[],chat:{messages:0,reported:0,muted:false,banned:false},invites:{invitedBy:null,friends:0,qualified:0}};
- const html=playerDetail({...detail,ip:'1.1.1.1',country:'NL',device:'iPhone · Safari',sameNetwork:[list[1]],purchases:[]},{guideSteps:GUIDE_STEPS,now});
+ const html=playerDetail({...detail,ip:'1.1.1.1',country:'NL',device:'iPhone · Safari',language:'nl',sameNetwork:[list[1]],purchases:[]},{guideSteps:GUIDE_STEPS,now});
+ assert.match(html,/Game language<\/dt><dd>Dutch/);
  assert.match(html,/Same network as<\/dt><dd><button[^>]*data-player="b">Bram<\/button>/);assert.match(html,/IP address<\/dt><dd>1\.1\.1\.1/);assert.match(html,/<h4>Purchases<\/h4>/);assert.match(html,/next: Start production/);assert.match(html,/email not confirmed/);
  const {purchases,...forModerator}=detail,mod=playerDetail(forModerator,{guideSteps:GUIDE_STEPS,now});
- assert.doesNotMatch(mod,/<dt>(IP address|Country|Device)<\/dt>|<h4>Purchases/);assert.match(mod,/Same network as<\/dt><dd>Not known/);
+ assert.doesNotMatch(mod,/<dt>(IP address|Country|Device)<\/dt>|<h4>Purchases/);assert.match(mod,/Same network as<\/dt><dd>Not known/);assert.match(mod,/Game language<\/dt><dd>Not known yet/);
 });
 test('the dashboard: the list replaces the newest players, the funnel and countries sit in Growth, the policy names what is kept',()=>{
  const dash=read('src/admin-dashboard.js');
  assert.match(dash,/\['admin_players','All players'\]/);assert.match(dash,/bridge\.request\(\{operation\}\)\.catch\(\(\)=>null\)/);
  assert.match(dash,/bridge\.request\(\{operation:'admin_player',playerId:id\}\)/);
- assert.match(dash,/id="admin-funnel"/);assert.match(dash,/id="admin-countries" hidden/);
+ assert.match(dash,/id="admin-funnel"/);assert.match(dash,/id="admin-countries" hidden/);assert.match(dash,/id="admin-languages">/,'the languages are for all staff');
  assert.doesNotMatch(dash,/admin_recent_players/);
- assert.match(read('public/privacy.html'),/your IP address, your browser and device type, and the country of your device’s time zone/);
+ assert.match(read('public/privacy.html'),/your IP address, your browser and device type, the country of your device’s time zone and the language you play in/);
 });
 
 test('staff go both ways: the dashboard opens a profile, and a profile opens that farmer in the dashboard',()=>{

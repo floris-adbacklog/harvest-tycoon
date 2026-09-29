@@ -34,10 +34,17 @@ export function country(code){
  let name=code;try{name=regions?.of(code)??code;}catch{}
  return `${String.fromCodePoint(...[...code].map(c=>0x1F1E6+c.charCodeAt(0)-65))} ${name}`;
 }
+let languages=null;
+try{languages=new Intl.DisplayNames(['en'],{type:'language'});}catch{}
+// "Dutch" from "nl" (the language the farmer's game was in at the last visit).
+export function gameLanguage(code){
+ if(!/^[a-z]{2}$/.test(code??''))return null;
+ try{return languages?.of(code)??code;}catch{return code;}
+}
 const face=p=>`<span class="admin-avatar${p.avatarId?' has-face':''}">${p.avatarId?avatarImage(p.avatarId):esc(String(p.username??'?').slice(0,2).toUpperCase())}${p.online?'<span class="online-dot is-online" aria-hidden="true"></span>':''}</span>`;
 const name=p=>p.username??(p.everPlayed?'Unnamed':'Never opened a farm');
 
-// The list: a filter, a search box (name, and for the admin also country and IP) and an order.
+// The list: a filter, a search box (name and language, and for the admin also country and IP) and an order.
 export const PLAYER_FILTERS=Object.freeze([['all','All'],['online','Online'],['today','Today'],['week','This week'],['quiet','Gone quiet'],['new','New'],['never','Never played']]);
 export const PLAYER_SORTS=Object.freeze([['active','Last action'],['new','Newest'],['level','Level'],['days','Days played']]);
 export function filterPlayers(players,{filter='all',search='',sort='active'}={},now=Date.now()){
@@ -45,15 +52,15 @@ export function filterPlayers(players,{filter='all',search='',sort='active'}={},
  const keep={all:()=>true,online:p=>p.online,today:p=>active(p)>=midnight,week:p=>active(p)>=now-7*DAY,
   quiet:p=>p.everPlayed&&active(p)<now-7*DAY,new:p=>joined(p)>=now-7*DAY,never:p=>!p.everPlayed}[filter]??(()=>true);
  const words=search.trim().toLowerCase();
- const found=p=>!words||[p.username,p.ip,p.country,country(p.country),provider(p.provider),p.family].some(v=>String(v??'').toLowerCase().includes(words));
+ const found=p=>!words||[p.username,p.ip,p.country,country(p.country),provider(p.provider),p.family,gameLanguage(p.language)].some(v=>String(v??'').toLowerCase().includes(words));
  const order={active:(a,b)=>active(b)-active(a),new:(a,b)=>joined(b)-joined(a),level:(a,b)=>(b.level??0)-(a.level??0),days:(a,b)=>b.daysPlayed-a.daysPlayed}[sort]??((a,b)=>active(b)-active(a));
  return players.filter(p=>keep(p)&&found(p)).sort((a,b)=>order(a,b)||joined(b)-joined(a));
 }
-// One row: face, name and chips; level, days played, guide step and family; joined, sign-in, country and IP; at the end when they last
+// One row: face, name and chips; level, days played, guide step and family; joined, sign-in, country, language and IP; at the end when they last
 // did something (online: "Online" with the time of the last action under it).
 export function playerRow(p,{guideSteps=10,now=Date.now()}={}){
  const facts=p.everPlayed?[`Level ${number(p.level)}`,`${number(p.daysPlayed)} day${p.daysPlayed===1?'':'s'} played`,p.guide>=guideSteps?'Guide done':`Guide ${number(p.guide)}/${guideSteps}`,p.family&&esc(p.family)]:['Never opened a farm'];
- const where=[`Joined ${esc(dateTime(p.createdAt))}`,provider(p.provider),country(p.country),p.ip&&`IP ${esc(p.ip)}`].filter(Boolean);
+ const where=[`Joined ${esc(dateTime(p.createdAt))}`,provider(p.provider),country(p.country),p.language&&`Plays in ${esc(gameLanguage(p.language))}`,p.ip&&`IP ${esc(p.ip)}`].filter(Boolean);
  return `<li><button type="button" class="admin-player-row" data-player="${esc(p.playerId)}">${face(p)}<span class="admin-recent-copy"><strong>${esc(name(p))}${p.vip?' <b class="admin-chip is-vip">VIP</b>':''}</strong><small>${facts.filter(Boolean).join(' · ')}</small><small>${where.join(' · ')}</small></span><span class="admin-last-active${p.online?' is-online':''}"><b>${p.online?'Online':esc(ago(p.lastActiveAt,now))}</b><time datetime="${esc(p.lastActiveAt??'')}" title="Last action (Amsterdam time)">${p.online?`Last action ${esc(clock(p.lastActiveAt))} (${esc(ago(p.lastActiveAt,now))})`:esc(dateTime(p.lastActiveAt))}</time></span></button></li>`;
 }
 
@@ -73,6 +80,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
   fact('Signs in with',`${provider(p.provider)}${p.provider==='email'?` <small>(email ${p.emailBonus?'confirmed':'not confirmed'})</small>`:''}`),
   // The address and Change, for the admin only (28 Sep 2026): for a farmer who signed up with a typo (farm-api handleAdminEmail).
   ...('email' in p?[fact('Email',`${p.email?esc(p.email):'—'}${p.provider==='email'?' <button type="button" class="admin-link" data-email-edit>Change</button>':''}`)]:[]),
+  fact('Game language',p.language?esc(gameLanguage(p.language)):'Not known yet'),
   fact('Days played',`${number(p.daysPlayed)} <small>(streak ${number(p.streak)}, best ${number(p.bestStreak)})</small>`),
   ...('ip' in p?[fact('Country',esc(country(p.country)??'Not known yet')),fact('IP address',p.ip?esc(p.ip):'—'),
    fact('Device',p.device?`<span title="${esc(p.userAgent??'')}">${esc(p.device)}</span>`:'—')]:[]),
@@ -144,6 +152,18 @@ export function countriesHtml({rows,unknown}){
  const top=Math.max(1,rows[0]?.count??0);
  const list=rows.slice(0,12).map(r=>`<li><span>${esc(country(r.code))}</span><i aria-hidden="true"><b style="width:${Math.round(r.count/top*100)}%"></b></i><strong>${number(r.count)}</strong></li>`).join('');
  return (list||'<li class="admin-empty">No countries yet: they fill in as farmers open the game.</li>')+(unknown?`<li class="admin-funnel-split">${number(unknown)} not seen since countries were added</li>`:'');
+}
+
+// The language farmers play in (for all staff): the language of each game at the last visit, most first.
+export function languageCounts(players){
+ const counts=new Map();let unknown=0;
+ for(const p of players){if(!p.everPlayed)continue;if(p.language)counts.set(p.language,(counts.get(p.language)??0)+1);else unknown++;}
+ return {rows:[...counts].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).map(([code,count])=>({code,count})),unknown};
+}
+export function languagesHtml({rows,unknown}){
+ const top=Math.max(1,rows[0]?.count??0);
+ const list=rows.map(r=>`<li><span>${esc(gameLanguage(r.code))}</span><i aria-hidden="true"><b style="width:${Math.round(r.count/top*100)}%"></b></i><strong>${number(r.count)}</strong></li>`).join('');
+ return (list||'<li class="admin-empty">No languages yet: they fill in as farmers open the game.</li>')+(unknown?`<li class="admin-funnel-split">${number(unknown)} not seen since languages were added</li>`:'');
 }
 
 // Phone, tablet or computer: from the device each farmer last opened the game on (admin-analytics-service.js deviceName, for the

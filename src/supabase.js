@@ -1,6 +1,7 @@
 import {createClient} from '@supabase/supabase-js';
 import {describeFailure,connectionMessage,safeToRepeat,withRetry} from './connection.js';
 import {enabledProviders} from './social-login.js';
+import {chosenLanguage} from '../public/i18n.js';
 const url=import.meta.env.VITE_SUPABASE_URL?.trim();
 const key=import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const isConfigured=Boolean(url&&key);
@@ -33,9 +34,10 @@ async function farmRequestOnce(body){
 }
 // A request that cannot go wrong twice (see safeToRepeat) is repeated a few times when the connection fails, with the same
 // body, so with the same request ID. {retry:false} is for checks that are repeated by the caller anyway.
-// Every farm load says which time zone the device is in: the admin dashboard shows the country it belongs to (farm-api, time-zones.js).
+// Every farm load says which time zone the device is in and which language the game is in: the admin dashboard shows the country
+// the time zone belongs to (farm-api, time-zones.js) and the language.
 const deviceTimeZone=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||null;}catch{return null;}};
-export function farmRequest(body,{retry=true}={}){const sent=body?.operation==='load'?{...body,timeZone:deviceTimeZone()}:body;return withRetry(()=>farmRequestOnce(sent),{repeatable:retry&&safeToRepeat(sent)});}
+export function farmRequest(body,{retry=true}={}){const sent=body?.operation==='load'?{...body,timeZone:deviceTimeZone(),language:chosenLanguage()}:body;return withRetry(()=>farmRequestOnce(sent),{repeatable:retry&&safeToRepeat(sent)});}
 export async function paymentRequest(body){
  const {data,error}=await supabase.functions.invoke('diamond-checkout',{body,timeout:20000});
  if(error){let detail;try{detail=await error.context?.json();}catch{}throw new Error(detail?.error||'Could not connect to checkout. Please try again.');}
