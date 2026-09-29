@@ -6,12 +6,14 @@ import {loadStaff,staffRole,staffBadge,STAFF_LABELS} from './staff-badge.js';
 // scrolled. A name or picture opens that farmer's profile. Data and live updates: bridge.chat (src/chat-client.js).
 import {avatarImage} from '../public/player-avatars.js';
 import {art,refreshArt} from '../public/visual-icons.js';
+import {ITEMS} from '../public/farm-state.js';
+import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
-const withEdit=(list,changed)=>list.map(m=>m.id===changed?.id?{...m,body:changed.body,edited_at:changed.edited_at,edited_by_moderator:changed.edited_by_moderator}:m);
+const withEdit=(list,changed)=>list.map(m=>m.id===changed?.id?{...m,body:changed.body,edited_at:changed.edited_at,edited_by_moderator:changed.edited_by_moderator,...(changed.meta!==undefined?{meta:changed.meta}:{})}:m);
 // "now", "5m", "3h", "2d": short enough for a line of chat; the exact time is in the tooltip.
 export function ago(iso,now=Date.now()){
  const seconds=Math.floor((now-Date.parse(iso))/1000);if(!Number.isFinite(seconds))return '';
@@ -35,7 +37,8 @@ export function dayLabel(iso,now=Date.now()){
 export function messageLayout(shown){
  return shown.map((m,i)=>{
   const newer=shown[i-1],day=!newer||dayKey(newer.created_at)!==dayKey(m.created_at);
-  const cont=Boolean(newer)&&!day&&newer.sender===m.sender&&Date.parse(newer.created_at)-Date.parse(m.created_at)<=GROUP_GAP;
+  // A request card stands on its own: it never folds into the messages around it.
+  const cont=Boolean(newer)&&!day&&newer.kind!=='request'&&m.kind!=='request'&&newer.sender===m.sender&&Date.parse(newer.created_at)-Date.parse(m.created_at)<=GROUP_GAP;
   return {m,day,cont};
  });
 }
@@ -136,7 +139,17 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  }
 
  const profileButton=(id,label,inner,cls)=>`<button type="button" class="${cls}" data-profile="${esc(id)}" aria-label="${esc(label)}">${inner}</button>`;
+ // A request for goods (supabase/family-request-chat.sql, 29 Sep 2026): a card of its own between the messages, with the good's
+ // picture and, for the others, a button that gives it straight from here. Once given it greys out and says by whom.
+ function requestRow(m){
+  const r=m.meta??{},name=ITEMS[r.item]?.name??String(r.item??''),qty=Number(r.quantity)||0,mine=m.sender===me,given=Boolean(r.fulfilled_by);
+  const have=win.harvestStock?.(r.item),known=Number.isFinite(have);
+  const status=given?(r.fulfilled_by===me?'✓ You helped':r.fulfilled_name?`✓ Given by ${r.fulfilled_name}`:'✓ Fulfilled'):mine?'Waiting for your family':known?`You have ${have}`:'';
+  const give=!given&&!mine&&r.request?`<button type="button" class="primary-button chat-request-give" data-give="${esc(r.request)}"${known&&have<qty?' disabled':''}>Give ${qty} ${esc(name)}</button>`:'';
+  return `<li class="chat-request${given?' is-given':''}" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Family request</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(r.item)}</span><div><p class="chat-text">${esc(given?`${m.sender_name} asked for ${qty} ${name}`:`${m.sender_name} asks for ${qty} ${name}`)}</p>${status?`<small class="chat-request-status">${esc(status)}</small>`:''}</div></div>${give}</li>`;
+ }
  function messageRow(m,{cont=false}={}){
+  if(m.kind==='request')return requestRow(m);
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
   // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
   const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
@@ -285,10 +298,24 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  dialog.addEventListener('close',()=>{closeMenu();if(!dialog.open){loading++;busy=false;}});
  blockButton.onclick=()=>thread&&setBlock(thread.otherId,thread.otherName,!blocked().has(thread.otherId));
  reportButton.onclick=()=>thread&&reportPlayer(thread.otherId,thread.otherName);
+ // Gives what a family request card asks for, the same way as Daily sharing does (public/social-ui.js), then refreshes the farm.
+ // What it did, or why it was refused, shows in the middle of the chat (public/center-notice.js); the card updates itself.
+ async function giveRequest(button){
+  if(button.disabled)return;button.disabled=true;
+  try{
+   const r=await bridge.request({operation:'social',action:{kind:'fulfill',request:button.dataset.give},requestId:crypto.randomUUID()});
+   const card=button.closest('.chat-request'),qty=Number(r?.social?.quantity),name=ITEMS[r?.social?.item]?.name;
+   showCenterNotice(dialog,qty&&name?`You gave ${qty} ${name}. Your family thanks you!`:r?.social?.message??'Request fulfilled. Your family thanks you!');
+   card?.classList.add('is-given');
+   await win.harvestRefresh?.();
+  }catch(error){button.disabled=false;showCenterNotice(dialog,error?.message??'That did not work. Please try again.',{refused:true});}
+ }
  list.addEventListener('click',event=>{
   if(pressed){pressed=false;return;}   // the tap that ends a long press opened the menu already
   const profile=event.target.closest('[data-profile]'),threadButton=event.target.closest('[data-thread]'),more=event.target.closest('[data-more]');
   if(more){openMenu(more.closest('.chat-msg'));return;}
+  const give=event.target.closest('[data-give]');
+  if(give){giveRequest(give);return;}
   if(profile){profiles?.open(profile.dataset.profile,{back:null});return;}
   const start=event.target.closest('[data-start]');
   if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}

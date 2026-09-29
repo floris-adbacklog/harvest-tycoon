@@ -931,6 +931,8 @@ function bindUI(){
  $('email-settings-change').onclick=()=>emailCheckUI.open({change:true});$('email-settings-confirm').onclick=()=>emailCheckUI.open();
  setEmailCheck(initialEmailCheck);
  familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
+ // The family chat's request cards (src/chat-ui.js) show how many of the asked-for good you have.
+ window.harvestStock=key=>Number(state.inventory?.[key])||0;
  economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section)});
  let savedCrop=null;try{savedCrop=localStorage.getItem(CROP_KEY);}catch{}
  if(savedCrop&&CROPS[savedCrop]&&cropUnlocked(state,savedCrop))economy.chooseCrop(savedCrop);

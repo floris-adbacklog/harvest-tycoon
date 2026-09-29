@@ -3,6 +3,9 @@
 // may say what. One Realtime channel per signed-in session brings new messages and notices in while the farm is open.
 export const dmChannel=(a,b)=>{const [x,y]=[String(a),String(b)].sort();return `dm:${x}:${y}`;};
 const MESSAGE_COLUMNS='id,channel,sender,sender_name,sender_avatar,sender_staff,sender_vip,body,created_at,edited_at,edited_by_moderator';
+// A family request card (supabase/family-request-chat.sql) carries its kind and details; until that is in the database the chat
+// reads the columns it always had.
+const CARD_COLUMNS=`${MESSAGE_COLUMNS},kind,meta`;let cards=true;
 // The database says why in plain words ("Slow down a little."); a lost connection gets a sentence of its own.
 export function chatError(error){
  const message=String(error?.message??'');
@@ -30,7 +33,10 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   overview:()=>rpc('chat_overview'),
   myRole:()=>rpc('chat_my_role'),
   async messages(name,limit=50){
-   const list=await rows(supabase.from('chat_messages').select(MESSAGE_COLUMNS).eq('channel',name).order('created_at',{ascending:false}).limit(limit));
+   const read=columns=>supabase.from('chat_messages').select(columns).eq('channel',name).order('created_at',{ascending:false}).limit(limit);
+   let list;
+   if(cards){check();const first=await read(CARD_COLUMNS);if(first.error?.code==='42703')cards=false;else{if(first.error)throw chatError(first.error);check();list=first.data??[];}}
+   if(!cards)list=await rows(read(MESSAGE_COLUMNS));
    // The VIP mark belongs to the farmer, not the message: it shows as they are now, on older messages too.
    const ids=[...new Set(list.map(m=>m.sender))];
    if(ids.length){
