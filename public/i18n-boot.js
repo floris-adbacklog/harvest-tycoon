@@ -2,7 +2,7 @@
 // hidden until public/i18n.js has translated it, and the translation file starts loading now. English farmers: nothing happens.
 // READY lists the languages that are translated, like public/languages.js (a test keeps them the same).
 (function(){
- var READY=' ';
+ var READY=' es ';
  try{
   var root=document.documentElement,saved=localStorage.getItem('harvest-tycoon:language'),code=saved||'';
   if(!saved){var tags=navigator.languages||[navigator.language];for(var i=0;i<tags.length;i++){var c=String(tags[i]||'').slice(0,2).toLowerCase();if(c==='en'||READY.indexOf(' '+c+' ')>=0){code=c;break;}}}

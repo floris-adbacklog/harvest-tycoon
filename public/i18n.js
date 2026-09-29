@@ -9,7 +9,7 @@ import {LANGUAGES} from './languages.js';
 export const LANGUAGE_KEY='harvest-tycoon:language';
 const ATTRS=['title','aria-label','placeholder','alt'];
 // Left as they are: code, players' own words (translate="no") and the staff screens, which stay English.
-const KEEP='script,style,textarea,code,[translate="no"],[contenteditable="true"],.admin-dashboard-dialog,.admin-grant';
+const KEEP='script,style,noscript,textarea,code,[translate="no"],[contenteditable="true"],.admin-dashboard-dialog,.admin-grant';
 const READY=new Set(LANGUAGES.filter(language=>language.ready).map(language=>language.code));
 
 // The farmer's choice in Settings, else the device's language if the game speaks it, else English.
@@ -45,7 +45,16 @@ export function createTranslator(dict,code='en'){
  }
  patterns.sort((a,b)=>b.weight-a.weight);
  // A changing part that is a known text on its own (a crop, a building) is translated as well.
- const part=value=>{const key=value.trim(),hit=exact.get(key);return typeof hit==='string'?value.replace(key,hit):value;};
+ // A known text on its own, also when the code wrote it in lower case ("high demand"): then the translation starts in lower case
+ // too (not in German, where nouns keep their capital).
+ const known=key=>{
+  const hit=exact.get(key);if(typeof hit==='string')return hit;
+  if(!/^\p{Ll}/u.test(key))return undefined;
+  const upper=exact.get(key[0].toUpperCase()+key.slice(1));
+  return typeof upper!=='string'?undefined:code==='de'?upper:upper[0].toLowerCase()+upper.slice(1);
+ };
+ // A changing part that is a known text (a crop, a building) is translated as well.
+ const part=value=>{const key=value.trim(),hit=key&&known(key);return hit?value.replace(key,hit):value;};
  const fill=(out,values)=>{
   if(out&&typeof out==='object'){
    const n=values.map(v=>parseFloat(String(v).replace(/[^\d.-]/g,''))).find(Number.isFinite);
@@ -53,7 +62,8 @@ export function createTranslator(dict,code='en'){
   }
   return String(out).replace(/\{(\d+)\}/g,(all,i)=>values[i]??'');
  };
- function translate(key){
+ // probe: a look-up while taking a text apart, which never counts as missing.
+ function translate(key,probe=false){
   if(cache.has(key))return cache.get(key);
   let result=exact.get(key);
   if(result&&typeof result==='object')result=fill(result,[]);
@@ -65,12 +75,27 @@ export function createTranslator(dict,code='en'){
     result=fill(pattern.out,values);break;
    }
   }
-  // Texts joined with " · " by the code: each part on its own.
+  if(result===undefined)result=known(key);
+  // Texts the code put together itself: a number before a known text ("8/12 Wheat", "+2 wheat"), a list with " · " (each part on
+  // its own), or two known texts with ", " or ": " between them ("Feed Mill, Mix barley feed").
+  if(result===undefined){
+   const lead=key.match(/^([+−-]?\d[\d.,/×%]*\s?[a-z]{0,2})\s+(\S.*)$/),tail=lead&&(translate(lead[2],true)??known(lead[2]));
+   if(tail)result=`${lead[1]} ${tail}`;
+  }
+  if(result===undefined&&/^· |\s·$/.test(key)){
+   const inner=key.replace(/^· /,'').replace(/\s·$/,''),done=translate(inner,true);
+   if(done!=null)result=key.replace(inner,done);
+  }
   if(result===undefined&&key.includes(' · ')){
-   const parts=key.split(' · '),done=parts.map(p=>translate(p)??p);
+   const parts=key.split(' · '),done=parts.map(p=>translate(p,true)??p);
    if(done.some((p,i)=>p!==parts[i]))result=done.join(' · ');
   }
-  if(result===undefined)missing.add(key);
+  for(const glue of [', ',': ']){
+   if(result!==undefined||!key.includes(glue))continue;
+   const parts=key.split(glue),done=parts.map(p=>translate(p,true)??known(p));
+   if(done.every(p=>p!=null))result=done.join(glue);
+  }
+  if(result===undefined&&!probe)missing.add(key);
   if(cache.size>5000)cache.clear();
   cache.set(key,result??null);
   return result??null;

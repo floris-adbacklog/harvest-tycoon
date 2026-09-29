@@ -24,8 +24,8 @@ export async function createStarterPackUI(bridge){
   const pack=catalog?.packs?.find(p=>p.id==='starter'),same=pack&&catalog.packs.find(p=>p.id!=='starter'&&!p.coins&&p.diamonds===pack.diamonds);
   if(pack)dialog.querySelector('[data-starter-diamonds]').textContent=pack.diamonds.toLocaleString('en-US');
   value.hidden=!same;if(same)value.textContent=`The ${pack.diamonds.toLocaleString('en-US')} diamonds alone cost ${euro(same.cents)} in the shop.`;
-  if(!catalog?.enabled&&!pending)feedback.textContent='Purchases are not available yet. Please check back later.';
-  else if(catalog?.enabled&&feedback.textContent==='Purchases are not available yet. Please check back later.')feedback.textContent='';
+  if(!catalog?.enabled&&!pending){feedback.textContent='Purchases are not available yet. Please check back later.';feedback.dataset.unavailable='1';}
+  else if(catalog?.enabled&&feedback.dataset.unavailable){feedback.textContent='';delete feedback.dataset.unavailable;}
  }
  async function refresh(){if(refreshing||disposed)return;refreshing=true;checkedAt=Date.now();try{const data=await bridge.payments({operation:'catalog'});if(disposed)return;catalog=data;offset=data.serverNow-Date.now();render();}catch{if(!catalog)button.hidden=chip.hidden=true;}finally{refreshing=false;}}
  button.onclick=chip.onclick=()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());requestId=crypto.randomUUID();feedback.textContent='';render();dialog.showModal();refresh();};

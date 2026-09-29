@@ -72,7 +72,7 @@ test('avatar save is authenticated, session-checked and separate from farm rewar
 });
 function uiHarness(){
  const nodes=new Map(),events=[],pending=[];
- const node=()=>({listeners:{},textContent:'',disabled:false,addEventListener(k,fn){this.listeners[k]=fn;},setAttribute(){},querySelectorAll(){return [];},querySelector(key){if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);}});
+ const node=()=>({listeners:{},dataset:{},textContent:'',disabled:false,addEventListener(k,fn){this.listeners[k]=fn;},setAttribute(){},querySelectorAll(){return [];},querySelector(key){if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);}});
  const root=node();const previous=globalThis.window;
  globalThis.window={addEventListener(){},dispatchEvent(event){events.push(event);}};
  const controller=createAvatarSettings(root,{profile:{avatar_id:'default'},bridge:{playerId:'owner',request(body){return new Promise((resolve,reject)=>pending.push({body,resolve,reject}));}}});
@@ -131,7 +131,7 @@ test('the picker: the 10 level avatars are grey with a lock and "Lv. N" until re
 });
 test('a locked avatar can be looked at but not saved, and opens when the level-up says so',async()=>{
  const listeners={},nodes=new Map(),pending=[];const previous=globalThis.window;
- const node=()=>({listeners:{},textContent:'',disabled:false,addEventListener(k,fn){this.listeners[k]=fn;},setAttribute(){},querySelectorAll(){return [];},querySelector(key){if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);}});
+ const node=()=>({listeners:{},dataset:{},textContent:'',disabled:false,addEventListener(k,fn){this.listeners[k]=fn;},setAttribute(){},querySelectorAll(){return [];},querySelector(key){if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);}});
  globalThis.window={addEventListener(k,fn){listeners[k]=fn;},removeEventListener(){},dispatchEvent(){}};
  try{
   const root=node(),c=createAvatarSettings(root,{profile:{avatar_id:'default',level:19},bridge:{playerId:'owner',request(body){return new Promise(resolve=>pending.push({body,resolve}));}}});

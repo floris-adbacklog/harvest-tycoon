@@ -54,17 +54,17 @@ export function createAvatarSettings(root,{bridge,profile,state=null,onSaved=()=
    input.dataset.name=labelOf(avatar,farm);input.setAttribute('aria-label',`${labelOf(avatar,farm)} avatar`);input.parentElement.title=labelOf(avatar,farm);
   }
   const picked=form.querySelector('.emblem-picked strong');if(picked)picked.textContent=form.querySelector('input[name="avatar"]:checked')?.dataset?.name??'';
-  if(!busy&&feedback.textContent!=='Avatar saved.')feedback.textContent=waiting();refresh();
+  if(!busy&&!feedback.dataset.saved)feedback.textContent=waiting();refresh();
  }
  function bind(){
- form.addEventListener('change',event=>{if(event.target.name!=='avatar'||busy)return;selected=playerAvatar(event.target.value).id;feedback.textContent=waiting();refresh();});
+ form.addEventListener('change',event=>{if(event.target.name!=='avatar'||busy)return;selected=playerAvatar(event.target.value).id;delete feedback.dataset.saved;feedback.textContent=waiting();refresh();});
  form.addEventListener('submit',async event=>{
-  event.preventDefault();if(busy||selected===saved||locked(selected,farm))return;busy=true;feedback.textContent='';refresh();
+  event.preventDefault();if(busy||selected===saved||locked(selected,farm))return;busy=true;delete feedback.dataset.saved;feedback.textContent='';refresh();
   try{
    const data=await bridge.request({operation:'avatar',avatarId:selected});
    if(disposed)return;
    if(data.profile?.player_id!==bridge.playerId||data.profile?.avatar_id!==selected)throw new Error('Your avatar could not be saved. Please try again.');
-   saved=selected;onSaved(data.profile);feedback.textContent='Avatar saved.';
+   saved=selected;onSaved(data.profile);feedback.textContent='Avatar saved.';feedback.dataset.saved='1';
    window.dispatchEvent(new CustomEvent('harvest-avatar-changed',{detail:{playerId:bridge.playerId,avatarId:saved}}));
   }catch(error){if(!disposed)feedback.textContent=error.message||'Your avatar could not be saved. Please try again.';}
   finally{busy=false;if(!disposed)refresh();}

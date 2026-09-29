@@ -4,7 +4,7 @@
 export const LANGUAGES=Object.freeze([
  {code:'en',name:'English',ready:true},
  {code:'de',name:'Deutsch'},
- {code:'es',name:'Español'},
+ {code:'es',name:'Español',ready:true},
  {code:'fr',name:'Français'},
  {code:'nl',name:'Nederlands'},
  {code:'pt',name:'Português'},

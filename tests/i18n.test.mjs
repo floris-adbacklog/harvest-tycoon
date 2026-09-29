@@ -19,6 +19,14 @@ test('the translator: exact texts, texts with changing parts, a known name insid
  assert.equal(t.translate('1 coins'),'1 moneda');assert.equal(t.translate('1,250 coins'),'1,250 monedas');
  assert.equal(t.translate('Ready · 5m left'),'Listo · Quedan 5m');
  assert.equal(t.translate('Something new'),null);assert.ok(t.missing.has('Something new'));
+ // Texts the code puts together itself.
+ const u=createTranslator({'Wheat':'Trigo','High demand':'Mucha demanda','Feed Mill':'Molino de piensos','Mix barley feed':'Mezcla pienso de cebada','Quick delivery':'Reparto rápido','· {0} expected.':'· se espera {0}.'},'es');
+ assert.equal(u.translate('8/12 Wheat'),'8/12 Trigo');assert.equal(u.translate('+2 wheat'),'+2 trigo');
+ assert.equal(u.translate('· high demand expected.'),'· se espera mucha demanda.','a known text in lower case stays lower case');
+ assert.equal(u.translate('Feed Mill, Mix barley feed'),'Molino de piensos, Mezcla pienso de cebada');
+ assert.equal(u.translate('Quick delivery ·'),'Reparto rápido ·');
+ assert.equal(u.translate('Feed Mill, something else'),null,'only when every part is known');
+ assert.equal(createTranslator({'Wheat':'Weizen'},'de').translate('+2 wheat'),'+2 Weizen','German nouns keep their capital');
 });
 
 test('English farmers load no translation; the device language picks a translated language, a choice in Settings wins',async()=>{

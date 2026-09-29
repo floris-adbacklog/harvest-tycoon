@@ -1,10 +1,16 @@
 [
+ "A notice in the chat's Notifications for every purchase in the shop: who bought what, for how much. Only the admin sees this.",
+ "Admin dashboard",
  "Apply one farming action to the given fields. Planting spends coins; harvesting adds produce to inventory. Returns per-field results.",
+ "Bearer {0}",
  "Collect a finished batch",
  "Collect finished goods from a building into inventory. Fails when the batch is not ready.",
  "Consume the ingredients and start a timed recipe in its farm building. Does not collect the finished goods.",
+ "In-game purchases",
  "Inspect the farm",
+ "Open the admin dashboard",
  "Plant, water or harvest fields",
+ "Players and retention",
  "Read coins, inventory, field IDs, growth and quests in your saved Harvest Tycoon farm.",
  "Scene polish",
  "Scenery",
@@ -13,5 +19,8 @@
  "Spend coins to increase production speed, or expand the fields when building is farmhouse.",
  "Start a production batch",
  "Unknown yard: {0}",
- "Upgrade a farm building"
+ "Upgrade a farm building",
+ "and $1",
+ "s are",
+ "toast is-{0}"
 ]

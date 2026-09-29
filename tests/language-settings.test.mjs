@@ -7,9 +7,9 @@ import {renderLanguageSettings} from '../public/language-settings.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // 29 Sep 2026: Settings > Language lists the languages to come, each with its painted flag; only English can be chosen so far.
-test('every language has its painted flag, and English is the only one ready',()=>{
+test('every language has its painted flag; English and the fully translated languages can be chosen',()=>{
  assert.deepEqual(LANGUAGES.map(l=>l.code),['en','de','es','fr','nl','pt','ru','ar','hi','zh']);
- assert.deepEqual(LANGUAGES.filter(l=>l.ready).map(l=>l.code),['en']);
+ assert.deepEqual(LANGUAGES.filter(l=>l.ready).map(l=>l.code),['en','es']);
  for(const {code} of LANGUAGES){
   assert.ok(art(`flag-${code}`).includes(`src="/assets/icons/flag-${code}.webp"`),code);
   assert.ok(statSync(new URL(`../public/assets/icons/flag-${code}.webp`,import.meta.url)).size>2000,code);
@@ -17,11 +17,13 @@ test('every language has its painted flag, and English is the only one ready',()
 });
 
 test('the Language dropdown in Settings: English chosen, the others greyed out as coming soon',()=>{
- const select={innerHTML:'',addEventListener(){},closest:()=>null};renderLanguageSettings(select);
+ globalThis.document??={querySelector:()=>null};const select={innerHTML:'',addEventListener(){},closest:()=>null};renderLanguageSettings(select);
  const options=[...select.innerHTML.matchAll(/<option [^>]*>[^<]*<\/option>/g)].map(m=>m[0]);
  assert.equal(options.length,10);
  assert.match(options[0],/value="en".*data-art="flag-en" selected>English</);
- for(const [i,option] of options.entries())if(!LANGUAGES[i].ready)assert.match(option,/ disabled data-note="Coming soon">/);
+ const ready=LANGUAGES.filter(l=>l.ready).length;
+ options.forEach((option,i)=>i<ready?assert.doesNotMatch(option,/disabled/):assert.match(option,/ disabled data-note="Coming soon">/));
+ assert.deepEqual(options.map(o=>o.match(/value="(\w+)"/)[1]),[...LANGUAGES.filter(l=>l.ready),...LANGUAGES.filter(l=>!l.ready)].map(l=>l.code),'the languages you can choose come first');
  assert.match(read('public/farm.html'),/<section id="language-settings"[^>]*>.*<select id="language-select" aria-label="Language"><\/select><\/section>\s*<section id="privacy-settings"/s);
  const game=read('public/game.js');
  assert.ok(game.indexOf('renderLanguageSettings();')<game.indexOf('watchSelects();'),'the options are there before the dropdowns get the game look');

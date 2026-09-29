@@ -12,7 +12,7 @@ const ROOT=new URL('../',import.meta.url);
 const read=path=>readFileSync(new URL(path,ROOT),'utf8');
 const list=(dir,test)=>readdirSync(new URL(dir,ROOT)).filter(test).sort().map(file=>`${dir}${file}`);
 // Admin screens stay English (only staff see them); the other skipped files hold no text for players.
-const SKIP=/(^|\/)(admin-[^/]*|lucide-icons|analytics|sound-worker|sw|sound-kit|model-atlas|render-resources|languages|language-settings|i18n|i18n-boot)\.js$/;
+const SKIP=/(^|\/)(admin-[^/]*|lucide-icons|analytics|sound-worker|sw|sound-kit|model-atlas|render-resources|languages|i18n|i18n-boot)\.js$/;
 export const SOURCES=[
  ...list('public/',f=>f.endsWith('.js')),
  ...list('src/',f=>f.endsWith('.js')),
@@ -21,13 +21,14 @@ export const SOURCES=[
 export const PAGES=['public/farm.html','public/play.html'];
 const SQL_DIRS=['supabase/','supabase/migrations/'];
 
-const ATTRS=['title','aria-label','placeholder','alt'];
+// data-note becomes a line of text in a dropdown (pretty-select.js), so it is collected too.
+const ATTRS=['title','aria-label','placeholder','alt','data-note'];
 const ENTITIES={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' ',middot:'·',rarr:'→',larr:'←',hellip:'…',mdash:'—',ndash:'–',times:'×',copy:'©',bull:'•',rsquo:'’',lsquo:'‘',ldquo:'“',rdquo:'”',euro:'€',check:'✓'};
 const decode=text=>text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,(all,code)=>code[0]==='#'?String.fromCodePoint(code[1]==='x'||code[1]==='X'?parseInt(code.slice(2),16):Number(code.slice(1))):ENTITIES[code.toLowerCase()]??all);
 export const normalize=text=>text.replace(/\s+/g,' ').trim();
 
 // Placeholders while a text is being cut up: \u0001<n>\u0001 is a changing part, \u0002 is markup (a cut).
-const HOLE=n=>`\u0001${n}\u0001`,CUT='\u0002';
+const HOLE=n=>`\u0001${n}\u0001`,CUT='\u0002';let cutHole=0;
 const TAG=/<\/?[a-zA-Z][^<>]*>|<!--[\s\S]*?-->|<![^<>]*>/g;
 
 function looksLikeText(text,inMarkup){
@@ -39,6 +40,8 @@ function looksLikeText(text,inMarkup){
  if(!/\s/.test(bare)&&/^[\w-]+(:[\w-]*)+$/.test(bare))return false;     // storage keys: "field:{0}"
  if(/="|=\S|\w=|\b[a-z]+_[a-z_]+\b|',|^'/.test(bare))return false;            // attributes, database names, font lists
  if(/^[A-Z][a-z]+[A-Z][a-z]+$/.test(bare))return false;                     // ArrowUp, TikTok
+ if(/^[a-z0-9]+-[a-z0-9-]+(\s[a-z0-9-]+)*$/.test(bare))return false;         // a class list: "plot-label plot-timer tended"
+ if(bare.split(/\s+/).every(w=>/^[a-z0-9]+(-[a-z0-9]+)+$/.test(w)||/^[a-z]+$/.test(w))&&/-/.test(bare)&&(/(^|\s)is-[a-z]+/.test(bare)||!/\s[a-z]+\s/.test(` ${bare} `.replace(/\S*-\S*/g,''))))return false; // class lists
  if(/^\d*(px|em|rem|ms|s|vh|vw|%|deg)$/.test(bare))return false;
  if(/\b(px|rem)\b.*\b(px|rem)\b/.test(bare))return false;                // CSS values
  if(inMarkup)return true;
@@ -50,22 +53,30 @@ function looksLikeText(text,inMarkup){
 }
 
 // Cut a text with holes and cuts into the pieces that show up as text nodes, plus the attribute texts in its tags.
-function pieces(text,html){
+function pieces(text,html,choices=[]){
  const found=[];
  // Attributes written without their tag (`${locked?' title="Locked"':''}`): their texts count like a tag's.
- if(!html&&/(^|\s)(title|aria-label|placeholder|alt)="/.test(text)){text=`<x ${text}>`;html=true;}
+ if(!html&&new RegExp(`(^|\\s)(${ATTRS.join('|')})="`).test(text)){text=`<x ${text}>`;html=true;}
  if(html){
   text=text.replace(TAG,tag=>{
-   for(const name of ATTRS){const m=tag.match(new RegExp(`\\s${name}="([^"]*)"`));if(m)found.push({text:m[1],markup:true});}
+   for(const name of ATTRS){const m=tag.match(new RegExp(`\\s${name}="([^"]*)"`));if(m)found.push({text:m[1].replace(/\u0002/g,()=>HOLE(`c${cutHole++}`)),markup:true});}
    return CUT;
   });
  }
  for(const part of text.split(CUT))found.push({text:part,markup:html});
  const out=[];
- for(const {text:piece,markup} of found){
-  let n=0;const map=new Map();
-  const key=normalize(decode(piece).replace(/\u0001(\d+)\u0001/g,(all,id)=>{if(!map.has(id))map.set(id,n++);return `{${map.get(id)}}`;}));
-  if(key&&looksLikeText(key,markup))out.push(key);
+ for(const {text:raw,markup} of found){
+  // A choice between short texts gives every version, only within its own piece of text.
+  let variants=[raw];
+  for(const m of raw.matchAll(/\u0003(\d+)\u0003/g)){
+   const options=choices[Number(m[1])]??[''];
+   variants=variants.flatMap(v=>options.map(o=>v.replace(m[0],o))).slice(0,32);
+  }
+  for(const piece of variants){
+   let n=0;const map=new Map();
+   const key=normalize(decode(piece).replace(/\u0001(c?\d+)\u0001/g,(all,id)=>{if(!map.has(id))map.set(id,n++);return `{${map.get(id)}}`;}));
+   if(key&&looksLikeText(key,markup))out.push(key);
+  }
  }
  return out;
 }
@@ -138,32 +149,40 @@ function fromScript(code,file,out,htmlNames){
 // A changing part: is it markup (a cut), a choice between short texts (both versions), or a value (a hole)?
 function classify(expr,code,htmlNames){
  if(expr.type==='ConditionalExpression'){
-  const branch=b=>b.type==='Literal'&&typeof b.value==='string'?b.value:b.type==='TemplateLiteral'&&!b.expressions.length?b.quasis[0].value.cooked:null;
+  // A choice between two short texts: both versions. A branch may be a text with changing parts of its own.
+  const branch=b=>b.type==='Literal'&&typeof b.value==='string'?b.value:b.type==='TemplateLiteral'&&!hasMarkup(b)&&b.expressions.every(e=>classify(e,code,htmlNames).hole)?b:null;
   const a=branch(expr.consequent),b=branch(expr.alternate);
-  if(a!==null&&b!==null)return /<[a-z/!]/i.test(a+b)?{cut:true}:{choice:[a,b]};
+  if(a!==null&&b!==null){
+   const flat=[a,b].map(x=>typeof x==='string'?x:x.quasis.map(q=>q.value.cooked??'').join(''));
+   return /<[a-z/!]/i.test(flat.join(''))?{cut:true}:{choice:[a,b]};
+  }
  }
- if(expr.type==='CallExpression'&&expr.callee.type==='MemberExpression'&&['map','join','flatMap'].includes(expr.callee.property.name))return {cut:true};
+ const call=expr.type==='CallExpression'&&expr.callee.type==='MemberExpression'&&['map','join','flatMap'].includes(expr.callee.property.name);
  let cut=false;
- walk(expr,n=>{
+ walk(expr,(n,parent)=>{
   if(cut)return;
   if(isMarkup(n))cut=true;
   else if(n.type==='CallExpression'){const c=n.callee,name=c.type==='Identifier'?c.name:c.type==='MemberExpression'&&!c.computed?c.property.name:'';if(htmlNames.has(name))cut=true;}
-  else if(n.type==='Identifier'&&htmlNames.has(n.name))cut=true;
+  else if(n.type==='Identifier'&&htmlNames.has(n.name)&&!(parent?.type==='MemberExpression'&&parent.property===n&&!parent.computed)&&!(parent?.type==='Property'&&parent.key===n))cut=true;
  });
- return cut?{cut:true}:{hole:true};
+ // A list joined together is a cut when its items carry markup; a list of numbers or words is a changing part.
+ return cut?{cut:true}:call&&false?{cut:true}:{hole:true};
 }
 
 // Every version of a text made of fixed parts and changing parts (at most 16 versions).
 function versions(parts,code,htmlNames){
- let out=[''];let hole=0;
+ let text='',hole=0;const choices=[];
  for(const part of parts){
-  if(typeof part==='string'){out=out.map(t=>t+part);continue;}
+  if(typeof part==='string'){text+=part;continue;}
   const kind=classify(part,code,htmlNames);
-  if(kind.cut)out=out.map(t=>t+CUT);
-  else if(kind.choice)out=out.flatMap(t=>kind.choice.map(c=>t+c)).slice(0,16);
-  else{const id=hole++;out=out.map(t=>t+HOLE(id));}
+  if(kind.cut)text+=CUT;
+  else if(kind.choice){
+   const options=kind.choice.map(o=>typeof o==='string'?o:o.quasis.map((q,i)=>(q.value.cooked??'')+(i<o.expressions.length?HOLE(hole++):'')).join(''));
+   text+=`\u0003${choices.length}\u0003`;choices.push(options);
+  }
+  else text+=HOLE(hole++);
  }
- return out;
+ return {text,choices};
 }
 
 // The parts of a text joined with +. Only the strings of the chain itself are used up (never ones deeper inside a part).
@@ -190,7 +209,8 @@ function collectScript(code,file,catalog,htmlNames,ast){
   if(!parts)return;
   const fixed=parts.filter(p=>typeof p==='string').join('');
   const html=/<\/?[a-z][^<>]*>/i.test(fixed)||/^\s*</.test(fixed);
-  for(const text of versions(parts,code,htmlNames))for(const key of pieces(text,html))add(catalog,key,file);
+  const {text,choices}=versions(parts,code,htmlNames);
+  for(const key of pieces(text,html,choices))add(catalog,key,file);
  });
 }
 
