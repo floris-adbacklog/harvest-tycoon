@@ -6,7 +6,7 @@ create table if not exists public.harvest_offers(
  id uuid primary key default gen_random_uuid(),
  diamonds integer not null default 0 check (diamonds between 0 and 20000),
  coins integer not null default 0 check (coins between 0 and 10000000),
- vip_days integer not null default 0 check (vip_days in (0,7,30)),
+ vip_days integer not null default 0 check (vip_days in (0,7,30,60,90)),
  audience text not null default 'all' check (audience in ('all','browser','phone_browser','phone','desktop')),
  min_level integer not null default 14 check (min_level between 14 and 200),
  starts_at timestamptz not null default now(),
@@ -35,7 +35,7 @@ alter table public.harvest_purchases add constraint harvest_pack_amount_matches 
  (pack = any (array['300','600','1250']) and diamonds=(case when pack ~ '^[0-9]+$' then pack::integer else 0 end) and coins=0 and amount_cents=999) or
  (pack = any (array['1000','2000','3500']) and diamonds=(case when pack ~ '^[0-9]+$' then pack::integer else 0 end) and coins=0 and amount_cents=2499) or
  (pack='starter' and diamonds = any (array[300,500]) and coins=10000 and amount_cents=299) or
- (pack='offer' and offer_id is not null and amount_cents=499 and coins between 0 and 10000000 and vip_days in (0,7,30) and (diamonds>0 or coins>0 or vip_days>0)));
+ (pack='offer' and offer_id is not null and amount_cents=499 and coins between 0 and 10000000 and vip_days in (0,7,30,60,90) and (diamonds>0 or coins>0 or vip_days>0)));
 -- One checkout per farmer per offer, like the Starter Pack: only a Stripe session that expired frees it.
 create unique index if not exists harvest_one_offer_per_player on public.harvest_purchases(player_id, offer_id)
  where pack='offer' and status<>'expired';
@@ -125,7 +125,8 @@ end $function$;
 
 -- The admin panel (src/admin-dashboard.js): post an offer, list the last ten with how many farmers bought each, stop one. Only the
 -- admin in a Google session (chat_staff_role, supabase/admin-google-only.sql), like the pop-ups. The worth is the same sum as
--- game/payments.js offerValueCents: a diamond at €4.99/500, 200 coins a diamond, VIP 7 days 500 diamonds and 30 days 1500; it must be
+-- game/payments.js offerValueCents: a diamond at €4.99/500, 200 coins a diamond, VIP 7 days 500 diamonds, 30 days 1500, 60 and 90 days two and three
+-- times that; it must be
 -- €49.99 within 2%. A new offer ends the one running now.
 create or replace function public.offer_post(p_diamonds integer, p_coins integer, p_vip_days integer, p_audience text, p_min_level integer, p_hours integer)
 returns uuid language plpgsql security definer set search_path to '' as $f$
@@ -133,9 +134,9 @@ declare me uuid:=(select auth.uid());d integer:=coalesce(p_diamonds,0);c integer
  who text:=coalesce(nullif(p_audience,''),'all');lvl integer:=coalesce(p_min_level,14);hours integer:=coalesce(p_hours,48);worth integer;offer uuid;
 begin
  if public.chat_staff_role(me) is distinct from 'admin' then raise exception 'Not authorized.' using errcode='42501'; end if;
- if d not between 0 and 20000 or c not between 0 and 10000000 or v not in (0,7,30) then raise exception 'Choose amounts within the limits.' using errcode='22023'; end if;
+ if d not between 0 and 20000 or c not between 0 and 10000000 or v not in (0,7,30,60,90) then raise exception 'Choose amounts within the limits.' using errcode='22023'; end if;
  if d=0 and c=0 and v=0 then raise exception 'Put something in the offer.' using errcode='22023'; end if;
- worth:=round((d+c/200.0+case v when 7 then 500 when 30 then 1500 else 0 end)*499/500.0);
+ worth:=round((d+c/200.0+case v when 7 then 500 when 30 then 1500 when 60 then 3000 when 90 then 4500 else 0 end)*499/500.0);
  if abs(worth-4999)>4999*0.02 then raise exception 'The offer must be worth €49.99; it is worth €%.', to_char(worth/100.0,'FM990.00') using errcode='22023'; end if;
  if who not in ('all','browser','phone_browser','phone','desktop') then raise exception 'Choose who sees it.' using errcode='22023'; end if;
  if lvl not between 14 and 200 then raise exception 'Choose a level from 14 to 200.' using errcode='22023'; end if;

@@ -58,7 +58,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   // within 2%. One offer at a time: a new one ends the one running now.
   +'<section class="admin-card" id="admin-offers"><h3>'+art('diamonds')+'Special offer</h3><form id="admin-offer-form" class="admin-news admin-offer">'
   +'<div class="admin-offer-kinds"><label><input type="checkbox" id="admin-offer-has-diamonds" checked> Diamonds</label><label><input type="checkbox" id="admin-offer-has-coins"> Coins</label>'
-  +'<label>VIP<select id="admin-offer-vip"><option value="0">None</option><option value="7">7 days</option><option value="30">30 days</option></select></label></div>'
+  +'<label>VIP<select id="admin-offer-vip"><option value="0">None</option><option value="7">7 days</option><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option></select></label></div>'
   +'<div class="admin-popup-fields"><label>Diamonds<input id="admin-offer-diamonds" type="number" min="0" max="'+OFFER.maxDiamonds+'" step="50" inputmode="numeric"></label>'
   +'<label>Coins<input id="admin-offer-coins" type="number" min="0" max="'+OFFER.maxCoins+'" step="1000" inputmode="numeric"></label>'
   +'<label>Who sees it<select id="admin-offer-audience">'+Object.entries(POPUP_AUDIENCES).map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'

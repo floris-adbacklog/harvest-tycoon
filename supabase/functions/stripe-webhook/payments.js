@@ -22,12 +22,13 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
 // for a diamond (the admin's rate; coins are never sold), VIP at its price in diamonds (VIP_PLANS in farm-state.js). The server
 // takes the contents from the offer itself, never from the browser, and the "worth" line is always this sum.
 export const OFFER=Object.freeze({cents:499,valueCents:4999,price:'price_1UL3qr04FdNTUSp41m7H0DCp',coinsPerDiamond:200,
- diamondCents:499/500,vipDiamonds:Object.freeze({7:500,30:1500}),target:5000,maxDiamonds:20000,maxCoins:10000000});
+ diamondCents:499/500,vipDiamonds:Object.freeze({7:500,30:1500,60:3000,90:4500}),target:5000,maxDiamonds:20000,maxCoins:10000000});
 // What an offer is worth, in euro cents at the shop's prices.
 export function offerValueCents({diamonds=0,coins=0,vipDays=0}={}){
  return Math.round((Number(diamonds)+Number(coins)/OFFER.coinsPerDiamond+(OFFER.vipDiamonds[vipDays]??0))*OFFER.diamondCents);
 }
-// A valid offer: whole amounts, VIP of 7 or 30 days or none, something in it, and worth €49.99 (within 2%, so round numbers fit).
+// VIP of 60 or 90 days (30 Sep 2026) is two or three of the shop's 30-day plan.
+// A valid offer: whole amounts, VIP of 7, 30, 60 or 90 days or none, something in it, and worth €49.99 (within 2%, so round numbers fit).
 export function offerProblem({diamonds=0,coins=0,vipDays=0}={}){
  if(![diamonds,coins,vipDays].every(Number.isInteger))return 'Use whole numbers.';
  if(diamonds<0||diamonds>OFFER.maxDiamonds||coins<0||coins>OFFER.maxCoins||!Object.hasOwn(OFFER.vipDiamonds,vipDays)&&vipDays!==0)return 'Choose amounts within the limits.';

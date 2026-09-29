@@ -13,6 +13,10 @@ test('a special offer is worth €49.99 at shop prices and sells for €4.99 (90
  assert.equal(offerValueCents({coins:1000}),offerValueCents({diamonds:5}),'1,000 coins = 5 diamonds');
  assert.equal(offerValueCents({vipDays:30}),offerValueCents({diamonds:1500}),'VIP at its diamond price');
  assert.equal(offerValueCents({vipDays:7}),offerValueCents({diamonds:500}));
+ assert.equal(offerValueCents({vipDays:60}),offerValueCents({diamonds:3000}),'60 days: two 30-day plans');
+ assert.equal(offerValueCents({vipDays:90}),offerValueCents({diamonds:4500}),'90 days: three 30-day plans');
+ assert.equal(offerProblem({diamonds:500,vipDays:90}),null);
+ assert.match(offerProblem({vipDays:90}),/must be worth €49\.99/,'VIP alone never reaches €49.99');
  assert.equal(offerProblem({diamonds:5000}),null);
  assert.equal(offerProblem({coins:1000000}),null);
  assert.match(offerProblem({coins:1250000}),/must be worth €49\.99/);
@@ -25,7 +29,7 @@ test('a special offer is worth €49.99 at shop prices and sells for €4.99 (90
 });
 
 test('ticking kinds in the Admin panel always fills in a valid offer',()=>{
- for(const diamonds of [false,true])for(const coins of [false,true])for(const vipDays of [0,7,30]){
+ for(const diamonds of [false,true])for(const coins of [false,true])for(const vipDays of [0,7,30,60,90]){
   if(!diamonds&&!coins)continue;
   const o=offerFill({diamonds,coins,vipDays});
   assert.equal(offerProblem(o),null,JSON.stringify(o));
@@ -49,7 +53,7 @@ test('a paid offer is credited only with contents that still make a valid offer'
 test('the database checks the same rules: admin in a Google session, from level 14, one offer at a time, once per farmer',()=>{
  const sql=read('supabase/special-offer.sql');
  assert.match(sql,/min_level integer not null default 14 check \(min_level between 14 and 200\)/);
- assert.match(sql,/worth:=round\(\(d\+c\/200\.0\+case v when 7 then 500 when 30 then 1500 else 0 end\)\*499\/500\.0\);/,'the same sum as offerValueCents');
+ assert.match(sql,/worth:=round\(\(d\+c\/200\.0\+case v when 7 then 500 when 30 then 1500 when 60 then 3000 when 90 then 4500 else 0 end\)\*499\/500\.0\);/,'the same sum as offerValueCents');
  assert.match(sql,/if abs\(worth-4999\)>4999\*0\.02 then raise exception/);
  assert.equal((sql.match(/chat_staff_role\((?:me|\(select auth\.uid\(\)\))\) is distinct from 'admin'/g)??[]).length,3,'posting, listing and stopping');
  assert.match(sql,/update public\.harvest_offers set stopped_at=now\(\) where stopped_at is null and ends_at>now\(\);\n insert into public\.harvest_offers/);
