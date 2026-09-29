@@ -27,7 +27,7 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  const style=doc.createElement('link');style.rel='stylesheet';style.href='/offer.css';doc.head.append(style);
  const tile=doc.createElement('button');tile.id='offer-button';tile.type='button';tile.hidden=true;
  const chip=doc.createElement('button');chip.id='offer-chip';chip.className='icon-button';chip.type='button';chip.hidden=true;chip.title='Special offer';
- const dialog=doc.createElement('dialog');dialog.id='offer-dialog';dialog.className='game-dialog';dialog.setAttribute('aria-labelledby','offer-title');
+ const dialog=doc.createElement('dialog');dialog.id='offer-dialog';dialog.className='game-dialog';dialog.setAttribute('aria-labelledby','offer-title');dialog.tabIndex=-1;
  doc.body.append(tile,dialog);
  const hud=doc.getElementById('starter-pack-chip')??doc.getElementById('diamond-button');hud?.after(chip);
  const device=()=>({installed:doc.documentElement.dataset.appMode==='standalone',phone:Boolean(win.matchMedia?.('(pointer: coarse)').matches)});
@@ -69,7 +69,9 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  }
  function open(){
   if(!offer)return;doc.querySelectorAll('dialog[open]').forEach(d=>d!==dialog&&d.close());
-  requestId=win.crypto.randomUUID();pending=false;draw();render();dialog.showModal();if(!offer.preview)markSeen();
+  requestId=win.crypto.randomUUID();pending=false;draw();render();dialog.showModal();
+  // The window itself takes the focus, not the close button (a phone drew a ring around it).
+  dialog.focus({preventScroll:true});if(!offer.preview)markSeen();
   win.harvestSound?.('offer');
  }
  // The Diamond shop (public/farm.html #boost-dialog): the offer as a banner at the top while it runs, so a farmer who closed the
