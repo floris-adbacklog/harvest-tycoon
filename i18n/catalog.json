@@ -2160,6 +2160,7 @@
 "New field":"public/progression-ui.js",
 "New field · buy it at the Farmhouse":"public/progression-ui.js",
 "New here?":"src/account-form.js",
+"New member":"src/chat-ui.js",
 "New order: {0}. {1} replacements left today.":"public/retention-ui.js",
 "New prices in {0} · 00:00 UTC":"public/economy-ui.js",
 "New private message":"public/farm.html",

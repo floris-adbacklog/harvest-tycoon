@@ -36,7 +36,7 @@ test('the card: the family icon, the good\'s picture, a Give button for the othe
 
 test('a new rank in the family writes a card with the rank\'s badge; joining another family or leaving does not',()=>{
  const sql=read('supabase/family-rank-chat.sql');
- assert.match(sql,/check \(kind in \('message','request','rank','top'\)\)/);
+ assert.match(sql,/check \(kind in \('message','request','rank','top','join'\)\)/);
  assert.match(sql,/after update of role on public\.family_members for each row\s+when \(old\.role is distinct from new\.role and old\.family_id=new\.family_id and old\.left_at is null and new\.left_at is null\)/);
  assert.match(sql,/jsonb_build_object\('from',old\.role,'to',new\.role\)/);
  assert.match(sql,/exception when others then return new;/);
@@ -58,5 +58,17 @@ test('a new top farmer is checked once an hour and gets a card; the first run on
  const ui=read('src/chat-ui.js');
  assert.match(ui,/if\(m\.kind==='top'\)return topRow\(m\);/);
  assert.match(ui,/art\('family-rank-top'\)/);
- for(const file of ['supabase/family-rank-chat.sql','supabase/family-top-chat.sql'])assert.match(read(file),/check \(kind in \('message','request','rank','top'\)\)/,`${file}: the same kinds, whichever runs last`);
+ for(const file of ['supabase/family-rank-chat.sql','supabase/family-top-chat.sql'])assert.match(read(file),/check \(kind in \('message','request','rank','top','join'\)\)/,`${file}: the same kinds, whichever runs last`);
+});
+
+test('a new member of the family gets a card with the member badge; the founder and farmers already in it do not',()=>{
+ const sql=read('supabase/family-join-chat.sql');
+ assert.match(sql,/create trigger family_join_chat after insert or update on public\.family_members/);
+ assert.match(sql,/if new\.left_at is not null or new\.role<>'member' then return new; end if;/,'not the founder, who starts as leader');
+ assert.match(sql,/if tg_op='UPDATE' and old\.family_id is not distinct from new\.family_id and old\.left_at is null then return new; end if;/,'not a farmer who was already in');
+ assert.match(sql,/exception when others then return new;/);
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/if\(m\.kind==='join'\)return joinRow\(m\);/);
+ assert.match(ui,/art\('family-rank-member'\)/);
+ for(const file of ['supabase/family-rank-chat.sql','supabase/family-top-chat.sql','supabase/family-join-chat.sql'])assert.match(read(file),/check \(kind in \('message','request','rank','top','join'\)\)/,`${file}: the same kinds, whichever runs last`);
 });
