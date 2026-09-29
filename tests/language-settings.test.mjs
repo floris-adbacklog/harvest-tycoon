@@ -17,11 +17,11 @@ test('every language has its painted flag, and English is the only one ready',()
 });
 
 test('the Language dropdown in Settings: English chosen, the others greyed out as coming soon',()=>{
- const select={innerHTML:''};renderLanguageSettings(select);
+ const select={innerHTML:'',addEventListener(){},closest:()=>null};renderLanguageSettings(select);
  const options=[...select.innerHTML.matchAll(/<option [^>]*>[^<]*<\/option>/g)].map(m=>m[0]);
  assert.equal(options.length,10);
  assert.match(options[0],/value="en".*data-art="flag-en" selected>English</);
- for(const option of options.slice(1))assert.match(option,/ disabled data-note="Coming soon">/);
+ for(const [i,option] of options.entries())if(!LANGUAGES[i].ready)assert.match(option,/ disabled data-note="Coming soon">/);
  assert.match(read('public/farm.html'),/<section id="language-settings"[^>]*>.*<select id="language-select" aria-label="Language"><\/select><\/section>\s*<section id="privacy-settings"/s);
  const game=read('public/game.js');
  assert.ok(game.indexOf('renderLanguageSettings();')<game.indexOf('watchSelects();'),'the options are there before the dropdowns get the game look');

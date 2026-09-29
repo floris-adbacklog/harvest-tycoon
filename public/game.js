@@ -41,10 +41,13 @@ import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { renderLanguageSettings } from './language-settings.js';
+import { startTranslation } from './i18n.js';
 import { watchSelects } from './pretty-select.js';
 import { createInviteUI } from './invite-ui.js';
 import { fitText } from './fit-text.js';
 
+// Another language than English: translate the farm's texts as they appear (public/i18n.js).
+startTranslation();
 const $ = id => document.getElementById(id);
 const state = structuredClone(window.harvestInitialFarm.state);
 // A server that has not learnt about a new building yet must not break the buildings list (farm-client.js does the same on every reload).
