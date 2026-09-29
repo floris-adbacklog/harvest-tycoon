@@ -58,3 +58,15 @@ storage Lager · (natural) fertilizer (Natur)dünger · animal feed Tierfutter �
 Seed Lab Saatgutlabor · Glasshouse Gewächshaus · Greenhouse (activity) Frühbeet · Grand Valley Fair Große Talmesse ·
 Family Hall Familienhaus · Farmhouse Bauernhaus · Dairy Barn Kuhstall · Feed Mill Futtermühle · Squash Zucchini ·
 Pole beans Stangenbohnen · Cider apples Mostäpfel · Cider Cidre.
+
+### हिन्दी (polite "आप", Western digits)
+
+coins सिक्के · diamonds हीरे · field खेत · crop फसल · harvest कटाई/काटें · plant बोएँ/बुआई · water पानी दें ·
+extra care खास देखभाल · batch बैच · slot स्लॉट · goods सामान · building इमारत · upgrade अपग्रेड · level लेवल ·
+Market बाज़ार · Quests मिशन · More और · My farm मेरा फ़ार्म · Farm Family फ़ार्म परिवार · Family Chest परिवार संदूक ·
+Family Order परिवार ऑर्डर · leader/co-leader मुखिया/सह-मुखिया · boost बूस्ट · streak सिलसिला · daily gift रोज़ का तोहफ़ा ·
+chore काम · helping hand मदद का हाथ · Estate जागीर · Valley घाटी · Valley Market घाटी बाज़ार · farm stall फ़ार्म स्टॉल ·
+storage भंडार · natural fertilizer जैविक खाद · animal feed पशु आहार · heirloom पुरानी किस्म · test bed परीक्षण क्यारी ·
+Seed Lab बीज प्रयोगशाला · Glasshouse ग्लासहाउस · Greenhouse (activity) नर्सरी · Grand Valley Fair घाटी का बड़ा मेला ·
+grand champion महाविजेता · visitor मेहमान · Windmill पवनचक्की · Dairy Barn गौशाला · Squash तोरी · Pole beans सेम ·
+cheese चीज़ · goat cheese बकरी का पनीर · journal फ़ार्म डायरी · Trade Depot व्यापार डिपो · Silo research साइलो शोध.
