@@ -132,6 +132,25 @@ Feed Mill Penggilingan Pakan · Juice Press Pemeras Jus · Preserves Workshop Be
 Apiary Sarang Lebah · Bee Yard Peternakan Lebah · Animal paddock Padang Ternak · Squash zukini · rush order pesanan kilat ·
 visitor tamu · Starter Pack Paket Pemula · leaderboard papan peringkat.
 
+### 日本語 (polite です/ます in sentences, short noun or verb forms on buttons)
+
+No plurals and no spaces between words; counters follow the number (3個, 2枚 for fields, 5件 for batches and orders, 2人 for
+people). Full-width punctuation in sentences (。、！？：（）), keep " · " between list parts. Thousands with a comma (1,000).
+Fragments around a name or number are written so the sentence still reads in Japanese order ("今いるのは" + Facebook + "の中です。").
+coins コイン · diamonds ダイヤ · field 畑 · crop 作物 · harvest 収穫 · plant 植える · water 水やり · care 手入れ ·
+batch 生産 (件) · slot 枠 · goods 商品 (processed goods 加工品) · building 建物 · upgrade 強化 · level レベル (Lv) ·
+Market 市場 · Quests クエスト · More その他 · My farm 農場 · Farm Family 農場ファミリー · Family Chest ファミリー宝箱 ·
+Family Order ファミリー注文 · Family Hall ファミリーホール · tournament 大会 · leader/co-leader リーダー/サブリーダー ·
+honorary 名誉メンバー · qualify 条件達成 · streak 連続記録 · daily gift デイリーギフト · chore 農作業 ·
+helping hand お手伝い (stops 場所, round 農場めぐり) · Estate 大農園 · Valley 谷 · Valley Market 谷の市場 ·
+farm stall 直売所 · storage 倉庫 · natural fertilizer 天然肥料 · animal feed 飼料 · heirloom 在来種 · test bed 試験区画 ·
+Seed Lab 種子研究所 · Glasshouse ガラスハウス · Greenhouse (stop) 温室 · Apiary 養蜂箱 · Bee Yard 養蜂場 ·
+Animal paddock 放牧場 · Tool workshop 道具小屋 · Grand Valley Fair 谷の大品評会 · fair star 品評会スター ·
+Farmhouse 母屋 · Dairy Barn 牛舎 · Feed Mill 飼料工場 · Windmill 風車 · Juice Press ジュース工房 ·
+Preserves Workshop 保存食工房 · Trade Depot 交易所 · The Ranch 牧場 · herd 家畜 · visitor 来客 · customer お客さん ·
+rush order 急ぎの注文 · delivery order 配達注文 · Squash ズッキーニ · Green beans さやいんげん · Pole beans つるインゲン ·
+Cherries さくらんぼ · specialist 名人 · Starter Pack スターターパック · leaderboard ランキング · report 通報.
+
 ### Русский (informal "ты", three plural forms)
 
 Counts use plural objects (`one`/`few`/`many`/`other`); the runtime picks the form from the first number in the text.
