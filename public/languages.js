@@ -3,7 +3,7 @@
 // English first, then the others by their own name.
 export const LANGUAGES=Object.freeze([
  {code:'en',name:'English',ready:true},
- {code:'cs',name:'Čeština'},
+ {code:'cs',name:'Čeština',ready:true},
  {code:'de',name:'Deutsch',ready:true},
  {code:'es',name:'Español',ready:true},
  {code:'fr',name:'Français',ready:true},

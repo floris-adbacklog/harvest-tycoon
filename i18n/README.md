@@ -172,6 +172,29 @@ Trade Depot Ticaret Deposu · trailer römork · visitor ziyaretçi · customer 
 delivery order teslimat siparişi · Berries orman meyvesi · Squash kabak · Pumpkin bal kabağı · Cider sider ·
 specialist uzmanı · Starter Pack Başlangıç Paketi · leaderboard sıralama · report bildir.
 
+### Čeština (informal "ty", plural forms)
+
+Counts that change the noun use plural objects (`one` 1, `few` 2–4, `many` decimals, `other` 0 and 5+), like Russian; the
+runtime picks the form from the first number. No-break space before % and inside thousands (10 %, 1 000); decimals with a
+comma. Uncountable goods are counted with "ks" (kusů) plus the genitive ("12 ks pšenice", "Vyzvedni 20 ks včelího vosku").
+To avoid declining a placeholder, put it after a colon ("Otevři: {0}", "Pole {1}: sklidit {0}"). Farm log lines use
+passive participles, so they need no gender ("Postaveno: {0}", "Koupeno VIP").
+coins mince (mincí) · diamonds diamanty (diamantů) · field pole (polí) · crop plodina · goods výrobky/zboží · harvest sklizeň/sklidit ·
+plant sázet/zasadit · water zalít · care péče · fertilize pohnojit · batch várka · slot místo · building budova ·
+upgrade vylepšit/vylepšení · level úroveň (Úr.) · rank hodnost · Market Trh · Quests Úkoly · More Více · My farm Moje farma ·
+boost boost · streak série · daily gift denní dárek · daily challenge denní výzva · qualify splnit podmínky ·
+Farm Family Farmářská rodina · Family Chest Rodinná truhla · Family Order Rodinná objednávka · Family Hall Rodinný sál ·
+leader/co-leader vedoucí/zástupce · honorary čestný člen · tournament turnaj · chore farmářská práce ·
+helping hand pomocná ruka (stop zastávka, round kolo) · Estate Panství · Valley Údolí · Valley Market Trh v údolí ·
+farm stall farmářský stánek · storage sklad · natural fertilizer přírodní hnojivo · animal feed krmivo · heirloom stará odrůda ·
+test bed zkušební záhon · Seed Lab Semenářská laboratoř · Glasshouse Skleník · Greenhouse (stop) Pařeniště · Apiary Úly ·
+Bee Yard Včelín · Animal paddock Výběh · Tool workshop Dílna na nářadí · The Ranch Ranč · herd stádo ·
+Grand Valley Fair Velký údolní jarmark · fair star hvězda jarmarku · Farmhouse Statek · Dairy Barn Kravín · Windmill Větrný mlýn ·
+Feed Mill Mlýn na krmivo · Juice Press Lisovna · Preserves Workshop Zavařovna · Trade Depot Obchodní sklad · trailer přívěs ·
+visitor návštěvník · customer zákazník · rush order spěšná objednávka · delivery order objednávka k doručení · Berries bobule ·
+Squash cuketa · Pumpkin dýně · Cider cidr · specialist specialista na … · Starter Pack Startovní balíček · leaderboard žebříček ·
+report nahlásit.
+
 ### Русский (informal "ты", three plural forms)
 
 Counts use plural objects (`one`/`few`/`many`/`other`); the runtime picks the form from the first number in the text.
