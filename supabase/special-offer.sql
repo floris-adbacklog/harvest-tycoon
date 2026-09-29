@@ -125,7 +125,7 @@ end $function$;
 
 -- The admin panel (src/admin-dashboard.js): post an offer, list the last ten with how many farmers bought each, stop one. Only the
 -- admin in a Google session (chat_staff_role, supabase/admin-google-only.sql), like the pop-ups. The worth is the same sum as
--- game/payments.js offerValueCents: a diamond at €4.99/500, 250 coins a diamond, VIP 7 days 500 diamonds and 30 days 1500; it must be
+-- game/payments.js offerValueCents: a diamond at €4.99/500, 200 coins a diamond, VIP 7 days 500 diamonds and 30 days 1500; it must be
 -- €49.99 within 2%. A new offer ends the one running now.
 create or replace function public.offer_post(p_diamonds integer, p_coins integer, p_vip_days integer, p_audience text, p_min_level integer, p_hours integer)
 returns uuid language plpgsql security definer set search_path to '' as $f$
@@ -135,7 +135,7 @@ begin
  if public.chat_staff_role(me) is distinct from 'admin' then raise exception 'Not authorized.' using errcode='42501'; end if;
  if d not between 0 and 20000 or c not between 0 and 10000000 or v not in (0,7,30) then raise exception 'Choose amounts within the limits.' using errcode='22023'; end if;
  if d=0 and c=0 and v=0 then raise exception 'Put something in the offer.' using errcode='22023'; end if;
- worth:=round((d+c/250.0+case v when 7 then 500 when 30 then 1500 else 0 end)*499/500.0);
+ worth:=round((d+c/200.0+case v when 7 then 500 when 30 then 1500 else 0 end)*499/500.0);
  if abs(worth-4999)>4999*0.02 then raise exception 'The offer must be worth €49.99; it is worth €%.', to_char(worth/100.0,'FM990.00') using errcode='22023'; end if;
  if who not in ('all','browser','phone_browser','phone','desktop') then raise exception 'Choose who sees it.' using errcode='22023'; end if;
  if lvl not between 14 and 200 then raise exception 'Choose a level from 14 to 200.' using errcode='22023'; end if;

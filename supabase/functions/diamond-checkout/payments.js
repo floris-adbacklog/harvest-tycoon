@@ -18,10 +18,10 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
  '1000':{diamonds:1000,cents:2499,price:'price_1UH5HL04FdNTUSp41DLz2C1B'}
 });
 // The special offer (29 Sep 2026): the admin puts together diamonds, coins and/or VIP time worth €49.99 at the shop's own prices,
-// sold once per farmer for €4.99 (90% off), one offer at a time. Worth: a diamond as in the €4.99 pack (500 for €4.99), coins at 250
+// sold once per farmer for €4.99 (90% off), one offer at a time. Worth: a diamond as in the €4.99 pack (500 for €4.99), coins at 200
 // for a diamond (the admin's rate; coins are never sold), VIP at its price in diamonds (VIP_PLANS in farm-state.js). The server
 // takes the contents from the offer itself, never from the browser, and the "worth" line is always this sum.
-export const OFFER=Object.freeze({cents:499,valueCents:4999,price:'price_1UL3qr04FdNTUSp41m7H0DCp',coinsPerDiamond:250,
+export const OFFER=Object.freeze({cents:499,valueCents:4999,price:'price_1UL3qr04FdNTUSp41m7H0DCp',coinsPerDiamond:200,
  diamondCents:499/500,vipDiamonds:Object.freeze({7:500,30:1500}),target:5000,maxDiamonds:20000,maxCoins:10000000});
 // What an offer is worth, in euro cents at the shop's prices.
 export function offerValueCents({diamonds=0,coins=0,vipDays=0}={}){
