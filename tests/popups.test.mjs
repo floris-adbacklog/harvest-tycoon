@@ -55,9 +55,9 @@ test('the admin form: send a notification, a pop-up or both; a web page asks for
 test('the admin can send one private message to many farmers: online now, active this week or everyone; they can reply',()=>{
  const admin=read('src/admin-dashboard.js'),sql=read('supabase/chat-broadcast-dm.sql');
  assert.match(admin,/<option value="online">Online now<\/option><option value="week" selected>Active this week<\/option><option value="all">Everyone<\/option>/);
- assert.match(admin,/const n=await bridge\.chat\.broadcastDm\(\{audience\}\);note\.textContent=`Goes to/,'the count before sending');
+ assert.match(admin,/const n=await bridge\.chat\.broadcastDm\(\{audience,minLevel\}\);if\(ask!==dmCounting\)return;note\.textContent=`Goes to/,'the count before sending, only the latest one');
  assert.match(admin,/confirmAction\(\{title:`Send a private message to/,'asked once more before it goes');
- assert.match(read('src/chat-client.js'),/broadcastDm:\(\{body='',audience,send=false\}\)=>rpc\('chat_broadcast_dm'/);
+ assert.match(read('src/chat-client.js'),/broadcastDm:\(\{body='',audience,send=false,minLevel=1\}\)=>rpc\('chat_broadcast_dm',\{p_body:body,p_audience:audience,p_send:send,p_min_level:minLevel\}\)/);
  assert.match(sql,/if me is null or public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'/,'only the admin');
  assert.match(sql,/p_audience='online' and ps\.last_active_at>now\(\)-interval '30 minutes'/,'online: the same 30 minutes as the green dot');
  assert.match(sql,/not exists\(select 1 from public\.chat_blocks b where b\.player_id=ps\.player_id and b\.blocked_id=p_sender\)/,'not to farmers who blocked the admin');
@@ -66,6 +66,16 @@ test('the admin can send one private message to many farmers: online now, active
  assert.match(sql,/m\.body=msg and m\.created_at>now\(\)-interval '10 minutes'\) then raise exception 'You sent this message a moment ago\.'/,'a double click sends once');
  assert.match(read('src/chat-ui.js'),/m\.sender_staff\?linkify\(m\.body\):esc\(m\.body\)/,'a link in the admin\'s message works');
  assert.match(sql,/add constraint chat_messages_body_check check \(char_length\(body\) between 1 and 500\);/,'the table takes the admin\'s 500 characters (it allowed 200)');
+});
+test('the admin\'s private message can go to farmers from a level, e.g. 14 for the special offer',()=>{
+ const sql=read('supabase/chat-broadcast-level.sql'),admin=read('src/admin-dashboard.js');
+ assert.match(sql,/drop function if exists public\.chat_broadcast_dm\(text,text,boolean\);/,'one function for the game to call');
+ assert.match(sql,/ps\.level>=greatest\(\(select c\.dm_level from public\.chat_config c\),coalesce\(p_min_level,1\)\)/,'the private-message level still applies');
+ assert.match(sql,/p_send boolean default false, p_min_level integer default 1\)/,'a call without a level is everyone, as before');
+ assert.match(sql,/if me is null or public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'/);
+ assert.match(sql,/m\.body=msg and m\.created_at>now\(\)-interval '10 minutes'\) then raise exception 'You sent this message a moment ago\.'/);
+ assert.match(admin,/<label>From level<input id="admin-dm-level" type="number" min="1" max="200"/);
+ assert.match(admin,/const sent=await bridge\.chat\.broadcastDm\(\{body,audience:audience\.value,send:true,minLevel\}\);/);
 });
 test('a welcome message from the admin to every new farmer, a few minutes after sign-up; set up in the Admin dashboard',()=>{
  const sql=read('supabase/welcome-dm.sql'),admin=read('src/admin-dashboard.js');

@@ -83,8 +83,9 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   // The admin's welcome message to every new farmer (supabase/welcome-dm.sql).
   welcomeGet:()=>rpc('welcome_dm_get'),
   welcomeSave:({enabled,body,delay})=>rpc('welcome_dm_save',{p_enabled:enabled,p_body:body,p_delay:delay}),
-  // The admin's private message to many farmers at once (supabase/chat-broadcast-dm.sql): count first, then send.
-  broadcastDm:({body='',audience,send=false})=>rpc('chat_broadcast_dm',{p_body:body,p_audience:audience,p_send:send}),
+  // The admin's private message to many farmers at once (supabase/chat-broadcast-dm.sql): count first, then send; from a farm
+  // level too (supabase/chat-broadcast-level.sql).
+  broadcastDm:({body='',audience,send=false,minLevel=1})=>rpc('chat_broadcast_dm',{p_body:body,p_audience:audience,p_send:send,p_min_level:minLevel}),
   // Pop-ups (supabase/popups.sql): news that also opens once as a pop-up. Posting, the list and stopping are for the admin only.
   postPopup:({title,body,buttonLabel=null,buttonTarget=null,audience='all',minLevel=1,hours=24,news=true})=>rpc('popup_post',{p_title:title,p_body:body,p_button_label:buttonLabel,p_button_target:buttonTarget,p_audience:audience,p_min_level:minLevel,p_hours:hours,p_news:news}),
   popupList:()=>rpc('popup_list'),

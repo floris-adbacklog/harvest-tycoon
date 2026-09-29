@@ -74,7 +74,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   // The admin only: the same news also as a pop-up, once per farmer, with an optional button (src/popup-ui.js, supabase/popups.sql).
   +'<label class="admin-news-hours admin-send-as">Send as<select id="admin-send-as"><option value="news">Notification</option><option value="popup">Pop-up</option><option value="both">Notification and pop-up</option><option value="dm">Private message (they can reply)</option></select></label>'
   // The admin's private message to many farmers: who gets it, and how many that is right now (supabase/chat-broadcast-dm.sql).
-  +'<div class="admin-popup-fields" id="admin-dm-fields" hidden><label>Who gets it<select id="admin-dm-audience"><option value="online">Online now</option><option value="week" selected>Active this week</option><option value="all">Everyone</option></select></label><p class="admin-popup-note" id="admin-dm-count">Counting farmers…</p><p class="admin-popup-note">Every farmer gets it as a private message from you and can reply; the replies come in under your private messages. Farmers with notifications on for messages also get a push. Links (https) work.</p></div>'
+  +'<div class="admin-popup-fields" id="admin-dm-fields" hidden><label>Who gets it<select id="admin-dm-audience"><option value="online">Online now</option><option value="week" selected>Active this week</option><option value="all">Everyone</option></select></label><label>From level<input id="admin-dm-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label><p class="admin-popup-note" id="admin-dm-count">Counting farmers…</p><p class="admin-popup-note">Every farmer gets it as a private message from you and can reply; the replies come in under your private messages. Farmers with notifications on for messages also get a push. Links (https) work.</p></div>'
   +'<div class="admin-popup-fields" id="admin-popup-fields" hidden>'
   +'<label>Title<input id="admin-popup-title" maxlength="60" placeholder="Play it as an app"></label>'
   +'<label>Button<input id="admin-popup-label" maxlength="30" placeholder="Show me how (leave empty for no button)"></label>'
@@ -328,10 +328,14 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-send-as').addEventListener('change',event=>{const mode=event.target.value;dialog.querySelector('#admin-popup-fields').hidden=mode==='news'||mode==='dm';dialog.querySelector('#admin-dm-fields').hidden=mode!=='dm';dialog.querySelector('#admin-news-hours-row').hidden=mode==='dm';if(mode==='dm')void countDm();});
  // How many farmers a private message to all would reach right now.
  async function countDm(){
-  const note=dialog.querySelector('#admin-dm-count'),audience=dialog.querySelector('#admin-dm-audience').value;note.textContent='Counting farmers…';
-  try{const n=await bridge.chat.broadcastDm({audience});note.textContent=`Goes to ${n.toLocaleString('en-US')} farmer${n===1?'':'s'}.`;note.dataset.count=String(n);}catch(error){note.textContent=error.message;delete note.dataset.count;}
+  const note=dialog.querySelector('#admin-dm-count'),audience=dialog.querySelector('#admin-dm-audience').value,minLevel=dmLevel(),ask=++dmCounting;note.textContent='Counting farmers…';delete note.dataset.count;
+  // Only the latest count shows (typing a level asks again for every digit).
+  try{const n=await bridge.chat.broadcastDm({audience,minLevel});if(ask!==dmCounting)return;note.textContent=`Goes to ${n.toLocaleString('en-US')} farmer${n===1?'':'s'}.`;note.dataset.count=String(n);}catch(error){if(ask===dmCounting)note.textContent=error.message;}
  }
+ // From a farm level too (supabase/chat-broadcast-level.sql), e.g. level 14 for the farmers who can buy the special offer.
+ let dmCounting=0;const dmLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-dm-level').value)||1)));
  dialog.querySelector('#admin-dm-audience').addEventListener('change',()=>void countDm());
+ dialog.querySelector('#admin-dm-level').addEventListener('input',()=>void countDm());
  dialog.querySelector('#admin-popup-target').addEventListener('change',event=>{dialog.querySelector('#admin-popup-link-row').hidden=event.target.value!=='link';});
  // The welcome message: its setting, and how many new farmers got it.
  function welcomeStatus(w){
@@ -409,9 +413,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const mode=dialog.querySelector('#admin-send-as').value,popup=mode==='popup'||mode==='both',$p=id=>dialog.querySelector(`#admin-popup-${id}`);
   try{
    if(mode==='dm'){
-    const audience=dialog.querySelector('#admin-dm-audience'),n=Number(dialog.querySelector('#admin-dm-count').dataset.count??0),who=audience.options[audience.selectedIndex].text.toLowerCase();
-    if(!await confirmAction({title:`Send a private message to ${n.toLocaleString('en-US')} farmers?`,description:`Every farmer${audience.value==='all'?'':` ${who}`} gets “${body}” from you and can reply.`,confirmLabel:'Send',cancelLabel:'Cancel',picture:'bell'}))return;
-    const sent=await bridge.chat.broadcastDm({body,audience:audience.value,send:true});
+    const audience=dialog.querySelector('#admin-dm-audience'),n=Number(dialog.querySelector('#admin-dm-count').dataset.count??0),who=audience.options[audience.selectedIndex].text.toLowerCase(),minLevel=dmLevel();
+    if(!await confirmAction({title:`Send a private message to ${n.toLocaleString('en-US')} farmers?`,description:`Every farmer${audience.value==='all'?'':` ${who}`}${minLevel>1?` from level ${minLevel}`:''} gets “${body}” from you and can reply.`,confirmLabel:'Send',cancelLabel:'Cancel',picture:'bell'}))return;
+    const sent=await bridge.chat.broadcastDm({body,audience:audience.value,send:true,minLevel});
     text.value='';chatStatus.textContent=`Sent to ${sent.toLocaleString('en-US')} farmers. Their replies come in under your private messages.`;return;
    }
    if(popup){
