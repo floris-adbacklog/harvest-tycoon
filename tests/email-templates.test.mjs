@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {LANGUAGES} from '../public/languages.js';
-import {TEMPLATES,templateHtml,subjectLine} from '../scripts/email-templates.mjs';
+import {TEMPLATES,templateHtml,SUBJECTS} from '../scripts/email-templates.mjs';
 
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // A stand-in for the part of Go templates the files use: variables (:= and =), printf "%v", eq, if / else if / else / end,
@@ -44,9 +44,9 @@ test('the Auth email templates are the generated ones, with every game language'
  for(const [name,texts] of Object.entries(TEMPLATES)){
   assert.equal(read(`supabase/email-templates/${name}.html`),templateHtml(texts),`${name}: run node scripts/email-templates.mjs`);
   assert.deepEqual(Object.keys(texts).sort(),LANGUAGES.map(l=>l.code).sort(),name);
-  for(const [code,t] of Object.entries(texts))for(const field of ['subject','title','pre','intro','button','foot'])assert.ok(t[field],`${name} ${code} ${field}`);
+  for(const [code,t] of Object.entries(texts))for(const field of ['title','pre','intro','button','foot'])assert.ok(t[field],`${name} ${code} ${field}`);
  }
- assert.ok(read('supabase/email-templates/subjects.txt').includes(subjectLine(TEMPLATES['reset-password'])));
+ for(const [name,subject] of Object.entries(SUBJECTS)){assert.ok(read('supabase/email-templates/subjects.txt').includes(`${name}:\n${subject}\n`));assert.ok(subject.length<=255,'Supabase allows 255 characters in a subject');}
 });
 
 test('each template renders in the account\'s language, and in English when it is missing or unknown',()=>{
@@ -61,11 +61,9 @@ test('each template renders in the account\'s language, and in English when it i
    assert.ok(out.includes(`>${texts[code].button}</a>`),`${name} ${code}`);
    assert.equal(out.split(url).length-1,3,'the link is in the button and twice in the copy line');
    assert.ok(!out.includes('{{'),`${name} ${code}`);
-   assert.equal(render(subjectLine(texts),{Data:{language:code}}),texts[code].subject);
   }
   for(const data of [{},{language:null},{language:'xx'}]){
    assert.ok(render(html,{ConfirmationURL:url,Data:data}).includes(`>${texts.en.title}</h1>`),`${name}: English fallback`);
-   assert.equal(render(subjectLine(texts),{Data:data}),texts.en.subject);
   }
  }
 });
