@@ -15,6 +15,8 @@ export const REASONS=Object.freeze(['offline','timeout','network','server','othe
 export const STAGES=Object.freeze(['reconnecting','paused']);
 
 const TRANSIENT_STATUS=new Set([408,425,502,503,504,546]);
+// The server answered and said no (a rule, a limit, not allowed): the farm is connected, the reason goes on screen.
+export const refused=status=>status>=400&&status<500&&!TRANSIENT_STATUS.has(status);
 
 // What a failed call was, from the error supabase-js hands back and the body of the answer, if there was one.
 // FunctionsFetchError: the request never got an answer (offline, dropped, timed out). FunctionsRelayError: the platform in

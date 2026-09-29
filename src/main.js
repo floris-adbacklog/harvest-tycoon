@@ -13,7 +13,7 @@ import {createChatClient} from './chat-client.js';
 import {startLoadingTips,ACCOUNT_STEPS} from '../public/loading-screen.js';
 import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
-import {createConnection,connectionMessage,reasonOf,WAKE_GRACE} from './connection.js';
+import {createConnection,connectionMessage,reasonOf,refused,WAKE_GRACE} from './connection.js';
 import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
@@ -147,7 +147,9 @@ async function openFarm(){
      if(error.status===401){await supabase.auth.signOut({scope:'local'});landing('Your session has ended. Please sign in again.');}
      else if(error.status===409)unavailable(error.message);
      // A failed request never closes the farm by itself: the connection shows "Reconnecting…", checks again and only after a minute pauses.
-     else if(!['player_search','player_profile','avatar'].includes(body.operation))connection.problem(reasonOf(error,navigator.onLine));
+     // A refusal (4xx) is an answer, not a connection problem: the screen shows its reason (29 Sep 2026: a refused Help in daily
+     // sharing showed "Reconnecting…" instead of why). 408 and 425 do mean "try again".
+     else if(!refused(error.status)&&!['player_search','player_profile','avatar'].includes(body.operation))connection.problem(reasonOf(error,navigator.onLine));
     }
     throw error;
    }

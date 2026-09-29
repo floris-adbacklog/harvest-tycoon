@@ -265,3 +265,9 @@ test('the page shows the browser step before the script loads, for the same apps
  assert.ok(/\.account-card\[data-gate\]>:not\(\.card-top\):not\(\.browser-gate\)\{display:none!important\}/.test(readFileSync(new URL('../public/welcome.css',import.meta.url),'utf8')));
  assert.match(readFileSync(new URL('../public/privacy.html',import.meta.url),'utf8'),/<code>harvest-tycoon:browser-escape<\/code>/);
 });
+
+test('a refusal from the server (4xx) shows its reason; only a lost or failing connection shows "Reconnecting…"',async()=>{
+ const {refused}=await import('../src/connection.js');
+ for(const status of [400,403,404,413,422,429])assert.equal(refused(status),true,String(status));
+ for(const status of [undefined,408,425,500,502,503,504,546])assert.equal(refused(status),false,String(status));
+});
