@@ -75,7 +75,7 @@ cheese चीज़ · goat cheese बकरी का पनीर · journal �
 
 coins munten · diamonds diamanten · field veld · crop gewas · harvest oogsten/oogst · plant planten · water water geven ·
 extra care extra verzorging · batch batch · slot plek · goods producten · building gebouw · upgrade upgrade/upgraden ·
-level level · Market Markt · Quests Opdrachten · More Meer · My farm Mijn boerderij · Farm Family Boerenfamilie ·
+level level · Market Markt · Quests Opdrachten · More Meer · My farm Boerderij (fits the tab bar) · Farm Family Boerenfamilie ·
 Family Chest Familiekist · Family Order Familiebestelling · order bestelling · leader/co-leader leider/co-leider ·
 honorary erelid · boost boost · streak reeks · daily gift dagcadeau · chore klusje · helping hand helpende hand ·
 Estate Landgoed · Valley Vallei · Valley Market Valleimarkt · farm stall boerderijkraam · storage opslag ·
@@ -106,7 +106,7 @@ Squash courgette · Pumpkin citrouille · Pole beans haricots à rames · journa
 Brazilian Portuguese: far more players reach the game through Meta from Brazil than from Portugal.
 coins moedas · diamonds diamantes · field campo · crop cultivo · harvest colher/colheita · plant plantar · water regar ·
 extra care cuidado extra · batch lote · slot vaga · goods produtos · building construção · upgrade melhoria/melhorar ·
-level nível · Market Mercado · Quests Missões · More Mais · My farm Minha fazenda · Farm Family Família da Fazenda ·
+level nível · Market Mercado · Quests Missões · More Mais · My farm Fazenda (fits the tab bar) · Farm Family Família da Fazenda ·
 Family Chest Baú da Família · Family Order Pedido da Família · order pedido · leader/co-leader líder/vice-líder ·
 rank posto · honorary honorário · streak sequência · daily gift presente diário · chore tarefa · helping hand mão amiga ·
 Estate Propriedade · Valley Market Mercado do Vale · farm stall barraca da fazenda · storage estoque ·
@@ -116,6 +116,21 @@ Farmhouse Sede · Dairy Barn Estábulo · Feed Mill Moinho de Ração · Juice P
 Goat Shed Capril · Pig Farm Chiqueiro · Preserves Workshop Oficina de Conservas · Tool workshop Galpão de Ferramentas ·
 Apiary Colmeias · Bee Yard Apiário · Animal paddock Cercado · Squash abobrinha · Berries frutas vermelhas · Green beans vagens ·
 Pole beans feijão-trepador · leaderboard ranking.
+
+### Bahasa Indonesia (informal "kamu"/"-mu", no plurals)
+
+Indonesian has no plural: "{0} diamond" and "{0} diamonds" read the same. Thousands with a dot, decimals with a comma (1.000, 1,6×).
+Time units: j (jam), mnt/m (menit), d (detik). Common game loanwords stay: boost, batch, upgrade, event, level, XP, VIP, chat.
+coins koin · diamonds berlian · field ladang · crop tanaman · harvest panen · plant tanam · water siram · care rawat ·
+goods barang · building bangunan · Market Pasar · Quests Misi · More Lainnya · My farm Kebunku · Farm Family Keluarga Kebun ·
+Family Chest Peti Keluarga · Family Order Pesanan Keluarga · leader/co-leader ketua/wakil ketua · honorary kehormatan ·
+qualify lolos · streak beruntun · daily gift hadiah harian · chore tugas · helping hand bantuan · Estate Perkebunan ·
+Valley Market Pasar Lembah · farm stall kios kebun · storage gudang · natural fertilizer pupuk alami · animal feed pakan ternak ·
+heirloom varietas pusaka · test bed bedeng uji · Seed Lab Lab Benih · Glasshouse Rumah Kaca · Greenhouse (stop) Persemaian ·
+Grand Valley Fair Pekan Raya Lembah · fair pekan raya · Farmhouse Rumah Kebun · Dairy Barn Kandang Sapi ·
+Feed Mill Penggilingan Pakan · Juice Press Pemeras Jus · Preserves Workshop Bengkel Awetan · Tool workshop Gudang Perkakas ·
+Apiary Sarang Lebah · Bee Yard Peternakan Lebah · Animal paddock Padang Ternak · Squash zukini · rush order pesanan kilat ·
+visitor tamu · Starter Pack Paket Pemula · leaderboard papan peringkat.
 
 ### Русский (informal "ты", three plural forms)
 

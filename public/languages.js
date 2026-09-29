@@ -6,7 +6,7 @@ export const LANGUAGES=Object.freeze([
  {code:'de',name:'Deutsch',ready:true},
  {code:'es',name:'Español',ready:true},
  {code:'fr',name:'Français',ready:true},
- {code:'id',name:'Bahasa Indonesia'},
+ {code:'id',name:'Bahasa Indonesia',ready:true},
  {code:'nl',name:'Nederlands',ready:true},
  {code:'pt',name:'Português',ready:true},
  {code:'tr',name:'Türkçe'},
