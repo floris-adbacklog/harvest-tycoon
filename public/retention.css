@@ -1303,3 +1303,9 @@
 .center-notice .primary-button{min-width:120px;margin-top:4px}
 @keyframes center-notice-in{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.center-notice{animation:none}}
+/* A farmer in daily sharing opens their profile, like a row in the Members list (29 Sep 2026). */
+.sharing-person{flex:1;display:flex;align-items:center;gap:12px;min-width:0;margin:0;padding:4px 8px 4px 0;border:0;border-radius:14px;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.sharing-person .sharing-who{display:block}
+.sharing-person:not(:disabled):hover{background:#f7f2e9}
+.sharing-person:focus-visible{outline:3px solid #c79138;outline-offset:1px}
+.sharing-person:disabled{cursor:default}

@@ -43,6 +43,8 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
  const me=()=>bridge.playerId,stock=key=>state?.inventory?.[key]??0,myLevel=()=>state?levelOf(state):10;
  // The family view keys members by membership row, the sharing list by player; the (unique) farmer name links the two.
  const member=id=>{const name=social?.members.find(m=>m.id===id)?.name;return name?getMembers().find(m=>m.username===name):undefined;};
+ // Tapping a farmer opens their profile, as in the Members list; closing it comes back here (29 Sep 2026).
+ const profiles=()=>(doc.defaultView??globalThis).harvestProfiles;
  const portrait=id=>`<span class="family-member-portrait">${avatarImage(member(id)?.avatarId)}${member(id)?`<span class="online-dot ${member(id).online?'is-online':''}" aria-hidden="true"></span>`:''}</span>`;
  const nameOf=id=>id===me()?'You':esc(social.members.find(m=>m.id===id)?.name??member(id)?.username??'A family member');
 
@@ -67,7 +69,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
    const max=Math.min(maxShare(myLevel()),stock(gift.item));
    return `<div class="sharing-gift">${itemPicker({kind:'gift',keys:giftKeys(),picked:gift.item,quantity:gift.quantity,max,withStock:true})}<div class="sharing-gift-actions"><button type="button" class="link-button" data-gift-cancel>Cancel</button><button type="button" class="primary-button" data-send-gift>Send ${gift.quantity} ${esc(ITEMS[gift.item].name)}</button></div></div>`;
   };
-  return `<div class="sharing-list">${social.members.map(m=>`<article class="sharing-row">${portrait(m.id)}<div class="sharing-who"><strong>${esc(m.name)}</strong><span>${member(m.id)?`Level ${member(m.id).level}`:'Family member'}</span></div><div class="sharing-actions">${action('help',m.id,`Help · ${helpCoins(myLevel())}`,'coins',helpBlocked)}${today.done('gift',m.id)?'<button class="sharing-action" disabled>✓ Sent</button>':`<button class="sharing-action ${gift.to===m.id?'is-open':''}" data-gift-open="${esc(m.id)}" ${giftBlocked?'disabled':''} title="${esc(giftBlocked)}" aria-expanded="${gift.to===m.id}">${art('gift')}<span>Gift</span></button>`}</div></article>${composer(m)}`).join('')}</div>`;
+  return `<div class="sharing-list">${social.members.map(m=>`<article class="sharing-row"><button type="button" class="sharing-person" data-player-profile="${esc(m.id)}" ${profiles()?'':'disabled'}>${portrait(m.id)}<span class="sharing-who"><strong>${esc(m.name)}</strong><span>${member(m.id)?`Level ${member(m.id).level}`:'Family member'}</span></span></button><div class="sharing-actions">${action('help',m.id,`Help · ${helpCoins(myLevel())}`,'coins',helpBlocked)}${today.done('gift',m.id)?'<button class="sharing-action" disabled>✓ Sent</button>':`<button class="sharing-action ${gift.to===m.id?'is-open':''}" data-gift-open="${esc(m.id)}" ${giftBlocked?'disabled':''} title="${esc(giftBlocked)}" aria-expanded="${gift.to===m.id}">${art('gift')}<span>Gift</span></button>`}</div></article>${composer(m)}`).join('')}</div>`;
  }
  function requests(today){
   const open=social.requests;
@@ -98,6 +100,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   const close=root.querySelector('[data-close]');if(close)close.onclick=()=>dialog.close();
   const back=root.querySelector('[data-back]');if(back)back.onclick=()=>{dialog.close();onBack();};
   root.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>act({kind:b.dataset.kind,recipient:b.dataset.recipient,request:b.dataset.request}));
+  root.querySelectorAll('.sharing-person[data-player-profile]').forEach(b=>b.onclick=()=>profiles()?.open(b.dataset.playerProfile,{back:'Back to your family'}));
   root.querySelectorAll('[data-pick]').forEach(select=>select.onchange=()=>{const target=select.dataset.pick==='gift'?gift:pick;target.item=select.value;target.quantity=Math.min(target.quantity,select.dataset.pick==='gift'?Math.min(maxShare(myLevel()),stock(select.value)):maxShare(myLevel()))||1;render();});
   root.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const target=b.dataset.step==='gift'?gift:pick,max=b.dataset.step==='gift'?Math.min(maxShare(myLevel()),stock(gift.item)):maxShare(myLevel());target.quantity=Math.min(max,Math.max(1,target.quantity+Number(b.dataset.by)));render();});
   root.querySelectorAll('[data-gift-open]').forEach(b=>b.onclick=()=>{const id=b.dataset.giftOpen;if(gift.to===id){gift.to=null;}else{const keys=giftKeys();gift={to:id,item:keys.includes(gift.item)?gift.item:keys[0],quantity:1};}render();});
