@@ -218,6 +218,32 @@ Trade Depot Торговий склад · trailer причіп · visitor ві�
 delivery order замовлення на доставку · Cherries черешні · Squash кабачок · Pumpkin гарбуз · specialist фахівець з … ·
 Starter Pack Стартовий набір · leaderboard рейтинг · report поскаржитися.
 
+### Magyar (informal "te", no plurals after a number)
+
+A number takes the singular ("5 gyémánt", "Takaríts be 12 búzát"). No suffix on a placeholder, because it depends on how the
+value sounds: put it after a colon ("Nyisd meg: {0}", "{1}. mező: {0} betakarítása"), use "{0}. szint" for levels and "a(z)"
+before a number or name. Percent without a space and with its suffix on the literal ("10%-kal", "60%-át"); thousands with a
+no-break space (1 000 000), four digits without (2000); decimals with a comma (1,5×). Farm log lines are impersonal participles
+("Megépítve: {0}", "VIP megvásárolva"). "Medal" is medál, never érem: it looks too much like érme (coin).
+coins érme · diamonds gyémánt · field mező · crop termény · goods termék · harvest betakarítás/betakarít · plant ültet ·
+water öntöz · care gondozás · fertilize trágyáz · batch adag · slot hely · building épület · upgrade fejlesztés/fejleszt ·
+level szint (Sz.) · rank rang · Market Piac · Buildings Épületek · Quests Küldetések · More Több · My farm Farmom ·
+boost gyorsító · streak sorozat · daily gift napi ajándék · daily challenge napi kihívás · qualify kvalifikálja magát ·
+Farm Family Farmcsalád · Family Chest Családi láda · Family Order Családi rendelés · Family Hall Családi csarnok ·
+leader/co-leader vezető/helyettes vezető · honorary tiszteletbeli tag · tournament verseny · chore farmmunka ·
+helping hand segítő kéz (stop állomás, round kör, hands-on job kézi munka) · Estate Birtok · Valley Völgy ·
+Valley Market Völgyi piac · farm stall farmstand · storage raktár · natural fertilizer természetes trágya · animal feed takarmány ·
+heirloom régi fajta · test bed kísérleti ágyás · Seed Lab Vetőmaglabor · mastery mesterfok (crop master terménymester,
+medal medál) · improvement beruházás · Glasshouse Üvegház · Greenhouse (stop) Melegágy · Apiary Méhes · Bee Yard Méhészet ·
+Animal paddock Karám · Tool workshop Szerszámműhely · The Ranch A Ranch · herd állomány · Grand Valley Fair Nagy völgyi vásár ·
+fair star vásárcsillag · class kategória · ribbon szalag · grand champion nagy bajnok · Farmhouse Tanyaház ·
+Dairy Barn Tehénistálló · Dairy Tejüzem · Windmill Szélmalom · Feed Mill Takarmánymalom · Juice Press Gyümölcsprés ·
+Preserves Workshop Befőzőműhely · Packing Shed Csomagolószín · Sheep Barn Juhhodály · Goat Shed Kecskeól ·
+Weaving Shed Szövőműhely · Pig Farm Sertéstelep · Trade Depot Kereskedelmi raktár · trailer utánfutó · visitor látogató ·
+customer vevő · rush order sürgős rendelés · delivery order szállítási rendelés · Squash cukkini · Pumpkin sütőtök ·
+Cider cider · Cider apples cideralma · Berries bogyók · specialist …-specialista · Starter Pack Kezdőcsomag ·
+leaderboard ranglista · report jelentés.
+
 ### Русский (informal "ты", three plural forms)
 
 Counts use plural objects (`one`/`few`/`many`/`other`); the runtime picks the form from the first number in the text.
