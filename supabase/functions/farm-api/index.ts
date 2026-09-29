@@ -107,6 +107,12 @@ Deno.serve(async(req)=>{
   const username=profile?.username??await freeName(admin,chosen);
   // Where and on what the farm was opened, for the admin dashboard (admin-analytics-service.js): runs beside the load, never holds it up.
   if(body.operation==='load'){const seen=Promise.resolve().then(()=>recordSeen({admin,player:user.id,headers:req.headers,timeZone:body.timeZone,language:body.language})).catch(()=>{});(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(seen);}
+  // The game language also goes on the account (user_metadata.language), where the Supabase Auth emails read it: the password reset
+  // and the sign-up confirmation (supabase/email-templates) are written in it. Only when it changed, beside the load.
+  if(body.operation==='load'&&typeof body.language==='string'&&/^[a-z]{2}$/.test(body.language)&&user.user_metadata?.language!==body.language){
+   const saved=admin.auth.admin.updateUserById(user.id,{user_metadata:{language:body.language}}).then(()=>{}).catch(()=>{});
+   (globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(saved);
+  }
   // Sends each friend an invitation to this farmer's family, as this farmer's own family action; true when one was sent.
   async function inviteFriendsToFamily(friends:{playerId:string,invitedToFamily?:boolean}[]){
    let sent=false;

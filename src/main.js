@@ -15,7 +15,7 @@ import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
 import {createConnection,connectionMessage,reasonOf,WAKE_GRACE} from './connection.js';
 import {stopPageZoom,gameViewport} from './page-zoom.js';
-import {startTranslation} from '../public/i18n.js';
+import {startTranslation,chosenLanguage} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
 const $=id=>document.getElementById(id);
 // Another language than English: translate the page's texts as they appear (public/i18n.js).
@@ -212,7 +212,7 @@ $('account-form').onsubmit=async event=>{
    // The player name is optional: a friendly one is picked here and can be changed in the leaderboard.
    if(!name){name=randomPlayerName();for(let i=0;i<5&&!(await free(name));i++)name=randomPlayerName();}
    const invite=pendingInvite(localStore);if(invite)trackInvite('invite_signup');
-   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username:name,...(invite?{invite}:{})},emailRedirectTo:redirectUrl()}});
+   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username:name,language:chosenLanguage(),...(invite?{invite}:{})},emailRedirectTo:redirectUrl()}});
    if(error)throw error;
    if(isNewRegistration(data))trackSignUp({confirmationRequired:!data.session});
    store.set(RETURNING_KEY,'1');

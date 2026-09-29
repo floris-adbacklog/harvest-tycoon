@@ -76,7 +76,7 @@ test('the sign-in page remembers ?invite=CODE for 30 days (not for a browser tha
 });
 test('the code goes along with the sign-up and the first farm load, and the inviter\'s name comes from player-counts',async()=>{
  const main=read('src/main.js');
- assert.match(main,/options:\{data:\{username:name,\.\.\.\(invite\?\{invite\}:\{\}\)\}/);
+ assert.match(main,/options:\{data:\{username:name,language:chosenLanguage\(\),\.\.\.\(invite\?\{invite\}:\{\}\)\}/);
  assert.match(main,/initial=await farmRequest\(\{operation:'load',\.\.\.\(inviteCode\?\{inviteCode\}:\{\}\)\}\);clearInvite\(localStore\);/);
  let asked;assert.equal(await inviterName('https://f.test/functions/v1','TONYAA',async url=>{asked=url;return {ok:true,json:async()=>({inviter:'Tony'})};}),'Tony');assert.equal(asked,'https://f.test/functions/v1/player-counts?invite=TONYAA');
  assert.equal(await inviterName('https://f.test','TONYAA',async()=>{throw new Error('offline');}),null);
