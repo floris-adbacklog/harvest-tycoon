@@ -195,6 +195,29 @@ visitor návštěvník · customer zákazník · rush order spěšná objednávk
 Squash cuketa · Pumpkin dýně · Cider cidr · specialist specialista na … · Starter Pack Startovní balíček · leaderboard žebříček ·
 report nahlásit.
 
+### Українська (informal "ти", plural forms)
+
+Written from the English, not from the Russian: no russicisms. Counts that change the noun use plural objects (`one`,
+`few` 2–4, `many` 5+, `other` fractions); the runtime picks the form from the first number. Thousands with a no-break space
+(1 000), percent without a space (10%), decimals with a comma. Uncountable goods are counted with "од." plus the genitive
+("12 од. пшениці"). Placeholders stand after a colon or in «quotes» so they need no case ending ("Відкрити: {0}"). Farm log
+lines are impersonal past forms ("Збудовано: {0}", "Куплено VIP").
+coins монети (монет) · diamonds діаманти (діамантів) · field поле (полів) · crop культура · goods вироби/товари · harvest збирати/зібрати ·
+plant посадити · water полити · care догляд/доглянути · fertilize удобрити · batch партія · slot місце · building будівля ·
+upgrade покращити/покращення · level рівень (Рів.) · rank ранг · Market Ринок · Quests Завдання · More Ще · My farm Моя ферма ·
+boost бустер · streak серія · daily gift щоденний подарунок · daily challenge щоденне випробування · qualify виконати умови ·
+Farm Family Фермерська родина · Family Chest Родинна скриня · Family Order Родинне замовлення · Family Hall Родинна зала ·
+leader/co-leader голова/заступник · honorary почесний член · tournament турнір · chore господарська справа ·
+helping hand допомога (stop зупинка, round коло) · Estate Маєток · Valley Долина · Valley Market Ринок долини ·
+farm stall фермерський прилавок · storage склад · natural fertilizer природне добриво · animal feed корм ·
+heirloom старовинний сорт · test bed дослідна грядка · Seed Lab Насіннєва лабораторія · Glasshouse Оранжерея ·
+Greenhouse (stop) Теплиця · Apiary Вулики · Bee Yard Пасіка · Animal paddock Загін · Tool workshop Сарай з інструментами ·
+The Ranch Ранчо · herd стадо · Grand Valley Fair Великий ярмарок долини · fair star зірка ярмарку · Farmhouse Садиба ·
+Dairy Barn Корівник · Windmill Вітряк · Feed Mill Кормовий млин · Juice Press Соковарня · Preserves Workshop Консервна майстерня ·
+Trade Depot Торговий склад · trailer причіп · visitor відвідувач · customer покупець · rush order термінове замовлення ·
+delivery order замовлення на доставку · Cherries черешні · Squash кабачок · Pumpkin гарбуз · specialist фахівець з … ·
+Starter Pack Стартовий набір · leaderboard рейтинг · report поскаржитися.
+
 ### Русский (informal "ты", three plural forms)
 
 Counts use plural objects (`one`/`few`/`many`/`other`); the runtime picks the form from the first number in the text.

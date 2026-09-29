@@ -13,7 +13,7 @@ export const LANGUAGES=Object.freeze([
  {code:'pt',name:'Português',ready:true},
  {code:'tr',name:'Türkçe',ready:true},
  {code:'ru',name:'Русский',ready:true},
- {code:'uk',name:'Українська'},
+ {code:'uk',name:'Українська',ready:true},
  {code:'hi',name:'हिन्दी',ready:true},
  {code:'ja',name:'日本語',ready:true}
 ].map(Object.freeze));
