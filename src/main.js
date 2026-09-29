@@ -162,7 +162,7 @@ async function openFarm(){
   bridge.trackGame=(event,params)=>{if(ticket===generation)trackGame(event,params);};
   bridge.trackInvite=event=>{if(ticket===generation)trackInvite(event);};
   bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
-  bridge.checkout=async(pack,requestId)=>{bridge.trackCommerce('diamond_pack_started',{pack});const data=await bridge.payments({operation:'create',pack,requestId});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
+  bridge.checkout=async(pack,requestId,offerId)=>{bridge.trackCommerce('diamond_pack_started',{pack});const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
   bridge.paymentReturn=()=>{const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   window.harvestBridge=bridge;frame=document.createElement('iframe');frame.title='Harvest Tycoon farm';frame.src='/farm.html';$('farm-host').append(frame);phase('authenticated');store.set(RETURNING_KEY,'1');

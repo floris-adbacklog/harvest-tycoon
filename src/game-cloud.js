@@ -9,6 +9,7 @@ import {showPaymentReturn} from './payment-ui.js';
 import {createStarterPackUI} from './starter-pack-ui.js';
 import {stopPageZoom} from './page-zoom.js';
 import {createPopupUI} from './popup-ui.js';
+import {createOfferUI} from './offer-ui.js';
 // The game frame never zooms as a page: only the 3D field does (src/page-zoom.js).
 stopPageZoom(document);
 let bridge;
@@ -40,6 +41,8 @@ if(!bridge){location.replace('/play.html');}else{
    showPaymentReturn(bridge);
    // A pop-up from the admin (news with a button), once, when nothing else is open. It does not wait for the Starter Pack's catalog.
    void createPopupUI({client:bridge.chat,chat,state:firstState}).start();
+   // The special offer listens for the Starter Pack's catalogue, so it starts first.
+   createOfferUI(bridge);
    await createStarterPackUI(bridge);
    // One screen from a notification, a shortcut on the app icon or a link (public/app-links.js). src/main.js keeps it until the farm is
    // ready, and hands over what arrives later.

@@ -27,7 +27,8 @@ export async function createStarterPackUI(bridge){
   if(!catalog?.enabled&&!pending){feedback.textContent='Purchases are not available yet. Please check back later.';feedback.dataset.unavailable='1';}
   else if(catalog?.enabled&&feedback.dataset.unavailable){feedback.textContent='';delete feedback.dataset.unavailable;}
  }
- async function refresh(){if(refreshing||disposed)return;refreshing=true;checkedAt=Date.now();try{const data=await bridge.payments({operation:'catalog'});if(disposed)return;catalog=data;offset=data.serverNow-Date.now();render();}catch{if(!catalog)button.hidden=chip.hidden=true;}finally{refreshing=false;}}
+ // The same answer also carries the special offer (src/offer-ui.js reads it from the harvest-catalog event): no second request.
+ async function refresh(){if(refreshing||disposed)return;refreshing=true;checkedAt=Date.now();try{const data=await bridge.payments({operation:'catalog'});if(disposed)return;catalog=data;offset=data.serverNow-Date.now();render();window.dispatchEvent(new CustomEvent('harvest-catalog',{detail:data}));}catch{if(!catalog)button.hidden=chip.hidden=true;}finally{refreshing=false;}}
  button.onclick=chip.onclick=()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());requestId=crypto.randomUUID();feedback.textContent='';render();dialog.showModal();refresh();};
  dialog.querySelector('.starter-close').onclick=()=>dialog.close();
  buy.onclick=async()=>{if(pending||buy.disabled)return;pending=true;feedback.textContent='';render();try{await bridge.checkout('starter',requestId);}catch(error){feedback.textContent=error.message;pending=false;render();}};

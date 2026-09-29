@@ -23,7 +23,8 @@ function start(){
   loadGame:async()=>({farmReady}),
   showPaymentReturn:()=>calls.push('payment'),
   createStarterPackUI:async()=>calls.push('starter'),
-  createPopupUI:()=>({start(){calls.push('popup');}})
+  createPopupUI:()=>({start(){calls.push('popup');}}),
+  createOfferUI:()=>calls.push('offer')
  });
  const done=vm.runInContext(`(async()=>{${source}})()`,context);
  return{calls,done,finish};
@@ -33,7 +34,7 @@ test('starter offer and payment return wait for farm readiness',async()=>{
  await new Promise(resolve=>setImmediate(resolve));
  assert.deepEqual(app.calls,[]);
  app.finish(true);await app.done;
- assert.deepEqual(app.calls,['payment','popup','starter'],'the admin pop-up does not wait for the Starter Pack');
+ assert.deepEqual(app.calls,['payment','popup','offer','starter'],'the admin pop-up does not wait for the Starter Pack; the special offer listens before its catalogue arrives');
 });
 test('failed farm startup never shows purchase UI',async()=>{
  const app=start();app.finish(false);await app.done;

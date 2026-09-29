@@ -40,6 +40,7 @@ export const SOUND_CUES=Object.freeze({
  dailygift:{notes:[659.25,783.99,987.77,1174.66,1567.98],step:.07,duration:.45,volume:.1},
  construct:{notes:[392,523.25,659.25,783.99],step:.1,duration:.35,volume:.1,type:'triangle'},
  purchase:{notes:[523.25,659.25,783.99,1046.5,1318.51],step:.09,duration:.45,volume:.11},
+ offer:{notes:[523.25,659.25,783.99,1046.5,1567.98],step:.07,duration:.5,volume:.1},
  message:{notes:[1174.66,1567.98],step:.09,duration:.25,volume:.06},
  finish:{notes:[783.99,1046.5,1396.91],step:.06,duration:.3,volume:.08},
  quest:{notes:[523.25,659.25,1046.5],step:.08,duration:.26,volume:.09},

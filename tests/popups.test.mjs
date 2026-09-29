@@ -34,7 +34,7 @@ test('the game shows it once, when nothing else is open, never in a farmer\'s fi
  assert.match(ui,/if\(target\.startsWith\('https:\/\/'\)\)\{win\.open\(target,'_blank','noopener,noreferrer'\);return;\}/);
  assert.match(ui,/install:\(\)=>win\.harvestWiki\?\.\('getting-started','sec-play-it-as-an-app'\)/);
  assert.match(cloud,/const firstState=window\.harvestInitialFarm\.state;/,'the game clears harvestInitialFarm once it has taken the farm');
- assert.match(cloud,/void createPopupUI\(\{client:bridge\.chat,chat,state:firstState\}\)\.start\(\);\n   await createStarterPackUI\(bridge\);/);
+ assert.match(cloud,/void createPopupUI\(\{client:bridge\.chat,chat,state:firstState\}\)\.start\(\);\n[^]*?createOfferUI\(bridge\);\n   await createStarterPackUI\(bridge\);/);
  assert.match(read('public/game.js'),/window\.harvestWiki=\(id,anchor=''\)=>\{openDialog\('help-dialog'\);renderWiki\(state,id,anchor\);\};/);
  assert.match(read('public/wiki-ui.js'),/export function renderWiki\(state,id=null,anchor=''\)\{farm=state;bind\(\);if\(id\)topic\(id,anchor\);else home\(\);\}/);
  assert.match(read('public/wiki-content.js'),/section\('Play it as an app'/,'the anchor sec-play-it-as-an-app exists');

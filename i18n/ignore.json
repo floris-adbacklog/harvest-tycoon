@@ -22,5 +22,11 @@
  "Upgrade a farm building",
  "and $1",
  "s are",
- "toast is-{0}"
+ "toast is-{0}",
+ "Choose a level from 14 to 200.",
+ "Choose amounts within the limits.",
+ "Choose up to 336 hours (14 days).",
+ "Put something in the offer.",
+ "The offer must be worth €49.99; it is worth €{0}.",
+ "Preview · {0}"
 ]

@@ -1,0 +1,94 @@
+/* The special offer (src/offer-ui.js, 29 Sep 2026). The buttons: on a computer a small one next to the diamonds (after the
+   Starter Pack's), on a phone a tile above the bottom bar, above the Starter Pack tile when that one shows too. */
+#offer-button{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(20px,var(--safe-bottom));z-index:12;width:72px;min-height:84px;display:flex;align-items:center;flex-direction:column;gap:2px;padding:5px 4px 7px;border:2px solid #e0a13a;border-radius:19px;background:#fff3d6;box-shadow:0 4px 0 #a8742a33,0 10px 24px #3a2a1030;color:#6b4412;font-family:'DM Sans',sans-serif}
+#offer-button img{width:48px;height:48px;border-radius:13px;object-fit:cover}
+#offer-button span{font-size:9px;font-weight:800;white-space:nowrap}
+#offer-button small{padding:0 6px;border-radius:99px;background:#d9482b;color:#fff;font-size:11px;font-weight:800}
+#offer-button[hidden],#offer-chip[hidden]{display:none}
+#offer-chip{position:relative;flex-shrink:0;overflow:visible;background:#fff3d6;border-color:#e8b85a}
+#offer-chip img{width:30px;height:30px;border-radius:9px;object-fit:cover}
+#offer-chip small{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);padding:1px 5px;border-radius:99px;background:#d9482b;color:#fff;font:800 9.5px/1.3 'DM Sans',sans-serif;white-space:nowrap}
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){#offer-button{display:none}}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ #offer-chip{display:none}
+ #offer-button{bottom:calc(var(--mobile-bottom,190px) + 12px);left:max(10px,env(safe-area-inset-left));width:62px;min-height:74px;border-radius:17px}
+ #offer-button img{width:40px;height:40px}#offer-button span{font-size:8px}
+ body:has(#starter-pack-button:not([hidden])) #offer-button{bottom:calc(var(--mobile-bottom,190px) + 96px)}
+}
+@media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){#offer-button{left:calc(86px + env(safe-area-inset-left))}}
+
+/* The window. Computer and tablet: the treasure chest on the left, what is in it on the right. Phone: the chest as a banner on
+   top and smaller cards, so the Buy button is on screen without scrolling. */
+#offer-dialog{width:min(820px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);margin:auto;left:0;right:0;padding:0;box-sizing:border-box;overflow:hidden auto;border:3px solid #e2b04d;border-radius:28px;background:radial-gradient(ellipse at 70% 0,#fff1c9,#fffdf4 60%);box-shadow:0 24px 60px #2b1d0855}
+#offer-dialog[open]{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr)}
+#offer-dialog::backdrop{background:#2f2410a6}
+.offer-close{position:absolute;right:14px;top:14px;z-index:2;width:40px;height:40px;border:0;border-radius:13px;background:#efe6d6;color:#5b4b30;font-size:26px;line-height:1}
+.offer-hero{position:relative;min-height:100%;background:#f6e6b8}
+.offer-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 55%}
+.offer-ribbon{position:absolute;left:16px;top:16px;display:grid;place-items:center;align-content:center;width:100px;height:100px;border:3px solid #fff4d8;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f2663f,#c9361c);box-shadow:0 6px 16px #6a1d0b55;color:#fff;transform:rotate(-12deg);font-family:'Outfit',sans-serif}
+.offer-ribbon b{font-size:30px;line-height:.95;font-weight:800}
+.offer-ribbon small{max-width:88px;font-size:12px;font-weight:800;letter-spacing:1px;white-space:nowrap}
+.offer-body{display:flex;flex-direction:column;align-items:center;padding:26px 28px 20px;text-align:center}
+.offer-body .eyebrow{color:#b5561f;letter-spacing:2px;font-weight:800}
+#offer-dialog h2{margin:4px 0 16px;font:700 30px/1.1 'Outfit',sans-serif;color:#3d2f14}
+.offer-parts{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:0 0 14px}
+.offer-part{display:flex;flex-direction:column;align-items:center;flex:1 1 0;min-width:0;max-width:150px;padding:10px 6px 12px;border:2px solid #ead9ae;border-radius:18px;background:#fff9e8}
+.offer-part img{width:76px;height:76px;filter:drop-shadow(0 4px 6px #7a5a1a33)}
+.offer-part strong{margin-top:4px;font:700 22px/1.1 'Outfit',sans-serif;color:#3d2f14;white-space:nowrap}
+.offer-part span{font-size:12px;font-weight:700;color:#80704f}
+.offer-part.is-diamonds{border-color:#b9dcea;background:linear-gradient(160deg,#e6f5fb,#f7fcfe)}.offer-part.is-diamonds strong{color:#20617a}
+.offer-part.is-coins{border-color:#ecd28a;background:linear-gradient(160deg,#fff2c6,#fffaea)}.offer-part.is-coins strong{color:#8a5d09}
+.offer-part.is-vipDays{border-color:#d6c2ea;background:linear-gradient(160deg,#f3e9fb,#fbf7fe)}.offer-part.is-vipDays strong{color:#6a3c93}
+.offer-plus{flex:none;font:800 26px 'Outfit',sans-serif;color:#c08a25}
+#offer-dialog[data-parts="1"] .offer-part{max-width:210px;flex-direction:row;gap:12px;padding:12px 18px}
+#offer-dialog[data-parts="1"] .offer-part img{width:84px;height:84px}
+#offer-dialog[data-parts="1"] .offer-part strong{font-size:28px}
+.offer-worth{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:0 0 10px!important;font-size:15px!important;color:#80704f}
+.offer-worth s{color:#9a8c75;font-size:18px;text-decoration-color:#d9482b;text-decoration-thickness:2px}
+.offer-worth b{font:800 32px/1 'Outfit',sans-serif;color:#2f7a34}
+.offer-time{display:inline-flex;align-items:center;gap:6px;margin:0 0 14px!important;padding:5px 13px 5px 8px;border-radius:999px;background:#f8e2b3;font-size:13px!important;font-weight:800;color:#8a4f12}
+.offer-time img{width:24px;height:24px}
+.offer-buy{width:100%;justify-content:center;min-height:54px;font-size:18px}
+.offer-feedback{margin:8px 0 0!important;font-size:13px;color:#785727}
+.offer-feedback:empty{display:none}
+.offer-fine{display:block;margin-top:8px;font-size:11px;color:#877c71}
+
+/* Phone (and a narrow tablet in portrait): one column, the chest as a banner. */
+@media(max-width:640px){
+ #offer-dialog{width:min(440px,calc(100vw - 20px));max-width:calc(100vw - 20px);border-radius:24px}
+ #offer-dialog[open]{grid-template-columns:minmax(0,1fr)}
+ .offer-hero{min-height:0;height:150px}
+ .offer-ribbon{left:12px;top:12px;width:76px;height:76px}.offer-ribbon b{font-size:23px}.offer-ribbon small{max-width:66px;font-size:9px;letter-spacing:.5px}
+ .offer-body{padding:14px 16px 16px}
+ #offer-dialog h2{margin:2px 0 10px;font-size:24px}
+ .offer-parts{gap:3px;margin-bottom:10px}
+ .offer-part{padding:8px 4px 9px;border-radius:15px}
+ .offer-part img{width:52px;height:52px}
+ .offer-part strong{font-size:17px}.offer-part span{font-size:11px}
+ .offer-plus{font-size:19px}
+ #offer-dialog[data-parts="1"] .offer-part img{width:64px;height:64px}
+ #offer-dialog[data-parts="1"] .offer-part strong{font-size:23px}
+ .offer-worth b{font-size:27px}
+ .offer-buy{min-height:50px;font-size:17px}
+}
+@media(max-width:640px) and (max-height:700px){.offer-hero{height:112px}}
+/* A low landscape phone: side by side again, with a narrow picture. */
+@media(max-height:500px) and (min-width:560px){
+ #offer-dialog[open]{grid-template-columns:minmax(0,200px) minmax(0,1fr)}
+ .offer-hero{height:auto;min-height:100%}
+ .offer-body{padding:14px 18px 12px}#offer-dialog h2{font-size:22px;margin-bottom:8px}
+ .offer-part img{width:44px;height:44px}.offer-time{margin-bottom:8px!important}.offer-fine{display:none}
+}
+
+/* The banner at the top of the Diamond shop (src/offer-ui.js): the chest, "Special offer" and the time left, the price. */
+.shop-offer{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:10px 14px 10px 10px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#fff1c9,#fffaf0 55%,#ffe9d6);box-shadow:0 3px 0 #b8862a33;color:#3d2f14;text-align:left;font-family:'DM Sans',sans-serif;cursor:pointer}
+.shop-offer[hidden]{display:none}
+.shop-offer:hover{border-color:#d69a2c}
+.shop-offer img{width:58px;height:58px;flex:none;border-radius:13px;object-fit:cover}
+.shop-offer-copy{display:grid;gap:2px;min-width:0;flex:1}
+.shop-offer-copy b{font:700 18px/1.1 'Outfit',sans-serif}
+.shop-offer-copy small{font-size:12px;font-weight:700;color:#8a4f12}
+.shop-offer-price{display:grid;justify-items:end;flex:none}
+.shop-offer-price s{font-size:12px;color:#9a8c75;text-decoration-color:#d9482b;text-decoration-thickness:2px}
+.shop-offer-price b{font:800 22px/1 'Outfit',sans-serif;color:#2f7a34}
+.shop-offer-tag{position:absolute;right:-6px;top:-10px;padding:2px 8px;border-radius:99px;background:#d9482b;color:#fff;font:800 12px/1.4 'DM Sans',sans-serif;transform:rotate(6deg)}

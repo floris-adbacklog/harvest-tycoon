@@ -1,10 +1,21 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration} from './payments.js';
+import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem} from './payments.js';
 const origin='https://www.harvesttycoon.com';
 const cors={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+// The special offer running now for this farmer (supabase/special-offer.sql): one at a time, from its level (14 or higher). A
+// problem reading it only hides the offer, so the Starter Pack and the diamond packs keep working.
+async function currentOffer(player:string){
+ const now=new Date().toISOString();
+ const found=await admin.from('harvest_offers').select('*').is('stopped_at',null).lte('starts_at',now).gt('ends_at',now).order('created_at',{ascending:false}).limit(1).maybeSingle();
+ if(found.error){console.error('Offer unavailable',found.error.code);return null;}const o=found.data;if(!o)return null;
+ const stats=await admin.from('player_stats').select('level').eq('player_id',player).maybeSingle();if(stats.error)throw stats.error;
+ if((stats.data?.level??1)<o.min_level)return null;
+ const bought=await admin.from('harvest_purchases').select('id').eq('player_id',player).eq('offer_id',o.id).in('status',['credited','test_paid']).limit(1);if(bought.error)throw bought.error;
+ return {id:o.id,diamonds:o.diamonds,coins:o.coins,vipDays:o.vip_days,audience:o.audience,endsAt:Date.parse(o.ends_at),cents:OFFER.cents,valueCents:OFFER.valueCents,bought:(bought.data??[]).length>0};
+}
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
  if(req.method!=='POST')return reply({error:'Use POST.'},405);
@@ -25,14 +36,24 @@ Deno.serve(async req=>{
   const offerRow=body.operation==='catalog'||body.pack==='starter'?await admin.from('player_farms').select('offer:state->starterOffer').eq('player_id',user.id).maybeSingle():null;
   if(offerRow?.error)throw offerRow.error;
   const starter=starterEligibility(offerRow?.data?.offer?.unlockedAt,['credited','test_paid'].includes(existingStarter?.data?.status));
-  if(body.operation==='catalog')return reply({enabled,mode,serverNow:Date.now(),starter,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
+  // The special offer running now (game/payments.js OFFER), for a farm at its level: what is in it, until when, and whether this
+  // farmer already bought it. Only in the catalogue and for an offer checkout, so other requests make no extra queries.
+  const special=body.operation==='catalog'||body.pack==='offer'?await currentOffer(user.id):null;
+  if(body.operation==='catalog')return reply({enabled,mode,serverNow:Date.now(),starter,offer:special,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
   if(body.operation==='status'){
    if(!UUID.test(body.purchaseId??''))return reply({error:'Invalid purchase.'},400);
-   const r=await admin.from('harvest_purchases').select('id,pack,coins,diamonds,status,livemode').eq('id',body.purchaseId).eq('player_id',user.id).maybeSingle();if(r.error)throw r.error;if(!r.data)return reply({error:'Purchase not found for this account.'},404);return reply(r.data);
+   const r=await admin.from('harvest_purchases').select('*').eq('id',body.purchaseId).eq('player_id',user.id).maybeSingle();if(r.error)throw r.error;if(!r.data)return reply({error:'Purchase not found for this account.'},404);
+   const {id,pack,coins,diamonds,status,livemode,vip_days}=r.data;return reply({id,pack,coins,diamonds,status,livemode,vipDays:vip_days??0});
   }
   if(body.operation!=='create')return reply({error:'Unknown request.'},400);
   if(!enabled)return reply({error:'Diamond purchases are not available yet.'},503);
-  let pack;try{pack=checkoutPack(body.pack);}catch{return reply({error:'Choose a diamond pack.'},400);}
+  let pack;
+  if(body.pack==='offer'){
+   if(!special||special.id!==body.offerId)return reply({error:'This offer has ended.'},409);
+   if(special.bought)return reply({error:'You have already bought this offer.'},409);
+   if(offerProblem({diamonds:special.diamonds,coins:special.coins,vipDays:special.vipDays}))return reply({error:'This offer has ended.'},409);
+   pack={id:'offer',cents:OFFER.cents,price:OFFER.price,diamonds:special.diamonds,coins:special.coins,vipDays:special.vipDays,offerId:special.id};
+  }else{try{pack=checkoutPack(body.pack);}catch{return reply({error:'Choose a diamond pack.'},400);}}
   const packId=pack.id;
   if(!UUID.test(body.requestId??''))return reply({error:'Invalid purchase request.'},400);
   if(packId==='starter'&&!starter.eligible)return reply({error:starter.claimed?'You have already received the Starter Pack.':'The Starter Pack opens when you reach level 14 and is then available for 7 days.'},409);
@@ -42,12 +63,13 @@ Deno.serve(async req=>{
   if(!priceId)return reply({error:'This pack has not been configured.'},503);
   const price=await stripe.prices.retrieve(priceId);
   if(!price.active||price.livemode!==live||price.currency!=='eur'||price.unit_amount!==pack.cents||price.type!=='one_time'||(live&&pack.product&&price.product!==pack.product))return reply({error:'This pack needs a pricing configuration update.'},503);
-  const insert=await admin.from('harvest_purchases').insert({id:body.requestId,player_id:user.id,pack:packId,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:priceId,livemode:live,starter_expires_at:packId==='starter'?new Date(starter.expiresAt).toISOString():null});
+  const insert=await admin.from('harvest_purchases').insert({id:body.requestId,player_id:user.id,pack:packId,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:priceId,livemode:live,starter_expires_at:packId==='starter'?new Date(starter.expiresAt).toISOString():null,...(packId==='offer'?{offer_id:pack.offerId,vip_days:pack.vipDays}:{})});
   if(insert.error&&insert.error.code!=='23505')throw insert.error;
   let query=admin.from('harvest_purchases').select('*').eq('player_id',user.id);
-  query=packId==='starter'?query.eq('pack','starter').eq('livemode',live).neq('status','expired'):query.eq('id',body.requestId);
+  // The Starter Pack and a special offer: one checkout per farmer (a unique index each), so a second tab or tap reuses it.
+  query=packId==='starter'?query.eq('pack','starter').eq('livemode',live).neq('status','expired'):packId==='offer'?query.eq('pack','offer').eq('offer_id',pack.offerId).neq('status','expired'):query.eq('id',body.requestId);
   const found=await query.single();if(found.error)throw found.error;
-  const p=found.data;if(p.pack!==packId||p.price_id!==priceId||p.livemode!==live)return reply({error:'Start a new purchase request.'},409);
+  const p=found.data;if(p.pack!==packId||p.price_id!==priceId||p.livemode!==live||packId==='offer'&&p.offer_id!==pack.offerId)return reply({error:'Start a new purchase request.'},409);
   if(p.pack==='starter'&&Date.parse(p.created_at)>=starter.expiresAt)return reply({error:'The Starter Pack offer has ended.'},409);
   if(p.status!=='pending')return reply({error:'This purchase has already been processed.'},409);
   if(Date.now()-Date.parse(p.created_at)>23*3600000&&!p.stripe_session_id)return reply({error:'This checkout request needs review. Please contact support before retrying.'},409);

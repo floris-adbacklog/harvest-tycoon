@@ -91,6 +91,10 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   stopPopup:id=>rpc('popup_stop',{p_id:id}),
   popups:()=>rpc('popup_next'),
   popupSeen:id=>rpc('popup_seen',{p_id:id}),
+  // Special offers (supabase/special-offer.sql): posting, the list and stopping are for the admin only.
+  postOffer:({diamonds=0,coins=0,vipDays=0,audience='all',minLevel=14,hours=48})=>rpc('offer_post',{p_diamonds:diamonds,p_coins:coins,p_vip_days:vipDays,p_audience:audience,p_min_level:minLevel,p_hours:hours}),
+  offerList:()=>rpc('offer_list'),
+  stopOffer:id=>rpc('offer_stop',{p_id:id}),
   setLevels:(global,dm)=>rpc('chat_set_levels',{p_global:global,p_dm:dm}),
   subscribe(listener){listeners.add(listener);connect();return()=>listeners.delete(listener);},
   dispose(){listeners.clear();if(channel){void supabase.removeChannel(channel);channel=null;}}

@@ -121,6 +121,17 @@ export function renderCue(kind,rate=48000,variant=0){
    [79,83,86,91,95].forEach((m,i)=>add(.2+i*.07,bell(hz(m),.6,.22)));
    [[91,.24],[95,.18],[98,.13]].forEach(([m,v])=>{add(.58,bell(hz(m),1.1,v,.55));add(.584,bell(hz(m)*1.003,1.1,v*.4,.4));});
    add(.56,hiss(.85,7600,1.6,.32,.13));break;
+  case 'offer': // the special offer opening (29 Sep 2026): a magic run of bells up, a bright brass "ta-daa", the chest lid, coins
+   // tumbling and a high shimmer, so it sounds like treasure and not like the daily gift
+   add(0,hiss(.4,5200,1.4,.13,.14));
+   [72,76,79,84,88,91].forEach((m,i)=>add(i*.035,bell(hz(m),.4,.15,.6)));
+   [[.24,.1,[67,71,74]],[.37,.6,[72,76,79]]].forEach(([start,len,chord])=>chord.forEach(m=>{
+    const f=hz(m),b=buffer(len+.3);for(let i=0;i<b.length;i++){const t=i/rate,env=Math.min(1,t/.015)*(t<len?1:Math.exp(-(t-len)/.1))*Math.exp(-t*.8);let s=0;for(let n=1;n<=6;n++)s+=Math.sin(TAU*f*n*t)/n*(n<=3?1:.6);b[i]=s*env*.09;}
+    lowpass(b,rate,3000);add(start,b);}));
+   add(.37,knock(300,.3));
+   for(let c=0;c<5;c++)add(.42+c*.05+rand()*.015,coin(.2-c*.025));
+   [[96,.18],[100,.13]].forEach(([m,v])=>add(.4,bell(hz(m),1,v,.5)));
+   add(.4,hiss(.9,7800,1.6,.3,.12));break;
   case 'levelup': // a little fanfare with a bell and a shimmer on the last chord
    [[72,0,.16],[76,.14,.16],[79,.28,.16],[84,.42,.7]].forEach(([m,start,len])=>{
     const f=hz(m),b=buffer(len+.25);for(let i=0;i<b.length;i++){const t=i/rate,env=Math.min(1,t/.02)*(t<len?1:Math.exp(-(t-len)/.08))*Math.exp(-t*.9);let s=0;for(let n=1;n<=6;n++)s+=Math.sin(TAU*f*n*t)/n*(n<=3?1:.6);b[i]=s*env*.13;}
@@ -136,7 +147,7 @@ export function renderCue(kind,rate=48000,variant=0){
 export const CUE_VARIANTS={tractor:3};
 // Rendered at 24 kHz (half the work of 48; nothing in these sounds needs more), most frequent first (sound-worker.js).
 export const SFX_RATE=24000;
-export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','chorebonus','quest','delivery','stall','reward','upgrade','expand','boost','finish','diamond','dailygift','construct','message','valley','depot','fair','improve','purchase','levelup'];
-export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,chorebonus:.85,upgrade:.9,reward:.95,diamond:1.1,dailygift:1.45,tractor:1,levelup:1.45,construct:1.3,purchase:1.45,message:.55,finish:.9,quest:.6,delivery:1.,stall:.8,boost:.9,expand:.9,valley:.7,depot:1.3,fair:1.4,improve:1.};
-export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,chorebonus:.042,upgrade:.053,reward:.052,diamond:.038,dailygift:.055,tractor:.034,levelup:.056,construct:.052,purchase:.056,message:.03,finish:.045,quest:.045,delivery:.045,stall:.047,boost:.048,expand:.045,valley:.04,depot:.046,fair:.05,improve:.048};
+export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','chorebonus','quest','delivery','stall','reward','upgrade','expand','boost','finish','diamond','dailygift','construct','message','valley','depot','fair','improve','purchase','offer','levelup'];
+export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,chorebonus:.85,upgrade:.9,reward:.95,diamond:1.1,dailygift:1.45,tractor:1,levelup:1.45,construct:1.3,purchase:1.45,message:.55,finish:.9,quest:.6,delivery:1.,stall:.8,boost:.9,expand:.9,valley:.7,depot:1.3,fair:1.4,improve:1.,offer:1.45};
+export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,chorebonus:.042,upgrade:.053,reward:.052,diamond:.038,dailygift:.055,tractor:.034,levelup:.056,construct:.052,purchase:.056,message:.03,finish:.045,quest:.045,delivery:.045,stall:.047,boost:.048,expand:.045,valley:.04,depot:.046,fair:.05,improve:.048,offer:.055};
 export function loudness(data,rate){const w=Math.min(data.length,Math.round(.15*rate)),step=Math.max(1,Math.round(w/4));let best=0;for(let i=0;i+w<=data.length;i+=step){let e=0;for(let j=i;j<i+w;j++)e+=data[j]*data[j];best=Math.max(best,Math.sqrt(e/w));}return best;}

@@ -17,7 +17,33 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
  '300':{diamonds:300,cents:999,price:'price_1UH5Gv04FdNTUSp4kabIfp0Y'},
  '1000':{diamonds:1000,cents:2499,price:'price_1UH5HL04FdNTUSp41DLz2C1B'}
 });
-const RECEIPT_PACKS=Object.freeze({...LEGACY_PAYMENT_PACKS,...PAYMENT_PACKS});
+// The special offer (29 Sep 2026): the admin puts together diamonds, coins and/or VIP time worth €49.99 at the shop's own prices,
+// sold once per farmer for €4.99 (90% off), one offer at a time. Worth: a diamond as in the €4.99 pack (500 for €4.99), coins at 250
+// for a diamond (the admin's rate; coins are never sold), VIP at its price in diamonds (VIP_PLANS in farm-state.js). The server
+// takes the contents from the offer itself, never from the browser, and the "worth" line is always this sum.
+export const OFFER=Object.freeze({cents:499,valueCents:4999,price:'price_1UL3qr04FdNTUSp41m7H0DCp',coinsPerDiamond:250,
+ diamondCents:499/500,vipDiamonds:Object.freeze({7:500,30:1500}),target:5000,maxDiamonds:20000,maxCoins:10000000});
+// What an offer is worth, in euro cents at the shop's prices.
+export function offerValueCents({diamonds=0,coins=0,vipDays=0}={}){
+ return Math.round((Number(diamonds)+Number(coins)/OFFER.coinsPerDiamond+(OFFER.vipDiamonds[vipDays]??0))*OFFER.diamondCents);
+}
+// A valid offer: whole amounts, VIP of 7 or 30 days or none, something in it, and worth €49.99 (within 2%, so round numbers fit).
+export function offerProblem({diamonds=0,coins=0,vipDays=0}={}){
+ if(![diamonds,coins,vipDays].every(Number.isInteger))return 'Use whole numbers.';
+ if(diamonds<0||diamonds>OFFER.maxDiamonds||coins<0||coins>OFFER.maxCoins||!Object.hasOwn(OFFER.vipDiamonds,vipDays)&&vipDays!==0)return 'Choose amounts within the limits.';
+ if(!diamonds&&!coins&&!vipDays)return 'Put something in the offer.';
+ const value=offerValueCents({diamonds,coins,vipDays});
+ if(Math.abs(value-OFFER.valueCents)>OFFER.valueCents*0.02)return `The offer must be worth €49.99; it is worth €${(value/100).toFixed(2)}.`;
+ return null;
+}
+// The amounts that make €49.99 for the kinds chosen: VIP takes its share, diamonds and coins split the rest evenly.
+export function offerFill({diamonds=false,coins=false,vipDays=0}={}){
+ const rest=OFFER.target-(OFFER.vipDiamonds[vipDays]??0);
+ if(!diamonds&&!coins)return {diamonds:0,coins:0,vipDays};
+ const d=diamonds?(coins?Math.round(rest/2/50)*50:rest):0;
+ return {diamonds:d,coins:coins?(rest-d)*OFFER.coinsPerDiamond:0,vipDays};
+}
+const RECEIPT_PACKS=Object.freeze({...LEGACY_PAYMENT_PACKS,...PAYMENT_PACKS,offer:Object.freeze({cents:OFFER.cents,price:OFFER.price,offer:true})});
 const CHECKOUT_PACK_ALIASES=Object.freeze({'50':'150','100':'150','300':'1250','600':'1250','1000':'3500','2000':'3500'});
 // A Starter Pack checkout opened before 27 Sep 2026 held 300 diamonds; paid later, it still counts, and credits the 300 it showed.
 export const STARTER_DIAMONDS_BEFORE=300;
@@ -43,11 +69,13 @@ export function checkoutPack(id){
 }
 export function validatePaidSession(session,purchase,items){
  const pack=paymentPack(purchase.pack);
+ // A special offer's contents come from the offer, written into the purchase by the checkout: they must still make a valid offer.
+ if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||offerProblem({diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0})))throw new Error('Offer mismatch.');
  if(session.payment_status!=='paid'||session.status!=='complete')throw new Error('Payment is not complete.');
  if(session.mode!=='payment'||session.livemode!==purchase.livemode)throw new Error('Payment mode mismatch.');
  if(session.id!==purchase.stripe_session_id||session.client_reference_id!==purchase.player_id||session.metadata?.purchase_id!==purchase.id||session.metadata?.player_id!==purchase.player_id||session.metadata?.app!=='harvest-tycoon')throw new Error('Purchase ownership mismatch.');
- if(session.currency!=='eur'||session.amount_total!==purchase.amount_cents||session.amount_subtotal!==purchase.amount_cents||purchase.amount_cents!==pack.cents||purchase.diamonds!==pack.diamonds&&!(purchase.pack==='starter'&&purchase.diamonds===STARTER_DIAMONDS_BEFORE))throw new Error('Payment amount mismatch.');
- if((purchase.coins??0)!==(pack.coins??0))throw new Error('Coin reward mismatch.');
+ if(session.currency!=='eur'||session.amount_total!==purchase.amount_cents||session.amount_subtotal!==purchase.amount_cents||purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds&&!(purchase.pack==='starter'&&purchase.diamonds===STARTER_DIAMONDS_BEFORE))throw new Error('Payment amount mismatch.');
+ if(!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Coin reward mismatch.');
  if(purchase.price_id!==pack.price||items.has_more||items.data?.length!==1||items.data[0].quantity!==1||items.data[0].price?.id!==purchase.price_id)throw new Error('Payment items mismatch.');
  if(typeof session.payment_intent!=='string'||!session.payment_intent.startsWith('pi_'))throw new Error('Missing payment reference.');
  return session.payment_intent;

@@ -285,3 +285,11 @@ span.chat-avatar{cursor:default}
 .chat-request.is-given .chat-request-status{color:#3d6b45;font-weight:700}
 .chat-request.is-given .chat-request-give{display:none}
 .chat-request.chat-kick .chat-request-status{color:#857d70;font-weight:400}
+/* The admin's special offer (src/admin-dashboard.js): what is in it, the amounts, the worth line (red while it is not €49.99). */
+.admin-offer-kinds{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 10px;color:#5e523a;font:650 14px 'DM Sans',sans-serif}
+.admin-offer-kinds label{display:inline-flex;align-items:center;gap:6px}
+.admin-offer-kinds input[type=checkbox]{width:18px;height:18px;accent-color:#615742}
+.admin-offer-kinds select{min-height:34px;padding:0 8px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 14px 'DM Sans',sans-serif}
+.admin-offer-worth{margin:0 0 8px;padding:8px 12px;border-radius:10px;background:#eef6e6;color:#2f6a2a;font:700 14px 'DM Sans',sans-serif}
+.admin-offer-worth.is-wrong{background:#fbe9e4;color:#a4351c}
+.admin-offer-actions{display:flex;gap:8px;margin-top:10px}.admin-offer-actions>*{flex:1;justify-content:center}
