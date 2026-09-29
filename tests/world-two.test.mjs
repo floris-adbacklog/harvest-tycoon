@@ -25,6 +25,11 @@ test('World II opens at level 100: below it none of its places, recipes, goods o
  for(const key of ['mine','lumbercamp'])assert.equal(buildingUnlocked(w,key),true,key);
  for(const id of ['packedlunch','digiron','chop','saw'])assert.equal(recipeUnlocked(w,id),true,id);
  assert.equal(recipeUnlocked(w,'smeltiron'),false,'the Smithy waits for 102');
+ // Built with coins like the farm's buildings: 150,000 for the Mine and the Lumber Camp, 200,000 for the Smithy, 300,000 for the windmill.
+ const fresh=createFarm(now);fresh.xp=xpForLevel(100);fresh.coins=400000;fresh.onboarding={...fresh.onboarding,completed:99,rewardClaimed:true};normalizeFarm(fresh,now);
+ assert.equal(buildingUnlocked(fresh,'mine'),false,'eligible, not built yet');
+ act(fresh,{type:'construct',building:'mine'});assert.equal(buildingUnlocked(fresh,'mine'),true);assert.equal(fresh.coins,250000);
+ assert.deepEqual(['mine','lumbercamp','smithy','villagemill'].map(k=>BUILDINGS[k].buildCost),[150000,150000,200000,300000]);
 });
 
 test('the village goods stay in the village: own market, never in the farm Market, Family Orders or family sharing',()=>{

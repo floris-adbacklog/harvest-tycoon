@@ -177,10 +177,10 @@ export const BUILDINGS = Object.freeze({
  craftshop:{"name": "Craft Workshop", "tagline": "Hand-poured beeswax candles and warm wool blankets.", "icon": "flame", "model": "hangar_019", "type": "production", "upgradeCost": 1500, "minLevel": 58, "buildCost": 90000},
  factory:{"name": "Factory", "tagline": "Every good in huge batches, for the fields and upgrades of a lasting estate.", "icon": "factory", "model": "hangar_007", "type": "production", "upgradeCost": 800, "minLevel": FACTORY_LEVEL, "buildCost": FACTORY_COST},
  // World II, The Village: its places work like the farm's buildings (slots, recipes, upgrades to level 10), in the village only.
- mine:{name:'Mine',tagline:'Stone and iron from the mountain, silver and rubies deeper down.',icon:'pickaxe',model:null,type:'production',upgradeCost:1600,minLevel:100,world:2},
- lumbercamp:{name:'Lumber Camp',tagline:'Logs from the forest, sawn into planks.',icon:'axe',model:null,type:'production',upgradeCost:1600,minLevel:100,world:2},
- smithy:{name:'Smithy',tagline:'Iron and silver bars, pickaxes and master tools for the farm.',icon:'hammer',model:null,type:'production',upgradeCost:1800,minLevel:102,world:2},
- villagemill:{name:'Village Windmill',tagline:'Grind golden wheat into heirloom flour.',icon:'wind',model:null,type:'production',upgradeCost:2000,minLevel:112,world:2}
+ mine:{name:'Mine',tagline:'Stone and iron from the mountain, silver and rubies deeper down.',icon:'pickaxe',model:null,type:'production',upgradeCost:1600,minLevel:100,buildCost:150000,world:2},
+ lumbercamp:{name:'Lumber Camp',tagline:'Logs from the forest, sawn into planks.',icon:'axe',model:null,type:'production',upgradeCost:1600,minLevel:100,buildCost:150000,world:2},
+ smithy:{name:'Smithy',tagline:'Iron and silver bars, pickaxes and master tools for the farm.',icon:'hammer',model:null,type:'production',upgradeCost:1800,minLevel:102,buildCost:200000,world:2},
+ villagemill:{name:'Village Windmill',tagline:'Grind golden wheat into heirloom flour.',icon:'wind',model:null,type:'production',upgradeCost:2000,minLevel:112,buildCost:300000,world:2}
 });
 export const worldTwoBuilding=key=>BUILDINGS[key]?.world===2;
 const BASE_RECIPES=Object.freeze({
@@ -786,7 +786,9 @@ export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,
 // independently of inventory bundles, so purchases never bypass progression.
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:7,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
 export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112});
-export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST});
+export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST,
+ // World II (30 Sep 2026): the village's places are built with coins like the farm's, on from the Factory.
+ mine:150000,lumbercamp:150000,smithy:200000,villagemill:300000});
 export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115});
 export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:14,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:16});
