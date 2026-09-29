@@ -223,7 +223,11 @@ function collectPage(file,catalog,htmlNames,scripts){
  for(const key of pieces(html,true))add(catalog,key,file);
 }
 
+// Texts a database function hands back as its message (not an error), which the scan for "raise exception" does not see: what a
+// Help, gift or event claim did (29 Sep 2026). Keep in step with the live functions (harvest_social, harvest_event_claim).
+const SERVER_MESSAGES=['You helped with {0} coins. Thank you!','Your gift has arrived!','Request fulfilled. Your family thanks you!','Already completed.','Your family request is ready.','This reward was already collected.','Event rewards collected!'];
 function collectSql(catalog){
+ for(const key of SERVER_MESSAGES)add(catalog,key,'supabase/ (database messages)');
  for(const dir of SQL_DIRS){
   if(!existsSync(new URL(dir,ROOT)))continue;
   for(const file of list(dir,f=>f.endsWith('.sql'))){

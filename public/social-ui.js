@@ -17,7 +17,8 @@ const itemName=key=>(ITEMS[key]?.name??key).toLowerCase();
 export function sharingMessage(result,action,nameOf=id=>id){
  const item=ITEMS[result?.item]?.name,quantity=result?.quantity;
  if(!item||!quantity)return result?.message??'Done.';
- if(action.kind==='gift')return `You sent ${quantity} ${item} to ${nameOf(action.recipient)}.`;
+ // The name in its own variable: the whole sentence is then one text to translate (a call there cut it in two).
+ if(action.kind==='gift'){const who=nameOf(action.recipient);return `You sent ${quantity} ${item} to ${who}.`;}
  if(action.kind==='request')return `Your family can see your request for ${quantity} ${item}.`;
  if(action.kind==='fulfill')return `You gave ${quantity} ${item}. Your family thanks you!`;
  return result.message;
