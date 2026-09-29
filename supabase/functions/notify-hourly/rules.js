@@ -1,5 +1,7 @@
 // Decides, for one player and one moment, which reminder (if any) goes out. Pure: no network, no database,
 // so every rule can be tested. The hourly job (job.js) applies the result.
+import {textsFor} from './texts.js';
+import {LOCAL_NAMES} from './names.js';
 export const DAY_MS=86400000,HOUR_MS=3600000;
 export const CONFIG=Object.freeze({
  QUIET_START:22,QUIET_END:8,          // no crop or production reminders from 22:00 until 08:00 local time
@@ -37,25 +39,32 @@ export function readyJobs(farm,now){
  }
  return out;
 }
-const plural=(n,one,many=`${one}s`)=>n===1?one:many;
 const tally=(items,key)=>{const counts=new Map();for(const item of items)counts.set(item[key],(counts.get(item[key])??0)+1);return [...counts];};
+const EN=textsFor('en');
+// The crop and building names in the farmer's language (the game's own translations), English where one is missing.
+export function localNames(names,language){
+ const local=LOCAL_NAMES[language];
+ return local?{crops:{...names.crops,...local.crops},buildings:{...names.buildings,...local.buildings}}:names;
+}
 
-export function cropsText(crops,names,max=CONFIG.MAX_KINDS){
- const kinds=tally(crops,'crop'),shown=kinds.slice(0,max).map(([key,n])=>`${n} ${(names[key]??key).toLowerCase()}`);
- return `${crops.length} ${plural(crops.length,'crop')} ready to harvest${kinds.length>0?`: ${shown.join(', ')}${kinds.length>max?'…':''}`:''}`;
+export function cropsText(crops,names,max=CONFIG.MAX_KINDS,t=EN){
+ const kinds=tally(crops,'crop'),shown=kinds.slice(0,max).map(([key,n])=>t.item(n,names[key]??key));
+ return t.cropsLine(crops.length,kinds.length>0?`${shown.join(t.listSep)}${kinds.length>max?'…':''}`:'');
 }
 // The push says it plainly (26 Sep 2026): one line for crops and goods together; the email summary keeps the details below.
-export function readyText(crops,goods){return crops&&goods?'Your crops and goods are ready':crops?'Your crops are ready to harvest':'Your goods are ready to collect';}
-export function jobsText(jobs,names){
+export function readyText(crops,goods,t=EN){return crops&&goods?t.readyBoth:crops?t.readyCrops:t.readyGoods;}
+export function jobsText(jobs,names,t=EN){
  const kinds=tally(jobs,'building'),label=key=>names[key]??key;
- if(kinds.length===1)return `${label(kinds[0][0])}: ${jobs.length} ${plural(jobs.length,'batch','batches')} ready`;
- return `${jobs.length} batches ready (${kinds.map(([key,n])=>`${label(key)} ${n}`).join(', ')})`;
+ if(kinds.length===1)return t.jobsOne(label(kinds[0][0]),jobs.length);
+ return t.jobsMany(jobs.length,kinds.map(([key,n])=>`${label(key)} ${n}`).join(t.jobSep));
 }
 
 // One player at one moment. `player` is a row from notification_candidates(); `names` maps crop and building keys to names.
 // Returns {push, patchAlways, patchOnSend, digest, digestPatch}. patchAlways is saved regardless; patchOnSend only
 // once the push was really delivered, so a failed delivery is tried again next hour.
 export function planPlayer(player,now,names={crops:{},buildings:{}}){
+ // The texts in the farmer's own game language (texts.js); English when it is not known yet.
+ const t=textsFor(player.language);names=localNames(names,t.language);
  const zone=knownZone(player.timezone),local=localParts(now,zone),today=local.date;
  const lastActive=player.last_active_at?Date.parse(player.last_active_at):null;
  const inactive=lastActive!==null&&now-lastActive>CONFIG.INACTIVE_STOP_MS;
@@ -77,15 +86,15 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
   const parts=[],onSend={},quiet=local.hour>=CONFIG.QUIET_START||local.hour<CONFIG.QUIET_END;
   if(player.push_daily&&login.lastDay!==utcDay(now)){
    const day=giftStreak(login,now),boost=GIFT_BOOSTS[(day-1)%7+1];
-   if(local.hour===CONFIG.DAILY_MORNING_HOUR&&player.daily_morning_on!==today){parts.push(boost?`Your daily gift is waiting, with ${boost}`:'Your daily gift is waiting');onSend.daily_morning_on=today;}
+   if(local.hour===CONFIG.DAILY_MORNING_HOUR&&player.daily_morning_on!==today){parts.push(boost?t.pushGift(t.boosts[(day-1)%7+1]):t.gift);onSend.daily_morning_on=today;}
    const streak=day>1?day-1:0;
-   if(local.hour===CONFIG.DAILY_EVENING_HOUR&&streak>=CONFIG.STREAK_MIN&&player.daily_evening_on!==today){parts.push(`Collect your gift to keep your ${streak}-day streak`);onSend.daily_evening_on=today;}
+   if(local.hour===CONFIG.DAILY_EVENING_HOUR&&streak>=CONFIG.STREAK_MIN&&player.daily_evening_on!==today){parts.push(t.pushStreak(streak));onSend.daily_evening_on=today;}
   }
   const giftParts=parts.length;
   if(!quiet){
    // Crops and goods are one setting in the game and one line in the push: only when something new is ready since the last one.
    const crops=Boolean(player.push_crops)&&ready.some(c=>c.readyAt>seenCrops),goods=Boolean(player.push_production)&&jobsReady.some(j=>j.readyAt>seenJobs);
-   if(crops||goods)parts.push(readyText(crops,goods));
+   if(crops||goods)parts.push(readyText(crops,goods,t));
   }
   const gapOk=!player.last_push_at||now-Date.parse(player.last_push_at)>=CONFIG.MIN_PUSH_GAP_MS;
   const sentToday=player.push_day===today?Number(player.push_count)||0:0;
@@ -102,7 +111,7 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
  if(player.email_digest&&player.email&&!inactive&&digestHour!==null&&local.hour>=digestHour&&local.hour<CONFIG.QUIET_START&&player.digest_on!==today){
   const giftWaiting=login.lastDay!==utcDay(now);
   if(ready.length||jobsReady.length||giftWaiting){
-   result.digest={username:player.username??'farmer',crops:ready,jobs:jobsReady,giftWaiting,streak:number(login.streak)??0};
+   result.digest={username:player.username??'farmer',language:t.language,crops:ready,jobs:jobsReady,giftWaiting,streak:number(login.streak)??0};
    result.digestPatch={digest_on:today};
   }
  }

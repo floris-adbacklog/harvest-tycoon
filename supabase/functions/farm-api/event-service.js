@@ -1,6 +1,7 @@
 import {writeLog,eventRewardLog,accountLog} from './player-log.js';
 import {isSuperadmin,isAdminAccount,isAdminAddress} from './admin-service.js';
 import {validEmail} from './account-form.js';
+import {codeTexts,playerLanguage} from './mail-text.js';
 // The goals an event may use: the 24 Sep list (farm-wide counters, crops unlocked by level 9, eggs) and the 30 kinds of the mixed
 // events (supabase/live-events-mixed.sql), all open to every farm at level 15, when events open. Since 26 Sep 2026 the pool has
 // "Sell wheat" instead of "Use a boost" (supabase/live-events-sell-wheat.sql); boosts_used stays valid for events made by hand.
@@ -79,22 +80,24 @@ async function eligibility(admin,user){
 export const EMAIL_CODE=Object.freeze({validMs:30*60000,waitMs:60000,perDay:5,tries:5});
 async function codeHash(player,code){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`${player}:${code}`));return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');}
 // The same look as the reminder email (notify-hourly/mail.js): the logo, a cream card and the game's colours.
-export function emailCodeMessage(code,appUrl='https://www.harvesttycoon.com'){
- const text=`Your code to confirm your email for Harvest Tycoon: ${code}\n\nType it in the game within 30 minutes. If you did not ask for this, you can ignore this email.`;
+// In the farmer's game language (mail-text.js), English when it is not known.
+export function emailCodeMessage(code,appUrl='https://www.harvesttycoon.com',language=null){
+ const t=codeTexts(language),esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+ const text=t.text(code);
  const font="'DM Sans',Helvetica,Arial,sans-serif";
- const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Harvest Tycoon code</title></head>
+ const html=`<!doctype html><html lang="${t.language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t.title)}</title></head>
 <body style="margin:0;padding:0;background:#f3e8e0;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3e8e0;padding:28px 12px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fffdf6;border-radius:22px;border:1px solid #eadfd4;">
 <tr><td align="center" style="padding:24px 28px 0;"><img src="${appUrl}/assets/harvest-tycoon-logo.png" width="130" height="130" alt="Harvest Tycoon" style="display:block;border:0;width:130px;height:auto;"></td></tr>
 <tr><td align="center" style="padding:8px 32px 0;font-family:${font};color:#3d3923;">
-<h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#3d3923;">Confirm your email</h1>
-<p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#5d573f;">Type this code in the game to confirm your email:</p>
+<h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#3d3923;">${esc(t.heading)}</h1>
+<p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#5d573f;">${esc(t.intro)}</p>
 <p style="margin:0 0 18px;"><span style="display:inline-block;padding:14px 24px;border-radius:14px;background:#eef5e6;border:1px solid #cfe2bd;font-size:34px;font-weight:700;letter-spacing:8px;color:#2f5a33;font-family:${font};">${code}</span></p>
-<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#5d573f;">The code works for 30 minutes.</p></td></tr>
-<tr><td style="padding:18px 32px 28px;font-family:${font};font-size:12px;line-height:1.6;color:#857d70;text-align:center;">You get this email because someone asked for a code in Harvest Tycoon with this address. If that was not you, you can ignore it.</td></tr>
+<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#5d573f;">${esc(t.valid)}</p></td></tr>
+<tr><td style="padding:18px 32px 28px;font-family:${font};font-size:12px;line-height:1.6;color:#857d70;text-align:center;">${esc(t.footer)}</td></tr>
 </table></td></tr></table></body></html>`;
- return {subject:`Your Harvest Tycoon code: ${code}`,text,html};
+ return {subject:t.subject(code),text,html};
 }
 async function resendMail(to,message){
  const env=globalThis.Deno?.env,key=env?.get('RESEND_API_KEY')??'',from=env?.get('MAIL_FROM')??'Harvest Tycoon <noreply@harvesttycoon.com>';
@@ -113,7 +116,7 @@ export async function sendEmailCode({admin,user,now=Date.now(),mail=resendMail,r
  const code=String(random()%1000000).padStart(6,'0');
  const saved=await admin.from('email_checks').upsert({player_id:user.id,email:user.email,new_email:null,code_hash:await codeHash(user.id,code),code_expires_at:new Date(now+EMAIL_CODE.validMs).toISOString(),attempts:0,sent_at:new Date(now).toISOString(),send_day:day,sends_today:sends+1,confirmed_at:null});
  if(saved.error)throw saved.error;
- await mail(user.email,emailCodeMessage(code));
+ await mail(user.email,emailCodeMessage(code,undefined,await playerLanguage(admin,user.id)));
  return {sent:true,email:user.email,waitMs:EMAIL_CODE.waitMs};
 }
 export async function confirmEmailCode({admin,user,code,now=Date.now()}){
@@ -157,7 +160,7 @@ export async function sendEmailChange({admin,user,email,password,passwordOk,now=
  const code=String(random()%1000000).padStart(6,'0');
  const saved=await admin.from('email_checks').update({new_email:next,code_hash:await codeHash(user.id,code),code_expires_at:new Date(now+EMAIL_CODE.validMs).toISOString(),attempts:0}).eq('player_id',user.id);
  if(saved.error)throw saved.error;
- await mail(next,emailCodeMessage(code));
+ await mail(next,emailCodeMessage(code,undefined,await playerLanguage(admin,user.id)));
  return {sent:true,email:next,waitMs:EMAIL_CODE.waitMs};
 }
 export async function confirmEmailChange({admin,user,code,now=Date.now()}){

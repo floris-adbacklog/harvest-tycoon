@@ -23,7 +23,19 @@ const tokenOk=(value:string|null)=>Boolean(value&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9
 
 const db={
  async beginRun(){const {data,error}=await admin.rpc('notification_begin_run');if(error)throw error;return data;},
- async candidates(){const {data,error}=await admin.rpc('notification_candidates');if(error)throw error;return data??[];},
+ // Each farmer's game language (player_seen.language, saved by farm-api when the game loads), so the reminder is written in it.
+ // Read in chunks; if that fails the reminders still go out, in English.
+ async candidates(){
+  const {data,error}=await admin.rpc('notification_candidates');if(error)throw error;
+  const rows=data??[],languages=new Map();
+  for(let i=0;i<rows.length;i+=150){
+   const ids=rows.slice(i,i+150).map((r:Record<string,any>)=>r.player_id);
+   const seen=await admin.from('player_seen').select('player_id,language').in('player_id',ids);
+   if(seen.error){console.error(`languages: ${seen.error.message}`);break;}
+   for(const s of seen.data??[])if(s.language)languages.set(s.player_id,s.language);
+  }
+  return rows.map((r:Record<string,any>)=>({...r,language:languages.get(r.player_id)??null}));
+ },
  async saveState(player:string,patch:Record<string,unknown>){const {error}=await admin.from('notification_state').upsert({player_id:player,...patch,updated_at:new Date().toISOString()});if(error)throw error;},
  async removeSubscription(endpoint:string){await admin.from('push_subscriptions').delete().eq('endpoint',endpoint);},
  async markSuccess(endpoint:string){await admin.from('push_subscriptions').update({last_success_at:new Date().toISOString(),failures:0}).eq('endpoint',endpoint);},

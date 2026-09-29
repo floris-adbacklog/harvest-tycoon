@@ -16,7 +16,8 @@ const SKIP=/(^|\/)(admin-[^/]*|lucide-icons|analytics|sound-worker|sw|sound-kit|
 export const SOURCES=[
  ...list('public/',f=>f.endsWith('.js')),
  ...list('src/',f=>f.endsWith('.js')),
- ...list('supabase/functions/farm-api/',f=>f.endsWith('.js')&&f!=='farm-state.js')
+ // mail-text.js holds the code email already written in every language: it is not translated through the catalog.
+ ...list('supabase/functions/farm-api/',f=>f.endsWith('.js')&&f!=='farm-state.js'&&f!=='mail-text.js')
 ].filter(file=>!SKIP.test(file));
 export const PAGES=['public/farm.html','public/play.html'];
 const SQL_DIRS=['supabase/','supabase/migrations/'];
