@@ -8,10 +8,12 @@ export const LANGUAGES=Object.freeze([
  {code:'es',name:'Español',ready:true},
  {code:'fr',name:'Français',ready:true},
  {code:'id',name:'Bahasa Indonesia',ready:true},
+ {code:'hu',name:'Magyar'},
  {code:'nl',name:'Nederlands',ready:true},
  {code:'pt',name:'Português',ready:true},
  {code:'tr',name:'Türkçe'},
  {code:'ru',name:'Русский',ready:true},
+ {code:'uk',name:'Українська'},
  {code:'hi',name:'हिन्दी',ready:true},
  {code:'ja',name:'日本語',ready:true}
 ].map(Object.freeze));
