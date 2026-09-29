@@ -103,22 +103,40 @@ export function createTranslator(dict,code='en'){
  return {translate,missing,code};
 }
 
+// Numbers the game writes the English way (1,456 coins, 1.6×, 24.9K) in the language's own notation (29 Sep 2026): its thousands
+// separator (1.456, 1 456) and a decimal comma where it uses one. Only the English forms change: a dot with three digits after it
+// is a translator's thousands (1.000), never an English decimal, and no translation holds an English "1,456". Japanese and Hindi
+// write numbers as English does. Returns null when nothing needs changing.
+export function localNumbers(code){
+ if(!code||code==='en'||code==='ja'||code==='hi'||typeof Intl==='undefined')return null;
+ const whole=new Intl.NumberFormat(code,{maximumFractionDigits:0});
+ const decimal=new Intl.NumberFormat(code).formatToParts(1.5).find(part=>part.type==='decimal')?.value??'.';
+ return text=>text
+  .replace(/(?<![\d.,])\d{1,3}(?:,\d{3})+(?![\d.,])/g,match=>whole.format(Number(match.replace(/,/g,''))))
+  .replace(/(?<![\d.,])(\d+)\.(\d{1,2})(?![\d.,])/g,`$1${decimal}$2`);
+}
+
 // Keep a document translated: everything in it now, and every text that is added or changed later.
 export function translateDocument(doc,translator){
- const written=new WeakMap(),attrsWritten=new WeakMap();
+ const written=new WeakMap(),attrsWritten=new WeakMap(),numbers=localNumbers(translator.code);
  const skip=element=>!element||element.closest(KEEP);
  function text(node){
   const data=node.data;
-  if(written.get(node)===data||!/\p{L}/u.test(data)||skip(node.parentElement))return;
-  const key=normalize(data);if(!key)return;
-  const out=translator.translate(key);if(out==null||out===key)return;
-  const next=data.match(/^\s*/)[0]+out+data.match(/\s*$/)[0];
+  if(written.get(node)===data||skip(node.parentElement))return;
+  let next=data;
+  if(/\p{L}/u.test(data)){
+   const key=normalize(data),out=key?translator.translate(key):null;
+   if(out!=null&&out!==key)next=data.match(/^\s*/)[0]+out+data.match(/\s*$/)[0];
+  }
+  if(numbers&&/\d/.test(next))next=numbers(next);
+  if(next===data)return;
   written.set(node,next);node.data=next;
  }
  function attr(element,name){
   const value=element.getAttribute(name);if(!value||!/\p{L}/u.test(value)||skip(element))return;
   let done=attrsWritten.get(element);if(done?.[name]===value)return;
-  const out=translator.translate(normalize(value));if(out==null)return;
+  let out=translator.translate(normalize(value));if(out==null)return;
+  if(numbers&&/\d/.test(out))out=numbers(out);
   if(!done)attrsWritten.set(element,done={});
   done[name]=out;element.setAttribute(name,out);
  }
