@@ -52,7 +52,7 @@ test('the scene is laid out through the zones, and the default is restored after
  assert(!/(cloneModel|scenery)\('road_001',-?\d/.test(scene+life),'no road with typed-in numbers: they come from the shared list');assert.match(scene,/for\(const road of ROADS\.slice\(0,3\)\)cloneModel\('road_001'/);assert.match(life,/for\(const road of ROADS\.slice\(3\)\)\{const size=roadSize\(road\);scenery\('road_001'/);
  const used=new Set([...scene.matchAll(/zone\('(\w+)'\)/g)].map(m=>m[1]).concat([...scene.matchAll(/\[yard,list\]/g)].length?Object.keys(ANCHORS):[]));
  for(const id of used)assert(id==='fields'||id==='exact'||Object.hasOwn(ANCHORS,id),id);
- assert.match(game,/const limit=Math\.round\(24\*SPREAD\)/,'more room to pan, as far as the wave-3 column at the end of the trunk road');
+ assert.match(game,/const limit=villageWorld\?60:Math\.round\(24\*SPREAD\)/,'more room to pan, as far as the wave-3 column at the end of the trunk road');
  assert.match(game,/sun\.shadow\.camera\.left=-52/,'shadows cover the wider farm');
  assert.match(game,/utilityViews\.set\(key,\{object,label,info,x:object\.position\.x,z:object\.position\.z,height,locked:false\}\)/);assert.match(game,/buildingViews\.set\(key,\{object,hit,outline,label,pin:label\.querySelector\('\.building-pin'\),pinArt:key==='familyhall'\?'familyhall-model':key,x:object\.position\.x,z:object\.position\.z,height,locked:false\}\)/,'labels follow where things really stand');
  assert.match(life,/zone\('pond'\)/);assert.match(life,/zone\('paddock'\)/);assert.match(life,/zone\('workshop'\)/);assert.match(life,/const beeHome=placeIn\('apiary',10\.4,13\.7\)/);

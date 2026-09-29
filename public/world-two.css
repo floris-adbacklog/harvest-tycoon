@@ -4,8 +4,11 @@ html[data-world="village"] .tool-dock,
 html[data-world="village"] #minimap,
 html[data-world="village"] .beginner-card,
 html[data-world="village"] #fields-view,
-html[data-world="village"] #zoom-reset,
+html[data-world="village"] .touch-instructions,
+html[data-world="village"] #game::after,
 html[data-world="village"] #buildings-dialog .utility-shortcuts-title,
 html[data-world="village"] #buildings-dialog .utility-shortcuts{display:none!important}
 /* The loading screen on the way there shows the village (public/app-mode.js marks the trip before the game's code runs). */
 html[data-trip="village"] .farm-loading.loading{background-image:url('/assets/village-welcome.webp');background-color:#2c4a5a}
+/* On a phone the farm keeps room at the bottom for its tool dock; the village has none, so its view runs down to the menu bar. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){html[data-world="village"]{--mobile-bottom:var(--mobile-nav,76px)}}

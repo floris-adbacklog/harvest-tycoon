@@ -7,7 +7,6 @@ import {createFamilyUI} from './family-ui.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
 import {buildingEligible,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,WORLD_TWO_LEVEL,WORLD_TWO_TEASER} from './farm-state.js';
-import {loadVillage,VILLAGE_PLACES,VILLAGE_UTILITIES} from './village-scene.js';
 import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
@@ -58,6 +57,8 @@ state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key
 // the minimap, the welcome back) are skipped; the village's places are building labels like the farm's (public/village-scene.js).
 const villageWorld=new URLSearchParams(location.search).get('world')==='village'&&worldTwoOpen(state);
 if(villageWorld)document.documentElement.dataset.world='village';else document.documentElement.removeAttribute('data-trip');   // app-mode.js marks the trip
+// In the village the camera buttons speak of the village: centre it, or show all of it.
+if(villageWorld)for(const [id,label] of [['zoom-reset','Center the village'],['zoom-fit','Show the whole village']]){$(id).setAttribute('aria-label',label);$(id).title=label;}
 const travel=to=>{if(window.parent?.harvestBridge?.travel)void window.parent.harvestBridge.travel(to);else location.search=to==='village'?'?world=village':'';};
 window.harvestTravel=travel;
 const initialChapterReward=window.harvestInitialFarm.chapterReward;
@@ -75,7 +76,7 @@ function setEmailCheck(check){if(check)emailAccount=check;const hide=!emailAccou
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
 // On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide.
-const startView=()=>villageWorld?'overview':mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)?'fields':'home';
+const startView=()=>villageWorld?'home':mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)?'fields':'home';
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
 let overviewBounds=null;
 let familyFlag=null;
@@ -728,9 +729,15 @@ function resize(){
  camera.left=-span*aspect/2-shift;camera.right=span*aspect/2-shift;camera.top=span/2;camera.bottom=-span/2;
  let focus;
  if(villageWorld){
-  // The village: the lake, the houses and the places, from the farm's angle; phones in portrait see less across, so more up and down.
-  const villageSpan=Math.max(44,34/aspect)/zoom;camera.left=-villageSpan*aspect/2;camera.right=villageSpan*aspect/2;camera.top=villageSpan/2;camera.bottom=-villageSpan/2;
-  focus=new THREE.Vector3(4+pan+panDepth,0,-9-pan+panDepth);
+  // The village: the lake, the houses and the places, from the farm's angle; phones in portrait see less across, so more up and down
+  // (all the places from the Lumber Camp to the Smithy stay in view; a pinch brings a house close).
+  // The whole-village view (the scan button) frames all of it, as measured when it loaded (villageFrame). The fog moves out with
+  // the view, so zooming out never hides the far side.
+  const whole=viewMode==='overview'&&villageFrame;
+  const villageSpan=(whole?Math.max(villageFrame.height,villageFrame.width/aspect):Math.max(44,50/aspect))/zoom,villageShift=!mobile?hudShift*villageSpan/height:0;camera.left=-villageSpan*aspect/2-villageShift;camera.right=villageSpan*aspect/2-villageShift;camera.top=villageSpan/2;camera.bottom=-villageSpan/2;
+  // Both views look at the middle of the village's places (the Lumber Camp on the left, the Mine and the Smithy on the right).
+  focus=(villageFrame?villageFrame.focus.clone():new THREE.Vector3(4,0,-9)).add(new THREE.Vector3(pan+panDepth,0,-pan+panDepth));
+  if(scene.fog){scene.fog.near=65+villageSpan*.9;scene.fog.far=65+villageSpan*2.6;}
  }else if(viewMode==='fields'){
   const fieldCenter=.25+(Math.ceil(state.plots.length/4)-1)*3.2/2;
   focus=new THREE.Vector3(2.575+pan+panDepth,0,fieldCenter-pan+panDepth);
@@ -746,11 +753,14 @@ function resize(){
  camera.position.copy(focus).add(new THREE.Vector3(36,40,36));camera.lookAt(focus);camera.updateProjectionMatrix();camera.updateMatrixWorld();
  $('game').classList.toggle('farm-overview',mobile&&viewMode==='overview'&&zoom<1.4);
  $('fields-view').setAttribute('aria-pressed',String(viewMode==='fields'));$('zoom-reset').setAttribute('aria-pressed',String(viewMode==='home'));$('zoom-fit').setAttribute('aria-pressed',String(viewMode==='overview'));
- $('zoom-in').disabled=zoom>=2.2;$('zoom-out').disabled=zoom<=.75;
+ $('zoom-in').disabled=zoom>=maxZoom();$('zoom-out').disabled=zoom<=minZoom();
  positionLabels();positionBuildingLabels();
 }
-function panFarm(delta,depth=0){const limit=Math.round(24*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
-function zoomFarm(value){zoom=Math.max(.75,Math.min(2.2,value));resize();}
+// The village is three times as wide as the farm and its houses are smaller on screen: further out to zoom and to move, and much
+// further in, so a house comes as close as a farm building does.
+const minZoom=()=>villageWorld?.5:.75,maxZoom=()=>villageWorld?6:2.2;
+function panFarm(delta,depth=0){const limit=villageWorld?60:Math.round(24*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
+function zoomFarm(value){zoom=Math.max(minZoom(),Math.min(maxZoom(),value));resize();}
 function resetView(){viewMode=startView();zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
 function showOverview(){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}
 function focusFields(){viewMode='fields';zoom=1;pan=0;panDepth=0;resize();}
@@ -829,6 +839,17 @@ function addBuilding(key,x,z,options){
  label.innerHTML=`<span class="building-pin">${art(key==='familyhall'?'familyhall-model':key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">${key==='farmhouse'?'Expand your fields':'Ready to work'}</small></span>`;
  label.addEventListener('click',()=>tapBuilding(key));label.addEventListener('mouseenter',()=>highlight(key));label.addEventListener('mouseleave',()=>highlight(-1));label.addEventListener('focus',()=>highlight(key));label.addEventListener('blur',()=>highlight(-1));$('building-labels').append(label);
  buildingViews.set(key,{object,hit,outline,label,pin:label.querySelector('.building-pin'),pinArt:key==='familyhall'?'familyhall-model':key,x:object.position.x,z:object.position.z,height,locked:false});
+}
+// World II: how big the village valley looks from the game's angle (its places and a margin around them, so the lake and the houses
+// are in and the ring of mountains is not), and the spot on the ground in its middle, for the whole-village view.
+let villageFrame=null;
+function measureVillage(spots,margin=26){
+ const view=new THREE.OrthographicCamera();view.position.set(36,40,36);view.lookAt(0,0,0);view.updateMatrixWorld();
+ let [minX,maxX,minY,maxY]=[Infinity,-Infinity,Infinity,-Infinity];
+ for(const spot of spots)for(const dx of [-margin,margin])for(const dz of [-margin,margin])for(const y of [0,spot.y+4]){const [x,z]=[spot.x+dx,spot.z+dz];const v=new THREE.Vector3(x,y,z).applyMatrix4(view.matrixWorldInverse);minX=Math.min(minX,v.x);maxX=Math.max(maxX,v.x);minY=Math.min(minY,v.y);maxY=Math.max(maxY,v.y);}
+ const right=new THREE.Vector3(1,0,0).applyQuaternion(view.quaternion),up=new THREE.Vector3(0,1,0).applyQuaternion(view.quaternion),dir=view.getWorldDirection(new THREE.Vector3());
+ const middle=view.position.clone().add(right.multiplyScalar((minX+maxX)/2)).add(up.multiplyScalar((minY+maxY)/2));
+ return {width:maxX-minX,height:maxY-minY,focus:middle.add(dir.multiplyScalar(-middle.y/dir.y))};
 }
 // World II: a village place has no model of its own (it is part of the village scene), only an invisible block to measure and
 // grey out, with the same label as a farm building (or a place pin for the market and the road back).
@@ -971,7 +992,7 @@ function bindUI(){
  // Every dropdown in the game gets the game look, also the ones that are drawn later (public/pretty-select.js).
  watchSelects();
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
- $('zoom-in').addEventListener('click',()=>zoomFarm(zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
+ $('zoom-in').addEventListener('click',()=>zoomFarm(villageWorld?zoom*1.25:zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(villageWorld?zoom/1.25:zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'tend',4:'harvest'}[e.key];if(t){e.preventDefault();setTool(t);}});
  liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh()});
  // Confirm your email for 10 diamonds: a button in the left sidebar (desktop) and a card in the More menu, only for an email sign-up
@@ -1071,8 +1092,10 @@ async function init(){
   if(villageWorld){
    // The village is three times as wide as the farm: fog further out, and the sun's shadows over all of it.
    scene.fog=new THREE.Fog(0xdcebea,105,180);sun.position.multiplyScalar(3);sun.shadow.camera.left=sun.shadow.camera.bottom=-95;sun.shadow.camera.right=sun.shadow.camera.top=95;sun.shadow.camera.far=320;sun.shadow.camera.updateProjectionMatrix();
+   // Only a farmer in the village loads its scene code (and its mesh decoder): the farm never downloads it.
+   const {loadVillage,VILLAGE_PLACES,VILLAGE_UTILITIES}=await import('./village-scene.js');
    const [village]=await Promise.all([loadVillage({onProgress:share=>loadingUI.modelsReady(Math.round(share*99))}),client.load().then(()=>loadingUI.accountReady())]);
-   loadingUI.modelsReady(100);scene.add(village);
+   loadingUI.modelsReady(100);scene.add(village);villageFrame=measureVillage([...Object.values(VILLAGE_PLACES),...Object.values(VILLAGE_UTILITIES)]);
    for(const [key,spot] of Object.entries(VILLAGE_PLACES))addVillagePlace(key,spot);
    for(const [key,spot] of Object.entries(VILLAGE_UTILITIES))addVillageUtility(key,spot);
    atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});measureFarm();resize();icons();

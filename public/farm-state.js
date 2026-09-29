@@ -1568,7 +1568,7 @@ const mixBits=h=>{h^=h>>>16;h=Math.imul(h,0x85ebca6b);h^=h>>>13;h=Math.imul(h,0x
 export function valleyBasketValue(level){return Math.min(9000,3000+150*Math.max(0,level-FEATURE_LEVELS.valleymarket));}
 function valleyBasket(state,stall,serial){
  const roll=n=>mixBits(calendarHash(`valley-v1:${stall}:${serial}:${n}`)),target=valleyBasketValue(levelOf(state));
- const stars=VALLEY_STARS.filter(k=>itemAvailable(state,k)),others=Object.keys(PRODUCTS).filter(k=>!VALLEY_STARS.includes(k)&&!['feed','fertilizer','honey'].includes(k)&&itemAvailable(state,k));
+ const stars=VALLEY_STARS.filter(k=>itemAvailable(state,k)),others=Object.keys(PRODUCTS).filter(k=>!VALLEY_STARS.includes(k)&&!['feed','fertilizer','honey'].includes(k)&&!worldTwoItem(k)&&itemAvailable(state,k));   // World II's bakes stay out of the farm's orders
  const star=stars[roll(0)%stars.length],input={[star]:Math.max(1,Math.min(12,Math.round(target*.5/ITEMS[star].sell)))};
  const count=Math.min(others.length,1+roll(1)%2);let rest=target-ITEMS[star].sell*input[star];
  for(let i=0;i<count;i++){const key=others.splice(roll(2+i)%others.length,1)[0];input[key]=Math.max(1,Math.min(15,Math.round(Math.max(0,rest)/(count-i)/ITEMS[key].sell)));rest-=ITEMS[key].sell*input[key];}
@@ -1644,7 +1644,7 @@ export function exportValue(level){return Math.min(120000,60000+4000*Math.max(0,
 export function depotRestock(state){return hasImprovement(state,'crane')?DEPOT_RESTOCK/2:DEPOT_RESTOCK;}
 function exportContract(state,serial){
  const roll=n=>mixBits(calendarHash(`export-v1:${serial}:${n}`)),target=exportValue(levelOf(state));
- const goods=Object.keys(PRODUCTS).filter(k=>ITEMS[k].sell>=400&&itemAvailable(state,k)),kinds=Math.min(4,goods.length),input={};
+ const goods=Object.keys(PRODUCTS).filter(k=>ITEMS[k].sell>=400&&!worldTwoItem(k)&&itemAvailable(state,k)),kinds=Math.min(4,goods.length),input={};
  if(!kinds)return null;   // nothing the farm can make yet: no trailer until it can
  for(let i=0;i<kinds;i++){const key=goods.splice(roll(i)%goods.length,1)[0];input[key]=Math.max(2,Math.min(120,Math.round(target/kinds/ITEMS[key].sell)));}
  const value=Object.entries(input).reduce((sum,[key,n])=>sum+ITEMS[key].sell*n,0);
@@ -1697,7 +1697,7 @@ export const FAIR_CLASSES=Object.freeze([
 function fairClasses(state,week){
  const roll=n=>mixBits(calendarHash(`fair-v1:${week}:${n}`)),pick=(list,n)=>list[roll(n)%list.length];
  const amount=(key,value)=>Math.max(1,Math.round(value/ITEMS[key].sell));
- const crops=Object.keys(CROPS).filter(k=>CROPS[k].sell>=100&&cropUnlocked(state,k)),products=Object.keys(PRODUCTS).filter(k=>!['prizeproduce','feed','fertilizer','honey'].includes(k)&&ITEMS[k].sell>=200&&itemAvailable(state,k));
+ const crops=Object.keys(CROPS).filter(k=>CROPS[k].sell>=100&&cropUnlocked(state,k)),products=Object.keys(PRODUCTS).filter(k=>!['prizeproduce','feed','fertilizer','honey'].includes(k)&&!worldTwoItem(k)&&ITEMS[k].sell>=200&&itemAvailable(state,k));
  const fine=products.filter(k=>ITEMS[k].sell>=1000),goods=fine.length?fine:products;
  if(!crops.length||!goods.length)return null;   // a farm that makes nothing yet waits for its first classes
  const crop=pick(crops,0),good=pick(goods,1),others=goods.filter(k=>k!==good),show=pick(others.length?others:[good],2);
@@ -1808,7 +1808,7 @@ export const visitorStreakBonus=streak=>Math.min(streak,VISITOR_STREAK_MAX)*.1;
 export function visitorPay(state){return 1+masterBonus(state,'visitors')+valleyProjectBonus(state,'bridge');}
 function visitorOrder(state,serial,streak,now){
  const roll=n=>mixBits(calendarHash(`visitor-v1:${serial}:${n}`)),bonus=visitorStreakBonus(streak),target=VISITOR_VALUE*(1+bonus);
- const goods=Object.keys(PRODUCTS).filter(k=>ITEMS[k].sell>=300&&itemAvailable(state,k)),found=Object.keys(HEIRLOOMS).filter(k=>heirloomFound(state,k));
+ const goods=Object.keys(PRODUCTS).filter(k=>ITEMS[k].sell>=300&&!worldTwoItem(k)&&itemAvailable(state,k)),found=Object.keys(HEIRLOOMS).filter(k=>heirloomFound(state,k));
  if(goods.length<2)return null;
  const keys=[goods.splice(roll(0)%goods.length,1)[0],goods.splice(roll(1)%goods.length,1)[0]];
  keys.push(found.length?found[roll(2)%found.length]:goods[roll(2)%goods.length]);

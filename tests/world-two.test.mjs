@@ -32,7 +32,7 @@ test('World II opens at level 100: below it none of its places, recipes, goods o
  assert.deepEqual(['mine','lumbercamp','smithy','villagemill'].map(k=>BUILDINGS[k].buildCost),[150000,150000,200000,300000]);
 });
 
-test('the village goods stay in the village: own market, never in the farm Market, Family Orders or family sharing',()=>{
+test('the village goods stay in the village: own market, never in the farm Market, Family Orders or family sharing',async()=>{
  assert.equal(Object.keys(VILLAGE_GOODS).length,12);
  for(const k of Object.keys(VILLAGE_GOODS)){assert.ok(villageGood(k)&&worldTwoItem(k),k);}
  assert.ok(worldTwoItem('goldenloaf')&&worldTwoItem('heirloompie')&&!villageGood('goldenloaf'),'the farm\'s bakes are World II but sell at the farm Market');
@@ -44,6 +44,9 @@ test('the village goods stay in the village: own market, never in the farm Marke
  act(s,{type:'sell',item:'all',category:'village'});assert.equal(s.inventory.stone,0);
  for(let day=0;day<60;day++)for(const k of Object.keys(familyOrder('f'+day,2900+day,3).lines))assert.ok(!worldTwoItem(k),k);
  for(let d=0;d<30;d++){const h=marketHighlights(now+d*86400000,s);assert.ok(!villageGood(h.today.item)&&!villageGood(h.tomorrow.item));}
+ // Valley baskets, Trade Depot exports, fair classes and visitors' orders never ask for World II goods, even with them in reach.
+ const src=(await import('node:fs')).readFileSync(new URL('../game/farm-state.js',import.meta.url),'utf8');
+ for(const fn of ['function valleyBasket(','function exportContract(','function fairClasses(','function visitorOrder(']){const body=src.slice(src.indexOf(fn),src.indexOf('\n}',src.indexOf(fn)));assert.match(body,/!worldTwoItem\(k\)/,fn);}
 });
 
 test('a packed lunch from the farm starts every trip: the chain from the Kitchen to master tools works',()=>{
