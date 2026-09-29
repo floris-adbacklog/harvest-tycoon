@@ -6,6 +6,9 @@
 // height (0px when the page fills the screen, which is the normal case).
 (function(){
  var html=document.documentElement;
+ // World II (30 Sep 2026): on the way to the village the loading screen already shows the village, before the game's code runs
+ // (world-two.css). The game itself decides whether the village opens and takes the mark off when it does not.
+ try{if(/[?&]world=village(&|$)/.test(window.location.search))html.setAttribute('data-trip','village');}catch(e){}
  function standalone(win){try{return Boolean((win.matchMedia&&win.matchMedia('(display-mode: standalone)').matches)||win.navigator.standalone);}catch(e){return false;}}
  var installed=standalone(window);
  try{if(!installed&&window.parent!==window)installed=standalone(window.parent);}catch(e){}

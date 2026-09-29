@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import {readFileSync,mkdtempSync,writeFileSync,readdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {CROPS,RECIPES} from '../public/farm-state.js';
+import {CROPS,RECIPES,BUILDINGS,worldTwoBuilding,worldTwoItem} from '../public/farm-state.js';
+// World II's recipes (the village's places, and the farm's recipes for or from it) are in The Village, not in Buildings and goods.
+const worldTwo=r=>worldTwoBuilding(r.building)||Object.keys(r.output).some(worldTwoItem);
+const FARM_RECIPES=Object.values(RECIPES).filter(r=>!worldTwo(r)).length;
 import {WIKI_TOPICS,wikiArticle,wikiSearch,wikiTime} from '../public/wiki-content.js';
 import {buildWiki} from '../scripts/build-wiki.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 test('every topic renders from the game rules without gaps, old drawn icons or broken links',()=>{
- assert.equal(WIKI_TOPICS.length,13);
+ assert.equal(WIKI_TOPICS.length,14);
  const ids=new Set(WIKI_TOPICS.map(t=>t.id));
  for(const t of WIKI_TOPICS){
   const a=wikiArticle(t.id);
@@ -23,7 +26,7 @@ test('the tables list every crop and every recipe',()=>{
  const crops=wikiArticle('crops').html,buildings=wikiArticle('buildings').html;
  for(const c of Object.values(CROPS))assert.ok(crops.includes(c.name),c.name);
  const rows=(buildings.match(/<tr/g)??[]).length,tables=(buildings.match(/<table/g)??[]).length;
- assert.equal(rows-tables,Object.keys(RECIPES).length);
+ assert.equal(rows-tables,FARM_RECIPES);
  assert.equal(wikiTime(120000),'2 min');assert.equal(wikiTime(5400000),'1 h 30 min');assert.equal(wikiTime(86400000),'1 d');
 });
 
@@ -73,7 +76,7 @@ test('topic pages have a coloured header and a jump bar; phones get cards; the h
  const jump=wikiJump(buildings);assert.match(jump,/data-wiki-jump="sec-how-buildings-work"/);assert.match(jump,/data-wiki-jump="building-bakery"/);
  const crops=wikiArticle('crops').html;assert.match(crops,/<div class="wiki-dual"><div class="wiki-table-wrap">/);
  assert.equal((crops.match(/class="wiki-card(?:"| is-locked")/g)??[]).length,Object.keys(CROPS).length);
- assert.equal((buildings.html.match(/class="wiki-card(?:"| is-locked")/g)??[]).length,Object.keys(RECIPES).length);
+ assert.equal((buildings.html.match(/class="wiki-card(?:"| is-locked")/g)??[]).length,FARM_RECIPES);
  assert.deepEqual(WIKI_GROUPS.flatMap(g=>g.ids).sort(),WIKI_TOPICS.map(t=>t.id).sort(),'every topic in exactly one group');
  assert.match(wikiGroups(),/class="wiki-tile is-featured" href="\/wiki\/getting-started"/);
  const css=read('public/wiki.css');
@@ -122,4 +125,18 @@ test('the wiki shows what the helpers, chapters, market, levels and challenges p
  assert.match(estate,new RegExp(`${rules.DEPOT_PREMIUM}× the goods`));assert.match(estate,/switching to another herd costs/);
  assert.match(text('market'),/How far prices move/);assert.match(text('market'),/160% of normal/);assert.doesNotMatch(text('market'),/Sunflower oil/);
  assert.match(text('quests'),/Level rewards/);assert.match(text('daily'),new RegExp(`bonus of .*${rules.DAILY_BONUS.coins}`));
+});
+
+test('The Village has its own topic: every World II recipe and the steps past level 10, hidden in the game below level 90',async()=>{
+ const {wikiGroups,wikiArticle:article}=await import('../public/wiki-content.js');
+ const {MASTER_UPGRADES}=await import('../public/farm-state.js');
+ const village=article('village').html,buildings=article('buildings').html;
+ for(const r of Object.values(RECIPES).filter(r=>worldTwo(r)&&r.building!=='factory'))assert.ok(village.includes(r.name)||Object.keys(r.output).every(k=>village.includes(k)),r.name);
+ for(const key of Object.keys(BUILDINGS).filter(worldTwoBuilding)){assert.match(village,new RegExp(`id="building-${key}"`));assert.doesNotMatch(buildings,new RegExp(`id="building-${key}"`));}
+ for(const u of MASTER_UPGRADES)assert.ok(village.includes(`Level ${u.level}`),u.level);
+ assert.doesNotMatch(wikiGroups({level:50,href:id=>`#wiki-${id}`}),/data-wiki-topic="village"/,'a farmer below level 90 never sees it');
+ assert.match(wikiGroups({level:90,href:id=>`#wiki-${id}`}),/data-wiki-topic="village"/);
+ assert.match(wikiGroups(),/data-wiki-topic="village"/,'the website shows it');
+ assert.doesNotMatch(article('buildings',{level:40}).html,/master tools/,'the Buildings topic mentions it only from level 90');
+ assert.doesNotMatch(article('quests').html,/Lumber Camp|Packed lunch/,'the level list stays on the farm');
 });

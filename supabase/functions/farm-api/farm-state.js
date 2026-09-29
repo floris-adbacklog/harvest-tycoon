@@ -71,7 +71,10 @@ blanket:{"name": "Wool blanket", "sell": 9800, "icon": "package-check", "color":
 cherryjam:{"name": "Cherry jam", "sell": 2700, "icon": "amphora", "color": "gold"},
 cherrypie:{"name": "Cherry pie", "sell": 2900, "icon": "cake-slice", "color": "gold"},
 // Wave 3: the Glasshouse's show basket, for the fair, the export trailers and the best orders.
-prizeproduce:{"name": "Prize produce", "sell": 9800, "icon": "award", "color": "gold"}
+prizeproduce:{"name": "Prize produce", "sell": 9800, "icon": "award", "color": "gold"},
+// World II (level 100+): the farm bakes with the village's heirloom flour (see VILLAGE_GOODS).
+goldenloaf:{"name": "Golden loaf", "sell": 3800, "icon": "croissant", "color": "gold", "world": 2},
+heirloompie:{"name": "Heirloom pie", "sell": 8600, "icon": "cake-slice", "color": "gold", "world": 2}
 
 });
 // Heirloom varieties (the Seed Lab, level 92; 27 Sep 2026): a cross of two crops, grown in the lab's test beds, never on a field, so
@@ -89,7 +92,29 @@ export const HEIRLOOMS=Object.freeze(Object.fromEntries(HEIRLOOM_LIST.map(([key,
  const input={[a]:labParentCount(a),[b]:labParentCount(b)},value=Object.entries(input).reduce((sum,[k,n])=>sum+CROPS[k].sell*n,0);
  return [key,Object.freeze({name,parents:Object.freeze([a,b]),input:Object.freeze(input),level,sell:Math.round(value*LAB_PREMIUM/LAB_YIELD/10)*10,heirloom:true})];
 })));
-export const ITEMS=Object.freeze({...CROPS,...PRODUCTS,...HEIRLOOMS});
+// World II, The Village (30 Sep 2026): a second, smaller world for levels 100-200, where the farm's goods feed miners and
+// woodcutters and the village sends back what lets the farm grow past its top (see WORLD_TWO_LEVEL below). Village goods share the
+// storage but have their own tab and their own market: they never show in the farm's Market, Family Orders, family sharing, the
+// Starter Pack or the World I leaderboards (villageGood). Each sells for about 1.4 times what goes into it, like the farm's goods.
+export const VILLAGE_GOODS=Object.freeze({
+ packedlunch:{name:'Packed lunch',sell:370,village:true,world:2},
+ stone:{name:'Stone',sell:45,village:true,world:2},
+ ironore:{name:'Iron ore',sell:70,village:true,world:2},
+ timber:{name:'Log',sell:90,village:true,world:2},
+ plank:{name:'Plank',sell:195,village:true,world:2},
+ ironbar:{name:'Iron bar',sell:650,village:true,world:2},
+ pickaxe:{name:'Pickaxe',sell:600,village:true,world:2},
+ silverore:{name:'Silver ore',sell:400,village:true,world:2},
+ silverbar:{name:'Silver bar',sell:2500,village:true,world:2},
+ mastertools:{name:'Master tools',sell:9400,village:true,world:2},
+ heirloomflour:{name:'Heirloom flour',sell:1200,village:true,world:2},
+ gemstone:{name:'Ruby',sell:2400,village:true,world:2}
+});
+export const villageGood=key=>ITEMS[key]?.village===true;
+// Everything of World II (the village goods, and the farm's bakes with heirloom flour): never shared with a family, never in a
+// Family Order or on the World I leaderboards.
+export const worldTwoItem=key=>ITEMS[key]?.world===2;
+export const ITEMS=Object.freeze({...CROPS,...PRODUCTS,...HEIRLOOMS,...VILLAGE_GOODS});
 // The Starter Pack (level 14) gives one of every crop in the game. The payment itself is credited by the database
 // (harvest_credit_purchase, supabase/starter-pack-all-crops.sql), which lists the same crops: a test keeps the two equal, so a
 // new crop cannot be left out.
@@ -115,7 +140,7 @@ export function marketQuote(item,now=Date.now()){
 }
 export function marketValue(items,now=Date.now()){return Object.entries(items).reduce((sum,[key,count])=>sum+marketQuote(key,now).price*count,0);}
 export function marketHighlights(now=Date.now(),state){
- const keys=state&&guidedFarm(state)?Object.keys(ITEMS).filter(k=>state.inventory[k]>0||itemAvailable(state,k)):Object.keys(PRODUCTS);
+ const keys=state&&guidedFarm(state)?Object.keys(ITEMS).filter(k=>!villageGood(k)&&(state.inventory[k]>0||itemAvailable(state,k))):Object.keys(PRODUCTS);
  const sorted=time=>keys.map(k=>marketQuote(k,time)).sort((a,b)=>b.change-a.change||a.item.localeCompare(b.item));
  return {today:sorted(now)[0],tomorrow:sorted(now+DAY_MS)[0]};
 }
@@ -150,8 +175,14 @@ export const BUILDINGS = Object.freeze({
  pigfarm:{"name": "Pig Farm", "tagline": "Happy pigs with clever noses, digging up truffles.", "icon": "package-check", "model": "house_019", "type": "production", "upgradeCost": 900, "minLevel": 29, "buildCost": 14000},
  goatshed:{"name": "Goat Shed", "tagline": "Curious goats, creamy milk and a cheese to be proud of.", "icon": "milk", "model": "hangar_015", "type": "production", "upgradeCost": 1400, "minLevel": 54, "buildCost": 72000},
  craftshop:{"name": "Craft Workshop", "tagline": "Hand-poured beeswax candles and warm wool blankets.", "icon": "flame", "model": "hangar_019", "type": "production", "upgradeCost": 1500, "minLevel": 58, "buildCost": 90000},
- factory:{"name": "Factory", "tagline": "Every good in huge batches, for the fields and upgrades of a lasting estate.", "icon": "factory", "model": "hangar_007", "type": "production", "upgradeCost": 800, "minLevel": FACTORY_LEVEL, "buildCost": FACTORY_COST}
+ factory:{"name": "Factory", "tagline": "Every good in huge batches, for the fields and upgrades of a lasting estate.", "icon": "factory", "model": "hangar_007", "type": "production", "upgradeCost": 800, "minLevel": FACTORY_LEVEL, "buildCost": FACTORY_COST},
+ // World II, The Village: its places work like the farm's buildings (slots, recipes, upgrades to level 10), in the village only.
+ mine:{name:'Mine',tagline:'Stone and iron from the mountain, silver and rubies deeper down.',icon:'pickaxe',model:null,type:'production',upgradeCost:1600,minLevel:100,world:2},
+ lumbercamp:{name:'Lumber Camp',tagline:'Logs from the forest, sawn into planks.',icon:'axe',model:null,type:'production',upgradeCost:1600,minLevel:100,world:2},
+ smithy:{name:'Smithy',tagline:'Iron and silver bars, pickaxes and master tools for the farm.',icon:'hammer',model:null,type:'production',upgradeCost:1800,minLevel:102,world:2},
+ villagemill:{name:'Village Windmill',tagline:'Grind golden wheat into heirloom flour.',icon:'wind',model:null,type:'production',upgradeCost:2000,minLevel:112,world:2}
 });
+export const worldTwoBuilding=key=>BUILDINGS[key]?.world===2;
 const BASE_RECIPES=Object.freeze({
  grainmeal:{building:'windmill',name:'Grind grain meal',input:{wheat:8,barley:4},output:{grainmeal:3},duration:1200000,xp:30},
  fertilizer:{building:'windmill',name:'Mix natural fertilizer',input:{grainmeal:2,cabbage:2},output:{fertilizer:3},duration:1800000,xp:40},
@@ -168,6 +199,10 @@ const BASE_RECIPES=Object.freeze({
  cheese:{building:'dairy',name:'Make farmhouse cheese',input:{milk:2},output:{cheese:1},duration:3600000,xp:24},
  eggs:{building:'coop',name:'Feed the chickens',input:{feed:1},output:{eggs:3},duration:300000,xp:10},
  bread:{building:'bakery',name:'Bake fresh bread',input:{flour:4,milk:2},output:{bread:2},duration:1200000,xp:16},
+ // World II: lunch for the village's miners and woodcutters, and the farm's bakes with heirloom flour from the village.
+ packedlunch:{building:'kitchen',name:'Pack lunches for the village',input:{bread:2,cheese:2,apples:4},output:{packedlunch:6},duration:1800000,xp:30,minLevel:100},
+ goldenloaf:{building:'bakery',name:'Bake a golden loaf',input:{heirloomflour:2,milk:2,eggs:2},output:{goldenloaf:1},duration:10800000,xp:150,minLevel:112},
+ heirloompie:{building:'kitchen',name:'Bake an heirloom pie',input:{heirloomflour:2,goldenapple:2,eggs:2},output:{heirloompie:1},duration:14400000,xp:200,minLevel:115},
  pie:{building:'bakery',name:'Bake fresh pumpkin pie',input:{flour:2,pumpkin:2,eggs:2},output:{pie:1},duration:7200000,xp:50},
  vegetables:{building:'packing',name:'Pack a vegetable box',input:{cabbage:4,cauliflower:4},output:{vegetables:1},duration:3600000,xp:30},
  stew:{"building": "kitchen", "name": "Simmer vegetable stew", "input": {"greenbeans": 4, "corn": 3, "cabbage": 2}, "output": {"stew": 1}, "duration": 7200000, "xp": 40, "minLevel": 6},
@@ -223,7 +258,20 @@ const scaled=(items,n)=>Object.freeze(Object.fromEntries(Object.entries(items).m
 const MASS_RECIPES=Object.fromEntries([
  ...Object.entries(BASE_RECIPES).filter(([,r])=>r.building!=='glasshouse').map(([id,r])=>{const n=factoryBatches(r);return [`mass_${id}`,Object.freeze({building:'factory',name:`${r.name} ×${n}`,input:scaled(r.input,n),output:scaled(r.output,n),duration:r.duration*FACTORY_TIME_FACTOR,xp:r.xp*n,base:id,batches:n,minLevel:FACTORY_LEVEL})];}),
 ]);
-export const RECIPES=Object.freeze({...BASE_RECIPES,...MASS_RECIPES});
+// World II's places (see VILLAGE_GOODS). The first trips need only a packed lunch; silver and rubies need pickaxes from the Smithy.
+const VILLAGE_RECIPES=Object.freeze({
+ digiron:{building:'mine',name:'Dig for iron',input:{packedlunch:1},output:{ironore:5,stone:4},duration:1800000,xp:40,minLevel:100},
+ chop:{building:'lumbercamp',name:'Chop logs',input:{packedlunch:1},output:{timber:6},duration:1800000,xp:40,minLevel:100},
+ saw:{building:'lumbercamp',name:'Saw planks',input:{timber:3},output:{plank:2},duration:1200000,xp:20,minLevel:100},
+ smeltiron:{building:'smithy',name:'Smelt an iron bar',input:{ironore:4,timber:2},output:{ironbar:1},duration:3600000,xp:50,minLevel:102},
+ forgepickaxe:{building:'smithy',name:'Forge pickaxes',input:{ironbar:2,plank:2},output:{pickaxe:4},duration:1800000,xp:30,minLevel:102},
+ digsilver:{building:'mine',name:'Dig for silver',input:{pickaxe:2,packedlunch:2},output:{silverore:6,stone:8},duration:2700000,xp:60,minLevel:105},
+ smeltsilver:{building:'smithy',name:'Smelt a silver bar',input:{silverore:4,timber:2},output:{silverbar:1},duration:5400000,xp:80,minLevel:105},
+ mastertools:{building:'smithy',name:'Forge master tools',input:{ironbar:2,silverbar:2,plank:2},output:{mastertools:1},duration:14400000,xp:200,minLevel:108},
+ heirloomflour:{building:'villagemill',name:'Grind heirloom flour',input:{goldenwheat:2},output:{heirloomflour:3},duration:3600000,xp:70,minLevel:112},
+ digdeep:{building:'mine',name:'Dig deep for rubies',input:{pickaxe:2,packedlunch:2},output:{gemstone:1,stone:8},duration:7200000,xp:150,minLevel:115}
+});
+export const RECIPES=Object.freeze({...BASE_RECIPES,...MASS_RECIPES,...VILLAGE_RECIPES});
 // How big a Factory batch is on this farm (26 Sep 2026): twice the level of the building that normally makes the good, up to ×20;
 // goods that take over an hour its level, up to ×10. A level-5 Dairy makes cheese ×10 in the Factory, a level-10 one ×20. Before,
 // every Factory batch was ×20 (×10): balanced for level-20 buildings, it did the work of four to fifteen of the level 3-7 buildings
@@ -684,6 +732,31 @@ export const BASE_BUILDING_LEVEL=10;
 // fields can fill, the Factory's batches are full size there, and levels 11-20 (17 million coins a building) were out of reach. No
 // building in the game was above level 7. ESTATE_UPGRADES below is kept only for the price ladder's top (its first step).
 export const MAX_BUILDING_LEVEL=10;
+// World II (30 Sep 2026): the farm's production buildings grow past level 10 with master tools from the village's Smithy, one level
+// at farm level 108, 120, 140, 160 and 180 (TOP_BUILDING_LEVEL 15). Every level above 10 gives each batch a 10% chance to come out
+// double (50% at level 15): a level-100 farm is held back by its fields, not by slots or speed, so more of those would add little.
+// Levels 11-15 keep 10 slots. The Factory and the village's own places stop at 10. Below level 100 nothing of this shows: a level-10
+// building reads as fully upgraded, as before.
+export const WORLD_TWO_LEVEL=100,WORLD_TWO_TOP=200,WORLD_TWO_TEASER=90;
+export const TOP_BUILDING_LEVEL=15;
+export const DOUBLE_BATCH_PER_LEVEL=.1;
+export const MASTER_UPGRADES=Object.freeze([
+ {level:108,coins:750000,materials:{mastertools:1,plank:20,stone:30}},
+ {level:120,coins:1000000,materials:{mastertools:2,plank:40,stone:60}},
+ {level:140,coins:1300000,materials:{mastertools:3,plank:60,stone:90}},
+ {level:160,coins:1700000,materials:{mastertools:4,plank:80,stone:120}},
+ {level:180,coins:2200000,materials:{mastertools:5,plank:100,stone:150}}
+].map(step=>Object.freeze({...step,materials:Object.freeze(step.materials)})));
+export const beyondMaxBuilding=key=>BUILDINGS[key]?.type==='production'&&key!=='factory'&&!worldTwoBuilding(key);
+export const worldTwoOpen=state=>levelOf(state)>=WORLD_TWO_LEVEL;
+// The next step past level 10 for this building (with the farm level it needs), or null: none below level 100, none for the Factory
+// or the village's places, none at level 15.
+export function masterUpgrade(state,key){
+ if(!beyondMaxBuilding(key)||!worldTwoOpen(state))return null;
+ const level=state.buildings?.[key]?.level??1;
+ return level>=MAX_BUILDING_LEVEL?MASTER_UPGRADES[level-MAX_BUILDING_LEVEL]??null:null;
+}
+export const doubleBatchChance=level=>Math.round(Math.max(0,Math.min(TOP_BUILDING_LEVEL,level)-MAX_BUILDING_LEVEL)*DOUBLE_BATCH_PER_LEVEL*100)/100;
 // The Factory is one shared workshop for every good: a slot every two levels, up to five (reached at level 9), and half the
 // speed bonus. Its batches are as big as the source building allows (factoryBatchCount, at most ×20), so a full Factory adds
 // about one to two buildings of the farm's own level, and at the top a specialised building always makes the same good faster.
@@ -712,9 +785,9 @@ export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:7,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
-export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL});
+export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST});
-export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80});
+export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115});
 export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:14,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:16});
 export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
@@ -735,11 +808,13 @@ export function featureUnlockHint(key){return `Reach level ${FEATURE_LEVELS[key]
 export function recipeLevel(state,id){const factory=RECIPES[id]?.building==='factory';if(factory)return Math.max(FACTORY_LEVEL,RECIPES[id].base?recipeLevel(state,RECIPES[id].base):1);return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
 export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
 const FEATURE_ART={challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',master:'master',seedlab:'seedlab',visitors:'visitors',giantpumpkin:'giantpumpkin',valleyprojects:'valleyprojects'};
+// World II's unlocks (its places, and the farm's recipes for it) only show from level 100: below it nothing of the village does.
+const worldTwoEntry=(state,level)=>level<WORLD_TWO_LEVEL||worldTwoOpen(state);
 export function unlockEntries(state){return [
  ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,art:key,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
- ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall').map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
+ ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall'&&worldTwoEntry(state,guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1)).map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
  ...Object.entries(FEATURE_NAMES).map(([key,name])=>({id:'feature:'+key,name,art:FEATURE_ART[key]??key,kind:'Activity',level:FEATURE_LEVELS[key],unlocked:featureUnlocked(state,key),hint:featureUnlockHint(key)})),
- ...Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&buildingUnlocked(state,r.building)).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
+ ...Object.entries(RECIPES).filter(([key,r])=>r.building!=='factory'&&buildingUnlocked(state,r.building)&&worldTwoEntry(state,recipeLevel(state,key))).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
  // Fields 9-12 only for farms that started with 8 (a farm that has more than 8 but fewer than 12 fields, or 8).
  ...(state.plots.length<12||state.progression?.fields===STARTER_FIELDS?EARLY_FIELDS.map((field,i)=>({id:'field:'+(i+9),name:`Field ${i+9}`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+9,hint:`Level ${field.level} · Expand at the Farmhouse for ${field.coins} coins.`})):[]),
  ...ENDGAME_FIELDS.map((field,i)=>({id:'field:'+(i+29),name:`Field ${i+29} expansion`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+29,hint:`Level ${field.level} · Expand at the Farmhouse with coins and supplies.`}))
@@ -924,9 +999,9 @@ export function upgradeGoods(building,level){
 // level it needs: none any more), or null.
 export function upgradeRequirements(state,building){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')return null;
- const voucher=state.boosts?.upgradeCredits>0;
- const materials=Object.fromEntries(Object.entries(upgradeGoods(building,state.buildings[building].level)).map(([item,n])=>[item,voucher?Math.ceil(n/2):n]));
- return Object.keys(materials).length?{level:1,materials}:null;
+ const voucher=state.boosts?.upgradeCredits>0,master=masterUpgrade(state,building);
+ const materials=Object.fromEntries(Object.entries(master?master.materials:upgradeGoods(building,state.buildings[building].level)).map(([item,n])=>[item,voucher?Math.ceil(n/2):n]));
+ return Object.keys(materials).length?{level:master?.level??1,materials}:null;
 }
 // Upgrade prices below level 10 (26 Sep 2026). Each building follows its own curve (2.7× a level), but:
 // - a first upgrade costs at least 5% of what the building cost to build, growing 2.7× a level from there, so the late buildings
@@ -945,7 +1020,7 @@ export function upgradeCost(state,building){
  const level=state.buildings[building].level;
  const voucher=state.boosts?.upgradeCredits>0?.5:1;
  const factoryPrice=building==='factory'?FACTORY_UPGRADE_MULTIPLIER:1;
- if(level>=BASE_BUILDING_LEVEL){const step=level<MAX_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]:null;return step?Math.ceil(step.coins*voucher*factoryPrice):null;}
+ if(level>=BASE_BUILDING_LEVEL){const master=masterUpgrade(state,building);if(master)return Math.ceil(master.coins*voucher);const step=level<MAX_BUILDING_LEVEL?ESTATE_UPGRADES[level-BASE_BUILDING_LEVEL]:null;return step?Math.ceil(step.coins*voucher*factoryPrice):null;}
  const curve=Math.round(BUILDINGS[building].upgradeCost*(level<3?level*1.5:12*2.7**(level-3)));
  const floor=Math.round((BUILDING_COSTS[building]??0)/factoryPrice*UPGRADE_BUILD_SHARE*2.7**(level-1));
  const ceiling=Math.round(ESTATE_UPGRADES[0].coins/UPGRADE_LADDER_STEP**(BASE_BUILDING_LEVEL-level));
@@ -1036,10 +1111,14 @@ export function workFields(state,action,ids,now=Date.now(),crop='corn'){
 }
 export function sellCrops(state,item='all',now=Date.now(),day,category,quantity) {
  if(day!==undefined&&day!==utcDay(now))throw new Error('Market prices have refreshed. Check today’s prices before selling.');
- if(category!==undefined&&!['crops','goods'].includes(category))throw new Error('Choose a market category.');
+ if(category!==undefined&&!['crops','goods','village'].includes(category))throw new Error('Choose a market category.');
  if(item!=='all'&&!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid item.');
- const keys=category?(category==='crops'?[...Object.keys(CROPS),...Object.keys(HEIRLOOMS)]:Object.keys(PRODUCTS)):item==='all'?Object.keys(ITEMS):[item];   // heirlooms sell with the crops
- if(quantity!==undefined&&(item==='all'||category!==undefined||!Number.isSafeInteger(quantity)||quantity<1||quantity>state.inventory[item]))throw new Error('Choose a valid quantity within your stock.');
+ // World II: village goods sell only at the Village market (category 'village'), which buys nothing else.
+ const village=category==='village';
+ if(village&&!worldTwoOpen(state))throw new Error(`Reach level ${WORLD_TWO_LEVEL} to trade in the village.`);
+ if(item!=='all'&&villageGood(item)!==village)throw new Error(village?'The Village market only buys village goods.':'Sell village goods at the Village market.');
+ const keys=village?(item==='all'?Object.keys(VILLAGE_GOODS):[item]):category?(category==='crops'?[...Object.keys(CROPS),...Object.keys(HEIRLOOMS)]:Object.keys(PRODUCTS)):item==='all'?Object.keys(ITEMS).filter(k=>!villageGood(k)):[item];   // heirlooms sell with the crops
+ if(quantity!==undefined&&(item==='all'||(category!==undefined&&!village)||!Number.isSafeInteger(quantity)||quantity<1||quantity>state.inventory[item]))throw new Error('Choose a valid quantity within your stock.');
  if(quantity!==undefined&&quantity>sellableStock(state,item,now))throw new Error(`Keep your first ${keptStock(state,item,now)} ${ITEMS[item].name.toLowerCase()} for now: you need them for your first steps. Sell what you grow or make on top of them; the rest is free to sell after your first 30 minutes.`);
  const amounts=Object.fromEntries(keys.map(k=>[k,quantity??sellableStock(state,k,now)]));
  const total=marketSaleValue(state,keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0),now);
@@ -1078,17 +1157,17 @@ export function recipeAvailability(state,id){
  const maxCount=locked?0:Math.max(0,Math.min(slots-used,...Object.entries(r.input).map(([k,n])=>Math.floor(state.inventory[k]/n)),...(price?[Math.floor(state.coins/price)]:[])));
  return {canStart:!locked&&!busy&&missing.length===0&&!poor,missing,busy,used,slots,maxCount,locked,price,poor};
 }
-export function startProduction(state,id,now=Date.now(),count=1){
+export function startProduction(state,id,now=Date.now(),count=1,random=secureChoreRandom){
  if(!Number.isInteger(count)||count<1||count>MAX_BUILDING_LEVEL)throw new Error(`Choose 1–${MAX_BUILDING_LEVEL} batches.`);
  const a=recipeAvailability(state,id),r=RECIPES[id];
  if(a.locked)throw new Error(`Unlock this recipe first. ${recipeUnlockHint(state,id)}`);
  if(count>a.slots-a.used)throw new Error('Not enough free production slots. Collect a finished batch first.');
  if(a.price&&state.coins<a.price*count)throw new Error(`You need ${a.price*count} coins for ${count===1?'this batch':`${count} batches`}.`);
  if(count>a.maxCount)throw new Error('Missing ingredients for this many batches.');
- const batches=Array.from({length:count},()=>startSingleProduction(state,id,now));
+ const batches=Array.from({length:count},()=>startSingleProduction(state,id,now,random));
  return {...batches[0],count,batches};
 }
-function startSingleProduction(state,id,now=Date.now()){
+function startSingleProduction(state,id,now=Date.now(),random=secureChoreRandom){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
  const r=recipeFor(state,id),b=state.buildings[r.building],a=recipeAvailability(state,id);
  if(a.busy)throw new Error('All production slots are occupied. Collect a finished batch first.');
@@ -1098,10 +1177,11 @@ function startSingleProduction(state,id,now=Date.now()){
  state.coins-=a.price;
  for(const [k,n]of Object.entries(r.input))state.inventory[k]-=n;
  b.batchSequence=(b.batchSequence??0)+1;
- const job={id:`${r.building}-${b.batchSequence}`,recipe:id,startedAt:now,readyAt:now+duration,output:{...r.output},xp:r.xp};
+ const chance=beyondMaxBuilding(r.building)?doubleBatchChance(b.level):0,double=chance>0&&random()<chance;
+ const job={id:`${r.building}-${b.batchSequence}`,recipe:id,startedAt:now,readyAt:now+duration,output:double?scaled(r.output,2):{...r.output},xp:r.xp,...(double?{double:true}:{})};
  if(productionJobs(b).some(j=>j.readyAt>now))state.stats.parallel_batches=(state.stats.parallel_batches??0)+1;
  if(!b.job)b.job=job;else (b.extraJobs??=[]).push(job);
- return {building:r.building,recipe:id,jobId:job.id,readyAt:job.readyAt};
+ return {building:r.building,recipe:id,jobId:job.id,readyAt:job.readyAt,...(double?{double:true}:{})};
 }
 export function collectProduction(state,building,now=Date.now(),jobId){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')throw new Error('Choose a production building.');
@@ -1143,6 +1223,9 @@ export function upgradeBuilding(state,building,currency='coins',expectedCost,exp
  if(missing.length)throw new Error(`Make the goods first: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
  state[currency]-=cost;if(estate)for(const [key,n] of Object.entries(estate.materials))state.inventory[key]-=n;
  b.level++;state.stats.upgrades++;state.xp+=15;
+ // Past level 10 (World II): counted per building, so a level can never come back from an old save (normalizeFarm), and for the
+ // World II leaderboard.
+ if(b.level>MAX_BUILDING_LEVEL){b.beyond=b.level-MAX_BUILDING_LEVEL;state.stats.beyond_upgrades=(state.stats.beyond_upgrades??0)+1;}
  if(state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
  if(building==='windmill')state.stats.windmill_upgrades=(state.stats.windmill_upgrades??0)+1;
  return {building,level:b.level,cost,currency,materials:estate?{...estate.materials}:{}};
@@ -1874,7 +1957,8 @@ export function normalizeFarm(state,now=Date.now()){
  for(const [key,b] of Object.entries(state.buildings)){
   b.extraJobs??=[];b.batchSequence??=0;
   for(const job of productionJobs(b))if(!job.id)job.id=`${key}-${++b.batchSequence}`;
-  if(BUILDINGS[key]?.type==='production'&&b.level>MAX_BUILDING_LEVEL)b.level=MAX_BUILDING_LEVEL;   // level 10 is the top since 26 Sep 2026
+  // Level 10 is the top since 26 Sep 2026; past it only the levels bought with master tools (World II, b.beyond) count.
+  if(BUILDINGS[key]?.type==='production'){const top=beyondMaxBuilding(key)?MAX_BUILDING_LEVEL+Math.min(TOP_BUILDING_LEVEL-MAX_BUILDING_LEVEL,Math.max(0,Math.floor(b.beyond??0))):MAX_BUILDING_LEVEL;if(b.level>top)b.level=top;}
  }
  state.stats??={};
  if(oldVersion<10){
@@ -2140,7 +2224,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'field':return actOnPlot(state,action.id,action.action,action.crop??'corn',now);
   case 'fields':return workFields(state,action.action,action.ids,now,action.crop??'corn');
   case 'sell':return sellCrops(state,action.item??'all',now,action.day,action.category,action.quantity);
-  case 'produce':return startProduction(state,action.recipe,now,action.count);
+  case 'produce':return startProduction(state,action.recipe,now,action.count,random);
   case 'collect':return collectProduction(state,action.building,now,action.jobId);
   case 'collect_all':return collectAllProduction(state,action.building,now);
   case 'upgrade':return upgradeBuilding(state,action.building,action.currency,action.expectedCost,action.expectedLevel);
@@ -2405,7 +2489,7 @@ const niceCount=n=>n<10?Math.max(1,Math.round(n)):n<50?Math.round(n/5)*5:Math.ro
 export const FAMILY_ORDER_FROM_WEEK=Object.freeze({truffles:2960,truffleomelette:2960});   // week 2960 starts Monday 28 September 2026
 export function familyOrder(familyId,week,members,config=FAMILY_CONFIG){
  if(!Number.isInteger(members)||members<1||members>config.MAX_MEMBERS)throw new Error('Choose a valid family size.');
- const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&!ITEMS[k].heirloom&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
+ const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&!ITEMS[k].heirloom&&!worldTwoItem(k)&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
  const next=()=>pool[calendarHash(`family-order-v2:${week}:${draw++}`)%pool.length];
  // At most one of the dearest goods (5,000+ coins each, such as a blanket) in one week.
  const dear=k=>ITEMS[k].sell>=5000;

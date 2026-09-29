@@ -10,7 +10,7 @@ test('the Buildings dialog lists buildings by the level they unlock, not by thei
  assert.notDeepEqual(declared,byLevel,'this test needs BUILDINGS to still be unordered; re-check by hand if it is now already sorted');
  const ui=read('public/economy-ui.js');
  assert.match(ui,/const buildingLevel=key=>guidedFarm\(state\)\?BUILDING_LEVELS\[key\]:BUILDINGS\[key\]\.minLevel\?\?1;/);
- assert.match(ui,/Object\.entries\(BUILDINGS\)\.sort\(\(\[a\],\[b\]\)=>readyFirst\(a\)-readyFirst\(b\)\|\|buildingLevel\(a\)-buildingLevel\(b\)\)\.map/,'the catalog sorts before it maps to cards: finished batches first, then by level');
+ assert.match(ui,/Object\.entries\(BUILDINGS\)\.filter\(\(\[key\]\)=>inWorld\(key\)\)\.sort\(\(\[a\],\[b\]\)=>readyFirst\(a\)-readyFirst\(b\)\|\|buildingLevel\(a\)-buildingLevel\(b\)\)\.map/,'the catalog sorts before it maps to cards: finished batches first, then by level');
  assert.match(ui,/const readyFirst=key=>status\(key\)\.kind==='ready'\?0:1;/,'a building with a finished batch comes first, so collecting is one tap away');
  assert.match(ui,/import \{[^}]*BUILDING_LEVELS[^}]*\} from '\.\/farm-state\.js';/,'BUILDING_LEVELS is imported to sort with');
 });

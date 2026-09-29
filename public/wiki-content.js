@@ -1,4 +1,4 @@
-import {CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_XP,ACTIVE_STATIONS,CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,siloBonus,DAILY_REWARDS,DAILY_DIAMONDS,DAILY_BOOSTS,DAILY_BOOST_MS,giftCoins,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,INVITE_DAYS,INVITE_LIMIT,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,EMAIL_BONUS,choreRewards,CHORE_PRACTICE_STEP,ACTIVITY_ROUND_REWARD,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_REST_MS,stallLevel,STALL_MAX_LEVEL,PROJECTS,CHAPTER_DIAMONDS,VALLEY_STALLS,VALLEY_RESTOCK,VALLEY_PREMIUM,RANCH_SPEEDUP,RANCH_SWITCH_COST,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,levelReward,DAILY_CHALLENGE_DIAMONDS,DAILY_BONUS,MARKET_RANGES,FAMILY_CHEST_TIERS,FAMILY_CHEST_POINTS,FAMILY_CHEST_MIN,FAMILY_LEVEL_STEPS,FAMILY_LEVEL_BONUS,FAMILY_MAX_COLEADERS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,VISITOR_STREAK_MAX,VISITOR_PREMIUM,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,GIANT_FEED,GIANT_FEED_KG,VALLEY_PROJECTS,MASTER_BRANCHES,MASTER_FROM,FAMILY_EVENT_BONUS} from './farm-state.js';
+import {CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_XP,ACTIVE_STATIONS,CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,siloBonus,DAILY_REWARDS,DAILY_DIAMONDS,DAILY_BOOSTS,DAILY_BOOST_MS,giftCoins,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,INVITE_DAYS,INVITE_LIMIT,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,EMAIL_BONUS,choreRewards,CHORE_PRACTICE_STEP,ACTIVITY_ROUND_REWARD,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_REST_MS,stallLevel,STALL_MAX_LEVEL,PROJECTS,CHAPTER_DIAMONDS,VALLEY_STALLS,VALLEY_RESTOCK,VALLEY_PREMIUM,RANCH_SPEEDUP,RANCH_SWITCH_COST,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,levelReward,DAILY_CHALLENGE_DIAMONDS,DAILY_BONUS,MARKET_RANGES,FAMILY_CHEST_TIERS,FAMILY_CHEST_POINTS,FAMILY_CHEST_MIN,FAMILY_LEVEL_STEPS,FAMILY_LEVEL_BONUS,FAMILY_MAX_COLEADERS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,VISITOR_STREAK_MAX,VISITOR_PREMIUM,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,GIANT_FEED,GIANT_FEED_KG,VALLEY_PROJECTS,MASTER_BRANCHES,MASTER_FROM,FAMILY_EVENT_BONUS,worldTwoBuilding,worldTwoItem,VILLAGE_GOODS,MASTER_UPGRADES,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,TOP_BUILDING_LEVEL,DOUBLE_BATCH_PER_LEVEL} from './farm-state.js';
 import {art} from './visual-icons.js';
 import {helpCoins,maxShare,SHARE_LIMIT} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
@@ -17,6 +17,7 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'family',title:'Farm family',art:'family-members',blurb:'Playing together: the Family Chest, weekly orders, sharing and the tournament.',keywords:'family team guild members tournament sharing invite chest level flag join'},
  {id:'events',title:'Farm events',art:'live-events',blurb:'Short shared goals every six hours.',keywords:'event goals qualify podium'},
  {id:'helpers',title:'Farm helpers',art:'tractor',blurb:'Tractor, silo research, farm stall, chores and a helping hand.',keywords:'tractor silo stall chores helping hand greenhouse apiary paddock workshop'},
+ {id:'village',title:'The Village',art:'village-badge',blurb:'World II from level 100: the mine, the forest, the smithy and master tools for your farm.',keywords:'village world ii second world mine lumber camp smithy windmill iron silver ruby pickaxe master tools packed lunch stone log plank level 15 double batch travel'},
  {id:'estate',title:'Estate and Valley',art:'estate',blurb:'Big goals for later: projects, the Valley Market and more.',keywords:'estate projects valley market ranch workshop trade depot fair improvements'},
  {id:'diamonds',title:'Diamonds, boosts and VIP',art:'diamonds',blurb:'How to earn diamonds and what they do.',keywords:'diamonds boosts vip shop packs starter pack buy premium'},
  {id:'chat',title:'Chat and house rules',art:'chat',blurb:'Talking with other farmers, and keeping it friendly.',keywords:'chat messages private block report rules moderator'},
@@ -29,10 +30,10 @@ export const STARTER_DAYS=7;
 export const WIKI_GROUPS=Object.freeze([
  {title:'Start here',ids:['getting-started','crops','buildings']},
  {title:'Grow your farm',ids:['market','daily','quests','helpers']},
- {title:'Together and extras',ids:['family','events','chat','diamonds','estate','account']}
+ {title:'Together and extras',ids:['family','events','chat','diamonds','estate','village','account']}
 ]);
 // Each topic's header has its own soft colour.
-const TINTS={'getting-started':'#e3efd6',crops:'#f6e7b8',buildings:'#f3d9cf',market:'#f6dfc4',quests:'#efe4cf',daily:'#f5d9dc',family:'#dcebd3',events:'#e6def0',helpers:'#d8e7f0',estate:'#dbe9e2',diamonds:'#d9ebf7',chat:'#e1eed8',account:'#ebe5dc'};
+const TINTS={'getting-started':'#e3efd6',crops:'#f6e7b8',buildings:'#f3d9cf',market:'#f6dfc4',quests:'#efe4cf',daily:'#f5d9dc',family:'#dcebd3',events:'#e6def0',helpers:'#d8e7f0',estate:'#dbe9e2',village:'#dde6ee',diamonds:'#d9ebf7',chat:'#e1eed8',account:'#ebe5dc'};
 
 const number=n=>Number(n).toLocaleString('en-US');
 export function wikiTime(ms){
@@ -56,6 +57,9 @@ const facts=list=>`<ul class="wiki-facts">${list.map(([picture,title,text])=>`<l
 export const cropLevel=key=>CROP_LEVELS[key]??CROPS[key].minLevel??1;
 export const buildingLevel=key=>BUILDING_LEVELS[key]??BUILDINGS[key].minLevel??1;
 export const recipeLevel=key=>{const r=RECIPES[key];return r.building==='factory'?Math.max(FACTORY_LEVEL,RECIPE_LEVELS[r.base]??1):RECIPE_LEVELS[key]??buildingLevel(r.building);};
+// World II (30 Sep 2026): the village's places and everything made for or from it (packed lunches, the heirloom-flour bakes) have
+// their own topic, The Village; the farm's topics leave them out.
+const worldTwoRecipe=r=>worldTwoBuilding(r.building)||Object.keys(r.output).some(worldTwoItem);
 
 // ctx: {level: the player's level, or null on the website; href: id => link to a topic}.
 function helpers(ctx){
@@ -67,6 +71,15 @@ function helpers(ctx){
  return {level,href,locked,lvl,row,link};
 }
 
+// A building's section: its recipes as a table (cards on a phone). The Buildings topic and The Village share it.
+function buildingBlock(h,key,recipes){
+ const b=BUILDINGS[key],sellOf=out=>(PRODUCTS[out]??VILLAGE_GOODS[out])?.sell;
+ if(!recipes.length)return '';
+ const cost=key==='factory'?FACTORY_COST:BUILDING_COSTS[key];
+ const rows=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return h.row(recipeLevel(id),[out?item(out,count):r.name,items(r.input),wikiTime(r.duration),out&&sellOf(out)?`${art('coins')}${number(sellOf(out))}`:'–',h.lvl(recipeLevel(id))]);});
+ const cards=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return card({picture:out??key,title:out?`${count>1?`${number(count)} `:''}${itemName(out)}`:r.name,badge:h.lvl(recipeLevel(id)),locked:h.locked(recipeLevel(id)),stats:[wikiTime(r.duration),...(out&&sellOf(out)?[`Sells ${art('coins')}${number(sellOf(out))} each`]:[])],note:`Needs ${items(r.input)}`});});
+ return `<section class="wiki-section wiki-building" id="building-${key}"><h3>${art(key)}${b.name}</h3><p class="wiki-meta">${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:worldTwoBuilding(key)?' · opens by itself, nothing to build':' · ready from the start'}</p>${b.tagline?`<p>${b.tagline}</p>`:''}${key==='factory'?'<p>The biggest batches are shown. Yours are twice the level of the building that normally makes the good (its level for goods that take over an hour).</p>':''}${dual(table(['Makes','Needs','Time','Sells for (each)','Opens'],rows),cards)}</section>`;
+}
 const BODIES={
  'getting-started'(h){
   const loop=[['seeds','Plant'],['harvest','Harvest'],['buildings','Make'],['market','Sell']].map(([p,l],i)=>`${i?'<i class="wiki-arrow" aria-hidden="true">›</i>':''}<li>${art(p)}<span>${l}</span></li>`).join('');
@@ -103,18 +116,11 @@ const BODIES={
   +section('Every crop',dual(table(['Crop','Opens','Seed','Grows in','Sells for','XP','Grows back','Used for'],rows,'wiki-crops'),cards));
  },
  buildings(h){
-  const production=Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').sort(([a],[b])=>buildingLevel(a)-buildingLevel(b));
-  const blocks=production.map(([key,b])=>{
-   const recipes=Object.entries(RECIPES).filter(([,r])=>r.building===key).sort(([a],[b])=>recipeLevel(a)-recipeLevel(b));
-   if(!recipes.length)return '';
-   const cost=key==='factory'?FACTORY_COST:BUILDING_COSTS[key];
-   const rows=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return h.row(recipeLevel(id),[out?item(out,count):r.name,items(r.input),wikiTime(r.duration),out&&PRODUCTS[out]?.sell?`${art('coins')}${number(PRODUCTS[out].sell)}`:'–',h.lvl(recipeLevel(id))]);});
-   const cards=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return card({picture:out??key,title:out?`${count>1?`${number(count)} `:''}${itemName(out)}`:r.name,badge:h.lvl(recipeLevel(id)),locked:h.locked(recipeLevel(id)),stats:[wikiTime(r.duration),...(out&&PRODUCTS[out]?.sell?[`Sells ${art('coins')}${number(PRODUCTS[out].sell)} each`]:[])],note:`Needs ${items(r.input)}`});});
-   return `<section class="wiki-section wiki-building" id="building-${key}"><h3>${art(key)}${b.name}</h3><p class="wiki-meta">${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:' · ready from the start'}</p>${b.tagline?`<p>${b.tagline}</p>`:''}${key==='factory'?'<p>The biggest batches are shown. Yours are twice the level of the building that normally makes the good (its level for goods that take over an hour).</p>':''}${dual(table(['Makes','Needs','Time','Sells for (each)','Opens'],rows),cards)}</section>`;
-  }).join('');
+  const production=Object.entries(BUILDINGS).filter(([key,b])=>b.type==='production'&&!worldTwoBuilding(key)).sort(([a],[b])=>buildingLevel(a)-buildingLevel(b));
+  const blocks=production.map(([key])=>buildingBlock(h,key,Object.entries(RECIPES).filter(([,r])=>r.building===key&&!worldTwoRecipe(r)).sort(([a],[b])=>recipeLevel(a)-recipeLevel(b)))).join('');
   return section('How buildings work',facts([
    ['buildings','Build',`Each building opens at a level and costs coins once; the ${BUILDINGS.dairy.name} needs the ${BUILDINGS.mill.name} first, the ${BUILDINGS.bakery.name} the ${BUILDINGS.dairy.name} and the ${BUILDINGS.windmill.name}. Tap a building to start a batch: it turns crops (or other goods) into goods that sell for more.`],
-   ['hammer','Upgrade',`Better buildings run more batches at the same time, up to level ${MAX_BUILDING_LEVEL}. Level ${MAX_BUILDING_LEVEL} is fully upgraded. Every level costs more than the one before, and a building that costs more to build costs more to upgrade. From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn. The Factory asks for goods from across the valley from its first upgrade. The Buildings discount boost halves the coins and goods of your next upgrade.`],
+   ['hammer','Upgrade',`Better buildings run more batches at the same time, up to level ${MAX_BUILDING_LEVEL}. Level ${MAX_BUILDING_LEVEL} is fully upgraded. Every level costs more than the one before, and a building that costs more to build costs more to upgrade. From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn. The Factory asks for goods from across the valley from its first upgrade. The Buildings discount boost halves the coins and goods of your next upgrade.${h.level==null||h.level>=WORLD_TWO_TEASER?` <span>From level ${MASTER_UPGRADES[0].level}, master tools from ${h.link('village')} take a building on to level ${TOP_BUILDING_LEVEL}.</span>`:''}`],
    ['collect-all','Collect','When a batch is ready, the building\'s name on the farm turns yellow: tap the name to collect everything that is ready. Or open the building and use Collect all.'],
    ['feed','Animal feed',`Chickens, cows, sheep, goats and pigs eat animal feed. Mix it at the ${BUILDINGS.mill.name}: ${RECIPES.feed.input.corn} corn make ${RECIPES.feed.output.feed}, ${RECIPES.barleyfeed.input.barley} barley make ${RECIPES.barleyfeed.output.feed} and ${RECIPES.wheatfeed.input.wheat} wheat make ${RECIPES.wheatfeed.output.feed}. At the ${BUILDINGS.windmill.name}, ${RECIPES.windfeed.input.barley} barley make ${RECIPES.windfeed.output.feed}. Feed sells for ${ITEMS.feed.sell} coins.`],
    ['boost','Factory',`From level ${FACTORY_LEVEL} the Factory (${number(FACTORY_COST)} coins) makes the goods of your other buildings in bulk, in twice the time of one batch. A bulk batch is twice the level of the building that normally makes it, up to ×20: a level-5 Dairy makes cheese ×10. Goods that take over an hour: its level, up to ×10. Upgrade a building and its bulk batch grows too. Upgrading the Factory itself asks for flour, cheese and cloth, plus harvest hampers from the upgrade to level 5, squash soup from level 7 and cider from level 9.`]
@@ -137,9 +143,9 @@ const BODIES={
   const featureArt={challenges:'quests',mastery:'trophy',activities:'helping-hand',family:'familyhall',boosts:'boost',projects:'estate'};
   for(const [key,n] of Object.entries(FEATURE_LEVELS))add(n,chip(featureArt[key]??key,featureTitle(key)));
   add(EVENTS_LEVEL,chip('live-events','Farm events'));add(STARTER_LEVEL,chip('gift','Starter Pack'));
-  for(const [key,b] of Object.entries(BUILDINGS))if(b.type==='production')add(buildingLevel(key),chip(key,b.name,'building'));
+  for(const [key,b] of Object.entries(BUILDINGS))if(b.type==='production'&&!worldTwoBuilding(key))add(buildingLevel(key),chip(key,b.name,'building'));
   for(const [key,c] of Object.entries(CROPS))add(cropLevel(key),chip(key,c.name,'crop'));
-  for(const [id,r] of Object.entries(RECIPES))if(r.building!=='factory'&&recipeLevel(id)>buildingLevel(r.building))add(recipeLevel(id),chip(Object.keys(r.output)[0],r.name,'recipe'));
+  for(const [id,r] of Object.entries(RECIPES))if(r.building!=='factory'&&!worldTwoRecipe(r)&&recipeLevel(id)>buildingLevel(r.building))add(recipeLevel(id),chip(Object.keys(r.output)[0],r.name,'recipe'));
   return section('Quests',facts([
    ['quests','One little goal at a time',`${number(QUESTS.length)} quests, from your first harvest to the Grand Valley Fair. They ask for things like harvesting 12 wheat. When one is done, claim its coins and XP.`],
    ['trophy','Bigger quests, more XP',`Quests up to ${number(1000)} coins give ${QUEST_XP} XP. Bigger ones give more, up to 250 XP for the biggest.`],
@@ -209,6 +215,25 @@ const BODIES={
   +section('Estate Workshop improvements',dual(table(['Improvement','What it does','Opens','Costs'],improvements),improvementCards))
   +afterNinety(h);
  },
+ // World II (30 Sep 2026): every number from the rules (VILLAGE_RECIPES, MASTER_UPGRADES).
+ village(h){
+  const places=Object.keys(BUILDINGS).filter(worldTwoBuilding).sort((a,b)=>buildingLevel(a)-buildingLevel(b));
+  const blocks=places.map(key=>buildingBlock(h,key,Object.entries(RECIPES).filter(([,r])=>r.building===key).sort(([a],[b])=>recipeLevel(a)-recipeLevel(b)))).join('');
+  const fromFarm=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&!worldTwoBuilding(r.building)&&worldTwoRecipe(r)).sort(([a],[b])=>recipeLevel(a)-recipeLevel(b));
+  const farmRows=fromFarm.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0];return h.row(recipeLevel(id),[item(out,count),BUILDINGS[r.building].name,items(r.input),wikiTime(r.duration),h.lvl(recipeLevel(id))]);});
+  const farmCards=fromFarm.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0];return card({picture:out,title:`${count>1?`${number(count)} `:''}${itemName(out)}`,badge:h.lvl(recipeLevel(id)),locked:h.locked(recipeLevel(id)),stats:[BUILDINGS[r.building].name,wikiTime(r.duration)],note:`Needs ${items(r.input)}`});});
+  const steps=MASTER_UPGRADES.map((u,i)=>h.row(u.level,[`${MAX_BUILDING_LEVEL+i} → ${MAX_BUILDING_LEVEL+i+1}`,h.lvl(u.level),`${art('coins')}${number(u.coins)} + ${items(u.materials)}`,`${Math.round((i+1)*DOUBLE_BATCH_PER_LEVEL*100)}%`]));
+  const stepCards=MASTER_UPGRADES.map((u,i)=>card({picture:'mastertools',title:`Level ${MAX_BUILDING_LEVEL+i+1}`,badge:h.lvl(u.level),locked:h.locked(u.level),stats:[`${Math.round((i+1)*DOUBLE_BATCH_PER_LEVEL*100)}% double batches`],note:`Costs ${art('coins')}${number(u.coins)} + ${items(u.materials)}`}));
+  return section('Your second world',facts([
+   ['village-badge',`From level ${WORLD_TWO_LEVEL}`,`The road out of the valley leads to a village in the mountains. Travel there with the Village button (on a phone: More → The Village) or the signpost past the Trade Depot, and back with My farm. From level ${WORLD_TWO_TEASER} you can see the closed bridge on the way.`],
+   ['coins','One farm, two places','Your coins, diamonds and XP are the same in both. Your fields and buildings keep working while you are in the village, and the village keeps working while you are on the farm.'],
+   ['packedlunch','Lunch from the farm',`Every trip into the mine or the forest takes packed lunches. Pack them in the ${BUILDINGS[RECIPES.packedlunch.building].name}: ${items(RECIPES.packedlunch.input)} make ${RECIPES.packedlunch.output.packedlunch}.`],
+   ['villagemarket','The Village market','Village goods sell only at the Village market, and it buys nothing else. They never go to the farm Market, Family Orders or family sharing. Prices change every day, as at the farm.']
+  ]))
+  +section('Past level 10',`<p>Master tools from the Smithy take a farm production building past level ${MAX_BUILDING_LEVEL}, one level at a time, up to ${TOP_BUILDING_LEVEL}. Every level past ${MAX_BUILDING_LEVEL} gives each batch a ${Math.round(DOUBLE_BATCH_PER_LEVEL*100)}% chance to come out double, decided when it starts. The Factory and the village's own places stop at level ${MAX_BUILDING_LEVEL}.</p>`+dual(table(['Building level','Opens','Costs','Double batches'],steps),stepCards))
+  +blocks
+  +section('Made on the farm',`<p>The farm makes these for and from the village. The Factory can make them in bulk too.</p>`+dual(table(['Makes','Where','Needs','Time','Opens'],farmRows),farmCards));
+ },
  diamonds(h){
   const boostPrice=b=>b.prices?Object.entries(b.prices).map(([length,cost])=>`${length.replace('m',' min').replace('h',' hour').replace('d',' day')}: ${number(cost)}`).join(' · '):number(b.cost);
   const boosts=Object.values(BOOSTS).map(b=>`<tr><td>${art(b.art)}${b.name}</td><td>${b.description}</td><td>${boostPrice(b)}</td></tr>`);
@@ -274,7 +299,7 @@ function afterNinety(h){
 }
 const featureTitle=key=>({family:'Farm family',boosts:'Diamond boosts'})[key]??{challenges:'Daily challenges',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'}[key]??key;
 
-const RELATED={'getting-started':['crops','daily','quests'],crops:['buildings','market','helpers'],buildings:['crops','market','daily'],market:['buildings','daily','family'],quests:['getting-started','crops','buildings'],daily:['market','events','diamonds'],family:['chat','events','daily'],events:['family','daily','diamonds'],helpers:['crops','estate','buildings'],estate:['helpers','buildings','quests'],diamonds:['daily','events','account'],chat:['family','account','events'],account:['chat','diamonds','getting-started']};
+const RELATED={'getting-started':['crops','daily','quests'],crops:['buildings','market','helpers'],buildings:['crops','market','daily'],market:['buildings','daily','family'],quests:['getting-started','crops','buildings'],daily:['market','events','diamonds'],family:['chat','events','daily'],events:['family','daily','diamonds'],helpers:['crops','estate','buildings'],estate:['helpers','buildings','quests'],village:['estate','buildings','market'],diamonds:['daily','events','account'],chat:['family','account','events'],account:['chat','diamonds','getting-started']};
 
 export function wikiArticle(id,ctx={}){
  const topic=TOPIC[id];if(!topic)return null;const h=helpers(ctx);
@@ -286,7 +311,9 @@ export function wikiJump(article){
  const chips=[...article.html.matchAll(/<section class="wiki-section[^"]*" id="([^"]+)"><h3>(.*?)<\/h3>/g)].map(([,id,label])=>`<a href="#${id}" data-wiki-jump="${id}">${label}</a>`);
  return chips.length>1?`<nav class="wiki-jump" aria-label="On this page">${chips.join('')}</nav>`:'';
 }
-export const wikiGroups=(ctx={},{featured=true}={})=>WIKI_GROUPS.map(g=>`<section class="wiki-group"><h3>${g.title}</h3><div class="wiki-tiles">${g.ids.map(id=>wikiTile(TOPIC[id],ctx).replace('class="wiki-tile"',featured&&id==='getting-started'?'class="wiki-tile is-featured"':'class="wiki-tile"')).join('')}</div></section>`).join('');
+// In the game The Village shows from level WORLD_TWO_TEASER (a farmer below it never sees it); the website shows every topic.
+const topicShown=(id,ctx)=>id!=='village'||ctx.level==null||ctx.level>=WORLD_TWO_TEASER;
+export const wikiGroups=(ctx={},{featured=true}={})=>WIKI_GROUPS.map(g=>`<section class="wiki-group"><h3>${g.title}</h3><div class="wiki-tiles">${g.ids.filter(id=>topicShown(id,ctx)).map(id=>wikiTile(TOPIC[id],ctx).replace('class="wiki-tile"',featured&&id==='getting-started'?'class="wiki-tile is-featured"':'class="wiki-tile"')).join('')}</div></section>`).join('');
 // "Read next" under a topic: a short row per topic, picture and title.
 export const wikiNext=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-next" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><i aria-hidden="true">›</i></a>`;};
 export const wikiTile=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-tile" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><span>${topic.blurb}</span></a>`;};
@@ -296,8 +323,8 @@ const INDEX=[
  ...WIKI_TOPICS.map(t=>({topic:t.id,label:t.title,art:t.art,text:`${t.title} ${t.blurb} ${t.keywords}`.toLowerCase()})),
  ...Object.entries(CROPS).map(([k,c])=>({topic:'crops',label:c.name,art:k,text:c.name.toLowerCase()})),
  ...PLAYER_AVATARS.filter(a=>a.level||avatarGoal(a.id)).map(a=>({topic:'account',label:a.name,art:'settings',text:`${a.name} avatar`.toLowerCase(),anchor:'sec-avatars'})),
- ...Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').map(([k,b])=>({topic:'buildings',label:b.name,art:k,text:b.name.toLowerCase(),anchor:`building-${k}`})),
- ...Object.entries(RECIPES).flatMap(([,r])=>Object.keys(r.output).map(out=>({topic:'buildings',label:itemName(out),art:out,text:itemName(out).toLowerCase(),anchor:`building-${r.building}`})))
+ ...Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').map(([k,b])=>({topic:worldTwoBuilding(k)?'village':'buildings',label:b.name,art:k,text:b.name.toLowerCase(),anchor:`building-${k}`})),
+ ...Object.entries(RECIPES).flatMap(([,r])=>Object.keys(r.output).map(out=>({topic:worldTwoRecipe(r)?'village':'buildings',label:itemName(out),art:out,text:itemName(out).toLowerCase(),anchor:worldTwoRecipe(r)&&!worldTwoBuilding(r.building)?'sec-made-on-the-farm':`building-${r.building}`})))
 ];
 export function wikiSearch(query){
  const words=String(query).toLowerCase().trim().split(/\s+/).filter(Boolean);if(!words.length)return [];

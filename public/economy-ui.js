@@ -1,5 +1,5 @@
 import {foldLocked} from './progression-ui.js';
-import {VALLEY_PROJECTS,valleyProjectLevel,HEIRLOOMS,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
+import {worldTwoBuilding,villageGood,VILLAGE_GOODS,VALLEY_PROJECTS,valleyProjectLevel,HEIRLOOMS,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt,pictureFile} from './visual-icons.js';
@@ -8,11 +8,14 @@ import {confirmAction} from './confirm-dialog.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const seconds=formatDuration;
-export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate,onFamily,onPlace}){
+// village: the game shows World II, the village (public/game.js). Its Buildings list holds only the village's places and its market
+// only buys village goods; on the farm the village's places and goods never show here.
+export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate,onFamily,onPlace,village=false}){
  const openFactoryGroups=new Set();let factoryFilter='all';
- let currentBuilding=null,marketTab='crops',selectedCrop='wheat',seedFilter='all',lastJobReady='',lastCoinBoost=false,mutating=false,lastReadyKeys='';
+ let currentBuilding=null,marketTab=village?'village':'crops',selectedCrop='wheat',seedFilter='all',lastJobReady='',lastCoinBoost=false,mutating=false,lastReadyKeys='';
  let marketSelling=false,renderedMarketDay='',lastMarketDay=utcDay(farmNow());
  const number=n=>n.toLocaleString('en-US');
+ const inWorld=key=>worldTwoBuilding(key)===village;
  const signed=n=>`${n>=0?'+':''}${number(n)}`;
  const sellQuantities={};
  // Market rows whose amount slider is open on a phone (mobile-windows.css); a computer always shows it.
@@ -100,10 +103,10 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   const buildingLevel=key=>guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1;
   // Buildings with finished batches come first, so collecting is one tap away; the rest in the order they unlock.
   const readyFirst=key=>status(key).kind==='ready'?0:1;
-  $('building-catalog').innerHTML=Object.entries(BUILDINGS).sort(([a],[b])=>readyFirst(a)-readyFirst(b)||buildingLevel(a)-buildingLevel(b)).map(([key,b])=>{const s=status(key),picture=key==='familyhall'?'familyhall-model':key;const sub=key==='familyhall'?'':!buildingUnlocked(state,key)?'<small>Not built yet</small>':`<small>Level ${state.buildings[key].level}</small>`;return `<button class="building-card" data-open-building="${key}"><span class="building-card-art"><img src="${pictureFile(picture)}" alt=""></span><span class="building-card-info"><strong>${b.name}</strong>${sub}<span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
-  foldLocked($('building-catalog'),'[data-open-building]',b=>!buildingEligible(state,b.dataset.openBuilding),'Buildings to unlock');
+  $('building-catalog').innerHTML=Object.entries(BUILDINGS).filter(([key])=>inWorld(key)).sort(([a],[b])=>readyFirst(a)-readyFirst(b)||buildingLevel(a)-buildingLevel(b)).map(([key,b])=>{const s=status(key),picture=key==='familyhall'?'familyhall-model':key;const sub=key==='familyhall'?'':!buildingUnlocked(state,key)?'<small>Not built yet</small>':`<small>Level ${state.buildings[key].level}</small>`;return `<button class="building-card" data-open-building="${key}"><span class="building-card-art"><img src="${pictureFile(picture)}" alt=""></span><span class="building-card-info"><strong>${b.name}</strong>${sub}<span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
+  foldLocked($('building-catalog'),'[data-open-building]',b=>!buildingEligible(state,b.dataset.openBuilding),village?'Places to unlock':'Buildings to unlock');
   normalizeFarm(state,farmNow());
-  const placeFirst=key=>placeStatus(key).kind==='ready'?0:1,places=Object.keys(PLACES).filter(k=>!ENDGAME_PLACES.includes(k)||endgameInSight(state)).sort((a,b)=>placeFirst(a)-placeFirst(b)||FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),openPlaces=places.filter(k=>featureUnlocked(state,k));
+  const placeFirst=key=>placeStatus(key).kind==='ready'?0:1,places=village?[]:Object.keys(PLACES).filter(k=>!ENDGAME_PLACES.includes(k)||endgameInSight(state)).sort((a,b)=>placeFirst(a)-placeFirst(b)||FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),openPlaces=places.filter(k=>featureUnlocked(state,k));
   $('building-catalog').insertAdjacentHTML('beforeend',`${openPlaces.length?'<h3 class="catalog-heading">Places in the valley</h3>':''}${places.map(key=>{const s=placeStatus(key);return `<button class="building-card is-place" data-open-place="${key}"><span class="building-card-art"><img src="${pictureFile(PLACE_PICTURES[key]??`place-${key}`)}" alt=""></span><span class="building-card-info"><strong>${FEATURE_NAMES[key]}</strong><span class="building-status ${s.kind}" data-place-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('')}`);
   foldLocked($('building-catalog'),'[data-open-place]',b=>!featureUnlocked(state,b.dataset.openPlace),'Places to unlock');
   $('building-catalog').querySelectorAll('[data-open-building]').forEach(b=>b.addEventListener('click',()=>openBuilding(b.dataset.openBuilding)));
@@ -115,7 +118,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(!currentBuilding)return;
   const picker=$('fertilizer-field-picker'),pickerOpen=picker?.open,pickerScroll=picker?.querySelector('.field-picker-options')?.scrollTop??0;
   const key=currentBuilding,b=BUILDINGS[key],bs=state.buildings[key],buildCost=buildingCost(state,key);
-  let content=`<div class="building-hero"><div class="building-image"><img src="${pictureFile(key)}" alt=""></div><div><span class="eyebrow">${key==='farmhouse'||buildingUnlocked(state,key)?`LEVEL ${bs.level}`:'NOT BUILT YET'}${key==='farmhouse'?' · YOUR HOMESTEAD':' · FARM PRODUCTION'}</span><h2 id="building-title">${b.name}</h2><p>${b.tagline}</p></div></div>`;
+  let content=`<div class="building-hero"><div class="building-image"><img src="${pictureFile(key)}" alt=""></div><div><span class="eyebrow">${worldTwoBuilding(key)?(buildingUnlocked(state,key)?`LEVEL ${bs.level} · VILLAGE PRODUCTION`:'NOT BUILT YET · VILLAGE PRODUCTION'):`${key==='farmhouse'||buildingUnlocked(state,key)?`LEVEL ${bs.level}`:'NOT BUILT YET'}${key==='farmhouse'?' · YOUR HOMESTEAD':' · FARM PRODUCTION'}`}</span><h2 id="building-title">${b.name}</h2><p>${b.tagline}</p></div></div>`;
   // Shared by both the pre-purchase preview and the working recipe list below: the Factory repeats every other
   // building's whole catalogue, so both of its recipe lists get grouped and collapsed by source; every other
   // building's own, much shorter list stays exactly the flat list it always was.
@@ -266,16 +269,16 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function renderMarket(){
   const now=farmNow(),entries=marketEntries(),multiplier=state.boosts.coinsUntil>now?2:1;
   renderedMarketDay=utcDay(now);
-  const {today,tomorrow}=marketHighlights(now,state);
+  const {today,tomorrow}=marketHighlights(now,state);$('market-outlook').hidden=village;
   $('market-outlook').innerHTML=`<div class="market-outlook-heading"><span class="eyebrow">TODAY’S MARKET</span><span id="market-countdown"></span></div><div class="market-highlight">${art(today.item)}<div><strong>${ITEMS[today.item].name}</strong><span>${number(today.price)} coins each · ${today.label}</span></div><b class="demand-pill ${today.demand}">${signed(today.change)}%</b></div><p class="market-forecast">Tomorrow’s outlook: <strong>${ITEMS[tomorrow.item].name}</strong> · ${tomorrow.label.toLowerCase()} expected.</p><div class="market-board-link"><span>The Valley Market pays 1.5× for a full basket.</span><button type="button" id="market-valley">Valley Market →</button></div>`;
   $('market-valley').closest('.market-board-link').hidden=!featureUnlocked(state,'valleymarket');
   $('market-valley').onclick=()=>{$('market-dialog').close();document.querySelector('[data-menu-utility="valleymarket"]').click();};
   // What you can sell gets a card with its controls; what you do not have yet is a compact price list, never a row of greyed-out buttons.
   const card=([key,c])=>{const q=marketQuote(key,now),stock=sellableStock(state,key,now),kept=keptStock(state,key,now),quantity=stock?Math.min(stock,Math.max(1,sellQuantities[key]??1)):0,open=openSaleRows.has(key)&&stock>1;sellQuantities[key]=quantity;return `<div class="market-row dynamic-market-row market-card${open?' is-open':''}">${itemArt(key)}<div class="market-item-copy"><strong>${c.name}</strong><span class="market-current-price">${art('coins')}<b>${number(marketSaleValue(state,q.price,now))}</b> each${vipActive(state,now)?' · VIP +5%':''}${multiplier===2?' · 2× boost':''}</span><span class="demand-pill ${q.demand}" title="Normal ${number(q.normal)} · range ${number(q.min)}–${number(q.max)}">${q.label} · ${signed(q.change)}%</span>${kept?`<small class="market-kept">${number(kept)} kept, free in ${rookieTimeLeft(rookieLeft(state,now))}</small>`:''}</div><div class="market-stock"><b>${number(stock)}</b><small>${kept?`${number(kept)} kept`:'in stock'}</small></div><div class="market-quick"><button type="button" class="small-button market-quick-sell" data-sell-item-all="${key}" ${marketSelling?'disabled':''}>Sell all ${number(stock)}</button>${stock>1?`<button type="button" class="market-amount-toggle" data-sell-amount="${key}" aria-expanded="${open}" aria-controls="sell-controls-${key}">${open?'Hide':'Pick amount'}</button>`:''}</div><div class="market-sale-controls" id="sell-controls-${key}"><label for="sell-quantity-${key}"><span>${kept?`${number(kept)} kept, free in ${rookieTimeLeft(rookieLeft(state,now))}`:'How many to sell'}</span><output id="sell-count-${key}">${quantity} selected</output></label><input id="sell-quantity-${key}" data-sell-range="${key}" type="range" min="1" max="${stock}" step="1" value="${quantity}" aria-label="Quantity of ${c.name} to sell" ${marketSelling||stock<2?'disabled':''}><div class="market-sale-buttons"><button class="small-button market-sell-some" data-sell="${key}" ${marketSelling?'disabled':''}>Sell ${number(quantity)} · ${art('coins')}${number(marketSaleValue(state,quantity*q.price,now))}</button><button class="small-button" data-sell-item-all="${key}" ${marketSelling?'disabled':''}>Sell all ${number(stock)}</button></div></div></div>`;};
   const inStock=entries.filter(([key])=>sellableStock(state,key,now)>0),empty=entries.filter(([key])=>sellableStock(state,key,now)<=0);
-  $('market-items').innerHTML=(inStock.length?inStock.map(card).join(''):`<div class="quest-empty market-empty">${art(marketTab==='crops'?'wheat':'feed')}<h3>Nothing to sell yet</h3><p>${marketTab==='crops'?'Harvest your fields, then sell your crops here.':'Collect batches from your buildings, then sell the goods here.'}</p><button type="button" class="primary-button" data-market-empty>${marketTab==='crops'?'Go to your fields':'Open buildings'}</button></div>`)
+  $('market-items').innerHTML=(inStock.length?inStock.map(card).join(''):`<div class="quest-empty market-empty">${art(marketTab==='crops'?'wheat':marketTab==='village'?'stone':'feed')}<h3>Nothing to sell yet</h3><p>${marketTab==='crops'?'Harvest your fields, then sell your crops here.':marketTab==='village'?'Dig, chop and forge in the village, then sell the goods here.':'Collect batches from your buildings, then sell the goods here.'}</p><button type="button" class="primary-button" data-market-empty>${marketTab==='crops'?'Go to your fields':marketTab==='village'?'Open places':'Open buildings'}</button></div>`)
    +(empty.length?`<h3 class="market-empty-title">Not in stock · today’s prices</h3><div class="market-price-list">${empty.map(([key,c])=>{const q=marketQuote(key,now);return `<div class="market-price-tile">${itemArt(key)}<span><strong>${c.name}</strong><small>${art('coins')}${number(marketSaleValue(state,q.price,now))}<em class="demand-dot ${q.demand}" title="${q.label} · ${signed(q.change)}%"></em></small></span></div>`;}).join('')}</div>`:'');
-  const total=categoryTotal(now);$('inventory-value').innerHTML=`${art('coins')}${number(total)} coins`;$('sell-all').disabled=!total||marketSelling;$('sell-all').textContent=marketSelling?'Selling…':`Sell all ${marketTab==='crops'?'crops':'goods'}`;
+  const total=categoryTotal(now);$('inventory-value').innerHTML=`${art('coins')}${number(total)} coins`;$('sell-all').disabled=!total||marketSelling;$('sell-all').textContent=marketSelling?'Selling…':marketTab==='village'?'Sell all village goods':`Sell all ${marketTab==='crops'?'crops':'goods'}`;
   document.querySelectorAll('[data-market-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.marketTab===marketTab);b.setAttribute('aria-pressed',String(b.dataset.marketTab===marketTab));b.disabled=marketSelling;});
   $('market-items').querySelectorAll('[data-sell]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sell,sellQuantities[b.dataset.sell])));$('market-items').querySelectorAll('[data-sell-item-all]').forEach(b=>b.addEventListener('click',()=>sell(b.dataset.sellItemAll)));
   $('market-items').querySelectorAll('[data-sell-amount]').forEach(b=>b.addEventListener('click',()=>{const key=b.dataset.sellAmount,open=!openSaleRows.has(key);if(open)openSaleRows.add(key);else openSaleRows.delete(key);b.closest('.market-card').classList.toggle('is-open',open);b.setAttribute('aria-expanded',String(open));b.textContent=open?'Hide':'Pick amount';}));
@@ -286,20 +289,20 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function marketCountdown(now){const el=$('market-countdown');if(el)el.textContent=`New prices in ${seconds(marketQuote('oil',now).resetsAt-now)} · 00:00 UTC`;}
  // What "Sell all" would bring in right now for the tab that is open.
  // Heirlooms from the Seed Lab sell with the crops, once found or in stock (27 Sep 2026).
- function marketEntries(){return Object.entries(marketTab==='crops'?{...CROPS,...HEIRLOOMS}:PRODUCTS).filter(([key])=>HEIRLOOMS[key]?state.inventory[key]>0||itemAvailable(state,key):!guidedFarm(state)||state.inventory[key]>0||itemAvailable(state,key));}
+ function marketEntries(){if(marketTab==='village')return Object.entries(VILLAGE_GOODS).filter(([key])=>state.inventory[key]>0||itemAvailable(state,key));return Object.entries(marketTab==='crops'?{...CROPS,...HEIRLOOMS}:PRODUCTS).filter(([key])=>HEIRLOOMS[key]?state.inventory[key]>0||itemAvailable(state,key):!guidedFarm(state)||state.inventory[key]>0||itemAvailable(state,key));}
  function categoryTotal(now=farmNow()){return marketSaleValue(state,marketEntries().reduce((v,[k])=>v+sellableStock(state,k,now)*marketQuote(k,now).price,0),now);}
  let confirmingSale=false;
  async function sell(key='category',quantity){
   if(marketSelling||confirmingSale)return;
   // Selling a whole tab is one tap that empties the barn, so it asks first. Selling one item stays a single tap.
   if(key==='category'){
-   const label=marketTab==='crops'?'crops':'goods',total=categoryTotal();confirmingSale=true;
+   const label=marketTab==='crops'?'crops':marketTab==='village'?'village goods':'goods',total=categoryTotal();confirmingSale=true;
    const sure=await confirmAction({title:`Sell all your ${label}?`,description:`Are you sure you want to sell all your ${label} for ${number(total)} coins?`,confirmLabel:`Sell for ${number(total)} coins`,cancelLabel:'Keep them',picture:'market'}).finally(()=>{confirmingSale=false;});
    if(!sure)return;
   }
   const day=renderedMarketDay||utcDay(farmNow()),category=marketTab;marketSelling=true;renderMarket();
   try{
-   const r=await runAction(key==='category'?{type:'sell',category,day}:{type:'sell',item:key,day,...(quantity===undefined?{}:{quantity})});
+   const r=await runAction(key==='category'?{type:'sell',category,day}:{type:'sell',item:key,day,...(category==='village'?{category}:{}),...(quantity===undefined?{}:{quantity})});
    onChange();notify(`Sold! +${number(r.coins)} coins for your next harvest.`);return r;
   }catch(e){notify(e.message);return {error:e.message};}finally{marketSelling=false;renderMarket();}
  }
@@ -307,7 +310,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   $('selected-crop-price').textContent=`${seedCost(state,selectedCrop)} · ${seconds(cropDuration(state,selectedCrop))}`;
   if($('building-dialog').open)renderBuilding();
   if($('seed-dialog').open)renderSeeds();
-  const count=Object.keys(BUILDINGS).filter(key=>status(key).kind==='ready').length;$('production-count').hidden=!count;$('production-count').textContent=count;
+  const count=Object.keys(BUILDINGS).filter(key=>inWorld(key)&&status(key).kind==='ready').length;$('production-count').hidden=!count;$('production-count').textContent=count;
   if($('market-dialog').open)renderMarket();
   if($('buildings-dialog').open)renderCatalog();
  }
@@ -322,7 +325,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if($('buildings-dialog').open&&readyKeys!==lastReadyKeys){const y=$('buildings-dialog').scrollTop;renderCatalog();$('buildings-dialog').scrollTop=y;}
   lastReadyKeys=readyKeys;
   document.querySelectorAll('[data-place-status]').forEach(el=>{const s=placeStatus(el.dataset.placeStatus,now);const html=(s.kind==='locked'?art('lock','unlock-lock'):'')+s.text;if(el.dataset.text!==html){el.dataset.text=html;el.innerHTML=html;el.className=`building-status ${s.kind}`;}});
-  const count=Object.keys(BUILDINGS).filter(key=>status(key,now).kind==='ready').length;$('production-count').hidden=!count;$('production-count').textContent=count;
+  const count=Object.keys(BUILDINGS).filter(key=>inWorld(key)&&status(key,now).kind==='ready').length;$('production-count').hidden=!count;$('production-count').textContent=count;
   if($('building-dialog').open&&currentBuilding){
    const jobs=productionJobs(state.buildings[currentBuilding]),signature=jobs.map(j=>`${j.id}:${now>=j.readyAt}`).join('|');
    if(signature!==lastJobReady)renderBuilding();
@@ -338,5 +341,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  $('buildings-button').addEventListener('click',openBuildings);$('all-buildings').addEventListener('click',openBuildings);
  document.querySelectorAll('[data-seed-filter]').forEach(b=>b.addEventListener('click',()=>{seedFilter=b.dataset.seedFilter;renderSeeds();}));
  document.querySelectorAll('[data-market-tab]').forEach(b=>b.addEventListener('click',()=>{marketTab=b.dataset.marketTab;renderMarket();}));
- return {openMarket:(tab='crops')=>{marketTab=tab;renderMarket();show('market-dialog');},placeReady:key=>key in PLACES&&placeStatus(key).kind==='ready',openBuilding,openBuildings,openSeeds,renderBuilding,renderMarket,sell,refresh,tick,status,chooseCrop,itemList};
+ // In the village the market is the Village market: one list, its own heading, no farm tabs or farm prices of the day.
+ if(village){const d=$('market-dialog');d.querySelector('.eyebrow').textContent='DUG, CHOPPED AND FORGED';d.querySelector('h2').textContent='Village market';d.querySelector('.market-tabs').hidden=true;
+  const b=$('buildings-dialog');if(b){const e=b.querySelector('.dialog-heading .eyebrow'),h=b.querySelector('.dialog-heading h2');if(e)e.textContent='THE VILLAGE';if(h)h.textContent='Village places';}}
+ return {openMarket:(tab='crops')=>{marketTab=village?'village':tab==='village'?'crops':tab;renderMarket();show('market-dialog');},placeReady:key=>key in PLACES&&placeStatus(key).kind==='ready',openBuilding,openBuildings,openSeeds,renderBuilding,renderMarket,sell,refresh,tick,status,chooseCrop,itemList};
 }

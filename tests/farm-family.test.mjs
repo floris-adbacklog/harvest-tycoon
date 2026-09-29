@@ -37,7 +37,7 @@ test('Every family gets the same weekly order: four random crops or goods from t
    assert.ok(hours<=72,`${key}: ${hours} hours`);
   }
  }
- assert.equal(seen.size,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom).length,'over time every crop and good turns up (never an heirloom)');
+ assert.equal(seen.size,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom&&ITEMS[k].world!==2).length,'over time every crop and good turns up (never an heirloom or a World II good)');
 });
 test('Create and join enforce names, emblems, member limit and code privacy',()=>{
  let c=create();assert.equal(c.families[0].is_open,true,'a new family is open (27 Sep 2026)');assert.match(c.families[0].invite_code,/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);

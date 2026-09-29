@@ -10,21 +10,29 @@ export const LOADING_TIPS=Object.freeze([
  ['family-members','Join a Farm family for weekly orders and a tournament.'],
  ['guide','How to play has a wiki with every crop and recipe.']
 ]);
+// On the way to the village (World II, 30 Sep 2026) the tips are about the village.
+export const VILLAGE_LOADING_TIPS=Object.freeze([
+ ['packedlunch','Every trip into the mine or the forest starts with packed lunches from your farm Kitchen.'],
+ ['mastertools','Master tools from the Smithy take your farm buildings past level 10.'],
+ ['villagemarket','Village goods sell at the Village market, not at the farm Market.'],
+ ['farmroad','Your farm keeps growing while you are in the village.']
+]);
 // The account check on play.html covers the bar up to here; the farm continues from it.
 export const FARM_START=12;
 export const ACCOUNT_STEPS=Object.freeze({'Checking your account…':4,'Signing you out…':4,'Opening your farm…':10});
 
 // Shows a tip and changes it every few seconds with a short fade. Returns a function that stops it.
-export function startLoadingTips(doc,{text='loading-tip-text',icon='loading-tip-icon',interval=4500,timers=globalThis,now=Date.now()}={}){
- const box=doc.getElementById(text)?.parentElement;let index=Math.floor(now/interval)%LOADING_TIPS.length,swap=0;
- const show=()=>{const [picture,tip]=LOADING_TIPS[index];const t=doc.getElementById(text),i=doc.getElementById(icon);if(t)t.textContent=tip;if(i)i.src=`/assets/icons/${picture}.webp`;};
+export function startLoadingTips(doc,{tips=LOADING_TIPS,text='loading-tip-text',icon='loading-tip-icon',interval=4500,timers=globalThis,now=Date.now()}={}){
+ const box=doc.getElementById(text)?.parentElement;let index=Math.floor(now/interval)%tips.length,swap=0;
+ const show=()=>{const [picture,tip]=tips[index];const t=doc.getElementById(text),i=doc.getElementById(icon);if(t)t.textContent=tip;if(i)i.src=`/assets/icons/${picture}.webp`;};
  show();
- const timer=timers.setInterval(()=>{box?.classList?.add('is-changing');swap=timers.setTimeout(()=>{index=(index+1)%LOADING_TIPS.length;show();box?.classList?.remove('is-changing');},350);},interval);
+ const timer=timers.setInterval(()=>{box?.classList?.add('is-changing');swap=timers.setTimeout(()=>{index=(index+1)%tips.length;show();box?.classList?.remove('is-changing');},350);},interval);
  return ()=>{timers.clearInterval(timer);timers.clearTimeout(swap);};
 }
 
-// Progress reflects completed work: model files, account data and the first frame.
-export function createLoadingScreen(doc,modelCount){
+// Progress reflects completed work: model files, account data and the first frame. On the way to the village (World II) the first
+// step reads 'Travelling to the village'.
+export function createLoadingScreen(doc,modelCount,{loading='Loading your farm'}={}){
  const get=id=>doc.getElementById(id);
  let models=0,account=false,finished=false;
  function render(){
@@ -32,7 +40,7 @@ export function createLoadingScreen(doc,modelCount){
   const percent=finished?100:Math.min(99,FARM_START+Math.floor(done*(100-FARM_START)));
   get('load-progress').value=percent;
   get('load-percent').textContent=`${percent}%`;
-  get('load-text').textContent=finished?'Ready!':models<modelCount?'Loading your farm':!account?'Opening your saved farm':'Planting the fields';
+  get('load-text').textContent=finished?'Ready!':models<modelCount?loading:!account?'Opening your saved farm':'Planting the fields';
  }
  render();
  return {

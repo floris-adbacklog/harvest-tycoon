@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction,productionSlots,productionJobs,recipeValue,recipeAvailability,upgradeCost,BUILDINGS,BUILDING_COSTS,UPGRADE_BUILD_SHARE,RECIPES,CROPS,BOOSTS,ITEMS,farmSummary,marketQuote} from '../game/farm-state.js';
+import {xpForLevel,normalizeFarm,applyFarmAction,productionSlots,productionJobs,recipeValue,recipeAvailability,upgradeCost,BUILDINGS,BUILDING_COSTS,UPGRADE_BUILD_SHARE,RECIPES,CROPS,BOOSTS,ITEMS,farmSummary,marketQuote} from '../game/farm-state.js';
 import {createProductionCueTracker} from '../public/farm-audio.js';
 import {createBeginnerUI} from '../public/beginner-ui.js';
 const now=1789690000000;
-function farm(){const s=createFarm(now);s.xp=200000;for(const b of Object.values(s.buildings))b.built=true;s.coins=1000000;s.diamonds=500;for(const k of Object.keys(s.inventory))s.inventory[k]=1000;return s;}
+function farm(){const s=createFarm(now);s.xp=xpForLevel(115);   // World II's places open at 100-112
+ for(const b of Object.values(s.buildings))b.built=true;s.coins=1000000;s.diamonds=500;for(const k of Object.keys(s.inventory))s.inventory[k]=1000;return s;}
 const act=(s,a,t=now)=>applyFarmAction(s,a,t);
 test('every production building permits exactly one simultaneous batch per level',()=>{
  for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&id!=='factory'))for(let level=1;level<=10;level++){

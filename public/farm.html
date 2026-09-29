@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="/chat.css">
   <link rel="stylesheet" href="/wiki.css">
   <link rel="stylesheet" href="/buttons.css">
+  <link rel="stylesheet" href="/world-two.css">
   <link rel="stylesheet" href="/more-menu.css">
   <link rel="stylesheet" href="/desktop-hud.css">
   <link rel="stylesheet" href="/mobile-windows.css">
@@ -57,6 +58,7 @@
       <button class="side-tool" id="today-button" aria-haspopup="dialog"><span><i data-lucide="gift"></i><em id="today-dot">!</em></span><b>Today</b></button>
       <button class="side-tool" id="estate-button" aria-haspopup="dialog"><span><i data-lucide="landmark"></i><em id="estate-dot" hidden>!</em></span><b>Estate</b></button>
       <button class="side-tool active" id="farm-button" aria-label="Return to the farm"><span><i data-lucide="house"></i></span><b>My farm</b></button>
+      <button class="side-tool" id="village-button" aria-label="Travel to the village" hidden><span><i data-game-art="village-badge"></i><em id="village-count" hidden>0</em></span><b>Village</b></button>
       <button class="side-tool" id="buildings-button" aria-haspopup="dialog"><span><i data-lucide="factory"></i><em id="production-count" hidden>0</em></span><b>Buildings</b></button>
       <button class="side-tool" id="market-button" aria-haspopup="dialog"><span><i data-lucide="store"></i><em id="stock-count" hidden>0</em></span><b>Market</b></button>
       <button class="side-tool" id="boosts-button" aria-haspopup="dialog"><span><i data-lucide="sparkles"></i></span><b>Boosts</b></button>
@@ -136,7 +138,7 @@
     <button data-menu-utility="silo"><i data-lucide="warehouse"></i><span><strong>Silo research</strong><small class="menu-hint">Improve your crops</small></span></button>
     <h3 class="menu-section" data-section-heading="estate">Estate &amp; valley</h3>
     <button data-menu-action="estate-button"><i data-lucide="landmark"></i><span><strong>Estate</strong><small class="menu-hint">Projects & mastery</small></span></button>
-    <button data-menu-utility="valleymarket"><i data-game-art="valley-market"></i><span><strong>Valley Market</strong><small class="menu-hint">Baskets for the valley</small></span></button>
+    <button data-menu-utility="valleymarket"><i data-game-art="valley-market"></i><span><strong>Valley Market</strong><small class="menu-hint">Baskets for the valley</small></span></button><button data-menu-utility="villageroad" id="village-menu-entry" hidden><i data-game-art="village-badge"></i><span><strong>The Village</strong><small class="menu-hint">Mine, forest and smithy</small></span></button>
     <button data-menu-utility="ranch"><i data-game-art="ranch"></i><span><strong>The Ranch</strong><small class="menu-hint">One herd works faster</small></span></button>
     <button data-menu-utility="estateworkshop"><i data-game-art="estate-workshop"></i><span><strong>Estate Workshop</strong><small class="menu-hint">Improvements that last</small></span></button>
     <button data-menu-utility="tradedepot"><i data-game-art="trade-depot"></i><span><strong>Trade Depot</strong><small class="menu-hint">Fill an export trailer</small></span></button>

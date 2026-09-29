@@ -8,7 +8,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,21,12);
 const act=(s,action,t=now)=>applyFarmAction(s,action,t);
 // Every production recipe gets a bulk version, except the Glasshouse's: those grow crops, and the Factory never makes crops.
-const base=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&r.building!=='glasshouse');
+const base=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&r.building!=='glasshouse'&&BUILDINGS[r.building].world!==2);   // the village's places have no bulk versions
 const mass=Object.entries(RECIPES).filter(([,r])=>r.building==='factory');
 function farm(level=60){const s=createLegacyFarm(now);s.xp=xpForLevel(level);s.coins=1e9;s.diamonds=1000;for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;return s;}
 
@@ -24,7 +24,7 @@ test('the Factory is an endgame building: level 50, 100,000 coins, twenty levels
  assert.equal(MAX_BUILDING_LEVEL,10,'ten levels, like every production building since 26 Sep 2026');
 });
 test('every production recipe has one bulk version: quick goods x20, slow goods x10, in twice the time, with the same XP per ingredient',()=>{
- assert.equal(base.length,48);assert.equal(mass.length,48,'one bulk recipe for each (wheat feed, 26 Sep 2026)');
+ assert.equal(base.length,51);assert.equal(mass.length,51,'one bulk recipe for each (wheat feed, 26 Sep 2026; packed lunch, golden loaf and heirloom pie, World II, 30 Sep 2026)');
  assert.deepEqual(Object.keys(RECIPES).filter(id=>RECIPES[id].building==='glasshouse'&&RECIPES[`mass_${id}`]),[],'no bulk Glasshouse');
  for(const [id,r] of base){
   const m=RECIPES[`mass_${id}`],n=r.duration<=3600000?20:10;assert.ok(m,id);
@@ -128,7 +128,7 @@ test('an older saved farm gets a locked Factory, and nothing else about it chang
 test('the roadmap and hints only speak of the ordinary recipes, the Factory has its own panel',()=>{
  const state=(s=>{s.xp=xpForLevel(60);return s;})(createFarm(now));
  const src=read('game/farm-state.js');
- assert.match(src,/filter\(\(\[,r\]\)=>r\.building!=='factory'&&buildingUnlocked\(state,r\.building\)\)/);
+ assert.match(src,/filter\(\(\[key,r\]\)=>r\.building!=='factory'&&buildingUnlocked\(state,r\.building\)&&worldTwoEntry\(state,recipeLevel\(state,key\)\)\)/);
  assert.match(src,/recipe\.output\[item\]&&recipe\.building!=='factory'/);
  assert.equal(state.buildings.factory.level,1);
 });

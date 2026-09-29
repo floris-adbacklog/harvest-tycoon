@@ -46,6 +46,11 @@ const ENDGAME_PICTURES=['visitor-cook','visitor-merchant','visitor-innkeeper','v
 for(const key of Object.keys(HEIRLOOMS))pictures[key]=`heirloom-${key}`;
 for(const key of ENDGAME_PICTURES)pictures[key]=key;
 Object.assign(pictures,{master:'endgame-master-star',seedlab:'endgame-seed-lab',visitors:'endgame-visitors',giantpumpkin:'giant-prize',valleyprojects:'project-watermill'});
+// World II, The Village (30 Sep 2026): renders of its places, built from the Village pack's own models like the farm's buildings, and
+// its goods painted by the user (all WebP), the badge on the travel button and the closed bridge that shows at level 90 to 99.
+const VILLAGE_ART=['mine','lumbercamp','smithy','villagemill','villagemarket','farmroad','packedlunch','stone','ironore','timber','plank','ironbar','pickaxe',
+ 'silverore','silverbar','mastertools','heirloomflour','gemstone','goldenloaf','heirloompie','village-badge','village-bridge'];
+for(const key of VILLAGE_ART)pictures[key]=key;
 export const ART_KEYS=Object.freeze([...Object.keys(spriteEntries),...Object.keys(pictures)]);
 // The second batch re-encoded to WebP (every picture of 40 KB or more that was still a PNG; the PNGs stay on disk): same pixel size,
 // 64-79% smaller, no visible difference side by side at 2x. The small building pictures (farmhouse, mill, ...) stay PNG.
@@ -57,6 +62,7 @@ const webpPictures=new Set(['live-events','family-sharing','double-harvest','dou
 // The Family Chest in its four tiers, and open (27 Sep 2026, painted, WebP).
 for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver','family-chest-gold','family-chest-open']){pictures[key]=key;webpPictures.add(key);}
 for(const key of [...Object.keys(HEIRLOOMS),...ENDGAME_PICTURES,'master','seedlab','visitors','giantpumpkin','valleyprojects'])webpPictures.add(key);   // looked up by the short name
+for(const key of VILLAGE_ART)webpPictures.add(key);
 // Family rank badges (27 Sep 2026), painted by the user; public/family-profile.js shows each one that is here beside the rank's name.
 for(const key of ['family-rank-leader','family-rank-coleader','family-rank-honorary','family-rank-member','family-rank-top']){pictures[key]=key;webpPictures.add(key);}
 // A flag for every language in Settings (29 Sep 2026, painted, WebP): flag-en, flag-es, ...

@@ -69,8 +69,11 @@ test('every level has renewable play, every new building has a viable recipe; th
  }
  // By 90 every expansion is fully open: the Valley Market, the Ranch, the Estate Workshop, the Trade Depot and the fair included.
  // (The five after-90 activities, 27 Sep 2026, open at 91-95.)
- assert.equal(cropCount,16);for(const key of Object.keys(FEATURE_NAMES))assert.equal(featureUnlocked(s,key),FEATURE_LEVELS[key]<=90,key);for(const key of Object.keys(BUILDINGS))if(key!=='factory')assert.ok(buildingUnlocked(s,key),key);
- for(const id of Object.keys(RECIPES))if(RECIPES[id].building!=='factory')assert.ok(recipeUnlocked(s,id),id);
+ assert.equal(cropCount,16);for(const key of Object.keys(FEATURE_NAMES))assert.equal(featureUnlocked(s,key),FEATURE_LEVELS[key]<=90,key);for(const key of Object.keys(BUILDINGS))if(key!=='factory'&&BUILDINGS[key].world!==2)assert.ok(buildingUnlocked(s,key),key);
+ for(const id of Object.keys(RECIPES))if(RECIPES[id].building!=='factory'&&(RECIPE_LEVELS[id]??0)<100)assert.ok(recipeUnlocked(s,id),id);
+ // World II (30 Sep 2026) opens at level 100: at 90 none of its places or recipes is open.
+ for(const key of Object.keys(BUILDINGS))if(BUILDINGS[key].world===2)assert.ok(!buildingUnlocked(s,key),`${key} waits for World II`);
+ for(const id of Object.keys(RECIPES))if((RECIPE_LEVELS[id]??0)>=100)assert.ok(!recipeUnlocked(s,id),`${id} waits for World II`);
  assert.ok(['squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','prizeproduce'].every(k=>outputs.has(k)));
  const levels=Object.entries(CROP_LEVELS).filter(([,n])=>n>1).sort((a,b)=>a[1]-b[1]);
  assert.deepEqual(levels.map(([k])=>k),['lettuce','barley','greenbeans','cabbage','cauliflower','pumpkin','redcabbage','sunflower','apples','berries','squash','polebeans','ciderapples','cherries']);

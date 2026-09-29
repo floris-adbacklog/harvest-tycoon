@@ -1,0 +1,11 @@
+/* World II, The Village (30 Sep 2026): the farm's own controls have nothing to do in the village (public/game.js sets
+   data-world="village" on the page there). "My farm" travels back. */
+html[data-world="village"] .tool-dock,
+html[data-world="village"] #minimap,
+html[data-world="village"] .beginner-card,
+html[data-world="village"] #fields-view,
+html[data-world="village"] #zoom-reset,
+html[data-world="village"] #buildings-dialog .utility-shortcuts-title,
+html[data-world="village"] #buildings-dialog .utility-shortcuts{display:none!important}
+/* The loading screen on the way there shows the village (public/app-mode.js marks the trip before the game's code runs). */
+html[data-trip="village"] .farm-loading.loading{background-image:url('/assets/village-welcome.webp');background-color:#2c4a5a}
