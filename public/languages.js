@@ -10,7 +10,7 @@ export const LANGUAGES=Object.freeze([
  {code:'nl',name:'Nederlands',ready:true},
  {code:'pt',name:'Português',ready:true},
  {code:'tr',name:'Türkçe'},
- {code:'ru',name:'Русский'},
+ {code:'ru',name:'Русский',ready:true},
  {code:'ar',name:'العربية'},
  {code:'hi',name:'हिन्दी',ready:true},
  {code:'ja',name:'日本語'}

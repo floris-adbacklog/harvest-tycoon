@@ -116,3 +116,17 @@ Farmhouse Sede · Dairy Barn Estábulo · Feed Mill Moinho de Ração · Juice P
 Goat Shed Capril · Pig Farm Chiqueiro · Preserves Workshop Oficina de Conservas · Tool workshop Galpão de Ferramentas ·
 Apiary Colmeias · Bee Yard Apiário · Animal paddock Cercado · Squash abobrinha · Berries frutas vermelhas · Green beans vagens ·
 Pole beans feijão-trepador · leaderboard ranking.
+
+### Русский (informal "ты", three plural forms)
+
+Counts use plural objects (`one`/`few`/`many`/`other`); the runtime picks the form from the first number in the text.
+Thousands with a no-break space (1 000). coins монеты · diamonds алмазы · field поле · crop культура · harvest собрать урожай ·
+plant посадить · water полить/полив · extra care особый уход · batch партия · slot место · goods товары · building здание ·
+upgrade улучшить/улучшение · level уровень · Market Рынок · Quests Задания · More Ещё · My farm Моя ферма ·
+Farm Family Фермерская семья · Family Chest Семейный сундук · Family Order Семейный заказ · leader/co-leader глава/заместитель ·
+honorary почётный член · boost бустер · streak серия · daily gift ежедневный подарок · chore дело по хозяйству ·
+helping hand помощь · Estate Поместье · Valley Market Рынок долины · farm stall фермерский прилавок · storage склад ·
+natural fertilizer натуральное удобрение · animal feed корм · heirloom старинный сорт · test bed опытная грядка ·
+Seed Lab Семенная лаборатория · Glasshouse Оранжерея · Greenhouse (stop) Теплица · Grand Valley Fair Большая ярмарка долины ·
+Farmhouse Фермерский дом · Dairy Barn Коровник · Feed Mill Кормовая мельница · Juice Press Соковарня · Bee Yard Пасека ·
+Apiary Ульи · Animal paddock Загон · Tool workshop Сарай с инструментами · Squash кабачок · leaderboard рейтинг.
