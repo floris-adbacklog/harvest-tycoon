@@ -6,10 +6,13 @@ export const LANGUAGES=Object.freeze([
  {code:'de',name:'Deutsch'},
  {code:'es',name:'Español',ready:true},
  {code:'fr',name:'Français'},
+ {code:'id',name:'Bahasa Indonesia'},
  {code:'nl',name:'Nederlands'},
  {code:'pt',name:'Português'},
+ {code:'tr',name:'Türkçe'},
  {code:'ru',name:'Русский'},
  {code:'ar',name:'العربية'},
  {code:'hi',name:'हिन्दी'},
- {code:'zh',name:'中文'}
+ {code:'zh',name:'中文'},
+ {code:'ja',name:'日本語'}
 ].map(Object.freeze));
