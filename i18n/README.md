@@ -46,3 +46,15 @@ English.
 | Estate Workshop, Trade Depot, Grand Valley Fair, Family Hall | Taller de la finca, Depósito comercial, Gran Feria del Valle, Casa Familiar |
 
 Informal "tú" throughout.
+
+### Deutsch (informal "du")
+
+coins Münzen · diamonds Diamanten · field Feld · crop Feldfrucht (growing: Pflanze) · harvest ernten/Ernte · water gießen ·
+extra care Extrapflege · batch Charge · slot Platz · goods Waren · upgrade Ausbau/ausbauen · level Level · Market Markt ·
+Quests Aufgaben · More Mehr · My farm Mein Hof · Farm Family Farmfamilie · Family Chest Familientruhe · Family Order
+Familienauftrag · leader/co-leader Anführer/Co-Anführer · boost Booster · streak Serie · daily gift Tagesgeschenk ·
+chore Hofarbeit · helping hand Mit anpacken · Estate Gut · Valley Tal · Valley Market Talmarkt · farm stall Hofladen ·
+storage Lager · (natural) fertilizer (Natur)dünger · animal feed Tierfutter · heirloom alte Sorte · test bed Versuchsbeet ·
+Seed Lab Saatgutlabor · Glasshouse Gewächshaus · Greenhouse (activity) Frühbeet · Grand Valley Fair Große Talmesse ·
+Family Hall Familienhaus · Farmhouse Bauernhaus · Dairy Barn Kuhstall · Feed Mill Futtermühle · Squash Zucchini ·
+Pole beans Stangenbohnen · Cider apples Mostäpfel · Cider Cidre.
