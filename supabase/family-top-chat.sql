@@ -5,7 +5,7 @@
 -- when that farmer differs from the last check, also when a new week starts; family_top_state remembers the last one. The
 -- first run only writes down who is on top now, so it sends no cards. A problem with one card never stops the others.
 alter table public.chat_messages drop constraint if exists chat_messages_kind_check;
-alter table public.chat_messages add constraint chat_messages_kind_check check (kind in ('message','request','rank','top','join'));
+alter table public.chat_messages add constraint chat_messages_kind_check check (kind in ('message','request','rank','top','join','kick'));
 
 create table if not exists public.family_top_state(
  family_id uuid primary key references public.families(id) on delete cascade,

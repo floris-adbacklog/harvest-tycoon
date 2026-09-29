@@ -36,7 +36,7 @@ test('the card: the family icon, the good\'s picture, a Give button for the othe
 
 test('a new rank in the family writes a card with the rank\'s badge; joining another family or leaving does not',()=>{
  const sql=read('supabase/family-rank-chat.sql');
- assert.match(sql,/check \(kind in \('message','request','rank','top','join'\)\)/);
+ assert.match(sql,/check \(kind in \('message','request','rank','top','join','kick'\)\)/);
  assert.match(sql,/after update of role on public\.family_members for each row\s+when \(old\.role is distinct from new\.role and old\.family_id=new\.family_id and old\.left_at is null and new\.left_at is null\)/);
  assert.match(sql,/jsonb_build_object\('from',old\.role,'to',new\.role\)/);
  assert.match(sql,/exception when others then return new;/);
@@ -58,7 +58,7 @@ test('a new top farmer is checked once an hour and gets a card; the first run on
  const ui=read('src/chat-ui.js');
  assert.match(ui,/if\(m\.kind==='top'\)return topRow\(m\);/);
  assert.match(ui,/art\('family-rank-top'\)/);
- for(const file of ['supabase/family-rank-chat.sql','supabase/family-top-chat.sql'])assert.match(read(file),/check \(kind in \('message','request','rank','top','join'\)\)/,`${file}: the same kinds, whichever runs last`);
+ for(const file of ['supabase/family-rank-chat.sql','supabase/family-top-chat.sql'])assert.match(read(file),/check \(kind in \('message','request','rank','top','join','kick'\)\)/,`${file}: the same kinds, whichever runs last`);
 });
 
 test('a new member of the family gets a card with the member badge; the founder and farmers already in it do not',()=>{
@@ -70,5 +70,15 @@ test('a new member of the family gets a card with the member badge; the founder 
  const ui=read('src/chat-ui.js');
  assert.match(ui,/if\(m\.kind==='join'\)return joinRow\(m\);/);
  assert.match(ui,/art\('family-rank-member'\)/);
- for(const file of ['supabase/family-rank-chat.sql','supabase/family-top-chat.sql','supabase/family-join-chat.sql'])assert.match(read(file),/check \(kind in \('message','request','rank','top','join'\)\)/,`${file}: the same kinds, whichever runs last`);
+ for(const file of ['supabase/family-rank-chat.sql','supabase/family-top-chat.sql','supabase/family-join-chat.sql','supabase/family-kick-chat.sql'])assert.match(read(file),/check \(kind in \('message','request','rank','top','join','kick'\)\)/,`${file}: the same kinds, whichever runs last`);
+});
+
+test('a farmer removed from the family gets a grey card with their old rank and who removed them, written by farm-api',()=>{
+ const service=read('supabase/functions/farm-api/family-service.js');
+ assert.match(service,/if\(writeFarm&&body\.action\.type==='family_kick'\)\{/,'only after a removal that went through');
+ assert.match(service,/kind:'kick',meta:\{role:target\.role,by:username,by_id:player\}/);
+ assert.match(service,/globalThis\.EdgeRuntime\?\.waitUntil\?\.\(card\)/,'beside the reply, never in its way');
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/if\(m\.kind==='kick'\)return kickRow\(m\);/);
+ assert.match(ui,/was removed from the family\./);
 });

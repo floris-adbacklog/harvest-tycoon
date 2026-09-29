@@ -4,7 +4,7 @@
 -- co-leader, honorary or member, the leadership handed over, and the longest-standing member taking over from a leader who left.
 -- Joining another family or leaving is not a rank change and makes no card. A problem here never stops the change itself.
 alter table public.chat_messages drop constraint if exists chat_messages_kind_check;
-alter table public.chat_messages add constraint chat_messages_kind_check check (kind in ('message','request','rank','top','join'));
+alter table public.chat_messages add constraint chat_messages_kind_check check (kind in ('message','request','rank','top','join','kick'));
 
 create or replace function public.family_rank_chat() returns trigger language plpgsql security definer set search_path to '' as $f$
 declare nm text; av text; vip boolean;

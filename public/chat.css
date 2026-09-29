@@ -284,3 +284,4 @@ span.chat-avatar{cursor:default}
 .chat-request.is-given .chat-request-art{border-color:#ddd5c5;filter:saturate(.6)}
 .chat-request.is-given .chat-request-status{color:#3d6b45;font-weight:700}
 .chat-request.is-given .chat-request-give{display:none}
+.chat-request.chat-kick .chat-request-status{color:#857d70;font-weight:400}

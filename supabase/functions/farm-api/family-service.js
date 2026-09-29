@@ -60,6 +60,15 @@ export async function handleFamily({admin,body,row,state,player,username}){
  const saved=await admin.rpc('harvest_family_commit',{p_player:player,p_expected_family:before.revision,p_expected_farm:row.revision,p_week:familyWeek(now),p_changes:changes,p_settled:settled,p_write_farm:writeFarm,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state),p_request:reading?null:body.requestId,p_result:result,p_failed:failed});
  if(saved.error)throw saved.error;if(!saved.data)return null;
  if(writeFarm)await requestNotice(admin,body.action,result,context,player,username,now);
+ // A farmer removed from the family shows in the family chat as a card (29 Sep 2026; supabase/family-kick-chat.sql allows the kind).
+ // Only farm-api knows a removal from a leave: in family_members both look the same. Beside the reply, and never in its way.
+ if(writeFarm&&body.action.type==='family_kick'){
+  const target=before.members?.find(m=>m.id===body.action.memberId),name=before.players?.find(p=>p.player_id===target?.player_id)?.username;
+  if(target?.family_id){
+   const card=admin.from('chat_messages').insert({channel:`family:${target.family_id}`,sender:target.player_id,sender_name:name??'A farmer',body:'Was removed from the family',kind:'kick',meta:{role:target.role,by:username,by_id:player}}).then(()=>{},()=>{});
+   globalThis.EdgeRuntime?.waitUntil?.(card);
+  }
+ }
  // A successful action sets online status through the existing commit function.
  if(writeFarm){const p=context.players.find(p=>p.player_id===player);if(p){p.level=levelOf(state);p.last_active_at=new Date(now).toISOString();}else context.players.push({player_id:player,username,level:levelOf(state),last_active_at:new Date(now).toISOString()});}
  return response(context,result,failed,writeFarm);

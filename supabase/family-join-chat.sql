@@ -3,7 +3,7 @@
 -- family_members row, or as their row moving to this family or coming back after leaving; the founder of a new family starts as
 -- leader and makes no card. A problem here never stops the join itself.
 alter table public.chat_messages drop constraint if exists chat_messages_kind_check;
-alter table public.chat_messages add constraint chat_messages_kind_check check (kind in ('message','request','rank','top','join'));
+alter table public.chat_messages add constraint chat_messages_kind_check check (kind in ('message','request','rank','top','join','kick'));
 
 create or replace function public.family_join_chat() returns trigger language plpgsql security definer set search_path to '' as $f$
 declare nm text; av text; vip boolean;
