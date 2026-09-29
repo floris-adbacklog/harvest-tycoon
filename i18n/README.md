@@ -85,3 +85,18 @@ grand champion grote kampioen · Farmhouse Woonboerderij · Dairy Barn Koeiensta
 Juice Press Sappers · Preserves Workshop Inmaakkeuken · Tool workshop Gereedschapsschuur · Apiary Bijenkorven ·
 Animal paddock Dierenweide · Squash courgette · Pole beans stokbonen · Green beans sperziebonen · journal boerderijdagboek ·
 leaderboard ranglijst · farm events boerderijevenementen. Building names go without "de/het" before a `{0}`.
+
+### Français (informal "tu", French spacing)
+
+No-break spaces before ! ? ; : % and inside « » (the batch files go through a small fix script before `apply`).
+coins pièces · diamonds diamants · field champ · crop culture · harvest récolter/récolte · plant planter · water arroser ·
+extra care soins bonus · batch lot · slot emplacement · goods produits · building bâtiment · upgrade amélioration/améliorer ·
+level niveau · Market Marché · Quests Quêtes · More Plus · My farm Ma ferme · Farm Family Famille fermière ·
+Family Chest Coffre familial · Family Order Commande familiale · order commande · leader/co-leader chef/co-chef ·
+honorary membre d'honneur · streak série · daily gift cadeau du jour · chore corvée · helping hand coup de main ·
+Estate Domaine · Valley Market Marché de la vallée · farm stall stand de la ferme · storage réserve ·
+natural fertilizer engrais naturel · animal feed nourriture animale · heirloom variété ancienne · test bed planche d'essai ·
+Seed Lab Labo des graines · Glasshouse Serre · Greenhouse (stop) Pépinière · Grand Valley Fair Grande Foire de la vallée ·
+fair star étoile de foire · Farmhouse Corps de ferme · Dairy Barn Étable · Feed Mill Moulin à provende · Juice Press Pressoir ·
+Preserves Workshop Atelier des conserves · Tool workshop Remise à outils · Apiary Ruches · Animal paddock Enclos ·
+Squash courgette · Pumpkin citrouille · Pole beans haricots à rames · journal journal de la ferme · leaderboard classement.
