@@ -125,6 +125,27 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]),html[data-app
 /* Privacy link on the sign-in card, and three small legal links at the foot of the page. */
 .account-card .account-legal{margin:10px 0 0;text-align:center;font-size:11px;line-height:1.5;color:#9a8f80}
 .account-legal a{color:#7d6f58}
+/* The language switch under the sign-up form: a small flag button that opens a little menu of languages above it. */
+.language-switch{position:relative;display:flex;justify-content:center;margin:10px 0 0}
+.language-switch[hidden]{display:none}
+.language-button{display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 5px;border:1px solid #e7e0d9;border-radius:999px;background:#fffef9;color:#7d6f58;font-size:12px;font-weight:700;line-height:1.2;transition:background .15s,border-color .15s}
+.language-button:hover,.language-button[aria-expanded=true]{background:#f6f0e6;border-color:#d9cdbf}
+.language-button img{width:22px;height:22px;object-fit:contain}
+.language-chevron{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+.language-button[aria-expanded=true] .language-chevron{transform:rotate(180deg)}
+.language-menu{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);z-index:5;display:grid;gap:1px;min-width:156px;max-width:calc(100vw - 32px);max-height:min(300px,60vh);overflow-y:auto;margin:0;padding:4px;list-style:none;background:#fffdf6;border:1px solid #eadfd3;border-radius:13px;box-shadow:0 14px 40px #2d2c1138,0 2px 0 #e3d8cc;animation:language-menu-in .14s ease-out}
+.language-menu.is-wide{grid-template-columns:1fr 1fr;width:300px}
+.language-menu[hidden]{display:none}
+.language-menu li{display:flex;align-items:center;gap:7px;padding:5px 8px 5px 6px;border-radius:8px;color:#4c452b;font-size:12.5px;font-weight:700;line-height:1.2;cursor:pointer;outline:none}
+.language-menu li img{width:20px;height:20px;object-fit:contain;flex-shrink:0}
+.language-menu li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.language-menu li:hover,.language-menu li:focus-visible{background:#f3ede4}
+.language-menu li[aria-selected=true]{background:#efe8d8;color:#3d3923}
+.language-check{width:13px;height:13px;flex-shrink:0;fill:none;stroke:#5c7a34;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+@keyframes language-menu-in{from{opacity:0;transform:translate(-50%,4px)}}
+/* In other languages the three chips under the title keep their words whole on a phone. */
+.loop-icons li{white-space:nowrap}
+@media(max-width:420px){:root:not([lang=en]) .loop-icons{gap:5px}:root:not([lang=en]) .loop-icons li:not(.loop-arrow){gap:5px;padding:3px 9px 3px 3px;font-size:12px}:root:not([lang=en]) .loop-icons .wart{width:24px}}
 .site-legal{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;margin-top:auto;padding:14px 0 18px;font-size:12px;color:#efe6cfcc}
 .site-legal a{color:#fff5da}
 @media(max-width:720px){.site-legal{padding:44px 0 24px}}

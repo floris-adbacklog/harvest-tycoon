@@ -16,9 +16,11 @@ import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText
 import {createConnection,connectionMessage,reasonOf,WAKE_GRACE} from './connection.js';
 import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation} from '../public/i18n.js';
+import {renderLanguageSwitch} from './language-switch.js';
 const $=id=>document.getElementById(id);
 // Another language than English: translate the page's texts as they appear (public/i18n.js).
 startTranslation();
+renderLanguageSwitch();
 startPwa();startUpdateCheck();
 // A screen to open once the farm is there: from a notification, a shortcut on the app icon or ?open= (public/app-links.js). The farm
 // frame takes it when it is ready (harvestTakeOpen); a notification tapped while the game is open arrives from sw.js as a message.
