@@ -8,7 +8,7 @@ export const LANGUAGES=Object.freeze([
  {code:'fr',name:'Français',ready:true},
  {code:'id',name:'Bahasa Indonesia'},
  {code:'nl',name:'Nederlands',ready:true},
- {code:'pt',name:'Português'},
+ {code:'pt',name:'Português',ready:true},
  {code:'tr',name:'Türkçe'},
  {code:'ru',name:'Русский'},
  {code:'ar',name:'العربية'},

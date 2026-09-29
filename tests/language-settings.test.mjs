@@ -10,7 +10,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // 29 Sep 2026: Settings > Language lists the languages to come, each with its painted flag; only English can be chosen so far.
 test('every language has its painted flag; English and the fully translated languages can be chosen',()=>{
  assert.deepEqual(LANGUAGES.map(l=>l.code),['en','de','es','fr','id','nl','pt','tr','ru','ar','hi','ja']);
- assert.deepEqual(LANGUAGES.filter(l=>l.ready).map(l=>l.code),['en','de','es','fr','nl','hi']);
+ assert.deepEqual(LANGUAGES.filter(l=>l.ready).map(l=>l.code),['en','de','es','fr','nl','pt','hi']);
  for(const {code} of LANGUAGES){
   assert.ok(art(`flag-${code}`).includes(`src="/assets/icons/flag-${code}.webp"`),code);
   assert.ok(statSync(new URL(`../public/assets/icons/flag-${code}.webp`,import.meta.url)).size>2000,code);
@@ -38,7 +38,8 @@ test('the sign-up page has a small language switch under the form with the trans
  try{renderLanguageSwitch(host);}finally{doc.addEventListener=added;}
  assert.equal(host.hidden,false);assert.ok(on.click&&on.keydown,'the button opens the menu, the menu answers clicks and keys');
  assert.match(host.innerHTML,/^<button type="button" class="language-button" aria-haspopup="listbox" aria-expanded="false"><img src="\/assets\/icons\/flag-en\.webp"[^>]*><span lang="en">English<\/span>/);
- assert.match(host.innerHTML,/<ul class="language-menu" role="listbox" aria-label="Language" hidden>/);
+ assert.match(host.innerHTML,/<ul class="language-menu( is-wide)?" role="listbox" aria-label="Language" hidden>/);
+ assert.equal(host.innerHTML.includes("is-wide"),LANGUAGES.filter(l=>l.ready).length>6,"two columns from seven languages on");
  const options=[...host.innerHTML.matchAll(/<li role="option"[^>]* data-code="(\w+)"/g)].map(m=>m[1]);
  assert.deepEqual(options,LANGUAGES.filter(l=>l.ready).map(l=>l.code),'only the languages you can play in');
  assert.match(host.innerHTML,/data-code="en" lang="en" aria-selected="true"><img src="\/assets\/icons\/flag-en\.webp"[^>]*><span>English<\/span><svg class="language-check"/);

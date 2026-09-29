@@ -100,3 +100,19 @@ Seed Lab Labo des graines · Glasshouse Serre · Greenhouse (stop) Pépinière �
 fair star étoile de foire · Farmhouse Corps de ferme · Dairy Barn Étable · Feed Mill Moulin à provende · Juice Press Pressoir ·
 Preserves Workshop Atelier des conserves · Tool workshop Remise à outils · Apiary Ruches · Animal paddock Enclos ·
 Squash courgette · Pumpkin citrouille · Pole beans haricots à rames · journal journal de la ferme · leaderboard classement.
+
+### Português (Brazilian, informal "você")
+
+Brazilian Portuguese: far more players reach the game through Meta from Brazil than from Portugal.
+coins moedas · diamonds diamantes · field campo · crop cultivo · harvest colher/colheita · plant plantar · water regar ·
+extra care cuidado extra · batch lote · slot vaga · goods produtos · building construção · upgrade melhoria/melhorar ·
+level nível · Market Mercado · Quests Missões · More Mais · My farm Minha fazenda · Farm Family Família da Fazenda ·
+Family Chest Baú da Família · Family Order Pedido da Família · order pedido · leader/co-leader líder/vice-líder ·
+rank posto · honorary honorário · streak sequência · daily gift presente diário · chore tarefa · helping hand mão amiga ·
+Estate Propriedade · Valley Market Mercado do Vale · farm stall barraca da fazenda · storage estoque ·
+natural fertilizer adubo natural · animal feed ração · heirloom variedade crioula · test bed canteiro de teste ·
+Seed Lab Laboratório de Sementes · Glasshouse Estufa · Greenhouse (stop) Viveiro · Grand Valley Fair Grande Feira do Vale ·
+Farmhouse Sede · Dairy Barn Estábulo · Feed Mill Moinho de Ração · Juice Press Prensa de Sucos · Sheep Barn Celeiro das Ovelhas ·
+Goat Shed Capril · Pig Farm Chiqueiro · Preserves Workshop Oficina de Conservas · Tool workshop Galpão de Ferramentas ·
+Apiary Colmeias · Bee Yard Apiário · Animal paddock Cercado · Squash abobrinha · Berries frutas vermelhas · Green beans vagens ·
+Pole beans feijão-trepador · leaderboard ranking.
