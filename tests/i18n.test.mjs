@@ -33,7 +33,7 @@ test('English farmers load no translation; the device language picks a translate
  const saved=Object.getOwnPropertyDescriptor(globalThis,'navigator'),store=new Map();
  globalThis.localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v)};
  try{
-  Object.defineProperty(globalThis,'navigator',{value:{languages:['nl-NL','en-GB']},configurable:true});
+  Object.defineProperty(globalThis,'navigator',{value:{languages:['sv-SE','en-GB']},configurable:true});
   assert.equal(chosenLanguage(),'en');
   let fetched=false;globalThis.fetch=()=>{fetched=true;return Promise.reject(new Error('no'));};
   const classes=new Set(['i18n-wait']);

@@ -70,3 +70,18 @@ storage भंडार · natural fertilizer जैविक खाद · anima
 Seed Lab बीज प्रयोगशाला · Glasshouse ग्लासहाउस · Greenhouse (activity) नर्सरी · Grand Valley Fair घाटी का बड़ा मेला ·
 grand champion महाविजेता · visitor मेहमान · Windmill पवनचक्की · Dairy Barn गौशाला · Squash तोरी · Pole beans सेम ·
 cheese चीज़ · goat cheese बकरी का पनीर · journal फ़ार्म डायरी · Trade Depot व्यापार डिपो · Silo research साइलो शोध.
+
+### Nederlands (informal "je")
+
+coins munten · diamonds diamanten · field veld · crop gewas · harvest oogsten/oogst · plant planten · water water geven ·
+extra care extra verzorging · batch batch · slot plek · goods producten · building gebouw · upgrade upgrade/upgraden ·
+level level · Market Markt · Quests Opdrachten · More Meer · My farm Mijn boerderij · Farm Family Boerenfamilie ·
+Family Chest Familiekist · Family Order Familiebestelling · order bestelling · leader/co-leader leider/co-leider ·
+honorary erelid · boost boost · streak reeks · daily gift dagcadeau · chore klusje · helping hand helpende hand ·
+Estate Landgoed · Valley Vallei · Valley Market Valleimarkt · farm stall boerderijkraam · storage opslag ·
+natural fertilizer natuurlijke mest · animal feed veevoer · heirloom oud ras · test bed proefbed · Seed Lab Zadenlab ·
+Glasshouse Kas · Greenhouse (stop) Broeibak · Grand Valley Fair Grote Valleifair · fair star fairster · ribbon lint ·
+grand champion grote kampioen · Farmhouse Woonboerderij · Dairy Barn Koeienstal · Feed Mill Voermolen ·
+Juice Press Sappers · Preserves Workshop Inmaakkeuken · Tool workshop Gereedschapsschuur · Apiary Bijenkorven ·
+Animal paddock Dierenweide · Squash courgette · Pole beans stokbonen · Green beans sperziebonen · journal boerderijdagboek ·
+leaderboard ranglijst · farm events boerderijevenementen. Building names go without "de/het" before a `{0}`.
