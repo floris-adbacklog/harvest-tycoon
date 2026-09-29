@@ -2,6 +2,7 @@ import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {farmNow} from './farm-client.js';
+import {placeLabel} from './place-label.js';
 import {formatDuration,levelOf,FAMILY_EVENT_BONUS} from './farm-state.js';
 // Farm events: a short shared goal (usually 5 hours, then a 1-hour break before the next one). The Events button
 // sits next to Quests on desktop and in the More menu on phones; the screen shows the running event, or the next
@@ -64,7 +65,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const rewards=e=>{
   const {coins}=e.rewards;
   const row=(p,medal,place)=>`<li>${medal}<b>${place}</b><span>${art('coins')}${num(coins+p.coins)}</span><span>${art('diamonds')}${num(p.diamonds)}</span></li>`;
-  return `<div class="event-podium"><span>What you win when you finish</span><ol>${PODIUM_PRIZES.map((p,i)=>row(p,art(MEDALS[i]),['1st','2nd','3rd'][i])).join('')}${row(FINISHER_PRIZE,'<i aria-hidden="true"></i>','Everyone else')}</ol><p class="event-family-bonus">${art('family-members')}<span>Family bonus: when ${FAMILY_EVENT_BONUS.finishers} or more of your Farm Family finish, you each get ${art('coins')}${num(FAMILY_EVENT_BONUS.coins)} and ${art('diamonds')}${num(FAMILY_EVENT_BONUS.diamonds)} more.</span></p></div>`;
+  return `<div class="event-podium"><span>What you win when you finish</span><ol>${PODIUM_PRIZES.map((p,i)=>row(p,art(MEDALS[i]),placeLabel(i+1))).join('')}${row(FINISHER_PRIZE,'<i aria-hidden="true"></i>','Everyone else')}</ol><p class="event-family-bonus">${art('family-members')}<span>Family bonus: when ${FAMILY_EVENT_BONUS.finishers} or more of your Farm Family finish, you each get ${art('coins')}${num(FAMILY_EVENT_BONUS.coins)} and ${art('diamonds')}${num(FAMILY_EVENT_BONUS.diamonds)} more.</span></p></div>`;
  };
  // Goals use the Family Order line: picture, name, "41 / 60" and a bar.
  function goals(e,{preview=false}={}){
@@ -90,7 +91,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   // longer qualify: "not qualified", without a prize.
   const next=PODIUM_PRIZES[s.top.filter(r=>r.finished).length]??FINISHER_PRIZE,{coins:base}=e.rewards??{coins:0};
   const soon=r=>r.isYou?`<span class="event-soon" title="When you qualify">${art('coins')}${num(base+next.coins)}${art('diamonds')}${num(next.diamonds)}<small>when you qualify</small></span>`:'<span class="event-qualifying">Qualifying</span>';
-  const label=r=>r.podium?`${['1st','2nd','3rd'][r.rank-1]} place`:r.finished?'✓ Finished':r.progress>=100?(final?'All goals done, not qualified':'All goals done · qualifying'):`${r.progress}% done`;
+  const label=r=>r.podium?placeLabel(r.rank):r.finished?'✓ Finished':r.progress>=100?(final?'All goals done, not qualified':'All goals done · qualifying'):`${r.progress}% done`;
   const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><button type="button" class="event-standing-who" data-event-profile="${esc(r.playerId)}" aria-label="Open ${esc(r.username)}’s profile"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${esc(r.username)}${vipBadge(r.vipExpiresAt,farmNow())}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div></button><span class="event-standing-reward">${r.finished?`<b>${art('coins')}${num(r.coins)}</b>${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:r.progress>=100?(final?'':soon(r)):`<progress class="event-mini" max="100" value="${r.progress}" aria-label="${esc(r.username)}: ${r.progress}% done"></progress>`}</span></article>`;
   return `<h3 class="event-section-title">${final?`Final standings · ${esc(e.title)}`:'Top farmers'}</h3><p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:'Rewards if the event ended now. The first three to finish win a podium prize.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
  }

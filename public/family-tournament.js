@@ -1,4 +1,5 @@
 import {rankArt} from './rank-art.js';
+import {placeLabel} from './place-label.js';
 import {art} from './visual-icons.js';
 import {formatDuration} from './farm-state.js';
 
@@ -11,7 +12,7 @@ const num=n=>Number(n??0).toLocaleString('en-US');
 export function renderFamilyTournament({view,now,emblem,rewards,preview}){
  const t=view.tournament;
  // The three prizes now, how far first prize has grown towards its maximum, and where your family stands.
- const ladder=(t.placePrizes??[t.firstPrize]).map((prize,i)=>`<div class="family-prize-step family-place-${i+1}">${rankArt(i+1)}<span>${['1st','2nd','3rd'][i]} place</span><strong>${art('diamonds')}${num(prize)}</strong></div>`).join('');
+ const ladder=(t.placePrizes??[t.firstPrize]).map((prize,i)=>`<div class="family-prize-step family-place-${i+1}">${rankArt(i+1)}<span>${placeLabel(i+1)}</span><strong>${art('diamonds')}${num(prize)}</strong></div>`).join('');
  const grown=Math.max(0,Math.min(1,(t.firstPrize-t.firstPrizeMin)/Math.max(1,t.firstPrizeMax-t.firstPrizeMin)));
  const growth=`<div class="family-prize-growth"><div><strong>+${num(t.perExtraFamily)} for every family that takes part</strong><span>${t.firstPrize>=t.firstPrizeMax?`1st prize is at its maximum of ${num(t.firstPrizeMax)} diamonds.`:`${num(t.activeFamilies)} of ${num(t.familiesForMax)} families for the maximum of ${num(t.firstPrizeMax)} diamonds.`}</span></div><progress max="100" value="${Math.round(grown*100)}" aria-label="First prize towards its maximum"></progress></div>`;
  const gap=t.yourRank>1?` · ${num(t.pointsBehind)} behind #${t.yourRank-1}`:t.yourRank===1&&t.top.length>1?` · ${num(t.familyPoints-t.top[1].points)} ahead of #2`:'';

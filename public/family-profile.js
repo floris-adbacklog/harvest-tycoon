@@ -8,10 +8,10 @@ import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {FAMILY_JOIN_MODES,FAMILY_MIN_LEVEL,FAMILY_RANKS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rankArt} from './rank-art.js';
+import {placeLabel} from './place-label.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
-const place=rank=>({1:'1st',2:'2nd',3:'3rd'}[rank]??`${rank}th`);
 const day=ms=>new Date(ms).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short',year:'numeric'});
 const weekOf=week=>new Date((week*7+4)*86400000).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short'});
 
@@ -60,7 +60,7 @@ export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
   ${tile('family-tournament',p.thisWeek.rank?`#${p.thisWeek.rank}`:'—',p.thisWeek.rank?'In the tournament now':'Not in the tournament yet')}
  </section>
  <section class="family-profile-members"><h3>Farmers</h3><div class="family-member-list">${p.members.map(member).join('')}</div></section>
- <section class="family-profile-recent"><h3>Recent tournaments</h3>${p.recent.length?p.recent.map(r=>`<div class="family-list-row"><b class="family-rank">${rankArt(r.rank)}</b><div><strong>${place(r.rank)} place</strong><span>Week of ${weekOf(r.week)} · ${num(r.points)} points</span></div></div>`).join(''):'<p class="family-profile-empty">No finished tournament yet. A week ends on Monday, 00:00 UTC.</p>'}</section>
+ <section class="family-profile-recent"><h3>Recent tournaments</h3>${p.recent.length?p.recent.map(r=>`<div class="family-list-row"><b class="family-rank">${rankArt(r.rank)}</b><div><strong>${placeLabel(r.rank)}</strong><span>Week of ${weekOf(r.week)} · ${num(r.points)} points</span></div></div>`).join(''):'<p class="family-profile-empty">No finished tournament yet. A week ends on Monday, 00:00 UTC.</p>'}</section>
  <div class="family-profile-actions">${action.note?`<p class="family-notice">${esc(action.note)}</p>`:''}${action.button?`<button type="button" class="${action.button==='open'||action.button==='family_join'||action.button==='family_request'?'primary-button':'small-button'}" data-family-profile-action="${action.button}">${esc(action.label)}</button>`:''}</div>`;
 }
 
