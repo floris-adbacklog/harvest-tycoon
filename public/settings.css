@@ -26,3 +26,6 @@
 
 /* The Privacy block in Settings: its policy link looks like the other text buttons there. */
 #privacy-settings a.link-button{display:inline-flex;align-items:center;font-size:14px;font-weight:700;color:#7a6c58;text-decoration:underline;text-underline-offset:3px}
+
+/* Settings > Language (language-settings.js): the languages that are not translated yet are greyed out in the dropdown. */
+#language-settings .pretty-select-option:disabled .game-art{filter:grayscale(1)}

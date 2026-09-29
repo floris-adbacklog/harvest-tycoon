@@ -1,4 +1,5 @@
 import {HEIRLOOMS} from './farm-state.js';
+import {LANGUAGES} from './languages.js';
 // Every item has one explicit image. Square sprite cells cannot reveal neighbouring art.
 const sheets=[
  {file:'crops-v2.webp',columns:3,keys:['wheat','lettuce','corn','barley','cabbage','cauliflower','pumpkin','redcabbage','sunflower']},
@@ -58,6 +59,8 @@ for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver',
 for(const key of [...Object.keys(HEIRLOOMS),...ENDGAME_PICTURES,'master','seedlab','visitors','giantpumpkin','valleyprojects'])webpPictures.add(key);   // looked up by the short name
 // Family rank badges (27 Sep 2026), painted by the user; public/family-profile.js shows each one that is here beside the rank's name.
 for(const key of ['family-rank-leader','family-rank-coleader','family-rank-honorary','family-rank-member','family-rank-top']){pictures[key]=key;webpPictures.add(key);}
+// A flag for every language in Settings (29 Sep 2026, painted, WebP): flag-en, flag-es, ...
+for(const {code} of LANGUAGES){pictures[`flag-${code}`]=`flag-${code}`;webpPictures.add(`flag-${code}`);}
 // A picture by its file name, for the screens that show one without art() (the Buildings list and a building's page).
 export const pictureFile=name=>`/assets/icons/${name}.${webpPictures.has(name)?'webp':'png'}`;
 // Where a picture lives, for drawing it on a canvas (the family flag, game.js): a file, and for a sprite its cell in the sheet.

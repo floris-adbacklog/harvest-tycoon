@@ -40,6 +40,7 @@ import { createActivitiesUI } from './activities-ui.js';
 import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress } from './farm-state.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
+import { renderLanguageSettings } from './language-settings.js';
 import { watchSelects } from './pretty-select.js';
 import { createInviteUI } from './invite-ui.js';
 import { fitText } from './fit-text.js';
@@ -912,6 +913,7 @@ function bindUI(){
  $('quest-collapse').addEventListener('click',toggleQuest);
  document.querySelector('.quest-heading')?.addEventListener('click',event=>{if(event.target.closest('#quest-collapse'))return;if(mobileLayout.matches)beginner.open();});
  soundUI=createSoundSettings(farmAudio,{onEmailOn:()=>{if(!emailAccount.needed)return;toast('Confirm your email address and the daily email starts.');emailCheckUI?.open();}});
+ renderLanguageSettings();
  // Every dropdown in the game gets the game look, also the ones that are drawn later (public/pretty-select.js).
  watchSelects();
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
