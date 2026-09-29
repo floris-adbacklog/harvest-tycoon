@@ -9,12 +9,15 @@ const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SE
 // problem reading it only hides the offer, so the Starter Pack and the diamond packs keep working.
 async function currentOffer(player:string){
  const now=new Date().toISOString();
- const found=await admin.from('harvest_offers').select('*').is('stopped_at',null).lte('starts_at',now).gt('ends_at',now).order('created_at',{ascending:false}).limit(1).maybeSingle();
+ // The three look-ups at once (30 Sep 2026: one after the other they made the catalogue ~150 ms slower).
+ const [found,stats,bought]=await Promise.all([
+  admin.from('harvest_offers').select('*').is('stopped_at',null).lte('starts_at',now).gt('ends_at',now).order('created_at',{ascending:false}).limit(1).maybeSingle(),
+  admin.from('player_stats').select('level').eq('player_id',player).maybeSingle(),
+  admin.from('harvest_purchases').select('offer_id').eq('player_id',player).eq('pack','offer').in('status',['credited','test_paid'])]);
  if(found.error){console.error('Offer unavailable',found.error.code);return null;}const o=found.data;if(!o)return null;
- const stats=await admin.from('player_stats').select('level').eq('player_id',player).maybeSingle();if(stats.error)throw stats.error;
+ if(stats.error)throw stats.error;if(bought.error)throw bought.error;
  if((stats.data?.level??1)<o.min_level)return null;
- const bought=await admin.from('harvest_purchases').select('id').eq('player_id',player).eq('offer_id',o.id).in('status',['credited','test_paid']).limit(1);if(bought.error)throw bought.error;
- return {id:o.id,diamonds:o.diamonds,coins:o.coins,vipDays:o.vip_days,audience:o.audience,endsAt:Date.parse(o.ends_at),cents:OFFER.cents,valueCents:OFFER.valueCents,bought:(bought.data??[]).length>0};
+ return {id:o.id,diamonds:o.diamonds,coins:o.coins,vipDays:o.vip_days,audience:o.audience,endsAt:Date.parse(o.ends_at),cents:OFFER.cents,valueCents:OFFER.valueCents,bought:(bought.data??[]).some(b=>b.offer_id===o.id)};
 }
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
@@ -30,15 +33,17 @@ Deno.serve(async req=>{
   const key=(Deno.env.get('STRIPE_SECRET_KEY')??'').trim();
   const {mode,enabled}=livePaymentConfiguration(key,Deno.env.get('STRIPE_WEBHOOK_SECRET'),Deno.env.get('PAYMENTS_ENABLED'));
   const live=true;
-  const existingStarter=body.operation==='catalog'||body.pack==='starter'?await admin.from('harvest_purchases').select('*').eq('player_id',user.id).eq('pack','starter').eq('livemode',live).neq('status','expired').maybeSingle():null;
-  if(existingStarter?.error)throw existingStarter.error;
   // The offer opens when the farm reaches level 14, where diamond boosts unlock: the server wrote that moment into the farm (farm-state.js stampStarterOffer).
-  const offerRow=body.operation==='catalog'||body.pack==='starter'?await admin.from('player_farms').select('offer:state->starterOffer').eq('player_id',user.id).maybeSingle():null;
-  if(offerRow?.error)throw offerRow.error;
-  const starter=starterEligibility(offerRow?.data?.offer?.unlockedAt,['credited','test_paid'].includes(existingStarter?.data?.status));
   // The special offer running now (game/payments.js OFFER), for a farm at its level: what is in it, until when, and whether this
   // farmer already bought it. Only in the catalogue and for an offer checkout, so other requests make no extra queries.
-  const special=body.operation==='catalog'||body.pack==='offer'?await currentOffer(user.id):null;
+  // The Starter Pack's and the special offer's look-ups run at the same time.
+  const [existingStarter,offerRow,special]=await Promise.all([
+   body.operation==='catalog'||body.pack==='starter'?admin.from('harvest_purchases').select('*').eq('player_id',user.id).eq('pack','starter').eq('livemode',live).neq('status','expired').maybeSingle():null,
+   body.operation==='catalog'||body.pack==='starter'?admin.from('player_farms').select('offer:state->starterOffer').eq('player_id',user.id).maybeSingle():null,
+   body.operation==='catalog'||body.pack==='offer'?currentOffer(user.id):null]);
+  if(existingStarter?.error)throw existingStarter.error;
+  if(offerRow?.error)throw offerRow.error;
+  const starter=starterEligibility(offerRow?.data?.offer?.unlockedAt,['credited','test_paid'].includes(existingStarter?.data?.status));
   if(body.operation==='catalog')return reply({enabled,mode,serverNow:Date.now(),starter,offer:special,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
   if(body.operation==='status'){
    if(!UUID.test(body.purchaseId??''))return reply({error:'Invalid purchase.'},400);
