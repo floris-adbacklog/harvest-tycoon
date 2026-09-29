@@ -29,6 +29,6 @@ test('the toast names what moved, with the item\'s own name',()=>{
 test('a gift sends the chosen item and amount; the request list is every crop or good you have unlocked',()=>{
  const ui=read('public/social-ui.js');
  assert.match(ui,/act\(\{kind:'gift',recipient:gift\.to,item:gift\.item,quantity:gift\.quantity\}\)/);
- assert.match(ui,/const keys=Object\.keys\(ITEMS\)\.filter\(k=>itemAvailable\(state,k\)&&!ITEMS\[k\]\.heirloom\)/);
- assert.match(ui,/const giftKeys=\(\)=>Object\.keys\(ITEMS\)\.filter\(k=>stock\(k\)>0&&!ITEMS\[k\]\.heirloom\)/,'you can only give what you have');
+ assert.match(ui,/const keys=Object\.keys\(ITEMS\)\.filter\(k=>itemAvailable\(state,k\)&&!ITEMS\[k\]\.heirloom&&!worldTwoItem\(k\)\)/);
+ assert.match(ui,/const giftKeys=\(\)=>Object\.keys\(ITEMS\)\.filter\(k=>stock\(k\)>0&&!ITEMS\[k\]\.heirloom&&!worldTwoItem\(k\)\)/,'you can only give what you have, and never World II goods');
 });

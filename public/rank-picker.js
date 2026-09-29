@@ -6,7 +6,9 @@ export const rankArtKey=key=>RANK_ART[key]??(key.startsWith('harvested_')?key.sl
 // "By crop" and "By good": each chip opens its own row of boards and remembers the last one you looked at there.
 const GROUPS=Object.freeze({
  crops:{toggle:'data-rank-crops',row:'rank-crops',label:'By crop',art:'wheat',label2:'Choose a crop',first:'harvested_wheat'},
- goods:{toggle:'data-rank-goods',row:'rank-goods',label:'By good',art:'bread',label2:'Choose a good',first:'made_bread'}
+ goods:{toggle:'data-rank-goods',row:'rank-goods',label:'By good',art:'bread',label2:'Choose a good',first:'made_bread'},
+ // World II: the village's goods, a chip that is hidden until the farmer reaches level 100 (src/ui.js).
+ village:{toggle:'data-rank-village',row:'rank-village',label:'Village',art:'village-badge',label2:'Choose a village good',first:'made_packedlunch',hidden:true}
 });
 const groupOf=(categories,key)=>categories[key]?.group??null;
 const chip=(art,key,label,extra='')=>`<button type="button" class="rank-chip ${extra}" data-rank="${key}" aria-pressed="false">${art}<span>${label}</span></button>`;
@@ -14,7 +16,7 @@ const chip=(art,key,label,extra='')=>`<button type="button" class="rank-chip ${e
 export function rankPickerMarkup(categories,art){
  const entries=Object.entries(categories),groups=Object.entries(GROUPS).filter(([g])=>entries.some(([,c])=>c.group===g));
  return `<div class="rank-chips" role="group" aria-labelledby="rank-label">${entries.filter(([,c])=>!c.group).map(([key,c])=>chip(art(RANK_ART[key]??'trophy'),key,c.heading)).join('')}`
-  +groups.map(([,g])=>`<button type="button" class="rank-chip" ${g.toggle} aria-pressed="false" aria-expanded="false" aria-controls="${g.row}">${art(g.art)}<span>${g.label}</span><span class="rank-caret" aria-hidden="true"></span></button>`).join('')+'</div>'
+  +groups.map(([,g])=>`<button type="button" class="rank-chip" ${g.toggle} aria-pressed="false" aria-expanded="false" aria-controls="${g.row}"${g.hidden?' hidden':''}>${art(g.art)}<span>${g.label}</span><span class="rank-caret" aria-hidden="true"></span></button>`).join('')+'</div>'
   +groups.map(([name,g])=>`<div class="rank-crops" id="${g.row}" role="group" aria-label="${g.label2}" hidden>${entries.filter(([,c])=>c.group===name).map(([key,c])=>chip(art(rankArtKey(key)),key,c.heading,'rank-chip-small')).join('')}</div>`).join('');
 }
 
@@ -22,7 +24,7 @@ export function rankPickerMarkup(categories,art){
 // {rank: 'level'} for a chip, {crops: true} for "By crop" or {group: 'goods'} for "By good". A row can be opened and closed on its own:
 // closing it keeps the board you were looking at.
 export function nextRank(categories,state,tap){
- let {category}=state;const last={crops:state.lastCrop??GROUPS.crops.first,goods:state.lastGood??GROUPS.goods.first};
+ let {category}=state;const last={crops:state.lastCrop??GROUPS.crops.first,goods:state.lastGood??GROUPS.goods.first,village:state.lastVillage??GROUPS.village.first};
  let open=state.open===undefined||state.open===true?groupOf(categories,category):state.open||null;
  const group=tap.crops?'crops':Object.hasOwn(GROUPS,tap.group??'')?tap.group:null;
  if(group){
@@ -30,12 +32,12 @@ export function nextRank(categories,state,tap){
   else if(Object.hasOwn(categories,last[group])){category=last[group];open=group;}
  }else if(Object.hasOwn(categories,tap.rank)){category=tap.rank;open=groupOf(categories,category);}
  const now=groupOf(categories,category);if(now)last[now]=category;
- return {category,lastCrop:last.crops,lastGood:last.goods,open,showCrops:open==='crops',showGoods:open==='goods',changed:category!==state.category};
+ return {category,lastCrop:last.crops,lastGood:last.goods,lastVillage:last.village,open,showCrops:open==='crops',showGoods:open==='goods',showVillage:open==='village',changed:category!==state.category};
 }
 
 // Wires the chips inside `root` to the hidden field and reports real changes.
 export function bindRankPicker(root,{categories,field,onChange}){
- let state={category:field.value||'level',lastCrop:GROUPS.crops.first,lastGood:GROUPS.goods.first,open:groupOf(categories,field.value||'level')};
+ let state={category:field.value||'level',lastCrop:GROUPS.crops.first,lastGood:GROUPS.goods.first,lastVillage:GROUPS.village.first,open:groupOf(categories,field.value||'level')};
  const paint=()=>{
   for(const button of root.querySelectorAll('[data-rank]'))button.setAttribute('aria-pressed',String(button.dataset.rank===state.category));
   for(const [name,g] of Object.entries(GROUPS)){
@@ -45,14 +47,17 @@ export function bindRankPicker(root,{categories,field,onChange}){
   }
  };
  root.addEventListener('click',event=>{
-  const button=event.target.closest?.('[data-rank],[data-rank-crops],[data-rank-goods]');if(!button)return;
-  const tap=button.hasAttribute('data-rank-crops')?{crops:true}:button.hasAttribute('data-rank-goods')?{group:'goods'}:{rank:button.dataset.rank};
+  const button=event.target.closest?.('[data-rank],[data-rank-crops],[data-rank-goods],[data-rank-village]');if(!button)return;
+  const tap=button.hasAttribute('data-rank-crops')?{crops:true}:button.hasAttribute('data-rank-goods')?{group:'goods'}:button.hasAttribute('data-rank-village')?{group:'village'}:{rank:button.dataset.rank};
   const next=nextRank(categories,state,tap);
-  state={category:next.category,lastCrop:next.lastCrop,lastGood:next.lastGood,open:next.open};field.value=next.category;paint();
+  state={category:next.category,lastCrop:next.lastCrop,lastGood:next.lastGood,lastVillage:next.lastVillage,open:next.open};field.value=next.category;paint();
   // On a phone the chips scroll sideways: keep the chosen one in view.
   root.querySelector(`[data-rank="${next.category}"]`)?.scrollIntoView?.({inline:'center',block:'nearest',behavior:'smooth'});
   if(next.changed)onChange(next.category);
  });
  paint();
- return {select(key){state=nextRank(categories,state,{rank:key});field.value=state.category;paint();}};
+ return {
+  // From level 100 the Village chip shows (World II's boards); below it, it stays hidden and its row closed.
+  showVillage(on){const toggle=root.querySelector('[data-rank-village]');if(toggle)toggle.hidden=!on;if(!on&&state.open==='village'){state={...state,open:null};paint();}},
+  select(key){state=nextRank(categories,state,{rank:key});field.value=state.category;paint();}};
 }

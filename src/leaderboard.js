@@ -2,11 +2,14 @@ import {avatarImage} from '../public/player-avatars.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {staffRole,staffBadge} from './staff-badge.js';
 import {rankArt} from '../public/rank-art.js';
-import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS} from '../public/farm-state.js';
+import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem} from '../public/farm-state.js';
 const CROP_BOARDS=Object.keys(CROPS).sort((a,b)=>(CROP_LEVELS[a]??1)-(CROP_LEVELS[b]??1));
 // The level at which a good can first be made: its earliest recipe outside the Factory (the building's level or the recipe's own).
 const goodLevel=key=>Math.min(...Object.values(RECIPES).filter(r=>r.building!=='factory'&&r.output[key]).map(r=>Math.max(BUILDING_LEVELS[r.building]??1,r.minLevel??1)),Infinity);
-const GOOD_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&!ITEMS[key].heirloom).sort((a,b)=>goodLevel(a)-goodLevel(b)||ITEMS[a].name.localeCompare(ITEMS[b].name));
+const byLevel=(a,b)=>goodLevel(a)-goodLevel(b)||ITEMS[a].name.localeCompare(ITEMS[b].name);
+// World II's goods (30 Sep 2026) are boards of their own, under Village, which only a farmer from level 100 sees (src/ui.js).
+const GOOD_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&!ITEMS[key].heirloom&&!worldTwoItem(key)).sort(byLevel);
+const VILLAGE_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&worldTwoItem(key)).sort(byLevel);
 export const LEADERBOARD_CATEGORIES=Object.freeze({
  level:{label:'Highest level',heading:'Level',unit:'level',description:'Your farmer level, earned through farming experience.'},
  currency:{label:'Most coins',heading:'Coins',unit:'coins',description:'Current coin balance. Spending coins can change your position.'},
@@ -29,7 +32,8 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  ...Object.fromEntries(CROP_BOARDS.map(key=>[`harvested_${key}`,{label:`${CROPS[key].name} harvested`,heading:CROPS[key].name,unit:`${CROPS[key].name.toLowerCase()} harvested`,group:'crops',description:`Lifetime ${CROPS[key].name.toLowerCase()} harvested, including extra yield from water and care.`}])),
  // One board per good, in the order the goods unlock. Each reads the good's count in player_stats.goods_made (the farm journal's
  // numbers, kept up to date on every save: supabase/leaderboard-goods.sql).
- ...Object.fromEntries(GOOD_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'goods',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} collected from your buildings.`}]))
+ ...Object.fromEntries(GOOD_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'goods',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} collected from your buildings.`}])),
+ ...Object.fromEntries(VILLAGE_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'village',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} made for and in the village.`}]))
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}
 // A good's board reads one key of goods_made ("goods_made->bread" to the database); every other board is its own column.

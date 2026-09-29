@@ -1,8 +1,8 @@
 import {playerAvatar} from './player-avatars.js';
 import {isRecentlyActive} from './presence.js';
-import {CROPS,ITEMS,MASTERY_TIERS} from './farm-state.js';
+import {CROPS,ITEMS,MASTERY_TIERS,worldTwoItem} from './farm-state.js';
 
-const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom);
+const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom&&!worldTwoItem(key));   // the farm's goods, not World II's
 // The profile's stat pages (src/player-profiles.js): the same public numbers as the leaderboards, coins included (the "Most coins"
 // board already shows them). Diamonds and the rest of the account stay private.
 const metrics=['harvested_crops','goods_produced','items_sold','deliveries','badges','farm_fields','building_upgrades','best_streak','events_finished','chores_done','helping_rounds','estate_projects','quests_done','currency'];

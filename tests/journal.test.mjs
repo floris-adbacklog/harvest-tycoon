@@ -6,7 +6,7 @@ import {roadmapMarkup} from '../public/progression-ui.js';
 const ui=readFileSync(new URL('../public/retention-ui.js',import.meta.url),'utf8');
 
 test('the farm journal counts goods made next to crops harvested; Glasshouse crates are crops, not goods',()=>{
- assert.match(ui,/crops=Math\.max\(stats\.harvested\?\?0,total\('harvest_'\)\)\+total\('made_',k=>CROPS\[k\]\),goods=Math\.max\(stats\.produced\?\?0,total\('made_',k=>!CROPS\[k\]\)\)/);
+ assert.match(ui,/crops=Math\.max\(stats\.harvested\?\?0,total\('harvest_'\)\)\+total\('made_',k=>CROPS\[k\]\),goods=Math\.max\(stats\.produced\?\?0,total\('made_',k=>!CROPS\[k\]&&!worldTwoItem\(k\)\)\)/,'World II goods have their own tab');
  assert.match(ui,/tile\('buildings',number\(goods\),'goods made'\)/);
 });
 

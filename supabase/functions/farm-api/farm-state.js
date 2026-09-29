@@ -1127,7 +1127,8 @@ export function sellCrops(state,item='all',now=Date.now(),day,category,quantity)
  if(total===0){const kept=keys.filter(k=>keptStock(state,k,now)>0);throw new Error(kept.length?`Your starting ${kept.map(k=>ITEMS[k].name.toLowerCase()).join(' and ')} ${kept.length>1?'are':'is'} kept for your first steps. Harvest or make more to sell, or wait until your first 30 minutes are up.`:'Your basket is empty. Harvest or produce something first.');}
  const units=keys.reduce((v,k)=>v+amounts[k],0);
  for(const k of keys){state.inventory[k]-=amounts[k];state.stats['sold_'+k]=(state.stats['sold_'+k]??0)+amounts[k];}
- state.coins+=total;state.stats.earned+=total;state.stats.sold+=units;
+ // Sold at the Village market: the village's own count, not the farm Market's (quests, challenges and the Items sold board).
+ state.coins+=total;state.stats.earned+=total;if(village)state.stats.village_sold=(state.stats.village_sold??0)+units;else state.stats.sold+=units;
  return {coins:total,day:utcDay(now)};
 }
 export function recipeUnlocked(state,id){const r=RECIPES[id];return !!r&&(!r.base||recipeUnlocked(state,r.base))&&buildingUnlocked(state,r.building)&&levelOf(state)>=recipeLevel(state,id)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&(!guidedFarm(state)||Object.keys(r.input).every(k=>k==='feed'&&state.inventory.feed>0||itemAvailable(state,k)));}
@@ -1192,7 +1193,10 @@ export function collectProduction(state,building,now=Date.now(),jobId){
  if(now<job.readyAt)throw new Error('This batch is still being made.');
  const r=RECIPES[job.recipe],output=job.output??r.output,xp=job.xp??r.xp;
  for(const [k,n]of Object.entries(output)){state.inventory[k]+=n;state.stats['made_'+k]=(state.stats['made_'+k]??0)+n;}
- state.stats.produced++;state.stats.bread+=output.bread??0;state.xp+=xp;
+ // A batch counts where it was made (30 Sep 2026): the village's places in the village's own count, so the farm's quests, challenges
+ // and leaderboards stay the farm's; the goods themselves are in made_* either way (the village's own boards read those).
+ if(worldTwoBuilding(building))state.stats.village_batches=(state.stats.village_batches??0)+1;else state.stats.produced++;
+ state.stats.bread+=output.bread??0;state.xp+=xp;
  const remaining=jobs.filter(j=>j!==job);b.job=remaining.shift()??null;b.extraJobs=remaining;
  if(building==='windmill')state.stats.windmill_batches=(state.stats.windmill_batches??0)+1;
  if(building==='glasshouse')state.stats.glasshouse_batches=(state.stats.glasshouse_batches??0)+1;

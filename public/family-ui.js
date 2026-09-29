@@ -6,7 +6,7 @@ import {renderFamilyInvitation,renderSentInvitations,createFamilyInviteSearch,in
 import {renderFamilyOrderRewards} from './family-order-rewards.js';
 import {renderFamilyTournament} from './family-tournament.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_MIN_LEVEL,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_MIN_LEVEL,worldTwoItem,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {farmNow} from './farm-client.js';
@@ -62,7 +62,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const lines=Object.entries(o.lines),isDone=([k,n])=>(o.filled[k]??0)>=n,complete=lines.filter(isDone).length;
   const total=lines.reduce((n,[,t])=>n+t,0),delivered=lines.reduce((n,[k,t])=>n+Math.min(t,o.filled[k]??0),0);
   const extrasOpen=complete>0;
-  const available=Object.entries(ITEMS).filter(([k,item])=>item.sell>0&&state.inventory[k]>0);
+  const available=Object.entries(ITEMS).filter(([k,item])=>item.sell>0&&state.inventory[k]>0&&!worldTwoItem(k));   // never World II's goods
   const place=[...view.members].sort((a,b)=>b.points-a.points).findIndex(m=>m.isSelf)+1;
   // What you can hand in now comes first, then what still needs stock, and finished lines last.
   const order=([k,n])=>isDone([k,n])?2:!locked&&(state.inventory[k]??0)>0?0:1;

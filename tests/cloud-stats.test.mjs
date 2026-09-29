@@ -13,7 +13,8 @@ test('every crop has its own board; only public metrics can be selected',async()
  for(const crop of Object.keys(CROPS))assert(LEADERBOARD_CATEGORIES['harvested_'+crop],crop);
  const goods=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom);   // heirlooms (Seed Lab) have no boards
  assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,15+Object.keys(CROPS).length+goods.length,'fifteen boards plus one per crop and one per good');
- for(const good of goods)assert.equal(LEADERBOARD_CATEGORIES['made_'+good]?.group,'goods',good);
+ // World II's goods are under Village, the farm's under By good (30 Sep 2026).
+ for(const good of goods)assert.equal(LEADERBOARD_CATEGORIES['made_'+good]?.group,ITEMS[good].world===2?'village':'goods',good);
  for(const key of ['events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades','quests_done'])assert(LEADERBOARD_CATEGORIES[key],`${key} board`);
  for(const category of ['diamonds','harvested_grain','state','__proto__'])await assert.rejects(fetchLeaderboard({from(){throw new Error('Should not query');}},'self',category),/valid leaderboard/);
  for(const category of Object.keys(LEADERBOARD_CATEGORIES)){

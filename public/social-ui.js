@@ -1,6 +1,6 @@
 import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
-import {ITEMS,CROPS,itemAvailable,levelOf} from './farm-state.js';
+import {ITEMS,CROPS,itemAvailable,levelOf,worldTwoItem} from './farm-state.js';
 import {showCenterNotice} from './center-notice.js';
 // Daily sharing inside a Farm Family: help a member with coins, send a gift of any crop or good, ask for any crop or good
 // of any crop or good you have unlocked, and fill someone else's request. Everything comes out of your own farm (harvest_social in retention-social.sql moves it),
@@ -55,7 +55,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   return `<div class="sharing-picker"><span class="sharing-picker-art">${art(picked)}</span><select data-pick="${kind}" aria-label="Choose a crop or good">${crops.length?`<optgroup label="Crops">${crops.map(option).join('')}</optgroup>`:''}${goods.length?`<optgroup label="Goods">${goods.map(option).join('')}</optgroup>`:''}</select><div class="sharing-stepper" aria-label="Quantity"><button type="button" data-step="${kind}" data-by="-1" aria-label="One less" ${quantity<=1?'disabled':''}>−</button><output>${quantity}</output><button type="button" data-step="${kind}" data-by="1" aria-label="One more" ${quantity>=max?'disabled':''}>+</button></div></div>`;
  }
  // Heirlooms (the Seed Lab) are not shared: the database's list is the crops and goods (supabase/family-sharing-all-items.sql).
- const giftKeys=()=>Object.keys(ITEMS).filter(k=>stock(k)>0&&!ITEMS[k].heirloom);
+ const giftKeys=()=>Object.keys(ITEMS).filter(k=>stock(k)>0&&!ITEMS[k].heirloom&&!worldTwoItem(k));   // World II's goods stay in the village
  function members(today){
   if(!social.members.length)return '<p class="sharing-empty">Invite a farmer to your family to start sharing.</p>';
   const action=(kind,id,label,icon,blocked)=>{
@@ -81,7 +81,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
  }
  function ask(){
   if(social.requests.some(r=>r.player_id===me()))return '';
-  const keys=Object.keys(ITEMS).filter(k=>itemAvailable(state,k)&&!ITEMS[k].heirloom);if(!keys.includes(pick.item))pick.item=keys[0]??'wheat';
+  const keys=Object.keys(ITEMS).filter(k=>itemAvailable(state,k)&&!ITEMS[k].heirloom&&!worldTwoItem(k));if(!keys.includes(pick.item))pick.item=keys[0]??'wheat';
   return `<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Once a day, up to ${maxShare(myLevel())} of any crop or good. Any family member can fill it.</p><form class="sharing-ask">${itemPicker({kind:'ask',keys,picked:pick.item,quantity:pick.quantity,max:maxShare(myLevel())})}<button class="primary-button">Ask for ${pick.quantity} ${esc(ITEMS[pick.item]?.name??pick.item)}</button></form></section>`;
  }
  function render(){

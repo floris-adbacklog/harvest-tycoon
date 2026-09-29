@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,levelReward,levelOf,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel,STARTER_COINS,STARTER_ITEMS,FIRST_HARVEST_BONUS} from '../game/farm-state.js';
+import {worldTwoBuilding,applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,levelReward,levelOf,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel,STARTER_COINS,STARTER_ITEMS,FIRST_HARVEST_BONUS} from '../game/farm-state.js';
 import {readFarm,transactFarm} from '../game/farm-store.js';
 const now=Date.UTC(2026,8,16,12);
 const apply=(s,a,t=now)=>applyFarmAction(s,a,t);
@@ -38,7 +38,9 @@ test('all 67 recipes require ingredients, persist timed jobs and collect once',(
   const restored=JSON.parse(JSON.stringify(s));
   assert.throws(()=>apply(restored,{type:'collect',building:r.building}),/still being made/);
   const result=apply(restored,{type:'collect',building:r.building},now+r.duration);
-  assert.deepEqual(result.items,r.output);assert.equal(restored.stats.produced,1);
+  assert.deepEqual(result.items,r.output);
+  // A batch counts where it was made: the village's places in their own count (30 Sep 2026).
+  if(worldTwoBuilding(r.building))assert.deepEqual([restored.stats.village_batches,restored.stats.produced??0],[1,0]);else assert.equal(restored.stats.produced,1);
   assert.throws(()=>apply(restored,{type:'collect',building:r.building},now+r.duration),/Nothing to collect/);
  }
 });
