@@ -85,6 +85,44 @@ begin
  return jsonb_build_object('status',case when purchase.livemode then 'credited' else 'test_paid' end,'duplicate',false);
 end $function$;
 
+-- The admin's purchase notice and the farmer's log (purchase-alerts-push.sql, player-logs.sql): an offer says what was in it,
+-- instead of only its diamonds.
+create or replace function public.harvest_purchase_alert() returns trigger language plpgsql security definer set search_path to '' as $function$
+declare who text; what text; price text; body text; admin_id uuid; notice uuid;
+begin
+ select coalesce(s.username,'A farmer') into who from public.player_stats s where s.player_id=new.player_id;
+ what:=case when new.pack='starter' then 'the Starter Pack'
+  when new.pack='offer' then 'the special offer ('||concat_ws(' + ',case when new.diamonds>0 then to_char(new.diamonds,'FM999G999')||' diamonds' end,
+   case when new.coins>0 then to_char(new.coins,'FM999G999G999')||' coins' end,case when new.vip_days>0 then new.vip_days||' days of VIP' end)||')'
+  else to_char(new.diamonds,'FM999G999')||' diamonds' end;
+ price:='€'||to_char(new.amount_cents/100.0,'FM999990.00');
+ body:=(case when new.livemode then 'In-game purchase: ' else 'Test purchase (no money): ' end)||coalesce(who,'A farmer')||' bought '||what||' for '||price||'.';
+ for admin_id in select u.id from auth.users u where public.chat_staff_role(u.id)='admin'
+  and not exists(select 1 from public.chat_settings c where c.player_id=u.id and c.purchase_alerts_off) loop
+  insert into public.player_notices(player_id,kind,body) values(admin_id,'purchase',body) returning id into notice;
+  if exists(select 1 from public.push_subscriptions p where p.player_id=admin_id) then
+   perform net.http_post(url:='https://jnmdirvidffzxukbdmij.supabase.co/functions/v1/notify-hourly?notice',headers:='{"Content-Type":"application/json"}'::jsonb,
+    body:=jsonb_build_object('notice',notice),timeout_milliseconds:=10000);
+  end if;
+ end loop;
+ return new;
+exception when others then return new;   -- a notice never stands in the way of the purchase itself
+end $function$;
+
+create or replace function public.harvest_purchase_log() returns trigger language plpgsql security definer set search_path to '' as $function$
+begin
+ insert into public.player_logs(player_id,category,action,text)
+ values(new.player_id,'purchase',case when new.livemode then 'purchase' else 'test_purchase' end,
+  (case when new.livemode then 'Bought ' else 'Test purchase (no money): ' end)
+  ||case when new.pack='starter' then 'the Starter Pack'
+    when new.pack='offer' then 'the special offer ('||concat_ws(' + ',case when new.diamonds>0 then to_char(new.diamonds,'FM999G999')||' diamonds' end,
+     case when new.coins>0 then to_char(new.coins,'FM999G999G999')||' coins' end,case when new.vip_days>0 then new.vip_days||' days of VIP' end)||')'
+    else to_char(new.diamonds,'FM999G999')||' diamonds' end
+  ||' for €'||to_char(new.amount_cents/100.0,'FM999990.00'));
+ return new;
+exception when others then return new;
+end $function$;
+
 -- The admin panel (src/admin-dashboard.js): post an offer, list the last ten with how many farmers bought each, stop one. Only the
 -- admin in a Google session (chat_staff_role, supabase/admin-google-only.sql), like the pop-ups. The worth is the same sum as
 -- game/payments.js offerValueCents: a diamond at €4.99/500, 250 coins a diamond, VIP 7 days 500 diamonds and 30 days 1500; it must be

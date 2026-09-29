@@ -173,7 +173,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(data)purchases=data;if(!purchases)return;const t=purchases.totals;
   dialog.querySelector('#admin-purchase-totals').innerHTML=`<span><strong>${number(t.started)}</strong> checkouts</span><span><strong>${number(t.paid)}</strong> paid</span><span><strong>${number(t.notFinished)}</strong> not finished</span><span><strong>${euro(t.revenueCents)}</strong> earned</span><span><strong>${number(t.players)}</strong> farmers</span>`;
   const shown=purchases.purchases.filter(p=>purchaseFilter==='all'||(purchaseFilter==='paid'?p.status==='credited':p.status!=='credited'));
-  const what=p=>p.pack==='starter'?`Starter Pack · ${number(p.diamonds)} diamonds${p.coins?` + ${number(p.coins)} coins`:''}`:`${number(p.diamonds)} diamonds`;
+  const what=p=>p.pack==='starter'||p.pack==='offer'?`${p.pack==='offer'?'Special offer':'Starter Pack'} · ${number(p.diamonds)} diamonds${p.coins?` + ${number(p.coins)} coins`:''}`:`${number(p.diamonds)} diamonds`;
   dialog.querySelector('#admin-purchase-list').innerHTML=shown.length?shown.map(p=>{const [label,cls]=PURCHASE_STATUS[p.status]??[p.status,'is-open'];
    return `<li>${avatar(p.username,false,p.playerId)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-profile="${esc(p.playerId)}">${esc(p.username)}</button> <small>${p.level?`Level ${p.level}`:''}</small></strong><small>${what(p)} · ${euro(p.amountCents)}${p.live?'':' · test'}</small></span><span class="admin-purchase-status ${cls}">${label}</span><small class="admin-when" title="${esc(fmtDate(p.createdAt))}">${ago(p.createdAt)}</small></li>`;}).join(''):'<li class="admin-empty">No checkouts here yet.</li>';
  }
