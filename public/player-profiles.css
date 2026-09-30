@@ -64,7 +64,8 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .leaderboard-table .leaderboard-place{width:60px;padding-inline:8px;text-align:center}.leaderboard-place .rank-number{display:inline-grid;place-items:center;min-width:40px;min-height:46px;font-weight:800}.leaderboard-place .rank-trophy>.game-art{width:44px;height:48px}
 @media(max-width:480px){.leaderboard-table .leaderboard-place{width:42px;padding-inline:3px}.leaderboard-place .rank-trophy>.game-art{width:34px;height:40px}.leaderboard-place .rank-number{min-width:34px}.leaderboard-table td{overflow-wrap:anywhere}}
 /* The admin dashboard (floris@millstone.nl only — #admin-button in the topbar stays hidden for everyone else). */
-.admin-dashboard-dialog{max-width:640px}
+/* Wide enough on a computer for all six tabs with their names (Feedback made six, 30 Sep 2026); phones use the full-width sheet. */
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){.admin-dashboard-dialog.wide-dialog{width:min(900px,calc(100% - 28px));max-width:900px}}
 .admin-card{border:1px solid #ded2c8;border-radius:16px;padding:16px 18px;margin:16px 0;background:#fffdf5}
 .admin-card h3{font:600 16px 'Outfit',sans-serif;margin:0 0 6px;display:flex;align-items:center;gap:9px;color:#3d382a}
 .admin-card h3>svg{width:18px;height:18px;color:#8a7a4a;flex-shrink:0}
