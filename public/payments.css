@@ -7,7 +7,7 @@
 .payment-dismiss svg{width:20px;height:20px}
 .payment-hero{display:grid;place-items:center;width:92px;height:92px;margin:4px auto 16px;border:1px solid #cce2da;border-radius:28px;background:linear-gradient(140deg,#f8fff4,#d9eeec);box-shadow:0 5px 0 #dce9d5}
 .payment-hero .game-art{display:block;width:72px;height:72px;margin:0}
-.payment-dialog .payment-eyebrow{margin:0 0 10px;font:700 10px/1.5 'DM Sans',sans-serif;letter-spacing:1.5px;color:#75845f;text-transform:uppercase}
+.payment-dialog .payment-eyebrow{margin:0 0 10px;font:700 12px/1.5 'DM Sans',sans-serif;letter-spacing:1.5px;color:#75845f;text-transform:uppercase}
 .payment-dialog h2{margin:0 0 12px;font:600 29px/1.15 'Outfit',sans-serif;letter-spacing:-.5px}
 .payment-dialog .payment-message{margin:0;font:400 14px/1.7 'DM Sans',sans-serif;color:#68785e;overflow-wrap:anywhere}
 .payment-status{display:inline-flex;align-items:center;gap:7px;margin:18px 0 0;padding:7px 11px;border:1px solid #ded8b7;border-radius:999px;background:#f8f0d8;color:#826b37;font:600 11px/1.5 'DM Sans',sans-serif}
@@ -49,7 +49,7 @@
 #diamond-packs .diamond-pack:hover:not(:disabled) .pack-price{background:#355d3f}
 #diamond-packs .diamond-pack[data-state="opening"] .pack-price{background:#e2eddc;border-color:#b5d4b3;box-shadow:none;color:#365e42;font-size:15px}
 #diamond-packs .diamond-pack[data-state="unavailable"] .pack-price{background:#e4e9df;border-color:#ccd5c3;box-shadow:none;color:#697661;font-size:15px}
-.pack-ribbon{position:absolute;left:10px;right:10px;bottom:100%;margin-bottom:2px;padding:4px 6px 3px;border-radius:9px 9px 0 0;background:linear-gradient(#f3cd6e,#dfa43a);color:#553708;font:800 11px/1.3 'DM Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pack-ribbon{position:absolute;left:10px;right:10px;bottom:100%;margin-bottom:2px;padding:4px 6px 3px;border-radius:9px 9px 0 0;background:linear-gradient(#f3cd6e,#dfa43a);color:#553708;font:800 12px/1.3 'DM Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pack-ribbon.is-extra{background:linear-gradient(#8a6aa8,#6c4f8a);color:#fff;text-transform:none;letter-spacing:.02em;font-size:12px}
 #diamond-packs .diamond-pack.is-best{border-color:#dfa43a;background:linear-gradient(#fff6d8,#f7e0a0);box-shadow:0 3px 0 #d7b15c,0 8px 22px #c9a45a40}
 #diamond-packs .diamond-pack.is-best .pack-price{border-color:#8d5714;background:#b8741f;box-shadow:0 2px 0 #7d4b10}

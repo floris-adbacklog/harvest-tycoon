@@ -2,12 +2,12 @@
    Starter Pack's), on a phone a tile above the bottom bar, above the Starter Pack tile when that one shows too. */
 #offer-button{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(20px,var(--safe-bottom));z-index:12;width:72px;min-height:84px;display:flex;align-items:center;flex-direction:column;gap:2px;padding:5px 4px 7px;border:2px solid #e0a13a;border-radius:19px;background:#fff3d6;box-shadow:0 4px 0 #a8742a33,0 10px 24px #3a2a1030;color:#6b4412;font-family:'DM Sans',sans-serif}
 #offer-button img{width:48px;height:48px;border-radius:13px;object-fit:cover}
-#offer-button span{font-size:9px;font-weight:800;white-space:nowrap}
-#offer-button small{padding:0 6px;border-radius:99px;background:#d9482b;color:#fff;font-size:11px;font-weight:800}
+#offer-button span{font-size:12px;font-weight:800;white-space:nowrap}
+#offer-button small{padding:0 6px;border-radius:99px;background:#d9482b;color:#fff;font-size:12px;font-weight:800}
 #offer-button[hidden],#offer-chip[hidden]{display:none}
 #offer-chip{position:relative;flex-shrink:0;overflow:visible;background:#fff3d6;border-color:#e8b85a}
 #offer-chip img{width:30px;height:30px;border-radius:9px;object-fit:cover}
-#offer-chip small{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);padding:1px 5px;border-radius:99px;background:#d9482b;color:#fff;font:800 9.5px/1.3 'DM Sans',sans-serif;white-space:nowrap}
+#offer-chip small{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);padding:1px 5px;border-radius:99px;background:#d9482b;color:#fff;font:800 12px/1.3 'DM Sans',sans-serif;white-space:nowrap}
 @media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){#offer-button{display:none}}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  #offer-chip{display:none}
@@ -54,20 +54,20 @@
 .offer-buy{width:100%;justify-content:center;min-height:54px;font-size:18px}
 .offer-feedback{margin:8px 0 0!important;font-size:13px;color:#785727}
 .offer-feedback:empty{display:none}
-.offer-fine{display:block;margin-top:8px;font-size:11px;color:#877c71}
+.offer-fine{display:block;margin-top:8px;font-size:12px;color:#877c71}
 
 /* Phone (and a narrow tablet in portrait): one column, the chest as a banner. */
 @media(max-width:640px){
  #offer-dialog{width:min(440px,calc(100vw - 20px));max-width:calc(100vw - 20px);border-radius:24px}
  #offer-dialog[open]{flex-direction:column}
  .offer-hero{flex:0 0 150px}
- .offer-ribbon{left:12px;top:12px;width:76px;height:76px}.offer-ribbon b{font-size:23px}.offer-ribbon small{max-width:66px;font-size:9px;letter-spacing:.5px}
+ .offer-ribbon{left:12px;top:12px;width:76px;height:76px}.offer-ribbon b{font-size:23px}.offer-ribbon small{max-width:66px;font-size:12px;letter-spacing:.5px}
  .offer-body{padding:14px 16px calc(16px + var(--safe-bottom,0px))}
  #offer-dialog h2{margin:2px 0 10px;font-size:24px}
  .offer-parts{gap:3px;margin-bottom:10px}
  .offer-part{padding:8px 4px 9px;border-radius:15px}
  .offer-part img{width:52px;height:52px}
- .offer-part strong{font-size:17px}.offer-part span{font-size:11px}
+ .offer-part strong{font-size:17px}.offer-part span{font-size:12px}
  .offer-plus{font-size:19px}
  #offer-dialog[data-parts="1"] .offer-part img{width:64px;height:64px}
  #offer-dialog[data-parts="1"] .offer-part strong{font-size:23px}

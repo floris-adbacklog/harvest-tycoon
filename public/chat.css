@@ -20,7 +20,7 @@
 .chat-tabs button .game-art{width:24px;height:24px;object-fit:contain}
 .chat-tabs button.active{background:#fffdf5;box-shadow:0 2px 5px #43362214;color:#5e523a}
 .chat-tabs button:not(.active):hover{color:#5e523a}
-.chat-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:6px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e0533d;color:#fff;font:800 10px/1 'DM Sans',sans-serif}
+.chat-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:6px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e0533d;color:#fff;font:800 12px/1 'DM Sans',sans-serif}
 .chat-count[hidden]{display:none}
 .chat-close{flex-shrink:0;width:40px;height:40px;border:0;background:none;box-shadow:none;color:#8a7c6a}
 .chat-close:hover{background:#f0e8e0;color:#5e523a}
@@ -222,7 +222,7 @@ span.chat-avatar{cursor:default}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  .chat-tabs{gap:2px}
  .chat-tabs button{padding:6px 2px;font-size:13px}
- .chat-count{position:absolute;right:1px;top:-7px;min-width:16px;height:16px;margin:0;padding:0 4px;border:2px solid #f0e8e0;font-size:9px;line-height:1}
+ .chat-count{position:absolute;right:1px;top:-7px;min-width:16px;height:16px;margin:0;padding:0 4px;border:2px solid #f0e8e0;font-size:12px;line-height:1}
  .chat-tabs button[data-chat-tab="notices"]{min-width:38px}
 }
 /* A message the staff changed (chat-edit-message.sql): a quiet mark after the text. */
@@ -289,7 +289,7 @@ span.chat-avatar{cursor:default}
 .chat-request-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:12px;color:#8a5a14}
 .chat-request-label{display:inline-flex;align-items:center;gap:6px;font-weight:700}
 .chat-request-label>.game-art{width:20px;height:20px;object-fit:contain}
-.chat-request-top time{color:#9b8a6c;font-size:11px}
+.chat-request-top time{color:#9b8a6c;font-size:12px}
 .chat-request-body{display:flex;align-items:center;gap:12px}
 .chat-request-art{flex-shrink:0;display:grid;place-items:center;width:52px;height:52px;border:1px solid #ecd3a8;border-radius:14px;background:#fffdf5}
 .chat-request-art>.game-art{width:38px;height:38px;object-fit:contain}

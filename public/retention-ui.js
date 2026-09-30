@@ -1,6 +1,6 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt} from './quests-ui.js';
-import {streakToday,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,canWater,waterUntil,formatDuration,marketHighlights,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {streakToday,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -60,9 +60,8 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  function renderToday(){
   if(tab==='orders'&&!featureUnlocked(state,'cart'))tab='challenges';
   const challengesOpen=featureUnlocked(state,'challenges');
-  const {today}=marketHighlights(farmNow(),state);
-  $('today-market').innerHTML=`<button type="button" class="today-market-card" id="today-open-market">${art(today.item)}<span><small>TODAY’S MARKET PICK</small><strong>${ITEMS[today.item].name}</strong><span>${today.price.toLocaleString('en-US')} coins each · ${today.change>=0?'+':''}${today.change}% vs normal</span></span><b>Market →</b></button>`;
-  $('today-open-market').onclick=()=>{$('today-dialog').close();$('market-button').click();};
+  // One job per window (30 Sep 2026): the market's pick of the day lives in the Market only.
+  $('today-market').hidden=true;$('today-market').innerHTML='';
   gift();document.querySelectorAll('[data-today-tab]').forEach(b=>{b.hidden=b.dataset.todayTab==='orders'?!featureUnlocked(state,'cart'):!challengesOpen;b.classList.toggle('active',b.dataset.todayTab===tab);b.setAttribute('aria-pressed',String(b.dataset.todayTab===tab));});
   const day=utcDay(farmNow());
   if(tab==='challenges'&&!challengesOpen){
@@ -123,11 +122,14 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const count=key=>CROPS[key]?(stats['harvest_'+key]??0)+(stats['made_'+key]??0):(stats['made_'+key]??0)+(key==='honey'?apiaryHoney:0);
   const found=keys=>keys.filter(k=>CROPS[k]?state.discovered.includes(k):count(k)>0).length;
   const keys=journalTab==='goods'?goodKeys:journalTab==='village'?villageKeys:cropKeys,verb=journalTab==='crops'?'picked':'made';
-  const card=key=>{const n=count(key),seen=CROPS[key]?state.discovered.includes(key):n>0;return `<div class="collection-crop ${seen?'discovered':''}">${art(key,'collection-picture')}<strong>${ITEMS[key].name}</strong><small>${seen?`${number(n)} ${verb}`:'Not yet'}</small></div>`;};
+  // The collection shows what you have (30 Sep 2026); what is still to find is one tile with a count, not a grid of grey "Not yet".
+  const seen=key=>CROPS[key]?state.discovered.includes(key):count(key)>0;
+  const card=key=>`<div class="collection-crop discovered">${art(key,'collection-picture')}<strong>${ITEMS[key].name}</strong><small>${number(count(key))} ${verb}</small></div>`;
+  const have=keys.filter(seen),left=keys.length-have.length;
   const tabButton=(key,label,list)=>`<button type="button" data-journal-tab="${key}" aria-pressed="${journalTab===key}" class="${journalTab===key?'active':''}">${label} <b>${found(list)}/${list.length}</b></button>`;
   $('journal-content').innerHTML=`<section class="journal-hero"><span class="journal-medallion"><small>LVL</small><b>${level}</b></span><div class="journal-hero-copy"><div class="journal-hero-top"><strong>Level ${level+1} in ${number(Math.max(0,target-current))} XP</strong><small>${number(current)} / ${number(target)} XP</small></div><progress max="${target}" value="${current}" aria-label="Level progress"></progress><div class="journal-next"><span>Level-up reward</span><b>${art('coins')}${number(reward.coins)}</b><b>${art('diamonds')}${reward.diamonds}</b></div></div></section>`
    +`<div class="journal-tiles">${tile('harvest',number(crops),'crops harvested')}${tile('buildings',number(goods),'goods made')}${tile('quests',`${state.claimed.length}/${QUESTS.length}`,'quests done')}${tile('cart',number(stats.deliveries??0),'deliveries')}</div>`
-   +`<section class="journal-collection"><div class="journal-collection-head"><h3>Your collection</h3><div class="market-tabs journal-tabs" role="group" aria-label="Collection">${tabButton('crops','Crops',cropKeys)}${tabButton('goods','Goods',goodKeys)}${worldTwoOpen(state)?tabButton('village','Village',villageKeys):''}</div></div><div class="collection-grid">${keys.map(card).join('')}</div></section>`
+   +`<section class="journal-collection"><div class="journal-collection-head"><h3>Your collection</h3><div class="market-tabs journal-tabs" role="group" aria-label="Collection">${tabButton('crops','Crops',cropKeys)}${tabButton('goods','Goods',goodKeys)}${worldTwoOpen(state)?tabButton('village','Village',villageKeys):''}</div></div><div class="collection-grid">${have.map(card).join('')}${left?`<div class="collection-crop collection-left"><b>${left}</b><small>${have.length?'still to discover':'to discover'}</small></div>`:''}</div></section>`
    +roadmapMarkup(state);
   document.querySelectorAll('[data-journal-tab]').forEach(b=>b.onclick=()=>{journalTab=b.dataset.journalTab;renderJournal();});
   icons();

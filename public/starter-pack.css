@@ -1,9 +1,9 @@
 #starter-pack-button{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(20px,var(--safe-bottom));z-index:12;width:72px;min-height:84px;display:flex;align-items:center;flex-direction:column;gap:2px;padding:5px 4px 7px;border:2px solid #d4b365;border-radius:19px;background:#fff8de;box-shadow:0 3px 0 #ab904d,0 5px 15px #3a372726;color:#514939;touch-action:manipulation}
-#starter-pack-button img{width:48px;height:48px}#starter-pack-button span{font-size:9px;font-weight:800;white-space:nowrap}#starter-pack-button small{font-size:12px;font-weight:800;color:#806322}
+#starter-pack-button img{width:48px;height:48px}#starter-pack-button span{font-size:12px;font-weight:800;white-space:nowrap}#starter-pack-button small{font-size:12px;font-weight:800;color:#806322}
 /* On a computer: a small button next to the diamonds instead of the tile in the corner (starter-pack-ui.js). */
 #starter-pack-chip{position:relative;flex-shrink:0;overflow:visible;background:#fff8de;border-color:#e2c77f}
 #starter-pack-chip img{width:30px;height:30px}
-#starter-pack-chip small{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);padding:1px 5px;border:1px solid #e2c77f;border-radius:99px;background:#fffdf5;color:#806322;font:800 9.5px/1.3 'DM Sans',sans-serif;white-space:nowrap}
+#starter-pack-chip small{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);padding:1px 5px;border:1px solid #e2c77f;border-radius:99px;background:#fffdf5;color:#806322;font:800 12px/1.3 'DM Sans',sans-serif;white-space:nowrap}
 #starter-pack-chip[hidden]{display:none}
 @media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){#starter-pack-button{display:none}}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#starter-pack-chip{display:none}}
@@ -30,11 +30,11 @@
 .starter-crops{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;justify-items:center}
 .starter-crops>span{display:grid;place-items:center;width:100%;max-width:44px;aspect-ratio:1;border-radius:11px;background:#fffdf7}
 .starter-crops .game-art{width:30px;height:30px}
-.starter-crops-strip>small{font-size:11px;color:#8a7c69}
+.starter-crops-strip>small{font-size:12px;color:#8a7c69}
 .starter-buy{width:100%;justify-content:center;min-height:50px;font-size:16px}
 .starter-feedback{margin:8px 0 0!important;font-size:13px;color:#785727}
 .starter-feedback:empty{display:none}
-.starter-fine{display:block;margin-top:8px;font-size:11px;color:#877c71}
+.starter-fine{display:block;margin-top:8px;font-size:12px;color:#877c71}
 /* Narrow phones: a smaller picture and number, so 10,000 always fits inside its tile. */
 @media(max-width:400px){.starter-rewards>div{gap:0 7px;padding:10px 9px}.starter-rewards .game-art{width:32px;height:32px;min-width:32px}.starter-rewards strong{font-size:20px}}
 @media(max-width:340px){#starter-pack-dialog{padding:20px 14px 16px}.starter-rewards>div{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}.starter-rewards .game-art{grid-row:auto}}

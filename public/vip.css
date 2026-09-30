@@ -35,14 +35,14 @@
 /* A short text to change (confirm-dialog.js promptText): a text box and its character count. */
 .prompt-text-field{display:block;width:100%;min-height:88px;box-sizing:border-box;margin:14px 0 0;padding:10px 12px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:500 15px/1.4 'DM Sans',sans-serif;text-align:left;resize:vertical}
 .prompt-text-field:focus{outline:2px solid #a8935a;outline-offset:1px}
-.prompt-text-count{display:block;margin-top:4px;text-align:right;color:#8a7c69;font-size:11.5px}
+.prompt-text-count{display:block;margin-top:4px;text-align:right;color:#8a7c69;font-size:12px}
 /* VIP plans in the row layout of the boost cards: days and a line on the left, the price button on the right. The month plan
    has a small gold "Best value" badge next to its days. */
 #boost-dialog .vip-plans{gap:12px}
 #boost-dialog .vip-plan{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 12px 12px 14px;border:2px solid #e3d2a6;border-radius:14px;background:#fffdf5}
 #boost-dialog .vip-plan.is-best{border-color:#dfa43a;background:linear-gradient(#fffaf0,#fbefcd)}
 #boost-dialog .vip-plan-copy strong{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;font:700 20px/1.1 'Outfit',sans-serif;color:#3b2c12}
-#boost-dialog .vip-best{padding:3px 8px;border-radius:999px;background:linear-gradient(#f3cd6e,#dfa43a);color:#553708;font:800 10.5px/1.2 'DM Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+#boost-dialog .vip-best{padding:3px 8px;border-radius:999px;background:linear-gradient(#f3cd6e,#dfa43a);color:#553708;font:800 12px/1.2 'DM Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
 #boost-dialog .vip-plan-copy>span{font-size:12.5px;color:#7b6a45}
 #boost-dialog .vip-plan .vip-buy{grid-area:auto;width:92px;height:58px;min-height:0;margin:0}
 #boost-dialog .vip-shop-heading p{font-size:13.5px}

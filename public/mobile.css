@@ -99,7 +99,7 @@
  .game-dialog .dialog-heading{position:sticky;top:-16px;z-index:5;padding:16px 0 12px;margin:-16px 0 16px;background:#fffdf5;border-bottom:1px solid #e7dfd7;gap:12px;min-height:78px}
  .dialog-heading h2,.wide-dialog .dialog-heading h2{font-size:26px;line-height:1.15;margin-top:5px;overflow-wrap:normal}
  .game-dialog .dialog-heading .icon-button{min-width:46px;min-height:46px;width:46px;height:46px;margin:0;border-radius:14px;background:#f0e9e2}
- .dialog-heading .eyebrow{font-size:9px;letter-spacing:1px}
+ .dialog-heading .eyebrow{font-size:12px;letter-spacing:1px}
  .game-dialog button,.game-dialog .small-button,.game-dialog .back-button{min-height:44px}
  .game-dialog input,.game-dialog select{font-size:16px;min-height:48px}
  .game-dialog>p,.wide-dialog>p{font-size:14px;line-height:1.6;margin-top:0}
@@ -107,7 +107,7 @@
  #tasks-dialog>.beta-intro{margin-bottom:12px}
  .task-row{padding:18px 0}.task-row h3{font-size:21px}.task-row p{font-size:14px;line-height:1.6}.task-bottom{font-size:13px}
  .task-bottom .primary-button{padding:11px 14px;white-space:nowrap}
- .quest-filters{gap:3px}.quest-filters button{font-size:12px;min-height:48px;padding:7px 4px}.quest-filters span{display:block;margin:3px 0 0;font-size:11px}
+ .quest-filters{gap:3px}.quest-filters button{font-size:12px;min-height:48px;padding:7px 4px}.quest-filters span{display:block;margin:3px 0 0;font-size:12px}
  .mobile-menu-grid{gap:8px}.mobile-menu-grid button{flex-direction:column;align-items:flex-start;gap:8px;padding:12px;min-height:126px}.mobile-menu-grid strong{font-size:15px}
  .crop-catalog{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.crop-card{min-width:0;padding:11px}.crop-card>strong{font-size:20px}.crop-stats{flex-wrap:wrap;gap:7px}
  .seed-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.seed-filters button{padding:9px 3px;font-size:12px;min-height:48px}

@@ -39,9 +39,9 @@ const number=n=>Number(n).toLocaleString('en-US');
 // switch shows either list; below it there is only the farm's.
 export function createQuestsUI({state,claim,claimVillage,icons,notify,village=false,document:doc=globalThis.document}){
  const dialog=doc.getElementById('tasks-dialog'),list=doc.getElementById('task-list');
- let filter='active',world=village?'village':'farm';
+ let showDone=false,world=village?'village':'farm';
  const toolbar=doc.createElement('div');toolbar.className='quest-toolbar';
- toolbar.innerHTML='<div class="market-tabs quest-worlds" role="group" aria-label="Quests for" hidden><button data-quest-world="farm" aria-pressed="true">Farm</button><button data-quest-world="village" aria-pressed="false">Village</button></div><div id="quest-summary" role="status"></div><div class="market-tabs quest-filters" role="group" aria-label="Quest status"><button data-quest-filter="ready" aria-pressed="false">Ready <span>0</span></button><button data-quest-filter="active" aria-pressed="true">In progress <span>0</span></button><button data-quest-filter="done" aria-pressed="false">Completed <span>0</span></button></div>';
+ toolbar.innerHTML='<div class="market-tabs quest-worlds" role="group" aria-label="Quests for" hidden><button data-quest-world="farm" aria-pressed="true">Farm</button><button data-quest-world="village" aria-pressed="false">Village</button></div><div id="quest-summary" role="status"></div>';
  list.before(toolbar);
  function row({id,quest:q,value},group){
   const xp=questXp(q),rewards=`<span class="quest-rewards"><b>${art('coins')}${number(q.reward)}</b>${xp?`<b class="is-xp">${art('xp')}${xp} XP</b>`:''}</span>`;
@@ -53,31 +53,29 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,village=fa
   const villageList=world==='village',groups=villageList?villageQuestGroups(state):questGroups(state),done=groups.done.length,all=villageList?VILLAGE_QUESTS.length:QUESTS.length;
   const worlds=toolbar.querySelector('.quest-worlds');if(worlds){worlds.hidden=!both;worlds.querySelectorAll('[data-quest-world]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.questWorld===world)));}
   toolbar.querySelector('#quest-summary').innerHTML=`${art(villageList?'village-badge':'quests')}<span><strong>${villageList?`${done} of ${all} village quests done`:`${done} of ${all} quests done`}</strong><progress max="${all}" value="${done}" aria-label="Quests completed"></progress></span>`;
-  toolbar.querySelectorAll('[data-quest-filter]').forEach(button=>{
-   button.setAttribute('aria-pressed',String(button.dataset.questFilter===filter));
-   button.querySelector('span').textContent=groups[button.dataset.questFilter].length;
-  });
-  // Every reward is claimed on its own, one tap per quest: that is the satisfying part.
-  list.innerHTML=(groups[filter].map(entry=>row(entry,filter)).join('')||`<div class="quest-empty">${art(filter==='done'?'trophy':'quests')}<h3>${filter==='ready'?'No rewards waiting':filter==='done'?'Your journey starts here':'All caught up!'}</h3><p>${filter==='ready'?'Finish a quest in progress to claim it here.':filter==='done'?'Claimed quests are kept here.':'New quests arrive as your farm grows.'}</p></div>`);
+  // One list, no tabs (30 Sep 2026): what you can claim comes first, then what is in progress; completed quests fold away at the
+  // end. Every reward is claimed on its own, one tap per quest: that is the satisfying part.
+  const open=[...groups.ready.map(entry=>row(entry,'ready')),...groups.active.map(entry=>row(entry,'active'))].join('');
+  const toggle=done?`<button type="button" class="link-button quest-done-toggle" data-quest-done aria-expanded="${showDone}">${showDone?'Hide completed':`Show completed (${done})`}</button>`:'';
+  list.innerHTML=(open||`<div class="quest-empty">${art('trophy')}<h3>All caught up!</h3><p>New quests arrive as your farm grows.</p></div>`)+toggle+(showDone?groups.done.map(entry=>row(entry,'done')).join(''):'');
   icons();
  }
  function open(){
   world=village&&worldTwoOpen(state)?'village':'farm';
-  filter=(world==='village'?villageQuestGroups(state):questGroups(state)).ready.length?'ready':'active';
+  showDone=false;
   doc.querySelectorAll('dialog[open]').forEach(other=>{if(other!==dialog)other.close();});
   render();if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
   dialog.querySelector('.close-dialog')?.focus({preventScroll:true});
  }
  toolbar.addEventListener('click',event=>{
   const switcher=event.target.closest('[data-quest-world]');
-  if(switcher){world=switcher.dataset.questWorld;filter=(world==='village'?villageQuestGroups(state):questGroups(state)).ready.length?'ready':'active';render();return;}
-  const button=event.target.closest('[data-quest-filter]');if(!button)return;
-  filter=button.dataset.questFilter;render();
+  if(switcher){world=switcher.dataset.questWorld;showDone=false;render();}
  });
  list.addEventListener('click',async event=>{
+  if(event.target.closest('[data-quest-done]')){showDone=!showDone;render();return;}
   const button=event.target.closest('[data-claim]');if(!button||button.disabled)return;
   button.disabled=true;await (world==='village'?claimVillage:claim)(Number(button.dataset.claim));render();
-  (list.querySelector('[data-claim]')??toolbar.querySelector(`[data-quest-filter="${filter}"]`))?.focus({preventScroll:true});
+  (list.querySelector('[data-claim]')??dialog.querySelector('.close-dialog'))?.focus({preventScroll:true});
  });
  // One direct path for desktop and mobile; there is no nested quest popover on phones.
  doc.getElementById('tasks-button').addEventListener('click',open);

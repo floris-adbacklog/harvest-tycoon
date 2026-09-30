@@ -14,7 +14,7 @@
 #boost-dialog .boost-card h3{margin:0 0 3px;font:600 18px/1.2 'Outfit',sans-serif;letter-spacing:-.01em;color:#3d392b}
 #boost-dialog .boost-card p{margin:0;font-size:13px;line-height:1.5;color:#7a705f}
 /* Status line: a small pill, always in the same place. */
-#boost-dialog .boost-detail{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 9px;border-radius:99px;background:#efe9df;font-size:11px;line-height:1.4;font-weight:700;color:#7d705b}
+#boost-dialog .boost-detail{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 9px;border-radius:99px;background:#efe9df;font-size:12px;line-height:1.4;font-weight:700;color:#7d705b}
 #boost-dialog .boost-detail:before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
 #boost-dialog .boost-detail[data-state=ready]{background:#e6f1dc;color:#4d6f34}
 #boost-dialog .boost-detail[data-state=active]{background:#dcecf6;color:#2f6a8b}
@@ -25,7 +25,7 @@
 #boost-dialog .boost-price{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 #boost-dialog .boost-price .game-art{width:22px;height:22px}
 #boost-dialog .boost-price b{font:700 20px/1 'Outfit',sans-serif;font-variant-numeric:tabular-nums}
-#boost-dialog .boost-buy small{width:auto;margin:0;font-size:11px;font-weight:700;line-height:1.2;text-transform:uppercase;letter-spacing:.05em;opacity:.8}
+#boost-dialog .boost-buy small{width:auto;margin:0;font-size:12px;font-weight:700;line-height:1.2;text-transform:uppercase;letter-spacing:.05em;opacity:.8}
 #boost-dialog .boost-buy:not(:disabled):hover{background:#cdeafb}
 #boost-dialog .boost-buy:not(:disabled):active{transform:translateY(1px);box-shadow:0 1px 0 #b8d6e6}
 #boost-dialog .boost-buy:disabled{opacity:1;cursor:default;background:#f1ede7;border-color:#e2dbd0;box-shadow:none;color:#a0978a}

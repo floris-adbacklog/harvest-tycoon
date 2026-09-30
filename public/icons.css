@@ -41,7 +41,7 @@
 .level-card .level-caption{font:700 9px 'DM Sans',sans-serif;letter-spacing:1px;line-height:12px;margin-top:1px}
 .level-card .level-star>b{position:static;display:block;inset:auto;padding:0;font:700 24px/26px 'Outfit',sans-serif;color:#72521d;text-shadow:none}
 .journal-level>.journal-medallion{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:68px;height:72px;background:#f8dda0;border:1px solid #d7b868;border-radius:20px}
-.journal-medallion>small{font-size:11px;font-weight:700;letter-spacing:1px;color:#806327}
+.journal-medallion>small{font-size:12px;font-weight:700;letter-spacing:1px;color:#806327}
 .journal-level>.journal-medallion>b{position:static;font:700 34px/36px 'Outfit',sans-serif;color:#72521d}
 
 @media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){

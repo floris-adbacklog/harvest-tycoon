@@ -82,7 +82,7 @@ class Element extends EventTarget{
  querySelector(selector){return this.children?.[selector]??null;}
  querySelectorAll(){return this.buttons??[];}
  clickTarget(target=this){const event=new Event('click');Object.defineProperty(event,'target',{value:target});this.dispatchEvent(event);}
- closest(selector){return selector==='[data-claim-all]'&&this.dataset.claimAll!==undefined||selector==='[data-claim]'&&this.dataset.claim!==undefined||selector==='[data-quest-filter]'&&this.dataset.questFilter?this:null;}
+ closest(selector){return selector==='[data-claim-all]'&&this.dataset.claimAll!==undefined||selector==='[data-claim]'&&this.dataset.claim!==undefined||selector==='[data-quest-done]'&&this.dataset.questDone!==undefined?this:null;}
 }
 function questFixture(state,{notify}={}){
  const elements=Object.fromEntries(['tasks-dialog','task-list','tasks-button','all-quests-mobile'].map(id=>[id,new Element()]));
@@ -101,12 +101,13 @@ test('the Quests navigation button opens directly, resets scroll and can reopen'
  elements['tasks-dialog'].close();elements['tasks-button'].clickTarget();assert.equal(elements['tasks-dialog'].openCount,2);
  elements['tasks-dialog'].close();elements['all-quests-mobile'].clickTarget();assert.equal(elements['tasks-dialog'].open,false,'beginner navigation must not open regular quests');
 });
-test('quest filters expose rewards, new features and completed quests without losing progress',()=>{
+test('one quest list: rewards to claim first, then quests in progress, completed ones folded away until asked',async()=>{
  const state=createFarm();state.stats[QUESTS[0].stat]=QUESTS[0].target;
- const {elements,toolbar}=questFixture(state);elements['tasks-button'].clickTarget();assert.match(elements['task-list'].innerHTML,/data-claim="0"/);
- const claim=new Element();claim.dataset.claim='0';elements['task-list'].clickTarget(claim);assert(state.claimed.includes(0));
- toolbar.clickTarget(toolbar.buttons[2]);assert.match(elements['task-list'].innerHTML,/Completed ✓/);
- toolbar.clickTarget(toolbar.buttons[1]);assert.match(elements['task-list'].innerHTML,new RegExp(QUESTS[32].title));
+ const {elements}=questFixture(state);elements['tasks-button'].clickTarget();const first=elements['task-list'].innerHTML;
+ assert.match(first,/data-claim="0"/);assert.ok(first.indexOf('data-claim="0"')<first.indexOf(QUESTS[32].title),'ready before in progress');assert.doesNotMatch(first,/Completed ✓|quest-filter/);
+ const claim=new Element();claim.dataset.claim='0';elements['task-list'].clickTarget(claim);for(let i=0;i<20&&!state.claimed.includes(0);i++)await new Promise(r=>setImmediate(r));await new Promise(r=>setImmediate(r));assert(state.claimed.includes(0));
+ assert.match(elements['task-list'].innerHTML,/data-quest-done aria-expanded="false">Show completed \(1\)/);assert.doesNotMatch(elements['task-list'].innerHTML,/Completed ✓/);
+ const toggle=new Element();toggle.dataset.questDone='';elements['task-list'].clickTarget(toggle);assert.match(elements['task-list'].innerHTML,/Completed ✓/);assert.match(elements['task-list'].innerHTML,/Hide completed/);
  const groups=questGroups(state);assert.equal(groups.ready.length+groups.active.length+groups.done.length,QUESTS.length);
 });
 test('pressed floating buttons retain their position instead of jumping away from the pointer',()=>{

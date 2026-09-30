@@ -11,10 +11,10 @@
 .emblem-arrow:focus-visible{outline:3px solid #c79138;outline-offset:2px}
 .emblem-arrow:disabled{opacity:.35;cursor:default}
 .emblem-picked{display:flex;justify-content:center;align-items:baseline;gap:8px;margin:8px 0 0;font-size:13px;color:#7c7568}.emblem-picked strong{font-size:14px;color:#4b452c}.family-emblems input:checked+.family-emblem{outline:3px solid #648050;outline-offset:1px}.family-emblems input:focus-visible+.family-emblem{outline:3px solid #c79138;outline-offset:2px}.family-join-grid .primary-button{width:100%;font-size:15px}.family-join-grid small{margin-top:14px}.family-notice{border-left:3px solid #a9b583;padding:8px 12px;background:#f0f2e5;border-radius:0 10px 10px 0}
-.family-week-intro{display:flex;justify-content:space-between;align-items:center;gap:14px}.family-week-intro>.game-art{width:72px;height:72px;flex-shrink:0}.family-week-intro .eyebrow{font-size:11px}.family-order-line{display:grid;grid-template-columns:48px 1fr;gap:10px 14px;padding:18px 0;border-bottom:1px solid #e2ddcf}.family-order-line>.game-art{width:48px;height:48px;align-self:center}.family-line-copy strong{display:block;font-size:17px}.family-line-copy span{display:block;font-size:13px;color:#7c7d6e;margin:5px 0}.family-line-copy progress{width:100%;height:9px;display:block;accent-color:#7f9b56}.family-line-actions{grid-column:2;display:flex;flex-wrap:wrap;gap:8px}.family-done{color:#557448;font-weight:700;font-size:14px}.family-your-share{margin:22px 0}.family-your-share p:last-child{margin-bottom:0!important}.family-extra summary{cursor:pointer;font-weight:700}.family-extra summary span{display:block;font-size:12px;color:#7c7d6e;margin-top:5px}.family-extra form{display:grid;grid-template-columns:1fr 100px;gap:4px 12px}.family-extra label:first-child{grid-column:1;grid-row:1}.family-extra select{grid-column:1;grid-row:2}.family-extra label[for=family-extra-count]{grid-column:2;grid-row:1}.family-extra input{grid-column:2;grid-row:2}.family-extra button{grid-column:1/-1}.family-rewards{background:#f0ebf7;border:1px solid #dfd4eb;padding:18px;border-radius:18px;margin-bottom:24px}.family-reward,.family-list-row{display:flex;align-items:center;gap:14px;padding:14px 0}.family-list-row+.family-list-row,.family-reward+.family-reward{border-top:1px solid #e2ddcf}.family-list-row>div:not(.family-member-actions),.family-reward>div{flex:1}.family-list-row strong,.family-reward strong{display:block;overflow-wrap:anywhere}.family-list-row span:not(.game-art):not(.family-emblem):not(.online-dot),.family-reward span{font-size:13px}.family-reward>.game-art{width:42px;height:42px;flex-shrink:0}.family-member-actions{display:flex;gap:6px}.family-pool{display:flex;align-items:center;justify-content:center;gap:16px;background:#eef3e3;border-radius:20px;padding:24px;margin-bottom:18px}.family-pool .game-art{width:60px;height:60px}.family-pool strong{display:block;font-size:26px}.family-pool span{font-size:14px}.family-rank{width:26px;color:#9c865b;font-size:21px}.family-settings-header{display:flex;align-items:center;gap:16px}.family-invite>div,.family-setting-row,.family-inline{display:flex;align-items:center;gap:14px;justify-content:space-between}.family-invite code{font-size:26px;letter-spacing:4px;font-weight:800;user-select:all}.family-setting-row{margin:24px 0}.family-setting-row p{margin-bottom:0!important}.family-inline input{margin:0!important}.family-leave{border-top:1px solid #e1d5cb;padding-top:20px;margin-top:28px}.family-leave button{color:#875744}.family-member-list .online-dot{display:block;flex-shrink:0;width:10px;height:10px;border-radius:50%;background:#c8c4b8}.family-member-list .online-dot.is-online{background:#5e9b51;box-shadow:0 0 0 3px #e6efdf}#family-feedback{color:#965e44;font-size:14px;margin:12px 0 0}#family-feedback:empty{display:none}.family-celebrate .family-rewards{box-shadow:0 0 0 3px #e8d499}
+.family-week-intro{display:flex;justify-content:space-between;align-items:center;gap:14px}.family-week-intro>.game-art{width:72px;height:72px;flex-shrink:0}.family-week-intro .eyebrow{font-size:12px}.family-order-line{display:grid;grid-template-columns:48px 1fr;gap:10px 14px;padding:18px 0;border-bottom:1px solid #e2ddcf}.family-order-line>.game-art{width:48px;height:48px;align-self:center}.family-line-copy strong{display:block;font-size:17px}.family-line-copy span{display:block;font-size:13px;color:#7c7d6e;margin:5px 0}.family-line-copy progress{width:100%;height:9px;display:block;accent-color:#7f9b56}.family-line-actions{grid-column:2;display:flex;flex-wrap:wrap;gap:8px}.family-done{color:#557448;font-weight:700;font-size:14px}.family-your-share{margin:22px 0}.family-your-share p:last-child{margin-bottom:0!important}.family-extra summary{cursor:pointer;font-weight:700}.family-extra summary span{display:block;font-size:12px;color:#7c7d6e;margin-top:5px}.family-extra form{display:grid;grid-template-columns:1fr 100px;gap:4px 12px}.family-extra label:first-child{grid-column:1;grid-row:1}.family-extra select{grid-column:1;grid-row:2}.family-extra label[for=family-extra-count]{grid-column:2;grid-row:1}.family-extra input{grid-column:2;grid-row:2}.family-extra button{grid-column:1/-1}.family-rewards{background:#f0ebf7;border:1px solid #dfd4eb;padding:18px;border-radius:18px;margin-bottom:24px}.family-reward,.family-list-row{display:flex;align-items:center;gap:14px;padding:14px 0}.family-list-row+.family-list-row,.family-reward+.family-reward{border-top:1px solid #e2ddcf}.family-list-row>div:not(.family-member-actions),.family-reward>div{flex:1}.family-list-row strong,.family-reward strong{display:block;overflow-wrap:anywhere}.family-list-row span:not(.game-art):not(.family-emblem):not(.online-dot),.family-reward span{font-size:13px}.family-reward>.game-art{width:42px;height:42px;flex-shrink:0}.family-member-actions{display:flex;gap:6px}.family-pool{display:flex;align-items:center;justify-content:center;gap:16px;background:#eef3e3;border-radius:20px;padding:24px;margin-bottom:18px}.family-pool .game-art{width:60px;height:60px}.family-pool strong{display:block;font-size:26px}.family-pool span{font-size:14px}.family-rank{width:26px;color:#9c865b;font-size:21px}.family-settings-header{display:flex;align-items:center;gap:16px}.family-invite>div,.family-setting-row,.family-inline{display:flex;align-items:center;gap:14px;justify-content:space-between}.family-invite code{font-size:26px;letter-spacing:4px;font-weight:800;user-select:all}.family-setting-row{margin:24px 0}.family-setting-row p{margin-bottom:0!important}.family-inline input{margin:0!important}.family-leave{border-top:1px solid #e1d5cb;padding-top:20px;margin-top:28px}.family-leave button{color:#875744}.family-member-list .online-dot{display:block;flex-shrink:0;width:10px;height:10px;border-radius:50%;background:#c8c4b8}.family-member-list .online-dot.is-online{background:#5e9b51;box-shadow:0 0 0 3px #e6efdf}#family-feedback{color:#965e44;font-size:14px;margin:12px 0 0}#family-feedback:empty{display:none}.family-celebrate .family-rewards{box-shadow:0 0 0 3px #e8d499}
 @media(max-width:600px){#family-dialog{padding:18px 16px;width:calc(100% - 20px);max-width:calc(100% - 20px);max-height:calc(100dvh - 24px)}#family-dialog .dialog-heading{align-items:flex-start}#family-dialog .dialog-heading .icon-button{width:42px;height:42px;flex-shrink:0}#family-tabs button{font-size:12px}.family-join-grid{grid-template-columns:1fr}.family-emblems .family-emblem{width:52px;height:52px}.family-emblems .game-art{width:34px;height:34px}.emblem-picker-row{gap:4px}.family-list-row{flex-wrap:wrap}.family-member-actions{width:100%;padding-left:24px}.family-reward{flex-wrap:wrap}.family-reward>button{width:100%}.family-line-actions{grid-column:1/-1}.family-line-actions button{flex:1}.family-week-intro>.game-art{width:52px;height:52px}.family-setting-row{align-items:flex-start}.family-inline{flex-wrap:wrap}.family-inline button{width:100%}.family-pool strong{font-size:22px}#family-button{width:34px;height:36px}#family-button .game-art{width:25px;height:25px}}
 
-#family-tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:78px}#family-tabs .game-art{width:34px;height:34px;flex-shrink:0}.family-page-icon>.game-art{width:68px;height:68px;display:block;margin:0 auto 16px}.family-settings-header>.game-art{width:68px;height:68px;flex-shrink:0}@media(max-width:600px){#family-tabs button{min-height:70px;font-size:11px;gap:6px}#family-tabs .game-art{width:30px;height:30px}}
+#family-tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:78px}#family-tabs .game-art{width:34px;height:34px;flex-shrink:0}.family-page-icon>.game-art{width:68px;height:68px;display:block;margin:0 auto 16px}.family-settings-header>.game-art{width:68px;height:68px;flex-shrink:0}@media(max-width:600px){#family-tabs button{min-height:70px;font-size:12px;gap:6px}#family-tabs .game-art{width:30px;height:30px}}
 /* Phones (26 Sep 2026): Farm Family lives in the More menu, under Friends, like the chat; the header keeps coins and diamonds. */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#family-button{display:none}}
 #family-button[hidden],#family-dot[hidden],#family-tabs[hidden]{display:none}
@@ -22,17 +22,17 @@
 /* The leading families and their prizes stay together on every screen size. */
 .family-tournament-banner{display:grid;grid-template-columns:60px minmax(0,1fr) auto;align-items:center;gap:16px;padding:20px;border:1px solid #d8dfc5;border-radius:20px;background:linear-gradient(110deg,#edf3e1,#f8f5e6);margin-bottom:22px}
 .family-tournament-banner>.game-art{width:60px;height:60px}
-.family-tournament-title .eyebrow{display:block;font-size:10px;letter-spacing:1.7px;color:#7c8967;margin-bottom:5px}
+.family-tournament-title .eyebrow{display:block;font-size:12px;letter-spacing:1.7px;color:#7c8967;margin-bottom:5px}
 #family-dialog .family-tournament-title h3{font-size:24px;line-height:1.12;margin:0 0 7px}
 .family-tournament-title>span:last-child{font-size:12px;color:#73805e}
 .family-tournament-title>span:last-child strong{color:#44553c}
 .family-tournament-pool{display:flex;align-items:center;justify-content:center;gap:9px;padding:12px;background:#fffcf2;border:1px solid #e2dcc5;border-radius:14px}
 .family-tournament-pool>.game-art{width:34px;height:34px;flex-shrink:0}
 .family-tournament-pool strong{display:block;font-size:26px;line-height:1.05;color:#40543c;font-variant-numeric:tabular-nums}
-.family-tournament-pool span{display:block;font-size:11px;color:#7c816c;margin-top:4px}
+.family-tournament-pool span{display:block;font-size:12px;color:#7c816c;margin-top:4px}
 .family-standings-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 #family-dialog .family-standings-heading h3{margin:0;font-size:18px}
-.family-standings-heading>span{font-size:11px;color:#7f866d;white-space:nowrap}
+.family-standings-heading>span{font-size:12px;color:#7f866d;white-space:nowrap}
 .family-podium{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .family-podium-row{--place:#b9a383;--place-light:#f2e7d8;display:grid;grid-template-columns:34px minmax(0,1fr) 238px;align-items:center;gap:12px;padding:16px 14px;border:1px solid #e5d9c9;border-radius:17px;background:#fffaf2;box-shadow:0 3px 0 #c1b49222}
 .family-place-1{--place:#b48a32;--place-light:#ffedb2;background:linear-gradient(105deg,#fff4ce,#fffdf5);border-color:#e8d49a}
@@ -43,11 +43,11 @@
 .family-podium-identity>.family-emblem{width:42px;height:42px;border-radius:12px}
 .family-podium-identity .family-emblem>.game-art{width:30px;height:30px}
 .family-podium-identity strong{display:block;font-size:17px;line-height:1.2;overflow-wrap:anywhere;color:#424936}
-.family-podium-identity>div>span{display:block;margin-top:5px;font-size:11px;color:#8b846b}
+.family-podium-identity>div>span{display:block;margin-top:5px;font-size:12px;color:#8b846b}
 .family-podium-row.is-yours .family-podium-identity>div>span{color:#56794c;font-weight:700}
 .family-podium-stats{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(76px,1.08fr);gap:6px;margin:0;text-align:center}
 .family-podium-stats>div{display:flex;flex-direction:column;justify-content:center;gap:7px;min-height:62px;background:#fffcf28c;border:1px solid #ded5be77;border-radius:11px;padding:8px 3px}
-.family-podium-stats dt{font-size:10px;color:#817b68;line-height:1.1}
+.family-podium-stats dt{font-size:12px;color:#817b68;line-height:1.1}
 .family-podium-stats dd{display:flex;align-items:center;justify-content:center;gap:4px;margin:0;font-size:18px;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums;color:#4b513d}
 .family-podium-stats>.family-podium-prize{background:#e8f3f8;border-color:#c3dce5}
 .family-podium-prize dt{color:#637f8c}.family-podium-prize dd{color:#426b7b}
@@ -72,10 +72,10 @@
  .family-podium-row{grid-template-columns:32px minmax(0,1fr);gap:10px;padding:13px 12px}
  .family-podium-identity{gap:9px}.family-podium-identity strong{font-size:17px}
  .family-podium-stats{grid-column:1/-1;grid-template-columns:1fr 1fr 1fr;gap:7px}
- .family-podium-stats>div{min-height:58px}.family-podium-stats dt{font-size:10px}.family-podium-stats dd{font-size:18px}
+ .family-podium-stats>div{min-height:58px}.family-podium-stats dt{font-size:12px}.family-podium-stats dd{font-size:18px}
  .family-podium-row.is-empty{min-height:66px;padding-block:11px}.family-open-place{display:none}
  .family-podium-row.is-empty .family-podium-identity strong{font-size:14px}
- .family-standings-heading>span{font-size:10px}#family-dialog .family-standings-heading h3{font-size:17px}
+ .family-standings-heading>span{font-size:12px}#family-dialog .family-standings-heading h3{font-size:17px}
 }
 .family-prize-preview{display:flex;align-items:center;gap:14px;padding:18px;margin:20px 0;background:#edf4ec;border:1px solid #cbdac1;border-radius:18px}.family-prize-preview>.game-art{width:42px;height:42px;flex-shrink:0}.family-prize-preview strong{display:block;font-size:18px;line-height:1.3}.family-prize-preview span{display:block;font-size:13px;line-height:1.5;margin-top:5px;color:#637358}.family-prize-preview+.family-your-share{margin-top:14px}.family-rank-prize{font-weight:700;color:#5d7350;text-align:right}.family-rules{border-top:1px solid #e2ddcf;padding:16px 0}.family-rules summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;font-weight:700}.family-rules summary::before{content:'+';font-size:22px;color:#7f886a}.family-rules[open] summary::before{content:'−'}
 
@@ -86,7 +86,7 @@
 .family-completion-bonus{display:flex;align-items:center;gap:12px;background:#edf1e1;border-radius:15px;border:1px solid #d6dfc5;padding:13px}.family-completion-bonus>.game-art{width:32px;height:32px;flex:0 0 32px}.family-completion-bonus strong,.family-completion-bonus span{display:block;line-height:1.4}.family-completion-bonus strong{font-size:15px}.family-completion-bonus span{font-size:12px;color:#6a785c;margin-top:4px}
 .family-order-reward-progress{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;margin:18px 0 8px}.family-order-rewards progress{height:8px}.family-reward-qualification{color:#806429;font-size:14px;margin:12px 0}.family-reward-unlock{font-size:12px;color:#707959;margin:10px 0 0}.family-emblem-settings{margin:20px 0}.family-emblem-settings>button{margin-top:10px}.family-welcome-benefits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}.family-welcome-benefits>div{display:flex;flex-direction:column;align-items:center;gap:6px;border:1px solid #dce3ce;background:#f5f5e9;border-radius:18px;padding:14px}.family-welcome-benefits .game-art{width:48px;height:48px}.family-welcome-benefits span{font-size:12px;line-height:1.4;color:#738266}
 .rank-trophy{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}.rank-trophy>.game-art{width:46px;height:50px;object-fit:contain}.family-place .rank-trophy>.game-art{width:46px;height:50px}.family-podium-row .family-place{background:transparent;box-shadow:none;border:0;padding:0}.family-rank .rank-trophy>.game-art{width:32px;height:36px}
-@media(max-width:480px){.family-order-rewards{padding:14px}.family-order-rewards-heading h3{font-size:20px}.family-order-rewards-heading>.game-art{width:42px;height:42px;flex-basis:42px}.family-order-rewards-heading .eyebrow{font-size:9px;letter-spacing:1px}.family-order-reward-grid{gap:7px}.family-order-reward-cell{padding:11px 4px}.family-welcome-benefits{gap:8px}.family-welcome-benefits>div{padding:12px 8px}.family-welcome-benefits strong{font-size:14px}.family-place .rank-trophy>.game-art{width:34px;height:39px}}
+@media(max-width:480px){.family-order-rewards{padding:14px}.family-order-rewards-heading h3{font-size:20px}.family-order-rewards-heading>.game-art{width:42px;height:42px;flex-basis:42px}.family-order-rewards-heading .eyebrow{font-size:12px;letter-spacing:1px}.family-order-reward-grid{gap:7px}.family-order-reward-cell{padding:11px 4px}.family-welcome-benefits{gap:8px}.family-welcome-benefits>div{padding:12px 8px}.family-welcome-benefits strong{font-size:14px}.family-place .rank-trophy>.game-art{width:34px;height:39px}}
 
 .family-incoming-invitation,.family-invitation-empty{margin:0 0 20px;padding:20px;border-radius:22px;border:1px solid #cbd9b7;background:#eef4e2}.family-invitation-identity{display:flex;align-items:center;gap:14px;margin:12px 0}.family-invitation-identity>div{min-width:0}.family-invitation-identity h3{font-size:24px;overflow-wrap:anywhere;margin:0 0 5px}.family-invitation-identity p{font-size:13px;margin:0;color:#728161}.family-incoming-invitation>p,.family-invitation-empty p{font-size:14px;line-height:1.5}.family-incoming-invitation small,.family-invitation-empty small{font-size:12px;color:#75806b}.family-invitation-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.family-invitation-actions button{flex:1;min-height:46px}.family-invitation-actions button:first-child:not(:disabled){background:#526f3e;color:#fffdf5;border-color:#526f3e}.family-invitation-empty{display:flex;gap:15px;align-items:center;background:#f6f5eb}.family-invitation-empty>.game-art{width:58px;height:58px;flex:0 0 58px}
 .family-name-invite{margin:18px 0;padding:20px;background:#f1f4e6;border:1px solid #d7dec7;border-radius:20px}.family-name-invite>.game-art{width:50px;height:50px;float:right;margin:0 0 8px 12px}.family-name-invite h3{font-size:23px;margin:0 0 8px}.family-name-invite>p{font-size:14px;line-height:1.5;color:#718060}.family-name-invite>label{display:block;font-weight:700;margin:15px 0 8px}.family-name-invite input{display:block;box-sizing:border-box;width:100%;min-height:46px;font-size:16px;border:1px solid #c7d1b6;border-radius:12px;background:#fffdf5;padding:11px 13px}.family-name-invite>small{display:block;font-size:12px;line-height:1.5;color:#758066;margin-top:14px}.family-name-invite [data-invite-search-status]{font-size:13px;margin:10px 0}.family-invite-result,.family-sent-invitation{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid #dce2cd}.family-invite-result>div,.family-sent-invitation>div{min-width:0;flex:1}.family-invite-result strong,.family-sent-invitation strong{display:block;overflow-wrap:anywhere}.family-invite-result span,.family-sent-invitation span{display:block;color:#788269;font-size:12px;margin-top:4px}.family-invite-result button,.family-sent-invitation button{min-height:44px;max-width:45%;white-space:normal}.family-sent-invitations{margin:20px 0}.family-sent-invitations>p{font-size:14px;color:#788269}
@@ -130,7 +130,7 @@
 .family-member-copy strong{display:flex;align-items:center;flex-wrap:wrap;gap:4px 7px;font-size:16px;overflow-wrap:anywhere}
 .family-member-copy em{font-style:normal;font-weight:600;color:#8b8472}
 #family-dialog .family-member-copy small,#family-profile-dialog .family-member-copy small{font-size:12px;color:#7c7d6e}
-.family-role{display:inline-block;padding:1px 8px;border-radius:99px;background:#f3e6bd;color:#6e5418;font-size:11px;font-weight:800}
+.family-role{display:inline-block;padding:1px 8px;border-radius:99px;background:#f3e6bd;color:#6e5418;font-size:12px;font-weight:800}
 .family-member-bar{display:block;height:5px;margin-top:3px;border-radius:99px;background:#ede6d8;overflow:hidden}
 .family-member-bar>span{display:block;height:100%;min-width:0;border-radius:inherit;background:#8fae63}
 .family-member.is-self .family-member-bar>span{background:#d7a64a}
@@ -151,7 +151,7 @@
 .family-prize-ladder{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .family-prize-step{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px 11px;border:1px solid #e5d9c9;border-radius:14px;background:#fffaf2}
 .family-prize-step .rank-trophy>.game-art{width:30px;height:34px}
-.family-prize-step>span:not(.rank-trophy){font-size:11px;color:#8b846b}
+.family-prize-step>span:not(.rank-trophy){font-size:12px;color:#8b846b}
 .family-prize-step strong{display:inline-flex;align-items:center;gap:4px;font:700 19px/1.1 'Outfit',sans-serif;color:#40543c;font-variant-numeric:tabular-nums}
 .family-prize-step strong .game-art{width:18px;height:18px}
 .family-prize-growth{display:grid;gap:8px;margin-top:12px;padding:0 2px}
@@ -186,7 +186,7 @@
 #family-dialog .family-leave p{font-size:13px}
 #family-dialog .family-leave button{color:#9b4a33;background:#fffdf7;border:1px solid #e6cfc4;box-shadow:none}
 @media(max-width:600px){
- .family-week-stats strong{font-size:17px}.family-week-stats span{font-size:11px}
+ .family-week-stats strong{font-size:17px}.family-week-stats span{font-size:12px}
  .family-prize-step strong{font-size:17px}.family-your-place{padding:11px 12px}
  .family-tournament-banner{grid-template-columns:48px minmax(0,1fr)}
 }
@@ -198,7 +198,7 @@
 .family-sharing>.sharing-feedback:empty{display:none}
 .family-sharing>.sharing-empty{margin:12px 0;font-size:14px;color:#807463}
 .family-sharing>.sharing-intro{margin-top:0}
-@media(max-width:600px){#family-tabs button{font-size:11px;padding:8px 2px}#family-tabs .game-art{width:28px;height:28px}}
+@media(max-width:600px){#family-tabs button{font-size:12px;padding:8px 2px}#family-tabs .game-art{width:28px;height:28px}}
 /* Look and name: the header shows the family's own emblem (a live preview while choosing); one Save changes button appears
    only once something has changed. */
 .family-settings-header>[data-look-emblem]>.family-emblem{width:64px;height:64px;border-radius:18px}
@@ -218,7 +218,7 @@
 /* Compact tabs (like the chat and the dashboard): a small picture next to the word on a computer, a small one above it on a phone. */
 #family-tabs button{flex-direction:row;gap:7px;min-height:46px;padding:6px 10px}
 #family-tabs .game-art{width:24px;height:24px}
-@media(max-width:600px){#family-tabs button{flex-direction:column;gap:3px;min-height:54px;padding:5px 2px;font-size:11px}#family-tabs .game-art{width:22px;height:22px}}
+@media(max-width:600px){#family-tabs button{flex-direction:column;gap:3px;min-height:54px;padding:5px 2px;font-size:12px}#family-tabs .game-art{width:22px;height:22px}}
 /* The family's own emblem and name on top, with the chat and the settings next to the close button. */
 .family-heading{align-items:center;gap:14px}
 .family-heading>div:not(.family-heading-actions){flex:1;min-width:0}
@@ -282,7 +282,7 @@
 .family-chest-head>.game-art{flex:none;width:68px;height:68px;object-fit:contain}
 .family-chest-head h3{margin:2px 0 4px;font:700 18px/1.25 'Outfit',sans-serif;color:#3d3522}
 .family-chest-head p{margin:0;font-size:12.5px;line-height:1.45;color:#7a6b4b}
-.family-chest-head .eyebrow{font-size:10.5px;letter-spacing:.08em;color:#a17a26}
+.family-chest-head .eyebrow{font-size:12px;letter-spacing:.08em;color:#a17a26}
 .family-chest-track{position:relative;margin:22px 14px 8px}
 .family-chest-track progress{appearance:none;-webkit-appearance:none;display:block;width:100%;height:12px;border:0;border-radius:99px;background:#eadfc2;overflow:hidden}
 .family-chest-track progress::-webkit-progress-bar{background:#eadfc2;border-radius:99px}
@@ -312,7 +312,7 @@
 .family-alone span{font-size:12.5px;color:#7a6b4b}
 /* The family list leads; starting your own family is folded below it. */
 .family-browse-lead{margin:-4px 0 10px;font-size:13px;color:#7a6b4b}
-.family-level-chip{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:99px;background:#f6ecd0;color:#8a6a22;font:700 11px/1.5 'DM Sans',sans-serif;vertical-align:1px}
+.family-level-chip{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:99px;background:#f6ecd0;color:#8a6a22;font:700 12px/1.5 'DM Sans',sans-serif;vertical-align:1px}
 .family-create-fold{margin-top:14px;border:1px solid #ebe0c4;border-radius:16px;background:#fffdf6}
 .family-create-fold>summary{display:grid;gap:2px;padding:12px 14px;cursor:pointer;list-style:none}
 .family-create-fold>summary::-webkit-details-marker{display:none}
@@ -333,7 +333,7 @@
 .family-order-head h3{margin:2px 0 4px;font:700 18px/1.25 'Outfit',sans-serif;color:#3d3522}
 .family-order-head p{margin:0;font-size:12.5px;color:#7a6b4b}
 .family-order-head p b{color:#3d3522}
-.family-order-head .eyebrow{font-size:10.5px;letter-spacing:.08em;color:#7c9a5c}
+.family-order-head .eyebrow{font-size:12px;letter-spacing:.08em;color:#7c9a5c}
 .family-order-card progress{appearance:none;-webkit-appearance:none;display:block;width:100%;height:10px;margin-top:12px;border:0;border-radius:99px;background:#e6e2cf;overflow:hidden}
 .family-order-card progress::-webkit-progress-bar{background:#e6e2cf;border-radius:99px}
 .family-order-card progress::-webkit-progress-value{background:linear-gradient(90deg,#7c9a5c,#9dbb72);border-radius:99px}
@@ -344,7 +344,7 @@
 #family-dialog .family-rewards h3{margin:2px 0 4px;font-size:14px;color:#7a5d1e}
 #family-dialog .family-reward{display:flex;align-items:center;gap:10px;padding:8px 0}
 #family-dialog .family-reward>.game-art{width:36px;height:36px;object-fit:contain}
-#family-dialog .family-reward small{display:block;font-size:11px;color:#9a8d6f}
+#family-dialog .family-reward small{display:block;font-size:12px;color:#9a8d6f}
 #family-dialog .family-reward>button{width:auto;flex:none}
 .family-chest-ready{margin:10px 0 4px;padding:2px 12px;border:1px solid #e3d3a4;border-radius:14px;background:#fffdf6}
 .family-chest-ready .family-reward+.family-reward{border-top:1px solid #efe6cf}
@@ -390,7 +390,7 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 /* Family ranks and this week's top farmer (27 Sep 2026): the leader in gold, co-leaders in green, honorary members in lilac. */
 .family-role-coleader{background:#e1ecd3;color:#44602c}
 .family-role-honorary{background:#ece2f4;color:#65447f}
-.family-top{display:inline-flex;align-items:center;gap:3px;padding:1px 8px 1px 5px;border-radius:99px;background:#fff1c4;color:#7a5410;font-size:11px;font-weight:800;white-space:nowrap}
+.family-top{display:inline-flex;align-items:center;gap:3px;padding:1px 8px 1px 5px;border-radius:99px;background:#fff1c4;color:#7a5410;font-size:12px;font-weight:800;white-space:nowrap}
 .family-top svg{width:14px;height:14px;flex-shrink:0}
 .family-role>.game-art{width:16px;height:16px;margin:-2px 3px -2px -3px;vertical-align:-3px}
 .family-member-menu-list .game-art{width:22px;height:22px;flex-shrink:0;margin-right:8px}

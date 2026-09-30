@@ -26,7 +26,7 @@
  #market-items .market-card .market-item-copy>strong{font-size:16px}
  #market-items .market-card .market-current-price{font-size:12px}
  #market-items .market-card .market-current-price b{font-size:15px}
- #market-items .market-card .demand-pill{font-size:11px;padding:2px 7px}
+ #market-items .market-card .demand-pill{font-size:12px;padding:2px 7px}
  #market-items .market-card .market-stock{display:none}
  #market-items .market-card .market-kept{display:block}
  #market-items .market-quick{grid-column:3;grid-row:1;display:flex;flex-direction:column;align-items:stretch;gap:0}
@@ -58,7 +58,7 @@
  #building-content .building-hero p{font-size:13px;line-height:1.45}
  #building-content .milling-chain{padding:8px 6px}
  #building-content .milling-chain .game-art{width:28px;height:28px}
- #building-content .milling-chain>span{gap:2px;font-size:11px}
+ #building-content .milling-chain>span{gap:2px;font-size:12px}
  #building-content .milling-note{margin:6px 0 10px;font-size:12.5px;line-height:1.5}
  #building-content .production-capacity{padding:8px 12px;margin-bottom:10px}
  #building-content .production-capacity strong{font-size:14px}
@@ -66,10 +66,10 @@
  #building-content .recipe-section-heading h3{font-size:19px}
 
  /* Nothing smaller than 10px (the small capitals) or 11px (the rest). */
- .game-dialog .eyebrow,#building-content .building-hero .eyebrow{font-size:10px;letter-spacing:1px}
- .today-market-card>span>small{font-size:10px}
- #daily-gift .streak-day small,#journal-content .collection-crop small{font-size:11px}
- .avatar-level{font-size:10px}
+ .game-dialog .eyebrow,#building-content .building-hero .eyebrow{font-size:12px;letter-spacing:1px}
+ .today-market-card>span>small{font-size:12px}
+ #daily-gift .streak-day small,#journal-content .collection-crop small{font-size:12px}
+ .avatar-level{font-size:12px}
 
  /* Buttons you tap are at least 40px high. */
  .wiki-quick a,.wiki-quick button{min-height:40px;padding:6px 14px}

@@ -60,7 +60,7 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .admin-grant-give>.game-art{width:20px;height:20px}
 #admin-grant-status{font-size:12px;line-height:1.5;margin:11px 0 0;color:#6b5c33;min-height:1.5em}
 @media(max-width:480px){.admin-grant-row{grid-template-columns:1fr;gap:8px}.admin-grant-item-row{grid-template-columns:1fr;gap:8px}}
-@media(max-width:480px){.farmer-profile-dialog{padding:18px;border-radius:24px}.farmer-identity{gap:13px}.farmer-avatar{flex-basis:76px;height:76px}.farmer-avatar-img{padding:3px 3px 0}.farmer-profile-dialog .eyebrow{font-size:10px;letter-spacing:1px}.farmer-stat{padding:10px 4px 9px;gap:3px}.farmer-stat>.game-art{width:30px;height:30px}.farmer-stat strong{font-size:19px}.farmer-stat-grid{gap:8px}.farmer-badge-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.farmer-search{padding:12px}.farmer-search-result{gap:8px}.farmer-search-avatar{flex-basis:30px;height:34px;font-size:12px}.farmer-search-result .farmer-presence{font-size:11px;gap:4px}.farmer-search-name strong{font-size:14px}.farmer-family{padding:12px}}
+@media(max-width:480px){.farmer-profile-dialog{padding:18px;border-radius:24px}.farmer-identity{gap:13px}.farmer-avatar{flex-basis:76px;height:76px}.farmer-avatar-img{padding:3px 3px 0}.farmer-profile-dialog .eyebrow{font-size:12px;letter-spacing:1px}.farmer-stat{padding:10px 4px 9px;gap:3px}.farmer-stat>.game-art{width:30px;height:30px}.farmer-stat strong{font-size:19px}.farmer-stat-grid{gap:8px}.farmer-badge-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.farmer-search{padding:12px}.farmer-search-result{gap:8px}.farmer-search-avatar{flex-basis:30px;height:34px;font-size:12px}.farmer-search-result .farmer-presence{font-size:12px;gap:4px}.farmer-search-name strong{font-size:14px}.farmer-family{padding:12px}}
 .leaderboard-table .leaderboard-place{width:60px;padding-inline:8px;text-align:center}.leaderboard-place .rank-number{display:inline-grid;place-items:center;min-width:40px;min-height:46px;font-weight:800}.leaderboard-place .rank-trophy>.game-art{width:44px;height:48px}
 @media(max-width:480px){.leaderboard-table .leaderboard-place{width:42px;padding-inline:3px}.leaderboard-place .rank-trophy>.game-art{width:34px;height:40px}.leaderboard-place .rank-number{min-width:34px}.leaderboard-table td{overflow-wrap:anywhere}}
 /* The admin dashboard (floris@millstone.nl only — #admin-button in the topbar stays hidden for everyone else). */
@@ -71,7 +71,7 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .admin-card h3>svg{width:18px;height:18px;color:#8a7a4a;flex-shrink:0}
 .admin-card h3>span{font-size:14px;font-weight:700;color:#615742;background:#f3c35345;border-radius:8px;padding:1px 9px;margin-left:2px}
 .admin-hint{font-size:12px;color:#80776b;line-height:1.6;margin:0 0 12px}
-.admin-avatar{position:relative;display:inline-grid;place-items:center;flex-shrink:0;width:30px;height:30px;border-radius:50%;background:#e5d1a6;color:#685334;font-size:11px;font-weight:800}
+.admin-avatar{position:relative;display:inline-grid;place-items:center;flex-shrink:0;width:30px;height:30px;border-radius:50%;background:#e5d1a6;color:#685334;font-size:12px;font-weight:800}
 .admin-avatar>.online-dot{position:absolute;right:-1px;bottom:-1px;border:2px solid #fffdf5;box-sizing:content-box;margin:0}
 .admin-online-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
 .admin-online-list li{display:flex;align-items:center;gap:9px;background:#f3f5e9;border:1px solid #dde2cf;border-radius:12px;padding:6px 14px 6px 6px;font-size:13px}
@@ -116,12 +116,12 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .farmer-log-filters{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}.farmer-log-filters::-webkit-scrollbar{display:none}
 .farmer-log-filters button{flex:none;min-height:36px;padding:6px 12px;border:1px solid #e0d5c6;border-radius:999px;background:#f7f1e6;color:#5d5140;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer}
 .farmer-log-filters button[aria-pressed="true"]{background:#4d6b3b;border-color:#4d6b3b;color:#fff}
-.farmer-log-day{margin:14px 0 6px;font:700 11.5px 'DM Sans',sans-serif;letter-spacing:.7px;text-transform:uppercase;color:#8a7c68}
+.farmer-log-day{margin:14px 0 6px;font:700 12px 'DM Sans',sans-serif;letter-spacing:.7px;text-transform:uppercase;color:#8a7c68}
 .farmer-log-list{list-style:none;margin:0;padding:0;border:1px solid #ebe2d6;border-radius:14px;background:#fffdf8;overflow:hidden}
 .farmer-log-row{display:flex;gap:10px;padding:9px 12px;border-top:1px solid #f0e8dc}.farmer-log-row:first-child{border-top:0}
 .farmer-log-dot{flex:none;width:9px;height:9px;margin-top:6px;border-radius:50%;background:var(--log-dot,#a89c8a)}
 .farmer-log-row p{margin:0;font-size:13.5px;line-height:1.45;color:#3f3a2c;overflow-wrap:anywhere}
-.farmer-log-row small{display:block;margin-top:2px;font-size:11.5px;color:#8a7f70}
+.farmer-log-row small{display:block;margin-top:2px;font-size:12px;color:#8a7f70}
 .farmer-log-more{width:100%;margin-top:10px}
 [data-log-category="farm"]{--log-dot:#6f9a4a}[data-log-category="production"]{--log-dot:#b0773e}[data-log-category="market"]{--log-dot:#d4a337}
 [data-log-category="rewards"]{--log-dot:#8c6bb1}[data-log-category="diamonds"]{--log-dot:#3884a0}[data-log-category="social"]{--log-dot:#4aa39a}
