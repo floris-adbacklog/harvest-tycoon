@@ -48,7 +48,7 @@ test('the arrows, the dots and the page you are on; the other page cannot be tab
 });
 test('the profile keeps its stat page on a refresh, starts on page 1 for another farmer, and a tap opens the board',()=>{
  const profiles=read('src/player-profiles.js');
- assert.match(profiles,/renderPlayerProfile\(data\.playerProfile,Date\.now\(\)\+clockOffset,\{statPage\}\)/);
+ assert.match(profiles,/renderPlayerProfile\(data\.playerProfile,Date\.now\(\)\+clockOffset,\{statPage,self:id===bridge\.playerId\}\)/);
  assert.match(profiles,/bindStatPages\(content,\{page:statPage,onPage:page=>\{statPage=page;\},onBoard:key=>showBoard\?\.\(key\)\}\)/);
  assert.match(profiles,/selected=playerId;profileUsername=null;statPage=0;/);
  assert.match(read('src/game-cloud.js'),/createPlayerProfiles\(bridge,\{showBoard:key=>ui\.showBoard\(key\)\}\)/);

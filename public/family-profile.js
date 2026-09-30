@@ -36,6 +36,8 @@ export function familyProfileAction(p){
  return {note:p.mode==='closed'?'This family is not taking new farmers.':'Invite only: the leader or a co-leader invites farmers by name.'};
 }
 
+// 30 Sep 2026, cleaner: Join, Ask to join or Open your family right under the family's name, the numbers in one compact grid,
+// and Recent tournaments only once there is one.
 export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
  const s=p.standing,next=s.next,progress=next?Math.min(100,Math.round(s.tiers/next*100)):100;
  const tile=(picture,value,label)=>`<div class="family-profile-stat">${art(picture)}<strong>${value}</strong><span>${label}</span></div>`;
@@ -46,6 +48,7 @@ export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
   <div><h3>${esc(p.name)}</h3><p>${num(p.members.length)} / ${num(p.maxMembers)} farmers · ${num(p.online)} online</p>
    <div class="family-profile-tags"><span class="family-mode-chip">${esc(FAMILY_JOIN_MODES[p.mode]??'Invite only')}</span>${p.createdAt?`<small>Since ${day(p.createdAt)}</small>`:''}</div></div>
  </section>
+ <div class="family-profile-actions">${action.note?`<p class="family-notice">${esc(action.note)}</p>`:''}${action.button?`<button type="button" class="${action.button==='open'||action.button==='family_join'||action.button==='family_request'?'primary-button':'small-button'}" data-family-profile-action="${action.button}">${esc(action.label)}</button>`:''}</div>
  <section class="family-profile-level" aria-label="Family level">
   <div><strong>Level ${s.level}</strong><span>${next?`${num(s.tiers)} of ${num(next)} chest tiers to level ${s.level+1}`:'The highest family level'}</span></div>
   <span class="family-profile-bar" aria-hidden="true"><i style="width:${progress}%"></i></span>
@@ -60,8 +63,8 @@ export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
   ${tile('family-tournament',p.thisWeek.rank?`#${p.thisWeek.rank}`:'—',p.thisWeek.rank?'In the tournament now':'Not in the tournament yet')}
  </section>
  <section class="family-profile-members"><h3>Farmers</h3><div class="family-member-list">${p.members.map(member).join('')}</div></section>
- <section class="family-profile-recent"><h3>Recent tournaments</h3>${p.recent.length?p.recent.map(r=>`<div class="family-list-row"><b class="family-rank">${rankArt(r.rank)}</b><div><strong>${placeLabel(r.rank)}</strong><span>Week of ${weekOf(r.week)} · ${num(r.points)} points</span></div></div>`).join(''):'<p class="family-profile-empty">No finished tournament yet. A week ends on Monday, 00:00 UTC.</p>'}</section>
- <div class="family-profile-actions">${action.note?`<p class="family-notice">${esc(action.note)}</p>`:''}${action.button?`<button type="button" class="${action.button==='open'||action.button==='family_join'||action.button==='family_request'?'primary-button':'small-button'}" data-family-profile-action="${action.button}">${esc(action.label)}</button>`:''}</div>`;
+ ${p.recent.length?`<section class="family-profile-recent"><h3>Recent tournaments</h3>${p.recent.map(r=>`<div class="family-list-row"><b class="family-rank">${rankArt(r.rank)}</b><div><strong>${placeLabel(r.rank)}</strong><span>Week of ${weekOf(r.week)} · ${num(r.points)} points</span></div></div>`).join('')}</section>`:''}
+`;
 }
 
 export function createFamilyProfile({emblem,act,openFamily,request=body=>window.parent.harvestBridge.request(body)}){

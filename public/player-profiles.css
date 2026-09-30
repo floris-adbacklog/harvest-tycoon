@@ -132,3 +132,5 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .farmer-family-open>.game-art{width:60px;height:60px;flex:0 0 60px}
 .farmer-family-more{flex-shrink:0;font-size:28px;line-height:1;color:#7a8b6c}
 .farmer-family-open:hover h4{text-decoration:underline;text-underline-offset:3px}
+/* The status line only when it says something (a refresh that failed). */
+.farmer-profile-status:empty{display:none}

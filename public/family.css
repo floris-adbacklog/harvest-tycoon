@@ -392,3 +392,6 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 /* Start your own family: the form sits straight in its fold (no card inside a card). */
 .family-create-fold .family-join-grid form{border:0;background:none;padding:0}
 .family-create-fold .family-create-grid{margin-bottom:0}
+/* Family profile (30 Sep 2026): the action right under the family, the six numbers three to a row on a phone too. */
+.family-profile-actions:empty{display:none}
+@media(max-width:600px){.family-profile-dialog .family-profile-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.family-profile-stat{padding:10px 5px}.family-profile-stat>.game-art{width:30px;height:30px}.family-profile-stat strong{font-size:18px}}

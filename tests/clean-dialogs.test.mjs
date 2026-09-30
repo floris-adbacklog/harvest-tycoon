@@ -88,3 +88,11 @@ test('Farm Family is cleaner: the week is the chest and the order, the tournamen
  assert.match(social,/action\('help',m\.id,'Help','coins',helpBlocked\)/,'the cost of Help is said once, above the list');
  assert.match(css,/\.family-open-row>\.pretty-select\{flex:none;width:210px\}/,'Who can join keeps its width');
 });
+test('profiles are cleaner: a family\'s action right under its name, the name once on a farmer\'s profile, no footnotes',async()=>{
+ const family=read('public/family-profile.js'),player=read('src/player-profiles.js');
+ assert.ok(family.indexOf('<div class="family-profile-actions">')<family.indexOf('<section class="family-profile-level"'),'Join or Open your family comes first');
+ assert.match(family,/\$\{p\.recent\.length\?`<section class="family-profile-recent">/,'no empty Recent tournaments');
+ assert.doesNotMatch(player,/FARMER OF THE VALLEY|'s profile`|Online status is based on activity/);
+ assert.match(player,/\$\{self\?vipBadge\(player\.vipExpiresAt,now,true\):''\}/,'the VIP time left only on your own profile');
+ assert.match(read('public/player-profiles.css'),/\.farmer-profile-status:empty\{display:none\}/);
+});

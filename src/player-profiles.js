@@ -19,7 +19,7 @@ const dateLine=(ms,label,icon,extra='')=>{const date=formatDate(ms);return date?
 const since=ms=>dateLine(ms,'Member since','<path d="M8 3v4M16 3v4M4 10h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/>');
 // Last online (28 Sep 2026): the day the farm last saved. Left out while the farmer is online; the green dot already says so.
 const lastOnline=(ms,online)=>online?'':dateLine(ms,'Last online','<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',' farmer-last-online');
-const presence=online=>`<span class="farmer-presence"><span class="online-dot${online?' is-online':''}" aria-hidden="true"></span>${online?'Online':'Offline'}</span>`;
+const presence=online=>`<span class="farmer-presence"${online?' title="Online: a farm action in the last 30 minutes"':''}><span class="online-dot${online?' is-online':''}" aria-hidden="true"></span>${online?'Online':'Offline'}</span>`;
 // Crop mastery: one card per crop with its best badge, and a dot for each of the four badges (bronze, silver, gold, platinum)
 // that is earned. The best crops first, then in the order they unlock.
 export function masteryByCrop(badges){
@@ -33,10 +33,12 @@ function familyCard(family,emblem){
  const inner=`${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div>`;
  return family?.id?`<button type="button" class="farmer-family-open" data-family-profile="${esc(family.id)}" aria-label="${esc(family.name)}: family profile">${inner}<span class="farmer-family-more" aria-hidden="true">›</span></button>`:inner;
 }
-export function renderPlayerProfile(player,now=Date.now(),{statPage=0}={}){
+// 30 Sep 2026, cleaner: the name once (the window says Farmer profile), the VIP time left only on your own profile, and what
+// Online means in the dot's own tooltip rather than a line under the profile.
+export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false}={}){
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem);
  const badges=player.badges??[],mastered=masteryByCrop(badges);
- return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><span class="eyebrow">FARMER OF THE VALLEY</span><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${vipBadge(player.vipExpiresAt,now,true)}</div></div>
+ return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
  <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
  ${renderStatPages(player,now,statPage)}
@@ -190,14 +192,13 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   try{
    const data=await bridge.request({operation:'player_profile',playerId:id});
    if(disposed||ticket!==profileSequence||!dialog.open)return;
-   const y=dialog.scrollTop;clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage});refreshVipBadges(dialog,Date.now()+clockOffset);
+   const y=dialog.scrollTop;clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId});refreshVipBadges(dialog,Date.now()+clockOffset);
    // The stat pages keep the page you were on when the profile refreshes (every 30 seconds).
    bindStatPages(content,{page:statPage,onPage:page=>{statPage=page;},onBoard:key=>showBoard?.(key)});
    profileUsername=data.playerProfile.username;showInvite(data.playerProfile);
    content.querySelector('[data-family-profile]')?.addEventListener('click',event=>window.harvestFamilyProfile?.open(event.currentTarget.dataset.familyProfile));
    chatExtras?.(data.playerProfile,content,{isCurrent:()=>!disposed&&selected===id&&dialog.open});
-   dialog.querySelector('#farmer-profile-title').textContent=`${data.playerProfile.username}'s profile`;
-   profileStatus.textContent='Online status is based on activity in the last 30 minutes.';
+   profileStatus.textContent='';
    if(quiet)dialog.scrollTop=y;
   }catch(error){
    if(disposed||ticket!==profileSequence||!dialog.open)return;
