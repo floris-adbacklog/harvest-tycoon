@@ -27,7 +27,7 @@ import { createRookieUI } from './rookie-ui.js';
 import { art,refreshArt } from './visual-icons.js';
 import { createFamilyFlag } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
-import { createQuestsUI } from './quests-ui.js';
+import { createQuestsUI,villageQuestReady } from './quests-ui.js';
 import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
@@ -684,11 +684,13 @@ function updateUI(){
  const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';
  // What the Market button counts: the goods its market buys (village goods in the village, the rest on the farm).
  const count=Object.entries(state.inventory).reduce((a,[k,n])=>a+(villageGood(k)===villageWorld?n:0),0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
- $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target);
+ $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target)&&!villageQuestReady(state);
  familyUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
+// World II's own quests (public/quests-ui.js, from level 100).
+async function claimVillage(id){try{const r=await runAction({type:'village_quest',id});updateUI();toast(`Village quest complete! +${r.coins.toLocaleString('en-US')} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 async function claim(id,{quiet=false}={}){try{const r=await runAction({type:'quest',id});updateUI();if(!quiet)toast(`Quest complete! +${r.coins} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;}
 // On a computer the side tools float over the map: a building name that would sit behind them is hidden until the map
@@ -1021,7 +1023,7 @@ function bindUI(){
  // A notification or a shortcut on the app icon can open Daily rewards (src/game-cloud.js harvestOpen).
  window.harvestToday=()=>retention.openToday();
  rookie=createRookieUI({state});
- quests=createQuestsUI({state,claim,icons,notify:toast});
+ quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,village:villageWorld});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote()}),guide:target=>{
   if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':'Tap a ready crop or its basket.');}

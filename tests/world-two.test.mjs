@@ -102,3 +102,30 @@ test('every World II recipe is worth making: 40% on top and 120 coins an hour, a
  }
  assert.equal(levelOf(farm(200)),200);
 });
+
+test('the village keeps its own count and its own quests: batches, sales and quests apart from the farm\'s',async()=>{
+ const {VILLAGE_QUESTS,QUESTS,worldTwoItem:w2}=await import('../game/farm-state.js');
+ // Every village quest counts something of the village (its goods, places, batches, market) or the master levels, from level 100.
+ for(const q of VILLAGE_QUESTS){
+  assert.ok(q.minLevel>=WORLD_TWO_LEVEL,q.title);
+  const [,kind,key]=q.stat.match(/^(made|built)_(.+)$/)??[];
+  assert.ok(kind==='made'?w2(key):kind==='built'?worldTwoBuilding(key):['village_batches','village_sold','village_earned','beyond_upgrades'].includes(q.stat),q.stat);
+  if(kind==='made'){const opens=Math.min(...Object.values(RECIPES).filter(r=>r.output[key]&&r.building!=='factory').map(r=>r.minLevel??0));assert.ok(q.minLevel>=opens,`${q.title} opens with its recipe`);}
+ }
+ assert.ok(!QUESTS.some(q=>/^village_|beyond_upgrades/.test(q.stat)),'the farm\'s quests stay the farm\'s');
+ const s=farm(110);Object.assign(s.inventory,{packedlunch:10,stone:20});
+ const produced=s.stats.produced??0,sold=s.stats.sold??0;
+ const r=act(s,{type:'produce',recipe:'digiron'});act(s,{type:'collect',building:'mine'},r.readyAt);
+ assert.deepEqual([s.stats.village_batches,s.stats.produced??0],[1,produced],'a village batch is the village\'s');
+ const sale=act(s,{type:'sell',item:'stone',category:'village',quantity:5},r.readyAt);
+ assert.deepEqual([s.stats.village_sold,s.stats.village_earned,s.stats.sold??0],[5,sale.coins,sold],'so is a village sale');
+ // A village quest: claimed once, only when done and open, and never among the farm's claimed quests.
+ const first=VILLAGE_QUESTS.findIndex(q=>q.stat==='village_batches');
+ const low=farm(99);low.stats.village_batches=50;assert.throws(()=>act(low,{type:'village_quest',id:first}),/Reach level 100/);
+ s.stats.village_batches=VILLAGE_QUESTS[first].target;const coins=s.coins,claimed=[...s.claimed];
+ const got=act(s,{type:'village_quest',id:first});assert.equal(s.coins,coins+VILLAGE_QUESTS[first].reward);assert.ok(got.xp>0);
+ assert.deepEqual(s.villageQuests,[first]);assert.deepEqual(s.claimed,claimed);
+ assert.throws(()=>act(s,{type:'village_quest',id:first}),/already been claimed/);
+ const late=VILLAGE_QUESTS.findIndex(q=>q.minLevel>110);s.stats[VILLAGE_QUESTS[late].stat]=1e9;assert.throws(()=>act(s,{type:'village_quest',id:late}),/Reach level/);
+ s.villageQuests.push(999,'x',first);normalizeFarm(s,now);assert.deepEqual(s.villageQuests,[first]);
+});

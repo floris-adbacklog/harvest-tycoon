@@ -1128,7 +1128,7 @@ export function sellCrops(state,item='all',now=Date.now(),day,category,quantity)
  const units=keys.reduce((v,k)=>v+amounts[k],0);
  for(const k of keys){state.inventory[k]-=amounts[k];state.stats['sold_'+k]=(state.stats['sold_'+k]??0)+amounts[k];}
  // Sold at the Village market: the village's own count, not the farm Market's (quests, challenges and the Items sold board).
- state.coins+=total;state.stats.earned+=total;if(village)state.stats.village_sold=(state.stats.village_sold??0)+units;else state.stats.sold+=units;
+ state.coins+=total;state.stats.earned+=total;if(village){state.stats.village_sold=(state.stats.village_sold??0)+units;state.stats.village_earned=(state.stats.village_earned??0)+total;}else state.stats.sold+=units;
  return {coins:total,day:utcDay(now)};
 }
 export function recipeUnlocked(state,id){const r=RECIPES[id];return !!r&&(!r.base||recipeUnlocked(state,r.base))&&buildingUnlocked(state,r.building)&&levelOf(state)>=recipeLevel(state,id)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&(!guidedFarm(state)||Object.keys(r.input).every(k=>k==='feed'&&state.inventory.feed>0||itemAvailable(state,k)));}
@@ -1262,6 +1262,50 @@ export function claimQuest(state,id){
  if((state.stats[q.stat]??0)<q.target)throw new Error('Finish this quest to claim your reward.');
  const xp=questXp(q);
  state.claimed.push(id);state.coins+=q.reward;state.xp+=xp;
+ return {coins:q.reward,xp};
+}
+// World II's own quests (30 Sep 2026): a list for the village, apart from the farm's (their own tab in Your quests, from level 100).
+// Each opens at the level its place or recipe does and counts the village's own numbers: its goods (made_*), its batches
+// (village_batches), its market (village_sold, village_earned), its places (built_*) and the farm's buildings past level 10
+// (beyond_upgrades). Claimed ones are kept in state.villageQuests, so they never count towards the farm's Quests done.
+export const VILLAGE_QUESTS=Object.freeze([
+ {title:'Lunch for the road',description:'Pack 30 lunches in the Farm Kitchen.',stat:'made_packedlunch',target:30,reward:15000,minLevel:100},
+ {title:'Open the Mine',description:'Build the Mine.',stat:'built_mine',target:1,reward:20000,minLevel:100},
+ {title:'Open the Lumber Camp',description:'Build the Lumber Camp.',stat:'built_lumbercamp',target:1,reward:20000,minLevel:100},
+ {title:'First trips',description:'Collect 10 batches in the village.',stat:'village_batches',target:10,reward:15000,minLevel:100},
+ {title:'Stone by stone',description:'Dig 200 stone.',stat:'made_stone',target:200,reward:20000,minLevel:100},
+ {title:'Iron in the hills',description:'Dig 150 iron ore.',stat:'made_ironore',target:150,reward:25000,minLevel:100},
+ {title:'Timber!',description:'Chop 300 logs.',stat:'made_timber',target:300,reward:25000,minLevel:100},
+ {title:'Planks for the village',description:'Saw 100 planks.',stat:'made_plank',target:100,reward:30000,minLevel:100},
+ {title:'Village trader',description:'Sell 500 goods at the Village market.',stat:'village_sold',target:500,reward:30000,minLevel:100},
+ {title:'Light the forge',description:'Build the Smithy.',stat:'built_smithy',target:1,reward:30000,minLevel:102},
+ {title:'Iron bars',description:'Smelt 25 iron bars.',stat:'made_ironbar',target:25,reward:40000,minLevel:102},
+ {title:'Tools for the miners',description:'Forge 40 pickaxes.',stat:'made_pickaxe',target:40,reward:50000,minLevel:102},
+ {title:'A silver seam',description:'Dig 120 silver ore.',stat:'made_silverore',target:120,reward:60000,minLevel:105},
+ {title:'Silver in hand',description:'Smelt 20 silver bars.',stat:'made_silverbar',target:20,reward:80000,minLevel:105},
+ {title:'Master craft',description:'Forge 3 master tools.',stat:'made_mastertools',target:3,reward:100000,minLevel:108},
+ {title:'Past the top',description:'Take a farm building past level 10.',stat:'beyond_upgrades',target:1,reward:100000,minLevel:108},
+ {title:'A busy village',description:'Collect 500 batches in the village.',stat:'village_batches',target:500,reward:150000,minLevel:110},
+ {title:'Village market regular',description:'Earn 1,000,000 coins at the Village market.',stat:'village_earned',target:1000000,reward:150000,minLevel:110},
+ {title:'The village windmill',description:'Build the Village Windmill.',stat:'built_villagemill',target:1,reward:60000,minLevel:112},
+ {title:'Heirloom flour',description:'Grind 60 heirloom flour.',stat:'made_heirloomflour',target:60,reward:80000,minLevel:112},
+ {title:'Golden loaves',description:'Bake 20 golden loaves.',stat:'made_goldenloaf',target:20,reward:100000,minLevel:112},
+ {title:'Rubies below',description:'Find 10 rubies.',stat:'made_gemstone',target:10,reward:120000,minLevel:115},
+ {title:'Heirloom pies',description:'Bake 15 heirloom pies.',stat:'made_heirloompie',target:15,reward:120000,minLevel:115},
+ {title:'Master of the farm',description:'Take farm buildings past level 10, 10 times.',stat:'beyond_upgrades',target:10,reward:250000,minLevel:120},
+ {title:'Master smith',description:'Forge 25 master tools.',stat:'made_mastertools',target:25,reward:300000,minLevel:140},
+ {title:'Deep miner',description:'Find 100 rubies.',stat:'made_gemstone',target:100,reward:300000,minLevel:140},
+ {title:'A valley of masters',description:'Take farm buildings past level 10, 40 times.',stat:'beyond_upgrades',target:40,reward:500000,minLevel:180}
+].map(q=>Object.freeze(q)));
+export function claimVillageQuest(state,id){
+ if(!Number.isInteger(id)||!VILLAGE_QUESTS[id])throw new Error('Choose a valid quest.');
+ const q=VILLAGE_QUESTS[id];
+ if(levelOf(state)<q.minLevel)throw new Error(`Reach level ${q.minLevel} for this quest.`);
+ state.villageQuests??=[];
+ if(state.villageQuests.includes(id))throw new Error('This reward has already been claimed.');
+ if((state.stats[q.stat]??0)<q.target)throw new Error('Finish this quest to claim your reward.');
+ const xp=questXp(q);
+ state.villageQuests.push(id);state.coins+=q.reward;state.xp+=xp;
  return {coins:q.reward,xp};
 }
 export function farmSummary(state,now=Date.now()) {
@@ -1949,6 +1993,7 @@ export function normalizeFarm(state,now=Date.now()){
  if(state.keep!==undefined)state.keep=Object.fromEntries(Object.entries(state.keep&&typeof state.keep==='object'?state.keep:{}).filter(([k,v])=>Object.hasOwn(ITEMS,k)&&Number.isSafeInteger(v)&&v>0));
  if(state.emailBonus!==undefined&&!Number.isSafeInteger(state.emailBonus))delete state.emailBonus;
  if(state.rookieUntil!==undefined)state.rookieUntil=Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil):0;
+ state.villageQuests=Array.isArray(state.villageQuests)?[...new Set(state.villageQuests.filter(id=>Number.isInteger(id)&&VILLAGE_QUESTS[id]))]:[];   // World II's claimed quests
  state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','harvestUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
@@ -2236,6 +2281,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'upgrade':return upgradeBuilding(state,action.building,action.currency,action.expectedCost,action.expectedLevel);
   case 'expand':return expandFarm(state);
   case 'quest':return claimQuest(state,action.id);
+  case 'village_quest':return claimVillageQuest(state,action.id);
   case 'beginner_claim':return claimBeginnerQuest(state,action.id);
   case 'daily':return claimDaily(state,action.id,action.day,now);
   case 'checkin':return checkIn(state,now);
