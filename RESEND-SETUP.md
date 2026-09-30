@@ -2,7 +2,12 @@
 
 Supabase verstuurt de bevestigingsmail (na registreren) en de mail "wachtwoord vergeten". Standaard gebeurt dat via Supabase zelf: maximaal een paar mails per uur, vaak in de spam, en met een onbekend afzendadres. Dat kost je nieuwe spelers. Met Resend gaan die mails vanuit je eigen domein, komen ze veel vaker aan en kun je het volume opschalen.
 
-**Er verandert niets in de code.** Alles hieronder doe je in de dashboards van Resend, je DNS-provider en Supabase. De bestanden in `supabase/email-templates/` zijn de mails zelf.
+**Sinds 30 sep 2026 gaan deze twee mails via een Send Email Hook** (zie "Stap 7" onderaan): Supabase roept de functie
+`auth-email` aan, die de mail in de taal van de speler maakt (ook het onderwerp) en via de Resend-API verstuurt. De SMTP-instellingen
+en templates hieronder blijven staan als terugval: zet je de hook uit, dan gaan de mails weer via SMTP met de templates.
+
+Alles hieronder doe je in de dashboards van Resend, je DNS-provider en Supabase. De bestanden in `supabase/email-templates/` zijn de mails
+zelf (dezelfde teksten als de hook, uit `supabase/functions/auth-email/texts.js`).
 
 ## Waar laat ik de Resend-secret (API key)?
 
@@ -67,3 +72,16 @@ Laat `{{ .ConfirmationURL }}` staan, Supabase vult die zelf in.
 
 ## Meten
 In Tag Manager komen nu deze events voorbij (allemaal anoniem: nooit een e-mailadres of spelersnaam): `auth_view`, `auth_mode`, `auth_field_start`, `auth_submit`, `auth_error` (met `reason`), `auth_confirmation_sent`, `auth_resend`, `auth_email_confirmed`, `auth_login` (met `after_signup`), `auth_reset_sent`, `auth_password_changed`, `auth_link_error` en het bestaande `sign_up`. Elk event heeft een `device` (mobile, tablet of desktop). Vergelijk `sign_up` met `auth_email_confirmed`: het verschil is het aantal spelers dat de mail nooit opent.
+
+## Stap 7. De Send Email Hook (30 sep 2026)
+Zo krijgt elke speler de mail met een onderwerp in zijn eigen taal (een template-onderwerp mag maar 255 tekens zijn, te weinig voor 14 talen).
+- De functie staat in `supabase/functions/auth-email/`. Deploy: `npx supabase functions deploy auth-email --project-ref jnmdirvidffzxukbdmij --use-api --no-verify-jwt`.
+- Supabase → **Authentication → Hooks → Send Email hook**: type HTTPS, URL `https://jnmdirvidffzxukbdmij.supabase.co/functions/v1/auth-email`,
+  met een gegenereerd geheim.
+- Dat geheim (`v1,whsec_…`) staat bij **Edge Functions → Secrets** als `SEND_EMAIL_HOOK_SECRET`. De functie gebruikt verder
+  `RESEND_API_KEY` en `MAIL_FROM`, dezelfde als de herinneringsmails.
+- De taal komt uit het account (`user_metadata.language`, door het spel bijgehouden). Onbekend of leeg: Engels.
+- Alleen de mails die het spel vraagt worden verstuurd: bevestiging na registreren en wachtwoord vergeten. Een nieuw e-mailadres
+  bevestigt farm-api zelf met een code.
+- In Resend heeft elke mail de labels `kind` (`auth_signup` / `auth_recovery`) en `language`.
+- Gaat er iets mis? Zet de hook uit in Authentication → Hooks; Supabase stuurt dan meteen weer via SMTP.
