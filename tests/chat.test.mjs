@@ -169,16 +169,11 @@ test('the VIP mark follows the farmer as they are now, also on messages from bef
  assert.deepEqual(list.map(m=>[m.id,m.sender_vip]),[['1',true],['2',false],['3',true]],'a is VIP now (both messages), b no longer');
 });
 
-test('events: a trophy only for a real finisher; every goal done but not qualified says so, with what is missing and the coming reward',async()=>{
+test('events: every goal done is finished, the first three get a trophy, no qualifying step (30 Sep 2026)',async()=>{
  const ui=read('public/live-events-ui.js');
  assert.match(ui,/<span class="event-rank">\$\{r\.podium\?art\(MEDALS\[r\.rank-1\]\):r\.rank\}<\/span>/);
- assert.match(ui,/r\.progress>=100\?\(final\?'All goals done, not qualified':'All goals done · qualifying'\)/,'after the event nobody is still qualifying');
- assert.match(ui,/r\.progress>=100\?\(final\?'':soon\(r\)\)/,'and a final standing shows no Qualifying chip or coming prize');
- const {qualifyHint}=await import('../public/live-events-ui.js');
- const t=Date.parse('2026-09-24T20:00:00Z');
- assert.equal(qualifyHint({actions:5,joined_at:'2026-09-24T19:54:00Z'},t),'After about 4 min, your next farm action qualifies you.');
- assert.equal(qualifyHint({actions:1,joined_at:'2026-09-24T19:30:00Z'},t),'2 more farm actions and you qualify.');
- assert.equal(qualifyHint({actions:4,joined_at:'2026-09-24T19:30:00Z'},t),'Your next farm action qualifies you.');
+ assert.match(ui,/const label=r=>r\.podium\?placeLabel\(r\.rank\):r\.finished\?'✓ Finished':`\$\{r\.progress\}% done`;/);
+ assert.doesNotMatch(ui,/qualifying|Qualifying|qualifyHint|3 times over 10 minutes/,'no qualifying rule left on the screen');
 });
 
 test('Farm Family: the family\'s own name and emblem on top, four tabs with a "!" where something waits, a Later fold and one Deliver button',()=>{

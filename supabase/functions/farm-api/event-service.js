@@ -17,7 +17,7 @@ export function validateEvent(config,now=Date.now()){
  for(const [key,min,max] of [['coins',0,300],['diamondMin',0,1],['diamondMax',1,3],['participantStep',10,1000],['poolCap',0,200]])if(!Number.isInteger(rewards?.[key])||rewards[key]<min||rewards[key]>max)throw Error(`Set ${key} between ${min} and ${max}.`);
  return {title:config.title.trim(),description:config.description,starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString(),active:config.active===true,objectives:objectives.map(({stat,target})=>({stat,target})),rewards:Object.fromEntries(['coins','diamondMin','diamondMax','participantStep','poolCap'].map(k=>[k,rewards[k]]))};
 }
-const DAY_MS=86400000,MIN_ACTIONS=3,MIN_SPAN=10*60000,TOP=10;
+const DAY_MS=86400000,TOP=10;
 // The first three farmers to finish win a podium prize on top of the usual reward, and every later finisher a small extra
 // (same numbers as harvest_event_settle, live-events-bigger-prizes.sql). Diamonds are a fixed prize per place, nothing else; coins
 // come on top of the event's own coins. Every event diamond is paid out: no daily limit since 28 Sep 2026.
@@ -29,7 +29,8 @@ export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:5});
 export function eventStandings(event,rows,now=Date.now()){
  const settled=Boolean(event.settled_at),goals=event.objectives;
  const share=r=>goals.reduce((sum,o)=>sum+Math.min(1,(r.progress?.[o.stat]??0)/o.target),0)/goals.length;
- const finished=r=>settled?r.qualified:goals.every(o=>(r.progress?.[o.stat]??0)>=o.target)&&r.actions>=MIN_ACTIONS&&Date.parse(r.last_at)-Date.parse(r.joined_at)>=MIN_SPAN;
+ // Every goal full is finished (30 Sep 2026; it also took 3 contributions over 10 minutes before), the earliest first.
+ const finished=r=>settled?r.qualified:goals.every(o=>(r.progress?.[o.stat]??0)>=o.target);
  const at=r=>Date.parse(r.last_at);
  const ranked=rows.map(r=>({...r,done:finished(r),share:share(r)})).sort((a,b)=>Number(b.done)-Number(a.done)||(a.done?at(a)-at(b)||String(a.player_id).localeCompare(String(b.player_id)):b.share-a.share||at(a)-at(b)));
  const {coins}=event.rewards;

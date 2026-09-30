@@ -23,12 +23,11 @@ test('the event screen shows the running event, the next one during the break, r
  assert.deepEqual(view.owed.map(e=>e.id),['owed']);assert.deepEqual(view.past.map(e=>e.id),['done']);
  assert.equal(eventView([next,later],now).live,null,'in the 1-hour break there is no live event, only the next one');
 });
-test('qualifying mirrors the settlement rule: every goal full, 3 contributions over at least 10 minutes',()=>{
+test('finishing mirrors the settlement rule: every goal full, however quickly (30 Sep 2026)',()=>{
  const e=event('e',now-H,now+H),p=(harvested,actions,span)=>({progress:{harvested},actions,joined_at:iso(now-span),last_at:iso(now)});
  assert.equal(hasQualified(e,p(10,3,10*M)),true);
  assert.equal(hasQualified(e,p(9,3,10*M)),false);
- assert.equal(hasQualified(e,p(10,2,10*M)),false);
- assert.equal(hasQualified(e,p(10,3,10*M-1)),false);
+ assert.equal(hasQualified(e,p(10,1,0)),true,'one action, right away: finished');
  assert.equal(goalsDone(e,p(10,1,0)),true);
 });
 test('the screen says in one sentence why a farm cannot join yet',()=>{
@@ -41,8 +40,8 @@ test('the screen says in one sentence why a farm cannot join yet',()=>{
 test('standings: finishers first by finish time, then by progress; rewards follow the settlement formula',()=>{
  const e=event('e',now-H,now+H),row=(player_id,harvested,actions,last)=>({player_id,progress:{harvested},actions,joined_at:iso(now-H),last_at:iso(now-H+last*M)});
  const ranked=eventStandings(e,[row('late',10,5,40),row('early',10,5,20),row('almost',9,9,5),row('slow',2,3,50),row('fast-but-short',10,2,1)],now);
- assert.deepEqual(ranked.map(r=>r.playerId),['early','late','fast-but-short','almost','slow']);
- assert.deepEqual(ranked.map(r=>r.finished),[true,true,false,false,false]);
+ assert.deepEqual(ranked.map(r=>r.playerId),['fast-but-short','early','late','almost','slow'],'the first to finish is first, however few actions it took');
+ assert.deepEqual(ranked.map(r=>r.finished),[true,true,true,false,false]);
  assert.deepEqual(ranked.slice(0,2).map(r=>[r.coins,r.diamonds]),[[200+2000,50],[200+1000,30]],'the event\'s coins plus the podium coins, and the fixed podium diamonds');
  assert.deepEqual([ranked[3].progress,ranked[3].coins,ranked[3].diamonds],[90,0,0]);
  const settled={...e,settled_at:iso(now)},paid=eventStandings(settled,[{...row('a',10,5,20),qualified:true,coins:200,diamonds:2},{...row('b',10,5,10),qualified:false,coins:0,diamonds:0}],now);
