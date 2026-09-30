@@ -276,3 +276,12 @@ test('a gift per level pays the coins times the farmer\'s level when it arrives;
  assert.match(dash,/data-coin-kind="fixed" aria-pressed="true">Fixed<\/button><button type="button" class="admin-filter" data-coin-kind="level" aria-pressed="false">Per level<\/button>/);
  assert.match(dash,/gift\.audience==='player'\?gift\.player\.playerId:null,gift\.perLevel\)/);
 });
+
+test('a message from someone else in the global chat has a small Google Translate link to the farmer\'s own language',async()=>{
+ const {translateLink}=await import('../src/chat-ui.js');
+ assert.equal(translateLink('Hola, ¿cómo estás? & más','nl'),'https://translate.google.com/?sl=auto&tl=nl&text=Hola%2C%20%C2%BFc%C3%B3mo%20est%C3%A1s%3F%20%26%20m%C3%A1s&op=translate');
+ const ui=readFileSync(new URL('../src/chat-ui.js',import.meta.url),'utf8');
+ assert.match(ui,/const translate=!mine&&\(m\.channel\?\?channelOf\(\)\)==='global'/,'only the global chat, never on your own messages');
+ assert.match(ui,/target="_blank" rel="noopener noreferrer" aria-label="Translate with Google"/,'a new tab, without handing the game page over');
+ assert.match(ui,/translateLink\(m\.body,chosenLanguage\(\)\)/,'into the language the farmer plays in');
+});

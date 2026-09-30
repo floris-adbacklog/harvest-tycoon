@@ -3518,6 +3518,7 @@
 "Trade Depot":"public/farm.html",
 "Trade Depot →":"public/retention-ui.js",
 "Trailer loaded":"public/estate-ui.js",
+"Translate with Google":"src/chat-ui.js",
 "Travel back to your farm":"public/game.js",
 "Travel to the village":"public/farm.html",
 "Travelling to the village":"public/game.js",

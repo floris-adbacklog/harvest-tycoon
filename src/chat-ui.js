@@ -10,6 +10,7 @@ import {ITEMS} from '../public/farm-state.js';
 import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
+import {chosenLanguage} from '../public/i18n.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
@@ -56,8 +57,12 @@ const EMPTY={
 };
 const ICON={
  back:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>',
- more:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>'
+ more:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
+ translate:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>'
 };
+// The global chat is the whole valley, in many languages (30 Sep 2026): a message from someone else has a small translate link that
+// opens Google Translate in a new tab, from whatever language it is in to the one the farmer plays in.
+export const translateLink=(text,language='en')=>`https://translate.google.com/?sl=auto&tl=${encodeURIComponent(language)}&text=${encodeURIComponent(String(text??''))}&op=translate`;
 
 export function createChatUI({bridge,profiles,doc=document,win=window}){
  const chat=bridge?.chat,button=doc.getElementById('chat-button'),dot=doc.getElementById('chat-dot');
@@ -181,7 +186,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
   const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
   // Staff messages can carry an https link (an admin's message to many farmers, e.g. a feedback form); nobody else's can.
-  const text=`<span translate="no">${m.sender_staff?linkify(m.body):esc(m.body)}</span>${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`;
+  const translate=!mine&&(m.channel??channelOf())==='global'&&String(m.body??'').trim()?` <a class="chat-translate" href="${esc(translateLink(m.body,chosenLanguage()))}" target="_blank" rel="noopener noreferrer" aria-label="Translate with Google" title="Translate with Google">${ICON.translate}</a>`:'';
+  const text=`<span translate="no">${m.sender_staff?linkify(m.body):esc(m.body)}</span>${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}${translate}`;
   // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
   if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${esc(m.sender_name)}: </span>${text}</p></div>${more}</li>`;
   return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div><p class="chat-text">${text}</p></div></li>`;
