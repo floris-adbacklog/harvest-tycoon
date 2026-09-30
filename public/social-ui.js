@@ -20,7 +20,8 @@ export function sharingMessage(result,action,nameOf=id=>id){
  // The name in its own variable: the whole sentence is then one text to translate (a call there cut it in two).
  if(action.kind==='gift'){const who=nameOf(action.recipient);return `You sent ${quantity} ${item} to ${who}.`;}
  if(action.kind==='request')return `Your family can see your request for ${quantity} ${item}.`;
- if(action.kind==='fulfill')return `You gave ${quantity} ${item}. Your family thanks you!`;
+ // A request can fill up from several farmers (supabase/family-sharing-partial.sql): say how full it is until it is complete.
+ if(action.kind==='fulfill'){const given=Number(result.given),needed=Number(result.needed);return given>0&&needed>given?`You gave ${quantity} ${item}. ${given} of ${needed} are in.`:`You gave ${quantity} ${item}. Your family thanks you!`;}
  return result.message;
 }
 
@@ -75,14 +76,19 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   const open=social.requests;
   if(!open.length)return '<p class="sharing-empty">No requests yet today.</p>';
   return `<div class="sharing-list">${open.map(r=>{
-   const mine=r.player_id===me(),have=stock(r.item),state_=r.fulfilled_by?`<span class="sharing-chip is-done">✓ ${r.fulfilled_by===me()?'You helped':'Fulfilled'}</span>`:mine?'<span class="sharing-chip">Your request</span>':today.full('fulfill')?'<span class="sharing-chip">Daily limit reached</span>':`<button class="sharing-action is-primary" data-kind="fulfill" data-request="${esc(r.id)}" ${have<r.quantity?'disabled':''}>${have<r.quantity?`You have ${have}`:`Give ${r.quantity}`}</button>`;
-   return `<article class="sharing-row">${art(r.item,'sharing-item')}<div class="sharing-who"><strong>${mine?'You need':`${esc(r.name)} needs`} ${r.quantity} ${esc(itemName(r.item))}</strong><span>${mine&&!r.fulfilled_by?'Waiting for your family':r.fulfilled_by?`From ${nameOf(r.fulfilled_by)}`:`You have ${have}`}</span></div>${state_}</article>`;
+   // Give what you have (30 Sep 2026): as many as you have, up to what the request still needs; the family fills it together.
+   const mine=r.player_id===me(),have=stock(r.item),given=Number(r.given)||0,left=Math.max(0,r.quantity-given),give=Math.min(have,left),helpers=r.helpers?.length?r.helpers:r.fulfilled_by?[r.fulfilled_by]:[];
+   const state_=r.fulfilled_by?`<span class="sharing-chip is-done">✓ ${helpers.includes(me())?'You helped':'Fulfilled'}</span>`:mine?'<span class="sharing-chip">Your request</span>':today.full('fulfill')?'<span class="sharing-chip">Daily limit reached</span>':`<button class="sharing-action is-primary" data-kind="fulfill" data-request="${esc(r.id)}" ${give<1?'disabled':''}>${give<1?'You have none':`Give ${give}`}</button>`;
+   const from=helpers.map(nameOf).join(', ');
+   const line=r.fulfilled_by?`From ${from}`:given?`${given} of ${r.quantity} in${mine?'':` · you have ${have}`}`:mine?'Waiting for your family':`You have ${have}`;
+   const bar=given&&!r.fulfilled_by?`<span class="sharing-progress" aria-hidden="true"><i style="width:${Math.round(given/r.quantity*100)}%"></i></span>`:'';
+   return `<article class="sharing-row">${art(r.item,'sharing-item')}<div class="sharing-who"><strong>${mine?'You need':`${esc(r.name)} needs`} ${r.quantity} ${esc(itemName(r.item))}</strong><span>${line}</span>${bar}</div>${state_}</article>`;
   }).join('')}</div>`;
  }
  function ask(){
   if(social.requests.some(r=>r.player_id===me()))return '';
   const keys=Object.keys(ITEMS).filter(k=>itemAvailable(state,k)&&!ITEMS[k].heirloom&&!worldTwoItem(k));if(!keys.includes(pick.item))pick.item=keys[0]??'wheat';
-  return `<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Once a day, up to ${maxShare(myLevel())} of any crop or good. Any family member can fill it.</p><form class="sharing-ask">${itemPicker({kind:'ask',keys,picked:pick.item,quantity:pick.quantity,max:maxShare(myLevel())})}<button class="primary-button">Ask for ${pick.quantity} ${esc(ITEMS[pick.item]?.name??pick.item)}</button></form></section>`;
+  return `<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Once a day, up to ${maxShare(myLevel())} of any crop or good. Your family fills it together: each gives what they have.</p><form class="sharing-ask">${itemPicker({kind:'ask',keys,picked:pick.item,quantity:pick.quantity,max:maxShare(myLevel())})}<button class="primary-button">Ask for ${pick.quantity} ${esc(ITEMS[pick.item]?.name??pick.item)}</button></form></section>`;
  }
  function render(){
   if(!root)return;

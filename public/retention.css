@@ -67,6 +67,8 @@
 .sharing-action:disabled{opacity:.55;cursor:default}
 .sharing-chip{padding:6px 10px;border-radius:999px;background:#efe7dc;color:#7c6f5c;font-size:12px;font-weight:700;white-space:nowrap}
 .sharing-chip.is-done{background:#e3efd9;color:#3f6b2c}
+/* A request that fills up from several farmers: how full it is (public/social-ui.js). */
+.sharing-progress{display:block;height:6px;margin-top:6px;border-radius:99px;background:#efe7dc;overflow:hidden}.sharing-progress i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#8fb35c,#6f9a45)}
 .sharing-empty{margin:8px 0 0;font-size:14px;color:#807463}
 .sharing-ask{display:grid;gap:12px}
 .sharing-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}

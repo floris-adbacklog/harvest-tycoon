@@ -149,10 +149,12 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // A request for goods (supabase/family-request-chat.sql, 29 Sep 2026): a card of its own between the messages, with the good's
  // picture and, for the others, a button that gives it straight from here. Once given it greys out and says by whom.
  function requestRow(m){
-  const r=m.meta??{},name=ITEMS[r.item]?.name??String(r.item??''),qty=Number(r.quantity)||0,mine=m.sender===me,given=Boolean(r.fulfilled_by);
-  const have=win.harvestStock?.(r.item),known=Number.isFinite(have);
-  const status=given?(r.fulfilled_by===me?'✓ You helped':r.fulfilled_name?`✓ Given by ${r.fulfilled_name}`:'✓ Fulfilled'):mine?'Waiting for your family':known?`You have ${have}`:'';
-  const give=!given&&!mine&&r.request?`<button type="button" class="primary-button chat-request-give" data-give="${esc(r.request)}"${known&&have<qty?' disabled':''}>Give ${qty} ${esc(name)}</button>`:'';
+  // The family fills a request together (supabase/family-sharing-partial.sql): "given" is how many are in, each farmer gives
+  // what they have, up to what is still needed.
+  const r=m.meta??{},name=ITEMS[r.item]?.name??String(r.item??''),qty=Number(r.quantity)||0,mine=m.sender===me,given=Boolean(r.fulfilled_by),filled=Number(r.given)||0,left=Math.max(0,qty-filled);
+  const have=win.harvestStock?.(r.item),known=Number.isFinite(have),give_=known?Math.min(have,left):left;
+  const helped=Number(r.helpers)||0,status=given?(r.fulfilled_by===me?'✓ You helped':helped>1?`✓ Filled by ${helped} farmers`:r.fulfilled_name?`✓ Given by ${r.fulfilled_name}`:'✓ Fulfilled'):filled?`${filled} of ${qty} in${mine||!known?'':` · you have ${have}`}`:mine?'Waiting for your family':known?`You have ${have}`:'';
+  const give=!given&&!mine&&r.request?`<button type="button" class="primary-button chat-request-give" data-give="${esc(r.request)}"${known&&give_<1?' disabled':''}>${known&&give_<1?'You have none':`Give ${give_} ${esc(name)}`}</button>`:'';
   return `<li class="chat-request${given?' is-given':''}" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Family request</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(r.item)}</span><div><p class="chat-text">${esc(given?`${m.sender_name} asked for ${qty} ${name}`:`${m.sender_name} asks for ${qty} ${name}`)}</p>${status?`<small class="chat-request-status">${esc(status)}</small>`:''}</div></div>${give}</li>`;
  }
  // A new rank in the family (supabase/family-rank-chat.sql): a card with the rank's badge, a promotion in the warm colour, a
@@ -338,9 +340,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(button.disabled)return;button.disabled=true;
   try{
    const r=await bridge.request({operation:'social',action:{kind:'fulfill',request:button.dataset.give},requestId:crypto.randomUUID()});
-   const card=button.closest('.chat-request'),qty=Number(r?.social?.quantity),name=ITEMS[r?.social?.item]?.name;
-   showCenterNotice(dialog,qty&&name?`You gave ${qty} ${name}. Your family thanks you!`:r?.social?.message??'Request fulfilled. Your family thanks you!');
-   card?.classList.add('is-given');
+   const card=button.closest('.chat-request'),qty=Number(r?.social?.quantity),name=ITEMS[r?.social?.item]?.name,filled=Number(r?.social?.given),needed=Number(r?.social?.needed),full=!(needed>filled);
+   showCenterNotice(dialog,qty&&name?(full?`You gave ${qty} ${name}. Your family thanks you!`:`You gave ${qty} ${name}. ${filled} of ${needed} are in.`):r?.social?.message??'Request fulfilled. Your family thanks you!');
+   if(full)card?.classList.add('is-given');
    await win.harvestRefresh?.();
   }catch(error){button.disabled=false;showCenterNotice(dialog,error?.message??'That did not work. Please try again.',{refused:true});}
  }
