@@ -15,7 +15,7 @@ test('messages in a row from one farmer (at most 10 minutes apart, the same day)
 });
 test('a second message in a row shows only its text (the name stays for a screen reader), and every row keeps the room of the menu, so the times line up',()=>{
  const ui=read('src/chat-ui.js'),css=read('public/chat.css');
- assert.match(ui,/<li class="chat-msg is-cont\$\{mine\?' is-mine':''\}" data-id="\$\{esc\(m\.id\)\}"><span aria-hidden="true"><\/span><div class="chat-msg-main"><p class="chat-text" title="\$\{esc\(exact\(m\.created_at\)\)\}"><span class="chat-sr">\$\{esc\(m\.sender_name\)\}: <\/span>/);
+ assert.match(ui,/<li class="chat-msg is-cont\$\{mine\?' is-mine':''\}\$\{tr\}" data-id="\$\{esc\(m\.id\)\}"><span aria-hidden="true"><\/span><div class="chat-msg-main"><p class="chat-text" title="\$\{esc\(exact\(m\.created_at\)\)\}"><span class="chat-sr">\$\{esc\(m\.sender_name\)\}: <\/span>/);
  assert.match(ui,/<li class="chat-day" role="separator"><span>\$\{esc\(dayLabel\(m\.created_at\)\)\}<\/span><\/li>/);
  assert.match(ui,/:'<span class="chat-more-space" aria-hidden="true"><\/span>';/);
  assert.match(css,/\.chat-more-space\{flex-shrink:0;width:28px;margin-right:-4px\}/);assert.match(css,/\.chat-more\{width:32px;height:28px\}\.chat-more-space\{width:32px\}/,'the same width as the menu button on smaller screens');
