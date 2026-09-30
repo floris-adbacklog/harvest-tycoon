@@ -50,10 +50,10 @@ test('Accept remembers the choice and starts Tag Manager at once; the banner clo
  assert.equal(p.saved().choice,'accepted');assert.equal(p.win.gtm,1);assert.equal(p.shown(),undefined);
 });
 test('Decline remembers the choice, removes Google and Meta cookies from our domain, and keeps other cookies',()=>{
- const p=page({cookies:'_ga=GA1.1.1; _ga_ABC123=GS1; _fbp=fb.1; sb-token=keep; harvest=1'});press(p,'Decline');
+ const p=page({cookies:'_ga=GA1.1.1; _ga_ABC123=GS1; _fbp=fb.1; _ttp=tt.1; ttcsid=1; sb-token=keep; harvest=1'});press(p,'Decline');
  assert.equal(p.saved().choice,'declined');assert.equal(p.win.gtm,0);assert.equal(p.win.reloads,0,'nothing was running, so no reload');
  const removed=new Set(p.writes.map(w=>w.split('=')[0]));
- assert.deepEqual([...removed].sort(),['_fbp','_ga','_ga_ABC123']);
+ assert.deepEqual([...removed].sort(),['_fbp','_ga','_ga_ABC123','_ttp','ttcsid'],'the TikTok Pixel\'s cookies too (30 Sep 2026)');
  for(const domain of ['','; domain=www.harvesttycoon.com','; domain=.harvesttycoon.com'])assert.ok(p.writes.includes(`_ga=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${domain}`),domain||'no domain');
 });
 test('withdrawing an earlier yes reloads the page, so the tools that were running stop',()=>{
