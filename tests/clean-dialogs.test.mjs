@@ -51,3 +51,21 @@ test('no text below 12 px inside the windows (the map labels and the top bar kee
  }
  assert.deepEqual(found,[]);
 });
+
+// The leaderboard (30 Sep 2026): the top 100 in one light read, ten a page with Previous and Next, a jump to your own page, and a
+// quieter window (no intro line, the sync line only when something is wrong, no second line under each name).
+test('the leaderboard shows the top 100, ten a page, and keeps the window quiet',async()=>{
+ const board=read('src/leaderboard.js'),cloud=read('src/game-cloud.js'),ui=read('src/ui.js');
+ const {BOARD_SIZE,BOARD_PAGE}=await import('../src/leaderboard.js');assert.equal(BOARD_SIZE,100);assert.equal(BOARD_PAGE,10);
+ assert.match(board,/const BOARD_FIELDS=\['player_id','username','level','last_active_at','vip_expires_at','avatar_id'\];/,'only what the board shows');
+ assert.match(board,/\.limit\(BOARD_SIZE\)/);assert.match(board,/slice\(shown\*BOARD_PAGE,\(shown\+1\)\*BOARD_PAGE\)/);
+ assert.match(board,/`Page \$\{shown\+1\} of \$\{pages\}`/);assert.match(board,/step\('‹ Previous',shown-1,'previous'\),where,step\('Next ›',shown\+1,'next'\)/);
+ assert.match(board,/jump\.textContent='Show';jump\.onclick=\(\)=>onPage\(mine\);/,'your own page, when you are in the top 100');
+ assert.match(board,/small\.textContent=row\.player_id===playerId\?'You':'';/,'no "Level 160" under every name');
+ assert.match(cloud,/if\(!quiet\|\|board\?\.category!==result\.category\)boardPage=0;board=result;drawBoard\(\);/,'a refresh keeps the page, a new board starts on page 1');
+ assert.doesNotMatch(ui,/leaderboard-intro|A green dot means online now/);assert.match(read('public/retention.css'),/#leaderboard-dialog \.cloud-sync:has\(#cloud-status:empty\)\{display:none\}/);
+});
+test('empty states are cards: the journal before your first harvest, and an empty board',()=>{
+ assert.match(read('public/retention-ui.js'),/<div class="quest-empty journal-empty">\$\{art\(journalTab==='crops'\?'harvest'/);
+ assert.match(read('src/leaderboard.js'),/box\.className='quest-empty leaderboard-empty';box\.innerHTML=`\$\{art\(rankArtKey\(category\)\)\}<h3>The valley is quiet<\/h3><p>Be the first farmer on this board\.<\/p>`/);
+});

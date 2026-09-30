@@ -1329,3 +1329,16 @@
 
 /* Journal: what is still to discover, as one tile with a count (public/retention-ui.js). */
 .collection-crop.collection-left{display:grid;place-content:center;justify-items:center;gap:2px;border-style:dashed;background:#faf6ee}.collection-left b{font:700 26px/1 'Outfit',sans-serif;color:#8a7a5a}.collection-left small{font-size:12px;color:#8a7a5a;text-align:center}
+
+/* The leaderboard (src/leaderboard.js, 30 Sep 2026): ten farmers a page, Previous and Next under the list; the sync line only
+   shows when something is wrong (it refreshes by itself every 30 seconds). */
+#leaderboard-dialog .cloud-sync:has(#cloud-status:empty){display:none}
+#leaderboard-dialog .leaderboard-pages{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 6px}
+#leaderboard-dialog .leaderboard-pages span{color:#6f6450;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+#leaderboard-dialog .leaderboard-pages .small-button{width:auto;min-height:40px;padding:6px 14px}
+#leaderboard-dialog .your-rank .small-button{width:auto;min-height:34px;margin-left:auto;padding:4px 12px}
+/* Empty states as cards (30 Sep 2026): the Journal before your first harvest or batch, and an empty leaderboard. */
+#journal-content .journal-empty,#leaderboard-dialog .leaderboard-empty{padding:26px 18px}
+#journal-content .journal-empty>.game-art,#leaderboard-dialog .leaderboard-empty>.game-art{display:block;width:60px;height:60px;margin:0 auto 10px}
+#journal-content .journal-empty h3,#leaderboard-dialog .leaderboard-empty h3{margin:0 0 6px;font:700 20px 'Outfit',sans-serif}
+#journal-content .journal-empty p,#leaderboard-dialog .leaderboard-empty p{margin:0;font-size:14px;line-height:1.5}

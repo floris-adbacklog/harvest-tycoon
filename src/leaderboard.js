@@ -2,6 +2,8 @@ import {avatarImage} from '../public/player-avatars.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {staffRole,staffBadge} from './staff-badge.js';
 import {rankArt} from '../public/rank-art.js';
+import {art} from '../public/visual-icons.js';
+import {rankArtKey} from '../public/rank-picker.js';
 import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem} from '../public/farm-state.js';
 const CROP_BOARDS=Object.keys(CROPS).sort((a,b)=>(CROP_LEVELS[a]??1)-(CROP_LEVELS[b]??1));
 // The level at which a good can first be made: its earliest recipe outside the Factory (the building's level or the recipe's own).
@@ -39,10 +41,13 @@ function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw ne
 // A good's board reads one key of goods_made ("goods_made->bread" to the database); every other board is its own column.
 const columnOf=category=>{const config=categoryFor(category);return config.good?`goods_made->${config.good}`:category;};
 export const scoreOf=(row,category)=>{const config=categoryFor(category);return Number((config.good?row?.goods_made?.[config.good]:row?.[category])??0);};
-const PUBLIC_FIELDS=['player_id','username','currency','level',...CROP_BOARDS.map(key=>`harvested_${key}`),'harvested_crops','badges','deliveries','goods_produced','items_sold','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades','quests_done','last_active_at','vip_expires_at','avatar_id'].join(',');
+// The top 100 in one read, shown ten a page (30 Sep 2026); only what the board shows, so a hundred rows stay light: who, their
+// picture and VIP mark, the level, when they last played (the online dot) and the board's own score.
+const BOARD_FIELDS=['player_id','username','level','last_active_at','vip_expires_at','avatar_id'];
+export const BOARD_SIZE=100,BOARD_PAGE=10;
 export async function fetchLeaderboard(client,playerId,category='level'){
- const config=categoryFor(category),column=columnOf(category),fields=config.good?`${PUBLIC_FIELDS},goods_made`:PUBLIC_FIELDS;
- const {data,error}=await client.from('player_stats').select(fields).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(10);
+ const config=categoryFor(category),column=columnOf(category),fields=[...BOARD_FIELDS,...(config.good?['goods_made']:BOARD_FIELDS.includes(category)?[]:[category])].join(',');
+ const {data,error}=await client.from('player_stats').select(fields).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(BOARD_SIZE);
  if(error)throw error;
  let own=data?.find(row=>row.player_id===playerId)??null;
  if(!own&&playerId){const response=await client.from('player_stats').select(fields).eq('player_id',playerId).maybeSingle();if(response.error)throw response.error;own=response.data;}
@@ -53,21 +58,32 @@ export async function fetchLeaderboard(client,playerId,category='level'){
 export function rankedRows(rows,category='level'){
  categoryFor(category);return rows.map((row,i)=>({row,rank:i+1,score:scoreOf(row,category)}));
 }
-export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false,now=Date.now()},playerId,onPlayer){
+// Ten farmers a page with Previous and Next (onPage gets the page to show); a farmer in the top 100 can jump to their own page.
+export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false,now=Date.now(),page=0},playerId,onPlayer,onPage){
  const config=categoryFor(category);container.replaceChildren();
- if(!rows.length){const p=document.createElement('p');p.className='leaderboard-empty';p.textContent='The valley is quiet. Be the first farmer on this board.';container.append(p);return;}
+ const pages=Math.max(1,Math.ceil(rows.length/BOARD_PAGE)),shown=Math.min(Math.max(0,page),pages-1);
+ // An empty board is a card with the board's own picture, not a lone sentence.
+ if(!rows.length){const box=document.createElement('div');box.className='quest-empty leaderboard-empty';box.innerHTML=`${art(rankArtKey(category))}<h3>The valley is quiet</h3><p>Be the first farmer on this board.</p>`;container.append(box);return;}
  const table=document.createElement('table');table.className='leaderboard-table';
- const caption=document.createElement('caption');caption.className='leaderboard-caption';caption.textContent=`${config.label} · Top 10`;table.append(caption);
+ const caption=document.createElement('caption');caption.className='leaderboard-caption';caption.textContent=`${config.label} · Top ${Math.min(rows.length,BOARD_SIZE)}`;table.append(caption);
  const head=document.createElement('thead'),header=document.createElement('tr');
  for(const title of ['Rank','Farmer',config.heading]){const th=document.createElement('th');th.scope='col';th.textContent=title;header.append(th);}head.append(header);table.append(head);
  const tbody=document.createElement('tbody');
- rankedRows(rows,category).forEach(({row,rank:place,score:value})=>{
+ rankedRows(rows,category).slice(shown*BOARD_PAGE,(shown+1)*BOARD_PAGE).forEach(({row,rank:place,score:value})=>{
   const tr=document.createElement('tr');tr.classList.toggle('is-you',row.player_id===playerId);if(place<=3)tr.classList.add('is-podium',`is-rank-${place}`);
   const n=document.createElement('td');n.className='leaderboard-place';n.innerHTML=rankArt(place);
-  const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');strong.textContent=row.username;if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',`View ${row.username}'s profile`);strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);const role=staffRole(row.player_id);if(role)strong.insertAdjacentHTML('beforeend',staffBadge(role));small.textContent=`Level ${row.level}${row.player_id===playerId?' · You':''}`;const identity=document.createElement('div');identity.className='leaderboard-farmer';identity.innerHTML=`<span class="leaderboard-portrait">${avatarImage(row.avatar_id)}</span>`;identity.firstElementChild.append(dot);const copy=document.createElement('div');copy.append(strong,small);identity.append(copy);name.append(identity);
+  const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');strong.textContent=row.username;if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',`View ${row.username}'s profile`);strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);const role=staffRole(row.player_id);if(role)strong.insertAdjacentHTML('beforeend',staffBadge(role));small.textContent=row.player_id===playerId?'You':'';const identity=document.createElement('div');identity.className='leaderboard-farmer';identity.innerHTML=`<span class="leaderboard-portrait">${avatarImage(row.avatar_id)}</span>`;identity.firstElementChild.append(dot);const copy=document.createElement('div');copy.append(strong);if(small.textContent)copy.append(small);identity.append(copy);name.append(identity);
   const score=document.createElement('td');score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
  });table.append(tbody);container.append(table);updateOnlineIndicators(container,{onlinePlayers,presenceReady,now});
- if(own&&rank){const line=document.createElement('div');line.className='your-rank';const label=document.createElement('strong'),value=document.createElement('span');label.textContent=`Your rank: #${rank}`;const score=scoreOf(own,category).toLocaleString('en-US');value.textContent=category==='level'?`Level ${score} · ${own.username}`:`${score} ${config.unit} · ${own.username}`;line.append(label,value);container.append(line);}
+ if(pages>1){
+  const pager=document.createElement('div');pager.className='leaderboard-pages';
+  const step=(label,to,key)=>{const b=document.createElement('button');b.type='button';b.className='small-button';b.dataset.boardPage=key;b.textContent=label;b.disabled=to<0||to>=pages||!onPage;b.onclick=()=>onPage?.(to);return b;};
+  const where=document.createElement('span');where.textContent=`Page ${shown+1} of ${pages}`;
+  pager.append(step('‹ Previous',shown-1,'previous'),where,step('Next ›',shown+1,'next'));container.append(pager);
+ }
+ if(own&&rank){const line=document.createElement('div');line.className='your-rank';const label=document.createElement('strong'),value=document.createElement('span');label.textContent=`Your rank: #${rank}`;const score=scoreOf(own,category).toLocaleString('en-US');value.textContent=category==='level'?`Level ${score} · ${own.username}`:`${score} ${config.unit} · ${own.username}`;line.append(label,value);
+  const mine=Math.floor((rank-1)/BOARD_PAGE);if(onPage&&rank<=rows.length&&mine!==shown){const jump=document.createElement('button');jump.type='button';jump.className='small-button';jump.dataset.boardPage='you';jump.textContent='Show';jump.onclick=()=>onPage(mine);line.append(jump);}
+  container.append(line);}
 }
 
 export function updateOnlineIndicators(container,{onlinePlayers=[],presenceReady=false,now=Date.now()}){

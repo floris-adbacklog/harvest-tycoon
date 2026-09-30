@@ -35,8 +35,10 @@ if(!bridge){location.replace('/play.html');}else{
   const stopPresence=bridge.presence?.subscribe(snapshot=>{if(ui.open)updateOnlineIndicators(ui.results,{...snapshot,now:Date.now()+serverOffset});});
   const boardRefresh=setInterval(()=>{if(ui.open&&!profiles.isOpen&&!document.hidden)openBoard(true);},30000);
   window.addEventListener('pagehide',()=>{stopPresence?.();clearInterval(boardRefresh);},{once:true});
-  let boardRequest=0;
-  async function openBoard(quiet=false){const request=++boardRequest,category=ui.category;if(!quiet)ui.message('Gathering the latest scores…');ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own)ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);renderLeaderboard(ui.results,{...result,now:Date.now()+serverOffset},bridge.playerId,id=>profiles.open(id));ui.status('Up to date');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
+  let boardRequest=0,board=null,boardPage=0;
+  // The board keeps its page when it refreshes (every 30 seconds); a new board, or opening it again, starts on page 1.
+  const drawBoard=()=>renderLeaderboard(ui.results,{...board,page:boardPage,now:Date.now()+serverOffset},bridge.playerId,id=>profiles.open(id),page=>{boardPage=page;drawBoard();ui.results.scrollIntoView?.({block:'start'});});
+  async function openBoard(quiet=false){const request=++boardRequest,category=ui.category;if(!quiet)ui.message('Gathering the latest scores…');ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own)ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);if(!quiet||board?.category!==result.category)boardPage=0;board=result;drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
   const {farmReady}=await import(/* @vite-ignore */ '/game.js?v=familyhall-model-2');
   if(await farmReady){
    showPaymentReturn(bridge);
