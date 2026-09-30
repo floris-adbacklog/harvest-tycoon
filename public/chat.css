@@ -147,6 +147,14 @@ span.chat-avatar{cursor:default}
 .admin-report-body{display:block;margin-top:3px;white-space:normal;font-style:italic}
 .admin-report-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .admin-report-actions .small-button{width:auto;min-height:34px;padding:5px 10px;font-size:12.5px;grid-column:auto}
+/* Feedback & bugs (src/admin-dashboard.js): the count of open messages on the tab, the kind, the message as written, then level, device and language. */
+.admin-tab-count{min-width:18px;padding:1px 6px;border-radius:999px;background:#c2912d;color:#fffdf0;font-size:11px;font-weight:800;line-height:16px;text-align:center}
+.admin-tab-count[hidden]{display:none}
+.admin-feedback-kind{display:inline-block;padding:1px 7px;border-radius:999px;background:#e6efdc;color:#42632e;font-size:11px;font-weight:800;vertical-align:1px}
+.admin-feedback-kind.is-bug{background:#f6e2d8;color:#9a3b24}
+.admin-feedback-body{display:block;margin-top:4px;color:#3d3923;white-space:pre-line;overflow-wrap:anywhere}
+.admin-feedback-meta{display:block;margin-top:4px}
+.admin-report-actions a.small-button{display:inline-flex;align-items:center;text-decoration:none}
 .admin-news textarea{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:10px 12px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:500 14px/1.4 'DM Sans',sans-serif;resize:vertical}
 #admin-chat-settings h3:not(:first-child){margin-top:20px}
 .admin-levels{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
@@ -176,7 +184,7 @@ span.chat-avatar{cursor:default}
 /* The staff's dashboard button sits right next to the chat (computers; phones find it in the More menu). */
 #admin-button .game-art{width:28px;height:28px;object-fit:contain}
 /* The header's painted icons (settings gear, How to play book) at the same size as the chat and the shield. */
-#sound-button .game-art,#help-button .game-art{width:28px;height:28px;object-fit:contain}
+#sound-button .game-art,#feedback-button .game-art,#help-button .game-art{width:28px;height:28px;object-fit:contain}
 .admin-donate label>span{display:flex;align-items:center;gap:6px}
 .admin-donate label>span .game-art{width:20px;height:20px;flex:none}
 .chat-amount{white-space:nowrap}

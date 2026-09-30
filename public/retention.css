@@ -1168,6 +1168,20 @@
 .email-check-form{display:flex;gap:8px;margin:0 0 10px}
 .email-check-form input{flex:1;min-width:0;height:48px;padding:0 12px;border:1px solid #d9c7a4;border-radius:12px;background:#fffdf5;font:700 22px 'Outfit',sans-serif;letter-spacing:6px;text-align:center}
 .email-check-form input:focus{outline:3px solid #c2912d;outline-offset:1px}
+/* Feedback & bugs (public/feedback-ui.js): the mailbox, a two-way switch (feedback or a bug), the message and Send. */
+.feedback-dialog{width:min(420px,calc(100vw - 32px));padding:24px 22px 20px;text-align:center}
+.feedback-dialog>.game-art{display:block;width:72px;height:72px;margin:0 auto 8px}
+.feedback-dialog h2{margin:2px 0 12px;font:700 24px/1.2 'Outfit',sans-serif}
+.feedback-dialog>p{margin:0 0 14px;color:#5d5641;font-size:14.5px;line-height:1.5}
+.feedback-dialog .feedback-close{position:absolute;top:12px;right:12px}
+.feedback-kinds{display:flex;gap:4px;margin:0 0 12px;padding:4px;border-radius:12px;background:#efe6d6}
+.feedback-kinds button{flex:1;min-height:40px;border:0;border-radius:9px;background:transparent;color:#6b6149;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.feedback-kinds button[aria-pressed="true"]{background:#fffdf5;color:#3d3923;box-shadow:0 1px 0 #d9c7a4}
+.feedback-form textarea{display:block;width:100%;box-sizing:border-box;min-height:120px;padding:12px;border:1px solid #d9c7a4;border-radius:12px;background:#fffdf5;color:#3d3923;font:inherit;font-size:15px;line-height:1.45;resize:vertical}
+.feedback-form textarea:focus{outline:3px solid #c2912d;outline-offset:1px}
+.feedback-note{margin:8px 0 14px;color:#857d70;font-size:12.5px;line-height:1.45;text-align:left}
+.feedback-form .primary-button,.feedback-dialog>.primary-button{width:100%;justify-content:center}
+.feedback-dialog>.feedback-status{min-height:1.2em;margin:10px 0 0;color:#9a3b24;font-size:13.5px}
 .email-check-form .primary-button{flex:none}
 .email-check-resend{font-size:13px}
 .email-check-status{min-height:20px;margin:10px 0 0!important;font-size:13px!important;color:#7a5510!important}

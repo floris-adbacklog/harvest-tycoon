@@ -13,7 +13,7 @@ function menuOrder(html){
 }
 test('"Your farm menu" always lists every feature, gated ones in the order they unlock',()=>{
  const html=read('public/farm.html'),order=menuOrder(html);
- assert.equal(order.length,26,'nothing was dropped (The Village is the newest: from level 100, 30 Sep 2026; the Chat before it: on phones it left the header on 26 Sep 2026; before it Confirm your email, shown only until an email sign-up is paid its diamonds); Activities, Farm events, the (admin-only) dashboard, the Valley Market, the Ranch, the Estate Workshop, the Trade Depot, the fair, Invite a friend and Farm family were added');
+ assert.equal(order.length,27,'nothing was dropped (Feedback & bugs is the newest: the mailbox, 30 Sep 2026; The Village before it: from level 100, 30 Sep 2026; the Chat before it: on phones it left the header on 26 Sep 2026; before it Confirm your email, shown only until an email sign-up is paid its diamonds); Activities, Farm events, the (admin-only) dashboard, the Valley Market, the Ranch, the Estate Workshop, the Trade Depot, the fair, Invite a friend and Farm family were added');
  assert.match(html,/data-menu-action="today-button"[\s\S]{0,200}<\/button>\n    <button data-menu-action="events-button">/,'Farm events sits right next to Daily rewards');
  assert.match(html,/<button data-menu-action="admin-button" id="admin-menu-entry" hidden>/,'the admin card is hidden for everyone until checkAdmin() allows it');
  assert.match(html,/<button data-menu-utility="villageroad" id="village-menu-entry" hidden>/,'The Village is hidden until level 100, so a beginner never sees it');

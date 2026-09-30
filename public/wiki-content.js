@@ -21,7 +21,7 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'estate',title:'Estate and Valley',art:'estate',blurb:'Big goals for later: projects, the Valley Market and more.',keywords:'estate projects valley market ranch workshop trade depot fair improvements'},
  {id:'diamonds',title:'Diamonds, boosts and VIP',art:'diamonds',blurb:'How to earn diamonds and what they do.',keywords:'diamonds boosts vip shop packs starter pack buy premium'},
  {id:'chat',title:'Chat and house rules',art:'chat',blurb:'Talking with other farmers, and keeping it friendly.',keywords:'chat messages private block report rules moderator'},
- {id:'account',title:'Account and settings',art:'settings',blurb:'Your account, settings, invites and privacy.',keywords:'account password settings avatar sound reminders invite delete privacy app'}
+ {id:'account',title:'Account and settings',art:'settings',blurb:'Your account, settings, invites and privacy.',keywords:'account password settings avatar sound reminders invite delete privacy app feedback bug support help problem'}
 ]);
 const TOPIC=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,t]));
 // How long the Starter Pack is open (game/payments.js STARTER_WINDOW; the wiki test keeps the two equal).
@@ -282,6 +282,8 @@ const BODIES={
    ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. Email reminders, and news and offers by email, stay off until you switch them on. The daily email (at most one a day, only when something is waiting) goes to a confirmed address: signed up with your email? Confirm it first.']
   ]))
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
+  // The mailbox button (30 Sep 2026, public/feedback-ui.js).
+  +section('Feedback and bugs','<p>An idea, a question or something that does not work? Tap the mailbox next to How to play (on a phone: More, then Feedback &amp; bugs), choose Feedback or Report a bug and write what happened. Our team reads every message.</p>')
   +section('Avatars',`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`
    +table(['Avatar','Opens at'],PLAYER_AVATARS.filter(a=>a.level).map(a=>`<tr><td>${avatarCell(a)}</td><td>Level ${a.level}</td></tr>`))
    +table(['Avatar','How to earn it'],PLAYER_AVATARS.filter(a=>avatarGoal(a.id)).map(a=>`<tr><td>${avatarCell(a)}</td><td>${avatarGoal(a.id).text}</td></tr>`))

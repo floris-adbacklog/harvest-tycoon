@@ -11,6 +11,10 @@ import {confirmAction} from '../public/confirm-dialog.js';
 import {POPUP_SCREENS,POPUP_AUDIENCES} from './popup-ui.js';
 import {OFFER,offerValueCents,offerProblem,offerFill} from '../game/payments.js';
 import {avatarImage} from '../public/player-avatars.js';
+import {LANGUAGES} from '../public/languages.js';
+import {chosenLanguage} from '../public/i18n.js';
+import {translateLink} from './chat-ui.js';
+import {deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
 import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -34,11 +38,15 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  const dialog=document.createElement('dialog');dialog.id='admin-dashboard-dialog';dialog.className='game-dialog wide-dialog admin-dashboard-dialog';dialog.setAttribute('aria-labelledby','admin-dashboard-title');
  dialog.innerHTML=`<div class="dialog-heading"><div class="admin-title"><span class="admin-badge">${art('admin')}</span><div><span class="eyebrow" id="admin-dashboard-eyebrow">ONLY FOR YOU</span><h2 id="admin-dashboard-title">Admin dashboard</h2></div></div><button class="icon-button admin-dashboard-close" aria-label="Close"><i data-lucide="x"></i></button></div>`
   +'<div class="admin-kpis"><div>'+art('family-members')+'<strong id="admin-kpi-online">–</strong><span>Online now</span></div><div>'+art('invite-friends')+'<strong id="admin-kpi-new">–</strong><span>New today</span></div><div>'+art('rank-gold')+'<strong id="admin-kpi-day1">–</strong><span>Kept on day 1</span></div><div>'+art('alert')+'<strong id="admin-kpi-reports">–</strong><span>Open reports</span></div></div>'
-  +'<div class="market-tabs admin-tabs" role="tablist" aria-label="Dashboard"><button type="button" role="tab" data-admin-tab="chat" aria-label="Chat" class="active" aria-selected="true">'+art('chat')+'<span class="admin-tab-name">Chat</span></button><button type="button" role="tab" data-admin-tab="players" aria-label="Players" aria-selected="false">'+art('family-members')+'<span class="admin-tab-name">Players</span></button><button type="button" role="tab" data-admin-tab="growth" aria-label="Growth" aria-selected="false">'+art('xp')+'<span class="admin-tab-name">Growth</span></button><button type="button" role="tab" data-admin-tab="purchases" aria-label="Purchases" aria-selected="false" hidden>'+art('diamonds')+'<span class="admin-tab-name">Purchases</span></button><button type="button" role="tab" data-admin-tab="settings" aria-label="Settings" aria-selected="false" hidden>'+art('settings')+'<span class="admin-tab-name">Settings</span></button></div>'
+  +'<div class="market-tabs admin-tabs" role="tablist" aria-label="Dashboard"><button type="button" role="tab" data-admin-tab="chat" aria-label="Chat" class="active" aria-selected="true">'+art('chat')+'<span class="admin-tab-name">Chat</span></button><button type="button" role="tab" data-admin-tab="feedback" aria-label="Feedback" aria-selected="false">'+art('feedback')+'<span class="admin-tab-name">Feedback</span><b class="admin-tab-count" id="admin-feedback-count" hidden>0</b></button><button type="button" role="tab" data-admin-tab="players" aria-label="Players" aria-selected="false">'+art('family-members')+'<span class="admin-tab-name">Players</span></button><button type="button" role="tab" data-admin-tab="growth" aria-label="Growth" aria-selected="false">'+art('xp')+'<span class="admin-tab-name">Growth</span></button><button type="button" role="tab" data-admin-tab="purchases" aria-label="Purchases" aria-selected="false" hidden>'+art('diamonds')+'<span class="admin-tab-name">Purchases</span></button><button type="button" role="tab" data-admin-tab="settings" aria-label="Settings" aria-selected="false" hidden>'+art('settings')+'<span class="admin-tab-name">Settings</span></button></div>'
   +'<div data-admin-panel="chat">'
   +'<section class="admin-card admin-guide"><h3>'+art('admin')+'Keeping the valley friendly</h3><ul><li><strong>Delete</strong> a message that is rude, hurtful or shares personal details (an address, a phone number).</li><li><strong>Mute for a day</strong> when someone keeps it up after a message is deleted.</li><li><strong>Ban from chat</strong> only for serious or repeated abuse. It closes the chat, never the farm.</li><li>Not sure? Choose <strong>Nothing wrong</strong> or leave it for the admin.</li></ul></section>'
   +'<section class="admin-card" id="admin-reports" hidden><h3>'+art('alert')+'Chat reports <span id="admin-report-count">0</span></h3><ul id="admin-report-list" class="admin-recent-list admin-report-list"></ul><p class="admin-hint">Delete removes the message for everyone. Mute and ban only close the chat for that farmer, never their farm.</p></section>'
   +'<section class="admin-card" id="admin-report-log" hidden><h3>'+art('quests')+'Report log</h3><p class="admin-hint">Every reported message, newest first: who reported it and what the staff did with it.</p><ul id="admin-log-list" class="admin-recent-list admin-log-list"></ul></section>'
+  // Feedback & bugs (supabase/feedback.sql): what farmers send with the mailbox button, for the admin and the moderators.
+  +'</div><div data-admin-panel="feedback" hidden>'
+  +'<section class="admin-card"><h3>'+art('feedback')+'Feedback &amp; bugs</h3><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-feedback-filter="open" aria-pressed="true">Open</button><button type="button" class="admin-filter" data-feedback-filter="done" aria-pressed="false">Done</button></div>'
+  +'<ul id="admin-feedback-list" class="admin-recent-list admin-feedback-list"></ul><p class="admin-hint">What farmers send with the mailbox button, newest first, in their own words. Done moves a message to Done. A name opens the farmer\'s profile, where you can write back.</p></section>'
   +'</div><div data-admin-panel="players" hidden>'
   +'<section class="admin-card" id="admin-donate" hidden><h3>'+art('gift')+'Send a gift</h3><form id="admin-donate-form" class="admin-donate"><div class="admin-gift-to"><span>Send to</span><div class="admin-filters" role="group" aria-label="Send to">'+GIFT_AUDIENCES.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-gift-audience="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><div id="admin-gift-player" class="admin-gift-player" hidden><input type="search" id="admin-gift-search" placeholder="Find a farmer by name" aria-label="Find a farmer" autocomplete="off"><ul id="admin-gift-results" class="admin-gift-results"></ul></div></div><label><span>'+art('diamonds')+'Diamonds</span><input type="number" id="admin-donate-diamonds" min="0" max="50" step="1" placeholder="0" inputmode="numeric"></label><label><span>'+art('coins')+'<b id="admin-donate-coins-label">Coins</b></span><input type="number" id="admin-donate-coins" min="0" max="1000" step="10" placeholder="0" inputmode="numeric"></label><div class="admin-coin-kind"><div class="admin-filters" role="group" aria-label="Coins"><button type="button" class="admin-filter active" data-coin-kind="fixed" aria-pressed="true">Fixed</button><button type="button" class="admin-filter" data-coin-kind="level" aria-pressed="false">Per level</button></div><p class="admin-hint" id="admin-donate-preview">Every farmer gets the same.</p></div><label class="admin-donate-message"><span>Message</span><input type="text" id="admin-donate-message" maxlength="120" placeholder="Thanks for playing!"></label><button type="submit" class="primary-button" id="admin-donate-send">Send to everyone</button></form><p class="admin-hint" id="admin-donate-room"></p></section>'
   +'<section class="admin-card"><h3>'+art('family-members')+'Online now <span id="admin-online-count">0</span></h3><ul id="admin-online-list" class="admin-online-list"></ul><p class="admin-hint">Active in the last <span id="admin-online-window">30</span> minutes.</p></section>'
@@ -181,7 +189,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-purchase-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
  async function load(){
   const status=dialog.querySelector('#admin-dashboard-status');status.textContent='Refreshing…';
-  void loadChat();
+  void loadChat();void loadFeedback();
   // Every part loads on its own: one that fails leaves the others showing, and the line at the bottom says which one is missing.
   const PARTS=[['admin_online','Online now'],['admin_players','All players'],['admin_retention','Retention'],['admin_invites','Invites']];
   const [online,players,retention,invites]=await Promise.all(PARTS.map(([operation])=>bridge.request({operation}).catch(()=>null)));
@@ -195,6 +203,31 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const missing=PARTS.filter((_,i)=>![online,players,retention,invites][i]).map(([,name])=>name);
   status.textContent=missing.length?`${missing.join(', ')} could not be loaded. Please try again.`:`Updated ${clock(new Date().toISOString())} (Amsterdam time)`;
  }
+ // Feedback & bugs: the open messages (the count on the tab), or the ones marked done; each with the farmer's name, the time
+ // (Amsterdam), level, device and game language, and a Google Translate link like the chat's.
+ let feedbackView='open';
+ const FEEDBACK_KINDS={feedback:'Feedback',bug:'Bug'};
+ const languageName=code=>code?LANGUAGES.find(l=>l.code===code)?.name??code:null;
+ const feedbackRow=f=>`<li>${avatar(f.name,false,f.playerId)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-profile="${esc(f.playerId)}">${esc(f.name??'A farmer')}</button> <b class="admin-feedback-kind is-${f.kind==='bug'?'bug':'feedback'}">${FEEDBACK_KINDS[f.kind]??'Feedback'}</b> <small>${esc(fmtDate(f.createdAt))}</small></strong>`
+  +`<span class="admin-feedback-body">${esc(f.body)}</span><small class="admin-feedback-meta">${[f.level?`Level ${number(f.level)}`:null,deviceName(f.device),languageName(f.language)].filter(Boolean).map(esc).join(' · ')}${f.handledAt?` · done by ${esc(f.handledBy??'the staff')}, ${esc(fmtDate(f.handledAt))}`:''}</small>`
+  +`<span class="admin-report-actions"><a class="small-button" href="${esc(translateLink(f.body,chosenLanguage()))}" target="_blank" rel="noopener noreferrer">Translate</a><button type="button" class="small-button" data-feedback-id="${esc(f.id)}" data-feedback-done="${f.handledAt?'0':'1'}">${f.handledAt?'Open again':'Done'}</button></span></span></li>`;
+ async function loadFeedback(){
+  const client=bridge.chat,list=dialog.querySelector('#admin-feedback-list');if(!client?.feedbackList||!role)return;
+  try{
+   const [open,done]=await Promise.all([client.feedbackList(false),feedbackView==='done'?client.feedbackList(true):null]);
+   const count=dialog.querySelector('#admin-feedback-count');count.textContent=number(open.length);count.hidden=!open.length;
+   const shown=done??open;await loadFaces(shown.map(f=>f.playerId));
+   list.innerHTML=shown.length?shown.map(feedbackRow).join(''):`<li class="admin-empty">${feedbackView==='done'?'Nothing is marked done yet.':'No open messages. Everything is read.'}</li>`;
+  }catch(error){list.innerHTML=`<li class="admin-empty">${esc(error.message)}</li>`;}
+ }
+ dialog.querySelectorAll('[data-feedback-filter]').forEach(b=>b.onclick=()=>{feedbackView=b.dataset.feedbackFilter;dialog.querySelectorAll('[data-feedback-filter]').forEach(x=>{const on=x===b;x.classList.toggle('active',on);x.setAttribute('aria-pressed',String(on));});void loadFeedback();});
+ dialog.querySelector('#admin-feedback-list').addEventListener('click',async event=>{
+  const name=event.target.closest('[data-profile]');if(name){window.harvestProfiles?.open(name.dataset.profile,{back:null});return;}
+  const mark=event.target.closest('[data-feedback-id]');if(!mark)return;
+  mark.disabled=true;
+  try{await bridge.chat.feedbackHandle(mark.dataset.feedbackId,mark.dataset.feedbackDone==='1');}catch(error){mark.disabled=false;mark.title=error.message;return;}
+  void loadFeedback();
+ });
  // The chat: open reports for the staff; news, moderators and chat levels for the admin.
  const ACTIONS={deleted:'Deleted',dismissed:'Nothing wrong',muted:'Muted',banned:'Banned from chat'};
  const verdict=r=>r.open?'<b class="admin-log-open">Open</b>':`<b class="admin-log-done">${esc(ACTIONS[r.action]??'Handled')}${r.handledBy?` · ${esc(r.handledBy)}`:''}</b>`;

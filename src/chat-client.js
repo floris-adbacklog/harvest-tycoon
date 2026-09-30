@@ -63,6 +63,15 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
    const {data,error}=await supabase.from('player_stats').select('player_id,avatar_id').in('player_id',unique.slice(0,200));
    return error?new Map():new Map((data??[]).map(r=>[r.player_id,r.avatar_id]));
   },
+  // Feedback & bugs (supabase/feedback.sql): any farmer sends one; a limit reached keeps its code (54000), so the game can say it
+  // in the farmer's own language.
+  async sendFeedback({kind,body,level=null,device=null,language=null}){
+   check();const {error}=await supabase.rpc('feedback_send',{p_kind:kind,p_body:body,p_level:level,p_device:device,p_language:language});
+   if(error){const failure=chatError(error);failure.code=error.code;throw failure;}
+  },
+  // The staff read them (open or done) and mark them done.
+  feedbackList:(done=false)=>rpc('feedback_list',{p_done:done}),
+  feedbackHandle:(id,done=true)=>rpc('feedback_handle',{p_id:id,p_done:done}),
   // Staff (moderators and the admin); the database refuses anyone else.
   reports:()=>rpc('chat_mod_reports'),
   reportLog:()=>rpc('chat_mod_log'),
