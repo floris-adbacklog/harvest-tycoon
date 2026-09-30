@@ -1181,7 +1181,10 @@
 .feedback-form textarea:focus{outline:3px solid #c2912d;outline-offset:1px}
 .feedback-note{margin:8px 0 14px;color:#857d70;font-size:12.5px;line-height:1.45;text-align:left}
 .feedback-form .primary-button,.feedback-dialog>.primary-button{width:100%;justify-content:center}
-.feedback-dialog>.feedback-status{min-height:1.2em;margin:10px 0 0;color:#9a3b24;font-size:13.5px}
+.feedback-dialog>.feedback-status{min-height:1.2em;margin:16px 0 0;color:#9a3b24;font-size:13.5px;text-align:center}
+.feedback-dialog>.feedback-status:empty{margin:0}
+/* Phones: a full-width sheet like every other window (mobile-windows.css), not a card with a gap on the right. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){.feedback-dialog{width:100%}}
 .email-check-form .primary-button{flex:none}
 .email-check-resend{font-size:13px}
 .email-check-status{min-height:20px;margin:10px 0 0!important;font-size:13px!important;color:#7a5510!important}
