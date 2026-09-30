@@ -399,8 +399,8 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 .family-profile-week span{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#4b513d}
 .family-profile-week .game-art{width:22px;height:22px;flex:none}
 .family-profile-dialog .family-profile-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.family-profile-dialog .family-profile-stat{display:flex;align-items:center;justify-items:start;gap:8px;padding:10px;text-align:left}
-.family-profile-dialog .family-profile-stat>.game-art{width:30px;height:30px;flex:none}
-.family-profile-dialog .family-profile-stat>div{display:grid;gap:2px;min-width:0}
-.family-profile-dialog .family-profile-stat strong{font-size:18px}
+.family-profile-dialog .family-profile-stat{grid-template-columns:30px minmax(0,1fr);grid-template-areas:"art value" "art label";align-items:center;align-content:center;justify-items:start;gap:2px 10px;padding:10px 12px;text-align:left}
+.family-profile-dialog .family-profile-stat>.game-art{grid-area:art;width:30px;height:30px}
+.family-profile-dialog .family-profile-stat strong{grid-area:value;font-size:18px}
+.family-profile-dialog .family-profile-stat span{grid-area:label}
 

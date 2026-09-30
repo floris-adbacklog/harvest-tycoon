@@ -40,7 +40,7 @@ export function familyProfileAction(p){
 // place) on the level card and the four all-time numbers as compact tiles; Recent tournaments only once there is one.
 export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
  const s=p.standing,next=s.next,progress=next?Math.min(100,Math.round(s.tiers/next*100)):100;
- const tile=(picture,value,label)=>`<div class="family-profile-stat">${art(picture)}<div><strong>${value}</strong><span>${label}</span></div></div>`;
+ const tile=(picture,value,label)=>`<div class="family-profile-stat">${art(picture)}<strong>${value}</strong><span>${label}</span></div>`;
  const member=m=>`<article class="family-member"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId)}" ${profiles?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online':'Offline'}"></span></span><span class="family-member-copy"><strong>${esc(m.username)}${vipBadge(m.vipExpiresAt,now)}${rankChip(m)}</strong><small>Level ${num(m.level)}</small></span>${profiles?'<span class="family-sr-only">Open profile</span>':''}</button></article>`;
  const action=familyProfileAction(p);
  return `<section class="family-profile-hero">
