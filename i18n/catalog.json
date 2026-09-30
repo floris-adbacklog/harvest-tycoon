@@ -2388,6 +2388,7 @@
 "Open diamonds and boosts":"public/farm.html",
 "Open farm events":"public/farm.html",
 "Open farm events, a reward is waiting":"public/live-events-ui.js",
+"Open farm events, an event is running":"public/live-events-ui.js",
 "Open farm journal and level rewards":"public/farm.html",
 "Open for business":"public/farm-state.js",
 "Open from level {0}.":"public/live-events-ui.js",

@@ -223,7 +223,9 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  function refresh(){
   refreshVipBadges(dialog,farmNow());tabDots();
   button.hidden=!familyUnlocked(state);if(button.hidden)return;
-  dot.hidden=!(view?.invitation||view?.rewards.length||view?.joinRequests?.length||view?.order&&!view.contributionLocked&&Object.entries(view.order.lines).some(([k,n])=>(view.order.filled[k]??0)<n&&(state.inventory[k]??0)>0));
+  // The button's "!" only for what waits for you: an invitation, a reward, farmers asking to join. Goods you could deliver light the
+  // "!" on This week inside the window, not the button (30 Sep 2026: with a full storage that was always true, so it never went away).
+  dot.hidden=!(view?.invitation||view?.rewards.length||view?.joinRequests?.length);
   const countdown=dialog.querySelector('[data-family-countdown]');if(countdown&&view)countdown.textContent=formatDuration(Math.max(0,view.endsAt-farmNow()));
   if(!busy&&!reading&&isReady()&&!document.hidden&&Date.now()-lastRead>=30000)void load();
  }

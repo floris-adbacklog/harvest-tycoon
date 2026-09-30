@@ -50,6 +50,13 @@ export function eligibilityNote(eligibility,now=Date.now()){
 export function createLiveEventsUI({state,notify,refreshFarm,document:doc=globalThis.document,bridge=globalThis.parent?.harvestBridge,now=farmNow}){
  const button=doc.getElementById('events-button'),dot=doc.getElementById('events-dot'),hint=doc.getElementById('mobile-events-hint'),entry=doc.querySelector('[data-menu-action="events-button"]');
  let locked=null;
+ // A running event you have not opened yet lights the dot too (30 Sep 2026: players forgot an event was on). Opening the screen
+ // marks it seen until the next event; kept in this browser only. Not when you cannot take part or have already finished.
+ const SEEN_KEY='harvest-tycoon:event-seen';
+ const seenId=()=>{try{return globalThis.localStorage?.getItem(SEEN_KEY)??null;}catch{return null;}};
+ const markSeen=id=>{try{globalThis.localStorage?.setItem(SEEN_KEY,String(id));}catch{}};
+ const unseen=live=>Boolean(live)&&!hasQualified(live)&&!eligibilityNote(data?.eligibility,now())&&seenId()!==String(live.id);
+ const seeLive=()=>{if(!data)return;const {live}=eventView(data.events,now());if(live)markSeen(live.id);};
  const dialog=doc.createElement('dialog');dialog.id='events-dialog';dialog.className='game-dialog wide-dialog events-dialog';dialog.setAttribute('aria-labelledby','events-title');doc.body.append(dialog);
  let data=null,busy=false,error='',reloadTimer=0,clock=0,background=0;
 
@@ -117,16 +124,17 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   catch(e){dialog.querySelector('[data-status]').textContent=e.message;b.disabled=false;}
   finally{busy=false;}
  }
- // The button's dot and the More-menu hint: a reward waiting, or when the current/next event ends/starts.
+ // The button's dot and the More-menu hint: a reward waiting or an event you have not seen yet, and when the current/next event ends/starts.
  function badge(){
   if(!data||locked)return;
-  const {live,next,owed}=eventView(data.events,now());
-  if(dot)dot.hidden=!owed.length;
+  const {live,next,owed}=eventView(data.events,now()),fresh=unseen(live);
+  if(dot)dot.hidden=!owed.length&&!fresh;
   if(hint)hint.textContent=owed.length?'A reward is waiting':live?`Live · ${formatDuration(Date.parse(live.ends_at)-now())} left`:next?`Next in ${formatDuration(Date.parse(next.starts_at)-now())}`:'Short shared goals';
-  if(button)button.setAttribute('aria-label',owed.length?'Open farm events, a reward is waiting':'Open farm events');
+  if(button)button.setAttribute('aria-label',owed.length?'Open farm events, a reward is waiting':fresh?'Open farm events, an event is running':'Open farm events');
  }
  async function load(){
   try{data=await bridge.request({operation:'events'});error='';}catch(e){error=e.message;if(!data)throw e;}
+  if(dialog.open)seeLive();
   badge();if(dialog.open)render();
  }
  function tick(){
@@ -136,7 +144,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  }
  async function open(){
   doc.querySelectorAll('dialog[open]').forEach(d=>{if(d!==dialog)d.close();});
-  render();if(!dialog.open)dialog.showModal();
+  render();if(!dialog.open)dialog.showModal();seeLive();badge();
   clearInterval(clock);clearInterval(reloadTimer);clock=setInterval(tick,1000);reloadTimer=setInterval(()=>{if(!busy)load().catch(()=>{});},30000);
   try{await load();}catch(e){error=e.message;render();}
  }

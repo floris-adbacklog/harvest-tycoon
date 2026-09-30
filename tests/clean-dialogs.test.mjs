@@ -98,3 +98,15 @@ test('profiles are cleaner: a family\'s action right under its name, the name on
  assert.match(player,/\$\{self\?vipBadge\(player\.vipExpiresAt,now,true\):''\}/,'the VIP time left only on your own profile');
  assert.match(read('public/player-profiles.css'),/\.farmer-profile-status:empty\{display:none\}/);
 });
+
+// 30 Sep 2026, player feedback: the Family "!" never went away (goods you could deliver are nearly always there), and events were
+// easy to forget. The button dots now say what waits for you, and a running event you have not opened yet.
+test('the Family dot is for what waits for you; a running event you have not seen lights the Events dot',()=>{
+ const family=read('public/family-ui.js'),events=read('public/live-events-ui.js');
+ assert.match(family,/dot\.hidden=!\(view\?\.invitation\|\|view\?\.rewards\.length\|\|view\?\.joinRequests\?\.length\);/);
+ assert.match(family,/const waiting=\{week:Boolean\([^\n]*state\.inventory\[k\]\?\?0\)>0\)\)/,'deliverable goods still light This week inside the window');
+ assert.match(events,/const unseen=live=>Boolean\(live\)&&!hasQualified\(live\)&&!eligibilityNote\(data\?\.eligibility,now\(\)\)&&seenId\(\)!==String\(live\.id\);/);
+ assert.match(events,/if\(dot\)dot\.hidden=!owed\.length&&!fresh;/);
+ assert.match(events,/render\(\);if\(!dialog\.open\)dialog\.showModal\(\);seeLive\(\);badge\(\);/,'opening the screen marks the event seen');
+ assert.match(events,/try\{return globalThis\.localStorage\?\.getItem\(SEEN_KEY\)\?\?null;\}catch\{return null;\}/,'storage may be missing');
+});
