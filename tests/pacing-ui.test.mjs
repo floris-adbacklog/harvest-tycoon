@@ -94,7 +94,7 @@ test('the game only offers the question while its own screen is showing',()=>{
 test('where push cannot work, the question offers the daily email',async()=>{
  for(const opts of [{kind:'unsupported'},{kind:'install-first'},{kind:'blocked'},{push:false}]){
   const h=harness({...opts,email:true});await h.nudge.check();
-  assert.equal(h.shown(),true,JSON.stringify(opts));assert.match(h.html(),/Want a reminder by email\?/);assert.match(h.html(),/data-nudge-on>Email me</);
+  assert.equal(h.shown(),true,JSON.stringify(opts));assert.match(h.html(),/Want a reminder by email\?/);assert.match(h.html(),/<span class="reminder-nudge-icon" aria-hidden="true"><img class="game-art " data-art="letter"/,'the painted letter, as everywhere else');assert.match(h.html(),/data-nudge-on>Email me</);
   assert.deepEqual(h.log.events,[['reminder_prompt','shown']]);h.cleanup();
  }
 });

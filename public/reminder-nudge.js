@@ -4,6 +4,7 @@
 // first visit and never come back, so the repeats come with levels, in the same visit too, never with days). One card at a time.
 // Where push cannot work (inside the Facebook, Instagram or TikTok app, Safari on an iPhone without the Home Screen app, push blocked)
 // the same question offers the daily email instead (28 Sep 2026): every account has an address.
+import {art} from './visual-icons.js';
 const KEY='harvest-tycoon:reminder-nudge';
 export const NUDGE_LEVELS=Object.freeze([5,10,20]);
 // A harvest by hand, of one field or several, or by the tractor.
@@ -32,7 +33,7 @@ export function createReminderNudge({state,level,notify,track=()=>{},canShow=()=
   open=true;storage.set(`${farmKey()}:${lvl}`);track('reminder_prompt',{action:'shown',channel});
   const card=document.createElement('aside');card.className='reminder-nudge';card.setAttribute('role','region');card.setAttribute('aria-label','Reminders');
   card.innerHTML=channel==='email'
-   ?'<span class="reminder-nudge-icon" aria-hidden="true"><i data-lucide="mail"></i></span><div class="reminder-nudge-copy"><strong>Want a reminder by email?</strong><span>At most one a day, only when crops or your daily gift are waiting. Unsubscribe in one tap.</span></div><div class="reminder-nudge-actions"><button type="button" class="small-button" data-nudge-later>Not now</button><button type="button" class="primary-button" data-nudge-on>Email me</button></div>'
+   ?'<span class="reminder-nudge-icon" aria-hidden="true">'+art('letter')+'</span><div class="reminder-nudge-copy"><strong>Want a reminder by email?</strong><span>At most one a day, only when crops or your daily gift are waiting. Unsubscribe in one tap.</span></div><div class="reminder-nudge-actions"><button type="button" class="small-button" data-nudge-later>Not now</button><button type="button" class="primary-button" data-nudge-on>Email me</button></div>'
    :'<span class="reminder-nudge-icon" aria-hidden="true"><i data-lucide="bell"></i></span><div class="reminder-nudge-copy"><strong>Want a nudge when your crops are ready?</strong><span>We only send a reminder when something is waiting.</span></div><div class="reminder-nudge-actions"><button type="button" class="small-button" data-nudge-later>Not now</button><button type="button" class="primary-button" data-nudge-on>Turn on</button></div>';
   card.querySelector('[data-nudge-later]').onclick=()=>{track('reminder_prompt',{action:'dismissed',channel});close();};
   card.querySelector('[data-nudge-on]').onclick=async()=>{
