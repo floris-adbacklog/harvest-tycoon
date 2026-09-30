@@ -36,7 +36,7 @@ pictures['double-xp']='double-xp';pictures['double-coins']='double-coins';
 const PACK_ART=['pack-nest','pack-sack','pack-chest','pack-gold','vip-farmer'];
 for(const id of PACK_ART)pictures[id]=id;
 // Painted-style vector illustrations for the few interface items that had no artwork yet.
-const svgArt=new Set(['streak','reminders','farmapp','hourglass']);
+const svgArt=new Set(['streak','reminders','hourglass']);
 for(const id of svgArt)pictures[id]=id;
 const spriteEntries=Object.fromEntries(sheets.flatMap(sheet=>sheet.keys.map((key,index)=>[key,{...sheet,index}])));
 const symbolMap={'lock-keyhole':'lock',lock:'lock',salad:'salad',amphora:'pickles',milk:'milk',egg:'eggs',sandwich:'cheese',croissant:'bread','cake-slice':'pie','package-check':'vegetables','package-open':'feed',droplet:'oil',gem:'diamonds',coins:'coins',star:'xp',droplets:'water',scissors:'harvest',shovel:'care',leaf:'care',gift:'gift','clipboard-check':'quests',trophy:'trophy',medal:'trophy',sparkles:'boost',sprout:'seeds',hammer:'hammer',wheat:'wheat',house:'farm',factory:'buildings',landmark:'estate',store:'market',tractor:'tractor',warehouse:'silo',truck:'cart',wind:'windmill','shopping-basket':'vegetables','land-plot':'seeds','circle-fading-arrow-up':'hammer',flag:'quests','circle-help':'guide','volume-2':'sound',settings:'settings',bell:'bell',smartphone:'farmapp',shield:'admin',flame:'streak'};
@@ -66,6 +66,8 @@ for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver',
 for(const key of [...Object.keys(HEIRLOOMS),...ENDGAME_PICTURES,'master','seedlab','visitors','giantpumpkin','valleyprojects'])webpPictures.add(key);   // looked up by the short name
 for(const key of VILLAGE_ART)webpPictures.add(key);
 webpPictures.add('feedback');
+// The farm app (30 Sep 2026, painted by the user): a golden phone with the barn, for installing the game and the admin's devices.
+pictures.farmapp='farmapp';webpPictures.add('farmapp');
 // Family rank badges (27 Sep 2026), painted by the user; public/family-profile.js shows each one that is here beside the rank's name.
 for(const key of ['family-rank-leader','family-rank-coleader','family-rank-honorary','family-rank-member','family-rank-top']){pictures[key]=key;webpPictures.add(key);}
 // A flag for every language in Settings (29 Sep 2026, painted, WebP): flag-en, flag-es, ...

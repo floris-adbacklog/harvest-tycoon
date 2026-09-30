@@ -90,8 +90,9 @@ test('settings headings use drawn icons: a golden bell for reminders and a phone
  const farm=read('public/farm.html'),icons=read('public/visual-icons.js');
  assert.match(farm,/settings-heading"><i data-lucide="bell"><\/i>Reminders/);assert.match(farm,/settings-heading"><i data-lucide="smartphone"><\/i>Farm app/);
  assert(!/data-lucide="(bell|smartphone)" data-line-icon/.test(farm),'no line icons left on these headings');
- assert.match(icons,/svgArt=new Set\(\[[^\]]*'reminders'[^\]]*'farmapp'/);assert.match(icons,/bell:'bell'/,'the painted bell, the same as the chat\'s Notifications tab');assert.match(icons,/smartphone:'farmapp'/);
- for(const file of ['reminders','farmapp']){const svg=read(`public/assets/icons/${file}.svg`);assert.match(svg,/viewBox="0 0 128 128"/);assert(!/<script|onload=|href=/i.test(svg),'a plain drawing');}
+ assert.match(icons,/svgArt=new Set\(\[[^\]]*'reminders'/);assert.match(icons,/pictures\.farmapp='farmapp';webpPictures\.add\('farmapp'\);/,'the painted phone, as a WebP');assert.match(icons,/bell:'bell'/,'the painted bell, the same as the chat\'s Notifications tab');assert.match(icons,/smartphone:'farmapp'/);
+ assert.ok(existsSync(new URL('../public/assets/icons/farmapp.webp',import.meta.url)));assert.match(read('public/play.html'),/src="\/assets\/icons\/farmapp\.webp"/);
+ for(const file of ['reminders']){const svg=read(`public/assets/icons/${file}.svg`);assert.match(svg,/viewBox="0 0 128 128"/);assert(!/<script|onload=|href=/i.test(svg),'a plain drawing');}
 });
 test('the game frame fills the whole screen and the sign-in card keeps clear of the notch and the home indicator',()=>{
  const css=read('public/welcome.css');
