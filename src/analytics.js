@@ -47,6 +47,13 @@ export function trackCommerce(event,params={},win=globalThis.window){
  // A price paid is in euro cents (30 Sep 2026: for the ChatGPT Ads pixel's order_created in Tag Manager).
  if('amount_cents' in clean)clean.currency='EUR';
  pushEvent(event,clean,win);
+ // The standard name ad pixels read by themselves (30 Sep 2026, TikTok through Tag Manager): a pack paid for is a "purchase", in
+ // GA4's ecommerce shape with its price in euros, never with who bought it. The ecommerce of an earlier push is cleared first.
+ if(event==='diamond_pack_completed'&&'amount_cents' in clean&&win){
+  const value=clean.amount_cents/100;
+  (win.dataLayer=win.dataLayer||[]).push({ecommerce:null});
+  pushEvent('purchase',{ecommerce:{value,currency:'EUR',items:[{item_id:`diamonds_${clean.pack??'pack'}`,item_name:'Diamonds',price:value,quantity:1}]}},win);
+ }
 }
 
 // Pacing events from inside the game (how far new farmers get, and where they stop). Only numbers and a few fixed
@@ -74,4 +81,6 @@ export function trackGame(event,params={},win=globalThis.window){
  if(CONNECTION_REASONS.has(params.reason))clean.reason=params.reason;
  if(CONNECTION_STAGES.has(params.stage))clean.stage=params.stage;
  pushEvent(event,clean,win);
+ // Level 5 is a real player (the goal of the ad campaigns): also GA4's standard "generate_lead", which ad pixels read by themselves.
+ if(event==='level_up'&&clean.level===5)pushEvent('generate_lead',{level:5},win);
 }
