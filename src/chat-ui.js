@@ -60,8 +60,9 @@ const ICON={
  more:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
  translate:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>'
 };
-// The global chat is the whole valley, in many languages (30 Sep 2026): a message from someone else has a small translate link that
-// opens Google Translate in a new tab, from whatever language it is in to the one the farmer plays in.
+// The valley speaks many languages (30 Sep 2026): a message from someone else, in any chat, has a small translate link (under the
+// "•••", on hover; on a phone in the long-press menu) that opens Google Translate in a new tab, from whatever language it is in to
+// the one the farmer plays in.
 export const translateLink=(text,language='en')=>`https://translate.google.com/?sl=auto&tl=${encodeURIComponent(language)}&text=${encodeURIComponent(String(text??''))}&op=translate`;
 
 export function createChatUI({bridge,profiles,doc=document,win=window}){
@@ -186,11 +187,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
   const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
   // Staff messages can carry an https link (an admin's message to many farmers, e.g. a feedback form); nobody else's can.
-  const translate=!mine&&(m.channel??channelOf())==='global'&&String(m.body??'').trim()?` <a class="chat-translate" href="${esc(translateLink(m.body,chosenLanguage()))}" target="_blank" rel="noopener noreferrer" aria-label="Translate with Google" title="Translate with Google">${ICON.translate}</a>`:'';
-  const text=`<span translate="no">${m.sender_staff?linkify(m.body):esc(m.body)}</span>${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}${translate}`;
+  const translate=!mine&&String(m.body??'').trim()?`<a class="chat-translate" href="${esc(translateLink(m.body,chosenLanguage()))}" target="_blank" rel="noopener noreferrer" aria-label="Translate with Google" title="Translate with Google">${ICON.translate}</a>`:'';
+  const text=`<span translate="no">${m.sender_staff?linkify(m.body):esc(m.body)}</span>${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`,tr=translate?' has-translate':'';
   // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
-  if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${esc(m.sender_name)}: </span>${text}</p></div>${more}</li>`;
-  return `<li class="chat-msg${mine?' is-mine':''}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div><p class="chat-text">${text}</p></div></li>`;
+  if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${esc(m.sender_name)}: </span>${text}</p></div>${more}${translate}</li>`;
+  return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div><p class="chat-text">${text}</p></div>${translate}</li>`;
  }
  function threadRow(t){
   return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${esc(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}<span translate="no">${esc(t.last?.body??'')}</span></small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
@@ -377,6 +378,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const mine=m.sender===me,staff=role()!==null,items=[];
   // A long press replaces the phone's own text selection, so the menu can copy the text there.
   if(touch())items.push(['copy','Copy text']);
+  if(touch()&&!mine&&String(m.body??'').trim())items.push(['translate','Translate with Google']);
   if(!mine)items.push(['report','Report message'],['block',`Block ${m.sender_name}`]);
   if(staff)items.push(['edit','Edit message'],['delete','Delete message']);
   if(staff&&!mine&&!m.sender_staff)items.push(['mute60','Mute 1 hour'],['mute1440','Mute 1 day'],['ban','Ban from chat']);
@@ -401,6 +403,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  list.addEventListener('contextmenu',event=>{if(touch()&&event.target.closest('.chat-msg'))event.preventDefault();});
  dialog.addEventListener('keydown',event=>{if(event.key==='Escape'&&menuEl){event.preventDefault();closeMenu();}});
  async function act(key,m){
+  // A new tab straight from the tap on the menu item, so the browser allows it.
+  if(key==='translate'){win.open(translateLink(m.body,chosenLanguage()),'_blank','noopener,noreferrer');return;}
   try{
    if(key==='report'){
     if(!await confirmAction({title:'Report this message?',description:'A moderator will read it. Thank you for keeping the valley friendly.',confirmLabel:'Report',picture:'admin'}))return;

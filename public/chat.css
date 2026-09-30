@@ -83,8 +83,13 @@ span.chat-avatar{cursor:default}
 .chat-more-space{flex-shrink:0;width:28px;margin-right:-4px}.chat-msg.is-cont>.chat-more-space{display:none}
 @media(hover:hover) and (pointer:fine){.chat-more{opacity:0}.chat-msg:hover .chat-more,.chat-more:focus-visible,.chat-msg:has(.chat-menu) .chat-more{opacity:1}}
 .chat-text{margin:3px 0 0;color:#4a4232;font:500 15px/1.4 'DM Sans',sans-serif;overflow-wrap:anywhere}
-/* The small translate link behind a message in the global chat (src/chat-ui.js): quiet until you need it. */
-.chat-translate{display:inline-grid;place-items:center;width:22px;height:22px;margin:-3px 0 -3px 2px;vertical-align:middle;border-radius:7px;color:#a69a86;text-decoration:none}
+/* The small translate link of a message in the global chat (src/chat-ui.js): quiet until you need it. */
+.chat-translate{position:absolute;top:36px;right:9px;display:grid;place-items:center;width:22px;height:22px;border-radius:7px;color:#a69a86;text-decoration:none}
+/* Under the "•••", and like it only while the pointer is on the message; a follow-up message is one line, so there it sits beside
+   the "•••". A phone has no hover: there it is "Translate with Google" in the long-press menu. */
+.chat-msg.is-cont>.chat-translate{top:3px;right:40px}.chat-msg.has-translate:not(.is-cont) .chat-text{padding-right:24px}
+@media(hover:hover) and (pointer:fine){.chat-translate{opacity:0}.chat-msg:hover .chat-translate,.chat-translate:focus-visible{opacity:1}}
+@media(pointer:coarse){.chat-translate{display:none}.chat-msg.has-translate .chat-text{padding-right:0}}
 .chat-translate:hover,.chat-translate:focus-visible{color:#5b5336;background:#efe7dc}
 .chat-translate svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .chat-menu{position:absolute;right:8px;top:36px;z-index:3;display:grid;min-width:176px;padding:5px;border:1px solid #e0d4c6;border-radius:12px;background:#fffdf5;box-shadow:0 10px 30px #3a2f1f26}
