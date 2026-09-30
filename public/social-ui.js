@@ -70,7 +70,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
    const max=Math.min(maxShare(myLevel()),stock(gift.item));
    return `<div class="sharing-gift">${itemPicker({kind:'gift',keys:giftKeys(),picked:gift.item,quantity:gift.quantity,max,withStock:true})}<div class="sharing-gift-actions"><button type="button" class="link-button" data-gift-cancel>Cancel</button><button type="button" class="primary-button" data-send-gift>Send ${gift.quantity} ${esc(ITEMS[gift.item].name)}</button></div></div>`;
   };
-  return `<div class="sharing-list">${social.members.map(m=>`<article class="sharing-row"><button type="button" class="sharing-person" data-player-profile="${esc(m.id)}" ${profiles()?'':'disabled'}>${portrait(m.id)}<span class="sharing-who"><strong>${esc(m.name)}</strong><span>${member(m.id)?`Level ${member(m.id).level}`:'Family member'}</span></span></button><div class="sharing-actions">${action('help',m.id,`Help · ${helpCoins(myLevel())}`,'coins',helpBlocked)}${today.done('gift',m.id)?'<button class="sharing-action" disabled>✓ Sent</button>':`<button class="sharing-action ${gift.to===m.id?'is-open':''}" data-gift-open="${esc(m.id)}" ${giftBlocked?'disabled':''} title="${esc(giftBlocked)}" aria-expanded="${gift.to===m.id}">${art('gift')}<span>Gift</span></button>`}</div></article>${composer(m)}`).join('')}</div>`;
+  return `<div class="sharing-list">${social.members.map(m=>`<article class="sharing-row"><button type="button" class="sharing-person" data-player-profile="${esc(m.id)}" ${profiles()?'':'disabled'}>${portrait(m.id)}<span class="sharing-who"><strong>${esc(m.name)}</strong><span>${member(m.id)?`Level ${member(m.id).level}`:'Family member'}</span></span></button><div class="sharing-actions">${action('help',m.id,'Help','coins',helpBlocked)}${today.done('gift',m.id)?'<button class="sharing-action" disabled>✓ Sent</button>':`<button class="sharing-action ${gift.to===m.id?'is-open':''}" data-gift-open="${esc(m.id)}" ${giftBlocked?'disabled':''} title="${esc(giftBlocked)}" aria-expanded="${gift.to===m.id}">${art('gift')}<span>Gift</span></button>`}</div></article>${composer(m)}`).join('')}</div>`;
  }
  function requests(today){
   const open=social.requests;
@@ -79,8 +79,9 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
    // Give what you have (30 Sep 2026): as many as you have, up to what the request still needs; the family fills it together.
    const mine=r.player_id===me(),have=stock(r.item),given=Number(r.given)||0,left=Math.max(0,r.quantity-given),give=Math.min(have,left),helpers=r.helpers?.length?r.helpers:r.fulfilled_by?[r.fulfilled_by]:[];
    const state_=r.fulfilled_by?`<span class="sharing-chip is-done">✓ ${helpers.includes(me())?'You helped':'Fulfilled'}</span>`:mine?'<span class="sharing-chip">Your request</span>':today.full('fulfill')?'<span class="sharing-chip">Daily limit reached</span>':`<button class="sharing-action is-primary" data-kind="fulfill" data-request="${esc(r.id)}" ${give<1?'disabled':''}>${give<1?'You have none':`Give ${give}`}</button>`;
-   const from=helpers.map(nameOf).join(', ');
-   const line=r.fulfilled_by?`From ${from}`:given?`${given} of ${r.quantity} in${mine?'':` · you have ${have}`}`:mine?'Waiting for your family':`You have ${have}`;
+   // Who filled it, without yourself in the list (the chip already says "You helped"; "From You" read oddly).
+   const others=helpers.filter(id=>id!==me()).map(nameOf).join(', ');
+   const line=r.fulfilled_by?(others?`From ${others}`:'All from you'):given?`${given} of ${r.quantity} in${mine?'':` · you have ${have}`}`:mine?'Waiting for your family':`You have ${have}`;
    const bar=given&&!r.fulfilled_by?`<span class="sharing-progress" aria-hidden="true"><i style="width:${Math.round(given/r.quantity*100)}%"></i></span>`:'';
    return `<article class="sharing-row">${art(r.item,'sharing-item')}<div class="sharing-who"><strong>${mine?'You need':`${esc(r.name)} needs`} ${r.quantity} ${esc(itemName(r.item))}</strong><span>${line}</span>${bar}</div>${state_}</article>`;
   }).join('')}</div>`;
@@ -95,11 +96,13 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   const heading=embedded?'':`<div class="dialog-heading"><div><span class="eyebrow">FARM FAMILY</span><h2 id="sharing-title">Daily sharing</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>${onBack?'<button class="back-button sharing-back" data-back><i data-lucide="chevron-left" data-line-icon></i>Back to Farm Family</button>':''}`;
   if(!social){root.innerHTML=heading+`<p class="sharing-empty">${esc(error||'Opening daily sharing…')}</p>`;bind();return;}
   const today=sharingToday(social,me());
-  root.innerHTML=heading+`<section class="sharing-intro">${art('family-sharing')}<div><strong>Share a little of your own farm</strong><span>Help and gifts arrive right away. Up to ${SHARE_LIMIT} of each a day, resets at midnight UTC.</span></div><dl class="sharing-today"><div><dt>Sent</dt><dd>${today.sent}</dd></div><div><dt>Received</dt><dd>${today.received}</dd></div></dl></section>`
-   +`<section class="sharing-section"><h3>Help your family</h3>${members(today)}</section>`
+  // 30 Sep 2026, cleaner: a slim intro with today's count, then what your family asks for (and your own request), then help and
+  // gifts for each farmer on one row; what Help costs is said once, not on every button.
+  root.innerHTML=heading+`<section class="sharing-intro">${art('family-sharing')}<div><strong>Share a little of your own farm</strong><span>Help and gifts arrive right away.</span></div><dl class="sharing-today"><div><dt>Sent</dt><dd>${today.sent}</dd></div><div><dt>Received</dt><dd>${today.received}</dd></div></dl></section>`
    +`<section class="sharing-section"><h3>Today’s requests</h3>${requests(today)}</section>`
    +ask()
-   +'<p class="sharing-rules">Opens at level 10, 48 hours after you started your farm and 24 hours in this family.</p><p class="sharing-feedback" role="status" data-status></p>';
+   +`<section class="sharing-section"><h3>Help your family</h3><p class="sharing-hint">Help gives ${helpCoins(myLevel())} of your coins; a gift is anything from your storage.</p>${members(today)}</section>`
+   +`<p class="sharing-rules">Up to ${SHARE_LIMIT} of each a day, reset at midnight UTC. Opens at level 10, 48 hours after you started your farm and 24 hours in this family.</p><p class="sharing-feedback" role="status" data-status></p>`;
   bind();
  }
  function bind(){

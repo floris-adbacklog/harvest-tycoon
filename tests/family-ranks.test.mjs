@@ -66,7 +66,7 @@ test('ranks and the crown on screen, and the database allows the new ranks',()=>
  const ui=read('public/family-ui.js');
  assert.match(ui,/actionButton\('family_rank',/);assert.match(ui,/memberId:b\.dataset\.memberId,rank:b\.dataset\.rank,/);
  assert.match(ui,/const canRemove=m=>f\.leader\|\|f\.manager&&!\['leader','coleader'\]\.includes\(m\.role\);/);
- assert.match(ui,/const invite=view\.family\.manager\?/);assert.match(ui,/offer\(player\)\{if\(!view\?\.family\?\.manager\|\|/);
+ assert.match(ui,/const manager=view\.family\.manager,closed=view\.family\.mode==='closed';/);assert.match(ui,/const invite=manager\?/);assert.match(ui,/offer\(player\)\{if\(!view\?\.family\?\.manager\|\|/);
  assert.match(read('public/family-invitations-ui.js'),/if\(!view\.family\?\.manager\)return '';/);
  assert.match(read('supabase/family-ranks.sql'),/check \(role in \('leader','coleader','honorary','member'\)\)/);
  assert.match(read('supabase/functions/farm-api/family-service.js'),/\(m\.role==='leader'\|\|m\.role==='coleader'\)/,'a new join request reaches the co-leaders too');

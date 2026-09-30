@@ -69,3 +69,22 @@ test('empty states are cards: the journal before your first harvest, and an empt
  assert.match(read('public/retention-ui.js'),/<div class="quest-empty journal-empty">\$\{art\(journalTab==='crops'\?'harvest'/);
  assert.match(read('src/leaderboard.js'),/box\.className='quest-empty leaderboard-empty';box\.innerHTML=`\$\{art\(rankArtKey\(category\)\)\}<h3>The valley is quiet<\/h3><p>Be the first farmer on this board\.<\/p>`/);
 });
+
+// Farm Family (30 Sep 2026): one job per tab, less text, no empty blocks, the same numbers once.
+test('Farm Family is cleaner: the week is the chest and the order, the tournament has its goods, members come first',async()=>{
+ const ui=read('public/family-ui.js'),tour=read('public/family-tournament.js'),social=read('public/social-ui.js'),css=read('public/family.css');
+ assert.doesNotMatch(ui,/tournamentLink|Grow something together|family-settings-header|A green dot means/);
+ assert.match(ui,/renderFamilyTournament\(\{view,now:farmNow\(\),emblem,rewards:rewardCards\(\),preview:prizePreview\(\),extra:extraGoods\(\)\}\)/,'Tournament goods live on the Tournament tab');
+ assert.match(ui,/aria-label="Family Order delivered"><\/progress>[^\n]*<details class="family-rewards-fold">/,'your rewards fold inside the order card');
+ assert.match(ui,/<p class="family-chest-how">Everything your family does on the farm fills it\. A new chest every Monday\.<\/p><ul class="family-chest-tiers">/,'how the chest fills sits in its fold');
+ assert.match(ui,/document\.querySelector\('#family-heading-emblem \.family-emblem'\)\?\.replaceWith\(/,'a new emblem shows in the window header as you pick it');
+ assert.doesNotMatch(tour,/family-prize-ladder|family-podium-stats|family-podium-empty/);
+ assert.match(tour,/<ol class="family-podium">\$\{Array\.from\(\{length:3\},\(_,i\)=>podiumRow\(t\.top\[i\],i\)\)\.join\(''\)\}<\/ol>/,'three places, always');
+ assert.match(tour,/<strong>\$\{num\(f\?f\.diamonds:prizes\[index\]\?\?0\)\}<\/strong>/,'an open place shows what it would win');
+ assert.match(tour,/<summary>How rewards work<\/summary>\$\{growth\}/);
+ const {renderSentInvitations}=await import('../public/family-invitations-ui.js');
+ assert.equal(renderSentInvitations({family:{manager:true},sentInvitations:[]},0,()=>''),'','no empty "Pending invitations"');
+ assert.ok(social.indexOf('<h3>Today’s requests</h3>')<social.indexOf('<h3>Help your family</h3>'),'requests first');
+ assert.match(social,/action\('help',m\.id,'Help','coins',helpBlocked\)/,'the cost of Help is said once, above the list');
+ assert.match(css,/\.family-open-row>\.pretty-select\{flex:none;width:210px\}/,'Who can join keeps its width');
+});
