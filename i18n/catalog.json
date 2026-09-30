@@ -4038,7 +4038,6 @@
 "Your level rewards":"public/progression-ui.js",
 "Your message":"public/feedback-ui.js",
 "Your message is with the Harvest Tycoon team.":"public/feedback-ui.js",
-"Your name, online status and public farming achievements appear here. Your diamonds and farm details stay private.":"src/ui.js",
 "Your neighbours":"public/farm-state.js",
 "Your next chapter":"public/economy-ui.js",
 "Your next production-building upgrade costs 50% less.":"public/boosts-ui.js",

@@ -63,7 +63,7 @@ test('the leaderboard shows the top 100, ten a page, and keeps the window quiet'
  assert.match(board,/jump\.textContent='Show';jump\.onclick=\(\)=>onPage\(mine\);/,'your own page, when you are in the top 100');
  assert.match(board,/small\.textContent=row\.player_id===playerId\?'You':'';/,'no "Level 160" under every name');
  assert.match(cloud,/if\(!quiet\|\|board\?\.category!==result\.category\)boardPage=0;board=result;drawBoard\(\);/,'a refresh keeps the page, a new board starts on page 1');
- assert.doesNotMatch(ui,/leaderboard-intro|A green dot means online now/);assert.match(read('public/retention.css'),/#leaderboard-dialog \.cloud-sync:has\(#cloud-status:empty\)\{display:none\}/);
+ assert.doesNotMatch(ui,/leaderboard-intro|A green dot means online now|cloud-privacy/,'no intro and no privacy footnote');assert.match(read('public/retention.css'),/#leaderboard-dialog \.cloud-sync:has\(#cloud-status:empty\)\{display:none\}/);
 });
 test('empty states are cards: the journal before your first harvest, and an empty board',()=>{
  assert.match(read('public/retention-ui.js'),/<div class="quest-empty journal-empty">\$\{art\(journalTab==='crops'\?'harvest'/);
