@@ -200,7 +200,7 @@ html:has(body[data-phase=authenticated]),body[data-phase=authenticated]{touch-ac
 .site-legal{align-items:center}
 .site-legal-button{min-height:0;height:auto;margin:0;line-height:inherit}
 .site-legal .footer-social{display:inline-flex;align-items:center}
-/* Inside the Facebook or Instagram app (28 Sep 2026): before the account form, one step to the phone's own browser (src/main.js browserGate). */
+/* Inside the Facebook, Instagram or TikTok app (28 Sep 2026): before the account form, one step to the phone's own browser (src/main.js browserGate). */
 .browser-gate{display:none;text-align:center}
 .account-card[data-gate]>:not(.card-top):not(.browser-gate){display:none!important}
 .account-card[data-gate]>.browser-gate{display:grid;justify-items:center;gap:10px;padding:6px 0 4px}

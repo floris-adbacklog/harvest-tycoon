@@ -3,7 +3,7 @@
 // browser. The farm lives on the account, so signing in there with the same account carries on where they left off.
 export const BROWSER_TIP_KEY='harvest-tycoon:browser-tip',BROWSER_TIP_DELAY=120000;
 export function inAppName(ua=''){
- return /Instagram/i.test(ua)?'Instagram':/Barcelona/i.test(ua)?'Threads':/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)?'Facebook':/musical_ly|BytedanceWebview/i.test(ua)?'TikTok':/Snapchat/i.test(ua)?'Snapchat':/LinkedInApp/i.test(ua)?'LinkedIn':'an app';
+ return /Instagram/i.test(ua)?'Instagram':/Barcelona/i.test(ua)?'Threads':/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)?'Facebook':/musical_ly|trill_|BytedanceWebview/i.test(ua)?'TikTok':/Snapchat/i.test(ua)?'Snapchat':/LinkedInApp/i.test(ua)?'LinkedIn':'an app';
 }
 // Android can hand the page to Chrome; an iPhone cannot be sent to Safari from here, so there the link is copied. (Safari on an
 // iPhone only shows reminders for a game added to the Home Screen, so the iPhone text does not promise them.)
@@ -40,9 +40,13 @@ function showBrowserTip({doc,win,storage}){
 // day, against 22 in 92 in a phone's own browser. So the sign-up card first offers Meta's in-app visitors the phone's own browser,
 // where they make their account: Android hands the page to Chrome (on the first visit by itself, once), an iPhone tries Safari
 // (x-safari-https, iOS 17 and later) and otherwise shows where the app's own "open in browser" is. "Play here instead" stays.
+// TikTok's app has the same step since its ads started (30 Sep 2026), but Android only moves to Chrome on a tap there: whether
+// TikTok hands an intent:// link on is not known yet, and a first visit must never land on an error page.
 export const ESCAPE_KEY='harvest-tycoon:browser-escape';
 export const META_APP=/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona/i;
 export const metaApp=(ua='')=>META_APP.test(ua);
+export const GATE_APP=/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona|musical_ly|trill_|BytedanceWebview/i;
+export const gateApp=(ua='')=>GATE_APP.test(ua);
 export const safariUrl=href=>`x-safari-${href}`;
 // The page itself, without an OAuth answer or error in it, and with a friend's invite code put back (invite-link.js keeps it on
 // this device only, and the phone's browser is another device as far as storage goes).

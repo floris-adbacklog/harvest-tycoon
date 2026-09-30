@@ -60,7 +60,7 @@ test('the screens: steps announce themselves, the finale opens once, a promise a
 
 test('inside Instagram, Facebook or TikTok: one tip to open the game in the phone\'s own browser',()=>{
  assert.equal(inAppName('Mozilla/5.0 (iPhone) Instagram 300.0'),'Instagram');assert.equal(inAppName('Mozilla/5.0 [FBAN/FBIOS;FBAV/400]'),'Facebook');
- assert.equal(inAppName('Mozilla/5.0 (Linux; Android 14) musical_ly_2024'),'TikTok');
+ assert.equal(inAppName('Mozilla/5.0 (Linux; Android 14) musical_ly_2024'),'TikTok');assert.equal(inAppName('Mozilla/5.0 (Linux; Android 14; wv) trill_370504'),'TikTok');
  assert.equal(chromeIntent('https://www.harvesttycoon.com/'),'intent://www.harvesttycoon.com/#Intent;scheme=https;package=com.android.chrome;end');
  assert.deepEqual([browserTipText('Android Instagram').action,browserTipText('iPhone Instagram').action],['Open in Chrome','Copy link']);
  assert.match(browserTipText('iPhone Instagram').text,/inside Instagram\. Open Harvest Tycoon in Safari so your farm is easy to find again\./);assert.match(browserTipText('Android FBAV').text,/Chrome so your farm is easy to find again and you get reminders/);

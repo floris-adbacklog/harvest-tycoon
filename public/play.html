@@ -54,6 +54,6 @@ try{var c=JSON.parse(localStorage.getItem('harvest-tycoon:cookies')||'null');if(
 </main>
 <div id="farm-host" hidden></div>
 <noscript><p>Enable JavaScript to sign in to Harvest Tycoon.</p></noscript>
-<script>try{var q=location.hash+'&'+location.search;if(!localStorage.getItem('harvest-tycoon:auth')&&!localStorage.getItem('harvest-tycoon:returning')&&!/access_token=|refresh_token=|[?&#]code=|type=|error/.test(q)){document.body.dataset.phase='unauthenticated';document.getElementById('loading-screen').hidden=true;document.getElementById('welcome').hidden=false;if(/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona/i.test(navigator.userAgent)&&localStorage.getItem('harvest-tycoon:browser-escape')!=='stay')document.querySelector('.account-card').setAttribute('data-gate','');}}catch(e){}</script>
+<script>try{var q=location.hash+'&'+location.search;if(!localStorage.getItem('harvest-tycoon:auth')&&!localStorage.getItem('harvest-tycoon:returning')&&!/access_token=|refresh_token=|[?&#]code=|type=|error/.test(q)){document.body.dataset.phase='unauthenticated';document.getElementById('loading-screen').hidden=true;document.getElementById('welcome').hidden=false;if(/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona|musical_ly|trill_|BytedanceWebview/i.test(navigator.userAgent)&&localStorage.getItem('harvest-tycoon:browser-escape')!=='stay')document.querySelector('.account-card').setAttribute('data-gate','');}}catch(e){}</script>
 <script type="module" src="/cloud/cloud.js"></script>
 </body></html>

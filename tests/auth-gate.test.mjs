@@ -250,6 +250,17 @@ test('on an iPhone the card tries Safari only on a tap; "Play here instead" is r
  assert.equal(storage['harvest-tycoon:browser-escape'],'stay');assert.equal(storage['harvest-tycoon:browser-tip'],'1');assert.equal(f.nodes.get('.account-card').attrs['data-gate'],undefined);
  const later=fixture({ua:IPHONE_IG,storage,location:{...page}});await settle();assert.equal(later.nodes.get('.account-card').attrs?.['data-gate'],false,'the sign-up form straight away');
 });
+// 30 Sep 2026: TikTok's app has the step too, but Android never leaves it by itself (not known yet whether TikTok passes intent:// on).
+const ANDROID_TT='Mozilla/5.0 (Linux; Android 14; SM-A546B Build/UP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0 Mobile Safari/537.36 trill_370504 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/trill app_version/37.5.4 ByteLocale/en BytedanceWebview/d8a21c6';
+const IPHONE_TT='Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 musical_ly_41.2.0 JsSdk/2.0 NetType/WIFI Channel/App Store ByteLocale/en Region/US BytedanceWebview/d8a21c6';
+test('inside TikTok the card offers the phone\'s browser too; Android goes to Chrome only on a tap',async()=>{
+ const storage={},f=fixture({ua:ANDROID_TT,storage,location:{...page,search:'?utm_source=tiktok&ttclid=E.C.P'}});await settle();
+ assert.equal(f.nodes.get('.account-card').attrs['data-gate'],true);assert.equal(f.nodes.get('gate-open').textContent,'Open in Chrome');
+ assert.equal(f.context.location.href,undefined,'no jump by itself');assert.equal(storage['harvest-tycoon:browser-escape'],'shown');
+ f.nodes.get('gate-open').onclick();assert.equal(f.context.location.href,'intent://www.harvesttycoon.com/play.html?utm_source=tiktok&ttclid=E.C.P#Intent;scheme=https;package=com.android.chrome;end','the ad\'s click id goes along');
+ const iphone=fixture({ua:IPHONE_TT,storage:{},location:{...page}});await settle();
+ assert.equal(iphone.nodes.get('.account-card').attrs['data-gate'],true);assert.equal(iphone.nodes.get('gate-open').textContent,'Open in Safari');assert.equal(iphone.context.location.href,undefined);
+});
 test('a phone browser, and every screen that is not sign-in or sign-up, never shows the browser step',async()=>{
  const chrome=fixture({ua:'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/129.0 Mobile Safari/537.36',storage:{},location:{...page}});await settle();
  assert.equal(chrome.nodes.get('.account-card').attrs?.['data-gate'],false);assert.equal(chrome.context.location.href,undefined);
@@ -258,9 +269,11 @@ test('a phone browser, and every screen that is not sign-in or sign-up, never sh
 });
 test('the page shows the browser step before the script loads, for the same apps, and keeps a friend\'s invite in the link',async()=>{
  const play=readFileSync(new URL('../public/play.html',import.meta.url),'utf8'),tip=await import('../src/browser-tip.js');
- assert.ok(play.includes(`if(${tip.META_APP}.test(navigator.userAgent)&&localStorage.getItem('${tip.ESCAPE_KEY}')!=='stay')document.querySelector('.account-card').setAttribute('data-gate','');`));
+ assert.ok(play.includes(`if(${tip.GATE_APP}.test(navigator.userAgent)&&localStorage.getItem('${tip.ESCAPE_KEY}')!=='stay')document.querySelector('.account-card').setAttribute('data-gate','');`));
  for(const ua of [ANDROID_FB,IPHONE_IG,'… [FBAN/FBIOS;FBAV/500.0]','… Barcelona 350.0'])assert.ok(tip.metaApp(ua),ua);
  for(const ua of ['Mozilla/5.0 (iPhone) Version/18.0 Mobile Safari/604.1','Mozilla/5.0 (Linux; Android 14) Chrome/129.0 Mobile Safari/537.36','… musical_ly'])assert.ok(!tip.metaApp(ua),ua);
+ for(const ua of [ANDROID_FB,IPHONE_IG,ANDROID_TT,IPHONE_TT])assert.ok(tip.gateApp(ua),ua);
+ for(const ua of ['Mozilla/5.0 (iPhone) Version/18.0 Mobile Safari/604.1','Mozilla/5.0 (Linux; Android 14) Chrome/129.0 Mobile Safari/537.36'])assert.ok(!tip.gateApp(ua),ua);
  assert.equal(tip.escapeTarget({origin:'https://www.harvesttycoon.com',pathname:'/play.html',search:'?code=abc&error=x&utm_campaign=eu'},'FARM2026'),'https://www.harvesttycoon.com/play.html?utm_campaign=eu&invite=FARM2026','no sign-in answer, the invite back in');
  assert.ok(/\.account-card\[data-gate\]>:not\(\.card-top\):not\(\.browser-gate\)\{display:none!important\}/.test(readFileSync(new URL('../public/welcome.css',import.meta.url),'utf8')));
  assert.match(readFileSync(new URL('../public/privacy.html',import.meta.url),'utf8'),/<code>harvest-tycoon:browser-escape<\/code>/);

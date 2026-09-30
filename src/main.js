@@ -1,7 +1,7 @@
 import {createFarmPresence} from './presence.js';
 import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError,socialProviders} from './supabase.js';
 import {OAUTH_KEY,providerName,oauthStartError,oauthReturnMessage,usableProviders,embeddedBrowser} from './social-login.js';
-import {scheduleBrowserTip,metaApp,gateText,escapeTarget,chromeIntent,safariUrl,ESCAPE_KEY,BROWSER_TIP_KEY} from './browser-tip.js';
+import {scheduleBrowserTip,metaApp,gateApp,gateText,escapeTarget,chromeIntent,safariUrl,ESCAPE_KEY,BROWSER_TIP_KEY} from './browser-tip.js';
 import {fetchLeaderboard} from './leaderboard.js';
 import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInvite} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
@@ -97,10 +97,10 @@ function setMode(next,focus=false){
  document.querySelectorAll('.account-tabs [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
  if(focus){document.querySelector('.account-card').scrollIntoView({behavior:'smooth',block:'start'});if(visible.length)focusField(inputId(visible[0]),{preventScroll:true});}
 }
-// Inside the Facebook or Instagram app, the sign-up card first offers the phone's own browser (src/browser-tip.js, 28 Sep 2026).
+// Inside the Facebook, Instagram or TikTok app, the sign-up card first offers the phone's own browser (src/browser-tip.js, 28 Sep 2026).
 let gateTimer=null;
 function browserGate(){
- const card=document.querySelector('.account-card'),ua=navigator.userAgent,on=metaApp(ua)&&store.get(ESCAPE_KEY)!=='stay';
+ const card=document.querySelector('.account-card'),ua=navigator.userAgent,on=gateApp(ua)&&store.get(ESCAPE_KEY)!=='stay';
  card.toggleAttribute('data-gate',on);if(!on)return;
  const text=gateText(ua),target=escapeTarget(location,pendingInvite(localStore)),help=$('gate-help');
  document.querySelectorAll('[data-gate-browser]').forEach(el=>el.textContent=text.browser);document.querySelectorAll('[data-gate-app]').forEach(el=>el.textContent=text.app);$('gate-open').textContent=text.action;
@@ -111,7 +111,7 @@ function browserGate(){
   gateTimer=setTimeout(()=>{if(document.hidden)return;help.textContent=text.help;help.hidden=false;if(!text.android)void navigator.clipboard?.writeText(target).catch(()=>{});},1500);
  };
  $('gate-stay').onclick=()=>{store.set(ESCAPE_KEY,'stay');store.set(BROWSER_TIP_KEY,'1');card.removeAttribute('data-gate');trackAuth('browser_gate',{reason:'stay'});};
- if(!store.get(ESCAPE_KEY)){store.set(ESCAPE_KEY,'shown');trackAuth('browser_gate',{reason:'shown'});if(text.android)leave();}
+ if(!store.get(ESCAPE_KEY)){store.set(ESCAPE_KEY,'shown');trackAuth('browser_gate',{reason:'shown'});if(text.android&&metaApp(ua))leave();}
 }
 function landing(message=''){connection.stop();dispose();setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');browserGate();$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
 function unavailable(message='Your farm is safe. Reconnect to continue.',{retrying=false}={}){dispose();phase('error');$('account-title').textContent='A little pause.';$('account-copy').hidden=false;$('account-copy').textContent=message;$('account-message').textContent=retrying?'We are trying again automatically.':'';$('account-form').hidden=true;$('confirm-panel').hidden=true;$('mode-switch-row').hidden=true;document.querySelector('.account-tabs').hidden=true;$('connection-actions').hidden=false;}

@@ -135,7 +135,7 @@ export async function recordSeen({admin,player,headers,timeZone,language,now=Dat
 export function deviceName(agent){
  const s=String(agent??'');if(!s)return null;
  const system=/iPad/.test(s)?'iPad':/iPhone|iPod/.test(s)?'iPhone':/Android/.test(s)?(/Mobile/.test(s)?'Android phone':'Android tablet'):/CrOS/.test(s)?'Chromebook':/Windows/.test(s)?'Windows':/Macintosh|Mac OS X/.test(s)?'Mac':/Linux/.test(s)?'Linux':'Other';
- const browser=/FBAN|FBAV|FB_IAB/.test(s)?'Facebook app':/Instagram/.test(s)?'Instagram app':/EdgA?\/|EdgiOS/.test(s)?'Edge':/SamsungBrowser/.test(s)?'Samsung Internet':/OPR\/|Opera/.test(s)?'Opera':/Firefox|FxiOS/.test(s)?'Firefox':/CriOS|Chrome\//.test(s)?'Chrome':/Safari\//.test(s)?'Safari':'Browser';
+ const browser=/FBAN|FBAV|FB_IAB/.test(s)?'Facebook app':/Instagram/.test(s)?'Instagram app':/musical_ly|trill_|BytedanceWebview/.test(s)?'TikTok app':/EdgA?\/|EdgiOS/.test(s)?'Edge':/SamsungBrowser/.test(s)?'Samsung Internet':/OPR\/|Opera/.test(s)?'Opera':/Firefox|FxiOS/.test(s)?'Firefox':/CriOS|Chrome\//.test(s)?'Chrome':/Safari\//.test(s)?'Safari':'Browser';
  return `${system} · ${browser}`;
 }
 const num=value=>Number.isFinite(Number(value))?Number(value):0;
