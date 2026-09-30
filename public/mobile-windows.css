@@ -72,7 +72,7 @@
  .avatar-level{font-size:10px}
 
  /* Buttons you tap are at least 40px high. */
- .wiki-quick button{min-height:40px;padding:6px 14px}
+ .wiki-quick a,.wiki-quick button{min-height:40px;padding:6px 14px}
  #sound-dialog .sound-preview{min-height:40px}
 }
 /* A touchscreen: no text field under 16px, or iOS zooms the whole game in when you tap it (26 Sep 2026: the chat felt jumpy). */

@@ -39,7 +39,7 @@ const number=n=>Number(n).toLocaleString('en-US');
 export function wikiTime(ms){
  const minutes=Math.round(ms/60000);if(minutes<60)return `${minutes} min`;
  const hours=Math.floor(minutes/60),rest=minutes%60;if(hours<24)return rest?`${hours} h ${rest} min`:`${hours} h`;
- const days=Math.floor(hours/24),h=hours%24;return h?`${days} d ${h} h`:`${days} d`;
+ const days=Math.floor(hours/24),h=hours%24,d=`${days} ${days===1?'day':'days'}`;return h?`${d} ${h} h`:d;
 }
 const itemName=key=>ITEMS[key]?.name??PRODUCTS[key]?.name??CROPS[key]?.name??key;
 const item=(key,count)=>`<span class="wiki-item">${art(key)}<span>${count>1?`${number(count)} `:''}${itemName(key)}</span></span>`;
@@ -78,7 +78,10 @@ function buildingBlock(h,key,recipes){
  const cost=key==='factory'?FACTORY_COST:BUILDING_COSTS[key];
  const rows=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return h.row(recipeLevel(id),[out?item(out,count):r.name,items(r.input),wikiTime(r.duration),out&&sellOf(out)?`${art('coins')}${number(sellOf(out))}`:'–',h.lvl(recipeLevel(id))]);});
  const cards=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return card({picture:out??key,title:out?`${count>1?`${number(count)} `:''}${itemName(out)}`:r.name,badge:h.lvl(recipeLevel(id)),locked:h.locked(recipeLevel(id)),stats:[wikiTime(r.duration),...(out&&sellOf(out)?[`Sells ${art('coins')}${number(sellOf(out))} each`]:[])],note:`Needs ${items(r.input)}`});});
- return `<section class="wiki-section wiki-building" id="building-${key}"><h3>${art(key)}${b.name}</h3><p class="wiki-meta">${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:' · ready from the start'}</p>${b.tagline?`<p>${b.tagline}</p>`:''}${key==='factory'?'<p>The biggest batches are shown. Yours are twice the level of the building that normally makes the good (its level for goods that take over an hour).</p>':''}${dual(table(['Makes','Needs','Time','Sells for (each)','Opens'],rows),cards)}</section>`;
+ // Closed, a building is one row: its picture, name, level and cost, and small pictures of what it makes; open, its recipes.
+ const made=[...new Set(recipes.map(([,r])=>Object.keys(r.output)[0]).filter(Boolean))];
+ return `<details class="wiki-section wiki-building" id="building-${key}"><summary><h3>${art(key)}${b.name}</h3><span class="wiki-meta">${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:' · ready from the start'}</span><span class="wiki-makes" aria-hidden="true">${made.slice(0,6).map(out=>art(out)).join('')}${made.length>6?`<small>+${made.length-6}</small>`:''}</span><i class="wiki-open-mark" aria-hidden="true"></i></summary>`
+  +`<div class="wiki-building-body">${b.tagline?`<p>${b.tagline}</p>`:''}${key==='factory'?'<p>The biggest batches are shown. Yours are twice the level of the building that normally makes the good (its level for goods that take over an hour).</p>':''}${dual(table(['Makes','Needs','Time','Sells for (each)','Opens'],rows),cards)}</div></details>`;
 }
 const BODIES={
  'getting-started'(h){
@@ -104,7 +107,7 @@ const BODIES={
   +facts([['settings','In the game','Settings, Farm app shows the steps for your device, or installs it in one tap. There you can also switch on full screen (Android and computers).']]));
  },
  crops(h){
-  const regrowing=Object.entries(CROPS).filter(([,c])=>c.regrow).map(([k])=>CROPS[k].name);
+  const regrowing=Object.keys(CROPS).filter(k=>CROPS[k].regrow).sort((a,b)=>cropLevel(a)-cropLevel(b));
   const sorted=Object.entries(CROPS).sort(([a],[b])=>cropLevel(a)-cropLevel(b)||CROPS[a].duration-CROPS[b].duration);
   const rows=sorted.map(([key,c])=>h.row(cropLevel(key),[
    item(key,1),h.lvl(cropLevel(key)),`${art('coins')}${number(c.cost)}`,wikiTime(c.duration),`${art('coins')}${number(c.sell)}`,number(c.xp),c.regrow?`every ${wikiTime(c.regrow)}`:'–',c.use??'–']));
@@ -112,7 +115,7 @@ const BODIES={
   const early=EARLY_FIELDS.map(f=>number(f.coins)).join(', ');
   return section('Planting','<p>Pick a crop in the seed shop, then tap an empty field. Quick crops are good while you play; longer ones grow while you are away.</p><p>Changed your mind? In the Farmhouse, under Your fields, you can remove any crop, ripe or not. The field is empty right away, but you get nothing back: no harvest, no XP and no seed coins.</p>')
   +section('Water and care',`<p>A harvest gives 1 crop. Water a field for 2 crops, water and care for 3. Both also make the crop grow faster, and doing both gives double XP.</p>`)
-  +section('Trees and bushes',`<p>${regrowing.join(', ')} grow back after you harvest them, so you only plant them once. Each holds one harvest at a time: pick it yourself to start the next one. Water and care it every time, for up to 3 fruit instead of 1. Nothing is picked while you are away.</p>`)
+  +section('Trees and bushes',`<ul class="wiki-chips wiki-regrow">${regrowing.map(k=>`<li>${art(k)}<span>${CROPS[k].name}</span>${h.lvl(cropLevel(k))}</li>`).join('')}</ul><p>These grow back after you harvest them, so you only plant them once. Each holds one harvest at a time: pick it yourself to start the next one. Water and care it every time, for up to 3 fruit instead of 1. Nothing is picked while you are away.</p>`)
   +section('More fields',`<p>You start with ${STARTER_FIELDS} fields. While you start out, each new level lets you open one more for coins (${early}). After that the Farmhouse adds fields, up to ${MAX_PLOTS} in total. See ${h.link('buildings')}.</p>`)
   +section('Crop mastery',`<p>${h.lvl(FEATURE_LEVELS.mastery)} Harvest the same crop often for a reward at every tier.</p>`+table(['Tier','Harvests','Reward'],MASTERY_TIERS.map(t=>`<tr><td>${t.name}</td><td>${number(t.target)}</td><td>${art('coins')}${number(t.coins)} · ${number(t.xp)} XP</td></tr>`)))
   +section('Silo research',`<p>${h.lvl(FEATURE_LEVELS.silo)} Five research steps, each paid with coins. Together they make crops grow up to 40% faster and seeds up to 25% cheaper. Crops already growing keep their time.</p>`+table(['Step','Price','Growing time','Seed price'],SILO_COSTS.map((cost,i)=>{const b=siloBonus(i+1),was=siloBonus(i),pct=n=>Math.round(n*100);return `<tr><td>${i+1}</td><td>${art('coins')}${number(cost)}</td><td>−${pct(b.growth-was.growth)}% <small>(−${pct(b.growth)}% in all)</small></td><td>−${pct(b.seeds-was.seeds)}% <small>(−${pct(b.seeds)}% in all)</small></td></tr>`;})))
@@ -320,15 +323,26 @@ export function wikiArticle(id,ctx={}){
 export const wikiHero=topic=>`<header class="wiki-hero" style="--tint:${TINTS[topic.id]??'#efe6d8'}"><div><h3>${topic.title}</h3><p>${topic.blurb}</p></div>${art(topic.art)}</header>`;
 // The jump bar: one chip per section of the page (a building's chip has its picture).
 export function wikiJump(article){
- const chips=[...article.html.matchAll(/<section class="wiki-section[^"]*" id="([^"]+)"><h3>(.*?)<\/h3>/g)].map(([,id,label])=>`<a href="#${id}" data-wiki-jump="${id}">${label}</a>`);
- return chips.length>1?`<nav class="wiki-jump" aria-label="On this page">${chips.join('')}</nav>`:'';
+ const chips=[...article.html.matchAll(/<(?:section|details) class="wiki-section[^"]*" id="([^"]+)">(?:<summary>)?<h3>(.*?)<\/h3>/g)].map(([,id,label])=>`<a href="#${id}" data-wiki-jump="${id}">${label}</a>`);
+ return chips.length>1?`<div class="wiki-jump-wrap"><nav class="wiki-jump" aria-label="On this page">${chips.join('')}</nav></div>`:'';
 }
 // In the game The Village shows from level WORLD_TWO_TEASER (a farmer below it never sees it); the website shows every topic.
 const topicShown=(id,ctx)=>id!=='village'||ctx.level==null||ctx.level>=WORLD_TWO_TEASER;
-export const wikiGroups=(ctx={},{featured=true}={})=>WIKI_GROUPS.map(g=>`<section class="wiki-group"><h3>${g.title}</h3><div class="wiki-tiles">${g.ids.filter(id=>topicShown(id,ctx)).map(id=>wikiTile(TOPIC[id],ctx).replace('class="wiki-tile"',featured&&id==='getting-started'?'class="wiki-tile is-featured"':'class="wiki-tile"')).join('')}</div></section>`).join('');
+// Getting started, while it is the one to read first, stands above its group's grid; the grid has two columns (one on a phone),
+// and an odd last tile takes the whole row, so a group never ends in a gap (wiki.css).
+export const wikiGroups=(ctx={},{featured=true}={})=>WIKI_GROUPS.map(g=>{
+ const ids=g.ids.filter(id=>topicShown(id,ctx)),first=featured&&ids[0]==='getting-started';
+ return `<section class="wiki-group"><h3>${g.title}</h3>${first?wikiTile(TOPIC[ids[0]],ctx,{featured:true}):''}<div class="wiki-tiles">${ids.slice(first?1:0).map(id=>wikiTile(TOPIC[id],ctx)).join('')}</div></section>`;
+}).join('');
 // "Read next" under a topic: a short row per topic, picture and title.
 export const wikiNext=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-next" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><i aria-hidden="true">›</i></a>`;};
-export const wikiTile=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-tile" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><span>${topic.blurb}</span></a>`;};
+export const wikiTile=(topic,ctx={},{featured=false}={})=>{const h=helpers(ctx);return `<a class="wiki-tile${featured?' is-featured':''}" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}${featured?' <b class="wiki-badge">Read first</b>':''}</strong><span>${topic.blurb}</span><i aria-hidden="true">›</i></a>`;};
+
+// The search box and its quick searches, the same in How to play and on the website. App comes first and goes straight to how to
+// install it: many players do not know there is one.
+export const WIKI_QUICK=Object.freeze([{label:'App',topic:'getting-started',anchor:'sec-play-it-as-an-app'},'Corn','Apples','Cheese','Tractor','VIP','Farm family']);
+export const wikiSearchBox=()=>`<label class="wiki-search">${art('guide')}<input type="search" id="wiki-search" placeholder="Search the wiki: corn, cheese, tractor…" aria-label="Search the wiki" autocomplete="off"></label>`;
+export const wikiQuick=(ctx={})=>{const h=helpers(ctx);return `<div class="wiki-quick" aria-label="Quick searches">${WIKI_QUICK.map(q=>typeof q==='string'?`<button type="button" data-wiki-query="${q}">${q}</button>`:`<a href="${h.href(q.topic)}#${q.anchor}" data-wiki-topic="${q.topic}" data-wiki-anchor="${q.anchor}">${q.label}</a>`).join('')}</div>`;};
 
 // Search: topic titles, blurbs and keywords, plus every crop, building and product by name (pointing to its topic).
 const INDEX=[
@@ -338,6 +352,8 @@ const INDEX=[
  ...Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').map(([k,b])=>({topic:worldTwoBuilding(k)?'village':'buildings',label:b.name,art:k,text:b.name.toLowerCase(),anchor:`building-${k}`})),
  ...Object.entries(RECIPES).flatMap(([,r])=>Object.keys(r.output).map(out=>({topic:worldTwoRecipe(r)?'village':'buildings',label:itemName(out),art:out,text:itemName(out).toLowerCase(),anchor:worldTwoRecipe(r)&&!worldTwoBuilding(r.building)?'sec-made-on-the-farm':`building-${r.building}`})))
 ];
+// Everything search looks through, for the website's search (scripts/build-wiki.mjs writes it to /wiki/search.json).
+export const wikiSearchIndex=()=>INDEX.map(entry=>({...entry,topicTitle:TOPIC[entry.topic].title}));
 export function wikiSearch(query){
  const words=String(query).toLowerCase().trim().split(/\s+/).filter(Boolean);if(!words.length)return [];
  const seen=new Set(),hits=[];

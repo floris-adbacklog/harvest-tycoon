@@ -27,7 +27,7 @@ test('the tables list every crop and every recipe',()=>{
  for(const c of Object.values(CROPS))assert.ok(crops.includes(c.name),c.name);
  const rows=(buildings.match(/<tr/g)??[]).length,tables=(buildings.match(/<table/g)??[]).length;
  assert.equal(rows-tables,FARM_RECIPES);
- assert.equal(wikiTime(120000),'2 min');assert.equal(wikiTime(5400000),'1 h 30 min');assert.equal(wikiTime(86400000),'1 d');
+ assert.equal(wikiTime(120000),'2 min');assert.equal(wikiTime(5400000),'1 h 30 min');assert.equal(wikiTime(86400000),'1 day');assert.equal(wikiTime(3*86400000),'3 days');
 });
 
 test('in the game what is above your level says from which level; the website just shows the level',()=>{
@@ -54,7 +54,7 @@ test('the website gets a page per topic, in the sitemap, linked from the footer'
  const out=mkdtempSync(join(tmpdir(),'wiki-'));
  writeFileSync(join(out,'sitemap.xml'),'<?xml version="1.0"?>\n<urlset>\n</urlset>\n');
  assert.equal(await buildWiki(out),WIKI_TOPICS.length+1);await buildWiki(out);
- const pages=readdirSync(join(out,'wiki'));assert.equal(pages.length,WIKI_TOPICS.length+1);
+ const pages=readdirSync(join(out,'wiki'));assert.equal(pages.filter(p=>p.endsWith('.html')).length,WIKI_TOPICS.length+1);assert.ok(pages.includes('search.json'));
  const crops=readFileSync(join(out,'wiki','crops.html'),'utf8');
  assert.match(crops,/<link rel="canonical" href="https:\/\/www\.harvesttycoon\.com\/wiki\/crops">/);
  // A shared wiki link shows the same share card as the home page (27 Sep 2026; it showed the square logo).
@@ -81,7 +81,7 @@ test('topic pages have a coloured header and a jump bar; phones get cards; the h
  assert.match(wikiGroups(),/class="wiki-tile is-featured" href="\/wiki\/getting-started"/);
  const css=read('public/wiki.css');
  assert.match(css,/\.wiki-dual \.wiki-table-wrap\{display:none\}\.wiki-dual \.wiki-cards\{display:grid\}/);
- assert.match(css,/\.wiki-jump\{position:sticky;top:var\(--wiki-sticky,0px\)/);
+ assert.match(css,/\.wiki-jump-wrap\{position:sticky;top:var\(--wiki-sticky,0px\)/);
 });
 
 test('the wiki states the current rules: the Starter Pack window and the day-long beginner boost',async()=>{
@@ -149,4 +149,45 @@ test('Play it as an app has an install button that shows only where the browser 
  assert.match(build,/<link rel="manifest" href="\/manifest\.webmanifest">/);assert.match(build,/\$\{body\.includes\('data-wiki-install'\)\?INSTALL_SCRIPT:''\}/);
  const {INSTALL_SCRIPT}=await import('../scripts/build-wiki.mjs');assert.match(INSTALL_SCRIPT,/beforeinstallprompt[\s\S]*row\.hidden=false[\s\S]*e\.prompt\(\)/);
  assert.match(read('public/wiki.css'),/\.wiki-install\{margin:0 0 20px\}/);assert.doesNotMatch(read('public/wiki.css'),/\.wiki-install\{[^}]*display/,'the hidden attribute keeps working');
+});
+
+// 30 Sep 2026, a cleaner wiki: a building is a closed row that opens to its recipes; the home has two even columns and "Read first"
+// as a real (translated) badge; the website has search; the jump bar fades while there is more; Trees and bushes shows pictures.
+test('a building is one closed row (picture, name, level, cost and what it makes) that opens to its recipes; going to it opens it',async()=>{
+ const {wikiArticle:article,wikiJump:jump}=await import('../public/wiki-content.js');
+ const buildings=article('buildings');
+ assert.match(buildings.html,/<details class="wiki-section wiki-building" id="building-dairy"><summary><h3>[^]*?Dairy Barn<\/h3><span class="wiki-meta">[^]*?<\/span><span class="wiki-makes" aria-hidden="true">[^]*?<\/span><i class="wiki-open-mark" aria-hidden="true"><\/i><\/summary><div class="wiki-building-body">/);
+ assert.doesNotMatch(buildings.html,/<details[^>]* open/,'every building starts closed');
+ assert.match(jump(buildings),/data-wiki-jump="building-dairy"/);assert.match(jump(buildings),/^<div class="wiki-jump-wrap"><nav class="wiki-jump" aria-label="On this page">/);
+ assert.match(article('village').html,/<details class="wiki-section wiki-building" id="building-mine">/,'The Village shares the rows');
+ const ui=read('public/wiki-ui.js');
+ assert.match(ui,/function reveal\(id\)\{const target=root\(\)\?\.querySelector\(`#\$\{CSS\.escape\(id\)\}`\);const row=target\?\.closest\('details'\);if\(row\)row\.open=true;return target;\}/);
+ assert.match(ui,/const target=anchor&&reveal\(anchor\);/);assert.match(ui,/reveal\(jump\.dataset\.wikiJump\)\?\.scrollIntoView\(/);
+ const {TOPIC_SCRIPT}=await import('../scripts/build-wiki.mjs');assert.match(TOPIC_SCRIPT,/row=el&&el\.closest\('details'\);if\(row&&!row\.open\)\{row\.open=true;/);assert.match(TOPIC_SCRIPT,/addEventListener\('hashchange',open\)/);
+});
+test('the home: Getting started above two even columns, an odd last tile across the row, and Read first as a badge that stays whole',async()=>{
+ const {wikiGroups}=await import('../public/wiki-content.js');const home=wikiGroups();
+ assert.match(home,/<section class="wiki-group"><h3>Start here<\/h3><a class="wiki-tile is-featured" href="\/wiki\/getting-started"[^]*?<b class="wiki-badge">Read first<\/b><\/strong>[^]*?<\/a><div class="wiki-tiles">/);
+ assert.match(wikiGroups({level:20},{featured:false}),/<h3>Start here<\/h3><div class="wiki-tiles"><a class="wiki-tile" href="\/wiki\/getting-started"/);
+ const css=read('public/wiki.css');
+ assert.match(css,/\.wiki-tiles\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px\}\n\.wiki-tiles>\.wiki-tile:last-child:nth-child\(odd\)\{grid-column:1\/-1\}/);
+ assert.match(css,/\.wiki-badge\{[^}]*white-space:nowrap\}/);assert.doesNotMatch(css,/content:'Read first'/,'a CSS text is never translated');
+ assert.match(css,/\.wiki-jump-wrap::after\{content:'';position:absolute;[^}]*\}\n\.wiki-jump-wrap\.is-scrollable:not\(\.at-end\)::after\{opacity:1\}/);
+});
+test('the website has the same search as the game: the box, the quick searches and /wiki/search.json',async()=>{
+ const out=mkdtempSync(join(tmpdir(),'wiki-search-'));await buildWiki(out);
+ const index=readFileSync(join(out,'wiki','index.html'),'utf8');
+ assert.match(index,/<input type="search" id="wiki-search" placeholder="Search the wiki: corn, cheese, tractor…"/);assert.match(index,/<div class="wiki-quick" aria-label="Quick searches"><a href="\/wiki\/getting-started#sec-play-it-as-an-app"/);
+ assert.match(index,/<div id="wiki-results" class="wiki-results" hidden><\/div>/);assert.match(index,/fetch\('\/wiki\/search\.json'\)/);
+ const data=JSON.parse(readFileSync(join(out,'wiki','search.json'),'utf8'));
+ const cheese=data.items.find(e=>e[0]==='Cheese');assert.deepEqual(cheese.slice(1,4),['Buildings and goods','/wiki/buildings#building-dairy','cheese']);assert.match(data.arts.cheese,/game-art/);
+ assert.ok(data.items.some(e=>e[2]==='/wiki/crops'&&e[0]==='Corn'));
+ assert.doesNotMatch(readFileSync(join(out,'wiki','crops.html'),'utf8'),/id="wiki-search"/,'the search is on the home page');
+});
+test('Trees and bushes shows each crop that grows back with its picture and level; days are written out',async()=>{
+ const {wikiArticle:article}=await import('../public/wiki-content.js');
+ const crops=article('crops').html;
+ assert.match(crops,/<ul class="wiki-chips wiki-regrow"><li>[^]*?<span>Apples<\/span><span class="wiki-level">Level 20<\/span><\/li>/);
+ assert.match(crops,/<p>These grow back after you harvest them, so you only plant them once\./);
+ assert.doesNotMatch(article('estate').html.replace(/<[^>]+>/g,' '),/\b\d+ d\b/);
 });

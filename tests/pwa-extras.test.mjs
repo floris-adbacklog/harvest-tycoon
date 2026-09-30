@@ -95,7 +95,7 @@ test('full screen: a switch in Settings where the browser can, remembered, back 
  assert.match(privacy,/<code>harvest-tycoon:fullscreen<\/code>/);assert.match(privacy,/It keeps one small page to show when there is no internet connection/);
 });
 test('the wiki explains the app, and App is the first quick search',()=>{
- assert.match(read('public/wiki-ui.js'),/const QUICK=\[\{label:'App',topic:'getting-started',anchor:'sec-play-it-as-an-app'\},'Corn'/);
+ assert.match(read('public/wiki-content.js'),/export const WIKI_QUICK=Object\.freeze\(\[\{label:'App',topic:'getting-started',anchor:'sec-play-it-as-an-app'\},'Corn'/);
  assert.match(read('public/wiki-content.js'),/section\('Play it as an app',facts\(\[/);
 });
 test('our Facebook page: a small icon in every logged-out footer, opening in a new tab',()=>{
