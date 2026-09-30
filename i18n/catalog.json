@@ -1163,6 +1163,7 @@
 "Email address":"public/farm.html",
 "Email is not available right now. Try again later.":"supabase/functions/farm-api/event-service.js",
 "Email me":"public/reminder-nudge.js",
+"Email me when my crops are ready. At most one email a day.":"public/email-check-ui.js",
 "Email reminders are on. You can change the time in Settings.":"public/reminder-nudge.js",
 "Email reminders could not be turned on. You can try again in Settings.":"public/reminder-nudge.js",
 "Empty":"public/estate-ui.js",

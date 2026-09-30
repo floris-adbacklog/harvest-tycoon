@@ -8,13 +8,22 @@ import {EMAIL_BONUS} from './farm-state.js';
 // moves the account (farm-api event-service.js sendEmailChange). The new address counts as confirmed, so its diamonds follow.
 export function createEmailCheck({doc=globalThis.document,bridge,email,canChange=()=>false,onDone,onChanged,timers=globalThis}){
  const dialog=doc.createElement('dialog');dialog.id='email-check-dialog';dialog.className='game-dialog email-check-dialog';dialog.setAttribute('aria-labelledby','email-check-title');doc.body.append(dialog);
- let sent=false,busy=false,waitUntil=0,timer=0,message='',news=null;
+ let sent=false,busy=false,waitUntil=0,timer=0,message='',news=null,digest=null;
  // Changing: 'form' (new address and password), 'code' (the code sent to the new address), or null. From Settings there is no way back to confirming.
  let change=null,changeOnly=false,newEmail='',typed={email:'',password:''};
  // News & offers by email: a separate yes that starts off (26 Sep 2026). Ticking it saves it right away, with the date, in the
  // same setting as Settings, Reminders (supabase/email-marketing-consent.sql). Confirming the email does not depend on it.
+ // The daily reminder email (30 Sep 2026): the moment a farmer proves the address is the moment to offer it, one tick, saved
+ // right away in the same setting as Settings, Reminders (email_digest). It also starts off; notify-hourly mails confirmed addresses only.
  const notices=()=>bridge?.notifications;
+ const digestBox=()=>digest===null?'':`<label class="email-check-news"><input type="checkbox" data-email-digest ${digest?'checked':''}><span>Email me when my crops are ready. At most one email a day.</span></label>`;
  const newsBox=()=>news===null?'':`<label class="email-check-news"><input type="checkbox" data-email-news ${news?'checked':''}><span>Send me news and offers by email. You can unsubscribe at any time.</span></label>`;
+ // A tick saves at once, keeping every other choice; if it does not save, the tick goes back and says why.
+ async function saveChoice(event,key,apply){
+  const on=event.target.checked;
+  try{const api=notices();await api.save({...(await api.get()),[key]:on});apply(on);}
+  catch(error){event.target.checked=!on;message=error?.message||'That did not save. Please try again.';render();}
+ }
  const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
  function render(){
   const wait=Math.max(0,Math.ceil((waitUntil-Date.now())/1000));
@@ -23,16 +32,13 @@ export function createEmailCheck({doc=globalThis.document,bridge,email,canChange
    +(sent?`<p>We sent a 6-digit code to <b>${esc(email())}</b>. Type it here and the diamonds are yours.</p><form class="email-check-form" data-email-form><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456" aria-label="The 6-digit code" data-email-code><button type="submit" class="primary-button" ${busy?'disabled':''}>Confirm</button></form><button type="button" class="link-button email-check-resend" data-email-send ${busy||wait?'disabled':''}>${wait?`Send a new code in ${wait}s`:'Send a new code'}</button>`
     :`<p>Confirm your email address once and get ${EMAIL_BONUS} diamonds. We send a 6-digit code to <b>${esc(email())}</b>.</p><button type="button" class="primary-button" data-email-send ${busy?'disabled':''}>Send code</button>`)
    +(canChange()?'<button type="button" class="link-button email-check-change" data-email-change>Wrong address? Change it</button>':'')
-   +newsBox()+`<p class="email-check-status" role="status">${esc(message)}</p>`;
+   +digestBox()+newsBox()+`<p class="email-check-status" role="status">${esc(message)}</p>`;
   dialog.querySelector('[data-email-close]').onclick=()=>dialog.close();
   dialog.querySelector('[data-email-change]')?.addEventListener('click',()=>{change='form';message='';render();dialog.querySelector('[data-new-email]')?.focus();});
   dialog.querySelector('[data-email-send]')?.addEventListener('click',send);
   dialog.querySelector('[data-email-form]')?.addEventListener('submit',event=>{event.preventDefault();checkCode();});
-  dialog.querySelector('[data-email-news]')?.addEventListener('change',async event=>{
-   const on=event.target.checked;
-   try{const api=notices();await api.save({...(await api.get()),emailMarketing:on});news=on;}
-   catch(error){event.target.checked=!on;message=error?.message||'That did not save. Please try again.';render();}
-  });
+  dialog.querySelector('[data-email-digest]')?.addEventListener('change',event=>saveChoice(event,'emailDigest',on=>{digest=on;}));
+  dialog.querySelector('[data-email-news]')?.addEventListener('change',event=>saveChoice(event,'emailMarketing',on=>{news=on;}));
   refreshArt();
  }
  function renderChange(){
@@ -84,7 +90,7 @@ export function createEmailCheck({doc=globalThis.document,bridge,email,canChange
  function open({change:toChange=false}={}){
   if(toChange){change='form';changeOnly=true;}else if(!dialog.open){change=null;changeOnly=false;}
   if(!dialog.open){message='';typed={email:'',password:''};render();dialog.showModal();}
-  notices()?.get?.().then(prefs=>{news=Boolean(prefs?.emailMarketing);if(dialog.open)render();}).catch(()=>{});
+  notices()?.get?.().then(prefs=>{news=Boolean(prefs?.emailMarketing);digest=Boolean(prefs?.emailDigest);if(dialog.open)render();}).catch(()=>{});
  }
  dialog.addEventListener('close',()=>{timers.clearInterval(timer);typed.password='';});
  return {open,dialog};

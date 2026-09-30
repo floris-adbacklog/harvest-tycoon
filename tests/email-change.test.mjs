@@ -78,3 +78,13 @@ test('the routes, the password check, the screens and the database column',()=>{
  assert.match(read('public/game.js'),/\$\('email-settings-change'\)\.onclick=\(\)=>emailCheckUI\.open\(\{change:true\}\)/);
  assert.match(read('src/admin-players.js'),/\.\.\.\('email' in p\?\[fact\('Email'/);assert.match(read('src/admin-dashboard.js'),/operation:'admin_email',playerId:id,email/);
 });
+
+// 30 Sep 2026: confirming the address is the moment to offer the daily reminder email: one tick, off until ticked, saved at once.
+test('the confirm pop-up offers the reminder email as a tick next to news and offers, saved in the same setting as Settings',()=>{
+ const ui=read('public/email-check-ui.js');
+ assert.match(ui,/<input type="checkbox" data-email-digest \$\{digest\?'checked':''\}><span>Email me when my crops are ready\. At most one email a day\.<\/span>/);
+ assert.match(ui,/\+digestBox\(\)\+newsBox\(\)\+/);
+ assert.match(ui,/addEventListener\('change',event=>saveChoice\(event,'emailDigest',on=>\{digest=on;\}\)\)/);
+ assert.match(ui,/await api\.save\(\{\.\.\.\(await api\.get\(\)\),\[key\]:on\}\)/,'every other choice is kept');
+ assert.match(ui,/digest=Boolean\(prefs\?\.emailDigest\)/,'it shows what is saved: off until ticked');
+});
