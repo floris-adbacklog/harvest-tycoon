@@ -140,3 +140,13 @@ test('The Village has its own topic: every World II recipe and the steps past le
  assert.doesNotMatch(article('buildings',{level:40}).html,/master tools/,'the Buildings topic mentions it only from level 90');
  assert.doesNotMatch(article('quests').html,/Lumber Camp|Packed lunch/,'the level list stays on the farm');
 });
+
+// 30 Sep 2026: an Install the app button under the steps, only where one tap installs it (in the game and on the website).
+test('Play it as an app has an install button that shows only where the browser can install in one tap',async()=>{
+ const content=read('public/wiki-content.js'),ui=read('public/wiki-ui.js'),build=read('scripts/build-wiki.mjs');
+ assert.match(content,/<p class="wiki-install" data-wiki-install-row hidden><button type="button" class="wiki-install-button" data-wiki-install>Install the app<\/button><\/p>/);
+ assert.match(ui,/row\.hidden=pwa\(\)\?\.state\?\.\(\)\.kind!=='prompt'/);assert.match(ui,/pwa\(\)\?\.install\?\.\(\)/);assert.match(ui,/stickyOffset\(\);showInstall\(el\);/);
+ assert.match(build,/<link rel="manifest" href="\/manifest\.webmanifest">/);assert.match(build,/\$\{body\.includes\('data-wiki-install'\)\?INSTALL_SCRIPT:''\}/);
+ const {INSTALL_SCRIPT}=await import('../scripts/build-wiki.mjs');assert.match(INSTALL_SCRIPT,/beforeinstallprompt[\s\S]*row\.hidden=false[\s\S]*e\.prompt\(\)/);
+ assert.match(read('public/wiki.css'),/\.wiki-install\{margin:0 0 20px\}/);assert.doesNotMatch(read('public/wiki.css'),/\.wiki-install\{[^}]*display/,'the hidden attribute keeps working');
+});

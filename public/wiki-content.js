@@ -98,6 +98,9 @@ const BODIES={
   +section('Play it as an app',facts([
    ['farm','Why the app','One tap from your home screen, without the browser bar. Reminders when your farm needs you, a number on the icon for new messages, and press and hold the icon for Chat, Daily gift and the leaderboard.']
   ])+'<ul class="wiki-list wiki-app-steps"><li><strong>Android:</strong> in Chrome, tap the menu (⋮) and choose “Install app” or “Add to Home screen”.</li><li><strong>iPhone and iPad:</strong> in Safari, tap Share, then “Add to Home Screen”, then “Add”.</li><li><strong>Computer:</strong> in Chrome or Edge, click the install icon at the right of the address bar.</li></ul>'
+  // Install the app (30 Sep 2026): one tap where the browser can install it (Android, Chrome and Edge on a computer). Shown by
+  // public/wiki-ui.js in the game and by a small script on the website (scripts/build-wiki.mjs); hidden elsewhere, where the steps say how.
+  +'<p class="wiki-install" data-wiki-install-row hidden><button type="button" class="wiki-install-button" data-wiki-install>Install the app</button></p>'
   +facts([['settings','In the game','Settings, Farm app shows the steps for your device, or installs it in one tap. There you can also switch on full screen (Android and computers).']]));
  },
  crops(h){

@@ -1865,6 +1865,7 @@
 "Ingredients are used when you start.":"public/economy-ui.js",
 "Instagram":"src/browser-tip.js",
 "Install app":"public/farm.html",
+"Install the app":"public/wiki-content.js",
 "Instant harvest":"public/farm-state.js",
 "Interactive farm. Use Tab to move between fields, and Enter to work a field.":"public/game.js",
 "Invalid checkout destination.":"src/main.js",

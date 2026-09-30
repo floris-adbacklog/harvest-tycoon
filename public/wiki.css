@@ -47,6 +47,11 @@
 .wiki-list{margin:0 0 10px;padding-left:20px;font-size:14.5px;line-height:1.6}
 /* How to install the app (Getting started): between two fact cards, with room around it and between the steps. */
 .wiki-app-steps{display:grid;gap:10px;margin:20px 0}
+/* Install the app: only where one tap installs it (public/wiki-ui.js, scripts/build-wiki.mjs); the same brown button as the game. */
+.wiki-install{margin:0 0 20px}
+.wiki-install-button{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#61573f;border:1px solid #504833;color:#fffdf0;font:inherit;font-size:14px;font-weight:650;border-radius:11px;padding:13px 20px;box-shadow:0 3px 0 #443d2b;cursor:pointer}
+.wiki-install-button:hover:not(:disabled){background:#6d6247}
+.wiki-install-button:disabled{opacity:.6;cursor:default}
 .wiki-level{display:inline-block;padding:2px 8px;border-radius:999px;background:#e6efdc;color:#42632e;font-size:11.5px;font-weight:800;white-space:nowrap;vertical-align:1px}
 .wiki-level.is-locked{background:#f1ebe2;color:#8a7a5a}
 .wiki-loop{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 0 10px;padding:12px;border-radius:14px;background:#f7f0e3;list-style:none}

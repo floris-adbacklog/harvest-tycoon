@@ -12,6 +12,10 @@ const QUICK=[{label:'App',topic:'getting-started',anchor:'sec-play-it-as-an-app'
 const quickChip=q=>typeof q==='string'?`<button type="button" data-wiki-query="${q}">${q}</button>`:`<button type="button" data-wiki-topic="${q.topic}" data-wiki-anchor="${q.anchor}">${q.label}</button>`;
 
 function root(){return document.getElementById('help-content');}
+// Install the app (Getting started): the install prompt belongs to the top-level page (src/pwa.js, window.harvestPwa), like the
+// Farm app block in Settings. The button shows only where one tap installs it.
+const pwa=()=>{try{return window.parent?.harvestPwa??null;}catch{return null;}};
+function showInstall(el){const row=el?.querySelector('[data-wiki-install-row]');if(row)row.hidden=pwa()?.state?.().kind!=='prompt';}
 function ctx(){return {level:farm?levelOf(farm):null,href:id=>`#wiki-${id}`};}
 function scrollTop(){const dialog=root()?.closest('dialog');if(dialog)dialog.scrollTop=0;}
 // On a phone the pop-up's title bar stays at the top; the jump bar sits just below it.
@@ -32,14 +36,16 @@ function home(){
 function topic(id,anchor=''){
  const el=root(),article=wikiArticle(id,ctx());if(!el||!article)return home();
  el.innerHTML=`<div class="wiki" data-wiki-view="${id}"><button type="button" class="small-button wiki-back" data-wiki-home>‹ All topics</button>${wikiHero(article)}${wikiJump(article)}<article class="wiki-article">${article.html}</article><section class="wiki-related"><h3>Read next</h3><div class="wiki-next-list">${article.related.map(t=>wikiNext(t,ctx())).join('')}</div></section></div>`;
- refreshArt();stickyOffset();
+ refreshArt();stickyOffset();showInstall(el);
  const target=anchor&&el.querySelector(`#${CSS.escape(anchor)}`);
  if(target)target.scrollIntoView({block:'start'});else scrollTop();
 }
 
 function bind(){
  if(bound||!root())return;bound=true;
+ pwa()?.subscribe?.(()=>showInstall(root()));
  root().addEventListener('click',event=>{
+  const install=event.target.closest('[data-wiki-install]');if(install){install.disabled=true;Promise.resolve(pwa()?.install?.()).catch(()=>{}).finally(()=>{install.disabled=false;showInstall(root());});return;}
   const back=event.target.closest('[data-wiki-home]');if(back){event.preventDefault();home();scrollTop();return;}
   const quick=event.target.closest('[data-wiki-query]');if(quick){const input=root().querySelector('#wiki-search');input.value=quick.dataset.wikiQuery;input.dispatchEvent(new Event('input'));input.focus();return;}
   const jump=event.target.closest('[data-wiki-jump]');if(jump){event.preventDefault();root().querySelector(`#${CSS.escape(jump.dataset.wikiJump)}`)?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});return;}
