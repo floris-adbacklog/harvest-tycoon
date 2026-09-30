@@ -36,11 +36,11 @@ export function familyProfileAction(p){
  return {note:p.mode==='closed'?'This family is not taking new farmers.':'Invite only: the leader or a co-leader invites farmers by name.'};
 }
 
-// 30 Sep 2026, cleaner: Join, Ask to join or Open your family right under the family's name, the numbers in one compact grid,
-// and Recent tournaments only once there is one.
+// 30 Sep 2026, cleaner: Join, Ask to join or Open your family right under the family's name; this week (chest points, tournament
+// place) on the level card and the four all-time numbers as compact tiles; Recent tournaments only once there is one.
 export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
  const s=p.standing,next=s.next,progress=next?Math.min(100,Math.round(s.tiers/next*100)):100;
- const tile=(picture,value,label)=>`<div class="family-profile-stat">${art(picture)}<strong>${value}</strong><span>${label}</span></div>`;
+ const tile=(picture,value,label)=>`<div class="family-profile-stat">${art(picture)}<div><strong>${value}</strong><span>${label}</span></div></div>`;
  const member=m=>`<article class="family-member"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId)}" ${profiles?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online':'Offline'}"></span></span><span class="family-member-copy"><strong>${esc(m.username)}${vipBadge(m.vipExpiresAt,now)}${rankChip(m)}</strong><small>Level ${num(m.level)}</small></span>${profiles?'<span class="family-sr-only">Open profile</span>':''}</button></article>`;
  const action=familyProfileAction(p);
  return `<section class="family-profile-hero">
@@ -53,14 +53,13 @@ export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
   <div><strong>Level ${s.level}</strong><span>${next?`${num(s.tiers)} of ${num(next)} chest tiers to level ${s.level+1}`:'The highest family level'}</span></div>
   <span class="family-profile-bar" aria-hidden="true"><i style="width:${progress}%"></i></span>
   ${s.bonus?`<small>+${Math.round(s.bonus*100)}% on Family Chest and Family Order rewards</small>`:'<small>Each level adds 10% to Family Chest and Family Order rewards.</small>'}
+  <div class="family-profile-week"><span>${art('family-chest-wood')}${num(p.thisWeek.chestPoints)} chest points this week</span><span>${art('family-tournament')}${p.thisWeek.rank?`In the tournament now: #${p.thisWeek.rank}`:'Not in the tournament yet'}</span></div>
  </section>
  <section class="family-profile-stats" aria-label="How this family has done">
   ${tile('family-tournament',num(p.stats.wins),p.stats.wins===1?'Tournament won':'Tournaments won')}
   ${tile('trophy',num(p.stats.podiums),'Podium places')}
   ${tile('family-chest-gold',num(p.stats.chestTiers),'Chest tiers opened')}
   ${tile('family-weekly-order',num(p.stats.orders),'Family Orders done')}
-  ${tile('family-chest-wood',num(p.thisWeek.chestPoints),'Chest points this week')}
-  ${tile('family-tournament',p.thisWeek.rank?`#${p.thisWeek.rank}`:'—',p.thisWeek.rank?'In the tournament now':'Not in the tournament yet')}
  </section>
  <section class="family-profile-members"><h3>Farmers</h3><div class="family-member-list">${p.members.map(member).join('')}</div></section>
  ${p.recent.length?`<section class="family-profile-recent"><h3>Recent tournaments</h3>${p.recent.map(r=>`<div class="family-list-row"><b class="family-rank">${rankArt(r.rank)}</b><div><strong>${placeLabel(r.rank)}</strong><span>Week of ${weekOf(r.week)} · ${num(r.points)} points</span></div></div>`).join('')}</section>`:''}

@@ -92,6 +92,8 @@ test('profiles are cleaner: a family\'s action right under its name, the name on
  const family=read('public/family-profile.js'),player=read('src/player-profiles.js');
  assert.ok(family.indexOf('<div class="family-profile-actions">')<family.indexOf('<section class="family-profile-level"'),'Join or Open your family comes first');
  assert.match(family,/\$\{p\.recent\.length\?`<section class="family-profile-recent">/,'no empty Recent tournaments');
+ assert.match(family,/<div class="family-profile-week"><span>\$\{art\('family-chest-wood'\)\}\$\{num\(p\.thisWeek\.chestPoints\)\} chest points this week<\/span>/,'this week sits on the level card');
+ assert.doesNotMatch(family,/'Chest points this week'\)/,'and not again as a tile');
  assert.doesNotMatch(player,/FARMER OF THE VALLEY|'s profile`|Online status is based on activity/);
  assert.match(player,/\$\{self\?vipBadge\(player\.vipExpiresAt,now,true\):''\}/,'the VIP time left only on your own profile');
  assert.match(read('public/player-profiles.css'),/\.farmer-profile-status:empty\{display:none\}/);

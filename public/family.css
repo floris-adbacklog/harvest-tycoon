@@ -394,4 +394,13 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 .family-create-fold .family-create-grid{margin-bottom:0}
 /* Family profile (30 Sep 2026): the action right under the family, the six numbers three to a row on a phone too. */
 .family-profile-actions:empty{display:none}
-@media(max-width:600px){.family-profile-dialog .family-profile-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.family-profile-stat{padding:10px 5px}.family-profile-stat>.game-art{width:30px;height:30px}.family-profile-stat strong{font-size:18px}}
+/* This week on the level card; the four all-time numbers as tiles with the picture beside the number, two to a row (the profile window is narrow). */
+.family-profile-week{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:4px;padding-top:10px;border-top:1px solid #efe8d9}
+.family-profile-week span{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#4b513d}
+.family-profile-week .game-art{width:22px;height:22px;flex:none}
+.family-profile-dialog .family-profile-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.family-profile-dialog .family-profile-stat{display:flex;align-items:center;justify-items:start;gap:8px;padding:10px;text-align:left}
+.family-profile-dialog .family-profile-stat>.game-art{width:30px;height:30px;flex:none}
+.family-profile-dialog .family-profile-stat>div{display:grid;gap:2px;min-width:0}
+.family-profile-dialog .family-profile-stat strong{font-size:18px}
+
