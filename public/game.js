@@ -736,7 +736,8 @@ function resize(){
   // The whole-village view (the scan button) frames all of it, as measured when it loaded (villageFrame). The fog moves out with
   // the view, so zooming out never hides the far side.
   const whole=viewMode==='overview'&&villageFrame;
-  const villageSpan=(whole?Math.max(villageFrame.height,villageFrame.width/aspect):Math.max(44,50/aspect))/zoom,villageShift=!mobile?hudShift*villageSpan/height:0;camera.left=-villageSpan*aspect/2-villageShift;camera.right=villageSpan*aspect/2-villageShift;camera.top=villageSpan/2;camera.bottom=-villageSpan/2;
+  const across=mobile?50:62*(width>2*hudShift?width/(width-2*hudShift):1);   // the places' width, and on a computer the side tools' share and room for their names
+  const villageSpan=(whole?Math.max(villageFrame.height,villageFrame.width/aspect):Math.max(44,across/aspect))/zoom,villageShift=!mobile?hudShift*villageSpan/height:0;camera.left=-villageSpan*aspect/2-villageShift;camera.right=villageSpan*aspect/2-villageShift;camera.top=villageSpan/2;camera.bottom=-villageSpan/2;
   // Both views look at the middle of the village's places (the Lumber Camp on the left, the Mine and the Smithy on the right).
   focus=(villageFrame?villageFrame.focus.clone():new THREE.Vector3(4,0,-9)).add(new THREE.Vector3(pan+panDepth,0,-pan+panDepth));
   if(scene.fog){scene.fog.near=65+villageSpan*.9;scene.fog.far=65+villageSpan*2.6;}
