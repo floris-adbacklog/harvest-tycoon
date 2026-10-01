@@ -4,10 +4,13 @@
 // READY lists the languages that are translated, like public/languages.js (a test keeps them the same).
 (function(){
  var READY=' cs de es fr id hu nl pt tr ru uk hi ja ';
+ var RTL=' ar ';
  try{
   var root=document.documentElement,saved=localStorage.getItem('harvest-tycoon:language'),code=saved||'';
   if(!saved){var tags=navigator.languages||[navigator.language];for(var i=0;i<tags.length;i++){var c=String(tags[i]||'').slice(0,2).toLowerCase();if(c==='en'||READY.indexOf(' '+c+' ')>=0){code=c;break;}}}
   if(!code||code==='en'||READY.indexOf(' '+code+' ')<0)return;
+  // Arabic reads from right to left: the whole page turns before it is drawn (public/languages.js RTL_LANGUAGES).
+  root.lang=code;if(RTL.indexOf(' '+code+' ')>=0)root.dir='rtl';
   var style=document.createElement('style');style.textContent='.i18n-wait body{visibility:hidden}body{-webkit-hyphens:auto;hyphens:auto}';document.head.appendChild(style);
   root.classList.add('i18n-wait');
   window.harvestI18n={code:code,load:fetch('/i18n/'+code+'.json').then(function(r){if(!r.ok)throw new Error(String(r.status));return r.json();})};

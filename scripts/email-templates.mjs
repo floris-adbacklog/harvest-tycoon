@@ -5,7 +5,7 @@
 // Only a small, safe part of Go templates is used: printf, eq, if / else if / end and variables, so a missing language never
 // breaks a mail. tests/email-templates.test.mjs renders every language with a stand-in for exactly that part.
 import {writeFileSync} from 'node:fs';
-import {COPY,TAG,TEMPLATES} from '../supabase/functions/auth-email/texts.js';
+import {COPY,TAG,TEMPLATES,RTL} from '../supabase/functions/auth-email/texts.js';
 export {TEMPLATES};
 const FIELDS=['title','pre','intro','button','copy','foot','tag'];
 const q=text=>{if(/["\\`{}]/.test(text))throw Error(`Not allowed in a template string: ${text}`);return `"${text}"`;};
@@ -14,15 +14,15 @@ function variables(texts){
  const all=code=>({...texts[code],copy:COPY[code],tag:TAG[code]});
  const set=(code,op)=>FIELDS.map(f=>`{{- $${f} ${op} ${q(all(code)[f])} -}}`).join('\n');
  const others=Object.keys(texts).filter(code=>code!=='en');
- return `{{- $l := printf "%v" .Data.language -}}\n{{- $lang := "en" -}}\n${set('en',':=')}\n`
-  +others.map((code,i)=>`{{- ${i?'else if':'if'} eq $l "${code}" -}}\n{{- $lang = "${code}" -}}\n${set(code,'=')}\n`).join('')+'{{- end -}}\n';
+ return `{{- $l := printf "%v" .Data.language -}}\n{{- $lang := "en" -}}\n{{- $dir := "ltr" -}}\n${set('en',':=')}\n`
+  +others.map((code,i)=>`{{- ${i?'else if':'if'} eq $l "${code}" -}}\n{{- $lang = "${code}" -}}\n${RTL.includes(code)?'{{- $dir = "rtl" -}}\n':''}${set(code,'=')}\n`).join('')+'{{- end -}}\n';
 }
 // The subject is the same in every language: Supabase allows at most 255 characters there, too few for 14 languages. The inbox
 // shows the preview line ($pre) beside it, and that one is in the farmer's language.
 export const SUBJECTS=Object.freeze({'confirm-signup':'🌱 Harvest Tycoon','reset-password':'🔑 Harvest Tycoon'});
 export function templateHtml(texts){
  return `${variables(texts)}<!doctype html>
-<html lang="{{ $lang }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ $title }}</title></head>
+<html lang="{{ $lang }}" dir="{{ $dir }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ $title }}</title></head>
 <body style="margin:0;padding:0;background:#f3e8e0;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f3e8e0;">{{ $pre }}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3e8e0;padding:28px 12px;">

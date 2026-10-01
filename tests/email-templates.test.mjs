@@ -56,7 +56,7 @@ test('each template renders in the account\'s language, and in English when it i
   for(const code of Object.keys(texts)){
    const out=render(html,{ConfirmationURL:url,Data:{language:code}});
    assert.ok(out.startsWith('<!doctype html>'),`${name} ${code}: nothing before the doctype`);
-   assert.ok(out.includes(`<html lang="${code}">`),`${name} ${code}`);
+   assert.ok(out.includes(`<html lang="${code}" dir="${code==='ar'?'rtl':'ltr'}">`),`${name} ${code}`);
    assert.ok(out.includes(`>${texts[code].title}</h1>`),`${name} ${code}`);
    assert.ok(out.includes(`>${texts[code].button}</a>`),`${name} ${code}`);
    assert.equal(out.split(url).length-1,3,'the link is in the button and twice in the copy line');

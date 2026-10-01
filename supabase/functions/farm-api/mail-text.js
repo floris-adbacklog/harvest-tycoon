@@ -43,8 +43,13 @@ const CODE_TEXTS={
   text:c=>`Harvest Tycoon में अपना ईमेल पक्का करने का कोड: ${c}\n\nइसे 30 मिनट के अंदर गेम में डालें। अगर आपने यह नहीं माँगा था, तो इस ईमेल को अनदेखा कर दें।`},
  ja:{subject:c=>`Harvest Tycoonの確認コード：${c}`,title:'Harvest Tycoonの確認コード',heading:'メールアドレスの確認',intro:'メールアドレスを確認するには、ゲームでこのコードを入力してください：',valid:'コードの有効期限は30分です。',
   footer:'このメールは、このアドレスでHarvest Tycoonの確認コードがリクエストされたためお送りしています。心当たりがない場合は、このメールを無視してください。',
-  text:c=>`Harvest Tycoonのメールアドレス確認コード：${c}\n\n30分以内にゲームで入力してください。心当たりがない場合は、このメールを無視してください。`}
+  text:c=>`Harvest Tycoonのメールアドレス確認コード：${c}\n\n30分以内にゲームで入力してください。心当たりがない場合は、このメールを無視してください。`},
+ ar:{subject:c=>`رمز Harvest Tycoon الخاص بك: ${c}`,title:'رمز Harvest Tycoon الخاص بك',heading:'أكّد بريدك الإلكتروني',intro:'اكتب هذا الرمز في اللعبة لتأكيد بريدك الإلكتروني:',valid:'الرمز صالح لمدة 30 دقيقة.',
+  footer:'وصلتك هذه الرسالة لأن شخصًا ما طلب رمزًا في Harvest Tycoon بهذا العنوان. إن لم تكن أنت، يمكنك تجاهلها.',
+  text:c=>`رمزك لتأكيد بريدك الإلكتروني في Harvest Tycoon: ${c}\n\nاكتبه في اللعبة خلال 30 دقيقة. إن لم تطلبه، يمكنك تجاهل هذه الرسالة.`}
 };
+// Languages that read from right to left: their emails run right to left (dir="rtl").
+export const RTL_MAIL=Object.freeze(['ar']);
 export function codeTexts(language){return {...(CODE_TEXTS[language]??CODE_TEXTS.en),language:CODE_TEXTS[language]?language:'en'};}
 // The farmer's game language, or null. A failed look-up never stops the email: it is then written in English.
 export async function playerLanguage(admin,player){

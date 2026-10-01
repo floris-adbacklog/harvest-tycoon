@@ -8,7 +8,7 @@
  /* The boosts pill sits just under the top-right buttons, clear of the Beginner guide card below it (26 Sep 2026). */
  .active-boosts{top:92px;padding:4px 11px;border-radius:999px}
  .side-tools{max-height:calc(100dvh - 184px)}
- .scene-controls{flex-direction:row;top:auto;right:20px;bottom:20px}
+ .scene-controls{flex-direction:row;top:auto;inset-inline-end:20px;bottom:20px}
  .beginner-card{max-height:calc(100dvh - 215px)}
  /* The live farm map takes the logo's place (public/minimap.js). */
  .topbar .brand{width:210px;height:126px}
@@ -26,7 +26,7 @@
 }
 /* The logo, small in the bottom-left corner, on screens tall enough that it never meets the side tools. */
 @media(min-width:901px) and (min-height:760px){
- .topbar .brand>img{display:block;position:fixed;left:22px;top:auto;bottom:14px;width:118px;height:118px;opacity:.96;pointer-events:none}
+ .topbar .brand>img{display:block;position:fixed;inset-inline-start:22px;top:auto;bottom:14px;width:118px;height:118px;opacity:.96;pointer-events:none}
 }
 @media(min-width:901px) and (max-width:1040px) and (min-height:551px),(min-width:901px) and (max-width:1040px) and (pointer:fine){
  .scene-controls{bottom:124px}

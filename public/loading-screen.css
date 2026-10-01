@@ -11,7 +11,7 @@
 .farm-loading progress::-moz-progress-bar{border-radius:99px;background:linear-gradient(90deg,#e9b53f,#ffe08a)}
 .farm-loading .farm-loading-status{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:10px 2px 0;color:#fffdf2eb;font:600 13.5px/1.4 'DM Sans',sans-serif;text-shadow:0 1px 3px #0000008c}
 .farm-loading #load-percent,.farm-loading #loading-percent{flex:none;color:#ffe08a;font-weight:800;font-variant-numeric:tabular-nums}
-.farm-loading .farm-loading-tip{display:flex;align-items:center;gap:10px;max-width:100%;min-height:46px;margin:30px 0 0;padding:7px 16px 7px 7px;border:1px solid #ffffff24;border-radius:999px;background:#0e1c1566;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fffdf2e6;font:500 13px/1.4 'DM Sans',sans-serif;text-align:left;text-wrap:pretty;transition:opacity .35s ease}
+.farm-loading .farm-loading-tip{display:flex;align-items:center;gap:10px;max-width:100%;min-height:46px;margin:30px 0 0;padding:7px 16px 7px 7px;border:1px solid #ffffff24;border-radius:999px;background:#0e1c1566;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fffdf2e6;font:500 13px/1.4 'DM Sans',sans-serif;text-align:start;text-wrap:pretty;transition:opacity .35s ease}
 .farm-loading .farm-loading-tip img{flex:none;width:32px;height:32px;padding:3px;border-radius:50%;background:#fffdf2;object-fit:contain;box-sizing:border-box}
 .farm-loading .farm-loading-tip.is-changing{opacity:0}
 .farm-loading.fade{opacity:0;pointer-events:none}

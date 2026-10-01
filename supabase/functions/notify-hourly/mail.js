@@ -1,7 +1,7 @@
 // The daily email summary. Plain, small and branded like the sign-up mails; every mail carries its own unsubscribe link.
 // Written in the farmer's game language (digest.language, texts.js), English when it is not known.
 import {cropsText,jobsText,localNames,CONFIG} from './rules.js';
-import {textsFor} from './texts.js';
+import {textsFor,RTL_MAIL} from './texts.js';
 const escape=text=>String(text).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 
 export function digestLines(digest,names={crops:{},buildings:{}}){
@@ -20,7 +20,7 @@ export function digestSubject(digest){
 export function digestEmail({digest,names,appUrl,unsubscribeUrl}){
  const t=textsFor(digest.language),lines=digestLines(digest,names);
  const items=lines.map(line=>`<li style="margin:0 0 8px;">${escape(line)}</li>`).join('');
- const html=`<!doctype html><html lang="${t.language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(digestSubject(digest))}</title></head>
+ const html=`<!doctype html><html lang="${t.language}" dir="${RTL_MAIL.includes(t.language)?'rtl':'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(digestSubject(digest))}</title></head>
 <body style="margin:0;padding:0;background:#f3e8e0;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3e8e0;padding:28px 12px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fffdf6;border-radius:22px;border:1px solid #eadfd4;">

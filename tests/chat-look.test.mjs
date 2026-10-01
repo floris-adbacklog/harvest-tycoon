@@ -18,8 +18,8 @@ test('a second message in a row shows only its text (the name stays for a screen
  assert.match(ui,/<li class="chat-msg is-cont\$\{mine\?' is-mine':''\}\$\{tr\}" data-id="\$\{esc\(m\.id\)\}"><span aria-hidden="true"><\/span><div class="chat-msg-main"><p class="chat-text" title="\$\{esc\(exact\(m\.created_at\)\)\}"><span class="chat-sr">\$\{esc\(m\.sender_name\)\}: <\/span>/);
  assert.match(ui,/<li class="chat-day" role="separator"><span>\$\{esc\(dayLabel\(m\.created_at\)\)\}<\/span><\/li>/);
  assert.match(ui,/:'<span class="chat-more-space" aria-hidden="true"><\/span>';/);
- assert.match(css,/\.chat-more-space\{flex-shrink:0;width:28px;margin-right:-4px\}/);assert.match(css,/\.chat-more\{width:32px;height:28px\}\.chat-more-space\{width:32px\}/,'the same width as the menu button on smaller screens');
- assert.match(css,/\.chat-msg:has\(\+ \.chat-msg\.is-cont\)\{padding-bottom:4px;border-bottom-left-radius:0;border-bottom-right-radius:0\}/,'one block for a group');
+ assert.match(css,/\.chat-more-space\{flex-shrink:0;width:28px;margin-inline-end:-4px\}/);assert.match(css,/\.chat-more\{width:32px;height:28px\}\.chat-more-space\{width:32px\}/,'the same width as the menu button on smaller screens');
+ assert.match(css,/\.chat-msg:has\(\+ \.chat-msg\.is-cont\)\{padding-bottom:4px;border-end-start-radius:0;border-end-end-radius:0\}/,'one block for a group');
 });
 test('on a phone a long press opens the menu of a message (no "•••" on every message), and the menu can copy the text',()=>{
  const ui=read('src/chat-ui.js'),css=read('public/chat.css');

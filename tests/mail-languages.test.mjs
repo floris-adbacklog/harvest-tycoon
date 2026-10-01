@@ -29,7 +29,7 @@ test('the reminder is written in the farmer\'s game language, with the game\'s o
  const now=Date.UTC(2026,8,29,10),digest={username:'Anna',language:'nl',crops:[{crop:'wheat'},{crop:'wheat'}],jobs:[],giftWaiting:false,streak:0};
  const mail=digestEmail({digest,names,appUrl:'https://example.com',unsubscribeUrl:'https://example.com/u'});
  assert.equal(mail.subject,'Je boerderij heeft je nodig: 2 gewassen klaar');
- assert.match(mail.html,/<html lang="nl">/);assert.match(mail.text,new RegExp(`${LOCAL_NAMES.nl.crops.wheat} ×2`));
+ assert.match(mail.html,/<html lang="nl" dir="ltr">/);assert.match(mail.text,new RegExp(`${LOCAL_NAMES.nl.crops.wheat} ×2`));
  assert.match(mail.html,/Afmelden<\/a>/);
  const player={player_id:'p',timezone:'Europe/Amsterdam',language:'de',last_active_at:new Date(now-3600000).toISOString(),push_crops:true,push_production:true,push_daily:false,
   crops_seen_at:now-7200000,production_seen_at:now-7200000,subscriptions:[{endpoint:'e',p256dh:'k',auth:'a'}],farm:{plots:[{crop:'wheat',readyAt:now-3600000}]}};
@@ -39,6 +39,6 @@ test('the reminder is written in the farmer\'s game language, with the game\'s o
 
 test('the code email follows the farmer\'s language and falls back to English',()=>{
  assert.equal(emailCodeMessage('042042',undefined,'es').subject,'Tu código de Harvest Tycoon: 042042');
- assert.match(emailCodeMessage('042042',undefined,'ja').html,/<html lang="ja">/);
+ assert.match(emailCodeMessage('042042',undefined,'ja').html,/<html lang="ja" dir="ltr">/);assert.match(emailCodeMessage('042042',undefined,'ar').html,/<html lang="ar" dir="rtl">/,'Arabic runs right to left');
  assert.equal(emailCodeMessage('042042').subject,'Your Harvest Tycoon code: 042042');
 });

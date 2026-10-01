@@ -1,7 +1,7 @@
 import {writeLog,eventRewardLog,accountLog} from './player-log.js';
 import {isSuperadmin,isAdminAccount,isAdminAddress} from './admin-service.js';
 import {validEmail} from './account-form.js';
-import {codeTexts,playerLanguage} from './mail-text.js';
+import {codeTexts,playerLanguage,RTL_MAIL} from './mail-text.js';
 // The goals an event may use: the 24 Sep list (farm-wide counters, crops unlocked by level 9, eggs) and the 30 kinds of the mixed
 // events (supabase/live-events-mixed.sql), all open to every farm at level 15, when events open. Since 26 Sep 2026 the pool has
 // "Sell wheat" instead of "Use a boost" (supabase/live-events-sell-wheat.sql); boosts_used stays valid for events made by hand.
@@ -86,7 +86,7 @@ export function emailCodeMessage(code,appUrl='https://www.harvesttycoon.com',lan
  const t=codeTexts(language),esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
  const text=t.text(code);
  const font="'DM Sans',Helvetica,Arial,sans-serif";
- const html=`<!doctype html><html lang="${t.language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t.title)}</title></head>
+ const html=`<!doctype html><html lang="${t.language}" dir="${RTL_MAIL.includes(t.language)?'rtl':'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t.title)}</title></head>
 <body style="margin:0;padding:0;background:#f3e8e0;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3e8e0;padding:28px 12px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fffdf6;border-radius:22px;border:1px solid #eadfd4;">

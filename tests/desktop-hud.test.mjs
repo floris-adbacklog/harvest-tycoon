@@ -14,7 +14,7 @@ test('on a computer the side tools stay see-through and the camera buttons are o
  assert.match(game,/hudShift=\(toolsBox\.right-\(g\?\.width\?w\.right-g\.left:0\)\)\/2;/,'the farm sits between the side tools and an open Beginner guide');
  assert.match(game,/if\(!t\.width\)\{toolsBox=null;hudShift=0;return;\}/,'tools or a guide that are not on screen do not count');
  assert.match(game,/const shift=!mobile&&viewMode!=='overview'\?hudShift\*span\/height:0;\n camera\.left=-span\*aspect\/2-shift;camera\.right=span\*aspect\/2-shift;/);
- assert.match(css,/\.scene-controls\{flex-direction:row;top:auto;right:20px;bottom:20px\}/);
+ assert.match(css,/\.scene-controls\{flex-direction:row;top:auto;inset-inline-end:20px;bottom:20px\}/);
  assert.match(css,/\.beginner-card\{max-height:calc\(100dvh - 215px\)\}/,'the Beginner guide ends above the camera row');
  assert.match(css,/max-width:1040px[^{]*\{\s*\.scene-controls\{bottom:124px\}/,'narrow windows lift the row above the dock');
 });

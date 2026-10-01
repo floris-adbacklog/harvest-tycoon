@@ -1,6 +1,6 @@
 // The sign-up confirmation and password reset emails for the Send Email Hook (index.ts): the same layout and texts as the Supabase
 // templates (scripts/email-templates.mjs), with a subject in the farmer's own language (30 Sep 2026).
-import {COPY,TAG,TEMPLATES,SUBJECTS,SUBJECT_ICONS} from './texts.js';
+import {COPY,TAG,TEMPLATES,SUBJECTS,SUBJECT_ICONS,RTL} from './texts.js';
 
 // Which email each of Supabase's actions sends. The game only asks Supabase for these two (sign-up, and its resend; forgot your
 // password); a changed email address is confirmed by farm-api with its own code.
@@ -22,7 +22,7 @@ export function authEmail({type,language,link}){
  const lang=languageOf(language),t={...TEMPLATES[name][lang],copy:COPY[lang],tag:TAG[lang]},href=esc(link),font="'DM Sans',Helvetica,Arial,sans-serif";
  const subject=`${SUBJECT_ICONS[name]} ${SUBJECTS[name][lang]}`;
  const html=`<!doctype html>
-<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t.title)}</title></head>
+<html lang="${lang}" dir="${RTL.includes(lang)?'rtl':'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t.title)}</title></head>
 <body style="margin:0;padding:0;background:#f3e8e0;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f3e8e0;">${esc(t.pre)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3e8e0;padding:28px 12px;">

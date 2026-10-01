@@ -15,5 +15,9 @@ export const LANGUAGES=Object.freeze([
  {code:'ru',name:'Русский',ready:true},
  {code:'uk',name:'Українська',ready:true},
  {code:'hi',name:'हिन्दी',ready:true},
- {code:'ja',name:'日本語',ready:true}
+ {code:'ja',name:'日本語',ready:true},
+ {code:'ar',name:'العربية',ready:false,rtl:true}
 ].map(Object.freeze));
+// Languages read from right to left (1 Oct 2026, Arabic): the page then runs right to left (dir="rtl"), set by public/i18n-boot.js
+// before anything is drawn and again by public/i18n.js.
+export const RTL_LANGUAGES=Object.freeze(LANGUAGES.filter(l=>l.rtl).map(l=>l.code));

@@ -32,7 +32,7 @@ test('it works like a dropdown: arrows, Home/End, typing, Escape closes only the
  assert.match(js,/document\.addEventListener\('pointerdown',event=>\{if\(openMenu&&!openMenu\.wrap\.contains\(event\.target\)\)openMenu\.close\(\);\},true\);/);
  assert.match(js,/const labels=\[\.\.\.\(select\.labels\?\?\[\]\)\];/,'the label is read before it is pointed at the button');
  // Opens upward when there is no room below, and never runs off the right edge.
- assert.match(js,/menu\.classList\.toggle\('is-up',up\)/);assert.match(css,/\.pretty-select-menu\.is-up\{top:auto;bottom:calc\(100% \+ 6px\)\}/);assert.match(css,/\.pretty-select-menu\.is-end\{left:auto;right:0\}/);
+ assert.match(js,/menu\.classList\.toggle\('is-up',up\)/);assert.match(css,/\.pretty-select-menu\.is-up\{top:auto;bottom:calc\(100% \+ 6px\)\}/);assert.match(css,/\.pretty-select-menu\.is-end\{inset-inline-start:auto;inset-inline-end:0\}/);
 });
 
 test('the look: soft field or small pill, pictures and notes in the menu, the picked option light blue, 44 px to tap',()=>{

@@ -8,14 +8,16 @@ export const COPY={
  id:'Tombol tidak berfungsi? Salin tautan ini ke browsermu:',tr:'Düğme çalışmıyor mu? Bu bağlantıyı tarayıcına kopyala:',
  hu:'Nem működik a gomb? Másold be ezt a linket a böngésződbe:',ru:'Кнопка не работает? Скопируй эту ссылку в браузер:',
  uk:'Кнопка не працює? Скопіюй це посилання в браузер:',cs:'Tlačítko nefunguje? Zkopíruj tento odkaz do prohlížeče:',
- hi:'बटन काम नहीं कर रहा? यह लिंक अपने ब्राउज़र में कॉपी करें:',ja:'ボタンが使えない場合は、このリンクをブラウザにコピーしてください：'
+ hi:'बटन काम नहीं कर रहा? यह लिंक अपने ब्राउज़र में कॉपी करें:',ja:'ボタンが使えない場合は、このリンクをブラウザにコピーしてください：',
+ ar:'الزر لا يعمل؟ انسخ هذا الرابط إلى متصفحك:'
 };
 export const TAG={
  en:'A little farm. A world of possibilities.',nl:'Een kleine boerderij. Een wereld aan mogelijkheden.',de:'Ein kleiner Hof. Eine Welt voller Möglichkeiten.',
  es:'Una pequeña granja. Un mundo de posibilidades.',fr:'Une petite ferme. Un monde de possibilités.',pt:'Uma pequena fazenda. Um mundo de possibilidades.',
  id:'Kebun kecil. Dunia penuh kemungkinan.',tr:'Küçük bir çiftlik. Olasılıklarla dolu bir dünya.',hu:'Egy kis farm. Egy világnyi lehetőség.',
  ru:'Маленькая ферма. Целый мир возможностей.',uk:'Маленька ферма. Цілий світ можливостей.',cs:'Malá farma. Svět plný možností.',
- hi:'एक छोटा फ़ार्म। संभावनाओं की पूरी दुनिया।',ja:'小さな農場。可能性に満ちた世界。'
+ hi:'एक छोटा फ़ार्म। संभावनाओं की पूरी दुनिया।',ja:'小さな農場。可能性に満ちた世界。',
+ ar:'مزرعة صغيرة. عالم من الإمكانيات.'
 };
 export const TEMPLATES={
  'confirm-signup':{
@@ -32,7 +34,8 @@ export const TEMPLATES={
   uk:{title:'Ласкаво просимо до долини!',pre:'Один дотик, і ферма готова.',intro:'Дякуємо за реєстрацію. Підтверди адресу пошти, і ферма одразу відкриється: клапоть землі, трохи насіння й перший урожай уже чекають на тебе.',button:'Підтвердити й почати',foot:'Цей лист надійшов, бо хтось зареєструвався в Harvest Tycoon з цією адресою. Якщо це був не ти, просто не зважай на нього.'},
   cs:{title:'Vítej v údolí!',pre:'Jedno klepnutí a farma je připravená.',intro:'Díky za registraci. Potvrď svou e-mailovou adresu a farma se hned otevře: kousek půdy, pár semínek a první sklizeň, která na tebe čeká.',button:'Potvrdit a spustit moji farmu',foot:'Tento e-mail ti přišel, protože se někdo s touto adresou zaregistroval do Harvest Tycoon. Pokud to nebyl tvůj požadavek, můžeš ho klidně ignorovat.'},
   hi:{title:'घाटी में आपका स्वागत है!',pre:'एक टैप और आपका फ़ार्म तैयार।',intro:'साइन अप करने के लिए धन्यवाद। अपना ईमेल पता पक्का करें और आपका फ़ार्म तुरंत खुल जाएगा: ज़मीन का एक टुकड़ा, कुछ बीज और पहली फसल आपका इंतज़ार कर रही है।',button:'पक्का करें और मेरा फ़ार्म शुरू करें',foot:'आपको यह ईमेल इसलिए मिला है क्योंकि किसी ने इस पते से Harvest Tycoon पर साइन अप किया है। अगर वह आप नहीं थे, तो इसे आराम से अनदेखा कर दें।'},
-  ja:{title:'谷へようこそ！',pre:'タップひとつで農場の準備ができます。',intro:'ご登録ありがとうございます。メールアドレスを確認すると、すぐに農場が開きます。小さな土地と少しの種、そして最初の収穫があなたを待っています。',button:'確認して農場を始める',foot:'このアドレスでHarvest Tycoonに登録があったため、このメールをお送りしています。心当たりがない場合は、このメールを無視してください。'}
+  ja:{title:'谷へようこそ！',pre:'タップひとつで農場の準備ができます。',intro:'ご登録ありがとうございます。メールアドレスを確認すると、すぐに農場が開きます。小さな土地と少しの種、そして最初の収穫があなたを待っています。',button:'確認して農場を始める',foot:'このアドレスでHarvest Tycoonに登録があったため、このメールをお送りしています。心当たりがない場合は、このメールを無視してください。'},
+  ar:{title:'مرحبًا بك في الوادي!',pre:'لمسة واحدة ومزرعتك جاهزة.',intro:'شكرًا لتسجيلك. أكّد عنوان بريدك الإلكتروني وستُفتح مزرعتك على الفور: قطعة أرض وبعض البذور وأول حصاد بانتظارك.',button:'أكّد وابدأ مزرعتي',foot:'وصلتك هذه الرسالة لأن شخصًا ما سجّل في Harvest Tycoon بهذا العنوان. إن لم تكن أنت، يمكنك تجاهلها بأمان.'}
  },
  'reset-password':{
   en:{title:'Choose a new password',pre:'Choose a new password for your farm.',intro:'We received a request to reset the password for your Harvest Tycoon account. Tap the button to choose a new one. Your farm and progress stay exactly as you left them.',button:'Choose a new password',foot:'If you did not ask for this, ignore this email: your password stays the same. The link works once and expires after a while.'},
@@ -48,7 +51,8 @@ export const TEMPLATES={
   uk:{title:'Обери новий пароль',pre:'Обери новий пароль для своєї ферми.',intro:'Ми отримали запит на скидання пароля до твого облікового запису Harvest Tycoon. Натисни кнопку, щоб обрати новий. Ферма й увесь прогрес залишаться такими, як були.',button:'Обрати новий пароль',foot:'Якщо це був не ти, просто не зважай на цей лист: пароль не зміниться. Посилання працює один раз і згодом перестає діяти.'},
   cs:{title:'Zvol si nové heslo',pre:'Zvol si nové heslo ke své farmě.',intro:'Dostali jsme žádost o obnovení hesla k tvému účtu Harvest Tycoon. Klepni na tlačítko a zvol si nové. Tvoje farma i postup zůstanou beze změny.',button:'Zvolit nové heslo',foot:'Pokud to nebyl tvůj požadavek, tento e-mail ignoruj: heslo zůstane stejné. Odkaz funguje jednou a po čase vyprší.'},
   hi:{title:'नया पासवर्ड चुनें',pre:'अपने फ़ार्म के लिए नया पासवर्ड चुनें।',intro:'हमें आपके Harvest Tycoon खाते का पासवर्ड रीसेट करने का अनुरोध मिला है। नया पासवर्ड चुनने के लिए बटन दबाएँ। आपका फ़ार्म और आपकी प्रगति बिल्कुल वैसी ही रहेगी जैसी आपने छोड़ी थी।',button:'नया पासवर्ड चुनें',foot:'अगर आपने यह नहीं माँगा था, तो इस ईमेल को अनदेखा करें: आपका पासवर्ड वही रहेगा। लिंक एक बार काम करता है और कुछ समय बाद खत्म हो जाता है।'},
-  ja:{title:'新しいパスワードを設定',pre:'農場の新しいパスワードを設定してください。',intro:'Harvest Tycoonアカウントのパスワード再設定のリクエストを受け付けました。ボタンをタップして新しいパスワードを設定してください。農場と進行状況はそのまま残ります。',button:'新しいパスワードを設定',foot:'心当たりがない場合は、このメールを無視してください。パスワードは変わりません。リンクは1回だけ有効で、しばらくすると期限切れになります。'}
+  ja:{title:'新しいパスワードを設定',pre:'農場の新しいパスワードを設定してください。',intro:'Harvest Tycoonアカウントのパスワード再設定のリクエストを受け付けました。ボタンをタップして新しいパスワードを設定してください。農場と進行状況はそのまま残ります。',button:'新しいパスワードを設定',foot:'心当たりがない場合は、このメールを無視してください。パスワードは変わりません。リンクは1回だけ有効で、しばらくすると期限切れになります。'},
+  ar:{title:'اختر كلمة مرور جديدة',pre:'اختر كلمة مرور جديدة لمزرعتك.',intro:'وصلنا طلب لإعادة تعيين كلمة مرور حسابك في Harvest Tycoon. اضغط على الزر لاختيار كلمة جديدة. ستبقى مزرعتك وتقدّمك كما تركتهما تمامًا.',button:'اختر كلمة مرور جديدة',foot:'إن لم تطلب ذلك، تجاهل هذه الرسالة: ستبقى كلمة مرورك كما هي. يعمل الرابط مرة واحدة وتنتهي صلاحيته بعد فترة.'}
  }
 };
 // A subject per language (30 Sep 2026): the hook (index.ts) has no length limit, unlike a Supabase template's subject field.
@@ -57,12 +61,14 @@ export const SUBJECTS=Object.freeze({
   es:'Confirma tu correo y empieza tu granja',fr:'Confirme ton e-mail et lance ta ferme',pt:'Confirme seu e-mail e comece sua fazenda',
   id:'Konfirmasi emailmu dan mulai kebunmu',tr:'E-postanı onayla ve çiftliğini başlat',hu:'Erősítsd meg az e-mail-címed, és indítsd a farmod',
   ru:'Подтверди почту и начни свою ферму',uk:'Підтверди пошту й почни свою ферму',cs:'Potvrď e-mail a spusť svou farmu',
-  hi:'अपना ईमेल पक्का करें और अपना फ़ार्म शुरू करें',ja:'メールを確認して農場を始めましょう'},
+  hi:'अपना ईमेल पक्का करें और अपना फ़ार्म शुरू करें',ja:'メールを確認して農場を始めましょう',ar:'أكّد بريدك الإلكتروني وابدأ مزرعتك'},
  'reset-password':{en:'Choose a new password for Harvest Tycoon',nl:'Kies een nieuw wachtwoord voor Harvest Tycoon',de:'Wähle ein neues Passwort für Harvest Tycoon',
   es:'Elige una contraseña nueva para Harvest Tycoon',fr:'Choisis un nouveau mot de passe pour Harvest Tycoon',pt:'Escolha uma nova senha para o Harvest Tycoon',
   id:'Pilih kata sandi baru untuk Harvest Tycoon',tr:'Harvest Tycoon için yeni bir şifre seç',hu:'Válassz új jelszót a Harvest Tycoonhoz',
   ru:'Выбери новый пароль для Harvest Tycoon',uk:'Обери новий пароль для Harvest Tycoon',cs:'Zvol si nové heslo pro Harvest Tycoon',
-  hi:'Harvest Tycoon के लिए नया पासवर्ड चुनें',ja:'Harvest Tycoonの新しいパスワードを設定'}
+  hi:'Harvest Tycoon के लिए नया पासवर्ड चुनें',ja:'Harvest Tycoonの新しいパスワードを設定',ar:'اختر كلمة مرور جديدة لـ Harvest Tycoon'}
 });
 // The emoji in front of each subject, as in the Supabase templates' subjects.
 export const SUBJECT_ICONS=Object.freeze({'confirm-signup':'🌱','reset-password':'🔑'});
+// Languages that read from right to left: their emails run right to left (dir="rtl").
+export const RTL=Object.freeze(['ar']);

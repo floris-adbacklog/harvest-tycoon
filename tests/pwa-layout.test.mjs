@@ -82,8 +82,8 @@ test('the game frame and the page load the installed-app files, before anything 
 // buttons stay above the strip, in case it takes no taps.
 test('the game frame reaches over the strip, and its bottom bar sits on the home indicator like an app',()=>{
  // iOS draws no fixed element below the short layout (seen on an iPhone): the frame is then part of the page, a strip taller.
- assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\]\[data-viewport-short\] #farm-host\{position:absolute;top:0;right:0;bottom:auto;left:0;height:calc\(100% \+ var\(--viewport-shortfall,0px\)\)\}/);
- assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\]\[data-viewport-short\] #loading-screen\{position:absolute;top:0;right:0;bottom:auto;left:0;height:calc\(100% \+ var\(--viewport-shortfall,0px\)\);min-height:0\}/,'and the loading screen before the farm opens');
+ assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\]\[data-viewport-short\] #farm-host\{position:absolute;top:0;inset-inline-end:0;bottom:auto;inset-inline-start:0;height:calc\(100% \+ var\(--viewport-shortfall,0px\)\)\}/);
+ assert.match(read('public/welcome.css'),/html\[data-app-mode=standalone\]\[data-viewport-short\] #loading-screen\{position:absolute;top:0;inset-inline-end:0;bottom:auto;inset-inline-start:0;height:calc\(100% \+ var\(--viewport-shortfall,0px\)\);min-height:0\}/,'and the loading screen before the farm opens');
  assert.equal(run({height:812}).attrs['data-viewport-short'],'');assert.equal(run({height:874}).attrs['data-viewport-short'],undefined,'only when the layout is short');
  assert.equal(run({height:874}).viewport(),'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover','the installed app starts with the game viewport and keeps it');
  const stretched=run({standalone:false,inFrame:true,parentStandalone:true,height:874,parentShortfall:' 62px'});

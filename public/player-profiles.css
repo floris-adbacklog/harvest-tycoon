@@ -1,14 +1,14 @@
 /* Farmer profiles share the painted illustrations and warm farm palette. */
-.player-name-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;border:0;background:transparent;color:inherit;font:inherit;font-weight:800;text-align:left;padding:4px 0;cursor:pointer;overflow-wrap:anywhere;max-width:100%}
+.player-name-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;border:0;background:transparent;color:inherit;font:inherit;font-weight:800;text-align:start;padding:4px 0;cursor:pointer;overflow-wrap:anywhere;max-width:100%}
 .player-name-link:hover{text-decoration:underline;text-underline-offset:4px;color:#446440}
 .player-name-link:focus-visible,.farmer-search-result:focus-visible{outline:3px solid #d9a433;outline-offset:3px;border-radius:10px}
-.cloud-profile{flex-wrap:wrap;gap:8px}.cloud-profile>span{margin-right:auto;overflow-wrap:anywhere}
+.cloud-profile{flex-wrap:wrap;gap:8px}.cloud-profile>span{margin-inline-end:auto;overflow-wrap:anywhere}
 .farmer-search{margin:18px 0;padding:16px;border:1px solid #dedfcf;border-radius:20px;background:#f3f5e9}
 .farmer-search>label{display:block;font-weight:800;margin-bottom:9px;color:#304b32}
 .farmer-search-control{display:flex;gap:10px;align-items:center;min-width:0}
 .farmer-search input{box-sizing:border-box;min-width:0;width:100%;min-height:46px;border:1px solid #ccd3bd;background:#fffdf5;border-radius:12px;padding:11px 14px;font:inherit;font-size:16px;color:#304332}
 #farmer-search-status{font-size:13px;color:#6c775e;margin:9px 0 0;line-height:1.5}
-.farmer-search-result{display:flex;align-items:center;gap:12px;width:100%;border:0;border-top:1px solid #dde2cf;background:transparent;font:inherit;color:#304332;text-align:left;padding:12px 0;min-height:66px;cursor:pointer}
+.farmer-search-result{display:flex;align-items:center;gap:12px;width:100%;border:0;border-top:1px solid #dde2cf;background:transparent;font:inherit;color:#304332;text-align:start;padding:12px 0;min-height:66px;cursor:pointer}
 .farmer-search-result:first-child{margin-top:12px}.farmer-search-result:hover{background:#e9efda}.farmer-search-name{flex:1;min-width:0;overflow-wrap:anywhere}.farmer-search-name strong,.farmer-search-name small{display:block}.farmer-search-name small{font-size:12px;color:#708064;margin-top:4px}
 .farmer-search-avatar{display:grid;place-items:center;flex:0 0 38px;height:38px;background:#e5d1a6;border-radius:13px;color:#685334;font-weight:800}
 .farmer-presence{display:inline-flex;gap:7px;align-items:center;font-size:13px;white-space:nowrap;color:#617358}.farmer-presence .online-dot{margin:0;flex-shrink:0}
@@ -69,22 +69,22 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .admin-card{border:1px solid #ded2c8;border-radius:16px;padding:16px 18px;margin:16px 0;background:#fffdf5}
 .admin-card h3{font:600 16px 'Outfit',sans-serif;margin:0 0 6px;display:flex;align-items:center;gap:9px;color:#3d382a}
 .admin-card h3>svg{width:18px;height:18px;color:#8a7a4a;flex-shrink:0}
-.admin-card h3>span{font-size:14px;font-weight:700;color:#615742;background:#f3c35345;border-radius:8px;padding:1px 9px;margin-left:2px}
+.admin-card h3>span{font-size:14px;font-weight:700;color:#615742;background:#f3c35345;border-radius:8px;padding:1px 9px;margin-inline-start:2px}
 .admin-hint{font-size:12px;color:#80776b;line-height:1.6;margin:0 0 12px}
 .admin-avatar{position:relative;display:inline-grid;place-items:center;flex-shrink:0;width:30px;height:30px;border-radius:50%;background:#e5d1a6;color:#685334;font-size:12px;font-weight:800}
-.admin-avatar>.online-dot{position:absolute;right:-1px;bottom:-1px;border:2px solid #fffdf5;box-sizing:content-box;margin:0}
+.admin-avatar>.online-dot{position:absolute;inset-inline-end:-1px;bottom:-1px;border:2px solid #fffdf5;box-sizing:content-box;margin:0}
 .admin-online-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
 .admin-online-list li{display:flex;align-items:center;gap:9px;background:#f3f5e9;border:1px solid #dde2cf;border-radius:12px;padding:6px 14px 6px 6px;font-size:13px}
 .admin-online-list li strong{display:block;line-height:1.3}
 .admin-online-list li small{display:block;color:#80776b;font-size:11px;line-height:1.3}
 .admin-empty{color:#80776b;font-style:italic}
 .admin-table{width:100%;border-collapse:collapse;font-size:13px}
-.admin-table th{text-align:left;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:#80776b;padding:6px 10px;border-bottom:1px solid #ded2c8}
+.admin-table th{text-align:start;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:#80776b;padding:6px 10px;border-bottom:1px solid #ded2c8}
 .admin-table td{padding:7px 10px;border-bottom:1px solid #ede8dd}
 .admin-farmer-cell{display:flex;align-items:center;gap:9px}
 .admin-table-scroll{overflow-x:auto}
 .admin-retention-table th,.admin-retention-table td{text-align:center;white-space:nowrap}
-.admin-retention-table th:first-child,.admin-retention-table td:first-child,.admin-retention-table th:nth-child(2),.admin-retention-table td:nth-child(2){text-align:left}
+.admin-retention-table th:first-child,.admin-retention-table td:first-child,.admin-retention-table th:nth-child(2),.admin-retention-table td:nth-child(2){text-align:start}
 .admin-retention-table td[class^=admin-heat]{border-radius:8px;font-weight:700;color:#fffdf5}
 .admin-heat-good{background:#5e9b51}
 .admin-heat-ok{background:#dfae3f}
@@ -112,7 +112,7 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .farmer-staff-view{display:flex;justify-content:flex-end;margin:-4px 0 12px}.farmer-staff-view[hidden]{display:none}
 /* The farm log (src/player-profiles.js): category chips, the lines per day, a coloured dot per category. */
 .farmer-log{margin:26px 0 6px}.farmer-log[hidden]{display:none}
-.farmer-log-icon .game-art{width:24px;height:24px;vertical-align:-6px;margin-right:7px}
+.farmer-log-icon .game-art{width:24px;height:24px;vertical-align:-6px;margin-inline-end:7px}
 .farmer-log-filters{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}.farmer-log-filters::-webkit-scrollbar{display:none}
 .farmer-log-filters button{flex:none;min-height:36px;padding:6px 12px;border:1px solid #e0d5c6;border-radius:999px;background:#f7f1e6;color:#5d5140;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer}
 .farmer-log-filters button[aria-pressed="true"]{background:#4d6b3b;border-color:#4d6b3b;color:#fff}
@@ -127,7 +127,7 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 [data-log-category="rewards"]{--log-dot:#8c6bb1}[data-log-category="diamonds"]{--log-dot:#3884a0}[data-log-category="social"]{--log-dot:#4aa39a}
 [data-log-category="staff"]{--log-dot:#c45b4b}[data-log-category="purchase"]{--log-dot:#2f6a3f}
 /* With a family, the family card is a button to its profile (family-profile.js, 27 Sep 2026). */
-.farmer-family-open{flex:1;display:flex;align-items:center;gap:16px;min-width:0;padding:0;border:0;background:none;box-shadow:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.farmer-family-open{flex:1;display:flex;align-items:center;gap:16px;min-width:0;padding:0;border:0;background:none;box-shadow:none;color:inherit;font:inherit;text-align:start;cursor:pointer}
 .farmer-family-open>div{flex:1;min-width:0}
 .farmer-family-open>.game-art{width:60px;height:60px;flex:0 0 60px}
 .farmer-family-more{flex-shrink:0;font-size:28px;line-height:1;color:#7a8b6c}

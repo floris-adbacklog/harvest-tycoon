@@ -9,7 +9,7 @@ test('on a computer a live farm map takes the logo\'s place; the logo moves smal
  assert.match(html,/src="\/assets\/harvest-tycoon-logo\.webp"/,'the logo stays in the page');
  assert.match(css,/^\.minimap\{display:none\}/m,'no map on phones');
  assert.match(css,/\.minimap\{display:block;/);
- assert.match(css,/@media\(min-width:901px\) and \(min-height:760px\)\{\s*\.topbar \.brand>img\{display:block;position:fixed;left:22px;top:auto;bottom:14px;width:118px;height:118px/);
+ assert.match(css,/@media\(min-width:901px\) and \(min-height:760px\)\{\s*\.topbar \.brand>img\{display:block;position:fixed;inset-inline-start:22px;top:auto;bottom:14px;width:118px;height:118px/);
 });
 
 test('the map is a small render of the farm, refreshed now and then, with live rings and the view frame; clicking moves the view',()=>{

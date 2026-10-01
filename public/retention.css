@@ -22,19 +22,19 @@
 .event-reward-amounts .coin-reward{display:inline-flex;align-items:center;gap:6px;margin:0;color:#806322;font-size:15px}
 .event-reward-amounts .coin-reward .game-art{width:22px;height:22px}
 .event-note{margin:0;font-size:14px;line-height:1.55}
-.event-note.is-blocked{border-left-color:#d6ae4b;background:#faf1dc}
+.event-note.is-blocked{border-inline-start-color:#d6ae4b;background:#faf1dc}
 .event-section-title{font:600 20px 'Outfit',sans-serif;margin:26px 0 0}
 .events-dialog .task-row .task-bottom{flex-wrap:wrap}
 .event-history .family-list-row{padding:12px 0}
 .event-history .family-list-row span{color:#7c7d6e}
 .event-rules{margin-top:24px}
-.event-rules ul{margin:12px 0 0;padding-left:18px;font-size:14px;line-height:1.6;color:#6f6a58}
+.event-rules ul{margin:12px 0 0;padding-inline-start:18px;font-size:14px;line-height:1.6;color:#6f6a58}
 .event-rules li+li{margin-top:6px}
 .event-feedback{margin:12px 0 0;font-size:14px;color:#9a4b35}
 .event-feedback:empty,.event-loading:empty{display:none}
 
 /* Daily sharing: an entry card on the Members tab, then its own screen. */
-.family-share-entry{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 16px;padding:14px 16px;border:1px solid #e0d5ac;border-radius:18px;background:linear-gradient(140deg,#f9efcc,#f0e5dd);text-align:left;color:inherit;cursor:pointer;box-shadow:0 2px 0 #e4d9b8}
+.family-share-entry{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 16px;padding:14px 16px;border:1px solid #e0d5ac;border-radius:18px;background:linear-gradient(140deg,#f9efcc,#f0e5dd);text-align:start;color:inherit;cursor:pointer;box-shadow:0 2px 0 #e4d9b8}
 .family-share-entry:hover{border-color:#cdbb85}
 .family-share-entry>.game-art{width:52px;height:52px;flex-shrink:0;object-fit:contain}
 .family-share-entry>span:not(.game-art){flex:1;min-width:0}
@@ -89,7 +89,7 @@
  .sharing-today{grid-column:1/-1}.sharing-today div{flex:1}
  .sharing-row{flex-wrap:wrap;gap:10px}
  .sharing-row>.sharing-person{flex:1 1 118px;gap:10px}
- .sharing-actions{margin-left:auto}
+ .sharing-actions{margin-inline-start:auto}
  .sharing-actions .sharing-action{padding:6px 10px}
 }
 
@@ -97,7 +97,7 @@
 #welcome-back-dialog{box-sizing:border-box;width:min(400px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:28px 24px 24px;border:1px solid #dfd3ae;border-radius:24px;background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 65%);text-align:center;color:#34432d;overflow:auto;position:relative}
 #welcome-back-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
 /* Today's gift inside Welcome back: a warm row with its own Collect; once collected it turns green and says the streak. */
-#welcome-back-dialog .welcome-gift{display:flex;align-items:center;gap:10px;margin:14px 0 4px;padding:10px 12px;border:1px solid #ead9ad;border-radius:14px;background:linear-gradient(135deg,#fff6dc,#fdf0cf);text-align:left}
+#welcome-back-dialog .welcome-gift{display:flex;align-items:center;gap:10px;margin:14px 0 4px;padding:10px 12px;border:1px solid #ead9ad;border-radius:14px;background:linear-gradient(135deg,#fff6dc,#fdf0cf);text-align:start}
 #welcome-back-dialog .welcome-gift-art{flex:none;width:38px;height:38px}
 #welcome-back-dialog .welcome-gift-art .game-art{width:38px;height:38px}
 #welcome-back-dialog .welcome-gift-copy{flex:1;min-width:0;display:grid;gap:5px}
@@ -117,7 +117,7 @@
 .chore-rewards>span{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 6px;border-radius:999px;background:#f3ead5;color:#6b4f0f;font-size:13px;font-weight:700}
 .chore-rewards .game-art{width:20px;height:20px}
 .chore-rewards .chore-bonus{background:#e6efdc;color:#42632e}
-.chore-rewards .chore-bonus em{font-style:normal;font-weight:600;font-size:12px;opacity:.8;margin-left:2px}
+.chore-rewards .chore-bonus em{font-style:normal;font-weight:600;font-size:12px;opacity:.8;margin-inline-start:2px}
 .chore-card .chore-foot{margin:6px 0 0;font-size:12px;color:#8b7d6d}
 .chore-card.is-locked .chore-icon{filter:grayscale(1);opacity:.6}
 .chore-prizes{flex-wrap:wrap}
@@ -129,7 +129,7 @@
 .chore-result.is-bonus .chore-result-art{background:radial-gradient(circle,#fff6dc,#f9e5a8);border-color:#e8d499;box-shadow:0 0 0 6px #fff3cc}
 .chore-result:not(.is-bonus){background:#fffdf5}
 .chore-result:not(.is-bonus) .chore-prizes strong{background:#f1ece4;color:#5d5641}
-.chore-missed{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:12px 14px;border-radius:14px;background:#f3efe7;text-align:left;font-size:13px;line-height:1.5;color:#6f6a58}
+.chore-missed{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:12px 14px;border-radius:14px;background:#f3efe7;text-align:start;font-size:13px;line-height:1.5;color:#6f6a58}
 .chore-missed>.game-art{width:34px;height:34px;flex-shrink:0;filter:grayscale(1);opacity:.55}
 .chore-missed b{color:#453e28}
 /* Event standings: medal, portrait, name and what they earn. */
@@ -155,7 +155,7 @@
 .event-standing .player-avatar-thumb{display:block;width:40px;height:40px}
 .event-standing>div{min-width:0}
 /* The farmer (picture and name) opens their profile (26 Sep 2026). */
-.event-standing-who{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:10px;min-width:0;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.event-standing-who{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:10px;min-width:0;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:start;cursor:pointer}
 .event-standing-who>div{min-width:0}.event-standing-who:hover strong{text-decoration:underline;text-underline-offset:2px}.event-standing-who:focus-visible{outline:3px solid #6c8f3f;outline-offset:2px;border-radius:10px}
 .event-standing-who span:not(.family-member-portrait):not(.vip-badge){display:block}
 .event-standing strong{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -173,7 +173,7 @@
 #market-items .market-card .market-current-price{margin:0;font-size:13px;font-weight:400;color:#807262}
 #market-items .market-card .market-current-price b{font:700 17px 'Outfit',sans-serif;color:#453e28}
 #market-items .market-card .demand-pill{font-size:12px;padding:3px 8px}
-#market-items .market-card .market-stock{grid-column:3;grid-row:1;min-width:52px;text-align:right}
+#market-items .market-card .market-stock{grid-column:3;grid-row:1;min-width:52px;text-align:end}
 #market-items .market-card .market-stock b{display:block;font:700 24px 'Outfit',sans-serif;line-height:1.1;color:#453e28}
 #market-items .market-card .market-stock small{display:block;font-size:12px;color:#867c70}
 #market-items .market-card .market-sale-controls{grid-column:1/-1;grid-row:2;margin-top:6px}
@@ -198,11 +198,11 @@
 #inventory-value .game-art{width:26px;height:26px}
 
 /* Admin: farm events (floris@millstone.nl only). */
-#admin-events h3 img{vertical-align:middle;margin-right:4px}
+#admin-events h3 img{vertical-align:middle;margin-inline-end:4px}
 #admin-events [data-list]{display:grid;gap:8px;margin:12px 0}
 .admin-event-row{padding:12px 14px;border:1px solid #e2d7cc;border-radius:14px;background:#fffdf5}
 .admin-event-row p{margin:4px 0 8px;font-size:13px;color:#6f6a58}
-.admin-event-tag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font-size:12px;font-weight:700;vertical-align:middle}
+.admin-event-tag{display:inline-block;margin-inline-start:6px;padding:2px 8px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font-size:12px;font-weight:700;vertical-align:middle}
 #admin-events form{display:grid;gap:10px}
 #admin-events label{display:grid;gap:4px;font-size:13px;font-weight:600;color:#5d5641}
 #admin-events input:not([type=checkbox]),#admin-events textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #dcd2c6;border-radius:10px;background:#fffef9;font-size:15px}
@@ -217,7 +217,7 @@
 .settings-account .cloud-profile>span{font:600 20px 'Outfit',sans-serif;margin-bottom:2px}
 
 /* Leaderboard "Rank by" chips: every label on one line, left-aligned next to its icon. */
-.rank-chip>span:not(.game-art){text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-chip>span:not(.game-art){text-align:start;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Podium prize list under the event reward: medal, place, coins, diamonds. */
 .event-podium{margin:14px 0 16px;padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,#fff6dc,#fbeecb);border:1px solid #ecd9a0;color:#6b5a2a}
 .event-podium>span{display:block;margin-bottom:4px;font-size:13px;font-weight:700}
@@ -232,7 +232,7 @@
 
 /* Factory "What shall we make?": each source shows its building, what it makes and how many recipes can start now. */
 .factory-filter{margin:4px 0 12px}
-.factory-filter button span{display:inline-block;min-width:18px;margin-left:4px;padding:0 6px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font-size:12px}
+.factory-filter button span{display:inline-block;min-width:18px;margin-inline-start:4px;padding:0 6px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font-size:12px}
 .factory-filter button:disabled{opacity:.5;cursor:default}
 .factory-recipe-list{display:grid;gap:8px}
 .factory-recipe-group{background:#fbf8f2}
@@ -266,7 +266,7 @@
  .tool-dock .tools .tool:hover:not(.active){background:#fbf7f0}
  .tool-dock .tools .tool>.game-art{width:32px;height:32px}
  .tool-dock .tools .tool span{font-size:13px}
- .tool-dock .tools .tool kbd{top:5px;right:6px;min-width:15px;height:15px;padding:0 3px;box-sizing:border-box;border-radius:5px;background:transparent;color:#b3a894;font:700 10px/15px 'DM Sans',sans-serif;text-align:center;opacity:1}
+ .tool-dock .tools .tool kbd{top:5px;inset-inline-end:6px;min-width:15px;height:15px;padding:0 3px;box-sizing:border-box;border-radius:5px;background:transparent;color:#b3a894;font:700 10px/15px 'DM Sans',sans-serif;text-align:center;opacity:1}
  .tool-dock .tools .tool.active kbd{color:#8a7a4a}
 }
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
@@ -287,7 +287,7 @@
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#boost-dialog{max-width:none;max-height:calc(100dvh - env(safe-area-inset-top) - 8px)}}
 
 /* Toasts: a painted icon in a tinted circle, reward chips, a soft spring in and a thin timer that runs out. */
-.toast{display:flex;align-items:center;gap:10px;min-width:220px;max-width:min(440px,calc(100% - 24px));padding:9px 16px 11px 9px;border:1px solid #e3d8c6;border-radius:18px;background:#fffdf5;box-shadow:0 10px 30px #3a301c26,0 2px 0 #e8dcc4;overflow:hidden;text-align:left;line-height:1.4}
+.toast{display:flex;align-items:center;gap:10px;min-width:220px;max-width:min(440px,calc(100% - 24px));padding:9px 16px 11px 9px;border:1px solid #e3d8c6;border-radius:18px;background:#fffdf5;box-shadow:0 10px 30px #3a301c26,0 2px 0 #e8dcc4;overflow:hidden;text-align:start;line-height:1.4}
 .toast.visible{animation:toast-in .38s cubic-bezier(.2,1.4,.4,1)}
 @keyframes toast-in{from{opacity:0;transform:translate(-50%,-14px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
 .toast-icon{flex-shrink:0;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#efe8dc}
@@ -301,7 +301,7 @@
 .toast-chip.is-coins{background:#f7e9b8;color:#6b4f0f}
 .toast-chip.is-xp{background:#e6ecfa;color:#39518f}
 .toast-chip.is-diamonds{background:#dff0f8;color:#2f6a8b}
-.toast-timer{position:absolute;left:0;bottom:0;height:3px;width:100%;background:#d9c28d;transform-origin:left;transform:scaleX(0)}
+.toast-timer{position:absolute;inset-inline-start:0;bottom:0;height:3px;width:100%;background:#d9c28d;transform-origin:left;transform:scaleX(0)}
 .toast.visible .toast-timer{animation:toast-timer var(--toast-duration,3200ms) linear forwards}
 .toast.is-warn .toast-timer{background:#e0a75a}
 @keyframes toast-timer{from{transform:scaleX(1)}to{transform:scaleX(0)}}
@@ -316,7 +316,7 @@
 .beginner-summary progress{display:block;width:100%;height:9px;accent-color:#b08a3c}
 #beginner-list{position:relative}
 .beginner-step{position:relative;margin:0;border:0;border-radius:16px;padding:10px 12px 14px;background:none;gap:12px}
-.beginner-step:not(:last-child)::after{content:'';position:absolute;left:27px;top:44px;bottom:-8px;width:2px;background:#e6ddd0}
+.beginner-step:not(:last-child)::after{content:'';position:absolute;inset-inline-start:27px;top:44px;bottom:-8px;width:2px;background:#e6ddd0}
 .beginner-step.done:not(:last-child)::after{background:#b7d3a7}
 .beginner-step-number{position:relative;z-index:1;min-width:32px;height:32px;font-size:14px}
 .beginner-step.done .beginner-step-number{background:#5e9b51;color:#fff}
@@ -347,7 +347,7 @@
 .estate-road>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
 .estate-road>summary::-webkit-details-marker{display:none}
 .estate-road>summary strong{font:600 16px 'Outfit',sans-serif;color:#453e28}
-.estate-road>summary span{margin-left:auto;font-size:12px;font-weight:600;color:#8f816f}
+.estate-road>summary span{margin-inline-start:auto;font-size:12px;font-weight:600;color:#8f816f}
 .estate-road[open] .factory-chevron{transform:rotate(180deg)}
 .estate-road .estate-roadmap{padding:0 12px 12px}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
@@ -382,7 +382,7 @@
 .tractor-top div>span{display:block;margin-top:2px;font-size:13px;color:#807463}
 .tractor-state{flex-shrink:0;padding:5px 11px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font-size:12px;font-weight:800;white-space:nowrap}
 .tractor-state.is-resting{background:#f3ebdd;color:#8a6a2f}
-.tractor-seed{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:10px 12px;border:1px solid #ecdcae;border-radius:16px;background:#fff8e4;text-align:left;color:inherit;cursor:pointer}
+.tractor-seed{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:10px 12px;border:1px solid #ecdcae;border-radius:16px;background:#fff8e4;text-align:start;color:inherit;cursor:pointer}
 .tractor-seed>.game-art{flex:0 0 38px;width:38px;height:38px;object-fit:contain}
 .tractor-seed>span:not(.game-art){flex:1;min-width:0}
 .tractor-seed small{display:block;font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#9b823a}
@@ -391,7 +391,7 @@
 .tractor-seed em .game-art{width:18px;height:18px}
 .tractor-seed>svg{width:18px;height:18px;color:#a09684;flex-shrink:0}
 .tractor-jobs{display:grid;gap:8px}
-.tractor-job{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2;text-align:left;color:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+.tractor-job{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2;text-align:start;color:inherit;cursor:pointer;transition:background .15s,border-color .15s}
 .tractor-job:hover:not(:disabled){border-color:#cdbb85;background:#fffaf0}
 .tractor-job:disabled{cursor:default;background:#f6f3ee;border-color:#ece6dc}
 .tractor-job:disabled .tractor-job-art{filter:grayscale(1);opacity:.5}
@@ -407,7 +407,7 @@
 
 /* Seed shop: one compact row per crop, the chosen one framed in gold with a check. */
 .crop-catalog{display:grid;gap:8px;grid-template-columns:1fr}
-.seed-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2;text-align:left;color:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+.seed-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2;text-align:start;color:inherit;cursor:pointer;transition:background .15s,border-color .15s}
 .seed-row:hover:not(:disabled){border-color:#cdbb85;background:#fffaf0}
 .seed-row.selected{border-color:#d9c28d;background:#fff6dc;box-shadow:inset 0 0 0 1px #d9c28d}
 .seed-row.is-locked{cursor:default;background:#f6f3ee}
@@ -425,7 +425,7 @@
 .seed-row-price{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;padding:5px 10px 5px 6px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:800;font-size:14px;white-space:nowrap}
 .seed-row-price .game-art{width:18px;height:18px}
 .seed-row.is-locked .seed-row-price{background:#efeae1;color:#a09684}
-.seed-row-check{position:absolute;top:-6px;right:-6px;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#b08a3c;color:#fff;font-size:12px;font-weight:800;box-shadow:0 0 0 2px #fffdf5}
+.seed-row-check{position:absolute;top:-6px;inset-inline-end:-6px;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#b08a3c;color:#fff;font-size:12px;font-weight:800;box-shadow:0 0 0 2px #fffdf5}
 .seed-yield-line{margin:0 0 12px;font-size:13px;color:#807463}
 .seed-filters button{white-space:nowrap;padding-inline:6px}
 @media(max-width:340px){.seed-filters button{padding-inline:3px;font-size:12px}}
@@ -483,10 +483,10 @@
 #leaderboard-description{margin:4px 2px 6px;font-size:12px;line-height:1.5;color:#8a7d68}
 #leaderboard-dialog .leaderboard-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 6px}
 #leaderboard-dialog .leaderboard-table thead{display:none}
-#leaderboard-dialog .leaderboard-caption{padding:6px 2px 0;font-size:12px;font-weight:700;color:#8a7d68;text-align:left}
+#leaderboard-dialog .leaderboard-caption{padding:6px 2px 0;font-size:12px;font-weight:700;color:#8a7d68;text-align:start}
 #leaderboard-dialog .leaderboard-table td{padding:8px;border-top:1px solid #eee6da;border-bottom:1px solid #eee6da;background:#fbf8f2;vertical-align:middle;overflow-wrap:normal}
-#leaderboard-dialog .leaderboard-table td:first-child{width:46px;padding-inline:4px;border-left:1px solid #eee6da;border-radius:14px 0 0 14px;text-align:center}
-#leaderboard-dialog .leaderboard-table td:last-child{width:86px;padding-right:12px;border-right:1px solid #eee6da;border-radius:0 14px 14px 0;font:700 16px 'Outfit',sans-serif;color:#806322;white-space:nowrap;text-align:right}
+#leaderboard-dialog .leaderboard-table td:first-child{width:46px;padding-inline:4px;border-inline-start:1px solid #eee6da;border-radius:14px 0 0 14px;text-align:center}
+#leaderboard-dialog .leaderboard-table td:last-child{width:86px;padding-inline-end:12px;border-inline-end:1px solid #eee6da;border-radius:0 14px 14px 0;font:700 16px 'Outfit',sans-serif;color:#806322;white-space:nowrap;text-align:end}
 #leaderboard-dialog .leaderboard-table tr.is-rank-1 td{background:#fff3c8;border-color:#ecd48a}
 #leaderboard-dialog .leaderboard-table tr.is-rank-2 td{background:#f2f0ea;border-color:#dcd8cd}
 #leaderboard-dialog .leaderboard-table tr.is-rank-3 td{background:#f8e7d7;border-color:#e6c7a7}
@@ -495,7 +495,7 @@
 .leaderboard-farmer{display:flex;align-items:center;gap:10px;min-width:0}
 .leaderboard-portrait{position:relative;flex:0 0 40px;width:40px;height:40px}
 .leaderboard-portrait .player-avatar-thumb{display:block;width:40px;height:40px;border-radius:12px}
-.leaderboard-portrait .online-dot{position:absolute;right:-3px;bottom:-2px;width:11px;height:11px;margin:0;border:2px solid #fffdf5;border-radius:50%;background:#c8c4b8}
+.leaderboard-portrait .online-dot{position:absolute;inset-inline-end:-3px;bottom:-2px;width:11px;height:11px;margin:0;border:2px solid #fffdf5;border-radius:50%;background:#c8c4b8}
 .leaderboard-portrait .online-dot.is-online{background:#5e9b51}
 #leaderboard-dialog .leaderboard-farmer strong,#leaderboard-dialog .leaderboard-farmer .player-name-link{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;font-size:15px}
 #leaderboard-dialog .leaderboard-table small{margin-top:1px;font-size:12px}
@@ -507,7 +507,7 @@
 .family-rewards-fold>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
 .family-rewards-fold>summary::-webkit-details-marker{display:none}
 .family-rewards-fold>summary strong{font:600 16px 'Outfit',sans-serif;color:#453e28}
-.family-rewards-fold>summary span{margin-left:auto;font-size:12px;font-weight:600;color:#8f816f}
+.family-rewards-fold>summary span{margin-inline-start:auto;font-size:12px;font-weight:600;color:#8f816f}
 .family-rewards-fold[open] .factory-chevron{transform:rotate(180deg)}
 .family-rewards-fold>.family-order-rewards{margin:0 12px 12px}
 .family-line-actions:empty{display:none}
@@ -640,7 +640,7 @@
 #journal-content .journal-hero-top small{flex:none;font-size:12px;color:#8a7550}
 #journal-content .journal-hero progress{display:block;width:100%;height:8px;margin:7px 0 9px}
 #journal-content .journal-next{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:#806c45}
-#journal-content .journal-next>span{margin-right:2px}
+#journal-content .journal-next>span{margin-inline-end:2px}
 #journal-content .journal-next>b{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 4px;border:1px solid #ead9ad;border-radius:999px;background:#fffaf0;font-size:13px;color:#5d4a22}
 #journal-content .journal-next .game-art{flex:none;width:18px;height:18px}
 #journal-content .journal-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 20px}
@@ -653,7 +653,7 @@
 #journal-content .journal-collection-head h3{font:600 20px 'Outfit',sans-serif;color:#453e28}
 #journal-content .journal-tabs{flex:0 1 260px;margin:0}
 #journal-content .journal-tabs button{white-space:nowrap}
-#journal-content .journal-tabs b{margin-left:3px;font-weight:600;opacity:.7}
+#journal-content .journal-tabs b{margin-inline-start:3px;font-weight:600;opacity:.7}
 #journal-content .collection-grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
 #journal-content .collection-crop{gap:1px;min-width:0;padding:8px 4px 9px;border:1px dashed #e0d6cc;border-radius:14px;background:#f7f3ee}
 #journal-content .collection-crop>.collection-picture{width:52px;height:52px;margin-bottom:3px}
@@ -675,7 +675,7 @@
  #journal-content .journal-hero-top{flex-wrap:wrap;gap:0 8px}
  #journal-content .journal-hero-top strong{font-size:16px}
  #journal-content .journal-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
- #journal-content .journal-tiles>div{flex-direction:row;gap:9px;padding:9px 10px;text-align:left}
+ #journal-content .journal-tiles>div{flex-direction:row;gap:9px;padding:9px 10px;text-align:start}
  #journal-content .journal-tiles strong{font-size:18px}
  #journal-content .journal-tabs{flex-basis:100%}
  #journal-content .collection-grid{grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px}
@@ -730,7 +730,7 @@
  #task-list .quest-art>.game-art{width:31px;height:31px}
  #task-list .quest-item h3{font-size:16px}
  #tasks-dialog .quest-filters button{font-size:12px}
- #tasks-dialog .quest-filters span{margin-left:3px;padding:0 4px;min-width:18px;height:18px}
+ #tasks-dialog .quest-filters span{margin-inline-start:3px;padding:0 4px;min-width:18px;height:18px}
 }
 
 /* Farm stall: one card with the coins waiting, when it is full and Collect; three facts; the next level as gains. */
@@ -770,7 +770,7 @@
 /* Farm buildings: one compact row per building (picture, name, level, a coloured status), two columns on desktop;
    the tractor, silo and delivery cart as three small tiles underneath. */
 #buildings-dialog .building-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
-#buildings-dialog .building-card{display:flex;align-items:center;gap:12px;min-height:0;margin:0;padding:10px 12px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2;text-align:left;box-shadow:none}
+#buildings-dialog .building-card{display:flex;align-items:center;gap:12px;min-height:0;margin:0;padding:10px 12px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2;text-align:start;box-shadow:none}
 #buildings-dialog .building-card:hover{border-color:#d8c7ae;background:#fdf9f1}
 #buildings-dialog .building-card-art{flex:none;display:grid;place-items:center;width:56px;height:56px;border-radius:14px;background:#f1e9dc}
 #buildings-dialog .building-card-art>img{width:50px;height:50px;object-fit:contain}
@@ -873,7 +873,7 @@
 #daily-gift .streak-day.collected b{color:#5d7a4a}
 /* Days 3, 5 and 7 of every streak week bring a boost: a small badge in the corner of the day, and a chip with today's gift. */
 #daily-gift .streak-day{position:relative}
-#daily-gift .streak-boost{position:absolute;top:-7px;right:-5px;display:grid;place-items:center;width:24px;height:24px;border:1px solid #cfe0c0;border-radius:50%;background:#f3f8ec;box-shadow:0 1px 3px #3c2f1426}
+#daily-gift .streak-boost{position:absolute;top:-7px;inset-inline-end:-5px;display:grid;place-items:center;width:24px;height:24px;border:1px solid #cfe0c0;border-radius:50%;background:#f3f8ec;box-shadow:0 1px 3px #3c2f1426}
 #daily-gift .streak-boost .game-art{width:17px;height:17px}
 #daily-gift .streak-claim{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:#fffaf0}
 #daily-gift .streak-claim>span:not(.streak-done){flex:1;min-width:0;display:grid;gap:5px}
@@ -910,7 +910,7 @@
 #utility-content .silo-next h3{font-size:18px}
 #utility-content .silo-next h3 small{font:600 13px 'DM Sans',sans-serif;color:#8a7c69}
 #utility-content .silo-next p{margin:0;font-size:13px;line-height:1.5}
-#utility-content .silo-next .reward-chips>b.is-gain{border-color:#cfe0c3;background:#eef6e6;color:#3f6b2c;padding-left:9px}
+#utility-content .silo-next .reward-chips>b.is-gain{border-color:#cfe0c3;background:#eef6e6;color:#3f6b2c;padding-inline-start:9px}
 #utility-content .silo-next button{flex:none;width:auto;min-height:44px;padding:8px 14px;gap:8px;white-space:nowrap}
 #utility-content .silo-note{margin:8px 0 0;font-size:12px;color:#8a7c69;text-align:center}
 @media(max-width:460px){
@@ -974,7 +974,7 @@
 #sound-dialog :is(.sound-switch,.notify-row){min-height:0;padding:10px 12px;border-radius:14px;background:#fff;border-color:#ebe3d8}
 #sound-dialog .sound-switch>span{font-size:14px}
 #sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:44px;height:26px;min-height:0;margin:0;padding:0;border:0;border-radius:999px;background:#d9cfc2;cursor:pointer;transition:background .15s}
-#sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #3d392340;transition:transform .15s}
+#sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]::after{content:'';position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #3d392340;transition:transform .15s}
 #sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]:checked{background:#6f8f4e}
 #sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]:checked::after{transform:translateX(18px)}
 #sound-dialog :is(.sound-switch,.notify-row) input[type=checkbox]:disabled{opacity:.5}
@@ -1043,7 +1043,7 @@
 #building-content .build-makes>div{display:flex;flex-wrap:wrap;gap:6px}
 #building-content .build-makes b{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 5px;border:1px solid #e6dccd;border-radius:999px;background:#fff;font-size:13px;color:#4f4331}
 #building-content .build-makes b .game-art{width:22px;height:22px}
-#building-content .build-makes b.build-more{padding-left:10px;color:#8a7c69}
+#building-content .build-makes b.build-more{padding-inline-start:10px;color:#8a7c69}
 #building-content .build-recipes{margin:0 0 12px}
 #building-content .build-recipes>summary{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#6d5a2f;cursor:pointer}
 #building-content .build-recipes .construction-recipes{margin-top:10px}
@@ -1150,7 +1150,7 @@
 #admin-dashboard-dialog .admin-invite-totals{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 8px;font-size:13px;color:#6c604a}
 #admin-dashboard-dialog .admin-invite-totals strong{color:#3f3827;font-size:15px}
 #admin-dashboard-dialog .admin-invite-list strong small{font-weight:500;color:#857d6b}
-#admin-dashboard-dialog .admin-invite-list .admin-when{margin-left:auto;flex:none;color:#857d6b}
+#admin-dashboard-dialog .admin-invite-list .admin-when{margin-inline-start:auto;flex:none;color:#857d6b}
 #admin-dashboard-dialog .admin-paid{color:#3f7a3a}
 #admin-dashboard-dialog .admin-pending-pay{color:#a8741c}
 #admin-dashboard-dialog .admin-none{color:#9a8f7c;font-weight:600}
@@ -1163,8 +1163,8 @@
 .email-check-dialog>.game-art{display:block;width:64px;height:64px;margin:0 auto 8px}
 .email-check-dialog h2{margin:2px 0 8px;font:700 24px/1.2 'Outfit',sans-serif}
 .email-check-dialog p{margin:0 0 14px;color:#5d5641;font-size:14.5px;line-height:1.5}
-.email-check-dialog .email-check-close{position:absolute;top:12px;right:12px}
-.email-check-news{display:flex;align-items:flex-start;gap:10px;margin:16px 0 4px;color:#5d5641;font-size:13px;line-height:1.45;text-align:left;cursor:pointer}.email-check-news input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#3f6b33}
+.email-check-dialog .email-check-close{position:absolute;top:12px;inset-inline-end:12px}
+.email-check-news{display:flex;align-items:flex-start;gap:10px;margin:16px 0 4px;color:#5d5641;font-size:13px;line-height:1.45;text-align:start;cursor:pointer}.email-check-news input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#3f6b33}
 .email-check-dialog>.primary-button{width:100%;justify-content:center}
 .email-check-form{display:flex;gap:8px;margin:0 0 10px}
 .email-check-form input{flex:1;min-width:0;height:48px;padding:0 12px;border:1px solid #d9c7a4;border-radius:12px;background:#fffdf5;font:700 22px 'Outfit',sans-serif;letter-spacing:6px;text-align:center}
@@ -1174,13 +1174,13 @@
 .feedback-dialog>.game-art{display:block;width:72px;height:72px;margin:0 auto 8px}
 .feedback-dialog h2{margin:2px 0 12px;font:700 24px/1.2 'Outfit',sans-serif}
 .feedback-dialog>p{margin:0 0 14px;color:#5d5641;font-size:14.5px;line-height:1.5}
-.feedback-dialog .feedback-close{position:absolute;top:12px;right:12px}
+.feedback-dialog .feedback-close{position:absolute;top:12px;inset-inline-end:12px}
 .feedback-kinds{display:flex;gap:4px;margin:0 0 12px;padding:4px;border-radius:12px;background:#efe6d6}
 .feedback-kinds button{flex:1;min-height:40px;border:0;border-radius:9px;background:transparent;color:#6b6149;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
 .feedback-kinds button[aria-pressed="true"]{background:#fffdf5;color:#3d3923;box-shadow:0 1px 0 #d9c7a4}
 .feedback-form textarea{display:block;width:100%;box-sizing:border-box;min-height:120px;padding:12px;border:1px solid #d9c7a4;border-radius:12px;background:#fffdf5;color:#3d3923;font:inherit;font-size:15px;line-height:1.45;resize:vertical}
 .feedback-form textarea:focus{outline:3px solid #c2912d;outline-offset:1px}
-.feedback-note{margin:8px 0 14px;color:#857d70;font-size:12.5px;line-height:1.45;text-align:left}
+.feedback-note{margin:8px 0 14px;color:#857d70;font-size:12.5px;line-height:1.45;text-align:start}
 .feedback-form .primary-button,.feedback-dialog>.primary-button{width:100%;justify-content:center}
 .feedback-dialog>.feedback-status{min-height:1.2em;margin:16px 0 0;color:#9a3b24;font-size:13.5px;text-align:center}
 .feedback-dialog>.feedback-status:empty{margin:0}
@@ -1202,15 +1202,15 @@
 #admin-dashboard-dialog .admin-filter:not(.active):hover{background:#f7f0e3;color:#5b4520}
 #admin-dashboard-dialog .admin-filter.active{background:#fffdf5;border-color:#d9c7a4;color:#5b4520;box-shadow:0 2px 0 #e2d3b3}
 #admin-dashboard-dialog .admin-player-list>li{padding:0}
-#admin-dashboard-dialog .admin-player-row{display:flex;align-items:center;gap:10px;width:100%;padding:9px 4px;border:0;border-radius:10px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+#admin-dashboard-dialog .admin-player-row{display:flex;align-items:center;gap:10px;width:100%;padding:9px 4px;border:0;border-radius:10px;background:none;color:inherit;font:inherit;text-align:start;cursor:pointer}
 #admin-dashboard-dialog .admin-player-row:hover{background:#f3ecdf}
 #admin-dashboard-dialog .admin-player-row .admin-avatar{width:36px;height:36px}
 #admin-dashboard-dialog .admin-player-row small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#admin-dashboard-dialog .admin-last-active{flex:none;display:grid;justify-items:end;gap:1px;text-align:right}
+#admin-dashboard-dialog .admin-last-active{flex:none;display:grid;justify-items:end;gap:1px;text-align:end}
 #admin-dashboard-dialog .admin-last-active b{font-size:12.5px;color:#4f472f}
 #admin-dashboard-dialog .admin-last-active.is-online b{color:#3f7a3a}
 #admin-dashboard-dialog .admin-last-active time{font-size:12px;font-weight:600;color:#8a7c69;font-variant-numeric:tabular-nums}
-#admin-dashboard-dialog .admin-chip{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:800;vertical-align:1px}
+#admin-dashboard-dialog .admin-chip{display:inline-block;margin-inline-start:4px;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:800;vertical-align:1px}
 #admin-dashboard-dialog .admin-chip.is-vip{background:#f7e3a3;color:#7a5a10}
 #admin-dashboard-dialog .admin-chip.is-drop{background:#f6d9cf;color:#9a4a2c}
 #admin-dashboard-dialog .admin-more{display:block;width:auto;margin:10px auto 0}
@@ -1234,7 +1234,7 @@
 #admin-dashboard-dialog .admin-bars>li>span small{color:#8a7c69}
 #admin-dashboard-dialog .admin-bars i{display:block;height:10px;border-radius:99px;background:#efe6d8;overflow:hidden}
 #admin-dashboard-dialog .admin-bars i>b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#8fb35c,#6f9a45)}
-#admin-dashboard-dialog .admin-bars strong{min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
+#admin-dashboard-dialog .admin-bars strong{min-width:44px;text-align:end;font-variant-numeric:tabular-nums}
 #admin-dashboard-dialog .admin-bars strong small{display:block;font-size:12px;font-weight:600;color:#8a7c69}
 #admin-dashboard-dialog .admin-bars>li.is-worst i>b{background:linear-gradient(90deg,#e0a064,#c9713f)}
 #admin-dashboard-dialog .admin-funnel-split{margin-top:8px;padding-top:8px;border-top:1px solid #eee6da;font-size:12px;font-weight:700;color:#8a7c69}
@@ -1245,7 +1245,7 @@
 }
 /* Mobile or desktop (src/admin-players.js devicesHtml): the split in one line, the three bars, this week's split below. */
 #admin-dashboard-dialog .admin-device-split{margin:0 0 10px;font-size:15px;color:#4a4232}#admin-dashboard-dialog .admin-device-split strong{font:700 20px 'Outfit',sans-serif;color:#3f5a30}
-#admin-dashboard-dialog .admin-device-split small,#admin-dashboard-dialog .admin-device-week small{margin-left:6px;color:#8a7c69;font-size:12px}
+#admin-dashboard-dialog .admin-device-split small,#admin-dashboard-dialog .admin-device-week small{margin-inline-start:6px;color:#8a7c69;font-size:12px}
 #admin-dashboard-dialog .admin-device-week{margin:10px 0 0;font-size:13px;color:#5d5140}
 /* Farm events: the family bonus under the prizes (27 Sep 2026). */
 .event-family-bonus{display:flex;align-items:center;gap:8px;margin:10px 0 0;padding:8px 10px;border-radius:12px;background:#f2f6ea;font-size:12.5px;color:#4d6b3a}
@@ -1272,7 +1272,7 @@
 .giant-actions{display:flex;flex-wrap:wrap;gap:8px}
 .giant-actions button{flex:1 1 180px}
 .fair-tabs{margin:0 0 12px}
-.project-pips,.master-pips{display:inline-flex;gap:4px;vertical-align:middle;margin-right:6px}
+.project-pips,.master-pips{display:inline-flex;gap:4px;vertical-align:middle;margin-inline-end:6px}
 .project-pips i,.master-pips i{display:block;width:10px;height:10px;border-radius:50%;background:#e8dfcd;border:1px solid #d6c9ad}
 .project-pips i.is-on,.master-pips i.is-on{background:#e7b43e;border-color:#b98a22}
 .master-pips{margin:8px 0 2px}
@@ -1291,7 +1291,7 @@
 #estate-content .master-branch .task-bottom{display:flex;justify-content:flex-end;margin-top:8px}
 #estate-content .daily-list{display:grid;gap:8px}
 /* Change your email (28 Sep 2026): the new address and the password, then the code sent to the new address. */
-.email-change-form{display:grid;gap:10px;margin:0 0 10px;text-align:left}
+.email-change-form{display:grid;gap:10px;margin:0 0 10px;text-align:start}
 .email-change-form label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:650}
 .email-change-form input{height:46px;box-sizing:border-box;padding:0 12px;border:1px solid #d9c7a4;border-radius:12px;background:#fffdf5;font:600 16px 'DM Sans',sans-serif}
 .email-change-form input:focus{outline:3px solid #c2912d;outline-offset:1px}
@@ -1318,7 +1318,7 @@
 @keyframes center-notice-in{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.center-notice{animation:none}}
 /* A farmer in daily sharing opens their profile, like a row in the Members list (29 Sep 2026). */
-.sharing-person{flex:1;display:flex;align-items:center;gap:12px;min-width:0;margin:0;padding:4px 8px 4px 0;border:0;border-radius:14px;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.sharing-person{flex:1;display:flex;align-items:center;gap:12px;min-width:0;margin:0;padding:4px 8px 4px 0;border:0;border-radius:14px;background:none;font:inherit;color:inherit;text-align:start;cursor:pointer}
 .sharing-person .sharing-who{display:block}
 .sharing-person:not(:disabled):hover{background:#f7f2e9}
 .sharing-person:focus-visible{outline:3px solid #c79138;outline-offset:1px}
@@ -1333,7 +1333,7 @@
 #leaderboard-dialog .leaderboard-pages{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 6px}
 #leaderboard-dialog .leaderboard-pages span{color:#6f6450;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
 #leaderboard-dialog .leaderboard-pages .small-button{width:auto;min-height:40px;padding:6px 14px}
-#leaderboard-dialog .your-rank .small-button{width:auto;min-height:34px;margin-left:auto;padding:4px 12px}
+#leaderboard-dialog .your-rank .small-button{width:auto;min-height:34px;margin-inline-start:auto;padding:4px 12px}
 /* Empty states as cards (30 Sep 2026): the Journal before your first harvest or batch, and an empty leaderboard. */
 #journal-content .journal-empty,#leaderboard-dialog .leaderboard-empty{padding:26px 18px}
 #journal-content .journal-empty>.game-art,#leaderboard-dialog .leaderboard-empty>.game-art{display:block;width:60px;height:60px;margin:0 auto 10px}

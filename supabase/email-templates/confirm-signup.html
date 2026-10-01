@@ -1,5 +1,6 @@
 {{- $l := printf "%v" .Data.language -}}
 {{- $lang := "en" -}}
+{{- $dir := "ltr" -}}
 {{- $title := "Welcome to the valley!" -}}
 {{- $pre := "One tap and your farm is ready." -}}
 {{- $intro := "Thanks for signing up. Confirm your email address and your farm opens right away: a patch of land, a few seeds and a first harvest waiting for you." -}}
@@ -124,9 +125,19 @@
 {{- $copy = "ボタンが使えない場合は、このリンクをブラウザにコピーしてください：" -}}
 {{- $foot = "このアドレスでHarvest Tycoonに登録があったため、このメールをお送りしています。心当たりがない場合は、このメールを無視してください。" -}}
 {{- $tag = "小さな農場。可能性に満ちた世界。" -}}
+{{- else if eq $l "ar" -}}
+{{- $lang = "ar" -}}
+{{- $dir = "rtl" -}}
+{{- $title = "مرحبًا بك في الوادي!" -}}
+{{- $pre = "لمسة واحدة ومزرعتك جاهزة." -}}
+{{- $intro = "شكرًا لتسجيلك. أكّد عنوان بريدك الإلكتروني وستُفتح مزرعتك على الفور: قطعة أرض وبعض البذور وأول حصاد بانتظارك." -}}
+{{- $button = "أكّد وابدأ مزرعتي" -}}
+{{- $copy = "الزر لا يعمل؟ انسخ هذا الرابط إلى متصفحك:" -}}
+{{- $foot = "وصلتك هذه الرسالة لأن شخصًا ما سجّل في Harvest Tycoon بهذا العنوان. إن لم تكن أنت، يمكنك تجاهلها بأمان." -}}
+{{- $tag = "مزرعة صغيرة. عالم من الإمكانيات." -}}
 {{- end -}}
 <!doctype html>
-<html lang="{{ $lang }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ $title }}</title></head>
+<html lang="{{ $lang }}" dir="{{ $dir }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ $title }}</title></head>
 <body style="margin:0;padding:0;background:#f3e8e0;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f3e8e0;">{{ $pre }}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3e8e0;padding:28px 12px;">

@@ -2,13 +2,13 @@
    box you type in on top, the newest message right under it. The same cream, brown and soft tabs as the rest of the game. */
 #chat-button{position:relative;flex-shrink:0}
 #chat-button .game-art{width:28px;height:28px}
-#chat-dot{position:absolute;right:-6px;top:-6px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border:2px solid #fffdf5;border-radius:999px;background:#e0533d;box-shadow:0 1px 3px #47372333;color:#fff;font:800 10px/15px 'DM Sans',sans-serif;text-align:center;pointer-events:none}
+#chat-dot{position:absolute;inset-inline-end:-6px;top:-6px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border:2px solid #fffdf5;border-radius:999px;background:#e0533d;box-shadow:0 1px 3px #47372333;color:#fff;font:800 10px/15px 'DM Sans',sans-serif;text-align:center;pointer-events:none}
 #chat-button[hidden],#chat-dot[hidden]{display:none}
 /* Phones (26 Sep 2026): a clean header. The chat lives in the More menu, under Friends, with a pill for what is unread; the header
    keeps the coins, the diamonds and the beginner boost. The desktop keeps its chat button in the header. */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#chat-button{display:none}}
 
-#chat-dialog{position:fixed;inset:14px auto 14px 14px;margin:0;width:min(420px,calc(100vw - 28px));height:auto;max-height:none;box-sizing:border-box;padding:0;display:none;flex-direction:column;overflow:hidden;border:1px solid #d1c6ba;border-radius:22px;background:var(--cream,#fffdf5);color:var(--ink,#3d382a);text-align:left;box-shadow:0 25px 80px #302d1938}
+#chat-dialog{position:fixed;inset:14px auto 14px 14px;margin:0;width:min(420px,calc(100vw - 28px));height:auto;max-height:none;box-sizing:border-box;padding:0;display:none;flex-direction:column;overflow:hidden;border:1px solid #d1c6ba;border-radius:22px;background:var(--cream,#fffdf5);color:var(--ink,#3d382a);text-align:start;box-shadow:0 25px 80px #302d1938}
 #chat-dialog[open]{display:flex;animation:chat-in .18s ease-out}
 @keyframes chat-in{from{transform:translateX(-28px);opacity:0}}
 @media(prefers-reduced-motion:reduce){#chat-dialog[open]{animation:none}}
@@ -20,14 +20,14 @@
 .chat-tabs button .game-art{width:24px;height:24px;object-fit:contain}
 .chat-tabs button.active{background:#fffdf5;box-shadow:0 2px 5px #43362214;color:#5e523a}
 .chat-tabs button:not(.active):hover{color:#5e523a}
-.chat-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:6px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e0533d;color:#fff;font:800 12px/1 'DM Sans',sans-serif}
+.chat-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-inline-start:6px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e0533d;color:#fff;font:800 12px/1 'DM Sans',sans-serif}
 .chat-count[hidden]{display:none}
 .chat-close{flex-shrink:0;width:40px;height:40px;border:0;background:none;box-shadow:none;color:#8a7c6a}
 .chat-close:hover{background:#f0e8e0;color:#5e523a}
 .chat-head{display:flex;align-items:center;gap:10px;padding:14px 16px 0;min-height:40px}
 .chat-head.is-quiet{position:absolute;width:1px;height:1px;min-height:0;padding:0;overflow:hidden;clip-path:inset(50%)}
 .chat-head h2{flex:1;min-width:0;margin:0;font:750 21px/1.2 'Outfit','DM Sans',sans-serif;color:#3d382a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chat-title-name{display:block;max-width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.chat-title-name{display:block;max-width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start}
 .chat-title-name:hover{text-decoration:underline;text-underline-offset:3px}
 .chat-back,.chat-block{flex-shrink:0;display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid #e1d6ca;border-radius:12px;background:#f6efe7;color:#6b5e49;cursor:pointer}
 .chat-back[hidden],.chat-block[hidden],.chat-report[hidden]{display:none}
@@ -58,10 +58,10 @@
 .chat-msg{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr);gap:11px;padding:10px;border-radius:14px}
 .chat-msg.is-mine{background:#f2f6e8}
 /* 26 Sep 2026: messages in a row from one farmer share one name and picture, and each day starts with a divider. */
-.chat-msg.is-cont{padding-top:2px;border-top-left-radius:0;border-top-right-radius:0}
-.chat-msg:has(+ .chat-msg.is-cont){padding-bottom:4px;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.chat-msg.is-cont{padding-top:2px;border-start-start-radius:0;border-start-end-radius:0}
+.chat-msg:has(+ .chat-msg.is-cont){padding-bottom:4px;border-end-start-radius:0;border-end-end-radius:0}
 .chat-msg.is-cont .chat-text{margin-top:0}
-.chat-msg.is-cont>.chat-more{position:absolute;top:2px;right:10px}
+.chat-msg.is-cont>.chat-more{position:absolute;top:2px;inset-inline-end:10px}
 .chat-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .chat-day{display:flex;align-items:center;gap:10px;margin:12px 6px 4px;color:#9a8d7c;font:700 12px 'DM Sans',sans-serif;letter-spacing:.2px}
 .chat-day:first-child{margin-top:4px}
@@ -77,26 +77,26 @@ span.chat-avatar{cursor:default}
 .chat-name:hover{text-decoration:underline;text-underline-offset:2px}
 .chat-mod{display:inline-flex;flex-shrink:0}
 .chat-mod .game-art{width:17px;height:17px}
-.chat-msg-top time{margin-left:auto;flex-shrink:0;color:#9a8d7c;font-size:12px;font-variant-numeric:tabular-nums}
+.chat-msg-top time{margin-inline-start:auto;flex-shrink:0;color:#9a8d7c;font-size:12px;font-variant-numeric:tabular-nums}
 .chat-more{flex-shrink:0;display:grid;place-items:center;width:28px;height:24px;margin:-2px -4px -2px 0;padding:0;border:0;border-radius:8px;background:none;color:#9a8d7c;cursor:pointer}
 .chat-more:hover,.chat-more:focus-visible{background:#efe6da;color:#5e523a}
-.chat-more-space{flex-shrink:0;width:28px;margin-right:-4px}.chat-msg.is-cont>.chat-more-space{display:none}
+.chat-more-space{flex-shrink:0;width:28px;margin-inline-end:-4px}.chat-msg.is-cont>.chat-more-space{display:none}
 @media(hover:hover) and (pointer:fine){.chat-more{opacity:0}.chat-msg:hover .chat-more,.chat-more:focus-visible,.chat-msg:has(.chat-menu) .chat-more{opacity:1}}
 .chat-text{margin:3px 0 0;color:#4a4232;font:500 15px/1.4 'DM Sans',sans-serif;overflow-wrap:anywhere}
 /* The small translate link of a message in the global chat (src/chat-ui.js): quiet until you need it. */
-.chat-translate{position:absolute;top:36px;right:9px;display:grid;place-items:center;width:22px;height:22px;border-radius:7px;color:#a69a86;text-decoration:none}
+.chat-translate{position:absolute;top:36px;inset-inline-end:9px;display:grid;place-items:center;width:22px;height:22px;border-radius:7px;color:#a69a86;text-decoration:none}
 /* Under the "•••", and like it only while the pointer is on the message; a follow-up message is one line, so there it sits beside
    the "•••". A phone has no hover: there it is "Translate with Google" in the long-press menu. */
-.chat-msg.is-cont>.chat-translate{top:3px;right:40px}.chat-msg.has-translate:not(.is-cont) .chat-text{padding-right:24px}
+.chat-msg.is-cont>.chat-translate{top:3px;inset-inline-end:40px}.chat-msg.has-translate:not(.is-cont) .chat-text{padding-inline-end:24px}
 @media(hover:hover) and (pointer:fine){.chat-translate{opacity:0}.chat-msg:hover .chat-translate,.chat-translate:focus-visible{opacity:1}}
-@media(pointer:coarse){.chat-translate{display:none}.chat-msg.has-translate .chat-text{padding-right:0}}
+@media(pointer:coarse){.chat-translate{display:none}.chat-msg.has-translate .chat-text{padding-inline-end:0}}
 .chat-translate:hover,.chat-translate:focus-visible{color:#5b5336;background:#efe7dc}
 .chat-translate svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.chat-menu{position:absolute;right:8px;top:36px;z-index:3;display:grid;min-width:176px;padding:5px;border:1px solid #e0d4c6;border-radius:12px;background:#fffdf5;box-shadow:0 10px 30px #3a2f1f26}
-.chat-menu button{padding:9px 12px;border:0;border-radius:8px;background:none;color:#4a4232;font:650 14px 'DM Sans',sans-serif;text-align:left;cursor:pointer}
+.chat-menu{position:absolute;inset-inline-end:8px;top:36px;z-index:3;display:grid;min-width:176px;padding:5px;border:1px solid #e0d4c6;border-radius:12px;background:#fffdf5;box-shadow:0 10px 30px #3a2f1f26}
+.chat-menu button{padding:9px 12px;border:0;border-radius:8px;background:none;color:#4a4232;font:650 14px 'DM Sans',sans-serif;text-align:start;cursor:pointer}
 .chat-menu button:hover,.chat-menu button:focus-visible{background:#f4ece2}
 .chat-menu button.is-danger{color:#b3402a}
-.chat-thread{display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;padding:10px;border:0;border-radius:14px;background:none;text-align:left;cursor:pointer}
+.chat-thread{display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;padding:10px;border:0;border-radius:14px;background:none;text-align:start;cursor:pointer}
 .chat-thread:hover{background:#f6efe7}
 .chat-thread .chat-avatar{width:46px;height:46px}
 .chat-thread-copy{display:grid;gap:3px;min-width:0}
@@ -116,8 +116,8 @@ span.chat-avatar{cursor:default}
 .chat-empty p{margin:0 auto;max-width:280px}
 .chat-empty .small-button{margin-top:14px}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
- #chat-dialog{inset:0 auto 0 0;width:min(420px,calc(100vw - 44px));height:100%;max-height:none;padding-top:env(safe-area-inset-top);border-left:0;border-radius:0 22px 22px 0}
- .chat-top{padding:12px 8px 0 12px}.chat-head{padding:12px 12px 0}.chat-compose{padding:12px}.chat-tabs button{font-size:13.5px;padding:6px 4px}.chat-tabs button[data-chat-tab="notices"]{min-width:40px}.chat-count{margin-left:4px}
+ #chat-dialog{inset:0 auto 0 0;width:min(420px,calc(100vw - 44px));height:100%;max-height:none;padding-top:env(safe-area-inset-top);border-inline-start:0;border-radius:0 22px 22px 0}
+ .chat-top{padding:12px 8px 0 12px}.chat-head{padding:12px 12px 0}.chat-compose{padding:12px}.chat-tabs button{font-size:13.5px;padding:6px 4px}.chat-tabs button[data-chat-tab="notices"]{min-width:40px}.chat-count{margin-inline-start:4px}
  .chat-list{padding-bottom:calc(18px + var(--safe-bottom,0px))}
  .chat-more{width:32px;height:28px}.chat-more-space{width:32px}
 }
@@ -127,7 +127,7 @@ span.chat-avatar{cursor:default}
 
 /* The profile: the Moderator badge (the admin wears the same), Send message and Block, the staff's chat buttons. */
 .farmer-profile-back[hidden]{display:none}
-.farmer-mod-badge{display:inline-flex;align-items:center;gap:5px;margin-left:8px;padding:3px 10px 3px 5px;border:1px solid #c5dbeb;border-radius:999px;background:#eaf2f9;color:#23577f;font:800 12px/1.4 'DM Sans',sans-serif;letter-spacing:.2px;vertical-align:middle;white-space:nowrap}
+.farmer-mod-badge{display:inline-flex;align-items:center;gap:5px;margin-inline-start:8px;padding:3px 10px 3px 5px;border:1px solid #c5dbeb;border-radius:999px;background:#eaf2f9;color:#23577f;font:800 12px/1.4 'DM Sans',sans-serif;letter-spacing:.2px;vertical-align:middle;white-space:nowrap}
 .farmer-mod-badge .game-art{width:18px;height:18px}
 .farmer-chat{display:grid;gap:10px;margin:0 0 18px}
 .farmer-chat[hidden]{display:none}
@@ -135,7 +135,7 @@ span.chat-avatar{cursor:default}
 .farmer-chat-row .small-button{min-height:46px;padding:0 16px}
 .farmer-chat-send{flex:1;width:auto}
 .farmer-chat-send .game-art{width:22px;height:22px}
-.farmer-mod-tools{display:grid;gap:10px;padding:12px;border-radius:14px;background:#f6f1ea;text-align:left}
+.farmer-mod-tools{display:grid;gap:10px;padding:12px;border-radius:14px;background:#f6f1ea;text-align:start}
 .farmer-mod-title{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:#5e523a;font:700 13px 'DM Sans',sans-serif}
 .farmer-mod-title .game-art{width:18px;height:18px}
 .farmer-mod-title b{color:#8a5a2b}
@@ -165,14 +165,14 @@ span.chat-avatar{cursor:default}
 .admin-tabs{margin:0 0 12px}
 [data-admin-panel][hidden],.admin-tabs button[hidden]{display:none}
 .admin-guide{background:#f3f7ec;border-color:#dce8cc}
-.admin-guide ul{display:grid;gap:6px;margin:8px 0 0;padding-left:18px;color:#4f5a3c;font-size:13px;line-height:1.45}
+.admin-guide ul{display:grid;gap:6px;margin:8px 0 0;padding-inline-start:18px;color:#4f5a3c;font-size:13px;line-height:1.45}
 @media(max-width:600px){#admin-dashboard-dialog .admin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Settings: a picture on every switch (the envelope for private messages). */
-.notify-row-art>.game-art{flex:none;width:34px;height:34px;margin-right:2px;object-fit:contain}
+.notify-row-art>.game-art{flex:none;width:34px;height:34px;margin-inline-end:2px;object-fit:contain}
 .notify-row-art{justify-content:flex-start;gap:12px}.notify-row-art>span{flex:1;min-width:0}
 .chat-vip{display:inline-flex;flex-shrink:0}
 .chat-vip img{display:block;width:18px;height:18px;object-fit:contain}
-.chat-thread-copy strong .chat-vip{display:inline-flex;margin-left:5px;vertical-align:-3px}
+.chat-thread-copy strong .chat-vip{display:inline-flex;margin-inline-start:5px;vertical-align:-3px}
 .admin-donate{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px}
 .admin-donate label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:650}
 .admin-donate input{min-height:42px;box-sizing:border-box;padding:0 12px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 14px 'DM Sans',sans-serif}
@@ -188,7 +188,7 @@ span.chat-avatar{cursor:default}
 .admin-donate label>span{display:flex;align-items:center;gap:6px}
 .admin-donate label>span .game-art{width:20px;height:20px;flex:none}
 .chat-amount{white-space:nowrap}
-.chat-amount .game-art{display:inline-block;width:18px;height:18px;margin-right:3px;vertical-align:-3px}
+.chat-amount .game-art{display:inline-block;width:18px;height:18px;margin-inline-end:3px;vertical-align:-3px}
 .chat-amount b{font-weight:800}
 /* Private tab: find a farmer to write to. */
 .chat-find{padding:14px 16px;border-bottom:1px solid #eee4d9}
@@ -222,7 +222,7 @@ span.chat-avatar{cursor:default}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  .chat-tabs{gap:2px}
  .chat-tabs button{padding:6px 2px;font-size:13px}
- .chat-count{position:absolute;right:1px;top:-7px;min-width:16px;height:16px;margin:0;padding:0 4px;border:2px solid #f0e8e0;font-size:12px;line-height:1}
+ .chat-count{position:absolute;inset-inline-end:1px;top:-7px;min-width:16px;height:16px;margin:0;padding:0 4px;border:2px solid #f0e8e0;font-size:12px;line-height:1}
  .chat-tabs button[data-chat-tab="notices"]{min-width:38px}
 }
 /* A message the staff changed (chat-edit-message.sql): a quiet mark after the text. */
@@ -232,7 +232,7 @@ span.chat-avatar{cursor:default}
 .admin-gift-to .admin-filters{display:flex;flex-wrap:wrap;gap:6px}
 .admin-gift-player{display:grid;gap:6px;margin-top:4px}
 .admin-gift-results{display:grid;gap:6px;margin:0;padding:0;list-style:none}
-.admin-gift-results button,.admin-gift-results .is-chosen{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;margin:0;padding:6px 10px;border:1px solid #e3d6c1;border-radius:12px;background:#fffdf7;color:#3d382a;text-align:left;font:inherit}
+.admin-gift-results button,.admin-gift-results .is-chosen{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;margin:0;padding:6px 10px;border:1px solid #e3d6c1;border-radius:12px;background:#fffdf7;color:#3d382a;text-align:start;font:inherit}
 .admin-gift-results button:hover{background:#f7f0e3}
 .admin-gift-results .is-chosen{border-color:#608046;background:#eef4e3}
 .admin-gift-results span{display:grid;min-width:0}.admin-gift-results strong{font-size:14px}.admin-gift-results small{color:#80776b;font-size:12px;font-weight:600}
@@ -248,7 +248,7 @@ span.chat-avatar{cursor:default}
 .chat-notice .chat-text,#popup-dialog p{white-space:pre-line}
 #popup-dialog .primary-button{width:100%;min-height:46px}
 #popup-dialog .popup-later{display:block;width:100%;min-height:44px;margin-top:6px;border:0;background:none;color:#7a6c57;font:650 14px 'DM Sans',sans-serif;cursor:pointer}
-#popup-dialog .popup-close{position:absolute;right:12px;top:12px;width:44px;height:44px;border:0;border-radius:14px;background:#efe6da;color:#5e523a;font-size:28px;line-height:1;cursor:pointer}
+#popup-dialog .popup-close{position:absolute;inset-inline-end:12px;top:12px;width:44px;height:44px;border:0;border-radius:14px;background:#efe6da;color:#5e523a;font-size:28px;line-height:1;cursor:pointer}
 /* The admin's pop-up fields under the news, and the last ten pop-ups with who saw them. */
 .admin-popup-fields{display:grid;gap:8px;margin:0 0 10px;padding:12px;border:1px solid #e6dccd;border-radius:12px;background:#fffaf1}
 .admin-popup-fields[hidden],.admin-popup-fields [hidden]{display:none}
@@ -263,7 +263,7 @@ span.chat-avatar{cursor:default}
 .chat-mod.is-admin,.chat-mod.is-moderator{align-items:center;gap:3px;padding:1px 7px 1px 3px;border-radius:999px;background:#fdf1d8;color:#8a5a12;font:800 11px/1.4 'DM Sans',sans-serif;white-space:nowrap}
 .chat-mod.is-moderator{background:#eaf2f9;color:#23577f}
 .farmer-mod-badge.is-admin{border-color:#ecd39c;background:#fdf1d8;color:#8a5a12}
-.staff-badge{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 7px 1px 3px;border-radius:999px;background:#eaf2f9;color:#23577f;font:800 11px/1.4 'DM Sans',sans-serif;vertical-align:middle;white-space:nowrap}
+.staff-badge{display:inline-flex;align-items:center;gap:3px;margin-inline-start:6px;padding:1px 7px 1px 3px;border-radius:999px;background:#eaf2f9;color:#23577f;font:800 11px/1.4 'DM Sans',sans-serif;vertical-align:middle;white-space:nowrap}
 .staff-badge.is-admin{background:#fdf1d8;color:#8a5a12}.staff-badge .game-art{width:15px;height:15px}
 /* The welcome message for new farmers (Admin dashboard, Settings; supabase/welcome-dm.sql). */
 .admin-welcome-on{display:flex;align-items:center;gap:10px;margin:0 0 10px;color:#3d382a;font-size:14px;font-weight:700}

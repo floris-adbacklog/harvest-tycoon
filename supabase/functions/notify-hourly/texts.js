@@ -180,9 +180,25 @@ const TEXTS={
   pushGift:b=>`デイリーギフトが届いています（${b}付き）`,boosts:{3:'XP 2倍',5:'収穫2倍',7:'稼ぎ2倍'},
   pushStreak:n=>`ギフトを受け取って${n}日の連続記録を守りましょう`,
   readyBoth:'作物と商品の準備ができました',readyCrops:'作物が収穫できます',readyGoods:'商品を受け取れます'
+ },
+ ar:{
+  hi:n=>`مرحبًا ${n}!`,waiting:'هناك شيء ينتظرك في مزرعتك:',button:'افتح مزرعتي',openText:'افتح مزرعتك',
+  footer:'تصلك هذه الرسالة لأنك فعّلت الملخص اليومي في الإعدادات. تُرسل مرة واحدة في اليوم، وفقط عندما يكون هناك شيء ينتظرك.',
+  footerShort:'تصلك هذه الرسالة لأنك فعّلت الملخص اليومي في الإعدادات.',unsubscribe:'إلغاء الاشتراك',
+  subjectCrops:n=>`مزرعتك تحتاجك: ${n} ${forms('ar',n,{zero:'محاصيل جاهزة',one:'محصول جاهز',two:'محصولان جاهزان',few:'محاصيل جاهزة',many:'محصولًا جاهزًا',other:'محصول جاهز'})}`,
+  subjectJobs:n=>`مزرعتك تحتاجك: ${n} ${forms('ar',n,{zero:'دفعات جاهزة',one:'دفعة جاهزة',two:'دفعتان جاهزتان',few:'دفعات جاهزة',many:'دفعةً جاهزةً',other:'دفعة جاهزة'})}`,
+  gift:'هديتك اليومية بانتظارك',giftStreak:n=>`هديتك اليومية بانتظارك: حافظ على سلسلتك (${n} ${forms('ar',n,{zero:'أيام',one:'يوم',two:'يومان',few:'أيام',many:'يومًا',other:'يوم'})})`,
+  cropsLine:(n,list)=>`جاهزة للحصاد: ${n} ${forms('ar',n,{zero:'محاصيل',one:'محصول',two:'محصولان',few:'محاصيل',many:'محصولًا',other:'محصول'})}${list?` (${list})`:''}`,
+  jobsOne:(b,n)=>`${b}: ${n} ${forms('ar',n,{zero:'دفعات جاهزة',one:'دفعة جاهزة',two:'دفعتان جاهزتان',few:'دفعات جاهزة',many:'دفعةً جاهزةً',other:'دفعة جاهزة'})}`,
+  jobsMany:(n,list)=>`${n} ${forms('ar',n,{zero:'دفعات جاهزة',one:'دفعة جاهزة',two:'دفعتان جاهزتان',few:'دفعات جاهزة',many:'دفعةً جاهزةً',other:'دفعة جاهزة'})} (${list})`,
+  pushGift:b=>`هديتك اليومية بانتظارك، ومعها ${b}`,boosts:{3:'خبرة مضاعفة',5:'حصاد مضاعف',7:'أرباح مضاعفة'},
+  pushStreak:n=>`اجمع هديتك لتحافظ على سلسلتك (${n} ${forms('ar',n,{zero:'أيام',one:'يوم',two:'يومان',few:'أيام',many:'يومًا',other:'يوم'})})`,
+  readyBoth:'محاصيلك ومنتجاتك جاهزة',readyCrops:'محاصيلك جاهزة للحصاد',readyGoods:'منتجاتك جاهزة للجمع'
  }
 };
 export const MAIL_LANGUAGES=Object.freeze(Object.keys(TEXTS));
+// Languages that read from right to left: their emails run right to left (dir="rtl").
+export const RTL_MAIL=Object.freeze(['ar']);
 // Every language but English writes a crop as "Name ×3": no plural or case ending to get wrong in a list.
 export function textsFor(language){
  const t=TEXTS[language]??TEXTS.en;

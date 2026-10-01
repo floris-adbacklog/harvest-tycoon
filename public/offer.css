@@ -1,6 +1,6 @@
 /* The special offer (src/offer-ui.js, 29 Sep 2026). The buttons: on a computer a small one next to the diamonds (after the
    Starter Pack's), on a phone a tile above the bottom bar, above the Starter Pack tile when that one shows too. */
-#offer-button{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(20px,var(--safe-bottom));z-index:12;width:72px;min-height:84px;display:flex;align-items:center;flex-direction:column;gap:2px;padding:5px 4px 7px;border:2px solid #e0a13a;border-radius:19px;background:#fff3d6;box-shadow:0 4px 0 #a8742a33,0 10px 24px #3a2a1030;color:#6b4412;font-family:'DM Sans',sans-serif}
+#offer-button{position:fixed;inset-inline-start:max(14px,env(safe-area-inset-left));bottom:max(20px,var(--safe-bottom));z-index:12;width:72px;min-height:84px;display:flex;align-items:center;flex-direction:column;gap:2px;padding:5px 4px 7px;border:2px solid #e0a13a;border-radius:19px;background:#fff3d6;box-shadow:0 4px 0 #a8742a33,0 10px 24px #3a2a1030;color:#6b4412;font-family:'DM Sans',sans-serif}
 #offer-button img{width:48px;height:48px;border-radius:13px;object-fit:cover}
 #offer-button span{font-size:12px;font-weight:800;white-space:nowrap}
 #offer-button small{padding:0 6px;border-radius:99px;background:#d9482b;color:#fff;font-size:12px;font-weight:800}
@@ -11,24 +11,24 @@
 @media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){#offer-button{display:none}}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  #offer-chip{display:none}
- #offer-button{bottom:calc(var(--mobile-bottom,190px) + 12px);left:max(10px,env(safe-area-inset-left));width:62px;min-height:74px;border-radius:17px}
+ #offer-button{bottom:calc(var(--mobile-bottom,190px) + 12px);inset-inline-start:max(10px,env(safe-area-inset-left));width:62px;min-height:74px;border-radius:17px}
  #offer-button img{width:40px;height:40px}#offer-button span{font-size:8px}
  body:has(#starter-pack-button:not([hidden])) #offer-button{bottom:calc(var(--mobile-bottom,190px) + 96px)}
 }
-@media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){#offer-button{left:calc(86px + env(safe-area-inset-left))}}
+@media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){#offer-button{inset-inline-start:calc(86px + env(safe-area-inset-left))}}
 
 /* The window. Computer and tablet: the treasure chest on the left, what is in it on the right. Phone: the chest as a banner on
    top and smaller cards, so the Buy button is on screen without scrolling. */
-#offer-dialog{width:min(820px,calc(100vw - 24px));max-width:calc(100vw - 24px);height:fit-content;max-height:calc(100dvh - env(safe-area-inset-top) - 24px);margin:auto;left:0;right:0;padding:0;box-sizing:border-box;overflow:hidden auto;border:3px solid #e2b04d;border-radius:28px;background:radial-gradient(ellipse at 70% 0,#fff1c9,#fffdf4 60%);box-shadow:0 24px 60px #2b1d0855}
+#offer-dialog{width:min(820px,calc(100vw - 24px));max-width:calc(100vw - 24px);height:fit-content;max-height:calc(100dvh - env(safe-area-inset-top) - 24px);margin:auto;inset-inline-start:0;inset-inline-end:0;padding:0;box-sizing:border-box;overflow:hidden auto;border:3px solid #e2b04d;border-radius:28px;background:radial-gradient(ellipse at 70% 0,#fff1c9,#fffdf4 60%);box-shadow:0 24px 60px #2b1d0855}
 /* Flex, not grid (30 Sep 2026): Safari (and the app on an iPhone) made a grid window as tall as its max-height and spread the
    rest as empty space above and below the text. */
 #offer-dialog[open]{display:flex;align-items:stretch}
 #offer-dialog:focus{outline:none}
 #offer-dialog::backdrop{background:#2f2410a6}
-.offer-close{position:absolute;right:14px;top:14px;z-index:2;width:40px;height:40px;border:0;border-radius:13px;background:#efe6d6;color:#5b4b30;font-size:26px;line-height:1}
+.offer-close{position:absolute;inset-inline-end:14px;top:14px;z-index:2;width:40px;height:40px;border:0;border-radius:13px;background:#efe6d6;color:#5b4b30;font-size:26px;line-height:1}
 .offer-hero{position:relative;flex:0 0 340px;min-width:0;background:#f6e6b8}
 .offer-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 55%}
-.offer-ribbon{position:absolute;left:16px;top:16px;display:grid;place-items:center;align-content:center;width:100px;height:100px;border:3px solid #fff4d8;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f2663f,#c9361c);box-shadow:0 6px 16px #6a1d0b55;color:#fff;transform:rotate(-12deg);font-family:'Outfit',sans-serif}
+.offer-ribbon{position:absolute;inset-inline-start:16px;top:16px;display:grid;place-items:center;align-content:center;width:100px;height:100px;border:3px solid #fff4d8;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f2663f,#c9361c);box-shadow:0 6px 16px #6a1d0b55;color:#fff;transform:rotate(-12deg);font-family:'Outfit',sans-serif}
 .offer-ribbon b{font-size:30px;line-height:.95;font-weight:800}
 .offer-ribbon small{max-width:88px;font-size:12px;font-weight:800;letter-spacing:1px;white-space:nowrap}
 .offer-body{display:flex;flex:1 1 auto;min-width:0;flex-direction:column;align-items:center;padding:26px 28px 20px;text-align:center}
@@ -61,7 +61,7 @@
  #offer-dialog{width:min(440px,calc(100vw - 20px));max-width:calc(100vw - 20px);border-radius:24px}
  #offer-dialog[open]{flex-direction:column}
  .offer-hero{flex:0 0 150px}
- .offer-ribbon{left:12px;top:12px;width:76px;height:76px}.offer-ribbon b{font-size:23px}.offer-ribbon small{max-width:66px;font-size:12px;letter-spacing:.5px}
+ .offer-ribbon{inset-inline-start:12px;top:12px;width:76px;height:76px}.offer-ribbon b{font-size:23px}.offer-ribbon small{max-width:66px;font-size:12px;letter-spacing:.5px}
  .offer-body{padding:14px 16px calc(16px + var(--safe-bottom,0px))}
  #offer-dialog h2{margin:2px 0 10px;font-size:24px}
  .offer-parts{gap:3px;margin-bottom:10px}
@@ -84,7 +84,7 @@
 }
 
 /* The banner at the top of the Diamond shop (src/offer-ui.js): the chest, "Special offer" and the time left, the price. */
-.shop-offer{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:10px 14px 10px 10px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#fff1c9,#fffaf0 55%,#ffe9d6);box-shadow:0 3px 0 #b8862a33;color:#3d2f14;text-align:left;font-family:'DM Sans',sans-serif;cursor:pointer}
+.shop-offer{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:10px 14px 10px 10px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#fff1c9,#fffaf0 55%,#ffe9d6);box-shadow:0 3px 0 #b8862a33;color:#3d2f14;text-align:start;font-family:'DM Sans',sans-serif;cursor:pointer}
 .shop-offer[hidden]{display:none}
 .shop-offer:hover{border-color:#d69a2c}
 .shop-offer img{width:58px;height:58px;flex:none;border-radius:13px;object-fit:cover}
@@ -94,4 +94,4 @@
 .shop-offer-price{display:grid;justify-items:end;flex:none}
 .shop-offer-price s{font-size:12px;color:#9a8c75;text-decoration-color:#d9482b;text-decoration-thickness:2px}
 .shop-offer-price b{font:800 22px/1 'Outfit',sans-serif;color:#2f7a34}
-.shop-offer-tag{position:absolute;right:-6px;top:-10px;padding:2px 8px;border-radius:99px;background:#d9482b;color:#fff;font:800 12px/1.4 'DM Sans',sans-serif;transform:rotate(6deg)}
+.shop-offer-tag{position:absolute;inset-inline-end:-6px;top:-10px;padding:2px 8px;border-radius:99px;background:#d9482b;color:#fff;font:800 12px/1.4 'DM Sans',sans-serif;transform:rotate(6deg)}

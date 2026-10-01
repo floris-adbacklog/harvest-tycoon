@@ -15,5 +15,5 @@ test('a number that does not fit its pill is made smaller, a pixel at a time, an
   wide.style.fontSize='99px';fitText(wide);assert.equal(wide.style.fontSize,'99px','same text, same room: nothing is measured again');
  }finally{globalThis.getComputedStyle=previous;}
  assert.match(read('public/game.js'),/fitText\(\$\('coins'\)\);/);assert.match(read('public/boosts-ui.js'),/fitText\(\$\('diamonds'\)\);/);
- assert.match(read('public/mobile.css'),/\.diamond-counter>span:last-child\{position:absolute;top:-5px;right:-5px;/,'the + is a badge on the corner, not a column of its own');
+ assert.match(read('public/mobile.css'),/\.diamond-counter>span:last-child\{position:absolute;top:-5px;inset-inline-end:-5px;/,'the + is a badge on the corner, not a column of its own');
 });

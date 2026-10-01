@@ -89,7 +89,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  function chestCard(){
   const c=view.chest;if(!c)return '';
   const top=c.tiers.at(-1).points,next=c.tiers.find(t=>!t.reached),level=view.standing?.level??1,bonus=Math.round((view.standing?.bonus??0)*100);
-  const marker=t=>`<span class="family-chest-marker${t.reached?' is-reached':''}" style="left:${Math.min(100,t.points/top*100)}%">${art(`family-chest-${t.id}`)}</span>`;
+  const marker=t=>`<span class="family-chest-marker${t.reached?' is-reached':''}" style="inset-inline-start:${Math.min(100,t.points/top*100)}%">${art(`family-chest-${t.id}`)}</span>`;
   const tier=t=>`<li class="${t.reached?'is-reached':''}">${art(`family-chest-${t.id}`)}<div><strong>${t.name}</strong><span>${num(t.points)} points</span></div><span class="family-chest-gives"><b>${art('diamonds')}${num(t.diamonds)}</b><b>${art('coins')}${num(t.coins)}</b></span>${t.reached?'<i class="family-chest-check" aria-label="Reached">✓</i>':''}</li>`;
   const mine=c.mine>=c.minPoints?`You put in ${num(c.mine)} points: you share in every chest.`:`You put in ${num(c.mine)} points. From ${num(c.minPoints)} you share in every chest.`;
   return `<section class="family-chest"><div class="family-chest-head">${art(next?`family-chest-${next.id}`:'family-chest-open')}<div><span class="eyebrow">FAMILY CHEST${bonus?` · +${bonus}% REWARDS`:''}</span><h3>${next?`${num(c.points)} / ${num(next.points)} to the ${next.name.toLowerCase()}`:'Every chest is open this week!'}</h3></div></div>

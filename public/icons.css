@@ -23,7 +23,7 @@
 .collection-crop>.collection-picture{width:84px;height:84px;filter:grayscale(1);opacity:.4}
 .collection-crop.discovered>.collection-picture{filter:none;opacity:1}
 .mastery-card>.mastery-picture{width:70px;height:70px;align-self:center}
-.mastery-medals>.game-art{width:23px;height:23px;filter:grayscale(1);opacity:.3;margin-right:4px}
+.mastery-medals>.game-art{width:23px;height:23px;filter:grayscale(1);opacity:.3;margin-inline-end:4px}
 .mastery-medals>.earned{filter:none;opacity:1}
 .milling-chain .game-art{width:44px;height:44px}
 .quest-icon>.game-art{width:28px;height:28px}
@@ -51,7 +51,7 @@
  .side-tools{grid-template-columns:repeat(2,74px);gap:13px 8px}
  .side-tool{width:74px;gap:6px}.side-tool>span{width:54px;height:54px;border-radius:17px;background:#fffdf5;border-color:#dbd1c6;box-shadow:0 3px 8px #44372412}
  .side-tool b{font-size:12px;color:#4d4635}.side-tool.active b{color:#453e28}
- .side-tool em{min-width:20px;height:20px;right:-4px;top:-4px;font-size:10px;border-width:2px}
+ .side-tool em{min-width:20px;height:20px;inset-inline-end:-4px;top:-4px;font-size:10px;border-width:2px}
  .tool-dock{border-radius:21px;gap:13px;padding:10px 12px}.tool{gap:5px}
  .leaderboard-button{background:#f7efcf;border-color:#d9c587}
 }
@@ -60,7 +60,7 @@
  .level-card .level-star{width:39px;height:39px;min-width:39px;border-radius:12px}.level-card .level-caption{font-size:8px;line-height:10px}.level-card .level-star>b{font-size:20px;line-height:22px}
  .side-tools .side-tool>span>.game-art{width:32px;height:32px}
  .side-tools .side-tool.active>span{background:none;border:0;box-shadow:none}
- .side-tools .side-tool em{min-width:18px;height:18px;right:-8px;top:-2px;font-size:10px}
+ .side-tools .side-tool em{min-width:18px;height:18px;inset-inline-end:-8px;top:-2px;font-size:10px}
  .tools .tool>.game-art{width:28px;height:28px}
  .selected-crop-art{flex:0 0 34px;width:34px;height:36px}.selected-crop-art>.game-art{width:34px;height:34px}
  .crop-art{height:129px;padding-top:23px}.crop-art>.crop-picture{width:104px;height:104px}

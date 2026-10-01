@@ -5,7 +5,7 @@
 #activities-dialog{max-width:620px}#activities-dialog .dialog-heading{margin-bottom:16px}
 .activity-dialog-title{display:flex;align-items:center;gap:13px;min-width:0}.activity-dialog-title>div{min-width:0}.activity-dialog-icon{display:grid;place-items:center;width:48px;height:48px;flex:0 0 48px;border-radius:15px;background:#f2ebe3;color:#695e49}.activity-dialog-icon>svg{display:block;width:28px;height:28px}
 .activity-round{padding:14px 16px;border-radius:15px;background:#f2ebe3;margin-top:16px}.activity-round-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.activity-round-heading strong{font-size:13px}.activity-round-heading b{font-size:14px;white-space:nowrap;color:#776852}
-.activity-round-stops{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.round-stop{position:relative;display:grid;place-items:center;width:32px;height:32px;flex:0 0 32px;border:1px solid #dad0c3;border-radius:50%;color:#837a6b;background:#fffdf5;padding:0}.round-stop>svg{width:18px;height:18px}.round-stop.complete{background:#e6d9c8;color:#5f4e33;border-color:#b39f83}.round-stop>.round-tick{position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;background:#6c5839;color:white;padding:2px}.round-bonus{font-size:11px;line-height:1.5;color:#756b5d;margin-left:4px;flex:1 1 150px}
+.activity-round-stops{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.round-stop{position:relative;display:grid;place-items:center;width:32px;height:32px;flex:0 0 32px;border:1px solid #dad0c3;border-radius:50%;color:#837a6b;background:#fffdf5;padding:0}.round-stop>svg{width:18px;height:18px}.round-stop.complete{background:#e6d9c8;color:#5f4e33;border-color:#b39f83}.round-stop>.round-tick{position:absolute;inset-inline-end:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;background:#6c5839;color:white;padding:2px}.round-bonus{font-size:11px;line-height:1.5;color:#756b5d;margin-inline-start:4px;flex:1 1 150px}
 /* Every round stop is now a button (tap one to jump straight there); the one already open just cannot be tapped again. */
 .round-stop:not(:disabled):hover{border-color:#a89676}.round-stop:disabled{cursor:default;opacity:.6}
 /* The activities hub: a clean 2x2 of the four stops (.building-card already sizes an <img>, .game-art included, at 79x84). */
@@ -29,7 +29,7 @@
    the way to the next stop. The line icons on the tiles stay as they are. */
 #activities-hub-grid .activity-stop{align-items:center}
 .activity-stop-art{position:relative;display:grid;place-items:center;flex:none}
-.activity-stop-art>.round-tick{position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;padding:3px;border-radius:50%;background:#3f6b4a;color:#fff;box-shadow:0 0 0 2px #fffdf5}
+.activity-stop-art>.round-tick{position:absolute;inset-inline-end:-2px;bottom:-2px;width:20px;height:20px;padding:3px;border-radius:50%;background:#3f6b4a;color:#fff;box-shadow:0 0 0 2px #fffdf5}
 .activity-chips{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0}
 .activity-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:#f3ecdf;color:#5d5641;font-size:12px;font-weight:700;white-space:nowrap}
 .activity-chip .game-art{width:16px;height:16px}

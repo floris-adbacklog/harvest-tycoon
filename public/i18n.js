@@ -4,7 +4,7 @@
 // ("Harvested {0} {1}"); the parts are kept, and a part that is itself a known text (a crop's name) is translated too.
 // English farmers never load a translation file: for them nothing on the page changes.
 // Players' own words (names, chat, family texts) sit in translate="no" and stay as they are.
-import {LANGUAGES} from './languages.js';
+import {LANGUAGES,RTL_LANGUAGES} from './languages.js';
 
 export const LANGUAGE_KEY='harvest-tycoon:language';
 const ATTRS=['title','aria-label','placeholder','alt'];
@@ -108,7 +108,8 @@ export function createTranslator(dict,code='en'){
 // is a translator's thousands (1.000), never an English decimal, and no translation holds an English "1,456". Japanese and Hindi
 // write numbers as English does. Returns null when nothing needs changing.
 export function localNumbers(code){
- if(!code||code==='en'||code==='ja'||code==='hi'||typeof Intl==='undefined')return null;
+ // Arabic and Chinese games write numbers the English way too (1,456; Western digits), as Japanese and Hindi do.
+ if(!code||['en','ja','hi','ar','zh'].includes(code)||typeof Intl==='undefined')return null;
  const whole=new Intl.NumberFormat(code,{maximumFractionDigits:0});
  const decimal=new Intl.NumberFormat(code).formatToParts(1.5).find(part=>part.type==='decimal')?.value??'.';
  return text=>text
@@ -116,9 +117,14 @@ export function localNumbers(code){
   .replace(/(?<![\d.,])(\d+)\.(\d{1,2})(?![\d.,])/g,`$1${decimal}$2`);
 }
 
+// Right to left (Arabic, 1 Oct 2026): a number with a sign, a slash, a percent or a times sign keeps its own order ("0 / 3", "+10",
+// "60%", "×2", a date like 05-07-2026) inside a sentence that runs right to left; Unicode isolates hold it left to right. Taken off first, so a text that
+// is written again never gets them twice.
+const ISOLATE=/\d{1,4}-\d{1,2}-\d{1,4}|[+\-−×]\d[\d.,]*[%×KMk]?|\d[\d.,]*[%×KMk]?\s*\/\s*[+\-−]?\d[\d.,]*[%×KMk]?|\d[\d.,]*%/g;
+export const isolateNumbers=text=>text.replace(/[\u2066\u2069]/g,'').replace(ISOLATE,match=>`\u2066${match}\u2069`);
 // Keep a document translated: everything in it now, and every text that is added or changed later.
 export function translateDocument(doc,translator){
- const written=new WeakMap(),attrsWritten=new WeakMap(),numbers=localNumbers(translator.code);
+ const written=new WeakMap(),attrsWritten=new WeakMap(),numbers=localNumbers(translator.code),rtl=RTL_LANGUAGES.includes(translator.code);
  const skip=element=>!element||element.closest(KEEP);
  function text(node){
   const data=node.data;
@@ -129,6 +135,7 @@ export function translateDocument(doc,translator){
    if(out!=null&&out!==key)next=data.match(/^\s*/)[0]+out+data.match(/\s*$/)[0];
   }
   if(numbers&&/\d/.test(next))next=numbers(next);
+  if(rtl&&/\d/.test(next))next=isolateNumbers(next);
   if(next===data)return;
   written.set(node,next);node.data=next;
  }
@@ -171,7 +178,7 @@ export async function startTranslation(doc=globalThis.document){
  try{
   const dict=await(globalThis.harvestI18n?.code===code?globalThis.harvestI18n.load:fetch(`/i18n/${code}.json`).then(response=>{if(!response.ok)throw new Error(String(response.status));return response.json();}));
   const translator=createTranslator(dict,code);
-  root.lang=code;
+  root.lang=code;root.dir=RTL_LANGUAGES.includes(code)?'rtl':'ltr';
   translateDocument(doc,translator);
   globalThis.harvestI18nMissing=translator.missing;
   return translator;
