@@ -91,3 +91,14 @@
 @media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){
  :root{--mobile-bottom:76px}
 }
+/* Show me (public/coach.js, 1 Oct 2026): a glowing ring on the button to tap, and a speech bubble beside it. Taps go straight
+   through the bubble. */
+.coach-target{outline:3px solid #f2c14e;outline-offset:3px;animation:coach-ring 1.3s ease-out infinite}
+@keyframes coach-ring{0%{box-shadow:0 0 0 0 rgba(242,193,78,.75)}100%{box-shadow:0 0 0 16px rgba(242,193,78,0)}}
+.coach-bubble{position:fixed;left:0;top:0;z-index:2147483000;box-sizing:border-box;max-width:min(270px,calc(100vw - 24px));padding:10px 14px;border-radius:14px;background:#33452a;color:#fffbea;font:700 15px/1.35 'DM Sans',system-ui,sans-serif;text-align:center;box-shadow:0 10px 26px rgba(30,40,20,.35);pointer-events:none;animation:coach-bob 1.3s ease-in-out infinite}
+.coach-bubble::after{content:'';position:absolute;left:var(--coach-arrow,50%);top:100%;width:0;height:0;margin-left:-9px;border:9px solid transparent;border-top-color:#33452a}
+.coach-bubble.is-below::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:#33452a}
+@keyframes coach-bob{0%,100%{translate:0 0}50%{translate:0 -4px}}
+.coach-bubble.is-below{animation-name:coach-bob-down}
+@keyframes coach-bob-down{0%,100%{translate:0 0}50%{translate:0 4px}}
+@media(prefers-reduced-motion:reduce){.coach-target,.coach-bubble{animation:none}}

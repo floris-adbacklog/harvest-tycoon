@@ -46,6 +46,8 @@ import { startTranslation } from './i18n.js';
 import { watchSelects } from './pretty-select.js';
 import { createInviteUI } from './invite-ui.js';
 import { fitText } from './fit-text.js';
+import { createCoach } from './coach.js';
+import { guideSteps } from './guide-steps.js';
 
 // Another language than English: translate the farm's texts as they appear (public/i18n.js).
 startTranslation();
@@ -82,6 +84,8 @@ let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
 let overviewBounds=null;
 let familyFlag=null;
 const familyDecor=[],factoryDecor=[],yardDecor={pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+// The pointer for Show me (public/coach.js): one at a time, gone after the last tap.
+const coach=createCoach();
 let liveEvents,familyUI,progression,economy,retention,growth,valley,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
@@ -841,7 +845,7 @@ function addBuilding(key,x,z,options){
  const hit=new THREE.Mesh(new THREE.BoxGeometry(size.x+.4,size.y+.3,size.z+.4),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
  hit.position.copy(center);hit.userData.building=key;scene.add(hit);hit.updateMatrixWorld(true);
  const outline=new THREE.BoxHelper(object,0xffdc76);outline.material.transparent=true;outline.material.opacity=.75;outline.visible=false;scene.add(outline);
- const label=document.createElement('button');label.className='building-label';label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
+ const label=document.createElement('button');label.className='building-label';label.dataset.building=key;label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
  label.innerHTML=`<span class="building-pin">${art(key==='familyhall'?'familyhall-model':key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">${key==='farmhouse'?'Expand your fields':'Ready to work'}</small></span>`;
  label.addEventListener('click',()=>tapBuilding(key));label.addEventListener('mouseenter',()=>highlight(key));label.addEventListener('mouseleave',()=>highlight(-1));label.addEventListener('focus',()=>highlight(key));label.addEventListener('blur',()=>highlight(-1));$('building-labels').append(label);
  buildingViews.set(key,{object,hit,outline,label,pin:label.querySelector('.building-pin'),pinArt:key==='familyhall'?'familyhall-model':key,x:object.position.x,z:object.position.z,height,locked:false});
@@ -865,7 +869,7 @@ function villageMarker(x,y,z){
 }
 function addVillagePlace(key,{x,y,z}){
  const object=villageMarker(x,y,z);object.userData.building=key;
- const label=document.createElement('button');label.className='building-label';label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
+ const label=document.createElement('button');label.className='building-label';label.dataset.building=key;label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
  label.innerHTML=`<span class="building-pin">${art(key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">Ready to work</small></span>`;
  label.addEventListener('click',()=>tapBuilding(key));$('building-labels').append(label);
  buildingViews.set(key,{object,hit:object.children[0],outline:new THREE.Object3D(),label,pin:label.querySelector('.building-pin'),pinArt:key,x,z,height:y+3,locked:false});
@@ -1033,7 +1037,11 @@ function bindUI(){
  quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,village:villageWorld});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote()}),guide:target=>{
+  coach.stop();
   if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':'Tap a ready crop or its basket.');}
+  // Show me points at the way in and lets the farmer tap it (1 Oct 2026: it used to open the window for them, so they never
+  // learnt where Market was). Only where nothing can be pointed at does it still open the window itself.
+  else if(guideSteps(target,{state,now:farmNow()}))coach.start(guideSteps(target,{state,now:farmNow()}));
   else if(target==='eggs')economy.openMarket('goods');
   else if(target==='market')openDialog('market-dialog');
   else if(target==='produce')economy.openBuilding('coop');
