@@ -98,7 +98,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
  const purchases=!p.purchases?'':p.purchases.length?p.purchases.map(b=>`<li><span>${pack(b.pack)} · €${b.euros.toFixed(2)}${b.test?' <small>(test)</small>':''}</span><b class="${b.status==='credited'?'admin-paid':'admin-pending-pay'}">${esc(PURCHASE[b.status]??b.status)}</b><small>${esc(dateTime(b.createdAt))}</small></li>`).join(''):'<li class="admin-empty">No purchases or checkouts.</li>';
  const chat=[p.chat.messages==null?null:`${number(p.chat.messages)} message${p.chat.messages===1?'':'s'} in the last 30 days`,p.chat.reported?`reported ${number(p.chat.reported)} time${p.chat.reported===1?'':'s'}`:'never reported',p.chat.banned?'<b class="admin-log-open">banned from chat</b>':p.chat.muted?'<b class="admin-log-open">muted</b>':null].filter(Boolean).join(' · ');
  const social=[
-  fact('Farm events',`${number(p.events.joined)} joined · ${number(p.events.finished)} finished · ${number(p.events.diamonds)} diamonds won`),
+  fact('Events',`${number(p.events.joined)} joined · ${number(p.events.finished)} finished · ${number(p.events.diamonds)} diamonds won`),
   fact('Chat',chat),
   fact('Invites',`${p.invites.invitedBy?`Invited by ${esc(p.invites.invitedBy)} · `:''}${number(p.invites.friends)} friend${p.invites.friends===1?'':'s'} invited${p.invites.friends?` (${number(p.invites.qualified)} reached level 10)`:''}`),
   fact('Earned in total',`${number(p.earned.coins)} coins · ${number(p.earned.diamonds)} diamonds`)

@@ -58,7 +58,7 @@ test('the farm counts the coins it spends (for "Spend coins"), and not the coins
  const before=s.coins;applyFarmAction(s,{type:'upgrade',building:'coop'},now);assert.equal(s.stats.coins_spent,afterSeed+(before-s.coins));
 });
 
-test('the wiki and the event screen explain the mix and the level',()=>{
- assert.match(read('public/wiki-content.js'),/Every event mixes 3 goals from 30 kinds, each in an easy, medium or hard size/);
+test('the wiki and the event screen explain the mix, the leagues and the level',()=>{
+ assert.match(read('public/wiki-content.js'),/Every event has 3 goals from 3 different kinds of play: the fields, crops, buildings, the market or helping out, each in an easy, medium or hard size, and never three hard goals\. Each league gets its own goals, made for its levels/);
  assert.match(read('public/live-events-ui.js'),/<li>Open from level \$\{EVENTS_LEVEL\}\.<\/li>/);
 });

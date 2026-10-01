@@ -6,7 +6,7 @@ import {rookieLeft} from '../public/farm-state.js';
 // the browser, anyone in the browser, phones or computers (decided here, on the device: nothing records who installed the app), and
 // from a farm level (decided by the server). Never in a farmer's first half hour, and never over
 // another window: it waits until nothing else is open.
-export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Farm events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play'});
+export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play'});
 export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only'});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text).

@@ -23,7 +23,7 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  badges:{label:'Most badges',heading:'Badges',unit:'badges',description:`Crop mastery medals you have claimed. Up to ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges to earn.`},
  quests_done:{label:'Most quests done',heading:'Quests',unit:'quests done',description:`Quests finished and claimed, out of ${QUESTS.length}.`},
  deliveries:{label:'Most deliveries',heading:'Deliveries',unit:'deliveries',description:'Total delivery orders completed for your neighbours.'},
- events_finished:{label:'Most events finished',heading:'Events',unit:'events finished',description:'Farm events you finished.'},
+ events_finished:{label:'Most events finished',heading:'Events',unit:'events finished',description:'Events you finished.'},
  best_streak:{label:'Longest daily streak',heading:'Streak',unit:'days in a row',description:'The most days in a row you came back to collect your daily gift.'},
  farm_fields:{label:'Biggest farm',heading:'Farm size',unit:'fields',description:'Fields on your farm, up to 40.'},
  chores_done:{label:'Most chores',heading:'Chores',unit:'chores done',description:'Farm chores completed.'},

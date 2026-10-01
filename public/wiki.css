@@ -198,3 +198,6 @@
 /* The daily gift's boost in its table: the picture and a short name (×2 XP), which fits beside four other columns on a phone. */
 .wiki-boost{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 @media(max-width:560px){.wiki-boost>span{display:none}}
+/* A league in the events article (1 Oct 2026): its badge beside its levels and coins. */
+.wiki-league{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.wiki-league-badge{flex:none;width:48px;height:48px;object-fit:contain}

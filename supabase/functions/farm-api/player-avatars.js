@@ -235,7 +235,7 @@ export const AVATAR_GOALS=Object.freeze({
  'velvet-farmer':{text:'Be VIP for 90 days in total',target:90,count:f=>f.state?.stats?.vip_days},
  'crop-master':{text:'Earn a Platinum crop medal',target:1,count:f=>(f.state?.mastery?.claimed??[]).filter(medal=>String(medal).endsWith(':3')).length},
  'early-riser':{text:'Log in 30 days in a row',target:30,count:f=>f.state?.login?.best},
- 'event-champion':{text:'Finish 25 farm events',target:25,count:f=>f.events},
+ 'event-champion':{text:'Finish 25 events',target:25,count:f=>f.events},
  'grand-champion':{text:'Become grand champion of the fair',target:1,count:f=>f.state?.stats?.fair_champion},
  'good-neighbor':{text:'Have 3 invited friends reach level 10',target:3,count:f=>f.state?.inviteRewards?.length},
  'seed-keeper':{text:'Earn all 64 crop medals',target:64,count:f=>f.state?.stats?.mastery_medals},

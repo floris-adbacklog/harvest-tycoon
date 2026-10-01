@@ -103,7 +103,7 @@ function awayText(ms){const h=Math.floor(ms/3600000),d=Math.floor(h/24);return d
 export const accountLog=(action,text)=>[line('account',action,text)];
 // A farm event's reward, when the farmer collects it (event-service.js): the event's name and what it paid.
 export function eventRewardLog(title,reward){
- return [line('rewards','event_reward',`Collected the reward of the farm event ${title?`“${title}”`:''}`.trim(),changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:reward?.coins??0,diamonds:reward?.diamonds??0,xp:0,inventory:{}}))];
+ return [line('rewards','event_reward',`Collected the reward of the event ${title?`“${title}”`:''}`.trim(),changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:reward?.coins??0,diamonds:reward?.diamonds??0,xp:0,inventory:{}}))];
 }
 export function adminGrantLog(granted){
  return [line('staff','admin_grant','Received a gift from the admin',changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:granted.coins??0,diamonds:granted.diamonds??0,xp:granted.xp??0,inventory:granted.item?{[granted.item]:granted.itemCount}:{}}))];

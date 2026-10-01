@@ -16,7 +16,18 @@ export const EVENT_GOALS={harvested:{label:'Harvest crops',art:'harvest'},produc
  planted:{label:'Plant fields',art:'seeds'},fertilized:{label:'Fertilize fields',art:'fertilizer'},harvest_cauliflower:{label:'Harvest cauliflower',art:'cauliflower'},
  made_feed:{label:'Make animal feed',art:'feed'},made_milk:{label:'Make milk',art:'milk'},made_cheese:{label:'Make cheese',art:'cheese'},made_flour:{label:'Make flour',art:'flour'},made_grainmeal:{label:'Make grain meal',art:'grainmeal'},made_bread:{label:'Bake bread',art:'bread'},parallel_batches:{label:'Start batches side by side',art:'buildings'},
  sold:{label:'Sell at the market',art:'market'},earned:{label:'Earn coins',art:'coins'},coins_spent:{label:'Spend coins',art:'coins'},diamonds_spent:{label:'Spend diamonds',art:'diamonds'},boosts_used:{label:'Use a boost',art:'boost'},sold_wheat:{label:'Sell wheat',art:'wheat'},
- activities:{label:'Lend a helping hand',art:'helping-hand'},activity_rounds:{label:'Finish a helping-hand round',art:'helping-hand'},upgrades:{label:'Upgrade buildings',art:'hammer'}};
+ activities:{label:'Lend a helping hand',art:'helping-hand'},activity_rounds:{label:'Finish a helping-hand round',art:'helping-hand'},upgrades:{label:'Upgrade buildings',art:'hammer'},
+ // The goals of the higher leagues (public/event-goals.js, 1 Oct 2026).
+ glasshouse_batches:{label:'Collect Glasshouse crates',art:'glasshouse'},valley_baskets:{label:'Sell Valley Market baskets',art:'valley-market'},
+ made_pie:{label:'Bake pies',art:'pie'},made_stew:{label:'Cook stew',art:'stew'},made_applejuice:{label:'Press apple juice',art:'applejuice'},made_orchardjuice:{label:'Make orchard juice',art:'orchardjuice'},
+ made_berrypreserves:{label:'Make berry preserves',art:'berrypreserves'},made_truffles:{label:'Find truffles',art:'truffles'},made_honey:{label:'Collect honey',art:'honey'},made_wool:{label:'Shear wool',art:'wool'},
+ made_yarn:{label:'Spin yarn',art:'yarn'},made_cloth:{label:'Weave cloth',art:'cloth'},made_squashsoup:{label:'Cook squash soup',art:'squashsoup'},made_goatmilk:{label:'Milk the goats',art:'goatmilk'},
+ made_goatcheese:{label:'Make goat cheese',art:'goatcheese'},made_candles:{label:'Pour candles',art:'candles'},made_cider:{label:'Press cider',art:'cider'},made_cherryjam:{label:'Make cherry jam',art:'cherryjam'},
+ made_salad:{label:'Make fresh salads',art:'salad'},made_vegetables:{label:'Pack vegetable boxes',art:'vegetables'},made_pickles:{label:'Make pickles',art:'pickles'},made_fertilizer:{label:'Make natural fertilizer',art:'fertilizer'},
+ sold_eggs:{label:'Sell eggs',art:'eggs'},made_oil:{label:'Press sunflower oil',art:'oil'},made_beangratin:{label:'Bake bean gratin',art:'beangratin'},made_applepie:{label:'Bake apple pies',art:'applepie'},
+ made_berrysmoothie:{label:'Make berry smoothies',art:'berrysmoothie'},made_applecompote:{label:'Make apple compote',art:'applecompote'},made_pickledbeans:{label:'Pickle green beans',art:'pickledbeans'},
+ made_orchardsalad:{label:'Make orchard salads',art:'orchardsalad'},made_truffleomelette:{label:'Cook truffle omelettes',art:'truffleomelette'},made_berrycheesecake:{label:'Bake berry cheesecakes',art:'berrycheesecake'},
+ tractor:{label:'Use the tractor',art:'tractor'},sold_cheese:{label:'Sell cheese',art:'cheese'}};
 // Same level as the server gate (player_stats.level>=15, live-events-mixed.sql; 10 until 26 Sep 2026, when spending diamonds, which
 // opens at 14, became a goal): below it the button stays visible but greyed.
 export const EVENTS_LEVEL=15;
@@ -44,7 +55,7 @@ export function hasQualified(e,player=e.player){return Boolean(player)&&goalsDon
 // Why this farm is not taking part yet, in one sentence — or null when it can.
 export function eligibilityNote(eligibility,now=Date.now()){
  if(!eligibility)return null;
- if(eligibility.level<eligibility.minLevel)return `Farm events open at level ${eligibility.minLevel}. You are level ${eligibility.level}.`;
+ if(eligibility.level<eligibility.minLevel)return `Events open at level ${eligibility.minLevel}. You are level ${eligibility.level}.`;
  return null;
 }
 
@@ -56,7 +67,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const SEEN_KEY='harvest-tycoon:event-seen';
  const seenId=()=>{try{return globalThis.localStorage?.getItem(SEEN_KEY)??null;}catch{return null;}};
  const markSeen=id=>{try{globalThis.localStorage?.setItem(SEEN_KEY,String(id));}catch{}};
- const unseen=live=>Boolean(live)&&!hasQualified(live)&&!eligibilityNote(data?.eligibility,now())&&seenId()!==String(live.id);
+ const unseen=live=>Boolean(live)&&!hasQualified(leagueGoals(live))&&!eligibilityNote(data?.eligibility,now())&&seenId()!==String(live.id);
  const seeLive=()=>{if(!data)return;const {live}=eventView(data.events,now());if(live)markSeen(live.id);};
  const dialog=doc.createElement('dialog');dialog.id='events-dialog';dialog.className='game-dialog wide-dialog events-dialog';dialog.setAttribute('aria-labelledby','events-title');doc.body.append(dialog);
  let data=null,busy=false,error='',reloadTimer=0,clock=0,background=0;
@@ -65,6 +76,8 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  // Your league (1 Oct 2026, farm-state.js EVENT_LEAGUES): the server's for the event it shows standings for, otherwise your level's.
  const leagueOf=e=>{const s=e?.standings?.league;return s?EVENT_LEAGUES.find(l=>l.id===s.id)??eventLeague(levelOf(state)):eventLeague(levelOf(state));};
  const leagueRange=l=>l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`;
+ // The league's own goals and title (live-event-league-goals.sql); an event without them has one set for everyone.
+ const leagueGoals=e=>{const own=e?.leagues?.[leagueOf(e).index];return own?{...e,title:own.title,description:own.description,objectives:own.objectives}:e;};
  const leagueCard=l=>`<div class="event-league"><img src="/assets/icons/league-${l.id}.webp" alt="" width="56" height="56" draggable="false"><div><span>Your league</span><strong>${l.name}</strong><small><span>${leagueRange(l)}</span> · <span>coins ×${l.coins}</span></small></div></div>`;
  // One list of what a farmer wins per place: the event's own coins plus the place's coins, and the place's fixed diamonds.
  const rewards=e=>{
@@ -97,10 +110,11 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   return `<h3 class="event-section-title">${final?`Final standings · ${esc(e.title)}`:'Top farmers'}</h3>${league?`<p class="event-league-name">${league}</p>`:''}<p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:'Rewards if the event ended now. The first three to finish in your league win a podium prize.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
  }
  function hero(){
-  const {live,next}=eventView(data.events,now());
+  // Each league sees its own title and goals (1 Oct 2026).
+  const view=eventView(data.events,now()),live=view.live&&leagueGoals(view.live),next=view.next&&leagueGoals(view.next);
   if(live)return intro(live,`Live · ends in ${countdown(Date.parse(live.ends_at))}`,true)+`<p class="event-summary">${num(live.participants)} farmer${live.participants===1?'':'s'} taking part</p>`+goals(live)+rewards(live)+status(live)+standings(live);
   if(next){const blocked=eligibilityNote(data.eligibility,now());return intro(next,`Next event in ${countdown(Date.parse(next.starts_at))}`,false)+'<p class="event-summary">A short break between events. Here is what comes next.</p>'+goals(next,{preview:true})+rewards(next)+(blocked?`<p class="family-notice event-note is-blocked">${esc(blocked)}</p>`:'')+standings(data.events.find(e=>e.standings),{final:true});}
-  return `<div class="quest-empty"><span class="estate-icon">${art('live-events')}</span><h3>The next farm event is on its way</h3><p>Check back soon.</p></div>`;
+  return `<div class="quest-empty"><span class="estate-icon">${art('live-events')}</span><h3>The next event is on its way</h3><p>Check back soon.</p></div>`;
  }
  function collect(){
   const {owed}=eventView(data.events,now());
@@ -113,10 +127,10 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const result=e=>!e.settled_at?'Results coming up':e.player?.claimed_at?`Collected · ${num(e.player.coins)} coins${e.player.paid_diamonds?` + ${num(e.player.paid_diamonds)} diamond${e.player.paid_diamonds===1?'':'s'}`:''}`:e.player?'Not finished':'You did not take part';
   return `<h3 class="event-section-title">Recent events</h3><div class="family-member-list event-history">${past.map(e=>`<article class="family-list-row"><div><strong>${esc(e.title)}</strong><span>${result(e)}${e.settled_at?` · ${num(e.qualified)} of ${num(e.participants)} finished`:''}</span></div></article>`).join('')}</div>`;
  }
- const rules=`<details class="family-extra event-rules"><summary>How farm events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and you have finished.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You race in your league, against farmers of about your level. Your level when the event ends decides your league.<span class="event-league-list">${EVENT_LEAGUES.map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li><li>Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
+ const rules=`<details class="family-extra event-rules"><summary>How events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and you have finished.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You race in your league, against farmers of about your level. Your level when the event ends decides your league.<span class="event-league-list">${EVENT_LEAGUES.map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li><li>Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  function render(){
-  const heading='<div class="dialog-heading"><div><span class="eyebrow">PLAY TOGETHER, FOR A LITTLE WHILE</span><h2 id="events-title">Farm events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
-  dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:error?`<p class="event-loading">${esc(error)}</p>`:skeleton('Opening farm events…',{hero:true,rows:3,avatar:false}))+'<p class="event-feedback" role="status" data-status></p>';
+  const heading='<div class="dialog-heading"><div><span class="eyebrow">PLAY TOGETHER, FOR A LITTLE WHILE</span><h2 id="events-title">Events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
+  dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:error?`<p class="event-loading">${esc(error)}</p>`:skeleton('Opening events…',{hero:true,rows:3,avatar:false}))+'<p class="event-feedback" role="status" data-status></p>';
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();
   dialog.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>claim(b));
   // A farmer in the standings opens their profile on top of the event; its back button returns here (26 Sep 2026).
@@ -136,7 +150,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const {live,next,owed}=eventView(data.events,now()),fresh=unseen(live);
   if(dot)dot.hidden=!owed.length&&!fresh;
   if(hint)hint.textContent=owed.length?'A reward is waiting':live?`Live · ${formatDuration(Date.parse(live.ends_at)-now())} left`:next?`Next in ${formatDuration(Date.parse(next.starts_at)-now())}`:'Short shared goals';
-  if(button)button.setAttribute('aria-label',owed.length?'Open farm events, a reward is waiting':fresh?'Open farm events, an event is running':'Open farm events');
+  if(button)button.setAttribute('aria-label',owed.length?'Open events, a reward is waiting':fresh?'Open events, an event is running':'Open events');
  }
  async function load(){
   try{data=await bridge.request({operation:'events'});error='';}catch(e){error=e.message;if(!data)throw e;}
@@ -161,7 +175,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  function refresh(){
   const next=Boolean(state)&&levelOf(state)<EVENTS_LEVEL;if(next===locked)return;locked=next;
   if(button)button.hidden=locked;
-  if(entry){entry.disabled=locked;entry.classList.toggle('locked',locked);entry.style.order=locked?String(100+EVENTS_LEVEL):'';entry.setAttribute('aria-disabled',String(locked));if(locked)entry.title=`Reach level ${EVENTS_LEVEL} to unlock farm events.`;else entry.removeAttribute('title');}
+  if(entry){entry.disabled=locked;entry.classList.toggle('locked',locked);entry.style.order=locked?String(100+EVENTS_LEVEL):'';entry.setAttribute('aria-disabled',String(locked));if(locked)entry.title=`Reach level ${EVENTS_LEVEL} to unlock events.`;else entry.removeAttribute('title');}
   if(locked){if(dot)dot.hidden=true;if(hint)hint.textContent=`Reach level ${EVENTS_LEVEL}.`;}
   else if(data)badge();else if(hint)hint.textContent='Short shared goals';
   if(!locked)setTimeout(quiet,3000);

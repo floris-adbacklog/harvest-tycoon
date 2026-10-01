@@ -29,7 +29,7 @@ export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:5});
 // as harvest_event_settle — exact once settled, "if it ended now" while the event runs. Since 1 Oct 2026 the rows are one
 // league's (live-event-leagues.sql): the podium is that league's, and its coins are × the league's number.
 export function eventStandings(event,rows,now=Date.now(),league=EVENT_LEAGUES[0]){
- const settled=Boolean(event.settled_at),goals=event.objectives;
+ const settled=Boolean(event.settled_at),goals=event.leagues?.[league.index]?.objectives??event.objectives;   // the league's own goals
  const share=r=>goals.reduce((sum,o)=>sum+Math.min(1,(r.progress?.[o.stat]??0)/o.target),0)/goals.length;
  // Every goal full is finished (30 Sep 2026; it also took 3 contributions over 10 minutes before), the earliest first.
  const finished=r=>settled?r.qualified:goals.every(o=>(r.progress?.[o.stat]??0)>=o.target);
