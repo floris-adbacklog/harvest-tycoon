@@ -78,7 +78,10 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<p class="admin-hint" id="admin-offer-status" role="status"></p></form><ul id="admin-offer-list" class="admin-recent-list" hidden></ul></section>'
   +'<section class="admin-card"><h3>'+art('diamonds')+'Purchases</h3><div id="admin-purchase-totals" class="admin-invite-totals"></div><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-purchase-filter="all" aria-pressed="true">All</button><button type="button" class="admin-filter" data-purchase-filter="paid" aria-pressed="false">Paid</button><button type="button" class="admin-filter" data-purchase-filter="open" aria-pressed="false">Not finished</button></div><ul id="admin-purchase-list" class="admin-recent-list admin-purchase-list"></ul><p class="admin-hint">Every checkout, newest first (Amsterdam time). “Not finished”: the farmer opened the payment page but did not pay, or the page is still open. Test payments are marked.</p></section>'
   +'</div><div data-admin-panel="settings" hidden>'
-  +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News and pop-ups</h3><form id="admin-news-form" class="admin-news"><textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… As a notification everyone sees it under Notifications in the chat."></textarea>'
+  +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News and pop-ups</h3><form id="admin-news-form" class="admin-news">'
+  // In more languages (supabase/admin-texts-languages.sql): English for every language without a text of its own.
+  +'<label class="admin-news-hours">Language<select id="admin-news-language">'+LANGUAGES.map(l=>`<option value="${l.code}">${esc(l.name)}</option>`).join('')+'</select></label><p class="admin-popup-note" id="admin-news-language-note"></p>'
+  +'<textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… As a notification everyone sees it under Notifications in the chat."></textarea>'
   // The admin only: the same news also as a pop-up, once per farmer, with an optional button (src/popup-ui.js, supabase/popups.sql).
   +'<label class="admin-news-hours admin-send-as">Send as<select id="admin-send-as"><option value="news">Notification</option><option value="popup">Pop-up</option><option value="both">Notification and pop-up</option><option value="dm">Private message (they can reply)</option></select></label>'
   // The admin's private message to many farmers: who gets it, and how many that is right now (supabase/chat-broadcast-dm.sql).
@@ -372,6 +375,24 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-dm-audience').addEventListener('change',()=>void countDm());
  dialog.querySelector('#admin-dm-level').addEventListener('input',()=>void countDm());
  dialog.querySelector('#admin-popup-target').addEventListener('change',event=>{dialog.querySelector('#admin-popup-link-row').hidden=event.target.value!=='link';});
+ // News, pop-ups and the private message per language: the text, the title and the button. Each language keeps what was typed for it
+ // until the message goes; the English parts show in the empty fields of another language, as what to translate.
+ let newsTexts={},newsLanguage='en';
+ const newsFields=()=>({body:dialog.querySelector('#admin-news-text'),title:dialog.querySelector('#admin-popup-title'),buttonLabel:dialog.querySelector('#admin-popup-label')});
+ function keepNewsLanguage(){newsTexts[newsLanguage]=Object.fromEntries(Object.entries(newsFields()).map(([key,field])=>[key,field.value.trim()]));}
+ function showNewsLanguage(){
+  const en=newsTexts.en??{},own=newsTexts[newsLanguage]??{},name=LANGUAGES.find(l=>l.code===newsLanguage)?.name??newsLanguage;
+  for(const [key,field] of Object.entries(newsFields())){field.dataset.placeholder??=field.placeholder;field.value=own[key]??'';field.placeholder=newsLanguage==='en'?field.dataset.placeholder:en[key]||field.dataset.placeholder;}
+  for(const option of dialog.querySelectorAll('#admin-news-language option')){
+   const l=LANGUAGES.find(x=>x.code===option.value),has=Object.values(newsTexts[l.code]??{}).some(Boolean);
+   option.textContent=l.code==='en'?`${l.name} · everyone else`:`${l.name}${has?' ✓':' · English for now'}`;
+  }
+  dialog.querySelector('#admin-news-language-note').textContent=newsLanguage==='en'?'Farmers whose game language has no text of its own get the English one.':`Farmers who play in ${name} get this text. A part left empty stays English.`;
+ }
+ // The other languages' parts that were written, for the server.
+ const newsOwnTexts=()=>{const texts=Object.entries(newsTexts).filter(([code,t])=>code!=='en'&&Object.values(t).some(Boolean)).map(([code,t])=>[code,Object.fromEntries(Object.entries(t).filter(([,v])=>v))]);return texts.length?Object.fromEntries(texts):null;};
+ dialog.querySelector('#admin-news-language').addEventListener('change',event=>{keepNewsLanguage();newsLanguage=event.target.value;showNewsLanguage();});
+ showNewsLanguage();
  // The welcome message: its setting, and how many new farmers got it.
  function welcomeStatus(w){
   const last=w.lastSentAt?` · last one ${new Date(w.lastSentAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
@@ -464,23 +485,26 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   void showPopups();
  });
  dialog.querySelector('#admin-news-form').addEventListener('submit',async event=>{
-  event.preventDefault();const text=dialog.querySelector('#admin-news-text'),chatStatus=dialog.querySelector('#admin-chat-status'),body=text.value.trim();if(!body)return;
+  event.preventDefault();const chatStatus=dialog.querySelector('#admin-chat-status');
+  keepNewsLanguage();const en=newsTexts.en??{},body=en.body??'',texts=newsOwnTexts(),languages=texts?` in ${Object.keys(texts).length+1} languages`:'';
+  if(!body){chatStatus.textContent=newsLanguage==='en'?'':'Write the English text first: farmers in every other language get it.';return;}
+  const sent=()=>{newsTexts={};newsLanguage='en';dialog.querySelector('#admin-news-language').value='en';showNewsLanguage();};
   const hours=Number(dialog.querySelector('#admin-news-hours').value)||0;
   const mode=dialog.querySelector('#admin-send-as').value,popup=mode==='popup'||mode==='both',$p=id=>dialog.querySelector(`#admin-popup-${id}`);
   try{
    if(mode==='dm'){
     const audience=dialog.querySelector('#admin-dm-audience'),n=Number(dialog.querySelector('#admin-dm-count').dataset.count??0),who=audience.options[audience.selectedIndex].text.toLowerCase(),minLevel=dmLevel();
-    if(!await confirmAction({title:`Send a private message to ${n.toLocaleString('en-US')} farmers?`,description:`Every farmer${audience.value==='all'?'':` ${who}`}${minLevel>1?` from level ${minLevel}`:''} gets “${body}” from you and can reply.`,confirmLabel:'Send',cancelLabel:'Cancel',picture:'bell'}))return;
-    const sent=await bridge.chat.broadcastDm({body,audience:audience.value,send:true,minLevel});
-    text.value='';chatStatus.textContent=`Sent to ${sent.toLocaleString('en-US')} farmers. Their replies come in under your private messages.`;return;
+    if(!await confirmAction({title:`Send a private message to ${n.toLocaleString('en-US')} farmers?`,description:`Every farmer${audience.value==='all'?'':` ${who}`}${minLevel>1?` from level ${minLevel}`:''} gets “${body}” from you${languages} and can reply.`,confirmLabel:'Send',cancelLabel:'Cancel',picture:'bell'}))return;
+    const reached=await bridge.chat.broadcastDm({body,audience:audience.value,send:true,minLevel,texts});
+    sent();chatStatus.textContent=`Sent to ${reached.toLocaleString('en-US')} farmers${languages}. Their replies come in under your private messages.`;return;
    }
    if(popup){
-    const label=$p('label').value.trim(),target=$p('target').value==='link'?$p('link').value.trim():$p('target').value;
-    await bridge.chat.postPopup({title:$p('title').value.trim(),body,buttonLabel:label||null,buttonTarget:label?target:null,audience:$p('audience').value,minLevel:Number($p('level').value)||1,hours,news:mode==='both'});
-    for(const id of ['title','label','link'])$p(id).value='';dialog.querySelector('#admin-send-as').value='news';$p('fields').hidden=true;void showPopups();
-   }else await bridge.chat.postNews(body,hours);
+    const label=en.buttonLabel??'',target=$p('target').value==='link'?$p('link').value.trim():$p('target').value;
+    await bridge.chat.postPopup({title:en.title??'',body,buttonLabel:label||null,buttonTarget:label?target:null,audience:$p('audience').value,minLevel:Number($p('level').value)||1,hours,news:mode==='both',texts});
+    $p('link').value='';dialog.querySelector('#admin-send-as').value='news';$p('fields').hidden=true;void showPopups();
+   }else await bridge.chat.postNews(body,hours,texts);
    const span=hours?` for ${hours>=48&&hours%24===0?`${hours/24} days`:`${hours} hours`}`:'';
-   text.value='';chatStatus.textContent=mode==='popup'?`Sent as a pop-up${span}.`:`Sent${mode==='both'?' as a notification and a pop-up':''}. Everyone sees it under Notifications${span}.`;
+   sent();chatStatus.textContent=mode==='popup'?`Sent as a pop-up${span}${languages}.`:`Sent${mode==='both'?' as a notification and a pop-up':''}${languages}. Everyone sees it under Notifications${span}.`;
   }catch(error){chatStatus.textContent=error.message;}
  });
  dialog.querySelector('#admin-levels-form').addEventListener('submit',async event=>{

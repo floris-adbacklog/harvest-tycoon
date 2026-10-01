@@ -1,5 +1,6 @@
 import {refreshArt} from '../public/visual-icons.js';
 import {rookieLeft} from '../public/farm-state.js';
+import {chosenLanguage} from '../public/i18n.js';
 
 // Pop-ups from the admin (supabase/popups.sql, 26 Sep 2026): news that also opens once as a pop-up, with an optional button to a
 // screen of the game or to a web page (in a new tab); the admin can also send it without the news. Who sees it: everyone, phones in
@@ -11,6 +12,12 @@ export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text).
 export const linkify=text=>esc(text).replace(/https:\/\/[^\s<]+[^\s<.,!?;:)'"]/g,url=>`<a href="${url}" target="_blank" rel="noopener noreferrer">${url.replace(/^https:\/\//,'')}</a>`);
+// The admin's own text in the language the game plays in (supabase/admin-texts-languages.sql, 1 Oct 2026), part by part: English for
+// a part that language has no text of its own for. `own` lists the parts in that language, which the page's translation leaves alone.
+export function inLanguage(item,code=chosenLanguage()){
+ const texts=code!=='en'&&item?.texts?.[code]||{},own=new Set(['title','body','buttonLabel'].filter(key=>texts[key]&&item?.[key]));
+ return {...item,...Object.fromEntries([...own].map(key=>[key,texts[key]])),own};
+}
 export function fitsDevice(audience,{installed,phone}){
  return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone);
 }
@@ -25,10 +32,10 @@ export function createPopupUI({client,chat,state,doc=document,win=window,now=()=
   if(target.startsWith('https://')){win.open(target,'_blank','noopener,noreferrer');return;}
   screens[target.replace(/^screen:/,'')]?.();
  }
- function show(popup){
-  const button=popup.buttonLabel&&popup.buttonTarget;
-  dialog.innerHTML=`<button type="button" class="popup-close" data-popup-close aria-label="Close">×</button><img class="popup-art" src="/assets/harvest-tycoon-logo.webp" alt="" width="88" height="88" draggable="false"><h2 id="popup-title">${esc(popup.title)}</h2><p>${linkify(popup.body)}</p>`
-   +(button?`<button type="button" class="primary-button" data-popup-go>${esc(popup.buttonLabel)}${popup.buttonTarget.startsWith('https://')?' ↗':''}</button><button type="button" class="popup-later" data-popup-close>Not now</button>`:'<button type="button" class="primary-button" data-popup-close>Got it</button>');
+ function show(shown){
+  const popup=inLanguage(shown),button=popup.buttonLabel&&popup.buttonTarget,keep=key=>popup.own.has(key)?' translate="no"':'';
+  dialog.innerHTML=`<button type="button" class="popup-close" data-popup-close aria-label="Close">×</button><img class="popup-art" src="/assets/harvest-tycoon-logo.webp" alt="" width="88" height="88" draggable="false"><h2 id="popup-title"${keep('title')}>${esc(popup.title)}</h2><p${keep('body')}>${linkify(popup.body)}</p>`
+   +(button?`<button type="button" class="primary-button" data-popup-go><span${keep('buttonLabel')}>${esc(popup.buttonLabel)}</span>${popup.buttonTarget.startsWith('https://')?' ↗':''}</button><button type="button" class="popup-later" data-popup-close>Not now</button>`:'<button type="button" class="primary-button" data-popup-close>Got it</button>');
   dialog.onclick=event=>{
    if(event.target.closest('[data-popup-go]')){dialog.close();go(popup.buttonTarget);}
    else if(event.target.closest('[data-popup-close]'))dialog.close();

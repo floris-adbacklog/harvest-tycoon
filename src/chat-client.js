@@ -47,7 +47,7 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
    }
    return list;
   },
-  notices:(limit=30)=>rows(supabase.from('player_notices').select('id,player_id,kind,body,created_at').order('created_at',{ascending:false}).limit(limit)),
+  notices:(limit=30)=>rows(supabase.from('player_notices').select('id,player_id,kind,body,texts,created_at').order('created_at',{ascending:false}).limit(limit)),
   send:(name,body)=>rpc('chat_send',{p_channel:name,p_body:body}),
   markRead:name=>rpc('chat_mark_read',{p_channel:name}),
   block:(player,on)=>rpc('chat_block',{p_player:player,p_on:on}),
@@ -86,7 +86,8 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   // The admin only.
   setModerator:(player,on)=>rpc('staff_set_moderator',{p_player:player,p_on:on}),
   staffList:()=>rpc('staff_list'),
-  postNews:(body,hours=24)=>rpc('chat_post_news',{p_body:body,p_hours:hours}),
+  // News, pop-ups and the private message to many: with each language's own text, if the admin wrote one (supabase/admin-texts-languages.sql).
+  postNews:(body,hours=24,texts=null)=>rpc('chat_post_news',{p_body:body,p_hours:hours,p_texts:texts}),
   // Who is admin or moderator, for the mark beside their name (src/staff-badge.js); not the Admin dashboard's staffList above.
   staffRoles:()=>rpc('chat_staff_list'),
   // The admin's welcome message to every new farmer (supabase/welcome-dm.sql).
@@ -96,9 +97,9 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   welcomeSaveText:({language,body})=>rpc('welcome_dm_save_text',{p_language:language,p_body:body}),
   // The admin's private message to many farmers at once (supabase/chat-broadcast-dm.sql): count first, then send; from a farm
   // level too (supabase/chat-broadcast-level.sql).
-  broadcastDm:({body='',audience,send=false,minLevel=1})=>rpc('chat_broadcast_dm',{p_body:body,p_audience:audience,p_send:send,p_min_level:minLevel}),
+  broadcastDm:({body='',audience,send=false,minLevel=1,texts=null})=>rpc('chat_broadcast_dm',{p_body:body,p_audience:audience,p_send:send,p_min_level:minLevel,p_texts:texts}),
   // Pop-ups (supabase/popups.sql): news that also opens once as a pop-up. Posting, the list and stopping are for the admin only.
-  postPopup:({title,body,buttonLabel=null,buttonTarget=null,audience='all',minLevel=1,hours=24,news=true})=>rpc('popup_post',{p_title:title,p_body:body,p_button_label:buttonLabel,p_button_target:buttonTarget,p_audience:audience,p_min_level:minLevel,p_hours:hours,p_news:news}),
+  postPopup:({title,body,buttonLabel=null,buttonTarget=null,audience='all',minLevel=1,hours=24,news=true,texts=null})=>rpc('popup_post',{p_title:title,p_body:body,p_button_label:buttonLabel,p_button_target:buttonTarget,p_audience:audience,p_min_level:minLevel,p_hours:hours,p_news:news,p_texts:texts}),
   popupList:()=>rpc('popup_list'),
   stopPopup:id=>rpc('popup_stop',{p_id:id}),
   popups:()=>rpc('popup_next'),
