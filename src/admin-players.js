@@ -118,6 +118,8 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
 // BEGINNER_QUESTS (game/farm-state.js); a guided farm sells an egg at step 7 where an older farm does a chore.
 export const GUIDE_STEPS=Object.freeze(['First harvest','First sale','Plant wheat','Water a crop','Start production','Daily gift','A chore or an egg sale','Care for a crop','Harvest wheat','Collect goods and the guide reward']);
 export const FUNNEL_PERIODS=Object.freeze([['7','Last 7 days'],['30','Last 30 days'],['all','Everyone']]);
+// Retention over 7, 30 or 90 days (1 Oct 2026, supabase/functions/farm-api/admin-analytics-service.js RETENTION_PERIODS).
+export const RETENTION_PERIODS=Object.freeze([['7','7d'],['30','30d'],['90','90d']]);
 // The levels the funnel follows (27 Sep 2026: 1, 5, 10, 15, 20, 50, with no note on what each opens; those notes went out of date).
 export const FUNNEL_LEVELS=Object.freeze([1,5,10,15,20,50]);
 export function funnel(players,period='7',now=Date.now()){

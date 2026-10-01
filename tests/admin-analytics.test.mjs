@@ -188,7 +188,7 @@ test('retention percentages are colour-coded so a pattern is visible at a glance
 });
 test('the dashboard fetches all three admin operations through the same bridge every other request uses',()=>{
  const js=read('src/admin-dashboard.js');
- assert.match(js,/\[\['admin_online','Online now'\],\['admin_players','All players'\],\['admin_retention','Retention'\],\['admin_invites','Invites'\]\]/);assert.match(js,/bridge\.request\(\{operation\}\)/);
+ assert.match(js,/\[\['admin_online','Online now'\],\['admin_players','All players'\],\['admin_retention','Retention'\],\['admin_invites','Invites'\]\]/);assert.match(js,/bridge\.request\(operation==='admin_retention'\?\{operation,days:Number\(view\.retention\)\}:\{operation\}\)/);
  assert.match(js,/document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);refreshArt\(\);dialog\.showModal\(\);load\(\);/,'closes whatever else is open first, like every other dialog');
  assert.match(js,/refreshTimer=setInterval\(load,60000\);/);
  assert.match(js,/dialog\.addEventListener\('close',\(\)=>clearInterval\(refreshTimer\)\);/,'stops polling once closed');
@@ -247,7 +247,7 @@ test('long lists of farmers are asked for 100 at a time, and retention still cou
 });
 test('the dashboard shows what did load when one part fails, and says which part is missing',()=>{
  const dash=read('src/admin-dashboard.js');
- assert.match(dash,/PARTS\.map\(\(\[operation\]\)=>bridge\.request\(\{operation\}\)\.catch\(\(\)=>null\)\)/);
+ assert.match(dash,/PARTS\.map\(\(\[operation\]\)=>bridge\.request\(operation==='admin_retention'\?\{operation,days:Number\(view\.retention\)\}:\{operation\}\)\.catch\(\(\)=>null\)\)/);
  assert.match(dash,/could not be loaded\. Please try again\./);
  assert.doesNotMatch(dash,/bridge\.request\(\{operation:'admin_(online|retention)'\}\)\)?,/,'no part can take the others down');
 });
@@ -289,4 +289,33 @@ test('the payment page shows Harvest Tycoon for this game only',()=>{
  const checkout=read('supabase/functions/diamond-checkout/index.ts');
  assert.match(checkout,/branding_settings:\{display_name:'Harvest Tycoon',icon:\{type:'url',url:`\$\{origin\}\/assets\/pwa\/icon-512\.png`\}/);
  assert.ok(read('public/assets/pwa/icon-512.png').length>0,'the icon ships with the site');
+});
+
+// 1 Oct 2026: the staff switch the retention table between 7, 30 and 90 days.
+test('admin_retention over 30 days: a row per signup day with day 0, 1, 2, 3, 7, 14 and 30; the headline numbers stay the last week\'s',async()=>{
+ const D=86400000,signups=[{player_id:'old',created_at:iso(now-20*D)},{player_id:'new',created_at:iso(now-2*D)},{player_id:'today',created_at:iso(now-60000)}];
+ const stats=[{player_id:'old',last_active_at:iso(now-5*D)},{player_id:'new',last_active_at:iso(now-1000)},{player_id:'today',last_active_at:iso(now)}];
+ const r=await handleAdminRetention({admin:database({signups,stats}),user:admin,now,days:30});
+ assert.deepEqual([r.data.period,r.data.columns,r.data.weekly],[30,[0,1,2,3,7,14,30],false]);
+ const old=r.data.rows.find(x=>x.day===zoneDay(now-20*D));
+ assert.deepEqual(old.days.map(d=>d?.pct??null),[100,100,100,100,100,100,null],'still around until day 15, day 30 not reached yet');
+ assert.deepEqual(r.data.kpi,{today:1,day1:{retained:1,total:1}},'only the last week counts for the headline numbers');
+ const week=await handleAdminRetention({admin:database({signups,stats}),user:admin,now,days:7});
+ assert.ok(!week.data.rows.some(x=>x.day===zoneDay(now-20*D)),'7 days: the week only');assert.deepEqual(week.data.columns,[0,1,2,3,4,5,6,7]);
+ const odd=await handleAdminRetention({admin:database({signups,stats}),user:admin,now,days:12});assert.equal(odd.data.period,7,'anything else is the week');
+});
+test('admin_retention over 90 days: a row per signup week from Monday, and a farmer counts for day N once N days passed since their own signup',async()=>{
+ const D=86400000,monday=dayStart('2026-09-14'),signups=[{player_id:'a',created_at:iso(monday+3600000)},{player_id:'b',created_at:iso(monday+4*D)}];
+ const stats=[{player_id:'a',last_active_at:iso(monday+8*D)},{player_id:'b',last_active_at:iso(monday+5*D)}];
+ const at=dayStart('2026-09-22')+12*3600000;
+ const r=await handleAdminRetention({admin:database({signups,stats}),user:admin,now:at,days:90});
+ assert.deepEqual([r.data.columns,r.data.weekly],[[0,1,7,14,30,60,90],true]);
+ const row=r.data.rows.find(x=>x.day==='2026-09-14');assert.equal(row.size,2,'Monday and Friday, the same week');
+ assert.deepEqual(row.days[1],{retained:2,total:2,pct:100});
+ assert.deepEqual(row.days[2],{retained:1,total:1,pct:100},'day 7: only a has had 7 days, and a was still around');
+ assert.equal(row.days[3],null,'day 14: nobody has had 14 days yet');
+ const ui=read('src/admin-dashboard.js');
+ assert.match(ui,/data-retention-period="\$\{id\}"/);assert.match(ui,/data\.weekly\?`Week of \$\{fmtDay\(row\.day\)\}`:fmtDay\(row\.day\)/);
+ assert.match(read('src/admin-players.js'),/export const RETENTION_PERIODS=Object\.freeze\(\[\['7','7d'\],\['30','30d'\],\['90','90d'\]\]\);/);
+ assert.match(read('supabase/functions/farm-api/index.ts'),/handleAdminRetention\(\{admin,user,days:body\.days\}\)/);
 });

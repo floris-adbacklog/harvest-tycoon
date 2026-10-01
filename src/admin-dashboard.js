@@ -15,7 +15,7 @@ import {LANGUAGES} from '../public/languages.js';
 import {chosenLanguage} from '../public/i18n.js';
 import {translateLink} from './chat-ui.js';
 import {deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
-import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
+import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,RETENTION_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
@@ -57,7 +57,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<section class="admin-card" id="admin-countries" hidden><h3>'+art('invite-friends')+'Where players come from</h3><ul id="admin-country-list" class="admin-bars"></ul><p class="admin-hint">The country of each farmer’s device time zone, the last time they opened the game.</p></section>'
   +'<section class="admin-card" id="admin-devices" hidden><h3>'+art('farmapp')+'Mobile or desktop</h3><div id="admin-device-box"></div><p class="admin-hint">The device each farmer last opened the game on. Mobile is a phone or a tablet.</p></section>'
   +'<section class="admin-card" id="admin-languages"><h3>'+art('settings')+'Game language</h3><ul id="admin-language-list" class="admin-bars"></ul><p class="admin-hint">The language each farmer’s game was in, the last time they opened it.</p></section>'
-  +'<section class="admin-card"><h3>'+art('xp')+'Retention, day 0–7</h3><p class="admin-hint">Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
+  // 7, 30 or 90 days (1 Oct 2026): a row per signup day, or per signup week for 90 days (admin-analytics-service.js).
+  +'<section class="admin-card"><h3>'+art('xp')+'Retention</h3><div class="admin-filters" role="group" aria-label="Retention period">'+RETENTION_PERIODS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-retention-period="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><p class="admin-hint" id="admin-retention-hint">Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
   +'<section class="admin-card"><h3>'+art('gift')+'Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
   // Purchases (27 Sep 2026, the admin only): every checkout, paid or not, newest first.
   +'</div><div data-admin-panel="purchases" hidden>'
@@ -122,7 +123,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  }
  // All players: the filter, search and order stay as they are when the list refreshes; one farmer's details replace the list
  // until "All players". The funnel and the countries read the same list.
- const view={filter:'all',search:'',sort:'active',shown:60,period:'7',players:[],owner:false,guideSteps:GUIDE_STEPS.length,detail:null};
+ const view={filter:'all',search:'',sort:'active',shown:60,period:'7',retention:'7',players:[],owner:false,guideSteps:GUIDE_STEPS.length,detail:null};
  function renderPlayers(){
   const found=filterPlayers(view.players,view),list=dialog.querySelector('#admin-player-list');
   dialog.querySelector('#admin-players-count').textContent=found.length===view.players.length?number(found.length):`${number(found.length)} of ${number(view.players.length)}`;
@@ -157,15 +158,18 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  // Headline numbers: who is on now, today's signups (today's retention row) and how many of the recent signups came
  // back the next day, weighted by cohort size.
  function renderKpis(online,retention){
+  // The server counts the last week's signups whatever period the table shows (retention.kpi); an older server sends only the week.
   const today=zoneDay(Date.now()),row=retention.rows.find(r=>r.day===today),day1=retention.rows.map(r=>r.days[1]).filter(Boolean);
-  const kept=day1.reduce((sum,d)=>({retained:sum.retained+d.retained,total:sum.total+d.total}),{retained:0,total:0});
+  const kept=retention.kpi?.day1??day1.reduce((sum,d)=>({retained:sum.retained+d.retained,total:sum.total+d.total}),{retained:0,total:0});
   dialog.querySelector('#admin-kpi-online').textContent=number(online.count);
-  dialog.querySelector('#admin-kpi-new').textContent=number(row?.size??0);
+  dialog.querySelector('#admin-kpi-new').textContent=number(retention.kpi?.today??row?.size??0);
   dialog.querySelector('#admin-kpi-day1').textContent=kept.total?`${Math.round(kept.retained/kept.total*100)}%`:'—';
  }
  function renderRetention(data){
-  dialog.querySelector('#admin-retention-head').innerHTML=`<tr><th>Signed up</th><th>Farmers</th>${Array.from({length:8},(_,i)=>`<th>Day ${i}</th>`).join('')}</tr>`;
-  dialog.querySelector('#admin-retention-body').innerHTML=data.rows.length?data.rows.map(row=>`<tr><td>${fmtDay(row.day)}</td><td>${number(row.size)}</td>${row.days.map(d=>d?`<td class="${heat(d.pct)}" title="${d.retained} / ${d.total} still active">${d.pct}%</td>`:'<td class="admin-pending">—</td>').join('')}</tr>`).join(''):'<tr><td colspan="10" class="admin-empty">No signups in the last week.</td></tr>';
+  const columns=data.columns??Array.from({length:8},(_,i)=>i),period=data.period??7;
+  dialog.querySelector('#admin-retention-hint').textContent=data.weekly?'Share of each week’s signups (from Monday, Amsterdam time) still active N days after their own signup day. A farmer counts once N days have passed. Approximate: based on last activity.':'Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.';
+  dialog.querySelector('#admin-retention-head').innerHTML=`<tr><th>Signed up</th><th>Farmers</th>${columns.map(n=>`<th>Day ${n}</th>`).join('')}</tr>`;
+  dialog.querySelector('#admin-retention-body').innerHTML=data.rows.length?data.rows.map(row=>`<tr><td>${data.weekly?`Week of ${fmtDay(row.day)}`:fmtDay(row.day)}</td><td>${number(row.size)}</td>${row.days.map(d=>d?`<td class="${heat(d.pct)}" title="${d.retained} / ${d.total} still active">${d.pct}%</td>`:'<td class="admin-pending">—</td>').join('')}</tr>`).join(''):`<tr><td colspan="${columns.length+2}" class="admin-empty">No signups in the last ${period===7?'week':`${period} days`}.</td></tr>`;
  }
  // Invite a friend: the totals, then every friend who started with someone's link and whether each side has its diamonds.
  function renderInvites(data){
@@ -197,7 +201,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   void loadChat();void loadFeedback();
   // Every part loads on its own: one that fails leaves the others showing, and the line at the bottom says which one is missing.
   const PARTS=[['admin_online','Online now'],['admin_players','All players'],['admin_retention','Retention'],['admin_invites','Invites']];
-  const [online,players,retention,invites]=await Promise.all(PARTS.map(([operation])=>bridge.request({operation}).catch(()=>null)));
+  const [online,players,retention,invites]=await Promise.all(PARTS.map(([operation])=>bridge.request(operation==='admin_retention'?{operation,days:Number(view.retention)}:{operation}).catch(()=>null)));
   if(role==='admin')void showOffers();
   if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(renderPurchases).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
   if(players)showPlayers(players);
@@ -272,6 +276,14 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-player-search').addEventListener('input',event=>{view.search=event.target.value;view.shown=60;renderPlayers();});
  dialog.querySelector('#admin-player-sort').addEventListener('change',event=>{view.sort=event.target.value;renderPlayers();});
  dialog.querySelectorAll('[data-player-filter]').forEach(b=>b.onclick=()=>{view.filter=b.dataset.playerFilter;view.shown=60;pressed(dialog.querySelectorAll('[data-player-filter]'),b);renderPlayers();});
+ // The retention period: only the latest choice is drawn when the answers come back out of order.
+ let retentionAsk=0;
+ dialog.querySelectorAll('[data-retention-period]').forEach(b=>b.onclick=async()=>{
+  view.retention=b.dataset.retentionPeriod;pressed(dialog.querySelectorAll('[data-retention-period]'),b);const ask=++retentionAsk;
+  dialog.querySelector('#admin-retention-body').innerHTML='<tr><td colspan="10" class="admin-empty">Loading…</td></tr>';
+  try{const data=await bridge.request({operation:'admin_retention',days:Number(view.retention)});if(ask===retentionAsk)renderRetention(data);}
+  catch(error){if(ask===retentionAsk)dialog.querySelector('#admin-retention-body').innerHTML=`<tr><td colspan="10" class="admin-empty">${esc(error.message)}</td></tr>`;}
+ });
  dialog.querySelectorAll('[data-funnel-period]').forEach(b=>b.onclick=()=>{view.period=b.dataset.funnelPeriod;pressed(dialog.querySelectorAll('[data-funnel-period]'),b);renderFunnel();});
  dialog.querySelector('#admin-player-more').onclick=()=>{view.shown+=60;renderPlayers();};
  dialog.querySelector('[data-admin-panel="players"]').addEventListener('click',event=>{

@@ -60,31 +60,36 @@ export async function handleAdminRecentPlayers({admin,user,limit=14,now=Date.now
 // around by day N" cohort (a rolling floor on their one last-activity timestamp), not exact day-N-active
 // retention — the game keeps no daily activity log, so exact day-by-day presence cannot be reconstructed after
 // the fact. A day still in progress (not enough of it has elapsed for a given N) is reported as null, not 0%.
-export async function handleAdminRetention({admin,user,now=Date.now()}){
+// 1 Oct 2026: the staff switch between 7, 30 and 90 days. 7 is the week as before (day 0–7); 30 is a row per signup day with day 0,
+// 1, 2, 3, 7, 14 and 30; 90 is a row per signup week (from Monday) with day 0, 1, 7, 14, 30, 60 and 90. In a week's row a farmer
+// counts for day N once N days have passed since their own signup day. The headline numbers (kpi) are always the last week's.
+export const RETENTION_PERIODS=Object.freeze({7:{columns:[0,1,2,3,4,5,6,7],weekly:false},30:{columns:[0,1,2,3,7,14,30],weekly:false},90:{columns:[0,1,7,14,30,60,90],weekly:true}});
+const weekOf=day=>{const t=Date.parse(`${day}T00:00:00Z`);return new Date(t-((new Date(t).getUTCDay()+6)%7)*DAY_MS).toISOString().slice(0,10);};
+export async function handleAdminRetention({admin,user,now=Date.now(),days=RETENTION_DAYS}){
  if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
- const since=new Date(now-(RETENTION_DAYS+1)*DAY_MS).toISOString();
+ const period=RETENTION_PERIODS[days]?Number(days):RETENTION_DAYS,{columns,weekly}=RETENTION_PERIODS[period];
+ const since=new Date(now-(period+1)*DAY_MS).toISOString();
  const signups=await admin.rpc('admin_auth_signups',{p_since:since,p_limit:5000});
  if(signups.error)throw signups.error;
  const ids=[...new Set((signups.data??[]).map(r=>r.player_id))];
  const stats=await rowsFor(()=>admin.from('player_stats').select('player_id,last_active_at'),ids);
  const lastActive=new Map(stats.map(s=>[s.player_id,s.last_active_at?Date.parse(s.last_active_at):null]));
- const cohorts=new Map();
+ const cohorts=new Map(),signedOn=new Map(),firstDay=zoneDay(now-RETENTION_DAYS*DAY_MS);
  for(const s of signups.data??[]){
-  const day=zoneDay(Date.parse(s.created_at));
-  if(!cohorts.has(day))cohorts.set(day,[]);
-  cohorts.get(day).push(s.player_id);
+  const day=zoneDay(Date.parse(s.created_at));signedOn.set(s.player_id,day);
+  if(period===RETENTION_DAYS||day>=zoneDay(now-period*DAY_MS)){const key=weekly?weekOf(day):day;if(!cohorts.has(key))cohorts.set(key,[]);cohorts.get(key).push(s.player_id);}
  }
- const rows=[...cohorts.entries()].sort(([a],[b])=>a<b?-1:a>b?1:0).map(([day,members])=>{
-  const start=dayStart(day);
-  const days=Array.from({length:RETENTION_DAYS+1},(_,offset)=>{
-   const mark=start+offset*DAY_MS;
-   if(now<mark)return null;
-   const retained=members.filter(id=>{const active=lastActive.get(id);return active!=null&&active>=mark;}).length;
-   return {retained,total:members.length,pct:Math.round(retained/members.length*100)};
-  });
-  return {day,size:members.length,days};
- });
- return respond(user,{rows});
+ const kept=(members,offset)=>{
+  const due=members.filter(id=>now>=dayStart(signedOn.get(id))+offset*DAY_MS);
+  if(!due.length)return null;
+  const retained=due.filter(id=>{const active=lastActive.get(id);return active!=null&&active>=dayStart(signedOn.get(id))+offset*DAY_MS;}).length;
+  return {retained,total:due.length,pct:Math.round(retained/due.length*100)};
+ };
+ const rows=[...cohorts.entries()].sort(([a],[b])=>a<b?-1:a>b?1:0).map(([day,members])=>({day,size:members.length,days:columns.map(offset=>kept(members,offset))}));
+ // Today's signups and how many of the last week's came back the next day, whatever the period on screen.
+ const week=[...signedOn].filter(([,day])=>day>=firstDay).map(([id])=>id),day1=week.filter(id=>now>=dayStart(signedOn.get(id))+DAY_MS);
+ const kpi={today:week.filter(id=>signedOn.get(id)===zoneDay(now)).length,day1:{retained:day1.filter(id=>{const active=lastActive.get(id);return active!=null&&active>=dayStart(signedOn.get(id))+DAY_MS;}).length,total:day1.length}};
+ return respond(user,{period,columns,weekly,rows,kpi});
 }
 
 // Invite a friend, for the admin: every friend who started with someone's link (newest first, at most 200), who invited them,

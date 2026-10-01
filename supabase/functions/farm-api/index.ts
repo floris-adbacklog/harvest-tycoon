@@ -79,7 +79,7 @@ Deno.serve(async(req)=>{
    const recent=await handleAdminRecentPlayers({admin,user,limit:body.limit});return reply(recent.data,recent.status);
   }
   if(body.operation==='admin_retention'){
-   const retention=await handleAdminRetention({admin,user});return reply(retention.data,retention.status);
+   const retention=await handleAdminRetention({admin,user,days:body.days});return reply(retention.data,retention.status);
   }
   if(body.operation==='admin_players'){
    const players=await handleAdminPlayers({admin,user});return reply(players.data,players.status);
