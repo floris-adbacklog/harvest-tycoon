@@ -1,4 +1,5 @@
 import {confirmAction} from './confirm-dialog.js';
+import {skeleton} from './skeleton.js';
 import {createSocialUI} from './social-ui.js';
 import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
@@ -160,7 +161,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   document.getElementById('family-feedback').textContent=error;
   document.getElementById('family-tabs').hidden=!view?.family;
   document.querySelectorAll('[data-family-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.familyTab===tab);b.setAttribute('aria-selected',String(b.dataset.familyTab===tab));});
-  if(!view){content.innerHTML=`<p class="family-loading">${error?'Your family could not be loaded.':'Opening the Family Hall…'}</p><button id="family-retry" class="small-button">Try again</button>`;content.querySelector('#family-retry').onclick=()=>load(true);return;}
+  // Still on its way: placeholder rows (1 Oct 2026). Usually it is here already: refresh() reads it in the background every 30 s.
+  if(!view){if(!error){content.innerHTML=skeleton('Opening the Family Hall…',{hero:true,rows:4});return;}content.innerHTML='<p class="family-loading">Your family could not be loaded.</p><button id="family-retry" class="small-button">Try again</button>';content.querySelector('#family-retry').onclick=()=>load(true);return;}
   social.unmount();
   content.innerHTML=view.family?(({week,sharing,members,tournament,settings}[tab])??week)():landing();
   content.querySelectorAll('[data-family-action]').forEach(b=>b.onclick=async()=>{

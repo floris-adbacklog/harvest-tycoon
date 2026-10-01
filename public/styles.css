@@ -68,3 +68,19 @@ html,body{touch-action:pan-x pan-y}
 /* More room for the farm: the tool hint and the "Click to work" line under the tools are gone on desktop too (phones never
    showed them). The tools themselves light up to show what a tap did. */
 .bottom-hud .context-hint,.bottom-hud .bottom-note{display:none}
+/* Placeholder rows while a window waits for the server (public/skeleton.js, 1 Oct 2026): the shape of what is coming, with a soft
+   shimmer. The sentence is there for screen readers only. */
+.skeleton{display:grid;gap:12px;padding:6px 0}
+.skeleton-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.skeleton-row,.skeleton-hero{display:flex;align-items:center;gap:12px}
+.skeleton-hero{padding:16px;border-radius:18px;background:#f4efe2}
+.skeleton-row{padding:6px 0;border-bottom:1px solid #efe9db}
+.skeleton i{flex:none;width:44px;height:44px;border-radius:14px}
+.skeleton-hero i{width:60px;height:60px;border-radius:18px}
+.skeleton span{flex:1;display:grid;gap:8px;min-width:0}
+.skeleton b{display:block;height:12px;border-radius:6px}
+.skeleton b:first-child{width:58%;height:14px}.skeleton b+b{width:36%}
+.skeleton-row:nth-of-type(3n) b:first-child{width:46%}.skeleton-row:nth-of-type(3n+1) b:first-child{width:66%}
+.skeleton i,.skeleton b{background:linear-gradient(90deg,#ece5d4 0%,#f7f2e6 45%,#ece5d4 90%) 0 0/220% 100%;animation:skeleton-shine 1.3s ease-in-out infinite}
+@keyframes skeleton-shine{0%{background-position:100% 0}100%{background-position:-120% 0}}
+@media(prefers-reduced-motion:reduce){.skeleton i,.skeleton b{animation:none}}

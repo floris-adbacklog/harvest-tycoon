@@ -3,6 +3,7 @@ import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {renderStatPages,bindStatPages} from './profile-stats.js';
+import {skeleton} from '../public/skeleton.js';
 import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS} from '../game/farm-state.js';
 
 export const escapeProfileText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -152,6 +153,8 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
  }
  // The chat (src/chat-ui.js) adds the Moderator badge, Send message, Block and the staff's chat buttons after every draw.
  let chatExtras=null;
+ // The last answer for each farmer opened in this visit, shown at once when they are opened again.
+ const profileCache=new Map();
  let searchSequence=0,profileSequence=0,timer,selected=null,statPage=0,returnFocus,disposed=false,profileUsername=null,clockOffset=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
  function close(){dialog.close();}
  dialog.querySelector('.farmer-profile-close').onclick=close;dialog.querySelector('.farmer-profile-back').onclick=close;
@@ -162,7 +165,9 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   if(disposed)return;returnFocus=document.activeElement;selected=playerId;profileUsername=null;statPage=0;++profileSequence;
   const backButton=dialog.querySelector('.farmer-profile-back');backButton.hidden=back===null;if(back!==null)backButton.textContent=back;
   dialog.querySelector('#farmer-profile-title').textContent='Farmer profile';
-  content.innerHTML='<p class="farmer-empty">Opening this farmer’s gate…</p>';profileStatus.textContent='';
+  // A farmer seen before shows at once while the newest numbers load; a new one shows placeholder rows (1 Oct 2026).
+  const cached=profileCache.get(playerId);
+  if(cached)paint(playerId,cached);else content.innerHTML=skeleton('Opening this farmer’s gate…',{hero:true,rows:3});profileStatus.textContent='';
   adminGrant.hidden=true;adminGrant.innerHTML='';
   // The admin and the moderators can jump to this farmer in their dashboard (src/admin-dashboard.js), like its "Open profile" comes here.
   const staffView=dialog.querySelector('#farmer-staff-view'),staff=window.harvestStaff;
@@ -172,7 +177,7 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   // The Admin gift only when the admin came for it (Edit on the farmer's page in the dashboard), not on every profile they open.
   const granting=checkAdmin().then(admin=>{if(!disposed&&gift&&admin&&selected===playerId&&dialog.open){renderAdminGrant(playerId);return true;}return false;});
   // The profile first, the log right behind it (it sits below the profile).
-  const loading=loadProfile(false);showLog(playerId);await loading;
+  const loading=loadProfile(Boolean(cached));showLog(playerId);await loading;
   if(await granting&&selected===playerId&&dialog.open){adminGrant.scrollIntoView?.({block:'center',behavior:'smooth'});adminGrant.querySelector('#admin-grant-diamonds')?.focus?.({preventScroll:true});}
  }
  // A family leader sees "Invite to <family>" on the profile of a farmer without a family (public/family-ui.js decides whether
@@ -192,12 +197,7 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   try{
    const data=await bridge.request({operation:'player_profile',playerId:id});
    if(disposed||ticket!==profileSequence||!dialog.open)return;
-   const y=dialog.scrollTop;clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId});refreshVipBadges(dialog,Date.now()+clockOffset);
-   // The stat pages keep the page you were on when the profile refreshes (every 30 seconds).
-   bindStatPages(content,{page:statPage,onPage:page=>{statPage=page;},onBoard:key=>showBoard?.(key)});
-   profileUsername=data.playerProfile.username;showInvite(data.playerProfile);
-   content.querySelector('[data-family-profile]')?.addEventListener('click',event=>window.harvestFamilyProfile?.open(event.currentTarget.dataset.familyProfile));
-   chatExtras?.(data.playerProfile,content,{isCurrent:()=>!disposed&&selected===id&&dialog.open});
+   const y=dialog.scrollTop;profileCache.set(id,data);paint(id,data);
    profileStatus.textContent='';
    if(quiet)dialog.scrollTop=y;
   }catch(error){
@@ -209,6 +209,15 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
    const retry=document.createElement('button');retry.className='small-button';retry.textContent='Try again';retry.onclick=()=>loadProfile(false);
    content.replaceChildren(why,retry);profileStatus.textContent='';
   }finally{if(ticket===profileSequence)content.setAttribute('aria-busy','false');}
+ }
+ // The farmer's page from a server answer (or the last one, while the newest loads).
+ function paint(id,data){
+  clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId});refreshVipBadges(dialog,Date.now()+clockOffset);
+  // The stat pages keep the page you were on when the profile refreshes (every 30 seconds).
+  bindStatPages(content,{page:statPage,onPage:page=>{statPage=page;},onBoard:key=>showBoard?.(key)});
+  profileUsername=data.playerProfile.username;showInvite(data.playerProfile);
+  content.querySelector('[data-family-profile]')?.addEventListener('click',event=>window.harvestFamilyProfile?.open(event.currentTarget.dataset.familyProfile));
+  chatExtras?.(data.playerProfile,content,{isCurrent:()=>!disposed&&selected===id&&dialog.open});
  }
  async function searchPlayers(ticket,query){
   if(disposed||ticket!==searchSequence)return;

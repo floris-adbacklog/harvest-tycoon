@@ -19,7 +19,7 @@ function start(){
   createAvatarSettings:()=>{},stopPageZoom:()=>{},loadStaff:()=>Promise.resolve(),staffRole:()=>null,
   createPlayerProfiles:()=>({open(){},isOpen:false}),
   createAdminDashboard:()=>({}),createChatUI:()=>null,
-  setInterval:()=>1,clearInterval(){},
+  setInterval:()=>1,clearInterval(){},setTimeout:()=>1,
   loadGame:async()=>({farmReady}),
   showPaymentReturn:()=>calls.push('payment'),
   createStarterPackUI:async()=>calls.push('starter'),

@@ -62,7 +62,8 @@ test('the leaderboard shows the top 100, ten a page, and keeps the window quiet'
  assert.match(board,/`Page \$\{shown\+1\} of \$\{pages\}`/);assert.match(board,/step\('‹ Previous',shown-1,'previous'\),where,step\('Next ›',shown\+1,'next'\)/);
  assert.match(board,/jump\.textContent='Show';jump\.onclick=\(\)=>onPage\(mine\);/,'your own page, when you are in the top 100');
  assert.match(board,/small\.textContent=row\.player_id===playerId\?'You':'';/,'no "Level 160" under every name');
- assert.match(cloud,/if\(!quiet\|\|board\?\.category!==result\.category\)boardPage=0;board=result;drawBoard\(\);/,'a refresh keeps the page, a new board starts on page 1');
+ assert.match(cloud,/if\(!quiet&&!cached\|\|board\?\.category!==result\.category\)boardPage=0;board=result;boardCache\.set\(result\.category,result\);drawBoard\(\);/,'a refresh keeps the page, a new board starts on page 1');
+ assert.match(cloud,/if\(cached\)\{board=cached;boardPage=0;drawBoard\(\);\}else if\(!quiet\)ui\.results\.innerHTML=skeleton\('Gathering the latest scores…',\{rows:6\}\);/,'the last board at once, placeholder rows the first time');
  assert.doesNotMatch(ui,/leaderboard-intro|A green dot means online now|cloud-privacy/,'no intro and no privacy footnote');assert.match(read('public/retention.css'),/#leaderboard-dialog \.cloud-sync:has\(#cloud-status:empty\)\{display:none\}/);
 });
 test('empty states are cards: the journal before your first harvest, and an empty board',()=>{

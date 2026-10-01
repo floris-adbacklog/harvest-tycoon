@@ -1,4 +1,5 @@
 import {createAvatarSettings} from '../public/avatar-settings.js';
+import {skeleton} from '../public/skeleton.js';
 import {WORLD_TWO_LEVEL} from '../public/farm-state.js';
 import {createPlayerProfiles} from './player-profiles.js';
 import {createAdminDashboard} from './admin-dashboard.js';
@@ -38,9 +39,14 @@ if(!bridge){location.replace('/play.html');}else{
   let boardRequest=0,board=null,boardPage=0;
   // The board keeps its page when it refreshes (every 30 seconds); a new board, or opening it again, starts on page 1.
   const drawBoard=()=>renderLeaderboard(ui.results,{...board,page:boardPage,now:Date.now()+serverOffset},bridge.playerId,id=>profiles.open(id),page=>{boardPage=page;drawBoard();ui.results.scrollIntoView?.({block:'start'});});
-  async function openBoard(quiet=false){const request=++boardRequest,category=ui.category;if(!quiet)ui.message('Gathering the latest scores…');ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own)ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);if(!quiet||board?.category!==result.category)boardPage=0;board=result;drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
+  // The last board of each kind shows at once when it opens again (or was read in the background after the farm opened), while
+  // the newest loads; a board never seen shows placeholder rows (1 Oct 2026).
+  const boardCache=new Map();
+  async function openBoard(quiet=false){const request=++boardRequest,category=ui.category,cached=!quiet&&boardCache.get(category);if(cached){board=cached;boardPage=0;drawBoard();}else if(!quiet)ui.results.innerHTML=skeleton('Gathering the latest scores…',{rows:6});ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own)ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);if(!quiet&&!cached||board?.category!==result.category)boardPage=0;board=result;boardCache.set(result.category,result);drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
   const {farmReady}=await import(/* @vite-ignore */ '/game.js?v=familyhall-model-2');
   if(await farmReady){
+   // The board the leaderboard opens on, read once in the background, so the first look needs no wait.
+   setTimeout(()=>{const category=ui.category;if(!boardCache.has(category))bridge.leaderboard(category).then(result=>{if(!boardCache.has(result.category))boardCache.set(result.category,result);}).catch(()=>{});},8000);
    showPaymentReturn(bridge);
    // A pop-up from the admin (news with a button), once, when nothing else is open. It does not wait for the Starter Pack's catalog.
    void createPopupUI({client:bridge.chat,chat,state:firstState}).start();

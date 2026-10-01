@@ -1,5 +1,6 @@
 // The chat window. Its button sits next to Farm Family in the header; on a phone it takes the Family button's place (Family moves
 import {linkify} from './popup-ui.js';
+import {skeleton} from '../public/skeleton.js';
 import {loadStaff,staffRole,staffBadge,STAFF_LABELS} from './staff-badge.js';
 // into the More menu, under Friends). Four tabs: Notifications (news from the admin and the odd personal note from the staff),
 // Global, Family and Private. The box you type in is at the top and the newest message right under it, so nothing has to be
@@ -241,7 +242,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // put for the next message.
   form.hidden=!compose.show;input.disabled=Boolean(compose.blocked);sendButton.disabled=Boolean(compose.blocked)||sending;
   input.placeholder=compose.blocked??compose.placeholder??'';input.maxLength=compose.max??200;hours.hidden=tab!=='notices';form.classList.toggle('is-blocked',Boolean(compose.blocked));
-  if(busy){list.innerHTML='<li class="chat-empty"><p>Opening the chat…</p></li>';return;}
+  if(busy){list.innerHTML=`<li class="chat-empty">${skeleton('Opening the chat…',{rows:4})}</li>`;return;}
   if(tab==='notices')list.innerHTML=notices.length?notices.map((n,i)=>noticeRow(n,i<freshNotices)).join(''):empty(EMPTY.notices);
   else if(tab==='family'&&!overview?.family){
    const familyButton=doc.getElementById('family-button');

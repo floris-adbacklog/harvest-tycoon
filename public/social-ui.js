@@ -2,6 +2,7 @@ import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
 import {ITEMS,CROPS,itemAvailable,levelOf,worldTwoItem} from './farm-state.js';
 import {showCenterNotice} from './center-notice.js';
+import {skeleton} from './skeleton.js';
 // Daily sharing inside a Farm Family: help a member with coins, send a gift of any crop or good, ask for any crop or good
 // of any crop or good you have unlocked, and fill someone else's request. Everything comes out of your own farm (harvest_social in retention-social.sql moves it),
 // so this screen only has to make the choices clear and say up front what cannot be done today.
@@ -94,7 +95,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
  function render(){
   if(!root)return;
   const heading=embedded?'':`<div class="dialog-heading"><div><span class="eyebrow">FARM FAMILY</span><h2 id="sharing-title">Daily sharing</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>${onBack?'<button class="back-button sharing-back" data-back><i data-lucide="chevron-left" data-line-icon></i>Back to Farm Family</button>':''}`;
-  if(!social){root.innerHTML=heading+`<p class="sharing-empty">${esc(error||'Opening daily sharing…')}</p>`;bind();return;}
+  if(!social){root.innerHTML=heading+(error?`<p class="sharing-empty">${esc(error)}</p>`:skeleton('Opening daily sharing…',{rows:4}));bind();return;}
   const today=sharingToday(social,me());
   // 30 Sep 2026, cleaner: a slim intro with today's count, then what your family asks for (and your own request), then help and
   // gifts for each farmer on one row; what Help costs is said once, not on every button.

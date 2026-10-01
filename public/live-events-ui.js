@@ -3,6 +3,7 @@ import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {farmNow} from './farm-client.js';
 import {placeLabel} from './place-label.js';
+import {skeleton} from './skeleton.js';
 import {formatDuration,levelOf,FAMILY_EVENT_BONUS} from './farm-state.js';
 // Farm events: a short shared goal (usually 5 hours, then a 1-hour break before the next one). The Events button
 // sits next to Quests on desktop and in the More menu on phones; the screen shows the running event, or the next
@@ -110,7 +111,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const rules=`<details class="family-extra event-rules"><summary>How farm events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and you have finished.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  function render(){
   const heading='<div class="dialog-heading"><div><span class="eyebrow">PLAY TOGETHER, FOR A LITTLE WHILE</span><h2 id="events-title">Farm events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
-  dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:`<p class="event-loading">${esc(error||'Opening farm events…')}</p>`)+'<p class="event-feedback" role="status" data-status></p>';
+  dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:error?`<p class="event-loading">${esc(error)}</p>`:skeleton('Opening farm events…',{hero:true,rows:3,avatar:false}))+'<p class="event-feedback" role="status" data-status></p>';
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();
   dialog.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>claim(b));
   // A farmer in the standings opens their profile on top of the event; its back button returns here (26 Sep 2026).

@@ -2,6 +2,7 @@
 // chest tiers opened, Family Orders completed, and this week so far. Opened from a farmer's profile, the list of families, your own
 // family's heading and the tournament: window.harvestFamilyProfile.open(familyId). The numbers come from familyProfile (farm-state.js)
 // through farm-api's read-only family_profile request; Join and Ask to join run through the Family window, as in its list.
+import {skeleton} from './skeleton.js';
 import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
@@ -73,6 +74,7 @@ export function createFamilyProfile({emblem,act,openFamily,request=body=>window.
  const content=dialog.querySelector('#family-profile-content');
  dialog.querySelector('[data-family-profile-close]').onclick=()=>dialog.close();
  let shown=null,sequence=0,busy=false;
+ const seen=new Map();   // the last answer for each family opened in this visit
  function paint(p){
   shown=p;
   content.innerHTML=renderFamilyProfile(p,{emblem,now:farmNow(),profiles:!!window.harvestProfiles});refreshArt();refreshVipBadges(content,farmNow());
@@ -88,11 +90,12 @@ export function createFamilyProfile({emblem,act,openFamily,request=body=>window.
  }
  async function open(familyId,{keep=false}={}){
   if(!familyId)return;
-  const ticket=++sequence;
-  if(!keep){document.querySelectorAll('dialog[open]').forEach(d=>{if(d!==dialog)d.close();});content.innerHTML='<p class="family-loading">Opening the family…</p>';}
+  // A family seen before shows at once while the newest answer loads; a new one shows placeholder rows (1 Oct 2026).
+  const ticket=++sequence,cached=seen.get(familyId);
+  if(!keep){document.querySelectorAll('dialog[open]').forEach(d=>{if(d!==dialog)d.close();});if(cached)paint(cached);else content.innerHTML=skeleton('Opening the family…',{hero:true,rows:4});}
   if(!dialog.open)dialog.showModal();
-  try{const data=await request({operation:'family_profile',familyId});if(ticket===sequence&&dialog.open)paint(data.familyProfile);}
-  catch(error){if(ticket!==sequence||!dialog.open)return;content.innerHTML=`<p class="family-loading">${esc(error.message||'This family could not be loaded.')}</p><button type="button" class="small-button" data-family-profile-retry>Try again</button>`;content.querySelector('[data-family-profile-retry]').onclick=()=>open(familyId);}
+  try{const data=await request({operation:'family_profile',familyId});seen.set(familyId,data.familyProfile);if(ticket===sequence&&dialog.open)paint(data.familyProfile);}
+  catch(error){if(ticket!==sequence||!dialog.open||cached&&!keep)return;content.innerHTML=`<p class="family-loading">${esc(error.message||'This family could not be loaded.')}</p><button type="button" class="small-button" data-family-profile-retry>Try again</button>`;content.querySelector('[data-family-profile-retry]').onclick=()=>open(familyId);}
  }
  dialog.addEventListener('close',()=>{sequence++;shown=null;});
  window.harvestFamilyProfile={open,get shown(){return shown;}};
