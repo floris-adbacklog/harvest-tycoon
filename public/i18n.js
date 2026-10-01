@@ -10,6 +10,9 @@ export const LANGUAGE_KEY='harvest-tycoon:language';
 const ATTRS=['title','aria-label','placeholder','alt'];
 // Left as they are: code, players' own words (translate="no") and the staff screens, which stay English.
 const KEEP='script,style,noscript,textarea,code,[translate="no"],[contenteditable="true"],.admin-dashboard-dialog,.admin-grant';
+// What a farmer types in a text box stays as it is, but the box's own hint (placeholder, label) is the game's and is translated
+// (1 Oct 2026: the feedback box asked "What happened…?" in English).
+const KEEP_ATTRS=KEEP.split(',').filter(s=>s!=='textarea').join(',');
 const READY=new Set(LANGUAGES.filter(language=>language.ready).map(language=>language.code));
 
 // The farmer's choice in Settings, else the device's language if the game speaks it, else English.
@@ -126,7 +129,7 @@ export const isolateNumbers=text=>text.replace(/[\u2066\u2069]/g,'').replace(ISO
 // Keep a document translated: everything in it now, and every text that is added or changed later.
 export function translateDocument(doc,translator){
  const written=new WeakMap(),attrsWritten=new WeakMap(),numbers=localNumbers(translator.code),rtl=RTL_LANGUAGES.includes(translator.code);
- const skip=element=>!element||element.closest(KEEP);
+ const skip=element=>!element||element.closest(KEEP),skipAttr=element=>!element||element.closest(KEEP_ATTRS);
  function text(node){
   const data=node.data;
   if(written.get(node)===data||skip(node.parentElement))return;
@@ -141,7 +144,7 @@ export function translateDocument(doc,translator){
   written.set(node,next);node.data=next;
  }
  function attr(element,name){
-  const value=element.getAttribute(name);if(!value||!/\p{L}/u.test(value)||skip(element))return;
+  const value=element.getAttribute(name);if(!value||!/\p{L}/u.test(value)||skipAttr(element))return;
   let done=attrsWritten.get(element);if(done?.[name]===value)return;
   let out=translator.translate(normalize(value));if(out==null)return;
   if(numbers&&/\d/.test(out))out=numbers(out);
@@ -151,11 +154,13 @@ export function translateDocument(doc,translator){
  function tree(root){
   if(root.nodeType===3){text(root);return;}
   if(root.nodeType!==1&&root.nodeType!==9&&root.nodeType!==11)return;
-  if(root.nodeType===1){if(skip(root))return;for(const name of ATTRS)if(root.hasAttribute(name))attr(root,name);}
-  const walker=doc.createTreeWalker(root,5,{acceptNode:node=>node.nodeType===1&&node.matches(KEEP)?2:1});
+  const attrs=element=>{for(const name of ATTRS)if(element.hasAttribute(name))attr(element,name);};
+  if(root.nodeType===1){attrs(root);if(skip(root))return;}
+  // A kept element's text is left alone, but a text box still gets its hint translated (attr checks KEEP_ATTRS).
+  const walker=doc.createTreeWalker(root,5,{acceptNode:node=>node.nodeType===1&&node.matches(KEEP)?(attrs(node),2):1});
   for(let node=walker.nextNode();node;node=walker.nextNode()){
    if(node.nodeType===3)text(node);
-   else for(const name of ATTRS)if(node.hasAttribute(name))attr(node,name);
+   else attrs(node);
   }
  }
  tree(doc.documentElement);

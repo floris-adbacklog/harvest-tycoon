@@ -199,7 +199,7 @@ const BODIES={
   ]))
   // The six leagues (1 Oct 2026, farm-state.js EVENT_LEAGUES) with what first place wins in coins there, and then each league with
   // the goals its events can draw, per kind of play (public/event-goals.js), so a farmer knows what to get ready for.
-  +section('Leagues',`<p>Your level when an event ends decides your league. Every league has the same diamonds; coins grow with the league.</p>`+table(['League','Levels','First place'],EVENT_LEAGUES.map(l=>`<tr><td>${l.name}</td><td>${l.to?`${l.from}–${l.to}`:`${l.from}+`}</td><td>${number((200+PODIUM_PRIZES[0].coins)*l.coins)} coins · ${PODIUM_PRIZES[0].diamonds} diamonds</td></tr>`)))
+  +section('Leagues',`<p>Your level when an event ends decides your league. Every league has the same diamonds; coins grow with the league. The family bonus counts family members from every league.</p>`+table(['League','Levels','First place'],EVENT_LEAGUES.map(l=>`<tr><td>${l.name}</td><td>${l.to?`${l.from}–${l.to}`:`${l.from}+`}</td><td>${number((200+PODIUM_PRIZES[0].coins)*l.coins)} coins · ${PODIUM_PRIZES[0].diamonds} diamonds</td></tr>`)))
   +EVENT_LEAGUES.map((l,i)=>section(l.name,`<p class="wiki-league"><img class="wiki-league-badge" src="/assets/icons/league-${l.id}.webp" alt="" width="48" height="48" loading="lazy"><span><span>${l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`}</span> · <span>coins ×${l.coins}</span></span></p><p>Goals you can expect, three per event:</p><ul class="wiki-list">${EVENT_GOAL_POOLS[i].map((group,k)=>`<li><strong>${['Fields','Crops','Buildings','Market','Helping out'][k]}</strong>: ${group.map(g=>`<span>${EVENT_GOALS[g.stat]?.label??g.stat}</span>`).join(', ')}</li>`).join('')}</ul>`)).join('');
  },
  helpers(h){

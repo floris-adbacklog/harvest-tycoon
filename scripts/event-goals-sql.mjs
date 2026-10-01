@@ -70,6 +70,10 @@ begin
   end;
  end loop;
 end $function$;
+
+-- The automatic events made ahead before this ran get their per-league goals too (never one that has started).
+update public.live_events e set leagues=public.harvest_event_pick(floor(extract(epoch from e.starts_at)/21600)::bigint)->'leagues'
+ where e.created_by is null and e.leagues is null and e.starts_at>now();
 `;
 writeFileSync(new URL('../supabase/live-event-league-goals.sql',import.meta.url),sql);
 console.log('supabase/live-event-league-goals.sql',sql.length,'characters,',pools.length,'leagues');

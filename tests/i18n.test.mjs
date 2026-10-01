@@ -75,3 +75,10 @@ test('a language is only in the game when every text is translated, and every tr
   assert.deepEqual(wrong.slice(0,10),[],code);
  }
 });
+
+test('a text box keeps what a farmer types, but its hint and label are the game\'s and get translated (1 Oct 2026)',()=>{
+ const src=readFileSync(new URL('../public/i18n.js',import.meta.url),'utf8');
+ assert.match(src,/const KEEP_ATTRS=KEEP\.split\(','\)\.filter\(s=>s!=='textarea'\)\.join\(','\);/);
+ assert.match(src,/if\(!value\|\|!\/\\p\{L\}\/u\.test\(value\)\|\|skipAttr\(element\)\)return;/,'attributes use the list without textarea');
+ assert.match(src,/acceptNode:node=>node\.nodeType===1&&node\.matches\(KEEP\)\?\(attrs\(node\),2\):1/,'a kept element still has its hint translated, never its text');
+});

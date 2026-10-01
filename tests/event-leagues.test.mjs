@@ -57,6 +57,8 @@ test('the database draws exactly these goals per league, counts the league\'s ow
  assert.match(leagues,/\(stat='glasshouse_batches' and action in \('collect','collect_all'\)\) or \(stat='valley_baskets' and action='valley_sell'\)/);
  assert.match(leagues,/qualified=\(not exists\(select 1 from jsonb_array_elements\(coalesce\(e\.leagues->p\.league->'objectives',e\.objectives\)\)/);
  assert.match(leagues,/row_number\(\) over\(partition by league order by last_at,player_id\)/);
+ const bonus=leagues.slice(leagues.indexOf('with fam as'),leagues.indexOf('update public.live_events set settled_at'));
+ assert.doesNotMatch(bonus,/league/,'the family bonus counts finishers from every league');assert.match(bonus,/having count\(\*\)>=3/);
  assert.match(leagues,/\*\(case r\.league when 5 then 8 else r\.league\+1 end\)/);
  assert.match(leagues,/revoke all on function public\.harvest_event_board\(uuid\) from public, anon, authenticated;/);
 });
