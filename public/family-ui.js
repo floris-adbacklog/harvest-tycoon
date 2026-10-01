@@ -7,7 +7,7 @@ import {renderFamilyInvitation,renderSentInvitations,createFamilyInviteSearch,in
 import {renderFamilyOrderRewards} from './family-order-rewards.js';
 import {renderFamilyTournament} from './family-tournament.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_MIN_LEVEL,worldTwoItem,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {farmNow} from './farm-client.js';
@@ -40,12 +40,14 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  // Every family, with who can join and how: Join, Ask to join (or cancel your request), or why not. Open ones come first.
  function browse(cooldown){
   const list=view.families??view.openFamilies??[],mine=view.myRequest;
+  const myLevel=levelOf(state),low=f=>(f.mode==='open'||f.mode==='request')&&myLevel<(f.minLevel??FAMILY_MIN_LEVEL);
   const action=f=>f.full?'<span class="family-mode-chip">Full</span>'
+   :low(f)?`<span class="family-mode-chip">From level ${f.minLevel}</span>`
    :f.mode==='open'?actionButton('family_join','Join',`data-family-id="${esc(f.id)}"`,cooldown)
    :f.mode==='request'?(mine?.family.id===f.id?actionButton('family_request_cancel','Cancel request',`data-request-id="${esc(mine.id)}"`):actionButton('family_request','Ask to join',`data-family-id="${esc(f.id)}"`,cooldown||!!mine))
    :`<span class="family-mode-chip">${FAMILY_JOIN_MODES[f.mode]}</span>`;
   const note=mine?`<p class="family-notice">You asked to join ${esc(mine.family.name)}. Their leader or a co-leader can accept it for ${formatDuration(mine.expiresAt-farmNow())}.</p>`:'';
-  return `<section class="family-browse"><h3>Join a family</h3>${note}${list.length?list.map(f=>`<div class="family-list-row${mine?.family.id===f.id?' is-requested':''}"><button type="button" class="family-list-open" data-family-profile="${esc(f.id)}">${emblem(f.emblem)}<div><strong>${esc(f.name)} <small class="family-level-chip">Level ${f.level??1}</small></strong><span>${f.members} / ${view.config.maxMembers} farmers · ${f.active??0} active</span></div></button>${action(f)}</div>`).join(''):'<p>No families yet. Create the first one!</p>'}${list.some(f=>!f.full&&f.mode!=='open')?'<p class="family-footnote">Request to join: the leader or a co-leader decides. Invite only: they invite you by your player name.</p>':''}</section>`;
+  return `<section class="family-browse"><h3>Join a family</h3>${note}${list.length?list.map(f=>`<div class="family-list-row${mine?.family.id===f.id?' is-requested':''}"><button type="button" class="family-list-open" data-family-profile="${esc(f.id)}">${emblem(f.emblem)}<div><strong>${esc(f.name)} <small class="family-level-chip">Level ${f.level??1}</small></strong><span>${f.members} / ${view.config.maxMembers} farmers · ${f.active??0} active${(f.minLevel??FAMILY_MIN_LEVEL)>FAMILY_MIN_LEVEL&&(f.mode==='open'||f.mode==='request')&&!low(f)?` · level ${f.minLevel}+`:''}</span></div></button>${action(f)}</div>`).join(''):'<p>No families yet. Create the first one!</p>'}${list.some(f=>!f.full&&f.mode!=='open')?'<p class="family-footnote">Request to join: the leader or a co-leader decides. Invite only: they invite you by your player name.</p>':''}</section>`;
  }
  function prizePreview(){
   const t=view.tournament;
@@ -143,6 +145,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   <label for="family-rename">Family name</label><input id="family-rename" name="name" value="${esc(f.name)}" minlength="3" maxlength="20" required ${renameLater?'disabled':''}><small>${renameLater?`You can rename again in ${formatDuration(f.renameAt-farmNow())}.`:'You can rename once every seven days.'}</small>
   <div class="family-look-save" data-look-save hidden><button type="button" class="link-button" data-look-undo>Undo</button><button class="primary-button">Save changes</button></div></form>
   <section class="family-card family-open-row"><div><strong>Who can join</strong><p>${MODE_HELP[f.mode]??MODE_HELP.invite}</p></div><select data-family-mode aria-label="Who can join" ${disabled(false)}>${Object.entries(FAMILY_JOIN_MODES).map(([k,label])=>`<option value="${k}" ${f.mode===k?'selected':''}>${label}</option>`).join('')}</select></section>
+  ${f.mode==='open'||f.mode==='request'?`<section class="family-card family-open-row"><div><strong>Minimum level</strong><p>${f.mode==='open'?'Farmers below this level cannot join.':'Farmers below this level cannot ask to join.'} You can still invite anyone.</p></div><select data-family-min-level aria-label="Minimum level" ${disabled(false)}>${FAMILY_MIN_LEVELS.map(n=>`<option value="${n}" ${(f.minLevel??FAMILY_MIN_LEVEL)===n?'selected':''}>${n===FAMILY_MIN_LEVEL?`Any level (${n}+)`:`Level ${n}+`}</option>`).join('')}</select></section>`:''}
   ${leave}`;
  }
  function render(){
@@ -198,6 +201,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
    };
   }
   content.querySelector('[data-family-mode]')?.addEventListener('change',event=>act({type:'family_join_mode',mode:event.currentTarget.value}));
+  content.querySelector('[data-family-min-level]')?.addEventListener('change',event=>act({type:'family_min_level',level:Number(event.currentTarget.value)}));
   inviteSearch.mount(content);bindEmblemPickers(content);
   refreshArt();if(focusId){const next=document.getElementById(focusId);next?.focus({preventScroll:true});if(next&&typeof selection==='number')try{next.setSelectionRange(selection,selection);}catch{}}
  }

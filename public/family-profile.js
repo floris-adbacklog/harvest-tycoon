@@ -28,6 +28,7 @@ export function familyProfileAction(p){
  if(v.inFamily)return {note:'You are in another family.'};
  if(!v.unlocked)return {note:`Farm Families open at level ${FAMILY_MIN_LEVEL}.`};
  if(p.full)return {note:'This family is full.'};
+ if((p.mode==='open'||p.mode==='request')&&(v.level??Infinity)<(p.minLevel??FAMILY_MIN_LEVEL))return {note:`This family is for farmers from level ${p.minLevel}.`};
  if(p.mode==='open')return v.cooldown?{note:'You recently left a family; you can join again soon.'}:{button:'family_join',label:'Join'};
  if(p.mode==='request'){
   if(v.requestId)return {button:'family_request_cancel',label:'Cancel request',note:'You asked to join. Their leader or a co-leader can accept or decline.'};

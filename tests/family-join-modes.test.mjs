@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {FAMILY_MIN_LEVEL,FAMILY_JOIN_MODES,FAMILY_REQUEST_LIFETIME,familyJoinMode,emptyFamilyContext,familyMutate,familyPublicView,createFarm,normalizeFarm,xpForLevel} from '../public/farm-state.js';
+import {FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,familyMinLevel,familyProfile,FAMILY_JOIN_MODES,FAMILY_REQUEST_LIFETIME,familyJoinMode,emptyFamilyContext,familyMutate,familyPublicView,createFarm,normalizeFarm,xpForLevel} from '../public/farm-state.js';
 import {familyChanges} from '../supabase/functions/farm-api/family-service.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.parse('2026-09-26T12:00:00Z');
@@ -82,3 +82,32 @@ test('the database: join_mode beside is_open, a requests table only the server r
  const service=read('supabase/functions/farm-api/family-service.js');
  assert.match(service,/requests:\['id'\]/);assert.match(service,/kind:'family'/,'the leader and the farmer hear of it in Notifications');
 });
+
+test('a minimum level for an open family or one taking requests: below it no Join or Ask; an invitation still works',()=>{
+ const at=level=>{const s=createFarm(now);s.xp=xpForLevel(level);return normalizeFarm(s,now);};
+ const go=(c,p,a,level=FAMILY_MIN_LEVEL)=>familyMutate(c,at(level),p,a,now,{uuid});
+ assert.equal(FAMILY_MIN_LEVELS[0],FAMILY_MIN_LEVEL);assert.equal(familyMinLevel({}),FAMILY_MIN_LEVEL,'no minimum: the level families open at');
+ let c=family();assert.equal(c.families[0].min_level,null);
+ assert.throws(()=>run(c,'bo',{type:'family_min_level',level:20}),/Join a family first/);
+ assert.throws(()=>run(c,'lea',{type:'family_min_level',level:17}),/Choose a minimum level/);
+ c=run(c,'lea',{type:'family_min_level',level:20}).context;assert.equal(c.families[0].min_level,20);
+ assert.equal(go(c,'bo',{type:'family_join',familyId:fid(c)},19).result.error,'This family is for farmers from level 20.');
+ assert.equal(familyCurrentName(go(c,'bo',{type:'family_join',familyId:fid(c)},20).context,'bo'),'Meadow Friends','level 20 joins');
+ const asking=run(c,'lea',{type:'family_join_mode',mode:'request'}).context;
+ assert.equal(asking.families[0].min_level,20,'kept when who can join changes');
+ assert.equal(go(asking,'bo',{type:'family_request',familyId:fid(asking)},12).result.error,'This family is for farmers from level 20.');
+ assert.equal(go(asking,'bo',{type:'family_request',familyId:fid(asking)},25).context.requests.length,1);
+ const invited=go(run(asking,'lea',{type:'family_join_mode',mode:'invite'}).context,'lea',{type:'family_invite',playerId:'bo'}).context;
+ assert.equal(familyCurrentName(go(invited,'bo',{type:'family_accept_invite',invitationId:invited.invitations[0].id},12).context,'bo'),'Meadow Friends','an invitation works below the minimum');
+ assert.equal(run(c,'lea',{type:'family_min_level',level:FAMILY_MIN_LEVEL}).context.families[0].min_level,null,'back to any level');
+ const list=familyPublicView(c,'cas',at(12),now);assert.equal(list.families[0].minLevel,20);
+ assert.equal(familyProfile(c,fid(c),'cas',at(12),now).minLevel,20);assert.equal(familyProfile(c,fid(c),'cas',at(12),now).viewer.level,12);
+ const ui=read('public/family-ui.js'),profile=read('public/family-profile.js');
+ assert.match(ui,/f\.mode==='open'\|\|f\.mode==='request'\?`<section class="family-card family-open-row"><div><strong>Minimum level<\/strong>/,'only for open and request');
+ assert.match(ui,/act\(\{type:'family_min_level',level:Number\(event\.currentTarget\.value\)\}\)/);
+ assert.match(ui,/low\(f\)\?`<span class="family-mode-chip">From level \$\{f\.minLevel\}<\/span>`/);
+ assert.match(profile,/return \{note:`This family is for farmers from level \$\{p\.minLevel\}\.`\}/);
+ const sql=read('supabase/family-min-level.sql');
+ assert.match(sql,/add column if not exists min_level integer/);assert.match(sql,/join_mode=excluded\.join_mode,min_level=excluded\.min_level;/);
+});
+const familyCurrentName=(c,p)=>{const m=c.members.find(m=>m.player_id===p&&!m.left_at);return c.families.find(f=>f.id===m?.family_id)?.name;};
