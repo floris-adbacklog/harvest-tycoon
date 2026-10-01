@@ -257,3 +257,26 @@ natural fertilizer натуральное удобрение · animal feed ко
 Seed Lab Семенная лаборатория · Glasshouse Оранжерея · Greenhouse (stop) Теплица · Grand Valley Fair Большая ярмарка долины ·
 Farmhouse Фермерский дом · Dairy Barn Коровник · Feed Mill Кормовая мельница · Juice Press Соковарня · Bee Yard Пасека ·
 Apiary Ульи · Animal paddock Загон · Tool workshop Сарай с инструментами · Squash кабачок · leaderboard рейтинг.
+
+### العربية (Arabic: right to left, Modern Standard Arabic, the player as "أنت" in the masculine, Western digits)
+
+The page runs right to left (public/languages.js `rtl`); numbers with a sign, slash or percent are held in order by the game
+(public/i18n.js isolateNumbers), so write them as English does ("{0} / {1}", "+{0}"). Counts that change the noun use the six
+forms: `{"zero":…,"one":…,"two":…,"few":…,"many":…,"other":…}`.
+
+coins عملات · diamonds ألماس · XP XP · field حقل · crop محصول · harvest احصد/حصاد · plant ازرع/زراعة · water اسقِ/سقي ·
+extra care عناية إضافية · Care عناية · batch دفعة · slot خانة · goods منتجات · building مبنى · upgrade ترقية/رقِّ ·
+level المستوى · Market السوق · Buildings المباني · Quests المهام · More المزيد · My farm مزرعتي · Settings الإعدادات ·
+Farm Family عائلة المزرعة · Family Chest صندوق العائلة · Family Order طلبية العائلة · Family Tournament بطولة العائلات ·
+leader/co-leader القائد/نائب القائد · honorary عضو شرفي · boost معزِّز · streak سلسلة · daily gift الهدية اليومية ·
+Daily rewards المكافآت اليومية · chore عمل في المزرعة (Farm chores أعمال المزرعة) · helping hand يد العون · Estate الضيعة ·
+Valley الوادي · Valley Market سوق الوادي · farm stall كشك المزرعة · storage المخزن · natural fertilizer سماد طبيعي ·
+animal feed علف · heirloom صنف أصيل · test bed حوض تجارب · Seed Lab مختبر البذور · Glasshouse البيت الزجاجي ·
+Greenhouse (activity) المشتل · Grand Valley Fair معرض الوادي الكبير · visitor زائر · journal دفتر المزرعة · VIP VIP.
+Wheat قمح · Corn ذرة · Barley شعير · Lettuce خس · Cabbage ملفوف · Cauliflower قرنبيط · Pumpkin يقطين · Red cabbage ملفوف أحمر ·
+Sunflower دوار الشمس · Apples تفاح · Berries توت · Green beans فاصوليا خضراء · Squash كوسا · Pole beans فاصوليا متسلقة ·
+Cider apples تفاح العصير · Cherries كرز. Farmhouse بيت المزرعة · Chicken Coop قن الدجاج · Feed Mill مطحنة العلف ·
+Dairy Barn حظيرة الألبان · Windmill طاحونة الهواء · Bakery المخبز · Farm Kitchen مطبخ المزرعة · Juice Press معصرة العصير ·
+Factory المصنع · Family Hall قاعة العائلة · Packing Shed سقيفة التعبئة · Bee Yard المنحل · Sheep Barn حظيرة الأغنام ·
+Pig Farm مزرعة الخنازير · Goat Shed حظيرة الماعز · Weaving Shed ورشة النسيج · Craft Workshop ورشة الحرف · The Ranch المرعى ·
+Estate Workshop ورشة الضيعة · Trade Depot مستودع التجارة · Silo research أبحاث الصومعة · Tractor الجرار.

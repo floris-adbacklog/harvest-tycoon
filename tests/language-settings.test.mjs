@@ -11,7 +11,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 test('every language has its painted flag; English and the fully translated languages can be chosen',()=>{
  assert.deepEqual(LANGUAGES.map(l=>l.code),['en','cs','de','es','fr','id','hu','nl','pt','tr','ru','uk','hi','ja','ar']);
  assert.deepEqual(LANGUAGES.filter(l=>l.rtl).map(l=>l.code),['ar'],'Arabic reads from right to left');
- assert.deepEqual(LANGUAGES.filter(l=>l.ready).map(l=>l.code),['en','cs','de','es','fr','id','hu','nl','pt','tr','ru','uk','hi','ja']);
+ assert.deepEqual(LANGUAGES.filter(l=>l.ready).map(l=>l.code),['en','cs','de','es','fr','id','hu','nl','pt','tr','ru','uk','hi','ja','ar']);
  for(const {code} of LANGUAGES){
   assert.ok(art(`flag-${code}`).includes(`src="/assets/icons/flag-${code}.webp"`),code);
   assert.ok(statSync(new URL(`../public/assets/icons/flag-${code}.webp`,import.meta.url)).size>2000,code);

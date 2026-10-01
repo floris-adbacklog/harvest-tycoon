@@ -3,7 +3,7 @@
 // hyphen by the rules of the language (public/i18n.js sets the page's lang). English farmers: nothing happens.
 // READY lists the languages that are translated, like public/languages.js (a test keeps them the same).
 (function(){
- var READY=' cs de es fr id hu nl pt tr ru uk hi ja ';
+ var READY=' cs de es fr id hu nl pt tr ru uk hi ja ar ';
  var RTL=' ar ';
  try{
   var root=document.documentElement,saved=localStorage.getItem('harvest-tycoon:language'),code=saved||'';

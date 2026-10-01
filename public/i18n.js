@@ -53,8 +53,9 @@ export function createTranslator(dict,code='en'){
   const upper=exact.get(key[0].toUpperCase()+key.slice(1));
   return typeof upper!=='string'?undefined:code==='de'?upper:upper[0].toLowerCase()+upper.slice(1);
  };
- // A changing part that is a known text (a crop, a building) is translated as well.
- const part=value=>{const key=value.trim(),hit=key&&known(key);return hit?value.replace(key,hit):value;};
+ // A changing part that is a known text (a crop, a building) is translated as well, and so is one that is a text with its own
+ // changing parts ("8 / 40 fields" inside "Level 1 · 8 / 40 fields", 1 Oct 2026).
+ const part=value=>{const key=value.trim();if(!key)return value;const hit=known(key)??(/\p{L}/u.test(key)&&/\d/.test(key)?translate(key,true):null);return hit?value.replace(key,hit):value;};
  const fill=(out,values)=>{
   if(out&&typeof out==='object'){
    const n=values.map(v=>parseFloat(String(v).replace(/[^\d.-]/g,''))).find(Number.isFinite);
