@@ -5,10 +5,23 @@ export const LOADING_TIPS=Object.freeze([
  ['double-harvest','Water and care for a field: up to three crops from one harvest.'],
  ['apples','Apple trees and berry bushes grow back after you pick them.'],
  ['collect-all','Turn crops into goods in your buildings: they sell for more.'],
- ['instant-harvest','Hold a field for a moment, then swipe across your fields to harvest many at once.'],
- ['live-events','A new farm event starts every six hours.'],
- ['family-members','Join a Farm family for weekly orders and a tournament.'],
- ['guide','How to play has a wiki with every crop and recipe.']
+ ['instant-harvest','Hold a field for a moment, then swipe across your fields to plant, water or harvest many at once.'],
+ ['live-events','A new farm event starts every six hours: finish its goals for coins and diamonds.'],
+ ['guide','How to play has a wiki with every crop and recipe.'],
+ // More tips (1 Oct 2026); the old Farm family tip (weekly orders) gave way to the Family Chest and the top ten.
+ ['double-coins','The Market shows tomorrow’s best price: make it today, sell it tomorrow.'],
+ ['offer-coins','Come back every day: your daily gift grows with your streak, and one missed day a week is forgiven.'],
+ ['level-up','Every new level brings coins and diamonds, and opens new crops and buildings.'],
+ ['squash','Plant a long crop before you go: your farm keeps growing while you are away.'],
+ ['chore-weeds','Farm chores pay coins and XP, and sometimes find extra crops.'],
+ ['helping-hand','Lend a helping hand at four stops on the farm for coins, goods and XP.'],
+ ['family-chest-gold','Fill a Family Chest with your Farm family every week: everything you do on your farm counts.'],
+ ['family-sharing','In a Farm family you help each other every day with coins, crops and goods.'],
+ ['family-tournament','The top ten families win diamonds in the weekly Family Tournament.'],
+ ['invite-friends','Invite a friend: when they reach level 10 within 30 days, you both get 150 diamonds.'],
+ ['farmapp','Add Harvest Tycoon to your home screen: one tap away, with a reminder when your crops are ready.'],
+ ['valley-market','From level 62 the Valley Market pays 1.5× for a full basket of goods.'],
+ ['trade-depot','From level 85 a full export trailer at the Trade Depot pays 1.6× plus diamonds.']
 ]);
 // On the way to the village (World II, 30 Sep 2026) the tips are about the village.
 export const VILLAGE_LOADING_TIPS=Object.freeze([
