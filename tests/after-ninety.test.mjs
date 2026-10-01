@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createFarm,normalizeFarm,applyFarmAction as act,xpForLevel,levelOf,FEATURE_LEVELS,featureUnlocked,ITEMS,CROPS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_MS,LAB_GROW_MS,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,
  masterPoints,masterFree,masterBonus,cropDuration,recipeDuration,marketSaleValue,VISITOR_STAY,VISITOR_WAIT,GIANT_TEND_MS,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,
- VALLEY_PROJECTS,valleyProjectBonus,endgameInSight,itemAvailable,STARTER_PACK_CROPS,familyOrder} from '../game/farm-state.js';
+ VALLEY_PROJECTS,valleyProjectBonus,endgameInSight,itemAvailable,STARTER_PACK_CROPS,familyOrder,labCanCross} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // 27 Sep 2026: the Grand Valley Fair (90) is the last building; five things keep a farm going after it, all on its own.
@@ -96,4 +96,15 @@ test('the screens: places on the map and in the menu, the Master tab, the fair t
  assert.match(estate,/data-fair-tab="pumpkin"/);for(const fn of ['labMarkup','visitorsMarkup','projectsMarkup','pumpkinMarkup'])assert.match(estate,new RegExp(`function ${fn}\\(`),fn);
  assert.match(read('public/wiki-content.js'),/section\('After level 90'/);
  for(const f of ['heirloom-savoycabbage','visitor-cook','project-canal','giant-prize','endgame-master-star'])assert.ok(readFileSync(new URL(`../public/assets/icons/${f}.webp`,import.meta.url)).length>1000,f);
+});
+
+test('a free test bed counts as ready only when a cross is possible: crops for an heirloom open at your level',()=>{
+ const s=farm(92);for(const k of Object.keys(CROPS))s.inventory[k]=0;
+ assert.equal(labCanCross(s),false,'nothing to cross: the Seed Lab stays quiet');
+ const h=HEIRLOOMS.ghostpumpkin;for(const [k,n] of Object.entries(h.input))s.inventory[k]=n;
+ assert.equal(labCanCross(s),false,'the crops for a level-94 heirloom do not count at 92');
+ for(const [k,n] of Object.entries(HEIRLOOMS.savoycabbage.input))s.inventory[k]=n;assert.equal(labCanCross(s),true);
+ assert.equal(labCanCross(farm(80)),false,'before the Seed Lab opens');
+ const ui=read('public/economy-ui.js');
+ assert.match(ui,/if\(free\)return \{text:`\$\{free\} test \$\{free===1\?'bed':'beds'\} free`,kind:labCanCross\(state\)\?'ready':'idle'\};/);
 });

@@ -1,5 +1,5 @@
 import {foldLocked} from './progression-ui.js';
-import {doubleBatchChance,worldTwoBuilding,villageGood,VILLAGE_GOODS,VALLEY_PROJECTS,valleyProjectLevel,HEIRLOOMS,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
+import {labCanCross,doubleBatchChance,worldTwoBuilding,villageGood,VILLAGE_GOODS,VALLEY_PROJECTS,valleyProjectLevel,HEIRLOOMS,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,itemAvailable,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,PRODUCTS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt,pictureFile} from './visual-icons.js';
@@ -77,7 +77,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(key==='seedlab'){
    const beds=state.lab?.beds??[],ready=beds.filter(b=>b&&now>=b.readyAt).length,free=beds.filter(b=>!b).length;
    if(ready)return {text:`${ready} ${ready===1?'bed':'beds'} ready to collect`,kind:'ready'};
-   if(free)return {text:`${free} test ${free===1?'bed':'beds'} free`,kind:'ready'};
+   if(free)return {text:`${free} test ${free===1?'bed':'beds'} free`,kind:labCanCross(state)?'ready':'idle'};   // ready only when you can cross something
    return {text:`Growing · ready in ${seconds(Math.min(...beds.map(b=>b.readyAt))-now)}`,kind:'working'};
   }
   if(key==='visitors'){

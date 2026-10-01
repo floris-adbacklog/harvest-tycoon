@@ -1813,6 +1813,9 @@ export function masterSpend(state,branch){
 export const LAB_BEDS=2,LAB_DISCOVER_MS=24*3600000,LAB_GROW_MS=8*3600000,LAB_DISCOVER_DIAMONDS=15,LAB_COMPLETE_DIAMONDS=200;
 export const heirloomFound=(state,key)=>Array.isArray(state.lab?.found)&&state.lab.found.includes(key);
 export const heirloomOpen=(state,key)=>featureUnlocked(state,'seedlab')&&levelOf(state)>=HEIRLOOMS[key].level;
+// Whether a free test bed can be used now: some heirloom open at your level whose parent crops you have (1 Oct 2026: a free bed
+// alone lit the Seed Lab up as ready, even with nothing to cross).
+export const labCanCross=state=>Object.entries(HEIRLOOMS).some(([key,h])=>heirloomOpen(state,key)&&Object.entries(h.input).every(([k,n])=>(state.inventory[k]??0)>=n));
 export function labCross(state,bed,heirloom,now=Date.now()){
  if(!Number.isInteger(bed)||bed<0||bed>=LAB_BEDS)throw new Error('Choose a test bed.');
  if(typeof heirloom!=='string'||!Object.hasOwn(HEIRLOOMS,heirloom))throw new Error('Choose an heirloom variety.');
