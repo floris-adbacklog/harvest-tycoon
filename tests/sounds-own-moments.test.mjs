@@ -26,6 +26,6 @@ test('the new sounds are made like the others: short, never clipping, with plain
 
 test('a private message from someone else and a confirmed purchase play their sound through the farm\'s audio',()=>{
  assert.match(read('public/game.js'),/window\.harvestSound=kind=>farmAudio\.play\(kind\);/);
- assert.match(read('src/chat-ui.js'),/if\(m\.sender!==me&&m\.channel\.startsWith\('dm:'\)\)win\.harvestSound\?\.\('message'\);/);
+ assert.match(read('src/chat-ui.js'),/if\(m\.sender!==me&&\(m\.channel\.startsWith\('dm:'\)\|\|m\.channel==='crew'\)\)win\.harvestSound\?\.\('message'\);/,'a private message or one in the staff\'s Crew');
  assert.match(read('src/payment-ui.js'),/window\.harvestSound\?\.\('purchase'\);\n    window\.dispatchEvent\(new Event\('harvest-purchase-confirmed'\)\);/);
 });

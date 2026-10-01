@@ -59,6 +59,7 @@ const EMPTY={
 const ICON={
  back:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>',
  more:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
+ pin:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>',
  translate:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>'
 };
 // The valley speaks many languages (30 Sep 2026): a message from someone else, in any chat, has a small translate link (under the
@@ -134,8 +135,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  }
  const scheduleOverview=(wait=1200)=>{clearTimeout(overviewTimer);overviewTimer=setTimeout(refreshOverview,wait);};
  function clearThread(name){
-  const t=overview?.threads?.find(x=>x.channel===name);if(!t)return;
-  t.unread=0;overview.unread.dm=overview.threads.reduce((sum,x)=>sum+(x.unread||0),0);
+  const t=name==='crew'?overview?.crew:overview?.threads?.find(x=>x.channel===name);if(!t)return;
+  // Private counts the staff's Crew too (supabase/chat-crew.sql).
+  t.unread=0;overview.unread.dm=overview.threads.reduce((sum,x)=>sum+(x.unread||0),0)+(overview.crew?.unread||0);
  }
  // Marks a chat read on the server, at most once every few seconds per chat, and at once on this screen.
  function markRead(name){
@@ -199,6 +201,12 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  function threadRow(t){
   return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${esc(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}<span translate="no">${esc(t.last?.body??'')}</span></small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
  }
+ // The Crew (supabase/chat-crew.sql, 1 Oct 2026): the staff's own group chat, the admin and every moderator, pinned on top of their
+ // private chats. Nobody else sees it.
+ function crewRow(c){
+  const last=c.last?`${c.last.mine?'You: ':`<span translate="no">${esc(c.last.senderName)}</span>: `}<span translate="no">${esc(c.last.body)}</span>`:'Admins and moderators only';
+  return `<li><button type="button" class="chat-thread chat-crew${c.unread?' is-unread':''}" data-thread="crew"><span class="chat-avatar chat-crew-art">${art('admin')}</span><span class="chat-thread-copy"><strong>Crew<span class="chat-crew-pin" title="Pinned">${ICON.pin}</span></strong><small>${last}</small></span><span class="chat-thread-side">${c.lastAt?`<time datetime="${esc(c.lastAt)}" title="${esc(exact(c.lastAt))}">${ago(c.lastAt)}</time>`:''}${c.unread?`<b class="chat-count">${pillText(c.unread)}</b>`:''}</span></button></li>`;
+ }
  // "50 diamonds + 1,000 coins" in a gift note shows the diamond and the coin in front of the amounts.
  const AMOUNT_ART={diamonds:'diamonds',coins:'coins',XP:'xp'};
  const withAmounts=text=>esc(text).replace(/\b(\d{1,3}(?:,\d{3})+|\d+) (diamonds|coins|XP)\b/g,(all,amount,what)=>`<span class="chat-amount">${art(AMOUNT_ART[what])}<b>${amount}</b> ${what}</span>`);
@@ -229,6 +237,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(tab==='family'&&!overview?.family)return {show:false};
   if(overview?.banned)return {show:true,blocked:'The chat is closed for you. Your farm is not affected.'};
   if(overview?.mutedUntil&&Date.parse(overview.mutedUntil)>Date.now())return {show:true,blocked:`You are muted until ${new Date(overview.mutedUntil).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}.`};
+  if(tab==='private'&&thread?.crew)return {show:true,placeholder:'Message the crew…'};
   const need=tab==='global'?overview?.levels?.global:tab==='private'?overview?.levels?.dm:1;
   if(need&&(overview?.level??0)<need)return {show:true,blocked:`${tab==='global'?'The global chat':'Private messages'} open at level ${need}.`};
   if(tab==='private'&&overview?.privateOn===false)return {show:true,blocked:'Your private messages are off. Turn them on in Settings.'};
@@ -237,7 +246,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  }
  function paint(){
   dialog.querySelectorAll('[data-chat-tab]').forEach(tabButton=>{const on=tabButton.dataset.chatTab===tab;tabButton.classList.toggle('active',on);tabButton.setAttribute('aria-selected',String(on));});
-  back.hidden=!(tab==='private'&&thread);blockButton.hidden=reportButton.hidden=back.hidden;
+  back.hidden=!(tab==='private'&&thread);blockButton.hidden=reportButton.hidden=back.hidden||Boolean(thread?.crew);
   find.hidden=!(tab==='private'&&!thread&&overview?.privateOn!==false);
   // The tab already says where you are: a heading only for a family (its name) and a private chat (who with).
   head.classList.toggle('is-quiet',!((tab==='family'&&overview?.family)||(tab==='private'&&thread)));
@@ -245,8 +254,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(thread){const off=blocked().has(thread.otherId);blockButton.setAttribute('aria-label',off?`Unblock ${thread.otherName}`:`Block ${thread.otherName}`);blockButton.title=blockButton.getAttribute('aria-label');blockButton.classList.toggle('is-on',off);}
   // A private chat shows just the other farmer's name (27 Sep 2026): "Chat with" and a long automatic name ("Gentle Farm 6170")
   // did not fit on a phone next to Report and Block, and the whole name fell away behind "…". Screen readers still hear "Chat with".
-  title.innerHTML=tab==='family'?esc(overview?.family?.name??'Family chat'):tab==='private'&&thread?profileButton(thread.otherId,`Open ${thread.otherName}’s profile`,esc(thread.otherName),'chat-title-name'):esc(TITLES[tab]);
-  if(tab==='private'&&thread)title.setAttribute('aria-label',`Chat with ${thread.otherName}`);else title.removeAttribute('aria-label');
+  title.innerHTML=tab==='family'?esc(overview?.family?.name??'Family chat'):tab==='private'&&thread?.crew?esc('Crew'):tab==='private'&&thread?profileButton(thread.otherId,`Open ${thread.otherName}’s profile`,esc(thread.otherName),'chat-title-name'):esc(TITLES[tab]);
+  if(tab==='private'&&thread&&!thread.crew)title.setAttribute('aria-label',`Chat with ${thread.otherName}`);else title.removeAttribute('aria-label');
   const compose=composeState();
   // While a message is on its way only the send button waits: the box stays usable, so the cursor (and a phone's keyboard) stays
   // put for the next message.
@@ -259,8 +268,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    list.innerHTML=empty(familyButton&&!familyButton.hidden?'Join a family to chat with its farmers.':'Families open at level 10. Then you can chat with yours here.',familyButton&&!familyButton.hidden?'<button type="button" class="small-button" data-open-family>Find a family</button>':'');
   }
   else if(tab==='private'&&!thread&&found&&!find.hidden)list.innerHTML=found.loading?'<li class="chat-empty"><p>Looking around the valley…</p></li>':found.players.length?found.players.map(foundRow).join(''):empty('No farmers found. Try another name.');
-  else if(tab==='private'&&!thread){const threads=(overview?.threads??[]).filter(t=>!blocked().has(t.otherId));list.innerHTML=(overview?.privateOn===false?'<li class="chat-empty chat-off"><p>Your private messages are off. You can turn them on in Settings, under Chat.</p></li>':'')+(threads.length?threads.map(threadRow).join(''):overview?.privateOn===false?'':empty(EMPTY.private));}
-  else{const shown=messages.filter(m=>!blocked().has(m.sender));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join(''):empty(thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
+  else if(tab==='private'&&!thread){const threads=(overview?.threads??[]).filter(t=>!blocked().has(t.otherId));list.innerHTML=(overview?.crew?crewRow(overview.crew):'')+(overview?.privateOn===false?'<li class="chat-empty chat-off"><p>Your private messages are off. You can turn them on in Settings, under Chat.</p></li>':'')+(threads.length?threads.map(threadRow).join(''):overview?.privateOn===false?'':empty(EMPTY.private));}
+  else{const shown=messages.filter(m=>!blocked().has(m.sender));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join(''):empty(thread?.crew?'Say hello to the crew!':thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
   refreshArt();
  }
  async function load(){
@@ -314,12 +323,12 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   }
   const m=event.message;if(!m||blocked().has(m.sender))return;
   // A private message from someone else gets its own soft ding, open or not (the sound settings decide if it plays).
-  if(m.sender!==me&&m.channel.startsWith('dm:'))win.harvestSound?.('message');
-  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,100);paint();void freshFaces([m.sender]);}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:'))scheduleOverview();return;}
+  if(m.sender!==me&&(m.channel.startsWith('dm:')||m.channel==='crew'))win.harvestSound?.('message');
+  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,100);paint();void freshFaces([m.sender]);}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview();return;}
   if(m.sender===me)return;
   if(m.channel==='global')overview.unread.global=Math.min(99,(overview.unread.global??0)+1);
   else if(m.channel===overview.family?.channel)overview.unread.family=Math.min(99,(overview.unread.family??0)+1);
-  else if(m.channel.startsWith('dm:'))scheduleOverview(300);
+  else if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview(300);
   counts();
  }
 
@@ -366,6 +375,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(profile){profiles?.open(profile.dataset.profile,{back:null});return;}
   const start=event.target.closest('[data-start]');
   if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}
+  if(threadButton&&threadButton.dataset.thread==='crew'){if(!overview?.crew)return;thread={channel:'crew',crew:true,otherName:'Crew'};show('private',{keepThread:true});return;}
   if(threadButton){const t=overview?.threads?.find(x=>x.channel===threadButton.dataset.thread);if(!t)return;thread={channel:t.channel,otherId:t.otherId,otherName:t.otherName,otherAvatar:t.otherAvatar};show('private',{keepThread:true});return;}
   if(event.target.closest('[data-open-family]')){dialog.close();doc.getElementById('family-button')?.click();}
  });

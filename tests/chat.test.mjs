@@ -311,3 +311,15 @@ test('a moderator can still send a gift, but only the admin writes a message wit
  assert.match(admin,/const message=role==='admin'\?dialog\.querySelector\('#admin-donate-message'\)\.value\.trim\(\):''/);
  assert.match(read('public/chat.css'),/\.admin-donate-message\[hidden\]\{display:none\}/,'the label\'s own display does not show it again');
 });
+test('the Crew: one group chat for the admin and the moderators, pinned on top of their private chats; nobody else reads or writes it (1 Oct 2026)',()=>{
+ const sql=read('supabase/chat-crew.sql'),ui=read('src/chat-ui.js');
+ assert.match(sql,/if p_channel='crew' then return public\.chat_staff_role\(me\) is not null; end if;/,'only the staff read it, Realtime included');
+ assert.match(sql,/elsif p_channel='crew' then\n  if public\.chat_staff_role\(me\) is null then raise exception 'Choose a chat\.'/,'only the staff write in it');
+ assert.match(sql,/if public\.chat_staff_role\(me\) is not null then crew:=jsonb_build_object\('channel','crew',/,'the overview has it for the staff only');
+ assert.match(sql,/'dm',coalesce\(\(select sum\(\(x->>'unread'\)::int\) from jsonb_array_elements\(threads\) x\),0\)\+coalesce\(\(crew->>'unread'\)::int,0\)\),/,'its new messages count on Private');
+ assert.match(sql,/body ~\* '\(https\?:\/\/\|www\\\.\|/,'the chat\'s rules hold here too');
+ assert.match(ui,/list\.innerHTML=\(overview\?\.crew\?crewRow\(overview\.crew\):''\)\+/,'pinned first');
+ assert.match(ui,/blockButton\.hidden=reportButton\.hidden=back\.hidden\|\|Boolean\(thread\?\.crew\);/,'no Block or Report on the Crew');
+ assert.match(ui,/if\(threadButton&&threadButton\.dataset\.thread==='crew'\)\{if\(!overview\?\.crew\)return;/);
+ assert.match(ui,/overview\.unread\.dm=overview\.threads\.reduce\(\(sum,x\)=>sum\+\(x\.unread\|\|0\),0\)\+\(overview\.crew\?\.unread\|\|0\);/);
+});
