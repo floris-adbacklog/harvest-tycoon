@@ -24,7 +24,7 @@ export function renderFamilyTournament({view,now,emblem,rewards,preview,extra=''
   return `<li class="family-podium-row family-place-${rank}${f?'':' is-empty'}${mine?' is-yours':''}">
    <span class="family-place" aria-label="Place ${rank}">${rankArt(rank)}</span>
    ${openable(f,`${f?emblem(f.emblem):`<span class="family-empty-emblem" aria-hidden="true">${art('family-members')}</span>`}
-    <div><strong>${f?esc(f.name):'Open place'}</strong><span>${!f?'No family here yet':mine?`Your family · ${num(f.points)} points`:`${num(f.points)} points`}</span></div>`,'family-podium-identity')}
+    <div><strong>${f?`<span translate="no">${esc(f.name)}</span>`:'Open place'}</strong><span>${!f?'No family here yet':mine?`Your family · ${num(f.points)} points`:`${num(f.points)} points`}</span></div>`,'family-podium-identity')}
    <span class="family-podium-prize" title="Family prize">${art('diamonds')}<strong>${num(f?f.diamonds:prizes[index]??0)}</strong><span class="family-sr-only"> diamonds for the family</span></span>
   </li>`;
  };
@@ -44,6 +44,6 @@ export function renderFamilyTournament({view,now,emblem,rewards,preview,extra=''
   <p>Family prizes are shared by contribution. Make a delivery and stay in your family until Monday, 00:00 UTC. Only members who contributed this week count. Your personal prize is on your family's place above the standings; order rewards are extra. Prizes may change before the week ends.</p>
  </details>
  <details class="family-rules"><summary>Previous weeks</summary>
-  ${t.past.length?t.past.map(f=>`<div class="family-list-row"><b class="family-rank">${rankArt(f.rank)}</b>${openable(f,`<div><strong>${esc(f.name)}</strong><span>Week of ${new Date((f.week*7+4)*86400000).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short'})} · ${num(f.points)} points</span></div>`)}<span>${f.diamonds} diamonds</span></div>`).join(''):'<p>Results appear after the first week ends.</p>'}
+  ${t.past.length?t.past.map(f=>`<div class="family-list-row"><b class="family-rank">${rankArt(f.rank)}</b>${openable(f,`<div><strong translate="no">${esc(f.name)}</strong><span>Week of ${new Date((f.week*7+4)*86400000).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short'})} · ${num(f.points)} points</span></div>`)}<span>${f.diamonds} diamonds</span></div>`).join(''):'<p>Results appear after the first week ends.</p>'}
  </details>`;
 }

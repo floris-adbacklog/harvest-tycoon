@@ -47,7 +47,7 @@ export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
  const action=familyProfileAction(p);
  return `<section class="family-profile-hero">
   <span class="family-profile-emblem">${emblem(p.emblem)}<b class="family-level-badge" title="Family level ${s.level}">${s.level}</b></span>
-  <div><h3>${esc(p.name)}</h3><p>${num(p.members.length)} / ${num(p.maxMembers)} farmers · ${num(p.online)} online</p>
+  <div><h3 translate="no">${esc(p.name)}</h3><p>${num(p.members.length)} / ${num(p.maxMembers)} farmers · ${num(p.online)} online</p>
    <div class="family-profile-tags"><span class="family-mode-chip">${esc(FAMILY_JOIN_MODES[p.mode]??'Invite only')}</span>${p.createdAt?`<small>Since ${day(p.createdAt)}</small>`:''}</div></div>
  </section>
  <div class="family-profile-actions">${action.note?`<p class="family-notice">${esc(action.note)}</p>`:''}${action.button?`<button type="button" class="${action.button==='open'||action.button==='family_join'||action.button==='family_request'?'primary-button':'small-button'}" data-family-profile-action="${action.button}">${esc(action.label)}</button>`:''}</div>

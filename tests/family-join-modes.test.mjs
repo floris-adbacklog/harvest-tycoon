@@ -111,3 +111,10 @@ test('a minimum level for an open family or one taking requests: below it no Joi
  assert.match(sql,/add column if not exists min_level integer/);assert.match(sql,/join_mode=excluded\.join_mode,min_level=excluded\.min_level;/);
 });
 const familyCurrentName=(c,p)=>{const m=c.members.find(m=>m.player_id===p&&!m.left_at);return c.families.find(f=>f.id===m?.family_id)?.name;};
+test('a family name is the players\' own word: never translated, even when it matches a game text like "Sunny Acres"',()=>{
+ const ui=read('public/family-ui.js'),tour=read('public/family-tournament.js'),profile=read('public/family-profile.js'),invite=read('public/family-invitations-ui.js');
+ assert.match(ui,/title\.toggleAttribute\('translate',!!f\);if\(f\)title\.setAttribute\('translate','no'\);title\.textContent=f\?f\.name:'Farm Family';/);
+ assert.match(ui,/<strong><span translate="no">\$\{esc\(f\.name\)\}<\/span> <small class="family-level-chip">/,'the list of families');
+ assert.match(tour,/<span translate="no">\$\{esc\(f\.name\)\}<\/span>/,'the standings');assert.match(tour,/<strong translate="no">\$\{esc\(f\.name\)\}<\/strong>/,'previous weeks');
+ assert.match(profile,/<h3 translate="no">\$\{esc\(p\.name\)\}<\/h3>/);assert.match(invite,/<h3 id="family-invitation-heading" translate="no">/);
+});
