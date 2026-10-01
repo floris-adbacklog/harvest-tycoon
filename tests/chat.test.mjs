@@ -323,3 +323,14 @@ test('the Crew: one group chat for the admin and the moderators, pinned on top o
  assert.match(ui,/if\(threadButton&&threadButton\.dataset\.thread==='crew'\)\{if\(!overview\?\.crew\)return;/);
  assert.match(ui,/overview\.unread\.dm=overview\.threads\.reduce\(\(sum,x\)=>sum\+\(x\.unread\|\|0\),0\)\+\(overview\.crew\?\.unread\|\|0\);/);
 });
+test('a Crew message is a push for the rest of the staff, like a private message, and tapping it opens the Crew (1 Oct 2026)',()=>{
+ const sql=read('supabase/chat-crew-push.sql'),crew=read('supabase/chat-crew.sql');
+ assert.match(crew,/check \(channel ~ '\^\(global\|crew\|family:/,'the chat table takes the Crew\'s channel');
+ assert.match(sql,/where p\.player_id<>new\.sender and public\.chat_staff_role\(p\.player_id\) is not null\n   and exists\(select 1 from public\.notification_settings x where x\.player_id=p\.player_id and x\.push_messages\)/,'the staff with message pushes on, not the sender');
+ assert.match(sql,/r\.channel='crew' and r\.last_read_at>now\(\)-interval '2 minutes'/,'not while they read the Crew');
+ assert.match(sql,/where s\.pushed_at<now\(\)-interval '3 minutes';/,'at most one per 3 minutes');
+ assert.match(sql,/create trigger chat_crew_push after insert on public\.chat_messages for each row when \(new\.channel='crew'\)/);
+ assert.match(sql,/'senderName',m\.sender_name\|\|' \(Crew\)'/);assert.match(sql,/update public\.chat_push_state set claimed=true where channel='crew' and message_id=m\.id and not claimed returning player_id/,'each push once');
+ assert.match(read('public/app-links.js'),/const CHANNEL=\/\^\(global\|notices\|crew\|/);
+ assert.match(read('src/chat-ui.js'),/else if\(crew\)thread=\{channel:'crew',crew:true,otherName:'Crew'\};/);
+});

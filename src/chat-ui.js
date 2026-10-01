@@ -300,11 +300,14 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(channel?.startsWith('dm:')){const t=overview.threads?.find(x=>x.channel===channel);if(t)other={id:t.otherId,name:t.otherName,avatar:t.otherAvatar};else wanted='private';}
   else if(channel?.startsWith('family:'))wanted='family';
   else if(channel==='notices')wanted='notices';
+  // A push from the Crew opens the Crew (a farmer who is no longer staff gets their private chats).
+  const crew=channel==='crew'&&Boolean(overview.crew);if(channel==='crew')wanted='private';
   // Always Global first (a private chat only when you came to write to someone); the counts on the tabs show what is new elsewhere.
   const first=other?'private':wanted??'global';
   if(other)thread={channel:chat.dmChannel(other.id),otherId:other.id,otherName:other.name,otherAvatar:other.avatar};
+  else if(crew)thread={channel:'crew',crew:true,otherName:'Crew'};
   // The chat itself takes the focus, not its first button (the bell showed a focus ring on every open); Tab still reaches everything.
-  dialog.showModal();dialog.focus({preventScroll:true});show(first,{keepThread:Boolean(other)});void refreshOverview();
+  dialog.showModal();dialog.focus({preventScroll:true});show(first,{keepThread:Boolean(other)||crew});void refreshOverview();
  }
 
  // Live: a message in the chat on screen appears at the top; anything else raises a count.

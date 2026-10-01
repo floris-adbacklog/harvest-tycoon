@@ -4,6 +4,10 @@
 -- yet: the Crew shows its count in the chat. As live on 1 Oct 2026 (chat_can_read md5 8f41a2ec28d78cd31d76f7d5600130b8, chat_send
 -- e061ca95fc65b8113da16f8790ef5c40, chat_overview c3c9ac158d940270b31312fec90e8a3c, md5 of the body), with the Crew added.
 
+-- The table takes the Crew's channel too (it allowed global, family:… and dm:… only).
+alter table public.chat_messages drop constraint if exists chat_messages_channel_check;
+alter table public.chat_messages add constraint chat_messages_channel_check check (channel ~ '^(global|crew|family:[0-9a-f-]{36}|dm:[0-9a-f-]{36}:[0-9a-f-]{36})$');
+
 create or replace function public.chat_can_read(p_channel text)
  returns boolean language plpgsql stable security definer set search_path to '' as $function$
 declare me uuid:=(select auth.uid());
