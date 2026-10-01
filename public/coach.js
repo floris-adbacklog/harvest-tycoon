@@ -56,11 +56,14 @@ export function createCoach({doc=globalThis.document,win=globalThis,timeout=2500
   const host=el.closest('dialog[open]')??doc.body;
   if(el!==r.target||host!==r.host||r.bubble?.dataset.text!==text){
    r.target?.classList.remove('coach-target');r.bubble?.remove();
-   r.target=el;r.host=host;el.classList.add('coach-target');
-   el.scrollIntoView?.({block:'nearest',inline:'nearest'});
+   r.target=el;r.host=host;el.classList.add('coach-target');r.scrolledAt=0;
    const bubble=doc.createElement('div');bubble.className='coach-bubble';bubble.setAttribute('role','status');bubble.dataset.text=text;bubble.textContent=text;
    host.append(bubble);r.bubble=bubble;
   }
+  // A button in a window is brought to the middle of the screen, with room for the bubble (on a phone on its side it sat on the
+  // edge); again if the window's content moves it off. Buttons on the farm and in the bars never scroll the game.
+  const seen=el.getBoundingClientRect();
+  if(host!==doc.body&&(seen.top<0||seen.bottom>win.innerHeight||seen.left<0||seen.right>win.innerWidth)&&Date.now()-r.scrolledAt>600){r.scrolledAt=Date.now();el.scrollIntoView?.({block:'center',inline:'nearest'});}
   const t=el.getBoundingClientRect(),b=r.bubble.getBoundingClientRect();
   const place=bubblePlace(t,b,{width:win.innerWidth,height:win.innerHeight});
   // Inside a window the bubble may be placed relative to that window: correct for where it actually landed.
