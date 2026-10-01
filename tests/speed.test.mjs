@@ -30,3 +30,13 @@ test('every Show me goal uses the buttons a farmer uses: the bottom bar and More
  assert.match(coach,/pointer-events|r\.index===at/);assert.match(read('public/beginner.css'),/\.coach-bubble\{position:fixed;[^}]*pointer-events:none/,'taps go through the bubble');
  assert.match(game,/label\.className='building-label';label\.dataset\.building=key;/);
 });
+
+// 1 Oct 2026: the game page loads while the farm is on its way from the server, instead of after it.
+test('the game page starts loading with the farm request; it waits for the farm, and the game script downloads with the page',()=>{
+ const main=read('src/main.js'),cloud=read('src/game-cloud.js'),farm=read('public/farm.html');
+ assert.match(main,/window\.harvestBridge=\{pending:true,ready\};const page=document\.createElement\('iframe'\);[^\n]*page\.src='\/farm\.html';\$\('farm-host'\)\.append\(page\);/);
+ assert.ok(main.indexOf("window.harvestBridge={pending:true,ready}")<main.indexOf("initial=await farmRequest({operation:'load'"),'the page starts before the farm request is awaited');
+ assert.match(main,/window\.harvestBridge=bridge;frame=page;release\(bridge\);phase\('authenticated'\);/);
+ assert.match(cloud,/if\(bridge\?\.pending\)\{waited=true;bridge=await bridge\.ready\.catch\(\(\)=>null\);\}\nif\(!bridge\)\{if\(!waited\)location\.replace\('\/play\.html'\);\}else\{/);
+ const version=cloud.match(/'\/game\.js\?v=([^']+)'/)[1];assert.ok(farm.includes(`<link rel="modulepreload" href="/game.js?v=${version}">`),'the preload and the import are the same address');
+});

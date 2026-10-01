@@ -135,8 +135,15 @@ async function openFarm(){
   if(!navigator.onLine)throw new Error('Connect to the internet to open your farm.');
   const user=await verifiedUser();if(ticket!==generation)return;
   if(!user){landing();return;}playerId=user.id;phase('checking','Opening your farm…');
-  let initial;try{const inviteCode=pendingInvite(localStore);initial=await farmRequest({operation:'load',...(inviteCode?{inviteCode}:{})});clearInvite(localStore);}catch(error){if(ticket!==generation)return;if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
-  if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){reopen=true;return;}
+  // The game page starts loading now, while the farm is on its way from the server (1 Oct 2026): its page, styles and scripts
+  // arrive in the meantime and it picks the farm up the moment it is here (src/game-cloud.js waits for this bridge). One wait at
+  // the start instead of the server and then the page. It only counts as the open farm (frame) once the farm is here; a farm that
+  // does not come takes the page away again.
+  let release,cancel;const ready=new Promise((resolve,reject)=>{release=resolve;cancel=reject;});ready.catch(()=>{});
+  window.harvestBridge={pending:true,ready};const page=document.createElement('iframe');page.title='Harvest Tycoon farm';page.src='/farm.html';$('farm-host').append(page);
+  const giveUp=error=>{cancel(error);page.remove();if(window.harvestBridge?.ready===ready)delete window.harvestBridge;};
+  let initial;try{const inviteCode=pendingInvite(localStore);initial=await farmRequest({operation:'load',...(inviteCode?{inviteCode}:{})});clearInvite(localStore);}catch(error){if(ticket!==generation)return;giveUp(error);if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
+  if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}
   presence=createFarmPresence(supabase,user.id);
   presence.setClock?.(initial.serverNow);
   const bridge={playerId,presence,serverNow:initial.serverNow,takeInitial(){const data=initial;initial=null;return data;},signOut,async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');const result=await fetchLeaderboard(supabase,user.id,category);if(ticket!==generation)throw new Error('Your session has ended.');presence?.setRows?.(result.rows);return {...result,...presence?.snapshot()};},async request(body){
@@ -168,7 +175,7 @@ async function openFarm(){
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,
   // with the farm as it is now (public/game.js reads ?world=village).
   bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;frame.src=to==='village'?'/farm.html?world=village':'/farm.html';};
-  window.harvestBridge=bridge;frame=document.createElement('iframe');frame.title='Harvest Tycoon farm';frame.src='/farm.html';$('farm-host').append(frame);phase('authenticated');store.set(RETURNING_KEY,'1');
+  window.harvestBridge=bridge;frame=page;release(bridge);phase('authenticated');store.set(RETURNING_KEY,'1');
   scheduleBrowserTip({embedded:embeddedBrowser(navigator.userAgent),doc:document,win:window,storage:store});
  }catch(error){if(ticket===generation){
   if(error.status===401){landing('Your session has ended. Please sign in again.');}

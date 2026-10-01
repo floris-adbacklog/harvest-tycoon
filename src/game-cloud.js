@@ -16,7 +16,11 @@ import {createOfferUI} from './offer-ui.js';
 stopPageZoom(document);
 let bridge;
 try{bridge=window.parent!==window?window.parent.harvestBridge:null;}catch{}
-if(!bridge){location.replace('/play.html');}else{
+// src/main.js starts this page while the farm is still on its way from the server (1 Oct 2026): wait for it here. When it does not
+// come (a new name is needed, the session ended), the parent takes this page away; nothing more happens here.
+let waited=false;
+if(bridge?.pending){waited=true;bridge=await bridge.ready.catch(()=>null);}
+if(!bridge){if(!waited)location.replace('/play.html');}else{
  window.harvestInitialFarm=bridge.takeInitial();
  if(!window.harvestInitialFarm){location.replace('/play.html');}else{
   document.body.hidden=false;
