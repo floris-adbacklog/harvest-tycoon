@@ -21,7 +21,7 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'village',title:'The Village',art:'village-badge',blurb:'World II from level 100: the mine, the forest, the smithy and master tools for your farm.',keywords:'village world ii second world mine lumber camp smithy windmill iron silver ruby pickaxe master tools packed lunch stone log plank level 15 double batch travel'},
  {id:'estate',title:'Estate and Valley',art:'estate',blurb:'Big goals for later: projects, the Valley Market and more.',keywords:'estate projects valley market ranch workshop trade depot fair improvements'},
  {id:'diamonds',title:'Diamonds, boosts and VIP',art:'diamonds',blurb:'How to earn diamonds and what they do.',keywords:'diamonds boosts vip shop packs starter pack buy premium'},
- {id:'chat',title:'Chat and house rules',art:'chat',blurb:'Talking with other farmers, and keeping it friendly.',keywords:'chat messages private block report rules moderator'},
+ {id:'chat',title:'Chat and house rules',art:'chat',blurb:'Talking with other farmers, and keeping it friendly.',keywords:'chat messages private block report rules moderator moderators admin team staff'},
  {id:'account',title:'Account and settings',art:'settings',blurb:'Your account, settings, invites and privacy.',keywords:'account password settings avatar sound reminders invite delete privacy app feedback bug support help problem'}
 ]);
 const TOPIC=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,t]));
@@ -289,6 +289,12 @@ const BODIES={
    ['block','Block','Blocked farmers can no longer send you private messages.'],
    ['alert','Report','Report a message or a farmer and a moderator will look at it.']
   ]))
+  // Who the team is (1 Oct 2026): what the admin and the moderators are there for, without the details of what each may do.
+  +section('Moderators and the admin',facts([
+   ['admin','The admin','Runs Harvest Tycoon: the game itself, the news, the events and the gifts for everyone.'],
+   ['family-members','Moderators','Farmers who help keep the valley a friendly place. They look at what is reported and keep an eye on the chat.'],
+   ['chat','How to spot them','An Admin or Moderator badge next to their name, in the chat and on their profile.']
+  ])+`<p>The team never asks for your password or payment details. A question or a problem? Send one of them a private message, or use ${h.link('account','Feedback and bugs')}.</p>`)
   +section('House rules',`<ul class="wiki-list"><li>Be friendly. No insults, threats or discrimination.</li><li>No spam, advertising or selling accounts.</li><li>Keep personal details to yourself: no phone numbers, addresses or passwords.</li><li>Moderators can remove messages and close the chat for someone for a while or for good. That only ever closes the chat, never your farm.</li></ul><p>Chat not open for you yet? The chat says from which level it opens.</p>`);
  },
  account(h){
