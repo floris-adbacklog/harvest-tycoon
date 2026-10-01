@@ -9,7 +9,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // 29 Sep 2026: Settings > Language lists the languages to come, each with its painted flag; only English can be chosen so far.
 test('every language has its painted flag; English and the fully translated languages can be chosen',()=>{
- assert.deepEqual(LANGUAGES.map(l=>l.code),['en','cs','de','es','fr','id','hu','nl','pt','tr','ru','uk','hi','ja','ar']);
+ assert.deepEqual(LANGUAGES.map(l=>l.code),['en','cs','de','es','fr','id','hu','nl','pt','tr','ru','uk','hi','ja','ar','zh']);
  assert.deepEqual(LANGUAGES.filter(l=>l.rtl).map(l=>l.code),['ar'],'Arabic reads from right to left');
  assert.deepEqual(LANGUAGES.filter(l=>l.ready).map(l=>l.code),['en','cs','de','es','fr','id','hu','nl','pt','tr','ru','uk','hi','ja','ar']);
  for(const {code} of LANGUAGES){

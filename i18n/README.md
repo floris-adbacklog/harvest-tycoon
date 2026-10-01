@@ -280,3 +280,21 @@ Dairy Barn حظيرة الألبان · Windmill طاحونة الهواء · Ba
 Factory المصنع · Family Hall قاعة العائلة · Packing Shed سقيفة التعبئة · Bee Yard المنحل · Sheep Barn حظيرة الأغنام ·
 Pig Farm مزرعة الخنازير · Goat Shed حظيرة الماعز · Weaving Shed ورشة النسيج · Craft Workshop ورشة الحرف · The Ranch المرعى ·
 Estate Workshop ورشة الضيعة · Trade Depot مستودع التجارة · Silo research أبحاث الصومعة · Tractor الجرار.
+
+### 简体中文 (Simplified Chinese: the player as "你", Western digits, full-width punctuation ，。：！？（）)
+
+coins 金币 · diamonds 钻石 · XP XP · field 田地 · crop 作物 · harvest 收获 · plant 种植 · water 浇水 · extra care 额外照料 ·
+Care 照料 · batch 批次 · slot 槽位 · goods 商品 · building 建筑 · upgrade 升级 · level 等级 · Market 市场 · Buildings 建筑 ·
+Quests 任务 · More 更多 · My farm 我的农场 · Settings 设置 · Farm Family 农场家族 · Family Chest 家族宝箱 ·
+Family Order 家族订单 · Family Tournament 家族锦标赛 · leader/co-leader 族长/副族长 · honorary 荣誉成员 · member 成员 ·
+boost 加成 · streak 连续签到 · daily gift 每日礼物 · Daily rewards 每日奖励 · chore 农活 (Farm chores 农场杂务) ·
+helping hand 帮把手 · Estate 庄园 · Valley 山谷 · Valley Market 山谷市场 · farm stall 农场摊位 · storage 仓库 ·
+natural fertilizer 天然肥料 · animal feed 饲料 · heirloom 传家品种 · test bed 试验田 · Seed Lab 种子实验室 ·
+Glasshouse 玻璃温室 · Greenhouse (activity) 育苗棚 · Grand Valley Fair 山谷大集市 · visitor 访客 · journal 农场日志 · VIP VIP.
+Wheat 小麦 · Corn 玉米 · Barley 大麦 · Lettuce 生菜 · Cabbage 卷心菜 · Cauliflower 花椰菜 · Pumpkin 南瓜 · Red cabbage 紫甘蓝 ·
+Sunflower 向日葵 · Apples 苹果 · Berries 浆果 · Green beans 四季豆 · Squash 西葫芦 · Pole beans 架豆 · Cider apples 酒用苹果 ·
+Cherries 樱桃. Farmhouse 农舍 · Chicken Coop 鸡舍 · Feed Mill 饲料磨坊 · Dairy Barn 奶牛棚 · Windmill 风车 · Bakery 面包房 ·
+Farm Kitchen 农场厨房 · Juice Press 榨汁坊 · Factory 工厂 · Family Hall 家族大厅 · Packing Shed 包装棚 · Bee Yard 养蜂场 ·
+Sheep Barn 羊舍 · Pig Farm 养猪场 · Goat Shed 山羊棚 · Weaving Shed 织布坊 · Craft Workshop 手工作坊 · The Ranch 牧场 ·
+Preserves Workshop 果酱坊 · Estate Workshop 庄园工坊 · Trade Depot 贸易站 · Silo research 筒仓研究 · Tractor 拖拉机 ·
+Mine 矿山 · Lumber Camp 伐木营地 · Smithy 铁匠铺 · Village Windmill 村庄风车.

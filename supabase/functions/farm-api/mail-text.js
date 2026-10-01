@@ -46,7 +46,10 @@ const CODE_TEXTS={
   text:c=>`Harvest Tycoonのメールアドレス確認コード：${c}\n\n30分以内にゲームで入力してください。心当たりがない場合は、このメールを無視してください。`},
  ar:{subject:c=>`رمز Harvest Tycoon الخاص بك: ${c}`,title:'رمز Harvest Tycoon الخاص بك',heading:'أكّد بريدك الإلكتروني',intro:'اكتب هذا الرمز في اللعبة لتأكيد بريدك الإلكتروني:',valid:'الرمز صالح لمدة 30 دقيقة.',
   footer:'وصلتك هذه الرسالة لأن شخصًا ما طلب رمزًا في Harvest Tycoon بهذا العنوان. إن لم تكن أنت، يمكنك تجاهلها.',
-  text:c=>`رمزك لتأكيد بريدك الإلكتروني في Harvest Tycoon: ${c}\n\nاكتبه في اللعبة خلال 30 دقيقة. إن لم تطلبه، يمكنك تجاهل هذه الرسالة.`}
+  text:c=>`رمزك لتأكيد بريدك الإلكتروني في Harvest Tycoon: ${c}\n\nاكتبه في اللعبة خلال 30 دقيقة. إن لم تطلبه، يمكنك تجاهل هذه الرسالة.`},
+ zh:{subject:c=>`你的 Harvest Tycoon 验证码：${c}`,title:'你的 Harvest Tycoon 验证码',heading:'验证你的邮箱',intro:'在游戏中输入此验证码以验证你的邮箱：',valid:'验证码 30 分钟内有效。',
+  footer:'你收到这封邮件，是因为有人用这个地址在 Harvest Tycoon 中申请了验证码。如果不是你本人，请忽略此邮件。',
+  text:c=>`你在 Harvest Tycoon 验证邮箱的验证码：${c}\n\n请在 30 分钟内在游戏中输入。如果你没有申请，请忽略此邮件。`}
 };
 // Languages that read from right to left: their emails run right to left (dir="rtl").
 export const RTL_MAIL=Object.freeze(['ar']);

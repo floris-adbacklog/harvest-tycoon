@@ -194,6 +194,18 @@ const TEXTS={
   pushGift:b=>`هديتك اليومية بانتظارك، ومعها ${b}`,boosts:{3:'خبرة مضاعفة',5:'حصاد مضاعف',7:'أرباح مضاعفة'},
   pushStreak:n=>`اجمع هديتك لتحافظ على سلسلتك (${n} ${forms('ar',n,{zero:'أيام',one:'يوم',two:'يومان',few:'أيام',many:'يومًا',other:'يوم'})})`,
   readyBoth:'محاصيلك ومنتجاتك جاهزة',readyCrops:'محاصيلك جاهزة للحصاد',readyGoods:'منتجاتك جاهزة للجمع'
+ },
+ zh:{
+  hi:n=>`${n}，你好！`,waiting:'你的农场有东西在等你：',button:'打开我的农场',openText:'打开你的农场',
+  footer:'你收到这封邮件，是因为你在设置中开启了每日摘要。每天最多发送一次，并且只在有东西等你时发送。',
+  footerShort:'你收到这封邮件，是因为你在设置中开启了每日摘要。',unsubscribe:'退订',
+  subjectCrops:n=>`你的农场需要你：${n} 种作物已成熟`,subjectJobs:n=>`你的农场需要你：${n} 个批次已完成`,
+  gift:'你的每日礼物在等你',giftStreak:n=>`你的每日礼物在等你：保持你的 ${n} 天连续签到`,
+  cropsLine:(n,list)=>`${n} 种作物可以收获${list?`：${list}`:''}`,
+  jobsOne:(b,n)=>`${b}：${n} 个批次已完成`,jobsMany:(n,list)=>`${n} 个批次已完成（${list}）`,
+  pushGift:b=>`你的每日礼物在等你，还有${b}`,boosts:{3:'双倍经验',5:'双倍收获',7:'双倍收益'},
+  pushStreak:n=>`领取礼物以保持你的 ${n} 天连续签到`,
+  readyBoth:'你的作物和商品已经准备好了',readyCrops:'你的作物可以收获了',readyGoods:'你的商品可以领取了'
  }
 };
 export const MAIL_LANGUAGES=Object.freeze(Object.keys(TEXTS));
