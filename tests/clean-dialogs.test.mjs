@@ -80,7 +80,7 @@ test('Farm Family is cleaner: the week is the chest and the order, the tournamen
  assert.match(ui,/<p class="family-chest-how">Everything your family does on the farm fills it\. A new chest every Monday\.<\/p><ul class="family-chest-tiers">/,'how the chest fills sits in its fold');
  assert.match(ui,/document\.querySelector\('#family-heading-emblem \.family-emblem'\)\?\.replaceWith\(/,'a new emblem shows in the window header as you pick it');
  assert.doesNotMatch(tour,/family-prize-ladder|family-podium-stats|family-podium-empty/);
- assert.match(tour,/<ol class="family-podium">\$\{Array\.from\(\{length:3\},\(_,i\)=>podiumRow\(t\.top\[i\],i\)\)\.join\(''\)\}<\/ol>/,'three places, always');
+ assert.match(tour,/<ol class="family-podium">\$\{Array\.from\(\{length:Math\.max\(3,Math\.min\(prizes\.length,t\.top\.length\)\)\},\(_,i\)=>podiumRow\(t\.top\[i\],i\)\)\.join\(''\)\}<\/ol>/,'three places at least, up to the ten that win (1 Oct 2026)');
  assert.match(tour,/<strong>\$\{num\(f\?f\.diamonds:prizes\[index\]\?\?0\)\}<\/strong>/,'an open place shows what it would win');
  assert.match(tour,/<summary>How rewards work<\/summary>\$\{growth\}/);
  const {renderSentInvitations}=await import('../public/family-invitations-ui.js');
