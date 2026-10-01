@@ -5,11 +5,11 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // 30 Sep 2026: cleaner windows. One job per window, less text per row, fewer tabs, Settings as a short list, one green button per
 // window and no text below 12 px inside the windows.
-test('one job per window: the market pick lives in the Market only, and the Market drops tomorrow\'s outlook',()=>{
+test('one job per window: the market pick lives in the Market only, with tomorrow\'s outlook to plan for (back on 1 Oct 2026)',()=>{
  const today=read('public/retention-ui.js'),market=read('public/economy-ui.js');
  assert.match(today,/\$\('today-market'\)\.hidden=true;\$\('today-market'\)\.innerHTML='';/);assert.doesNotMatch(today,/TODAY’S MARKET PICK/);
- assert.doesNotMatch(market,/Tomorrow’s outlook|market-forecast/);assert.match(market,/TODAY’S MARKET/,'today\'s pick stays in the Market');
- assert.doesNotMatch(read('public/wiki-content.js'),/the outlook shows tomorrow’s/,'the wiki says the same');
+ assert.match(market,/<p class="market-forecast">Tomorrow’s outlook: <strong>\$\{ITEMS\[tomorrow\.item\]\.name\}<\/strong> · \$\{tomorrowChange\} expected\.<\/p>/,'tomorrow\'s best price, with how much it rises');assert.match(market,/TODAY’S MARKET/,'today\'s pick stays in the Market');
+ assert.match(read('public/wiki-content.js'),/the outlook shows tomorrow’s/,'the wiki says the same');
 });
 
 test('less text per row: a building is one line (level and what it does), a fair price has no label',()=>{

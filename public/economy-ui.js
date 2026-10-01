@@ -276,8 +276,9 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function renderMarket(){
   const now=farmNow(),entries=marketEntries(),multiplier=state.boosts.coinsUntil>now?2:1;
   renderedMarketDay=utcDay(now);
-  const {today}=marketHighlights(now,state);$('market-outlook').hidden=village;
-  $('market-outlook').innerHTML=`<div class="market-outlook-heading"><span class="eyebrow">TODAY’S MARKET</span><span id="market-countdown"></span></div><div class="market-highlight">${art(today.item)}<div><strong>${ITEMS[today.item].name}</strong><span>${number(today.price)} coins each · ${today.label}</span></div><b class="demand-pill ${today.demand}">${signed(today.change)}%</b></div><div class="market-board-link"><span>The Valley Market pays 1.5× for a full basket.</span><button type="button" id="market-valley">Valley Market →</button></div>`;
+  // Tomorrow's outlook (back on 1 Oct 2026, the player missed it): the item whose price rises most tomorrow, to plant or make for.
+  const {today,tomorrow}=marketHighlights(now,state),tomorrowChange=`${signed(tomorrow.change)}%`;$('market-outlook').hidden=village;
+  $('market-outlook').innerHTML=`<div class="market-outlook-heading"><span class="eyebrow">TODAY’S MARKET</span><span id="market-countdown"></span></div><div class="market-highlight">${art(today.item)}<div><strong>${ITEMS[today.item].name}</strong><span>${number(today.price)} coins each · ${today.label}</span></div><b class="demand-pill ${today.demand}">${signed(today.change)}%</b></div><p class="market-forecast">Tomorrow’s outlook: <strong>${ITEMS[tomorrow.item].name}</strong> · ${tomorrowChange} expected.</p><div class="market-board-link"><span>The Valley Market pays 1.5× for a full basket.</span><button type="button" id="market-valley">Valley Market →</button></div>`;
   $('market-valley').closest('.market-board-link').hidden=!featureUnlocked(state,'valleymarket');
   $('market-valley').onclick=()=>{$('market-dialog').close();document.querySelector('[data-menu-utility="valleymarket"]').click();};
   // What you can sell gets a card with its controls; what you do not have yet is a compact price list, never a row of greyed-out buttons.
