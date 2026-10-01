@@ -1296,6 +1296,8 @@
 "Every drop counts":"public/farm-state.js",
 "Every event has 3 goals from 3 different kinds of play: the fields, crops, buildings, the market or helping out, each in an easy, medium or hard size, and never three hard goals. Each league gets its own goals, made for its levels: the Sprout League grows wheat and collects eggs, higher leagues weave cloth, make goat cheese and fill Valley Market baskets, with bigger numbers. Your progress shows in the event window.":"public/wiki-content.js",
 "Every farm grows wheat. Bring in yours before the rest of the valley does.":"public/event-goals.js",
+"Every goal from the league below, with bigger numbers, plus:":"public/wiki-content.js",
+"Every goal from the league below, with bigger numbers.":"public/wiki-content.js",
 "Every good in huge batches, for the fields and upgrades of a lasting estate.":"public/farm-state.js",
 "Every growing crop ready to harvest now.":"public/farm-state.js",
 "Every harvest is a step towards a first mastery badge.":"src/player-profiles.js",

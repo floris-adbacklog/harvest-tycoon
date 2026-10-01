@@ -198,9 +198,15 @@ const BODIES={
    ['gift','Next event','When an event ends, the window shows when the next one starts and what it gives.']
   ]))
   // The six leagues (1 Oct 2026, farm-state.js EVENT_LEAGUES) with what first place wins in coins there, and then each league with
-  // the goals its events can draw, per kind of play (public/event-goals.js), so a farmer knows what to get ready for.
+  // the goals its events can draw, per kind of play (public/event-goals.js), so a farmer knows what to get ready for. A higher
+  // league keeps every goal of the league below, so it lists only the goals it adds.
   +section('Leagues',`<p>Your level when an event ends decides your league. Every league has the same diamonds; coins grow with the league. The family bonus counts family members from every league.</p>`+table(['League','Levels','First place'],EVENT_LEAGUES.map(l=>`<tr><td>${l.name}</td><td>${l.to?`${l.from}–${l.to}`:`${l.from}+`}</td><td>${number((200+PODIUM_PRIZES[0].coins)*l.coins)} coins · ${PODIUM_PRIZES[0].diamonds} diamonds</td></tr>`)))
-  +EVENT_LEAGUES.map((l,i)=>section(l.name,`<p class="wiki-league"><img class="wiki-league-badge" src="/assets/icons/league-${l.id}.webp" alt="" width="48" height="48" loading="lazy"><span><span>${l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`}</span> · <span>coins ×${l.coins}</span></span></p><p>Goals you can expect, three per event:</p><ul class="wiki-list">${EVENT_GOAL_POOLS[i].map((group,k)=>`<li><strong>${['Fields','Crops','Buildings','Market','Helping out'][k]}</strong>: ${group.map(g=>`<span>${EVENT_GOALS[g.stat]?.label??g.stat}</span>`).join(', ')}</li>`).join('')}</ul>`)).join('');
+  +EVENT_LEAGUES.map((l,i)=>{
+   const below=new Set((EVENT_GOAL_POOLS[i-1]??[]).flat().map(g=>g.stat));
+   const added=EVENT_GOAL_POOLS[i].map((group,k)=>[k,group.filter(g=>!below.has(g.stat))]).filter(([,group])=>group.length);
+   const intro=!i?'Goals you can expect, three per event:':added.length?'Every goal from the league below, with bigger numbers, plus:':'Every goal from the league below, with bigger numbers.';
+   return section(l.name,`<p class="wiki-league"><img class="wiki-league-badge" src="/assets/icons/league-${l.id}.webp" alt="" width="48" height="48" loading="lazy"><span><span>${l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`}</span> · <span>coins ×${l.coins}</span></span></p><p>${intro}</p>${added.length?`<ul class="wiki-list">${added.map(([k,group])=>`<li><strong>${['Fields','Crops','Buildings','Market','Helping out'][k]}</strong>: ${group.map(g=>`<span>${EVENT_GOALS[g.stat]?.label??g.stat}</span>`).join(', ')}</li>`).join('')}</ul>`:''}`);
+  }).join('');
  },
  helpers(h){
   // Every number below comes from the game rules (27 Sep 2026: the wiki named these helpers without saying what they pay or cost).
