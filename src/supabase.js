@@ -23,8 +23,12 @@ export async function verifiedUser(){
  return checked.data.user?.is_anonymous?null:checked.data.user;
 }
 // One call to the farm. A failure says what kind it was (kind, transient) so the caller knows whether trying again can help.
+// farm-api runs in Frankfurt, next to the database (1 Oct 2026). Left to itself it runs in the region nearest the player, and
+// every database step then crosses the world: 1.2–1.7 s a tap in Asia against 0.5 s in Europe. One long hop per tap instead of
+// one per step. The query parameter (not the x-region header) keeps the request free of a CORS preflight change.
+export const FARM_API='farm-api?forceFunctionRegion=eu-central-1';
 async function farmRequestOnce(body){
- const {data,error}=await supabase.functions.invoke('farm-api',{body,timeout:20000});
+ const {data,error}=await supabase.functions.invoke(FARM_API,{body,timeout:20000});
  if(error){let detail;try{detail=await error.context?.json();}catch{}
   const {kind,transient,status,code}=describeFailure(error,detail);
   const failure=new Error(detail?.error||connectionMessage(kind,globalThis.navigator?.onLine));

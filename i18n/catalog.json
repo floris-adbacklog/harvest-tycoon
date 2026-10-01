@@ -4027,7 +4027,6 @@
 "Your next production-building upgrade costs 50% less.":"public/boosts-ui.js",
 "Your order rewards":"public/family-order-rewards.js",
 "Your password":"public/play.html",
-"Your previous action is still saving.":"public/farm-client.js",
 "Your private messages are off. Turn them on in Settings.":"src/chat-ui.js",
 "Your private messages are off. You can turn them on in Settings, under Chat.":"src/chat-ui.js",
 "Your profile":"src/ui.js",

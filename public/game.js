@@ -620,9 +620,11 @@ async function interact(id,forcedAction){
  // One picture flies to the Market for the harvest, one more if the field was watered and one more for extra care.
  const flightCount=1+(plot.watered?1:0)+(plot.tended?1:0);
  try{
+  // The burst comes with the tap itself, also when the answer has to come from the server (a harvest that levels you up).
+  if(action==='harvest')particleBurst(id);
   const result=await runAction({type:'field',id,action,crop:selectedCrop});
   // The golden first harvest shows on the field itself, so the toast stays free for the guide step it completes.
-  if(action==='harvest'){particleBurst(id);harvestFlight(id,result.crop,flightCount);if(result.firstHarvest)particleBurst(id,true);floatReward(id,(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
+  if(action==='harvest'){harvestFlight(id,result.crop,flightCount);if(result.firstHarvest)particleBurst(id,true);floatReward(id,(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
   if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
   if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
   if(action==='plant')floatReward(id,floatChip(state.plots[id].crop??selectedCrop,'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));

@@ -187,7 +187,7 @@ test('the Factory\'s recipe groups are keyed by the building each good normally 
  for(const [source,count] of groups)if(source)assert.ok(count>=1,source);
 });
 test('a server that does not know the Factory yet cannot break the game, and the server copy of the rules is the same',()=>{
- assert.match(read('public/farm-client.js'),/for\(const key of Object\.keys\(BUILDINGS\)\)state\.buildings\[key\]\?\?=\{level:1,job:null\};/);
+ assert.match(read('public/farm-client.js'),/for\(const key of Object\.keys\(BUILDINGS\)\)base\.buildings\[key\]\?\?=\{level:1,job:null\};/);
  assert.match(read('public/game.js'),/state\.buildings\?\?=\{\};for\(const key of Object\.keys\(BUILDINGS\)\)state\.buildings\[key\]\?\?=\{level:1,job:null\};/);
  for(const path of ['public/farm-state.js','supabase/functions/farm-api/farm-state.js'])assert.equal(read(path),read('game/farm-state.js'),path);
  assert.match(read('supabase/functions/notify-hourly/names.js'),/"factory":"Factory"/);

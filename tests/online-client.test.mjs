@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarmClient} from '../public/farm-client.js';
+import {createFarmClient,instantResult,INSTANT_ACTIONS} from '../public/farm-client.js';
+import {createFarm,levelOf,xpForLevel} from '../public/farm-state.js';
 function setup(request){
  globalThis.localStorage={getItem(){throw new Error('Legacy save must not be read');},setItem(){throw new Error('Farm state must not be saved locally');}};
  globalThis.document={body:{classList:{add(){},remove(){}}}};
@@ -8,15 +9,51 @@ function setup(request){
  const state={coins:180,inventory:{wheat:4}},client=createFarmClient(state,{onChange(){},onStatus(){}});
  return {state,client};
 }
-test('no optimistic progression; only a successful server response changes the view',async()=>{
- let finish,payload;const {state,client}=setup(body=>{payload=body;return new Promise(resolve=>finish=resolve);});await client.load();
- const action=client.runAction({type:'sell',item:'wheat'});assert.equal(state.coins,180);assert.equal(payload.operation,'action');assert(!Object.hasOwn(payload,'state'));assert(!Object.hasOwn(payload,'player_id'));
- await assert.rejects(client.runAction({type:'sell',item:'wheat'}),/previous action/);
- finish({state:{coins:212,inventory:{wheat:0}},serverNow:Date.now(),result:{coins:32}});
- assert.deepEqual(await action,{coins:32});assert.equal(state.coins,212);assert.equal(state.inventory.wheat,0);
+// 1 Oct 2026 ("a harvest took over five seconds"): everyday taps show at once with the same rules as the server, and the server's
+// answer takes over; a second tap waits its turn instead of being refused; a refused tap goes back to the saved farm and says why.
+function farmSetup(request,extra={}){
+ globalThis.localStorage={getItem(){throw new Error('Legacy save must not be read');},setItem(){throw new Error('Farm state must not be saved locally');}};
+ globalThis.document={body:{classList:{add(){},remove(){}}}};
+ globalThis.window={parent:{harvestBridge:{request,serverNow:Date.now()}}};
+ const state=createFarm(Date.now());state.inventory.wheat=4;
+ const errors=[],statuses=[],client=createFarmClient(state,{onChange(){},onStatus:s=>statuses.push(s),onError:m=>errors.push(m),...extra});
+ return {state,client,errors,statuses};
+}
+test('an everyday tap shows at once, and the server answer takes over when it comes',async()=>{
+ const answers=[];let payload;
+ const {state,client}=farmSetup(body=>{payload=body;return new Promise(resolve=>answers.push(resolve));});await client.load();
+ const coins=state.coins,result=await client.runAction({type:'sell',item:'wheat',quantity:4});
+ assert.equal(state.inventory.wheat,0,'sold on the screen before the server answered');assert(state.coins>coins);assert(result.coins>0);
+ assert.equal(payload.operation,'action');assert(!Object.hasOwn(payload,'state'));assert(!Object.hasOwn(payload,'player_id'));
+ const saved=structuredClone(state);saved.coins=coins+999;answers.shift()({state:saved,serverNow:Date.now(),result});
+ await new Promise(r=>setTimeout(r,0));assert.equal(state.coins,coins+999,'the server has the last word');
 });
-test('failed server writes do not change state or read old browser saves',async()=>{
- const {state,client}=setup(async()=>{throw new Error('Unavailable');});await client.load();await assert.rejects(client.runAction({type:'sell'}),/Unavailable/);assert.equal(state.coins,180);assert.equal(state.inventory.wheat,4);
+test('a second tap waits its turn instead of being refused, and is sent after the first',async()=>{
+ const sent=[],answers=[];
+ const {state,client}=farmSetup(body=>{sent.push(body.action.type);return new Promise(resolve=>answers.push(()=>resolve({state:structuredClone(state),serverNow:Date.now(),result:{}})));});await client.load();
+ await client.runAction({type:'sell',item:'wheat',quantity:1});const second=client.runAction({type:'sell',item:'wheat',quantity:1});
+ await second;await new Promise(r=>setTimeout(r,0));assert.equal(sent.length,1,'the second waits until the first is answered');
+ answers.shift()();await new Promise(r=>setTimeout(r,0));assert.equal(sent.length,2);answers.shift()();
+});
+test('a tap the server refuses goes back to the saved farm and says why',async()=>{
+ const {state,client,errors}=farmSetup(async()=>{throw Object.assign(new Error('Your farm changed in another tab.'),{code:'ACTION_REJECTED'});});await client.load();
+ const coins=state.coins;await client.runAction({type:'sell',item:'wheat',quantity:4});assert.equal(state.inventory.wheat,0);
+ await new Promise(r=>setTimeout(r,0));await new Promise(r=>setTimeout(r,0));
+ assert.equal(state.inventory.wheat,4);assert.equal(state.coins,coins);assert.deepEqual(errors,['Your farm changed in another tab.']);
+});
+test('what the rules refuse is refused at once, without asking the server; other actions still wait for the server',async()=>{
+ let asked=0;const {state,client}=farmSetup(async()=>{asked++;throw new Error('Unavailable');});await client.load();
+ await assert.rejects(client.runAction({type:'sell',item:'corn',quantity:50}));assert.equal(asked,0);
+ await assert.rejects(client.runAction({type:'buy_boost',boost:'double_harvest'}),/Unavailable/);assert.equal(asked,1);assert.equal(state.inventory.wheat,4);
+});
+test('a level-up shows at once too (a new farm levels up on its first harvest); only the invited friend\'s reward waits for the server',()=>{
+ const now=Date.now(),farm=createFarm(now),ready=farm.plots.findIndex(p=>p.crop&&p.readyAt<=now);
+ const first=instantResult(farm,{type:'field',id:ready,action:'harvest'},now);
+ assert.ok(first,'the first harvest shows at once');assert(levelOf(first.trial)>levelOf(farm));assert.ok(first.result.levelReward,'with its level reward, from the same rules as the server');
+ const invited=structuredClone(farm);invited.invite={code:'ANNA12',by:'Anna',at:now};invited.xp=xpForLevel(10)-1;
+ assert.equal(instantResult(invited,{type:'field',id:ready,action:'harvest'},now),null,'reaching level 10 as an invited friend waits for the server');
+ assert.equal(instantResult(farm,{type:'buy_vip',plan:'week'},now),null,'not an everyday tap');
+ assert.deepEqual([...INSTANT_ACTIONS].sort(),['collect','collect_all','field','fields','produce','sell']);
 });
 test('direct game access cannot create a client without an authenticated parent',()=>{
  globalThis.window={parent:{}};assert.throws(()=>createFarmClient({},{}),/Sign in/);
