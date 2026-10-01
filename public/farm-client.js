@@ -4,17 +4,22 @@ import {BUILDINGS,applyFarmAction,inviteeReward} from './farm-state.js';
 let clockOffset=0;
 export const farmNow=()=>Date.now()+clockOffset;
 // Taps that show at once (1 Oct 2026, "a harvest took over five seconds"): the frame works the action out with the same rules as
-// the server (farm-state.js), shows it straight away and sends it; the server's answer then takes over. Only the everyday taps:
-// fields, selling, starting and collecting batches. Everything else (purchases, rewards, family, ...) waits for the server as before.
-export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all']));
+// the server (farm-state.js), shows it straight away and sends it; the server's answer then takes over. The everyday taps (fields,
+// selling, batches), and since the same day the claims, building, helping hands and the daily gift. Purchases, the family, chores
+// (their lucky bonus is the server's roll) and anything that spends diamonds wait for the server as before.
+export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','delivery','mastery','activity_start','activity_work','upgrade','construct','expand','tractor','stall_collect']));
 // No lucky double batch on the screen before the server has rolled for it (its answer shows it when it comes).
 const noLuck=()=>1;
 // Whether a tap can show at once: an everyday action that the rules accept. A level-up shows at once too (the rules pay its reward
 // themselves, a new farm levels up on its very first harvest), except the one that pays an invited friend's reward: only the server
-// adds that. Returns the worked-out farm and result, or null to wait for the server.
+// adds that. Spending diamonds (an upgrade paid in diamonds) always waits for the server. Returns the worked-out farm and result,
+// or null to wait for the server.
 export function instantResult(state,action,now){
  if(!INSTANT_ACTIONS.has(action?.type))return null;
- const trial=structuredClone(state),result=applyFarmAction(trial,action,now,noLuck);   // a refused action throws, as the server would
+ const trial=structuredClone(state);let result;
+ // A refused action throws, as the server would; a slip in the rules here (not a refusal) leaves the decision to the server.
+ try{result=applyFarmAction(trial,action,now,noLuck);}catch(error){if(error instanceof TypeError||error instanceof RangeError||error instanceof ReferenceError)return null;throw error;}
+ if((trial.diamonds??0)<(state.diamonds??0))return null;
  return inviteeReward(structuredClone(trial),now)?null:{trial,result};
 }
 export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapterReward,onGift,onEmailCheck,onError}){
@@ -60,7 +65,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
   if(instant){
    // Shown now; the server's answer replaces it. If the server refuses after all, the farm goes back to what it saved and says why.
    const entry={action};pending.push(entry);show(instant.trial);onChange();
-   send(action).then(data=>{pending.splice(pending.indexOf(entry),1);replace(data);},error=>{
+   send(action).then(data=>{pending.splice(pending.indexOf(entry),1);replace(data);track(action,data.result??instant.result);},error=>{
     pending.splice(pending.indexOf(entry),1);rebase();onChange();
     onStatus(error.code==='ACTION_REJECTED'?'saved':'error');onError?.(error.message);
     if(!pending.length&&!waiting)void refresh().catch(()=>{});

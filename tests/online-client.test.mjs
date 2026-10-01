@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {createFarmClient,instantResult,INSTANT_ACTIONS} from '../public/farm-client.js';
 import {createFarm,levelOf,xpForLevel} from '../public/farm-state.js';
 function setup(request){
@@ -53,7 +54,10 @@ test('a level-up shows at once too (a new farm levels up on its first harvest); 
  const invited=structuredClone(farm);invited.invite={code:'ANNA12',by:'Anna',at:now};invited.xp=xpForLevel(10)-1;
  assert.equal(instantResult(invited,{type:'field',id:ready,action:'harvest'},now),null,'reaching level 10 as an invited friend waits for the server');
  assert.equal(instantResult(farm,{type:'buy_vip',plan:'week'},now),null,'not an everyday tap');
- assert.deepEqual([...INSTANT_ACTIONS].sort(),['collect','collect_all','field','fields','produce','sell']);
+ assert.deepEqual([...INSTANT_ACTIONS].sort(),['activity_start','activity_work','beginner_claim','checkin','collect','collect_all','construct','daily','delivery','expand','field','fields','mastery','produce','quest','sell','stall_collect','tractor','upgrade']);
+ assert(!INSTANT_ACTIONS.has('chore'),'a chore\'s lucky bonus is the server\'s roll');
+ assert.match(readFileSync(new URL('../public/farm-client.js',import.meta.url),'utf8'),/if\(\(trial\.diamonds\?\?0\)<\(state\.diamonds\?\?0\)\)return null;/,'spending diamonds waits for the server');
+ assert.equal(instantResult({coins:1},{type:'quest',id:'x'},now),null,'a slip in the rules (not a refusal) leaves it to the server');
 });
 test('direct game access cannot create a client without an authenticated parent',()=>{
  globalThis.window={parent:{}};assert.throws(()=>createFarmClient({},{}),/Sign in/);
@@ -79,5 +83,5 @@ test('an expected game-rule rejection does not show a broken connection',async()
  globalThis.document={body:{classList:{add(){},remove(){}}}};
  globalThis.window={parent:{harvestBridge:{serverNow:Date.now(),request:async()=>{throw Object.assign(new Error('Choose a dry seedling.'),{code:'ACTION_REJECTED'});}}}};
  const statuses=[],s={coins:180};const client=createFarmClient(s,{onChange(){},onStatus:status=>statuses.push(status)});
- await assert.rejects(client.runAction({type:'activity_work'}),/seedling/);assert.deepEqual(statuses,['saving','saved']);assert.equal(s.coins,180);
+ await assert.rejects(client.runAction({type:'chore',id:'weeds'}),/seedling/);assert.deepEqual(statuses,['saving','saved']);assert.equal(s.coins,180);
 });
