@@ -2521,6 +2521,14 @@ export function familyStanding(c,familyId){
 // A family event bonus (harvest_event_settle, family-chest.sql): when this many members of one family finish the same farm event,
 // each of them gets this on top of their own prize.
 export const FAMILY_EVENT_BONUS=Object.freeze({finishers:3,coins:200,diamonds:5});
+// Farm event leagues (1 Oct 2026): every farmer races against farmers of about their level, with a top 10 and a podium of its own
+// per league. Diamonds per place are the same in every league; coins grow with the league: × its number, 1 to 6
+// (harvest_event_settle, supabase/live-event-leagues.sql). The level when the event ends decides the league.
+export const EVENT_LEAGUES=Object.freeze([
+ {id:'sprout',name:'Sprout League',from:15},{id:'meadow',name:'Meadow League',from:30},{id:'orchard',name:'Orchard League',from:45},
+ {id:'harvest',name:'Harvest League',from:60},{id:'estate',name:'Estate League',from:75},{id:'legends',name:'Valley Legends',from:90}
+].map((l,i,all)=>Object.freeze({...l,index:i,to:all[i+1]?all[i+1].from-1:null,coins:i+1})));
+export const eventLeague=level=>EVENT_LEAGUES.reduce((found,l)=>Number(level)>=l.from?l:found,EVENT_LEAGUES[0]);
 // A farmer counts as active in a family list when they did something on their farm in the last three days.
 const FAMILY_ACTIVE_MS=3*DAY_MS;
 // The weekly Family Order is the same for every family: four crops or goods drawn at random from everything in the game

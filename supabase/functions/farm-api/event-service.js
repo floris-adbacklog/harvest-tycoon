@@ -2,6 +2,7 @@ import {writeLog,eventRewardLog,accountLog} from './player-log.js';
 import {isSuperadmin,isAdminAccount,isAdminAddress} from './admin-service.js';
 import {validEmail} from './account-form.js';
 import {codeTexts,playerLanguage,RTL_MAIL} from './mail-text.js';
+import {EVENT_LEAGUES,eventLeague} from './farm-state.js';
 // The goals an event may use: the 24 Sep list (farm-wide counters, crops unlocked by level 9, eggs) and the 30 kinds of the mixed
 // events (supabase/live-events-mixed.sql), all open to every farm at level 15, when events open. Since 26 Sep 2026 the pool has
 // "Sell wheat" instead of "Use a boost" (supabase/live-events-sell-wheat.sql); boosts_used stays valid for events made by hand.
@@ -25,8 +26,9 @@ export const PODIUM=Object.freeze([{coins:2000,diamonds:50},{coins:1000,diamonds
 export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:5});
 // The event's top 10, ranked the way settlement pays (live-events.sql): finished farmers first, earliest finish
 // first (the finish time is frozen), then everyone else by how far along they are. Rewards follow the same formula
-// as harvest_event_settle — exact once settled, "if it ended now" while the event runs.
-export function eventStandings(event,rows,now=Date.now()){
+// as harvest_event_settle — exact once settled, "if it ended now" while the event runs. Since 1 Oct 2026 the rows are one
+// league's (live-event-leagues.sql): the podium is that league's, and its coins are × the league's number.
+export function eventStandings(event,rows,now=Date.now(),league=EVENT_LEAGUES[0]){
  const settled=Boolean(event.settled_at),goals=event.objectives;
  const share=r=>goals.reduce((sum,o)=>sum+Math.min(1,(r.progress?.[o.stat]??0)/o.target),0)/goals.length;
  // Every goal full is finished (30 Sep 2026; it also took 3 contributions over 10 minutes before), the earliest first.
@@ -35,19 +37,23 @@ export function eventStandings(event,rows,now=Date.now()){
  const ranked=rows.map(r=>({...r,done:finished(r),share:share(r)})).sort((a,b)=>Number(b.done)-Number(a.done)||(a.done?at(a)-at(b)||String(a.player_id).localeCompare(String(b.player_id)):b.share-a.share||at(a)-at(b)));
  const {coins}=event.rewards;
  return ranked.map((r,i)=>({rank:i+1,playerId:r.player_id,finished:r.done,progress:Math.round(r.share*100),
-  coins:settled?r.coins:r.done?coins+(PODIUM[i]??FINISHER_PRIZE).coins:0,diamonds:settled?r.diamonds:r.done?(PODIUM[i]??FINISHER_PRIZE).diamonds:0,podium:r.done&&i<PODIUM.length}));
+  coins:settled?r.coins:r.done?(coins+(PODIUM[i]??FINISHER_PRIZE).coins)*league.coins:0,diamonds:settled?r.diamonds:r.done?(PODIUM[i]??FINISHER_PRIZE).diamonds:0,podium:r.done&&i<PODIUM.length}));
 }
+// The standings the farmer sees are their own league's: the league they finished in, or the one their level puts them in now.
 async function standings(admin,event,user,now){
- const rows=await admin.from('live_event_players').select('player_id,progress,actions,joined_at,last_at,qualified,coins,diamonds').eq('event_id',event.id).limit(2000);
+ const rows=await admin.rpc('harvest_event_board',{p_event:event.id});
  if(rows.error)throw rows.error;
- const all=eventStandings(event,rows.data,now),top=all.slice(0,TOP),you=all.find(r=>r.playerId===user.id)??null;
+ const mine=rows.data.find(r=>r.player_id===user.id);
+ let league=mine&&Number.isInteger(mine.league)?EVENT_LEAGUES[mine.league]:null;
+ if(!league){const me=await admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle();if(me.error)throw me.error;league=eventLeague(me.data?.level??0);}
+ const all=eventStandings(event,rows.data.filter(r=>(r.league??0)===league.index),now,league),top=all.slice(0,TOP),you=all.find(r=>r.playerId===user.id)??null;
  const ids=[...new Set([...top.map(r=>r.playerId),...(you?[you.playerId]:[])])];
  const names=ids.length?await admin.from('player_stats').select('player_id,username,level,avatar_id,vip_expires_at').in('player_id',ids):{data:[]};
  if(names.error)throw names.error;
  const byId=new Map(names.data.map(p=>[p.player_id,p]));
  // The VIP mark as on the leaderboard (26 Sep 2026), and the id opens the farmer's profile in the game.
  const dress=r=>({...r,username:byId.get(r.playerId)?.username??'Farmer',level:byId.get(r.playerId)?.level??null,avatarId:byId.get(r.playerId)?.avatar_id??null,vipExpiresAt:Date.parse(byId.get(r.playerId)?.vip_expires_at)||0,isYou:r.playerId===user.id});
- return {top:top.map(dress),you:you&&you.rank>TOP?dress(you):null,total:all.length};
+ return {league:{id:league.id,name:league.name,from:league.from,to:league.to,coins:league.coins},top:top.map(dress),you:you&&you.rank>TOP?dress(you):null,total:all.length,everyone:rows.data.length};
 }
 // A player sees the running and upcoming events, the last day's results and any reward still waiting to be
 // collected (up to 30 days back) — not every automatic event of the month.

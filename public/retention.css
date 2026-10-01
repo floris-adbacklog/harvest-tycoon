@@ -1339,3 +1339,16 @@
 #journal-content .journal-empty>.game-art,#leaderboard-dialog .leaderboard-empty>.game-art{display:block;width:60px;height:60px;margin:0 auto 10px}
 #journal-content .journal-empty h3,#leaderboard-dialog .leaderboard-empty h3{margin:0 0 6px;font:700 20px 'Outfit',sans-serif}
 #journal-content .journal-empty p,#leaderboard-dialog .leaderboard-empty p{margin:0;font-size:14px;line-height:1.5}
+/* Your league in farm events (1 Oct 2026): the league's badge, its name, its levels and its coins. */
+.event-league{display:flex;align-items:center;gap:12px;margin:14px 0 0;padding:10px 14px;border:1px solid #e2d6bf;border-radius:14px;background:#fffaf0}
+.event-league img{flex:none;width:56px;height:56px;object-fit:contain}
+.event-league div{display:grid;gap:1px;min-width:0}
+.event-league>div>span{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#8a7443}
+.event-league strong{font:700 18px/1.15 'Outfit',sans-serif;color:#3b2c12}
+.event-league small{font-size:13px;color:#7a6c55}
+.event-league-name{margin:-4px 0 4px;font-size:13px;font-weight:700;color:#8a7443}
+.event-league-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 12px;margin:8px 0 2px}
+.event-league-list>span{display:flex;align-items:center;gap:6px;min-width:0}
+.event-league-list img{flex:none;width:28px;height:28px;object-fit:contain}
+.event-league-list b{font-size:13px;color:#4b3d22}
+.event-league-list small{font-size:12px;color:#8a7d66;white-space:nowrap}
