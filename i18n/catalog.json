@@ -460,7 +460,6 @@
 "Best harvest":"public/farm-state.js",
 "Best in show":"public/farm-state.js",
 "Best value":"public/boosts-ui.js",
-"Best value · +{0}%":"public/boosts-ui.js",
 "Best {0} day":"public/retention-ui.js",
 "Best {0} day · VIP doubles your gifts":"public/retention-ui.js",
 "Best {0} days":"public/retention-ui.js",

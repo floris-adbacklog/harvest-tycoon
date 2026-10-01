@@ -92,15 +92,16 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   $('finish-one-batch').onclick=()=>finishMany('batch');
   // The packs as tappable cards, smallest to largest: how many diamonds, the picture, the price. The biggest is "Best value".
   // Short of diamonds for something here: the smallest pack that covers it gets a green tab.
-  // Each bigger pack's tab says how many more diamonds per euro it gives than the smallest pack, rounded.
+  // Each bigger pack's tab says how many more diamonds per euro it gives than the smallest pack, rounded. The biggest has a gold tab
+  // and "Best value" above its price (1 Oct 2026: "Best value · +86%" did not fit on one tab and was cut off).
   const perEuro=pack=>pack.amount/Number(pack.price.replace(/[^0-9.]/g,'')),base=perEuro(DIAMOND_PACKS[0]);
   const last=DIAMOND_PACKS.length-1,open=Boolean(catalog?.enabled)&&!purchasing;
   $('diamond-packs').innerHTML=DIAMOND_PACKS.map((pack,i)=>{
    const best=i===last,suggested=suggestion===pack.amount,opening=purchasing===String(pack.amount);
    const extra=Math.round((perEuro(pack)/base-1)*100);
-   const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':best?`<span class="pack-ribbon">Best value · +${extra}%</span>`:extra>0?`<span class="pack-ribbon is-extra">+${extra}% extra</span>`:'';
+   const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':best?`<span class="pack-ribbon">+${extra}% extra</span>`:extra>0?`<span class="pack-ribbon is-extra">+${extra}% extra</span>`:'';
    const foot=opening?'Opening…':catalog?.enabled?pack.price:catalog?'Unavailable':pack.price;
-   return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':catalog?.enabled?'available':'unavailable'}" aria-label="Buy ${number(pack.amount)} diamonds for ${pack.price}" ${open?'':'disabled'}>${tag}<span class="pack-amount"><b>${number(pack.amount)}</b><small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}<span class="pack-price">${foot}</span></button>`;}).join('')
+   return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':catalog?.enabled?'available':'unavailable'}" aria-label="Buy ${number(pack.amount)} diamonds for ${pack.price}" ${open?'':'disabled'}>${tag}<span class="pack-amount"><b>${number(pack.amount)}</b><small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}${best?'<span class="pack-best">Best value</span>':''}<span class="pack-price">${foot}</span></button>`;}).join('')
    +(catalog?.mode==='test'?'<p class="pack-note">Test checkout: no real payment.</p>':'')
    +(packError?`<p class="pack-error" role="alert">${packError.message}</p>`:'');
   $('diamond-packs').querySelectorAll('[data-diamond-pack]').forEach(button=>button.onclick=async()=>{

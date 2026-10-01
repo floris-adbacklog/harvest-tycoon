@@ -17,7 +17,7 @@ test('every diamond pack has its own painted picture, registered and on disk',()
 test('the +% extra tabs compare diamonds per euro with the smallest pack',()=>{
  const perEuro=pack=>pack.amount/Number(pack.price.replace(/[^0-9.]/g,'')),base=perEuro(DIAMOND_PACKS[0]);
  assert.deepEqual(DIAMOND_PACKS.map(pack=>Math.round((perEuro(pack)/base-1)*100)),[0,33,66,86]);
- assert.match(ui,/Best value · \+\$\{extra\}%/);assert.match(ui,/\+\$\{extra\}% extra/);
+ assert.match(ui,/best\?`<span class="pack-ribbon">\+\$\{extra\}% extra<\/span>`/,'a short gold tab that fits');assert.match(ui,/<span class="pack-best">Best value<\/span>/);assert.match(ui,/\+\$\{extra\}% extra/);
 });
 
 test('short of diamonds never leaves a dead button: boosts, finishing and VIP lead to the packs',()=>{
