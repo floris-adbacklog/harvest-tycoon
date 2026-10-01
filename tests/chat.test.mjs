@@ -293,3 +293,21 @@ test('a gift note from the database shows in the player\'s language: "You’ve r
  assert.equal(giftBody('Something else'),'Something else','any other text as before');
  assert.match(giftBody('Donation: you received 1 diamonds. “<b>hi</b>”'),/“&lt;b&gt;hi&lt;\/b&gt;”/,'the note stays escaped');
 });
+test('the admin can take a handled report out of the report log; an open one is handled first, the message itself stays (1 Oct 2026)',()=>{
+ const sql=read('supabase/chat-report-log-remove.sql'),admin=read('src/admin-dashboard.js');
+ assert.match(sql,/if me is null or public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'/,'the admin only, not the moderators');
+ assert.match(sql,/r\.resolved_at is null\) then raise exception 'Handle this report first\.'/,'an open report stays until it is handled');
+ assert.match(sql,/delete from public\.chat_reports where message_id=p_message;/);assert.doesNotMatch(sql,/chat_messages/,'the message itself is not touched');
+ assert.match(sql,/revoke all on function public\.chat_mod_log_remove\(uuid\) from public, anon;/);
+ assert.match(admin,/\$\{role==='admin'&&!r\.open\?`<button type="button" class="small-button" data-log-remove="\$\{esc\(r\.messageId\)\}">Remove<\/button>`:''\}/);
+ assert.match(admin,/confirmAction\(\{title:'Remove from the report log\?'/,'asked once more');
+ assert.match(read('src/chat-client.js'),/reportLogRemove:message=>rpc\('chat_mod_log_remove',\{p_message:message\}\)/);
+});
+test('a moderator can still send a gift, but only the admin writes a message with it (1 Oct 2026)',()=>{
+ const sql=read('supabase/staff-gift-message-admin.sql'),admin=read('src/admin-dashboard.js');
+ assert.match(sql,/if msg is not null and public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Only the admin can add a message to a gift\.'/);
+ assert.match(sql,/if public\.chat_staff_role\(me\) is null then raise exception 'Not authorized\.'/,'the moderators still give coins and diamonds');
+ assert.match(admin,/dialog\.querySelector\('\.admin-donate-message'\)\.hidden=role!=='admin';/,'no message box for a moderator');
+ assert.match(admin,/const message=role==='admin'\?dialog\.querySelector\('#admin-donate-message'\)\.value\.trim\(\):''/);
+ assert.match(read('public/chat.css'),/\.admin-donate-message\[hidden\]\{display:none\}/,'the label\'s own display does not show it again');
+});

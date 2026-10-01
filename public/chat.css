@@ -177,6 +177,7 @@ span.chat-avatar{cursor:default}
 .admin-donate label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:650}
 .admin-donate input{min-height:42px;box-sizing:border-box;padding:0 12px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 14px 'DM Sans',sans-serif}
 .admin-donate-message,.admin-donate .primary-button{grid-column:1/-1}
+.admin-donate-message[hidden]{display:none}
 .chat-hours{flex:0 0 auto;min-height:46px;padding:0 8px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#5e523a;font:650 13px 'DM Sans',sans-serif}
 .chat-hours[hidden]{display:none}
 .admin-news-hours{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:#5e523a;font-size:13px;font-weight:650}
@@ -205,6 +206,7 @@ span.chat-avatar{cursor:default}
 .admin-log-open{color:#a8741c}
 .admin-log-done{color:#3f7a3a}
 .admin-log-list li{align-items:flex-start}
+.admin-log-side{display:flex;flex:none;flex-direction:column;align-items:flex-end;gap:6px;margin-inline-start:auto}
 /* The dashboard in the game's own look: painted icons on the numbers, the tabs and every heading; farmers' own pictures. */
 #admin-dashboard-dialog .admin-card h3{display:flex;align-items:center;gap:9px}
 #admin-dashboard-dialog .admin-card h3>.game-art{flex:none;width:28px;height:28px;object-fit:contain}

@@ -254,7 +254,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   }catch(error){dialog.querySelector('#admin-reports').hidden=false;dialog.querySelector('#admin-report-list').innerHTML=`<li class="admin-empty">${esc(error.message)}</li>`;}
   try{
    const log=await client.reportLog();await loadFaces(log.map(r=>r.sender));dialog.querySelector('#admin-report-log').hidden=false;
-   dialog.querySelector('#admin-log-list').innerHTML=log.length?log.map(r=>`<li>${avatar(r.senderName,false,r.sender)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-profile="${esc(r.sender)}">${esc(r.senderName??'A farmer')}</button> <small>${where(r.channel)} · ${number(r.reports)} report${r.reports===1?'':'s'}</small></strong><small class="admin-report-body">“${esc(r.body)}”</small>${reportedBy(r)}<small>${verdict(r)}</small></span><small class="admin-when" title="${esc(fmtDate(r.lastAt))}">${ago(r.lastAt)}</small></li>`).join(''):'<li class="admin-empty">No reports yet.</li>';
+   dialog.querySelector('#admin-log-list').innerHTML=log.length?log.map(r=>`<li>${avatar(r.senderName,false,r.sender)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-profile="${esc(r.sender)}">${esc(r.senderName??'A farmer')}</button> <small>${where(r.channel)} · ${number(r.reports)} report${r.reports===1?'':'s'}</small></strong><small class="admin-report-body">“${esc(r.body)}”</small>${reportedBy(r)}<small>${verdict(r)}</small></span><span class="admin-log-side"><small class="admin-when" title="${esc(fmtDate(r.lastAt))}">${ago(r.lastAt)}</small>${role==='admin'&&!r.open?`<button type="button" class="small-button" data-log-remove="${esc(r.messageId)}">Remove</button>`:''}</span></li>`).join(''):'<li class="admin-empty">No reports yet.</li>';
   }catch{}
   try{showRoom(await client.donationRoom());}catch{}
   if(role!=='admin')return;
@@ -296,7 +296,15 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   catch(error){status.textContent=error.message;form.querySelectorAll('button,input').forEach(el=>el.disabled=false);}
  });
  // A name in the log opens that farmer's profile (with the chat buttons: mute, ban), on top of the dashboard.
- dialog.querySelector('#admin-log-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
+ // The admin can take a handled report out of the log; an open one is handled under Chat reports first.
+ dialog.querySelector('#admin-log-list').addEventListener('click',async event=>{
+  const name=event.target.closest('[data-profile]');if(name){window.harvestProfiles?.open(name.dataset.profile,{back:null});return;}
+  const remove=event.target.closest('[data-log-remove]');if(!remove)return;
+  if(!await confirmAction({title:'Remove from the report log?',description:'Every report of this message goes for good, also from the farmer\'s report count. The message itself stays as it is.',confirmLabel:'Remove',tone:'danger'}))return;
+  remove.disabled=true;
+  try{await bridge.chat.reportLogRemove(remove.dataset.logRemove);const row=remove.closest('li'),list=row.parentElement;row.remove();if(!list.children.length)list.innerHTML='<li class="admin-empty">No reports yet.</li>';}
+  catch(error){remove.disabled=false;remove.nextElementSibling?.remove();remove.insertAdjacentHTML('afterend',`<small class="admin-log-error">${esc(error.message)}</small>`);}
+ });
  dialog.querySelector('#admin-invite-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
  dialog.querySelector('#admin-report-list').addEventListener('click',async event=>{
   const name=event.target.closest('[data-profile]');if(name){window.harvestProfiles?.open(name.dataset.profile,{back:null});return;}
@@ -323,6 +331,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  }
  function showRoom(room,sent=''){
   dialog.querySelector('#admin-donate').hidden=false;
+  // Only the admin writes a message with a gift; a moderator sends the amounts alone (supabase/staff-gift-message-admin.sql).
+  dialog.querySelector('.admin-donate-message').hidden=role!=='admin';
   dialog.querySelector('#admin-donate-room').textContent=`${sent}Left today, for all staff together: ${number(room.diamonds)} diamonds, ${number(room.coins)} coins${room.perLevel!=null?`, ${number(room.perLevel)} coins per level`:''}, ${number(room.gifts)} gift${room.gifts===1?'':'s'}. Farmers get it the next time their farm opens (open games at once), and see it under Notifications.`;
  }
  function paintGift(){
@@ -348,7 +358,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-donate-form').addEventListener('submit',async event=>{
   event.preventDefault();if(!bridge.chat)return;
   const diamonds=Math.max(0,Math.floor(Number(dialog.querySelector('#admin-donate-diamonds').value)||0)),coins=Math.max(0,Math.floor(Number(dialog.querySelector('#admin-donate-coins').value)||0));
-  const message=dialog.querySelector('#admin-donate-message').value.trim(),room=dialog.querySelector('#admin-donate-room');
+  const message=role==='admin'?dialog.querySelector('#admin-donate-message').value.trim():'',room=dialog.querySelector('#admin-donate-room');
   if(!diamonds&&!coins){room.textContent='Enter some diamonds or coins.';return;}
   if(gift.audience==='player'&&!gift.player){room.textContent='Choose the farmer who gets the gift.';return;}
   const parts=[diamonds&&`${number(diamonds)} diamonds`,coins&&`${number(coins)} coins${gift.perLevel?' for every level':''}`].filter(Boolean).join(' + ');
