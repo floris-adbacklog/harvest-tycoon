@@ -7,6 +7,14 @@
   "cleanUrls": false,
   "rewrites": [
     {
+      "source": "/partners",
+      "destination": "/partners.html"
+    },
+    {
+      "source": "/partners/",
+      "destination": "/partners.html"
+    },
+    {
       "source": "/privacy",
       "destination": "/privacy.html"
     },

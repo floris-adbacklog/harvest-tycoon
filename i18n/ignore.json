@@ -28,5 +28,10 @@
  "Choose up to 336 hours (14 days).",
  "Put something in the offer.",
  "The offer must be worth €49.99; it is worth €{0}.",
- "Preview · {0}"
+ "Preview · {0}",
+ "Choose paid or rejected.",
+ "Sign up as a partner first.",
+ "This request was already handled.",
+ "You can ask for a payout from €{0}.",
+ "Your payout request is already with us."
 ]

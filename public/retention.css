@@ -1257,6 +1257,9 @@
 .admin-purchase-status.is-paid{background:#e4efd9;color:#3f6b33}
 .admin-purchase-status.is-open{background:#fbefd3;color:#8a6414}
 .admin-purchase-status.is-expired{background:#ece7de;color:#7d7060}
+/* Partners (1 Oct 2026): the two lists under one card. */
+#admin-dashboard-dialog .admin-subhead{margin:14px 0 4px;font:700 13px/1.3 'DM Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8a7c69}
+#admin-partners .admin-log-side{display:flex;flex:none;gap:6px}
 /* After level 90 (27 Sep 2026): the Seed Lab, visitors, the giant pumpkin, valley projects and Master points. */
 .heirloom.is-unknown .order-icon .game-art{filter:grayscale(1) brightness(.72) contrast(.9);opacity:.8}
 .lab-bed .depot-progress{margin-top:8px}

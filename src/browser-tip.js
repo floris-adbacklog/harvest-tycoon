@@ -50,10 +50,12 @@ export const gateApp=(ua='')=>GATE_APP.test(ua);
 export const safariUrl=href=>`x-safari-${href}`;
 // The page itself, without an OAuth answer or error in it, and with a friend's invite code put back (invite-link.js keeps it on
 // this device only, and the phone's browser is another device as far as storage goes).
-export function escapeTarget(loc,invite=null){
+export function escapeTarget(loc,invite=null,ref=null){
  const url=new URL((loc.pathname??'/')+(loc.search??''),loc.origin);
  for(const key of ['code','error','error_code','error_description'])url.searchParams.delete(key);
  if(invite&&!url.searchParams.has('invite'))url.searchParams.set('invite',invite);
+ // A partner's code (src/partner-link.js) goes along to the real browser too.
+ if(ref&&!url.searchParams.has('ref'))url.searchParams.set('ref',ref);
  return url.href;
 }
 export function gateText(ua=''){

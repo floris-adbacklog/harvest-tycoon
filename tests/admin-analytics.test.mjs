@@ -154,8 +154,8 @@ test('the read-only admin operations are safe to auto-retry, like every other re
 // Lives inside the game (an icon in the topbar, hidden for everyone else), not a separate page: one session,
 // one sign-in, nothing extra to visit — and it reuses checkAdmin() from player-profiles.js rather than a second
 // admin check.
-test('build-cloud.mjs has no separate admin page: only the original two entries',()=>{
- assert.match(read('scripts/build-cloud.mjs'),/entry:\{cloud:'src\/main\.js','game-cloud':'src\/game-cloud\.js'\}/);
+test('build-cloud.mjs has no separate admin page: the game\'s two entries and the partner programme\'s page',()=>{
+ assert.match(read('scripts/build-cloud.mjs'),/entry:\{cloud:'src\/main\.js','game-cloud':'src\/game-cloud\.js',partners:'src\/partners\.js'\}/);
 });
 test('the admin dashboard button exists in the topbar, hidden until checkAdmin() says otherwise',()=>{
  const html=read('public/farm.html');

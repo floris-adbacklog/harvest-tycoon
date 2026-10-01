@@ -78,6 +78,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<div class="admin-offer-actions"><button type="button" class="secondary-button" id="admin-offer-preview">Preview</button><button type="submit" class="primary-button">Start offer</button></div>'
   +'<p class="admin-hint" id="admin-offer-status" role="status"></p></form><ul id="admin-offer-list" class="admin-recent-list" hidden></ul></section>'
   +'<section class="admin-card"><h3>'+art('diamonds')+'Purchases</h3><div id="admin-purchase-totals" class="admin-invite-totals"></div><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-purchase-filter="all" aria-pressed="true">All</button><button type="button" class="admin-filter" data-purchase-filter="paid" aria-pressed="false">Paid</button><button type="button" class="admin-filter" data-purchase-filter="open" aria-pressed="false">Not finished</button></div><ul id="admin-purchase-list" class="admin-recent-list admin-purchase-list"></ul><p class="admin-hint">Every checkout, newest first (Amsterdam time). “Not finished”: the farmer opened the payment page but did not pay, or the page is still open. Test payments are marked.</p></section>'
+  // The partner programme (supabase/partners.sql, /partners): partners, what they brought in, and payout requests to pay by hand.
+  +'<section class="admin-card" id="admin-partners"><h3>'+art('invite-friends')+'Partners <span id="admin-partner-count">0</span></h3><div id="admin-partner-totals" class="admin-invite-totals"></div><h4 class="admin-subhead">Payout requests</h4><ul id="admin-payout-list" class="admin-recent-list"></ul><h4 class="admin-subhead">Partners</h4><ul id="admin-partner-list" class="admin-recent-list"></ul><p class="admin-hint">Partners sign up on harvesttycoon.com/partners and earn 25% of what their players spend, without 21% VAT. A payout request comes by email to info@harvesttycoon.com with where to pay: pay it by hand, then mark it paid here. Rejected goes back to what they can ask for.</p></section>'
   +'</div><div data-admin-panel="settings" hidden>'
   +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News and pop-ups</h3><form id="admin-news-form" class="admin-news">'
   // In more languages (supabase/admin-texts-languages.sql): English for every language without a text of its own.
@@ -186,6 +188,26 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  let purchases=null,purchaseFilter='all';
  const PURCHASE_STATUS={credited:['Paid','is-paid'],pending:['Not finished','is-open'],expired:['Expired','is-expired']};
  const euro=cents=>`€${(cents/100).toFixed(2)}`;
+ // Partners: the totals, the payout requests (open ones first, with Paid and Reject) and every partner with their numbers.
+ const PAYOUT_STATUS={requested:['Asked for','is-open'],paid:['Paid','is-paid'],rejected:['Rejected','is-expired']};
+ async function showPartners(){
+  const list=dialog.querySelector('#admin-partner-list'),requests=dialog.querySelector('#admin-payout-list');
+  try{
+   const data=await bridge.chat.partnerList(),partners=data.partners??[],payouts=data.payouts??[],sum=key=>partners.reduce((n,p)=>n+(p.stats?.[key]??0),0);
+   dialog.querySelector('#admin-partner-count').textContent=number(partners.length);
+   dialog.querySelector('#admin-partner-totals').innerHTML=`<span><strong>${number(sum('players'))}</strong> players brought in</span><span><strong>${number(sum('payingPlayers'))}</strong> paying</span><span><strong>${euro(sum('earnedCents'))}</strong> earned</span><span><strong>${euro(sum('paidCents'))}</strong> paid out</span>`;
+   const open=payouts.filter(p=>p.status==='requested'),rest=payouts.filter(p=>p.status!=='requested');
+   requests.innerHTML=payouts.length?[...open,...rest].map(p=>{const [label,cls]=PAYOUT_STATUS[p.status]??[p.status,''];return `<li><span class="admin-recent-copy"><strong>${esc(p.partner)} · ${euro(p.amountCents)}</strong><small>${esc(p.email??'')} · asked ${esc(fmtDate(p.requestedAt))}</small></span>${p.status==='requested'?`<span class="admin-log-side"><button type="button" class="small-button" data-payout-id="${esc(p.id)}" data-payout-status="paid">Paid</button><button type="button" class="small-button" data-payout-id="${esc(p.id)}" data-payout-status="rejected">Reject</button></span>`:`<b class="admin-purchase-status ${cls}">${label}</b>`}</li>`;}).join(''):'<li class="admin-empty">No payout requests yet.</li>';
+   list.innerHTML=partners.length?partners.map(p=>`<li><span class="admin-recent-copy"><strong>${esc(p.name)} <small>${esc(p.code)}</small></strong><small>${esc(p.email??'')}${p.website?` · ${esc(p.website)}`:''} · since ${esc(fmtDate(p.createdAt))}</small><small>${number(p.stats?.players??0)} players · ${number(p.stats?.payingPlayers??0)} paying · ${euro(p.stats?.earnedCents??0)} earned · ${euro(p.stats?.paidCents??0)} paid · ${euro(p.stats?.availableCents??0)} available</small></span></li>`).join(''):'<li class="admin-empty">No partners yet.</li>';
+  }catch(error){list.innerHTML=`<li class="admin-empty">${esc(error.message)}</li>`;requests.innerHTML='';}
+ }
+ dialog.querySelector('#admin-payout-list').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-payout-id]');if(!button)return;const paid=button.dataset.payoutStatus==='paid';
+  if(!await confirmAction({title:paid?'Mark this payout paid?':'Reject this payout request?',description:paid?'Only after you paid it by hand. The partner sees it as paid.':'The amount goes back to what the partner can ask for.',confirmLabel:paid?'Mark paid':'Reject',tone:paid?'':'danger'}))return;
+  button.disabled=true;
+  try{await bridge.chat.partnerPayout(button.dataset.payoutId,button.dataset.payoutStatus);}catch(error){button.disabled=false;button.title=error.message;return;}
+  void showPartners();
+ });
  function renderPurchases(data){
   if(data)purchases=data;if(!purchases)return;const t=purchases.totals;
   dialog.querySelector('#admin-purchase-totals').innerHTML=`<span><strong>${number(t.started)}</strong> checkouts</span><span><strong>${number(t.paid)}</strong> paid</span><span><strong>${number(t.notFinished)}</strong> not finished</span><span><strong>${euro(t.revenueCents)}</strong> earned</span><span><strong>${number(t.players)}</strong> farmers</span>`;
@@ -203,6 +225,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const PARTS=[['admin_online','Online now'],['admin_players','All players'],['admin_retention','Retention'],['admin_invites','Invites']];
   const [online,players,retention,invites]=await Promise.all(PARTS.map(([operation])=>bridge.request(operation==='admin_retention'?{operation,days:Number(view.retention)}:{operation}).catch(()=>null)));
   if(role==='admin')void showOffers();
+  if(role==='admin')void showPartners();
   if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(renderPurchases).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
   if(players)showPlayers(players);
   if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}

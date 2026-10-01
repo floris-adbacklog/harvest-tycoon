@@ -13,6 +13,7 @@ import {createChatClient} from './chat-client.js';
 import {startLoadingTips,ACCOUNT_STEPS} from '../public/loading-screen.js';
 import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
+import {takeRefFromUrl,pendingRef,clearRef} from './partner-link.js';
 import {createConnection,connectionMessage,reasonOf,refused,WAKE_GRACE} from './connection.js';
 import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
@@ -56,6 +57,8 @@ const knownPlayer=()=>store.get(RETURNING_KEY)==='1'||store.get(AUTH_KEY)!==null
 // Invite a friend: remember ?invite=CODE (src/invite-link.js) and show who invited this visitor on the sign-up card.
 const localStore=(()=>{try{return localStorage;}catch{return null;}})();
 takeInviteFromUrl({location:globalThis.location,history:globalThis.history,storage:localStore,known:knownPlayer()});
+// A partner's link (?ref=CODE, src/partner-link.js): the new farm counts for that partner.
+takeRefFromUrl({location:globalThis.location,history:globalThis.history,storage:localStore,known:knownPlayer()});
 async function showInviter(){
  const code=pendingInvite(localStore),box=document.getElementById('account-invite');if(!code||!box)return;
  const name=await inviterName(functionsUrl,code);if(!name||pendingInvite(localStore)!==code)return;
@@ -102,7 +105,7 @@ let gateTimer=null;
 function browserGate(){
  const card=document.querySelector('.account-card'),ua=navigator.userAgent,on=gateApp(ua)&&store.get(ESCAPE_KEY)!=='stay';
  card.toggleAttribute('data-gate',on);if(!on)return;
- const text=gateText(ua),target=escapeTarget(location,pendingInvite(localStore)),help=$('gate-help');
+ const text=gateText(ua),target=escapeTarget(location,pendingInvite(localStore),pendingRef(localStore)),help=$('gate-help');
  document.querySelectorAll('[data-gate-browser]').forEach(el=>el.textContent=text.browser);document.querySelectorAll('[data-gate-app]').forEach(el=>el.textContent=text.app);$('gate-open').textContent=text.action;
  const leave=()=>{location.href=text.android?chromeIntent(target):safariUrl(target);};
  $('gate-open').onclick=()=>{
@@ -142,7 +145,7 @@ async function openFarm(){
   let release,cancel;const ready=new Promise((resolve,reject)=>{release=resolve;cancel=reject;});ready.catch(()=>{});
   window.harvestBridge={pending:true,ready};const page=document.createElement('iframe');page.title='Harvest Tycoon farm';page.src='/farm.html';$('farm-host').append(page);
   const giveUp=error=>{cancel(error);page.remove();if(window.harvestBridge?.ready===ready)delete window.harvestBridge;};
-  let initial;try{const inviteCode=pendingInvite(localStore);initial=await farmRequest({operation:'load',...(inviteCode?{inviteCode}:{})});clearInvite(localStore);}catch(error){if(ticket!==generation)return;giveUp(error);if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
+  let initial;try{const inviteCode=pendingInvite(localStore),partnerCode=pendingRef(localStore);initial=await farmRequest({operation:'load',...(inviteCode?{inviteCode}:{}),...(partnerCode?{partnerCode}:{})});clearInvite(localStore);clearRef(localStore);}catch(error){if(ticket!==generation)return;giveUp(error);if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
   if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}
   presence=createFarmPresence(supabase,user.id);
   presence.setClock?.(initial.serverNow);
@@ -224,7 +227,8 @@ $('account-form').onsubmit=async event=>{
    // The player name is optional: a friendly one is picked here and can be changed in the leaderboard.
    if(!name){name=randomPlayerName();for(let i=0;i<5&&!(await free(name));i++)name=randomPlayerName();}
    const invite=pendingInvite(localStore);if(invite)trackInvite('invite_signup');
-   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username:name,language:chosenLanguage(),...(invite?{invite}:{})},emailRedirectTo:redirectUrl()}});
+   const ref=pendingRef(localStore);
+   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username:name,language:chosenLanguage(),...(invite?{invite}:{}),...(ref?{ref}:{})},emailRedirectTo:redirectUrl()}});
    if(error)throw error;
    if(isNewRegistration(data))trackSignUp({confirmationRequired:!data.session});
    store.set(RETURNING_KEY,'1');

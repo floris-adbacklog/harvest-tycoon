@@ -75,6 +75,9 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   // Staff (moderators and the admin); the database refuses anyone else.
   reports:()=>rpc('chat_mod_reports'),
   reportLog:()=>rpc('chat_mod_log'),
+  // The partner programme, for the admin (supabase/partners.sql): partners and payout requests, and marking one paid or rejected.
+  partnerList:()=>rpc('partner_admin_list'),
+  partnerPayout:(id,status)=>rpc('partner_admin_payout',{p_id:id,p_status:status}),
   // The admin takes a handled report out of the log (supabase/chat-report-log-remove.sql).
   reportLogRemove:message=>rpc('chat_mod_log_remove',{p_message:message}),
   deleteMessage:message=>rpc('chat_mod_delete',{p_message:message}),

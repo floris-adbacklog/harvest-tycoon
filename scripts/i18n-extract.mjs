@@ -11,8 +11,9 @@ import {readFileSync,readdirSync,writeFileSync,existsSync} from 'node:fs';
 const ROOT=new URL('../',import.meta.url);
 const read=path=>readFileSync(new URL(path,ROOT),'utf8');
 const list=(dir,test)=>readdirSync(new URL(dir,ROOT)).filter(test).sort().map(file=>`${dir}${file}`);
-// Admin screens stay English (only staff see them); the other skipped files hold no text for players.
-const SKIP=/(^|\/)(admin-[^/]*|lucide-icons|analytics|sound-worker|sw|sound-kit|model-atlas|render-resources|languages|i18n|i18n-boot)\.js$/;
+// Admin screens stay English (only staff see them), and so does the partner programme's page (src/partners.js, like the privacy
+// policy); the other skipped files hold no text for players.
+const SKIP=/(^|\/)(admin-[^/]*|lucide-icons|analytics|sound-worker|sw|sound-kit|model-atlas|render-resources|languages|i18n|i18n-boot|partners)\.js$/;
 export const SOURCES=[
  ...list('public/',f=>f.endsWith('.js')),
  ...list('src/',f=>f.endsWith('.js')),
