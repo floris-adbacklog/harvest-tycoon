@@ -1,7 +1,7 @@
 -- Farm event leagues (1 Oct 2026, game/farm-state.js EVENT_LEAGUES): every farmer races against farmers of about their level, with
 -- a top 10 and a podium of its own per league. Diamonds per place are the same in every league (50, 30, 20, then 5); coins grow
--- with the league, × its number: Sprout League 15–29 ×1, Meadow 30–44 ×2, Orchard 45–59 ×3, Harvest 60–74 ×4, Estate 75–89 ×5,
--- Valley Legends 90+ ×6. The level when the event ends decides the league; settlement writes it on every row.
+-- with the league: Sprout League 15–29 ×1, Meadow 30–44 ×2, Orchard 45–59 ×3, Harvest 60–74 ×4, Estate 75–89 ×5,
+-- Valley Legends 90+ ×8. The level when the event ends decides the league; settlement writes it on every row.
 -- Built on the live harvest_event_settle (read on 1 Oct 2026); only the league lines are new.
 alter table public.live_event_players add column if not exists league smallint check (league is null or league between 0 and 5);
 
@@ -27,9 +27,9 @@ begin
  budget:=least((e.rewards->>'poolCap')::integer,n*per_player);
  -- Completed players are ordered by completion time within their league, UUID as deterministic tie-break. The first three of each
  -- league also win a podium prize on top (+2000, +1000, +500 coins) and every later finisher +100 coins; the event's coins and the
- -- podium coins are × the league's number (1–6). Diamonds are a fixed 50, 30, 20 and 5 in every league.
+ -- podium coins are × the league's number (1–5), × 8 for the Valley Legends. Diamonds are a fixed 50, 30, 20 and 5 in every league.
  with ranked as (select player_id,league,row_number() over(partition by league order by last_at,player_id) as rank from public.live_event_players where event_id=p_event and qualified)
- update public.live_event_players p set coins=((e.rewards->>'coins')::integer+(case r.rank when 1 then 2000 when 2 then 1000 when 3 then 500 else 100 end))*(r.league+1),
+ update public.live_event_players p set coins=((e.rewards->>'coins')::integer+(case r.rank when 1 then 2000 when 2 then 1000 when 3 then 500 else 100 end))*(case r.league when 5 then 8 else r.league+1 end),
   diamonds=(case r.rank when 1 then 50 when 2 then 30 when 3 then 20 else 5 end)
   from ranked r where p.event_id=p_event and p.player_id=r.player_id;
  -- The family bonus (27 Sep 2026): 3 or more finishers from one family each get +200 coins and +5 diamonds.
