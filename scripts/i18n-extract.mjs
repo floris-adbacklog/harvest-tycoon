@@ -37,8 +37,9 @@ function looksLikeText(text,inMarkup){
  if(!/\p{L}\p{L}/u.test(bare))return false;
  if(/=>|\$\{|\bvar\(--|rgba?\(|:\/\/|\.(webp|png|svg|jpe?g|js|css|glb|json|mp3|wav|flac)\b|\[data-|:not\(|[{}]|;\S|[a-z-]+:[^\s;]+;|\\u|^\w+\(|\bfunction\b|&&|\|\||===/.test(bare))return false;
  if(/^[.#@\[/-]/.test(text))return false;                                 // selectors, paths
- if(/^[a-z0-9]+([_:./-][a-z0-9]+)+$/i.test(bare))return false;          // keys, ids, paths
- if(!/\s/.test(bare)&&/^[\w-]+(:[\w-]*)+$/.test(bare))return false;     // storage keys: "field:{0}"
+ // A word with a capital and a hyphen is a word ("Co-leader"), and a capital word with a colon is a label ("Goal: {0}", "Now:").
+ if(/^[a-z0-9]+([_:./-][a-z0-9]+)+$/i.test(bare)&&!/^\p{Lu}\p{Ll}+(-\p{Ll}+)+$/u.test(bare))return false; // keys, ids, paths
+ if(!/\s/.test(bare)&&/^[a-z][\w-]*(:[\w-]*)+$/.test(bare))return false;   // storage keys: "field:{0}"
  if(/="|=\S|\w=|\b[a-z]+_[a-z_]+\b|',|^'/.test(bare))return false;            // attributes, database names, font lists
  if(/^[A-Z][a-z]+[A-Z][a-z]+$/.test(bare))return false;                     // ArrowUp, TikTok
  if(/^[a-z0-9]+-[a-z0-9-]+(\s[a-z0-9-]+)*$/.test(bare))return false;         // a class list: "plot-label plot-timer tended"
@@ -226,8 +227,12 @@ function collectPage(file,catalog,htmlNames,scripts){
 // Texts a database function hands back as its message (not an error), which the scan for "raise exception" does not see: what a
 // Help, gift or event claim did (29 Sep 2026). Keep in step with the live functions (harvest_social, harvest_event_claim).
 const SERVER_MESSAGES=['You helped with {0} coins. Thank you!','Your gift has arrived!','Request fulfilled. Your family thanks you!','Already completed.','Your family request is ready.','This reward was already collected.','Event rewards collected!'];
+// One word in lower case the code shows on its own, which the scan takes for a name in the code: the reward cell under "1" in a
+// family order (public/family-order-rewards.js, 1 Oct 2026).
+const WORDS=['diamond'];
 function collectSql(catalog){
  for(const key of SERVER_MESSAGES)add(catalog,key,'supabase/ (database messages)');
+ for(const key of WORDS)add(catalog,key,'public/family-order-rewards.js');
  for(const dir of SQL_DIRS){
   if(!existsSync(new URL(dir,ROOT)))continue;
   for(const file of list(dir,f=>f.endsWith('.sql'))){

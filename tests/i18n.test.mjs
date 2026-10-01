@@ -64,6 +64,9 @@ test('every English text a player can see is in i18n/catalog.json (run node scri
  const now=extract(),saved=catalog();
  const added=Object.keys(now).filter(k=>!(k in saved)),gone=Object.keys(saved).filter(k=>!(k in now));
  assert.deepEqual({added:added.slice(0,20),gone:gone.slice(0,20)},{added:[],gone:[]});
+ // 1 Oct 2026: a label with a colon and a word with a hyphen looked like a storage key or an id and stayed English.
+ for(const key of ['Goal: {0}','Now:','You:','Co-leader'])assert.ok(key in now,key);
+ assert.ok(!Object.keys(now).some(k=>/^[a-z][\w-]*:(\{\d+\})?$/.test(k)),'a storage key is no text');
 });
 
 test('a language is only in the game when every text is translated, and every translation keeps the changing parts',()=>{
