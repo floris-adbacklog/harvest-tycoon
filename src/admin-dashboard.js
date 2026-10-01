@@ -92,9 +92,11 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label>From level<input id="admin-popup-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label>'
   +'<p class="admin-popup-note">Every farmer sees the pop-up once, when nothing else is open, and never in their first half hour. It ends after the time below, or after 30 days. Who installed the app is only known on the device: phones and browsers are checked when the game opens.</p></div>'
   +'<label class="admin-news-hours" id="admin-news-hours-row">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Send</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
-  // A private message from the admin to every new farmer, a few minutes after they sign up (supabase/welcome-dm.sql).
+  // A private message from the admin to every new farmer, a few minutes after they sign up (supabase/welcome-dm.sql), in the
+  // language they play in when it has a text of its own, otherwise in English (supabase/welcome-dm-languages.sql).
   +'<h3>'+art('chat')+'Welcome message</h3><form id="admin-welcome-form" class="admin-news admin-welcome" hidden><label class="admin-welcome-on"><input type="checkbox" role="switch" class="family-switch" id="admin-welcome-on"><span>Send new farmers a private message from you</span></label>'
-  +'<textarea id="admin-welcome-text" maxlength="500" rows="4" placeholder="Hi {name}, welcome to Harvest Tycoon!"></textarea><p class="admin-popup-note">{name} becomes their farmer name. They can reply; the replies come in under your private messages. Only farmers who sign up after you switch it on get it, each once.</p>'
+  +'<label class="admin-news-hours">Language<select id="admin-welcome-language">'+LANGUAGES.map(l=>`<option value="${l.code}">${esc(l.name)}</option>`).join('')+'</select></label>'
+  +'<textarea id="admin-welcome-text" maxlength="500" rows="4" placeholder="Hi {name}, welcome to Harvest Tycoon!"></textarea><p class="admin-popup-note" id="admin-welcome-language-note"></p><p class="admin-popup-note">{name} becomes their farmer name. They can reply; the replies come in under your private messages. Only farmers who sign up after you switch it on get it, each once.</p>'
   +'<label class="admin-news-hours">Send it<select id="admin-welcome-delay"><option value="1">1 minute after sign-up</option><option value="3">3 minutes after sign-up</option><option value="5">5 minutes after sign-up</option><option value="10">10 minutes after sign-up</option><option value="30">30 minutes after sign-up</option></select></label>'
   +'<button type="submit" class="primary-button">Save</button><p class="admin-hint" id="admin-welcome-status"></p></form>'
   +'<h3>'+art('admin')+'Moderators</h3><ul id="admin-mod-list" class="admin-recent-list"></ul><p class="admin-hint">Make a farmer a moderator (or not) on their profile.</p>'
@@ -375,11 +377,29 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const last=w.lastSentAt?` · last one ${new Date(w.lastSentAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
   return `${w.enabled?'On':'Off'} · sent to ${Number(w.sent??0).toLocaleString('en-US')} new farmer${w.sent===1?'':'s'}${last}`;
  }
+ // Per language: English is the text for everyone whose language has none of its own. The list marks which have one.
+ let welcome={body:'',texts:{}};
+ const welcomeLanguage=()=>dialog.querySelector('#admin-welcome-language').value;
+ function showWelcomeLanguage(){
+  const code=welcomeLanguage(),name=LANGUAGES.find(l=>l.code===code)?.name??code,own=welcome.texts?.[code];
+  for(const option of dialog.querySelectorAll('#admin-welcome-language option')){
+   const l=LANGUAGES.find(x=>x.code===option.value);
+   option.textContent=l.code==='en'?`${l.name} · everyone else`:`${l.name}${welcome.texts?.[l.code]?' ✓':' · English for now'}`;
+  }
+  const text=dialog.querySelector('#admin-welcome-text');
+  text.value=code==='en'?welcome.body??'':own??'';
+  text.placeholder=code==='en'?'Hi {name}, welcome to Harvest Tycoon!':welcome.body??'';
+  dialog.querySelector('#admin-welcome-language-note').textContent=code==='en'
+   ?'Farmers whose game language has no text of its own get this one.'
+   :own?`Farmers who play in ${name} get this text. Empty it and save to send them the English one.`
+   :`No text of its own yet: farmers who play in ${name} get the English one.`;
+ }
+ dialog.querySelector('#admin-welcome-language').addEventListener('change',showWelcomeLanguage);
  async function showWelcome(){
   const form=dialog.querySelector('#admin-welcome-form');if(!bridge.chat?.welcomeGet)return;
   try{
-   const w=await bridge.chat.welcomeGet();form.hidden=false;
-   dialog.querySelector('#admin-welcome-on').checked=!!w.enabled;dialog.querySelector('#admin-welcome-text').value=w.body??'';
+   const w=await bridge.chat.welcomeGet();form.hidden=false;welcome={...w,texts:w.texts??{}};
+   dialog.querySelector('#admin-welcome-on').checked=!!w.enabled;showWelcomeLanguage();
    const delay=dialog.querySelector('#admin-welcome-delay');delay.value=String(w.delayMinutes??3);if(delay.value!==String(w.delayMinutes??3))delay.value='3';
    dialog.querySelector('#admin-welcome-status').textContent=welcomeStatus(w);
   }catch(error){form.hidden=false;dialog.querySelector('#admin-welcome-status').textContent=error.message;}
@@ -387,8 +407,11 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-welcome-form').addEventListener('submit',async event=>{
   event.preventDefault();const status=dialog.querySelector('#admin-welcome-status');
   try{
-   const w=await bridge.chat.welcomeSave({enabled:dialog.querySelector('#admin-welcome-on').checked,body:dialog.querySelector('#admin-welcome-text').value.trim(),delay:Number(dialog.querySelector('#admin-welcome-delay').value)});
-   status.textContent=`Saved. ${welcomeStatus(w)}`;
+   const code=welcomeLanguage(),text=dialog.querySelector('#admin-welcome-text').value.trim();
+   let w=await bridge.chat.welcomeSave({enabled:dialog.querySelector('#admin-welcome-on').checked,body:code==='en'?text:welcome.body,delay:Number(dialog.querySelector('#admin-welcome-delay').value)});
+   if(code!=='en')w=await bridge.chat.welcomeSaveText({language:code,body:text});
+   welcome={...w,texts:w.texts??{}};showWelcomeLanguage();
+   status.textContent=`Saved${code==='en'?'':` (${LANGUAGES.find(l=>l.code===code)?.name})`}. ${welcomeStatus(w)}`;
   }catch(error){status.textContent=error.message;}
  });
  // Special offer: the amounts, their worth as the checkout counts it (game/payments.js), a preview, posting and the list.

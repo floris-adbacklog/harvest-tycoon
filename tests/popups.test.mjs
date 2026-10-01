@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {LANGUAGES} from '../public/languages.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {linkify,fitsDevice,POPUP_SCREENS,POPUP_AUDIENCES} from '../src/popup-ui.js';
@@ -88,4 +89,20 @@ test('a welcome message from the admin to every new farmer, a few minutes after 
  assert.match(sql,/revoke all on function public\.welcome_dm_run\(\) from public, anon, authenticated;/,'only the clock runs it');
  assert.match(admin,/<option value="3">3 minutes after sign-up<\/option>/);assert.match(admin,/\{name\} becomes their farmer name\./);
  assert.match(admin,/await bridge\.chat\.welcomeSave\(\{enabled:dialog\.querySelector\('#admin-welcome-on'\)\.checked,/);
+});
+test('the welcome message in the language the farmer plays in, English for every language without its own text',()=>{
+ const sql=read('supabase/welcome-dm-languages.sql'),admin=read('src/admin-dashboard.js'),client=read('src/chat-client.js');
+ assert.match(sql,/left join public\.player_seen seen on seen\.player_id=u\.id\n   left join public\.welcome_dm_texts t on t\.language=seen\.language/,'the game language they last played in');
+ assert.match(sql,/replace\(coalesce\(r\.own,c\.body\),'\{name\}',r\.username\)/,'their own text, otherwise English');
+ assert.match(sql,/if msg='' then delete from public\.welcome_dm_texts where language=p_language;/,'an empty text goes back to English');
+ assert.match(sql,/function public\.welcome_dm_save_text[\s\S]*?chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'/,'only the admin sets it');
+ assert.match(sql,/revoke all on public\.welcome_dm_texts from anon, authenticated;/);
+ assert.match(sql,/on conflict \(language\) do nothing;\s*$/,'a text the admin already set is kept');
+ const texts=[...sql.matchAll(/\('([a-z]{2})',\$t\$([\s\S]*?)\$t\$\)/g)];
+ const codes=texts.map(m=>m[1]).sort();
+ assert.deepEqual(codes,LANGUAGES.map(l=>l.code).filter(c=>c!=='en').sort(),'a first text for every game language');
+ for(const [,code,body] of texts){assert.ok(body.includes('{name}'),code);assert.ok([...body].length<=500,code);}
+ assert.match(client,/welcomeSaveText:\(\{language,body\}\)=>rpc\('welcome_dm_save_text',\{p_language:language,p_body:body\}\)/);
+ assert.match(admin,/<select id="admin-welcome-language">'\+LANGUAGES\.map/);
+ assert.match(admin,/if\(code!=='en'\)w=await bridge\.chat\.welcomeSaveText\(\{language:code,body:text\}\);/);
 });

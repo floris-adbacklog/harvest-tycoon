@@ -657,6 +657,7 @@
 "Choose a good":"public/rank-picker.js",
 "Choose a growing field":"public/field-picker.js",
 "Choose a herd for your ranch.":"public/farm-state.js",
+"Choose a language.":"supabase/welcome-dm-languages.sql",
 "Choose a level from 1 to 200.":"supabase/chat-broadcast-level.sql",
 "Choose a market category.":"public/farm-state.js",
 "Choose a market stall.":"public/farm-state.js",
