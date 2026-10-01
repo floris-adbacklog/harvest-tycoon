@@ -114,7 +114,7 @@ test('the Admin dashboard opens for moderators too, reading only; giving stays w
 
 test('a gift note shows the diamond and the coin in front of the amounts',()=>{
  const ui=read('src/chat-ui.js');
- assert.match(ui,/n\.kind==='gift'\|\|n\.kind==='donation'\?withAmounts\(n\.body\):n\.kind==='news'\?linkify\(n\.body\):esc\(n\.body\)/);
+ assert.match(ui,/n\.kind==='gift'\|\|n\.kind==='donation'\?giftBody\(n\.body\):n\.kind==='news'\?linkify\(n\.body\):esc\(n\.body\)/);
  assert.match(ui,/const withAmounts=text=>esc\(text\)\.replace\(/,'escaped first, then only the amounts get a picture');
 });
 
@@ -282,4 +282,14 @@ test('a message from someone else, in any chat, has a small Google Translate lin
  assert.match(read('public/chat.css'),/@media\(hover:hover\) and \(pointer:fine\)\{\.chat-translate\{opacity:0\}\.chat-msg:hover \.chat-translate/,'on a computer it shows on hover, like the menu');
  assert.match(ui,/target="_blank" rel="noopener noreferrer" aria-label="Translate with Google"/,'a new tab, without handing the game page over');
  assert.match(ui,/translateLink\(m\.body,chosenLanguage\(\)\)/,'into the language the farmer plays in');
+});
+
+test('a gift note from the database shows in the player\'s language: "You’ve received:", the amounts, and the staff\'s words untranslated',()=>{
+ const ui=read('src/chat-ui.js'),from=ui.indexOf(' const AMOUNT_ART='),to=ui.indexOf(' function noticeRow(');
+ const giftBody=new Function('art','esc',ui.slice(from,to)+';return giftBody;')(k=>`[${k}]`,s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+ const html=giftBody('Donation: you received 10 diamonds + 10 coins for every level. “We reached 2.000+ players!”');
+ assert.equal(html,'<span>You’ve received:</span> <span class="chat-amount">[diamonds]<b>10</b> diamonds</span> + <span class="chat-amount">[coins]<b>10</b> coins</span> <span>for every level</span> <span translate="no">“We reached 2.000+ players!”</span>');
+ assert.equal(giftBody('Donation: you received 50 diamonds.'),'<span>You’ve received:</span> <span class="chat-amount">[diamonds]<b>50</b> diamonds</span>','no note');
+ assert.equal(giftBody('Something else'),'Something else','any other text as before');
+ assert.match(giftBody('Donation: you received 1 diamonds. “<b>hi</b>”'),/“&lt;b&gt;hi&lt;\/b&gt;”/,'the note stays escaped');
 });

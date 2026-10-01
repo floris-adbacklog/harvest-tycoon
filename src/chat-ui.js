@@ -202,9 +202,17 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // "50 diamonds + 1,000 coins" in a gift note shows the diamond and the coin in front of the amounts.
  const AMOUNT_ART={diamonds:'diamonds',coins:'coins',XP:'xp'};
  const withAmounts=text=>esc(text).replace(/\b(\d{1,3}(?:,\d{3})+|\d+) (diamonds|coins|XP)\b/g,(all,amount,what)=>`<span class="chat-amount">${art(AMOUNT_ART[what])}<b>${amount}</b> ${what}</span>`);
+ // A gift note is made by the database in English ("Donation: you received 10 diamonds + 10 coins for every level. “…”"). It shows
+ // in the player's language (1 Oct 2026): "You’ve received:", the amounts with their pictures, and the staff's own words as written.
+ function giftBody(body){
+  const m=/^Donation: you received (.*?)\.(?: “([\s\S]*)”)?$/.exec(String(body??''));
+  if(!m)return withAmounts(body);
+  const parts=m[1].split(' + ').map(part=>/ for every level$/.test(part)?`${withAmounts(part.replace(/ for every level$/,''))} <span>for every level</span>`:withAmounts(part));
+  return `<span>You’ve received:</span> ${parts.join(' + ')}${m[2]?` <span translate="no">“${esc(m[2])}”</span>`:''}`;
+ }
  function noticeRow(n,fresh){
   const picture=n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':n.kind==='purchase'?'diamonds':n.kind==='family'?'family-members':'bell');
-  return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text">${n.kind==='gift'||n.kind==='donation'?withAmounts(n.body):n.kind==='news'?linkify(n.body):esc(n.body)}</p></div></li>`;
+  return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text">${n.kind==='gift'||n.kind==='donation'?giftBody(n.body):n.kind==='news'?linkify(n.body):esc(n.body)}</p></div></li>`;
  }
  function foundRow(p){
   return `<li><button type="button" class="chat-thread" data-start="${esc(p.playerId)}"><span class="chat-avatar">${avatarImage(p.avatarId)}</span><span class="chat-thread-copy"><strong>${esc(p.username)}</strong><small>Level ${esc(p.level)}${p.family?` · ${esc(p.family.name)}`:''}</small></span><span class="chat-thread-side"><small class="chat-write">Write</small></span></button></li>`;
