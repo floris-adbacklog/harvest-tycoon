@@ -141,12 +141,18 @@ test('the sign-in card and the website\'s wiki: the same second lock, only in th
  const welcome=read('public/welcome.css'),wiki=read('public/wiki.css');
  for(const selector of ['#social-login','.social-button','.browser-tip'])assert.ok(hiddenBy(welcome).includes(`html[data-app=android] ${selector}`),selector);
  const wikiHidden=hiddenBy(wiki);
- for(const selector of ['.wiki-install','.wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass)'])assert.ok(wikiHidden.includes(`html[data-app=android] ${selector}`),selector);
- assert.ok(wikiHidden.some(s=>s.includes('[data-wiki-anchor="sec-play-it-as-an-app"]')&&s.includes('[data-wiki-jump="sec-buying-diamonds"]')));
+ for(const selector of ['.wiki-install','.wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass,#sec-your-account,[data-shop-only])'])assert.ok(wikiHidden.includes(`html[data-app=android] ${selector}`),selector);
+ assert.ok(wikiHidden.some(s=>['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'].every(id=>s.includes(`[data-wiki-jump="${id}"]`))&&s.includes('[data-wiki-anchor="sec-play-it-as-an-app"]')),'and their chips in the jump bar');
  for(const css of [welcome,wiki])for(const selector of selectorsOf(css).filter(s=>s.includes('[data-app=')))assert.ok(selector.startsWith('html[data-app=android] '),selector);
  // The sections those rules name exist on the website's wiki (their ids come from their titles).
  const site=WIKI_TOPICS.map(t=>wikiArticle(t.id,{now:SEASON_PASS.startsAt+3600000}).html).join('\n');
- for(const id of ['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass'])assert.match(site,new RegExp(`id="${id}"`),id);
+ for(const id of ['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'])assert.match(site,new RegExp(`id="${id}"`),id);
+ // Your account on the website holds only the home screen, full screen and push reminders (the app's own line is in Getting started);
+ // the one bought thing in What opens when is the Starter Pack, and it is the one chip marked.
+ const account=wikiArticle('account').html.match(/<section class="wiki-section" id="sec-your-account">.*?<\/section>/)[0];
+ for(const browserOnly of [/home screen/,/Settings, Farm app/,/Push reminders/])assert.match(account,browserOnly,String(browserOnly));
+ assert.equal((account.match(/<li>/g)??[]).length,2,'nothing else would go with it');
+ assert.deepEqual([...wikiArticle('quests').html.matchAll(/<span class="wiki-open" data-shop-only>.*?<span>([^<]+)<\/span>/g)].map(m=>m[1]),['Starter Pack']);
 });
 
 // ---- Purchases: off in the app at the one place the farm asks (public/portal.js portalOff), plus the bridge (tests/auth-gate.test.mjs) ----
@@ -241,7 +247,7 @@ test('admin pop-ups: the app counts as installed, and a button to installing the
 test('How to play in the app: no installing the web app, no buying on our website, no browser notifications; the rest as on the website',()=>{
  const now=SEASON_PASS.startsAt+3600000,text=ctx=>WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,now,...ctx}).html).join('\n');
  const app=text({app:true}),site=text({});
- for(const gone of [/Play it as an app/,/Install the app/,/home screen/,/Buying diamonds/,/Stripe;/,/Push reminders/,/€/,/paid rewards open/,/Settings, Farm app/])
+ for(const gone of [/Play it as an app/,/Install the app/,/home screen/,/Buying diamonds/,/Stripe;/,/Push reminders/,/€/,/paid rewards open/,/Settings, Farm app/,/Starter Pack/])
   {assert.doesNotMatch(app,gone,String(gone));assert.match(site,gone,`the website keeps ${gone}`);}
  for(const kept of [/Invite a friend/,/Share my farm/,/Confirm your email/,/delete-account/,/Privacy Policy/,/Halloween Pass/,/Boosts/,/VIP/,/Your farm is saved to your account/,/Forgot your password/])assert.match(app,kept,String(kept));
  assert.doesNotMatch(wikiQuick({app:true}),/>App</);assert.match(wikiQuick({}),/>App</);

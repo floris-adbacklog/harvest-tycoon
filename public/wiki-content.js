@@ -184,10 +184,12 @@ const BODIES={
   // Everything a level opens, not only the features: buildings, crops and the recipes that come later than their building (26 Sep 2026;
   // between level 27 and 62 only buildings, crops and recipes open, and a features-only list looked empty there).
   const opens=new Map(),add=(n,html)=>{if(n>1)(opens.get(n)??opens.set(n,[]).get(n)).push(html);};
-  const chip=(picture,name,kind)=>`<span class="wiki-open">${art(picture)||art('gift')}<span>${name}</span>${kind?`<small>${kind}</small>`:''}</span>`;
+  const chip=(picture,name,kind,mark='')=>`<span class="wiki-open"${mark}>${art(picture)||art('gift')}<span>${name}</span>${kind?`<small>${kind}</small>`:''}</span>`;
   const featureArt={challenges:'quests',mastery:'trophy',activities:'helping-hand',family:'familyhall',boosts:'boost',projects:'estate'};
   for(const [key,n] of Object.entries(FEATURE_LEVELS))add(n,chip(featureArt[key]??key,featureTitle(key)));
-  add(EVENTS_LEVEL,chip('live-events','Events'));add(STARTER_LEVEL,chip('gift','Starter Pack'));
+  // The Starter Pack is bought, so never in our Android app (Oct 2026): How to play there leaves it out, and on the website's wiki
+  // data-shop-only lets public/wiki.css hide it in the app.
+  add(EVENTS_LEVEL,chip('live-events','Events'));if(!h.app)add(STARTER_LEVEL,chip('gift','Starter Pack','',' data-shop-only'));
   for(const [key,b] of Object.entries(BUILDINGS))if(b.type==='production'&&!worldTwoBuilding(key))add(buildingLevel(key),chip(key,b.name,'building'));
   for(const [key,c] of Object.entries(CROPS))add(cropLevel(key),chip(key,c.name,'crop'));
   for(const [id,r] of Object.entries(RECIPES))if(r.building!=='factory'&&!worldTwoRecipe(r)&&recipeLevel(id)>buildingLevel(r.building))add(recipeLevel(id),chip(Object.keys(r.output)[0],r.name,'recipe'));
