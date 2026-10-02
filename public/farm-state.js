@@ -2721,7 +2721,13 @@ export function familyMutate(original,state,player,action,now,options={}){
  const leader=()=>{needFamily();if(member.role!=='leader')throw new Error('Only the family leader can do this.');};
  const manager=()=>{needFamily();if(!familyManager(member.role))throw new Error('Only the family leader or a co-leader can do this.');};
  const validName=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _'-]{2,19}$/.test(value.trim());
- const joinable=()=>{if(family)throw new Error('Leave your current family first.');if((member?.cooldown_until??0)>now)throw new Error(`You can join again in ${formatDuration(member.cooldown_until-now)}.`);};
+ // Leaving or being removed never keeps a farmer from other families (2 Oct 2026; there was a 48-hour wait for every family). Only the
+ // family that removed them stays closed to them for JOIN_COOLDOWN_MS: blocked_family and cooldown_until on their member row.
+ const blockedFrom=(m,familyId)=>!!familyId&&m?.blocked_family===familyId&&(m?.cooldown_until??0)>now;
+ const blockedFor=m=>formatDuration(m.cooldown_until-now);
+ // Joining elsewhere keeps the block on the family that removed them, until it runs out.
+ const keepBlock=m=>m?.blocked_family&&(m.cooldown_until??0)>now?{cooldown_until:m.cooldown_until,blocked_family:m.blocked_family}:{cooldown_until:null,blocked_family:null};
+ const joinable=(familyId=null)=>{if(family)throw new Error('Leave your current family first.');if(blockedFrom(member,familyId))throw new Error(`This family removed you. You can join it again in ${blockedFor(member)}.`);};
  if(['family_create','family_join','family_invite','family_accept_invite','family_request'].includes(type)){
   let rate=c.attempts.find(a=>a.player_id===player);if(!rate){rate={player_id:player,window_at:now,count:0};c.attempts.push(rate);}
   if(now-rate.window_at>=3600000){rate.window_at=now;rate.count=0;}
@@ -2734,15 +2740,15 @@ export function familyMutate(original,state,player,action,now,options={}){
    const name=action.name.trim();if(c.families.some(f=>!f.deleted_at&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('That family name is taken.');
    if(!FAMILY_EMBLEMS.some(e=>e.id===action.emblem))throw new Error('Choose a family emblem.');
    family={id:uuid(),name,emblem:action.emblem,invite_code:familyCode(c,random),is_open:true,join_mode:'open',min_level:null,created_at:now,renamed_at:null,deleted_at:null};c.families.push(family);   // open from the start (27 Sep 2026; was invite only, and most families stayed a family of one)
-   const next={id:member?.id??uuid(),player_id:player,family_id:family.id,role:'leader',joined_at:now,left_at:null,cooldown_until:null};if(member)Object.assign(member,next);else c.members.push(next);member=next;
+   const next={id:member?.id??uuid(),player_id:player,family_id:family.id,role:'leader',joined_at:now,left_at:null,...keepBlock(member)};if(member)Object.assign(member,next);else c.members.push(next);member=next;
    result={message:'Your Farm Family is ready. Anyone can join it; you can change that in Family settings.'};
   }else if(type==='family_join'){
-   joinable();
+   joinable(action.familyId);
    if(action.code)throw new Error('Invite codes have been replaced. Ask the family leader or a co-leader to invite your player name.');
    const found=c.families.find(f=>f.id===action.familyId&&familyJoinMode(f)==='open'&&!f.deleted_at);
    if(!found||familyMembers(c,found.id).length>=config.MAX_MEMBERS)throw new Error('This family is unavailable or full.');
    if(levelOf(state)<familyMinLevel(found))throw new Error(`This family is for farmers from level ${familyMinLevel(found)}.`);
-   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,cooldown_until:null};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;result={message:'Welcome to your Farm Family.'};
+   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,...keepBlock(member)};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;result={message:'Welcome to your Farm Family.'};
   }else if(type==='family_invite'){
    manager();
    if(familyJoinMode(family)==='closed')throw new Error('Your family is closed to new farmers. Change who can join in Family settings first.');
@@ -2751,7 +2757,7 @@ export function familyMutate(original,state,player,action,now,options={}){
    if(target.level<minLevel)throw new Error(`This farmer needs level ${minLevel} to join a family.`);
    if(familyMembers(c,family.id).length>=config.MAX_MEMBERS)throw new Error('Your family is full.');
    if(familyCurrent(c,target.player_id))throw new Error('This farmer already belongs to a family.');
-   if((familyMember(c,target.player_id)?.cooldown_until??0)>now)throw new Error('This farmer is still in their family join cooldown.');
+   const invited=familyMember(c,target.player_id);if(blockedFrom(invited,family.id))throw new Error(`Your family removed this farmer. You can invite them again in ${blockedFor(invited)}.`);
    if(c.invitations.some(i=>i.recipient_id===target.player_id&&i.status==='pending'))throw new Error('This farmer already has a pending invitation. They must accept or decline it first.');
    c.invitations.push({id:uuid(),family_id:family.id,recipient_id:target.player_id,invited_by:player,created_at:now,expires_at:now+FAMILY_INVITATION_LIFETIME,status:'pending',resolved_at:null});
    result={message:`Invitation sent to ${target.username}.`};
@@ -2762,7 +2768,8 @@ export function familyMutate(original,state,player,action,now,options={}){
    const found=c.families.find(f=>f.id===invite.family_id&&!f.deleted_at);
    if(!found||familyMembers(c,found.id).length>=config.MAX_MEMBERS)throw new Error('This family is unavailable or full.');
    if(familyJoinMode(found)==='closed')throw new Error('This family is closed to new farmers.');
-   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,cooldown_until:null};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;
+   joinable(found.id);
+   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,...keepBlock(member)};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;
    invite.status='accepted';invite.resolved_at=now;result={message:`Welcome to ${found.name}!`};
   }else if(type==='family_decline_invite'){
    const invite=c.invitations.find(i=>i.id===action.invitationId&&i.recipient_id===player&&i.status==='pending');
@@ -2776,11 +2783,11 @@ export function familyMutate(original,state,player,action,now,options={}){
    needFamily();if(type==='family_kick')manager();const target=type==='family_leave'?member:c.members.find(m=>m.id===action.memberId&&m.family_id===family.id&&!m.left_at);
    if(!target||type==='family_kick'&&target.player_id===player)throw new Error('Choose another family member.');
    if(type==='family_kick'&&member.role==='coleader'&&familyManager(target.role))throw new Error('A co-leader cannot remove the leader or the other co-leader.');
-   // A farmer who was the only member does not wait before joining another family (27 Sep 2026: help families of one find others).
-   const alone=type==='family_leave'&&familyMembers(c,family.id).length===1;
-   const wasLeader=target.role==='leader';target.family_id=null;target.left_at=now;target.cooldown_until=alone?null:now+config.JOIN_COOLDOWN_MS;target.role='member';
+   // Leaving never waits (2 Oct 2026); a farmer who is removed can join any other family at once, only not this one for a while.
+   const kicked=type==='family_kick';
+   const wasLeader=target.role==='leader';target.family_id=null;target.left_at=now;target.cooldown_until=kicked?now+config.JOIN_COOLDOWN_MS:null;target.blocked_family=kicked?family.id:null;target.role='member';
    const remaining=familyMembers(c,family.id).sort((a,b)=>a.joined_at-b.joined_at||a.id.localeCompare(b.id));if(!remaining.length)family.deleted_at=now;else if(wasLeader)(remaining.find(m=>m.role==='coleader')??remaining[0]).role='leader';   // a co-leader first
-   result={message:type==='family_leave'?(alone?'You left your family. You can join another family right away.':'You left the family. Joining is available again in 48 hours.'):'Member removed. A 48-hour join cooldown applies.'};
+   result={message:kicked?`Member removed. They can join another family right away, but not this one for ${Math.round(config.JOIN_COOLDOWN_MS/3600000)} hours.`:'You left your family. You can join another family right away.'};
   }else if(type==='family_promote'){
    leader();const target=c.members.find(m=>m.id===action.memberId&&m.family_id===family.id&&!m.left_at&&m.player_id!==player);if(!target)throw new Error('Choose another family member.');member.role='member';target.role='leader';result={message:'Family leadership transferred.'};
   }else if(type==='family_rank'){
@@ -2804,7 +2811,7 @@ export function familyMutate(original,state,player,action,now,options={}){
    family.min_level=level>FAMILY_MIN_LEVEL?level:null;
    result={message:`Farmers from level ${level} can now join.`};
   }else if(type==='family_request'){
-   joinable();
+   joinable(action.familyId);
    const found=c.families.find(f=>f.id===action.familyId&&!f.deleted_at);
    if(!found||familyJoinMode(found)!=='request')throw new Error('This family does not take requests right now.');
    if(familyMembers(c,found.id).length>=config.MAX_MEMBERS)throw new Error('This family is full.');
@@ -2824,8 +2831,8 @@ export function familyMutate(original,state,player,action,now,options={}){
    if(type==='family_request_accept'){
     if(familyMembers(c,family.id).length>=config.MAX_MEMBERS)throw new Error('Your family is full.');
     if(familyCurrent(c,request.player_id))throw new Error(`${name} already belongs to a family.`);
-    const joiner=familyMember(c,request.player_id);if((joiner?.cooldown_until??0)>now)throw new Error(`${name} is still in their family join cooldown.`);
-    const next={id:joiner?.id??uuid(),player_id:request.player_id,family_id:family.id,role:'member',joined_at:now,left_at:null,cooldown_until:null};if(joiner)Object.assign(joiner,next);else c.members.push(next);
+    const joiner=familyMember(c,request.player_id);if(blockedFrom(joiner,family.id))throw new Error(`Your family removed ${name}. You can let them in again in ${blockedFor(joiner)}.`);
+    const next={id:joiner?.id??uuid(),player_id:request.player_id,family_id:family.id,role:'member',joined_at:now,left_at:null,...keepBlock(joiner)};if(joiner)Object.assign(joiner,next);else c.members.push(next);
     request.status='accepted';result={message:`${name} joined your family.`,accepted:request.player_id};
    }else{request.status='declined';result={message:'Request declined.',declined:request.player_id};}
    request.resolved_at=now;request.resolved_by=player;
@@ -2883,7 +2890,7 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  const pending=(c.invitations??[]).filter(i=>i.status==='pending'&&i.expires_at>now&&c.families.some(f=>f.id===i.family_id&&!f.deleted_at)&&!familyCurrent(c,i.recipient_id));
  const incoming=pending.find(i=>i.recipient_id===player);
  const invitedFamily=incoming?c.families.find(f=>f.id===incoming.family_id):null;
- const invitation=incoming?{id:incoming.id,family:card(invitedFamily),invitedBy:c.players.find(p=>p.player_id===incoming.invited_by)?.username??'Family leader',expiresAt:incoming.expires_at,canAccept:!family&&(me?.cooldown_until??0)<=now&&familyMembers(c,invitedFamily.id).length<config.MAX_MEMBERS}:null;
+ const invitation=incoming?{id:incoming.id,family:card(invitedFamily),invitedBy:c.players.find(p=>p.player_id===incoming.invited_by)?.username??'Family leader',expiresAt:incoming.expires_at,canAccept:!family&&!(me?.blocked_family===invitedFamily.id&&(me?.cooldown_until??0)>now)&&familyMembers(c,invitedFamily.id).length<config.MAX_MEMBERS}:null;
  const sentInvitations=family&&familyManager(me?.role)?pending.filter(i=>i.family_id===family.id).map(i=>({id:i.id,recipientId:i.recipient_id,username:c.players.find(p=>p.player_id===i.recipient_id)?.username??'Farmer',expiresAt:i.expires_at})):[];
 
  // Every family for a farmer without one (who can join, and how), open ones first; the farmer's own request; a leader's requests.
@@ -2898,7 +2905,8 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  const chestPoints=family?Number(c.chests?.find(r=>r.family_id===family.id&&r.week===week)?.points)||0:0,myChest=family?Number(c.chestPlayers?.find(r=>r.family_id===family.id&&r.week===week&&r.player_id===player)?.points)||0:0;
  const chest=family?{points:chestPoints,mine:myChest,minPoints:FAMILY_CHEST_MIN,tiers:FAMILY_CHEST_TIERS.map(t=>({id:t.id,name:t.name,points:t.points,reached:chestPoints>=t.points,diamonds:Math.floor(t.diamonds*extra),coins:Math.floor(t.coinsPerLevel*myLevel*extra)}))}:null;
  const alone=!!family&&familyMembers(c,family.id).length===1&&now-(me?.joined_at??now)>=FAMILY_ACTIVE_MS;
- return {chest,standing,alone,invitation,sentInvitations,families,myRequest,joinRequests,week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:familyJoinMode(family)==='open',leader:me.role==='leader',manager:familyManager(me.role),role:me.role,renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,cooldownUntil:me?.cooldown_until??0,openFamilies:c.families.filter(f=>!f.deleted_at&&familyJoinMode(f)==='open'&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview:{coins:Math.floor((current?.order_points??0)*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER),xp:Math.floor((current?.order_points??0)*config.ORDER_XP_PER_VALUE),diamonds:Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor((current?.order_points??0)/10000)),completionBonus:config.ORDER_COMPLETION_DIAMONDS},tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraFamily:config.TOURNAMENT_PER_EXTRA_FAMILY,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),placePrizes:config.TOURNAMENT_SHARES.map(share=>Math.floor(Math.max(board.total,board.firstPrize*2)*share/100)),placeShares:config.TOURNAMENT_SHARES,poolSteps:[1,2,3].map(n=>Math.round((config.TOURNAMENT_FIRST_MIN+(n-1)*config.TOURNAMENT_PER_EXTRA_FAMILY)*config.RANK_WEIGHTS.slice(0,n).reduce((a,w)=>a+w,0))),poolPerFamily:config.TOURNAMENT_PER_EXTRA_FAMILY*2,poolMax:config.TOURNAMENT_FIRST_MAX*2,familiesForMax:Math.ceil((config.TOURNAMENT_FIRST_MAX-config.TOURNAMENT_FIRST_MIN)/config.TOURNAMENT_PER_EXTRA_FAMILY)+1,familyPoints:place>=0?board.qualifying[place].points:0,pointsBehind:above?above.points-board.qualifying[place].points:0,top:board.qualifying.slice(0,10).map((f,i)=>({familyId:f.family_id,name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,familyId:r.family_id,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
+ return {chest,standing,alone,invitation,sentInvitations,families,myRequest,joinRequests,week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:familyJoinMode(family)==='open',leader:me.role==='leader',manager:familyManager(me.role),role:me.role,renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,// The one family that removed this farmer, while it is closed to them (2 Oct 2026; there was one wait for every family).
+  blocked:me?.blocked_family&&(me.cooldown_until??0)>now?{family:me.blocked_family,until:me.cooldown_until}:null,openFamilies:c.families.filter(f=>!f.deleted_at&&familyJoinMode(f)==='open'&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview:{coins:Math.floor((current?.order_points??0)*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER),xp:Math.floor((current?.order_points??0)*config.ORDER_XP_PER_VALUE),diamonds:Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor((current?.order_points??0)/10000)),completionBonus:config.ORDER_COMPLETION_DIAMONDS},tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraFamily:config.TOURNAMENT_PER_EXTRA_FAMILY,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),placePrizes:config.TOURNAMENT_SHARES.map(share=>Math.floor(Math.max(board.total,board.firstPrize*2)*share/100)),placeShares:config.TOURNAMENT_SHARES,poolSteps:[1,2,3].map(n=>Math.round((config.TOURNAMENT_FIRST_MIN+(n-1)*config.TOURNAMENT_PER_EXTRA_FAMILY)*config.RANK_WEIGHTS.slice(0,n).reduce((a,w)=>a+w,0))),poolPerFamily:config.TOURNAMENT_PER_EXTRA_FAMILY*2,poolMax:config.TOURNAMENT_FIRST_MAX*2,familiesForMax:Math.ceil((config.TOURNAMENT_FIRST_MAX-config.TOURNAMENT_FIRST_MIN)/config.TOURNAMENT_PER_EXTRA_FAMILY)+1,familyPoints:place>=0?board.qualifying[place].points:0,pointsBehind:above?above.points-board.qualifying[place].points:0,top:board.qualifying.slice(0,10).map((f,i)=>({familyId:f.family_id,name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,familyId:r.family_id,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
 }
 // A family's profile (27 Sep 2026): opened from a farmer's profile, the list of families, your own family and the tournament. Its
 // members with their levels, its level and how far to the next, and how it has done: tournaments won and on the podium, chest tiers
@@ -2920,5 +2928,5 @@ export function familyProfile(c,familyId,player,state,now,config=FAMILY_CONFIG){
   thisWeek:{chestPoints,chestTiers:familyChestTiers(chestPoints),points:board.entries.find(x=>x.family_id===f.id)?.points??0,rank:place>=0?place+1:null},
   recent:results.slice(0,5).map(r=>({week:r.week,rank:r.rank,points:r.points})),
   // What you can do here: nothing extra in your own family; otherwise join or ask, as in the list of families.
-  viewer:{member:mine?.id===f.id,inFamily:!!mine,unlocked:familyUnlocked(state),level:levelOf(state),cooldown:(me?.cooldown_until??0)>now,requestId:request?.family_id===f.id?request.id:null,requestElsewhere:!!request&&request.family_id!==f.id}};
+  viewer:{member:mine?.id===f.id,inFamily:!!mine,unlocked:familyUnlocked(state),level:levelOf(state),cooldown:me?.blocked_family===f.id&&(me?.cooldown_until??0)>now,requestId:request?.family_id===f.id?request.id:null,requestElsewhere:!!request&&request.family_id!==f.id}};
 }

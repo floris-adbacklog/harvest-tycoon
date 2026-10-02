@@ -154,11 +154,10 @@ test('Settlement excludes departed members; inactive members remain without rewa
  const c=tournamentContext([3],[5000]);c.members[0].family_id=null;c.members[0].left_at=now;c.members.push({id:'inactive',player_id:'inactive',family_id:'f0',role:'member',joined_at:now,left_at:null});settleFamilyWeeks(c,familyWeekStart(week+1));
  assert.equal(c.results[0].active_members,2);assert.equal(c.members.length,4);assert.ok(!c.rewards.some(r=>['p0-0','inactive'].includes(r.player_id)));
 });
-test('Leave passes leadership to oldest member and enforces cooldown and weekly lock',()=>{
+test('Leave passes leadership to oldest member, lets the farmer start again at once, and keeps the weekly lock',()=>{
  let c=join(join(create(),'bob',now+1),'carol',now+2);const item=Object.keys(c.orders[0].lines)[0];c=contribution(c,'alice',item,10).context;
  c=run(c,farm(),'alice',{type:'family_leave'},now+10).context;assert.equal(c.members.find(m=>m.player_id==='bob').role,'leader');
- assert.ok(run(c,farm(),'alice',{type:'family_create',name:'New place',emblem:'0'},now+DAY_MS).failed);
- const later=now+C.JOIN_COOLDOWN_MS+11;c=run(c,farm(),'alice',{type:'family_create',name:'New place',emblem:'0'},later).context;
+ const later=now+11;c=run(c,farm(),'alice',{type:'family_create',name:'New place',emblem:'0'},later).context;
  const newOrder=c.orders.find(o=>o.family_id===c.members.find(m=>m.player_id==='alice').family_id),s=farm(),k=Object.keys(newOrder.lines)[0];s.inventory[k]=100;
  assert.throws(()=>run(c,s,'alice',{type:'family_contribute',week,item:k,count:1},later),/one family/);
  let alone=create();alone=run(alone,farm(),'alice',{type:'family_leave'}).context;assert.ok(alone.families[0].deleted_at);assert.equal(alone.orders.length,1);
@@ -168,7 +167,7 @@ test('Leader permissions, open joining, kick cooldown, code regeneration and ren
  c=run(c,farm(),'alice',{type:'family_open',open:true}).context;c=run(c,farm(),'carol',{type:'family_join',familyId:c.families[0].id}).context;
  assert.throws(()=>run(c,farm(),'alice',{type:'family_code'}),/valid family action/);
  c=run(c,farm(),'alice',{type:'family_rename',name:'New meadow'}).context;assert.throws(()=>run(c,farm(),'alice',{type:'family_rename',name:'Again'},now+DAY_MS),/seven/);
- c=run(c,farm(),'alice',{type:'family_kick',memberId:c.members.find(m=>m.player_id==='bob').id}).context;assert.equal(c.members.find(m=>m.player_id==='bob').cooldown_until,now+C.JOIN_COOLDOWN_MS);
+ c=run(c,farm(),'alice',{type:'family_kick',memberId:c.members.find(m=>m.player_id==='bob').id}).context;assert.equal(c.members.find(m=>m.player_id==='bob').cooldown_until,now+C.JOIN_COOLDOWN_MS);assert.equal(c.members.find(m=>m.player_id==='bob').blocked_family,c.families[0].id,'only the family that removed him');
  c=run(c,farm(),'alice',{type:'family_promote',memberId:c.members.find(m=>m.player_id==='carol').id}).context;assert.equal(c.members.find(m=>m.player_id==='carol').role,'leader');
 });
 test('Failed invite attempts are persisted and limited, including alternating create requests',()=>{
@@ -233,4 +232,23 @@ test('new emblems preserve existing IDs and only leaders may change them',()=>{
 test('family standings expose at most ten ranked families while retaining all contributors for prize sizing',()=>{
  const c=tournamentContext(Array(12).fill(1),Array.from({length:12},(_,i)=>1000-i));
  const v=familyPublicView(c,'p0-0',farm(),now);assert.equal(v.tournament.top.length,10);assert.equal(v.tournament.activePlayers,12);assert.equal(v.tournament.top[0].diamonds,188);assert.equal(v.tournament.top[9].diamonds,30,'tenth place wins too');
+});
+
+test('a farmer who is removed can join any other family at once, but not the one that removed them for 48 hours (2 Oct 2026)',()=>{
+ let c=join(create());c=run(c,farm(),'alice',{type:'family_open',open:true}).context;const home=c.families[0].id;
+ c=run(c,farm(),'alice',{type:'family_kick',memberId:c.members.find(m=>m.player_id==='bob').id}).context;
+ const back=run(c,farm(),'bob',{type:'family_join',familyId:home});assert.equal(back.failed,true);assert.match(back.result.error,/removed you/);
+ c=run(c,farm(),'carol',{type:'family_create',name:'Elsewhere',emblem:'1'}).context;const other=c.families.find(f=>f.name==='Elsewhere').id;
+ const moved=run(c,farm(),'bob',{type:'family_join',familyId:other});assert.equal(moved.failed,false,'another family at once');
+ assert.equal(moved.context.members.find(m=>m.player_id==='bob').blocked_family,home,'the block on the first family stays while it runs');
+ const view=familyPublicView(c,'bob',farm(),now);assert.equal(view.blocked.family,home);
+ assert.equal(run(c,farm(),'bob',{type:'family_join',familyId:home},now+C.JOIN_COOLDOWN_MS+1).failed,false,'after 48 hours the first family is open again');
+});
+test('the database keeps which family removed a farmer, and frees everyone who waited under the old rule',()=>{
+ const sql=readFileSync(new URL('../supabase/family-kick-block.sql',import.meta.url),'utf8');
+ assert.match(sql,/alter table public\.family_members add column if not exists blocked_family uuid;/);
+ assert.match(sql,/execute replace\(d,'cooldown_until=excluded\.cooldown_until;','cooldown_until=excluded\.cooldown_until,blocked_family=excluded\.blocked_family;'\);/,'the commit writes it for a member who already has a row');
+ assert.match(sql,/raise exception 'harvest_family_commit is not as expected/,'and stops rather than guess');
+ assert.match(sql,/update public\.family_members set cooldown_until=null where cooldown_until is not null and blocked_family is null;/);
+ assert.match(readFileSync(new URL('../public/wiki-content.js',import.meta.url),'utf8'),/You can join another family straight away\. Only the family that removed you stays closed to you for/);
 });

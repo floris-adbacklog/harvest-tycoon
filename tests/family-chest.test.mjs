@@ -75,10 +75,10 @@ test('what the Family screen and the farm get: chest, level, flag data, and a nu
  const later=now+4*86400000;assert.equal(familyPublicView(out.context,'lea',s,later).alone,true,'alone for three days');
 });
 
-test('a farmer who was alone in a family can leave and join another one straight away',()=>{
+test('a farmer who leaves a family can join another one straight away, alone or not (2 Oct 2026: there was a 48-hour wait)',()=>{
  let c=family();
  const left=run(c,'lea',{type:'family_leave'});assert.equal(left.context.members.find(m=>m.player_id==='lea').cooldown_until,null);assert.match(left.result.message,/right away/);
- c=family('bo');const bo=run(c,'bo',{type:'family_leave'});assert.ok(bo.context.members.find(m=>m.player_id==='bo').cooldown_until>now,'leaving a family with others still waits 48 hours');
+ c=family('bo');const bo=run(c,'bo',{type:'family_leave'});assert.equal(bo.context.members.find(m=>m.player_id==='bo').cooldown_until,null,'leaving a family with others waits no more');assert.match(bo.result.message,/right away/);
 });
 
 test('the family list puts families you can join first, the busiest on top',()=>{

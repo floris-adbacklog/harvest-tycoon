@@ -186,7 +186,7 @@ const BODIES={
   ]))
   +section('Family chat',`<p>Your family has its own chat. See ${h.link('chat')}.</p>`)
   +section('Events together',`<p>When ${FAMILY_EVENT_BONUS.finishers} or more members of your family finish the same event, each of them gets ${art('coins')}${number(FAMILY_EVENT_BONUS.coins)} and ${art('diamonds')}${FAMILY_EVENT_BONUS.diamonds} on top of their own prize. See ${h.link('events')}.</p>`)
-  +section('Changing family',`<p>After you leave a family you can join another after ${Math.round(FAMILY_CONFIG.JOIN_COOLDOWN_MS/3600000)} hours. Were you its only member? Then you can join another family straight away.</p>`);
+  +section('Changing family',`<p>Left a family, or did a family remove you? You can join another family straight away. Only the family that removed you stays closed to you for ${Math.round(FAMILY_CONFIG.JOIN_COOLDOWN_MS/3600000)} hours.</p>`);
  },
  events(h){
   return section('Short shared goals',`<p>${h.lvl(EVENTS_LEVEL)} An event runs for 5 hours, then there is a 1-hour break before the next one. Everyone plays toward the same goals. Events open as soon as you reach level ${EVENTS_LEVEL}.</p>`)

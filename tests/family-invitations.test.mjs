@@ -40,13 +40,14 @@ test('expired invitations are removed from the active inbox and can be replaced'
 test('level, capacity, membership, self and cooldown checks reject unavailable recipients',()=>{
  let c=fixture();c.players.find(p=>p.player_id==='r').level=9;assert.match(invite(c).result.error,/level 10/);
  c=fixture();assert.match(invite(c,'a','a').result.error,/another/);assert.match(invite(c,'a','b').result.error,/already belongs/);assert.match(invite(c,'a','missing').result.error,/another/);
- c=fixture();c.members.push({player_id:'r',family_id:null,left_at:now-1,cooldown_until:now+1000});assert.match(invite(c).result.error,/cooldown/);
+ c=fixture();c.members.push({player_id:'r',family_id:null,left_at:now-1,cooldown_until:now+1000,blocked_family:c.families[0].id});assert.match(invite(c).result.error,/removed this farmer/);
+ c=fixture();c.members.push({player_id:'r',family_id:null,left_at:now-1,cooldown_until:now+1000,blocked_family:'another'});assert.equal(invite(c).failed,false,'removed by another family: free to invite');
  c=fixture();const id=c.families[0].id;for(let j=0;j<FAMILY_CONFIG.MAX_MEMBERS-1;j++)c.members.push({player_id:`f${j}`,family_id:id,left_at:null,role:'member'});assert.match(invite(c).result.error,/full/);
 });
 test('accept rechecks capacity and cooldown without consuming a still-valid invitation',()=>{
  let c=invite(fixture()).context,i=pending(c);for(let j=0;j<FAMILY_CONFIG.MAX_MEMBERS-1;j++)c.members.push({player_id:`f${j}`,family_id:i.family_id,left_at:null,role:'member'});
  let r=run(c,'r',{type:'family_accept_invite',invitationId:i.id});assert.equal(r.failed,true);assert.match(r.result.error,/full/);assert.equal(pending(r.context).id,i.id);
- c=invite(fixture()).context;i=pending(c);c.members.push({player_id:'r',family_id:null,left_at:now-1,cooldown_until:now+1000});r=run(c,'r',{type:'family_accept_invite',invitationId:i.id});assert.match(r.result.error,/join again/);
+ c=invite(fixture()).context;i=pending(c);c.members.push({player_id:'r',family_id:null,left_at:now-1,cooldown_until:now+1000,blocked_family:i.family_id});r=run(c,'r',{type:'family_accept_invite',invitationId:i.id});assert.match(r.result.error,/removed you/);
 });
 test('joining or creating another family clears the pending invitation; dissolved families cancel theirs',()=>{
  let c=invite(fixture()).context;c=run(c,'r',{type:'family_create',name:'New Place',emblem:'0'}).context;assert.equal(c.invitations[0].status,'cancelled');
