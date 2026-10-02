@@ -25,7 +25,7 @@ export const TOOL_ART=Object.freeze({
 // Made once per tool (it is asked on every mouse move); the fallback is joined on, so the translation catalog never takes ", pointer"
 // for a text.
 export const CURSOR_PX=40;
-const CURSORS=new Map(),LOADING=new Set();
+const CURSORS=new Map(),LOADING=new Set(),LOADED=new Set();
 function drawingCursor(art){
  if(!art.svg)return '';
  const svg=art.svg.replace('<svg ','<svg width="32" height="32" ');
@@ -37,13 +37,13 @@ function pictureCursor(img,art,doc){
  const sharp=[['image-set(',`url("${one}") 1x, url("${png(CURSOR_PX*2)}") 2x`,')'].join(''),x,y].join(' ');   // joined, as above
  return [globalThis.CSS?.supports?.('cursor',[sharp,'pointer'].join(', '))?sharp:plain,'pointer'].join(', ');
 }
-// Loads the painted tool once; when it is there its cursor replaces the drawing from the next mouse move on. Without a browser (the
-// tests) nothing loads and the drawing stays.
+// Loads the painted tool once; when it is there its cursor replaces the drawing from the next mouse move on (and LOADED tells the hand
+// the picture is there). Without a browser (the tests) nothing loads and the drawing stays.
 function loadCursor(action,art){
  const doc=globalThis.document,Img=globalThis.Image;
  if(LOADING.has(action)||!doc||typeof Img!=='function')return;
  LOADING.add(action);const img=new Img();
- img.onload=()=>{try{CURSORS.set(action,pictureCursor(img,art,doc));}catch{}};   // a canvas that cannot be read keeps the drawing
+ img.onload=()=>{LOADED.add(action);try{CURSORS.set(action,pictureCursor(img,art,doc));}catch{}};   // a canvas that cannot be read keeps the drawing
  img.src=art.picture;
 }
 export function toolCursor(action){
@@ -53,7 +53,8 @@ export function toolCursor(action){
  return CURSORS.get(action);
 }
 // Puts a tool's painted picture in el at size px, with its working point as --hot-x/--hot-y (the point on the pointer and the turning
-// point of the swing). If the picture cannot load the inline drawing takes its place (care has none: then the hand stays empty).
+// point of the swing). If the picture cannot load the inline drawing takes its place (care has none: the hand only takes its gloves
+// once they have loaded, see createSweepTool).
 function holdTool(el,art,size){
  const img=el.ownerDocument.createElement('img'),hot=([x,y],of)=>{el.style.setProperty('--hot-x',`${x*size/of}px`);el.style.setProperty('--hot-y',`${y*size/of}px`);};
  img.alt='';img.draggable=false;img.decoding='async';
@@ -62,11 +63,14 @@ function holdTool(el,art,size){
 }
 // The tool in the hand during a sweep with a mouse: it follows the pointer, faces the way it moves and swings at each field it works
 // (no swing when motion is reduced). 48 px, the painted picture (it is loaded already: the cursor over the first field asked for it).
+// Review (Oct 2026): a tool without a drawing (care) is only taken in the hand once its picture has loaded. The cursor hides while the
+// hand holds a tool, so gloves that are not there (yet, or at all) would leave a care sweep without any pointer; it keeps the plain
+// pointer instead, as care had before.
 export function createSweepTool({doc=globalThis.document,reducedMotion=false}={}){
  const el=doc.createElement('div');el.className='sweep-tool';el.setAttribute('aria-hidden','true');el.hidden=true;doc.body.append(el);
  let kind='';
  return {
-  show(action){kind=TOOL_ART[action]?action:'';if(!kind){el.hidden=true;return;}if(el.dataset.tool!==kind){el.dataset.tool=kind;holdTool(el,TOOL_ART[kind],48);}},
+  show(action){const art=TOOL_ART[action];kind=art&&(art.svg||LOADED.has(action))?action:'';if(!kind){el.hidden=true;return;}if(el.dataset.tool!==kind){el.dataset.tool=kind;holdTool(el,TOOL_ART[kind],48);}},
   move(x,y,dx=0){if(!kind)return false;el.hidden=false;el.style.translate=`${x}px ${y}px`;if(Math.abs(dx)>1.5)el.classList.toggle('to-left',dx<0);return true;},
   cut(){if(reducedMotion||el.hidden)return;el.classList.remove('is-cutting');void el.offsetWidth;el.classList.add('is-cutting');},
   hide(){kind='';el.hidden=true;el.classList.remove('is-cutting');},

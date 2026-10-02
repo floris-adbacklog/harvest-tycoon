@@ -144,6 +144,19 @@ test('the four painted tools are 256 px WebP pictures with transparency, listed 
  assert.doesNotMatch(read('public/sweep-tools.js'),/\.png/,'no PNG picture is asked for');
 });
 
+// A small stand-in for the page: elements with children, attributes, listeners and style properties (the tool in the hand and the ghost).
+function fakeDoc(){
+ const doc={};
+ class El{
+  constructor(tag){Object.assign(this,{tagName:tag.toUpperCase(),ownerDocument:doc,dataset:{},children:[],listeners:{},attrs:{},parentNode:null,classList:{toggle(){},add(){},remove(){}},style:{props:{},setProperty(k,v){this.props[k]=v;}}});}
+  setAttribute(k,v){this.attrs[k]=v;}addEventListener(type,fn){this.listeners[type]=fn;}remove(){this.removed=true;}
+  append(c){this.children.push(c);c.parentNode=this;}replaceChildren(...c){this.children=c;for(const x of c)x.parentNode=this;}
+  set outerHTML(html){const p=this.parentNode;p.children=p.children.map(c=>c===this?{html}:c);this.parentNode=null;}
+ }
+ doc.createElement=tag=>new El(tag);doc.body=new El('body');
+ return doc;
+}
+
 test('once a painted tool has loaded it is the cursor: drawn once at 40 px (and 80 px for sharp screens) as a PNG, its working point the hot spot; a picture that cannot load keeps the drawing',async()=>{
  const keys=['document','Image','CSS'],saved=Object.fromEntries(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
  const images=[],drawn=[];let unreadable=false;
@@ -151,7 +164,7 @@ test('once a painted tool has loaded it is the cursor: drawn once at 40 px (and 
  globalThis.document={createElement(tag){assert.equal(tag,'canvas');const c={width:0,height:0,getContext:()=>({drawImage:(img,x,y,w,h)=>drawn.push([img.src,w,h])}),toDataURL(type){if(unreadable)throw new Error('tainted');return `data:${type};base64,${c.width}`;}};return c;}};
  globalThis.CSS={supports:(prop,value)=>prop==='cursor'&&value.startsWith('image-set(')};
  try{
-  const {toolCursor:cursor}=await import('../public/sweep-tools.js?browser');
+  const {toolCursor:cursor,createSweepTool:hold}=await import('../public/sweep-tools.js?browser');
   assert.match(cursor('harvest'),/^url\("data:image\/svg\+xml,/,'the drawing until the picture is there');
   assert.equal(images.length,1);assert.equal(images[0].src,'/assets/icons/tool-sickle.webp');
   cursor('harvest');cursor('harvest');assert.equal(images.length,1,'loaded once');
@@ -161,6 +174,10 @@ test('once a painted tool has loaded it is the cursor: drawn once at 40 px (and 
   // Where a browser takes no image-set for a cursor: the 40 px picture alone. Care gets its gloves.
   globalThis.CSS={supports:()=>false};
   assert.equal(cursor('tend'),'');images[1].onload();assert.equal(cursor('tend'),'url("data:image/png;base64,40") 2 3, pointer');
+  // Once the gloves have loaded, a care sweep holds them (48 px, the leaf tip on the pointer).
+  const doc=fakeDoc(),tool=hold({doc}),hand=doc.body.children[0];
+  tool.show('tend');const [gloves]=hand.children;assert.equal(gloves.tagName,'IMG');assert.equal(gloves.src,'/assets/icons/tool-gloves.webp');
+  assert.deepEqual(hand.style.props,{'--hot-x':'1.875px','--hot-y':'3px'});assert.equal(tool.move(10,20),true,'care has a tool in the hand now');
   // A picture that cannot load, or a canvas that cannot be read, keeps the drawing.
   cursor('water');images[2].onerror?.();assert.match(cursor('water'),/^url\("data:image\/svg\+xml,.*"\) 4 11, pointer$/);
   unreadable=true;cursor('plant');images[3].onload();assert.match(cursor('plant'),/^url\("data:image\/svg\+xml,.*"\) 6 6, pointer$/);
@@ -168,20 +185,15 @@ test('once a painted tool has loaded it is the cursor: drawn once at 40 px (and 
 });
 
 test('in the hand and in Show me the tool is the painted picture (an <img>), with its working point scaled to the size shown; the drawing if it cannot load',()=>{
- const doc={};
- class El{
-  constructor(tag){Object.assign(this,{tagName:tag.toUpperCase(),ownerDocument:doc,dataset:{},children:[],listeners:{},attrs:{},parentNode:null,classList:{toggle(){},add(){},remove(){}},style:{props:{},setProperty(k,v){this.props[k]=v;}}});}
-  setAttribute(k,v){this.attrs[k]=v;}addEventListener(type,fn){this.listeners[type]=fn;}remove(){this.removed=true;}
-  append(c){this.children.push(c);c.parentNode=this;}replaceChildren(...c){this.children=c;for(const x of c)x.parentNode=this;}
-  set outerHTML(html){const p=this.parentNode;p.children=p.children.map(c=>c===this?{html}:c);this.parentNode=null;}
- }
- doc.createElement=tag=>new El(tag);doc.body=new El('body');
+ const doc=fakeDoc();
  const tool=createSweepTool({doc}),hand=doc.body.children[0];
- tool.show('tend');let [img]=hand.children;
- assert.equal(img.tagName,'IMG');assert.equal(img.src,'/assets/icons/tool-gloves.webp');assert.equal(img.alt,'');assert.equal(img.draggable,false);
- assert.deepEqual(hand.style.props,{'--hot-x':'1.875px','--hot-y':'3px'},'48 px in the hand');
- assert.equal(tool.move(10,20),true,'care has a tool in the hand now');
- tool.show('harvest');[img]=hand.children;assert.equal(img.src,'/assets/icons/tool-sickle.webp');
+ // Review (Oct 2026): care has no drawing, so until its gloves have loaded (here nothing loads) the hand stays empty and the cursor
+ // keeps its plain pointer: game.js hides the cursor only while move() says a tool is in the hand.
+ tool.show('tend');assert.equal(hand.children.length,0);assert.equal(tool.move(10,20),false,'no hidden cursor without a tool in the hand');assert.equal(hand.hidden,true);
+ tool.show('harvest');let [img]=hand.children;
+ assert.equal(img.tagName,'IMG');assert.equal(img.src,'/assets/icons/tool-sickle.webp');assert.equal(img.alt,'');assert.equal(img.draggable,false);
+ assert.deepEqual(hand.style.props,{'--hot-x':`${47*48/256}px`,'--hot-y':`${10*48/256}px`},'48 px in the hand');
+ assert.equal(tool.move(10,20),true);
  img.listeners.error();assert.equal(hand.children[0].html,TOOL_ART.harvest.svg,'the drawing if the picture cannot load');
  assert.deepEqual(hand.style.props,{'--hot-x':'14px','--hot-y':'18px'},'with the drawing\'s own working point');
  const ghost=createSweepGhost({doc,win:{requestAnimationFrame:()=>1,cancelAnimationFrame(){},performance:{now:()=>0}},reducedMotion:true});
