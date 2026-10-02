@@ -26,6 +26,7 @@ export function audioSettings(value={}){
 export const SOUND_CUES=Object.freeze({
  plant:{notes:[196,294],step:.065,duration:.13,volume:.09,type:'triangle'},
  harvest:{notes:[392,523.25,659.25],step:.065,duration:.24,volume:.11},
+ snip:{notes:[783.99],step:.05,duration:.07,volume:.05,type:'triangle'},
  water:{notes:[620,820,710],step:.075,duration:.15,volume:.065,glide:.53},
  care:{notes:[523.25,783.99],step:.08,duration:.28,volume:.09},
  sell:{notes:[880,1174.66],step:.075,duration:.2,volume:.075},
@@ -70,6 +71,11 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
  return {sell:'sell',produce:'produce',collect:'collect',collect_all:'collect',upgrade:'upgrade',expand:'expand',quest:'quest',mastery:'reward',level_rewards:'reward',delivery:'delivery',tractor:'tractor',chore:'chore',fertilize:'care',stall_collect:'stall',stall_upgrade:'upgrade',project_start:'produce',project_collect:'reward',silo_upgrade:'upgrade',buy_boost:'boost',
   construct:'construct',finish_crop:'finish',finish_batch:'finish',valley_sell:'valley',fair_enter:'fair',improve:'improve'}[action.type]??null;
 }
+// A sweep's snip per field (Oct 2026): step n of the sweep (from 0) is a step higher on a pentatonic scale, up to an octave and then
+// it stays there; every sweep starts low again.
+export const SNIP_SCALE=Object.freeze([0,2,4,7,9,12]);
+export const snipRate=n=>2**(SNIP_SCALE[Math.min(Math.max(0,Math.floor(n)||0),SNIP_SCALE.length-1)]/12);
+export const SNIP_GAP=.055;
 export function createProductionCueTracker(buildings,now){
  let previous=new Map();
  const key=(id,j)=>`${id}:${j.id??j.recipe+':'+j.startedAt}`;
@@ -96,7 +102,7 @@ function renderInBackground(windowRef,accept){
 }
 export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic,renderSounds=renderInBackground}={}){
  let settings={...AUDIO_DEFAULTS},ctx,master,ambientBus,effectBus,musicBuffer=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;
- let nextEffectAt=0,priorityUntil=0,resuming=null;
+ let nextEffectAt=0,priorityUntil=0,resuming=null,lastSnip=-Infinity;
  const voices=new Set(),lastPlayed=new Map();
  try{storage??=windowRef?.localStorage;settings=audioSettings(JSON.parse(storage?.getItem(AUDIO_STORAGE_KEY)??'{}'));}catch{}
  const active=()=>!disposed&&unlocked&&settings.enabled&&!documentRef?.hidden;
@@ -110,7 +116,7 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  }
  function silence(){
   if(!ctx)return;master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(0,ctx.currentTime);stopBed();for(const v of [...voices])stopVoice(v);
-  nextEffectAt=0;priorityUntil=0;lastPlayed.clear();
+  nextEffectAt=0;priorityUntil=0;lastSnip=-Infinity;lastPlayed.clear();
   if(ctx.state!=='closed')Promise.resolve(ctx.suspend()).catch(()=>{});
  }
  function makeContext(){
@@ -130,12 +136,12 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   if(stopRendering)return;
   stopRendering=renderSounds(windowRef,(kind,variant,data,rate)=>{if(!ctx||disposed)return;try{const buffer=ctx.createBuffer(1,data.length,rate);buffer.getChannelData(0).set(data);rendered.set(`${kind}:${variant}`,buffer);}catch{}})??(()=>{});
  }
- function sample(kind,when){
+ function sample(kind,when,rate=1){
   const variant=(turns.get(kind)??0)%(CUE_VARIANTS[kind]??1),buffer=rendered.get(`${kind}:${variant}`);turns.set(kind,variant+1);
   if(!buffer)return false;
   if(voices.size>=16)return true;
   const source=ctx.createBufferSource(),voice={source,cleanup:()=>{voices.delete(voice);source.disconnect();}};
-  source.buffer=buffer;source.connect(effectBus);source.onended=voice.cleanup;voices.add(voice);source.start(when);return true;
+  source.buffer=buffer;if(rate!==1)source.playbackRate.value=rate;source.connect(effectBus);source.onended=voice.cleanup;voices.add(voice);source.start(when);return true;
  }
  // Every short voice disconnects when it ends; rapid actions cannot pile up.
  function note(frequency,when,duration,volume,bus,type='sine',glide=1){
@@ -190,19 +196,27 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
    if(!sample(kind,now+.015))cue.notes.forEach((f,i)=>note(f,now+.015+i*cue.step,cue.duration,cue.volume,effectBus,cue.type??'sine',cue.glide??1));return true;
   }catch{return false;}
  }
+ // A sweep cuts a field every few frames, so its snips have their own way past the one-cue-at-a-time rule of play(): at most one
+ // every SNIP_GAP seconds (a quicker field stays silent), never over a level-up, and they leave the closing chime free to play.
+ function snip(n){
+  if(!active()||!settings.effects||ctx?.state!=='running')return false;
+  const now=ctx.currentTime;if(now-lastSnip<SNIP_GAP||now<priorityUntil)return false;
+  try{lastSnip=now;const rate=snipRate(n),cue=SOUND_CUES.snip;if(!sample('snip',now+.005,rate))note(cue.notes[0]*rate,now+.005,cue.duration,cue.volume,effectBus,cue.type);return true;}catch{return false;}
+ }
  function setSettings(next){
   settings=audioSettings({...settings,...next});try{storage?.setItem(AUDIO_STORAGE_KEY,JSON.stringify(settings));}catch{}
   onChange(read());
   if(!settings.enabled){silence();return;}
   if(unlocked)void unlock();
  }
- function gesture(event){if(event.isTrusted&&(event.type!=='keydown'||['Enter',' ','1','2','3','4'].includes(event.key)))void unlock();}
+ // A mouse button going down counts too (Oct 2026), so a first sweep with the mouse already has its snips.
+ function gesture(event){if(event.isTrusted&&(event.type!=='keydown'||['Enter',' ','1','2','3','4'].includes(event.key))&&(event.type!=='pointerdown'||event.pointerType==='mouse'))void unlock();}
  function visibility(){if(documentRef.hidden)silence();else if(unlocked)void unlock();}
  function pagehide(event){if(event.persisted)silence();else dispose();}
  function pageshow(event){if(event.persisted&&unlocked)void unlock();}
- function dispose(){if(disposed)return;disposed=true;stopRendering?.();silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);musicBuffer=null;if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
- documentRef?.addEventListener('pointerup',gesture,true);documentRef?.addEventListener('keydown',gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
- return {settings:read,setSettings,unlock,play,dispose};
+ function dispose(){if(disposed)return;disposed=true;stopRendering?.();silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('pointerdown',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);musicBuffer=null;if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
+ documentRef?.addEventListener('pointerup',gesture,true);documentRef?.addEventListener('pointerdown',gesture,true);documentRef?.addEventListener('keydown',gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
+ return {settings:read,setSettings,unlock,play,snip,dispose};
 }
 
 export function withActionSounds(runAction,getLevel,play){

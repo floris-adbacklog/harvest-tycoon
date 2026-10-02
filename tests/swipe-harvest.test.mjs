@@ -12,10 +12,10 @@ function setup(work,pointerType='touch'){
  const canvas={addEventListener:(type,fn)=>{handlers[type]=fn;},setPointerCapture(){},hasPointerCapture:()=>false,releasePointerCapture(){}};
  const pick=e=>e.clientY<100?{type:'plot',id:Math.floor(e.clientX/50)}:null;
  bindFarmInput({canvas,isReady:()=>true,pick,open:t=>log.opened.push(t.id),pan:()=>log.pan++,zoom(){},
-  sweep:{action:t=>work[t.id]??null,add:t=>log.added.push(t.id),end:(action,ids)=>{log.ended={action,ids};}},
+  sweep:{action:t=>work[t.id]??null,add:(t,action)=>{log.added.push(t.id);(log.actions??=[]).push(action);},end:(action,ids)=>{log.ended={action,ids};}},
   later:(fn,ms)=>{assert.equal(ms,SWIPE_HOLD_MS);waiting=fn;return 7;},cancelLater:id=>{if(id===7)waiting=null;}});
- const at=(type,x,y,id=1)=>handlers[type]({pointerId:id,pointerType,button:0,clientX:x,clientY:y,preventDefault(){}});
- return {log,at,hold:()=>{const fn=waiting;waiting=null;fn?.();}};
+ const at=(type,x,y,id=1,button=0)=>handlers[type]({pointerId:id,pointerType,button,clientX:x,clientY:y,preventDefault(){}});
+ return {log,at,handlers,hold:()=>{const fn=waiting;waiting=null;fn?.();}};
 }
 
 test('a swipe that starts on a ripe field harvests every ripe field it passes, even on a quick swipe, and does not move the map',()=>{
@@ -23,6 +23,7 @@ test('a swipe that starts on a ripe field harvests every ripe field it passes, e
  at('pointerdown',20,50);hold();assert.deepEqual(log.added,[0],'the held field lights up');at('pointermove',120,50);at('pointermove',230,50);at('pointerup',230,50);
  assert.deepEqual(log.ended,{action:'harvest',ids:[0,1,3,4]},'field 2 only needs water, so it is skipped');
  assert.deepEqual(log.added,[0,1,3,4]);assert.equal(log.pan,0);assert.deepEqual(log.opened,[]);
+ assert.deepEqual(log.actions,['harvest','harvest','harvest','harvest'],'each field is handed over the moment it is passed, with the sweep\'s work (Oct 2026)');
 });
 
 test('a drag that starts on grass or on a field with nothing to do still moves the map; a tap still works one field',()=>{
@@ -46,6 +47,20 @@ test('on a touchscreen a quick drag from a ripe or empty field moves the farm: o
  assert.deepEqual(s.log.ended,{action:'harvest',ids:[0,1]},'a mouse swipes straight away, as before');
  const texts=read('public/wiki-content.js')+read('public/loading-screen.js');
  assert.match(texts,/hold a field for a moment/i,'the wiki and the tips say how');
+});
+
+// Oct 2026: on a computer a right- or middle-button drag always moves the farm, also from a ripe or empty field (in the fields view
+// nearly every spot is a field), and those buttons never work a field, not even on a click. The left button sweeps and taps as before.
+test('a right- or middle-button drag with a mouse always moves the farm and never works a field',()=>{
+ for(const button of [1,2]){
+  const s=setup({0:'harvest',1:'plant',2:'harvest'},'mouse');
+  s.at('pointerdown',20,50,1,button);s.at('pointermove',120,50,1,button);s.at('pointermove',140,50,1,button);s.at('pointerup',140,50,1,button);
+  assert.ok(s.log.pan>0,`button ${button} moves the farm`);assert.equal(s.log.ended,null);assert.deepEqual(s.log.added,[]);assert.deepEqual(s.log.opened,[]);
+  const c=setup({0:'harvest'},'mouse');c.at('pointerdown',20,50,1,button);c.at('pointerup',20,50,1,button);
+  assert.deepEqual(c.log.opened,[],'a right click on a ripe field harvests nothing');
+ }
+ const t=setup({0:'harvest'},'touch');t.at('pointerdown',20,50,1,2);t.at('pointerup',20,50,1,2);assert.deepEqual(t.log.opened,[],'only the mouse');
+ let menu=false;setup({}).handlers.contextmenu({preventDefault(){menu=true;}});assert.ok(menu,'no browser menu after a right-button drag');
 });
 
 test('a second finger turns a swipe that has not started into a pinch',()=>{
@@ -75,7 +90,9 @@ test('the server works the swiped fields in one save: only where the work fits, 
 test('the game wires the swipe to one save and lights the swiped fields; labels lost their extra icon',()=>{
  const game=read('public/game.js');
   assert.match(game,/return a==='plant'\|\|a==='harvest'\|\|a==='water'\|\|a==='tend'\?a:null;/,'plant, harvest, water and care');
- assert.match(game,/runAction\(\{type:'fields',action,ids,crop:selectedCrop\}\)/,'planting uses the chosen seed');
+ assert.match(game,/handle:client\.sweep\(action,selectedCrop\)/,'one sweep handle per sweep; planting uses the chosen seed');
+ assert.match(game,/sweep:\{action:sweepAction,add:\(target,action\)=>sweepField\(target\.id,action\?\?sweepAction\(target\)\),end:\(\)=>endSweep\(\)\}/);
+ assert.doesNotMatch(game,/still saving|workSwept/,'the dead "still saving" retry is gone: the farm client queues every request');
  assert.match(read('public/farm-audio.js'),/if\(action\.type==='fields'\)return/);
 });
 

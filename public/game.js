@@ -38,9 +38,10 @@ import { shareAtlas } from './model-atlas.js';
 import { createAtmosphere } from './farm-atmosphere.js';
 import { buildRows, createCropMotion, isRowCrop } from './crop-rows.js';
 import { flyHarvest, bump } from './harvest-fly.js';
+import { toolCursor,createSweepTool,createSweepGhost } from './sweep-tools.js';
 import { createActivitiesUI } from './activities-ui.js';
 import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress } from './farm-state.js';
-import { createFarmAudio,withActionSounds,createProductionCueTracker } from './farm-audio.js';
+import { createFarmAudio,withActionSounds,createProductionCueTracker,soundForAction } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { renderLanguageSettings } from './language-settings.js';
 import { startTranslation } from './i18n.js';
@@ -521,11 +522,12 @@ function createPlots(){
 }
 // A building is busy while one of its batches is still being made (the Windmill's sails turn).
 const buildingBusy=key=>productionJobs(state.buildings[key]).some(j=>j.readyAt>farmNow());
-function drawCrop(i){
+// cut (Oct 2026): a sweep's harvest also tips the plants over as they go, the way the sickle went (cropMotion.pick).
+function drawCrop(i,cut=0){
  const p=state.plots[i],v=plots[i];
  if(v.visualCrop!==p.crop){
   // A ripe crop that leaves its field was harvested: its plants are picked, going down into the soil (cropMotion tidies them up).
-  const picked=v.visualCrop&&v.lastReady&&cropMotion.pick(v.cropGroup),fresh=v.visualCrop!==undefined;
+  const picked=v.visualCrop&&v.lastReady&&cropMotion.pick(v.cropGroup,cut),fresh=v.visualCrop!==undefined;
   if(!picked)v.rows?.dispose();
   v.rows=null;clearCropVisual(v.cropGroup);v.visualCrop=p.crop;
   if(p.crop){
@@ -580,21 +582,23 @@ function drawCrop(i){
  v.lastReady=ripe;
 }
 function highlight(id){hovered=id;plots.forEach((v,i)=>v.ring.visible=i===id||swept.has(i));for(const [key,v] of buildingViews)v.outline.visible=key===id;world.style.cursor=id!==-1?'pointer':'grab';}
-function particleBurst(id,water=false){
+// count: a sweep's field gets a small burst of its own (Oct 2026: 13 a field ran into the cap of 100 after seven or eight fields).
+function particleBurst(id,water=false,count=13){
  if(reducedMotion)return;
  const v=plots[id];
- for(let i=0;i<13&&particles.length<100;i++){
+ for(let i=0;i<count&&particles.length<100;i++){
   const mesh=new THREE.Mesh(new THREE.SphereGeometry(water?.045:.055,4,3),new THREE.MeshBasicMaterial({color:water?0x88d0e0:[0xffdb69,0xfff2bb,0xf6bf42][i%3],transparent:true}));
   mesh.position.set(v.x,.9,v.z);scene.add(mesh);particles.push({mesh,velocity:new THREE.Vector3((Math.random()-.5)*2,1.5+Math.random()*1.5,(Math.random()-.5)*2),life:1});
  }
 }
+// Where a spot on the farm is on the screen (in page pixels).
+function toScreen(x,y,z){const p=new THREE.Vector3(x,y,z).project(camera),r=world.getBoundingClientRect();return {x:r.left+(p.x*.5+.5)*r.width,y:r.top+(-p.y*.5+.5)*r.height};}
 // The harvest flies from the field to the Market button (harvest-fly.js), where it goes into your stock.
 function harvestFlight(id,crop,count,delay=0){if(crop)flyToMarket(plots[id].x,1,plots[id].z,art(crop),count,delay);}
 function flyToMarket(x,y,z,html,count,delay=0){
  if(reducedMotion)return;
  const market=[...document.querySelectorAll('#market-button')].find(b=>b.offsetParent);if(!market)return;
- const p=new THREE.Vector3(x,y,z).project(camera),r=world.getBoundingClientRect(),m=market.getBoundingClientRect();
- const from={x:r.left+(p.x*.5+.5)*r.width,y:r.top+(-p.y*.5+.5)*r.height},to={x:m.left+m.width/2,y:m.top+m.height/2};
+ const m=market.getBoundingClientRect(),from=toScreen(x,y,z),to={x:m.left+m.width/2,y:m.top+m.height/2};
  setTimeout(()=>flyHarvest({from,to,html,count,onArrive:()=>bump(market)}),delay);
 }
 // Tapping a building's name while batches are ready collects them all right on the farm (as Collect all in its window does), and
@@ -639,30 +643,56 @@ async function interact(id,forcedAction){
   drawCrop(id);renderer.shadowMap.needsUpdate=true;updateUI();icons();return result;
  }catch(e){toast(e.message);return {error:e.message};}
 }
-// The fields of one swipe (farm-input.js), in one save; then the same bursts a tap shows and one sum of what it brought in.
-async function workSwept(action,ids){
- const flights=new Map(ids.map(id=>[id,1+(state.plots[id]?.watered?1:0)+(state.plots[id]?.tended?1:0)]));
- for(let tries=0;;tries++){
-  try{
-   const result=await runAction({type:'fields',action,ids,crop:selectedCrop});
-   const crops={};let xp=0,golden=0;
-   for(const f of result.fields){
-    particleBurst(f.id,action==='water');drawCrop(f.id);
-    if(action==='harvest'){if(result.fields.indexOf(f)<6)harvestFlight(f.id,f.crop,flights.get(f.id)??1,result.fields.indexOf(f)*70);crops[f.crop]=(crops[f.crop]??0)+f.quantity;xp+=f.xp;if(f.firstHarvest){golden=f.firstHarvest;particleBurst(f.id,true);}}
-   }
-   const last=result.fields.at(-1).id;
-   if(action==='harvest')floatReward(last,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+floatChip('xp',`+${xp} XP`,'is-xp'));
-   if(action==='water')floatReward(last,floatChip('water',result.count>1?`${result.count} fields · faster`:'+1 crop · faster'));
-   if(action==='tend')floatReward(last,floatChip('care',`+${result.count} crop${result.count>1?'s':''}`));
-   if(action==='plant'){floatReward(last,floatChip(result.crop,result.count>1?`${result.count} planted`:'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));if(result.short)toast('Out of coins for more seeds. Sell some produce at the market.');}
-   break;
-  }catch(e){
-   // A tap that was still saving finishes first; then the swipe goes.
-   if(/still saving/i.test(e.message)&&tries<20){await new Promise(r=>setTimeout(r,250));continue;}
-   toast(e.message);break;
-  }
- }
- swept.clear();highlight(hovered);renderer.shadowMap.needsUpdate=true;updateUI();icons();
+// A sweep (farm-input.js; Oct 2026, the CrazyGames review: "harvesting should feel physical"): every field is cut, planted, watered or
+// cared for the moment the pointer passes it, with the server's own rules on top of what is shown (farm-client.js sweep), and the
+// whole sweep is still saved in ONE request, on release. Per field only that field is drawn: the plants tip over and go, a small burst,
+// one picture to the Market (at most 8 in the air), a snip a little higher every field, a tick on a phone, and the coins, stock and XP
+// in the header move. The rest of the screen, the guide, a level-up, the closing chime and the sum of what it brought in follow on
+// release (no updateUI per field). A field the rules refuse (out of coins, not ripe) is not lit; if the server refuses the sweep, its
+// fields come back and the toast says why. With reduced motion the rings and sounds stay, without flights, bursts or swings.
+let sweepRun=null,lastPointer=null,pointerDx=0;
+const sweepTool=createSweepTool({reducedMotion}),sweepGhost=createSweepGhost({reducedMotion});
+// What a drag from this field does (plant, harvest, water or care), or nothing: then the drag moves the farm.
+function sweepAction(target){const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool):null;return a==='plant'||a==='harvest'||a==='water'||a==='tend'?a:null;}
+function startSweep(action){
+ const run={action,handle:client.sweep(action,selectedCrop),before:progressionSnapshot(state),level:levelProgress(state).level,count:0,tilt:Math.abs(pointerDx)>1.5?(pointerDx<0?.55:-.55):0,flights:[]};
+ // With a mouse the tool is in the hand from the first field on (the cursor itself hides meanwhile).
+ if(lastPointer?.type==='mouse'){sweepTool.show(action);if(sweepTool.move(lastPointer.x,lastPointer.y))world.style.cursor='none';}
+ return run;
+}
+function sweepField(id,action){
+ if(!ready||!plots[id])return false;
+ const run=sweepRun??=startSweep(action);if(run.action!==action)return false;
+ const result=run.handle.add(id);if(!result)return false;
+ const f=result.fields[0],v=plots[id],n=run.count++;
+ swept.add(id);v.ring.visible=true;
+ if(action==='harvest'){
+  // A tree or a bush keeps its plants: it gives a shake instead.
+  drawCrop(id,run.tilt);if(state.plots[id].crop&&!v.rows)cropMotion.hopGroup(v,'stage');
+  particleBurst(id,false,5);if(f.firstHarvest)particleBurst(id,true,5);
+  // A picture flies for 0.76 s: one a field, never more than 8 on their way at once (a quick sweep passes several fields a frame).
+  const now=performance.now();run.flights=run.flights.filter(t=>now-t<900);if(run.flights.length<8){run.flights.push(now);harvestFlight(id,f.crop,1);}
+ }else{drawCrop(id);particleBurst(id,action==='water',action==='plant'?0:4);}
+ farmAudio.snip(n);haptic('sweep');sweepTool.cut();hudNumbers();renderer.shadowMap.needsUpdate=true;
+ return true;
+}
+function endSweep(){
+ const run=sweepRun;sweepRun=null;sweepTool.hide();swept.clear();highlight(hovered);
+ if(!run)return;
+ const result=run.handle.end(),action=run.action;
+ if(!result){if(run.handle.reason)toast(run.handle.reason);return;}
+ // As after a tap (runAction): the guide, the reminder, a level-up.
+ beginner?.afterAction(result);if(action==='harvest')nudge?.harvested();
+ const change=progressionChange(run.before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});
+ // The chime that closes the sweep (its snips played on the way), or the level-up's own.
+ try{const cue=soundForAction({type:'fields',action},result,run.level,levelProgress(state).level);if(cue){farmAudio.play(cue);if(cue==='levelup')haptic('levelup');}}catch{}
+ const crops={},last=result.fields.at(-1).id;let xp=0,golden=0;
+ if(action==='harvest')for(const f of result.fields){crops[f.crop]=(crops[f.crop]??0)+f.quantity;xp+=f.xp;if(f.firstHarvest)golden=f.firstHarvest;}
+ if(action==='harvest')floatReward(last,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+floatChip('xp',`+${xp} XP`,'is-xp'));
+ if(action==='water')floatReward(last,floatChip('water',result.count>1?`${result.count} fields · faster`:'+1 crop · faster'));
+ if(action==='tend')floatReward(last,floatChip('care',`+${result.count} crop${result.count>1?'s':''}`));
+ if(action==='plant'){floatReward(last,floatChip(result.crop,result.count>1?`${result.count} planted`:'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));if(result.short)toast('Out of coins for more seeds. Sell some produce at the market.');}
+ renderer.shadowMap.needsUpdate=true;icons();
 }
 function showTool(tool){if(tool!==selectedTool)setTool(tool);const button=document.querySelector(`[data-tool="${tool}"]`);if(!button)return;button.classList.remove('just-used');void button.offsetWidth;button.classList.add('just-used');}
 function setTool(tool){selectedTool=tool;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
@@ -670,14 +700,24 @@ function setTool(tool){selectedTool=tool;document.querySelectorAll('[data-tool]'
 const CROP_KEY='harvest-tycoon:seed';
 function setCrop(crop){selectedCrop=crop;try{localStorage.setItem(CROP_KEY,crop);}catch{}setTool('plant');if(ready)plots.forEach((_,i)=>drawCrop(i));updateHint();}
 function updateHint(){
- let text=selectedTool==='tend'?'Give growing crops extra care when the green marker appears. Earn +1 crop.':selectedTool==='water'?'Water growing crops for +1 crop and 20% less waiting.':selectedTool==='harvest'?'Click a ready crop to harvest. Hold and drag to move the view.':`Click an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water it and give extra care when it is ready. Hold and drag to move the view.`;
- if(!state.stats.harvested&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt))text='Your first crops are ready. Click a crop or its basket to harvest!';
+ // A drag from a ripe crop or an empty field sweeps (Oct 2026): the computer hints say so, and that the grass moves the view.
+ let text=selectedTool==='tend'?'Give growing crops extra care when the green marker appears. Earn +1 crop.':selectedTool==='water'?'Water growing crops for +1 crop and 20% less waiting.':selectedTool==='harvest'?'Click a ripe crop, or hold the mouse button and sweep over your crops to harvest them all. Drag the grass to move the view.':`Click an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water it and give extra care when it is ready. Hold the mouse button and sweep over empty fields to plant them all. Drag the grass to move the view.`;
+ if(!state.stats.harvested&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt))text='Your first crops are ready. Click one, or hold the mouse button and sweep across them to harvest them all!';
  if(selectedTool==='plant'&&state.stats.harvested>=3&&state.stats.produced===0)text='Your farm can do more. Click a building to start producing!';
  if(mobileLayout.matches)text=selectedTool==='plant'?`Tap an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water and care for it. Drag to move the view.`:`Tap a field to ${selectedTool==='tend'?'give extra care':selectedTool}. Drag to move the view.`;
  $('hint-text').textContent=text;
 }
-function updateUI(){
+// The numbers in the header that a sweep moves field by field (Oct 2026): coins, level and XP, and what the Market button counts.
+// updateUI shows them too, with everything else.
+function hudNumbers(){
  $('coins').textContent=state.coins.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});fitText($('coins'));$('coins').parentElement.title=`${state.coins.toLocaleString('en-US')} coins`;
+ const lp=levelProgress(state),lvl=lp.level;
+ $('level').textContent=lvl;$('xp-text').textContent=`${lp.current} / ${lp.target} XP`;$('xp-bar').max=lp.target;$('xp-bar').value=lp.current;$('journal-button').style.setProperty('--xp',String(Math.min(100,Math.round(lp.current/Math.max(1,lp.target)*100))));
+ // What the Market button counts: the goods its market buys (village goods in the village, the rest on the farm).
+ const count=Object.entries(state.inventory).reduce((a,[k,n])=>a+(villageGood(k)===villageWorld?n:0),0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
+}
+function updateUI(){
+ hudNumbers();
  const lp=levelProgress(state),lvl=lp.level;
  // World II (30 Sep 2026): the way to the village from level 100, in the side tools (with how many of its places have a batch
  // ready) and in the More menu. In the village the Village tool is the one lit and My farm travels back.
@@ -687,12 +727,9 @@ function updateUI(){
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
  {const next=unlockEntries(state).filter(e=>!e.unlocked&&e.level===lvl+1).map(e=>e.name);$('journal-button').title=next.length?`Level ${lvl+1} unlocks: ${next.slice(0,3).join(', ')}${next.length>3?'…':''}`:'Farm journal & level rewards';}
  nudge?.check();
- $('level').textContent=lvl;$('xp-text').textContent=`${lp.current} / ${lp.target} XP`;$('xp-bar').max=lp.target;$('xp-bar').value=lp.current;$('journal-button').style.setProperty('--xp',String(Math.min(100,Math.round(lp.current/Math.max(1,lp.target)*100))));
  $('level-name').textContent=levelTitle(lvl);
  // What the next level brings, on the level card (computer screens): there is always something just ahead.
  const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';
- // What the Market button counts: the goods its market buys (village goods in the village, the rest on the farm).
- const count=Object.entries(state.inventory).reduce((a,[k,n])=>a+(villageGood(k)===villageWorld?n:0),0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target)&&!villageQuestReady(state);
  familyUI?.refresh();passUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
 }
@@ -1056,8 +1093,12 @@ function bindUI(){
  quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,village:villageWorld});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote()}),guide:target=>{
-  coach.stop();
-  if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':'Tap a ready crop or its basket.');}
+  coach.stop();sweepGhost.stop();
+  // Harvest (Oct 2026): sweeping is said first. A finger holds a field a moment before it sweeps (a quick swipe moves the farm).
+  // Step 1's Show me also draws a see-through sickle sweeping over the ripe starter corn, again and again until the first harvest, on
+  // the farm itself (no window, no bubble; every tap goes through).
+  const touch=mobileLayout.matches||matchMedia('(pointer: coarse)').matches,firstBasket=target==='harvest'&&beginnerProgress(state).find(q=>q.current)?.id==='harvest';
+  if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':firstBasket?(touch?'Hold one ripe corn for a moment, then sweep across the others to harvest them, or tap one.':'Sweep across your ripe corn to harvest it, or tap one.'):touch?'Tap a ready crop, or hold one for a moment and sweep across the others.':'Click a ready crop, or sweep across your ready crops to harvest them all.');if(firstBasket&&!villageWorld)sweepGhost.start(()=>{if(state.stats.harvested>0)return null;const ids=state.plots.map((p,i)=>p.crop&&farmNow()>=p.readyAt?i:-1).filter(i=>i>=0).slice(0,3);return ids.length?ids.map(i=>toScreen(plots[i].x,.7,plots[i].z)):null;});}
   // Show me points at the way in and lets the farmer tap it (1 Oct 2026: it used to open the window for them, so they never
   // learnt where Market was). Only where nothing can be pointed at does it still open the window itself.
   else if(guideSteps(target,{state,now:farmNow()}))coach.start(guideSteps(target,{state,now:farmNow()}));
@@ -1144,8 +1185,13 @@ async function init(){
   decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
   }
   renderer.domElement.addEventListener('pointermove',e=>{
+   // During a sweep (Oct 2026) the plants tip over the way the pointer goes, and with a mouse the tool in the hand follows it.
+   const dx=lastPointer?e.clientX-lastPointer.x:0;lastPointer={x:e.clientX,y:e.clientY,type:e.pointerType};pointerDx=dx;
+   if(sweepRun){if(Math.abs(dx)>1.5)sweepRun.tilt=dx<0?.55:-.55;if(e.pointerType==='mouse'&&sweepTool.move(e.clientX,e.clientY,dx))world.style.cursor='none';$('tooltip').hidden=true;return;}
    if(e.pointerType!=='mouse'||e.buttons){highlight(-1);$('tooltip').hidden=true;return;}
    const target=pointerTarget(e);highlight(target?.id??-1);const tooltip=$('tooltip');
+   // Over a field the cursor is the tool its sweep would use: a sickle over a ripe crop, a watering can, a seed bag (sweep-tools.js).
+   if(target?.type==='plot')world.style.cursor=toolCursor(sweepAction(target))||'pointer';
    if(!target||e.pointerType==='touch'){tooltip.hidden=true;return;}
    tooltip.hidden=false;
    if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
@@ -1162,13 +1208,9 @@ async function init(){
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);
    },
-   // A swipe from a field with work to do (plant, water, care, harvest): the fields light up as the finger passes, and all of them
-   // are worked in one save.
-   sweep:{
-    action:target=>{const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool):null;return a==='plant'||a==='harvest'||a==='water'||a==='tend'?a:null;},
-    add:target=>{swept.add(target.id);const v=plots[target.id];if(v)v.ring.visible=true;},
-    end:(action,ids)=>{void workSwept(action,ids);}
-   },
+   // A swipe from a field with work to do (plant, water, care, harvest): each field is worked the moment it is passed, and all of
+   // them are saved in one request on release (sweepField, endSweep).
+   sweep:{action:sweepAction,add:(target,action)=>sweepField(target.id,action??sweepAction(target)),end:()=>endSweep()},
    zoom:(ratio,x,y)=>{
     const before=zoom;zoomFarm(zoom*ratio);
     // Scrolling zooms towards the pointer: the spot under the mouse stays under the mouse.

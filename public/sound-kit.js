@@ -36,6 +36,9 @@ export function renderCue(kind,rate=48000,variant=0){
    for(let d=0;d<5;d++)add(.04+d*.055+rand()*.02,sweep(.05,900+rand()*500,2000+rand()*900,.02,.35));break;
   case 'harvest': // a rustle of leaves, a pop as it comes free, two little bells
    add(0,hiss(.16,3200,1.5,.05,.45));add(.03,sweep(.07,480,900,.03,.6));add(.08,bell(hz(79),.5,.32));add(.16,bell(hz(84),.55,.3));break;
+  case 'snip': // one field of a sweep (Oct 2026): a quick crisp swish of leaves and a short bright pluck; farm-audio.js plays it a
+   // little higher field by field
+   add(0,hiss(.05,5200,1.6,.012,.6));add(.004,sweep(.03,2400,1500,.01,.25));add(.006,bell(hz(79),.16,.3,.5));break;
   case 'care': // a soft sparkle
    add(0,hiss(.35,6000,2,.12,.12));[88,91,95].forEach((m,i)=>add(i*.07,bell(hz(m),.45,.2,.6)));break;
   case 'sell': // coins
@@ -147,7 +150,7 @@ export function renderCue(kind,rate=48000,variant=0){
 export const CUE_VARIANTS={tractor:3};
 // Rendered at 24 kHz (half the work of 48; nothing in these sounds needs more), most frequent first (sound-worker.js).
 export const SFX_RATE=24000;
-export const CUE_ORDER=['harvest','plant','water','care','sell','collect','tractor','produce','ready','chore','chorebonus','quest','delivery','stall','reward','upgrade','expand','boost','finish','diamond','dailygift','construct','message','valley','depot','fair','improve','purchase','offer','levelup'];
-export const CUE_LENGTH={plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,chorebonus:.85,upgrade:.9,reward:.95,diamond:1.1,dailygift:1.45,tractor:1,levelup:1.45,construct:1.3,purchase:1.45,message:.55,finish:.9,quest:.6,delivery:1.,stall:.8,boost:.9,expand:.9,valley:.7,depot:1.3,fair:1.4,improve:1.,offer:1.45};
-export const CUE_LOUDNESS={plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,chorebonus:.042,upgrade:.053,reward:.052,diamond:.038,dailygift:.055,tractor:.034,levelup:.056,construct:.052,purchase:.056,message:.03,finish:.045,quest:.045,delivery:.045,stall:.047,boost:.048,expand:.045,valley:.04,depot:.046,fair:.05,improve:.048,offer:.055};
+export const CUE_ORDER=['harvest','snip','plant','water','care','sell','collect','tractor','produce','ready','chore','chorebonus','quest','delivery','stall','reward','upgrade','expand','boost','finish','diamond','dailygift','construct','message','valley','depot','fair','improve','purchase','offer','levelup'];
+export const CUE_LENGTH={snip:.18,plant:.25,water:.5,harvest:.75,care:.6,sell:.45,produce:.45,collect:.85,ready:1.1,chore:.3,chorebonus:.85,upgrade:.9,reward:.95,diamond:1.1,dailygift:1.45,tractor:1,levelup:1.45,construct:1.3,purchase:1.45,message:.55,finish:.9,quest:.6,delivery:1.,stall:.8,boost:.9,expand:.9,valley:.7,depot:1.3,fair:1.4,improve:1.,offer:1.45};
+export const CUE_LOUDNESS={snip:.024,plant:.029,water:.029,harvest:.05,care:.04,sell:.032,produce:.029,collect:.047,ready:.029,chore:.029,chorebonus:.042,upgrade:.053,reward:.052,diamond:.038,dailygift:.055,tractor:.034,levelup:.056,construct:.052,purchase:.056,message:.03,finish:.045,quest:.045,delivery:.045,stall:.047,boost:.048,expand:.045,valley:.04,depot:.046,fair:.05,improve:.048,offer:.055};
 export function loudness(data,rate){const w=Math.min(data.length,Math.round(.15*rate)),step=Math.max(1,Math.round(w/4));let best=0;for(let i=0;i+w<=data.length;i+=step){let e=0;for(let j=i;j<i+w;j++)e+=data[j]*data[j];best=Math.max(best,Math.sqrt(e/w));}return best;}

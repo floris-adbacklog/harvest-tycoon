@@ -5,7 +5,7 @@ export const LOADING_TIPS=Object.freeze([
  ['double-harvest','Water and care for a field: up to three crops from one harvest.'],
  ['apples','Apple trees and berry bushes grow back after you pick them.'],
  ['collect-all','Turn crops into goods in your buildings: they sell for more.'],
- ['instant-harvest','Hold a field for a moment, then swipe across your fields to plant, water or harvest many at once.'],
+ ['instant-harvest','Hold the mouse button on a ripe crop and sweep across your fields to harvest them all. On a phone, hold a field for a moment first.'],
  ['live-events','A new event starts every six hours: finish its goals for coins and diamonds.'],
  ['guide','How to play has a wiki with every crop and recipe.'],
  // More tips (1 Oct 2026); the old Farm family tip (weekly orders) gave way to the Family Chest and the top ten.

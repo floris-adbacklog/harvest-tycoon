@@ -5,7 +5,10 @@ export function cameraDragDelta(dx,dy,spanX,spanY,width,height){
 }
 
 // All pointers commit on release. Dragging moves the farm, except a drag that starts on a field with work to do (a ripe crop, water,
-// care): that one swipes, and every field the finger passes over gets the same work (sweep: {action,add,end}).
+// care): that one swipes, and every field the finger passes over gets the same work (sweep: {action,add,end}). add(target,action) is
+// called the moment a field is passed (Oct 2026: the game works it right then); end(action,ids) on release, with every field passed.
+// A right- or middle-button drag always moves the farm (Oct 2026): in the fields view nearly every spot under a mouse is a field, so
+// a left drag there sweeps (and with Plant spends coins); these buttons never work a field, also not on a click.
 // On a touchscreen the swipe waits for a short hold on that first field (26 Sep 2026): the field lights up and the swipe is on. A quick
 // drag always moves the farm, so scrolling past ripe or empty fields no longer harvests or plants them by accident. A mouse or a pen
 // swipes straight away, as before. `later`/`cancelLater` are the timer functions (replaced in the tests).
@@ -18,7 +21,7 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,hold
   const point=pointers.get(event.pointerId);if(!point)return;
   pointers.delete(event.pointerId);cancelLater(point.hold);
   if(point.sweep?.started)sweep.end(point.sweep.action,point.sweep.ids);
-  else if(!cancelled&&!point.moved&&!point.multi){
+  else if(!cancelled&&!point.moved&&!point.multi&&!point.panOnly){
    const target=pick(event);
    if(target&&target.type===point.target?.type&&target.id===point.target.id){
     open(target);
@@ -28,17 +31,18 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,hold
   if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
  }
  canvas.addEventListener('pointerdown',event=>{
-  if(event.button!==0||!isReady())return;
+  const panOnly=event.pointerType==='mouse'&&(event.button===1||event.button===2);
+  if(event.button!==0&&!panOnly||!isReady())return;
   event.preventDefault();canvas.setPointerCapture(event.pointerId);
-  const target=pick(event);
+  const target=panOnly?null:pick(event);
   const action=target?.type==='plot'&&sweep?sweep.action(target):null;
-  const point={x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,target,moved:false,multi:false,threshold:event.pointerType==='touch'?12:8,sweep:action?{action,ids:[],started:false,armed:event.pointerType!=='touch'}:null};
+  const point={x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,target,panOnly,moved:false,multi:false,threshold:event.pointerType==='touch'?12:8,sweep:action?{action,ids:[],started:false,armed:event.pointerType!=='touch'}:null};
   pointers.set(event.pointerId,point);
   if(pointers.size>1){for(const item of pointers.values()){item.multi=true;if(item.sweep&&!item.sweep.started){cancelLater(item.hold);item.sweep=null;}}return;}
   // A finger that stays on the field arms the swipe: that field lights up (and the phone ticks, where it can).
   if(point.sweep&&!point.sweep.armed)point.hold=later(()=>{
    const s=point.sweep;if(pointers.get(event.pointerId)!==point||!s||point.moved||point.multi)return;
-   s.armed=true;s.started=true;s.ids.push(target.id);sweep.add(target);globalThis.navigator?.vibrate?.(12);
+   s.armed=true;s.started=true;s.ids.push(target.id);sweep.add(target,s.action);globalThis.navigator?.vibrate?.(12);
   },holdMs);
  });
  canvas.addEventListener('pointermove',event=>{
@@ -55,11 +59,11 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,hold
   if(point.sweep&&!point.multi){
    if(!point.moved)return;
    const s=point.sweep;
-   if(!s.started){s.started=true;s.ids.push(point.target.id);sweep.add(point.target);}
+   if(!s.started){s.started=true;s.ids.push(point.target.id);sweep.add(point.target,s.action);}
    const steps=Math.max(1,Math.ceil(Math.hypot(point.x-previous.x,point.y-previous.y)/10));
    for(let i=1;i<=steps;i++){
     const over=pick({clientX:previous.x+(point.x-previous.x)*i/steps,clientY:previous.y+(point.y-previous.y)*i/steps});
-    if(over?.type==='plot'&&!s.ids.includes(over.id)&&s.ids.length<60&&sweep.action(over)===s.action){s.ids.push(over.id);sweep.add(over);}
+    if(over?.type==='plot'&&!s.ids.includes(over.id)&&s.ids.length<60&&sweep.action(over)===s.action){s.ids.push(over.id);sweep.add(over,s.action);}
    }
    return;
   }
@@ -79,6 +83,8 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,hold
   zoom(ratio,event.clientX,event.clientY);
  },{passive:false});
  canvas.addEventListener('pointerup',event=>release(event));
+ // No menu after a right-button drag over the farm.
+ canvas.addEventListener('contextmenu',event=>event.preventDefault());
  canvas.addEventListener('pointercancel',event=>release(event,true));
  canvas.addEventListener('lostpointercapture',event=>release(event,true));
  return {cancel(){for(const [id] of pointers)release({pointerId:id},true);}};

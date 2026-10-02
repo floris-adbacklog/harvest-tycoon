@@ -7,6 +7,8 @@ import {ROW_CROPS,growthStage,fieldSpots,hop} from './crop-growth.js';
 
 export const isRowCrop=crop=>Object.hasOwn(ROW_CROPS,crop);
 const WHITE=new THREE.Color(1,1,1),UP=new THREE.Vector3(0,1,0);
+// The ground line across the screen's depth (the camera looks along x=z): turning about it tips plants to the screen's left or right.
+const TIP=new THREE.Vector3(1,0,1).normalize();
 const clock=()=>performance.now()/1000;
 
 function templateMesh(entry){let mesh=null;entry.object.updateMatrixWorld(true);entry.object.traverse(n=>{if(!mesh&&n.isMesh)mesh=n;});return mesh;}
@@ -20,12 +22,13 @@ export function createCropMotion({scene,reducedMotion=false}){
   isHopping:v=>hopping.has(v),
   track(rows){if(!reducedMotion)hopping.set(rows,{rows});},
   // The plants of a harvested field are picked: a small lift, then they go down into the soil (the harvest itself flies to the
-  // Market button, harvest-fly.js). False when motion is reduced.
-  pick(cropGroup){
+  // Market button, harvest-fly.js). False when motion is reduced. tilt (radians, Oct 2026): a sweep's cut also tips them over, the
+  // way the sickle went (positive: to the screen's left).
+  pick(cropGroup,tilt=0){
    if(reducedMotion||!cropGroup.children.length)return false;
    const g=new THREE.Group();g.position.copy(cropGroup.position);g.rotation.copy(cropGroup.rotation);g.scale.copy(cropGroup.scale);
    for(const child of [...cropGroup.children])g.add(child);
-   scene.add(g);flying.push({g,start:clock(),s:g.scale.x});return true;
+   scene.add(g);flying.push({g,start:clock(),s:g.scale.x,tilt});return true;
   },
   // Each frame: true while something moves (so the shadows follow).
   animate(){
@@ -41,6 +44,7 @@ export function createCropMotion({scene,reducedMotion=false}){
     if(k>=1){fl.g.traverse(n=>{if(n.isInstancedMesh)n.dispose();for(const m of [].concat(n.material??[]))if(m.userData?.farmCropOwned)m.dispose();});scene.remove(fl.g);flying.splice(i,1);continue;}
     const lift=k<.3?Math.sin(k/.3*Math.PI):0,e=k<.3?0:(k-.3)/.7,up=k<.3?1+.1*lift:(1-e)*(1-e),wide=k<.3?1-.04*lift:1-.25*e;
     fl.g.scale.set(fl.s*wide,fl.s*Math.max(.001,up),fl.s*wide);
+    if(fl.tilt)fl.g.quaternion.setFromAxisAngle(TIP,fl.tilt*Math.min(1,k/.45));
    }
    return busy;
   }

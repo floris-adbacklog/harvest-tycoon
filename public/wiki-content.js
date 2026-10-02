@@ -9,7 +9,7 @@ import {EVENT_GOAL_POOLS} from './event-goals.js';
 // Every number and table comes from the game rules, so a balance change never leaves the wiki behind. In the game, things
 // above your level say "From level X"; on the website every level is just shown.
 export const WIKI_TOPICS=Object.freeze([
- {id:'getting-started',title:'Getting started',art:'farm',blurb:'Your first minutes on the farm, and how to move around.',keywords:'start beginner guide rookie controls swipe zoom tutorial new'},
+ {id:'getting-started',title:'Getting started',art:'farm',blurb:'Your first minutes on the farm, and how to move around.',keywords:'start beginner guide rookie controls swipe sweep zoom tutorial new'},
  {id:'crops',title:'Fields and crops',art:'wheat',blurb:'Planting, watering, more fields and every crop in the game.',keywords:'plant water care harvest field seeds grow mastery silo trees'},
  {id:'buildings',title:'Buildings and goods',art:'buildings',blurb:'What each building makes, from what, and how long it takes.',keywords:'production recipe goods upgrade factory batch collect'},
  {id:'market',title:'Market',art:'market',blurb:'Selling crops and goods, and prices that change every day.',keywords:'sell price demand coins stall'},
@@ -115,8 +115,9 @@ const BODIES={
    ['gift','A gift every day',`Come back every day for coins and diamonds. See ${h.link('daily')}.`]
   ]))
   +section('Moving around',facts([
-   ['farm','Look around','Drag to move the farm. Pinch, or scroll with a mouse, to zoom in and out.'],
-   ['harvest','Swipe across fields',`With a tool picked, hold a field for a moment until it lights up, then swipe across your fields to plant, water, care for or harvest many at once, up to ${SWIPE_MAX_FIELDS} in one swipe. A quick swipe moves the farm instead. With a mouse, just drag from a field.`],
+   ['farm','Look around','Drag the grass to move the farm. With a mouse, a drag with the right button moves it from anywhere. Pinch, or scroll with a mouse, to zoom in and out.'],
+   // Mouse first, then touch (Oct 2026): every field is worked the moment you pass it, and the whole sweep is saved at once.
+   ['harvest','Swipe across fields',`With a mouse, hold the button on a ripe crop and sweep across your fields: every ripe crop you pass is harvested on the spot, up to ${SWIPE_MAX_FIELDS} in one sweep. From an empty field a sweep plants your seed, and from a growing crop it waters or gives extra care. On a touchscreen, hold a field for a moment until it lights up, then swipe across your fields. A quick swipe moves the farm instead.`],
    ['care','Tools at the bottom','Pick Plant, Water, Care or Harvest at the bottom of the screen, then tap or swipe your fields.']
   ]))
   +section('Saved for you','<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>')

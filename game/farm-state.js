@@ -300,7 +300,8 @@ export const BEGINNER_REWARD=50;
 // Every finished guide step also pays XP: following the guide takes a new farmer to level 3 in about ten minutes.
 export const BEGINNER_STEP_XP=15;
 export const BEGINNER_QUESTS=Object.freeze([
- {id:'harvest',title:'Your first basket',description:'Harvest one ready crop. Tap the crop or its basket.',guide:'harvest',icon:'shopping-basket'},
+ // Step 1 says the sweep first (Oct 2026): sweeping over the ripe corn harvests every field it passes; a tap still harvests one.
+ {id:'harvest',title:'Your first basket',description:'Sweep across your ripe corn to harvest it, or tap one.',guide:'harvest',icon:'shopping-basket'},
  {id:'sell',title:'Your first market sale',description:'Open Market and sell some corn. Save your animal feed for the chickens.',guide:'market',icon:'store'},
  {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
  {id:'water',title:'A little water goes a long way',description:'Use Water on one growing crop. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
