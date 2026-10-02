@@ -22,3 +22,8 @@ test('everything the game itself ships (game code, rules, HTML, the /cloud accou
  assert.equal(get('/cloud/(.*)')['Cache-Control'],'no-cache');
  for(const source of ['/vendor/(.*)','/assets/fonts/(.*)'])assert(rules.findIndex(r=>r.source===source)>rules.findIndex(r=>r.source==='/cloud/(.*)'),`${source} is declared, and does not replace, the existing rules`);
 });
+// Oct 2026: the language pages (/es/, ...) are the sign-in page too. Vercel matches the address asked for, so /es/ needs its own rule.
+test('the language pages revalidate on every load like the home page',()=>{
+ const rule=rules.find(r=>/^\/:lang\([a-z|]+\)\/$/.test(r.source));
+ assert.ok(rule,'a rule for /:lang(...)/');assert.equal(get(rule.source)['Cache-Control'],'no-cache');
+});

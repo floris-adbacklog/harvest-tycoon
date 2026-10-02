@@ -1,7 +1,8 @@
-import {LANGUAGES} from './languages.js';
+import {LANGUAGES,languagePath,pageLanguage} from './languages.js';
 import {chosenLanguage,chooseLanguage} from './i18n.js';
 // Settings > Language: a dropdown (pretty-select.js) with every language and its flag. The languages that are not translated yet
 // are greyed out as coming soon, below the ones you can choose. Picking one saves it on this device and opens the game again in that language.
+// On a language page (/es/, Oct 2026) that is the new language's own page, which would otherwise open in Spanish again.
 export function renderLanguageSettings(select=document.getElementById('language-select')){
  if(!select)return;
  const current=chosenLanguage();
@@ -11,5 +12,8 @@ export function renderLanguageSettings(select=document.getElementById('language-
  // The heading shows the flag of the language in use (before or after visual-icons.js turned it into a picture).
  const flag=document.querySelector('#language-settings-title img.game-art, #language-settings-title [data-game-art]');
  if(flag?.tagName==='IMG')flag.src=`/assets/icons/flag-${current}.webp`;else flag?.setAttribute('data-game-art',`flag-${current}`);
- select.addEventListener('change',()=>{chooseLanguage(select.value);(window.top??window).location.reload();});
+ select.addEventListener('change',()=>{
+  chooseLanguage(select.value);const top=(window.top??window).location;
+  if(pageLanguage(top.pathname))top.assign(languagePath(select.value)+top.search+top.hash);else top.reload();
+ });
 }

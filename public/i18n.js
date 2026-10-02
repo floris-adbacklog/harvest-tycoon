@@ -15,8 +15,11 @@ const KEEP='script,style,noscript,textarea,code,[translate="no"],[contenteditabl
 const KEEP_ATTRS=KEEP.split(',').filter(s=>s!=='textarea').join(',');
 const READY=new Set(LANGUAGES.filter(language=>language.ready).map(language=>language.code));
 
-// The farmer's choice in Settings, else the device's language if the game speaks it, else English.
+// The farmer's choice in Settings, else the device's language if the game speaks it, else English. A language page (/es/, Oct 2026)
+// is its own language, also where this device keeps nothing (blocked storage).
 export function chosenLanguage(){
+ const page=globalThis.document?.documentElement?.getAttribute?.('data-page-lang');
+ if(page&&READY.has(page))return page;
  let saved=null;try{saved=localStorage.getItem(LANGUAGE_KEY);}catch{}
  if(saved&&READY.has(saved))return saved;
  if(saved==='en')return 'en';
@@ -143,8 +146,9 @@ export const t=(english,...values)=>codeText(english,...values);
 // is written again never gets them twice.
 const ISOLATE=/\d{1,4}-\d{1,2}-\d{1,4}|[+\-−×]\d[\d.,]*[%×KMk]?|\d[\d.,]*[%×KMk]?\s*\/\s*[+\-−]?\d[\d.,]*[%×KMk]?|\d[\d.,]*%/g;
 export const isolateNumbers=text=>text.replace(/[\u2066\u2069]/g,'').replace(ISOLATE,match=>`\u2066${match}\u2069`);
-// Keep a document translated: everything in it now, and every text that is added or changed later.
-export function translateDocument(doc,translator){
+// Keep a document translated: everything in it now, and every text that is added or changed later. done: texts that are already a
+// translation (a language page arrives translated), left as they are so the guesses for texts with changing parts never touch them.
+export function translateDocument(doc,translator,done=null){
  const written=new WeakMap(),attrsWritten=new WeakMap(),numbers=localNumbers(translator.code),rtl=RTL_LANGUAGES.includes(translator.code);
  const skip=element=>!element||element.closest(KEEP),skipAttr=element=>!element||element.closest(KEEP_ATTRS);
  function text(node){
@@ -152,7 +156,7 @@ export function translateDocument(doc,translator){
   if(written.get(node)===data||skip(node.parentElement))return;
   let next=data;
   if(/\p{L}/u.test(data)){
-   const key=normalize(data),out=key?translator.translate(key):null;
+   const key=normalize(data),out=key&&!done?.has(key)?translator.translate(key):null;
    if(out!=null&&out!==key)next=data.match(/^\s*/)[0]+out+data.match(/\s*$/)[0];
   }
   if(numbers&&/\d/.test(next))next=numbers(next);
@@ -162,11 +166,11 @@ export function translateDocument(doc,translator){
  }
  function attr(element,name){
   const value=element.getAttribute(name);if(!value||!/\p{L}/u.test(value)||skipAttr(element))return;
-  let done=attrsWritten.get(element);if(done?.[name]===value)return;
+  let written=attrsWritten.get(element);if(written?.[name]===value||done?.has(normalize(value)))return;
   let out=translator.translate(normalize(value));if(out==null)return;
   if(numbers&&/\d/.test(out))out=numbers(out);
-  if(!done)attrsWritten.set(element,done={});
-  done[name]=out;element.setAttribute(name,out);
+  if(!written)attrsWritten.set(element,written={});
+  written[name]=out;element.setAttribute(name,out);
  }
  function tree(root){
   if(root.nodeType===3){text(root);return;}
@@ -202,7 +206,9 @@ export async function startTranslation(doc=globalThis.document){
   const dict=await(globalThis.harvestI18n?.code===code?globalThis.harvestI18n.load:fetch(`/i18n/${code}.json`).then(response=>{if(!response.ok)throw new Error(String(response.status));return response.json();}));
   const translator=createTranslator(dict,code);codeText=codeTranslator(dict,code);
   root.lang=code;root.dir=RTL_LANGUAGES.includes(code)?'rtl':'ltr';
-  translateDocument(doc,translator);
+  // A language page (scripts/build-languages.mjs) is written in the translations already: those texts stay as they are.
+  const page=root.getAttribute?.('data-page-lang')===code;
+  translateDocument(doc,translator,page?new Set(Object.values(dict).flatMap(out=>out&&typeof out==='object'?Object.values(out):[out]).map(out=>normalize(String(out)))):null);
   globalThis.harvestI18nMissing=translator.missing;
   return translator;
  }catch{return null;}

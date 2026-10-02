@@ -19,9 +19,12 @@ export function scheduleBrowserTip({embedded,doc,win,storage,delay=BROWSER_TIP_D
  if(!embedded||scheduled||storage.get(BROWSER_TIP_KEY))return false;
  scheduled=true;win.setTimeout(()=>showBrowserTip({doc,win,storage}),delay);return true;
 }
+// The address to open there: the home page, or the language page this is (/es/, Oct 2026; the phone's browser keeps its own storage,
+// so it would not know the language otherwise).
+export function tipLink(doc,loc){const page=doc?.documentElement?.getAttribute?.('data-page-lang');return `${loc.origin}/${page&&/^[a-z]{2}$/.test(page)?`${page}/`:''}`;}
 function showBrowserTip({doc,win,storage}){
  if(storage.get(BROWSER_TIP_KEY))return;
- const {android,action,text}=browserTipText(win.navigator?.userAgent??''),link=`${win.location.origin}/`;
+ const {android,action,text}=browserTipText(win.navigator?.userAgent??''),link=tipLink(doc,win.location);
  const box=doc.createElement('div');box.className='browser-tip';box.setAttribute('role','status');
  const note=doc.createElement('p');note.textContent=text;
  const go=doc.createElement('button');go.type='button';go.className='browser-tip-go';go.textContent=action;

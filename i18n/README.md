@@ -13,6 +13,11 @@ language, from `public/i18n/<code>.json` (`{"English text": "translation"}`). En
   forms for a number: `id|{"one":"...","few":"...","many":"...","other":"..."}`.
 - A language only appears in the game (`ready: true` in `public/languages.js`, and in `READY` in
   `public/i18n-boot.js`) when every text in the catalog is translated.
+- Every ready language has its own sign-in page (`/es/`, `/fr/`, ...; English is `/`), written at deploy time by
+  `scripts/build-languages.mjs` from `public/play.html` and these translations, including the search and share texts in
+  its head. Only exact translations are used: a `play.html` text without one stops the deploy build, so translate new
+  `play.html` texts before deploying. A newly ready language also needs its code in the three `/:lang(...)` rules in
+  `vercel.json` (a test checks them).
 
 Texts that are cut by markup arrive in pieces (`Beginner guide complete! +` … `XP and {0} diamonds.`): translate each
 piece so the pieces still read as one sentence in their order.

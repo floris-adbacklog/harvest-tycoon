@@ -1,8 +1,9 @@
-import {LANGUAGES} from '../public/languages.js';
+import {LANGUAGES,languagePath} from '../public/languages.js';
 import {chosenLanguage,chooseLanguage} from '../public/i18n.js';
 // Under the sign-up form: a small flag button that opens a little menu with the languages the game is translated into,
 // each with its flag. Picking one saves it on this device (the same choice as Settings > Language) and opens the page
-// again in that language. From seven languages on the menu has two columns, so it stays small.
+// again in that language: its own page (/es/, English on '/'; Oct 2026), so a language page never opens itself again.
+// From seven languages on the menu has two columns, so it stays small.
 const flag=code=>`<img src="/assets/icons/flag-${code}.webp" alt="" width="20" height="20">`;
 const chevron='<svg class="language-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const check='<svg class="language-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
@@ -18,7 +19,7 @@ export function renderLanguageSwitch(host=document.getElementById('language-swit
  const button=host.querySelector('.language-button'),menu=host.querySelector('.language-menu'),options=()=>[...menu.querySelectorAll('[role=option]')];
  const open=()=>{menu.hidden=false;button.setAttribute('aria-expanded','true');(options().find(o=>o.getAttribute('aria-selected')==='true')??options()[0]).focus();};
  const close=(focus=true)=>{if(menu.hidden)return;menu.hidden=true;button.setAttribute('aria-expanded','false');if(focus)button.focus();};
- const pick=code=>{close();if(code&&code!==current){chooseLanguage(code);location.reload();}};
+ const pick=code=>{close();if(code&&code!==current){chooseLanguage(code);location.assign(languagePath(code)+location.search+location.hash);}};
  button.addEventListener('click',()=>menu.hidden?open():close());
  menu.addEventListener('click',event=>pick(event.target.closest?.('[role=option]')?.dataset.code));
  menu.addEventListener('keydown',event=>{

@@ -5,6 +5,23 @@
   "buildCommand": "npm run build:static",
   "outputDirectory": "dist-static",
   "cleanUrls": false,
+  "redirects": [
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)",
+      "destination": "/:lang/",
+      "permanent": true
+    },
+    {
+      "source": "/en",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/en/",
+      "destination": "/",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/partners",
@@ -41,6 +58,10 @@
     {
       "source": "/wiki/:topic([a-z-]+)",
       "destination": "/wiki/:topic.html"
+    },
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/",
+      "destination": "/:lang/index.html"
     }
   ],
   "headers": [
@@ -55,6 +76,15 @@
     },
     {
       "source": "/(.*).html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/",
       "headers": [
         {
           "key": "Cache-Control",

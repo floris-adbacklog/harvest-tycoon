@@ -47,3 +47,29 @@ test('the sign-up page has a small language switch under the form with the trans
  assert.match(read('public/play.html'),/<p class="account-legal">.*?<\/p>\s*<div id="language-switch" class="language-switch" hidden><\/div>/);
  const main=read('src/main.js');assert.ok(main.indexOf('renderLanguageSwitch();')>main.indexOf('startTranslation();'));
 });
+
+// Oct 2026: every language has its own page (/es/, English on '/'), so picking a language opens that page: on /es/ a reload
+// would open Spanish again.
+test('picking a language opens its own page; Settings > Language does so on a language page and reloads elsewhere',()=>{
+ const handlers={},visited=[];let reloaded=0;
+ const node=()=>({hidden:false,addEventListener:(type,fn)=>{handlers[type]=fn;},setAttribute(){},focus(){},querySelectorAll:()=>[]});
+ const button=node(),menu=node();
+ const host={innerHTML:'',hidden:true,querySelector:selector=>selector==='.language-button'?button:menu,contains:()=>true};
+ globalThis.document??={};const doc=globalThis.document,added=doc.addEventListener;doc.addEventListener=()=>{};
+ const savedLocation=globalThis.location;
+ globalThis.location={search:'?ref=ABC',hash:'',assign:url=>visited.push(url),reload:()=>reloaded++};
+ try{
+  renderLanguageSwitch(host);
+  handlers.click({target:{closest:()=>({dataset:{code:'fr'}})}});
+  handlers.click({target:{closest:()=>({dataset:{code:'es'}})}});
+  assert.deepEqual(visited,['/fr/?ref=ABC','/es/?ref=ABC']);assert.equal(reloaded,0);
+  const select={innerHTML:'',value:'',addEventListener:(type,fn)=>{select.on=fn;},closest:()=>null};
+  globalThis.document.querySelector=()=>null;renderLanguageSettings(select);
+  for(const [pathname,code,want] of [['/es/','fr','/fr/'],['/es/','en','/'],['/','fr',null],['/play.html','de',null]]){
+   visited.length=0;reloaded=0;
+   globalThis.window={top:{location:{pathname,search:'',hash:'',assign:url=>visited.push(url),reload:()=>reloaded++}}};
+   select.value=code;select.on();
+   assert.deepEqual(visited,want?[want]:[],pathname);assert.equal(reloaded,want?0:1,pathname);
+  }
+ }finally{doc.addEventListener=added;delete globalThis.window;if(savedLocation)globalThis.location=savedLocation;else delete globalThis.location;}
+});
