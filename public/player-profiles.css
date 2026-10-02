@@ -90,6 +90,12 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .admin-heat-ok{background:#dfae3f}
 .admin-heat-low{background:#c56a52}
 .admin-pending{color:#c4bcac}
+/* Where new farmers come from (2 Oct 2026): one row per source, its name with what kind it is underneath, and the totals last. */
+.admin-source-table th,.admin-source-table td{text-align:center;white-space:nowrap}
+.admin-source-table th:first-child,.admin-source-table td:first-child{text-align:start;white-space:normal;min-width:150px;overflow-wrap:anywhere}
+.admin-source-table td:first-child small{display:block;color:#80776b;font-size:11px;line-height:1.3}
+.admin-source-table td[class^=admin-heat]{border-radius:8px;font-weight:700;color:#fffdf5}
+.admin-source-table .admin-source-total td{font-weight:700;border-bottom:0;border-top:1px solid #ded2c8}
 @media(max-width:480px){.admin-card{padding:12px 14px}}
 /* The family card shows the family's own emblem tile, and "Invite to <family>" for a leader looking at a farmer without one. */
 .farmer-family-emblem{display:grid;place-items:center;flex:0 0 60px;height:60px;border-radius:17px;background:color-mix(in srgb,var(--family-color) 17%,#fffdf4);border:1px solid color-mix(in srgb,var(--family-color) 45%,#fffdf4)}

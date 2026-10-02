@@ -120,7 +120,7 @@ test('admin_retention: a day-offset that has not elapsed yet is null, never a fa
 
 test('the admin_online/admin_recent_players/admin_retention operations are wired in, gated, and reachable before a username is required',()=>{
  const code=read('supabase/functions/farm-api/index.ts');
- assert.match(code,/import \{handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,recordSeen\} from '\.\/admin-analytics-service\.js';/);
+ assert.match(code,/import \{handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen\} from '\.\/admin-analytics-service\.js';/);
  for(const op of ['admin_online','admin_recent_players','admin_retention','admin_players','admin_player'])assert.match(code,new RegExp(`'${op}'`));
  const before=code.indexOf('const username=profile?.username');
  for(const marker of ["body.operation==='admin_online'","body.operation==='admin_recent_players'","body.operation==='admin_retention'","body.operation==='admin_players'","body.operation==='admin_player'"])assert.ok(code.indexOf(marker)<before,marker);
@@ -318,4 +318,49 @@ test('admin_retention over 90 days: a row per signup week from Monday, and a far
  assert.match(ui,/data-retention-period="\$\{id\}"/);assert.match(ui,/data\.weekly\?`Week of \$\{fmtDay\(row\.day\)\}`:fmtDay\(row\.day\)/);
  assert.match(read('src/admin-players.js'),/export const RETENTION_PERIODS=Object\.freeze\(\[\['7','7d'\],\['30','30d'\],\['90','90d'\]\]\);/);
  assert.match(read('supabase/functions/farm-api/index.ts'),/handleAdminRetention\(\{admin,user,days:body\.days\}\)/);
+});
+
+// 2 Oct 2026: where new farmers come from (supabase/player-attribution.sql), per first-touch source; the admin only (money).
+test('admin_sources: the admin in a Google session only; 7, 30 or 90 Amsterdam days in one database call',async()=>{
+ const {handleAdminSources,SOURCE_PERIODS}=await import('../supabase/functions/farm-api/admin-analytics-service.js');
+ const asked=[],db={rpc:async(name,args)=>{asked.push([name,args]);return {data:[{source:'src:reddit-cozygames',signups:12,played:11,d1_due:10,d1_kept:4,l5:6,l10:3,l14:1,checkout_players:2,paid_players:1,revenue_cents:'499'}],error:null};},from(){throw new Error('no table reads');}};
+ assert.deepEqual([...SOURCE_PERIODS],[7,30,90]);
+ for(const user of [notAdmin,{...admin,signInMethods:['password']}]){const denied=await handleAdminSources({admin:db,user});assert.equal(denied.status,403);assert.equal(denied.data.profile.player_id,user.id);}
+ assert.equal(asked.length,0,'a moderator or a password session asks nothing');
+ const moderator=database({staff:[{player_id:notAdmin.id}]});assert.equal((await handleAdminSources({admin:moderator,user:notAdmin})).status,403,'not for the moderators either');
+ const {status,data}=await handleAdminSources({admin:db,user:admin,days:'7',now});
+ assert.equal(status,200);assert.equal(data.period,7);assert.equal(data.profile.player_id,admin.id);
+ assert.deepEqual(asked[0],['admin_source_stats',{p_since:new Date(dayStart(zoneDay(now-6*86400000))).toISOString()}],'today and the 6 days before, from Amsterdam midnight');
+ assert.deepEqual(data.rows,[{source:'src:reddit-cozygames',farmers:12,played:11,day1:{kept:4,due:10},level5:6,level10:3,level14:1,checkouts:2,paid:1,revenueCents:499}]);
+ for(const [days,period] of [[90,90],['30',30],[365,30],[undefined,30],['x',30]]){await handleAdminSources({admin:db,user:admin,days,now});assert.equal(asked.at(-1)[1].p_since,new Date(dayStart(zoneDay(now-(period-1)*86400000))).toISOString(),String(days));}
+ const failing={rpc:async()=>({data:null,error:{message:'function admin_source_stats does not exist'}})};
+ await assert.rejects(handleAdminSources({admin:failing,user:admin}),e=>/does not exist/.test(e.message),'a database problem is not an empty table');
+});
+test('admin_sources is wired in: accepted by farm-api, safe to repeat, loaded for the admin only, under the funnel',async()=>{
+ const index=read('supabase/functions/farm-api/index.ts'),dash=read('src/admin-dashboard.js');
+ assert.match(index,/if\(!\[[^\]]*'admin_sources'[^\]]*\]\.includes\(body\?\.operation\)\)/);
+ assert.match(index,/handleAdminSources\(\{admin,user,days:body\.days\}\)/);
+ assert.ok(index.indexOf("body.operation==='admin_sources'")<index.indexOf('const username=profile?.username'),'reachable for the admin account without a farmer name');
+ const {safeToRepeat}=await import('../src/connection.js');assert.equal(safeToRepeat({operation:'admin_sources',days:30}),true);
+ assert.match(dash,/if\(role==='admin'\)void loadSources\(\);/,'loaded only for the admin');
+ assert.match(dash,/<section class="admin-card" id="admin-sources" hidden>/,'hidden until the admin\'s load shows it: never for the moderators');
+ assert.ok(dash.indexOf('id="admin-funnel"')<dash.indexOf('id="admin-sources"')&&dash.indexOf('id="admin-sources"')<dash.indexOf('id="admin-countries"'),'right under the funnel');
+ assert.match(dash,/bridge\.request\(\{operation:'admin_sources',days:Number\(view\.sources\)\}\);if\(ask===sourceAsk\)/,'only the latest period asked for is drawn');
+});
+test('the sources table: plain names, shares of each source\'s farmers, day 1 only once it is due, Not recorded last and the totals',async()=>{
+ const {sourceLabel,sourcesHtml,SOURCE_PERIODS}=await import('../src/admin-players.js');
+ assert.deepEqual([...SOURCE_PERIODS],[['7','7d'],['30','30d'],['90','90d']]);
+ assert.deepEqual(sourceLabel('src:reddit-cozygames'),{label:'reddit-cozygames',note:'Our link'});
+ assert.deepEqual(sourceLabel('ad:meta'),{label:'Meta ad click',note:''});assert.deepEqual(sourceLabel('ad:tiktok').label,'TikTok ad click');assert.deepEqual(sourceLabel('ad:google').label,'Google ad click');
+ assert.deepEqual(sourceLabel('site:reddit.com'),{label:'reddit.com',note:'Website'});assert.deepEqual(sourceLabel('utm:facebook / eu'),{label:'facebook / eu',note:'Ad (utm)'});
+ assert.deepEqual(sourceLabel('partner:GREENA123'),{label:'GREENA123',note:'Partner link'});assert.equal(sourceLabel('invite').label,'Friend’s invite');assert.equal(sourceLabel('direct').label,'Direct');
+ assert.deepEqual(sourceLabel('unknown'),{label:'Not recorded',note:'joined before tracking, or never opened the farm'});
+ const row=(source,farmers,extra={})=>({source,farmers,played:farmers,day1:{kept:0,due:0},level5:0,level10:0,level14:0,checkouts:0,paid:0,revenueCents:0,...extra});
+ const html=sourcesHtml({rows:[row('unknown',40),row('site:<b>x.com',2),row('src:reddit-cozygames',10,{day1:{kept:6,due:10},level5:5,level10:2,level14:1,checkouts:2,paid:1,revenueCents:499})]});
+ const rows=html.split('</tr>').filter(Boolean);
+ assert.match(rows[0],/^<tr><td>reddit-cozygames<small>Our link<\/small><\/td><td title="10 opened their farm">10<\/td><td class="admin-heat-good" title="6 \/ 10 came back on day 1">60%<\/td><td title="5 \/ 10">50%<\/td><td title="2 \/ 10">20%<\/td><td title="1 \/ 10">10%<\/td><td title="20% of 10">2<\/td><td title="10% of 10">1<\/td><td>€4\.99<\/td>$/);
+ assert.match(rows[1],/&lt;b&gt;x\.com/,'escaped');assert.match(rows[1],/<td class="admin-pending" title="Joined today: day 1 is still to come">—<\/td>/);
+ assert.match(rows[2],/^<tr><td>Not recorded<small>/,'Not recorded last');
+ assert.match(rows[3],/^<tr class="admin-source-total"><td>All new farmers<\/td><td title="52 opened their farm">52<\/td><td class="admin-heat-good" title="6 \/ 10 came back on day 1">60%<\/td>/);
+ assert.match(sourcesHtml({rows:[]}),/No new farmers in this period\./);assert.match(sourcesHtml(),/admin-empty/);
 });

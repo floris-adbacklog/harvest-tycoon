@@ -29,7 +29,7 @@ test('the buttons are compact, English, hidden until a provider is on, and only 
  assert.match(html,/data-provider="google" aria-label="Continue with Google" hidden>/);assert.match(html,/data-provider="facebook" aria-label="Continue with Facebook" hidden>/);
  assert.match(html,/<span>or use your email<\/span>/);
  assert.match(main,/\$\('social-login'\)\.hidden=!providers\.length\|\|!\['signin','register'\]\.includes\(mode\)/);
- assert.match(main,/signInWithOAuth\(\{provider,options:\{redirectTo:redirectUrl\(\)\}\}\)/);
+ assert.match(main,/signInWithOAuth\(\{provider,options:\{redirectTo:redirectUrl\(true\)\}\}\)/);
 });
 
 test('the privacy policy and the deletion page are public, linked from the sign-in card and the footer, and load no tracking',()=>{

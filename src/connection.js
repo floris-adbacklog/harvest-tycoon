@@ -53,7 +53,7 @@ export function safeToRepeat(body){
  const operation=body?.operation;
  if(operation==='action')return typeof body.requestId==='string'&&body.requestId.length>0;
  if(operation==='family')return Object.keys(body).length===1;
- return ['load','family_profile','player_search','player_profile','rename','avatar','admin_online','admin_recent_players','admin_retention','admin_invites','admin_players','admin_player','admin_purchases'].includes(operation);
+ return ['load','family_profile','player_search','player_profile','rename','avatar','admin_online','admin_recent_players','admin_retention','admin_sources','admin_invites','admin_players','admin_player','admin_purchases'].includes(operation);
 }
 
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));

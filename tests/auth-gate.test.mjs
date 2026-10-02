@@ -8,6 +8,7 @@ const connectionModule=readFileSync(new URL('../src/connection.js',import.meta.u
 const socialModule=readFileSync(new URL('../src/social-login.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const inviteModule=readFileSync(new URL('../src/invite-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const partnerModule=readFileSync(new URL('../src/partner-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
+const sourceModule=readFileSync(new URL('../src/source-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const browserTipModule=readFileSync(new URL('../src/browser-tip.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const settle=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};}
@@ -21,7 +22,7 @@ function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,locati
   // A delay of 0 runs at once; a real delay waits until the test moves the clock (see advance).
   setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,chosenLanguage:()=>'en',socialProviders:async()=>[],cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
 
- vm.runInContext(accountForm,context);vm.runInContext(connectionModule,context);vm.runInContext(socialModule,context);vm.runInContext(inviteModule,context);vm.runInContext(partnerModule,context);vm.runInContext(browserTipModule,context);vm.runInContext(source,context);
+ vm.runInContext(accountForm,context);vm.runInContext(connectionModule,context);vm.runInContext(socialModule,context);vm.runInContext(inviteModule,context);vm.runInContext(partnerModule,context);vm.runInContext(sourceModule,context);vm.runInContext(browserTipModule,context);vm.runInContext(source,context);
  // Moves the clock forward, running every timer that falls due on the way (and the ones they start).
  const advance=async ms=>{const end=clock+ms;for(;;){timers.sort((a,b)=>a.at-b.at);const next=timers[0];if(!next||next.at>end)break;timers.shift();clock=Math.max(clock,next.at);next.fn();await settle();}clock=end;await settle();};
  return {analytics,game,lookups,context,document,window,frames,calls,nodes,events,timers,advance,goOffline(){context.navigator.onLine=false;},goOnline(){context.navigator.onLine=true;},async auth(event,next){currentUser=next;authCallback(event,next?{user:next}:null);await settle();}};
@@ -240,7 +241,7 @@ const page={origin:'https://www.harvesttycoon.com',pathname:'/play.html',search:
 test('inside Facebook on Android the card offers Chrome, and the first visit hands the page to Chrome by itself, once',async()=>{
  const storage={},f=fixture({ua:ANDROID_FB,storage,location:{...page}});await settle();
  const card=f.nodes.get('.account-card');assert.equal(card.attrs['data-gate'],true);assert.equal(f.nodes.get('gate-open').textContent,'Open in Chrome');
- assert.equal(f.context.location.href,'intent://www.harvesttycoon.com/play.html?utm_source=facebook#Intent;scheme=https;package=com.android.chrome;end');
+ assert.equal(f.context.location.href,'intent://www.harvesttycoon.com/play.html?utm_source=facebook&via=facebook#Intent;scheme=https;package=com.android.chrome;end','the app it came from goes along (src/source-link.js)');
  assert.equal(storage['harvest-tycoon:browser-escape'],'shown');
  const again=fixture({ua:ANDROID_FB,storage,location:{...page}});await settle();
  assert.equal(again.context.location.href,undefined,'the second visit waits for a tap');assert.equal(again.nodes.get('.account-card').attrs['data-gate'],true);
@@ -250,7 +251,7 @@ test('inside Facebook on Android the card offers Chrome, and the first visit han
 test('on an iPhone the card tries Safari only on a tap; "Play here instead" is remembered and ends the later tip too',async()=>{
  const storage={},f=fixture({ua:IPHONE_IG,storage,location:{...page}});await settle();
  assert.equal(f.context.location.href,undefined,'an iPhone is never sent anywhere by itself');assert.equal(f.nodes.get('gate-open').textContent,'Open in Safari');
- f.nodes.get('gate-open').onclick();assert.equal(f.context.location.href,'x-safari-https://www.harvesttycoon.com/play.html?utm_source=facebook');
+ f.nodes.get('gate-open').onclick();assert.equal(f.context.location.href,'x-safari-https://www.harvesttycoon.com/play.html?utm_source=facebook&via=instagram');
  f.nodes.get('gate-stay').onclick();
  assert.equal(storage['harvest-tycoon:browser-escape'],'stay');assert.equal(storage['harvest-tycoon:browser-tip'],'1');assert.equal(f.nodes.get('.account-card').attrs['data-gate'],undefined);
  const later=fixture({ua:IPHONE_IG,storage,location:{...page}});await settle();assert.equal(later.nodes.get('.account-card').attrs?.['data-gate'],false,'the sign-up form straight away');
@@ -262,7 +263,7 @@ test('inside TikTok the card offers the phone\'s browser too; Android goes to Ch
  const storage={},f=fixture({ua:ANDROID_TT,storage,location:{...page,search:'?utm_source=tiktok&ttclid=E.C.P'}});await settle();
  assert.equal(f.nodes.get('.account-card').attrs['data-gate'],true);assert.equal(f.nodes.get('gate-open').textContent,'Open in Chrome');
  assert.equal(f.context.location.href,undefined,'no jump by itself');assert.equal(storage['harvest-tycoon:browser-escape'],'shown');
- f.nodes.get('gate-open').onclick();assert.equal(f.context.location.href,'intent://www.harvesttycoon.com/play.html?utm_source=tiktok&ttclid=E.C.P#Intent;scheme=https;package=com.android.chrome;end','the ad\'s click id goes along');
+ f.nodes.get('gate-open').onclick();assert.equal(f.context.location.href,'intent://www.harvesttycoon.com/play.html?utm_source=tiktok&ttclid=E.C.P&via=tiktok#Intent;scheme=https;package=com.android.chrome;end','the ad\'s click id goes along');
  const iphone=fixture({ua:IPHONE_TT,storage:{},location:{...page}});await settle();
  assert.equal(iphone.nodes.get('.account-card').attrs['data-gate'],true);assert.equal(iphone.nodes.get('gate-open').textContent,'Open in Safari');assert.equal(iphone.context.location.href,undefined);
 });

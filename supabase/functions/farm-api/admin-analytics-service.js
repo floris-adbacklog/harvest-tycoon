@@ -252,3 +252,16 @@ export async function handleAdminPurchases({admin,user,limit=500}){
  const paid=purchases.filter(p=>p.status==='credited'&&p.live);
  return respond(user,{purchases,totals:{started:purchases.length,paid:paid.length,notFinished:purchases.filter(p=>p.status!=='credited').length,revenueCents:paid.reduce((n,p)=>n+p.amountCents,0),players:new Set(purchases.map(p=>p.playerId)).size}});
 }
+// Where new farmers come from (2 Oct 2026, supabase/player-attribution.sql): every real account of the last 7, 30 or 90 days (Amsterdam
+// days, today included) per first-touch source, with how many opened their farm, came back on day 1, reached level 5, 10 and 14, and
+// paid. One database call. For the admin only, not the moderators (money).
+export const SOURCE_PERIODS=Object.freeze([7,30,90]);
+export async function handleAdminSources({admin,user,days=30,now=Date.now()}){
+ if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
+ const period=SOURCE_PERIODS.includes(Number(days))?Number(days):30;
+ const found=await admin.rpc('admin_source_stats',{p_since:new Date(dayStart(zoneDay(now-(period-1)*DAY_MS))).toISOString()});
+ if(found.error)throw found.error;
+ const rows=(found.data??[]).map(r=>({source:String(r.source??'unknown'),farmers:num(r.signups),played:num(r.played),day1:{kept:num(r.d1_kept),due:num(r.d1_due)},
+  level5:num(r.l5),level10:num(r.l10),level14:num(r.l14),checkouts:num(r.checkout_players),paid:num(r.paid_players),revenueCents:num(r.revenue_cents)}));
+ return respond(user,{period,rows});
+}

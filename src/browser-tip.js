@@ -5,6 +5,8 @@ export const BROWSER_TIP_KEY='harvest-tycoon:browser-tip',BROWSER_TIP_DELAY=1200
 export function inAppName(ua=''){
  return /Instagram/i.test(ua)?'Instagram':/Barcelona/i.test(ua)?'Threads':/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)?'Facebook':/musical_ly|trill_|BytedanceWebview/i.test(ua)?'TikTok':/Snapchat/i.test(ua)?'Snapchat':/LinkedInApp/i.test(ua)?'LinkedIn':'an app';
 }
+// The same app as a key for where a new farmer came from (src/source-link.js): it goes along when the page moves to the phone's browser.
+export const appKey=(ua='')=>({Facebook:'facebook',Instagram:'instagram',Threads:'threads',TikTok:'tiktok'})[inAppName(ua)]??null;
 // Android can hand the page to Chrome; an iPhone cannot be sent to Safari from here, so there the link is copied. (Safari on an
 // iPhone only shows reminders for a game added to the Home Screen, so the iPhone text does not promise them.)
 export function chromeIntent(href){const url=new URL(href);return `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=https;package=com.android.chrome;end`;}
@@ -50,12 +52,16 @@ export const gateApp=(ua='')=>GATE_APP.test(ua);
 export const safariUrl=href=>`x-safari-${href}`;
 // The page itself, without an OAuth answer or error in it, and with a friend's invite code put back (invite-link.js keeps it on
 // this device only, and the phone's browser is another device as far as storage goes).
-export function escapeTarget(loc,invite=null,ref=null){
+export function escapeTarget(loc,invite=null,ref=null,{rd=null,via=null}={}){
  const url=new URL((loc.pathname??'/')+(loc.search??''),loc.origin);
  for(const key of ['code','error','error_code','error_description'])url.searchParams.delete(key);
  if(invite&&!url.searchParams.has('invite'))url.searchParams.set('invite',invite);
  // A partner's code (src/partner-link.js) goes along to the real browser too.
  if(ref&&!url.searchParams.has('ref'))url.searchParams.set('ref',ref);
+ // And where the farmer came from (2 Oct 2026, src/source-link.js): the website that linked (the phone's browser gets no referrer)
+ // and the app it was in. The campaign tags and click ids are in the address already.
+ if(rd&&!url.searchParams.has('rd'))url.searchParams.set('rd',rd);
+ if(via&&!url.searchParams.has('via'))url.searchParams.set('via',via);
  return url.href;
 }
 export function gateText(ua=''){

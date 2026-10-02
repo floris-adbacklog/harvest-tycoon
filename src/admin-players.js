@@ -187,6 +187,36 @@ export function devicesHtml(all,week){
   +(all.unknown?`<p class="admin-funnel-split">${number(all.unknown)} not seen since devices were added</p>`:'');
 }
 
+// Where new farmers come from (2 Oct 2026, the admin only: farm-api admin_sources, supabase/player-attribution.sql): one row per
+// first-touch source, with the share of its farmers who came back on day 1 and reached level 5, 10 and 14, and who paid.
+export const SOURCE_PERIODS=Object.freeze([['7','7d'],['30','30d'],['90','90d']]);
+const SOURCE_KINDS={src:'Our link',partner:'Partner link',utm:'Ad (utm)',site:'Website'};
+const AD_CLICKS={meta:'Meta ad click',tiktok:'TikTok ad click',google:'Google ad click'};
+// "src:reddit-cozygames" → reddit-cozygames (our link), "ad:meta" → Meta ad click, "site:reddit.com" → reddit.com (website).
+export function sourceLabel(source){
+ const text=String(source??'unknown'),cut=text.indexOf(':'),kind=cut>0?text.slice(0,cut):text,rest=cut>0?text.slice(cut+1):'';
+ if(kind==='ad')return {label:AD_CLICKS[rest]??`${rest} ad click`,note:''};
+ if(SOURCE_KINDS[kind])return {label:rest,note:SOURCE_KINDS[kind]};
+ if(kind==='invite')return {label:'Friend’s invite',note:''};
+ if(kind==='direct')return {label:'Direct',note:'no tag, ad or website'};
+ return {label:'Not recorded',note:'joined before tracking, or never opened the farm'};
+}
+const heat=pct=>pct>=50?'admin-heat-good':pct>=25?'admin-heat-ok':'admin-heat-low';
+const euros=cents=>`€${(Number(cents??0)/100).toFixed(2)}`;
+export function sourcesHtml({rows=[]}={}){
+ if(!rows.length)return '<tr><td colspan="9" class="admin-empty">No new farmers in this period.</td></tr>';
+ // The recorded sources first, most farmers first; "Not recorded" last, then the totals.
+ const sorted=[...rows].sort((a,b)=>(a.source==='unknown')-(b.source==='unknown')||b.farmers-a.farmers);
+ const sum=key=>rows.reduce((n,r)=>n+(r[key]??0),0);
+ const total={farmers:sum('farmers'),played:sum('played'),day1:{kept:rows.reduce((n,r)=>n+(r.day1?.kept??0),0),due:rows.reduce((n,r)=>n+(r.day1?.due??0),0)},level5:sum('level5'),level10:sum('level10'),level14:sum('level14'),checkouts:sum('checkouts'),paid:sum('paid'),revenueCents:sum('revenueCents')};
+ const level=(r,n)=>`<td title="${number(n)} / ${number(r.farmers)}">${share(n,r.farmers)}%</td>`;
+ const count=(r,n)=>`<td title="${share(n,r.farmers)}% of ${number(r.farmers)}">${number(n)}</td>`;
+ const row=(r,name,cls='')=>`<tr${cls?` class="${cls}"`:''}><td>${name}</td><td title="${number(r.played)} opened their farm">${number(r.farmers)}</td>`
+  +(r.day1?.due?`<td class="${heat(share(r.day1.kept,r.day1.due))}" title="${number(r.day1.kept)} / ${number(r.day1.due)} came back on day 1">${share(r.day1.kept,r.day1.due)}%</td>`:'<td class="admin-pending" title="Joined today: day 1 is still to come">—</td>')
+  +level(r,r.level5)+level(r,r.level10)+level(r,r.level14)+count(r,r.checkouts)+count(r,r.paid)+`<td>${euros(r.revenueCents)}</td></tr>`;
+ return sorted.map(r=>{const {label,note}=sourceLabel(r.source);return row(r,`${esc(label)}${note?`<small>${esc(note)}</small>`:''}`);}).join('')+row(total,'All new farmers','admin-source-total');
+}
+
 // A staff gift to whom (supabase/staff-gift-audience.sql decides the list when it is sent; these are the same rules, for the counts on
 // the screen): everyone, the farmers active in the last 7 days, the farmers online now (the online dot) or one farmer.
 export const GIFT_AUDIENCES=Object.freeze([['all','Everyone'],['active','Active this week'],['online','Online now'],['player','One farmer']]);

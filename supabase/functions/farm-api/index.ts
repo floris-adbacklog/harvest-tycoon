@@ -5,9 +5,10 @@ import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily,handleFamilyProfile} from './family-service.js';
 import {handleAdminGrant,handleAdminEmail,isSuperadmin,isAdminAccount} from './admin-service.js';
-import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,recordSeen} from './admin-analytics-service.js';
+import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {linkPartner} from './partner-service.js';
+import {recordSource} from './source-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName} from './account-form.js';
@@ -54,7 +55,7 @@ Deno.serve(async(req)=>{
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','rename','avatar','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','rename','avatar','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
   if(body.operation==='admin_email'){
    const r=await handleAdminEmail({admin,body,user});
@@ -90,6 +91,9 @@ Deno.serve(async(req)=>{
   }
   if(body.operation==='admin_purchases'){
    const purchases=await handleAdminPurchases({admin,user});return reply(purchases.data,purchases.status);
+  }
+  if(body.operation==='admin_sources'){
+   const sources=await handleAdminSources({admin,user,days:body.days});return reply(sources.data,sources.status);
   }
   if(body.operation==='admin_invites'){
    const invites=await handleAdminInvites({admin,user});return reply(invites.data,invites.status);
@@ -155,7 +159,9 @@ Deno.serve(async(req)=>{
     // added to a farm that already exists, and a problem with it never stops the farm from opening.
     else{const invite=await linkInvite({admin,player:user.id,code:body.inviteCode??user.user_metadata?.invite,now}).catch((error:{code?:string})=>{console.error('Invite link failed',error?.code);return null;});if(invite)initial.invite=invite;
      // And from a partner's link (partner-service.js): never in the way of the farm either.
-     await linkPartner({admin,player:user.id,code:body.partnerCode??user.user_metadata?.ref,now}).catch((error:{code?:string})=>{console.error('Partner link failed',error?.code);});}
+     await linkPartner({admin,player:user.id,code:body.partnerCode??user.user_metadata?.ref,now}).catch((error:{code?:string})=>{console.error('Partner link failed',error?.code);});
+     // And how this new farmer found the game (source-service.js): once, beside the first load, never in the farm's way.
+     later(recordSource({admin,player:user.id,source:body.source??user.user_metadata?.source,headers:req.headers,language:body.language,now}).catch((error:{code?:string})=>{console.error('Source record failed',error?.code);}));}
     const created=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:0,p_state:initial,p_receipts:[],p_username:username,p_currency:initial.coins,p_level:levelOf(initial)});
     if(created.error)throw created.error;continue;
    }

@@ -1,7 +1,7 @@
 import {createFarmPresence} from './presence.js';
 import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError,socialProviders} from './supabase.js';
 import {OAUTH_KEY,providerName,oauthStartError,oauthReturnMessage,usableProviders,embeddedBrowser} from './social-login.js';
-import {scheduleBrowserTip,metaApp,gateApp,gateText,escapeTarget,chromeIntent,safariUrl,ESCAPE_KEY,BROWSER_TIP_KEY} from './browser-tip.js';
+import {scheduleBrowserTip,metaApp,gateApp,gateText,escapeTarget,chromeIntent,safariUrl,appKey,ESCAPE_KEY,BROWSER_TIP_KEY} from './browser-tip.js';
 import {fetchLeaderboard} from './leaderboard.js';
 import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInvite} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
@@ -14,6 +14,7 @@ import {startLoadingTips,ACCOUNT_STEPS} from '../public/loading-screen.js';
 import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
 import {takeRefFromUrl,pendingRef,clearRef} from './partner-link.js';
+import {readSource,sourceQuery} from './source-link.js';
 import {createConnection,connectionMessage,reasonOf,refused,WAKE_GRACE} from './connection.js';
 import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
@@ -68,7 +69,11 @@ void showInviter();
 const linkText=()=>`${globalThis.location?.hash??''}&${globalThis.location?.search??''}`;
 const linkKind=()=>/type=(recovery|signup|magiclink|invite|email_change)/.exec(linkText())?.[1]??'';
 const linkError=()=>/error_code=|error=access_denied/.test(linkText());
-const redirectUrl=()=>new URL('/play.html',location.origin).href;
+// Where a new farmer came from (src/source-link.js, 2 Oct 2026): read once from this address, in memory only (nothing on the device),
+// and sent with the sign-up and the first farm load. Google, Facebook and the email links come back to /play.html with it in their
+// address (redirectUrl(true)); the password reset does not need it.
+let pendingSource=readSource({href:location.href,pathname:location.pathname,referrer:document.referrer,authReturn:Boolean(tabStore.get(OAUTH_KEY)||linkKind()||/access_token=/.test(location.hash??''))});
+const redirectUrl=(carry=false)=>{const url=new URL('/play.html',location.origin);if(carry)for(const [key,value] of sourceQuery(location.href,pendingSource))url.searchParams.set(key,value);return url.href;};
 const inputId=field=>field==='name'?'player-name':field;
 const MESSAGES={register:'Creating your account…',signin:'Opening your farm…',name:'Opening your farm…',forgot:'Sending your link…',recovery:'Saving your password…'};
 // The loading screen before the farm: the same layout as the farm's own, and its bar covers the first few percent (the farm goes on
@@ -105,7 +110,7 @@ let gateTimer=null;
 function browserGate(){
  const card=document.querySelector('.account-card'),ua=navigator.userAgent,on=gateApp(ua)&&store.get(ESCAPE_KEY)!=='stay';
  card.toggleAttribute('data-gate',on);if(!on)return;
- const text=gateText(ua),target=escapeTarget(location,pendingInvite(localStore),pendingRef(localStore)),help=$('gate-help');
+ const text=gateText(ua),target=escapeTarget(location,pendingInvite(localStore),pendingRef(localStore),{rd:pendingSource?.ref,via:appKey(ua)}),help=$('gate-help');
  document.querySelectorAll('[data-gate-browser]').forEach(el=>el.textContent=text.browser);document.querySelectorAll('[data-gate-app]').forEach(el=>el.textContent=text.app);$('gate-open').textContent=text.action;
  const leave=()=>{location.href=text.android?chromeIntent(target):safariUrl(target);};
  $('gate-open').onclick=()=>{
@@ -145,7 +150,7 @@ async function openFarm(){
   let release,cancel;const ready=new Promise((resolve,reject)=>{release=resolve;cancel=reject;});ready.catch(()=>{});
   window.harvestBridge={pending:true,ready};const page=document.createElement('iframe');page.title='Harvest Tycoon farm';page.src='/farm.html';$('farm-host').append(page);
   const giveUp=error=>{cancel(error);page.remove();if(window.harvestBridge?.ready===ready)delete window.harvestBridge;};
-  let initial;try{const inviteCode=pendingInvite(localStore),partnerCode=pendingRef(localStore);initial=await farmRequest({operation:'load',...(inviteCode?{inviteCode}:{}),...(partnerCode?{partnerCode}:{})});clearInvite(localStore);clearRef(localStore);}catch(error){if(ticket!==generation)return;giveUp(error);if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
+  let initial;try{const inviteCode=pendingInvite(localStore),partnerCode=pendingRef(localStore);initial=await farmRequest({operation:'load',...(inviteCode?{inviteCode}:{}),...(partnerCode?{partnerCode}:{}),...(pendingSource?{source:pendingSource}:{})});clearInvite(localStore);clearRef(localStore);pendingSource=null;}catch(error){if(ticket!==generation)return;giveUp(error);if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
   if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}
   presence=createFarmPresence(supabase,user.id);
   presence.setClock?.(initial.serverNow);
@@ -193,7 +198,7 @@ socialProviders().then(list=>{providers=usableProviders(list,navigator.userAgent
 document.querySelectorAll('[data-provider]').forEach(button=>button.onclick=async()=>{
  if(submitting||!supabase)return;const provider=button.dataset.provider;
  trackAuth('submit',{mode,method:provider});submitting=true;lock(true);$('account-message').textContent=`Opening ${providerName(provider)}…`;
- try{tabStore.set(OAUTH_KEY,provider);const {error}=await supabase.auth.signInWithOAuth({provider,options:{redirectTo:redirectUrl()}});if(error)throw error;}
+ try{tabStore.set(OAUTH_KEY,provider);const {error}=await supabase.auth.signInWithOAuth({provider,options:{redirectTo:redirectUrl(true)}});if(error)throw error;}
  catch(error){tabStore.remove(OAUTH_KEY);const problem=oauthStartError(error,provider);trackAuth('error',{mode,reason:problem.reason,method:provider});$('account-message').textContent=problem.message;submitting=false;lock(false);}
 });
 $('forgot-link').onclick=()=>{if(submitting)return;trackAuth('mode',{mode:'forgot'});setMode('forgot',true);};
@@ -228,7 +233,7 @@ $('account-form').onsubmit=async event=>{
    if(!name){name=randomPlayerName();for(let i=0;i<5&&!(await free(name));i++)name=randomPlayerName();}
    const invite=pendingInvite(localStore);if(invite)trackInvite('invite_signup');
    const ref=pendingRef(localStore);
-   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username:name,language:chosenLanguage(),...(invite?{invite}:{}),...(ref?{ref}:{})},emailRedirectTo:redirectUrl()}});
+   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username:name,language:chosenLanguage(),...(invite?{invite}:{}),...(ref?{ref}:{}),...(pendingSource?{source:pendingSource}:{})},emailRedirectTo:redirectUrl(true)}});
    if(error)throw error;
    if(isNewRegistration(data))trackSignUp({confirmationRequired:!data.session});
    store.set(RETURNING_KEY,'1');
@@ -256,7 +261,7 @@ function shownField(field){return !$(field+'-row').hidden;}
 $('resend-confirmation').onclick=async()=>{
  if(!pendingEmail||!supabase)return;trackAuth('resend',{mode:confirmKind});$('confirm-message').textContent='Sending…';
  try{
-  const {error}=confirmKind==='reset'?await supabase.auth.resetPasswordForEmail(pendingEmail,{redirectTo:redirectUrl()}):await supabase.auth.resend({type:'signup',email:pendingEmail,options:{emailRedirectTo:redirectUrl()}});
+  const {error}=confirmKind==='reset'?await supabase.auth.resetPasswordForEmail(pendingEmail,{redirectTo:redirectUrl()}):await supabase.auth.resend({type:'signup',email:pendingEmail,options:{emailRedirectTo:redirectUrl(true)}});
   if(error)throw error;$('confirm-message').textContent='Sent! It can take a minute to arrive.';startResendCooldown(60);
  }catch(error){const problem=describeAuthError(error,cloudError);$('confirm-message').textContent=problem.message;trackAuth('error',{mode:'confirm',reason:problem.reason});}
 };

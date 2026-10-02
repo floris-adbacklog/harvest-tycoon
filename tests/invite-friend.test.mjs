@@ -76,8 +76,8 @@ test('the sign-in page remembers ?invite=CODE for 30 days (not for a browser tha
 });
 test('the code goes along with the sign-up and the first farm load, and the inviter\'s name comes from player-counts',async()=>{
  const main=read('src/main.js');
- assert.match(main,/options:\{data:\{username:name,language:chosenLanguage\(\),\.\.\.\(invite\?\{invite\}:\{\}\),\.\.\.\(ref\?\{ref\}:\{\}\)\}/);
- assert.match(main,/initial=await farmRequest\(\{operation:'load',\.\.\.\(inviteCode\?\{inviteCode\}:\{\}\),\.\.\.\(partnerCode\?\{partnerCode\}:\{\}\)\}\);clearInvite\(localStore\);clearRef\(localStore\);/);
+ assert.match(main,/options:\{data:\{username:name,language:chosenLanguage\(\),\.\.\.\(invite\?\{invite\}:\{\}\),\.\.\.\(ref\?\{ref\}:\{\}\),\.\.\.\(pendingSource\?\{source:pendingSource\}:\{\}\)\}/);
+ assert.match(main,/initial=await farmRequest\(\{operation:'load',\.\.\.\(inviteCode\?\{inviteCode\}:\{\}\),\.\.\.\(partnerCode\?\{partnerCode\}:\{\}\),\.\.\.\(pendingSource\?\{source:pendingSource\}:\{\}\)\}\);clearInvite\(localStore\);clearRef\(localStore\);pendingSource=null;/);
  let asked;assert.equal(await inviterName('https://f.test/functions/v1','TONYAA',async url=>{asked=url;return {ok:true,json:async()=>({inviter:'Tony'})};}),'Tony');assert.equal(asked,'https://f.test/functions/v1/player-counts?invite=TONYAA');
  assert.equal(await inviterName('https://f.test','TONYAA',async()=>{throw new Error('offline');}),null);
  const play=read('public/play.html');assert.match(play,/<div id="account-invite" class="account-invite" role="note" hidden>/);

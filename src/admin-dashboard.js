@@ -1,6 +1,6 @@
 // The staff dashboard (the admin and the moderators): three headline numbers, the chat reports, who is online, every farmer with
 // when they were last active and one farmer's details (src/admin-players.js), where new players stop, a 7-day retention cohort
-// and the Invite a friend log; for the admin also news for everyone, the moderators and the
+// and the Invite a friend log; for the admin also where new farmers come from, news for everyone, the moderators and the
 // levels from which farmers may chat (supabase/chat.sql). Giving coins, XP, diamonds or goods stays admin-only (the profile). Farm events run on their own schedule (live-events-schedule.sql), so they have no controls here. A single
 // icon button in the topbar (hidden for everyone else, same gate as the gift panel in player-profiles.js) opens
 // its own dialog inside the game, instead of a separate page — one session, one sign-in, nothing extra to visit.
@@ -15,7 +15,7 @@ import {LANGUAGES} from '../public/languages.js';
 import {chosenLanguage} from '../public/i18n.js';
 import {translateLink} from './chat-ui.js';
 import {deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
-import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,RETENTION_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
+import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,RETENTION_PERIODS,SOURCE_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,sourcesHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
@@ -54,6 +54,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<section class="admin-card admin-player-detail" id="admin-player-detail" hidden></section>'
   +'</div><div data-admin-panel="growth" hidden>'
   +'<section class="admin-card" id="admin-funnel"><h3>'+art('quests')+'New players: where do they stop?</h3><div class="admin-filters" role="group" aria-label="Period">'+FUNNEL_PERIODS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-funnel-period="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-funnel-list" class="admin-bars admin-funnel"></ul><p class="admin-hint">Of everyone who made an account in the period, how many got this far. Coming back counts only farmers who joined long enough ago, from their last activity.</p></section>'
+  // Where new farmers come from (2 Oct 2026, supabase/player-attribution.sql): the admin only, it has money in it.
+  +'<section class="admin-card" id="admin-sources" hidden><h3>'+art('invite-friends')+'Where new farmers come from</h3><div class="admin-filters" role="group" aria-label="Sources period">'+SOURCE_PERIODS.map(([id,label])=>`<button type="button" class="admin-filter${id==='30'?' active':''}" data-source-period="${id}" aria-pressed="${id==='30'}">${label}</button>`).join('')+'</div><div class="admin-table-scroll"><table class="admin-table admin-source-table"><thead><tr><th>Source</th><th>Farmers</th><th>Day 1</th><th>Level 5</th><th>Level 10</th><th>Level 14</th><th>Checkouts</th><th>Paid</th><th>€</th></tr></thead><tbody id="admin-source-body"></tbody></table></div><p class="admin-hint">One source per farmer, the first that applies: our ?src= tag, a partner link, a friend’s invite, the ad’s utm_source / campaign, the ad click (Meta, TikTok, Google), the website that linked, else Direct. Recorded once, when a new farm opens. Day 1 is approximate (last activity). Paid and € count real payments only.</p></section>'
   +'<section class="admin-card" id="admin-countries" hidden><h3>'+art('invite-friends')+'Where players come from</h3><ul id="admin-country-list" class="admin-bars"></ul><p class="admin-hint">The country of each farmer’s device time zone, the last time they opened the game.</p></section>'
   +'<section class="admin-card" id="admin-devices" hidden><h3>'+art('farmapp')+'Mobile or desktop</h3><div id="admin-device-box"></div><p class="admin-hint">The device each farmer last opened the game on. Mobile is a phone or a tablet.</p></section>'
   +'<section class="admin-card" id="admin-languages"><h3>'+art('settings')+'Game language</h3><ul id="admin-language-list" class="admin-bars"></ul><p class="admin-hint">The language each farmer’s game was in, the last time they opened it.</p></section>'
@@ -125,7 +127,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  }
  // All players: the filter, search and order stay as they are when the list refreshes; one farmer's details replace the list
  // until "All players". The funnel and the countries read the same list.
- const view={filter:'all',search:'',sort:'active',shown:60,period:'7',retention:'7',players:[],owner:false,guideSteps:GUIDE_STEPS.length,detail:null};
+ const view={filter:'all',search:'',sort:'active',shown:60,period:'7',retention:'7',sources:'30',players:[],owner:false,guideSteps:GUIDE_STEPS.length,detail:null};
  function renderPlayers(){
   const found=filterPlayers(view.players,view),list=dialog.querySelector('#admin-player-list');
   dialog.querySelector('#admin-players-count').textContent=found.length===view.players.length?number(found.length):`${number(found.length)} of ${number(view.players.length)}`;
@@ -226,6 +228,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const [online,players,retention,invites]=await Promise.all(PARTS.map(([operation])=>bridge.request(operation==='admin_retention'?{operation,days:Number(view.retention)}:{operation}).catch(()=>null)));
   if(role==='admin')void showOffers();
   if(role==='admin')void showPartners();
+  if(role==='admin')void loadSources();
   if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(renderPurchases).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
   if(players)showPlayers(players);
   if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}
@@ -307,6 +310,14 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   try{const data=await bridge.request({operation:'admin_retention',days:Number(view.retention)});if(ask===retentionAsk)renderRetention(data);}
   catch(error){if(ask===retentionAsk)dialog.querySelector('#admin-retention-body').innerHTML=`<tr><td colspan="10" class="admin-empty">${esc(error.message)}</td></tr>`;}
  });
+ // Where new farmers come from (the admin only): one database call per period; only the latest choice is drawn.
+ let sourceAsk=0;
+ async function loadSources(){
+  const body=dialog.querySelector('#admin-source-body'),ask=++sourceAsk;dialog.querySelector('#admin-sources').hidden=false;
+  try{const data=await bridge.request({operation:'admin_sources',days:Number(view.sources)});if(ask===sourceAsk)body.innerHTML=sourcesHtml(data);}
+  catch(error){if(ask===sourceAsk)body.innerHTML=`<tr><td colspan="9" class="admin-empty">${esc(error.message)}</td></tr>`;}
+ }
+ dialog.querySelectorAll('[data-source-period]').forEach(b=>b.onclick=()=>{view.sources=b.dataset.sourcePeriod;pressed(dialog.querySelectorAll('[data-source-period]'),b);dialog.querySelector('#admin-source-body').innerHTML='<tr><td colspan="9" class="admin-empty">Loading…</td></tr>';void loadSources();});
  dialog.querySelectorAll('[data-funnel-period]').forEach(b=>b.onclick=()=>{view.period=b.dataset.funnelPeriod;pressed(dialog.querySelectorAll('[data-funnel-period]'),b);renderFunnel();});
  dialog.querySelector('#admin-player-more').onclick=()=>{view.shown+=60;renderPlayers();};
  dialog.querySelector('[data-admin-panel="players"]').addEventListener('click',event=>{

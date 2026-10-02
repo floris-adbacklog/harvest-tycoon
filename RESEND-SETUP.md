@@ -61,6 +61,7 @@ Laat `{{ .ConfirmationURL }}` staan, Supabase vult die zelf in.
 - **Authentication → URL Configuration**
   - Site URL: `https://www.harvesttycoon.com`
   - Redirect URLs: voeg `https://www.harvesttycoon.com/play.html` **en** `https://harvesttycoon.com/play.html` toe (de site kan op beide adressen worden geopend). De registratie- en wachtwoord-mails sturen mensen hiernaartoe.
+  - Sinds 2 okt 2026 krijgen Google, Facebook en de bevestigingsmail een adres met parameters mee (`/play.html?src=…&rd=…`, waar een nieuwe speler vandaan kwam, `src/source-link.js`). Supabase accepteert elk pad op het domein van de Site URL (www) en het kale domein stuurt door naar www, dus er hoeft niets bij. Controleer het wel één keer na de deploy: open `https://www.harvesttycoon.com/?src=test` in een privévenster en meld je aan met Google en met Facebook. De pagina hoort terug te komen met `src=test&rd=none` in de adresbalk. Komt hij terug zonder, voeg dan `https://www.harvesttycoon.com/**` toe aan de Redirect URLs.
 - **Authentication → Rate Limits**: met eigen SMTP mag het aantal mails per uur hoger. Zet het op iets als 100 zolang je start, zodat een drukke dag geen spelers blokkeert.
 - **Authentication → Providers → Email**: laat "Confirm email" voorlopig aan. Het spel opent na de bevestiging automatisch de boerderij als de speler op hetzelfde apparaat klikt.
 
