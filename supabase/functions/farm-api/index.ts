@@ -11,7 +11,7 @@ import {linkPartner} from './partner-service.js';
 import {recordSource} from './source-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {randomPlayerName} from './account-form.js';
+import {randomPlayerName,firstFreeName} from './account-form.js';
 import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -19,11 +19,7 @@ const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-
 // Farmer names are unique, whatever the capitals (supabase/unique-farmer-names.sql). A new farm whose chosen name was taken in the
 // meantime gets the first free "Name 2", "Name 3"… so it always opens.
 const nameFree=async(admin:any,name:string)=>{const {data,error}=await admin.rpc('username_available',{p_name:name});if(error)throw error;return data===true;};
-async function freeName(admin:any,name:string){
- if(await nameFree(admin,name))return name;
- for(let n=2;n<1000;n++){const suffix=` ${n}`,candidate=`${name.slice(0,20-suffix.length).trim()}${suffix}`;if(await nameFree(admin,candidate))return candidate;}
- return name;
-}
+const freeName=(admin:any,name:string)=>firstFreeName(name,(candidate:string)=>nameFree(admin,candidate));
 // Work that may finish after the reply (the log, where the farm was opened): the game never waits for it.
 const later=(work:Promise<unknown>)=>(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(work);
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -53,6 +49,11 @@ Deno.serve(async(req)=>{
   const active=await admin.rpc('harvest_session_active',{p_player:user.id,p_session:claims.session_id});
   if(active.error)throw active.error;
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
+  // A CrazyGames account (Oct 2026, crazygames-auth, portal.js) signs in through CrazyGames, and its address on players.harvesttycoon.com
+  // is made up and never read: here its provider is CrazyGames, so every "email sign-up" rule below leaves it out (no confirm-your-email
+  // entry, no address change, no "Thanks for confirming" pop-up; a logged-in player gets the email bonus quietly, as with Google, and
+  // a guest never, supabase/crazygames.sql).
+  if(user.app_metadata?.portal==='crazygames')user.app_metadata={...user.app_metadata,provider:'crazygames'};
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
   if(!['events','admin_events','social','load','action','rename','avatar','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);

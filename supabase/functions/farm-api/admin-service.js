@@ -1,5 +1,6 @@
 import {normalizeFarm,levelOf,ITEMS,CROPS} from './farm-state.js';
 import {validEmail} from './account-form.js';
+import {portalOf} from './portal.js';
 
 // The only account that may ever give coins, XP, diamonds or goods to another farmer. Checked against the
 // authenticated, server-verified user (index.ts already resolved this from a real Supabase JWT) — never against
@@ -109,6 +110,9 @@ export async function handleAdminEmail({admin,body,user,now=Date.now()}){
  if(isAdminAddress(next))return respond({error:'This email address cannot be used.'},400);
  const found=await admin.auth.admin.getUserById(playerId);
  const target=found.data?.user;if(found.error||!target)return respond({error:'This farmer could not be found.'},404);
+ // A CrazyGames account (Oct 2026) signs in through CrazyGames: its address is made up and must stay as it is (crazygames-auth signs it
+ // in with that address).
+ if(portalOf(target))return respond({error:'This farmer plays on CrazyGames, so the account has no real email address to change.'},400);
  if((target.app_metadata?.provider??'email')!=='email')return respond({error:'This farmer signs in with Google or Facebook, so the address comes from there.'},400);
  if(String(target.email??'').toLowerCase()===next)return respond({error:'That is already their email address.'},400);
  const moved=await admin.auth.admin.updateUserById(playerId,{email:next,email_confirm:true});

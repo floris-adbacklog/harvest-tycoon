@@ -21,6 +21,14 @@ export function randomPlayerName(random=Math.random){
  const pick=list=>list[Math.floor(random()*list.length)%list.length];
  return `${pick(ADJECTIVES)} ${pick(NOUNS)} ${1000+Math.floor(random()*9000)}`;
 }
+// Farmer names are unique, whatever the capitals (supabase/unique-farmer-names.sql): the name itself when it is free, else the first
+// free "Name 2", "Name 3"… cut to fit 20 characters. isFree asks the database (username_available). Used by farm-api for a new farm
+// and by crazygames-auth for a CrazyGames username (Oct 2026), so both make names the same way.
+export async function firstFreeName(name,isFree){
+ if(await isFree(name))return name;
+ for(let n=2;n<1000;n++){const suffix=` ${n}`,candidate=`${name.slice(0,20-suffix.length).trim()}${suffix}`;if(await isFree(candidate))return candidate;}
+ return name;
+}
 
 export const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(value??'').trim());
 

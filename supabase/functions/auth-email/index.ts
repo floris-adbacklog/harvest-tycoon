@@ -3,7 +3,7 @@
 // subject field cannot hold. Deploy with --no-verify-jwt: the call is checked by the hook's own signature (SEND_EMAIL_HOOK_SECRET,
 // "v1,whsec_…", from Authentication → Hooks). Uses RESEND_API_KEY and MAIL_FROM, like notify-hourly.
 import {Webhook} from 'npm:standardwebhooks@1.0.0';
-import {authEmail,confirmationUrl} from './mail.js';
+import {authEmail,confirmationUrl,PORTAL_MAIL} from './mail.js';
 
 const env=(key:string)=>Deno.env.get(key)??'';
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
@@ -17,6 +17,7 @@ Deno.serve(async request=>{
  try{data=new Webhook(secret).verify(await request.text(),Object.fromEntries(request.headers)) as {user:{email:string,user_metadata?:{language?:string}},email_data:{token_hash:string,redirect_to?:string,site_url?:string,email_action_type:string}};}
  catch{return failure('Invalid signature.',401);}
  const {user,email_data:mail}=data;
+ if(PORTAL_MAIL.test(String(user?.email??'').trim()))return reply({});
  let message;
  try{
   const link=confirmationUrl({supabaseUrl:env('SUPABASE_URL'),tokenHash:mail.token_hash,type:mail.email_action_type,redirectTo:mail.redirect_to||mail.site_url});

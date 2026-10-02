@@ -7,6 +7,9 @@ import {COPY,TAG,TEMPLATES,SUBJECTS,SUBJECT_ICONS,RTL} from './texts.js';
 export const MAIL_OF=Object.freeze({signup:'confirm-signup',recovery:'reset-password'});
 export const LANGUAGES=Object.freeze(Object.keys(TEMPLATES['confirm-signup']));
 export const languageOf=value=>LANGUAGES.includes(String(value??''))?String(value):'en';
+// A CrazyGames account (Oct 2026, supabase/functions/crazygames-auth) has a made-up address on players.harvesttycoon.com, which has
+// no mailbox: nothing is ever sent there, whatever Supabase asks for (a password reset typed for it, or a sign-in link).
+export const PORTAL_MAIL=/@players\.harvesttycoon\.com$/i;
 
 const esc=text=>String(text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 

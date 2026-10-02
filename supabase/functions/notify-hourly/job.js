@@ -2,6 +2,9 @@
 import {planPlayer} from './rules.js';
 export const EMAIL_DAILY_CAP=60;   // keeps the free Resend allowance (100 a day) free for sign-up and password mails
 export const MAX_FAILURES=5;       // a device that keeps failing is forgotten
+// A CrazyGames account (Oct 2026) has a made-up address on players.harvesttycoon.com: it gets no reminder at all, push or email.
+// notification_candidates already leaves these out (supabase/crazygames.sql); this holds even before that is run.
+export const PORTAL_MAIL=/@players\.harvesttycoon\.com$/i;
 
 async function deliver(deps,player,push){
  let delivered=0;
@@ -24,6 +27,7 @@ export async function runJob(deps,now=Date.now()){
  // back (a new farmer the morning after their first day), not to someone who stopped days ago. Pushes have no allowance.
  const rows=[...(await deps.db.candidates())].sort((a,b)=>(Date.parse(b.last_active_at)||0)-(Date.parse(a.last_active_at)||0));
  for(const row of rows){
+  if(PORTAL_MAIL.test(String(row.email??'').trim()))continue;
   stats.players++;
   try{
    const plan=planPlayer(row,now,deps.names),patch={...plan.patchAlways};
