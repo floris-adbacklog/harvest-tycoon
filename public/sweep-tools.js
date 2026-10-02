@@ -24,7 +24,7 @@ export const TOOL_ART=Object.freeze({
 // as a PNG. Until then, or if the picture cannot load, the inline drawing at 32 px is the cursor (a plain pointer where there is none).
 // Made once per tool (it is asked on every mouse move); the fallback is joined on, so the translation catalog never takes ", pointer"
 // for a text.
-export const CURSOR_PX=40;
+export const CURSOR_PX=40,SMALL_CURSOR_PX=32;
 const CURSORS=new Map(),LOADING=new Set(),LOADED=new Set();
 function drawingCursor(art){
  if(!art.svg)return '';
@@ -35,7 +35,10 @@ function pictureCursor(img,art,doc){
  const png=px=>{const c=doc.createElement('canvas');c.width=c.height=px;const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(img,0,0,px,px);return c.toDataURL('image/png');};
  const [x,y]=art.hot.map(v=>Math.round(v*CURSOR_PX/TOOL_SIZE)),one=png(CURSOR_PX),plain=[`url("${one}")`,x,y].join(' ');
  const sharp=[['image-set(',`url("${one}") 1x, url("${png(CURSOR_PX*2)}") 2x`,')'].join(''),x,y].join(' ');   // joined, as above
- return [globalThis.CSS?.supports?.('cursor',[sharp,'pointer'].join(', '))?sharp:plain,'pointer'].join(', ');
+ // Chrome skips a cursor over 32 px that would stick out of the window (a field near the right or bottom edge), so the same tool at
+ // 32 px comes next in the list before the plain pointer (Oct 2026 review).
+ const small=[`url("${png(SMALL_CURSOR_PX)}")`,...art.hot.map(v=>Math.round(v*SMALL_CURSOR_PX/TOOL_SIZE))].join(' ');
+ return [globalThis.CSS?.supports?.('cursor',[sharp,'pointer'].join(', '))?sharp:plain,small,'pointer'].join(', ');
 }
 // Loads the painted tool once; when it is there its cursor replaces the drawing from the next mouse move on (and LOADED tells the hand
 // the picture is there). Without a browser (the tests) nothing loads and the drawing stays.

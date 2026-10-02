@@ -169,11 +169,11 @@ test('once a painted tool has loaded it is the cursor: drawn once at 40 px (and 
   assert.equal(images.length,1);assert.equal(images[0].src,'/assets/icons/tool-sickle.webp');
   cursor('harvest');cursor('harvest');assert.equal(images.length,1,'loaded once');
   images[0].onload();
-  assert.equal(cursor('harvest'),'image-set(url("data:image/png;base64,40") 1x, url("data:image/png;base64,80") 2x) 7 2, pointer');
-  assert.deepEqual(drawn,[['/assets/icons/tool-sickle.webp',40,40],['/assets/icons/tool-sickle.webp',80,80]]);assert.equal(CURSOR_PX,40);
+  assert.equal(cursor('harvest'),'image-set(url("data:image/png;base64,40") 1x, url("data:image/png;base64,80") 2x) 7 2, url("data:image/png;base64,32") 6 1, pointer','then the same tool at 32 px, which Chrome takes near the window edge');
+  assert.deepEqual(drawn,[['/assets/icons/tool-sickle.webp',40,40],['/assets/icons/tool-sickle.webp',80,80],['/assets/icons/tool-sickle.webp',32,32]]);assert.equal(CURSOR_PX,40);
   // Where a browser takes no image-set for a cursor: the 40 px picture alone. Care gets its gloves.
   globalThis.CSS={supports:()=>false};
-  assert.equal(cursor('tend'),'');images[1].onload();assert.equal(cursor('tend'),'url("data:image/png;base64,40") 2 3, pointer');
+  assert.equal(cursor('tend'),'');images[1].onload();assert.equal(cursor('tend'),'url("data:image/png;base64,40") 2 3, url("data:image/png;base64,32") 1 2, pointer');
   // Once the gloves have loaded, a care sweep holds them (48 px, the leaf tip on the pointer).
   const doc=fakeDoc(),tool=hold({doc}),hand=doc.body.children[0];
   tool.show('tend');const [gloves]=hand.children;assert.equal(gloves.tagName,'IMG');assert.equal(gloves.src,'/assets/icons/tool-gloves.webp');
