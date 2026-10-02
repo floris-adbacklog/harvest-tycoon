@@ -7,8 +7,9 @@ export const farmNow=()=>Date.now()+clockOffset;
 // the server (farm-state.js), shows it straight away and sends it; the server's answer then takes over. The everyday taps (fields,
 // selling, batches), and since the same day the claims, building, helping hands and the daily gift (and the comeback chest, Oct 2026:
 // it spends nothing and only opens what the server put there). Purchases, the family, chores
-// (their lucky bonus is the server's roll) and anything that spends diamonds wait for the server as before.
-export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','comeback','delivery','mastery','activity_start','activity_work','upgrade','construct','expand','tractor','stall_collect']));
+// (their lucky bonus is the server's roll) and anything that spends diamonds wait for the server as before. A Halloween Pass reward
+// (Oct 2026) shows at once too: a claim like the others, worked out from the farm alone.
+export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','comeback','delivery','mastery','activity_start','activity_work','upgrade','construct','expand','tractor','stall_collect','pass_claim']));
 // No lucky double batch on the screen before the server has rolled for it (its answer shows it when it comes).
 const noLuck=()=>1;
 // Whether a tap can show at once: an everyday action that the rules accept. A level-up shows at once too (the rules pay its reward

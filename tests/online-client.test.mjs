@@ -54,7 +54,7 @@ test('a level-up shows at once too (a new farm levels up on its first harvest); 
  const invited=structuredClone(farm);invited.invite={code:'ANNA12',by:'Anna',at:now};invited.xp=xpForLevel(10)-1;
  assert.equal(instantResult(invited,{type:'field',id:ready,action:'harvest'},now),null,'reaching level 10 as an invited friend waits for the server');
  assert.equal(instantResult(farm,{type:'buy_vip',plan:'week'},now),null,'not an everyday tap');
- assert.deepEqual([...INSTANT_ACTIONS].sort(),['activity_start','activity_work','beginner_claim','checkin','collect','collect_all','comeback','construct','daily','delivery','expand','field','fields','mastery','produce','quest','sell','stall_collect','tractor','upgrade']);
+ assert.deepEqual([...INSTANT_ACTIONS].sort(),['activity_start','activity_work','beginner_claim','checkin','collect','collect_all','comeback','construct','daily','delivery','expand','field','fields','mastery','pass_claim','produce','quest','sell','stall_collect','tractor','upgrade']);
  assert(!INSTANT_ACTIONS.has('chore'),'a chore\'s lucky bonus is the server\'s roll');
  assert.match(readFileSync(new URL('../public/farm-client.js',import.meta.url),'utf8'),/if\(\(trial\.diamonds\?\?0\)<\(state\.diamonds\?\?0\)\)return null;/,'spending diamonds waits for the server');
  assert.equal(instantResult({coins:1},{type:'quest',id:'x'},now),null,'a slip in the rules (not a refusal) leaves it to the server');

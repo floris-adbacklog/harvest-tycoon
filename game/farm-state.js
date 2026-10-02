@@ -2052,7 +2052,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.daily.tasks??=oldVersion<10&&existingDay?LEGACY_DAILY_POOLS.map((pool,id)=>({...pool[(d+id)%pool.length]})):featureUnlocked(state,'challenges')?selectDailyTasks(state,d):[];
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);
- refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);
+ refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshPass(state,now);
  return state;
 }
 // An order on today's board that the farm cannot make (picked before a rule changed, or a building it has not built) is swapped,
@@ -2159,6 +2159,117 @@ export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  if(order.input.honey)state.stats.honey_deliveries=(state.stats.honey_deliveries??0)+1;
  if(Object.keys(order.input).some(k=>k!=='honey'&&Object.hasOwn(PRODUCTS,k)))state.stats.crafted_deliveries=(state.stats.crafted_deliveries??0)+1;
  return {coins:order.coins,xp:order.xp,diamonds:order.diamonds};
+}
+// The Halloween Pass (Oct 2026): 30 tiers, each with a free and a paid reward, from level 10 for both. Lanterns come only from what every
+// farm can do a few times a day whatever its level (the daily gift 2, a daily challenge 1, a delivery 1: at most 7-8 a day), so a level-12
+// farm keeps up with a level-80 one; counted from the moment the season opens for the farm (or it reaches level 10 during it). Every 2
+// lanterns open the next tier and every reward has its own Claim (never all at once, also after a late purchase). The lanterns stand
+// still at the end, collecting goes on for a week, then it all hides. One purchase opens the paid row (game/payments.js PASS, the same
+// dates: a test keeps them equal); the database writes it into state.passPremium, a list the game never resets. No XP inside, so the
+// level pace stays as it is; its coins never count as earned (a farm event's "Earn coins" goal reads stats.earned); the free row holds
+// no diamonds, and the paid row's diamonds are the 500 of the €4.99 pack. No decorations or avatars in this first season.
+const tierPair=(free,paid)=>Object.freeze({free:Object.freeze(free),paid:Object.freeze(paid)});
+export const SEASON_PASS=Object.freeze({id:'halloween-2026',name:'Halloween Pass',level:10,cents:499,
+ startsAt:Date.UTC(2026,9,23),endsAt:Date.UTC(2026,10,3),claimUntil:Date.UTC(2026,10,10),perTier:2,
+ points:Object.freeze({gift:2,daily:1,delivery:1}),
+ // cents: the price the screens show; what Stripe charges is game/payments.js PASS (the same, a test checks).
+ // coins: that many × the farm level when collected (in fives); boost: a timed boost of that length; items: into storage; vipDays: VIP time.
+ tiers:Object.freeze([
+  tierPair({coins:10},{diamonds:50}),
+  tierPair({items:{pumpkin:3}},{coins:20}),
+  tierPair({boost:'harvest',length:'30m'},{boost:'xp',length:'1h'}),
+  tierPair({coins:10},{items:{pie:1}}),
+  tierPair({items:{pie:1}},{diamonds:50}),
+  tierPair({coins:20},{boost:'harvest',length:'1h'}),
+  tierPair({boost:'xp',length:'30m'},{coins:30}),
+  tierPair({coins:20},{boost:'coins',length:'1h'}),
+  tierPair({items:{pumpkin:3}},{coins:30}),
+  tierPair({coins:20},{diamonds:100}),
+  tierPair({coins:20},{boost:'xp',length:'1h'}),
+  tierPair({boost:'coins',length:'30m'},{coins:40}),
+  tierPair({coins:30},{coins:40}),
+  tierPair({items:{pie:1}},{boost:'harvest',length:'1h'}),
+  tierPair({coins:30},{diamonds:100}),
+  tierPair({boost:'harvest',length:'30m'},{boost:'coins',length:'1h'}),
+  tierPair({coins:30},{coins:50}),
+  tierPair({items:{pumpkin:5}},{items:{pie:2}}),
+  tierPair({coins:40},{coins:50}),
+  tierPair({boost:'xp',length:'30m'},{vipDays:7}),
+  tierPair({coins:40},{coins:60}),
+  tierPair({items:{pie:2}},{boost:'coins',length:'1h'}),
+  tierPair({coins:40},{items:{pie:2}}),
+  tierPair({boost:'coins',length:'30m'},{coins:60}),
+  tierPair({coins:50},{diamonds:200}),
+  tierPair({items:{pumpkin:5}},{coins:80}),
+  tierPair({coins:50},{boost:'xp',length:'1h'}),
+  tierPair({boost:'harvest',length:'30m'},{items:{pie:3}}),
+  tierPair({coins:60},{coins:100}),
+  tierPair({coins:100},{boost:'harvest',length:'1d'})
+ ])});
+export const PASS_TRACKS=Object.freeze(['free','paid']);
+// Where the season stands: 'soon' (a preview from level 10), 'open' (lanterns count, the paid row is for sale), 'claim' (a week to collect
+// what was reached) and 'over' (hidden).
+export function passPhase(now=Date.now()){return now<SEASON_PASS.startsAt?'soon':now<SEASON_PASS.endsAt?'open':now<SEASON_PASS.claimUntil?'claim':'over';}
+const passCounts=state=>({visits:Number(state.login?.visits)||0,dailies:Number(state.stats?.dailies)||0,deliveries:Number(state.stats?.deliveries)||0});
+export function passLanterns(state){
+ const pass=state.pass;if(!pass||pass.id!==SEASON_PASS.id)return 0;if(Number.isSafeInteger(pass.final))return pass.final;
+ const now=passCounts(state),base=pass.base??{},p=SEASON_PASS.points,since=key=>Math.max(0,now[key]-(base[key]??now[key]));
+ return p.gift*since('visits')+p.daily*since('dailies')+p.delivery*since('deliveries');
+}
+export const passTier=state=>Math.min(SEASON_PASS.tiers.length,Math.floor(passLanterns(state)/SEASON_PASS.perTier));
+export const passPremium=state=>Array.isArray(state.passPremium)&&state.passPremium.includes(SEASON_PASS.id);
+// Whether the farm sees the pass: the preview and the open season from level 10, the collecting week only with lanterns of its own.
+export function passVisible(state,now=Date.now()){const phase=passPhase(now);return levelOf(state)>=SEASON_PASS.level&&(phase==='soon'||phase==='open'||phase==='claim'&&state.pass?.id===SEASON_PASS.id);}
+// Rewards reached and not collected yet (the paid row only once bought): the "!" on the pass button, worked out from the farm (no storage).
+export function passWaiting(state,now=Date.now()){
+ const phase=passPhase(now),pass=state.pass;if(phase!=='open'&&phase!=='claim'||pass?.id!==SEASON_PASS.id)return 0;
+ const tier=passTier(state);
+ return (passPremium(state)?PASS_TRACKS:['free']).reduce((n,track)=>n+tier-(pass[track]??[]).filter(t=>t<=tier).length,0);
+}
+// What the paid row holds in all (its diamonds, VIP days and boosts) and how long the free row's boosts run: the buy box and the wiki.
+export function passTotals(){
+ const paid=SEASON_PASS.tiers.map(t=>t.paid),free=SEASON_PASS.tiers.map(t=>t.free);
+ return {diamonds:paid.reduce((n,r)=>n+(r.diamonds??0),0),vipDays:paid.reduce((n,r)=>n+(r.vipDays??0),0),boosts:paid.filter(r=>r.boost).length,
+  freeBoostMinutes:[...new Set(free.filter(r=>r.boost).map(r=>BOOST_DURATIONS[r.length]/60000))]};
+}
+// One tier's reward for a farm at this level: coins in fives.
+export function passReward(reward,level){
+ const r={...reward};if(r.coins)r.coins=Math.round(reward.coins*Math.max(1,level)/5)*5;if(r.items)r.items={...reward.items};return r;
+}
+function refreshPass(state,now){
+ if(state.passPremium!==undefined)state.passPremium=Array.isArray(state.passPremium)?[...new Set(state.passPremium.filter(id=>typeof id==='string'))]:[];
+ if(state.pass!==undefined&&!(state.pass&&typeof state.pass==='object'&&state.pass.id===SEASON_PASS.id))delete state.pass;   // another season's pass
+ if(!state.pass&&passPhase(now)==='open'&&levelOf(state)>=SEASON_PASS.level)state.pass={id:SEASON_PASS.id,base:passCounts(state),free:[],paid:[]};
+ const pass=state.pass;if(!pass)return;
+ const counts=passCounts(state),base=pass.base&&typeof pass.base==='object'?pass.base:{};
+ pass.base=Object.fromEntries(Object.entries(counts).map(([key,n])=>[key,Number.isSafeInteger(base[key])?base[key]:n]));
+ const tiers=list=>Array.isArray(list)?[...new Set(list.filter(t=>Number.isInteger(t)&&t>=1&&t<=SEASON_PASS.tiers.length))]:[];
+ pass.free=tiers(pass.free);pass.paid=tiers(pass.paid);
+ if(pass.final!==undefined&&!Number.isSafeInteger(pass.final))delete pass.final;
+ // From the end on the lanterns stand still: every action normalizes the farm first, so this keeps the count from before it.
+ if(now>=SEASON_PASS.endsAt&&pass.final===undefined)pass.final=passLanterns(state);
+}
+export function claimPassTier(state,track,tier,now=Date.now()){
+ normalizeFarm(state,now);const phase=passPhase(now),pass=state.pass,name=SEASON_PASS.name;
+ if(phase==='soon')throw new Error(`The ${name} is not open yet.`);
+ if(phase==='over')throw new Error(`The ${name} has ended.`);
+ if(levelOf(state)<SEASON_PASS.level)throw new Error(`The ${name} opens at level ${SEASON_PASS.level}.`);
+ if(!PASS_TRACKS.includes(track))throw new Error('Choose a free or a paid reward.');
+ if(!Number.isInteger(tier)||tier<1||tier>SEASON_PASS.tiers.length)throw new Error('Choose a tier.');
+ if(!pass)throw new Error(`You have no lanterns in the ${name}.`);
+ if(track==='paid'&&!passPremium(state))throw new Error('Unlock the paid rewards first.');
+ if(pass[track].includes(tier))throw new Error('You already collected this reward.');
+ const need=tier*SEASON_PASS.perTier-passLanterns(state);
+ if(need>0)throw new Error(`Collect ${need} more lantern${need===1?'':'s'} to reach this tier.`);
+ const reward=passReward(SEASON_PASS.tiers[tier-1][track],levelOf(state));
+ if(reward.coins)state.coins+=reward.coins;   // never stats.earned (see above)
+ if(reward.diamonds)state.diamonds+=reward.diamonds;
+ for(const [key,n] of Object.entries(reward.items??{}))state.inventory[key]=(state.inventory[key]??0)+n;
+ if(reward.boost){const key=BOOST_UNTIL[reward.boost];state.boosts[key]=Math.max(state.boosts[key]??0,now)+BOOST_DURATIONS[reward.length];}
+ // VIP after any VIP still running, and counted like VIP bought (stats.vip_days: the Velvet farmer avatar).
+ if(reward.vipDays){state.vipExpiresAt=Math.max(now,state.vipExpiresAt??0)+reward.vipDays*DAY_MS;state.stats.vip_days=(state.stats.vip_days??0)+reward.vipDays;}
+ pass[track].push(tier);
+ return {track,tier,...reward};
 }
 // Every level pays at least one diamond, so no level-up is ever empty-handed; from level 10 on it grows with every five levels.
 // Invite a friend: every farmer has a short personal code (harvesttycoon.com/?invite=CODE). A friend who starts a new farm with
@@ -2318,6 +2429,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'daily':return claimDaily(state,action.id,action.day,now);
   case 'checkin':return checkIn(state,now);
   case 'comeback':return collectComeback(state,now);
+  case 'pass_claim':return claimPassTier(state,action.track,action.tier,now);
   case 'delivery':return deliverOrder(state,action.id,action.day,now,action.revision);
   case 'level_rewards':return claimLevelRewards(state);
   case 'tractor':return useTractor(state,action.mode,action.crop,now);

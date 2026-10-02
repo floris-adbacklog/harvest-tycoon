@@ -35,6 +35,10 @@ export function createMobileUI({openUtility,resetView}){
   const family=$('family-button'),familyTile=menu.querySelector('[data-menu-action="family-button"]');
   if(family&&familyTile){familyTile.hidden=family.hidden;familyTile.classList.toggle('has-dot',!family.hidden&&!($('family-dot')?.hidden??true));}
   const familyWaiting=mobileLayout.matches&&familyTile?.classList.contains('has-dot');
+  // The Halloween Pass (Oct 2026) the same way, under Every day: its tile follows its header button and its "!".
+  const pass=$('pass-button'),passTile=$('pass-menu-entry');
+  if(pass&&passTile){passTile.hidden=pass.hidden;passTile.classList.toggle('has-dot',!pass.hidden&&!($('pass-dot')?.hidden??true));}
+  const passWaiting=mobileLayout.matches&&Boolean(passTile?.classList.contains('has-dot'));
   const chat=$('chat-button'),chatDot=$('chat-dot'),chatTile=$('chat-menu-entry'),chatPill=$('chat-menu-pill');
   if(chat&&chatTile){chatTile.hidden=chat.hidden;chatPill.hidden=chat.hidden||(chatDot?.hidden??true);chatPill.textContent=chatDot?.textContent??'';chatTile.setAttribute('aria-label',chat.getAttribute('aria-label')??'Open chat');}
   const chatWaiting=mobileLayout.matches&&Boolean(chatPill&&!chatPill.hidden);
@@ -44,7 +48,7 @@ export function createMobileUI({openUtility,resetView}){
   const emailWaiting=mobileLayout.matches&&Boolean(emailTile&&!emailTile.hidden);
   // A waiting event reward, a stall worth emptying (growth-ui.js) or something in the family also lights the More dot, since they
   // live in that menu on phones.
-  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!familyWaiting&&!chatWaiting&&!emailWaiting;
+  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!passWaiting&&!familyWaiting&&!chatWaiting&&!emailWaiting;
   $('tasks-button').setAttribute('aria-label',quests.hidden?'Open quests':'Open quests, rewards ready');
   $('buildings-button').setAttribute('aria-label',batches.hidden?'Open buildings':`Open buildings, ${batches.textContent} batches ready`);
  }

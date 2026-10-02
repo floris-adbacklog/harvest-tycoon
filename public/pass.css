@@ -1,0 +1,85 @@
+/* The Halloween Pass (Oct 2026, public/pass-ui.js): a header button like Farm family's (a phone has the More tile instead), the window
+   with one row per tier (the free and the paid reward side by side), a banner in the Diamond shop and the lantern chip in Today. */
+#pass-button{position:relative;flex-shrink:0}#pass-button .game-art{width:28px;height:28px;object-fit:contain}
+#pass-dot{position:absolute;inset-inline-end:-5px;top:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif;pointer-events:none}
+#pass-button[hidden],#pass-dot[hidden],#pass-menu-entry[hidden],.shop-pass[hidden]{display:none}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){#pass-button{display:none}}
+#pass-menu-entry .game-art{object-fit:contain}
+
+#pass-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}
+#pass-dialog *{box-sizing:border-box;min-width:0}
+.pass-top{display:flex;align-items:center;gap:14px;margin:6px 0 14px}
+.pass-top .pass-hero{width:64px;height:64px;flex:none;object-fit:contain}
+.pass-top-copy{flex:1}
+.pass-phase{margin:0;font:700 17px/1.3 'Outfit',sans-serif;color:#8a4f12}
+.pass-rule{margin:4px 0 0;font-size:14px;line-height:1.5;color:#6f6a5a}
+.pass-progress{display:grid;gap:6px;margin:0 0 12px;padding:10px 14px;border:1px solid #ead9ad;border-radius:16px;background:#fff8e6}
+.pass-progress>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.pass-progress strong{font:700 18px/1.2 'Outfit',sans-serif;color:#5b4520}
+.pass-progress span{font-size:13px;font-weight:700;color:#8a4f12}
+.pass-progress progress{width:100%;height:10px;accent-color:#e08a2c}
+.pass-progress small{font-size:12px;color:#807b6c}
+.pass-progress small:empty{display:none}
+.pass-waiting{margin:0 0 12px;padding:8px 12px;border-radius:12px;background:#f3f8ec;color:#3f6b2c;font-size:14px;font-weight:700}
+
+.pass-paid-box{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:0 0 16px;padding:12px 14px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#fff1c9,#fffaf0 55%,#ffe9d6);box-shadow:0 3px 0 #b8862a33}
+.pass-paid-copy{display:grid;gap:3px;flex:1 1 280px}
+.pass-paid-copy strong{font:700 18px/1.2 'Outfit',sans-serif;color:#3d2f14}
+.pass-paid-copy small{font-size:13px;line-height:1.45;color:#6f5a35}
+.pass-paid-copy .pass-value{font-weight:700;color:#2f7a34}
+.pass-paid-copy .pass-value:empty{display:none}
+#pass-dialog .primary-button.pass-buy{flex:none;min-width:170px;background:var(--btn-gold);border-color:var(--btn-gold-line);color:var(--btn-gold-text);box-shadow:0 3px 0 var(--btn-gold-edge)}
+#pass-dialog .primary-button.pass-buy:hover:not(:disabled){background:var(--btn-gold-hover)}
+#pass-dialog .primary-button.pass-buy:disabled{background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;transform:none;cursor:default}
+.pass-feedback{flex-basis:100%;margin:0;font-size:13px;color:#8a4f12}
+.pass-feedback:empty{display:none}
+
+.pass-heads,.pass-row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(0,1fr);gap:8px}
+.pass-heads{margin:0 0 4px;font:700 13px/1.2 'DM Sans',sans-serif;color:#807b6c;text-transform:uppercase;letter-spacing:.04em}
+.pass-heads b{display:flex;align-items:center;gap:5px;padding-inline-start:10px}
+.pass-heads .game-art{width:16px;height:16px}
+.pass-tiers{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.pass-row{align-items:stretch}
+.pass-tier{display:grid;place-items:center;align-self:center;width:30px;height:30px;border-radius:50%;background:#efe6d8;color:#8a7a5c;font:800 13px/1 'DM Sans',sans-serif}
+.pass-row.is-reached .pass-tier{background:#e08a2c;color:#fff}
+.pass-row.is-next .pass-tier{box-shadow:0 0 0 2px #e08a2c inset;background:#fff3e2;color:#a85f14}
+.pass-cell{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:7px 9px;border:1px solid #ead9ad;border-radius:14px;background:#fffaf0}
+.pass-cell.is-paid{border-color:#e8c07a;background:#fff4e0}
+.pass-row:not(.is-reached) .pass-cell{opacity:.82}
+.pass-cell.is-locked .pass-reward{opacity:.75}
+.pass-cell.is-claimed{background:#f3f8ec;border-color:#cfe0c0}
+.pass-row.is-reached .pass-cell:not(.is-claimed):not(.is-locked){border-color:#8fb35c;box-shadow:0 2px 0 #8fb35c33}
+.pass-reward{display:flex;align-items:center;gap:8px;flex:1 1 auto}
+.pass-reward .game-art{width:34px;height:34px;flex:none;object-fit:contain}
+.pass-reward>span{display:grid;gap:1px}
+.pass-reward b{font:700 15px/1.2 'Outfit',sans-serif;color:#3d2f14;overflow-wrap:anywhere}
+.pass-reward small{font-size:12px;line-height:1.25;color:#807b6c}
+#pass-dialog .pass-claim{flex:none;min-height:36px;padding:7px 14px;font-size:13px}
+.pass-collected{display:inline-flex;align-items:center;gap:4px;flex:none;font-size:12px;font-weight:700;color:#5d7a4a}
+.pass-collected svg{width:14px;height:14px}
+.pass-lock{flex:none;display:grid;place-items:center}
+.pass-lock .game-art{width:22px;height:22px}
+@media(max-width:600px){
+ #pass-dialog{padding:18px 14px;width:calc(100% - 20px);max-width:calc(100% - 20px);max-height:calc(100dvh - 24px)}
+ .pass-top .pass-hero{width:52px;height:52px}
+ .pass-heads,.pass-row{grid-template-columns:26px minmax(0,1fr) minmax(0,1fr);gap:6px}
+ .pass-tier{width:24px;height:24px;font-size:11px}
+ .pass-cell{padding:6px 7px}
+ .pass-reward{gap:6px}
+ .pass-reward .game-art{width:28px;height:28px}
+ .pass-reward b{font-size:14px}
+ #pass-dialog .pass-claim{width:100%}
+ #pass-dialog .primary-button.pass-buy{width:100%}
+}
+
+/* The Diamond shop's banner while the paid row is for sale. */
+.shop-pass{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:10px 14px 10px 10px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#ffe3c2,#fffaf0 55%,#ffe9d6);box-shadow:0 3px 0 #b8862a33;color:#3d2f14;text-align:start;font-family:'DM Sans',sans-serif;cursor:pointer}
+.shop-pass:hover{border-color:#d69a2c}
+.shop-pass .game-art{width:54px;height:54px;flex:none;object-fit:contain}
+.shop-pass-copy{display:grid;gap:2px;min-width:0;flex:1}
+.shop-pass-copy b{font:700 18px/1.1 'Outfit',sans-serif}
+.shop-pass-copy small{font-size:12px;font-weight:700;color:#8a4f12}
+.shop-pass-price b{font:800 22px/1 'Outfit',sans-serif;color:#2f7a34}
+
+/* Today's cards: what a gift, a challenge or a delivery adds to the pass while it is open. */
+.reward-chips>b.is-lantern{border-color:#efc58f;background:#fff1de;color:#9a5410}

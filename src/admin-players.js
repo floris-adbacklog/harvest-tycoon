@@ -67,7 +67,8 @@ export function playerRow(p,{guideSteps=10,now=Date.now()}={}){
 // One farmer. The other accounts that last played from the same IP address are listed for the staff (a shared home, school or phone
 // network, or one person with a second account, for example to dodge a chat ban); the address itself only for the admin.
 const PURCHASE={credited:'Paid',test_paid:'Test payment',pending:'Checkout opened, not paid'};
-const pack=id=>id==='starter'?'Starter Pack':id==='offer'?'Special offer':`${number(id)} diamonds`;
+// The Halloween Pass (Oct 2026) holds no diamonds of its own: it goes by its name.
+const pack=id=>id==='starter'?'Starter Pack':id==='offer'?'Special offer':id==='pass'?'Halloween Pass':`${number(id)} diamonds`;
 const fact=(label,value)=>`<div><dt>${label}</dt><dd>${value}</dd></div>`;
 export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
  const since=iso=>time(iso)==null?'—':`${esc(dateTime(iso))} <small>(${esc(ago(iso,now))})</small>`;

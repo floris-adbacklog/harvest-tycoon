@@ -28,6 +28,8 @@ export function showPaymentReturn(bridge){
     // part is translated on its own (public/i18n.js).
     const offerContents=[result.diamonds>0&&`${Number(result.diamonds).toLocaleString('en-US')} diamonds`,result.coins>0&&`${Number(result.coins).toLocaleString('en-US')} coins`,result.vipDays>0&&`${result.vipDays} days of VIP`].filter(Boolean).join(' · ');
     if(result.pack==='offer')display('credited','Your special offer is here!',offerContents,'Payment confirmed');else
+    // The Halloween Pass (Oct 2026) adds nothing by itself: its paid rewards open, and each is collected in the pass.
+    if(result.pack==='pass')display('credited','Your Halloween Pass is here!','The paid rewards are open. Collect each one in the Halloween Pass.','Payment confirmed');else
     display('credited',result.pack==='starter'?'Your Starter Pack is here!':'A little sparkle for your farm',result.pack==='starter'?`10,000 coins, ${Number(result.diamonds||500).toLocaleString('en-US')} diamonds and one of every crop have been added to your account.`:`${Number(result.diamonds).toLocaleString('en-US')} diamonds have been added to your farm. Enjoy your next little upgrade!`,'Payment confirmed');retry.hidden=true;
     window.harvestSound?.('purchase');
     window.dispatchEvent(new Event('harvest-purchase-confirmed'));

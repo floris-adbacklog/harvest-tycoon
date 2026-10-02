@@ -44,7 +44,15 @@ export function offerFill({diamonds=false,coins=false,vipDays=0}={}){
  const d=diamonds?(coins?Math.round(rest/2/50)*50:rest):0;
  return {diamonds:d,coins:coins?(rest-d)*OFFER.coinsPerDiamond:0,vipDays};
 }
-const RECEIPT_PACKS=Object.freeze({...LEGACY_PAYMENT_PACKS,...PAYMENT_PACKS,offer:Object.freeze({cents:OFFER.cents,price:OFFER.price,offer:true})});
+// The Halloween Pass (Oct 2026): the paid row of the season pass (game/farm-state.js SEASON_PASS), €4.99, once per farmer per pass, from
+// level 10, sold only while the season is open. The dates are the game's own (a test keeps the two equal). Nothing is credited at once:
+// the purchase writes the pass into the farm (state.passPremium, supabase/season-pass.sql) and every paid reward is collected in the game.
+// price/product stay null until the Stripe product 'Halloween Pass' (one-time €4.99) exists: until then checkout says it is not available.
+export const PASS=Object.freeze({id:'halloween-2026',name:'Halloween Pass',cents:499,price:null,product:null,
+ startsAt:Date.UTC(2026,9,23),endsAt:Date.UTC(2026,10,3),level:10});
+export const passOnSale=(now=Date.now())=>now>=PASS.startsAt&&now<PASS.endsAt;
+const RECEIPT_PACKS=Object.freeze({...LEGACY_PAYMENT_PACKS,...PAYMENT_PACKS,offer:Object.freeze({cents:OFFER.cents,price:OFFER.price,offer:true}),
+ pass:Object.freeze({cents:PASS.cents,price:PASS.price,diamonds:0,pass:true})});
 const CHECKOUT_PACK_ALIASES=Object.freeze({'50':'150','100':'150','300':'1250','600':'1250','1000':'3500','2000':'3500'});
 // A Starter Pack checkout opened before 27 Sep 2026 held 300 diamonds; paid later, it still counts, and credits the 300 it showed.
 export const STARTER_DIAMONDS_BEFORE=300;
@@ -72,6 +80,8 @@ export function validatePaidSession(session,purchase,items){
  const pack=paymentPack(purchase.pack);
  // A special offer's contents come from the offer, written into the purchase by the checkout: they must still make a valid offer.
  if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||offerProblem({diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0})))throw new Error('Offer mismatch.');
+ // A pass carries no diamonds or coins of its own, only the pass it opens.
+ if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(session.payment_status!=='paid'||session.status!=='complete')throw new Error('Payment is not complete.');
  if(session.mode!=='payment'||session.livemode!==purchase.livemode)throw new Error('Payment mode mismatch.');
  if(session.id!==purchase.stripe_session_id||session.client_reference_id!==purchase.player_id||session.metadata?.purchase_id!==purchase.id||session.metadata?.player_id!==purchase.player_id||session.metadata?.app!=='harvest-tycoon')throw new Error('Purchase ownership mismatch.');

@@ -24,6 +24,9 @@ export const LOADING_TIPS=Object.freeze([
  ['valley-market','From level 62 the Valley Market pays 1.5× for a full basket of goods.'],
  ['trade-depot','From level 85 a full export trailer at the Trade Depot pays 1.6× plus diamonds.']
 ]);
+// The Halloween Pass (Oct 2026): a tip of its own among the others, only while lanterns count (public/game.js checks the season, so this
+// screen needs none of the game's rules).
+export const PASS_LOADING_TIP=Object.freeze(['giant-small','Halloween Pass from level 10: every daily gift, daily challenge and delivery brings lanterns for its rewards.']);
 // On the way to the village (World II, 30 Sep 2026) the tips are about the village.
 export const VILLAGE_LOADING_TIPS=Object.freeze([
  ['packedlunch','Every trip into the mine or the forest starts with packed lunches from your farm Kitchen.'],

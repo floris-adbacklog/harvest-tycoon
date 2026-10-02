@@ -38,7 +38,7 @@ export function trackSignUp({confirmationRequired=false}={},win){
 }
 
 const COMMERCE_EVENTS=new Set(['diamond_shop_view','diamond_pack_started','diamond_pack_completed','diamond_action_completed','vip_purchase_started','vip_purchase_completed','vip_extended','vip_expired']);
-const COMMERCE_VALUES={pack:new Set(['50','100','150','300','500','600','1000','1250','2000','3500','starter','offer']),plan:new Set(['week','month']),length:new Set(['30m','1h','1d']),action:new Set(['finish_crop','finish_batch','xp','harvest','coins','crops','production','upgrade','replace_order'])};
+const COMMERCE_VALUES={pack:new Set(['50','100','150','300','500','600','1000','1250','2000','3500','starter','offer','pass']),plan:new Set(['week','month']),length:new Set(['30m','1h','1d']),action:new Set(['finish_crop','finish_batch','xp','harvest','coins','crops','production','upgrade','replace_order'])};
 export function trackCommerce(event,params={},win=globalThis.window){
  if(!COMMERCE_EVENTS.has(event))return;
  const clean={device:deviceType(win)};
@@ -52,7 +52,9 @@ export function trackCommerce(event,params={},win=globalThis.window){
  if(event==='diamond_pack_completed'&&'amount_cents' in clean&&win){
   const value=clean.amount_cents/100;
   (win.dataLayer=win.dataLayer||[]).push({ecommerce:null});
-  pushEvent('purchase',{ecommerce:{value,currency:'EUR',items:[{item_id:`diamonds_${clean.pack??'pack'}`,item_name:'Diamonds',price:value,quantity:1}]}},win);
+  // The Halloween Pass (Oct 2026) is not diamonds: it goes by its own name.
+  const pass=clean.pack==='pass';
+  pushEvent('purchase',{ecommerce:{value,currency:'EUR',items:[{item_id:pass?'halloween_pass':`diamonds_${clean.pack??'pack'}`,item_name:pass?'Halloween Pass':'Diamonds',price:value,quantity:1}]}},win);
  }
 }
 

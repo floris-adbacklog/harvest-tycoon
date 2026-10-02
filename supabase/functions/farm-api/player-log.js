@@ -62,6 +62,8 @@ const FARM_ACTIONS={
  daily:['rewards',()=>'Claimed a daily challenge'],
  checkin:['rewards',()=>'Opened the daily gift'],
  comeback:['rewards',()=>'Opened the comeback chest'],
+ // The Halloween Pass (Oct 2026): every reward is its own claim; the line says which tier and which row.
+ pass_claim:['rewards',a=>`Collected tier ${Number(a.tier)||''} of the Halloween Pass (${a.track==='paid'?'paid':'free'})`],
  level_rewards:['rewards',()=>'Collected level rewards'],
  mastery:['rewards',(a)=>`Earned a ${CROPS[a.crop]?.name??'crop'} mastery medal`],
  chore:['rewards',()=>'Did a farm chore'],
