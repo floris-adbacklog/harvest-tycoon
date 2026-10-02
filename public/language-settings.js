@@ -13,7 +13,8 @@ export function renderLanguageSettings(select=document.getElementById('language-
  const flag=document.querySelector('#language-settings-title img.game-art, #language-settings-title [data-game-art]');
  if(flag?.tagName==='IMG')flag.src=`/assets/icons/flag-${current}.webp`;else flag?.setAttribute('data-game-art',`flag-${current}`);
  select.addEventListener('change',()=>{
-  chooseLanguage(select.value);const top=(window.top??window).location;
-  if(pageLanguage(top.pathname))top.assign(languagePath(select.value)+top.search+top.hash);else top.reload();
+  chooseLanguage(select.value);const top=(window.top??window).location,path=languagePath(select.value);
+  // The same address again is a reload: assigning it with a #… would only scroll (Oct 2026).
+  if(pageLanguage(top.pathname)&&path!==top.pathname)top.assign(path+top.search+top.hash);else top.reload();
  });
 }

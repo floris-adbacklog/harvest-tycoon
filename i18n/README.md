@@ -17,7 +17,10 @@ language, from `public/i18n/<code>.json` (`{"English text": "translation"}`). En
   `scripts/build-languages.mjs` from `public/play.html` and these translations, including the search and share texts in
   its head. Only exact translations are used: a `play.html` text without one stops the deploy build, so translate new
   `play.html` texts before deploying. A newly ready language also needs its code in the three `/:lang(...)` rules in
-  `vercel.json` (a test checks them).
+  `vercel.json` (a test checks them). Opening a language page saves its language on the device, so the farm and the
+  sign-in return (`/play.html`) follow it; where a browser keeps nothing (blocked storage) only the page itself is in its
+  language and the farm uses the device's language. On a language page a text that is already a translation is left
+  as it is, so no English text may also be the translation of another text (a test checks it).
 
 Texts that are cut by markup arrive in pieces (`Beginner guide complete! +` … `XP and {0} diamonds.`): translate each
 piece so the pieces still read as one sentence in their order.

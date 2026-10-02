@@ -52,7 +52,7 @@ export function translatePage(html,code,dict){
   if(/\stranslate="no"/.test(part))throw new Error(`Language page ${code}: play.html has translate="no" text, which scripts/build-languages.mjs cannot leave out yet`);
   let tag=part;
   const meta=tag.match(/^<meta (?:name|property)="([^"]+)" content="([^"]*)"/);
-  if(meta&&SEO_META.includes(meta[1])){seo.add(meta[1]);tag=tag.replace(`content="${meta[2]}"`,`content="${escAttr(out(normalize(decode(meta[2]))))}"`);}
+  if(meta&&SEO_META.includes(meta[1])){seo.add(meta[1]);tag=tag.replace(`content="${meta[2]}"`,()=>`content="${escAttr(out(normalize(decode(meta[2]))))}"`);}
   for(const name of ATTRS)tag=tag.replace(new RegExp(`(\\s${name}=")([^"]*)(")`),(all,a,value,b)=>/\p{L}/u.test(value)?a+escAttr(out(normalize(decode(value))))+b:all);
   parts[i]=tag;
  }

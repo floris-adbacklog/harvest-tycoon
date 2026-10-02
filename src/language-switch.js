@@ -19,7 +19,8 @@ export function renderLanguageSwitch(host=document.getElementById('language-swit
  const button=host.querySelector('.language-button'),menu=host.querySelector('.language-menu'),options=()=>[...menu.querySelectorAll('[role=option]')];
  const open=()=>{menu.hidden=false;button.setAttribute('aria-expanded','true');(options().find(o=>o.getAttribute('aria-selected')==='true')??options()[0]).focus();};
  const close=(focus=true)=>{if(menu.hidden)return;menu.hidden=true;button.setAttribute('aria-expanded','false');if(focus)button.focus();};
- const pick=code=>{close();if(code&&code!==current){chooseLanguage(code);location.assign(languagePath(code)+location.search+location.hash);}};
+ // The page it is already on (English on '/') opens again: assigning the same address with a #… would only scroll (Oct 2026).
+ const pick=code=>{close();if(!code||code===current)return;chooseLanguage(code);const path=languagePath(code);if(path===location.pathname)location.reload();else location.assign(path+location.search+location.hash);};
  button.addEventListener('click',()=>menu.hidden?open():close());
  menu.addEventListener('click',event=>pick(event.target.closest?.('[role=option]')?.dataset.code));
  menu.addEventListener('keydown',event=>{

@@ -24,6 +24,6 @@ export const LANGUAGES=Object.freeze([
 export const RTL_LANGUAGES=Object.freeze(LANGUAGES.filter(l=>l.rtl).map(l=>l.code));
 // A page per language (Oct 2026): /es/, /fr/, ... is the sign-in page already written in that language (scripts/build-languages.mjs),
 // so search engines find it and a visitor sees it at once. English is the home page itself ('/'). pageLanguage: the language of
-// such an address, null for any other page.
+// such an address (also /es/index.html, the same file), null for any other page.
 export const languagePath=code=>code==='en'?'/':`/${code}/`;
-export const pageLanguage=path=>{const m=/^\/([a-z]{2})\/?$/.exec(path??'');return m&&m[1]!=='en'&&LANGUAGES.some(l=>l.ready&&l.code===m[1])?m[1]:null;};
+export const pageLanguage=path=>{const m=/^\/([a-z]{2})(?:\/(?:index\.html)?)?$/.exec(path??'');return m&&m[1]!=='en'&&LANGUAGES.some(l=>l.ready&&l.code===m[1])?m[1]:null;};

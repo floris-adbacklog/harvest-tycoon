@@ -63,11 +63,15 @@ test('picking a language opens its own page; Settings > Language does so on a la
   handlers.click({target:{closest:()=>({dataset:{code:'fr'}})}});
   handlers.click({target:{closest:()=>({dataset:{code:'es'}})}});
   assert.deepEqual(visited,['/fr/?ref=ABC','/es/?ref=ABC']);assert.equal(reloaded,0);
+  // The address it is on already opens again: assigning it with a #… would only scroll.
+  globalThis.location={pathname:'/fr/',search:'',hash:'#top',assign:url=>visited.push(url),reload:()=>reloaded++};visited.length=0;
+  handlers.click({target:{closest:()=>({dataset:{code:'fr'}})}});
+  assert.deepEqual(visited,[]);assert.equal(reloaded,1,'the same page is reloaded');
   const select={innerHTML:'',value:'',addEventListener:(type,fn)=>{select.on=fn;},closest:()=>null};
   globalThis.document.querySelector=()=>null;renderLanguageSettings(select);
-  for(const [pathname,code,want] of [['/es/','fr','/fr/'],['/es/','en','/'],['/','fr',null],['/play.html','de',null]]){
+  for(const [pathname,code,want] of [['/es/','fr','/fr/#top'],['/es/','en','/#top'],['/es/index.html','de','/de/#top'],['/es/','es',null],['/','fr',null],['/play.html','de',null]]){
    visited.length=0;reloaded=0;
-   globalThis.window={top:{location:{pathname,search:'',hash:'',assign:url=>visited.push(url),reload:()=>reloaded++}}};
+   globalThis.window={top:{location:{pathname,search:'',hash:'#top',assign:url=>visited.push(url),reload:()=>reloaded++}}};
    select.value=code;select.on();
    assert.deepEqual(visited,want?[want]:[],pathname);assert.equal(reloaded,want?0:1,pathname);
   }

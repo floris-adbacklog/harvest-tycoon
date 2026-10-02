@@ -66,6 +66,9 @@ test('a text without its exact translation stops the build (the game\'s guesses 
  assert.throws(()=>translatePage(html,'es',dict),/Language page es: missing "The Harvest Tycoon logo over the farm at dusk[^"]*", "Create account"/);
  assert.throws(()=>translatePage(html.replace('<meta name="description"','<meta name="summary"'),'es',translations('es')),/no description meta tag/);
  assert.throws(()=>translatePage(html.replace('<p class="hero-copy">','<p class="hero-copy" title="a > b">'),'es',translations('es')),/a > inside a quoted value/);
+ // A translation is written as it is, also with a $ in it (a replacement pattern to String.replace).
+ const dollar={...translations('es'),[meta(html,'description')]:'Gana 5 $& más'};
+ assert.equal(meta(translatePage(html,'es',dollar),'description'),'Gana 5 $& más');
 });
 
 test('the sitemap lists the home page once per language, each with the full hreflang set; the wiki is still added once',async()=>{
@@ -100,7 +103,8 @@ test('Vercel serves /xx/ for exactly the translated languages, /xx and /en go to
 test('an address to its language and back',()=>{
  assert.equal(languagePath('en'),'/');assert.equal(languagePath('es'),'/es/');
  for(const code of others){assert.equal(pageLanguage(`/${code}/`),code);assert.equal(pageLanguage(`/${code}`),code);}
- for(const path of ['/','/en/','/play.html','/wiki','/xx/','/es/x',undefined])assert.equal(pageLanguage(path),null,String(path));
+ assert.equal(pageLanguage('/es/index.html'),'es','the same file under its own name');
+ for(const path of ['/','/en/','/en/index.html','/play.html','/wiki','/xx/','/es/x','/es/play.html','/es//',undefined])assert.equal(pageLanguage(path),null,String(path));
 });
 
 test('a language page is its language even when the device chose another one or keeps nothing',()=>{
@@ -140,6 +144,16 @@ test('the early script: a language page wins, is saved as this device\'s languag
  const fr=boot({saved:'fr'});assert.equal(fr.root.lang,'fr');assert.match(fr.styles[0],/^\.i18n-wait body\{visibility:hidden\}/);assert.equal(fr.store.get(LANGUAGE_KEY),'fr');
  assert.equal(boot({blocked:true,languages:['de-DE']}).root.lang,'de','blocked storage no longer stops the early script');
  const en=boot({});assert.equal(en.classes.size,0);assert.deepEqual(en.fetched,[]);
+});
+
+// A language page leaves every text that is already a translation as it is (startTranslation). That is only right while no English
+// text the code writes is also some other text's translation: it would stay English on that language's page. Translate it otherwise.
+test('no English text is another text\'s translation, so a language page never leaves English standing',()=>{
+ for(const code of others){
+  const dict=translations(code),values=new Set(Object.values(dict).flatMap(out=>out&&typeof out==='object'?Object.values(out):[out]).map(out=>normalize(String(out))));
+  const clash=Object.keys(dict).filter(key=>values.has(normalize(key))&&normalize(String(exact(dict,key)))!==normalize(key));
+  assert.deepEqual(clash,[],`${code}: these English texts are also a translation of another text`);
+ }
 });
 
 // Just enough of a page for public/i18n.js: elements with attributes, text nodes and a tree walker.
