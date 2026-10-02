@@ -5,22 +5,25 @@ import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8').split('\n').filter(line=>!line.startsWith('import ')).join('\n');
 const accountForm=readFileSync(new URL('../src/account-form.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const connectionModule=readFileSync(new URL('../src/connection.js',import.meta.url),'utf8').replace(/^export /gm,'');
-const socialModule=readFileSync(new URL('../src/social-login.js',import.meta.url),'utf8').replace(/^export /gm,'');
+const socialModule=readFileSync(new URL('../src/social-login.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
 const inviteModule=readFileSync(new URL('../src/invite-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const partnerModule=readFileSync(new URL('../src/partner-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const sourceModule=readFileSync(new URL('../src/source-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
-const browserTipModule=readFileSync(new URL('../src/browser-tip.js',import.meta.url),'utf8').replace(/^export /gm,'');
+const browserTipModule=readFileSync(new URL('../src/browser-tip.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
 const settle=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};}
-function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'}}={}){
+// app: the page is marked as our Android app (public/android-app.js; public/android.js androidApp()). providers: what Supabase has switched
+// on; buttons: the page's Google and Facebook buttons are there (nodes 'provider-google' and 'provider-facebook').
+function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest}={}){
  const nodes=new Map(),events={},frames=[],calls=[],analytics=[],game=[],timers=[],lookups=[];let authCallback,currentUser=user,clock=1_000_000,nextTimer=1;
  const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},toggleAttribute(name,on){(this.attrs??={})[name]=Boolean(on);},removeAttribute(name){if(this.attrs)delete this.attrs[name];},focus(){},scrollIntoView(){},replaceChildren(...items){for(const old of this.children)if(!items.includes(old))old.removed=true;this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},contentWindow:{}});return nodes.get(id);};
- const document={body:{dataset:{}},hidden:false,getElementById:element,querySelector:element,querySelectorAll:()=>[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
+ const providerButtons=buttons?['google','facebook'].map(provider=>Object.assign(element(`provider-${provider}`),{dataset:{provider}})):[];
+ const document={body:{dataset:{}},hidden:false,getElementById:element,querySelector:element,querySelectorAll:selector=>selector==='[data-provider]'?providerButtons:[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
  const window={addEventListener(name,fn){events[name]=fn;}};
  const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};},...authApi},...(rpc?{rpc}:{})};
- const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online,userAgent:ua},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,queueMicrotask,
+ const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online,userAgent:ua},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,URLSearchParams,queueMicrotask,
   // A delay of 0 runs at once; a real delay waits until the test moves the clock (see advance).
-  setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,chosenLanguage:()=>'en',socialProviders:async()=>[],cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
+  setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,chosenLanguage:()=>'en',socialProviders:async()=>providers,androidApp:()=>app,...(paymentRequest?{paymentRequest}:{}),cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
 
  vm.runInContext(accountForm,context);vm.runInContext(connectionModule,context);vm.runInContext(socialModule,context);vm.runInContext(inviteModule,context);vm.runInContext(partnerModule,context);vm.runInContext(sourceModule,context);vm.runInContext(browserTipModule,context);vm.runInContext(source,context);
  // Moves the clock forward, running every timer that falls due on the way (and the ones they start).
@@ -283,6 +286,39 @@ test('the page shows the browser step before the script loads, for the same apps
  assert.equal(tip.escapeTarget({origin:'https://www.harvesttycoon.com',pathname:'/play.html',search:'?code=abc&error=x&utm_campaign=eu'},'FARM2026'),'https://www.harvesttycoon.com/play.html?utm_campaign=eu&invite=FARM2026','no sign-in answer, the invite back in');
  assert.ok(/\.account-card\[data-gate\]>:not\(\.card-top\):not\(\.browser-gate\)\{display:none!important\}/.test(readFileSync(new URL('../public/welcome.css',import.meta.url),'utf8')));
  assert.match(readFileSync(new URL('../public/privacy.html',import.meta.url),'utf8'),/<code>harvest-tycoon:browser-escape<\/code>/);
+});
+
+// Our Android app (Oct 2026, public/android.js): the same page in a WebView whose user agent ends in HarvestTycoonApp/1.0.
+const APP_UA='Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP2A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0 Mobile Safari/537.36 HarvestTycoonApp/1.0';
+const APP_PAGE={origin:'https://www.harvesttycoon.com',pathname:'/',search:'?src=android-app',hash:''};
+test('the Android app: only email and password, and a sign-in with Google or Facebook cannot even start; the website keeps both',async()=>{
+ let oauth=0;const authApi={signInWithOAuth:async()=>{oauth++;return {};}};
+ const app=fixture({ua:APP_UA,app:true,storage:{},providers:['google','facebook'],buttons:true,authApi,location:{...APP_PAGE}});await settle();
+ assert.equal(app.nodes.get('provider-google').hidden,true);assert.equal(app.nodes.get('provider-facebook').hidden,true);assert.equal(app.nodes.get('social-login').hidden,true);
+ await app.nodes.get('provider-google').onclick();await app.nodes.get('provider-facebook').onclick();assert.equal(oauth,0);
+ assert.equal(app.nodes.get('email-row').hidden,false);assert.equal(app.nodes.get('password-row').hidden,false);
+ const site=fixture({ua:'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/129.0 Mobile Safari/537.36',storage:{},providers:['google','facebook'],buttons:true,authApi,location:{...page}});await settle();
+ assert.equal(site.nodes.get('provider-google').hidden,false);assert.equal(site.nodes.get('provider-facebook').hidden,false);assert.equal(site.nodes.get('social-login').hidden,false);
+ await site.nodes.get('provider-google').onclick();assert.equal(oauth,1,'the website signs in with Google as before');
+});
+test('the Android app never shows the step to open the game in Chrome, not even for a user agent the step knows',async()=>{
+ const storage={},app=fixture({ua:`${ANDROID_FB} HarvestTycoonApp/1.0`,app:true,storage,location:{...APP_PAGE}});await settle();
+ assert.equal(app.nodes.get('.account-card').attrs?.['data-gate'],false);assert.equal(app.context.location.href,undefined,'never sent to Chrome');
+ assert.equal(storage['harvest-tycoon:browser-escape'],undefined);assert.ok(!app.analytics.some(e=>e.step==='browser_gate'));
+});
+test('the Android app: the shop\'s catalogue says off, nothing else about payments is asked and no checkout opens; the website is unchanged',async()=>{
+ const asked=[],paymentRequest=async body=>{asked.push(body);return {enabled:true,url:'https://checkout.stripe.com/c/pay/x'};};
+ const app=fixture({ua:APP_UA,app:true,user:{id:'A'},paymentRequest,location:{...APP_PAGE,search:'?src=android-app&purchase=p1&checkout=cancelled'}});await settle();
+ assert.equal(app.document.body.dataset.phase,'authenticated');const bridge=app.window.harvestBridge;
+ const catalog=await bridge.payments({operation:'catalog'});assert.equal(catalog.enabled,false);assert.equal(catalog.starter,undefined);assert.equal(catalog.offer,undefined);assert.equal(catalog.pass,undefined);
+ await assert.rejects(bridge.payments({operation:'create',pack:'50',requestId:'r'}),/Purchases are not available here/);
+ await assert.rejects(bridge.payments({operation:'status',purchaseId:'p1'}),/Purchases are not available here/);
+ await assert.rejects(bridge.checkout('50','r1'),/Purchases are not available here/);await assert.rejects(bridge.checkout('offer','r2','o1'),/Purchases are not available here/);
+ assert.deepEqual(asked,[],'the payment service is never asked');assert.equal(app.context.location.href,undefined,'no checkout page');
+ assert.deepEqual({...bridge.paymentReturn()},{id:null,cancelled:false},'no purchase window from an address');
+ const site=fixture({user:{id:'A'},paymentRequest,location:{...page,search:'?purchase=p1&checkout=cancelled'}});await settle();
+ assert.deepEqual(await site.window.harvestBridge.payments({operation:'catalog'}),{enabled:true,url:'https://checkout.stripe.com/c/pay/x'});assert.deepEqual(asked,[{operation:'catalog'}]);
+ assert.deepEqual({...site.window.harvestBridge.paymentReturn()},{id:'p1',cancelled:true});
 });
 
 test('a refusal from the server (4xx) shows its reason; only a lost or failing connection shows "Reconnecting…"',async()=>{

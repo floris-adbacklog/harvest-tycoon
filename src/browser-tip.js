@@ -1,6 +1,8 @@
 // Visitors from Meta and TikTok ads play inside that app's own browser: it cannot show reminders, and once it is closed the
 // farm is hard to find again. A couple of minutes into the farm, one small tip (once per device) offers the phone's own
 // browser. The farm lives on the account, so signing in there with the same account carries on where they left off.
+// Never in our own Android app (Oct 2026, public/android.js): its WebView also says "; wv)", but that app is where the farm belongs.
+import {androidApp} from '../public/android.js';
 export const BROWSER_TIP_KEY='harvest-tycoon:browser-tip',BROWSER_TIP_DELAY=120000;
 export function inAppName(ua=''){
  return /Instagram/i.test(ua)?'Instagram':/Barcelona/i.test(ua)?'Threads':/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)?'Facebook':/musical_ly|trill_|BytedanceWebview/i.test(ua)?'TikTok':/Snapchat/i.test(ua)?'Snapchat':/LinkedInApp/i.test(ua)?'LinkedIn':'an app';
@@ -16,7 +18,7 @@ export function browserTipText(ua=''){
 }
 let scheduled=false;
 export function scheduleBrowserTip({embedded,doc,win,storage,delay=BROWSER_TIP_DELAY}){
- if(!embedded||scheduled||storage.get(BROWSER_TIP_KEY))return false;
+ if(!embedded||androidApp(win)||scheduled||storage.get(BROWSER_TIP_KEY))return false;
  scheduled=true;win.setTimeout(()=>showBrowserTip({doc,win,storage}),delay);return true;
 }
 // The address to open there: the home page, or the language page this is (/es/, Oct 2026; the phone's browser keeps its own storage,

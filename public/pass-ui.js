@@ -90,7 +90,8 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
   const progress=phase==='soon'?'':`<div class="pass-progress"><div><strong>${number(lanterns)} lantern${lanterns===1?'':'s'}</strong><span>Tier ${tier} of ${tiers.length}</span></div><progress max="${SEASON_PASS.perTier}" value="${tier<tiers.length?SEASON_PASS.perTier-next:SEASON_PASS.perTier}" aria-label="Lanterns to the next tier"></progress><small>${phase==='open'&&next?`${next} more lantern${next===1?'':'s'} to tier ${tier+1}`:tier>=tiers.length?`All ${tiers.length} tiers reached`:''}</small></div>`;
   const rows=tiers.map((_,i)=>{const n=i+1,reached=phase!=='soon'&&n<=tier;return `<li class="pass-row${reached?' is-reached':''}${n===tier+1&&phase==='open'?' is-next':''}" data-pass-row="${n}"><b class="pass-tier">${n}</b>${PASS_TRACKS.map(track=>cell(track,n,level,reached,phase)).join('')}</li>`;}).join('');
   content.innerHTML=`<section class="pass-top">${art(PASS_ART,'pass-hero')}<div class="pass-top-copy"><p class="pass-phase" data-pass-phase>${passPhaseLine(t)}</p><p class="pass-rule">${passRule()} Coins grow with your level.</p></div></section>`
-   +progress+(waiting?`<p class="pass-waiting">${waiting} reward${waiting===1?' is':'s are'} waiting</p>`:'')+passPaidBox(state,{phase,now:t,catalog,pending,feedback})
+   // Where payments are off (CrazyGames, our Android app: public/portal.js) no buy box; bought on the website, it still says so.
+   +progress+(waiting?`<p class="pass-waiting">${waiting} reward${waiting===1?' is':'s are'} waiting</p>`:'')+(portalOff('payments')&&!passPremium(state)?'':passPaidBox(state,{phase,now:t,catalog,pending,feedback}))
    +`<div class="pass-heads" aria-hidden="true"><span></span><b>Free</b><b>${passPremium(state)?'Paid':`${art('lock')}Paid`}</b></div><ol class="pass-tiers">${rows}</ol>`;
   content.querySelectorAll('[data-pass-claim]').forEach(b=>b.onclick=()=>claim(b.dataset.passClaim,Number(b.dataset.passTier)));
   const buy=content.querySelector('.pass-buy');if(buy)buy.onclick=purchase;
@@ -144,7 +145,7 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
   const t=now(),visible=passVisible(state,t),waiting=visible?passWaiting(state,t):0;
   button.hidden=!visible;dot.hidden=!waiting;
   if(hint)hint.textContent=visible?passHint(state,t):'Coming soon';
-  banner(visible&&['soon','open'].includes(passPhase(t))&&!passPremium(state));
+  banner(visible&&['soon','open'].includes(passPhase(t))&&!passPremium(state)&&!portalOff('payments'));
   if(!dialog.open)return;
   if(!visible){dialog.close();return;}
   if(key()!==drawn)draw();else{

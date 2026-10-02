@@ -1,3 +1,4 @@
+import {androidApp} from '../public/android.js';
 // Sign in with Google or Facebook. The buttons only appear for providers that are switched on in Supabase
 // (Authentication → Providers), so nothing half-working shows up before that is set up.
 export const SOCIAL_PROVIDERS=Object.freeze({google:'Google',facebook:'Facebook'});
@@ -22,7 +23,9 @@ export async function enabledProviders({url,key,fetchImpl=globalThis.fetch}){
 // Only named app markers are used: an iPhone home-screen app also lacks the "Safari" word but can use Google fine.
 const EMBEDDED=/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|; wv\)/i;
 export const embeddedBrowser=(userAgent=globalThis.navigator?.userAgent??'')=>EMBEDDED.test(userAgent);
-export const usableProviders=(list,userAgent)=>embeddedBrowser(userAgent)?list.filter(provider=>provider!=='google'):list;
+// In our own Android app (Oct 2026, public/android.js) neither works: Google refuses every WebView and Facebook no longer signs anyone in
+// from a browser built into an app. There only the email address and password are offered.
+export const usableProviders=(list,userAgent,app=androidApp())=>app?[]:embeddedBrowser(userAgent)?list.filter(provider=>provider!=='google'):list;
 
 export const providerName=provider=>SOCIAL_PROVIDERS[provider]??'that service';
 

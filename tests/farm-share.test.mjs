@@ -104,10 +104,12 @@ test('the picture: logo, name as written, level, family flag, the farm, the site
  assert.deepEqual(offline.drawn.filter(d=>d.text).map(d=>d.text),['Tony’s farm','Level 2','Play free at harvesttycoon.com'],'without a code: no link pill and no reward line');
 });
 
-function setup({route='files',invite=async()=>({link:LINK,profile:{username:'Tony'}}),capture=()=>({width:PHOTO.width,height:PHOTO.height}),compose,coarse=false,share,clipboard}={}){
+// app: the page around the game is our Android app (Oct 2026, public/android.js): marked, with an address the app's share sheet is opened from.
+function setup({route='files',invite=async()=>({link:LINK,profile:{username:'Tony'}}),capture=()=>({width:PHOTO.width,height:PHOTO.height}),compose,coarse=false,share,clipboard,app=false}={}){
  const events=[],copied=[],composed=[],shares=[];
  const doc=fakeDoc({coarse});
- const host={File,navigator:{share:share??(async data=>{shares.push(data);}),canShare:()=>route==='files',clipboard:{writeText:clipboard??(async text=>{copied.push(text);})}}};
+ const host={File,navigator:{share:share??(async data=>{shares.push(data);}),canShare:()=>route==='files',clipboard:{writeText:clipboard??(async text=>{copied.push(text);})}},
+  ...(app?{document:{documentElement:{getAttribute:name=>name==='data-app'?'android':null}},location:{href:'https://www.harvesttycoon.com/?src=android-app'}}:{})};
  const farm=createFarm(now);farm.family={familyId:'f1',name:'Wheat',emblem:'sun',level:2};
  const ui=createFarmShare({capture,state:farm,invite,host,doc,track:(event,params)=>events.push([event,params]),playerName:()=>'Wheat',
   compose:compose??(async({copy})=>{composed.push(copy);return new Blob(['jpeg'],{type:'image/jpeg'});})});
@@ -155,6 +157,20 @@ test('where a file cannot be shared: Save picture and Copy link, and on a phone 
  const offline=setup({invite:async()=>{throw new Error('offline');}}),third=new Box();
  await offline.ui.open({source:'level_up',box:third});
  assert.doesNotMatch(third.html,/Copy link/);assert.equal(offline.composed[0].rule,'');assert.match(offline.composed[0].shareText,/https:\/\/www\.harvesttycoon\.com\/\?src=farm-photo$/);
+});
+
+test('in our Android app: Share opens the app\'s own share sheet with the text and the link (no picture there); Save picture and Copy link stay',async()=>{
+ const h=setup({app:true,coarse:true}),box=new Box();
+ await h.ui.open({source:'level_up',box});
+ assert.equal(shareRoute(h.host,new File(['x'],SHARE_FILE)),'app');
+ assert.match(box.html,/class="secondary-button farm-share-send">Share</);assert.match(box.html,/Save picture/);assert.match(box.html,/farm-share-copy">Copy link</);
+ assert.doesNotMatch(box.html,/Press and hold/,'a WebView offers no saving by holding');
+ await box.querySelector('.farm-share-send').onclick();
+ assert.deepEqual(h.shares,[],'the WebView has no navigator.share');
+ assert.equal(h.host.location.href,`shareapp://shareapp?${encodeURIComponent('Come and see my farm in Harvest Tycoon! Play free with my link:')}&url=${encodeURIComponent(`${LINK}&src=farm-photo`)}`,'the link once');
+ assert.deepEqual(h.events.at(-1),['farm_share_sent',{source:'level_up'}]);
+ // Everywhere else exactly as before: the file to the share sheet.
+ const web=setup(),other=new Box();await web.ui.open({source:'level_up',box:other});await other.querySelector('.farm-share-send').onclick();assert.equal(web.shares[0].files.length,1);assert.equal(web.host.location,undefined);
 });
 
 test('no 3D farm (lost, or the village): Try again; a closed card stops a picture still being made',async()=>{

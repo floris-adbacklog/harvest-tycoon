@@ -261,8 +261,9 @@ test('screens: a button and a More tile from level 10, a window that opens only 
  assert.equal(lanternChip(s,'gift',SEASON_PASS.endsAt),'');assert.equal(lanternChip(farm(20,SEASON_PASS.startsAt-H),'gift',SEASON_PASS.startsAt-H),'');
  const today=read('public/retention-ui.js');
  for(const kind of ['gift','daily','delivery'])assert.match(today,new RegExp(`lanternChip\\(state,'${kind}'`));
- // The Diamond shop banner only while it is for sale (the pre-sale too, Oct 2026) and not bought.
- assert.match(ui,/banner\(visible&&\['soon','open'\]\.includes\(passPhase\(t\)\)&&!passPremium\(state\)\);/);
+ // The Diamond shop banner only while it is for sale (the pre-sale too, Oct 2026) and not bought; never where payments are off (CrazyGames,
+ // the Android app: public/portal.js).
+ assert.match(ui,/banner\(visible&&\['soon','open'\]\.includes\(passPhase\(t\)\)&&!passPremium\(state\)&&!portalOff\('payments'\)\);/);
 });
 
 test('texts: the wiki, a loading tip, the purchase screens and the privacy policy say the same rule',()=>{

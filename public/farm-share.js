@@ -8,6 +8,7 @@
 import {t} from './i18n.js';
 import {INVITE_REWARD,INVITE_LEVEL,levelOf} from './farm-state.js';
 import {portalOff} from './portal.js';
+import {androidApp,shareInApp} from './android.js';
 
 export const SHARE_SIZE=Object.freeze({width:1080,height:1350});   // 4:5: chats, the Instagram and Facebook feed, centred in Stories
 export const PHOTO=Object.freeze({x:40,y:220,width:1000,height:860});   // where the farm sits on it (game.js renders it at this size)
@@ -48,8 +49,10 @@ export function shareCopy({name,level,family,link,invited},tr=t){
   fileName:SHARE_FILE
  };
 }
-// 'files' when this browser can hand a picture to the share sheet, else 'fallback' (Save picture, Copy link).
+// 'files' when this browser can hand a picture to the share sheet, else 'fallback' (Save picture, Copy link). In our Android app (Oct 2026,
+// public/android.js) 'app': its WebView has no navigator.share, and the app's own share sheet takes the text with the link (no picture).
 export function shareRoute(host,file){
+ if(androidApp(host))return 'app';
  try{return typeof host?.navigator?.share==='function'&&host.navigator.canShare?.({files:[file]})?'files':'fallback';}catch{return 'fallback';}
 }
 // Where everything goes on the 1080×1350 picture; right to left (Arabic) mirrors it.
@@ -172,10 +175,11 @@ export function createFarmShare({capture,canCapture=()=>true,state,invite=null,h
   box.querySelector('.farm-share-retry').onclick=()=>open({source:s.source,box,button:s.button});
  }
  function show(box,s){
-  const coarse=Boolean(doc?.defaultView?.matchMedia?.('(pointer:coarse)').matches),files=s.route==='files';
-  box.innerHTML=`<img class="farm-share-preview" src="${s.url}" alt="Your farm picture" width="${SHARE_SIZE.width}" height="${SHARE_SIZE.height}"><div class="farm-share-actions">${files?'<button type="button" class="secondary-button farm-share-send">Share</button>':''}<a class="secondary-button farm-share-save" href="${s.url}" download="${SHARE_FILE}">Save picture</a>${s.invited?'<button type="button" class="secondary-button farm-share-copy">Copy link</button>':''}</div>${!files&&coarse?'<p class="farm-share-hint">Press and hold the picture to save it.</p>':''}<p class="farm-share-status" role="status"></p>`;
+  const coarse=Boolean(doc?.defaultView?.matchMedia?.('(pointer:coarse)').matches),files=s.route==='files',app=s.route==='app';
+  box.innerHTML=`<img class="farm-share-preview" src="${s.url}" alt="Your farm picture" width="${SHARE_SIZE.width}" height="${SHARE_SIZE.height}"><div class="farm-share-actions">${files||app?'<button type="button" class="secondary-button farm-share-send">Share</button>':''}<a class="secondary-button farm-share-save" href="${s.url}" download="${SHARE_FILE}">Save picture</a>${s.invited?'<button type="button" class="secondary-button farm-share-copy">Copy link</button>':''}</div>${!files&&!app&&coarse?'<p class="farm-share-hint">Press and hold the picture to save it.</p>':''}<p class="farm-share-status" role="status"></p>`;
   const send=box.querySelector('.farm-share-send'),save=box.querySelector('.farm-share-save'),copy=box.querySelector('.farm-share-copy');
-  if(send)send.onclick=()=>sharePicture(host,s).then(result=>{if(sessions.get(box)!==s)return;if(result==='sent')track('farm_share_sent',{source:s.source});else if(result==='failed')return copied(box,s);});
+  if(send&&app)send.onclick=async()=>{if(shareInApp({text:s.copy.shareText,url:s.link},host))track('farm_share_sent',{source:s.source});else await copied(box,s);};
+  else if(send)send.onclick=()=>sharePicture(host,s).then(result=>{if(sessions.get(box)!==s)return;if(result==='sent')track('farm_share_sent',{source:s.source});else if(result==='failed')return copied(box,s);});
   if(save)save.onclick=()=>{track('farm_share_saved',{source:s.source});};
   if(copy)copy.onclick=()=>copied(box,s);
   (send??save)?.focus?.({preventScroll:true});box.scrollIntoView?.({block:'nearest',behavior:'smooth'});

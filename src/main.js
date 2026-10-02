@@ -19,7 +19,10 @@ import {createConnection,connectionMessage,reasonOf,refused,WAKE_GRACE} from './
 import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
+import {androidApp} from '../public/android.js';
 const $=id=>document.getElementById(id);
+// Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
+const inApp=androidApp();
 // Another language than English: translate the page's texts as they appear (public/i18n.js).
 startTranslation();
 renderLanguageSwitch();
@@ -105,10 +108,11 @@ function setMode(next,focus=false){
  document.querySelectorAll('.account-tabs [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
  if(focus){document.querySelector('.account-card').scrollIntoView({behavior:'smooth',block:'start'});if(visible.length)focusField(inputId(visible[0]),{preventScroll:true});}
 }
-// Inside the Facebook, Instagram or TikTok app, the sign-up card first offers the phone's own browser (src/browser-tip.js, 28 Sep 2026).
+// Inside the Facebook, Instagram or TikTok app, the sign-up card first offers the phone's own browser (src/browser-tip.js, 28 Sep 2026);
+// never in our own Android app, which is where the farm belongs there.
 let gateTimer=null;
 function browserGate(){
- const card=document.querySelector('.account-card'),ua=navigator.userAgent,on=gateApp(ua)&&store.get(ESCAPE_KEY)!=='stay';
+ const card=document.querySelector('.account-card'),ua=navigator.userAgent,on=!inApp&&gateApp(ua)&&store.get(ESCAPE_KEY)!=='stay';
  card.toggleAttribute('data-gate',on);if(!on)return;
  const text=gateText(ua),target=escapeTarget(location,pendingInvite(localStore),pendingRef(localStore),{rd:pendingSource?.ref,via:appKey(ua)}),help=$('gate-help');
  document.querySelectorAll('[data-gate-browser]').forEach(el=>el.textContent=text.browser);document.querySelectorAll('[data-gate-app]').forEach(el=>el.textContent=text.app);$('gate-open').textContent=text.action;
@@ -177,9 +181,13 @@ async function openFarm(){
   bridge.trackGame=(event,params)=>{if(ticket===generation)trackGame(event,params);};
   bridge.trackInvite=event=>{if(ticket===generation)trackInvite(event);};
   bridge.trackShare=(event,params)=>{if(ticket===generation)trackShare(event,params);};
-  bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
-  bridge.checkout=async(pack,requestId,offerId)=>{bridge.trackCommerce('diamond_pack_started',{pack});const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
-  bridge.paymentReturn=()=>{const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
+  // In the Android app (Oct 2026) Google Play's rules leave no room for purchases of our own: the catalogue the shop asks for says off (no
+  // Starter Pack, special offer or Halloween Pass for sale, so nothing opens by itself), nothing else about payments is asked and no
+  // checkout opens. Earned diamonds are spent as always, and what was bought on the website counts on the same account.
+  const appShop=()=>{throw new Error('Purchases are not available here.');};
+  bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');if(inApp){if(body?.operation==='catalog')return {enabled:false,serverNow:Date.now()};appShop();}const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
+  bridge.checkout=async(pack,requestId,offerId)=>{if(inApp)appShop();bridge.trackCommerce('diamond_pack_started',{pack});const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
+  bridge.paymentReturn=()=>{if(inApp)return {id:null,cancelled:false};const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,
   // with the farm as it is now (public/game.js reads ?world=village).
@@ -195,9 +203,12 @@ async function openFarm(){
  finally{checking=false;if(reopen){reopen=false;queueMicrotask(openFarm);}}
 }
 document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{if(submitting)return;const next=button.dataset.mode;if(next!==mode)trackAuth('mode',{mode:next});setMode(next,true);});
-socialProviders().then(list=>{providers=usableProviders(list,navigator.userAgent);document.querySelectorAll('[data-provider]').forEach(b=>{b.hidden=!providers.includes(b.dataset.provider);});showSocial();});
+// In the Android app there is nothing to ask: neither provider can sign in there (src/social-login.js).
+(inApp?Promise.resolve([]):socialProviders()).then(list=>{providers=usableProviders(list,navigator.userAgent);document.querySelectorAll('[data-provider]').forEach(b=>{b.hidden=!providers.includes(b.dataset.provider);});showSocial();});
+// Never in the Android app (Oct 2026): Google and Facebook both refuse a WebView, so there the buttons stay hidden (src/social-login.js)
+// and a sign-in with them cannot even start.
 document.querySelectorAll('[data-provider]').forEach(button=>button.onclick=async()=>{
- if(submitting||!supabase)return;const provider=button.dataset.provider;
+ if(submitting||!supabase||inApp)return;const provider=button.dataset.provider;
  trackAuth('submit',{mode,method:provider});submitting=true;lock(true);$('account-message').textContent=`Opening ${providerName(provider)}…`;
  try{tabStore.set(OAUTH_KEY,provider);const {error}=await supabase.auth.signInWithOAuth({provider,options:{redirectTo:redirectUrl(true)}});if(error)throw error;}
  catch(error){tabStore.remove(OAUTH_KEY);const problem=oauthStartError(error,provider);trackAuth('error',{mode,reason:problem.reason,method:provider});$('account-message').textContent=problem.message;submitting=false;lock(false);}
