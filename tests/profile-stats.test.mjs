@@ -14,7 +14,7 @@ test('the profile shows two pages of nine stats: on the farm and in the valley',
  assert.deepEqual(pages.map(p=>p.title),['On the farm','In the valley']);
  assert.deepEqual(pages.map(p=>p.stats.length),[9,9]);
  const labels=pages.flatMap(p=>p.stats.map(s=>s.label));
- assert.deepEqual(labels,['Crops harvested','Crop kinds','Top crop: Corn','Goods produced','Fields','Building upgrades','Badges','Quests done','Best day streak','Items sold','Deliveries','Coins','Events finished','Chores done','Helping-hand rounds','Estate projects','Goods kinds','Days farming']);
+ assert.deepEqual(labels,['Crops harvested','Crop kinds','Top crop: Corn','Goods produced','Fields','Building upgrades','Medals','Quests done','Best day streak','Items sold','Deliveries','Coins','Events finished','Chores done','Helping-hand rounds','Estate projects','Goods kinds','Days farming']);
  const find=label=>pages.flatMap(p=>p.stats).find(s=>s.label===label);
  assert.equal(find('Crop kinds').value,2,'crops harvested at least once');assert.equal(find('Crop kinds').of,Object.keys(CROPS).length);
  assert.equal(find('Quests done').of,QUESTS.length);assert.equal(find('Days farming').value,9,'the sign-up day counts as day 1');

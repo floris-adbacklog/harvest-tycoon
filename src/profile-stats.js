@@ -26,7 +26,7 @@ export function profileStatPages(player,now=Date.now()){
    stat('goods_produced',s.goods_produced,'Goods produced'),
    {...stat('farm_fields',s.farm_fields,'Fields'),of:40},
    {...stat('building_upgrades',s.building_upgrades,'Building upgrades'),of:153},
-   {...stat('badges',s.badges,'Badges'),of:CROP_COUNT*MASTERY_TIERS.length},
+   {...stat('badges',s.badges,'Medals'),of:CROP_COUNT*MASTERY_TIERS.length},
    {...stat('quests_done',s.quests_done,'Quests done'),of:QUESTS.length},
    stat('best_streak',s.best_streak,'Best day streak')
   ]},

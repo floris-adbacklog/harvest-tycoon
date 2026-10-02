@@ -25,7 +25,7 @@ test('the crop leaderboards follow the crop list',()=>{
 });
 test('the farmer profile counts the badges of every crop, so a new crop raises the total',()=>{
  const html=renderPlayerProfile({username:'Farmer',level:66,badges:[{crop:'cherries',tier:0}],stats:{}},Date.now());
- assert.match(html,new RegExp(`1 / ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges`));assert.match(html,/Cherries/);
+ assert.match(html,new RegExp(`1 / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals`));assert.match(html,/Cherries/);
 });
 test('the mastery list shows every crop: the ones still to come greyed, with the level they open at',()=>{
  const ui=read('public/growth-ui.js');

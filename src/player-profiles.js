@@ -21,14 +21,14 @@ const since=ms=>dateLine(ms,'Member since','<path d="M8 3v4M16 3v4M4 10h16M6 5h1
 // Last online (28 Sep 2026): the day the farm last saved. Left out while the farmer is online; the green dot already says so.
 const lastOnline=(ms,online)=>online?'':dateLine(ms,'Last online','<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',' farmer-last-online');
 const presence=online=>`<span class="farmer-presence"${online?' title="Online: a farm action in the last 30 minutes"':''}><span class="online-dot${online?' is-online':''}" aria-hidden="true"></span>${online?'Online':'Offline'}</span>`;
-// Crop mastery: one card per crop with its best badge, and a dot for each of the four badges (bronze, silver, gold, platinum)
+// Medals (Crop mastery until 2 Oct 2026): one card per crop with its best medal, and a dot for each of the four (bronze, silver, gold, platinum)
 // that is earned. The best crops first, then in the order they unlock.
 export function masteryByCrop(badges){
  const order=Object.keys(CROPS),byCrop=new Map();
  for(const b of badges){if(!CROPS[b.crop]||!MASTERY_TIERS[b.tier])continue;const tiers=byCrop.get(b.crop)??new Set();tiers.add(Number(b.tier));byCrop.set(b.crop,tiers);}
  return [...byCrop].map(([crop,tiers])=>({crop,tiers,best:Math.max(...tiers)})).sort((a,b)=>b.best-a.best||order.indexOf(a.crop)-order.indexOf(b.crop));
 }
-const masteryCard=({crop,tiers,best})=>`<div class="farmer-badge farmer-badge-${best}" title="${esc(MASTERY_TIERS[best].name)} · ${esc(CROPS[crop].name)}">${art(crop)}<strong>${esc(CROPS[crop].name)}</strong><span>${esc(MASTERY_TIERS[best].name)}</span><span class="farmer-badge-pips" role="img" aria-label="${tiers.size} of ${MASTERY_TIERS.length} badges">${MASTERY_TIERS.map((tier,i)=>`<i class="tier-${i}${tiers.has(i)?' is-earned':''}" title="${esc(tier.name)}"></i>`).join('')}</span></div>`;
+const masteryCard=({crop,tiers,best})=>`<div class="farmer-badge farmer-badge-${best}" title="${esc(MASTERY_TIERS[best].name)} · ${esc(CROPS[crop].name)}">${art(crop)}<strong>${esc(CROPS[crop].name)}</strong><span>${esc(MASTERY_TIERS[best].name)}</span><span class="farmer-badge-pips" role="img" aria-label="${tiers.size} of ${MASTERY_TIERS.length} medals">${MASTERY_TIERS.map((tier,i)=>`<i class="tier-${i}${tiers.has(i)?' is-earned':''}" title="${esc(tier.name)}"></i>`).join('')}</span></div>`;
 // The family card: with a family, a button to its profile (public/family-profile.js, 27 Sep 2026).
 function familyCard(family,emblem){
  const inner=`${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div>`;
@@ -43,7 +43,7 @@ export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false
  <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
  ${renderStatPages(player,now,statPage)}
- <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Crop mastery</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first mastery badge.</p>'}</section>`;
+ <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Medals</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first medal.</p>'}</section>`;
 }
 export function renderPlayerSearch(players,now=Date.now()){
  return players.map(p=>`<button type="button" class="farmer-search-result" data-player-id="${esc(p.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${avatarImage(p.avatarId)}</span><span class="farmer-search-name"><strong>${esc(p.username)}${vipBadge(p.vipExpiresAt,now)}</strong><small>${p.family?esc(p.family.name):'No family yet'} · Level ${fmt(p.level)}</small></span>${presence(p.online)}<span aria-hidden="true">›</span></button>`).join('');

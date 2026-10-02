@@ -20,7 +20,8 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  goods_produced:{label:'Most goods produced',heading:'Goods made',unit:'goods produced',description:'Lifetime production goods collected from every building, from honey to berry tart.'},
  building_upgrades:{label:'Most building upgrades',heading:'Upgrades',unit:'upgrades',description:'Every building upgrade counts the same: level 1 to 2 as much as level 9 to 10.'},
  items_sold:{label:'Most items sold',heading:'Items sold',unit:'items sold',description:'Lifetime crops and goods sold at the market. Counts from when this board launched.'},
- badges:{label:'Most badges',heading:'Badges',unit:'badges',description:`Crop mastery medals you have claimed. Up to ${Object.keys(CROPS).length*MASTERY_TIERS.length} badges to earn.`},
+ // Crop medals (2 Oct 2026): called Medals, as on the estate's Medals tab (they were Badges here and on profiles).
+ badges:{label:'Most medals',heading:'Medals',unit:'medals',description:`Crop medals you have claimed. Up to ${Object.keys(CROPS).length*MASTERY_TIERS.length} to earn.`},
  quests_done:{label:'Most quests done',heading:'Quests',unit:'quests done',description:`Quests finished and claimed, out of ${QUESTS.length}.`},
  deliveries:{label:'Most deliveries',heading:'Deliveries',unit:'deliveries',description:'Total delivery orders completed for your neighbours.'},
  events_finished:{label:'Most events finished',heading:'Events',unit:'events finished',description:'Events you finished.'},
