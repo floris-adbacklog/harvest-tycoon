@@ -437,9 +437,9 @@ test('no reminder and no auth email ever goes to a made-up CrazyGames address',a
 test('the privacy policy says what playing on CrazyGames stores',()=>{
  const policy=read('public/privacy.html');
  assert.match(policy,/<h3 id="crazygames">Playing on CrazyGames<\/h3>/);
- assert.match(policy,/we keep a scrambled form \(a keyed hash\) of your IP address for at most two hours, only to limit how many new guest farms one network can start/);
- assert.match(policy,/CrazyGames tells us your <strong>CrazyGames user ID<\/strong> and <strong>username<\/strong>: we link your farm to that user ID/);
- assert.match(policy,/If you log in to CrazyGames while playing as a guest, your guest farm is kept and linked to your CrazyGames account\./);
+ assert.match(policy,/To limit how many new guest farms one network can start, our server keeps a scrambled form \(a keyed hash\) of your IP address for at most two hours, never the address itself\./);
+ assert.match(policy,/a signed token with your <strong>CrazyGames user ID<\/strong> and <strong>username<\/strong>[^<]*<\/li>|keeps the user ID with your farm/);
+ assert.match(policy,/When you log in with CrazyGames later, the guest farm becomes the farm of your CrazyGames account\./);
  assert.match(policy,/<li><strong>Playing on CrazyGames<\/strong>: the link between your CrazyGames user ID and your farm, for as long as your account exists; the scrambled IP address of a new guest farm, at most two hours\.<\/li>/);
 });
 
