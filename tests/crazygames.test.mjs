@@ -163,7 +163,7 @@ test('crazygames.html: the loading screen and the farm, without tracking, cookie
  assert.doesNotMatch(read('public/sitemap.xml'),/crazygames/);
  const rule=JSON.parse(read('vercel.json')).headers.find(r=>r.source==='/crazygames.html'),get=key=>rule.headers.find(h=>h.key===key)?.value;
  assert.equal(get('Cache-Control'),'no-cache');assert.equal(get('X-Robots-Tag'),'noindex, nofollow');
- assert.equal(get('Content-Security-Policy'),'frame-ancestors https://*.crazygames.com https://crazygames.com capacitor://app.crazygames.com http://localhost:* http://127.0.0.1:*');
+ assert.equal(get('Content-Security-Policy'),'frame-ancestors https://*.crazygames.com https://crazygames.com https://*.crazygames.fr https://*.crazygames.co.id https://*.crazygames.cz https://*.crazygames.dk https://*.crazygames.hu https://*.crazygames.nl https://*.crazygames.no https://*.crazygames.pl https://*.crazygames.com.br https://*.crazygames.ro https://*.crazygames.fi https://*.crazygames.se https://*.crazygames.ru https://*.crazygames.com.ua https://*.crazygames.at https://*.crazygames.jp https://*.crazygames.pt https://*.crazygames.vn https://*.crazygames.com.vn https://*.crazygames.co.kr https://*.1001juegos.com capacitor://app.crazygames.com http://localhost:* http://127.0.0.1:*');
  assert.ok(!JSON.parse(read('vercel.json')).headers.some(r=>r.source!=='/crazygames.html'&&r.headers.some(h=>h.key==='Content-Security-Policy')),'only this page may be framed by them');
  const build=read('scripts/build-static.mjs');assert.match(build,/readFileSync\('public\/crazygames\.html','utf8'\)\.replace\('<meta name="harvest-version" content="dev">'/);assert.match(build,/writeFileSync\('dist-static\/crazygames\.html',crazy\)/);
  const cloud=read('scripts/build-cloud.mjs');
