@@ -331,6 +331,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    else{overview.unread.notices=Math.min(99,(overview.unread.notices??0)+1);counts();}
    return;
   }
+  // Chat switched off by CrazyGames during play (Oct 2026 review): no more dings or counts for a chat that is not there.
+  if(switchedOff)return;
   const m=event.message;if(!m||blocked().has(m.sender))return;
   // A private message from someone else gets its own soft ding, open or not (the sound settings decide if it plays).
   if(m.sender!==me&&(m.channel.startsWith('dm:')||m.channel==='crew'))win.harvestSound?.('message');
@@ -557,8 +559,12 @@ function chatLogIn({portal,button,doc}){
  dialog.querySelector('.close-dialog').onclick=()=>dialog.close();
  const login=dialog.querySelector('[data-portal-login]');
  login.onclick=async()=>{login.disabled=true;try{await portal.showAuthPrompt();}finally{login.disabled=false;dialog.close();}};
- function open(){doc.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();}
+ // CrazyGames switching the chat off during play: this window and its button go too (Oct 2026 review), as the chat does.
+ let off=false;
+ function open(){if(off)return;doc.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();}
  button.onclick=open;button.hidden=false;button.setAttribute('aria-label','Chat: log in with CrazyGames');
+ const stop=portal.onSettings?.(()=>{if(portalChat(portal)!=='off')return;off=true;button.hidden=true;if(dialog.open)dialog.close();});
+ doc.defaultView?.addEventListener?.('pagehide',()=>stop?.(),{once:true});
  try{globalThis.lucide?.createIcons?.();}catch{}
  return {open,get role(){return null;},whenReady:async()=>null};
 }

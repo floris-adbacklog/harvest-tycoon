@@ -1,4 +1,4 @@
-import {privacyLine,PRIVACY_URL} from '../public/portal.js';
+import {privacyLine,PRIVACY_URL,portalLogIn} from '../public/portal.js';
 // The farm on CrazyGames (Oct 2026; src/game-cloud.js calls this only there). The page is marked (html[data-portal], so portal.css
 // hides what CrazyGames does not allow: our purchases, invites, sharing, email, reminders, the app, Sign out and cookies) and gets
 // what CrazyGames asks for instead:
@@ -16,7 +16,7 @@ export function createPortalUI({portal,doc=globalThis.document}){
  }
  // The privacy link in the wiki and elsewhere in the frame: our full address, in a new tab (CrazyGames allows this one link).
  for(const link of doc.querySelectorAll('a[href="/privacy"]'))link.href=PRIVACY_URL;
- if(portal.guest){
+ if(portal.guest&&portalLogIn(portal)){
   const account=doc.querySelector('.settings-account .account-actions');
   if(account&&!doc.getElementById('portal-login')){
    const button=doc.createElement('button');button.type='button';button.id='portal-login';button.className='small-button portal-login';

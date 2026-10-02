@@ -27,7 +27,7 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
  // that opens again by itself (its Try again) asks that page for the farm; the website's sign-in page never opens inside CrazyGames.
  const portal=bridge.portal??null;
  if(!window.harvestInitialFarm){if(portal)portal.reopen();else location.replace('/play.html');}else{
-  // Marked before anything shows or loads (portal.css; src/supabase.js then never opens the website's own sign-in in this frame).
+  // Marked before anything shows or loads: portal.css and the farm's loading tips (public/loading-screen.js) read it.
   if(portal)document.documentElement.dataset.portal=portal.name;
   document.body.hidden=false;
   // The game takes the first farm over (and clears harvestInitialFarm); the pop-ups only need its start time (the first half hour).

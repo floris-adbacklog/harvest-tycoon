@@ -55,6 +55,9 @@ async function boot(){
  const portal={
   name:'crazygames',features:Object.freeze(Object.fromEntries(PORTAL_FEATURES.map(feature=>[feature,false]))),
   get guest(){return guest;},get settings(){return {...settings};},
+  // CrazyGames accounts on this site (their isUserAccountAvailable): false where CrazyGames is shown elsewhere without its log-in,
+  // so no "Log in with CrazyGames" there that cannot work (Oct 2026 review).
+  get userAvailable(){return info.userAvailable;},
   // From the game (src/game-cloud.js): the farm is ready (loadingStop, gameplayStart).
   event(name){if(name==='loadingStop'||name==='gameplayStart')ready=true;sdk(name);},
   // Only ever from a player's tap ("Log in with CrazyGames"); a log-in arrives through onAuth below.
@@ -95,7 +98,8 @@ async function boot(){
  function drop(kind){clientOf(kind)?.auth?.stopAutoRefresh?.();store.remove(CG_KEYS[kind]);}
  async function askServer(body,bearer){
   let response;
-  try{response=await fetch(`${functionsUrl}/crazygames-auth`,{method:'POST',headers:{'content-type':'application/json',apikey:supabaseKey,...(bearer?{authorization:`Bearer ${bearer}`}:{})},body:JSON.stringify(body)});}
+  // In Frankfurt next to the database, as farm-api (src/supabase.js FARM_API): one long hop instead of one per database step.
+  try{response=await fetch(`${functionsUrl}/crazygames-auth?forceFunctionRegion=eu-central-1`,{method:'POST',headers:{'content-type':'application/json',apikey:supabaseKey,...(bearer?{authorization:`Bearer ${bearer}`}:{})},body:JSON.stringify(body)});}
   catch{throw Object.assign(new Error('We could not reach your farm. Your farm is safe; we keep trying.'),{transient:true});}
   let data=null;try{data=await response.json();}catch{}
   if(!response.ok)throw Object.assign(new Error(data?.error||'We could not connect. Please try again.'),{status:response.status,transient:response.status>=500});
@@ -107,8 +111,10 @@ async function boot(){
  }
  // A CrazyGames player: a fresh token on every start (their rule), checked by our server, which answers with a way in to their farm.
  // A guest who logs in keeps the guest farm: the guest's sign-in goes along and the server makes it the CrazyGames player's farm.
+ // Asked whenever CrazyGames has accounts here, not only when init named a user (Oct 2026 review: a getUser() that failed once sent a
+ // logged-in player to a guest farm); a guest simply gets no token.
  async function account(){
-  if(info.userAvailable&&info.user){
+  if(info.userAvailable){
    const token=await link.token();
    if(token){
     try{
@@ -141,19 +147,23 @@ async function boot(){
    // No Sign out on CrazyGames (their rule; portal.css hides the button): a guest's farm is never let go by a tap.
    bridge.portal=portal;bridge.signOut=()=>{};
    // The village and back: the game page loads again, through its loading screen.
-   const travel=bridge.travel;bridge.travel=async to=>{ready=false;sdk('gameplayStop');sdk('loadingStart');await travel(to);};
+   // A trip that does not get going (no connection) leaves the farm on screen: CrazyGames hears it is played again (Oct 2026 review).
+   const travel=bridge.travel;bridge.travel=async to=>{ready=false;sdk('gameplayStop');sdk('loadingStart');try{await travel(to);}catch(error){sdk('loadingStop');ready=true;sdk('gameplayStart');throw error;}};
   }
  });
- let running=false,again=false,endedAt=0;
+ let running=false,again=false,endedAt=0,retries=0;
  async function start(){
   if(running){again=true;return;}running=true;clearTimeout(retryTimer);
   try{
    session.dispose();phase('checking','Checking your account…');
    if(!isConfigured)throw new Error('Account access is temporarily unavailable. Please try again later.');
-   await account();await session.open();
+   await account();await session.open();retries=0;
   }catch(error){
-   if(error?.status===429)pause('Many new farms were started from this network just now. Please try again in a little while.');
-   else if(error?.transient||navigator.onLine===false){pause(error.message||'We could not reach your farm. Your farm is safe; we keep trying.',{retrying:true});retryTimer=setTimeout(()=>void start(),8000);}
+   // 429: our guest limit or Supabase's own sign-in limit, both per network (a school class behind one address).
+   if(error?.status===429)pause('Many players on this network are starting at once. Please try again in a little while.');
+   // Trying again by itself, a little later each time (8 s up to a minute): a server that is down is not asked every 8 seconds by
+   // every waiting player (Oct 2026 review).
+   else if(error?.transient||navigator.onLine===false){pause(error.message||'We could not reach your farm. Your farm is safe; we keep trying.',{retrying:true});retryTimer=setTimeout(()=>void start(),Math.min(60000,8000*2**retries++));}
    else pause(cloudError(error));
   }finally{running=false;if(again){again=false;queueMicrotask(()=>void start());}}
  }
@@ -167,7 +177,8 @@ async function boot(){
   void (async()=>{if(active)await forget(active);void start();})();
  }
  // Logging in or out on CrazyGames during play: the farm of whoever plays now (a log-out reloads the whole page anyway).
- link.onAuth(user=>{info.user=user;if(user)info.userAvailable=true;void start();});
+ // Only a real change starts again (the same player told twice must not reload the farm).
+ link.onAuth(user=>{if((user?.username??null)===(info.user?.username??null))return;info.user=user;if(user)info.userAvailable=true;void start();});
  $('pause-retry').onclick=()=>void start();
  session.listen({reopen:()=>void start()});
  void start();

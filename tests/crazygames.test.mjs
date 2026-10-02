@@ -7,7 +7,8 @@ import {join} from 'node:path';
 import {createWrapperLink,trustedWrapper,portalLanguage,cleanInit,localStandIn,NS} from '../src/crazygames-link.js';
 import {createWrapper,gameAddress,allowedOrigin,GAME_URL,GAME_ORIGIN,SDK_EVENTS} from '../crazygames/wrapper.js';
 import {createFarmSession} from '../src/farm-session.js';
-import {portal,portalOff,portalChat,PORTAL_FEATURES,PRIVACY_URL} from '../public/portal.js';
+import {portal,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,PRIVACY_URL} from '../public/portal.js';
+import {setAppBadge} from '../public/app-badge.js';
 import {portalTips,LOADING_TIPS,PORTAL_HIDDEN_TIPS} from '../public/loading-screen.js';
 import {wikiArticle,wikiQuick,WIKI_TOPICS} from '../public/wiki-content.js';
 import {renderLanguageSettings} from '../public/language-settings.js';
@@ -175,7 +176,15 @@ test('src/crazygames.js: its own sign-ins, the token on every start, a guest oth
  assert.match(supabase,/const portalPage=Boolean\(globalThis\.document\?\.documentElement\?\.dataset\?\.portal\);\nexport let supabase=isConfigured&&!portalPage\?createClient\(url,key,\{auth:\{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'harvest-tycoon:auth'\}\}\):null;/,'the website\'s saved sign-in is never read there');
  assert.match(supabase,/detectSessionInUrl:false,storageKey\}/);
  assert.match(js,/const token=await link\.token\(\);/);assert.match(js,/askServer\(\{op:'crazygames',token,language:chosenLanguage\(\)\},sent\?\.access_token\)/);assert.match(js,/askServer\(\{op:'guest',language:chosenLanguage\(\)\}\)/);
- assert.match(js,/verifyOtp\(\{token_hash:tokenHash,type:'magiclink'\}\)/);assert.match(js,/`\$\{functionsUrl\}\/crazygames-auth`/);
+ assert.match(js,/verifyOtp\(\{token_hash:tokenHash,type:'magiclink'\}\)/);assert.match(js,/`\$\{functionsUrl\}\/crazygames-auth\?forceFunctionRegion=eu-central-1`/,'in Frankfurt, next to the database, as farm-api');
+ // Oct 2026 review: the token is asked whenever CrazyGames has accounts here (not only when init named a user); a server that is down is
+ // asked again later each time; a trip to the village that does not start gives CrazyGames its gameplay back; the same player told
+ // twice does not reload the farm.
+ assert.match(js,/async function account\(\)\{\n  if\(info\.userAvailable\)\{\n   const token=await link\.token\(\);/);
+ assert.match(js,/retryTimer=setTimeout\(\(\)=>void start\(\),Math\.min\(60000,8000\*2\*\*retries\+\+\)\);/);assert.match(js,/await account\(\);await session\.open\(\);retries=0;/);
+ assert.match(js,/try\{await travel\(to\);\}catch\(error\)\{sdk\('loadingStop'\);ready=true;sdk\('gameplayStart'\);throw error;\}/);
+ assert.match(js,/link\.onAuth\(user=>\{if\(\(user\?\.username\?\?null\)===\(info\.user\?\.username\?\?null\)\)return;/);
+ assert.match(js,/get userAvailable\(\)\{return info\.userAvailable;\}/);
  assert.match(js,/firstLoad:\(\)=>\(\{source:\{src:'crazygames',ref:'crazygames\.com'\}\}\)/);
  assert.equal((js.match(/authPrompt\(\)/g)??[]).length,1,'only through the portal, from a tap');assert.match(js,/showAuthPrompt:\(\)=>link\.authPrompt\(\)/);
  assert.match(js,/if\(!framed&&!local\)location\.replace\('\/'\);/,'on its own, our address sends the visitor to the website');
@@ -234,7 +243,10 @@ test('the portal is read from the page around the game; on the website there is 
  assert.equal(portal({get parent(){throw new Error('cross-origin');}}),null);
  for(const feature of PORTAL_FEATURES){assert.equal(portalOff(feature,null),false,feature);assert.equal(portalOff(feature,CRAZY),true,feature);}
  assert.deepEqual(PORTAL_FEATURES,['payments','invite','share','email','reminders','app','signOut','cookies','translate','links']);
- assert.equal(portalChat(null),'on');assert.equal(portalChat(CRAZY),'guest');assert.equal(portalChat({...CRAZY,guest:false}),'on');assert.equal(portalChat({...CRAZY,guest:false,settings:{disableChat:true}}),'off');
+ assert.equal(portalChat(null),'on');assert.equal(portalChat(CRAZY),'guest');
+ // Oct 2026 review: where CrazyGames has no accounts (isUserAccountAvailable false) a guest cannot log in, so no chat and no log-in button.
+ assert.equal(portalChat({...CRAZY,userAvailable:false}),'off');assert.equal(portalChat({...CRAZY,guest:false,userAvailable:false}),'on');
+ assert.equal(portalLogIn(CRAZY),true);assert.equal(portalLogIn({...CRAZY,userAvailable:true}),true);assert.equal(portalLogIn({...CRAZY,userAvailable:false}),false);assert.equal(portalLogIn(null),false);assert.equal(portalChat({...CRAZY,guest:false}),'on');assert.equal(portalChat({...CRAZY,guest:false,settings:{disableChat:true}}),'off');
  assert.equal(PRIVACY_URL,'https://www.harvesttycoon.com/privacy');
  assert.equal(linkify('See https://www.harvesttycoon.com/partners'),'See <a href="https://www.harvesttycoon.com/partners" target="_blank" rel="noopener noreferrer">www.harvesttycoon.com/partners</a>','the website keeps its links');
 });
@@ -260,7 +272,7 @@ test('the farm frame on CrazyGames: SDK events at farm ready, no purchases, the 
  assert.match(cloud,/if\(portal\)createPortalUI\(\{portal\}\);/);
  assert.match(cloud,/if\(await farmReady\)\{\n   \/\/[^\n]*\n   if\(portal\)\{portal\.event\('loadingStop'\);portal\.event\('gameplayStart'\);\}/);
  assert.match(cloud,/const shop=!portal;\n   if\(shop\)showPaymentReturn\(bridge\);/);assert.match(cloud,/if\(shop\)\{createOfferUI\(bridge\);\n   await createStarterPackUI\(bridge\);\}/);
- assert.match(ui,/doc\.documentElement\.dataset\.portal=portal\.name;/);assert.match(ui,/button\.textContent='Save your farm: log in with CrazyGames';/);assert.match(ui,/if\(portal\.guest\)\{/);
+ assert.match(ui,/doc\.documentElement\.dataset\.portal=portal\.name;/);assert.match(ui,/button\.textContent='Save your farm: log in with CrazyGames';/);assert.match(ui,/if\(portal\.guest&&portalLogIn\(portal\)\)\{/);
  assert.match(ui,/button\.onclick=async\(\)=>\{button\.disabled=true;try\{await portal\.showAuthPrompt\(\);\}/,'only from a tap');
  assert.match(read('public/boosts-ui.js'),/track\('diamond_shop_view'\);if\(portalOff\('payments'\)\)return;try\{catalog=await bridge\(\)\.payments/,'the shop never asks for the packs there');
  assert.match(read('public/pass-ui.js'),/if\(catalog\|\|portalOff\('payments'\)\|\|/);assert.match(read('public/pass-ui.js'),/if\(pending\|\|portalOff\('payments'\)\|\|/);
@@ -291,9 +303,9 @@ function chatPage(portalState){
  const el=()=>{const node={hidden:true,attrs:{},kids:{},open:false,setAttribute(k,v){node.attrs[k]=v;},querySelector(sel){return node.kids[sel]??=el();},showModal(){node.open=true;},close(){node.open=false;}};return node;};
  const button=el(),dot=el(),appended=[];
  const doc={getElementById:id=>id==='chat-button'?button:id==='chat-dot'?dot:null,createElement:()=>el(),body:{append:node=>appended.push(node)},querySelectorAll:()=>[]};
- let prompts=0;const portal={...portalState,showAuthPrompt:async()=>{prompts++;return {ok:true};},onSettings:()=>()=>{}};
+ let prompts=0;const changes=new Set();const portal={...portalState,showAuthPrompt:async()=>{prompts++;return {ok:true};},onSettings:fn=>{changes.add(fn);return()=>changes.delete(fn);}};
  const chat=createChatUI({bridge:{chat:{},playerId:'A',portal},profiles:null,doc,win:{addEventListener(){}}});
- return {chat,button,appended,prompts:()=>prompts};
+ return {chat,button,appended,prompts:()=>prompts,settle:next=>{portal.settings=next;for(const fn of changes)fn(next);}};
 }
 test('the chat on CrazyGames: gone when CrazyGames switches it off; a guest gets one window with CrazyGames\' log-in, opened only by a tap',async()=>{
  const off=chatPage({...CRAZY,guest:false,settings:{disableChat:true}});assert.equal(off.chat,null);assert.equal(off.button.hidden,true);assert.equal(off.appended.length,0);
@@ -304,6 +316,10 @@ test('the chat on CrazyGames: gone when CrazyGames switches it off; a guest gets
  guest.button.onclick();assert.equal(dialog.open,true);
  await dialog.kids['[data-portal-login]'].onclick();assert.equal(guest.prompts(),1);assert.equal(dialog.open,false);
  assert.equal(guest.chat.role,null);
+ // Oct 2026 review: CrazyGames switching the chat off during play takes the guest's chat button and window away too.
+ guest.button.onclick();assert.equal(dialog.open,true);guest.settle({muteAudio:false,disableChat:true});assert.equal(guest.button.hidden,true);assert.equal(dialog.open,false);
+ guest.chat.open();assert.equal(dialog.open,false,'gone until the next start');
+ const noAccounts=chatPage({...CRAZY,userAvailable:false});assert.equal(noAccounts.chat,null);assert.equal(noAccounts.appended.length,0,'no log-in where CrazyGames has none');
 });
 test('the privacy policy says what we get from CrazyGames, about guests, no trackers there and how to delete a farm',()=>{
  const html=read('public/privacy.html');
@@ -312,4 +328,14 @@ test('the privacy policy says what we get from CrazyGames, about guests, no trac
  assert.match(html,/on CrazyGames we load no Google Analytics, Meta Pixel, TikTok Pixel or other trackers/);assert.match(html,/<strong>Deleting your farm:<\/strong> email <a href="mailto:info@harvesttycoon\.com">/);
  for(const key of ['cg-user','cg-guest','cg-locale'])assert.match(html,new RegExp(`<code>harvest-tycoon:${key}</code>`),key);
  assert.match(read('src/crazygames.js'),/const LOCALE_KEY='harvest-tycoon:cg-locale';/);
+});
+
+// Oct 2026 review: inside CrazyGames the top window is theirs; reading its navigator throws, so the badge stays in our own frame and
+// never becomes an error in the console.
+test('the app badge never reaches into CrazyGames\' own page',async()=>{
+ const set=[];const own={navigator:{setAppBadge:async n=>{set.push(n);}},caches:null};
+ own.top={get navigator(){throw new Error('cross-origin');}};
+ await setAppBadge(3,own);assert.deepEqual(set,[3]);
+ const site={navigator:{setAppBadge:async n=>{set.push(`top ${n}`);}}};const frame={navigator:{setAppBadge:async()=>set.push('frame')},top:site};
+ await setAppBadge(2,frame);assert.deepEqual(set,[3,'top 2'],'on the website the installed app\'s own window still gets it');
 });
