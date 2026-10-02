@@ -310,8 +310,11 @@ test('the Edge Function itself: OPTIONS, POST JSON up to 4 KB, the settings from
  const guest=await call('POST',JSON.stringify({op:'guest'}),{'x-real-ip':'192.0.2.4'});
  assert.equal(guest.status,200);assert.equal(guest.headers.get('content-type'),'application/json');assert.equal(guest.headers.get('cache-control'),'no-store');
  assert.deepEqual(Object.keys(await guest.json()).sort(),['player_id','token_hash']);assert.equal(log.slots[0].p_max,12);assert.equal(log.slots[0].p_ip,await ipHash('192.0.2.4','service'));
- const other=await call('POST',JSON.stringify({op:'crazygames',token:cgToken({gameId:'another'})}));assert.equal(other.status,401,'CRAZYGAMES_GAME_ID is used, trimmed');
- const mine=await call('POST',JSON.stringify({op:'crazygames',token:cgToken({gameId:'harvest'})}));assert.equal(mine.status,200);assert.deepEqual(fetched,[PUBLIC_KEY_URL],'the key is fetched once');
+ // The function itself reads the real clock (the other tests pass NOW), so these two tokens are valid from now on, not only until an
+ // hour after NOW (2 Oct 2026, 13:00 UTC: from then on the right game's token was refused as expired).
+ const live={iat:Math.floor(Date.now()/1000)-60,exp:Math.floor(Date.now()/1000)+3600};
+ const other=await call('POST',JSON.stringify({op:'crazygames',token:cgToken({gameId:'another',...live})}));assert.equal(other.status,401,'CRAZYGAMES_GAME_ID is used, trimmed');
+ const mine=await call('POST',JSON.stringify({op:'crazygames',token:cgToken({gameId:'harvest',...live})}));assert.equal(mine.status,200);assert.deepEqual(fetched,[PUBLIC_KEY_URL],'the key is fetched once');
  const broken=start({...admin,rpc:async()=>({error:{code:'XX000',message:'database down'}})});
  assert.deepEqual(await (await broken('POST',JSON.stringify({op:'guest'}))).json(),{error:'Your farm could not be reached. Please try again.',code:'SERVER_UNAVAILABLE'});
 });
