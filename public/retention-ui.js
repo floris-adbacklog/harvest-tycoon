@@ -1,6 +1,6 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt} from './quests-ui.js';
-import {streakToday,comebackChest,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -30,7 +30,8 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  const chestOffer=(now=farmNow())=>comebackChest(state,now);
  const chestChips=c=>rewardChips({coins:c.coins},boostChip(c.boost,c.boostMs));
  const collectChest=()=>act({type:'comeback'},r=>`Comeback chest: +${r.coins.toLocaleString('en-US')} coins. Plus ${boostName(r.boost,r.boostMinutes*60000)}!`);
- const chestRow=c=>c?`<div class="welcome-gift welcome-chest"><span class="welcome-gift-art">${art('family-chest-wood')}</span><span class="welcome-gift-copy"><strong>Comeback chest</strong>${chestChips(c)}</span><button type="button" id="comeback-chest" class="small-button">Collect</button></div>`:'';
+ // Here, unlike in Welcome back (which says how long you were away), the row says why it is there: the rule in one line.
+ const chestRow=c=>c?`<div class="welcome-gift welcome-chest"><span class="welcome-gift-art">${art('family-chest-wood')}</span><span class="welcome-gift-copy"><strong>Comeback chest</strong>${chestChips(c)}<small class="welcome-chest-note">For coming back after ${COMEBACK_MIN_DAYS} days or more. One every ${COMEBACK_EVERY_DAYS} days.</small></span><button type="button" id="comeback-chest" class="small-button">Collect</button></div>`:'';
  function gift(){
   // The seven days of the current streak week: day 1-7, then 8-14 and so on, each with its diamonds and, on days 3, 5 and 7, its boost.
   const now=farmNow(),today=streakToday(state,now),claimed=today.claimed;

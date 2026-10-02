@@ -71,6 +71,9 @@ test('the saved chest is cleaned up: farms from before it start at 0, rubbish is
 test('Welcome back still mints nothing; the chest shows at once in the game (it spends nothing)',()=>{
  const s=createFarm(start),copy=structuredClone(s);
  assert.ok(welcomeSummary(s,new Date(start-4*DAY_MS).toISOString(),start));assert.deepEqual(s,copy);
+ // farm-api saves a load only when there is a Welcome back (or another reward): every away time that offers a chest must have one,
+ // or the chest offered on that load would never be saved.
+ assert.ok(welcomeSummary(s,new Date(start-COMEBACK_MIN_DAYS*DAY_MS).toISOString(),start),'3 days away is always a Welcome back');
  offerComeback(s,4*DAY_MS,start);
  const shown=instantResult(s,{type:'comeback'},start);assert.equal(shown.result.coins,comebackCoins(4,levelOf(s)));assert.equal(shown.trial.comeback.pending,null);assert.ok(s.comeback.pending,'the farm itself waits for the server');
  assert.throws(()=>instantResult(createFarm(start),{type:'comeback'},start),/No comeback chest is waiting/);
@@ -89,6 +92,8 @@ test('the chest has its own row and Collect in Welcome back and at the top of To
  assert.match(welcome,/data-welcome-chest><span class="welcome-gift-art">\$\{art\('family-chest-wood'\)\}<\/span><span class="welcome-gift-copy"><strong>Comeback chest<\/strong>/);
  assert.ok(welcome.indexOf('data-welcome-chest')<welcome.indexOf('data-welcome-gift'),'above the gift');
  assert.match(retention,/\$\('daily-gift'\)\.innerHTML=`\$\{chestRow\(chestOffer\(now\)\)\}<section/);
+ assert.match(retention,/<small class="welcome-chest-note">For coming back after \$\{COMEBACK_MIN_DAYS\} days or more\. One every \$\{COMEBACK_EVERY_DAYS\} days\.<\/small>/,'Today says the rule in one line');
+ assert.doesNotMatch(welcome,/welcome-chest-note/,'Welcome back already says how long you were away');
  assert.match(retention,/act\(\{type:'comeback'\}/);assert.doesNotMatch(retention+welcome,/collect all/i);
  assert.match(css,/:is\(#welcome-back-dialog,#daily-gift\) \.welcome-gift\{/);
  assert.match(read('public/visual-icons.js'),/'family-chest-wood'/);
