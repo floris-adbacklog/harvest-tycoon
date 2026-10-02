@@ -276,6 +276,9 @@ test('texts: the wiki, a loading tip, the purchase screens and the privacy polic
  // The pre-sale (Oct 2026): before the season the wiki says it can be bought already, and when it starts.
  for(const id of ['daily','diamonds'])assert.match(wikiArticle(id,{now:Date.UTC(2026,9,2)}).html,/You can buy it already; it starts on 23 October\./);
  assert.doesNotMatch(wikiArticle('daily',{now:OPEN}).html,/buy it already/);assert.doesNotMatch(wikiArticle('daily',{now:SEASON_PASS.endsAt}).html,/You can buy it/,'not in the collecting week');
+ // In the game the wiki reads the farm's clock (the server's), as the pass window does, never the device's.
+ const wikiUI=read('public/wiki-ui.js');
+ assert.match(wikiUI,/^import \{farmNow\} from '\.\/farm-client\.js';$/m);assert.match(wikiUI,/function ctx\(\)\{return \{level:farm\?levelOf\(farm\):null,href:id=>`#wiki-\$\{id\}`,now:farmNow\(\)\};\}/);
  assert.doesNotMatch(wikiArticle('diamonds',{now:SEASON_PASS.endsAt}).html,/Halloween Pass/);
  assert.equal(PASS_LOADING_TIP[0],'giant-small');assert.ok(read('public/assets/icons/giant-small.webp').length>1000,'existing art, WebP');
  assert.match(read('public/game.js'),/passPhase\(Date\.now\(\)\)==='open'\?\[PASS_LOADING_TIP,\.\.\.LOADING_TIPS\]:LOADING_TIPS/,'the tip only while it is open');

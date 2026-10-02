@@ -1,4 +1,5 @@
 import {levelOf} from './farm-state.js';
+import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {wikiArticle,wikiNext,wikiSearch,wikiHero,wikiJump,wikiGroups,wikiSearchBox,wikiQuick} from './wiki-content.js';
 
@@ -13,7 +14,9 @@ function root(){return document.getElementById('help-content');}
 // Farm app block in Settings. The button shows only where one tap installs it.
 const pwa=()=>{try{return window.parent?.harvestPwa??null;}catch{return null;}};
 function showInstall(el){const row=el?.querySelector('[data-wiki-install-row]');if(row)row.hidden=pwa()?.state?.().kind!=='prompt';}
-function ctx(){return {level:farm?levelOf(farm):null,href:id=>`#wiki-${id}`};}
+// now: the farm's clock (the server's, as the Halloween Pass window and its countdowns), never the device's: what the wiki says about
+// the pass (on sale already, until when, gone after the collecting week) follows the same moment as the window (Oct 2026).
+function ctx(){return {level:farm?levelOf(farm):null,href:id=>`#wiki-${id}`,now:farmNow()};}
 function scrollTop(){const dialog=root()?.closest('dialog');if(dialog)dialog.scrollTop=0;}
 // On a phone the pop-up's title bar stays at the top; the jump bar sits just below it.
 // On a computer the title bar scrolls away: the jump bar then sticks to the window's very top edge, over its padding, so nothing
