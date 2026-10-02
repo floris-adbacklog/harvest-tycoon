@@ -1198,7 +1198,8 @@ async function init(){
    if(sweepRun){if(Math.abs(dx)>1.5)sweepRun.tilt=dx<0?.55:-.55;if(e.pointerType==='mouse'&&sweepTool.move(e.clientX,e.clientY,dx))world.style.cursor='none';$('tooltip').hidden=true;return;}
    if(e.pointerType!=='mouse'||e.buttons){highlight(-1);$('tooltip').hidden=true;return;}
    const target=pointerTarget(e);highlight(target?.id??-1);const tooltip=$('tooltip');
-   // Over a field the cursor is the tool its sweep would use: a sickle over a ripe crop, a watering can, a seed bag (sweep-tools.js).
+   // Over a field the cursor is the tool its sweep would use: a sickle over a ripe crop, a watering can, a seed bag, gloves for care
+   // (sweep-tools.js).
    if(target?.type==='plot')world.style.cursor=toolCursor(sweepAction(target))||'pointer';
    if(!target||e.pointerType==='touch'){tooltip.hidden=true;return;}
    tooltip.hidden=false;

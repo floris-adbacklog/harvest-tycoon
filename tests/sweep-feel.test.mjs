@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {createFarmClient,sweepTotal,farmNow} from '../public/farm-client.js';
 import {createFarm,applyFarmAction,seedCost,BEGINNER_QUESTS} from '../public/farm-state.js';
 import {createFarmAudio,snipRate,SNIP_SCALE,SNIP_GAP,SOUND_CUES} from '../public/farm-audio.js';
-import {toolCursor,ghostPose,TOOL_ART} from '../public/sweep-tools.js';
+import {toolCursor,ghostPose,TOOL_ART,TOOL_SIZE,CURSOR_PX,createSweepTool,createSweepGhost} from '../public/sweep-tools.js';
+import {art,pictureFile,ART_KEYS} from '../public/visual-icons.js';
 import {HAPTICS} from '../public/haptics.js';
 import {extract} from '../scripts/i18n-extract.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -104,12 +105,13 @@ test('every swept field snips, a step higher on a pentatonic scale up to an octa
  assert.equal(HAPTICS.sweep,8,'a short tick per field on a phone');
 });
 
-test('the tool in the hand: a sickle over a ripe crop, a watering can and a seed bag as the cursor, drawn inline (no image files)',()=>{
+test('the tool in the hand: a sickle over a ripe crop, a watering can, a seed bag and (Oct 2026) gloves for care, with the inline drawings as the cursor until a picture is there',()=>{
+ // Before a painted picture has loaded (and in these tests, where nothing loads) the inline drawing is the cursor; care has none.
  assert.match(toolCursor('harvest'),/^url\("data:image\/svg\+xml,%3Csvg%20width%3D%2232%22%20height%3D%2232%22.*"\) 9 12, pointer$/);
  assert.match(toolCursor('water'),/^url\("data:image\/svg\+xml,.*"\) 4 11, pointer$/);assert.match(toolCursor('plant'),/, pointer$/);
- assert.equal(toolCursor('tend'),'');assert.equal(toolCursor(null),'');
- for(const art of Object.values(TOOL_ART))assert.match(art.svg,/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 48 48">/);
- assert.doesNotMatch(read('public/sweep-tools.js'),/\.png|\.webp|<img/);
+ assert.equal(toolCursor('tend'),'','care: a plain pointer until the gloves are there');assert.equal(toolCursor(null),'');
+ for(const tool of Object.values(TOOL_ART))if(tool.svg)assert.match(tool.svg,/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 48 48">/);
+ assert.deepEqual(Object.keys(TOOL_ART).filter(a=>TOOL_ART[a].svg),['harvest','water','plant'],'the three drawings stay as the fallback');
  // Review (Oct 2026): made once per tool (asked on every mouse move), and the cursor value is no text for the translation catalog.
  assert.equal(toolCursor('harvest'),toolCursor('harvest'));
  const texts=Object.keys(extract());assert.ok(!texts.some(t=>/pointer|svg\+xml/.test(t)),'", pointer" is not a text to translate');
@@ -117,6 +119,80 @@ test('the tool in the hand: a sickle over a ripe crop, a watering can and a seed
  const game=read('public/game.js');
  assert.match(game,/addEventListener\('pointerdown',e=>\{lastPointer=\{x:e\.clientX,y:e\.clientY,type:e\.pointerType\};pointerDx=0;\}\);/);
  assert.match(game,/const run=sweepRun;sweepRun=null;sweepTool\.hide\(\);swept\.clear\(\);highlight\(-1\);/);
+});
+
+// The painted tools (Oct 2026): the owner's sickle, watering can, seed bag and gloves, WebP like every game picture and listed in
+// visual-icons.js, 256 px square with a transparent background; the hot spot is each one's working point.
+test('the four painted tools are 256 px WebP pictures with transparency, listed in visual-icons.js, each with its working point inside the picture',()=>{
+ const files={harvest:'tool-sickle',water:'tool-can',plant:'tool-seeds',tend:'tool-gloves'};
+ assert.deepEqual(Object.keys(TOOL_ART),Object.keys(files));assert.equal(TOOL_SIZE,256);
+ for(const [action,name] of Object.entries(files)){
+  const tool=TOOL_ART[action];
+  assert.equal(tool.picture,`/assets/icons/${name}.webp`);assert.equal(tool.picture,pictureFile(name),'the path comes from visual-icons.js');
+  assert.ok(ART_KEYS.includes(name));assert.match(art(name),new RegExp(`src="/assets/icons/${name}\\.webp"`));
+  const webp=readFileSync(new URL(`../public${tool.picture}`,import.meta.url));
+  assert.equal(webp.toString('latin1',0,4),'RIFF');assert.equal(webp.toString('latin1',8,16),'WEBPVP8X',`${name}: an extended WebP`);
+  assert.ok(webp[20]&0x10,`${name} keeps its transparency`);
+  assert.deepEqual([1+webp.readUIntLE(24,3),1+webp.readUIntLE(27,3)],[TOOL_SIZE,TOOL_SIZE],`${name} is 256 px square`);
+  assert.ok(webp.length<30000,`${name} stays small`);
+  assert.ok(!existsSync(new URL(`../public/assets/icons/${name}.png`,import.meta.url)),'no PNG');
+  assert.ok(tool.hot.every(v=>Number.isInteger(v)&&v>=0&&v<TOOL_SIZE),`${name}: the hot spot is inside the picture`);
+ }
+ // Each hot spot is the working point: the sickle's blade tip and the leaf the gloves hold are at the top left, the can's rose a
+ // little lower, the bag's opening further in.
+ assert.deepEqual(TOOL_ART.harvest.hot,[47,10]);assert.deepEqual(TOOL_ART.water.hot,[52,54]);assert.deepEqual(TOOL_ART.plant.hot,[100,84]);assert.deepEqual(TOOL_ART.tend.hot,[10,16]);
+ assert.doesNotMatch(read('public/sweep-tools.js'),/\.png/,'no PNG picture is asked for');
+});
+
+test('once a painted tool has loaded it is the cursor: drawn once at 40 px (and 80 px for sharp screens) as a PNG, its working point the hot spot; a picture that cannot load keeps the drawing',async()=>{
+ const keys=['document','Image','CSS'],saved=Object.fromEntries(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
+ const images=[],drawn=[];let unreadable=false;
+ globalThis.Image=class{constructor(){images.push(this);}};
+ globalThis.document={createElement(tag){assert.equal(tag,'canvas');const c={width:0,height:0,getContext:()=>({drawImage:(img,x,y,w,h)=>drawn.push([img.src,w,h])}),toDataURL(type){if(unreadable)throw new Error('tainted');return `data:${type};base64,${c.width}`;}};return c;}};
+ globalThis.CSS={supports:(prop,value)=>prop==='cursor'&&value.startsWith('image-set(')};
+ try{
+  const {toolCursor:cursor}=await import('../public/sweep-tools.js?browser');
+  assert.match(cursor('harvest'),/^url\("data:image\/svg\+xml,/,'the drawing until the picture is there');
+  assert.equal(images.length,1);assert.equal(images[0].src,'/assets/icons/tool-sickle.webp');
+  cursor('harvest');cursor('harvest');assert.equal(images.length,1,'loaded once');
+  images[0].onload();
+  assert.equal(cursor('harvest'),'image-set(url("data:image/png;base64,40") 1x, url("data:image/png;base64,80") 2x) 7 2, pointer');
+  assert.deepEqual(drawn,[['/assets/icons/tool-sickle.webp',40,40],['/assets/icons/tool-sickle.webp',80,80]]);assert.equal(CURSOR_PX,40);
+  // Where a browser takes no image-set for a cursor: the 40 px picture alone. Care gets its gloves.
+  globalThis.CSS={supports:()=>false};
+  assert.equal(cursor('tend'),'');images[1].onload();assert.equal(cursor('tend'),'url("data:image/png;base64,40") 2 3, pointer');
+  // A picture that cannot load, or a canvas that cannot be read, keeps the drawing.
+  cursor('water');images[2].onerror?.();assert.match(cursor('water'),/^url\("data:image\/svg\+xml,.*"\) 4 11, pointer$/);
+  unreadable=true;cursor('plant');images[3].onload();assert.match(cursor('plant'),/^url\("data:image\/svg\+xml,.*"\) 6 6, pointer$/);
+ }finally{for(const k of keys){if(saved[k])Object.defineProperty(globalThis,k,saved[k]);else delete globalThis[k];}}
+});
+
+test('in the hand and in Show me the tool is the painted picture (an <img>), with its working point scaled to the size shown; the drawing if it cannot load',()=>{
+ const doc={};
+ class El{
+  constructor(tag){Object.assign(this,{tagName:tag.toUpperCase(),ownerDocument:doc,dataset:{},children:[],listeners:{},attrs:{},parentNode:null,classList:{toggle(){},add(){},remove(){}},style:{props:{},setProperty(k,v){this.props[k]=v;}}});}
+  setAttribute(k,v){this.attrs[k]=v;}addEventListener(type,fn){this.listeners[type]=fn;}remove(){this.removed=true;}
+  append(c){this.children.push(c);c.parentNode=this;}replaceChildren(...c){this.children=c;for(const x of c)x.parentNode=this;}
+  set outerHTML(html){const p=this.parentNode;p.children=p.children.map(c=>c===this?{html}:c);this.parentNode=null;}
+ }
+ doc.createElement=tag=>new El(tag);doc.body=new El('body');
+ const tool=createSweepTool({doc}),hand=doc.body.children[0];
+ tool.show('tend');let [img]=hand.children;
+ assert.equal(img.tagName,'IMG');assert.equal(img.src,'/assets/icons/tool-gloves.webp');assert.equal(img.alt,'');assert.equal(img.draggable,false);
+ assert.deepEqual(hand.style.props,{'--hot-x':'1.875px','--hot-y':'3px'},'48 px in the hand');
+ assert.equal(tool.move(10,20),true,'care has a tool in the hand now');
+ tool.show('harvest');[img]=hand.children;assert.equal(img.src,'/assets/icons/tool-sickle.webp');
+ img.listeners.error();assert.equal(hand.children[0].html,TOOL_ART.harvest.svg,'the drawing if the picture cannot load');
+ assert.deepEqual(hand.style.props,{'--hot-x':'14px','--hot-y':'18px'},'with the drawing\'s own working point');
+ const ghost=createSweepGhost({doc,win:{requestAnimationFrame:()=>1,cancelAnimationFrame(){},performance:{now:()=>0}},reducedMotion:true});
+ ghost.start(()=>[{x:0,y:0}]);const shown=doc.body.children.at(-1);
+ assert.match(shown.className,/sweep-ghost/);assert.equal(shown.children[0].src,'/assets/icons/tool-sickle.webp','Show me: the painted sickle');
+ assert.deepEqual(shown.style.props,{'--hot-x':`${47*56/256}px`,'--hot-y':`${10*56/256}px`},'56 px');
+ ghost.stop();assert.ok(shown.removed);
+ // Either picture swings around its working point; reduced motion has no swing.
+ const css=read('public/ui-polish.css');
+ assert.match(css,/\.sweep-tool>\*\{width:100%;height:100%;display:block;transform-origin:var\(--hot-x,24px\) var\(--hot-y,24px\)\}/);
+ assert.match(css,/\.sweep-tool\.is-cutting>\*\{animation:sweep-swing \.22s ease-out\}/);
 });
 
 test('Show me for the first basket: the ghost sickle comes in over the first field, holds, sweeps over the others and lifts away',()=>{
@@ -145,7 +221,7 @@ test('per field only the field and three header numbers are drawn; the full redr
  assert.match(game,/function hudNumbers\(\)\{[\s\S]*?fitText\(\$\('coins'\)\);[\s\S]*?\$\('xp-text'\)[\s\S]*?\$\('stock-count'\)/);assert.match(game,/function updateUI\(\)\{\n hudNumbers\(\);/);
  // Reduced motion keeps the rings and sounds, without flights, bursts or swings.
  assert.match(game,/function particleBurst\(id,water=false,count=13\)\{\n if\(reducedMotion\)return;/);assert.match(game,/function flyToMarket\(x,y,z,html,count,delay=0\)\{\n if\(reducedMotion\)return;/);
- assert.match(game,/createSweepTool\(\{reducedMotion\}\),sweepGhost=createSweepGhost\(\{reducedMotion\}\)/);assert.match(read('public/ui-polish.css'),/@media\(prefers-reduced-motion:reduce\)\{\.sweep-tool\.is-cutting>svg\{animation:none\}\}/);
+ assert.match(game,/createSweepTool\(\{reducedMotion\}\),sweepGhost=createSweepGhost\(\{reducedMotion\}\)/);assert.match(read('public/ui-polish.css'),/@media\(prefers-reduced-motion:reduce\)\{\.sweep-tool\.is-cutting>\*\{animation:none\}\}/);
  assert.match(game,/if\(target\?\.type==='plot'\)world\.style\.cursor=toolCursor\(sweepAction\(target\)\)\|\|'pointer';/,'the hover cursor');
 });
 

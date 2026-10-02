@@ -51,6 +51,10 @@ Object.assign(pictures,{master:'endgame-master-star',seedlab:'endgame-seed-lab',
 const VILLAGE_ART=['mine','lumbercamp','smithy','villagemill','villagemarket','farmroad','packedlunch','stone','ironore','timber','plank','ironbar','pickaxe',
  'silverore','silverbar','mastertools','heirloomflour','gemstone','goldenloaf','heirloompie','village-badge','village-bridge'];
 for(const key of VILLAGE_ART)pictures[key]=key;
+// The hand tools of a sweep (Oct 2026, painted by the owner, WebP): the sickle, the watering can, the seed bag and the gardening gloves
+// for care, as the cursor over a field and in the hand during a sweep (public/sweep-tools.js).
+const TOOL_PICTURES=['tool-sickle','tool-can','tool-seeds','tool-gloves'];
+for(const key of TOOL_PICTURES)pictures[key]=key;
 // Feedback & bugs (30 Sep 2026, painted by the user, WebP): the mailbox on its button and in the More menu.
 pictures.feedback='feedback';
 export const ART_KEYS=Object.freeze([...Object.keys(spriteEntries),...Object.keys(pictures)]);
@@ -66,6 +70,7 @@ for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver',
 for(const key of [...Object.keys(HEIRLOOMS),...ENDGAME_PICTURES,'master','seedlab','visitors','giantpumpkin','valleyprojects'])webpPictures.add(key);   // looked up by the short name
 for(const key of VILLAGE_ART)webpPictures.add(key);
 webpPictures.add('feedback');
+for(const key of TOOL_PICTURES)webpPictures.add(key);
 // The farm app (30 Sep 2026, painted by the user): a golden phone with the barn, for installing the game and the admin's devices.
 pictures.farmapp='farmapp';webpPictures.add('farmapp');
 // Family rank badges (27 Sep 2026), painted by the user; public/family-profile.js shows each one that is here beside the rank's name.
