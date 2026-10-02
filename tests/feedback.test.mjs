@@ -19,7 +19,7 @@ test('the database: any farmer sends at most 5 an hour; only the staff read and 
  assert.match(sql,/ps\.username as name/,'the farmer\'s name comes with every message');assert.match(sql,/r\.created_at as "createdAt"/);
  assert.equal(FEEDBACK_MAX,1000);
  assert.match(sql,/delete from public\.feedback_reports where created_at<now\(\)-interval '1 year';/);
- const privacy=read('public/privacy.html');assert.match(privacy,/Feedback and bug reports you send with the Feedback &amp; bugs button/);assert.match(privacy,/<strong>Feedback and bug reports<\/strong>: one year, then they are deleted automatically\./);
+ const privacy=read('public/privacy.html');assert.match(privacy,/Feedback, bug reports and feature requests you send with the Feedback button/);assert.match(privacy,/<strong>Feedback, bug reports and feature requests<\/strong>: one year, then they are deleted automatically\./);
 });
 
 test('sending keeps the limit\'s code, so the game can say it in the farmer\'s language',async()=>{
@@ -39,8 +39,8 @@ test('sending keeps the limit\'s code, so the game can say it in the farmer\'s l
 
 test('the mailbox: beside How to play on a computer, in the More menu on a phone, and hidden where Settings is hidden',()=>{
  const farm=read('public/farm.html');
- assert.match(farm,/id="sound-button"[^]*?<\/button><button class="icon-button" id="feedback-button" aria-label="Feedback &amp; bugs" aria-haspopup="dialog" title="Feedback &amp; bugs"><i data-game-art="feedback"><\/i><\/button><button class="icon-button" id="help-button"/);
- assert.match(farm,/<button data-menu-action="feedback-button"><i data-game-art="feedback"><\/i><span><strong>Feedback &amp; bugs<\/strong><small>Ideas, problems, anything<\/small><\/span><\/button>/);
+ assert.match(farm,/id="sound-button"[^]*?<\/button><button class="icon-button" id="feedback-button" aria-label="Feedback" aria-haspopup="dialog" title="Feedback"><i data-game-art="feedback"><\/i><\/button><button class="icon-button" id="help-button"/);
+ assert.match(farm,/<button data-menu-action="feedback-button"><i data-game-art="feedback"><\/i><span><strong>Feedback<\/strong><small>Ideas, problems, anything<\/small><\/span><\/button>/);
  assert.match(read('public/mobile.css'),/\.resources \.icon-button\{display:none\}/,'phones hide the topbar icons and use the More menu');
  assert.match(read('public/styles.css'),/\.resources #sound-button,\.resources #feedback-button\{display:none\}/);
  assert.match(read('public/game.js'),/const feedback=createFeedback\(\{level:\(\)=>levelProgress\(state\)\.level\}\);\n \$\('feedback-button'\)\.addEventListener\('click',/);
@@ -51,7 +51,7 @@ test('the mailbox: beside How to play on a computer, in the More menu on a phone
 test('the form says what comes with a message, and sends the level, device and game language',()=>{
  const ui=read('public/feedback-ui.js');
  assert.match(ui,/With your message we send your farmer name, level, device and language\./);
- assert.match(ui,/data-feedback-kind="\$\{key\}"/);assert.match(ui,/\[\['feedback','Feedback'\],\['bug','Report a bug'\]\]/);
+ assert.match(ui,/data-feedback-kind="\$\{key\}"/);assert.match(ui,/\[\['feedback','Feedback'\],\['bug','Report a bug'\],\['feature','Request a feature'\]\]/);
  assert.match(ui,/api\.sendFeedback\(\{kind,body,level:level\(\),device:String\(agent\(\)\)\.slice\(0,300\),language:language\(\)\}\)/);
  assert.match(ui,/if\(body\.length<3\)\{message='Write a few words first\.'/);
 });
@@ -65,4 +65,13 @@ test('the staff dashboard: a Feedback tab for the admin and the moderators, with
  assert.match(admin,/\[f\.level\?`Level \$\{number\(f\.level\)\}`:null,deviceName\(f\.device\),languageName\(f\.language\)\]/);
  assert.match(admin,/href="\$\{esc\(translateLink\(f\.body,chosenLanguage\(\)\)\)\}" target="_blank" rel="noopener noreferrer">Translate<\/a>/);
  assert.match(admin,/bridge\.chat\.feedbackHandle\(mark\.dataset\.feedbackId,mark\.dataset\.feedbackDone==='1'\)/);
+});
+
+test('a third kind: Request a feature, with its own hint; the button is just Feedback; the database takes it (2 Oct 2026)',()=>{
+ const sql=read('supabase/feedback-feature.sql'),ui=read('public/feedback-ui.js');
+ assert.match(sql,/add constraint feedback_reports_kind_check check \(kind in \('feedback','bug','feature'\)\);/);
+ assert.match(sql,/p_kind not in \('feedback','bug','feature'\) then raise exception 'Choose feedback, a bug or a feature request\.'/);
+ assert.match(ui,/feature:'What would you like to see in the game\?'/);assert.match(ui,/<h2 id="feedback-title">Feedback<\/h2>/);
+ assert.match(read('src/admin-dashboard.js'),/const FEEDBACK_KINDS=\{feedback:'Feedback',bug:'Bug',feature:'Feature request'\};/);
+ assert.doesNotMatch(read('public/farm.html')+read('public/wiki-content.js'),/Feedback (&amp;|&|and) bugs/,'one name everywhere');
 });

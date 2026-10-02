@@ -159,6 +159,7 @@ span.chat-avatar{cursor:default}
 .admin-tab-count[hidden]{display:none}
 .admin-feedback-kind{display:inline-block;padding:1px 7px;border-radius:999px;background:#e6efdc;color:#42632e;font-size:11px;font-weight:800;vertical-align:1px}
 .admin-feedback-kind.is-bug{background:#f6e2d8;color:#9a3b24}
+.admin-feedback-kind.is-feature{background:#e3ecf8;color:#2f5689}
 .admin-feedback-body{display:block;margin-top:4px;color:#3d3923;white-space:pre-line;overflow-wrap:anywhere}
 .admin-feedback-meta{display:block;margin-top:4px}
 .admin-report-actions a.small-button{display:inline-flex;align-items:center;text-decoration:none}

@@ -294,7 +294,7 @@ const BODIES={
    ['admin','The admin','Runs Harvest Tycoon: the game itself, the news, the events and the gifts for everyone.'],
    ['family-members','Moderators','Farmers who help keep the valley a friendly place. They look at what is reported and keep an eye on the chat.'],
    ['chat','How to spot them','An Admin or Moderator badge next to their name, in the chat and on their profile.']
-  ])+`<p>The team never asks for your password or payment details. A question or a problem? Send one of them a private message, or use ${h.link('account','Feedback and bugs')}.</p>`)
+  ])+`<p>The team never asks for your password or payment details. A question or a problem? Send one of them a private message, or use ${h.link('account','Feedback')}.</p>`)
   +section('House rules',`<ul class="wiki-list"><li>Be friendly. No insults, threats or discrimination.</li><li>No spam, advertising or selling accounts.</li><li>Keep personal details to yourself: no phone numbers, addresses or passwords.</li><li>Moderators can remove messages and close the chat for someone for a while or for good. That only ever closes the chat, never your farm.</li></ul><p>Chat not open for you yet? The chat says from which level it opens.</p>`);
  },
  account(h){
@@ -304,7 +304,7 @@ const BODIES={
   ]))
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
   // The mailbox button (30 Sep 2026, public/feedback-ui.js).
-  +section('Feedback and bugs','<p>An idea, a question or something that does not work? Tap the mailbox next to How to play (on a phone: More, then Feedback &amp; bugs), choose Feedback or Report a bug and write what happened. Our team reads every message.</p>')
+  +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap the mailbox next to How to play (on a phone: More, then Feedback), choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
   +section('Avatars',`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`
    +table(['Avatar','Opens at'],PLAYER_AVATARS.filter(a=>a.level).map(a=>`<tr><td>${avatarCell(a)}</td><td>Level ${a.level}</td></tr>`))
    +table(['Avatar','How to earn it'],PLAYER_AVATARS.filter(a=>avatarGoal(a.id)).map(a=>`<tr><td>${avatarCell(a)}</td><td>${avatarGoal(a.id).text}</td></tr>`))
