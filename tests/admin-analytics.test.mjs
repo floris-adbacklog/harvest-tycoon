@@ -351,7 +351,7 @@ test('the sources table: plain names, shares of each source\'s farmers, day 1 on
  const {sourceLabel,sourcesHtml,SOURCE_PERIODS}=await import('../src/admin-players.js');
  assert.deepEqual([...SOURCE_PERIODS],[['7','7d'],['30','30d'],['90','90d']]);
  assert.deepEqual(sourceLabel('src:reddit-cozygames'),{label:'reddit-cozygames',note:'Our link'});
- assert.deepEqual(sourceLabel('ad:meta'),{label:'Meta ad click',note:''});assert.deepEqual(sourceLabel('ad:tiktok').label,'TikTok ad click');assert.deepEqual(sourceLabel('ad:google').label,'Google ad click');
+ assert.deepEqual(sourceLabel('ad:meta'),{label:'Meta ad click',note:'or a link in a Facebook post (fbclid)'},'Facebook puts fbclid on links in posts too');assert.equal(sourceLabel('ad:tiktok').note,'');assert.deepEqual(sourceLabel('ad:tiktok').label,'TikTok ad click');assert.deepEqual(sourceLabel('ad:google').label,'Google ad click');
  assert.deepEqual(sourceLabel('site:reddit.com'),{label:'reddit.com',note:'Website'});assert.deepEqual(sourceLabel('utm:facebook / eu'),{label:'facebook / eu',note:'Ad (utm)'});
  assert.deepEqual(sourceLabel('partner:GREENA123'),{label:'GREENA123',note:'Partner link'});assert.equal(sourceLabel('invite').label,'Friend’s invite');assert.equal(sourceLabel('direct').label,'Direct');
  assert.deepEqual(sourceLabel('unknown'),{label:'Not recorded',note:'joined before tracking, or never opened the farm'});

@@ -192,10 +192,12 @@ export function devicesHtml(all,week){
 export const SOURCE_PERIODS=Object.freeze([['7','7d'],['30','30d'],['90','90d']]);
 const SOURCE_KINDS={src:'Our link',partner:'Partner link',utm:'Ad (utm)',site:'Website'};
 const AD_CLICKS={meta:'Meta ad click',tiktok:'TikTok ad click',google:'Google ad click'};
+// Facebook puts its fbclid on links in ordinary posts too, so a Meta "ad click" without utm tags can be a post (2 Oct 2026).
+const AD_NOTES={meta:'or a link in a Facebook post (fbclid)'};
 // "src:reddit-cozygames" → reddit-cozygames (our link), "ad:meta" → Meta ad click, "site:reddit.com" → reddit.com (website).
 export function sourceLabel(source){
  const text=String(source??'unknown'),cut=text.indexOf(':'),kind=cut>0?text.slice(0,cut):text,rest=cut>0?text.slice(cut+1):'';
- if(kind==='ad')return {label:AD_CLICKS[rest]??`${rest} ad click`,note:''};
+ if(kind==='ad')return {label:AD_CLICKS[rest]??`${rest} ad click`,note:AD_NOTES[rest]??''};
  if(SOURCE_KINDS[kind])return {label:rest,note:SOURCE_KINDS[kind]};
  if(kind==='invite')return {label:'Friend’s invite',note:''};
  if(kind==='direct')return {label:'Direct',note:'no tag, ad or website'};

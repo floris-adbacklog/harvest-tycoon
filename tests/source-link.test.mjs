@@ -74,7 +74,7 @@ test('main.js: read at the start, never stored on the device, along with Google,
 });
 test('the privacy policy says what is recorded and lists the partner link\'s storage',()=>{
  const privacy=read('public/privacy.html');
- assert.match(privacy,/<h3>How you found us<\/h3>/);assert.match(privacy,/never the ad’s click ID/);assert.match(privacy,/Nothing for this is stored on your device/);
+ assert.match(privacy,/<h3>How you found us<\/h3>/);assert.match(privacy,/never the click ID itself/);assert.match(privacy,/If you sign up with an email address, it is also saved with your account right away/,'the sign-up keeps it on the account (user_metadata.source)');assert.match(privacy,/Nothing for this is stored on your device/);
  assert.match(privacy,/<strong>To learn which links, websites and ads bring new farmers<\/strong>[^<]*<a href="#what-we-collect">section 2<\/a>; no cookies, nothing stored on your device\)\. Legal basis: our legitimate interest/);
  assert.match(privacy,/<li><strong>How you found us<\/strong>: for as long as your account exists\.<\/li>/);
  assert.match(privacy,/<code>harvest-tycoon:partner-ref<\/code>/);
