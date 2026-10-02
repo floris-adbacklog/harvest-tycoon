@@ -59,6 +59,12 @@
 .sharing-who{flex:1;min-width:0}
 .sharing-who strong{display:block;font-size:15px;overflow-wrap:anywhere;hyphens:manual}
 .sharing-who span{display:block;margin-top:2px;font-size:12px;color:#7c7d6e}
+/* A request filled bit by bit (2 Oct 2026): who gave how many, how long it stays open, and the 1 / 5 / all buttons. */
+.sharing-who .sharing-gave{display:block;margin-top:2px;font-size:12px;font-weight:700;color:#5d6b3d}
+.sharing-who .sharing-gave span{display:inline;margin:0;font-size:inherit;color:inherit}
+.sharing-who .sharing-ends{display:block;margin-top:4px;font-size:12px;color:#8b7d6d}
+.sharing-give{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:280px}
+.sharing-give .sharing-action{min-width:0;min-height:38px;padding:6px 11px;font-size:13px}
 .sharing-actions{display:flex;gap:6px}
 .sharing-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:6px 12px;border:1px solid #dcd2c6;border-radius:12px;background:#f5efe7;color:#4d4635;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
 .sharing-action .game-art{width:22px;height:22px}

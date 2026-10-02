@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {ITEMS} from '../public/farm-state.js';
-import {sharingMessage,maxShare,helpCoins} from '../public/social-ui.js';
+import {sharingMessage,maxShare,helpCoins,giveAmounts,requestEnds} from '../public/social-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // The newest definition of harvest_social; the item-name check on requests was added in family-sharing-all-items.sql.
 const sql=read('supabase/pig-farm.sql'),constraintSql=read('supabase/family-sharing-all-items.sql');
@@ -44,6 +44,22 @@ test('a family request fills up together: each gives what they have, the card an
  assert.match(sql,/create trigger family_request_chat_given after update of fulfilled_by, given on public\.family_social_requests/);
  assert.equal(sharingMessage({item:'corn',quantity:3,given:3,needed:10},{kind:'fulfill'}),'You gave 3 Corn. 3 of 10 are in.');
  assert.equal(sharingMessage({item:'corn',quantity:2,given:10,needed:10},{kind:'fulfill'}),'You gave 2 Corn. Your family thanks you!');
- const ui=read('public/social-ui.js');assert.match(ui,/give=Math\.min\(have,left\)/);assert.match(ui,/\$\{give<1\?'You have none':`Give \$\{give\}`\}/);assert.match(ui,/class="sharing-progress"/);
+ const ui=read('public/social-ui.js');assert.match(ui,/give=Math\.min\(have,left\)/);assert.match(ui,/:'<span class="sharing-chip">You have none<\/span>'/);assert.match(ui,/class="sharing-progress"/);
  const chat=read('src/chat-ui.js');assert.match(chat,/give_=known\?Math\.min\(have,left\):left/);assert.match(chat,/`\$\{filled\} of \$\{qty\} in/);assert.match(chat,/if\(full\)card\?\.classList\.add\('is-given'\)/);
+});
+
+// 2 Oct 2026: a request works like the Trade Depot: open until it is full (up to 3 days), anyone adds 1, 5 or all, as often as they like.
+test('a family request fills up like the Trade Depot: open for 3 days, give 1, 5 or all as often as you like, no daily limit on giving',()=>{
+ const sql=read('supabase/family-sharing-depot.sql'),ui=read('public/social-ui.js');
+ assert.deepEqual([giveAmounts(0),giveAmounts(1),giveAmounts(3),giveAmounts(5),giveAmounts(12)],[[],[1],[1,3],[1,5],[1,5,12]]);
+ assert.equal(requestEnds({day:'2026-10-02'})-Date.parse('2026-10-02T00:00:00Z'),3*86400000,'open until 3 days after the day it was asked');
+ assert.match(sql,/create unique index if not exists family_social_actions_once_a_day on public\.family_social_actions\(sender,recipient,kind,day\) where kind<>'fulfill';/,'one help and one gift a day stays; giving to a request can repeat');
+ assert.match(sql,/and day>=d-2 and fulfilled_by is null for update;/,'a request of the last 3 days that is not full');
+ assert.match(sql,/quantity:=least\(quantity,greatest\(1,\(p_action->>'quantity'\)::integer\)\)/,'the amount the farmer chose, never more than is needed');
+ assert.match(sql,/if kind<>'fulfill' and \(\(select count\(\*\)/,'the 3 a day are for help and gifts only');
+ assert.match(sql,/raise exception 'Your last request is still open\. It stays open for 3 days, or until your family fills it\.'/);
+ assert.match(sql,/amounts=jsonb_set\(r\.amounts,array\[p_player::text\]/,'who gave how many');
+ assert.match(sql,/if n<>1 then raise exception 'harvest_social is not as expected \(part %\): change it by hand', i;/,'built on the live function, loudly');
+ assert.match(ui,/data-kind="fulfill" data-request="\$\{esc\(r\.id\)\}" data-quantity="\$\{n\}"/);assert.match(ui,/quantity:b\.dataset\.quantity\?Number\(b\.dataset\.quantity\):undefined/);
+ assert.match(ui,/Open for \$\{formatDuration\(Math\.max\(0,requestEnds\(r\)-farmNow\(\)\)\)\}/);
 });

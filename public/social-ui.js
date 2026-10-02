@@ -1,6 +1,7 @@
 import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
-import {ITEMS,CROPS,itemAvailable,levelOf,worldTwoItem} from './farm-state.js';
+import {ITEMS,CROPS,itemAvailable,levelOf,worldTwoItem,formatDuration} from './farm-state.js';
+import {farmNow} from './farm-client.js';
 import {showCenterNotice} from './center-notice.js';
 import {skeleton} from './skeleton.js';
 // Daily sharing inside a Farm Family: help a member with coins, send a gift of any crop or good, ask for any crop or good
@@ -13,6 +14,12 @@ export const SHARE_LIMIT=3;
 export const helpCoins=level=>25*Math.max(10,Math.floor(Number(level)||0));
 export const maxShare=level=>5*Math.max(1,Math.floor((Number(level)||0)/10));
 const itemName=key=>(ITEMS[key]?.name??key).toLowerCase();
+// A request fills up like the Trade Depot (2 Oct 2026, supabase/family-sharing-depot.sql): it stays open until it is full, for up to
+// 3 days; anyone adds 1, 5 or all they have, as often as they like, and each part arrives at once. One open request at a time.
+export const REQUEST_DAYS=3;
+export const requestEnds=request=>Date.parse(`${request.day}T00:00:00Z`)+REQUEST_DAYS*86400000;
+// The amounts to give: 1, 5 and everything you can (no more than you have, nor than the request still needs).
+export const giveAmounts=give=>give<1?[]:[...new Set([1,5,give].filter(n=>n<=give))];
 
 // What the toast says after sharing, with the item's own name ("You sent 4 Fresh bread to Anna.").
 export function sharingMessage(result,action,nameOf=id=>id){
@@ -73,24 +80,33 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   };
   return `<div class="sharing-list">${social.members.map(m=>`<article class="sharing-row"><button type="button" class="sharing-person" data-player-profile="${esc(m.id)}" ${profiles()?'':'disabled'}>${portrait(m.id)}<span class="sharing-who"><strong>${esc(m.name)}</strong><span>${member(m.id)?`Level ${member(m.id).level}`:'Family member'}</span></span></button><div class="sharing-actions">${action('help',m.id,'Help','coins',helpBlocked)}${today.done('gift',m.id)?'<button class="sharing-action" disabled>✓ Sent</button>':`<button class="sharing-action ${gift.to===m.id?'is-open':''}" data-gift-open="${esc(m.id)}" ${giftBlocked?'disabled':''} title="${esc(giftBlocked)}" aria-expanded="${gift.to===m.id}">${art('gift')}<span>Gift</span></button>`}</div></article>${composer(m)}`).join('')}</div>`;
  }
- function requests(today){
+ function requests(){
   const open=social.requests;
-  if(!open.length)return '<p class="sharing-empty">No requests yet today.</p>';
-  return `<div class="sharing-list">${open.map(r=>{
-   // Give what you have (30 Sep 2026): as many as you have, up to what the request still needs; the family fills it together.
+  if(!open.length)return '<p class="sharing-empty">No requests right now.</p>';
+  // Open ones first, your own on top; full ones after them.
+  const sorted=[...open].sort((a,b)=>Number(Boolean(a.fulfilled_by))-Number(Boolean(b.fulfilled_by))||Number(b.player_id===me())-Number(a.player_id===me()));
+  return `<div class="sharing-list">${sorted.map(r=>{
    const mine=r.player_id===me(),have=stock(r.item),given=Number(r.given)||0,left=Math.max(0,r.quantity-given),give=Math.min(have,left),helpers=r.helpers?.length?r.helpers:r.fulfilled_by?[r.fulfilled_by]:[];
-   const state_=r.fulfilled_by?`<span class="sharing-chip is-done">✓ ${helpers.includes(me())?'You helped':'Fulfilled'}</span>`:mine?'<span class="sharing-chip">Your request</span>':today.full('fulfill')?'<span class="sharing-chip">Daily limit reached</span>':`<button class="sharing-action is-primary" data-kind="fulfill" data-request="${esc(r.id)}" ${give<1?'disabled':''}>${give<1?'You have none':`Give ${give}`}</button>`;
-   // Who filled it, without yourself in the list (the chip already says "You helped"; "From You" read oddly).
-   const others=helpers.filter(id=>id!==me()).map(nameOf).join(', ');
-   const line=r.fulfilled_by?(others?`From ${others}`:'All from you'):given?`${given} of ${r.quantity} in${mine?'':` · you have ${have}`}`:mine?'Waiting for your family':`You have ${have}`;
+   // Who gave how many (older requests only know who helped): names stay as written, "You" is translated.
+   const parts=Object.entries(r.amounts??{}).filter(([,n])=>Number(n)>0);
+   const gave=(parts.length?parts.map(([id,n])=>`${id===me()?'<span>You</span>':`<span translate="no">${esc(social.members.find(m=>m.id===id)?.name??'')}</span>`} +${Number(n)}`):helpers.map(id=>id===me()?'<span>You</span>':`<span translate="no">${esc(social.members.find(m=>m.id===id)?.name??'')}</span>`)).join(' · ');
+   const amounts=giveAmounts(give);
+   const action=r.fulfilled_by?`<span class="sharing-chip is-done">✓ ${helpers.includes(me())?'You helped':'Fulfilled'}</span>`:mine?'<span class="sharing-chip">Your request</span>'
+    :amounts.length?`<div class="sharing-give" role="group" aria-label="Give">${amounts.map(n=>`<button class="sharing-action is-primary" data-kind="fulfill" data-request="${esc(r.id)}" data-quantity="${n}">${n===give&&n>1?`Give all ${n}`:`Give ${n}`}</button>`).join('')}</div>`
+    :'<span class="sharing-chip">You have none</span>';
+   const line=r.fulfilled_by?'Filled':given?`${given} of ${r.quantity} in`:mine?'Waiting for your family':`You have ${have}`;
    const bar=given&&!r.fulfilled_by?`<span class="sharing-progress" aria-hidden="true"><i style="width:${Math.round(given/r.quantity*100)}%"></i></span>`:'';
-   return `<article class="sharing-row">${art(r.item,'sharing-item')}<div class="sharing-who"><strong>${mine?'You need':`${esc(r.name)} needs`} ${r.quantity} ${esc(itemName(r.item))}</strong><span>${line}</span>${bar}</div>${state_}</article>`;
+   const ends=r.fulfilled_by?'':`<small class="sharing-ends">Open for ${formatDuration(Math.max(0,requestEnds(r)-farmNow()))}</small>`;
+   return `<article class="sharing-row">${art(r.item,'sharing-item')}<div class="sharing-who"><strong>${mine?'You need':`${esc(r.name)} needs`} ${r.quantity} ${esc(itemName(r.item))}</strong><span>${line}</span>${gave?`<small class="sharing-gave">${gave}</small>`:''}${bar}${ends}</div>${action}</article>`;
   }).join('')}</div>`;
  }
  function ask(){
-  if(social.requests.some(r=>r.player_id===me()))return '';
+  // One open request at a time, and at most one new one a day (the server says the same).
+  if(social.requests.some(r=>r.player_id===me()&&!r.fulfilled_by))return '';
+  const today=new Date(farmNow()).toISOString().slice(0,10);
+  if(social.requests.some(r=>r.player_id===me()&&r.day===today))return '<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Your family filled today’s request. You can ask again tomorrow.</p></section>';
   const keys=Object.keys(ITEMS).filter(k=>itemAvailable(state,k)&&!ITEMS[k].heirloom&&!worldTwoItem(k));if(!keys.includes(pick.item))pick.item=keys[0]??'wheat';
-  return `<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Once a day, up to ${maxShare(myLevel())} of any crop or good. Your family fills it together: each gives what they have.</p><form class="sharing-ask">${itemPicker({kind:'ask',keys,picked:pick.item,quantity:pick.quantity,max:maxShare(myLevel())})}<button class="primary-button">Ask for ${pick.quantity} ${esc(ITEMS[pick.item]?.name??pick.item)}</button></form></section>`;
+  return `<section class="sharing-section"><h3>Ask for goods</h3><p class="sharing-hint">Once a day, up to ${maxShare(myLevel())} of any crop or good. It stays open for ${REQUEST_DAYS} days: your family adds to it, a little at a time, until it is full.</p><form class="sharing-ask">${itemPicker({kind:'ask',keys,picked:pick.item,quantity:pick.quantity,max:maxShare(myLevel())})}<button class="primary-button">Ask for ${pick.quantity} ${esc(ITEMS[pick.item]?.name??pick.item)}</button></form></section>`;
  }
  function render(){
   if(!root)return;
@@ -100,16 +116,16 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   // 30 Sep 2026, cleaner: a slim intro with today's count, then what your family asks for (and your own request), then help and
   // gifts for each farmer on one row; what Help costs is said once, not on every button.
   root.innerHTML=heading+`<section class="sharing-intro">${art('family-sharing')}<div><strong>Share a little of your own farm</strong><span>Help and gifts arrive right away.</span></div><dl class="sharing-today"><div><dt>Sent</dt><dd>${today.sent}</dd></div><div><dt>Received</dt><dd>${today.received}</dd></div></dl></section>`
-   +`<section class="sharing-section"><h3>Today’s requests</h3>${requests(today)}</section>`
+   +`<section class="sharing-section"><h3>Family requests</h3>${requests()}</section>`
    +ask()
    +`<section class="sharing-section"><h3>Help your family</h3><p class="sharing-hint">Help gives ${helpCoins(myLevel())} of your coins; a gift is anything from your storage.</p>${members(today)}</section>`
-   +`<p class="sharing-rules">Up to ${SHARE_LIMIT} of each a day, reset at midnight UTC. Opens at level 10, 48 hours after you started your farm and 24 hours in this family.</p><p class="sharing-feedback" role="status" data-status></p>`;
+   +`<p class="sharing-rules">Up to ${SHARE_LIMIT} helps and ${SHARE_LIMIT} gifts a day, reset at midnight UTC. Giving to a request has no daily limit. Opens at level 10, 48 hours after you started your farm and 24 hours in this family.</p><p class="sharing-feedback" role="status" data-status></p>`;
   bind();
  }
  function bind(){
   const close=root.querySelector('[data-close]');if(close)close.onclick=()=>dialog.close();
   const back=root.querySelector('[data-back]');if(back)back.onclick=()=>{dialog.close();onBack();};
-  root.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>act({kind:b.dataset.kind,recipient:b.dataset.recipient,request:b.dataset.request}));
+  root.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>act({kind:b.dataset.kind,recipient:b.dataset.recipient,request:b.dataset.request,quantity:b.dataset.quantity?Number(b.dataset.quantity):undefined}));
   root.querySelectorAll('.sharing-person[data-player-profile]').forEach(b=>b.onclick=()=>profiles()?.open(b.dataset.playerProfile,{back:'Back to your family'}));
   root.querySelectorAll('[data-pick]').forEach(select=>select.onchange=()=>{const target=select.dataset.pick==='gift'?gift:pick;target.item=select.value;target.quantity=Math.min(target.quantity,select.dataset.pick==='gift'?Math.min(maxShare(myLevel()),stock(select.value)):maxShare(myLevel()))||1;render();});
   root.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const target=b.dataset.step==='gift'?gift:pick,max=b.dataset.step==='gift'?Math.min(maxShare(myLevel()),stock(gift.item)):maxShare(myLevel());target.quantity=Math.min(max,Math.max(1,target.quantity+Number(b.dataset.by)));render();});
