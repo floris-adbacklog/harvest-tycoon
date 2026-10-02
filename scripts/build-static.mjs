@@ -15,6 +15,10 @@ if(!html.includes(`content="${version}"`))throw new Error('play.html lost its ha
 const {buildLanguagePages}=await import('./build-languages.mjs');
 const home=buildLanguagePages('dist-static',html);
 writeFileSync('dist-static/index.html',home);writeFileSync('dist-static/play.html',home);
+// The CrazyGames page (Oct 2026) carries the same version, so a player there gets the new game on the way back in, as in the app.
+const crazy=readFileSync('public/crazygames.html','utf8').replace('<meta name="harvest-version" content="dev">',`<meta name="harvest-version" content="${version}">`);
+if(!crazy.includes(`content="${version}"`))throw new Error('crazygames.html lost its harvest-version meta tag');
+writeFileSync('dist-static/crazygames.html',crazy);
 // The public farm wiki (/wiki), made from the game rules on every deploy.
 const {buildWiki}=await import('./build-wiki.mjs');await buildWiki('dist-static');
 console.log('Standalone static game ready in dist-static/. No application server is required.');

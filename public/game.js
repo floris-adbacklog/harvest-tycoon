@@ -51,6 +51,7 @@ import { createFarmShare,photoFrame } from './farm-share.js';
 import { fitText } from './fit-text.js';
 import { createCoach } from './coach.js';
 import { guideSteps } from './guide-steps.js';
+import { portal,portalOff } from './portal.js';
 
 // Another language than English: translate the farm's texts as they appear (public/i18n.js).
 startTranslation();
@@ -76,7 +77,8 @@ const initialEmailCheck=window.harvestInitialFarm.emailCheck;
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
 let emailAccount={needed:false,email:''},emailCheckUI=null;
-function setEmailCheck(check){if(check)emailAccount=check;const hide=!emailAccount.needed;$('email-button').hidden=hide;$('email-menu-entry').hidden=hide;
+// No email on CrazyGames (Oct 2026, public/portal.js): nothing to confirm or change there.
+function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check,needed:false,canChange:false}:check;const hide=!emailAccount.needed;$('email-button').hidden=hide;$('email-menu-entry').hidden=hide;
  // Settings, Email address (28 Sep 2026): email sign-ups see their address, can change it, and are reminded to confirm it.
  $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
@@ -95,6 +97,8 @@ const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel 
 Object.assign(utilityInfo,{villagemarket:{name:'Village market',icon:'store',hint:'Sell village goods'},farmroad:{name:'Road to your farm',icon:'house',hint:'Travel back to your farm'}});
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onEmailCheck:c=>setEmailCheck(c),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
 const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
+// CrazyGames' sound switch (Oct 2026, public/portal.js): while it is off there, the farm is silent.
+const soundPortal=portal();if(soundPortal){farmAudio.muteFromOutside(soundPortal.settings?.muteAudio);const stop=soundPortal.onSettings?.(next=>farmAudio.muteFromOutside(next?.muteAudio));window.addEventListener('pagehide',()=>stop?.(),{once:true});}
 // For the parts of the game outside the farm's own actions (src/chat-ui.js: a private message; src/payment-ui.js: diamonds bought).
 window.harvestSound=kind=>farmAudio.play(kind);
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());

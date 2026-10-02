@@ -4,6 +4,7 @@ import {farmNow} from './farm-client.js';
 import {fitText} from './fit-text.js';
 import {art,refreshArt} from './visual-icons.js';
 import {prettifySelects} from './pretty-select.js';
+import {portalOff} from './portal.js';
 import {fieldPicker,batchPicker,bindFieldPicker} from './field-picker.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
@@ -148,11 +149,12 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   track('get_diamonds_clicked',{short});
  }
  $('boost-dialog').addEventListener('click',event=>{
-  const more=event.target.closest('[data-get-diamonds]');if(more){showPacks(Number(more.dataset.getDiamonds)||0);return;}
+  // No packs on CrazyGames (Oct 2026, public/portal.js): short of diamonds says where they are earned instead.
+  const more=event.target.closest('[data-get-diamonds]');if(more){if(portalOff('payments')){const tip='Earn diamonds with the daily gift, daily challenges, quests, level-ups and events.';$('boost-feedback').textContent=tip;notify(tip);return;}showPacks(Number(more.dataset.getDiamonds)||0);return;}
   // The long shop in four parts: a row of small buttons under your balance jumps to each.
   const jump=event.target.closest('[data-shop-jump]');if(jump)$(jump.dataset.shopJump)?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
  });
- async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();track('diamond_shop_view');try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
+ async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();track('diamond_shop_view');if(portalOff('payments'))return;try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
  function refresh(){
   $('diamonds').textContent=state.diamonds.toLocaleString('en-US',matchMedia('(max-width: 900px), (max-height: 550px) and (pointer: coarse)').matches?{notation:'compact',maximumFractionDigits:1}:{});
   fitText($('diamonds'));

@@ -7,6 +7,7 @@
 // family's name are drawn as they are.
 import {t} from './i18n.js';
 import {INVITE_REWARD,INVITE_LEVEL,levelOf} from './farm-state.js';
+import {portalOff} from './portal.js';
 
 export const SHARE_SIZE=Object.freeze({width:1080,height:1350});   // 4:5: chats, the Instagram and Facebook feed, centred in Stories
 export const PHOTO=Object.freeze({x:40,y:220,width:1000,height:860});   // where the farm sits on it (game.js renders it at this size)
@@ -156,7 +157,8 @@ export async function copyLink(host,link,doc=globalThis.document,into=null){
 // host: the page around the game, which shares and copies. track(event,{source}): analytics in that page, after cookie consent.
 export function createFarmShare({capture,canCapture=()=>true,state,invite=null,host=globalThis.window,track=()=>{},drawCloth=null,playerName=()=>'',doc=globalThis.document,compose=composeFarmPicture}){
  const sessions=new WeakMap(),runs=new WeakMap(),urls=()=>doc?.defaultView?.URL??globalThis.URL;
- const available=()=>Boolean(capture)&&Boolean(canCapture());
+ // Not on CrazyGames (Oct 2026, public/portal.js): the picture carries a link to our website, which they do not allow.
+ const available=()=>Boolean(capture)&&!portalOff('share')&&Boolean(canCapture());
  const say=(box,text)=>{const status=box.querySelector('.farm-share-status');if(status)status.textContent=text;};
  // The box closes with its card: the picture is let go of, the button comes back.
  function reset(box){

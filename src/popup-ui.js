@@ -1,6 +1,7 @@
 import {refreshArt} from '../public/visual-icons.js';
 import {rookieLeft} from '../public/farm-state.js';
 import {chosenLanguage} from '../public/i18n.js';
+import {portalOff} from '../public/portal.js';
 
 // Pop-ups from the admin (supabase/popups.sql, 26 Sep 2026): news that also opens once as a pop-up, with an optional button to a
 // screen of the game or to a web page (in a new tab); the admin can also send it without the news. Who sees it: everyone, phones in
@@ -10,8 +11,9 @@ import {chosenLanguage} from '../public/i18n.js';
 export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play'});
 export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only'});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-// Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text).
-export const linkify=text=>esc(text).replace(/https:\/\/[^\s<]+[^\s<.,!?;:)'"]/g,url=>`<a href="${url}" target="_blank" rel="noopener noreferrer">${url.replace(/^https:\/\//,'')}</a>`);
+// Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text). On CrazyGames (Oct 2026,
+// public/portal.js) no links out are allowed: the address stays plain text there.
+export const linkify=text=>portalOff('links')?esc(text):esc(text).replace(/https:\/\/[^\s<]+[^\s<.,!?;:)'"]/g,url=>`<a href="${url}" target="_blank" rel="noopener noreferrer">${url.replace(/^https:\/\//,'')}</a>`);
 // The admin's own text in the language the game plays in (supabase/admin-texts-languages.sql, 1 Oct 2026), part by part: English for
 // a part that language has no text of its own for. `own` lists the parts in that language, which the page's translation leaves alone.
 export function inLanguage(item,code=chosenLanguage()){
@@ -34,8 +36,10 @@ export function createPopupUI({client,chat,state,doc=document,win=window,now=()=
  }
  function show(shown){
   const popup=inLanguage(shown),button=popup.buttonLabel&&popup.buttonTarget,keep=key=>popup.own.has(key)?' translate="no"':'';
+  // On CrazyGames (Oct 2026, public/portal.js) a button to a web page or to installing the app is left out: neither is allowed there.
+  const offered=button&&!(portalOff('links')&&/^https:\/\/|^(screen:)?install$/.test(popup.buttonTarget));
   dialog.innerHTML=`<button type="button" class="popup-close" data-popup-close aria-label="Close">×</button><img class="popup-art" src="/assets/harvest-tycoon-logo.webp" alt="" width="88" height="88" draggable="false"><h2 id="popup-title"${keep('title')}>${esc(popup.title)}</h2><p${keep('body')}>${linkify(popup.body)}</p>`
-   +(button?`<button type="button" class="primary-button" data-popup-go><span${keep('buttonLabel')}>${esc(popup.buttonLabel)}</span>${popup.buttonTarget.startsWith('https://')?' ↗':''}</button><button type="button" class="popup-later" data-popup-close>Not now</button>`:'<button type="button" class="primary-button" data-popup-close>Got it</button>');
+   +(offered?`<button type="button" class="primary-button" data-popup-go><span${keep('buttonLabel')}>${esc(popup.buttonLabel)}</span>${popup.buttonTarget.startsWith('https://')?' ↗':''}</button><button type="button" class="popup-later" data-popup-close>Not now</button>`:'<button type="button" class="primary-button" data-popup-close>Got it</button>');
   dialog.onclick=event=>{
    if(event.target.closest('[data-popup-go]')){dialog.close();go(popup.buttonTarget);}
    else if(event.target.closest('[data-popup-close]'))dialog.close();

@@ -1,6 +1,7 @@
 import {SEASON_PASS,PASS_TRACKS,passTotals,passPhase,passLanterns,passTier,passPremium,passVisible,passWaiting,passReward,levelOf,BOOSTS,BOOST_LENGTH_NAMES,ITEMS,DIAMOND_PACKS,formatDuration} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
+import {portalOff} from './portal.js';
 
 // The Halloween Pass (Oct 2026, the rules in farm-state.js SEASON_PASS): a pumpkin button next to Farm family on a computer and a tile
 // under Every day in the More menu on a phone, both with the "!" while a reached reward waits (worked out from the farm, nothing stored
@@ -113,13 +114,14 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
   finally{claiming='';refresh();if(dialog.open)draw();}
  }
  async function purchase(){
-  if(pending||!['soon','open'].includes(passPhase(now()))||passPremium(state))return;   // for sale before the season too (Oct 2026)
+  if(pending||portalOff('payments')||!['soon','open'].includes(passPhase(now()))||passPremium(state))return;   // for sale before the season too (Oct 2026)
   pending=true;feedback='';draw();
   try{await bridge().checkout('pass',requestId);}
   catch(error){pending=false;feedback=error.message;draw();}
  }
  async function readCatalog(){
-  if(catalog||!['soon','open'].includes(passPhase(now()))||passPremium(state))return;   // only for the buy box
+  // Not on CrazyGames (Oct 2026, public/portal.js): only the free row is there, nothing is for sale.
+  if(catalog||portalOff('payments')||!['soon','open'].includes(passPhase(now()))||passPremium(state))return;   // only for the buy box
   try{catalog=await bridge().payments({operation:'catalog'});if(dialog.open)draw();}catch{}
  }
  function open(){

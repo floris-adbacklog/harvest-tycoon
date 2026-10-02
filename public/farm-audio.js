@@ -103,10 +103,13 @@ function renderInBackground(windowRef,accept){
 export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic,renderSounds=renderInBackground}={}){
  let settings={...AUDIO_DEFAULTS},ctx,master,ambientBus,effectBus,musicBuffer=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;
  let nextEffectAt=0,priorityUntil=0,resuming=null,lastSnip=-Infinity;
+ // CrazyGames' own sound switch (Oct 2026, settings.muteAudio through public/portal.js): while it is off the game is silent, whatever
+ // Settings say, and the sound comes back as Settings have it once CrazyGames turns it on again.
+ let outsideMute=false;
  const voices=new Set(),lastPlayed=new Map();
  try{storage??=windowRef?.localStorage;settings=audioSettings(JSON.parse(storage?.getItem(AUDIO_STORAGE_KEY)??'{}'));}catch{}
- const active=()=>!disposed&&unlocked&&settings.enabled&&!documentRef?.hidden;
- const read=()=>({...settings,available:!unavailable,musicStatus});
+ const active=()=>!disposed&&unlocked&&settings.enabled&&!outsideMute&&!documentRef?.hidden;
+ const read=()=>({...settings,available:!unavailable,musicStatus,...(outsideMute?{outsideMute:true}:{})});
  function ramp(param,value,seconds=.08){const t=ctx.currentTime;param.cancelScheduledValues(t);param.setTargetAtTime(value,t,seconds);}
  function stopVoice(v){try{v.source.stop();}catch{}v.cleanup();}
  function stopBed(){
@@ -177,7 +180,7 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   if(settings.ambience)startBed();else stopBed();
  }
  function unlock(){
-  if(disposed||!settings.enabled||documentRef?.hidden||unavailable)return Promise.resolve(false);
+  if(disposed||!settings.enabled||outsideMute||documentRef?.hidden||unavailable)return Promise.resolve(false);
   unlocked=true;
   try{
    const first=!ctx;if(!ctx)makeContext();
@@ -209,6 +212,7 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   if(!settings.enabled){silence();return;}
   if(unlocked)void unlock();
  }
+ function muteFromOutside(on){if(outsideMute===Boolean(on))return;outsideMute=Boolean(on);onChange(read());if(outsideMute)silence();else if(unlocked)void unlock();}
  // A mouse button going down counts too (Oct 2026), so a first sweep with the mouse already has its snips.
  function gesture(event){if(event.isTrusted&&(event.type!=='keydown'||['Enter',' ','1','2','3','4'].includes(event.key))&&(event.type!=='pointerdown'||event.pointerType==='mouse'))void unlock();}
  function visibility(){if(documentRef.hidden)silence();else if(unlocked)void unlock();}
@@ -216,7 +220,7 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  function pageshow(event){if(event.persisted&&unlocked)void unlock();}
  function dispose(){if(disposed)return;disposed=true;stopRendering?.();silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('pointerdown',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);musicBuffer=null;if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
  documentRef?.addEventListener('pointerup',gesture,true);documentRef?.addEventListener('pointerdown',gesture,true);documentRef?.addEventListener('keydown',gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
- return {settings:read,setSettings,unlock,play,snip,dispose};
+ return {settings:read,setSettings,unlock,play,snip,dispose,muteFromOutside};
 }
 
 export function withActionSounds(runAction,getLevel,play){

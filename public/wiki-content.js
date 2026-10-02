@@ -4,6 +4,7 @@ import {helpCoins,maxShare,SHARE_LIMIT,REQUEST_DAYS} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
 import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_GOAL_POOLS} from './event-goals.js';
+import {portal as portalAround} from './portal.js';
 
 // The farm wiki: the same topics in How to play (public/wiki-ui.js) and on the website (/wiki, scripts/build-wiki.mjs).
 // Every number and table comes from the game rules, so a balance change never leaves the wiki behind. In the game, things
@@ -25,6 +26,11 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'account',title:'Account and settings',art:'settings',blurb:'Your account, settings, invites and privacy.',keywords:'account password settings avatar sound reminders invite delete privacy app feedback bug support help problem'}
 ]);
 const TOPIC=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,t]));
+// The Avatars section of Account and settings. On CrazyGames the one earned with invited friends is left out (no invites there).
+const avatarsBody=(portal=false)=>`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`
+ +table(['Avatar','Opens at'],PLAYER_AVATARS.filter(a=>a.level).map(a=>`<tr><td>${avatarCell(a)}</td><td>Level ${a.level}</td></tr>`))
+ +table(['Avatar','How to earn it'],PLAYER_AVATARS.filter(a=>avatarGoal(a.id)&&!(portal&&/invite/i.test(avatarGoal(a.id).text))).map(a=>`<tr><td>${avatarCell(a)}</td><td>${avatarGoal(a.id).text}</td></tr>`))
+ +'<p>Diamonds spent and VIP days count from 25 September 2026.</p>';
 // How long the Starter Pack is open (game/payments.js STARTER_WINDOW; the wiki test keeps the two equal).
 export const STARTER_DAYS=7;
 // The home page in three groups; "Getting started" leads as the one to read first.
@@ -63,15 +69,21 @@ export const recipeLevel=key=>{const r=RECIPES[key];return r.building==='factory
 const worldTwoRecipe=r=>worldTwoBuilding(r.building)||Object.keys(r.output).some(worldTwoItem);
 
 // ctx: {level: the player's level, or null on the website; href: id => link to a topic; now: the moment (seasonal sections, the
-// Halloween Pass)}.
+// Halloween Pass); portal: true in the game on CrazyGames (Oct 2026, public/portal.js; read from the page around the game when not
+// given), where the parts about buying, inviting, sharing, email, reminders, the app and our website are left out, as the game itself
+// leaves them out there}.
 function helpers(ctx){
- const level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now();
+ const level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now(),portal=Boolean(ctx.portal??portalAround());
  const locked=n=>level!=null&&n>level;
  const lvl=n=>`<span class="wiki-level${locked(n)?' is-locked':''}">${locked(n)?'From level':'Level'} ${n}</span>`;
  const row=(n,cells)=>`<tr${locked(n)?' class="is-locked"':''}>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
  const link=(id,text=TOPIC[id].title)=>`<a href="${href(id)}" data-wiki-topic="${id}">${text}</a>`;
- return {level,href,locked,lvl,row,link,now};
+ return {level,href,locked,lvl,row,link,now,portal};
 }
+// On CrazyGames: what is saved where, and the one link allowed (our Privacy Policy, in full).
+const PORTAL_SAVED='<p>Your farm is saved on our server. As a guest it stays with this browser; log in with CrazyGames to keep it safe and play it on any device. You need an internet connection to play.</p>';
+const PORTAL_PRIVACY='<p>Read how we handle your data in our <a href="https://www.harvesttycoon.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>';
+const PORTAL_BLURBS=Object.freeze({account:'Your account, settings and privacy.'});
 // The Halloween Pass (Oct 2026): from its preview until the collecting week ends, every number and date from SEASON_PASS
 // (farm-state.js). Its dates as "23 October" (UTC, as the daily reset).
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -89,8 +101,9 @@ function passSection(h){
   :r.boost?`<span class="wiki-boost">${art(BOOSTS[r.boost].art)}<span>${BOOSTS[r.boost].name} · ${BOOST_LENGTH_NAMES[r.length]}</span></span>`:r.vipDays?`${art('vip')}VIP · ${r.vipDays} days`:'–';
  const rows=P.tiers.map((t,i)=>`<tr><td>${i+1}</td><td>${reward(t.free)}</td><td>${reward(t.paid)}</td></tr>`);
  return section(P.name,`<p>${h.lvl(P.level)} From ${passDay(P.startsAt)} to ${passDay(P.endsAt-DAY)}. Every daily gift gives ${p.gift} lanterns, every daily challenge and every delivery ${p.daily}. Every ${P.perTier} lanterns open the next of ${P.tiers.length} tiers. Collect each reward with its own button, until ${passDay(P.claimUntil-DAY)}.</p>`
-  +`<p>Free: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts. For ${price} the paid rewards open too: ${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts, pies and more coins. Tiers you already reached open at once.</p>`+(passSale(h.now)?`<p>${passSale(h.now)}</p>`:'')
-  +table(['Tier','Free','Paid'],rows));
+  +(h.portal?`<p>Rewards: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts.</p>`+table(['Tier','Reward'],P.tiers.map((t,i)=>`<tr><td>${i+1}</td><td>${reward(t.free)}</td></tr>`))
+  :`<p>Free: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts. For ${price} the paid rewards open too: ${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts, pies and more coins. Tiers you already reached open at once.</p>`+(passSale(h.now)?`<p>${passSale(h.now)}</p>`:'')
+  +table(['Tier','Free','Paid'],rows)));
 }
 
 // A building's section: its recipes as a table (cards on a phone). The Buildings topic and The Village share it.
@@ -120,14 +133,14 @@ const BODIES={
    ['harvest','Swipe across fields',`With a mouse, hold the button on a ripe crop and sweep across your fields: every ripe crop you pass is harvested on the spot, up to ${SWIPE_MAX_FIELDS} in one sweep. From an empty field a sweep plants your seed, and from a growing crop it waters or gives extra care. On a touchscreen, hold a field for a moment until it lights up, then swipe across your fields. A quick swipe moves the farm instead.`],
    ['care','Tools at the bottom','Pick Plant, Water, Care or Harvest at the bottom of the screen, then tap or swipe your fields.']
   ]))
-  +section('Saved for you','<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>')
-  +section('Play it as an app',facts([
+  +section('Saved for you',h.portal?PORTAL_SAVED:'<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>')
+  +(h.portal?'':section('Play it as an app',facts([
    ['farm','Why the app','One tap from your home screen, without the browser bar. Reminders when your farm needs you, a number on the icon for new messages, and press and hold the icon for Chat, Daily gift and the leaderboard.']
   ])+'<ul class="wiki-list wiki-app-steps"><li><strong>Android:</strong> in Chrome, tap the menu (⋮) and choose “Install app” or “Add to Home screen”.</li><li><strong>iPhone and iPad:</strong> in Safari, tap Share, then “Add to Home Screen”, then “Add”.</li><li><strong>Computer:</strong> in Chrome or Edge, click the install icon at the right of the address bar.</li></ul>'
   // Install the app (30 Sep 2026): one tap where the browser can install it (Android, Chrome and Edge on a computer). Shown by
   // public/wiki-ui.js in the game and by a small script on the website (scripts/build-wiki.mjs); hidden elsewhere, where the steps say how.
   +'<p class="wiki-install" data-wiki-install-row hidden><button type="button" class="wiki-install-button" data-wiki-install>Install the app</button></p>'
-  +facts([['settings','In the game','Settings, Farm app shows the steps for your device, or installs it in one tap. There you can also switch on full screen (Android and computers).']]));
+  +facts([['settings','In the game','Settings, Farm app shows the steps for your device, or installs it in one tap. There you can also switch on full screen (Android and computers).']])));
  },
  crops(h){
   const regrowing=Object.keys(CROPS).filter(k=>CROPS[k].regrow).sort((a,b)=>cropLevel(a)-cropLevel(b));
@@ -295,16 +308,17 @@ const BODIES={
    ['gift','Every day',`Your daily gift and daily challenges. See ${h.link('daily')}.`],
    ['quests','Beginner guide and levels',`${BEGINNER_REWARD} diamonds for the beginner guide, and at least 1 diamond with every level-up.`],
    ['live-events','Events and family',`${h.link('events','Events')} and your ${h.link('family','Farm family')} give diamonds too.`],
-   ['invite-friends','Invite a friend',`When a friend you invite reaches level ${INVITE_LEVEL} within ${INVITE_DAYS} days: ${INVITE_REWARD} diamonds for you both.`],
-   ['letter','Confirm your email',`${EMAIL_BONUS} diamonds, once. Signed up with Google or Facebook? You get them straight away.`]
+   ...(h.portal?[]:[['invite-friends','Invite a friend',`When a friend you invite reaches level ${INVITE_LEVEL} within ${INVITE_DAYS} days: ${INVITE_REWARD} diamonds for you both.`],
+   ['letter','Confirm your email',`${EMAIL_BONUS} diamonds, once. Signed up with Google or Facebook? You get them straight away.`]])
   ]))
   +section('Finish now',`<p>Finish a growing field for ${SINGLE_CROP_COST} diamonds, or a running batch for ${SINGLE_BATCH_COST} (not in the Factory).</p>`)
   +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+dual(table(['Boost','What it does','Diamonds'],boosts),boostCards))
   +section('VIP',`<p>VIP gives 10% faster crops, 10% faster production, 5% more coins at the market and double daily rewards. Buying again adds time; it never gets stronger.</p>`+table(['Plan','Diamonds'],vip))
-  +section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.${passSale(h.now)?` From level ${SEASON_PASS.level} the ${h.link('daily',SEASON_PASS.name)} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}. ${passSale(h.now)}`:''}</p>`+table(['Diamonds','Price'],packs));
+  +(h.portal?'':section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.${passSale(h.now)?` From level ${SEASON_PASS.level} the ${h.link('daily',SEASON_PASS.name)} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}. ${passSale(h.now)}`:''}</p>`+table(['Diamonds','Price'],packs)));
  },
  chat(h){
-  return section('The chat',facts([
+  return (h.portal?section('Who can chat','<p>The chat is for farmers who are logged in with CrazyGames, when CrazyGames has the chat switched on. Playing as a guest? Tap the chat button to log in with CrazyGames; your farm comes with you.</p>'):'')
+  +section('The chat',facts([
    ['bell','Notifications','News from the Harvest Tycoon team, and gifts.'],
    ['chat','Global','Everyone in the valley. Be kind: new farmers read along too.'],
    ['family-members','Family',`Only your ${h.link('family','Farm family')}.`],
@@ -324,6 +338,13 @@ const BODIES={
   +section('House rules',`<ul class="wiki-list"><li>Be friendly. No insults, threats or discrimination.</li><li>No spam, advertising or selling accounts.</li><li>Keep personal details to yourself: no phone numbers, addresses or passwords.</li><li>Moderators can remove messages and close the chat for someone for a while or for good. That only ever closes the chat, never your farm.</li></ul><p>Chat not open for you yet? The chat says from which level it opens.</p>`);
  },
  account(h){
+  if(h.portal)return section('Your account',facts([
+   ['farm','Your farm on CrazyGames','Logged in with CrazyGames, your farm is yours on any device. As a guest it stays with this browser: tap “Save your farm: log in with CrazyGames” in Settings to keep it. Your farm comes with you when you log in.']
+  ]))
+  +section('Settings','<p>In Settings you change your farmer name and avatar, sound and music, private messages and the language.</p>')
+  +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap the mailbox next to How to play (on a phone: More, then Feedback), choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
+  +section('Avatars',avatarsBody(true))
+  +section('Privacy',PORTAL_PRIVACY);
   return section('Your account',facts([
    ['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app: press and hold its icon for Chat, Daily gift and the leaderboard, and on Android or a computer you can play full screen (Settings, Farm app).'],
    ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. After 3 and 6 days away, the morning gift reminder tells you a comeback chest is waiting. Email reminders, and news and offers by email, stay off until you switch them on. The daily email (at most one a day, only when something is waiting) goes to a confirmed address: signed up with your email? Confirm it first.']
@@ -331,10 +352,7 @@ const BODIES={
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
   // The mailbox button (30 Sep 2026, public/feedback-ui.js).
   +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap the mailbox next to How to play (on a phone: More, then Feedback), choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
-  +section('Avatars',`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`
-   +table(['Avatar','Opens at'],PLAYER_AVATARS.filter(a=>a.level).map(a=>`<tr><td>${avatarCell(a)}</td><td>Level ${a.level}</td></tr>`))
-   +table(['Avatar','How to earn it'],PLAYER_AVATARS.filter(a=>avatarGoal(a.id)).map(a=>`<tr><td>${avatarCell(a)}</td><td>${avatarGoal(a.id).text}</td></tr>`))
-   +'<p>Diamonds spent and VIP days count from 25 September 2026.</p>')
+  +section('Avatars',avatarsBody())
   +section('Confirm your email',`<p>Signed up with your email address? Confirm it once for ${EMAIL_BONUS} diamonds: tap “Confirm your email” in the menu and type the code we send you. Google and Facebook accounts get the diamonds straight away.</p>`)
   // Share my farm (Oct 2026, public/farm-share.js).
   +section('Invite a friend',`<p>Share your invite link. When your friend reaches level ${INVITE_LEVEL} within ${INVITE_DAYS} days, you both get ${INVITE_REWARD} diamonds, for up to ${INVITE_LIMIT} friends.</p><p>Or tap Share my farm on the level-up card or your own profile: a picture of your farm with your invite link.</p>`)
@@ -363,7 +381,7 @@ const RELATED={'getting-started':['crops','daily','quests'],crops:['buildings','
 
 export function wikiArticle(id,ctx={}){
  const topic=TOPIC[id];if(!topic)return null;const h=helpers(ctx);
- return {...topic,html:BODIES[id](h),related:(RELATED[id]??[]).map(r=>TOPIC[r])};
+ return {...topic,...(h.portal&&PORTAL_BLURBS[id]?{blurb:PORTAL_BLURBS[id]}:{}),html:BODIES[id](h),related:(RELATED[id]??[]).map(r=>TOPIC[r])};
 }
 export const wikiHero=topic=>`<header class="wiki-hero" style="--tint:${TINTS[topic.id]??'#efe6d8'}"><div><h3>${topic.title}</h3><p>${topic.blurb}</p></div>${art(topic.art)}</header>`;
 // The jump bar: one chip per section of the page (a building's chip has its picture).
@@ -381,13 +399,13 @@ export const wikiGroups=(ctx={},{featured=true}={})=>WIKI_GROUPS.map(g=>{
 }).join('');
 // "Read next" under a topic: a short row per topic, picture and title.
 export const wikiNext=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-next" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><i aria-hidden="true">›</i></a>`;};
-export const wikiTile=(topic,ctx={},{featured=false}={})=>{const h=helpers(ctx);return `<a class="wiki-tile${featured?' is-featured':''}" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}${featured?' <b class="wiki-badge">Read first</b>':''}</strong><span>${topic.blurb}</span><i aria-hidden="true">›</i></a>`;};
+export const wikiTile=(topic,ctx={},{featured=false}={})=>{const h=helpers(ctx);return `<a class="wiki-tile${featured?' is-featured':''}" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}${featured?' <b class="wiki-badge">Read first</b>':''}</strong><span>${h.portal&&PORTAL_BLURBS[topic.id]||topic.blurb}</span><i aria-hidden="true">›</i></a>`;};
 
 // The search box and its quick searches, the same in How to play and on the website. App comes first and goes straight to how to
 // install it: many players do not know there is one.
 export const WIKI_QUICK=Object.freeze([{label:'App',topic:'getting-started',anchor:'sec-play-it-as-an-app'},'Corn','Apples','Cheese','Tractor','VIP','Farm family']);
 export const wikiSearchBox=()=>`<label class="wiki-search">${art('guide')}<input type="search" id="wiki-search" placeholder="Search the wiki: corn, cheese, tractor…" aria-label="Search the wiki" autocomplete="off"></label>`;
-export const wikiQuick=(ctx={})=>{const h=helpers(ctx);return `<div class="wiki-quick" aria-label="Quick searches">${WIKI_QUICK.map(q=>typeof q==='string'?`<button type="button" data-wiki-query="${q}">${q}</button>`:`<a href="${h.href(q.topic)}#${q.anchor}" data-wiki-topic="${q.topic}" data-wiki-anchor="${q.anchor}">${q.label}</a>`).join('')}</div>`;};
+export const wikiQuick=(ctx={})=>{const h=helpers(ctx);return `<div class="wiki-quick" aria-label="Quick searches">${WIKI_QUICK.filter(q=>!(h.portal&&q.label==='App')).map(q=>typeof q==='string'?`<button type="button" data-wiki-query="${q}">${q}</button>`:`<a href="${h.href(q.topic)}#${q.anchor}" data-wiki-topic="${q.topic}" data-wiki-anchor="${q.anchor}">${q.label}</a>`).join('')}</div>`;};
 
 // Search: topic titles, blurbs and keywords, plus every crop, building and product by name (pointing to its topic).
 const INDEX=[

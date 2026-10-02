@@ -12,6 +12,7 @@ import {createStarterPackUI} from './starter-pack-ui.js';
 import {stopPageZoom} from './page-zoom.js';
 import {createPopupUI} from './popup-ui.js';
 import {createOfferUI} from './offer-ui.js';
+import {createPortalUI} from './portal-ui.js';
 // The game frame never zooms as a page: only the 3D field does (src/page-zoom.js).
 stopPageZoom(document);
 let bridge;
@@ -22,7 +23,12 @@ let waited=false;
 if(bridge?.pending){waited=true;bridge=await bridge.ready.catch(()=>null);}
 if(!bridge){if(!waited)location.replace('/play.html');}else{
  window.harvestInitialFarm=bridge.takeInitial();
- if(!window.harvestInitialFarm){location.replace('/play.html');}else{
+ // CrazyGames (Oct 2026): the page around the game is src/crazygames.js, with a portal on the bridge (public/portal.js). A farm page
+ // that opens again by itself (its Try again) asks that page for the farm; the website's sign-in page never opens inside CrazyGames.
+ const portal=bridge.portal??null;
+ if(!window.harvestInitialFarm){if(portal)portal.reopen();else location.replace('/play.html');}else{
+  // Marked before anything shows or loads (portal.css; src/supabase.js then never opens the website's own sign-in in this frame).
+  if(portal)document.documentElement.dataset.portal=portal.name;
   document.body.hidden=false;
   // The game takes the first farm over (and clears harvestInitialFarm); the pop-ups only need its start time (the first half hour).
   const firstState=window.harvestInitialFarm.state;
@@ -33,6 +39,8 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   // Farm Family's chat button (public/family-ui.js) opens it on the family's own tab.
   window.harvestChat=chat;
   createAdminDashboard(bridge,{chat});
+  // On CrazyGames the purchases, links and account buttons step aside (portal.css) and the page's own lines come in (src/portal-ui.js).
+  if(portal)createPortalUI({portal});
   // The Family Members list opens a farmer's profile too (public/family-ui.js).
   window.harvestProfiles=profiles;
   ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');
@@ -49,14 +57,18 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   async function openBoard(quiet=false){const request=++boardRequest,category=ui.category,cached=!quiet&&boardCache.get(category);if(cached){board=cached;boardPage=0;drawBoard();}else if(!quiet)ui.results.innerHTML=skeleton('Gathering the latest scores…',{rows:6});ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own)ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);if(!quiet&&!cached||board?.category!==result.category)boardPage=0;board=result;boardCache.set(result.category,result);drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
   const {farmReady}=await import(/* @vite-ignore */ '/game.js?v=familyhall-model-2');
   if(await farmReady){
+   // CrazyGames' SDK (src/crazygames.js): the farm is loaded and can be played.
+   if(portal){portal.event('loadingStop');portal.event('gameplayStart');}
    // The board the leaderboard opens on, read once in the background, so the first look needs no wait.
    setTimeout(()=>{const category=ui.category;if(!boardCache.has(category))bridge.leaderboard(category).then(result=>{if(!boardCache.has(result.category))boardCache.set(result.category,result);}).catch(()=>{});},8000);
-   showPaymentReturn(bridge);
+   // No purchases on CrazyGames (their rule): no payment return, special offer or Starter Pack there.
+   const shop=!portal;
+   if(shop)showPaymentReturn(bridge);
    // A pop-up from the admin (news with a button), once, when nothing else is open. It does not wait for the Starter Pack's catalog.
    void createPopupUI({client:bridge.chat,chat,state:firstState}).start();
    // The special offer listens for the Starter Pack's catalogue, so it starts first.
-   createOfferUI(bridge);
-   await createStarterPackUI(bridge);
+   if(shop){createOfferUI(bridge);
+   await createStarterPackUI(bridge);}
    // One screen from a notification, a shortcut on the app icon or a link (public/app-links.js). src/main.js keeps it until the farm is
    // ready, and hands over what arrives later.
    window.harvestOpen=intent=>{

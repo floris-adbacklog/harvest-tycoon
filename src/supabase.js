@@ -6,7 +6,13 @@ const url=import.meta.env.VITE_SUPABASE_URL?.trim();
 const key=import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const isConfigured=Boolean(url&&key);
 export const functionsUrl=url?`${url.replace(/\/$/,'')}/functions/v1`:null;
-export const supabase=isConfigured?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'harvest-tycoon:auth'}}):null;
+// CrazyGames (Oct 2026): public/crazygames.html (<html data-portal="crazygames">) signs in with sign-ins of its own (portalClient,
+// src/crazygames.js), so there the website's saved sign-in is never read or refreshed. Everything below uses whichever is in use.
+const portalPage=Boolean(globalThis.document?.documentElement?.dataset?.portal);
+export let supabase=isConfigured&&!portalPage?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'harvest-tycoon:auth'}}):null;
+export const supabaseKey=key;
+export const portalClient=storageKey=>isConfigured?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey}}):null;
+export function useClient(client){supabase=client;}
 // Which of Google / Facebook sign-in are switched on in Supabase (an empty list until they are).
 export const socialProviders=()=>isConfigured?enabledProviders({url,key}):Promise.resolve([]);
 export const validUsername=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());

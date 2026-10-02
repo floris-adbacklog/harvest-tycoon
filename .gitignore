@@ -5,6 +5,8 @@
 dist-static/
 dist/
 public/cloud/
+# The CrazyGames zip (scripts/build-crazygames.mjs), uploaded by hand.
+dist-crazygames/
 
 # Local tools
 node_modules/

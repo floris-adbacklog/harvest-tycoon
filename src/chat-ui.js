@@ -12,6 +12,7 @@ import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
 import {chosenLanguage} from '../public/i18n.js';
+import {portalChat,portalOff} from '../public/portal.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
@@ -70,6 +71,11 @@ export const translateLink=(text,language='en')=>`https://translate.google.com/?
 export function createChatUI({bridge,profiles,doc=document,win=window}){
  const chat=bridge?.chat,button=doc.getElementById('chat-button'),dot=doc.getElementById('chat-dot');
  if(!chat||!button)return null;
+ // CrazyGames (Oct 2026, public/portal.js): the chat is for players logged in with CrazyGames, and gone when CrazyGames switches chat
+ // off (its disableChat setting). A guest's chat button opens one small window with CrazyGames' log-in instead.
+ const gate=portalChat(bridge.portal??null);
+ if(gate==='off')return null;
+ if(gate==='guest')return chatLogIn({portal:bridge.portal,button,doc});
  const me=bridge.playerId;
  // Staff marks: the admin shows as Admin (src/staff-badge.js); drawn again once the list is in.
  void loadStaff(chat).then(()=>{if(dialog?.open)paint();});
@@ -92,7 +98,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // The Private tab: find any farmer by name and write to them, without opening their profile first (the same search as the leaderboard).
  let found=null,findTimer=null,findTicket=0;
 
- let overview=null,tab='global',thread=null,messages=[],notices=[],freshNotices=0,loading=0,busy=false,sending=false,connected=false,disposed=false;
+ let overview=null,tab='global',thread=null,messages=[],notices=[],freshNotices=0,loading=0,busy=false,sending=false,connected=false,disposed=false,switchedOff=false;
  let overviewTimer=null,pollTimer=null;const readTimers=new Map(),statusCache=new Map();
  // A message keeps the avatar its sender had when it was sent (chat_messages.sender_avatar); the chat shows the sender's avatar of now
  // instead: looked up for every farmer on screen when a chat opens (at most once a minute, then only farmers not seen yet), and changed
@@ -127,7 +133,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  async function refreshOverview(){
   try{
    const next=await chat.overview();if(disposed)return;
-   overview=next;button.hidden=false;settings();
+   overview=next;button.hidden=switchedOff;settings();
    // What is on screen right now is read, even if the count raced ahead of it.
    if(dialog.open){const name=channelOf();if(tab==='notices')overview.unread.notices=0;else if(name==='global')overview.unread.global=0;else if(name&&name===overview.family?.channel)overview.unread.family=0;else if(name)clearThread(name);}
    counts();if(dialog.open)paint();
@@ -294,6 +300,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // A channel comes from a notification or a link (public/app-links.js): a private chat opens that conversation, a family chat the
  // Family tab.
  async function open({tab:wanted,with:other,channel}={}){
+  if(switchedOff)return;
   doc.querySelectorAll('dialog[open]').forEach(d=>d.close());
   if(!overview||channel)await refreshOverview();
   if(!overview)return;
@@ -405,6 +412,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // A long press replaces the phone's own text selection, so the menu can copy the text there.
   if(touch())items.push(['copy','Copy text']);
   if(touch()&&!mine&&String(m.body??'').trim())items.push(['translate','Translate with Google']);
+  // No links out on CrazyGames (Oct 2026, public/portal.js), Google's translation included.
+  if(portalOff('translate')){const at=items.findIndex(([key])=>key==='translate');if(at>=0)items.splice(at,1);}
   if(!mine)items.push(['report','Report message'],['block',`Block ${m.sender_name}`]);
   if(staff)items.push(['edit','Edit message'],['delete','Delete message']);
   if(staff&&!mine&&!m.sender_staff)items.push(['mute60','Mute 1 hour'],['mute1440','Mute 1 day'],['ban','Ban from chat']);
@@ -430,7 +439,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  dialog.addEventListener('keydown',event=>{if(event.key==='Escape'&&menuEl){event.preventDefault();closeMenu();}});
  async function act(key,m){
   // A new tab straight from the tap on the menu item, so the browser allows it.
-  if(key==='translate'){win.open(translateLink(m.body,chosenLanguage()),'_blank','noopener,noreferrer');return;}
+  if(key==='translate'){if(!portalOff('translate'))win.open(translateLink(m.body,chosenLanguage()),'_blank','noopener,noreferrer');return;}
   try{
    if(key==='report'){
     if(!await confirmAction({title:'Report this message?',description:'A moderator will read it. Thank you for keeping the valley friendly.',confirmLabel:'Report',picture:'admin'}))return;
@@ -529,11 +538,27 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  });
 
  button.onclick=()=>open();
+ // CrazyGames switching the chat off during play: it closes and its button goes (until the next start).
+ const stopPortal=bridge.portal?.onSettings?.(()=>{if(portalChat(bridge.portal)!=='off')return;switchedOff=true;button.hidden=true;if(dialog.open)dialog.close();});
  const stop=chat.subscribe(onEvent);
  const ready=refreshOverview();
  // In case the live connection drops without telling: a quiet check every few minutes while the farm is on screen.
  pollTimer=setInterval(()=>{if(!doc.hidden)void refreshOverview();},180000);
  doc.addEventListener('visibilitychange',()=>{if(!doc.hidden&&overview)scheduleOverview(500);});
- win.addEventListener('pagehide',()=>{disposed=true;stop?.();clearInterval(pollTimer);clearTimeout(overviewTimer);for(const timer of readTimers.values())clearTimeout(timer);},{once:true});
+ win.addEventListener('pagehide',()=>{disposed=true;stop?.();stopPortal?.();clearInterval(pollTimer);clearTimeout(overviewTimer);for(const timer of readTimers.values())clearTimeout(timer);},{once:true});
  return {open,get role(){return role();},whenReady:()=>ready.then(()=>overview)};
+}
+// The chat button for a guest on CrazyGames (Oct 2026): one small window that says the chat is for players logged in with CrazyGames,
+// with their log-in (never opened by itself). Logged in, the farm opens again with the chat (src/crazygames.js).
+function chatLogIn({portal,button,doc}){
+ const dialog=doc.createElement('dialog');dialog.id='chat-login-dialog';dialog.className='game-dialog portal-chat-gate';dialog.setAttribute('aria-labelledby','chat-login-title');
+ dialog.innerHTML='<div class="dialog-heading"><div><span class="eyebrow">CHAT</span><h2 id="chat-login-title">Log in with CrazyGames to chat</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"></i></button></div><p>The chat is for farmers who are logged in with CrazyGames. Your farm comes with you.</p><button type="button" class="primary-button" data-portal-login>Log in with CrazyGames</button>';
+ doc.body.append(dialog);
+ dialog.querySelector('.close-dialog').onclick=()=>dialog.close();
+ const login=dialog.querySelector('[data-portal-login]');
+ login.onclick=async()=>{login.disabled=true;try{await portal.showAuthPrompt();}finally{login.disabled=false;dialog.close();}};
+ function open(){doc.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();}
+ button.onclick=open;button.hidden=false;button.setAttribute('aria-label','Chat: log in with CrazyGames');
+ try{globalThis.lucide?.createIcons?.();}catch{}
+ return {open,get role(){return null;},whenReady:async()=>null};
 }

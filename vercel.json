@@ -93,6 +93,23 @@
       ]
     },
     {
+      "source": "/crazygames.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors https://*.crazygames.com https://crazygames.com capacitor://app.crazygames.com http://localhost:* http://127.0.0.1:*"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
       "source": "/version.json",
       "headers": [
         {

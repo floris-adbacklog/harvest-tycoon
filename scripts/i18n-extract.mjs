@@ -20,7 +20,8 @@ export const SOURCES=[
  // mail-text.js holds the code email already written in every language: it is not translated through the catalog.
  ...list('supabase/functions/farm-api/',f=>f.endsWith('.js')&&f!=='farm-state.js'&&f!=='mail-text.js')
 ].filter(file=>!SKIP.test(file));
-export const PAGES=['public/farm.html','public/play.html'];
+// The CrazyGames page (Oct 2026) shows the same loading screen and a pause card of its own.
+export const PAGES=['public/farm.html','public/play.html','public/crazygames.html'];
 const SQL_DIRS=['supabase/','supabase/migrations/'];
 
 // data-note becomes a line of text in a dropdown (pretty-select.js), so it is collected too.

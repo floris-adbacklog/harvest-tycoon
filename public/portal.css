@@ -1,0 +1,31 @@
+/* The farm on CrazyGames (Oct 2026): html[data-portal] is set only there (src/portal-ui.js), so on harvesttycoon.com nothing here
+   applies. CrazyGames allows no purchases of our own, no invites or sharing links, no email, reminders or app, no Sign out and no
+   cookie banner: those step aside here (the JS that would use them checks public/portal.js too). */
+/* Purchases: the diamond packs and every "Get diamonds" (boosts and VIP with earned diamonds stay), the Halloween Pass's paid row,
+   its buy box and its banner in the shop (the free row stays). */
+html[data-portal] #diamond-store,html[data-portal] [data-shop-jump="diamond-store"],html[data-portal] .get-diamonds,
+html[data-portal] #shop-pass,html[data-portal] .pass-paid-box,html[data-portal] .pass-cell.is-paid,html[data-portal] .pass-heads b:last-child{display:none!important}
+html[data-portal] .pass-heads,html[data-portal] .pass-row{grid-template-columns:34px minmax(0,1fr)}
+@media(max-width:600px){html[data-portal] .pass-heads,html[data-portal] .pass-row{grid-template-columns:26px minmax(0,1fr)}}
+/* Invite a friend and Share my farm (both links to our website). */
+html[data-portal] #invite-button,html[data-portal] [data-menu-action="invite-button"],html[data-portal] .family-invite-friend,
+html[data-portal] .level-up-share,html[data-portal] .farmer-share{display:none!important}
+/* Email, reminders, the app and full screen (CrazyGames has its own full-screen button). */
+html[data-portal] #email-button,html[data-portal] #email-menu-entry,html[data-portal] #email-settings,html[data-portal] #notify-settings,
+html[data-portal] .reminder-nudge,html[data-portal] #app-settings,html[data-portal] .wiki-install{display:none!important}
+/* The account: no Sign out (CrazyGames' own log-in is the only one), no cookie settings (no cookies or trackers here). */
+html[data-portal] #logout-player,html[data-portal] #cookie-settings{display:none!important}
+/* The chat's "Translate with Google" (a link out). */
+html[data-portal] .chat-translate{display:none!important}
+/* The guest's "Save your farm: log in with CrazyGames" in Settings, Your account. */
+html[data-portal] #sound-dialog .account-actions{flex-wrap:wrap}
+html[data-portal] #sound-dialog .account-actions .portal-login{flex:1 1 100%;white-space:normal}
+/* The privacy line on the farm's loading screen. */
+.portal-privacy{margin:18px 0 0;font:500 12px/1.4 'DM Sans',sans-serif;color:#fffdf2c7;text-shadow:0 1px 3px #0000008c}
+.portal-privacy a{color:#ffe08a;text-decoration:underline}
+.i18n-wait .portal-privacy{visibility:hidden}
+@media(max-height:420px){.portal-privacy{margin-top:10px}}
+/* The chat for a guest: one small window that says who can chat, with CrazyGames' log-in. */
+.portal-chat-gate{max-width:min(380px,calc(100% - 24px));text-align:center}
+.portal-chat-gate h2{font-size:22px}
+.portal-chat-gate p{margin:6px 0 16px;color:#6f685a;line-height:1.5}

@@ -6,3 +6,6 @@ if(key.startsWith('sb_secret_'))throw new Error('Use a Supabase publishable/anon
 if(key.startsWith('eyJ')){let role;try{role=JSON.parse(Buffer.from(key.split('.')[1],'base64url').toString()).role;}catch{}if(role!=='anon')throw new Error('The browser build only accepts a Supabase anon key.');}
 if(url&&!/^https:\/\//.test(url))throw new Error('Use the HTTPS Supabase project URL.');
 await build({configFile:false,publicDir:false,define:{'import.meta.env.VITE_SUPABASE_URL':JSON.stringify(url),'import.meta.env.VITE_SUPABASE_ANON_KEY':JSON.stringify(key)},build:{outDir:'public/cloud',emptyOutDir:true,lib:{entry:{cloud:'src/main.js','game-cloud':'src/game-cloud.js',partners:'src/partners.js'},formats:['es'],fileName:(_format,name)=>name+'.js'},minify:true,sourcemap:false}});
+// Harvest Tycoon on CrazyGames (Oct 2026, public/crazygames.html): its own build next to the website's, so the website's files are
+// made exactly as before; it shares no file with them.
+await build({configFile:false,publicDir:false,define:{'import.meta.env.VITE_SUPABASE_URL':JSON.stringify(url),'import.meta.env.VITE_SUPABASE_ANON_KEY':JSON.stringify(key)},build:{outDir:'public/cloud',emptyOutDir:false,lib:{entry:{crazygames:'src/crazygames.js'},formats:['es'],fileName:(_format,name)=>name+'.js'},minify:true,sourcemap:false}});
