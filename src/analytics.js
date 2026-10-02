@@ -69,6 +69,15 @@ const CONNECTION_STAGES=new Set(['reconnecting','paused']);
 // Invite a friend: the screen opened, the link shared or copied, a sign-up that came with a code. Never a name or code.
 const INVITE_EVENTS=new Set(['invite_open','invite_share','invite_copy','invite_signup']);
 export function trackInvite(event,win=globalThis.window){if(INVITE_EVENTS.has(event))pushEvent(event,{device:deviceType(win)},win);}
+// Share my farm (Oct 2026, public/farm-share.js): the picture made, shared, saved or its link copied, and where (the level-up card or
+// your own profile). Never a name, code or link.
+const SHARE_EVENTS=new Set(['farm_share_open','farm_share_sent','farm_share_saved','farm_share_copied']);
+const SHARE_SOURCES=new Set(['level_up','profile']);
+export function trackShare(event,params={},win=globalThis.window){
+ if(!SHARE_EVENTS.has(event))return;
+ const clean={device:deviceType(win)};if(SHARE_SOURCES.has(params?.source))clean.source=params.source;
+ pushEvent(event,clean,win);
+}
 export function trackGame(event,params={},win=globalThis.window){
  if(!GAME_EVENTS.has(event))return;
  const clean={device:deviceType(win)};

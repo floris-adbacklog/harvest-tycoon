@@ -121,6 +121,23 @@ export function localNumbers(code){
   .replace(/(?<![\d.,])(\d+)\.(\d{1,2})(?![\d.,])/g,`$1${decimal}$2`);
 }
 
+// Texts the page's translation never sees (Oct 2026): the words drawn on a picture (Share my farm, public/farm-share.js) and the text
+// handed to the share sheet. t('Level {0}',12) looks the English text up as a whole and fills in the parts as they are; a number part
+// is written the language's way, and a text with forms per number picks its form by the first number. Players' own words (a name)
+// only ever go in as a part, never as the text: the page's look-up would translate a farmer called "Wheat".
+export function codeTranslator(dict,code='en'){
+ const plural=dict&&code!=='en'&&typeof Intl!=='undefined'?new Intl.PluralRules(code):null,numbers=localNumbers(code);
+ const part=value=>typeof value==='number'?(numbers??String)(value.toLocaleString('en-US')):String(value??'');
+ return (english,...values)=>{
+  let out=dict?.[english]??english;
+  if(out&&typeof out==='object'){const n=values.find(v=>typeof v==='number'&&Number.isFinite(v));out=out[plural&&n!==undefined?plural.select(n):'other']??out.other??english;}
+  const parts=values.map(part);
+  return String(out).replace(/\{(\d+)\}/g,(all,i)=>parts[i]??'');
+ };
+}
+let codeText=codeTranslator(null);
+export const t=(english,...values)=>codeText(english,...values);
+
 // Right to left (Arabic, 1 Oct 2026): a number with a sign, a slash, a percent or a times sign keeps its own order ("0 / 3", "+10",
 // "60%", "×2", a date like 05-07-2026) inside a sentence that runs right to left; Unicode isolates hold it left to right. Taken off first, so a text that
 // is written again never gets them twice.
@@ -183,7 +200,7 @@ export async function startTranslation(doc=globalThis.document){
  if(!root||code==='en'){show();return null;}
  try{
   const dict=await(globalThis.harvestI18n?.code===code?globalThis.harvestI18n.load:fetch(`/i18n/${code}.json`).then(response=>{if(!response.ok)throw new Error(String(response.status));return response.json();}));
-  const translator=createTranslator(dict,code);
+  const translator=createTranslator(dict,code);codeText=codeTranslator(dict,code);
   root.lang=code;root.dir=RTL_LANGUAGES.includes(code)?'rtl':'ltr';
   translateDocument(doc,translator);
   globalThis.harvestI18nMissing=translator.missing;

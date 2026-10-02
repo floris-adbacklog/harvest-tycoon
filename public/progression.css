@@ -75,3 +75,22 @@
 #level-up-dialog .level-up-next .game-art{width:22px;height:22px}
 #level-up-dialog .level-up-close{width:36px;height:36px;inset-inline-end:10px;top:10px;border-radius:12px;font-size:22px}
 #level-up-dialog .level-up-done{min-height:46px}
+/* Share my farm (Oct 2026, public/farm-share.js): a quiet button beside Keep growing, and the picture with its buttons inside the card
+   (also on your own profile, player-profiles.css). The preview keeps its 4:5 shape and can be pressed and held to save it. */
+#level-up-dialog .level-up-actions{display:flex;gap:10px}
+#level-up-dialog .level-up-actions>button{flex:1 1 0;min-width:0;min-height:46px;justify-content:center}
+#level-up-dialog .level-up-actions>.level-up-done{width:auto}
+.farm-share-box{display:grid;gap:10px;margin:0 0 12px;text-align:center}
+.farm-share-preview{display:block;width:auto;max-width:100%;height:auto;max-height:40vh;aspect-ratio:4/5;margin:0 auto;border-radius:14px;box-shadow:0 6px 18px #372f2026;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+.farm-share-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.farm-share-actions>.secondary-button{display:inline-flex;align-items:center;justify-content:center;flex:1 1 0;min-width:max-content;min-height:44px;padding:8px 14px;font-size:14px;text-decoration:none}
+.farm-share-making,.farm-share-error{display:flex;align-items:center;justify-content:center;gap:10px;margin:0;padding:14px;border-radius:14px;background:#f4efe3;color:#6c604a;font-size:14px;line-height:1.4}
+.farm-share-spinner{flex:none;width:18px;height:18px;border:3px solid #e4d6b4;border-top-color:#c2912d;border-radius:50%;animation:farm-share-spin .8s linear infinite}
+@keyframes farm-share-spin{to{transform:rotate(360deg)}}
+.farm-share-retry{justify-self:center;min-height:44px;padding:8px 18px}
+.farm-share-hint,.farm-share-status{margin:0;font-size:13px;line-height:1.4;color:#6c604a}
+.farm-share-status:empty{display:none}
+.farm-share-status{overflow-wrap:anywhere;font-weight:700;color:#3f6b4a;-webkit-user-select:text;user-select:text}
+.farm-share-copy-field{position:fixed;inset-inline-start:-9999px;top:0;opacity:0}
+@media(max-width:360px){#level-up-dialog .level-up-actions{flex-direction:column}.farm-share-actions{flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.farm-share-spinner{animation:none}}

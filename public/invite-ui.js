@@ -1,6 +1,7 @@
 // Invite a friend: your personal link, Share and Copy, and the friends who started with it (rules: farm-state.js; data:
 // farm-api invite-service.js). Opened from the side tools on desktop, the More menu on phones and the Family tab.
 import {art,refreshArt} from './visual-icons.js';
+import {t} from './i18n.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const STATUS={
  playing:f=>`Level ${f.level} · playing`,
@@ -37,15 +38,23 @@ export function createInviteUI({notify}){
   bridge()?.trackInvite?.('invite_copy');notify?.('Invite link copied. Send it to a friend!');
  }
  async function share(input){
-  const text=`Come farm with me in Harvest Tycoon! Reach level ${data.rules.level} and we both get ${data.rules.reward} diamonds.`;
+  // In the farmer's language (Oct 2026): the share sheet's text is not on the page, so the page's translation never saw it.
+  const text=t('Come farm with me in Harvest Tycoon! Reach level {0} and we both get {1} diamonds.',data.rules.level,data.rules.reward);
   if(typeof host.navigator.share==='function'){
    try{await host.navigator.share({title:'Harvest Tycoon',text,url:data.link});bridge()?.trackInvite?.('invite_share');}
    catch(e){if(e?.name!=='AbortError')await copy(input);}
   }else await copy(input);
  }
+ // One answer for the visit (Oct 2026): Share my farm (public/farm-share.js) only needs the link, so it takes the last answer or
+ // asks once; this window still asks afresh each time it opens, as the friends' levels move on. A failed ask is forgotten.
+ let asked=null;
+ function info({fresh=false}={}){
+  if(!asked||fresh){const ask=Promise.resolve().then(()=>bridge().request({operation:'invite'}));asked=ask;ask.catch(()=>{if(asked===ask)asked=null;});}
+  return asked;
+ }
  async function load(){
   error='';render();
-  try{data=await bridge().request({operation:'invite'});}catch(e){error=e.message||'Your invite link could not be loaded.';}
+  try{data=await info({fresh:true});}catch(e){error=e.message||'Your invite link could not be loaded.';}
   if(dialog.open)render();
  }
  function open(){
@@ -53,6 +62,6 @@ export function createInviteUI({notify}){
   if(!dialog.open)dialog.showModal();render();void load();bridge()?.trackInvite?.('invite_open');
  }
  document.getElementById('invite-button')?.addEventListener('click',open);
- window.harvestInvite={open};
- return {open};
+ window.harvestInvite={open,info};
+ return {open,info};
 }

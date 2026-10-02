@@ -12,6 +12,7 @@ export const LOADING_TIPS=Object.freeze([
  ['double-coins','The Market shows tomorrow’s best price: make it today, sell it tomorrow.'],
  ['offer-coins','Come back every day: your daily gift grows with your streak, and one missed day a week is forgiven.'],
  ['level-up','Every new level brings coins and diamonds, and opens new crops and buildings.'],
+ ['invite-friends','Share my farm: send a picture of your farm with your invite link when you level up.'],
  ['squash','Plant a long crop before you go: your farm keeps growing while you are away.'],
  ['chore-weeds','Farm chores pay coins and XP, and sometimes find extra crops.'],
  ['helping-hand','Lend a helping hand at four stops on the farm for coins, goods and XP.'],

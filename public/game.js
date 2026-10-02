@@ -26,7 +26,7 @@ import { createEstateUI } from './estate-ui.js';
 import { createBoostsUI } from './boosts-ui.js';
 import { createRookieUI } from './rookie-ui.js';
 import { art,refreshArt } from './visual-icons.js';
-import { createFamilyFlag } from './family-flag.js';
+import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI,villageQuestReady } from './quests-ui.js';
 import { createBeginnerUI } from './beginner-ui.js';
@@ -45,6 +45,7 @@ import { renderLanguageSettings } from './language-settings.js';
 import { startTranslation } from './i18n.js';
 import { watchSelects } from './pretty-select.js';
 import { createInviteUI } from './invite-ui.js';
+import { createFarmShare,photoFrame } from './farm-share.js';
 import { fitText } from './fit-text.js';
 import { createCoach } from './coach.js';
 import { guideSteps } from './guide-steps.js';
@@ -927,6 +928,21 @@ function shootMinimap(){
  renderer.setScissorTest(false);renderer.setViewport(0,0,viewportWidth,viewportHeight);renderer.render(scene,camera);
  lastMapShot=performance.now();minimap.draw();
 }
+// Share my farm (Oct 2026, public/farm-share.js): the farm as the farmer sees it, centred on the farm (without the side tools' shift)
+// and in the picture's shape. Rendered at the picture's size into the screen buffer and copied out in the same go (the buffer is not
+// kept after a frame, and a render target would skip the tone mapping and colours), then the screen size and the farm are back before
+// the browser paints. A bit larger than needed and scaled down, so the edges are smooth on phones too (they draw without antialias).
+// Not in the village, and not once the 3D view was lost.
+function shootFarmPhoto(width,height){
+ if(!ready||!renderer||!camera||villageWorld||renderer.getContext().isContextLost())return null;
+ const max=renderer.capabilities.maxTextureSize,scale=Math.min(mobileLayout.matches?1.5:1.25,max/width,max/height);
+ const photo=camera.clone();Object.assign(photo,photoFrame(camera,width/height));photo.updateProjectionMatrix();
+ const was=hovered;highlight(-1);
+ const out=document.createElement('canvas');out.width=width;out.height=height;const ctx=out.getContext('2d');ctx.imageSmoothingQuality='high';
+ try{renderer.setDrawingBufferSize(width,height,scale);renderer.render(scene,photo);ctx.drawImage(renderer.domElement,0,0,width,height);}
+ finally{renderer.setDrawingBufferSize(viewportWidth,viewportHeight,viewportRatio);renderer.render(scene,camera);highlight(was);}
+ return out;
+}
 const mapProject=(x,z)=>{const v=new THREE.Vector3(x,0,z).project(mapCamera);return [(v.x+1)/2*mapBuffer.width,(1-v.y)/2*mapBuffer.height];};
 function mapUnproject(cx,cy){
  const p=new THREE.Vector3(cx/mapBuffer.width*2-1,1-cy/mapBuffer.height*2,-1).unproject(mapCamera),dir=new THREE.Vector3();mapCamera.getWorldDirection(dir);
@@ -1049,11 +1065,15 @@ function bindUI(){
   else if(target==='today')retention.openToday();
   else if(target==='chores')growth.open('chores');
  }});
- progression=createProgressionUI({state,isReady:()=>ready&&$('loading').hidden});
+ const inviteUI=createInviteUI({notify:toast});
+ // Share my farm (Oct 2026): on the level-up card and on your own profile (src/player-profiles.js, through window.harvestShareFarm).
+ // The village is another scene, so not there. It takes the invite link Invite a friend already asked for (one ask per visit).
+ const farmShare=villageWorld?null:createFarmShare({capture:shootFarmPhoto,canCapture:()=>ready&&Boolean(renderer)&&!renderer.getContext().isContextLost(),state,invite:()=>inviteUI.info(),host:window.parent??window,track:(event,params)=>{try{window.parent.harvestBridge?.trackShare?.(event,params);}catch{}},drawCloth:drawFamilyCloth,playerName:()=>$('player-name')?.dataset.username});
+ window.harvestShareFarm=farmShare;
+ progression=createProgressionUI({state,isReady:()=>ready&&$('loading').hidden,share:farmShare});
  if(initialLevelReward?.levels.length)progression.announce({...progressionChange(progressionSnapshot(state),state,initialLevelReward),catchUp:true});
  if(initialGift)giftPopup(initialGift);
  if(initialInvite)inviteLoadPopup(initialInvite);
- createInviteUI({notify:toast});
  mobileUI=createMobileUI({openUtility,resetView});
  $('save-status').onclick=()=>client.retry();
  new ResizeObserver(resize).observe(world);const sideTools=document.querySelector('.side-tools');if(sideTools)new ResizeObserver(resize).observe(sideTools);const guideCard=document.querySelector('.beginner-card');if(guideCard)new ResizeObserver(resize).observe(guideCard);icons();

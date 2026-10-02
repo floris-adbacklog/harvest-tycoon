@@ -40,6 +40,7 @@ export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem);
  const badges=player.badges??[],mastered=masteryByCrop(badges);
  return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
+ ${self?'<div class="farmer-share" data-farmer-share hidden></div>':''}
  <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
  ${renderStatPages(player,now,statPage)}
@@ -158,7 +159,7 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
  let searchSequence=0,profileSequence=0,timer,selected=null,statPage=0,returnFocus,disposed=false,profileUsername=null,clockOffset=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
  function close(){dialog.close();}
  dialog.querySelector('.farmer-profile-close').onclick=close;dialog.querySelector('.farmer-profile-back').onclick=close;
- dialog.addEventListener('close',()=>{++profileSequence;selected=null;if(!disposed)(returnFocus?.isConnected?returnFocus:input).focus();});
+ dialog.addEventListener('close',()=>{++profileSequence;selected=null;if(shareSlot)window.harvestShareFarm?.reset(shareSlot.querySelector('.farm-share-box'));if(!disposed)(returnFocus?.isConnected?returnFocus:input).focus();});
  // From the leaderboard (the default) or from somewhere else, such as the Family Members list, which names its own way back.
  // back:null (the chat) shows no way back at all: closing the profile is the way back.
  async function open(playerId,{back='Back to leaderboard',gift=false}={}){
@@ -192,6 +193,21 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
    const sent=await family.invite(player.playerId);button.textContent=sent?'Invited':label;button.disabled=sent;
   };
  }
+ // Share my farm (Oct 2026, public/farm-share.js): on your own profile, a picture of your farm with your invite link that opens in place.
+ // The game hands it over (window.harvestShareFarm; not in the village). One slot, kept through the refresh every 30 seconds, so a
+ // picture being made or shown stays.
+ let shareSlot=null;
+ function showShare(id){
+  const share=window.harvestShareFarm;if(id!==bridge.playerId||!share?.available?.())return;
+  const slot=content.querySelector('[data-farmer-share]');if(!slot)return;
+  if(!shareSlot){
+   shareSlot=document.createElement('div');shareSlot.className='farmer-share';
+   shareSlot.innerHTML='<button type="button" class="secondary-button farmer-share-button">Share my farm</button><div class="farm-share-box" hidden aria-live="polite"></div>';
+   const button=shareSlot.querySelector('.farmer-share-button'),box=shareSlot.querySelector('.farm-share-box');
+   button.onclick=()=>void window.harvestShareFarm?.open({source:'profile',box,button});
+  }
+  slot.replaceWith(shareSlot);
+ }
  async function loadProfile(quiet){
   const id=selected,ticket=++profileSequence;if(!id)return;content.setAttribute('aria-busy','true');
   try{
@@ -215,7 +231,7 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId});refreshVipBadges(dialog,Date.now()+clockOffset);
   // The stat pages keep the page you were on when the profile refreshes (every 30 seconds).
   bindStatPages(content,{page:statPage,onPage:page=>{statPage=page;},onBoard:key=>showBoard?.(key)});
-  profileUsername=data.playerProfile.username;showInvite(data.playerProfile);
+  profileUsername=data.playerProfile.username;showInvite(data.playerProfile);showShare(id);
   content.querySelector('[data-family-profile]')?.addEventListener('click',event=>window.harvestFamilyProfile?.open(event.currentTarget.dataset.familyProfile));
   chatExtras?.(data.playerProfile,content,{isCurrent:()=>!disposed&&selected===id&&dialog.open});
  }

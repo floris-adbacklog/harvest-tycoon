@@ -3,7 +3,7 @@ import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmReques
 import {OAUTH_KEY,providerName,oauthStartError,oauthReturnMessage,usableProviders,embeddedBrowser} from './social-login.js';
 import {scheduleBrowserTip,metaApp,gateApp,gateText,escapeTarget,chromeIntent,safariUrl,appKey,ESCAPE_KEY,BROWSER_TIP_KEY} from './browser-tip.js';
 import {fetchLeaderboard} from './leaderboard.js';
-import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInvite} from './analytics.js';
+import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInvite,trackShare} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
 import {openIntent,withoutOpen} from '../public/app-links.js';
@@ -176,6 +176,7 @@ async function openFarm(){
   bridge.trackCommerce=(event,params)=>{if(ticket===generation)trackCommerce(event,params);};
   bridge.trackGame=(event,params)=>{if(ticket===generation)trackGame(event,params);};
   bridge.trackInvite=event=>{if(ticket===generation)trackInvite(event);};
+  bridge.trackShare=(event,params)=>{if(ticket===generation)trackShare(event,params);};
   bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
   bridge.checkout=async(pack,requestId,offerId)=>{bridge.trackCommerce('diamond_pack_started',{pack});const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
   bridge.paymentReturn=()=>{const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};

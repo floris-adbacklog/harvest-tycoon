@@ -313,7 +313,8 @@ const BODIES={
    +table(['Avatar','How to earn it'],PLAYER_AVATARS.filter(a=>avatarGoal(a.id)).map(a=>`<tr><td>${avatarCell(a)}</td><td>${avatarGoal(a.id).text}</td></tr>`))
    +'<p>Diamonds spent and VIP days count from 25 September 2026.</p>')
   +section('Confirm your email',`<p>Signed up with your email address? Confirm it once for ${EMAIL_BONUS} diamonds: tap “Confirm your email” in the menu and type the code we send you. Google and Facebook accounts get the diamonds straight away.</p>`)
-  +section('Invite a friend',`<p>Share your invite link. When your friend reaches level ${INVITE_LEVEL} within ${INVITE_DAYS} days, you both get ${INVITE_REWARD} diamonds, for up to ${INVITE_LIMIT} friends.</p>`)
+  // Share my farm (Oct 2026, public/farm-share.js).
+  +section('Invite a friend',`<p>Share your invite link. When your friend reaches level ${INVITE_LEVEL} within ${INVITE_DAYS} days, you both get ${INVITE_REWARD} diamonds, for up to ${INVITE_LIMIT} friends.</p><p>Or tap Share my farm on the level-up card or your own profile: a picture of your farm with your invite link.</p>`)
   +section('Privacy',`<p>Read how we handle your data in the <a href="/privacy">Privacy Policy</a>. Want to stop? You can <a href="/delete-account">delete your account</a>.</p>`);
  }
 };

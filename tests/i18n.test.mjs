@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-import {createTranslator,chosenLanguage,startTranslation,LANGUAGE_KEY} from '../public/i18n.js';
+import {createTranslator,chosenLanguage,startTranslation,LANGUAGE_KEY,codeTranslator,t} from '../public/i18n.js';
 import {LANGUAGES} from '../public/languages.js';
 import {extract} from '../scripts/i18n-extract.mjs';
 import {catalog,translations,problem} from '../scripts/i18n.mjs';
@@ -84,4 +84,17 @@ test('a text box keeps what a farmer types, but its hint and label are the game\
  assert.match(src,/const KEEP_ATTRS=KEEP\.split\(','\)\.filter\(s=>s!=='textarea'\)\.join\(','\);/);
  assert.match(src,/if\(!value\|\|!\/\\p\{L\}\/u\.test\(value\)\|\|skipAttr\(element\)\)return;/,'attributes use the list without textarea');
  assert.match(src,/acceptNode:node=>node\.nodeType===1&&node\.matches\(KEEP\)\?\(attrs\(node\),2\):1/,'a kept element still has its hint translated, never its text');
+});
+
+// Oct 2026: texts the page never shows as text (the words on the Share my farm picture, the share sheet's text) are translated in code.
+test('t(): the whole English text looked up, its parts filled in as they are, numbers the language\'s way, English without a file',()=>{
+ assert.equal(t('Level {0}',12),'Level 12','English (or no file yet): the English text, filled in');
+ assert.equal(t('Something {0} new',1250),'Something 1,250 new');
+ const es=codeTranslator({'Level {0}':'Nivel {0}','Wheat':'Trigo','{0}’s farm':'La granja de {0}'},'es');
+ assert.equal(es('Level {0}',12),'Nivel 12');assert.equal(es('{0}’s farm','Wheat'),'La granja de Wheat','a part is never translated: a farmer called Wheat stays Wheat');
+ assert.equal(es('Not in the file {0}','x'),'Not in the file x','a missing text stays English');
+ const nl=codeTranslator({'{0} diamonds at level {1}':{one:'{0} diamant op level {1}',other:'{0} diamanten op level {1}'}},'nl');
+ assert.equal(nl('{0} diamonds at level {1}',1,10),'1 diamant op level 10');assert.equal(nl('{0} diamonds at level {1}',150,10),'150 diamanten op level 10');
+ assert.equal(codeTranslator({'{0} coins':'{0} Münzen'},'de')('{0} coins',1250),'1.250 Münzen','the German thousands');
+ assert.match(readFileSync(new URL('../public/i18n.js',import.meta.url),'utf8'),/const translator=createTranslator\(dict,code\);codeText=codeTranslator\(dict,code\);/,'the same file as the page');
 });

@@ -140,3 +140,9 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .farmer-family-open:hover h4{text-decoration:underline;text-underline-offset:3px}
 /* The status line only when it says something (a refresh that failed). */
 .farmer-profile-status:empty{display:none}
+/* Share my farm on your own profile (Oct 2026, src/player-profiles.js): one quiet button under your name; the picture opens in place
+   (its styles: progression.css). */
+.farmer-share{display:grid;gap:12px;margin:-8px 0 20px}
+.farmer-share-button{justify-self:start;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 18px}
+.farmer-share .farm-share-box{margin:0}
+@media(max-width:480px){.farmer-share-button{justify-self:stretch}}
