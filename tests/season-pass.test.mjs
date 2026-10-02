@@ -67,6 +67,8 @@ test('the lanterns stand still at the end; collecting goes on for a week, then n
  assert.throws(()=>claimPassTier(s,'free',1,SEASON_PASS.claimUntil),/has ended/);
  assert.equal(passVisible(s,SEASON_PASS.claimUntil),false,'after the collecting week it hides');
  assert.equal(passVisible(farm(20,end+H),end+H),false,'a farm that never took part sees nothing in the collecting week');
+ const idle=farm(20,OPEN);normalizeFarm(idle,end+H);assert.equal(idle.pass.id,SEASON_PASS.id);
+ assert.equal(passVisible(idle,end+H),false,'nor one that reached no tier: nothing to collect, so no button for a week');
 });
 
 test('claims one by one: refused before the season, before the tier, twice, and on the paid row before it is bought',()=>{
@@ -117,6 +119,9 @@ test('the balance: no diamonds on the free row; the paid row holds the 500 of th
  const worth=sum('paid','diamonds')+VIP_PLANS.week.cost+SEASON_PASS.tiers.filter(t=>t.paid.boost).reduce((n,t)=>n+BOOSTS[t.paid.boost].prices[t.paid.length],0);
  assert.equal(worth,2530);
  assert.equal(SEASON_PASS.tiers.reduce((n,t)=>n+(t.free.coins??0),0),570);assert.equal(sum('paid','coins'),560);
+ // The owner's changes to the map's tables (no decorations or avatars in this first season).
+ assert.deepEqual({...SEASON_PASS.tiers[9].free},{coins:20});assert.deepEqual({...SEASON_PASS.tiers[29].free},{coins:100});
+ assert.deepEqual({...SEASON_PASS.tiers[11].paid},{coins:40});assert.deepEqual({...SEASON_PASS.tiers[29].paid},{boost:'harvest',length:'1d'});
  assert.equal(passPaidTotals().diamonds,500);
  assert.equal(DIAMOND_PACKS.find(p=>p.amount===500).price,'€4.99');
  assert.equal(passValueLine(),'The 500 diamonds alone cost €4.99 in the shop.','a true comparison, never a made-up "was" price');
@@ -198,6 +203,10 @@ test('screens: a button and a More tile from level 10, a window that opens only 
  assert.match(html,/<button data-menu-action="events-button">[^\n]*\n    <button data-menu-action="pass-button" id="pass-menu-entry" hidden>/,'under Every day, after Events');
  assert.match(html,/<dialog id="pass-dialog" class="game-dialog wide-dialog" aria-labelledby="pass-title">/);
  assert.match(read('public/pass.css'),/@media\(max-width:900px\),\(max-height:550px\) and \(pointer:coarse\)\{#pass-button\{display:none\}\}/,'a clean header on phones, like Farm family');
+ // A narrow computer: with the pass button the header held one button too many (Help fell off at 1024 and 1200 px with the chat on).
+ const css=read('public/pass.css');
+ assert.match(css,/@media\(min-width:901px\) and \(max-width:1365px\)\{\n \.topbar \.resources:has\(>#pass-button:not\(\[hidden\]\)\)\{gap:3px\}\n \.topbar \.resources:has\(>#pass-button:not\(\[hidden\]\)\)>:is\(#pass-button,#family-button,#chat-button,#admin-button,#sound-button,#feedback-button,#help-button\)\{width:36px;padding-inline:3px\}\n\}/,'narrower icon buttons only while the pass button shows');
+ assert.match(css,/@media\(min-width:901px\) and \(max-width:1199px\)\{\.topbar \.resources:has\(>#pass-button:not\(\[hidden\]\)\) \.resource-label\{display:none\}\}/);
  assert.match(read('public/mobile-ui.js'),/passTile\.hidden=pass\.hidden;/);
  assert.match(read('public/mobile-ui.js'),/&&!passWaiting&&!familyWaiting&&!chatWaiting&&!emailWaiting;/);
  assert.equal((ui.match(/showModal\(\)/g)??[]).length,1,'one way in');assert.match(ui,/function open\(\)\{\n  if\(!passVisible\(state,now\(\)\)\)return;/);

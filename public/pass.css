@@ -4,6 +4,15 @@
 #pass-dot{position:absolute;inset-inline-end:-5px;top:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif;pointer-events:none}
 #pass-button[hidden],#pass-dot[hidden],#pass-menu-entry[hidden],.shop-pass[hidden]{display:none}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#pass-button{display:none}}
+/* A narrow computer (901-1365 px, Oct 2026): the header was already full there (Farm family, chat, settings, feedback, help, for a while
+   the Starter Pack or an offer), and one more button pushed Help off the screen (about 50 px at 1024 and 1200 px). While the pass button
+   shows, the plain icon buttons sit a little narrower and closer, and below 1200 px the words "coins" and "diamonds" go, as they already do
+   up to 1100 px; outside the season nothing changes. */
+@media(min-width:901px) and (max-width:1365px){
+ .topbar .resources:has(>#pass-button:not([hidden])){gap:3px}
+ .topbar .resources:has(>#pass-button:not([hidden]))>:is(#pass-button,#family-button,#chat-button,#admin-button,#sound-button,#feedback-button,#help-button){width:36px;padding-inline:3px}
+}
+@media(min-width:901px) and (max-width:1199px){.topbar .resources:has(>#pass-button:not([hidden])) .resource-label{display:none}}
 #pass-menu-entry .game-art{object-fit:contain}
 
 #pass-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}

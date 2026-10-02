@@ -2218,8 +2218,9 @@ export function passLanterns(state){
 }
 export const passTier=state=>Math.min(SEASON_PASS.tiers.length,Math.floor(passLanterns(state)/SEASON_PASS.perTier));
 export const passPremium=state=>Array.isArray(state.passPremium)&&state.passPremium.includes(SEASON_PASS.id);
-// Whether the farm sees the pass: the preview and the open season from level 10, the collecting week only with lanterns of its own.
-export function passVisible(state,now=Date.now()){const phase=passPhase(now);return levelOf(state)>=SEASON_PASS.level&&(phase==='soon'||phase==='open'||phase==='claim'&&state.pass?.id===SEASON_PASS.id);}
+// Whether the farm sees the pass: the preview and the open season from level 10, the collecting week only with a tier of its own (a farm
+// that reached none has nothing to collect, so no button for a week).
+export function passVisible(state,now=Date.now()){const phase=passPhase(now);return levelOf(state)>=SEASON_PASS.level&&(phase==='soon'||phase==='open'||phase==='claim'&&passTier(state)>0);}
 // Rewards reached and not collected yet (the paid row only once bought): the "!" on the pass button, worked out from the farm (no storage).
 export function passWaiting(state,now=Date.now()){
  const phase=passPhase(now),pass=state.pass;if(phase!=='open'&&phase!=='claim'||pass?.id!==SEASON_PASS.id)return 0;
