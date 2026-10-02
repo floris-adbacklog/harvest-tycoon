@@ -13,6 +13,13 @@
  .topbar .resources:has(>#pass-button:not([hidden]))>:is(#pass-button,#family-button,#chat-button,#admin-button,#sound-button,#feedback-button,#help-button){width:36px;padding-inline:3px}
 }
 @media(min-width:901px) and (max-width:1199px){.topbar .resources:has(>#pass-button:not([hidden])) .resource-label{display:none}}
+/* The pass and a special offer (or the Starter Pack) in the header at once (Oct 2026): Help went off the screen again at 1024 px (about
+   40 px) and 1200 px (about 15 px). Then the offer's chip is as narrow as the other buttons and the words go up to 1279 px; up to 1100 px
+   the offer's chip steps aside, as the offer still opens from the banner at the top of the Diamond shop (and opened by itself once). */
+@media(min-width:901px) and (max-width:1365px){.topbar .resources:has(>#pass-button:not([hidden]))>:is(#offer-chip,#starter-pack-chip){width:36px;padding-inline:3px}}
+@media(min-width:901px) and (max-width:1279px){.topbar .resources:has(>#pass-button:not([hidden])):has(>:is(#offer-chip,#starter-pack-chip):not([hidden])) .resource-label{display:none}}
+@media(min-width:901px) and (max-width:1100px){.topbar .resources:has(>#pass-button:not([hidden]))>#offer-chip{display:none}}
+}
 #pass-menu-entry .game-art{object-fit:contain}
 
 #pass-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}
