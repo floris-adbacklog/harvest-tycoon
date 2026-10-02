@@ -677,7 +677,8 @@ function sweepField(id,action){
  return true;
 }
 function endSweep(){
- const run=sweepRun;sweepRun=null;sweepTool.hide();swept.clear();highlight(hovered);
+ // No ring is left on the field the mouse was over when the sweep began (the pointer is elsewhere now; the next move lights its own).
+ const run=sweepRun;sweepRun=null;sweepTool.hide();swept.clear();highlight(-1);
  if(!run)return;
  const result=run.handle.end(),action=run.action;
  if(!result){if(run.handle.reason)toast(run.handle.reason);return;}
@@ -1184,6 +1185,9 @@ async function init(){
   await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);},4)]);
   decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
   }
+  // Every press starts its own way (Oct 2026): a finger that holds a field after the mouse was used gets no sickle at the old mouse
+  // spot, and a held first field is not tipped over by an earlier drag.
+  renderer.domElement.addEventListener('pointerdown',e=>{lastPointer={x:e.clientX,y:e.clientY,type:e.pointerType};pointerDx=0;});
   renderer.domElement.addEventListener('pointermove',e=>{
    // During a sweep (Oct 2026) the plants tip over the way the pointer goes, and with a mouse the tool in the hand follows it.
    const dx=lastPointer?e.clientX-lastPointer.x:0;lastPointer={x:e.clientX,y:e.clientY,type:e.pointerType};pointerDx=dx;

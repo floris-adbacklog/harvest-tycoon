@@ -8,10 +8,13 @@ const SEEDS='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d
 // hot: the point of the picture that is the pointer (the sickle's cutting edge, the can's rose, the falling seeds), in the 48 grid.
 export const TOOL_ART=Object.freeze({harvest:{svg:SICKLE,hot:[14,18]},water:{svg:CAN,hot:[6,16]},plant:{svg:SEEDS,hot:[9,9]}});
 // The cursor over a field whose sweep would use this tool, at 32 px (a plain pointer where there is none, or where SVG cursors are not drawn).
+// Made once per tool (it is asked on every mouse move); the fallback is joined on, so the translation catalog never takes ", pointer"
+// for a text.
+const CURSORS=new Map();
 export function toolCursor(action){
  const art=TOOL_ART[action];if(!art)return '';
- const svg=art.svg.replace('<svg ','<svg width="32" height="32" ');
- return `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${Math.round(art.hot[0]*2/3)} ${Math.round(art.hot[1]*2/3)}, pointer`;
+ if(!CURSORS.has(action)){const svg=art.svg.replace('<svg ','<svg width="32" height="32" ');CURSORS.set(action,[`url("data:image/svg+xml,${encodeURIComponent(svg)}") ${Math.round(art.hot[0]*2/3)} ${Math.round(art.hot[1]*2/3)}`,'pointer'].join(', '));}
+ return CURSORS.get(action);
 }
 // The tool in the hand during a sweep with a mouse: it follows the pointer, faces the way it moves and swings at each field it works
 // (no swing when motion is reduced).

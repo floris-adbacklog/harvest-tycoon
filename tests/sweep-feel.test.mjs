@@ -6,6 +6,7 @@ import {createFarm,applyFarmAction,seedCost,BEGINNER_QUESTS} from '../public/far
 import {createFarmAudio,snipRate,SNIP_SCALE,SNIP_GAP,SOUND_CUES} from '../public/farm-audio.js';
 import {toolCursor,ghostPose,TOOL_ART} from '../public/sweep-tools.js';
 import {HAPTICS} from '../public/haptics.js';
+import {extract} from '../scripts/i18n-extract.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 // Oct 2026 (the CrazyGames review: "harvesting should feel physical"): a sweep works every field on the screen the moment it is passed,
@@ -109,6 +110,13 @@ test('the tool in the hand: a sickle over a ripe crop, a watering can and a seed
  assert.equal(toolCursor('tend'),'');assert.equal(toolCursor(null),'');
  for(const art of Object.values(TOOL_ART))assert.match(art.svg,/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 48 48">/);
  assert.doesNotMatch(read('public/sweep-tools.js'),/\.png|\.webp|<img/);
+ // Review (Oct 2026): made once per tool (asked on every mouse move), and the cursor value is no text for the translation catalog.
+ assert.equal(toolCursor('harvest'),toolCursor('harvest'));
+ const texts=Object.keys(extract());assert.ok(!texts.some(t=>/pointer|svg\+xml/.test(t)),'", pointer" is not a text to translate');
+ // A press starts afresh: no sickle at an old mouse spot for a finger, no tilt from an earlier drag; no ring left after a sweep.
+ const game=read('public/game.js');
+ assert.match(game,/addEventListener\('pointerdown',e=>\{lastPointer=\{x:e\.clientX,y:e\.clientY,type:e\.pointerType\};pointerDx=0;\}\);/);
+ assert.match(game,/const run=sweepRun;sweepRun=null;sweepTool\.hide\(\);swept\.clear\(\);highlight\(-1\);/);
 });
 
 test('Show me for the first basket: the ghost sickle comes in over the first field, holds, sweeps over the others and lifts away',()=>{
@@ -130,6 +138,7 @@ test('Show me for the first basket: the ghost sickle comes in over the first fie
 test('per field only the field and three header numbers are drawn; the full redraw, the sum and the chime wait for release; bursts and flights are capped',()=>{
  const game=read('public/game.js'),field=game.match(/\nfunction sweepField\(id,action\)\{([\s\S]*?)\n\}\n/)[1],end=game.match(/\nfunction endSweep\(\)\{([\s\S]*?)\n\}\n/)[1];
  assert.doesNotMatch(field,/updateUI\(|floatReward\(|icons\(/,'no full redraw per field');
+ assert.match(field,/const result=run\.handle\.add\(id\);if\(!result\)return false;\n[\s\S]*?swept\.add\(id\);v\.ring\.visible=true;/,'a field the rules refuse is not lit');
  assert.match(field,/hudNumbers\(\)/);assert.match(field,/particleBurst\(id,false,5\)/,'5 particles a field instead of 13');assert.match(field,/run\.flights=run\.flights\.filter\(t=>now-t<900\);if\(run\.flights\.length<8\)\{run\.flights\.push\(now\);harvestFlight\(id,f\.crop,1\);\}/,'one picture a field, at most 8 in the air');
  assert.match(field,/farmAudio\.snip\(n\);haptic\('sweep'\);sweepTool\.cut\(\);/);assert.match(field,/drawCrop\(id,run\.tilt\)/);
  assert.match(end,/floatReward\(last,/);assert.match(end,/soundForAction\(\{type:'fields',action\},result,run\.level,levelProgress\(state\)\.level\)/);assert.match(end,/beginner\?\.afterAction\(result\)/);
