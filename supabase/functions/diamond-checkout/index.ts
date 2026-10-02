@@ -55,6 +55,9 @@ Deno.serve(async req=>{
    const {id,pack,coins,diamonds,status,livemode,vip_days}=r.data;return reply({id,pack,coins,diamonds,status,livemode,vipDays:vip_days??0,serverNow:Date.now()});
   }
   if(body.operation!=='create')return reply({error:'Unknown request.'},400);
+  // A CrazyGames account (Oct 2026, crazygames-auth) never pays through Stripe: CrazyGames allows purchases only through its own shop.
+  // The game there shows no purchase; this holds whatever a page asks (its page runs on www.harvesttycoon.com, so CORS lets it in).
+  if(user.app_metadata?.portal==='crazygames')return reply({error:'Purchases are not available on CrazyGames.'},403);
   if(!enabled)return reply({error:'Diamond purchases are not available yet.'},503);
   let pack;
   if(body.pack==='offer'){

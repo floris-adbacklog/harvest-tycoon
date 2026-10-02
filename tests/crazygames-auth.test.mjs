@@ -72,6 +72,7 @@ test('the public key is kept in memory and fetched once more when a token fails,
  await assert.rejects(()=>verifyToken(cgToken({}),{keys:down,now:NOW}),/offline/,'CrazyGames unreachable is a server problem (503), not a bad token');
  const index=read('supabase/functions/crazygames-auth/index.ts');
  assert.equal(PUBLIC_KEY_URL,'https://sdk.crazygames.com/publicKey.json');assert.match(index,/return \(await response\.json\(\)\)\?\.publicKey;/);
+ assert.match(index,/fetch\(PUBLIC_KEY_URL,\{headers:\{Accept:'application\/json'\},signal:AbortSignal\.timeout\(5000\)\}\)/,'a slow CrazyGames never holds a start for long');
 });
 
 test('a CrazyGames username becomes a farmer name that fits the rule, the first free one',async()=>{
@@ -92,7 +93,7 @@ test('a CrazyGames username becomes a farmer name that fits the rule, the first 
 // A database and Auth that keep what they are told, like Supabase's, for the account rules.
 const GUEST='00000000-0000-4000-8000-0000000000a1',OTHER_GUEST='00000000-0000-4000-8000-0000000000a2',FARMER='00000000-0000-4000-8000-0000000000b1';
 const guestUser=(id=GUEST)=>({id,email:`g-${id}@${MAIL_DOMAIN}`,app_metadata:{provider:'email',providers:['email'],portal:'crazygames',guest:true},user_metadata:{}});
-const session=(id,{role='authenticated',session_id='s-'+id}={})=>`${part({alg:'HS256'})}.${part({sub:id,role,session_id})}.sig`;
+const session=(id,{role='authenticated',session_id='s-'+id,app_metadata}={})=>`${part({alg:'HS256'})}.${part({sub:id,role,session_id,...(app_metadata?{app_metadata}:{})})}.sig`;
 const headers=(values={})=>new Headers(values);
 function fakeSupabase({users=[],accounts=[],stats=[],sessions=[],taken=[],slot=true,lostRace=false}={}){
  const db={users:new Map(users.map(u=>[u.id,structuredClone(u)])),accounts:structuredClone(accounts),stats:structuredClone(stats)};
@@ -179,6 +180,8 @@ test('guests per network: over the limit is refused with 429 and makes nothing; 
  assert.match(sql,/where ip_hash=p_ip and created_at>now\(\)-interval '1 hour';\n  if n>=greatest\(coalesce\(p_max,0\),0\) then return false; end if;/);
  assert.match(sql,/where created_at>now\(\)-interval '1 hour';\n if n>=greatest\(coalesce\(p_max_all,0\),0\) then return false; end if;\n insert into public\.crazygames_guest_ips\(ip_hash\) values\(p_ip\);\n return true;/);
  assert.match(sql,/grant execute on function public\.crazygames_guest_slot\(text,integer,integer\) to service_role;/);
+ // Also without new guests, nothing stays longer than the privacy policy says (at most two hours): every 15 minutes, older than an hour.
+ assert.match(sql,/select cron\.unschedule\('harvest-crazygames-guest-ips'\) where exists\(select 1 from cron\.job where jobname='harvest-crazygames-guest-ips'\);\nselect cron\.schedule\('harvest-crazygames-guest-ips','\*\/15 \* \* \* \*',\$c\$delete from public\.crazygames_guest_ips where created_at<now\(\)-interval '1 hour'\$c\$\);/);
 });
 
 test('logged in to CrazyGames for the first time: a new account with the CrazyGames name, keyed on the CrazyGames userId',async()=>{
@@ -261,8 +264,18 @@ test('two starts at the same moment, a taken address and a link that stopped hal
  assert.match(squatted.log.created[0].email,/^cg-cg-user-1-[0-9a-f]{6}@players\.harvesttycoon\.com$/);
  const half=fakeSupabase({users:[guestUser()],accounts:[{cg_user_id:'cg-user-1',player_id:GUEST,linked_from_guest:true}],sessions:['s-'+GUEST]});
  const fixed=await run(half.admin,{op:'crazygames',token:cgToken({})},{Authorization:`Bearer ${session(GUEST)}`});
- assert.deepEqual(fixed.data,{token_hash:`hash:g-${GUEST}@${MAIL_DOMAIN}`,player_id:GUEST,linked:false},'put right, and a new session that says so');
+ assert.deepEqual(fixed.data,{token_hash:`hash:g-${GUEST}@${MAIL_DOMAIN}`,player_id:GUEST,linked:true},'put right, and a new session that says so; linked, so the game forgets its guest sign-in');
  assert.equal(half.db.users.get(GUEST).app_metadata.guest,false);assert.equal(half.db.users.get(GUEST).app_metadata.crazygames_id,'cg-user-1');
+ // The same guest twice at the same moment (the start and the login listener): the one that finds the farm linked already says linked too.
+ const twice=fakeSupabase({users:[guestUser()],stats:[{player_id:GUEST,username:'Sunny Acres 4821'}],sessions:['s-'+GUEST]});
+ const guestToken=session(GUEST,{app_metadata:{portal:'crazygames',guest:true}});
+ const both=await Promise.all([1,2].map(()=>run(twice.admin,{op:'crazygames',token:cgToken({})},{Authorization:`Bearer ${guestToken}`})));
+ assert.deepEqual(both.map(r=>[r.data.player_id,r.data.linked,typeof r.data.token_hash]),[[GUEST,true,'string'],[GUEST,true,'string']]);assert.equal(twice.log.created.length,0);assert.equal(twice.db.accounts.length,1);
+ // Linked already, but this session's token was made while it was a guest (the chat would stay closed until it renews): a new one.
+ assert.deepEqual((await run(twice.admin,{op:'crazygames',token:cgToken({})},{Authorization:`Bearer ${guestToken}`})).data,{token_hash:`hash:g-${GUEST}@${MAIL_DOMAIN}`,player_id:GUEST,linked:true});
+ assert.deepEqual((await run(twice.admin,{op:'crazygames',token:cgToken({})},{Authorization:`Bearer ${session(GUEST,{app_metadata:{portal:'crazygames',guest:false}})}`})).data,{ok:true,player_id:GUEST},'its new session: nothing to do');
+ const repaired=fakeSupabase({users:[{...guestUser(),app_metadata:{portal:'crazygames',guest:false,crazygames_id:'old'}}],accounts:[{cg_user_id:'cg-user-1',player_id:GUEST,linked_from_guest:true}],sessions:['s-'+GUEST]});
+ assert.equal((await run(repaired.admin,{op:'crazygames',token:cgToken({})},{Authorization:`Bearer ${session(GUEST)}`})).data.linked,false,'no guest any more: nothing to forget');
 });
 
 test('a bad request or token is refused before anything is made; the endpoint is POST JSON only, CORS for everyone',async()=>{
@@ -286,7 +299,7 @@ test('a bad request or token is refused before anything is made; the endpoint is
 test('the Edge Function itself: OPTIONS, POST JSON up to 4 KB, the settings from the environment, a 503 that names nothing',async()=>{
  const source=stripTypeScriptTypes(read('supabase/functions/crazygames-auth/index.ts').replace(/^import .*;\n/gm,''));
  const settings={SUPABASE_URL:'https://x.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'service',CRAZYGAMES_GAME_ID:' harvest ',CRAZYGAMES_GUEST_LIMIT:'12'};
- const start=(admin,fetched=[])=>{let handler;vm.runInNewContext(source,{...crazygames,createClient:()=>admin,Deno:{env:{get:key=>settings[key]},serve:fn=>handler=fn},Response,JSON,String,Error,console:{error(){}},
+ const start=(admin,fetched=[])=>{let handler;vm.runInNewContext(source,{...crazygames,createClient:()=>admin,Deno:{env:{get:key=>settings[key]},serve:fn=>handler=fn},Response,JSON,String,Error,AbortSignal,console:{error(){}},
   fetch:async url=>{fetched.push(url);return new Response(JSON.stringify({publicKey:KEY.pem}));}});
   return (method,body,more={})=>handler(new Request('https://x.supabase.co/functions/v1/crazygames-auth',{method,headers:{'Content-Type':'application/json',...more},...(body===undefined?{}:{body})}));};
  const {admin,log}=fakeSupabase(),fetched=[],call=start(admin,fetched);
@@ -428,4 +441,25 @@ test('the privacy policy says what playing on CrazyGames stores',()=>{
  assert.match(policy,/CrazyGames tells us your <strong>CrazyGames user ID<\/strong> and <strong>username<\/strong>: we link your farm to that user ID/);
  assert.match(policy,/If you log in to CrazyGames while playing as a guest, your guest farm is kept and linked to your CrazyGames account\./);
  assert.match(policy,/<li><strong>Playing on CrazyGames<\/strong>: the link between your CrazyGames user ID and your farm, for as long as your account exists; the scrambled IP address of a new guest farm, at most two hours\.<\/li>/);
+});
+
+test('diamond-checkout: a CrazyGames account never starts a Stripe checkout; a website farmer as before',async()=>{
+ const payments=await import('../supabase/functions/diamond-checkout/payments.js');
+ const source=stripTypeScriptTypes(read('supabase/functions/diamond-checkout/index.ts').replace(/^import .*;\n/gm,''));
+ const send=async(user,body)=>{
+  let handler;const stripe=[];
+  const admin={auth:{async getUser(){return {data:{user:structuredClone(user)},error:null};}},async rpc(name){assert.equal(name,'harvest_session_active');return {data:true,error:null};},
+   from(){throw new Error('no look-up for a pack checkout');}};
+  vm.runInNewContext(source,{...payments,Stripe:class{constructor(){stripe.push('made');}},createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,JSON,Date,Object,Promise,Error,atob,console:{error(){}}});
+  const token=`x.${Buffer.from(JSON.stringify({session_id:'s'})).toString('base64url')}.y`;
+  const r=await handler(new Request('https://test.invalid/diamond-checkout',{method:'POST',headers:{Authorization:`Bearer ${token}`},body:JSON.stringify(body)}));
+  return {status:r.status,data:await r.json(),stripe};
+ };
+ const create={operation:'create',pack:Object.keys(payments.PAYMENT_PACKS)[0],requestId:crypto.randomUUID()};
+ for(const guest of [false,true]){
+  const r=await send({id:FARMER,email:'cg-x@players.harvesttycoon.com',app_metadata:{provider:'email',portal:'crazygames',guest}},create);
+  assert.deepEqual([r.status,r.data],[403,{error:'Purchases are not available on CrazyGames.'}]);assert.deepEqual(r.stripe,[]);
+ }
+ const site=await send({id:OTHER_GUEST,email:'farmer@example.com',app_metadata:{provider:'email'}},create);
+ assert.deepEqual([site.status,site.data],[503,{error:'Diamond purchases are not available yet.'}],'the website: past this check as before (no Stripe key in this test)');
 });

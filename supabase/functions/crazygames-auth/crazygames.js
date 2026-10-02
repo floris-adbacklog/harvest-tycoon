@@ -137,7 +137,8 @@ async function sessionUser(admin,headers){
  if(error||!user||user.is_anonymous||user.id!==claims.sub)return null;
  const active=await admin.rpc('harvest_session_active',{p_player:user.id,p_session:claims.session_id});
  if(active.error)throw active.error;
- return active.data===true?user:null;
+ // guestToken: this session's own token still says guest (made before the farm was linked), so chat_can_read still treats it as one.
+ return active.data===true?Object.assign(user,{guestToken:claims.app_metadata?.guest===true}):null;
 }
 // A one-time sign-in for this account (no email is sent): the game makes its session from it.
 async function signIn(admin,email){
@@ -206,8 +207,9 @@ async function crazygames({admin,body,headers,keys,env,now}){
  let cg;
  try{cg=await verifyToken(body.token,{keys,gameId:env.gameId,now});}
  catch(error){if(error instanceof TokenError)return {status:401,data:{error:error.message}};throw error;}
- const me=await sessionUser(admin,headers);
- let playerId=await mappedPlayer(admin,cg.userId),user=null,linked=false;
+ // The session and the CrazyGames user's farm are looked up at once: one round trip less on every start (the database is in Frankfurt).
+ const [me,mapped]=await Promise.all([sessionUser(admin,headers),mappedPlayer(admin,cg.userId)]);
+ let playerId=mapped,user=null,linked=false;
  if(!playerId&&isGuest(me)){
   if(await addMapping(admin,{cg_user_id:cg.userId,player_id:me.id,linked_from_guest:true})){user=await linkGuest(admin,me,cg);playerId=me.id;linked=true;}
   else playerId=await mappedPlayer(admin,cg.userId);
@@ -220,9 +222,17 @@ async function crazygames({admin,body,headers,keys,env,now}){
  if(!user&&me?.id===playerId)user=me;
  if(!user){const found=await admin.auth.admin.getUserById(playerId);if(found.error||!found.data?.user)throw found.error??Error('A CrazyGames farm without its account.');user=found.data.user;}
  // An account whose marks did not get saved (a link that stopped halfway) is put right: it is this CrazyGames user's, no guest.
+ // Still marked guest means this guest farm is linked only now, so the reply says linked and the game forgets its guest sign-in
+ // (Oct 2026 review: otherwise that sign-in kept opening the logged-in player's farm on this browser after a CrazyGames logout).
  if(!isCurrent(user,cg.userId)){
+  linked||=isGuest(user);
   const saved=await admin.auth.admin.updateUserById(playerId,{app_metadata:accountMetadata(cg.userId)});if(saved.error)throw saved.error;
- }else if(user===me&&!linked)return {status:200,data:{ok:true,player_id:playerId}};
+ }else if(user===me&&!linked){
+  if(!me.guestToken)return {status:200,data:{ok:true,player_id:playerId}};
+  // This guest's session, while another request (the login listener at the same moment) linked the farm: a new session whose token
+  // no longer says guest, and linked, so the game forgets its guest sign-in.
+  linked=true;
+ }
  return {status:200,data:{token_hash:await signIn(admin,user.email),player_id:playerId,linked}};
 }
 

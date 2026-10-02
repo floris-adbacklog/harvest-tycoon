@@ -12,8 +12,9 @@ const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'au
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const env=(key:string)=>Deno.env.get(key)??'';
 const admin=createClient(env('SUPABASE_URL'),env('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false,autoRefreshToken:false}});
+// At most 5 seconds (Oct 2026 review): a slow sdk.crazygames.com must not hold every logged-in start until the function's own limit.
 const keys=createKeyStore({fetchKey:async()=>{
- const response=await fetch(PUBLIC_KEY_URL,{headers:{Accept:'application/json'}});
+ const response=await fetch(PUBLIC_KEY_URL,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(5000)});
  if(!response.ok)throw Error(`CrazyGames public key: ${response.status}`);
  return (await response.json())?.publicKey;
 }});

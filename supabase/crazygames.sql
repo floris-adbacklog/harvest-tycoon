@@ -51,6 +51,10 @@ begin
 end $f$;
 revoke all on function public.crazygames_guest_slot(text,integer,integer) from public, anon, authenticated;
 grant execute on function public.crazygames_guest_slot(text,integer,integer) to service_role;
+-- The limit only counts the last hour, so every 15 minutes hashes older than that go, also when no new guest comes (Oct 2026 review:
+-- before, they were only removed by the next guest, so "at most two hours" in the privacy policy did not always hold).
+select cron.unschedule('harvest-crazygames-guest-ips') where exists(select 1 from cron.job where jobname='harvest-crazygames-guest-ips');
+select cron.schedule('harvest-crazygames-guest-ips','*/15 * * * *',$c$delete from public.crazygames_guest_ips where created_at<now()-interval '1 hour'$c$);
 
 -- Is this a CrazyGames guest (not logged in to CrazyGames)? Read from the account itself, not from a session's token.
 create or replace function public.harvest_portal_guest(p_player uuid)
