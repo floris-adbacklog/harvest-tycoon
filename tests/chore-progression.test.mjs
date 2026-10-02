@@ -59,3 +59,9 @@ test('chores rest 5 minutes to an hour and pay their XP in full; the chores list
  const ui=readFileSync(new URL('../public/growth-ui.js',import.meta.url),'utf8');
  assert.match(ui,/const mastery=c=>Math\.ceil\(\(c\.maxChance-c\.baseChance\)\/CHORE_PRACTICE_STEP\);/);
 });
+test('a resting chore shows its time left on a dark button that reads at a glance; Locked keeps the pale look (2 Oct 2026)',()=>{
+ const ui=readFileSync(new URL('../public/growth-ui.js',import.meta.url),'utf8'),css=readFileSync(new URL('../public/beta.css',import.meta.url),'utf8');
+ assert.match(ui,/const choreButton=s=>s\.locked\?\{text:'Locked',waiting:false\}:s\.remaining\?\{text:`Back in \$\{formatDuration\(s\.remaining\)\}`,waiting:true\}/);
+ assert.match(ui,/b\.classList\.toggle\('is-waiting',shown\.waiting\)/,'the live countdown keeps the dark look');
+ assert.match(css,/\.chore-card>button\.is-waiting:disabled\{background:linear-gradient\(180deg,#4d4330,#2b2417\);[^}]*color:#fff5d8/);
+});

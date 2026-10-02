@@ -48,12 +48,15 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
   $('stall-collect').onclick=()=>act({type:'stall_collect'},r=>`Collected ${number(r.coins)} coins from your farm stall.`);
   $('stall-upgrade').onclick=()=>act({type:'stall_upgrade'},r=>`Your farm stall is now level ${r.level}.`);
  }
+ // A chore's button: Do chore, Locked, or the time until it can be done again (2 Oct 2026: on a dark button, the time left was pale
+ // grey on pale beige and hard to read).
+ const choreButton=s=>s.locked?{text:'Locked',waiting:false}:s.remaining?{text:`Back in ${formatDuration(s.remaining)}`,waiting:true}:{text:'Do chore',waiting:false};
  function renderChores(){
   const mastery=c=>Math.ceil((c.maxChance-c.baseChance)/CHORE_PRACTICE_STEP);
   $('estate-content').innerHTML=`${lead('shovel','Coins and XP every time, sometimes extra goods.')}<div class="chore-list">${Object.entries(CHORES).map(([key,c])=>{
    const status=choreStatus(state,key,farmNow()),remaining=status.remaining,base=choreRewards(c),item=c.bonus.item;
    const foot=status.locked?`Master ${CHORES[c.requires].name} first`:status.mastered?`Mastered · every ${formatDuration(c.cooldown)}`:`${Math.min(mastery(c),status.attempts)} / ${mastery(c)} to mastery · every ${formatDuration(c.cooldown)}`;
-   return `<article class="chore-card ${status.locked?'is-locked':''}"><span class="chore-icon">${art(`chore-${key}`)}</span><div><h3>${c.name}</h3><p>${c.description}</p><div class="chore-rewards"><span>${art('coins')}+${base.coins}</span><span>${art('xp')}+${base.xp} XP</span><span class="chore-bonus" title="Bonus: ${status.chance}% chance">${art(item)}+${c.bonus.count} ${ITEMS[item].name.toLowerCase()}</span></div><div class="chore-chance ${status.mastered?'is-mastered':''}"><progress max="${c.maxChance}" value="${status.chance}" aria-label="${c.name} bonus chance, ${status.chance}% of ${c.maxChance}%"></progress><strong>${status.mastered?`${status.chance}% · Mastered`:`${status.chance}% bonus chance`}</strong></div><p class="chore-foot">${foot}</p></div><button class="small-button" data-chore="${key}" ${remaining||status.locked?'disabled':''}>${status.locked?'Locked':remaining?formatDuration(remaining):'Do chore'}</button></article>`;
+   return `<article class="chore-card ${status.locked?'is-locked':''}"><span class="chore-icon">${art(`chore-${key}`)}</span><div><h3>${c.name}</h3><p>${c.description}</p><div class="chore-rewards"><span>${art('coins')}+${base.coins}</span><span>${art('xp')}+${base.xp} XP</span><span class="chore-bonus" title="Bonus: ${status.chance}% chance">${art(item)}+${c.bonus.count} ${ITEMS[item].name.toLowerCase()}</span></div><div class="chore-chance ${status.mastered?'is-mastered':''}"><progress max="${c.maxChance}" value="${status.chance}" aria-label="${c.name} bonus chance, ${status.chance}% of ${c.maxChance}%"></progress><strong>${status.mastered?`${status.chance}% · Mastered`:`${status.chance}% bonus chance`}</strong></div><p class="chore-foot">${foot}</p></div><button class="small-button${choreButton(status).waiting?' is-waiting':''}" data-chore="${key}" ${remaining||status.locked?'disabled':''}>${choreButton(status).text}</button></article>`;
   }).join('')}</div>`;
   document.querySelectorAll('[data-chore]').forEach(b=>b.onclick=()=>act({type:'chore',id:b.dataset.chore},r=>{showChoreResult(b.dataset.chore,r);return `Job well done! +${r.coins} coins and +${r.xp} XP.${r.bonus?` Bonus: ${bonusText(r.items)}!`:''}`;}));
  }
@@ -92,7 +95,7 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
   if(!$('estate-dialog').open)return;
   if(lastReadiness!==readiness()){render();return;}
   if(tab==='stall'){$('stall-balance').innerHTML=`${art('coins')}${number(s.available)}`;$('stall-meter').value=s.balance;$('stall-capacity').textContent=stallNote(s);$('stall-collect').disabled=s.available<1;document.querySelector('.stall-hero')?.classList.toggle('is-full',s.balance>=s.capacity);}
-  if(tab==='chores')document.querySelectorAll('[data-chore]').forEach(b=>{const s=choreStatus(state,b.dataset.chore,farmNow());b.textContent=s.locked?'Locked':s.remaining?formatDuration(s.remaining):'Do chore';b.disabled=s.locked||s.remaining>0;});
+  if(tab==='chores')document.querySelectorAll('[data-chore]').forEach(b=>{const s=choreStatus(state,b.dataset.chore,farmNow()),shown=choreButton(s);b.textContent=shown.text;b.classList.toggle('is-waiting',shown.waiting);b.disabled=s.locked||s.remaining>0;});
   if(tab==='projects'&&state.estate.job){const job=state.estate.job;$('project-clock').textContent=farmNow()>=job.readyAt?'Ready to complete':`${formatDuration(job.readyAt-farmNow())} remaining`;$('project-progress').value=Math.min(100,(farmNow()-job.startedAt)/(job.readyAt-job.startedAt)*100);}
  }
  $('estate-button').onclick=()=>open(!projectReady()&&stallNotice(state,farmNow())?'stall':'projects');
