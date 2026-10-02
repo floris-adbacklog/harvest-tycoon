@@ -40,6 +40,10 @@
 #pass-dialog .primary-button.pass-buy{flex:none;min-width:170px;background:var(--btn-gold);border-color:var(--btn-gold-line);color:var(--btn-gold-text);box-shadow:0 3px 0 var(--btn-gold-edge)}
 #pass-dialog .primary-button.pass-buy:hover:not(:disabled){background:var(--btn-gold-hover)}
 #pass-dialog .primary-button.pass-buy:disabled{background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;transform:none;cursor:default}
+/* The pre-sale (Oct 2026): before the season, the time until it starts under the copy; a pass bought then, in green, with no button. */
+.pass-paid-copy .pass-starts{font-weight:700;color:#8a4f12}
+.pass-paid-box.is-owned{border-color:#8fb35c;background:linear-gradient(110deg,#eef6e4,#fffaf0 60%);box-shadow:0 3px 0 #8fb35c33}
+.pass-paid-box.is-owned strong{color:#3f6b2c}
 .pass-feedback{flex-basis:100%;margin:0;font-size:13px;color:#8a4f12}
 .pass-feedback:empty{display:none}
 
@@ -81,7 +85,7 @@
  #pass-dialog .primary-button.pass-buy{width:100%}
 }
 
-/* The Diamond shop's banner while the paid row is for sale. */
+/* The Diamond shop's banner while the paid row is for sale (also before the season since Oct 2026, the pre-sale). */
 .shop-pass{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:10px 14px 10px 10px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#ffe3c2,#fffaf0 55%,#ffe9d6);box-shadow:0 3px 0 #b8862a33;color:#3d2f14;text-align:start;font-family:'DM Sans',sans-serif;cursor:pointer}
 .shop-pass:hover{border-color:#d69a2c}
 .shop-pass .game-art{width:54px;height:54px;flex:none;object-fit:contain}

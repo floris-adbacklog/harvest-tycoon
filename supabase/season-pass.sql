@@ -1,7 +1,8 @@
 -- The Halloween Pass (Oct 2026): the paid row of the season pass (game/farm-state.js SEASON_PASS, game/payments.js PASS), €4.99, once
--- per farmer per pass, from level 10, sold from 23 October to 2 November 2026 (diamond-checkout checks the window and the level). A pass
--- purchase holds no diamonds, coins or VIP of its own: crediting it adds the pass id to the farm's state.passPremium, an append-only list
--- the game never resets, and every paid reward is then collected in the game, one by one. Safe to run more than once; the functions
+-- per farmer per pass, from level 10, sold from its preview (the pre-sale) until 2 November 2026 (diamond-checkout checks the dates and
+-- the level; crediting has no dates, so a pass bought before 23 October opens with the season). A pass purchase holds no diamonds, coins
+-- or VIP of its own: crediting it adds the pass id to the farm's state.passPremium, an append-only list the game never resets, and every
+-- paid reward is then collected in the game, one by one. Safe to run more than once; the functions
 -- below are the live ones (read on 2 Oct 2026, identical to supabase/special-offer.sql) with only the pass added.
 
 -- A pass purchase: pack 'pass', €4.99 (already an allowed amount), no diamonds, coins or VIP, and the pass it opens.

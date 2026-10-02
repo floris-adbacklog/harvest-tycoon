@@ -77,6 +77,11 @@ function helpers(ctx){
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const passDay=ms=>{const d=new Date(ms);return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;};
 const DAY=86400000;
+// When the paid rewards can be bought: already before the season (the pre-sale, Oct 2026), until it ends; nothing after.
+function passSale(now){
+ const phase=passPhase(now);
+ return phase==='soon'?`You can buy it already; it starts on ${passDay(SEASON_PASS.startsAt)}.`:phase==='open'?`You can buy it until ${passDay(SEASON_PASS.endsAt-DAY)}.`:'';
+}
 function passSection(h){
  if(passPhase(h.now)==='over')return '';
  const P=SEASON_PASS,p=P.points,totals=passTotals(),price=`€${(P.cents/100).toFixed(2)}`;
@@ -84,7 +89,7 @@ function passSection(h){
   :r.boost?`<span class="wiki-boost">${art(BOOSTS[r.boost].art)}<span>${BOOSTS[r.boost].name} · ${BOOST_LENGTH_NAMES[r.length]}</span></span>`:r.vipDays?`${art('vip')}VIP · ${r.vipDays} days`:'–';
  const rows=P.tiers.map((t,i)=>`<tr><td>${i+1}</td><td>${reward(t.free)}</td><td>${reward(t.paid)}</td></tr>`);
  return section(P.name,`<p>${h.lvl(P.level)} From ${passDay(P.startsAt)} to ${passDay(P.endsAt-DAY)}. Every daily gift gives ${p.gift} lanterns, every daily challenge and every delivery ${p.daily}. Every ${P.perTier} lanterns open the next of ${P.tiers.length} tiers. Collect each reward with its own button, until ${passDay(P.claimUntil-DAY)}.</p>`
-  +`<p>Free: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts. For ${price} the paid rewards open too: ${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts, pies and more coins. Tiers you already reached open at once.</p>`
+  +`<p>Free: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts. For ${price} the paid rewards open too: ${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts, pies and more coins. Tiers you already reached open at once.</p>`+(passSale(h.now)?`<p>${passSale(h.now)}</p>`:'')
   +table(['Tier','Free','Paid'],rows));
 }
 
@@ -295,7 +300,7 @@ const BODIES={
   +section('Finish now',`<p>Finish a growing field for ${SINGLE_CROP_COST} diamonds, or a running batch for ${SINGLE_BATCH_COST} (not in the Factory).</p>`)
   +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+dual(table(['Boost','What it does','Diamonds'],boosts),boostCards))
   +section('VIP',`<p>VIP gives 10% faster crops, 10% faster production, 5% more coins at the market and double daily rewards. Buying again adds time; it never gets stronger.</p>`+table(['Plan','Diamonds'],vip))
-  +section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.${['soon','open'].includes(passPhase(h.now))?` From ${passDay(SEASON_PASS.startsAt)} to ${passDay(SEASON_PASS.endsAt-DAY)} the ${h.link('daily',SEASON_PASS.name)} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}, from level ${SEASON_PASS.level}.`:''}</p>`+table(['Diamonds','Price'],packs));
+  +section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.${passSale(h.now)?` From level ${SEASON_PASS.level} the ${h.link('daily',SEASON_PASS.name)} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}. ${passSale(h.now)}`:''}</p>`+table(['Diamonds','Price'],packs));
  },
  chat(h){
   return section('The chat',facts([

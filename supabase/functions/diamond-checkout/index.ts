@@ -1,6 +1,6 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale} from './payments.js';
+import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem} from './payments.js';
 const origin='https://www.harvesttycoon.com';
 const cors={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -45,13 +45,14 @@ Deno.serve(async req=>{
   if(offerRow?.error)throw offerRow.error;
   const starter=starterEligibility(offerRow?.data?.offer?.unlockedAt,['credited','test_paid'].includes(existingStarter?.data?.status));
   // The Halloween Pass (Oct 2026): its dates and price from the catalogue itself, no look-up (whether this farm bought it is in the farm,
-  // state.passPremium); ready is false until its Stripe price exists.
-  const pass={id:PASS.id,cents:PASS.cents,startsAt:PASS.startsAt,endsAt:PASS.endsAt,level:PASS.level,ready:Boolean(PASS.price)};
+  // state.passPremium); ready: for sale now, with a Stripe price, from the preview (the pre-sale) until the season ends.
+  const pass={id:PASS.id,cents:PASS.cents,startsAt:PASS.startsAt,endsAt:PASS.endsAt,level:PASS.level,ready:Boolean(PASS.price)&&passOnSale()};
   if(body.operation==='catalog')return reply({enabled,mode,serverNow:Date.now(),starter,offer:special,pass,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
   if(body.operation==='status'){
    if(!UUID.test(body.purchaseId??''))return reply({error:'Invalid purchase.'},400);
    const r=await admin.from('harvest_purchases').select('*').eq('id',body.purchaseId).eq('player_id',user.id).maybeSingle();if(r.error)throw r.error;if(!r.data)return reply({error:'Purchase not found for this account.'},404);
-   const {id,pack,coins,diamonds,status,livemode,vip_days}=r.data;return reply({id,pack,coins,diamonds,status,livemode,vipDays:vip_days??0});
+   // serverNow: a pass bought before its season says when it starts, by this clock (src/payment-ui.js, Oct 2026).
+   const {id,pack,coins,diamonds,status,livemode,vip_days}=r.data;return reply({id,pack,coins,diamonds,status,livemode,vipDays:vip_days??0,serverNow:Date.now()});
   }
   if(body.operation!=='create')return reply({error:'Unknown request.'},400);
   if(!enabled)return reply({error:'Diamond purchases are not available yet.'},503);
@@ -62,15 +63,13 @@ Deno.serve(async req=>{
    if(offerProblem({diamonds:special.diamonds,coins:special.coins,vipDays:special.vipDays}))return reply({error:'This offer has ended.'},409);
    pack={id:'offer',cents:OFFER.cents,price:OFFER.price,diamonds:special.diamonds,coins:special.coins,vipDays:special.vipDays,offerId:special.id};
   }else if(body.pack==='pass'){
-   // Only while the season is open, from its level, once per farmer per pass (a unique index too, supabase/season-pass.sql).
-   if(Date.now()<PASS.startsAt)return reply({error:`The ${PASS.name} is not open yet.`},409);
-   if(!passOnSale())return reply({error:`The ${PASS.name} has ended.`},409);
-   if(!PASS.price)return reply({error:`The ${PASS.name} is not available yet.`},503);
+   // From the preview on (the pre-sale, Oct 2026) until the season ends, from its level, once per farmer per pass (a unique index too,
+   // supabase/season-pass.sql): game/payments.js passCheckoutProblem, which the tests run.
    const [level,owned]=await Promise.all([admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle(),
     admin.from('harvest_purchases').select('id').eq('player_id',user.id).eq('pack','pass').eq('pass_id',PASS.id).in('status',['credited','test_paid']).limit(1)]);
    if(level.error)throw level.error;if(owned.error)throw owned.error;
-   if((level.data?.level??1)<PASS.level)return reply({error:`The ${PASS.name} opens at level ${PASS.level}.`},409);
-   if(owned.data?.length)return reply({error:`You already have the ${PASS.name}.`},409);
+   const problem=passCheckoutProblem({level:level.data?.level??1,owned:Boolean(owned.data?.length)});
+   if(problem)return reply({error:problem.error},problem.status);
    pack={id:'pass',cents:PASS.cents,price:PASS.price,product:PASS.product,diamonds:0,coins:0,passId:PASS.id};
   }else{try{pack=checkoutPack(body.pack);}catch{return reply({error:'Choose a diamond pack.'},400);}}
   const packId=pack.id;

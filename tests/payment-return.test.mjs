@@ -2,15 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
+import {PASS} from '../game/payments.js';
+import {formatDuration} from '../game/farm-state.js';
 const source=readFileSync(new URL('../src/payment-ui.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace('export function','function');
 const settle=async()=>{for(let n=0;n<15;n++)await Promise.resolve();};
-function fixture({cancelled=false,payments,refresh}={}){
+function fixture({cancelled=false,payments,refresh,globals={}}={}){
  const nodes=new Map(),listeners={},timers=new Map();let counter=0,cleared=0,confirmations=0;
  const node=selector=>{if(!nodes.has(selector))nodes.set(selector,{textContent:'',hidden:false,disabled:false});return nodes.get(selector);};
  const dialog={dataset:{},setAttribute(){},querySelector:node,addEventListener(name,fn){listeners[name]=fn;},showModal(){this.open=true;},close(){this.open=false;listeners.close();},remove(){this.removed=true;}};
  const window=new EventTarget();window.harvestRefresh=refresh;window.addEventListener('harvest-purchase-confirmed',()=>confirmations++);
  const bridge={paymentReturn:()=>({id:'purchase',cancelled}),payments,clearPaymentReturn(){cleared++;}};
- vm.runInNewContext(source+'\nshowPaymentReturn(bridge);',{document:{createElement:()=>dialog,body:{append(){}}},window,bridge,Event,art:()=>'',paymentPack:()=>({cents:499}),setTimeout(fn){timers.set(++counter,fn);return counter;},clearTimeout(id){timers.delete(id);}});
+ vm.runInNewContext(source+'\nshowPaymentReturn(bridge);',{document:{createElement:()=>dialog,body:{append(){}}},window,bridge,Event,art:()=>'',paymentPack:()=>({cents:499}),setTimeout(fn){timers.set(++counter,fn);return counter;},clearTimeout(id){timers.delete(id);},...globals});
  return {dialog,node,timers,get cleared(){return cleared;},get confirmations(){return confirmations;}};
 }
 test('server confirmation wins over a cancelled URL and a failed farm refresh',async()=>{
@@ -34,4 +36,15 @@ test('a closed checkout offers a way straight back to the diamond shop',async()=
  const f=fixture({cancelled:true,payments:async()=>({status:'open'})});await settle();
  const shop=f.node('[data-shop]');assert.equal(shop.hidden,false);
  f.dialog.open=true;shop.onclick();assert.equal(f.dialog.open,false);
+});
+// The Halloween Pass's pre-sale (Oct 2026): bought before its season, the return says when it starts, by the server's clock.
+test('a Halloween Pass bought before its season says when it starts; bought in the season, that its rewards are open',async()=>{
+ const H=3600000,D=24*H,globals={PASS,formatDuration};
+ const early=fixture({payments:async()=>({status:'credited',pack:'pass',diamonds:0,coins:0,serverNow:PASS.startsAt-(20*D+18*H)}),refresh:async()=>{},globals});await settle();
+ assert.equal(early.dialog.dataset.state,'credited');assert.equal(early.node('h2').textContent,'Your Halloween Pass is here!');
+ assert.equal(early.node('.payment-message').textContent,'It starts in 20d 18h. Then collect each paid reward in the Halloween Pass.');
+ assert.equal(early.node('[data-retry]').hidden,true);assert.equal(early.confirmations,1);
+ const open=fixture({payments:async()=>({status:'credited',pack:'pass',diamonds:0,coins:0,serverNow:PASS.startsAt+H}),refresh:async()=>{},globals});await settle();
+ assert.equal(open.node('.payment-message').textContent,'The paid rewards are open. Collect each one in the Halloween Pass.');
+ assert.doesNotMatch(open.node('.payment-message').textContent,/diamonds/,'no "0 diamonds"');
 });

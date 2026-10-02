@@ -2207,8 +2207,9 @@ export const SEASON_PASS=Object.freeze({id:'halloween-2026',name:'Halloween Pass
   tierPair({coins:100},{boost:'harvest',length:'1d'})
  ])});
 export const PASS_TRACKS=Object.freeze(['free','paid']);
-// Where the season stands: 'soon' (a preview from level 10), 'open' (lanterns count, the paid row is for sale), 'claim' (a week to collect
-// what was reached) and 'over' (hidden).
+// Where the season stands: 'soon' (a preview from level 10; since Oct 2026 the paid row is already for sale, bought it opens with the
+// season, nothing to collect before), 'open' (lanterns count, the paid row still for sale), 'claim' (a week to collect what was reached)
+// and 'over' (hidden).
 export function passPhase(now=Date.now()){return now<SEASON_PASS.startsAt?'soon':now<SEASON_PASS.endsAt?'open':now<SEASON_PASS.claimUntil?'claim':'over';}
 const passCounts=state=>({visits:Number(state.login?.visits)||0,dailies:Number(state.stats?.dailies)||0,deliveries:Number(state.stats?.deliveries)||0});
 export function passLanterns(state){

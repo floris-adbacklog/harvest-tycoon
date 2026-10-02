@@ -6,7 +6,8 @@ import {art,refreshArt} from './visual-icons.js';
 // under Every day in the More menu on a phone, both with the "!" while a reached reward waits (worked out from the farm, nothing stored
 // on the device). The window opens only from there or from its banner in the Diamond shop, never by itself. One row per tier with the
 // free and the paid reward, each with its own Claim and a toast, never all at once. From level 10: a preview with every reward and the
-// rule before the season opens (nothing to collect or buy yet), a week to collect after it ends, then it hides.
+// rule before the season opens (nothing to collect yet, but the paid row is already for sale: the pre-sale, Oct 2026), a week to collect
+// after it ends, then it hides.
 const number=n=>Number(n).toLocaleString('en-US');
 const euro=cents=>`€${(cents/100).toFixed(2)}`;
 export const PASS_ART='giant-small';
@@ -40,6 +41,27 @@ export function passPhaseLine(now){
  if(phase==='claim')return `Collect your rewards · ${formatDuration(SEASON_PASS.claimUntil-now)} left`;
  return '';
 }
+// The pre-sale (Oct 2026): before the season the time until it starts, or, once bought, that the farmer has it and when it starts (a
+// countdown by the farm's clock, as the phase line).
+export function passStartsLine(state,now){
+ const left=formatDuration(SEASON_PASS.startsAt-now);
+ return passPremium(state)?`You have the Halloween Pass · starts in ${left}`:`Starts in ${left}`;
+}
+// The buy box, from the preview on (the pre-sale, Oct 2026) until the season ends: Buy, with the time until it starts while it is coming.
+// Bought before the season it says so instead; bought in the season there is no box (the paid row is open).
+export function passPaidBox(state,{phase,now,catalog=null,pending=false,feedback=''}){
+ const soon=phase==='soon';
+ if(passPremium(state))return soon?`<section class="pass-paid-box is-owned"><div class="pass-paid-copy"><strong data-pass-starts>${passStartsLine(state,now)}</strong></div></section>`:'';
+ if(!soon&&phase!=='open')return '';
+ const totals=passPaidTotals(),cents=catalog?.pass?.cents??SEASON_PASS.cents,ready=Boolean(catalog?.enabled&&catalog?.pass?.ready);
+ const label=pending?'Opening secure checkout…':catalog?.mode==='test'?`Test purchase · ${euro(cents)}`:`Buy for ${euro(cents)}`;
+ const note=catalog&&!ready&&!pending?'Purchases are not available yet. Please check back later.':feedback;
+ // No tiers are reached before the season, so that part waits for it.
+ const holds=soon?`${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts and more.`
+  :`${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts and more. Tiers you already reached open at once.`;
+ return `<section class="pass-paid-box"><div class="pass-paid-copy"><strong>Unlock the paid rewards</strong><small>${holds}</small><small class="pass-value">${passValueLine()}</small>${soon?`<small class="pass-starts" data-pass-starts>${passStartsLine(state,now)}</small>`:''}</div>`
+  +`<button type="button" class="primary-button pass-buy" ${ready&&!pending?'':'disabled'}>${label}</button><p class="pass-feedback" role="status" aria-live="polite">${note}</p></section>`;
+}
 // The small line under the tile in the More menu.
 export function passHint(state,now){
  const phase=passPhase(now);
@@ -47,11 +69,11 @@ export function passHint(state,now){
  return passWaiting(state,now)?'A reward is waiting':`Tier ${passTier(state)} of ${tiers.length}`;
 }
 
-export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>window.parent?.harvestBridge,doc=document}){
+export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>window.parent?.harvestBridge,doc=document,clock=farmNow}){
  const $=id=>doc.getElementById(id);
  const button=$('pass-button'),dot=$('pass-dot'),dialog=$('pass-dialog'),content=$('pass-content'),hint=$('pass-menu-hint');
  let catalog=null,pending=false,claiming='',requestId='',drawn='',feedback='';
- const now=()=>farmNow();
+ const now=()=>clock();
  // One reward of a tier with its button: Claim once reached (the paid one once bought), Collected after; nothing in the preview.
  function cell(track,t,level,reached,phase){
   const raw=tiers[t-1][track],parts=passRewardParts(raw,level),claimed=state.pass?.[track]?.includes(t),locked=track==='paid'&&!passPremium(state);
@@ -61,21 +83,13 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
    :reached?`<button type="button" class="primary-button pass-claim" data-pass-claim="${track}" data-pass-tier="${t}" ${claiming?'disabled':''}>Claim</button>`:'';
   return `<div class="pass-cell is-${track}${claimed?' is-claimed':''}${locked?' is-locked':''}">${parts.map(p=>`<span class="pass-reward" title="${p.label}">${art(p.art)}<span><b>${p.main}</b><small>${p.sub}</small></span></span>`).join('')}${action}</div>`;
  }
- function paidBox(phase){
-  if(passPremium(state)||phase!=='soon'&&phase!=='open')return '';
-  const totals=passPaidTotals(),cents=catalog?.pass?.cents??SEASON_PASS.cents,ready=phase==='open'&&Boolean(catalog?.enabled&&catalog?.pass?.ready);
-  const label=phase==='soon'?'Coming soon':pending?'Opening secure checkout…':catalog?.mode==='test'?`Test purchase · ${euro(cents)}`:`Buy for ${euro(cents)}`;
-  const note=phase==='open'&&catalog&&!ready&&!pending?'Purchases are not available yet. Please check back later.':feedback;
-  return `<section class="pass-paid-box"><div class="pass-paid-copy"><strong>Unlock the paid rewards</strong><small>${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts and more. Tiers you already reached open at once.</small><small class="pass-value">${passValueLine()}</small></div>`
-   +`<button type="button" class="primary-button pass-buy" ${ready&&!pending?'':'disabled'}>${label}</button><p class="pass-feedback" role="status" aria-live="polite">${note}</p></section>`;
- }
  function render(){
   const t=now(),phase=passPhase(t),level=levelOf(state),lanterns=passLanterns(state),tier=passTier(state),waiting=passWaiting(state,t);
   const next=tier<tiers.length?(tier+1)*SEASON_PASS.perTier-lanterns:0;
   const progress=phase==='soon'?'':`<div class="pass-progress"><div><strong>${number(lanterns)} lantern${lanterns===1?'':'s'}</strong><span>Tier ${tier} of ${tiers.length}</span></div><progress max="${SEASON_PASS.perTier}" value="${tier<tiers.length?SEASON_PASS.perTier-next:SEASON_PASS.perTier}" aria-label="Lanterns to the next tier"></progress><small>${phase==='open'&&next?`${next} more lantern${next===1?'':'s'} to tier ${tier+1}`:tier>=tiers.length?`All ${tiers.length} tiers reached`:''}</small></div>`;
   const rows=tiers.map((_,i)=>{const n=i+1,reached=phase!=='soon'&&n<=tier;return `<li class="pass-row${reached?' is-reached':''}${n===tier+1&&phase==='open'?' is-next':''}" data-pass-row="${n}"><b class="pass-tier">${n}</b>${PASS_TRACKS.map(track=>cell(track,n,level,reached,phase)).join('')}</li>`;}).join('');
   content.innerHTML=`<section class="pass-top">${art(PASS_ART,'pass-hero')}<div class="pass-top-copy"><p class="pass-phase" data-pass-phase>${passPhaseLine(t)}</p><p class="pass-rule">${passRule()} Coins grow with your level.</p></div></section>`
-   +progress+(waiting?`<p class="pass-waiting">${waiting} reward${waiting===1?' is':'s are'} waiting</p>`:'')+paidBox(phase)
+   +progress+(waiting?`<p class="pass-waiting">${waiting} reward${waiting===1?' is':'s are'} waiting</p>`:'')+passPaidBox(state,{phase,now:t,catalog,pending,feedback})
    +`<div class="pass-heads" aria-hidden="true"><span></span><b>Free</b><b>${passPremium(state)?'Paid':`${art('lock')}Paid`}</b></div><ol class="pass-tiers">${rows}</ol>`;
   content.querySelectorAll('[data-pass-claim]').forEach(b=>b.onclick=()=>claim(b.dataset.passClaim,Number(b.dataset.passTier)));
   const buy=content.querySelector('.pass-buy');if(buy)buy.onclick=purchase;
@@ -99,13 +113,13 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
   finally{claiming='';refresh();if(dialog.open)draw();}
  }
  async function purchase(){
-  if(pending||passPhase(now())!=='open'||passPremium(state))return;
+  if(pending||!['soon','open'].includes(passPhase(now()))||passPremium(state))return;   // for sale before the season too (Oct 2026)
   pending=true;feedback='';draw();
   try{await bridge().checkout('pass',requestId);}
   catch(error){pending=false;feedback=error.message;draw();}
  }
  async function readCatalog(){
-  if(catalog||passPhase(now())!=='open')return;
+  if(catalog||!['soon','open'].includes(passPhase(now()))||passPremium(state))return;   // only for the buy box
   try{catalog=await bridge().payments({operation:'catalog'});if(dialog.open)draw();}catch{}
  }
  function open(){
@@ -114,23 +128,27 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
   requestId=crypto.randomUUID();pending=false;feedback='';draw();
   if(!dialog.open)dialog.showModal();dialog.scrollTop=0;scrollToNext();void readCatalog();
  }
- // The Diamond shop (farm.html #boost-dialog): a banner at the top while the paid row is for sale and not bought yet.
+ // The Diamond shop (farm.html #boost-dialog): a banner at the top while the paid row is for sale and not bought yet, also before the
+ // season (the pre-sale, Oct 2026: there it says when it starts). Tapped, it opens the pass; it never opens by itself.
  function banner(show){
   let b=$('shop-pass');const wallet=doc.querySelector('#boost-dialog .boost-wallet');
   if(!b&&!wallet)return;
   if(!b){b=doc.createElement('button');b.type='button';b.id='shop-pass';b.className='shop-pass';b.onclick=open;wallet.after(b);}
   b.hidden=!show;if(!show)return;
-  const html=`${art(PASS_ART)}<span class="shop-pass-copy"><b>Halloween Pass</b><small>${passPhaseLine(now())}</small></span><span class="shop-pass-price"><b>${euro(catalog?.pass?.cents??SEASON_PASS.cents)}</b></span>`;
+  const html=`${art(PASS_ART)}<span class="shop-pass-copy"><b>Halloween Pass</b><small>${passPhase(now())==='soon'?passStartsLine(state,now()):passPhaseLine(now())}</small></span><span class="shop-pass-price"><b>${euro(catalog?.pass?.cents??SEASON_PASS.cents)}</b></span>`;
   if(b.dataset.html!==html){b.dataset.html=html;b.innerHTML=html;}
  }
  function refresh(){
   const t=now(),visible=passVisible(state,t),waiting=visible?passWaiting(state,t):0;
   button.hidden=!visible;dot.hidden=!waiting;
   if(hint)hint.textContent=visible?passHint(state,t):'Coming soon';
-  banner(visible&&passPhase(t)==='open'&&!passPremium(state));
+  banner(visible&&['soon','open'].includes(passPhase(t))&&!passPremium(state));
   if(!dialog.open)return;
   if(!visible){dialog.close();return;}
-  if(key()!==drawn)draw();else{const line=content.querySelector('[data-pass-phase]');if(line)line.textContent=passPhaseLine(t);}
+  if(key()!==drawn)draw();else{
+   const line=content.querySelector('[data-pass-phase]');if(line)line.textContent=passPhaseLine(t);
+   content.querySelectorAll('[data-pass-starts]').forEach(el=>el.textContent=passStartsLine(state,t));
+  }
  }
  const onCatalog=event=>{catalog=event.detail??catalog;refresh();};
  window.addEventListener('harvest-catalog',onCatalog);

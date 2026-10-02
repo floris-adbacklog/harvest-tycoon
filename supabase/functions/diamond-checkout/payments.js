@@ -45,12 +45,21 @@ export function offerFill({diamonds=false,coins=false,vipDays=0}={}){
  return {diamonds:d,coins:coins?(rest-d)*OFFER.coinsPerDiamond:0,vipDays};
 }
 // The Halloween Pass (Oct 2026): the paid row of the season pass (game/farm-state.js SEASON_PASS), €4.99, once per farmer per pass, from
-// level 10, sold only while the season is open. The dates are the game's own (a test keeps the two equal). Nothing is credited at once:
-// the purchase writes the pass into the farm (state.passPremium, supabase/season-pass.sql) and every paid reward is collected in the game.
-// price/product stay null until the Stripe product 'Halloween Pass' (one-time €4.99) exists: until then checkout says it is not available.
-export const PASS=Object.freeze({id:'halloween-2026',name:'Halloween Pass',cents:499,price:null,product:null,
+// level 10. The dates are the game's own (a test keeps the two equal). Nothing is credited at once: the purchase writes the pass into the
+// farm (state.passPremium, supabase/season-pass.sql) and every paid reward is collected in the game. The Stripe product 'Halloween Pass'
+// since 2 Oct 2026 (checkout checks that its price is a one-time €4.99); without a price, checkout says it is not available.
+export const PASS=Object.freeze({id:'halloween-2026',name:'Halloween Pass',cents:499,price:'price_1ULzBo04FdNTUSp4ncaXGr2m',product:'prod_VMidVtFUFBIZTw',
  startsAt:Date.UTC(2026,9,23),endsAt:Date.UTC(2026,10,3),level:10});
-export const passOnSale=(now=Date.now())=>now>=PASS.startsAt&&now<PASS.endsAt;
+// On sale already before the season opens (the pre-sale, Oct 2026: bought during the preview, it opens with the season), until it ends.
+export const passOnSale=(now=Date.now())=>now<PASS.endsAt;
+// Why a farmer cannot start a pass checkout, or null (diamond-checkout): the season over, no Stripe price, below its level, or bought.
+export function passCheckoutProblem({level=1,owned=false,now=Date.now(),price=PASS.price}={}){
+ if(!passOnSale(now))return {error:`The ${PASS.name} has ended.`,status:409};
+ if(!price)return {error:`The ${PASS.name} is not available yet.`,status:503};
+ if(!(level>=PASS.level))return {error:`The ${PASS.name} opens at level ${PASS.level}.`,status:409};
+ if(owned)return {error:`You already have the ${PASS.name}.`,status:409};
+ return null;
+}
 const RECEIPT_PACKS=Object.freeze({...LEGACY_PAYMENT_PACKS,...PAYMENT_PACKS,offer:Object.freeze({cents:OFFER.cents,price:OFFER.price,offer:true}),
  pass:Object.freeze({cents:PASS.cents,price:PASS.price,diamonds:0,pass:true})});
 const CHECKOUT_PACK_ALIASES=Object.freeze({'50':'150','100':'150','300':'1250','600':'1250','1000':'3500','2000':'3500'});
