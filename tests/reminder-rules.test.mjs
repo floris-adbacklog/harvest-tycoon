@@ -89,6 +89,47 @@ test('daily gift: a morning reminder once a day, and an evening one only when a 
  assert.equal(planPlayer(player({last_active_at:new Date(evening-9*HOUR).toISOString()},{login:{lastDay:'2026-09-19',streak:5}}),evening,names).push.body,'Collect your gift to keep your 5-day streak','saved over one missed day');
  assert.equal(planPlayer(player({last_active_at:new Date(evening-9*HOUR).toISOString()},{login:{lastDay:'2026-09-19',streak:5,savedDay:'2026-09-17'}}),evening,names).push,null,'the save was used this week');
 });
+// Oct 2026: the comeback chest (game/farm-state.js COMEBACK_*). On away-day 3 and 6 the 09:00 gift reminder becomes the chest's, never
+// an extra push, and it opens the farm, where Welcome back shows the chest.
+const DAY=24*HOUR;
+const awayFor=(days,comeback)=>[{last_active_at:new Date(MORNING-days*DAY-HOUR).toISOString()},{login:{lastDay:'2026-09-15',streak:4},seenAt:new Date(MORNING-days*DAY-HOUR).toISOString(),...(comeback?{comeback}:{})}];
+const CHEST='A comeback chest is waiting on your farm';
+test('comeback chest: the morning reminder on away-day 3 and 6 says the chest is waiting and opens the farm',()=>{
+ for(const days of [3,6]){
+  const [over,farm]=awayFor(days),plan=planPlayer(player(over,farm),MORNING,names);
+  assert.equal(plan.push.body,CHEST,`day ${days}`);assert.equal(plan.push.url,'/?source=push','the farm, so Welcome back shows it');assert.equal(plan.patchOnSend.daily_morning_on,'2026-09-21');
+  assert.equal(planPlayer(player({...over,daily_morning_on:'2026-09-21'},farm),MORNING,names).push,null,'still once a day');
+  assert.equal(planPlayer(player(over,farm),MORNING+HOUR,names).push,null,'only in the 09:00 hour');
+ }
+ for(const days of [1,2,4,5]){const [over,farm]=awayFor(days),plan=planPlayer(player(over,farm),MORNING,names);assert.equal(plan.push.body,'Your daily gift is waiting',`day ${days}`);assert.equal(plan.push.url,'/?source=push&open=today');}
+ const [over,farm]=awayFor(3);
+ assert.equal(planPlayer(player({...over,push_daily:false},farm),MORNING,names).push,null,'under the Daily gift & streak switch');
+ assert.equal(planPlayer(player(...awayFor(8)),MORNING,names).push,null,'a week away: nothing at all');
+ assert.equal(planPlayer(player(over,{...farm,seenAt:undefined}),MORNING,names).push.body,CHEST,'without seenAt it counts from the last activity');
+ assert.equal(planPlayer(player({},awayFor(3)[1]),MORNING,names).push.body,CHEST,'the farm\'s own last save (seenAt) decides, as in the game');
+ assert.equal(planPlayer(player({...over,language:'nl'},farm),MORNING,names).push.body,'Er staat een comebackkist voor je klaar op je boerderij');
+ const both=planPlayer(player(over,{...farm,plots:plots(['wheat',MORNING-HOUR])}),MORNING,names);
+ assert.equal(both.push.body,`${CHEST} · Your crops are ready to harvest`,'one push');assert.equal(both.push.url,'/?source=push');
+ const evening=at('2026-09-21T17:05:00Z');
+ assert.equal(planPlayer(player({last_active_at:new Date(evening-3*DAY-HOUR).toISOString()},{...farm,seenAt:new Date(evening-3*DAY-HOUR).toISOString()}),evening,names).push,null,'no evening push: the streak is gone');
+});
+test('comeback chest: one every 14 days, and a chest still waiting is named again',()=>{
+ const [over]=awayFor(3);
+ assert.equal(planPlayer(player(...awayFor(3,{lastAt:MORNING-5*DAY,collected:1,pending:null})),MORNING,names).push.body,'Your daily gift is waiting','offered 5 days ago: not yet');
+ assert.equal(planPlayer(player(...awayFor(3,{lastAt:MORNING-15*DAY,collected:1,pending:null})),MORNING,names).push.body,CHEST,'15 days ago: again');
+ assert.equal(planPlayer(player(...awayFor(6,{lastAt:MORNING-10*DAY,collected:0,pending:{days:4,at:MORNING-10*DAY}})),MORNING,names).push.body,CHEST,'not collected yet: still waiting');
+ assert.equal(planPlayer(player(over,{...awayFor(3)[1],comeback:{lastAt:0,collected:0,pending:null}}),MORNING,names).push.body,CHEST,'a farm that never had one');
+});
+test('daily email: the comeback line after 3 days away, and no "keep your streak" once the streak is gone',()=>{
+ const on={email_digest:true,digest_hour:9,push_crops:false,push_production:false,push_daily:false,subscriptions:[]};
+ const [over,farm]=awayFor(4),plan=planPlayer(player({...on,...over},farm),MORNING,names);
+ assert.equal(plan.digest.comeback,true);assert.deepEqual(digestLines(plan.digest,names),[CHEST]);assert.equal(digestSubject(plan.digest),CHEST);
+ assert.equal(planPlayer(player(on,{plots:[],login:{lastDay:'2026-09-20',streak:3}}),MORNING,names).digest.comeback,undefined,'only after 3 days away');
+ const broken=planPlayer(player(on,{plots:[],login:{lastDay:'2026-09-18',streak:5}}),MORNING,names).digest;
+ assert.equal(broken.streak,0);assert.deepEqual(digestLines(broken,names),['Your daily gift is waiting']);
+ assert.deepEqual(digestLines(planPlayer(player(on,{plots:[],login:{lastDay:'2026-09-20',streak:5}}),MORNING,names).digest,names),['Your daily gift is waiting: keep your 5-day streak going']);
+ assert.equal(planPlayer(player(on,{plots:[],login:{lastDay:'2026-09-19',streak:5}}),MORNING,names).digest.streak,5,'kept over one missed day by the weekly save');
+});
 test('daily email: at the chosen hour, once a day, and only when something is waiting',()=>{
  const farm={plots:plots(['wheat',MORNING-HOUR]),login:{lastDay:'2026-09-21',streak:4}};
  const on={email_digest:true,digest_hour:9,push_crops:false,push_production:false,push_daily:false,subscriptions:[]};

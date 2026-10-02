@@ -8,14 +8,15 @@ export function digestLines(digest,names={crops:{},buildings:{}}){
  const t=textsFor(digest.language),local=localNames(names,t.language),lines=[];
  if(digest.crops?.length)lines.push(cropsText(digest.crops,local.crops,CONFIG.MAX_KINDS,t));
  if(digest.jobs?.length)lines.push(jobsText(digest.jobs,local.buildings,t));
- if(digest.giftWaiting)lines.push(digest.streak>=2?t.giftStreak(digest.streak):t.gift);
+ // After 3 days or more away the comeback chest takes the gift's line (Oct 2026), like the morning push.
+ if(digest.giftWaiting||digest.comeback)lines.push(digest.comeback?t.comeback:digest.streak>=2?t.giftStreak(digest.streak):t.gift);
  return lines;
 }
 export function digestSubject(digest){
  const t=textsFor(digest.language);
  if(digest.crops?.length)return t.subjectCrops(digest.crops.length);
  if(digest.jobs?.length)return t.subjectJobs(digest.jobs.length);
- return t.gift;
+ return digest.comeback?t.comeback:t.gift;
 }
 export function digestEmail({digest,names,appUrl,unsubscribeUrl}){
  const t=textsFor(digest.language),lines=digestLines(digest,names);

@@ -61,6 +61,7 @@ const FARM_ACTIONS={
  beginner_claim:['rewards',()=>'Claimed a beginner guide step'],
  daily:['rewards',()=>'Claimed a daily challenge'],
  checkin:['rewards',()=>'Opened the daily gift'],
+ comeback:['rewards',()=>'Opened the comeback chest'],
  level_rewards:['rewards',()=>'Collected level rewards'],
  mastery:['rewards',(a)=>`Earned a ${CROPS[a.crop]?.name??'crop'} mastery medal`],
  chore:['rewards',()=>'Did a farm chore'],
@@ -90,13 +91,15 @@ export function familyLog(action,before,state){
  const text=FAMILY_ACTIONS[action?.type];if(!text)return [];
  return [line('social',action.type,text,state?changes(before,snapshot(state)):'')];
 }
-// On opening the game: back after a while, and what was waiting (a gift from the staff, the invite reward, the email bonus).
-export function loadLog({away,gift,inviteReward,emailBonus}){
+// On opening the game: back after a while, and what was waiting (a gift from the staff, the invite reward, the email bonus, and since
+// Oct 2026 a comeback chest after 3 days or more away).
+export function loadLog({away,gift,inviteReward,emailBonus,comeback}){
  const rows=[];
  if(away>=30*60000)rows.push(line('account','open',`Opened the game after ${awayText(away)}`));
  if(gift&&(gift.coins||gift.diamonds||gift.xp||gift.itemCount))rows.push(line('staff','gift','Received a gift from the staff',changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:gift.coins??0,diamonds:gift.diamonds??0,xp:gift.xp??0,inventory:gift.item?{[gift.item]:gift.itemCount}:{}})));
  if(inviteReward)rows.push(line('social','invite','Got the reward for joining through an invite'));
  if(emailBonus)rows.push(line('rewards','email','Got the bonus for confirming the email address'));
+ if(comeback)rows.push(line('rewards','comeback',`A comeback chest was waiting after ${comeback.days} days away`));
  return rows;
 }
 function awayText(ms){const h=Math.floor(ms/3600000),d=Math.floor(h/24);return d?`${d} ${d===1?'day':'days'}`:h?`${h} ${h===1?'hour':'hours'}`:`${Math.round(ms/60000)} minutes`;}

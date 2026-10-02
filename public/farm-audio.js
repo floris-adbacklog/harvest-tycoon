@@ -63,7 +63,7 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
  if(action.type==='field')return {plant:'plant',water:'water',harvest:'harvest',tend:'care'}[action.action]??null;
  if(action.type==='fields')return {plant:'plant',water:'water',harvest:'harvest',tend:'care'}[action.action]??null;
  if(action.type==='activity_work')return result.roundComplete?'reward':result.finished?'collect':{greenhouse:'water',apiary:'collect',paddock:'water',workshop:'chore'}[action.station]??'chore';
- if(action.type==='checkin')return 'dailygift';   // the daily gift has its own, fuller sound
+ if(['checkin','comeback'].includes(action.type))return 'dailygift';   // the daily gift has its own, fuller sound; the comeback chest shares it
  if(['daily','beginner_claim'].includes(action.type))return result.diamonds>0?'diamond':'reward';
   // A load that fills the export trailer sends it off (horn); a part load is just crates going on.
  if(action.type==='depot_load')return result.shipped?'depot':'produce';

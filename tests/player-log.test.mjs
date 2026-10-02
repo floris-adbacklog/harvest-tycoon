@@ -36,6 +36,8 @@ test('opening the game, gifts, names, faces and family actions have their own li
  assert.deepEqual(loadLog({away:3*86400000}).map(r=>r.text),['Opened the game after 3 days']);
  assert.deepEqual(loadLog({away:0,gift:{coins:500,diamonds:20}}).map(r=>[r.category,r.text]),[['staff','Received a gift from the staff · +500 coins · +20 diamonds']]);
  assert.equal(loadLog({away:0,emailBonus:true})[0].category,'rewards');assert.equal(loadLog({away:0,inviteReward:{diamonds:150}})[0].category,'social');
+ // Oct 2026: a comeback chest offered on this load, and opening it.
+ assert.deepEqual(loadLog({away:4*86400000,comeback:{days:4,at:1}}).map(r=>[r.category,r.text]),[['account','Opened the game after 4 days'],['rewards','A comeback chest was waiting after 4 days away']]);
  assert.deepEqual(accountLog('rename','Changed the farmer name to Sunny'),[{category:'account',action:'rename',text:'Changed the farmer name to Sunny'}]);
  assert.equal(adminGrantLog({coins:1000,xp:0,diamonds:5,item:'corn',itemCount:3})[0].text,'Received a gift from the admin · +1,000 coins · +5 diamonds · +3 Corn');
  const s=farm();assert.deepEqual(familyLog({type:'family_join'},snapshot(s),null).map(r=>[r.category,r.text]),[['social','Joined a family']]);
@@ -86,7 +88,7 @@ test('farm-api writes the lines after the reply, for actions, opening the game, 
  assert.match(api,/const later=\(work:Promise<unknown>\)=>\(globalThis as unknown as \{EdgeRuntime\?:\{waitUntil\?:\(p:Promise<unknown>\)=>void\}\}\)\.EdgeRuntime\?\.waitUntil\?\.\(work\);/);
  assert.match(api,/const before=snapshot\(state\);\n   let result;try\{result=applyFarmAction/);
  assert.match(api,/later\(writeLog\(admin,user\.id,farmLog\(body\.action,before,state,result\)\)\);\n    return reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins,level:levelOf\(state\)\},result/,'only once the save went through');
- assert.match(api,/const logged=loadLog\(\{away:now-\(Date\.parse\(row\.updated_at\)\|\|now\),gift:donations\.length\?fromStaff:null,inviteReward,emailBonus:emailBonusPaid\}\);/);
+ assert.match(api,/const logged=loadLog\(\{away:now-\(Date\.parse\(row\.updated_at\)\|\|now\),gift:donations\.length\?fromStaff:null,inviteReward,emailBonus:emailBonusPaid,comeback\}\);/);
  assert.equal((api.match(/later\(writeLog\(admin,user\.id,logged\)\);/g)??[]).length,2,'both ways a load can answer');
  assert.match(api,/later\(writeLog\(admin,user\.id,accountLog\('rename',/);assert.match(api,/later\(writeLog\(admin,user\.id,accountLog\('avatar','Picked a new face'\)\)\)/);
  assert.match(api,/later\(writeLog\(admin,user\.id,familyLog\(body\.action,familyBefore,after\?\?null\)\)\)/);

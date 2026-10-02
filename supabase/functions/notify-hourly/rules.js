@@ -23,6 +23,14 @@ export function giftStreak(login,now){
  if(login?.lastDay===utcDay(now-2*DAY_MS)&&streak>0&&(!saved||Date.parse(utcDay(now))-Date.parse(saved)>=STREAK_SAVE_DAYS*DAY_MS))return streak+1;
  return 1;
 }
+// The comeback chest (game/farm-state.js COMEBACK_*, Oct 2026): offered when the farm opens after 3 days or more away (from the last
+// save, player_farms.updated_at: farm.seenAt here), at most every 14 days, and kept until collected. On away-day 3 and 6 the 09:00 gift
+// reminder says the chest is waiting instead (one push, never an extra); from day 7 the week rule below sends nothing at all.
+export const COMEBACK_MIN_DAYS=3,COMEBACK_EVERY_DAYS=14,COMEBACK_PUSH_DAYS=Object.freeze([3,6]);
+export function comebackWaiting(comeback,seen,now){
+ if(comeback?.pending)return true;
+ return seen!==null&&now-seen>=COMEBACK_MIN_DAYS*DAY_MS&&now-(Number(comeback?.lastAt)||0)>=COMEBACK_EVERY_DAYS*DAY_MS;
+}
 const knownZone=zone=>{try{new Intl.DateTimeFormat('en',{timeZone:zone});return zone;}catch{return 'UTC';}};
 
 // Calendar date and hour (0-23) on the player's own clock, daylight saving included.
@@ -71,6 +79,9 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
  const active=lastActive!==null&&now-lastActive<CONFIG.ACTIVE_SKIP_MS;
  const farm=player.farm??{},login=farm.login??{},ready=readyCrops(farm,now),jobsReady=readyJobs(farm,now);
  const subscriptions=player.subscriptions??[];
+ // Days away as the game counts them for the comeback chest: from the farm's last save, or the last activity when that is missing.
+ const seen=Number.isFinite(Date.parse(farm.seenAt))?Date.parse(farm.seenAt):lastActive,awayDays=seen===null?0:Math.floor((now-seen)/DAY_MS);
+ const chestWaiting=awayDays>=COMEBACK_MIN_DAYS&&comebackWaiting(farm.comeback,seen,now);
  const result={push:null,patchAlways:{},patchOnSend:{},digest:null,digestPatch:null};
 
  // "Seen" markers only move forward. The first time, and whenever a category is off or cannot be delivered,
@@ -83,10 +94,13 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
  for(const key of follow)result.patchAlways[key]=now;
 
  if(canPush&&!active){
-  const parts=[],onSend={},quiet=local.hour>=CONFIG.QUIET_START||local.hour<CONFIG.QUIET_END;
+  const parts=[],onSend={},quiet=local.hour>=CONFIG.QUIET_START||local.hour<CONFIG.QUIET_END;let chestPush=false;
   if(player.push_daily&&login.lastDay!==utcDay(now)){
    const day=giftStreak(login,now),boost=GIFT_BOOSTS[(day-1)%7+1];
-   if(local.hour===CONFIG.DAILY_MORNING_HOUR&&player.daily_morning_on!==today){parts.push(boost?t.pushGift(t.boosts[(day-1)%7+1]):t.gift);onSend.daily_morning_on=today;}
+   if(local.hour===CONFIG.DAILY_MORNING_HOUR&&player.daily_morning_on!==today){
+    chestPush=chestWaiting&&COMEBACK_PUSH_DAYS.includes(awayDays);
+    parts.push(chestPush?t.comeback:boost?t.pushGift(t.boosts[(day-1)%7+1]):t.gift);onSend.daily_morning_on=today;
+   }
    const streak=day>1?day-1:0;
    if(local.hour===CONFIG.DAILY_EVENING_HOUR&&streak>=CONFIG.STREAK_MIN&&player.daily_evening_on!==today){parts.push(t.pushStreak(streak));onSend.daily_evening_on=today;}
   }
@@ -99,8 +113,9 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
   const gapOk=!player.last_push_at||now-Date.parse(player.last_push_at)>=CONFIG.MIN_PUSH_GAP_MS;
   const sentToday=player.push_day===today?Number(player.push_count)||0:0;
   if(parts.length&&gapOk&&sentToday<CONFIG.MAX_PUSH_PER_DAY){
-   // Only about the daily gift: tapping it opens Daily rewards. Anything about the fields or buildings opens the farm.
-   result.push={title:'Harvest Tycoon',body:parts.join(' · '),tag:'harvest-tycoon',url:giftParts===parts.length?'/?source=push&open=today':'/?source=push'};
+   // Only about the daily gift: tapping it opens Daily rewards. Anything about the fields or buildings opens the farm, and so does the
+   // comeback chest: the Welcome back card shows it there, with the gift.
+   result.push={title:'Harvest Tycoon',body:parts.join(' · '),tag:'harvest-tycoon',url:giftParts===parts.length&&!chestPush?'/?source=push&open=today':'/?source=push'};
    result.patchOnSend={...onSend,crops_seen_at:now,production_seen_at:now,last_push_at:new Date(now).toISOString(),push_day:today,push_count:sentToday+1};
   }
  }
@@ -110,8 +125,9 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
  const digestHour=number(player.digest_hour);
  if(player.email_digest&&player.email&&!inactive&&digestHour!==null&&local.hour>=digestHour&&local.hour<CONFIG.QUIET_START&&player.digest_on!==today){
   const giftWaiting=login.lastDay!==utcDay(now);
-  if(ready.length||jobsReady.length||giftWaiting){
-   result.digest={username:player.username??'farmer',language:t.language,crops:ready,jobs:jobsReady,giftWaiting,streak:number(login.streak)??0};
+  if(ready.length||jobsReady.length||giftWaiting||chestWaiting){
+   // The streak still alive today (Oct 2026: the stored login.streak promised to "keep" a streak that had already broken).
+   result.digest={username:player.username??'farmer',language:t.language,crops:ready,jobs:jobsReady,giftWaiting,streak:Math.max(0,giftStreak(login,now)-1),...(chestWaiting?{comeback:true}:{})};
    result.digestPatch={digest_on:today};
   }
  }

@@ -12,7 +12,7 @@ import {recordSource} from './source-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName} from './account-form.js';
-import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations} from './farm-state.js';
+import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
@@ -180,6 +180,8 @@ Deno.serve(async(req)=>{
    }
    if(body.operation==='load'){
     const welcome=welcomeSummary(state,row.updated_at,now);
+    // The comeback chest (Oct 2026), from the days since the last save (updated_at, set by the database); none on the admin account.
+    const comeback=isAdminAccount(user)?null:offerComeback(state,now-(Date.parse(row.updated_at)||now),now);
     const levelReward=grantLevelRewards(state),chapterReward=grantChapterRewards(state);
     // An admin gift waiting on this farm (admin-service.js) is shown once, here, then cleared — the same
     // "picked up on the next load, whether that is right now or after a reconnect" delivery as level/chapter
@@ -210,7 +212,7 @@ Deno.serve(async(req)=>{
       if((user.app_metadata?.provider??'email')==='email'){const message='Thanks for confirming your email!';gift=gift?{...gift,diamonds:(gift.diamonds??0)+EMAIL_BONUS,message:gift.message??message}:{coins:0,xp:0,diamonds:EMAIL_BONUS,item:null,itemCount:0,message,at:now};}
      }
     }
-    const logged=loadLog({away:now-(Date.parse(row.updated_at)||now),gift:donations.length?fromStaff:null,inviteReward,emailBonus:emailBonusPaid});
+    const logged=loadLog({away:now-(Date.parse(row.updated_at)||now),gift:donations.length?fromStaff:null,inviteReward,emailBonus:emailBonusPaid,comeback});
     if(welcome||levelReward.levels.length||chapterReward.chapters.length||gift||inviteReward||friends.length||emailBonusPaid){
      const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
      if(saved.error)throw saved.error;if(!saved.data)continue;

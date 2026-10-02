@@ -16,6 +16,7 @@ const TEXTS={
   item:(n,name)=>`${n} ${name.toLowerCase()}`,
   pushGift:b=>`Your daily gift is waiting, with ${b}`,boosts:{3:'double XP',5:'double harvest',7:'double earnings'},
   pushStreak:n=>`Collect your gift to keep your ${n}-day streak`,
+  comeback:'A comeback chest is waiting on your farm',
   readyBoth:'Your crops and goods are ready',readyCrops:'Your crops are ready to harvest',readyGoods:'Your goods are ready to collect'
  },
  nl:{
@@ -28,6 +29,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}: ${n} ${n===1?'batch':'batches'} klaar`,jobsMany:(n,list)=>`${n} batches klaar (${list})`,
   pushGift:b=>`Je dagcadeau ligt klaar, met ${b}`,boosts:{3:'dubbele XP',5:'dubbele oogst',7:'dubbele verdiensten'},
   pushStreak:n=>`Haal je cadeau op en houd je reeks van ${n} dagen vast`,
+  comeback:'Er staat een comebackkist voor je klaar op je boerderij',
   readyBoth:'Je gewassen en producten zijn klaar',readyCrops:'Je gewassen zijn klaar om te oogsten',readyGoods:'Je producten liggen klaar om op te halen'
  },
  de:{
@@ -40,6 +42,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}: ${n} ${n===1?'Charge':'Chargen'} fertig`,jobsMany:(n,list)=>`${n} Chargen fertig (${list})`,
   pushGift:b=>`Dein Tagesgeschenk wartet, mit ${b}`,boosts:{3:'doppelten XP',5:'doppelter Ernte',7:'doppeltem Verdienst'},
   pushStreak:n=>`Hol dein Geschenk ab und halte deine Serie von ${n} Tagen`,
+  comeback:'Auf deinem Hof wartet eine Comeback-Truhe auf dich',
   readyBoth:'Deine Feldfrüchte und Waren sind fertig',readyCrops:'Deine Feldfrüchte sind erntereif',readyGoods:'Deine Waren sind abholbereit'
  },
  es:{
@@ -52,6 +55,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}: ${n} ${n===1?'lote listo':'lotes listos'}`,jobsMany:(n,list)=>`${n} lotes listos (${list})`,
   pushGift:b=>`Tu regalo diario te espera, con ${b}`,boosts:{3:'XP doble',5:'cosecha doble',7:'ganancias dobles'},
   pushStreak:n=>`Recoge tu regalo para mantener tu racha de ${n} días`,
+  comeback:'Un cofre de regreso te espera en tu granja',
   readyBoth:'Tus cultivos y productos están listos',readyCrops:'Tus cultivos están listos para cosechar',readyGoods:'Tus productos están listos para recoger'
  },
  fr:{
@@ -64,6 +68,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}${NBSP}: ${n} ${n<=1?'lot prêt':'lots prêts'}`,jobsMany:(n,list)=>`${n} lots prêts (${list})`,
   pushGift:b=>`Ton cadeau du jour t’attend, avec ${b}`,boosts:{3:'l’XP double',5:'la récolte double',7:'les gains doublés'},
   pushStreak:n=>`Récupère ton cadeau pour garder ta série de ${n}${NBSP}jours`,
+  comeback:'Un coffre de retour t’attend à la ferme',
   readyBoth:'Tes cultures et tes produits sont prêts',readyCrops:'Tes cultures sont prêtes à récolter',readyGoods:'Tes produits sont prêts à récupérer'
  },
  pt:{
@@ -76,6 +81,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}: ${n} ${n===1?'lote pronto':'lotes prontos'}`,jobsMany:(n,list)=>`${n} lotes prontos (${list})`,
   pushGift:b=>`Seu presente diário está esperando, com ${b}`,boosts:{3:'XP em dobro',5:'colheita em dobro',7:'ganhos em dobro'},
   pushStreak:n=>`Pegue seu presente para manter sua sequência de ${n} dias`,
+  comeback:'Um baú de retorno está esperando por você na fazenda',
   readyBoth:'Seus cultivos e produtos estão prontos',readyCrops:'Seus cultivos estão prontos para colher',readyGoods:'Seus produtos estão prontos para coletar'
  },
  id:{
@@ -88,6 +94,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}: ${n} batch siap`,jobsMany:(n,list)=>`${n} batch siap (${list})`,
   pushGift:b=>`Hadiah harianmu menunggu, dengan ${b}`,boosts:{3:'XP ganda',5:'panen ganda',7:'penghasilan ganda'},
   pushStreak:n=>`Ambil hadiahmu untuk mempertahankan ${n} hari beruntunmu`,
+  comeback:'Peti kepulangan sedang menunggumu di kebun',
   readyBoth:'Tanaman dan barangmu sudah siap',readyCrops:'Tanamanmu siap dipanen',readyGoods:'Barangmu siap diambil'
  },
  tr:{
@@ -100,6 +107,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}: ${n} parti hazır`,jobsMany:(n,list)=>`${n} parti hazır (${list})`,
   pushGift:b=>`Günlük hediyen seni bekliyor, yanında ${b}`,boosts:{3:'çift XP',5:'çift hasat',7:'çift kazanç'},
   pushStreak:n=>`${n} günlük serini sürdürmek için hediyeni al`,
+  comeback:'Çiftliğinde seni bir dönüş sandığı bekliyor',
   readyBoth:'Mahsullerin ve ürünlerin hazır',readyCrops:'Mahsullerin hasada hazır',readyGoods:'Ürünlerin toplanmaya hazır'
  },
  hu:{
@@ -112,6 +120,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}: ${n} adag kész`,jobsMany:(n,list)=>`${n} adag kész (${list})`,
   pushGift:b=>`Vár a napi ajándékod, benne: ${b}`,boosts:{3:'dupla XP',5:'dupla termés',7:'dupla bevétel'},
   pushStreak:n=>`Vedd át az ajándékodat, hogy megmaradjon a(z) ${n} napos sorozatod`,
+  comeback:'Visszatérési láda vár rád a farmodon',
   readyBoth:'A terményeid és termékeid elkészültek',readyCrops:'A terményeid betakaríthatók',readyGoods:'A termékeid átvehetők'
  },
  ru:{
@@ -126,6 +135,7 @@ const TEXTS={
   jobsMany:(n,list)=>`${n} ${forms('ru',n,{one:'партия готова',few:'партии готовы',many:'партий готово',other:'партии готово'})} (${list})`,
   pushGift:b=>`Тебя ждёт ежедневный подарок, а с ним ${b}`,boosts:{3:'двойной XP',5:'двойной урожай',7:'двойной доход'},
   pushStreak:n=>`Забери подарок, чтобы сохранить ${n}-дневную серию`,
+  comeback:'На твоей ферме тебя ждёт сундук возвращения',
   readyBoth:'Твои культуры и товары готовы',readyCrops:'Твои культуры готовы к сбору',readyGoods:'Твои товары готовы: забери их'
  },
  uk:{
@@ -140,6 +150,7 @@ const TEXTS={
   jobsMany:(n,list)=>`${n} ${forms('uk',n,{one:'партія готова',few:'партії готові',many:'партій готово',other:'партії готово'})} (${list})`,
   pushGift:b=>`На тебе чекає щоденний подарунок, а з ним ${b}`,boosts:{3:'подвійний XP',5:'подвійний урожай',7:'подвійний заробіток'},
   pushStreak:n=>`Забери подарунок, щоб зберегти ${n}-денну серію`,
+  comeback:'На твоїй фермі на тебе чекає скриня повернення',
   readyBoth:'Твої культури й вироби готові',readyCrops:'Твої культури готові до збирання',readyGoods:'Твої вироби готові: забери їх'
  },
  cs:{
@@ -154,6 +165,7 @@ const TEXTS={
   jobsMany:(n,list)=>`${n} ${forms('cs',n,{one:'várka hotová',few:'várky hotové',many:'várky hotovo',other:'várek hotovo'})} (${list})`,
   pushGift:b=>`Čeká na tebe denní dárek a s ním ${b}`,boosts:{3:'dvojnásobné XP',5:'dvojnásobná sklizeň',7:'dvojnásobný výdělek'},
   pushStreak:n=>`Vyzvedni si dárek a udrž svou ${n}denní sérii`,
+  comeback:'Na tvé farmě na tebe čeká truhla na uvítanou',
   readyBoth:'Tvoje plodiny a výrobky jsou hotové',readyCrops:'Tvoje plodiny jsou připravené ke sklizni',readyGoods:'Tvoje výrobky jsou připravené k vyzvednutí'
  },
  hi:{
@@ -166,6 +178,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}: ${n} बैच तैयार`,jobsMany:(n,list)=>`${n} बैच तैयार (${list})`,
   pushGift:b=>`आपका रोज़ का तोहफ़ा इंतज़ार कर रहा है, साथ में ${b}`,boosts:{3:'दोगुना XP',5:'दोगुनी फसल',7:'दोगुनी कमाई'},
   pushStreak:n=>`अपना ${n} दिन का सिलसिला बनाए रखने के लिए तोहफ़ा लें`,
+  comeback:'आपके फ़ार्म पर वापसी का संदूक आपका इंतज़ार कर रहा है',
   readyBoth:'आपकी फसलें और सामान तैयार हैं',readyCrops:'आपकी फसलें कटाई के लिए तैयार हैं',readyGoods:'आपका सामान लेने के लिए तैयार है'
  },
  ja:{
@@ -179,6 +192,7 @@ const TEXTS={
   item:(n,name)=>`${name}×${n}`,listSep:'、',jobSep:'、',
   pushGift:b=>`デイリーギフトが届いています（${b}付き）`,boosts:{3:'XP 2倍',5:'収穫2倍',7:'稼ぎ2倍'},
   pushStreak:n=>`ギフトを受け取って${n}日の連続記録を守りましょう`,
+  comeback:'農場でおかえり宝箱があなたを待っています',
   readyBoth:'作物と商品の準備ができました',readyCrops:'作物が収穫できます',readyGoods:'商品を受け取れます'
  },
  ar:{
@@ -193,6 +207,7 @@ const TEXTS={
   jobsMany:(n,list)=>`${n} ${forms('ar',n,{zero:'دفعات جاهزة',one:'دفعة جاهزة',two:'دفعتان جاهزتان',few:'دفعات جاهزة',many:'دفعةً جاهزةً',other:'دفعة جاهزة'})} (${list})`,
   pushGift:b=>`هديتك اليومية بانتظارك، ومعها ${b}`,boosts:{3:'خبرة مضاعفة',5:'حصاد مضاعف',7:'أرباح مضاعفة'},
   pushStreak:n=>`اجمع هديتك لتحافظ على سلسلتك (${n} ${forms('ar',n,{zero:'أيام',one:'يوم',two:'يومان',few:'أيام',many:'يومًا',other:'يوم'})})`,
+  comeback:'صندوق العودة بانتظارك في مزرعتك',
   readyBoth:'محاصيلك ومنتجاتك جاهزة',readyCrops:'محاصيلك جاهزة للحصاد',readyGoods:'منتجاتك جاهزة للجمع'
  },
  zh:{
@@ -205,6 +220,7 @@ const TEXTS={
   jobsOne:(b,n)=>`${b}：${n} 个批次已完成`,jobsMany:(n,list)=>`${n} 个批次已完成（${list}）`,
   pushGift:b=>`你的每日礼物在等你，还有${b}`,boosts:{3:'双倍经验',5:'双倍收获',7:'双倍收益'},
   pushStreak:n=>`领取礼物以保持你的 ${n} 天连续签到`,
+  comeback:'你的农场里有一个回归宝箱在等你',
   readyBoth:'你的作物和商品已经准备好了',readyCrops:'你的作物可以收获了',readyGoods:'你的商品可以领取了'
  }
 };

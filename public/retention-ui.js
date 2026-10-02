@@ -1,6 +1,6 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt} from './quests-ui.js';
-import {streakToday,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {streakToday,comebackChest,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -25,6 +25,12 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   if(r&&r.streak%7===0)celebrate(r);
   return r;
  }
+ // The comeback chest (Oct 2026, farm-state.js comebackChest): after 3 days or more away, waiting until it is collected. Welcome back
+ // shows it first; the top of the Today window keeps it for a farmer who closed that card (or came back in the village).
+ const chestOffer=(now=farmNow())=>comebackChest(state,now);
+ const chestChips=c=>rewardChips({coins:c.coins},boostChip(c.boost,c.boostMs));
+ const collectChest=()=>act({type:'comeback'},r=>`Comeback chest: +${r.coins.toLocaleString('en-US')} coins. Plus ${boostName(r.boost,r.boostMinutes*60000)}!`);
+ const chestRow=c=>c?`<div class="welcome-gift welcome-chest"><span class="welcome-gift-art">${art('family-chest-wood')}</span><span class="welcome-gift-copy"><strong>Comeback chest</strong>${chestChips(c)}</span><button type="button" id="comeback-chest" class="small-button">Collect</button></div>`:'';
  function gift(){
   // The seven days of the current streak week: day 1-7, then 8-14 and so on, each with its diamonds and, on days 3, 5 and 7, its boost.
   const now=farmNow(),today=streakToday(state,now),claimed=today.claimed;
@@ -36,8 +42,9 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const offer=giftOffer(now),next=claimed?dailyGift(state,today.streak+1,now+DAY_MS):null;
   const claim=claimed?`<span><strong>Tomorrow · day ${today.streak+1}</strong>${giftChips(next)}</span><span class="streak-done"><i data-lucide="check"></i>Collected</span>`
    :`<span><strong>Day ${offer.day} gift${offer.saved?' · streak saved':''}</strong>${giftChips(offer)}</span><button id="checkin-gift" class="primary-button">Collect</button>`;
-  $('daily-gift').innerHTML=`<section class="gift-panel streak-panel ${claimed?'is-claimed':''}"><div class="streak-head">${art('streak','streak-flame')}<div><h3>${streak?`${streak}-day streak`:'Start a streak'}</h3><p>Best ${state.login.best} day${state.login.best===1?'':'s'}${vipActive(state,now)?' · VIP doubles your gifts':''}</p></div><b class="streak-count">${streak}</b></div><ol class="streak-days">${days}</ol><div class="streak-claim">${claim}</div>${claimed?'<button type="button" class="gift-remind" id="gift-remind" hidden><i data-lucide="bell"></i>Remind me when tomorrow’s gift is ready</button>':''}<small class="gift-note">${rule}</small></section>`;
+  $('daily-gift').innerHTML=`${chestRow(chestOffer(now))}<section class="gift-panel streak-panel ${claimed?'is-claimed':''}"><div class="streak-head">${art('streak','streak-flame')}<div><h3>${streak?`${streak}-day streak`:'Start a streak'}</h3><p>Best ${state.login.best} day${state.login.best===1?'':'s'}${vipActive(state,now)?' · VIP doubles your gifts':''}</p></div><b class="streak-count">${streak}</b></div><ol class="streak-days">${days}</ol><div class="streak-claim">${claim}</div>${claimed?'<button type="button" class="gift-remind" id="gift-remind" hidden><i data-lucide="bell"></i>Remind me when tomorrow’s gift is ready</button>':''}<small class="gift-note">${rule}</small></section>`;
   if($('checkin-gift'))$('checkin-gift').onclick=()=>void collectGift();
+  if($('comeback-chest'))$('comeback-chest').onclick=async()=>{$('comeback-chest').disabled=true;if(!await collectChest()&&$('comeback-chest'))$('comeback-chest').disabled=false;};
   if(claimed)void offerReminder();
  }
  // The daily reminder already exists (notify-hourly: 09:00 "your gift is waiting", 19:00 for a streak of 3 or more); this only offers
@@ -146,7 +153,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  }
  function refresh(){
   streakDanger();
-  const tasks=dailyTasks(state,farmNow());$('today-dot').hidden=state.login.lastDay===utcDay(farmNow())&&(!featureUnlocked(state,'challenges')||!tasks.some(q=>!q.claimed&&q.progress>=q.target))&&(!featureUnlocked(state,'cart')||!dailyOrders(state,farmNow()).some(o=>!o.done&&Object.entries(o.input).every(([k,n])=>state.inventory[k]>=n)));
+  const tasks=dailyTasks(state,farmNow());$('today-dot').hidden=state.login.lastDay===utcDay(farmNow())&&!chestOffer()&&(!featureUnlocked(state,'challenges')||!tasks.some(q=>!q.claimed&&q.progress>=q.target))&&(!featureUnlocked(state,'cart')||!dailyOrders(state,farmNow()).some(o=>!o.done&&Object.entries(o.input).every(([k,n])=>state.inventory[k]>=n)));
   $('journal-button').classList.remove('has-reward');
   if($('today-dialog').open)renderToday();if($('utility-dialog').open)renderUtility();if($('journal-dialog').open)renderJournal();
  }
@@ -164,5 +171,5 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  $('today-button').onclick=()=>openToday();$('journal-button').onclick=()=>{renderJournal();open('journal-dialog');};
  document.querySelectorAll('[data-today-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.todayTab;renderToday();});
  document.querySelectorAll('[data-utility]').forEach(b=>b.onclick=()=>openUtility(b.dataset.utility));
- return {refresh,tick,openToday,openUtility,giftOffer,collectGift,giftChips};
+ return {refresh,tick,openToday,openUtility,giftOffer,collectGift,giftChips,chestOffer,chestChips,collectChest};
 }

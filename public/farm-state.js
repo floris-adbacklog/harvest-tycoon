@@ -1321,6 +1321,10 @@ export const DAILY_REWARDS=[40,55,70,85,100,120,160];
 export const RETURN_BOOST_MS=30*60000,FIRST_HARVEST_BONUS=3;
 export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
 export const DAILY_BOOSTS=Object.freeze({3:'xp',5:'harvest',7:'coins'}),DAILY_BOOST_MS=30*60000,STREAK_SAVE_DAYS=7;
+// The comeback chest (Oct 2026): away COMEBACK_MIN_DAYS days or more, the Welcome back card holds 20 coins × half the level for every
+// day away (up to 7), plus the gift's 30 minutes of double XP; VIP doubles it like the gift. No diamonds and no XP, so it stays below a
+// 3-day gift run in every part (tests/comeback-chest.test.mjs): coming back never pays better than coming every day. One every 14 days.
+export const COMEBACK_MIN_DAYS=3,COMEBACK_MAX_DAYS=7,COMEBACK_EVERY_DAYS=14,COMEBACK_COINS=20,COMEBACK_BOOST='xp';
 export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]),DAILY_BONUS=Object.freeze({coins:60,xp:15});   // the bonus for all three
 export const DIAMOND_PACKS=Object.freeze([{amount:150,price:'€1.99'},{amount:500,price:'€4.99'},{amount:1250,price:'€9.99'},{amount:3500,price:'€24.99'}]);
 // Every diamond spent goes through here, so the farm keeps the total (stats.diamonds_spent: the Gem collector avatar,
@@ -2025,6 +2029,10 @@ export function normalizeFarm(state,now=Date.now()){
  state.family??={familyId:null,unclaimedCount:0};
  state.discovered??=[];state.siloLevel??=0;state.tractorReadyAt??=0;
  state.login??={lastDay:null,streak:0,best:0,visits:0};if(state.login.savedDay!==undefined&&!(typeof state.login.savedDay==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(state.login.savedDay)))delete state.login.savedDay;state.levelRewards??=[1];
+ // The comeback chest (Oct 2026): when the last one was offered, how many were opened, and the one waiting (only farm-api sets it, on a
+ // load). Farms from before it start at 0, so they can get one on their next return.
+ {const c=state.comeback,p=c?.pending,count=v=>Number.isSafeInteger(v)?Math.max(0,v):0;
+  state.comeback={lastAt:count(c?.lastAt),collected:count(c?.collected),pending:p&&Number.isInteger(p.days)&&p.days>=COMEBACK_MIN_DAYS&&p.days<=COMEBACK_MAX_DAYS&&Number.isSafeInteger(p.at)?{days:p.days,at:p.at}:null};}
  // Existing farms keep every regular quest, inventory item and timer. A past daily gift
  // counts so returning players never have to wait a day to finish the introduction.
  state.onboarding??={completed:0,milestones:{gift:state.login.visits>0},rewardClaimed:false};
@@ -2118,6 +2126,27 @@ export function checkIn(state,now=Date.now()){
  const returnBoost=guidedFarm(state)&&state.login.visits===2;
  if(returnBoost)state.boosts.harvestUntil=Math.max(state.boosts.harvestUntil??0,now)+RETURN_BOOST_MS;
  return {coins,diamonds,streak:state.login.streak,xp,...(boost?{boost,boostMinutes:boostMs/60000}:{}),...(today.saved?{saved:true}:{}),...(returnBoost?{returnBoost:RETURN_BOOST_MS/60000}:{})};
+}
+// The comeback chest's coins for the days away (3 to 7) at a farm level, before VIP: like giftCoins, × half the level, in fives.
+export function comebackCoins(days,level){return Math.round(COMEBACK_COINS*Math.min(Math.max(days,COMEBACK_MIN_DAYS),COMEBACK_MAX_DAYS)*Math.max(1,level/2)/5)*5;}
+// The chest waiting on this farm, or null: worked out at the level and VIP of the moment it is opened, like the daily gift.
+export function comebackChest(state,now=Date.now()){
+ const p=state.comeback?.pending;if(!p)return null;const m=dailyRewardMultiplier(state,now);
+ return {days:p.days,coins:comebackCoins(p.days,levelOf(state))*m,boost:COMEBACK_BOOST,boostMs:DAILY_BOOST_MS*m};
+}
+// Only farm-api calls this, on a load: `away` is the time since player_farms.updated_at, which only the database sets, so the days
+// away never come from the game (3 days away is always a Welcome back too, so that load is saved with the chest). It never stacks
+// (one waiting is enough), never expires, and comes at most every 14 days from the last one offered.
+export function offerComeback(state,away,now=Date.now()){
+ const c=state.comeback;
+ if(!c||!Number.isFinite(away)||away<COMEBACK_MIN_DAYS*DAY_MS||c.pending||now-c.lastAt<COMEBACK_EVERY_DAYS*DAY_MS)return null;
+ c.pending={days:Math.min(COMEBACK_MAX_DAYS,Math.floor(away/DAY_MS)),at:now};c.lastAt=now;return c.pending;
+}
+export function collectComeback(state,now=Date.now()){
+ const chest=comebackChest(state,now);if(!chest)throw new Error('No comeback chest is waiting.');
+ state.coins+=chest.coins;const key=BOOST_UNTIL[chest.boost];state.boosts[key]=Math.max(state.boosts[key]??0,now)+chest.boostMs;
+ state.comeback.pending=null;state.comeback.collected++;
+ return {coins:chest.coins,days:chest.days,boost:chest.boost,boostMinutes:chest.boostMs/60000};
 }
 export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('The order board has refreshed. Pick a new order.');
@@ -2288,6 +2317,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'beginner_claim':return claimBeginnerQuest(state,action.id);
   case 'daily':return claimDaily(state,action.id,action.day,now);
   case 'checkin':return checkIn(state,now);
+  case 'comeback':return collectComeback(state,now);
   case 'delivery':return deliverOrder(state,action.id,action.day,now,action.revision);
   case 'level_rewards':return claimLevelRewards(state);
   case 'tractor':return useTractor(state,action.mode,action.crop,now);

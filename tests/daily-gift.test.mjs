@@ -68,10 +68,18 @@ test('the gift sounds like a present, shows tomorrow once collected, and comes b
  assert.match(retention,/danger=!today\.claimed&&today\.streak-1>=3&&new Date\(\)\.getHours\(\)>=18/,'the flame: a streak of 3+ in the evening');
  assert.match(retention,/\(await api\.push\.status\(\)\)\.kind!=='off'\)return;/,'the reminder offer only where notifications can work and are off');
  assert.match(welcome,/data-collect-gift/);assert.match(game,/showWelcomeBack\(initialWelcome,\{gift:\{offer:retention\.giftOffer\(\),chips:retention\.giftChips,collect:retention\.collectGift\}/);
+ // Oct 2026: the comeback chest is a second row in the same card, with its own Collect, and the card drops a row collected meanwhile.
+ assert.match(welcome,/data-collect-chest/);assert.match(game,/collect:retention\.collectGift\},chest:\{offer:retention\.chestOffer\(\),chips:retention\.chestChips,collect:retention\.collectChest\},current:\(\)=>\(\{gift:retention\.giftOffer\(\),chest:retention\.chestOffer\(\)\}\)/);
+ assert.match(welcome,/const now=current\?\.\(\);if\(now\)\{if\(!now\.gift\)dialog\.querySelector\('\[data-welcome-gift\]'\)\?\.remove\(\);if\(!now\.chest\)dialog\.querySelector\('\[data-welcome-chest\]'\)\?\.remove\(\);\}\n  dialog\.showModal\(\);/);
+ assert.equal(soundForAction({type:'comeback'},{coins:300},5,5),'dailygift');
 });
 
 test('the morning push names the same boosts as the game gives',async()=>{
  const {GIFT_BOOSTS,STREAK_SAVE_DAYS:pushSave}=await import('../supabase/functions/notify-hourly/rules.js');const {BOOSTS}=await import('../game/farm-state.js');
  assert.deepEqual(Object.fromEntries(Object.entries(DAILY_BOOSTS).map(([day,kind])=>[day,BOOSTS[kind].name.replace('Double','double')])),{...GIFT_BOOSTS});
  assert.equal(pushSave,STREAK_SAVE_DAYS);
+ // The comeback reminder counts the days away and the 14-day wait like the game (Oct 2026).
+ const push=await import('../supabase/functions/notify-hourly/rules.js'),game=await import('../game/farm-state.js');
+ assert.equal(push.COMEBACK_MIN_DAYS,game.COMEBACK_MIN_DAYS);assert.equal(push.COMEBACK_EVERY_DAYS,game.COMEBACK_EVERY_DAYS);
+ assert(push.COMEBACK_PUSH_DAYS.every(d=>d>=game.COMEBACK_MIN_DAYS&&d*DAY_MS<=push.CONFIG.INACTIVE_STOP_MS),'only days the week rule still sends on');
 });
