@@ -17,7 +17,9 @@ const TEXTS={
   pushGift:b=>`Your daily gift is waiting, with ${b}`,boosts:{3:'double XP',5:'double harvest',7:'double earnings'},
   pushStreak:n=>`Collect your gift to keep your ${n}-day streak`,
   comeback:'A comeback chest is waiting on your farm',
-  readyBoth:'Your crops and goods are ready',readyCrops:'Your crops are ready to harvest',readyGoods:'Your goods are ready to collect'
+  readyBoth:'Your crops and goods are ready',readyCrops:'Your crops are ready to harvest',readyGoods:'Your goods are ready to collect',
+  // A chat message as a push (3 Oct 2026, messages.js): the title in the farmer's own language, with who wrote it.
+  pushMessage:n=>`Message from ${n}`,pushMention:n=>`${n} mentioned you`
  },
  nl:{
   hi:n=>`Hoi ${n}!`,waiting:'Er wacht iets op je boerderij:',button:'Open mijn boerderij',openText:'Open je boerderij',
@@ -30,7 +32,8 @@ const TEXTS={
   pushGift:b=>`Je dagcadeau ligt klaar, met ${b}`,boosts:{3:'dubbele XP',5:'dubbele oogst',7:'dubbele verdiensten'},
   pushStreak:n=>`Haal je cadeau op en houd je reeks van ${n} dagen vast`,
   comeback:'Er staat een comebackkist voor je klaar op je boerderij',
-  readyBoth:'Je gewassen en producten zijn klaar',readyCrops:'Je gewassen zijn klaar om te oogsten',readyGoods:'Je producten liggen klaar om op te halen'
+  readyBoth:'Je gewassen en producten zijn klaar',readyCrops:'Je gewassen zijn klaar om te oogsten',readyGoods:'Je producten liggen klaar om op te halen',
+  pushMessage:n=>`Bericht van ${n}`,pushMention:n=>`${n} noemde je`
  },
  de:{
   hi:n=>`Hallo ${n}!`,waiting:'Auf deinem Hof wartet etwas:',button:'Meinen Hof öffnen',openText:'Deinen Hof öffnen',
@@ -43,7 +46,8 @@ const TEXTS={
   pushGift:b=>`Dein Tagesgeschenk wartet, mit ${b}`,boosts:{3:'doppelten XP',5:'doppelter Ernte',7:'doppeltem Verdienst'},
   pushStreak:n=>`Hol dein Geschenk ab und halte deine Serie von ${n} Tagen`,
   comeback:'Auf deinem Hof wartet eine Comeback-Truhe auf dich',
-  readyBoth:'Deine Feldfrüchte und Waren sind fertig',readyCrops:'Deine Feldfrüchte sind erntereif',readyGoods:'Deine Waren sind abholbereit'
+  readyBoth:'Deine Feldfrüchte und Waren sind fertig',readyCrops:'Deine Feldfrüchte sind erntereif',readyGoods:'Deine Waren sind abholbereit',
+  pushMessage:n=>`Nachricht von ${n}`,pushMention:n=>`${n} hat dich erwähnt`
  },
  es:{
   hi:n=>`¡Hola, ${n}!`,waiting:'Algo te espera en tu granja:',button:'Abrir mi granja',openText:'Abre tu granja',
@@ -56,7 +60,8 @@ const TEXTS={
   pushGift:b=>`Tu regalo diario te espera, con ${b}`,boosts:{3:'XP doble',5:'cosecha doble',7:'ganancias dobles'},
   pushStreak:n=>`Recoge tu regalo para mantener tu racha de ${n} días`,
   comeback:'Un cofre de regreso te espera en tu granja',
-  readyBoth:'Tus cultivos y productos están listos',readyCrops:'Tus cultivos están listos para cosechar',readyGoods:'Tus productos están listos para recoger'
+  readyBoth:'Tus cultivos y productos están listos',readyCrops:'Tus cultivos están listos para cosechar',readyGoods:'Tus productos están listos para recoger',
+  pushMessage:n=>`Mensaje de ${n}`,pushMention:n=>`${n} te ha mencionado`
  },
  fr:{
   hi:n=>`Bonjour ${n}${NBSP}!`,waiting:`Quelque chose t’attend à la ferme${NBSP}:`,button:'Ouvrir ma ferme',openText:'Ouvre ta ferme',
@@ -69,7 +74,8 @@ const TEXTS={
   pushGift:b=>`Ton cadeau du jour t’attend, avec ${b}`,boosts:{3:'l’XP double',5:'la récolte double',7:'les gains doublés'},
   pushStreak:n=>`Récupère ton cadeau pour garder ta série de ${n}${NBSP}jours`,
   comeback:'Un coffre de retour t’attend à la ferme',
-  readyBoth:'Tes cultures et tes produits sont prêts',readyCrops:'Tes cultures sont prêtes à récolter',readyGoods:'Tes produits sont prêts à récupérer'
+  readyBoth:'Tes cultures et tes produits sont prêts',readyCrops:'Tes cultures sont prêtes à récolter',readyGoods:'Tes produits sont prêts à récupérer',
+  pushMessage:n=>`Message de ${n}`,pushMention:n=>`${n} t’a mentionné`
  },
  pt:{
   hi:n=>`Oi, ${n}!`,waiting:'Tem algo esperando por você na fazenda:',button:'Abrir minha fazenda',openText:'Abra sua fazenda',
@@ -82,7 +88,8 @@ const TEXTS={
   pushGift:b=>`Seu presente diário está esperando, com ${b}`,boosts:{3:'XP em dobro',5:'colheita em dobro',7:'ganhos em dobro'},
   pushStreak:n=>`Pegue seu presente para manter sua sequência de ${n} dias`,
   comeback:'Um baú de retorno está esperando por você na fazenda',
-  readyBoth:'Seus cultivos e produtos estão prontos',readyCrops:'Seus cultivos estão prontos para colher',readyGoods:'Seus produtos estão prontos para coletar'
+  readyBoth:'Seus cultivos e produtos estão prontos',readyCrops:'Seus cultivos estão prontos para colher',readyGoods:'Seus produtos estão prontos para coletar',
+  pushMessage:n=>`Mensagem de ${n}`,pushMention:n=>`${n} mencionou você`
  },
  id:{
   hi:n=>`Hai ${n}!`,waiting:'Ada yang menunggumu di kebun:',button:'Buka kebunku',openText:'Buka kebunmu',
@@ -95,7 +102,8 @@ const TEXTS={
   pushGift:b=>`Hadiah harianmu menunggu, dengan ${b}`,boosts:{3:'XP ganda',5:'panen ganda',7:'penghasilan ganda'},
   pushStreak:n=>`Ambil hadiahmu untuk mempertahankan ${n} hari beruntunmu`,
   comeback:'Peti kepulangan sedang menunggumu di kebun',
-  readyBoth:'Tanaman dan barangmu sudah siap',readyCrops:'Tanamanmu siap dipanen',readyGoods:'Barangmu siap diambil'
+  readyBoth:'Tanaman dan barangmu sudah siap',readyCrops:'Tanamanmu siap dipanen',readyGoods:'Barangmu siap diambil',
+  pushMessage:n=>`Pesan dari ${n}`,pushMention:n=>`${n} menyebutmu`
  },
  tr:{
   hi:n=>`Merhaba ${n}!`,waiting:'Çiftliğinde seni bekleyen bir şey var:',button:'Çiftliğimi aç',openText:'Çiftliğini aç',
@@ -108,7 +116,8 @@ const TEXTS={
   pushGift:b=>`Günlük hediyen seni bekliyor, yanında ${b}`,boosts:{3:'çift XP',5:'çift hasat',7:'çift kazanç'},
   pushStreak:n=>`${n} günlük serini sürdürmek için hediyeni al`,
   comeback:'Çiftliğinde seni bir dönüş sandığı bekliyor',
-  readyBoth:'Mahsullerin ve ürünlerin hazır',readyCrops:'Mahsullerin hasada hazır',readyGoods:'Ürünlerin toplanmaya hazır'
+  readyBoth:'Mahsullerin ve ürünlerin hazır',readyCrops:'Mahsullerin hasada hazır',readyGoods:'Ürünlerin toplanmaya hazır',
+  pushMessage:n=>`Yeni mesaj: ${n}`,pushMention:n=>`${n} senden bahsetti`
  },
  hu:{
   hi:n=>`Szia, ${n}!`,waiting:'Valami vár rád a farmodon:',button:'Farmom megnyitása',openText:'Nyisd meg a farmodat',
@@ -121,7 +130,8 @@ const TEXTS={
   pushGift:b=>`Vár a napi ajándékod, benne: ${b}`,boosts:{3:'dupla XP',5:'dupla termés',7:'dupla bevétel'},
   pushStreak:n=>`Vedd át az ajándékodat, hogy megmaradjon a(z) ${n} napos sorozatod`,
   comeback:'Visszatérési láda vár rád a farmodon',
-  readyBoth:'A terményeid és termékeid elkészültek',readyCrops:'A terményeid betakaríthatók',readyGoods:'A termékeid átvehetők'
+  readyBoth:'A terményeid és termékeid elkészültek',readyCrops:'A terményeid betakaríthatók',readyGoods:'A termékeid átvehetők',
+  pushMessage:n=>`Új üzenet: ${n}`,pushMention:n=>`${n} megemlített téged`
  },
  ru:{
   hi:n=>`Привет, ${n}!`,waiting:'На твоей ферме кое-что ждёт:',button:'Открыть мою ферму',openText:'Открой свою ферму',
@@ -136,7 +146,8 @@ const TEXTS={
   pushGift:b=>`Тебя ждёт ежедневный подарок, а с ним ${b}`,boosts:{3:'двойной XP',5:'двойной урожай',7:'двойной доход'},
   pushStreak:n=>`Забери подарок, чтобы сохранить ${n}-дневную серию`,
   comeback:'На твоей ферме тебя ждёт сундук возвращения',
-  readyBoth:'Твои культуры и товары готовы',readyCrops:'Твои культуры готовы к сбору',readyGoods:'Твои товары готовы: забери их'
+  readyBoth:'Твои культуры и товары готовы',readyCrops:'Твои культуры готовы к сбору',readyGoods:'Твои товары готовы: забери их',
+  pushMessage:n=>`Новое сообщение: ${n}`,pushMention:n=>`${n} упоминает тебя в чате`
  },
  uk:{
   hi:n=>`Привіт, ${n}!`,waiting:'На твоїй фермі дещо чекає:',button:'Відкрити мою ферму',openText:'Відкрий свою ферму',
@@ -151,7 +162,8 @@ const TEXTS={
   pushGift:b=>`На тебе чекає щоденний подарунок, а з ним ${b}`,boosts:{3:'подвійний XP',5:'подвійний урожай',7:'подвійний заробіток'},
   pushStreak:n=>`Забери подарунок, щоб зберегти ${n}-денну серію`,
   comeback:'На твоїй фермі на тебе чекає скриня повернення',
-  readyBoth:'Твої культури й вироби готові',readyCrops:'Твої культури готові до збирання',readyGoods:'Твої вироби готові: забери їх'
+  readyBoth:'Твої культури й вироби готові',readyCrops:'Твої культури готові до збирання',readyGoods:'Твої вироби готові: забери їх',
+  pushMessage:n=>`Нове повідомлення: ${n}`,pushMention:n=>`${n} згадує тебе в чаті`
  },
  cs:{
   hi:n=>`Ahoj ${n}!`,waiting:'Na tvé farmě na tebe něco čeká:',button:'Otevřít moji farmu',openText:'Otevři svou farmu',
@@ -166,7 +178,8 @@ const TEXTS={
   pushGift:b=>`Čeká na tebe denní dárek a s ním ${b}`,boosts:{3:'dvojnásobné XP',5:'dvojnásobná sklizeň',7:'dvojnásobný výdělek'},
   pushStreak:n=>`Vyzvedni si dárek a udrž svou ${n}denní sérii`,
   comeback:'Na tvé farmě na tebe čeká truhla na uvítanou',
-  readyBoth:'Tvoje plodiny a výrobky jsou hotové',readyCrops:'Tvoje plodiny jsou připravené ke sklizni',readyGoods:'Tvoje výrobky jsou připravené k vyzvednutí'
+  readyBoth:'Tvoje plodiny a výrobky jsou hotové',readyCrops:'Tvoje plodiny jsou připravené ke sklizni',readyGoods:'Tvoje výrobky jsou připravené k vyzvednutí',
+  pushMessage:n=>`Nová zpráva: ${n}`,pushMention:n=>`${n} tě zmiňuje v chatu`
  },
  hi:{
   hi:n=>`नमस्ते ${n}!`,waiting:'आपके फ़ार्म पर कुछ आपका इंतज़ार कर रहा है:',button:'मेरा फ़ार्म खोलें',openText:'अपना फ़ार्म खोलें',
@@ -179,7 +192,8 @@ const TEXTS={
   pushGift:b=>`आपका रोज़ का तोहफ़ा इंतज़ार कर रहा है, साथ में ${b}`,boosts:{3:'दोगुना XP',5:'दोगुनी फसल',7:'दोगुनी कमाई'},
   pushStreak:n=>`अपना ${n} दिन का सिलसिला बनाए रखने के लिए तोहफ़ा लें`,
   comeback:'आपके फ़ार्म पर वापसी का संदूक आपका इंतज़ार कर रहा है',
-  readyBoth:'आपकी फसलें और सामान तैयार हैं',readyCrops:'आपकी फसलें कटाई के लिए तैयार हैं',readyGoods:'आपका सामान लेने के लिए तैयार है'
+  readyBoth:'आपकी फसलें और सामान तैयार हैं',readyCrops:'आपकी फसलें कटाई के लिए तैयार हैं',readyGoods:'आपका सामान लेने के लिए तैयार है',
+  pushMessage:n=>`${n} का संदेश`,pushMention:n=>`${n} ने आपका ज़िक्र किया`
  },
  ja:{
   hi:n=>`${n}さん、こんにちは！`,waiting:'農場であなたを待っているものがあります：',button:'農場を開く',openText:'農場を開く',
@@ -193,7 +207,8 @@ const TEXTS={
   pushGift:b=>`デイリーギフトが届いています（${b}付き）`,boosts:{3:'XP 2倍',5:'収穫2倍',7:'稼ぎ2倍'},
   pushStreak:n=>`ギフトを受け取って${n}日の連続記録を守りましょう`,
   comeback:'農場でおかえり宝箱があなたを待っています',
-  readyBoth:'作物と商品の準備ができました',readyCrops:'作物が収穫できます',readyGoods:'商品を受け取れます'
+  readyBoth:'作物と商品の準備ができました',readyCrops:'作物が収穫できます',readyGoods:'商品を受け取れます',
+  pushMessage:n=>`${n}さんからのメッセージ`,pushMention:n=>`${n}さんがあなたをメンションしました`
  },
  ar:{
   hi:n=>`مرحبًا ${n}!`,waiting:'هناك شيء ينتظرك في مزرعتك:',button:'افتح مزرعتي',openText:'افتح مزرعتك',
@@ -208,7 +223,8 @@ const TEXTS={
   pushGift:b=>`هديتك اليومية بانتظارك، ومعها ${b}`,boosts:{3:'خبرة مضاعفة',5:'حصاد مضاعف',7:'أرباح مضاعفة'},
   pushStreak:n=>`اجمع هديتك لتحافظ على سلسلتك (${n} ${forms('ar',n,{zero:'أيام',one:'يوم',two:'يومان',few:'أيام',many:'يومًا',other:'يوم'})})`,
   comeback:'صندوق العودة بانتظارك في مزرعتك',
-  readyBoth:'محاصيلك ومنتجاتك جاهزة',readyCrops:'محاصيلك جاهزة للحصاد',readyGoods:'منتجاتك جاهزة للجمع'
+  readyBoth:'محاصيلك ومنتجاتك جاهزة',readyCrops:'محاصيلك جاهزة للحصاد',readyGoods:'منتجاتك جاهزة للجمع',
+  pushMessage:n=>`رسالة من ${n}`,pushMention:n=>`إشارة إليك من ${n}`
  },
  zh:{
   hi:n=>`${n}，你好！`,waiting:'你的农场有东西在等你：',button:'打开我的农场',openText:'打开你的农场',
@@ -221,7 +237,8 @@ const TEXTS={
   pushGift:b=>`你的每日礼物在等你，还有${b}`,boosts:{3:'双倍经验',5:'双倍收获',7:'双倍收益'},
   pushStreak:n=>`领取礼物以保持你的 ${n} 天连续签到`,
   comeback:'你的农场里有一个回归宝箱在等你',
-  readyBoth:'你的作物和商品已经准备好了',readyCrops:'你的作物可以收获了',readyGoods:'你的商品可以领取了'
+  readyBoth:'你的作物和商品已经准备好了',readyCrops:'你的作物可以收获了',readyGoods:'你的商品可以领取了',
+  pushMessage:n=>`来自${n}的消息`,pushMention:n=>`${n}提到了你`
  }
 };
 export const MAIL_LANGUAGES=Object.freeze(Object.keys(TEXTS));

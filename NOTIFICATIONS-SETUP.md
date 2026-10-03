@@ -84,7 +84,7 @@ Aan of uit is van de speler, niet van één telefoon: OneSignal bereikt elke tel
 koppelt alleen die telefoon los (OneSignal-logout); de andere telefoons houden hun meldingen. Uitzetten in Settings zet ze overal uit.
 
 Elke melding valt in een categorie van de app (Android-instellingen, `existing_android_channel_id`): `messages` voor privéberichten,
-de Crew en aankoopmeldingen; `daily` voor een uurlijkse herinnering waarvan elke regel over het dagcadeau, de reeks of de terugkomkist
+vermeldingen (sinds 3 okt 2026), de Crew en aankoopmeldingen; `daily` voor een uurlijkse herinnering waarvan elke regel over het dagcadeau, de reeks of de terugkomkist
 gaat; anders `ready`.
 
 Bekend en zo gelaten: wie op dezelfde telefoon eerder pushmeldingen in Chrome aanzette en daarna in de app, krijgt elke melding daar

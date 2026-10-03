@@ -120,10 +120,10 @@ test('the header: chat next to Farm Family and the staff dashboard next to the c
  assert.match(mobile,/for\(const id of \['chat-button','chat-dot'\]\)if\(\$\(id\)\)chatWatch\.observe/,'live, as messages come in');
 });
 
-test('the chat window: Global first, no red count on Global, names open a profile without a way back, VIP and Moderator marks',()=>{
+test('the chat window: Global first, Global\'s red count only for mentions of you, names open a profile without a way back, VIP and Moderator marks',()=>{
  const ui=read('src/chat-ui.js'),profiles=read('src/player-profiles.js');
  assert.match(ui,/const first=other\?'private':wanted\?\?'global';/);
- assert.match(ui,/const per=\{notices:u\.notices,global:0,family:u\.family,private:u\.dm\};/);
+ assert.match(ui,/const per=\{notices:u\.notices,global:u\.mentions\?\?0,family:u\.family,private:u\.dm\};/,'Global counts only its mentions of you (3 Oct 2026)');
  assert.match(ui,/profiles\?\.open\(profile\.dataset\.profile,\{back:null\}\)/);
  assert.match(profiles,/backButton\.hidden=back===null;/);
  assert.match(ui,/\$\{m\.sender_vip\?VIP:''\}\$\{m\.sender_staff\?/);

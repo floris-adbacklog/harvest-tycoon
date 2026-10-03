@@ -57,7 +57,7 @@ test('both pages start the translation first, and the early script knows the sam
  assert.match(read('public/game.js'),/\nstartTranslation\(\);\n/);
  assert.match(read('src/main.js'),/\nstartTranslation\(\);\n/);
  // What players write themselves is never translated.
- assert.match(read('src/chat-ui.js'),/<span translate="no">\$\{m\.sender_staff\?linkify\(m\.body\):esc\(m\.body\)\}<\/span>/);
+ assert.match(read('src/chat-ui.js'),/<span translate="no">\$\{m\.sender_staff\?linkify\(part\.text\):esc\(part\.text\)\}<\/span>/,'the words between wiki chips and mentions (3 Oct 2026)');
 });
 
 test('every English text a player can see is in i18n/catalog.json (run node scripts/i18n-extract.mjs after changing texts)',()=>{
