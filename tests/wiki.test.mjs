@@ -10,6 +10,8 @@ const FARM_RECIPES=Object.values(RECIPES).filter(r=>!worldTwo(r)).length;
 import {WIKI_TOPICS,wikiArticle,wikiSearch,wikiTime} from '../public/wiki-content.js';
 import {buildWiki} from '../scripts/build-wiki.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+// The Farmhouse and the Family Hall rows (Oct 2026) make nothing: the recipe counts leave them out.
+const recipesOnly=html=>html.replace(/<details class="wiki-section wiki-building" id="building-(?:farmhouse|familyhall)">[^]*?<\/details>/g,'');
 
 test('every topic renders from the game rules without gaps, old drawn icons or broken links',()=>{
  assert.equal(WIKI_TOPICS.length,14);
@@ -23,7 +25,7 @@ test('every topic renders from the game rules without gaps, old drawn icons or b
 });
 
 test('the tables list every crop and every recipe',()=>{
- const crops=wikiArticle('crops').html,buildings=wikiArticle('buildings').html;
+ const crops=wikiArticle('crops').html,buildings=recipesOnly(wikiArticle('buildings').html);
  for(const c of Object.values(CROPS))assert.ok(crops.includes(c.name),c.name);
  const rows=(buildings.match(/<tr/g)??[]).length,tables=(buildings.match(/<table/g)??[]).length;
  assert.equal(rows-tables,FARM_RECIPES);
@@ -76,7 +78,7 @@ test('topic pages have a coloured header and a jump bar; phones get cards; the h
  const jump=wikiJump(buildings);assert.match(jump,/data-wiki-jump="sec-how-buildings-work"/);assert.match(jump,/data-wiki-jump="building-bakery"/);
  const crops=wikiArticle('crops').html;assert.match(crops,/<div class="wiki-dual"><div class="wiki-table-wrap">/);
  assert.equal((crops.match(/class="wiki-card(?:"| is-locked")/g)??[]).length,Object.keys(CROPS).length);
- assert.equal((buildings.html.match(/class="wiki-card(?:"| is-locked")/g)??[]).length,FARM_RECIPES);
+ assert.equal((recipesOnly(buildings.html).match(/class="wiki-card(?:"| is-locked")/g)??[]).length,FARM_RECIPES);
  assert.deepEqual(WIKI_GROUPS.flatMap(g=>g.ids).sort(),WIKI_TOPICS.map(t=>t.id).sort(),'every topic in exactly one group');
  assert.match(wikiGroups(),/class="wiki-tile is-featured" href="\/wiki\/getting-started"/);
  const css=read('public/wiki.css');
@@ -182,13 +184,13 @@ test('the website has the same search as the game: the box, the quick searches a
  assert.match(index,/<div id="wiki-results" class="wiki-results" hidden><\/div>/);assert.match(index,/fetch\('\/wiki\/search\.json'\)/);
  const data=JSON.parse(readFileSync(join(out,'wiki','search.json'),'utf8'));
  const cheese=data.items.find(e=>e[0]==='Cheese');assert.deepEqual(cheese.slice(1,4),['Buildings and goods','/wiki/buildings#building-dairy','cheese']);assert.match(data.arts.cheese,/game-art/);
- assert.ok(data.items.some(e=>e[2]==='/wiki/crops'&&e[0]==='Corn'));
+ assert.ok(data.items.some(e=>e[2]==='/wiki/crops#crop-corn'&&e[0]==='Corn'),'a crop lands on its row in Every crop (Oct 2026)');
  assert.doesNotMatch(readFileSync(join(out,'wiki','crops.html'),'utf8'),/id="wiki-search"/,'the search is on the home page');
 });
 test('Trees and bushes shows each crop that grows back with its picture and level; days are written out',async()=>{
  const {wikiArticle:article}=await import('../public/wiki-content.js');
  const crops=article('crops').html;
- assert.match(crops,/<ul class="wiki-chips wiki-regrow"><li>[^]*?<span>Apples<\/span><span class="wiki-level">Level 20<\/span><\/li>/);
+ assert.match(crops,/<ul class="wiki-chips wiki-regrow"><li><a href="\/wiki\/crops#crop-apples" data-wiki-topic="crops" data-wiki-anchor="crop-apples">[^]*?<span>Apples<\/span><span class="wiki-level">Level 20<\/span><\/a><\/li>/,'each chip leads to its row in Every crop (Oct 2026)');
  assert.match(crops,/<p>These grow back after you harvest them, so you only plant them once\./);
  assert.doesNotMatch(article('estate').html.replace(/<[^>]+>/g,' '),/\b\d+ d\b/);
 });
