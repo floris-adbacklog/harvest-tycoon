@@ -203,6 +203,13 @@ html:has(body[data-phase=authenticated]),body[data-phase=authenticated]{touch-ac
 .site-legal{align-items:center}
 .site-legal-button{min-height:0;height:auto;margin:0;line-height:inherit}
 .site-legal .footer-social{display:inline-flex;align-items:center}
+/* The Google Play badge (Oct 2026): Google's own picture in the page's language on a line of its own above the footer's links, 40 px
+   high (Google's minimum is 28 px) with a quarter of its height clear around it, as Google's badge guidelines ask (6 px here plus the
+   footer's 4 px gap under it). Not in our Android app: the farmer is in it already. */
+.play-badge{flex-basis:100%;display:flex;justify-content:center;margin-bottom:6px}
+.play-badge a{display:block;border-radius:7px}
+.play-badge img{display:block;width:auto;height:40px}
+html[data-app=android] .play-badge{display:none!important}
 /* Inside the Facebook, Instagram or TikTok app (28 Sep 2026): before the account form, one step to the phone's own browser (src/main.js browserGate). */
 .browser-gate{display:none;text-align:center}
 .account-card[data-gate]>:not(.card-top):not(.browser-gate){display:none!important}

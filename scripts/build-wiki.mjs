@@ -43,6 +43,7 @@ ${body}
  <div class="wiki-cta"><p>Ready to start your own farm? It’s free to play.</p><a href="/">Play Harvest Tycoon</a></div>
 </main>
 <footer class="legal-footer">
+ <span class="play-badge"><a href="https://play.google.com/store/apps/details?id=com.harvesttycoon.app&amp;referrer=utm_source%3Dwebsite%26utm_medium%3Dfooter" target="_blank" rel="noopener"><img src="/assets/badges/google-play-en.webp" alt="Get it on Google Play" width="135" height="40" loading="lazy" decoding="async"></a></span>
  <span>© 2026 Harvest Tycoon</span>
  <a href="/">Play Harvest Tycoon</a>
  <a href="/wiki">Game wiki</a>

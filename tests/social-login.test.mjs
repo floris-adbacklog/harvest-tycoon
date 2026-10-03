@@ -39,7 +39,8 @@ test('the privacy policy and the deletion page are public, linked from the sign-
  assert.deepEqual(vercel.rewrites.filter(r=>!r.source.endsWith('/')).map(r=>[r.source,r.destination]),[['/partners','/partners.html'],['/privacy','/privacy.html'],['/delete-account','/delete-account.html'],['/wiki','/wiki/index.html'],['/wiki/:topic([a-z-]+)','/wiki/:topic.html']]);
  for(const page of ['public/privacy.html','public/delete-account.html']){
   const text=read(page);
-  assert.ok(!/googletagmanager|gtag\(|fbq\(|<script/i.test(text),`${page} loads no scripts`);
+  // Only our own app mark (public/android-app.js, Oct 2026: the footer's Google Play badge steps aside in the Android app); no tracking.
+  assert.ok(!/googletagmanager|gtag\(|fbq\(/i.test(text)&&!/<script/i.test(text.replace('<script src="/android-app.js"></script>','')),`${page} loads no scripts but the app mark`);
   assert.match(text,/info@harvesttycoon\.com/);assert.doesNotMatch(text,/floris@millstone/);assert.match(text,/89795857/);assert.match(text,/<html lang="en">/);
  }
 });
@@ -47,7 +48,7 @@ test('the privacy policy and the deletion page are public, linked from the sign-
 test('unknown pages get a friendly 404 in the same style, with the way back and no tracking',()=>{
  const html=read('public/404.html');
  assert.match(html,/<meta name="robots" content="noindex">/);assert.match(html,/<a class="legal-button nf-button" href="\/">Back to the farm<\/a>/);
- assert.ok(!/<script/i.test(html),'no scripts');assert.match(html,/href="\/legal\.css"/,'absolute paths, so it works at any depth');
+ assert.ok(!/<script/i.test(html.replace('<script src="/android-app.js"></script>','')),'no scripts but the app mark');assert.match(html,/href="\/legal\.css"/,'absolute paths, so it works at any depth');
 });
 
 test('inside the Facebook, Instagram or other in-app browsers the Google button is left out; elsewhere both stay',async()=>{
