@@ -5,7 +5,7 @@ import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
 import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_GOAL_POOLS} from './event-goals.js';
 import {portal as portalAround} from './portal.js';
-import {androidApp} from './android.js';
+import {androidApp,appPushOffered} from './android.js';
 
 // The farm wiki: the same topics in How to play (public/wiki-ui.js) and on the website (/wiki, scripts/build-wiki.mjs).
 // Every number and table comes from the game rules, so a balance change never leaves the wiki behind. In the game, things
@@ -73,15 +73,17 @@ const worldTwoRecipe=r=>worldTwoBuilding(r.building)||Object.keys(r.output).some
 // Halloween Pass); portal: true in the game on CrazyGames (Oct 2026, public/portal.js; read from the page around the game when not
 // given), where the parts about buying, inviting, sharing, email, reminders, the app and our website are left out, as the game itself
 // leaves them out there; app: true in our Android app (Oct 2026, public/android.js; read from the page when not given), where only the
-// parts about buying, installing the web app and browser notifications are left out}.
+// parts about buying and installing the web app are left out; appPush: in the app, its own notifications are offered (src/app-push.js,
+// once notify-hourly's config says appPush; read from the page around the game when not given), else push reminders are left out too}.
 function helpers(ctx){
  const level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now(),portal=Boolean(ctx.portal??portalAround()),app=Boolean(ctx.app??androidApp());
+ const appPush=app&&Boolean(ctx.appPush??appPushOffered());
  const locked=n=>level!=null&&n>level;
  const lvl=n=>`<span class="wiki-level${locked(n)?' is-locked':''}">${locked(n)?'From level':'Level'} ${n}</span>`;
  const row=(n,cells)=>`<tr${locked(n)?' class="is-locked"':''}>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
  const link=(id,text=TOPIC[id].title)=>`<a href="${href(id)}" data-wiki-topic="${id}">${text}</a>`;
  // shop: our own purchases are there (not on CrazyGames, not in the Android app); install: installing the web app is.
- return {level,href,locked,lvl,row,link,now,portal,app,shop:!portal&&!app,install:!portal&&!app};
+ return {level,href,locked,lvl,row,link,now,portal,app,appPush,shop:!portal&&!app,install:!portal&&!app};
 }
 // On CrazyGames: what is saved where, and the one link allowed (our Privacy Policy, in full).
 const PORTAL_SAVED='<p>Your farm is saved on our server. As a guest it stays with this browser; log in with CrazyGames to keep it safe and play it on any device. You need an internet connection to play.</p>';
@@ -350,12 +352,13 @@ const BODIES={
   +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap the mailbox next to How to play (on a phone: More, then Feedback), choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
   +section('Avatars',avatarsBody(true))
   +section('Privacy',PORTAL_PRIVACY);
-  // In the Android app (Oct 2026): no home screen or Farm app to point at, and no browser notifications; what the app says instead
-  // is the line Getting started already has (so it is translated already).
+  // In the Android app (Oct 2026): no home screen or Farm app to point at; what the app says instead is the line Getting started already
+  // has (so it is translated already). Push reminders only once the app offers its own notifications (h.appPush, src/app-push.js);
+  // until then Settings has no switch for them there, so the line would promise one.
   return section('Your account',facts([
    h.app?['farm','One farm, everywhere','Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.']
    :['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app: press and hold its icon for Chat, Daily gift and the leaderboard, and on Android or a computer you can play full screen (Settings, Farm app).'],
-   ...(h.app?[]:[['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. After 3 and 6 days away, the morning gift reminder tells you a comeback chest is waiting. Email reminders, and news and offers by email, stay off until you switch them on. The daily email (at most one a day, only when something is waiting) goes to a confirmed address: signed up with your email? Confirm it first.']])
+   ...(h.app&&!h.appPush?[]:[['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. After 3 and 6 days away, the morning gift reminder tells you a comeback chest is waiting. Email reminders, and news and offers by email, stay off until you switch them on. The daily email (at most one a day, only when something is waiting) goes to a confirmed address: signed up with your email? Confirm it first.']])
   ]))
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
   // The mailbox button (30 Sep 2026, public/feedback-ui.js).

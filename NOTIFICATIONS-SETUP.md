@@ -61,3 +61,51 @@ Zeg tegen mij dat de geheimen erin staan. Dan voer ik `supabase/notifications-cr
 ## Wat spelers zien
 
 Zodra de config `enabled` is, verschijnt in Settings het blok **Reminders**. Alles staat uit. Een speler zet zelf meldingen aan op zijn apparaat (op een iPhone eerst de app op het beginscherm zetten), kiest wat hij wil, en kan een testmelding sturen.
+
+## Meldingen in de Android-app (OneSignal, oktober 2026)
+
+In de Android-app komen de meldingen via OneSignal in plaats van via de browser. Dezelfde herinneringen, dezelfde schakelaars,
+dezelfde stille uren en limieten. Wat jij doet, in deze volgorde (elke stap is los veilig: zonder de volgende gebeurt er niets):
+
+1. **Database:** voer `supabase/app-push.sql` uit in de SQL-editor. Het maakt de tabel `app_push_players` (per speler: meldingen in
+   de app aan of uit; geen push-id's, die heeft alleen OneSignal) en de functie `app_push_save`, en past drie triggers aan vanaf hun
+   live versie (privéberichten, de Crew, aankoopmeldingen voor de admin). Staat een regel live anders dan verwacht, dan stopt het hele
+   bestand zonder iets half te doen; laat het me dan weten.
+2. **Edge Function:** zet `notify-hourly` opnieuw neer (met de nieuwe `onesignal.js`).
+3. **Geheim:** in **Edge Functions → Secrets** het geheim `ONESIGNAL_REST_API_KEY` met de **App API key** uit OneSignal
+   (Settings → Keys & IDs). Nooit in de code, de chat of GitHub. De App ID (`1d8ca7c0-fca0-48a9-b55e-e87b85802fad`) is openbaar en staat al in de code.
+4. **Controleren:** `…/functions/v1/notify-hourly?config` geeft dan ook `"appPush":true`. Pas dan zie je in de app de knop
+   **Turn on notifications** in Settings, en vraagt de app de speler om toestemming (alleen na een tik).
+
+Zonder het geheim stuurt de functie niets naar de app en blijft de app zoals nu (alleen de dagelijkse e-mail); How to play noemt
+pushmeldingen in de app ook pas als de config `appPush` zegt. De wiki-pagina's van de website noemen ze in de app niet.
+
+Aan of uit is van de speler, niet van één telefoon: OneSignal bereikt elke telefoon waarop de speler is ingelogd. Afmelden in de app
+koppelt alleen die telefoon los (OneSignal-logout); de andere telefoons houden hun meldingen. Uitzetten in Settings zet ze overal uit.
+
+Elke melding valt in een categorie van de app (Android-instellingen, `existing_android_channel_id`): `messages` voor privéberichten,
+de Crew en aankoopmeldingen; `daily` voor een uurlijkse herinnering waarvan elke regel over het dagcadeau, de reeks of de terugkomkist
+gaat; anders `ready`.
+
+Bekend en zo gelaten: wie op dezelfde telefoon eerder pushmeldingen in Chrome aanzette en daarna in de app, krijgt elke melding daar
+twee keer. De server kan niet zien dat Chrome op dezelfde telefoon zit, en ook niet of de app er nog op staat; de Chrome-kopie
+weglaten kan de telefoon dus helemaal stil maken. De speler zet de Chrome-kopie uit in Chrome: Settings, Reminders, "Turn off in this browser or app".
+
+### Account verwijderen (handmatig)
+
+Verwijder bij een verwijderverzoek ook de gegevens bij OneSignal (de privacyverklaring en /delete-account beloven dat): in OneSignal
+**Audience → Users**, zoek op External ID = de player id, en verwijder de gebruiker. Of met de API (sleutel uit je eigen beheer, nooit
+in de code): `DELETE https://api.onesignal.com/apps/1d8ca7c0-fca0-48a9-b55e-e87b85802fad/users/by/external_id/<player id>` met de
+header `Authorization: Key <App API key>`. Dat wist ook de abonnementen van die gebruiker.
+
+### Google Play: Data safety
+
+OneSignal krijgt niets over de speler of de game tot de speler in de game meldingen aanzet (Turn on): de app start OneSignal met
+privacy-toestemming verplicht en geeft die toestemming pas bij `registerpush://`; tot dan blokkeert OneSignal zelf elke POST. Wel bij
+elke start, ook zonder tik: OneSignal haalt de instellingen van de app op (`GET …/apps/<app id>/android_params.js`, met het IP-adres en
+een willekeurig installatienummer in de header `OneSignal-Install-Id`), en Firebase Cloud Messaging (Google) geeft de telefoon een
+push-token (via een Firebase-installatie-id), dat op de telefoon blijft tot Turn on. Vanaf Turn on krijgt OneSignal de player id, het
+push-token en apparaatgegevens (apparaattype en model, Android-versie, taal, tijdzone, land via het IP-adres, provider, app-versie) en
+gebruik van de app (sessies, duur). Vul Data safety daarnaar in: *Device or other IDs* verzameld voor *App functionality* en niet
+optioneel (gebeurt bij elke start); *User IDs* en *App interactions* verzameld voor *App functionality*, optioneel (alleen na Turn on);
+niet gedeeld (OneSignal en Google zijn verwerkers namens ons), versleuteld onderweg, te verwijderen op verzoek.

@@ -19,10 +19,13 @@ import {createConnection,connectionMessage,reasonOf,refused,WAKE_GRACE} from './
 import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
-import {androidApp} from '../public/android.js';
+import {androidApp,listenAppPush} from '../public/android.js';
+import {forgetAppPushLink} from './app-push.js';
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
 const inApp=androidApp();
+// The app's answers about its notifications (window.harvestAppPush) are kept on this page from the start (src/app-push.js).
+if(inApp)listenAppPush(window);
 // Another language than English: translate the page's texts as they appear (public/i18n.js).
 startTranslation();
 renderLanguageSwitch();
@@ -125,9 +128,9 @@ function browserGate(){
  $('gate-stay').onclick=()=>{store.set(ESCAPE_KEY,'stay');store.set(BROWSER_TIP_KEY,'1');card.removeAttribute('data-gate');trackAuth('browser_gate',{reason:'stay'});};
  if(!store.get(ESCAPE_KEY)){store.set(ESCAPE_KEY,'shown');trackAuth('browser_gate',{reason:'shown'});if(text.android&&metaApp(ua))leave();}
 }
-function landing(message=''){connection.stop();dispose();setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');browserGate();$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
+function landing(message=''){connection.stop();dispose();if(inApp)forgetAppPushLink(window);setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');browserGate();$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
 function unavailable(message='Your farm is safe. Reconnect to continue.',{retrying=false}={}){dispose();phase('error');$('account-title').textContent='A little pause.';$('account-copy').hidden=false;$('account-copy').textContent=message;$('account-message').textContent=retrying?'We are trying again automatically.':'';$('account-form').hidden=true;$('confirm-panel').hidden=true;$('mode-switch-row').hidden=true;document.querySelector('.account-tabs').hidden=true;$('connection-actions').hidden=false;}
-async function signOut(){if(!supabase){landing();return;}connection.stop();try{await notifications?.push?.detach();}catch{}notifications=null;dispose();phase('checking','Signing you out…');try{const result=await supabase.auth.signOut();if(result.error)throw result.error;}catch{await supabase.auth.signOut({scope:'local'});}finally{landing();$('password').value='';}}
+async function signOut(){if(!supabase){landing();return;}connection.stop();try{await notifications?.push?.detach();}catch{}notifications?.dispose?.();notifications=null;dispose();phase('checking','Signing you out…');try{const result=await supabase.auth.signOut();if(result.error)throw result.error;}catch{await supabase.auth.signOut({scope:'local'});}finally{landing();$('password').value='';}}
 // "Check your inbox": shown after registering, after asking for a reset link, and when an unconfirmed player tries to sign in.
 function showConfirmation(email,{kind='signup',fresh=true}={}){
  pendingEmail=email;confirmKind=kind;if(kind==='signup')store.set(CONFIRM_KEY,'1');setMode('confirm');
@@ -175,7 +178,7 @@ async function openFarm(){
   },watchConnection(watch){watchers.add(watch);return()=>watchers.delete(watch);}};
   // The chat window and the notifications (src/chat-client.js): straight to the database, live through Realtime.
   chat?.dispose();chat=bridge.chat=createChatClient(supabase,{playerId:user.id,alive:()=>ticket===generation});
-  notifications=bridge.notifications=createNotifications(supabase,{configUrl:functionsUrl&&`${functionsUrl}/notify-hourly?config`});
+  notifications?.dispose?.();notifications=bridge.notifications=createNotifications(supabase,{configUrl:functionsUrl&&`${functionsUrl}/notify-hourly?config`,playerId:user.id});
   void notifications.ready?.then?.(()=>notifications?.push?.sync?.());
   bridge.trackCommerce=(event,params)=>{if(ticket===generation)trackCommerce(event,params);};
   bridge.trackGame=(event,params)=>{if(ticket===generation)trackGame(event,params);};

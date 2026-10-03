@@ -3,6 +3,7 @@ import webpush from 'npm:web-push@3.6.7';
 import {runJob,MAX_FAILURES} from './job.js';
 import {digestEmail} from './mail.js';
 import {CROP_NAMES,BUILDING_NAMES} from './names.js';
+import {createOneSignal,sendReminders} from './onesignal.js';
 
 // verify_jwt is off for this function: the hourly cron call carries no user, and the unsubscribe link is opened from an email.
 // Nothing here trusts the caller. The job runs at most once per clock hour (notification_begin_run), so calling it more
@@ -15,6 +16,10 @@ const RESEND_KEY=Deno.env.get('RESEND_API_KEY')??'',MAIL_FROM=Deno.env.get('MAIL
 const APP_URL=(Deno.env.get('APP_URL')??'https://www.harvesttycoon.com').replace(/\/$/,'');
 const pushOn=Boolean(VAPID_PUBLIC&&VAPID_PRIVATE),emailOn=Boolean(RESEND_KEY);
 if(pushOn)webpush.setVapidDetails(VAPID_SUBJECT,VAPID_PUBLIC,VAPID_PRIVATE);
+// Our Android app's notifications (Oct 2026), through OneSignal (onesignal.js): only once the owner set the secret
+// ONESIGNAL_REST_API_KEY. Without it nothing is sent to the app and the game does not offer them there (config appPush).
+const appPush=createOneSignal({apiKey:Deno.env.get('ONESIGNAL_REST_API_KEY')??'',base:APP_URL,log:(m:string)=>console.error(m)});
+const appPushOn=appPush.enabled;
 const functionUrl=`${url}/functions/v1/notify-hourly`;
 const cors={'Access-Control-Allow-Origin':'*','Cache-Control':'no-store'};
 const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -45,7 +50,37 @@ const db={
   if(failures>=MAX_FAILURES)await admin.from('push_subscriptions').delete().eq('endpoint',endpoint);
   else await admin.from('push_subscriptions').update({failures}).eq('endpoint',endpoint);
  },
- async addEmails(count:number){await admin.rpc('notification_add_emails',{p_count:count});}
+ async addEmails(count:number){await admin.rpc('notification_add_emails',{p_count:count});},
+ // The farmers with the app's notifications on (supabase/app-push.sql). Before that file is run (no table) or on an error: none, and
+ // their reminders still go to their browsers.
+ async appPushPlayers(){
+  const ids=new Set<string>();
+  for(let from=0;;from+=1000){
+   const {data,error}=await admin.from('app_push_players').select('player_id').eq('enabled',true).order('player_id').range(from,from+999);
+   if(error){console.error(`app push players: ${error.message}`);break;}
+   for(const r of data??[])ids.add(r.player_id);
+   if((data??[]).length<1000)break;
+  }
+  return ids;
+ },
+ // Of these farmers, the ones with the app's notifications on.
+ async appPushOf(players:string[]){
+  if(!players.length)return [];
+  const {data,error}=await admin.from('app_push_players').select('player_id').in('player_id',players).eq('enabled',true);
+  if(error){console.error(`app push players: ${error.message}`);return [];}
+  return [...new Set((data??[]).map((r:Record<string,any>)=>String(r.player_id)))];
+ },
+ // Who a message's push was just handed to (chat_push_claim marks them claimed): the other farmer of a private chat, or the staff.
+ async messageTargets(message:string){
+  const {data,error}=await admin.from('chat_push_state').select('player_id').eq('message_id',message).eq('claimed',true);
+  if(error){console.error(`message push: ${error.message}`);return [];}
+  return (data??[]).map((r:Record<string,any>)=>String(r.player_id));
+ },
+ async noticeOwner(notice:string){
+  const {data,error}=await admin.from('player_notices').select('player_id').eq('id',notice).maybeSingle();
+  if(error||!data?.player_id)return [];
+  return [String(data.player_id)];
+ }
 };
 async function sendPush(sub:{endpoint:string;p256dh:string;auth:string},payload:string){
  try{await webpush.sendNotification({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},payload,{TTL:3600,urgency:'normal'});return {ok:true,status:201};}
@@ -70,7 +105,7 @@ Deno.serve(async(req)=>{
  const query=new URL(req.url).searchParams;
  if(req.method==='OPTIONS')return new Response('ok',{headers:{...cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS'}});
  // What the settings dialog may offer. The public key is public by design; nothing secret is returned.
- if(query.has('config'))return json({enabled:pushOn||emailOn,push:pushOn,email:emailOn,vapidPublicKey:pushOn?VAPID_PUBLIC:null});
+ if(query.has('config'))return json({enabled:pushOn||emailOn||appPushOn,push:pushOn,email:emailOn,appPush:appPushOn,vapidPublicKey:pushOn?VAPID_PUBLIC:null});
  if(query.has('unsubscribe')){
   const token=query.get('unsubscribe');if(!tokenOk(token))return page('This link is not valid','<p>Open Settings in the game to change your reminders.</p>');
   // Opening the link (mail scanners do that) changes nothing; the button, or a mail app\'s one-click request, does.
@@ -87,45 +122,52 @@ Deno.serve(async(req)=>{
  // A new private message (the chat_dm_push trigger in supabase/chat.sql): one notification to the other farmer's devices. The
  // trigger already checked their switch, their devices and the pace; chat_push_claim hands out each message once, so calling
  // this again, by anyone, sends nothing.
+ // The same message goes to the app as a push too (onesignal.js) for whoever of them has the app's notifications on, in the app's
+ // "messages" category (a private message and the Crew alike).
  if(query.has('dm')){
-  if(!pushOn)return json({sent:0});
+  if(!pushOn&&!appPushOn)return json({sent:0});
   let id='';try{id=String((await req.json())?.message??'');}catch{}
   if(!tokenOk(id))return json({sent:0});
   const {data:claim,error}=await admin.rpc('chat_push_claim',{p_message:id});
   if(error||!claim)return json({sent:0});
   // Tapping it opens that conversation (public/app-links.js).
-  const payload=JSON.stringify({title:`Message from ${claim.senderName}`,body:claim.body,tag:`chat-${claim.channel}`,url:`/?open=chat&channel=${encodeURIComponent(claim.channel)}`});
+  const push={title:`Message from ${claim.senderName}`,body:claim.body,tag:`chat-${claim.channel}`,url:`/?open=chat&channel=${encodeURIComponent(claim.channel)}`};
+  const payload=JSON.stringify(push);
   let sent=0;
-  for(const sub of claim.subscriptions??[]){
+  if(pushOn)for(const sub of claim.subscriptions??[]){
    const outcome=await sendPush(sub,payload);
    if(outcome.ok){sent++;await db.markSuccess(sub.endpoint);}
    else if(outcome.status===404||outcome.status===410)await db.removeSubscription(sub.endpoint);
    else await db.markFailure(sub.endpoint);
   }
+  if(appPushOn){try{sent+=(await appPush.send({...push,channel:'messages',ids:await db.appPushOf(await db.messageTargets(id)),key:`message|${id}`})).size;}catch(error){console.error(`message app push: ${(error as Error)?.message??error}`);}}
   return json({sent});
  }
  // An in-game purchase, for the admin (supabase/purchase-alerts-push.sql): the same notice as in the chat's Notifications, on the
- // admin's devices. notice_push_claim hands each notice out once. Tapping it opens the chat on Notifications.
+ // admin's devices. notice_push_claim hands each notice out once. Tapping it opens the chat on Notifications. In the app: "messages".
  if(query.has('notice')){
-  if(!pushOn)return json({sent:0});
+  if(!pushOn&&!appPushOn)return json({sent:0});
   let id='';try{id=String((await req.json())?.notice??'');}catch{}
   if(!tokenOk(id))return json({sent:0});
   const {data:claim,error}=await admin.rpc('notice_push_claim',{p_notice:id});
   if(error||!claim)return json({sent:0});
   const text=String(claim.body??''),test=text.startsWith('Test purchase');
-  const payload=JSON.stringify({title:test?'Test purchase':'In-game purchase',body:text.replace(/^(In-game purchase|Test purchase \(no money\)): /,''),tag:`purchase-${claim.id}`,url:'/?open=chat&channel=notices'});
+  const push={title:test?'Test purchase':'In-game purchase',body:text.replace(/^(In-game purchase|Test purchase \(no money\)): /,''),tag:`purchase-${claim.id}`,url:'/?open=chat&channel=notices'};
+  const payload=JSON.stringify(push);
   let sent=0;
-  for(const sub of claim.subscriptions??[]){
+  if(pushOn)for(const sub of claim.subscriptions??[]){
    const outcome=await sendPush(sub,payload);
    if(outcome.ok){sent++;await db.markSuccess(sub.endpoint);}
    else if(outcome.status===404||outcome.status===410)await db.removeSubscription(sub.endpoint);
    else await db.markFailure(sub.endpoint);
   }
+  if(appPushOn){try{sent+=(await appPush.send({...push,channel:'messages',ids:await db.appPushOf(await db.noticeOwner(String(claim.id))),key:`notice|${claim.id}`})).size;}catch(error){console.error(`notice app push: ${(error as Error)?.message??error}`);}}
   return json({sent});
  }
- if(!pushOn&&!emailOn)return json({ran:false,reason:'not configured'},503);
+ if(!pushOn&&!emailOn&&!appPushOn)return json({ran:false,reason:'not configured'},503);
  try{
-  const stats=await runJob({db,sendPush:pushOn?sendPush:null,sendEmail:emailOn?sendEmail:null,emailConfirmed,names:{crops:CROP_NAMES,buildings:BUILDING_NAMES},log:(m:string)=>console.error(m)});
+  const stats=await runJob({db,sendPush:pushOn?sendPush:null,sendEmail:emailOn?sendEmail:null,emailConfirmed,names:{crops:CROP_NAMES,buildings:BUILDING_NAMES},log:(m:string)=>console.error(m),
+   sendAppPush:appPushOn?(items:{player:string;push:Record<string,string>}[],now:number)=>sendReminders(appPush,items,now):null});
   return json(stats);
  }catch(error){console.error(error);return json({error:'The reminder job failed.'},500);}
 });

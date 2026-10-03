@@ -2588,6 +2588,7 @@
 "Notifications":"通知",
 "Notifications are blocked for this site. Allow them in your browser settings, then reload the page.":"このサイトの通知はブロックされています。ブラウザの設定で許可してから、ページを再読み込みしてください。",
 "Notifications are blocked for this site. You can allow them in your browser settings.":"このサイトの通知はブロックされています。ブラウザの設定で許可できます。",
+"Notifications are off for Harvest Tycoon on this phone. You can allow them in your phone settings.":"このスマホでは Harvest Tycoon の通知がオフです。スマホの設定で許可できます。",
 "Notifications are off in this browser or app.":"このブラウザまたはアプリでは通知がオフです。",
 "Notifications are on in this browser or app.":"このブラウザまたはアプリでは通知がオンです。",
 "Notifications work in this browser or app. We will only nudge you when your farm needs you.":"このブラウザまたはアプリで通知が使えます。農場があなたを必要とするときだけお知らせします。",
