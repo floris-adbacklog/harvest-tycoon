@@ -7,7 +7,13 @@ import {chosenLanguage} from './i18n.js';
 export const FEEDBACK_MAX=1000;
 const HINTS={feedback:'What do you like, and what could be better?',bug:'What happened, and what did you do just before?',feature:'What would you like to see in the game?'};
 // What went wrong, in words the translation layer knows: a full hour (the database's 54000), no connection, or anything else.
-export const feedbackProblem=error=>error?.code==='54000'?'Thanks, we have your messages. Try again in a little while.':/^No connection/.test(error?.message??'')?'No connection right now. Try again in a moment.':'That did not send. Please try again.';
+// Oct 2026: the real reason, where the game knows it (a farmer on Firefox for Android saw only "That did not send." on 3 Oct, while
+// nothing had reached the server): signed out, a session that ended, a request cut off or timed out (src/chat-client.js makes that
+// "No connection"), a text the database refused for its length. Only these known texts, all translated; a database's own words
+// stay the general text.
+const SAID=new Set(['No connection right now. Try again in a moment.','Your session has ended. Please sign in again.','Sign in to send feedback.','Write between 3 and 1,000 characters.']);
+export const NOT_READY='The app is not ready yet. Reload the page and try again.';
+export const feedbackProblem=error=>{const message=String(error?.message??'');return error?.code==='54000'?'Thanks, we have your messages. Try again in a little while.':message==='Your session has ended.'?'Your session has ended. Please sign in again.':SAID.has(message)?message:/^No connection/.test(message)?'No connection right now. Try again in a moment.':'That did not send. Please try again.';};
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 
 export function createFeedback({doc=globalThis.document,chat=()=>{try{return globalThis.window?.parent?.harvestBridge?.chat??null;}catch{return null;}},level=()=>null,agent=()=>globalThis.navigator?.userAgent??'',language=chosenLanguage}={}){
@@ -36,7 +42,8 @@ export function createFeedback({doc=globalThis.document,chat=()=>{try{return glo
   if(busy)return;
   const body=draft.trim();
   if(body.length<3){message='Write a few words first.';render();dialog.querySelector('[data-feedback-text]')?.focus();return;}
-  const api=chat();if(!api?.sendFeedback){message='That did not send. Please try again.';render();return;}
+  // No game connection to send it with (the farm is still opening, or was closed): Oct 2026, it says so instead of "try again".
+  const api=chat();if(!api?.sendFeedback){message=NOT_READY;render();return;}
   busy=true;message='';render();
   try{await api.sendFeedback({kind,body,level:level(),device:String(agent()).slice(0,300),language:language()});sent=true;draft='';kind='feedback';}
   catch(error){message=feedbackProblem(error);}

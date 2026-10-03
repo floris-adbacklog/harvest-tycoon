@@ -19,6 +19,8 @@ import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SOR
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
+// The staff see what the database really said (Oct 2026: the chat shows farmers the general text instead, src/chat-client.js).
+const why=error=>error?.raw??error?.message;
 // Every time is Amsterdam time on a 24-hour clock (admin-players.js); a retention day is already an Amsterdam date ("2026-09-25").
 const fmtDate=dateTime;
 const fmtDay=day=>{const time=Date.parse(`${day}T00:00:00Z`);return Number.isFinite(time)?new Date(time).toLocaleDateString('en-US',{timeZone:'UTC',month:'short',day:'numeric'}):day;};
@@ -153,7 +155,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   try{
    const {player}=await bridge.request({operation:'admin_player',playerId:id});if(view.detail!==id)return;
    box.innerHTML=playerDetail(player,{guideSteps:GUIDE_STEPS,owner:view.owner});refreshArt();
-  }catch(error){box.innerHTML=`<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button></div><p class="admin-hint">${esc(error.message)}</p>`;}
+  }catch(error){box.innerHTML=`<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button></div><p class="admin-hint">${esc(why(error))}</p>`;}
  }
  function closePlayer(){
   view.detail=null;const panel=dialog.querySelector('[data-admin-panel="players"]');
@@ -201,13 +203,13 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    const open=payouts.filter(p=>p.status==='requested'),rest=payouts.filter(p=>p.status!=='requested');
    requests.innerHTML=payouts.length?[...open,...rest].map(p=>{const [label,cls]=PAYOUT_STATUS[p.status]??[p.status,''];return `<li><span class="admin-recent-copy"><strong>${esc(p.partner)} · ${euro(p.amountCents)}</strong><small>${esc(p.email??'')} · asked ${esc(fmtDate(p.requestedAt))}</small></span>${p.status==='requested'?`<span class="admin-log-side"><button type="button" class="small-button" data-payout-id="${esc(p.id)}" data-payout-status="paid">Paid</button><button type="button" class="small-button" data-payout-id="${esc(p.id)}" data-payout-status="rejected">Reject</button></span>`:`<b class="admin-purchase-status ${cls}">${label}</b>`}</li>`;}).join(''):'<li class="admin-empty">No payout requests yet.</li>';
    list.innerHTML=partners.length?partners.map(p=>`<li><span class="admin-recent-copy"><strong>${esc(p.name)} <small>${esc(p.code)}</small></strong><small>${esc(p.email??'')}${p.website?` · ${esc(p.website)}`:''} · since ${esc(fmtDate(p.createdAt))}</small><small>${number(p.stats?.players??0)} players · ${number(p.stats?.payingPlayers??0)} paying · ${euro(p.stats?.earnedCents??0)} earned · ${euro(p.stats?.paidCents??0)} paid · ${euro(p.stats?.availableCents??0)} available</small></span></li>`).join(''):'<li class="admin-empty">No partners yet.</li>';
-  }catch(error){list.innerHTML=`<li class="admin-empty">${esc(error.message)}</li>`;requests.innerHTML='';}
+  }catch(error){list.innerHTML=`<li class="admin-empty">${esc(why(error))}</li>`;requests.innerHTML='';}
  }
  dialog.querySelector('#admin-payout-list').addEventListener('click',async event=>{
   const button=event.target.closest('[data-payout-id]');if(!button)return;const paid=button.dataset.payoutStatus==='paid';
   if(!await confirmAction({title:paid?'Mark this payout paid?':'Reject this payout request?',description:paid?'Only after you paid it by hand. The partner sees it as paid.':'The amount goes back to what the partner can ask for.',confirmLabel:paid?'Mark paid':'Reject',tone:paid?'':'danger'}))return;
   button.disabled=true;
-  try{await bridge.chat.partnerPayout(button.dataset.payoutId,button.dataset.payoutStatus);}catch(error){button.disabled=false;button.title=error.message;return;}
+  try{await bridge.chat.partnerPayout(button.dataset.payoutId,button.dataset.payoutStatus);}catch(error){button.disabled=false;button.title=why(error);return;}
   void showPartners();
  });
  function renderPurchases(data){
@@ -254,14 +256,14 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    const count=dialog.querySelector('#admin-feedback-count');count.textContent=number(open.length);count.hidden=!open.length;
    const shown=done??open;await loadFaces(shown.map(f=>f.playerId));
    list.innerHTML=shown.length?shown.map(feedbackRow).join(''):`<li class="admin-empty">${feedbackView==='done'?'Nothing is marked done yet.':'No open messages. Everything is read.'}</li>`;
-  }catch(error){list.innerHTML=`<li class="admin-empty">${esc(error.message)}</li>`;}
+  }catch(error){list.innerHTML=`<li class="admin-empty">${esc(why(error))}</li>`;}
  }
  dialog.querySelectorAll('[data-feedback-filter]').forEach(b=>b.onclick=()=>{feedbackView=b.dataset.feedbackFilter;dialog.querySelectorAll('[data-feedback-filter]').forEach(x=>{const on=x===b;x.classList.toggle('active',on);x.setAttribute('aria-pressed',String(on));});void loadFeedback();});
  dialog.querySelector('#admin-feedback-list').addEventListener('click',async event=>{
   const name=event.target.closest('[data-profile]');if(name){window.harvestProfiles?.open(name.dataset.profile,{back:null});return;}
   const mark=event.target.closest('[data-feedback-id]');if(!mark)return;
   mark.disabled=true;
-  try{await bridge.chat.feedbackHandle(mark.dataset.feedbackId,mark.dataset.feedbackDone==='1');}catch(error){mark.disabled=false;mark.title=error.message;return;}
+  try{await bridge.chat.feedbackHandle(mark.dataset.feedbackId,mark.dataset.feedbackDone==='1');}catch(error){mark.disabled=false;mark.title=why(error);return;}
   void loadFeedback();
  });
  // The chat: open reports for the staff; news, moderators and chat levels for the admin.
@@ -282,7 +284,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    const reports=await client.reports();await loadFaces(reports.map(r=>r.sender));
    dialog.querySelector('#admin-reports').hidden=false;dialog.querySelector('#admin-report-count').textContent=number(reports.length);dialog.querySelector('#admin-kpi-reports').textContent=number(reports.length);
    dialog.querySelector('#admin-report-list').innerHTML=reports.length?reports.map(r=>`<li>${avatar(r.senderName,false,r.sender)}<span class="admin-recent-copy"><strong>${esc(r.senderName??'A farmer')} <small>${where(r.channel)} · ${number(r.reports)} report${r.reports===1?'':'s'}${r.present?'':' · already gone'}</small></strong><small class="admin-report-body">“${esc(r.body)}”</small>${reportedBy(r)}<span class="admin-report-actions">${r.present?`<button type="button" class="small-button" data-report="delete" data-id="${esc(r.messageId)}">Delete</button>`:''}<button type="button" class="small-button" data-report="mute" data-id="${esc(r.messageId)}" data-player="${esc(r.sender)}">Mute 1 day</button><button type="button" class="small-button" data-report="ban" data-id="${esc(r.messageId)}" data-player="${esc(r.sender)}">Ban from chat</button><button type="button" class="small-button" data-report="dismiss" data-id="${esc(r.messageId)}">Nothing wrong</button></span></span></li>`).join(''):'<li class="admin-empty">No open reports. The valley is friendly today.</li>';
-  }catch(error){dialog.querySelector('#admin-reports').hidden=false;dialog.querySelector('#admin-report-list').innerHTML=`<li class="admin-empty">${esc(error.message)}</li>`;}
+  }catch(error){dialog.querySelector('#admin-reports').hidden=false;dialog.querySelector('#admin-report-list').innerHTML=`<li class="admin-empty">${esc(why(error))}</li>`;}
   try{
    const log=await client.reportLog();await loadFaces(log.map(r=>r.sender));dialog.querySelector('#admin-report-log').hidden=false;
    dialog.querySelector('#admin-log-list').innerHTML=log.length?log.map(r=>`<li>${avatar(r.senderName,false,r.sender)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-profile="${esc(r.sender)}">${esc(r.senderName??'A farmer')}</button> <small>${where(r.channel)} · ${number(r.reports)} report${r.reports===1?'':'s'}</small></strong><small class="admin-report-body">“${esc(r.body)}”</small>${reportedBy(r)}<small>${verdict(r)}</small></span><span class="admin-log-side"><small class="admin-when" title="${esc(fmtDate(r.lastAt))}">${ago(r.lastAt)}</small>${role==='admin'&&!r.open?`<button type="button" class="small-button" data-log-remove="${esc(r.messageId)}">Remove</button>`:''}</span></li>`).join(''):'<li class="admin-empty">No reports yet.</li>';
@@ -298,7 +300,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    dialog.querySelector('#admin-mod-list').innerHTML=staff.length?staff.map(s=>`<li>${avatar(s.name,false,s.playerId)}<span class="admin-recent-copy"><strong>${esc(s.name)}</strong><small>Moderator since ${esc(fmtDate(s.since))}</small></span></li>`).join(''):'<li class="admin-empty">No moderators yet.</li>';
    const levels=overview?.levels;
    if(levels&&document.activeElement?.closest?.('#admin-levels-form')==null){dialog.querySelector('#admin-level-global').value=levels.global;dialog.querySelector('#admin-level-dm').value=levels.dm;}
-  }catch(error){chatStatus.textContent=error.message;}
+  }catch(error){chatStatus.textContent=why(error);}
  }
  dialog.querySelector('#admin-player-search').addEventListener('input',event=>{view.search=event.target.value;view.shown=60;renderPlayers();});
  dialog.querySelector('#admin-player-sort').addEventListener('change',event=>{view.sort=event.target.value;renderPlayers();});
@@ -309,14 +311,14 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   view.retention=b.dataset.retentionPeriod;pressed(dialog.querySelectorAll('[data-retention-period]'),b);const ask=++retentionAsk;
   dialog.querySelector('#admin-retention-body').innerHTML='<tr><td colspan="10" class="admin-empty">Loading…</td></tr>';
   try{const data=await bridge.request({operation:'admin_retention',days:Number(view.retention)});if(ask===retentionAsk)renderRetention(data);}
-  catch(error){if(ask===retentionAsk)dialog.querySelector('#admin-retention-body').innerHTML=`<tr><td colspan="10" class="admin-empty">${esc(error.message)}</td></tr>`;}
+  catch(error){if(ask===retentionAsk)dialog.querySelector('#admin-retention-body').innerHTML=`<tr><td colspan="10" class="admin-empty">${esc(why(error))}</td></tr>`;}
  });
  // Where new farmers come from (the admin only): one database call per period; only the latest choice is drawn.
  let sourceAsk=0;
  async function loadSources(){
   const body=dialog.querySelector('#admin-source-body'),ask=++sourceAsk;dialog.querySelector('#admin-sources').hidden=false;
   try{const data=await bridge.request({operation:'admin_sources',days:Number(view.sources)});if(ask===sourceAsk)body.innerHTML=sourcesHtml(data);}
-  catch(error){if(ask===sourceAsk)body.innerHTML=`<tr><td colspan="9" class="admin-empty">${esc(error.message)}</td></tr>`;}
+  catch(error){if(ask===sourceAsk)body.innerHTML=`<tr><td colspan="9" class="admin-empty">${esc(why(error))}</td></tr>`;}
  }
  dialog.querySelectorAll('[data-source-period]').forEach(b=>b.onclick=()=>{view.sources=b.dataset.sourcePeriod;pressed(dialog.querySelectorAll('[data-source-period]'),b);dialog.querySelector('#admin-source-body').innerHTML='<tr><td colspan="9" class="admin-empty">Loading…</td></tr>';void loadSources();});
  dialog.querySelectorAll('[data-funnel-period]').forEach(b=>b.onclick=()=>{view.period=b.dataset.funnelPeriod;pressed(dialog.querySelectorAll('[data-funnel-period]'),b);renderFunnel();});
@@ -340,7 +342,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(!await confirmAction({title:'Change the email address?',description:`${name} signs in with ${email} from now on. No email is sent.`,confirmLabel:'Change',cancelLabel:'Cancel',picture:'letter'}))return;
   form.querySelectorAll('button,input').forEach(el=>el.disabled=true);status.textContent='Saving…';
   try{await bridge.request({operation:'admin_email',playerId:id,email});if(view.detail===id)await openPlayer(id);}
-  catch(error){status.textContent=error.message;form.querySelectorAll('button,input').forEach(el=>el.disabled=false);}
+  catch(error){status.textContent=why(error);form.querySelectorAll('button,input').forEach(el=>el.disabled=false);}
  });
  // A name in the log opens that farmer's profile (with the chat buttons: mute, ban), on top of the dashboard.
  // The admin can take a handled report out of the log; an open one is handled under Chat reports first.
@@ -350,7 +352,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(!await confirmAction({title:'Remove from the report log?',description:'Every report of this message goes for good, also from the farmer\'s report count. The message itself stays as it is.',confirmLabel:'Remove',tone:'danger'}))return;
   remove.disabled=true;
   try{await bridge.chat.reportLogRemove(remove.dataset.logRemove);const row=remove.closest('li'),list=row.parentElement;row.remove();if(!list.children.length)list.innerHTML='<li class="admin-empty">No reports yet.</li>';}
-  catch(error){remove.disabled=false;remove.nextElementSibling?.remove();remove.insertAdjacentHTML('afterend',`<small class="admin-log-error">${esc(error.message)}</small>`);}
+  catch(error){remove.disabled=false;remove.nextElementSibling?.remove();remove.insertAdjacentHTML('afterend',`<small class="admin-log-error">${esc(why(error))}</small>`);}
  });
  dialog.querySelector('#admin-invite-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
  dialog.querySelector('#admin-report-list').addEventListener('click',async event=>{
@@ -362,7 +364,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    else if(kind==='dismiss')await bridge.chat.dismissReports(id);
    else await bridge.chat.sanction(player,kind==='mute'?1440:0,kind==='ban');
    await loadChat();
-  }catch(error){action.disabled=false;dialog.querySelector('#admin-dashboard-status').textContent=error.message;}
+  }catch(error){action.disabled=false;dialog.querySelector('#admin-dashboard-status').textContent=why(error);}
  });
  // A gift from the staff, to everyone, the farmers active this week, the farmers online now or one farmer (the database decides the list
  // when it is sent). All staff together give at most 5 gifts, 50 diamonds and 1,000 coins or 50 coins per level a day (the database keeps count).
@@ -417,7 +419,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    const result=await bridge.chat.donate(coins,diamonds,message||null,gift.audience,gift.audience==='player'?gift.player.playerId:null,gift.perLevel);
    showRoom(result,result.farmers==null?'Sent to everyone. ':`Sent to ${number(result.farmers)} farmer${result.farmers===1?'':'s'}. `);
    dialog.querySelector('#admin-donate-diamonds').value='';dialog.querySelector('#admin-donate-coins').value='';dialog.querySelector('#admin-donate-message').value='';paintCoins();
-  }catch(error){room.textContent=error.message;}
+  }catch(error){room.textContent=why(error);}
  });
  // Pop-ups: the fields open with "Also as a pop-up", the web address with "A web page"; below the form the last ten, with who saw them.
  dialog.querySelector('#admin-send-as').addEventListener('change',event=>{const mode=event.target.value;dialog.querySelector('#admin-popup-fields').hidden=mode==='news'||mode==='dm';dialog.querySelector('#admin-dm-fields').hidden=mode!=='dm';dialog.querySelector('#admin-news-hours-row').hidden=mode==='dm';if(mode==='dm')void countDm();});
@@ -425,7 +427,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  async function countDm(){
   const note=dialog.querySelector('#admin-dm-count'),audience=dialog.querySelector('#admin-dm-audience').value,minLevel=dmLevel(),ask=++dmCounting;note.textContent='Counting farmers…';delete note.dataset.count;
   // Only the latest count shows (typing a level asks again for every digit).
-  try{const n=await bridge.chat.broadcastDm({audience,minLevel});if(ask!==dmCounting)return;note.textContent=`Goes to ${n.toLocaleString('en-US')} farmer${n===1?'':'s'}.`;note.dataset.count=String(n);}catch(error){if(ask===dmCounting)note.textContent=error.message;}
+  try{const n=await bridge.chat.broadcastDm({audience,minLevel});if(ask!==dmCounting)return;note.textContent=`Goes to ${n.toLocaleString('en-US')} farmer${n===1?'':'s'}.`;note.dataset.count=String(n);}catch(error){if(ask===dmCounting)note.textContent=why(error);}
  }
  // From a farm level too (supabase/chat-broadcast-level.sql), e.g. level 14 for the farmers who can buy the special offer.
  let dmCounting=0;const dmLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-dm-level').value)||1)));
@@ -480,7 +482,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    dialog.querySelector('#admin-welcome-on').checked=!!w.enabled;showWelcomeLanguage();
    const delay=dialog.querySelector('#admin-welcome-delay');delay.value=String(w.delayMinutes??3);if(delay.value!==String(w.delayMinutes??3))delay.value='3';
    dialog.querySelector('#admin-welcome-status').textContent=welcomeStatus(w);
-  }catch(error){form.hidden=false;dialog.querySelector('#admin-welcome-status').textContent=error.message;}
+  }catch(error){form.hidden=false;dialog.querySelector('#admin-welcome-status').textContent=why(error);}
  }
  dialog.querySelector('#admin-welcome-form').addEventListener('submit',async event=>{
   event.preventDefault();const status=dialog.querySelector('#admin-welcome-status');
@@ -490,7 +492,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    if(code!=='en')w=await bridge.chat.welcomeSaveText({language:code,body:text});
    welcome={...w,texts:w.texts??{}};showWelcomeLanguage();
    status.textContent=`Saved${code==='en'?'':` (${LANGUAGES.find(l=>l.code===code)?.name})`}. ${welcomeStatus(w)}`;
-  }catch(error){status.textContent=error.message;}
+  }catch(error){status.textContent=why(error);}
  });
  // Special offer: the amounts, their worth as the checkout counts it (game/payments.js), a preview, posting and the list.
  const $o=id=>dialog.querySelector(`#admin-offer-${id}`);
@@ -517,7 +519,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  $o('list').addEventListener('click',async event=>{
   const stop=event.target.closest('[data-offer-stop]');if(!stop)return;
   if(!await confirmAction({title:'Stop this offer?',description:'Farmers can no longer buy it. Anyone who already paid keeps what they bought.',confirmLabel:'Stop',tone:'danger'}))return;
-  try{await bridge.chat.stopOffer(stop.dataset.offerStop);}catch(error){$o('status').textContent=error.message;}
+  try{await bridge.chat.stopOffer(stop.dataset.offerStop);}catch(error){$o('status').textContent=why(error);}
   void showOffers();
  });
  $o('form').addEventListener('submit',async event=>{
@@ -525,7 +527,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const hours=Number($o('hours').value),time=$o('hours').options[$o('hours').selectedIndex].text;
   if(!await confirmAction({title:'Start this offer?',description:`${offerText(o)} for ${euro(OFFER.cents)}, for ${time}, from level ${$o('level').value}. It replaces the offer running now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'diamonds'}))return;
   try{await bridge.chat.postOffer({...o,audience:$o('audience').value,minLevel:Number($o('level').value)||14,hours});$o('status').textContent='The offer is running. Farmers see it the next time they open the game.';}
-  catch(error){$o('status').textContent=error.message;}
+  catch(error){$o('status').textContent=why(error);}
   void showOffers();
  });
  async function showPopups(){
@@ -538,7 +540,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-popup-list').addEventListener('click',async event=>{
   const stop=event.target.closest('[data-popup-stop]');if(!stop)return;
   if(!await confirmAction({title:'Stop this pop-up?',description:'Farmers who have not seen it yet will not get it. The news stays in Notifications.',confirmLabel:'Stop',tone:'danger'}))return;
-  try{await bridge.chat.stopPopup(stop.dataset.popupStop);}catch(error){dialog.querySelector('#admin-chat-status').textContent=error.message;}
+  try{await bridge.chat.stopPopup(stop.dataset.popupStop);}catch(error){dialog.querySelector('#admin-chat-status').textContent=why(error);}
   void showPopups();
  });
  dialog.querySelector('#admin-news-form').addEventListener('submit',async event=>{
@@ -562,12 +564,12 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    }else await bridge.chat.postNews(body,hours,texts);
    const span=hours?` for ${hours>=48&&hours%24===0?`${hours/24} days`:`${hours} hours`}`:'';
    sent();chatStatus.textContent=mode==='popup'?`Sent as a pop-up${span}${languages}.`:`Sent${mode==='both'?' as a notification and a pop-up':''}${languages}. Everyone sees it under Notifications${span}.`;
-  }catch(error){chatStatus.textContent=error.message;}
+  }catch(error){chatStatus.textContent=why(error);}
  });
  dialog.querySelector('#admin-levels-form').addEventListener('submit',async event=>{
   event.preventDefault();const chatStatus=dialog.querySelector('#admin-chat-status');
   const global=Math.round(Number(dialog.querySelector('#admin-level-global').value)),dm=Math.round(Number(dialog.querySelector('#admin-level-dm').value));
-  try{await bridge.chat.setLevels(global,dm);chatStatus.textContent=`Saved: global chat from level ${global}, private messages from level ${dm}.`;}catch(error){chatStatus.textContent=error.message;}
+  try{await bridge.chat.setLevels(global,dm);chatStatus.textContent=`Saved: global chat from level ${global}, private messages from level ${dm}.`;}catch(error){chatStatus.textContent=why(error);}
  });
  function openDashboard(){
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());refreshArt();dialog.showModal();load();

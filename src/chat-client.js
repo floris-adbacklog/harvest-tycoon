@@ -6,10 +6,22 @@ const MESSAGE_COLUMNS='id,channel,sender,sender_name,sender_avatar,sender_staff,
 // A family request card (supabase/family-request-chat.sql) carries its kind and details; until that is in the database the chat
 // reads the columns it always had.
 const CARD_COLUMNS=`${MESSAGE_COLUMNS},kind,meta`;let cards=true;
-// The database says why in plain words ("Slow down a little."); a lost connection gets a sentence of its own.
+// The database says why in plain words ("Write 1–200 characters."); a lost connection gets a sentence of its own.
+// Oct 2026: a request that was cut off or timed out ("AbortError: …", "TimeoutError: …") is no connection either, and a sign-in
+// that ran out ("JWT expired") says so. The pace limit names itself: "Slow down a little." told 8 farmers in a week nothing about
+// the 2 seconds (supabase/chat.sql; the 12 a minute it also keeps is never reached by players, at most 6 so far).
+// What Postgres or its API says in their own words ("permission denied for function chat_send", "Could not find the function … in
+// the schema cache", the English line farmers saw while the Crew went live on 1 Oct) is no refusal of ours and has no translation:
+// the farmer reads the general text in their own language. Ours start with a capital (supabase/*.sql, a test keeps them so),
+// Postgres starts in lower case and the API's have a PGRST code. raw keeps the words for the staff dashboard (src/admin-dashboard.js).
+const OFFLINE=/failed to fetch|networkerror|load failed|network connection was lost|abort|timed out|timeout/i,EXPIRED=/\bJWT\b|\bJWS|^Auth\w*Error|refresh token|session missing/i;
+const RAW=/^[^\p{Lu}]|^[A-Z]\w*Error:|schema cache|upstream|violates|does not exist|permission denied/u;
 export function chatError(error){
- const message=String(error?.message??'');
- if(!message||/failed to fetch|networkerror|load failed/i.test(message))return new Error('No connection right now. Try again in a moment.');
+ const message=String(error?.message??'').trim(),code=String(error?.code??''),said=text=>Object.assign(new Error(text),message&&message!==text?{raw:message}:{});
+ if(!message||OFFLINE.test(message)||/^(AbortError|TimeoutError)$/.test(error?.name??''))return said('No connection right now. Try again in a moment.');
+ if(/^PGRST30\d$/.test(code)||EXPIRED.test(message))return said('Your session has ended. Please sign in again.');
+ if(message==='Slow down a little.')return said('Slow down: one message every 2 seconds.');
+ if(code.startsWith('PGRST')||RAW.test(message))return said('That did not work. Please try again.');
  return new Error(message);
 }
 export function createChatClient(supabase,{playerId,alive=()=>true}){
