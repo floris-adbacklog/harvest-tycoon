@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {chatWikiLink,chatParts,mentionsMe,wikiLinkTitle,mentionAt,insertMention,mentionIds,mentionMatches,WIKI_LINK,MAX_MENTIONS,MAX_WIKI_LINKS} from '../src/chat-rich.js';
-import {wikiArticle} from '../public/wiki-content.js';
+import {chatParts,mentionsMe,mentionAt,insertMention,mentionIds,mentionMatches,MAX_MENTIONS,MAX_WIKI_LINKS} from '../src/chat-rich.js';
+import {wikiArticle,wikiSectionTitle} from '../public/wiki-content.js';
+import {wikiLinksIn} from '../public/wiki-link.js';
 import {messagePushes} from '../supabase/functions/notify-hourly/messages.js';
 import {textsFor,MAIL_LANGUAGES} from '../supabase/functions/notify-hourly/texts.js';
 import {createChatClient} from '../src/chat-client.js';
@@ -10,25 +11,29 @@ import {headerCount} from '../src/chat-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const A='00000000-0000-4000-8000-00000000000a',B='00000000-0000-4000-8000-00000000000b';
 
-// 3 Oct 2026: links to our own wiki are the only links the chat lets through, at most 2 in a message, as chips.
-test('a wiki address is ours only on harvesttycoon.com/wiki, a known topic, a plain section',()=>{
- assert.deepEqual(chatWikiLink('https://www.harvesttycoon.com/wiki/chat#sec-house-rules'),{topic:'chat',anchor:'sec-house-rules'});
- assert.deepEqual(chatWikiLink('harvesttycoon.com/wiki/Buildings#building-bakery'),{topic:'buildings',anchor:'building-bakery'});
- assert.deepEqual(chatWikiLink('www.harvesttycoon.com/wiki/'),{topic:null,anchor:''},'the first page');
- for(const bad of ['https://harvesttycoon.com/wiki/nope','https://evil.com/wiki/chat','https://harvesttycoon.com.evil.io/wiki/chat','https://harvesttycoon.com/play','harvesttycoon.com/wiki/chat/x','javascript:alert(1)',null])assert.equal(chatWikiLink(bad),null,String(bad));
+// 3 Oct 2026: links to our own wiki are the only links the chat lets through, at most 2 in a message, as chips. Which address is one is
+// the wiki's own rule (public/wiki-link.js, the address Copy link writes): one helper for the wiki and the chat (Oct 2026 merge).
+test('the chat reads a wiki link with the wiki\'s own helper, never a second one of its own',()=>{
+ const rich=read('src/chat-rich.js');
+ assert.match(rich,/import \{wikiLinksIn\} from '\.\.\/public\/wiki-link\.js';/);
+ assert.match(rich,/for\(const \{url,topic,section,index\} of wikiLinksIn\(text\)\)marks\.push\(/);
+ assert.doesNotMatch(rich,/harvesttycoon|function \w*[wW]iki\w*\(/,'no address rule or wiki helper of its own');
+ assert.doesNotMatch(read('src/chat-ui.js'),/harvesttycoon\\\.com|wikiLinkTitle|chatWikiLink/);
 });
 
 test('a message becomes words, wiki chips and mentions, in order; the chip says the section in the game\'s own words',()=>{
  const parts=chatParts('See https://www.harvesttycoon.com/wiki/chat#sec-house-rules, @Ann Lee and @Ann!',[{id:'a',name:'Ann'},{id:'b',name:'Ann Lee'}]);
- assert.deepEqual(parts,[{text:'See '},{wiki:{topic:'chat',anchor:'sec-house-rules',url:'https://www.harvesttycoon.com/wiki/chat#sec-house-rules'}},{text:', '},{mention:{id:'b',name:'Ann Lee'}},{text:' and '},{mention:{id:'a',name:'Ann'}},{text:'!'}],'the longer name first');
+ assert.deepEqual(parts,[{text:'See '},{wiki:{topic:'chat',section:'sec-house-rules',url:'https://www.harvesttycoon.com/wiki/chat#sec-house-rules'}},{text:', '},{mention:{id:'b',name:'Ann Lee'}},{text:' and '},{mention:{id:'a',name:'Ann'}},{text:'!'}],'the longer name first');
  assert.deepEqual(chatParts('myharvesttycoon.com/wiki/chat'),[{text:'myharvesttycoon.com/wiki/chat'}],'not on its own: plain words');
  assert.deepEqual(chatParts('harvesttycoon.com/wiki/nope'),[{text:'harvesttycoon.com/wiki/nope'}],'a topic the wiki does not have');
  assert.deepEqual(chatParts('@Bob was here',[{id:'b',name:'Bobby'}]),[{text:'@Bob was here'}],'a mention counts only where its name is');
  assert.deepEqual(chatParts(''),[{text:''}]);
- assert.equal(wikiLinkTitle({topic:'chat',anchor:'sec-house-rules'}),'House rules');
- assert.equal(wikiLinkTitle({topic:'buildings',anchor:'building-bakery'}),'Bakery','a building\'s row: its name, without the picture');
- assert.equal(wikiLinkTitle({topic:'crops',anchor:'sec-nothing-here'}),'Fields and crops','an unknown section: the topic');
- assert.equal(wikiLinkTitle({}),'How to play');
+ assert.deepEqual(chatParts('(harvesttycoon.com/wiki/crops#crop-wheat) ok'),[{text:'('},{wiki:{topic:'crops',section:'crop-wheat',url:'harvesttycoon.com/wiki/crops#crop-wheat'}},{text:') ok'}],'the bracket stays words');
+ assert.equal(wikiSectionTitle('chat','sec-house-rules'),'House rules');
+ assert.equal(wikiSectionTitle('buildings','building-bakery'),'Bakery','a building\'s row: its name, without the picture');
+ assert.equal(wikiSectionTitle('crops','crop-wheat'),'Wheat','a crop\'s row in Every crop');
+ assert.equal(wikiSectionTitle('quests','level-30'),'Level 30','a level in What opens when');
+ assert.equal(wikiSectionTitle('crops','sec-nothing-here'),'Fields and crops','an unknown section: the topic');
  // The titles are texts the page already translates: the house rules heading is in the catalog.
  assert.ok('House rules' in JSON.parse(read('i18n/catalog.json')));
  assert.match(wikiArticle('chat').html,/id="sec-house-rules"><h3>House rules<\/h3>/);
@@ -36,9 +41,15 @@ test('a message becomes words, wiki chips and mentions, in order; the chip says 
 
 test('the game and the database let the same wiki links through: the same address, at most 2, every other link refused with its reason',()=>{
  const sql=read('supabase/chat-wiki-links.sql');
- // The same expression, written the database's way: no (?: groups, no escaped slashes, and the link itself not a group of its own.
- const pattern=WIKI_LINK.source.replace(/\(\?:/g,'(').replace(/\\\//g,'/').replace('[\\s(])((','[\\s(])(').replace(')?)(?=$',')?(?=$');
- assert.ok(sql.includes(`'${pattern}'`),`the database uses ${pattern}`);
+ // The database's wiki address (it is a JavaScript expression too): it counts and strips this one.
+ const WIKI_SQL=String.raw`(^|[\s(])(https?://)?(www\.)?harvesttycoon\.com/wiki(/[a-z-]+)?/?(#[a-z0-9-]+)?(?=$|[\s).,!?;:])`;
+ assert.equal(sql.split(`'${WIKI_SQL}'`).length-1,2,'chat_wiki_links counts and strips the same address');
+ // Every chip the game draws (wiki-link.js, the wiki's own rule) is a link the database let through as one: what the database lets
+ // through and the wiki does not name (http://, the wiki's home, an unknown topic) stays plain words.
+ const counted=body=>[...body.matchAll(new RegExp(WIKI_SQL,'gi'))].map(m=>m.index+m[1].length);
+ for(const body of ['See https://www.harvesttycoon.com/wiki/chat#sec-house-rules.','(harvesttycoon.com/wiki/crops) and www.harvesttycoon.com/wiki/buildings#building-bakery!','harvesttycoon.com/wiki/quests?fbclid=x','one\nhttps://harvesttycoon.com/wiki/market#sec-x, two','https://www.harvesttycoon.com/wiki/quests/#level-30'])
+  {const links=wikiLinksIn(body);assert.ok(links.length,body);for(const link of links)assert.ok(counted(body).includes(link.index),`${body}: ${link.url}`);}
+ for(const body of ['http://harvesttycoon.com/wiki/crops','harvesttycoon.com/wiki','harvesttycoon.com/wiki/nope'])assert.ok(counted(body).length===1&&chatParts(body).every(part=>part.text),body);
  assert.equal(MAX_WIKI_LINKS,2);
  assert.match(sql,/if public\.chat_wiki_links\(body\)<0 then raise exception 'Only links to the Harvest Tycoon wiki are allowed in the chat\.'/);
  assert.match(sql,/if public\.chat_wiki_links\(body\)>2 then raise exception 'Up to 2 wiki links fit in one message\.'/);
@@ -52,15 +63,16 @@ test('the game and the database let the same wiki links through: the same addres
 
 test('a wiki chip opens How to play there, inside the game, with "‹ Chat" back to the same chat; the staff\'s other links stay links',()=>{
  const ui=read('src/chat-ui.js');
- assert.match(ui,/class="chat-wiki" data-wiki-link="\$\{esc\(link\.topic\?\?''\)\}" data-wiki-anchor="\$\{esc\(link\.anchor\)\}">\$\{art\('guide'\)\}<span>\$\{esc\(wikiLinkTitle\(link\)\)\}<\/span><\/button>/,'the book and the title, outside translate="no" so it is translated');
+ assert.match(ui,/class="chat-wiki" data-wiki-link="\$\{esc\(link\.topic\)\}" data-wiki-section="\$\{esc\(link\.section\)\}">\$\{art\('guide'\)\}<span>\$\{esc\(wikiSectionTitle\(link\.topic,link\.section\)\)\}<\/span><\/button>/,'the book and the spot\'s title, outside translate="no" so it is translated');
  assert.match(ui,/<span translate="no">\$\{m\.sender_staff\?linkify\(part\.text\):esc\(part\.text\)\}<\/span>/,'the words themselves stay as written');
- assert.match(ui,/if\(wiki\)\{openWiki\(wiki\.dataset\.wikiLink,wiki\.dataset\.wikiAnchor\);return;\}/);
- assert.match(ui,/const backButton=heading\.querySelector\('\.wiki-chat-back'\);\n  dialog\.close\(\);win\.harvestWiki\(topic\|\|null,anchor\|\|''\);/,'no new tab, also on CrazyGames and in the app; the button first, so the jump bar sits under the bar');
- assert.match(read('public/chat.css'),/#help-dialog \.dialog-heading:has\(\.wiki-chat-back\)\{position:sticky;/,'"‹ Chat" stays in view on a computer too');
- assert.match(ui,/'<button type="button" class="small-button wiki-chat-back">‹ <span>Chat<\/span><\/button>'/,'"Chat" is a text the game has already');
- assert.match(ui,/help\.addEventListener\('close',\(\)=>backButton\.remove\(\),\{once:true\}\);/,'gone once How to play closes');
- assert.match(ui,/show\(tab,\{keepThread:true\}\);/);
- assert.match(read('public/game.js'),/window\.harvestWiki=\(id,anchor=''\)=>\{openDialog\('help-dialog'\);renderWiki\(state,id,anchor\);\};/);
+ assert.match(ui,/if\(wiki\)\{openWiki\(wiki\.dataset\.wikiLink,wiki\.dataset\.wikiSection\);return;\}/);
+ // The way back is How to play's own (wiki-ui.js renderWiki's from: "‹ Chat" in the jump bar, which stays in view; "‹ Back" after a
+ // link inside the wiki), not a second button in the title bar (Oct 2026 merge).
+ assert.match(ui,/dialog\.close\(\);\n  win\.harvestWiki\(topic,section,\{from:\{label:'Chat',go:\(\)=>\{doc\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);if\(switchedOff\)return;dialog\.showModal\(\);dialog\.focus\(\{preventScroll:true\}\);show\(tab,\{keepThread:true\}\);\}\}\}\);/,'no new tab, also on CrazyGames and in the app');
+ assert.match(read('public/game.js'),/window\.harvestWiki=\(id,anchor='',options=\{\}\)=>\{openDialog\('help-dialog'\);renderWiki\(state,id,anchor,options\);\};/);
+ assert.match(read('public/wiki-ui.js'),/trail=from\?\.go\?\[\{label:String\(from\.label\?\?'Back'\),go:from\.go\}\]:\[\]/);
+ assert.doesNotMatch(ui+read('public/chat.css'),/wiki-chat-back/,'one way back');
+ assert.ok('Chat' in JSON.parse(read('i18n/catalog.json')),'"Chat" is a text the game has already');
 });
 
 // 3 Oct 2026: mentions, phase 1 (in the game) and 2 (the push in the farmer's language).

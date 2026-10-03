@@ -1,8 +1,9 @@
 -- Wiki links in the chat (3 Oct 2026). The chat refused every link, also one to our own wiki, and How to play has no address bar to
 -- copy from. Now a link to the Harvest Tycoon wiki goes through: https://www.harvesttycoon.com/wiki/<topic>#<section>, also without
 -- https:// or www., at most 2 in one message. Every other link is still refused, now with words that say what is allowed. The game shows
--- such a link as a chip with a book and the section's title in the reader's language, which opens How to play there (src/chat-rich.js,
--- the same rule); outside the game (WhatsApp, socials) the same address opens the website's wiki.
+-- such a link as a chip with a book and the section's title in the reader's language, which opens How to play there (src/chat-rich.js
+-- with the wiki's own public/wiki-link.js: a chip only for a link this lets through, a test checks it); outside the game (WhatsApp,
+-- socials) the same address opens the website's wiki.
 -- One function sends in every chat (global, family, private and the Crew): chat_send. It and the staff's edit (chat_mod_edit) are
 -- patched from their LIVE definition, only the link line, so anything deployed since stays as it is (as supabase/crazygames.sql does):
 -- a function patched already is left alone, and one without the expected line stops the whole file, nothing half-done. Re-runnable.

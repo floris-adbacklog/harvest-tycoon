@@ -326,9 +326,9 @@ span.chat-avatar{cursor:default}
 .admin-offer-worth{margin:0 0 8px;padding:8px 12px;border-radius:10px;background:#eef6e6;color:#2f6a2a;font:700 14px 'DM Sans',sans-serif}
 .admin-offer-worth.is-wrong{background:#fbe9e4;color:#a4351c}
 .admin-offer-actions{display:flex;gap:8px;margin-top:10px}.admin-offer-actions>*{flex:1;justify-content:center}
-/* Mentions and wiki links in the chat (3 Oct 2026, src/chat-rich.js): the list under the box, the chips in a message, the soft mark on a
-   message that mentions you, and "‹ Chat" in How to play after a wiki chip. The chips sit in a line of text: not the 44 px of a
-   dialog's buttons on a phone (mobile.css). */
+/* Mentions and wiki links in the chat (3 Oct 2026, src/chat-rich.js): the list under the box, the chips in a message and the soft mark
+   on a message that mentions you. "‹ Chat" in How to play is the wiki's own way back (wiki.css .wiki-step-back). The chips sit in a line
+   of text: not the 44 px of a dialog's buttons on a phone (mobile.css). */
 .chat-compose{position:relative}
 .chat-mentions{position:absolute;top:calc(100% - 6px);inset-inline:12px;z-index:6;max-height:min(300px,42vh);margin:0;padding:6px;overflow:auto;list-style:none;border:1px solid #e3d8cc;border-radius:14px;background:#fffdf8;box-shadow:0 12px 28px #3d382a33}
 .chat-mentions[hidden]{display:none}
@@ -343,7 +343,3 @@ span.chat-avatar{cursor:default}
 .chat-text .chat-wiki .game-art{flex:none;width:22px;height:22px}
 .chat-text .chat-wiki span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chat-text .chat-wiki:hover{background:#e3eed6}
-.wiki-chat-back{flex:none;align-self:center;white-space:nowrap}
-.dialog-heading:has(.wiki-chat-back)>div{flex:1;min-width:0}
-/* On a computer How to play's title bar scrolls away; with "‹ Chat" in it, it stays at the top (a phone's always does). */
-@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){#help-dialog .dialog-heading:has(.wiki-chat-back){position:sticky;top:-28px;z-index:6;margin:-28px -28px 16px;padding:20px 28px 12px;background:#fffdf5;border-bottom:1px solid #e7dfd7}}

@@ -13,7 +13,8 @@ import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
 import {chosenLanguage} from '../public/i18n.js';
 import {portalChat,portalOff} from '../public/portal.js';
-import {chatParts,mentionsMe,wikiLinkTitle,mentionAt,insertMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
+import {chatParts,mentionsMe,mentionAt,insertMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
+import {wikiSectionTitle} from '../public/wiki-content.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
@@ -191,10 +192,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   return `<li class="chat-request chat-join" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}New member</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art('family-rank-member')}</span><div><p class="chat-text">${esc(`${m.sender_name} is now a member.`)}</p></div></div></li>`;
  }
  // The words of a message as written (translate="no"), with its wiki links and mentions as chips (3 Oct 2026, src/chat-rich.js). A wiki
- // chip shows the book and the section's title, the game's own words, so the page's translation puts them in the reader's language; a
- // mention is "@Name" and opens that farmer's profile by id. The staff's own messages may still carry another https link (an admin's
- // message to many farmers, e.g. a feedback form); nobody else's can.
- const wikiChip=link=>`<button type="button" class="chat-wiki" data-wiki-link="${esc(link.topic??'')}" data-wiki-anchor="${esc(link.anchor)}">${art('guide')}<span>${esc(wikiLinkTitle(link))}</span></button>`;
+ // chip shows the book and the spot's title as How to play heads it (wiki-content.js wikiSectionTitle: a section, a building, a crop or
+ // a level, else the topic), the game's own words, so the page's translation puts them in the reader's language; a mention is "@Name"
+ // and opens that farmer's profile by id. The staff's own messages may still carry another https link (an admin's message to many
+ // farmers, e.g. a feedback form); nobody else's can.
+ const wikiChip=link=>`<button type="button" class="chat-wiki" data-wiki-link="${esc(link.topic)}" data-wiki-section="${esc(link.section)}">${art('guide')}<span>${esc(wikiSectionTitle(link.topic,link.section))}</span></button>`;
  const mentionChip=who=>`<button type="button" class="chat-mention${who.id===me?' is-me':''}" data-profile="${esc(who.id)}" translate="no">@${esc(who.name)}</button>`;
  const bodyHtml=m=>chatParts(m.body,m.meta?.mentions).map(part=>part.wiki?wikiChip(part.wiki):part.mention?mentionChip(part.mention):`<span translate="no">${m.sender_staff?linkify(part.text):esc(part.text)}</span>`).join('');
  function messageRow(m,{cont=false}={}){
@@ -397,7 +399,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const give=event.target.closest('[data-give]');
   if(give){giveRequest(give);return;}
   const wiki=event.target.closest('[data-wiki-link]');
-  if(wiki){openWiki(wiki.dataset.wikiLink,wiki.dataset.wikiAnchor);return;}
+  if(wiki){openWiki(wiki.dataset.wikiLink,wiki.dataset.wikiSection);return;}
   if(profile){profiles?.open(profile.dataset.profile,{back:null});return;}
   const start=event.target.closest('[data-start]');
   if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}
@@ -478,18 +480,13 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  dialog.addEventListener('close',closePicks);
 
  // A wiki chip opens How to play at that section in the game (public/game.js harvestWiki), never a new tab (also on CrazyGames and in
- // the app), with "‹ Chat" in its title bar that comes back to this chat as it was (3 Oct 2026). The bar stays in view while the page
- // scrolls to the section (chat.css), so the button is put in first: How to play then places its jump bar under it. No How to play (the
- // farm not ready): nothing.
- function openWiki(topic,anchor){
-  const help=doc.getElementById('help-dialog'),heading=help?.querySelector('.dialog-heading');if(typeof win.harvestWiki!=='function'||!heading)return;
-  help.querySelector('.wiki-chat-back')?.remove();
-  heading.insertAdjacentHTML('afterbegin','<button type="button" class="small-button wiki-chat-back">‹ <span>Chat</span></button>');
-  const backButton=heading.querySelector('.wiki-chat-back');
-  dialog.close();win.harvestWiki(topic||null,anchor||'');
-  if(!help.open){backButton.remove();return;}
-  help.addEventListener('close',()=>backButton.remove(),{once:true});
-  backButton.onclick=()=>{help.close();if(switchedOff)return;doc.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();dialog.focus({preventScroll:true});show(tab,{keepThread:true});};
+ // the app). The way back is How to play's own (wiki-ui.js renderWiki's from): "‹ Chat" in its jump bar, which stays in view, back to
+ // this chat as it was; after a link inside the wiki it says "‹ Back" first. One way back, not a second button in the title bar
+ // (Oct 2026, merging the wiki links and the chat). No How to play (the farm not ready): nothing.
+ function openWiki(topic,section){
+  if(typeof win.harvestWiki!=='function'||!doc.getElementById('help-dialog'))return;
+  dialog.close();
+  win.harvestWiki(topic,section,{from:{label:'Chat',go:()=>{doc.querySelectorAll('dialog[open]').forEach(d=>d.close());if(switchedOff)return;dialog.showModal();dialog.focus({preventScroll:true});show(tab,{keepThread:true});}}});
  }
 
  // The little menu on a message: report or block for everyone; delete, mute and ban (the chat only) for the staff.

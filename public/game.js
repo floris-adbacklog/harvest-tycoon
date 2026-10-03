@@ -1056,8 +1056,9 @@ function bindUI(){
  // Feedback & bugs: the mailbox (public/feedback-ui.js), beside How to play and in the More menu.
  const feedback=createFeedback({level:()=>levelProgress(state).level});
  $('feedback-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());feedback.open();});
- // A topic of How to play, and a spot in it (a pop-up's button opens how to install the app: src/popup-ui.js).
- window.harvestWiki=(id,anchor='')=>{openDialog('help-dialog');renderWiki(state,id,anchor);};
+ // A topic of How to play, and a spot in it (a pop-up's button opens how to install the app: src/popup-ui.js). options (Oct 2026):
+ // renderWiki's {from}, where it was opened from for its way back (the chat's wiki chip: "‹ Chat", src/chat-ui.js).
+ window.harvestWiki=(id,anchor='',options={})=>{openDialog('help-dialog');renderWiki(state,id,anchor,options);};
  $('village-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(!villageWorld)travel('village');});
  $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(villageWorld){travel('farm');return;}resetView();toast('Back to the heart of your farm.');});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
