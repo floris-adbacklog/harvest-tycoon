@@ -1162,6 +1162,7 @@
 "Deep miner":"public/farm-state.js",
 "Deep purple":"public/farm-state.js",
 "Delete":"src/chat-ui.js",
+"Delete account":"public/farm.html",
 "Delete message":"src/chat-ui.js",
 "Delete this message?":"src/chat-ui.js",
 "Deliver":"public/estate-ui.js",

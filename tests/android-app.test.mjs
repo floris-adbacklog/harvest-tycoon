@@ -278,3 +278,12 @@ test('Invite a friend in the app: Share opens the app\'s share sheet with the te
   assert.deepEqual(shared,[{title:'Harvest Tycoon',text:'Come farm with me in Harvest Tycoon! Reach level 10 and we both get 150 diamonds.',url:DATA.link}]);
  }finally{globalThis.window=saved.window;globalThis.document=saved.document;if(saved.window===undefined)delete globalThis.window;if(saved.document===undefined)delete globalThis.document;}
 });
+// Google Play asks that an app with accounts lets its players start deleting their account from inside the app (Oct 2026): Settings'
+// Privacy links to the website's /delete-account page, for every farmer; CrazyGames (no links to our website) leaves it out.
+test('Settings\' Privacy links to deleting the account, except on CrazyGames',()=>{
+ const privacy=read('public/farm.html').match(/<section id="privacy-settings"[\s\S]*?<\/section>/)[0];
+ assert.match(privacy,/<a id="delete-account-link" class="link-button" href="\/delete-account" target="_blank" rel="noopener">Delete account<\/a>/);
+ assert.match(read('public/portal.css'),/html\[data-portal\] #delete-account-link[,{]/);
+ assert.doesNotMatch(read('public/android.css'),/delete-account/);
+ for(const code of READY)if(code!=='en')assert.ok(JSON.parse(read(`public/i18n/${code}.json`))['Delete account'],code);
+});
