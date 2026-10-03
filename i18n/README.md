@@ -16,11 +16,16 @@ language, from `public/i18n/<code>.json` (`{"English text": "translation"}`). En
 - Every ready language has its own sign-in page (`/es/`, `/fr/`, ...; English is `/`), written at deploy time by
   `scripts/build-languages.mjs` from `public/play.html` and these translations, including the search and share texts in
   its head. Only exact translations are used: a `play.html` text without one stops the deploy build, so translate new
-  `play.html` texts before deploying. A newly ready language also needs its code in the three `/:lang(...)` rules in
+  `play.html` texts before deploying. A newly ready language also needs its code in the five `/:lang(...)` rules in
   `vercel.json` (a test checks them). Opening a language page saves its language on the device, so the farm and the
   sign-in return (`/play.html`) follow it; where a browser keeps nothing (blocked storage) only the page itself is in its
   language and the farm uses the device's language. On a language page a text that is already a translation is left
   as it is, so no English text may also be the translation of another text (a test checks it).
+- The help and support page is built the same way (3 Oct 2026): `/support` is `public/support.html` in English and
+  `/es/support`, `/fr/support`, ... are written at deploy time from it and these translations (its texts are in the catalog
+  like the sign-in page's). It has no script, so nothing is translated in the browser: a missing translation of a
+  `support.html` text stops the deploy build too. Its links to the sign-in page go to the page in the same language; the
+  wiki and the legal pages stay English.
 
 Texts that are cut by markup arrive in pieces (`Beginner guide complete! +` … `XP and {0} diamonds.`): translate each
 piece so the pieces still read as one sentence in their order.

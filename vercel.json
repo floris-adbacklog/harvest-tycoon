@@ -48,6 +48,14 @@
       "destination": "/delete-account.html"
     },
     {
+      "source": "/support",
+      "destination": "/support.html"
+    },
+    {
+      "source": "/support/",
+      "destination": "/support.html"
+    },
+    {
       "source": "/wiki",
       "destination": "/wiki/index.html"
     },
@@ -62,6 +70,14 @@
     {
       "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/",
       "destination": "/:lang/index.html"
+    },
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/support",
+      "destination": "/:lang/support.html"
+    },
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/support/",
+      "destination": "/:lang/support.html"
     }
   ],
   "headers": [

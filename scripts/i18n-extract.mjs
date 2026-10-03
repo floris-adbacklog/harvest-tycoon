@@ -20,8 +20,9 @@ export const SOURCES=[
  // mail-text.js holds the code email already written in every language: it is not translated through the catalog.
  ...list('supabase/functions/farm-api/',f=>f.endsWith('.js')&&f!=='farm-state.js'&&f!=='mail-text.js')
 ].filter(file=>!SKIP.test(file));
-// The CrazyGames page (Oct 2026) shows the same loading screen and a pause card of its own.
-export const PAGES=['public/farm.html','public/play.html','public/crazygames.html'];
+// The CrazyGames page (Oct 2026) shows the same loading screen and a pause card of its own. The support page (3 Oct 2026) is written
+// per language at deploy time from these translations (scripts/build-languages.mjs), like the sign-in page.
+export const PAGES=['public/farm.html','public/play.html','public/crazygames.html','public/support.html'];
 const SQL_DIRS=['supabase/','supabase/migrations/'];
 
 // data-note becomes a line of text in a dropdown (pretty-select.js), so it is collected too.
@@ -221,11 +222,12 @@ function collectScript(code,file,catalog,htmlNames,ast){
 function add(catalog,key,file){if(!catalog.has(key))catalog.set(key,file);}
 
 // The search and share texts in the sign-in page's head (Oct 2026): its page per language (/es/, scripts/build-languages.mjs) has
-// them translated. The twitter ones are the same texts. The farm frame's head is never shown or searched, so it is left out.
-const SEO_PAGE='public/play.html',SEO_META=/<meta (?:name|property)="(?:description|og:title|og:description|og:image:alt|twitter:title|twitter:description)" content="([^"]*)">/g;
+// them translated. The twitter ones are the same texts. The farm frame's head is never shown or searched, so it is left out. The support
+// page's description too (3 Oct 2026).
+const SEO_PAGES=['public/play.html','public/support.html'],SEO_META=/<meta (?:name|property)="(?:description|og:title|og:description|og:image:alt|twitter:title|twitter:description)" content="([^"]*)">/g;
 function collectPage(file,catalog,htmlNames,scripts){
  let html=read(file);
- if(file===SEO_PAGE)for(const m of html.matchAll(SEO_META)){const key=normalize(decode(m[1]));if(key)add(catalog,key,file);}
+ if(SEO_PAGES.includes(file))for(const m of html.matchAll(SEO_META)){const key=normalize(decode(m[1]));if(key)add(catalog,key,file);}
  html=html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,(all,attrs,code)=>{if(code.trim()&&!/type="(?!module|text\/javascript)/.test(attrs))scripts.push({file,code});return CUT;}).replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,CUT).replace(/<head\b[^>]*>[\s\S]*?<\/head>/i,m=>m.replace(/<title>([\s\S]*?)<\/title>/i,'<title>$1</title>').replace(/<meta[^>]*>/gi,CUT));
  for(const key of pieces(html,true))add(catalog,key,file);
 }

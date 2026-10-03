@@ -1,0 +1,40 @@
+/* Help and support (/support, 3 Oct 2026) on top of legal.css: the help cards, the form and the boxes the Edge Function's way back
+   opens (#sent, #error-…), shown by :target alone (no script on this page). Logical sides, so Arabic runs right to left as it should. */
+.support-help{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 8px!important;padding:0!important;list-style:none}
+.support-help li{margin:0!important}
+.support-help a{display:grid;align-content:start;gap:4px;height:100%;padding:14px 16px;border:1px solid #e8ded2;border-radius:16px;background:#fbf8f2;color:#3d3923;text-decoration:none}
+.support-help a:hover{border-color:#cdb98a;color:#3d3923}
+.support-help strong{font:700 17px/1.3 'Outfit',sans-serif;color:#3d3923}
+.support-help span{font-size:14px;line-height:1.5;color:#6d6248}
+.support-mail{font-size:15px}
+.support-mail a{display:inline-block;font-weight:700;overflow-wrap:anywhere}
+
+.support-note{display:none;margin:14px 0!important;padding:12px 14px;border-radius:13px;font-size:15px;scroll-margin-top:16px}
+.support-note:target{display:block}
+.support-note.is-good{border:1px solid #cfdcb9;background:#eef4e4;color:#36521f}
+.support-note.is-good strong{display:block;font:700 19px/1.3 'Outfit',sans-serif;color:#36521f}
+.support-note.is-bad{border:1px solid #edc6b9;background:#f8e3dc;color:#8a2f1d}
+/* Sent: the thank-you takes the form's place (a new message is one reload away). */
+#sent:target~.support-form{display:none}
+
+.support-form{display:grid;gap:14px;margin:18px 0 0;padding:20px;border:1px solid #e8ded2;border-radius:20px;background:#fbf8f2}
+.support-field{display:grid;gap:5px;font-size:14px;font-weight:700;color:#4a4130}
+.support-field em{margin-inline-start:6px;font-style:normal;font-weight:400;color:#8a7c69}
+.support-field small{font-size:13px;font-weight:400;color:#8a7c69}
+.support-field input,.support-field select,.support-field textarea{width:100%;min-height:46px;padding:10px 12px;border:1px solid #d9ccb6;border-radius:11px;background:#fff;font:16px/1.4 'DM Sans',system-ui,sans-serif;color:#3d3923}
+.support-field textarea{min-height:150px;resize:vertical}
+/* An address reads left to right, also on the Arabic page. */
+.support-field input[type=email]{direction:ltr}
+[dir=rtl] .support-field input[type=email]{text-align:right}
+.support-field select{appearance:none;-webkit-appearance:none;padding-inline-end:38px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236d6248' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center}
+[dir=rtl] .support-field select{background-position:left 14px center}
+.support-field input:focus,.support-field select:focus,.support-field textarea:focus{outline:3px solid #d6ae4b55;border-color:#b9a36a}
+/* The honeypot: off screen for people, a plain field for robots that fill in every field. */
+.support-trap{position:absolute;inset-inline-start:-10000px;width:1px;height:1px;overflow:hidden}
+.support-form .legal-button{width:100%;margin:2px 0 0;font:800 16px 'DM Sans',sans-serif;cursor:pointer}
+.support-small{margin:0!important;font-size:13px;color:#7d7060;text-align:center}
+[dir=rtl] .legal-card ul,[dir=rtl] .legal-card ol{padding-left:0;padding-right:22px}
+@media(max-width:640px){
+ .support-help{grid-template-columns:1fr}
+ .support-form{padding:14px;margin-inline:-4px}
+}
