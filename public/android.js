@@ -26,7 +26,8 @@ export function shareInApp({text,url},host=globalThis.window){
 // registerpush and pushstatus, and whenever the phone's permission or the subscription changes.
 // - login: links this phone to the farmer (OneSignal's external_id = the player id); once per page load, and again after a sign-in.
 // - logout: Sign out; this phone stops getting that farmer's notifications.
-// - register: asks Android's permission (the Android 13+ question) and opts the phone in. Only ever from the farmer's own tap.
+// - register: asks Android's permission (the Android 13+ question) and opts the phone in. Only ever from the farmer's own tap. While
+//   Android's question is open the app reports nothing (AppPush.holdingState), so the next report is the farmer's answer.
 // - status: the app answers with the state as it is, asking nothing.
 export const APP_PUSH=Object.freeze({login:'onesignallogin://login',logout:'onesignallogout://logout',register:'registerpush://',status:'pushstatus://status'});
 export const appPushLoginLink=id=>`${APP_PUSH.login}?id=${encodeURIComponent(String(id??''))}`;

@@ -100,9 +100,12 @@ header `Authorization: Key <App API key>`. Dat wist ook de abonnementen van die 
 
 ### Google Play: Data safety
 
-OneSignal krijgt niets van de app tot de speler in de game meldingen aanzet (Turn on): de app start OneSignal met privacy-toestemming
-verplicht en geeft die toestemming pas bij `registerpush://`. Vanaf dan krijgt OneSignal de player id, een push-token (apparaat-id) en
-apparaatgegevens (apparaattype en model, Android-versie, taal, tijdzone, land via het IP-adres, provider, app-versie) en gebruik van de
-app (sessies, duur). Vul Data safety daarnaar in: o.a. *User IDs*, *Device or other IDs* en *App interactions*, verzameld voor *App
-functionality*, optioneel (alleen na Turn on), niet gedeeld (OneSignal is een verwerker namens ons), versleuteld onderweg, te
-verwijderen op verzoek.
+OneSignal krijgt niets over de speler of de game tot de speler in de game meldingen aanzet (Turn on): de app start OneSignal met
+privacy-toestemming verplicht en geeft die toestemming pas bij `registerpush://`; tot dan blokkeert OneSignal zelf elke POST. Wel bij
+elke start, ook zonder tik: OneSignal haalt de instellingen van de app op (`GET …/apps/<app id>/android_params.js`, met het IP-adres en
+een willekeurig installatienummer in de header `OneSignal-Install-Id`), en Firebase Cloud Messaging (Google) geeft de telefoon een
+push-token (via een Firebase-installatie-id), dat op de telefoon blijft tot Turn on. Vanaf Turn on krijgt OneSignal de player id, het
+push-token en apparaatgegevens (apparaattype en model, Android-versie, taal, tijdzone, land via het IP-adres, provider, app-versie) en
+gebruik van de app (sessies, duur). Vul Data safety daarnaar in: *Device or other IDs* verzameld voor *App functionality* en niet
+optioneel (gebeurt bij elke start); *User IDs* en *App interactions* verzameld voor *App functionality*, optioneel (alleen na Turn on);
+niet gedeeld (OneSignal en Google zijn verwerkers namens ons), versleuteld onderweg, te verwijderen op verzoek.
