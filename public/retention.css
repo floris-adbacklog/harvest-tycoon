@@ -374,6 +374,24 @@
 .float-chip.is-cost{background:#fbf1dff2;color:#8a5a1c}
 .float-chip.is-golden{background:#f7d77af2;color:#6b4712;font-weight:800}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.floating-reward{font-size:14px}.float-chip .game-art{width:20px;height:20px}}
+/* A new crop medal (Oct 2026, public/medal-notice.js): its chip on a line of its own over the floating harvest, in the tier's colour
+   (the profile's medal dots); one short toast at the bottom, just above the tools (farm.html puts #medal-toast in the bottom bar, so it
+   follows every layout) that slides up, goes by itself and takes no taps; the yellow "!" on the Medals tab until it is collected. */
+.float-stack{display:flex;flex-direction:column;align-items:center;gap:5px}
+.float-row{display:flex;gap:6px;align-items:center}
+.float-chip.is-medal{font-weight:800;box-shadow:0 4px 12px #3a301c40,0 0 0 2px #fffdf5}
+.float-chip.is-medal>b{margin-inline-start:1px}
+.float-chip.is-medal.tier-0{background:#f3d7bcf2;color:#7a4519}
+.float-chip.is-medal.tier-1{background:#e6ebeaf2;color:#4c5856}
+.float-chip.is-medal.tier-2{background:#f7d77af2;color:#6b4712}
+.float-chip.is-medal.tier-3{background:#d5ece6f2;color:#2c6658}
+.toast.medal-toast{top:auto;bottom:calc(100% + 10px);left:50%;transform:translate(-50%,14px)}
+.toast.medal-toast.visible{transform:translate(-50%,0);animation-name:medal-toast-in}
+@keyframes medal-toast-in{from{opacity:0;transform:translate(-50%,14px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.toast.medal-toast.visible{animation:none}}
+.estate-tabs button[data-estate-tab]{position:relative}
+.estate-tab-dot{position:absolute;inset-inline-end:3px;top:2px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif}
+.estate-tab-dot[hidden]{display:none}
 
 /* Phones hide the XP bar, so the level badge gets a ring that fills toward the next level. */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){

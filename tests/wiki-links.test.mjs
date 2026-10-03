@@ -69,7 +69,7 @@ test('the Farmhouse is the first row of Buildings and goods: what you do there, 
  assert.match(farmhouse,/<summary><h3>[^]*?Farmhouse<\/h3><span class="wiki-meta"><span class="wiki-level">Level 1<\/span> · ready from the start<\/span>/);
  assert.match(farmhouse,new RegExp(`You start with ${STARTER_FIELDS} fields\\. Buy more here, one at a time, up to ${MAX_PLOTS}\\.`));
  assert.match(farmhouse,/<strong>Your fields<\/strong><p>Remove a crop to free its field\. You get nothing back\.<\/p>/,'the game\'s own words');
- assert.match(farmhouse,new RegExp(`<strong>Your next chapter <span class="wiki-level">Level ${FEATURE_LEVELS.projects}</span></strong><p>Estate projects, passive income and mastery <span class="wiki-see">See <a href="/wiki/estate#sec-estate-chapters"`));
+ assert.match(farmhouse,new RegExp(`<strong>Your next chapter <span class="wiki-level">Level ${FEATURE_LEVELS.projects}</span></strong><p>Estate projects, passive income and medals <span class="wiki-see">See <a href="/wiki/estate#sec-estate-chapters"`));
  assert.match(farmhouse,/<p>The Farmhouse level goes up by 1 with every field from field 13 on\. You do not upgrade it, and it gives no bonus of its own\.<\/p>/);
  // The table: fields 9-40, straight from the rules; checked against the game buying them one by one.
  const fields=wikiFields();assert.deepEqual(fields.map(f=>f.field),Array.from({length:MAX_PLOTS-STARTER_FIELDS},(_,i)=>STARTER_FIELDS+i+1));
