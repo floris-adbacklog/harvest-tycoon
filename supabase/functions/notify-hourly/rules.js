@@ -117,7 +117,10 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
   if(parts.length&&gapOk&&sentToday<CONFIG.MAX_PUSH_PER_DAY){
    // Only about the daily gift: tapping it opens Daily rewards. Anything about the fields or buildings opens the farm, and so does the
    // comeback chest: the Welcome back card shows it there, with the gift.
-   result.push={title:'Harvest Tycoon',body:parts.join(' · '),tag:'harvest-tycoon',url:giftParts===parts.length&&!chestPush?'/?source=push&open=today':'/?source=push'};
+   // channel: the Android app's notification category (onesignal.js, existing_android_channel_id; the browser's push leaves it out):
+   // 'daily' when every line comes from the daily gift switch (the gift, the streak, the comeback chest), else 'ready'.
+   result.push={title:'Harvest Tycoon',body:parts.join(' · '),tag:'harvest-tycoon',url:giftParts===parts.length&&!chestPush?'/?source=push&open=today':'/?source=push',
+    channel:giftParts===parts.length?'daily':'ready'};
    result.patchOnSend={...onSend,crops_seen_at:now,production_seen_at:now,last_push_at:new Date(now).toISOString(),push_day:today,push_count:sentToday+1};
   }
  }

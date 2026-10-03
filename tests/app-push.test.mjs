@@ -121,6 +121,54 @@ test('Android says no: answered at once as blocked, nothing saved, Turn on again
  assert.deepEqual(await quiet.status(),{kind:'off'});assert.deepEqual(await quiet.enable(),{kind:'off'});
  quiet.dispose();
 });
+// Android 8-12 allow notifications from the install, so the app can report 'granted' before the farmer ever tapped Turn on. Until that
+// tap OneSignal has no subscription for the phone (the app gives OneSignal its consent only on registerpush://), and the app says so:
+// optedIn false and no subscription id. Only 'granted' with optedIn true is on; nothing is saved without the tap.
+test('Android 8-12: allowed from the install but not opted in reads as off (Turn on stays), never saved; the tap turns it on',async()=>{
+ const before={permission:'granted',optedIn:false,subscriptionId:'',externalId:'',version:'1.0'};
+ assert.equal(appPushAllowed(readAppPush(before)),false);assert.equal(appPushAllowed(readAppPush({...before,optedIn:true})),true);
+ assert.equal(appPushAllowed(readAppPush({...before,permission:'default',optedIn:true})),false);
+ // The real app's order after the tap: consent, Android's answer (allowed at once here), opt in; the subscription id follows when
+ // OneSignal has made it.
+ const visits=[],state={...before},db=database(),top=appTop({app(link,win){
+  visits.push(link);
+  if(link.startsWith(APP_PUSH.login)){state.externalId='p1';queueMicrotask(()=>win.harvestAppPush({...state}));}
+  else if(link===APP_PUSH.status)queueMicrotask(()=>win.harvestAppPush({...state}));
+  else if(link===APP_PUSH.register){
+   state.optedIn=true;queueMicrotask(()=>win.harvestAppPush({...state}));
+   setTimeout(()=>{state.subscriptionId=SUB;win.harvestAppPush({...state});},30);
+  }
+ }});
+ // The farmer already has them on (on another phone): this phone still says off and offers Turn on.
+ db.on=true;
+ const push=createAppPush({supabase:db,playerId:'p1',win:top.win,waitMs:2000,statusWaitMs:100,gapMs:0,timezone:zone});
+ await push.sync();await settle();
+ assert.deepEqual(await push.status(),{kind:'off'});
+ // The app repeats its state (page loads, back in the app): still off, and nothing is saved.
+ top.win.harvestAppPush({...state});top.win.harvestAppPush({...state});await settle();
+ assert.deepEqual(await push.status(),{kind:'off'});assert.ok(!db.calls.some(([name])=>name==='app_push_save'));
+ assert.ok(!visits.includes(APP_PUSH.register),'nothing asks the app to opt in without the tap');
+ // The Settings line for it: Turn on, not Turn off.
+ const els={},el=id=>els[id]??=({id,hidden:false,checked:false,value:'',disabled:false,textContent:'',innerHTML:'',children:[]});
+ els['notify-settings']={...el('notify-settings'),querySelector:()=>null};
+ const notifications={ready:Promise.resolve(),available:true,config:{appPush:true},push,get:async()=>({pushCrops:true,pushProduction:true,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true}),save:async prefs=>prefs};
+ globalThis.document={getElementById:el,querySelectorAll:()=>[]};globalThis.window={parent:{harvestBridge:{notifications}}};
+ try{
+  const {createNotificationsSection}=await import('../public/notifications-ui.js?granted='+Math.random());await createNotificationsSection().refresh();
+  assert.equal(els['notify-enable'].hidden,false,'Turn on');assert.equal(els['notify-disable'].hidden,true,'no Turn off');
+ }finally{delete globalThis.document;delete globalThis.window;}
+ // The tap: an answer that is allowed and opted in but has no subscription yet is not the end (and not a no); the subscription is.
+ db.on=false;
+ assert.deepEqual(await push.enable(),{kind:'on'});assert.equal(visits.at(-1),APP_PUSH.register);
+ assert.deepEqual(db.calls.filter(([name])=>name==='app_push_save'),[['app_push_save',{p_enabled:true,p_timezone:ZONE}]]);
+ push.dispose();
+ // An app that stays not opted in after the tap: off after the wait, not blocked (the phone allows them), nothing saved.
+ const stuck={...before},stuckDb=database(),stuckTop=appTop({app(link,win){if(link===APP_PUSH.register)queueMicrotask(()=>win.harvestAppPush({...stuck}));}});
+ const stuckPush=createAppPush({supabase:stuckDb,playerId:'p1',win:stuckTop.win,waitMs:60,statusWaitMs:30,gapMs:0});
+ stuckTop.win.harvestAppPush({...stuck});
+ assert.deepEqual(await stuckPush.enable(),{kind:'off'});assert.ok(!stuckDb.calls.some(([name])=>name==='app_push_save'));
+ stuckPush.dispose();
+});
 test('a slow answer still counts: Android\'s question answered after the wait is saved the moment the phone allows it; not after the farm closed',async()=>{
  const slow=phone({answerRegister:false}),top=appTop({app:slow.app}),db=database(),changes=[];
  const push=createAppPush({supabase:db,playerId:'p1',win:top.win,waitMs:40,statusWaitMs:30,gapMs:0,timezone:zone});push.onChange(()=>changes.push(1));

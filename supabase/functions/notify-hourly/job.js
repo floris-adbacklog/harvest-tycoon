@@ -16,7 +16,9 @@ export const PORTAL_MAIL=/@players\.harvesttycoon\.com$/i;
 
 async function deliver(deps,player,push){
  let delivered=0;
- const payload=JSON.stringify(push);
+ // The browser's push as before: the app's notification category (channel) is only for OneSignal.
+ const {channel,...shown}=push;
+ const payload=JSON.stringify(shown);
  for(const sub of player.subscriptions){
   let outcome;try{outcome=await deps.sendPush(sub,payload);}catch(error){outcome={ok:false,status:0};}
   if(outcome.ok){delivered++;await deps.db.markSuccess(sub.endpoint);}

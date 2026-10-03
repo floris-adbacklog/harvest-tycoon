@@ -9,6 +9,11 @@ export const ONESIGNAL_URL='https://api.onesignal.com/notifications?c=push';
 export const ONESIGNAL_BATCH=2000;    // farmers per call (OneSignal takes up to 20,000)
 export const APP_PUSH_TTL=3600;       // as the browser's push: a reminder that could not arrive within the hour is not shown later
 const SITE='https://www.harvesttycoon.com',HOSTS=Object.freeze(['www.harvesttycoon.com','harvesttycoon.com']);
+// The app's notification categories in Android's settings (android-app AppPush.java; the ids are part of the contract, never rename them):
+// messages = a private message, the Crew or a purchase notice; ready = crops & goods ready; daily = the daily gift, the streak and the
+// comeback chest (rules.js picks ready or daily). Each request names one as existing_android_channel_id; without a known one OneSignal
+// uses its own default category.
+export const APP_PUSH_CHANNELS=Object.freeze(['messages','ready','daily']);
 
 // Where tapping it goes, as a full address on our website (the app opens it in itself, never in a browser): the same path as the
 // browser's push; anything not on harvesttycoon.com goes to the home page.
@@ -36,10 +41,12 @@ export async function idempotencyKey(name){
 }
 // One request. The words are already in the farmers' own game language (texts.js; a call only holds farmers with the same words): they
 // go in OneSignal's "en", the text a phone shows when no other language is given, so the phone's own language never replaces the
-// language the farmer plays in. data.url is what the app opens on a tap; no url field, which would open a browser.
-export function notificationRequest({ids,title,body,url,tag,key},base=SITE){
+// language the farmer plays in. data.url is what the app opens on a tap; no url field, which would open a browser. channel: one of
+// APP_PUSH_CHANNELS.
+export function notificationRequest({ids,title,body,url,tag,key,channel},base=SITE){
  return {app_id:ONESIGNAL_APP_ID,target_channel:'push',include_aliases:{external_id:[...ids]},
   headings:{en:String(title??'Harvest Tycoon')},contents:{en:String(body??'')},data:{url:appLink(url,base)},
+  ...(APP_PUSH_CHANNELS.includes(channel)?{existing_android_channel_id:channel}:{}),
   idempotency_key:key,ttl:APP_PUSH_TTL,...(tag?{collapse_id:collapseId(tag)}:{})};
 }
 
@@ -62,13 +69,14 @@ export function createOneSignal({apiKey='',fetchImpl=globalThis.fetch,base=SITE,
  return {
   enabled,
   // One notification for many farmers, in calls of at most ONESIGNAL_BATCH. key: what makes it this notification (the reminder and
-  // its hour, a message's id); each call's idempotency key adds its farmers. Returns the set of player ids OneSignal took.
-  async send({ids,title,body,url,tag,key}){
+  // its hour, a message's id); each call's idempotency key adds its farmers. channel: the app's category (APP_PUSH_CHANNELS).
+  // Returns the set of player ids OneSignal took.
+  async send({ids,title,body,url,tag,key,channel}){
    const reached=new Set();if(!enabled)return reached;
    const unique=[...new Set((ids??[]).filter(id=>id!=null&&id!=='').map(String))].sort();
    for(let i=0;i<unique.length;i+=ONESIGNAL_BATCH){
     const part=unique.slice(i,i+ONESIGNAL_BATCH);
-    const request=notificationRequest({ids:part,title,body,url,tag,key:await idempotencyKey(`${key}|${part.join(',')}`)},base);
+    const request=notificationRequest({ids:part,title,body,url,tag,channel,key:await idempotencyKey(`${key}|${part.join(',')}`)},base);
     for(const id of await call(request))reached.add(id);
    }
    return reached;
@@ -76,17 +84,17 @@ export function createOneSignal({apiKey='',fetchImpl=globalThis.fetch,base=SITE,
  };
 }
 
-// The hourly reminders (job.js): farmers with the same words and the same link share calls. items: [{player, push}] with push as
-// planPlayer made it ({title, body, tag, url}). Returns the set of player ids OneSignal took.
+// The hourly reminders (job.js): farmers with the same words, link and category share calls. items: [{player, push}] with push as
+// planPlayer made it ({title, body, tag, url, channel}: 'daily' or 'ready'). Returns the set of player ids OneSignal took.
 export async function sendReminders(client,items,now=Date.now()){
  const reached=new Set();if(!client?.enabled)return reached;
  const groups=new Map(),hour=new Date(now).toISOString().slice(0,13);
  for(const {player,push} of items??[]){
-  const group=JSON.stringify([push.title,push.body,push.url,push.tag]);
+  const group=JSON.stringify([push.title,push.body,push.url,push.tag,push.channel]);
   if(!groups.has(group))groups.set(group,{push,ids:[]});groups.get(group).ids.push(player);
  }
  for(const {push,ids} of groups.values()){
-  const sent=await client.send({ids,title:push.title,body:push.body,url:push.url,tag:push.tag,key:`reminder|${hour}|${push.title}|${push.body}|${push.url}`});
+  const sent=await client.send({ids,title:push.title,body:push.body,url:push.url,tag:push.tag,channel:push.channel,key:`reminder|${hour}|${push.title}|${push.body}|${push.url}|${push.channel??''}`});
   for(const id of sent)reached.add(id);
  }
  return reached;

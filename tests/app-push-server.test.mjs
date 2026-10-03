@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 import {parse} from '../scripts/vendor/acorn.mjs';
-import {ONESIGNAL_APP_ID,ONESIGNAL_URL,ONESIGNAL_BATCH,APP_PUSH_TTL,appLink,collapseId,idempotencyKey,notificationRequest,createOneSignal,sendReminders} from '../supabase/functions/notify-hourly/onesignal.js';
+import {ONESIGNAL_APP_ID,ONESIGNAL_URL,ONESIGNAL_BATCH,APP_PUSH_TTL,APP_PUSH_CHANNELS,appLink,collapseId,idempotencyKey,notificationRequest,createOneSignal,sendReminders} from '../supabase/functions/notify-hourly/onesignal.js';
 import {runJob} from '../supabase/functions/notify-hourly/job.js';
 import {planPlayer} from '../supabase/functions/notify-hourly/rules.js';
 import {CROP_NAMES,BUILDING_NAMES} from '../supabase/functions/notify-hourly/names.js';
@@ -112,7 +112,7 @@ const device={endpoint:'https://push.example/1',p256dh:'k',auth:'a'};
 test('job: a farmer with only the app gets the reminder there, and it counts as the one reminder of this hour',async()=>{
  const {log,deps}=jobDeps([player()],{appPlayers:['p1']});const stats=await runJob(deps,MORNING);
  assert.deepEqual([stats.pushes,stats.appPushes,stats.errors],[1,1,0]);assert.deepEqual(log.web,[]);
- assert.deepEqual(log.app[0].items,[{player:'p1',push:{title:'Harvest Tycoon',body:'Your crops are ready to harvest',tag:'harvest-tycoon',url:'/?source=push'}}]);assert.equal(log.app[0].now,MORNING);
+ assert.deepEqual(log.app[0].items,[{player:'p1',push:{title:'Harvest Tycoon',body:'Your crops are ready to harvest',tag:'harvest-tycoon',url:'/?source=push',channel:'ready'}}]);assert.equal(log.app[0].now,MORNING);
  assert.equal(log.saved.length,1);assert.equal(log.saved[0][1].push_count,1);assert.equal(log.saved[0][1].crops_seen_at,MORNING);
  // Without the app (and without a browser) there is nothing to send it to: the markers follow the clock, as before.
  const none=jobDeps([player()]);await runJob(none.deps,MORNING);assert.equal(none.log.app.length,0);assert.equal(none.log.saved[0][1].push_count,undefined);
@@ -144,15 +144,49 @@ test('job: an app reminder that did not arrive is tried again next hour; the bro
  assert.equal(many.log.app.length,1);assert.deepEqual(many.log.app[0].items.map(i=>i.player).sort(),['p1','p2']);
 });
 
+// The app's notification categories in Android's settings (android-app AppPush.java): messages, ready, daily. Every request names one.
+test('the app\'s category per push: messages for chats and purchase notices, daily when every line is about the daily gift, else ready',async()=>{
+ assert.deepEqual([...APP_PUSH_CHANNELS],['messages','ready','daily']);
+ const base={ids:['p1'],title:'t',body:'b',url:'/',key:'k'};
+ for(const channel of APP_PUSH_CHANNELS)assert.equal(notificationRequest({...base,channel}).existing_android_channel_id,channel);
+ // None or an unknown one: left out, so OneSignal uses its own default category.
+ for(const channel of [undefined,'','Messages','chat'])assert.ok(!('existing_android_channel_id' in notificationRequest({...base,channel})),String(channel));
+ // The hourly reminder: planPlayer picks it from the lines, as it picks the link.
+ const at=Date.parse('2026-09-21T07:05:00Z'),evening=Date.parse('2026-09-21T17:05:00Z'),day=24*3600000;
+ const row=(over={},farm={})=>({player_id:'p',push_crops:true,push_production:true,push_daily:true,timezone:'Europe/Amsterdam',language:'en',last_active_at:new Date(at-3*3600000).toISOString(),
+  crops_seen_at:at-7200000,production_seen_at:at-7200000,app_push:true,subscriptions:[],farm:{plots:[],buildings:{},login:{lastDay:'2026-09-20',streak:6},...farm},...over});
+ const wheat=[{id:0,crop:'wheat',readyAt:at-600000}],plan=(r,now=at)=>planPlayer(r,now,names).push;
+ const gift=plan(row());assert.deepEqual([gift.body,gift.url,gift.channel],['Your daily gift is waiting, with double earnings','/?source=push&open=today','daily']);
+ const streak=plan(row({last_active_at:new Date(evening-9*3600000).toISOString(),crops_seen_at:evening,production_seen_at:evening}),evening);
+ assert.deepEqual([streak.body,streak.url,streak.channel],['Collect your gift to keep your 6-day streak','/?source=push&open=today','daily']);
+ // The comeback chest comes under the same switch (Daily gift & streak): daily, though tapping it opens the farm (Welcome back).
+ const away=new Date(at-3*day-3600000).toISOString(),chest=plan(row({last_active_at:away},{login:{lastDay:'2026-09-15',streak:4},seenAt:away}));
+ assert.deepEqual([chest.body,chest.url,chest.channel],['A comeback chest is waiting on your farm','/?source=push','daily']);
+ const crops=plan(row({push_daily:false},{plots:wheat}));assert.deepEqual([crops.body,crops.url,crops.channel],['Your crops are ready to harvest','/?source=push','ready']);
+ const both=plan(row({},{plots:wheat}));assert.match(both.body,/ · /);assert.deepEqual([both.url,both.channel],['/?source=push','ready'],'a gift line with a crops line: ready');
+ // To OneSignal: each request in its category, never two categories in one call.
+ const {calls,fetchImpl}=oneSignal();
+ await sendReminders(createOneSignal({apiKey:'k',fetchImpl}),[{player:'a',push:gift},{player:'b',push:crops},{player:'c',push:gift},{player:'d',push:{...crops,channel:'daily'}}],at);
+ assert.deepEqual(calls.map(c=>[c.request.include_aliases.external_id,c.request.existing_android_channel_id]),[[['a','c'],'daily'],[['b'],'ready'],[['d'],'daily']]);
+ assert.equal(new Set(calls.map(c=>c.request.idempotency_key)).size,3);
+ // The browser's push stays as it was: the category only goes to OneSignal.
+ const payloads=[],{log,deps}=jobDeps([player({push_daily:true,subscriptions:[device],farm:{plots:[],buildings:{},login:{lastDay:'2026-09-20',streak:6}}})],{appPlayers:['p1']});
+ deps.sendPush=async(sub,payload)=>{payloads.push(JSON.parse(payload));return {ok:true,status:201};};
+ await runJob(deps,MORNING);
+ assert.deepEqual(payloads,[{title:'Harvest Tycoon',body:'Your daily gift is waiting, with double earnings',tag:'harvest-tycoon',url:'/?source=push&open=today'}]);
+ assert.equal(log.app[0].items[0].push.channel,'daily');
+});
+
 test('notify-hourly: the secret by name from the environment, never in the code; the config says appPush; messages and purchase notices reach the app too',()=>{
  const index=read('supabase/functions/notify-hourly/index.ts');
  assert.match(index,/createOneSignal\(\{apiKey:Deno\.env\.get\('ONESIGNAL_REST_API_KEY'\)\?\?''/);
  const configLine=index.split('\n').find(l=>l.includes("query.has('config')"));
  assert.match(configLine,/appPush:appPushOn/);assert.doesNotMatch(configLine,/ONESIGNAL|apiKey|VAPID_PRIVATE|RESEND_KEY|SERVICE_ROLE/);
  assert.match(index,/if\(query\.has\('dm'\)\)\{\n  if\(!pushOn&&!appPushOn\)return json\(\{sent:0\}\);/);
- assert.match(index,/appPush\.send\(\{\.\.\.push,ids:await db\.appPushOf\(await db\.messageTargets\(id\)\),key:`message\|\$\{id\}`\}\)/,'a private message or the Crew: whoever the claim went to');
+ assert.match(index,/appPush\.send\(\{\.\.\.push,channel:'messages',ids:await db\.appPushOf\(await db\.messageTargets\(id\)\),key:`message\|\$\{id\}`\}\)/,'a private message or the Crew: whoever the claim went to, in the app\'s "messages" category');
  assert.match(index,/admin\.from\('chat_push_state'\)\.select\('player_id'\)\.eq\('message_id',message\)\.eq\('claimed',true\)/);
- assert.match(index,/appPush\.send\(\{\.\.\.push,ids:await db\.appPushOf\(await db\.noticeOwner\(String\(claim\.id\)\)\),key:`notice\|\$\{claim\.id\}`\}\)/,'a purchase notice: the admin');
+ assert.match(index,/appPush\.send\(\{\.\.\.push,channel:'messages',ids:await db\.appPushOf\(await db\.noticeOwner\(String\(claim\.id\)\)\),key:`notice\|\$\{claim\.id\}`\}\)/,'a purchase notice: the admin, also "messages" (it opens the chat)');
+ assert.equal((index.match(/appPush\.send\(/g)??[]).length,2,'every other app push is an hourly reminder (sendReminders), with its own category');
  assert.match(index,/if\(!pushOn&&!emailOn&&!appPushOn\)return json\(\{ran:false,reason:'not configured'\},503\);/);
  assert.match(index,/sendAppPush:appPushOn\?\(items:[^)]*\)=>sendReminders\(appPush,items,now\):null/);
  assert.match(index,/admin\.from\('app_push_players'\)\.select\('player_id'\)\.eq\('enabled',true\)\.order\('player_id'\)\.range\(from,from\+999\)/);
@@ -191,17 +225,20 @@ test('supabase/app-push.sql: on or off per farmer (no push ids), own row readabl
  // The farmers with only the app's notifications are in the hourly job: it takes every farmer with reminder settings that has a switch on.
  assert.match(read('supabase/comeback-chest.sql'),/from public\.notification_settings s\n[^]*where \(s\.push_crops or s\.push_production or s\.push_daily or s\.email_digest\);/);
 });
-test('the privacy policy: OneSignal in the app as it works (the SDK from the first start, the player id once signed in, sending only once on), and deleting it with the account',()=>{
+test('the privacy policy: OneSignal in the app as it works (nothing before Turn on; then the player id, a push token and device data), and deleting it with the account',()=>{
  const policy=read('public/privacy.html');
- assert.doesNotMatch(policy,/cannot show push notifications|Push ID in the Android app|push token for your phone and your device type|nothing more:/);
+ // Gone: the earlier wording from before the app asked OneSignal to wait for the farmer's tap.
+ assert.doesNotMatch(policy,/cannot show push notifications|Push ID in the Android app|push token for your phone and your device type|nothing more:|From the first time you open the app|even before you allow notifications|whether or not you turn notifications on|when you sign in \(see/);
+ assert.match(policy,/Its push notifications go through OneSignal, which receives nothing from the app until you turn them on\./);
  const app=policy.slice(policy.indexOf('<h3 id="android-app">'),policy.indexOf('<h2 id="social-sign-in">'));
- assert.match(app,/From the first time you open the app, even before you allow notifications, it registers your phone with OneSignal: OneSignal receives a push token for your phone and device data, namely the phone model, Android version, language, time zone, country \(worked out from your IP address\), mobile carrier, app version, and when, how often and how long you use the app\./);
- assert.match(app,/Once you sign in, the app also gives OneSignal your player ID, so that notifications can reach every phone you play on\. This happens whether or not you turn notifications on; when you sign out in the app, that phone is no longer linked to your player ID\./);
- assert.match(app,/Notifications are only sent after you turn them on \(Settings, Reminders\) and allow them on your phone\./);
- assert.match(app,/You can switch them off in Settings, or for the app in your phone's Android settings\. We keep only whether you turned them on\./);
+ assert.match(app,/The only addition is what OneSignal receives once you turn push notifications on \(below\)\./);
+ assert.match(app,/OneSignal receives nothing from the app until you turn notifications on in the game \(for example <strong>Turn on notifications<\/strong> in Settings, Reminders\)\./);
+ assert.match(app,/From then on, to deliver them, it receives your player ID, a push token for your phone and device data, namely the device type and model, Android version, language, time zone, country \(worked out from your IP address\), mobile carrier, app version, and when, how often and how long you use the app\./);
+ assert.match(app,/Your player ID lets notifications reach every phone you play on; when you sign out in the app, that phone is no longer linked to your player ID\. Notifications only arrive once you have also allowed them on your phone\./);
+ assert.match(app,/Turning them off in Settings, or for the app in your phone's Android settings, stops them\. We keep only whether you turned them on\. When you delete your account, we also delete your data at OneSignal that is linked to your player ID\./);
  const helpers=policy.slice(policy.indexOf('<h2 id="service-providers">'),policy.indexOf('<h2 id="transfers">'));
- assert.match(helpers,/<li><strong>OneSignal<\/strong>: delivery of push notifications in the Android app\. From the first time you open the app OneSignal receives a push token and device data for your phone, and once you sign in your player ID;/);
- assert.match(policy,/<strong>To make push notifications possible in the Android app<\/strong>:[^<]*<a href="#android-app">The Android app<\/a>\), so that notifications work as soon as you turn them on, on every phone you play on\. Legal basis: our legitimate interest/);
+ assert.match(helpers,/<li><strong>OneSignal<\/strong>: delivery of push notifications in the Android app, on our behalf\. OneSignal receives nothing from the app until you turn notifications on in the game; from then on it receives your player ID, a push token and device data for your phone;/);
+ assert.match(policy,/<strong>To make push notifications possible in the Android app<\/strong>: once you turn them on in the game, registering your phone with OneSignal and linking it to your player ID \(see <a href="#android-app">The Android app<\/a>\), so that they reach every phone you play on\. Legal basis: our legitimate interest/);
  assert.match(policy,/including Vercel, Stripe, Resend, OneSignal, Google, Meta and TikTok/);
  const retention=policy.slice(policy.indexOf('<h2 id="retention">'),policy.indexOf('<h2 id="your-rights">'));
  assert.match(retention,/<strong>Notifications in the Android app<\/strong>: whether you turned them on, for as long as your account exists\. OneSignal keeps a phone's push token and device data for as long as we use OneSignal, unless we delete them earlier\. Signing out in the app ends the link between that phone and your player ID; when you delete your account, we also delete the data at OneSignal that is linked to your player ID\./);

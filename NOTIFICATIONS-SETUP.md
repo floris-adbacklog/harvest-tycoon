@@ -83,6 +83,10 @@ pushmeldingen in de app ook pas als de config `appPush` zegt. De wiki-pagina's v
 Aan of uit is van de speler, niet van één telefoon: OneSignal bereikt elke telefoon waarop de speler is ingelogd. Afmelden in de app
 koppelt alleen die telefoon los (OneSignal-logout); de andere telefoons houden hun meldingen. Uitzetten in Settings zet ze overal uit.
 
+Elke melding valt in een categorie van de app (Android-instellingen, `existing_android_channel_id`): `messages` voor privéberichten,
+de Crew en aankoopmeldingen; `daily` voor een uurlijkse herinnering waarvan elke regel over het dagcadeau, de reeks of de terugkomkist
+gaat; anders `ready`.
+
 Bekend en zo gelaten: wie op dezelfde telefoon eerder pushmeldingen in Chrome aanzette en daarna in de app, krijgt elke melding daar
 twee keer. De server kan niet zien dat Chrome op dezelfde telefoon zit, en ook niet of de app er nog op staat; de Chrome-kopie
 weglaten kan de telefoon dus helemaal stil maken. De speler zet de Chrome-kopie uit in Chrome: Settings, Reminders, "Turn off in this browser or app".
@@ -96,7 +100,9 @@ header `Authorization: Key <App API key>`. Dat wist ook de abonnementen van die 
 
 ### Google Play: Data safety
 
-De OneSignal-SDK in de app verzamelt vanaf de eerste start, ook zonder toestemming voor meldingen: een push-token (apparaat-id),
-apparaatgegevens (model, Android-versie, taal, tijdzone, land via het IP-adres, provider, app-versie) en gebruik van de app (sessies,
-duur). Na inloggen krijgt OneSignal ook de player id. Vul Data safety daarnaar in: o.a. *Device or other IDs* en *App interactions*,
-gedeeld met een dienstverlener voor *App functionality*, versleuteld onderweg, te verwijderen op verzoek.
+OneSignal krijgt niets van de app tot de speler in de game meldingen aanzet (Turn on): de app start OneSignal met privacy-toestemming
+verplicht en geeft die toestemming pas bij `registerpush://`. Vanaf dan krijgt OneSignal de player id, een push-token (apparaat-id) en
+apparaatgegevens (apparaattype en model, Android-versie, taal, tijdzone, land via het IP-adres, provider, app-versie) en gebruik van de
+app (sessies, duur). Vul Data safety daarnaar in: o.a. *User IDs*, *Device or other IDs* en *App interactions*, verzameld voor *App
+functionality*, optioneel (alleen na Turn on), niet gedeeld (OneSignal is een verwerker namens ons), versleuteld onderweg, te
+verwijderen op verzoek.

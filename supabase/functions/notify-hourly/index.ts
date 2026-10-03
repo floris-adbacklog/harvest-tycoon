@@ -122,7 +122,8 @@ Deno.serve(async(req)=>{
  // A new private message (the chat_dm_push trigger in supabase/chat.sql): one notification to the other farmer's devices. The
  // trigger already checked their switch, their devices and the pace; chat_push_claim hands out each message once, so calling
  // this again, by anyone, sends nothing.
- // The same message goes to the app as a push too (onesignal.js) for whoever of them has the app's notifications on.
+ // The same message goes to the app as a push too (onesignal.js) for whoever of them has the app's notifications on, in the app's
+ // "messages" category (a private message and the Crew alike).
  if(query.has('dm')){
   if(!pushOn&&!appPushOn)return json({sent:0});
   let id='';try{id=String((await req.json())?.message??'');}catch{}
@@ -139,11 +140,11 @@ Deno.serve(async(req)=>{
    else if(outcome.status===404||outcome.status===410)await db.removeSubscription(sub.endpoint);
    else await db.markFailure(sub.endpoint);
   }
-  if(appPushOn){try{sent+=(await appPush.send({...push,ids:await db.appPushOf(await db.messageTargets(id)),key:`message|${id}`})).size;}catch(error){console.error(`message app push: ${(error as Error)?.message??error}`);}}
+  if(appPushOn){try{sent+=(await appPush.send({...push,channel:'messages',ids:await db.appPushOf(await db.messageTargets(id)),key:`message|${id}`})).size;}catch(error){console.error(`message app push: ${(error as Error)?.message??error}`);}}
   return json({sent});
  }
  // An in-game purchase, for the admin (supabase/purchase-alerts-push.sql): the same notice as in the chat's Notifications, on the
- // admin's devices. notice_push_claim hands each notice out once. Tapping it opens the chat on Notifications.
+ // admin's devices. notice_push_claim hands each notice out once. Tapping it opens the chat on Notifications. In the app: "messages".
  if(query.has('notice')){
   if(!pushOn&&!appPushOn)return json({sent:0});
   let id='';try{id=String((await req.json())?.notice??'');}catch{}
@@ -160,7 +161,7 @@ Deno.serve(async(req)=>{
    else if(outcome.status===404||outcome.status===410)await db.removeSubscription(sub.endpoint);
    else await db.markFailure(sub.endpoint);
   }
-  if(appPushOn){try{sent+=(await appPush.send({...push,ids:await db.appPushOf(await db.noticeOwner(String(claim.id))),key:`notice|${claim.id}`})).size;}catch(error){console.error(`notice app push: ${(error as Error)?.message??error}`);}}
+  if(appPushOn){try{sent+=(await appPush.send({...push,channel:'messages',ids:await db.appPushOf(await db.noticeOwner(String(claim.id))),key:`notice|${claim.id}`})).size;}catch(error){console.error(`notice app push: ${(error as Error)?.message??error}`);}}
   return json({sent});
  }
  if(!pushOn&&!emailOn&&!appPushOn)return json({ran:false,reason:'not configured'},503);
