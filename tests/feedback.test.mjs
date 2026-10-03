@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-import {createChatClient} from '../src/chat-client.js';
-import {feedbackProblem,FEEDBACK_MAX} from '../public/feedback-ui.js';
+import {createChatClient,chatError} from '../src/chat-client.js';
+import {feedbackProblem,FEEDBACK_MAX,NOT_READY} from '../public/feedback-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // 30 Sep 2026: Feedback & bugs. A farmer writes with the mailbox button; the admin and the moderators read it in the dashboard.
@@ -32,7 +32,8 @@ test('sending keeps the limit\'s code, so the game can say it in the farmer\'s l
  await assert.rejects(()=>chat.sendFeedback({kind:'feedback',body:'Nice game'}),error=>error.code==='54000');
  assert.equal(feedbackProblem({code:'54000'}),'Thanks, we have your messages. Try again in a little while.');
  assert.equal(feedbackProblem(new Error('No connection right now. Try again in a moment.')),'No connection right now. Try again in a moment.');
- assert.equal(feedbackProblem(new Error('permission denied')),'That did not send. Please try again.','a database text never reaches the farmer');
+ assert.equal(feedbackProblem(chatError({message:'permission denied for function feedback_send',code:'42501'})),'That did not send. Please try again.','a database text never reaches the farmer');
+ assert.equal(feedbackProblem(new Error('permission denied')),'That did not send. Please try again.');
  answer={data:[],error:null};await chat.feedbackList(true);await chat.feedbackHandle('f1',false);
  assert.deepEqual(calls.slice(-2),[['feedback_list',{p_done:true}],['feedback_handle',{p_id:'f1',p_done:false}]]);
 });
@@ -74,4 +75,27 @@ test('a third kind: Request a feature, with its own hint; the button is just Fee
  assert.match(ui,/feature:'What would you like to see in the game\?'/);assert.match(ui,/<h2 id="feedback-title">Feedback<\/h2>/);
  assert.match(read('src/admin-dashboard.js'),/const FEEDBACK_KINDS=\{feedback:'Feedback',bug:'Bug',feature:'Feature request'\};/);
  assert.doesNotMatch(read('public/farm.html')+read('public/wiki-content.js'),/Feedback (&amp;|&|and) bugs/,'one name everywhere');
+});
+
+// 3 Oct 2026: a farmer on Firefox for Android read "That did not send." while his attempt never reached the server; the form said
+// nothing about why. Now it names the reason it knows, in texts the game already has in every language.
+test('the form names the real reason: signed out, a session that ended, a cut-off request, a game that is not ready',async()=>{
+ const calls=[];let answer={error:null},alive=true;
+ const chat=createChatClient({rpc:async(name,args)=>{calls.push(name);return answer;}},{playerId:'A',alive:()=>alive});
+ const problem=async error=>{answer={error};try{await chat.sendFeedback({kind:'bug',body:'The mill froze'});return 'sent';}catch(failure){return feedbackProblem(failure);}};
+ assert.equal(await problem({message:'Sign in to send feedback.',code:'28000'}),'Sign in to send feedback.');
+ assert.equal(await problem({message:'JWT expired',code:'PGRST303'}),'Your session has ended. Please sign in again.');
+ assert.equal(await problem({message:'AbortError: The operation was aborted.',code:''}),'No connection right now. Try again in a moment.','a request cut off or timed out');
+ assert.equal(await problem({message:'TimeoutError: signal timed out',code:'23'}),'No connection right now. Try again in a moment.');
+ assert.equal(await problem({message:'Write between 3 and 1,000 characters.',code:'22023'}),'Write between 3 and 1,000 characters.');
+ assert.equal(await problem({message:'Thanks, we have your messages. Try again later.',code:'54000'}),'Thanks, we have your messages. Try again in a little while.');
+ assert.equal(await problem({message:'column "language" does not exist',code:'42703'}),'That did not send. Please try again.','the database\'s own words stay the general text');
+ alive=false;assert.equal(await problem(null),'Your session has ended. Please sign in again.','the farm was closed or opened again meanwhile');
+ assert.equal(NOT_READY,'The app is not ready yet. Reload the page and try again.');
+ const ui=read('public/feedback-ui.js');
+ assert.match(ui,/const api=chat\(\);if\(!api\?\.sendFeedback\)\{message=NOT_READY;render\(\);return;\}/,'no game connection to send it with');
+ assert.match(ui,/catch\(error\)\{message=feedbackProblem\(error\);\}/);
+ const catalog=JSON.parse(read('i18n/catalog.json'));
+ for(const text of ['Sign in to send feedback.','Your session has ended. Please sign in again.','No connection right now. Try again in a moment.','The app is not ready yet. Reload the page and try again.','Write between 3 and 1,000 characters.','That did not send. Please try again.'])
+  for(const code of ['nl','de','ja','ar'])assert.ok(text in catalog&&JSON.parse(read(`public/i18n/${code}.json`))[text],`${code}: ${text}`);
 });

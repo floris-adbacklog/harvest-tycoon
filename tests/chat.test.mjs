@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import {dmChannel,chatError} from '../src/chat-client.js';
 import {receiveDonations,normalizeFarm,createFarm,xpForLevel} from '../game/farm-state.js';
 import {giftNotice} from '../supabase/functions/farm-api/admin-service.js';
@@ -14,8 +14,34 @@ test('a private chat has one name for both farmers, whoever writes first',()=>{
 });
 
 test('errors read as plain sentences; a lost connection gets its own',()=>{
- assert.equal(chatError({message:'Slow down a little.'}).message,'Slow down a little.');
+ assert.equal(chatError({message:'Write 1–200 characters.',code:'22023'}).message,'Write 1–200 characters.');
  assert.equal(chatError({message:'TypeError: Failed to fetch'}).message,'No connection right now. Try again in a moment.');
+});
+
+// Oct 2026: the chat names its limit, and a database's own words never reach a farmer in English.
+test('the pace limit names the 2 seconds; a cut-off request is no connection; an expired sign-in says so',()=>{
+ assert.equal(chatError({message:'Slow down a little.',code:'54000'}).message,'Slow down: one message every 2 seconds.');
+ assert.match(sql,/if last_at>now\(\)-interval '2 seconds' or recent>=12 then raise exception 'Slow down a little\.'/,'the database still says the old words; the game says the rule');
+ for(const message of ['AbortError: The operation was aborted.','AbortError: signal is aborted without reason','TimeoutError: signal timed out','NetworkError when attempting to fetch resource.','Load failed','canceling statement due to statement timeout',''])
+  assert.equal(chatError({message}).message,'No connection right now. Try again in a moment.',message);
+ for(const error of [{message:'JWT expired',code:'PGRST303'},{message:'JWT expired',code:'PGRST301'},{message:'AuthSessionMissingError: Auth session missing!'}])
+  assert.equal(chatError(error).message,'Your session has ended. Please sign in again.',error.message);
+});
+
+test('the database\'s own words become the general text (the staff dashboard keeps them); every refusal of ours stays as written',()=>{
+ for(const error of [{message:'permission denied for function chat_send',code:'42501'},{message:'Could not find the function public.chat_send(p_body, p_channel) in the schema cache',code:'PGRST202'},
+  {message:'new row for relation "chat_messages" violates check constraint "chat_messages_channel_check"',code:'23514'},{message:'column "kind" does not exist',code:'42703'},
+  {message:'<!DOCTYPE html><html><body>502 Bad Gateway</body></html>'},{message:'TypeError: Cannot read properties of undefined (reading \'id\')'},{message:'An invalid response was received from the upstream server'}]){
+  const said=chatError(error);assert.equal(said.message,'That did not work. Please try again.',error.message);assert.equal(said.raw,error.message,'the words stay with the error');
+ }
+ // Every refusal the database raises that a farmer may read (the catalog holds it: the translations have it) comes through as it is.
+ const catalog=JSON.parse(read('i18n/catalog.json')),texts=[];
+ for(const dir of ['supabase/','supabase/migrations/'])for(const file of readdirSync(new URL(`../${dir}`,import.meta.url)).filter(f=>f.endsWith('.sql')))
+  for(const m of read(`${dir}${file}`).matchAll(/raise exception\s+'((?:[^']|'')*)'/gi)){let n=0;const key=m[1].replace(/''/g,"'").replace(/%/g,()=>`{${n++}}`).replace(/\s+/g,' ').trim();if(key in catalog&&key!=='Slow down a little.')texts.push(key.replace(/\{\d+\}/g,'12'));}
+ assert.ok(texts.length>100,`${texts.length} refusals`);
+ for(const message of texts){const said=chatError({message,code:'P0001'});assert.equal(said.message,message);assert.equal(said.raw,undefined,message);}
+ const admin=read('src/admin-dashboard.js');
+ assert.match(admin,/const why=error=>error\?\.raw\?\?error\?\.message;/);assert.doesNotMatch(admin,/error\.message/,'every staff screen shows the database\'s words');
 });
 
 test('every chat table is locked: row-level security on, no direct rights, reading only through the policies',()=>{
@@ -334,3 +360,4 @@ test('a Crew message is a push for the rest of the staff, like a private message
  assert.match(read('public/app-links.js'),/const CHANNEL=\/\^\(global\|notices\|crew\|/);
  assert.match(read('src/chat-ui.js'),/else if\(crew\)thread=\{channel:'crew',crew:true,otherName:'Crew'\};/);
 });
+
