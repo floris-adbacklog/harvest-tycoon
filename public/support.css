@@ -6,6 +6,8 @@
 .support-help a:hover{border-color:#cdb98a;color:#3d3923}
 .support-help strong{font:700 17px/1.3 'Outfit',sans-serif;color:#3d3923}
 .support-help span{font-size:14px;line-height:1.5;color:#6d6248}
+/* Our apps have no Google or Facebook sign-in (android-app.js marks the page html[data-app]), so that card is not theirs. */
+html[data-app] .support-social{display:none}
 .support-mail{font-size:15px}
 .support-mail a{display:inline-block;font-weight:700;overflow-wrap:anywhere}
 
@@ -13,6 +15,7 @@
 .support-note:target{display:block}
 .support-note.is-good{border:1px solid #cfdcb9;background:#eef4e4;color:#36521f}
 .support-note.is-good strong{display:block;font:700 19px/1.3 'Outfit',sans-serif;color:#36521f}
+.support-note:focus{outline:none}
 .support-note.is-bad{border:1px solid #edc6b9;background:#f8e3dc;color:#8a2f1d}
 /* Sent: the thank-you takes the form's place (a new message is one reload away). */
 #sent:target~.support-form{display:none}
