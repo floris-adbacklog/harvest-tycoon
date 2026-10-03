@@ -41,7 +41,13 @@ export const ACCOUNT_STEPS=Object.freeze({'Checking your account…':4,'Signing 
 // On CrazyGames (Oct 2026: the page is marked html[data-portal], public/portal.js) the tips about inviting, sharing and the app are
 // left out: none of those are there.
 export const PORTAL_HIDDEN_TIPS=Object.freeze(['invite-friends','farmapp']);
-export const portalTips=(tips,doc)=>doc?.documentElement?.dataset?.portal?tips.filter(([picture])=>!PORTAL_HIDDEN_TIPS.includes(picture)):tips;
+// In our Android app (Oct 2026: html[data-app=android], public/android.js) only the tip about adding the game to the home screen goes:
+// the app is on the phone already.
+export const APP_HIDDEN_TIPS=Object.freeze(['farmapp']);
+export const portalTips=(tips,doc)=>{
+ const data=doc?.documentElement?.dataset,hidden=data?.portal?PORTAL_HIDDEN_TIPS:data?.app==='android'?APP_HIDDEN_TIPS:null;
+ return hidden?tips.filter(([picture])=>!hidden.includes(picture)):tips;
+};
 // Shows a tip and changes it every few seconds with a short fade. Returns a function that stops it.
 export function startLoadingTips(doc,{tips:all=LOADING_TIPS,text='loading-tip-text',icon='loading-tip-icon',interval=4500,timers=globalThis,now=Date.now()}={}){
  const tips=portalTips(all,doc),box=doc.getElementById(text)?.parentElement;let index=Math.floor(now/interval)%tips.length,swap=0;

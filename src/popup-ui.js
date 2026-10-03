@@ -2,6 +2,7 @@ import {refreshArt} from '../public/visual-icons.js';
 import {rookieLeft} from '../public/farm-state.js';
 import {chosenLanguage} from '../public/i18n.js';
 import {portalOff} from '../public/portal.js';
+import {androidApp} from '../public/android.js';
 
 // Pop-ups from the admin (supabase/popups.sql, 26 Sep 2026): news that also opens once as a pop-up, with an optional button to a
 // screen of the game or to a web page (in a new tab); the admin can also send it without the news. Who sees it: everyone, phones in
@@ -26,7 +27,8 @@ export function fitsDevice(audience,{installed,phone}){
 
 export function createPopupUI({client,chat,state,doc=document,win=window,now=()=>Date.now()}){
  const dialog=doc.createElement('dialog');dialog.id='popup-dialog';dialog.setAttribute('aria-labelledby','popup-title');doc.body.append(dialog);
- const device=()=>({installed:doc.documentElement.dataset.appMode==='standalone',phone:Boolean(win.matchMedia?.('(pointer: coarse)').matches)});
+ // Our Android app (Oct 2026, public/android.js) counts as installed: a pop-up for players in the browser is not for it.
+ const device=()=>({installed:doc.documentElement.dataset.appMode==='standalone'||androidApp(win),phone:Boolean(win.matchMedia?.('(pointer: coarse)').matches)});
  const click=id=>doc.getElementById(id)?.click();
  const screens={install:()=>win.harvestWiki?.('getting-started','sec-play-it-as-an-app'),today:()=>win.harvestToday?.(),events:()=>click('events-button'),
   leaderboard:()=>click('leaderboard-button'),chat:()=>chat?.open(),shop:()=>win.harvestShop?.open(),family:()=>click('family-button'),wiki:()=>click('help-button')};
@@ -37,7 +39,8 @@ export function createPopupUI({client,chat,state,doc=document,win=window,now=()=
  function show(shown){
   const popup=inLanguage(shown),button=popup.buttonLabel&&popup.buttonTarget,keep=key=>popup.own.has(key)?' translate="no"':'';
   // On CrazyGames (Oct 2026, public/portal.js) a button to a web page or to installing the app is left out: neither is allowed there.
-  const offered=button&&!(portalOff('links')&&/^https:\/\/|^(screen:)?install$/.test(popup.buttonTarget));
+  // In our Android app (Oct 2026) the button to installing the web app is left out: the app is installed.
+  const offered=button&&!(portalOff('links')&&/^https:\/\/|^(screen:)?install$/.test(popup.buttonTarget))&&!(androidApp(win)&&/^(screen:)?install$/.test(popup.buttonTarget));
   dialog.innerHTML=`<button type="button" class="popup-close" data-popup-close aria-label="Close">×</button><img class="popup-art" src="/assets/harvest-tycoon-logo.webp" alt="" width="88" height="88" draggable="false"><h2 id="popup-title"${keep('title')}>${esc(popup.title)}</h2><p${keep('body')}>${linkify(popup.body)}</p>`
    +(offered?`<button type="button" class="primary-button" data-popup-go><span${keep('buttonLabel')}>${esc(popup.buttonLabel)}</span>${popup.buttonTarget.startsWith('https://')?' ↗':''}</button><button type="button" class="popup-later" data-popup-close>Not now</button>`:'<button type="button" class="primary-button" data-popup-close>Got it</button>');
   dialog.onclick=event=>{

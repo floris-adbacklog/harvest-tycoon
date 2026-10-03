@@ -2,6 +2,7 @@
 // farm-api invite-service.js). Opened from the side tools on desktop, the More menu on phones and the Family tab.
 import {art,refreshArt} from './visual-icons.js';
 import {t} from './i18n.js';
+import {androidApp,shareInApp} from './android.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const STATUS={
  playing:f=>`Level ${f.level} · playing`,
@@ -40,6 +41,8 @@ export function createInviteUI({notify}){
  async function share(input){
   // In the farmer's language (Oct 2026): the share sheet's text is not on the page, so the page's translation never saw it.
   const text=t('Come farm with me in Harvest Tycoon! Reach level {0} and we both get {1} diamonds.',data.rules.level,data.rules.reward);
+  // Our Android app (Oct 2026, public/android.js): its WebView has no navigator.share, so the app's own share sheet takes the text and link.
+  if(androidApp(host)&&shareInApp({text,url:data.link},host)){bridge()?.trackInvite?.('invite_share');return;}
   if(typeof host.navigator.share==='function'){
    try{await host.navigator.share({title:'Harvest Tycoon',text,url:data.link});bridge()?.trackInvite?.('invite_share');}
    catch(e){if(e?.name!=='AbortError')await copy(input);}

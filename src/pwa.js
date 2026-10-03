@@ -1,7 +1,10 @@
 import {pushEvent} from './analytics.js';
+import {androidApp} from '../public/android.js';
 
-// What the "Farm app" block of the settings should offer on this device.
-export function installState({standalone=false,ios=false,promptReady=false,secure=true,serviceWorker=true}={}){
+// What the "Farm app" block of the settings should offer on this device. In the Android app (Oct 2026, public/android.js) the Play app
+// is the app: nothing to install, so the block stays hidden ('unsupported') and the browser's install prompt is never used.
+export function installState({standalone=false,ios=false,promptReady=false,secure=true,serviceWorker=true,app=false}={}){
+ if(app)return {kind:'unsupported'};
  if(standalone)return {kind:'installed'};
  if(!secure||!serviceWorker)return {kind:'unsupported'};
  if(promptReady)return {kind:'prompt'};
@@ -10,16 +13,17 @@ export function installState({standalone=false,ios=false,promptReady=false,secur
 
 // Registers the service worker (installable app, later push) and keeps the browser's install prompt for
 // the settings dialog, which lives in the game iframe and reads it from window.harvestPwa.
+// The service worker stays in the Android app too: the WebView runs it, and it gives the offline page.
 export function startPwa(win=globalThis.window){
  if(!win?.navigator)return null;
- const nav=win.navigator,listeners=new Set();let deferred=null;
+ const nav=win.navigator,listeners=new Set(),app=androidApp(win);let deferred=null;
  // Full screen changes the display mode, so "installed" is also what it was when the app opened.
  const displayStandalone=()=>Boolean(win.matchMedia?.('(display-mode: standalone)')?.matches||nav.standalone),openedAsApp=displayStandalone();
  const standalone=()=>openedAsApp||displayStandalone();
  const ios=()=>/iphone|ipad|ipod/i.test(nav.userAgent??'')||(nav.platform==='MacIntel'&&nav.maxTouchPoints>1);
- const state=()=>installState({standalone:standalone(),ios:ios(),promptReady:Boolean(deferred),secure:win.isSecureContext!==false,serviceWorker:'serviceWorker' in nav});
+ const state=()=>installState({standalone:standalone(),ios:ios(),promptReady:Boolean(deferred),secure:win.isSecureContext!==false,serviceWorker:'serviceWorker' in nav,app});
  const notify=()=>{for(const listener of listeners){try{listener(state());}catch{}}};
- win.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferred=event;notify();});
+ win.addEventListener('beforeinstallprompt',event=>{event.preventDefault();if(app)return;deferred=event;notify();});
  win.addEventListener('appinstalled',()=>{deferred=null;pushEvent('pwa_installed',{},win);notify();});
  if('serviceWorker' in nav){
   const register=()=>nav.serviceWorker.register('/sw.js',{scope:'/'}).catch(()=>{});
@@ -32,7 +36,8 @@ export function startPwa(win=globalThis.window){
  const doc=win.document,KEY='harvest-tycoon:fullscreen';
  const remembered={get(){try{return win.localStorage.getItem(KEY)==='on';}catch{return false;}},set(on){try{if(on)win.localStorage.setItem(KEY,'on');else win.localStorage.removeItem(KEY);}catch{}}};
  const fullscreen={
-  supported:()=>Boolean(doc?.fullscreenEnabled&&doc.documentElement?.requestFullscreen)&&!ios(),
+  // Not in the Android app: the app itself decides how much of the screen it takes.
+  supported:()=>Boolean(doc?.fullscreenEnabled&&doc.documentElement?.requestFullscreen)&&!ios()&&!app,
   active:()=>Boolean(doc?.fullscreenElement),
   wanted:()=>remembered.get(),
   async enter(){try{await doc.documentElement.requestFullscreen({navigationUI:'hide'});return true;}catch{return false;}},
@@ -43,7 +48,7 @@ export function startPwa(win=globalThis.window){
   state,fullscreen,
   subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
   async install(){
-   if(!deferred)return {outcome:'unavailable'};
+   if(!deferred||app)return {outcome:'unavailable'};
    const event=deferred;deferred=null;pushEvent('pwa_install_click',{},win);
    await event.prompt();const choice=await event.userChoice;notify();return choice;
   }

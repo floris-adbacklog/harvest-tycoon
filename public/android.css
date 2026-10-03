@@ -1,0 +1,20 @@
+/* Our Android app (Oct 2026): html[data-app=android] is set only there (public/android-app.js), so in a browser and on CrazyGames nothing
+   here applies. The code that would show these asks public/android.js first; these rules are the second lock, as public/portal.css is. */
+/* Our own purchases (Google Play's rules): the diamond packs and every "Get diamonds" (boosts and VIP with earned diamonds stay), the
+   Starter Pack's and the special offer's buttons and the offer's banner in the shop, and the Halloween Pass's buy box and its banner. Their
+   windows are not hidden here: with nothing to open them they never open, and a hidden window that did open would still block the farm. */
+html[data-app=android] #diamond-store,html[data-app=android] [data-shop-jump="diamond-store"],html[data-app=android] .get-diamonds,
+html[data-app=android] #starter-pack-button,html[data-app=android] #starter-pack-chip,html[data-app=android] #offer-button,html[data-app=android] #offer-chip,
+html[data-app=android] #shop-offer,html[data-app=android] #shop-pass,html[data-app=android] .pass-paid-box:not(.is-owned){display:none!important}
+/* The pass's paid row only while it is locked: bought on the website, it is there to collect as always. The layout follows with :has() in
+   rules of their own, so a WebView without :has() only keeps an empty column. */
+html[data-app=android] .pass-cell.is-paid.is-locked{display:none!important}
+html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) .pass-heads b:last-child{display:none!important}
+html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass-heads,.pass-row){grid-template-columns:34px minmax(0,1fr)}
+@media(max-width:600px){html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass-heads,.pass-row){grid-template-columns:26px minmax(0,1fr)}}
+/* Installing the web app and full screen: the Play app is the app (Settings' Farm app block, How to play's install button and steps). */
+html[data-app=android] #app-settings,html[data-app=android] #app-fullscreen-row,html[data-app=android] .wiki-install,html[data-app=android] .wiki-app-steps{display:none!important}
+/* Browser notifications (the WebView has none): the device's switch and its rows, the line that asks to allow them, and "Remind me" under
+   the daily gift. The email reminders in the same block stay. */
+html[data-app=android] #notify-device,html[data-app=android] #notify-push-rows,html[data-app=android] #notify-settings>.install-copy,
+html[data-app=android] #gift-remind{display:none!important}
