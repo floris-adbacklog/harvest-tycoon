@@ -1,5 +1,6 @@
 /* Legal pages (privacy policy, account deletion): the welcome page's fonts and colours, a farm header and one readable
-   cream card. No scripts, no tracking, nothing loaded from other sites. */
+   cream card. No tracking, nothing loaded from other sites; the only script is the app mark (public/android-app.js, Oct 2026), so the
+   footer's Google Play badge steps aside in our Android app. */
 @font-face{font-family:DM Sans;src:url('/assets/fonts/dm-sans-regular.ttf') format('truetype');font-display:swap}
 @font-face{font-family:Outfit;src:url('/assets/fonts/outfit-bold.ttf') format('truetype');font-weight:600 900;font-display:swap}
 *{box-sizing:border-box}
@@ -77,10 +78,19 @@ body.not-found::before{content:'';position:fixed;inset:0;z-index:-1;background:l
 .nf-card h1{margin:6px 0 8px;font:700 28px/1.15 'Outfit',sans-serif;color:#3d3923}
 .nf-card p:not(.nf-code){margin:0 auto 16px;max-width:320px;color:#7a6c58}
 .nf-button{width:100%;margin:4px 0 0}
-.nf-footer{display:flex;gap:16px;font-size:12px;color:#efe6cfcc}
+.nf-footer{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;font-size:12px;color:#efe6cfcc}
 .nf-footer a{color:#fff5da}
 
 /* Our Facebook page: a small "f" at the end of the footer, in the footer's own colour. */
 .footer-social{display:inline-flex;align-items:center;justify-content:center;align-self:center;width:20px;height:20px;border-radius:50%;opacity:.85;text-decoration:none}
 .footer-social:hover,.footer-social:focus-visible{opacity:1}
 .footer-social svg{display:block}
+/* The Google Play badge (Oct 2026): Google's own picture on a line of its own above the footer's links, 40 px high (Google's minimum is
+   28 px) with a quarter of its height clear around it, as Google's badge guidelines ask (4 px here plus the footer's 6 px gap under it).
+   Not in our Android app (public/android-app.js): the farmer is in it already. */
+.play-badge{flex-basis:100%;display:flex;justify-content:center;margin-bottom:4px}
+.play-badge a{display:block;border-radius:7px}
+.play-badge img{display:block;width:auto;height:40px}
+html[data-app=android] .play-badge{display:none!important}
+/* Google's attribution line for its badge, once on the site: at the end of the privacy policy, which every footer links to. */
+.legal-card .legal-trademarks{margin:32px 0 0;font-size:13px;color:#7d7060}

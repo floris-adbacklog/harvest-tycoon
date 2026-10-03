@@ -26,4 +26,9 @@ export const RTL_LANGUAGES=Object.freeze(LANGUAGES.filter(l=>l.rtl).map(l=>l.cod
 // so search engines find it and a visitor sees it at once. English is the home page itself ('/'). pageLanguage: the language of
 // such an address (also /es/index.html, the same file), null for any other page.
 export const languagePath=code=>code==='en'?'/':`/${code}/`;
+// The Google Play badge in the website's footers (Oct 2026): Google's own badge in the page's language (public/assets/badges/, Google's
+// play.google.com badge files with only their see-through edge trimmed; the clear space Google asks for is the footer's CSS). Arabic
+// shows the English one: Google's Arabic file still has the old Play logo, and its badge guidelines say not to use outdated artwork.
+export const PLAY_BADGES=Object.freeze(LANGUAGES.map(l=>l.code).filter(code=>code!=='ar'));
+export const playBadge=code=>`/assets/badges/google-play-${PLAY_BADGES.includes(code)?code:'en'}.webp`;
 export const pageLanguage=path=>{const m=/^\/([a-z]{2})(?:\/(?:index\.html)?)?$/.exec(path??'');return m&&m[1]!=='en'&&LANGUAGES.some(l=>l.ready&&l.code===m[1])?m[1]:null;};

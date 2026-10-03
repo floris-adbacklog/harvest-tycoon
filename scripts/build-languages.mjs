@@ -6,7 +6,7 @@
 // page a search engine reads is worse than none). Translate the missing texts first (i18n/README.md).
 import {mkdirSync,readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
-import {LANGUAGES,RTL_LANGUAGES,languagePath} from '../public/languages.js';
+import {LANGUAGES,RTL_LANGUAGES,languagePath,playBadge} from '../public/languages.js';
 
 const SITE='https://www.harvesttycoon.com';
 export const READY=LANGUAGES.filter(l=>l.ready).map(l=>l.code);
@@ -36,6 +36,8 @@ export function translatePage(html,code,dict){
  html=once(html,'<meta property="og:locale" content="en_GB">',`<meta property="og:locale" content="${OG_LOCALE[code]}">`,'og:locale');
  html=once(html,`<meta property="og:url" content="${SITE}/">`,`<meta property="og:url" content="${SITE}${languagePath(code)}">`,'og:url');
  html=once(html,`<link rel="canonical" href="${SITE}/">`,`<link rel="canonical" href="${SITE}${languagePath(code)}">`,'canonical address');
+ // The footer's Google Play badge in the page's language (Oct 2026, public/languages.js playBadge); its alt text is translated below.
+ html=once(html,`src="${playBadge('en')}"`,`src="${playBadge(code)}"`,'Google Play badge');
  const parts=html.split(TOKENS);
  for(let i=0;i<parts.length;i++){
   const part=parts[i];

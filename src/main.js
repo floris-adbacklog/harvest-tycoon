@@ -19,6 +19,7 @@ import {createConnection,connectionMessage,reasonOf,refused,WAKE_GRACE} from './
 import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
+import {playBadge} from '../public/languages.js';
 import {androidApp,listenAppPush} from '../public/android.js';
 import {forgetAppPushLink} from './app-push.js';
 const $=id=>document.getElementById(id);
@@ -29,6 +30,9 @@ if(inApp)listenAppPush(window);
 // Another language than English: translate the page's texts as they appear (public/i18n.js).
 startTranslation();
 renderLanguageSwitch();
+// The footer's Google Play badge in the farmer's language also on the English page '/' (Oct 2026), where the texts around it are
+// translated as the page is shown; a language page (/nl/) has its own badge already (scripts/build-languages.mjs).
+{const badge=document.querySelector('.play-badge img'),src=playBadge(chosenLanguage());if(badge?.getAttribute&&badge.getAttribute('src')!==src)badge.src=src;}
 startPwa();startUpdateCheck();
 // A screen to open once the farm is there: from a notification, a shortcut on the app icon or ?open= (public/app-links.js). The farm
 // frame takes it when it is ready (harvestTakeOpen); a notification tapped while the game is open arrives from sw.js as a message.
