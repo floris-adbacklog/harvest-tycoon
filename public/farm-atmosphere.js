@@ -17,7 +17,7 @@ function cloudTexture(size,rand){
  ctx.putImageData(img,0,0);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;
 }
 
-export function createAtmosphere({scene,renderer,sun,hemi,reducedMotion=false,mobile=false,clock=()=>new Date()}){
+export function createAtmosphere({scene,renderer,sun,hemi,reducedMotion=false,mobile=false,clock=()=>new Date(),cloudHeight=.28}){
  let seed=20260926;const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
  // Cloud shadows: one flat, see-through sheet just above the ground and the fields, moving slowly with the wind.
  const clouds=new THREE.Group();clouds.name='Cloud shadows';clouds.userData.polish=true;scene.add(clouds);
@@ -25,7 +25,8 @@ export function createAtmosphere({scene,renderer,sun,hemi,reducedMotion=false,mo
  if(!reducedMotion){
   cloudMap=cloudTexture(mobile?96:128,rand);cloudMap.repeat.set(400/64,400/64);
   const sheet=new THREE.Mesh(new THREE.PlaneGeometry(400,400),new THREE.MeshBasicMaterial({map:cloudMap,transparent:true,depthWrite:false}));
-  sheet.rotation.x=-Math.PI/2;sheet.position.y=.28;sheet.renderOrder=2;clouds.add(sheet);
+  // The farm's sheet lies just above its fields (.28); the village's lies above its hills (village-scene.js, Oct 2026).
+  sheet.rotation.x=-Math.PI/2;sheet.position.y=cloudHeight;sheet.renderOrder=2;clouds.add(sheet);
  }
  // Daylight.
  const baseSun=sun.position.clone(),up=new THREE.Vector3(0,1,0);let lastTurn=null,lastLight=0;

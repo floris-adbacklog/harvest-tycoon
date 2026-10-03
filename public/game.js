@@ -1178,13 +1178,16 @@ async function init(){
   if(villageWorld){
    // The village is three times as wide as the farm: fog further out, and the sun's shadows over all of it.
    scene.fog=new THREE.Fog(0xdcebea,105,180);sun.position.multiplyScalar(3);sun.shadow.camera.left=sun.shadow.camera.bottom=-95;sun.shadow.camera.right=sun.shadow.camera.top=95;sun.shadow.camera.far=320;sun.shadow.camera.updateProjectionMatrix();
+   // The same shadow map over almost twice the width makes each shadow texel twice as big (0.09 units, 0.19 on phones): the farm's
+   // normal bias (.035) left stripes over the rocks, walls and roofs (shadow acne). 1.3 texels of it (Oct 2026): .12, .24 on phones.
+   sun.shadow.normalBias=1.3*190/sun.shadow.mapSize.x;
    // Only a farmer in the village loads its scene code (and its mesh decoder): the farm never downloads it.
-   const {loadVillage,VILLAGE_PLACES,VILLAGE_UTILITIES}=await import('./village-scene.js');
+   const {loadVillage,VILLAGE_PLACES,VILLAGE_UTILITIES,VILLAGE_CLOUD_HEIGHT}=await import('./village-scene.js');
    const [village]=await Promise.all([loadVillage({onProgress:share=>loadingUI.modelsReady(Math.round(share*99))}),client.load().then(()=>loadingUI.accountReady())]);
    loadingUI.modelsReady(100);scene.add(village);villageFrame=measureVillage([...Object.values(VILLAGE_PLACES),...Object.values(VILLAGE_UTILITIES)]);
    for(const [key,spot] of Object.entries(VILLAGE_PLACES))addVillagePlace(key,spot);
    for(const [key,spot] of Object.entries(VILLAGE_UTILITIES))addVillageUtility(key,spot);
-   atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});measureFarm();resize();icons();
+   atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches,cloudHeight:VILLAGE_CLOUD_HEIGHT});measureFarm();resize();icons();
   }else{
   await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);},4)]);
   decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
