@@ -14,6 +14,11 @@
   return {app:/HarvestTycoonApp\//.test(ua||'')||want==='android'||(want!=='web'&&saved==='android'),remember:want};
  }
  window.harvestAndroidApp=androidApp;
+ // Our iPhone app (Oct 2026, WebViewGold for iOS): the same " HarvestTycoonApp/1.0" on an iPhone's own user agent, so it is the app as
+ // above (no purchases of our own, no install, its own notifications), and the page is also marked <html data-app-os="ios">: there it has
+ // no Tag Manager and no cookie banner at all (the owner's choice for the App Store, 3 Oct 2026; the app blocks the trackers too).
+ function iosApp(ua){return /HarvestTycoonApp\//.test(ua||'')&&/iPhone|iPad|iPod|Macintosh/.test(ua||'');}
+ window.harvestIosApp=iosApp;
  var parent=null;try{if(window.parent!==window)parent=window.parent.document.documentElement;}catch(e){}
  if(html.hasAttribute('data-portal')||(parent&&parent.hasAttribute('data-portal')))return;
  var saved=null;try{saved=localStorage.getItem(KEY);}catch(e){}
@@ -21,4 +26,5 @@
  try{if(found.remember==='android')localStorage.setItem(KEY,'android');else if(found.remember==='web')localStorage.removeItem(KEY);}catch(e){}
  // The game frame follows the page around it (its own address never carries ?app=).
  if(found.app||(parent&&parent.getAttribute('data-app')==='android'))html.setAttribute('data-app','android');
+ if(iosApp(navigator.userAgent)||(parent&&parent.getAttribute('data-app-os')==='ios'))html.setAttribute('data-app-os','ios');
 })();

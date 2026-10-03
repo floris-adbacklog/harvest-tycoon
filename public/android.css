@@ -16,3 +16,7 @@ html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass
 html[data-app=android] #app-settings,html[data-app=android] #app-fullscreen-row,html[data-app=android] .wiki-install,html[data-app=android] .wiki-app-steps{display:none!important}
 /* Notifications are the app's own there (src/app-push.js, Oct 2026): Settings' device switch, the reminder question and "Remind me" under
    the daily gift show as on the website, and the code hides them itself while the app has no push. */
+
+/* Our iPhone app (3 Oct 2026): no Tag Manager and no cookie banner, so Settings › Privacy has no Cookie settings and no sentence about
+   cookies; the privacy policy and Delete account stay. */
+html[data-app-os=ios] #cookie-settings,html[data-app-os=ios] #privacy-settings .install-copy{display:none!important}

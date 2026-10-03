@@ -5,6 +5,8 @@
 // is as easy as accepting, as the Dutch Data Protection Authority requires.
 (function(){
  var KEY='harvest-tycoon:cookies',KEEP=365*864e5;
+ // Our iPhone app (3 Oct 2026, public/android-app.js marks it): no Tag Manager there at all, so no banner and nothing to choose.
+ var root=document.documentElement,iosApp=!!(root&&root.getAttribute&&root.getAttribute('data-app-os')==='ios');
  var TRACKING=/^(_ga|_ga_.+|_gid|_gat.*|_gcl_.+|_fbp|_fbc|_ttp|_tt_enable_cookie|ttcsid.*)$/;
  function choice(){
   try{var saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&(saved.choice==='accepted'||saved.choice==='declined')&&Date.now()-saved.at<KEEP)return saved.choice;}catch(e){}
@@ -30,6 +32,7 @@
   if(before==='accepted'||window.harvestGtmLoaded)location.reload();
  }
  function open(){
+  if(iosApp)return;
   close();
   banner=document.createElement('section');
   banner.className='cookie-banner';banner.setAttribute('role','dialog');banner.setAttribute('aria-modal','false');banner.setAttribute('aria-labelledby','cookie-title');
@@ -42,6 +45,7 @@
  }
  window.harvestConsent={open:open,choice:choice};
  function start(){
+  if(iosApp)return;
   var params=new URLSearchParams(location.search);
   if(params.has('cookie-settings')){params.delete('cookie-settings');var rest=params.toString();history.replaceState(history.state,'',location.pathname+(rest?'?'+rest:'')+location.hash);open();return;}
   if(!choice())open();

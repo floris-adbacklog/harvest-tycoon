@@ -7,10 +7,10 @@ const KEY='harvest-tycoon:cookies',DAY=864e5;
 const banner=read('public/cookie-consent.js'),play=read('public/play.html');
 
 // Runs public/cookie-consent.js against a small stand-in for the page.
-function page({saved,search='',cookies=''}={}){
+function page({saved,search='',cookies='',os=null}={}){
  const store=new Map(saved?[[KEY,JSON.stringify(saved)]]:[]),writes=[],body={children:[]};
  body.appendChild=el=>body.children.push(el);
- const document={readyState:'complete',body,addEventListener(){},
+ const document={readyState:'complete',body,addEventListener(){},documentElement:{getAttribute:name=>name==='data-app-os'?os:null},
   get cookie(){return cookies;},set cookie(value){writes.push(value);},
   createElement(){
    const el={attributes:{},setAttribute(k,v){el.attributes[k]=v;},remove(){body.children=body.children.filter(c=>c!==el);},
@@ -73,11 +73,11 @@ test('/?cookie-settings (the link in the privacy policy) opens the choice and cl
 });
 
 // The loader at the top of play.html, run with each saved choice.
-function loader(saved){
+function loader(saved,ua=''){
  const script=play.match(/<!-- Google Tag Manager, only after the visitor accepts cookies[^>]*-->\n<script>([\s\S]*?)<\/script>/)[1];
  const inserted=[],store=new Map(saved===undefined?[]:[[KEY,JSON.stringify(saved)]]);
  const document={getElementsByTagName:()=>[{parentNode:{insertBefore:el=>inserted.push(el)}}],createElement:()=>({})};
- const win={document,JSON,Date,localStorage:{getItem:k=>store.get(k)??null}};win.window=win;
+ const win={document,JSON,Date,navigator:{userAgent:ua},localStorage:{getItem:k=>store.get(k)??null}};win.window=win;
  vm.runInNewContext(script,win);
  return {inserted,win};
 }
@@ -95,4 +95,14 @@ test('the choice can be changed later: on the home page, in the game settings an
  assert.match(policy,/Only if you choose <strong>Accept<\/strong> in the cookie banner/);assert.match(policy,/<a href="\/\?cookie-settings">home page<\/a>/);
  assert.match(policy,/<code>harvest-tycoon:cookies<\/code>/);assert.match(policy,/Legal basis: your consent \(Article 6\(1\)\(a\) GDPR\), which you can withdraw at any time under Cookie settings/);
  assert.doesNotMatch(policy,/cookie-consent\.js|googletagmanager\.com\/gtm/,'the policy page itself still loads no tracking');
+});
+
+// 3 Oct 2026: our iPhone app has no Tag Manager and no cookie banner at all (the owner's choice for the App Store).
+test('in our iPhone app: no banner, no way to open it, and the head loader never starts Tag Manager',()=>{
+ const ios=page({os:'ios'});assert.equal(ios.shown(),undefined,'no banner');ios.win.harvestConsent.open();assert.equal(ios.shown(),undefined,'Cookie settings opens nothing');
+ assert.equal(page({os:'ios',search:'?cookie-settings'}).shown(),undefined);
+ const app='Mozilla/5.0 (iPhone; CPU iPhone OS 26_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 HarvestTycoonApp/1.0';
+ const l=loader({choice:'accepted',at:Date.now()},app);assert.equal(l.inserted.length,0,'not even after an earlier Accept');l.win.harvestLoadGtm();assert.equal(l.inserted.length,0);
+ assert.equal(loader({choice:'accepted',at:Date.now()},'Mozilla/5.0 (Linux; Android 14; Pixel 8; wv) Chrome/129 Mobile Safari/537.36 HarvestTycoonApp/1.0').inserted.length,1,'the Android app as before');
+ assert.equal(loader({choice:'accepted',at:Date.now()},'Mozilla/5.0 (iPhone; CPU iPhone OS 26_4 like Mac OS X) Version/26.4 Mobile/15E148 Safari/604.1').inserted.length,1,'Safari on an iPhone as before');
 });

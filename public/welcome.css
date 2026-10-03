@@ -222,3 +222,6 @@ html[data-app=android] .play-badge{display:none!important}
 .browser-gate .link-button{margin-top:2px}
 /* Arabic letters join: never spaced apart (1 Oct 2026). */
 :lang(ar) *{letter-spacing:0!important}
+
+/* Our iPhone app (3 Oct 2026): no Tag Manager and no cookie banner there, so no Cookie settings in the footer either. */
+html[data-app-os=ios] .site-legal-button[onclick*=harvestConsent]{display:none!important}

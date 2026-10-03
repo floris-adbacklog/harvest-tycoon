@@ -133,7 +133,7 @@ test('android.css hides what a Play app may not have or cannot do, only in the a
  for(const kept of ['#invite-button','.family-invite-friend','.level-up-share','.farmer-share','#email-button','#email-settings','#notify-settings','#notify-email-rows','.reminder-nudge',
   '#notify-device','#notify-push-rows','#notify-settings>.install-copy','#gift-remind','#notify-enable','#notify-disable','#chat-button','#family-button','#leaderboard-button','#help-button','#cookie-settings','#logout-player','.pass-cell','#vip-shop','#boost-catalog','#starter-pack-dialog','#offer-dialog','.payment-dialog'])
   assert.ok(!selectorsOf(css).some(s=>s===`html[data-app=android] ${kept}`),`kept: ${kept}`);
- for(const selector of selectorsOf(css))assert.ok(selector.startsWith('html[data-app=android] '),`only in the app: ${selector}`);
+ for(const selector of selectorsOf(css))assert.ok(selector.startsWith('html[data-app=android] ')||selector.startsWith('html[data-app-os=ios] '),`only in the app: ${selector}`);
  // A rule with :has() stands alone, so a WebView without it drops only that rule.
  for(const [,selectors] of css.replace(/\/\*[^]*?\*\//g,'').replace(/@media[^{]*\{/g,'').matchAll(/([^{}]+)\{[^}]*\}/g))if(/:has\(/.test(selectors))assert.equal(selectors.split(/,(?![^(]*\))/).length,1,selectors);
  assert.match(css,/#pass-content:has\(\.pass-cell\.is-paid\.is-locked\) :is\(\.pass-heads,\.pass-row\)\{grid-template-columns:34px minmax\(0,1fr\)\}/);
@@ -304,4 +304,19 @@ test('Settings\' Privacy links to deleting the account, except on CrazyGames',()
  assert.match(read('public/portal.css'),/html\[data-portal\] #delete-account-link[,{]/);
  assert.doesNotMatch(read('public/android.css'),/delete-account/);
  for(const code of READY)if(code!=='en')assert.ok(JSON.parse(read(`public/i18n/${code}.json`))['Delete account'],code);
+});
+
+// 3 Oct 2026: our iPhone app (WebViewGold for iOS) adds the same token to an iPhone's own user agent. It is the app as on Android, and the
+// page is also marked data-app-os="ios": there it has no Tag Manager and no cookie banner (public/cookie-consent.js, play.html's loader).
+const IOS_APP_UA='Mozilla/5.0 (iPhone; CPU iPhone OS 26_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 HarvestTycoonApp/1.0';
+const IOS_SAFARI_UA='Mozilla/5.0 (iPhone; CPU iPhone OS 26_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Mobile/15E148 Safari/604.1';
+test('the iPhone app: the app as on Android, and marked ios; Safari on an iPhone and the Android app are not',()=>{
+ const ios=mark({ua:IOS_APP_UA});assert.equal(ios.app,'android');assert.equal(ios.attrs['data-app-os'],'ios');
+ assert.equal(mark({ua:IOS_SAFARI_UA}).attrs['data-app-os'],undefined);assert.equal(mark({ua:IOS_SAFARI_UA}).app,undefined);
+ assert.equal(mark({ua:APP_UA}).attrs['data-app-os'],undefined,'Android keeps its Tag Manager after Accept, as on the website');
+ assert.equal(mark({ua:CHROME_UA,parent:element({'data-app':'android','data-app-os':'ios'})}).attrs['data-app-os'],'ios','the game frame follows the page');
+ assert.equal(mark({ua:IOS_APP_UA,parent:element({'data-portal':'crazygames'})}).attrs['data-app-os'],undefined,'never inside CrazyGames');
+ const css=read('public/android.css'),home=read('public/welcome.css');
+ assert.match(css,/html\[data-app-os=ios\] #cookie-settings,html\[data-app-os=ios\] #privacy-settings \.install-copy\{display:none!important\}/,'no Cookie settings in the game, Privacy Policy and Delete account stay');
+ assert.match(home,/html\[data-app-os=ios\] \.site-legal-button\[onclick\*=harvestConsent\]\{display:none!important\}/,'nor in the footer');
 });
