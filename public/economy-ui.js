@@ -132,13 +132,16 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   const sourceLabel=r=>r.base?BUILDINGS[RECIPES[r.base].building].name:'Honey bottling';
   // Each source reads at a glance: its building, what it makes, how many recipes and how many you can start now.
   // Open groups stay open when the list re-renders (after starting or collecting a batch).
-  const foldFactoryGroups=(entries,cardOf,{ready=()=>false}={})=>{
+  // 4 Oct 2026: every good a source makes, in colour when you can start one of its recipes now and greyed out when you cannot (the
+  // "N ready" count alone did not say which, so you had to open each group). The pre-purchase preview has nothing to start: all in colour.
+  const foldFactoryGroups=(entries,cardOf,{ready=null}={})=>{
    const groups=new Map();
    for(const [rid,r] of entries.sort(([,a],[,b])=>sourceOf(a)-sourceOf(b))){
-    const source=sourceKey(r);if(!groups.has(source))groups.set(source,{label:sourceLabel(r),cards:[],outputs:[],ready:0});
-    const g=groups.get(source);g.cards.push(cardOf(rid,r));g.outputs.push(Object.keys(r.output)[0]);if(ready(rid))g.ready++;
+    const source=sourceKey(r);if(!groups.has(source))groups.set(source,{label:sourceLabel(r),cards:[],goods:new Map(),ready:0});
+    const g=groups.get(source),now=ready?Boolean(ready(rid)):true,item=Object.keys(r.output)[0];
+    g.cards.push(cardOf(rid,r));g.goods.set(item,Boolean(g.goods.get(item))||now);if(ready&&now)g.ready++;
    }
-   return [...groups].map(([source,g])=>`<details class="factory-recipe-group ${g.ready?'has-ready':''}" data-factory-group="${source}" ${openFactoryGroups.has(source)?'open':''}><summary><span class="factory-source-art">${art(source)}</span><span class="factory-source-copy"><strong>${g.label}</strong><small><span class="factory-source-goods">${[...new Set(g.outputs)].slice(0,4).map(item=>art(item)).join('')}</span>${g.cards.length} ${g.cards.length===1?'recipe':'recipes'}</small></span>${g.ready?`<em class="factory-ready">${g.ready} ready</em>`:''}<i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary><div class="factory-recipe-group-cards">${g.cards.join('')}</div></details>`).join('');
+   return [...groups].map(([source,g])=>`<details class="factory-recipe-group ${g.ready?'has-ready':''}" data-factory-group="${source}" ${openFactoryGroups.has(source)?'open':''}><summary><span class="factory-source-art">${art(source)}</span><span class="factory-source-copy"><strong>${g.label}</strong><small><span class="factory-source-goods">${[...g.goods].map(([item,on])=>art(item,on?'':'is-off')).join('')}</span>${g.cards.length} ${g.cards.length===1?'recipe':'recipes'}</small></span>${g.ready?`<em class="factory-ready">${g.ready} ready</em>`:''}<i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary><div class="factory-recipe-group-cards">${g.cards.join('')}</div></details>`).join('');
   };
   if(key==='farmhouse'){
    const cost=expansionCost(state),materials=expansionMaterials(state),hasMaterials=Object.entries(materials).every(([k,n])=>state.inventory[k]>=n),needLevel=expansionLevel(state),levelOk=levelOf(state)>=needLevel;

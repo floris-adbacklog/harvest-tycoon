@@ -253,14 +253,16 @@
 .factory-source-copy{flex:1;min-width:0}
 .factory-source-copy strong{display:block;font:600 16px 'Outfit',sans-serif;line-height:1.25}
 .factory-source-copy small{display:flex;align-items:center;gap:8px;margin-top:3px;font:500 12px 'DM Sans',sans-serif;color:#8f816f}
-.factory-source-goods{display:inline-flex;gap:2px}
+.factory-source-goods{display:inline-flex;flex-wrap:wrap;gap:2px;min-width:0}
 .factory-source-goods .game-art{width:20px;height:20px;object-fit:contain}
+/* What you cannot start now, greyed out; what you can, in full colour (4 Oct 2026). */
+.factory-source-goods .game-art.is-off{filter:grayscale(1);opacity:.4}
 .factory-ready{flex-shrink:0;padding:4px 10px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font:700 12px 'DM Sans',sans-serif;font-style:normal;white-space:nowrap}
 .factory-chevron{flex-shrink:0;width:18px;height:18px;color:#a09684;transition:transform .15s}
 .factory-recipe-group[open] .factory-chevron{transform:rotate(180deg)}
 .factory-recipe-group[open]>summary{border-bottom:1px solid #eee4d6;margin-bottom:12px}
 .factory-ready-list{display:grid;gap:12px}
-.factory-source-copy small{white-space:nowrap}
+.factory-source-copy small{white-space:nowrap;flex-wrap:wrap;row-gap:4px}
 
 /* Tool dock: the four tools sit straight in the dock, in the order you work (Plant, Water, Care, Harvest, keys 1-4). The
    chosen tool only gets a soft fill: no frame, no border, no box inside the box. */

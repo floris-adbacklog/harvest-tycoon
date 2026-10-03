@@ -160,7 +160,7 @@ test('the building panel shows the coin price of bottled honey, orders the Facto
 // other building's short recipe-list (and preview) stays exactly as it was, unwrapped.
 test('only the Factory groups its recipes by source and collapses them; every other building keeps a flat list',()=>{
  const ui=read('public/economy-ui.js');
- assert.match(ui,/const foldFactoryGroups=\(entries,cardOf,\{ready=\(\)=>false\}=\{\}\)=>\{/,'one shared grouping helper for both of the Factory\'s recipe lists');
+ assert.match(ui,/const foldFactoryGroups=\(entries,cardOf,\{ready=null\}=\{\}\)=>\{/,'one shared grouping helper for both of the Factory\'s recipe lists');
  assert.match(ui,/const sourceLabel=r=>r\.base\?BUILDINGS\[RECIPES\[r\.base\]\.building\]\.name:'Honey bottling';/);
  assert.match(ui,/<details class="factory-recipe-group \$\{g\.ready\?'has-ready':''\}" data-factory-group="\$\{source\}" \$\{openFactoryGroups\.has\(source\)\?'open':''\}><summary><span class="factory-source-art">\$\{art\(source\)\}<\/span>/,'each source shows its building, stays open across re-renders');
  assert.match(ui,/\$\{g\.ready\?`<em class="factory-ready">\$\{g\.ready\} ready<\/em>`:''\}/,'and how many of its recipes you can start now');
@@ -258,4 +258,16 @@ test('a Factory upgrade asks for goods from across the valley from the first one
  const s=farm();s.buildings.factory.level=6;s.boosts.upgradeCredits=1;
  assert.deepEqual(upgradeRequirements(s,'factory').materials,{flour:48,cheese:12,cloth:6,harvesthamper:3,squashsoup:3},'the Buildings discount halves every good');
  const other=farm();other.buildings.dairy.level=2;assert.deepEqual(upgradeRequirements(other,'dairy'),null,'other buildings still start at the upgrade to level 4');
+});
+
+// 4 Oct 2026: a closed group shows every good its source makes, in colour when one of its recipes can start now and greyed out when
+// not, so the Factory says which goods are ready without opening each group; the pre-purchase preview has nothing to start.
+test('the Factory groups show what you can make now in colour and the rest greyed out',()=>{
+ const ui=read('public/economy-ui.js'),css=read('public/retention.css');
+ assert.match(ui,/const g=groups\.get\(source\),now=ready\?Boolean\(ready\(rid\)\):true,item=Object\.keys\(r\.output\)\[0\];/,'without a ready test (the preview) every good counts as in colour');
+ assert.match(ui,/g\.goods\.set\(item,Boolean\(g\.goods\.get\(item\)\)\|\|now\);if\(ready&&now\)g\.ready\+\+;/,'a good is in colour when any of its recipes can start');
+ assert.match(ui,/<span class="factory-source-goods">\$\{\[\.\.\.g\.goods\]\.map\(\(\[item,on\]\)=>art\(item,on\?'':'is-off'\)\)\.join\(''\)\}<\/span>/,'every good, not only the first four');
+ assert.doesNotMatch(ui,/\.slice\(0,4\)\.map\(item=>art\(item\)\)/);
+ assert.match(css,/\.factory-source-goods \.game-art\.is-off\{filter:grayscale\(1\);opacity:\.4\}/);
+ assert.match(css,/\.factory-source-goods\{display:inline-flex;flex-wrap:wrap;gap:2px;min-width:0\}/,'seven goods wrap on a phone');
 });
