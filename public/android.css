@@ -13,7 +13,7 @@ html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) .pass-hea
 html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass-heads,.pass-row){grid-template-columns:34px minmax(0,1fr)}
 @media(max-width:600px){html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass-heads,.pass-row){grid-template-columns:26px minmax(0,1fr)}}
 /* Installing the web app and full screen: the Play app is the app (Settings' Farm app block, How to play's install button and steps). */
-html[data-app=android] #app-settings,html[data-app=android] #app-fullscreen-row,html[data-app=android] .wiki-install,html[data-app=android] .wiki-app-steps{display:none!important}
+html[data-app=android] #app-settings,html[data-app=android] #app-fullscreen-row,html[data-app=android] .wiki-install,html[data-app=android] .wiki-app-steps,html[data-app=android] .wiki-paid{display:none!important}
 /* Notifications are the app's own there (src/app-push.js, Oct 2026): Settings' device switch, the reminder question and "Remind me" under
    the daily gift show as on the website, and the code hides them itself while the app has no push. */
 

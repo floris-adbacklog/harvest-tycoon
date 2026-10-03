@@ -17,12 +17,12 @@ export async function savePlayerAvatar({admin,player,avatarId,now=Date.now(),own
  const goal=avatarGoal(avatarId),name=playerAvatar(avatarId).name;
  if(goal){
   const [farm,stats]=await Promise.all([
-   admin.from('player_farms').select('stats:state->stats,login:state->login,claimed:state->mastery->claimed,invites:state->inviteRewards').eq('player_id',player).maybeSingle(),
+   admin.from('player_farms').select('stats:state->stats,login:state->login,claimed:state->mastery->claimed,invites:state->inviteRewards,passes:state->passPremium').eq('player_id',player).maybeSingle(),
    admin.from('player_stats').select('events_finished').eq('player_id',player).maybeSingle()
   ]);
   if(farm.error)throw farm.error;if(stats.error)throw stats.error;
   if(!farm.data||!stats.data)return {status:409,data:{error:'Open your farm before choosing an avatar.'}};
-  const f=farm.data,state={stats:f.stats??{},login:f.login??{},mastery:{claimed:Array.isArray(f.claimed)?f.claimed:[]},inviteRewards:Array.isArray(f.invites)?f.invites:[]};
+  const f=farm.data,state={stats:f.stats??{},login:f.login??{},mastery:{claimed:Array.isArray(f.claimed)?f.claimed:[]},inviteRewards:Array.isArray(f.invites)?f.invites:[],passPremium:Array.isArray(f.passes)?f.passes:[]};
   if(!avatarOpen(avatarId,{state,events:stats.data.events_finished}))return {status:403,data:{error:`${goal.text} to use the ${name} avatar.`}};
  }
  const level=avatarLevel(avatarId);

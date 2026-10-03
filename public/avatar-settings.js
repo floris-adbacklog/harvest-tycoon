@@ -1,4 +1,5 @@
 import {PLAYER_AVATARS,OWNER_AVATARS,isOwnerAvatar,playerAvatar,avatarLevel,avatarGoal,goalCount,avatarOpen} from './player-avatars.js';
+import {portalOff} from './portal.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -31,7 +32,10 @@ const tile=farm=>id=>`<span class="avatar-tile${locked(id,farm)?' is-locked':''}
 // The admins also get the makers' own faces, Tony's and Gerard's, first in the row (owner); every other farmer sees the 40 of PLAYER_AVATARS.
 export function avatarSettingsMarkup(id,farm=1,{owner=false}={}){
  const current=playerAvatar(id),known=asFarm(farm);
- const picker=emblemPickerMarkup({emblems:owner?[...OWNER_AVATARS,...PLAYER_AVATARS]:PLAYER_AVATARS,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>labelOf(a,known),tile:tile(known),esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
+ // A face that comes with a purchase (the Halloween Pass) is shown only where it can be bought, or once it is yours: our apps and
+ // CrazyGames sell nothing of our own (public/portal.js), so there it would only point at a shop that is not there (4 Oct 2026).
+ const offered=PLAYER_AVATARS.filter(a=>!avatarGoal(a.id)?.pass||!portalOff('payments')||!locked(a.id,known));
+ const picker=emblemPickerMarkup({emblems:owner?[...OWNER_AVATARS,...offered]:offered,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>labelOf(a,known),tile:tile(known),esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
  return `<div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${esc(current.name)}" width="80" height="80"><div><h3 id="avatar-settings-title">Avatar</h3><p>Pick a face for your farm.</p></div></div><form id="avatar-form">${picker}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
 }
 

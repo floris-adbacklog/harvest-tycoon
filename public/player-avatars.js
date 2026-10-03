@@ -212,6 +212,11 @@ export const PLAYER_AVATARS=Object.freeze([
     "id": "valley-regular",
     "name": "Valley regular",
     "src": "/assets/avatars/valley-regular.webp"
+  },
+  {
+    "id": "lantern-keeper",
+    "name": "Lantern keeper",
+    "src": "/assets/avatars/lantern-keeper.webp"
   }
 ].map(Object.freeze));
 export const DEFAULT_AVATAR='default';
@@ -245,7 +250,10 @@ export const AVATAR_GOALS=Object.freeze({
  'good-neighbor':{text:'Have 3 invited friends reach level 10',target:3,count:f=>f.state?.inviteRewards?.length},
  'seed-keeper':{text:'Earn all 64 crop medals',target:64,count:f=>f.state?.stats?.mastery_medals},
  'coin-baron':{text:'Earn 5,000,000 coins',target:5000000,count:f=>f.state?.stats?.earned},
- 'valley-regular':{text:'Play on 100 days',target:100,count:f=>f.state?.login?.visits}
+ 'valley-regular':{text:'Play on 100 days',target:100,count:f=>f.state?.login?.visits},
+ // The paid Halloween Pass (4 Oct 2026): the Lantern keeper is yours the moment the pass is bought, also before the season starts. The
+ // farm keeps the passes it bought (state.passPremium, game/farm-state.js SEASON_PASS.id 'halloween-2026'; a test keeps the two equal).
+ 'lantern-keeper':{text:'Get the Halloween Pass',target:1,pass:'halloween-2026',count:f=>Array.isArray(f.state?.passPremium)&&f.state.passPremium.includes('halloween-2026')?1:0}
 });
 export const avatarGoal=id=>Object.hasOwn(AVATAR_GOALS,id)?AVATAR_GOALS[id]:null;
 export const goalCount=(id,farm)=>{const goal=avatarGoal(id);return goal?Math.max(0,Math.floor(Number(goal.count(farm??{}))||0)):0;};

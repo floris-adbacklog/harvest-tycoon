@@ -20,13 +20,13 @@ test('the farm counts every diamond spent and every VIP day bought, from today',
  assert.equal((rules.match(/state\.diamonds-=/g)||[]).length,1,'the only place diamonds leave a farm is spendDiamonds');
  assert.match(rules,/export function spendDiamonds\(state,amount\)\{state\.diamonds-=amount;state\.stats\.diamonds_spent=/);
 });
-test('ten goals, each read from the farm itself, and the numbers match the rules',()=>{
- assert.deepEqual(Object.keys(AVATAR_GOALS),['gem-collector','velvet-farmer','crop-master','early-riser','event-champion','grand-champion','good-neighbor','seed-keeper','coin-baron','valley-regular']);
+test('ten goals and the Halloween Pass, each read from the farm itself, and the numbers match the rules',()=>{
+ assert.deepEqual(Object.keys(AVATAR_GOALS),['gem-collector','velvet-farmer','crop-master','early-riser','event-champion','grand-champion','good-neighbor','seed-keeper','coin-baron','valley-regular','lantern-keeper']);
  assert.equal(AVATAR_GOALS['seed-keeper'].target,Object.keys(CROPS).length*MASTERY_TIERS.length,'all crop medals');
  assert.equal(MASTERY_TIERS[3].name,'Platinum','tier 3 is the highest medal');
- const farm={events:25,state:{stats:{diamonds_spent:1000,vip_days:90,fair_champion:1,mastery_medals:64,earned:5000000},login:{best:30,visits:100},mastery:{claimed:['corn:0','wheat:3']},inviteRewards:['a','b','c']}};
+ const farm={events:25,state:{stats:{diamonds_spent:1000,vip_days:90,fair_champion:1,mastery_medals:64,earned:5000000},login:{best:30,visits:100},mastery:{claimed:['corn:0','wheat:3']},inviteRewards:['a','b','c'],passPremium:['halloween-2026']}};
  for(const id of Object.keys(AVATAR_GOALS))assert.equal(avatarOpen(id,farm),true,id);
- const short={events:24,state:{stats:{diamonds_spent:999,vip_days:89,fair_champion:0,mastery_medals:63,earned:4999999},login:{best:29,visits:99},mastery:{claimed:['corn:2']},inviteRewards:['a','b']}};
+ const short={events:24,state:{stats:{diamonds_spent:999,vip_days:89,fair_champion:0,mastery_medals:63,earned:4999999},login:{best:29,visits:99},mastery:{claimed:['corn:2']},inviteRewards:['a','b'],passPremium:['halloween-2025']}};
  for(const id of Object.keys(AVATAR_GOALS))assert.equal(avatarOpen(id,short),false,id);
  assert.equal(goalCount('gem-collector',{}),0,'a farm without the number counts as 0');assert.equal(avatarOpen('gem-collector',{}),false);
  assert.equal(avatarGoal('__proto__'),null);assert.equal(avatarGoal('tractor-driver'),null);

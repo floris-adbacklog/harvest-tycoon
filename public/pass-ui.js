@@ -60,7 +60,7 @@ export function passPaidBox(state,{phase,now,catalog=null,pending=false,feedback
  // No tiers are reached before the season, so that part waits for it.
  const holds=soon?`${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts and more.`
   :`${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts and more. Tiers you already reached open at once.`;
- return `<section class="pass-paid-box"><div class="pass-paid-copy"><strong>Unlock the paid rewards</strong><small>${holds}</small><small class="pass-value">${passValueLine()}</small>${soon?`<small class="pass-starts" data-pass-starts>${passStartsLine(state,now)}</small>`:''}</div>`
+ return `<section class="pass-paid-box"><div class="pass-paid-copy"><strong>Unlock the paid rewards</strong><small>${holds}</small><small class="pass-value">${passValueLine()}</small><small class="pass-avatar-line"><img src="/assets/avatars/lantern-keeper.webp" alt="" width="40" height="40" loading="lazy" decoding="async" draggable="false">With the Lantern keeper avatar, yours at once.</small>${soon?`<small class="pass-starts" data-pass-starts>${passStartsLine(state,now)}</small>`:''}</div>`
   +`<button type="button" class="primary-button pass-buy" ${ready&&!pending?'':'disabled'}>${label}</button><p class="pass-feedback" role="status" aria-live="polite">${note}</p></section>`;
 }
 // The small line under the tile in the More menu.

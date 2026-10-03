@@ -102,3 +102,6 @@
 
 /* Today's cards: what a gift, a challenge or a delivery adds to the pass while it is open. */
 .reward-chips>b.is-lantern{border-color:#efc58f;background:#fff1de;color:#9a5410}
+/* The paid pass brings the Lantern keeper avatar (4 Oct 2026): its face beside the line, in the buy box. */
+.pass-avatar-line{display:flex;align-items:center;gap:8px}
+.pass-avatar-line img{flex-shrink:0;width:40px;height:40px;border-radius:50%;object-fit:cover;background:#f3e7d3}

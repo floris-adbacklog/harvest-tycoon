@@ -33,7 +33,8 @@ const TOPIC=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,t]));
 // The Avatars section of Account and settings. On CrazyGames the one earned with invited friends is left out (no invites there).
 const avatarsBody=(portal=false)=>`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`
  +table(['Avatar','Opens at'],PLAYER_AVATARS.filter(a=>a.level).map(a=>`<tr><td>${avatarCell(a)}</td><td>Level ${a.level}</td></tr>`))
- +table(['Avatar','How to earn it'],PLAYER_AVATARS.filter(a=>avatarGoal(a.id)&&!(portal&&/invite/i.test(avatarGoal(a.id).text))).map(a=>`<tr><td>${avatarCell(a)}</td><td>${avatarGoal(a.id).text}</td></tr>`))
+ // The Halloween Pass face (4 Oct 2026) is a purchase: not on CrazyGames, and hidden in our apps (public/android.css .wiki-paid).
+ +table(['Avatar','How to earn it'],PLAYER_AVATARS.filter(a=>avatarGoal(a.id)&&!(portal&&(/invite/i.test(avatarGoal(a.id).text)||avatarGoal(a.id).pass))).map(a=>`<tr${avatarGoal(a.id).pass?' class="wiki-paid"':''}><td>${avatarCell(a)}</td><td>${avatarGoal(a.id).text}</td></tr>`))
  +'<p>Diamonds spent and VIP days count from 25 September 2026.</p>';
 // How long the Starter Pack is open (game/payments.js STARTER_WINDOW; the wiki test keeps the two equal).
 export const STARTER_DAYS=7;
