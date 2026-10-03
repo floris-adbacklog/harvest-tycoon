@@ -6,8 +6,9 @@ import {ITEMS} from './farm-state.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // "first" only as in "Do this first.": "Your first basket" or "a golden first harvest" is good news.
 const WARN=/\b(need|needs|cannot|can't|not enough|failed|no longer|already|limit|locked|first(?=[.!])|unavailable|try again|reach level|returns in|is still)\b/i;
+// A crop medal (Oct 2026: a new one, or one collected) shows the medal picture that Medals uses.
 const ICONS=[
- [/job complete|helping hand|farm round/i,'helping-hand'],[/diamond/i,'diamonds'],[/\bXP\b|level/i,'xp'],[/\bcare\b|\btend/i,'care'],[/\bwater/i,'water'],[/\bplant|\bseed/i,'seeds'],[/harvest|crop|field/i,'harvest'],[/batch|collected|production/i,'buildings'],
+ [/\bmedals?\b/i,'trophy'],[/job complete|helping hand|farm round/i,'helping-hand'],[/diamond/i,'diamonds'],[/\bXP\b|level/i,'xp'],[/\bcare\b|\btend/i,'care'],[/\bwater/i,'water'],[/\bplant|\bseed/i,'seeds'],[/harvest|crop|field/i,'harvest'],[/batch|collected|production/i,'buildings'],
  [/upgrade/i,'hammer'],[/event/i,'live-events'],[/family|gift|help/i,'gift'],[/sold|sale|market/i,'market'],[/coin/i,'coins']
 ];
 const REWARD=/\+([\d,]+)\s(coins?|XP|diamonds?)/g;
@@ -30,11 +31,14 @@ export function toastParts(message){
   .replace(/\s·\s/g,' ').replace(/<\/b>[.!](?=\s|$)/g,'</b>');
  return {tone,icon,html};
 }
+// The element keeps its own classes (the medal toast at the bottom is "toast medal-toast", Oct 2026), and a toast can say its tone
+// itself: a new medal is good news without a "+40 coins" in it.
 export function createToast(el,{duration=3200}={}){
+ const base=String(el.className??'').split(/\s+/).filter(c=>c&&c!=='visible'&&!c.startsWith('is-')).join(' ')||'toast';
  let timer=0;
- return function show(message){
-  const {tone,icon,html}=toastParts(message);
-  el.className=`toast is-${tone}`;el.style.setProperty('--toast-duration',`${duration}ms`);
+ return function show(message,options){
+  const {tone:found,icon,html}=toastParts(message),tone=options?.tone??found;
+  el.className=base;el.classList.add('is-'+tone);el.style.setProperty('--toast-duration',`${duration}ms`);
   el.innerHTML=`<span class="toast-icon">${art(icon)}</span><span class="toast-text">${html}</span><i class="toast-timer" aria-hidden="true"></i>`;
   void el.offsetWidth;el.classList.add('visible');
   clearTimeout(timer);timer=setTimeout(()=>el.classList.remove('visible'),duration);

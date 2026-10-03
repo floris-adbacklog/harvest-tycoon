@@ -379,11 +379,11 @@ export const QUESTS = Object.freeze([
  {title:'Above and beyond',description:'Give 50 crops extra care.',stat:'tended',target:50,reward:300},
  {title:'A familiar face',description:'Complete 100 farm chores.',stat:'chores',target:100,reward:500},
  {title:'Roots for the future',description:'Complete your first estate project.',stat:'projects',target:1,reward:600},
- {title:'A specialist touch',description:'Claim 9 crop mastery medals.',stat:'mastery_medals',target:9,reward:1500},
+ {title:'A specialist touch',description:'Claim 9 crop medals.',stat:'mastery_medals',target:9,reward:1500},
  {title:'A thousand little harvests',description:'Harvest 1,000 fields.',stat:'harvested',target:1000,reward:2500},
  {title:'From farm to estate',description:'Complete 6 estate projects.',stat:'projects',target:6,reward:8000},
  {title:'Known across the valley',description:'Complete 100 delivery orders.',stat:'deliveries',target:100,reward:6000},
- {title:'A lifelong grower',description:'Claim 36 crop mastery medals.',stat:'mastery_medals',target:36,reward:20000},
+ {title:'A lifelong grower',description:'Claim 36 crop medals.',stat:'mastery_medals',target:36,reward:20000},
  {title:'Catch the wind',description:'Collect your first production batch at the Windmill.',stat:'windmill_batches',target:1,reward:180},
  {title:'Grain with a purpose',description:'Make 3 grain meal at the Windmill.',stat:'made_grainmeal',target:3,reward:160},
  {title:'Fresh from the mill',description:'Refine grain meal into 12 flour for the Bakery.',stat:'made_flour',target:12,reward:200},
@@ -437,7 +437,7 @@ export const QUESTS = Object.freeze([
 {"title": "Berry preserves specialist", "description": "Produce 6 berry preserves.", "stat": "made_berrypreserves", "target": 6, "reward": 1200},
 {"title": "Berry tart specialist", "description": "Produce 6 berry tart.", "stat": "made_berrytart", "target": 6, "reward": 1200},
 {"title": "Twelve tastes of the valley", "description": "Discover all 12 crops by harvesting them.", "stat": "varieties", "target": 12, "reward": 2000},
-{"title": "A grand crop collection", "description": "Claim 48 crop mastery medals.", "stat": "mastery_medals", "target": 48, "reward": 30000},
+{"title": "A grand crop collection", "description": "Claim 48 crop medals.", "stat": "mastery_medals", "target": 48, "reward": 30000},
 {"title": "Apple & Berry Juice specialist", "description": "Collect 3 batches of Apple & Berry Juice.", "stat": "made_orchardjuice", "target": 3, "reward": 310},
 {"title": "Berry Smoothie specialist", "description": "Collect 3 batches of Berry Smoothie.", "stat": "made_berrysmoothie", "target": 3, "reward": 300},
 {"title": "Honey Apple Compote specialist", "description": "Collect 3 batches of Honey Apple Compote.", "stat": "made_applecompote", "target": 3, "reward": 300},
@@ -610,7 +610,7 @@ export const QUESTS = Object.freeze([
  {title:'The whole estate story',description:'Finish all 10 estate chapters.',stat:'projects',target:10,reward:100000,minLevel:85},
  {title:'Room to grow',description:'Buy 16 more fields.',stat:'expansions',target:16,reward:20000},
  {title:'Forty fields',description:'Grow your farm to all 40 fields.',stat:'expansions',target:28,reward:150000,minLevel:90},
- {title:'Master of every crop',description:'Earn all 64 crop mastery medals.',stat:'mastery_medals',target:64,reward:150000,minLevel:66},
+ {title:'Master of every crop',description:'Earn all 64 crop medals.',stat:'mastery_medals',target:64,reward:150000,minLevel:66},
  {title:'A hundred upgrades',description:'Upgrade your buildings 100 times.',stat:'upgrades',target:100,reward:25000},
  {title:'Every building at its best',description:'Upgrade all 17 production buildings to level 10.',stat:'upgrades',target:153,reward:90000},
  // 50 more (26 Sep 2026), 250 -> 300: the crops and goods that had one quest, the middle of the game (Pig Farm to Craft Workshop),
@@ -661,8 +661,8 @@ export const QUESTS = Object.freeze([
  {title:'Twenty-five chores',description:'Finish 25 farm chores.',stat:'chores',target:25,reward:200,minLevel:10},
  {title:'Always helping',description:'Lend a helping hand 50 times.',stat:'activities',target:50,reward:1200,minLevel:8},
  {title:'On the road',description:'Deliver 25 orders.',stat:'deliveries',target:25,reward:1300,minLevel:5},
- {title:'Medal collector',description:'Earn 18 crop mastery medals.',stat:'mastery_medals',target:18,reward:5500,minLevel:7},
- {title:'Decorated farmer',description:'Earn 27 crop mastery medals.',stat:'mastery_medals',target:27,reward:12000,minLevel:7},
+ {title:'Medal collector',description:'Earn 18 crop medals.',stat:'mastery_medals',target:18,reward:5500,minLevel:7},
+ {title:'Decorated farmer',description:'Earn 27 crop medals.',stat:'mastery_medals',target:27,reward:12000,minLevel:7},
  {title:'Every seed in the shop',description:'Harvest every one of the 16 crops at least once.',stat:'varieties',target:16,reward:40000,minLevel:66},
  {title:'Boost lover',description:'Use 25 boosts.',stat:'boosts_used',target:25,reward:5200,minLevel:14},
  {title:'Stall keeper',description:'Earn 100,000 coins at your farm stall.',stat:'passive_earned',target:100000,reward:15000,minLevel:19}
@@ -793,7 +793,7 @@ export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,baker
 export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115});
 export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:14,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:16});
-export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
+export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
 const kept=(state,kind,key)=>state.progression?.kept?.[kind]?.includes(key)===true;
 export function buildingCost(state,key){return guidedFarm(state)?BUILDING_COSTS[key]??0:BUILDINGS[key]?.buildCost??0;}
@@ -2506,9 +2506,12 @@ export const PROJECTS=Object.freeze([
  {name:'The grand estate',description:'Prize vegetables, full export trailers and a name known far beyond the valley.',level:85,coins:2600000,input:{prizeproduce:30,blanket:25,harvesthamper:80},medals:44,duration:604800000,xp:28000}
 ]);
 export function masteryStatus(state,crop){return MASTERY_TIERS.map((tier,id)=>({...tier,id,progress:Math.min(tier.target,state.mastery.harvests[crop]??0),claimed:state.mastery.claimed.includes(`${crop}:${id}`)}));}
+// The medals earned and not collected yet, as 'crop:tier' (Oct 2026: they light the yellow "!" on Medals, public/medal-notice.js names a
+// new one). Only crops the Medals list shows (it lists the crops the farm has opened), so the "!" never points at a medal nobody can tap.
+export function medalsWaiting(state){const claimed=new Set(state.mastery?.claimed??[]);return Object.keys(CROPS).filter(crop=>cropUnlocked(state,crop)).flatMap(crop=>MASTERY_TIERS.map((tier,id)=>(state.mastery?.harvests?.[crop]??0)>=tier.target&&!claimed.has(`${crop}:${id}`)?`${crop}:${id}`:'')).filter(Boolean);}
 export function claimMastery(state,crop,tier){
- if(!Object.hasOwn(CROPS,crop)||!Number.isInteger(tier)||!MASTERY_TIERS[tier])throw new Error('Choose a crop mastery reward.');
- const goal=masteryStatus(state,crop)[tier];if(goal.claimed)throw new Error('This mastery reward is already collected.');if(goal.progress<goal.target)throw new Error('Keep harvesting this crop to earn its medal.');
+ if(!Object.hasOwn(CROPS,crop)||!Number.isInteger(tier)||!MASTERY_TIERS[tier])throw new Error('Choose a crop medal.');
+ const goal=masteryStatus(state,crop)[tier];if(goal.claimed)throw new Error('This medal is already collected.');if(goal.progress<goal.target)throw new Error('Keep harvesting this crop to earn its medal.');
  state.mastery.claimed.push(`${crop}:${tier}`);state.stats.mastery_medals++;state.coins+=goal.coins;state.xp+=goal.xp;return {crop,tier,coins:goal.coins,xp:goal.xp};
 }
 // What each finished estate chapter adds to the stall, in coins an hour (26 Sep 2026, was 6 for every chapter): about a month of the
@@ -2558,7 +2561,7 @@ export function currentProject(state){
 export function startProject(state,now=Date.now()){
  if(state.estate.job)throw new Error('Finish your current estate project first.');const project=currentProject(state);
  if(project.level&&levelOf(state)<project.level)throw new Error(`Reach level ${project.level} for ${project.name}.`);
- if(state.mastery.claimed.length<project.medals)throw new Error(`Earn ${project.medals} crop mastery medals for this project.`);
+ if(state.mastery.claimed.length<project.medals)throw new Error(`Earn ${project.medals} crop medals for this project.`);
  if(state.coins<project.coins)throw new Error(`You need ${project.coins.toLocaleString('en-US')} coins for this project.`);
  if(Object.entries(project.input).some(([k,n])=>state.inventory[k]<n))throw new Error('Gather the required goods before starting this project.');
  state.coins-=project.coins;for(const[k,n]of Object.entries(project.input))state.inventory[k]-=n;

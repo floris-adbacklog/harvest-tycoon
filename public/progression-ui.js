@@ -46,7 +46,9 @@ export function createProgressionUI({state,isReady,share=null}){
  }
  function refresh(){
   tellLevel();
-  const sideTools={'#boosts-button':'boosts','#estate-button':'projects'};
+  // The Estate button (computers; phones have it in More) is there from Medals at level 7 (Oct 2026): a computer has no More menu, so
+  // before the projects open at 27 it was no way to Medals at all. Its window shows only the tabs that are open.
+  const sideTools={'#boosts-button':'boosts','#estate-button':'mastery'};
   for(const [selector,feature]of Object.entries(sideTools))document.querySelectorAll(selector).forEach(el=>el.hidden=!featureUnlocked(state,feature));
   // The "More" menu (mobile) is everything on the farm, so it always shows every entry: what is not open yet stays visible, gets a lock and
   // "Reach level N." in place of its usual description, and cannot be tapped, so the game never looks emptier than it is this early.

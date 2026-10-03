@@ -13,7 +13,7 @@ function menuOrder(html){
 }
 test('"Your farm menu" always lists every feature, gated ones in the order they unlock',()=>{
  const html=read('public/farm.html'),order=menuOrder(html);
- assert.equal(order.length,28,'nothing was dropped (the Halloween Pass is the newest: under Every day, from level 10, Oct 2026; Feedback & bugs before it: the mailbox, 30 Sep 2026; The Village before it: from level 100, 30 Sep 2026; the Chat before it: on phones it left the header on 26 Sep 2026; before it Confirm your email, shown only until an email sign-up is paid its diamonds); Activities, Farm events, the (admin-only) dashboard, the Valley Market, the Ranch, the Estate Workshop, the Trade Depot, the fair, Invite a friend and Farm family were added');
+ assert.equal(order.length,29,'nothing was dropped (Medals is the newest: under On the farm, from level 7, Oct 2026; the Halloween Pass before it: under Every day, from level 10, Oct 2026; Feedback & bugs before it: the mailbox, 30 Sep 2026; The Village before it: from level 100, 30 Sep 2026; the Chat before it: on phones it left the header on 26 Sep 2026; before it Confirm your email, shown only until an email sign-up is paid its diamonds); Activities, Farm events, the (admin-only) dashboard, the Valley Market, the Ranch, the Estate Workshop, the Trade Depot, the fair, Invite a friend and Farm family were added');
  assert.match(html,/data-menu-action="today-button"[\s\S]{0,200}<\/button>\n    <button data-menu-action="events-button">/,'Farm events sits right next to Daily rewards');
  assert.match(html,/<button data-menu-action="admin-button" id="admin-menu-entry" hidden>/,'the admin card is hidden for everyone until checkAdmin() allows it');
  assert.match(html,/<button data-menu-utility="villageroad" id="village-menu-entry" hidden>/,'The Village is hidden until level 100, so a beginner never sees it');
@@ -29,7 +29,7 @@ test('"Your farm menu" always lists every feature, gated ones in the order they 
 test('a locked feature stays visible in the menu, greyed and unclickable, with the level it needs; the side-tool bar keeps hiding it',()=>{
  const ui=read('public/progression-ui.js');
  assert.match(ui,/import \{[^}]*FEATURE_LEVELS[^}]*\} from '\.\/farm-state\.js';/);
- assert.match(ui,/const sideTools=\{'#boosts-button':'boosts','#estate-button':'projects'\};/,'the desktop side-tool bar still hides what is not open');
+ assert.match(ui,/const sideTools=\{'#boosts-button':'boosts','#estate-button':'mastery'\};/,'the desktop side-tool bar still hides what is not open (the Estate button from Medals, level 7: a computer has no More menu, Oct 2026)');
  assert.match(ui,/el\.disabled=!unlocked;el\.classList\.toggle\('locked',!unlocked\);/,'the More-menu card is disabled and greyed, never hidden');
  assert.match(ui,/hint\.textContent=unlocked\?hint\.dataset\.open:`Reach level \$\{FEATURE_LEVELS\[feature\]\}\.`;/);
  assert.doesNotMatch(ui,/data-menu-utility.*\.hidden=!featureUnlocked/s);
