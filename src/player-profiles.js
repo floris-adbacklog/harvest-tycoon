@@ -69,8 +69,10 @@ export function renderLogEntries(entries,now=Date.now()){
  }
  return day===null?'':html+'</ol>';
 }
+// The admin addresses (Oct 2026: the owner and his brother); farm-api (admin-service.js) and supabase/admins.sql decide what they may do.
+export const ADMIN_EMAILS=Object.freeze(['floris@millstone.nl','harvesttycoon@gmail.com']);
 export function checkAdmin(){
- return adminCheck??=import('./supabase.js').then(({supabase})=>supabase?.auth.getUser()).then(result=>String(result?.data?.user?.email??'').trim().toLowerCase()==='floris@millstone.nl').catch(()=>false);
+ return adminCheck??=import('./supabase.js').then(({supabase})=>supabase?.auth.getUser()).then(result=>ADMIN_EMAILS.includes(String(result?.data?.user?.email??'').trim().toLowerCase())).catch(()=>false);
 }
 // Every seed and production good, grouped the way a farmer already thinks about them.
 const adminGrantItemOptions=`<option value="">None</option><optgroup label="Crops">${Object.entries(CROPS).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup><optgroup label="Goods produced">${Object.entries(ITEMS).filter(([key,c])=>!Object.hasOwn(CROPS,key)&&!c.heirloom).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup><optgroup label="Heirlooms (Seed Lab)">${Object.entries(ITEMS).filter(([,c])=>c.heirloom).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup>`;

@@ -5,7 +5,9 @@ import {portalOf} from './portal.js';
 // The only account that may ever give coins, XP, diamonds or goods to another farmer. Checked against the
 // authenticated, server-verified user (index.ts already resolved this from a real Supabase JWT) — never against
 // anything the client claims about itself.
-const SUPERADMINS=new Set(['floris@millstone.nl']);
+// Two admin addresses since 3 Oct 2026: the owner's and his brother's (harvesttycoon@gmail.com, farmer Gerard), with the same rules: playing
+// is locked on the account itself, and its powers need a Google session. supabase/admins.sql and src/player-profiles.js list the same two.
+const SUPERADMINS=new Set(['floris@millstone.nl','harvesttycoon@gmail.com']);
 export const isAdminAddress=email=>SUPERADMINS.has(String(email??'').trim().toLowerCase());
 // The admin account itself: the address, confirmed (an account that only claims it is not the admin). It never plays (index.ts)
 // and never moves its own address from the game (event-service.js), however it signed in.

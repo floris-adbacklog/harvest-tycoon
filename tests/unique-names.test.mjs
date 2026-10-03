@@ -21,5 +21,5 @@ test('the admin account plays nothing (fields, buildings, market, streaks, rewar
  const api=read('supabase/functions/farm-api/index.ts');
  assert.match(api,/if\(body\.operation==='action'&&isAdminAccount\(user\)\)return reply\(\{error:'This is your admin account, so playing is locked here\. Play on your own farmer account\.'/);
  assert.doesNotMatch(api,/ADMIN_LOCKED/,'every farm action, not a list that misses one');
- assert.match(read('supabase/functions/farm-api/admin-service.js'),/const SUPERADMINS=new Set\(\['floris@millstone\.nl'\]\);/,'only the admin, by confirmed e-mail');
+ assert.match(read('supabase/functions/farm-api/admin-service.js'),/const SUPERADMINS=new Set\(\['floris@millstone\.nl','harvesttycoon@gmail\.com'\]\);/,'only the two admins (Oct 2026), by confirmed e-mail');
 });
