@@ -3,7 +3,7 @@ import {createAppPush} from './app-push.js';
 import {androidApp} from '../public/android.js';
 // Reminder preferences for the settings dialog. Reads go through row-level security (a player only sees their
 // own row) and writes go through the notification_save function, which validates everything on the server.
-// New private messages, the daily gift & streak reminder and crops & goods ready (one switch, 26 Sep 2026) are on unless a farmer
+// New private messages (and mentions, 3 Oct 2026: the same switch), the daily gift & streak reminder and crops & goods ready (one switch, 26 Sep 2026) are on unless a farmer
 // switches them off; the email summary stays off until switched on. Push itself still needs the farmer's own yes on the device.
 // News & offers by email (26 Sep 2026) starts off and only comes on with the farmer's own yes (supabase/email-marketing-consent.sql).
 export const DEFAULT_PREFS=Object.freeze({pushCrops:true,pushProduction:true,pushDaily:true,emailDigest:false,digestHour:9,pushMessages:true,emailMarketing:false});

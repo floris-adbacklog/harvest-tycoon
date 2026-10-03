@@ -329,7 +329,9 @@ const BODIES={
    ['bell','Notifications','News from the Harvest Tycoon team, and gifts.'],
    ['chat','Global','Everyone in the valley. Be kind: new farmers read along too.'],
    ['family-members','Family',`Only your ${h.link('family','Farm family')}.`],
-   ['letter','Private','One-to-one messages. Search a farmer by name, or open their profile.']
+   ['letter','Private','One-to-one messages. Search a farmer by name, or open their profile.'],
+   // Mentions (3 Oct 2026, src/chat-rich.js): the one rule, on the page that explains the chat.
+   ['chat','Mentions','Type @ in Global or Family and pick a farmer. A mention reaches them like a private message.']
   ]))
   +section('Your choice',facts([
    ['settings','Private messages off','In Settings you can switch private messages off. Then nobody can start one with you, and you cannot start one either.'],
@@ -342,7 +344,7 @@ const BODIES={
    ['family-members','Moderators','Farmers who help keep the valley a friendly place. They look at what is reported and keep an eye on the chat.'],
    ['chat','How to spot them','An Admin or Moderator badge next to their name, in the chat and on their profile.']
   ])+`<p>The team never asks for your password or payment details. A question or a problem? Send one of them a private message, or use ${h.link('account','Feedback')}.</p>`)
-  +section('House rules',`<ul class="wiki-list"><li>Be friendly. No insults, threats or discrimination.</li><li>No spam, advertising or selling accounts.</li><li>Keep personal details to yourself: no phone numbers, addresses or passwords.</li><li>Moderators can remove messages and close the chat for someone for a while or for good. That only ever closes the chat, never your farm.</li></ul><p>Chat not open for you yet? The chat says from which level it opens.</p>`);
+  +section('House rules',`<ul class="wiki-list"><li>Be friendly. No insults, threats or discrimination.</li><li>No spam, advertising or selling accounts.</li><li>Keep personal details to yourself: no phone numbers, addresses or passwords.</li><li>No links, except to this wiki: at most 2 in one message.</li><li>Moderators can remove messages and close the chat for someone for a while or for good. That only ever closes the chat, never your farm.</li></ul><p>Chat not open for you yet? The chat says from which level it opens.</p>`);
  },
  account(h){
   if(h.portal)return section('Your account',facts([
@@ -433,4 +435,13 @@ export function wikiSearch(query){
  const seen=new Set(),hits=[];
  for(const entry of INDEX){if(!words.every(w=>entry.text.includes(w)))continue;const key=`${entry.topic}:${entry.label}`;if(seen.has(key))continue;seen.add(key);hits.push({...entry,topicTitle:TOPIC[entry.topic].title});}
  return hits.slice(0,12);
+}
+// A link to our own wiki (3 Oct 2026): https://www.harvesttycoon.com/wiki/<topic>#<section>, also without https:// or www. The chat lets
+// only these through (supabase/chat-wiki-links.sql) and shows them as a chip that opens How to play there (src/chat-rich.js). Gives
+// {topic, anchor} (topic null: the wiki's first page; anchor '': the top of the topic), or null for any other address or a topic the
+// wiki does not have.
+export function parseWikiLink(url){
+ const m=/^(?:https?:\/\/)?(?:www\.)?harvesttycoon\.com\/wiki(?:\/([a-z-]+))?\/?(?:#([a-z0-9-]+))?$/i.exec(String(url??'').trim());if(!m)return null;
+ const topic=m[1]?m[1].toLowerCase():null;if(topic&&!TOPIC[topic])return null;
+ return {topic,anchor:topic&&m[2]?m[2].toLowerCase():''};
 }

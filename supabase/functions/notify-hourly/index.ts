@@ -4,6 +4,7 @@ import {runJob,MAX_FAILURES} from './job.js';
 import {digestEmail} from './mail.js';
 import {CROP_NAMES,BUILDING_NAMES} from './names.js';
 import {createOneSignal,sendReminders} from './onesignal.js';
+import {messagePushes} from './messages.js';
 
 // verify_jwt is off for this function: the hourly cron call carries no user, and the unsubscribe link is opened from an email.
 // Nothing here trusts the caller. The job runs at most once per clock hour (notification_begin_run), so calling it more
@@ -76,6 +77,14 @@ const db={
   if(error){console.error(`message push: ${error.message}`);return [];}
   return (data??[]).map((r:Record<string,any>)=>String(r.player_id));
  },
+ // The game language of these farmers (player_seen.language), for a chat push's title (messages.js). An error: English for them.
+ async languagesOf(players:string[]){
+  const languages=new Map();if(!players.length)return languages;
+  const {data,error}=await admin.from('player_seen').select('player_id,language').in('player_id',players.slice(0,500));
+  if(error){console.error(`message languages: ${error.message}`);return languages;}
+  for(const r of data??[])if(r.language)languages.set(String(r.player_id),r.language);
+  return languages;
+ },
  async noticeOwner(notice:string){
   const {data,error}=await admin.from('player_notices').select('player_id').eq('id',notice).maybeSingle();
   if(error||!data?.player_id)return [];
@@ -124,6 +133,8 @@ Deno.serve(async(req)=>{
  // this again, by anyone, sends nothing.
  // The same message goes to the app as a push too (onesignal.js) for whoever of them has the app's notifications on, in the app's
  // "messages" category (a private message and the Crew alike).
+ // A mention in Global or Family (3 Oct 2026, supabase/chat-mentions.sql) comes the same way, to every farmer it mentions, as "Bram
+ // mentioned you"; every title is in the farmer's own game language now (messages.js), the English "Message from Bram" too.
  if(query.has('dm')){
   if(!pushOn&&!appPushOn)return json({sent:0});
   let id='';try{id=String((await req.json())?.message??'');}catch{}
@@ -131,16 +142,18 @@ Deno.serve(async(req)=>{
   const {data:claim,error}=await admin.rpc('chat_push_claim',{p_message:id});
   if(error||!claim)return json({sent:0});
   // Tapping it opens that conversation (public/app-links.js).
-  const push={title:`Message from ${claim.senderName}`,body:claim.body,tag:`chat-${claim.channel}`,url:`/?open=chat&channel=${encodeURIComponent(claim.channel)}`};
-  const payload=JSON.stringify(push);
+  const players=await db.messageTargets(id);
   let sent=0;
-  if(pushOn)for(const sub of claim.subscriptions??[]){
-   const outcome=await sendPush(sub,payload);
-   if(outcome.ok){sent++;await db.markSuccess(sub.endpoint);}
-   else if(outcome.status===404||outcome.status===410)await db.removeSubscription(sub.endpoint);
-   else await db.markFailure(sub.endpoint);
+  for(const {language,players:who,subscriptions,...push} of messagePushes(claim,players,await db.languagesOf(players))){
+   const payload=JSON.stringify(push);
+   if(pushOn)for(const sub of subscriptions){
+    const outcome=await sendPush(sub,payload);
+    if(outcome.ok){sent++;await db.markSuccess(sub.endpoint);}
+    else if(outcome.status===404||outcome.status===410)await db.removeSubscription(sub.endpoint);
+    else await db.markFailure(sub.endpoint);
+   }
+   if(appPushOn){try{sent+=(await appPush.send({...push,channel:'messages',ids:await db.appPushOf(who),key:`message|${id}|${language}`})).size;}catch(error){console.error(`message app push: ${(error as Error)?.message??error}`);}}
   }
-  if(appPushOn){try{sent+=(await appPush.send({...push,channel:'messages',ids:await db.appPushOf(await db.messageTargets(id)),key:`message|${id}`})).size;}catch(error){console.error(`message app push: ${(error as Error)?.message??error}`);}}
   return json({sent});
  }
  // An in-game purchase, for the admin (supabase/purchase-alerts-push.sql): the same notice as in the chat's Notifications, on the

@@ -48,7 +48,14 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
    return list;
   },
   notices:(limit=30)=>rows(supabase.from('player_notices').select('id,player_id,kind,body,texts,created_at').order('created_at',{ascending:false}).limit(limit)),
-  send:(name,body)=>rpc('chat_send',{p_channel:name,p_body:body}),
+  // Mentions (3 Oct 2026, supabase/chat-mentions.sql) go with the message as farmer ids, only when there are any. Before that file is in
+  // the database (no function with p_mentions: PGRST202) the message still goes, its "@Name" as plain words.
+  async send(name,body,mentions=[]){
+   if(!mentions?.length)return rpc('chat_send',{p_channel:name,p_body:body});
+   check();const {data,error}=await supabase.rpc('chat_send',{p_channel:name,p_body:body,p_mentions:mentions});
+   if(error?.code==='PGRST202')return rpc('chat_send',{p_channel:name,p_body:body});
+   if(error)throw chatError(error);check();return data;
+  },
   markRead:name=>rpc('chat_mark_read',{p_channel:name}),
   block:(player,on)=>rpc('chat_block',{p_player:player,p_on:on}),
   report:(message,reason=null)=>rpc('chat_report',{p_message:message,p_reason:reason}),
@@ -62,6 +69,13 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
    const unique=[...new Set(ids.filter(Boolean))];if(!unique.length)return new Map();
    const {data,error}=await supabase.from('player_stats').select('player_id,avatar_id').in('player_id',unique.slice(0,200));
    return error?new Map():new Map((data??[]).map(r=>[r.player_id,r.avatar_id]));
+  },
+  // The farmers the mention list offers from the chat (3 Oct 2026): their name, level and picture as they are now (a rename since their
+  // last message: the database checks "@Name" against the name of now).
+  async cards(ids){
+   const unique=[...new Set(ids.filter(Boolean))];if(!unique.length)return [];
+   const {data,error}=await supabase.from('player_stats').select('player_id,username,level,avatar_id').in('player_id',unique.slice(0,50));
+   return error?[]:(data??[]).map(r=>({playerId:r.player_id,username:r.username,level:r.level,avatarId:r.avatar_id}));
   },
   // Feedback & bugs (supabase/feedback.sql): any farmer sends one; a limit reached keeps its code (54000), so the game can say it
   // in the farmer's own language.
