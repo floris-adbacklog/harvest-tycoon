@@ -25,6 +25,11 @@ test('one link form: wiki-link.js builds and reads https://www.harvesttycoon.com
   assert.equal(parseWikiLink(bad),null,String(bad));
  assert.equal(fromContent,parseWikiLink,'wiki-content.js hands on the same helper');
  assert.deepEqual(wikiLinksIn('Look: https://www.harvesttycoon.com/wiki/crops#crop-wheat. And harvesttycoon.com/wiki/market, not https://example.com/wiki/crops').map(l=>[l.url,l.topic,l.section]),[['https://www.harvesttycoon.com/wiki/crops#crop-wheat','crops','crop-wheat'],['harvesttycoon.com/wiki/market','market','']]);
+ // Oct 2026 review: a wiki link starts a word, never the tail of another address; the index is where the link itself starts.
+ for(const text of ['notharvesttycoon.com/wiki/crops','https://evilharvesttycoon.com/wiki/crops','https://evil.com/?r=harvesttycoon.com/wiki/crops','evil.com/harvesttycoon.com/wiki/crops','x.harvesttycoon.com/wiki/crops','user@harvesttycoon.com/wiki/crops','éharvesttycoon.com/wiki/crops'])
+  assert.deepEqual(wikiLinksIn(text),[],text);
+ assert.deepEqual(wikiLinksIn('(harvesttycoon.com/wiki/crops) and\nhttps://www.harvesttycoon.com/wiki/market').map(l=>[l.index,l.topic]),[[1,'crops'],[35,'market']]);
+ assert.doesNotMatch(read('public/wiki-link.js'),/\(\?<[!=]/,'no lookbehind: older iPhones cannot read one, and the wiki loads this file');
  assert.doesNotMatch(read('public/wiki-link.js'),/^import /m,'no imports: the page around the game can use it');
  // The website serves exactly that path (vercel.json /wiki/:topic -> /wiki/<topic>.html) with that canonical address.
  assert.ok(JSON.parse(read('vercel.json')).rewrites.some(r=>r.source==='/wiki/:topic([a-z-]+)'&&r.destination==='/wiki/:topic.html'));
@@ -118,6 +123,10 @@ test('wikiSectionTitle names a spot for a link\'s chip: a section, a building, a
  assert.equal(wikiSectionTitle('crops',''),'Fields and crops');assert.equal(wikiSectionTitle('crops','sec-nope'),'Fields and crops');
  assert.equal(wikiSectionTitle('nope','sec-x'),null);assert.equal(wikiSectionTitle('quests','level-1'),'Quests and levels','no row for level 1');assert.equal(wikiSectionTitle('crops','crop-nope'),'Fields and crops');
  const {topic,section}=parseWikiLink('https://www.harvesttycoon.com/wiki/account#sec-feedback');assert.equal(wikiSectionTitle(topic,section),'Feedback');
+ // Kept for the hour without a ctx (a chat names every link it shows): the same answer, much faster the second time.
+ const first=performance.now();assert.equal(wikiSectionTitle('buildings','building-bakery'),'Bakery');const once=performance.now()-first;
+ const again=performance.now();for(let i=0;i<50;i++)assert.equal(wikiSectionTitle('buildings','building-bakery'),'Bakery');assert.ok(performance.now()-again<once*5,'50 kept answers cost less than 5 fresh ones');
+ assert.equal(wikiSectionTitle('quests','level-30',{level:20}),'Level 30','with a ctx: written fresh');
 });
 
 test('How to play: lands on the spot and lights it up, a step back, Copy link beside every heading but never on CrazyGames',()=>{
@@ -146,6 +155,10 @@ test('the website wiki does the same: Copy link with the same address, and a lin
  assert.match(TOPIC_SCRIPT,/b\.setAttribute\('data-wiki-copy','https:\/\/www\.harvesttycoon\.com\/wiki\/'\+topic\+'#'\+h\.closest\('\.wiki-section'\)\.id\)/);
  assert.match(TOPIC_SCRIPT,/say\.textContent='Copied\.'/);assert.match(TOPIC_SCRIPT,/getAttribute\('data-wiki-row'\)===id/);assert.match(TOPIC_SCRIPT,/classList\.add\('wiki-flash'\)/);
  assert.doesNotMatch(TOPIC_SCRIPT,/\b(alert|prompt|confirm)\(/);
+ // Oct 2026 review: a broken address (#%E0) is no spot and stops nothing else; the link shown to copy by hand is shown once, and a tap in
+ // it leaves a building's row as it is.
+ assert.match(TOPIC_SCRIPT,/var id='';try\{id=decodeURIComponent\(location\.hash\.slice\(1\)\);\}catch\(e\)\{\}/);
+ assert.match(TOPIC_SCRIPT,/closest\('\.wiki-copy-field'\)\)\{e\.preventDefault\(\);return;\}/);assert.match(read('public/wiki-ui.js'),/if\(event\.target\.closest\('\.wiki-copy-field'\)\)\{event\.preventDefault\(\);return;\}/);
  new Function(TOPIC_SCRIPT.replace(/^<script>|<\/script>$/g,''));
  assert.match(readFileSync(join(out,'wiki','crops.html'),'utf8'),/<tr id="crop-wheat">/);
 });

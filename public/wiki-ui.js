@@ -121,6 +121,8 @@ function bind(){
  root().addEventListener('click',event=>{
   // Before anything else: the button sits in a building's closed row, which a click would open or close.
   const copying=event.target.closest('[data-wiki-copy]');if(copying){event.preventDefault();event.stopPropagation();void copy(copying);return;}
+  // The link shown to copy by hand sits in the heading too: a tap there selects it and leaves the row as it is (Oct 2026 review).
+  if(event.target.closest('.wiki-copy-field')){event.preventDefault();return;}
   const install=event.target.closest('[data-wiki-install]');if(install){install.disabled=true;Promise.resolve(pwa()?.install?.()).catch(()=>{}).finally(()=>{install.disabled=false;showInstall(root());});return;}
   if(event.target.closest('[data-wiki-back]')){event.preventDefault();back();return;}
   const homeButton=event.target.closest('[data-wiki-home]');if(homeButton){event.preventDefault();home();scrollTop();return;}

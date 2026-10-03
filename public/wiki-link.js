@@ -22,9 +22,12 @@ export function parseWikiLink(url){
  return {topic,section};
 }
 // Every wiki link in a text (a chat message), in order: {url, topic, section, index}. What counts is what parseWikiLink takes.
+// A link starts a word (Oct 2026 review): never the tail of another address, so notharvesttycoon.com/wiki/crops or
+// evil.com/?r=harvesttycoon.com/wiki/crops is no wiki link. A group, not a lookbehind: older iPhones cannot read a lookbehind, and
+// this file is loaded with the wiki.
 export function wikiLinksIn(text){
  const found=[];
- for(const m of String(text??'').matchAll(/(?:https?:\/\/)?(?:www\.)?harvesttycoon\.com\/wiki\/[^\s<>"']*/gi)){const url=m[0].replace(/[.,!?;:)]+$/,''),hit=parseWikiLink(url);if(hit)found.push({url,...hit,index:m.index});}
+ for(const m of String(text??'').matchAll(/(^|[^\p{L}\p{N}_.@/:%?#=&+~-])((?:https?:\/\/)?(?:www\.)?harvesttycoon\.com\/wiki\/[^\s<>"']*)/giu)){const url=m[2].replace(/[.,!?;:)]+$/,''),hit=parseWikiLink(url);if(hit)found.push({url,...hit,index:m.index+m[1].length});}
  return found;
 }
 // The small link picture beside every heading (How to play and the website): two chain links, in the text colour.

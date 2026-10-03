@@ -448,8 +448,17 @@ export function wikiArticle(id,ctx={}){
 // The heading of a spot on a topic (Oct 2026; the chat shows a wiki link as a chip with it): a section's or a building's title, a crop's
 // or a level's name, or the topic's own title where the page has no such spot (now: a season that is over, the app, CrazyGames). null:
 // no such topic. English, as on the page: the page's translation does the rest.
+// Writing a whole topic takes a phone up to a tenth of a second, and the chat names every link it shows: without a ctx a spot's title is
+// kept for the hour (Oct 2026 review; a season's section comes and goes, so not for longer). At most 200 kept.
+const TITLES=new Map();let titlesHour=-1;
 export function wikiSectionTitle(id,section='',ctx={}){
  if(!TOPIC[id])return null;
+ const keep=!Object.keys(ctx).length,hour=Math.floor(Date.now()/3600000),key=`${id}#${section}`;
+ if(keep&&(hour!==titlesHour||TITLES.size>=200)){TITLES.clear();titlesHour=hour;}
+ if(keep&&TITLES.has(key))return TITLES.get(key);
+ const title=sectionTitle(id,String(section??''),ctx);if(keep)TITLES.set(key,title);return title;
+}
+function sectionTitle(id,section,ctx){
  const html=/^[a-z0-9-]+$/.test(section)&&wikiArticle(id,ctx).html;if(!html||!html.includes(`id="${section}"`))return TOPIC[id].title;
  const [,crop]=section.match(/^crop-(.+)$/)??[],[,level]=section.match(/^level-(\d+)$/)??[],m=html.match(new RegExp(`id="${section}">(?:<summary>)?<h3>(.*?)</h3>`));
  return crop?CROPS[crop].name:level?`Level ${level}`:m?m[1].replace(/<[^>]+>/g,'').trim():TOPIC[id].title;
