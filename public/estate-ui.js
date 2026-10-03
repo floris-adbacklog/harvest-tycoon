@@ -110,7 +110,7 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
    const action=!open?`<small class="ranch-closed">Opens at level ${h.level}.</small>`:`<button class="${known?'secondary-button':'primary-button'}" data-lab-cross="${k}" ${can?'':'disabled'}>${known?'Grow again · 8 h':'Discover · 1 day'}</button>`;
    return `<article class="order-card heirloom ${known?'is-found':'is-unknown'}"><div class="order-head"><span class="order-icon">${art(k)}</span><div><small>${known?`Found · ${number(state.inventory[k])} in your barn`:`New · +${LAB_DISCOVER_DIAMONDS} diamonds`}</small><h3>${h.name}</h3></div></div><div class="ingredients">${itemList(h.input,open)}</div><div class="task-bottom">${action}</div></article>`;
   }).join('');
-  return lead('seedlab',`Cross two crops in a test bed. The first cross of a variety takes a day and discovers it; after that it takes 8 hours. Each bed gives <b>${LAB_YIELD} heirlooms</b>, worth far more than their parents, and the visitors and valley projects ask for them.`)
+  return lead('seedlab',`Cross two crops in a test bed. The first cross of a variety takes a day and discovers it; after that it takes 8 hours. Each bed gives <b>${LAB_YIELD} heirlooms</b>, worth far more than their parents at the Market.`)
    +`<div class="daily-list lab-beds">${beds}</div><p class="fair-tally"><b>${found} of ${total}</b> discovered${found<total?` · all ${total}: +${LAB_COMPLETE_DIAMONDS} diamonds`:' · the whole collection ✓'}</p><div class="daily-list heirloom-list">${cards}</div>`;
  }
  // Visitors (level 93): one rush order at a time; the run of visitors served in a row makes the next one bigger and better paid.

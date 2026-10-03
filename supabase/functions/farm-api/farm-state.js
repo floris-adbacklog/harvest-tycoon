@@ -1864,10 +1864,11 @@ export const visitorStreakBonus=streak=>Math.min(streak,VISITOR_STREAK_MAX)*.1;
 export function visitorPay(state){return 1+masterBonus(state,'visitors')+valleyProjectBonus(state,'bridge');}
 function visitorOrder(state,serial,streak,now){
  const roll=n=>mixBits(calendarHash(`visitor-v1:${serial}:${n}`)),bonus=visitorStreakBonus(streak),target=VISITOR_VALUE*(1+bonus);
- const goods=Object.keys(PRODUCTS).filter(k=>ITEMS[k].sell>=300&&!worldTwoItem(k)&&itemAvailable(state,k)),found=Object.keys(HEIRLOOMS).filter(k=>heirloomFound(state,k));
+// 3 Oct 2026: three of the farm's goods, no heirloom any more (one in every order was more than the Seed Lab's two beds keep up with).
+ const goods=Object.keys(PRODUCTS).filter(k=>ITEMS[k].sell>=300&&!worldTwoItem(k)&&itemAvailable(state,k));
  if(goods.length<2)return null;
  const keys=[goods.splice(roll(0)%goods.length,1)[0],goods.splice(roll(1)%goods.length,1)[0]];
- keys.push(found.length?found[roll(2)%found.length]:goods[roll(2)%goods.length]);
+ keys.push(goods.length?goods[roll(2)%goods.length]:keys[0]);
  const input={};for(const k of keys)input[k]=(input[k]??0)+Math.max(1,Math.min(200,Math.round(target/keys.length/ITEMS[k].sell)));
  const value=Object.entries(input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
  return {id:serial,visitor:roll(3)%VISITORS.length,input,value,coins:Math.ceil(value*(VISITOR_PREMIUM+bonus)*visitorPay(state)/100)*100,xp:Math.round(value/40),diamonds:5+Math.min(streak,VISITOR_STREAK_MAX),arrivedAt:now,leavesAt:now+VISITOR_STAY};
@@ -1929,28 +1930,29 @@ export function giantWeigh(state){
 }
 
 // Valley projects: five works in the valley, three levels each. Hand in the goods a level asks for bit by bit (what you give stays
-// given), then pay the coins to finish it; every level adds a lasting bonus. Heirlooms are asked for from level 2.
+// given), then pay the coins to finish it; every level adds a lasting bonus. Since 3 Oct 2026 no heirlooms: the Seed Lab's two beds
+// make at most 8 every 8 hours, so 30 to 60 of each made a wall; the farm's own goods of the same value stand in their place.
 export const VALLEY_PROJECTS=Object.freeze({
  bridge:{name:'Stone bridge',art:'project-bridge',effect:'Visitors pay 5% more per level.',per:.05,levels:[
   {coins:250000,materials:{cloth:40,pickledbeans:40,candles:40}},
-  {coins:500000,materials:{blanket:15,cherryjam:50,savoycabbage:30,romanesco:30}},
-  {coins:900000,materials:{blanket:30,harvesthamper:40,cherrypie:60,ghostpumpkin:40,bluecorn:40}}]},
+  {coins:500000,materials:{blanket:15,cherryjam:50,vegetables:65}},
+  {coins:900000,materials:{blanket:30,harvesthamper:40,cherrypie:60,squashsoup:55}}]},
  watermill:{name:'Water mill',art:'project-watermill',effect:'The Windmill and the Feed Mill work 15% faster per level.',per:.15,levels:[
   {coins:250000,materials:{oil:80,flour:400,grainmeal:200}},
-  {coins:500000,materials:{oil:150,squashsoup:40,goldenwheat:40,rainbowcorn:30}},
-  {coins:900000,materials:{oil:250,prizeproduce:10,blackbarley:40,stripedsquash:40}}]},
+  {coins:500000,materials:{oil:150,squashsoup:40,pie:85}},
+  {coins:900000,materials:{oil:250,prizeproduce:10,berrytart:50}}]},
  terraces:{name:'Orchard terraces',art:'project-terraces',effect:'Trees, bushes and climbing plants grow back 5% faster per level.',per:.05,levels:[
   {coins:250000,materials:{applepie:60,berrytart:30,cider:40}},
-  {coins:500000,materials:{cherrypie:50,orchardjuice:150,goldenapple:30,goldenraspberries:30}},
-  {coins:900000,materials:{cherryjam:120,berrycheesecake:80,pinkpearl:40,russetapple:40,rainiercherries:40}}]},
+  {coins:500000,materials:{cherrypie:50,orchardjuice:150,applepie:90}},
+  {coins:900000,materials:{cherryjam:120,berrycheesecake:80,cider:70,applepie:85}}]},
  canal:{name:'Irrigation canal',art:'project-canal',effect:'Crops grow 3% faster per level.',per:.03,levels:[
   {coins:250000,materials:{vegetables:80,pickles:80,salad:200}},
-  {coins:500000,materials:{beangratin:80,squashsoup:40,speckledlettuce:30,dragonbeans:30}},
-  {coins:900000,materials:{harvesthamper:40,pickledbeans:80,purplecauliflower:40,purplebeans:40,scarletrunners:40}}]},
+  {coins:500000,materials:{beangratin:80,squashsoup:40,stew:100}},
+  {coins:900000,materials:{harvesthamper:40,pickledbeans:80,vegetables:80,pickles:75}}]},
  barn:{name:'Harvest barn',art:'project-barn',effect:'The Market pays 2% more per level.',per:.02,levels:[
   {coins:250000,materials:{cheese:400,wool:300,goatcheese:40}},
-  {coins:500000,materials:{harvesthamper:30,cloth:60,bluepumpkin:30,savoycabbage:30}},
-  {coins:900000,materials:{blanket:25,prizeproduce:15,redsunflower:40,goldenwheat:60,romanesco:40}}]}
+  {coins:500000,materials:{harvesthamper:30,cloth:60,goatcheese:80}},
+  {coins:900000,materials:{blanket:25,prizeproduce:15,oil:70,goatcheese:80}}]}
 });
 export const VALLEY_PROJECT_XP=2000,VALLEY_PROJECT_DIAMONDS=40;
 export const valleyProjectLevel=(state,id)=>state.valleyProjects?.[id]?.level??0;

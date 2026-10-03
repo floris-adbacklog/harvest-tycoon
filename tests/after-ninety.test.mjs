@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createFarm,normalizeFarm,applyFarmAction as act,xpForLevel,levelOf,FEATURE_LEVELS,featureUnlocked,ITEMS,CROPS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_MS,LAB_GROW_MS,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,
  masterPoints,masterFree,masterBonus,cropDuration,recipeDuration,marketSaleValue,VISITOR_STAY,VISITOR_WAIT,GIANT_TEND_MS,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,
- VALLEY_PROJECTS,valleyProjectBonus,endgameInSight,itemAvailable,STARTER_PACK_CROPS,familyOrder,labCanCross} from '../game/farm-state.js';
+ VALLEY_PROJECTS,valleyProjectBonus,endgameInSight,itemAvailable,STARTER_PACK_CROPS,familyOrder,labCanCross,RECIPES,RECIPE_LEVELS} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // 27 Sep 2026: the Grand Valley Fair (90) is the last building; five things keep a farm going after it, all on its own.
@@ -107,4 +107,21 @@ test('a free test bed counts as ready only when a cross is possible: crops for a
  assert.equal(labCanCross(farm(80)),false,'before the Seed Lab opens');
  const ui=read('public/economy-ui.js');
  assert.match(ui,/if\(free\)return \{text:`\$\{free\} test \$\{free===1\?'bed':'beds'\} free`,kind:labCanCross\(state\)\?'ready':'idle'\};/);
+});
+
+// 3 Oct 2026: no heirlooms in the valley's asks. The Seed Lab's two beds make at most 8 every 8 hours, and every visitor wanting 7–11
+// of one, and each project level 30–60 of two or three, made a wall; the farm's own goods of the same value stand in their place.
+test('visitors and valley projects never ask for heirlooms; the projects cost what they did',()=>{
+ const before={bridge:[391200,849600],watermill:[452400,649600],terraces:[369400,719200],canal:[347700,780000],barn:[441900,613200]};
+ for(const [id,p] of Object.entries(VALLEY_PROJECTS))p.levels.forEach((l,i)=>{
+  for(const k of Object.keys(l.materials)){assert.ok(!ITEMS[k].heirloom,`${id} ${i+1}: ${k}`);assert.ok(ITEMS[k].world!==2,`${id} ${i+1}: ${k} is no village good`);assert.ok(Object.keys(RECIPES).some(r=>RECIPES[r].output[k]&&(RECIPE_LEVELS[r]??1)<=FEATURE_LEVELS.valleyprojects),`${id} ${i+1}: ${k} can be made before the projects open`);}
+  if(i){const value=Object.entries(l.materials).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0),was=before[id][i-1];assert.ok(Math.abs(value-was)/was<.01,`${id} ${i+1}: ${value} for ${was}`);}
+ });
+ const s=farm(100);for(const k of Object.keys(s.buildings))s.buildings[k]={...s.buildings[k],built:true,level:12};s.lab.found=Object.keys(HEIRLOOMS);
+ for(let serial=0;serial<60;serial++){
+  Object.assign(s.visitors,{current:null,nextAt:0,serial});normalizeFarm(s,now);
+  const order=s.visitors.current;assert.ok(order,`visitor ${serial}`);
+  for(const k of Object.keys(order.input))assert.ok(!ITEMS[k].heirloom,`visitor ${serial} asks ${k}`);
+ }
+ assert.doesNotMatch(read('public/estate-ui.js'),/visitors and valley projects ask for them/,'the Seed Lab no longer says they ask for them');
 });
