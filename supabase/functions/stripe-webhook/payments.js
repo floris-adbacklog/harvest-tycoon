@@ -93,7 +93,10 @@ export function validatePaidSession(session,purchase,items){
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(session.payment_status!=='paid'||session.status!=='complete')throw new Error('Payment is not complete.');
  if(session.mode!=='payment'||session.livemode!==purchase.livemode)throw new Error('Payment mode mismatch.');
- if(session.id!==purchase.stripe_session_id||session.client_reference_id!==purchase.player_id||session.metadata?.purchase_id!==purchase.id||session.metadata?.player_id!==purchase.player_id||session.metadata?.app!=='harvest-tycoon')throw new Error('Purchase ownership mismatch.');
+ // A purchase of a deleted account (3 Oct 2026, supabase/delete-account.sql) has no farmer left to compare: the checkout and purchase id
+ // still tie them, and harvest_credit_purchase records the payment for a refund without crediting anything.
+ const owner=purchase.player_id===null&&purchase.account_deleted_at?session.client_reference_id:purchase.player_id;
+ if(session.id!==purchase.stripe_session_id||session.client_reference_id!==owner||session.metadata?.purchase_id!==purchase.id||session.metadata?.player_id!==owner||session.metadata?.app!=='harvest-tycoon')throw new Error('Purchase ownership mismatch.');
  if(session.currency!=='eur'||session.amount_total!==purchase.amount_cents||session.amount_subtotal!==purchase.amount_cents||purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds&&!(purchase.pack==='starter'&&purchase.diamonds===STARTER_DIAMONDS_BEFORE))throw new Error('Payment amount mismatch.');
  if(!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Coin reward mismatch.');
  if(purchase.price_id!==pack.price||items.has_more||items.data?.length!==1||items.data[0].quantity!==1||items.data[0].price?.id!==purchase.price_id)throw new Error('Payment items mismatch.');

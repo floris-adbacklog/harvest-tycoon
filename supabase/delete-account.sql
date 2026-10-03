@@ -1,7 +1,8 @@
 -- Delete account in the game (3 Oct 2026): Settings › Privacy › Delete account, on the website and in the Android and iPhone apps (the
 -- App Store asks for it inside the app). farm-api (account-delete-service.js) checks the farmer name typed in the game against the
--- account's own, refuses the admin accounts, then calls harvest_delete_account below for the signed-in farmer only and deletes the
--- Supabase Auth user after it (admin.auth.admin.deleteUser). At once, no grace period.
+-- account's own, refuses the admin accounts, then calls harvest_delete_account below for the signed-in farmer only, which deletes the
+-- sign-in account (auth.users) too, in the same transaction (after review: a separate deleteUser that failed left a sign-in that
+-- farm-api gave a fresh farm). At once, no grace period.
 -- What goes and what stays follows the audit of the LIVE schema (read 3 Oct 2026): the farmer's own rows are deleted (farm, stats,
 -- where and how they play, chat and private messages from both sides, reports they made, blocks, push, notices, popups seen, logs,
 -- family membership, invites, partner links); rows other farmers need stay but lose the link (a family request they helped with, a
@@ -43,8 +44,9 @@ begin
 end $do$;
 revoke all on function public.partner_stats(uuid) from public, anon, authenticated;
 
--- 4. The deletion, in one transaction. Returns how many rows each step touched (farm-api logs nothing personal from it; app_push says
--- whether OneSignal holds this farmer). Safe to run again for the same farmer: a retry after a failed deleteUser finds nothing left.
+-- 4. The deletion, in one transaction, the sign-in account last: all of it or nothing, so no request in between can make a farm again
+-- (its sessions go with it, and a farm or stats row needs the user). Returns how many rows each step touched (farm-api logs nothing
+-- personal from it). Safe to run again for the same farmer: it finds nothing left.
 create or replace function public.harvest_delete_account(p_player uuid, p_name text)
 returns jsonb language plpgsql security definer set search_path to '' as $f$
 declare
@@ -55,7 +57,7 @@ begin
  if p_player is null then raise exception 'harvest_delete_account: no player'; end if;
  perform pg_advisory_xact_lock(hashtextextended('delete-account:'||p_player::text,0));
  -- Guards, also in farm-api (account-delete-service.js): never an admin account, and only with the farmer name typed exactly. A farmer
- -- whose stats are gone already (a retry) has no name left to type.
+ -- without stats (a sign-in that never made a farm, or a second run) has no name left to type.
  if public.chat_staff_role(p_player)='admin' then raise exception 'This is an admin account and cannot be deleted here.'; end if;
  select s.username into v_name from public.player_stats s where s.player_id=p_player;
  if found and v_name is distinct from btrim(coalesce(p_name,'')) then raise exception 'Type your farmer name exactly to delete your account.'; end if;
@@ -147,8 +149,9 @@ begin
  delete from public.feedback_reports where player_id=p_player;get diagnostics n=row_count;c:=c||jsonb_build_object('feedback_reports',n);
  update public.feedback_reports set handled_by=null where handled_by=p_player;
 
- -- Invite a friend: a friend they invited keeps the farm, and its "invited by" says "A friend" (it held their name).
- update public.player_farms set state=jsonb_set(state,'{invite,by}','"A friend"'::jsonb)
+ -- Invite a friend: a friend they invited keeps the farm, and its "invited by" says "A friend" (it held their name); a new revision, so
+ -- a request of that friend's that read the farm before cannot save the old name back.
+ update public.player_farms set state=jsonb_set(state,'{invite,by}','"A friend"'::jsonb),revision=revision+1
   where player_id in (select r.invitee_id from public.referrals r where r.referrer_id=p_player) and jsonb_typeof(state->'invite')='object' and state->'invite' ? 'by';
  get diagnostics n=row_count;c:=c||jsonb_build_object('invitees_unlinked',n);
  delete from public.referrals where invitee_id=p_player or referrer_id=p_player;get diagnostics n=row_count;c:=c||jsonb_build_object('referrals',n);
@@ -162,6 +165,7 @@ begin
  delete from public.partners where user_id=p_player;get diagnostics n=row_count;c:=c||jsonb_build_object('partners',n);
 
  -- Purchases: kept for the bookkeeping, without the account (pending to expired: the purchase triggers only fire on pending to paid).
+ -- A Stripe checkout still open can be paid for a day after this: harvest_credit_purchase (5. below) records that payment for a refund.
  delete from public.harvest_purchases where player_id=p_player and not livemode;get diagnostics n=row_count;c:=c||jsonb_build_object('test_purchases',n);
  update public.harvest_purchases set player_id=null,account_deleted_at=now(),status=case when status='pending' then 'expired' else status end where player_id=p_player;
  get diagnostics n=row_count;c:=c||jsonb_build_object('purchases_kept',n);
@@ -175,10 +179,44 @@ begin
  delete from public.crazygames_accounts where player_id=p_player;get diagnostics n=row_count;c:=c||jsonb_build_object('crazygames_accounts',n);
  delete from public.account_move_backup where strpos("row"::text,p_player::text)>0;get diagnostics n=row_count;c:=c||jsonb_build_object('account_move_backup',n);
 
- -- The farm, and the stats last (this frees the farmer name).
+ -- The farm, the stats (this frees the farmer name), then the sign-in account itself: its identities, sessions and refresh tokens go
+ -- with it (on delete cascade), so every later request with its token is refused (harvest_session_active).
  delete from public.player_farms where player_id=p_player;get diagnostics n=row_count;c:=c||jsonb_build_object('player_farms',n);
  delete from public.player_stats where player_id=p_player;get diagnostics n=row_count;c:=c||jsonb_build_object('player_stats',n);
+ delete from auth.users where id=p_player;get diagnostics n=row_count;c:=c||jsonb_build_object('auth_user',n);
  return c;
 end $f$;
 revoke all on function public.harvest_delete_account(uuid,text) from public, anon, authenticated;
 grant execute on function public.harvest_delete_account(uuid,text) to service_role;
+
+-- 5. Paid after the account was deleted (3 Oct 2026): a Stripe checkout opened before the deletion stays payable for about a day, and
+-- Stripe retries its webhook for three days. Such a payment is recorded (credited, with Stripe's ids, no farm gets anything), so the
+-- books match the money, and the admins get the purchase notice saying to refund it in Stripe; stripe-webhook (payments.js) ties it
+-- by the checkout and the purchase id, as there is no account left to compare. Both patched from the LIVE definitions (read on 3 Oct
+-- 2026): a function patched already is left alone, one without the expected text stops the file.
+do $do$
+declare def text:=pg_get_functiondef('public.harvest_credit_purchase(uuid,text,text,text,boolean)'::regprocedure);
+begin
+ if position('account_deleted' in def)>0 then return; end if;
+ if position($a$ if purchase.status<>'pending' then raise exception 'Purchase is not pending'; end if;$a$ in def)=0 then raise exception 'harvest_credit_purchase: the expected text was not found; read the live definition before changing it'; end if;
+ execute replace(def,$a$ if purchase.status<>'pending' then raise exception 'Purchase is not pending'; end if;$a$,
+$b$ -- Paid after the account was deleted (delete-account.sql): recorded for the books and a refund, nothing credited, no commission.
+ if purchase.player_id is null and purchase.account_deleted_at is not null and purchase.status in ('pending','expired') then
+  update public.harvest_purchases set status=case when livemode then 'credited' else 'test_paid' end,stripe_payment_id=p_payment,stripe_event_id=p_event,credited_at=now(),partner_id=null where id=p_purchase;
+  return jsonb_build_object('status',case when purchase.livemode then 'credited' else 'test_paid' end,'duplicate',false,'account_deleted',true);
+ end if;
+ if purchase.status<>'pending' then raise exception 'Purchase is not pending'; end if;$b$);
+end $do$;
+do $do$
+declare def text:=pg_get_functiondef('public.harvest_purchase_alert()'::regprocedure);
+begin
+ if position('Paid after the account was deleted' in def)>0 then return; end if;
+ if position($a$||' bought '||what||' for '||price||'.';$a$ in def)=0 then raise exception 'harvest_purchase_alert: the expected text was not found; read the live definition before changing it'; end if;
+ execute replace(def,$a$||' bought '||what||' for '||price||'.';$a$,$b$||' bought '||what||' for '||price||'.';
+ if new.player_id is null then body:='Paid after the account was deleted: '||what||' for '||price||' (payment '||coalesce(new.stripe_payment_id,'?')||'). Refund it in Stripe.'; end if;$b$);
+end $do$;
+-- The notice also for an expired checkout of a deleted account that is paid after all (the purchase log needs a farmer, so it stays as is).
+drop trigger if exists harvest_purchase_alert on public.harvest_purchases;
+create trigger harvest_purchase_alert after update of status on public.harvest_purchases for each row
+ when ((old.status='pending' or old.status='expired' and new.player_id is null and new.account_deleted_at is not null) and new.status in ('credited','test_paid'))
+ execute function public.harvest_purchase_alert();

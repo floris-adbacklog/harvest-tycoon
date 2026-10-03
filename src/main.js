@@ -207,10 +207,12 @@ async function openFarm(){
   // Delete account (3 Oct 2026, Settings › Privacy, src/account-delete.js): farm-api deletes the farm, everything personal and the account
   // itself, for this signed-in farmer only and only with their farmer name typed exactly (account-delete-service.js). Never repeated by
   // itself. Then this device lets go (the app's notifications, the session, which the server no longer knows) and the home page says so;
-  // a refusal (a wrong name, an admin account) is thrown back to Settings and the farm stays open.
+  // a refusal (a wrong name, an admin account) is thrown back to Settings and the farm stays open. An answer lost on the way (a timeout,
+  // the connection) while the server did delete: the sign-in is then gone too (verifiedUser finds none), so it is said as a deletion.
   bridge.deleteAccount=async username=>{
    if(ticket!==generation||!navigator.onLine)throw new Error('Your session is paused. Reconnect to continue.');
-   const data=await farmRequest({operation:'delete_account',username},{retry:false});
+   let data;try{data=await farmRequest({operation:'delete_account',username},{retry:false});}
+   catch(error){if(!error?.transient||await verifiedUser().catch(()=>user))throw error;data={deleted:user.id};}
    if(ticket!==generation||data?.deleted!==user.id)throw new Error('Your session has ended.');
    connection.stop();try{await notifications?.push?.detach();}catch{}notifications?.dispose?.();notifications=null;dispose();
    try{await supabase.auth.signOut({scope:'local'});}catch{}
