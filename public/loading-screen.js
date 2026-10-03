@@ -76,3 +76,33 @@ export function createLoadingScreen(doc,modelCount,{loading='Loading your farm'}
   complete(){models=modelCount;account=true;finished=true;render();}
  };
 }
+
+// A farm that does not open opens once more by itself (3 Oct 2026). The game's own code (public/game.js and the files it brings, each on
+// its own) can fail to arrive on a weak connection, and the bar then stood still at 12% until a refresh. A load that fails, or a bar that
+// does not move for 30 seconds while the page is in view, reloads the whole page once, as a refresh does (on CrazyGames that page asks for
+// the farm again); a second time within ten minutes, or without a place to count it, shows "Your farm could not load" with Try again
+// instead of a loop (over the loading screen, in the player's language). Try again reloads the whole page too: this page alone would come back without its farm. Each time is counted
+// (farm_load_retry, with the player's consent like every other measurement), to see how often it happens.
+export const LOAD_STALL_MS=30000,LOAD_RETRY_KEY='harvest-tycoon:farm-retry',LOAD_RETRY_GAP_MS=600000;
+export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=window,storage=(()=>{try{return win.sessionStorage;}catch{return null;}})(),now=()=>Date.now()}={}){
+ const reload=()=>{if(portal)portal.reopen();else win.parent.location.reload();};
+ const retry=doc.querySelector('#error .primary-button');if(retry)retry.onclick=reload;
+ let last=null,still=now(),over=false;
+ const stop=()=>{over=true;win.clearInterval(timer);};
+ function recover(reason){
+  if(over)return;stop();
+  let before=null;try{before=Number(storage.getItem(LOAD_RETRY_KEY))||0;}catch{}
+  const again=before===null||now()-before<LOAD_RETRY_GAP_MS;
+  try{bridge.trackGame?.('farm_load_retry',{reason,again});}catch{}
+  if(!again){try{storage.setItem(LOAD_RETRY_KEY,String(now()));}catch{}win.setTimeout(reload,400);return;}
+  // Over the loading screen, without its bar: the page under it only holds placeholders (level 1, 180 coins), not this farm. In the
+  // player's language, which otherwise comes with the game's code.
+  const bar=doc.querySelector('#loading .farm-loading-progress');if(bar)bar.style.visibility='hidden';
+  const card=doc.getElementById('error');card.style.zIndex='101';card.hidden=false;try{translate();}catch{}
+ }
+ const timer=win.setInterval(()=>{
+  const value=Number(doc.getElementById('load-progress')?.value??0);
+  if(value!==last||doc.hidden){last=value;still=now();}else if(now()-still>=LOAD_STALL_MS)recover('stalled');
+ },1000);
+ return {failed:()=>recover('failed'),done(ready){if(over)return;stop();if(ready)try{storage.removeItem(LOAD_RETRY_KEY);}catch{}}};
+}

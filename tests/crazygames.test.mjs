@@ -268,9 +268,9 @@ test('every control CrazyGames does not allow is hidden by the portal flag, and 
 });
 test('the farm frame on CrazyGames: SDK events at farm ready, no purchases, the privacy notice, Save your farm for a guest',()=>{
  const cloud=read('src/game-cloud.js'),ui=read('src/portal-ui.js');
- assert.match(cloud,/const portal=bridge\.portal\?\?null;\n if\(!window\.harvestInitialFarm\)\{if\(portal\)portal\.reopen\(\);else location\.replace\('\/play\.html'\);\}else\{/,'the website\'s sign-in page never opens inside CrazyGames');
+ assert.match(cloud,/const portal=bridge\.portal\?\?null;\n if\(!window\.harvestInitialFarm\)\{if\(portal\)portal\.reopen\(\);else window\.parent\.location\.reload\(\);\}else\{/,'the website\'s sign-in page never opens inside CrazyGames (nor inside the website\'s own frame: the whole page opens again, 3 Oct 2026)');
  assert.match(cloud,/if\(portal\)createPortalUI\(\{portal\}\);/);
- assert.match(cloud,/if\(await farmReady\)\{\n   \/\/[^\n]*\n   if\(portal\)\{portal\.event\('loadingStop'\);portal\.event\('gameplayStart'\);\}/);
+ assert.match(cloud,/if\(ready\)\{\n   \/\/[^\n]*\n   if\(portal\)\{portal\.event\('loadingStop'\);portal\.event\('gameplayStart'\);\}/);
  assert.match(cloud,/const shop=!portal;\n   if\(shop\)showPaymentReturn\(bridge\);/);assert.match(cloud,/if\(shop\)\{createOfferUI\(bridge\);\n   await createStarterPackUI\(bridge\);\}/);
  assert.match(ui,/doc\.documentElement\.dataset\.portal=portal\.name;/);assert.match(ui,/button\.textContent='Save your farm: log in with CrazyGames';/);assert.match(ui,/if\(portal\.guest&&portalLogIn\(portal\)\)\{/);
  assert.match(ui,/button\.onclick=async\(\)=>\{button\.disabled=true;try\{await portal\.showAuthPrompt\(\);\}/,'only from a tap');

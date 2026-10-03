@@ -60,7 +60,7 @@ export function trackCommerce(event,params={},win=globalThis.window){
 
 // Pacing events from inside the game (how far new farmers get, and where they stop). Only numbers and a few fixed
 // words are accepted, so nothing personal can be sent along.
-const GAME_EVENTS=new Set(['game_session','level_up','guide_step','guide_complete','reminder_prompt','connection_problem','connection_recovered']);
+const GAME_EVENTS=new Set(['game_session','level_up','guide_step','guide_complete','reminder_prompt','connection_problem','connection_recovered','farm_load_retry']);
 const GUIDE_STEPS=new Set(['harvest','sell','plant','water','produce','gift','chore','sell_egg','tend','wheat','collect']);
 const PROMPT_ACTIONS=new Set(['shown','accepted','dismissed','failed']);
 // Which reminder the question offered (28 Sep 2026): push on the device, or the daily email where push cannot work.
@@ -68,6 +68,9 @@ const PROMPT_CHANNELS=new Set(['push','email']);
 // Connection problems: how it failed (a fixed word, never an error message) and whether it stayed a small "Reconnecting…" or became the pause screen.
 const CONNECTION_REASONS=new Set(['offline','timeout','network','server','other']);
 const CONNECTION_STAGES=new Set(['reconnecting','paused']);
+// A farm that did not open (3 Oct 2026, public/loading-screen.js watchLoading): its code failed to load, or the bar stood still; again =
+// the second time within ten minutes, when it shows Try again instead of opening once more by itself.
+const LOAD_REASONS=new Set(['failed','stalled']);
 // Invite a friend: the screen opened, the link shared or copied, a sign-up that came with a code. Never a name or code.
 const INVITE_EVENTS=new Set(['invite_open','invite_share','invite_copy','invite_signup']);
 export function trackInvite(event,win=globalThis.window){if(INVITE_EVENTS.has(event))pushEvent(event,{device:deviceType(win)},win);}
@@ -89,7 +92,8 @@ export function trackGame(event,params={},win=globalThis.window){
  if(PROMPT_ACTIONS.has(params.action))clean.action=params.action;
  if(PROMPT_CHANNELS.has(params.channel))clean.channel=params.channel;
  if(typeof params.returning==='boolean')clean.returning=params.returning;
- if(CONNECTION_REASONS.has(params.reason))clean.reason=params.reason;
+ if(CONNECTION_REASONS.has(params.reason)||LOAD_REASONS.has(params.reason))clean.reason=params.reason;
+ if(typeof params.again==='boolean')clean.again=params.again;
  if(CONNECTION_STAGES.has(params.stage))clean.stage=params.stage;
  pushEvent(event,clean,win);
  // Level 5 is a real player (the goal of the ad campaigns): also GA4's standard "generate_lead", which ad pixels read by themselves.

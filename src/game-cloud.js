@@ -10,6 +10,8 @@ import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
 import {showPaymentReturn} from './payment-ui.js';
 import {createStarterPackUI} from './starter-pack-ui.js';
 import {stopPageZoom} from './page-zoom.js';
+import {watchLoading} from '../public/loading-screen.js';
+import {startTranslation} from '../public/i18n.js';
 import {createPopupUI} from './popup-ui.js';
 import {createOfferUI} from './offer-ui.js';
 import {createPortalUI} from './portal-ui.js';
@@ -26,10 +28,11 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
  // CrazyGames (Oct 2026): the page around the game is src/crazygames.js, with a portal on the bridge (public/portal.js). A farm page
  // that opens again by itself (its Try again) asks that page for the farm; the website's sign-in page never opens inside CrazyGames.
  const portal=bridge.portal??null;
- if(!window.harvestInitialFarm){if(portal)portal.reopen();else location.replace('/play.html');}else{
+ if(!window.harvestInitialFarm){if(portal)portal.reopen();else window.parent.location.reload();}else{
   // Marked before anything shows or loads: portal.css and the farm's loading tips (public/loading-screen.js) read it.
   if(portal)document.documentElement.dataset.portal=portal.name;
   document.body.hidden=false;
+  const watch=watchLoading(bridge,portal,{translate:()=>void startTranslation(document)});
   // The game takes the first farm over (and clears harvestInitialFarm); the pop-ups only need its start time (the first half hour).
   const firstState=window.harvestInitialFarm.state;
   const ui=createCloudUI({onOpen:openBoard,onRetry:openBoard,onPlayer:()=>profiles.open(bridge.playerId),onName:async username=>{const data=await bridge.request({operation:'rename',username});ui.setProfile(data.profile,{id:bridge.playerId});},onSignOut:()=>bridge.signOut()});
@@ -55,8 +58,10 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   // the newest loads; a board never seen shows placeholder rows (1 Oct 2026).
   const boardCache=new Map();
   async function openBoard(quiet=false){const request=++boardRequest,category=ui.category,cached=!quiet&&boardCache.get(category);if(cached){board=cached;boardPage=0;drawBoard();}else if(!quiet)ui.results.innerHTML=skeleton('Gathering the latest scores…',{rows:6});ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own)ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);if(!quiet&&!cached||board?.category!==result.category)boardPage=0;board=result;boardCache.set(result.category,result);drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
-  const {farmReady}=await import(/* @vite-ignore */ '/game.js?v=familyhall-model-2');
-  if(await farmReady){
+  let game=null;try{game=await import(/* @vite-ignore */ '/game.js?v=familyhall-model-2');}catch(error){console.error('The game could not load',error);}
+  const ready=game?await game.farmReady:false;
+  if(!game)watch.failed();else watch.done(ready);
+  if(ready){
    // CrazyGames' SDK (src/crazygames.js): the farm is loaded and can be played.
    if(portal){portal.event('loadingStop');portal.event('gameplayStart');}
    // The board the leaderboard opens on, read once in the background, so the first look needs no wait.
