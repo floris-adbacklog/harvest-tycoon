@@ -444,7 +444,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   catch{return [];}
  }
  function updatePicks(){
-  const at=canMention()?mentionAt(input.value,input.selectionStart??input.value.length):null;
+  const at=canMention()?mentionAt(input.value,input.selectionStart??input.value.length,picked.values()):null;
   if(!at){closePicks();return;}
   clearTimeout(pickTimer);pickAt=at;const ticket=++pickTicket,query=at.query.trim(),family=tab==='family';
   if(mentionIds(input.value,picked,me).length>=MAX_MENTIONS){picks=[];drawPicks('Mention up to 3 farmers in one message.');return;}

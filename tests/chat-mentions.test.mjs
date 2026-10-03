@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {chatParts,mentionsMe,wikiLinkTitle,mentionAt,insertMention,mentionIds,mentionMatches,WIKI_LINK,MAX_MENTIONS,MAX_WIKI_LINKS} from '../src/chat-rich.js';
-import {parseWikiLink,wikiArticle} from '../public/wiki-content.js';
+import {chatWikiLink,chatParts,mentionsMe,wikiLinkTitle,mentionAt,insertMention,mentionIds,mentionMatches,WIKI_LINK,MAX_MENTIONS,MAX_WIKI_LINKS} from '../src/chat-rich.js';
+import {wikiArticle} from '../public/wiki-content.js';
 import {messagePushes} from '../supabase/functions/notify-hourly/messages.js';
 import {textsFor,MAIL_LANGUAGES} from '../supabase/functions/notify-hourly/texts.js';
 import {createChatClient} from '../src/chat-client.js';
@@ -12,10 +12,10 @@ const A='00000000-0000-4000-8000-00000000000a',B='00000000-0000-4000-8000-000000
 
 // 3 Oct 2026: links to our own wiki are the only links the chat lets through, at most 2 in a message, as chips.
 test('a wiki address is ours only on harvesttycoon.com/wiki, a known topic, a plain section',()=>{
- assert.deepEqual(parseWikiLink('https://www.harvesttycoon.com/wiki/chat#sec-house-rules'),{topic:'chat',anchor:'sec-house-rules'});
- assert.deepEqual(parseWikiLink('harvesttycoon.com/wiki/Buildings#building-bakery'),{topic:'buildings',anchor:'building-bakery'});
- assert.deepEqual(parseWikiLink('www.harvesttycoon.com/wiki/'),{topic:null,anchor:''},'the first page');
- for(const bad of ['https://harvesttycoon.com/wiki/nope','https://evil.com/wiki/chat','https://harvesttycoon.com.evil.io/wiki/chat','https://harvesttycoon.com/play','harvesttycoon.com/wiki/chat/x','javascript:alert(1)',null])assert.equal(parseWikiLink(bad),null,String(bad));
+ assert.deepEqual(chatWikiLink('https://www.harvesttycoon.com/wiki/chat#sec-house-rules'),{topic:'chat',anchor:'sec-house-rules'});
+ assert.deepEqual(chatWikiLink('harvesttycoon.com/wiki/Buildings#building-bakery'),{topic:'buildings',anchor:'building-bakery'});
+ assert.deepEqual(chatWikiLink('www.harvesttycoon.com/wiki/'),{topic:null,anchor:''},'the first page');
+ for(const bad of ['https://harvesttycoon.com/wiki/nope','https://evil.com/wiki/chat','https://harvesttycoon.com.evil.io/wiki/chat','https://harvesttycoon.com/play','harvesttycoon.com/wiki/chat/x','javascript:alert(1)',null])assert.equal(chatWikiLink(bad),null,String(bad));
 });
 
 test('a message becomes words, wiki chips and mentions, in order; the chip says the section in the game\'s own words',()=>{
@@ -71,6 +71,11 @@ test('typing "@" finds the name being typed; a pick puts "@Full Name " in; only 
  assert.equal(mentionAt('mail me@home'),null,'an @ inside a word is not one');
  assert.equal(mentionAt('hi @abcdefghijklmnopqrstu'),null,'longer than a name');
  assert.deepEqual(mentionAt('hi @Gen and more',7),mentionAt('hi @Gen'),'up to the cursor');
+ // 3 Oct 2026 review: after a pick the words that follow are the message, not a search ("No farmers found" after every pick).
+ for(const text of ['hi @Anna ','hi @Anna thanks','hi @Anna, thanks','@Anna'])assert.equal(mentionAt(text,undefined,['Bram','Anna']),null,text);
+ assert.deepEqual(mentionAt('hi @Annab',undefined,['Anna']),{start:3,query:'Annab'},'another farmer whose name starts the same');
+ assert.equal(mentionAt('see you @ home'),null,'no name starts with a space');
+ assert.match(read('src/chat-ui.js'),/mentionAt\(input\.value,input\.selectionStart\?\?input\.value\.length,picked\.values\(\)\)/);
  assert.deepEqual(insertMention('hi @Gen',7,3,'Gentle Farm 6170'),{text:'hi @Gentle Farm 6170 ',caret:21});
  assert.deepEqual(insertMention('@Br see you',3,0,'Bram'),{text:'@Bram see you',caret:6},'no second space');
  const picked=new Map([[A,'Anna'],[B,'Bram'],['c','Cor'],['d','Dirk'],['me','Me']]);

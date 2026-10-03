@@ -436,12 +436,3 @@ export function wikiSearch(query){
  for(const entry of INDEX){if(!words.every(w=>entry.text.includes(w)))continue;const key=`${entry.topic}:${entry.label}`;if(seen.has(key))continue;seen.add(key);hits.push({...entry,topicTitle:TOPIC[entry.topic].title});}
  return hits.slice(0,12);
 }
-// A link to our own wiki (3 Oct 2026): https://www.harvesttycoon.com/wiki/<topic>#<section>, also without https:// or www. The chat lets
-// only these through (supabase/chat-wiki-links.sql) and shows them as a chip that opens How to play there (src/chat-rich.js). Gives
-// {topic, anchor} (topic null: the wiki's first page; anchor '': the top of the topic), or null for any other address or a topic the
-// wiki does not have.
-export function parseWikiLink(url){
- const m=/^(?:https?:\/\/)?(?:www\.)?harvesttycoon\.com\/wiki(?:\/([a-z-]+))?\/?(?:#([a-z0-9-]+))?$/i.exec(String(url??'').trim());if(!m)return null;
- const topic=m[1]?m[1].toLowerCase():null;if(topic&&!TOPIC[topic])return null;
- return {topic,anchor:topic&&m[2]?m[2].toLowerCase():''};
-}
