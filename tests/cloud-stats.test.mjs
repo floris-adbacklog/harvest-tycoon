@@ -52,3 +52,22 @@ test('Most quests done: the distinct quests in the farm\'s claimed list, read on
  assert.match(readFileSync(new URL('../src/leaderboard.js',import.meta.url),'utf8'),/fields=\[\.\.\.BOARD_FIELDS,\.\.\.\(config\.good\?\['goods_made'\]:BOARD_FIELDS\.includes\(category\)\?\[\]:\[category\]\)\]/,'the board reads its own column');
  assert.match(read('supabase/functions/farm-api/player-profile-service.js'),/'estate_projects','quests_done','currency'\]/,'the profile reads the same column');
 });
+
+// 3 Oct 2026: the admins are on no board, the moderators are; an admin looking at a board has no "Your rank".
+test('the admins are left off every board, from the database\'s staff list, asked once',async()=>{
+ const ADMIN='e8e4c7c3-c06f-408c-9fe6-1cfa7d2b3ae8',MOD='0b9d6a7e-1111-4222-8333-944455556666';
+ const make=responses=>{const calls=[],rpcs=[];let i=0;
+  const client={rpc(name){rpcs.push(name);return Promise.resolve({data:[{player_id:ADMIN,role:'admin'},{player_id:MOD,role:'moderator'}],error:null});},
+   from(table){const n=i++,query={};calls.push({table,steps:[]});for(const name of ['select','order','limit','eq','maybeSingle','gt','lt','not'])query[name]=(...args)=>{calls[n].steps.push([name,...args]);return query;};query.then=resolve=>Promise.resolve(responses[n]).then(resolve);return query;}};
+  return {client,calls,rpcs};};
+ const farmer=make([{data:[{player_id:'other',username:'Other',level:3}],error:null},{data:{player_id:'self',username:'Farmer',level:2},error:null},{count:21,error:null},{count:2,error:null}]);
+ const result=await fetchLeaderboard(farmer.client,'self');assert.equal(result.rank,24);
+ const hidden=['not','player_id','in',`(${ADMIN})`];
+ assert.deepEqual(farmer.calls[0].steps.find(x=>x[0]==='not'),hidden,'the top 100 without the admins, moderators stay');
+ assert.deepEqual(farmer.calls[2].steps.find(x=>x[0]==='not'),hidden,'nor do they count above you');assert.deepEqual(farmer.calls[3].steps.find(x=>x[0]==='not'),hidden);
+ await fetchLeaderboard(farmer.client,'self','currency').catch(()=>{});assert.deepEqual(farmer.rpcs,['chat_staff_list'],'asked once per session');
+ const admin=make([{data:[{player_id:'other',username:'Other',level:3}],error:null}]);
+ const seen=await fetchLeaderboard(admin.client,ADMIN);assert.equal(seen.own,null);assert.equal(seen.rank,null);assert.equal(admin.calls.length,1,'no own row or rank is looked up for an admin');
+ const broken={rpc:()=>Promise.resolve({data:null,error:new Error('down')}),from(){const q={};for(const name of ['select','order','limit','eq','maybeSingle','gt','lt'])q[name]=()=>q;q.then=resolve=>Promise.resolve({data:[],error:null}).then(resolve);return q;}};
+ assert.deepEqual((await fetchLeaderboard(broken,null)).rows,[],'without the list the board still opens');
+});

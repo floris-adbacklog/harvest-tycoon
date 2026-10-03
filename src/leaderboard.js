@@ -46,14 +46,26 @@ export const scoreOf=(row,category)=>{const config=categoryFor(category);return 
 // picture and VIP mark, the level, when they last played (the online dot) and the board's own score.
 const BOARD_FIELDS=['player_id','username','level','last_active_at','vip_expires_at','avatar_id'];
 export const BOARD_SIZE=100,BOARD_PAGE=10;
+// The admins are on no board (3 Oct 2026): they make the game and cannot play on their admin accounts, so on a quiet board their
+// zeros would still fill places. Who is admin comes from the database's one staff check (chat_staff_list, supabase/chat-staff-list.sql),
+// asked once per session; moderators stay on the boards. Should that list not load, the board shows as before and asks again next time.
+const adminLists=new WeakMap();
+export function boardAdmins(client){
+ if(typeof client?.rpc!=='function')return Promise.resolve([]);
+ let list=adminLists.get(client);
+ if(!list){list=Promise.resolve().then(()=>client.rpc('chat_staff_list')).then(({data,error})=>{if(error)throw error;return (Array.isArray(data)?data:[]).filter(s=>s?.role==='admin'&&/^[0-9a-f-]{36}$/i.test(String(s.player_id))).map(s=>s.player_id);}).catch(()=>{adminLists.delete(client);return [];});adminLists.set(client,list);}
+ return list;
+}
 export async function fetchLeaderboard(client,playerId,category='level'){
  const config=categoryFor(category),column=columnOf(category),fields=[...BOARD_FIELDS,...(config.good?['goods_made']:BOARD_FIELDS.includes(category)?[]:[category])].join(',');
- const {data,error}=await client.from('player_stats').select(fields).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(BOARD_SIZE);
+ const admins=await boardAdmins(client),ranked=query=>admins.length?query.not('player_id','in',`(${admins.join(',')})`):query;
+ const {data,error}=await ranked(client.from('player_stats').select(fields)).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(BOARD_SIZE);
  if(error)throw error;
  let own=data?.find(row=>row.player_id===playerId)??null;
- if(!own&&playerId){const response=await client.from('player_stats').select(fields).eq('player_id',playerId).maybeSingle();if(response.error)throw response.error;own=response.data;}
+ // An admin looking at a board has no place on it, so no "Your rank" either.
+ if(!own&&playerId&&!admins.includes(playerId)){const response=await client.from('player_stats').select(fields).eq('player_id',playerId).maybeSingle();if(response.error)throw response.error;own=response.data;}
  let rank=null;
- if(own){const listed=data?.findIndex(row=>row.player_id===playerId)??-1;if(listed>=0)rank=listed+1;else{const result=await client.from('player_stats').select('player_id',{count:'exact',head:true}).gt(column,scoreOf(own,category));if(result.error)throw result.error;const ties=await client.from('player_stats').select('player_id',{count:'exact',head:true}).eq(column,scoreOf(own,category)).lt('player_id',own.player_id);if(ties.error)throw ties.error;rank=(result.count??0)+(ties.count??0)+1;}}
+ if(own){const listed=data?.findIndex(row=>row.player_id===playerId)??-1;if(listed>=0)rank=listed+1;else{const result=await ranked(client.from('player_stats').select('player_id',{count:'exact',head:true})).gt(column,scoreOf(own,category));if(result.error)throw result.error;const ties=await ranked(client.from('player_stats').select('player_id',{count:'exact',head:true})).eq(column,scoreOf(own,category)).lt('player_id',own.player_id);if(ties.error)throw ties.error;rank=(result.count??0)+(ties.count??0)+1;}}
  return {rows:data??[],own,rank,category};
 }
 export function rankedRows(rows,category='level'){
