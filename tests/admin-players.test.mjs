@@ -233,7 +233,7 @@ test('staff go both ways: the dashboard opens a profile, and a profile opens tha
  assert.match(profiles,/onclick=\(\)=>staff\?\.showFarmer\(playerId\)/);
  assert.match(dash,/function showFarmer\(id\)\{\n  if\(!role\|\|!id\)return;/);
  assert.match(dash,/if\(dialog\.open\)document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>\{if\(d!==dialog\)d\.close\(\);\}\);else openDashboard\(\);\n  showTab\('players'\);openPlayer\(id\);/);
- assert.match(dash,/window\.harvestStaff=\{role:\(\)=>role,showFarmer\};/);
+ assert.match(dash,/window\.harvestStaff=\{role:\(\)=>role,showFarmer,open\};/);
  assert.match(dash,/data-open-profile/,'and the other way, as before');
 });
 

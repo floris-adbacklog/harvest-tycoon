@@ -78,7 +78,7 @@ test('the offer window: its cards, once per device, a sound, and the Diamond sho
  assert.deepEqual(offerParts({diamonds:5000,coins:0,vipDays:0}).map(p=>p.key),['diamonds']);
  const ui=read('src/offer-ui.js');
  assert.match(ui,/const running=\(\)=>Boolean\(offer\)&&!offer\.bought&&left\(\)>0&&fitsDevice\(offer\.audience,device\(\)\);/);
- assert.match(ui,/if\(!running\(\)\|\|seen\(\)\|\|waiting\)return;\n  const quiet=\(\)=>!doc\.querySelector\('dialog\[open\]'\);/);
+ assert.match(ui,/if\(!running\(\)\|\|seen\(\)\|\|waiting\|\|doc\.documentElement\?\.hasAttribute\?\.\('data-admin-view'\)\)return;\n  const quiet=\(\)=>!doc\.querySelector\('dialog\[open\]'\);/);
  assert.match(ui,/win\.harvestSound\?\.\('offer'\);/);
  assert.match(ui,/wallet\.after\(b\);/);
  assert.match(ui,/await bridge\.checkout\('offer',requestId,offer\.id\);/);

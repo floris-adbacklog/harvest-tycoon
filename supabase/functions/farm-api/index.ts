@@ -12,7 +12,7 @@ import {recordSource} from './source-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
-import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback} from './farm-state.js';
+import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
@@ -146,6 +146,15 @@ Deno.serve(async(req)=>{
   // it by accident, it takes no farm action at all: no fields, buildings, market, streaks, daily rewards, quests or deliveries.
   // The Admin dashboard, chat, messages and gifts to farmers are other operations and still work.
   if(body.operation==='action'&&isAdminAccount(user))return reply({error:'This is your admin account, so playing is locked here. Play on your own farmer account.',code:'ACTION_REJECTED'},422);
+  // The admin view (3 Oct 2026): an admin account opens a showcase farm (farm-state.js createShowcaseFarm: level 999, everything
+  // built, upgraded and finished) instead of its real one, and the game shows the staff's own topbar and menu (src/admin-view.js).
+  // Only the real farm's family is read, so the flag and the Family window stay theirs; nothing is written: no rewards, gifts,
+  // donations or bonuses, no save, and the real farm and player_stats stay as they are (supabase/admin-level.sql sets level 999).
+  if(body.operation==='load'&&isAdminAccount(user)){
+   const now=Date.now(),own=await admin.from('player_farms').select('family:state->family').eq('player_id',user.id).maybeSingle();
+   const family=!own.error&&own.data?.family&&typeof own.data.family==='object'?own.data.family:null;
+   return reply({state:createShowcaseFarm(now,{family}),profile:{player_id:user.id,username,currency:0,level:SHOWCASE_LEVEL,avatar_id:profile?.avatar_id??'default'},adminView:true,emailCheck:{needed:false,email:user.email??'',canChange:false},serverNow:now});
+  }
   // Keep one server-owned roll across optimistic concurrency retries.
   let choreRoll:number|undefined;
   const random=()=>choreRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);
@@ -166,7 +175,11 @@ Deno.serve(async(req)=>{
     const created=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:0,p_state:initial,p_receipts:[],p_username:username,p_currency:initial.coins,p_level:levelOf(initial)});
     if(created.error)throw created.error;continue;
    }
-   const state=normalizeFarm(row.state,now);
+   // An admin account's Family window and invite card read the showcase farm too (3 Oct 2026), with the real farm's family: its real
+   // level may be under the Family's level 10. These are reads (p_write_farm false), so the showcase is never stored; family actions
+   // are locked above.
+   const showcase=isAdminAccount(user)&&['family','family_profile','invite'].includes(body.operation);
+   const state=showcase?createShowcaseFarm(now,{family:row.state?.family&&typeof row.state.family==='object'?row.state.family:null}):normalizeFarm(row.state,now);
    // Whether this account can still confirm its email for the bonus: only email sign-ups, until the bonus is paid.
    const emailCheck=(farm:{emailBonus?:number})=>({needed:(user.app_metadata?.provider??'email')==='email'&&!farm.emailBonus,email:user.email??'',canChange:(user.app_metadata?.provider??'email')==='email'});
    profile={player_id:user.id,username,currency:state.coins,level:levelOf(state),avatar_id:profile?.avatar_id??'default'};

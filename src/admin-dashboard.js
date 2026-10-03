@@ -594,7 +594,15 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(dialog.open)document.querySelectorAll('dialog[open]').forEach(d=>{if(d!==dialog)d.close();});else openDashboard();
   showTab('players');openPlayer(id);
  }
- window.harvestStaff={role:()=>role,showFarmer};
+ // One tab of the dashboard, opened from elsewhere (3 Oct 2026, the admin view's topbar, src/admin-view.js): its online count opens the
+ // Players tab at Online now, its open reports the Chat tab with the reports.
+ function open(tab='chat'){
+  if(!role)return;
+  if(!dialog.open)openDashboard();
+  showTab(dialog.querySelector(`[data-admin-tab="${tab}"]:not([hidden])`)?tab:'chat');
+  if(tab==='players')dialog.querySelector('#admin-online-list')?.closest('.admin-card')?.scrollIntoView?.({block:'start'});
+ }
+ window.harvestStaff={role:()=>role,showFarmer,open};
  // For the admin (checked by e-mail, as before) and the moderators (their role comes with the chat). Phones hide the topbar
  // icons, so the same dashboard also gets a card at the end of the More menu. The server checks every request again.
  let role=null;

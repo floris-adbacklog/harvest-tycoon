@@ -56,6 +56,8 @@ export function createMobileUI({openUtility,resetView}){
  mobileLayout.addEventListener('change',resetView);
  // Primary navigation stays selected while its sheet is open, then returns to Farm.
  const sections={'tasks-dialog':'tasks-button','buildings-dialog':'buildings-button','building-dialog':'buildings-button','market-dialog':'market-button','more-dialog':'more-button','chat-dialog':''};
+ // The admin view (3 Oct 2026, src/admin-view.js) has buttons of its own for How to play, the chat and the Admin dashboard.
+ if(document.documentElement.hasAttribute('data-admin-view'))Object.assign(sections,{'help-dialog':'admin-help-tool','chat-dialog':'admin-chat-tool','admin-dashboard-dialog':'admin-admin-tool'});
  const observer=new MutationObserver(()=>{
   const current=document.querySelector('dialog[open]'),active=current?(sections[current.id]??'more-button'):'farm-button';
   document.querySelectorAll('.side-tool').forEach(button=>{

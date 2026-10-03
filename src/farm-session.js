@@ -61,6 +61,11 @@ export function createFarmSession({
    bridge.trackGame=(event,params)=>{if(ticket===generation)track.game?.(event,params);};
    bridge.trackInvite=event=>{if(ticket===generation)track.invite?.(event);};
    bridge.trackShare=(event,params)=>{if(ticket===generation)track.share?.(event,params);};
+   // The admin view's topbar (3 Oct 2026, src/admin-view.js): how many farmers were active in the last 30 minutes, one count straight from
+   // the database (the leaderboard's own table and rule), no Edge Function. On the server's clock (the load's serverNow), as the dashboard's
+   // Online now counts.
+   const skew=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
+   bridge.onlineCount=async()=>{if(ticket!==generation)throw new Error('Your session has ended.');const at=Date.now()+skew,{count,error}=await client().from('player_stats').select('player_id',{count:'exact',head:true}).gte('last_active_at',new Date(at-30*60000).toISOString()).lte('last_active_at',new Date(at+60000).toISOString());if(error)throw error;return Number.isSafeInteger(count)?count:NaN;};
    // Payments only where the page has them (the website); elsewhere the shop never offers them, and asking says so.
    const noPayments=()=>{throw new Error('Purchases are not available here.');};
    bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');if(!paymentRequest)noPayments();const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};

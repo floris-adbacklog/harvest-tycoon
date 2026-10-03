@@ -188,6 +188,11 @@ async function openFarm(){
   bridge.trackGame=(event,params)=>{if(ticket===generation)trackGame(event,params);};
   bridge.trackInvite=event=>{if(ticket===generation)trackInvite(event);};
   bridge.trackShare=(event,params)=>{if(ticket===generation)trackShare(event,params);};
+  // The admin view's topbar (3 Oct 2026, src/admin-view.js): how many farmers were active in the last 30 minutes, one count straight from
+  // the database (the leaderboard's own table and rule), no Edge Function. On the server's clock (the load's serverNow), as the dashboard's
+  // Online now counts.
+  const skew=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
+  bridge.onlineCount=async()=>{if(ticket!==generation)throw new Error('Your session has ended.');const at=Date.now()+skew,{count,error}=await supabase.from('player_stats').select('player_id',{count:'exact',head:true}).gte('last_active_at',new Date(at-30*60000).toISOString()).lte('last_active_at',new Date(at+60000).toISOString());if(error)throw error;return Number.isSafeInteger(count)?count:NaN;};
   // In the Android app (Oct 2026) Google Play's rules leave no room for purchases of our own: the catalogue the shop asks for says off (no
   // Starter Pack, special offer or Halloween Pass for sale, so nothing opens by itself), nothing else about payments is asked and no
   // checkout opens. Earned diamonds are spent as always, and what was bought on the website counts on the same account.

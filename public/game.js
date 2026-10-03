@@ -75,6 +75,9 @@ const initialGift=window.harvestInitialFarm.gift;
 const initialInvite=window.harvestInitialFarm.invite;
 const initialWelcome=window.harvestInitialFarm.welcome;
 const initialEmailCheck=window.harvestInitialFarm.emailCheck;
+// The admin view (3 Oct 2026, src/admin-view.js): an admin account's showcase farm, marked on the page by src/game-cloud.js before the
+// game starts. Nothing is played or counted there: no actions (farm-client.js), no sweeps, no pacing events, no Welcome back.
+const adminView=document.documentElement.hasAttribute('data-admin-view');
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
 let emailAccount={needed:false,email:''},emailCheckUI=null;
@@ -104,7 +107,7 @@ const soundPortal=portal();if(soundPortal){farmAudio.muteFromOutside(soundPortal
 window.harvestSound=kind=>farmAudio.play(kind);
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 // Pacing measurements go to the page around the game (see src/analytics.js); they carry numbers only.
-const track=(event,params={})=>{try{window.parent.harvestBridge?.trackGame?.(event,params);}catch{}};
+const track=(event,params={})=>{if(adminView)return;try{window.parent.harvestBridge?.trackGame?.(event,params);}catch{}};
 let sessionTracked=false;
 const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
 // A crop medal the action earned (a tap harvest, the tractor) gets its toast at the bottom (medal-notice.js, Oct 2026).
@@ -664,7 +667,7 @@ async function interact(id,forcedAction){
 let sweepRun=null,lastPointer=null,pointerDx=0;
 const sweepTool=createSweepTool({reducedMotion}),sweepGhost=createSweepGhost({reducedMotion});
 // What a drag from this field does (plant, harvest, water or care), or nothing: then the drag moves the farm.
-function sweepAction(target){const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool):null;return a==='plant'||a==='harvest'||a==='water'||a==='tend'?a:null;}
+function sweepAction(target){if(adminView)return null;const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool):null;return a==='plant'||a==='harvest'||a==='water'||a==='tend'?a:null;}
 function startSweep(action){
  const run={action,handle:client.sweep(action,selectedCrop),before:progressionSnapshot(state),medals:medalsWaiting(state),level:levelProgress(state).level,count:0,tilt:Math.abs(pointerDx)>1.5?(pointerDx<0?.55:-.55):0,flights:[]};
  // With a mouse the tool is in the hand from the first field on (the cursor itself hides meanwhile).
@@ -1242,7 +1245,7 @@ async function init(){
     panFarm(shift.side,shift.depth);
    }
   });
-  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(villageWorld)toast('Welcome to the village! Your farm keeps growing while you are here.');else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! Your farm keeps growing while you are here.');else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // The loading screen fades into the farm instead of disappearing at once.
   $('loading').classList.add('fade');
   await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;stopTips();progression.refresh();resolve();},450));

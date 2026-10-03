@@ -50,6 +50,8 @@ export const BOARD_SIZE=100,BOARD_PAGE=10;
 // zeros would still fill places. Who is admin comes from the database's one staff check (chat_staff_list, supabase/chat-staff-list.sql),
 // asked once per session; moderators stay on the boards. Should that list not load, the board shows as before and asks again next time.
 const adminLists=new WeakMap();
+// The admins' level everywhere (farm-state.js SHOWCASE_LEVEL), which no farmer reaches.
+export const ADMIN_LEVEL=999;
 export function boardAdmins(client){
  if(typeof client?.rpc!=='function')return Promise.resolve([]);
  let list=adminLists.get(client);
@@ -59,8 +61,10 @@ export function boardAdmins(client){
 export async function fetchLeaderboard(client,playerId,category='level'){
  const config=categoryFor(category),column=columnOf(category),fields=[...BOARD_FIELDS,...(config.good?['goods_made']:BOARD_FIELDS.includes(category)?[]:[category])].join(',');
  const admins=await boardAdmins(client),ranked=query=>admins.length?query.not('player_id','in',`(${admins.join(',')})`):query;
- const {data,error}=await ranked(client.from('player_stats').select(fields)).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(BOARD_SIZE);
+ let {data,error}=await ranked(client.from('player_stats').select(fields)).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(BOARD_SIZE);
  if(error)throw error;
+ // Should the admin list not load, the admins still stay off: they alone are level 999 (3 Oct 2026, supabase/admin-level.sql).
+ if(!admins.length&&Array.isArray(data))data=data.filter(row=>!(Number(row.level)>=ADMIN_LEVEL));
  let own=data?.find(row=>row.player_id===playerId)??null;
  // An admin looking at a board has no place on it, so no "Your rank" either.
  if(!own&&playerId&&!admins.includes(playerId)){const response=await client.from('player_stats').select(fields).eq('player_id',playerId).maybeSingle();if(response.error)throw response.error;own=response.data;}

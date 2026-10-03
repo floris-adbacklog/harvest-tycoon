@@ -3078,3 +3078,48 @@ export function familyProfile(c,familyId,player,state,now,config=FAMILY_CONFIG){
   // What you can do here: nothing extra in your own family; otherwise join or ask, as in the list of families.
   viewer:{member:mine?.id===f.id,inFamily:!!mine,unlocked:familyUnlocked(state),level:levelOf(state),cooldown:me?.blocked_family===f.id&&(me?.cooldown_until??0)>now,requestId:request?.family_id===f.id?request.id:null,requestElsewhere:!!request&&request.family_id!==f.id}};
 }
+// The admin view (3 Oct 2026): an admin account plays nothing (farm-api locks every action), so its farm is not its real one but this
+// showcase: level 999, every building built and at its top level, all 40 fields growing (watered, cared for, not ripe yet), every
+// production slot busy, everything up to and including the endgame finished, nothing waiting to be collected or claimed. farm-api
+// builds it fresh on every load of an admin account and stores nothing; it is made from `now` alone, so a refresh a minute later looks
+// the same. family: the admin's real family (the 3D flag and the Family window), copied as it is.
+export const SHOWCASE_LEVEL=999;
+const SHOWCASE_CROPS=Object.freeze([...['wheat','corn','sunflower','barley','redcabbage','pumpkin','cauliflower','greenbeans','berries'].flatMap(c=>[c,c,c,c]),'apples','cherries','ciderapples','cherries']);   // ten rows of four, the orchard last; no pole beans (heavy to draw)
+export function createShowcaseFarm(now=Date.now(),{family=null}={}){
+ const s=createFarm(now),HOUR=3600000;
+ Object.assign(s,{showcase:true,xp:xpForLevel(SHOWCASE_LEVEL)+Math.floor((xpForLevel(SHOWCASE_LEVEL+1)-xpForLevel(SHOWCASE_LEVEL))/2),xpOffset:0,xpCurve:XP_CURVE,coins:0,diamonds:0,rookieUntil:0,keep:{},vipExpiresAt:0});
+ if(family&&typeof family==='object')s.family=structuredClone(family);
+ s.inventory=Object.fromEntries(Object.keys(ITEMS).map(k=>[k,250]));s.discovered=Object.keys(CROPS);
+ s.onboarding={completed:BEGINNER_QUESTS.length,milestones:Object.fromEntries(BEGINNER_QUESTS.map(q=>[q.id,true])),rewardClaimed:true};
+ s.levelRewards=Array.from({length:SHOWCASE_LEVEL},(_,i)=>i+1);
+ // 29 of 30 days grown: full size and green, never ripe while it is looked at (no "ready" labels, a tap only says when).
+ s.plots=SHOWCASE_CROPS.map((crop,id)=>({id,crop,plantedAt:now-29*DAY_MS,readyAt:now+DAY_MS,careAt:now-29*DAY_MS,watered:true,tended:true,fertilized:true,...(CROPS[crop].perennial?{harvestCycles:3}:{})}));
+ for(const [key,b] of Object.entries(BUILDINGS)){
+  const own=s.buildings[key];own.built=true;own.job=null;own.extraJobs=[];own.batchSequence=0;
+  if(b.type!=='production')continue;
+  if(beyondMaxBuilding(key)){own.level=TOP_BUILDING_LEVEL;own.beyond=TOP_BUILDING_LEVEL-MAX_BUILDING_LEVEL;}else own.level=MAX_BUILDING_LEVEL;
+  // Every slot busy for hours (smoke, a turning windmill), its first recipe; nothing ready to collect.
+  const recipe=Object.keys(RECIPES).filter(id=>RECIPES[id].building===key).sort((a,c)=>(RECIPE_LEVELS[a]??0)-(RECIPE_LEVELS[c]??0)||a.localeCompare(c))[0];if(!recipe)continue;
+  const jobs=Array.from({length:productionSlots(own.level,key)},(_,i)=>({id:`${key}-${i+1}`,recipe,startedAt:now-HOUR,readyAt:now+(8+i)*HOUR,output:{...RECIPES[recipe].output},xp:RECIPES[recipe].xp}));
+  own.job=jobs.shift()??null;own.extraJobs=jobs;own.batchSequence=jobs.length+1;
+ }
+ s.buildings.farmhouse.level=1+MAX_PLOTS-12;
+ s.siloLevel=SILO_COSTS.length;s.stall={level:STALL_MAX_LEVEL,since:now,bank:0};
+ s.estate={completed:PROJECTS.length,job:null,diamondChapters:PROJECTS.map((_,i)=>i)};s.improvements=Object.keys(IMPROVEMENTS);
+ s.master=Object.fromEntries(Object.entries(MASTER_BRANCHES).map(([k,b])=>[k,b.max]));s.lab={beds:[null,null],found:Object.keys(HEIRLOOMS)};
+ s.valleyProjects=Object.fromEntries(Object.entries(VALLEY_PROJECTS).map(([k,p])=>[k,{level:p.levels.length,given:{}}]));
+ s.giant={week:familyWeek(now),kg:320,tends:24,lastTendAt:now,weighed:false,record:480,last:null};s.ranch={focus:'dairy',changes:1};
+ s.chorePractice=Object.fromEntries(Object.keys(CHORES).map(k=>[k,50]));s.chores=Object.fromEntries(Object.keys(CHORES).map(k=>[k,now+DAY_MS]));
+ s.claimed=QUESTS.map((_,i)=>i);s.villageQuests=VILLAGE_QUESTS.map((_,i)=>i);
+ s.mastery={harvests:Object.fromEntries(Object.keys(CROPS).map(k=>[k,1000])),claimed:Object.keys(CROPS).flatMap(k=>MASTERY_TIERS.map((_,t)=>`${k}:${t}`))};
+ for(const k of Object.keys(ITEMS))s.stats[(CROPS[k]?'harvest_':'made_')+k]=1000;
+ Object.assign(s.stats,{harvested:25000,planted:25000,watered:20000,tended:15000,produced:12000,earned:50000000,expansions:MAX_PLOTS-12,upgrades:300,deliveries:2000,sold:40000,dailies:600,chores:900,mastery_medals:Object.keys(CROPS).length*MASTERY_TIERS.length,projects:PROJECTS.length});
+ s.login={lastDay:utcDay(now),streak:30,best:60,visits:200};s.comeback={lastAt:now,collected:0,pending:null};
+ delete s.daily;normalizeFarm(s,now);refreshProgressionDaily(s,now);
+ // Today's tasks and orders done, the helping hands resting: no "!" anywhere.
+ s.daily.claimed=s.daily.tasks.map((_,i)=>i);s.daily.orders=s.daily.orderBoard.map((_,i)=>i);s.daily.bonusClaimed=true;
+ s.activities.cooldowns=Object.fromEntries(Object.keys(ACTIVE_STATIONS).map(k=>[k,now+DAY_MS]));
+ // No visitor on the road for a month: serving one is play (3 Oct 2026). src/admin-view.js reloads the showcase every hour anyway.
+ s.visitors.current=null;s.visitors.nextAt=now+30*DAY_MS;
+ return s;
+}

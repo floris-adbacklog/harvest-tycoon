@@ -1,0 +1,59 @@
+/* The admin view (3 Oct 2026, src/admin-view.js): only on an admin account's showcase farm, which src/game-cloud.js marks with
+   data-admin-view before the page shows. Coins, diamonds and everything to buy or play step aside; the topbar shows the farmers online
+   and the open chat reports, the menu is My farm, How to play, Chat, Admin panel and More. Every rule starts with html[data-admin-view]. */
+html[data-admin-view] .resources>:is(.coin-counter,#diamond-button,#rookie-button,#pass-button,#starter-pack-chip,#offer-chip,#chat-button,#admin-button,#help-button),
+html[data-admin-view] :is(#starter-pack-button,#offer-button,#active-boosts,.beginner-card,#beginner-mobile,.touch-instructions,#more-dot),
+html[data-admin-view] .bottom-hud>:is(.tool-dock,.context-hint,.bottom-note),
+html[data-admin-view] .mobile-menu-grid>:is([data-menu-action="all-quests-mobile"],#pass-menu-entry,[data-menu-action="boosts-button"]){display:none!important}
+/* The two numbers, in the coin pill's look: a big number with a short word under it. Red while a report waits, quiet at none. */
+html[data-admin-view] .resources .admin-stat{display:flex;align-items:center;gap:8px;height:53px;min-width:118px;padding:0 15px 0 10px;background:var(--cream);border:1px solid #dfd4ca;border-radius:16px;box-shadow:var(--shadow);color:#4d4635;font-variant-numeric:tabular-nums;cursor:pointer;text-align:start}
+html[data-admin-view] .resources .admin-stat:not([aria-disabled="true"]):hover{background:#f8f1e7}
+/* A password session: the numbers without the dashboard behind them. */
+html[data-admin-view] .resources .admin-stat[aria-disabled="true"]{cursor:default}
+html[data-admin-view] .resources .admin-stat>.game-art{width:34px;height:34px;flex-shrink:0}
+html[data-admin-view] .resources .admin-stat>span{display:flex;flex-direction:column;min-width:0;line-height:1.05}
+html[data-admin-view] .resources .admin-stat strong{font:700 24px/1.05 'Outfit',sans-serif;white-space:nowrap}
+html[data-admin-view] .resources .admin-stat small{font-size:11px;font-weight:700;color:#857a66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-admin-view] .resources #admin-reports-stat:not(.has-reports){color:#8c8577}
+html[data-admin-view] .resources #admin-reports-stat:not(.has-reports)>.game-art{filter:grayscale(1);opacity:.55}
+html[data-admin-view] .resources #admin-reports-stat.has-reports{background:#fdeae4;border-color:#e7a99a;color:#b2391f}
+html[data-admin-view] .resources #admin-reports-stat.has-reports small{color:#b2391f}
+/* The menu: the three new buttons look like the others; only My farm, them and More are there, in this order. */
+html[data-admin-view] .side-tools>.side-tool:not(#farm-button,#more-button,[data-admin-tool]),
+html[data-admin-view] .side-tools>.side-tool[data-admin-tool][hidden]{display:none!important}
+html[data-admin-view] #more-button{display:flex}
+html[data-admin-view] #farm-button{order:1}
+html[data-admin-view] #admin-help-tool{order:2}
+html[data-admin-view] #admin-chat-tool{order:3}
+html[data-admin-view] #admin-admin-tool{order:4}
+html[data-admin-view] #more-button{order:5}
+html[data-admin-view] #admin-chat-tool em{min-width:20px;padding:0 4px;width:auto}
+/* A computer: the camera buttons stay in their corner (no tool dock to clear in a narrow window). */
+@media(min-width:901px) and (max-width:1040px) and (min-height:551px),(min-width:901px) and (max-width:1040px) and (pointer:fine){
+ html[data-admin-view] .scene-controls{bottom:20px}
+}
+@media(min-width:901px) and (max-width:1100px){
+ html[data-admin-view] .resources .admin-stat{min-width:0;height:47px;padding:0 11px 0 8px;gap:6px}
+ html[data-admin-view] .resources .admin-stat strong{font-size:21px}
+}
+/* A phone: the two numbers fill the two pills, the view runs down to the menu bar (as in the village), the camera buttons sit just
+   above it. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ html[data-admin-view]{--mobile-bottom:var(--mobile-nav,76px)}
+ html[data-admin-view] .topbar .resources{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px}
+ html[data-admin-view] .resources .admin-stat{height:48px;min-height:48px;min-width:0;width:100%;gap:7px;padding:5px 10px;border-radius:14px;justify-content:center}
+ html[data-admin-view] .resources .admin-stat>.game-art{width:30px;height:30px}
+ html[data-admin-view] .resources .admin-stat strong{font-size:21px}
+ /* Five buttons in the bar: a long name ends in "…" (a computer's menu wraps it, as the other buttons do). */
+ html[data-admin-view] .side-tools .side-tool b{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ html[data-admin-view] .mobile-pan-controls,html[data-admin-view] .scene-controls{bottom:calc(var(--mobile-nav) + 10px)}
+}
+@media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){
+ html[data-admin-view]{--mobile-bottom:0px}
+ html[data-admin-view] .mobile-pan-controls,html[data-admin-view] .scene-controls{bottom:12px}
+}
+@media(max-width:360px){html[data-admin-view] .resources .admin-stat{padding:5px 7px;gap:5px}html[data-admin-view] .resources .admin-stat strong{font-size:19px}}
+/* The smallest phones (320 wide): the number and its word, without the picture (as the coin pill does there). */
+@media(max-width:340px){html[data-admin-view] .resources .admin-stat>.game-art{display:none}html[data-admin-view] .side-tools .side-tool b{font-size:10px}}
+/* The fields of the showcase without their little timers (3 Oct 2026): forty "1d" badges only cluttered a farm nobody plays on. */
+html[data-admin-view] .plot-label{display:none!important}

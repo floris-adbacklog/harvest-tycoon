@@ -14,7 +14,8 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  function notices(){
   const waiting=stallNotice(state,farmNow());
   // A Master point to spend (from level 91) lights it too.
-  const master=featureUnlocked(state,'master')&&masterFree(state)>0;
+  // Not on the admin's showcase farm (farm-state.js createShowcaseFarm): every branch is full there, so its points have nowhere to go.
+  const master=featureUnlocked(state,'master')&&masterFree(state)>0&&!state.showcase;
   // A crop medal earned and not collected (Oct 2026) lights the "!" until it is collected: on the Medals tab, its tile in More (and so
   // the More button) and the Estate button. Medals already waiting when the game opens light it too, without a toast (medal-notice.js).
   const medals=featureUnlocked(state,'mastery')&&medalsWaiting(state).length>0;
@@ -85,7 +86,7 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  }
  // Master points (27 Sep 2026): one for every level after 90, each spent on a lasting bonus, ten ranks per branch.
  function renderMaster(){
-  const free=masterFree(state),total=masterPoints(state);
+  const free=state.showcase?0:masterFree(state),total=masterPoints(state);
   const cards=Object.entries(MASTER_BRANCHES).map(([id,b])=>{const rank=masterRank(state,id),full=rank>=b.max;
    return `<article class="order-card master-branch${full?' is-ready':''}"><div class="order-head"><span class="order-icon">${art(b.art)}</span><div><small>Rank ${rank} of ${b.max}${rank?` · now +${Math.round(masterBonus(state,id)*100)}%`:''}</small><h3>${b.name}</h3><p class="valley-line">${b.effect}</p></div></div><div class="master-pips" aria-hidden="true">${Array.from({length:b.max},(_,i)=>`<i class="${i<rank?'is-on':''}"></i>`).join('')}</div><div class="task-bottom">${full?'<span class="quest-state">Highest rank ✓</span>':`<button class="primary-button" data-master="${id}" ${free?'':'disabled'}>Spend a point</button>`}</div></article>`;}).join('');
   $('estate-content').innerHTML=`${lead('star',`Every level after ${MASTER_FROM} gives a Master point. Spend each one on a bonus that lasts.`)}<div class="mastery-total"><strong>${free} ${free===1?'point':'points'} to spend</strong><span>${total} earned in all · the next one at level ${MASTER_FROM+total+1}</span></div><div class="daily-list">${cards}</div>`;

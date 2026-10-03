@@ -90,8 +90,9 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
   catch(error){pending=false;render();dialog.querySelector('.offer-feedback').textContent=error.message;}
  }
  // Once per offer on this device, when nothing else is open (the daily gift, a pop-up, a purchase screen).
+ // Never by itself in the admin view (3 Oct 2026, src/admin-view.js): nothing is bought there; the dashboard's Preview still opens it.
  function autoOpen(){
-  if(!running()||seen()||waiting)return;
+  if(!running()||seen()||waiting||doc.documentElement?.hasAttribute?.('data-admin-view'))return;
   const quiet=()=>!doc.querySelector('dialog[open]');
   if(quiet()){open();return;}
   waiting=win.setInterval(()=>{if(disposed||!running()){win.clearInterval(waiting);waiting=0;return;}if(quiet()){win.clearInterval(waiting);waiting=0;open();}},2000);

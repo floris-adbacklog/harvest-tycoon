@@ -37,6 +37,11 @@ export function sweepTotal(action,results,short=false){
  if(action==='plant')total.short=short||results.some(r=>r.short);
  return total;
 }
+// The admin view (3 Oct 2026, src/admin-view.js): an admin account's farm is a showcase and farm-api refuses every action on it, so
+// nothing is tried here at all: no farm change shown first, no sound, no request. The same words as farm-api's refusal.
+export const ADMIN_LOCKED='This is your admin account, so playing is locked here. Play on your own farmer account.';
+export const adminView=()=>Boolean(globalThis.document?.documentElement?.hasAttribute?.('data-admin-view'));
+const adminLocked=()=>Object.assign(new Error(ADMIN_LOCKED),{code:'ACTION_REJECTED'});
 export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapterReward,onGift,onEmailCheck,onError}){
  const bridge=window.parent.harvestBridge;
  if(!bridge)throw new Error('Sign in to open your farm.');
@@ -86,6 +91,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
   });
  }
  async function runAction(action){
+  if(adminView())throw adminLocked();
   const instant=instantResult(state,action,farmNow());
   if(instant){
    // Shown now; the server's answer replaces it.
@@ -106,6 +112,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
   const handle={reason:'',
    add(id){
     if(!open||entry.action.ids.includes(id))return null;
+    if(adminView()){handle.reason||=ADMIN_LOCKED;return null;}
     let instant;
     try{instant=instantResult(state,{type:'fields',action,ids:[id],crop},farmNow());}
     catch(error){if(action==='plant'&&!state.plots?.[id]?.crop)try{short||=state.coins<seedCost(state,crop);}catch{}handle.reason||=error.message;return null;}

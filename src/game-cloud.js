@@ -15,6 +15,7 @@ import {startTranslation} from '../public/i18n.js';
 import {createPopupUI} from './popup-ui.js';
 import {createOfferUI} from './offer-ui.js';
 import {createPortalUI} from './portal-ui.js';
+import {markAdminView,startAdminView} from './admin-view.js';
 // The game frame never zooms as a page: only the 3D field does (src/page-zoom.js).
 stopPageZoom(document);
 let bridge;
@@ -31,6 +32,10 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
  if(!window.harvestInitialFarm){if(portal)portal.reopen();else window.parent.location.reload();}else{
   // Marked before anything shows or loads: portal.css and the farm's loading tips (public/loading-screen.js) read it.
   if(portal)document.documentElement.dataset.portal=portal.name;
+  // The admin view (3 Oct 2026, src/admin-view.js): farm-api answers an admin account with its showcase farm and adminView; the page is
+  // marked (and its stylesheet asked for) before it shows, so coins, diamonds and the tools never flash. Never on CrazyGames.
+  const adminView=!portal&&window.harvestInitialFarm.adminView===true;
+  if(adminView)markAdminView(document);
   document.body.hidden=false;
   const watch=watchLoading(bridge,portal,{translate:()=>void startTranslation(document)});
   // The game takes the first farm over (and clears harvestInitialFarm); the pop-ups only need its start time (the first half hour).
@@ -42,6 +47,8 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   // Farm Family's chat button (public/family-ui.js) opens it on the family's own tab.
   window.harvestChat=chat;
   createAdminDashboard(bridge,{chat});
+  // Its own topbar numbers and menu (How to play, Chat, Admin panel), before the game's menu starts.
+  if(adminView)startAdminView({bridge});
   // On CrazyGames the purchases, links and account buttons step aside (portal.css) and the page's own lines come in (src/portal-ui.js).
   if(portal)createPortalUI({portal});
   // The Family Members list opens a farmer's profile too (public/family-ui.js).

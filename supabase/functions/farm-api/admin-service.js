@@ -59,6 +59,10 @@ export async function handleAdminGrant({admin,body,user}){
  const item=typeof body.item==='string'&&body.item?body.item:null,itemCount=item?Math.max(0,Math.floor(Number(body.itemCount)||0)):0;
  if(!validGrant({coins,xp,diamonds,item,itemCount}))return respond({error:'Enter whole, non-negative amounts (at least one), within the per-gift limit.'},400);
  const notify=body.notify===true,message=notify?sanitizeGiftMessage(body.message):null;
+ // Never to an admin account (3 Oct 2026): it plays nothing and opens a showcase farm, so a gift would never be seen, and saving its real
+ // farm would set its level 999 back (supabase/admin-level.sql). A lookup that fails does not stop a gift to a farmer.
+ const target=await Promise.resolve().then(()=>admin.auth.admin.getUserById(playerId)).catch(()=>null);
+ if(isAdminAccount(target?.data?.user))return respond({error:'This is an admin account, which does not play. Send the gift to their farmer account.'},400);
  for(let attempt=0;attempt<5;attempt++){
   const [foundFarm,foundProfile]=await Promise.all([
    admin.from('player_farms').select('*').eq('player_id',playerId).maybeSingle(),
