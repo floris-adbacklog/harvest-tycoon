@@ -1,18 +1,22 @@
 // Builds World II's village (public/assets/village/village.glb and village-layout.json, 30 Sep 2026) from the ITHappy Studios
 // Village pack's demo scene (assets-source/village, not in git). Every object that is a separate model of the pack, moved, turned
 // and scaled, becomes one entry in the layout and the model goes into the GLB once (with colour variants where the scene recoloured
-// it); the rest goes in as it is. The game draws each model as one InstancedMesh (public/village-scene.js). 54 MB -> ~4.5 MB.
+// it); the rest goes in as it is. The game draws each model as one InstancedMesh (public/village-scene.js). 54 MB -> ~5.3 MB.
 // Run from a folder with @gltf-transform/core, extensions, functions, cli and pngjs installed (npm i them there, not in the game):
 //   node build-village.mjs <pack>/Village_Summer_glb/Village_Summer.glb <pack>/Village_Summer_glb/Separate_assets_glb <out>
+//   SRC=<out> OUT=<out> LAYOUT=<out>/village-layout.json blender -b --factory-startup --python scripts/model-shade/bake-ao.py
+//   node build-village.mjs <the same three> <out>/village.ao.json
 //   gltf-transform meshopt <out>/village.glb public/assets/village/village.glb --level high
 //   cp <out>/village-layout.json public/assets/village/
+// The second run is the same build with the baked shade written in (Oct 2026, ASSET-USAGE.md): the village gets the farm's soft
+// shade in its vertex colours, so its houses stand on the ground instead of looking pasted on.
 import {NodeIO,Document} from '@gltf-transform/core';
 import {ALL_EXTENSIONS} from '@gltf-transform/extensions';
 import {mergeDocuments,dedup,prune,weld,quantize,unpartition} from '@gltf-transform/functions';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-const [,,demoPath,sepDir,outDir]=process.argv;
+const [,,demoPath,sepDir,outDir,shadePath]=process.argv;
 const io=new NodeIO().registerExtensions(ALL_EXTENSIONS);
 const demo=await io.read(demoPath);
 const mul=(a,b)=>{const o=new Array(16).fill(0);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)o[c*4+r]+=a[k*4+r]*b[c*4+k];return o;};
@@ -97,8 +101,27 @@ for(const n of demoScene.listChildren()){
  if(keep.has(n.getName()))statics.addChild(n);else n.dispose();
 }
 demoScene.dispose();
+// The buckets of the two wells and one market prop come without a material in the pack itself (an empty slot); three.js then draws
+// them with its metallic default, almost black. Their texture coordinates point at ordinary palette colours: they paint from it.
+const paint=out.getRoot().listMaterials().find(m=>m.getName()==='Material');
+for(const mesh of out.getRoot().listMeshes())for(const p of mesh.listPrimitives())if(!p.getMaterial())p.setMaterial(paint);
 await out.transform(dedup(),prune(),weld(),quantize(),unpartition());
+// The shade from bake-ao.py (1 = open) with the farm's strength .45 and floor .55 (scripts/model-shade/apply-ao.mjs), as one byte
+// per vertex (_SHADE): grey vertex colours (COLOR_0) would cost three, 6.4 MB instead of 5.3 after meshopt. village-scene.js
+// turns it into the vertex colours the farm's models carry. Marked like the farm's models.
+if(shadePath){
+ const {ao}=JSON.parse(fs.readFileSync(shadePath,'utf8')),shade=v=>Math.max(.55,1-.45*(1-v)),buffer=out.getRoot().listBuffers()[0],c=[];
+ out.getRoot().listMeshes().forEach((mesh,mi)=>mesh.listPrimitives().forEach((p,pi)=>{
+  const values=ao[`${mi}:${pi}`],had=p.getAttribute('COLOR_0');
+  if(values?.length!==p.getAttribute('POSITION').getCount())throw new Error(`The shade does not fit part ${mi}:${pi}: bake this build again (ASSET-USAGE.md).`);
+  // The pack's own vertex colours (24 tree parts) are plain white: they change nothing, so the shade takes their place.
+  if(had){for(let v=0;v<had.getCount();v++)if(had.getElement(v,c).slice(0,3).some(x=>x<.999))throw new Error(`Part ${mi}:${pi} has its own colours.`);p.setAttribute('COLOR_0',null);}
+  p.setAttribute('_SHADE',out.createAccessor().setType('SCALAR').setArray(Uint8Array.from(values,v=>Math.round(shade(v)*255))).setNormalized(true).setBuffer(buffer));
+ }));
+ out.getRoot().getAsset().extras={...out.getRoot().getAsset().extras,bakedShade:true};
+ await out.transform(prune());
+}
 fs.mkdirSync(outDir,{recursive:true});
 await io.write(path.join(outDir,'village.glb'),out);
 fs.writeFileSync(path.join(outDir,'village-layout.json'),JSON.stringify(placements));
-console.log('village.glb',(fs.statSync(path.join(outDir,'village.glb')).size/1048576).toFixed(2),'MB · layout',(fs.statSync(path.join(outDir,'village-layout.json')).size/1024).toFixed(0),'KB · textures',out.getRoot().listTextures().length);
+console.log('village.glb',(fs.statSync(path.join(outDir,'village.glb')).size/1048576).toFixed(2),'MB · layout',(fs.statSync(path.join(outDir,'village-layout.json')).size/1024).toFixed(0),'KB · textures',out.getRoot().listTextures().length,shadePath?'· shaded':'· no shade yet: bake it and build again (see above)');
