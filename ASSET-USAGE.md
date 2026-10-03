@@ -59,13 +59,17 @@ World II's village (`public/assets/village/village.glb`) carries the same soft s
 (.45) and floor (.55), so both worlds match. Its houses are built from separate pack models (roofs, walls, doors, chimneys), so it
 is baked where it stands instead of model by model on a ground plane: a roof gets its shade from the house under it, a tree from the
 hill it stands on, and a model drawn in many places gets the mean of its shade over them. scripts/build-village.mjs stays the one way
-to make the file; the bake (about 15 s) runs between two of its runs, from the folder with gltf-transform (see its header):
+to make the file; the bake (15-30 s) runs between two of its runs. From the repository, with <tools> a folder holding a copy of
+scripts/build-village.mjs and gltf-transform and pngjs installed (see its header) and <pack> assets-source/village/Village_Summer_glb:
 
-    node build-village.mjs <pack>/Village_Summer.glb <pack>/Separate_assets_glb <out>
+    node <tools>/build-village.mjs <pack>/Village_Summer.glb <pack>/Separate_assets_glb <out>
     SRC=<out> OUT=<out> LAYOUT=<out>/village-layout.json blender -b --factory-startup --python scripts/model-shade/bake-ao.py
-    node build-village.mjs <pack>/Village_Summer.glb <pack>/Separate_assets_glb <out> <out>/village.ao.json
-    gltf-transform meshopt <out>/village.glb public/assets/village/village.glb --level high
+    node <tools>/build-village.mjs <pack>/Village_Summer.glb <pack>/Separate_assets_glb <out> <out>/village.ao.json
+    <tools>/node_modules/.bin/gltf-transform meshopt <out>/village.glb public/assets/village/village.glb --level high
     cp <out>/village-layout.json public/assets/village/
+
+A second bake is not byte for byte the same (Blender's noise where two surfaces overlap: about 0.1% of the vertices, a few hundred
+bytes in the file); the layout comes out identical.
 
 The shade travels as one byte per vertex (`_SHADE`) and public/village-scene.js turns it into the grey vertex colours the farm's
 models carry: as COLOR_0 (three bytes) the meshopt file would grow to 6.4 MB, now 4.5 → 5.3 MB. The file is marked
