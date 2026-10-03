@@ -29,3 +29,12 @@ test('the welcome message can come from either admin; for now from Gerard, whose
  assert.match(sql,/if who<>me and public\.chat_staff_role\(who\) is distinct from 'admin' then raise exception 'Choose one of the admins\.'/);
  assert.match(sql,/I'm Gerard, the community manager of Harvest Tycoon\./);assert.match(sql,/update public\.player_stats set avatar_id='gerard'/);
 });
+test('Chat and house rules names both admins: Gerard, community manager, and Tony, developer; a tap opens their profile in the game',async()=>{
+ const {wikiArticle}=await import('../public/wiki-content.js');
+ const game=wikiArticle('chat',{level:20,href:id=>`#wiki-${id}`,portal:false,app:false}).html,site=wikiArticle('chat',{portal:false,app:false}).html;
+ assert.match(game,/There are two admins, Gerard and Tony\./);
+ assert.match(game,/data-player-profile="c1194a46-dfdf-47f7-abd2-c59279681702" translate="no">Gerard<\/a>, community manager/);
+ assert.match(game,/data-player-profile="e8e4c7c3-c06f-408c-9fe6-1cfa7d2b3ae8" translate="no">Tony<\/a>, developer/);
+ assert.doesNotMatch(site,/data-player-profile/,'on the website nobody is signed in: plain names');assert.match(site,/<span translate="no">Gerard<\/span>, community manager/);
+ assert.match(read('public/wiki-ui.js'),/closest\('\[data-player-profile\]'\);if\(profile\)\{event\.preventDefault\(\);window\.harvestProfiles\?\.open\?\.\(/);
+});

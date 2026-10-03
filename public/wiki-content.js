@@ -68,6 +68,10 @@ const card=({picture,title,badge='',stats=[],note='',locked=false,row=''})=>`<li
 // An avatar in a table: its small picture and its name (the Avatars section).
 const avatarCell=a=>`<span class="wiki-avatar"><img src="${a.src}" alt="" width="34" height="36" loading="lazy" decoding="async">${a.name}</span>`;
 const table=(head,rows,cls='')=>`<div class="wiki-table-wrap"><table class="wiki-table ${cls}"><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+// The two admins (3 Oct 2026), by name: in the game a tap opens their profile (wiki-ui.js, window.harvestProfiles); on the website, where
+// nobody is signed in, the name is plain text.
+const ADMINS=Object.freeze({gerard:{id:'c1194a46-dfdf-47f7-abd2-c59279681702',name:'Gerard'},tony:{id:'e8e4c7c3-c06f-408c-9fe6-1cfa7d2b3ae8',name:'Tony'}});
+const adminName=(h,a)=>h.level!=null?`<a href="#" class="wiki-profile-link" role="button" data-player-profile="${a.id}" translate="no">${a.name}</a>`:`<span translate="no">${a.name}</span>`;
 const facts=list=>`<ul class="wiki-facts">${list.map(([picture,title,text])=>`<li>${art(picture)}<div><strong>${title}</strong><p>${text}</p></div></li>`).join('')}</ul>`;
 
 export const cropLevel=key=>CROP_LEVELS[key]??CROPS[key].minLevel??1;
@@ -373,9 +377,10 @@ const BODIES={
    ['block','Block','Blocked farmers can no longer send you private messages.'],
    ['alert','Report','Report a message or a farmer and a moderator will look at it.']
   ]))
-  // Who the team is (1 Oct 2026): what the admin and the moderators are there for, without the details of what each may do.
-  +section('Moderators and the admin',facts([
-   ['admin','The admin','Runs Harvest Tycoon: the game itself, the news, the events and the gifts for everyone.'],
+  // Who the team is (1 Oct 2026; 3 Oct: two admins, each by name with their profile one tap away in the game, ADMINS above).
+  +section('The admins and the moderators','<p>There are two admins, Gerard and Tony.</p>'+facts([
+   ['admin',`<span>${adminName(h,ADMINS.gerard)}, community manager</span>`,'Your first contact: welcomes new farmers, answers questions and looks after the chat and the families.'],
+   ['admin',`<span>${adminName(h,ADMINS.tony)}, developer</span>`,'Builds Harvest Tycoon: the game itself, the news, the events and the gifts for everyone.'],
    ['family-members','Moderators','Farmers who help keep the valley a friendly place. They look at what is reported and keep an eye on the chat.'],
    ['chat','How to spot them','An Admin or Moderator badge next to their name, in the chat and on their profile.']
   ])+`<p>The team never asks for your password or payment details. A question or a problem? Send one of them a private message, or use ${h.link('account','Feedback','sec-feedback')}.</p>`)

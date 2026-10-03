@@ -129,6 +129,8 @@ function bind(){
   const quick=event.target.closest('[data-wiki-query]');if(quick){const input=root().querySelector('#wiki-search');input.value=quick.dataset.wikiQuery;input.dispatchEvent(new Event('input'));input.focus();return;}
   const jump=event.target.closest('[data-wiki-jump]');if(jump){event.preventDefault();reveal(jump.dataset.wikiJump)?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});return;}
   const link=event.target.closest('[data-wiki-topic]');if(link){event.preventDefault();go(link.dataset.wikiTopic,link.dataset.wikiAnchor);return;}
+  // An admin's name (Oct 2026, wiki-content.js ADMINS): their profile, over How to play.
+  const profile=event.target.closest('[data-player-profile]');if(profile){event.preventDefault();window.harvestProfiles?.open?.(profile.dataset.playerProfile,{back:null});return;}
  });
 }
 
