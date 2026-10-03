@@ -16,7 +16,7 @@ test('who a gift reaches: the same rules as the database, for the counts on the 
  assert.deepEqual(giftMatches(players,'  '),[]);
  assert.equal(giftLabel('all'),'Send to everyone');assert.equal(giftLabel('active',{count:345}),'Send to 345 farmers active this week');
  assert.equal(giftLabel('online',{count:1}),'Send to 1 farmer online now');assert.equal(giftLabel('player'),'Choose a farmer first');assert.equal(giftLabel('player',{player:players[1]}),'Send to Bram');
- assert.match(playerDetail({playerId:'b',username:'Bram',level:5,activity:[],earned:{},events:{},chat:{},invites:{}},{guideSteps:GUIDE_STEPS,now}),/data-gift-player="b">Send a gift<\/button>/,'a gift from a farmer\'s own page');
+ assert.match(playerDetail({playerId:'b',username:'Bram',level:5,activity:[],earned:{},events:{},chat:{},invites:{}},{guideSteps:GUIDE_STEPS,now,owner:true}),/data-gift-player="b">Send a gift<\/button>/,'a gift from a farmer\'s own page');
 });
 test('the database fixes who gets it when it is sent, keeps the daily room, and a farm only picks up its own gifts',()=>{
  const sql=read('supabase/staff-gift-audience.sql');
@@ -38,9 +38,25 @@ test('from a farmer\'s page: Send a gift reaches the gift card, Edit reaches the
  const farmer={playerId:'b',username:'Bram',level:5,activity:[],earned:{},events:{},chat:{},invites:{}};
  assert.match(playerDetail(farmer,{guideSteps:GUIDE_STEPS,now,owner:true}),/data-gift-player="b">Send a gift<\/button><button type="button" class="small-button" data-edit-player="b">Edit<\/button>/);
  assert.doesNotMatch(playerDetail(farmer,{guideSteps:GUIDE_STEPS,now}),/data-edit-player/,'a moderator has no Admin gift, so no Edit');
+ assert.doesNotMatch(playerDetail(farmer,{guideSteps:GUIDE_STEPS,now}),/data-gift-player/,'nor Send a gift (only the admins since 3 Oct 2026)');
  const dashboard=read('src/admin-dashboard.js'),profiles=read('src/player-profiles.js');
  assert.match(dashboard,/function giftTo\(player\)\{closePlayer\(\);/);
  assert.match(dashboard,/playerDetail\(player,\{guideSteps:GUIDE_STEPS,owner:view\.owner\}\)/);
  assert.match(dashboard,/window\.harvestProfiles\?\.open\(edit\.dataset\.editPlayer,\{back:null,gift:true\}\)/);
  assert.match(profiles,/async function open\(playerId,\{back='Back to leaderboard',gift=false\}=\{\}\)/);assert.match(profiles,/if\(!disposed&&gift&&admin&&selected===playerId&&dialog\.open\)\{renderAdminGrant/,'only via Edit, not on every profile');assert.match(profiles,/if\(await granting&&selected===playerId&&dialog\.open\)\{adminGrant\.scrollIntoView/);
+});
+
+// 3 Oct 2026: only the admins send a gift. The database refuses a moderator (supabase/staff-gift-admin-only.sql, patched from the live
+// definitions, only the staff check), and the dashboard shows the card and the farmer page's Send a gift to the admins alone.
+test('only the admins send a gift: the database refuses a moderator, the dashboard shows them nothing to send',()=>{
+ const sql=read('supabase/staff-gift-admin-only.sql');
+ assert.match(sql,/execute replace\(donate,\$a\$if public\.chat_staff_role\(me\) is null then raise exception 'Not authorized\.'\$a\$,\n   \$b\$if public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'\$b\$\);/);
+ assert.match(sql,/execute replace\(room,\$a\$if public\.chat_staff_role\(\(select auth\.uid\(\)\)\) is null then raise exception 'Not authorized\.'\$a\$,\n   \$b\$if public\.chat_staff_role\(\(select auth\.uid\(\)\)\) is distinct from 'admin' then raise exception 'Not authorized\.'\$b\$\);/,'the daily room too');
+ assert.equal((sql.match(/the expected text was not found; read the live definition before changing it/g)??[]).length,2,'an unexpected live definition stops the file');
+ assert.doesNotMatch(sql,/\b(grant|revoke|drop)\b/i,'the same functions, so the grants stay');
+ const dash=read('src/admin-dashboard.js'),chat=dash.slice(dash.indexOf('async function loadChat'),dash.indexOf('function showRoom'));
+ assert.ok(chat.indexOf("if(role!=='admin')return;")>=0&&chat.indexOf("if(role!=='admin')return;")<chat.indexOf('showRoom(await client.donationRoom())'),'the gift card opens for the admins only');
+ assert.match(dash,/id="admin-donate" hidden>/,'hidden until then');
+ assert.match(dash,/Left today, for both admins together:/);
+ assert.doesNotMatch(dash,/a moderator sends the amounts alone/);
 });

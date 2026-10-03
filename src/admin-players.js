@@ -105,7 +105,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
   fact('Invites',`${p.invites.invitedBy?`Invited by ${esc(p.invites.invitedBy)} · `:''}${number(p.invites.friends)} friend${p.invites.friends===1?'':'s'} invited${p.invites.friends?` (${number(p.invites.qualified)} reached level 10)`:''}`),
   fact('Earned in total',`${number(p.earned.coins)} coins · ${number(p.earned.diamonds)} diamonds`)
  ].join('');
- return `<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button><button type="button" class="small-button" data-open-profile="${esc(p.playerId)}">Open profile</button><button type="button" class="small-button" data-gift-player="${esc(p.playerId)}">Send a gift</button>${owner?`<button type="button" class="small-button" data-edit-player="${esc(p.playerId)}">Edit</button>`:''}</div>`
+ return `<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button><button type="button" class="small-button" data-open-profile="${esc(p.playerId)}">Open profile</button>${owner?`<button type="button" class="small-button" data-gift-player="${esc(p.playerId)}">Send a gift</button><button type="button" class="small-button" data-edit-player="${esc(p.playerId)}">Edit</button>`:''}</div>`
   +`<div class="admin-detail-head">${face(p)}<div><h3>${esc(name(p))}${p.vipUntil?' <b class="admin-chip is-vip">VIP</b>':''}</h3><small>${p.everPlayed?`Level ${number(p.level)} · `:''}${p.online?'Online now':`Last action ${esc(ago(p.lastActiveAt,now))}`}</small></div></div>`
   +`<h4>Account</h4><dl class="admin-facts">${account}</dl>`
   +('email' in p&&p.provider==='email'?`<form class="admin-email-form" data-email-form hidden><label for="admin-email-input">New email address</label><div><input id="admin-email-input" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="254" required value="${esc(p.email??'')}"><button type="submit" class="small-button">Save</button><button type="button" class="link-button" data-email-cancel>Cancel</button></div><p class="admin-hint">Takes effect at once and counts as confirmed. No email is sent; they sign in with the new address and their own password.</p><p class="admin-hint" data-email-status role="status"></p></form>`:'')
@@ -113,7 +113,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
   +`<h4>What they do</h4><ul class="admin-bars">${activity}</ul>`
   +(p.purchases?`<h4>Purchases</h4><ul class="admin-recent-list admin-purchases">${purchases}</ul>`:'')
   +`<h4>Events, chat and friends</h4><dl class="admin-facts">${social}</dl>`
-  +'<p class="admin-hint">Times are Amsterdam time. Last action is the last time the farm saved. Days played counts the days the daily gift was opened. Same network: the accounts that last played from the same IP address; a home, school or phone network is often shared, so it is a hint, not proof. Open profile for a gift or the chat buttons.</p>';
+  +'<p class="admin-hint">Times are Amsterdam time. Last action is the last time the farm saved. Days played counts the days the daily gift was opened. Same network: the accounts that last played from the same IP address; a home, school or phone network is often shared, so it is a hint, not proof. Open profile for the chat buttons.</p>';
 }
 
 // Where new players stop: of everyone who made an account in the period, how many got how far. The guide steps follow

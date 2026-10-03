@@ -329,13 +329,11 @@ test('the admin can take a handled report out of the report log; an open one is 
  assert.match(admin,/confirmAction\(\{title:'Remove from the report log\?'/,'asked once more');
  assert.match(read('src/chat-client.js'),/reportLogRemove:message=>rpc\('chat_mod_log_remove',\{p_message:message\}\)/);
 });
-test('a moderator can still send a gift, but only the admin writes a message with it (1 Oct 2026)',()=>{
+test('only the admin writes a message with a gift (1 Oct 2026); since 3 Oct only the admins send one at all',()=>{
  const sql=read('supabase/staff-gift-message-admin.sql'),admin=read('src/admin-dashboard.js');
  assert.match(sql,/if msg is not null and public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Only the admin can add a message to a gift\.'/);
- assert.match(sql,/if public\.chat_staff_role\(me\) is null then raise exception 'Not authorized\.'/,'the moderators still give coins and diamonds');
- assert.match(admin,/dialog\.querySelector\('\.admin-donate-message'\)\.hidden=role!=='admin';/,'no message box for a moderator');
- assert.match(admin,/const message=role==='admin'\?dialog\.querySelector\('#admin-donate-message'\)\.value\.trim\(\):''/);
- assert.match(read('public/chat.css'),/\.admin-donate-message\[hidden\]\{display:none\}/,'the label\'s own display does not show it again');
+ assert.match(read('supabase/staff-gift-admin-only.sql'),/if public\.chat_staff_role\(me\) is distinct from 'admin' then raise exception 'Not authorized\.'/,'the moderators no longer give');
+ assert.match(admin,/const message=dialog\.querySelector\('#admin-donate-message'\)\.value\.trim\(\),room=/,'whoever sees the card is an admin');
 });
 test('the Crew: one group chat for the admin and the moderators, pinned on top of their private chats; nobody else reads or writes it (1 Oct 2026)',()=>{
  const sql=read('supabase/chat-crew.sql'),ui=read('src/chat-ui.js');

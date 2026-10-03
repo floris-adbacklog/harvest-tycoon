@@ -1,7 +1,7 @@
 // The staff dashboard (the admin and the moderators): three headline numbers, the chat reports, who is online, every farmer with
 // when they were last active and one farmer's details (src/admin-players.js), where new players stop, a 7-day retention cohort
 // and the Invite a friend log; for the admin also where new farmers come from, news for everyone, the moderators and the
-// levels from which farmers may chat (supabase/chat.sql). Giving coins, XP, diamonds or goods stays admin-only (the profile). Farm events run on their own schedule (live-events-schedule.sql), so they have no controls here. A single
+// levels from which farmers may chat (supabase/chat.sql). Giving coins, XP, diamonds or goods stays admin-only (Send a gift and the profile). Farm events run on their own schedule (live-events-schedule.sql), so they have no controls here. A single
 // icon button in the topbar (hidden for everyone else, same gate as the gift panel in player-profiles.js) opens
 // its own dialog inside the game, instead of a separate page — one session, one sign-in, nothing extra to visit.
 import {checkAdmin} from './player-profiles.js';
@@ -292,8 +292,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    const log=await client.reportLog();await loadFaces(log.map(r=>r.sender));dialog.querySelector('#admin-report-log').hidden=false;
    dialog.querySelector('#admin-log-list').innerHTML=log.length?log.map(r=>`<li>${avatar(r.senderName,false,r.sender)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-profile="${esc(r.sender)}">${esc(r.senderName??'A farmer')}</button> <small>${where(r.channel)} · ${number(r.reports)} report${r.reports===1?'':'s'}</small></strong><small class="admin-report-body">“${esc(r.body)}”</small>${reportedBy(r)}<small>${verdict(r)}</small></span><span class="admin-log-side"><small class="admin-when" title="${esc(fmtDate(r.lastAt))}">${ago(r.lastAt)}</small>${role==='admin'&&!r.open?`<button type="button" class="small-button" data-log-remove="${esc(r.messageId)}">Remove</button>`:''}</span></li>`).join(''):'<li class="admin-empty">No reports yet.</li>';
   }catch{}
-  try{showRoom(await client.donationRoom());}catch{}
   if(role!=='admin')return;
+  // Send a gift: only the admins since 3 Oct 2026 (supabase/staff-gift-admin-only.sql); a moderator never sees the card.
+  try{showRoom(await client.donationRoom());}catch{}
   dialog.querySelector('#admin-chat-settings').hidden=false;void showPopups();void showWelcome();
   // This device, as the installed app sees it (public/app-mode.js): to check the bottom of the screen on a real phone.
   const viewport=w=>{try{return w.harvestViewport??null;}catch{return null;}},page=viewport(window.parent),frame=viewport(window);
@@ -369,8 +370,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    await loadChat();
   }catch(error){action.disabled=false;dialog.querySelector('#admin-dashboard-status').textContent=why(error);}
  });
- // A gift from the staff, to everyone, the farmers active this week, the farmers online now or one farmer (the database decides the list
- // when it is sent). All staff together give at most 5 gifts, 50 diamonds and 1,000 coins or 50 coins per level a day (the database keeps count).
+ // A gift from the admins (only they since 3 Oct 2026, supabase/staff-gift-admin-only.sql), to everyone, the farmers active this
+ // week, the farmers online now or one farmer (the database decides the list when it is sent). Both admins together give at most
+ // 5 gifts, 50 diamonds and 1,000 coins or 50 coins per level a day (the database keeps count).
  // Coins: a fixed amount (at most 1,000 a day) or an amount per level (at most 50 a day), which each farmer gets times their level
  // (28 Sep 2026, supabase/staff-gift-per-level.sql), so a late farm gets a gift that still counts.
  const gift={audience:'all',player:null,perLevel:false};
@@ -383,9 +385,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  }
  function showRoom(room,sent=''){
   dialog.querySelector('#admin-donate').hidden=false;
-  // Only the admin writes a message with a gift; a moderator sends the amounts alone (supabase/staff-gift-message-admin.sql).
-  dialog.querySelector('.admin-donate-message').hidden=role!=='admin';
-  dialog.querySelector('#admin-donate-room').textContent=`${sent}Left today, for all staff together: ${number(room.diamonds)} diamonds, ${number(room.coins)} coins${room.perLevel!=null?`, ${number(room.perLevel)} coins per level`:''}, ${number(room.gifts)} gift${room.gifts===1?'':'s'}. Farmers get it the next time their farm opens (open games at once), and see it under Notifications.`;
+  dialog.querySelector('#admin-donate-room').textContent=`${sent}Left today, for both admins together: ${number(room.diamonds)} diamonds, ${number(room.coins)} coins${room.perLevel!=null?`, ${number(room.perLevel)} coins per level`:''}, ${number(room.gifts)} gift${room.gifts===1?'':'s'}. Farmers get it the next time their farm opens (open games at once), and see it under Notifications.`;
  }
  function paintGift(){
   dialog.querySelectorAll('[data-gift-audience]').forEach(b=>{const on=b.dataset.giftAudience===gift.audience;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
@@ -410,7 +410,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-donate-form').addEventListener('submit',async event=>{
   event.preventDefault();if(!bridge.chat)return;
   const diamonds=Math.max(0,Math.floor(Number(dialog.querySelector('#admin-donate-diamonds').value)||0)),coins=Math.max(0,Math.floor(Number(dialog.querySelector('#admin-donate-coins').value)||0));
-  const message=role==='admin'?dialog.querySelector('#admin-donate-message').value.trim():'',room=dialog.querySelector('#admin-donate-room');
+  const message=dialog.querySelector('#admin-donate-message').value.trim(),room=dialog.querySelector('#admin-donate-room');
   if(!diamonds&&!coins){room.textContent='Enter some diamonds or coins.';return;}
   if(gift.audience==='player'&&!gift.player){room.textContent='Choose the farmer who gets the gift.';return;}
   const parts=[diamonds&&`${number(diamonds)} diamonds`,coins&&`${number(coins)} coins${gift.perLevel?' for every level':''}`].filter(Boolean).join(' + ');
