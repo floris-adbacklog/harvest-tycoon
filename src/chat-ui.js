@@ -404,6 +404,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  title.addEventListener('click',event=>{const profile=event.target.closest('[data-profile]');if(profile)profiles?.open(profile.dataset.profile,{back:null});});
 
  // The little menu on a message: report or block for everyone; delete, mute and ban (the chat only) for the staff.
+ const STAFF_ACTIONS=new Set(['edit','delete','mute60','mute1440','ban']);
  let menuEl=null;
  function closeMenu(){menuEl?.remove();menuEl=null;}
  const touch=()=>win.matchMedia?.('(pointer:coarse)').matches;
@@ -421,7 +422,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(staff&&!mine&&!m.sender_staff)items.push(['mute60','Mute 1 hour'],['mute1440','Mute 1 day'],['ban','Ban from chat']);
   if(!items.length)return;
   menuEl=doc.createElement('div');menuEl.className='chat-menu';menuEl.setAttribute('role','menu');
-  menuEl.innerHTML=items.map(([key,label])=>`<button type="button" role="menuitem" data-menu="${key}"${['block','delete','ban'].includes(key)?' class="is-danger"':''}>${esc(label)}</button>`).join('');
+  // Oct 2026: what only the staff can do carries the shield of their Admin and Moderator badge, and one line at the bottom says who
+  // has it (the wiki's own heading), only when such an action is in the menu. Farmers never get these, so their menu is as it was.
+  const staffOnly=items.some(([key])=>STAFF_ACTIONS.has(key));
+  menuEl.innerHTML=items.map(([key,label])=>`<button type="button" role="menuitem" data-menu="${key}"${['block','delete','ban'].includes(key)?' class="is-danger"':''}>${esc(label)}${STAFF_ACTIONS.has(key)?art('admin','chat-menu-shield'):''}</button>`).join('')
+   +(staffOnly?`<p class="chat-menu-staff" role="none">${art('admin')}Moderators and the admin</p>`:'');
   row.append(menuEl);menuEl.querySelector('button').focus({preventScroll:true});
   menuEl.onclick=event=>{const key=event.target.closest('[data-menu]')?.dataset.menu;if(!key)return;closeMenu();void act(key,m);};
  }

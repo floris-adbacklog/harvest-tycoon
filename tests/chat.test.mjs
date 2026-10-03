@@ -361,3 +361,17 @@ test('a Crew message is a push for the rest of the staff, like a private message
  assert.match(read('src/chat-ui.js'),/else if\(crew\)thread=\{channel:'crew',crew:true,otherName:'Crew'\};/);
 });
 
+// Oct 2026: on a message's menu, what only the staff can do wears the shield of their badge, with one line saying who has it.
+test('staff actions on a message carry the badge\'s shield and one line "Moderators and the admin"; a farmer\'s menu is as it was',()=>{
+ const ui=read('src/chat-ui.js'),css=read('public/chat.css');
+ assert.match(ui,/const STAFF_ACTIONS=new Set\(\['edit','delete','mute60','mute1440','ban'\]\);/);
+ for(const [key] of [['edit'],['delete'],['mute60'],['mute1440'],['ban']])assert.match(ui,new RegExp(`\\['${key}','`),`${key} is a menu item`);
+ assert.match(ui,/\$\{esc\(label\)\}\$\{STAFF_ACTIONS\.has\(key\)\?art\('admin','chat-menu-shield'\):''\}<\/button>/,'the same picture as the Admin and Moderator badge (src/staff-badge.js)');
+ assert.match(read('src/staff-badge.js'),/\$\{art\('admin'\)\}\$\{s\.label\}/);
+ assert.match(ui,/const staffOnly=items\.some\(\(\[key\]\)=>STAFF_ACTIONS\.has\(key\)\);/);
+ assert.match(ui,/\+\(staffOnly\?`<p class="chat-menu-staff" role="none">\$\{art\('admin'\)\}Moderators and the admin<\/p>`:''\);/,'only when such an action is listed');
+ assert.match(ui,/if\(!mine\)items\.push\(\['report','Report message'\],\['block',`Block \$\{m\.sender_name\}`\]\);/,'a farmer gets Report and Block, no staff action');
+ assert.match(ui,/if\(staff&&!mine&&!m\.sender_staff\)items\.push\(\['mute60','Mute 1 hour'\],\['mute1440','Mute 1 day'\],\['ban','Ban from chat'\]\);/);
+ assert.match(css,/\.chat-menu-shield\{width:16px;height:16px;margin-inline-start:auto\}/);assert.match(css,/\.chat-menu-staff\{display:flex;/);
+ for(const code of ['nl','es','ar','zh'])assert.ok(JSON.parse(read(`public/i18n/${code}.json`))['Moderators and the admin'],`${code} has the line already`);
+});
