@@ -36,8 +36,8 @@ test('the game shows it once, when nothing else is open, never in a farmer\'s fi
  assert.match(ui,/install:\(\)=>win\.harvestWiki\?\.\('getting-started','sec-play-it-as-an-app'\)/);
  assert.match(cloud,/const firstState=window\.harvestInitialFarm\.state;/,'the game clears harvestInitialFarm once it has taken the farm');
  assert.match(cloud,/void createPopupUI\(\{client:bridge\.chat,chat,state:firstState\}\)\.start\(\);\n[^]*?createOfferUI\(bridge\);\n   await createStarterPackUI\(bridge\);/);
- assert.match(read('public/game.js'),/window\.harvestWiki=\(id,anchor=''\)=>\{openDialog\('help-dialog'\);renderWiki\(state,id,anchor\);\};/);
- assert.match(read('public/wiki-ui.js'),/export function renderWiki\(state,id=null,anchor=''\)\{farm=state;bind\(\);if\(id\)topic\(id,anchor\);else home\(\);\}/);
+ assert.match(read('public/game.js'),/window\.harvestWiki=\(id,anchor='',options=\{\}\)=>\{openDialog\('help-dialog'\);renderWiki\(state,id,anchor,options\);\};/,'Oct 2026: and where it was opened from, for the chat\'s wiki chip');
+ assert.match(read('public/wiki-ui.js'),/export function renderWiki\(state,id=null,anchor='',\{from=null\}=\{\}\)\{farm=state;bind\(\);trail=[^;]+;if\(id\)topic\(id,anchor\);else home\(\);\}/,'a topic and a spot on it (Oct 2026: and where it was opened from)');
  assert.match(read('public/wiki-content.js'),/section\('Play it as an app'/,'the anchor sec-play-it-as-an-app exists');
 });
 test('the admin form: send a notification, a pop-up or both; a web page asks for its address',()=>{
@@ -65,7 +65,7 @@ test('the admin can send one private message to many farmers: online now, active
  assert.doesNotMatch(sql,/harvest\.broadcast/,'a push as for any private message: the trigger only calls out for farmers with notifications on');
  assert.match(sql,/if not exists\(select 1 from public\.push_subscriptions p where p\.player_id=other\) then return null; end if;/);
  assert.match(sql,/m\.body=msg and m\.created_at>now\(\)-interval '10 minutes'\) then raise exception 'You sent this message a moment ago\.'/,'a double click sends once');
- assert.match(read('src/chat-ui.js'),/m\.sender_staff\?linkify\(m\.body\):esc\(m\.body\)/,'a link in the admin\'s message works');
+ assert.match(read('src/chat-ui.js'),/m\.sender_staff\?linkify\(part\.text\):esc\(part\.text\)/,'a link in the admin\'s message works (its words between wiki chips, 3 Oct 2026)');
  assert.match(sql,/add constraint chat_messages_body_check check \(char_length\(body\) between 1 and 500\);/,'the table takes the admin\'s 500 characters (it allowed 200)');
 });
 test('the admin\'s private message can go to farmers from a level, e.g. 14 for the special offer',()=>{

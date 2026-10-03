@@ -101,7 +101,9 @@
 .wiki .wiki-jump a{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:34px;padding:4px 12px;border:1px solid #e3d6c1;border-radius:999px;background:#f7f0e3;color:#5b4520;font-size:13px;font-weight:700;white-space:nowrap}
 .wiki .wiki-jump a:hover{background:#f0e5d1;text-decoration:none}
 .wiki-jump .game-art{width:22px;height:22px}
-.wiki-section{scroll-margin-top:calc(var(--wiki-sticky,0px) + 58px)}
+/* Room for the jump bar above a spot that is scrolled to. On a computer --wiki-sticky is below 0 (the bar sticks over the window's
+   padding, at the very top of what scrolls), so only the bar's own height counts there (Oct 2026: a spot landed under the bar). */
+.wiki-section{scroll-margin-top:calc(max(var(--wiki-sticky,0px),0px) + 58px)}
 
 /* On a phone the long tables become cards. */
 .wiki-cards{display:none;gap:8px;margin:6px 0 4px;padding:0;list-style:none}
@@ -207,3 +209,32 @@
    nothing bought on our website (Google Play's rules; [data-shop-only] is the Starter Pack in What opens when). */
 html[data-app=android] .wiki-install,html[data-app=android] .wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass,#sec-your-account,[data-shop-only]),
 html[data-app=android] .wiki-page :is([data-wiki-anchor="sec-play-it-as-an-app"],[data-wiki-jump="sec-play-it-as-an-app"],[data-wiki-jump="sec-buying-diamonds"],[data-wiki-jump="sec-halloween-pass"],[data-wiki-jump="sec-your-account"]){display:none!important}
+/* Links in the wiki (Oct 2026). A good, a crop or a level in a table leads to where it is explained: a dotted line says so without
+   colouring hundreds of names green; a chip in What opens when keeps its look; Trees and bushes' chips are links as a whole. */
+.wiki a.wiki-item{color:inherit;font-weight:inherit;text-decoration:underline dotted #c4ae86;text-decoration-thickness:1.5px;text-underline-offset:3px}
+.wiki a.wiki-item:hover{text-decoration:underline solid #8a7a5a}
+.wiki a.wiki-level:hover{text-decoration:none;box-shadow:inset 0 0 0 1px currentColor}
+.wiki a.wiki-open{color:#4a4232;font-weight:inherit}
+.wiki a.wiki-open:hover{border-color:#c9b48f;background:#fff3d9;text-decoration:none}
+.wiki-regrow li>a{display:inline-flex;align-items:center;gap:6px;color:inherit}
+.wiki-regrow li>a:hover{text-decoration:none}
+/* The spot a link lands on lights up for a moment: a heading, a building's row, a table row or a card (public/wiki-ui.js land). */
+@keyframes wiki-flash{0%,35%{background-color:#fcebb4;box-shadow:0 0 0 4px #fcebb4}100%{box-shadow:0 0 0 4px #fcebb400}}
+@keyframes wiki-flash-cell{0%,35%{background-color:#fcebb4}}
+.wiki .wiki-flash{border-radius:8px;animation:wiki-flash 1.8s ease-out}
+.wiki tr.wiki-flash{animation:none}.wiki tr.wiki-flash>td{animation:wiki-flash-cell 1.8s ease-out}
+/* "‹ Back" (public/wiki-ui.js): first in the jump bar, which stays in view; a step back to where a link came from. */
+.wiki-jump-wrap.has-back{display:flex;align-items:center;gap:8px}
+.wiki-jump-wrap.has-back>.wiki-jump{flex:1;min-width:0}
+.wiki .wiki-step-back{display:inline-flex;align-items:center;gap:4px;flex:none;min-height:34px;margin:0 0 0 2px;padding:4px 12px;font-size:13px}
+.wiki>.wiki-step-back{margin:0 8px 12px 0}
+/* Copy link beside every heading (How to play and the website; never on CrazyGames): a small link picture that says "Copied." itself. */
+.wiki .wiki-copy{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;min-width:30px;height:30px;margin:0 0 0 2px;padding:0 7px;border:0;border-radius:999px;background:none;color:#b3a283;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer;vertical-align:middle}
+.wiki .wiki-copy:hover{background:#f3eadb;color:#5b4520}
+.wiki .wiki-copy:focus-visible{outline:3px solid #c2912d;outline-offset:1px}
+.wiki .wiki-copy.is-copied{background:#e6efdc;color:#3f6b4a}
+.wiki-copied:empty{display:none}
+.wiki-copy-field{width:min(100%,320px);margin:6px 0 0;padding:6px 8px;border:1px solid #e3d6c1;border-radius:8px;background:#fffdf5;color:#3d392b;font:500 13px 'DM Sans',sans-serif}
+html[data-portal] .wiki-copy{display:none!important}
+/* "See X." in a fact card stands on a line of its own: the card's text before it has no full stop of its own. */
+.wiki-facts p>.wiki-see{display:block;margin-top:4px}

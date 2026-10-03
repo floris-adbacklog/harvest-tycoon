@@ -4,6 +4,7 @@
 import {mkdirSync,readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {WIKI_SITE,WIKI_COPY_ICON} from '../public/wiki-link.js';
 
 const SITE='https://www.harvesttycoon.com';
 const esc=value=>String(value).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
@@ -21,8 +22,16 @@ box.innerHTML=hits.length?'<ul>'+hits.map(function(e){return '<li><a href="'+esc
 input.addEventListener('input',show);input.addEventListener('focus',load,{once:true});
 document.querySelectorAll('[data-wiki-query]').forEach(function(b){b.addEventListener('click',function(){input.value=b.getAttribute('data-wiki-query');show();input.focus();});});})();</script>`;
 // A topic page: a link to a building (a search hit, the jump bar) opens its closed row; the jump bar fades at the right edge while
-// there is more to scroll to.
-export const TOPIC_SCRIPT=`<script>(function(){function open(){var id=decodeURIComponent(location.hash.slice(1)),el=id&&document.getElementById(id),row=el&&el.closest('details');if(row&&!row.open){row.open=true;el.scrollIntoView();}}
+// there is more to scroll to. Since Oct 2026, as How to play does (public/wiki-ui.js): a link to a spot lands on it (a crop's or a level's
+// row is a card on a phone) and lights it up for a moment, and every heading has Copy link with the spot's canonical address
+// (public/wiki-link.js), saying "Copied." itself. A broken address (#%E0) is no spot, and the rest of the page still works (Oct 2026 review).
+export const TOPIC_SCRIPT=`<script>(function(){function find(id){try{return document.getElementById(id)||null;}catch(e){return null;}}
+function flash(el){var mark=el.tagName==='DETAILS'?el.querySelector('summary'):el.tagName==='SECTION'?el.querySelector('h3'):el;if(!mark)return;mark.classList.remove('wiki-flash');void mark.offsetWidth;mark.classList.add('wiki-flash');setTimeout(function(){mark.classList.remove('wiki-flash');},1900);}
+function open(){var id='';try{id=decodeURIComponent(location.hash.slice(1));}catch(e){}var el=id&&find(id),row=el&&el.closest('details');if(row&&!row.open){row.open=true;}if(!el)return;if(!el.getClientRects().length){var cards=document.querySelectorAll('[data-wiki-row]');for(var i=0;i<cards.length;i++)if(cards[i].getAttribute('data-wiki-row')===id)el=cards[i];}el.scrollIntoView({block:/^(TR|LI)$/.test(el.tagName)?'center':'start'});flash(el);}
+var page=document.querySelector('[data-wiki-page]');if(page){var topic=page.getAttribute('data-wiki-page');document.querySelectorAll('.wiki-article .wiki-section[id]>h3,.wiki-article .wiki-section[id]>summary>h3').forEach(function(h){var b=document.createElement('button');b.type='button';b.className='wiki-copy';b.title='Copy link';b.setAttribute('aria-label','Copy link');b.setAttribute('data-wiki-copy','${WIKI_SITE}/wiki/'+topic+'#'+h.closest('.wiki-section').id);b.innerHTML='${WIKI_COPY_ICON}<span class="wiki-copied" aria-live="polite"></span>';h.appendChild(b);});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.wiki-copy-field')){e.preventDefault();return;}var b=e.target.closest&&e.target.closest('[data-wiki-copy]');if(!b)return;e.preventDefault();e.stopPropagation();var url=b.getAttribute('data-wiki-copy'),say=b.querySelector('.wiki-copied');function done(){say.textContent='Copied.';b.classList.add('is-copied');clearTimeout(b.wikiTimer);b.wikiTimer=setTimeout(function(){say.textContent='';b.classList.remove('is-copied');},1800);}
+function byHand(){var f=document.createElement('textarea');f.value=url;f.setAttribute('readonly','');f.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';document.body.appendChild(f);f.select();var ok=false;try{ok=document.execCommand('copy');}catch(x){}f.remove();if(ok){done();return;}if(b.nextElementSibling&&b.nextElementSibling.classList.contains('wiki-copy-field')){b.nextElementSibling.select();return;}var i=document.createElement('input');i.className='wiki-copy-field';i.readOnly=true;i.value=url;b.after(i);i.select();}
+if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,byHand);else byHand();},true);}
 open();addEventListener('hashchange',open);var bar=document.querySelector('.wiki-jump');if(!bar)return;var wrap=bar.parentElement;function fade(){wrap.classList.toggle('is-scrollable',bar.scrollWidth>bar.clientWidth+2);wrap.classList.toggle('at-end',bar.scrollLeft+bar.clientWidth>=bar.scrollWidth-4);}
 fade();bar.addEventListener('scroll',fade,{passive:true});addEventListener('resize',fade);})();</script>`;
 function page({path,title,heading,description,body}){
@@ -73,7 +82,7 @@ export async function buildWiki(outDir,{contentUrl=new URL('../public/wiki-conte
   const article=wikiArticle(topic.id);
   const body=` <nav class="wiki-crumbs" aria-label="Breadcrumb"><a href="/wiki">Wiki</a> › ${esc(article.title)}</nav>
  ${wikiJump(article)}
- <article class="wiki-article">${article.html}</article>
+ <article class="wiki-article" data-wiki-page="${topic.id}">${article.html}</article>
  <section class="wiki-related"><h3>Read next</h3><div class="wiki-next-list">${article.related.map(t=>wikiNext(t)).join('')}</div></section>`;
   writeFileSync(join(outDir,'wiki',`${topic.id}.html`),page({path:`/wiki/${topic.id}`,title:`${article.title} — Harvest Tycoon wiki`,heading:article.title,description:article.blurb,body}));
  }

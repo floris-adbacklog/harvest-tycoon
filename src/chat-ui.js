@@ -13,6 +13,8 @@ import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
 import {chosenLanguage} from '../public/i18n.js';
 import {portalChat,portalOff} from '../public/portal.js';
+import {chatParts,mentionsMe,mentionAt,insertMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
+import {wikiSectionTitle} from '../public/wiki-content.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
@@ -46,9 +48,9 @@ export function messageLayout(shown){
   return {m,day,cont};
  });
 }
-// The header button counts news and notes, your family and your private messages. The global chat only lights its own tab:
-// with the whole valley talking, a number on the button would never go away.
-export const headerCount=unread=>(unread?.notices??0)+(unread?.family??0)+(unread?.dm??0);
+// The header button counts news and notes, your family and your private messages. Global's own messages do not count: with the whole
+// valley talking, a number on the button would never go away. A mention of you there does (3 Oct 2026): it is meant for you.
+export const headerCount=unread=>(unread?.notices??0)+(unread?.family??0)+(unread?.dm??0)+(unread?.mentions??0);
 const NOTICES={news:'News',moderation:'From the moderators',gift:'A gift for you',donation:'A gift for you',purchase:'In-game purchase',family:'Farm Family'};
 const TITLES={notices:'Notifications',global:'Global chat',private:'Private chats'};
 const EMPTY={
@@ -87,7 +89,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   <button type="button" role="tab" data-chat-tab="private">Private<b class="chat-count" hidden></b></button>
  </div><button type="button" class="icon-button chat-close" aria-label="Close chat"><i data-lucide="x"></i></button></div>
  <div class="chat-head"><button type="button" class="chat-back" aria-label="All private chats" hidden>${ICON.back}</button><h2 id="chat-title">Global chat</h2><button type="button" class="chat-report" hidden>${art('alert')}</button><button type="button" class="chat-block" hidden>${art('block')}</button></div>
- <form class="chat-compose" hidden><input type="text" maxlength="200" autocomplete="off" enterkeyhint="send" aria-label="Your message"><select class="chat-hours" aria-label="Show the news for" title="How long everyone sees it" hidden><option value="6">6 h</option><option value="12">12 h</option><option value="24" selected>24 h</option><option value="48">48 h</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select><button type="submit" class="chat-send" aria-label="Send">${art('send')}</button></form>
+ <form class="chat-compose" hidden><input type="text" maxlength="200" autocomplete="off" enterkeyhint="send" aria-label="Your message"><select class="chat-hours" aria-label="Show the news for" title="How long everyone sees it" hidden><option value="6">6 h</option><option value="12">12 h</option><option value="24" selected>24 h</option><option value="48">48 h</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select><button type="submit" class="chat-send" aria-label="Send">${art('send')}</button><ul class="chat-mentions" role="listbox" aria-label="Mention a farmer" hidden></ul></form>
  <div class="chat-find" hidden><input type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Find a farmer to message…" aria-label="Find a farmer to message"></div>
  <p class="chat-note" role="status" hidden></p>
  <ol class="chat-list"></ol>`;
@@ -112,7 +114,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(changed&&dialog.open&&!disposed)paint();
  }
  win.addEventListener?.('harvest-avatar-changed',event=>{const {playerId,avatarId}=event.detail??{};if(!playerId||!avatarId)return;faces.set(playerId,avatarId);if(dialog.open&&!disposed)paint();});
- const unread=()=>overview?.unread??{notices:0,global:0,family:0,dm:0};
+ const unread=()=>overview?.unread??{notices:0,global:0,family:0,dm:0,mentions:0};
  const role=()=>overview?.role??null;
  const blocked=()=>new Set(overview?.blocked??[]);
  const channelOf=()=>tab==='global'?'global':tab==='family'?overview?.family?.channel??null:tab==='private'?thread?.channel??null:null;
@@ -122,12 +124,13 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // The header pill, the numbers on the tabs and the number on the app icon (private and family messages; public/app-badge.js).
  let iconCount=null;
  function counts(){
-  const u=unread(),total=headerCount(u),onIcon=(u.dm??0)+(u.family??0);
+  const u=unread(),total=headerCount(u),onIcon=(u.dm??0)+(u.family??0)+(u.mentions??0);
   if(onIcon!==iconCount){iconCount=onIcon;void setAppBadge(onIcon);}
   dot.hidden=total<1;dot.textContent=pillText(total);
   button.setAttribute('aria-label',total?`Open chat, ${total} unread`:'Open chat');
-  // Global never gets a red count: with the whole valley talking it would never go away. News, Family and Private do.
-  const per={notices:u.notices,global:0,family:u.family,private:u.dm};
+  // Global's red count is only its mentions of you (3 Oct 2026): its other messages would keep it lit for ever. News, Family and
+  // Private count everything new.
+  const per={notices:u.notices,global:u.mentions??0,family:u.family,private:u.dm};
   dialog.querySelectorAll('[data-chat-tab]').forEach(tabButton=>{const n=per[tabButton.dataset.chatTab]??0,badge=tabButton.querySelector('.chat-count');badge.hidden=n<1;badge.textContent=pillText(n);});
  }
  async function refreshOverview(){
@@ -135,7 +138,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    const next=await chat.overview();if(disposed)return;
    overview=next;button.hidden=switchedOff;settings();
    // What is on screen right now is read, even if the count raced ahead of it.
-   if(dialog.open){const name=channelOf();if(tab==='notices')overview.unread.notices=0;else if(name==='global')overview.unread.global=0;else if(name&&name===overview.family?.channel)overview.unread.family=0;else if(name)clearThread(name);}
+   if(dialog.open){const name=channelOf();if(tab==='notices')overview.unread.notices=0;else if(name==='global')overview.unread.global=overview.unread.mentions=0;else if(name&&name===overview.family?.channel)overview.unread.family=0;else if(name)clearThread(name);}
    counts();if(dialog.open)paint();
   }catch{}
  }
@@ -148,7 +151,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // Marks a chat read on the server, at most once every few seconds per chat, and at once on this screen.
  function markRead(name){
   if(!overview||!name)return;
-  if(name==='notices')overview.unread.notices=0;else if(name==='global')overview.unread.global=0;else if(name===overview.family?.channel)overview.unread.family=0;else clearThread(name);
+  if(name==='notices')overview.unread.notices=0;else if(name==='global')overview.unread.global=overview.unread.mentions=0;else if(name===overview.family?.channel)overview.unread.family=0;else clearThread(name);
   counts();
   if(readTimers.has(name))return;
   readTimers.set(name,setTimeout(()=>{readTimers.delete(name);chat.markRead(name).catch(()=>{});},1500));
@@ -188,6 +191,14 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  function joinRow(m){
   return `<li class="chat-request chat-join" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}New member</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art('family-rank-member')}</span><div><p class="chat-text">${esc(`${m.sender_name} is now a member.`)}</p></div></div></li>`;
  }
+ // The words of a message as written (translate="no"), with its wiki links and mentions as chips (3 Oct 2026, src/chat-rich.js). A wiki
+ // chip shows the book and the spot's title as How to play heads it (wiki-content.js wikiSectionTitle: a section, a building, a crop or
+ // a level, else the topic), the game's own words, so the page's translation puts them in the reader's language; a mention is "@Name"
+ // and opens that farmer's profile by id. The staff's own messages may still carry another https link (an admin's message to many
+ // farmers, e.g. a feedback form); nobody else's can.
+ const wikiChip=link=>`<button type="button" class="chat-wiki" data-wiki-link="${esc(link.topic)}" data-wiki-section="${esc(link.section)}">${art('guide')}<span>${esc(wikiSectionTitle(link.topic,link.section))}</span></button>`;
+ const mentionChip=who=>`<button type="button" class="chat-mention${who.id===me?' is-me':''}" data-profile="${esc(who.id)}" translate="no">@${esc(who.name)}</button>`;
+ const bodyHtml=m=>chatParts(m.body,m.meta?.mentions).map(part=>part.wiki?wikiChip(part.wiki):part.mention?mentionChip(part.mention):`<span translate="no">${m.sender_staff?linkify(part.text):esc(part.text)}</span>`).join('');
  function messageRow(m,{cont=false}={}){
   if(m.kind==='request')return requestRow(m);
   if(m.kind==='rank')return rankRow(m);
@@ -197,9 +208,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
   // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
   const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
-  // Staff messages can carry an https link (an admin's message to many farmers, e.g. a feedback form); nobody else's can.
   const translate=!mine&&String(m.body??'').trim()?`<a class="chat-translate" href="${esc(translateLink(m.body,chosenLanguage()))}" target="_blank" rel="noopener noreferrer" aria-label="Translate with Google" title="Translate with Google">${ICON.translate}</a>`:'';
-  const text=`<span translate="no">${m.sender_staff?linkify(m.body):esc(m.body)}</span>${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`,tr=translate?' has-translate':'';
+  const text=`${bodyHtml(m)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`,tr=`${translate?' has-translate':''}${mentionsMe(m,me)?' is-mention':''}`;
   // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
   if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${esc(m.sender_name)}: </span>${text}</p></div>${more}${translate}</li>`;
   return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div><p class="chat-text">${text}</p></div>${translate}</li>`;
@@ -248,7 +258,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(need&&(overview?.level??0)<need)return {show:true,blocked:`${tab==='global'?'The global chat':'Private messages'} open at level ${need}.`};
   if(tab==='private'&&overview?.privateOn===false)return {show:true,blocked:'Your private messages are off. Turn them on in Settings.'};
   if(tab==='private'&&thread&&blocked().has(thread.otherId))return {show:true,blocked:`You blocked ${thread.otherName}. Unblock them to write.`};
-  return {show:true,placeholder:tab==='global'?'Say something to the valley…':tab==='family'?'Message your family…':`Message ${thread.otherName}…`};
+  // Global and Family say how to mention someone, on the box itself (3 Oct 2026; the tab already says where you write, and a longer
+  // hint did not fit a phone). A private chat has nobody else to mention.
+  return {show:true,placeholder:tab==='global'||tab==='family'?'Type @ to mention a farmer.':`Message ${thread.otherName}…`};
  }
  function paint(){
   dialog.querySelectorAll('[data-chat-tab]').forEach(tabButton=>{const on=tabButton.dataset.chatTab===tab;tabButton.classList.toggle('active',on);tabButton.setAttribute('aria-selected',String(on));});
@@ -294,7 +306,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(ticket!==loading)return;busy=false;paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);
  }
  function show(next,{keepThread=false}={}){
-  tab=next;if(!keepThread)thread=null;messages=[];found=null;findInput.value='';load();
+  tab=next;if(!keepThread)thread=null;messages=[];found=null;findInput.value='';picked.clear();closePicks();load();
   if(!matchMedia('(pointer:coarse)').matches&&!form.hidden)input.focus({preventScroll:true});
  }
  // A channel comes from a notification or a link (public/app-links.js): a private chat opens that conversation, a family chat the
@@ -334,11 +346,13 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // Chat switched off by CrazyGames during play (Oct 2026 review): no more dings or counts for a chat that is not there.
   if(switchedOff)return;
   const m=event.message;if(!m||blocked().has(m.sender))return;
-  // A private message from someone else gets its own soft ding, open or not (the sound settings decide if it plays).
-  if(m.sender!==me&&(m.channel.startsWith('dm:')||m.channel==='crew'))win.harvestSound?.('message');
+  // A private message from someone else gets its own soft ding, open or not (the sound settings decide if it plays), and so does a
+  // mention of you in Global or Family (3 Oct 2026: a mention reaches you like a private message).
+  const forMe=mentionsMe(m,me);
+  if(m.sender!==me&&(m.channel.startsWith('dm:')||m.channel==='crew'||forMe))win.harvestSound?.('message');
   if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,100);paint();void freshFaces([m.sender]);}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview();return;}
   if(m.sender===me)return;
-  if(m.channel==='global')overview.unread.global=Math.min(99,(overview.unread.global??0)+1);
+  if(m.channel==='global'){overview.unread.global=Math.min(99,(overview.unread.global??0)+1);if(forMe)overview.unread.mentions=Math.min(99,(overview.unread.mentions??0)+1);}
   else if(m.channel===overview.family?.channel)overview.unread.family=Math.min(99,(overview.unread.family??0)+1);
   else if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview(300);
   counts();
@@ -350,7 +364,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   sending=true;sendButton.disabled=true;note('');
   try{
    if(name==='notices'){await chat.postNews(text,Number(hours.value)||0);input.value='';await load();return;}
-   const m=await chat.send(name,text);input.value='';
+   const m=await chat.send(name,text,tab==='global'||tab==='family'?mentionIds(text,picked,me):[]);input.value='';picked.clear();closePicks();
    if(showing(name)&&!messages.some(x=>x.id===m.id)){messages=[m,...messages];paint();}
    if(name.startsWith('dm:'))scheduleOverview(300);
   }catch(error){note(error.message);}
@@ -384,6 +398,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(more){openMenu(more.closest('.chat-msg'));return;}
   const give=event.target.closest('[data-give]');
   if(give){giveRequest(give);return;}
+  const wiki=event.target.closest('[data-wiki-link]');
+  if(wiki){openWiki(wiki.dataset.wikiLink,wiki.dataset.wikiSection);return;}
   if(profile){profiles?.open(profile.dataset.profile,{back:null});return;}
   const start=event.target.closest('[data-start]');
   if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}
@@ -403,7 +419,78 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  });
  title.addEventListener('click',event=>{const profile=event.target.closest('[data-profile]');if(profile)profiles?.open(profile.dataset.profile,{back:null});});
 
+ // Mentions (3 Oct 2026, src/chat-rich.js): an "@" in Global or Family opens a list under the box, never in a private chat. Global: the
+ // farmers who spoke there lately, and from 2 letters every farmer by name (the same search as Private); Family: its members only, as
+ // the database only lets those through. A tap puts "@Full Name" in the text, and the message takes their ids along (at most 3).
+ const pickList=form.querySelector('.chat-mentions'),picked=new Map();
+ let picks=[],pickAt=null,pickActive=0,pickTimer=null,pickTicket=0,familyPeople=null,recentPeople=null;
+ const canMention=()=>(tab==='global'||(tab==='family'&&Boolean(overview?.family)))&&!composeState().blocked;
+ function closePicks(){clearTimeout(pickTimer);pickTicket++;picks=[];pickAt=null;pickList.hidden=true;pickList.innerHTML='';input.removeAttribute('aria-activedescendant');}
+ function drawPicks(text=''){
+  pickList.hidden=!picks.length&&!text;
+  pickList.innerHTML=text?`<li class="chat-pick-note">${esc(text)}</li>`:picks.map((p,i)=>`<li role="option" id="chat-pick-${i}" class="chat-pick${i===pickActive?' is-active':''}" aria-selected="${i===pickActive}" data-pick="${i}"><span class="chat-avatar">${avatarImage(p.avatarId)}</span><span class="chat-thread-copy"><strong translate="no">${esc(p.username)}</strong><small>${p.level?`Level ${esc(p.level)}`:''}${p.family?.name?`<span translate="no"> · ${esc(p.family.name)}</span>`:''}</small></span></li>`).join('');
+  if(picks.length)input.setAttribute('aria-activedescendant',`chat-pick-${pickActive}`);else input.removeAttribute('aria-activedescendant');
+ }
+ // Who spoke here lately, newest first, by their name of now (a farmer who renamed since: the database checks the name of now).
+ async function speakers(){
+  const ids=[];for(const m of messages)if(m.sender!==me&&(m.kind??'message')==='message'&&!ids.includes(m.sender))ids.push(m.sender);
+  const key=ids.slice(0,8).join();if(!key)return [];
+  if(recentPeople?.key===key&&Date.now()-recentPeople.at<60000)return recentPeople.list;
+  const cards=await chat.cards?.(ids.slice(0,8)).catch(()=>[])??[];
+  const list=ids.slice(0,8).map(id=>cards.find(c=>c.playerId===id)).filter(Boolean);recentPeople={key,at:Date.now(),list};return list;
+ }
+ // The family's members (the same answer as Farm Family's Members), kept two minutes.
+ async function members(){
+  if(familyPeople&&Date.now()-familyPeople.at<120000)return familyPeople.list;
+  try{const data=await bridge.request({operation:'family'});const list=(data?.family?.members??[]).map(x=>({playerId:x.playerId,username:x.username,level:x.level,avatarId:x.avatarId}));familyPeople={at:Date.now(),list};return list;}
+  catch{return [];}
+ }
+ function updatePicks(){
+  const at=canMention()?mentionAt(input.value,input.selectionStart??input.value.length,picked.values()):null;
+  if(!at){closePicks();return;}
+  clearTimeout(pickTimer);pickAt=at;const ticket=++pickTicket,query=at.query.trim(),family=tab==='family';
+  if(mentionIds(input.value,picked,me).length>=MAX_MENTIONS){picks=[];drawPicks('Mention up to 3 farmers in one message.');return;}
+  const run=async()=>{
+   let people=[];
+   if(family)people=await members();
+   else if(query.length>=2){try{people=(await bridge.request({operation:'player_search',query}))?.players??[];}catch{people=[];}}
+   else people=await speakers();
+   if(ticket!==pickTicket||!dialog.open)return;
+   picks=mentionMatches(people,query,{me,blocked:blocked()});pickActive=0;
+   drawPicks(!picks.length&&query.length>=2?'No farmers found. Try another name.':'');refreshArt();
+  };
+  if(!family&&query.length>=2)pickTimer=setTimeout(run,300);else void run();
+ }
+ function pick(i){
+  const p=picks[i];if(!p||!pickAt)return;
+  const next=insertMention(input.value,input.selectionStart??input.value.length,pickAt.start,p.username);
+  input.value=next.text;picked.set(p.playerId,p.username);closePicks();input.focus({preventScroll:true});input.setSelectionRange(next.caret,next.caret);
+ }
+ input.addEventListener('input',updatePicks);
+ input.addEventListener('keydown',event=>{
+  if(pickList.hidden)return;
+  if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closePicks();return;}
+  if(!picks.length)return;
+  if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();pickActive=(pickActive+(event.key==='ArrowDown'?1:picks.length-1))%picks.length;drawPicks();refreshArt();}
+  else if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();pick(pickActive);}
+ });
+ // A tap picks on click (the list goes away then, so the tap never lands on a message under it); the mouse keeps the box's focus.
+ pickList.addEventListener('mousedown',event=>event.preventDefault());
+ pickList.addEventListener('click',event=>{const row=event.target.closest('[data-pick]');if(row)pick(Number(row.dataset.pick));});
+ dialog.addEventListener('close',closePicks);
+
+ // A wiki chip opens How to play at that section in the game (public/game.js harvestWiki), never a new tab (also on CrazyGames and in
+ // the app). The way back is How to play's own (wiki-ui.js renderWiki's from): "‹ Chat" in its jump bar, which stays in view, back to
+ // this chat as it was; after a link inside the wiki it says "‹ Back" first. One way back, not a second button in the title bar
+ // (Oct 2026, merging the wiki links and the chat). No How to play (the farm not ready): nothing.
+ function openWiki(topic,section){
+  if(typeof win.harvestWiki!=='function'||!doc.getElementById('help-dialog'))return;
+  dialog.close();
+  win.harvestWiki(topic,section,{from:{label:'Chat',go:()=>{doc.querySelectorAll('dialog[open]').forEach(d=>d.close());if(switchedOff)return;dialog.showModal();dialog.focus({preventScroll:true});show(tab,{keepThread:true});}}});
+ }
+
  // The little menu on a message: report or block for everyone; delete, mute and ban (the chat only) for the staff.
+ const STAFF_ACTIONS=new Set(['edit','delete','mute60','mute1440','ban']);
  let menuEl=null;
  function closeMenu(){menuEl?.remove();menuEl=null;}
  const touch=()=>win.matchMedia?.('(pointer:coarse)').matches;
@@ -421,11 +508,15 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(staff&&!mine&&!m.sender_staff)items.push(['mute60','Mute 1 hour'],['mute1440','Mute 1 day'],['ban','Ban from chat']);
   if(!items.length)return;
   menuEl=doc.createElement('div');menuEl.className='chat-menu';menuEl.setAttribute('role','menu');
-  menuEl.innerHTML=items.map(([key,label])=>`<button type="button" role="menuitem" data-menu="${key}"${['block','delete','ban'].includes(key)?' class="is-danger"':''}>${esc(label)}</button>`).join('');
+  // Oct 2026: what only the staff can do carries the shield of their Admin and Moderator badge, and one line at the bottom says who
+  // has it (the wiki's own heading), only when such an action is in the menu. Farmers never get these, so their menu is as it was.
+  const staffOnly=items.some(([key])=>STAFF_ACTIONS.has(key));
+  menuEl.innerHTML=items.map(([key,label])=>`<button type="button" role="menuitem" data-menu="${key}"${['block','delete','ban'].includes(key)?' class="is-danger"':''}>${esc(label)}${STAFF_ACTIONS.has(key)?art('admin','chat-menu-shield'):''}</button>`).join('')
+   +(staffOnly?`<p class="chat-menu-staff" role="none">${art('admin')}Moderators and the admin</p>`:'');
   row.append(menuEl);menuEl.querySelector('button').focus({preventScroll:true});
   menuEl.onclick=event=>{const key=event.target.closest('[data-menu]')?.dataset.menu;if(!key)return;closeMenu();void act(key,m);};
  }
- dialog.addEventListener('pointerdown',event=>{if(menuEl&&!menuEl.contains(event.target)&&!event.target.closest('[data-more]'))closeMenu();});
+ dialog.addEventListener('pointerdown',event=>{if(menuEl&&!menuEl.contains(event.target)&&!event.target.closest('[data-more]'))closeMenu();if(!form.contains(event.target))closePicks();});
  // On a phone the "•••" is not shown: a long press on a message (half a second, without moving) opens its menu.
  let pressTimer=null,pressed=false,pressStart=null;
  const endPress=()=>{clearTimeout(pressTimer);pressTimer=null;};

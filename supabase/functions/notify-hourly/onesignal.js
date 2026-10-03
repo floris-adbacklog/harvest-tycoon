@@ -10,7 +10,7 @@ export const ONESIGNAL_BATCH=2000;    // farmers per call (OneSignal takes up to
 export const APP_PUSH_TTL=3600;       // as the browser's push: a reminder that could not arrive within the hour is not shown later
 const SITE='https://www.harvesttycoon.com',HOSTS=Object.freeze(['www.harvesttycoon.com','harvesttycoon.com']);
 // The app's notification categories in Android's settings (android-app AppPush.java; the ids are part of the contract, never rename them):
-// messages = a private message, the Crew or a purchase notice; ready = crops & goods ready; daily = the daily gift, the streak and the
+// messages = a private message, a mention (3 Oct 2026), the Crew or a purchase notice; ready = crops & goods ready; daily = the daily gift, the streak and the
 // comeback chest (rules.js picks ready or daily). Each request names one as existing_android_channel_id; without a known one OneSignal
 // uses its own default category.
 export const APP_PUSH_CHANNELS=Object.freeze(['messages','ready','daily']);

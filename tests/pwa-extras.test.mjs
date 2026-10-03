@@ -27,7 +27,7 @@ test('links that open one screen: only known screens, and a chat only by a real 
  assert.match(read('src/chat-ui.js'),/if\(channel\?\.startsWith\('dm:'\)\)\{const t=overview\.threads\?\.find\(x=>x\.channel===channel\);/);
 });
 test('a private message opens its conversation; a reminder only about the daily gift opens Daily rewards',()=>{
- assert.match(read('supabase/functions/notify-hourly/index.ts'),/url:`\/\?open=chat&channel=\$\{encodeURIComponent\(claim\.channel\)\}`/);
+ assert.match(read('supabase/functions/notify-hourly/messages.js'),/url:`\/\?open=chat&channel=\$\{encodeURIComponent\(channel\)\}`/,'the chat push (messages.js since 3 Oct 2026)');
  const now=Date.parse('2026-09-21T07:05:00Z');
  const player=farm=>({player_id:'p1',push_crops:true,push_production:true,push_daily:true,timezone:'Europe/Amsterdam',last_active_at:new Date(now-3*3600000).toISOString(),crops_seen_at:now-2*3600000,production_seen_at:now-2*3600000,push_count:0,subscriptions:[{endpoint:'https://push.example/1'}],farm:{plots:[],buildings:{},...farm}});
  const names={crops:CROP_NAMES,buildings:BUILDING_NAMES};
@@ -67,9 +67,9 @@ test('the iPhone launch screen: one picture per screen size, each exactly that s
  assert.equal(tags.length,12);
  for(const [,w,h,r,href] of tags){assert.ok(exists(`public${href}`),href);assert.ok(href.endsWith(`launch-${w*r}x${h*r}.png`),href);}
 });
-test('the number on the app icon: unread private and family messages, and one more for a chat message while the game is closed',async()=>{
+test('the number on the app icon: unread private and family messages and mentions, and one more for a chat message while the game is closed',async()=>{
  const ui=read('src/chat-ui.js');
- assert.match(ui,/onIcon=\(u\.dm\?\?0\)\+\(u\.family\?\?0\);\n  if\(onIcon!==iconCount\)\{iconCount=onIcon;void setAppBadge\(onIcon\);\}/);
+ assert.match(ui,/onIcon=\(u\.dm\?\?0\)\+\(u\.family\?\?0\)\+\(u\.mentions\?\?0\);\n  if\(onIcon!==iconCount\)\{iconCount=onIcon;void setAppBadge\(onIcon\);\}/,'a mention of you in Global too (3 Oct 2026)');
  const store=new Map(),badges=[],listeners={};
  const caches={open:async()=>({match:async key=>store.has(key)?{text:async()=>store.get(key)}:undefined,put:async(key,res)=>store.set(key,await res.text())})};
  const self={addEventListener:(n,fn)=>{listeners[n]=fn;},skipWaiting(){},navigator:{setAppBadge:async n=>badges.push(n)},clients:{claim(){}},registration:{showNotification:async()=>{}},location:{origin:'https://x.example'}};

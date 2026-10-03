@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import {dmChannel,chatError} from '../src/chat-client.js';
 import {receiveDonations,normalizeFarm,createFarm,xpForLevel} from '../game/farm-state.js';
 import {giftNotice} from '../supabase/functions/farm-api/admin-service.js';
@@ -14,8 +14,34 @@ test('a private chat has one name for both farmers, whoever writes first',()=>{
 });
 
 test('errors read as plain sentences; a lost connection gets its own',()=>{
- assert.equal(chatError({message:'Slow down a little.'}).message,'Slow down a little.');
+ assert.equal(chatError({message:'Write 1–200 characters.',code:'22023'}).message,'Write 1–200 characters.');
  assert.equal(chatError({message:'TypeError: Failed to fetch'}).message,'No connection right now. Try again in a moment.');
+});
+
+// Oct 2026: the chat names its limit, and a database's own words never reach a farmer in English.
+test('the pace limit names the 2 seconds; a cut-off request is no connection; an expired sign-in says so',()=>{
+ assert.equal(chatError({message:'Slow down a little.',code:'54000'}).message,'Slow down: one message every 2 seconds.');
+ assert.match(sql,/if last_at>now\(\)-interval '2 seconds' or recent>=12 then raise exception 'Slow down a little\.'/,'the database still says the old words; the game says the rule');
+ for(const message of ['AbortError: The operation was aborted.','AbortError: signal is aborted without reason','TimeoutError: signal timed out','NetworkError when attempting to fetch resource.','Load failed','canceling statement due to statement timeout',''])
+  assert.equal(chatError({message}).message,'No connection right now. Try again in a moment.',message);
+ for(const error of [{message:'JWT expired',code:'PGRST303'},{message:'JWT expired',code:'PGRST301'},{message:'AuthSessionMissingError: Auth session missing!'}])
+  assert.equal(chatError(error).message,'Your session has ended. Please sign in again.',error.message);
+});
+
+test('the database\'s own words become the general text (the staff dashboard keeps them); every refusal of ours stays as written',()=>{
+ for(const error of [{message:'permission denied for function chat_send',code:'42501'},{message:'Could not find the function public.chat_send(p_body, p_channel) in the schema cache',code:'PGRST202'},
+  {message:'new row for relation "chat_messages" violates check constraint "chat_messages_channel_check"',code:'23514'},{message:'column "kind" does not exist',code:'42703'},
+  {message:'<!DOCTYPE html><html><body>502 Bad Gateway</body></html>'},{message:'TypeError: Cannot read properties of undefined (reading \'id\')'},{message:'An invalid response was received from the upstream server'}]){
+  const said=chatError(error);assert.equal(said.message,'That did not work. Please try again.',error.message);assert.equal(said.raw,error.message,'the words stay with the error');
+ }
+ // Every refusal the database raises that a farmer may read (the catalog holds it: the translations have it) comes through as it is.
+ const catalog=JSON.parse(read('i18n/catalog.json')),texts=[];
+ for(const dir of ['supabase/','supabase/migrations/'])for(const file of readdirSync(new URL(`../${dir}`,import.meta.url)).filter(f=>f.endsWith('.sql')))
+  for(const m of read(`${dir}${file}`).matchAll(/raise exception\s+'((?:[^']|'')*)'/gi)){let n=0;const key=m[1].replace(/''/g,"'").replace(/%/g,()=>`{${n++}}`).replace(/\s+/g,' ').trim();if(key in catalog&&key!=='Slow down a little.')texts.push(key.replace(/\{\d+\}/g,'12'));}
+ assert.ok(texts.length>100,`${texts.length} refusals`);
+ for(const message of texts){const said=chatError({message,code:'P0001'});assert.equal(said.message,message);assert.equal(said.raw,undefined,message);}
+ const admin=read('src/admin-dashboard.js');
+ assert.match(admin,/const why=error=>error\?\.raw\?\?error\?\.message;/);assert.doesNotMatch(admin,/error\.message/,'every staff screen shows the database\'s words');
 });
 
 test('every chat table is locked: row-level security on, no direct rights, reading only through the policies',()=>{
@@ -94,10 +120,10 @@ test('the header: chat next to Farm Family and the staff dashboard next to the c
  assert.match(mobile,/for\(const id of \['chat-button','chat-dot'\]\)if\(\$\(id\)\)chatWatch\.observe/,'live, as messages come in');
 });
 
-test('the chat window: Global first, no red count on Global, names open a profile without a way back, VIP and Moderator marks',()=>{
+test('the chat window: Global first, Global\'s red count only for mentions of you, names open a profile without a way back, VIP and Moderator marks',()=>{
  const ui=read('src/chat-ui.js'),profiles=read('src/player-profiles.js');
  assert.match(ui,/const first=other\?'private':wanted\?\?'global';/);
- assert.match(ui,/const per=\{notices:u\.notices,global:0,family:u\.family,private:u\.dm\};/);
+ assert.match(ui,/const per=\{notices:u\.notices,global:u\.mentions\?\?0,family:u\.family,private:u\.dm\};/,'Global counts only its mentions of you (3 Oct 2026)');
  assert.match(ui,/profiles\?\.open\(profile\.dataset\.profile,\{back:null\}\)/);
  assert.match(profiles,/backButton\.hidden=back===null;/);
  assert.match(ui,/\$\{m\.sender_vip\?VIP:''\}\$\{m\.sender_staff\?/);
@@ -333,4 +359,19 @@ test('a Crew message is a push for the rest of the staff, like a private message
  assert.match(sql,/'senderName',m\.sender_name\|\|' \(Crew\)'/);assert.match(sql,/update public\.chat_push_state set claimed=true where channel='crew' and message_id=m\.id and not claimed returning player_id/,'each push once');
  assert.match(read('public/app-links.js'),/const CHANNEL=\/\^\(global\|notices\|crew\|/);
  assert.match(read('src/chat-ui.js'),/else if\(crew\)thread=\{channel:'crew',crew:true,otherName:'Crew'\};/);
+});
+
+// Oct 2026: on a message's menu, what only the staff can do wears the shield of their badge, with one line saying who has it.
+test('staff actions on a message carry the badge\'s shield and one line "Moderators and the admin"; a farmer\'s menu is as it was',()=>{
+ const ui=read('src/chat-ui.js'),css=read('public/chat.css');
+ assert.match(ui,/const STAFF_ACTIONS=new Set\(\['edit','delete','mute60','mute1440','ban'\]\);/);
+ for(const [key] of [['edit'],['delete'],['mute60'],['mute1440'],['ban']])assert.match(ui,new RegExp(`\\['${key}','`),`${key} is a menu item`);
+ assert.match(ui,/\$\{esc\(label\)\}\$\{STAFF_ACTIONS\.has\(key\)\?art\('admin','chat-menu-shield'\):''\}<\/button>/,'the same picture as the Admin and Moderator badge (src/staff-badge.js)');
+ assert.match(read('src/staff-badge.js'),/\$\{art\('admin'\)\}\$\{s\.label\}/);
+ assert.match(ui,/const staffOnly=items\.some\(\(\[key\]\)=>STAFF_ACTIONS\.has\(key\)\);/);
+ assert.match(ui,/\+\(staffOnly\?`<p class="chat-menu-staff" role="none">\$\{art\('admin'\)\}Moderators and the admin<\/p>`:''\);/,'only when such an action is listed');
+ assert.match(ui,/if\(!mine\)items\.push\(\['report','Report message'\],\['block',`Block \$\{m\.sender_name\}`\]\);/,'a farmer gets Report and Block, no staff action');
+ assert.match(ui,/if\(staff&&!mine&&!m\.sender_staff\)items\.push\(\['mute60','Mute 1 hour'\],\['mute1440','Mute 1 day'\],\['ban','Ban from chat'\]\);/);
+ assert.match(css,/\.chat-menu-shield\{width:16px;height:16px;margin-inline-start:auto\}/);assert.match(css,/\.chat-menu-staff\{display:flex;/);
+ for(const code of ['nl','es','ar','zh'])assert.ok(JSON.parse(read(`public/i18n/${code}.json`))['Moderators and the admin'],`${code} has the line already`);
 });

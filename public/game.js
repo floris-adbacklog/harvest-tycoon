@@ -40,7 +40,8 @@ import { buildRows, createCropMotion, isRowCrop } from './crop-rows.js';
 import { flyHarvest, bump } from './harvest-fly.js';
 import { toolCursor,createSweepTool,createSweepGhost } from './sweep-tools.js';
 import { createActivitiesUI } from './activities-ui.js';
-import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress } from './farm-state.js';
+import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress,medalsWaiting } from './farm-state.js';
+import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker,soundForAction } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { renderLanguageSettings } from './language-settings.js';
@@ -106,10 +107,11 @@ const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 const track=(event,params={})=>{try{window.parent.harvestBridge?.trackGame?.(event,params);}catch{}};
 let sessionTracked=false;
 const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
-const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
+// A crop medal the action earned (a tap harvest, the tractor) gets its toast at the bottom (medal-notice.js, Oct 2026).
+const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
-function openUtility(key){if(key==='farmroad'){travel('farm');return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){window.harvestVillageMarket?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
+function openUtility(key){if(key==='farmroad'){travel('farm');return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){window.harvestVillageMarket?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -133,6 +135,9 @@ const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.
 
 let showToast;
 function toast(message){showToast??=createToast($('toast'));showToast(message);}
+// The one short toast at the bottom for new crop medals (farm.html #medal-toast): the toast at the top stays free for the action's own.
+let medalNotice;
+function medalToast(medals){if(!medals.length||!$('medal-toast'))return;medalNotice??=createMedalNotice($('medal-toast'),{state});medalNotice.earned(medals);}
 // A gift from the admin (public/player-profiles.js, floris@millstone.nl only) picked up on this farm's next
 // load and cleared server-side (farm-api index.ts). The message, if any, is set with textContent — never HTML —
 // so there is nothing here that needs escaping.
@@ -634,11 +639,13 @@ async function interact(id,forcedAction){
  // One picture flies to the Market for the harvest, one more if the field was watered and one more for extra care.
  const flightCount=1+(plot.watered?1:0)+(plot.tended?1:0);
  try{
+  const medalsBefore=medalsWaiting(state);
   // The burst comes with the tap itself, also when the answer has to come from the server (a harvest that levels you up).
   if(action==='harvest')particleBurst(id);
   const result=await runAction({type:'field',id,action,crop:selectedCrop});
-  // The golden first harvest shows on the field itself, so the toast stays free for the guide step it completes.
-  if(action==='harvest'){harvestFlight(id,result.crop,flightCount);if(result.firstHarvest)particleBurst(id,true);floatReward(id,(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp'));}
+  // The golden first harvest shows on the field itself, so the toast stays free for the guide step it completes. A medal it earned
+  // gets a chip of its own above it (Oct 2026).
+  if(action==='harvest'){harvestFlight(id,result.crop,flightCount);if(result.firstHarvest)particleBurst(id,true);floatReward(id,withMedals(newMedals(medalsBefore,state),(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp')));}
   if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
   if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
   if(action==='plant')floatReward(id,floatChip(state.plots[id].crop??selectedCrop,'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));
@@ -659,7 +666,7 @@ const sweepTool=createSweepTool({reducedMotion}),sweepGhost=createSweepGhost({re
 // What a drag from this field does (plant, harvest, water or care), or nothing: then the drag moves the farm.
 function sweepAction(target){const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool):null;return a==='plant'||a==='harvest'||a==='water'||a==='tend'?a:null;}
 function startSweep(action){
- const run={action,handle:client.sweep(action,selectedCrop),before:progressionSnapshot(state),level:levelProgress(state).level,count:0,tilt:Math.abs(pointerDx)>1.5?(pointerDx<0?.55:-.55):0,flights:[]};
+ const run={action,handle:client.sweep(action,selectedCrop),before:progressionSnapshot(state),medals:medalsWaiting(state),level:levelProgress(state).level,count:0,tilt:Math.abs(pointerDx)>1.5?(pointerDx<0?.55:-.55):0,flights:[]};
  // With a mouse the tool is in the hand from the first field on (the cursor itself hides meanwhile).
  if(lastPointer?.type==='mouse'){sweepTool.show(action);if(sweepTool.move(lastPointer.x,lastPointer.y))world.style.cursor='none';}
  return run;
@@ -693,7 +700,9 @@ function endSweep(){
  try{const cue=soundForAction({type:'fields',action},result,run.level,levelProgress(state).level);if(cue){farmAudio.play(cue);if(cue==='levelup')haptic('levelup');}}catch{}
  const crops={},last=result.fields.at(-1).id;let xp=0,golden=0;
  if(action==='harvest')for(const f of result.fields){crops[f.crop]=(crops[f.crop]??0)+f.quantity;xp+=f.xp;if(f.firstHarvest)golden=f.firstHarvest;}
- if(action==='harvest')floatReward(last,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+floatChip('xp',`+${xp} XP`,'is-xp'));
+ // The medals a sweep earned: their chips over its sum and ONE toast for all of them (Oct 2026).
+ const medals=action==='harvest'?newMedals(run.medals,state):[];
+ if(action==='harvest'){floatReward(last,withMedals(medals,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+floatChip('xp',`+${xp} XP`,'is-xp')));medalToast(medals);}
  if(action==='water')floatReward(last,floatChip('water',result.count>1?`${result.count} fields · faster`:'+1 crop · faster'));
  if(action==='tend')floatReward(last,floatChip('care',`+${result.count} crop${result.count>1?'s':''}`));
  if(action==='plant'){floatReward(last,floatChip(result.crop,result.count>1?`${result.count} planted`:'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));if(result.short)toast('Out of coins for more seeds. Sell some produce at the market.');}
@@ -1047,8 +1056,9 @@ function bindUI(){
  // Feedback & bugs: the mailbox (public/feedback-ui.js), beside How to play and in the More menu.
  const feedback=createFeedback({level:()=>levelProgress(state).level});
  $('feedback-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());feedback.open();});
- // A topic of How to play, and a spot in it (a pop-up's button opens how to install the app: src/popup-ui.js).
- window.harvestWiki=(id,anchor='')=>{openDialog('help-dialog');renderWiki(state,id,anchor);};
+ // A topic of How to play, and a spot in it (a pop-up's button opens how to install the app: src/popup-ui.js). options (Oct 2026):
+ // renderWiki's {from}, where it was opened from for its way back (the chat's wiki chip: "‹ Chat", src/chat-ui.js).
+ window.harvestWiki=(id,anchor='',options={})=>{openDialog('help-dialog');renderWiki(state,id,anchor,options);};
  $('village-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(!villageWorld)travel('village');});
  $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(villageWorld){travel('farm');return;}resetView();toast('Back to the heart of your farm.');});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
