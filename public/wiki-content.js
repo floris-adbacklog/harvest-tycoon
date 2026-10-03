@@ -1,4 +1,4 @@
-import {EVENT_LEAGUES,CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_XP,ACTIVE_STATIONS,CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,siloBonus,DAILY_REWARDS,DAILY_DIAMONDS,DAILY_BOOSTS,DAILY_BOOST_MS,giftCoins,COMEBACK_MIN_DAYS,COMEBACK_MAX_DAYS,COMEBACK_EVERY_DAYS,COMEBACK_COINS,comebackCoins,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,INVITE_DAYS,INVITE_LIMIT,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,EMAIL_BONUS,choreRewards,CHORE_PRACTICE_STEP,ACTIVITY_ROUND_REWARD,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_REST_MS,stallLevel,STALL_MAX_LEVEL,PROJECTS,CHAPTER_DIAMONDS,VALLEY_STALLS,VALLEY_RESTOCK,VALLEY_PREMIUM,RANCH_SPEEDUP,RANCH_SWITCH_COST,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,levelReward,DAILY_CHALLENGE_DIAMONDS,DAILY_BONUS,MARKET_RANGES,FAMILY_CHEST_TIERS,FAMILY_CHEST_POINTS,FAMILY_CHEST_MIN,FAMILY_LEVEL_STEPS,FAMILY_LEVEL_BONUS,FAMILY_MAX_COLEADERS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,VISITOR_STREAK_MAX,VISITOR_PREMIUM,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,GIANT_FEED,GIANT_FEED_KG,VALLEY_PROJECTS,MASTER_BRANCHES,MASTER_FROM,FAMILY_EVENT_BONUS,worldTwoBuilding,worldTwoItem,VILLAGE_GOODS,MASTER_UPGRADES,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,TOP_BUILDING_LEVEL,DOUBLE_BATCH_PER_LEVEL,VILLAGE_QUESTS,questXp,SEASON_PASS,passPhase,passTotals,BOOST_LENGTH_NAMES} from './farm-state.js';
+import {EVENT_LEAGUES,CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_XP,ACTIVE_STATIONS,CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,siloBonus,DAILY_REWARDS,DAILY_DIAMONDS,DAILY_BOOSTS,DAILY_BOOST_MS,giftCoins,COMEBACK_MIN_DAYS,COMEBACK_MAX_DAYS,COMEBACK_EVERY_DAYS,COMEBACK_COINS,comebackCoins,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,INVITE_DAYS,INVITE_LIMIT,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,EMAIL_BONUS,choreRewards,CHORE_PRACTICE_STEP,ACTIVITY_ROUND_REWARD,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_REST_MS,stallLevel,STALL_MAX_LEVEL,PROJECTS,CHAPTER_DIAMONDS,VALLEY_STALLS,VALLEY_RESTOCK,VALLEY_PREMIUM,RANCH_SPEEDUP,RANCH_SWITCH_COST,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,levelReward,DAILY_CHALLENGE_DIAMONDS,DAILY_BONUS,MARKET_RANGES,FAMILY_CHEST_TIERS,FAMILY_CHEST_POINTS,FAMILY_CHEST_MIN,FAMILY_LEVEL_STEPS,FAMILY_LEVEL_BONUS,FAMILY_MAX_COLEADERS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,VISITOR_STREAK_MAX,VISITOR_PREMIUM,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,GIANT_FEED,GIANT_FEED_KG,VALLEY_PROJECTS,MASTER_BRANCHES,MASTER_FROM,FAMILY_EVENT_BONUS,worldTwoBuilding,worldTwoItem,VILLAGE_GOODS,MASTER_UPGRADES,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,TOP_BUILDING_LEVEL,DOUBLE_BATCH_PER_LEVEL,VILLAGE_QUESTS,questXp,SEASON_PASS,passPhase,passTotals,BOOST_LENGTH_NAMES,expansionCost,expansionMaterials,expansionLevel} from './farm-state.js';
 import {art} from './visual-icons.js';
 import {helpCoins,maxShare,SHARE_LIMIT,REQUEST_DAYS} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
@@ -6,6 +6,9 @@ import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-even
 import {EVENT_GOAL_POOLS} from './event-goals.js';
 import {portal as portalAround} from './portal.js';
 import {androidApp,appPushOffered} from './android.js';
+import {wikiLink,parseWikiLink,wikiLinksIn} from './wiki-link.js';
+// A link to one spot of the wiki (Oct 2026): public/wiki-link.js, here too for whoever has the wiki at hand.
+export {wikiLink,parseWikiLink,wikiLinksIn};
 
 // The farm wiki: the same topics in How to play (public/wiki-ui.js) and on the website (/wiki, scripts/build-wiki.mjs).
 // Every number and table comes from the game rules, so a balance change never leaves the wiki behind. In the game, things
@@ -50,13 +53,18 @@ export function wikiTime(ms){
  const days=Math.floor(hours/24),h=hours%24,d=`${days} ${days===1?'day':'days'}`;return h?`${d} ${h} h`:d;
 }
 const itemName=key=>ITEMS[key]?.name??PRODUCTS[key]?.name??CROPS[key]?.name??key;
-const item=(key,count)=>`<span class="wiki-item">${art(key)}<span>${count>1?`${number(count)} `:''}${itemName(key)}</span></span>`;
+// While a topic is written (wikiArticle): its helpers, so a name in any table can link to where it is explained without every table
+// handing them on (Oct 2026). Only set during that one synchronous call.
+let scope=null;
+// A crop, good or heirloom in a table leads to where it is explained (itemTarget); plain: the row's own name (what it makes, the crop itself).
+const item=(key,count,plain=false)=>{const to=!plain&&scope&&itemTarget(key),inner=`${art(key)}<span>${count>1?`${number(count)} `:''}${itemName(key)}</span>`;return to?`<a class="wiki-item" href="${scope.to(...to)}" data-wiki-topic="${to[0]}" data-wiki-anchor="${to[1]}">${inner}</a>`:`<span class="wiki-item">${inner}</span>`;};
 const items=list=>Object.entries(list).map(([key,count])=>item(key,count)).join('');
 const slug=text=>'sec-'+text.toLowerCase().replace(/<[^>]+>/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const section=(title,body)=>`<section class="wiki-section" id="${slug(title)}"><h3>${title}</h3>${body}</section>`;
 // On a phone the long tables become cards (CSS shows one or the other).
 const dual=(tableHtml,cards)=>`<div class="wiki-dual">${tableHtml}<ul class="wiki-cards">${cards.join('')}</ul></div>`;
-const card=({picture,title,badge='',stats=[],note='',locked=false})=>`<li class="wiki-card${locked?' is-locked':''}">${art(picture)}<div><strong>${title}</strong>${badge}${stats.length?`<div class="wiki-stats">${stats.map(x=>`<span>${x}</span>`).join('')}</div>`:''}${note?`<small>${note}</small>`:''}</div></li>`;
+// row: the card stands for a table row with that id (a crop, a field), so a link to the row finds the card on a phone (wiki-ui.js).
+const card=({picture,title,badge='',stats=[],note='',locked=false,row=''})=>`<li class="wiki-card${locked?' is-locked':''}"${row?` data-wiki-row="${row}"`:''}>${art(picture)}<div><strong>${title}</strong>${badge}${stats.length?`<div class="wiki-stats">${stats.map(x=>`<span>${x}</span>`).join('')}</div>`:''}${note?`<small>${note}</small>`:''}</div></li>`;
 // An avatar in a table: its small picture and its name (the Avatars section).
 const avatarCell=a=>`<span class="wiki-avatar"><img src="${a.src}" alt="" width="34" height="36" loading="lazy" decoding="async">${a.name}</span>`;
 const table=(head,rows,cls='')=>`<div class="wiki-table-wrap"><table class="wiki-table ${cls}"><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
@@ -68,6 +76,11 @@ export const recipeLevel=key=>{const r=RECIPES[key];return r.building==='factory
 // World II (30 Sep 2026): the village's places and everything made for or from it (packed lunches, the heirloom-flour bakes) have
 // their own topic, The Village; the farm's topics leave them out.
 const worldTwoRecipe=r=>worldTwoBuilding(r.building)||Object.keys(r.output).some(worldTwoItem);
+// Where a name in a table leads (Oct 2026): a crop to its row in Every crop, a good to the building that makes it (its row opens; the
+// village's goods and the farm's goods for the village as in search), an heirloom to Heirlooms. [topic, spot]; null: plain text.
+const MADE_AT=new Map();
+for(const r of Object.values(RECIPES))if(r.building!=='factory')for(const out of Object.keys(r.output))if(!MADE_AT.has(out))MADE_AT.set(out,worldTwoRecipe(r)?['village',worldTwoBuilding(r.building)?`building-${r.building}`:'sec-made-on-the-farm']:['buildings',`building-${r.building}`]);
+const itemTarget=key=>CROPS[key]?['crops',`crop-${key}`]:HEIRLOOMS[key]?['estate','sec-heirlooms']:MADE_AT.get(key)??null;
 
 // ctx: {level: the player's level, or null on the website; href: id => link to a topic; now: the moment (seasonal sections, the
 // Halloween Pass); portal: true in the game on CrazyGames (Oct 2026, public/portal.js; read from the page around the game when not
@@ -78,12 +91,16 @@ const worldTwoRecipe=r=>worldTwoBuilding(r.building)||Object.keys(r.output).some
 function helpers(ctx){
  const level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now(),portal=Boolean(ctx.portal??portalAround()),app=Boolean(ctx.app??androidApp());
  const appPush=app&&Boolean(ctx.appPush??appPushOffered());
+ // to: a link to a spot (Oct 2026). On the website the address itself (/wiki/crops#crop-wheat); in the game the topic's own href (never
+ // our site: CrazyGames allows no links to it), the spot rides along in data-wiki-anchor.
+ const to=(id,anchor='')=>ctx.href?ctx.href(id):`/wiki/${id}${anchor?`#${anchor}`:''}`;
  const locked=n=>level!=null&&n>level;
  const lvl=n=>`<span class="wiki-level${locked(n)?' is-locked':''}">${locked(n)?'From level':'Level'} ${n}</span>`;
- const row=(n,cells)=>`<tr${locked(n)?' class="is-locked"':''}>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
- const link=(id,text=TOPIC[id].title)=>`<a href="${href(id)}" data-wiki-topic="${id}">${text}</a>`;
+ const row=(n,cells,id='')=>`<tr${id?` id="${id}"`:''}${locked(n)?' class="is-locked"':''}>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+ // anchor: the spot on that topic (Oct 2026), so a link lands on the paragraph it means rather than the top.
+ const link=(id,text=TOPIC[id].title,anchor='')=>`<a href="${to(id,anchor)}" data-wiki-topic="${id}"${anchor?` data-wiki-anchor="${anchor}"`:''}>${text}</a>`;
  // shop: our own purchases are there (not on CrazyGames, not in the Android app); install: installing the web app is.
- return {level,href,locked,lvl,row,link,now,portal,app,appPush,shop:!portal&&!app,install:!portal&&!app};
+ return {level,href,to,locked,lvl,row,link,now,portal,app,appPush,shop:!portal&&!app,install:!portal&&!app};
 }
 // On CrazyGames: what is saved where, and the one link allowed (our Privacy Policy, in full).
 const PORTAL_SAVED='<p>Your farm is saved on our server. As a guest it stays with this browser; log in with CrazyGames to keep it safe and play it on any device. You need an internet connection to play.</p>';
@@ -116,12 +133,38 @@ function buildingBlock(h,key,recipes){
  const b=BUILDINGS[key],sellOf=out=>(PRODUCTS[out]??VILLAGE_GOODS[out])?.sell;
  if(!recipes.length)return '';
  const cost=key==='factory'?FACTORY_COST:BUILDING_COSTS[key];
- const rows=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return h.row(recipeLevel(id),[out?item(out,count):r.name,items(r.input),wikiTime(r.duration),out&&sellOf(out)?`${art('coins')}${number(sellOf(out))}`:'–',h.lvl(recipeLevel(id))]);});
+ const rows=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return h.row(recipeLevel(id),[out?item(out,count,true):r.name,items(r.input),wikiTime(r.duration),out&&sellOf(out)?`${art('coins')}${number(sellOf(out))}`:'–',h.lvl(recipeLevel(id))]);});
  const cards=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return card({picture:out??key,title:out?`${count>1?`${number(count)} `:''}${itemName(out)}`:r.name,badge:h.lvl(recipeLevel(id)),locked:h.locked(recipeLevel(id)),stats:[wikiTime(r.duration),...(out&&sellOf(out)?[`Sells ${art('coins')}${number(sellOf(out))} each`]:[])],note:`Needs ${items(r.input)}`});});
  // Closed, a building is one row: its picture, name, level and cost, and small pictures of what it makes; open, its recipes.
  const made=[...new Set(recipes.map(([,r])=>Object.keys(r.output)[0]).filter(Boolean))];
- return `<details class="wiki-section wiki-building" id="building-${key}"><summary><h3>${art(key)}${b.name}</h3><span class="wiki-meta">${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:' · ready from the start'}</span><span class="wiki-makes" aria-hidden="true">${made.slice(0,6).map(out=>art(out)).join('')}${made.length>6?`<small>+${made.length-6}</small>`:''}</span><i class="wiki-open-mark" aria-hidden="true"></i></summary>`
-  +`<div class="wiki-building-body">${b.tagline?`<p>${b.tagline}</p>`:''}${key==='factory'?'<p>The biggest batches are shown. Yours are twice the level of the building that normally makes the good (its level for goods that take over an hour).</p>':''}${dual(table(['Makes','Needs','Time','Sells for (each)','Opens'],rows),cards)}</div></details>`;
+ return closedRow(`building-${key}`,art(key)+b.name,`${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:' · ready from the start'}`,`${made.slice(0,6).map(out=>art(out)).join('')}${made.length>6?`<small>+${made.length-6}</small>`:''}`,
+  `${b.tagline?`<p>${b.tagline}</p>`:''}${key==='factory'?'<p>The biggest batches are shown. Yours are twice the level of the building that normally makes the good (its level for goods that take over an hour).</p>':''}${dual(table(['Makes','Needs','Time','Sells for (each)','Opens'],rows),cards)}`);
+}
+// One closed row (a building, the Farmhouse, the Family Hall): its heading, a line under it, small pictures and what opens.
+const closedRow=(id,heading,meta,makes,body)=>`<details class="wiki-section wiki-building" id="${id}"><summary><h3>${heading}</h3><span class="wiki-meta">${meta}</span><span class="wiki-makes" aria-hidden="true">${makes}</span><i class="wiki-open-mark" aria-hidden="true"></i></summary><div class="wiki-building-body">${body}</div></details>`;
+// The Farmhouse and the Family Hall (Oct 2026): they make nothing, so the production rows left them out, while the game keeps sending
+// farmers there ("buy it at the Farmhouse", the quest "Expand your fields at the Farmhouse"). Every field from the rules (expansionLevel,
+// expansionCost, expansionMaterials), so a balance change never leaves the table behind. A field opens at its own level or at the one
+// before it, whichever is higher: fields 13-28 ask no level of their own, but come after field 12.
+export function wikiFields(){
+ let need=1;
+ return Array.from({length:MAX_PLOTS-STARTER_FIELDS},(_,i)=>{const farm={plots:{length:STARTER_FIELDS+i}};need=Math.max(need,expansionLevel(farm));return {field:STARTER_FIELDS+i+1,level:need,coins:expansionCost(farm),materials:expansionMaterials(farm)};});
+}
+// Field 13 is the first that counts as an expansion: the one that raises the Farmhouse level (farm-state.js expandFarm).
+const FIRST_COUNTED_FIELD=STARTER_FIELDS+EARLY_FIELDS.length+1;
+function farmhouseBlock(h){
+ const fields=wikiFields(),needs=f=>Object.keys(f.materials).length?items(f.materials):'';
+ const rows=fields.map(f=>h.row(f.level,[`Field ${f.field}`,h.lvl(f.level),`${art('coins')}${number(f.coins)}`,needs(f)||'–']));
+ const cards=fields.map(f=>card({picture:'seeds',title:`Field ${f.field}`,badge:h.lvl(f.level),locked:h.locked(f.level),stats:[`${art('coins')}${number(f.coins)}`],note:needs(f)&&`Needs ${needs(f)}`}));
+ return closedRow('building-farmhouse',art('farmhouse')+BUILDINGS.farmhouse.name,`${h.lvl(1)} · ready from the start`,'',facts([
+  ['seeds','Expand your fields',`You start with ${STARTER_FIELDS} fields. Buy more here, one at a time, up to ${MAX_PLOTS}.`],
+  ['harvest','Your fields','Remove a crop to free its field. You get nothing back.'],
+  ['estate',`Your next chapter ${h.lvl(FEATURE_LEVELS.projects)}`,`Estate projects, passive income and mastery <span class="wiki-see">See ${h.link('estate',TOPIC.estate.title,'sec-estate-chapters')}.</span>`]
+ ])+`<p>The Farmhouse level goes up by 1 with every field from field ${FIRST_COUNTED_FIELD} on. You do not upgrade it, and it gives no bonus of its own.</p>`+dual(table(['Field','Opens','Coins','Needs'],rows),cards));
+}
+function familyHallBlock(h){
+ const b=BUILDINGS.familyhall;
+ return closedRow('building-familyhall',art('familyhall-model')+b.name,h.lvl(FAMILY_MIN_LEVEL),'',`<p>${b.tagline}</p><p>Tap it on your farm to open your Farm family: start or join one, fill the Family Chest, deliver the weekly order and share with your family. <span class="wiki-see">See ${h.link('family')}.</span></p>`);
 }
 const BODIES={
  'getting-started'(h){
@@ -130,7 +173,7 @@ const BODIES={
   +section('Your first minutes',facts([
    ['quests','Beginner guide',`Ten small steps that show you the farm. After all ten you get ${BEGINNER_REWARD} diamonds.`],
    ['boost','Beginner boost',`When you create your account, waiting times are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter. The boost gets smaller evenly, hour by hour, and stops after your first ${Math.round(ROOKIE_BOOST_MS/3600000)} hours.`],
-   ['gift','A gift every day',`Come back every day for coins and diamonds. See ${h.link('daily')}.`]
+   ['gift','A gift every day',`Come back every day for coins and diamonds. See ${h.link('daily',TOPIC.daily.title,'sec-a-gift-every-day')}.`]
   ]))
   +section('Moving around',facts([
    ['farm','Look around','Drag the grass to move the farm. With a mouse, a drag with the right button moves it from anywhere. Pinch, or scroll with a mouse, to zoom in and out.'],
@@ -151,13 +194,13 @@ const BODIES={
   const regrowing=Object.keys(CROPS).filter(k=>CROPS[k].regrow).sort((a,b)=>cropLevel(a)-cropLevel(b));
   const sorted=Object.entries(CROPS).sort(([a],[b])=>cropLevel(a)-cropLevel(b)||CROPS[a].duration-CROPS[b].duration);
   const rows=sorted.map(([key,c])=>h.row(cropLevel(key),[
-   item(key,1),h.lvl(cropLevel(key)),`${art('coins')}${number(c.cost)}`,wikiTime(c.duration),`${art('coins')}${number(c.sell)}`,number(c.xp),c.regrow?`every ${wikiTime(c.regrow)}`:'–',c.use??'–']));
-  const cards=sorted.map(([key,c])=>card({picture:key,title:c.name,badge:h.lvl(cropLevel(key)),locked:h.locked(cropLevel(key)),stats:[`Grows in ${wikiTime(c.duration)}`,`Seed ${art('coins')}${number(c.cost)}`,`Sells ${art('coins')}${number(c.sell)}`,`${number(c.xp)} XP`,...(c.regrow?[`Grows back every ${wikiTime(c.regrow)}`]:[])],note:c.use?`Used for ${c.use.toLowerCase()}`:''}));
+   item(key,1,true),h.lvl(cropLevel(key)),`${art('coins')}${number(c.cost)}`,wikiTime(c.duration),`${art('coins')}${number(c.sell)}`,number(c.xp),c.regrow?`every ${wikiTime(c.regrow)}`:'–',c.use??'–'],`crop-${key}`));
+  const cards=sorted.map(([key,c])=>card({picture:key,title:c.name,row:`crop-${key}`,badge:h.lvl(cropLevel(key)),locked:h.locked(cropLevel(key)),stats:[`Grows in ${wikiTime(c.duration)}`,`Seed ${art('coins')}${number(c.cost)}`,`Sells ${art('coins')}${number(c.sell)}`,`${number(c.xp)} XP`,...(c.regrow?[`Grows back every ${wikiTime(c.regrow)}`]:[])],note:c.use?`Used for ${c.use.toLowerCase()}`:''}));
   const early=EARLY_FIELDS.map(f=>number(f.coins)).join(', ');
-  return section('Planting','<p>Pick a crop in the seed shop, then tap an empty field. Quick crops are good while you play; longer ones grow while you are away.</p><p>Changed your mind? In the Farmhouse, under Your fields, you can remove any crop, ripe or not. The field is empty right away, but you get nothing back: no harvest, no XP and no seed coins.</p>')
+  return section('Planting',`<p>Pick a crop in the seed shop, then tap an empty field. Quick crops are good while you play; longer ones grow while you are away.</p><p>Changed your mind? In the Farmhouse, under Your fields, you can remove any crop, ripe or not. The field is empty right away, but you get nothing back: no harvest, no XP and no seed coins. <span class="wiki-see">See ${h.link('buildings','Farmhouse','building-farmhouse')}.</span></p>`)
   +section('Water and care',`<p>A harvest gives 1 crop. Water a field for 2 crops, water and care for 3. Both also make the crop grow faster, and doing both gives double XP.</p>`)
-  +section('Trees and bushes',`<ul class="wiki-chips wiki-regrow">${regrowing.map(k=>`<li>${art(k)}<span>${CROPS[k].name}</span>${h.lvl(cropLevel(k))}</li>`).join('')}</ul><p>These grow back after you harvest them, so you only plant them once. Each holds one harvest at a time: pick it yourself to start the next one. Water and care it every time, for up to 3 fruit instead of 1. Nothing is picked while you are away.</p>`)
-  +section('More fields',`<p>You start with ${STARTER_FIELDS} fields. While you start out, each new level lets you open one more for coins (${early}). After that the Farmhouse adds fields, up to ${MAX_PLOTS} in total. See ${h.link('buildings')}.</p>`)
+  +section('Trees and bushes',`<ul class="wiki-chips wiki-regrow">${regrowing.map(k=>`<li><a href="${h.to('crops',`crop-${k}`)}" data-wiki-topic="crops" data-wiki-anchor="crop-${k}">${art(k)}<span>${CROPS[k].name}</span>${h.lvl(cropLevel(k))}</a></li>`).join('')}</ul><p>These grow back after you harvest them, so you only plant them once. Each holds one harvest at a time: pick it yourself to start the next one. Water and care it every time, for up to 3 fruit instead of 1. Nothing is picked while you are away.</p>`)
+  +section('More fields',`<p>You start with ${STARTER_FIELDS} fields. While you start out, each new level lets you open one more for coins (${early}). After that the Farmhouse adds fields, up to ${MAX_PLOTS} in total. See ${h.link('buildings',TOPIC.buildings.title,'building-farmhouse')}.</p>`)
   +section('Crop mastery',`<p>${h.lvl(FEATURE_LEVELS.mastery)} Harvest the same crop often for a reward at every tier.</p>`+table(['Tier','Harvests','Reward'],MASTERY_TIERS.map(t=>`<tr><td>${t.name}</td><td>${number(t.target)}</td><td>${art('coins')}${number(t.coins)} · ${number(t.xp)} XP</td></tr>`)))
   +section('Silo research',`<p>${h.lvl(FEATURE_LEVELS.silo)} Five research steps, each paid with coins. Together they make crops grow up to 40% faster and seeds up to 25% cheaper. Crops already growing keep their time.</p>`+table(['Step','Price','Growing time','Seed price'],SILO_COSTS.map((cost,i)=>{const b=siloBonus(i+1),was=siloBonus(i),pct=n=>Math.round(n*100);return `<tr><td>${i+1}</td><td>${art('coins')}${number(cost)}</td><td>−${pct(b.growth-was.growth)}% <small>(−${pct(b.growth)}% in all)</small></td><td>−${pct(b.seeds-was.seeds)}% <small>(−${pct(b.seeds)}% in all)</small></td></tr>`;})))
   +section('Every crop',dual(table(['Crop','Opens','Seed','Grows in','Sells for','XP','Grows back','Used for'],rows,'wiki-crops'),cards));
@@ -167,39 +210,31 @@ const BODIES={
   const blocks=production.map(([key])=>buildingBlock(h,key,Object.entries(RECIPES).filter(([,r])=>r.building===key&&!worldTwoRecipe(r)).sort(([a],[b])=>recipeLevel(a)-recipeLevel(b)))).join('');
   return section('How buildings work',facts([
    ['buildings','Build',`Each building opens at a level and costs coins once; the ${BUILDINGS.dairy.name} needs the ${BUILDINGS.mill.name} first, the ${BUILDINGS.bakery.name} the ${BUILDINGS.dairy.name} and the ${BUILDINGS.windmill.name}. Tap a building to start a batch: it turns crops (or other goods) into goods that sell for more.`],
-   ['hammer','Upgrade',`Better buildings run more batches at the same time, up to level ${MAX_BUILDING_LEVEL}. Level ${MAX_BUILDING_LEVEL} is fully upgraded. Every level costs more than the one before, and a building that costs more to build costs more to upgrade. From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn. The Factory asks for goods from across the valley from its first upgrade. The Buildings discount boost halves the coins and goods of your next upgrade.${h.level==null||h.level>=WORLD_TWO_TEASER?` <span>From level ${MASTER_UPGRADES[0].level}, master tools from ${h.link('village')} take a building on to level ${TOP_BUILDING_LEVEL}.</span>`:''}`],
+   ['hammer','Upgrade',`Better buildings run more batches at the same time, up to level ${MAX_BUILDING_LEVEL}. Level ${MAX_BUILDING_LEVEL} is fully upgraded. Every level costs more than the one before, and a building that costs more to build costs more to upgrade. From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn. The Factory asks for goods from across the valley from its first upgrade. The Buildings discount boost halves the coins and goods of your next upgrade.${h.level==null||h.level>=WORLD_TWO_TEASER?` <span>From level ${MASTER_UPGRADES[0].level}, master tools from ${h.link('village',TOPIC.village.title,'sec-past-level-10')} take a building on to level ${TOP_BUILDING_LEVEL}.</span>`:''}`],
    ['collect-all','Collect','When a batch is ready, the building\'s name on the farm turns yellow: tap the name to collect everything that is ready. Or open the building and use Collect all.'],
    ['feed','Animal feed',`Chickens, cows, sheep, goats and pigs eat animal feed. Mix it at the ${BUILDINGS.mill.name}: ${RECIPES.feed.input.corn} corn make ${RECIPES.feed.output.feed}, ${RECIPES.barleyfeed.input.barley} barley make ${RECIPES.barleyfeed.output.feed} and ${RECIPES.wheatfeed.input.wheat} wheat make ${RECIPES.wheatfeed.output.feed}. At the ${BUILDINGS.windmill.name}, ${RECIPES.windfeed.input.barley} barley make ${RECIPES.windfeed.output.feed}. Feed sells for ${ITEMS.feed.sell} coins.`],
    ['boost','Factory',`From level ${FACTORY_LEVEL} the Factory (${number(FACTORY_COST)} coins) makes the goods of your other buildings in bulk, in twice the time of one batch. A bulk batch is twice the level of the building that normally makes it, up to ×20: a level-5 Dairy makes cheese ×10. Goods that take over an hour: its level, up to ×10. Upgrade a building and its bulk batch grows too. Upgrading the Factory itself asks for flour, cheese and cloth, plus harvest hampers from the upgrade to level 5, squash soup from level 7 and cider from level 9.`]
-  ]))+blocks;
+  ]))+farmhouseBlock(h)+familyHallBlock(h)+blocks;
  },
  market(h){
   return section('Selling',facts([
    ['market','Prices change every day','At 00:00 UTC the market sets new prices. Most days a price stays close to normal; now and then it is much higher or lower. Today’s market pick is the item whose price rose most today, and the outlook shows tomorrow’s.'],
    ['coins','Sell some or sell all','Choose how many to sell (on a phone: tap Pick amount), or sell all of one crop. The basket at the bottom shows what all your crops are worth.'],
    ['buildings','Goods pay more',`Crops made into goods sell for more than the crops that went in. See ${h.link('buildings')}.`],
-   ['quests','Keep what you need',`Orders and your family ask for crops and goods, and often pay more than the market. See ${h.link('daily')} and ${h.link('family')}.`]
+   ['quests','Keep what you need',`Orders and your family ask for crops and goods, and often pay more than the market. See ${h.link('daily',TOPIC.daily.title,'sec-delivery-orders')} and ${h.link('family',TOPIC.family.title,'sec-the-family-pages')}.`]
   ]))+section('How far prices move',table(['What','Lowest','Highest'],[['Crops',MARKET_RANGES.crops],['Goods',MARKET_RANGES.goods]].map(([what,[lo,hi]])=>`<tr><td>${what}</td><td>${Math.round(lo*100)}% of normal</td><td>${Math.round(hi*100)}% of normal</td></tr>`))+'<p>Every crop and good has its own price each day. The Market shows today’s price next to the normal one.</p>')
-  +section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Your stall earns coins by itself. Collect them from time to time. What it earns per level is in ${h.link('helpers')}.</p>`);
+  +section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Your stall earns coins by itself. Collect them from time to time. What it earns per level is in ${h.link('helpers',TOPIC.helpers.title,'sec-farm-stall')}.</p>`);
  },
  quests(h){
-  // Everything a level opens, not only the features: buildings, crops and the recipes that come later than their building (26 Sep 2026;
-  // between level 27 and 62 only buildings, crops and recipes open, and a features-only list looked empty there).
-  const opens=new Map(),add=(n,html)=>{if(n>1)(opens.get(n)??opens.set(n,[]).get(n)).push(html);};
-  const chip=(picture,name,kind,mark='')=>`<span class="wiki-open"${mark}>${art(picture)||art('gift')}<span>${name}</span>${kind?`<small>${kind}</small>`:''}</span>`;
-  const featureArt={challenges:'quests',mastery:'trophy',activities:'helping-hand',family:'familyhall',boosts:'boost',projects:'estate'};
-  for(const [key,n] of Object.entries(FEATURE_LEVELS))add(n,chip(featureArt[key]??key,featureTitle(key)));
-  // The Starter Pack is bought, so never in our Android app (Oct 2026): How to play there leaves it out, and on the website's wiki
-  // data-shop-only lets public/wiki.css hide it in the app.
-  add(EVENTS_LEVEL,chip('live-events','Events'));if(!h.app)add(STARTER_LEVEL,chip('gift','Starter Pack','',' data-shop-only'));
-  for(const [key,b] of Object.entries(BUILDINGS))if(b.type==='production'&&!worldTwoBuilding(key))add(buildingLevel(key),chip(key,b.name,'building'));
-  for(const [key,c] of Object.entries(CROPS))add(cropLevel(key),chip(key,c.name,'crop'));
-  for(const [id,r] of Object.entries(RECIPES))if(r.building!=='factory'&&!worldTwoRecipe(r)&&recipeLevel(id)>buildingLevel(r.building))add(recipeLevel(id),chip(Object.keys(r.output)[0],r.name,'recipe'));
+  // Each thing that opens is a chip; one explained elsewhere leads there (Oct 2026). The Starter Pack is bought, so never in our Android app:
+  // How to play there leaves it out, and on the website's wiki data-shop-only lets public/wiki.css hide it in the app.
+  const chip=e=>{const tag=e.to?'a':'span';return `<${tag} class="wiki-open"${e.mark??''}${e.to?` href="${h.to(...e.to)}" data-wiki-topic="${e.to[0]}"${e.to[1]?` data-wiki-anchor="${e.to[1]}"`:''}`:''}>${art(e.picture)||art('gift')}<span>${e.name}</span>${e.kind?`<small>${e.kind}</small>`:''}</${tag}>`;};
+  const opens=opensByLevel(h.app);
   return section('Quests',facts([
-   ['quests','One little goal at a time',`${number(QUESTS.length)} quests, from your first harvest to the Grand Valley Fair. They ask for things like harvesting 12 wheat. When one is done, claim its coins and XP.${h.level==null||h.level>=WORLD_TWO_TEASER?` <span>From level ${WORLD_TWO_LEVEL}, ${h.link('village')} has its own quests.</span>`:''}`],
+   ['quests','One little goal at a time',`${number(QUESTS.length)} quests, from your first harvest to the Grand Valley Fair. They ask for things like harvesting 12 wheat. When one is done, claim its coins and XP.${h.level==null||h.level>=WORLD_TWO_TEASER?` <span>From level ${WORLD_TWO_LEVEL}, ${h.link('village',TOPIC.village.title,'sec-village-quests')} has its own quests.</span>`:''}`],
    ['trophy','Bigger quests, more XP',`Quests up to ${number(1000)} coins give ${QUEST_XP} XP. Bigger ones give more, up to 250 XP for the biggest.`],
-   ['xp','XP and levels',`Almost everything you do gives XP. Each new level opens new crops, buildings and things to do, and the journal shows your level rewards.`]
-  ]))+section('Level rewards',`<p>Every new level brings ${art('coins')}10 × the level and ${art('diamonds')}1 diamond for every 5 levels (at least 1).</p>`+table(['Level','Coins','Diamonds'],[2,5,10,20,30,50,75,100].map(n=>{const r=levelReward(n);return `<tr><td>${n}</td><td>${art('coins')}${number(r.coins)}</td><td>${art('diamonds')}${number(r.diamonds)}</td></tr>`;})))+section('What opens when',table(['Level','What opens'],[...opens].sort((a,b)=>a[0]-b[0]).map(([n,list])=>h.row(n,[h.lvl(n),`<span class="wiki-opens">${list.join('')}</span>`])),'wiki-opens-table')+`<p>More about each one in ${h.link('crops')} and ${h.link('buildings')}.</p>`);
+   ['xp','XP and levels',`Almost everything you do gives XP. Each new level opens new crops, buildings and things to do, and the journal shows your level rewards. <span class="wiki-see">See ${h.link('quests','What opens when','sec-what-opens-when')}.</span>`]
+  ]))+section('Level rewards',`<p>Every new level brings ${art('coins')}10 × the level and ${art('diamonds')}1 diamond for every 5 levels (at least 1).</p>`+table(['Level','Coins','Diamonds'],[2,5,10,20,30,50,75,100].map(n=>{const r=levelReward(n);return `<tr><td>${n}</td><td>${art('coins')}${number(r.coins)}</td><td>${art('diamonds')}${number(r.diamonds)}</td></tr>`;})))+section('What opens when',table(['Level','What opens'],[...opens].sort((a,b)=>a[0]-b[0]).map(([n,list])=>h.row(n,[h.lvl(n),`<span class="wiki-opens">${list.map(chip).join('')}</span>`],`level-${n}`)),'wiki-opens-table')+`<p>More about each one in ${h.link('crops',TOPIC.crops.title,'sec-every-crop')} and ${h.link('buildings')}.</p>`);
  },
  daily(h){
   const boost=day=>DAILY_BOOSTS[day]?`<span class="wiki-boost" title="${BOOSTS[DAILY_BOOSTS[day]].name}">${art(BOOSTS[DAILY_BOOSTS[day]].art)}<span>${BOOSTS[DAILY_BOOSTS[day]].name.replace('Double ','×2 ')}</span></span>`:'–';
@@ -262,8 +297,8 @@ const BODIES={
   const choreCards=choreList.map(({key,c,r,tries})=>card({picture:`chore-${key}`,title:c.name,stats:[`${art('coins')}${number(r.coins)} · ${number(r.xp)} XP`,`Rests ${wikiTime(c.cooldown)}`,`${item(c.bonus.item,c.bonus.count)} ${c.baseChance}% → ${c.maxChance}%`],note:`Mastered after ${tries} times`}));
   const stops=Object.values(ACTIVE_STATIONS).map(a=>`<tr><td>${a.name}</td><td>${number(a.xp)} XP${a.coins?` · ${art('coins')}${number(a.coins)}`:''} · ${item(a.item,a.itemCount??1)}</td></tr>`);
   return section('Tractor',`<p>${h.lvl(FEATURE_LEVELS.tractor)} The tractor does one job on every field that needs it: it plants your chosen crop on every empty field, waters every field that can be watered, or harvests every ripe field. Fuel costs ${art('coins')}${TRACTOR_FUEL_BASE} plus ${art('coins')}${TRACTOR_FUEL_PER_FIELD} for every field (planting also pays the seeds), and afterwards the tractor rests ${TRACTOR_REST_MS/1000} seconds.</p>`)
-  +section('Silo research',`<p>${h.lvl(FEATURE_LEVELS.silo)} Better seeds: crops grow faster and seeds cost less. Every step and its price is in ${h.link('crops')}.</p>`)
-  +section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Your stall earns coins by itself, every hour, also while you are away. It holds a day or two of earnings; when it is full it stops earning until you collect. Every finished estate chapter adds more coins an hour on top (see ${h.link('estate')}).</p>`+table(['Level','Earns an hour','Holds','Next level'],stall))
+  +section('Silo research',`<p>${h.lvl(FEATURE_LEVELS.silo)} Better seeds: crops grow faster and seeds cost less. Every step and its price is in ${h.link('crops',TOPIC.crops.title,'sec-silo-research')}.</p>`)
+  +section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Your stall earns coins by itself, every hour, also while you are away. It holds a day or two of earnings; when it is full it stops earning until you collect. Every finished estate chapter adds more coins an hour on top (see ${h.link('estate',TOPIC.estate.title,'sec-estate-chapters')}).</p>`+table(['Level','Earns an hour','Holds','Next level'],stall))
   +section('Farm chores',`<p>${h.lvl(FEATURE_LEVELS.chores)} Small jobs that always pay coins and XP, and sometimes find a few crops too. Every time you do a chore its chance of finding them goes up by ${CHORE_PRACTICE_STEP}%, until it reaches its top: then the chore is mastered and the next one opens. After a chore it rests before you can do it again.</p>`+dual(table(['Chore','Pays','Rests','Sometimes finds (chance)','To master'],chores),choreCards))
   +section('A helping hand',`<p>${h.lvl(FEATURE_LEVELS.activities)} Four stops on the farm, each with a little job of three taps. Help at all four for a round bonus of ${art('coins')}${number(ACTIVITY_ROUND_REWARD.coins)} and ${number(ACTIVITY_ROUND_REWARD.xp)} XP, then start a new round. After its job a stop rests ${wikiTime(Math.min(...Object.values(ACTIVE_STATIONS).map(a=>a.cooldown)))}.</p>`+table(['Stop','Gives'],stops));
  },
@@ -321,7 +356,7 @@ const BODIES={
   +section('Finish now',`<p>Finish a growing field for ${SINGLE_CROP_COST} diamonds, or a running batch for ${SINGLE_BATCH_COST} (not in the Factory).</p>`)
   +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+dual(table(['Boost','What it does','Diamonds'],boosts),boostCards))
   +section('VIP',`<p>VIP gives 10% faster crops, 10% faster production, 5% more coins at the market and double daily rewards. Buying again adds time; it never gets stronger.</p>`+table(['Plan','Diamonds'],vip))
-  +(!h.shop?'':section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.${passSale(h.now)?` From level ${SEASON_PASS.level} the ${h.link('daily',SEASON_PASS.name)} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}. ${passSale(h.now)}`:''}</p>`+table(['Diamonds','Price'],packs)));
+  +(!h.shop?'':section('Buying diamonds',`<p>One-time purchases, added right after payment. Payments go through Stripe; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.${passSale(h.now)?` From level ${SEASON_PASS.level} the ${h.link('daily',SEASON_PASS.name,slug(SEASON_PASS.name))} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}. ${passSale(h.now)}`:''}</p>`+table(['Diamonds','Price'],packs)));
  },
  chat(h){
   return (h.portal?section('Who can chat','<p>The chat is for farmers who are logged in with CrazyGames, when CrazyGames has the chat switched on. Playing as a guest? Tap the chat button to log in with CrazyGames; your farm comes with you.</p>'):'')
@@ -341,7 +376,7 @@ const BODIES={
    ['admin','The admin','Runs Harvest Tycoon: the game itself, the news, the events and the gifts for everyone.'],
    ['family-members','Moderators','Farmers who help keep the valley a friendly place. They look at what is reported and keep an eye on the chat.'],
    ['chat','How to spot them','An Admin or Moderator badge next to their name, in the chat and on their profile.']
-  ])+`<p>The team never asks for your password or payment details. A question or a problem? Send one of them a private message, or use ${h.link('account','Feedback')}.</p>`)
+  ])+`<p>The team never asks for your password or payment details. A question or a problem? Send one of them a private message, or use ${h.link('account','Feedback','sec-feedback')}.</p>`)
   +section('House rules',`<ul class="wiki-list"><li>Be friendly. No insults, threats or discrimination.</li><li>No spam, advertising or selling accounts.</li><li>Keep personal details to yourself: no phone numbers, addresses or passwords.</li><li>Moderators can remove messages and close the chat for someone for a while or for good. That only ever closes the chat, never your farm.</li></ul><p>Chat not open for you yet? The chat says from which level it opens.</p>`);
  },
  account(h){
@@ -386,13 +421,47 @@ function afterNinety(h){
   +section('Heirlooms',dual(table(['Heirloom','Cross','Opens','Sells for'],heirlooms),heirloomCards))
   +section('Valley projects',dual(table(['Project','Bonus','Each level'],projects),projectCards));
 }
+// Everything a level opens, not only the features: buildings, crops and the recipes that come later than their building (26 Sep 2026;
+// between level 27 and 62 only buildings, crops and recipes open, and a features-only list looked empty there). to (Oct 2026): the
+// [topic, spot] where it is explained.
+function opensByLevel(app=false){
+ const opens=new Map(),add=(n,entry)=>{if(n>1)(opens.get(n)??opens.set(n,[]).get(n)).push(entry);};
+ const featureArt={challenges:'quests',mastery:'trophy',activities:'helping-hand',family:'familyhall',boosts:'boost',projects:'estate'};
+ for(const [key,n] of Object.entries(FEATURE_LEVELS))add(n,{picture:featureArt[key]??key,name:featureTitle(key),to:FEATURE_SPOTS[key]});
+ add(EVENTS_LEVEL,{picture:'live-events',name:'Events',to:['events']});if(!app)add(STARTER_LEVEL,{picture:'gift',name:'Starter Pack',mark:' data-shop-only'});
+ for(const [key,b] of Object.entries(BUILDINGS))if(b.type==='production'&&!worldTwoBuilding(key))add(buildingLevel(key),{picture:key,name:b.name,kind:'building',to:['buildings',`building-${key}`]});
+ for(const [key,c] of Object.entries(CROPS))add(cropLevel(key),{picture:key,name:c.name,kind:'crop',to:['crops',`crop-${key}`]});
+ for(const [id,r] of Object.entries(RECIPES))if(r.building!=='factory'&&!worldTwoRecipe(r)&&recipeLevel(id)>buildingLevel(r.building))add(recipeLevel(id),{picture:Object.keys(r.output)[0],name:r.name,kind:'recipe',to:['buildings',`building-${r.building}`]});
+ return opens;
+}
+// Where each feature in What opens when is explained (Oct 2026); one without a spot of its own leads to its topic.
+const FEATURE_SPOTS={challenges:['daily','sec-daily-challenges'],cart:['daily','sec-delivery-orders'],activities:['helpers','sec-a-helping-hand'],chores:['helpers','sec-farm-chores'],mastery:['crops','sec-crop-mastery'],family:['family'],stall:['helpers','sec-farm-stall'],tractor:['helpers','sec-tractor'],boosts:['diamonds','sec-boosts'],silo:['crops','sec-silo-research'],projects:['estate','sec-estate-chapters'],valleymarket:['estate','sec-something-to-grow-towards'],ranch:['estate','sec-something-to-grow-towards'],estateworkshop:['estate','sec-estate-workshop-improvements'],tradedepot:['estate','sec-something-to-grow-towards'],grandfair:['estate','sec-after-level-90'],master:['estate','sec-after-level-90'],seedlab:['estate','sec-heirlooms'],visitors:['estate','sec-after-level-90'],giantpumpkin:['estate','sec-after-level-90'],valleyprojects:['estate','sec-valley-projects']};
 const featureTitle=key=>({family:'Farm family',boosts:'Diamond boosts'})[key]??{challenges:'Daily challenges',chores:'Farm chores',stall:'Farm stall',mastery:'Crop mastery',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'}[key]??key;
 
 const RELATED={'getting-started':['crops','daily','quests'],crops:['buildings','market','helpers'],buildings:['crops','market','daily'],market:['buildings','daily','family'],quests:['getting-started','crops','buildings'],daily:['market','events','diamonds'],family:['chat','events','daily'],events:['family','daily','diamonds'],helpers:['crops','estate','buildings'],estate:['helpers','buildings','quests'],village:['estate','buildings','market'],diamonds:['daily','events','account'],chat:['family','account','events'],account:['chat','diamonds','getting-started']};
 
 export function wikiArticle(id,ctx={}){
  const topic=TOPIC[id];if(!topic)return null;const h=helpers(ctx);
- return {...topic,...(h.portal&&PORTAL_BLURBS[id]?{blurb:PORTAL_BLURBS[id]}:{}),html:BODIES[id](h),related:(RELATED[id]??[]).map(r=>TOPIC[r])};
+ let html;scope=h;try{html=BODIES[id](h);}finally{scope=null;}
+ return {...topic,...(h.portal&&PORTAL_BLURBS[id]?{blurb:PORTAL_BLURBS[id]}:{}),html,related:(RELATED[id]??[]).map(r=>TOPIC[r])};
+}
+// The heading of a spot on a topic (Oct 2026; the chat shows a wiki link as a chip with it): a section's or a building's title, a crop's
+// or a level's name, or the topic's own title where the page has no such spot (now: a season that is over, the app, CrazyGames). null:
+// no such topic. English, as on the page: the page's translation does the rest.
+// Writing a whole topic takes a phone up to a tenth of a second, and the chat names every link it shows: without a ctx a spot's title is
+// kept for the hour (Oct 2026 review; a season's section comes and goes, so not for longer). At most 200 kept.
+const TITLES=new Map();let titlesHour=-1;
+export function wikiSectionTitle(id,section='',ctx={}){
+ if(!TOPIC[id])return null;
+ const keep=!Object.keys(ctx).length,hour=Math.floor(Date.now()/3600000),key=`${id}#${section}`;
+ if(keep&&(hour!==titlesHour||TITLES.size>=200)){TITLES.clear();titlesHour=hour;}
+ if(keep&&TITLES.has(key))return TITLES.get(key);
+ const title=sectionTitle(id,String(section??''),ctx);if(keep)TITLES.set(key,title);return title;
+}
+function sectionTitle(id,section,ctx){
+ const html=/^[a-z0-9-]+$/.test(section)&&wikiArticle(id,ctx).html;if(!html||!html.includes(`id="${section}"`))return TOPIC[id].title;
+ const [,crop]=section.match(/^crop-(.+)$/)??[],[,level]=section.match(/^level-(\d+)$/)??[],m=html.match(new RegExp(`id="${section}">(?:<summary>)?<h3>(.*?)</h3>`));
+ return crop?CROPS[crop].name:level?`Level ${level}`:m?m[1].replace(/<[^>]+>/g,'').trim():TOPIC[id].title;
 }
 export const wikiHero=topic=>`<header class="wiki-hero" style="--tint:${TINTS[topic.id]??'#efe6d8'}"><div><h3>${topic.title}</h3><p>${topic.blurb}</p></div>${art(topic.art)}</header>`;
 // The jump bar: one chip per section of the page (a building's chip has its picture).
@@ -421,7 +490,10 @@ export const wikiQuick=(ctx={})=>{const h=helpers(ctx);return `<div class="wiki-
 // Search: topic titles, blurbs and keywords, plus every crop, building and product by name (pointing to its topic).
 const INDEX=[
  ...WIKI_TOPICS.map(t=>({topic:t.id,label:t.title,art:t.art,text:`${t.title} ${t.blurb} ${t.keywords}`.toLowerCase()})),
- ...Object.entries(CROPS).map(([k,c])=>({topic:'crops',label:c.name,art:k,text:c.name.toLowerCase()})),
+ ...Object.entries(CROPS).map(([k,c])=>({topic:'crops',label:c.name,art:k,text:c.name.toLowerCase(),anchor:`crop-${k}`})),
+ // The Farmhouse and the Family Hall (Oct 2026): "farmhouse" and "expand" found nothing. Single words, so no text to translate.
+ {topic:'buildings',label:BUILDINGS.farmhouse.name,art:'farmhouse',text:[BUILDINGS.farmhouse.name.toLowerCase(),'expand','expansion','fields','field','land','plots'].join(' '),anchor:'building-farmhouse'},
+ {topic:'buildings',label:BUILDINGS.familyhall.name,art:'familyhall-model',text:BUILDINGS.familyhall.name.toLowerCase(),anchor:'building-familyhall'},
  ...PLAYER_AVATARS.filter(a=>a.level||avatarGoal(a.id)).map(a=>({topic:'account',label:a.name,art:'settings',text:`${a.name} avatar`.toLowerCase(),anchor:'sec-avatars'})),
  ...Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').map(([k,b])=>({topic:worldTwoBuilding(k)?'village':'buildings',label:b.name,art:k,text:b.name.toLowerCase(),anchor:`building-${k}`})),
  ...Object.entries(RECIPES).flatMap(([,r])=>Object.keys(r.output).map(out=>({topic:worldTwoRecipe(r)?'village':'buildings',label:itemName(out),art:out,text:itemName(out).toLowerCase(),anchor:worldTwoRecipe(r)&&!worldTwoBuilding(r.building)?'sec-made-on-the-farm':`building-${r.building}`})))
