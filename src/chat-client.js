@@ -123,7 +123,8 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   staffRoles:()=>rpc('chat_staff_list'),
   // The admin's welcome message to every new farmer (supabase/welcome-dm.sql).
   welcomeGet:()=>rpc('welcome_dm_get'),
-  welcomeSave:({enabled,body,delay})=>rpc('welcome_dm_save',{p_enabled:enabled,p_body:body,p_delay:delay}),
+  // sender (Oct 2026, supabase/gerard.sql): which admin the welcome comes from, Tony or Gerard; without it the one who saves.
+  welcomeSave:({enabled,body,delay,sender})=>rpc('welcome_dm_save',sender?{p_enabled:enabled,p_body:body,p_delay:delay,p_sender:sender}:{p_enabled:enabled,p_body:body,p_delay:delay}),
   // One language's own welcome text; an empty one goes back to English (supabase/welcome-dm-languages.sql).
   welcomeSaveText:({language,body})=>rpc('welcome_dm_save_text',{p_language:language,p_body:body}),
   // The admin's private message to many farmers at once (supabase/chat-broadcast-dm.sql): count first, then send; from a farm

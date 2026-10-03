@@ -21,3 +21,11 @@ test('the game and the database list the same admin addresses',()=>{
  assert.match(read('src/player-profiles.js'),/ADMIN_EMAILS=Object\.freeze\(\['floris@millstone\.nl','harvesttycoon@gmail\.com'\]\)/);
  assert.match(read('supabase/admins.sql'),/lower\(u\.email\) in \('floris@millstone\.nl','harvesttycoon@gmail\.com'\)/);
 });
+test('the welcome message can come from either admin; for now from Gerard, whose texts say "I\'m Gerard"',()=>{
+ const client=read('src/chat-client.js'),dash=read('src/admin-dashboard.js'),sql=read('supabase/gerard.sql');
+ assert.match(client,/welcomeSave:\(\{enabled,body,delay,sender\}\)=>rpc\('welcome_dm_save',sender\?\{p_enabled:enabled,p_body:body,p_delay:delay,p_sender:sender\}/);
+ assert.match(dash,/id="admin-welcome-from" hidden>From<select id="admin-welcome-sender">/);assert.match(dash,/from\.hidden=list\.length<2;/);
+ assert.match(sql,/function public\.welcome_dm_save\(p_enabled boolean, p_body text, p_delay integer, p_sender uuid\)/);
+ assert.match(sql,/if who<>me and public\.chat_staff_role\(who\) is distinct from 'admin' then raise exception 'Choose one of the admins\.'/);
+ assert.match(sql,/I'm Gerard, the community manager of Harvest Tycoon\./);assert.match(sql,/update public\.player_stats set avatar_id='gerard'/);
+});

@@ -178,9 +178,17 @@ test('the maker\'s own face: everyone sees it on the admin, only the admin can p
  assert.equal(face('owner').src,'/assets/avatars/owner.webp','shown beside the admin\'s name everywhere');
  assert.equal(known('owner'),false,'not one of the farmers\' avatars');assert.equal(PLAYER_AVATARS.length,40);
  assert.equal((avatarSettingsMarkup('default').match(/type="radio" name="avatar"/g)||[]).length,40);
- assert.equal((avatarSettingsMarkup('default',1,{owner:true}).match(/type="radio" name="avatar"/g)||[]).length,41,'the admin gets it first in the row');
+ assert.equal((avatarSettingsMarkup('default',1,{owner:true}).match(/type="radio" name="avatar"/g)||[]).length,42,'the admins get Tony and Gerard first in the row');
  const service=readFileSync(new URL('../supabase/functions/farm-api/avatar-service.js',import.meta.url),'utf8');
- assert.match(service,/if\(avatarId===OWNER_AVATAR\.id\)\{\n  if\(!owner\)return \{status:403/);
+ assert.match(service,/if\(isOwnerAvatar\(avatarId\)\)\{\n  if\(!owner\)return \{status:403/);
  assert.match(readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8'),/savePlayerAvatar\(\{admin,player:user\.id,avatarId:body\.avatarId,owner:isSuperadmin\(user\)\}\)/);
  assert.match(readFileSync(new URL('../supabase/owner-avatar.sql',import.meta.url),'utf8'),/ARRAY\[''default''::text, ''owner''::text,/);
+});
+test('Gerard\'s face (Oct 2026): like Tony\'s, only for the admins, never among the 40',async()=>{
+ const {GERARD_AVATAR,OWNER_AVATARS,isOwnerAvatar,playerAvatar:face,isPlayerAvatar:known}=await import('../public/player-avatars.js');
+ assert.deepEqual(OWNER_AVATARS.map(a=>a.id),['owner','gerard']);assert.equal(GERARD_AVATAR.name,'Gerard, the owner');
+ assert.ok(existsSync(new URL('../public'+GERARD_AVATAR.src,import.meta.url)));assert.equal(face('gerard').src,'/assets/avatars/gerard.webp');
+ assert.ok(isOwnerAvatar('gerard')&&isOwnerAvatar('owner')&&!isOwnerAvatar('default'));assert.equal(known('gerard'),false);
+ assert.equal(PLAYER_AVATARS.length,40);
+ assert.match(readFileSync(new URL('../supabase/gerard.sql',import.meta.url),'utf8'),/''owner''::text, ''gerard''::text/);
 });

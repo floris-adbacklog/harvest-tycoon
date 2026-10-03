@@ -105,6 +105,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   // A private message from the admin to every new farmer, a few minutes after they sign up (supabase/welcome-dm.sql), in the
   // language they play in when it has a text of its own, otherwise in English (supabase/welcome-dm-languages.sql).
   +'<h3>'+art('chat')+'Welcome message</h3><form id="admin-welcome-form" class="admin-news admin-welcome" hidden><label class="admin-welcome-on"><input type="checkbox" role="switch" class="family-switch" id="admin-welcome-on"><span>Send new farmers a private message from you</span></label>'
+  // From (Oct 2026): the welcome comes from one of the admins, Tony or Gerard (supabase/gerard.sql); it is sent as that farmer, with
+  // their face and name, and replies go to them, so the text should say who they are.
+  +'<label class="admin-news-hours" id="admin-welcome-from" hidden>From<select id="admin-welcome-sender"></select></label>'
   +'<label class="admin-news-hours">Language<select id="admin-welcome-language">'+LANGUAGES.map(l=>`<option value="${l.code}">${esc(l.name)}</option>`).join('')+'</select></label>'
   +'<textarea id="admin-welcome-text" maxlength="500" rows="4" placeholder="Hi {name}, welcome to Harvest Tycoon!"></textarea><p class="admin-popup-note" id="admin-welcome-language-note"></p><p class="admin-popup-note">{name} becomes their farmer name. They can reply; the replies come in under your private messages. Only farmers who sign up after you switch it on get it, each once.</p>'
   +'<label class="admin-news-hours">Send it<select id="admin-welcome-delay"><option value="1">1 minute after sign-up</option><option value="3">3 minutes after sign-up</option><option value="5">5 minutes after sign-up</option><option value="10">10 minutes after sign-up</option><option value="30">30 minutes after sign-up</option></select></label>'
@@ -475,11 +478,18 @@ export function createAdminDashboard(bridge,{chat=null}={}){
    :`No text of its own yet: farmers who play in ${name} get the English one.`;
  }
  dialog.querySelector('#admin-welcome-language').addEventListener('change',showWelcomeLanguage);
+ // Who it comes from: the admins the database lists (welcome_dm_get senders); hidden while the database does not list them yet.
+ function showWelcomeSender(w){
+  const from=dialog.querySelector('#admin-welcome-from'),select=dialog.querySelector('#admin-welcome-sender'),list=Array.isArray(w?.senders)?w.senders:[];
+  from.hidden=list.length<2;
+  select.innerHTML=list.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+  if(w?.sender)select.value=w.sender;
+ }
  async function showWelcome(){
   const form=dialog.querySelector('#admin-welcome-form');if(!bridge.chat?.welcomeGet)return;
   try{
    const w=await bridge.chat.welcomeGet();form.hidden=false;welcome={...w,texts:w.texts??{}};
-   dialog.querySelector('#admin-welcome-on').checked=!!w.enabled;showWelcomeLanguage();
+   dialog.querySelector('#admin-welcome-on').checked=!!w.enabled;showWelcomeLanguage();showWelcomeSender(w);
    const delay=dialog.querySelector('#admin-welcome-delay');delay.value=String(w.delayMinutes??3);if(delay.value!==String(w.delayMinutes??3))delay.value='3';
    dialog.querySelector('#admin-welcome-status').textContent=welcomeStatus(w);
   }catch(error){form.hidden=false;dialog.querySelector('#admin-welcome-status').textContent=why(error);}
@@ -488,9 +498,10 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   event.preventDefault();const status=dialog.querySelector('#admin-welcome-status');
   try{
    const code=welcomeLanguage(),text=dialog.querySelector('#admin-welcome-text').value.trim();
-   let w=await bridge.chat.welcomeSave({enabled:dialog.querySelector('#admin-welcome-on').checked,body:code==='en'?text:welcome.body,delay:Number(dialog.querySelector('#admin-welcome-delay').value)});
+   const from=dialog.querySelector('#admin-welcome-from'),sender=from.hidden?undefined:dialog.querySelector('#admin-welcome-sender').value||undefined;
+   let w=await bridge.chat.welcomeSave({enabled:dialog.querySelector('#admin-welcome-on').checked,body:code==='en'?text:welcome.body,delay:Number(dialog.querySelector('#admin-welcome-delay').value),sender});
    if(code!=='en')w=await bridge.chat.welcomeSaveText({language:code,body:text});
-   welcome={...w,texts:w.texts??{}};showWelcomeLanguage();
+   welcome={...w,texts:w.texts??{}};showWelcomeLanguage();showWelcomeSender(w);
    status.textContent=`Saved${code==='en'?'':` (${LANGUAGES.find(l=>l.code===code)?.name})`}. ${welcomeStatus(w)}`;
   }catch(error){status.textContent=why(error);}
  });

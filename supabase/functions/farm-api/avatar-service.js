@@ -1,4 +1,4 @@
-import {isPlayerAvatar,playerAvatar,avatarLevel,avatarGoal,avatarOpen,OWNER_AVATAR} from './player-avatars.js';
+import {isPlayerAvatar,playerAvatar,avatarLevel,avatarGoal,avatarOpen,isOwnerAvatar} from './player-avatars.js';
 
 // Called only after the verified user and active session checks in index.ts.
 // Never accept a target player ID, image URL, balance or other profile field from the body.
@@ -6,8 +6,8 @@ import {isPlayerAvatar,playerAvatar,avatarLevel,avatarGoal,avatarOpen,OWNER_AVAT
 // update itself carries the condition, so a farmer below it changes nothing. An achievement avatar is checked against the farm's own
 // numbers first (player-avatars.js AVATAR_GOALS); those only ever go up, so a goal reached stays reached.
 export async function savePlayerAvatar({admin,player,avatarId,now=Date.now(),owner=false}){
- // The maker's own face: only the admin account (index.ts passes isSuperadmin) may wear it.
- if(avatarId===OWNER_AVATAR.id){
+ // The makers' own faces (Tony's and, since 3 Oct 2026, Gerard's): only an admin account (index.ts passes isSuperadmin) may wear them.
+ if(isOwnerAvatar(avatarId)){
   if(!owner)return {status:403,data:{error:'Choose one of the available farmer avatars.'}};
   const {data,error}=await admin.from('player_stats').update({avatar_id:avatarId,last_active_at:new Date(now).toISOString()}).eq('player_id',player).select('player_id,username,currency,level,avatar_id').maybeSingle();
   if(error)throw error;if(!data)return {status:409,data:{error:'Open your farm before choosing an avatar.'}};

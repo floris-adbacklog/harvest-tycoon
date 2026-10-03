@@ -1,4 +1,4 @@
-import {PLAYER_AVATARS,OWNER_AVATAR,playerAvatar,avatarLevel,avatarGoal,goalCount,avatarOpen} from './player-avatars.js';
+import {PLAYER_AVATARS,OWNER_AVATARS,isOwnerAvatar,playerAvatar,avatarLevel,avatarGoal,goalCount,avatarOpen} from './player-avatars.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -28,10 +28,10 @@ function lockedText(id,farm){
 const tile=farm=>id=>`<span class="avatar-tile${locked(id,farm)?' is-locked':''}"><img src="${playerAvatar(id).src}" alt="" width="96" height="96" loading="lazy" decoding="async" draggable="false">${avatarBadge(id,farm)}</span>`;
 
 // One row of faces that pages with arrows, the same picker as the family emblems.
-// The admin also gets the maker's own face, first in the row (owner); every other farmer sees the 40 of PLAYER_AVATARS.
+// The admins also get the makers' own faces, Tony's and Gerard's, first in the row (owner); every other farmer sees the 40 of PLAYER_AVATARS.
 export function avatarSettingsMarkup(id,farm=1,{owner=false}={}){
  const current=playerAvatar(id),known=asFarm(farm);
- const picker=emblemPickerMarkup({emblems:owner?[OWNER_AVATAR,...PLAYER_AVATARS]:PLAYER_AVATARS,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>labelOf(a,known),tile:tile(known),esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
+ const picker=emblemPickerMarkup({emblems:owner?[...OWNER_AVATARS,...PLAYER_AVATARS]:PLAYER_AVATARS,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>labelOf(a,known),tile:tile(known),esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
  return `<div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${esc(current.name)}" width="80" height="80"><div><h3 id="avatar-settings-title">Avatar</h3><p>Pick a face for your farm.</p></div></div><form id="avatar-form">${picker}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
 }
 
@@ -40,7 +40,7 @@ export function avatarSettingsMarkup(id,farm=1,{owner=false}={}){
 // owner: whether this is the admin account (a promise is fine: src/game-cloud.js asks the staff list); the picker then adds the maker's face.
 export function createAvatarSettings(root,{bridge,profile,state=null,onSaved=()=>{},owner=false}){
  if(!root)return;
- let saved=playerAvatar(profile?.avatar_id).id,selected=saved,busy=false,disposed=false,withOwner=saved===OWNER_AVATAR.id;
+ let saved=playerAvatar(profile?.avatar_id).id,selected=saved,busy=false,disposed=false,withOwner=isOwnerAvatar(saved);
  const farm={level:Math.max(1,Number(profile?.level)||1),state,events:Number(profile?.events_finished)||0};
  root.innerHTML=avatarSettingsMarkup(saved,farm,{owner:withOwner});bindEmblemPickers(root);
  let form=root.querySelector('form'),preview=root.querySelector('#avatar-preview'),feedback=root.querySelector('#avatar-feedback'),save=form.querySelector('.avatar-save'),choices=form.querySelector('fieldset');
