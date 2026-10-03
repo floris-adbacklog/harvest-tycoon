@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {readFileSync,mkdtempSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {androidApp,appShareLink,shareInApp,APP_SHARE} from '../public/android.js';
+import {androidApp,appShareLink,shareInApp,APP_SHARE,appPushOffered} from '../public/android.js';
 import {portalOff,APP_OFF,PORTAL_FEATURES} from '../public/portal.js';
 import {usableProviders} from '../src/social-login.js';
 import {scheduleBrowserTip} from '../src/browser-tip.js';
@@ -143,23 +143,18 @@ test('the sign-in card and the website\'s wiki: the same second lock, only in th
  const welcome=read('public/welcome.css'),wiki=read('public/wiki.css');
  for(const selector of ['#social-login','.social-button','.browser-tip'])assert.ok(hiddenBy(welcome).includes(`html[data-app=android] ${selector}`),selector);
  const wikiHidden=hiddenBy(wiki);
- for(const selector of ['.wiki-install','.wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass,[data-shop-only],[data-browser-only])'])assert.ok(wikiHidden.includes(`html[data-app=android] ${selector}`),selector);
- assert.ok(wikiHidden.some(s=>['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass'].every(id=>s.includes(`[data-wiki-jump="${id}"]`))&&s.includes('[data-wiki-anchor="sec-play-it-as-an-app"]')),'and their chips in the jump bar');
- // Your account stays (Oct 2026: its push reminders hold in the app, through the app's own notifications); only its home-screen line goes.
- assert.ok(!wikiHidden.some(s=>s.includes('sec-your-account')),'Your account and its chip stay in the app');
+ for(const selector of ['.wiki-install','.wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass,#sec-your-account,[data-shop-only])'])assert.ok(wikiHidden.includes(`html[data-app=android] ${selector}`),selector);
+ assert.ok(wikiHidden.some(s=>['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'].every(id=>s.includes(`[data-wiki-jump="${id}"]`))&&s.includes('[data-wiki-anchor="sec-play-it-as-an-app"]')),'and their chips in the jump bar');
  for(const css of [welcome,wiki])for(const selector of selectorsOf(css).filter(s=>s.includes('[data-app=')))assert.ok(selector.startsWith('html[data-app=android] '),selector);
  // The sections those rules name exist on the website's wiki (their ids come from their titles).
  const site=WIKI_TOPICS.map(t=>wikiArticle(t.id,{now:SEASON_PASS.startsAt+3600000}).html).join('\n');
  for(const id of ['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'])assert.match(site,new RegExp(`id="${id}"`),id);
- // Your account on the website: the home screen and full screen in one line, marked data-browser-only, and push reminders, which hold in
- // the app too (the app's own line about one farm is in Getting started); the one bought thing in What opens when is the Starter Pack,
- // and it is the one chip marked.
+ // Your account on the website holds only the home screen, full screen and push reminders (the app's own line is in Getting started; the
+ // website's page cannot tell whether the app offers its own notifications yet, so the app leaves the whole section out there, and How
+ // to play in the game says it once it does); the one bought thing in What opens when is the Starter Pack, and it is the one chip marked.
  const account=wikiArticle('account').html.match(/<section class="wiki-section" id="sec-your-account">.*?<\/section>/)[0];
- const items=account.match(/<li[^>]*>.*?<\/li>/g)??[];
- assert.equal(items.length,2,'nothing else would go with it');
- assert.match(items[0],/^<li data-browser-only>/);for(const browserOnly of [/home screen/,/Settings, Farm app/])assert.match(items[0],browserOnly,String(browserOnly));
- assert.match(items[1],/^<li>/);assert.match(items[1],/Push reminders/);
- assert.equal((site.match(/data-browser-only/g)??[]).length,1,'only that line');
+ for(const browserOnly of [/home screen/,/Settings, Farm app/,/Push reminders/])assert.match(account,browserOnly,String(browserOnly));
+ assert.equal((account.match(/<li>/g)??[]).length,2,'nothing else would go with it');assert.doesNotMatch(site,/data-browser-only/);
  assert.deepEqual([...wikiArticle('quests').html.matchAll(/<span class="wiki-open" data-shop-only>.*?<span>([^<]+)<\/span>/g)].map(m=>m[1]),['Starter Pack']);
 });
 
@@ -257,13 +252,22 @@ test('admin pop-ups: the app counts as installed, and a button to installing the
  assert.match(popup,/installed:doc\.documentElement\.dataset\.appMode==='standalone'\|\|androidApp\(win\)/);
  assert.match(popup,/&&!\(androidApp\(win\)&&\/\^\(screen:\)\?install\$\/\.test\(popup\.buttonTarget\)\);/);
 });
-test('How to play in the app: no installing the web app and no buying on our website; push reminders and the rest as on the website',()=>{
+test('How to play in the app: no installing the web app and no buying on our website; push reminders once the app offers them; the rest as on the website',()=>{
  const now=SEASON_PASS.startsAt+3600000,text=ctx=>WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,now,...ctx}).html).join('\n');
- const app=text({app:true}),site=text({});
+ const app=text({app:true,appPush:true}),site=text({});
  for(const gone of [/Play it as an app/,/Install the app/,/home screen/,/Buying diamonds/,/Stripe;/,/€/,/paid rewards open/,/Settings, Farm app/,/Starter Pack/])
   {assert.doesNotMatch(app,gone,String(gone));assert.match(site,gone,`the website keeps ${gone}`);}
  for(const kept of [/Invite a friend/,/Share my farm/,/Confirm your email/,/delete-account/,/Privacy Policy/,/Halloween Pass/,/Boosts/,/VIP/,/Your farm is saved to your account/,/Forgot your password/,/Push reminders come once you allow notifications on your device \(Settings\)/])assert.match(app,kept,String(kept));
- assert.doesNotMatch(app,/data-browser-only/,'How to play in the app leaves the home-screen line out by itself');
+ // Before notify-hourly offers the app's own notifications (no OneSignal key yet), Settings has no push switch in the app, so How to play
+ // does not promise one; the rest is the same.
+ const early=text({app:true}),account=html=>html.match(/<section class="wiki-section" id="sec-your-account">.*?<\/section>/)[0];
+ assert.doesNotMatch(early,/Push reminders/);assert.equal((account(early).match(/<li>/g)??[]).length,1);assert.equal((account(app).match(/<li>/g)??[]).length,2);
+ assert.equal(text({appPush:true}),site,'appPush means nothing outside the app');
+ // Read in the game frame from the bridge on the page around it (src/notifications.js), as Settings does.
+ const bridge=appPush=>({harvestBridge:{notifications:{config:{enabled:true,appPush}}}}),frame=top=>({parent:top});
+ assert.equal(appPushOffered(frame(bridge(true))),true);assert.equal(appPushOffered(bridge(true)),true);
+ for(const top of [bridge(false),bridge(undefined),{},{harvestBridge:{notifications:null}}])assert.equal(appPushOffered(frame(top)),false);
+ assert.equal(appPushOffered({get parent(){throw new Error('x');}}),false);assert.equal(appPushOffered(undefined),false);
  assert.doesNotMatch(wikiQuick({app:true}),/>App</);assert.match(wikiQuick({}),/>App</);
 });
 test('the privacy policy lists what the app remembers',()=>{

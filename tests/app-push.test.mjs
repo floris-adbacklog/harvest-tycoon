@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {APP_PUSH,APP_PUSH_BLOCKED,appPushLoginLink,readAppPush,appPushAllowed,listenAppPush,appPushState} from '../public/android.js';
+import {APP_PUSH,APP_PUSH_BLOCKED,appPushLoginLink,readAppPush,appPushAllowed,listenAppPush,appPushState,appPushOffered} from '../public/android.js';
 import {createAppPush,forgetAppPushLink} from '../src/app-push.js';
 import {createNotifications} from '../src/notifications.js';
 import {createReminderNudge} from '../public/reminder-nudge.js';
@@ -20,9 +20,11 @@ function appTop({app=()=>{}}={}){
  win.parent=win;
  return {win,visits};
 }
-// The phone in the app: what it reports after each address (as the contract says), with a permission the test sets.
+// The phone in the app: what it reports after each address (as the contract says), with a permission the test sets. As the real app
+// (android-app AppPush.permissionState): Android 13+ reports 'default' after a first "Don't allow" (the game may still ask) and 'denied'
+// only after the second.
 function phone({permission='default',optedIn=false,subscriptionId='',allowOnRegister=true,answerRegister=true}={}){
- const state={permission,optedIn,subscriptionId,externalId:'',version:'1.0'},seen=[];
+ const state={permission,optedIn,subscriptionId,externalId:'',version:'1.0'},seen=[];let refusals=0;
  const report=win=>queueMicrotask(()=>win.harvestAppPush&&win.harvestAppPush({...state}));
  return {state,seen,app(link,win){
   seen.push(link);
@@ -30,19 +32,19 @@ function phone({permission='default',optedIn=false,subscriptionId='',allowOnRegi
   else if(link===APP_PUSH.logout){state.externalId='';report(win);}
   else if(link===APP_PUSH.status)report(win);
   else if(link===APP_PUSH.register){
-   if(allowOnRegister){state.permission='granted';state.optedIn=true;state.subscriptionId||='4f1e2d3c-aaaa-4bbb-8ccc-0123456789ab';}else state.permission='denied';
+   if(allowOnRegister){state.permission='granted';state.optedIn=true;state.subscriptionId||='4f1e2d3c-aaaa-4bbb-8ccc-0123456789ab';}else state.permission=++refusals>1?'denied':'default';
    if(answerRegister)report(win);
   }
  }};
 }
-// Supabase as far as app push uses it: the farmer's rows (row-level security) and the two functions.
+// Supabase as far as app push uses it: the farmer's own row (row-level security) and the function that sets it.
 function database({fail=false}={}){
  const calls=[];let on=false;
  return {calls,get on(){return on;},set on(value){on=value;},
-  from(table){calls.push(['from',table]);const query={select:()=>query,eq:()=>query,limit:async()=>fail?{data:null,error:new Error('offline')}:{data:on?[{enabled:true}]:[],error:null},maybeSingle:async()=>({data:null,error:null})};return query;},
+  from(table){calls.push(['from',table]);const query={select:()=>query,eq:()=>query,limit:async()=>fail?{data:null,error:new Error('offline')}:{data:on&&table==='app_push_players'?[{enabled:true}]:[],error:null},maybeSingle:async()=>({data:null,error:null})};return query;},
   async rpc(name,params){calls.push([name,params]);if(fail)return {error:new Error('offline')};if(name==='app_push_save')on=params.p_enabled;return {error:null};}};
 }
-const SUB='4f1e2d3c-aaaa-4bbb-8ccc-0123456789ab';
+const SUB='4f1e2d3c-aaaa-4bbb-8ccc-0123456789ab',ZONE='Europe/Amsterdam',zone=()=>ZONE;
 
 test('the addresses the app catches: exactly the agreed format, the player id encoded in full',()=>{
  assert.deepEqual({...APP_PUSH},{login:'onesignallogin://login',logout:'onesignallogout://logout',register:'registerpush://',status:'pushstatus://status'});
@@ -73,7 +75,7 @@ test('the app\'s answer: kept on the page around the game, read by the game fram
 
 test('Turn on asks the app only on the farmer\'s tap; the answer is saved for the farmer and the device says on',async()=>{
  const device=phone(),top=appTop({app:device.app}),db=database(),visits=top.visits;
- const push=createAppPush({supabase:db,playerId:'p1',win:top.win,waitMs:200,statusWaitMs:100,gapMs:0});
+ const push=createAppPush({supabase:db,playerId:'p1',win:top.win,waitMs:200,statusWaitMs:100,gapMs:0,timezone:zone});
  assert.equal(push.app,true);assert.equal(push.test,undefined,'no test notification in the app');
  await push.sync();await settle();
  assert.deepEqual(visits,['onesignallogin://login?id=p1'],'linking the phone to the farmer asks nothing');assert.equal(device.state.externalId,'p1');
@@ -82,21 +84,38 @@ test('Turn on asks the app only on the farmer\'s tap; the answer is saved for th
  assert.ok(!db.calls.some(([name])=>name==='app_push_save'),'nothing is saved without a tap');
  assert.deepEqual(await push.enable(),{kind:'on'});
  assert.deepEqual(visits,['onesignallogin://login?id=p1',APP_PUSH.register]);
- assert.deepEqual(db.calls.filter(([name])=>name==='app_push_save'),[['app_push_save',{p_subscription_id:SUB,p_enabled:true}]]);
- assert.deepEqual(await push.status(),{kind:'on'});
+ // On for the farmer, with this phone's time zone for reminder settings made now (quiet hours, 09:00 and 19:00); no push id is kept.
+ assert.deepEqual(db.calls.filter(([name])=>name==='app_push_save'),[['app_push_save',{p_enabled:true,p_timezone:ZONE}]]);
+ assert.deepEqual(await push.status(),{kind:'on'});assert.ok(db.calls.some(([name,table])=>name==='from'&&table==='app_push_players'));
  // Turn off: off for the farmer (every phone, as OneSignal reaches them all by the player id); the phone itself still allows them.
- assert.deepEqual(await push.disable(),{kind:'off'});assert.deepEqual(db.calls.filter(([name])=>name==='app_push_save').at(-1),['app_push_save',{p_subscription_id:SUB,p_enabled:false}]);
+ assert.deepEqual(await push.disable(),{kind:'off'});assert.deepEqual(db.calls.filter(([name])=>name==='app_push_save').at(-1),['app_push_save',{p_enabled:false}]);
  // On again with the phone already allowing them: the app confirms at once.
  assert.deepEqual(await push.enable(),{kind:'on'});assert.equal(visits.filter(v=>v===APP_PUSH.register).length,2);
  push.dispose();
 });
-test('Android says no: blocked, nothing saved; a phone that never answered is off; the app asked for the state when none is known',async()=>{
+test('Android says no: answered at once as blocked, nothing saved, Turn on again after a first no; a phone that never answered is off',async()=>{
  const denied=phone({allowOnRegister:false}),top=appTop({app:denied.app}),db=database();
- const push=createAppPush({supabase:db,playerId:'p1',win:top.win,waitMs:200,statusWaitMs:100,gapMs:0});
+ const push=createAppPush({supabase:db,playerId:'p1',win:top.win,waitMs:5000,statusWaitMs:100,gapMs:0});
  assert.deepEqual(await push.status(),{kind:'off'});assert.deepEqual(top.visits,[APP_PUSH.status],'no state yet: the app is asked how it is, nothing more');
- assert.deepEqual(await push.enable(),{kind:'blocked'});assert.ok(!db.calls.some(([name])=>name==='app_push_save'));
- assert.deepEqual(await push.status(),{kind:'blocked'});
+ // A first "Don't allow": the app reports 'default' (Android may still ask). That answer settles it at once, not after the wait, so
+ // Turn on, the reminder card and "Remind me" never hang; the farmer reads where to allow them.
+ let started=Date.now();
+ assert.deepEqual(await push.enable(),{kind:'blocked'});assert.ok(Date.now()-started<1000,`${Date.now()-started} ms`);assert.equal(denied.state.permission,'default');
+ assert.ok(!db.calls.some(([name])=>name==='app_push_save'));
+ assert.deepEqual(await push.status(),{kind:'off'},'Turn on is offered again: Android may ask once more');
+ // The second "Don't allow": 'denied', only Android's settings can allow them now.
+ started=Date.now();assert.deepEqual(await push.enable(),{kind:'blocked'});assert.ok(Date.now()-started<1000);
+ assert.deepEqual(await push.status(),{kind:'blocked'});assert.ok(!db.calls.some(([name])=>name==='app_push_save'));
  push.dispose();
+ // An answer to an earlier address (a sign-in link still on its way) is not the farmer's answer: only one after the question counts.
+ const late=phone({allowOnRegister:true,answerRegister:false}),lateTop=appTop({app:late.app}),lateDb=database();
+ const waiting=createAppPush({supabase:lateDb,playerId:'p1',win:lateTop.win,waitMs:5000,statusWaitMs:100,gapMs:30});
+ lateTop.win.harvestAppPush({permission:'default'});void waiting.sync();
+ const asked=waiting.enable();await pause(5);assert.ok(!lateTop.visits.includes(APP_PUSH.register),'the question waits its turn');
+ lateTop.win.harvestAppPush({permission:'default',externalId:'p1'});await pause(50);assert.equal(lateTop.visits.at(-1),APP_PUSH.register);
+ lateTop.win.harvestAppPush({...late.state});assert.deepEqual(await asked,{kind:'on'});
+ assert.deepEqual(lateDb.calls.filter(([name])=>name==='app_push_save').map(([,p])=>p.p_enabled),[true]);
+ waiting.dispose();
  // An app that does not answer at all (an older app): off, after a short wait, and Turn on gives up after its wait.
  const silent=appTop(),quiet=createAppPush({supabase:database(),playerId:'p1',win:silent.win,waitMs:60,statusWaitMs:30,gapMs:0});
  assert.deepEqual(await quiet.status(),{kind:'off'});assert.deepEqual(await quiet.enable(),{kind:'off'});
@@ -104,11 +123,12 @@ test('Android says no: blocked, nothing saved; a phone that never answered is of
 });
 test('a slow answer still counts: Android\'s question answered after the wait is saved the moment the phone allows it; not after the farm closed',async()=>{
  const slow=phone({answerRegister:false}),top=appTop({app:slow.app}),db=database(),changes=[];
- const push=createAppPush({supabase:db,playerId:'p1',win:top.win,waitMs:40,statusWaitMs:30,gapMs:0});push.onChange(()=>changes.push(1));
+ const push=createAppPush({supabase:db,playerId:'p1',win:top.win,waitMs:40,statusWaitMs:30,gapMs:0,timezone:zone});push.onChange(()=>changes.push(1));
  top.win.harvestAppPush({permission:'default',optedIn:false,subscriptionId:SUB});
  assert.deepEqual(await push.enable(),{kind:'off'},'no answer within the wait');assert.ok(!db.calls.some(([name])=>name==='app_push_save'));
  top.win.harvestAppPush({...slow.state});await settle();
- assert.deepEqual(db.calls.filter(([name])=>name==='app_push_save'),[['app_push_save',{p_subscription_id:SUB,p_enabled:true}]]);assert.ok(changes.length>=2,'Settings is told');
+ // Saved by itself, with this phone's time zone: a farmer without reminder settings gets them on their own clock, not the server's UTC.
+ assert.deepEqual(db.calls.filter(([name])=>name==='app_push_save'),[['app_push_save',{p_enabled:true,p_timezone:ZONE}]]);assert.ok(changes.length>=2,'Settings is told');
  assert.deepEqual(await push.status(),{kind:'on'});
  push.dispose();
  // A farm that closed (signed out, opened again) never saves a "Turn on" for whoever comes next.
@@ -117,16 +137,16 @@ test('a slow answer still counts: Android\'s question answered after the wait is
  other.win.harvestAppPush({permission:'granted',optedIn:true,subscriptionId:SUB});await settle();
  assert.ok(!db2.calls.some(([name])=>name==='app_push_save'));
 });
-test('sign-in and sign-out: the phone is linked once per page load and again after a sign-in; Sign out forgets it and unlinks it',async()=>{
+test('sign-in and sign-out: the phone is linked once per page load and again after a sign-in; Sign out unlinks only this phone',async()=>{
  const device=phone({permission:'granted',optedIn:true,subscriptionId:SUB}),top=appTop({app:device.app}),db=database();
  const first=createAppPush({supabase:db,playerId:'p1',win:top.win,gapMs:0});
  await first.sync();await first.sync();
  // The farm opened again in the same page (a reconnect): no second link.
  const again=createAppPush({supabase:db,playerId:'p1',win:top.win,gapMs:0});await again.sync();
  assert.deepEqual(top.visits,['onesignallogin://login?id=p1']);await settle();
- // Sign out: the server forgets this phone first (it needs the session), then the app unlinks it.
- await again.detach();await settle();
- assert.deepEqual(db.calls.filter(([name])=>name.startsWith('app_push')),[['app_push_forget',{p_subscription_id:SUB}]]);
+ // Sign out: the app unlinks this phone. On or off stays the farmer's, so the farmer's other phones keep their notifications.
+ db.on=true;await again.detach();await settle();
+ assert.deepEqual(db.calls.filter(([name])=>name.startsWith('app_push')),[]);assert.equal(db.on,true);
  assert.deepEqual(top.visits,['onesignallogin://login?id=p1',APP_PUSH.logout]);assert.equal(device.state.externalId,'');
  // The next farmer signs in on the same phone: linked to them.
  await createAppPush({supabase:db,playerId:'p2',win:top.win,gapMs:0}).sync();assert.equal(top.visits.at(-1),'onesignallogin://login?id=p2');
@@ -179,6 +199,16 @@ test('the service decides: the app\'s push only once notify-hourly says appPush;
   const email=createNotifications(db,{configUrl:'https://x.example/fn?config',fetchImpl:config({enabled:true,push:true,email:true}),win:top.win});await email.ready;
   email.get=notifications.get;globalThis.window={parent:{harvestBridge:{notifications:email}}};await section.refresh();
   assert.equal(els['notify-device'].hidden,true);assert.equal(els['notify-push-rows'].hidden,true);assert.equal(els['notify-email-rows'].hidden,false);assert.equal(intro.hidden,true);
+  // A first "Don't allow" from Settings: answered at once, the status line says where to allow them, and Turn on is offered again.
+  const no=phone({allowOnRegister:false}),noTop=appTop({app:no.app});
+  const refused=createNotifications(db,{configUrl:'https://x.example/fn?config',fetchImpl:config({enabled:true,push:true,email:true,appPush:true}),win:noTop.win,playerId:'p1'});await refused.ready;
+  refused.get=notifications.get;refused.save=notifications.save;globalThis.window={parent:{harvestBridge:{notifications:refused}}};
+  try{
+   await section.refresh();assert.equal(els['notify-enable'].hidden,false);
+   const started=Date.now();await els['notify-enable'].onclick();assert.ok(Date.now()-started<3000,`${Date.now()-started} ms`);
+   assert.equal(noTop.visits.at(-1),APP_PUSH.register);assert.equal(els['notify-status'].textContent,APP_PUSH_BLOCKED);
+   assert.equal(els['notify-enable'].hidden,false);assert.equal(els['notify-enable'].disabled,false,'the buttons are free again');
+  }finally{refused.dispose();}
  }finally{delete globalThis.document;delete globalThis.window;notifications.dispose();}
 });
 test('the reminder question in the app offers push again (Turn on), and says where to allow it when the phone said no',async()=>{

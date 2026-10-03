@@ -70,7 +70,8 @@ export function createNotificationsSection({onEmailOn}={}){
   const push=api()?.push;if(!push)return;
   for(const id of ['notify-enable','notify-test','notify-disable'])$(id).disabled=true;
   try{
-   await push[action]();status(done);
+   // In the app the farmer said no to Android's question: say where to allow them.
+   const result=await push[action]();status(action==='enable'&&push.app&&result?.kind==='blocked'?APP_PUSH_BLOCKED:done);
    // Allowing notifications saves the settings on screen (the defaults the first time): without them the server sends nothing.
    if(action==='enable'&&current&&!saving)await api()?.save(read()).then(paint).catch(()=>{});
   }catch(error){status(error?.message||'That did not work. Please try again.');}

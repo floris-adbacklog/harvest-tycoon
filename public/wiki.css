@@ -202,8 +202,8 @@
 .wiki-league{display:flex;align-items:center;gap:10px;margin:0 0 6px}
 .wiki-league-badge{flex:none;width:48px;height:48px;object-fit:contain}
 /* Our Android app (Oct 2026, public/android-app.js marks html[data-app=android]; How to play in the game leaves these out by itself): on
-   the website's wiki pages the app shows nothing about installing the web app, the home screen or full screen ([data-browser-only] is
-   that line in Your account, whose push reminders hold in the app too: its own notifications) and nothing bought on our website
-   (Google Play's rules; [data-shop-only] is the Starter Pack in What opens when). */
-html[data-app=android] .wiki-install,html[data-app=android] .wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass,[data-shop-only],[data-browser-only]),
-html[data-app=android] .wiki-page :is([data-wiki-anchor="sec-play-it-as-an-app"],[data-wiki-jump="sec-play-it-as-an-app"],[data-wiki-jump="sec-buying-diamonds"],[data-wiki-jump="sec-halloween-pass"]){display:none!important}
+   the website's wiki pages the app shows nothing about installing the web app, the home screen, full screen or push reminders (Your
+   account: this page cannot tell whether the app offers its own notifications yet; How to play in the game can, and says so then) and
+   nothing bought on our website (Google Play's rules; [data-shop-only] is the Starter Pack in What opens when). */
+html[data-app=android] .wiki-install,html[data-app=android] .wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass,#sec-your-account,[data-shop-only]),
+html[data-app=android] .wiki-page :is([data-wiki-anchor="sec-play-it-as-an-app"],[data-wiki-jump="sec-play-it-as-an-app"],[data-wiki-jump="sec-buying-diamonds"],[data-wiki-jump="sec-halloween-pass"],[data-wiki-jump="sec-your-account"]){display:none!important}

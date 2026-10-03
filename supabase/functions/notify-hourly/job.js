@@ -3,6 +3,10 @@
 // there too, through OneSignal (sendAppPush, onesignal.js), sent after the other farmers in shared calls. The reminder goes to every
 // device at once, the browsers and the app: we cannot know which one the farmer has at hand, and it is one reminder all the same. It
 // counts once (notification_state), when it reached at least one of them, so having both never means more reminders than the rules allow.
+// One known double: a farmer who allowed push in Chrome on a phone and later turned the app's on, on that same phone, sees each one twice
+// there. On purpose: the server cannot tell that Chrome is on the same phone (Chrome's user agent no longer names the phone), nor
+// whether the app is still on it, so leaving the browser's copy out could leave the phone silent. In Chrome, Settings' "Turn off in
+// this browser or app" stops the browser's copy (NOTIFICATIONS-SETUP.md).
 import {planPlayer} from './rules.js';
 export const EMAIL_DAILY_CAP=60;   // keeps the free Resend allowance (100 a day) free for sign-up and password mails
 export const MAX_FAILURES=5;       // a device that keeps failing is forgotten

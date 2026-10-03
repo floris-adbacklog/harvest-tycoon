@@ -56,8 +56,8 @@ const db={
  async appPushPlayers(){
   const ids=new Set<string>();
   for(let from=0;;from+=1000){
-   const {data,error}=await admin.from('app_push_devices').select('subscription_id,player_id').eq('enabled',true).order('subscription_id').range(from,from+999);
-   if(error){console.error(`app push devices: ${error.message}`);break;}
+   const {data,error}=await admin.from('app_push_players').select('player_id').eq('enabled',true).order('player_id').range(from,from+999);
+   if(error){console.error(`app push players: ${error.message}`);break;}
    for(const r of data??[])ids.add(r.player_id);
    if((data??[]).length<1000)break;
   }
@@ -66,8 +66,8 @@ const db={
  // Of these farmers, the ones with the app's notifications on.
  async appPushOf(players:string[]){
   if(!players.length)return [];
-  const {data,error}=await admin.from('app_push_devices').select('player_id').in('player_id',players).eq('enabled',true);
-  if(error){console.error(`app push devices: ${error.message}`);return [];}
+  const {data,error}=await admin.from('app_push_players').select('player_id').in('player_id',players).eq('enabled',true);
+  if(error){console.error(`app push players: ${error.message}`);return [];}
   return [...new Set((data??[]).map((r:Record<string,any>)=>String(r.player_id)))];
  },
  // Who a message's push was just handed to (chat_push_claim marks them claimed): the other farmer of a private chat, or the staff.

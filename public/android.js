@@ -55,6 +55,13 @@ export function listenAppPush(win=globalThis.window){
  }
  return {get state(){return win.harvestAppPushState??null;},onChange(listen){hub.listeners.add(listen);return()=>hub.listeners.delete(listen);}};
 }
+// The app's own notifications are offered: notify-hourly's config says appPush (src/notifications.js; its OneSignal key is set). Read on the
+// page around the game, where the bridge lives, or from the game frame through it (How to play mentions push reminders in the app only then).
+export function appPushOffered(win=globalThis.window){
+ const offered=w=>{try{return w?.harvestBridge?.notifications?.config?.appPush===true;}catch{return false;}};
+ if(offered(win))return true;
+ try{return Boolean(win?.parent&&win.parent!==win&&offered(win.parent));}catch{return false;}
+}
 // The latest answer for the game frame: from this page or, inside the frame, from the page around it (as androidApp() reads the mark).
 export function appPushState(win=globalThis.window){
  const own=w=>{try{return w?.harvestAppPushState??null;}catch{return null;}};

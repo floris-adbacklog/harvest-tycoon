@@ -37,7 +37,7 @@ export function createNotifications(supabase,{configUrl=null,fetchImpl=globalThi
   try{const response=await fetchImpl(configUrl);if(!response.ok)return;const body=await response.json();if(body?.enabled===true){available=true;config=body;}}catch{}
  })();
  const push=createPush({supabase,getKey:async()=>{await ready;return config?.vapidPublicKey??null;},win});
- const app=inApp?createAppPush({supabase,playerId,win}):null;
+ const app=inApp?createAppPush({supabase,playerId,win,timezone}):null;
  return {
   ready,
   get available(){return available;},

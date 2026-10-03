@@ -452,7 +452,8 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
 - Deletion requests are handled by hand. Deleting a user in the Supabase dashboard currently fails for many players:
   harvest_purchases.player_id is ON DELETE RESTRICT and family_*, live_event_players, family_social_* and admin_grants
   are NO ACTION. Delete or anonymise those rows first (purchases: keep, the account then stays as an anonymised shell
-  with its email changed), or ask for an admin delete function.
+  with its email changed), or ask for an admin delete function. Also delete the player's OneSignal user (Android app push,
+  external_id = player id; NOTIFICATIONS-SETUP.md, Account verwijderen).
 - 404: public/404.html (Vercel serves it for every unknown URL): the farm behind a cream card with the tractor, a big
   404, "This field is empty." and "Back to the farm"; noindex, no scripts, absolute paths so it works at any depth.
 - Google blocks OAuth inside in-app browsers ("disallowed_useragent"). Visitors from Meta ads land in the Facebook /

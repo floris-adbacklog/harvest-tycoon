@@ -155,7 +155,8 @@ test('notify-hourly: the secret by name from the environment, never in the code;
  assert.match(index,/appPush\.send\(\{\.\.\.push,ids:await db\.appPushOf\(await db\.noticeOwner\(String\(claim\.id\)\)\),key:`notice\|\$\{claim\.id\}`\}\)/,'a purchase notice: the admin');
  assert.match(index,/if\(!pushOn&&!emailOn&&!appPushOn\)return json\(\{ran:false,reason:'not configured'\},503\);/);
  assert.match(index,/sendAppPush:appPushOn\?\(items:[^)]*\)=>sendReminders\(appPush,items,now\):null/);
- assert.match(index,/admin\.from\('app_push_devices'\)\.select\('subscription_id,player_id'\)\.eq\('enabled',true\)/);
+ assert.match(index,/admin\.from\('app_push_players'\)\.select\('player_id'\)\.eq\('enabled',true\)\.order\('player_id'\)\.range\(from,from\+999\)/);
+ assert.match(index,/admin\.from\('app_push_players'\)\.select\('player_id'\)\.in\('player_id',players\)\.eq\('enabled',true\)/);assert.doesNotMatch(index,/app_push_devices/);
  assert.doesNotMatch(index,/console\.(log|error)\([^)]*apiKey/);
  // The same function, still valid code once its types are gone (it runs on Deno; this is the syntax check here).
  assert.doesNotThrow(()=>parse(stripTypeScriptTypes(index),{ecmaVersion:'latest',sourceType:'module'}));
@@ -164,40 +165,49 @@ test('notify-hourly: the secret by name from the environment, never in the code;
   assert.doesNotMatch(read(file),/os_v2_app_|Key [A-Za-z0-9]{20,}|['"][A-Za-z0-9_-]{40,}['"]/,file);
 });
 
-test('supabase/app-push.sql: own rows readable, writes only through the two checked functions, re-runnable, the triggers patched from their live definitions',()=>{
+test('supabase/app-push.sql: on or off per farmer (no push ids), own row readable, writes only through one checked function, re-runnable, the triggers patched from their live definitions',()=>{
  const sql=read('supabase/app-push.sql');
- assert.match(sql,/create table if not exists public\.app_push_devices \(\n subscription_id text primary key check \(subscription_id ~ '\^\[A-Za-z0-9\._:-\]\{8,128\}\$'\),\n player_id uuid not null references auth\.users\(id\) on delete cascade,\n enabled boolean not null default true,\n platform text not null default 'android'/);
- assert.match(sql,/alter table public\.app_push_devices enable row level security;/);
- assert.match(sql,/revoke all on public\.app_push_devices from anon, authenticated;\ngrant select on public\.app_push_devices to authenticated;/);
- assert.match(sql,/drop policy if exists "players read their own app push devices" on public\.app_push_devices;\ncreate policy "players read their own app push devices" on public\.app_push_devices for select to authenticated using \(player_id = \(select auth\.uid\(\)\)\);/);
+ assert.match(sql,/create table if not exists public\.app_push_players \(\n player_id uuid primary key references auth\.users\(id\) on delete cascade,\n enabled boolean not null default true,/);
+ assert.doesNotMatch(sql,/app_push_devices|subscription_id|app_push_forget/,'no phone\'s push id is kept, and Sign out changes nothing here');
+ assert.match(sql,/alter table public\.app_push_players enable row level security;/);
+ assert.match(sql,/revoke all on public\.app_push_players from anon, authenticated;\ngrant select on public\.app_push_players to authenticated;/);
+ assert.match(sql,/drop policy if exists "players read their own app push" on public\.app_push_players;\ncreate policy "players read their own app push" on public\.app_push_players for select to authenticated using \(player_id = \(select auth\.uid\(\)\)\);/);
  assert.equal((sql.match(/create policy/g)??[]).length,1);assert.doesNotMatch(sql,/for (insert|update|delete|all)/i,'no client write policies');
- const fns=sql.split(/create or replace function public\./).slice(1);assert.deepEqual(fns.map(f=>f.slice(0,f.indexOf('('))),['app_push_save','app_push_forget']);
+ const fns=sql.split(/create or replace function public\./).slice(1);assert.deepEqual(fns.map(f=>f.slice(0,f.indexOf('('))),['app_push_save']);
  for(const body of fns){assert.match(body,/security definer set search_path = ''/);assert.match(body,/v_player uuid := \(select auth\.uid\(\)\)/);assert.match(body,/is_anonymous/);}
- for(const fn of ['app_push_save(text, boolean)','app_push_forget(text)']){
-  const name=fn.replace(/[()]/g,m=>`\\${m}`);
-  assert.match(sql,new RegExp(`revoke all on function public\\.${name} from public, anon;`));assert.match(sql,new RegExp(`grant execute on function public\\.${name} to authenticated;`));
- }
- assert.match(sql,/p_subscription_id !~ '\^\[A-Za-z0-9\._:-\]\{8,128\}\$' then raise exception 'This device cannot receive notifications\.'/,'the id is checked');
- assert.match(sql,/on conflict \(subscription_id\) do update set player_id = excluded\.player_id, enabled = true, updated_at = now\(\);/,'a phone follows the farmer who turns it on');
- assert.match(sql,/limit 5\);/);assert.match(sql,/insert into public\.notification_settings \(player_id\) values \(v_player\) on conflict \(player_id\) do nothing;/);
- assert.match(sql,/update public\.app_push_devices set enabled = false, updated_at = now\(\) where player_id = v_player and enabled;/,'off is the farmer\'s, on every phone');
- assert.match(sql,/delete from public\.app_push_devices where subscription_id = p_subscription_id and player_id = v_player;/,'only the farmer\'s own phone is forgotten');
+ assert.match(sql,/create or replace function public\.app_push_save\(p_enabled boolean, p_timezone text default null\)/);
+ assert.match(sql,/revoke all on function public\.app_push_save\(boolean, text\) from public, anon;/);assert.match(sql,/grant execute on function public\.app_push_save\(boolean, text\) to authenticated;/);
+ assert.match(sql,/on conflict \(player_id\) do update set enabled = excluded\.enabled, updated_at = now\(\);/,'on or off is the farmer\'s');
+ // Reminder settings made by turning them on get the phone's time zone (a name the database knows), not the column's UTC.
+ assert.match(sql,/insert into public\.notification_settings \(player_id, timezone\)\n   values \(v_player, case when p_timezone is not null and exists \(select 1 from pg_catalog\.pg_timezone_names where name = p_timezone\) then p_timezone else 'UTC' end\)\n   on conflict \(player_id\) do nothing;/);
  // The three triggers that ask notify-hourly for a push, patched line by line from their live definitions, once.
  assert.match(sql,/create or replace function pg_temp\.app_push_patch\(p_fn regprocedure, p_marker text, p_from text, p_to text\)/);
- const patched=[...sql.matchAll(/select pg_temp\.app_push_patch\('([^']+)','app_push_devices',\n \$a\$([\s\S]*?)\$a\$,\n \$b\$([\s\S]*?)\$b\$\);/g)].map(m=>[m[1],m[2],m[3]]);
+ const patched=[...sql.matchAll(/select pg_temp\.app_push_patch\('([^']+)','app_push_players',\n \$a\$([\s\S]*?)\$a\$,\n \$b\$([\s\S]*?)\$b\$\);/g)].map(m=>[m[1],m[2],m[3]]);
  assert.deepEqual(patched.map(p=>p[0]),['public.chat_dm_push()','public.chat_crew_push()','public.harvest_purchase_alert()']);
  const live={'public.chat_dm_push()':read('supabase/chat-broadcast-dm.sql'),'public.chat_crew_push()':read('supabase/chat-crew-push.sql'),'public.harvest_purchase_alert()':read('supabase/special-offer.sql')};
- for(const [fn,from,to] of patched){assert.ok(live[fn].includes(from),`${fn}: the line is in its latest definition in the repo`);assert.match(to,/public\.app_push_devices( a where a\.player_id=(other|admin_id) and a\.enabled| where enabled)/);assert.ok(to.includes(from.slice(0,40)),'the browser\'s devices still count');}
+ for(const [fn,from,to] of patched){assert.ok(live[fn].includes(from),`${fn}: the line is in its latest definition in the repo`);assert.match(to,/public\.app_push_players( a where a\.player_id=(other|admin_id) and a\.enabled| where enabled)/);assert.ok(to.includes(from.slice(0,40)),'the browser\'s devices still count');}
  assert.match(read('supabase/season-pass.sql'),/if exists\(select 1 from public\.push_subscriptions p where p\.player_id=admin_id\) then/);
- for(const part of ['create table if not exists','create index if not exists','drop policy if exists'])assert.ok(sql.includes(part),part);
+ for(const part of ['create table if not exists','drop policy if exists'])assert.ok(sql.includes(part),part);
+ // The farmers with only the app's notifications are in the hourly job: it takes every farmer with reminder settings that has a switch on.
+ assert.match(read('supabase/comeback-chest.sql'),/from public\.notification_settings s\n[^]*where \(s\.push_crops or s\.push_production or s\.push_daily or s\.email_digest\);/);
 });
-test('the privacy policy: push in the app through OneSignal (player id, push token, device type), off in Settings or Android, OneSignal among who helps us',()=>{
+test('the privacy policy: OneSignal in the app as it works (the SDK from the first start, the player id once signed in, sending only once on), and deleting it with the account',()=>{
  const policy=read('public/privacy.html');
- assert.doesNotMatch(policy,/cannot show push notifications/);
- const app=policy.slice(policy.indexOf('<h3 id="android-app">'),policy.indexOf('<h2 id="service-providers">'));
- assert.match(app,/the app can show push notifications if you allow them \(Settings, Reminders\)\. They are sent through <strong>OneSignal<\/strong>, which processes them on our behalf and receives your player ID, a push token for your phone and your device type/);
- assert.match(app,/You can switch them off in Settings, or for the app in your phone's Android settings\./);
+ assert.doesNotMatch(policy,/cannot show push notifications|Push ID in the Android app|push token for your phone and your device type|nothing more:/);
+ const app=policy.slice(policy.indexOf('<h3 id="android-app">'),policy.indexOf('<h2 id="social-sign-in">'));
+ assert.match(app,/From the first time you open the app, even before you allow notifications, it registers your phone with OneSignal: OneSignal receives a push token for your phone and device data, namely the phone model, Android version, language, time zone, country \(worked out from your IP address\), mobile carrier, app version, and when, how often and how long you use the app\./);
+ assert.match(app,/Once you sign in, the app also gives OneSignal your player ID, so that notifications can reach every phone you play on\. This happens whether or not you turn notifications on; when you sign out in the app, that phone is no longer linked to your player ID\./);
+ assert.match(app,/Notifications are only sent after you turn them on \(Settings, Reminders\) and allow them on your phone\./);
+ assert.match(app,/You can switch them off in Settings, or for the app in your phone's Android settings\. We keep only whether you turned them on\./);
  const helpers=policy.slice(policy.indexOf('<h2 id="service-providers">'),policy.indexOf('<h2 id="transfers">'));
- assert.match(helpers,/<li><strong>OneSignal<\/strong>: delivery of push notifications in the Android app, if you allow them\. OneSignal receives your player ID, a push token for your phone and your device type\.<\/li>/);
- assert.match(policy,/including Vercel, Stripe, Resend, OneSignal, Google, Meta and TikTok/);assert.match(policy,/<strong>Push ID in the Android app<\/strong>: until you sign out in the app/);
+ assert.match(helpers,/<li><strong>OneSignal<\/strong>: delivery of push notifications in the Android app\. From the first time you open the app OneSignal receives a push token and device data for your phone, and once you sign in your player ID;/);
+ assert.match(policy,/<strong>To make push notifications possible in the Android app<\/strong>:[^<]*<a href="#android-app">The Android app<\/a>\), so that notifications work as soon as you turn them on, on every phone you play on\. Legal basis: our legitimate interest/);
+ assert.match(policy,/including Vercel, Stripe, Resend, OneSignal, Google, Meta and TikTok/);
+ const retention=policy.slice(policy.indexOf('<h2 id="retention">'),policy.indexOf('<h2 id="your-rights">'));
+ assert.match(retention,/<strong>Notifications in the Android app<\/strong>: whether you turned them on, for as long as your account exists\. OneSignal keeps a phone's push token and device data for as long as we use OneSignal, unless we delete them earlier\. Signing out in the app ends the link between that phone and your player ID; when you delete your account, we also delete the data at OneSignal that is linked to your player ID\./);
+ // The deletion page promises it, and the manual steps say how (OneSignal's user by external_id = the player id).
+ assert.match(read('public/delete-account.html'),/and for the Android app the data at OneSignal \(our push notification service\) that is linked to your player ID\./);
+ const setup=read('NOTIFICATIONS-SETUP.md');
+ assert.match(setup,/DELETE https:\/\/api\.onesignal\.com\/apps\/1d8ca7c0-fca0-48a9-b55e-e87b85802fad\/users\/by\/external_id\/<player id>/);assert.match(setup,/Data safety/);
+ assert.match(read('HANDOFF-NOTES.md'),/Also delete the player's OneSignal user/);
 });

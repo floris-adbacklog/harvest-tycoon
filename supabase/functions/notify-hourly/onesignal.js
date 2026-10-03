@@ -1,5 +1,5 @@
 // Push notifications in our Android app (Oct 2026), through OneSignal's REST API: the same reminders and messages as the browser's push,
-// for the farmers who turned them on in the app (supabase/app-push.sql, app_push_devices). The app links each phone to its farmer
+// for the farmers who turned them on in the app (supabase/app-push.sql, app_push_players). The app links each phone to its farmer
 // (OneSignal.login with the player id), so a notification is addressed to player ids: include_aliases.external_id.
 // No key (the secret ONESIGNAL_REST_API_KEY is not set yet): nothing is sent and nothing fails. Nothing here throws: a refused or failed
 // call is logged and counts as not delivered, so the hourly job tries that reminder again next hour, as with a browser's push.
