@@ -370,7 +370,7 @@ const BODIES={
    ['family-members','Family',`Only your ${h.link('family','Farm family')}.`],
    ['letter','Private','One-to-one messages. Search a farmer by name, or open their profile.'],
    // Mentions (3 Oct 2026, src/chat-rich.js): the one rule, on the page that explains the chat.
-   ['chat','Mentions','Type @ in Global or Family and pick a farmer. A mention reaches them like a private message.']
+   ['chat','Mentions','Type @ in Global or Family and pick a farmer, or choose Mention in the menu of their message. A mention reaches them like a private message.']
   ]))
   +section('Your choice',facts([
    ['settings','Private messages off','In Settings you can switch private messages off. Then nobody can start one with you, and you cannot start one either.'],

@@ -13,7 +13,7 @@ import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
 import {chosenLanguage} from '../public/i18n.js';
 import {portalChat,portalOff} from '../public/portal.js';
-import {chatParts,mentionsMe,mentionAt,insertMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
+import {chatParts,mentionsMe,mentionAt,insertMention,appendMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
 import {wikiSectionTitle} from '../public/wiki-content.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -461,6 +461,16 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   };
   if(!family&&query.length>=2)pickTimer=setTimeout(run,300);else void run();
  }
+ // "Mention" in a message's menu: their name of now (a farmer who renamed since: the database checks the name of now, as for the list),
+ // at the end of what is typed, and the box gets the focus so the message can go on from there.
+ async function mentionFrom(m){
+  if(!canMention())return;
+  const card=(await chat.cards?.([m.sender]).catch(()=>[])??[]).find(c=>c?.playerId===m.sender),name=card?.username??m.sender_name;
+  if(!name||!canMention())return;
+  if(!picked.has(m.sender)&&mentionIds(input.value,picked,me).length>=MAX_MENTIONS){note('Mention up to 3 farmers in one message.');return;}
+  const next=appendMention(input.value,name,input.maxLength>0?input.maxLength:200);if(!next)return;
+  input.value=next.text;picked.set(m.sender,name);closePicks();input.focus({preventScroll:true});input.setSelectionRange(next.caret,next.caret);
+ }
  function pick(i){
   const p=picks[i];if(!p||!pickAt)return;
   const next=insertMention(input.value,input.selectionStart??input.value.length,pickAt.start,p.username);
@@ -503,6 +513,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(touch()&&!mine&&String(m.body??'').trim())items.push(['translate','Translate with Google']);
   // No links out on CrazyGames (Oct 2026, public/portal.js), Google's translation included.
   if(portalOff('translate')){const at=items.findIndex(([key])=>key==='translate');if(at>=0)items.splice(at,1);}
+  // Mention them without typing (3 Oct 2026): handy for a farmer who never chose a name. Global and Family, as the "@" list.
+  if(!mine&&canMention())items.push(['mention',`Mention ${m.sender_name}`]);
   if(!mine)items.push(['report','Report message'],['block',`Block ${m.sender_name}`]);
   if(staff)items.push(['edit','Edit message'],['delete','Delete message']);
   if(staff&&!mine&&!m.sender_staff)items.push(['mute60','Mute 1 hour'],['mute1440','Mute 1 day'],['ban','Ban from chat']);
@@ -533,6 +545,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  async function act(key,m){
   // A new tab straight from the tap on the menu item, so the browser allows it.
   if(key==='translate'){if(!portalOff('translate'))win.open(translateLink(m.body,chosenLanguage()),'_blank','noopener,noreferrer');return;}
+  if(key==='mention'){await mentionFrom(m);return;}
   try{
    if(key==='report'){
     if(!await confirmAction({title:'Report this message?',description:'A moderator will read it. Thank you for keeping the valley friendly.',confirmLabel:'Report',picture:'admin'}))return;

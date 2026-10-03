@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {chatParts,mentionsMe,mentionAt,insertMention,mentionIds,mentionMatches,MAX_MENTIONS,MAX_WIKI_LINKS} from '../src/chat-rich.js';
+import {chatParts,mentionsMe,mentionAt,insertMention,appendMention,mentionIds,mentionMatches,MAX_MENTIONS,MAX_WIKI_LINKS} from '../src/chat-rich.js';
 import {wikiArticle,wikiSectionTitle} from '../public/wiki-content.js';
 import {wikiLinksIn} from '../public/wiki-link.js';
 import {messagePushes} from '../supabase/functions/notify-hourly/messages.js';
@@ -124,7 +124,7 @@ test('the list: Global and Family only, recent speakers or from 2 letters every 
  assert.match(ui,/placeholder:tab==='global'\|\|tab==='family'\?'Type @ to mention a farmer\.':`Message \$\{thread\.otherName\}…`/,'short enough for a phone');
  assert.match(ui,/pickList\.addEventListener\('click',/,'a tap picks on click, so it never lands on a message under the list');
  const wiki=wikiArticle('chat').html;
- assert.match(wiki,/<strong>Mentions<\/strong><p>Type @ in Global or Family and pick a farmer\. A mention reaches them like a private message\.<\/p>/,'one line in the wiki');
+ assert.match(wiki,/<strong>Mentions<\/strong><p>Type @ in Global or Family and pick a farmer, or choose Mention in the menu of their message\. A mention reaches them like a private message\.<\/p>/,'one line in the wiki, with the menu\'s Mention (3 Oct 2026)');
 });
 
 test('the client sends the ids with the message, and still sends it without them before the database knows mentions',async()=>{
@@ -177,4 +177,20 @@ test('Settings: the private messages switch is the mentions switch too, and says
  const html=read('public/farm.html');
  assert.match(html,/<strong>Private messages and mentions<\/strong><small>When a farmer sends you a private message or mentions you in the chat, and you are not in the game\. At most one every few minutes per chat\.<\/small><\/span><input id="notify-messages"/);
  assert.doesNotMatch(html,/New private message/);
+});
+
+// 3 Oct 2026: "Mention" in a message's menu (long press on a phone, ••• on a computer) puts "@Name " in the box, in Global and Family.
+test('Mention from a message\'s menu: "@Name " after what is typed, once, within the box\'s length',()=>{
+ assert.deepEqual(appendMention('','Farmer 4821'),{text:'@Farmer 4821 ',caret:13});
+ assert.deepEqual(appendMention('Hi','Anna'),{text:'Hi @Anna ',caret:9},'a space before it');
+ assert.deepEqual(appendMention('Hi ','Anna'),{text:'Hi @Anna ',caret:9});
+ assert.deepEqual(appendMention('Hi @Anna ','Anna'),{text:'Hi @Anna ',caret:9},'not twice');
+ assert.equal(appendMention('Hi @Annabel','Anna').text,'Hi @Annabel @Anna ','a longer name is another farmer');
+ assert.equal(appendMention('x'.repeat(195),'Anna',200),null,'never past the box');
+ assert.equal(appendMention('a.b','a.b').text,'a.b @a.b ','the name is matched as written, not as a pattern');
+ const ui=readFileSync(new URL('../src/chat-ui.js',import.meta.url),'utf8');
+ assert.match(ui,/if\(!mine&&canMention\(\)\)items\.push\(\['mention',`Mention \$\{m\.sender_name\}`\]\);\n  if\(!mine\)items\.push\(\['report'/,'for another farmer\'s message, where the "@" list works, before Report');
+ assert.match(ui,/if\(key==='mention'\)\{await mentionFrom\(m\);return;\}/);
+ assert.match(ui,/if\(!picked\.has\(m\.sender\)&&mentionIds\(input\.value,picked,me\)\.length>=MAX_MENTIONS\)\{note\('Mention up to 3 farmers in one message\.'\);return;\}/,'at most 3, as typed ones');
+ assert.match(ui,/input\.value=next\.text;picked\.set\(m\.sender,name\);/,'the message takes their id along, as a picked one');
 });
