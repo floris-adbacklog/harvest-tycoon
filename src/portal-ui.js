@@ -11,7 +11,7 @@ export function createPortalUI({portal,doc=globalThis.document}){
  if(stage&&!stage.querySelector('.portal-privacy')){const line=doc.createElement('p');line.className='portal-privacy';line.innerHTML=privacyLine();stage.append(line);}
  const privacy=doc.getElementById('privacy-settings');
  if(privacy){
-  for(const old of privacy.querySelectorAll('.install-copy,.notify-device-actions'))old.remove();
+  for(const old of privacy.querySelectorAll('.install-copy,.notify-device-actions,.privacy-danger'))old.remove();
   const line=doc.createElement('p');line.className='install-copy portal-privacy-settings';line.innerHTML=privacyLine();privacy.append(line);
  }
  // The privacy link in the wiki and elsewhere in the frame: our full address, in a new tab (CrazyGames allows this one link).

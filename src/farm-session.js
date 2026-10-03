@@ -74,6 +74,13 @@ export function createFarmSession({
    bridge.clearPaymentReturn=()=>{const url=new URL(win.location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');win.history.replaceState(null,'',url.pathname+url.search+url.hash);};
    // World II: travelling between the farm and the village loads the game frame again, through its loading screen, with the farm as it is now.
    bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;frame.src=to==='village'?`${farmUrl}?world=village`:farmUrl;};
+   // Delete account (3 Oct 2026), as on the website (src/main.js): never offered on CrazyGames (portal.css, src/portal-ui.js), the same when asked.
+   bridge.deleteAccount=async username=>{
+    if(ticket!==generation||!nav.onLine)throw new Error('Your session is paused. Reconnect to continue.');
+    const data=await farmRequest({operation:'delete_account',username},{retry:false});
+    if(ticket!==generation||data?.deleted!==user.id)throw new Error('Your session has ended.');
+    connection.stop();notifications?.dispose?.();notifications=null;dispose();signedOut('Your account has been deleted.');
+   };
    extend(bridge,{alive:()=>ticket===generation,user});
    win.harvestBridge=bridge;frame=page;release(bridge);phase('authenticated');
    opened(bridge,user);

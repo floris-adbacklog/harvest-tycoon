@@ -409,7 +409,7 @@ const BODIES={
   +section('Confirm your email',`<p>Signed up with your email address? Confirm it once for ${EMAIL_BONUS} diamonds: tap “Confirm your email” in the menu and type the code we send you. Google and Facebook accounts get the diamonds straight away.</p>`)
   // Share my farm (Oct 2026, public/farm-share.js).
   +section('Invite a friend',`<p>Share your invite link. When your friend reaches level ${INVITE_LEVEL} within ${INVITE_DAYS} days, you both get ${INVITE_REWARD} diamonds, for up to ${INVITE_LIMIT} friends.</p><p>Or tap Share my farm on the level-up card or your own profile: a picture of your farm with your invite link.</p>`)
-  +section('Privacy',`<p>Read how we handle your data in the <a href="/privacy">Privacy Policy</a>. Want to stop? You can <a href="/delete-account">delete your account</a>.</p>`);
+  +section('Privacy',`<p>Read how we handle your data in the <a href="/privacy">Privacy Policy</a>.</p><p>Want to stop? You can delete your account yourself under <strong>Settings</strong>, <strong>Privacy</strong>, <strong>Delete account</strong>: after a warning you type your farmer name and it is gone at once (<a href="/delete-account">what is deleted and what is kept</a>). A question? <a href="/support">Contact support</a>.</p>`);
  }
 };
 // After the last building (27 Sep 2026): five things to do from level 91 on, all on your own farm.

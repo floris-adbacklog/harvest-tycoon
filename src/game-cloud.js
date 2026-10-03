@@ -16,6 +16,7 @@ import {createPopupUI} from './popup-ui.js';
 import {createOfferUI} from './offer-ui.js';
 import {createPortalUI} from './portal-ui.js';
 import {markAdminView,startAdminView} from './admin-view.js';
+import {createAccountDelete} from './account-delete.js';
 // The game frame never zooms as a page: only the 3D field does (src/page-zoom.js).
 stopPageZoom(document);
 let bridge;
@@ -51,6 +52,8 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   if(adminView)startAdminView({bridge});
   // On CrazyGames the purchases, links and account buttons step aside (portal.css) and the page's own lines come in (src/portal-ui.js).
   if(portal)createPortalUI({portal});
+  // Settings › Privacy › Delete account (3 Oct 2026, src/account-delete.js): on the website and in both apps, never on CrazyGames.
+  if(!portal)createAccountDelete({bridge,name:()=>document.getElementById('player-name')?.dataset.username??''});
   // The Family Members list opens a farmer's profile too (public/family-ui.js).
   window.harvestProfiles=profiles;
   ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');

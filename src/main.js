@@ -204,6 +204,18 @@ async function openFarm(){
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,
   // with the farm as it is now (public/game.js reads ?world=village).
   bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;frame.src=to==='village'?'/farm.html?world=village':'/farm.html';};
+  // Delete account (3 Oct 2026, Settings › Privacy, src/account-delete.js): farm-api deletes the farm, everything personal and the account
+  // itself, for this signed-in farmer only and only with their farmer name typed exactly (account-delete-service.js). Never repeated by
+  // itself. Then this device lets go (the app's notifications, the session, which the server no longer knows) and the home page says so;
+  // a refusal (a wrong name, an admin account) is thrown back to Settings and the farm stays open.
+  bridge.deleteAccount=async username=>{
+   if(ticket!==generation||!navigator.onLine)throw new Error('Your session is paused. Reconnect to continue.');
+   const data=await farmRequest({operation:'delete_account',username},{retry:false});
+   if(ticket!==generation||data?.deleted!==user.id)throw new Error('Your session has ended.');
+   connection.stop();try{await notifications?.push?.detach();}catch{}notifications?.dispose?.();notifications=null;dispose();
+   try{await supabase.auth.signOut({scope:'local'});}catch{}
+   store.remove(RETURNING_KEY);landing();setMode('register');$('account-message').textContent='Your account has been deleted.';
+  };
   window.harvestBridge=bridge;frame=page;release(bridge);phase('authenticated');store.set(RETURNING_KEY,'1');
   scheduleBrowserTip({embedded:embeddedBrowser(navigator.userAgent),doc:document,win:window,storage:store});
  }catch(error){if(ticket===generation){

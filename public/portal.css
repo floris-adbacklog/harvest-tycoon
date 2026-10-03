@@ -14,8 +14,8 @@ html[data-portal] .level-up-share,html[data-portal] .farmer-share{display:none!i
 html[data-portal] #email-button,html[data-portal] #email-menu-entry,html[data-portal] #email-settings,html[data-portal] #notify-settings,
 html[data-portal] .reminder-nudge,html[data-portal] #app-settings,html[data-portal] .wiki-install{display:none!important}
 /* The account: no Sign out (CrazyGames' own log-in is the only one), no cookie settings (no cookies or trackers here), no Delete
-   account link (a link to our website; Oct 2026). */
-html[data-portal] #logout-player,html[data-portal] #cookie-settings,html[data-portal] #delete-account-link{display:none!important}
+   account (Oct 2026; the farm belongs to the CrazyGames account there). */
+html[data-portal] #logout-player,html[data-portal] #cookie-settings,html[data-portal] #delete-account-row{display:none!important}
 /* The chat's "Translate with Google" (a link out). */
 html[data-portal] .chat-translate{display:none!important}
 /* The guest's "Save your farm: log in with CrazyGames" in Settings, Your account. */

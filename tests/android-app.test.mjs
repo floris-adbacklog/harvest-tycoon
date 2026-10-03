@@ -297,13 +297,16 @@ test('Invite a friend in the app: Share opens the app\'s share sheet with the te
  }finally{globalThis.window=saved.window;globalThis.document=saved.document;if(saved.window===undefined)delete globalThis.window;if(saved.document===undefined)delete globalThis.document;}
 });
 // Google Play asks that an app with accounts lets its players start deleting their account from inside the app (Oct 2026): Settings'
-// Privacy links to the website's /delete-account page, for every farmer; CrazyGames (no links to our website) leaves it out.
-test('Settings\' Privacy links to deleting the account, except on CrazyGames',()=>{
+// Privacy deletes the account in the game itself (3 Oct 2026: the App Store asks for it inside the app), for every farmer on the website and in
+// both apps, and links to support; CrazyGames (no links to our website, the farm belongs to the CrazyGames account) leaves both out.
+test('Settings\' Privacy has Delete account and Contact support, except on CrazyGames',()=>{
  const privacy=read('public/farm.html').match(/<section id="privacy-settings"[\s\S]*?<\/section>/)[0];
- assert.match(privacy,/<a id="delete-account-link" class="link-button" href="\/delete-account" target="_blank" rel="noopener">Delete account<\/a>/);
- assert.match(read('public/portal.css'),/html\[data-portal\] #delete-account-link[,{]/);
- assert.doesNotMatch(read('public/android.css'),/delete-account/);
- for(const code of READY)if(code!=='en')assert.ok(JSON.parse(read(`public/i18n/${code}.json`))['Delete account'],code);
+ assert.match(privacy,/<a class="link-button" href="\/privacy" target="_blank" rel="noopener">Privacy Policy<\/a><a id="contact-support-link" class="link-button" href="\/support" target="_blank" rel="noopener">Contact support<\/a><\/div><div id="delete-account-row" class="privacy-danger"><button id="delete-account" class="small-button is-danger" type="button">Delete account<\/button><p id="delete-account-message" class="cloud-form-error" role="alert"><\/p><\/div><\/section>/);
+ assert.doesNotMatch(privacy,/href="\/delete-account"/,'a button now, not the link to the page');
+ assert.match(read('public/portal.css'),/html\[data-portal\] #delete-account-row[,{]/);
+ assert.match(read('src/portal-ui.js'),/querySelectorAll\('\.install-copy,\.notify-device-actions,\.privacy-danger'\)\)old\.remove\(\)/);
+ assert.doesNotMatch(read('public/android.css'),/delete-account|contact-support/,'both apps keep them');
+ for(const code of READY)if(code!=='en')for(const text of ['Delete account','Contact support'])assert.ok(JSON.parse(read(`public/i18n/${code}.json`))[text],`${code}: ${text}`);
 });
 
 // 3 Oct 2026: our iPhone app (WebViewGold for iOS) adds the same token to an iPhone's own user agent. It is the app as on Android, and the

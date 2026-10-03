@@ -8,6 +8,7 @@ import {handleAdminGrant,handleAdminEmail,isSuperadmin,isAdminAccount} from './a
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {linkPartner} from './partner-service.js';
+import {handleDeleteAccount} from './account-delete-service.js';
 import {recordSource} from './source-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
@@ -56,7 +57,7 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='crazygames')user.app_metadata={...user.app_metadata,provider:'crazygames'};
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','rename','avatar','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','rename','avatar','delete_account','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
   if(body.operation==='admin_email'){
    const r=await handleAdminEmail({admin,body,user});
@@ -103,6 +104,11 @@ Deno.serve(async(req)=>{
    const saved=await savePlayerAvatar({admin,player:user.id,avatarId:body.avatarId,owner:isSuperadmin(user)});
    if(saved.status===200)later(writeLog(admin,user.id,accountLog('avatar','Picked a new face')));
    return reply(saved.data,saved.status);
+  }
+  // Delete account (3 Oct 2026, account-delete-service.js): the signed-in farmer's own account, with their farmer name typed exactly; never
+  // an admin account. Before the farm is read, so nothing here can make a farm or a name again.
+  if(body.operation==='delete_account'){
+   const removed=await handleDeleteAccount({admin,body,user,oneSignalKey:Deno.env.get('ONESIGNAL_REST_API_KEY')??''});return reply(removed.data,removed.status);
   }
   const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished').eq('player_id',user.id).maybeSingle();
   if(profileResponse.error)throw profileResponse.error;
