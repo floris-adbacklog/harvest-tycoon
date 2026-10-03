@@ -78,6 +78,8 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
  const inactive=lastActive!==null&&now-lastActive>CONFIG.INACTIVE_STOP_MS;
  const active=lastActive!==null&&now-lastActive<CONFIG.ACTIVE_SKIP_MS;
  const farm=player.farm??{},login=farm.login??{},ready=readyCrops(farm,now),jobsReady=readyJobs(farm,now);
+ // Devices: the browsers that allow push (subscriptions), and our Android app's notifications (app_push: the farmer turned them on there,
+ // supabase/app-push.sql). One reminder is one reminder on all of them, so the limits below hold for the farmer, not per device.
  const subscriptions=player.subscriptions??[];
  // Days away as the game counts them for the comeback chest: from the farm's last save, or the last activity when that is missing.
  const seen=Number.isFinite(Date.parse(farm.seenAt))?Date.parse(farm.seenAt):lastActive,awayDays=seen===null?0:Math.floor((now-seen)/DAY_MS);
@@ -87,7 +89,7 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
  // "Seen" markers only move forward. The first time, and whenever a category is off or cannot be delivered,
  // they follow the clock, so switching something on never announces what was already waiting.
  const seenCrops=number(player.crops_seen_at)??now,seenJobs=number(player.production_seen_at)??now;
- const canPush=!inactive&&subscriptions.length>0;
+ const canPush=!inactive&&(subscriptions.length>0||player.app_push===true);
  const follow=[];
  if(player.crops_seen_at==null||!player.push_crops||!canPush||active)follow.push('crops_seen_at');
  if(player.production_seen_at==null||!player.push_production||!canPush||active)follow.push('production_seen_at');

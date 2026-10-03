@@ -2588,6 +2588,7 @@
 "Notifications":"通知",
 "Notifications are blocked for this site. Allow them in your browser settings, then reload the page.":"这个网站的通知被阻止了。请在浏览器设置中允许，然后重新加载页面。",
 "Notifications are blocked for this site. You can allow them in your browser settings.":"这个网站的通知被阻止了。你可以在浏览器设置中允许。",
+"Notifications are off for Harvest Tycoon on this phone. You can allow them in your phone settings.":"此手机上 Harvest Tycoon 的通知已关闭。你可以在手机设置中允许。",
 "Notifications are off in this browser or app.":"此浏览器或应用的通知已关闭。",
 "Notifications are on in this browser or app.":"此浏览器或应用的通知已开启。",
 "Notifications work in this browser or app. We will only nudge you when your farm needs you.":"此浏览器或应用可以接收通知。只有农场需要你时我们才会提醒你。",

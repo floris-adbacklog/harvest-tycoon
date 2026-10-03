@@ -61,3 +61,19 @@ Zeg tegen mij dat de geheimen erin staan. Dan voer ik `supabase/notifications-cr
 ## Wat spelers zien
 
 Zodra de config `enabled` is, verschijnt in Settings het blok **Reminders**. Alles staat uit. Een speler zet zelf meldingen aan op zijn apparaat (op een iPhone eerst de app op het beginscherm zetten), kiest wat hij wil, en kan een testmelding sturen.
+
+## Meldingen in de Android-app (OneSignal, oktober 2026)
+
+In de Android-app komen de meldingen via OneSignal in plaats van via de browser. Dezelfde herinneringen, dezelfde schakelaars,
+dezelfde stille uren en limieten. Wat jij doet, in deze volgorde (elke stap is los veilig: zonder de volgende gebeurt er niets):
+
+1. **Database:** voer `supabase/app-push.sql` uit in de SQL-editor. Het maakt de tabel `app_push_devices` en de functies
+   `app_push_save` en `app_push_forget`, en past drie triggers aan vanaf hun live versie (privéberichten, de Crew, aankoopmeldingen
+   voor de admin). Staat een regel live anders dan verwacht, dan stopt het hele bestand zonder iets half te doen; laat het me dan weten.
+2. **Edge Function:** zet `notify-hourly` opnieuw neer (met de nieuwe `onesignal.js`).
+3. **Geheim:** in **Edge Functions → Secrets** het geheim `ONESIGNAL_REST_API_KEY` met de **App API key** uit OneSignal
+   (Settings → Keys & IDs). Nooit in de code, de chat of GitHub. De App ID (`1d8ca7c0-fca0-48a9-b55e-e87b85802fad`) is openbaar en staat al in de code.
+4. **Controleren:** `…/functions/v1/notify-hourly?config` geeft dan ook `"appPush":true`. Pas dan zie je in de app de knop
+   **Turn on notifications** in Settings, en vraagt de app de speler om toestemming (alleen na een tik).
+
+Zonder het geheim stuurt de functie niets naar de app en blijft de app zoals nu (alleen de dagelijkse e-mail).

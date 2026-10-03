@@ -60,7 +60,8 @@ const card=({picture,title,badge='',stats=[],note='',locked=false})=>`<li class=
 // An avatar in a table: its small picture and its name (the Avatars section).
 const avatarCell=a=>`<span class="wiki-avatar"><img src="${a.src}" alt="" width="34" height="36" loading="lazy" decoding="async">${a.name}</span>`;
 const table=(head,rows,cls='')=>`<div class="wiki-table-wrap"><table class="wiki-table ${cls}"><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
-const facts=list=>`<ul class="wiki-facts">${list.map(([picture,title,text])=>`<li>${art(picture)}<div><strong>${title}</strong><p>${text}</p></div></li>`).join('')}</ul>`;
+// A fact may carry attributes for its <li> (a fourth part, such as ' data-browser-only').
+const facts=list=>`<ul class="wiki-facts">${list.map(([picture,title,text,attrs=''])=>`<li${attrs}>${art(picture)}<div><strong>${title}</strong><p>${text}</p></div></li>`).join('')}</ul>`;
 
 export const cropLevel=key=>CROP_LEVELS[key]??CROPS[key].minLevel??1;
 export const buildingLevel=key=>BUILDING_LEVELS[key]??BUILDINGS[key].minLevel??1;
@@ -73,7 +74,7 @@ const worldTwoRecipe=r=>worldTwoBuilding(r.building)||Object.keys(r.output).some
 // Halloween Pass); portal: true in the game on CrazyGames (Oct 2026, public/portal.js; read from the page around the game when not
 // given), where the parts about buying, inviting, sharing, email, reminders, the app and our website are left out, as the game itself
 // leaves them out there; app: true in our Android app (Oct 2026, public/android.js; read from the page when not given), where only the
-// parts about buying, installing the web app and browser notifications are left out}.
+// parts about buying and installing the web app are left out (its notifications are the app's own, src/app-push.js)}.
 function helpers(ctx){
  const level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now(),portal=Boolean(ctx.portal??portalAround()),app=Boolean(ctx.app??androidApp());
  const locked=n=>level!=null&&n>level;
@@ -350,12 +351,13 @@ const BODIES={
   +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap the mailbox next to How to play (on a phone: More, then Feedback), choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
   +section('Avatars',avatarsBody(true))
   +section('Privacy',PORTAL_PRIVACY);
-  // In the Android app (Oct 2026): no home screen or Farm app to point at, and no browser notifications; what the app says instead
-  // is the line Getting started already has (so it is translated already).
+  // In the Android app (Oct 2026): no home screen or Farm app to point at; what the app says instead is the line Getting started already
+  // has (so it is translated already). The website's own wiki page marks the home-screen line data-browser-only, so public/wiki.css
+  // leaves it out when the app shows that page. Push reminders are the same in the app (its own notifications, src/app-push.js).
   return section('Your account',facts([
    h.app?['farm','One farm, everywhere','Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.']
-   :['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app: press and hold its icon for Chat, Daily gift and the leaderboard, and on Android or a computer you can play full screen (Settings, Farm app).'],
-   ...(h.app?[]:[['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. After 3 and 6 days away, the morning gift reminder tells you a comeback chest is waiting. Email reminders, and news and offers by email, stay off until you switch them on. The daily email (at most one a day, only when something is waiting) goes to a confirmed address: signed up with your email? Confirm it first.']])
+   :['farm','One farm, everywhere','Sign in on any device and your farm is there. You can also add Harvest Tycoon to your home screen and play it like an app: press and hold its icon for Chat, Daily gift and the leaderboard, and on Android or a computer you can play full screen (Settings, Farm app).',' data-browser-only'],
+   ['bell','Reminders','Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. After 3 and 6 days away, the morning gift reminder tells you a comeback chest is waiting. Email reminders, and news and offers by email, stay off until you switch them on. The daily email (at most one a day, only when something is waiting) goes to a confirmed address: signed up with your email? Confirm it first.']
   ]))
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
   // The mailbox button (30 Sep 2026, public/feedback-ui.js).

@@ -3,8 +3,10 @@
 // It comes at level 5, and again at level 10 and 20 while reminders are still off (30 Sep 2026: most new farmers leave in their
 // first visit and never come back, so the repeats come with levels, in the same visit too, never with days). One card at a time.
 // Where push cannot work (inside the Facebook, Instagram or TikTok app, Safari on an iPhone without the Home Screen app, push blocked)
-// the same question offers the daily email instead (28 Sep 2026): every account has an address.
+// the same question offers the daily email instead (28 Sep 2026): every account has an address. In our Android app "Turn on" asks
+// the app for its own notifications (src/app-push.js, Oct 2026), the same question with the same answer.
 import {art} from './visual-icons.js';
+import {APP_PUSH_BLOCKED} from './android.js';
 const KEY='harvest-tycoon:reminder-nudge';
 export const NUDGE_LEVELS=Object.freeze([5,10,20]);
 // A harvest by hand, of one field or several, or by the tractor.
@@ -46,7 +48,7 @@ export function createReminderNudge({state,level,notify,track=()=>{},canShow=()=
    }
    try{
     const api=bridge(),result=await api.push.enable();
-    if(result?.kind!=='on'){notify(result?.kind==='blocked'?'Notifications are blocked for this site. You can allow them in your browser settings.':'Reminders could not be turned on here.');track('reminder_prompt',{action:'failed',channel});close();return;}
+    if(result?.kind!=='on'){notify(result?.kind==='blocked'?(api.push.app?APP_PUSH_BLOCKED:'Notifications are blocked for this site. You can allow them in your browser settings.'):'Reminders could not be turned on here.');track('reminder_prompt',{action:'failed',channel});close();return;}
     const current=await api.get();await api.save({...current,pushCrops:true,pushProduction:true});
     track('reminder_prompt',{action:'accepted',channel});notify('Reminders are on. We will nudge you when crops or batches are ready.');
    }catch{notify('Reminders could not be turned on. You can try again in Settings.');track('reminder_prompt',{action:'failed',channel});}
@@ -69,7 +71,7 @@ export function createReminderNudge({state,level,notify,track=()=>{},canShow=()=
   checking=true;
   try{
    const api=bridge();if(!api)return;await api.ready;if(!api.available)return;
-   const push=api.config?.push&&api.push?(await api.push.status()).kind:'unsupported';
+   const push=(api.config?.push||api.config?.appPush)&&api.push?(await api.push.status()).kind:'unsupported';
    harvestedAt=0;
    if(push==='on')return;
    if(push==='off'){show('push',lvl);return;}

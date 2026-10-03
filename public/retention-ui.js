@@ -4,6 +4,7 @@ import {streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwo
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {lanternChip} from './pass-ui.js';
+import {APP_PUSH_BLOCKED} from './android.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList,celebrate=()=>{}}){
@@ -55,13 +56,13 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  const notifications=()=>{try{return window.parent?.harvestBridge?.notifications??null;}catch{return null;}};
  async function offerReminder(){
   const button=$('gift-remind'),api=notifications();if(!button||!api)return;
-  try{await api.ready;if(!api.available||!api.config?.push||!api.push||(await api.push.status()).kind!=='off')return;}catch{return;}
+  try{await api.ready;if(!api.available||!(api.config?.push||api.config?.appPush)||!api.push||(await api.push.status()).kind!=='off')return;}catch{return;}
   button.hidden=false;
   button.onclick=async()=>{
    button.disabled=true;
    try{
     const result=await api.push.enable();
-    if(result?.kind!=='on'){notify(result?.kind==='blocked'?'Notifications are blocked for this site. You can allow them in your browser settings.':'Reminders could not be turned on here.');return;}
+    if(result?.kind!=='on'){notify(result?.kind==='blocked'?(api.push.app?APP_PUSH_BLOCKED:'Notifications are blocked for this site. You can allow them in your browser settings.'):'Reminders could not be turned on here.');return;}
     await api.save({...await api.get(),pushDaily:true});button.hidden=true;notify('Reminders are on. We will let you know when your next gift is ready.');
    }catch{notify('Reminders could not be turned on. You can try again in Settings.');}
    finally{button.disabled=false;}

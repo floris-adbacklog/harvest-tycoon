@@ -14,7 +14,5 @@ html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass
 @media(max-width:600px){html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass-heads,.pass-row){grid-template-columns:26px minmax(0,1fr)}}
 /* Installing the web app and full screen: the Play app is the app (Settings' Farm app block, How to play's install button and steps). */
 html[data-app=android] #app-settings,html[data-app=android] #app-fullscreen-row,html[data-app=android] .wiki-install,html[data-app=android] .wiki-app-steps{display:none!important}
-/* Browser notifications (the WebView has none): the device's switch and its rows, the line that asks to allow them, and "Remind me" under
-   the daily gift. The email reminders in the same block stay. */
-html[data-app=android] #notify-device,html[data-app=android] #notify-push-rows,html[data-app=android] #notify-settings>.install-copy,
-html[data-app=android] #gift-remind{display:none!important}
+/* Notifications are the app's own there (src/app-push.js, Oct 2026): Settings' device switch, the reminder question and "Remind me" under
+   the daily gift show as on the website, and the code hides them itself while the app has no push. */

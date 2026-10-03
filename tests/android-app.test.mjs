@@ -123,13 +123,15 @@ const selectorsOf=css=>[...css.replace(/\/\*[^]*?\*\//g,'').replace(/@media[^{]*
 test('android.css hides what a Play app may not have or cannot do, only in the app, and leaves everything else',()=>{
  const css=read('public/android.css'),hidden=hiddenBy(css),sources=['public/farm.html','public/boosts-ui.js','public/pass-ui.js','src/starter-pack-ui.js','src/offer-ui.js','public/retention-ui.js','public/wiki-content.js'].map(read).join('\n');
  const gone=['#diamond-store','[data-shop-jump="diamond-store"]','.get-diamonds','#starter-pack-button','#starter-pack-chip','#offer-button','#offer-chip','#shop-offer',
-  '#shop-pass','.pass-paid-box:not(.is-owned)','.pass-cell.is-paid.is-locked','#app-settings','#app-fullscreen-row','.wiki-install','.wiki-app-steps','#notify-device','#notify-push-rows','#notify-settings>.install-copy','#gift-remind'];
+  '#shop-pass','.pass-paid-box:not(.is-owned)','.pass-cell.is-paid.is-locked','#app-settings','#app-fullscreen-row','.wiki-install','.wiki-app-steps'];
  for(const selector of gone){
   assert.ok(hidden.includes(`html[data-app=android] ${selector}`),`hidden: ${selector}`);
   const name=selector.match(/[#.]([\w-]+)|"([\w-]+)"/).slice(1).find(Boolean);assert.ok(sources.includes(name),`still in the game: ${name}`);
  }
- // What stays in the app: invites and sharing, email and its reminders, chat, families, the leaderboard, the wiki, cookies, Sign out.
- for(const kept of ['#invite-button','.family-invite-friend','.level-up-share','.farmer-share','#email-button','#email-settings','#notify-settings','#notify-email-rows','.reminder-nudge','#chat-button','#family-button','#leaderboard-button','#help-button','#cookie-settings','#logout-player','.pass-cell','#vip-shop','#boost-catalog','#starter-pack-dialog','#offer-dialog','.payment-dialog'])
+ // What stays in the app: invites and sharing, email and its reminders, push reminders (the app's own, Oct 2026: the device switch,
+ // its rows, the line that asks to allow them and the gift's "Remind me"), chat, families, the leaderboard, the wiki, cookies, Sign out.
+ for(const kept of ['#invite-button','.family-invite-friend','.level-up-share','.farmer-share','#email-button','#email-settings','#notify-settings','#notify-email-rows','.reminder-nudge',
+  '#notify-device','#notify-push-rows','#notify-settings>.install-copy','#gift-remind','#notify-enable','#notify-disable','#chat-button','#family-button','#leaderboard-button','#help-button','#cookie-settings','#logout-player','.pass-cell','#vip-shop','#boost-catalog','#starter-pack-dialog','#offer-dialog','.payment-dialog'])
   assert.ok(!selectorsOf(css).some(s=>s===`html[data-app=android] ${kept}`),`kept: ${kept}`);
  for(const selector of selectorsOf(css))assert.ok(selector.startsWith('html[data-app=android] '),`only in the app: ${selector}`);
  // A rule with :has() stands alone, so a WebView without it drops only that rule.
@@ -141,17 +143,23 @@ test('the sign-in card and the website\'s wiki: the same second lock, only in th
  const welcome=read('public/welcome.css'),wiki=read('public/wiki.css');
  for(const selector of ['#social-login','.social-button','.browser-tip'])assert.ok(hiddenBy(welcome).includes(`html[data-app=android] ${selector}`),selector);
  const wikiHidden=hiddenBy(wiki);
- for(const selector of ['.wiki-install','.wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass,#sec-your-account,[data-shop-only])'])assert.ok(wikiHidden.includes(`html[data-app=android] ${selector}`),selector);
- assert.ok(wikiHidden.some(s=>['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'].every(id=>s.includes(`[data-wiki-jump="${id}"]`))&&s.includes('[data-wiki-anchor="sec-play-it-as-an-app"]')),'and their chips in the jump bar');
+ for(const selector of ['.wiki-install','.wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass,[data-shop-only],[data-browser-only])'])assert.ok(wikiHidden.includes(`html[data-app=android] ${selector}`),selector);
+ assert.ok(wikiHidden.some(s=>['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass'].every(id=>s.includes(`[data-wiki-jump="${id}"]`))&&s.includes('[data-wiki-anchor="sec-play-it-as-an-app"]')),'and their chips in the jump bar');
+ // Your account stays (Oct 2026: its push reminders hold in the app, through the app's own notifications); only its home-screen line goes.
+ assert.ok(!wikiHidden.some(s=>s.includes('sec-your-account')),'Your account and its chip stay in the app');
  for(const css of [welcome,wiki])for(const selector of selectorsOf(css).filter(s=>s.includes('[data-app=')))assert.ok(selector.startsWith('html[data-app=android] '),selector);
  // The sections those rules name exist on the website's wiki (their ids come from their titles).
  const site=WIKI_TOPICS.map(t=>wikiArticle(t.id,{now:SEASON_PASS.startsAt+3600000}).html).join('\n');
  for(const id of ['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'])assert.match(site,new RegExp(`id="${id}"`),id);
- // Your account on the website holds only the home screen, full screen and push reminders (the app's own line is in Getting started);
- // the one bought thing in What opens when is the Starter Pack, and it is the one chip marked.
+ // Your account on the website: the home screen and full screen in one line, marked data-browser-only, and push reminders, which hold in
+ // the app too (the app's own line about one farm is in Getting started); the one bought thing in What opens when is the Starter Pack,
+ // and it is the one chip marked.
  const account=wikiArticle('account').html.match(/<section class="wiki-section" id="sec-your-account">.*?<\/section>/)[0];
- for(const browserOnly of [/home screen/,/Settings, Farm app/,/Push reminders/])assert.match(account,browserOnly,String(browserOnly));
- assert.equal((account.match(/<li>/g)??[]).length,2,'nothing else would go with it');
+ const items=account.match(/<li[^>]*>.*?<\/li>/g)??[];
+ assert.equal(items.length,2,'nothing else would go with it');
+ assert.match(items[0],/^<li data-browser-only>/);for(const browserOnly of [/home screen/,/Settings, Farm app/])assert.match(items[0],browserOnly,String(browserOnly));
+ assert.match(items[1],/^<li>/);assert.match(items[1],/Push reminders/);
+ assert.equal((site.match(/data-browser-only/g)??[]).length,1,'only that line');
  assert.deepEqual([...wikiArticle('quests').html.matchAll(/<span class="wiki-open" data-shop-only>.*?<span>([^<]+)<\/span>/g)].map(m=>m[1]),['Starter Pack']);
 });
 
@@ -204,15 +212,20 @@ test('the tip to open the game in Chrome never comes in the app, though its WebV
  assert.equal(scheduleBrowserTip({embedded:true,doc:{},win:win({document:{documentElement:element()}}),storage}),true,'Instagram, Facebook, TikTok: as before');assert.deepEqual(timers,[120000]);
  assert.match(read('src/main.js'),/on=!inApp&&gateApp\(ua\)&&store\.get\(ESCAPE_KEY\)!=='stay'/,'and no browser step on the sign-up card');
 });
-test('notifications in the app: no device push (no switch, no "Turn on", no browser question); email reminders stay',async()=>{
- const config={enabled:true,push:true,email:true,vapidPublicKey:'AQID'},fetchImpl=async()=>({ok:true,json:async()=>config});
- const app=createNotifications({},{configUrl:'https://x.example/fn?config',fetchImpl,win:appWindow({navigator:{serviceWorker:{}},PushManager:{},Notification:{}})});await app.ready;
- assert.equal(app.available,true);assert.equal(app.config.email,true);assert.equal(app.push,null);
- const site=createNotifications({},{configUrl:'https://x.example/fn?config',fetchImpl,win:{navigator:{serviceWorker:{}},PushManager:{},Notification:{}}});await site.ready;assert.notEqual(site.push,null);
+test('notifications in the app: the app\'s own push once the service has it on (appPush), with the same switch; email reminders stay',async()=>{
+ const answer=config=>async()=>({ok:true,json:async()=>config}),appWin=()=>appWindow({navigator:{serviceWorker:{}},PushManager:{},Notification:{},location:{href:'https://www.harvesttycoon.com/'}});
+ // Before the OneSignal key is set (or an older notify-hourly): no device push in the app, as before.
+ const before=createNotifications({},{configUrl:'https://x.example/fn?config',fetchImpl:answer({enabled:true,push:true,email:true,vapidPublicKey:'AQID'}),win:appWin()});await before.ready;
+ assert.equal(before.available,true);assert.equal(before.config.email,true);assert.equal(before.push,null);
+ const app=createNotifications({},{configUrl:'https://x.example/fn?config',fetchImpl:answer({enabled:true,push:true,email:true,appPush:true,vapidPublicKey:'AQID'}),win:appWin(),playerId:'p1'});await app.ready;
+ assert.equal(app.push?.app,true,'the app\'s own notifications (src/app-push.js)');assert.equal(typeof app.push.enable,'function');assert.equal(app.push.test,undefined,'no test notification in the app');
+ assert.equal(typeof app.dispose,'function');app.dispose();
+ const site=createNotifications({},{configUrl:'https://x.example/fn?config',fetchImpl:answer({enabled:true,push:true,email:true,appPush:true,vapidPublicKey:'AQID'}),win:{navigator:{serviceWorker:{}},PushManager:{},Notification:{}}});await site.ready;
+ assert.notEqual(site.push,null);assert.equal(site.push.app,undefined,'a browser keeps the browser\'s push');assert.equal(typeof site.push.test,'function');
  // Without push the settings show only the email rows and the questions offer the daily email (the code for browsers without push).
- assert.match(read('public/notifications-ui.js'),/const push=Boolean\(bridge\?\.available&&bridge\.config\?\.push&&bridge\.push\)/);
- assert.match(read('public/reminder-nudge.js'),/const push=api\.config\?\.push&&api\.push\?\(await api\.push\.status\(\)\)\.kind:'unsupported';/);
- assert.match(read('public/retention-ui.js'),/if\(!api\.available\|\|!api\.config\?\.push\|\|!api\.push\|\|/);
+ assert.match(read('public/notifications-ui.js'),/const push=Boolean\(bridge\?\.available&&\(bridge\.config\?\.push\|\|bridge\.config\?\.appPush\)&&bridge\.push\)/);
+ assert.match(read('public/reminder-nudge.js'),/const push=\(api\.config\?\.push\|\|api\.config\?\.appPush\)&&api\.push\?\(await api\.push\.status\(\)\)\.kind:'unsupported';/);
+ assert.match(read('public/retention-ui.js'),/if\(!api\.available\|\|!\(api\.config\?\.push\|\|api\.config\?\.appPush\)\|\|!api\.push\|\|/);
 });
 function pwaWindow(extra={}){
  const handlers={},registered=[];
@@ -244,12 +257,13 @@ test('admin pop-ups: the app counts as installed, and a button to installing the
  assert.match(popup,/installed:doc\.documentElement\.dataset\.appMode==='standalone'\|\|androidApp\(win\)/);
  assert.match(popup,/&&!\(androidApp\(win\)&&\/\^\(screen:\)\?install\$\/\.test\(popup\.buttonTarget\)\);/);
 });
-test('How to play in the app: no installing the web app, no buying on our website, no browser notifications; the rest as on the website',()=>{
+test('How to play in the app: no installing the web app and no buying on our website; push reminders and the rest as on the website',()=>{
  const now=SEASON_PASS.startsAt+3600000,text=ctx=>WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,now,...ctx}).html).join('\n');
  const app=text({app:true}),site=text({});
- for(const gone of [/Play it as an app/,/Install the app/,/home screen/,/Buying diamonds/,/Stripe;/,/Push reminders/,/€/,/paid rewards open/,/Settings, Farm app/,/Starter Pack/])
+ for(const gone of [/Play it as an app/,/Install the app/,/home screen/,/Buying diamonds/,/Stripe;/,/€/,/paid rewards open/,/Settings, Farm app/,/Starter Pack/])
   {assert.doesNotMatch(app,gone,String(gone));assert.match(site,gone,`the website keeps ${gone}`);}
- for(const kept of [/Invite a friend/,/Share my farm/,/Confirm your email/,/delete-account/,/Privacy Policy/,/Halloween Pass/,/Boosts/,/VIP/,/Your farm is saved to your account/,/Forgot your password/])assert.match(app,kept,String(kept));
+ for(const kept of [/Invite a friend/,/Share my farm/,/Confirm your email/,/delete-account/,/Privacy Policy/,/Halloween Pass/,/Boosts/,/VIP/,/Your farm is saved to your account/,/Forgot your password/,/Push reminders come once you allow notifications on your device \(Settings\)/])assert.match(app,kept,String(kept));
+ assert.doesNotMatch(app,/data-browser-only/,'How to play in the app leaves the home-screen line out by itself');
  assert.doesNotMatch(wikiQuick({app:true}),/>App</);assert.match(wikiQuick({}),/>App</);
 });
 test('the privacy policy lists what the app remembers',()=>{

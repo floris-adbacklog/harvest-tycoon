@@ -3,8 +3,8 @@
 // enough, this device remembers it (the app's WebView keeps storage of its own, so a phone's browser never gets it; ?app=web forgets it
 // again, for testing in a browser). The page is then marked <html data-app="android"> before anything is drawn, here and in the game
 // frame, and the code asks public/android.js. What a Play app may not have or cannot do steps aside there (public/android.css): our own
-// purchases (Google Play's rules), installing the web app and full screen, browser notifications, Google and Facebook sign-in (both refuse
-// a WebView) and the tip to open the game in Chrome. Never inside CrazyGames' page (html[data-portal]), and in a browser nothing happens.
+// purchases (Google Play's rules), installing the web app and full screen, Google and Facebook sign-in (both refuse a WebView) and the tip
+// to open the game in Chrome. Notifications are the app's own instead of the browser's (src/app-push.js). Never inside CrazyGames' page (html[data-portal]), and in a browser nothing happens.
 (function(){
  var KEY='harvest-tycoon:app',html=document.documentElement;
  // The rule, on its own for the tests: ua is the user agent, search the address's ?…, saved what this device remembers. app: this is

@@ -1,4 +1,5 @@
 import {createPush} from './push.js';
+import {createAppPush} from './app-push.js';
 import {androidApp} from '../public/android.js';
 // Reminder preferences for the settings dialog. Reads go through row-level security (a player only sees their
 // own row) and writes go through the notification_save function, which validates everything on the server.
@@ -24,22 +25,26 @@ export function paramsFromPrefs(prefs,timezone=browserTimezone()){
 
 // `available` only turns true when the notification service answers its config request. Until then the
 // settings dialog does not show reminder switches that would not do anything yet.
-export function createNotifications(supabase,{configUrl=null,fetchImpl=globalThis.fetch,timezone=browserTimezone,win=globalThis.window}={}){
+// playerId: the signed-in farmer, for the Android app's link between the phone and the farmer.
+export function createNotifications(supabase,{configUrl=null,fetchImpl=globalThis.fetch,timezone=browserTimezone,win=globalThis.window,playerId=null}={}){
  let available=false,config=null;
- // The Android app (Oct 2026, public/android.js): its WebView has no browser notifications, so there is no device push there (no switch,
- // no "Turn on" and the reminder question offers the daily email instead). Email reminders stay.
- const devicePush=!androidApp(win);
+ // The Android app (Oct 2026, public/android.js): its WebView has no browser notifications; the app's own notifications come through
+ // OneSignal instead (src/app-push.js, the same face), once the service says they are switched on there (appPush: its OneSignal key is
+ // set). Until then the app has no device push: no switch, no "Turn on", and the reminder question offers the daily email.
+ const inApp=androidApp(win);
  const ready=(async()=>{
   if(!configUrl||typeof fetchImpl!=='function')return;
   try{const response=await fetchImpl(configUrl);if(!response.ok)return;const body=await response.json();if(body?.enabled===true){available=true;config=body;}}catch{}
  })();
  const push=createPush({supabase,getKey:async()=>{await ready;return config?.vapidPublicKey??null;},win});
+ const app=inApp?createAppPush({supabase,playerId,win}):null;
  return {
   ready,
   get available(){return available;},
   get config(){return config;},
-  // Device notifications, only when the service has push switched on.
-  get push(){return config?.push&&devicePush?push:null;},
+  // Device notifications, only when the service has push switched on: the browser's, or in the Android app the app's own.
+  get push(){return inApp?(config?.appPush===true?app:null):config?.push?push:null;},
+  dispose(){app?.dispose();},
   async get(){
    const {data,error}=await supabase.from('notification_settings').select('push_crops,push_production,push_daily,email_digest,digest_hour,push_messages,email_marketing').maybeSingle();
    if(error)throw error;return prefsFromRow(data);

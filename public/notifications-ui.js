@@ -1,6 +1,9 @@
 // The "Reminders" block of the settings dialog. It talks to window.parent.harvestBridge.notifications
-// (src/notifications.js) and stays hidden until the notification service is switched on.
+// (src/notifications.js) and stays hidden until the notification service is switched on. In our Android app the device is the app
+// (src/app-push.js, push.app): the same switch and buttons, no test (the app shows no notification of its own on request) and, when
+// the phone said no, where to allow them on the phone.
 import {refreshArt} from './visual-icons.js';
+import {APP_PUSH_BLOCKED} from './android.js';
 // Crops and goods are one switch (26 Sep 2026): it sets both of the server's settings, and shows on when either is on.
 const IDS={pushMessages:'notify-messages',pushDaily:'notify-daily',emailDigest:'notify-email',emailMarketing:'notify-marketing'};
 const DEVICE={
@@ -14,7 +17,7 @@ const hourLabel=hour=>`${String(hour).padStart(2,'0')}:00`;
 // onEmailOn: the daily email was just switched on (game.js opens the email check for an address that is not confirmed yet).
 export function createNotificationsSection({onEmailOn}={}){
  const $=id=>document.getElementById(id),api=()=>{try{return window.parent?.harvestBridge?.notifications??null;}catch{return null;}};
- let saving=false,current=null;
+ let saving=false,current=null,watched=null;
  const select=$('notify-hour');
  if(select&&!select.children.length)select.innerHTML=Array.from({length:24},(_,hour)=>`<option value="${hour}">${hourLabel(hour)}</option>`).join('');
  const status=text=>{const el=$('notify-status');if(el)el.textContent=text;};
@@ -34,16 +37,24 @@ export function createNotificationsSection({onEmailOn}={}){
  async function device(){
   const push=api()?.push;if(!push)return;
   let kind='unsupported';try{kind=(await push.status()).kind;}catch{}
-  $('notify-device-copy').textContent=DEVICE[kind]??'';
-  $('notify-enable').hidden=kind!=='off';$('notify-test').hidden=kind!=='on';$('notify-disable').hidden=kind!=='on';
+  $('notify-device-copy').textContent=(kind==='blocked'&&push.app?APP_PUSH_BLOCKED:DEVICE[kind])??'';
+  $('notify-enable').hidden=kind!=='off';$('notify-test').hidden=kind!=='on'||typeof push.test!=='function';$('notify-disable').hidden=kind!=='on';
   $('notify-push-rows').hidden=kind==='unsupported';
  }
  async function refresh(){
   const section=$('notify-settings');if(!section)return;
   const bridge=api();if(bridge?.ready)await bridge.ready;
-  const push=Boolean(bridge?.available&&bridge.config?.push&&bridge.push),email=Boolean(bridge?.available&&bridge.config?.email);
+  // Push: the browser's, or in our Android app the app's own (appPush), when the service has it on.
+  const push=Boolean(bridge?.available&&(bridge.config?.push||bridge.config?.appPush)&&bridge.push),email=Boolean(bridge?.available&&bridge.config?.email);
   section.hidden=!(push||email);if(section.hidden)return;
   $('notify-device').hidden=!push;$('notify-push-rows').hidden=!push;$('notify-email-rows').hidden=!email;
+  // The line that asks to allow notifications only where they can be allowed.
+  const intro=section.querySelector?.(':scope>.install-copy');if(intro)intro.hidden=!push;
+  // The app answers in its own time (Android's question, the phone's settings): the device line follows it.
+  if(push&&typeof bridge.push.onChange==='function'&&watched!==bridge.push){
+   watched=bridge.push;const stop=watched.onChange(()=>{void device().catch(()=>{});});
+   try{window.addEventListener?.('pagehide',stop,{once:true});}catch{}
+  }
   try{paint(await bridge.get());status('');}catch{status('Your reminder settings could not be loaded.');}
   if(push)await device();
   refreshArt();
