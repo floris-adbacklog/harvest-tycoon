@@ -2,9 +2,10 @@ import {refreshArt} from './visual-icons.js';
 import {createInstallSection} from './install-ui.js';
 import {createNotificationsSection} from './notifications-ui.js';
 import {createSettingsNav} from './settings-nav.js';
+import {settingsPart} from './game-links.js';
 export function createSoundSettings(audio,{onEmailOn}={}){
  const $=id=>document.getElementById(id),dialog=$('sound-dialog'),install=createInstallSection(),reminders=createNotificationsSection({onEmailOn});
- createSettingsNav(dialog);
+ const nav=createSettingsNav(dialog);
  function refresh(){
   const s=audio.settings(),audible=s.enabled&&(s.ambience>0||s.effects>0);
   $('sound-enabled').checked=s.enabled;$('sound-enabled').disabled=!s.available;
@@ -16,8 +17,9 @@ export function createSoundSettings(audio,{onEmailOn}={}){
   $('sound-button').setAttribute('aria-label','Settings');$('sound-button').title='Settings';
   $('mobile-sound-label').textContent='Settings';$('mobile-sound-summary').textContent=audible?'Account, avatar, sound & app':'Account, avatar & app · sound off';install.refresh();refreshArt();
  }
- function open(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());refresh();dialog.showModal();void reminders.refresh();}
- $('sound-button').onclick=open;
+ // part (4 Oct 2026): a slug of public/game-links.js, from a link (/settings/<part>, the chat's Settings chip): Settings opens there.
+ function open(part){document.querySelectorAll('dialog[open]').forEach(d=>d.close());refresh();nav?.openAt(settingsPart(part)?.id??(part?'unknown':null));dialog.showModal();void reminders.refresh();}
+ $('sound-button').onclick=()=>open();
  $('sound-enabled').onchange=()=>{audio.setSettings({enabled:$('sound-enabled').checked});if($('sound-enabled').checked)void audio.unlock();};
  $('ambience-volume').oninput=()=>audio.setSettings({ambience:Number($('ambience-volume').value)});
  $('effects-volume').oninput=()=>audio.setSettings({effects:Number($('effects-volume').value)});

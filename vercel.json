@@ -20,6 +20,26 @@
       "source": "/en/",
       "destination": "/",
       "permanent": true
+    },
+    {
+      "source": "/settings/:part(avatar|email|sound|chat|reminders|farm-app|language|privacy)",
+      "destination": "/?open=settings&part=:part",
+      "permanent": false
+    },
+    {
+      "source": "/settings/:part(avatar|email|sound|chat|reminders|farm-app|language|privacy)/",
+      "destination": "/?open=settings&part=:part",
+      "permanent": false
+    },
+    {
+      "source": "/settings",
+      "destination": "/?open=settings",
+      "permanent": false
+    },
+    {
+      "source": "/settings/",
+      "destination": "/?open=settings",
+      "permanent": false
     }
   ],
   "rewrites": [
@@ -56,6 +76,14 @@
       "destination": "/support.html"
     },
     {
+      "source": "/app",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/app/",
+      "destination": "/app.html"
+    },
+    {
       "source": "/wiki",
       "destination": "/wiki/index.html"
     },
@@ -78,6 +106,14 @@
     {
       "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/support/",
       "destination": "/:lang/support.html"
+    },
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/app",
+      "destination": "/:lang/app.html"
+    },
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/app/",
+      "destination": "/:lang/app.html"
     }
   ],
   "headers": [

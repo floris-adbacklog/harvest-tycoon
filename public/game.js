@@ -1073,6 +1073,8 @@ function bindUI(){
  $('quest-collapse').addEventListener('click',toggleQuest);
  document.querySelector('.quest-heading')?.addEventListener('click',event=>{if(event.target.closest('#quest-collapse'))return;if(mobileLayout.matches)beginner.open();});
  soundUI=createSoundSettings(farmAudio,{onEmailOn:()=>{if(!emailAccount.needed)return;toast('Confirm your email address and the daily email starts.');emailCheckUI?.open();}});
+ // Settings at one part (4 Oct 2026): a link to /settings/<part> (src/game-cloud.js harvestOpen) and the chat's Settings chip.
+ window.harvestSettings=part=>soundUI.open(part);
  renderLanguageSettings();
  // Every dropdown in the game gets the game look, also the ones that are drawn later (public/pretty-select.js).
  watchSelects();

@@ -8,7 +8,8 @@
 -- patched from their LIVE definition, only the link line, so anything deployed since stays as it is (as supabase/crazygames.sql does):
 -- a function patched already is left alone, and one without the expected line stops the whole file, nothing half-done. Re-runnable.
 -- Read live on 3 Oct 2026: chat_send md5 c956bc312fc09a85d7b736176f2dbdde, chat_mod_edit b2f9823fe2e3d36cdafa2ff9b5cb0d2f
--- (md5 of pg_get_functiondef). Run before supabase/chat-mentions.sql.
+-- (md5 of pg_get_functiondef). Run before supabase/chat-mentions.sql. Since 4 Oct 2026 supabase/chat-game-links.sql replaces the link
+-- lines this writes (also the app page and Settings): a function that has chat_game_links( counts as done here too.
 
 -- How many links to our wiki a message holds, or -1 when it holds any other link. A wiki link stands on its own: the start, a space or
 -- a bracket before it, so "myharvesttycoon.com/wiki" is not one; the end, a space, a bracket or a stop after it. What is left once the
@@ -25,7 +26,7 @@ create or replace function pg_temp.chat_links_patch(p_fn regprocedure, p_marker 
 returns void language plpgsql as $f$
 declare def text:=pg_get_functiondef(p_fn);
 begin
- if position(p_marker in def)>0 then return; end if;
+ if position(p_marker in def)>0 or position('chat_game_links(' in def)>0 then return; end if;
  if position(p_from in def)=0 then raise exception using message=format('%s: the expected text was not found; read the live definition before changing it', p_fn); end if;
  execute replace(def,p_from,p_to);
 end $f$;

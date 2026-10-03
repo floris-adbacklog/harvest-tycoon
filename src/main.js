@@ -38,7 +38,12 @@ startPwa();startUpdateCheck();
 // frame takes it when it is ready (harvestTakeOpen); a notification tapped while the game is open arrives from sw.js as a message.
 let pendingOpen=openIntent(location.search);
 if(pendingOpen)history.replaceState(null,'',withoutOpen(location.href));
-window.harvestTakeOpen=()=>{const intent=pendingOpen;pendingOpen=null;return intent;};
+// It also survives a sign-in that leaves this page (Google or Facebook; /settings/<part> signed out, 4 Oct 2026): kept in this tab
+// for 30 minutes, read back through openIntent, gone once the farm takes it.
+const OPEN_KEY='harvest-tycoon:open',keepOpen=intent=>{try{if(intent)sessionStorage.setItem(OPEN_KEY,JSON.stringify({...intent,at:Date.now()}));else sessionStorage.removeItem(OPEN_KEY);}catch{}};
+if(pendingOpen)keepOpen(pendingOpen);
+else try{const kept=JSON.parse(sessionStorage.getItem(OPEN_KEY)??'null');if(kept&&Date.now()-Number(kept.at)<1800000)pendingOpen=openIntent(`?${new URLSearchParams(Object.entries(kept).filter(([key])=>key!=='at').map(([key,value])=>[key,String(value)]))}`);else keepOpen(null);}catch{}
+window.harvestTakeOpen=()=>{const intent=pendingOpen;pendingOpen=null;keepOpen(null);return intent;};
 function openScreen(intent){
  if(!intent)return;
  try{const open=frame?.contentWindow?.harvestOpen;if(typeof open==='function'){open(intent);return;}}catch{}

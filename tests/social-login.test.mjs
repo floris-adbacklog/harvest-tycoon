@@ -36,8 +36,8 @@ test('the privacy policy and the deletion page are public, linked from the sign-
  const html=read('public/play.html'),vercel=JSON.parse(read('vercel.json'));
  assert.match(html,/class="account-legal">For players aged 16 and over · <a href="\/privacy">Privacy Policy<\/a>/);
  assert.match(html,/<footer class="site-legal">.*href="\/privacy"/);assert.ok(!/<footer class="site-legal">[^\n]*delete-account/.test(html),'the deletion page is for Meta, not the footer');
- assert.deepEqual(vercel.rewrites.filter(r=>!r.source.endsWith('/')).map(r=>[r.source,r.destination]),[['/partners','/partners.html'],['/privacy','/privacy.html'],['/delete-account','/delete-account.html'],['/support','/support.html'],['/wiki','/wiki/index.html'],['/wiki/:topic([a-z-]+)','/wiki/:topic.html'],
-  ['/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/support','/:lang/support.html']]);
+ assert.deepEqual(vercel.rewrites.filter(r=>!r.source.endsWith('/')).map(r=>[r.source,r.destination]),[['/partners','/partners.html'],['/privacy','/privacy.html'],['/delete-account','/delete-account.html'],['/support','/support.html'],['/app','/app.html'],['/wiki','/wiki/index.html'],['/wiki/:topic([a-z-]+)','/wiki/:topic.html'],
+  ['/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/support','/:lang/support.html'],['/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/app','/:lang/app.html']]);
  for(const page of ['public/privacy.html','public/delete-account.html']){
   const text=read(page);
   // Only our own app mark (public/android-app.js, Oct 2026: the footer's Google Play badge steps aside in the Android app); no tracking.

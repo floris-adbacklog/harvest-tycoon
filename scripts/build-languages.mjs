@@ -7,6 +7,7 @@
 import {mkdirSync,readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {LANGUAGES,RTL_LANGUAGES,languagePath,playBadge} from '../public/languages.js';
+import {appPath} from '../public/game-links.js';
 
 const SITE='https://www.harvesttycoon.com';
 export const READY=LANGUAGES.filter(l=>l.ready).map(l=>l.code);
@@ -72,6 +73,8 @@ export function translatePage(html,code,dict){
  html=once(html,`src="${playBadge('en')}"`,`src="${playBadge(code)}"`,'Google Play badge');
  // The footer's Help and support (3 Oct 2026) opens the support page in the same language.
  html=html.replaceAll('href="/support"',`href="${supportPath(code)}"`);
+ // ... and Get the app (4 Oct 2026) the app page.
+ html=html.replaceAll('href="/app"',`href="${appPath(code)}"`);
  return translateTexts(html,code,dict,{label:'Language page',page:'play.html',seoMeta:SEO_META});
 }
 
@@ -86,26 +89,50 @@ export function translateSupport(html,code,dict){
  html=oncePage(html,'<input type="hidden" name="lang" value="en">',`<input type="hidden" name="lang" value="${code}">`,'hidden lang field');
  html=oncePage(html,`src="${playBadge('en')}"`,`src="${playBadge(code)}"`,'Google Play badge');
  // The game's own links in the page's language (the sign-in page per language); the wiki and the legal pages are English only.
- html=html.replace(/href="\/"/g,`href="${languagePath(code)}"`);
+ html=html.replace(/href="\/"/g,`href="${languagePath(code)}"`).replaceAll('href="/app"',`href="${appPath(code)}"`);
  return translateTexts(html,code,dict,{label:'Support page',page:'support.html',seoMeta:['description']});
 }
 // Writes /<code>/support.html for every translated language and adds the support pages to the sitemap. Returns the English page with
 // the same hreflang set, for /support.
-export function buildSupportPages(outDir,html,{dictionary=code=>JSON.parse(readFileSync(new URL(`../public/i18n/${code}.json`,import.meta.url),'utf8'))}={}){
- const set=supportAlternates();
- const english=oncePage(html,'<link rel="canonical"',`${set.map(([lang,href])=>`<link rel="alternate" hreflang="${lang}" href="${href}">`).join('')}<link rel="canonical"`,'canonical address');
+export function buildSupportPages(outDir,html,{dictionary=readDictionary}={}){
+ return buildPerLanguage(outDir,html,{file:'support.html',pathOf:supportPath,translate:translateSupport,dictionary,what:'Support pages: support.html'});
+}
+
+// Harvest Tycoon on your phone (4 Oct 2026): /app is public/app.html in English, /es/app, ... the same way (no script; its texts are in
+// the catalog). Google Play's badge in the page's language (on the page and in the footer), its links in the same language.
+export {appPath};// one copy, shared with the chat's chip (public/game-links.js)
+export function translateAppPage(html,code,dict){
+ const once=(from,to,what)=>{if(!html.includes(from))throw new Error(`App pages: app.html has no ${what}`);html=html.replace(from,to);};
+ once('<html lang="en">',htmlTag(code),'<html lang="en">');
+ once(`<link rel="canonical" href="${SITE}/app">`,`<link rel="canonical" href="${SITE}${appPath(code)}">`,'canonical address');
+ if(!html.includes(`src="${playBadge('en')}"`))throw new Error('App pages: app.html has no Google Play badge');
+ html=html.replaceAll(`src="${playBadge('en')}"`,`src="${playBadge(code)}"`);
+ html=html.replace(/href="\/"/g,`href="${languagePath(code)}"`).replaceAll('href="/support"',`href="${supportPath(code)}"`);
+ return translateTexts(html,code,dict,{label:'App page',page:'app.html',seoMeta:['description']});
+}
+export function buildAppPages(outDir,html,{dictionary=readDictionary}={}){
+ return buildPerLanguage(outDir,html,{file:'app.html',pathOf:appPath,translate:translateAppPage,dictionary,what:'App pages: app.html'});
+}
+
+// One page in every translated language (/<code>/<file>), each naming all of them (hreflang), and once each in the sitemap (also when
+// the build runs twice). Returns the English page with the same set, for its own address.
+const readDictionary=code=>JSON.parse(readFileSync(new URL(`../public/i18n/${code}.json`,import.meta.url),'utf8'));
+function buildPerLanguage(outDir,html,{file,pathOf,translate,dictionary,what}){
+ const set=[...READY.map(code=>[code,`${SITE}${pathOf(code)}`]),['x-default',`${SITE}${pathOf('en')}`]];
+ if(!html.includes('<link rel="canonical"'))throw new Error(`${what} has no canonical address`);
+ const english=html.replace('<link rel="canonical"',`${set.map(([lang,href])=>`<link rel="alternate" hreflang="${lang}" href="${href}">`).join('')}<link rel="canonical"`);
  for(const code of READY.filter(code=>code!=='en')){
   mkdirSync(join(outDir,code),{recursive:true});
-  writeFileSync(join(outDir,code,'support.html'),translateSupport(english,code,dictionary(code)));
+  writeFileSync(join(outDir,code,file),translate(english,code,dictionary(code)));
  }
- writeFileSync(join(outDir,'support.html'),english);
+ writeFileSync(join(outDir,file),english);
  const sitemap=join(outDir,'sitemap.xml');
  if(existsSync(sitemap)){
   let xml=readFileSync(sitemap,'utf8');
-  if(!xml.includes(`${SITE}/support</loc>`)){
+  if(!xml.includes(`${SITE}${pathOf('en')}</loc>`)){
    const today=new Date().toISOString().slice(0,10),links=set.map(([lang,href])=>`<xhtml:link rel="alternate" hreflang="${lang}" href="${href}"/>`).join('');
    if(!xml.includes('xmlns:xhtml='))xml=xml.replace('<urlset','<urlset xmlns:xhtml="http://www.w3.org/1999/xhtml"');
-   xml=xml.replace('</urlset>',`${READY.map(code=>` <url><loc>${SITE}${supportPath(code)}</loc><lastmod>${today}</lastmod>${links}</url>`).join('\n')}\n</urlset>`);
+   xml=xml.replace('</urlset>',`${READY.map(code=>` <url><loc>${SITE}${pathOf(code)}</loc><lastmod>${today}</lastmod>${links}</url>`).join('\n')}\n</urlset>`);
    writeFileSync(sitemap,xml);
   }
  }

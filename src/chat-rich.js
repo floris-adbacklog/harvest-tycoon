@@ -3,21 +3,24 @@
 // address is a wiki link is the wiki's own rule (public/wiki-link.js wikiLinksIn, the address Copy link writes), so the chat and the wiki
 // never disagree about one: one helper, not a second one here (Oct 2026, merging the wiki links and the chat). Mentions: "@Full Name"
 // of a farmer picked from the list under the box, kept with the farmer's id (supabase/chat-mentions.sql), so the chip opens the right
-// profile also after a rename. Pure, so the tests can run it: src/chat-ui.js draws the parts.
+// profile also after a rename. Pure, so the tests can run it: src/chat-ui.js draws the parts. Since 4 Oct 2026 also the app page and a
+// part of Settings (public/game-links.js gameLinksIn, supabase/chat-game-links.sql), in the same 2 links: a chip each.
 import {wikiLinksIn} from '../public/wiki-link.js';
+import {gameLinksIn} from '../public/game-links.js';
 
-export const MAX_WIKI_LINKS=2,MAX_MENTIONS=3;
+export const MAX_LINKS=2,MAX_WIKI_LINKS=MAX_LINKS,MAX_MENTIONS=3;
 
-// The message as parts, in order: {text}, {wiki:{topic,section,url}} and {mention:{id,name}}. A mention counts where its "@Full Name" is
+// The message as parts, in order: {text}, {wiki:{topic,section,url}}, {app:{url}}, {settings:{slug,url}} and {mention:{id,name}}. A mention counts where its "@Full Name" is
 // still in the words (a moderator's edit may have taken it out); the longest name first, so "@Ann Lee" is never read as "@Ann".
 export function chatParts(body,mentions=[]){
  const text=String(body??''),marks=[],free=(at,end)=>!marks.some(x=>at<x.end&&end>x.at);
  for(const {url,topic,section,index} of wikiLinksIn(text))marks.push({at:index,end:index+url.length,wiki:{topic,section,url}});
+ for(const {url,index,app,settings} of gameLinksIn(text))if(free(index,index+url.length))marks.push({at:index,end:index+url.length,...(app?{app:{url}}:{settings:{slug:settings,url}})});
  const named=(Array.isArray(mentions)?mentions:[]).filter(x=>x?.id&&typeof x.name==='string'&&x.name).sort((a,b)=>b.name.length-a.name.length);
  for(const who of named){const tag=`@${who.name}`;for(let at=text.indexOf(tag);at>=0;at=text.indexOf(tag,at+tag.length))if(free(at,at+tag.length))marks.push({at,end:at+tag.length,mention:{id:String(who.id),name:who.name}});}
  marks.sort((a,b)=>a.at-b.at);
  const parts=[];let from=0;
- for(const x of marks){if(x.at>from)parts.push({text:text.slice(from,x.at)});parts.push(x.wiki?{wiki:x.wiki}:{mention:x.mention});from=x.end;}
+ for(const x of marks){if(x.at>from)parts.push({text:text.slice(from,x.at)});parts.push(x.wiki?{wiki:x.wiki}:x.app?{app:x.app}:x.settings?{settings:x.settings}:{mention:x.mention});from=x.end;}
  if(from<text.length||!parts.length)parts.push({text:text.slice(from)});
  return parts;
 }

@@ -4,6 +4,7 @@ import {WORLD_TWO_LEVEL} from '../public/farm-state.js';
 import {createPlayerProfiles} from './player-profiles.js';
 import {createAdminDashboard} from './admin-dashboard.js';
 import {loadStaff,staffRole} from './staff-badge.js';
+import {addSettingsCopyLinks} from '../public/settings-nav.js';
 import {createChatUI} from './chat-ui.js';
 import {createCloudUI} from './ui.js';
 import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
@@ -58,6 +59,8 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   window.harvestProfiles=profiles;
   ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');
   createAvatarSettings(document.getElementById('avatar-settings'),{bridge,profile:window.harvestInitialFarm.profile,state:window.harvestInitialFarm.state,owner:loadStaff(bridge.chat).then(()=>staffRole(bridge.playerId)==='admin'),onSaved:profile=>ui.setProfile(profile,{id:bridge.playerId})});
+  // Copy link beside each Settings part (4 Oct 2026, public/settings-nav.js): for an admin or a moderator only, never on CrazyGames.
+  if(!portal)void loadStaff(bridge.chat).then(()=>{if(staffRole(bridge.playerId))addSettingsCopyLinks(document.getElementById('sound-dialog'));});
   const stopPresence=bridge.presence?.subscribe(snapshot=>{if(ui.open)updateOnlineIndicators(ui.results,{...snapshot,now:Date.now()+serverOffset});});
   const boardRefresh=setInterval(()=>{if(ui.open&&!profiles.isOpen&&!document.hidden)openBoard(true);},30000);
   window.addEventListener('pagehide',()=>{stopPresence?.();clearInterval(boardRefresh);},{once:true});
@@ -90,6 +93,8 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
     if(intent?.open==='chat')void chat.open(intent.channel?{channel:intent.channel}:{});
     else if(intent?.open==='today')window.harvestToday?.();
     else if(intent?.open==='leaderboard')document.getElementById('leaderboard-button')?.click();
+    // Settings at one part (4 Oct 2026, /settings/<part>): public/game.js harvestSettings, the list when the part is not here.
+    else if(intent?.open==='settings')window.harvestSettings?.(intent.part);
    };
    const waiting=window.parent?.harvestTakeOpen?.();if(waiting)window.harvestOpen(waiting);
   }

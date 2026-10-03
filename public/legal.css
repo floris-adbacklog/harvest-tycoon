@@ -92,5 +92,7 @@ body.not-found::before{content:'';position:fixed;inset:0;z-index:-1;background:l
 .play-badge a{display:block;border-radius:7px}
 .play-badge img{display:block;width:auto;height:40px}
 html[data-app=android] .play-badge{display:none!important}
+/* Get the app (/app, 4 Oct 2026) in the footer: not in our apps either, the farmer has it. */
+html[data-app] .footer-app{display:none!important}
 /* Google's attribution line for its badge, once on the site: at the end of the privacy policy, which every footer links to. */
 .legal-card .legal-trademarks{margin:32px 0 0;font-size:13px;color:#7d7060}

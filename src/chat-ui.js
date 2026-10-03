@@ -15,6 +15,8 @@ import {chosenLanguage} from '../public/i18n.js';
 import {portalChat,portalOff} from '../public/portal.js';
 import {chatParts,mentionsMe,mentionAt,insertMention,appendMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
 import {wikiSectionTitle} from '../public/wiki-content.js';
+import {SITE,appPath,settingsPart} from '../public/game-links.js';
+import {androidApp} from '../public/android.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
@@ -63,7 +65,8 @@ const ICON={
  back:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>',
  more:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
  pin:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>',
- translate:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>'
+ translate:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>',
+ phone:'<svg class="chat-link-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>'
 };
 // The valley speaks many languages (30 Sep 2026): a message from someone else, in any chat, has a small translate link (under the
 // "•••", on hover; on a phone in the long-press menu) that opens Google Translate in a new tab, from whatever language it is in to
@@ -197,8 +200,13 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // and opens that farmer's profile by id. The staff's own messages may still carry another https link (an admin's message to many
  // farmers, e.g. a feedback form); nobody else's can.
  const wikiChip=link=>`<button type="button" class="chat-wiki" data-wiki-link="${esc(link.topic)}" data-wiki-section="${esc(link.section)}">${art('guide')}<span>${esc(wikiSectionTitle(link.topic,link.section))}</span></button>`;
+ // The app page and a part of Settings (4 Oct 2026, public/game-links.js): "Get the app", and the way to the part as Settings shows it,
+ // "Settings › Farm app" (the game's own words, translated like the rest), so a farmer learns where to find it without the link.
+ // On CrazyGames an app link stays plain words (no app promotion in their build; 4 Oct 2026 review).
+ const appChip=()=>`<button type="button" class="chat-wiki chat-app-link" data-app-link>${ICON.phone}<span>Get the app</span></button>`;
+ const settingsChip=link=>`<button type="button" class="chat-wiki chat-settings-link" data-settings-link="${esc(link.slug)}">${art('settings')}<span>Settings</span><span class="chat-path-sep" aria-hidden="true">›</span><span>${esc(settingsPart(link.slug)?.title??'')}</span></button>`;
  const mentionChip=who=>`<button type="button" class="chat-mention${who.id===me?' is-me':''}" data-profile="${esc(who.id)}" translate="no">@${esc(who.name)}</button>`;
- const bodyHtml=m=>chatParts(m.body,m.meta?.mentions).map(part=>part.wiki?wikiChip(part.wiki):part.mention?mentionChip(part.mention):`<span translate="no">${m.sender_staff?linkify(part.text):esc(part.text)}</span>`).join('');
+ const bodyHtml=m=>chatParts(m.body,m.meta?.mentions).map(part=>part.wiki?wikiChip(part.wiki):part.app?(portalOff('app')?`<span translate="no">${esc(part.app.url)}</span>`:appChip()):part.settings?settingsChip(part.settings):part.mention?mentionChip(part.mention):`<span translate="no">${m.sender_staff?linkify(part.text):esc(part.text)}</span>`).join('');
  function messageRow(m,{cont=false}={}){
   if(m.kind==='request')return requestRow(m);
   if(m.kind==='rank')return rankRow(m);
@@ -400,6 +408,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(give){giveRequest(give);return;}
   const wiki=event.target.closest('[data-wiki-link]');
   if(wiki){openWiki(wiki.dataset.wikiLink,wiki.dataset.wikiSection);return;}
+  if(event.target.closest('[data-app-link]')){openApp();return;}
+  const part=event.target.closest('[data-settings-link]');
+  if(part){openSettings(part.dataset.settingsLink);return;}
   if(profile){profiles?.open(profile.dataset.profile,{back:null});return;}
   const start=event.target.closest('[data-start]');
   if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}
@@ -497,6 +508,20 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(typeof win.harvestWiki!=='function'||!doc.getElementById('help-dialog'))return;
   dialog.close();
   win.harvestWiki(topic,section,{from:{label:'Chat',go:()=>{doc.querySelectorAll('dialog[open]').forEach(d=>d.close());if(switchedOff)return;dialog.showModal();dialog.focus({preventScroll:true});show(tab,{keepThread:true});}}});
+ }
+
+ // "Get the app" opens /app in a new tab on the website, in the farmer's language (/es/app, ...). In our Android or iPhone app the farmer has it already (the game's own view
+ // never goes away to a store page), and CrazyGames allows no links to an app: a short line says so instead.
+ function openApp(){
+  if(portalOff('app')){showCenterNotice(dialog,'The app is not available on CrazyGames.');return;}
+  if(androidApp(win)){showCenterNotice(dialog,'You already have the app: you are playing in it.');return;}
+  win.open(`${SITE}${appPath(chosenLanguage())}`,'_blank','noopener');
+ }
+ // A Settings chip opens Settings at that part (public/game.js harvestSettings); a part this farmer does not have opens the list with
+ // a short note (settings-nav.js).
+ function openSettings(slug){
+  if(typeof win.harvestSettings!=='function')return;
+  dialog.close();win.harvestSettings(slug);
  }
 
  // The little menu on a message: report or block for everyone; delete, mute and ban (the chat only) for the staff.

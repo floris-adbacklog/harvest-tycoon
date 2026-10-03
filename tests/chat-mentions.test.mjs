@@ -58,7 +58,7 @@ test('the game and the database let the same wiki links through: the same addres
  assert.match(sql,/if position\(p_from in def\)=0 then raise exception/,'patched from the live definition, never over an unknown one');
  assert.match(sql,/revoke all on function public\.chat_wiki_links\(text\) from public, anon, authenticated;/);
  const wiki=wikiArticle('chat').html;
- assert.match(wiki,/<li>No links, except to this wiki: at most 2 in one message\.<\/li>/,'the house rules say it');
+ assert.match(wiki,/<li>No links, except to this wiki, the app page or a part of Settings: at most 2 in one message\.<\/li>/,'the house rules say it (4 Oct 2026: the app page and Settings too, tests/game-links.test.mjs)');
 });
 
 test('a wiki chip opens How to play there, inside the game, with "‹ Chat" back to the same chat; the staff\'s other links stay links',()=>{

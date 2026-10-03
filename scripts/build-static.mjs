@@ -12,11 +12,13 @@ writeFileSync('dist-static/version.json',JSON.stringify({version})+'\n');
 const html=readFileSync('public/play.html','utf8').replace('data-legacy-migration="true"','data-legacy-migration="false"').replace('<meta name="harvest-version" content="dev">',`<meta name="harvest-version" content="${version}">`);
 if(!html.includes(`content="${version}"`))throw new Error('play.html lost its harvest-version meta tag');
 // A page per language (/es/, /fr/, ...) made from the same page and the translations; the home page gets the list of them (hreflang).
-const {buildLanguagePages,buildSupportPages}=await import('./build-languages.mjs');
+const {buildLanguagePages,buildSupportPages,buildAppPages}=await import('./build-languages.mjs');
 const home=buildLanguagePages('dist-static',html);
 writeFileSync('dist-static/index.html',home);writeFileSync('dist-static/play.html',home);
 // Help and support (3 Oct 2026): /support and /es/support, ... the same way, from public/support.html.
 buildSupportPages('dist-static',readFileSync('public/support.html','utf8'));
+// Harvest Tycoon on your phone (4 Oct 2026): /app and /es/app, ... the same way, from public/app.html.
+buildAppPages('dist-static',readFileSync('public/app.html','utf8'));
 // The CrazyGames page (Oct 2026) carries the same version, so a player there gets the new game on the way back in, as in the app.
 const crazy=readFileSync('public/crazygames.html','utf8').replace('<meta name="harvest-version" content="dev">',`<meta name="harvest-version" content="${version}">`);
 if(!crazy.includes(`content="${version}"`))throw new Error('crazygames.html lost its harvest-version meta tag');

@@ -30,7 +30,7 @@ test('fewer tabs: one quest list with the completed ones folded away, and the jo
 test('Settings is a short list: the account on top, one row per part that opens only that part, and a way back',()=>{
  const nav=read('public/settings-nav.js'),settings=read('public/sound-settings.js'),css=read('public/settings.css');
  assert.match(settings,/import \{createSettingsNav\} from '\.\/settings-nav\.js';/);assert.match(settings,/createSettingsNav\(dialog\);/);
- assert.match(nav,/parts\(\)\.filter\(p=>!p\.hidden&&titleOf\(p\)\)/,'a hidden part has no row');
+ assert.match(nav,/const away=p=>p\.hidden\|\|p\.matches\(AWAY\)\|\|!titleOf\(p\);/);assert.match(nav,/parts\(\)\.filter\(p=>!away\(p\)\)/,'a hidden part has no row (4 Oct 2026: nor one the CSS puts aside)');
  assert.match(nav,/All settings/);assert.match(nav,/observe\(dialog,\{attributes:true,attributeFilter:\['open'\]\}\)/,'it opens on the list');
  assert.match(css,/#sound-dialog:not\(\.settings-one\) :is\(#avatar-settings,\.settings-section\)\{display:none\}/);
  assert.match(css,/#sound-dialog\.settings-one :is\(#avatar-settings,\.settings-section\):not\(\.is-open\),#sound-dialog\.settings-one \.settings-account\{display:none\}/);

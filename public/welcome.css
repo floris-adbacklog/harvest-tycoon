@@ -210,6 +210,8 @@ html:has(body[data-phase=authenticated]),body[data-phase=authenticated]{touch-ac
 .play-badge a{display:block;border-radius:7px}
 .play-badge img{display:block;width:auto;height:40px}
 html[data-app=android] .play-badge{display:none!important}
+/* Get the app (/app, 4 Oct 2026) in the footer: not in our apps either, the farmer has it. */
+html[data-app] .footer-app{display:none!important}
 /* Inside the Facebook, Instagram or TikTok app (28 Sep 2026): before the account form, one step to the phone's own browser (src/main.js browserGate). */
 .browser-gate{display:none;text-align:center}
 .account-card[data-gate]>:not(.card-top):not(.browser-gate){display:none!important}

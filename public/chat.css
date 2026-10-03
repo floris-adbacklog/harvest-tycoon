@@ -343,3 +343,10 @@ span.chat-avatar{cursor:default}
 .chat-text .chat-wiki .game-art{flex:none;width:22px;height:22px}
 .chat-text .chat-wiki span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chat-text .chat-wiki:hover{background:#e3eed6}
+/* The app page and a part of Settings (4 Oct 2026, src/chat-ui.js): the wiki chip's shape; Settings shows its way, "Settings › Farm app". */
+.chat-text .chat-wiki>.chat-link-icon{flex:none;width:20px;height:20px;margin:0 1px 0 3px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chat-text .chat-settings-link{gap:4px}
+.chat-text .chat-settings-link .chat-path-sep{flex:none;color:#7f9a6e;font-weight:800}
+.chat-text .chat-settings-link span:last-child{flex:0 1 auto}
+/* "Settings" itself never shrinks: the way is the point; a long part's title takes the dots (4 Oct 2026 review). */
+.chat-text .chat-settings-link span:first-of-type{flex:none}

@@ -22,7 +22,8 @@ export const SOURCES=[
 ].filter(file=>!SKIP.test(file));
 // The CrazyGames page (Oct 2026) shows the same loading screen and a pause card of its own. The support page (3 Oct 2026) is written
 // per language at deploy time from these translations (scripts/build-languages.mjs), like the sign-in page.
-export const PAGES=['public/farm.html','public/play.html','public/crazygames.html','public/support.html'];
+// The app page (/app, 4 Oct 2026) too.
+export const PAGES=['public/farm.html','public/play.html','public/crazygames.html','public/support.html','public/app.html'];
 const SQL_DIRS=['supabase/','supabase/migrations/'];
 
 // data-note becomes a line of text in a dropdown (pretty-select.js), so it is collected too.
@@ -224,7 +225,7 @@ function add(catalog,key,file){if(!catalog.has(key))catalog.set(key,file);}
 // The search and share texts in the sign-in page's head (Oct 2026): its page per language (/es/, scripts/build-languages.mjs) has
 // them translated. The twitter ones are the same texts. The farm frame's head is never shown or searched, so it is left out. The support
 // page's description too (3 Oct 2026).
-const SEO_PAGES=['public/play.html','public/support.html'],SEO_META=/<meta (?:name|property)="(?:description|og:title|og:description|og:image:alt|twitter:title|twitter:description)" content="([^"]*)">/g;
+const SEO_PAGES=['public/play.html','public/support.html','public/app.html'],SEO_META=/<meta (?:name|property)="(?:description|og:title|og:description|og:image:alt|twitter:title|twitter:description)" content="([^"]*)">/g;
 function collectPage(file,catalog,htmlNames,scripts){
  let html=read(file);
  if(SEO_PAGES.includes(file))for(const m of html.matchAll(SEO_META)){const key=normalize(decode(m[1]));if(key)add(catalog,key,file);}
