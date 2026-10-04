@@ -53,6 +53,9 @@ test('the database draws exactly these goals per league, counts the league\'s ow
  const json=JSON.stringify(EVENT_GOAL_POOLS.map(l=>l.map(g=>g.map(({stat,targets})=>({stat,targets,titles:EVENT_GOAL_TITLES[stat]}))))).replaceAll("'","''");
  assert.ok(goals.includes(`pools constant jsonb:='${json}';`),'run node scripts/event-goals-sql.mjs after changing public/event-goals.js');
  assert.match(goals,/insert into public\.live_events\(id,title,description,starts_at,ends_at,active,objectives,rewards,created_by,leagues\)/);
+ // 4 Oct 2026: the check on new events refused the leagues' new goals, and the schedule skipped those events without a word.
+ const allowed=goals.slice(goals.indexOf('function public.harvest_event_validate()')).match(/not in \(([^)]*)\)/)[1].split(',').map(s=>s.replace(/'/g,''));
+ for(const {stat} of EVENT_GOAL_POOLS.flat(2))assert.ok(allowed.includes(stat),`the event check allows ${stat}`);
  assert.match(leagues,/objs:=coalesce\(e\.leagues->lg->'objectives',e\.objectives\);/,'progress counts the league\'s goals');
  assert.match(leagues,/\(stat='glasshouse_batches' and action in \('collect','collect_all'\)\) or \(stat='valley_baskets' and action='valley_sell'\)/);
  assert.match(leagues,/qualified=\(not exists\(select 1 from jsonb_array_elements\(coalesce\(e\.leagues->p\.league->'objectives',e\.objectives\)\)/);
