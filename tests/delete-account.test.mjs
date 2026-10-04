@@ -183,7 +183,7 @@ test('/delete-account: in the game on the website and in both apps, the support 
  assert.match(page,/on our website, in the Harvest Tycoon app for Android on Google Play and in the Harvest Tycoon app for iPhone on the App Store\./);
  assert.match(page,/Your account is deleted <strong>at once<\/strong>/);
  assert.match(page,/<h2 id="no-sign-in">Can’t sign in any more\?<\/h2>/);assert.match(page,/<a href="\/support">support form<\/a> <strong>from the email address linked to your account<\/strong>/);
- assert.match(page,/generally <strong>seven years<\/strong>\. In our records they are no longer linked to your account, your email address or your player name; Stripe keeps its own payment records under its own privacy policy\. Purchases are not refunded/);
+ assert.match(page,/generally <strong>seven years<\/strong>\. In our records they are no longer linked to your account, your email address or your player name; Stripe and Google keep their own payment records under their own privacy policies\. Purchases are not refunded/);
  assert.match(page,/If you are a partner: your partner account, and partner earnings that have not been paid out yet\. Request a payout first/);
  for(const part of ['farm and all your progress','VIP, medals','Your place in your farm family','your private messages (from both sides of the conversation)','Your invites'])assert.ok(page.includes(part),part);
  assert.doesNotMatch(page,/subject=Delete|Email a deletion request/,'no more emailed requests');

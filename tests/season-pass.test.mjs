@@ -285,7 +285,7 @@ test('texts: the wiki, a loading tip, the purchase screens and the privacy polic
  assert.equal(PASS_LOADING_TIP[0],'giant-small');assert.ok(read('public/assets/icons/giant-small.webp').length>1000,'existing art, WebP');
  assert.match(read('public/game.js'),/passPhase\(Date\.now\(\)\)==='open'\?\[PASS_LOADING_TIP,\.\.\.LOADING_TIPS\]:LOADING_TIPS/,'the tip only while it is open');
  assert.match(read('src/payment-ui.js'),/if\(result\.pack==='pass'\)\{const wait=PASS\.startsAt-\(Number\(result\.serverNow\)\|\|Date\.now\(\)\);display\('credited','Your Halloween Pass is here!',wait>0\?`It starts in \$\{formatDuration\(wait\)\}\./,'bought in the pre-sale, it says when it starts (tests/payment-return.test.mjs runs it)');
- assert.match(read('public/privacy.html'),/When you buy diamonds, a pack, a special offer or a season pass such as the Halloween Pass, you pay on a checkout page run by <strong>Stripe<\/strong>\./);
+ assert.match(read('public/privacy.html'),/When you buy diamonds, a pack, a special offer or a season pass such as the Halloween Pass on our website, you pay on a checkout page run by <strong>Stripe<\/strong>\./);
  assert.match(read('src/analytics.js'),/'starter','offer','pass'\]\)/);
 });
 
