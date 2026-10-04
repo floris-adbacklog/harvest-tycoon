@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-import {createFarmAudio,AUDIO_DEFAULTS,AUDIO_STORAGE_KEY,audioSettings,soundForAction,withActionSounds,createProductionCueTracker,SOUND_CUES} from '../public/farm-audio.js';
+import {createFarmAudio,AUDIO_DEFAULTS,AUDIO_STORAGE_KEY,MUSIC_TRACKS,MUSIC_PAD,audioSettings,soundForAction,withActionSounds,createProductionCueTracker,SOUND_CUES} from '../public/farm-audio.js';
 import {CUE_ORDER,CUE_VARIANTS} from '../public/sound-kit.js';
 class Param{
  value=0;events=[];
@@ -26,15 +26,15 @@ class Context{
  createBuffer(channels,length){const data=new Float32Array(length);return {getChannelData:()=>data};}
  async resume(){this.state='running';}async suspend(){this.state='suspended';}async close(){this.state='closed';}
 }
-function setup(saved,loader){
+function setup(saved,loader,{loadPreview}={}){
  const doc=new EventTarget();doc.hidden=false;const win=new EventTarget(),ctx=new Context(),writes=[];let created=0,loads=0,renderedFor=0;
- const audio=createFarmAudio({contextFactory:()=>{created++;return ctx;},storage:{getItem:()=>saved??null,setItem:(...args)=>writes.push(args)},documentRef:doc,windowRef:win,renderSounds:(w,accept)=>{renderedFor++;for(const k of CUE_ORDER)for(let v=0;v<(CUE_VARIANTS[k]??1);v++)accept(k,v,new Float32Array(64),8000);},loadMusic:context=>{loads++;return loader?loader(context):Promise.resolve({duration:144});}});
+ const audio=createFarmAudio({contextFactory:()=>{created++;return ctx;},storage:{getItem:()=>saved??null,setItem:(...args)=>writes.push(args)},documentRef:doc,windowRef:win,renderSounds:(w,accept)=>{renderedFor++;for(const k of CUE_ORDER)for(let v=0;v<(CUE_VARIANTS[k]??1);v++)accept(k,v,new Float32Array(64),8000);},loadMusic:(context,track)=>{loads++;return loader?loader(context,track):Promise.resolve({duration:144});},loadPreview});
  // Music loops; the effects (sound-kit.js buffers, or plain oscillator notes as the fallback) do not.
  const music=()=>ctx.buffers.filter(n=>n.loop),effects=()=>[...ctx.oscillators,...ctx.buffers.filter(n=>!n.loop)];
  return {audio,doc,win,ctx,writes,music,effects,created:()=>created,loads:()=>loads,renderedFor:()=>renderedFor};
 }
 test('quiet defaults, validation and a saved mute preference are respected before any gesture',async()=>{
- assert.deepEqual(audioSettings({ambience:Infinity,effects:-20,enabled:'yes'}),{enabled:true,ambience:16,effects:0});
+ assert.deepEqual(audioSettings({ambience:Infinity,effects:-20,enabled:'yes',music:'farm-radio'}),{enabled:true,ambience:12,effects:0,music:'hayride-hop'});
  assert.deepEqual(audioSettings(null),AUDIO_DEFAULTS);
  const s=setup(JSON.stringify({enabled:false,ambience:10,effects:35}));assert.equal(s.created(),0);assert.equal(await s.audio.unlock(),false);assert.equal(s.created(),0);assert.equal(s.audio.play('levelup'),false);
  s.audio.setSettings({enabled:true});await s.audio.unlock();assert.equal(s.created(),1);assert.equal(s.ctx.state,'running');assert.equal(s.writes[0][0],AUDIO_STORAGE_KEY);assert.equal(s.audio.settings().effects,35);s.audio.dispose();
@@ -99,6 +99,77 @@ test('a pending music download cannot start playback after mute, hiding or dispo
   else if(action==='hide'){s.doc.hidden=true;s.doc.dispatchEvent(new Event('visibilitychange'));}
   else s.audio.dispose();
   finish({duration:144});await settle();assert.equal(s.ctx.buffers.length,0);s.audio.dispose();
+ }
+});
+test('the farmer picks the music (Hayride Hop unless they choose): the choice is saved, the old track fades out, the new one starts from its beginning',async()=>{
+ const loaded=[],s=setup(null,(context,track)=>{loaded.push(track.id);return Promise.resolve({buffer:{duration:200},start:.5,length:190});});
+ assert.equal(s.audio.settings().music,'hayride-hop');await s.audio.unlock();await settle();
+ assert.deepEqual(loaded,['hayride-hop']);const first=s.music()[0];
+ assert.equal(first.loopStart,.5);assert.equal(first.loopEnd,190.5,'the loop runs between the padding');assert.equal(first.offset,.5);
+ s.ctx.currentTime+=30;const at=s.ctx.currentTime;s.audio.setSettings({music:'orchard-breeze'});
+ assert.equal(JSON.parse(s.writes.at(-1)[1]).music,'orchard-breeze','saved on this device');
+ assert.equal(first.stopAt,at+.6,'the old track fades out and stops, never cut off mid-note');assert.equal(first.stopped,false);
+ const fading=s.ctx.gains[3];assert.deepEqual(fading.gain.events.at(-1),['target',0,at,.12],'its own volume goes down first');
+ await settle();await settle();
+ assert.deepEqual(loaded,['hayride-hop','orchard-breeze']);const second=s.music()[1];assert.equal(second.offset,.5,'from its beginning');assert.equal(second.loopEnd,190.5);
+ s.ctx.currentTime+=200;s.audio.setSettings({ambience:0});s.audio.setSettings({ambience:20});await settle();
+ assert.equal(s.music()[2].offset,.5+10,'the place in the loop is counted from the loop, not the file');
+ s.audio.setSettings({music:'farm-radio'});assert.equal(s.audio.settings().music,'hayride-hop','an unknown track is the default');s.audio.dispose();
+});
+test('a track picked while another is still loading: only the last pick plays, one track in memory at a time',async()=>{
+ const waiting=[],s=setup(null,(context,track)=>new Promise(resolve=>waiting.push([track.id,resolve])));
+ await s.audio.unlock();s.audio.setSettings({music:'morning-market'});s.audio.setSettings({music:'sunny-acres'});
+ waiting[0][1]({duration:100});await settle();await settle();
+ assert.deepEqual(waiting.map(w=>w[0]),['hayride-hop','sunny-acres'],'Morning Market was never fetched');assert.equal(s.music().length,0,'Hayride Hop arrived too late and is dropped');
+ waiting[1][1]({duration:107});await settle();await settle();
+ assert.equal(s.music().length,1);assert.equal(s.music()[0].loopStart,0);assert.equal(s.music()[0].loopEnd,107,'Sunny Acres is a whole-file loop');
+ assert.equal(s.audio.settings().musicStatus,'ready');s.audio.dispose();
+ const odd=setup(null,()=>Promise.resolve({buffer:{duration:100},start:.5,length:120}));await odd.audio.unlock();await settle();
+ assert.equal(odd.music()[0].loopStart,0);assert.equal(odd.music()[0].loopEnd,100,'a loop that does not fit its file is not trusted');odd.audio.dispose();
+});
+test('Listen plays a track\'s preview over the farm music, which is turned down meanwhile and comes back after; Stop ends it',async()=>{
+ const previews=[];let fail=false;
+ const s=setup(null,null,{loadPreview:(context,track)=>{previews.push(track.id);return fail?Promise.reject(Error('Offline')):Promise.resolve({duration:20});}});
+ assert.equal(await s.audio.preview('orchard-breeze'),false,'never before the sound is on');
+ await s.audio.unlock();await settle();const bed=s.ctx.gains[3];assert.equal(bed.gain.value,1);
+ assert.equal(await s.audio.preview('orchard-breeze'),true);assert.deepEqual(s.audio.settings().preview,{id:'orchard-breeze',status:'playing'});
+ const clip=s.ctx.buffers.find(n=>!n.loop&&n.buffer?.duration===20);assert(clip.started);
+ assert.equal(bed.gain.value,0,'the farm music is turned down');assert.equal(s.ctx.gains.at(-1).gain.value,AUDIO_DEFAULTS.ambience/100,'at the music volume');
+ s.audio.stopPreview();assert.equal(clip.stopAt,s.ctx.currentTime+.3,'Stop really stops the sound');s.audio.setSettings({ambience:40});
+ assert.equal(await s.audio.preview('orchard-breeze'),true);assert.equal(s.ctx.gains.at(-1).gain.value,.4,'the music slider sets its volume');s.ctx.buffers.filter(n=>!n.loop).at(-1).onended();s.audio.setSettings({ambience:12});
+ clip.onended();assert.equal(s.audio.settings().preview,null);assert.equal(bed.gain.value,1,'and comes back when the preview ends');
+ await s.audio.preview('morning-market');s.audio.stopPreview();assert.equal(s.audio.settings().preview,null);assert.equal(bed.gain.value,1);
+ await s.audio.preview('morning-market');assert.deepEqual(previews,['orchard-breeze','morning-market'],'the last preview is kept, not fetched again');
+ s.audio.setSettings({music:'morning-market'});assert.equal(s.audio.settings().preview,null,'picking a track ends its preview');
+ s.audio.setSettings({ambience:0});await s.audio.preview('hayride-hop');assert.equal(s.ctx.gains.at(-1).gain.value,AUDIO_DEFAULTS.ambience/100,'never softer than the default music volume');
+ fail=true;assert.equal(await s.audio.preview('sunny-acres'),false);assert.equal(s.audio.settings().previewFailed,'sunny-acres');assert.equal(s.audio.settings().preview,null);
+ s.audio.setSettings({enabled:false});assert.equal(await s.audio.preview('hayride-hop'),false,'not while the sound is off');s.audio.dispose();
+});
+test('a preview that fails while the farm music is still loading never leaves the music turned down',async()=>{
+ let finishMusic,failPreview;
+ const s=setup(null,()=>new Promise(resolve=>{finishMusic=resolve;}),{loadPreview:()=>new Promise((resolve,reject)=>{failPreview=reject;})});
+ await s.audio.unlock();const asked=s.audio.preview('morning-market');assert.deepEqual(s.audio.settings().preview,{id:'morning-market',status:'loading'});
+ finishMusic({duration:100});await settle();await settle();const bed=s.ctx.gains[3];assert.equal(bed.gain.value,1,'not turned down for a preview that is only loading');
+ failPreview(Error('Offline'));assert.equal(await asked,false);assert.equal(bed.gain.value,1);assert.equal(s.audio.settings().previewFailed,'morning-market');s.audio.dispose();
+});
+test('a track that loads after another was picked, with the music at 0 meanwhile, does not leave "loading" on screen',async()=>{
+ let finish;const s=setup(null,()=>new Promise(resolve=>{finish=resolve;}));
+ await s.audio.unlock();assert.equal(s.audio.settings().musicStatus,'loading');
+ s.audio.setSettings({music:'orchard-breeze'});s.audio.setSettings({ambience:0});finish({duration:100});await settle();await settle();
+ assert.equal(s.audio.settings().musicStatus,'idle');assert.equal(s.loads(),1,'nothing loads while the music is at 0');s.audio.dispose();
+});
+test('every track ships its loop and preview: AAC, small, the loop as long as the game thinks, no seam once decoded',()=>{
+ assert.equal(MUSIC_TRACKS[0].id,AUDIO_DEFAULTS.music);assert.deepEqual(MUSIC_TRACKS.map(t=>t.id),['hayride-hop','morning-market','orchard-breeze','sunny-acres']);
+ const file=name=>new URL(`../public/assets/audio/${name}`,import.meta.url),bytes=name=>readFileSync(file(name));
+ for(const track of MUSIC_TRACKS){
+  const preview=bytes(track.preview);assert.equal(preview.toString('ascii',4,8),'ftyp',`${track.id}: preview is an .m4a`);assert.ok(preview.length<400e3,`${track.id}: preview under 400 KB`);
+  if(!track.length){assert.deepEqual(track.sources.map(s=>s.file),['sunny-acres.flac','sunny-acres.wav']);continue;}
+  const loop=bytes(`${track.id}.m4a`),info=JSON.parse(bytes(`${track.id}.json`));
+  assert.equal(loop.toString('ascii',4,8),'ftyp');assert.ok(loop.length<3e6,`${track.id}: under 3 MB`);
+  assert.equal(track.length,info.frames/info.sample_rate,`${track.id}: the game loops exactly the rendered loop`);assert.equal(info.channels,1);assert.equal(info.pad_seconds,MUSIC_PAD);
+  assert.ok(info.duration_seconds>=180&&info.duration_seconds<=240,`${track.id}: three to four minutes`);
+  assert.ok(Math.abs(info.rms-.062)<.002&&info.peak<.4,`${track.id}: as loud as the others`);assert.ok(info.decoded_seam<.1,`${track.id}: no seam once decoded`);
+  assert.deepEqual(track.sources.map(s=>s.file),[`${track.id}.m4a`,'sunny-acres.flac','sunny-acres.wav'],'a browser without AAC plays Sunny Acres');
  }
 });
 test('a failed music load leaves game sounds available and avoids request spam',async()=>{

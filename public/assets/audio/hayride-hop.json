@@ -1,0 +1,18 @@
+{
+  "title": "Hayride Hop",
+  "duration_seconds": 192,
+  "frames": 6144000,
+  "sample_rate": 32000,
+  "channels": 1,
+  "pad_seconds": 0.5,
+  "aac_bitrate": 96000,
+  "rms": 0.06199999995478668,
+  "peak": 0.3128465531565613,
+  "quietest_50ms_rms": 0.010564989394381441,
+  "seam_step": 0.000614455943659404,
+  "decoded_seam": 0,
+  "decoder_shift_ms": 0,
+  "preview_start_seconds": 15.5,
+  "preview_seconds": 20,
+  "composition": "Original Hayride Hop: a light country shuffle in D major at 120 BPM. Banjo, mandolin, upright bass, whistled tune, reed, fiddle, xylophone, brushes, a hayride horse"
+}

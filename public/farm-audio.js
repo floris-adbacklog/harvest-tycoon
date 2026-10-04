@@ -1,27 +1,60 @@
 import {productionJobs} from './farm-state.js';
 import {renderCue,CUE_VARIANTS,CUE_ORDER,SFX_RATE} from './sound-kit.js';
 // Original continuous music and procedural effects. No third-party recordings.
-// "Sunny Acres" (scripts/generate-farm-music.mjs, 26 Sep 2026: an upbeat folk loop in place of the calm Harvest Meadow piano).
-// The same 107-second loop twice: the FLAC is lossless (every sample identical, so the seamless loop stays seamless) at under half
-// the WAV's size. The WAV stays as the fallback for a browser that cannot fetch or decode the FLAC.
-const MUSIC_URLS=['./assets/audio/sunny-acres.flac','./assets/audio/sunny-acres.wav'].map(path=>new URL(path,import.meta.url));
-async function loadFarmMusic(context){
+// The farm's music (4 Oct 2026): four original loops, and the farmer picks one in Settings › Sound (Hayride Hop unless they choose).
+// Hayride Hop, Morning Market and Orchard Breeze (scripts/music/, built by scripts/build-farm-music.mjs) are mono AAC (.m4a): about a
+// third of a stereo FLAC's size. A compressed file can gain or lose a few milliseconds at its edges when it is decoded (the encoder's
+// start-up and padding), so each file holds MUSIC_PAD seconds of the loop's end before the loop and MUSIC_PAD seconds of its start
+// after it, and the game loops from MUSIC_PAD to MUSIC_PAD + length: wherever the decoder puts the edges, that stretch is exactly one
+// turn of continuous music, so the repeat has no seam. Sunny Acres (scripts/generate-farm-music.mjs, 26 Sep 2026) stays the lossless
+// FLAC with the WAV as fallback, and is also what a browser that cannot decode AAC plays.
+// Each track has a 20-second preview (<id>-preview.m4a) that Settings plays before the farmer picks it.
+export const MUSIC_PAD=.5;
+const SUNNY_ACRES=Object.freeze([{file:'sunny-acres.flac'},{file:'sunny-acres.wav'}]);
+// length: the loop in seconds (its frames at 32 kHz, from public/assets/audio/<id>.json); none for the whole-file Sunny Acres.
+const musicTrackOf=(id,title,about,length)=>Object.freeze({id,title,about,length,preview:`${id}-preview.m4a`,
+ sources:Object.freeze(length?[{file:`${id}.m4a`,start:MUSIC_PAD,length},...SUNNY_ACRES]:SUNNY_ACRES)});
+export const MUSIC_TRACKS=Object.freeze([
+ musicTrackOf('hayride-hop','Hayride Hop','Banjo, fiddle and a whistled tune, with a gentle swing',6144000/32000),
+ musicTrackOf('morning-market','Morning Market','Bouncy strings, tuba and bells',6355862/32000),
+ musicTrackOf('orchard-breeze','Orchard Breeze','Ukulele, marimba and recorder, calm and cosy',6257778/32000),
+ musicTrackOf('sunny-acres','Sunny Acres','The first farm tune: banjo, guitar and whistling',null)
+]);
+export const musicTrack=id=>MUSIC_TRACKS.find(track=>track.id===id)??MUSIC_TRACKS[0];
+const audioUrl=file=>new URL(`./assets/audio/${file}`,import.meta.url);
+async function loadFarmMusic(context,track){
  let failure;
- for(const url of MUSIC_URLS){
+ for(const source of track.sources){
   try{
-   const response=await fetch(url);
+   const response=await fetch(audioUrl(source.file));
    if(!response.ok)throw new Error('Music unavailable');
-   return await context.decodeAudioData(await response.arrayBuffer());
+   const buffer=await context.decodeAudioData(await response.arrayBuffer());
+   return {buffer,start:source.start??0,length:source.length??buffer.duration};
   }catch(error){failure=error;}
  }
  throw failure;
 }
-// Music starts a little softer (16%, was 22%) now that Sunny Acres is livelier than the old piano; a farmer's own setting stays.
-export const AUDIO_DEFAULTS=Object.freeze({enabled:true,ambience:16,effects:48});
+async function loadMusicPreview(context,track){
+ const response=await fetch(audioUrl(track.preview));
+ if(!response.ok)throw new Error('Preview unavailable');
+ return await context.decodeAudioData(await response.arrayBuffer());
+}
+// What a loader gave: {buffer,start,length}, or just a buffer (the whole buffer is the loop). A loop that does not fit in the buffer
+// is not trusted: the whole buffer loops instead.
+function musicLoop(result){
+ const buffer=result?.buffer??result,duration=buffer?.duration;
+ if(!Number.isFinite(duration)||duration<=0)return null;
+ const start=Number(result?.start)||0,length=Number(result?.length)||duration;
+ return start>=0&&length>0&&start+length<=duration?{buffer,start,length}:{buffer,start:0,length:duration};
+}
+// Music 12% (was 16%) and game sounds 75% (was 48%) from 4 Oct 2026: the farm's own sounds lead, the music sits underneath.
+// A farmer's own setting stays.
+export const AUDIO_DEFAULTS=Object.freeze({enabled:true,ambience:12,effects:75,music:'hayride-hop'});
 export const AUDIO_STORAGE_KEY='harvest-tycoon-audio-v1';
 export function audioSettings(value={}){
  const percent=(v,fallback)=>typeof v==='number'&&Number.isFinite(v)?Math.max(0,Math.min(100,Math.round(v))):fallback;
- return {enabled:typeof value?.enabled==='boolean'?value.enabled:AUDIO_DEFAULTS.enabled,ambience:percent(value?.ambience,AUDIO_DEFAULTS.ambience),effects:percent(value?.effects,AUDIO_DEFAULTS.effects)};
+ return {enabled:typeof value?.enabled==='boolean'?value.enabled:AUDIO_DEFAULTS.enabled,ambience:percent(value?.ambience,AUDIO_DEFAULTS.ambience),effects:percent(value?.effects,AUDIO_DEFAULTS.effects),
+  music:MUSIC_TRACKS.some(track=>track.id===value?.music)?value.music:AUDIO_DEFAULTS.music};
 }
 export const SOUND_CUES=Object.freeze({
  plant:{notes:[196,294],step:.065,duration:.13,volume:.09,type:'triangle'},
@@ -100,25 +133,40 @@ function renderInBackground(windowRef,accept){
  }catch{idle();}
  return ()=>{stopped=true;worker?.terminate();};
 }
-export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic,renderSounds=renderInBackground}={}){
- let settings={...AUDIO_DEFAULTS},ctx,master,ambientBus,effectBus,musicBuffer=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;
+export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic,loadPreview=loadMusicPreview,renderSounds=renderInBackground}={}){
+ let settings={...AUDIO_DEFAULTS},ctx,master,compressor,ambientBus,effectBus,music=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;
  let nextEffectAt=0,priorityUntil=0,resuming=null,lastSnip=-Infinity;
  // CrazyGames' own sound switch (Oct 2026, settings.muteAudio through public/portal.js): while it is off the game is silent, whatever
  // Settings say, and the sound comes back as Settings have it once CrazyGames turns it on again.
  let outsideMute=false;
  const voices=new Set(),lastPlayed=new Map();
+ // A track's preview in Settings: {id,status:'loading'|'playing',source,gain}; the farm's music is turned down while it plays.
+ let preview=null,previewTurn=0,previewFailed=null,previewBuffer=null;
  try{storage??=windowRef?.localStorage;settings=audioSettings(JSON.parse(storage?.getItem(AUDIO_STORAGE_KEY)??'{}'));}catch{}
  const active=()=>!disposed&&unlocked&&settings.enabled&&!outsideMute&&!documentRef?.hidden;
- const read=()=>({...settings,available:!unavailable,musicStatus,...(outsideMute?{outsideMute:true}:{})});
+ const read=()=>({...settings,available:!unavailable,musicStatus,preview:preview?{id:preview.id,status:preview.status}:null,previewFailed,...(outsideMute?{outsideMute:true}:{})});
  function ramp(param,value,seconds=.08){const t=ctx.currentTime;param.cancelScheduledValues(t);param.setTargetAtTime(value,t,seconds);}
  function stopVoice(v){try{v.source.stop();}catch{}v.cleanup();}
  function stopBed(){
   if(!bed)return;
-  if(musicBuffer)musicOffset=(musicOffset+Math.max(0,ctx.currentTime-musicStartedAt))%musicBuffer.duration;
+  if(music)musicOffset=(musicOffset+Math.max(0,ctx.currentTime-musicStartedAt))%music.length;
   for(const node of bed){try{node.stop?.();node.disconnect();}catch{}}bed=null;
+ }
+ // Another track was picked: the one playing fades out in half a second rather than stopping mid-note.
+ function fadeOutBed(){
+  if(!bed)return;const [source,gain]=bed,t=ctx.currentTime;bed=null;
+  gain.gain.cancelScheduledValues(t);gain.gain.setTargetAtTime(0,t,.12);
+  source.onended=()=>{try{source.disconnect();gain.disconnect();}catch{}};try{source.stop(t+.6);}catch{}
+ }
+ function endPreview(){
+  if(!preview)return false;const {source,gain}=preview;preview=null;previewTurn++;
+  if(source&&ctx){const t=ctx.currentTime;try{gain.gain.cancelScheduledValues(t);gain.gain.setTargetAtTime(0,t,.06);source.onended=()=>{try{source.disconnect();gain.disconnect();}catch{}};source.stop(t+.3);}catch{}}
+  if(bed)ramp(bed[1].gain,1,.4);
+  return true;
  }
  function silence(){
   if(!ctx)return;master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(0,ctx.currentTime);stopBed();for(const v of [...voices])stopVoice(v);
+  if(preview){if(preview.source){try{preview.source.stop();preview.source.disconnect();preview.gain.disconnect();}catch{}}preview=null;previewTurn++;if(!disposed)onChange(read());}
   nextEffectAt=0;priorityUntil=0;lastSnip=-Infinity;lastPlayed.clear();
   if(ctx.state!=='closed')Promise.resolve(ctx.suspend()).catch(()=>{});
  }
@@ -126,7 +174,7 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   const AudioContext=windowRef?.AudioContext??windowRef?.webkitAudioContext;
   ctx=contextFactory?contextFactory():new AudioContext();
   master=ctx.createGain();master.gain.value=0;
-  const compressor=ctx.createDynamicsCompressor();compressor.threshold.value=-16;compressor.knee.value=12;compressor.ratio.value=8;compressor.attack.value=.006;compressor.release.value=.18;
+  compressor=ctx.createDynamicsCompressor();compressor.threshold.value=-16;compressor.knee.value=12;compressor.ratio.value=8;compressor.attack.value=.006;compressor.release.value=.18;
   ambientBus=ctx.createGain();ambientBus.gain.value=0;effectBus=ctx.createGain();effectBus.gain.value=settings.effects/100;
   ambientBus.connect(compressor);effectBus.connect(compressor);compressor.connect(master);master.connect(ctx.destination);
   prepareSounds();
@@ -157,24 +205,56 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  }
  function startBed(){
   if(bed||!active()||!settings.ambience||ctx.state!=='running')return;
-  if(!musicBuffer){
+  if(music?.id!==settings.music){
    if(musicLoading||Date.now()<musicRetryAt)return;
+   // One track in memory at a time: the old one goes as the new one loads.
+   const id=settings.music;music=null;
    musicStatus='loading';onChange(read());
-   musicLoading=Promise.resolve().then(()=>loadMusic(ctx)).then(buffer=>{
+   musicLoading=Promise.resolve().then(()=>loadMusic(ctx,musicTrack(id))).then(result=>{
     if(disposed)return;
-    if(!buffer||!Number.isFinite(buffer.duration)||buffer.duration<=0)throw new Error('Invalid music');
-    musicBuffer=buffer;musicStatus='ready';onChange(read());startBed();
-   }).catch(()=>{if(!disposed){musicStatus='unavailable';musicRetryAt=Date.now()+15000;onChange(read());}}).finally(()=>{musicLoading=null;});
+    const loop=musicLoop(result);if(!loop)throw new Error('Invalid music');
+    if(id===settings.music){music={id,...loop};musicStatus='ready';onChange(read());}
+   }).catch(()=>{if(!disposed&&id===settings.music){musicStatus='unavailable';musicRetryAt=Date.now()+15000;onChange(read());}})
+    .finally(()=>{
+     musicLoading=null;if(disposed||!ctx)return;
+     startBed();   // the track loaded, or the farmer picked another meanwhile
+     // A load for a track no longer picked, with nothing loading after it (the music turned to 0 meanwhile): not 'loading' any more.
+     if(!musicLoading&&!music&&musicStatus==='loading'){musicStatus='idle';onChange(read());}
+    });
    return;
   }
-  // One sample-accurate loop: release tails already wrap in the WAV. No end fade,
-  // restart timers, compressed padding or silent gap between repeats.
-  const music=ctx.createBufferSource(),gain=ctx.createGain();
-  music.buffer=musicBuffer;music.loop=true;music.loopStart=0;music.loopEnd=musicBuffer.duration;
-  gain.gain.setValueAtTime(0,ctx.currentTime);gain.gain.setTargetAtTime(1,ctx.currentTime,.4);
-  music.connect(gain);gain.connect(ambientBus);musicStartedAt=ctx.currentTime;
-  music.start(0,musicOffset);bed=[music,gain];
+  // One sample-accurate loop: release tails already wrap in the music. No end fade,
+  // restart timers or silent gap between repeats.
+  const source=ctx.createBufferSource(),gain=ctx.createGain();
+  source.buffer=music.buffer;source.loop=true;source.loopStart=music.start;source.loopEnd=music.start+music.length;
+  gain.gain.setValueAtTime(0,ctx.currentTime);gain.gain.setTargetAtTime(preview?.source?0:1,ctx.currentTime,.4);   // down only while a preview plays
+  source.connect(gain);gain.connect(ambientBus);musicStartedAt=ctx.currentTime;
+  source.start(0,music.start+musicOffset%music.length);bed=[source,gain];
  }
+ // Settings › Sound: a track's 20-second preview, before the farmer picks it. It plays at the music's volume, but never softer than
+ // the default music volume (the music slider may be down at 0), and the farm's own music is turned down while it plays.
+ async function playPreview(id){
+  const track=MUSIC_TRACKS.find(t=>t.id===id);if(!track)return false;
+  endPreview();previewFailed=null;
+  if(!active()||ctx?.state!=='running'){onChange(read());return false;}
+  const turn=previewTurn;preview={id,status:'loading'};onChange(read());
+  try{
+   const buffer=previewBuffer?.id===id?previewBuffer.buffer:await loadPreview(ctx,track);
+   if(turn!==previewTurn)return false;
+   if(!active()||ctx.state!=='running'){preview=null;previewTurn++;onChange(read());return false;}   // e.g. iOS interrupted the sound
+   previewBuffer={id,buffer};
+   const source=ctx.createBufferSource(),gain=ctx.createGain(),t=ctx.currentTime;
+   source.buffer=buffer;gain.gain.setValueAtTime(0,t);gain.gain.setTargetAtTime(Math.max(settings.ambience,AUDIO_DEFAULTS.ambience)/100,t,.05);
+   source.connect(gain);gain.connect(compressor);
+   source.onended=()=>{try{source.disconnect();gain.disconnect();}catch{}if(preview?.source===source){preview=null;previewTurn++;if(bed)ramp(bed[1].gain,1,.4);onChange(read());}};
+   if(bed)ramp(bed[1].gain,0,.12);
+   preview={id,status:'playing',source,gain};source.start(t+.02);onChange(read());return true;
+  }catch{
+   if(turn===previewTurn){preview=null;previewTurn++;previewFailed=id;if(bed)ramp(bed[1].gain,1,.4);onChange(read());}
+   return false;
+  }
+ }
+ function stopPreview(){const failed=previewFailed;previewFailed=null;if(endPreview()||failed)onChange(read());}
  function applyMix(fadeIn=false){
   ramp(effectBus.gain,settings.effects/100);ramp(ambientBus.gain,settings.ambience/100,fadeIn?.75:.15);ramp(master.gain,.55,fadeIn?.3:.05);
   if(settings.ambience)startBed();else stopBed();
@@ -207,7 +287,10 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   try{lastSnip=now;const rate=snipRate(n),cue=SOUND_CUES.snip;if(!sample('snip',now+.005,rate))note(cue.notes[0]*rate,now+.005,cue.duration,cue.volume,effectBus,cue.type);return true;}catch{return false;}
  }
  function setSettings(next){
+  const before=settings.music;
   settings=audioSettings({...settings,...next});try{storage?.setItem(AUDIO_STORAGE_KEY,JSON.stringify(settings));}catch{}
+  // Another track: it starts from its beginning, and the one playing fades out.
+  if(settings.music!==before){musicOffset=0;musicRetryAt=0;previewFailed=null;endPreview();if(ctx)fadeOutBed();}
   onChange(read());
   if(!settings.enabled){silence();return;}
   if(unlocked)void unlock();
@@ -218,9 +301,9 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  function visibility(){if(documentRef.hidden)silence();else if(unlocked)void unlock();}
  function pagehide(event){if(event.persisted)silence();else dispose();}
  function pageshow(event){if(event.persisted&&unlocked)void unlock();}
- function dispose(){if(disposed)return;disposed=true;stopRendering?.();silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('pointerdown',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);musicBuffer=null;if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
+ function dispose(){if(disposed)return;disposed=true;stopRendering?.();silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('pointerdown',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);music=null;previewBuffer=null;if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
  documentRef?.addEventListener('pointerup',gesture,true);documentRef?.addEventListener('pointerdown',gesture,true);documentRef?.addEventListener('keydown',gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
- return {settings:read,setSettings,unlock,play,snip,dispose,muteFromOutside};
+ return {settings:read,setSettings,unlock,play,snip,dispose,muteFromOutside,preview:playPreview,stopPreview};
 }
 
 export function withActionSounds(runAction,getLevel,play){

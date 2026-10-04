@@ -27,8 +27,11 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
  // Not there for this farmer: hidden, or put aside by the page's CSS (AWAY), so it has no row and a link to it gets the note.
  const away=p=>p.hidden||p.matches(AWAY)||!titleOf(p);
  function list(){
+  // The row that has the focus keeps it when the list is drawn again (4 Oct 2026 review: keyboard and screen-reader users lost their place).
+  const focused=nav.contains(doc.activeElement)?doc.activeElement.closest?.('[data-settings-open]')?.dataset.settingsOpen:null;
   nav.innerHTML=parts().filter(p=>!away(p)).map(p=>`<button type="button" class="settings-row" data-settings-open="${esc(p.id)}">${iconOf(p)}<span>${esc(titleOf(p))}</span><i data-lucide="chevron-right" data-line-icon></i></button>`).join('');
   refreshArt();try{win?.lucide?.createIcons?.();}catch{}
+  if(focused)nav.querySelector(`[data-settings-open="${esc(focused)}"]`)?.focus({preventScroll:true});
  }
  function show(id){
   open=id;note.hidden=true;dialog.classList.toggle('settings-one',Boolean(id));
@@ -46,11 +49,13 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
  }
  const openAt=id=>{next=id||null;};
  nav.addEventListener('click',event=>{const row=event.target.closest('[data-settings-open]');if(row)show(row.dataset.settingsOpen);});
- back.addEventListener('click',()=>{show(null);nav.querySelector(`[data-settings-open="${open}"]`)?.focus({preventScroll:true});});
+ // Back on the list, the focus goes to the row of the part just left (it read open after show(null) cleared it, so found nothing).
+ back.addEventListener('click',()=>{const left=open;show(null);nav.querySelector(`[data-settings-open="${esc(left)}"]`)?.focus({preventScroll:true});});
  const anchor=dialog.querySelector('#avatar-settings')??parts()[0];anchor?.before(back,note,nav);
  // Every time Settings opens it starts on the list (or the part a link asked for); a part that shows or hides later updates the list.
  new MutationObserver(()=>{if(!dialog.open)return;const id=next;next=null;if(id)reveal(id);else show(null);}).observe(dialog,{attributes:true,attributeFilter:['open']});
- new MutationObserver(()=>{if(!open)list();}).observe(dialog,{subtree:true,attributes:true,attributeFilter:['hidden']});
+ // Only a part that really shows or hides: setting hidden to what it already is (install-ui.js does on every refresh) changes nothing.
+ new MutationObserver(records=>{if(!open&&records.some(r=>(r.oldValue!==null)!==r.target.hasAttribute('hidden')))list();}).observe(dialog,{subtree:true,attributes:true,attributeFilter:['hidden'],attributeOldValue:true});
  show(null);
  return {show,list,openAt,reveal};
 }

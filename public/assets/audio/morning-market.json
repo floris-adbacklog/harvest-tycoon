@@ -1,0 +1,18 @@
+{
+  "title": "Morning Market",
+  "duration_seconds": 198.6206875,
+  "frames": 6355862,
+  "sample_rate": 32000,
+  "channels": 1,
+  "pad_seconds": 0.5,
+  "aac_bitrate": 96000,
+  "rms": 0.06200000000003354,
+  "peak": 0.2923031660736776,
+  "quietest_50ms_rms": 0.003950477532790267,
+  "seam_step": 0.0004164498371781903,
+  "decoded_seam": 0.037977614755227665,
+  "decoder_shift_ms": 0,
+  "preview_start_seconds": 16.03,
+  "preview_seconds": 20,
+  "composition": "Original Morning Market: bouncy light orchestral-country in F major at 116 BPM. Pizzicato strings, tuba, guitar, glockenspiel, clarinet, flute, woodblock, shaker"
+}

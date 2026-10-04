@@ -23,7 +23,7 @@ function size(path){
  throw new Error(`unknown image ${path}`);
 }
 
-test('the music loads as FLAC first: lossless, every sample identical to the WAV, under half its size, with the WAV as fallback',()=>{
+test('Sunny Acres loads as FLAC first: lossless, every sample identical to the WAV, under half its size, with the WAV as fallback',()=>{
  const flac=bytes('public/assets/audio/sunny-acres.flac'),wav=bytes('public/assets/audio/sunny-acres.wav');
  assert.equal(flac.toString('ascii',0,4),'fLaC');assert.equal(flac[4]&0x7f,0,'STREAMINFO comes first');
  const info=flac.subarray(8,42);
@@ -34,7 +34,7 @@ test('the music loads as FLAC first: lossless, every sample identical to the WAV
  assert.equal(info.subarray(18,34).toString('hex'),createHash('md5').update(wav.subarray(44)).digest('hex'));
  assert.ok(flac.length<wav.length/2&&flac.length<2.5e6,'a fuller folk track compresses less than the old piano, still well under 2.5 MB');
  const audio=read('public/farm-audio.js');
- assert.match(audio,/\['\.\/assets\/audio\/sunny-acres\.flac','\.\/assets\/audio\/sunny-acres\.wav'\]/,'FLAC first, WAV as fallback');
+ assert.match(audio,/\[\{file:'sunny-acres\.flac'\},\{file:'sunny-acres\.wav'\}\]/,'FLAC first, WAV as fallback');
 });
 
 const LARGE=['familyhall-model','helping-hand','windmill','family-fox','family-owl','family-windmill','chore-weeds','chore-fences','activity-paddock','activity-workshop','greenbeans','juicepress','preserves','kitchen','berrysmoothie','applevinegar','beangratin','beeyard','sheepbarn','glasshouse','weaving','goatshed','craftshop'];

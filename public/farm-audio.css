@@ -1,1 +1,19 @@
 #sound-dialog{max-width:480px}#sound-dialog>p{color:#80776b;font-size:13px;line-height:1.7;margin:0 0 18px}.sound-switch{display:flex;align-items:center;justify-content:space-between;gap:15px;min-height:68px;border:1px solid #e2d7cb;border-radius:14px;background:#f3ede7;padding:13px 16px;margin-bottom:19px;cursor:pointer}.sound-switch>span{display:flex;align-items:center;gap:11px;font-weight:700}.sound-switch svg{width:23px;height:23px}.sound-switch input{accent-color:#6e6248;width:25px;height:25px;margin:0;cursor:pointer}.sound-volume{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;padding:14px 0;border-bottom:1px solid #e8e2dc}.sound-volume label{font-size:14px;font-weight:700}.sound-volume output{font-size:13px;font-variant-numeric:tabular-nums;color:#71624a}.sound-volume small{grid-column:1/-1;font-size:12px;line-height:1.5;color:#827a6f}.sound-volume input{grid-column:1/-1;width:100%;margin:0;height:44px;accent-color:#74654a;touch-action:pan-y;cursor:pointer}.sound-volume input:focus-visible,.sound-switch input:focus-visible{outline:2px solid #d3a032;outline-offset:4px}.sound-volume input:disabled{opacity:.45}#sound-dialog .sound-preview{width:100%;justify-content:center;min-height:46px;margin-top:20px}#sound-dialog .sound-status{margin:15px 0 0;min-height:22px;font-size:12px;text-align:center;line-height:1.6}@media(max-width:900px){#sound-dialog{max-width:480px}.sound-volume{padding:12px 0}.sound-switch{min-height:62px}.sound-switch input{width:27px;height:27px}}
+/* Music (4 Oct 2026): the farm's tracks, each with a preview button. */
+.music-choice{min-width:0;margin:0;padding:14px 0;border:0;border-bottom:1px solid #e8e2dc}
+.music-choice legend{padding:0;margin:0 0 9px;font-size:14px;font-weight:700}
+.music-tracks{display:flex;flex-direction:column;gap:8px}
+.music-track{display:flex;align-items:center;gap:10px;padding:6px 8px 6px 12px;border:1px solid #e2d7cb;border-radius:14px;background:#fffdf9}
+.music-track.is-chosen{border-color:#bba878;background:#f5eedf}
+.music-pick{flex:1;min-width:0;min-height:48px;display:flex;align-items:center;gap:11px;cursor:pointer}
+.music-pick input{flex:none;width:20px;height:20px;margin:0;accent-color:#6e6248;cursor:pointer}
+.music-pick span{min-width:0;display:flex;flex-direction:column;gap:2px}
+.music-pick b{font-size:14px}
+.music-pick small{font-size:12px;line-height:1.4;color:#827a6f}
+#sound-dialog .music-listen{flex:none;width:auto;min-width:0;min-height:40px;margin:0;padding:0 13px;display:flex;align-items:center;gap:6px;border:1px solid #d9cdbb;border-radius:999px;background:#f3ede7;box-shadow:none;color:#5d5240;font-size:13px;font-weight:700;cursor:pointer}
+#sound-dialog .music-listen svg{width:14px;height:14px}
+#sound-dialog .music-listen .music-stop,#sound-dialog .music-listen.is-playing .music-play{display:none}
+#sound-dialog .music-listen.is-playing .music-stop{display:inline}
+#sound-dialog .music-listen.is-playing{border-color:#bba878;background:#e9dfc8}
+#sound-dialog .music-listen:disabled{opacity:.45;cursor:default}
+.music-pick input:focus-visible,#sound-dialog .music-listen:focus-visible{outline:2px solid #d3a032;outline-offset:3px}

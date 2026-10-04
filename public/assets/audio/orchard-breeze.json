@@ -1,0 +1,18 @@
+{
+  "title": "Orchard Breeze",
+  "duration_seconds": 195.5555625,
+  "frames": 6257778,
+  "sample_rate": 32000,
+  "channels": 1,
+  "pad_seconds": 0.5,
+  "aac_bitrate": 96000,
+  "rms": 0.061999999996352695,
+  "peak": 0.3095079649323109,
+  "quietest_50ms_rms": 0.007752152526230314,
+  "seam_step": 0.005895825259646534,
+  "decoded_seam": 0.040425047577642224,
+  "decoder_shift_ms": 0,
+  "preview_start_seconds": 17.22,
+  "preview_seconds": 20,
+  "composition": "Original Orchard Breeze: a cosy loop in C major at 108 BPM. Ukulele, marimba, recorder, whistle, flute, glockenspiel, plucked bass, accordion, pizzicato"
+}

@@ -913,3 +913,21 @@ Vercel rebuilds everything, so they are never served live.
   public/assets/audio/sunny-acres.flac` (afconvert writes the samples' MD5, which the test compares with the WAV).
 - Unused now, kept (nothing deleted): public/assets/audio/harvest-meadow.flac (1.5 MB), .wav (6.9 MB), .json and
   scripts/generate-farm-music.py (the old calm piano loop).
+
+## Music choice: four tracks, Hayride Hop by default (4 Oct 2026; client only, no server change)
+- Settings › Sound › Music lists four original tracks: Hayride Hop (the default: a light country shuffle, 120 BPM, D major),
+  Morning Market (bouncy light orchestral-country, 116 BPM, F major), Orchard Breeze (cosy ukulele and marimba, 108 BPM,
+  C major) and Sunny Acres (the old one). Picking a track saves it on the device (harvest-tycoon-audio-v1 `music`), the
+  playing track fades out in half a second and the new one starts from its beginning; only the chosen track is ever
+  downloaded, and only one is kept in memory. Listen plays a 20-second preview (tap again to stop); the farm's music is
+  turned down meanwhile. Catalogue: MUSIC_TRACKS in public/farm-audio.js; list: public/sound-settings.js.
+- New defaults: music 12% (was 16%), game sounds 75% (was 48%). A farmer who ever changed a sound setting keeps theirs;
+  everyone without a saved track gets Hayride Hop.
+- Files (public/assets/audio/): <id>.m4a (mono AAC 96 kbps, about 2.3 MB for 3:12-3:19), <id>-preview.m4a (about 240 KB),
+  <id>.json (length, loudness, checks). Each .m4a holds half a second of the loop's end before the loop and half a second
+  of its start after it (MUSIC_PAD); the game loops between them, so the repeat has no seam whatever the decoder does at the
+  file's edges (checked: decoded again, 2-4% difference at the jump, AAC's own noise; Chrome decodes the exact length). A
+  browser that cannot decode AAC plays Sunny Acres (FLAC, WAV) instead.
+- Rebuild (macOS, afconvert): `node scripts/build-farm-music.mjs [id ...]` renders scripts/music/<id>.mjs (pure Node
+  synthesis, about 5-10 s each), mixes to mono at the same loudness (RMS 0.062), writes the three files and checks the
+  decoded loop. If a track's length changes, update its frames in MUSIC_TRACKS (the test compares them with the .json).
