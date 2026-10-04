@@ -1676,6 +1676,7 @@
 "From level {0} · one open invitation per farmer · 7 days":"public/family-invitations-ui.js",
 "From level {0},":"public/wiki-content.js",
 "From level {0}, master tools from":"public/wiki-content.js",
+"From level {0}, the XP each level needs is doubled.":"public/wiki-content.js",
 "From mill to oven":"public/farm-state.js",
 "From the moderators":"src/chat-ui.js",
 "From the valley to the busiest stalls in town.":"public/farm-state.js",

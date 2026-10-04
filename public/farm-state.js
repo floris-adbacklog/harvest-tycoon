@@ -685,28 +685,39 @@ export const MAX_PLOTS=40;
 // whole 6,000 XP, four and a half times levels 1 to 10, just as the beginner boost runs out; experienced players had nothing new to
 // do. Now 10 -> 20 asks about 4,550 XP (a quarter less), the steps grow smoothly on from level 9, and between 20 and 30 they grow
 // back to curve 4's steps (about a tenth less there), so there is no new jump at 20. From level 30 every step is as before.
+// Curve 6 (4 Oct 2026, the owner's call) is curve 5 with every step from level 90 on asking exactly twice as much: 90 -> 91 asks
+// 18,824 XP instead of 9,412, 90 -> 100 211,544 instead of 105,772 (more than 50 -> 90 as a whole). Reaching level 90 costs the same.
+// The one farmer past 90 then went up about 3.7 levels a day; the endgame after 90 (Master points, heirlooms, World II, the master
+// tools) is meant to last. What comes per level (Master points, level rewards) comes half as often per XP. Nobody goes back: a farm
+// keeps its level and its share of the way to the next one, and below level 90 its XP does not change.
+// Two releases, so no copy of this code ever meets a farm on a curve it cannot read (an unknown curve reads as curve 1, so an old
+// browser tab would show every farmer at a wrong level, and an old farm-api would rewrite their XP): first every copy learns to
+// read curve 6 while farms stay on curve 5 (XP_CURVE 5, 4 Oct 2026); a day later XP_CURVE becomes 6 and farms convert.
 export const XP_CURVE=5;
-export const LATE_XP_FROM=50,LATE_XP_STEP=.04,LATER_XP_FROM=100,LATER_XP_STEP=.06;
+export const LATE_XP_FROM=50,LATE_XP_STEP=.04,LATER_XP_FROM=100,LATER_XP_STEP=.06,TOP_XP_FROM=90,TOP_XP_FACTOR=2;
 const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
+const CURVE5_GAPS=Object.freeze([15,40,65,95,130,170,215,265,320,  330,355,380,405,435,465,495,525,560,595,  640,690,745,800,860,920,985,1050,1115,1175]);   // to level 30
 const EARLY_GAPS=Object.freeze({   // XP from level 1 to 2, 2 to 3 ... 9 to 10 (curve 1: 60, 100, 140 ... 380); curve 5 on to level 30
  2:Object.freeze([15,30,40,60,80,105,135,170,215]),
  3:Object.freeze([15,40,65,95,130,170,215,265,320]),
  4:Object.freeze([15,40,65,95,130,170,215,265,320]),
- 5:Object.freeze([15,40,65,95,130,170,215,265,320,  330,355,380,405,435,465,495,525,560,595,  640,690,745,800,860,920,985,1050,1115,1175])   // to level 30
+ 5:CURVE5_GAPS,
+ 6:CURVE5_GAPS   // curve 6 differs from 5 only from level 90 (lateStep)
 });
-const lateStep=level=>Math.round((40*level+20)*(1+(Math.min(level,LATER_XP_FROM)-LATE_XP_FROM)*LATE_XP_STEP+Math.max(0,level-LATER_XP_FROM)*LATER_XP_STEP));   // level -> level+1, from level 50
+// level -> level+1, from level 50; on curve 6 twice that from level 90 (exactly twice the rounded step)
+const lateStep=(level,curve)=>Math.round((40*level+20)*(1+(Math.min(level,LATER_XP_FROM)-LATE_XP_FROM)*LATE_XP_STEP+Math.max(0,level-LATER_XP_FROM)*LATER_XP_STEP))*(curve>=6&&level>=TOP_XP_FROM?TOP_XP_FACTOR:1);
 const curveOf=state=>Object.hasOwn(EARLY_GAPS,state.xpCurve)?Number(state.xpCurve):1;
 const sum=list=>list.reduce((total,n)=>total+n,0);
 function totalForLevel(level,curve){
  if(level<=1)return 0;
  const gaps=EARLY_GAPS[curve];if(!gaps)return oldXpForLevel(level);
  if(level<=gaps.length+1)return sum(gaps.slice(0,level-1));
- if(curve>=4&&level>LATE_XP_FROM){let total=totalForLevel(LATE_XP_FROM,curve);for(let l=LATE_XP_FROM;l<level;l++)total+=lateStep(l);return total;}
+ if(curve>=4&&level>LATE_XP_FROM){let total=totalForLevel(LATE_XP_FROM,curve);for(let l=LATE_XP_FROM;l<level;l++)total+=lateStep(l,curve);return total;}
  return oldXpForLevel(level)-(oldXpForLevel(gaps.length+1)-sum(gaps));
 }
 export const xpForLevel=level=>totalForLevel(level,XP_CURVE);
 function levelFromTotal(total,curve){
- if(curve>=4&&total>=totalForLevel(LATE_XP_FROM,curve)){let level=LATE_XP_FROM,next=totalForLevel(LATE_XP_FROM,curve)+lateStep(LATE_XP_FROM);while(total>=next&&level<10000){level++;next+=lateStep(level);}return level;}
+ if(curve>=4&&total>=totalForLevel(LATE_XP_FROM,curve)){let level=LATE_XP_FROM,next=totalForLevel(LATE_XP_FROM,curve)+lateStep(LATE_XP_FROM,curve);while(total>=next&&level<10000){level++;next+=lateStep(level,curve);}return level;}
  const gaps=EARLY_GAPS[curve];
  if(!gaps)return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);
  const early=sum(gaps);
@@ -718,13 +729,15 @@ export function levelProgress(state){
  const level=levelOf(state),curve=curveOf(state),from=totalForLevel(level,curve),to=totalForLevel(level+1,curve);
  return {level,current:state.xp+(state.xpOffset??0)-from,target:to-from};
 }
-// One-off conversion of a farm to the current curve: the same level, and the same share of the way to the next one.
-function migrateXpCurve(state){
- if(state.xpCurve===XP_CURVE)return;
+// One-off conversion of a farm to the current curve (to: another curve, for the tests): the same level, and the same share of the way
+// to the next one.
+export function convertXpCurve(state,to=XP_CURVE){
+ if(state.xpCurve===to)return;
  const from=curveOf(state),total=Math.max(0,Number.isFinite(state.xp)?state.xp:0)+(Number.isFinite(state.xpOffset)?state.xpOffset:0),level=levelFromTotal(total,from);
- const start=totalForLevel(level,from),share=(total-start)/(totalForLevel(level+1,from)-start),next=xpForLevel(level),after=xpForLevel(level+1);
- state.xp=Math.min(after-1,Math.round(next+share*(after-next)));state.xpOffset=0;state.xpCurve=XP_CURVE;   // rounding never lifts a farmer into the next level
+ const start=totalForLevel(level,from),share=(total-start)/(totalForLevel(level+1,from)-start),next=totalForLevel(level,to),after=totalForLevel(level+1,to);
+ state.xp=Math.min(after-1,Math.round(next+share*(after-next)));state.xpOffset=0;state.xpCurve=to;   // rounding never lifts a farmer into the next level
 }
+const migrateXpCurve=state=>convertXpCurve(state);
 // Levels 1-10 are bought with coins or diamonds, one slot and a bit more speed per level. Levels 11-20 are estate upgrades for the
 // long game (forty fields need far more processing): a higher farm level and finished goods on top of the price, which is coins
 // or diamonds (and the 50% voucher) exactly as below level 10.
