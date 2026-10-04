@@ -184,5 +184,5 @@ Deno.serve(async req=>{
   if(!session.url||session.status!=='open')return reply({error:'This checkout has ended. If you paid, your rewards will arrive after confirmation.'},409);
   const saved=await admin.from('harvest_purchases').update({stripe_session_id:session.id}).eq('id',p.id).eq('player_id',user.id);if(saved.error)throw saved.error;
   return reply({url:session.url,purchaseId:p.id});
- }catch(e){console.error('Checkout failed',e?.code??e?.name);return reply({error:'Checkout is unavailable. Please try again later.'},503);}
+ }catch(e){console.error('Checkout failed',e?.code??e?.name,e?.status??'',e?.reason??'');return reply({error:'Checkout is unavailable. Please try again later.'},503);}
 });

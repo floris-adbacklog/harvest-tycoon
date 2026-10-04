@@ -19,5 +19,5 @@ Deno.serve(async req=>{
   if(!items.length)return reply({checked:voided.length,revoked:0});
   const done=await admin.rpc('harvest_revoke_play_purchases',{p_items:items});if(done.error)throw done.error;
   return reply({checked:voided.length,...done.data});
- }catch(e){console.error('Play refunds check failed',e?.status??e?.code??e?.name);return reply({error:'Refunds could not be checked.'},500);}
+ }catch(e){console.error('Play refunds check failed',e?.status??e?.code??e?.name,e?.reason??'',String(e?.message??'').slice(0,80));return reply({error:'Refunds could not be checked.'},500);}
 });
