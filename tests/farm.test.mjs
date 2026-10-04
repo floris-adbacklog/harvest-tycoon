@@ -75,11 +75,10 @@ test('delivery pays above market, consumes inventory and rejects duplicate or st
   assert.throws(()=>apply(s,{type:'delivery',id:o.id,day:utcDay(t)},t+DAY_MS),/refreshed/);
  }
 });
-test('tractor charges per eligible field, cooldown holds; silo changes only future planting',()=>{
+test('tractor charges per eligible field and needs no rest (4 Oct 2026); silo changes only future planting',()=>{
  const s=createFarm(now),n=s.plots.filter(p=>!p.crop).length,balance=s.coins;
  const r=apply(s,{type:'tractor',mode:'plant',crop:'corn'});assert.equal(r.count,n);assert.equal(s.coins,balance-n*CROPS.corn.cost-12-2*n);
- assert.throws(()=>apply(s,{type:'tractor',mode:'water'}),/ready in/);
- apply(s,{type:'tractor',mode:'water'},now+15000);
+ apply(s,{type:'tractor',mode:'water'},now+1000);assert.equal(s.tractorReadyAt,undefined,'no rest');
  s.coins=10000;s.xp=xpForLevel(20);const existing=structuredClone(s.plots[8]);apply(s,{type:'silo_upgrade'});assert.deepEqual(s.plots[8],existing);
  apply(s,{type:'field',id:8,action:'harvest'},now+DAY_MS);apply(s,{type:'field',id:8,action:'plant',crop:'pumpkin'},now+DAY_MS);
  assert.equal(s.plots[8].readyAt-s.plots[8].plantedAt,CROPS.pumpkin.duration*.9);

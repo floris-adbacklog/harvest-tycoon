@@ -2043,7 +2043,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of QUESTS)state.stats[q.stat]??=0;
  for(const k of ['harvested','watered','planted','produced','earned','deliveries','tractor','dailies','tended','chores','passive_earned','projects','mastery_medals','sold','diamonds_spent','vip_days'])state.stats[k]??=0;
  state.family??={familyId:null,unclaimedCount:0};
- state.discovered??=[];state.siloLevel??=0;state.tractorReadyAt??=0;
+ state.discovered??=[];state.siloLevel??=0;delete state.tractorReadyAt;
  state.login??={lastDay:null,streak:0,best:0,visits:0};if(state.login.savedDay!==undefined&&!(typeof state.login.savedDay==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(state.login.savedDay)))delete state.login.savedDay;state.levelRewards??=[1];
  // The comeback chest (Oct 2026): when the last one was offered, how many were opened, and the one waiting (only farm-api sets it, on a
  // load). Farms from before it start at 0, so they can get one on their next return.
@@ -2354,8 +2354,9 @@ export function grantLevelRewards(state,firstLevel=2){
 // Compatibility for an already-open older client. The same ledger prevents
 // repeat claims after automatic payment; the new UI has no claim button.
 export function claimLevelRewards(state){const reward=grantLevelRewards(state);if(!reward.levels.length)throw new Error('Level rewards are already added automatically.');return reward;}
-// The tractor's fuel: a fixed start plus a little per field (planting pays the seeds on top); then it rests (the wiki reads these).
-export const TRACTOR_FUEL_BASE=12,TRACTOR_FUEL_PER_FIELD=2,TRACTOR_REST_MS=15000;
+// The tractor's fuel: a fixed start plus a little per field (planting pays the seeds on top) (the wiki reads these). No rest since
+// 4 Oct 2026 (it rested 15 seconds after each job): swiping over the fields is free and has no wait either.
+export const TRACTOR_FUEL_BASE=12,TRACTOR_FUEL_PER_FIELD=2;
 export function tractorQuote(state,mode,crop='corn',now=Date.now()){
  const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?canWater(p,now):p.crop&&p.readyAt<=now);
  const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-TRACTOR_FUEL_BASE)/(seedCost(state,crop)+TRACTOR_FUEL_PER_FIELD)))):eligible.length;
@@ -2364,14 +2365,13 @@ export function tractorQuote(state,mode,crop='corn',now=Date.now()){
 }
 export function useTractor(state,mode,crop='corn',now=Date.now()){
  if(!['plant','water','harvest'].includes(mode))throw new Error('Choose a tractor task.');if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
- if(now<state.tractorReadyAt)throw new Error(`The tractor will be ready in ${Math.ceil((state.tractorReadyAt-now)/1000)} seconds.`);
  if(mode==='plant'&&!cropUnlocked(state,crop))throw new Error(cropUnlockHint(state,crop));
  const quote=tractorQuote(state,mode,crop,now);
  if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':'No crops are ready to harvest.');
  if(state.coins<quote.total)throw new Error(`You need ${quote.fuel} coins for tractor fuel. Working by hand is free.`);
  state.coins-=quote.fuel;
  for(const id of quote.ids)actOnPlot(state,id,mode,crop,now);
- state.tractorReadyAt=now+TRACTOR_REST_MS;state.stats.tractor++;return {count:quote.count,mode,cost:quote.total,fuel:quote.fuel};
+ state.stats.tractor++;return {count:quote.count,mode,cost:quote.total,fuel:quote.fuel};
 }
 export function upgradeSilo(state){
  if(state.siloLevel>=5)throw new Error('Your silo research is complete.');const cost=SILO_COSTS[state.siloLevel];if(state.coins<cost)throw new Error(`You need ${cost} coins for this research.`);

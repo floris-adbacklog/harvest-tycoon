@@ -8,7 +8,7 @@ import {APP_PUSH_BLOCKED} from './android.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList,celebrate=()=>{}}){
- let tab='challenges',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastTractorReady=true,lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
+ let tab='challenges',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
  const open=id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();};
  // Rewards as the same little chips everywhere: coins, diamonds, XP.
  // In the order given, so a screen can lead with what matters most there (the streak leads with diamonds).
@@ -101,12 +101,12 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   if(utility==='tractor'){
    $('utility-title').textContent='Your trusty tractor';
    lastFieldStatus=fieldStatus();
-   const crop=getCrop(),cooldown=Math.max(0,Math.ceil((state.tractorReadyAt-farmNow())/1000));lastTractorReady=cooldown===0;
+   const crop=getCrop();
    const quotes=Object.fromEntries(['plant','water','harvest'].map(mode=>[mode,tractorQuote(state,mode,crop,farmNow())]));
    // A status pill instead of a note, the crop you plant as a tappable chip, and each job as one card with its fields
    // and price; the fuel rule is one small line at the bottom.
    const empty={plant:state.plots.some(p=>!p.crop)?'Not enough coins':'No empty fields',water:'Nothing to water · water right after planting',harvest:'Nothing ready yet'};
-   $('utility-content').innerHTML=`<div class="tractor-top"><span class="tractor-art">${art('tractor')}</span><div><strong>Works many fields at once</strong><span>By hand is always free.</span></div><span id="tractor-timer" class="tractor-state ${cooldown?'is-resting':''}">${cooldown?`Resting · ${cooldown}s`:'Ready'}</span></div><button type="button" class="tractor-seed" data-tractor-crop>${art(crop)}<span><small>Planting</small><strong>${CROPS[crop].name}</strong></span><em>${art('coins')}${seedCost(state,crop)} per field</em><i data-lucide="chevron-right" data-line-icon></i></button><div class="tractor-jobs">${[['plant','seeds',`Plant ${CROPS[crop].name}`],['water','water','Water growing crops'],['harvest','harvest','Harvest ready crops']].map(([mode,icon,label])=>{const q=quotes[mode];return `<button class="tractor-job" data-tractor="${mode}" ${cooldown||!q.count||state.coins<q.total?'disabled':''}><span class="tractor-job-art">${art(icon)}</span><span class="tractor-job-copy"><strong>${label}</strong><small>${q.count?`${q.count} ${q.count===1?'field':'fields'}${q.seeds?` · ${q.fuel} fuel + ${q.seeds} seeds`:''}${mode==='water'?` · ${waterLeft(q)} left to water`:''}`:empty[mode]}</small></span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}</button>`;}).join('')}</div><p class="tractor-foot">Fuel: 12 coins a job + 2 per field. The tractor rests 15 seconds after each job.</p>`;
+   $('utility-content').innerHTML=`<div class="tractor-top"><span class="tractor-art">${art('tractor')}</span><div><strong>Works many fields at once</strong><span>By hand is always free.</span></div></div><button type="button" class="tractor-seed" data-tractor-crop>${art(crop)}<span><small>Planting</small><strong>${CROPS[crop].name}</strong></span><em>${art('coins')}${seedCost(state,crop)} per field</em><i data-lucide="chevron-right" data-line-icon></i></button><div class="tractor-jobs">${[['plant','seeds',`Plant ${CROPS[crop].name}`],['water','water','Water growing crops'],['harvest','harvest','Harvest ready crops']].map(([mode,icon,label])=>{const q=quotes[mode];return `<button class="tractor-job" data-tractor="${mode}" ${cooldown||!q.count||state.coins<q.total?'disabled':''}><span class="tractor-job-art">${art(icon)}</span><span class="tractor-job-copy"><strong>${label}</strong><small>${q.count?`${q.count} ${q.count===1?'field':'fields'}${q.seeds?` · ${q.fuel} fuel + ${q.seeds} seeds`:''}${mode==='water'?` · ${waterLeft(q)} left to water`:''}`:empty[mode]}</small></span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}</button>`;}).join('')}</div><p class="tractor-foot">Fuel: 12 coins a job + 2 per field. The tractor rests 15 seconds after each job.</p>`;
    document.querySelector('[data-tractor-crop]').onclick=()=>{$('utility-dialog').close();$('selected-crop-button')?.click();};
    document.querySelectorAll('[data-tractor]').forEach(b=>b.onclick=()=>act({type:'tractor',mode:b.dataset.tractor,crop:getCrop()},r=>`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`));
   }else{
@@ -170,7 +170,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const coinBoost=`${state.boosts.coinsUntil>farmNow()}:${vipActive(state,farmNow())}`;if(lastCoinBoost!==coinBoost){lastCoinBoost=coinBoost;if($('today-dialog').open)renderToday();}
   const xpBoost=state.boosts.xpUntil>farmNow();if(lastXPBoost!==xpBoost){lastXPBoost=xpBoost;if($('today-dialog').open)renderToday();}
   const day=utcDay(farmNow());if(day!==lastDay){lastDay=day;refresh();}countdown();streakDanger();
-  if($('utility-dialog').open&&utility==='tractor'){const s=Math.max(0,Math.ceil((state.tractorReadyAt-farmNow())/1000));if(lastTractorReady!==(s===0)||lastFieldStatus!==fieldStatus())renderUtility();else if($('tractor-timer'))$('tractor-timer').textContent=s?`Resting · ${s}s`:'Ready';}
+  if($('utility-dialog').open&&utility==='tractor'&&lastFieldStatus!==fieldStatus())renderUtility();
  }
  $('today-button').onclick=()=>openToday();$('journal-button').onclick=()=>{renderJournal();open('journal-dialog');};
  document.querySelectorAll('[data-today-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.todayTab;renderToday();});

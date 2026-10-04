@@ -409,8 +409,6 @@
 .tractor-art>.game-art,.tractor-job-art>.game-art{flex:none}
 .tractor-top strong{display:block;font:600 17px 'Outfit',sans-serif;color:#453e28}
 .tractor-top div>span{display:block;margin-top:2px;font-size:13px;color:#807463}
-.tractor-state{flex-shrink:0;padding:5px 11px;border-radius:999px;background:#e3efd9;color:#3f6b2c;font-size:12px;font-weight:800;white-space:nowrap}
-.tractor-state.is-resting{background:#f3ebdd;color:#8a6a2f}
 .tractor-seed{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:10px 12px;border:1px solid #ecdcae;border-radius:16px;background:#fff8e4;text-align:start;color:inherit;cursor:pointer}
 .tractor-seed>.game-art{flex:0 0 38px;width:38px;height:38px;object-fit:contain}
 .tractor-seed>span:not(.game-art){flex:1;min-width:0}

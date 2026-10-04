@@ -123,7 +123,7 @@ test('the wiki shows what the helpers, chapters, market, levels and challenges p
  const helpers=text('helpers');
  assert.match(helpers,/Earns an hour/);assert.match(helpers,new RegExp(`${rules.stallLevel(8).rate}<`));assert.match(helpers,/Top level/);
  for(const c of Object.values(rules.CHORES))assert.ok(helpers.includes(c.name)&&helpers.includes(`${c.baseChance}% → ${c.maxChance}%`),c.name);
- assert.match(helpers,new RegExp(`rests ${rules.TRACTOR_REST_MS/1000} seconds`));assert.match(helpers,/round bonus/);
+ assert.doesNotMatch(helpers,/tractor rests/,'the tractor has no rest since 4 Oct 2026');assert.match(helpers,/round bonus/);
  const estate=text('estate');for(const p of rules.PROJECTS)assert.ok(estate.includes(p.name.replace('’','\\u2019'))||estate.includes(p.name),p.name);
  assert.match(estate,new RegExp(`${rules.DEPOT_PREMIUM}× the goods`));assert.match(estate,/switching to another herd costs/);
  assert.match(text('market'),/How far prices move/);assert.match(text('market'),/160% of normal/);assert.doesNotMatch(text('market'),/Sunflower oil/);
