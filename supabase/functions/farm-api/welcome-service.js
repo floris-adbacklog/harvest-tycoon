@@ -1,9 +1,12 @@
-import {productionJobs,stallStatus,featureUnlocked} from './farm-state.js';
+import {productionJobs,stallStatus,featureUnlocked,SHIFT_ROUND_MS} from './farm-state.js';
 export function welcomeSummary(state,lastSeen,now){
  const away=now-Date.parse(lastSeen);
  if(!Number.isFinite(away)||away<30*60000)return null;
  const crops=state.plots.filter(p=>p.crop&&p.readyAt<=now).length;
  const batches=Object.values(state.buildings).flatMap(productionJobs).filter(j=>j.readyAt<=now).length;
  const stall=featureUnlocked(state,'stall')?stallStatus(state,now).available:0;
- return {away,crops,batches,stall,objective:crops?'Harvest your ready fields.':batches?'Collect your finished batches.':stall?'Collect your farm stall earnings.':'Plant a fresh crop and check today’s goals.'};
+ // The tractor's night shift: the fields its rounds harvested since the farmer was last here.
+ const shift=state.tractorShift,seen=Date.parse(lastSeen);
+ const tractor=shift?(shift.log?.rounds??[]).reduce((sum,n,k)=>shift.startedAt+k*SHIFT_ROUND_MS>seen?sum+n:sum,0):0;
+ return {away,crops,batches,stall,tractor,objective:crops?'Harvest your ready fields.':batches?'Collect your finished batches.':stall?'Collect your farm stall earnings.':'Plant a fresh crop and check today’s goals.'};
 }

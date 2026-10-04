@@ -931,3 +931,27 @@ Vercel rebuilds everything, so they are never served live.
 - Rebuild (macOS, afconvert): `node scripts/build-farm-music.mjs [id ...]` renders scripts/music/<id>.mjs (pure Node
   synthesis, about 5-10 s each), mixes to mono at the same loudness (RMS 0.062), writes the three files and checks the
   decoded loop. If a track's length changes, update its frames in MUSIC_TRACKS (the test compares them with the .json).
+
+## The tractor: no rest, Extra care for coins, Full care and the night shift for diamonds (4 Oct 2026; farm-api + notify-hourly + SQL)
+- No rest after a job any more (it waited 15 s). A fourth coin job, Extra care: every crop whose care moment has come, fuel as the
+  others, counted like hand work (stats.tended, events' "Tractor jobs").
+- Full care (tractor_care): water and extra care at once for every growing crop missing either, also outside their moments,
+  FULL_CARE_COST (2) diamonds a crop.
+- Night shift (tractor_shift): 8 hours, a round at the start and every hour (9): harvest ripe fields, plant the chosen crop on empty
+  ones (seeds from coins; stops when they run out), water, care. Worked out lazily from the clock in normalizeFarm (settleShift),
+  so every load and action and the client's own tick settle it the same way. One a day (UTC day it starts). Its harvests give no XP
+  and touch no harvest/plant/water/care/harvest_*/mastery counter (stats.shift_harvests only). Price: shiftForecast works the shift
+  out on a copy with every field empty, coins enough and no timed boosts, so only crop, field count, lasting growth bonuses and
+  today's market price set it: 1 diamond per SHIFT_COINS_PER_DIAMOND (250) coins of crops minus seeds, at least 1 a field. The
+  server never charges more than the price on the button.
+- Neither counts for events: farm-api saves tractor_care and tractor_shift with eventAction null (NO_EVENT_ACTIONS), and the shift's
+  first round's seeds are no coins_spent. Crops it brings in are ordinary crops: selling or using them later counts as usual (the
+  wiki and the card say so).
+- Welcome back: "N harvests by the tractor" since the last visit. notify-hourly sends no "crops ready" while a shift runs or its
+  rounds are not saved yet (supabase/tractor-shift-pushes.sql adds tractorShift to notification_candidates).
+- Tests: tests/tractor-diamonds.test.mjs.
+
+## News from a level (4 Oct 2026; SQL + site)
+- Admin dashboard › News and pop-ups › Send as Notification › From level. player_notices.min_level; the read policy and the unread
+  count (chat_overview) leave news out below the farmer's current level; a pop-up's own notification takes the pop-up's level.
+  supabase/news-min-level.sql (built on the live definitions).

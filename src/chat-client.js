@@ -118,7 +118,8 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   setModerator:(player,on)=>rpc('staff_set_moderator',{p_player:player,p_on:on}),
   staffList:()=>rpc('staff_list'),
   // News, pop-ups and the private message to many: with each language's own text, if the admin wrote one (supabase/admin-texts-languages.sql).
-  postNews:(body,hours=24,texts=null)=>rpc('chat_post_news',{p_body:body,p_hours:hours,p_texts:texts}),
+  // minLevel (4 Oct 2026, supabase/news-min-level.sql): only farmers from that level see it; 1 is everyone.
+  postNews:(body,hours=24,texts=null,minLevel=1)=>rpc('chat_post_news',{p_body:body,p_hours:hours,p_texts:texts,p_min_level:minLevel}),
   // Who is admin or moderator, for the mark beside their name (src/staff-badge.js); not the Admin dashboard's staffList above.
   staffRoles:()=>rpc('chat_staff_list'),
   // The admin's welcome message to every new farmer (supabase/welcome-dm.sql).

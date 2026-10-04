@@ -129,5 +129,5 @@ test('news, pop-ups and the admin\'s private message in the farmer\'s own langua
  assert.match(sql,/coalesce\(own->>seen\.language,msg\)\n  from public\.chat_broadcast_targets\(me,p_audience,lvl\) t left join public\.player_seen seen on seen\.player_id=t\.player_id;/,'a private message in the language they last played in');
  assert.match(sql,/m\.body=msg or m\.body in \(select value from jsonb_each_text\(own\)\)/,'a double click sends once, in any language');
  assert.match(admin,/<select id="admin-news-language">'\+LANGUAGES\.map/);
- assert.match(admin,/await bridge\.chat\.postNews\(body,hours,texts\)/);
+ assert.match(admin,/await bridge\.chat\.postNews\(body,hours,texts,newsLevel\(\)\)/);
 });

@@ -72,6 +72,8 @@ const FARM_ACTIONS={
  project_collect:['rewards',()=>'Finished an estate project'],
  finish_batch:['diamonds',(a)=>`Finished a batch at the ${building(a.building)} with diamonds`],
  finish_crop:['diamonds',()=>'Finished a field with diamonds'],
+ tractor_care:['diamonds',(a,s,r)=>`Gave ${r?.count??''} crops full care with the tractor`],
+ tractor_shift:['diamonds',(a)=>`Started the tractor's night shift (${CROPS[a.crop]?.name??'crops'})`],
  buy_boost:['diamonds',(a)=>`Used the boost ${BOOSTS[a.boost]?.name??''}`.trim()],
  buy_vip:['diamonds',()=>'Bought VIP']
 };

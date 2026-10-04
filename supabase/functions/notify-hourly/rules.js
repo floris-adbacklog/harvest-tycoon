@@ -39,7 +39,10 @@ export function localParts(now,timeZone){
  return {date:`${parts.year}-${parts.month}-${parts.day}`,hour:Number(parts.hour)%24};
 }
 const number=value=>{if(value===null||value===undefined||value==='')return null;const n=Number(value);return Number.isFinite(n)?n:null;};
-export const readyCrops=(farm,now)=>(farm?.plots??[]).filter(p=>p&&p.crop&&number(p.readyAt)!==null&&number(p.readyAt)<=now).map(p=>({crop:p.crop,readyAt:number(p.readyAt)}));
+// While the tractor's night shift runs (farm-state.js) it harvests ripe fields itself within the hour, so no "crops ready" for them;
+// after it ends the saved fields are those from before its rounds until the farm is next opened, so none for half a day more either.
+const shiftStale=(farm,now)=>{const s=farm?.tractorShift,ends=number(s?.endsAt);return ends!==null&&(ends>now||(Number(s?.done)<=8&&now<ends+12*3600000));};
+export const readyCrops=(farm,now)=>shiftStale(farm,now)?[]:(farm?.plots??[]).filter(p=>p&&p.crop&&number(p.readyAt)!==null&&number(p.readyAt)<=now).map(p=>({crop:p.crop,readyAt:number(p.readyAt)}));
 export function readyJobs(farm,now){
  const out=[];
  for(const [building,data] of Object.entries(farm?.buildings??{}))for(const job of [data?.job,...(data?.extraJobs??[])].filter(Boolean)){

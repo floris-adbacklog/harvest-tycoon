@@ -101,7 +101,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label>Who sees it<select id="admin-popup-audience">'+Object.entries(POPUP_AUDIENCES).map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'
   +'<label>From level<input id="admin-popup-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label>'
   +'<p class="admin-popup-note">Every farmer sees the pop-up once, when nothing else is open, and never in their first half hour. It ends after the time below, or after 30 days. Who installed the app is only known on the device: phones and browsers are checked when the game opens.</p></div>'
-  +'<label class="admin-news-hours" id="admin-news-hours-row">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><button type="submit" class="primary-button">Send</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
+  +'<label class="admin-news-hours" id="admin-news-hours-row">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><label class="admin-news-hours" id="admin-news-level-row">From level<input id="admin-news-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label><button type="submit" class="primary-button">Send</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
   // A private message from the admin to every new farmer, a few minutes after they sign up (supabase/welcome-dm.sql), in the
   // language they play in when it has a text of its own, otherwise in English (supabase/welcome-dm-languages.sql).
   +'<h3>'+art('chat')+'Welcome message</h3><form id="admin-welcome-form" class="admin-news admin-welcome" hidden><label class="admin-welcome-on"><input type="checkbox" role="switch" class="family-switch" id="admin-welcome-on"><span>Send new farmers a private message from you</span></label>'
@@ -425,7 +425,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   }catch(error){room.textContent=why(error);}
  });
  // Pop-ups: the fields open with "Also as a pop-up", the web address with "A web page"; below the form the last ten, with who saw them.
- dialog.querySelector('#admin-send-as').addEventListener('change',event=>{const mode=event.target.value;dialog.querySelector('#admin-popup-fields').hidden=mode==='news'||mode==='dm';dialog.querySelector('#admin-dm-fields').hidden=mode!=='dm';dialog.querySelector('#admin-news-hours-row').hidden=mode==='dm';if(mode==='dm')void countDm();});
+ dialog.querySelector('#admin-send-as').addEventListener('change',event=>{const mode=event.target.value;dialog.querySelector('#admin-popup-fields').hidden=mode==='news'||mode==='dm';dialog.querySelector('#admin-dm-fields').hidden=mode!=='dm';dialog.querySelector('#admin-news-hours-row').hidden=mode==='dm';dialog.querySelector('#admin-news-level-row').hidden=mode!=='news';if(mode==='dm')void countDm();});
  // How many farmers a private message to all would reach right now.
  async function countDm(){
   const note=dialog.querySelector('#admin-dm-count'),audience=dialog.querySelector('#admin-dm-audience').value,minLevel=dmLevel(),ask=++dmCounting;note.textContent='Counting farmers…';delete note.dataset.count;
@@ -433,6 +433,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   try{const n=await bridge.chat.broadcastDm({audience,minLevel});if(ask!==dmCounting)return;note.textContent=`Goes to ${n.toLocaleString('en-US')} farmer${n===1?'':'s'}.`;note.dataset.count=String(n);}catch(error){if(ask===dmCounting)note.textContent=why(error);}
  }
  // From a farm level too (supabase/chat-broadcast-level.sql), e.g. level 14 for the farmers who can buy the special offer.
+ // News from a level (4 Oct 2026): 1 is everyone.
+ const newsLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-news-level').value)||1)));
  let dmCounting=0;const dmLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-dm-level').value)||1)));
  dialog.querySelector('#admin-dm-audience').addEventListener('change',()=>void countDm());
  dialog.querySelector('#admin-dm-level').addEventListener('input',()=>void countDm());
@@ -572,9 +574,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
     const label=en.buttonLabel??'',target=$p('target').value==='link'?$p('link').value.trim():$p('target').value;
     await bridge.chat.postPopup({title:en.title??'',body,buttonLabel:label||null,buttonTarget:label?target:null,audience:$p('audience').value,minLevel:Number($p('level').value)||1,hours,news:mode==='both',texts});
     $p('link').value='';dialog.querySelector('#admin-send-as').value='news';$p('fields').hidden=true;void showPopups();
-   }else await bridge.chat.postNews(body,hours,texts);
-   const span=hours?` for ${hours>=48&&hours%24===0?`${hours/24} days`:`${hours} hours`}`:'';
-   sent();chatStatus.textContent=mode==='popup'?`Sent as a pop-up${span}${languages}.`:`Sent${mode==='both'?' as a notification and a pop-up':''}${languages}. Everyone sees it under Notifications${span}.`;
+   }else await bridge.chat.postNews(body,hours,texts,newsLevel());
+   const span=hours?` for ${hours>=48&&hours%24===0?`${hours/24} days`:`${hours} hours`}`:'',from=mode==='news'&&newsLevel()>1?newsLevel():mode==='both'&&Number($p('level').value)>1?Number($p('level').value):0;
+   sent();chatStatus.textContent=mode==='popup'?`Sent as a pop-up${span}${languages}.`:`Sent${mode==='both'?' as a notification and a pop-up':''}${languages}. ${from?`Farmers from level ${from}`:'Everyone'} see${from?'':'s'} it under Notifications${span}.`;
   }catch(error){chatStatus.textContent=why(error);}
  });
  dialog.querySelector('#admin-levels-form').addEventListener('submit',async event=>{

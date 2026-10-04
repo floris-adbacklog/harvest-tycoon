@@ -2068,6 +2068,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.daily.tasks??=oldVersion<10&&existingDay?LEGACY_DAILY_POOLS.map((pool,id)=>({...pool[(d+id)%pool.length]})):featureUnlocked(state,'challenges')?selectDailyTasks(state,d):[];
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);
+ normalizeShift(state);settleShift(state,now);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshPass(state,now);
  return state;
 }
@@ -2358,20 +2359,128 @@ export function claimLevelRewards(state){const reward=grantLevelRewards(state);i
 // 4 Oct 2026 (it rested 15 seconds after each job): swiping over the fields is free and has no wait either.
 export const TRACTOR_FUEL_BASE=12,TRACTOR_FUEL_PER_FIELD=2;
 export function tractorQuote(state,mode,crop='corn',now=Date.now()){
- const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?canWater(p,now):p.crop&&p.readyAt<=now);
+ // tend (4 Oct 2026): extra care for every crop whose care moment has come, as by hand.
+ const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?canWater(p,now):mode==='tend'?fieldTapAction(p,now,'tend')==='tend':p.crop&&p.readyAt<=now);
  const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-TRACTOR_FUEL_BASE)/(seedCost(state,crop)+TRACTOR_FUEL_PER_FIELD)))):eligible.length;
  const fuel=count?TRACTOR_FUEL_BASE+count*TRACTOR_FUEL_PER_FIELD:0,seeds=mode==='plant'?count*seedCost(state,crop):0;
  return {count,fuel,seeds,total:fuel+seeds,ids:eligible.slice(0,count).map(p=>p.id)};
 }
 export function useTractor(state,mode,crop='corn',now=Date.now()){
- if(!['plant','water','harvest'].includes(mode))throw new Error('Choose a tractor task.');if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
+ if(!['plant','water','harvest','tend'].includes(mode))throw new Error('Choose a tractor task.');if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
  if(mode==='plant'&&!cropUnlocked(state,crop))throw new Error(cropUnlockHint(state,crop));
  const quote=tractorQuote(state,mode,crop,now);
- if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':'No crops are ready to harvest.');
+ if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':mode==='tend'?'No crops are ready for extra care yet.':'No crops are ready to harvest.');
  if(state.coins<quote.total)throw new Error(`You need ${quote.fuel} coins for tractor fuel. Working by hand is free.`);
  state.coins-=quote.fuel;
  for(const id of quote.ids)actOnPlot(state,id,mode,crop,now);
  state.stats.tractor++;return {count:quote.count,mode,cost:quote.total,fuel:quote.fuel};
+}
+// The tractor's diamond work (4 Oct 2026). It counts for no challenges, events or leaderboards: it never raises the harvest, water,
+// care or plant counters (only its own), gives no XP, and farm-api saves it as no event action (NO_EVENT_ACTIONS), so not even
+// the diamonds it costs move an event's "Spend diamonds" goal. Quests that count diamonds spent do count them, as every spend.
+export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift']));
+// Full care: water and extra care for every growing crop at once, also outside their moments (water is meant for the start, care
+// opens at 30% of the growing time), so each gives 3 times the crop and double XP at harvest. Per growing crop that still misses
+// either: FULL_CARE_COST diamonds.
+export const FULL_CARE_COST=2;
+export function fullCareQuote(state,now=Date.now()){
+ const ids=state.plots.filter(p=>p.crop&&p.readyAt>now&&(!p.watered||!p.tended)).map(p=>p.id);
+ return {ids,count:ids.length,cost:ids.length*FULL_CARE_COST};
+}
+export function fullCare(state,expectedCost,now=Date.now()){
+ const quote=fullCareQuote(state,now);
+ if(!quote.count)throw new Error('No growing crops need water or care.');
+ if(expectedCost!==quote.cost)throw new Error('Your fields have changed. Review the price.');
+ if(state.diamonds<quote.cost)throw new Error(`You need ${quote.cost} diamonds.`);
+ spendDiamonds(state,quote.cost);
+ for(const id of quote.ids){
+  const p=state.plots[id];
+  if(!p.watered){p.readyAt=now+(p.readyAt-now)*(hasImprovement(state,'watertower')?.7:.8);p.watered=true;}
+  if(!p.tended){p.readyAt=now+(p.readyAt-now)*.85;p.tended=true;}
+ }
+ state.stats.full_care=(state.stats.full_care??0)+quote.count;
+ return {count:quote.count,cost:quote.cost};
+}
+// The night shift: for 8 hours the tractor does a round every hour (at the start and then on the hour after it, 9 rounds), also
+// while the farmer is away: it harvests every ripe field, plants the chosen crop on every empty one (the seeds are paid in coins;
+// it stops planting when they run out), waters what can be watered and gives care where care is open. Its harvests go to the barn
+// with their usual size, but give no XP and count nowhere (see above). One a day (the UTC day it starts). The rounds are worked out
+// from the clock when the farm is next loaded or acted on (settleShift in normalizeFarm), each at its own time, so the result never
+// depends on when that happens.
+// The price follows what the shift brings in with the chosen crop (the owner's call: a crop that ripens in minutes is harvested every
+// round, one that takes 8 hours once): the shift is worked out ahead on a copy of the farm with every field empty, coins enough for
+// the seeds and no timed boosts, so only the crop, the number of fields, the farm's lasting growth bonuses and today's market price
+// set it (4 Oct 2026 review: from the farm as it was, emptying the coins or filling the fields with slow crops just before starting
+// made it a quarter of the price, and crops already on the fields were charged for). Every SHIFT_COINS_PER_DIAMOND coins of crops
+// (minus the seeds) cost a diamond, at least SHIFT_MIN_PER_FIELD per field.
+export const SHIFT_MS=8*3600000,SHIFT_ROUND_MS=3600000,SHIFT_ROUNDS=SHIFT_MS/SHIFT_ROUND_MS,SHIFT_COINS_PER_DIAMOND=250,SHIFT_MIN_PER_FIELD=1;
+export const shiftHarvests=shift=>(shift?.log?.rounds??[]).reduce((sum,n)=>sum+n,0);
+const newShift=(crop,now)=>({day:utcDay(now),startedAt:now,endsAt:now+SHIFT_MS,crop,done:0,log:{rounds:[],items:{},planted:0,watered:0,tended:0}});
+// What a shift with this crop brings in on these fields: on a copy with every field empty, coins enough and no timed boosts.
+export function shiftForecast(state,crop,now=Date.now()){
+ const empty={crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0};
+ const coins=1e12,copy={...state,coins,boosts:{...state.boosts,harvestUntil:0,xpUntil:0,coinsUntil:0},plots:state.plots.map(p=>({...p,...empty})),inventory:{...state.inventory},stats:{...state.stats},tractorShift:newShift(crop,now)};
+ settleShift(copy,now+SHIFT_MS);
+ const items=copy.tractorShift.log.items,seeds=coins-copy.coins,harvests=shiftHarvests(copy.tractorShift);
+ const crops=Object.entries(items).reduce((sum,[item,n])=>sum+marketQuote(item,now).price*n,0);
+ return {value:Math.max(0,crops-seeds),crops,seeds,harvests,items,tooSlow:!harvests,perField:state.plots.length?Math.round(harvests/state.plots.length):0};
+}
+export function nightShiftQuote(state,crop='corn',now=Date.now()){
+ const shift=state.tractorShift??null,running=Boolean(shift)&&now<shift.endsAt,doneToday=Boolean(shift)&&!running&&shift.day===utcDay(now);
+ const fields=state.plots.length,forecast=Object.hasOwn(CROPS,crop)&&cropUnlocked(state,crop)?shiftForecast(state,crop,now):null;
+ const cost=forecast?Math.max(fields*SHIFT_MIN_PER_FIELD,Math.ceil(forecast.value/SHIFT_COINS_PER_DIAMOND)):0;
+ return {cost,fields,running,doneToday,shift,forecast,perField:forecast?.perField??0};
+}
+// expectedCost is the price the farmer was shown: never more is charged (the forecast can come out a little lower on the server's clock).
+export function startNightShift(state,crop,expectedCost,now=Date.now()){
+ if(typeof crop!=='string'||!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
+ if(!cropUnlocked(state,crop))throw new Error(cropUnlockHint(state,crop));
+ const quote=nightShiftQuote(state,crop,now);
+ if(quote.running)throw new Error('The night shift is already running.');
+ if(quote.doneToday)throw new Error('One night shift a day: the next one can start tomorrow.');
+ if(!Number.isSafeInteger(expectedCost)||expectedCost<quote.cost)throw new Error('The price has changed. Review the current price.');
+ if(state.diamonds<quote.cost)throw new Error(`You need ${quote.cost} diamonds.`);
+ spendDiamonds(state,quote.cost);
+ state.stats.tractor_shifts=(state.stats.tractor_shifts??0)+1;
+ state.tractorShift=newShift(crop,now);
+ settleShift(state,now);   // the first round, right away
+ return {cost:quote.cost,crop,endsAt:state.tractorShift.endsAt,harvests:shiftHarvests(state.tractorShift),planted:state.tractorShift.log.planted};
+}
+// One round of the night shift at time t: the same work as by hand at that moment, counted only in the shift's own log.
+function shiftRound(state,shift,t){
+ let harvests=0;
+ for(const p of state.plots){
+  if(p.crop&&p.readyAt<=t){
+   const crop=p.crop,quantity=harvestQuantity(state,p,t);
+   state.inventory[crop]=(state.inventory[crop]??0)+quantity;shift.log.items[crop]=(shift.log.items[crop]??0)+quantity;harvests++;
+   if(CROPS[crop].perennial){const duration=cropDuration(state,crop,true,t);Object.assign(p,{plantedAt:t,readyAt:t+duration,careAt:t+careDelay(state,duration,t),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1});}
+   else Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
+  }
+  if(!p.crop&&cropUnlocked(state,shift.crop)&&state.coins>=seedCost(state,shift.crop)){
+   state.coins-=seedCost(state,shift.crop);
+   const duration=cropDuration(state,shift.crop,false,t);
+   Object.assign(p,{crop:shift.crop,harvestCycles:0,plantedAt:t,readyAt:t+duration,careAt:t+careDelay(state,duration,t),watered:false,tended:false,fertilized:false});
+   shift.log.planted++;
+  }
+  if(canWater(p,t)){p.readyAt=t+(p.readyAt-t)*(hasImprovement(state,'watertower')?.7:.8);p.watered=true;shift.log.watered++;}
+  if(p.crop&&!p.tended&&t>=(p.careAt??p.plantedAt)&&t<p.readyAt){p.readyAt=t+(p.readyAt-t)*.85;p.tended=true;shift.log.tended++;}
+ }
+ shift.log.rounds.push(harvests);
+ state.stats.shift_harvests=(state.stats.shift_harvests??0)+harvests;
+}
+export function settleShift(state,now=Date.now()){
+ const shift=state.tractorShift;if(!shift)return;
+ while(shift.done<=SHIFT_ROUNDS){const t=shift.startedAt+shift.done*SHIFT_ROUND_MS;if(t>now)break;shiftRound(state,shift,t);shift.done++;}
+}
+// A saved night shift as the rules expect it, or none.
+function normalizeShift(state){
+ const s=state.tractorShift;if(s===undefined)return;
+ const ok=s&&typeof s==='object'&&typeof s.day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s.day)&&Number.isSafeInteger(s.startedAt)&&s.endsAt===s.startedAt+SHIFT_MS
+  &&typeof s.crop==='string'&&Object.hasOwn(CROPS,s.crop)&&Number.isInteger(s.done)&&s.done>=0&&s.done<=SHIFT_ROUNDS+1&&s.log&&typeof s.log==='object';
+ if(!ok){delete state.tractorShift;return;}
+ const count=v=>Number.isSafeInteger(v)?Math.max(0,v):0;
+ s.log={rounds:(Array.isArray(s.log.rounds)?s.log.rounds:[]).slice(0,SHIFT_ROUNDS+1).map(count),items:Object.fromEntries(Object.entries(s.log.items&&typeof s.log.items==='object'?s.log.items:{}).filter(([k])=>Object.hasOwn(CROPS,k)).map(([k,v])=>[k,count(v)])),
+  planted:count(s.log.planted),watered:count(s.log.watered),tended:count(s.log.tended)};
 }
 export function upgradeSilo(state){
  if(state.siloLevel>=5)throw new Error('Your silo research is complete.');const cost=SILO_COSTS[state.siloLevel];if(state.coins<cost)throw new Error(`You need ${cost} coins for this research.`);
@@ -2391,7 +2500,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  const beginnerBefore={harvested:state.stats.harvested,wheat:state.stats.harvest_wheat??0,watered:state.stats.watered,tended:state.stats.tended};
  const result=dispatchFarmAction(state,action,now,random);
  // Coins spent (seeds, buildings, upgrades, fields, research…), for the farm events' "Spend coins" goal (26 Sep 2026).
- const spent=beforeCoins-state.coins;if(spent>0)state.stats.coins_spent=(state.stats.coins_spent??0)+spent;
+ const spent=beforeCoins-state.coins;if(spent>0&&!NO_EVENT_ACTIONS.has(action.type))state.stats.coins_spent=(state.stats.coins_spent??0)+spent;
  recordBeginnerAction(state,action,result,beginnerBefore);
  const earnedXP=state.xp-beforeXP;
  if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
@@ -2407,7 +2516,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  return result;
 }
 function dispatchFarmAction(state,action,now,random){
- const gates={buy_vip:'boosts',daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts',valley_sell:'valleymarket',valley_skip:'valleymarket',ranch_focus:'ranch',improve:'estateworkshop',master_spend:'master',lab_cross:'seedlab',lab_collect:'seedlab',visitor_serve:'visitors',visitor_decline:'visitors',giant_tend:'giantpumpkin',giant_weigh:'giantpumpkin',vproject_give:'valleyprojects',vproject_finish:'valleyprojects',depot_load:'tradedepot',depot_skip:'tradedepot',fair_enter:'grandfair'};
+ const gates={buy_vip:'boosts',daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',tractor_care:'tractor',tractor_shift:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts',valley_sell:'valleymarket',valley_skip:'valleymarket',ranch_focus:'ranch',improve:'estateworkshop',master_spend:'master',lab_cross:'seedlab',lab_collect:'seedlab',visitor_serve:'visitors',visitor_decline:'visitors',giant_tend:'giantpumpkin',giant_weigh:'giantpumpkin',vproject_give:'valleyprojects',vproject_finish:'valleyprojects',depot_load:'tradedepot',depot_skip:'tradedepot',fair_enter:'grandfair'};
  const gate=gates[action.type];if(gate&&!featureUnlocked(state,gate))throw new Error(featureUnlockHint(gate));
  switch(action.type){
   case 'buy_vip':return buyVip(state,action.plan,action.expectedCost,action.expectedExpiresAt,now);
@@ -2451,6 +2560,8 @@ function dispatchFarmAction(state,action,now,random){
   case 'delivery':return deliverOrder(state,action.id,action.day,now,action.revision);
   case 'level_rewards':return claimLevelRewards(state);
   case 'tractor':return useTractor(state,action.mode,action.crop,now);
+  case 'tractor_care':return fullCare(state,action.expectedCost,now);
+  case 'tractor_shift':return startNightShift(state,action.crop,action.expectedCost,now);
   case 'silo_upgrade':return upgradeSilo(state);
   case 'valley_sell':return valleySell(state,action.stall,action.basket,now);
   case 'valley_skip':return valleySkip(state,action.stall,action.basket,now);

@@ -418,6 +418,17 @@
 .tractor-seed em .game-art{width:18px;height:18px}
 .tractor-seed>svg{width:18px;height:18px;color:#a09684;flex-shrink:0}
 .tractor-jobs{display:grid;gap:8px}
+.tractor-subhead{display:flex;align-items:center;gap:6px;margin:18px 0 8px;font:600 15px 'Outfit',sans-serif;color:#453e28}
+.tractor-subhead .game-art{width:20px;height:20px}
+.tractor-rule{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 10px;border-radius:12px;background:#f1efe9;font-size:12.5px;line-height:1.4;color:#6f6553}
+.tractor-rule .game-art{flex:none;width:20px;height:20px;filter:grayscale(.4)}
+.tractor-job.is-diamond{border-color:#d9dcf2;background:#f7f8ff}
+.tractor-job.is-diamond:hover:not(:disabled){border-color:#aab2e6;background:#f0f2ff}
+.tractor-job.is-diamond .tractor-job-art{background:#e6e9fb}
+.tractor-job.is-running,.tractor-job.is-done{cursor:default}
+.tractor-job.is-running{border-color:#b9d8a8;background:#f2f9ec}
+.tractor-forecast{color:#5a5fa0!important;font-weight:700}
+.tractor-price-rule{margin:-4px 0 10px;font-size:12px;color:#8a7d68}
 .tractor-job{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2;text-align:start;color:inherit;cursor:pointer;transition:background .15s,border-color .15s}
 .tractor-job:hover:not(:disabled){border-color:#cdbb85;background:#fffaf0}
 .tractor-job:disabled{cursor:default;background:#f6f3ee;border-color:#ece6dc}

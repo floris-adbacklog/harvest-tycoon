@@ -13,7 +13,7 @@ import {recordSource} from './source-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
-import {grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
+import {NO_EVENT_ACTIONS,grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const nameValid=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/.test(value.trim());
@@ -256,7 +256,8 @@ Deno.serve(async(req)=>{
    let result;try{result=applyFarmAction(state,body.action,now,random);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
    // Invite a friend: the action that brings an invited farm to level 10 pays its reward in the same save.
    const inviteReward=inviteeReward(state,now);if(inviteReward)result.inviteReward=inviteReward;
-   const receipts=[...row.receipts,{id:body.requestId,result,eventAction:body.action.type}].slice(-100);
+   // The tractor's diamond work counts for no event (NO_EVENT_ACTIONS): saved as no event action, so its stats only move the baselines.
+   const receipts=[...row.receipts,{id:body.requestId,result,eventAction:NO_EVENT_ACTIONS.has(body.action.type)?null:body.action.type}].slice(-100);
    const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
    if(saved.error)throw saved.error;
    if(saved.data){
