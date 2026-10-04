@@ -692,8 +692,8 @@ export const MAX_PLOTS=40;
 // keeps its level and its share of the way to the next one, and below level 90 its XP does not change.
 // Two releases, so no copy of this code ever meets a farm on a curve it cannot read (an unknown curve reads as curve 1, so an old
 // browser tab would show every farmer at a wrong level, and an old farm-api would rewrite their XP): first every copy learns to
-// read curve 6 while farms stay on curve 5 (XP_CURVE 5, 4 Oct 2026); a day later XP_CURVE becomes 6 and farms convert.
-export const XP_CURVE=5;
+// read curve 6 while farms stay on curve 5 (XP_CURVE 5, 4 Oct 2026, 14:00); then XP_CURVE became 6 (4 Oct 2026, 17:15) and farms convert.
+export const XP_CURVE=6;
 export const LATE_XP_FROM=50,LATE_XP_STEP=.04,LATER_XP_FROM=100,LATER_XP_STEP=.06,TOP_XP_FROM=90,TOP_XP_FACTOR=2;
 const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
 const CURVE5_GAPS=Object.freeze([15,40,65,95,130,170,215,265,320,  330,355,380,405,435,465,495,525,560,595,  640,690,745,800,860,920,985,1050,1115,1175]);   // to level 30

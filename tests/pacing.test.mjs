@@ -24,7 +24,7 @@ test('every guide step pays XP, so following the guide takes a new farmer to lev
 });
 test('levels 1 to 10 need less XP than the original curve, the first harvest reaches level 2, and levels 30 to 50 keep their old distances',()=>{
  assert.deepEqual([1,2,3,4,5,6,7,8,9,10,11,12,20,30].map(xpForLevel),[0,15,55,120,215,345,515,730,995,1315,1645,2000,5860,14840]);
- assert.equal(XP_CURVE,5,'curve 6 is known to every copy first and switched on in a second release');assert(xpForLevel(10)<xpForLevelOld(10)&&xpForLevel(10)>850,'between the flying curve of a day (850) and the original (1,980)');
+ assert.equal(XP_CURVE,6,'curve 6 is on: every copy learned to read it first (step 1), then farms switched (step 2)');assert(xpForLevel(10)<xpForLevelOld(10)&&xpForLevel(10)>850,'between the flying curve of a day (850) and the original (1,980)');
  for(let level=30;level<=50;level++)assert.equal(xpForLevel(level+1)-xpForLevel(level),60+40*(level-1),`the step from level ${level} is unchanged`);
  for(let level=1;level<60;level++)assert(xpForLevel(level+1)-xpForLevel(level)<xpForLevel(level+2)-xpForLevel(level+1),`steps grow: ${level}`);
  for(const level of [1,2,5,9,10,12,25]){const s={xp:xpForLevel(level),xpOffset:0,xpCurve:XP_CURVE};assert.equal(levelOf(s),level);assert.equal(levelOf({...s,xp:xpForLevel(level+1)-1}),level);}
