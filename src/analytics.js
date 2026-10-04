@@ -97,5 +97,6 @@ export function trackGame(event,params={},win=globalThis.window){
  if(CONNECTION_STAGES.has(params.stage))clean.stage=params.stage;
  pushEvent(event,clean,win);
  // Level 5 is a real player (the goal of the ad campaigns): also GA4's standard "generate_lead", which ad pixels read by themselves.
- if(event==='level_up'&&clean.level===5)pushEvent('generate_lead',{level:5},win);
+ // Our Android app (1.2) tells Meta too, through its Meta SDK; the app sends nothing unless the farmer accepted cookies there.
+ if(event==='level_up'&&clean.level===5){pushEvent('generate_lead',{level:5},win);try{win.HarvestMeta?.level?.(5);}catch{}}
 }

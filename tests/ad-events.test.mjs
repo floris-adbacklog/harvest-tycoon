@@ -13,4 +13,8 @@ test('ad pixels get the standard names: a paid pack is a "purchase" in euros, le
  assert.equal(win.dataLayer.filter(e=>e.event==='purchase').length,1,'VIP is bought with diamonds, not money: no purchase');
  trackGame('level_up',{level:4},win);trackGame('level_up',{level:5},win);trackGame('level_up',{level:6},win);
  assert.deepEqual(win.dataLayer.filter(e=>e.event==='generate_lead'),[{event:'generate_lead',level:5}],'only at level 5');
+ const levels=[],app={innerWidth:400,dataLayer:[],HarvestMeta:{level:n=>levels.push(n)}};
+ trackGame('level_up',{level:4},app);trackGame('level_up',{level:5},app);trackGame('level_up',{level:6},app);
+ assert.deepEqual(levels,[5],'our Android app (1.2) tells its Meta SDK about level 5 only (the app itself sends nothing without a cookie yes)');
+ assert.doesNotThrow(()=>trackGame('level_up',{level:5},{innerWidth:400,dataLayer:[],HarvestMeta:{level(){throw Error('gone');}}}));
 });

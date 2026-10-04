@@ -8,11 +8,20 @@
  // Our iPhone app (3 Oct 2026, public/android-app.js marks it): no Tag Manager there at all, so no banner and nothing to choose.
  var root=document.documentElement,iosApp=!!(root&&root.getAttribute&&root.getAttribute('data-app-os')==='ios');
  var TRACKING=/^(_ga|_ga_.+|_gid|_gat.*|_gcl_.+|_fbp|_fbc|_ttp|_tt_enable_cookie|ttcsid.*)$/;
- function choice(){
-  try{var saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&(saved.choice==='accepted'||saved.choice==='declined')&&Date.now()-saved.at<KEEP)return saved.choice;}catch(e){}
+ // The saved choice while it is younger than 12 months, else null. v:2 (4 Oct 2026): made with the privacy policy that names the
+ // Meta SDK of our Android app.
+ function saved(){
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&(s.choice==='accepted'||s.choice==='declined')&&Date.now()-s.at<KEEP)return s;}catch(e){}
   return null;
  }
- function save(value){try{localStorage.setItem(KEY,JSON.stringify({choice:value,at:Date.now()}));}catch(e){}}
+ function choice(){var s=saved();return s?s.choice:null;}
+ function save(value){var at=Date.now();try{localStorage.setItem(KEY,JSON.stringify({choice:value,at:at,v:2}));}catch(e){}return at;}
+ // Our Android app from 1.2 (4 Oct 2026) has the Meta SDK (android-app MetaEvents): it hears the choice, and when it was made (so a
+ // yes ends there after 12 months too), through window.HarvestMeta, and sends Meta nothing without a yes, as Tag Manager here.
+ // No valid choice (none yet, or asked again) is told too: the app is then as before a choice.
+ function app(){return window.HarvestMeta||null;}
+ function tellApp(value,at){try{if(app()&&app().consent)app().consent(value==='accepted',at);}catch(e){}}
+ function forgetApp(){try{if(app()&&app().forget)app().forget();}catch(e){}}
  // Removes the Google Analytics, Meta and TikTok cookies from this site (they are set on the site's own domain).
  function clearTrackingCookies(){
   var host=location.hostname,parts=host.split('.'),domains=['',host,'.'+host];
@@ -25,7 +34,7 @@
  var banner;
  function close(){if(banner){banner.remove();banner=null;}}
  function decide(value){
-  var before=choice();save(value);close();
+  var before=choice(),at=save(value);close();tellApp(value,at);
   if(value==='accepted'){if(window.harvestLoadGtm)window.harvestLoadGtm();return;}
   clearTrackingCookies();
   // Tools that already run on this page keep running until it is left, so a withdrawn "yes" reloads the page.
@@ -48,7 +57,10 @@
   if(iosApp)return;
   var params=new URLSearchParams(location.search);
   if(params.has('cookie-settings')){params.delete('cookie-settings');var rest=params.toString();history.replaceState(history.state,'',location.pathname+(rest?'?'+rest:'')+location.hash);open();return;}
-  if(!choice())open();
+  var s=saved();
+  // In the app, a yes from before its Meta SDK (no v:2) was given for less: the question is asked again there.
+  if(s&&app()&&s.choice==='accepted'&&s.v!==2)s=null;
+  if(s)tellApp(s.choice,s.at);else{forgetApp();open();}
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();

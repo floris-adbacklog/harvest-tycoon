@@ -106,3 +106,19 @@ test('in our iPhone app: no banner, no way to open it, and the head loader never
  assert.equal(loader({choice:'accepted',at:Date.now()},'Mozilla/5.0 (Linux; Android 14; Pixel 8; wv) Chrome/129 Mobile Safari/537.36 HarvestTycoonApp/1.0').inserted.length,1,'the Android app as before');
  assert.equal(loader({choice:'accepted',at:Date.now()},'Mozilla/5.0 (iPhone; CPU iPhone OS 26_4 like Mac OS X) Version/26.4 Mobile/15E148 Safari/604.1').inserted.length,1,'Safari on an iPhone as before');
 });
+test('our Android app (1.2, Meta SDK) hears the choice and when it was made; no valid choice is told too; an older yes is asked again there',()=>{
+ // The stand-in page runs the script once without the app; this runs it again on the same page with window.HarvestMeta present.
+ const inApp=saved=>{const calls=[];const p=page({saved});p.win.HarvestMeta={consent:(yes,at)=>calls.push(['consent',yes,at]),forget:()=>calls.push(['forget'])};
+  const shownBefore=p.win.document.body.children.length;vm.runInNewContext(banner,p.win);return {calls,asked:p.win.document.body.children.length>shownBefore,p};};
+ const at=Date.now()-5*DAY;
+ assert.deepEqual(inApp({choice:'accepted',at,v:2}).calls,[['consent',true,at]],'a yes and its time, so it ends after 12 months in the app too');
+ assert.deepEqual(inApp({choice:'declined',at}).calls,[['consent',false,at]]);
+ const none=inApp(null);assert.deepEqual(none.calls,[['forget']]);assert.ok(none.asked);
+ const old=inApp({choice:'accepted',at:Date.now()-366*DAY,v:2});assert.deepEqual(old.calls,[['forget']],'an expired yes: the app is as before a choice');assert.ok(old.asked);
+ const before=inApp({choice:'accepted',at});assert.deepEqual(before.calls,[['forget']],'a yes from before the Meta SDK (no v:2) is asked again in the app');assert.ok(before.asked);
+ assert.equal(page({saved:{choice:'accepted',at}}).shown(),undefined,'on the website that yes stands');
+ const p=before.p;press(p,'Accept');const [,yes,when]=before.calls.at(-1);
+ assert.equal(yes,true);assert.ok(Math.abs(when-Date.now())<1000);assert.equal(p.saved().v,2);
+ p.win.harvestConsent.open();press(p,'Decline');assert.equal(before.calls.at(-1)[1],false,'a withdrawn yes, before the page reloads');
+ assert.doesNotThrow(()=>{const q=page();q.win.HarvestMeta={consent(){throw Error('gone');}};press(q,'Accept');},'an app error never breaks the banner');
+});
