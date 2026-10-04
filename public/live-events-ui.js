@@ -27,7 +27,7 @@ export const EVENT_GOALS={harvested:{label:'Harvest crops',art:'harvest'},produc
  sold_eggs:{label:'Sell eggs',art:'eggs'},made_oil:{label:'Press sunflower oil',art:'oil'},made_beangratin:{label:'Bake bean gratin',art:'beangratin'},made_applepie:{label:'Bake apple pies',art:'applepie'},
  made_berrysmoothie:{label:'Make berry smoothies',art:'berrysmoothie'},made_applecompote:{label:'Make apple compote',art:'applecompote'},made_pickledbeans:{label:'Pickle green beans',art:'pickledbeans'},
  made_orchardsalad:{label:'Make orchard salads',art:'orchardsalad'},made_truffleomelette:{label:'Cook truffle omelettes',art:'truffleomelette'},made_berrycheesecake:{label:'Bake berry cheesecakes',art:'berrycheesecake'},
- tractor:{label:'Use the tractor',art:'tractor'},sold_cheese:{label:'Sell cheese',art:'cheese'}};
+ tractor:{label:'Tractor jobs',art:'tractor'},sold_cheese:{label:'Sell cheese',art:'cheese'}};
 // Same level as the server gate (player_stats.level>=15, live-events-mixed.sql; 10 until 26 Sep 2026, when spending diamonds, which
 // opens at 14, became a goal): below it the button stays visible but greyed.
 export const EVENTS_LEVEL=15;
