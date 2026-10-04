@@ -1,10 +1,16 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem} from './payments.js';
+import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase} from './payments.js';
+import {serviceAccount,getPurchase,consumePurchase} from './google-play.js';
 const origin='https://www.harvesttycoon.com';
 const cors={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+// Google Play (Oct 2026, the Android app 1.1): on when the owner has set the service account's key (GOOGLE_PLAY_SERVICE_ACCOUNT), with
+// PLAY_PAYMENTS_ENABLED=false as the emergency off switch, as PAYMENTS_ENABLED is for Stripe.
+const playAccount=serviceAccount(Deno.env.get('GOOGLE_PLAY_SERVICE_ACCOUNT'));
+const playEnabled=Boolean(playAccount)&&String(Deno.env.get('PLAY_PAYMENTS_ENABLED')??'').trim().toLowerCase()!=='false';
+const purchaseReply=(p:any)=>({id:p.id,pack:p.pack,coins:p.coins,diamonds:p.diamonds,status:p.status,livemode:p.livemode,vipDays:p.vip_days??0,serverNow:Date.now()});
 // The special offer running now for this farmer (supabase/special-offer.sql): one at a time, from its level (14 or higher). A
 // problem reading it only hides the offer, so the Starter Pack and the diamond packs keep working.
 async function currentOffer(player:string){
@@ -19,6 +25,33 @@ async function currentOffer(player:string){
  if((stats.data?.level??1)<o.min_level)return null;
  return {id:o.id,diamonds:o.diamonds,coins:o.coins,vipDays:o.vip_days,audience:o.audience,endsAt:Date.parse(o.ends_at),cents:OFFER.cents,valueCents:OFFER.valueCents,bought:(bought.data??[]).some(b=>b.offer_id===o.id)};
 }
+// A Google Play purchase about to start (the app's create): the same pending row as a Stripe checkout, with the Play product as its
+// price, and the ids the app gives Google's purchase sheet (the farmer's and this row's). A Starter Pack, offer or pass already started
+// (one row per farmer, a unique index each) is reused; one that was a Stripe checkout becomes a Play one, its Stripe page ended first.
+async function playCreate(player:string,pack:any,requestId:string,starter:any){
+ const product=playProduct(pack.id);if(!product)throw new Error('No Google Play product.');
+ const insert=await admin.from('harvest_purchases').insert({id:requestId,player_id:player,pack:pack.id,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:product,livemode:true,store:'google_play',
+  starter_expires_at:pack.id==='starter'?new Date(starter.expiresAt).toISOString():null,...(pack.id==='offer'?{offer_id:pack.offerId,vip_days:pack.vipDays}:{}),...(pack.id==='pass'?{pass_id:pack.passId}:{})});
+ if(insert.error&&insert.error.code!=='23505')throw insert.error;
+ let query=admin.from('harvest_purchases').select('*').eq('player_id',player);
+ query=pack.id==='starter'?query.eq('pack','starter').eq('livemode',true).neq('status','expired'):pack.id==='offer'?query.eq('pack','offer').eq('offer_id',pack.offerId).neq('status','expired'):pack.id==='pass'?query.eq('pack','pass').eq('pass_id',pack.passId).neq('status','expired'):query.eq('id',requestId);
+ const found=await query.single();if(found.error)throw found.error;
+ let p=found.data;
+ if(p.status!=='pending')return {error:'This purchase has already been processed.'};
+ if(p.pack==='starter'&&Date.parse(p.created_at)>=starter.expiresAt)return {error:'The Starter Pack offer has ended.'};
+ if(p.store!=='google_play'){
+  if(p.stripe_session_id){
+   const key=(Deno.env.get('STRIPE_SECRET_KEY')??'').trim();if(!key)throw new Error('Stripe is not configured.');
+   const stripe=new Stripe(key,{apiVersion:'2026-07-29.dahlia',httpClient:Stripe.createFetchHttpClient(),maxNetworkRetries:2});
+   const session=await stripe.checkout.sessions.retrieve(p.stripe_session_id);
+   if(session.status==='complete')return {error:'This purchase has already been processed.'};
+   if(session.status==='open')await stripe.checkout.sessions.expire(session.id);
+  }
+  const moved=await admin.from('harvest_purchases').update({store:'google_play',price_id:product}).eq('id',p.id).eq('status','pending').select('*').single();if(moved.error)throw moved.error;p=moved.data;
+ }
+ if(p.pack!==pack.id||p.price_id!==product||pack.id==='offer'&&p.offer_id!==pack.offerId||pack.id==='pass'&&p.pass_id!==pack.passId)return {error:'Start a new purchase request.'};
+ return {purchaseId:p.id,product,account:player,store:'google_play'};
+}
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
  if(req.method!=='POST')return reply({error:'Use POST.'},405);
@@ -31,8 +64,10 @@ Deno.serve(async req=>{
   const raw=await req.text();if(raw.length>2048)return reply({error:'Request too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
   const key=(Deno.env.get('STRIPE_SECRET_KEY')??'').trim();
-  const {mode,enabled}=livePaymentConfiguration(key,Deno.env.get('STRIPE_WEBHOOK_SECRET'),Deno.env.get('PAYMENTS_ENABLED'));
+  const {mode,enabled:stripeEnabled}=livePaymentConfiguration(key,Deno.env.get('STRIPE_WEBHOOK_SECRET'),Deno.env.get('PAYMENTS_ENABLED'));
   const live=true;
+  // The Android app asks with store 'google_play' (src/play-store.js): its shop is open when Google Play is, whatever Stripe says.
+  const play=body.store==='google_play',enabled=play?playEnabled:stripeEnabled;
   // The offer opens when the farm reaches level 14, where diamond boosts unlock: the server wrote that moment into the farm (farm-state.js stampStarterOffer).
   // The special offer running now (game/payments.js OFFER), for a farm at its level: what is in it, until when, and whether this
   // farmer already bought it. Only in the catalogue and for an offer checkout, so other requests make no extra queries.
@@ -47,18 +82,47 @@ Deno.serve(async req=>{
   // The Halloween Pass (Oct 2026): its dates and price from the catalogue itself, no look-up (whether this farm bought it is in the farm,
   // state.passPremium); ready: for sale now, with a Stripe price, from the preview (the pre-sale) until the season ends.
   const pass={id:PASS.id,cents:PASS.cents,startsAt:PASS.startsAt,endsAt:PASS.endsAt,level:PASS.level,ready:Boolean(PASS.price)&&passOnSale()};
-  if(body.operation==='catalog')return reply({enabled,mode,serverNow:Date.now(),starter,offer:special,pass,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
+  if(body.operation==='catalog')return reply({enabled,mode,store:play?'google_play':'stripe',serverNow:Date.now(),starter,offer:special,pass,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
   if(body.operation==='status'){
    if(!UUID.test(body.purchaseId??''))return reply({error:'Invalid purchase.'},400);
    const r=await admin.from('harvest_purchases').select('*').eq('id',body.purchaseId).eq('player_id',user.id).maybeSingle();if(r.error)throw r.error;if(!r.data)return reply({error:'Purchase not found for this account.'},404);
    // serverNow: a pass bought before its season says when it starts, by this clock (src/payment-ui.js, Oct 2026).
-   const {id,pack,coins,diamonds,status,livemode,vip_days}=r.data;return reply({id,pack,coins,diamonds,status,livemode,vipDays:vip_days??0,serverNow:Date.now()});
+   return reply(purchaseReply(r.data));
+  }
+  // A Google Play purchase (Oct 2026): the app hands over Google's token, the server asks Google itself (never trusting the app), and
+  // credits it only when Google says it is paid, for this farmer and this purchase row (the ids the app gave Google's purchase sheet).
+  // Then it consumes it, so the pack can be bought again; a purchase never confirmed is refunded by Google after 3 days. A test
+  // purchase (licence testers) is recorded as test_paid and credits nothing. Safe to repeat: the app sends every unconsumed purchase
+  // again at the next start (playpending://).
+  if(body.operation==='play_confirm'){
+   if(!playAccount)return reply({error:'Purchases through Google Play are not available yet.'},503);
+   if(typeof body.product!=='string'||!PLAY_PRODUCT.test(body.product)||typeof body.token!=='string'||!PLAY_TOKEN.test(body.token))return reply({error:'Invalid purchase.'},400);
+   let google;
+   try{google=await getPurchase(playAccount,PLAY_PACKAGE,body.product,body.token);}
+   catch(e){if([400,404,410].includes(e?.status))return reply({error:'Google Play does not know this purchase.'},404);throw e;}
+   if(google.obfuscatedExternalAccountId!==user.id)return reply({error:'This purchase belongs to another farmer.'},403);
+   const id=google.obfuscatedExternalProfileId;if(!UUID.test(id??''))return reply({error:'This purchase was not made in Harvest Tycoon.'},409);
+   const row=await admin.from('harvest_purchases').select('*').eq('id',id).eq('player_id',user.id).maybeSingle();if(row.error)throw row.error;
+   if(!row.data)return reply({error:'Purchase not found for this account.'},404);
+   let checked;
+   try{checked=checkPlayPurchase(google,row.data,{product:body.product,player:user.id});}
+   catch(e){console.error('Play purchase mismatch',id,e?.message);return reply({error:'This purchase could not be matched. Please contact support.'},409);}
+   if(checked.state==='pending')return reply({...purchaseReply(row.data),status:'pending'});
+   if(checked.state==='cancelled'){
+    const ended=await admin.from('harvest_purchases').update({status:'expired'}).eq('id',id).eq('status','pending');if(ended.error)throw ended.error;
+    return reply({...purchaseReply(row.data),status:row.data.status==='pending'?'expired':row.data.status});
+   }
+   const credited=await admin.rpc('harvest_credit_play_purchase',{p_purchase:id,p_token:body.token,p_order:checked.order,p_test:checked.test});if(credited.error)throw credited.error;
+   if(google.consumptionState!==1){try{await consumePurchase(playAccount,PLAY_PACKAGE,body.product,body.token);}catch(e){console.error('Play consume failed',id,e?.status);}}
+   const after=await admin.from('harvest_purchases').select('*').eq('id',id).single();if(after.error)throw after.error;
+   // duplicate: confirmed before (the app sent it again), so the game does not show the window a second time
+   return reply({...purchaseReply(after.data),duplicate:Boolean(credited.data?.duplicate)});
   }
   if(body.operation!=='create')return reply({error:'Unknown request.'},400);
   // A CrazyGames account (Oct 2026, crazygames-auth) never pays through Stripe: CrazyGames allows purchases only through its own shop.
   // The game there shows no purchase; this holds whatever a page asks (its page runs on www.harvesttycoon.com, so CORS lets it in).
   if(user.app_metadata?.portal==='crazygames')return reply({error:'Purchases are not available on CrazyGames.'},403);
-  if(!enabled)return reply({error:'Diamond purchases are not available yet.'},503);
+  if(!enabled)return reply({error:play?'Purchases through Google Play are not available yet.':'Diamond purchases are not available yet.'},503);
   let pack;
   if(body.pack==='offer'){
    if(!special||special.id!==body.offerId)return reply({error:'This offer has ended.'},409);
@@ -79,6 +143,7 @@ Deno.serve(async req=>{
   if(!UUID.test(body.requestId??''))return reply({error:'Invalid purchase request.'},400);
   if(packId==='starter'&&!starter.eligible)return reply({error:starter.claimed?'You have already received the Starter Pack.':'The Starter Pack opens when you reach level 14 and is then available for 7 days.'},409);
   const farm=await admin.from('player_farms').select('player_id').eq('player_id',user.id).maybeSingle();if(farm.error)throw farm.error;if(!farm.data)return reply({error:'Open your farm before buying diamonds.'},409);
+  if(play){const r=await playCreate(user.id,pack,body.requestId,starter);return reply(r,'error' in r?409:200);}
   const stripe=new Stripe(key,{apiVersion:'2026-07-29.dahlia',httpClient:Stripe.createFetchHttpClient(),maxNetworkRetries:2});
   const priceId=pack.price;
   if(!priceId)return reply({error:'This pack has not been configured.'},503);
@@ -90,7 +155,12 @@ Deno.serve(async req=>{
   // The Starter Pack, a special offer and a pass: one checkout per farmer (a unique index each), so a second tab or tap reuses it.
   query=packId==='starter'?query.eq('pack','starter').eq('livemode',live).neq('status','expired'):packId==='offer'?query.eq('pack','offer').eq('offer_id',pack.offerId).neq('status','expired'):packId==='pass'?query.eq('pack','pass').eq('pass_id',pack.passId).neq('status','expired'):query.eq('id',body.requestId);
   const found=await query.single();if(found.error)throw found.error;
-  const p=found.data;if(p.pack!==packId||p.price_id!==priceId||p.livemode!==live||packId==='offer'&&p.offer_id!==pack.offerId||packId==='pass'&&p.pass_id!==pack.passId)return reply({error:'Start a new purchase request.'},409);
+  let p=found.data;
+  // The same Starter Pack, offer or pass started in the Android app and never paid there: the website takes the row back for Stripe.
+  if(p.store==='google_play'&&p.status==='pending'&&p.pack===packId){
+   const back=await admin.from('harvest_purchases').update({store:'stripe',price_id:priceId}).eq('id',p.id).eq('status','pending').select('*').single();if(back.error)throw back.error;p=back.data;
+  }
+  if(p.pack!==packId||p.price_id!==priceId||p.livemode!==live||packId==='offer'&&p.offer_id!==pack.offerId||packId==='pass'&&p.pass_id!==pack.passId)return reply({error:'Start a new purchase request.'},409);
   if(p.pack==='starter'&&Date.parse(p.created_at)>=starter.expiresAt)return reply({error:'The Starter Pack offer has ended.'},409);
   if(p.status!=='pending')return reply({error:'This purchase has already been processed.'},409);
   if(Date.now()-Date.parse(p.created_at)>23*3600000&&!p.stripe_session_id)return reply({error:'This checkout request needs review. Please contact support before retrying.'},409);

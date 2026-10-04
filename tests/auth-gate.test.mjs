@@ -11,10 +11,12 @@ const partnerModule=readFileSync(new URL('../src/partner-link.js',import.meta.ur
 const sourceModule=readFileSync(new URL('../src/source-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const browserTipModule=readFileSync(new URL('../src/browser-tip.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
 const settle=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
+let uuid=0;
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};}
 // app: the page is marked as our Android app (public/android-app.js; public/android.js androidApp()). providers: what Supabase has switched
 // on; buttons: the page's Google and Facebook buttons are there (nodes 'provider-google' and 'provider-facebook').
-function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest}={}){
+// play: the app sells through Google Play (app 1.1, public/android.js playBilling); playStore: the fake app it talks to (src/play-store.js).
+function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null}={}){
  const nodes=new Map(),events={},frames=[],calls=[],analytics=[],game=[],timers=[],lookups=[];let authCallback,currentUser=user,clock=1_000_000,nextTimer=1;
  const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},toggleAttribute(name,on){(this.attrs??={})[name]=Boolean(on);},removeAttribute(name){if(this.attrs)delete this.attrs[name];},focus(){},scrollIntoView(){},replaceChildren(...items){for(const old of this.children)if(!items.includes(old))old.removed=true;this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},contentWindow:{}});return nodes.get(id);};
  const providerButtons=buttons?['google','facebook'].map(provider=>Object.assign(element(`provider-${provider}`),{dataset:{provider}})):[];
@@ -23,7 +25,7 @@ function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,locati
  const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};},...authApi},...(rpc?{rpc}:{})};
  const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online,userAgent:ua},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,URLSearchParams,queueMicrotask,
   // A delay of 0 runs at once; a real delay waits until the test moves the clock (see advance).
-  setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,chosenLanguage:()=>'en',playBadge:code=>`/assets/badges/google-play-${code}.webp`,socialProviders:async()=>providers,androidApp:()=>app,listenAppPush:()=>null,forgetAppPushLink(){},...(paymentRequest?{paymentRequest}:{}),cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
+  setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,chosenLanguage:()=>'en',playBadge:code=>`/assets/badges/google-play-${code}.webp`,socialProviders:async()=>providers,androidApp:()=>app,listenAppPush:()=>null,playBilling:()=>play,createPlayStore:()=>playStore,PLAY_ERRORS:{unavailable:'Google Play is not available right now.',error:'Google Play could not start the purchase.',owned:'Unfinished purchase.'},PLAY_PRODUCTS:{'150':'diamonds_150','500':'diamonds_500',starter:'starter_pack'},crypto:{randomUUID:()=>'00000000-0000-4000-8000-00000000000'+(++uuid)},forgetAppPushLink(){},...(paymentRequest?{paymentRequest}:{}),cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackCommerce(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
 
  vm.runInContext(accountForm,context);vm.runInContext(connectionModule,context);vm.runInContext(socialModule,context);vm.runInContext(inviteModule,context);vm.runInContext(partnerModule,context);vm.runInContext(sourceModule,context);vm.runInContext(browserTipModule,context);vm.runInContext(source,context);
  // Moves the clock forward, running every timer that falls due on the way (and the ones they start).
@@ -319,6 +321,38 @@ test('the Android app: the shop\'s catalogue says off, nothing else about paymen
  const site=fixture({user:{id:'A'},paymentRequest,location:{...page,search:'?purchase=p1&checkout=cancelled'}});await settle();
  assert.deepEqual(await site.window.harvestBridge.payments({operation:'catalog'}),{enabled:true,url:'https://checkout.stripe.com/c/pay/x'});assert.deepEqual(asked,[{operation:'catalog'}]);
  assert.deepEqual({...site.window.harvestBridge.paymentReturn()},{id:'p1',cancelled:true});
+});
+
+// The Android app 1.1 (Oct 2026): the shop sells through Google Play (src/play-store.js), checked by the server before anything is credited.
+test('the Android app 1.1: Google\'s prices in the catalogue, a purchase through Google\'s sheet confirmed by the server, never Stripe',async()=>{
+ const A='0000000a-0000-4000-8000-000000000000',asked=[],shown=[];let sheet=null;
+ const paymentRequest=async body=>{asked.push(body);
+  if(body.operation==='catalog')return {enabled:true,store:'google_play',packs:[]};
+  if(body.operation==='create')return {purchaseId:'1111111a-0000-4000-8000-000000000000',product:'diamonds_500',account:A,store:'google_play'};
+  if(body.operation==='play_confirm')return {id:'1111111a-0000-4000-8000-000000000000',status:'credited',duplicate:false};
+  return {status:'pending'};};
+ const playStore={async prices(ids){assert.deepEqual([...ids].sort(),['diamonds_150','diamonds_500','starter_pack']);return {diamonds_500:{price:'US$5.49',micros:5490000,currency:'USD'}};},
+  async buy(order){sheet=order;return {kind:'purchase',product:order.product,token:'t'.repeat(30),state:'purchased',account:A,purchase:order.purchase};},
+  async pending(){return [];},onPurchase(){return()=>{};}};
+ const app=fixture({ua:APP_UA+' PlayBilling/1',app:true,play:true,playStore,user:{id:A},paymentRequest,location:{...APP_PAGE}});await settle();
+ const bridge=app.window.harvestBridge;bridge.purchaseDone=id=>shown.push(id);
+ const catalog=await bridge.payments({operation:'catalog'});
+ assert.equal(catalog.enabled,true);assert.deepEqual({...catalog.prices},{'500':{price:'US$5.49',micros:5490000,currency:'USD'}},'Google\'s price per pack');
+ assert.deepEqual({...asked[0]},{operation:'catalog',store:'google_play'});
+ const done=await bridge.checkout('500','ui-request');
+ assert.deepEqual({...done},{store:'google_play',id:'1111111a-0000-4000-8000-000000000000',status:'purchased'});
+ assert.equal(asked[1].operation,'create');assert.equal(asked[1].store,'google_play');assert.notEqual(asked[1].requestId,'ui-request','a new purchase row for every sheet');
+ assert.deepEqual({...sheet},{product:'diamonds_500',account:A,purchase:'1111111a-0000-4000-8000-000000000000'});
+ assert.deepEqual({...asked[2]},{operation:'play_confirm',store:'google_play',product:'diamonds_500',token:'t'.repeat(30)},'the server checks it with Google');
+ assert.deepEqual(shown,['1111111a-0000-4000-8000-000000000000'],'the result window opens');
+ assert.equal(app.context.location.href,undefined,'never a Stripe page');
+ // Closed sheet: nothing confirmed, the shop just opens again. Another farmer's purchase on this phone is left for them.
+ playStore.buy=async()=>({kind:'cancelled'});asked.length=0;
+ assert.deepEqual({...await bridge.checkout('150','r')},{store:'google_play',status:'cancelled'});assert.deepEqual(asked.map(b=>b.operation),['create']);
+ assert.equal(await bridge.playSettle({product:'diamonds_150',token:'u'.repeat(30),state:'purchased',account:'0000000b-0000-4000-8000-000000000000'}),null);
+ // No price from Google (products not in Play Console yet, no connection): the shop stays closed.
+ const quiet=fixture({ua:APP_UA+' PlayBilling/1',app:true,play:true,playStore:{...playStore,async prices(){return {};}},user:{id:A},paymentRequest,location:{...APP_PAGE}});await settle();
+ assert.equal((await quiet.window.harvestBridge.payments({operation:'catalog'})).enabled,false);
 });
 
 test('a refusal from the server (4xx) shows its reason; only a lost or failing connection shows "Reconnecting…"',async()=>{

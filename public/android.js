@@ -69,3 +69,26 @@ export function appPushState(win=globalThis.window){
  const here=own(win);if(here)return here;
  try{return win?.parent&&win.parent!==win?own(win.parent):null;}catch{return null;}
 }
+
+// Purchases through Google Play (Oct 2026, the Android app 1.1; android-app PlayBilling.java). The app says it can with " PlayBilling/1"
+// in its user agent; public/android-app.js then marks the page <html data-play-billing> (and the game frame), and the shop opens there
+// as on the website (portal.js portalOff, android.css). Older app versions and the iPhone app sell nothing. The page around the game
+// asks the app as it does for push: it goes to one of these addresses and the app answers with window.harvestPlay({...}) (src/play-store.js).
+export function playBilling(win=globalThis.window){
+ const marked=w=>{try{return w?.document?.documentElement?.hasAttribute?.('data-play-billing')===true;}catch{return false;}};
+ if(marked(win))return true;
+ try{return Boolean(win?.parent&&win.parent!==win&&marked(win.parent));}catch{return false;}
+}
+export const PLAY_LINKS=Object.freeze({prices:'playprices://prices',buy:'playbuy://buy',pending:'playpending://pending'});
+export const playPricesLink=ids=>`${PLAY_LINKS.prices}?ids=${ids.map(encodeURIComponent).join(',')}`;
+export const playBuyLink=({product,account,purchase})=>`${PLAY_LINKS.buy}?product=${encodeURIComponent(product)}&account=${encodeURIComponent(account)}&purchase=${encodeURIComponent(purchase)}`;
+// The price on a buy button: Google Play's own (the farmer's currency, catalog.prices from src/play-store.js) in the app, else the euro
+// price as on the website (Stripe shows it in the farmer's currency at checkout). worth: an amount at the same rate as the pack's price
+// (the special offer's "worth €49.99"), in the same currency.
+const euro=cents=>`€${(Number(cents)/100).toFixed(2)}`;
+export function shopPrice(catalog,pack,cents){const p=catalog?.prices?.[pack];return typeof p?.price==='string'&&p.price?p.price:euro(cents);}
+export function shopWorth(catalog,pack,cents,worthCents){
+ const p=catalog?.prices?.[pack];
+ if(!p||!Number.isFinite(p.micros)||!/^[A-Z]{3}$/.test(p.currency??'')||!(cents>0))return euro(worthCents);
+ try{return new Intl.NumberFormat(undefined,{style:'currency',currency:p.currency}).format(p.micros/1e6*worthCents/cents);}catch{return euro(worthCents);}
+}

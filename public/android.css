@@ -3,17 +3,19 @@
 /* Our own purchases (Google Play's rules): the diamond packs and every "Get diamonds" (boosts and VIP with earned diamonds stay), the
    Starter Pack's and the special offer's buttons and the offer's banner in the shop, and the Halloween Pass's buy box and its banner. Their
    windows are not hidden here: with nothing to open them they never open, and a hidden window that did open would still block the farm. */
-html[data-app=android] #diamond-store,html[data-app=android] [data-shop-jump="diamond-store"],html[data-app=android] .get-diamonds,
-html[data-app=android] #starter-pack-button,html[data-app=android] #starter-pack-chip,html[data-app=android] #offer-button,html[data-app=android] #offer-chip,
-html[data-app=android] #shop-offer,html[data-app=android] #shop-pass,html[data-app=android] .pass-paid-box:not(.is-owned){display:none!important}
+/* From the app 1.1 (Oct 2026) the shop is there again, paid through Google Play (html[data-play-billing], src/play-store.js): these
+   rules only hold for an older app. */
+html[data-app=android]:not([data-play-billing]) #diamond-store,html[data-app=android]:not([data-play-billing]) [data-shop-jump="diamond-store"],html[data-app=android]:not([data-play-billing]) .get-diamonds,
+html[data-app=android]:not([data-play-billing]) #starter-pack-button,html[data-app=android]:not([data-play-billing]) #starter-pack-chip,html[data-app=android]:not([data-play-billing]) #offer-button,html[data-app=android]:not([data-play-billing]) #offer-chip,
+html[data-app=android]:not([data-play-billing]) #shop-offer,html[data-app=android]:not([data-play-billing]) #shop-pass,html[data-app=android]:not([data-play-billing]) .pass-paid-box:not(.is-owned),html[data-app=android]:not([data-play-billing]) .wiki-paid{display:none!important}
 /* The pass's paid row only while it is locked: bought on the website, it is there to collect as always. The layout follows with :has() in
    rules of their own, so a WebView without :has() only keeps an empty column. */
-html[data-app=android] .pass-cell.is-paid.is-locked{display:none!important}
-html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) .pass-heads b:last-child{display:none!important}
-html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass-heads,.pass-row){grid-template-columns:34px minmax(0,1fr)}
-@media(max-width:600px){html[data-app=android] #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass-heads,.pass-row){grid-template-columns:26px minmax(0,1fr)}}
+html[data-app=android]:not([data-play-billing]) .pass-cell.is-paid.is-locked{display:none!important}
+html[data-app=android]:not([data-play-billing]) #pass-content:has(.pass-cell.is-paid.is-locked) .pass-heads b:last-child{display:none!important}
+html[data-app=android]:not([data-play-billing]) #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass-heads,.pass-row){grid-template-columns:34px minmax(0,1fr)}
+@media(max-width:600px){html[data-app=android]:not([data-play-billing]) #pass-content:has(.pass-cell.is-paid.is-locked) :is(.pass-heads,.pass-row){grid-template-columns:26px minmax(0,1fr)}}
 /* Installing the web app and full screen: the Play app is the app (Settings' Farm app block, How to play's install button and steps). */
-html[data-app=android] #app-settings,html[data-app=android] #app-fullscreen-row,html[data-app=android] .wiki-install,html[data-app=android] .wiki-app-steps,html[data-app=android] .wiki-paid{display:none!important}
+html[data-app=android] #app-settings,html[data-app=android] #app-fullscreen-row,html[data-app=android] .wiki-install,html[data-app=android] .wiki-app-steps{display:none!important}
 /* Notifications are the app's own there (src/app-push.js, Oct 2026): Settings' device switch, the reminder question and "Remind me" under
    the daily gift show as on the website, and the code hides them itself while the app has no push. */
 

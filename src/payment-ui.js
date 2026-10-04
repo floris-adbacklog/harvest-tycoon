@@ -2,8 +2,10 @@ import {art} from '../public/visual-icons.js';
 import {paymentPack,PASS} from '../game/payments.js';
 import {formatDuration} from '../public/farm-state.js';
 
-export function showPaymentReturn(bridge){
- const purchase=bridge.paymentReturn?.();if(!purchase?.id)return;
+// purchase: the one Stripe's page returned with (the address), or one bought through Google Play in the Android app (Oct 2026,
+// bridge.purchaseDone in src/game-cloud.js), which this window shows the same way.
+export function showPaymentReturn(bridge,purchase=bridge.paymentReturn?.()){
+ if(!purchase?.id)return;
  const dialog=document.createElement('dialog');dialog.className='payment-dialog';
  dialog.setAttribute('aria-labelledby','payment-result-title');dialog.setAttribute('aria-describedby','payment-result-message');
  dialog.innerHTML=`<button type="button" class="payment-dismiss" aria-label="Close purchase update"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button><div class="payment-hero">${art('diamonds')}</div><p class="payment-eyebrow">A LITTLE EXTRA GROWING POWER</p><h2 id="payment-result-title">Checking your purchase</h2><p id="payment-result-message" class="payment-message" role="status" aria-live="polite">Just a moment while we check your payment.</p><span class="payment-status">Checking payment</span><div class="payment-actions"><button type="button" class="payment-shop" data-shop hidden>Back to the shop</button><button type="button" data-close autofocus>Back to farm</button><button type="button" data-retry>Check payment</button></div>`;

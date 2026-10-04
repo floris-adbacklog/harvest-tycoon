@@ -1,4 +1,5 @@
 import {fitsDevice} from './popup-ui.js';
+import {shopPrice,shopWorth} from '../public/android.js';
 
 // The special offer (29 Sep 2026, supabase/special-offer.sql): diamonds, coins and/or VIP time worth €49.99 at the shop's own
 // prices, for €4.99, once per farmer, from level 14. The admin puts one together in the Admin panel; the server's catalogue says
@@ -23,7 +24,9 @@ export function offerParts(offer){
 export const offerDiscount=offer=>Math.round((1-offer.cents/offer.valueCents)*100);
 
 export function createOfferUI(bridge,{doc=document,win=window,storage=win.localStorage}={}){
- let offer=null,mode='live',enabled=true,offset=0,pending=false,requestId='',waiting=0,disposed=false,live=null;
+ let offer=null,mode='live',enabled=true,offset=0,pending=false,requestId='',waiting=0,disposed=false,live=null,prices=null;
+ // In the Android app (Oct 2026) the price is Google Play's and the worth is in the same currency (public/android.js shopPrice).
+ const price=()=>shopPrice({prices},'offer',offer.cents),worth=()=>shopWorth({prices},'offer',offer.cents,offer.valueCents);
  const style=doc.createElement('link');style.rel='stylesheet';style.href='/offer.css';doc.head.append(style);
  const tile=doc.createElement('button');tile.id='offer-button';tile.type='button';tile.hidden=true;
  const chip=doc.createElement('button');chip.id='offer-chip';chip.className='icon-button';chip.type='button';chip.hidden=true;chip.title='Special offer';
@@ -42,7 +45,7 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
 
  function draw(){
   const off=offerDiscount(offer),parts=offerParts(offer);
-  const label=`Special offer, ${euro(offer.cents)}`;tile.setAttribute('aria-label',label);chip.setAttribute('aria-label',label);
+  const label=`Special offer, ${price()}`;tile.setAttribute('aria-label',label);chip.setAttribute('aria-label',label);
   tile.innerHTML=`<img src="/assets/icons/offer-hero.webp" alt=""><span>Special offer</span><small>-${off}%</small>`;
   chip.innerHTML=`<img src="/assets/icons/offer-hero.webp" alt=""><small>-${off}%</small>`;
   // Picture with the discount, then what is in it (cards with a + between), what it is worth, the time left and one Buy button.
@@ -50,7 +53,7 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
    +`<div class="offer-hero"><img src="/assets/icons/offer-hero.webp" alt="" draggable="false"><span class="offer-ribbon"><b>${off}%</b><small>OFF</small></span></div>`
    +`<div class="offer-body"><span class="eyebrow">SPECIAL OFFER</span><h2 id="offer-title">A chest full of treasure</h2>`
    +`<div class="offer-parts">${parts.map((p,i)=>`${i?'<span class="offer-plus" aria-hidden="true">+</span>':''}<div class="offer-part is-${p.key}"><img src="/assets/icons/${p.art}.webp" alt="" draggable="false"><strong>${p.amount}</strong><span>${p.detail}</span></div>`).join('')}</div>`
-   +`<p class="offer-worth"><span>Worth</span> <s>${euro(offer.valueCents)}</s> <b>${euro(offer.cents)}</b></p>`
+   +`<p class="offer-worth"><span>Worth</span> <s>${worth()}</s> <b>${price()}</b></p>`
    +`<p class="offer-time"><img src="/assets/icons/offer-hourglass.webp" alt=""><span data-offer-left></span></p>`
    +`<button type="button" class="primary-button offer-buy"></button><p class="offer-feedback" role="status" aria-live="polite"></p>`
    +`<small class="offer-fine">Once per farmer. Worth: what the same diamonds, coins and VIP cost in the shop.</small></div>`;
@@ -64,7 +67,7 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
   const ms=left(),over=ms<=0||offer.bought;
   dialog.querySelector('[data-offer-left]').textContent=offer.bought?'Already bought':over?'This offer has ended':`Ends in ${duration(ms)}`;
   const button=dialog.querySelector('.offer-buy');button.disabled=pending||over||!enabled||offer.preview;
-  button.textContent=offer.preview?`Preview · ${euro(offer.cents)}`:pending?'Opening secure checkout…':mode==='test'?`Test purchase · ${euro(offer.cents)}`:`Buy for ${euro(offer.cents)}`;
+  button.textContent=offer.preview?`Preview · ${euro(offer.cents)}`:pending?'Opening secure checkout…':mode==='test'?`Test purchase · ${euro(offer.cents)}`:`Buy for ${price()}`;
   const feedback=dialog.querySelector('.offer-feedback');if(!enabled&&!pending)feedback.textContent='Purchases are not available yet. Please check back later.';
  }
  function open(){
@@ -81,12 +84,13 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
   if(!b&&!wallet)return;
   if(!b){b=doc.createElement('button');b.type='button';b.id='shop-offer';b.className='shop-offer';b.onclick=open;wallet.after(b);}
   b.hidden=!show;if(!show)return;
-  const html=`<img src="/assets/icons/offer-hero.webp" alt=""><span class="shop-offer-copy"><b>Special offer</b><small>Ends in ${duration(left())}</small></span><span class="shop-offer-price"><s>${euro(offer.valueCents)}</s><b>${euro(offer.cents)}</b></span><span class="shop-offer-tag">-${offerDiscount(offer)}%</span>`;
+  const html=`<img src="/assets/icons/offer-hero.webp" alt=""><span class="shop-offer-copy"><b>Special offer</b><small>Ends in ${duration(left())}</small></span><span class="shop-offer-price"><s>${worth()}</s><b>${price()}</b></span><span class="shop-offer-tag">-${offerDiscount(offer)}%</span>`;
   if(b.dataset.html!==html){b.dataset.html=html;b.innerHTML=html;}
  }
  async function buy(){
   if(pending||!running()||offer.preview)return;pending=true;dialog.querySelector('.offer-feedback').textContent='';render();
-  try{await bridge.checkout('offer',requestId,offer.id);}
+  // Stripe leaves the page; Google Play's sheet (the Android app) closes on the farm, and the window with the result opens by itself.
+  try{const done=await bridge.checkout('offer',requestId,offer.id);if(done?.store==='google_play'){pending=false;render();}}
   catch(error){pending=false;render();dialog.querySelector('.offer-feedback').textContent=error.message;}
  }
  // Once per offer on this device, when nothing else is open (the daily gift, a pop-up, a purchase screen).
@@ -99,7 +103,7 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  }
  function update(catalog){
   const next=catalog?.offer??null,changed=next?.id!==offer?.id;
-  offset=(catalog?.serverNow??Date.now())-Date.now();mode=catalog?.mode??'live';enabled=Boolean(catalog?.enabled);offer=next;
+  offset=(catalog?.serverNow??Date.now())-Date.now();mode=catalog?.mode??'live';enabled=Boolean(catalog?.enabled);prices=catalog?.prices??null;offer=next;
   if(!offer){tile.hidden=chip.hidden=true;if(dialog.open)dialog.close();return;}
   if(changed||!dialog.querySelector('.offer-buy'))draw();
   if(offer.bought)pending=false;render();autoOpen();

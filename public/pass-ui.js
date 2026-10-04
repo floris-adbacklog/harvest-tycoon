@@ -2,6 +2,7 @@ import {SEASON_PASS,PASS_TRACKS,passTotals,passPhase,passLanterns,passTier,passP
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {portalOff} from './portal.js';
+import {shopPrice} from './android.js';
 
 // The Halloween Pass (Oct 2026, the rules in farm-state.js SEASON_PASS): a pumpkin button next to Farm family on a computer and a tile
 // under Every day in the More menu on a phone, both with the "!" while a reached reward waits (worked out from the farm, nothing stored
@@ -55,7 +56,8 @@ export function passPaidBox(state,{phase,now,catalog=null,pending=false,feedback
  if(passPremium(state))return soon?`<section class="pass-paid-box is-owned"><div class="pass-paid-copy"><strong data-pass-starts>${passStartsLine(state,now)}</strong></div></section>`:'';
  if(!soon&&phase!=='open')return '';
  const totals=passPaidTotals(),cents=catalog?.pass?.cents??SEASON_PASS.cents,ready=Boolean(catalog?.enabled&&catalog?.pass?.ready);
- const label=pending?'Opening secure checkout…':catalog?.mode==='test'?`Test purchase · ${euro(cents)}`:`Buy for ${euro(cents)}`;
+ // In the Android app (Oct 2026) the price is Google Play's, in the farmer's currency (public/android.js shopPrice).
+ const label=pending?'Opening secure checkout…':catalog?.mode==='test'?`Test purchase · ${euro(cents)}`:`Buy for ${shopPrice(catalog,'pass',cents)}`;
  const note=catalog&&!ready&&!pending?'Purchases are not available yet. Please check back later.':feedback;
  // No tiers are reached before the season, so that part waits for it.
  const holds=soon?`${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts and more.`
@@ -117,7 +119,8 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
  async function purchase(){
   if(pending||portalOff('payments')||!['soon','open'].includes(passPhase(now()))||passPremium(state))return;   // for sale before the season too (Oct 2026)
   pending=true;feedback='';draw();
-  try{await bridge().checkout('pass',requestId);}
+  // Stripe leaves the page; Google Play's sheet (the Android app) closes on the farm, and the window with the result opens by itself.
+  try{const done=await bridge().checkout('pass',requestId);if(done?.store==='google_play'){pending=false;draw();}}
   catch(error){pending=false;feedback=error.message;draw();}
  }
  async function readCatalog(){
@@ -138,7 +141,7 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
   if(!b&&!wallet)return;
   if(!b){b=doc.createElement('button');b.type='button';b.id='shop-pass';b.className='shop-pass';b.onclick=open;wallet.after(b);}
   b.hidden=!show;if(!show)return;
-  const html=`${art(PASS_ART)}<span class="shop-pass-copy"><b>Halloween Pass</b><small>${passPhase(now())==='soon'?passStartsLine(state,now()):passPhaseLine(now())}</small></span><span class="shop-pass-price"><b>${euro(catalog?.pass?.cents??SEASON_PASS.cents)}</b></span>`;
+  const html=`${art(PASS_ART)}<span class="shop-pass-copy"><b>Halloween Pass</b><small>${passPhase(now())==='soon'?passStartsLine(state,now()):passPhaseLine(now())}</small></span><span class="shop-pass-price"><b>${shopPrice(catalog,'pass',catalog?.pass?.cents??SEASON_PASS.cents)}</b></span>`;
   if(b.dataset.html!==html){b.dataset.html=html;b.innerHTML=html;}
  }
  function refresh(){

@@ -1,3 +1,4 @@
+import {shopPrice} from '../public/android.js';
 export async function createStarterPackUI(bridge){
  const {CROPS,STARTER_PACK_CROPS,STARTER_LEVEL,formatDuration}=await import(/* @vite-ignore */ '/farm-state.js');
  const {art,refreshArt}=await import(/* @vite-ignore */ '/visual-icons.js');
@@ -13,17 +14,17 @@ export async function createStarterPackUI(bridge){
  document.body.append(button,dialog);document.getElementById('diamond-button')?.after(chip);refreshArt();
  const buy=dialog.querySelector('.starter-buy'),feedback=dialog.querySelector('.starter-feedback'),time=dialog.querySelector('.starter-time'),value=dialog.querySelector('.starter-value');
  // What the pack is worth, from the shop's own prices (the server catalogue): the pack of as many diamonds as the Starter Pack (27 Sep
- // 2026). A plain comparison, never a made-up "was" price.
- const euro=cents=>`€${(cents/100).toFixed(2)}`;
+ // 2026). A plain comparison, never a made-up "was" price; in the Android app at Google Play's price (public/android.js shopPrice).
  let catalog=null,offset=0,pending=false,disposed=false,requestId='',refreshing=false,checkedAt=0;
  function render(){
   const offer=catalog?.starter,remaining=(offer?.expiresAt??0)-(Date.now()+offset),eligible=offer?.eligible&&remaining>0;
   button.hidden=chip.hidden=!eligible;buy.disabled=pending||!eligible||!catalog?.enabled;
-  buy.textContent=pending?'Opening secure checkout…':catalog?.mode==='test'?'Test purchase · €2.99':'Buy for €2.99';
+  // In the Android app (Oct 2026) Google Play's prices, in the farmer's currency (public/android.js shopPrice).
+  buy.textContent=pending?'Opening secure checkout…':catalog?.mode==='test'?'Test purchase · €2.99':catalog?.prices?.starter?`Buy for ${shopPrice(catalog,'starter',299)}`:'Buy for €2.99';
   time.textContent=offer?.claimed?'Already received':eligible?`Only in your first week at level ${STARTER_LEVEL} · ${formatDuration(remaining)} left`:'This offer has ended';
   const pack=catalog?.packs?.find(p=>p.id==='starter'),same=pack&&catalog.packs.find(p=>p.id!=='starter'&&!p.coins&&p.diamonds===pack.diamonds);
   if(pack)dialog.querySelector('[data-starter-diamonds]').textContent=pack.diamonds.toLocaleString('en-US');
-  value.hidden=!same;if(same)value.textContent=`The ${pack.diamonds.toLocaleString('en-US')} diamonds alone cost ${euro(same.cents)} in the shop.`;
+  value.hidden=!same;if(same)value.textContent=`The ${pack.diamonds.toLocaleString('en-US')} diamonds alone cost ${shopPrice(catalog,same.id,same.cents)} in the shop.`;
   if(!catalog?.enabled&&!pending){feedback.textContent='Purchases are not available yet. Please check back later.';feedback.dataset.unavailable='1';}
   else if(catalog?.enabled&&feedback.dataset.unavailable){feedback.textContent='';delete feedback.dataset.unavailable;}
  }
@@ -31,7 +32,7 @@ export async function createStarterPackUI(bridge){
  async function refresh(){if(refreshing||disposed)return;refreshing=true;checkedAt=Date.now();try{const data=await bridge.payments({operation:'catalog'});if(disposed)return;catalog=data;offset=data.serverNow-Date.now();render();window.dispatchEvent(new CustomEvent('harvest-catalog',{detail:data}));}catch{if(!catalog)button.hidden=chip.hidden=true;}finally{refreshing=false;}}
  button.onclick=chip.onclick=()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());requestId=crypto.randomUUID();feedback.textContent='';render();dialog.showModal();refresh();};
  dialog.querySelector('.starter-close').onclick=()=>dialog.close();
- buy.onclick=async()=>{if(pending||buy.disabled)return;pending=true;feedback.textContent='';render();try{await bridge.checkout('starter',requestId);}catch(error){feedback.textContent=error.message;pending=false;render();}};
+ buy.onclick=async()=>{if(pending||buy.disabled)return;pending=true;feedback.textContent='';render();try{const done=await bridge.checkout('starter',requestId);if(done?.store==='google_play'){pending=false;render();}}catch(error){feedback.textContent=error.message;pending=false;render();}};
  // The countdown runs on this device. The server is asked when the game starts, when the offer is opened, after a purchase
  // and when the farm reaches the Starter Pack level; while the offer runs, also every 15 minutes (and on coming back to
  // the game, at most that often). A farm without a running offer is not asked again. (It used to ask every minute, for

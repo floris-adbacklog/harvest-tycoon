@@ -447,22 +447,24 @@ test('the privacy policy says what playing on CrazyGames stores',()=>{
 });
 
 test('diamond-checkout: a CrazyGames account never starts a Stripe checkout; a website farmer as before',async()=>{
- const payments=await import('../supabase/functions/diamond-checkout/payments.js');
+ const payments=await import('../supabase/functions/diamond-checkout/payments.js'),googlePlay=await import('../supabase/functions/diamond-checkout/google-play.js');
  const source=stripTypeScriptTypes(read('supabase/functions/diamond-checkout/index.ts').replace(/^import .*;\n/gm,''));
  const send=async(user,body)=>{
   let handler;const stripe=[];
   const admin={auth:{async getUser(){return {data:{user:structuredClone(user)},error:null};}},async rpc(name){assert.equal(name,'harvest_session_active');return {data:true,error:null};},
    from(){throw new Error('no look-up for a pack checkout');}};
-  vm.runInNewContext(source,{...payments,Stripe:class{constructor(){stripe.push('made');}},createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,JSON,Date,Object,Promise,Error,atob,console:{error(){}}});
+  vm.runInNewContext(source,{...payments,...googlePlay,Stripe:class{constructor(){stripe.push('made');}},createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,JSON,Date,Object,Promise,Error,atob,console:{error(){}}});
   const token=`x.${Buffer.from(JSON.stringify({session_id:'s'})).toString('base64url')}.y`;
   const r=await handler(new Request('https://test.invalid/diamond-checkout',{method:'POST',headers:{Authorization:`Bearer ${token}`},body:JSON.stringify(body)}));
   return {status:r.status,data:await r.json(),stripe};
  };
  const create={operation:'create',pack:Object.keys(payments.PAYMENT_PACKS)[0],requestId:crypto.randomUUID()};
- for(const guest of [false,true]){
-  const r=await send({id:FARMER,email:'cg-x@players.harvesttycoon.com',app_metadata:{provider:'email',portal:'crazygames',guest}},create);
+ for(const guest of [false,true])for(const order of [create,{...create,store:'google_play'}]){
+  const r=await send({id:FARMER,email:'cg-x@players.harvesttycoon.com',app_metadata:{provider:'email',portal:'crazygames',guest}},order);
   assert.deepEqual([r.status,r.data],[403,{error:'Purchases are not available on CrazyGames.'}]);assert.deepEqual(r.stripe,[]);
  }
  const site=await send({id:OTHER_GUEST,email:'farmer@example.com',app_metadata:{provider:'email'}},create);
  assert.deepEqual([site.status,site.data],[503,{error:'Diamond purchases are not available yet.'}],'the website: past this check as before (no Stripe key in this test)');
+ const app=await send({id:OTHER_GUEST,email:'farmer@example.com',app_metadata:{provider:'email'}},{...create,store:'google_play'});
+ assert.deepEqual([app.status,app.data],[503,{error:'Purchases through Google Play are not available yet.'}],'the Android app: Google Play off without its key');
 });

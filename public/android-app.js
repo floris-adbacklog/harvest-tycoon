@@ -19,6 +19,8 @@
  // no Tag Manager and no cookie banner at all (the owner's choice for the App Store, 3 Oct 2026; the app blocks the trackers too).
  function iosApp(ua){return /HarvestTycoonApp\//.test(ua||'')&&/iPhone|iPad|iPod|Macintosh/.test(ua||'');}
  window.harvestIosApp=iosApp;
+ function playApp(ua){return /HarvestTycoonApp\//.test(ua||'')&&/ PlayBilling\/\d/.test(ua||'')&&!iosApp(ua);}
+ window.harvestPlayApp=playApp;
  var parent=null;try{if(window.parent!==window)parent=window.parent.document.documentElement;}catch(e){}
  if(html.hasAttribute('data-portal')||(parent&&parent.hasAttribute('data-portal')))return;
  var saved=null;try{saved=localStorage.getItem(KEY);}catch(e){}
@@ -27,4 +29,7 @@
  // The game frame follows the page around it (its own address never carries ?app=).
  if(found.app||(parent&&parent.getAttribute('data-app')==='android'))html.setAttribute('data-app','android');
  if(iosApp(navigator.userAgent)||(parent&&parent.getAttribute('data-app-os')==='ios'))html.setAttribute('data-app-os','ios');
+ // The Android app 1.1 (Oct 2026) sells through Google Play: " PlayBilling/1" in its user agent (public/android.js playBilling). Never
+ // the iPhone app, never a browser with ?app=android only.
+ if(html.getAttribute('data-app')==='android'&&html.getAttribute('data-app-os')!=='ios'&&(playApp(navigator.userAgent)||(parent&&parent.hasAttribute('data-play-billing'))))html.setAttribute('data-play-billing','');
 })();

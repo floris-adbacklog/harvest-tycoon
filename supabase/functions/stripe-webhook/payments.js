@@ -103,3 +103,29 @@ export function validatePaidSession(session,purchase,items){
  if(typeof session.payment_intent!=='string'||!session.payment_intent.startsWith('pi_'))throw new Error('Missing payment reference.');
  return session.payment_intent;
 }
+// Google Play (Oct 2026): the Android app (1.1 on) sells the same packs through Google Play, each a one-time product of its own in Play
+// Console at the same euro price (Google converts it for other countries and keeps 15%). A Play purchase is the same row as a Stripe
+// checkout (store 'google_play', price_id = the product), so the admin panel, the partners' 25% and account deletion count it as one.
+// The server checks every purchase with Google (diamond-checkout play_confirm, game/google-play.js) before crediting it, then consumes it.
+export const PLAY_PACKAGE='com.harvesttycoon.app';
+export const PLAY_PRODUCTS=Object.freeze({'150':'diamonds_150','500':'diamonds_500','1250':'diamonds_1250','3500':'diamonds_3500',
+ starter:'starter_pack',offer:'special_offer',pass:'halloween_pass_2026'});
+export const PLAY_PRODUCT=/^[a-z0-9][a-z0-9_.]{0,39}$/;
+export const PLAY_TOKEN=/^[A-Za-z0-9._-]{20,1024}$/;
+export const playProduct=pack=>typeof pack==='string'&&Object.hasOwn(PLAY_PRODUCTS,pack)?PLAY_PRODUCTS[pack]:null;
+// What Google says about a purchase (purchases.products.get) against its row: state 'purchased' (credit it), 'pending' (a payment still
+// on its way, such as cash at a shop) or 'cancelled'; test: a licence tester's test purchase, a promo code or a reward, no money, so it is
+// recorded as test_paid and credits nothing (as a Stripe test payment). Anything that does not belong to this row and farmer throws.
+export function checkPlayPurchase(google,purchase,{product,player}){
+ if(!google||google.kind!=='androidpublisher#productPurchase')throw new Error('Unknown Google Play purchase.');
+ if(!purchase||playProduct(purchase.pack)!==product)throw new Error('Product mismatch.');
+ if(typeof player!=='string'||google.obfuscatedExternalAccountId!==player||purchase.player_id!==player)throw new Error('Purchase ownership mismatch.');
+ if(google.obfuscatedExternalProfileId!==purchase.id)throw new Error('Purchase reference mismatch.');
+ if((google.quantity??1)!==1)throw new Error('Quantity mismatch.');
+ const pack=paymentPack(purchase.pack);
+ if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||offerProblem({diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0})))throw new Error('Offer mismatch.');
+ if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
+ if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
+ const state=google.purchaseState===0?'purchased':google.purchaseState===2?'pending':'cancelled';
+ return {state,test:google.purchaseType!=null,order:typeof google.orderId==='string'&&google.orderId?google.orderId.slice(0,100):null};
+}

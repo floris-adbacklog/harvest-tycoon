@@ -124,8 +124,11 @@ test('android.css hides what a Play app may not have or cannot do, only in the a
  const css=read('public/android.css'),hidden=hiddenBy(css),sources=['public/farm.html','public/boosts-ui.js','public/pass-ui.js','src/starter-pack-ui.js','src/offer-ui.js','public/retention-ui.js','public/wiki-content.js'].map(read).join('\n');
  const gone=['#diamond-store','[data-shop-jump="diamond-store"]','.get-diamonds','#starter-pack-button','#starter-pack-chip','#offer-button','#offer-chip','#shop-offer',
   '#shop-pass','.pass-paid-box:not(.is-owned)','.pass-cell.is-paid.is-locked','#app-settings','#app-fullscreen-row','.wiki-install','.wiki-app-steps'];
+ // The shop's parts only in an app that sells nothing (an older Android app, the iPhone app): the Android app 1.1 sells through Google
+ // Play (html[data-play-billing], Oct 2026). Installing the web app and full screen never.
+ const installing=['#app-settings','#app-fullscreen-row','.wiki-install','.wiki-app-steps'];
  for(const selector of gone){
-  assert.ok(hidden.includes(`html[data-app=android] ${selector}`),`hidden: ${selector}`);
+  assert.ok(hidden.includes(`html[data-app=android]${installing.includes(selector)?'':':not([data-play-billing])'} ${selector}`),`hidden: ${selector}`);
   const name=selector.match(/[#.]([\w-]+)|"([\w-]+)"/).slice(1).find(Boolean);assert.ok(sources.includes(name),`still in the game: ${name}`);
  }
  // What stays in the app: invites and sharing, email and its reminders, push reminders (the app's own, Oct 2026: the device switch,
@@ -133,7 +136,7 @@ test('android.css hides what a Play app may not have or cannot do, only in the a
  for(const kept of ['#invite-button','.family-invite-friend','.level-up-share','.farmer-share','#email-button','#email-settings','#notify-settings','#notify-email-rows','.reminder-nudge',
   '#notify-device','#notify-push-rows','#notify-settings>.install-copy','#gift-remind','#notify-enable','#notify-disable','#chat-button','#family-button','#leaderboard-button','#help-button','#cookie-settings','#logout-player','.pass-cell','#vip-shop','#boost-catalog','#starter-pack-dialog','#offer-dialog','.payment-dialog'])
   assert.ok(!selectorsOf(css).some(s=>s===`html[data-app=android] ${kept}`),`kept: ${kept}`);
- for(const selector of selectorsOf(css))assert.ok(selector.startsWith('html[data-app=android] ')||selector.startsWith('html[data-app-os=ios] '),`only in the app: ${selector}`);
+ for(const selector of selectorsOf(css))assert.ok(selector.startsWith('html[data-app=android] ')||selector.startsWith('html[data-app=android]:not([data-play-billing]) ')||selector.startsWith('html[data-app-os=ios] '),`only in the app: ${selector}`);
  // A rule with :has() stands alone, so a WebView without it drops only that rule.
  for(const [,selectors] of css.replace(/\/\*[^]*?\*\//g,'').replace(/@media[^{]*\{/g,'').matchAll(/([^{}]+)\{[^}]*\}/g))if(/:has\(/.test(selectors))assert.equal(selectors.split(/,(?![^(]*\))/).length,1,selectors);
  assert.match(css,/#pass-content:has\(\.pass-cell\.is-paid\.is-locked\) :is\(\.pass-heads,\.pass-row\)\{grid-template-columns:34px minmax\(0,1fr\)\}/);

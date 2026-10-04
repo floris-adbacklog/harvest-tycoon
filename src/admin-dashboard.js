@@ -193,7 +193,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  }
  // Purchases: the totals, then one row per checkout with who, what, the price and whether it was paid.
  let purchases=null,purchaseFilter='all';
- const PURCHASE_STATUS={credited:['Paid','is-paid'],pending:['Not finished','is-open'],expired:['Expired','is-expired']};
+ const PURCHASE_STATUS={credited:['Paid','is-paid'],pending:['Not finished','is-open'],expired:['Expired','is-expired'],refunded:['Refunded','is-expired']};
  const euro=cents=>`€${(cents/100).toFixed(2)}`;
  // Partners: the totals, the payout requests (open ones first, with Paid and Reject) and every partner with their numbers.
  const PAYOUT_STATUS={requested:['Asked for','is-open'],paid:['Paid','is-paid'],rejected:['Rejected','is-expired']};
@@ -222,7 +222,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   // The Halloween Pass (Oct 2026) holds no diamonds of its own: it goes by its name.
   const what=p=>p.pack==='pass'?'Halloween Pass':p.pack==='starter'||p.pack==='offer'?`${p.pack==='offer'?'Special offer':'Starter Pack'} · ${number(p.diamonds)} diamonds${p.coins?` + ${number(p.coins)} coins`:''}`:`${number(p.diamonds)} diamonds`;
   dialog.querySelector('#admin-purchase-list').innerHTML=shown.length?shown.map(p=>{const [label,cls]=PURCHASE_STATUS[p.status]??[p.status,'is-open'];
-   return `<li>${avatar(p.username,false,p.playerId)}<span class="admin-recent-copy"><strong>${p.playerId?`<button type="button" class="admin-log-name" data-profile="${esc(p.playerId)}">${esc(p.username)}</button>`:esc(p.username)} <small>${p.level?`Level ${p.level}`:''}</small></strong><small>${what(p)} · ${euro(p.amountCents)}${p.live?'':' · test'}</small></span><span class="admin-purchase-status ${cls}">${label}</span><small class="admin-when" title="${esc(fmtDate(p.createdAt))}">${ago(p.createdAt)}</small></li>`;}).join(''):'<li class="admin-empty">No checkouts here yet.</li>';
+   return `<li>${avatar(p.username,false,p.playerId)}<span class="admin-recent-copy"><strong>${p.playerId?`<button type="button" class="admin-log-name" data-profile="${esc(p.playerId)}">${esc(p.username)}</button>`:esc(p.username)} <small>${p.level?`Level ${p.level}`:''}</small></strong><small>${what(p)} · ${euro(p.amountCents)}${p.store==='google_play'?' · Google Play':''}${p.live?'':' · test'}</small></span><span class="admin-purchase-status ${cls}">${label}</span><small class="admin-when" title="${esc(fmtDate(p.createdAt))}">${ago(p.createdAt)}</small></li>`;}).join(''):'<li class="admin-empty">No checkouts here yet.</li>';
  }
  dialog.querySelectorAll('[data-purchase-filter]').forEach(b=>b.onclick=()=>{purchaseFilter=b.dataset.purchaseFilter;dialog.querySelectorAll('[data-purchase-filter]').forEach(x=>{const on=x===b;x.classList.toggle('active',on);x.setAttribute('aria-pressed',String(on));});renderPurchases();});
  dialog.querySelector('#admin-purchase-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
