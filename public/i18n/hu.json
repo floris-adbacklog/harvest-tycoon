@@ -1684,7 +1684,7 @@
 "From the valley to the busiest stalls in town.":"A völgyből a város legforgalmasabb standjaira.",
 "From {0} to {1}. Every daily gift gives {2} lanterns, every daily challenge and every delivery {3}. Every {4} lanterns open the next of {5} tiers. Collect each reward with its own button, until {6}.":"{0} és {1} között. Minden napi ajándék {2} töklámpást ad, minden napi kihívás és minden szállítás pedig {3} darabot. Minden {4} töklámpás megnyitja a következő fokozatot (összesen {5} van). Minden jutalmat a saját gombjával veszel át, a határidő: {6}.",
 "Fruit and greens from the Packing Shed.":"Gyümölcs és zöld a Csomagolószínből.",
-"Fuel: 12 coins a job + 2 per field. The tractor rests 15 seconds after each job.":"Üzemanyag: munkánként 12 érme + mezőnként 2. A traktor minden munka után 15 másodpercet pihen.",
+"Fuel: {0} coins a job + {1} per field.":"Üzemanyag: munkánként {0} érme + mezőnként {1}.",
 "Fulfilled":"Teljesítve",
 "Full":"Tele",
 "Full barns":"Teli csűrök",

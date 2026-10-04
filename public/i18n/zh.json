@@ -1684,7 +1684,7 @@
 "From the valley to the busiest stalls in town.":"从山谷送到城里最热闹的摊位。",
 "From {0} to {1}. Every daily gift gives {2} lanterns, every daily challenge and every delivery {3}. Every {4} lanterns open the next of {5} tiers. Collect each reward with its own button, until {6}.":"{0} 至 {1}。每份每日礼物给 {2} 个南瓜灯，每个每日挑战和每次配送给 {3} 个。每 {4} 个南瓜灯开启下一阶，共 {5} 阶。每份奖励用各自的按钮领取，截止到 {6}。",
 "Fruit and greens from the Packing Shed.":"包装棚的水果和蔬菜。",
-"Fuel: 12 coins a job + 2 per field. The tractor rests 15 seconds after each job.":"燃料：每次 12 金币 + 每块田 2 金币。拖拉机每次干完活休息 15 秒。",
+"Fuel: {0} coins a job + {1} per field.":"燃料：每次 {0} 金币 + 每块田 {1} 金币。",
 "Fulfilled":"已满足",
 "Full":"已满",
 "Full barns":"满满的谷仓",

@@ -1720,7 +1720,7 @@
 "From the valley to the busiest stalls in town.":"Из долины — к самым оживлённым прилавкам города.",
 "From {0} to {1}. Every daily gift gives {2} lanterns, every daily challenge and every delivery {3}. Every {4} lanterns open the next of {5} tiers. Collect each reward with its own button, until {6}.":"С {0} по {1}. Каждый ежедневный подарок даёт {2} фонаря, каждое ежедневное испытание и каждая доставка — {3}. Каждые {4} фонаря открывают следующую из {5} ступеней. Каждую награду забирай отдельной кнопкой — до {6} включительно.",
 "Fruit and greens from the Packing Shed.":"Фрукты и зелень из Упаковочного сарая.",
-"Fuel: 12 coins a job + 2 per field. The tractor rests 15 seconds after each job.":"Топливо: 12 монет за задачу + 2 за поле. После каждой задачи трактор отдыхает 15 секунд.",
+"Fuel: {0} coins a job + {1} per field.":"Топливо: {0} монет за задачу + {1} за поле.",
 "Fulfilled":"Выполнено",
 "Full":"Заполнена",
 "Full barns":"Полные амбары",

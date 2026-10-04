@@ -1684,7 +1684,7 @@
 "From the valley to the busiest stalls in town.":"Del valle a los puestos más concurridos de la ciudad.",
 "From {0} to {1}. Every daily gift gives {2} lanterns, every daily challenge and every delivery {3}. Every {4} lanterns open the next of {5} tiers. Collect each reward with its own button, until {6}.":"Del {0} al {1}. Cada regalo diario da {2} farolillos; cada desafío diario y cada reparto, {3}. Cada {4} farolillos abren el siguiente de los {5} niveles. Recoge cada recompensa con su propio botón, hasta el {6}.",
 "Fruit and greens from the Packing Shed.":"Fruta y verdura del Almacén de embalaje.",
-"Fuel: 12 coins a job + 2 per field. The tractor rests 15 seconds after each job.":"Combustible: 12 monedas por tarea + 2 por campo. El tractor descansa 15 segundos después de cada tarea.",
+"Fuel: {0} coins a job + {1} per field.":"Combustible: {0} monedas por tarea + {1} por campo.",
 "Fulfilled":"Cumplido",
 "Full":"Llena",
 "Full barns":"Graneros llenos",

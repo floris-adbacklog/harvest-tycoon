@@ -1720,7 +1720,7 @@
 "From the valley to the busiest stalls in town.":"З долини до найжвавіших прилавків міста.",
 "From {0} to {1}. Every daily gift gives {2} lanterns, every daily challenge and every delivery {3}. Every {4} lanterns open the next of {5} tiers. Collect each reward with its own button, until {6}.":"З {0} до {1} включно. Кожен щоденний подарунок дає {2} ліхтарі, кожне щоденне випробування й кожна доставка — {3}. Кожні {4} ліхтарі відкривають наступний із {5} ступенів. Забирай кожну нагороду окремою кнопкою — до {6} включно.",
 "Fruit and greens from the Packing Shed.":"Фрукти й зелень із Пакувальні.",
-"Fuel: 12 coins a job + 2 per field. The tractor rests 15 seconds after each job.":"Пальне: 12 монет за роботу + 2 за поле. Після кожної роботи трактор відпочиває 15 секунд.",
+"Fuel: {0} coins a job + {1} per field.":"Пальне: {0} монет за роботу + {1} за поле.",
 "Fulfilled":"Виконано",
 "Full":"Заповнено",
 "Full barns":"Повні комори",

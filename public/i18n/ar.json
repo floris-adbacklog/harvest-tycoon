@@ -1719,7 +1719,7 @@
 "From the valley to the busiest stalls in town.":"من الوادي إلى أكثر الأكشاك ازدحامًا في المدينة.",
 "From {0} to {1}. Every daily gift gives {2} lanterns, every daily challenge and every delivery {3}. Every {4} lanterns open the next of {5} tiers. Collect each reward with its own button, until {6}.":"من {0} إلى {1}. كل هدية يومية تمنح {2} فانوس، وكل تحدٍّ يومي وكل توصيل يمنح {3}. وتُفتح الدرجة التالية من أصل {5} درجة كلما جمعت {4} منها. اجمع كل مكافأة بزرّها الخاص، حتى {6}.",
 "Fruit and greens from the Packing Shed.":"فواكه وخضار من سقيفة التعبئة.",
-"Fuel: 12 coins a job + 2 per field. The tractor rests 15 seconds after each job.":"الوقود: 12 عملة لكل مهمة + 2 لكل حقل. يستريح الجرار 15 ثانية بعد كل مهمة.",
+"Fuel: {0} coins a job + {1} per field.":"الوقود: {0} عملة لكل مهمة + {1} لكل حقل.",
 "Fulfilled":"تمت تلبيته",
 "Full":"ممتلئة",
 "Full barns":"حظائر ممتلئة",

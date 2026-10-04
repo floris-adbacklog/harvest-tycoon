@@ -1684,7 +1684,7 @@
 "From the valley to the busiest stalls in town.":"Dari lembah ke kios-kios tersibuk di kota.",
 "From {0} to {1}. Every daily gift gives {2} lanterns, every daily challenge and every delivery {3}. Every {4} lanterns open the next of {5} tiers. Collect each reward with its own button, until {6}.":"Dari {0} sampai {1}. Setiap hadiah harian memberi {2} lentera, setiap tantangan harian dan setiap pengiriman {3}. Setiap {4} lentera membuka tingkat berikutnya dari total {5} tingkat. Ambil setiap hadiah dengan tombolnya masing-masing, sampai {6}.",
 "Fruit and greens from the Packing Shed.":"Buah dan sayur dari Gudang Kemas.",
-"Fuel: 12 coins a job + 2 per field. The tractor rests 15 seconds after each job.":"Bahan bakar: 12 koin per pekerjaan + 2 per ladang. Traktor istirahat 15 detik setelah setiap pekerjaan.",
+"Fuel: {0} coins a job + {1} per field.":"Bahan bakar: {0} koin per pekerjaan + {1} per ladang.",
 "Fulfilled":"Terpenuhi",
 "Full":"Penuh",
 "Full barns":"Lumbung penuh",
