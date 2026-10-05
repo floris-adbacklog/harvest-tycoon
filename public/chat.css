@@ -318,6 +318,13 @@ span.chat-avatar{cursor:default}
 .chat-request.is-given .chat-request-status{color:#3d6b45;font-weight:700}
 .chat-request.is-given .chat-request-give{display:none}
 .chat-request.chat-kick .chat-request-status{color:#857d70;font-weight:400}
+/* A Family Chest card (5 Oct 2026, supabase/family-chest-cards.sql): the card with the gold of the chest panel in Farm Family
+   (family.css .family-chest), a bigger chest, and its button to Farm Family across the card. */
+.chat-request.chat-chest{border-color:#ead9ad;background:linear-gradient(160deg,#fff6dc,#fffaf0 60%)}
+.chat-request.chat-chest .chat-request-label{color:#a17a26}
+.chat-request.chat-chest .chat-request-art{border-color:#ead9ad}
+.chat-request.chat-chest .chat-request-art>.game-art{width:44px;height:44px}
+.chat-chest-open{width:100%;margin-top:10px}
 /* The admin's special offer (src/admin-dashboard.js): what is in it, the amounts, the worth line (red while it is not €49.99). */
 .admin-offer-kinds{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 10px;color:#5e523a;font:650 14px 'DM Sans',sans-serif}
 .admin-offer-kinds label{display:inline-flex;align-items:center;gap:6px}

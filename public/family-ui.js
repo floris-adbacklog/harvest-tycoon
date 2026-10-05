@@ -4,7 +4,7 @@ import {createSocialUI} from './social-ui.js';
 import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {renderFamilyInvitation,renderSentInvitations,createFamilyInviteSearch,inviteBlocker} from './family-invitations-ui.js';
-import {renderFamilyOrderRewards} from './family-order-rewards.js';
+import {renderFamilyOrderRewards,orderShare,orderShareText} from './family-order-rewards.js';
 import {renderFamilyTournament} from './family-tournament.js';
 import {renderFamilyStats} from './family-stats.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
@@ -40,7 +40,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  function gives(){
   const chest=FAMILY_CHEST_TIERS.reduce((n,t)=>n+t.diamonds,0),ev=FAMILY_EVENT_BONUS;
   const cards=[['family-chest-gold','Family Chest',`Up to ${chest} diamonds a week for everyone with ${num(FAMILY_CHEST_MIN)} points or more. Everything you do on your farm fills it.`],
-   ['family-weekly-order','Family Order',`Complete it together: the full value of your goods in coins, a quarter more than the Market pays, plus XP and diamonds.`],
+   ['family-weekly-order','Family Order',`Every full line pays a quarter of its rewards. The whole order pays the full value of your goods in coins, ${Math.round((FAMILY_CONFIG.ORDER_COIN_MULTIPLIER-1)*100)}% more than the Market, plus XP and diamonds.`],
    ['live-events','Events together',`When ${ev.finishers} of you finish the same event, each gets ${num(ev.coins)} coins and ${ev.diamonds} diamonds extra.`],
    ['family-tournament','Weekly tournament',`The top ten families share a diamond prize. It grows with every family that joins in.`]];
   return `<div class="family-gives">${cards.map(([pic,title,text])=>`<div>${art(pic)}<strong>${title}</strong><span>${text}</span></div>`).join('')}</div><button type="button" class="family-gives-wiki" data-family-wiki>How families work</button>`;
@@ -90,7 +90,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const chip=([key,target])=>`<span class="family-done-chip">${art(key)}<span>✓ ${ITEMS[key].name} ${num(Math.min(o.filled[key]??0,target))}/${num(target)}</span></span>`;
   const done=lines.filter(isDone),chips=`<div class="family-done-chips">${done.map(chip).join('')}</div>`;
   // 2. The Family Order as one card: title, where it stands and the time left in one line, and the bar (27 Sep 2026: three blocks).
-  return `${rewardCards(view.rewards.filter(r=>!isChest(r)))}${aloneNote()}${chestCard()}<section class="family-order-card"><div class="family-order-head">${art('family-weekly-order')}<div><span class="eyebrow">${o.completed?'ORDER COMPLETE':'THIS WEEK'}</span><h3>${o.completed?'Order complete!':'Family Order'}</h3><p><b>${complete} / ${lines.length}</b> lines · <b>${num(view.yourPoints)}</b> ${view.yourPoints>0&&place?`your points (#${place})`:'your points'} · <b data-family-countdown>${formatDuration(Math.max(0,view.endsAt-farmNow()))}</b> left</p></div></div><progress max="${Math.max(1,total)}" value="${delivered}" aria-label="Family Order delivered"></progress>${locked?'<p class="family-notice">You have already contributed to another family this week. You can help this family next week.</p>':''}${o.completed?'':`<details class="family-rewards-fold"><summary><strong>Your rewards</strong><span>when the order is complete</span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary>${renderFamilyOrderRewards(view)}</details>`}</section>
+  return `${rewardCards(view.rewards.filter(r=>!isChest(r)))}${aloneNote()}${chestCard()}<section class="family-order-card"><div class="family-order-head">${art('family-weekly-order')}<div><span class="eyebrow">${o.completed?'ORDER COMPLETE':'THIS WEEK'}</span><h3>${o.completed?'Order complete!':'Family Order'}</h3><p><b>${complete} / ${lines.length}</b> lines · <b>${num(view.yourPoints)}</b> ${view.yourPoints>0&&place?`your points (#${place})`:'your points'} · <b data-family-countdown>${formatDuration(Math.max(0,view.endsAt-farmNow()))}</b> left</p></div></div><progress max="${Math.max(1,total)}" value="${delivered}" aria-label="Family Order delivered"></progress>${locked?'<p class="family-notice">You have already contributed to another family this week. You can help this family next week.</p>':''}${o.completed?'':`<details class="family-rewards-fold"><summary><strong>Your rewards</strong><span>${view.yourOrderPoints>=view.config.minPoints?orderShareText(orderShare(view).full,orderShare(view).lines):'Keep delivering to qualify.'}</span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary>${renderFamilyOrderRewards(view)}</details>`}</section>
 
   ${o.completed?`${view.rewards.some(r=>r.kind==='order')?'':renderFamilyOrderRewards(view)}<details class="family-done-fold"><summary><span><strong>✓ ${done.length} ${done.length===1?'line':'lines'} delivered</strong></span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary>${chips}</details>`
    :`<div class="family-order">${open.filter(l=>!later(l)).sort((a,b)=>order(a)-order(b)).map(line).join('')}</div>${done.length?`<div class="family-done-row"><span>Delivered</span>${chips}</div>`:''}`}

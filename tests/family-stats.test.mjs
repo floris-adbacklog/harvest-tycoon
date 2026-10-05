@@ -117,18 +117,21 @@ test('the order reward preview has the family-level bonus and matches the payout
   assert.ok(preview.coins>v.yourOrderPoints,'more than the goods\' value: the +50% is in');
   // The completion diamonds all went to Alice (by order points); for everyone else the diamonds are exactly the preview's.
   assert.equal(reward.diamonds,p==='alice'?preview.diamonds+preview.completionBonus:preview.diamonds,`${p} diamonds`);
+  // The order is whole: what the week's end would pay now is everything (5 Oct 2026).
+  assert.deepEqual([preview.fullLines,preview.lines,preview.now],[4,4,{coins:preview.coins,xp:preview.xp,diamonds:preview.diamonds}],`${p} now`);
  }
  const erin=view(c,'erin');assert.equal(erin.contributionLocked,true);assert.equal(erin.standing.level,1,'her new family is level 1, her order bonus is still the old family\'s');
- assert.deepEqual(view(c,'alice').rewardPreview,{coins:26880,xp:268,diamonds:3,completionBonus:6},'17,920 order points × 1.5: 26,880 coins, 268 XP, 2 diamonds × 1.5 and 4 × 1.5 shared');
+ assert.deepEqual(view(c,'alice').rewardPreview,{coins:26880,xp:268,diamonds:3,completionBonus:6,fullLines:4,lines:4,now:{coins:26880,xp:268,diamonds:3}},'17,920 order points × 1.5: 26,880 coins, 268 XP, 2 diamonds × 1.5 and 4 × 1.5 shared');
  // At level 1 nothing changes: the goods' value, 1 XP per 100, and the plain 4 shared diamonds.
- const plain=tournamentContext([1],[4080]);assert.deepEqual(view(plain,'p0-0').rewardPreview,{coins:4080,xp:40,diamonds:1,completionBonus:4});
+ // Without an order there is no full line, so nothing would be paid now.
+ const plain=tournamentContext([1],[4080]);assert.deepEqual(view(plain,'p0-0').rewardPreview,{coins:4080,xp:40,diamonds:1,completionBonus:4,fullLines:0,lines:0,now:{coins:0,xp:0,diamonds:0}});
 });
 
 test('empty and no-family views: zeros, empty lists and nulls, never an error',()=>{
  const none=view(emptyFamilyContext(),'nobody');
  assert.deepEqual(none.members,[]);assert.deepEqual(none.tournament.history,[]);assert.equal(none.lastWeek,null);
  assert.deepEqual([none.tournament.rankOf,none.tournament.pointsAhead,none.tournament.yourRank],[0,null,null]);
- assert.deepEqual(none.rewardPreview,{coins:0,xp:0,diamonds:1,completionBonus:4});
+ assert.deepEqual(none.rewardPreview,{coins:0,xp:0,diamonds:1,completionBonus:4,fullLines:0,lines:0,now:{coins:0,xp:0,diamonds:0}});
  // A new family on its first day: everyone at zero, no place, no past weeks, while other families already compete.
  let c=join(create(),'bob');c.families.push({id:'busy',name:'Busy Barn',emblem:'2',deleted_at:null});c.members.push({id:'x',player_id:'x',family_id:'busy',role:'leader',joined_at:now,left_at:null});
  c.contributions.push({family_id:'busy',player_id:'x',week,points:900,order_points:900,extra_points:0,lines:{},last_at:now});

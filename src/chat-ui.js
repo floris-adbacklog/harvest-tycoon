@@ -7,7 +7,7 @@ import {loadStaff,staffRole,staffBadge,STAFF_LABELS} from './staff-badge.js';
 // scrolled. A name or picture opens that farmer's profile. Data and live updates: bridge.chat (src/chat-client.js).
 import {avatarImage} from '../public/player-avatars.js';
 import {art,refreshArt} from '../public/visual-icons.js';
-import {ITEMS} from '../public/farm-state.js';
+import {ITEMS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,familyWeek} from '../public/farm-state.js';
 import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
@@ -50,6 +50,17 @@ export function messageLayout(shown){
   return {m,day,cont};
  });
 }
+// A Family Chest tier the family opened (supabase/family-chest-cards.sql, 5 Oct 2026): the chest's picture, one whole sentence per
+// chest (so a translation can bend it), who gets its rewards and a button to Farm Family, where they are collected. A card from an
+// earlier week says "that week". The database sends it under the week's top farmer, as a message needs a sender; it is the family's
+// card all the same, so it shows even to a farmer who blocked them.
+const CHEST_OPENED={wood:'Your family opened the Wooden chest!',iron:'Your family opened the Iron chest!',silver:'Your family opened the Silver chest!',gold:'Your family opened the Golden chest!'};
+export function chestCard(m,now=Date.now()){
+ const tier=FAMILY_CHEST_TIERS.find(t=>t.id===m.meta?.tier),week=Number(m.meta?.week),past=Number.isFinite(week)&&week<familyWeek(now);
+ const who=past?`Everyone with ${FAMILY_CHEST_MIN} points that week gets its rewards. Collect them in Farm Family.`:`Everyone with ${FAMILY_CHEST_MIN} points this week gets its rewards. Collect them in Farm Family.`;
+ return `<li class="chat-request chat-chest" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Family Chest</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at,now)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(tier?`family-chest-${tier.id}`:'family-chest-open')}</span><div><p class="chat-text">${esc(CHEST_OPENED[tier?.id]??m.body)}</p><small class="chat-request-status">${esc(who)}</small></div></div><button type="button" class="small-button chat-chest-open" data-open-family>Open Farm Family</button></li>`;
+}
+export const hiddenAsBlocked=(m,blocked)=>m.kind!=='chest'&&blocked.has(m.sender);
 // The header button counts news and notes, your family and your private messages. Global's own messages do not count: with the whole
 // valley talking, a number on the button would never go away. A mention of you there does (3 Oct 2026): it is meant for you.
 export const headerCount=unread=>(unread?.notices??0)+(unread?.family??0)+(unread?.dm??0)+(unread?.mentions??0);
@@ -216,6 +227,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(m.kind==='top')return topRow(m);
   if(m.kind==='join')return joinRow(m);
   if(m.kind==='kick')return kickRow(m);
+  if(m.kind==='chest')return chestCard(m);
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
   // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
   const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
@@ -306,7 +318,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   }
   else if(tab==='private'&&!thread&&found&&!find.hidden)list.innerHTML=found.loading?'<li class="chat-empty"><p>Looking around the valley…</p></li>':found.players.length?found.players.map(foundRow).join(''):empty('No farmers found. Try another name.');
   else if(tab==='private'&&!thread){const threads=(overview?.threads??[]).filter(t=>!blocked().has(t.otherId));list.innerHTML=(overview?.crew?crewRow(overview.crew):'')+(overview?.privateOn===false?'<li class="chat-empty chat-off"><p>Your private messages are off. You can turn them on in Settings, under Chat.</p></li>':'')+(threads.length?threads.map(threadRow).join(''):overview?.privateOn===false?'':empty(EMPTY.private));}
-  else{const shown=messages.filter(m=>!blocked().has(m.sender));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join('')+moreButton():empty(thread?.crew?'Say hello to the crew!':thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
+  else{const shown=messages.filter(m=>!hiddenAsBlocked(m,blocked()));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join('')+moreButton():empty(thread?.crew?'Say hello to the crew!':thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
   refreshArt();
  }
  async function load(){
@@ -365,7 +377,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   }
   // Chat switched off by CrazyGames during play (Oct 2026 review): no more dings or counts for a chat that is not there.
   if(switchedOff)return;
-  const m=event.message;if(!m||blocked().has(m.sender))return;
+  const m=event.message;if(!m||hiddenAsBlocked(m,blocked()))return;
   // A private message from someone else gets its own soft ding, open or not (the sound settings decide if it plays), and so does a
   // mention of you in Global or Family (3 Oct 2026: a mention reaches you like a private message).
   const forMe=mentionsMe(m,me);

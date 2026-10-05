@@ -94,8 +94,9 @@ test('the wiki states the current rules: the Starter Pack window and the day-lon
 });
 
 test('the wiki matches the rules it explains: family payouts, invites, events and building needs',()=>{
- assert.match(wikiArticle('family').html,/When the whole order is done, everyone who delivered at least 500 points’ worth gets coins, XP and diamonds/);
- assert.doesNotMatch(wikiArticle('family').html,/each line you complete pays/);
+ // 5 Oct 2026: every full line pays a quarter when the week ends (an unfinished order paid nothing before).
+ assert.match(wikiArticle('family').html,/Every full line pays a quarter of the coins, XP and diamonds to everyone who delivered at least 500 points’ worth, when the week ends; the whole order pays everything at once\./);
+ assert.doesNotMatch(wikiArticle('family').html,/When the whole order is done|An order that is not finished pays nothing|Rewards come only when every line is full/);
  assert.match(wikiArticle('family').html,/The prize pool grows with every family taking part: 100 diamonds for one family, 200 for two, 300 for three and 50 more for every family after that \(up to 10,000\)\. The top ten families share it, from 25% for first place down to 4% for tenth\. A family's prize is shared by what each member delivered\./);
  assert.match(wikiArticle('diamonds').html,/When a friend you invite reaches level 10 within 30 days: 150 diamonds for you both\./);
  assert.match(wikiArticle('account').html,/When your friend reaches level 10 within 30 days, you both get 150 diamonds, for up to 10 friends\./);
@@ -116,9 +117,15 @@ test('the Farm family article and tips say what the order, the tournament, the c
  // "A coin for every point" and "its full value in coins" hold only while the order pays the Market's payout × ORDER_COIN_MULTIPLIER = 1.
  assert.equal(rules.MARKET_PAYOUT_MULTIPLIER*C.ORDER_COIN_MULTIPLIER,1);
  assert.match(html,/Every family gets the same goods that week; a bigger family gets bigger amounts/);assert.match(html,/You deliver to one family a week\./);
- assert.match(html,new RegExp(`Rewards come only when every line is full before the week ends.*everyone who delivered at least ${C.MIN_CONTRIB_POINTS} points to the order gets a coin for every point \\(25% more than the Market pays at its normal price\\), 1 XP for every 100 points and diamonds`));
+ assert.match(html,new RegExp(`Everyone who delivered at least ${C.MIN_CONTRIB_POINTS} points to the order shares in its rewards\\. The whole order pays a coin for every point \\(25% more than the Market pays at its normal price\\), 1 XP for every 100 points and diamonds`));
  assert.match(html,/<td>500<\/td><td>[^]*?500<\/td><td>5<\/td><td>[^]*?1<\/td>/);assert.match(html,/<td>20,000<\/td><td>[^]*?20,000<\/td><td>200<\/td><td>[^]*?3<\/td>/);
- assert.match(html,new RegExp(`On top come ${C.ORDER_COMPLETION_DIAMONDS} diamonds for finishing the order`));
+ // 5 Oct 2026: an unfinished order pays for its full lines, a quarter a line of four; the completion diamonds only for a whole order.
+ assert.equal(rules.FAMILY_ORDER_LINES,4,'the article says a quarter a line');
+ assert.match(html,new RegExp(`Every full line pays a quarter of these rewards\\. An order that is not finished pays for its full lines when the week ends, on Monday at 00:00 UTC: with 2 of its 4 lines full, half\\. The whole order pays everything as soon as its last line is full, plus ${C.ORDER_COMPLETION_DIAMONDS} diamonds for finishing it, shared by points\\. An order without a full line pays nothing`));
+ // The table of one farmer's part (20,000 points) by full lines is familyOrderPay's own numbers.
+ for(let n=1;n<=4;n++){const pay=rules.familyOrderPay(rules.FAMILY_ORDER_VALUE,1,n,4),row=n<4?`${n} of 4`:'All 4';
+  assert.match(html,new RegExp(`<td>${row}</td><td>[^]*?${pay.coins.toLocaleString('en-US')}</td><td>${pay.xp}</td><td>[^]*?${pay.diamonds}${n<4?'':` \\+ a share of ${C.ORDER_COMPLETION_DIAMONDS}`}</td>`),row);}
+ assert.deepEqual([1,2,3,4].map(n=>rules.familyOrderPay(20000,1,n,4).coins),[5000,10000,15000,20000]);
  assert.match(html,/Family Chest points do not count\./);assert.match(html,/Tournament goods/);assert.match(html,/They count for the tournament only: no coins, XP or diamonds\./);
  assert.match(html,/still in the family when the week ends/);assert.match(html,/everyone who delivered gets at least 1 diamond/);
  assert.match(html,/gets its rewards in full: nothing is split/);assert.match(html,new RegExp(`for ${C.REWARD_WEEKS} weeks after their week ends`));assert.doesNotMatch(html,/a few weeks/);
@@ -142,7 +149,8 @@ test('the Farm family article and tips say what the order, the tournament, the c
  }
  // The tips: a quarter above the Market, and the event bonus's own numbers.
  const tips=LOADING_TIPS.map(([,text])=>text).join('\n');
- assert.equal(C.ORDER_COIN_MULTIPLIER,1.25,'the tip says a quarter more than the Market');assert.match(tips,/A finished Family Order pays a quarter more than the Market’s normal price/);
+ assert.equal(C.ORDER_COIN_MULTIPLIER,1.25,'the tip says a quarter more than the Market');assert.match(tips,/The Family Order pays for every full line, finished or not\. A whole order pays a quarter more than the Market’s normal price/);
+ assert.doesNotMatch(tips,/A finished Family Order pays/);
  assert.equal(rules.FAMILY_EVENT_BONUS.finishers,3,'the tip says two or more members besides you');
  assert.match(tips,new RegExp(`two or more members of your Farm family: you each get ${rules.FAMILY_EVENT_BONUS.coins} coins and ${rules.FAMILY_EVENT_BONUS.diamonds} diamonds extra`));
 });

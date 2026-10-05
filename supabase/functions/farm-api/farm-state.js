@@ -2812,7 +2812,8 @@ const FAMILY_ACTIVE_MS=3*DAY_MS;
 // amounts follow the value: about 20,000 coins of goods per member, at most 150 of one thing per member, cheap things
 // first so the rest of the value moves to the dearer lines; four cheap draws swap the last for a dearer good, and a week
 // never asks for two of the dearest goods.
-const FAMILY_ORDER_VALUE=20000,FAMILY_ORDER_MAX_COUNT=150,FAMILY_ORDER_LINES=4;
+// Exported (Oct 2026) for the wiki and the Family window: "every full line pays a quarter" holds while an order has four lines.
+export const FAMILY_ORDER_VALUE=20000,FAMILY_ORDER_MAX_COUNT=150,FAMILY_ORDER_LINES=4;
 // Realistic in one week, also when only one member can make a thing: a whole line never needs more than 3 days (72 hours) of
 // production from one farm, on one production slot for a good or on 12 fields for a crop (2 per harvest). Solo families never
 // reach this; a bigger family then gets a little less than size x the solo amount.
@@ -2919,9 +2920,35 @@ export function settleFamilyWeeks(c,now,config=FAMILY_CONFIG){
    c.results.push({week,family_id:f.family_id,rank:prize.rank,points:f.points,active_members:f.active_members,diamonds_pool:prize.diamonds,name:f.name,emblem:f.emblem,settled_at:now});
    for(const m of f.active)if(prize.shares[m.player_id]>0)addFamilyReward(c,m.player_id,week,'tournament',0,0,prize.shares[m.player_id],now,config);
   }
+  // An unfinished order pays for its full lines now, once, as the week is settled (5 Oct 2026).
+  for(const order of c.orders.filter(o=>o.week===week))payPartialFamilyOrder(c,order,now,config);
   c.weeks.push({week,settled_at:now,pool:board.pool});settled.push(week);
  }
  return settled;
+}
+// What the Family Order pays one member for their order points. A whole order pays a coin for every point (the Market's payout ×
+// ORDER_COIN_MULTIPLIER), 1 XP per 100 points and 1 diamond plus 1 for every 10,000 points, up to 3, all with the family level's
+// extra. An order with only some lines full pays that part of it (5 Oct 2026, the owner's choice): full of lines, so a quarter a
+// line, rounded down. The payouts and the window's preview both use this, so the preview is what is paid.
+const familyOrderDiamonds=(points,config)=>Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor(points/10000));
+export function familyOrderPay(points,extra=1,full=1,lines=1,config=FAMILY_CONFIG){
+ if(!(full>0)||!(lines>0))return {coins:0,xp:0,diamonds:0};
+ const part=value=>full>=lines?value:value*full/lines;
+ return {coins:Math.floor(part(points*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER*extra)),xp:Math.floor(part(points*config.ORDER_XP_PER_VALUE*extra)),diamonds:Math.floor(part(familyOrderDiamonds(points,config)*extra))};
+}
+const familyOrderFullLines=order=>Object.entries(order?.lines??{}).filter(([k,n])=>(order.filled?.[k]??0)>=n).length;
+// An order that is not whole when its week ends (5 Oct 2026; it paid nothing, and 1 of 18 orders was finished in the week before):
+// everyone with MIN_CONTRIB_POINTS order points gets the share of their whole-order coins, XP and own diamonds that its full lines
+// make. The completion diamonds stay for a whole order; an order without a full line pays nothing. Paid with the same kind, expiry and family-level
+// bonus as a whole order, and only once: a whole order has paid already, and addFamilyReward never pays a kind twice in a week.
+function payPartialFamilyOrder(c,order,now,config){
+ const lines=Object.keys(order.lines).length,full=familyOrderFullLines(order);
+ if(order.completed_at||!full)return;
+ if(full>=lines){completeFamilyOrder(c,order,now,config);return;}   // never happens: the last delivery completes the order
+ const extra=1+familyStanding(c,order.family_id).bonus;
+ for(const m of c.contributions.filter(x=>x.family_id===order.family_id&&x.week===order.week&&x.order_points>=config.MIN_CONTRIB_POINTS)){
+  const pay=familyOrderPay(m.order_points,extra,full,lines,config);addFamilyReward(c,m.player_id,order.week,'order',pay.coins,pay.xp,pay.diamonds,now,config);
+ }
 }
 function ensureFamilyOrder(c,f,week,now,config){
  let order=c.orders.find(o=>o.family_id===f.id&&o.week===week);
@@ -2935,7 +2962,8 @@ function completeFamilyOrder(c,order,now,config){
  // Reward only the value personally supplied by eligible contributors; never
  // redistribute a departing or below-threshold member's goods as extra coins.
  const bonus=familyShares(config.ORDER_COMPLETION_DIAMONDS,eligible,Infinity,0),extra=1+familyStanding(c,order.family_id).bonus;
- for(const m of eligible)addFamilyReward(c,m.player_id,order.week,'order',m.order_points*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER*extra,m.order_points*config.ORDER_XP_PER_VALUE*extra,Math.floor((Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor(m.order_points/10000))+(bonus[m.player_id]??0))*extra),now,config);
+ // A whole order pays everything at once (familyOrderPay), and the member's diamonds with their share of the completion diamonds.
+ for(const m of eligible){const pay=familyOrderPay(m.order_points,extra,1,1,config);addFamilyReward(c,m.player_id,order.week,'order',pay.coins,pay.xp,Math.floor((familyOrderDiamonds(m.order_points,config)+(bonus[m.player_id]??0))*extra),now,config);}
  return true;
 }
 // Every member with enough points gets each tier the chest has reached, this week or last week (a farmer who opens the family
@@ -3128,7 +3156,9 @@ export function familyMutate(original,state,player,action,now,options={}){
    state.inventory[action.item]-=action.count;entry.points+=points;entry.last_at=now;
    if(type==='family_contribute'){entry.order_points+=points;entry.lines[action.item]=(entry.lines[action.item]??0)+action.count;order.filled[action.item]=(order.filled[action.item]??0)+action.count;}
    else entry.extra_points+=points;
-   const complete=completeFamilyOrder(c,order,now,config);result={points,completed:complete,message:complete?'Family Order complete! Your rewards are ready.':`${action.count} ${ITEMS[action.item].name} contributed. Thank you!`};
+   // A delivery that fills a line says what that line is worth now (5 Oct 2026: every full line pays a quarter of the rewards).
+   const complete=completeFamilyOrder(c,order,now,config),lineFull=type==='family_contribute'&&action.count===needed;
+   result={points,completed:complete,message:complete?'Family Order complete! Your rewards are ready.':lineFull?`${action.count} ${ITEMS[action.item].name} contributed. That line is full: every full line pays a quarter of the rewards.`:`${action.count} ${ITEMS[action.item].name} contributed. Thank you!`};
   }else if(type==='family_claim'){
    const reward=c.rewards.find(r=>r.id===action.rewardId&&r.player_id===player);if(!reward||reward.expires_at<=now)throw new Error('This reward is unavailable or has expired.');if(reward.claimed_at)throw new Error('This reward has already been claimed.');
    reward.claimed_at=now;state.coins+=reward.coins;state.xp+=reward.xp;state.diamonds+=reward.diamonds;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+reward.diamonds;
@@ -3201,8 +3231,13 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  // What the Family Order pays you so far, worked out as completeFamilyOrder pays it (Oct 2026: the family-level bonus was left out,
  // so a family at level 2 or higher saw less than it got). The bonus is that of the family you deliver for this week. The shared
  // completion diamonds get it too; the payout rounds your diamonds and your share of them together, so it can be one more.
+ // Since 5 Oct 2026 an unfinished order pays for its full lines when the week ends (familyOrderPay). coins, xp and diamonds stay
+ // what the whole order gives for your points so far; fullLines of lines are full in the order you deliver for, and now is what the
+ // week's end would pay you today: nothing below MIN_CONTRIB_POINTS or without a full line, everything when the order is whole.
  const orderPoints=current?.order_points??0,orderExtra=current&&current.family_id!==family?.id?1+familyStanding(c,current.family_id).bonus:extra;
- const rewardPreview={coins:Math.floor(orderPoints*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER*orderExtra),xp:Math.floor(orderPoints*config.ORDER_XP_PER_VALUE*orderExtra),diamonds:Math.floor(Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor(orderPoints/10000))*orderExtra),completionBonus:Math.floor(config.ORDER_COMPLETION_DIAMONDS*orderExtra)};
+ const payOrder=current?c.orders.find(o=>o.family_id===current.family_id&&o.week===week):order,orderLines=Object.keys(payOrder?.lines??{}).length,fullLines=familyOrderFullLines(payOrder);
+ const rewardPreview={...familyOrderPay(orderPoints,orderExtra,1,1,config),completionBonus:Math.floor(config.ORDER_COMPLETION_DIAMONDS*orderExtra),fullLines,lines:orderLines,
+  now:familyOrderPay(orderPoints,orderExtra,orderPoints>=config.MIN_CONTRIB_POINTS?fullLines:0,orderLines,config)};
  return {chest,standing,alone,invitation,sentInvitations,families,myRequest,joinRequests,week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:familyJoinMode(family)==='open',leader:me.role==='leader',manager:familyManager(me.role),role:me.role,renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,// The one family that removed this farmer, while it is closed to them (2 Oct 2026; there was one wait for every family).
   blocked:me?.blocked_family&&(me.cooldown_until??0)>now?{family:me.blocked_family,until:me.cooldown_until}:null,openFamilies:c.families.filter(f=>!f.deleted_at&&familyJoinMode(f)==='open'&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview,lastWeek,tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraFamily:config.TOURNAMENT_PER_EXTRA_FAMILY,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),placePrizes:config.TOURNAMENT_SHARES.map(share=>Math.floor(Math.max(board.total,board.firstPrize*2)*share/100)),placeShares:config.TOURNAMENT_SHARES,poolSteps:[1,2,3].map(n=>Math.round((config.TOURNAMENT_FIRST_MIN+(n-1)*config.TOURNAMENT_PER_EXTRA_FAMILY)*config.RANK_WEIGHTS.slice(0,n).reduce((a,w)=>a+w,0))),poolPerFamily:config.TOURNAMENT_PER_EXTRA_FAMILY*2,poolMax:config.TOURNAMENT_FIRST_MAX*2,familiesForMax:Math.ceil((config.TOURNAMENT_FIRST_MAX-config.TOURNAMENT_FIRST_MIN)/config.TOURNAMENT_PER_EXTRA_FAMILY)+1,familyPoints:place>=0?board.qualifying[place].points:0,pointsBehind:above?above.points-board.qualifying[place].points:0,pointsAhead:place>=0&&place+1<board.qualifying.length?board.qualifying[place].points-board.qualifying[place+1].points:null,rankOf:board.qualifying.length,history,top:board.qualifying.slice(0,10).map((f,i)=>({familyId:f.family_id,name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,familyId:r.family_id,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
 }
