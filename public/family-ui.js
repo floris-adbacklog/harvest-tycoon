@@ -7,7 +7,7 @@ import {renderFamilyInvitation,renderSentInvitations,createFamilyInviteSearch,in
 import {renderFamilyOrderRewards} from './family-order-rewards.js';
 import {renderFamilyTournament} from './family-tournament.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {farmNow} from './farm-client.js';
@@ -33,11 +33,23 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  const isChest=r=>Boolean(CHEST_NAMES[r.kind]);
  const rewardRow=(r,short=false)=>`<div class="family-reward">${rewardArt(r)}<div><strong>${short&&CHEST_NAMES[r.kind]?CHEST_NAMES[r.kind]:rewardName(r)}</strong><span>${[r.coins?`${num(r.coins)} coins`:null,r.xp?`${num(r.xp)} XP`:null,r.diamonds?`${num(r.diamonds)} diamonds`:null].filter(Boolean).join(' · ')}</span><small>Claim within ${formatDuration(r.expiresAt-farmNow())}</small></div>${actionButton('family_claim','Collect',`data-reward-id="${esc(r.id)}"`)}</div>`;
  const rewardCards=(list=view.rewards)=>list.length?`<section class="family-rewards"><h3>Rewards to collect</h3>${list.map(rewardRow).join('')}</section>`:'';
+ // What a family gives a farmer (5 Oct 2026, the owner's wish): four cards with the real numbers, on the landing for a farmer without a
+ // family and in a fold on This week for members, with the way to the wiki's Farm family page. Only what holds for every family, and
+ // no promise of beating solo play (a solo family can win more of the tournament per head).
+ function gives(){
+  const chest=FAMILY_CHEST_TIERS.reduce((n,t)=>n+t.diamonds,0),ev=FAMILY_EVENT_BONUS;
+  const cards=[['family-chest-gold','Family Chest',`Up to ${chest} diamonds a week for everyone with ${num(FAMILY_CHEST_MIN)} points or more. Everything you do on your farm fills it.`],
+   ['family-weekly-order','Family Order',`Complete it together: the full value of your goods in coins, a quarter more than the Market pays, plus XP and diamonds.`],
+   ['live-events','Events together',`When ${ev.finishers} of you finish the same event, each gets ${num(ev.coins)} coins and ${ev.diamonds} diamonds extra.`],
+   ['family-tournament','Weekly tournament',`The top ten families share a diamond prize. It grows with every family that joins in.`]];
+  return `<div class="family-gives">${cards.map(([pic,title,text])=>`<div>${art(pic)}<strong>${title}</strong><span>${text}</span></div>`).join('')}</div><button type="button" class="family-gives-wiki" data-family-wiki>How families work</button>`;
+ }
+ const givesFold=()=>`<details class="family-gives-fold"><summary><strong>What your family gives you</strong><span>The chest, the order, events and the tournament</span></summary>${gives()}</details>`;
  function landing(){
   // Only the family that removed this farmer waits a while (2 Oct 2026); every other family can be joined at once.
   // Starting a family of your own comes first, above the families to join (5 Oct 2026, the owner's wish).
   const blocked=view.blocked&&view.blocked.until>farmNow()?view.blocked:null;
-  return `${renderFamilyInvitation(view,farmNow(),emblem,actionButton)}${rewardCards()}<div class="family-welcome is-compact">${art('family-members')}<div><h3>A little farm. A bigger family.</h3><p>Fill a Family Chest together every week, share a weekly order and help each other grow. Up to ${view.config.maxMembers} farmers.</p></div></div><details class="family-create-fold"${(view.families??[]).some(f=>!f.full&&(f.mode==='open'||f.mode==='request'))?'':' open'}><summary><strong>Start your own family</strong><span>Anyone can join it; you can change that later</span></summary><div class="family-join-grid family-create-grid"><form data-family-form="create"><label for="family-name">Family name</label><input id="family-name" name="name" required minlength="3" maxlength="20" placeholder="Meadow friends" autocomplete="off">${emblemPickerMarkup({emblems:FAMILY_EMBLEMS,checkedId:FAMILY_EMBLEMS[0].id,legend:'Choose your emblem',nameOf:emblemName,tile:emblem,esc})}<button class="primary-button" ${disabled(false)}>Create family</button></form></div></details>${browse(blocked)}`;
+  return `${renderFamilyInvitation(view,farmNow(),emblem,actionButton)}${rewardCards()}<div class="family-welcome is-compact">${art('family-members')}<div><h3>A little farm. A bigger family.</h3><p>Fill a Family Chest together every week, share a weekly order and help each other grow. Up to ${view.config.maxMembers} farmers.</p></div></div>${gives()}<details class="family-create-fold"${(view.families??[]).some(f=>!f.full&&(f.mode==='open'||f.mode==='request'))?'':' open'}><summary><strong>Start your own family</strong><span>Anyone can join it; you can change that later</span></summary><div class="family-join-grid family-create-grid"><form data-family-form="create"><label for="family-name">Family name</label><input id="family-name" name="name" required minlength="3" maxlength="20" placeholder="Meadow friends" autocomplete="off">${emblemPickerMarkup({emblems:FAMILY_EMBLEMS,checkedId:FAMILY_EMBLEMS[0].id,legend:'Choose your emblem',nameOf:emblemName,tile:emblem,esc})}<button class="primary-button" ${disabled(false)}>Create family</button></form></div></details>${browse(blocked)}`;
  }
  // Every family, with who can join and how: Join, Ask to join (or cancel your request), or why not. Open ones come first.
  function browse(blocked){
@@ -82,7 +94,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   ${o.completed?`${view.rewards.some(r=>r.kind==='order')?'':renderFamilyOrderRewards(view)}<details class="family-done-fold"><summary><span><strong>✓ ${done.length} ${done.length===1?'line':'lines'} delivered</strong></span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary>${chips}</details>`
    :`<div class="family-order">${open.filter(l=>!later(l)).sort((a,b)=>order(a)-order(b)).map(line).join('')}</div>${done.length?`<div class="family-done-row"><span>Delivered</span>${chips}</div>`:''}`}
   ${lines.some(later)?`<details class="family-later"><summary><span><strong>Later (${lines.filter(later).length})</strong><small>These open with a higher level or another building</small></span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary><div class="family-order">${lines.filter(later).map(line).join('')}</div></details>`:''}
-  ${locked||o.completed?'':'<p class="family-footnote">Deliveries count for the tournament too and cannot be taken back.</p>'}`;
+  ${locked||o.completed?'':'<p class="family-footnote">Deliveries count for the tournament too and cannot be taken back.</p>'}${givesFold()}`;
  }
  // Tournament goods (on the Tournament tab since 30 Sep 2026: they count for the tournament only), once an order line is full.
  function extraGoods(){
@@ -184,6 +196,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   content.querySelector('[data-family-goto]')?.addEventListener('click',event=>{tab=event.currentTarget.dataset.familyGoto;render();content.scrollTop=0;dialog.scrollTop=0;});
   content.querySelectorAll('[data-player-profile]').forEach(b=>b.onclick=()=>{if(b.dataset.playerProfile)window.harvestProfiles?.open(b.dataset.playerProfile,{back:'Back to your family'});});
   content.querySelectorAll('[data-family-profile]').forEach(b=>b.onclick=()=>familyProfile.open(b.dataset.familyProfile));
+  // How families work: the wiki's Farm family page, and its Back button returns to this window.
+  content.querySelector('[data-family-wiki]')?.addEventListener('click',()=>window.harvestWiki?.('family','',{from:{label:'Farm Family',go:open}}));
   content.querySelectorAll('.family-member-menu').forEach(menu=>menu.addEventListener('toggle',()=>{if(menu.open)content.querySelectorAll('.family-member-menu[open]').forEach(other=>{if(other!==menu)other.open=false;});}));
   // Look and name: the header above shows the picked emblem and the typed name at once; Save changes only appears once
   // something has changed, and saves the emblem and the name together.

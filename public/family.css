@@ -406,3 +406,22 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 .family-profile-dialog .family-profile-stat strong{grid-area:value;font-size:18px}
 .family-profile-dialog .family-profile-stat span{grid-area:label}
 
+
+/* What a family gives you (5 Oct 2026): four cards with the real numbers, two by two (one by one on a narrow phone), on the landing and
+   in a fold on This week, then a link to the wiki's Farm family page. */
+.family-gives{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 10px}
+.family-gives>div{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:12px;border:1px solid #e6ddd1;border-radius:16px;background:#fbf8f3}
+.family-gives .game-art{width:40px;height:40px;object-fit:contain;margin-bottom:2px}
+.family-gives strong{font:600 15px 'Outfit',sans-serif;color:#453e28}
+.family-gives span{font-size:12.5px;line-height:1.4;color:#7a705f;overflow-wrap:anywhere}
+.family-gives-wiki{min-height:0;margin:0 0 16px;padding:0;border:0;background:none;font:inherit;font-size:13px;font-weight:700;color:var(--btn-main);cursor:pointer}
+.family-gives-wiki::after{content:' ›'}
+[dir=rtl] .family-gives-wiki::after{content:' ‹'}
+.family-gives-fold{margin:16px 0 0;border:1px solid #ebe0c4;border-radius:16px;background:#fffdf6}
+.family-gives-fold>summary{display:flex;flex-direction:column;gap:2px;padding:12px 14px;cursor:pointer;list-style:none}
+.family-gives-fold>summary::-webkit-details-marker{display:none}
+.family-gives-fold>summary strong{font:600 15px 'Outfit',sans-serif;color:#453e28}
+.family-gives-fold>summary span{font-size:12px;color:#8a7d68}
+.family-gives-fold[open]>.family-gives{margin:0 12px 10px}
+.family-gives-fold[open]>.family-gives-wiki{margin:0 14px 14px}
+@media(max-width:360px){.family-gives{grid-template-columns:1fr}}

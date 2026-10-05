@@ -124,3 +124,11 @@ test('the family window for a farmer without a family draws again: no leftover o
  assert.doesNotMatch(ui,/\bcooldown\b/,'the window no longer knows a cooldown');
  assert.match(ui,/<button class="primary-button" \$\{disabled\(false\)\}>Create family<\/button>/);
 });
+test('what a family gives you: four cards with the real numbers on the landing and in a fold for members, and the way to the wiki (5 Oct 2026)',()=>{
+ const ui=readFileSync(new URL('../public/family-ui.js',import.meta.url),'utf8');
+ assert.match(ui,/const chest=FAMILY_CHEST_TIERS\.reduce\(\(n,t\)=>n\+t\.diamonds,0\),ev=FAMILY_EVENT_BONUS;/,'the chest total and the event bonus come from the rules');
+ assert.match(ui,/<h3>A little farm\. A bigger family\.<\/h3>.*<\/div><\/div>\$\{gives\(\)\}/,'the landing shows the cards');
+ assert.match(ui,/\$\{givesFold\(\)\}`;/,'members find them on This week');
+ assert.match(ui,/window\.harvestWiki\?\.\('family','',\{from:\{label:'Farm Family',go:open\}\}\)/);
+ assert.doesNotMatch(ui,/more than (playing )?alone/i,'never a promise of more than playing alone');
+});
