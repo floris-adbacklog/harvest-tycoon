@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {readFileSync,mkdtempSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {androidApp,appShareLink,shareInApp,APP_SHARE,appPushOffered} from '../public/android.js';
+import {androidApp,appShareLink,shareInApp,APP_SHARE,appPushOffered,appStoreBilling,appBilling} from '../public/android.js';
 import {portalOff,APP_OFF,PORTAL_FEATURES} from '../public/portal.js';
 import {usableProviders} from '../src/social-login.js';
 import {scheduleBrowserTip} from '../src/browser-tip.js';
@@ -124,11 +124,11 @@ test('android.css hides what a Play app may not have or cannot do, only in the a
  const css=read('public/android.css'),hidden=hiddenBy(css),sources=['public/farm.html','public/boosts-ui.js','public/pass-ui.js','src/starter-pack-ui.js','src/offer-ui.js','public/retention-ui.js','public/wiki-content.js'].map(read).join('\n');
  const gone=['#diamond-store','[data-shop-jump="diamond-store"]','.get-diamonds','#starter-pack-button','#starter-pack-chip','#offer-button','#offer-chip','#shop-offer',
   '#shop-pass','.pass-paid-box:not(.is-owned)','.pass-cell.is-paid.is-locked','#app-settings','#app-fullscreen-row','.wiki-install','.wiki-app-steps'];
- // The shop's parts only in an app that sells nothing (an older Android app, the iPhone app): the Android app 1.1 sells through Google
- // Play (html[data-play-billing], Oct 2026). Installing the web app and full screen never.
+ // The shop's parts only in an app that sells nothing (an older app): the app 1.1 sells through its store (html[data-app-billing], Oct
+ // 2026: Google Play in the Android app, the App Store in the iPhone app). Installing the web app and full screen never.
  const installing=['#app-settings','#app-fullscreen-row','.wiki-install','.wiki-app-steps'];
  for(const selector of gone){
-  assert.ok(hidden.includes(`html[data-app=android]${installing.includes(selector)?'':':not([data-play-billing])'} ${selector}`),`hidden: ${selector}`);
+  assert.ok(hidden.includes(`html[data-app=android]${installing.includes(selector)?'':':not([data-app-billing])'} ${selector}`),`hidden: ${selector}`);
   const name=selector.match(/[#.]([\w-]+)|"([\w-]+)"/).slice(1).find(Boolean);assert.ok(sources.includes(name),`still in the game: ${name}`);
  }
  // What stays in the app: invites and sharing, email and its reminders, push reminders (the app's own, Oct 2026: the device switch,
@@ -136,7 +136,8 @@ test('android.css hides what a Play app may not have or cannot do, only in the a
  for(const kept of ['#invite-button','.family-invite-friend','.level-up-share','.farmer-share','#email-button','#email-settings','#notify-settings','#notify-email-rows','.reminder-nudge',
   '#notify-device','#notify-push-rows','#notify-settings>.install-copy','#gift-remind','#notify-enable','#notify-disable','#chat-button','#family-button','#leaderboard-button','#help-button','#cookie-settings','#logout-player','.pass-cell','#vip-shop','#boost-catalog','#starter-pack-dialog','#offer-dialog','.payment-dialog'])
   assert.ok(!selectorsOf(css).some(s=>s===`html[data-app=android] ${kept}`),`kept: ${kept}`);
- for(const selector of selectorsOf(css))assert.ok(selector.startsWith('html[data-app=android] ')||selector.startsWith('html[data-app=android]:not([data-play-billing]) ')||selector.startsWith('html[data-app-os=ios] '),`only in the app: ${selector}`);
+ for(const selector of selectorsOf(css))assert.ok(selector.startsWith('html[data-app=android] ')||selector.startsWith('html[data-app=android]:not([data-app-billing]) ')||selector.startsWith('html[data-app-os=ios] '),`only in the app: ${selector}`);
+ assert.doesNotMatch(css,/data-play-billing\]\)|data-app-store-billing\]\)/,'one mark for either store: data-app-billing');
  // A rule with :has() stands alone, so a WebView without it drops only that rule.
  for(const [,selectors] of css.replace(/\/\*[^]*?\*\//g,'').replace(/@media[^{]*\{/g,'').matchAll(/([^{}]+)\{[^}]*\}/g))if(/:has\(/.test(selectors))assert.equal(selectors.split(/,(?![^(]*\))/).length,1,selectors);
  assert.match(css,/#pass-content:has\(\.pass-cell\.is-paid\.is-locked\) :is\(\.pass-heads,\.pass-row\)\{grid-template-columns:34px minmax\(0,1fr\)\}/);
@@ -325,4 +326,36 @@ test('the iPhone app: the app as on Android, and marked ios; Safari on an iPhone
  const css=read('public/android.css'),home=read('public/welcome.css');
  assert.match(css,/html\[data-app-os=ios\] #cookie-settings,html\[data-app-os=ios\] #privacy-settings \.install-copy\{display:none!important\}/,'no Cookie settings in the game, Privacy Policy and Delete account stay');
  assert.match(home,/html\[data-app-os=ios\] \.site-legal-button\[onclick\*=harvestConsent\]\{display:none!important\}/,'nor in the footer');
+});
+// The iPhone app 1.1 (Oct 2026) sells through the App Store: " AppStoreBilling/1" after its token marks the page data-app-store-billing,
+// and either store also data-app-billing (the one mark public/android.css asks). The Android app 1.1 keeps data-play-billing as it was.
+test('the iPhone app 1.1 is marked for the App Store, the Android app 1.1 for Google Play, and both as an app that sells',()=>{
+ const IOS_BILLING=IOS_APP_UA.replace('HarvestTycoonApp/1.0','HarvestTycoonApp/1.1 AppStoreBilling/1'),PLAY_UA=APP_UA.replace('HarvestTycoonApp/1.0','HarvestTycoonApp/1.2 PlayBilling/1');
+ const ios=mark({ua:IOS_BILLING});
+ assert.equal(ios.app,'android');assert.equal(ios.attrs['data-app-os'],'ios');assert.equal(ios.attrs['data-app-store-billing'],'');assert.equal(ios.attrs['data-app-billing'],'');
+ assert.equal(ios.attrs['data-play-billing'],undefined,'never Google Play on an iPhone');
+ const play=mark({ua:PLAY_UA});
+ assert.equal(play.attrs['data-play-billing'],'');assert.equal(play.attrs['data-app-billing'],'');assert.equal(play.attrs['data-app-store-billing'],undefined,'never the App Store on Android');
+ for(const ua of [IOS_APP_UA,APP_UA,IOS_SAFARI_UA,`${IOS_SAFARI_UA} AppStoreBilling/1`,`${APP_UA} AppStoreBilling/1`,`${IOS_APP_UA} PlayBilling/1`]){
+  const page=mark({ua});for(const name of ['data-app-store-billing','data-app-billing'])assert.equal(page.attrs[name],undefined,`${name}: ${ua}`);
+ }
+ assert.equal(mark({ua:'',search:'?app=android',stored:{}}).attrs['data-app-billing'],undefined,'?app=android sells nothing');
+ // The game frame follows the page around it; never inside CrazyGames.
+ const frame=mark({ua:CHROME_UA,parent:element({'data-app':'android','data-app-os':'ios','data-app-store-billing':'','data-app-billing':''})});
+ assert.equal(frame.attrs['data-app-store-billing'],'');assert.equal(frame.attrs['data-app-billing'],'');assert.equal(frame.attrs['data-play-billing'],undefined);
+ const playFrame=mark({ua:CHROME_UA,parent:element({'data-app':'android','data-play-billing':'','data-app-billing':''})});
+ assert.equal(playFrame.attrs['data-play-billing'],'');assert.equal(playFrame.attrs['data-app-billing'],'');assert.equal(playFrame.attrs['data-app-store-billing'],undefined);
+ assert.equal(mark({ua:IOS_BILLING,parent:element({'data-portal':'crazygames'})}).attrs['data-app-billing'],undefined,'never inside CrazyGames');
+ // The rule on its own (window.harvestAppStoreApp): the iPhone app's token and AppStoreBilling, nothing less.
+ const src=read('public/android-app.js'),appStoreApp=new Function(`${src.match(/function iosApp\(ua\)\{[^\n]*\}/)[0]}\n${src.match(/function appStoreApp\(ua\)\{[^\n]*\}/)[0]}\nreturn appStoreApp;`)();
+ assert.equal(appStoreApp(IOS_BILLING),true);assert.equal(appStoreApp(IOS_APP_UA),false,'the iPhone app 1.0');assert.equal(appStoreApp(`${IOS_SAFARI_UA} AppStoreBilling/1`),false,'Safari');
+ // The shop is there in either app that sells, as on the website; an older app and CrazyGames keep it closed.
+ const page=attrs=>({document:{documentElement:element({'data-app':'android',...attrs})}});
+ assert.equal(appStoreBilling(page({'data-app-os':'ios','data-app-store-billing':'','data-app-billing':''})),true);assert.equal(appStoreBilling(page({'data-play-billing':''})),false);
+ assert.equal(appBilling(page({'data-app-os':'ios','data-app-store-billing':''})),true);assert.equal(appBilling(page({'data-play-billing':''})),true);assert.equal(appBilling(page({'data-app-os':'ios'})),false);
+ assert.equal(appBilling({parent:page({'data-app-store-billing':''}),document:{documentElement:element({})}}),true,'the game frame asks the page around it');
+ assert.equal(portalOff('payments',null,true,appBilling(page({'data-app-os':'ios','data-app-store-billing':''}))),false,'the iPhone app 1.1');
+ assert.equal(portalOff('payments',null,true,appBilling(page({'data-app-os':'ios'}))),true,'the iPhone app 1.0');
+ assert.equal(portalOff('payments',{features:{payments:false}},false,true),true,'CrazyGames never');
+ for(const feature of PORTAL_FEATURES.filter(f=>f!=='payments'))assert.equal(portalOff(feature,null,true,true),false,feature);
 });

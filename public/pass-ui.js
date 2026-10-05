@@ -119,8 +119,9 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
  async function purchase(){
   if(pending||portalOff('payments')||!['soon','open'].includes(passPhase(now()))||passPremium(state))return;   // for sale before the season too (Oct 2026)
   pending=true;feedback='';draw();
-  // Stripe leaves the page; Google Play's sheet (the Android app) closes on the farm, and the window with the result opens by itself.
-  try{const done=await bridge().checkout('pass',requestId);if(done?.store==='google_play'){pending=false;draw();}}
+  // Stripe leaves the page; the app's store's sheet (Google Play, the App Store) closes on the farm and answers with its store, and
+  // the window with the result opens by itself.
+  try{const done=await bridge().checkout('pass',requestId);if(done?.store){pending=false;draw();}}
   catch(error){pending=false;feedback=error.message;draw();}
  }
  async function readCatalog(){

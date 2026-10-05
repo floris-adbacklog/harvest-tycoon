@@ -72,8 +72,9 @@ export function appPushState(win=globalThis.window){
 
 // Purchases through Google Play (Oct 2026, the Android app 1.1; android-app PlayBilling.java). The app says it can with " PlayBilling/1"
 // in its user agent; public/android-app.js then marks the page <html data-play-billing> (and the game frame), and the shop opens there
-// as on the website (portal.js portalOff, android.css). Older app versions and the iPhone app sell nothing. The page around the game
-// asks the app as it does for push: it goes to one of these addresses and the app answers with window.harvestPlay({...}) (src/play-store.js).
+// as on the website (portal.js portalOff, android.css). Older app versions sell nothing; the iPhone app 1.1 sells through the App Store
+// (below). The page around the game asks the app as it does for push: it goes to one of these addresses and the app answers with
+// window.harvestPlay({...}) (src/play-store.js).
 export function playBilling(win=globalThis.window){
  const marked=w=>{try{return w?.document?.documentElement?.hasAttribute?.('data-play-billing')===true;}catch{return false;}};
  if(marked(win))return true;
@@ -82,9 +83,25 @@ export function playBilling(win=globalThis.window){
 export const PLAY_LINKS=Object.freeze({prices:'playprices://prices',buy:'playbuy://buy',pending:'playpending://pending'});
 export const playPricesLink=ids=>`${PLAY_LINKS.prices}?ids=${ids.map(encodeURIComponent).join(',')}`;
 export const playBuyLink=({product,account,purchase})=>`${PLAY_LINKS.buy}?product=${encodeURIComponent(product)}&account=${encodeURIComponent(account)}&purchase=${encodeURIComponent(purchase)}`;
-// The price on a buy button: Google Play's own (the farmer's currency, catalog.prices from src/play-store.js) in the app, else the euro
-// price as on the website (Stripe shows it in the farmer's currency at checkout). worth: an amount at the same rate as the pack's price
-// (the special offer's "worth €49.99"), in the same currency.
+// Purchases through the App Store (Oct 2026, the iPhone app 1.1; ios-app HarvestApp.swift HarvestStore). The app says it can with
+// " AppStoreBilling/1" in its user agent; public/android-app.js then marks the page <html data-app-store-billing> (and the game frame).
+// The same addresses as Google Play's, plus finish: the app finishes a purchase (StoreKit's Transaction.finish) only when the page sends
+// it there, after diamond-checkout credited it; until then the App Store hands it back at every start. The app answers with
+// window.harvestAppStore({...}) (src/app-store.js).
+export function appStoreBilling(win=globalThis.window){
+ const marked=w=>{try{return w?.document?.documentElement?.hasAttribute?.('data-app-store-billing')===true;}catch{return false;}};
+ if(marked(win))return true;
+ try{return Boolean(win?.parent&&win.parent!==win&&marked(win.parent));}catch{return false;}
+}
+// The app sells through its store, either one (<html data-app-billing> in public/android.css): the shop is open there (portalOff).
+export const appBilling=(win=globalThis.window)=>playBilling(win)||appStoreBilling(win);
+export const APP_STORE_LINKS=Object.freeze({prices:'appstoreprices://prices',buy:'appstorebuy://buy',pending:'appstorepending://pending',finish:'appstorefinish://finish'});
+export const appStorePricesLink=ids=>`${APP_STORE_LINKS.prices}?ids=${ids.map(encodeURIComponent).join(',')}`;
+export const appStoreBuyLink=({product,account,purchase})=>`${APP_STORE_LINKS.buy}?product=${encodeURIComponent(product)}&account=${encodeURIComponent(account)}&purchase=${encodeURIComponent(purchase)}`;
+export const appStoreFinishLink=transaction=>`${APP_STORE_LINKS.finish}?transaction=${encodeURIComponent(transaction)}`;
+// The price on a buy button: the app's store's own (the farmer's currency, catalog.prices from src/play-store.js or src/app-store.js)
+// in the app, else the euro price as on the website (Stripe shows it in the farmer's currency at checkout). worth: an amount at the
+// same rate as the pack's price (the special offer's "worth €49.99"), in the same currency.
 const euro=cents=>`€${(Number(cents)/100).toFixed(2)}`;
 export function shopPrice(catalog,pack,cents){const p=catalog?.prices?.[pack];return typeof p?.price==='string'&&p.price?p.price:euro(cents);}
 export function shopWorth(catalog,pack,cents,worthCents){

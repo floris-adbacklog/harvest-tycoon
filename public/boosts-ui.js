@@ -111,8 +111,9 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   $('diamond-packs').querySelectorAll('[data-diamond-pack]').forEach(button=>button.onclick=async()=>{
    if(purchasing||!catalog?.enabled)return;const pack=button.dataset.diamondPack;purchasing=pack;packError=null;requests[pack]??=crypto.randomUUID();render();
    // A problem opening the checkout shows right under the packs.
-   // Stripe leaves the page; Google Play's sheet (the Android app) closes on the farm, and the window with the result opens by itself.
-   try{const done=await bridge().checkout(pack,requests[pack]);if(done?.store==='google_play'){purchasing='';render();}}catch(error){packError={pack,message:String(error.message).replace(/[<>&]/g,'')};purchasing='';render();}
+   // Stripe leaves the page; the app's store's sheet (Google Play, the App Store) closes on the farm and answers with its store, and
+   // the window with the result opens by itself.
+   try{const done=await bridge().checkout(pack,requests[pack]);if(done?.store){purchasing='';render();}}catch(error){packError={pack,message:String(error.message).replace(/[<>&]/g,'')};purchasing='';render();}
   });
   prettifySelects($('boost-catalog'));
   $('boost-catalog').querySelectorAll('[data-boost-length]').forEach(select=>select.onchange=()=>{

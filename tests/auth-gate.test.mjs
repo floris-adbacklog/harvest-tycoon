@@ -16,7 +16,8 @@ function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {
 // app: the page is marked as our Android app (public/android-app.js; public/android.js androidApp()). providers: what Supabase has switched
 // on; buttons: the page's Google and Facebook buttons are there (nodes 'provider-google' and 'provider-facebook').
 // play: the app sells through Google Play (app 1.1, public/android.js playBilling); playStore: the fake app it talks to (src/play-store.js).
-function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null}={}){
+// apple, appStore: the same for the iPhone app 1.1 and the App Store (Oct 2026, public/android.js appStoreBilling, src/app-store.js).
+function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null,apple=false,appStore=null}={}){
  const nodes=new Map(),events={},frames=[],calls=[],analytics=[],game=[],timers=[],lookups=[];let authCallback,currentUser=user,clock=1_000_000,nextTimer=1;
  const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},toggleAttribute(name,on){(this.attrs??={})[name]=Boolean(on);},removeAttribute(name){if(this.attrs)delete this.attrs[name];},focus(){},scrollIntoView(){},replaceChildren(...items){for(const old of this.children)if(!items.includes(old))old.removed=true;this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},contentWindow:{}});return nodes.get(id);};
  const providerButtons=buttons?['google','facebook'].map(provider=>Object.assign(element(`provider-${provider}`),{dataset:{provider}})):[];
@@ -25,7 +26,8 @@ function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,locati
  const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};},...authApi},...(rpc?{rpc}:{})};
  const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online,userAgent:ua},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,URLSearchParams,queueMicrotask,
   // A delay of 0 runs at once; a real delay waits until the test moves the clock (see advance).
-  setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,chosenLanguage:()=>'en',playBadge:code=>`/assets/badges/google-play-${code}.webp`,socialProviders:async()=>providers,androidApp:()=>app,listenAppPush:()=>null,playBilling:()=>play,createPlayStore:()=>playStore,PLAY_ERRORS:{unavailable:'Google Play is not available right now.',error:'Google Play could not start the purchase.',owned:'Unfinished purchase.'},PLAY_PRODUCTS:{'150':'diamonds_150','500':'diamonds_500',starter:'starter_pack'},crypto:{randomUUID:()=>'00000000-0000-4000-8000-00000000000'+(++uuid)},forgetAppPushLink(){},...(paymentRequest?{paymentRequest}:{}),cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackCommerce(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
+  setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,chosenLanguage:()=>'en',playBadge:code=>`/assets/badges/google-play-${code}.webp`,socialProviders:async()=>providers,androidApp:()=>app,listenAppPush:()=>null,playBilling:()=>play,createPlayStore:()=>playStore,PLAY_ERRORS:{unavailable:'Google Play is not available right now.',error:'Google Play could not start the purchase.',owned:'Unfinished purchase.'},PLAY_PRODUCTS:{'150':'diamonds_150','500':'diamonds_500',starter:'starter_pack'},
+  appStoreBilling:()=>apple,createAppStore:()=>appStore,APP_STORE_ERRORS:{unavailable:'The App Store is not available right now.',not_found:'Not in the App Store yet.',error:'The App Store could not start the purchase.'},APPLE_PRODUCTS:{'150':'diamonds_150','500':'diamonds_500',starter:'starter_pack'},crypto:{randomUUID:()=>'00000000-0000-4000-8000-00000000000'+(++uuid)},forgetAppPushLink(){},...(paymentRequest?{paymentRequest}:{}),cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackCommerce(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
 
  vm.runInContext(accountForm,context);vm.runInContext(connectionModule,context);vm.runInContext(socialModule,context);vm.runInContext(inviteModule,context);vm.runInContext(partnerModule,context);vm.runInContext(sourceModule,context);vm.runInContext(browserTipModule,context);vm.runInContext(source,context);
  // Moves the clock forward, running every timer that falls due on the way (and the ones they start).
@@ -353,6 +355,73 @@ test('the Android app 1.1: Google\'s prices in the catalogue, a purchase through
  // No price from Google (products not in Play Console yet, no connection): the shop stays closed.
  const quiet=fixture({ua:APP_UA+' PlayBilling/1',app:true,play:true,playStore:{...playStore,async prices(){return {};}},user:{id:A},paymentRequest,location:{...APP_PAGE}});await settle();
  assert.equal((await quiet.window.harvestBridge.payments({operation:'catalog'})).enabled,false);
+});
+
+// The iPhone app 1.1 (Oct 2026): the shop sells through the App Store (src/app-store.js). The server checks Apple's signed transaction
+// before anything is credited, and only when it says finish does the App Store hear that this phone is done with the purchase.
+const IOS_APP_UA='Mozilla/5.0 (iPhone; CPU iPhone OS 26_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 HarvestTycoonApp/1.1 AppStoreBilling/1';
+test('the iPhone app 1.1: the App Store\'s prices, a purchase checked by the server with Apple\'s signed transaction, finished only when the server says so',async()=>{
+ const A='0000000a-0000-4000-8000-000000000000',B='0000000b-0000-4000-8000-000000000000',ROW='1111111a-0000-4000-8000-000000000000',ROW2='2222222a-0000-4000-8000-000000000000';
+ const asked=[],shown=[],finished=[],JWS='aaa.bbb.ccc';let sheet=null,held=[];
+ let confirm=()=>({id:ROW,status:'credited',duplicate:false,finish:true,transaction:'2000000000000001'});
+ const paymentRequest=async body=>{asked.push(body);
+  if(body.operation==='catalog')return {enabled:true,store:'app_store',packs:[]};
+  if(body.operation==='create')return {purchaseId:ROW,product:'diamonds_500',account:A,store:'app_store'};
+  if(body.operation==='apple_confirm')return confirm(body);
+  return {status:'pending'};};
+ const appStore={async prices(ids){assert.deepEqual([...ids].sort(),['diamonds_150','diamonds_500','starter_pack']);return {diamonds_500:{price:'5,49 US$',micros:5490000,currency:'USD'}};},
+  async buy(order){sheet=order;return {kind:'purchase',product:order.product,token:JWS,order:'2000000000000001',state:'purchased',account:A,purchase:order.purchase};},
+  async pending(){return held;},async finish(id){finished.push(id);return true;},onPurchase(){return()=>{};}};
+ const app=fixture({ua:IOS_APP_UA,app:true,apple:true,appStore,user:{id:A},paymentRequest,location:{...APP_PAGE}});await settle();
+ const bridge=app.window.harvestBridge;bridge.purchaseDone=id=>shown.push(id);
+ const catalog=await bridge.payments({operation:'catalog'});
+ assert.equal(catalog.enabled,true);assert.deepEqual({...catalog.prices},{'500':{price:'5,49 US$',micros:5490000,currency:'USD'}},'the App Store\'s price per pack');
+ assert.deepEqual({...asked[0]},{operation:'catalog',store:'app_store'});
+ const done=await bridge.checkout('500','ui-request');
+ assert.deepEqual({...done},{store:'app_store',id:ROW,status:'purchased'});
+ assert.equal(asked[1].operation,'create');assert.equal(asked[1].store,'app_store');assert.notEqual(asked[1].requestId,'ui-request','a new purchase row for every sheet');
+ assert.deepEqual({...sheet},{product:'diamonds_500',account:A,purchase:ROW});
+ assert.deepEqual({...asked[2]},{operation:'apple_confirm',store:'app_store',product:'diamonds_500',transaction:JWS},'the server checks Apple\'s signed transaction');
+ assert.deepEqual(finished,['2000000000000001'],'finished once the server credited it');assert.deepEqual(shown,[ROW],'the result window opens');
+ assert.equal(app.context.location.href,undefined,'never a Stripe page');
+ // The server does not say finish: the App Store keeps it and hands it back at the next start.
+ const later={product:'diamonds_150',token:'ddd.eee.fff',order:'2000000000000002',state:'purchased',account:A,purchase:ROW2};
+ confirm=()=>({id:ROW2,status:'pending',duplicate:false,finish:false});finished.length=0;shown.length=0;
+ assert.equal((await bridge.playSettle(later)).finish,false);assert.deepEqual(finished,[]);assert.deepEqual(shown,[]);
+ // Credited before (the App Store handed it back): finished now, no window again.
+ confirm=()=>({id:ROW2,status:'credited',duplicate:true,finish:true,transaction:'2000000000000002'});
+ await bridge.playSettle(later);assert.deepEqual(finished,['2000000000000002']);assert.deepEqual(shown,[]);
+ // Another farmer's purchase on this phone is left for them: not asked, not finished.
+ asked.length=0;finished.length=0;
+ assert.equal(await bridge.playSettle({...later,account:B}),null);assert.deepEqual(asked,[]);assert.deepEqual(finished,[]);
+ assert.equal(await bridge.playSettle({...later,state:'unknown'}),null);assert.deepEqual(asked,[],'only a bought one');
+ // After the app was installed again it does not know whose a purchase is (account null): the server decides. This farmer's: credited and
+ // finished. Another farmer's: refused (403), asked once, never finished, and nothing thrown.
+ const unknown={...later,token:'ggg.hhh.iii',order:'2000000000000003',account:null};
+ confirm=()=>({id:ROW2,status:'credited',duplicate:false,finish:true,transaction:'2000000000000003'});
+ await bridge.playSettle(unknown);assert.deepEqual({...asked.at(-1)},{operation:'apple_confirm',store:'app_store',product:'diamonds_150',transaction:'ggg.hhh.iii'});
+ assert.deepEqual(finished,['2000000000000003']);assert.deepEqual(shown,[ROW2]);
+ confirm=()=>{throw Object.assign(new Error('This purchase belongs to another farmer.'),{status:403});};asked.length=0;finished.length=0;
+ assert.equal(await bridge.playSettle({...unknown,token:'jjj.kkk.lll',order:'2000000000000004'}),null);assert.equal(asked.length,1,'a refusal is not asked again');assert.deepEqual(finished,[]);
+ // At the start: everything the App Store still holds is confirmed, one at a time; this farmer's are finished, another farmer's wait.
+ confirm=body=>({id:ROW2,status:'credited',duplicate:true,finish:true,transaction:body.transaction==='kkk.lll.mmm'?'2000000000000005':'x'});asked.length=0;
+ held=[{...later,token:'kkk.lll.mmm',order:'2000000000000005'},{...later,token:'nnn.ooo.ppp',order:'2000000000000006',account:B}];
+ await bridge.playRecover();assert.deepEqual(asked.map(b=>b.transaction),['kkk.lll.mmm']);assert.deepEqual(finished,['2000000000000005']);
+ // Ask to Buy (or the bank): nothing to confirm yet, the window says it is on its way.
+ appStore.buy=async order=>({kind:'purchase',product:order.product,state:'pending',account:A,purchase:order.purchase});shown.length=0;asked.length=0;finished.length=0;
+ assert.deepEqual({...await bridge.checkout('500','r')},{store:'app_store',id:ROW,status:'pending'});assert.deepEqual(shown,[ROW]);assert.deepEqual(asked.map(b=>b.operation),['create']);assert.deepEqual(finished,[]);
+ // Closed sheet: nothing confirmed, the shop just opens again. The App Store's errors name it.
+ appStore.buy=async()=>({kind:'cancelled'});asked.length=0;
+ assert.deepEqual({...await bridge.checkout('150','r')},{store:'app_store',status:'cancelled'});assert.deepEqual(asked.map(b=>b.operation),['create']);
+ appStore.buy=async()=>({kind:'error',reason:'not_found'});await assert.rejects(bridge.checkout('150','r'),/Not in the App Store yet/);
+ appStore.buy=async()=>({kind:'error',reason:'whatever'});await assert.rejects(bridge.checkout('150','r'),/The App Store could not start/);
+ appStore.buy=async()=>null;await assert.rejects(bridge.checkout('150','r'),/The App Store is not available/);
+ // No price from the App Store (products not in App Store Connect yet, no connection): the shop stays closed.
+ const quiet=fixture({ua:IOS_APP_UA,app:true,apple:true,appStore:{...appStore,async prices(){return {};}},user:{id:A},paymentRequest,location:{...APP_PAGE}});await settle();
+ assert.equal((await quiet.window.harvestBridge.payments({operation:'catalog'})).enabled,false);
+ // The iPhone app 1.0 sells nothing, as before.
+ asked.length=0;const old=fixture({ua:IOS_APP_UA.replace(' AppStoreBilling/1',''),app:true,user:{id:A},paymentRequest,location:{...APP_PAGE}});await settle();
+ assert.equal((await old.window.harvestBridge.payments({operation:'catalog'})).enabled,false);await assert.rejects(old.window.harvestBridge.checkout('500','r'),/Purchases are not available here/);assert.deepEqual(asked,[]);
 });
 
 test('a refusal from the server (4xx) shows its reason; only a lost or failing connection shows "Reconnecting…"',async()=>{

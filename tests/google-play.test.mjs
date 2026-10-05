@@ -7,6 +7,7 @@ import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
 import * as payments from '../game/payments.js';
 import * as googlePlay from '../game/google-play.js';
+import * as appStore from '../game/app-store.js';
 import {readPlay,createPlayStore} from '../src/play-store.js';
 import {playBilling,playPricesLink,playBuyLink,shopPrice,shopWorth} from '../public/android.js';
 import {portalOff} from '../public/portal.js';
@@ -153,7 +154,7 @@ async function confirm({purchase=google(),stored=row(),body={operation:'play_con
   from(table){assert.equal(table,'harvest_purchases');return query();}};
  const google_=[];
  const source=stripTypeScriptTypes(read('supabase/functions/diamond-checkout/index.ts').replace(/^import .*;\n/gm,''));
- vm.runInNewContext(source,{...payments,serviceAccount:()=>key?{client_email:'x'}:null,
+ vm.runInNewContext(source,{...payments,...appStore,serviceAccount:()=>key?{client_email:'x'}:null,
   getPurchase:async(a,pkg,product,token)=>{google_.push(['get',pkg,product,token]);if(purchase instanceof Error)throw purchase;return purchase;},
   consumePurchase:async(a,pkg,product,token)=>{google_.push(['consume',pkg,product,token]);},
   Stripe:class{constructor(){throw new Error('no Stripe for Google Play');}},createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,JSON,Date,Object,Promise,Error,Boolean,String,atob,console:{error(){}}});
@@ -181,6 +182,11 @@ test('play_confirm refuses what is not this farmer\'s purchase and credits nothi
  const unknown=await confirm({purchase:Object.assign(new Error('x'),{status:410})});assert.equal(unknown.status,404);
  const bad=await confirm({body:{operation:'play_confirm',product:'diamonds_500',token:'short'}});assert.equal(bad.status,400);assert.deepEqual(bad.google,[]);
  const off=await confirm({key:false});assert.equal(off.status,503);
+ // The App Store's confirm (Oct 2026) is a request of its own: it never asks Google, and what Apple did not sign credits nothing.
+ for(const transaction of ['a.b.c',TOKEN,`${Buffer.from('{"alg":"ES256","x5c":[]}').toString('base64url')}.e30.${'A'.repeat(86)}`]){
+  const apple=await confirm({body:{operation:'apple_confirm',store:'app_store',product:'diamonds_500',transaction}});
+  assert.equal(apple.status,400,transaction);assert.equal(apple.data.finish,false);assert.equal(credited(apple),false);assert.deepEqual(apple.google,[],'Google is not asked');
+ }
 });
 
 test('google-play.sql: Stripe\'s credit replaced only from the definition read live, one grant for both, refunds and the hourly check',()=>{

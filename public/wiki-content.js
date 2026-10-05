@@ -5,7 +5,7 @@ import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
 import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_GOAL_POOLS} from './event-goals.js';
 import {portal as portalAround} from './portal.js';
-import {androidApp,appPushOffered,playBilling} from './android.js';
+import {androidApp,appPushOffered,playBilling,appStoreBilling} from './android.js';
 import {wikiLink,parseWikiLink,wikiLinksIn} from './wiki-link.js';
 // A link to one spot of the wiki (Oct 2026): public/wiki-link.js, here too for whoever has the wiki at hand.
 export {wikiLink,parseWikiLink,wikiLinksIn};
@@ -92,10 +92,11 @@ const itemTarget=key=>CROPS[key]?['crops',`crop-${key}`]:HEIRLOOMS[key]?['estate
 // given), where the parts about buying, inviting, sharing, email, reminders, the app and our website are left out, as the game itself
 // leaves them out there; app: true in our Android app (Oct 2026, public/android.js; read from the page when not given), where only the
 // parts about buying and installing the web app are left out; appPush: in the app, its own notifications are offered (src/app-push.js,
-// once notify-hourly's config says appPush; read from the page around the game when not given), else push reminders are left out too}.
+// once notify-hourly's config says appPush; read from the page around the game when not given), else push reminders are left out too;
+// play, appStore: in the app, it sells through Google Play or the App Store (app 1.1, Oct 2026; read from the page when not given)}.
 function helpers(ctx){
  const level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now(),portal=Boolean(ctx.portal??portalAround()),app=Boolean(ctx.app??androidApp());
- const appPush=app&&Boolean(ctx.appPush??appPushOffered()),play=app&&Boolean(ctx.play??playBilling());
+ const appPush=app&&Boolean(ctx.appPush??appPushOffered()),play=app&&Boolean(ctx.play??playBilling()),appStore=app&&Boolean(ctx.appStore??appStoreBilling());
  // to: a link to a spot (Oct 2026). On the website the address itself (/wiki/crops#crop-wheat); in the game the topic's own href (never
  // our site: CrazyGames allows no links to it), the spot rides along in data-wiki-anchor.
  const to=(id,anchor='')=>ctx.href?ctx.href(id):`/wiki/${id}${anchor?`#${anchor}`:''}`;
@@ -104,9 +105,9 @@ function helpers(ctx){
  const row=(n,cells,id='')=>`<tr${id?` id="${id}"`:''}${locked(n)?' class="is-locked"':''}>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
  // anchor: the spot on that topic (Oct 2026), so a link lands on the paragraph it means rather than the top.
  const link=(id,text=TOPIC[id].title,anchor='')=>`<a href="${to(id,anchor)}" data-wiki-topic="${id}"${anchor?` data-wiki-anchor="${anchor}"`:''}>${text}</a>`;
- // shop: our own purchases are there (not on CrazyGames, not in an app that sells nothing; the Android app 1.1 sells through Google
- // Play, Oct 2026: play); install: installing the web app is.
- return {level,href,to,locked,lvl,row,link,now,portal,app,appPush,play,shop:!portal&&(!app||play),install:!portal&&!app};
+ // shop: our own purchases are there (not on CrazyGames, not in an app that sells nothing; the app 1.1 sells through its store, Oct
+ // 2026: Google Play in the Android app, play; the App Store in the iPhone app, appStore); install: installing the web app is.
+ return {level,href,to,locked,lvl,row,link,now,portal,app,appPush,play,appStore,shop:!portal&&(!app||play||appStore),install:!portal&&!app};
 }
 // On CrazyGames: what is saved where, and the one link allowed (our Privacy Policy, in full).
 const PORTAL_SAVED='<p>Your farm is saved on our server. As a guest it stays with this browser; log in with CrazyGames to keep it safe and play it on any device. You need an internet connection to play.</p>';
@@ -367,7 +368,9 @@ const BODIES={
   +section('Finish now',`<p>Finish a growing field for ${SINGLE_CROP_COST} diamonds, or a running batch for ${SINGLE_BATCH_COST} (not in the Factory).</p>`)
   +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+dual(table(['Boost','What it does','Diamonds'],boosts),boostCards))
   +section('VIP',`<p>VIP gives 10% faster crops, 10% faster production, 5% more coins at the market and double daily rewards. Buying again adds time; it never gets stronger.</p>`+table(['Plan','Diamonds'],vip))
-  +(!h.shop?'':section('Buying diamonds',`<p>One-time purchases, added right after payment. ${h.play?'Payments go through Google Play':'Payments go through Stripe'}; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.${passSale(h.now)?` From level ${SEASON_PASS.level} the ${h.link('daily',SEASON_PASS.name,slug(SEASON_PASS.name))} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}. ${passSale(h.now)}`:''}</p>`+table(['Diamonds','Price'],packs)));
+  // The App Store's sentence is a text of its own (Oct 2026), so the website's and Google Play's keep their translations.
+  +(!h.shop?'':section('Buying diamonds',`<p>${h.appStore?`One-time purchases, added right after payment. Payments go through the App Store; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.`
+   :`One-time purchases, added right after payment. ${h.play?'Payments go through Google Play':'Payments go through Stripe'}; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL}, when diamond boosts unlock, there is also a Starter Pack for ${STARTER_DAYS} days.`}${passSale(h.now)?` From level ${SEASON_PASS.level} the ${h.link('daily',SEASON_PASS.name,slug(SEASON_PASS.name))} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}. ${passSale(h.now)}`:''}</p>`+table(['Diamonds','Price'],packs)));
  },
  chat(h){
   return (h.portal?section('Who can chat','<p>The chat is for farmers who are logged in with CrazyGames, when CrazyGames has the chat switched on. Playing as a guest? Tap the chat button to log in with CrazyGames; your farm comes with you.</p>'):'')

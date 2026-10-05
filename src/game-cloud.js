@@ -82,8 +82,9 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
    // No purchases on CrazyGames (their rule): no payment return, special offer or Starter Pack there.
    const shop=!portal;
    if(shop)showPaymentReturn(bridge);
-   // Google Play in the Android app (Oct 2026, src/main.js): a purchase confirmed in the app shows in the same window, and one paid while
-   // the game was closed (never confirmed) is confirmed now. Nothing on the website or in an app that sells nothing.
+   // The app's store (Oct 2026, src/main.js: Google Play in the Android app, the App Store in the iPhone app): a purchase confirmed in the
+   // app shows in the same window, and one paid while the game was closed (never confirmed) is confirmed now. Nothing on the website or in
+   // an app that sells nothing.
    if(shop&&bridge.playSettle){bridge.purchaseDone=id=>showPaymentReturn(bridge,{id,cancelled:false});void bridge.playRecover?.().catch(()=>{});}
    // A pop-up from the admin (news with a button), once, when nothing else is open. It does not wait for the Starter Pack's catalog.
    void createPopupUI({client:bridge.chat,chat,state:firstState}).start();

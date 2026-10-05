@@ -89,8 +89,9 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  }
  async function buy(){
   if(pending||!running()||offer.preview)return;pending=true;dialog.querySelector('.offer-feedback').textContent='';render();
-  // Stripe leaves the page; Google Play's sheet (the Android app) closes on the farm, and the window with the result opens by itself.
-  try{const done=await bridge.checkout('offer',requestId,offer.id);if(done?.store==='google_play'){pending=false;render();}}
+  // Stripe leaves the page; the app's store's sheet (Google Play, the App Store) closes on the farm and answers with its store, and
+  // the window with the result opens by itself.
+  try{const done=await bridge.checkout('offer',requestId,offer.id);if(done?.store){pending=false;render();}}
   catch(error){pending=false;render();dialog.querySelector('.offer-feedback').textContent=error.message;}
  }
  // Once per offer on this device, when nothing else is open (the daily gift, a pop-up, a purchase screen).

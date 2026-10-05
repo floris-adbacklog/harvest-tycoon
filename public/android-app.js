@@ -15,12 +15,17 @@
  }
  window.harvestAndroidApp=androidApp;
  // Our iPhone app (Oct 2026, WebViewGold for iOS): the same " HarvestTycoonApp/1.0" on an iPhone's own user agent, so it is the app as
- // above (no purchases of our own, no install, its own notifications), and the page is also marked <html data-app-os="ios">: there it has
- // no Tag Manager and no cookie banner at all (the owner's choice for the App Store, 3 Oct 2026; the app blocks the trackers too).
+ // above (no purchases of our own, from 1.1 the App Store's, below; no install, its own notifications), and the page is also marked
+ // <html data-app-os="ios">: there it has no Tag Manager and no cookie banner at all (the owner's choice for the App Store, 3 Oct 2026;
+ // the app blocks the trackers too).
  function iosApp(ua){return /HarvestTycoonApp\//.test(ua||'')&&/iPhone|iPad|iPod|Macintosh/.test(ua||'');}
  window.harvestIosApp=iosApp;
  function playApp(ua){return /HarvestTycoonApp\//.test(ua||'')&&/ PlayBilling\/\d/.test(ua||'')&&!iosApp(ua);}
  window.harvestPlayApp=playApp;
+ // The iPhone app 1.1 (Oct 2026) sells through the App Store: " AppStoreBilling/1" after its own token (ios-app HarvestApp.swift
+ // userAgentToken; public/android.js appStoreBilling). Never the Android app, never a browser.
+ function appStoreApp(ua){return iosApp(ua)&&/ AppStoreBilling\/\d/.test(ua||'');}
+ window.harvestAppStoreApp=appStoreApp;
  var parent=null;try{if(window.parent!==window)parent=window.parent.document.documentElement;}catch(e){}
  if(html.hasAttribute('data-portal')||(parent&&parent.hasAttribute('data-portal')))return;
  var saved=null;try{saved=localStorage.getItem(KEY);}catch(e){}
@@ -32,4 +37,8 @@
  // The Android app 1.1 (Oct 2026) sells through Google Play: " PlayBilling/1" in its user agent (public/android.js playBilling). Never
  // the iPhone app, never a browser with ?app=android only.
  if(html.getAttribute('data-app')==='android'&&html.getAttribute('data-app-os')!=='ios'&&(playApp(navigator.userAgent)||(parent&&parent.hasAttribute('data-play-billing'))))html.setAttribute('data-play-billing','');
+ // The iPhone app 1.1 the same way through the App Store (<html data-app-store-billing>), the game frame following the page around it.
+ if(html.getAttribute('data-app')==='android'&&html.getAttribute('data-app-os')==='ios'&&(appStoreApp(navigator.userAgent)||(parent&&parent.hasAttribute('data-app-store-billing'))))html.setAttribute('data-app-store-billing','');
+ // Either store: <html data-app-billing>, the one mark the shop's hide rules ask (public/android.css).
+ if(html.hasAttribute('data-play-billing')||html.hasAttribute('data-app-store-billing'))html.setAttribute('data-app-billing','');
 })();

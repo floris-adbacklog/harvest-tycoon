@@ -32,7 +32,9 @@ export async function createStarterPackUI(bridge){
  async function refresh(){if(refreshing||disposed)return;refreshing=true;checkedAt=Date.now();try{const data=await bridge.payments({operation:'catalog'});if(disposed)return;catalog=data;offset=data.serverNow-Date.now();render();window.dispatchEvent(new CustomEvent('harvest-catalog',{detail:data}));}catch{if(!catalog)button.hidden=chip.hidden=true;}finally{refreshing=false;}}
  button.onclick=chip.onclick=()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());requestId=crypto.randomUUID();feedback.textContent='';render();dialog.showModal();refresh();};
  dialog.querySelector('.starter-close').onclick=()=>dialog.close();
- buy.onclick=async()=>{if(pending||buy.disabled)return;pending=true;feedback.textContent='';render();try{const done=await bridge.checkout('starter',requestId);if(done?.store==='google_play'){pending=false;render();}}catch(error){feedback.textContent=error.message;pending=false;render();}};
+ // Stripe leaves the page; the app's store's sheet (Google Play, the App Store) closes on the farm and answers with its store, and
+ // the window with the result opens by itself.
+ buy.onclick=async()=>{if(pending||buy.disabled)return;pending=true;feedback.textContent='';render();try{const done=await bridge.checkout('starter',requestId);if(done?.store){pending=false;render();}}catch(error){feedback.textContent=error.message;pending=false;render();}};
  // The countdown runs on this device. The server is asked when the game starts, when the offer is opened, after a purchase
  // and when the farm reaches the Starter Pack level; while the offer runs, also every 15 minutes (and on coming back to
  // the game, at most that often). A farm without a running offer is not asked again. (It used to ask every minute, for

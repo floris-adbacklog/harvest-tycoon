@@ -113,6 +113,17 @@ export const PLAY_PRODUCTS=Object.freeze({'150':'diamonds_150','500':'diamonds_5
 export const PLAY_PRODUCT=/^[a-z0-9][a-z0-9_.]{0,39}$/;
 export const PLAY_TOKEN=/^[A-Za-z0-9._-]{20,1024}$/;
 export const playProduct=pack=>typeof pack==='string'&&Object.hasOwn(PLAY_PRODUCTS,pack)?PLAY_PRODUCTS[pack]:null;
+// The App Store (Oct 2026, the iPhone app 1.1, ios-app HarvestApp.swift HarvestStore): the same packs as consumables in App Store
+// Connect, with the same product ids as Google Play, at the same euro price (Apple converts it for other storefronts and keeps 15%, the
+// Small Business Program). A purchase is the same row again (store 'app_store', price_id = the product, apple_transaction_id = Apple's
+// transaction id). The app gives StoreKit this row's id as the purchase's appAccountToken; diamond-checkout apple_confirm checks Apple's
+// signed transaction (game/app-store.js, no key needed) before crediting it, and only then does the app finish it.
+export const APPLE_BUNDLE='com.harvesttycoon.app';
+export const APPLE_PRODUCTS=PLAY_PRODUCTS;
+export const APPLE_TRANSACTION=/^[0-9]{1,20}$/;
+export const APPLE_JWS=/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+export const APPLE_JWS_MAX=16000;
+export const appleProduct=pack=>playProduct(pack);
 // What Google says about a purchase (purchases.products.get) against its row: state 'purchased' (credit it), 'pending' (a payment still
 // on its way, such as cash at a shop) or 'cancelled'; test: a licence tester's test purchase, a promo code or a reward, no money, so it is
 // recorded as test_paid and credits nothing (as a Stripe test payment). Anything that does not belong to this row and farmer throws.
@@ -128,4 +139,27 @@ export function checkPlayPurchase(google,purchase,{product,player}){
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  const state=google.purchaseState===0?'purchased':google.purchaseState===2?'pending':'cancelled';
  return {state,test:google.purchaseType!=null,order:typeof google.orderId==='string'&&google.orderId?google.orderId.slice(0,100):null};
+}
+// What Apple signed about a purchase (StoreKit's transaction, checked by game/app-store.js verifyAppleJws) against its row: state
+// 'purchased' (credit it) or 'revoked' (Apple took the money back: credit nothing); test: the sandbox (App Review, TestFlight and sandbox
+// testers), credited all the same so App Review sees the diamonds, but recorded as livemode false (no revenue, no partner share). Xcode's
+// own test purchases are not signed by Apple and never get this far. The app gave StoreKit this row's id as the appAccountToken (Apple
+// may write the UUID in capitals). Anything that is not this app's consumable, for this row and this farmer, throws. player null: a
+// deleted account's row (app-store-notify only, which has no farmer to compare), recorded by harvest_credit_apple_purchase without
+// giving anything, as Stripe's harvest_credit_purchase does.
+export function checkApplePurchase(apple,purchase,{product,player}){
+ if(!apple||typeof apple!=='object'||apple.bundleId!==APPLE_BUNDLE)throw new Error('Unknown App Store purchase.');
+ if(typeof apple.transactionId!=='string'||!APPLE_TRANSACTION.test(apple.transactionId)||apple.originalTransactionId!=null&&(typeof apple.originalTransactionId!=='string'||!APPLE_TRANSACTION.test(apple.originalTransactionId)))throw new Error('Unknown App Store purchase.');
+ if(apple.environment!=='Production'&&apple.environment!=='Sandbox')throw new Error('Environment mismatch.');
+ if(apple.type!=='Consumable')throw new Error('Product type mismatch.');
+ if(!purchase||typeof product!=='string'||apple.productId!==product||appleProduct(purchase.pack)!==product)throw new Error('Product mismatch.');
+ const deleted=purchase.player_id===null&&Boolean(purchase.account_deleted_at);
+ if(deleted?player!==null:typeof player!=='string'||purchase.player_id!==player)throw new Error('Purchase ownership mismatch.');
+ if(typeof apple.appAccountToken!=='string'||typeof purchase.id!=='string'||apple.appAccountToken.toLowerCase()!==purchase.id.toLowerCase())throw new Error('Purchase reference mismatch.');
+ if(apple.quantity!==1)throw new Error('Quantity mismatch.');
+ const pack=paymentPack(purchase.pack);
+ if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||offerProblem({diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0})))throw new Error('Offer mismatch.');
+ if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
+ if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
+ return {state:apple.revocationDate!=null?'revoked':'purchased',test:apple.environment==='Sandbox',transaction:apple.transactionId,original:apple.originalTransactionId??apple.transactionId};
 }

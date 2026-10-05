@@ -20,20 +20,24 @@ import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
 import {playBadge} from '../public/languages.js';
-import {androidApp,listenAppPush,playBilling} from '../public/android.js';
+import {androidApp,listenAppPush,playBilling,appStoreBilling} from '../public/android.js';
 import {forgetAppPushLink} from './app-push.js';
 import {createPlayStore,PLAY_ERRORS} from './play-store.js';
-import {PLAY_PRODUCTS} from '../game/payments.js';
+import {createAppStore,APP_STORE_ERRORS} from './app-store.js';
+import {PLAY_PRODUCTS,APPLE_PRODUCTS} from '../game/payments.js';
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
 const inApp=androidApp();
 // The app's answers about its notifications (window.harvestAppPush) are kept on this page from the start (src/app-push.js).
 if(inApp)listenAppPush(window);
-// The Android app 1.1 (Oct 2026) sells through Google Play (src/play-store.js); an older app and the iPhone app sell nothing. A purchase
-// that finishes while no sheet of ours waits for it (a payment that was pending) goes to the farmer's session to be confirmed.
-const play=inApp&&playBilling()?createPlayStore(window):null;
-play?.onPurchase(message=>{void window.harvestBridge?.playSettle?.(message).catch(()=>{});});
-let playPrices=null;
+// The app 1.1 (Oct 2026) sells through the app's store (inAppStore): Google Play in the Android app (src/play-store.js), the App Store in
+// the iPhone app (appStore, src/app-store.js); an older app sells nothing. A purchase that finishes while no sheet of ours waits for it
+// (a payment that was pending, a parent's yes, one the App Store hands back at the start) goes to the farmer's session to be confirmed.
+const appStore=inApp&&appStoreBilling()?createAppStore(window):null;
+const inAppStore=appStore??(inApp&&playBilling()?createPlayStore(window):null);
+const storeName=appStore?'app_store':'google_play',storeErrors=appStore?APP_STORE_ERRORS:PLAY_ERRORS,storeProducts=appStore?APPLE_PRODUCTS:PLAY_PRODUCTS;
+inAppStore?.onPurchase(message=>{void window.harvestBridge?.playSettle?.(message).catch(()=>{});});
+let storePrices=null;
 // Another language than English: translate the page's texts as they appear (public/i18n.js).
 startTranslation();
 renderLanguageSwitch();
@@ -205,59 +209,72 @@ async function openFarm(){
   // Online now counts.
   const skew=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
   bridge.onlineCount=async()=>{if(ticket!==generation)throw new Error('Your session has ended.');const at=Date.now()+skew,{count,error}=await supabase.from('player_stats').select('player_id',{count:'exact',head:true}).gte('last_active_at',new Date(at-30*60000).toISOString()).lte('last_active_at',new Date(at+60000).toISOString());if(error)throw error;return Number.isSafeInteger(count)?count:NaN;};
-  // In an Android app before 1.1 (Oct 2026) and the iPhone app nothing is sold: the catalogue the shop asks for says off (no Starter
+  // In an app before 1.1 (Oct 2026), Android or iPhone, nothing is sold: the catalogue the shop asks for says off (no Starter
   // Pack, special offer or Halloween Pass for sale, so nothing opens by itself), nothing else about payments is asked and no checkout
   // opens. Earned diamonds are spent as always, and what was bought on the website counts on the same account.
   const appShop=()=>{throw new Error('Purchases are not available here.');};
-  bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');if(inApp&&!play){if(body?.operation==='catalog')return {enabled:false,serverNow:Date.now()};appShop();}
-   if(play&&body?.operation==='catalog')return playCatalog(body);if(play&&body?.operation==='status')await playRecoverSoon();
-   const data=await paymentRequest(play?{...body,store:'google_play'}:body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
-  // From the Android app 1.1 (Oct 2026) the shop sells through Google Play (play). The catalogue carries Google's prices in the farmer's
-  // currency per pack (catalog.prices; kept 10 minutes); without them (no connection, products not in Play Console yet) the shop stays
-  // closed rather than fail at Google's sheet. A purchase opens Google's sheet with a new purchase row each time, and diamond-checkout
-  // checks it with Google (play_confirm) before the farm gets anything. The result shows in the window a Stripe payment returns to
-  // (bridge.purchaseDone, src/game-cloud.js). One that was never confirmed (the app closed on the way) is confirmed at the next start
-  // (bridge.playRecover) or while that window checks; Google refunds one never confirmed after 3 days.
-  const playCatalog=async body=>{
-   const fresh=playPrices&&Date.now()-playPrices.at<600000;
-   const [data,found]=await Promise.all([paymentRequest({...body,store:'google_play'}),fresh?playPrices.found:play.prices([...new Set(Object.values(PLAY_PRODUCTS))])]);
+  bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');if(inApp&&!inAppStore){if(body?.operation==='catalog')return {enabled:false,serverNow:Date.now()};appShop();}
+   if(inAppStore&&body?.operation==='catalog')return storeCatalog(body);if(inAppStore&&body?.operation==='status')await storeRecoverSoon();
+   const data=await paymentRequest(inAppStore?{...body,store:storeName}:body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
+  // From the app 1.1 (Oct 2026) the shop sells through the app's store (inAppStore; storeName 'google_play' or 'app_store'). The catalogue
+  // carries the store's prices in the farmer's currency per pack (catalog.prices; kept 10 minutes); without them (no connection,
+  // products not in Play Console or App Store Connect yet) the shop stays closed rather than fail at the store's sheet. A purchase opens
+  // the store's sheet with a new purchase row each time, and diamond-checkout checks it (play_confirm with Google; apple_confirm, Apple's
+  // signed transaction) before the farm gets anything. The result shows in the window a Stripe payment returns to (bridge.purchaseDone,
+  // src/game-cloud.js). One that was never confirmed (the app closed on the way) is confirmed at the next start (bridge.playRecover) or
+  // while that window checks; Google refunds one never confirmed after 3 days, the App Store hands it back until the page finishes it.
+  const storeCatalog=async body=>{
+   const fresh=storePrices&&Date.now()-storePrices.at<600000;
+   const [data,found]=await Promise.all([paymentRequest({...body,store:storeName}),fresh?storePrices.found:inAppStore.prices([...new Set(Object.values(storeProducts))])]);
    if(ticket!==generation)throw new Error('Your session has ended.');
-   if(!fresh&&Object.keys(found).length)playPrices={at:Date.now(),found};
-   const prices=Object.fromEntries(Object.entries(PLAY_PRODUCTS).filter(([,id])=>found[id]).map(([pack,id])=>[pack,found[id]]));
+   if(!fresh&&Object.keys(found).length)storePrices={at:Date.now(),found};
+   const prices=Object.fromEntries(Object.entries(storeProducts).filter(([,id])=>found[id]).map(([pack,id])=>[pack,found[id]]));
    return {...data,enabled:Boolean(data?.enabled)&&Object.keys(prices).length>0,prices};
   };
-  const playConfirm=async message=>{
+  // The App Store's purchase goes as Apple's signed transaction (up to 16 KB); a refusal (not Apple's, another farmer's: a 403) is not
+  // asked again.
+  const storeConfirm=async message=>{
+   const body=appStore?{operation:'apple_confirm',store:'app_store',product:message.product,transaction:message.token}:{operation:'play_confirm',store:'google_play',product:message.product,token:message.token};
    for(let attempt=0;;attempt++){
-    try{const data=await paymentRequest({operation:'play_confirm',store:'google_play',product:message.product,token:message.token});if(ticket!==generation)throw new Error('Your session has ended.');return data;}
-    catch(error){if(attempt>=2||ticket!==generation)throw error;await new Promise(r=>setTimeout(r,1500*(attempt+1)));}
+    try{const data=await paymentRequest(body);if(ticket!==generation)throw new Error('Your session has ended.');return data;}
+    catch(error){if(attempt>=2||ticket!==generation||appStore&&refused(error?.status))throw error;await new Promise(r=>setTimeout(r,1500*(attempt+1)));}
    }
   };
-  // One purchase from Google, this farmer's (another farmer's on this phone waits for them to sign in), confirmed once at a time; the
-  // window shows it unless it was confirmed before.
+  // One purchase from the app's store, this farmer's (another farmer's on this phone waits for them to sign in), confirmed once at a
+  // time; the window shows it unless it was confirmed before. The App Store's own copy of a purchase does not always say whose it is (the
+  // app installed again): diamond-checkout decides then, and another farmer's is refused (403) and left alone. Only when the server says
+  // finish (credited now or before, or refunded) does the App Store hear that this phone is done with it.
   const settling=new Set();
   bridge.playSettle=async message=>{
-   if(!play||ticket!==generation||message?.account!==user.id||message.state!=='purchased'||settling.has(message.token))return null;
+   if(!inAppStore||ticket!==generation||message?.state!=='purchased'||settling.has(message.token))return null;
+   if(appStore?message.account!==null&&message.account!==user.id:message.account!==user.id)return null;
    settling.add(message.token);
-   try{const data=await playConfirm(message);if(!data?.duplicate&&['credited','test_paid'].includes(data?.status))bridge.purchaseDone?.(data.id);return data;}
+   try{
+    let data;try{data=await storeConfirm(message);}catch(error){if(appStore&&error?.status===403)return null;throw error;}
+    if(appStore&&data?.finish===true)void appStore.finish(message.order);
+    if(!data?.duplicate&&['credited','test_paid'].includes(data?.status))bridge.purchaseDone?.(data.id);return data;
+   }
    finally{settling.delete(message.token);}
   };
-  bridge.playRecover=async()=>{if(!play||ticket!==generation)return;for(const message of await play.pending()){try{await bridge.playSettle(message);}catch{}}};
+  bridge.playRecover=async()=>{if(!inAppStore||ticket!==generation)return;for(const message of await inAppStore.pending()){try{await bridge.playSettle(message);}catch{}}};
   let recovered=0;
-  const playRecoverSoon=async()=>{if(Date.now()-recovered<10000)return;recovered=Date.now();try{await bridge.playRecover();}catch{}};
-  const playCheckout=async(pack,offerId)=>{
+  const storeRecoverSoon=async()=>{if(Date.now()-recovered<10000)return;recovered=Date.now();try{await bridge.playRecover();}catch{}};
+  const storeCheckout=async(pack,offerId)=>{
    const made=await bridge.payments({operation:'create',pack,requestId:crypto.randomUUID(),...(offerId?{offerId}:{})});
    if(!made?.purchaseId||!made.product||made.account!==user.id)throw new Error('Checkout is unavailable. Please try again later.');
-   const result=await play.buy({product:made.product,account:made.account,purchase:made.purchaseId});
+   const result=await inAppStore.buy({product:made.product,account:made.account,purchase:made.purchaseId});
    if(ticket!==generation)throw new Error('Your session has ended.');
-   if(!result)throw new Error(PLAY_ERRORS.unavailable);
-   if(result.kind==='cancelled')return {store:'google_play',status:'cancelled'};
-   if(result.kind==='error'){if(result.reason==='owned')void bridge.playRecover();throw new Error(PLAY_ERRORS[result.reason]??PLAY_ERRORS.error);}
+   if(!result)throw new Error(storeErrors.unavailable);
+   if(result.kind==='cancelled')return {store:storeName,status:'cancelled'};
+   if(result.kind==='error'){if(result.reason==='owned')void bridge.playRecover();throw new Error(storeErrors[result.reason]??storeErrors.error);}
    recovered=Date.now();
-   if(result.state==='purchased'){try{const data=await bridge.playSettle(result);if(!data)bridge.purchaseDone?.(made.purchaseId);}catch{bridge.purchaseDone?.(made.purchaseId);}}
+   // The window follows the purchase that came back: the App Store may answer with an older, unfinished one of the same product.
+   const shown=result.purchase??made.purchaseId;
+   if(result.state==='purchased'){try{const data=await bridge.playSettle(result);if(!data)bridge.purchaseDone?.(shown);}catch{bridge.purchaseDone?.(shown);}}
    else bridge.purchaseDone?.(made.purchaseId);
-   return {store:'google_play',id:made.purchaseId,status:result.state};
+   return {store:storeName,id:made.purchaseId,status:result.state};
   };
-  bridge.checkout=async(pack,requestId,offerId)=>{if(inApp&&!play)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(play)return playCheckout(pack,offerId);const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
+  bridge.checkout=async(pack,requestId,offerId)=>{if(inApp&&!inAppStore)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId);const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
   bridge.paymentReturn=()=>{if(inApp)return {id:null,cancelled:false};const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,

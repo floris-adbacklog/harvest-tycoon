@@ -206,5 +206,5 @@ test('the Lantern keeper comes with the paid Halloween Pass, checked by the serv
  assert.match(picker,/const offered=PLAYER_AVATARS\.filter\(a=>!avatarGoal\(a\.id\)\?\.pass\|\|!portalOff\('payments'\)\|\|!locked\(a\.id,known\)\);/,'not offered in the apps or on CrazyGames unless owned');
  assert.match(readFileSync(new URL('../public/pass-ui.js',import.meta.url),'utf8'),/With the Lantern keeper avatar, yours at once\./,'the buy box says so');
  // Hidden in an app that sells nothing (an older Android app, the iPhone app); the Android app 1.1 sells it through Google Play.
- assert.match(readFileSync(new URL('../public/android.css',import.meta.url),'utf8'),/html\[data-app=android\]:not\(\[data-play-billing\]\) \.wiki-paid\{display:none!important\}/);
+ assert.match(readFileSync(new URL('../public/android.css',import.meta.url),'utf8'),/html\[data-app=android\]:not\(\[data-app-billing\]\) \.wiki-paid\{display:none!important\}/);
 });
