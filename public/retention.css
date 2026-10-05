@@ -401,47 +401,63 @@
  .level-card .level-star::after{content:'';position:absolute;inset:-4px;border-radius:15px;padding:3px;background:conic-gradient(#d99a26 calc(var(--xp,0)*1%),#eadfc9 0);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);pointer-events:none}
 }
 
-/* Tractor: a status pill, the crop you plant as a chip, one card per job with its fields and price. */
-.tractor-top{display:flex;align-items:center;gap:12px;margin:0 0 14px}
-.tractor-art{flex-shrink:0;display:grid;place-items:center;width:56px;height:56px;border-radius:16px;background:linear-gradient(145deg,#eef3f8,#dfe8f1)}
-.tractor-art>.game-art{width:46px;height:46px;object-fit:contain}
-.tractor-top>div{flex:1;min-width:0}
-.tractor-art>.game-art,.tractor-job-art>.game-art{flex:none}
-.tractor-top strong{display:block;font:600 17px 'Outfit',sans-serif;color:#453e28}
-.tractor-top div>span{display:block;margin-top:2px;font-size:13px;color:#807463}
-.tractor-seed{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:10px 12px;border:1px solid #ecdcae;border-radius:16px;background:#fff8e4;text-align:start;color:inherit;cursor:pointer}
-.tractor-seed>.game-art{flex:0 0 38px;width:38px;height:38px;object-fit:contain}
+/* Tractor (5 Oct 2026): the crop you plant as a chip, the four coin jobs as tiles, then the two diamond jobs as cards side by
+   side with their own pictures, all in the game's cream cards; spending diamonds looks like the game's diamond button. */
+.tractor-seed{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:8px 12px;border:1px solid #ecdcae;border-radius:16px;background:#fff8e4;text-align:start;color:inherit;cursor:pointer}
+.tractor-seed>.game-art{flex:0 0 34px;width:34px;height:34px;object-fit:contain}
 .tractor-seed>span:not(.game-art){flex:1;min-width:0}
-.tractor-seed small{display:block;font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#9b823a}
+.tractor-seed small{display:block;font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#9b823a}
 .tractor-seed strong{display:block;font:600 16px 'Outfit',sans-serif;color:#453e28}
 .tractor-seed em{display:inline-flex;align-items:center;gap:4px;font-style:normal;font-size:13px;font-weight:700;color:#806322;white-space:nowrap}
-.tractor-seed em .game-art{width:18px;height:18px}
+.tractor-seed em .game-art{width:17px;height:17px}
 .tractor-seed>svg{width:18px;height:18px;color:#a09684;flex-shrink:0}
-.tractor-jobs{display:grid;gap:8px}
-.tractor-subhead{display:flex;align-items:center;gap:6px;margin:18px 0 8px;font:600 15px 'Outfit',sans-serif;color:#453e28}
+.tractor-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tractor-tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;padding:10px 12px 12px;border:1px solid #e6ddd1;border-radius:18px;background:#fbf8f3;box-shadow:0 2px 0 #ebe2d3;text-align:start;color:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+.tractor-tile:hover:not(:disabled){border-color:#cdbb85;background:#fffaf0}
+.tractor-tile-art{display:grid;place-items:center;width:42px;height:42px;margin-bottom:6px;border-radius:13px;background:#efe6d8}
+.tractor-tile-art>.game-art{flex:none;width:32px;height:32px;object-fit:contain}
+.tractor-tile strong{font:600 15px 'Outfit',sans-serif;color:#453e28;overflow-wrap:anywhere}
+.tractor-tile small{font-size:12px;line-height:1.35;color:#807463;overflow-wrap:anywhere}
+.tractor-tile .tractor-job-cost{position:absolute;top:12px;inset-inline-end:10px}
+.tractor-tile:disabled{cursor:default;background:#f6f3ee;border-color:#ece6dc;box-shadow:none}
+.tractor-tile:disabled .tractor-tile-art{filter:grayscale(1);opacity:.45}
+.tractor-tile:disabled strong{color:#a49c8c}
+.tractor-job-cost{display:inline-flex;align-items:center;gap:3px;padding-block:4px;padding-inline:5px 9px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:800;font-size:13.5px;white-space:nowrap}
+.tractor-job-cost .game-art{width:17px;height:17px}
+.tractor-foot{margin:8px 2px 0;font-size:12px;line-height:1.5;color:#8a7d68}
+.tractor-subhead{display:flex;align-items:center;gap:6px;margin:18px 0 10px;font:600 16px 'Outfit',sans-serif;color:#453e28}
 .tractor-subhead .game-art{width:20px;height:20px}
-.tractor-rule{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 10px;border-radius:12px;background:#f1efe9;font-size:12.5px;line-height:1.4;color:#6f6553}
-.tractor-rule .game-art{flex:none;width:20px;height:20px;filter:grayscale(.4)}
-.tractor-job.is-diamond{border-color:#d9dcf2;background:#f7f8ff}
-.tractor-job.is-diamond:hover:not(:disabled){border-color:#aab2e6;background:#f0f2ff}
-.tractor-job.is-diamond .tractor-job-art{background:#e6e9fb}
-.tractor-job.is-running,.tractor-job.is-done{cursor:default}
-.tractor-job.is-running{border-color:#b9d8a8;background:#f2f9ec}
-.tractor-forecast{color:#5a5fa0!important;font-weight:700}
-.tractor-price-rule{margin:-4px 0 10px;font-size:12px;color:#8a7d68}
-.tractor-job{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2;text-align:start;color:inherit;cursor:pointer;transition:background .15s,border-color .15s}
-.tractor-job:hover:not(:disabled){border-color:#cdbb85;background:#fffaf0}
-.tractor-job:disabled{cursor:default;background:#f6f3ee;border-color:#ece6dc}
-.tractor-job:disabled .tractor-job-art{filter:grayscale(1);opacity:.5}
-.tractor-job:disabled strong{color:#9a9384}
-.tractor-job-art{flex-shrink:0;display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#efe6d8}
-.tractor-job-art>.game-art{width:32px;height:32px;object-fit:contain}
-.tractor-job-copy{flex:1;min-width:0}
-.tractor-job-copy strong{display:block;font:600 15px 'Outfit',sans-serif;color:#453e28}
-.tractor-job-copy small{display:block;margin-top:2px;font-size:12px;color:#807463}
-.tractor-job-cost{display:inline-flex;align-items:center;gap:4px;padding:5px 10px 5px 6px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:800;font-size:14px;white-space:nowrap}
-.tractor-job-cost .game-art{width:18px;height:18px}
-.tractor-foot{margin:14px 0 0;font-size:12px;line-height:1.5;color:#8a7d68}
+.tractor-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tractor-card{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:14px 10px 12px;border:1px solid #e6ddd1;border-radius:20px;background:#fbf8f3;box-shadow:0 2px 0 #ebe2d3;text-align:center;color:#453e28;cursor:pointer;transition:background .15s,border-color .15s}
+button.tractor-card:hover:not(:disabled){border-color:#cdbb85;background:#fffaf0}
+.tractor-card-art{display:grid;place-items:center;width:76px;height:76px;margin:0 0 6px;border-radius:20px;background:#fffdf7}
+.tractor-card-art>.game-art{flex:none;width:66px;height:66px;object-fit:contain}
+.tractor-card strong{font:600 16px 'Outfit',sans-serif;overflow-wrap:anywhere}
+.tractor-card small{font-size:12px;line-height:1.35;color:#7a705f;overflow-wrap:anywhere}
+.tractor-card .tractor-forecast{margin-top:2px;color:#806322;font-weight:700}
+.tractor-price{display:inline-flex;align-items:center;gap:4px;margin-top:auto;padding-block:6px;padding-inline:10px 16px;border:1px solid var(--btn-diamond-line);border-radius:var(--btn-radius);background:var(--btn-diamond);box-shadow:0 3px 0 var(--btn-diamond-edge);color:var(--btn-diamond-text);font-weight:800;font-size:14px;white-space:nowrap}
+.tractor-card>small:last-of-type{margin-bottom:10px}
+.tractor-price .game-art{width:18px;height:18px}
+button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-diamond-hover)}
+.tractor-card:disabled{cursor:default;background:#f6f3ee;border-color:#ece6dc;box-shadow:none}
+.tractor-card:disabled .tractor-card-art{filter:grayscale(1);opacity:.45}
+.tractor-card:disabled strong{color:#a49c8c}
+.tractor-card.is-running,.tractor-card.is-done{cursor:default}
+.tractor-card.is-running{border-color:#cfe0bf}
+.tractor-hours{display:flex;gap:4px;margin:8px 0 4px}
+.tractor-hours i{width:11px;height:11px;border-radius:50%;background:#e8dfcf}
+.tractor-hours i.is-on{background:#7aa35a}
+.tractor-rule{display:flex;align-items:flex-start;gap:7px;margin:14px 2px 0;font-size:12px;line-height:1.45;color:#8a7d68}
+.tractor-rule .game-art{flex:none;width:16px;height:16px;margin-top:1px;filter:grayscale(.4)}
+/* A link in the text: it keeps the line's height, and a larger invisible area around it is still easy to tap. */
+.tractor-rule .tractor-wiki{position:relative;min-height:0;padding:0;border:0;background:none;font:inherit;font-weight:700;line-height:inherit;color:var(--btn-main);cursor:pointer;white-space:nowrap}
+.tractor-rule .tractor-wiki::before{content:'';position:absolute;inset:-11px -6px}
+.tractor-wiki::after{content:' ›'}
+[dir=rtl] .tractor-wiki::after{content:' ‹'}
+.tractor-wiki:hover{text-decoration:underline}
+/* On a computer the window is wide enough for the four coin jobs in one row; phones, also turned sideways, keep two by two
+   (the same split as desktop-hud.css and mobile.css). */
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){.tractor-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
 /* Seed shop: one compact row per crop, the chosen one framed in gold with a check. */
 .crop-catalog{display:grid;gap:8px;grid-template-columns:1fr}

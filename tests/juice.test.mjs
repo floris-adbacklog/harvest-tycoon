@@ -27,11 +27,11 @@ test('an empty market offers the way forward',()=>{
  assert.match(ui,/data-market-empty>\$\{marketTab==='crops'\?'Go to your fields':marketTab==='village'\?'Open places':'Open buildings'\}<\/button>/);
  assert.match(ui,/\[data-market-empty\]'\)\?\.addEventListener\('click',\(\)=>\{\$\('market-dialog'\)\.close\(\);if\(marketTab!=='crops'\)openBuildings\(\);\}\)/);
 });
-test('the tractor shows the crop as a chip that opens the crop picker, and one card per job; no rest pill since it never rests (4 Oct 2026)',()=>{
+test('the tractor shows the crop as a chip that opens the crop picker, and one tile per job (5 Oct 2026); no rest pill since it never rests (4 Oct 2026)',()=>{
  const ui=read('public/retention-ui.js'),css=read('public/retention.css');
  assert.doesNotMatch(ui,/tractor-timer|Resting ·|\bcooldown\b|tractor rests/,'nothing of the old rest is left (a leftover cooldown broke the card on 4 Oct 2026)');
  assert.match(ui,/document\.querySelector\('\[data-tractor-crop\]'\)\.onclick=\(\)=>\{\$\('utility-dialog'\)\.close\(\);\$\('selected-crop-button'\)\?\.click\(\);\};/);
- assert.match(ui,/<button class="tractor-job" data-tractor="\$\{mode\}"/);
+ assert.match(ui,/<button class="tractor-tile" data-tractor="\$\{mode\}"/);
  assert.match(css,/\.tractor-seed>span:not\(\.game-art\)\{flex:1;min-width:0\}/,'a crop picture (a span) is never stretched like the text');
 });
 test('the seed shop is one compact row per crop with its price on the right, and planting says what was planted',()=>{

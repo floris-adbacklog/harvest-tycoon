@@ -115,9 +115,10 @@ test('a broken saved shift is dropped; the tractor card, Welcome back, pushes an
  const raw={plots:[{crop:'corn',readyAt:now-1}],tractorShift:{endsAt:now+HOUR}};
  assert.deepEqual(readyCrops(raw,now),[],'no "crops ready" push while the tractor will harvest them');assert.equal(readyCrops({...raw,tractorShift:null},now).length,1);
  const ui=read('public/retention-ui.js');
- assert.match(ui,/The tractor's diamond work counts for no challenges, events or leaderboards\. What it brings in is yours, like any crop\./);assert.match(ui,/data-tractor-care/);assert.match(ui,/data-tractor-shift/);
+ assert.match(ui,/Diamond work counts for no challenges, events or leaderboards\. <button type="button" class="tractor-wiki" data-tractor-wiki>How it works<\/button>/,'the rule on the card, with the way to the wiki');assert.match(ui,/data-tractor-care/);assert.match(ui,/data-tractor-shift/);
  assert.match(ui,/if\(cost>=150&&!await confirmDiamondSpend/,'150 diamonds or more asks first');assert.match(ui,/window\.harvestShop\?\.open\(\)/,'short of diamonds: to the packs');
- const wiki=read('public/wiki-content.js');assert.match(wiki,/The tractor's diamond work counts for no challenges, events or leaderboards\./);assert.match(wiki,/Selling or using them later counts like any crop you sell or use\./);assert.match(wiki,/1 diamond for every \$\{SHIFT_COINS_PER_DIAMOND\} coins of crops/);assert.match(ui,/Night shift price: 1 diamond for every \$\{SHIFT_COINS_PER_DIAMOND\} coins of crops it brings in\./);
+ const wiki=read('public/wiki-content.js');assert.match(wiki,/The tractor's diamond work counts for no challenges, events or leaderboards\./);assert.match(wiki,/Selling or using them later counts like any crop you sell or use\./);assert.match(wiki,/1 diamond for every \$\{SHIFT_COINS_PER_DIAMOND\} coins of crops/);assert.doesNotMatch(ui,/Night shift price/,'the price rule is only in the wiki (5 Oct 2026)');
+ assert.match(ui,/window\.harvestWiki\?\.\('helpers','sec-tractor',\{from:\{label:'Tractor',go:\(\)=>openUtility\('tractor'\)\}\}\)/,'How it works opens the tractor section, and Back returns to the card');
 });
 
 test('Extra care for coins: the tractor gives care to every crop whose care moment has come, like by hand, and it counts like hand work',()=>{
@@ -128,7 +129,7 @@ test('Extra care for coins: the tractor gives care to every crop whose care mome
  assert.equal(r.count,3,'the three cabbages; the corn is ripe by then and waits for its harvest');assert.equal(coins-s.coins,12+2*3);
  assert.equal(s.stats.tended,tended+3);assert.equal(s.stats.tractor,tractor+1,'a coin job, so it counts like the others');
  assert.ok([0,1,2].every(id=>s.plots[id].tended));
- assert.match(read('public/retention-ui.js'),/\['tend','care','Give extra care'\]/);
+ assert.match(read('public/retention-ui.js'),/\['tend','care','Extra care'\]/);
 });
 
 test('news from a level: the admin picks "From level", the database shows it only from that level and counts it unread only there',()=>{
