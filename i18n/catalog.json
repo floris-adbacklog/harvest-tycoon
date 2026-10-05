@@ -2696,6 +2696,7 @@
 "On the sign-in screen, tap “Forgot your password?” and enter your email address. We send you a link to choose a new one.":"public/support.html",
 "On this page":"public/wiki-content.js",
 "Once a day, up to {0} of any crop or good. It stays open for {1} days: your family adds to it, a little at a time, until it is full.":"public/social-ui.js",
+"Once it starts, it cannot be stopped.":"public/retention-ui.js",
 "Once per farmer. Worth: what the same diamonds, coins and VIP cost in the shop.":"src/offer-ui.js",
 "One chapter at a time, in this order. Pay the coins and goods, and the work takes the time shown. Some chapters also ask for crop medals.":"public/wiki-content.js",
 "One email a day, only when something is waiting. You can unsubscribe from any email.":"public/farm.html",

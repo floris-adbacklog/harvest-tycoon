@@ -17,6 +17,7 @@
 .diamond-confirm:not(.sale-confirm){background:radial-gradient(ellipse at top,#e2f0f7,#fffdf5 62%)}
 .diamond-confirm h2{margin:0 0 6px;color:#34432d;font:700 23px/1.2 'Outfit',sans-serif}
 .diamond-confirm p{max-width:300px;margin:0 auto;color:#5d5641;font-size:14px;line-height:1.5}
+.diamond-confirm .diamond-confirm-note{margin-top:8px;color:#806322;font-size:13px;font-weight:700}
 .diamond-confirm-art{display:grid;place-items:center;width:72px;height:72px;margin:0 auto 10px;border-radius:50%;background:radial-gradient(circle,#fffdf5,#f3e6c2)}
 .diamond-confirm:not(.sale-confirm) .diamond-confirm-art{background:radial-gradient(circle,#fff,#d7ebf5)}
 .diamond-confirm-art>.game-art{width:46px;height:46px;object-fit:contain}

@@ -110,18 +110,19 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    $('utility-content').innerHTML=`<button type="button" class="tractor-seed" data-tractor-crop>${art(crop)}<span><small>Planting</small><strong>${CROPS[crop].name}</strong></span><em>${art('coins')}${seedCost(state,crop)} per field</em><i data-lucide="chevron-right" data-line-icon></i></button><div class="tractor-tiles">${[['plant','seeds','Plant'],['water','water','Water'],['tend','care','Extra care'],['harvest','harvest','Harvest']].map(([mode,icon,label])=>{const q=quotes[mode];return `<button class="tractor-tile" data-tractor="${mode}" ${!q.count||state.coins<q.total?'disabled':''}><span class="tractor-tile-art">${art(icon)}</span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}<strong>${label}</strong><small>${q.count?`${q.count} ${q.count===1?'field':'fields'}${q.seeds?` · ${q.fuel} fuel + ${q.seeds} seeds`:''}${mode==='water'?` · ${waterLeft(q)} left to water`:''}`:empty[mode]}</small></button>`;}).join('')}</div><p class="tractor-foot">Fuel: ${TRACTOR_FUEL_BASE} coins a job + ${TRACTOR_FUEL_PER_FIELD} per field. <span>By hand is always free.</span></p>${diamondWork(crop)}`;
    document.querySelector('[data-tractor-crop]').onclick=()=>{$('utility-dialog').close();$('selected-crop-button')?.click();};
    document.querySelectorAll('[data-tractor]').forEach(b=>b.onclick=()=>act({type:'tractor',mode:b.dataset.tractor,crop:getCrop()},r=>`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`));
-   // The diamond work (4 Oct 2026): short of diamonds goes to the packs; 150 or more asks first, as everywhere in the game.
+   // The diamond work (4 Oct 2026): short of diamonds goes to the packs; 150 or more asks first, as everywhere in the game,
+   // and the night shift always asks (5 Oct 2026: a tap by accident started 8 hours that cannot be stopped).
    // The price sent is the one on the button: the server never charges more (a quote that went up asks to look again).
-   const paid=async(cost,ask,action,message)=>{
+   const paid=async(cost,ask,action,message,always=false)=>{
     const short=cost-state.diamonds;
     if(short>0){notify(`You need ${short} more diamonds.`);$('utility-dialog').close();window.harvestShop?.open();return;}
-    if(cost>=150&&!await confirmDiamondSpend({...ask,cost,balance:state.diamonds}))return;
+    if((always||cost>=150)&&!await confirmDiamondSpend({...ask,cost,balance:state.diamonds}))return;
     act(action,message);
    };
    const care=document.querySelector('[data-tractor-care]');
    if(care)care.onclick=()=>{const shown=Number(care.dataset.cost),q=fullCareQuote(state,farmNow());if(q.cost!==shown){notify('Your fields have changed. Review the price.');renderUtility();return;}paid(shown,{title:'Full care',description:'Water and extra care for every growing crop, now.',picture:'tractor-full-care'},{type:'tractor_care',expectedCost:shown},r=>`Full care for ${r.count} ${r.count===1?'crop':'crops'}: ${r.cost} diamonds.`);};
    const shift=document.querySelector('[data-tractor-shift]');
-   if(shift)shift.onclick=()=>{const crop=getCrop(),shown=Number(shift.dataset.cost),q=nightShiftQuote(state,crop,farmNow());if(q.cost>shown){notify('The price has changed. Review the current price.');renderUtility();return;}paid(shown,{title:'Night shift',description:`For 8 hours the tractor harvests, plants ${CROPS[crop].name}, waters and gives care every hour.`,picture:'tractor-night-shift'},{type:'tractor_shift',crop,expectedCost:shown},r=>`Night shift started: the tractor works your fields until ${clock(r.endsAt)}.`);};
+   if(shift)shift.onclick=()=>{const crop=getCrop(),shown=Number(shift.dataset.cost),q=nightShiftQuote(state,crop,farmNow());if(q.cost>shown){notify('The price has changed. Review the current price.');renderUtility();return;}paid(shown,{title:'Night shift',description:`For 8 hours the tractor harvests, plants ${CROPS[crop].name}, waters and gives care every hour.`,picture:'tractor-night-shift',note:'Once it starts, it cannot be stopped.'},{type:'tractor_shift',crop,expectedCost:shown},r=>`Night shift started: the tractor works your fields until ${clock(r.endsAt)}.`,true);};
    // How it works: the wiki's tractor section (with the night shift's price rule), and its Back button returns here.
    document.querySelector('[data-tractor-wiki]').onclick=()=>window.harvestWiki?.('helpers','sec-tractor',{from:{label:'Tractor',go:()=>openUtility('tractor')}});
   }else{

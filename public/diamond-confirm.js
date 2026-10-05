@@ -1,13 +1,15 @@
 import {art} from './visual-icons.js';
 // "Spend diamonds?" in the look of the other pop-ups: the thing you buy, what it does, the price with a diamond, what you
 // keep, and the usual buttons (Keep diamonds is focused, so Enter never spends by accident). Resolves to true only on Spend.
-export function confirmDiamondSpend({title,cost,description,picture='diamonds',balance}){
+export function confirmDiamondSpend({title,cost,description,picture='diamonds',balance,note=''}){
  return new Promise(resolve=>{
   const dialog=document.createElement('dialog');dialog.className='diamond-confirm';
   dialog.setAttribute('aria-labelledby','diamond-confirm-title');dialog.setAttribute('aria-describedby','diamond-confirm-description');
   const amount=cost.toLocaleString('en-US'),left=Number.isFinite(balance)?balance-cost:null;
-  dialog.innerHTML=`<div class="diamond-confirm-art">${art(picture)}</div><h2 id="diamond-confirm-title"></h2><p id="diamond-confirm-description"></p><div class="diamond-confirm-cost"><strong>${art('diamonds')}${amount}</strong>${left!==null&&left>=0?`<small>You keep ${left.toLocaleString('en-US')} diamonds</small>`:''}</div><div class="diamond-confirm-actions"><button type="button" class="small-button" data-cancel autofocus>Keep diamonds</button><button type="button" class="primary-button confirm-spend" data-confirm>Spend ${amount}</button></div>`;
+  dialog.innerHTML=`<div class="diamond-confirm-art">${art(picture)}</div><h2 id="diamond-confirm-title"></h2><p id="diamond-confirm-description"></p>${note?'<p class="diamond-confirm-note" id="diamond-confirm-note"></p>':''}<div class="diamond-confirm-cost"><strong>${art('diamonds')}${amount}</strong>${left!==null&&left>=0?`<small>You keep ${left.toLocaleString('en-US')} diamonds</small>`:''}</div><div class="diamond-confirm-actions"><button type="button" class="small-button" data-cancel autofocus>Keep diamonds</button><button type="button" class="primary-button confirm-spend" data-confirm>Spend ${amount}</button></div>`;
   dialog.querySelector('h2').textContent=title;dialog.querySelector('p').textContent=description;
+  // A note: what to know before spending, in its own line (the night shift: once it starts it cannot be stopped).
+  if(note){dialog.querySelector('.diamond-confirm-note').textContent=note;dialog.setAttribute('aria-describedby','diamond-confirm-description diamond-confirm-note');}
   const focus=document.activeElement;let accepted=false;
   dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
   dialog.querySelector('[data-confirm]').onclick=()=>{accepted=true;dialog.close();};

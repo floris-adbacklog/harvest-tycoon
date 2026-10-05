@@ -116,7 +116,9 @@ test('a broken saved shift is dropped; the tractor card, Welcome back, pushes an
  assert.deepEqual(readyCrops(raw,now),[],'no "crops ready" push while the tractor will harvest them');assert.equal(readyCrops({...raw,tractorShift:null},now).length,1);
  const ui=read('public/retention-ui.js');
  assert.match(ui,/Diamond work counts for no challenges, events or leaderboards\. <button type="button" class="tractor-wiki" data-tractor-wiki>How it works<\/button>/,'the rule on the card, with the way to the wiki');assert.match(ui,/data-tractor-care/);assert.match(ui,/data-tractor-shift/);
- assert.match(ui,/if\(cost>=150&&!await confirmDiamondSpend/,'150 diamonds or more asks first');assert.match(ui,/window\.harvestShop\?\.open\(\)/,'short of diamonds: to the packs');
+ assert.match(ui,/if\(\(always\|\|cost>=150\)&&!await confirmDiamondSpend/,'150 diamonds or more asks first');
+ assert.match(ui,/note:'Once it starts, it cannot be stopped\.'\},\{type:'tractor_shift',crop,expectedCost:shown\},r=>`Night shift started: the tractor works your fields until \$\{clock\(r\.endsAt\)\}\.`,true\);/,'the night shift always asks first, and says it cannot be stopped (5 Oct 2026)');
+ assert.match(read('public/diamond-confirm.js'),/if\(note\)\{dialog\.querySelector\('\.diamond-confirm-note'\)\.textContent=note;/);assert.match(ui,/window\.harvestShop\?\.open\(\)/,'short of diamonds: to the packs');
  const wiki=read('public/wiki-content.js');assert.match(wiki,/The tractor's diamond work counts for no challenges, events or leaderboards\./);assert.match(wiki,/Selling or using them later counts like any crop you sell or use\./);assert.match(wiki,/1 diamond for every \$\{SHIFT_COINS_PER_DIAMOND\} coins of crops/);assert.doesNotMatch(ui,/Night shift price/,'the price rule is only in the wiki (5 Oct 2026)');
  assert.match(ui,/window\.harvestWiki\?\.\('helpers','sec-tractor',\{from:\{label:'Tractor',go:\(\)=>openUtility\('tractor'\)\}\}\)/,'How it works opens the tractor section, and Back returns to the card');
 });
