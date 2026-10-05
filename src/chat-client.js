@@ -44,8 +44,9 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   dmChannel:other=>dmChannel(playerId,other),
   overview:()=>rpc('chat_overview'),
   myRole:()=>rpc('chat_my_role'),
-  async messages(name,limit=50){
-   const read=columns=>supabase.from('chat_messages').select(columns).eq('channel',name).order('created_at',{ascending:false}).limit(limit);
+  // The newest messages of a channel; before (a created_at): the ones just older than that (Load earlier messages, Oct 2026).
+  async messages(name,limit=50,before=null){
+   const read=columns=>{let q=supabase.from('chat_messages').select(columns).eq('channel',name);if(before)q=q.lt('created_at',before);return q.order('created_at',{ascending:false}).limit(limit);};
    let list;
    if(cards){check();const first=await read(CARD_COLUMNS);if(first.error?.code==='42703')cards=false;else{if(first.error)throw chatError(first.error);check();list=first.data??[];}}
    if(!cards)list=await rows(read(MESSAGE_COLUMNS));

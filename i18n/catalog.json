@@ -2335,6 +2335,7 @@
 "Load 1,000 goods onto export trailers.":"public/farm-state.js",
 "Load 5,000 goods onto export trailers.":"public/farm-state.js",
 "Load all you can":"public/estate-ui.js",
+"Load earlier messages":"src/chat-ui.js",
 "Load {0}":"public/estate-ui.js",
 "Loaded":"public/estate-ui.js",
 "Loaded an export trailer":"supabase/functions/farm-api/player-log.js",

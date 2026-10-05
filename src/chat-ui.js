@@ -104,6 +104,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  let found=null,findTimer=null,findTicket=0;
 
  let overview=null,tab='global',thread=null,messages=[],notices=[],freshNotices=0,loading=0,busy=false,sending=false,connected=false,disposed=false,switchedOff=false;
+ // Earlier messages (5 Oct 2026, a farmer's feedback: an old conversation could not be read back): the newest PAGE come first, and a button
+ // at the end of the list fetches the PAGE before them, as long as there are more.
+ const PAGE=50;let more=false,loadingMore=false;
  let overviewTimer=null,pollTimer=null;const readTimers=new Map(),statusCache=new Map();
  // A message keeps the avatar its sender had when it was sent (chat_messages.sender_avatar); the chat shows the sender's avatar of now
  // instead: looked up for every farmer on screen when a chat opens (at most once a minute, then only farmers not seen yet), and changed
@@ -270,6 +273,14 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // hint did not fit a phone). A private chat has nobody else to mention.
   return {show:true,placeholder:tab==='global'||tab==='family'?'Type @ to mention a farmer.':`Message ${thread.otherName}…`};
  }
+ const moreButton=()=>more?`<li class="chat-more"><button type="button" class="small-button" data-chat-more${loadingMore?' disabled':''}>${loadingMore?'Loading…':'Load earlier messages'}</button></li>`:'';
+ async function loadMore(){
+  const name=channelOf(),last=messages[messages.length-1];if(!name||!last||loadingMore)return;
+  const ticket=loading;loadingMore=true;paint();
+  try{const rows=await chat.messages(name,PAGE,last.created_at);if(ticket!==loading)return;const known=new Set(messages.map(m=>m.id));messages=[...messages,...rows.filter(m=>!known.has(m.id))];more=rows.length>=PAGE;void freshFaces(rows.map(m=>m.sender));}
+  catch(error){if(ticket===loading)note(error.message);}
+  finally{if(ticket===loading){loadingMore=false;paint();}}
+ }
  function paint(){
   dialog.querySelectorAll('[data-chat-tab]').forEach(tabButton=>{const on=tabButton.dataset.chatTab===tab;tabButton.classList.toggle('active',on);tabButton.setAttribute('aria-selected',String(on));});
   back.hidden=!(tab==='private'&&thread);blockButton.hidden=reportButton.hidden=back.hidden||Boolean(thread?.crew);
@@ -295,7 +306,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   }
   else if(tab==='private'&&!thread&&found&&!find.hidden)list.innerHTML=found.loading?'<li class="chat-empty"><p>Looking around the valley…</p></li>':found.players.length?found.players.map(foundRow).join(''):empty('No farmers found. Try another name.');
   else if(tab==='private'&&!thread){const threads=(overview?.threads??[]).filter(t=>!blocked().has(t.otherId));list.innerHTML=(overview?.crew?crewRow(overview.crew):'')+(overview?.privateOn===false?'<li class="chat-empty chat-off"><p>Your private messages are off. You can turn them on in Settings, under Chat.</p></li>':'')+(threads.length?threads.map(threadRow).join(''):overview?.privateOn===false?'':empty(EMPTY.private));}
-  else{const shown=messages.filter(m=>!blocked().has(m.sender));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join(''):empty(thread?.crew?'Say hello to the crew!':thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
+  else{const shown=messages.filter(m=>!blocked().has(m.sender));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join('')+moreButton():empty(thread?.crew?'Say hello to the crew!':thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
   refreshArt();
  }
  async function load(){
@@ -310,11 +321,12 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   }
   const name=channelOf();if(!name){messages=[];paint();return;}
   busy=true;paint();
-  try{const rows=await chat.messages(name);if(ticket!==loading)return;messages=rows;}catch(error){if(ticket===loading){messages=[];note(error.message);}}
+  more=false;
+  try{const rows=await chat.messages(name,PAGE);if(ticket!==loading)return;messages=rows;more=rows.length>=PAGE;}catch(error){if(ticket===loading){messages=[];note(error.message);}}
   if(ticket!==loading)return;busy=false;paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);
  }
  function show(next,{keepThread=false}={}){
-  tab=next;if(!keepThread)thread=null;messages=[];found=null;findInput.value='';picked.clear();closePicks();load();
+  tab=next;if(!keepThread)thread=null;messages=[];more=false;found=null;findInput.value='';picked.clear();closePicks();load();
   if(!matchMedia('(pointer:coarse)').matches&&!form.hidden)input.focus({preventScroll:true});
  }
  // A channel comes from a notification or a link (public/app-links.js): a private chat opens that conversation, a family chat the
@@ -358,7 +370,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // mention of you in Global or Family (3 Oct 2026: a mention reaches you like a private message).
   const forMe=mentionsMe(m,me);
   if(m.sender!==me&&(m.channel.startsWith('dm:')||m.channel==='crew'||forMe))win.harvestSound?.('message');
-  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,100);paint();void freshFaces([m.sender]);}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview();return;}
+  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,Math.max(100,messages.length+1));paint();void freshFaces([m.sender]);}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview();return;}
   if(m.sender===me)return;
   if(m.channel==='global'){overview.unread.global=Math.min(99,(overview.unread.global??0)+1);if(forMe)overview.unread.mentions=Math.min(99,(overview.unread.mentions??0)+1);}
   else if(m.channel===overview.family?.channel)overview.unread.family=Math.min(99,(overview.unread.family??0)+1);
@@ -402,6 +414,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  }
  list.addEventListener('click',event=>{
   if(pressed){pressed=false;return;}   // the tap that ends a long press opened the menu already
+  if(event.target.closest('[data-chat-more]')){void loadMore();return;}
   const profile=event.target.closest('[data-profile]'),threadButton=event.target.closest('[data-thread]'),more=event.target.closest('[data-more]');
   if(more){openMenu(more.closest('.chat-msg'));return;}
   const give=event.target.closest('[data-give]');

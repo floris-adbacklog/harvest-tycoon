@@ -373,3 +373,20 @@ test('staff actions on a message carry the badge\'s shield and one line "Moderat
  assert.match(css,/\.chat-menu-shield\{width:16px;height:16px;margin-inline-start:auto\}/);assert.match(css,/\.chat-menu-staff\{display:flex;/);
  for(const code of ['nl','es','ar','zh'])assert.ok(JSON.parse(read(`public/i18n/${code}.json`))['Moderators and the admin'],`${code} has the line already`);
 });
+
+test('Load earlier messages: the client asks for the page before the oldest one shown, and the chat offers it at the end of the list while there are more (5 Oct 2026)',async()=>{
+ const {createChatClient}=await import('../src/chat-client.js');
+ const calls=[];
+ const query=result=>({select(){return this;},eq(...a){calls.push(['eq',...a]);return this;},lt(...a){calls.push(['lt',...a]);return this;},order(){return this;},limit(n){calls.push(['limit',n]);return this;},in(){return this;},then:(ok,fail)=>Promise.resolve(result).then(ok,fail)});
+ const supabase={from:table=>table==='chat_messages'?query({data:[{id:'9',sender:'a',created_at:'2026-10-01T10:00:00Z'}],error:null}):query({data:[],error:null})};
+ const client=createChatClient(supabase,{playerId:'me'});
+ await client.messages('global',50);assert.ok(!calls.some(c=>c[0]==='lt'),'the first page has no "before"');
+ calls.length=0;await client.messages('global',50,'2026-10-02T08:00:00Z');
+ assert.deepEqual(calls.filter(c=>c[0]!=='eq'||c[1]!=='channel'),[['lt','created_at','2026-10-02T08:00:00Z'],['limit',50]]);
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/const rows=await chat\.messages\(name,PAGE\);if\(ticket!==loading\)return;messages=rows;more=rows\.length>=PAGE;/);
+ assert.match(ui,/const rows=await chat\.messages\(name,PAGE,last\.created_at\);/,'the page before the oldest message shown');
+ assert.match(ui,/\.join\(''\)\+moreButton\(\):empty\(/,'the button comes after the messages');
+ assert.match(ui,/if\(event\.target\.closest\('\[data-chat-more\]'\)\)\{void loadMore\(\);return;\}/);
+ assert.match(ui,/messages=\[m,\.\.\.messages\]\.slice\(0,Math\.max\(100,messages\.length\+1\)\);/,'a new message keeps the older ones that were loaded');
+});
