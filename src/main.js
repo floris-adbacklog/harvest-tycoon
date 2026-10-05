@@ -229,7 +229,11 @@ async function openFarm(){
    if(ticket!==generation)throw new Error('Your session has ended.');
    if(!fresh&&Object.keys(found).length)storePrices={at:Date.now(),found};
    const prices=Object.fromEntries(Object.entries(storeProducts).filter(([,id])=>found[id]).map(([pack,id])=>[pack,found[id]]));
-   return {...data,enabled:Boolean(data?.enabled)&&Object.keys(prices).length>0,prices};
+   // A pack the store gives no price for is not for sale in the app (Oct 2026: the App Store only sells what Apple approved, and the
+   // Starter Pack and the special offer go to Apple's review later): that Starter Pack and offer do not show and the pass cannot be bought.
+   return {...data,enabled:Boolean(data?.enabled)&&Object.keys(prices).length>0,prices,
+    starter:prices.starter||!data?.starter?data?.starter:{...data.starter,eligible:false},offer:prices.offer?data?.offer??null:null,
+    pass:data?.pass&&!prices.pass?{...data.pass,ready:false}:data?.pass};
   };
   // The App Store's purchase goes as Apple's signed transaction (up to 16 KB); a refusal (not Apple's, another farmer's: a 403) is not
   // asked again.

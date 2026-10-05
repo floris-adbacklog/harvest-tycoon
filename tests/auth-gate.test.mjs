@@ -429,3 +429,15 @@ test('a refusal from the server (4xx) shows its reason; only a lost or failing c
  for(const status of [400,403,404,413,422,429])assert.equal(refused(status),true,String(status));
  for(const status of [undefined,408,425,500,502,503,504,546])assert.equal(refused(status),false,String(status));
 });
+test('in the app, a pack the store has no price for is not for sale: no Starter Pack, no special offer, the pass cannot be bought (Oct 2026)',async()=>{
+ const A='0000000a-0000-4000-8000-000000000000';
+ const paymentRequest=async body=>body.operation==='catalog'?{enabled:true,store:'app_store',packs:[],starter:{eligible:true,expiresAt:Date.now()+86400000},offer:{id:'o',diamonds:900},pass:{id:'halloween-2026',ready:true}}:{status:'pending'};
+ const appStore=found=>({async prices(){return found;},async buy(){return null;},async pending(){return [];},async finish(){return true;},onPurchase(){return()=>{};}});
+ const priced={diamonds_500:{price:'€4,99',micros:4990000,currency:'EUR'}};
+ const only=fixture({ua:IOS_APP_UA,app:true,apple:true,appStore:appStore(priced),user:{id:A},paymentRequest,location:{...APP_PAGE}});await settle();
+ const catalog=await only.window.harvestBridge.payments({operation:'catalog'});
+ assert.equal(catalog.enabled,true);assert.equal(catalog.starter.eligible,false);assert.equal(catalog.offer,null);assert.equal(catalog.pass.ready,false);
+ const all=fixture({ua:IOS_APP_UA,app:true,apple:true,appStore:appStore({...priced,starter_pack:{price:'€2,99'},special_offer:{price:'€4,99'},halloween_pass_2026:{price:'€4,99'}}),user:{id:A},paymentRequest,location:{...APP_PAGE}});await settle();
+ const full=await all.window.harvestBridge.payments({operation:'catalog'});
+ assert.equal(full.starter.eligible,true,'with the store\'s price the Starter Pack is for sale as before (the fixture\'s store knows 150, 500 and the Starter Pack)');
+});

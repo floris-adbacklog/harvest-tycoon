@@ -149,7 +149,8 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
   const t=now(),visible=passVisible(state,t),waiting=visible?passWaiting(state,t):0;
   button.hidden=!visible;dot.hidden=!waiting;
   if(hint)hint.textContent=visible?passHint(state,t):'Coming soon';
-  banner(visible&&['soon','open'].includes(passPhase(t))&&!passPremium(state)&&!portalOff('payments'));
+  // Not while the shop says the pass cannot be bought (in the app: a store without its price, Oct 2026).
+  banner(visible&&['soon','open'].includes(passPhase(t))&&!passPremium(state)&&!portalOff('payments')&&catalog?.pass?.ready!==false);
   if(!dialog.open)return;
   if(!visible){dialog.close();return;}
   if(key()!==drawn)draw();else{
