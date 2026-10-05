@@ -12,7 +12,7 @@ function fresh(level){const s=createFarm(now);s.xp=xpForLevel(level);s.xpOffset=
 test('the unlocks between levels 10 and 38 are spread out: one or more new things on every level from 11 to 48',()=>{
  assert.deepEqual([FEATURE_LEVELS.stall,FEATURE_LEVELS.tractor,FEATURE_LEVELS.silo,FEATURE_LEVELS.projects,DELIVERY_LEVELS.commission,BUILDING_LEVELS.packing],[19,18,26,27,16,11]);
  assert.deepEqual(['windflour','berrycheesecake','harvesthamper','vegetablefeast','berrytart'].map(id=>RECIPE_LEVELS[id]),[14,33,35,36,38]);
- assert.deepEqual([FEATURE_LEVELS.chores,FEATURE_LEVELS.family,FEATURE_LEVELS.boosts],[10,10,14],'chores and Farm Family stay at 10, diamond boosts and the Starter Pack at 14');
+ assert.deepEqual([FEATURE_LEVELS.chores,FEATURE_LEVELS.family,FEATURE_LEVELS.boosts],[10,10,10],'chores, Farm Family and (since 5 Oct 2026) diamond boosts at 10; the Starter Pack stays at 14');
  const levels=new Set([...Object.values(CROP_LEVELS),...Object.values(BUILDING_LEVELS),...Object.values(FEATURE_LEVELS),...Object.values(DELIVERY_LEVELS),
   ...Object.entries(RECIPE_LEVELS).filter(([id,l])=>RECIPES[id]&&RECIPES[id].building!=='factory'&&l>(BUILDING_LEVELS[RECIPES[id].building]??1)).map(([,l])=>l)]);
  for(let level=11;level<=48;level++)assert.ok(levels.has(level),`level ${level} brings something new`);

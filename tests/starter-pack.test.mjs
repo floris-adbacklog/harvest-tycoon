@@ -38,7 +38,7 @@ test('seed-box sorting starts at 35%, keeps practice and caps at 60% after 7 att
 const stamp=Date.UTC(2026,8,22,10);
 function coopBatch(s,xp){s.buildings.coop.job={id:'batch',recipe:'eggs',output:{eggs:3},xp,startedAt:stamp-1000,readyAt:stamp};}
 test('a new farmer is not met by the shop: nothing is offered below level 14, however long the account exists',()=>{
- assert.equal(STARTER_LEVEL,14);assert.equal(STARTER_LEVEL,FEATURE_LEVELS.boosts,'the pack opens when diamond boosts do');
+ assert.equal(STARTER_LEVEL,14);assert.equal(FEATURE_LEVELS.boosts,10,'diamond boosts and the shop open at 10 since 5 Oct 2026; the pack stays at 14');
  const s=freshFarm(stamp);assert.equal(s.starterOffer,undefined);
  s.xp=xpForLevel(STARTER_LEVEL-1);coopBatch(s,5);applyFarmAction(s,{type:'collect',building:'coop'},stamp);
  assert.equal(levelOf(s),STARTER_LEVEL-1);assert.equal(s.starterOffer,undefined,'still nothing at level 13');

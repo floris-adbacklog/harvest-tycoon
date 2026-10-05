@@ -113,7 +113,7 @@ Deno.serve(async req=>{
   // The Android app asks with store 'google_play' (src/play-store.js), the iPhone app (1.1, Oct 2026) with 'app_store': its shop is open
   // when its store is, whatever Stripe says.
   const play=body.store==='google_play',apple=body.store==='app_store',enabled=play?playEnabled:apple?appleEnabled:stripeEnabled;
-  // The offer opens when the farm reaches level 14, where diamond boosts unlock: the server wrote that moment into the farm (farm-state.js stampStarterOffer).
+  // The offer opens when the farm reaches level 14 (STARTER_LEVEL): the server wrote that moment into the farm (farm-state.js stampStarterOffer).
   // The special offer running now (game/payments.js OFFER), for a farm at its level: what is in it, until when, and whether this
   // farmer already bought it. Only in the catalogue and for an offer checkout, so other requests make no extra queries.
   // The Starter Pack's and the special offer's look-ups run at the same time.

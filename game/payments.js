@@ -71,7 +71,7 @@ export function livePaymentConfiguration(key,webhookSecret,enabledFlag){
  const configured=/^[rs]k_live_/.test((key??'').trim())&&Boolean((webhookSecret??'').trim());
  return {mode:'live',configured,enabled:configured&&String(enabledFlag??'').trim().toLowerCase()!=='false'};
 }
-// The welcome offer opens when the farm reaches the level where diamond boosts unlock (STARTER_LEVEL, 14; the server stamps that moment in
+// The welcome offer opens when the farm reaches level 14 (STARTER_LEVEL; the server stamps that moment in
 // the farm, farm-state.js) and lasts 7 days. No moment (a farm below that level, or one that was past it long before this rule: 0) means no offer.
 export function starterEligibility(openedAt,claimed=false,now=Date.now()){
  const start=typeof openedAt==='number'?openedAt:Date.parse(openedAt),expiresAt=start+STARTER_WINDOW,opened=Number.isFinite(start)&&start>0;
