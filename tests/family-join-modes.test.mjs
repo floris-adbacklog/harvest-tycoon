@@ -118,3 +118,9 @@ test('a family name is the players\' own word: never translated, even when it ma
  assert.match(tour,/<span translate="no">\$\{esc\(f\.name\)\}<\/span>/,'the standings');assert.match(tour,/<strong translate="no">\$\{esc\(f\.name\)\}<\/strong>/,'previous weeks');
  assert.match(profile,/<h3 translate="no">\$\{esc\(p\.name\)\}<\/h3>/);assert.match(invite,/<h3 id="family-invitation-heading" translate="no">/);
 });
+
+test('the family window for a farmer without a family draws again: no leftover of the old 48-hour wait (a "cooldown" left in the Create button broke it from 2 to 5 Oct 2026)',()=>{
+ const ui=readFileSync(new URL('../public/family-ui.js',import.meta.url),'utf8');
+ assert.doesNotMatch(ui,/\bcooldown\b/,'the window no longer knows a cooldown');
+ assert.match(ui,/<button class="primary-button" \$\{disabled\(false\)\}>Create family<\/button>/);
+});
