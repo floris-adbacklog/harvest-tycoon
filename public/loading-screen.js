@@ -19,6 +19,9 @@ export const LOADING_TIPS=Object.freeze([
  ['family-chest-gold','Fill a Family Chest with your Farm family every week: everything you do on your farm counts.'],
  ['family-sharing','In a Farm family you help each other every day with coins, crops and goods.'],
  ['family-tournament','The top ten families win diamonds in the weekly Family Tournament.'],
+ // 5 Oct 2026: what the order and events pay a family (tests/wiki.test.mjs keeps them equal to the rules in farm-state.js).
+ ['family-weekly-order','A finished Family Order pays a quarter more than the Market’s normal price, plus XP and diamonds.'],
+ ['family-members','Finish an event with two or more members of your Farm family: you each get 200 coins and 5 diamonds extra.'],
  ['invite-friends','Invite a friend: when they reach level 10 within 30 days, you both get 150 diamonds.'],
  ['farmapp','Add Harvest Tycoon to your home screen: one tap away, with a reminder when your crops are ready.'],
  ['valley-market','From level 62 the Valley Market pays 1.5× for a full basket of goods.'],

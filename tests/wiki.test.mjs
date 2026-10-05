@@ -108,6 +108,45 @@ test('the wiki matches the rules it explains: family payouts, invites, events an
  assert.match(wikiArticle('buildings').html,/Dairy Barn needs the Feed Mill first/);
 });
 
+// 5 Oct 2026: the Farm family article says what the order pays, what counts for the tournament and how long rewards wait; the loading
+// tips name the order and the event bonus. Each claim is checked against the rules that pay it.
+test('the Farm family article and tips say what the order, the tournament, the chest and the level really give',async()=>{
+ const rules=await import('../public/farm-state.js'),{LOADING_TIPS}=await import('../public/loading-screen.js');
+ const C=rules.FAMILY_CONFIG,html=wikiArticle('family').html;
+ // "A coin for every point" and "its full value in coins" hold only while the order pays the Market's payout × ORDER_COIN_MULTIPLIER = 1.
+ assert.equal(rules.MARKET_PAYOUT_MULTIPLIER*C.ORDER_COIN_MULTIPLIER,1);
+ assert.match(html,/Every family gets the same goods that week; a bigger family gets bigger amounts/);assert.match(html,/You deliver to one family a week\./);
+ assert.match(html,new RegExp(`Rewards come only when every line is full before the week ends.*everyone who delivered at least ${C.MIN_CONTRIB_POINTS} points to the order gets a coin for every point \\(25% more than the Market pays at its normal price\\), 1 XP for every 100 points and diamonds`));
+ assert.match(html,/<td>500<\/td><td>[^]*?500<\/td><td>5<\/td><td>[^]*?1<\/td>/);assert.match(html,/<td>20,000<\/td><td>[^]*?20,000<\/td><td>200<\/td><td>[^]*?3<\/td>/);
+ assert.match(html,new RegExp(`On top come ${C.ORDER_COMPLETION_DIAMONDS} diamonds for finishing the order`));
+ assert.match(html,/Family Chest points do not count\./);assert.match(html,/Tournament goods/);assert.match(html,/They count for the tournament only: no coins, XP or diamonds\./);
+ assert.match(html,/still in the family when the week ends/);assert.match(html,/everyone who delivered gets at least 1 diamond/);
+ assert.match(html,/gets its rewards in full: nothing is split/);assert.match(html,new RegExp(`for ${C.REWARD_WEEKS} weeks after their week ends`));assert.doesNotMatch(html,/a few weeks/);
+ assert.match(html,/not to the tournament or events\. The level belongs to the family/);
+ assert.match(html,/The leader or a co-leader can invite farmers\./);assert.doesNotMatch(html,/The leader can invite/);
+ assert.match(html,/<strong>Stats<\/strong>/);
+ // A real solo order, delivered in full: the coins, XP and diamonds the article's table promises (10,000 points a diamond step).
+ const now=Date.parse('2026-09-15T12:00:00Z'),week=rules.familyWeek(now);
+ const farm=()=>{const s=rules.createFarm(now);s.xp=rules.xpForLevel(rules.FAMILY_MIN_LEVEL);return rules.normalizeFarm(s,now);};
+ let c=rules.familyMutate(rules.emptyFamilyContext(),farm(),'alice',{type:'family_create',name:'Meadow Friends',emblem:'0'},now).context;
+ const order=c.orders[0];
+ for(const [item,count] of Object.entries(order.lines)){const s=farm();s.inventory[item]=count;c=rules.familyMutate(c,s,'alice',{type:'family_contribute',week,item,count},now).context;}
+ const reward=c.rewards.find(r=>r.kind==='order'&&r.player_id==='alice'),points=order.value;
+ assert.deepEqual([reward.coins,reward.xp,reward.diamonds],[points,Math.floor(points/100),Math.min(C.ORDER_DIAMOND_MAX,C.ORDER_DIAMOND_BASE+Math.floor(points/10000))+C.ORDER_COMPLETION_DIAMONDS]);
+ assert.equal(reward.expires_at,rules.familyWeekStart(week+1)+C.REWARD_WEEKS*7*86400000,'rewards wait the weeks the article names');
+ // In the top ten every member who delivered wins at least 1 diamond, whatever the number of families (a full family each).
+ for(let families=1;families<=40;families++){
+  const t=rules.emptyFamilyContext();
+  for(let i=0;i<families;i++){t.families.push({id:`f${i}`,name:`F${i}`,emblem:'0',deleted_at:null});for(let j=0;j<C.MAX_MEMBERS;j++){const p=`p${i}-${j}`;t.members.push({id:p,player_id:p,family_id:`f${i}`,role:j?'member':'leader',joined_at:now,left_at:null});t.contributions.push({family_id:`f${i}`,week,player_id:p,points:1+i*j,order_points:0,extra_points:1+i*j,lines:{},last_at:now+i});}}
+  for(const prize of rules.familyTournament(t,week).prizes.slice(0,C.TOURNAMENT_SHARES.length))assert.ok(Object.values(prize.shares).every(d=>d>=1),`${families} families, place ${prize.rank}`);
+ }
+ // The tips: a quarter above the Market, and the event bonus's own numbers.
+ const tips=LOADING_TIPS.map(([,text])=>text).join('\n');
+ assert.equal(C.ORDER_COIN_MULTIPLIER,1.25,'the tip says a quarter more than the Market');assert.match(tips,/A finished Family Order pays a quarter more than the Market’s normal price/);
+ assert.equal(rules.FAMILY_EVENT_BONUS.finishers,3,'the tip says two or more members besides you');
+ assert.match(tips,new RegExp(`two or more members of your Farm family: you each get ${rules.FAMILY_EVENT_BONUS.coins} coins and ${rules.FAMILY_EVENT_BONUS.diamonds} diamonds extra`));
+});
+
 test('What opens when lists every level\'s features, buildings, crops and later recipes, so 27 to 62 is not empty',async()=>{
  const {wikiArticle}=await import('../public/wiki-content.js');
  const html=wikiArticle('quests').html;

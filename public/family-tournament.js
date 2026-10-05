@@ -1,11 +1,12 @@
 import {rankArt} from './rank-art.js';
 import {art} from './visual-icons.js';
-import {formatDuration} from './farm-state.js';
+import {formatDuration,familyWeekStart} from './farm-state.js';
 
 // A family's name (and emblem) on the board opens its profile (family-profile.js) when the board knows which family it is.
 const openable=(f,inner,cls='family-list-open')=>f?.familyId?`<button type="button" class="${cls}" data-family-profile="${esc(f.familyId)}">${inner}</button>`:`<div class="${cls}">${inner}</div>`;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
+const weekOf=week=>new Date(familyWeekStart(week)).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short'});
 
 // Every prize and statistic comes from the server's settlement calculation.
 // 30 Sep 2026, cleaner: rewards to collect first, then where your family stands, the top families as one row each with the family's
@@ -16,6 +17,8 @@ export function renderFamilyTournament({view,now,emblem,rewards,preview,extra=''
  const s=t.placeShares??[25,17,13,10,8,7,6,5,5,4],p=t.poolSteps??[100,200,300];
  // How far first prize has grown towards its maximum (in How rewards work).
  const grown=Math.max(0,Math.min(1,(t.firstPrize-t.firstPrizeMin)/Math.max(1,t.firstPrizeMax-t.firstPrizeMin)));
+ // Previous weeks (5 Oct 2026): one group per week, newest first, under the date of its Monday, with your own family picked out.
+ const own=view.family?.id,weeks=[...(t.past??[]).reduce((m,f)=>m.set(f.week,[...(m.get(f.week)??[]),f]),new Map())].sort((a,b)=>b[0]-a[0]).map(([week,rows])=>[week,rows.sort((a,b)=>a.rank-b.rank)]);
  const growth=`<div class="family-prize-growth"><div><strong>Grows with every family that takes part</strong><span>${t.firstPrize>=t.firstPrizeMax?`The prize pool is at its maximum of ${num(t.poolMax)} diamonds.`:`${num(t.activeFamilies)} of ${num(t.familiesForMax)} families for the maximum of ${num(t.poolMax)} diamonds.`}</span></div><progress max="100" value="${Math.round(grown*100)}" aria-label="Prize pool towards its maximum"></progress></div>`;
  const gap=t.yourRank>1?` · ${num(t.pointsBehind)} behind #${t.yourRank-1}`:t.yourRank===1&&t.top.length>1?` · ${num(t.familyPoints-t.top[1].points)} ahead of #2`:'';
  const yours=t.yourRank?`<section class="family-your-place">${rankArt(t.yourRank)}<div><strong>Your family is #${t.yourRank}</strong><span>${num(t.familyPoints)} points${gap}${t.yourRank>prizes.length?' · the top ten win prizes':''}</span></div><div class="family-your-place-prize"><strong>${art('diamonds')}${num(t.yourDiamonds)}</strong><span>${t.entered?'for you now':'deliver to share'}</span></div></section>`:preview;
@@ -44,6 +47,6 @@ export function renderFamilyTournament({view,now,emblem,rewards,preview,extra=''
   <p>Family prizes are shared by contribution. Make a delivery and stay in your family until Monday, 00:00 UTC. Only members who contributed this week count. Your personal prize is on your family's place above the standings; order rewards are extra. Prizes may change before the week ends.</p>
  </details>
  <details class="family-rules"><summary>Previous weeks</summary>
-  ${t.past.length?t.past.map(f=>`<div class="family-list-row"><b class="family-rank">${rankArt(f.rank)}</b>${openable(f,`<div><strong translate="no">${esc(f.name)}</strong><span>Week of ${new Date((f.week*7+4)*86400000).toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short'})} · ${num(f.points)} points</span></div>`)}<span>${f.diamonds} diamonds</span></div>`).join(''):'<p>Results appear after the first week ends.</p>'}
+  ${weeks.length?weeks.map(([week,rows])=>`<div class="family-past-week"><h4>Week of ${weekOf(week)}</h4>${rows.map(f=>`<div class="family-list-row${f.familyId&&f.familyId===own?' is-yours':''}"><b class="family-rank">${rankArt(f.rank)}</b>${openable(f,`<div><strong translate="no">${esc(f.name)}</strong><span>${f.familyId&&f.familyId===own?`Your family · ${num(f.points)} points`:`${num(f.points)} points`}</span></div>`)}<span class="family-past-prize">${art('diamonds')}${num(f.diamonds)}<span class="family-sr-only"> diamonds</span></span></div>`).join('')}</div>`).join(''):'<p>Results appear after the first week ends.</p>'}
  </details>`;
 }

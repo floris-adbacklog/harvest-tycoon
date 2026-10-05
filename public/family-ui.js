@@ -6,8 +6,9 @@ import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {renderFamilyInvitation,renderSentInvitations,createFamilyInviteSearch,inviteBlocker} from './family-invitations-ui.js';
 import {renderFamilyOrderRewards} from './family-order-rewards.js';
 import {renderFamilyTournament} from './family-tournament.js';
+import {renderFamilyStats} from './family-stats.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {farmNow} from './farm-client.js';
@@ -66,7 +67,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  }
  function prizePreview(){
   const t=view.tournament;
-  return `<section class="family-prize-preview">${art('diamonds')}<div><strong>${t.entered?`${num(t.yourDiamonds)} diamonds for you`:'Your first delivery enters the tournament'}</strong><span>${t.entered?'At current standings · collect after Monday, 00:00 UTC':'Deliver anything from the Family Order to join. Solo families can win too.'}</span>${t.entered&&t.yourDiamonds===0?`<small>${t.yourRank>3?'Reach the top three to win a prize.':'Your share follows your contribution points.'}</small>`:''}</div></section>`;
+  return `<section class="family-prize-preview">${art('diamonds')}<div><strong>${t.entered?`${num(t.yourDiamonds)} diamonds for you`:'Your first delivery enters the tournament'}</strong><span>${t.entered?'At current standings · collect after Monday, 00:00 UTC':'Deliver anything from the Family Order to join. Solo families can win too.'}</span>${t.entered&&t.yourDiamonds===0?`<small>${t.yourRank>(t.placePrizes?.length||10)?'Reach the top ten to win a prize.':'Your share follows your contribution points.'}</small>`:''}</div></section>`;
  }
  function week(){
   const o=view.order,locked=view.contributionLocked;
@@ -109,9 +110,12 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const marker=t=>`<span class="family-chest-marker${t.reached?' is-reached':''}" style="inset-inline-start:${Math.min(100,t.points/top*100)}%">${art(`family-chest-${t.id}`)}</span>`;
   const tier=t=>`<li class="${t.reached?'is-reached':''}">${art(`family-chest-${t.id}`)}<div><strong>${t.name}</strong><span>${num(t.points)} points</span></div><span class="family-chest-gives"><b>${art('diamonds')}${num(t.diamonds)}</b><b>${art('coins')}${num(t.coins)}</b></span>${t.reached?'<i class="family-chest-check" aria-label="Reached">✓</i>':''}</li>`;
   const mine=c.mine>=c.minPoints?`You put in ${num(c.mine)} points: you share in every chest.`:`You put in ${num(c.mine)} points. From ${num(c.minPoints)} you share in every chest.`;
+  // The family level (5 Oct 2026: the line said every chest raises it): chests opened in all weeks together, 3 for level 2, 8 for level 3 …
+  const s=view.standing,step=Math.round(FAMILY_LEVEL_BONUS*100),max=step*(FAMILY_LEVEL_STEPS.length-1);
+  const levelLine=`${s?.next!=null?`Every chest your family opens counts towards the family level: ${num(s.tiers)} of ${num(s.next)} chests for level ${s.level+1}.`:'Your family is at the highest level.'} Each level adds ${step}% to the chest and the weekly order, up to +${max}%.`;
   return `<section class="family-chest"><div class="family-chest-head">${art(next?`family-chest-${next.id}`:'family-chest-open')}<div><span class="eyebrow">FAMILY CHEST${bonus?` · +${bonus}% REWARDS`:''}</span><h3>${next?`${num(c.points)} / ${num(next.points)} to the ${next.name.toLowerCase()}`:'Every chest is open this week!'}</h3></div></div>
    <div class="family-chest-track"><progress max="${top}" value="${Math.min(c.points,top)}" aria-label="Family Chest points"></progress>${c.tiers.map(marker).join('')}</div>
-   <p class="family-chest-mine">${mine}</p>${chestRewards()}<details class="family-chest-fold"><summary><strong>What each chest gives you</strong><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary><p class="family-chest-how">Everything your family does on the farm fills it. A new chest every Monday.</p><ul class="family-chest-tiers">${c.tiers.map(tier).join('')}</ul><p class="family-footnote">Coins grow with your level. Every chest your family opens raises the family level, and every level adds 10% to the chest and the weekly order.</p></details></section>`;
+   <p class="family-chest-mine">${mine}</p>${chestRewards()}<details class="family-chest-fold"><summary><strong>What each chest gives you</strong><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary><p class="family-chest-how">Everything your family does on the farm fills it. A new chest every Monday.</p><ul class="family-chest-tiers">${c.tiers.map(tier).join('')}</ul><p class="family-footnote">Coins grow with your level. ${levelLine}</p></details></section>`;
  }
  // Chest rewards waiting: small rows on the chest card, each with its own Collect.
  function chestRewards(){const list=view.rewards.filter(isChest);return list.length?`<div class="family-chest-ready">${list.map(r=>rewardRow(r,true)).join('')}</div>`:'';}
@@ -145,6 +149,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  // Help, gifts and requests (public/social-ui.js draws into this box and keeps it up to date itself).
  function sharing(){return '<div class="family-sharing" data-sharing-root aria-live="polite"></div>';}
  function tournament(){return renderFamilyTournament({view,now:farmNow(),emblem,rewards:rewardCards(),preview:prizePreview(),extra:extraGoods()});}
+ // This week in numbers and your family's last weeks (5 Oct 2026, public/family-stats.js).
+ function stats(){return renderFamilyStats({view});}
  // Anyone can bring a friend who is new to Harvest Tycoon (public/invite-ui.js), leader or not (bottom of Members).
  const friendEntry=`<button type="button" class="family-share-entry family-invite-friend" data-invite-friend>${art('invite-friends')}<span><strong>Invite a friend to Harvest Tycoon</strong><small>At level 10 you both get 150 diamonds</small></span><i data-lucide="chevron-right" data-line-icon></i></button>`;
  // The gear in the header (settings): look and name, who can join, and leaving (quietly at the bottom).
@@ -153,7 +159,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   // The window's own header shows the family (30 Sep 2026: no second emblem and name card here); a new emblem or name shows there as you pick it.
   const header=`<h3 class="family-settings-title">${art('family-management')}Family settings</h3>`;
   const solo=view.members.length===1;
-  const leave=`<section class="family-leave"><h3>Leave this family</h3><p>${solo?'You are its only member, so you can join another family straight away.':'You wait 48 hours before you can join or start another family.'} Your points this week stay here.${f.leader&&!solo?' The longest-standing member becomes leader.':''}</p>${actionButton('family_leave','Leave family')}</section>`;
+  const leave=`<section class="family-leave"><h3>Leave this family</h3><p>${solo?'You are its only member, so you can join another family straight away.':'You can join or start another family straight away.'} Your points this week stay here.${f.leader&&!solo?' The longest-standing member becomes leader.':''}</p>${actionButton('family_leave','Leave family')}</section>`;
   if(!f.manager)return `${header}<p class="family-notice">Your family leader and co-leaders can invite farmers, choose the emblem and rename the family.</p>${leave}`;
   return `${header}
   <form data-family-look class="family-card family-look"><h3>Look and name</h3>${emblemPickerMarkup({emblems:FAMILY_EMBLEMS,checkedId:f.emblem,legend:'Choose an emblem',nameOf:emblemName,tile:emblem,esc})}
@@ -182,18 +188,18 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   // Still on its way: placeholder rows (1 Oct 2026). Usually it is here already: refresh() reads it in the background every 30 s.
   if(!view){if(!error){content.innerHTML=skeleton('Opening the Family Hall…',{hero:true,rows:4});return;}content.innerHTML='<p class="family-loading">Your family could not be loaded.</p><button id="family-retry" class="small-button">Try again</button>';content.querySelector('#family-retry').onclick=()=>load(true);return;}
   social.unmount();
-  content.innerHTML=view.family?(({week,sharing,members,tournament,settings}[tab])??week)():landing();
+  content.innerHTML=view.family?(({week,sharing,members,tournament,stats,settings}[tab])??week)():landing();
   content.querySelectorAll('[data-family-action]').forEach(b=>b.onclick=async()=>{
    const type=b.dataset.familyAction;
    // The game's own confirmation (not the browser's), red for what is hard to undo.
-   const ask=type==='family_leave'&&view.members?.length===1?{title:'Leave your family?',description:'You are its only member. You can join another family straight away.',confirmLabel:'Leave family'}:{family_leave:{title:'Leave this family?',description:'You cannot join another family for 48 hours.',confirmLabel:'Leave family',tone:'danger'},family_kick:{title:'Remove this farmer?',description:'They cannot join a family again for 48 hours.',confirmLabel:'Remove',tone:'danger'},family_promote:{title:'Make them the leader?',description:'You will become a regular member.',confirmLabel:'Make leader'}}[type];
+   const ask=type==='family_leave'&&view.members?.length===1?{title:'Leave your family?',description:'You are its only member. You can join another family straight away.',confirmLabel:'Leave family'}:{family_leave:{title:'Leave this family?',description:'You can join another family straight away. Your points this week stay here.',confirmLabel:'Leave family',tone:'danger'},family_kick:{title:'Remove this farmer?',description:`They can join another family straight away, but not this one for ${Math.round(FAMILY_CONFIG.JOIN_COOLDOWN_MS/3600000)} hours.`,confirmLabel:'Remove',tone:'danger'},family_promote:{title:'Make them the leader?',description:'You will become a regular member.',confirmLabel:'Make leader'}}[type];
    if(ask&&!await confirmAction({...ask,cancelLabel:'Cancel',picture:'family-members'}))return;
    act({type,week:view.week,item:b.dataset.item,count:Number(b.dataset.count),invitationId:b.dataset.invitationId,memberId:b.dataset.memberId,rank:b.dataset.rank,rewardId:b.dataset.rewardId,familyId:b.dataset.familyId,requestId:b.dataset.requestId,open:b.dataset.open==='true'});
   });
   content.querySelectorAll('form[data-family-form]').forEach(form=>form.onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(form));const kind=form.dataset.familyForm;act(kind==='extra'?{type:'family_tournament_goods',week:view.week,item:d.item,count:Number(d.count)}:{type:'family_'+kind,...d});});
   content.querySelector('[data-invite-friend]')?.addEventListener('click',()=>window.harvestInvite?.open());
   const sharingRoot=content.querySelector('[data-sharing-root]');if(sharingRoot)void social.mount(sharingRoot);
-  content.querySelector('[data-family-goto]')?.addEventListener('click',event=>{tab=event.currentTarget.dataset.familyGoto;render();content.scrollTop=0;dialog.scrollTop=0;});
+  content.querySelectorAll('[data-family-goto]').forEach(b=>b.addEventListener('click',event=>{tab=event.currentTarget.dataset.familyGoto;render();content.scrollTop=0;dialog.scrollTop=0;}));
   content.querySelectorAll('[data-player-profile]').forEach(b=>b.onclick=()=>{if(b.dataset.playerProfile)window.harvestProfiles?.open(b.dataset.playerProfile,{back:'Back to your family'});});
   content.querySelectorAll('[data-family-profile]').forEach(b=>b.onclick=()=>familyProfile.open(b.dataset.familyProfile));
   // How families work: the wiki's Farm family page, and its Back button returns to this window.
