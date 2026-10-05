@@ -15,7 +15,9 @@ const deliver=(c,p,item,count)=>{const s=farm();s.inventory[item]=count;return r
 const orderRewards=c=>c.rewards.filter(r=>r.kind==='order');
 // The order's rewards for one member as the rule is written: the whole order's coins, XP and own diamonds (with the family level's
 // extra) times full / 4, rounded down. Written out here, apart from familyOrderPay, so the test checks the rule and not itself.
-const expected=(points,full,extra=1)=>({coins:Math.floor(points*MARKET_PAYOUT_MULTIPLIER*C.ORDER_COIN_MULTIPLIER*extra*full/4),xp:Math.floor(points*C.ORDER_XP_PER_VALUE*extra*full/4),diamonds:Math.floor(Math.min(C.ORDER_DIAMOND_MAX,C.ORDER_DIAMOND_BASE+Math.floor(points/10000))*extra*full/4)});
+// Diamonds for a part payout: at least 1 per full line, never more than the farmer's own diamonds for the whole order (the owner, 5 Oct 2026).
+const ownDiamonds=(points,extra=1)=>Math.floor(Math.min(C.ORDER_DIAMOND_MAX,C.ORDER_DIAMOND_BASE+Math.floor(points/10000))*extra);
+const expected=(points,full,extra=1)=>({coins:Math.floor(points*MARKET_PAYOUT_MULTIPLIER*C.ORDER_COIN_MULTIPLIER*extra*full/4),xp:Math.floor(points*C.ORDER_XP_PER_VALUE*extra*full/4),diamonds:full>=4?ownDiamonds(points,extra):Math.min(ownDiamonds(points,extra),Math.max(full,Math.floor(ownDiamonds(points,extra)*full/4)))});
 
 // A family of four this week. The order (made for one member, 20,000 coins of goods) asks for 130 corn, 100 eggs, 10 yarn and 10
 // squash. Carol delivers 12 corn (480 points: below the 500 that qualify) and Dave 1 squash (560 points: enough). Then the first
@@ -33,7 +35,7 @@ const points=(c,p)=>c.contributions.find(x=>x.player_id===p&&x.week===week)?.ord
 
 test('an order has four lines, so every full line is a quarter (the window, the wiki and the tips say so)',()=>{
  assert.equal(FAMILY_ORDER_LINES,4);
- assert.deepEqual([0,1,2,3,4].map(n=>familyOrderPay(20000,1,n,4)),[{coins:0,xp:0,diamonds:0},{coins:5000,xp:50,diamonds:0},{coins:10000,xp:100,diamonds:1},{coins:15000,xp:150,diamonds:2},{coins:20000,xp:200,diamonds:3}]);
+ assert.deepEqual([0,1,2,3,4].map(n=>familyOrderPay(20000,1,n,4)),[{coins:0,xp:0,diamonds:0},{coins:5000,xp:50,diamonds:1},{coins:10000,xp:100,diamonds:2},{coins:15000,xp:150,diamonds:3},{coins:20000,xp:200,diamonds:3}]);
 });
 
 test('1, 2 and 3 of 4 full lines pay a quarter, half and three quarters when the week settles, to everyone with 500 points',()=>{
@@ -51,9 +53,9 @@ test('1, 2 and 3 of 4 full lines pay a quarter, half and three quarters when the
   }
  }
  // The numbers, written out for 2 of 4 lines: Alice 118 corn and 5 yarn (6,820 points), Bob 100 eggs and 4 squash (7,240), Dave 1
- // squash (560). Half of a coin a point, half of 1 XP per 100, half of 1 diamond: none.
+ // squash (560). Half of a coin a point, half of 1 XP per 100, and their 1 diamond (at least 1 a full line, at most the whole order's).
  const c=run(family(2),farm(),'alice',{type:'family_read'},nextWeek).context,paid=Object.fromEntries(orderRewards(c).map(r=>[r.player_id,[r.coins,r.xp,r.diamonds]]));
- assert.deepEqual(paid,{alice:[3410,34,0],bob:[3620,36,0],dave:[280,2,0]});
+ assert.deepEqual(paid,{alice:[3410,34,1],bob:[3620,36,1],dave:[280,2,1]});
 });
 
 test('the family level adds its bonus to a part payout as to a whole one',()=>{
@@ -88,7 +90,7 @@ test('a whole order is paid as before, at once, with the completion diamonds; se
 test('the completion diamonds come only with a whole order: three full lines share none of them',()=>{
  const c=run(family(3),farm(),'alice',{type:'family_read'},nextWeek).context;
  assert.equal(orderRewards(c).reduce((n,r)=>n+r.diamonds,0),orderRewards(c).reduce((n,r)=>n+expected(points(c,r.player_id),3).diamonds,0));
- for(const r of orderRewards(c))assert.ok(r.diamonds<=Math.floor(C.ORDER_DIAMOND_MAX*3/4));
+ for(const r of orderRewards(c))assert.ok(r.diamonds<=ownDiamonds(points(c,r.player_id)),'never more than the whole order would give the farmer');
 });
 
 test('500 order points qualify for a part payout; 499 do not',()=>{

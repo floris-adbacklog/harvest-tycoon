@@ -2933,8 +2933,11 @@ export function settleFamilyWeeks(c,now,config=FAMILY_CONFIG){
 const familyOrderDiamonds=(points,config)=>Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor(points/10000));
 export function familyOrderPay(points,extra=1,full=1,lines=1,config=FAMILY_CONFIG){
  if(!(full>0)||!(lines>0))return {coins:0,xp:0,diamonds:0};
- const part=value=>full>=lines?value:value*full/lines;
- return {coins:Math.floor(part(points*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER*extra)),xp:Math.floor(part(points*config.ORDER_XP_PER_VALUE*extra)),diamonds:Math.floor(part(familyOrderDiamonds(points,config)*extra))};
+ const part=value=>full>=lines?value:value*full/lines,own=Math.floor(familyOrderDiamonds(points,config)*extra);
+ // Diamonds for an order that is not whole (the owner, 5 Oct 2026): at least 1 for every full line, rounded down they were nearly
+ // always 0, but never more than the farmer's own diamonds for the whole order, so finishing it always pays the most.
+ const diamonds=full>=lines?own:Math.min(own,Math.max(full,Math.floor(part(own))));
+ return {coins:Math.floor(part(points*MARKET_PAYOUT_MULTIPLIER*config.ORDER_COIN_MULTIPLIER*extra)),xp:Math.floor(part(points*config.ORDER_XP_PER_VALUE*extra)),diamonds};
 }
 const familyOrderFullLines=order=>Object.entries(order?.lines??{}).filter(([k,n])=>(order.filled?.[k]??0)>=n).length;
 // An order that is not whole when its week ends (5 Oct 2026; it paid nothing, and 1 of 18 orders was finished in the week before):
