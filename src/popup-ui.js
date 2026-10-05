@@ -9,7 +9,7 @@ import {androidApp} from '../public/android.js';
 // the browser, anyone in the browser, phones or computers (decided here, on the device: nothing records who installed the app), and
 // from a farm level (decided by the server). Never in a farmer's first half hour, and never over
 // another window: it waits until nothing else is open.
-export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play'});
+export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play',feedback:'Feedback'});
 export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only'});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text). On CrazyGames (Oct 2026,
@@ -31,7 +31,9 @@ export function createPopupUI({client,chat,state,doc=document,win=window,now=()=
  const device=()=>({installed:doc.documentElement.dataset.appMode==='standalone'||androidApp(win),phone:Boolean(win.matchMedia?.('(pointer: coarse)').matches)});
  const click=id=>doc.getElementById(id)?.click();
  const screens={install:()=>win.harvestWiki?.('getting-started','sec-play-it-as-an-app'),today:()=>win.harvestToday?.(),events:()=>click('events-button'),
-  leaderboard:()=>click('leaderboard-button'),chat:()=>chat?.open(),shop:()=>win.harvestShop?.open(),family:()=>click('family-button'),wiki:()=>click('help-button')};
+  leaderboard:()=>click('leaderboard-button'),chat:()=>chat?.open(),shop:()=>win.harvestShop?.open(),family:()=>click('family-button'),wiki:()=>click('help-button'),
+  // The Feedback window (5 Oct 2026): ask farmers what they think, straight from a pop-up or News.
+  feedback:()=>click('feedback-button')};
  function go(target){
   if(target.startsWith('https://')){win.open(target,'_blank','noopener,noreferrer');return;}
   screens[target.replace(/^screen:/,'')]?.();
