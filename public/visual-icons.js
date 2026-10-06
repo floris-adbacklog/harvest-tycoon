@@ -98,7 +98,9 @@ export function art(key,extra=''){
   const {file,columns,index}=entry,x=index%columns/(columns-1)*100,y=Math.floor(index/columns)/(columns-1)*100;
   return `<span class="game-art game-art-sprite ${extra}" data-art="${key}" aria-hidden="true" style="--art-sheet:url('/assets/icons/${file}');--art-size:${columns*100}%;--art-position:${x}% ${y}%"></span>`;
  }
- if(pictures[key])return `<img class="game-art ${extra}" data-art="${key}" src="/assets/icons/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}" alt="" draggable="false">`;
+ // loading="lazy" (6 Oct 2026): a picture loads once it is shown, not before. The game's windows are built at the start, so about 80
+ // pictures (2.5 MB) of closed windows used to load before the farm could be played.
+ if(pictures[key])return `<img class="game-art ${extra}" data-art="${key}" src="/assets/icons/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}" alt="" draggable="false" loading="lazy" decoding="async">`;
  return '';
 }
 export function refreshArt(){
