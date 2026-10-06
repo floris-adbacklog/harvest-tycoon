@@ -3,6 +3,14 @@
 @font-face{font-family:'DM Sans';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/dm-sans-bold.ttf') format('truetype');}
 @font-face{font-family:'Outfit';font-style:normal;font-weight:600;font-display:swap;src:url('/assets/fonts/outfit-medium.ttf') format('truetype');}
 @font-face{font-family:'Outfit';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/outfit-bold.ttf') format('truetype');}
+/* Cyrillic and Greek (6 Oct 2026): DM Sans and Outfit have neither, and the device's default (Helvetica on a Mac, Arial on Windows) drew
+   Russian darker and squarer than the English beside it. The same families get those letters from a font of the device that matches
+   them, at the same weights as the faces above: Avenir Next on a Mac, iPhone and iPad (geometric, a touch lighter, which evens out
+   Cyrillic's denser letters), else Segoe UI on Windows. A device with neither (Android) keeps its own font, as before. */
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:400;font-display:swap;unicode-range:U+0370-03FF,U+0400-052F,U+1C80-1C8F,U+1F00-1FFF,U+20B4,U+2DE0-2DFF,U+A640-A69F;src:local('Avenir Next Regular'),local('AvenirNext-Regular'),local('Segoe UI'),local('SegoeUI');}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:700;font-display:swap;unicode-range:U+0370-03FF,U+0400-052F,U+1C80-1C8F,U+1F00-1FFF,U+20B4,U+2DE0-2DFF,U+A640-A69F;src:local('Avenir Next Demi Bold'),local('AvenirNext-DemiBold'),local('Segoe UI Semibold'),local('SegoeUI-Semibold');}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:600;font-display:swap;unicode-range:U+0370-03FF,U+0400-052F,U+1C80-1C8F,U+1F00-1FFF,U+20B4,U+2DE0-2DFF,U+A640-A69F;src:local('Avenir Next Demi Bold'),local('AvenirNext-DemiBold'),local('Segoe UI Semibold'),local('SegoeUI-Semibold');}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:700;font-display:swap;unicode-range:U+0370-03FF,U+0400-052F,U+1C80-1C8F,U+1F00-1FFF,U+20B4,U+2DE0-2DFF,U+A640-A69F;src:local('Avenir Next Bold'),local('AvenirNext-Bold'),local('Segoe UI Bold'),local('SegoeUI-Bold');}
 /* Only the weights the game's fonts have (6 Oct 2026): DM Sans 400 and 700, Outfit 600 and 700. Letters the fonts lack (Cyrillic,
    Chinese, Arabic, Hindi) come from the device's own font at the weight asked for, so a 500 or an 800 drew a chat message in Russian
    or Chinese thicker than the same message in English. <b> and <strong> are 700, not "bolder" (900 inside a bold line). */
