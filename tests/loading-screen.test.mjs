@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createLoadingScreen,startLoadingTips,LOADING_TIPS,FARM_START,ACCOUNT_STEPS} from '../public/loading-screen.js';
+import {createLoadingScreen,startLoadingTips,LOADING_TIPS,FARM_START,ACCOUNT_STEPS,farmHandOver} from '../public/loading-screen.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 function fixture(){const nodes=new Map();const doc={getElementById(id){if(!nodes.has(id))nodes.set(id,{value:0,textContent:'',src:'',parentElement:{classList:{add(){},remove(){}}}});return nodes.get(id);}};return{doc,nodes};}
 
@@ -41,4 +41,22 @@ test('the sign-in check and the farm show the same calm screen, and it fades int
  }
  assert.match(read('public/game.js'),/\$\('loading'\)\.classList\.add\('fade'\);/);
  assert.match(read('src/main.js'),/const step=ACCOUNT_STEPS\[message\]\?\?6;/);
+});
+
+// One screen from start to farm (6 Oct 2026): the page around keeps its loading screen until the farm page has drawn its own.
+test('the loading screen stays over the farm frame until the farm page shows its own, or until the wait is over',async()=>{
+ const win={},screen={hidden:true},hand=farmHandOver(win,screen,{wait:40});
+ hand.wait();assert.equal(screen.hidden,false,'still there while the farm page loads');
+ win.harvestFarmShown();assert.equal(screen.hidden,true,'gone once the farm page shows its screen');
+ hand.wait();await new Promise(r=>setTimeout(r,60));assert.equal(screen.hidden,true,'never stuck: after the wait it goes anyway');
+ hand.wait();hand.stop();await new Promise(r=>setTimeout(r,60));assert.equal(screen.hidden,false,'stop leaves it to the page (signed out, an error)');
+ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+ assert.match(read('src/game-cloud.js'),/  nextFrame\(\(\)=>nextFrame\(\(\)=>\{try\{window\.parent\.harvestFarmShown\?\.\(\);\}catch\{\}\}\)\);/);
+ for(const page of ['src/main.js','src/crazygames.js'])assert.match(read(page),/if\(value==='authenticated'\)handOver\.wait\(\);else\{handOver\.stop\(\);\$\('loading-screen'\)\.hidden=value!=='checking';\}/,page);
+});
+
+test('the loading screen is lighter: a real render of the farm behind it, not the painted picture (6 Oct 2026; the logo stays the 1024 px one)',()=>{
+ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+ assert.match(read('public/loading-screen.css'),/url\('\/assets\/loading-farm\.webp'\)/);
+ for(const page of ['public/farm.html','public/crazygames.html'])assert.match(read(page),/<link rel="preload" as="image" href="\/assets\/loading-farm\.webp">/,page);
 });

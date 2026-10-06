@@ -40,6 +40,9 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   if(adminView)markAdminView(document);
   document.body.hidden=false;
   const watch=watchLoading(bridge,portal,{translate:()=>void startTranslation(document)});
+  // Our loading screen is on screen now: the page around takes its own away once it is drawn (public/loading-screen.js farmHandOver).
+  const nextFrame=globalThis.requestAnimationFrame??(fn=>setTimeout(fn,0));
+  nextFrame(()=>nextFrame(()=>{try{window.parent.harvestFarmShown?.();}catch{}}));
   // The game takes the first farm over (and clears harvestInitialFarm); the pop-ups only need its start time (the first half hour).
   const firstState=window.harvestInitialFarm.state;
   const ui=createCloudUI({onOpen:openBoard,onRetry:openBoard,onPlayer:()=>profiles.open(bridge.playerId),onName:async username=>{const data=await bridge.request({operation:'rename',username});ui.setProfile(data.profile,{id:bridge.playerId});},onSignOut:()=>bridge.signOut()});

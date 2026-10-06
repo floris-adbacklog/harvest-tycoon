@@ -8,7 +8,7 @@ import {stopPageZoom} from './page-zoom.js';
 import {startUpdateCheck} from './app-update.js';
 import {WAKE_GRACE} from './connection.js';
 import {startTranslation,chooseLanguage,chosenLanguage} from '../public/i18n.js';
-import {startLoadingTips,ACCOUNT_STEPS} from '../public/loading-screen.js';
+import {startLoadingTips,ACCOUNT_STEPS,farmHandOver} from '../public/loading-screen.js';
 import {PORTAL_FEATURES} from '../public/portal.js';
 // Harvest Tycoon on CrazyGames (Oct 2026): public/crazygames.html, shown in a frame by our small page on CrazyGames (crazygames/).
 // No sign-in card: a player who is logged in on CrazyGames gets their own farm (their token is checked by our server, the Edge
@@ -71,10 +71,11 @@ async function boot(){
  link.onSettings(next=>{Object.assign(settings,next);for(const fn of [...listeners])try{fn({...settings});}catch{listeners.delete(fn);}});
 
  // ---- The screens of this page: loading, the farm, a pause ----
- let stopTips=null;
+ let stopTips=null;const handOver=farmHandOver(window,$('loading-screen'));
  function phase(value,message){
   document.body.dataset.phase=value;
-  $('loading-screen').hidden=value!=='checking';$('farm-host').hidden=value!=='authenticated';$('pause-screen').hidden=value!=='error';
+  // The loading screen stays over the farm until the farm page shows its own (public/loading-screen.js farmHandOver, 6 Oct 2026).
+  if(value==='authenticated')handOver.wait();else{handOver.stop();$('loading-screen').hidden=value!=='checking';}$('farm-host').hidden=value!=='authenticated';$('pause-screen').hidden=value!=='error';
   if(message){$('loading-copy').textContent=message;const step=ACCOUNT_STEPS[message]??6;$('loading-progress').value=step;$('loading-percent').textContent=`${step}%`;}
   if(value==='checking'){stopTips??=startLoadingTips(document);ready=false;sdk('gameplayStop');sdk('loadingStart');}else{stopTips?.();stopTips=null;}
  }

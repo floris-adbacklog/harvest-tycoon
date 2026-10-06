@@ -41,6 +41,15 @@ export const VILLAGE_LOADING_TIPS=Object.freeze([
 // The account check on play.html covers the bar up to here; the farm continues from it.
 export const FARM_START=12;
 export const ACCOUNT_STEPS=Object.freeze({'Checking your account…':4,'Signing you out…':4,'Opening your farm…':10});
+// One screen from start to farm (6 Oct 2026): the page around the farm (play.html, crazygames.html) keeps its loading screen over the
+// farm frame until the farm page shows its own (src/game-cloud.js calls harvestFarmShown once it has drawn it). Before, the frame showed
+// empty while the farm page's script was still on its way, and the farm's screen then came as a second one; on CrazyGames two thirds
+// of the farmers who opened the game never started playing. If the farm page never says so, the frame shows after `wait` anyway.
+export function farmHandOver(win,screen,{wait=20000}={}){
+ let timer=0;const shown=()=>{clearTimeout(timer);timer=0;screen.hidden=true;};
+ win.harvestFarmShown=shown;
+ return {wait(){clearTimeout(timer);screen.hidden=false;timer=setTimeout(shown,wait);},stop(){clearTimeout(timer);timer=0;}};
+}
 
 // On CrazyGames (Oct 2026: the page is marked html[data-portal], public/portal.js) the tips about inviting, sharing and the app are
 // left out: none of those are there.

@@ -43,10 +43,97 @@
   <link rel="stylesheet" href="/desktop-hud.css">
   <link rel="stylesheet" href="/mobile-windows.css">
   <link rel="stylesheet" href="/pwa-layout.css">
-  <link rel="preload" as="image" href="/assets/farm-welcome.webp">
+  <link rel="preload" as="image" href="/assets/loading-farm.webp">
   <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
   <!-- The game itself starts downloading with the page, not after the cloud script has started it (the same address as its import in src/game-cloud.js). -->
   <link rel="modulepreload" href="/game.js?v=familyhall-model-2">
+  <!-- Every module game.js needs, so they all download with the page instead of one after the other (scripts/module-preload.mjs). -->
+  <!-- module-preload:start -->
+  <link rel="modulepreload" href="/activities-ui.js">
+  <link rel="modulepreload" href="/android.js">
+  <link rel="modulepreload" href="/beginner-ui.js">
+  <link rel="modulepreload" href="/boosts-ui.js">
+  <link rel="modulepreload" href="/center-notice.js">
+  <link rel="modulepreload" href="/coach.js">
+  <link rel="modulepreload" href="/confirm-dialog.js">
+  <link rel="modulepreload" href="/crop-growth.js">
+  <link rel="modulepreload" href="/crop-rows.js">
+  <link rel="modulepreload" href="/daylight.js">
+  <link rel="modulepreload" href="/diamond-confirm.js">
+  <link rel="modulepreload" href="/economy-ui.js?v=familyhall-model-2">
+  <link rel="modulepreload" href="/email-check-ui.js">
+  <link rel="modulepreload" href="/emblem-picker.js">
+  <link rel="modulepreload" href="/estate-ui.js">
+  <link rel="modulepreload" href="/event-goals.js">
+  <link rel="modulepreload" href="/family-flag.js">
+  <link rel="modulepreload" href="/family-invitations-ui.js">
+  <link rel="modulepreload" href="/family-order-rewards.js">
+  <link rel="modulepreload" href="/family-profile.js">
+  <link rel="modulepreload" href="/family-stats.js">
+  <link rel="modulepreload" href="/family-tournament.js">
+  <link rel="modulepreload" href="/family-ui.js">
+  <link rel="modulepreload" href="/farm-atmosphere.js">
+  <link rel="modulepreload" href="/farm-audio.js">
+  <link rel="modulepreload" href="/farm-client.js">
+  <link rel="modulepreload" href="/farm-input.js">
+  <link rel="modulepreload" href="/farm-layout.js">
+  <link rel="modulepreload" href="/farm-life.js">
+  <link rel="modulepreload" href="/farm-props.js">
+  <link rel="modulepreload" href="/farm-share.js">
+  <link rel="modulepreload" href="/farm-state.js">
+  <link rel="modulepreload" href="/feedback-ui.js">
+  <link rel="modulepreload" href="/field-picker.js">
+  <link rel="modulepreload" href="/fit-text.js">
+  <link rel="modulepreload" href="/game-links.js">
+  <link rel="modulepreload" href="/growth-ui.js">
+  <link rel="modulepreload" href="/guide-steps.js">
+  <link rel="modulepreload" href="/haptics.js">
+  <link rel="modulepreload" href="/harvest-fly.js">
+  <link rel="modulepreload" href="/i18n.js">
+  <link rel="modulepreload" href="/install-ui.js">
+  <link rel="modulepreload" href="/invite-ui.js">
+  <link rel="modulepreload" href="/language-settings.js">
+  <link rel="modulepreload" href="/languages.js">
+  <link rel="modulepreload" href="/live-events-ui.js">
+  <link rel="modulepreload" href="/loading-screen.js">
+  <link rel="modulepreload" href="/medal-notice.js">
+  <link rel="modulepreload" href="/minimap.js">
+  <link rel="modulepreload" href="/mobile-ui.js">
+  <link rel="modulepreload" href="/model-atlas.js">
+  <link rel="modulepreload" href="/notifications-ui.js">
+  <link rel="modulepreload" href="/pass-ui.js">
+  <link rel="modulepreload" href="/place-label.js">
+  <link rel="modulepreload" href="/player-avatars.js">
+  <link rel="modulepreload" href="/portal.js">
+  <link rel="modulepreload" href="/pretty-select.js">
+  <link rel="modulepreload" href="/progression-ui.js">
+  <link rel="modulepreload" href="/quests-ui.js">
+  <link rel="modulepreload" href="/rank-art.js">
+  <link rel="modulepreload" href="/reminder-nudge.js">
+  <link rel="modulepreload" href="/render-resources.js">
+  <link rel="modulepreload" href="/retention-ui.js">
+  <link rel="modulepreload" href="/rookie-ui.js">
+  <link rel="modulepreload" href="/scene-polish.js">
+  <link rel="modulepreload" href="/settings-nav.js">
+  <link rel="modulepreload" href="/skeleton.js">
+  <link rel="modulepreload" href="/social-ui.js">
+  <link rel="modulepreload" href="/soft-red.js">
+  <link rel="modulepreload" href="/sound-kit.js">
+  <link rel="modulepreload" href="/sound-settings.js">
+  <link rel="modulepreload" href="/sweep-tools.js">
+  <link rel="modulepreload" href="/toast-ui.js">
+  <link rel="modulepreload" href="/valley-ui.js">
+  <link rel="modulepreload" href="/vendor/addons/loaders/GLTFLoader.js">
+  <link rel="modulepreload" href="/vendor/addons/utils/BufferGeometryUtils.js">
+  <link rel="modulepreload" href="/vendor/three.core.js">
+  <link rel="modulepreload" href="/vendor/three.module.js">
+  <link rel="modulepreload" href="/vip-ui.js">
+  <link rel="modulepreload" href="/visual-icons.js">
+  <link rel="modulepreload" href="/welcome-ui.js">
+  <link rel="modulepreload" href="/wiki-content.js">
+  <link rel="modulepreload" href="/wiki-link.js">
+  <link rel="modulepreload" href="/wiki-ui.js">
+  <!-- module-preload:end -->
 </head>
 <body hidden>
   <main id="game" aria-label="Harvest Tycoon farming game">
