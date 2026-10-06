@@ -34,7 +34,7 @@ import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
 import { createScenePolish } from './scene-polish.js';
-import { shareAtlas } from './model-atlas.js';
+import { shareAtlas,sharePalette } from './model-atlas.js';
 import { createAtmosphere } from './farm-atmosphere.js';
 import { buildRows, createCropMotion, isRowCrop } from './crop-rows.js';
 import { flyHarvest, bump } from './harvest-fly.js';
@@ -194,7 +194,8 @@ async function fetchModel(name){
  }
 }
 async function loadModel(name){
- gltfLoader??=new GLTFLoader();
+ // Every model's palette comes from one palette.png, fetched once for all of them (model-atlas.js sharePalette, 6 Oct 2026).
+ gltfLoader??=sharePalette(new GLTFLoader());
  const gltf=await fetchModel(name);
  if(!gltf){const group=new THREE.Group(),stand=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({visible:false}));stand.position.y=.5;group.add(stand);models.set(name,{object:group,size:new THREE.Vector3(1,1,1)});return;}
  const object=gltf.scene;

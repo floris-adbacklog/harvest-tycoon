@@ -34,6 +34,18 @@ A new model from the pack gets the same shade in two steps (Blender is needed fo
 A shaded model is marked (asset.extras.bakedShade), so running the second step again never darkens it twice. tests/scene-look.test.mjs
 checks that every model has its shade.
 
+## One palette file (6 Oct 2026)
+
+Every model paints from the same palette picture, and every .glb from the pack carries its own copy of it. The models in
+public/assets/models point at one `palette.png` beside them instead (`village-palette.png` for village_*), and the game fetches
+each palette once for all of them (public/model-atlas.js, sharePalette). The models went from 11.96 to 10.27 MB (as the site sends them, brotli-packed: 3.64 to 3.28 MB), and each palette is decoded once instead of once per model. After the two
+steps above, a new model gets the same treatment with:
+
+    node scripts/share-palette.mjs
+
+Only a picture that is byte for byte the palette is taken out; it is safe to run again. tests/model-palette.test.mjs checks that no
+model carries a copy of the palette.
+
 ## Village pack props (27 Sep 2026)
 
 Ten props from the ithappy Studios **Village** pack (Summer version), bought by the user: https://ithappystudios.com/environment/village/

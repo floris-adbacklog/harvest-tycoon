@@ -20,7 +20,10 @@ for name,model in [('familyhall-model','house_008')]:
    v=accessor(p['attributes']['POSITION']);v=v@np.array([[0,0,-1],[0,1,0],[1,0,0]],dtype=float);tri=accessor(p['indices']).reshape(-1,3);verts=v[tri]
    mat=g['materials'][p.get('material',0)]['pbrMetallicRoughness'];bc=mat.get('baseColorFactor',[1,1,1,1]);c=np.tile(bc,(len(tri),1))
    if 'baseColorTexture' in mat:
-    tex=g['textures'][mat['baseColorTexture']['index']];im=g['images'][tex['source']];b=g['bufferViews'][im['bufferView']];off=b.get('byteOffset',0);pic=np.array(Image.open(io.BytesIO(binary[off:off+b['byteLength']])).convert('RGBA'))/255
+    tex=g['textures'][mat['baseColorTexture']['index']];im=g['images'][tex['source']]
+    # Since 6 Oct 2026 the models point at one palette.png beside them (scripts/share-palette.mjs) instead of carrying a copy.
+    if 'uri' in im:pic=np.array(Image.open(root/'models'/im['uri']).convert('RGBA'))/255
+    else:b=g['bufferViews'][im['bufferView']];off=b.get('byteOffset',0);pic=np.array(Image.open(io.BytesIO(binary[off:off+b['byteLength']])).convert('RGBA'))/255
     uv=accessor(p['attributes']['TEXCOORD_0'])[tri].mean(1);xy=(uv*np.array([pic.shape[1]-1,pic.shape[0]-1])).round().astype(int);xy[:,0]=np.clip(xy[:,0],0,pic.shape[1]-1);xy[:,1]=np.clip(xy[:,1],0,pic.shape[0]-1);c=pic[xy[:,1],xy[:,0]]
    normals=np.cross(verts[:,1]-verts[:,0],verts[:,2]-verts[:,0]);normals/=np.maximum(np.linalg.norm(normals,axis=1,keepdims=True),1e-9);c[:,:3]*=(.75+.25*np.abs(normals@np.array([.3,.85,.4])))[:,None];c=np.clip(c,0,1)
    screen=np.stack([(v[:,0]-v[:,2])*.707,v[:,1]*.866-(v[:,0]+v[:,2])*.354],axis=1);polys.extend(screen[tri]);colors.extend(c);depths.extend(((verts[:,:,0]+verts[:,:,2])*.612+verts[:,:,1]*.5).mean(1))
