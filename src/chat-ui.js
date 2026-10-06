@@ -285,7 +285,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // hint did not fit a phone). A private chat has nobody else to mention.
   return {show:true,placeholder:tab==='global'||tab==='family'?'Type @ to mention a farmer.':`Message ${thread.otherName}…`};
  }
- const moreButton=()=>more?`<li class="chat-more"><button type="button" class="small-button" data-chat-more${loadingMore?' disabled':''}>${loadingMore?'Loading…':'Load earlier messages'}</button></li>`:'';
+ // Its own class (6 Oct 2026): it shared .chat-more with each message's ⋯ button, which is invisible until hovered on a computer and
+ // clipped away on a phone, so it never showed.
+ const moreButton=()=>more?`<li class="chat-earlier"><button type="button" class="small-button" data-chat-more${loadingMore?' disabled':''}>${loadingMore?'Loading…':'Load earlier messages'}</button></li>`:'';
  async function loadMore(){
   const name=channelOf(),last=messages[messages.length-1];if(!name||!last||loadingMore)return;
   const ticket=loading;loadingMore=true;paint();

@@ -389,4 +389,8 @@ test('Load earlier messages: the client asks for the page before the oldest one 
  assert.match(ui,/\.join\(''\)\+moreButton\(\):empty\(/,'the button comes after the messages');
  assert.match(ui,/if\(event\.target\.closest\('\[data-chat-more\]'\)\)\{void loadMore\(\);return;\}/);
  assert.match(ui,/messages=\[m,\.\.\.messages\]\.slice\(0,Math\.max\(100,messages\.length\+1\)\);/,'a new message keeps the older ones that were loaded');
+ // 6 Oct 2026: it shared .chat-more with each message's ⋯ button (invisible until hovered, clipped on a phone), so it never showed.
+ assert.match(ui,/<li class="chat-earlier"><button type="button" class="small-button" data-chat-more/);assert.doesNotMatch(ui,/<li class="chat-more">/);
+ const css=read('public/chat.css');assert.match(css,/\.chat-earlier\{display:flex;justify-content:center;padding:12px 0 4px\}/);
+ assert.doesNotMatch(css,/chat-earlier[^{]*\{[^}]*(opacity:0|clip-path)/,'nothing hides it');
 });

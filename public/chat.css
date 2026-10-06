@@ -358,5 +358,5 @@ span.chat-avatar{cursor:default}
 /* "Settings" itself never shrinks: the way is the point; a long part's title takes the dots (4 Oct 2026 review). */
 .chat-text .chat-settings-link span:first-of-type{flex:none}
 /* Load earlier messages (5 Oct 2026): at the end of a conversation (the newest is on top), while there are more. */
-.chat-more{display:flex;justify-content:center;padding:12px 0 4px}
-.chat-more .small-button{min-width:200px}
+.chat-earlier{display:flex;justify-content:center;padding:12px 0 4px}
+.chat-earlier .small-button{min-width:200px}
