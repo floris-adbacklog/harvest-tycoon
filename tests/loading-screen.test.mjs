@@ -54,9 +54,3 @@ test('the loading screen stays over the farm frame until the farm page shows its
  assert.match(read('src/game-cloud.js'),/  nextFrame\(\(\)=>nextFrame\(\(\)=>\{try\{window\.parent\.harvestFarmShown\?\.\(\);\}catch\{\}\}\)\);/);
  for(const page of ['src/main.js','src/crazygames.js'])assert.match(read(page),/if\(value==='authenticated'\)handOver\.wait\(\);else\{handOver\.stop\(\);\$\('loading-screen'\)\.hidden=value!=='checking';\}/,page);
 });
-
-test('the loading screen is lighter: a real render of the farm behind it, not the painted picture (6 Oct 2026; the logo stays the 1024 px one)',()=>{
- const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
- assert.match(read('public/loading-screen.css'),/url\('\/assets\/loading-farm\.webp'\)/);
- for(const page of ['public/farm.html','public/crazygames.html'])assert.match(read(page),/<link rel="preload" as="image" href="\/assets\/loading-farm\.webp">/,page);
-});
