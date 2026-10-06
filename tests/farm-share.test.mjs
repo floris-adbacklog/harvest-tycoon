@@ -206,7 +206,7 @@ test('the level-up card, your own profile and the game are wired as agreed',()=>
  assert.doesNotMatch(shoot,/await|setTimeout|requestAnimationFrame/,'render and copy in one go: the buffer is gone after a frame');
  assert.doesNotMatch(game,/preserveDrawingBuffer/,'never kept for every frame');
  assert.match(game,/const farmShare=villageWorld\?null:createFarmShare\(\{capture:shootFarmPhoto,/);assert.match(game,/window\.harvestShareFarm=farmShare;/);
- assert.match(game,/createProgressionUI\(\{state,isReady:\(\)=>ready&&\$\('loading'\)\.hidden,share:farmShare\}\)/);
+ assert.match(game,/createProgressionUI\(\{state,isReady:\(\)=>ready&&\$\('loading'\)\.hidden,share:farmShare,notify:toast\}\)/);
  const share=read('public/farm-share.js');assert.match(share,/new \(host\?\.File\?\?globalThis\.File\)\(\[blob\]/);assert.match(share,/host\.navigator\.clipboard\.writeText\(link\)/);
 });
 

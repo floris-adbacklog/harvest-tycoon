@@ -218,7 +218,7 @@ test('Show me for the first basket: the ghost sickle comes in over the first fie
  const one=ghostPose([{x:5,y:6}],.5);assert.deepEqual([one.x,one.y],[5,6],'a single ripe field: it stays over it');
  const game=read('public/game.js');
  assert.match(game,/firstBasket=target==='harvest'&&beginnerProgress\(state\)\.find\(q=>q\.current\)\?\.id==='harvest'/);
- assert.match(game,/if\(firstBasket&&!villageWorld\)sweepGhost\.start\(\(\)=>\{if\(state\.stats\.harvested>0\)return null;/,'until the first harvest');
+ assert.match(game,/const firstBasketGhost=\(\)=>sweepGhost\.start\(\(\)=>\{if\(state\.stats\.harvested>0\)return null;/,'until the first harvest');
  assert.match(game,/coach\.stop\(\);sweepGhost\.stop\(\);/,'one Show me at a time');
  assert.doesNotMatch(read('public/sweep-tools.js'),/showModal|<dialog|\.open\(/,'no popup');
 });

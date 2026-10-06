@@ -87,8 +87,10 @@ function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check
  $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
 const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
-// On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide.
-const startView=()=>villageWorld?'home':mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)?'fields':'home';
+// On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide. On a
+// computer too until the first harvest (6 Oct 2026: from the whole valley the ripe corn was some 25 px, and 37% of new farmers on a
+// computer never touched anything, against none on a phone).
+const startView=()=>villageWorld?'home':mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)||!(state.stats.harvested>0)?'fields':'home';
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
 let overviewBounds=null;
 let familyFlag=null;
@@ -666,6 +668,8 @@ async function interact(id,forcedAction){
 // fields come back and the toast says why. With reduced motion the rings and sounds stay, without flights, bursts or swings.
 let sweepRun=null,lastPointer=null,pointerDx=0;
 const sweepTool=createSweepTool({reducedMotion}),sweepGhost=createSweepGhost({reducedMotion});
+// Step 1's see-through sickle over the ripe starter corn, until the first harvest (Show me, and by itself on a brand-new farm).
+const firstBasketGhost=()=>sweepGhost.start(()=>{if(state.stats.harvested>0)return null;const ids=state.plots.map((p,i)=>p.crop&&farmNow()>=p.readyAt?i:-1).filter(i=>i>=0).slice(0,3);return ids.length?ids.map(i=>toScreen(plots[i].x,.7,plots[i].z)):null;});
 // What a drag from this field does (plant, harvest, water or care), or nothing: then the drag moves the farm.
 function sweepAction(target){if(adminView)return null;const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool):null;return a==='plant'||a==='harvest'||a==='water'||a==='tend'?a:null;}
 function startSweep(action){
@@ -1118,7 +1122,7 @@ function bindUI(){
   // Step 1's Show me also draws a see-through sickle sweeping over the ripe starter corn, again and again until the first harvest, on
   // the farm itself (no window, no bubble; every tap goes through).
   const touch=mobileLayout.matches||matchMedia('(pointer: coarse)').matches,firstBasket=target==='harvest'&&beginnerProgress(state).find(q=>q.current)?.id==='harvest';
-  if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':firstBasket?(touch?'Hold one ripe corn for a moment, then sweep across the others to harvest them, or tap one.':'Sweep across your ripe corn to harvest it, or tap one.'):touch?'Tap a ready crop, or hold one for a moment and sweep across the others.':'Click a ready crop, or sweep across your ready crops to harvest them all.');if(firstBasket&&!villageWorld)sweepGhost.start(()=>{if(state.stats.harvested>0)return null;const ids=state.plots.map((p,i)=>p.crop&&farmNow()>=p.readyAt?i:-1).filter(i=>i>=0).slice(0,3);return ids.length?ids.map(i=>toScreen(plots[i].x,.7,plots[i].z)):null;});}
+  if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?'Tap a growing crop to water it.':firstBasket?(touch?'Hold one ripe corn for a moment, then sweep across the others to harvest them, or tap one.':'Sweep across your ripe corn to harvest it, or tap one.'):touch?'Tap a ready crop, or hold one for a moment and sweep across the others.':'Click a ready crop, or sweep across your ready crops to harvest them all.');if(firstBasket&&!villageWorld)firstBasketGhost();}
   // Show me points at the way in and lets the farmer tap it (1 Oct 2026: it used to open the window for them, so they never
   // learnt where Market was). Only where nothing can be pointed at does it still open the window itself.
   else if(guideSteps(target,{state,now:farmNow()}))coach.start(guideSteps(target,{state,now:farmNow()}));
@@ -1134,7 +1138,7 @@ function bindUI(){
  // The village is another scene, so not there. It takes the invite link Invite a friend already asked for (one ask per visit).
  const farmShare=villageWorld?null:createFarmShare({capture:shootFarmPhoto,canCapture:()=>ready&&Boolean(renderer)&&!renderer.getContext().isContextLost(),state,invite:()=>inviteUI.info(),host:window.parent??window,track:(event,params)=>{try{window.parent.harvestBridge?.trackShare?.(event,params);}catch{}},drawCloth:drawFamilyCloth,playerName:()=>$('player-name')?.dataset.username});
  window.harvestShareFarm=farmShare;
- progression=createProgressionUI({state,isReady:()=>ready&&$('loading').hidden,share:farmShare});
+ progression=createProgressionUI({state,isReady:()=>ready&&$('loading').hidden,share:farmShare,notify:toast});
  if(initialLevelReward?.levels.length)progression.announce({...progressionChange(progressionSnapshot(state),state,initialLevelReward),catchUp:true});
  if(initialGift)giftPopup(initialGift);
  if(initialInvite)inviteLoadPopup(initialInvite);
@@ -1251,6 +1255,9 @@ async function init(){
   // The loading screen fades into the farm instead of disappearing at once.
   $('loading').classList.add('fade');
   await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;stopTips();progression.refresh();resolve();},450));
+  // A brand-new farm (6 Oct 2026): the sickle shows by itself where to sweep, as Show me does, until the first harvest. 11% of new farmers
+  // tapped growing wheat or an empty field instead, got no harvest and left.
+  if(!villageWorld&&!adminView&&!(state.stats.harvested>0)&&beginnerProgress(state).find(q=>q.current)?.id==='harvest')firstBasketGhost();
  // Oct 2026: the comeback chest is a row of its own above the gift; `current` is both as they are when the card really opens (it waits
  // for other dialogs), so one collected in Today meanwhile is not offered twice.
  if(!villageWorld)showWelcomeBack(initialWelcome,{gift:{offer:retention.giftOffer(),chips:retention.giftChips,collect:retention.collectGift},chest:{offer:retention.chestOffer(),chips:retention.chestChips,collect:retention.collectChest},current:()=>({gift:retention.giftOffer(),chest:retention.chestOffer()}),fields:focusFields,production:()=>economy.openBuilding(Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??'coop'),stall:()=>growth.open('stall'),today:()=>retention.openToday()});

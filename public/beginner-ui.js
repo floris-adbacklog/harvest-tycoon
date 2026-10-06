@@ -1,9 +1,12 @@
 import {BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,beginnerProgress} from './farm-state.js';
 import {art} from './visual-icons.js';
 
+// What to do now, in the phone's one-line banner (6 Oct 2026: it said only the step's title, and the instruction was a tap away; only 7
+// of 16 farmers on a phone made the first market sale).
+const DO_NOW={harvest:'Harvest the ripe corn',sell:'Sell corn in Market',plant:'Plant wheat in an empty field',water:'Water a growing crop',produce:'Start a batch in the Chicken Coop',gift:'Collect your gift in Today',chore:'Do a farm chore',tend:'Give care to a growing crop',wheat:'Harvest a ripe wheat field',collect:'Collect a finished batch'};
 export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished}){
  const $=id=>document.getElementById(id),dialog=$('beginner-dialog');
- let busy=false,lastMarkup='',finaleShown=false;
+ let busy=false,lastMarkup='',finaleShown=false,lastStep=null,marketTimer=0;
  function refresh(){
   const steps=beginnerProgress(state),current=steps.find(q=>q.current),done=steps.filter(q=>q.done).length,complete=done===steps.length;
   const finished=complete&&state.onboarding?.rewardClaimed===true;
@@ -11,7 +14,11 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   document.querySelectorAll('[data-menu-action="all-quests-mobile"]').forEach(el=>el.hidden=finished);
   if(finished&&dialog.open)dialog.close();
   $('game').classList.toggle('beginner-active',!complete);$('beginner-mobile').hidden=complete;$('beginner-mobile').classList.toggle('is-ready',!!current?.ready);
-  $('beginner-mobile-copy').textContent=`Step ${Math.min(done+1,steps.length)} of 10 · ${current?.ready?'Ready to complete':current?.title??'Guide complete'}`;
+  $('beginner-mobile-copy').textContent=`Step ${Math.min(done+1,steps.length)} of 10 · ${current?.ready?'Ready to complete':DO_NOW[current?.id]??current?.title??'Guide complete'}`;
+  // Right after the first harvest the guide shows the way to the Market by itself (6 Oct 2026: 62% of the farmers who harvested never
+  // made the first sale and left): the same pointer as Show me, a moment after the harvest, when no window is open.
+  if(lastStep==='harvest'&&current?.id==='sell'){clearTimeout(marketTimer);marketTimer=setTimeout(()=>{if(!document.querySelector('dialog[open]')&&beginnerProgress(state).find(q=>q.current)?.id==='sell')guide('market');},1800);}
+  lastStep=current?.id??null;
   $('quest-number').textContent=Math.min(done+1,steps.length);$('quest-total').textContent=steps.length;
   $('quest-title').textContent=current?.title??'Ready to grow your own way';
   $('quest-description').textContent=current?.description??`You learned the basics and earned ${BEGINNER_REWARD} diamonds. Find your next goals in Quests and Today.`;
