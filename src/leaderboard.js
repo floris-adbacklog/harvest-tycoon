@@ -5,6 +5,8 @@ import {rankArt} from '../public/rank-art.js';
 import {art} from '../public/visual-icons.js';
 import {rankArtKey} from '../public/rank-picker.js';
 import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem} from '../public/farm-state.js';
+import {ONLINE_WINDOW} from './presence.js';
+import {countLines} from './player-counts.js';
 const CROP_BOARDS=Object.keys(CROPS).sort((a,b)=>(CROP_LEVELS[a]??1)-(CROP_LEVELS[b]??1));
 // The level at which a good can first be made: its earliest recipe outside the Factory (the building's level or the recipe's own).
 const goodLevel=key=>Math.min(...Object.values(RECIPES).filter(r=>r.building!=='factory'&&r.output[key]).map(r=>Math.max(BUILDING_LEVELS[r.building]??1,r.minLevel??1)),Infinity);
@@ -58,9 +60,21 @@ export function boardAdmins(client){
  if(!list){list=Promise.resolve().then(()=>client.rpc('chat_staff_list')).then(({data,error})=>{if(error)throw error;return (Array.isArray(data)?data:[]).filter(s=>s?.role==='admin'&&/^[0-9a-f-]{36}$/i.test(String(s.player_id))).map(s=>s.player_id);}).catch(()=>{adminLists.delete(client);return [];});adminLists.set(client,list);}
  return list;
 }
-export async function fetchLeaderboard(client,playerId,category='level'){
+// How many farmers the valley has and how many of them are online (6 Oct 2026): the line above the top 100. Two counts in the
+// database, the admins left out as on the boards; online is a farm action in the last 30 minutes, as the dots, by the server's clock
+// (now). The counts are the same on every board, so switching boards within 25 seconds asks nothing new; a failed count shows no line.
+const countLists=new WeakMap();
+export function fetchPlayerCounts(client,admins=[],now=Date.now()){
+ const kept=countLists.get(client);if(kept&&now-kept.at>=0&&now-kept.at<25000)return kept.counts;
+ const count=filter=>{let query=client.from('player_stats').select('player_id',{count:'exact',head:true});if(admins.length)query=query.not('player_id','in',`(${admins.join(',')})`);return Promise.resolve(filter(query)).then(({count,error})=>{if(error||!Number.isFinite(count))throw error??new Error('No count');return count;});};
+ const counts=Promise.all([count(query=>query),count(query=>query.gt('last_active_at',new Date(now-ONLINE_WINDOW).toISOString()))]).then(([total,online])=>({total,online:Math.min(online,total)})).catch(()=>{countLists.delete(client);return null;});
+ countLists.set(client,{at:now,counts});return counts;
+}
+// counts: the game's own board asks for the farmer counts too (src/main.js, src/farm-session.js), side by side with the board.
+export async function fetchLeaderboard(client,playerId,category='level',{counts=false,now=Date.now()}={}){
  const config=categoryFor(category),column=columnOf(category),fields=[...BOARD_FIELDS,...(config.good?['goods_made']:BOARD_FIELDS.includes(category)?[]:[category])].join(',');
  const admins=await boardAdmins(client),ranked=query=>admins.length?query.not('player_id','in',`(${admins.join(',')})`):query;
+ const counting=counts?fetchPlayerCounts(client,admins,now):null;
  let {data,error}=await ranked(client.from('player_stats').select(fields)).order(column,{ascending:false,nullsFirst:false}).order('player_id',{ascending:true}).limit(BOARD_SIZE);
  if(error)throw error;
  // Should the admin list not load, the admins still stay off: they alone are level 999 (3 Oct 2026, supabase/admin-level.sql).
@@ -70,14 +84,21 @@ export async function fetchLeaderboard(client,playerId,category='level'){
  if(!own&&playerId&&!admins.includes(playerId)){const response=await client.from('player_stats').select(fields).eq('player_id',playerId).maybeSingle();if(response.error)throw response.error;own=response.data;}
  let rank=null;
  if(own){const listed=data?.findIndex(row=>row.player_id===playerId)??-1;if(listed>=0)rank=listed+1;else{const result=await ranked(client.from('player_stats').select('player_id',{count:'exact',head:true})).gt(column,scoreOf(own,category));if(result.error)throw result.error;const ties=await ranked(client.from('player_stats').select('player_id',{count:'exact',head:true})).eq(column,scoreOf(own,category)).lt('player_id',own.player_id);if(ties.error)throw ties.error;rank=(result.count??0)+(ties.count??0)+1;}}
- return {rows:data??[],own,rank,category};
+ return {rows:data??[],own,rank,category,players:counting?await counting:null};
 }
 export function rankedRows(rows,category='level'){
  categoryFor(category);return rows.map((row,i)=>({row,rank:i+1,score:scoreOf(row,category)}));
 }
 // Ten farmers a page with Previous and Next (onPage gets the page to show); a farmer in the top 100 can jump to their own page.
-export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false,now=Date.now(),page=0},playerId,onPlayer,onPage){
+// players: {total,online} from fetchPlayerCounts, one line above the top 100 (and above an empty board): a grey dot before the
+// players, the green online dot before the online, in the words of the sign-in page's counts (src/player-counts.js countLines).
+export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false,now=Date.now(),page=0,players=null},playerId,onPlayer,onPage){
  const config=categoryFor(category);container.replaceChildren();
+ if(players){
+  const words=countLines({players:players.total,online:players.online}),line=document.createElement('p');line.className='leaderboard-players';
+  const item=(text,online)=>{const span=document.createElement('span'),dot=document.createElement('i');dot.className=`online-dot${online?' is-online':''}`;dot.setAttribute('aria-hidden','true');span.append(dot,text);return span;};
+  line.append(item(words.players,false),item(words.online,true));container.append(line);
+ }
  const pages=Math.max(1,Math.ceil(rows.length/BOARD_PAGE)),shown=Math.min(Math.max(0,page),pages-1);
  // An empty board is a card with the board's own picture, not a lone sentence.
  if(!rows.length){const box=document.createElement('div');box.className='quest-empty leaderboard-empty';box.innerHTML=`${art(rankArtKey(category))}<h3>The valley is quiet</h3><p>Be the first farmer on this board.</p>`;container.append(box);return;}

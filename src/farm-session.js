@@ -38,8 +38,8 @@ export function createFarmSession({
    let initial;try{const extra=firstLoad();initial=await farmRequest({operation:'load',...(extra??{})});}catch(error){if(ticket!==generation)return;giveUp(error);throw error;}
    if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}
    presence=createFarmPresence(client(),user.id);
-   presence.setClock?.(initial.serverNow);
-   const bridge={playerId,presence,serverNow:initial.serverNow,takeInitial(){const data=initial;initial=null;return data;},signOut:()=>signedOut(),async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');const result=await fetchLeaderboard(client(),user.id,category);if(ticket!==generation)throw new Error('Your session has ended.');presence?.setRows?.(result.rows);return {...result,...presence?.snapshot()};},async request(body){
+   presence.setClock?.(initial.serverNow);const clock=Number.isFinite(initial.serverNow)?initial.serverNow-Date.now():0;   // the server's clock, for the board's online count
+   const bridge={playerId,presence,serverNow:initial.serverNow,takeInitial(){const data=initial;initial=null;return data;},signOut:()=>signedOut(),async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');const result=await fetchLeaderboard(client(),user.id,category,{counts:true,now:Date.now()+clock});if(ticket!==generation)throw new Error('Your session has ended.');presence?.setRows?.(result.rows);return {...result,...presence?.snapshot()};},async request(body){
     if(ticket!==generation||!nav.onLine)throw new Error('Your session is paused. Reconnect to continue.');
     try{const data=await farmRequest(body);if(ticket!==generation||data.profile?.player_id!==user.id)throw new Error('Your session has ended.');connection.ok();return data;}
     catch(error){

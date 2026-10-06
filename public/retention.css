@@ -539,6 +539,11 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #leaderboard-dialog .leaderboard-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 6px}
 #leaderboard-dialog .leaderboard-table thead{display:none}
 #leaderboard-dialog .leaderboard-caption{padding:6px 2px 0;font-size:12px;font-weight:700;color:#8a7d68;text-align:start}
+/* How many farmers (grey dot) and how many online (green dot) (6 Oct 2026, src/leaderboard.js): one quiet chip under the filters, above the top 100. */
+#leaderboard-dialog .leaderboard-players{display:flex;align-items:center;gap:16px;width:fit-content;margin:4px 0 2px;padding:5px 12px;border:1px solid #eee6da;border-radius:999px;background:#fbf8f2;font-size:12px;font-weight:700;color:#736859}
+#leaderboard-dialog .leaderboard-players>span{display:inline-flex;align-items:center;gap:6px}
+#leaderboard-dialog .leaderboard-players .online-dot{flex:none;width:8px;height:8px;margin:0;border-radius:50%;background:#c8c4b8}
+#leaderboard-dialog .leaderboard-players .online-dot.is-online{background:#5e9b51}
 #leaderboard-dialog .leaderboard-table td{padding:8px;border-top:1px solid #eee6da;border-bottom:1px solid #eee6da;background:#fbf8f2;vertical-align:middle;overflow-wrap:normal}
 #leaderboard-dialog .leaderboard-table td:first-child{width:46px;padding-inline:4px;border-inline-start:1px solid #eee6da;border-radius:14px 0 0 14px;text-align:center}
 #leaderboard-dialog .leaderboard-table td:last-child{width:86px;padding-inline-end:12px;border-inline-end:1px solid #eee6da;border-radius:0 14px 14px 0;font:700 16px 'Outfit',sans-serif;color:#806322;white-space:nowrap;text-align:end}

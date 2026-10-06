@@ -71,3 +71,34 @@ test('the admins are left off every board, from the database\'s staff list, aske
  const broken={rpc:()=>Promise.resolve({data:null,error:new Error('down')}),from(){const q={};for(const name of ['select','order','limit','eq','maybeSingle','gt','lt'])q[name]=()=>q;q.then=resolve=>Promise.resolve({data:[],error:null}).then(resolve);return q;}};
  assert.deepEqual((await fetchLeaderboard(broken,null)).rows,[],'without the list the board still opens');
 });
+
+// 6 Oct 2026: how many farmers the valley has and how many are online, one line above the top 100.
+test('the board shows how many farmers there are and how many of them are online',async()=>{
+ const {renderLeaderboard}=await import('../src/leaderboard.js');
+ const ADMIN='e8e4c7c3-c06f-408c-9fe6-1cfa7d2b3ae8',calls=[];let failing=false;
+ const client={rpc:()=>Promise.resolve({data:[{player_id:ADMIN,role:'admin'}],error:null}),
+  from(){const steps=[],q={};calls.push(steps);for(const name of ['select','order','limit','eq','maybeSingle','gt','lt','not'])q[name]=(...args)=>{steps.push([name,...args]);return q;};
+   q.then=resolve=>{const head=steps.some(s=>s[0]==='select'&&s[2]?.head),online=steps.some(s=>s[0]==='gt'&&s[1]==='last_active_at');
+    return Promise.resolve(head?(failing?{count:null,error:new Error('down')}:{count:online?44:4253,error:null}):{data:[{player_id:'other',username:'Other',level:3}],error:null}).then(resolve);};return q;}};
+ const now=Date.UTC(2026,9,6,12),heads=()=>calls.filter(s=>s.some(x=>x[0]==='select'&&x[2]?.head));
+ const result=await fetchLeaderboard(client,null,'level',{counts:true,now});
+ assert.deepEqual(result.players,{total:4253,online:44});
+ assert.equal(heads().length,2,'two counts');
+ assert.equal(heads().flat().find(x=>x[0]==='gt')[2],new Date(now-30*60000).toISOString(),'online: a farm action in the last 30 minutes, by the server clock');
+ assert(heads().every(s=>s.some(x=>x[0]==='not'&&x[3]===`(${ADMIN})`)),'the admins are not counted');
+ await fetchLeaderboard(client,null,'currency',{counts:true,now:now+5000});assert.equal(heads().length,2,'another board within 25 seconds asks nothing new');
+ failing=true;assert.equal((await fetchLeaderboard(client,null,'level',{counts:true,now:now+30000})).players,null,'a failed count: no line');
+ assert.equal((await fetchLeaderboard(client,null,'level')).players,null,'only the game\'s board asks for the counts');
+ // The line comes first: under the filters, above the top 100 (and above an empty board).
+ const element=tag=>{const el={tag,children:[],className:'',innerHTML:'',dataset:{},classList:{add(){},toggle(){}},setAttribute(){},querySelectorAll:()=>[],
+  append(...items){el.children.push(...items);},replaceChildren(...items){el.children=[...items];},get text(){return el.children.map(c=>typeof c==='string'?c:c.text??'').join('');}};return el;};
+ const previous=globalThis.document;globalThis.document={createElement:element};
+ try{
+  const box=element('div');renderLeaderboard(box,{rows:[],players:{total:4253,online:44}},null);
+  const [players,online]=box.children[0].children;
+  assert.equal(box.children[0].className,'leaderboard-players');assert.equal(players.text,'4\u202f253 players');assert.equal(online.text,'44 online','the sign-in page\'s words, translated already');
+  assert.equal(players.children[0].className,'online-dot','a grey dot before the players');assert.equal(online.children[0].className,'online-dot is-online','the green dot before the online');
+  assert.equal(box.children[1].className,'quest-empty leaderboard-empty');
+  renderLeaderboard(box,{rows:[],players:null},null);assert.equal(box.children[0].className,'quest-empty leaderboard-empty','no counts, no line');
+ }finally{globalThis.document=previous;}
+});
