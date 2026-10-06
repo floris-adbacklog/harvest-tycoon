@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {SETTINGS_PARTS,SETTINGS_SLUGS,APP_LINK,appPath as gameAppPath,settingsLink,settingsSlug,settingsPart,parseGameLink,gameLinksIn} from '../public/game-links.js';
+import {SETTINGS_PARTS,SETTINGS_SLUGS,APP_LINK,FEEDBACK_LINK,appPath as gameAppPath,settingsLink,settingsSlug,settingsPart,parseGameLink,gameLinksIn} from '../public/game-links.js';
 import {chatParts,MAX_LINKS} from '../src/chat-rich.js';
 import {openIntent,withoutOpen} from '../public/app-links.js';
 import {wikiArticle} from '../public/wiki-content.js';
@@ -124,7 +124,7 @@ test('Settings opens at the part a link names, or on the list with a note when t
 test('Copy link in Settings: for the admins and moderators only, never on CrazyGames, the part\'s own address',()=>{
  const nav=read('public/settings-nav.js'),cloud=read('src/game-cloud.js');
  assert.match(nav,/data-settings-copy="\$\{settingsLink\(slug\)\}" title="Copy link" aria-label="Copy link">\$\{WIKI_COPY_ICON\}/);
- assert.match(cloud,/if\(!portal\)void loadStaff\(bridge\.chat\)\.then\(\(\)=>\{if\(staffRole\(bridge\.playerId\)\)addSettingsCopyLinks\(document\.getElementById\('sound-dialog'\)\);\}\);/);
+ assert.match(cloud,/if\(!portal\)void loadStaff\(bridge\.chat\)\.then\(\(\)=>\{if\(staffRole\(bridge\.playerId\)\)\{addSettingsCopyLinks\(document\.getElementById\('sound-dialog'\)\);addFeedbackCopyLink\(document\.getElementById\('feedback-dialog'\)\);\}\}\);/);
  assert.equal((cloud.match(/addSettingsCopyLinks\(/g)??[]).length,1,'nowhere else');
  assert.match(read('public/settings.css'),/html\[data-portal\] \.settings-copy\{display:none!important\}/);
  assert.doesNotMatch(read('public/sound-settings.js')+read('public/game.js'),/addSettingsCopyLinks/,'farmers\' Settings never adds them');
@@ -208,4 +208,24 @@ test('the texts that state the link rule say it, in every language',()=>{
   assert.ok(portalFact.includes(`${settings} › ${exact(dict,'Sound')}`),`${code}: the way on CrazyGames`);
   for(const key of ['No links, except to this wiki, the app page or a part of Settings: at most 2 in one message.','No links, except to this wiki or a part of Settings: at most 2 in one message.','Get the app','That part of Settings is not available here.','You already have the app: you are playing in it.','The app is not available on CrazyGames.'])assert.ok(exact(dict,key),`${code}: ${key}`);
  }
+});
+
+// The Feedback window as a link (6 Oct 2026): the staff copy it beside Feedback's title, the chat shows it as a chip, the site opens it.
+test('the Feedback link: /feedback opens the Feedback window, the chat shows a Feedback chip, the staff copy it beside the title',()=>{
+ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+ assert.equal(FEEDBACK_LINK,'https://www.harvesttycoon.com/feedback');
+ for(const url of [FEEDBACK_LINK,'harvesttycoon.com/feedback','https://harvesttycoon.com/feedback/','http://www.harvesttycoon.com/FEEDBACK'])assert.deepEqual(parseGameLink(url),{feedback:true},url);
+ for(const url of ['https://www.harvesttycoon.com/feedbackx','https://www.harvesttycoon.com/feedback#x','https://evil.com/feedback'])assert.equal(parseGameLink(url),null,url);
+ assert.deepEqual(gameLinksIn('Tell us: harvesttycoon.com/feedback!').map(({url,feedback})=>({url,feedback})),[{url:'harvesttycoon.com/feedback',feedback:true}]);
+ assert.deepEqual(chatParts('Tell us here: https://www.harvesttycoon.com/feedback thanks'),[{text:'Tell us here: '},{feedback:{url:'https://www.harvesttycoon.com/feedback'}},{text:' thanks'}]);
+ assert.deepEqual(openIntent('?open=feedback'),{open:'feedback'});
+ const vercel=JSON.parse(read('vercel.json')),to=src=>(vercel.redirects??[]).find(r=>r.source===src)?.destination;
+ assert.equal(to('/feedback'),'/?open=feedback');assert.equal(to('/feedback/'),'/?open=feedback');
+ assert.match(read('src/game-cloud.js'),/else if\(intent\?\.open==='feedback'\)document\.getElementById\('feedback-button'\)\?\.click\(\);/);
+ const ui=read('src/chat-ui.js');assert.match(ui,/const feedbackChip=\(\)=>`<button type="button" class="chat-wiki chat-feedback-link" data-feedback-link>\$\{art\('feedback'\)\}<span>Feedback<\/span><\/button>`;/);
+ assert.match(ui,/if\(event\.target\.closest\('\[data-feedback-link\]'\)\)\{dialog\.close\(\);doc\.getElementById\('feedback-button'\)\?\.click\(\);return;\}/);
+ const fb=read('public/feedback-ui.js');assert.match(fb,/const copy=dialog\.dataset\.copyLink==='on'\?`<button type="button" class="feedback-copy" data-feedback-copy title="Copy link" aria-label="Copy link">/);
+ assert.match(fb,/copyGameLink\(event\.currentTarget,FEEDBACK_LINK,\{doc\}\)/);assert.match(read('public/retention.css'),/html\[data-portal\] \.feedback-copy\{display:none!important\}/);
+ const sql=read('supabase/chat-feedback-link.sql');assert.match(sql,/execute replace\(def,'\|app\/\?\|settings\/\(','\|app\/\?\|feedback\/\?\|settings\/\('\);/);
+ assert.match(sql,/if position\('feedback\/\?' in def\)>0 then return; end if;/,'re-runnable');
 });

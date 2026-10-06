@@ -37,6 +37,16 @@
       "permanent": false
     },
     {
+      "source": "/feedback",
+      "destination": "/?open=feedback",
+      "permanent": false
+    },
+    {
+      "source": "/feedback/",
+      "destination": "/?open=feedback",
+      "permanent": false
+    },
+    {
       "source": "/settings/",
       "destination": "/?open=settings",
       "permanent": false

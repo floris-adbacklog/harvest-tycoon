@@ -71,16 +71,24 @@ export function addSettingsCopyLinks(dialog,{doc=globalThis.document,win=globalT
   head.insertAdjacentHTML('beforeend',`<button type="button" class="settings-copy" data-settings-copy="${settingsLink(slug)}" title="Copy link" aria-label="Copy link">${WIKI_COPY_ICON}<span class="settings-copied" aria-live="polite"></span></button>`);
  }};
  add();new MutationObserver(add).observe(dialog,{attributes:true,attributeFilter:['open']});
- dialog.addEventListener('click',async event=>{
+ dialog.addEventListener('click',event=>{
   const button=event.target.closest('[data-settings-copy]');if(!button)return;
   event.preventDefault();event.stopPropagation();
-  const url=button.dataset.settingsCopy,say=button.querySelector('.settings-copied');clearTimeout(button.copyTimer);
-  let done=false;
-  for(const w of [win?.parent,win]){try{if(w?.navigator?.clipboard?.writeText){await w.navigator.clipboard.writeText(url);done=true;break;}}catch{}}
-  // Where no clipboard is allowed, the address shows, selected, to copy by hand.
-  if(!done){const field=doc.createElement('input');field.className='settings-copy-field';field.readOnly=true;field.value=url;field.setAttribute('aria-label','Copy link');(button.closest('h3')??button).after(field);field.select();field.addEventListener('blur',()=>field.remove(),{once:true});return;}
-  say.textContent='Copied.';button.classList.add('is-copied');
-  button.copyTimer=setTimeout(()=>{say.textContent='';button.classList.remove('is-copied');},1800);
+  void copyGameLink(button,button.dataset.settingsCopy,{doc,win});
  });
  return true;
 }
+// Copies a game link from a staff button (Settings, Feedback): "Copied." in the button's own status for a moment; where no clipboard is
+// allowed, the address shows, selected, to copy by hand.
+export async function copyGameLink(button,url,{doc=globalThis.document,win=globalThis.window}={}){
+ const say=button.querySelector('[aria-live]');clearTimeout(button.copyTimer);
+ let done=false;
+ for(const w of [win?.parent,win]){try{if(w?.navigator?.clipboard?.writeText){await w.navigator.clipboard.writeText(url);done=true;break;}}catch{}}
+ if(!done){const field=doc.createElement('input');field.className='settings-copy-field';field.readOnly=true;field.value=url;field.setAttribute('aria-label','Copy link');(button.closest('h2,h3')??button).after(field);field.select();field.addEventListener('blur',()=>field.remove(),{once:true});return false;}
+ if(say)say.textContent='Copied.';button.classList.add('is-copied');
+ button.copyTimer=setTimeout(()=>{if(say)say.textContent='';button.classList.remove('is-copied');},1800);
+ return true;
+}
+// Copy link beside Feedback's title (6 Oct 2026), for the staff only: its link (public/game-links.js FEEDBACK_LINK) to paste in the chat,
+// News or a pop-up. The window draws itself anew each time (public/feedback-ui.js), so this only marks it; it shows the button.
+export function addFeedbackCopyLink(dialog){if(!dialog)return false;dialog.dataset.copyLink='on';return true;}

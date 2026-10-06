@@ -3,7 +3,8 @@
 // Notifications tab: an in-game purchase for the admin; the staff's Crew, supabase/chat-crew-push.sql). Settings (4 Oct 2026) at one
 // part only by a slug of public/game-links.js (/settings/<part> on the website comes here as ?open=settings&part=<part>, vercel.json).
 import {settingsPart} from './game-links.js';
-export const OPEN_SCREENS=Object.freeze(['chat','today','leaderboard','farm','settings']);
+// The Feedback window (6 Oct 2026, /feedback on the website: vercel.json).
+export const OPEN_SCREENS=Object.freeze(['chat','today','leaderboard','farm','settings','feedback']);
 const CHANNEL=/^(global|notices|crew|family:[0-9a-f-]{36}|dm:[0-9a-f-]{36}:[0-9a-f-]{36})$/;
 export function openIntent(search){
  let params;try{params=new URLSearchParams(search??'');}catch{return null;}

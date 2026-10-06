@@ -72,7 +72,7 @@ test('a third kind: Request a feature, with its own hint; the button is just Fee
  const sql=read('supabase/feedback-feature.sql'),ui=read('public/feedback-ui.js');
  assert.match(sql,/add constraint feedback_reports_kind_check check \(kind in \('feedback','bug','feature'\)\);/);
  assert.match(sql,/p_kind not in \('feedback','bug','feature'\) then raise exception 'Choose feedback, a bug or a feature request\.'/);
- assert.match(ui,/feature:'What would you like to see in the game\?'/);assert.match(ui,/<h2 id="feedback-title">Feedback<\/h2>/);
+ assert.match(ui,/feature:'What would you like to see in the game\?'/);assert.match(ui,/<h2 id="feedback-title"><span>Feedback<\/span>\$\{copy\}<\/h2>/);
  assert.match(read('src/admin-dashboard.js'),/const FEEDBACK_KINDS=\{feedback:'Feedback',bug:'Bug',feature:'Feature request'\};/);
  assert.doesNotMatch(read('public/farm.html')+read('public/wiki-content.js'),/Feedback (&amp;|&|and) bugs/,'one name everywhere');
 });

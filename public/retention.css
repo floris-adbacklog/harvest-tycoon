@@ -1241,6 +1241,13 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 .feedback-dialog>.feedback-status:empty{margin:0}
 /* Phones: a full-width sheet like every other window (mobile-windows.css), not a card with a gap on the right. */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.feedback-dialog{width:100%}}
+/* Copy link beside Feedback's title, for the staff only (6 Oct 2026, settings-nav.js addFeedbackCopyLink); never on CrazyGames. */
+.feedback-dialog .feedback-copy{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;min-width:30px;height:30px;margin-inline-start:6px;padding:0 7px;border:0;border-radius:999px;background:none;color:#b3a283;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer}
+.feedback-dialog .feedback-copy svg{width:16px;height:16px;color:currentColor}
+.feedback-dialog .feedback-copy:hover{background:#f3eadb;color:#5b4520}
+.feedback-dialog .feedback-copy:focus-visible{outline:3px solid #c2912d;outline-offset:1px}
+.feedback-dialog .feedback-copy.is-copied{background:#e6efdc;color:#3f6b4a}
+html[data-portal] .feedback-copy{display:none!important}
 .email-check-form .primary-button{flex:none}
 .email-check-resend{font-size:13px}
 .email-check-status{min-height:20px;margin:10px 0 0!important;font-size:13px!important;color:#7a5510!important}

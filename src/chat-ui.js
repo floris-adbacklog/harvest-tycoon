@@ -219,8 +219,10 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // On CrazyGames an app link stays plain words (no app promotion in their build; 4 Oct 2026 review).
  const appChip=()=>`<button type="button" class="chat-wiki chat-app-link" data-app-link>${ICON.phone}<span>Get the app</span></button>`;
  const settingsChip=link=>`<button type="button" class="chat-wiki chat-settings-link" data-settings-link="${esc(link.slug)}">${art('settings')}<span>Settings</span><span class="chat-path-sep" aria-hidden="true">›</span><span>${esc(settingsPart(link.slug)?.title??'')}</span></button>`;
+ // The Feedback window (6 Oct 2026): "Feedback" with its mailbox, opening it as the button does.
+ const feedbackChip=()=>`<button type="button" class="chat-wiki chat-feedback-link" data-feedback-link>${art('feedback')}<span>Feedback</span></button>`;
  const mentionChip=who=>`<button type="button" class="chat-mention${who.id===me?' is-me':''}" data-profile="${esc(who.id)}" translate="no">@${esc(who.name)}</button>`;
- const bodyHtml=m=>chatParts(m.body,m.meta?.mentions).map(part=>part.wiki?wikiChip(part.wiki):part.app?(portalOff('app')?`<span translate="no">${esc(part.app.url)}</span>`:appChip()):part.settings?settingsChip(part.settings):part.mention?mentionChip(part.mention):`<span translate="no">${m.sender_staff?linkify(part.text):esc(part.text)}</span>`).join('');
+ const bodyHtml=m=>chatParts(m.body,m.meta?.mentions).map(part=>part.wiki?wikiChip(part.wiki):part.app?(portalOff('app')?`<span translate="no">${esc(part.app.url)}</span>`:appChip()):part.settings?settingsChip(part.settings):part.feedback?feedbackChip():part.mention?mentionChip(part.mention):`<span translate="no">${m.sender_staff?linkify(part.text):esc(part.text)}</span>`).join('');
  function messageRow(m,{cont=false}={}){
   if(m.kind==='request')return requestRow(m);
   if(m.kind==='rank')return rankRow(m);
@@ -438,6 +440,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(event.target.closest('[data-app-link]')){openApp();return;}
   const part=event.target.closest('[data-settings-link]');
   if(part){openSettings(part.dataset.settingsLink);return;}
+  if(event.target.closest('[data-feedback-link]')){dialog.close();doc.getElementById('feedback-button')?.click();return;}
   if(profile){profiles?.open(profile.dataset.profile,{back:null});return;}
   const start=event.target.closest('[data-start]');
   if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}

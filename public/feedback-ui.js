@@ -1,5 +1,8 @@
 import {art,refreshArt} from './visual-icons.js';
 import {chosenLanguage} from './i18n.js';
+import {WIKI_COPY_ICON} from './wiki-link.js';
+import {FEEDBACK_LINK} from './game-links.js';
+import {copyGameLink} from './settings-nav.js';
 
 // Feedback (30 Sep 2026; called Feedback & bugs until 2 Oct): the mailbox button (on a computer beside How to play, on a phone in the
 // More menu) opens a short form: feedback, a bug or a feature request (2 Oct 2026), a few words, Send. It goes to the staff dashboard's Feedback tab (src/admin-dashboard.js) with the
@@ -24,7 +27,9 @@ export function createFeedback({doc=globalThis.document,chat=()=>{try{return glo
   if(sent){
    dialog.innerHTML=`${close}${art('feedback')}<p class="eyebrow">WE READ EVERY MESSAGE</p><h2 id="feedback-title">Thank you!</h2><p>Your message is with the Harvest Tycoon team.</p><button type="button" class="primary-button" data-feedback-done>Close</button>`;
   }else{
-   dialog.innerHTML=`${close}${art('feedback')}<p class="eyebrow">WE READ EVERY MESSAGE</p><h2 id="feedback-title">Feedback</h2>`
+   // Copy link beside the title for the staff (6 Oct 2026, settings-nav.js addFeedbackCopyLink): this window's link, for the chat or News.
+   const copy=dialog.dataset.copyLink==='on'?`<button type="button" class="feedback-copy" data-feedback-copy title="Copy link" aria-label="Copy link">${WIKI_COPY_ICON}<span class="feedback-copied" aria-live="polite"></span></button>`:'';
+   dialog.innerHTML=`${close}${art('feedback')}<p class="eyebrow">WE READ EVERY MESSAGE</p><h2 id="feedback-title"><span>Feedback</span>${copy}</h2>`
     +`<div class="feedback-kinds" role="group" aria-label="What is it about?">${[['feedback','Feedback'],['bug','Report a bug'],['feature','Request a feature']].map(([key,label])=>`<button type="button" data-feedback-kind="${key}" aria-pressed="${kind===key}">${label}</button>`).join('')}</div>`
     +`<form class="feedback-form" data-feedback-form><textarea data-feedback-text maxlength="${FEEDBACK_MAX}" rows="5" placeholder="${HINTS[kind]}" aria-label="Your message"></textarea>`
     +`<p class="feedback-note">With your message we send your farmer name, level, device and language.</p><button type="submit" class="primary-button" ${busy?'disabled':''}>Send</button></form>`
@@ -32,6 +37,7 @@ export function createFeedback({doc=globalThis.document,chat=()=>{try{return glo
    const text=dialog.querySelector('[data-feedback-text]');text.value=draft;text.addEventListener('input',()=>{draft=text.value;});
    dialog.querySelectorAll('[data-feedback-kind]').forEach(button=>button.addEventListener('click',()=>{kind=button.dataset.feedbackKind;message='';render();dialog.querySelector('[data-feedback-text]')?.focus();}));
    dialog.querySelector('[data-feedback-form]').addEventListener('submit',event=>{event.preventDefault();void send();});
+   dialog.querySelector('[data-feedback-copy]')?.addEventListener('click',event=>{event.preventDefault();void copyGameLink(event.currentTarget,FEEDBACK_LINK,{doc});});
   }
   dialog.querySelector('[data-feedback-close]').onclick=()=>dialog.close();
   dialog.querySelector('[data-feedback-done]')?.addEventListener('click',()=>dialog.close());

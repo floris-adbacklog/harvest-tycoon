@@ -4,7 +4,7 @@ import {WORLD_TWO_LEVEL} from '../public/farm-state.js';
 import {createPlayerProfiles} from './player-profiles.js';
 import {createAdminDashboard} from './admin-dashboard.js';
 import {loadStaff,staffRole} from './staff-badge.js';
-import {addSettingsCopyLinks} from '../public/settings-nav.js';
+import {addSettingsCopyLinks,addFeedbackCopyLink} from '../public/settings-nav.js';
 import {createChatUI} from './chat-ui.js';
 import {createCloudUI} from './ui.js';
 import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
@@ -59,8 +59,9 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   window.harvestProfiles=profiles;
   ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');
   createAvatarSettings(document.getElementById('avatar-settings'),{bridge,profile:window.harvestInitialFarm.profile,state:window.harvestInitialFarm.state,owner:loadStaff(bridge.chat).then(()=>staffRole(bridge.playerId)==='admin'),onSaved:profile=>ui.setProfile(profile,{id:bridge.playerId})});
-  // Copy link beside each Settings part (4 Oct 2026, public/settings-nav.js): for an admin or a moderator only, never on CrazyGames.
-  if(!portal)void loadStaff(bridge.chat).then(()=>{if(staffRole(bridge.playerId))addSettingsCopyLinks(document.getElementById('sound-dialog'));});
+  // Copy link beside each Settings part (4 Oct 2026, public/settings-nav.js) and beside Feedback's title (6 Oct 2026): for an admin or a
+  // moderator only, never on CrazyGames.
+  if(!portal)void loadStaff(bridge.chat).then(()=>{if(staffRole(bridge.playerId)){addSettingsCopyLinks(document.getElementById('sound-dialog'));addFeedbackCopyLink(document.getElementById('feedback-dialog'));}});
   const stopPresence=bridge.presence?.subscribe(snapshot=>{if(ui.open)updateOnlineIndicators(ui.results,{...snapshot,now:Date.now()+serverOffset});});
   const boardRefresh=setInterval(()=>{if(ui.open&&!profiles.isOpen&&!document.hidden)openBoard(true);},30000);
   window.addEventListener('pagehide',()=>{stopPresence?.();clearInterval(boardRefresh);},{once:true});
@@ -100,6 +101,8 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
     else if(intent?.open==='leaderboard')document.getElementById('leaderboard-button')?.click();
     // Settings at one part (4 Oct 2026, /settings/<part>): public/game.js harvestSettings, the list when the part is not here.
     else if(intent?.open==='settings')window.harvestSettings?.(intent.part);
+    // The Feedback window (6 Oct 2026, /feedback): the button that opens it, as a pop-up's or a chat chip does.
+    else if(intent?.open==='feedback')document.getElementById('feedback-button')?.click();
    };
    const waiting=window.parent?.harvestTakeOpen?.();if(waiting)window.harvestOpen(waiting);
   }

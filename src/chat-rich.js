@@ -10,17 +10,17 @@ import {gameLinksIn} from '../public/game-links.js';
 
 export const MAX_LINKS=2,MAX_WIKI_LINKS=MAX_LINKS,MAX_MENTIONS=3;
 
-// The message as parts, in order: {text}, {wiki:{topic,section,url}}, {app:{url}}, {settings:{slug,url}} and {mention:{id,name}}. A mention counts where its "@Full Name" is
+// The message as parts, in order: {text}, {wiki:{topic,section,url}}, {app:{url}}, {settings:{slug,url}}, {feedback:{url}} and {mention:{id,name}}. A mention counts where its "@Full Name" is
 // still in the words (a moderator's edit may have taken it out); the longest name first, so "@Ann Lee" is never read as "@Ann".
 export function chatParts(body,mentions=[]){
  const text=String(body??''),marks=[],free=(at,end)=>!marks.some(x=>at<x.end&&end>x.at);
  for(const {url,topic,section,index} of wikiLinksIn(text))marks.push({at:index,end:index+url.length,wiki:{topic,section,url}});
- for(const {url,index,app,settings} of gameLinksIn(text))if(free(index,index+url.length))marks.push({at:index,end:index+url.length,...(app?{app:{url}}:{settings:{slug:settings,url}})});
+ for(const {url,index,app,settings,feedback} of gameLinksIn(text))if(free(index,index+url.length))marks.push({at:index,end:index+url.length,...(app?{app:{url}}:feedback?{feedback:{url}}:{settings:{slug:settings,url}})});
  const named=(Array.isArray(mentions)?mentions:[]).filter(x=>x?.id&&typeof x.name==='string'&&x.name).sort((a,b)=>b.name.length-a.name.length);
  for(const who of named){const tag=`@${who.name}`;for(let at=text.indexOf(tag);at>=0;at=text.indexOf(tag,at+tag.length))if(free(at,at+tag.length))marks.push({at,end:at+tag.length,mention:{id:String(who.id),name:who.name}});}
  marks.sort((a,b)=>a.at-b.at);
  const parts=[];let from=0;
- for(const x of marks){if(x.at>from)parts.push({text:text.slice(from,x.at)});parts.push(x.wiki?{wiki:x.wiki}:x.app?{app:x.app}:x.settings?{settings:x.settings}:{mention:x.mention});from=x.end;}
+ for(const x of marks){if(x.at>from)parts.push({text:text.slice(from,x.at)});parts.push(x.wiki?{wiki:x.wiki}:x.app?{app:x.app}:x.settings?{settings:x.settings}:x.feedback?{feedback:x.feedback}:{mention:x.mention});from=x.end;}
  if(from<text.length||!parts.length)parts.push({text:text.slice(from)});
  return parts;
 }
