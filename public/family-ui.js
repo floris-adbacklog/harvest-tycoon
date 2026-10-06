@@ -18,11 +18,17 @@ const emblemName=e=>({'family-bee':'Honeybee','family-oak':'Oak grove','family-b
 // Who can join, in one plain sentence each (Family settings and the list of families).
 const MODE_HELP={open:'Anyone can find your family in the list and join straight away.',request:'Farmers ask to join from the list; you accept or decline.',invite:'Farmers join only when you invite them by their player name.',closed:'Nobody new can join, not even by invitation.'};
 const emblem=id=>{const e=FAMILY_EMBLEMS.find(x=>x.id===id)??FAMILY_EMBLEMS[0];return `<span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span>`;};
+// Join a family (6 Oct 2026): ten families at a time in the list's own order, Show more for the next ten. The family you asked to
+// join stays in the list wherever it stands, so its Cancel request is never hidden.
+export const FAMILY_BROWSE_PAGE=10;
+export function familyBrowseRows(list,shown=FAMILY_BROWSE_PAGE,requested=null){
+ return {rows:list.filter((f,i)=>i<shown||(requested!=null&&f.id===requested)),more:list.length>shown};
+}
 export function createFamilyUI({state,runAction,notify,isReady}){
  // Daily sharing has a tab of its own (Sharing); it borrows this view's portraits and levels.
  const social=createSocialUI({state,notify,refreshFarm:()=>window.harvestRefresh(),getMembers:()=>view?.members??[]});
  const dialog=document.getElementById('family-dialog'),content=document.getElementById('family-content'),button=document.getElementById('family-button'),dot=document.getElementById('family-dot');
- let view=null,tab='week',busy=false,reading=false,lastRead=0,generation=0,error='';
+ let view=null,tab='week',busy=false,reading=false,lastRead=0,generation=0,error='',browseShown=FAMILY_BROWSE_PAGE;
  const familyProfile=createFamilyProfile({emblem,act,openFamily:()=>open()});
  const inviteSearch=createFamilyInviteSearch({request:body=>window.parent.harvestBridge.request(body),onInvite:act,getView:()=>view,playerId:window.parent.harvestBridge.playerId,isBusy:()=>busy});
  const disabled=condition=>condition||busy?'disabled':'';
@@ -54,7 +60,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  }
  // Every family, with who can join and how: Join, Ask to join (or cancel your request), or why not. Open ones come first.
  function browse(blocked){
-  const list=view.families??view.openFamilies??[],mine=view.myRequest;
+  const all=view.families??view.openFamilies??[],mine=view.myRequest,{rows:list,more}=familyBrowseRows(all,browseShown,mine?.family.id);
   const myLevel=levelOf(state),low=f=>(f.mode==='open'||f.mode==='request')&&myLevel<(f.minLevel??FAMILY_MIN_LEVEL);
   const action=f=>f.full?'<span class="family-mode-chip">Full</span>'
    :blocked?.family===f.id?`<span class="family-mode-chip" title="This family removed you.">Again in ${formatDuration(blocked.until-farmNow())}</span>`
@@ -63,7 +69,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
    :f.mode==='request'?(mine?.family.id===f.id?actionButton('family_request_cancel','Cancel request',`data-request-id="${esc(mine.id)}"`):actionButton('family_request','Ask to join',`data-family-id="${esc(f.id)}"`,!!mine))
    :`<span class="family-mode-chip">${FAMILY_JOIN_MODES[f.mode]}</span>`;
   const note=mine?`<p class="family-notice">You asked to join ${esc(mine.family.name)}. Their leader or a co-leader can accept it for ${formatDuration(mine.expiresAt-farmNow())}.</p>`:'';
-  return `<section class="family-browse"><h3>Join a family</h3>${note}${list.length?list.map(f=>`<div class="family-list-row${mine?.family.id===f.id?' is-requested':''}"><button type="button" class="family-list-open" data-family-profile="${esc(f.id)}">${emblem(f.emblem)}<div><strong><span translate="no">${esc(f.name)}</span> <small class="family-level-chip">Level ${f.level??1}</small></strong><span>${f.members} / ${view.config.maxMembers} farmers · ${f.active??0} active${(f.minLevel??FAMILY_MIN_LEVEL)>FAMILY_MIN_LEVEL&&(f.mode==='open'||f.mode==='request')&&!low(f)?` · level ${f.minLevel}+`:''}</span></div></button>${action(f)}</div>`).join(''):'<p>No families yet. Create the first one!</p>'}${list.some(f=>!f.full&&f.mode!=='open')?'<p class="family-footnote">Request to join: the leader or a co-leader decides. Invite only: they invite you by your player name.</p>':''}</section>`;
+  return `<section class="family-browse"><h3>Join a family</h3>${note}${list.length?list.map(f=>`<div class="family-list-row${mine?.family.id===f.id?' is-requested':''}"><button type="button" class="family-list-open" data-family-profile="${esc(f.id)}">${emblem(f.emblem)}<div><strong><span translate="no">${esc(f.name)}</span> <small class="family-level-chip">Level ${f.level??1}</small></strong><span>${f.members} / ${view.config.maxMembers} farmers · ${f.active??0} active${(f.minLevel??FAMILY_MIN_LEVEL)>FAMILY_MIN_LEVEL&&(f.mode==='open'||f.mode==='request')&&!low(f)?` · level ${f.minLevel}+`:''}</span></div></button>${action(f)}</div>`).join(''):'<p>No families yet. Create the first one!</p>'}${more?'<button type="button" class="small-button family-browse-more" data-family-more>Show more</button>':''}${list.some(f=>!f.full&&f.mode!=='open')?'<p class="family-footnote">Request to join: the leader or a co-leader decides. Invite only: they invite you by your player name.</p>':''}</section>`;
  }
  function prizePreview(){
   const t=view.tournament;
@@ -202,6 +208,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   content.querySelectorAll('[data-family-goto]').forEach(b=>b.addEventListener('click',event=>{tab=event.currentTarget.dataset.familyGoto;render();content.scrollTop=0;dialog.scrollTop=0;}));
   content.querySelectorAll('[data-player-profile]').forEach(b=>b.onclick=()=>{if(b.dataset.playerProfile)window.harvestProfiles?.open(b.dataset.playerProfile,{back:'Back to your family'});});
   content.querySelectorAll('[data-family-profile]').forEach(b=>b.onclick=()=>familyProfile.open(b.dataset.familyProfile));
+  // Show more: the next ten, and the first of them takes the focus (so the keyboard goes on where the list grew).
+  content.querySelector('[data-family-more]')?.addEventListener('click',()=>{const before=content.querySelectorAll('.family-browse .family-list-open').length;browseShown+=FAMILY_BROWSE_PAGE;render();content.querySelectorAll('.family-browse .family-list-open')[before]?.focus({preventScroll:true});});
   // How families work: the wiki's Farm family page, and its Back button returns to this window.
   content.querySelector('[data-family-wiki]')?.addEventListener('click',()=>window.harvestWiki?.('family','',{from:{label:'Farm Family',go:open}}));
   content.querySelectorAll('.family-member-menu').forEach(menu=>menu.addEventListener('toggle',()=>{if(menu.open)content.querySelectorAll('.family-member-menu[open]').forEach(other=>{if(other!==menu)other.open=false;});}));
@@ -258,7 +266,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const countdown=dialog.querySelector('[data-family-countdown]');if(countdown&&view)countdown.textContent=formatDuration(Math.max(0,view.endsAt-farmNow()));
   if(!busy&&!reading&&isReady()&&!document.hidden&&Date.now()-lastRead>=30000)void load();
  }
- function open(){if(!familyUnlocked(state))return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();render();void load(true);}
+ function open(){if(!familyUnlocked(state))return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());browseShown=FAMILY_BROWSE_PAGE;dialog.showModal();render();void load(true);}
  dialog.addEventListener('close',()=>{inviteSearch.unmount();social.unmount();});
  // A farmer's profile (src/player-profiles.js) asks whether you can invite them, and sends the invitation through here.
  window.harvestFamilyInvite={

@@ -3427,6 +3427,7 @@
 "Show day at the inn":"public/farm-state.js",
 "Show earlier {0}s":"public/emblem-picker.js",
 "Show me":"public/farm.html",
+"Show more":"public/family-ui.js",
 "Show more {0}s":"public/emblem-picker.js",
 "Show older":"src/player-profiles.js",
 "Show password":"public/play.html",

@@ -132,3 +132,18 @@ test('what a family gives you: four cards with the real numbers on the landing a
  assert.match(ui,/window\.harvestWiki\?\.\('family','',\{from:\{label:'Farm Family',go:open\}\}\)/);
  assert.doesNotMatch(ui,/more than (playing )?alone/i,'never a promise of more than playing alone');
 });
+
+// 6 Oct 2026: Join a family shows ten families at a time, in the list's own order, with Show more for the next ten.
+test('Join a family: ten at a time, Show more for the next ten, the family you asked to join always in the list',async()=>{
+ const {familyBrowseRows,FAMILY_BROWSE_PAGE}=await import('../public/family-ui.js');
+ const list=Array.from({length:23},(_,i)=>({id:'f'+i}));
+ assert.equal(FAMILY_BROWSE_PAGE,10);
+ let page=familyBrowseRows(list);assert.deepEqual(page.rows.map(f=>f.id),list.slice(0,10).map(f=>f.id),'the first ten, in order');assert.equal(page.more,true);
+ page=familyBrowseRows(list,20);assert.equal(page.rows.length,20);assert.equal(page.more,true);
+ page=familyBrowseRows(list,30);assert.equal(page.rows.length,23);assert.equal(page.more,false,'no Show more at the end');
+ page=familyBrowseRows(list,10,'f17');assert.deepEqual(page.rows.map(f=>f.id).slice(-2),['f9','f17'],'your request stays in the list, in its place');
+ assert.deepEqual(familyBrowseRows(list.slice(0,4)),{rows:list.slice(0,4),more:false},'a short list as it was');
+ const ui=readFileSync(new URL('../public/family-ui.js',import.meta.url),'utf8');
+ assert.match(ui,/data-family-more>Show more<\/button>/);assert.match(ui,/browseShown\+=FAMILY_BROWSE_PAGE;render\(\)/);
+ assert.match(ui,/function open\(\)\{[^\n]*browseShown=FAMILY_BROWSE_PAGE;/,'opening the window starts at ten again');
+});

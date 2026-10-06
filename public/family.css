@@ -252,6 +252,7 @@
 .family-mode-chip{flex-shrink:0;padding:5px 11px;border-radius:999px;background:#efe8dc;color:#6b624c;font-size:12px;font-weight:700;white-space:nowrap}
 .family-list-row.is-requested{background:#fff7dc;border-radius:12px;padding-inline-start:10px;padding-inline-end:10px}
 .family-browse .family-footnote{margin-top:10px}
+.family-browse .family-browse-more{display:block;margin:12px auto 0}
 .family-requests{margin:0 0 18px;padding:12px 14px;border:1px solid #ecd9a0;border-radius:16px;background:#fffaea}
 .family-requests h3{margin:0 0 4px}
 .family-requests .family-list-row{gap:10px}.family-requests .family-member-portrait{width:40px;height:40px;flex-shrink:0}
