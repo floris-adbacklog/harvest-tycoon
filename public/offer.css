@@ -2,12 +2,12 @@
    Starter Pack's), on a phone a tile above the bottom bar, above the Starter Pack tile when that one shows too. */
 #offer-button{position:fixed;inset-inline-start:max(14px,env(safe-area-inset-left));bottom:max(20px,var(--safe-bottom));z-index:12;width:72px;min-height:84px;display:flex;align-items:center;flex-direction:column;gap:2px;padding:5px 4px 7px;border:2px solid #e0a13a;border-radius:19px;background:#fff3d6;box-shadow:0 4px 0 #a8742a33,0 10px 24px #3a2a1030;color:#6b4412;font-family:'DM Sans',sans-serif}
 #offer-button img{width:48px;height:48px;border-radius:13px;object-fit:cover}
-#offer-button span{font-size:12px;font-weight:800;white-space:nowrap}
-#offer-button small{padding:0 6px;border-radius:99px;background:#d9482b;color:#fff;font-size:12px;font-weight:800}
+#offer-button span{font-size:12px;font-weight:700;white-space:nowrap}
+#offer-button small{padding:0 6px;border-radius:99px;background:#d9482b;color:#fff;font-size:12px;font-weight:700}
 #offer-button[hidden],#offer-chip[hidden]{display:none}
 #offer-chip{position:relative;flex-shrink:0;overflow:visible;background:#fff3d6;border-color:#e8b85a}
 #offer-chip img{width:30px;height:30px;border-radius:9px;object-fit:cover}
-#offer-chip small{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);padding:1px 5px;border-radius:99px;background:#d9482b;color:#fff;font:800 12px/1.3 'DM Sans',sans-serif;white-space:nowrap}
+#offer-chip small{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);padding:1px 5px;border-radius:99px;background:#d9482b;color:#fff;font:700 12px/1.3 'DM Sans',sans-serif;white-space:nowrap}
 @media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){#offer-button{display:none}}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  #offer-chip{display:none}
@@ -29,10 +29,10 @@
 .offer-hero{position:relative;flex:0 0 340px;min-width:0;background:#f6e6b8}
 .offer-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 55%}
 .offer-ribbon{position:absolute;inset-inline-start:16px;top:16px;display:grid;place-items:center;align-content:center;width:100px;height:100px;border:3px solid #fff4d8;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f2663f,#c9361c);box-shadow:0 6px 16px #6a1d0b55;color:#fff;transform:rotate(-12deg);font-family:'Outfit',sans-serif}
-.offer-ribbon b{font-size:30px;line-height:.95;font-weight:800}
-.offer-ribbon small{max-width:88px;font-size:12px;font-weight:800;letter-spacing:1px;white-space:nowrap}
+.offer-ribbon b{font-size:30px;line-height:.95;font-weight:700}
+.offer-ribbon small{max-width:88px;font-size:12px;font-weight:700;letter-spacing:1px;white-space:nowrap}
 .offer-body{display:flex;flex:1 1 auto;min-width:0;flex-direction:column;align-items:center;padding:26px 28px 20px;text-align:center}
-.offer-body .eyebrow{color:#b5561f;letter-spacing:2px;font-weight:800}
+.offer-body .eyebrow{color:#b5561f;letter-spacing:2px;font-weight:700}
 #offer-dialog h2{margin:4px 0 16px;font:700 30px/1.1 'Outfit',sans-serif;color:#3d2f14}
 .offer-parts{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:0 0 14px}
 .offer-part{display:flex;flex-direction:column;align-items:center;flex:1 1 0;min-width:0;max-width:150px;padding:10px 6px 12px;border:2px solid #ead9ae;border-radius:18px;background:#fff9e8}
@@ -42,7 +42,7 @@
 .offer-part.is-diamonds{border-color:#b9dcea;background:linear-gradient(160deg,#e6f5fb,#f7fcfe)}.offer-part.is-diamonds strong{color:#20617a}
 .offer-part.is-coins{border-color:#ecd28a;background:linear-gradient(160deg,#fff2c6,#fffaea)}.offer-part.is-coins strong{color:#8a5d09}
 .offer-part.is-vipDays{border-color:#d6c2ea;background:linear-gradient(160deg,#f3e9fb,#fbf7fe)}.offer-part.is-vipDays strong{color:#6a3c93}
-.offer-plus{flex:none;font:800 26px 'Outfit',sans-serif;color:#c08a25}
+.offer-plus{flex:none;font:700 26px 'Outfit',sans-serif;color:#c08a25}
 /* One kind in the offer (1 Oct 2026: "diamonds" fell outside a 210 px card): a wider card, the picture on the left and the amount
    with what it is under each other on the right. */
 #offer-dialog[data-parts="1"] .offer-part{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;justify-content:center;align-items:center;column-gap:16px;max-width:320px;padding:14px 24px}
@@ -51,8 +51,8 @@
 #offer-dialog[data-parts="1"] .offer-part span{align-self:start;justify-self:start;font-size:15px}
 .offer-worth{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:0 0 10px!important;font-size:15px!important;color:#80704f}
 .offer-worth s{color:#9a8c75;font-size:18px;text-decoration-color:#d9482b;text-decoration-thickness:2px}
-.offer-worth b{font:800 32px/1 'Outfit',sans-serif;color:#2f7a34}
-.offer-time{display:inline-flex;align-items:center;gap:6px;margin:0 0 14px!important;padding:5px 13px 5px 8px;border-radius:999px;background:#f8e2b3;font-size:13px!important;font-weight:800;color:#8a4f12}
+.offer-worth b{font:700 32px/1 'Outfit',sans-serif;color:#2f7a34}
+.offer-time{display:inline-flex;align-items:center;gap:6px;margin:0 0 14px!important;padding:5px 13px 5px 8px;border-radius:999px;background:#f8e2b3;font-size:13px!important;font-weight:700;color:#8a4f12}
 .offer-time img{width:24px;height:24px}
 .offer-buy{width:100%;justify-content:center;min-height:54px;font-size:18px}
 .offer-feedback{margin:8px 0 0!important;font-size:13px;color:#785727}
@@ -96,5 +96,5 @@
 .shop-offer-copy small{font-size:12px;font-weight:700;color:#8a4f12}
 .shop-offer-price{display:grid;justify-items:end;flex:none}
 .shop-offer-price s{font-size:12px;color:#9a8c75;text-decoration-color:#d9482b;text-decoration-thickness:2px}
-.shop-offer-price b{font:800 22px/1 'Outfit',sans-serif;color:#2f7a34}
-.shop-offer-tag{position:absolute;inset-inline-end:-6px;top:-10px;padding:2px 8px;border-radius:99px;background:#d9482b;color:#fff;font:800 12px/1.4 'DM Sans',sans-serif;transform:rotate(6deg)}
+.shop-offer-price b{font:700 22px/1 'Outfit',sans-serif;color:#2f7a34}
+.shop-offer-tag{position:absolute;inset-inline-end:-6px;top:-10px;padding:2px 8px;border-radius:99px;background:#d9482b;color:#fff;font:700 12px/1.4 'DM Sans',sans-serif;transform:rotate(6deg)}

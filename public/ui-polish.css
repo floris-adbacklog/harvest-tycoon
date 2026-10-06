@@ -73,7 +73,7 @@
 /* Beginner boost: an hourglass button next to the diamonds (built like the Family button), and the screen it opens. */
 #rookie-button{position:relative;flex-shrink:0}
 #rookie-button .game-art{width:30px;height:30px;object-fit:contain}
-#rookie-time{position:absolute;inset-inline-end:-3px;bottom:-4px;min-width:20px;padding:0 4px;border:2px solid var(--paper,#fffdf4);border-radius:999px;background:#e59d2c;color:#fff;font:800 9px/14px 'Outfit',system-ui,sans-serif;text-align:center;pointer-events:none}
+#rookie-time{position:absolute;inset-inline-end:-3px;bottom:-4px;min-width:20px;padding:0 4px;border:2px solid var(--paper,#fffdf4);border-radius:999px;background:#e59d2c;color:#fff;font:700 9px/14px 'Outfit',system-ui,sans-serif;text-align:center;pointer-events:none}
 #rookie-button[hidden],#rookie-time:empty{display:none}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  .topbar .resources:has(#rookie-button:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;gap:6px}
@@ -102,7 +102,7 @@
 .active-boosts:not([hidden]){display:flex;align-items:center;gap:10px}
 .active-boost{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .active-boost .game-art{flex:none;width:20px;height:20px}
-.active-boost b{font-weight:750;font-variant-numeric:tabular-nums}
+.active-boost b{font-weight:700;font-variant-numeric:tabular-nums}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.active-boosts:not([hidden]){gap:7px}.active-boost{gap:3px}.active-boost .game-art{width:16px;height:16px}}
 
 /* The harvest flying from a field to the Market button (harvest-fly.js). */

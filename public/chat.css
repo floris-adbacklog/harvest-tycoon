@@ -2,7 +2,7 @@
    box you type in on top, the newest message right under it. The same cream, brown and soft tabs as the rest of the game. */
 #chat-button{position:relative;flex-shrink:0}
 #chat-button .game-art{width:28px;height:28px}
-#chat-dot{position:absolute;inset-inline-end:-6px;top:-6px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border:2px solid #fffdf5;border-radius:999px;background:#e0533d;box-shadow:0 1px 3px #47372333;color:#fff;font:800 10px/15px 'DM Sans',sans-serif;text-align:center;pointer-events:none}
+#chat-dot{position:absolute;inset-inline-end:-6px;top:-6px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border:2px solid #fffdf5;border-radius:999px;background:#e0533d;box-shadow:0 1px 3px #47372333;color:#fff;font:700 10px/15px 'DM Sans',sans-serif;text-align:center;pointer-events:none}
 #chat-button[hidden],#chat-dot[hidden]{display:none}
 /* Phones (26 Sep 2026): a clean header. The chat lives in the More menu, under Friends, with a pill for what is unread; the header
    keeps the coins, the diamonds and the beginner boost. The desktop keeps its chat button in the header. */
@@ -15,18 +15,18 @@
 #chat-dialog::backdrop{background:#1f2a1a30;backdrop-filter:none;-webkit-backdrop-filter:none}
 .chat-top{display:flex;align-items:center;gap:8px;padding:14px 14px 0}
 .chat-tabs{flex:1;display:flex;gap:4px;min-width:0;padding:4px;border-radius:12px;background:#f0e8e0}
-.chat-tabs button{position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-width:0;min-height:38px;padding:6px 8px;border:0;border-radius:9px;background:none;color:#887a69;font:650 14px/1 'DM Sans',sans-serif;cursor:pointer}
+.chat-tabs button{position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-width:0;min-height:38px;padding:6px 8px;border:0;border-radius:9px;background:none;color:#887a69;font:700 14px/1 'DM Sans',sans-serif;cursor:pointer}
 .chat-tabs button[data-chat-tab="notices"]{flex:0 0 auto;min-width:48px}
 .chat-tabs button .game-art{width:24px;height:24px;object-fit:contain}
 .chat-tabs button.active{background:#fffdf5;box-shadow:0 2px 5px #43362214;color:#5e523a}
 .chat-tabs button:not(.active):hover{color:#5e523a}
-.chat-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-inline-start:6px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e0533d;color:#fff;font:800 12px/1 'DM Sans',sans-serif}
+.chat-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-inline-start:6px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e0533d;color:#fff;font:700 12px/1 'DM Sans',sans-serif}
 .chat-count[hidden]{display:none}
 .chat-close{flex-shrink:0;width:40px;height:40px;border:0;background:none;box-shadow:none;color:#8a7c6a}
 .chat-close:hover{background:#f0e8e0;color:#5e523a}
 .chat-head{display:flex;align-items:center;gap:10px;padding:14px 16px 0;min-height:40px}
 .chat-head.is-quiet{position:absolute;width:1px;height:1px;min-height:0;padding:0;overflow:hidden;clip-path:inset(50%)}
-.chat-head h2{flex:1;min-width:0;margin:0;font:750 21px/1.2 'Outfit','DM Sans',sans-serif;color:#3d382a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-head h2{flex:1;min-width:0;margin:0;font:700 21px/1.2 'Outfit','DM Sans',sans-serif;color:#3d382a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chat-title-name{display:block;max-width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start}
 .chat-title-name:hover{text-decoration:underline;text-underline-offset:3px}
 .chat-back,.chat-block{flex-shrink:0;display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid #e1d6ca;border-radius:12px;background:#f6efe7;color:#6b5e49;cursor:pointer}
@@ -41,7 +41,7 @@
 .chat-block.is-on{background:#fbe6e0;border-color:#e8c3b8;color:#b3402a}
 .chat-compose{display:flex;gap:8px;padding:14px 16px;border-bottom:1px solid #eee4d9}
 .chat-compose[hidden]{display:none}
-.chat-compose input{flex:1;min-width:0;min-height:46px;box-sizing:border-box;padding:0 14px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:500 15px 'DM Sans',sans-serif}
+.chat-compose input{flex:1;min-width:0;min-height:46px;box-sizing:border-box;padding:0 14px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:400 15px 'DM Sans',sans-serif}
 .chat-compose input::placeholder{color:#a3968a}
 .chat-compose input:focus{outline:3px solid #f3c35355;border-color:#c9a45a}
 .chat-send{flex-shrink:0;display:grid;place-items:center;width:52px;height:46px;padding:0;border:1px solid #d4c7b8;border-radius:12px;background:#f1e7de;box-shadow:0 3px 0 #dccdbb;cursor:pointer}
@@ -73,7 +73,7 @@ span.chat-avatar{cursor:default}
 .chat-avatar img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
 .chat-msg-main{min-width:0}
 .chat-msg-top{display:flex;align-items:center;gap:6px;min-height:22px}
-.chat-name{min-width:0;padding:0;border:0;background:none;color:#3d382a;font:750 14px/1.2 'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.chat-name{min-width:0;padding:0;border:0;background:none;color:#3d382a;font:700 14px/1.2 'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .chat-name:hover{text-decoration:underline;text-underline-offset:2px}
 .chat-mod{display:inline-flex;flex-shrink:0}
 .chat-mod .game-art{width:17px;height:17px}
@@ -82,7 +82,7 @@ span.chat-avatar{cursor:default}
 .chat-more:hover,.chat-more:focus-visible{background:#efe6da;color:#5e523a}
 .chat-more-space{flex-shrink:0;width:28px;margin-inline-end:-4px}.chat-msg.is-cont>.chat-more-space{display:none}
 @media(hover:hover) and (pointer:fine){.chat-more{opacity:0}.chat-msg:hover .chat-more,.chat-more:focus-visible,.chat-msg:has(.chat-menu) .chat-more{opacity:1}}
-.chat-text{margin:3px 0 0;color:#4a4232;font:500 15px/1.4 'DM Sans',sans-serif;overflow-wrap:anywhere}
+.chat-text{margin:3px 0 0;color:#4a4232;font:400 15px/1.4 'DM Sans',sans-serif;overflow-wrap:anywhere}
 /* The small translate link of a message in the global chat (src/chat-ui.js): quiet until you need it. */
 .chat-translate{position:absolute;top:36px;inset-inline-end:9px;display:grid;place-items:center;width:22px;height:22px;border-radius:7px;color:#a69a86;text-decoration:none}
 /* Under the "•••", and like it only while the pointer is on the message; a follow-up message is one line, so there it sits beside
@@ -93,7 +93,7 @@ span.chat-avatar{cursor:default}
 .chat-translate:hover,.chat-translate:focus-visible{color:#5b5336;background:#efe7dc}
 .chat-translate svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .chat-menu{position:absolute;inset-inline-end:8px;top:36px;z-index:3;display:grid;min-width:176px;padding:5px;border:1px solid #e0d4c6;border-radius:12px;background:#fffdf5;box-shadow:0 10px 30px #3a2f1f26}
-.chat-menu button{padding:9px 12px;border:0;border-radius:8px;background:none;color:#4a4232;font:650 14px 'DM Sans',sans-serif;text-align:start;cursor:pointer}
+.chat-menu button{padding:9px 12px;border:0;border-radius:8px;background:none;color:#4a4232;font:700 14px 'DM Sans',sans-serif;text-align:start;cursor:pointer}
 .chat-menu button:hover,.chat-menu button:focus-visible{background:#f4ece2}
 .chat-menu button.is-danger{color:#b3402a}
 /* Oct 2026: the staff's own actions carry the shield of their badge, and one line at the bottom says who has them (src/chat-ui.js).
@@ -108,7 +108,7 @@ span.chat-avatar{cursor:default}
 .chat-thread-copy{display:grid;gap:3px;min-width:0}
 .chat-thread-copy strong{color:#3d382a;font:700 15px/1.2 'DM Sans',sans-serif}
 .chat-thread-copy small{color:#8a7c6a;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chat-thread.is-unread strong{font-weight:800}
+.chat-thread.is-unread strong{font-weight:700}
 .chat-thread.is-unread small{color:#4a4232;font-weight:600}
 /* The staff's Crew (1 Oct 2026): pinned on top of the private chats, a soft card with the staff badge and a pin. */
 .chat-thread.chat-crew{margin-bottom:6px;background:#f6efe7}
@@ -124,7 +124,7 @@ span.chat-avatar{cursor:default}
 .chat-notice+.chat-notice{border-top:1px solid #f0e7dc}
 .chat-notice.is-new .chat-msg-top strong::before{content:'';display:inline-block;width:7px;height:7px;margin:0 7px 1px 0;border-radius:50%;background:#e0533d;vertical-align:middle}
 .chat-notice-art img,.chat-notice-art .game-art{display:block;width:40px;height:40px;object-fit:contain}
-.chat-notice .chat-msg-top strong{color:#3d382a;font:750 14px 'DM Sans',sans-serif}
+.chat-notice .chat-msg-top strong{color:#3d382a;font:700 14px 'DM Sans',sans-serif}
 .chat-empty{padding:40px 22px;color:#8a7c6a;font-size:14.5px;line-height:1.45;text-align:center}
 .chat-empty p{margin:0 auto;max-width:280px}
 .chat-empty .small-button{margin-top:14px}
@@ -140,7 +140,7 @@ span.chat-avatar{cursor:default}
 
 /* The profile: the Moderator badge (the admin wears the same), Send message and Block, the staff's chat buttons. */
 .farmer-profile-back[hidden]{display:none}
-.farmer-mod-badge{display:inline-flex;align-items:center;gap:5px;margin-inline-start:8px;padding:3px 10px 3px 5px;border:1px solid #c5dbeb;border-radius:999px;background:#eaf2f9;color:#23577f;font:800 12px/1.4 'DM Sans',sans-serif;letter-spacing:.2px;vertical-align:middle;white-space:nowrap}
+.farmer-mod-badge{display:inline-flex;align-items:center;gap:5px;margin-inline-start:8px;padding:3px 10px 3px 5px;border:1px solid #c5dbeb;border-radius:999px;background:#eaf2f9;color:#23577f;font:700 12px/1.4 'DM Sans',sans-serif;letter-spacing:.2px;vertical-align:middle;white-space:nowrap}
 .farmer-mod-badge .game-art{width:18px;height:18px}
 .farmer-chat{display:grid;gap:10px;margin:0 0 18px}
 .farmer-chat[hidden]{display:none}
@@ -161,18 +161,18 @@ span.chat-avatar{cursor:default}
 .admin-report-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .admin-report-actions .small-button{width:auto;min-height:34px;padding:5px 10px;font-size:12.5px;grid-column:auto}
 /* Feedback & bugs (src/admin-dashboard.js): the count of open messages on the tab, the kind, the message as written, then level, device and language. */
-.admin-tab-count{min-width:18px;padding:1px 6px;border-radius:999px;background:#c2912d;color:#fffdf0;font-size:11px;font-weight:800;line-height:16px;text-align:center}
+.admin-tab-count{min-width:18px;padding:1px 6px;border-radius:999px;background:#c2912d;color:#fffdf0;font-size:11px;font-weight:700;line-height:16px;text-align:center}
 .admin-tab-count[hidden]{display:none}
-.admin-feedback-kind{display:inline-block;padding:1px 7px;border-radius:999px;background:#e6efdc;color:#42632e;font-size:11px;font-weight:800;vertical-align:1px}
+.admin-feedback-kind{display:inline-block;padding:1px 7px;border-radius:999px;background:#e6efdc;color:#42632e;font-size:11px;font-weight:700;vertical-align:1px}
 .admin-feedback-kind.is-bug{background:#f6e2d8;color:#9a3b24}
 .admin-feedback-kind.is-feature{background:#e3ecf8;color:#2f5689}
 .admin-feedback-body{display:block;margin-top:4px;color:#3d3923;white-space:pre-line;overflow-wrap:anywhere}
 .admin-feedback-meta{display:block;margin-top:4px}
 .admin-report-actions a.small-button{display:inline-flex;align-items:center;text-decoration:none}
-.admin-news textarea{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:10px 12px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:500 14px/1.4 'DM Sans',sans-serif;resize:vertical}
+.admin-news textarea{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:10px 12px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:400 14px/1.4 'DM Sans',sans-serif;resize:vertical}
 #admin-chat-settings h3:not(:first-child){margin-top:20px}
 .admin-levels{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
-.admin-levels label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:650}
+.admin-levels label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:700}
 .admin-levels input{width:96px;min-height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 14px 'DM Sans',sans-serif}
 .admin-levels .small-button{width:auto;min-height:40px}
 #admin-dashboard-dialog .admin-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -188,13 +188,13 @@ span.chat-avatar{cursor:default}
 .chat-vip img{display:block;width:18px;height:18px;object-fit:contain}
 .chat-thread-copy strong .chat-vip{display:inline-flex;margin-inline-start:5px;vertical-align:-3px}
 .admin-donate{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px}
-.admin-donate label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:650}
+.admin-donate label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:700}
 .admin-donate input{min-height:42px;box-sizing:border-box;padding:0 12px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 14px 'DM Sans',sans-serif}
 .admin-donate-message,.admin-donate .primary-button{grid-column:1/-1}
 .admin-donate-message[hidden]{display:none}
-.chat-hours{flex:0 0 auto;min-height:46px;padding:0 8px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#5e523a;font:650 13px 'DM Sans',sans-serif}
+.chat-hours{flex:0 0 auto;min-height:46px;padding:0 8px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#5e523a;font:700 13px 'DM Sans',sans-serif}
 .chat-hours[hidden]{display:none}
-.admin-news-hours{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:#5e523a;font-size:13px;font-weight:650}
+.admin-news-hours{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:#5e523a;font-size:13px;font-weight:700}
 .admin-news-hours select{min-height:38px;padding:0 8px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 13px 'DM Sans',sans-serif}
 /* The staff's dashboard button sits right next to the chat (computers; phones find it in the More menu). */
 #admin-button .game-art{width:28px;height:28px;object-fit:contain}
@@ -204,13 +204,13 @@ span.chat-avatar{cursor:default}
 .admin-donate label>span .game-art{width:20px;height:20px;flex:none}
 .chat-amount{white-space:nowrap}
 .chat-amount .game-art{display:inline-block;width:18px;height:18px;margin-inline-end:3px;vertical-align:-3px}
-.chat-amount b{font-weight:800}
+.chat-amount b{font-weight:700}
 /* Private tab: find a farmer to write to. */
 .chat-find{padding:14px 16px;border-bottom:1px solid #eee4d9}
 .chat-find[hidden]{display:none}
-.chat-find input{width:100%;min-height:46px;box-sizing:border-box;padding:0 14px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:500 15px 'DM Sans',sans-serif}
+.chat-find input{width:100%;min-height:46px;box-sizing:border-box;padding:0 14px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:400 15px 'DM Sans',sans-serif}
 .chat-find input:focus{outline:3px solid #f3c35355;border-color:#c9a45a}
-.chat-write{color:#6b7f3e;font-size:12.5px;font-weight:750}
+.chat-write{color:#6b7f3e;font-size:12.5px;font-weight:700}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.chat-find{padding:12px}}
 .farmer-chat-report{display:inline-flex;align-items:center;gap:6px}
 .farmer-chat-report .game-art{width:22px;height:22px;flex:none}
@@ -244,7 +244,7 @@ span.chat-avatar{cursor:default}
 /* A message the staff changed (chat-edit-message.sql): a quiet mark after the text. */
 .chat-edited{color:#8a7c69;font-size:12px;font-weight:600;white-space:nowrap}
 /* A gift, to whom (admin-dashboard.js): Everyone, Active this week, Online now or One farmer, with a name search for one farmer. */
-.admin-gift-to{grid-column:1/-1;display:grid;gap:6px;color:#5e523a;font-size:13px;font-weight:650}
+.admin-gift-to{grid-column:1/-1;display:grid;gap:6px;color:#5e523a;font-size:13px;font-weight:700}
 .admin-gift-to .admin-filters{display:flex;flex-wrap:wrap;gap:6px}
 .admin-gift-player{display:grid;gap:6px;margin-top:4px}
 .admin-gift-results{display:grid;gap:6px;margin:0;padding:0;list-style:none}
@@ -258,17 +258,17 @@ span.chat-avatar{cursor:default}
 #popup-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
 #popup-dialog .popup-art{display:block;width:88px;height:88px;margin:0 auto 6px;object-fit:contain}
 #popup-dialog h2{margin:4px 0 8px;font:700 24px/1.2 'Outfit',sans-serif}
-#popup-dialog p{margin:0 0 18px;font:500 15px/1.5 'DM Sans',sans-serif;color:#4a4232;overflow-wrap:anywhere}
+#popup-dialog p{margin:0 0 18px;font:400 15px/1.5 'DM Sans',sans-serif;color:#4a4232;overflow-wrap:anywhere}
 #popup-dialog p a,.chat-notice .chat-text a{color:#3f6b33;font-weight:700;text-decoration:underline;text-underline-offset:2px}
 /* News and pop-ups keep the admin's line breaks (27 Sep 2026: a list with • read as one long line). */
 .chat-notice .chat-text,#popup-dialog p{white-space:pre-line}
 #popup-dialog .primary-button{width:100%;min-height:46px}
-#popup-dialog .popup-later{display:block;width:100%;min-height:44px;margin-top:6px;border:0;background:none;color:#7a6c57;font:650 14px 'DM Sans',sans-serif;cursor:pointer}
+#popup-dialog .popup-later{display:block;width:100%;min-height:44px;margin-top:6px;border:0;background:none;color:#7a6c57;font:700 14px 'DM Sans',sans-serif;cursor:pointer}
 #popup-dialog .popup-close{position:absolute;inset-inline-end:12px;top:12px;width:44px;height:44px;border:0;border-radius:14px;background:#efe6da;color:#5e523a;font-size:28px;line-height:1;cursor:pointer}
 /* The admin's pop-up fields under the news, and the last ten pop-ups with who saw them. */
 .admin-popup-fields{display:grid;gap:8px;margin:0 0 10px;padding:12px;border:1px solid #e6dccd;border-radius:12px;background:#fffaf1}
 .admin-popup-fields[hidden],.admin-popup-fields [hidden]{display:none}
-.admin-popup-fields label{display:grid;gap:4px;color:#5e523a;font:650 13px 'DM Sans',sans-serif}
+.admin-popup-fields label{display:grid;gap:4px;color:#5e523a;font:700 13px 'DM Sans',sans-serif}
 .admin-popup-fields input,.admin-popup-fields select{min-height:38px;box-sizing:border-box;padding:0 10px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 14px 'DM Sans',sans-serif}
 .admin-popup-note{margin:0;color:#8a7c6a;font-size:12px;line-height:1.4}
 .admin-popup-list{display:grid;gap:6px;margin:10px 0 0;padding:0;list-style:none}
@@ -276,10 +276,10 @@ span.chat-avatar{cursor:default}
 .admin-popup-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:10px;background:#f6efe7}
 .admin-popup-ended{flex-shrink:0;color:#8a7c6a}
 /* The admin's mark (src/staff-badge.js): the word Admin beside the icon, in the chat, on profiles and on the leaderboard. */
-.chat-mod.is-admin,.chat-mod.is-moderator{align-items:center;gap:3px;padding:1px 7px 1px 3px;border-radius:999px;background:#fdf1d8;color:#8a5a12;font:800 11px/1.4 'DM Sans',sans-serif;white-space:nowrap}
+.chat-mod.is-admin,.chat-mod.is-moderator{align-items:center;gap:3px;padding:1px 7px 1px 3px;border-radius:999px;background:#fdf1d8;color:#8a5a12;font:700 11px/1.4 'DM Sans',sans-serif;white-space:nowrap}
 .chat-mod.is-moderator{background:#eaf2f9;color:#23577f}
 .farmer-mod-badge.is-admin{border-color:#ecd39c;background:#fdf1d8;color:#8a5a12}
-.staff-badge{display:inline-flex;align-items:center;gap:3px;margin-inline-start:6px;padding:1px 7px 1px 3px;border-radius:999px;background:#eaf2f9;color:#23577f;font:800 11px/1.4 'DM Sans',sans-serif;vertical-align:middle;white-space:nowrap}
+.staff-badge{display:inline-flex;align-items:center;gap:3px;margin-inline-start:6px;padding:1px 7px 1px 3px;border-radius:999px;background:#eaf2f9;color:#23577f;font:700 11px/1.4 'DM Sans',sans-serif;vertical-align:middle;white-space:nowrap}
 .staff-badge.is-admin{background:#fdf1d8;color:#8a5a12}.staff-badge .game-art{width:15px;height:15px}
 /* The welcome message for new farmers (Admin dashboard, Settings; supabase/welcome-dm.sql). */
 .admin-welcome-on{display:flex;align-items:center;gap:10px;margin:0 0 10px;color:#3d382a;font-size:14px;font-weight:700}
@@ -287,7 +287,7 @@ span.chat-avatar{cursor:default}
 /* The admin changes a farmer's email address (28 Sep 2026): a small form under Account. */
 .admin-email-form{display:grid;gap:6px;margin:4px 0 12px;padding:12px;border:1px solid #e4d8c6;border-radius:12px;background:#fbf7ef}
 .admin-email-form[hidden]{display:none}
-.admin-email-form label{font-size:13px;font-weight:650;color:#5e523a}
+.admin-email-form label{font-size:13px;font-weight:700;color:#5e523a}
 .admin-email-form>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .admin-email-form input{flex:1 1 200px;min-width:0;min-height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 14px 'DM Sans',sans-serif}
 .admin-email-form .admin-hint{margin:0}
@@ -326,7 +326,7 @@ span.chat-avatar{cursor:default}
 .chat-request.chat-chest .chat-request-art>.game-art{width:44px;height:44px}
 .chat-chest-open{width:100%;margin-top:10px}
 /* The admin's special offer (src/admin-dashboard.js): what is in it, the amounts, the worth line (red while it is not €49.99). */
-.admin-offer-kinds{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 10px;color:#5e523a;font:650 14px 'DM Sans',sans-serif}
+.admin-offer-kinds{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 10px;color:#5e523a;font:700 14px 'DM Sans',sans-serif}
 .admin-offer-kinds label{display:inline-flex;align-items:center;gap:6px}
 .admin-offer-kinds input[type=checkbox]{width:18px;height:18px;accent-color:#615742}
 .admin-offer-kinds select{min-height:34px;padding:0 8px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 14px 'DM Sans',sans-serif}
@@ -342,8 +342,8 @@ span.chat-avatar{cursor:default}
 .chat-pick{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:10px;padding:7px 8px;border-radius:10px;cursor:pointer}
 .chat-pick .chat-avatar{width:36px;height:36px;cursor:pointer}
 .chat-pick.is-active,.chat-pick:hover{background:#f3ebdf}
-.chat-pick-note{padding:9px 10px;color:#8a7c6a;font:500 13.5px/1.35 'DM Sans',sans-serif}
-.chat-text .chat-mention{display:inline;min-width:0;min-height:0;margin:0 1px;padding:0 5px;border:0;border-radius:7px;background:#e8f0dc;color:#3f6b33;font:inherit;font-weight:750;line-height:inherit;cursor:pointer}
+.chat-pick-note{padding:9px 10px;color:#8a7c6a;font:400 13.5px/1.35 'DM Sans',sans-serif}
+.chat-text .chat-mention{display:inline;min-width:0;min-height:0;margin:0 1px;padding:0 5px;border:0;border-radius:7px;background:#e8f0dc;color:#3f6b33;font:inherit;font-weight:700;line-height:inherit;cursor:pointer}
 .chat-text .chat-mention.is-me{background:#fbe3a6;color:#6f4510}
 .chat-msg.is-mention{background:#fff4d6}
 .chat-text .chat-wiki{display:inline-flex;align-items:center;gap:5px;max-width:100%;min-width:0;min-height:0;margin:1px 2px;padding:2px 10px 2px 4px;vertical-align:middle;border:1px solid #cfe0bf;border-radius:999px;background:#eef5e4;color:#35602b;font:700 13.5px/1.3 'DM Sans',sans-serif;cursor:pointer}
@@ -353,7 +353,7 @@ span.chat-avatar{cursor:default}
 /* The app page and a part of Settings (4 Oct 2026, src/chat-ui.js): the wiki chip's shape; Settings shows its way, "Settings › Farm app". */
 .chat-text .chat-wiki>.chat-link-icon{flex:none;width:20px;height:20px;margin:0 1px 0 3px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .chat-text .chat-settings-link{gap:4px}
-.chat-text .chat-settings-link .chat-path-sep{flex:none;color:#7f9a6e;font-weight:800}
+.chat-text .chat-settings-link .chat-path-sep{flex:none;color:#7f9a6e;font-weight:700}
 .chat-text .chat-settings-link span:last-child{flex:0 1 auto}
 /* "Settings" itself never shrinks: the way is the point; a long part's title takes the dots (4 Oct 2026 review). */
 .chat-text .chat-settings-link span:first-of-type{flex:none}

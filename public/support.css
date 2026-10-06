@@ -34,7 +34,7 @@ html[data-app] .support-social{display:none}
 .support-field input:focus,.support-field select:focus,.support-field textarea:focus{outline:3px solid #d6ae4b55;border-color:#b9a36a}
 /* The honeypot: off screen for people, a plain field for robots that fill in every field. */
 .support-trap{position:absolute;inset-inline-start:-10000px;width:1px;height:1px;overflow:hidden}
-.support-form .legal-button{width:100%;margin:2px 0 0;font:800 16px 'DM Sans',sans-serif;cursor:pointer}
+.support-form .legal-button{width:100%;margin:2px 0 0;font:700 16px 'DM Sans',sans-serif;cursor:pointer}
 .support-small{margin:0!important;font-size:13px;color:#7d7060;text-align:center}
 [dir=rtl] .legal-card ul,[dir=rtl] .legal-card ol{padding-left:0;padding-right:22px}
 @media(max-width:640px){

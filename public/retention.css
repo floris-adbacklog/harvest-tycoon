@@ -252,7 +252,7 @@
 .factory-source-art>.game-art{width:40px;height:40px;object-fit:contain}
 .factory-source-copy{flex:1;min-width:0}
 .factory-source-copy strong{display:block;font:600 16px 'Outfit',sans-serif;line-height:1.25}
-.factory-source-copy small{display:flex;align-items:center;gap:8px;margin-top:3px;font:500 12px 'DM Sans',sans-serif;color:#8f816f}
+.factory-source-copy small{display:flex;align-items:center;gap:8px;margin-top:3px;font:400 12px 'DM Sans',sans-serif;color:#8f816f}
 .factory-source-goods{display:inline-flex;flex-wrap:wrap;gap:2px;min-width:0}
 .factory-source-goods .game-art{width:20px;height:20px;object-fit:contain}
 /* What you cannot start now, greyed out; what you can, in full colour (4 Oct 2026). */
@@ -307,7 +307,7 @@
 .toast.is-warn{border-color:#ecd3a8}
 .toast.is-warn .toast-icon{background:#f8ead2}
 .toast-text{min-width:0;font-weight:600;color:#453e28}
-.toast-chip{display:inline-flex;align-items:center;gap:3px;margin:0 1px;padding:1px 7px 1px 3px;border-radius:999px;font-weight:800;white-space:nowrap;vertical-align:1px}
+.toast-chip{display:inline-flex;align-items:center;gap:3px;margin:0 1px;padding:1px 7px 1px 3px;border-radius:999px;font-weight:700;white-space:nowrap;vertical-align:1px}
 .toast-chip .game-art{width:16px;height:16px}
 .toast-chip.is-coins{background:#f7e9b8;color:#6b4f0f}
 .toast-chip.is-xp{background:#e6ecfa;color:#39518f}
@@ -338,7 +338,7 @@
 .beginner-step.done h3{color:#7c7465;text-decoration:line-through;text-decoration-color:#c9bfae}
 .beginner-status{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .beginner-status:empty{display:none}
-.beginner-xp{display:inline-flex;align-items:center;gap:3px;padding:1px 8px 1px 3px;border-radius:999px;background:#e6ecfa;color:#39518f;font-size:11px;font-weight:800}
+.beginner-xp{display:inline-flex;align-items:center;gap:3px;padding:1px 8px 1px 3px;border-radius:999px;background:#e6ecfa;color:#39518f;font-size:11px;font-weight:700}
 .beginner-xp .game-art{width:16px;height:16px}
 #quest-xp{margin:2px 0 10px}
 #quest-xp[hidden]{display:none}
@@ -374,14 +374,14 @@
 .float-chip .game-art{width:24px;height:24px;object-fit:contain}
 .float-chip.is-xp{background:#eef2fcf2;color:#39518f}
 .float-chip.is-cost{background:#fbf1dff2;color:#8a5a1c}
-.float-chip.is-golden{background:#f7d77af2;color:#6b4712;font-weight:800}
+.float-chip.is-golden{background:#f7d77af2;color:#6b4712;font-weight:700}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.floating-reward{font-size:14px}.float-chip .game-art{width:20px;height:20px}}
 /* A new crop medal (Oct 2026, public/medal-notice.js): its chip on a line of its own over the floating harvest, in the tier's colour
    (the profile's medal dots); one short toast at the bottom, just above the tools (farm.html puts #medal-toast in the bottom bar, so it
    follows every layout) that slides up, goes by itself and takes no taps; the yellow "!" on the Medals tab until it is collected. */
 .float-stack{display:flex;flex-direction:column;align-items:center;gap:5px}
 .float-row{display:flex;gap:6px;align-items:center}
-.float-chip.is-medal{font-weight:800;box-shadow:0 4px 12px #3a301c40,0 0 0 2px #fffdf5}
+.float-chip.is-medal{font-weight:700;box-shadow:0 4px 12px #3a301c40,0 0 0 2px #fffdf5}
 .float-chip.is-medal>b{margin-inline-start:1px}
 .float-chip.is-medal.tier-0{background:#f3d7bcf2;color:#7a4519}
 .float-chip.is-medal.tier-1{background:#e6ebeaf2;color:#4c5856}
@@ -392,7 +392,7 @@
 @keyframes medal-toast-in{from{opacity:0;transform:translate(-50%,14px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.toast.medal-toast.visible{animation:none}}
 .estate-tabs button[data-estate-tab]{position:relative}
-.estate-tab-dot{position:absolute;inset-inline-end:3px;top:2px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif}
+.estate-tab-dot{position:absolute;inset-inline-end:3px;top:2px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:700 10px/1 'DM Sans',sans-serif}
 .estate-tab-dot[hidden]{display:none}
 
 /* Phones hide the XP bar, so the level badge gets a ring that fills toward the next level. */
@@ -406,7 +406,7 @@
 .tractor-seed{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:8px 12px;border:1px solid #ecdcae;border-radius:16px;background:#fff8e4;text-align:start;color:inherit;cursor:pointer}
 .tractor-seed>.game-art{flex:0 0 34px;width:34px;height:34px;object-fit:contain}
 .tractor-seed>span:not(.game-art){flex:1;min-width:0}
-.tractor-seed small{display:block;font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#9b823a}
+.tractor-seed small{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#9b823a}
 .tractor-seed strong{display:block;font:600 16px 'Outfit',sans-serif;color:#453e28}
 .tractor-seed em{display:inline-flex;align-items:center;gap:4px;font-style:normal;font-size:13px;font-weight:700;color:#806322;white-space:nowrap}
 .tractor-seed em .game-art{width:17px;height:17px}
@@ -422,7 +422,7 @@
 .tractor-tile:disabled{cursor:default;background:#f6f3ee;border-color:#ece6dc;box-shadow:none}
 .tractor-tile:disabled .tractor-tile-art{filter:grayscale(1);opacity:.45}
 .tractor-tile:disabled strong{color:#a49c8c}
-.tractor-job-cost{display:inline-flex;align-items:center;gap:3px;padding-block:4px;padding-inline:5px 9px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:800;font-size:13.5px;white-space:nowrap}
+.tractor-job-cost{display:inline-flex;align-items:center;gap:3px;padding-block:4px;padding-inline:5px 9px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:700;font-size:13.5px;white-space:nowrap}
 .tractor-job-cost .game-art{width:17px;height:17px}
 .tractor-foot{margin:8px 2px 0;font-size:12px;line-height:1.5;color:#8a7d68}
 .tractor-subhead{display:flex;align-items:center;gap:6px;margin:18px 0 10px;font:600 16px 'Outfit',sans-serif;color:#453e28}
@@ -436,7 +436,7 @@ button.tractor-card:hover:not(:disabled){border-color:#cdbb85;background:#fffaf0
 .tractor-card small{font-size:12px;line-height:1.35;color:#7a705f;overflow-wrap:anywhere}
 .tractor-card .tractor-forecast{margin-top:2px;color:#806322;font-weight:700}
 .tractor-card .tractor-forecast.is-warn{color:#a0521c}
-.tractor-price{display:inline-flex;align-items:center;gap:4px;margin-top:auto;padding-block:6px;padding-inline:10px 16px;border:1px solid var(--btn-diamond-line);border-radius:var(--btn-radius);background:var(--btn-diamond);box-shadow:0 3px 0 var(--btn-diamond-edge);color:var(--btn-diamond-text);font-weight:800;font-size:14px;white-space:nowrap}
+.tractor-price{display:inline-flex;align-items:center;gap:4px;margin-top:auto;padding-block:6px;padding-inline:10px 16px;border:1px solid var(--btn-diamond-line);border-radius:var(--btn-radius);background:var(--btn-diamond);box-shadow:0 3px 0 var(--btn-diamond-edge);color:var(--btn-diamond-text);font-weight:700;font-size:14px;white-space:nowrap}
 .tractor-card>small:last-of-type{margin-bottom:10px}
 .tractor-price .game-art{width:18px;height:18px}
 button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-diamond-hover)}
@@ -477,10 +477,10 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 .seed-row-copy .regrow-hint{color:#5d7d45}
 .seed-pace{white-space:nowrap;padding:1px 7px;border-radius:999px;font:700 12px 'DM Sans',sans-serif;font-style:normal;letter-spacing:.3px;text-transform:uppercase;background:#efe7dc;color:#7c6f5c}
 .seed-pace.is-regrow{background:#f3e3ec;color:#8a4a6e}
-.seed-row-price{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;padding:5px 10px 5px 6px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:800;font-size:14px;white-space:nowrap}
+.seed-row-price{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;padding:5px 10px 5px 6px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:700;font-size:14px;white-space:nowrap}
 .seed-row-price .game-art{width:18px;height:18px}
 .seed-row.is-locked .seed-row-price{background:#efeae1;color:#a09684}
-.seed-row-check{position:absolute;top:-6px;inset-inline-end:-6px;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#b08a3c;color:#fff;font-size:12px;font-weight:800;box-shadow:0 0 0 2px #fffdf5}
+.seed-row-check{position:absolute;top:-6px;inset-inline-end:-6px;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#b08a3c;color:#fff;font-size:12px;font-weight:700;box-shadow:0 0 0 2px #fffdf5}
 .seed-yield-line{margin:0 0 12px;font-size:13px;color:#807463}
 .seed-filters button{white-space:nowrap;padding-inline:6px}
 @media(max-width:340px){.seed-filters button{padding-inline:3px;font-size:12px}}
@@ -528,7 +528,7 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 .rank-drawer{margin:0 0 6px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2}
 .rank-drawer>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer}
 .rank-drawer>summary::-webkit-details-marker{display:none}
-.rank-drawer .rank-label{margin:0;font-size:12px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:#8f816f}
+.rank-drawer .rank-label{margin:0;font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#8f816f}
 .rank-current{flex:1;display:inline-flex;align-items:center;gap:7px;min-width:0;font:600 16px 'Outfit',sans-serif;color:#453e28}
 .rank-current .game-art{flex:none;width:26px;height:26px}
 .rank-current b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -667,7 +667,7 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
  .expansion-panel .field-preview>.unlocked{border:1px solid #c9a57f;background:radial-gradient(circle at 50% 42%,#8fbf5a 0 3px,transparent 3.5px),linear-gradient(180deg,#b98a5c,#9c6f45)}
  .expansion-panel .field-preview>.locked{border:1px dashed #e0d6c9;background:#f6f1ea}
  .expansion-panel .field-preview>.is-next{border:1.5px dashed #d0a64a;background:#fff6dc;position:relative}
- .expansion-panel .field-preview>.is-next::after{content:'+';position:absolute;inset:0;display:grid;place-items:center;font:800 14px/1 'Outfit',sans-serif;color:#b08a3c}
+ .expansion-panel .field-preview>.is-next::after{content:'+';position:absolute;inset:0;display:grid;place-items:center;font:700 14px/1 'Outfit',sans-serif;color:#b08a3c}
 }
 /* Wide cards: the start button keeps its natural size on the right instead of stretching across the card. */
 #building-content .recipe-footer .start-recipe{justify-self:end;width:auto;min-width:150px;padding-inline:20px}
@@ -1099,7 +1099,7 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #building-content .build-status strong{font:600 18px/1.2 'Outfit',sans-serif;color:#3f3827}
 #building-content .build-status small{font-size:13px;color:#7f735f}
 #building-content .build-makes{display:grid;gap:6px;margin:0 0 10px}
-#building-content .build-makes>span{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9a8457}
+#building-content .build-makes>span{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9a8457}
 #building-content .build-makes>div{display:flex;flex-wrap:wrap;gap:6px}
 #building-content .build-makes b{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 5px;border:1px solid #e6dccd;border-radius:999px;background:#fff;font-size:13px;color:#4f4331}
 #building-content .build-makes b .game-art{width:22px;height:22px}
@@ -1187,7 +1187,7 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 
 /* Growing crops (game.js drawCrop): a small ring that fills as the crop grows, with the crop's picture, the time left and, when
    it applies, a drop (watered) or a leaf (cared for). When Care is ready the pill glows gold and its leaf asks to be tapped. */
-.plot-label.plot-timer{display:inline-flex;align-items:center;gap:4px;min-width:0;min-height:0;padding:3px 8px 3px 3px;border:1px solid #e6dccb;border-radius:999px;background:#fffdf5f2;box-shadow:0 2px 6px #3e342226;color:#4f4632;font:800 11px/1 'DM Sans',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.plot-label.plot-timer{display:inline-flex;align-items:center;gap:4px;min-width:0;min-height:0;padding:3px 8px 3px 3px;border:1px solid #e6dccb;border-radius:999px;background:#fffdf5f2;box-shadow:0 2px 6px #3e342226;color:#4f4632;font:700 11px/1 'DM Sans',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
 .plot-timer-ring{position:relative;display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:conic-gradient(#7fae4e calc(var(--grow,0)*1%),#e9e1d0 0)}
 .plot-timer-ring::after{content:'';position:absolute;inset:2.5px;border-radius:50%;background:#fffdf5}
 .plot-timer-ring>.game-art{position:relative;z-index:1;width:15px;height:15px;object-fit:contain}
@@ -1209,7 +1209,7 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 /* Admin dashboard: the Invite a friend log (src/admin-dashboard.js renderInvites). */
 #admin-dashboard-dialog .admin-invite-totals{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 8px;font-size:13px;color:#6c604a}
 #admin-dashboard-dialog .admin-invite-totals strong{color:#3f3827;font-size:15px}
-#admin-dashboard-dialog .admin-invite-list strong small{font-weight:500;color:#857d6b}
+#admin-dashboard-dialog .admin-invite-list strong small{font-weight:400;color:#857d6b}
 #admin-dashboard-dialog .admin-invite-list .admin-when{margin-inline-start:auto;flex:none;color:#857d6b}
 #admin-dashboard-dialog .admin-paid{color:#3f7a3a}
 #admin-dashboard-dialog .admin-pending-pay{color:#a8741c}
@@ -1262,7 +1262,7 @@ html[data-portal] .feedback-copy{display:none!important}
 /* Admin dashboard: every farmer with when they were last active, one farmer's details, where new players stop and where players
    come from (src/admin-players.js). The filters are small chips in the tabs' own style. */
 #admin-dashboard-dialog .admin-player-tools{display:flex;gap:8px;margin:0 0 8px}
-#admin-dashboard-dialog .admin-player-tools input{flex:1;min-width:0;min-height:40px;box-sizing:border-box;padding:0 12px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:500 14px 'DM Sans',sans-serif}
+#admin-dashboard-dialog .admin-player-tools input{flex:1;min-width:0;min-height:40px;box-sizing:border-box;padding:0 12px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:400 14px 'DM Sans',sans-serif}
 #admin-dashboard-dialog .admin-player-tools select{flex:none;min-height:40px;padding:0 8px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 13px 'DM Sans',sans-serif}
 #admin-dashboard-dialog .admin-filters{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
 #admin-dashboard-dialog .admin-filter{min-height:32px;padding:4px 12px;border:1px solid #e3d6c1;border-radius:999px;background:#efe6d8;color:#857660;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer}
@@ -1277,7 +1277,7 @@ html[data-portal] .feedback-copy{display:none!important}
 #admin-dashboard-dialog .admin-last-active b{font-size:12.5px;color:#4f472f}
 #admin-dashboard-dialog .admin-last-active.is-online b{color:#3f7a3a}
 #admin-dashboard-dialog .admin-last-active time{font-size:12px;font-weight:600;color:#8a7c69;font-variant-numeric:tabular-nums}
-#admin-dashboard-dialog .admin-chip{display:inline-block;margin-inline-start:4px;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:800;vertical-align:1px}
+#admin-dashboard-dialog .admin-chip{display:inline-block;margin-inline-start:4px;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:700;vertical-align:1px}
 #admin-dashboard-dialog .admin-chip.is-vip{background:#f7e3a3;color:#7a5a10}
 #admin-dashboard-dialog .admin-chip.is-drop{background:#f6d9cf;color:#9a4a2c}
 #admin-dashboard-dialog .admin-more{display:block;width:auto;margin:10px auto 0}
@@ -1294,7 +1294,7 @@ html[data-portal] .feedback-copy{display:none!important}
 #admin-dashboard-dialog .admin-facts>div:last-child:nth-child(odd){grid-column:1/-1}
 #admin-dashboard-dialog .admin-facts dt{font-size:12px;font-weight:700;letter-spacing:.03em;color:#8a7c69}
 #admin-dashboard-dialog .admin-facts dd{margin:2px 0 0;font-size:13.5px;font-weight:600;color:#3f3827;overflow-wrap:anywhere}
-#admin-dashboard-dialog .admin-facts dd small{font-weight:500;color:#8a7c69}
+#admin-dashboard-dialog .admin-facts dd small{font-weight:400;color:#8a7c69}
 #admin-dashboard-dialog .admin-link{display:inline;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:#5b6f3a;font:inherit;font-weight:700;line-height:inherit;vertical-align:baseline;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 #admin-dashboard-dialog .admin-bars{display:grid;gap:6px;margin:0;padding:0;list-style:none}
 #admin-dashboard-dialog .admin-bars>li:not(.admin-empty):not(.admin-funnel-split){display:grid;grid-template-columns:minmax(0,11fr) minmax(0,9fr) auto;align-items:center;gap:10px;font-size:13px;color:#4f472f}
@@ -1337,7 +1337,7 @@ html[data-portal] .feedback-copy{display:none!important}
 .giant-card{display:grid;gap:10px}
 .giant-hero{display:flex;align-items:center;gap:16px}
 .giant-hero .giant-art{width:96px;height:96px;flex:0 0 96px}
-.giant-hero strong{display:block;font:800 30px/1.05 'Outfit',sans-serif;color:#3d4a2e}
+.giant-hero strong{display:block;font:700 30px/1.05 'Outfit',sans-serif;color:#3d4a2e}
 .giant-hero span{font-size:13px;color:#7a6b4b}
 .giant-actions{display:flex;flex-wrap:wrap;gap:8px}
 .giant-actions button{flex:1 1 180px}
@@ -1362,13 +1362,13 @@ html[data-portal] .feedback-copy{display:none!important}
 #estate-content .daily-list{display:grid;gap:8px}
 /* Change your email (28 Sep 2026): the new address and the password, then the code sent to the new address. */
 .email-change-form{display:grid;gap:10px;margin:0 0 10px;text-align:start}
-.email-change-form label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:650}
+.email-change-form label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:700}
 .email-change-form input{height:46px;box-sizing:border-box;padding:0 12px;border:1px solid #d9c7a4;border-radius:12px;background:#fffdf5;font:600 16px 'DM Sans',sans-serif}
 .email-change-form input:focus{outline:3px solid #c2912d;outline-offset:1px}
 .email-change-form .primary-button{width:100%;justify-content:center}
 .email-check-change{display:block;margin:10px auto 0;font-size:13px}
 .email-settings-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.email-settings-row>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650;color:#4f4632}
+.email-settings-row>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:#4f4632}
 .email-settings-row .small-button{flex:none}
 #email-settings-note{margin:8px 0 0}
 .email-check-dialog .link-button,#email-settings-note .link-button{display:inline-block;min-height:40px;padding:8px 6px;border:0;background:none;box-shadow:none;font:700 13px 'DM Sans',sans-serif;color:#6b5d44;text-decoration:underline;text-underline-offset:3px;cursor:pointer}

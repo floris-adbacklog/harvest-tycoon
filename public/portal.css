@@ -22,7 +22,7 @@ html[data-portal] .chat-translate{display:none!important}
 html[data-portal] #sound-dialog .account-actions{flex-wrap:wrap}
 html[data-portal] #sound-dialog .account-actions .portal-login{flex:1 1 100%;white-space:normal}
 /* The privacy line on the farm's loading screen. */
-.portal-privacy{margin:18px 0 0;font:500 12px/1.4 'DM Sans',sans-serif;color:#fffdf2c7;text-shadow:0 1px 3px #0000008c}
+.portal-privacy{margin:18px 0 0;font:400 12px/1.4 'DM Sans',sans-serif;color:#fffdf2c7;text-shadow:0 1px 3px #0000008c}
 .portal-privacy a{color:#ffe08a;text-decoration:underline}
 .i18n-wait .portal-privacy{visibility:hidden}
 @media(max-height:420px){.portal-privacy{margin-top:10px}}

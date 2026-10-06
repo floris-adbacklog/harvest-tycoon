@@ -28,7 +28,7 @@ export async function drawFamilyCloth(canvas,family){
  // The family level in a gold badge at the free end.
  const bx=W*.84,by=H*.74,br=H*.13;
  ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.fillStyle='#f0c24f';ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#8a5a17';ctx.stroke();
- ctx.fillStyle='#4a2d08';ctx.font=`800 ${Math.round(br*1.3)}px Outfit, 'DM Sans', sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(family.level??1),bx,by+1);
+ ctx.fillStyle='#4a2d08';ctx.font=`700 ${Math.round(br*1.3)}px Outfit, 'DM Sans', sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(family.level??1),bx,by+1);
 }
 // A flag standing at (x, z), `height` world units tall, turned by `turn` radians. update(family) shows, hides or redraws it;
 // tick(seconds) makes the cloth wave (call it every frame while it is visible).

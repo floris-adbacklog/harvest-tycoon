@@ -1,7 +1,7 @@
 /* The Halloween Pass (Oct 2026, public/pass-ui.js): a header button like Farm family's (a phone has the More tile instead), the window
    with one row per tier (the free and the paid reward side by side), a banner in the Diamond shop and the lantern chip in Today. */
 #pass-button{position:relative;flex-shrink:0}#pass-button .game-art{width:28px;height:28px;object-fit:contain}
-#pass-dot{position:absolute;inset-inline-end:-5px;top:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:800 10px/1 'DM Sans',sans-serif;pointer-events:none}
+#pass-dot{position:absolute;inset-inline-end:-5px;top:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:700 10px/1 'DM Sans',sans-serif;pointer-events:none}
 #pass-button[hidden],#pass-dot[hidden],#pass-menu-entry[hidden],.shop-pass[hidden]{display:none}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#pass-button{display:none}}
 /* A narrow computer (901-1365 px, Oct 2026): the header was already full there (Farm family, chat, settings, feedback, help, for a while
@@ -59,7 +59,7 @@
 .pass-heads .game-art{width:16px;height:16px}
 .pass-tiers{display:grid;gap:6px;margin:0;padding:0;list-style:none}
 .pass-row{align-items:stretch}
-.pass-tier{display:grid;place-items:center;align-self:center;width:30px;height:30px;border-radius:50%;background:#efe6d8;color:#8a7a5c;font:800 13px/1 'DM Sans',sans-serif}
+.pass-tier{display:grid;place-items:center;align-self:center;width:30px;height:30px;border-radius:50%;background:#efe6d8;color:#8a7a5c;font:700 13px/1 'DM Sans',sans-serif}
 .pass-row.is-reached .pass-tier{background:#e08a2c;color:#fff}
 .pass-row.is-next .pass-tier{box-shadow:0 0 0 2px #e08a2c inset;background:#fff3e2;color:#a85f14}
 .pass-cell{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:7px 9px;border:1px solid #ead9ad;border-radius:14px;background:#fffaf0}
@@ -98,7 +98,7 @@
 .shop-pass-copy{display:grid;gap:2px;min-width:0;flex:1}
 .shop-pass-copy b{font:700 18px/1.1 'Outfit',sans-serif}
 .shop-pass-copy small{font-size:12px;font-weight:700;color:#8a4f12}
-.shop-pass-price b{font:800 22px/1 'Outfit',sans-serif;color:#2f7a34}
+.shop-pass-price b{font:700 22px/1 'Outfit',sans-serif;color:#2f7a34}
 
 /* Today's cards: what a gift, a challenge or a delivery adds to the pass while it is open. */
 .reward-chips>b.is-lantern{border-color:#efc58f;background:#fff1de;color:#9a5410}

@@ -10,7 +10,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#27402b;fon
 /* Until the page knows its language (src/crazygames.js), its words wait; the picture does not. */
 .i18n-wait .farm-loading-status,.i18n-wait .farm-loading-tip,.i18n-wait .portal-privacy,.i18n-wait .portal-pause-card{visibility:hidden}
 /* The privacy line (CrazyGames: a notice for new players, never a pop-up). */
-.portal-privacy{margin:18px 0 0;font:500 12px/1.4 'DM Sans',sans-serif;color:#fffdf2c7;text-shadow:0 1px 3px #0000008c}
+.portal-privacy{margin:18px 0 0;font:400 12px/1.4 'DM Sans',sans-serif;color:#fffdf2c7;text-shadow:0 1px 3px #0000008c}
 .portal-privacy a{color:#ffe08a;text-decoration:underline}
 @media(max-height:420px){.portal-privacy{margin-top:10px}}
 .portal-pause{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(#0e1c15b3,#0e1c15b3),#27402b url('/assets/farm-welcome.webp') center/cover no-repeat}
@@ -19,6 +19,6 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#27402b;fon
 .portal-pause-card h2{margin:0 0 8px;font:700 24px/1.2 Outfit,'DM Sans',sans-serif}
 .portal-pause-card p{margin:0 0 8px;font-size:14px;line-height:1.55;color:#6f685a}
 .portal-pause-status:empty{display:none}
-.portal-button{margin-top:10px;min-height:46px;padding:12px 22px;border-radius:11px;border:1px solid #5b5133;background:#685e3f;color:#fffdf0;font:800 14px 'DM Sans',sans-serif;box-shadow:0 3px 0 #494125;cursor:pointer}
+.portal-button{margin-top:10px;min-height:46px;padding:12px 22px;border-radius:11px;border:1px solid #5b5133;background:#685e3f;color:#fffdf0;font:700 14px 'DM Sans',sans-serif;box-shadow:0 3px 0 #494125;cursor:pointer}
 .portal-button:active{transform:translateY(2px);box-shadow:0 1px 0 #494125}
 @media(max-height:480px){.portal-pause-card{padding:16px}.portal-pause-card img{width:64px;height:64px;margin-top:-6px}}
