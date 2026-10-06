@@ -17,12 +17,12 @@ function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {
 // on; buttons: the page's Google and Facebook buttons are there (nodes 'provider-google' and 'provider-facebook').
 // play: the app sells through Google Play (app 1.1, public/android.js playBilling); playStore: the fake app it talks to (src/play-store.js).
 // apple, appStore: the same for the iPhone app 1.1 and the App Store (Oct 2026, public/android.js appStoreBilling, src/app-store.js).
-function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null,apple=false,appStore=null}={}){
+function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null,apple=false,appStore=null,win={}}={}){
  const nodes=new Map(),events={},frames=[],calls=[],analytics=[],game=[],timers=[],lookups=[];let authCallback,currentUser=user,clock=1_000_000,nextTimer=1;
  const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},toggleAttribute(name,on){(this.attrs??={})[name]=Boolean(on);},removeAttribute(name){if(this.attrs)delete this.attrs[name];},focus(){},scrollIntoView(){},replaceChildren(...items){for(const old of this.children)if(!items.includes(old))old.removed=true;this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},contentWindow:{}});return nodes.get(id);};
  const providerButtons=buttons?['google','facebook'].map(provider=>Object.assign(element(`provider-${provider}`),{dataset:{provider}})):[];
  const document={body:{dataset:{}},hidden:false,getElementById:element,querySelector:element,querySelectorAll:selector=>selector==='[data-provider]'?providerButtons:[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
- const window={addEventListener(name,fn){events[name]=fn;}};
+ const window={addEventListener(name,fn){events[name]=fn;},...win};
  const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};},...authApi},...(rpc?{rpc}:{})};
  const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online,userAgent:ua},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,URLSearchParams,queueMicrotask,
   // A delay of 0 runs at once; a real delay waits until the test moves the clock (see advance).
@@ -440,4 +440,38 @@ test('in the app, a pack the store has no price for is not for sale: no Starter 
  const all=fixture({ua:IOS_APP_UA,app:true,apple:true,appStore:appStore({...priced,starter_pack:{price:'€2,99'},special_offer:{price:'€4,99'},halloween_pass_2026:{price:'€4,99'}}),user:{id:A},paymentRequest,location:{...APP_PAGE}});await settle();
  const full=await all.window.harvestBridge.payments({operation:'catalog'});
  assert.equal(full.starter.eligible,true,'with the store\'s price the Starter Pack is for sale as before (the fixture\'s store knows 150, 500 and the Starter Pack)');
+});
+
+// The game in a frame on another site (itch.io, Oct 2026): Google, Facebook and Stripe refuse a frame, so they open in a new tab.
+test('in a frame on another site: Google sign-in and a checkout open in a new tab, made on the tap; the website itself is unchanged',async()=>{
+ let oauth=0;const opened=[],authApi={signInWithOAuth:async()=>{oauth++;return {};}};
+ const tabOf=()=>({location:{},opener:'me',closed:false,close(){this.closed=true;}});
+ const open=(url,target)=>{const tab=tabOf();opened.push({url,target,tab});return tab;};
+ const framed=fixture({storage:{},providers:['google','facebook'],buttons:true,authApi,win:{top:{},open},location:{...page,href:'https://www.harvesttycoon.com/?src=itch',search:'?src=itch'}});await settle();
+ await framed.nodes.get('provider-google').onclick();
+ assert.equal(oauth,0,'no sign-in inside the frame');assert.equal(opened.length,1);assert.match(opened[0].url,/\/play\.html\?src=itch/);assert.equal(opened[0].target,'_blank');assert.equal(opened[0].tab.opener,null);
+ assert.equal(framed.nodes.get('account-message').textContent,'Sign in with Google in the new tab.');
+ const blocked=fixture({storage:{},providers:['google'],buttons:true,authApi,win:{top:{},open:()=>null},location:{...page}});await settle();
+ await blocked.nodes.get('provider-google').onclick();assert.equal(oauth,0);assert.equal(blocked.nodes.get('account-message').textContent,'To sign in with Google, open www.harvesttycoon.com.');
+ const asked=[],paymentRequest=async body=>{asked.push(body);if(body.pack==='bad')throw new Error('Diamond purchases are not available yet.');return {url:'https://checkout.stripe.com/c/pay/x',purchaseId:'p1'};};
+ opened.length=0;const shop=fixture({user:{id:'A'},paymentRequest,win:{top:{},open},location:{...page}});await settle();
+ const bridge=shop.window.harvestBridge,shown=[];bridge.purchaseDone=(id,more)=>shown.push([id,more]);
+ assert.deepEqual({...await bridge.checkout('50','r1')},{store:'tab'});
+ assert.equal(opened.length,1);assert.equal(opened[0].url,'');assert.equal(opened[0].tab.location.href,'https://checkout.stripe.com/c/pay/x');assert.equal(opened[0].tab.opener,null);
+ assert.deepEqual(shown.map(([id,more])=>[id,{...more}]),[['p1',{tab:true}]],'the farm waits for the payment in its purchase window');assert.equal(shop.context.location.href,undefined,'the frame stays on the farm');
+ await assert.rejects(bridge.checkout('bad','r2'),/not available yet/);assert.equal(opened[1].tab.closed,true,'a checkout that cannot start closes its tab');
+ const noPopups=fixture({user:{id:'A'},paymentRequest,win:{top:{},open:()=>null},location:{...page}});await settle();asked.length=0;
+ await assert.rejects(noPopups.window.harvestBridge.checkout('50','r3'),/Allow pop-ups for this page to pay in a new tab\./);assert.deepEqual(asked,[],'no checkout is made without its tab');
+ let site=0;const own=fixture({storage:{},providers:['google'],buttons:true,authApi,win:{open:()=>{site++;return null;}},location:{...page}});await settle();
+ await own.nodes.get('provider-google').onclick();assert.equal(oauth,1,'the website signs in with Google as before');assert.equal(site,0);
+});
+test('the itch.io page: the live game in a frame with ?src=itch, zipped with index.html at the root; a payment in a new tab is waited for',()=>{
+ const page=readFileSync(new URL('../itch/index.html',import.meta.url),'utf8');
+ assert.match(page,/<iframe src="https:\/\/www\.harvesttycoon\.com\/\?src=itch" title="Harvest Tycoon" allow="autoplay; fullscreen; clipboard-write"><\/iframe>/);
+ assert.doesNotMatch(page,/<script/,'no script of its own');
+ const build=readFileSync(new URL('../scripts/build-itch.mjs',import.meta.url),'utf8');assert.match(build,/execFileSync\('zip',\['-X','-q','-j',zip,page\]\)/);
+ assert.match(readFileSync(new URL('../.gitignore',import.meta.url),'utf8'),/^dist-itch\/$/m);
+ const ui=readFileSync(new URL('../src/payment-ui.js',import.meta.url),'utf8');
+ assert.match(ui,/purchase\.tab\?'Finish paying in the new tab\. Your purchase shows up here by itself\.'/);assert.match(ui,/\+\+attempts<\(purchase\.tab\?120:20\)/);
+ assert.match(readFileSync(new URL('../src/game-cloud.js',import.meta.url),'utf8'),/if\(shop\)bridge\.purchaseDone=\(id,more\)=>showPaymentReturn\(bridge,\{id,cancelled:false,\.\.\.more\}\);/);
 });

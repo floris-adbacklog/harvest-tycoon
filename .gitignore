@@ -7,6 +7,8 @@ dist/
 public/cloud/
 # The CrazyGames zip (scripts/build-crazygames.mjs), uploaded by hand.
 dist-crazygames/
+# The itch.io zip (scripts/build-itch.mjs), uploaded by hand.
+dist-itch/
 
 # Local tools
 node_modules/

@@ -28,6 +28,9 @@ import {PLAY_PRODUCTS,APPLE_PRODUCTS} from '../game/payments.js';
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
 const inApp=androidApp();
+// The game in a frame on another site (itch.io, Oct 2026): Google, Facebook and Stripe refuse to show their pages in a frame, so a
+// sign-in with them and a checkout open in a new tab (email and password work in the frame itself).
+const framed=(()=>{try{return Boolean(window.top)&&window.top!==window;}catch{return true;}})();
 // The app's answers about its notifications (window.harvestAppPush) are kept on this page from the start (src/app-push.js).
 if(inApp)listenAppPush(window);
 // The app 1.1 (Oct 2026) sells through the app's store (inAppStore): Google Play in the Android app (src/play-store.js), the App Store in
@@ -278,7 +281,14 @@ async function openFarm(){
    else bridge.purchaseDone?.(made.purchaseId);
    return {store:storeName,id:made.purchaseId,status:result.state};
   };
-  bridge.checkout=async(pack,requestId,offerId)=>{if(inApp&&!inAppStore)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId);const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');location.assign(url.href);};
+  // In a frame (framed) Stripe's page opens in a new tab, made on the tap itself (one opened after waiting for the server is blocked as
+  // a pop-up), and the farm waits for the payment in its purchase window (bridge.purchaseDone with tab, src/payment-ui.js).
+  bridge.checkout=async(pack,requestId,offerId)=>{if(inApp&&!inAppStore)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId);
+   const tab=framed?window.open('','_blank'):null;if(framed&&!tab)throw new Error('Allow pop-ups for this page to pay in a new tab.');
+   try{const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');
+    if(!tab){location.assign(url.href);return;}
+    tab.opener=null;tab.location.href=url.href;bridge.purchaseDone?.(data.purchaseId,{tab:true});return {store:'tab'};}
+   catch(error){tab?.close();throw error;}};
   bridge.paymentReturn=()=>{if(inApp)return {id:null,cancelled:false};const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,
@@ -315,6 +325,8 @@ document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{if(
 // and a sign-in with them cannot even start.
 document.querySelectorAll('[data-provider]').forEach(button=>button.onclick=async()=>{
  if(submitting||!supabase||inApp)return;const provider=button.dataset.provider;
+ // In a frame (framed) the game opens in a new tab, where the sign-in works.
+ if(framed){const tab=window.open(redirectUrl(true),'_blank');if(tab)tab.opener=null;$('account-message').textContent=tab?`Sign in with ${providerName(provider)} in the new tab.`:`To sign in with ${providerName(provider)}, open www.harvesttycoon.com.`;return;}
  trackAuth('submit',{mode,method:provider});submitting=true;lock(true);$('account-message').textContent=`Opening ${providerName(provider)}…`;
  try{tabStore.set(OAUTH_KEY,provider);const {error}=await supabase.auth.signInWithOAuth({provider,options:{redirectTo:redirectUrl(true)}});if(error)throw error;}
  catch(error){tabStore.remove(OAUTH_KEY);const problem=oauthStartError(error,provider);trackAuth('error',{mode,reason:problem.reason,method:provider});$('account-message').textContent=problem.message;submitting=false;lock(false);}
