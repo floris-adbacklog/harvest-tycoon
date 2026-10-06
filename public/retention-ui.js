@@ -1,6 +1,6 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt} from './quests-ui.js';
-import {streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,fullCareQuote,nightShiftQuote,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {confirmDiamondSpend} from './diamond-confirm.js';
@@ -122,7 +122,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    const care=document.querySelector('[data-tractor-care]');
    if(care)care.onclick=()=>{const shown=Number(care.dataset.cost),q=fullCareQuote(state,farmNow());if(q.cost!==shown){notify('Your fields have changed. Review the price.');renderUtility();return;}paid(shown,{title:'Full care',description:'Water and extra care for every growing crop, now.',picture:'tractor-full-care'},{type:'tractor_care',expectedCost:shown},r=>`Full care for ${r.count} ${r.count===1?'crop':'crops'}: ${r.cost} diamonds.`);};
    const shift=document.querySelector('[data-tractor-shift]');
-   if(shift)shift.onclick=()=>{const crop=getCrop(),shown=Number(shift.dataset.cost),q=nightShiftQuote(state,crop,farmNow());if(q.cost>shown){notify('The price has changed. Review the current price.');renderUtility();return;}paid(shown,{title:'Night shift',description:`For 8 hours the tractor harvests, plants ${CROPS[crop].name}, waters and gives care every hour.`,picture:'tractor-night-shift',note:'Once it starts, it cannot be stopped.'},{type:'tractor_shift',crop,expectedCost:shown},r=>`Night shift started: the tractor works your fields until ${clock(r.endsAt)}.`,true);};
+   if(shift)shift.onclick=()=>{const crop=getCrop(),shown=Number(shift.dataset.cost),q=nightShiftQuote(state,crop,farmNow());if(q.cost>shown){notify('The price has changed. Review the current price.');renderUtility();return;}paid(shown,{title:'Night shift',description:`For 8 hours the tractor harvests, plants ${CROPS[crop].name}, waters and gives care every hour.`,picture:'tractor-night-shift',warning:shiftWarning(crop,q),note:'Once it starts, it cannot be stopped.'},{type:'tractor_shift',crop,expectedCost:shown},r=>`Night shift started: the tractor works your fields until ${clock(r.endsAt)}.`,true);};
    // How it works: the wiki's tractor section (with the night shift's price rule), and its Back button returns here.
    document.querySelector('[data-tractor-wiki]').onclick=()=>window.harvestWiki?.('helpers','sec-tractor',{from:{label:'Tractor',go:()=>openUtility('tractor')}});
   }else{
@@ -180,6 +180,14 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  function countdown(){const ms=DAY_MS-farmNow()%DAY_MS,h=Math.floor(ms/3600000),m=Math.floor(ms/60000)%60;$('daily-countdown').textContent=`Resets in ${h}h ${m}m`;}
  // Water only fits early in a crop's growth, so the tractor's water job says how long is left (the field that closes first).
  const clock=at=>new Date(at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+ // What to know before a night shift starts, in full for its confirm (the card has the short line): fields that stay full until
+ // after it, or a crop that brings in less than the lowest price.
+ function shiftWarning(crop,q){
+  const taken=shiftFieldsTaken(state,crop,farmNow()),name=CROPS[crop].name;
+  if(taken>=q.fields)return 'All your fields stay full until after the shift, so the tractor has nothing to plant. The price counts every field.';
+  if(taken)return `${taken} of your ${q.fields} fields stay full until after the shift, so the tractor can't plant there. The price counts every field.`;
+  return q.low?`${name} brings in about ${Math.round(q.forecast.value).toLocaleString('en-US')} coins in this shift, less than the lowest price (1 diamond a field). A crop that sells for more is a better deal.`:'';
+ }
  // The tractor's diamond work: Full care and the night shift as two cards side by side, each with its own picture and its
  // price as a diamond button, and the one rule that they count nowhere, with the way to the wiki (which has the price rule).
  function diamondWork(crop){
@@ -187,15 +195,20 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const price=n=>`<span class="tractor-price">${art('diamonds')}${n}</span>`,picture=key=>`<span class="tractor-card-art">${art(key)}</span>`;
   const harvests=n=>`${n} ${n===1?'harvest':'harvests'}`;
   const careCard=`<button class="tractor-card" data-tractor-care data-cost="${care.cost}" ${care.count?'':'disabled'}>${picture('tractor-full-care')}<strong>Full care</strong><small>${care.count?`${care.count} ${care.count===1?'growing crop':'growing crops'} · water and extra care, now`:'No growing crops need water or care'}</small>${care.count?price(care.cost):''}</button>`;
-  // What tonight's shift does with this crop: how often it can harvest a field, or why it cannot.
-  const forecast=shift.forecast?.tooSlow?`${name} grows longer than the shift: you harvest it`
-   :state.coins<seedCost(state,crop)?`Not enough coins for ${name} seeds: no planting`
-   :`${name}: up to ${harvests(shift.perField)} a field`;
+  // What tonight's shift does with this crop: how often it can harvest a field, or why it cannot. A warning comes first (6 Oct
+  // 2026, the owner's choice): fields that stay full until after the shift, as the price counts every field, or a crop that
+  // brings in less than the lowest price; the confirm says it in full (shiftWarning). The price stays as it is.
+  const taken=shift.running||shift.doneToday||!shift.forecast?0:shiftFieldsTaken(state,crop,now);
+  const warning=state.coins<seedCost(state,crop)?`Not enough coins for ${name} seeds: no planting`
+   :taken>=shift.fields?'All fields stay full during the shift: nothing to plant'
+   :taken?`${taken} of ${shift.fields} fields stay full during the shift`
+   :shift.forecast?.tooSlow?'':shift.low?`${name} brings in less than this price`:'';
+  const forecast=warning||(shift.forecast?.tooSlow?`${name} grows longer than the shift: you harvest it`:`${name}: up to ${harvests(shift.perField)} a field`);
   // The hours a shift has worked as 8 dots: its first round is at the start, then one every hour.
   const hours=s=>{const n=Math.max(0,Math.min(SHIFT_ROUNDS,s.done-1));return `<span class="tractor-hours" role="img" aria-label="${n} of ${SHIFT_ROUNDS} hours worked">${Array.from({length:SHIFT_ROUNDS},(_,i)=>`<i${i<n?' class="is-on"':''}></i>`).join('')}</span>`;};
   const shiftCard=shift.running?`<div class="tractor-card is-running">${picture('tractor-night-shift')}<strong>Night shift</strong><small>${formatDuration(shift.shift.endsAt-now)} left</small>${hours(shift.shift)}<small class="tractor-forecast">${harvests(done)} so far · plants ${CROPS[shift.shift.crop].name}</small></div>`
    :shift.doneToday?`<div class="tractor-card is-done">${picture('tractor-night-shift')}<strong>Night shift done for today</strong>${hours(shift.shift)}<small>${harvests(done)} · the next one tomorrow</small></div>`
-   :`<button class="tractor-card" data-tractor-shift data-cost="${shift.cost}">${picture('tractor-night-shift')}<strong>Night shift</strong><small>Works your fields every hour for 8 hours, also while you are away</small><small class="tractor-forecast">${forecast}</small>${price(shift.cost)}</button>`;
+   :`<button class="tractor-card" data-tractor-shift data-cost="${shift.cost}">${picture('tractor-night-shift')}<strong>Night shift</strong><small>Works your fields every hour for 8 hours, also while you are away</small><small class="tractor-forecast${warning?' is-warn':''}">${forecast}</small>${price(shift.cost)}</button>`;
   return `<h3 class="tractor-subhead">${art('diamonds')}With diamonds</h3><div class="tractor-cards">${careCard}${shiftCard}</div><p class="tractor-rule">${art('trophy')}<span>Diamond work counts for no challenges, events or leaderboards. <button type="button" class="tractor-wiki" data-tractor-wiki>How it works</button></span></p>`;
  }
  function waterLeft(q){return formatDuration(Math.max(0,Math.min(...q.ids.map(id=>waterUntil(state.plots[id])))-farmNow()));}

@@ -2429,7 +2429,20 @@ export function nightShiftQuote(state,crop='corn',now=Date.now()){
  const shift=state.tractorShift??null,running=Boolean(shift)&&now<shift.endsAt,doneToday=Boolean(shift)&&!running&&shift.day===utcDay(now);
  const fields=state.plots.length,forecast=Object.hasOwn(CROPS,crop)&&cropUnlocked(state,crop)?shiftForecast(state,crop,now):null;
  const cost=forecast?Math.max(fields*SHIFT_MIN_PER_FIELD,Math.ceil(forecast.value/SHIFT_COINS_PER_DIAMOND)):0;
- return {cost,fields,running,doneToday,shift,forecast,perField:forecast?.perField??0};
+ // low: a crop the shift harvests that brings in less than the lowest price, so the lowest price sets it (wheat, lettuce). Not a
+ // crop that grows longer than the shift or keeps giving after it (berries, pole beans): those bring in their worth later.
+ const low=Boolean(forecast&&!forecast.tooSlow&&!CROPS[crop].perennial&&forecast.value<fields*SHIFT_MIN_PER_FIELD*SHIFT_COINS_PER_DIAMOND);
+ return {cost,fields,running,doneToday,shift,forecast,perField:forecast?.perField??0,low};
+}
+// What to know before starting (6 Oct 2026, the owner's choice after the first shifts: three farmers paid for one while every field
+// was full of slower crops, so it planted nothing, and wheat brought in less than the lowest price): how many fields stay full until
+// after the shift, so the tractor never plants there. Worked out on a copy of the farm as it is now with coins enough (the shift's
+// own water and care counted). Only a warning: the price stays as it is.
+export function shiftFieldsTaken(state,crop,now=Date.now()){
+ if(!Object.hasOwn(CROPS,crop)||!cropUnlocked(state,crop))return 0;
+ const copy={...state,coins:1e12,plots:state.plots.map(p=>({...p})),inventory:{...state.inventory},stats:{...state.stats},tractorShift:newShift(crop,now)};
+ settleShift(copy,now+SHIFT_MS);
+ return copy.plots.filter(p=>!(p.crop===crop&&p.plantedAt>=now)).length;
 }
 // expectedCost is the price the farmer was shown: never more is charged (the forecast can come out a little lower on the server's clock).
 export function startNightShift(state,crop,expectedCost,now=Date.now()){

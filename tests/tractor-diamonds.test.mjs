@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {applyFarmAction,normalizeFarm,CROPS,xpForLevel,utcDay,FULL_CARE_COST,SHIFT_MS,SHIFT_ROUND_MS,SHIFT_ROUNDS,SHIFT_COINS_PER_DIAMOND,SHIFT_MIN_PER_FIELD,NO_EVENT_ACTIONS,
- fullCareQuote,nightShiftQuote,shiftForecast,marketQuote,seedCost,cropDuration} from '../game/farm-state.js';
+ fullCareQuote,nightShiftQuote,shiftForecast,shiftFieldsTaken,cropUnlocked,marketQuote,seedCost,cropDuration} from '../game/farm-state.js';
 import {welcomeSummary} from '../supabase/functions/farm-api/welcome-service.js';
 import {readyCrops} from '../supabase/functions/notify-hourly/rules.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -118,7 +118,7 @@ test('a broken saved shift is dropped; the tractor card, Welcome back, pushes an
  assert.match(ui,/Diamond work counts for no challenges, events or leaderboards\. <button type="button" class="tractor-wiki" data-tractor-wiki>How it works<\/button>/,'the rule on the card, with the way to the wiki');assert.match(ui,/data-tractor-care/);assert.match(ui,/data-tractor-shift/);
  assert.match(ui,/if\(\(always\|\|cost>=150\)&&!await confirmDiamondSpend/,'150 diamonds or more asks first');
  assert.match(ui,/note:'Once it starts, it cannot be stopped\.'\},\{type:'tractor_shift',crop,expectedCost:shown\},r=>`Night shift started: the tractor works your fields until \$\{clock\(r\.endsAt\)\}\.`,true\);/,'the night shift always asks first, and says it cannot be stopped (5 Oct 2026)');
- assert.match(read('public/diamond-confirm.js'),/if\(note\)\{dialog\.querySelector\('\.diamond-confirm-note'\)\.textContent=note;/);assert.match(ui,/window\.harvestShop\?\.open\(\)/,'short of diamonds: to the packs');
+ assert.match(read('public/diamond-confirm.js'),/if\(note\)dialog\.querySelector\('\.diamond-confirm-note'\)\.textContent=note;/);assert.match(ui,/window\.harvestShop\?\.open\(\)/,'short of diamonds: to the packs');
  const wiki=read('public/wiki-content.js');assert.match(wiki,/The tractor's diamond work counts for no challenges, events or leaderboards\./);assert.match(wiki,/Selling or using them later counts like any crop you sell or use\./);assert.match(wiki,/1 diamond for every \$\{SHIFT_COINS_PER_DIAMOND\} coins of crops/);assert.doesNotMatch(ui,/Night shift price/,'the price rule is only in the wiki (5 Oct 2026)');
  assert.match(ui,/window\.harvestWiki\?\.\('helpers','sec-tractor',\{from:\{label:'Tractor',go:\(\)=>openUtility\('tractor'\)\}\}\)/,'How it works opens the tractor section, and Back returns to the card');
 });
@@ -156,4 +156,28 @@ test('the night shift price cannot be talked down: coins, what grows on the fiel
  assert.match(read('supabase/tractor-shift-pushes.sql'),/''tractorShift'', f\.state -> ''tractorShift''/,'the hourly job sees the shift');
  assert.deepEqual(readyCrops({plots:[{crop:'corn',readyAt:now-1}],tractorShift:{endsAt:now-3600000,done:5}},now),[],'a finished shift not saved yet: no push for half a day');
  assert.equal(readyCrops({plots:[{crop:'corn',readyAt:now-1}],tractorShift:{endsAt:now-3600000,done:9}},now).length,1);
+});
+
+test('before a night shift the farmer is warned when fields stay full until after it, or the crop brings in less than the lowest price; the price stays (6 Oct 2026)',()=>{
+ const s=farm(),fields=s.plots.length,price=nightShiftQuote(s,'corn',now).cost;
+ assert.equal(shiftFieldsTaken(s,'corn',now),0,'an empty farm');
+ const slow=id=>{Object.assign(s.plots[id],{crop:null,plantedAt:0,readyAt:0});apply(s,{type:'field',id,action:'plant',crop:'sunflower'});};
+ for(const id of [0,1,2])slow(id);
+ assert.equal(shiftFieldsTaken(s,'corn',now),3,'a crop that ripens after the shift keeps its field');assert.equal(nightShiftQuote(s,'corn',now).cost,price,'only a warning: the price stays');
+ apply(s,{type:'field',id:3,action:'plant',crop:'cabbage'});assert.equal(shiftFieldsTaken(s,'corn',now),3,'one that ripens during the shift frees its field');
+ const real=structuredClone(s);shift(real,'corn');normalizeFarm(real,now+SHIFT_MS);
+ assert.equal(real.plots.filter(p=>p.crop==='corn'&&p.plantedAt>=now).length,fields-3,'the warning counts what the shift really does');
+ for(let id=3;id<fields;id++)slow(id);assert.equal(shiftFieldsTaken(s,'corn',now),fields,'every field full');
+ const t=farm();Object.assign(t.plots[0],{crop:'berries',plantedAt:now-1e7,readyAt:now+HOUR,careAt:now-1,watered:true,tended:true,harvestCycles:1});
+ assert.equal(shiftFieldsTaken(t,'corn',now),1,'a bush of another crop regrows on its field');
+ const e=farm();e.xp=xpForLevel(40);normalizeFarm(e,now);
+ for(const crop of ['wheat','lettuce'])assert.equal(nightShiftQuote(e,crop,now).low,true,crop);
+ for(const crop of ['corn','barley','cabbage','cauliflower','sunflower','berries','polebeans']){assert.ok(cropUnlocked(e,crop),crop);assert.equal(nightShiftQuote(e,crop,now).low,false,crop);}
+ const ui=read('public/retention-ui.js'),confirm=read('public/diamond-confirm.js');
+ assert.match(ui,/:taken>=shift\.fields\?'All fields stay full during the shift: nothing to plant'/);assert.match(ui,/:taken\?`\$\{taken\} of \$\{shift\.fields\} fields stay full during the shift`/);
+ assert.match(ui,/shift\.low\?`\$\{name\} brings in less than this price`/);assert.match(ui,/class="tractor-forecast\$\{warning\?' is-warn':''\}"/);
+ assert.match(ui,/warning:shiftWarning\(crop,q\),note:'Once it starts, it cannot be stopped\.'/,'the confirm says it in full');
+ assert.match(ui,/so the tractor has nothing to plant\. The price counts every field\./);assert.match(ui,/less than the lowest price \(1 diamond a field\)\. A crop that sells for more is a better deal\./);
+ assert.match(confirm,/if\(warning\)dialog\.querySelector\('\.diamond-confirm-warning'\)\.textContent=warning;/);assert.match(read('public/vip.css'),/\.diamond-confirm \.diamond-confirm-warning\{/);
+ assert.match(read('public/wiki-content.js'),/It plants only on fields that are empty or harvested during the shift\. The price counts every field, so before you start the tractor card warns you/);
 });

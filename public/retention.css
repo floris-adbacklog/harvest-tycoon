@@ -435,6 +435,7 @@ button.tractor-card:hover:not(:disabled){border-color:#cdbb85;background:#fffaf0
 .tractor-card strong{font:600 16px 'Outfit',sans-serif;overflow-wrap:anywhere}
 .tractor-card small{font-size:12px;line-height:1.35;color:#7a705f;overflow-wrap:anywhere}
 .tractor-card .tractor-forecast{margin-top:2px;color:#806322;font-weight:700}
+.tractor-card .tractor-forecast.is-warn{color:#a0521c}
 .tractor-price{display:inline-flex;align-items:center;gap:4px;margin-top:auto;padding-block:6px;padding-inline:10px 16px;border:1px solid var(--btn-diamond-line);border-radius:var(--btn-radius);background:var(--btn-diamond);box-shadow:0 3px 0 var(--btn-diamond-edge);color:var(--btn-diamond-text);font-weight:800;font-size:14px;white-space:nowrap}
 .tractor-card>small:last-of-type{margin-bottom:10px}
 .tractor-price .game-art{width:18px;height:18px}
