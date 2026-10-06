@@ -40,7 +40,8 @@ function looksLikeText(text,inMarkup){
  const bare=text.replace(/\{\d+\}/g,'').trim();
  if(!/\p{L}\p{L}/u.test(bare))return false;
  if(/=>|\$\{|\bvar\(--|rgba?\(|:\/\/|\.(webp|png|svg|jpe?g|js|css|glb|json|mp3|wav|flac)\b|\[data-|:not\(|[{}]|;\S|[a-z-]+:[^\s;]+;|\\u|^\w+\(|\bfunction\b|&&|\|\||===/.test(bare))return false;
- if(/^[.#@\[/-]/.test(text))return false;                                 // selectors, paths
+ // selectors, paths; not the end of a count after a number in bold ("<b>3</b> / 10 steps": "/ {0} steps", 6 Oct 2026)
+ if(/^[.#@\[/-]/.test(text)&&!/^\/ \{\d+\} \p{L}/u.test(text))return false;
  // A word with a capital and a hyphen is a word ("Co-leader"), and a capital word with a colon is a label ("Goal: {0}", "Now:").
  if(/^[a-z0-9]+([_:./-][a-z0-9]+)+$/i.test(bare)&&!/^\p{Lu}\p{Ll}+(-\p{Ll}+)+$/u.test(bare))return false; // keys, ids, paths
  if(!/\s/.test(bare)&&/^[a-z][\w-]*(:[\w-]*)+$/.test(bare))return false;   // storage keys: "field:{0}"

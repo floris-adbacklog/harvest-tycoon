@@ -27,6 +27,15 @@ test('the translator: exact texts, texts with changing parts, a known name insid
  assert.equal(u.translate('Quick delivery ·'),'Reparto rápido ·');
  assert.equal(u.translate('Feed Mill, something else'),null,'only when every part is known');
  assert.equal(createTranslator({'Wheat':'Weizen'},'de').translate('+2 wheat'),'+2 Weizen','German nouns keep their capital');
+ // 6 Oct 2026: "3 × Pumpkin" (the pass's rewards), and sentences the page joins into one text (the chore result).
+ assert.equal(u.translate('3 × Wheat'),'3 × Trigo');
+ const nl=createTranslator({'Wheat':'Tarwe','No {0} this time.':'Deze keer geen {0}.','Practice raised your chance to':'Door te oefenen is je kans nu','One sentence.':'Eén zin.'},'nl');
+ assert.equal(nl.translate('No wheat this time. Practice raised your chance to'),'Deze keer geen tarwe. Door te oefenen is je kans nu');
+ assert.equal(nl.translate('One sentence. Something new'),null,'only when every sentence is known');assert.ok(nl.missing.has('One sentence. Something new'));
+ assert.equal(createTranslator({'A.':'あ。','B.':'い。'},'ja').translate('A. B.'),'あ。い。','no space between Japanese sentences');
+ const wiki=createTranslator({'One. Two.':'Een. Twee.','From level {0} the':'Vanaf level {0} de','Three.':'Drie.'},'nl');
+ assert.equal(wiki.translate('One. Two. From level 10 the'),'Een. Twee. Vanaf level 10 de','a known run of sentences, then the rest');
+ assert.equal(wiki.translate('Three. One. Two.'),'Drie. Een. Twee.');
 });
 
 test('English farmers load no translation; the device language picks a translated language, a choice in Settings wins',async()=>{

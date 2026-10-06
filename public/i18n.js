@@ -83,10 +83,10 @@ export function createTranslator(dict,code='en'){
    }
   }
   if(result===undefined)result=known(key);
-  // Texts the code put together itself: a number before a known text ("8/12 Wheat", "+2 wheat"), a list with " · " (each part on
-  // its own), or two known texts with ", " or ": " between them ("Feed Mill, Mix barley feed").
+  // Texts the code put together itself: a number before a known text ("8/12 Wheat", "+2 wheat", "3 × Pumpkin"), a list with " · "
+  // (each part on its own), or two known texts with ", " or ": " between them ("Feed Mill, Mix barley feed").
   if(result===undefined){
-   const lead=key.match(/^([+−-]?\d[\d.,/×%]*\s?[a-z]{0,2})\s+(\S.*)$/),tail=lead&&(translate(lead[2],true)??known(lead[2]));
+   const lead=key.match(/^([+−-]?\d[\d.,/×%]*\s?(?:×|[a-z]{0,2}))\s+(\S.*)$/),tail=lead&&(translate(lead[2],true)??known(lead[2]));
    if(tail)result=`${lead[1]} ${tail}`;
   }
   if(result===undefined&&/^· |\s·$/.test(key)){
@@ -101,6 +101,22 @@ export function createTranslator(dict,code='en'){
    if(result!==undefined||!key.includes(glue))continue;
    const parts=key.split(glue),done=parts.map(p=>translate(p,true)??known(p));
    if(done.every(p=>p!=null))result=done.join(glue);
+  }
+  // Sentences the code put in one text (6 Oct 2026): "No wheat this time. Practice raised your chance to" (a choice right after a
+  // sentence joins it in the page). The longest run of sentences the translations know first, then the rest the same way; only when
+  // all of it is known. Japanese and Chinese put no space between sentences.
+  if(result===undefined&&/[.!?]\s+\S/.test(key)){
+   const parts=key.split(/(?<=[.!?])\s+(?=\S)/),runs=new Map();
+   const from=start=>{
+    if(start===parts.length)return [];if(runs.has(start))return runs.get(start);let found=null;
+    for(let end=parts.length;end>start&&!found;end--){
+     if(start===0&&end===parts.length)continue;
+     const head=translate(parts.slice(start,end).join(' '),true),rest=head==null?null:from(end);
+     if(rest)found=[head,...rest];
+    }
+    runs.set(start,found);return found;
+   };
+   const done=parts.length>1?from(0):null;if(done)result=done.join(code==='ja'||code==='zh'?'':' ');
   }
   if(result===undefined&&!probe)missing.add(key);
   if(cache.size>5000)cache.clear();
@@ -140,6 +156,11 @@ export function codeTranslator(dict,code='en'){
 }
 let codeText=codeTranslator(null);
 export const t=(english,...values)=>codeText(english,...values);
+// The page's translation for code that has to translate a whole message before it cuts it into pieces (the chips in a toast,
+// public/toast-ui.js, 6 Oct 2026): the text in the farmer's language, its numbers written their way, or null (English, or a text
+// the translations do not know).
+let pageText=null;
+export const translateText=text=>pageText?.(String(text??''))??null;
 
 // Right to left (Arabic, 1 Oct 2026): a number with a sign, a slash, a percent or a times sign keeps its own order ("0 / 3", "+10",
 // "60%", "×2", a date like 05-07-2026) inside a sentence that runs right to left; Unicode isolates hold it left to right. Taken off first, so a text that
@@ -205,6 +226,8 @@ export async function startTranslation(doc=globalThis.document){
  try{
   const dict=await(globalThis.harvestI18n?.code===code?globalThis.harvestI18n.load:fetch(`/i18n/${code}.json`).then(response=>{if(!response.ok)throw new Error(String(response.status));return response.json();}));
   const translator=createTranslator(dict,code);codeText=codeTranslator(dict,code);
+  const numbers=localNumbers(code),rtl=RTL_LANGUAGES.includes(code);
+  pageText=text=>{const key=normalize(text);let out=key?translator.translate(key):null;if(out==null)return null;if(numbers&&/\d/.test(out))out=numbers(out);return rtl&&/\d/.test(out)?isolateNumbers(out):out;};
   root.lang=code;root.dir=RTL_LANGUAGES.includes(code)?'rtl':'ltr';
   // A language page (scripts/build-languages.mjs) is written in the translations already: those texts stay as they are.
   const page=root.getAttribute?.('data-page-lang')===code;

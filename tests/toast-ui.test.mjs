@@ -45,3 +45,17 @@ test('every amount is a chip: collected goods, plain coin amounts; no dots and t
  assert.match(toastParts('Sold 12 Wheat for 84 coins.').html,/for <b class="toast-chip is-coins">[\s\S]*84<\/b>/);
  assert.equal(toastParts('You need 5 coins to help.').icon,'lock','warnings keep their lock');
 });
+// 6 Oct 2026: in another language the whole message is translated before the chips ("Job well done!" stayed English between them).
+test('a toast in another language is translated whole, its rewards chips again, and the page leaves it alone',()=>{
+ const nl=text=>({'Job well done! +12 coins and +5 XP.':'Goed gedaan! +12 munten en +5 XP.','Sold! +1,250 coins':'Verkocht! +1.250 munten','Harvested 3 wheat':'3 tarwe geoogst'})[text]??null;
+ let parts=toastParts('Job well done! +12 coins and +5 XP.',nl);
+ assert.equal(parts.local,true);assert.equal(parts.icon,'xp','tone and picture still come from the English');assert.equal(parts.tone,'reward');
+ assert.match(parts.html,/^Goed gedaan! <b class="toast-chip is-coins">[\s\S]*\+12<\/b> munten en <b class="toast-chip is-xp">[\s\S]*\+5<\/b> XP\.$/);
+ assert.match(toastParts('Sold! +1,250 coins',nl).html,/Verkocht! <b class="toast-chip is-coins">[\s\S]*\+1\.250<\/b> munten/,'the number as the language writes it');
+ assert.equal(toastParts('Harvested 3 wheat',nl).html,'3 tarwe geoogst','goods stay words');
+ assert.equal(toastParts('Something new',nl).local,false,'a text no translation knows: as before');
+ assert.equal(toastParts('Job well done! +12 coins and +5 XP.').local,false,'English: as before');
+ assert.match(toastParts('<b>x</b> +5 coins',()=>'<b>x</b> +5 munten').html,/&lt;b&gt;x&lt;\/b&gt;/,'escaped');
+ const src=readFileSync(new URL('../public/toast-ui.js',import.meta.url),'utf8'),center=readFileSync(new URL('../public/center-notice.js',import.meta.url),'utf8');
+ assert.match(src,/<span class="toast-text"\$\{local\?' translate="no"':''\}>/);assert.match(center,/<p class="toast-text"\$\{local\?' translate="no"':''\}>/);
+});

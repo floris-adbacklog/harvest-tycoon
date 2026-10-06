@@ -1,5 +1,6 @@
 import {art} from './visual-icons.js';
 import {ITEMS} from './farm-state.js';
+import {translateText} from './i18n.js';
 // The short message after an action. Each toast gets a matching painted icon and a tone (a find, a reward, a warning),
 // and amounts like "+40 coins" or "+12 XP" become small chips with their own picture. The message is escaped first,
 // so text from other players (names, gift notes) can never become markup.
@@ -15,7 +16,11 @@ const REWARD=/\+([\d,]+)\s(coins?|XP|diamonds?)/g;
 // Goods and crops by their game name ("+1 Animal feed", "+2 wheat"), longest names first so "Red cabbage" wins over "cabbage".
 const ITEM_KEYS=new Map(Object.entries(ITEMS).map(([key,item])=>[item.name.toLowerCase(),key]));
 const ITEM=new RegExp(`\\+?([\\d,]+)\\s(${[...ITEM_KEYS.keys()].sort((a,b)=>b.length-a.length).map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')})\\b`,'gi');
-export function toastParts(message){
+// A reward's amount in a translated message: a plus and a number written the language's way ("+1.250", "+1 250"), maybe held
+// left to right in Arabic.
+const LOCAL_AMOUNT=/\u2066?\+\d(?:[.,\u00a0\u202f]?\d)*\u2069?/g;
+// translate: the farmer's language (public/i18n.js translateText); null for English.
+export function toastParts(message,translate=translateText){
  const text=String(message??'');
  const tone=WARN.test(text)?'warn':REWARD.test(text)?'reward':'info';REWARD.lastIndex=0;
  // Goods in the message ("Collected 3 Eggs") lead with their own picture; otherwise the first matching theme.
@@ -23,13 +28,23 @@ export function toastParts(message){
  const themed=ICONS.find(([re])=>re.test(text))?.[1];
  const icon=tone==='warn'?'lock':themed==='helping-hand'||themed==='diamonds'?themed:firstItem?ITEM_KEYS.get(firstItem[2].toLowerCase()):(themed??'farm');
  const kind=unit=>/coin/i.test(unit)?'coins':/xp/i.test(unit)?'xp':'diamonds';
+ // In another language (6 Oct 2026) the whole message is translated first. Cut into chips first, the words between them ("Job well
+ // done!", "Sold!", "Quest complete!") were pieces no translation knows, and they stayed English. The rewards (+12 coins, +5 XP)
+ // become chips again where the translation has their amounts, in the same order; goods and other numbers stay words. local: the
+ // text is in the farmer's language already, so the page's own translation leaves it alone (translate="no").
+ const local=translate?.(text);
+ if(local!=null&&local!==text){
+  const kinds=[...text.matchAll(REWARD)].map(m=>kind(m[2]));let html=esc(local),i=0;
+  if(kinds.length&&[...html.matchAll(LOCAL_AMOUNT)].length===kinds.length)html=html.replace(LOCAL_AMOUNT,amount=>{const k=kinds[i++];return `<b class="toast-chip is-${k}">${art(k)}${amount}</b>`;});
+  return {tone,icon,html,local:true};
+ }
  const html=esc(text)
   .replace(REWARD,(_,n,unit)=>`<b class="toast-chip is-${kind(unit)}">${art(kind(unit))}+${n}${kind(unit)==='xp'?' XP':''}</b>`)
   .replace(/(^|[^+\w,])([\d,]+)\scoins?\b/g,(_,lead,n)=>`${lead}<b class="toast-chip is-coins">${art('coins')}${n}</b>`)
   .replace(ITEM,(match,n,name)=>`<b class="toast-chip is-item">${art(ITEM_KEYS.get(name.toLowerCase()))}${match.startsWith('+')?'+':''}${n} ${name}</b>`)
   // No dots between the pieces and no stray full stop after a chip: the chips are the separators.
   .replace(/\s·\s/g,' ').replace(/<\/b>[.!](?=\s|$)/g,'</b>');
- return {tone,icon,html};
+ return {tone,icon,html,local:false};
 }
 // The element keeps its own classes (the medal toast at the bottom is "toast medal-toast", Oct 2026), and a toast can say its tone
 // itself: a new medal is good news without a "+40 coins" in it.
@@ -37,9 +52,9 @@ export function createToast(el,{duration=3200}={}){
  const base=String(el.className??'').split(/\s+/).filter(c=>c&&c!=='visible'&&!c.startsWith('is-')).join(' ')||'toast';
  let timer=0;
  return function show(message,options){
-  const {tone:found,icon,html}=toastParts(message),tone=options?.tone??found;
+  const {tone:found,icon,html,local}=toastParts(message),tone=options?.tone??found;
   el.className=base;el.classList.add('is-'+tone);el.style.setProperty('--toast-duration',`${duration}ms`);
-  el.innerHTML=`<span class="toast-icon">${art(icon)}</span><span class="toast-text">${html}</span><i class="toast-timer" aria-hidden="true"></i>`;
+  el.innerHTML=`<span class="toast-icon">${art(icon)}</span><span class="toast-text"${local?' translate="no"':''}>${html}</span><i class="toast-timer" aria-hidden="true"></i>`;
   void el.offsetWidth;el.classList.add('visible');
   clearTimeout(timer);timer=setTimeout(()=>el.classList.remove('visible'),duration);
  };
