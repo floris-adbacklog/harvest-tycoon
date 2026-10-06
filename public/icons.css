@@ -23,8 +23,11 @@
 .collection-crop>.collection-picture{width:84px;height:84px;filter:grayscale(1);opacity:.4}
 .collection-crop.discovered>.collection-picture{filter:none;opacity:1}
 .mastery-card>.mastery-picture{width:70px;height:70px;align-self:center}
-.mastery-medals>.game-art{width:23px;height:23px;filter:grayscale(1);opacity:.3;margin-inline-end:4px}
-.mastery-medals>.earned{filter:none;opacity:1}
+/* The four tier medals (6 Oct 2026, painted): one still to earn is grey and faint, an earned one in its own metal. */
+.mastery-medals{display:flex;gap:4px;align-items:center}
+.mastery-medal{display:inline-flex}
+.mastery-medal>.game-art{width:28px;height:28px;filter:grayscale(1);opacity:.3}
+.mastery-medal.earned>.game-art{filter:none;opacity:1}
 .milling-chain .game-art{width:44px;height:44px}
 .quest-icon>.game-art{width:28px;height:28px}
 .gift-icon>.game-art,.estate-icon>.game-art,.chore-icon>.game-art{width:40px;height:40px}

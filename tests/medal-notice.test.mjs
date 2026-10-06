@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {existsSync,readFileSync} from 'node:fs';
 import {createFarm,normalizeFarm,xpForLevel,applyFarmAction,medalsWaiting,FEATURE_NAMES,FEATURE_LEVELS,unlockEntries} from '../game/farm-state.js';
 import {MEDAL_NAMES,newMedals,medalMessage,withMedals,createMedalNotice} from '../public/medal-notice.js';
 import {toastParts} from '../public/toast-ui.js';
@@ -34,8 +34,19 @@ test('the toast names the crop and the medal, or how many; it is good news with 
  assert.equal(medalMessage([{crop:'corn',tier:2},{crop:'wheat',tier:0}]),'2 new medals! Collect them in Medals.');
  assert.deepEqual(MEDAL_NAMES,['Bronze medal','Silver medal','Gold medal','Platinum medal']);
  const parts=toastParts(medalMessage([{crop:'wheat',tier:0}]));
- assert.equal(parts.icon,'trophy');assert.notEqual(parts.tone,'warn');
- assert.equal(toastParts('Bronze medal collected! +100 coins and +25 XP.').icon,'trophy');
+ assert.equal(parts.icon,'medal-bronze');assert.notEqual(parts.tone,'warn');
+ assert.equal(toastParts('Platinum medal collected! +100 coins and +25 XP.').icon,'medal-platinum','its own tier\'s picture (6 Oct 2026)');
+ assert.equal(toastParts(medalMessage([{crop:'corn',tier:2},{crop:'wheat',tier:0}])).icon,'medal-gold','several: the gold one');
+});
+
+test('the four tier medals are painted WebP pictures, used on the Medals tab, the harvest chip, profiles and the leaderboard',async()=>{
+ const {MEDAL_ART,artSource}=await import('../public/visual-icons.js');
+ assert.deepEqual([...MEDAL_ART],['medal-bronze','medal-silver','medal-gold','medal-platinum']);
+ for(const key of MEDAL_ART){assert.equal(artSource(key).src,`/assets/icons/${key}.webp`);assert.ok(existsSync(new URL(`../public/assets/icons/${key}.webp`,import.meta.url)),key);}
+ assert.match(withMedals([{crop:'wheat',tier:3}],'x'),/data-art="medal-platinum"/);
+ assert.match(read('public/growth-ui.js'),/<span class="mastery-medal\$\{t\.claimed\?' earned':''\}" title="\$\{t\.name\}: \$\{number\(t\.target\)\} harvests">\$\{art\(MEDAL_ART\[t\.id\]\)\}<\/span>/);
+ assert.match(read('src/player-profiles.js'),/<span class="farmer-badge-art">\$\{art\(crop\)\}\$\{art\(MEDAL_ART\[best\],'farmer-badge-medal'\)\}<\/span>/);
+ assert.match(read('public/rank-picker.js'),/badges:'medal-gold'/);assert.match(read('public/visual-icons.js'),/medal:'medal-gold'/,'every medal symbol (Medals in More, a project\'s medals) is the gold medal');
 });
 
 test('the chip sits on a line of its own over the harvest, one per tier, highest first',()=>{

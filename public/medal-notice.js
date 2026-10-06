@@ -1,5 +1,5 @@
 import {CROPS,featureUnlocked,medalsWaiting} from './farm-state.js';
-import {art} from './visual-icons.js';
+import {art,MEDAL_ART} from './visual-icons.js';
 import {createToast} from './toast-ui.js';
 // A new crop medal (Oct 2026). Until now nothing happened when a farmer earned one: it only showed once collected in Estate → Medals,
 // and farmers on level 7-9 could not open Medals at all (live 3 Oct: 164 medals waiting there, none collected). Now the harvest that
@@ -19,7 +19,7 @@ export const medalMessage=medals=>medals.length===1?`${CROPS[medals[0].crop].nam
 // The name sits in its own span so it is translated as the exact text ("Bronze medal").
 export function withMedals(medals,html){
  if(!medals?.length)return html;
- const chips=[...new Set(medals.map(m=>m.tier))].sort((a,b)=>b-a).map(tier=>{const n=medals.filter(m=>m.tier===tier).length;return `<span class="float-chip is-medal tier-${tier}">${art('trophy')}<span>${MEDAL_NAMES[tier]}</span>${n>1?`<b>×${n}</b>`:''}</span>`;}).join('');
+ const chips=[...new Set(medals.map(m=>m.tier))].sort((a,b)=>b-a).map(tier=>{const n=medals.filter(m=>m.tier===tier).length;return `<span class="float-chip is-medal tier-${tier}">${art(MEDAL_ART[tier])}<span>${MEDAL_NAMES[tier]}</span>${n>1?`<b>×${n}</b>`:''}</span>`;}).join('');
  return `<span class="float-stack"><span class="float-row">${chips}</span><span class="float-row">${html}</span></span>`;
 }
 // The toast at the bottom (farm.html #medal-toast), never under a window: a medal from the tractor (its window is open) or one that

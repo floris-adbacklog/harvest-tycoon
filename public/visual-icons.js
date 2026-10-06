@@ -39,7 +39,7 @@ for(const id of PACK_ART)pictures[id]=id;
 const svgArt=new Set(['streak','reminders','hourglass']);
 for(const id of svgArt)pictures[id]=id;
 const spriteEntries=Object.fromEntries(sheets.flatMap(sheet=>sheet.keys.map((key,index)=>[key,{...sheet,index}])));
-const symbolMap={'lock-keyhole':'lock',lock:'lock',salad:'salad',amphora:'pickles',milk:'milk',egg:'eggs',sandwich:'cheese',croissant:'bread','cake-slice':'pie','package-check':'vegetables','package-open':'feed',droplet:'oil',gem:'diamonds',coins:'coins',star:'xp',droplets:'water',scissors:'harvest',shovel:'care',leaf:'care',gift:'gift','clipboard-check':'quests',trophy:'trophy',medal:'trophy',sparkles:'boost',sprout:'seeds',hammer:'hammer',wheat:'wheat',house:'farm',factory:'buildings',landmark:'estate',store:'market',tractor:'tractor',warehouse:'silo',truck:'cart',wind:'windmill','shopping-basket':'vegetables','land-plot':'seeds','circle-fading-arrow-up':'hammer',flag:'quests','circle-help':'guide','volume-2':'sound',settings:'settings',bell:'bell',smartphone:'farmapp',shield:'admin',flame:'streak'};
+const symbolMap={'lock-keyhole':'lock',lock:'lock',salad:'salad',amphora:'pickles',milk:'milk',egg:'eggs',sandwich:'cheese',croissant:'bread','cake-slice':'pie','package-check':'vegetables','package-open':'feed',droplet:'oil',gem:'diamonds',coins:'coins',star:'xp',droplets:'water',scissors:'harvest',shovel:'care',leaf:'care',gift:'gift','clipboard-check':'quests',trophy:'trophy',medal:'medal-gold',sparkles:'boost',sprout:'seeds',hammer:'hammer',wheat:'wheat',house:'farm',factory:'buildings',landmark:'estate',store:'market',tractor:'tractor',warehouse:'silo',truck:'cart',wind:'windmill','shopping-basket':'vegetables','land-plot':'seeds','circle-fading-arrow-up':'hammer',flag:'quests','circle-help':'guide','volume-2':'sound',settings:'settings',bell:'bell',smartphone:'farmapp',shield:'admin',flame:'streak'};
 // After level 90 (27 Sep 2026), painted by the user: the 20 heirlooms of the Seed Lab, the visitors, the valley projects, the giant
 // pumpkin and a picture for each of the five activities (all WebP, marked below).
 const ENDGAME_PICTURES=['visitor-cook','visitor-merchant','visitor-innkeeper','visitor-captain','visitor-organiser','visitor-gardener','project-bridge','project-watermill','project-terraces','project-canal','project-barn','giant-small','giant-big','giant-prize','giant-scale','endgame-master-star','endgame-seed-lab','endgame-visitors'];
@@ -73,6 +73,10 @@ webpPictures.add('feedback');
 for(const key of TOOL_PICTURES)webpPictures.add(key);
 // The farm app (30 Sep 2026, painted by the user): a golden phone with the barn, for installing the game and the admin's devices.
 pictures.farmapp='farmapp';webpPictures.add('farmapp');
+// The four crop medals (6 Oct 2026, painted, WebP): bronze, silver, gold and platinum, one to three stars and a diamond so the tier reads
+// at icon size too. Medals everywhere (the Medals tab, the harvest chip, the toast, profiles, the leaderboard) use them.
+export const MEDAL_ART=Object.freeze(['medal-bronze','medal-silver','medal-gold','medal-platinum']);   // by tier: 0 bronze … 3 platinum
+for(const key of MEDAL_ART){pictures[key]=key;webpPictures.add(key);}
 // The tractor's diamond work (4 Oct 2026, painted by the user, WebP): Full care and the night shift, on the tractor card and in the wiki.
 for(const key of ['tractor-full-care','tractor-night-shift']){pictures[key]=key;webpPictures.add(key);}
 // Family rank badges (27 Sep 2026), painted by the user; public/family-profile.js shows each one that is here beside the rank's name.

@@ -1,6 +1,6 @@
 import {playerAvatar,avatarImage} from '../public/player-avatars.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
-import {art} from '../public/visual-icons.js';
+import {art,MEDAL_ART} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {renderStatPages,bindStatPages} from './profile-stats.js';
 import {skeleton} from '../public/skeleton.js';
@@ -28,7 +28,8 @@ export function masteryByCrop(badges){
  for(const b of badges){if(!CROPS[b.crop]||!MASTERY_TIERS[b.tier])continue;const tiers=byCrop.get(b.crop)??new Set();tiers.add(Number(b.tier));byCrop.set(b.crop,tiers);}
  return [...byCrop].map(([crop,tiers])=>({crop,tiers,best:Math.max(...tiers)})).sort((a,b)=>b.best-a.best||order.indexOf(a.crop)-order.indexOf(b.crop));
 }
-const masteryCard=({crop,tiers,best})=>`<div class="farmer-badge farmer-badge-${best}" title="${esc(MASTERY_TIERS[best].name)} · ${esc(CROPS[crop].name)}">${art(crop)}<strong>${esc(CROPS[crop].name)}</strong><span>${esc(MASTERY_TIERS[best].name)}</span><span class="farmer-badge-pips" role="img" aria-label="${tiers.size} of ${MASTERY_TIERS.length} medals">${MASTERY_TIERS.map((tier,i)=>`<i class="tier-${i}${tiers.has(i)?' is-earned':''}" title="${esc(tier.name)}"></i>`).join('')}</span></div>`;
+// The crop with its best medal pinned to it (6 Oct 2026: the tier's own picture, public/visual-icons.js MEDAL_ART).
+const masteryCard=({crop,tiers,best})=>`<div class="farmer-badge farmer-badge-${best}" title="${esc(MASTERY_TIERS[best].name)} · ${esc(CROPS[crop].name)}"><span class="farmer-badge-art">${art(crop)}${art(MEDAL_ART[best],'farmer-badge-medal')}</span><strong>${esc(CROPS[crop].name)}</strong><span>${esc(MASTERY_TIERS[best].name)}</span><span class="farmer-badge-pips" role="img" aria-label="${tiers.size} of ${MASTERY_TIERS.length} medals">${MASTERY_TIERS.map((tier,i)=>`<i class="tier-${i}${tiers.has(i)?' is-earned':''}" title="${esc(tier.name)}"></i>`).join('')}</span></div>`;
 // The family card: with a family, a button to its profile (public/family-profile.js, 27 Sep 2026).
 function familyCard(family,emblem){
  const inner=`${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div>`;

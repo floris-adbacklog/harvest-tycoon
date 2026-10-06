@@ -108,6 +108,10 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 /* Crop mastery: one card per crop, the best badge named, a dot per badge (bronze, silver, gold, platinum). */
 .farmer-badge>span:not(.game-art):not(.farmer-badge-pips){font-size:11px;color:#796b54}
 .farmer-badge-pips{display:flex;gap:4px;margin-top:4px}
+/* The best medal pinned to the crop's corner (6 Oct 2026). */
+.farmer-badge-art{position:relative;display:inline-flex}
+.farmer-badge-art>.game-art:first-child{width:44px;height:44px}
+.farmer-badge-art>.farmer-badge-medal{position:absolute;right:-12px;bottom:-4px;width:26px;height:26px;filter:drop-shadow(0 1px 1px #5b4a2a55)}
 .farmer-badge-pips i{width:7px;height:7px;border-radius:50%;background:#0000;border:1px solid #b9ab94}
 .farmer-badge-pips i.is-earned.tier-0{background:#c98a52;border-color:#c98a52}
 .farmer-badge-pips i.is-earned.tier-1{background:#a9b3b1;border-color:#a9b3b1}

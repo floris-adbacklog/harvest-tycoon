@@ -6,9 +6,9 @@ import {ITEMS} from './farm-state.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // "first" only as in "Do this first.": "Your first basket" or "a golden first harvest" is good news.
 const WARN=/\b(need|needs|cannot|can't|not enough|failed|no longer|already|limit|locked|first(?=[.!])|unavailable|try again|reach level|returns in|is still)\b/i;
-// A crop medal (Oct 2026: a new one, or one collected) shows the medal picture that Medals uses.
+// A crop medal (Oct 2026: a new one, or one collected) shows its own tier's picture, as Medals does; several medals the gold one.
 const ICONS=[
- [/\bmedals?\b/i,'trophy'],[/job complete|helping hand|farm round/i,'helping-hand'],[/diamond/i,'diamonds'],[/\bXP\b|level/i,'xp'],[/\bcare\b|\btend/i,'care'],[/\bwater/i,'water'],[/\bplant|\bseed/i,'seeds'],[/harvest|crop|field/i,'harvest'],[/batch|collected|production/i,'buildings'],
+ [/\bbronze medal\b/i,'medal-bronze'],[/\bsilver medal\b/i,'medal-silver'],[/\bgold medal\b/i,'medal-gold'],[/\bplatinum medal\b/i,'medal-platinum'],[/\bmedals?\b/i,'medal-gold'],[/job complete|helping hand|farm round/i,'helping-hand'],[/diamond/i,'diamonds'],[/\bXP\b|level/i,'xp'],[/\bcare\b|\btend/i,'care'],[/\bwater/i,'water'],[/\bplant|\bseed/i,'seeds'],[/harvest|crop|field/i,'harvest'],[/batch|collected|production/i,'buildings'],
  [/upgrade/i,'hammer'],[/event/i,'live-events'],[/family|gift|help/i,'gift'],[/sold|sale|market/i,'market'],[/coin/i,'coins']
 ];
 const REWARD=/\+([\d,]+)\s(coins?|XP|diamonds?)/g;
