@@ -1612,6 +1612,7 @@
 "Finish for {0} coins":"public/estate-ui.js",
 "Finish now":"public/farm.html",
 "Finish paying in the new tab. Your purchase shows up here by itself.":"src/payment-ui.js",
+"Finish paying in your browser. Your purchase shows up here by itself.":"src/payment-ui.js",
 "Finish production":"public/farm-state.js",
 "Finish this daily challenge first.":"public/farm-state.js",
 "Finish this quest to claim your reward.":"public/farm-state.js",

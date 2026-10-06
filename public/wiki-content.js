@@ -5,7 +5,7 @@ import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
 import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_GOAL_POOLS} from './event-goals.js';
 import {portal as portalAround} from './portal.js';
-import {androidApp,appPushOffered,playBilling,appStoreBilling} from './android.js';
+import {androidApp,appPushOffered,playBilling,appStoreBilling,webBilling} from './android.js';
 import {wikiLink,parseWikiLink,wikiLinksIn} from './wiki-link.js';
 // A link to one spot of the wiki (Oct 2026): public/wiki-link.js, here too for whoever has the wiki at hand.
 export {wikiLink,parseWikiLink,wikiLinksIn};
@@ -93,10 +93,11 @@ const itemTarget=key=>CROPS[key]?['crops',`crop-${key}`]:HEIRLOOMS[key]?['estate
 // leaves them out there; app: true in our Android app (Oct 2026, public/android.js; read from the page when not given), where only the
 // parts about buying and installing the web app are left out; appPush: in the app, its own notifications are offered (src/app-push.js,
 // once notify-hourly's config says appPush; read from the page around the game when not given), else push reminders are left out too;
-// play, appStore: in the app, it sells through Google Play or the App Store (app 1.1, Oct 2026; read from the page when not given)}.
+// play, appStore: in the app, it sells through Google Play or the App Store (app 1.1, Oct 2026; read from the page when not given); web:
+// the Galaxy Store app, which sells through Stripe like the website (Oct 2026)}.
 function helpers(ctx){
  const level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now(),portal=Boolean(ctx.portal??portalAround()),app=Boolean(ctx.app??androidApp());
- const appPush=app&&Boolean(ctx.appPush??appPushOffered()),play=app&&Boolean(ctx.play??playBilling()),appStore=app&&Boolean(ctx.appStore??appStoreBilling());
+ const appPush=app&&Boolean(ctx.appPush??appPushOffered()),play=app&&Boolean(ctx.play??playBilling()),appStore=app&&Boolean(ctx.appStore??appStoreBilling()),web=app&&Boolean(ctx.web??webBilling());
  // to: a link to a spot (Oct 2026). On the website the address itself (/wiki/crops#crop-wheat); in the game the topic's own href (never
  // our site: CrazyGames allows no links to it), the spot rides along in data-wiki-anchor.
  const to=(id,anchor='')=>ctx.href?ctx.href(id):`/wiki/${id}${anchor?`#${anchor}`:''}`;
@@ -107,7 +108,7 @@ function helpers(ctx){
  const link=(id,text=TOPIC[id].title,anchor='')=>`<a href="${to(id,anchor)}" data-wiki-topic="${id}"${anchor?` data-wiki-anchor="${anchor}"`:''}>${text}</a>`;
  // shop: our own purchases are there (not on CrazyGames, not in an app that sells nothing; the app 1.1 sells through its store, Oct
  // 2026: Google Play in the Android app, play; the App Store in the iPhone app, appStore); install: installing the web app is.
- return {level,href,to,locked,lvl,row,link,now,portal,app,appPush,play,appStore,shop:!portal&&(!app||play||appStore),install:!portal&&!app};
+ return {level,href,to,locked,lvl,row,link,now,portal,app,appPush,play,appStore,web,shop:!portal&&(!app||play||appStore||web),install:!portal&&!app};
 }
 // On CrazyGames: what is saved where, and the one link allowed (our Privacy Policy, in full).
 const PORTAL_SAVED='<p>Your farm is saved on our server. As a guest it stays with this browser; log in with CrazyGames to keep it safe and play it on any device. You need an internet connection to play.</p>';

@@ -44,7 +44,7 @@ export function showPaymentReturn(bridge,purchase=bridge.paymentReturn?.()){
    if(result.status==='test_paid'){display('test','Test payment confirmed','This was a test purchase. No real diamonds were added.','Test complete');retry.hidden=true;return;}
    if(result.status==='expired'){display('closed','This checkout has expired','Pick a pack again in the diamond shop to start a new checkout.','Checkout expired');retry.hidden=true;shop.hidden=false;shop.focus?.();return;}
    if(purchase.cancelled){display('closed','Back to your farm','Checkout was closed. If you paid before returning, check your payment status below.','Checkout closed');shop.hidden=false;shop.focus?.();}
-   else display('pending','Confirming your purchase',purchase.tab?'Finish paying in the new tab. Your purchase shows up here by itself.':'We’re waiting for payment confirmation. You can return to your farm while we check.','Awaiting confirmation');
+   else display('pending','Confirming your purchase',purchase.app?'Finish paying in your browser. Your purchase shows up here by itself.':purchase.tab?'Finish paying in the new tab. Your purchase shows up here by itself.':'We’re waiting for payment confirmation. You can return to your farm while we check.','Awaiting confirmation');
    // A payment in a new tab (purchase.tab) is still being filled in: 6 minutes of checks instead of 1.
    if(!purchase.cancelled&&++attempts<(purchase.tab?120:20))timer=setTimeout(check,3000);
   }catch{if(!closed)display('error','Let’s check again','We couldn’t confirm your payment right now. If you paid, check again in a moment.','Connection interrupted');}

@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {readFileSync,mkdtempSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {androidApp,appShareLink,shareInApp,APP_SHARE,appPushOffered,appStoreBilling,appBilling} from '../public/android.js';
+import {androidApp,appShareLink,shareInApp,APP_SHARE,appPushOffered,appStoreBilling,appBilling,webBilling,playBilling} from '../public/android.js';
 import {portalOff,APP_OFF,PORTAL_FEATURES} from '../public/portal.js';
 import {usableProviders} from '../src/social-login.js';
 import {scheduleBrowserTip} from '../src/browser-tip.js';
@@ -358,4 +358,22 @@ test('the iPhone app 1.1 is marked for the App Store, the Android app 1.1 for Go
  assert.equal(portalOff('payments',null,true,appBilling(page({'data-app-os':'ios'}))),true,'the iPhone app 1.0');
  assert.equal(portalOff('payments',{features:{payments:false}},false,true),true,'CrazyGames never');
  for(const feature of PORTAL_FEATURES.filter(f=>f!=='payments'))assert.equal(portalOff(feature,null,true,true),false,feature);
+});
+
+// The Galaxy Store app (Oct 2026): " WebBilling/1" after its token, a separate build of the same app without Google Play Billing that sells
+// through Stripe like the website (Samsung allows a game's own payments). Marked data-web-billing, and as an app that sells.
+test('the Galaxy Store app is marked as an app that sells through Stripe; the shop and Buying diamonds (Stripe) show there',()=>{
+ const GALAXY_UA=APP_UA.replace('HarvestTycoonApp/1.0','HarvestTycoonApp/1.2 WebBilling/1');
+ const galaxy=mark({ua:GALAXY_UA,search:'?src=galaxy-store'});
+ assert.equal(galaxy.app,'android');assert.equal(galaxy.attrs['data-web-billing'],'');assert.equal(galaxy.attrs['data-app-billing'],'');
+ assert.equal(galaxy.attrs['data-play-billing'],undefined,'never Google Play');assert.equal(galaxy.attrs['data-app-store-billing'],undefined);
+ for(const ua of [APP_UA,CHROME_UA,`${CHROME_UA} WebBilling/1`,`${IOS_APP_UA} WebBilling/1`])assert.equal(mark({ua}).attrs['data-web-billing'],undefined,ua);
+ assert.equal(mark({ua:CHROME_UA,parent:element({'data-app':'android','data-web-billing':'','data-app-billing':''})}).attrs['data-web-billing'],'','the game frame follows the page around it');
+ const html=attrs=>({hasAttribute:name=>name in attrs,getAttribute:name=>attrs[name]??null}),win=attrs=>({document:{documentElement:html(attrs)}});
+ const page=win({'data-app':'android','data-web-billing':'','data-app-billing':''});
+ assert.equal(webBilling(page),true);assert.equal(appBilling(page),true);assert.equal(playBilling(page),false);assert.equal(webBilling(win({'data-app':'android'})),false);
+ assert.equal(portalOff('payments',null,true,appBilling(page)),false,'the shop is open');
+ const wiki=wikiArticle('diamonds',{app:true,web:true,play:false,appStore:false,portal:false}).html;
+ assert.match(wiki,/Buying diamonds/);assert.match(wiki,/Payments go through Stripe/);
+ assert.doesNotMatch(wikiArticle('diamonds',{app:true,web:false,play:false,appStore:false,portal:false}).html,/Buying diamonds/,'an app that sells nothing');
 });

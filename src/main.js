@@ -20,7 +20,7 @@ import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
 import {playBadge} from '../public/languages.js';
-import {androidApp,listenAppPush,playBilling,appStoreBilling} from '../public/android.js';
+import {androidApp,listenAppPush,playBilling,appStoreBilling,webBilling} from '../public/android.js';
 import {forgetAppPushLink} from './app-push.js';
 import {createPlayStore,PLAY_ERRORS} from './play-store.js';
 import {createAppStore,APP_STORE_ERRORS} from './app-store.js';
@@ -38,6 +38,9 @@ if(inApp)listenAppPush(window);
 // (a payment that was pending, a parent's yes, one the App Store hands back at the start) goes to the farmer's session to be confirmed.
 const appStore=inApp&&appStoreBilling()?createAppStore(window):null;
 const inAppStore=appStore??(inApp&&playBilling()?createPlayStore(window):null);
+// The Galaxy Store app (Oct 2026, " WebBilling/1"): no store of its own, it sells through Stripe like the website. The checkout opens in
+// the phone's browser (the app opens every other site there) and the farm waits for the payment in its purchase window.
+const webPay=inApp&&!inAppStore&&webBilling();
 const storeName=appStore?'app_store':'google_play',storeErrors=appStore?APP_STORE_ERRORS:PLAY_ERRORS,storeProducts=appStore?APPLE_PRODUCTS:PLAY_PRODUCTS;
 inAppStore?.onPurchase(message=>{void window.harvestBridge?.playSettle?.(message).catch(()=>{});});
 let storePrices=null;
@@ -216,7 +219,7 @@ async function openFarm(){
   // Pack, special offer or Halloween Pass for sale, so nothing opens by itself), nothing else about payments is asked and no checkout
   // opens. Earned diamonds are spent as always, and what was bought on the website counts on the same account.
   const appShop=()=>{throw new Error('Purchases are not available here.');};
-  bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');if(inApp&&!inAppStore){if(body?.operation==='catalog')return {enabled:false,serverNow:Date.now()};appShop();}
+  bridge.payments=async body=>{if(ticket!==generation)throw new Error('Your session has ended.');if(inApp&&!inAppStore&&!webPay){if(body?.operation==='catalog')return {enabled:false,serverNow:Date.now()};appShop();}
    if(inAppStore&&body?.operation==='catalog')return storeCatalog(body);if(inAppStore&&body?.operation==='status')await storeRecoverSoon();
    const data=await paymentRequest(inAppStore?{...body,store:storeName}:body);if(ticket!==generation)throw new Error('Your session has ended.');return data;};
   // From the app 1.1 (Oct 2026) the shop sells through the app's store (inAppStore; storeName 'google_play' or 'app_store'). The catalogue
@@ -282,14 +285,16 @@ async function openFarm(){
    return {store:storeName,id:made.purchaseId,status:result.state};
   };
   // In a frame (framed) Stripe's page opens in a new tab, made on the tap itself (one opened after waiting for the server is blocked as
-  // a pop-up), and the farm waits for the payment in its purchase window (bridge.purchaseDone with tab, src/payment-ui.js).
-  bridge.checkout=async(pack,requestId,offerId)=>{if(inApp&&!inAppStore)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId);
+  // a pop-up), and the farm waits for the payment in its purchase window (bridge.purchaseDone with tab, src/payment-ui.js). In the
+  // Galaxy Store app (webPay) the app opens Stripe's page in the phone's browser, and the farm waits the same way.
+  bridge.checkout=async(pack,requestId,offerId)=>{if(inApp&&!inAppStore&&!webPay)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId);
    const tab=framed?window.open('','_blank'):null;if(framed&&!tab)throw new Error('Allow pop-ups for this page to pay in a new tab.');
    try{const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');
+    if(webPay){bridge.purchaseDone?.(data.purchaseId,{tab:true,app:true});location.assign(url.href);return {store:'browser'};}
     if(!tab){location.assign(url.href);return;}
     tab.opener=null;tab.location.href=url.href;bridge.purchaseDone?.(data.purchaseId,{tab:true});return {store:'tab'};}
    catch(error){tab?.close();throw error;}};
-  bridge.paymentReturn=()=>{if(inApp)return {id:null,cancelled:false};const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
+  bridge.paymentReturn=()=>{if(inApp&&!webPay)return {id:null,cancelled:false};const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,
   // with the farm as it is now (public/game.js reads ?world=village).

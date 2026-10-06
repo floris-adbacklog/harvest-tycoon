@@ -93,8 +93,15 @@ export function appStoreBilling(win=globalThis.window){
  if(marked(win))return true;
  try{return Boolean(win?.parent&&win.parent!==win&&marked(win.parent));}catch{return false;}
 }
-// The app sells through its store, either one (<html data-app-billing> in public/android.css): the shop is open there (portalOff).
-export const appBilling=(win=globalThis.window)=>playBilling(win)||appStoreBilling(win);
+// The Galaxy Store app (Oct 2026): " WebBilling/1", marked <html data-web-billing> by public/android-app.js. It sells through Stripe on
+// the website like a browser, the checkout opening in the phone's browser (src/main.js webPay); Samsung allows a game's own payments.
+export function webBilling(win=globalThis.window){
+ const marked=w=>{try{return w?.document?.documentElement?.hasAttribute?.('data-web-billing')===true;}catch{return false;}};
+ if(marked(win))return true;
+ try{return Boolean(win?.parent&&win.parent!==win&&marked(win.parent));}catch{return false;}
+}
+// The app sells, through its store or Stripe (<html data-app-billing> in public/android.css): the shop is open there (portalOff).
+export const appBilling=(win=globalThis.window)=>playBilling(win)||appStoreBilling(win)||webBilling(win);
 export const APP_STORE_LINKS=Object.freeze({prices:'appstoreprices://prices',buy:'appstorebuy://buy',pending:'appstorepending://pending',finish:'appstorefinish://finish'});
 export const appStorePricesLink=ids=>`${APP_STORE_LINKS.prices}?ids=${ids.map(encodeURIComponent).join(',')}`;
 export const appStoreBuyLink=({product,account,purchase})=>`${APP_STORE_LINKS.buy}?product=${encodeURIComponent(product)}&account=${encodeURIComponent(account)}&purchase=${encodeURIComponent(purchase)}`;

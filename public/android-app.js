@@ -26,6 +26,10 @@
  // userAgentToken; public/android.js appStoreBilling). Never the Android app, never a browser.
  function appStoreApp(ua){return iosApp(ua)&&/ AppStoreBilling\/\d/.test(ua||'');}
  window.harvestAppStoreApp=appStoreApp;
+ // The Galaxy Store app (Oct 2026, Samsung allows a game's own payments): " WebBilling/1", it sells through Stripe on the website,
+ // opened in the phone's browser (src/main.js webPay). Never the iPhone app, never a browser with ?app=android only.
+ function webApp(ua){return /HarvestTycoonApp\//.test(ua||'')&&/ WebBilling\/\d/.test(ua||'')&&!iosApp(ua);}
+ window.harvestWebApp=webApp;
  var parent=null;try{if(window.parent!==window)parent=window.parent.document.documentElement;}catch(e){}
  if(html.hasAttribute('data-portal')||(parent&&parent.hasAttribute('data-portal')))return;
  var saved=null;try{saved=localStorage.getItem(KEY);}catch(e){}
@@ -39,6 +43,8 @@
  if(html.getAttribute('data-app')==='android'&&html.getAttribute('data-app-os')!=='ios'&&(playApp(navigator.userAgent)||(parent&&parent.hasAttribute('data-play-billing'))))html.setAttribute('data-play-billing','');
  // The iPhone app 1.1 the same way through the App Store (<html data-app-store-billing>), the game frame following the page around it.
  if(html.getAttribute('data-app')==='android'&&html.getAttribute('data-app-os')==='ios'&&(appStoreApp(navigator.userAgent)||(parent&&parent.hasAttribute('data-app-store-billing'))))html.setAttribute('data-app-store-billing','');
- // Either store: <html data-app-billing>, the one mark the shop's hide rules ask (public/android.css).
- if(html.hasAttribute('data-play-billing')||html.hasAttribute('data-app-store-billing'))html.setAttribute('data-app-billing','');
+ // The Galaxy Store app the same way through Stripe (<html data-web-billing>), the game frame following the page around it.
+ if(html.getAttribute('data-app')==='android'&&html.getAttribute('data-app-os')!=='ios'&&(webApp(navigator.userAgent)||(parent&&parent.hasAttribute('data-web-billing'))))html.setAttribute('data-web-billing','');
+ // Any of them: <html data-app-billing>, the one mark the shop's hide rules ask (public/android.css).
+ if(html.hasAttribute('data-play-billing')||html.hasAttribute('data-app-store-billing')||html.hasAttribute('data-web-billing'))html.setAttribute('data-app-billing','');
 })();
