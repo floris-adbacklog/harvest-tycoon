@@ -28,8 +28,9 @@ export function portalLanguage(locale){
 }
 
 // The link from this page. Without a wrapper answering within `wait` ms (a page opened on its own, a wrapper that broke) the game
-// still starts, as a guest without CrazyGames (environment 'disabled').
-export function createWrapperLink({win=globalThis.window,parent=win?.parent,local=false,wait=5000,tokenWait=15000,timers=globalThis}={}){
+// still starts, as a guest without CrazyGames (environment 'disabled'). 15 s (7 Oct 2026, was 5): the wrapper now starts this page
+// while CrazyGames' own SDK is still starting (up to about 12 s on a slow computer), and a logged-in player must not end up a guest.
+export function createWrapperLink({win=globalThis.window,parent=win?.parent,local=false,wait=15000,tokenWait=15000,timers=globalThis}={}){
  let origin=null,counter=0,initDone;
  const pending=new Map(),settingsListeners=new Set(),authListeners=new Set();
  const init=new Promise(resolve=>{initDone=resolve;});

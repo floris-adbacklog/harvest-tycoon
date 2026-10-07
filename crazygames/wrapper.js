@@ -19,10 +19,19 @@ export function gameAddress(search,environment){
 const errorCode=error=>typeof error?.code==='string'?error.code:'unexpectedError';
 const userOf=user=>user&&typeof user.username==='string'?{username:user.username}:null;
 
-export function createWrapper({sdk,frame,environment,gameOrigin,win}){
+// environment: the SDK's, or the promise of it while sdk.init() still runs (7 Oct 2026): the frame is made at once and may ask
+// before the SDK is ready, so every request waits for init, and nothing reaches the SDK before it.
+export function createWrapper({sdk,frame,environment,gameOrigin,win,onHello=()=>{}}){
+ const ready=Promise.resolve(environment);
  const post=message=>{try{frame.contentWindow?.postMessage({ns:NS,...message},gameOrigin);}catch{}};
  const settings=value=>({muteAudio:value?.muteAudio===true,disableChat:value?.disableChat===true});
- async function init(){
+ // One loadingStart for one loadingStop: the wrapper says the first as soon as the SDK is ready, so the game's own counts as said.
+ let loading=false;
+ function sdkEvent(name){
+  if(name==='loadingStart'){if(loading)return;loading=true;}else if(name==='loadingStop'){if(!loading)return;loading=false;}
+  try{sdk.game[name]();}catch{}
+ }
+ async function init(environment){
   let userAvailable=false,user=null,locale=null,now={};
   try{userAvailable=sdk.user.isUserAccountAvailable===true;}catch{}
   try{locale=sdk.user.systemInfo?.locale??null;}catch{}
@@ -31,10 +40,13 @@ export function createWrapper({sdk,frame,environment,gameOrigin,win}){
   return {type:'init',environment,locale:typeof locale==='string'?locale:null,settings:settings(now),userAvailable,user};
  }
  async function handle(event){
-  if(event.source!==frame.contentWindow||event.origin!==gameOrigin||!allowedOrigin(event.origin,environment))return;
+  if(event.source!==frame.contentWindow||event.origin!==gameOrigin)return;
   const data=event.data;if(!data||typeof data!=='object'||data.ns!==NS||typeof data.type!=='string')return;
+  // The game's page has its own loading screen up: the frame can show (index.html keeps ours until then).
+  if(data.type==='hello')onHello();
+  const environment=await ready;if(!allowedOrigin(event.origin,environment))return;
   const id=typeof data.id==='string'&&data.id.length<=40?data.id:null;
-  if(data.type==='hello'){post(await init());return;}
+  if(data.type==='hello'){post(await init(environment));return;}
   // A fresh token every time it is asked (the SDK renews it; it is never kept here). A guest: no token, and that is no error.
   if(data.type==='token'&&id){
    try{const token=await sdk.user.getUserToken();post({type:'token',id,token:typeof token==='string'&&token?token:null});}
@@ -47,21 +59,37 @@ export function createWrapper({sdk,frame,environment,gameOrigin,win}){
    catch(error){post({type:'authPrompt',id,ok:false,error:errorCode(error)});}
    return;
   }
-  if(data.type==='event'&&SDK_EVENTS.includes(data.name)){try{sdk.game[data.name]();}catch{}}
+  if(data.type==='event'&&SDK_EVENTS.includes(data.name))sdkEvent(data.name);
  }
  const listener=event=>{void handle(event);};
  win.addEventListener('message',listener);
- try{sdk.game.addSettingsChangeListener(next=>post({type:'settings',settings:settings(next)}));}catch{}
- try{sdk.user.addAuthListener(user=>post({type:'auth',user:userOf(user)}));}catch{}
- return {handle,dispose:()=>win.removeEventListener('message',listener)};
+ // Once the SDK is ready: loading has started (CrazyGames: say it when loading starts; the game page could only say it after its own
+ // download and hello), and the settings and log-ins as they change.
+ void ready.then(()=>{
+  sdkEvent('loadingStart');
+  try{sdk.game.addSettingsChangeListener(next=>post({type:'settings',settings:settings(next)}));}catch{}
+  try{sdk.user.addAuthListener(user=>post({type:'auth',user:userOf(user)}));}catch{}
+ });
+ return {handle,ready,dispose:()=>win.removeEventListener('message',listener)};
 }
 
-async function start(){
- const sdk=globalThis.CrazyGames?.SDK;let environment='disabled';
- try{await sdk.init();environment=sdk.environment;}catch{}
- const address=gameAddress(location.search,environment),frame=document.createElement('iframe');
- frame.id='game';frame.title='Harvest Tycoon';frame.allow='autoplay; clipboard-write; web-share';frame.src=address;
- createWrapper({sdk,frame,environment,gameOrigin:new URL(address).origin,win:window});
- document.body.append(frame);
+// The start (7 Oct 2026): the game's frame is made at once and downloads beside CrazyGames' SDK starting up (sdk.init()); before, it
+// waited for init, on a flat green page. Only a local test (?useLocalSdk=true) waits for init first: its ?game= address counts only
+// once the SDK says it runs locally. The frame stays invisible over our loading screen (index.html) until the game says hello; then it
+// shows once its page has loaded, pictures and all, or at most SHOW_AFTER_HELLO ms later. A page that never says hello shows once loaded.
+export const SHOW_AFTER_HELLO=1200;
+export function startWrapper({sdk=globalThis.CrazyGames?.SDK,doc=globalThis.document,win=globalThis.window,search=globalThis.location?.search??'',timers=globalThis}={}){
+ const ready=(async()=>{try{await sdk.init();return sdk.environment;}catch{return 'disabled';}})();
+ function open(address){
+  const frame=doc.createElement('iframe');let shown=false,said=false;
+  frame.id='game';frame.title='Harvest Tycoon';frame.allow='autoplay; clipboard-write; web-share';frame.src=address;
+  const show=()=>{if(shown)return;shown=true;frame.classList.add('shown');timers.setTimeout(()=>doc.getElementById('loading')?.remove(),600);};
+  const onHello=()=>{if(said)return;said=true;timers.setTimeout(show,SHOW_AFTER_HELLO);};
+  const wrapper=createWrapper({sdk,frame,environment:ready,gameOrigin:new URL(address).origin,win,onHello});
+  doc.body.append(frame);frame.addEventListener('load',show);
+  return {frame,wrapper};
+ }
+ if(new URLSearchParams(search).get('useLocalSdk')==='true')return ready.then(environment=>open(gameAddress(search,environment)));
+ return Promise.resolve(open(GAME_URL));
 }
-if(typeof document!=='undefined'&&typeof window!=='undefined')void start();
+if(typeof document!=='undefined'&&typeof window!=='undefined')void startWrapper();

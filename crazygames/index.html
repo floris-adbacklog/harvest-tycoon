@@ -4,6 +4,25 @@
 <title>Harvest Tycoon</title>
 <!-- The page CrazyGames hosts (Oct 2026): their SDK, and the live game in a frame (wrapper.js). Only relative paths here. -->
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#27402b;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}#game{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;background:#27402b}</style>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#27402b;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}#game{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;background:#27402b;opacity:0;pointer-events:none;transition:opacity .35s ease}#game.shown{opacity:1;pointer-events:auto}
+/* Our loading screen from the first moment (7 Oct 2026), under the game's frame until the game shows its own: the painted farm, the
+   logo and the bar of the game's loading screen (public/loading-screen.css), in the same places, so the two read as one screen. The
+   room under the bar is what the game's screen shows there (status, tip, privacy line). The pictures are small copies in the zip. */
+.loading{position:fixed;inset:0;display:grid;place-items:center;padding:24px;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom));overflow:hidden;background:#27402b url('backdrop.webp') center/cover no-repeat;isolation:isolate}
+@media(orientation:portrait){.loading{background-image:url('backdrop-tall.webp')}}
+.loading::before{content:'';position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 50% 42%,#18301f66,#0e1c15d9 72%),linear-gradient(180deg,#0e1c1533,#0e1c15b3)}
+.stage{display:flex;flex-direction:column;align-items:center;width:min(100%,380px);animation:arrive .5s ease-out both}
+.logo{display:block;width:min(300px,72vw);height:auto;aspect-ratio:1;object-fit:contain;margin:-28px 0 -34px;filter:drop-shadow(0 14px 26px #00000080);animation:breathe 3.4s ease-in-out infinite}
+.bar{position:relative;width:min(100%,320px);height:8px;margin-top:14px;border-radius:99px;overflow:hidden;background:#ffffff2e;box-shadow:inset 0 0 0 1px #ffffff1a}
+.bar::after{content:'';position:absolute;top:0;bottom:0;left:0;width:34%;border-radius:99px;background:linear-gradient(90deg,#e9b53f,#ffe08a);animation:slide 1.5s ease-in-out infinite}
+.room{height:146px}
+@keyframes arrive{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(295%)}}
+@media(max-width:520px){.loading{padding:20px}.logo{width:min(260px,74vw)}}
+@media(max-height:560px){.logo{width:190px;margin:-20px 0 -24px}.room{height:134px}}
+@media(max-height:420px){.logo{width:130px;margin:-14px 0 -16px}.room{height:56px}}
+@media(prefers-reduced-motion:reduce){.stage,.logo{animation:none}.bar::after{animation:none;width:4%}}</style>
 </head>
-<body><script type="module" src="wrapper.js"></script></body></html>
+<body><section id="loading" class="loading" aria-busy="true"><div class="stage"><img class="logo" src="logo.webp" alt="Harvest Tycoon" width="448" height="448" draggable="false"><div class="bar" aria-hidden="true"></div><div class="room"></div></div></section>
+<script type="module" src="wrapper.js"></script></body></html>

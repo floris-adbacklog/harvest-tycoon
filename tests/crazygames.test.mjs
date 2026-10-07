@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {readFileSync,mkdtempSync,rmSync,statSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createWrapperLink,trustedWrapper,portalLanguage,cleanInit,localStandIn,NS} from '../src/crazygames-link.js';
-import {createWrapper,gameAddress,allowedOrigin,GAME_URL,GAME_ORIGIN,SDK_EVENTS} from '../crazygames/wrapper.js';
+import {createWrapper,startWrapper,gameAddress,allowedOrigin,GAME_URL,GAME_ORIGIN,SDK_EVENTS,SHOW_AFTER_HELLO} from '../crazygames/wrapper.js';
 import {createFarmSession} from '../src/farm-session.js';
 import {portal,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,PRIVACY_URL} from '../public/portal.js';
 import {setAppBadge} from '../public/app-badge.js';
@@ -137,17 +137,84 @@ test('the uploaded files: the SDK first, only relative paths, nothing to select,
  const html=read('crazygames/index.html'),js=read('crazygames/wrapper.js');
  assert.ok(html.includes(SDK_TAG));assert.ok(html.indexOf(SDK_TAG)<html.indexOf('src="wrapper.js"'));
  assert.match(html,/<script type="module" src="wrapper\.js"><\/script>/);assert.match(html,/user-select:none/);assert.match(html,/#game\{position:fixed;inset:0;width:100%;height:100%;border:0/);
+ // 7 Oct 2026: our loading screen from the first moment (no flat green page): the game's painted farm, logo and bar, small copies in the zip.
+ assert.match(html,/<body><section id="loading" class="loading" aria-busy="true">.*<img class="logo" src="logo\.webp" alt="Harvest Tycoon"[^>]*>.*<div class="bar" aria-hidden="true"><\/div>/,'in the page itself, before the script, so it shows at once');
+ assert.match(html,/\.loading\{[^}]*background:#27402b url\('backdrop\.webp'\) center\/cover no-repeat/);assert.match(html,/@media\(orientation:portrait\)\{\.loading\{background-image:url\('backdrop-tall\.webp'\)\}\}/);
+ const screen=read('public/loading-screen.css');
+ for(const rule of ['radial-gradient(ellipse at 50% 42%,#18301f66,#0e1c15d9 72%),linear-gradient(180deg,#0e1c1533,#0e1c15b3)','width:min(300px,72vw);height:auto;aspect-ratio:1;object-fit:contain;margin:-28px 0 -34px','background:linear-gradient(90deg,#e9b53f,#ffe08a)'])assert.ok(screen.includes(rule)&&html.includes(rule),`the same as the game's loading screen: ${rule}`);
+ assert.match(html,/#game\{[^}]*opacity:0;pointer-events:none;transition:opacity \.35s ease\}#game\.shown\{opacity:1;pointer-events:auto\}/,'the frame is invisible, and takes no taps, until the game shows its own screen');
+ assert.match(html,/@media\(prefers-reduced-motion:reduce\)\{\.stage,\.logo\{animation:none\}\.bar::after\{animation:none;width:4%\}\}/);
+ for(const name of ['logo.webp','backdrop.webp','backdrop-tall.webp']){const file=new URL(`../crazygames/${name}`,import.meta.url);assert.equal(readFileSync(file).subarray(8,12).toString(),'WEBP',name);assert.ok(statSync(file).size<40000,`${name} stays small`);}
  assert.match(js,/frame\.allow='autoplay; clipboard-write; web-share'/);
  const code=`${html}\n${js}`.replace(/<!--[^]*?-->/g,'').replace(/^\s*\/\/.*$/gm,'');
  assert.deepEqual([...code.matchAll(/https?:\/\/[^\s'"`)<,]+/g)].map(m=>m[0]).filter(url=>!url.startsWith('https://sdk.crazygames.com/')&&url!=='https://www.harvesttycoon.com/crazygames.html'&&url!=='https://www.harvesttycoon.com'),[],'no address besides the SDK and our game');
- assert.deepEqual(checkWrapper(),['index.html','wrapper.js']);
+ assert.deepEqual(checkWrapper(),['backdrop-tall.webp','backdrop.webp','index.html','logo.webp','wrapper.js']);
  assert.doesNotMatch(read('package.json').match(/"build:static": "[^"]*"/)[0],/crazygames/,'not part of the Vercel build');
  assert.match(read('package.json'),/"build:crazygames": "node scripts\/build-crazygames\.mjs"/);assert.match(read('.gitignore'),/^dist-crazygames\/$/m);
  let zip=true;try{execFileSync('zip',['-v'],{stdio:'ignore'});}catch{zip=false;}
  if(!zip)return;
  const out=mkdtempSync(join(tmpdir(),'cg-zip-'));
- try{const made=buildCrazyGames({out});assert.equal(made.zip,join(out,'harvest-tycoon-crazygames.zip'));const list=execFileSync('unzip',['-Z1',made.zip],{encoding:'utf8'}).trim().split('\n').sort();assert.deepEqual(list,['index.html','wrapper.js']);}
+ try{const made=buildCrazyGames({out});assert.equal(made.zip,join(out,'harvest-tycoon-crazygames.zip'));const list=execFileSync('unzip',['-Z1',made.zip],{encoding:'utf8'}).trim().split('\n').sort();assert.deepEqual(list,['backdrop-tall.webp','backdrop.webp','index.html','logo.webp','wrapper.js']);}
  finally{rmSync(out,{recursive:true,force:true});}
+});
+
+// ---- 7 Oct 2026: the start. The frame is made at once, beside sdk.init(); before, it waited for init on a flat green page ----
+function startPage({search='',sdk,environment='crazygames'}={}){
+ const posted=[],calls=[],listeners=[],timers=[],appended=[],removed=[];let initDone,settingsListener;
+ sdk=sdk===undefined?{environment:undefined,init:()=>new Promise(resolve=>{initDone=()=>{sdk.environment=environment;resolve();};}),
+  user:{isUserAccountAvailable:false,systemInfo:{locale:'pt-BR'},getUserToken:async()=>'jwt-token',addAuthListener(){}},
+  game:{settings:{},addSettingsChangeListener(fn){settingsListener=fn;},...Object.fromEntries(SDK_EVENTS.map(name=>[name,()=>calls.push(name)]))}}:sdk;
+ const doc={
+  createElement(tag){const classes=new Set(),events={};return {tag,classes,events,contentWindow:{postMessage(data,target){posted.push({data,target});}},classList:{add:c=>classes.add(c)},addEventListener(type,fn){events[type]=fn;}};},
+  body:{append(el){appended.push(el);}},getElementById:id=>id==='loading'?{remove:()=>removed.push(id)}:null
+ };
+ const win={addEventListener(type,fn){if(type==='message')listeners.push(fn);},removeEventListener(){}};
+ const started=startWrapper({sdk,doc,win,search,timers:{setTimeout(fn,ms){timers.push({fn,ms});}}});
+ const frame=()=>appended[0];
+ const send=async(data,origin=new URL(frame().src).origin)=>{for(const fn of listeners)fn({data,origin,source:frame().contentWindow});await sleep(0);};
+ return {sdk,started,posted,calls,timers,appended,removed,frame,send,init:async()=>{initDone();await sleep(0);},settings:next=>settingsListener(next)};
+}
+test('the wrapper makes the game frame at once, invisible, while CrazyGames\' SDK starts; every request waits for init',async()=>{
+ const p=startPage();
+ assert.equal(p.appended.length,1,'before sdk.init() is done');
+ assert.deepEqual({id:p.frame().id,src:p.frame().src,allow:p.frame().allow},{id:'game',src:GAME_URL,allow:'autoplay; clipboard-write; web-share'});
+ assert.equal(p.frame().classes.size,0,'invisible over our loading screen');
+ await p.send({ns:NS,type:'hello'});await p.send({ns:NS,type:'token',id:'token-1'});await p.send({ns:NS,type:'event',name:'loadingStart'});
+ assert.deepEqual([p.posted,p.calls],[[],[]],'nothing reaches the SDK, and no answer, before init');
+ await p.init();
+ assert.deepEqual(p.posted.map(m=>m.data.type).sort(),['init','token']);assert.ok(p.posted.every(m=>m.target===GAME_ORIGIN));
+ assert.deepEqual(p.posted.find(m=>m.data.type==='init').data,{ns:NS,type:'init',environment:'crazygames',locale:'pt-BR',settings:{muteAudio:false,disableChat:false},userAvailable:false,user:null});
+ assert.deepEqual(p.calls,['loadingStart'],'loadingStart as soon as init is done, once: the game\'s own counts as said');
+ await p.send({ns:NS,type:'event',name:'loadingStop'});await p.send({ns:NS,type:'event',name:'gameplayStart'});await p.send({ns:NS,type:'event',name:'loadingStop'});
+ await p.send({ns:NS,type:'event',name:'gameplayStop'});await p.send({ns:NS,type:'event',name:'loadingStart'});await p.send({ns:NS,type:'event',name:'loadingStart'});
+ assert.deepEqual(p.calls,['loadingStart','loadingStop','gameplayStart','gameplayStop','loadingStart'],'one start for one stop, a village trip starts again');
+ p.settings({muteAudio:true});assert.deepEqual(p.posted.at(-1).data,{ns:NS,type:'settings',settings:{muteAudio:true,disableChat:false}},'settings listened to once the SDK is ready');
+});
+test('the game frame shows once its page has loaded, or soon after it says hello; then our loading screen goes',async()=>{
+ const p=startPage();
+ await p.send({ns:NS,type:'hello'},'https://evil.example');assert.equal(p.timers.length,0,'only our game counts');
+ await p.send({ns:NS,type:'hello'});await p.send({ns:NS,type:'hello'});
+ assert.deepEqual(p.timers.map(t=>t.ms),[SHOW_AFTER_HELLO],'hello: at most a moment for its pictures');
+ assert.ok(SHOW_AFTER_HELLO>=500&&SHOW_AFTER_HELLO<=2000);
+ p.frame().events.load();assert.ok(p.frame().classes.has('shown'),'its page has loaded: it shows');
+ p.timers[0].fn();p.timers[1].fn();p.timers.slice(2).forEach(t=>t.fn());assert.deepEqual(p.removed,['loading'],'our screen goes once, after the fade');
+ const q=startPage();await q.send({ns:NS,type:'hello'});q.timers[0].fn();assert.ok(q.frame().classes.has('shown'),'a slow picture: it shows anyway');
+ const r=startPage();r.frame().events.load();assert.ok(r.frame().classes.has('shown'),'a page that never says hello shows once loaded, as before');
+});
+test('without the SDK (an ad blocker) the game still starts at once, as a guest; a local test waits for init and may show a local game',async()=>{
+ const none=startPage({sdk:{}});
+ assert.equal(none.frame().src,GAME_URL);await none.send({ns:NS,type:'hello'});await none.send({ns:NS,type:'event',name:'gameplayStart'});
+ assert.deepEqual(none.posted.map(m=>m.data),[{ns:NS,type:'init',environment:'disabled',locale:null,settings:{muteAudio:false,disableChat:false},userAvailable:false,user:null}]);
+ const local=startPage({search:'?useLocalSdk=true&game=http://localhost:4789/crazygames.html',environment:'local'});
+ assert.equal(local.appended.length,0,'?useLocalSdk=true: the game address counts only once the SDK says it runs locally');
+ await local.init();await local.started;
+ assert.equal(local.frame().src,'http://localhost:4789/crazygames.html');assert.deepEqual(local.calls,['loadingStart']);
+ await local.send({ns:NS,type:'hello'});assert.equal(local.posted[0].data.environment,'local');assert.equal(local.posted[0].target,'http://localhost:4789');
+ const elsewhere=startPage({search:'?useLocalSdk=true&game=http://localhost:4789/crazygames.html',environment:'crazygames'});
+ await elsewhere.init();await elsewhere.started;assert.equal(elsewhere.frame().src,GAME_URL,'on CrazyGames itself a ?game= is never followed');
+ const js=read('crazygames/wrapper.js');
+ assert.match(js,/if\(new URLSearchParams\(search\)\.get\('useLocalSdk'\)==='true'\)return ready\.then\(environment=>open\(gameAddress\(search,environment\)\)\);\n return Promise\.resolve\(open\(GAME_URL\)\);/);
+ assert.match(js,/if\(typeof document!=='undefined'&&typeof window!=='undefined'\)void startWrapper\(\);$/m);
 });
 
 // ---- The game page: public/crazygames.html, served by Vercel ----
