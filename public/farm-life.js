@@ -77,8 +77,9 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  zone('pond');
  const shoreAt=(deg,k)=>[POND.x+POND.rx*k*Math.cos(deg*Math.PI/180),POND.z+POND.rz*k*Math.sin(deg*Math.PI/180)];
  const oval=(rx,rz,segments,material,y)=>{const m=new THREE.Mesh(new THREE.CircleGeometry(1,segments),material);m.rotation.x=-Math.PI/2;m.scale.set(rx,rz,1);const [px,pz]=place(POND.x,POND.z);m.position.set(px,y,pz);scene.add(m);};
- oval(POND.rx+.6,POND.rz+.6,24,new THREE.MeshStandardMaterial({color:0xb4ac89,roughness:1}),.019);
- oval(POND.rx,POND.rz,32,new THREE.MeshStandardMaterial({color:0x62bfc0,roughness:.35,metalness:.05}),.027);
+ // Clear blue water with a warm sandy bank (6 Oct 2026, like the pond of the loading screen's painted valley; it was mint).
+ oval(POND.rx+.6,POND.rz+.6,24,new THREE.MeshStandardMaterial({color:0xc2a77a,roughness:1}),.019);
+ oval(POND.rx,POND.rz,32,new THREE.MeshStandardMaterial({color:0x3aa3e3,roughness:.35,metalness:.05}),.027);
  scenery('village_pier_001',POND.x+4.8,POND.z+3,{width:3.4,rotation:-.55,y:.02});
  scenery('village_boat_001',POND.x+3.2,POND.z+4,{width:2.2,rotation:1,y:.03});
  scenery('village_rowboat_001',POND.x-2.6,POND.z-1.8,{width:2.6,rotation:.4,y:.03});

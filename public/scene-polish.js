@@ -36,10 +36,11 @@ function groundTexture(size,rand,anisotropy,tile){
  const n1=tileableNoise(size,4,rand),n2=tileableNoise(size,9,rand),n3=tileableNoise(size,24,rand);
  const canvas=makeCanvas(size),ctx=canvas.getContext('2d'),img=ctx.createImageData(size,size);
  for(let i=0;i<size*size;i++){
-  const v=.5*n1[i]+.3*n2[i]+.2*n3[i],shade=.86+.19*clamp01((v-.25)*2);
-  img.data[i*4]=Math.min(255,shade*(1+(n2[i]-.5)*.12)*255);
+  // Deeper mottling (6 Oct 2026): light and dark patches 1.8 times as far apart, so the meadow has depth instead of one flat green.
+  const v=.5*n1[i]+.3*n2[i]+.2*n3[i],shade=.784+.342*clamp01((v-.25)*2);
+  img.data[i*4]=Math.min(255,shade*(1+(n2[i]-.5)*.216)*255);
   img.data[i*4+1]=Math.min(255,shade*255);
-  img.data[i*4+2]=Math.min(255,shade*(1-(n1[i]-.5)*.2)*255);
+  img.data[i*4+2]=Math.min(255,shade*(1-(n1[i]-.5)*.36)*255);
   img.data[i*4+3]=255;
  }
  ctx.putImageData(img,0,0);
@@ -92,6 +93,44 @@ function tuftGeometry(){
  const g=new THREE.BufferGeometry();
  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(norm,3));
  return g;
+}
+
+// A wildflower (6 Oct 2026): five petals round a golden heart on a short stem with two leaves, like the daisies and buttercups of
+// the loading screen's painted valley (until then a coloured bead hung in the grass). 21 triangles, lit flat from above like the
+// tufts; only the petals take each flower's own colour, the heart and the stem keep theirs (the petal mask and wildflowerMaterial,
+// below). The petals and the heart face up, the stem and the leaves have both faces, so the flower needs no double-sided material
+// (a back face there turns dark). 0.26 tall.
+export function wildflowerGeometry(){
+ const pos=[],col=[],mask=[],tri=(points,shade,petal=0)=>{for(const p of points){pos.push(...p);col.push(...shade);mask.push(petal);}},both=(points,shade)=>{tri(points,shade);tri([...points].reverse(),shade);};
+ const top=.24,stem=[.42,.62,.26],heart=[1,.74,.2];
+ both([[-.012,0,0],[.012,0,0],[0,top,0]],stem);
+ both([[0,.02,0],[.075,.09,.02],[.03,.06,-.015]],stem);both([[0,.03,0],[-.07,.1,-.02],[-.025,.07,.02]],stem);
+ const ring=(n,i,r,y)=>{const a=i/n*Math.PI*2;return [Math.cos(a)*r,y,Math.sin(a)*r];};
+ for(let k=0;k<10;k++)tri([[0,top+.004,0],ring(10,k+1,k%2?.09:.042,top+(k%2?.014:0)),ring(10,k,k%2?.042:.09,top+(k%2?0:.014))],[1,1,1],1);
+ for(let k=0;k<5;k++)tri([[0,top+.032,0],ring(5,k+1,.034,top+.01),ring(5,k,.034,top+.01)],heart);
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+ g.setAttribute('normal',new THREE.Float32BufferAttribute(pos.map((_,i)=>i%3===1?1:0),3));
+ // 1 on the petals, 0 on the stem, the leaves and the heart: how much of the flower's own colour a corner takes.
+ g.setAttribute('petal',new THREE.Float32BufferAttribute(mask,1));
+ return g;
+}
+// White daisies and yellow buttercups, as in the painted valley, with a pink or lilac one now and then.
+export const BLOOM=Object.freeze([0xfffdf4,0xffffff,0xfff6e2,0xffd84a,0xffe066,0xffcf3a,0xf7a8c0,0xc9aef2]);
+// The flowers' material: the instance colour (each flower's own) only tints the petals, by the petal mask, so a yellow or pink flower
+// keeps a green stem and a golden heart (until 6 Oct 2026 it tinted the whole flower: olive and brown stems).
+export function wildflowerMaterial(){
+ const material=new THREE.MeshLambertMaterial({vertexColors:true});
+ material.onBeforeCompile=shader=>{shader.vertexShader='// the petal mask of wildflowerGeometry\nattribute float petal;\n'+shader.vertexShader.replace('#include <color_vertex>',THREE.ShaderChunk.color_vertex.replace('vColor.xyz *= instanceColor.xyz;','vColor.xyz*=mix(vec3(1.),instanceColor.xyz,petal);'));};
+ material.customProgramCacheKey=()=>'wildflower-petals';
+ return material;
+}
+// Many wildflowers as one instanced mesh, so they cost one draw call: [x,z,size,turn,colour] each.
+export function wildflowers(list){
+ const mesh=new THREE.InstancedMesh(wildflowerGeometry(),wildflowerMaterial(),Math.max(1,list.length)),dummy=new THREE.Object3D(),tint=new THREE.Color();
+ list.forEach(([x,z,size,turn,colour],i)=>{dummy.position.set(x,0,z);dummy.rotation.set(0,turn,0);dummy.scale.setScalar(size);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);mesh.setColorAt(i,tint.set(colour));});
+ mesh.count=list.length;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;mesh.frustumCulled=false;mesh.userData.wildflowers=true;
+ return mesh;
 }
 
 
@@ -215,19 +254,19 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
  }
  tufts.frustumCulled=false;tufts.count=placed;tufts.instanceMatrix.needsUpdate=true;if(tufts.instanceColor)tufts.instanceColor.needsUpdate=true;group.add(tufts);
 
- const bloom=[0xfff4e0,0xffd45a,0xf59fb5,0xb79bf0,0xffffff,0xf28b5b],flowerPatches=Math.round((mobile?26:60)*SPREAD*SPREAD),perPatch=6;
- const flowers=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.075,0),new THREE.MeshLambertMaterial({}),flowerPatches*perPatch);
- let f=0;guard=0;
- while(f<flowerPatches*perPatch&&guard++<flowerPatches*40){
+ // Patches of one colour each; since 6 Oct 2026 mostly white and yellow, and flowers instead of beads (wildflowers above). The
+ // spots and sizes come from the same draws as before, so the meadow, the butterflies and the mountains after it stay where they were.
+ const flowerPatches=Math.round((mobile?26:60)*SPREAD*SPREAD),perPatch=6,blooms=[];
+ guard=0;
+ while(blooms.length<flowerPatches*perPatch&&guard++<flowerPatches*40){
   const cx=(rand()-.5)*80*SPREAD,cz=(rand()-.5)*74*SPREAD;if(!free(cx,cz))continue;
-  const colour=bloom[Math.floor(rand()*bloom.length)];meadow.push([cx,cz]);
-  for(let k=0;k<perPatch&&f<flowerPatches*perPatch;k++){
+  const colour=BLOOM[Math.floor(rand()*BLOOM.length)];meadow.push([cx,cz]);
+  for(let k=0;k<perPatch&&blooms.length<flowerPatches*perPatch;k++){
    const x=cx+(rand()-.5)*1.1,z=cz+(rand()-.5)*1.1;if(!free(x,z))continue;
-   const s=.8+rand()*.7;dummy.position.set(x,.2+rand()*.09,z);dummy.rotation.set(0,0,0);dummy.scale.setScalar(s);dummy.updateMatrix();
-   flowers.setMatrixAt(f,dummy.matrix);flowers.setColorAt(f,tint.setHex(colour).offsetHSL((rand()-.5)*.03,0,(rand()-.5)*.08));f++;
+   const s=.8+rand()*.7,lift=rand()*.09;blooms.push([x,z,s*(.8+lift*2),(x*7.3+z*3.1)%(Math.PI*2),tint.setHex(colour).offsetHSL((rand()-.5)*.03,0,(rand()-.5)*.08).getHex()]);
   }
  }
- flowers.frustumCulled=false;flowers.count=f;flowers.instanceMatrix.needsUpdate=true;if(flowers.instanceColor)flowers.instanceColor.needsUpdate=true;group.add(flowers);
+ group.add(wildflowers(blooms));
 
  // 6. Wind: trees, bushes and crops lean gently together in gusts.
  const swayers=[];

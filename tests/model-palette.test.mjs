@@ -36,7 +36,7 @@ test('one request and one decode per palette: GLTFLoader gets the shared palette
  assert.match(atlas,/export function sharePalette\(gltfLoader\)\{\n return gltfLoader\.register\(/);
  assert.match(atlas,/const PALETTE=\/\(\^\|\\\/\)\(village-\)\?palette\\\.png\$\/;/);
  assert.match(atlas,/let image=palettes\.get\(url\);/,'one fetch per palette address, shared by every model');
- assert.match(atlas,/image=loader\.loadAsync\(url\)\.catch\(\(\)=>loader\.loadAsync\(`\$\{url\}\?fresh=\$\{Date\.now\(\)\}`\)\);/,'asked once more past the browser\'s cache');
+ assert.match(atlas,/const current=`\$\{url\}\?v=\$\{PALETTE_VERSION\}`;\n  image=loader\.loadAsync\(current\)\.catch\(\(\)=>loader\.loadAsync\(`\$\{current\}&fresh=\$\{Date\.now\(\)\}`\)\);/,'the current palette (its version past a day-old cache), asked once more past the browser\'s cache');
  assert.match(atlas,/image\.catch\(\(\)=>palettes\.delete\(url\)\);/,'a failed palette is asked for again by the next model');
  assert.match(atlas,/const loader=parser\.textureLoader;/,'the same ImageBitmap or <img> loader GLTFLoader chose for this browser');
  assert.match(atlas,/return parser\.loadTextureImage\(index,source,once\)\.then\(texture=>\{\n   if\(!texture\)throw new Error/,'no palette: the model fails (and gets its stand-in), it is never drawn unpainted');

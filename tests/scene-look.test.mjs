@@ -16,7 +16,7 @@ test('every model carries its baked shade (vertex colours), and the models stay 
 test('the light: true colours (neutral tone mapping), a warm low sun and a soft sky, and mown stripes where the fields grow',()=>{
  const game=read('public/game.js'),polish=read('public/scene-polish.js');
  assert.match(game,/renderer\.toneMapping=THREE\.NeutralToneMapping;/);
- assert.match(game,/new THREE\.HemisphereLight\(0xe4f0ff,0x6f8c46,2\)/);assert.match(game,/new THREE\.DirectionalLight\(0xffeccb,3\.2\);sun\.position\.set\(-26,22,14\);/);
+ assert.match(game,/new THREE\.HemisphereLight\(0xd3e6ff,0x7f8a3a,1\.5\)/);assert.match(game,/new THREE\.DirectionalLight\(0xffd9a3,3\.95\);sun\.position\.set\(-26,18,14\);/);
  assert.match(game,/\.name='Crop meadow';/);assert.match(polish,/scene\.getObjectByName\('Crop meadow'\)/);
  assert.match(polish,/const tuftCount=Math\.round\(\(mobile\?900:2200\)\*SPREAD\*SPREAD\)/,'instanced, so more tufts cost next to nothing');
 });
@@ -30,8 +30,8 @@ test('the light follows the clock but is always daylight: fresh in the morning a
  const {daylightAt}=await import('../public/daylight.js');
  const night=daylightAt(2),morning=daylightAt(8),noon=daylightAt(13),evening=daylightAt(20);
  assert.deepEqual(night,morning,'the night borrows the morning');
- for(const light of [night,noon,evening]){assert.ok(light.sunI>=3&&light.hemiI>=1.9,'never dark');}
- assert.equal(noon.sun,0xffeccb);assert.ok(evening.turn>0&&morning.turn<0,'the sun comes from the east in the morning and the west at night');
+ for(const light of [night,noon,evening]){assert.ok(light.sunI>=3.5&&light.hemiI>=1.4,'never dark: a strong sun, and a softer sky so the shade gives depth');}
+ assert.equal(noon.sun,0xffd9a3);assert.ok(evening.turn>0&&morning.turn<0,'the sun comes from the east in the morning and the west at night');
  const game=read('public/game.js');
  assert.match(game,/atmosphere\?\.hide\(true\);renderer\.render\(scene,mapCamera\);atmosphere\?\.hide\(false\);/,'no clouds in the map picture');
  assert.doesNotMatch(read('public/scenery.js'),/trailer_002/,'no loose red cultivator in the meadow');
@@ -74,4 +74,12 @@ test('goods: a tap on a building\'s yellow name collects everything ready on the
 });
 test('no flat water tiles anywhere: flat squares on the ground flickered when zooming and read as loose grey or cyan plates',()=>{
  for(const file of ['public/game.js','public/farm-life.js','public/farm-props.js','public/scenery.js'])assert.doesNotMatch(read(file),/water_001/,file);
+});
+test('the look of the loading screen\'s painted valley (6 Oct 2026): the same fresh grass, warm sand roads, a blue pond, deeper greens',()=>{
+ const game=read('public/game.js'),life=read('public/farm-life.js'),atlas=read('public/model-atlas.js');
+ assert.match(game,/const ground=patch\(0,0,600,600,0x8ebf62,0\);ground\.name='Farm ground';/,'set for the warmer sun, so the grass reads the same green as before');
+ assert.match(game,/if\(name==='road_001'\)obj\.traverse\(n=>\{if\(n\.isMesh\)n\.material=/,'the roads get their own sand-tinted copy of the palette material');
+ assert.match(game,/road\.color\.setRGB\(\.88,\.74,\.58\)/);
+ assert.match(life,/color:0x3aa3e3,roughness:\.35/,'clear blue water, not mint');
+ assert.match(atlas,/const current=`\$\{url\}\?v=\$\{PALETTE_VERSION\}`;/,'a returning farmer fetches the new palette at once');
 });
