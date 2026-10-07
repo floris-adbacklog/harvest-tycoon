@@ -21,9 +21,9 @@ let base=null,soft=null,villageBase=null;
 // asked for once more past the browser's cache (as fetchModel in game.js does for a model); if it still fails, the model fails to
 // load, and game.js puts its invisible stand-in there instead of an unpainted model.
 const PALETTE=/(^|\/)(village-)?palette\.png$/;
-// The palettes' colours change now and then (6 Oct 2026: deeper greens, like the loading screen's painted valley). /assets/ is kept
-// for a day, so the version makes a returning farmer fetch the new palette at once instead of painting with yesterday's.
-export const PALETTE_VERSION='20261006';
+// The palettes' colours change now and then (6 Oct 2026: deeper greens, like the loading screen's painted valley; 7 Oct: half of
+// that). /assets/ is kept for a day, so the version makes a returning farmer fetch the new palette at once instead of yesterday's.
+export const PALETTE_VERSION='20261007';
 const palettes=new Map();
 function paletteImage(loader,url){
  let image=palettes.get(url);

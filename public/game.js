@@ -214,12 +214,12 @@ async function addScenery(){
   buildScenery({scene,models,mobile:mobileLayout.matches});clearPropsFromMountains();renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
 }
-// The roads (6 Oct 2026): warm sand, like the paths of the loading screen's painted valley, instead of the pink of the shared
-// palette; one tinted copy of the material for every road, so the pink pigs and flowers keep the palette as it is.
+// The roads (6 Oct 2026, softer on 7 Oct): a warmer, sandier pink, towards the paths of the loading screen's painted valley; one
+// tinted copy of the material for every road, so the pink pigs and flowers keep the palette as it is.
 const roadMaterials=new Map();
 function roadMaterial(material){
  let road=roadMaterials.get(material);
- if(!road){road=material.clone();road.color.setRGB(.88,.74,.58);roadMaterials.set(material,road);}
+ if(!road){road=material.clone();road.color.setRGB(.94,.87,.79);roadMaterials.set(material,road);}
  return road;
 }
 function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
@@ -274,14 +274,14 @@ function decorate(){
  // Layout zones (public/farm-layout.js): each yard moves as one piece, the fields stay where they are.
  zone('fields');
  // Fresh grass green, wide enough that its edge is never in view: it runs on into the haze however far you pan or zoom out.
- // Set for the warmer, lower sun of 6 Oct 2026 so it looks the same green as before (scene-polish.js adds 7% and the mottling).
- const ground=patch(0,0,600,600,0x8ebf62,0);ground.name='Farm ground';
+ // Set for the light of 7 Oct 2026: the fresh green of before, a touch lighter (scene-polish.js adds 7% and the mottling).
+ const ground=patch(0,0,600,600,0x8cbc58,0);ground.name='Farm ground';
  // The crossing paths keep the four parts of the farm easy to read from the fixed camera.
  zone('exact');
  for(const road of ROADS.slice(0,3))cloneModel('road_001',road.x,road.z,{...roadSize(road),height:road.height,y:road.y});
- zone('fields');patch(2.575,14.4,12.8,31.7,0xaaca6a,.004).name='Crop meadow';
- zone('coop');patch(13,-9.5,15.8,11.6,0xa9bb78,.007);
- zone('mill');patch(-12.5,5.3,8.7,13,0xadbd7c,.004);
+ zone('fields');patch(2.575,14.4,12.8,31.7,0xa3be65,.004).name='Crop meadow';
+ zone('coop');patch(13,-9.5,15.8,11.6,0xa4b472,.007);
+ zone('mill');patch(-12.5,5.3,8.7,13,0xa8b676,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
  zone('dairy');addBuilding('dairy',-1,-13.2,{width:6.8,rotation:Math.PI/2});
  zone('silo');addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
@@ -1192,22 +1192,23 @@ async function init(){
  try{
   bindUI();updateUI();
   renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
-  renderer.setClearColor(0xdfeee2);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.22;
+  renderer.setClearColor(0xdeede6);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.32;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;});
   scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,300);   // far enough for the mountains at the edge when zoomed out
-  // Daylight with depth (6 Oct 2026, like the loading screen's painted valley): a soft sky, a warm sun a little lower than before
-  // for longer shadows, and less fill from the sky so the shade reads; the grass keeps its fresh green (the old warm-yellow sky,
-  // sun and haze made the whole valley beige, so the haze stays a light green-white). daylight.js moves it through the day.
-  const hemi=new THREE.HemisphereLight(0xd3e6ff,0x7f8a3a,1.5);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xffd9a3,3.95);sun.position.set(-26,18,14);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  // Sunny, cheerful daylight (7 Oct 2026: the farm should look fun and cheerful; halfway between the fresh light of before and the
+  // painted valley of the loading screen): a bright sky, a slightly warmer sun a little lower than before for longer, soft shadows
+  // (the old warm-yellow sky, sun and haze made the whole valley beige, so the haze stays a light green-white). daylight.js moves it
+  // through the day.
+  const hemi=new THREE.HemisphereLight(0xdcebff,0x778b40,1.95);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xffe3b7,3.45);sun.position.set(-26,20,14);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
   cropMotion=createCropMotion({scene,reducedMotion});
-  scene.fog=new THREE.Fog(0xdfeee2,60,150);
+  scene.fog=new THREE.Fog(0xdeede6,60,150);
   let loaded=0;
   if(villageWorld){
    // The village is three times as wide as the farm: fog further out, and the sun's shadows over all of it.
-   scene.fog=new THREE.Fog(0xdfeee2,105,180);sun.position.multiplyScalar(3);sun.shadow.camera.left=sun.shadow.camera.bottom=-95;sun.shadow.camera.right=sun.shadow.camera.top=95;sun.shadow.camera.far=320;sun.shadow.camera.updateProjectionMatrix();
+   scene.fog=new THREE.Fog(0xdeede6,105,180);sun.position.multiplyScalar(3);sun.shadow.camera.left=sun.shadow.camera.bottom=-95;sun.shadow.camera.right=sun.shadow.camera.top=95;sun.shadow.camera.far=320;sun.shadow.camera.updateProjectionMatrix();
    // The same shadow map over almost twice the width makes each shadow texel twice as big (0.09 units, 0.19 on phones): the farm's
    // normal bias (.035) left stripes over the rocks, walls and roofs (shadow acne). 1.3 texels of it (Oct 2026): .12, .24 on phones.
    sun.shadow.normalBias=1.3*190/sun.shadow.mapSize.x;

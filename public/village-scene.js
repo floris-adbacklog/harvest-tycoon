@@ -23,18 +23,21 @@ export const VILLAGE_UTILITIES=Object.freeze({
 // The cloud shadows' sheet (farm-atmosphere.js) just above the village's highest ground (hills to 12.7, rocks and trees to 15.7), so
 // the clouds drift over the whole valley; on the farm's height (.28) it lay under the hills. Only the mountain tops rise through it.
 export const VILLAGE_CLOUD_HEIGHT=16;
-// The look of the loading screen's painted village (6 Oct 2026): fresh green meadows, deeper trees and a clear blue lake.
+// The look of the loading screen's painted village (6 Oct 2026): fresh green meadows, deeper trees and a clear blue lake; since
+// 7 Oct 2026 as sunny and cheerful as the farm (its light, its palette grade: livelier trees, and a lighter blue lake).
 // The pack's hills and the grass edges of its paths sit on the seam between a green and a yellow cell of the palette (564 of
 // 1024 px across, the cells are 94 px), so the texture filter painted them two-fifths yellow: the lime meadows. They now read
 // the palette's white cell and carry their green in the vertex colours, times the baked shade, one green per row of the pack's
 // greens (row 4 its deepest, 7 its lightest). Nothing else in the village reads that seam.
-// The greens are the farm's grass (6 Oct 2026): the sunlit meadow renders like the farm's lit grass in the same light (about
-// #98c14e, hue 81, on desktop and phone), one valley; the pack's own greens made a saturated golf-course green (hue 97) beside
-// it. Lighter than the farm's ground colour (game.js), as the baked shade darkens them again; the trees stay the deeper green.
-export const VILLAGE_GRASS=Object.freeze({4:0x83bb5c,5:0x96cb66,6:0xabd574,7:0xbedf83});
+// The greens are the farm's grass: the sunlit meadow renders like the farm's lit grass in the same light, one valley; the pack's
+// own greens made a saturated golf-course green (hue 97) beside it. Set again for the farm's sunny light of 7 Oct 2026: at noon
+// the meadow renders #a3d259 (hue 83, lightness .59) against the farm's #a1d253 (hue 83, .58), on phones #a1d058 against #a1cf5b.
+// Lighter than the farm's ground colour (game.js), as the baked shade darkens them again; the trees keep the palette's green.
+export const VILLAGE_GRASS=Object.freeze({4:0x82b656,5:0x95c560,6:0xaacf6d,7:0xbcd97b});
 // The mountains' haze is the farm's (scene-polish.js, 0xe2ead0) since 6 Oct 2026, so both worlds' mountains fade into the same
-// air: the cool sky white before it faded them toward blue against the valley's green-white sky.
-export const VILLAGE_LAKE=0x2898f2,VILLAGE_HAZE=0xe2ead0;
+// air: the cool sky white before it faded them toward blue against the valley's green-white sky. The lake (7 Oct 2026) is halfway
+// between the pack's pale cyan (0x80deea) and the clear blue of 6 Oct (0x2898f2), as the farm's pond went from mint to 0x4eb1d2.
+export const VILLAGE_LAKE=0x54bbee,VILLAGE_HAZE=0xe2ead0;
 const PALETTE_PX=1024,CELL=94,SEAM=564,WHITE=[893/PALETTE_PX,982/PALETTE_PX];
 const grassTints=new Map(Object.entries(VILLAGE_GRASS).map(([row,hex])=>[Number(row),new THREE.Color(hex)]));   // linear, as vertex colours are
 function freshGrass(g){
@@ -54,8 +57,8 @@ export async function loadVillage({onProgress}={}){
   loader.loadAsync('/assets/village/village.glb',event=>{if(event.total)onProgress?.(event.loaded/event.total);}),
   fetch('/assets/village/village-layout.json').then(r=>{if(!r.ok)throw new Error('The village could not load.');return r.json();}),
   // village.glb carries its own copy of the pack's palette; the village paints from village-palette.png instead (6 Oct 2026),
-  // the one its props on the farm use, graded like the farm's palette (deeper greens) and versioned past a day-old cache. Without
-  // it the village keeps its own copy.
+  // the one its props on the farm use, graded like the farm's palette (7 Oct 2026: livelier greens, a touch fuller colours) and
+  // versioned past a day-old cache. Without it the village keeps its own copy.
   new THREE.ImageLoader().loadAsync(`/assets/models/village-palette.png?v=${PALETTE_VERSION}`).catch(()=>null)
  ]);
  if(palette){const maps=new Set();gltf.scene.traverse(o=>{if(o.isMesh&&o.material.map)maps.add(o.material.map);});for(const map of maps){map.image?.close?.();map.image=palette;map.needsUpdate=true;}}
@@ -69,7 +72,7 @@ export async function loadVillage({onProgress}={}){
   if(s){const c=new Uint8Array(s.count*4);for(let i=0;i<s.count;i++){c[i*4]=c[i*4+1]=c[i*4+2]=Math.round(s.getX(i)*255);c[i*4+3]=255;}g.setAttribute('color',new THREE.BufferAttribute(c,4,true));g.deleteAttribute('_shade');freshGrass(g);}
   o.material.roughness=1;o.material.metalness=0;o.material.vertexColors||=Boolean(g.getAttribute('color'));
   // The pack's water (its "Transparent" material: the lake and the stream down the mountains) was the palette's pale cyan at half
-  // strength, a milky green over the lake bed: now a clear blue with a little of the sun on it, like the farm's pond.
+  // strength, a milky green over the lake bed: now a sunny blue with a little of the sun on it, like the farm's pond.
   if(o.material.name==='Transparent'){o.material.map=null;o.material.color.setHex(VILLAGE_LAKE);o.material.opacity=.85;o.material.roughness=.35;}
  });
  // The farm's haze colour at half its strength (6 Oct 2026): the village's grey mountains then render in the farm's mountain tone

@@ -23,18 +23,14 @@ test('the farm\'s mood like the loading-screen art (6 Oct 2026): one layer right
  assert.match(base.body,/position:absolute;inset:0;pointer-events:none/,'taps and drags go straight through to the farm');
  assert.doesNotMatch(base.body,/backdrop-filter|filter:|opacity|mask/,'the layer itself is one still picture (and never cuts the blur off from the farm behind it)');
 });
-test('a faint haze towards the far side and deeper green corners: the grass keeps its green',()=>{
+test('a faint haze towards the far side and no dark corners: the farm looks fun and cheerful (7 Oct 2026)',()=>{
  const base=rules.find(r=>r.selector==='.vignette'&&!r.media).body;
  const haze=/linear-gradient\(180deg,#([0-9a-f]{6})([0-9a-f]{2}),#\1([0-9a-f]{2}) 15%,#\1(?:00) 34%\)/.exec(base);
  assert.ok(haze,'the haze fades out over the top third of the screen (the farthest away)');
  const [r,g,b]=[0,2,4].map(i=>parseInt(haze[1].slice(i,i+2),16));
  assert.ok(r>=g&&g>b&&b>=180,'warm sunlight, pale enough to read as air and not as yellow paint');
  assert.ok(parseInt(haze[2],16)<=0x1a,'barely there: a stronger haze turned the top of the valley milky and khaki (6 Oct 2026)');
- const corner=/radial-gradient\(ellipse 75% 70% at 50% 52%,#([0-9a-f]{6})00 58%,#\1([0-9a-f]{2})\)/.exec(base);
- assert.ok(corner,'darker corners, like the painted valley');
- const [cr,cg,cb]=[0,2,4].map(i=>parseInt(corner[1].slice(i,i+2),16));
- assert.ok(cg>cr&&cg>cb,'a deep green shade, so the corners turn a richer green instead of grey');
- assert.ok(parseInt(corner[2],16)<=0x50,'soft');
+ assert.doesNotMatch(base,/radial-gradient/,'no dark corners: they made the farm look gloomy');
 });
 test('the gentle blur at the top and bottom edges only on computers: never on phones, tablets, in the apps or with less transparency asked',()=>{
  const blurred=rules.filter(r=>/backdrop-filter/.test(r.body));

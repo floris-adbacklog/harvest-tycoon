@@ -19,14 +19,14 @@ b,strong{font-weight:700}
 /* The game frame scrolls but never zooms as a page; the 3D field (canvas, touch-action:none) handles its own pinch (src/page-zoom.js). */
 html,body{touch-action:pan-x pan-y}
 *{box-sizing:border-box}body{margin:0}button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}button:disabled{cursor:default}button:focus-visible{outline:3px solid #e4a530;outline-offset:4px}button,progress{touch-action:manipulation}button svg{width:21px;height:21px;stroke-width:1.8}h1,h2,h3,p{margin:0}button{transition:background .15s,box-shadow .15s}button:hover:not(:disabled){filter:brightness(1.03)}button:active:not(:disabled){filter:brightness(.97)}[hidden]{display:none!important}#game{height:100svh;min-height:650px;position:relative;overflow:hidden}#world{position:absolute;inset:0;background:#cab091}#world canvas{display:block;outline:none;touch-action:none}
-/* The farm's mood, like the loading screen's painted valley (6 Oct 2026), on the farm and in the village: a soft warm haze towards the
-   far side (the top of the screen is the farthest away), deeper green corners and, on computers only, a gentle blur along the top and
-   bottom edges. One layer right on the 3D view: it comes before every label, button and window in the page and has no z-index, so
-   all of them stay sharp on top of it. The map picture and the farm photo are copied from the 3D view itself, so neither has it. The
-   haze is barely there (a stronger one turned the top of the valley milky and khaki) and the corners are green, so the grass keeps
-   its green. The blur stops above 1920 px wide: on a big retina screen it costs more each frame than it is worth. Phones, tablets and the apps keep the haze and the corners
-   (one still picture, painted once) but never the blur, which is redone with every frame of the farm. */
-.vignette{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#fbf6e21a,#fbf6e208 15%,#fbf6e200 34%),radial-gradient(ellipse 75% 70% at 50% 52%,#0e280c00 58%,#0e280c3a),radial-gradient(ellipse 78% 72% at 50% 50%,transparent 58%,#22301c24 88%,#1a26143d 100%)}
+/* The farm's mood (6 Oct 2026, lighter on 7 Oct: the farm should look fun and cheerful), on the farm and in the village: a faint warm
+   haze towards the far side (the top of the screen is the farthest away) and, on computers only, a gentle blur along the top and
+   bottom edges, like a toy landscape. No dark corners: they made the farm look gloomy. One layer right on the 3D view: it comes
+   before every label, button and window in the page and has no z-index, so all of them stay sharp on top of it. The map picture and
+   the farm photo are copied from the 3D view itself, so neither has it. The haze is barely there (a stronger one turned the top of
+   the valley milky and khaki). The blur stops above 1920 px wide: on a big retina screen it costs more each frame than it is worth.
+   Phones, tablets and the apps keep the haze (one still picture, painted once) but never the blur, which is redone every frame. */
+.vignette{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#fbf6e20d,#fbf6e204 15%,#fbf6e200 34%)}
 @media(pointer:fine) and (hover:hover) and (min-width:901px) and (max-width:1920px){
  html:not([data-app]):not([data-app-mode]) .vignette::before,html:not([data-app]):not([data-app-mode]) .vignette::after{content:'';position:absolute;left:0;right:0;-webkit-backdrop-filter:blur(2.5px);backdrop-filter:blur(2.5px)}
  html:not([data-app]):not([data-app-mode]) .vignette::before{top:0;height:16%;-webkit-mask-image:linear-gradient(#000,#0000);mask-image:linear-gradient(#000,#0000)}

@@ -36,11 +36,11 @@ function groundTexture(size,rand,anisotropy,tile){
  const n1=tileableNoise(size,4,rand),n2=tileableNoise(size,9,rand),n3=tileableNoise(size,24,rand);
  const canvas=makeCanvas(size),ctx=canvas.getContext('2d'),img=ctx.createImageData(size,size);
  for(let i=0;i<size*size;i++){
-  // Deeper mottling (6 Oct 2026): light and dark patches 1.8 times as far apart, so the meadow has depth instead of one flat green.
-  const v=.5*n1[i]+.3*n2[i]+.2*n3[i],shade=.784+.342*clamp01((v-.25)*2);
-  img.data[i*4]=Math.min(255,shade*(1+(n2[i]-.5)*.216)*255);
+  // Deeper mottling (7 Oct 2026): light and dark patches 1.4 times as far apart as before, so the meadow is less flat (1.8 was too much).
+  const v=.5*n1[i]+.3*n2[i]+.2*n3[i],shade=.822+.266*clamp01((v-.25)*2);
+  img.data[i*4]=Math.min(255,shade*(1+(n2[i]-.5)*.168)*255);
   img.data[i*4+1]=Math.min(255,shade*255);
-  img.data[i*4+2]=Math.min(255,shade*(1-(n1[i]-.5)*.36)*255);
+  img.data[i*4+2]=Math.min(255,shade*(1-(n1[i]-.5)*.28)*255);
   img.data[i*4+3]=255;
  }
  ctx.putImageData(img,0,0);
