@@ -186,7 +186,7 @@
 .wiki-page .wiki-crumbs{margin:0 0 14px;font-size:14px}
 .wiki-page .wiki-cta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 0;padding:16px;border-radius:14px;background:#eef5e6}
 .wiki-page .wiki-cta p{margin:0;font-weight:700}
-.wiki-page .wiki-cta a{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border:1px solid #2d5137;border-radius:12px;background:#3f6b4a;box-shadow:0 3px 0 #25462e;color:#fffef3;text-decoration:none}
+.wiki-page .wiki-cta a{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border:1px solid #316c3a;border-radius:12px;background:#3f8a4a;box-shadow:0 3px 0 #2b5e32;color:#fffef3;text-decoration:none}
 
 /* "Back to my farm" under the wiki gets room to breathe. */
 #help-dialog .guide-done{margin-top:24px}

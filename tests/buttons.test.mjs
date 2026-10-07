@@ -11,7 +11,7 @@ test('one button style is loaded after the screens\' own styles, before the menu
 });
 
 test('the kinds: main green, second cream, light blue for diamonds, gold for money, red for what is hard to undo, and off',()=>{
- assert.match(css,/--btn-main:#3f6b4a/);
+ assert.match(css,/--btn-main:#3f8a4a;/,'a lighter, cheerful leaf green (7 Oct 2026), still readable with white text');
  assert.match(css,/#boost-dialog \.boost-buy\{\n background:var\(--btn-diamond\)/);
  for(const kind of ['main','second','diamond','gold','red'])assert.match(css,new RegExp(`background:var\\(--btn-${kind}\\)`),kind);
  assert.match(css,/\.primary-button,\n\.collect-all-panel \.primary-button/);

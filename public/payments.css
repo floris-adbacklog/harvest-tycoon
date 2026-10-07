@@ -45,7 +45,7 @@
 .pack-amount b{font:700 26px/1.05 'Outfit',sans-serif;letter-spacing:-.3px;color:#3b2c12}
 .pack-amount small{margin-top:3px;font:700 12px/1.2 'DM Sans',sans-serif;color:#8a7443;text-transform:capitalize}
 #diamond-packs .diamond-pack>.game-art{width:100%;max-width:112px;height:auto;aspect-ratio:1;margin:8px auto 10px;object-fit:contain}
-.pack-price{display:block;width:100%;margin-top:auto;padding:9px 6px;border:1px solid #2d5137;border-radius:11px;background:#3f6b4a;box-shadow:0 2px 0 #25462e;color:#fffef3;font:700 19px/1.1 'Outfit',sans-serif;box-sizing:border-box}
+.pack-price{display:block;width:100%;margin-top:auto;padding:9px 6px;border:1px solid var(--btn-main-line,#316c3a);border-radius:11px;background:var(--btn-main,#3f8a4a);box-shadow:0 2px 0 var(--btn-main-edge,#2b5e32);color:#fffef3;font:700 19px/1.1 'Outfit',sans-serif;box-sizing:border-box}
 #diamond-packs .diamond-pack:hover:not(:disabled) .pack-price{background:#355d3f}
 #diamond-packs .diamond-pack[data-state="opening"] .pack-price{background:#e2eddc;border-color:#b5d4b3;box-shadow:none;color:#365e42;font-size:15px}
 #diamond-packs .diamond-pack[data-state="unavailable"] .pack-price{background:#e4e9df;border-color:#ccd5c3;box-shadow:none;color:#697661;font-size:15px}

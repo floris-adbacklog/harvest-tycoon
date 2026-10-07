@@ -1,10 +1,11 @@
 /* One button style for the whole game, loaded after the screens' own styles:
    main (green) for the thing to do, second (cream) for the other choices, light blue for spending diamonds, gold for real
    money, red for what is hard to undo, and the round icon buttons. All share the corners, bold text and an edge underneath that sinks when pressed; a button that
-   is off looks the same everywhere. Sizes and spacing stay with each screen. */
+   is off looks the same everywhere. Sizes and spacing stay with each screen. The main green is a lighter, cheerful leaf green
+   (7 Oct 2026: the game should look fun and cheerful; it was a dark forest green #3f6b4a), still clearly readable with white text. */
 :root{
  --btn-radius:12px;
- --btn-main:#3f6b4a;--btn-main-hover:#365e42;--btn-main-line:#2d5137;--btn-main-edge:#25462e;--btn-main-text:#fffef3;
+ --btn-main:#3f8a4a;--btn-main-hover:#397c43;--btn-main-line:#316c3a;--btn-main-edge:#2b5e32;--btn-main-text:#fffef3;
  --btn-second:#f7f0e3;--btn-second-hover:#f0e5d1;--btn-second-line:#d9c7a4;--btn-second-edge:#e2d3b3;--btn-second-text:#5b4520;
  --btn-diamond:#e3f3fd;--btn-diamond-hover:#cdeafb;--btn-diamond-line:#9fc4da;--btn-diamond-edge:#b8d6e6;--btn-diamond-text:#1f5877;
  --btn-gold:#e3a53c;--btn-gold-hover:#d8982d;--btn-gold-line:#b07a22;--btn-gold-edge:#9c6214;--btn-gold-text:#3f2806;
