@@ -304,7 +304,8 @@ export const BEGINNER_QUESTS=Object.freeze([
  {id:'harvest',title:'Your first basket',description:'Sweep across your ripe corn to harvest it, or tap one.',guide:'harvest',icon:'shopping-basket'},
  {id:'sell',title:'Your first market sale',description:'Open Market and sell some corn. Save your animal feed for the chickens.',guide:'market',icon:'store'},
  {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
- {id:'water',title:'A little water goes a long way',description:'Use Water on one growing crop. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
+ // 7 Oct 2026: water works only in a crop's first minute, and the starter wheat is past it (9 of 38 new farmers who planted never watered).
+ {id:'water',title:'A little water goes a long way',description:'Plant wheat and water it within a minute. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
  {id:'produce',title:'Put your buildings to work',description:'Start a production batch. Try Feed the chickens in the Chicken Coop using your starter feed.',guide:'produce',icon:'egg'},
  {id:'gift',title:'A gift for showing up',description:'Open Today and collect your daily gift. Come back tomorrow for the next one and 30 minutes of double harvest.',guide:'today',icon:'gift'},
  {id:'chore',title:'A helping hand',description:'Complete one Farm chore for extra coins while your crops and buildings work.',guide:'chores',icon:'shovel'},
@@ -313,28 +314,49 @@ export const BEGINNER_QUESTS=Object.freeze([
  {id:'collect',title:'Made on your farm',description:'Collect a finished batch from a building. Chicken feed becomes eggs in 5 minutes.',guide:'collect',icon:'package-check'}
 ]);
 function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>q.id==='chore'?{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. Save the coins for your next building. Hands-on jobs open at level 8.',guide:'eggs',icon:'egg'}:q):BEGINNER_QUESTS;}
-export function beginnerProgress(state){
- const guide=state.onboarding??{completed:0,milestones:{}};
- return beginnerQuests(state).map((quest,index)=>({...quest,index,done:index<guide.completed,current:index===guide.completed,ready:!!guide.milestones[quest.id]}));
+// Step 10 says how long the eggs take on this farm now (7 Oct 2026: it said 5 minutes, where the beginner boost makes it about 1),
+// to the nearest 5 seconds.
+export function beginnerProgress(state,now=Date.now()){
+ const guide=state.onboarding??{completed:0,milestones:{}},eggs=state.buildings?.coop?formatDuration(Math.round(recipeDuration(state,'eggs',now)/5000)*5000):'5m';
+ return beginnerQuests(state).map((quest,index)=>({...quest,...(quest.id==='collect'?{description:`Collect a finished batch from a building. Chicken feed becomes eggs in ${eggs}.`}:{}),index,done:index<guide.completed,current:index===guide.completed,ready:!!guide.milestones[quest.id]}));
 }
 // Guide steps finish themselves as soon as the farmer has done them (many never found the "Complete step" button and
-// stayed on step 1); only the last step, with the diamonds, is collected by hand.
-function advanceBeginner(state){
+// stayed on step 1); only the last step, with the diamonds, is collected by hand. stepAt: when each step was finished (7 Oct 2026,
+// to see where new farmers stop).
+function advanceBeginner(state,now=Date.now()){
  const guide=state.onboarding,quests=beginnerQuests(state),done=[];
  while(guide&&!guide.rewardClaimed&&guide.completed<quests.length-1&&guide.milestones[quests[guide.completed].id]){
-  const quest=quests[guide.completed];guide.completed++;state.xp+=BEGINNER_STEP_XP;done.push({step:quest.id,title:quest.title,xp:BEGINNER_STEP_XP});
+  const quest=quests[guide.completed];guide.completed++;(guide.stepAt??={})[quest.id]=now;state.xp+=BEGINNER_STEP_XP;done.push({step:quest.id,title:quest.title,xp:BEGINNER_STEP_XP});
  }
  return done;
 }
-export function claimBeginnerQuest(state,id){
+export function claimBeginnerQuest(state,id,now=Date.now()){
  const guide=state.onboarding,quest=beginnerQuests(state)[guide.completed];
  if(!quest||guide.rewardClaimed)throw new Error('Your beginner guide is already complete.');
  if(id!==quest.id)throw new Error('Complete the current beginner step first.');
  if(!guide.milestones[quest.id])throw new Error('Try this farming action before completing the step.');
- guide.completed++;state.xp+=BEGINNER_STEP_XP;
+ guide.completed++;(guide.stepAt??={})[quest.id]=now;state.xp+=BEGINNER_STEP_XP;
  const diamonds=guide.completed===BEGINNER_QUESTS.length?BEGINNER_REWARD:0;
  if(diamonds){state.diamonds+=diamonds;guide.rewardClaimed=true;}
  return {step:quest.id,completed:guide.completed,total:BEGINNER_QUESTS.length,diamonds,xp:BEGINNER_STEP_XP};
+}
+// A new farm's first look (7 Oct 2026, the CrazyGames launch: did players leave while the farm loaded, or after they saw it?), kept
+// once in state.onboarding.firstLook. The game sends it along with a farm action (action.look): when the farm page was first drawn
+// (shownAt) and the farm could be played (readyAt), how long each took from the start of the page around it (loadMs, readyMs), the
+// frame's size in steps of 10 px (frame, '960x540') and the first touch (firstInputAt, and firstInputMs: how long after readyAt, on the
+// device's own clock). The times are the device's clock and sentAt is when the request left it: they move by the server's now minus
+// sentAt (the game's own idea of server time ran behind by the farm page's start-up), so each is late by its request's trip to the server,
+// which is why the time to the first touch is a duration of its own. Without sentAt they count as the server's. Each part is kept once:
+// a time only within the last day and never ahead of the server, a duration up to 10 minutes; anything else is left out.
+export const FIRST_LOOK_MAX_MS=600000;
+export function recordFirstLook(state,look,now=Date.now()){
+ if(!look||typeof look!=='object'||!state.onboarding)return;
+ const shift=Number.isFinite(look.sentAt)?now-look.sentAt:0;
+ const time=v=>Number.isFinite(v)&&v+shift>now-DAY_MS&&v+shift<now+60000?Math.min(Math.round(v+shift),now):undefined;
+ const span=v=>Number.isFinite(v)&&v>=0?Math.min(Math.round(v),FIRST_LOOK_MAX_MS):undefined;
+ const parts={shownAt:time(look.shownAt),loadMs:span(look.loadMs),readyAt:time(look.readyAt),readyMs:span(look.readyMs),frame:typeof look.frame==='string'&&/^\d{2,5}x\d{2,5}$/.test(look.frame)?look.frame:undefined,firstInputAt:time(look.firstInputAt),firstInputMs:span(look.firstInputMs)};
+ const seen={...state.onboarding.firstLook};for(const [key,value] of Object.entries(parts))if(value!==undefined&&seen[key]===undefined)seen[key]=value;
+ if(Object.keys(seen).length)state.onboarding.firstLook=seen;
 }
 function recordBeginnerAction(state,action,result,before){
  const m=state.onboarding.milestones;
@@ -935,11 +957,14 @@ export function cropDuration(state,crop,regrowing=false,now=Date.now()){return M
 export const WATER_MIN_MS=60000;
 export function waterUntil(plot){return Math.max(plot.careAt??plot.plantedAt??0,(plot.plantedAt??0)+WATER_MIN_MS);}
 export function canWater(plot,now=Date.now()){return !!plot.crop&&!plot.watered&&now<plot.readyAt&&now<waterUntil(plot);}
-export function fieldTapAction(plot,now=Date.now(),tool='plant'){
+// picked: the farmer chose the tool themselves (not the tool bar following the last tap). Water chosen on a crop that can no longer
+// take water does nothing (7 Oct 2026: it gave care instead and switched the tool, and new farmers never finished the water step).
+export function fieldTapAction(plot,now=Date.now(),tool='plant',picked=false){
  if(!plot.crop)return 'plant';
  if(now>=plot.readyAt)return 'harvest';
  const canTend=!plot.tended&&now>=(plot.careAt??plot.plantedAt),watering=canWater(plot,now);
  if(tool==='water'&&watering)return 'water';
+ if(tool==='water'&&picked)return null;
  if(tool==='tend'&&canTend)return 'tend';
  return canTend?'tend':watering?'water':null;
 }
@@ -947,7 +972,8 @@ export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0)
 // What a harvest gives right now: Double harvest doubles every harvest while it runs (also a crop that ripened before it started).
 export function harvestBoostActive(state,now=Date.now()){return state.boosts?.harvestUntil>now;}
 export function harvestQuantity(state,plot,now=Date.now()){return harvestYield(plot)*(harvestBoostActive(state,now)?2:1);}
-export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
+// Under 2 minutes with its seconds (7 Oct 2026: a 61-second batch read "2m"); from there whole minutes, rounded up.
+export function formatDuration(ms){const s=Math.max(0,Math.ceil(ms/1000));if(s<60)return `${s}s`;if(s<120)return `1m${s>60?` ${s-60}s`:''}`;const m=Math.ceil(s/60);if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h${m%60?` ${m%60}m`:''}`;return `${Math.floor(h/24)}d${h%24?` ${h%24}h`:''}`;}
 export function cropIcon(key){return CROPS[key].art??`/assets/icons/${CROPS[key].icon??key}.png`;}
 // Fields 13-20 keep their prices. Later coin costs rise steadily; estate materials and levels add the challenge.
 const LATE_FIELD_COSTS=Object.freeze([45000,65000,90000,120000,155000,190000,225000,260000]);
@@ -2530,6 +2556,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state);
  const beginnerBefore={harvested:state.stats.harvested,wheat:state.stats.harvest_wheat??0,watered:state.stats.watered,tended:state.stats.tended};
  const result=dispatchFarmAction(state,action,now,random);
+ if(action.look)recordFirstLook(state,action.look,now);
  // Coins spent (seeds, buildings, upgrades, fields, research…), for the farm events' "Spend coins" goal (26 Sep 2026).
  const spent=beforeCoins-state.coins;if(spent>0&&!NO_EVENT_ACTIONS.has(action.type))state.stats.coins_spent=(state.stats.coins_spent??0)+spent;
  recordBeginnerAction(state,action,result,beginnerBefore);
@@ -2539,7 +2566,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
   const bonus=state.coins-beforeCoins;if(bonus>0){state.coins+=bonus;state.stats.earned+=bonus;result.coins+=bonus;}
  }
  // After the boosts, so an action's own XP stays its own: the guide step's XP is shown by itself.
- const guideSteps=advanceBeginner(state);if(guideSteps.length)result.guide=guideSteps;
+ const guideSteps=advanceBeginner(state,now);if(guideSteps.length)result.guide=guideSteps;
  const reward=grantLevelRewards(state,beforeLevel+1);
  if(reward.levels.length)result.levelReward=reward;
  stampStarterOffer(state,beforeLevel,now);
@@ -2583,7 +2610,9 @@ function dispatchFarmAction(state,action,now,random){
   case 'expand':return expandFarm(state);
   case 'quest':return claimQuest(state,action.id);
   case 'village_quest':return claimVillageQuest(state,action.id);
-  case 'beginner_claim':return claimBeginnerQuest(state,action.id);
+  case 'beginner_claim':return claimBeginnerQuest(state,action.id,now);
+  // Only carries the first-look markers (action.look, recordFirstLook) when no other action took them along.
+  case 'first_look':return {};
   case 'daily':return claimDaily(state,action.id,action.day,now);
   case 'checkin':return checkIn(state,now);
   case 'comeback':return collectComeback(state,now);

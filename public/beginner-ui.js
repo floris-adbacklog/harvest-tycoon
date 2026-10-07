@@ -1,12 +1,34 @@
-import {BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,beginnerProgress} from './farm-state.js';
+import {BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,beginnerProgress,productionJobs,formatDuration} from './farm-state.js';
+import {farmNow} from './farm-client.js';
 import {art} from './visual-icons.js';
 
 // What to do now, in the phone's one-line banner (6 Oct 2026: it said only the step's title, and the instruction was a tap away; only 7
 // of 16 farmers on a phone made the first market sale).
-const DO_NOW={harvest:'Harvest the ripe corn',sell:'Sell corn in Market',plant:'Plant wheat in an empty field',water:'Water a growing crop',produce:'Start a batch in the Chicken Coop',gift:'Collect your gift in Today',chore:'Do a farm chore',tend:'Give care to a growing crop',wheat:'Harvest a ripe wheat field',collect:'Collect a finished batch'};
+const DO_NOW={harvest:'Harvest the ripe corn',sell:'Sell corn in Market',plant:'Plant wheat in an empty field',water:'Plant wheat, then water it',produce:'Start a batch in the Chicken Coop',gift:'Collect your gift in Today',chore:'Do a farm chore',tend:'Give care to a growing crop',wheat:'Harvest a ripe wheat field',collect:'Collect a finished batch',
+ // A guided farm sells an egg at step 7 instead of a chore (7 Oct 2026: its banner said only "An egg opens new doors").
+ sell_egg:'Collect eggs at the Coop, then sell one in Market'};
+// What to do now when it depends on the farm (7 Oct 2026: step 7 waited about a minute for eggs and nothing said how long). Step 7: the
+// eggs on their way (and how long), waiting at the Coop, or ready to sell; step 10: how long the batch still takes. Short, so the
+// phone's one-line banner shows it whole. null: the step's own line (DO_NOW).
+export function liveStep(state,id,now){
+ if(id==='sell_egg'){
+  if(state.inventory?.eggs>0)return 'Sell an egg in Market';
+  const jobs=productionJobs(state.buildings?.coop);if(!jobs.length)return null;
+  return jobs.some(j=>j.readyAt<=now)?'Collect eggs at the Coop':`Eggs in ${formatDuration(Math.min(...jobs.map(j=>j.readyAt))-now)}, then sell one`;
+ }
+ const jobs=id==='collect'?Object.values(state.buildings??{}).flatMap(productionJobs):[];
+ return jobs.length&&!jobs.some(j=>j.readyAt<=now)?`Batch ready in ${formatDuration(Math.min(...jobs.map(j=>j.readyAt))-now)}`:null;
+}
 export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished}){
  const $=id=>document.getElementById(id),dialog=$('beginner-dialog');
- let busy=false,lastMarkup='',finaleShown=false,lastStep=null,marketTimer=0;
+ let busy=false,lastMarkup='',finaleShown=false,lastStep=null,marketTimer=0,lastBanner='';
+ function banner(steps,current,done){
+  const text=`Step ${Math.min(done+1,steps.length)} of 10 · ${current?.ready?'Ready to complete':liveStep(state,current?.id,farmNow())??DO_NOW[current?.id]??current?.title??'Guide complete'}`;
+  // Only when the English line changed: the page translates it in place, so its text is not compared.
+  if(text!==lastBanner){lastBanner=text;$('beginner-mobile-copy').textContent=text;}
+ }
+ // Twice a second (public/game.js): only the banner, for its batch time, and only while it is on screen (phones).
+ function tick(){if($('beginner-mobile').hidden||!$('beginner-mobile').getClientRects().length)return;const steps=beginnerProgress(state);banner(steps,steps.find(q=>q.current),steps.filter(q=>q.done).length);}
  function refresh(){
   const steps=beginnerProgress(state),current=steps.find(q=>q.current),done=steps.filter(q=>q.done).length,complete=done===steps.length;
   const finished=complete&&state.onboarding?.rewardClaimed===true;
@@ -14,7 +36,7 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   document.querySelectorAll('[data-menu-action="all-quests-mobile"]').forEach(el=>el.hidden=finished);
   if(finished&&dialog.open)dialog.close();
   $('game').classList.toggle('beginner-active',!complete);$('beginner-mobile').hidden=complete;$('beginner-mobile').classList.toggle('is-ready',!!current?.ready);
-  $('beginner-mobile-copy').textContent=`Step ${Math.min(done+1,steps.length)} of 10 · ${current?.ready?'Ready to complete':DO_NOW[current?.id]??current?.title??'Guide complete'}`;
+  banner(steps,current,done);
   // Right after the first harvest the guide shows the way to the Market by itself (6 Oct 2026: 62% of the farmers who harvested never
   // made the first sale and left): the same pointer as Show me, a moment after the harvest, when no window is open.
   if(lastStep==='harvest'&&current?.id==='sell'){clearTimeout(marketTimer);marketTimer=setTimeout(()=>{if(!document.querySelector('dialog[open]')&&beginnerProgress(state).find(q=>q.current)?.id==='sell')guide('market');},1800);}
@@ -63,5 +85,5 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   }
   if(current?.index===BEGINNER_QUESTS.length-1&&current.ready&&!finaleShown){finaleShown=true;open();}
  }
- refresh();return {open,refresh,afterAction};
+ refresh();return {open,refresh,afterAction,tick};
 }

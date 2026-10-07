@@ -49,7 +49,9 @@ test('what a sweep shows field by field is exactly what its one request does on 
  const sweep=client.sweep('harvest','corn');for(const id of ids)assert.ok(sweep.add(id));const total=sweep.end();
  const result=applyFarmAction(server,{type:'fields',action:'harvest',ids,crop:'corn'},farmNow());
  for(const key of ['coins','diamonds','xp','inventory','levelRewards'])assert.deepEqual(state[key],server[key],key);
- assert.deepEqual(state.stats.harvested,server.stats.harvested);assert.deepEqual(state.onboarding,server.onboarding);
+ assert.deepEqual(state.stats.harvested,server.stats.harvested);
+ // When each guide step was finished (onboarding.stepAt, 7 Oct 2026) is each side's own clock.
+ const {stepAt:shownAt,...shown}=state.onboarding,{stepAt:savedAt,...saved}=server.onboarding;assert.deepEqual(shown,saved);assert.deepEqual(Object.keys(shownAt),Object.keys(savedAt));
  assert.deepEqual(total.fields,result.fields);assert.equal(total.count,result.count);
  assert.ok(total.fields[0].firstHarvest,'the golden first harvest lands on the first swept field');
  assert.deepEqual(total.guide.map(g=>g.id),result.guide.map(g=>g.id));assert.deepEqual(total.levelReward,result.levelReward);

@@ -24,7 +24,8 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  // While the Halloween Pass counts (Oct 2026), today's gift, each challenge and each order also show the lanterns they bring (public/pass-ui.js).
  const giftChips=g=>rewardChips({diamonds:g.diamonds,coins:g.coins},(g.boost?boostChip(g.boost,g.boostMs):'')+(g.day?lanternChip(state,'gift',farmNow()):''));
  async function collectGift(){
-  const r=await act({type:'checkin'},r=>`Welcome back! +${r.diamonds} diamonds and +${r.coins.toLocaleString('en-US')} coins · ${r.streak}-day streak${r.saved?' (saved)':''}.${r.boost?` Plus ${boostName(r.boost,r.boostMinutes*60000)}!`:''}${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''}`);
+  // Day 1 (7 Oct 2026): no "Welcome back!" in a new farmer's first minute, and a reason to come back tomorrow.
+  const r=await act({type:'checkin'},r=>r.streak===1?`Day 1 gift! +${r.diamonds} diamonds and +${r.coins.toLocaleString('en-US')} coins.${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''} Come back tomorrow for day 2.`:`Welcome back! +${r.diamonds} diamonds and +${r.coins.toLocaleString('en-US')} coins · ${r.streak}-day streak${r.saved?' (saved)':''}.${r.boost?` Plus ${boostName(r.boost,r.boostMinutes*60000)}!`:''}${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''}`);
   // Every seventh day of a streak (7, 14, 21 ...) gets its own little celebration.
   if(r&&r.streak%7===0)celebrate(r);
   return r;

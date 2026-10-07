@@ -26,7 +26,10 @@ test('a tool picked on purpose goes first when it fits; otherwise the tap still 
  const overlap={crop:'wheat',plantedAt:now-20000,readyAt:now+4000,careAt:now-13000,watered:false,tended:false};
  assert.equal(fieldTapAction(overlap,now),'tend','both possible (a beginner crop): care first');
  assert.equal(fieldTapAction(overlap,now,'water'),'water','Water picked: water');
- assert.equal(fieldTapAction(crop(12),now,'water'),'tend','too late to water: the tap gives care instead');
+ assert.equal(fieldTapAction(crop(12),now,'water'),'tend','Water only lit up after the last tap: too late to water, so care');
+ // Water chosen by the farmer (7 Oct 2026): too late or already watered does nothing (the game says why), and never switches to care.
+ assert.equal(fieldTapAction(crop(12),now,'water',true),null);assert.equal(fieldTapAction(crop(2,{watered:true,careAt:now-M}),now,'water',true),null);
+ assert.equal(fieldTapAction(crop(2),now,'water',true),'water');assert.equal(fieldTapAction({crop:null},now,'water',true),'plant');assert.equal(fieldTapAction(crop(30),now,'water',true),'harvest');
  assert.equal(fieldTapAction(crop(2),now,'tend'),'water','care not open: the tap waters instead of failing');
 });
 test('the server refuses late water with a clear reason, and the tractor only waters crops that can still take it',()=>{
@@ -39,10 +42,14 @@ test('the server refuses late water with a clear reason, and the tractor only wa
 });
 test('the game uses it for every tap, and says so in the hint',()=>{
  const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
- assert.match(game,/const action=forcedAction\?\?fieldTapAction\(plot,farmNow\(\),selectedTool\);/);
+ assert.match(game,/const action=forcedAction\?\?fieldTapAction\(plot,farmNow\(\),selectedTool,toolPicked\);/);
  assert.match(game,/or a growing crop to water it and give extra care when it is ready/);
  // The tool bar follows what a tap did (not bulk actions from the tractor or the assistant).
- assert.match(game,/if\(!forcedAction\)showTool\(action\);/);assert.match(game,/function showTool\(tool\)\{if\(tool!==selectedTool\)setTool\(tool\);/);
+ assert.match(game,/if\(!forcedAction&&!\(action==='plant'&&selectedTool==='water'&&toolPicked\)\)showTool\(action\);/,'planting with Water chosen keeps Water');
+ assert.match(game,/function showTool\(tool\)\{if\(tool!==selectedTool\)setTool\(tool,false\);/);assert.match(game,/function setTool\(tool,picked=true\)\{selectedTool=tool;toolPicked=picked;/);
+ assert.match(game,/const WATER_FIRST_MINUTE="Water works in a crop's first minute: plant wheat, then water it\.";/);
+ // A crop that already had its care falls through to the line below (review, 7 Oct 2026: it was told to give care).
+ assert.match(game,/if\(!action&&selectedTool==='water'&&toolPicked\)\{const why=plot\.watered\?'Already watered\. Your crop is growing nicely\.':beginnerProgress\(state\)\.some\(q=>q\.id==='water'&&!q\.done\)\?WATER_FIRST_MINUTE:plot\.tended\?'':'Water right after planting\. This crop is past that; give it extra care instead\.';if\(why\)\{toast\(why\);return \{error:'too late to water'\};\}\}/);
  // Nothing to do yet: what comes next and when, in two plain sentences.
  assert.match(game,/toast\(`\$\{name\}: \$\{plot\.tended\?'fully cared for':`extra care opens in \$\{formatDuration\(plot\.careAt-now\)\}`\}\. Ready to harvest in \$\{formatDuration\(plot\.readyAt-now\)\}\.`\)/);
 });

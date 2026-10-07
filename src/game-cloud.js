@@ -41,7 +41,13 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   document.body.hidden=false;
   const watch=watchLoading(bridge,portal,{translate:()=>void startTranslation(document)});
   // Our loading screen is on screen now: the page around takes its own away once it is drawn (public/loading-screen.js farmHandOver).
+  // A new farm's first look (7 Oct 2026, the CrazyGames launch): the start of the page around this frame (play.html, crazygames.html)
+  // and the frame's size in steps of 10 px right away, then when the farm page was first drawn and how long that took (shownAt, loadMs).
+  // A tab in the background draws nothing, so only those two wait for a drawn frame. public/game.js sends it with the farm's first request.
   const nextFrame=globalThis.requestAnimationFrame??(fn=>setTimeout(fn,0));
+  let started=globalThis.performance?.timeOrigin;try{started=window.parent.performance.timeOrigin||started;}catch{}
+  const step=n=>Math.round((n||0)/10)*10,look=window.harvestFirstLook={...(started?{started}:{}),frame:`${step(globalThis.innerWidth)}x${step(globalThis.innerHeight)}`};
+  nextFrame(()=>nextFrame(()=>{const now=Date.now();Object.assign(look,{shownAt:now,...(started?{loadMs:Math.round(now-started)}:{})});}));
   nextFrame(()=>nextFrame(()=>{try{window.parent.harvestFarmShown?.();}catch{}}));
   // The game takes the first farm over (and clears harvestInitialFarm); the pop-ups only need its start time (the first half hour).
   const firstState=window.harvestInitialFarm.state;

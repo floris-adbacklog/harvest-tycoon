@@ -17,9 +17,10 @@ test('the first minute: fields up close on every screen, the sickle shows itself
  assert.match(game,/\|\|!\(state\.stats\.harvested>0\)\?'fields':'home'/,'a computer starts on the fields until the first harvest');
  assert.match(game,/if\(!villageWorld&&!adminView&&!\(state\.stats\.harvested>0\)&&beginnerProgress\(state\)\.find\(q=>q\.current\)\?\.id==='harvest'\)firstBasketGhost\(\);/,'the sickle shows by itself on a new farm');
  assert.match(game,/if\(firstBasket&&!villageWorld\)firstBasketGhost\(\);/,'and still from Show me');
- assert.match(progression,/if\(notify&&p\.leveled&&!p\.catchUp&&p\.level===2&&!p\.avatars\?\.length\)\{notify\(`Level \$\{p\.level\}! One harvest at a time, your farm is growing\.`\);return;\}/);
+ assert.match(progression,/if\(notify&&p\.leveled&&!p\.catchUp&&p\.level===2&&!p\.avatars\?\.length\)\{notify\(p\.entries\.some\(e=>e\.id==='building:mill'\)\?'Level 2! You can now build the Feed Mill and buy a new field\.':`Level \$\{p\.level\}! One harvest at a time, your farm is growing\.`\);return;\}/,'level 2 names the Feed Mill and the new field (7 Oct 2026)');
  assert.match(beginner,/if\(lastStep==='harvest'&&current\?\.id==='sell'\)\{clearTimeout\(marketTimer\);marketTimer=setTimeout\(\(\)=>\{if\(!document\.querySelector\('dialog\[open\]'\)&&beginnerProgress\(state\)\.find\(q=>q\.current\)\?\.id==='sell'\)guide\('market'\);\},1800\);\}/);
  const ids=[...beginner.matchAll(/(\w+):'[^']+'/g)].map(m=>m[1]).slice(0,10);
  assert.deepEqual(ids,['harvest','sell','plant','water','produce','gift','chore','tend','wheat','collect'],'a short what-to-do for every guide step, in order');
- assert.match(beginner,/DO_NOW\[current\?\.id\]\?\?current\?\.title/);
+ assert.match(beginner,/liveStep\(state,current\?\.id,farmNow\(\)\)\?\?DO_NOW\[current\?\.id\]\?\?current\?\.title/);
+ assert.match(beginner,/sell_egg:'Collect eggs at the Coop, then sell one in Market'/,'a guided farm\'s step 7 too');
 });
