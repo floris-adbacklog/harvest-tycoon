@@ -1,4 +1,4 @@
-import {HEIRLOOMS} from './farm-state.js';
+import {HEIRLOOMS,FAMILY_EMBLEMS} from './farm-state.js';
 import {LANGUAGES} from './languages.js';
 // Every item has one explicit image. Square sprite cells cannot reveal neighbouring art.
 const sheets=[
@@ -81,6 +81,9 @@ for(const key of MEDAL_ART){pictures[key]=key;webpPictures.add(key);}
 for(const key of ['tractor-full-care','tractor-night-shift']){pictures[key]=key;webpPictures.add(key);}
 // Family rank badges (27 Sep 2026), painted by the user; public/family-profile.js shows each one that is here beside the rank's name.
 for(const key of ['family-rank-leader','family-rank-coleader','family-rank-honorary','family-rank-member','family-rank-top']){pictures[key]=key;webpPictures.add(key);}
+// The real family emblems (7 Oct 2026: 33 more, painted in the family style): every family-… emblem in the list, as WebP. A picture
+// is trimmed to the painting and centred on 256 px, 242 px at its longest side, like family-fox.webp (WebP quality 88, alpha 95).
+for(const {icon} of FAMILY_EMBLEMS)if(icon.startsWith('family-')){pictures[icon]=icon;webpPictures.add(icon);}
 // A flag for every language in Settings (29 Sep 2026, painted, WebP): flag-en, flag-es, ...
 for(const {code} of LANGUAGES){pictures[`flag-${code}`]=`flag-${code}`;webpPictures.add(`flag-${code}`);}
 // A picture by its file name, for the screens that show one without art() (the Buildings list and a building's page).

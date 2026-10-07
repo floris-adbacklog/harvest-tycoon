@@ -2830,7 +2830,26 @@ function workActivity(state,action,now){
 export const FAMILY_CONFIG=Object.freeze({MAX_MEMBERS:10,MIN_CONTRIB_POINTS:500,JOIN_COOLDOWN_MS:48*3600000,RENAME_COOLDOWN_MS:7*DAY_MS,ATTEMPTS_PER_HOUR:10,TOURNAMENT_FIRST_MIN:50,TOURNAMENT_FIRST_MAX:2500,TOURNAMENT_PER_EXTRA_FAMILY:12.5,ORDER_PLAYER_WEEK_DIAMOND_CAP:12,TOURNAMENT_MIN_POINTS:1,ORDER_COIN_MULTIPLIER:1.25,ORDER_XP_PER_VALUE:1/100,ORDER_DIAMOND_BASE:1,ORDER_DIAMOND_MAX:2,ORDER_COMPLETION_DIAMONDS:2,REWARD_WEEKS:8,ORDER_MIN_VALUE_PER_MEMBER:16000,ORDER_MAX_VALUE_PER_MEMBER:30000,RANK_WEIGHTS:[1,.6,.4],TOURNAMENT_SHARES:[25,17,13,10,8,7,6,5,5,4]});
 export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy','family-bee','family-oak','family-barn','pumpkin','greenbeans','cheese','applejuice','berrypreserves','harvesthamper','family-fox','family-owl','family-windmill','family-horseshoe',
  // 27 Sep 2026: 35 more (60 in all), from the crops and goods added since. Always added at the end: an emblem's id is its place in this list.
- 'lettuce','barley','cabbage','cauliflower','redcabbage','squash','polebeans','ciderapples','cherries','flour','pie','pickles','oil','stew','applepie','berrytart','orchardjuice','squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','prizeproduce','truffles','vegetables','silo','cart','berrysmoothie'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
+ 'lettuce','barley','cabbage','cauliflower','redcabbage','squash','polebeans','ciderapples','cherries','flour','pie','pickles','oil','stew','applepie','berrytart','orchardjuice','squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','prizeproduce','truffles','vegetables','silo','cart','berrysmoothie',
+ // 7 Oct 2026: 33 real family emblems (ids 60-92), painted like the bee and the fox, so the picker offers a round 40.
+ 'family-rooster','family-sheep','family-cow','family-piglet','family-bunny','family-hedgehog','family-duckling','family-goat','family-horse','family-squirrel','family-robin','family-frog','family-turtle','family-ladybug','family-butterfly','family-watering-can','family-lantern','family-key','family-shield-crest','family-moon','family-rainbow','family-mushroom-cottage','family-water-well','family-scarecrow','family-ginger-cat','family-sheepdog','family-snail','family-dragonfly','family-swan','family-fawn','family-badger','family-sun','family-raincloud'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
+// The emblem picker (7 Oct 2026) offers only the real family emblems (family-…), animals first, then things. A family whose emblem is
+// one of the old crop or goods pictures keeps it, first in its row, until it picks another; it still shows everywhere. A new family
+// starts with the first one. The server still takes every id in the list (a page that has not reloaded yet offers the old ones).
+export const FAMILY_EMBLEM_ORDER=Object.freeze([
+ 'family-rooster','family-duckling','family-cow','family-piglet','family-sheep','family-goat','family-horse','family-sheepdog','family-ginger-cat','family-bunny',
+ 'family-fox','family-owl','family-hedgehog','family-squirrel','family-badger','family-fawn','family-robin','family-swan','family-frog','family-turtle','family-snail',
+ 'family-bee','family-ladybug','family-butterfly','family-dragonfly',
+ 'family-barn','family-windmill','family-water-well','family-mushroom-cottage','family-scarecrow','family-watering-can','family-lantern','family-horseshoe','family-key','family-shield-crest',
+ 'family-oak','family-sun','family-rainbow','family-raincloud','family-moon']);
+export const familyEmblemReal=e=>!!e?.icon?.startsWith('family-');
+export function familyEmblemChoices(current=null){
+ const place=e=>{const i=FAMILY_EMBLEM_ORDER.indexOf(e.icon);return i<0?FAMILY_EMBLEM_ORDER.length+Number(e.id):i;};   // one missing from the order goes last
+ const real=FAMILY_EMBLEMS.filter(familyEmblemReal).sort((a,b)=>place(a)-place(b)),kept=FAMILY_EMBLEMS.find(e=>e.id===current&&!familyEmblemReal(e));
+ return kept?[kept,...real]:real;
+}
+export const FAMILY_EMBLEM_DEFAULT=familyEmblemChoices()[0].id;
+export const familyEmblemValid=id=>typeof id==='string'&&/^(0|[1-9]\d*)$/.test(id)&&Number(id)<FAMILY_EMBLEMS.length;   // ids 0-92
 export function familyUnlocked(state,minLevel=FAMILY_MIN_LEVEL){return levelOf(state)>=minLevel;}
 export function familyUnlockHint(minLevel=FAMILY_MIN_LEVEL){return `Reach level ${minLevel} to unlock Farm Family.`;}
 export function familyWeek(now=Date.now()){return Math.floor((now-4*DAY_MS)/(7*DAY_MS));}
@@ -3111,7 +3130,7 @@ export function familyMutate(original,state,player,action,now,options={}){
   if(type==='family_create'){
    joinable();if(!validName(action.name))throw new Error('Use 3–20 letters, numbers, spaces, apostrophes, underscores or hyphens.');
    const name=action.name.trim();if(c.families.some(f=>!f.deleted_at&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('That family name is taken.');
-   if(!FAMILY_EMBLEMS.some(e=>e.id===action.emblem))throw new Error('Choose a family emblem.');
+   if(!familyEmblemValid(action.emblem))throw new Error('Choose a family emblem.');
    family={id:uuid(),name,emblem:action.emblem,invite_code:familyCode(c,random),is_open:true,join_mode:'open',min_level:null,created_at:now,renamed_at:null,deleted_at:null};c.families.push(family);   // open from the start (27 Sep 2026; was invite only, and most families stayed a family of one)
    const next={id:member?.id??uuid(),player_id:player,family_id:family.id,role:'leader',joined_at:now,left_at:null,...keepBlock(member)};if(member)Object.assign(member,next);else c.members.push(next);member=next;
    result={message:'Your Farm Family is ready. Anyone can join it; you can change that in Family settings.'};
@@ -3172,7 +3191,7 @@ export function familyMutate(original,state,player,action,now,options={}){
   }else if(type==='family_rename'){
    manager();if(family.renamed_at&&now-family.renamed_at<config.RENAME_COOLDOWN_MS)throw new Error('You can rename your family once every seven days.');if(!validName(action.name))throw new Error('Use a valid 3–20 character family name.');const name=action.name.trim();if(c.families.some(f=>f.id!==family.id&&!f.deleted_at&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('That family name is taken.');family.name=name;family.renamed_at=now;result={message:'Family renamed.'};
   }else if(type==='family_emblem'){
-   manager();if(!FAMILY_EMBLEMS.some(e=>e.id===action.emblem))throw new Error('Choose a family emblem.');family.emblem=action.emblem;result={message:'Family emblem updated.'};
+   manager();if(!familyEmblemValid(action.emblem))throw new Error('Choose a family emblem.');family.emblem=action.emblem;result={message:'Family emblem updated.'};
   }else if(type==='family_open'){
    manager();if(typeof action.open!=='boolean')throw new Error('Choose open or invite-only.');family.is_open=action.open;family.join_mode=action.open?'open':'invite';refreshFamilyRequests(c,now);result={message:action.open?'Your family is open to new members.':'Your family is invite-only.'};
   }else if(type==='family_join_mode'){

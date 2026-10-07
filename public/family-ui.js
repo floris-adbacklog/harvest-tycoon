@@ -8,13 +8,18 @@ import {renderFamilyOrderRewards,orderShare,orderShareText} from './family-order
 import {renderFamilyTournament} from './family-tournament.js';
 import {renderFamilyStats} from './family-stats.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {farmNow} from './farm-client.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
-const emblemName=e=>({'family-bee':'Honeybee','family-oak':'Oak grove','family-barn':'Sunrise barn','family-fox':'Cosy fox','family-owl':'Wise owl','family-windmill':'Wheat windmill','family-horseshoe':'Lucky horseshoe'}[e.icon]??ITEMS[e.icon]?.name??e.icon.charAt(0).toUpperCase()+e.icon.slice(1));
+// The family emblems' names. 7 Oct 2026: the 33 new ones (farm-state.js).
+const EMBLEM_NAMES={'family-bee':'Honeybee','family-oak':'Oak grove','family-barn':'Sunrise barn','family-fox':'Cosy fox','family-owl':'Wise owl','family-windmill':'Wheat windmill','family-horseshoe':'Lucky horseshoe',
+ 'family-rooster':'Proud rooster','family-sheep':'Fluffy sheep','family-cow':'Happy cow','family-piglet':'Pink piglet','family-bunny':'Carrot bunny','family-hedgehog':'Apple hedgehog','family-duckling':'Little duckling','family-goat':'Cheeky goat','family-horse':'Chestnut horse','family-squirrel':'Busy squirrel','family-robin':'Robin redbreast','family-frog':'Jolly frog','family-turtle':'Steady turtle','family-ladybug':'Spotted ladybird','family-butterfly':'Blue butterfly',
+ 'family-watering-can':'Blooming watering can','family-lantern':'Glowing lantern','family-key':'Golden key','family-shield-crest':'Harvest shield','family-moon':'Moon and star','family-rainbow':'Rainbow meadow','family-mushroom-cottage':'Mushroom cottage','family-water-well':'Wishing well','family-scarecrow':'Friendly scarecrow',
+ 'family-ginger-cat':'Ginger cat','family-sheepdog':'Loyal sheepdog','family-snail':'Garden snail','family-dragonfly':'Pond dragonfly','family-swan':'Graceful swan','family-fawn':'Gentle fawn','family-badger':'Brave badger','family-sun':'Smiling sun','family-raincloud':'Spring rain'};
+const emblemName=e=>EMBLEM_NAMES[e.icon]??ITEMS[e.icon]?.name??e.icon.charAt(0).toUpperCase()+e.icon.slice(1);
 // Who can join, in one plain sentence each (Family settings and the list of families).
 const MODE_HELP={open:'Anyone can find your family in the list and join straight away.',request:'Farmers ask to join from the list; you accept or decline.',invite:'Farmers join only when you invite them by their player name.',closed:'Nobody new can join, not even by invitation.'};
 const emblem=id=>{const e=FAMILY_EMBLEMS.find(x=>x.id===id)??FAMILY_EMBLEMS[0];return `<span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span>`;};
@@ -56,7 +61,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   // Only the family that removed this farmer waits a while (2 Oct 2026); every other family can be joined at once.
   // Starting a family of your own comes first, above the families to join (5 Oct 2026, the owner's wish).
   const blocked=view.blocked&&view.blocked.until>farmNow()?view.blocked:null;
-  return `${renderFamilyInvitation(view,farmNow(),emblem,actionButton)}${rewardCards()}<div class="family-welcome is-compact">${art('family-members')}<div><h3>A little farm. A bigger family.</h3><p>Fill a Family Chest together every week, share a weekly order and help each other grow. Up to ${view.config.maxMembers} farmers.</p></div></div>${gives()}<details class="family-create-fold"${(view.families??[]).some(f=>!f.full&&(f.mode==='open'||f.mode==='request'))?'':' open'}><summary><strong>Start your own family</strong><span>Anyone can join it; you can change that later</span></summary><div class="family-join-grid family-create-grid"><form data-family-form="create"><label for="family-name">Family name</label><input id="family-name" name="name" required minlength="3" maxlength="20" placeholder="Meadow friends" autocomplete="off">${emblemPickerMarkup({emblems:FAMILY_EMBLEMS,checkedId:FAMILY_EMBLEMS[0].id,legend:'Choose your emblem',nameOf:emblemName,tile:emblem,esc})}<button class="primary-button" ${disabled(false)}>Create family</button></form></div></details>${browse(blocked)}`;
+  return `${renderFamilyInvitation(view,farmNow(),emblem,actionButton)}${rewardCards()}<div class="family-welcome is-compact">${art('family-members')}<div><h3>A little farm. A bigger family.</h3><p>Fill a Family Chest together every week, share a weekly order and help each other grow. Up to ${view.config.maxMembers} farmers.</p></div></div>${gives()}<details class="family-create-fold"${(view.families??[]).some(f=>!f.full&&(f.mode==='open'||f.mode==='request'))?'':' open'}><summary><strong>Start your own family</strong><span>Anyone can join it; you can change that later</span></summary><div class="family-join-grid family-create-grid"><form data-family-form="create"><label for="family-name">Family name</label><input id="family-name" name="name" required minlength="3" maxlength="20" placeholder="Meadow friends" autocomplete="off">${emblemPickerMarkup({emblems:familyEmblemChoices(),checkedId:FAMILY_EMBLEM_DEFAULT,legend:'Choose your emblem',nameOf:emblemName,tile:emblem,esc})}<button class="primary-button" ${disabled(false)}>Create family</button></form></div></details>${browse(blocked)}`;
  }
  // Every family, with who can join and how: Join, Ask to join (or cancel your request), or why not. Open ones come first.
  function browse(blocked){
@@ -168,7 +173,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const leave=`<section class="family-leave"><h3>Leave this family</h3><p>${solo?'You are its only member, so you can join another family straight away.':'You can join or start another family straight away.'} Your points this week stay here.${f.leader&&!solo?' The longest-standing member becomes leader.':''}</p>${actionButton('family_leave','Leave family')}</section>`;
   if(!f.manager)return `${header}<p class="family-notice">Your family leader and co-leaders can invite farmers, choose the emblem and rename the family.</p>${leave}`;
   return `${header}
-  <form data-family-look class="family-card family-look"><h3>Look and name</h3>${emblemPickerMarkup({emblems:FAMILY_EMBLEMS,checkedId:f.emblem,legend:'Choose an emblem',nameOf:emblemName,tile:emblem,esc})}
+  <form data-family-look class="family-card family-look"><h3>Look and name</h3>${emblemPickerMarkup({emblems:familyEmblemChoices(f.emblem),checkedId:f.emblem,legend:'Choose an emblem',nameOf:emblemName,tile:emblem,esc})}
   <label for="family-rename">Family name</label><input id="family-rename" name="name" value="${esc(f.name)}" minlength="3" maxlength="20" required ${renameLater?'disabled':''}><small>${renameLater?`You can rename again in ${formatDuration(f.renameAt-farmNow())}.`:'You can rename once every seven days.'}</small>
   <div class="family-look-save" data-look-save hidden><button type="button" class="link-button" data-look-undo>Undo</button><button class="primary-button">Save changes</button></div></form>
   <section class="family-card family-open-row"><div><strong>Who can join</strong><p>${MODE_HELP[f.mode]??MODE_HELP.invite}</p></div><select data-family-mode aria-label="Who can join" ${disabled(false)}>${Object.entries(FAMILY_JOIN_MODES).map(([k,label])=>`<option value="${k}" ${f.mode===k?'selected':''}>${label}</option>`).join('')}</select></section>
@@ -224,7 +229,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
     bar.hidden=picked()===f.emblem&&(input.disabled||name()===f.name);refreshArt();
    };
    look.addEventListener('change',sync);input.addEventListener('input',sync);
-   look.querySelector('[data-look-undo]').onclick=()=>{look.querySelector(`input[name="emblem"][value="${f.emblem}"]`).checked=true;input.value=f.name;look.querySelector('[data-emblem-picker]').dispatchEvent(new Event('change',{bubbles:true}));sync();};
+   look.querySelector('[data-look-undo]').onclick=()=>{(look.querySelector(`input[name="emblem"][value="${f.emblem}"]`)??{}).checked=true;input.value=f.name;look.querySelector('[data-emblem-picker]').dispatchEvent(new Event('change',{bubbles:true}));sync();};
    look.onsubmit=async event=>{
     event.preventDefault();const emblemId=picked(),newName=name();
     if(emblemId!==f.emblem&&!await act({type:'family_emblem',emblem:emblemId}))return;
