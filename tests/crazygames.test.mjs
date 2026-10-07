@@ -341,3 +341,9 @@ test('the app badge never reaches into CrazyGames\' own page',async()=>{
  const site={navigator:{setAppBadge:async n=>{set.push(`top ${n}`);}}};const frame={navigator:{setAppBadge:async()=>set.push('frame')},top:site};
  await setAppBadge(2,frame);assert.deepEqual(set,[3,'top 2'],'on the website the installed app\'s own window still gets it');
 });
+
+test('a tab switch sends CrazyGames nothing, and a farm ready behind another tab still starts play (7 Oct 2026)',()=>{
+ const js=readFileSync(new URL('../src/crazygames.js',import.meta.url),'utf8');
+ assert.doesNotMatch(js,/addEventListener\('visibilitychange',\(\)=>\{if\(document\.hidden\)sdk\('gameplayStop'\)/,'CrazyGames pauses its own count while the game is hidden');
+ assert.match(js,/if\(name==='gameplayStart'\)\{if\(playing\|\|!ready\|\|document\.body\.dataset\.phase!=='authenticated'\)return;playing=true;\}/,'no document.hidden: a start is never dropped');
+});

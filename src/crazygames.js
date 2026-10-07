@@ -38,16 +38,18 @@ async function boot(){
  void startTranslation();
  startUpdateCheck();
 
- // ---- The SDK's events: one start for one stop, and play only while the farm is on screen ----
+ // ---- The SDK's events: one start for one stop, and play once the farm is on screen ----
+ // A tab switch sends nothing (7 Oct 2026): CrazyGames pauses its own count while the game is hidden. Our own stop and start on every
+ // switch, and a start dropped when the farm was ready behind another tab, likely made CrazyGames count far fewer phone players as
+ // playing (their 26% against 39 of 50 phone farms that played).
  let playing=false,loading=false,ready=false,happyAt=0;
  function sdk(name){
-  if(name==='gameplayStart'){if(playing||!ready||document.hidden||document.body.dataset.phase!=='authenticated')return;playing=true;}
+  if(name==='gameplayStart'){if(playing||!ready||document.body.dataset.phase!=='authenticated')return;playing=true;}
   else if(name==='gameplayStop'){if(!playing)return;playing=false;}
   else if(name==='loadingStart'){if(loading)return;loading=true;}
   else if(name==='loadingStop'){if(!loading)return;loading=false;}
   link.event(name);
  }
- document.addEventListener('visibilitychange',()=>{if(document.hidden)sdk('gameplayStop');else sdk('gameplayStart');});
 
  // ---- The portal the game reads (public/portal.js): what is off here, the settings, the SDK and the log-in window ----
  const settings={...info.settings},listeners=new Set();
