@@ -433,6 +433,9 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 #family-tabs button>span{max-width:100%;overflow-wrap:anywhere;hyphens:auto}
 @media(max-width:720px){#family-tabs button{flex-direction:column;gap:3px;min-height:54px;padding:5px 4px}#family-tabs .game-art{width:22px;height:22px}}
 @media(max-width:600px){#family-tabs{gap:2px}#family-tabs button{padding:5px 2px}}
+/* A phone of 360px (7 Oct 2026, "Tournamen t"): a word never breaks. Each tab is at least as wide as its longest word and the room left
+   is shared out; a language whose words still don't fit scrolls the row sideways instead. */
+@media(max-width:600px){#family-tabs{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(min-content,auto);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}#family-tabs::-webkit-scrollbar{display:none}#family-tabs button>span{overflow-wrap:normal;hyphens:manual}}
 /* The Stats tab (5 Oct 2026, public/family-stats.js): cream cards for your family this week, you, every farmer, and your last weeks. */
 .family-stats{display:grid;gap:14px}
 #family-dialog .family-stats section+section{margin-top:0}
