@@ -160,7 +160,9 @@
 .wiki-dual{container-type:inline-size}
 .wiki-table .wiki-line:first-child,.wiki-table td>small{white-space:nowrap}
 @container (min-width:760px){.wiki-table .wiki-line{white-space:nowrap}}
-@container (max-width:759px){.wiki-chapters td:first-child{white-space:normal}.wiki-chapters td{text-wrap:pretty}}
+/* A chapter's name wraps only between words (7 Oct 2026: German, French and Russian names broke mid-word in the game's narrow How to
+   play); a long name lets the table scroll a little instead. */
+@container (max-width:759px){.wiki-chapters td:first-child{white-space:normal;hyphens:manual;overflow-wrap:normal;word-break:normal;min-width:8em}.wiki-chapters td{text-wrap:pretty}}
 
 .wiki-related{margin:24px 0 0;padding:16px 0 0;border-top:1px solid #efe6d8}
 .wiki-related h3{margin:0 0 10px;font:700 18px 'Outfit',sans-serif}
