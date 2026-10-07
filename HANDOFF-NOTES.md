@@ -958,10 +958,11 @@ Vercel rebuilds everything, so they are never served live.
   count (chat_overview) leave news out below the farmer's current level; a pop-up's own notification takes the pop-up's level.
   supabase/news-min-level.sql (built on the live definitions).
 
-## CrazyGames wrapper ahead of the uploaded zip (7 Oct 2026)
-- crazygames/ (index.html, wrapper.js, logo.webp, backdrop.webp, backdrop-tall.webp) now starts the game frame at once instead of after
-  sdk.init(), and shows our loading screen (painted farm, logo, sliding bar) instead of a flat green screen. It is NOT uploaded: a new
-  zip during Basic Launch would send the game through CrazyGames' review again, so the owner keeps the 2 Oct zip live for now.
-- Build and upload it later with `npm run build:crazygames` (dist-crazygames/harvest-tycoon-crazygames.zip); note the exact upload time,
-  because the new first-look load times (src/game-cloud.js) count from crazygames.html's start and jump once the new wrapper is live.
+## CrazyGames wrapper (7 Oct 2026)
+- crazygames/ (index.html, wrapper.js, logo.webp, backdrop.webp, backdrop-tall.webp) starts the game frame at once instead of after
+  sdk.init(), and shows our loading screen (painted farm, logo, sliding bar) instead of a flat green screen.
+- Uploaded on 7 Oct 2026 at 15:12 CEST (13:12 UTC); CrazyGames auto-approved it and it went live at once. The first-look load times
+  (src/game-cloud.js) count from crazygames.html's start, so they include the SDK's start from then on: never compare loadMs across
+  that moment.
+- A later change: build with `npm run build:crazygames` (dist-crazygames/harvest-tycoon-crazygames.zip) and note the upload time again.
 - The website works with both wrappers: the protocol is unchanged, and src/crazygames-link.js now waits 15 s for the wrapper's hello.
