@@ -11,16 +11,18 @@
 .app-option h2{margin:0 0 6px!important;font:700 21px/1.25 'Outfit',sans-serif;color:#3d3923}
 .app-option p{margin:0 0 12px}
 .app-option .legal-button{margin:2px 0 0}
-.app-play{display:inline-block;padding:4px 0;border-radius:10px}
-.app-play img{display:block;width:auto;height:56px}
+.app-play,.app-option .app-store-badge{display:inline-block;padding:4px 0;border-radius:10px}
+.app-play img,.app-option .app-store-badge img{display:block;width:auto;height:56px}
 .app-steps{margin:0 0 4px!important}
 .app-steps li{margin:0 0 8px;padding:11px 14px 11px 54px}
 .app-steps li::before{top:10px}
 [dir=rtl] .app-steps li{padding:11px 54px 11px 14px}
 [dir=rtl] .app-steps li::before{left:auto;right:16px}
-/* The App Store, once the iPhone app is approved: data-app-store="on" on the iPhone section shows it and puts the steps aside. */
+/* The App Store, once the iPhone app is approved: data-app-store="on" on the iPhone section shows Apple's badge, as big as Google
+   Play's, and puts the steps aside (the deploy sets it, scripts/app-store-links.mjs). The iPhone section then comes first, so the App
+   Store badge comes before Google Play's, as Apple asks. */
 .app-ios[data-app-store=off] .app-store-block,.app-ios[data-app-store=on] .app-home-screen{display:none}
-.app-store-button{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:10px 22px;border-radius:12px;background:#111;color:#fff!important;font:700 16px 'DM Sans',sans-serif;text-decoration:none}
+.app-ios[data-app-store=on]{order:-1}
 /* Inside our Android or iPhone app: the farmer has the app; one line and the way back to the farm instead of the stores. */
 .app-in-app{display:none;padding:18px;border:1px solid #cfdcb9;border-radius:20px;background:#eef4e4;color:#36521f;text-align:center}
 .app-in-app p{margin:0 0 10px;font-size:17px}

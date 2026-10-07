@@ -6,7 +6,7 @@
 // page a search engine reads is worse than none). Translate the missing texts first (i18n/README.md).
 import {mkdirSync,readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
-import {LANGUAGES,RTL_LANGUAGES,languagePath,playBadge} from '../public/languages.js';
+import {LANGUAGES,RTL_LANGUAGES,languagePath,playBadge,appStoreBadge} from '../public/languages.js';
 import {appPath} from '../public/game-links.js';
 import {FULL_STOP} from '../public/i18n.js';
 
@@ -71,8 +71,10 @@ export function translatePage(html,code,dict){
  html=once(html,'<meta property="og:locale" content="en_GB">',`<meta property="og:locale" content="${OG_LOCALE[code]}">`,'og:locale');
  html=once(html,`<meta property="og:url" content="${SITE}/">`,`<meta property="og:url" content="${SITE}${languagePath(code)}">`,'og:url');
  html=once(html,`<link rel="canonical" href="${SITE}/">`,`<link rel="canonical" href="${SITE}${languagePath(code)}">`,'canonical address');
- // The footer's Google Play badge in the page's language (Oct 2026, public/languages.js playBadge); its alt text is translated below.
+ // The footer's store badges in the page's language (Oct 2026, public/languages.js playBadge and, 7 Oct 2026, appStoreBadge); their
+ // alt texts are translated below.
  html=once(html,`src="${playBadge('en')}"`,`src="${playBadge(code)}"`,'Google Play badge');
+ html=once(html,`src="${appStoreBadge('en')}"`,`src="${appStoreBadge(code)}"`,'App Store badge');
  // The footer's Help and support (3 Oct 2026) opens the support page in the same language.
  html=html.replaceAll('href="/support"',`href="${supportPath(code)}"`);
  // ... and Get the app (4 Oct 2026) the app page.
@@ -90,6 +92,7 @@ export function translateSupport(html,code,dict){
  html=oncePage(html,`<link rel="canonical" href="${SITE}/support">`,`<link rel="canonical" href="${SITE}${supportPath(code)}">`,'canonical address');
  html=oncePage(html,'<input type="hidden" name="lang" value="en">',`<input type="hidden" name="lang" value="${code}">`,'hidden lang field');
  html=oncePage(html,`src="${playBadge('en')}"`,`src="${playBadge(code)}"`,'Google Play badge');
+ html=oncePage(html,`src="${appStoreBadge('en')}"`,`src="${appStoreBadge(code)}"`,'App Store badge');
  // The game's own links in the page's language (the sign-in page per language); the wiki and the legal pages are English only.
  html=html.replace(/href="\/"/g,`href="${languagePath(code)}"`).replaceAll('href="/app"',`href="${appPath(code)}"`);
  return translateTexts(html,code,dict,{label:'Support page',page:'support.html',seoMeta:['description']});
@@ -101,7 +104,8 @@ export function buildSupportPages(outDir,html,{dictionary=readDictionary}={}){
 }
 
 // Harvest Tycoon on your phone (4 Oct 2026): /app is public/app.html in English, /es/app, ... the same way (no script; its texts are in
-// the catalog). Google Play's badge in the page's language (on the page and in the footer), its links in the same language.
+// the catalog). Google Play's and the App Store's badges in the page's language (on the page and in the footer), its links in the same
+// language.
 export {appPath};// one copy, shared with the chat's chip (public/game-links.js)
 export function translateAppPage(html,code,dict){
  const once=(from,to,what)=>{if(!html.includes(from))throw new Error(`App pages: app.html has no ${what}`);html=html.replace(from,to);};
@@ -109,6 +113,8 @@ export function translateAppPage(html,code,dict){
  once(`<link rel="canonical" href="${SITE}/app">`,`<link rel="canonical" href="${SITE}${appPath(code)}">`,'canonical address');
  if(!html.includes(`src="${playBadge('en')}"`))throw new Error('App pages: app.html has no Google Play badge');
  html=html.replaceAll(`src="${playBadge('en')}"`,`src="${playBadge(code)}"`);
+ if(!html.includes(`src="${appStoreBadge('en')}"`))throw new Error('App pages: app.html has no App Store badge');
+ html=html.replaceAll(`src="${appStoreBadge('en')}"`,`src="${appStoreBadge(code)}"`);
  html=html.replace(/href="\/"/g,`href="${languagePath(code)}"`).replaceAll('href="/support"',`href="${supportPath(code)}"`);
  return translateTexts(html,code,dict,{label:'App page',page:'app.html',seoMeta:['description']});
 }

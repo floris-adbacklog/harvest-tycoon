@@ -203,10 +203,11 @@ html:has(body[data-phase=authenticated]),body[data-phase=authenticated]{touch-ac
 .site-legal{align-items:center}
 .site-legal-button{min-height:0;height:auto;margin:0;line-height:inherit}
 .site-legal .footer-social{display:inline-flex;align-items:center}
-/* The Google Play badge (Oct 2026): Google's own picture in the page's language on a line of its own above the footer's links, 40 px
-   high (Google's minimum is 28 px) with a quarter of its height clear around it, as Google's badge guidelines ask (6 px here plus the
-   footer's 4 px gap under it). Not in our Android app: the farmer is in it already. */
-.play-badge{flex-basis:100%;display:flex;justify-content:center;margin-bottom:6px}
+/* The store badges (Oct 2026): Apple's App Store badge (7 Oct 2026, first, as Apple asks) and Google Play's, each the store's own
+   picture in the page's language, on a line of their own above the footer's links, 40 px high (the least Apple allows; Google's is
+   28 px) with a quarter of their height clear around them, as both stores' badge guidelines ask (12 px between them, 6 px here plus
+   the footer's 4 px gap under them). Not in our apps (the iPhone app is marked data-app=android too): the farmer is in one already. */
+.play-badge{flex-basis:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 12px;margin-bottom:6px}
 .play-badge a{display:block;border-radius:7px}
 .play-badge img{display:block;width:auto;height:40px}
 html[data-app=android] .play-badge{display:none!important}

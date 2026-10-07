@@ -8,6 +8,11 @@
 // other address is no link of ours. No imports, so the page around the game, the chat and the tests can all use it.
 export const SITE='https://www.harvesttycoon.com';
 export const APP_LINK=`${SITE}/app`;
+// The iPhone app's App Store page (7 Oct 2026): null while Apple reviews it, and the App Store badges in the website's footers link to
+// the app page (/app, /es/app, ...), where an iPhone gets the Home Screen steps. Once Apple has approved it, its address goes here (App
+// Store Connect, the app's "View on App Store"; any country's address will do) and the deploy points every App Store badge there and
+// shows the App Store on the app page (scripts/app-store-links.mjs).
+export const APP_STORE_URL=null;
 // The app page in a language (scripts/build-languages.mjs writes /es/app, ...; the chat's chip opens the farmer's own, 4 Oct 2026).
 export const appPath=code=>!code||code==='en'?'/app':`/${code}/app`;
 export const SETTINGS_PARTS=Object.freeze({

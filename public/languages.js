@@ -31,4 +31,10 @@ export const languagePath=code=>code==='en'?'/':`/${code}/`;
 // shows the English one: Google's Arabic file still has the old Play logo, and its badge guidelines say not to use outdated artwork.
 export const PLAY_BADGES=Object.freeze(LANGUAGES.map(l=>l.code).filter(code=>code!=='ar'));
 export const playBadge=code=>`/assets/badges/google-play-${PLAY_BADGES.includes(code)?code:'en'}.webp`;
+// The App Store badge before it (7 Oct 2026, the iPhone app in review): Apple's own "Download on the App Store" badge in the page's
+// language (public/assets/badges/, Apple's marketing toolbox SVGs drawn at 160 px high with only their see-through edge trimmed, WebP).
+// Hindi shows the English one: Apple has no Hindi badge, and its guidelines say never to make a localised one of your own. Where it
+// links: public/game-links.js APP_STORE_URL.
+export const APP_STORE_BADGES=Object.freeze(LANGUAGES.map(l=>l.code).filter(code=>code!=='hi'));
+export const appStoreBadge=code=>`/assets/badges/app-store-${APP_STORE_BADGES.includes(code)?code:'en'}.webp`;
 export const pageLanguage=path=>{const m=/^\/([a-z]{2})(?:\/(?:index\.html)?)?$/.exec(path??'');return m&&m[1]!=='en'&&LANGUAGES.some(l=>l.ready&&l.code===m[1])?m[1]:null;};

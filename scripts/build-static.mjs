@@ -25,4 +25,8 @@ if(!crazy.includes(`content="${version}"`))throw new Error('crazygames.html lost
 writeFileSync('dist-static/crazygames.html',crazy);
 // The public farm wiki (/wiki), made from the game rules on every deploy.
 const {buildWiki}=await import('./build-wiki.mjs');await buildWiki('dist-static');
+// The App Store badges on every page (7 Oct 2026): to the iPhone app's App Store page once Apple has approved it (APP_STORE_URL in
+// public/game-links.js); until then they stay on the app page.
+const {APP_STORE_URL}=await import('../public/game-links.js');const {applyAppStore}=await import('./app-store-links.mjs');
+const appStorePages=applyAppStore('dist-static',APP_STORE_URL);if(appStorePages)console.log(`App Store badges: ${appStorePages} pages link to ${APP_STORE_URL}.`);
 console.log('Standalone static game ready in dist-static/. No application server is required.');

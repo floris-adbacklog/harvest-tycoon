@@ -6,10 +6,11 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // The Google Play badge in every website footer (Oct 2026): Google's own picture per language, to our Play page with a referrer, never
 // in our Android app (the farmer is in it) and never on CrazyGames (no store links there).
 const LINK='https://play.google.com/store/apps/details?id=com.harvesttycoon.app&amp;referrer=utm_source%3Dwebsite%26utm_medium%3Dfooter';
-test('every website footer has the Google Play badge, linking to our Play page',()=>{
- for(const page of ['public/play.html','public/privacy.html','public/delete-account.html','public/partners.html','public/404.html','scripts/build-wiki.mjs']){
+test('every website footer has the Google Play badge, linking to our Play page, after the App Store badge',()=>{
+ for(const page of ['public/play.html','public/privacy.html','public/delete-account.html','public/partners.html','public/404.html','public/support.html','public/app.html','scripts/build-wiki.mjs']){
   const html=read(page);
-  assert.ok(html.includes(`<span class="play-badge"><a href="${LINK}" target="_blank" rel="noopener"><img src="/assets/badges/google-play-en.webp" alt="Get it on Google Play"`),page);
+  assert.match(html,/<span class="play-badge"><a class="app-store-badge" href="[^"]+" data-app-store-link><img [^>]*><\/a><a href=/,page);
+  assert.ok(html.includes(`data-app-store-link><img src="/assets/badges/app-store-en.webp" alt="Download on the App Store" width="120" height="40" loading="lazy" decoding="async"></a><a href="${LINK}" target="_blank" rel="noopener"><img src="/assets/badges/google-play-en.webp" alt="Get it on Google Play"`),page);
  }
  assert.doesNotMatch(read('public/crazygames.html'),/play-badge|play\.google\.com/);
 });

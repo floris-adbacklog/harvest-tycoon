@@ -966,3 +966,15 @@ Vercel rebuilds everything, so they are never served live.
   that moment.
 - A later change: build with `npm run build:crazygames` (dist-crazygames/harvest-tycoon-crazygames.zip) and note the upload time again.
 - The website works with both wrappers: the protocol is unchanged, and src/crazygames-link.js now waits 15 s for the wrapper's hello.
+
+## App Store badge (7 Oct 2026, the iPhone app 1.1 in App Review)
+- Apple's own "Download on the App Store" badge sits first, before Google Play's, in every website footer: home and its 15 language
+  pages, support, app, privacy, partners, delete-account, 404 and the wiki. 15 languages (public/assets/badges/app-store-<code>.webp,
+  from Apple's marketing toolbox SVGs, drawn at 160 px and saved as WebP); Hindi shows the English one, because Apple has no Hindi badge.
+- Until approval each badge links to the app page (/app, /<code>/app; #iphone on the app page itself), where an iPhone gets the Home
+  Screen steps. The badges are hidden in our iPhone and Android apps (html[data-app=android]).
+- **Once Apple approves:** put the app's App Store address in `APP_STORE_URL` in public/game-links.js (any country's address will do;
+  the country is stripped), push. The deploy (scripts/app-store-links.mjs, run by build-static) points every badge at the App Store in
+  a new tab and switches the app page's iPhone part to the App Store badge (data-app-store="on"), which then comes first, above
+  Android. null again is the way back. The app page's description already says "on your iPhone", true before and after.
+- Apple's credit line is at the end of the privacy policy, next to Google's.

@@ -86,14 +86,15 @@ body.not-found::before{content:'';position:fixed;inset:0;z-index:-1;background:l
 .footer-social{display:inline-flex;align-items:center;justify-content:center;align-self:center;width:20px;height:20px;border-radius:50%;opacity:.85;text-decoration:none}
 .footer-social:hover,.footer-social:focus-visible{opacity:1}
 .footer-social svg{display:block}
-/* The Google Play badge (Oct 2026): Google's own picture on a line of its own above the footer's links, 40 px high (Google's minimum is
-   28 px) with a quarter of its height clear around it, as Google's badge guidelines ask (4 px here plus the footer's 6 px gap under it).
-   Not in our Android app (public/android-app.js): the farmer is in it already. */
-.play-badge{flex-basis:100%;display:flex;justify-content:center;margin-bottom:4px}
+/* The store badges (Oct 2026): Apple's App Store badge (7 Oct 2026, first, as Apple asks) and Google Play's, each the store's own
+   picture, on a line of their own above the footer's links, 40 px high (the least Apple allows; Google's is 28 px) with a quarter of
+   their height clear around them, as both stores' badge guidelines ask (12 px between them, 4 px here plus the footer's 6 px gap under
+   them). Not in our apps (public/android-app.js marks the iPhone app data-app=android too): the farmer is in one already. */
+.play-badge{flex-basis:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 12px;margin-bottom:4px}
 .play-badge a{display:block;border-radius:7px}
 .play-badge img{display:block;width:auto;height:40px}
 html[data-app=android] .play-badge{display:none!important}
 /* Get the app (/app, 4 Oct 2026) in the footer: not in our apps either, the farmer has it. */
 html[data-app] .footer-app{display:none!important}
-/* Google's attribution line for its badge, once on the site: at the end of the privacy policy, which every footer links to. */
+/* Apple's and Google's attribution lines for their badges, once on the site: at the end of the privacy policy, which every footer links to. */
 .legal-card .legal-trademarks{margin:32px 0 0;font-size:13px;color:#7d7060}

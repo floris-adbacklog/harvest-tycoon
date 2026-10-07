@@ -155,7 +155,8 @@ test('the app page: legal-style, no script but the app mark, the badge to Play w
  assert.doesNotMatch(html,/googletagmanager|gtag\(|fbq\(|\son[a-z]+="/i);
  assert.ok(html.includes('<a class="app-play" href="https://play.google.com/store/apps/details?id=com.harvesttycoon.app&amp;referrer=utm_source%3Dwebsite%26utm_medium%3Dapp-page" target="_blank" rel="noopener"><img src="/assets/badges/google-play-en.webp" alt="Get it on Google Play"'));
  assert.match(html,/<section class="app-option app-ios" id="iphone" aria-labelledby="iphone-title" data-app-store="off">/);
- assert.match(html,/<a class="app-store-button" target="_blank" rel="noopener">Download on the App Store<\/a>/,'no guessed App Store address before Apple approves');assert.doesNotMatch(html,/apps\.apple\.com/);
+ assert.ok(html.includes('<div class="app-store-block">\n    <p>Get the free app on the App Store. Sign in with the same account and your farm is there.</p>\n    <a class="app-store-badge" data-app-store-link><img src="/assets/badges/app-store-en.webp" alt="Download on the App Store" width="168" height="56" decoding="async"></a>'),'Apple\'s badge, no guessed App Store address before Apple approves');
+ assert.doesNotMatch(html,/apps\.apple\.com/);
  assert.match(css,/\.app-ios\[data-app-store=off\] \.app-store-block,\.app-ios\[data-app-store=on\] \.app-home-screen\{display:none\}/);
  assert.match(css,/html\[data-app\] \.app-in-app\{display:block\}/);assert.match(css,/html\[data-app\] \.app-options\{display:none\}/);
  assert.match(html,/<a class="legal-button" href="\/">Play in your browser<\/a>/);
