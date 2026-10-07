@@ -32,7 +32,7 @@ export const VILLAGE_CLOUD_HEIGHT=16;
 // The greens are the farm's grass: the sunlit meadow renders like the farm's lit grass in the same light, one valley; the pack's
 // own greens made a saturated golf-course green (hue 97) beside it. Set again for the farm's sunny light of 7 Oct 2026: at noon
 // the meadow renders #a3d259 (hue 83, lightness .59) against the farm's #a1d253 (hue 83, .58), on phones #a1d058 against #a1cf5b.
-// Lighter than the farm's ground colour (game.js), as the baked shade darkens them again; the trees keep the palette's green.
+// Rows 5-7 lighter than the farm's ground colour (game.js), as the baked shade darkens them again; the trees keep the palette's green.
 export const VILLAGE_GRASS=Object.freeze({4:0x82b656,5:0x95c560,6:0xaacf6d,7:0xbcd97b});
 // The mountains' haze is the farm's (scene-polish.js, 0xe2ead0) since 6 Oct 2026, so both worlds' mountains fade into the same
 // air: the cool sky white before it faded them toward blue against the valley's green-white sky. The lake (7 Oct 2026) is halfway
@@ -76,7 +76,7 @@ export async function loadVillage({onProgress}={}){
   if(o.material.name==='Transparent'){o.material.map=null;o.material.color.setHex(VILLAGE_LAKE);o.material.opacity=.85;o.material.roughness=.35;}
  });
  // The farm's haze colour at half its strength (6 Oct 2026): the village's grey mountains then render in the farm's mountain tone
- // (hue about 40, lightness .63 against the farm's .65); at the farm's full .24 they went chalk-white (.71).
+ // (7 Oct 2026 at noon: lightness about .69 against the farm's .67, a touch greyer); at the farm's full .24 they went chalk-white.
  const haze=new Map(),hazy=m=>{if(!haze.has(m)){const h=m.clone();h.emissive=new THREE.Color(VILLAGE_HAZE);h.emissiveIntensity=.12;haze.set(m,h);}return haze.get(m);};
  const parts=new Map();for(const node of gltf.scene.children){if(node.name==='static')continue;const list=[];node.traverse(o=>{if(o.isMesh)list.push(o);});parts.set(node.name,list);}
  const byModel=new Map();for(const p of layout)(byModel.get(p.a)??byModel.set(p.a,[]).get(p.a)).push(p.m);
