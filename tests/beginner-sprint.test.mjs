@@ -73,7 +73,7 @@ test('starter corn, animal feed and barley cannot be sold in the first 30 minute
 
 test('every level pays at least one diamond, so the first level-ups are never empty-handed',()=>{
  for(let level=2;level<=60;level++)assert(levelReward(level).diamonds>=1,`level ${level}`);
- assert.deepEqual([2,3,4,5,9].map(l=>levelReward(l).diamonds),[1,1,1,1,1]);assert.deepEqual([10,15,20].map(l=>levelReward(l).diamonds),[2,3,4]);
+ assert.deepEqual([2,3,4,5,9].map(l=>levelReward(l).diamonds),[1,1,1,1,1]);assert.deepEqual([10,15,20,30].map(l=>levelReward(l).diamonds),[1,1,2,3]);   // per ten levels since 7 Oct 2026
  const s=createFarm(now);s.xp=14;const before=s.diamonds;
  act(s,{type:'field',id:0,action:'harvest'},now);
  assert.equal(levelOf(s),2);assert.equal(s.diamonds,before+1,'level 2 already pays a diamond');

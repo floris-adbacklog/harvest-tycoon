@@ -1,4 +1,4 @@
-import {HEIRLOOMS,LAB_BEDS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,heirloomFound,heirloomOpen,VISITORS,VISITOR_WAIT,VISITOR_STREAK_MAX,visitorStreakBonus,GIANT_TEND_MS,GIANT_TEND_KG,GIANT_FEED,GIANT_FEED_KG,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,giantDiamonds,VALLEY_PROJECTS,valleyProjectLevel,valleyProjectBonus,IMPROVEMENTS,FAIR_CHAMPION_DIAMONDS,hasImprovement,EXPORT_DESTINATIONS,DEPOT_PREMIUM,depotRestock,featureUnlocked,featureUnlockHint,familyWeek,familyWeekStart,levelOf,normalizeFarm,marketValue,formatDuration,ITEMS} from './farm-state.js';
+import {VISITOR_DIAMONDS,GIANT_KG_PER_DIAMOND,GIANT_MAX_DIAMONDS,HEIRLOOMS,LAB_BEDS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,heirloomFound,heirloomOpen,VISITORS,VISITOR_WAIT,VISITOR_STREAK_MAX,visitorStreakBonus,GIANT_TEND_MS,GIANT_TEND_KG,GIANT_FEED,GIANT_FEED_KG,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,giantDiamonds,VALLEY_PROJECTS,valleyProjectLevel,valleyProjectBonus,IMPROVEMENTS,FAIR_CHAMPION_DIAMONDS,hasImprovement,EXPORT_DESTINATIONS,DEPOT_PREMIUM,depotRestock,featureUnlocked,featureUnlockHint,familyWeek,familyWeekStart,levelOf,normalizeFarm,marketValue,formatDuration,ITEMS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -86,7 +86,8 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
    +`<p class="fair-tally"><span class="fair-stars">★</span><b>${number(total)}</b> fair ${total===1?'star':'stars'}${champion?` · grand champion ${champion===1?'once':`${number(champion)} times`}`:''}</p>`
    +`<div class="daily-list">${cards}</div><p class="valley-footer">New classes in ${formatDuration(next-now)}, every Monday.</p>`;
  }
- // The giant pumpkin (level 94): tend it every 8 hours, feed it fertilizer for more, weigh it in when you like.
+ // The giant pumpkin (level 94): tend it every 8 hours, feed it fertilizer for more, weigh it in when you like. The intro names the
+ // scale's diamonds (7 Oct 2026: 1 for every 20 kg, up to 20; it said only the record's).
  function pumpkinMarkup(){
   const now=farmNow(),g=state.giant,next=g.lastTendAt?g.lastTendAt+GIANT_TEND_MS:0,ready=!g.weighed&&(!next||now>=next);
   const stage=g.kg>=200?'giant-prize':g.kg>=80?'giant-big':'giant-small',feed=Object.entries(GIANT_FEED).every(([k,n])=>state.inventory[k]>=n);
@@ -94,7 +95,7 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
   const body=g.weighed?`<p class="valley-next">Weighed in: <b>${number(g.kg)} kg</b>. A new pumpkin grows from Monday.</p>`
    :`<div class="giant-actions"><button class="primary-button" data-giant-tend ${ready?'':'disabled'}>Tend it · +${addNext} kg</button><button class="secondary-button" data-giant-feed ${ready&&feed?'':'disabled'}>Tend + feed · +${addNext+GIANT_FEED_KG} kg</button></div><p class="valley-line">${ready?`Feeding takes ${GIANT_FEED.fertilizer} natural fertilizer (you have ${number(state.inventory.fertilizer)}).`:`Tend it again in <b>${formatDuration(next-now)}</b>.`}</p>${g.kg?`<div class="task-bottom">${rewardChips({coins:payout,diamonds:giantDiamonds(g.kg)})}<button class="secondary-button" data-giant-weigh>Weigh in now</button></div>`:''}`;
   const last=g.last?`<p class="valley-footer">Last pumpkin: ${number(g.last.kg)} kg for ${number(g.last.coins)} coins and ${g.last.diamonds} diamonds${g.last.record?' (a new record)':''}.</p>`:'';
-  return lead('giant-scale',`One giant pumpkin a week. Tend it every 8 hours: each time it gains a little more than the time before. Feed it for ${GIANT_FEED_KG} kg extra. The scale pays <b>${number(GIANT_COINS_PER_KG)} coins a kilo</b>; a new record from ${GIANT_RECORD_MIN} kg adds ${GIANT_RECORD_DIAMONDS} diamonds.`)
+  return lead('giant-scale',`One giant pumpkin a week. Tend it every 8 hours: each time it gains a little more than the time before. Feed it for ${GIANT_FEED_KG} kg extra. The scale pays <b>${number(GIANT_COINS_PER_KG)} coins a kilo</b> and 1 diamond for every ${GIANT_KG_PER_DIAMOND} kg, up to ${GIANT_MAX_DIAMONDS}; a new record from ${GIANT_RECORD_MIN} kg adds ${GIANT_RECORD_DIAMONDS} diamonds.`)
    +`<article class="order-card giant-card"><div class="giant-hero">${art(stage,'giant-art')}<div><strong>${number(g.kg)} kg</strong><span>${g.tends} ${g.tends===1?'tending':'tendings'} this week${g.record?` · record ${number(g.record)} kg`:''}</span></div></div>${body}</article>${last}<p class="valley-footer">A pumpkin still on the vine on Monday is weighed in by itself.</p>`;
  }
  // The Seed Lab (level 92): two test beds, twenty heirlooms to discover.
@@ -113,7 +114,8 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
   return lead('seedlab',`Cross two crops in a test bed. The first cross of a variety takes a day and discovers it; after that it takes 8 hours. Each bed gives <b>${LAB_YIELD} heirlooms</b>, worth far more than their parents at the Market.`)
    +`<div class="daily-list lab-beds">${beds}</div><p class="fair-tally"><b>${found} of ${total}</b> discovered${found<total?` · all ${total}: +${LAB_COMPLETE_DIAMONDS} diamonds`:' · the whole collection ✓'}</p><div class="daily-list heirloom-list">${cards}</div>`;
  }
- // Visitors (level 93): one rush order at a time; the run of visitors served in a row makes the next one bigger and better paid.
+ // Visitors (level 93): one rush order at a time; the run of visitors served in a row makes the next one bigger and better paid in
+ // coins. Each pays VISITOR_DIAMONDS (3 since 7 Oct 2026; the run raised the diamonds too, 5 up to 15).
  function visitorsMarkup(){
   const now=farmNow(),v=state.visitors,c=v.current,streak=v.streak??0;
   let body;
@@ -123,7 +125,7 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
    body=`<article class="order-card visitor-card"><div class="order-head"><span class="order-icon visitor-portrait">${art(`visitor-${who.id}`)}</span><div><small>Leaves in <b>${formatDuration(Math.max(0,c.leavesAt-now))}</b></small><h3>${who.name}</h3><p class="valley-line">“${who.line}”</p></div></div><div class="ingredients">${itemList(c.input,true)}</div><div class="task-bottom">${rewardChips({coins:c.coins,diamonds:c.diamonds,xp:c.xp})}<button class="primary-button" data-visitor-serve ${can?'':'disabled'}>Deliver</button></div><button type="button" class="text-button valley-skip" data-visitor-decline>Send this visitor away${streak?' (ends your run)':''}</button></article>`;
   }
   const extra=Math.round(visitorStreakBonus(streak)*100);
-  return lead('visitors',`A visitor comes up the road with a rush order. Deliver it within 12 hours. Every visitor you serve in a row makes the next order bigger and <b>+10% better paid</b>, up to ${VISITOR_STREAK_MAX} in a row; a visitor who leaves unserved, or is sent away, ends the run.`)
+  return lead('visitors',`A visitor comes up the road with a rush order. Deliver it within 12 hours for coins and ${VISITOR_DIAMONDS} diamonds. Every visitor you serve in a row makes the next order bigger and <b>+10% better paid</b> in coins, up to ${VISITOR_STREAK_MAX} in a row; a visitor who leaves unserved, or is sent away, ends the run.`)
    +`<p class="fair-tally"><b>${streak}</b> in a row${extra?` · next order +${extra}%`:''}${v.best?` · best run ${v.best}`:''}</p><div class="daily-list">${body}</div><p class="valley-footer">${v.served?`${number(v.served)} ${v.served===1?'visitor':'visitors'} served so far. `:''}The next visitor comes ${formatDuration(VISITOR_WAIT)} after one leaves.</p>`;
  }
  // Valley projects (level 95): five works, three levels each; hand in goods bit by bit, then pay the coins to finish a level.

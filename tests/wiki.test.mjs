@@ -99,14 +99,15 @@ test('the wiki matches the rules it explains: family payouts, invites, events an
  // 5 Oct 2026: every full line pays a quarter when the week ends (an unfinished order paid nothing before).
  assert.match(wikiArticle('family').html,/Every full line pays a quarter of the coins, XP and diamonds to everyone who delivered at least 500 points’ worth, when the week ends; the whole order pays everything at once\./);
  assert.doesNotMatch(wikiArticle('family').html,/When the whole order is done|An order that is not finished pays nothing|Rewards come only when every line is full/);
- assert.match(wikiArticle('family').html,/The prize pool grows with every family taking part: 100 diamonds for one family, 200 for two, 300 for three and 50 more for every family after that \(up to 10,000\)\. The top ten families share it, from 25% for first place down to 4% for tenth\. A family's prize is shared by what each member delivered\./);
+ assert.match(wikiArticle('family').html,/The prize pool grows with every family taking part: 50 diamonds for one family, 100 for two, 150 for three and 25 more for every family after that \(up to 5,000\)\. The top ten families share it, from 25% for first place down to 4% for tenth\. A family's prize is shared by what each member delivered\./);
  assert.match(wikiArticle('diamonds').html,/When a friend you invite reaches level 10 within 30 days: 150 diamonds for you both\./);
  assert.match(wikiArticle('account').html,/When your friend reaches level 10 within 30 days, you both get 150 diamonds, for up to 10 friends\./);
  assert.doesNotMatch(wikiArticle('quests').html,/Invite a friend/,'inviting is not a level unlock');
  assert.match(wikiArticle('events').html,/Events open as soon as you reach level 15\./);assert.doesNotMatch(wikiArticle('events').html,/email/);
  assert.match(wikiArticle('account').html,/Confirm it once for 10 diamonds/);assert.match(wikiArticle('diamonds').html,/Confirm your email/);assert.doesNotMatch(wikiArticle('events').html,/48 hours/);
- assert.match(wikiArticle('events').html,/The first three in each league win 50, 30 and 20 diamonds, every other finisher 5\./);
- assert.match(wikiArticle('events').html,/<td>Valley Legends<\/td><td>90\+<\/td><td>17,600 coins and 50 diamonds<\/td>/,'the league table: first place in each league');
+ // 7 Oct 2026: 25, 15 and 10 (50, 30 and 20 before), each its own number, and the podium's diamonds only with 4 finishers or more.
+ assert.match(wikiArticle('events').html,/The first three in each league win 25, 15 and 10 diamonds, every other finisher 3\. <span>Podium diamonds need at least 4 finishers in your league\. With fewer, every finisher gets 3 diamonds\.<\/span>/);
+ assert.match(wikiArticle('events').html,/<td>Valley Legends<\/td><td>90\+<\/td><td>17,600 coins and 25 diamonds<\/td><\/tr><\/tbody><\/table><\/div><p>Podium diamonds need at least 4 finishers in your league\./,'the league table: first place in each league, and the rule under it');
  assert.match(wikiArticle('diamonds').html,/at least 1 diamond with every level-up/);
  assert.match(wikiArticle('buildings').html,/Dairy Barn needs the Feed Mill first/);
 });
@@ -120,7 +121,7 @@ test('the Farm family article and tips say what the order, the tournament, the c
  assert.equal(rules.MARKET_PAYOUT_MULTIPLIER*C.ORDER_COIN_MULTIPLIER,1);
  assert.match(html,/Every family gets the same goods that week; a bigger family gets bigger amounts/);assert.match(html,/You deliver to one family a week\./);
  assert.match(html,new RegExp(`Everyone who delivered at least ${C.MIN_CONTRIB_POINTS} points to the order shares in its rewards\\. The whole order pays a coin for every point \\(25% more than the Market pays at its normal price\\), 1 XP for every 100 points and diamonds`));
- assert.match(html,/<td>500<\/td><td>[^]*?500<\/td><td>5<\/td><td>[^]*?1<\/td>/);assert.match(html,/<td>20,000<\/td><td>[^]*?20,000<\/td><td>200<\/td><td>[^]*?3<\/td>/);
+ assert.match(html,/<td>500<\/td><td>[^]*?500<\/td><td>5<\/td><td>[^]*?1<\/td>/);assert.match(html,/<td>10,000<\/td><td>[^]*?10,000<\/td><td>100<\/td><td>[^]*?2<\/td><\/tr><\/tbody>/,'at most 2 own diamonds since 7 Oct 2026 (3 before)');
  // 5 Oct 2026: an unfinished order pays for its full lines, a quarter a line of four; the completion diamonds only for a whole order.
  assert.equal(rules.FAMILY_ORDER_LINES,4,'the article says a quarter a line');
  assert.match(html,new RegExp(`Every full line pays a quarter of these rewards\\. An order that is not finished pays for its full lines when the week ends, on Monday at 00:00 UTC: with 2 of its 4 lines full, half\\. The whole order pays everything as soon as its last line is full, plus ${C.ORDER_COMPLETION_DIAMONDS} diamonds for finishing it, shared by points\\. An order without a full line pays nothing`));

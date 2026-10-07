@@ -43,7 +43,7 @@ test('all products have positive base processing margins, variable prices and re
 test('special hamper commission pays coins and diamonds once; locked buildings never get its orders',()=>{
  const s=farm();let t=now,order;
  for(let d=1;d<100;d++){t=now+d*DAY_MS;order=dailyOrders(s,t).find(o=>o.input.harvesthamper===2&&o.tier==='commission');if(order)break;}
- assert.ok(order);assert.ok(order.coins>order.marketValue);assert.ok(order.diamonds>=8);const coins=s.coins,diamonds=s.diamonds;
+ assert.ok(order);assert.ok(order.coins>order.marketValue);assert.ok(order.diamonds>=4,'a commission pays 4-10 since 7 Oct 2026 (8-18 before)');const coins=s.coins,diamonds=s.diamonds;
  const result=act(s,{type:'delivery',id:order.id,day:utcDay(t)},t);assert.equal(s.coins,coins+result.coins);assert.equal(s.diamonds,diamonds+result.diamonds);
  assert.throws(()=>act(s,{type:'delivery',id:order.id,day:utcDay(t)},t),/already delivered/);
  const locked=farm();locked.buildings.preserves.built=false;for(let d=1;d<50;d++)for(const q of [...dailyTasks(locked,now+d*DAY_MS),...dailyOrders(locked,now+d*DAY_MS)])assert.ok(!q.requiresBuildings?.includes('preserves'));

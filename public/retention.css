@@ -236,6 +236,8 @@
 .event-podium li b{color:#6b5a2a}
 .event-podium li span{display:inline-flex;align-items:center;gap:4px;font-weight:700;color:#6b4f0f}
 .event-podium li span .game-art{width:18px;height:18px}
+/* The 4-finisher rule under the list (7 Oct 2026). */
+.event-podium .event-podium-note{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:#7a6631}
 .family-order-line.is-done progress::-webkit-progress-value{background:#5e9b51}
 .family-order-line.is-done progress::-moz-progress-bar{background:#5e9b51}
 

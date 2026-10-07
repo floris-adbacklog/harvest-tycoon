@@ -35,7 +35,7 @@ const points=(c,p)=>c.contributions.find(x=>x.player_id===p&&x.week===week)?.ord
 
 test('an order has four lines, so every full line is a quarter (the window, the wiki and the tips say so)',()=>{
  assert.equal(FAMILY_ORDER_LINES,4);
- assert.deepEqual([0,1,2,3,4].map(n=>familyOrderPay(20000,1,n,4)),[{coins:0,xp:0,diamonds:0},{coins:5000,xp:50,diamonds:1},{coins:10000,xp:100,diamonds:2},{coins:15000,xp:150,diamonds:3},{coins:20000,xp:200,diamonds:3}]);
+ assert.deepEqual([0,1,2,3,4].map(n=>familyOrderPay(20000,1,n,4)),[{coins:0,xp:0,diamonds:0},{coins:5000,xp:50,diamonds:1},{coins:10000,xp:100,diamonds:2},{coins:15000,xp:150,diamonds:2},{coins:20000,xp:200,diamonds:2}]);   // 3 and 3 until 7 Oct 2026 (at most 2 own diamonds)
 });
 
 test('1, 2 and 3 of 4 full lines pay a quarter, half and three quarters when the week settles, to everyone with 500 points',()=>{
@@ -128,8 +128,10 @@ test('the preview says what the week\'s end would pay now, and the settle pays e
    if(p==='carol'||full===0){assert.deepEqual(preview.now,{coins:0,xp:0,diamonds:0},`${p}, ${full} lines`);assert.equal(r,undefined);continue;}
    if(full<4){assert.deepEqual({coins:r.coins,xp:r.xp,diamonds:r.diamonds},preview.now,`${p}, ${full} lines`);continue;}
    // A whole order adds the member's share of the completion diamonds, which the preview shows apart (completionBonus, shared).
+   // The payout rounds the farmer's diamonds and their share together after the family level's extra, so it can be one more
+   // (familyPublicView says so); with 2 completion diamonds (7 Oct 2026, 4 before) that one shows here.
    assert.deepEqual([r.coins,r.xp],[preview.now.coins,preview.now.xp],`${p}, whole order`);
-   assert.ok(r.diamonds>=preview.now.diamonds&&r.diamonds<=preview.now.diamonds+preview.completionBonus,`${p}, whole order diamonds`);
+   assert.ok(r.diamonds>=preview.now.diamonds&&r.diamonds<=preview.now.diamonds+preview.completionBonus+1,`${p}, whole order diamonds`);
    // What a whole order would give stays in the preview beside it.
    assert.deepEqual({coins:preview.coins,xp:preview.xp,diamonds:preview.diamonds},familyOrderPay(points(c,p),1+familyPublicView(c,p,farm(),now).standing.bonus,1,1));
   }

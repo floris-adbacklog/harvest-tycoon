@@ -1330,16 +1330,18 @@ export const DAY_MS=86400000;
 // The daily gift, day 1 to 7 of a streak (day 7 repeats while the streak holds). 27 Sep 2026: the coins grow with the farm level
 // (× level/2, never below these, in fives: 40-160 at level 2, 400-1,600 at level 20), because a fixed 160 coins was less than one
 // pumpkin from level 10 on; days 3, 5 and 7 of every streak week bring a 30-minute boost (double XP, double harvest, double
-// earnings, rising like their shop prices, and no double harvest right after the second day's welcome one; VIP doubles the whole gift, so an hour); and one missed day a week keeps the streak (the save). The diamonds stay.
+// earnings, rising like their shop prices, and no double harvest right after the second day's welcome one; VIP doubles the whole gift, so an hour); and one missed day a week keeps the streak (the save). The diamonds stayed then; they were halved on 7 Oct 2026 (below).
 export const DAILY_REWARDS=[40,55,70,85,100,120,160];
 export const RETURN_BOOST_MS=30*60000,FIRST_HARVEST_BONUS=3;
-export const DAILY_DIAMONDS=[4,6,8,10,12,16,24];
+// Diamonds earned in play (7 Oct 2026, the owner's choice): about half at every level and about 60% less in the end game, because a
+// daily player earned a €4.99 pack's worth every week. Diamonds already earned stay. The gift was 4/6/8/10/12/16/24.
+export const DAILY_DIAMONDS=[2,3,4,5,6,8,12];
 export const DAILY_BOOSTS=Object.freeze({3:'xp',5:'harvest',7:'coins'}),DAILY_BOOST_MS=30*60000,STREAK_SAVE_DAYS=7;
 // The comeback chest (Oct 2026): away COMEBACK_MIN_DAYS days or more, the Welcome back card holds 20 coins × half the level for every
 // day away (up to 7), plus the gift's 30 minutes of double XP; VIP doubles it like the gift. No diamonds and no XP, so it stays below a
 // 3-day gift run in every part (tests/comeback-chest.test.mjs): coming back never pays better than coming every day. One every 14 days.
 export const COMEBACK_MIN_DAYS=3,COMEBACK_MAX_DAYS=7,COMEBACK_EVERY_DAYS=14,COMEBACK_COINS=20,COMEBACK_BOOST='xp';
-export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([2,2,4]),DAILY_BONUS=Object.freeze({coins:60,xp:15});   // the bonus for all three
+export const DAILY_CHALLENGE_DIAMONDS=Object.freeze([1,1,2]),DAILY_BONUS=Object.freeze({coins:60,xp:15});   // the bonus for all three; 2/2/4 diamonds until 7 Oct 2026
 export const DIAMOND_PACKS=Object.freeze([{amount:150,price:'€1.99'},{amount:500,price:'€4.99'},{amount:1250,price:'€9.99'},{amount:3500,price:'€24.99'}]);
 // Every diamond spent goes through here, so the farm keeps the total (stats.diamonds_spent: the Gem collector avatar,
 // public/player-avatars.js). Counted from 25 Sep 2026; spending before that was not kept.
@@ -1566,7 +1568,9 @@ function quoteTierOrder(template,tier,now,roll){
   const input=Object.fromEntries(Object.entries(template.input).map(([k,n])=>[k,tier==='village'?n*2:n]));
   const band=DELIVERY_TIERS[tier],bonus=band.minBonus+roll%(band.maxBonus-band.minBonus+1);
   const value=marketValue(input,now),baseValue=Object.entries(input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
-  const diamonds=tier==='quick'?1:tier==='village'?3+roll%3:Math.min(18,8+Math.floor(baseValue/2000)+roll%3);
+  // 7 Oct 2026: a village order 2-3 (was 3-5), a commission 4 + 1 per 4,000 coins of goods + 0-1, at most 10 (was 8 + 1 per 2,000
+  // + 0-2, at most 18). An order already on today's board keeps its amount until the board turns over.
+  const diamonds=tier==='quick'?1:tier==='village'?2+roll%2:Math.min(10,4+Math.floor(baseValue/4000)+roll%2);
   return {...template,input,tier,customer:template.customer??(tier==='quick'?'Your neighbours':'Village trading post'),story:template.story??(tier==='quick'?'A small basket to brighten someone’s day.':'The village needs a selection of your farm-made goods.'),bonus,marketValue:value,coins:Math.ceil(value*(100+bonus)/100),diamonds,xp:tier==='village'?template.xp*2:template.xp};
 }
 export const REPLACE_ORDER_COST=5;
@@ -1697,7 +1701,7 @@ export function buildImprovement(state,id){
 // diamonds; the next contract comes 12 hours later (6 with the Loading crane). A contract with nothing loaded yet can be
 // turned down, and the next one comes after the same wait. Contracts follow from a running number, like the Valley Market's
 // baskets, so the game and the server agree on them.
-export const DEPOT_PREMIUM=1.6,DEPOT_RESTOCK=12*3600000,DEPOT_DIAMONDS=10;
+export const DEPOT_PREMIUM=1.6,DEPOT_RESTOCK=12*3600000,DEPOT_DIAMONDS=5;   // 10 a trailer until 7 Oct 2026
 export const EXPORT_DESTINATIONS=Object.freeze([
  {name:'The city markets',line:'From the valley to the busiest stalls in town.'},
  {name:'The harbour warehouses',line:'Crates for the ships that sail at dawn.'},
@@ -1754,11 +1758,12 @@ export function depotSkip(state,contract,now=Date.now()){
 // the week and are kept for the whole week once the farm first sees them.
 // 27 Sep 2026: bigger and better paid (was 15,000 / 30,000 / 50,000 at 1.5× with 5/5/10 diamonds and 3 prize produce): about a
 // day of fields and a day of production spread over the week, two in the heaviest weeks, for twice the goods' price.
-export const FAIR_PREMIUM=2,FAIR_PRIZE_PRODUCE=6,FAIR_CHAMPION_DIAMONDS=100;
+// 7 Oct 2026: 5 / 10 / 15 diamonds a class and 20 for grand champion (was 15 / 25 / 40 and 100).
+export const FAIR_PREMIUM=2,FAIR_PRIZE_PRODUCE=6,FAIR_CHAMPION_DIAMONDS=20;
 export const FAIR_CLASSES=Object.freeze([
- {name:'Best harvest',stars:1,value:30000,diamonds:15},
- {name:'Finest goods',stars:2,value:90000,diamonds:25},
- {name:'Best in show',stars:3,value:150000,diamonds:40}
+ {name:'Best harvest',stars:1,value:30000,diamonds:5},
+ {name:'Finest goods',stars:2,value:90000,diamonds:10},
+ {name:'Best in show',stars:3,value:150000,diamonds:15}
 ]);
 function fairClasses(state,week){
  const roll=n=>mixBits(calendarHash(`fair-v1:${week}:${n}`)),pick=(list,n)=>list[roll(n)%list.length];
@@ -1826,9 +1831,9 @@ export function masterSpend(state,branch){
 }
 
 // The Seed Lab (in the Glasshouse): two test beds. Choose an heirloom that is open at your level and give the parent crops; the
-// first cross of a variety takes a day and discovers it (+15 diamonds, +200 more when all 20 are found), every cross after that
+// first cross of a variety takes a day and discovers it (+8 diamonds, +100 more when all 20 are found; 15 and 200 until 7 Oct 2026), every cross after that
 // 8 hours. A bed gives 4 heirlooms.
-export const LAB_BEDS=2,LAB_DISCOVER_MS=24*3600000,LAB_GROW_MS=8*3600000,LAB_DISCOVER_DIAMONDS=15,LAB_COMPLETE_DIAMONDS=200;
+export const LAB_BEDS=2,LAB_DISCOVER_MS=24*3600000,LAB_GROW_MS=8*3600000,LAB_DISCOVER_DIAMONDS=8,LAB_COMPLETE_DIAMONDS=100;
 export const heirloomFound=(state,key)=>Array.isArray(state.lab?.found)&&state.lab.found.includes(key);
 export const heirloomOpen=(state,key)=>featureUnlocked(state,'seedlab')&&levelOf(state)>=HEIRLOOMS[key].level;
 // Whether a free test bed can be used now: some heirloom open at your level whose parent crops you have (1 Oct 2026: a free bed
@@ -1862,7 +1867,7 @@ export function labCollect(state,bed,now=Date.now()){
 
 // Visitors: someone comes up the road with a rush order: two kinds of goods and, once you have found any, an heirloom. Deliver
 // everything within 12 hours. Every visitor served in a row adds 10% to the next order (up to double) and to the pay, which starts
-// at 1.8x the goods' normal price, with 5 diamonds plus 1 for each in the run (at most 15); one who leaves unserved, or is sent away, ends the run. The next one comes 3 hours later, from
+// at 1.8x the goods' normal price, with 3 diamonds (7 Oct 2026; was 5 plus 1 for each in the run, at most 15); one who leaves unserved, or is sent away, ends the run. The next one comes 3 hours later, from
 // the moment you are on the farm again. Orders follow a running number, like the trade depot's, so the game and the server agree.
 export const VISITORS=Object.freeze([
  Object.freeze({id:'cook',name:'The count’s cook',line:'The count has guests tonight. Can your farm help me out?'}),
@@ -1872,7 +1877,7 @@ export const VISITORS=Object.freeze([
  Object.freeze({id:'organiser',name:'The festival organiser',line:'The harvest festival opens tomorrow. I need the very best.'}),
  Object.freeze({id:'gardener',name:'The royal gardener',line:'The queen asked for something rare from the valley.'})
 ]);
-export const VISITOR_VALUE=40000,VISITOR_STAY=12*3600000,VISITOR_WAIT=3*3600000,VISITOR_STREAK_MAX=10,VISITOR_PREMIUM=1.8;
+export const VISITOR_VALUE=40000,VISITOR_STAY=12*3600000,VISITOR_WAIT=3*3600000,VISITOR_STREAK_MAX=10,VISITOR_PREMIUM=1.8,VISITOR_DIAMONDS=3;
 export const visitorStreakBonus=streak=>Math.min(streak,VISITOR_STREAK_MAX)*.1;
 export function visitorPay(state){return 1+masterBonus(state,'visitors')+valleyProjectBonus(state,'bridge');}
 function visitorOrder(state,serial,streak,now){
@@ -1884,7 +1889,7 @@ function visitorOrder(state,serial,streak,now){
  keys.push(goods.length?goods[roll(2)%goods.length]:keys[0]);
  const input={};for(const k of keys)input[k]=(input[k]??0)+Math.max(1,Math.min(200,Math.round(target/keys.length/ITEMS[k].sell)));
  const value=Object.entries(input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
- return {id:serial,visitor:roll(3)%VISITORS.length,input,value,coins:Math.ceil(value*(VISITOR_PREMIUM+bonus)*visitorPay(state)/100)*100,xp:Math.round(value/40),diamonds:5+Math.min(streak,VISITOR_STREAK_MAX),arrivedAt:now,leavesAt:now+VISITOR_STAY};
+ return {id:serial,visitor:roll(3)%VISITORS.length,input,value,coins:Math.ceil(value*(VISITOR_PREMIUM+bonus)*visitorPay(state)/100)*100,xp:Math.round(value/40),diamonds:VISITOR_DIAMONDS,arrivedAt:now,leavesAt:now+VISITOR_STAY};
 }
 function refreshVisitors(state,now){
  if(!featureUnlocked(state,'visitors'))return;
@@ -1910,9 +1915,11 @@ export function visitorDecline(state,id,now=Date.now()){
 // The giant pumpkin (at the fair): one a week. Tend it once every 8 hours: each tending adds 10 kg plus 1 kg for every tending
 // before it this week, and 10 kg more when you feed it 10 natural fertilizer. Weigh it in whenever you like; the scale pays by the
 // kilo, a new personal record (from 100 kg) adds 25 diamonds. A pumpkin still on the vine on Monday is weighed in by itself.
+// 7 Oct 2026: 1 diamond for every 20 kg, at most 20 (was every 10 kg, at most 40); the record bonus stays.
 export const GIANT_TEND_MS=8*3600000,GIANT_TEND_KG=10,GIANT_FEED_KG=10,GIANT_FEED=Object.freeze({fertilizer:10}),GIANT_COINS_PER_KG=400,GIANT_RECORD_DIAMONDS=25;
 export const GIANT_RECORD_MIN=100;   // a record counts from 100 kg, so a tiny first pumpkin is not one
-export const giantDiamonds=kg=>Math.min(40,Math.floor(kg/10));
+export const GIANT_KG_PER_DIAMOND=20,GIANT_MAX_DIAMONDS=20;   // named for the texts that show them
+export const giantDiamonds=kg=>Math.min(GIANT_MAX_DIAMONDS,Math.floor(kg/GIANT_KG_PER_DIAMOND));
 function giantPayout(state,g){
  const kg=g.kg,record=kg>=GIANT_RECORD_MIN&&kg>(g.record??0),coins=kg*GIANT_COINS_PER_KG,diamonds=giantDiamonds(kg)+(record&&kg>0?GIANT_RECORD_DIAMONDS:0),xp=kg*5;
  state.coins+=coins;state.xp+=xp;state.diamonds+=diamonds;state.stats.earned+=coins;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
@@ -1967,7 +1974,7 @@ export const VALLEY_PROJECTS=Object.freeze({
   {coins:500000,materials:{harvesthamper:30,cloth:60,goatcheese:80}},
   {coins:900000,materials:{blanket:25,prizeproduce:15,oil:70,goatcheese:80}}]}
 });
-export const VALLEY_PROJECT_XP=2000,VALLEY_PROJECT_DIAMONDS=40;
+export const VALLEY_PROJECT_XP=2000,VALLEY_PROJECT_DIAMONDS=20;   // × the project level: 20 / 40 / 60 (40 / 80 / 120 until 7 Oct 2026)
 export const valleyProjectLevel=(state,id)=>state.valleyProjects?.[id]?.level??0;
 export const valleyProjectBonus=(state,id)=>valleyProjectLevel(state,id)*VALLEY_PROJECTS[id].per;
 function valleyProjectStep(state,id){
@@ -2070,7 +2077,15 @@ export function normalizeFarm(state,now=Date.now()){
  normalizeEndgame(state);
  normalizeShift(state);settleShift(state,now);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshPass(state,now);
+ currentEndgameDiamonds(state);
  return state;
+}
+// This week's fair classes, an open trailer and a waiting visitor keep their diamonds in the farm. Since 7 Oct 2026 (fewer diamonds)
+// they always hold today's amounts, so one set out before the change pays, and shows, the new amount.
+function currentEndgameDiamonds(state){
+ if(Array.isArray(state.fair.classes))for(const c of state.fair.classes){const now=FAIR_CLASSES.find(x=>x.name===c?.name);if(now)c.diamonds=now.diamonds;}
+ if(state.depot.contract)state.depot.contract.diamonds=DEPOT_DIAMONDS;
+ if(state.visitors.current)state.visitors.current.diamonds=VISITOR_DIAMONDS;
 }
 // An order on today's board that the farm cannot make (picked before a rule changed, or a building it has not built) is swapped,
 // while undelivered, for one of the same kind it can make; its revision moves on, so an open screen asks to look again.
@@ -2290,7 +2305,8 @@ export function claimPassTier(state,track,tier,now=Date.now()){
  pass[track].push(tier);
  return {track,tier,...reward};
 }
-// Every level pays at least one diamond, so no level-up is ever empty-handed; from level 10 on it grows with every five levels.
+// Every level pays at least one diamond, so no level-up is ever empty-handed; from level 20 on it grows with every ten levels
+// (7 Oct 2026; it was one for every five levels, from level 10).
 // Invite a friend: every farmer has a short personal code (harvesttycoon.com/?invite=CODE). A friend who starts a new farm with
 // it and reaches level 10 within 30 days earns 150 diamonds, and so does the farmer who invited them, for at most 10 friends.
 // The friend's reward is paid in their own farm when they reach the level; the inviter's on their next load.
@@ -2340,7 +2356,7 @@ export function receiveDonations(state,rows){
  state.donations=state.donations.slice(-50);
  return got;
 }
-export function levelReward(level){return {coins:10*level,diamonds:Math.max(1,Math.floor(level/5))};}
+export function levelReward(level){return {coins:10*level,diamonds:Math.max(1,Math.floor(level/10))};}
 // One farmer title every 5 levels, so nobody is stuck reading "Farm tycoon" from level 5 to 100: the fields keep expanding to level 95, so the
 // titles keep going that far too. The last title holds from level 96 on.
 export const LEVEL_TITLES=Object.freeze(['Rookie farmer','Green thumb','Market regular','Harvest hero','Farm tycoon','Estate builder','Master grower','Valley supplier','Orchard keeper','Crop master','Factory owner','Homestead legend','Regional trader','Harvest baron','Valley icon','Grand cultivator','Estate mogul','Farming dynasty','Valley champion','Legend of the valley']);
@@ -2631,7 +2647,8 @@ export function choreStatus(state,id,now=Date.now()){
  return {...c,attempts,chance,mastered:chance===c.maxChance,locked:!!previous&&(previous.locked||!previous.mastered),remaining:Math.max(0,(state.chores[id]??0)-now)};
 }
 function secureChoreRandom(){return globalThis.crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;}
-export const CHAPTER_DIAMONDS=Object.freeze([10,20,35,50,75,100,125,150,175,200]);
+// Half since 7 Oct 2026 (was 10/20/35/50/75/100/125/150/175/200, 940 in all; now 470). A chapter paid before keeps what it paid.
+export const CHAPTER_DIAMONDS=Object.freeze([5,10,18,25,37,50,63,75,87,100]);
 export const PROJECTS=Object.freeze([
  {name:'Rooted homestead',description:'Build a dependable home for your growing farm.',coins:600,input:{wheat:40,milk:12},medals:0,duration:7200000,xp:250},
  {name:'Village supplier',description:'Become the village’s everyday source of fresh food.',coins:3000,input:{corn:40,eggs:36,bread:20},medals:1,duration:28800000,xp:600},
@@ -2777,7 +2794,11 @@ function workActivity(state,action,now){
 
 // Farm Family rules. Only the authenticated farm-api executes mutations against
 // the service-only context; browser copies expose constants and display helpers.
-export const FAMILY_CONFIG=Object.freeze({MAX_MEMBERS:10,MIN_CONTRIB_POINTS:500,JOIN_COOLDOWN_MS:48*3600000,RENAME_COOLDOWN_MS:7*DAY_MS,ATTEMPTS_PER_HOUR:10,TOURNAMENT_FIRST_MIN:100,TOURNAMENT_FIRST_MAX:5000,TOURNAMENT_PER_EXTRA_FAMILY:25,ORDER_PLAYER_WEEK_DIAMOND_CAP:25,TOURNAMENT_MIN_POINTS:1,ORDER_COIN_MULTIPLIER:1.25,ORDER_XP_PER_VALUE:1/100,ORDER_DIAMOND_BASE:1,ORDER_DIAMOND_MAX:3,ORDER_COMPLETION_DIAMONDS:4,REWARD_WEEKS:8,ORDER_MIN_VALUE_PER_MEMBER:16000,ORDER_MAX_VALUE_PER_MEMBER:30000,RANK_WEIGHTS:[1,.6,.4],TOURNAMENT_SHARES:[25,17,13,10,8,7,6,5,5,4]});
+// 7 Oct 2026, half the diamonds: the tournament's first prize starts at 50 and grows 12.5 a family up to 2,500 (100, 25 and 5,000
+// before), so the pool is 50 for one family, 100 for two, 150 for three and 25 more a family, up to 5,000 (still from 197 families);
+// the Family Order pays a farmer 1 diamond plus 1 from 10,000 points, at most 2 (3), at most 12 a week (25), and shares 2
+// completion diamonds (4).
+export const FAMILY_CONFIG=Object.freeze({MAX_MEMBERS:10,MIN_CONTRIB_POINTS:500,JOIN_COOLDOWN_MS:48*3600000,RENAME_COOLDOWN_MS:7*DAY_MS,ATTEMPTS_PER_HOUR:10,TOURNAMENT_FIRST_MIN:50,TOURNAMENT_FIRST_MAX:2500,TOURNAMENT_PER_EXTRA_FAMILY:12.5,ORDER_PLAYER_WEEK_DIAMOND_CAP:12,TOURNAMENT_MIN_POINTS:1,ORDER_COIN_MULTIPLIER:1.25,ORDER_XP_PER_VALUE:1/100,ORDER_DIAMOND_BASE:1,ORDER_DIAMOND_MAX:2,ORDER_COMPLETION_DIAMONDS:2,REWARD_WEEKS:8,ORDER_MIN_VALUE_PER_MEMBER:16000,ORDER_MAX_VALUE_PER_MEMBER:30000,RANK_WEIGHTS:[1,.6,.4],TOURNAMENT_SHARES:[25,17,13,10,8,7,6,5,5,4]});
 export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy','family-bee','family-oak','family-barn','pumpkin','greenbeans','cheese','applejuice','berrypreserves','harvesthamper','family-fox','family-owl','family-windmill','family-horseshoe',
  // 27 Sep 2026: 35 more (60 in all), from the crops and goods added since. Always added at the end: an emblem's id is its place in this list.
  'lettuce','barley','cabbage','cauliflower','redcabbage','squash','polebeans','ciderapples','cherries','flour','pie','pickles','oil','stew','applepie','berrytart','orchardjuice','squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','prizeproduce','truffles','vegetables','silo','cart','berrysmoothie'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
@@ -2790,12 +2811,13 @@ export function familyWeekStart(week){return 4*DAY_MS+week*7*DAY_MS;}
 // 2, a delivery 10, a chore 3, a helping-hand job 2. At each of four tiers every member with at least FAMILY_CHEST_MIN points that
 // week gets diamonds and coins that grow with their own level. A new chest every Monday. A bigger, busier family fills it further:
 // a keen farmer alone reaches the wooden chest, a family of five the silver one, and gold takes a full family.
+// 7 Oct 2026: 2 / 3 / 6 / 12 diamonds a tier (was 3 / 6 / 12 / 25), with the same family-level bonus.
 export const FAMILY_CHEST_POINTS=Object.freeze({harvested:1,produced:2,deliveries:10,chores:3,activities:2});
 export const FAMILY_CHEST_TIERS=Object.freeze([
- Object.freeze({id:'wood',name:'Wooden chest',points:1500,diamonds:3,coinsPerLevel:20}),
- Object.freeze({id:'iron',name:'Iron chest',points:5000,diamonds:6,coinsPerLevel:50}),
- Object.freeze({id:'silver',name:'Silver chest',points:12000,diamonds:12,coinsPerLevel:100}),
- Object.freeze({id:'gold',name:'Golden chest',points:25000,diamonds:25,coinsPerLevel:200})
+ Object.freeze({id:'wood',name:'Wooden chest',points:1500,diamonds:2,coinsPerLevel:20}),
+ Object.freeze({id:'iron',name:'Iron chest',points:5000,diamonds:3,coinsPerLevel:50}),
+ Object.freeze({id:'silver',name:'Silver chest',points:12000,diamonds:6,coinsPerLevel:100}),
+ Object.freeze({id:'gold',name:'Golden chest',points:25000,diamonds:12,coinsPerLevel:200})
 ]);
 export const FAMILY_CHEST_MIN=300;
 export const familyChestTiers=points=>FAMILY_CHEST_TIERS.filter(t=>points>=t.points).length;
@@ -2809,11 +2831,12 @@ export function familyStanding(c,familyId){
  return {tiers,level,next:FAMILY_LEVEL_STEPS[level]??null,bonus:(level-1)*FAMILY_LEVEL_BONUS};
 }
 // A family event bonus (harvest_event_settle, family-chest.sql): when this many members of one family finish the same farm event,
-// each of them gets this on top of their own prize.
-export const FAMILY_EVENT_BONUS=Object.freeze({finishers:3,coins:200,diamonds:5});
+// each of them gets this on top of their own prize (3 diamonds since 7 Oct 2026, 5 before; supabase/diamonds-2026-10-07.sql).
+export const FAMILY_EVENT_BONUS=Object.freeze({finishers:3,coins:200,diamonds:3});
 // Farm event leagues (1 Oct 2026): every farmer races against farmers of about their level, with a top 10 and a podium of its own
 // per league. Diamonds per place are the same in every league; coins grow with the league: × its number, 1 to 5, and × 8 for the
 // Valley Legends (harvest_event_settle, supabase/live-event-leagues.sql). The level when the event ends decides the league.
+// Since 7 Oct 2026 a league's podium diamonds (25 / 15 / 10) need at least 4 finishers in it (supabase/diamonds-2026-10-07.sql).
 export const EVENT_LEAGUES=Object.freeze([
  {id:'sprout',name:'Sprout League',from:15},{id:'meadow',name:'Meadow League',from:30},{id:'orchard',name:'Orchard League',from:45},
  {id:'harvest',name:'Harvest League',from:60},{id:'estate',name:'Estate League',from:75},{id:'legends',name:'Valley Legends',from:90,coins:8}
@@ -2897,7 +2920,7 @@ export function familyTournament(context,week,config=FAMILY_CONFIG){
  // member contributed). How many members a family has does not matter.
  const firstPrize=Math.min(config.TOURNAMENT_FIRST_MAX,config.TOURNAMENT_FIRST_MIN+Math.max(0,qualifying.length-1)*config.TOURNAMENT_PER_EXTRA_FAMILY);
  // The prize pool is what first, second and third won together until 1 Oct 2026 (RANK_WEIGHTS: 100%, 60% and 40% of first prize,
- // so 100 diamonds for one family, 200 for two, 300 for three, then 50 more a family). The top ten families share it now, by
+ // so 50 diamonds for one family, 100 for two, 150 for three, then 25 more a family; twice that until 7 Oct 2026). The top ten families share it now, by
  // TOURNAMENT_SHARES (25% for first down to 4% for tenth); fewer than ten share the whole pool in the same proportions. What
  // rounding leaves goes to the top places, so the pool is always paid out in full.
  const total=Math.round(firstPrize*config.RANK_WEIGHTS.slice(0,Math.max(1,Math.min(qualifying.length,config.RANK_WEIGHTS.length))).reduce((n,w)=>n+w,0));
@@ -2941,7 +2964,7 @@ export function settleFamilyWeeks(c,now,config=FAMILY_CONFIG){
  return settled;
 }
 // What the Family Order pays one member for their order points. A whole order pays a coin for every point (the Market's payout ×
-// ORDER_COIN_MULTIPLIER), 1 XP per 100 points and 1 diamond plus 1 for every 10,000 points, up to 3, all with the family level's
+// ORDER_COIN_MULTIPLIER), 1 XP per 100 points and 1 diamond plus 1 for every 10,000 points, up to 2 (3 until 7 Oct 2026), all with the family level's
 // extra. An order with only some lines full pays that part of it (5 Oct 2026, the owner's choice): full of lines, so a quarter a
 // line, rounded down. The payouts and the window's preview both use this, so the preview is what is paid.
 const familyOrderDiamonds=(points,config)=>Math.min(config.ORDER_DIAMOND_MAX,config.ORDER_DIAMOND_BASE+Math.floor(points/10000));

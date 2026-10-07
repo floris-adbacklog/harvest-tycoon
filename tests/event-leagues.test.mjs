@@ -18,7 +18,8 @@ test('standings per league: the podium is the league\'s own, coins × the league
  const legends=EVENT_LEAGUES[5];
  const e={id:'e',starts_at:iso(now-H),ends_at:iso(now+H),objectives:[{stat:'harvested',target:10}],leagues:[...Array(5).fill({objectives:[{stat:'harvested',target:10}]}),{objectives:[{stat:'made_cloth',target:2}]}],rewards:{coins:200}};
  const rows=['a','b','c','d'].map((id,i)=>({player_id:id,progress:{made_cloth:2,harvested:0},actions:5,joined_at:iso(now-H),last_at:iso(now-H+(20+i)*60000)}));
- assert.deepEqual(eventStandings(e,rows,now,legends).map(r=>[r.coins,r.diamonds,r.podium]),[[17600,50,true],[9600,30,true],[5600,20,true],[2400,5,false]]);
+ // Four finishers: the podium's diamonds (25 / 15 / 10 since 7 Oct 2026; 50 / 30 / 20 before) and 3 for the fourth.
+ assert.deepEqual(eventStandings(e,rows,now,legends).map(r=>[r.coins,r.diamonds,r.podium]),[[17600,25,true],[9600,15,true],[5600,10,true],[2400,3,false]]);
  assert.deepEqual(eventStandings(e,rows,now,EVENT_LEAGUES[0]).map(r=>r.finished),[false,false,false,false],'the Sprout League needs its own goal');
 });
 

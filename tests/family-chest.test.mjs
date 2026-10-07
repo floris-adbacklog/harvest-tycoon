@@ -24,7 +24,8 @@ test('a new family is open, so anyone can join straight away',()=>{
 });
 
 test('the chest has four tiers that a busier family fills further; points per action match the database trigger',async()=>{
- assert.deepEqual(FAMILY_CHEST_TIERS.map(t=>[t.id,t.points,t.diamonds,t.coinsPerLevel]),[['wood',1500,3,20],['iron',5000,6,50],['silver',12000,12,100],['gold',25000,25,200]]);
+ // Diamonds 2 / 3 / 6 / 12 since 7 Oct 2026 (3 / 6 / 12 / 25 before).
+ assert.deepEqual(FAMILY_CHEST_TIERS.map(t=>[t.id,t.points,t.diamonds,t.coinsPerLevel]),[['wood',1500,2,20],['iron',5000,3,50],['silver',12000,6,100],['gold',25000,12,200]]);
  assert.deepEqual(FAMILY_CHEST_POINTS,{harvested:1,produced:2,deliveries:10,chores:3,activities:2});
  assert.deepEqual([0,1499,1500,4999,5000,12000,25000,99999].map(familyChestTiers),[0,0,1,1,2,3,4,4]);
  const sql=(await import('node:fs')).readFileSync(new URL('../supabase/family-chest.sql',import.meta.url),'utf8');
@@ -38,8 +39,8 @@ test('every member with enough points gets each tier reached, coins by their own
  c.chestPlayers=[{family_id:fid(c),week,player_id:'lea',points:3000},{family_id:fid(c),week,player_id:'bo',points:FAMILY_CHEST_MIN},{family_id:fid(c),week,player_id:'cas',points:FAMILY_CHEST_MIN-1}];
  c=run(c,'bo',{type:'family_read'}).context;
  const mine=p=>c.rewards.filter(r=>r.player_id===p&&r.kind.startsWith('chest-')).sort((a,b)=>a.diamonds-b.diamonds);
- assert.deepEqual(mine('lea').map(r=>[r.kind,r.coins,r.diamonds]),[['chest-wood',20*30,3],['chest-iron',50*30,6]]);
- assert.deepEqual(mine('bo').map(r=>[r.kind,r.coins,r.diamonds]),[['chest-wood',20*20,3],['chest-iron',50*20,6]]);
+ assert.deepEqual(mine('lea').map(r=>[r.kind,r.coins,r.diamonds]),[['chest-wood',20*30,2],['chest-iron',50*30,3]]);
+ assert.deepEqual(mine('bo').map(r=>[r.kind,r.coins,r.diamonds]),[['chest-wood',20*20,2],['chest-iron',50*20,3]]);
  assert.equal(mine('cas').length,0,'below the minimum');
  // Again: nothing twice; the silver tier comes when the chest reaches it.
  c=run(c,'lea',{type:'family_read'}).context;assert.equal(mine('lea').length,2);
@@ -49,7 +50,7 @@ test('every member with enough points gets each tier reached, coins by their own
  c=run(c,'cas',{type:'family_read'}).context;assert.deepEqual(mine('cas').map(r=>[r.kind,r.week]),[['chest-wood',week-1]]);
  // Collecting pays out through the family rewards.
  const s=farm(),before=s.diamonds,id=mine('bo')[0].id;const out=run(c,'bo',{type:'family_claim',rewardId:id},now,s);
- assert.equal(s.diamonds,before+3+(out.result.levelReward?.diamonds??0),'the chest diamonds (plus any level rewards the claim also paid)');assert.ok(out.result.message.includes('diamonds'));
+ assert.equal(s.diamonds,before+2+(out.result.levelReward?.diamonds??0),'the chest diamonds (plus any level rewards the claim also paid)');assert.ok(out.result.message.includes('diamonds'));
 });
 
 test('the family level rises with every tier opened and adds 10% per level to the chest and the order',()=>{
@@ -62,7 +63,7 @@ test('the family level rises with every tier opened and adds 10% per level to th
  c.chests.push({family_id:fid(c),week,points:1500});c.chestPlayers=[{family_id:fid(c),week,player_id:'bo',points:500}];
  c=run(c,'bo',{type:'family_read'}).context;
  // This week's wooden chest makes 12 tiers: still level 3, so +20%.
- const wood=c.rewards.find(r=>r.player_id==='bo'&&r.kind==='chest-wood');assert.equal(wood.diamonds,Math.floor(3*1.2));assert.equal(wood.coins,Math.floor(20*20*1.2));
+ const wood=c.rewards.find(r=>r.player_id==='bo'&&r.kind==='chest-wood');assert.equal(wood.diamonds,Math.floor(2*1.2));assert.equal(wood.coins,Math.floor(20*20*1.2));
 });
 
 test('what the Family screen and the farm get: chest, level, flag data, and a nudge for a family of one',()=>{
@@ -92,9 +93,9 @@ test('the family list puts families you can join first, the busiest on top',()=>
 });
 
 test('three or more finishers from one family share a family bonus at the end of a farm event',async()=>{
- assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,coins:200,diamonds:5});
- const sql=(await import('node:fs')).readFileSync(new URL('../supabase/family-chest.sql',import.meta.url),'utf8');
- assert.match(sql,/having count\(\*\)>=3/);assert.match(sql,/coins=p\.coins\+200,diamonds=p\.diamonds\+5/);
+ assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,coins:200,diamonds:3});   // 5 diamonds until 7 Oct 2026
+ const sql=(await import('node:fs')).readFileSync(new URL('../supabase/diamonds-2026-10-07.sql',import.meta.url),'utf8');   // the newest settlement
+ assert.match(sql,/having count\(\*\)>=3/);assert.match(sql,/coins=p\.coins\+200,diamonds=p\.diamonds\+3/);
 });
 
 // 27 Sep 2026: the database refused the chest rewards (family_rewards_kind_check allowed only 'order' and 'tournament'), so a family

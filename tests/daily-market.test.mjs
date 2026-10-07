@@ -45,7 +45,8 @@ test('every fresh board has three tiers; commissions scale, and daily rewards ex
    assert.equal(o.marketValue,marketValue(o.input,t));assert.equal(o.coins,Math.ceil(o.marketValue*(100+o.bonus)/100));assert.ok(o.coins>o.marketValue);
    assert.ok(o.xp>0);assert.equal('reputation' in o,false);
   }
-  assert.equal(orders[0].diamonds,1);assert.ok(orders[1].diamonds>=3&&orders[1].diamonds<=5);assert.ok(orders[2].diamonds>=8&&orders[2].diamonds<=18);
+  // 7 Oct 2026: a village order 2-3 diamonds, a commission 4-10 (were 3-5 and 8-18).
+  assert.equal(orders[0].diamonds,1);assert.ok(orders[1].diamonds>=2&&orders[1].diamonds<=3);assert.ok(orders[2].diamonds>=4&&orders[2].diamonds<=10);
   assert.ok(orders[2].coins>orders[0].coins);assert.ok(Object.keys(orders[2].input).length>=3);assert.ok(Object.keys(orders[2].input).every(k=>PRODUCTS[k]));
   seenBonus.add(orders[2].bonus);seenCommissions.add(orders[2].title);
   const copy=JSON.parse(JSON.stringify(s));copy.xp+=100000;assert.deepEqual(dailyOrders(copy,t+5000),orders);

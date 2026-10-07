@@ -98,13 +98,13 @@ test('the Grand Valley Fair: three classes a week, one ribbon each, stars that a
  assert.throws(()=>act(s,{type:'fair_enter',entry:0,week},now),/already have a ribbon/);
  assert.throws(()=>act(s,{type:'fair_enter',entry:1,week:week-1},now),/new fair week/);
  act(s,{type:'fair_enter',entry:1,week},now);const before=s.diamonds;const r2=act(s,{type:'fair_enter',entry:2,week},now);
- assert.equal(r2.champion,true);assert.equal(r2.championDiamonds,100);assert.equal(s.diamonds-before,classes[2].diamonds+100,'the grand champion bonus');assert.equal(s.stats.fair_stars,6);assert.equal(s.stats.fair_entries,3);assert.equal(s.stats.fair_champion,1);
+ assert.equal(r2.champion,true);assert.equal(r2.championDiamonds,20);assert.equal(s.diamonds-before,classes[2].diamonds+20,'the grand champion bonus (100 until 7 Oct 2026)');assert.equal(s.stats.fair_stars,6);assert.equal(s.stats.fair_entries,3);assert.equal(s.stats.fair_champion,1);
  const next=familyWeekStart(week+1);normalizeFarm(s,next);assert.equal(s.fair.week,week+1);assert.deepEqual(s.fair.entered,[]);
  const weeks=new Set();for(let w=0;w<8;w++){normalizeFarm(s,next+w*7*DAY_MS);weeks.add(JSON.stringify(s.fair.classes.map(c=>c.input)));}assert.ok(weeks.size>=6,'the classes change from week to week');
 });
 
 test('Estate chapters 7-10 use the goods of the three waves and wait for their level',()=>{
- assert.equal(PROJECTS.length,10);assert.deepEqual(CHAPTER_DIAMONDS.slice(6),[125,150,175,200]);
+ assert.equal(PROJECTS.length,10);assert.deepEqual(CHAPTER_DIAMONDS.slice(6),[63,75,87,100]);   // half since 7 Oct 2026 (125/150/175/200)
  assert.deepEqual(PROJECTS.slice(6).map(p=>p.level),[40,55,70,85]);
  for(const p of PROJECTS.slice(6))for(const k of Object.keys(p.input))assert.ok(itemAvailable(farmAt(p.level),k),`${p.name}: ${k}`);
  const s=farmAt(45,1000);s.estate.completed=6;s.mastery.claimed=Array.from({length:44},(_,i)=>String(i));
@@ -198,7 +198,8 @@ test('orders only ask for what the farm can make now, on older farms too, and th
  for(const k of Object.keys(swapped.input))assert.ok(itemAvailable(t,k),k);
 });
 test('the fair is a week\'s goal (27 Sep 2026): bigger classes, twice the goods\' price, more diamonds and a champion bonus',()=>{
- assert.deepEqual(FAIR_CLASSES.map(c=>[c.value,c.diamonds]),[[30000,15],[90000,25],[150000,40]]);assert.equal(FAIR_PREMIUM,2);
+ // The diamonds since 7 Oct 2026: 5 / 10 / 15 (they were 15 / 25 / 40).
+ assert.deepEqual(FAIR_CLASSES.map(c=>[c.value,c.diamonds]),[[30000,5],[90000,10],[150000,15]]);assert.equal(FAIR_PREMIUM,2);
  const s=farmAt(90,0),total=s.fair.classes.reduce((sum,c)=>sum+c.coins,0);
  assert.ok(total>=500000&&total<=600000,`about 540,000 coins a week, got ${total}`);
 });

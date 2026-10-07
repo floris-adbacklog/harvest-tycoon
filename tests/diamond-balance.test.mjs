@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {applyFarmAction,dailyTasks,utcDay,DAY_MS,BOOSTS,DAILY_DIAMONDS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
-test('daily challenges pay 2, 2 and 4 diamonds once, separately from login gifts',()=>{
- const s=createFarm(now);const tasks=dailyTasks(s,now);assert.deepEqual(tasks.map(q=>q.diamonds),[2,2,4]);
+// 7 Oct 2026: 1, 1 and 2 (they were 2, 2 and 4).
+test('daily challenges pay 1, 1 and 2 diamonds once, separately from login gifts',()=>{
+ const s=createFarm(now);const tasks=dailyTasks(s,now);assert.deepEqual(tasks.map(q=>q.diamonds),[1,1,2]);
  let levelTotal=0;
  for(const q of tasks){
   assert.throws(()=>applyFarmAction(s,{type:'daily',id:q.id,day:utcDay(now)},now),/Finish/);
@@ -14,9 +15,9 @@ test('daily challenges pay 2, 2 and 4 diamonds once, separately from login gifts
   assert.throws(()=>applyFarmAction(s,{type:'daily',id:q.id,day:utcDay(now)},now),/already claimed/);
   assert.equal(s.diamonds,before+q.diamonds+levelDiamonds);
  }
- assert.equal(s.diamonds,8+levelTotal);assert.equal(s.stats.challenge_diamonds,8);assert.equal(s.stats.diamonds_earned,levelTotal,'only level-ups count, the challenge diamonds stay apart');
+ assert.equal(s.diamonds,4+levelTotal);assert.equal(s.stats.challenge_diamonds,4);assert.equal(s.stats.diamonds_earned,levelTotal,'only level-ups count, the challenge diamonds stay apart');
  assert.throws(()=>applyFarmAction(s,{type:'daily',id:0,day:utcDay(now)},now+DAY_MS),/new day/);
- assert.equal(s.diamonds,8+levelTotal);
+ assert.equal(s.diamonds,4+levelTotal);
 });
 test('old or manipulated boost quotes never charge a different price',()=>{
  const s=createFarm(now);s.diamonds=1000;
@@ -32,7 +33,7 @@ test('free beginner diamonds still buy an entry boost; premium boost prices pres
  const s=createFarm(now);s.diamonds=20;
  const id=s.plots.findIndex(p=>p.crop&&p.readyAt>now);
  applyFarmAction(s,{type:'finish_crop',id,expectedCost:10},now);assert.equal(s.diamonds,10);
- assert.equal(DAILY_DIAMONDS.reduce((a,b)=>a+b,0)+7*8,136);
+ assert.equal(DAILY_DIAMONDS.reduce((a,b)=>a+b,0)+7*4,68,'a first week of gifts and challenges (136 until 7 Oct 2026)');
  assert.equal(Math.floor(1000/BOOSTS.crops.cost),6);
  const before=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'coins',expectedCost:100},now),/diamonds/);assert.deepEqual(s,before);
 });

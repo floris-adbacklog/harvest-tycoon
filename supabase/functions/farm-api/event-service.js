@@ -23,8 +23,12 @@ const DAY_MS=86400000,TOP=10;
 // The first three farmers to finish win a podium prize on top of the usual reward, and every later finisher a small extra
 // (same numbers as harvest_event_settle, live-events-bigger-prizes.sql). Diamonds are a fixed prize per place, nothing else; coins
 // come on top of the event's own coins. Every event diamond is paid out: no daily limit since 28 Sep 2026.
-export const PODIUM=Object.freeze([{coins:2000,diamonds:50},{coins:1000,diamonds:30},{coins:500,diamonds:20}]);
-export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:5});
+// 7 Oct 2026 (supabase/diamonds-2026-10-07.sql): 25 / 15 / 10 diamonds for the podium and 3 for every other finisher (was 50 / 30 /
+// 20 and 5), and the podium's diamonds only in a league where at least PODIUM_MIN_FINISHERS farmers finished; with fewer every
+// finisher gets the finisher's 3. The podium's coins stay.
+export const PODIUM=Object.freeze([{coins:2000,diamonds:25},{coins:1000,diamonds:15},{coins:500,diamonds:10}]);
+export const FINISHER_PRIZE=Object.freeze({coins:100,diamonds:3});
+export const PODIUM_MIN_FINISHERS=4;
 // The event's top 10, ranked the way settlement pays (live-events.sql): finished farmers first, earliest finish
 // first (the finish time is frozen), then everyone else by how far along they are. Rewards follow the same formula
 // as harvest_event_settle — exact once settled, "if it ended now" while the event runs. Since 1 Oct 2026 the rows are one
@@ -36,9 +40,9 @@ export function eventStandings(event,rows,now=Date.now(),league=EVENT_LEAGUES[0]
  const finished=r=>settled?r.qualified:goals.every(o=>(r.progress?.[o.stat]??0)>=o.target);
  const at=r=>Date.parse(r.last_at);
  const ranked=rows.map(r=>({...r,done:finished(r),share:share(r)})).sort((a,b)=>Number(b.done)-Number(a.done)||(a.done?at(a)-at(b)||String(a.player_id).localeCompare(String(b.player_id)):b.share-a.share||at(a)-at(b)));
- const {coins}=event.rewards;
+ const {coins}=event.rewards,rivals=ranked.filter(r=>r.done).length>=PODIUM_MIN_FINISHERS;   // podium diamonds need rivals
  return ranked.map((r,i)=>({rank:i+1,playerId:r.player_id,finished:r.done,progress:Math.round(r.share*100),
-  coins:settled?r.coins:r.done?(coins+(PODIUM[i]??FINISHER_PRIZE).coins)*league.coins:0,diamonds:settled?r.diamonds:r.done?(PODIUM[i]??FINISHER_PRIZE).diamonds:0,podium:r.done&&i<PODIUM.length}));
+  coins:settled?r.coins:r.done?(coins+(PODIUM[i]??FINISHER_PRIZE).coins)*league.coins:0,diamonds:settled?r.diamonds:r.done?((rivals?PODIUM[i]:null)??FINISHER_PRIZE).diamonds:0,podium:r.done&&i<PODIUM.length}));
 }
 // The standings the farmer sees are their own league's: the league they finished in, or the one their level puts them in now.
 async function standings(admin,event,user,now){

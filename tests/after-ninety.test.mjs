@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createFarm,normalizeFarm,applyFarmAction as act,xpForLevel,levelOf,FEATURE_LEVELS,featureUnlocked,ITEMS,CROPS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_MS,LAB_GROW_MS,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,
- masterPoints,masterFree,masterBonus,cropDuration,recipeDuration,marketSaleValue,VISITOR_STAY,VISITOR_WAIT,GIANT_TEND_MS,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,
+ masterPoints,masterFree,masterBonus,cropDuration,recipeDuration,marketSaleValue,VISITOR_STAY,VISITOR_WAIT,VISITOR_DIAMONDS,GIANT_TEND_MS,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,
  VALLEY_PROJECTS,valleyProjectBonus,endgameInSight,itemAvailable,STARTER_PACK_CROPS,familyOrder,labCanCross,RECIPES,RECIPE_LEVELS} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
@@ -41,7 +41,7 @@ test('Seed Lab: 20 heirlooms from two crops each; the first cross takes a day an
  const d=s.diamonds,r=act(s,{type:'lab_collect',bed:0},now+LAB_DISCOVER_MS);
  assert.equal(r.discovered,true);assert.equal(s.inventory.savoycabbage,LAB_YIELD);assert.equal(s.diamonds-d-(r.levelReward?.diamonds??0),LAB_DISCOVER_DIAMONDS);assert.equal(itemAvailable(s,'savoycabbage'),true);
  const again=act(s,{type:'lab_cross',bed:1,heirloom:'savoycabbage'},now+LAB_DISCOVER_MS);assert.equal(again.discover,false);assert.equal(s.lab.beds[1].readyAt,now+LAB_DISCOVER_MS+LAB_GROW_MS);
- // All twenty: +200 diamonds on the last discovery.
+ // All twenty: +100 diamonds on the last discovery (200 until 7 Oct 2026).
  const t=farm(99);for(const k of Object.keys(CROPS))t.inventory[k]=100000;t.lab.found=Object.keys(HEIRLOOMS).slice(1);
  act(t,{type:'lab_cross',bed:0,heirloom:'savoycabbage'},now);const last=act(t,{type:'lab_collect',bed:0},now+LAB_DISCOVER_MS);
  assert.equal(last.complete,true);assert.equal(last.diamonds,LAB_DISCOVER_DIAMONDS+LAB_COMPLETE_DIAMONDS);
@@ -59,7 +59,8 @@ test('visitors: a rush order when you are on the farm; a run of served visitors 
  for(const [k,n] of Object.entries(v.input))s.inventory[k]=n;
  const served=act(s,{type:'visitor_serve',visitor:v.id},now+1000);assert.equal(served.streak,1);assert.equal(s.visitors.current,null);assert.equal(s.visitors.nextAt,now+1000+VISITOR_WAIT);
  normalizeFarm(s,now+1000+VISITOR_WAIT);const next=s.visitors.current;assert.ok(next.id===v.id+1);
- assert.ok(next.diamonds>v.diamonds,'the run pays more diamonds');
+ // Since 7 Oct 2026 every visitor pays a flat VISITOR_DIAMONDS; the run raises the coins (it raised the diamonds too, 5 up to 15).
+ assert.equal(v.diamonds,VISITOR_DIAMONDS);assert.equal(next.diamonds,VISITOR_DIAMONDS,'a flat 3 diamonds');assert.ok(next.coins>v.coins,'the run pays more coins');
  // Left unserved: the run ends.
  normalizeFarm(s,next.leavesAt+1);assert.equal(s.visitors.streak,0);assert.equal(s.visitors.current,null);
 });

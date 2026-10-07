@@ -4,20 +4,21 @@ import {createFarm,applyFarmAction as act,grantLevelRewards,levelReward,xpForLev
 import {mergeRewards,progressionChange,progressionSnapshot} from '../public/progression-ui.js';
 const now=Date.UTC(2026,8,19,12);
 function poised(level){const s=createFarm(now);s.xp=xpForLevel(level)-5;s.xpOffset=0;s.levelRewards=Array.from({length:level-1},(_,i)=>i+1);return s;}
-test('corrected schedule: level 20 gives 200 coins and 4 diamonds',()=>{
- for(const [lvl,coins,diamonds]of [[2,20,1],[3,30,1],[4,40,1],[5,50,1],[9,90,1],[10,100,2],[19,190,3],[20,200,4],[25,250,5]])assert.deepEqual(levelReward(lvl),{coins,diamonds});
+// 7 Oct 2026: one diamond for every ten levels (it was one for every five), at least 1.
+test('corrected schedule: level 20 gives 200 coins and 2 diamonds',()=>{
+ for(const [lvl,coins,diamonds]of [[2,20,1],[3,30,1],[4,40,1],[5,50,1],[9,90,1],[10,100,1],[19,190,1],[20,200,2],[25,250,2],[30,300,3],[90,900,9],[100,1000,10]])assert.deepEqual(levelReward(lvl),{coins,diamonds});
  for(let lvl=2;lvl<=100;lvl++)assert(levelReward(lvl).diamonds>=1,`level ${lvl} never pays zero diamonds`);
 });
 test('level-up credits automatically, persists and cannot be manually paid twice',()=>{
  const s=poised(20),coins=s.coins,diamonds=s.diamonds,before=progressionSnapshot(s);
  const result=act(s,{type:'field',id:0,action:'harvest'},now);
- assert.equal(levelOf(s),20);assert.deepEqual(result.levelReward,{coins:200,diamonds:4,levels:[20]});
- assert.equal(s.coins,coins+200);assert.equal(s.diamonds,diamonds+4);
+ assert.equal(levelOf(s),20);assert.deepEqual(result.levelReward,{coins:200,diamonds:2,levels:[20]});
+ assert.equal(s.coins,coins+200);assert.equal(s.diamonds,diamonds+2);
  assert.deepEqual(progressionChange(before,s,result.levelReward).reward,result.levelReward);
  const reloaded=normalizeFarm(JSON.parse(JSON.stringify(s)),now);
  assert.deepEqual(grantLevelRewards(reloaded),{coins:0,diamonds:0,levels:[]});
  assert.throws(()=>act(reloaded,{type:'level_rewards'},now),/already/);
- assert.equal(reloaded.coins,coins+200);assert.equal(reloaded.diamonds,diamonds+4);
+ assert.equal(reloaded.coins,coins+200);assert.equal(reloaded.diamonds,diamonds+2);
 });
 test('all crossed levels are paid once; coin boost cannot multiply level rewards',()=>{
  const s=createFarm(now);s.boosts.coinsUntil=now+10000;s.boosts.xpUntil=now+10000;
@@ -29,7 +30,7 @@ test('all crossed levels are paid once; coin boost cannot multiply level rewards
 });
 test('existing unpaid levels settle once while paid levels are preserved',()=>{
  const s=createFarm(now);s.xp=xpForLevel(20);s.levelRewards=Array.from({length:18},(_,i)=>i+1);const coins=s.coins;
- assert.deepEqual(grantLevelRewards(s),{coins:390,diamonds:7,levels:[19,20]});assert.equal(s.coins,coins+390);
+ assert.deepEqual(grantLevelRewards(s),{coins:390,diamonds:3,levels:[19,20]});assert.equal(s.coins,coins+390);
  assert.deepEqual(grantLevelRewards(s),{coins:0,diamonds:0,levels:[]});
 });
 test('invalid actions cannot trigger rewards; level one has no signup payout',()=>{
@@ -37,5 +38,5 @@ test('invalid actions cannot trigger rewards; level one has no signup payout',()
  const fresh=createFarm(now);assert.deepEqual(grantLevelRewards(fresh),{coins:0,diamonds:0,levels:[]});assert.equal(fresh.coins,STARTER_COINS);
 });
 test('queued popups add multiple rewards without counting duplicate levels twice',()=>{
- assert.deepEqual(mergeRewards({levels:[19,20],coins:390,diamonds:7},{levels:[20,21],coins:410,diamonds:8}),{levels:[19,20,21],coins:600,diamonds:11});
+ assert.deepEqual(mergeRewards({levels:[19,20],coins:390,diamonds:3},{levels:[20,21],coins:410,diamonds:4}),{levels:[19,20,21],coins:600,diamonds:5});
 });

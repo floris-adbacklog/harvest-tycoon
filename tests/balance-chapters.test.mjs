@@ -47,7 +47,7 @@ test('all ten chapter rewards are paid once, not doubled by XP boosts, then comm
   // Refreshed first: levelling past 93 on the way brings a visitor up the road at the next refresh (27 Sep 2026), which is not the action's doing.
   normalizeFarm(s,time);const snapshot=structuredClone(s);assert.throws(()=>act(s,{type:'project_collect'},time),/Start/);assert.deepEqual(s,snapshot);
  }
- assert.equal(chapterDiamonds,940);assert.equal(s.stats.chapter_diamonds,940);assert.equal(s.estate.diamondChapters.length,PROJECTS.length);
+ assert.equal(chapterDiamonds,470);assert.equal(s.stats.chapter_diamonds,470);assert.equal(s.estate.diamondChapters.length,PROJECTS.length);   // 940 until 7 Oct 2026
  assert.equal(currentProject(s).name,'Estate commission 3');assert.deepEqual(grantChapterRewards(s),{chapters:[],diamonds:0});
 });
 test('completed chapters on old saves receive a one-time catch-up without touching other progress',()=>{

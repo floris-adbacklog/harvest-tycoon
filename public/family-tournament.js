@@ -14,7 +14,7 @@ const weekOf=week=>new Date(familyWeekStart(week)).toLocaleDateString('en-GB',{t
 // fine print (how the prize pool grows, how it is shared) in the folds below. 1 Oct 2026: the top ten win, not the top three.
 export function renderFamilyTournament({view,now,emblem,rewards,preview,extra=''}){
  const t=view.tournament,prizes=t.placePrizes??[t.firstPrize];   // what each of the top ten wins with ten families
- const s=t.placeShares??[25,17,13,10,8,7,6,5,5,4],p=t.poolSteps??[100,200,300];
+ const s=t.placeShares??[25,17,13,10,8,7,6,5,5,4],p=t.poolSteps??[50,100,150];   // 100 / 200 / 300 until 7 Oct 2026
  // How far first prize has grown towards its maximum (in How rewards work).
  const grown=Math.max(0,Math.min(1,(t.firstPrize-t.firstPrizeMin)/Math.max(1,t.firstPrizeMax-t.firstPrizeMin)));
  // Previous weeks (5 Oct 2026): one group per week, newest first, under the date of its Monday, with your own family picked out.

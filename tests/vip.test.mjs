@@ -79,9 +79,9 @@ test('VIP doubles all Today reward currencies only once, with repeat claims reje
 test('VIP expiry before a daily claim pays regular rewards; upgrades and level rewards do not change',()=>{
  const s=farm(),regular=farm();purchase(s);const expiry=s.vipExpiresAt;
  const v=dailyOrders(s,expiry),b=dailyOrders(regular,expiry);assert.deepEqual(v,b);
- const gift=applyFarmAction(s,{type:'checkin'},expiry);assert.equal(gift.coins,40);assert.equal(gift.diamonds,4);assert.equal(gift.xp,10);
+ const gift=applyFarmAction(s,{type:'checkin'},expiry);assert.equal(gift.coins,40);assert.equal(gift.diamonds,DAILY_DIAMONDS[0]);assert.equal(gift.xp,10);
  assert.equal(upgradeCost(s,'mill'),upgradeCost(regular,'mill'));
- assert.deepEqual(levelReward(20),{coins:200,diamonds:4});
+ assert.deepEqual(levelReward(20),{coins:200,diamonds:2});   // one diamond per ten levels since 7 Oct 2026
  assert.deepEqual(Object.values(BOOSTS).map(b=>b.cost),[50,75,100,150,200,250]);
 });
 test('all historical payment receipts remain valid and every new pack rejects a substituted price',()=>{
