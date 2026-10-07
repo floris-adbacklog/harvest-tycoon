@@ -5,6 +5,7 @@ import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt,pictureFile} from './visual-icons.js';
 import {fieldPicker,bindFieldPicker} from './field-picker.js';
 import {confirmAction} from './confirm-dialog.js';
+import {flyHarvest,bump} from './harvest-fly.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const seconds=formatDuration;
@@ -312,11 +313,25 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    const sure=await confirmAction({title:`Sell all your ${label}?`,description:`Are you sure you want to sell all your ${label} for ${number(total)} coins?`,confirmLabel:`Sell for ${number(total)} coins`,cancelLabel:'Keep them',picture:'market'}).finally(()=>{confirmingSale=false;});
    if(!sure)return;
   }
+  // Where the coins fly from after the first sale: the button that was tapped, read before the list is drawn again.
+  const tapped=[...document.querySelectorAll(key==='category'?'#sell-all':`#market-items [data-sell-item-all="${key}"],#market-items [data-sell="${key}"]`)].map(b=>b.getBoundingClientRect()).find(b=>b.width&&b.height);
   const day=renderedMarketDay||utcDay(farmNow()),category=marketTab;marketSelling=true;renderMarket();
   try{
    const r=await runAction(key==='category'?{type:'sell',category,day}:{type:'sell',item:key,day,...(category==='village'?{category}:{}),...(quantity===undefined?{}:{quantity})});
-   onChange();notify(`Sold! +${number(r.coins)} coins for your next harvest.`);return r;
+   onChange();notify(`Sold! +${number(r.coins)} coins for your next harvest.`);
+   if(r.guide?.some(step=>step.step==='sell'))firstSale(tapped);
+   return r;
   }catch(e){notify(e.message);return {error:e.message};}finally{marketSelling=false;renderMarket();}
+ }
+ // The guide's first sale (7 Oct 2026, the owner's choice: a third of new farmers never got past it, and its "Sold!" and the next step
+ // were hidden behind the window, which stayed open): the Market closes and the coins fly from the button to the coin counter, so the
+ // reward and the guide's next step are in sight. Only the flight is skipped when motion is reduced.
+ function firstSale(from){
+  $('market-dialog').close();
+  const counter=[...document.querySelectorAll('.coin-counter')].find(el=>el.getBoundingClientRect().width>0);
+  if(!counter||!from||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const to=counter.getBoundingClientRect();
+  flyHarvest({from:{x:from.left+from.width/2,y:from.top+from.height/2},to:{x:to.left+to.width/2,y:to.top+to.height/2},html:art('coins'),count:5,onArrive:()=>bump(counter)});
  }
  function refresh(){
   $('selected-crop-price').textContent=`${seedCost(state,selectedCrop)} · ${seconds(cropDuration(state,selectedCrop))}`;

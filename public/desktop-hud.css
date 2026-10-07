@@ -32,6 +32,20 @@
  .scene-controls{bottom:124px}
  .beginner-card{max-height:calc(100dvh - 320px)}
 }
+/* Narrow and short too (about 960x540, CrazyGames on a laptop, 7 Oct 2026): the lifted camera buttons sat right under the guide card.
+   While the card is open they step aside (collapse the card to get them back), and the compact card (beginner.css) runs down to the dock. */
+@supports selector(:has(a)){@media(min-width:901px) and (max-width:1040px) and (max-height:620px){
+ #game:has(.beginner-card:not([hidden]) #quest-body:not([hidden])) .scene-controls{display:none}
+ .beginner-card{max-height:calc(100dvh - 225px)}
+}}
+/* The Market's × stays in the window's top corner while its list scrolls (7 Oct 2026: after Show me scrolled down to Sell all it was
+   out of sight). Phones already keep the whole heading on top (mobile.css). */
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
+ #market-dialog .dialog-heading{display:contents}
+ #market-dialog .dialog-heading>div{float:inline-start;width:calc(100% - 60px);margin-bottom:16px}
+ #market-dialog .dialog-heading>.close-dialog{float:inline-end;position:sticky;top:-16px;z-index:4;margin:11px 0 0}
+ #market-dialog .dialog-heading+p{clear:both}
+}
 /* Windows with a long list (the market, the seed shop, a building's recipes, the day's challenges and orders) are wider
    on a computer, with the list in two columns and nearly the full screen height, so you see four crops instead of one
    without scrolling. Windows with text keep their reading width; phones and tablets keep the phone layout. */

@@ -29,6 +29,30 @@
 .beginner-prize-copy small{display:block;font-size:11px;font-weight:400;line-height:1.5;margin:2px 0 0;color:inherit}
 .beginner-card .quest-list-button{display:block;box-sizing:border-box;width:100%;min-height:36px;margin:10px 0 0;padding:8px 10px;font-size:11px}
 @media(min-width:901px){.beginner-card{width:270px;inset-inline-end:20px;max-height:calc(100dvh - 205px);overflow-y:auto;overflow-x:hidden}}
+/* Short computer frames (7 Oct 2026: on CrazyGames a laptop shows the game at about 960x540, where the card was cut off and Show me,
+   the diamonds and View all 10 steps sat out of sight under the camera buttons): a compact card, Show me next to the title, the XP
+   beside the bar and the diamonds on one line. The camera buttons make room in desktop-hud.css. */
+@media(min-width:901px) and (max-height:660px),(min-width:901px) and (max-width:1040px) and (max-height:780px){
+ .beginner-card .quest-heading{grid-template-columns:28px minmax(0,1fr) 26px;gap:8px;padding:8px 12px}
+ .beginner-card .quest-icon{width:28px;height:28px}
+ .beginner-card .quest-heading>span:nth-child(2){font-size:13px}
+ .beginner-card .quest-heading small{margin-top:2px}
+ .beginner-card #quest-body{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"title help" "text text" "bar xp" "prize prize" "all all";align-items:center;gap:7px 10px;padding:10px 12px 12px}
+ .beginner-card #quest-body[hidden]{display:none}
+ .beginner-card #quest-title{grid-area:title;margin:0;font-size:17px}
+ .beginner-card .beginner-actions{grid-area:help;margin:0}
+ .beginner-card .beginner-actions button{min-height:34px;padding:6px 12px}
+ .beginner-card #quest-description{grid-area:text;font-size:12px;line-height:1.45}
+ .beginner-card .quest-progress{grid-area:bar;margin:0}
+ .beginner-card #quest-xp{grid-area:xp}
+ .beginner-card .beginner-prize{grid-area:prize;gap:8px;padding:7px 10px}
+ .beginner-card .beginner-prize>.game-art,.beginner-card .beginner-prize>svg{width:22px;height:22px;flex-basis:22px}
+ .beginner-card .beginner-prize-copy{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px}
+ .beginner-card .beginner-prize-copy small{margin:0}
+ .beginner-card .quest-list-button{grid-area:all;min-height:30px;margin:0;padding:5px 10px}
+ /* The last step's Claim button needs the whole width: its row comes under the bar. */
+ .beginner-card #quest-body:has(#claim-reward:not([hidden])){grid-template-areas:"title title" "text text" "bar xp" "help help" "prize prize" "all all"}
+}
 
 /* Camera controls form one quiet toolbar, with consistent line icons. */
 .scene-controls{gap:3px;padding:5px;border:1px solid #e1d6cc;border-radius:15px;background:#fffdf3f5;box-shadow:0 3px 14px #443d2614}

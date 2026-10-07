@@ -6,6 +6,10 @@
 const visible=el=>{if(!el?.isConnected)return false;const r=el.getBoundingClientRect(),cs=getComputedStyle(el);return r.width>0&&r.height>0&&cs.visibility!=='hidden'&&cs.display!=='none'&&!el.closest('[hidden]');};
 // On the screen right now (a map label can be outside the view on a phone).
 export const onScreen=(el,win=globalThis)=>{if(!visible(el))return false;const r=el.getBoundingClientRect();return r.bottom>0&&r.right>0&&r.top<win.innerHeight&&r.left<win.innerWidth;};
+// Part of its own window lies over the button's middle (7 Oct 2026: at 1280x720 the Market's sticky "This basket is worth" bar sat over
+// Sell all, and a new farmer had to find it by scrolling). Something from another layer (a toast, a second window) does not count:
+// scrolling the window would not help.
+export const covered=(el,host,doc=globalThis.document)=>{const r=el.getBoundingClientRect(),top=doc.elementFromPoint?.(r.left+r.width/2,r.top+r.height/2);return Boolean(top)&&!el.contains(top)&&host.contains(top);};
 // Where the bubble goes: above the button when there is room (the bottom bar on a phone), otherwise below it; centred on the button
 // and kept 12 px from the edges. The arrow points at the middle of the button.
 export function bubblePlace(target,bubble,view){
@@ -61,9 +65,10 @@ export function createCoach({doc=globalThis.document,win=globalThis,timeout=2500
    host.append(bubble);r.bubble=bubble;
   }
   // A button in a window is brought to the middle of the screen, with room for the bubble (on a phone on its side it sat on the
-  // edge); again if the window's content moves it off. Buttons on the farm and in the bars never scroll the game.
+  // edge); again if the window's content moves it off, or a sticky part of the window lies over it (covered). Buttons on the farm
+  // and in the bars never scroll the game.
   const seen=el.getBoundingClientRect();
-  if(host!==doc.body&&(seen.top<0||seen.bottom>win.innerHeight||seen.left<0||seen.right>win.innerWidth)&&Date.now()-r.scrolledAt>600){r.scrolledAt=Date.now();el.scrollIntoView?.({block:'center',inline:'nearest'});}
+  if(host!==doc.body&&(seen.top<0||seen.bottom>win.innerHeight||seen.left<0||seen.right>win.innerWidth||covered(el,host,doc))&&Date.now()-r.scrolledAt>600){r.scrolledAt=Date.now();el.scrollIntoView?.({block:'center',inline:'nearest'});}
   const t=el.getBoundingClientRect(),b=r.bubble.getBoundingClientRect();
   const place=bubblePlace(t,b,{width:win.innerWidth,height:win.innerHeight});
   // Inside a window the bubble may be placed relative to that window: correct for where it actually landed.
