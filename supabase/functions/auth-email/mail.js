@@ -20,6 +20,8 @@ export function confirmationUrl({supabaseUrl,tokenHash,type,redirectTo}){
  return url.href;
 }
 
+// Under the card, the name with the tagline on the line below it (7 Oct 2026: they were joined with a middle dot), in the html and
+// the plain text alike.
 export function authEmail({type,language,link}){
  const name=MAIL_OF[type];if(!name)throw Error(`No email for the ${type} action.`);
  const lang=languageOf(language),t={...TEMPLATES[name][lang],copy:COPY[lang],tag:TAG[lang]},href=esc(link),font="'DM Sans',Helvetica,Arial,sans-serif";
@@ -46,11 +48,11 @@ export function authEmail({type,language,link}){
     <p style="margin:0;">${esc(t.foot)}</p>
    </td></tr>
   </table>
-  <p style="font-family:${font};font-size:12px;color:#8e8374;margin:16px 0 0;">Harvest Tycoon &middot; ${esc(t.tag)}</p>
+  <p style="font-family:${font};font-size:12px;line-height:1.5;color:#8e8374;margin:16px 0 0;">Harvest Tycoon<br>${esc(t.tag)}</p>
  </td></tr>
 </table>
 </body></html>
 `;
- const text=`${t.title}\n\n${t.intro}\n\n${t.button}: ${link}\n\n${t.foot}\n\nHarvest Tycoon · ${t.tag}\n`;
+ const text=`${t.title}\n\n${t.intro}\n\n${t.button}: ${link}\n\n${t.foot}\n\nHarvest Tycoon\n${t.tag}\n`;
  return {subject,html,text,language:lang};
 }

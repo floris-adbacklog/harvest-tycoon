@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,mkdtempSync,writeFileSync,readdirSync} from 'node:fs';
+import {readFileSync,mkdtempSync,writeFileSync,readdirSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {CROPS,RECIPES,BUILDINGS,worldTwoBuilding,worldTwoItem} from '../public/farm-state.js';
@@ -10,6 +10,8 @@ const FARM_RECIPES=Object.values(RECIPES).filter(r=>!worldTwo(r)).length;
 import {WIKI_TOPICS,wikiArticle,wikiSearch,wikiTime} from '../public/wiki-content.js';
 import {buildWiki} from '../scripts/build-wiki.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+// A folder for a built wiki, removed when its test ends, also when the test fails (7 Oct 2026).
+const tempDir=(t,name)=>{const dir=mkdtempSync(join(tmpdir(),name));t.after(()=>rmSync(dir,{recursive:true,force:true}));return dir;};
 // The Farmhouse and the Family Hall rows (Oct 2026) make nothing: the recipe counts leave them out.
 const recipesOnly=html=>html.replace(/<details class="wiki-section wiki-building" id="building-(?:farmhouse|familyhall)">[^]*?<\/details>/g,'');
 
@@ -52,8 +54,8 @@ test('How to play opens the wiki',()=>{
  assert.ok(html.indexOf('/wiki.css')>0&&html.indexOf('/wiki.css')<html.indexOf('/buttons.css'));
 });
 
-test('the website gets a page per topic, in the sitemap, linked from the footer',async()=>{
- const out=mkdtempSync(join(tmpdir(),'wiki-'));
+test('the website gets a page per topic, in the sitemap, linked from the footer',async t=>{
+ const out=tempDir(t,'wiki-');
  writeFileSync(join(out,'sitemap.xml'),'<?xml version="1.0"?>\n<urlset>\n</urlset>\n');
  assert.equal(await buildWiki(out),WIKI_TOPICS.length+1);await buildWiki(out);
  const pages=readdirSync(join(out,'wiki'));assert.equal(pages.filter(p=>p.endsWith('.html')).length,WIKI_TOPICS.length+1);assert.ok(pages.includes('search.json'));
@@ -104,7 +106,7 @@ test('the wiki matches the rules it explains: family payouts, invites, events an
  assert.match(wikiArticle('events').html,/Events open as soon as you reach level 15\./);assert.doesNotMatch(wikiArticle('events').html,/email/);
  assert.match(wikiArticle('account').html,/Confirm it once for 10 diamonds/);assert.match(wikiArticle('diamonds').html,/Confirm your email/);assert.doesNotMatch(wikiArticle('events').html,/48 hours/);
  assert.match(wikiArticle('events').html,/The first three in each league win 50, 30 and 20 diamonds, every other finisher 5\./);
- assert.match(wikiArticle('events').html,/<td>Valley Legends<\/td><td>90\+<\/td><td>17,600 coins · 50 diamonds<\/td>/,'the league table: first place in each league');
+ assert.match(wikiArticle('events').html,/<td>Valley Legends<\/td><td>90\+<\/td><td>17,600 coins and 50 diamonds<\/td>/,'the league table: first place in each league');
  assert.match(wikiArticle('diamonds').html,/at least 1 diamond with every level-up/);
  assert.match(wikiArticle('buildings').html,/Dairy Barn needs the Feed Mill first/);
 });
@@ -224,8 +226,8 @@ test('the home: Getting started above two even columns, an odd last tile across 
  assert.match(css,/\.wiki-badge\{[^}]*white-space:nowrap\}/);assert.doesNotMatch(css,/content:'Read first'/,'a CSS text is never translated');
  assert.match(css,/\.wiki-jump-wrap::after\{content:'';position:absolute;[^}]*\}\n\.wiki-jump-wrap\.is-scrollable:not\(\.at-end\)::after\{opacity:1\}/);
 });
-test('the website has the same search as the game: the box, the quick searches and /wiki/search.json',async()=>{
- const out=mkdtempSync(join(tmpdir(),'wiki-search-'));await buildWiki(out);
+test('the website has the same search as the game: the box, the quick searches and /wiki/search.json',async t=>{
+ const out=tempDir(t,'wiki-search-');await buildWiki(out);
  const index=readFileSync(join(out,'wiki','index.html'),'utf8');
  assert.match(index,/<input type="search" id="wiki-search" placeholder="Search the wiki: corn, cheese, tractor…"/);assert.match(index,/<div class="wiki-quick" aria-label="Quick searches"><a href="\/wiki\/getting-started#sec-play-it-as-an-app"/);
  assert.match(index,/<div id="wiki-results" class="wiki-results" hidden><\/div>/);assert.match(index,/fetch\('\/wiki\/search\.json'\)/);
@@ -240,4 +242,27 @@ test('Trees and bushes shows each crop that grows back with its picture and leve
  assert.match(crops,/<ul class="wiki-chips wiki-regrow"><li><a href="\/wiki\/crops#crop-apples" data-wiki-topic="crops" data-wiki-anchor="crop-apples">[^]*?<span>Apples<\/span><span class="wiki-level">Level 20<\/span><\/a><\/li>/,'each chip leads to its row in Every crop (Oct 2026)');
  assert.match(crops,/<p>These grow back after you harvest them, so you only plant them once\./);
  assert.doesNotMatch(article('estate').html.replace(/<[^>]+>/g,' '),/\b\d+ d\b/);
+});
+
+// 7 Oct 2026 ("· is niet mooi"): the wiki on the website runs no page translation, so nothing takes a middle dot off there. Every
+// page is written without one: rewards with "and", the level badge and the cost apart, one boost price per line (a pill each on a
+// card), and every piece a text the game already translates on its own.
+test('the website wiki has no middle dots: rewards read "and", a building row keeps its level and cost apart',async t=>{
+ const out=tempDir(t,'wiki-dots-');await buildWiki(out);
+ for(const file of readdirSync(join(out,'wiki')))assert.doesNotMatch(readFileSync(join(out,'wiki',file),'utf8'),/·|&middot;/,file);
+ const pic=key=>`<span[^>]*data-art="${key}"[^>]*></span>`;
+ assert.match(wikiArticle('buildings').html,/<span class="wiki-meta"><span class="wiki-level">Level \d+<\/span> Builds for <span[^>]*data-art="coins"/);
+ assert.match(wikiArticle('crops').html,/<td><span[^>]*data-art="coins"[^]*?<\/span>100 and 25 XP<\/td>/,'a medal pays coins and XP');
+ assert.match(wikiArticle('helpers').html,/<\/span><\/a> and \d+ XP<\/td><\/tr>/,'a stop gives its goods and XP, the goods right before "and"');
+ // A chapter: the diamonds and XP, then the stall's coins on a line of their own (in the table and on the card alike).
+ const brings=`<span class="wiki-line">${pic('diamonds')}\\d+ and [\\d,]+ XP</span><br><span class="wiki-line">${pic('coins')}\\+\\d+ an hour at the stall</span>`;
+ assert.match(wikiArticle('estate').html,new RegExp(`<td>${brings}</td>`));assert.match(wikiArticle('estate').html,new RegExp(`<small>Brings ${brings}</small>`));
+ // A timed boost: each length and its price, a row each in the table and one pill each on a card; one price is one pill.
+ const prices=['30 min','1 hour','1 day'].map(length=>`${length} ${pic('diamonds')}\\d+`);
+ assert.match(wikiArticle('diamonds').html,new RegExp(`<td><span class="wiki-prices">${prices.map(p=>`<span>${p}</span>`).join('')}</span></td>`));
+ assert.match(wikiArticle('diamonds').html,new RegExp(`<div class="wiki-stats">${prices.map(p=>`<span>${p}</span>`).join('')}</div>`));
+ assert.match(wikiArticle('diamonds').html,new RegExp(`<strong>Finish production</strong><div class="wiki-stats"><span>${pic('diamonds')}\\d+</span></div>`));
+ assert.match(wikiArticle('diamonds').html,/<tr><td>7 days of VIP<\/td>/);
+ const pass=wikiArticle('daily').html;if(pass.includes('wiki-boost'))assert.match(pass,/<span class="wiki-boost">[^]*?<span>Double (XP|harvest|earnings)<small>(30 minutes|1 hour|1 day)<\/small><\/span><\/span>/,'a boost and its length: two texts the page translates on their own');
+ assert.match(wikiArticle('events').html,/<span class="wiki-league-facts"><span>Levels 15–29<\/span><span>Coins ×1<\/span><\/span>/,'a league: its levels, its coins under them');
 });

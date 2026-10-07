@@ -2,7 +2,7 @@
 // text on screen (text, title, aria-label, placeholder, alt) for its translation as soon as it appears, from
 // public/i18n/<code>.json: {"English text": "translation"}. A text with parts that change has {0}, {1}, ... in both
 // ("Harvested {0} {1}"); the parts are kept, and a part that is itself a known text (a crop's name) is translated too.
-// English farmers never load a translation file: for them nothing on the page changes.
+// English farmers never load a translation file: for them nothing on the page changes but the middle dots (undot, below).
 // Players' own words (names, chat, family texts) sit in translate="no" and stay as they are.
 import {LANGUAGES,RTL_LANGUAGES} from './languages.js';
 
@@ -13,6 +13,15 @@ const KEEP='script,style,noscript,textarea,code,[translate="no"],[contenteditabl
 // What a farmer types in a text box stays as it is, but the box's own hint (placeholder, label) is the game's and is translated
 // (1 Oct 2026: the feedback box asked "What happened…?" in English).
 const KEEP_ATTRS=KEEP.split(',').filter(s=>s!=='textarea').join(',');
+// No middle dots on screen (7 Oct 2026: "· is niet mooi"). The code still joins the parts of a line with " · ", so a translation can
+// look each part up on its own; what the page shows gets a wide space there instead (an en space and a thin space: as wide as the
+// old " · ", so no line wraps sooner), and a tooltip or a screen reader a comma (only a space after a number: "18,430 Crops harvested").
+// In every language, English too; players' own words (KEEP) are never touched.
+export const undot=text=>text.includes('·')?text.replace(/ · /g,'\u2002\u2009').replace(/^· /,'\u2002').replace(/ ·$/,'\u2002'):text;
+export const undotAttr=text=>text.includes(' · ')?text.replace(/(\d) · /g,'$1 ').replace(/ · /g,', '):text;
+// Japanese and Chinese put no space after a full stop, question mark or colon (7 Oct 2026: "…向け。 プライバシーポリシー"): a translation
+// that ends with one drops the space the English text had before a link or a button.
+export const FULL_STOP=/[。！？：]$/;
 const READY=new Set(LANGUAGES.filter(language=>language.ready).map(language=>language.code));
 
 // The farmer's choice in Settings, else the device's language if the game speaks it, else English. A language page (/es/, Oct 2026)
@@ -178,18 +187,20 @@ export function translateDocument(doc,translator,done=null){
   let next=data;
   if(/\p{L}/u.test(data)){
    const key=normalize(data),out=key&&!done?.has(key)?translator.translate(key):null;
-   if(out!=null&&out!==key)next=data.match(/^\s*/)[0]+out+data.match(/\s*$/)[0];
+   if(out!=null&&out!==key)next=data.match(/^\s*/)[0]+out+(FULL_STOP.test(out)?'':data.match(/\s*$/)[0]);
   }
   if(numbers&&/\d/.test(next))next=numbers(next);
   if(rtl&&/\d/.test(next))next=isolateNumbers(next);
+  next=undot(next);
   if(next===data)return;
   written.set(node,next);node.data=next;
  }
  function attr(element,name){
   const value=element.getAttribute(name);if(!value||!/\p{L}/u.test(value)||skipAttr(element))return;
-  let written=attrsWritten.get(element);if(written?.[name]===value||done?.has(normalize(value)))return;
-  let out=translator.translate(normalize(value));if(out==null)return;
-  if(numbers&&/\d/.test(out))out=numbers(out);
+  let written=attrsWritten.get(element);if(written?.[name]===value)return;
+  let out=done?.has(normalize(value))?null:translator.translate(normalize(value));
+  if(out!=null&&numbers&&/\d/.test(out))out=numbers(out);
+  out=undotAttr(out??value);if(out===value)return;
   if(!written)attrsWritten.set(element,written={});
   written[name]=out;element.setAttribute(name,out);
  }
@@ -222,7 +233,9 @@ export function translateDocument(doc,translator,done=null){
 export async function startTranslation(doc=globalThis.document){
  const code=chosenLanguage(),root=doc?.documentElement;
  const show=()=>root?.classList.remove('i18n-wait');
- if(!root||code==='en'){show();return null;}
+ if(!root){show();return null;}
+ // English: no translation file, but the page is still kept free of middle dots (undot).
+ if(code==='en'){show();try{if(typeof MutationObserver==='function'&&doc.createTreeWalker)translateDocument(doc,{code:'en',translate:()=>null});}catch{}return null;}
  try{
   const dict=await(globalThis.harvestI18n?.code===code?globalThis.harvestI18n.load:fetch(`/i18n/${code}.json`).then(response=>{if(!response.ok)throw new Error(String(response.status));return response.json();}));
   const translator=createTranslator(dict,code);codeText=codeTranslator(dict,code);

@@ -331,7 +331,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(day!==lastMarketDay){lastMarketDay=day;if($('market-dialog').open)renderMarket();if($('seed-dialog').open)renderSeeds();if($('building-dialog').open)renderBuilding();}
   if($('market-dialog').open)marketCountdown(now);
   const coinBoost=`${state.boosts.coinsUntil>now}:${vipActive(state,now)}`;if(lastCoinBoost!==coinBoost){lastCoinBoost=coinBoost;if($('market-dialog').open)renderMarket();if($('seed-dialog').open)renderSeeds();if($('building-dialog').open)renderBuilding();}
-  document.querySelectorAll('[data-building-status]').forEach(el=>{const key=el.dataset.buildingStatus,s=status(key,now),text=el.closest('#building-catalog')?catalogLine(key,s):s.text,kind=`building-status ${s.kind}`;if(el.textContent!==text&&!el.querySelector('.game-art'))el.textContent=text;if(el.className!==kind)el.className=kind;});
+  document.querySelectorAll('[data-building-status]').forEach(el=>{const key=el.dataset.buildingStatus,s=status(key,now),text=el.closest('#building-catalog')?catalogLine(key,s):s.text,kind=`building-status ${s.kind}`;if(el.dataset.text!==text&&!el.querySelector('.game-art')){el.dataset.text=text;el.textContent=text;}if(el.className!==kind)el.className=kind;});
   // A building that finishes while the list is open moves to the top; the places keep their line up to date.
   const readyKeys=Object.keys(BUILDINGS).filter(key=>status(key,now).kind==='ready').join();
   if($('buildings-dialog').open&&readyKeys!==lastReadyKeys){const y=$('buildings-dialog').scrollTop;renderCatalog();$('buildings-dialog').scrollTop=y;}

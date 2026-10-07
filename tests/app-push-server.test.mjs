@@ -163,7 +163,7 @@ test('the app\'s category per push: messages for chats and purchase notices, dai
  const away=new Date(at-3*day-3600000).toISOString(),chest=plan(row({last_active_at:away},{login:{lastDay:'2026-09-15',streak:4},seenAt:away}));
  assert.deepEqual([chest.body,chest.url,chest.channel],['A comeback chest is waiting on your farm','/?source=push','daily']);
  const crops=plan(row({push_daily:false},{plots:wheat}));assert.deepEqual([crops.body,crops.url,crops.channel],['Your crops are ready to harvest','/?source=push','ready']);
- const both=plan(row({},{plots:wheat}));assert.match(both.body,/ · /);assert.deepEqual([both.url,both.channel],['/?source=push','ready'],'a gift line with a crops line: ready');
+ const both=plan(row({},{plots:wheat}));assert.match(both.body,/\. \S/);assert.doesNotMatch(both.body,/·/);assert.deepEqual([both.url,both.channel],['/?source=push','ready'],'a gift line with a crops line: ready');
  // To OneSignal: each request in its category, never two categories in one call.
  const {calls,fetchImpl}=oneSignal();
  await sendReminders(createOneSignal({apiKey:'k',fetchImpl}),[{player:'a',push:gift},{player:'b',push:crops},{player:'c',push:gift},{player:'d',push:{...crops,channel:'daily'}}],at);

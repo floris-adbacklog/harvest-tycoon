@@ -8,6 +8,7 @@ import {mkdirSync,readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {LANGUAGES,RTL_LANGUAGES,languagePath,playBadge} from '../public/languages.js';
 import {appPath} from '../public/game-links.js';
+import {FULL_STOP} from '../public/i18n.js';
 
 const SITE='https://www.harvesttycoon.com';
 export const READY=LANGUAGES.filter(l=>l.ready).map(l=>l.code);
@@ -38,10 +39,11 @@ function translateTexts(html,code,dict,{label,page,seoMeta}){
  for(let i=0;i<parts.length;i++){
   const part=parts[i];
   if(i%2===0){
-   // Text: the same text node the game would translate, its spaces around it kept.
+   // Text: the same text node the game would translate, its spaces around it kept; but none after a Japanese or Chinese full stop,
+   // question mark or colon (FULL_STOP, 7 Oct 2026: "…向け。 プライバシーポリシー"), as the game does.
    if(!/\p{L}/u.test(part))continue;
-   const key=normalize(decode(part));
-   parts[i]=part.match(/^\s*/)[0]+escText(out(key))+part.match(/\s*$/)[0];
+   const key=normalize(decode(part)),text=out(key);
+   parts[i]=part.match(/^\s*/)[0]+escText(text)+(FULL_STOP.test(text)?'':part.match(/\s*$/)[0]);
    continue;
   }
   if(!part.startsWith('<')||/^<(script|style|!--)/i.test(part))continue;

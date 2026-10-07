@@ -66,7 +66,7 @@ test('the Farmhouse is the first row of Buildings and goods: what you do there, 
  assert.deepEqual(rows.slice(0,2),['farmhouse','familyhall'],'the Farmhouse first, then the Family Hall, then the production buildings');
  assert.ok(html.indexOf('id="sec-how-buildings-work"')<html.indexOf('id="building-farmhouse"'));
  const farmhouse=html.match(/<details[^>]*id="building-farmhouse">[^]*?<\/details>/)[0];
- assert.match(farmhouse,/<summary><h3>[^]*?Farmhouse<\/h3><span class="wiki-meta"><span class="wiki-level">Level 1<\/span> · ready from the start<\/span>/);
+ assert.match(farmhouse,/<summary><h3>[^]*?Farmhouse<\/h3><span class="wiki-meta"><span class="wiki-level">Level 1<\/span> Ready from the start<\/span>/);
  assert.match(farmhouse,new RegExp(`You start with ${STARTER_FIELDS} fields\\. Buy more here, one at a time, up to ${MAX_PLOTS}\\.`));
  assert.match(farmhouse,/<strong>Your fields<\/strong><p>Remove a crop to free its field\. You get nothing back\.<\/p>/,'the game\'s own words');
  assert.match(farmhouse,new RegExp(`<strong>Your next chapter <span class="wiki-level">Level ${FEATURE_LEVELS.projects}</span></strong><p>Estate projects, passive income and medals <span class="wiki-see">See <a href="/wiki/estate#sec-estate-chapters"`));

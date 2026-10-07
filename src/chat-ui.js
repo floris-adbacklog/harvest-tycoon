@@ -467,9 +467,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  let picks=[],pickAt=null,pickActive=0,pickTimer=null,pickTicket=0,familyPeople=null,recentPeople=null;
  const canMention=()=>(tab==='global'||(tab==='family'&&Boolean(overview?.family)))&&!composeState().blocked;
  function closePicks(){clearTimeout(pickTimer);pickTicket++;picks=[];pickAt=null;pickList.hidden=true;pickList.innerHTML='';input.removeAttribute('aria-activedescendant');}
+ // The family name stays as written (translate="no"), but the " · " before it is the game's: outside that span, so the page takes
+ // it off like every other middle dot (7 Oct 2026, public/i18n.js undot).
  function drawPicks(text=''){
   pickList.hidden=!picks.length&&!text;
-  pickList.innerHTML=text?`<li class="chat-pick-note">${esc(text)}</li>`:picks.map((p,i)=>`<li role="option" id="chat-pick-${i}" class="chat-pick${i===pickActive?' is-active':''}" aria-selected="${i===pickActive}" data-pick="${i}"><span class="chat-avatar">${avatarImage(p.avatarId)}</span><span class="chat-thread-copy"><strong translate="no">${esc(p.username)}</strong><small>${p.level?`Level ${esc(p.level)}`:''}${p.family?.name?`<span translate="no"> · ${esc(p.family.name)}</span>`:''}</small></span></li>`).join('');
+  pickList.innerHTML=text?`<li class="chat-pick-note">${esc(text)}</li>`:picks.map((p,i)=>`<li role="option" id="chat-pick-${i}" class="chat-pick${i===pickActive?' is-active':''}" aria-selected="${i===pickActive}" data-pick="${i}"><span class="chat-avatar">${avatarImage(p.avatarId)}</span><span class="chat-thread-copy"><strong translate="no">${esc(p.username)}</strong><small>${p.level?`Level ${esc(p.level)}`:''}${p.family?.name?`${p.level?' · ':''}<span translate="no">${esc(p.family.name)}</span>`:''}</small></span></li>`).join('');
   if(picks.length)input.setAttribute('aria-activedescendant',`chat-pick-${pickActive}`);else input.removeAttribute('aria-activedescendant');
  }
  // Who spoke here lately, newest first, by their name of now (a farmer who renamed since: the database checks the name of now).

@@ -244,8 +244,12 @@ const TEXTS={
 export const MAIL_LANGUAGES=Object.freeze(Object.keys(TEXTS));
 // Languages that read from right to left: their emails run right to left (dir="rtl").
 export const RTL_MAIL=Object.freeze(['ar']);
+// More than one reminder in one push (7 Oct 2026: they were joined with a middle dot): each is its own sentence, with the language's
+// full stop (Japanese and Chinese 。 with no space after it, Hindi ।). One reminder alone stays as it is, without a stop.
+const STOPS={ja:['。',''],zh:['。',''],hi:['।',' ']};
 // Every language but English writes a crop as "Name ×3": no plural or case ending to get wrong in a list.
 export function textsFor(language){
- const t=TEXTS[language]??TEXTS.en;
- return {item:(n,name)=>`${name} ×${n}`,listSep:', ',jobSep:', ',...t,language:TEXTS[language]?language:'en'};
+ const t=TEXTS[language]??TEXTS.en,code=TEXTS[language]?language:'en',[stop,gap]=STOPS[code]??['.',' '];
+ const sentences=parts=>parts.length>1?parts.map(part=>/[.!?。！？।]$/.test(part)?part:part+stop).join(gap):parts.join('');
+ return {item:(n,name)=>`${name} ×${n}`,listSep:', ',jobSep:', ',sentences,...t,language:code};
 }

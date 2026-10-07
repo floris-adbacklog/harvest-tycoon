@@ -30,7 +30,9 @@ language, from `public/i18n/<code>.json` (`{"English text": "translation"}`). En
   of an `app.html` text stops the deploy build too.
 
 Texts that are cut by markup arrive in pieces (`Beginner guide complete! +` … `XP and {0} diamonds.`): translate each
-piece so the pieces still read as one sentence in their order.
+piece so the pieces still read as one sentence in their order. In Japanese and Chinese a piece that ends with 。！？： gets no
+space after it (7 Oct 2026, `FULL_STOP` in `public/i18n.js`, the language pages too): the space the English has before a link
+or a button is dropped.
 
 What players write themselves (chat, names) sits in `translate="no"` and is never translated. The staff screens stay
 English.

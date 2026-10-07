@@ -122,7 +122,7 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
    // comeback chest: the Welcome back card shows it there, with the gift.
    // channel: the Android app's notification category (onesignal.js, existing_android_channel_id; the browser's push leaves it out):
    // 'daily' when every line comes from the daily gift switch (the gift, the streak, the comeback chest), else 'ready'.
-   result.push={title:'Harvest Tycoon',body:parts.join(' · '),tag:'harvest-tycoon',url:giftParts===parts.length&&!chestPush?'/?source=push&open=today':'/?source=push',
+   result.push={title:'Harvest Tycoon',body:t.sentences(parts),tag:'harvest-tycoon',url:giftParts===parts.length&&!chestPush?'/?source=push&open=today':'/?source=push',
     channel:giftParts===parts.length?'daily':'ready'};
    result.patchOnSend={...onSend,crops_seen_at:now,production_seen_at:now,last_push_at:new Date(now).toISOString(),push_day:today,push_count:sentToday+1};
   }

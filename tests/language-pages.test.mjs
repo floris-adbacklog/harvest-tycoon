@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {LANGUAGES,languagePath,pageLanguage} from '../public/languages.js';
 import {buildLanguagePages,translatePage,READY,OG_LOCALE} from '../scripts/build-languages.mjs';
 import {buildWiki} from '../scripts/build-wiki.mjs';
-import {chosenLanguage,startTranslation,LANGUAGE_KEY} from '../public/i18n.js';
+import {chosenLanguage,startTranslation,LANGUAGE_KEY,translateDocument,createTranslator} from '../public/i18n.js';
 import {catalog,translations} from '../scripts/i18n.mjs';
 import {tipLink} from '../src/browser-tip.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -186,4 +186,23 @@ test('the in-app browser tip opens the language page in the phone\'s browser; th
  assert.equal(tipLink({documentElement:{getAttribute:()=>'es'}},loc),'https://www.harvesttycoon.com/es/');
  assert.equal(tipLink({documentElement:{getAttribute:()=>null}},loc),'https://www.harvesttycoon.com/');
  assert.match(read('public/privacy.html'),/<code>harvest-tycoon:language<\/code><\/td><td data-label="What it does">[^<]*language page you opened \(for example \/es\/ for Spanish\)/);
+});
+
+// 7 Oct 2026: Japanese and Chinese put no space after 。 or ？ (FULL_STOP in public/i18n.js): the space the English text has before
+// the Privacy Policy link (or before Use a different email) is dropped, on the language page and where the game translates the page.
+test('no space after a Japanese or Chinese full stop or question mark, on the language page and in the game',()=>{
+ const html=read('public/play.html');
+ globalThis.MutationObserver=class{observe(){}};
+ try{
+  for(const code of ['ja','zh']){
+   const dict=translations(code),doc=translatePage(html,code,dict);
+   assert.ok(doc.includes(`<p class="account-legal">${dict['For players aged 16 and over.']}<a href="/privacy">`),code);
+   assert.doesNotMatch(doc,/[。！？：][ \t]+</,`${code}: no space between a full stop and a link or button`);
+   const legal={nodeType:3,data:'For players aged 16 and over. ',parentElement:null};
+   const p={nodeType:1,children:[legal],parentElement:null,hasAttribute:()=>false,getAttribute:()=>null,matches:()=>false,closest:()=>null};legal.parentElement=p;
+   translateDocument({documentElement:p,createTreeWalker:(start,show,filter)=>{const list=start.children.filter(c=>filter.acceptNode(c)===1);let i=0;return {nextNode:()=>list[i++]??null};}},createTranslator(dict,code));
+   assert.equal(legal.data,dict['For players aged 16 and over.'],`${code}: the game drops it too`);
+  }
+ }finally{delete globalThis.MutationObserver;}
+ assert.match(translatePage(html,'es',translations('es')),/<p class="account-legal">Para jugadores de 16 años o más\. <a href="\/privacy">/,'a language with spaces between sentences keeps it');
 });

@@ -107,3 +107,19 @@ test('t(): the whole English text looked up, its parts filled in as they are, nu
  assert.equal(codeTranslator({'{0} coins':'{0} Münzen'},'de')('{0} coins',1250),'1.250 Münzen','the German thousands');
  assert.match(readFileSync(new URL('../public/i18n.js',import.meta.url),'utf8'),/const translator=createTranslator\(dict,code\);codeText=codeTranslator\(dict,code\);/,'the same file as the page');
 });
+
+test('no middle dots on screen (7 Oct 2026): the code joins with " · " for the translations, the page shows a wide space',async()=>{
+ const {undot,undotAttr}=await import('../public/i18n.js');
+ assert.equal(undot('Level 3 · 8 / 40 fields'),'Level 3\u2002\u20098 / 40 fields','about as wide as the old dot with its spaces');
+ assert.equal(undot('Sell 1 · '),'Sell 1\u2002\u2009','a part that ends where a coin picture follows');
+ assert.equal(undot('Ready ·'),'Ready\u2002');
+ assert.equal(undot('· 3 left'),'\u20023 left');
+ assert.equal(undot('No dots here'),'No dots here');
+ assert.equal(undotAttr('Wheat · ready'),'Wheat, ready','a tooltip or a screen reader gets a comma');
+ assert.equal(undotAttr('18,430 · Crops harvested'),'18,430 Crops harvested','after a number only a space');
+ const src=readFileSync(new URL('../public/i18n.js',import.meta.url),'utf8');
+ assert.match(src,/next=undot\(next\);\n  if\(next===data\)return;/,'after the translation, so each part was looked up on its own');
+ assert.match(src,/out=undotAttr\(out\?\?value\);/);
+ assert.match(src,/if\(code==='en'\)\{show\(\);try\{if\(typeof MutationObserver==='function'&&doc\.createTreeWalker\)translateDocument\(doc,\{code:'en',translate:\(\)=>null\}\);\}catch\{\}return null;\}/,'English too, without a translation file');
+ assert.match(src,/const KEEP='script,style,noscript,textarea,code,\[translate="no"\]/,'players\' own words keep what they typed');
+});

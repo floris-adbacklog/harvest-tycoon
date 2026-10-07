@@ -109,7 +109,12 @@ test('comeback chest: the morning reminder on away-day 3 and 6 says the chest is
  assert.equal(planPlayer(player({},awayFor(3)[1]),MORNING,names).push.body,CHEST,'the farm\'s own last save (seenAt) decides, as in the game');
  assert.equal(planPlayer(player({...over,language:'nl'},farm),MORNING,names).push.body,'Er staat een comebackkist voor je klaar op je boerderij');
  const both=planPlayer(player(over,{...farm,plots:plots(['wheat',MORNING-HOUR])}),MORNING,names);
- assert.equal(both.push.body,`${CHEST} · Your crops are ready to harvest`,'one push');assert.equal(both.push.url,'/?source=push');
+ assert.equal(both.push.body,`${CHEST}. Your crops are ready to harvest.`,'one push, each reminder a sentence (7 Oct 2026: no middle dot)');assert.equal(both.push.url,'/?source=push');
+ const nl=planPlayer(player({...over,language:'nl'},{...farm,plots:plots(['wheat',MORNING-HOUR])}),MORNING,names);
+ assert.equal(nl.push.body,'Er staat een comebackkist voor je klaar op je boerderij. Je gewassen zijn klaar om te oogsten.');
+ const ja=planPlayer(player({...over,language:'ja'},{...farm,plots:plots(['wheat',MORNING-HOUR])}),MORNING,names);
+ assert.equal(ja.push.body,'農場でおかえり宝箱があなたを待っています。作物が収穫できます。','Japanese full stops, no space');
+ assert.ok(!/·/.test(ja.push.body+nl.push.body));
  const evening=at('2026-09-21T17:05:00Z');
  assert.equal(planPlayer(player({last_active_at:new Date(evening-3*DAY-HOUR).toISOString()},{...farm,seenAt:new Date(evening-3*DAY-HOUR).toISOString()}),evening,names).push,null,'no evening push: the streak is gone');
 });

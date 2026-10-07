@@ -1076,7 +1076,7 @@ function positionBuildingLabels(){
  for(const [key,v]of buildingViews){
   const locked=!buildingEligible(state,key),status=economy.status(key);setLocked(v.object,locked);
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.pin.innerHTML=art(locked?'lock':v.pinArt);v.label.setAttribute('aria-label',locked?`${BUILDINGS[key].name} (locked)`:`Open ${BUILDINGS[key].name}`);}
-  const hint=locked?`${BUILDINGS[key].name} · ${status.text}`:'';if(v.label.title!==hint)v.label.title=hint;
+  const hint=locked?`${BUILDINGS[key].name} · ${status.text}`:'';if(v.hint!==hint){v.hint=hint;v.label.title=hint;}
   const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera),x=(p.x*.5+.5)*width,y=(-p.y*.5+.5)*height;v.label.style.left=`${x}px`;v.label.style.top=`${y}px`;v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82||behindTools(x,y,80);v.label.classList.toggle('ready',status.kind==='ready');
   if(!locked){const aria=`${status.kind==='ready'?'Collect from':'Open'} ${BUILDINGS[key].name}`;if(v.label.getAttribute('aria-label')!==aria)v.label.setAttribute('aria-label',aria);}
  }

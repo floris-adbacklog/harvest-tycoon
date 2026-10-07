@@ -78,7 +78,8 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const leagueRange=l=>l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`;
  // The league's own goals and title (live-event-league-goals.sql); an event without them has one set for everyone.
  const leagueGoals=e=>{const own=e?.leagues?.[leagueOf(e).index];return own?{...e,title:own.title,description:own.description,objectives:own.objectives}:e;};
- const leagueCard=l=>`<div class="event-league"><img src="/assets/icons/league-${l.id}.webp" alt="" width="56" height="56" draggable="false"><div><span>Your league</span><strong>${l.name}</strong><small><span>${leagueRange(l)}</span> · <span>coins ×${l.coins}</span></small></div></div>`;
+ // Its levels, and under them how much its coins are worth (7 Oct 2026: side by side they read as one phrase).
+ const leagueCard=l=>`<div class="event-league"><img src="/assets/icons/league-${l.id}.webp" alt="" width="56" height="56" draggable="false"><div><span>Your league</span><strong>${l.name}</strong><small>${leagueRange(l)}</small><small>Coins ×${l.coins}</small></div></div>`;
  // One list of what a farmer wins per place: the event's own coins plus the place's coins, and the place's fixed diamonds.
  const rewards=e=>{
   const {coins}=e.rewards,league=leagueOf(e);

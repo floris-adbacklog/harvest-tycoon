@@ -128,7 +128,7 @@ function passSection(h){
  if(passPhase(h.now)==='over')return '';
  const P=SEASON_PASS,p=P.points,totals=passTotals(),price=`€${(P.cents/100).toFixed(2)}`;
  const reward=r=>r.coins?`${art('coins')}${r.coins} × your level`:r.diamonds?`${art('diamonds')}${number(r.diamonds)}`:r.items?items(r.items)
-  :r.boost?`<span class="wiki-boost">${art(BOOSTS[r.boost].art)}<span>${BOOSTS[r.boost].name} · ${BOOST_LENGTH_NAMES[r.length]}</span></span>`:r.vipDays?`${art('vip')}VIP · ${r.vipDays} days`:'–';
+  :r.boost?`<span class="wiki-boost">${art(BOOSTS[r.boost].art)}<span>${BOOSTS[r.boost].name}<small>${BOOST_LENGTH_NAMES[r.length]}</small></span></span>`:r.vipDays?`${art('vip')}${r.vipDays} days of VIP`:'–';
  const rows=P.tiers.map((t,i)=>`<tr><td>${i+1}</td><td>${reward(t.free)}</td><td>${reward(t.paid)}</td></tr>`);
  return section(P.name,`<p>${h.lvl(P.level)} From ${passDay(P.startsAt)} to ${passDay(P.endsAt-DAY)}. Every daily gift gives ${p.gift} lanterns, every daily challenge and every delivery ${p.daily}. Every ${P.perTier} lanterns open the next of ${P.tiers.length} tiers. Collect each reward with its own button, until ${passDay(P.claimUntil-DAY)}.</p>`
   +(!h.shop?`<p>Rewards: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts.</p>`+table(['Tier','Reward'],P.tiers.map((t,i)=>`<tr><td>${i+1}</td><td>${reward(t.free)}</td></tr>`))
@@ -144,8 +144,10 @@ function buildingBlock(h,key,recipes){
  const rows=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return h.row(recipeLevel(id),[out?item(out,count,true):r.name,items(r.input),wikiTime(r.duration),out&&sellOf(out)?`${art('coins')}${number(sellOf(out))}`:'–',h.lvl(recipeLevel(id))]);});
  const cards=recipes.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0]??[];return card({picture:out??key,title:out?`${count>1?`${number(count)} `:''}${itemName(out)}`:r.name,badge:h.lvl(recipeLevel(id)),locked:h.locked(recipeLevel(id)),stats:[wikiTime(r.duration),...(out&&sellOf(out)?[`Sells ${art('coins')}${number(sellOf(out))} each`]:[])],note:`Needs ${items(r.input)}`});});
  // Closed, a building is one row: its picture, name, level and cost, and small pictures of what it makes; open, its recipes.
+ // The level badge and the cost stand apart, with room between them (7 Oct 2026: no middle dot; the wiki on the website has no
+ // page translation to take it off, public/i18n.js undot).
  const made=[...new Set(recipes.map(([,r])=>Object.keys(r.output)[0]).filter(Boolean))];
- return closedRow(`building-${key}`,art(key)+b.name,`${h.lvl(buildingLevel(key))}${cost?` · builds for ${art('coins')}${number(cost)}`:' · ready from the start'}`,`${made.slice(0,6).map(out=>art(out)).join('')}${made.length>6?`<small>+${made.length-6}</small>`:''}`,
+ return closedRow(`building-${key}`,art(key)+b.name,`${h.lvl(buildingLevel(key))}${cost?` Builds for ${art('coins')}${number(cost)}`:' Ready from the start'}`,`${made.slice(0,6).map(out=>art(out)).join('')}${made.length>6?`<small>+${made.length-6}</small>`:''}`,
   `${b.tagline?`<p>${b.tagline}</p>`:''}${key==='factory'?'<p>The biggest batches are shown. Yours are twice the level of the building that normally makes the good (its level for goods that take over an hour).</p>':''}${dual(table(['Makes','Needs','Time','Sells for (each)','Opens'],rows),cards)}`);
 }
 // One closed row (a building, the Farmhouse, the Family Hall): its heading, a line under it, small pictures and what opens.
@@ -164,7 +166,7 @@ function farmhouseBlock(h){
  const fields=wikiFields(),needs=f=>Object.keys(f.materials).length?items(f.materials):'';
  const rows=fields.map(f=>h.row(f.level,[`Field ${f.field}`,h.lvl(f.level),`${art('coins')}${number(f.coins)}`,needs(f)||'–']));
  const cards=fields.map(f=>card({picture:'seeds',title:`Field ${f.field}`,badge:h.lvl(f.level),locked:h.locked(f.level),stats:[`${art('coins')}${number(f.coins)}`],note:needs(f)&&`Needs ${needs(f)}`}));
- return closedRow('building-farmhouse',art('farmhouse')+BUILDINGS.farmhouse.name,`${h.lvl(1)} · ready from the start`,'',facts([
+ return closedRow('building-farmhouse',art('farmhouse')+BUILDINGS.farmhouse.name,`${h.lvl(1)} Ready from the start`,'',facts([
   ['seeds','Expand your fields',`You start with ${STARTER_FIELDS} fields. Buy more here, one at a time, up to ${MAX_PLOTS}.`],
   ['harvest','Your fields','Remove a crop to free its field. You get nothing back.'],
   ['estate',`Your next chapter ${h.lvl(FEATURE_LEVELS.projects)}`,`Estate projects, passive income and medals <span class="wiki-see">See ${h.link('estate',TOPIC.estate.title,'sec-estate-chapters')}.</span>`]
@@ -209,7 +211,7 @@ const BODIES={
   +section('Water and care',`<p>A harvest gives 1 crop. Water a field for 2 crops, water and care for 3. Both also make the crop grow faster, and doing both gives double XP.</p>`)
   +section('Trees and bushes',`<ul class="wiki-chips wiki-regrow">${regrowing.map(k=>`<li><a href="${h.to('crops',`crop-${k}`)}" data-wiki-topic="crops" data-wiki-anchor="crop-${k}">${art(k)}<span>${CROPS[k].name}</span>${h.lvl(cropLevel(k))}</a></li>`).join('')}</ul><p>These grow back after you harvest them, so you only plant them once. Each holds one harvest at a time: pick it yourself to start the next one. Water and care it every time, for up to 3 fruit instead of 1. Nothing is picked while you are away.</p>`)
   +section('More fields',`<p>You start with ${STARTER_FIELDS} fields. While you start out, each new level lets you open one more for coins (${early}). After that the Farmhouse adds fields, up to ${MAX_PLOTS} in total. See ${h.link('buildings',TOPIC.buildings.title,'building-farmhouse')}.</p>`)
-  +section('Medals',`<p>${h.lvl(FEATURE_LEVELS.mastery)} Harvest the same crop often for a reward at every tier. <span>You collect each medal yourself in Medals (on a phone: More → Medals; on a computer: Estate → Medals). A yellow ! shows when one is waiting.</span></p>`+table(['Tier','Harvests','Reward'],MASTERY_TIERS.map(t=>`<tr><td>${t.name}</td><td>${number(t.target)}</td><td>${art('coins')}${number(t.coins)} · ${number(t.xp)} XP</td></tr>`)))
+  +section('Medals',`<p>${h.lvl(FEATURE_LEVELS.mastery)} Harvest the same crop often for a reward at every tier. <span>You collect each medal yourself in Medals (on a phone: More → Medals; on a computer: Estate → Medals). A yellow ! shows when one is waiting.</span></p>`+table(['Tier','Harvests','Reward'],MASTERY_TIERS.map(t=>`<tr><td>${t.name}</td><td>${number(t.target)}</td><td>${art('coins')}${number(t.coins)} and ${number(t.xp)} XP</td></tr>`)))
   +section('Silo research',`<p>${h.lvl(FEATURE_LEVELS.silo)} Five research steps, each paid with coins. Together they make crops grow up to 40% faster and seeds up to 25% cheaper. Crops already growing keep their time.</p>`+table(['Step','Price','Growing time','Seed price'],SILO_COSTS.map((cost,i)=>{const b=siloBonus(i+1),was=siloBonus(i),pct=n=>Math.round(n*100);return `<tr><td>${i+1}</td><td>${art('coins')}${number(cost)}</td><td>−${pct(b.growth-was.growth)}% <small>(−${pct(b.growth)}% in all)</small></td><td>−${pct(b.seeds-was.seeds)}% <small>(−${pct(b.seeds)}% in all)</small></td></tr>`;})))
   +section('Every crop',dual(table(['Crop','Opens','Seed','Grows in','Sells for','XP','Grows back','Used for'],rows,'wiki-crops'),cards));
  },
@@ -312,21 +314,22 @@ const BODIES={
   // The six leagues (1 Oct 2026, farm-state.js EVENT_LEAGUES) with what first place wins in coins there, and then each league with
   // the goals its events can draw, per kind of play (public/event-goals.js), so a farmer knows what to get ready for. A higher
   // league keeps every goal of the league below, so it lists only the goals it adds.
-  +section('Leagues',`<p>Your level when an event ends decides your league. Every league has the same diamonds; coins grow with the league. The family bonus counts family members from every league.</p>`+table(['League','Levels','First place'],EVENT_LEAGUES.map(l=>`<tr><td>${l.name}</td><td>${l.to?`${l.from}–${l.to}`:`${l.from}+`}</td><td>${number((200+PODIUM_PRIZES[0].coins)*l.coins)} coins · ${PODIUM_PRIZES[0].diamonds} diamonds</td></tr>`)))
+  +section('Leagues',`<p>Your level when an event ends decides your league. Every league has the same diamonds; coins grow with the league. The family bonus counts family members from every league.</p>`+table(['League','Levels','First place'],EVENT_LEAGUES.map(l=>`<tr><td>${l.name}</td><td>${l.to?`${l.from}–${l.to}`:`${l.from}+`}</td><td>${number((200+PODIUM_PRIZES[0].coins)*l.coins)} coins and ${PODIUM_PRIZES[0].diamonds} diamonds</td></tr>`)))
   +EVENT_LEAGUES.map((l,i)=>{
    const below=new Set((EVENT_GOAL_POOLS[i-1]??[]).flat().map(g=>g.stat));
    const added=EVENT_GOAL_POOLS[i].map((group,k)=>[k,group.filter(g=>!below.has(g.stat))]).filter(([,group])=>group.length);
    const intro=!i?'Goals you can expect, three per event:':added.length?'Every goal from the league below, with bigger numbers, plus:':'Every goal from the league below, with bigger numbers.';
-   return section(l.name,`<p class="wiki-league"><img class="wiki-league-badge" src="/assets/icons/league-${l.id}.webp" alt="" width="48" height="48" loading="lazy"><span><span>${l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`}</span> · <span>coins ×${l.coins}</span></span></p><p>${intro}</p>${added.length?`<ul class="wiki-list">${added.map(([k,group])=>`<li><strong>${['Fields','Crops','Buildings','Market','Helping out'][k]}</strong>: ${group.map(g=>`<span>${EVENT_GOALS[g.stat]?.label??g.stat}</span>`).join(', ')}</li>`).join('')}</ul>`:''}`);
+   return section(l.name,`<p class="wiki-league"><img class="wiki-league-badge" src="/assets/icons/league-${l.id}.webp" alt="" width="48" height="48" loading="lazy"><span class="wiki-league-facts"><span>${l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`}</span><span>Coins ×${l.coins}</span></span></p><p>${intro}</p>${added.length?`<ul class="wiki-list">${added.map(([k,group])=>`<li><strong>${['Fields','Crops','Buildings','Market','Helping out'][k]}</strong>: ${group.map(g=>`<span>${EVENT_GOALS[g.stat]?.label??g.stat}</span>`).join(', ')}</li>`).join('')}</ul>`:''}`);
   }).join('');
  },
  helpers(h){
   // Every number below comes from the game rules (27 Sep 2026: the wiki named these helpers without saying what they pay or cost).
   const stall=Array.from({length:STALL_MAX_LEVEL},(_,i)=>{const s=stallLevel(i+1);return `<tr><td>${i+1}</td><td>${art('coins')}${number(s.rate)}</td><td>${s.capacityHours} h</td><td>${s.upgradeCost?`${art('coins')}${number(s.upgradeCost)}`:'Top level'}</td></tr>`;});
   const choreList=Object.entries(CHORES).map(([key,c])=>({key,c,r:choreRewards(c),tries:Math.ceil((c.maxChance-c.baseChance)/CHORE_PRACTICE_STEP)}));
-  const chores=choreList.map(({key,c,r,tries})=>`<tr><td>${art(`chore-${key}`)||''}${c.name}</td><td>${art('coins')}${number(r.coins)} · ${number(r.xp)} XP</td><td>${wikiTime(c.cooldown)}</td><td>${item(c.bonus.item,c.bonus.count)} ${c.baseChance}% → ${c.maxChance}%</td><td>${tries} times</td></tr>`);
-  const choreCards=choreList.map(({key,c,r,tries})=>card({picture:`chore-${key}`,title:c.name,stats:[`${art('coins')}${number(r.coins)} · ${number(r.xp)} XP`,`Rests ${wikiTime(c.cooldown)}`,`${item(c.bonus.item,c.bonus.count)} ${c.baseChance}% → ${c.maxChance}%`],note:`Mastered after ${tries} times`}));
-  const stops=Object.values(ACTIVE_STATIONS).map(a=>`<tr><td>${a.name}</td><td>${number(a.xp)} XP${a.coins?` · ${art('coins')}${number(a.coins)}`:''} · ${item(a.item,a.itemCount??1)}</td></tr>`);
+  const chores=choreList.map(({key,c,r,tries})=>`<tr><td>${art(`chore-${key}`)||''}${c.name}</td><td>${art('coins')}${number(r.coins)} and ${number(r.xp)} XP</td><td>${wikiTime(c.cooldown)}</td><td>${item(c.bonus.item,c.bonus.count)} ${c.baseChance}% → ${c.maxChance}%</td><td>${tries} times</td></tr>`);
+  const choreCards=choreList.map(({key,c,r,tries})=>card({picture:`chore-${key}`,title:c.name,stats:[`${art('coins')}${number(r.coins)} and ${number(r.xp)} XP`,`Rests ${wikiTime(c.cooldown)}`,`${item(c.bonus.item,c.bonus.count)} ${c.baseChance}% → ${c.maxChance}%`],note:`Mastered after ${tries} times`}));
+  // The goods last, right before "and" (7 Oct 2026), so nothing but a space stands between them (wiki.css: a last .wiki-item has no margin).
+  const stops=Object.values(ACTIVE_STATIONS).map(a=>`<tr><td>${a.name}</td><td>${a.coins?`${art('coins')}${number(a.coins)}, `:''}${item(a.item,a.itemCount??1)} and ${number(a.xp)} XP</td></tr>`);
   return section('Tractor',`<p>${h.lvl(FEATURE_LEVELS.tractor)} The tractor does one job on every field that needs it. Fuel costs ${art('coins')}${TRACTOR_FUEL_BASE} plus ${art('coins')}${TRACTOR_FUEL_PER_FIELD} for every field (planting also pays the seeds).</p>`
    +facts([['seeds','Plant','Your chosen crop on every empty field.'],['water','Water','Every crop that can still take water.'],['care','Extra care','Every crop that is ready for it.'],['harvest','Harvest','Every ripe field.']])
    +`<p>With diamonds the tractor does more. The tractor's diamond work counts for no challenges, events or leaderboards. What it brings in is yours, like any crop.</p>`
@@ -343,10 +346,13 @@ const BODIES={
   const list=Object.values(IMPROVEMENTS).sort((a,b)=>a.level-b.level);
   const improvements=list.map(i=>h.row(i.level,[`${art(i.art)}${i.name}`,i.effect,h.lvl(i.level),`${art('coins')}${number(i.coins)} + ${items(i.materials)}`]));
   const improvementCards=list.map(i=>card({picture:i.art,title:i.name,badge:h.lvl(i.level),locked:h.locked(i.level),stats:[i.effect],note:`Costs ${art('coins')}${number(i.coins)} + ${items(i.materials)}`}));
-  const chapters=PROJECTS.map((p,i)=>h.row(p.level??FEATURE_LEVELS.projects,[`${i+1}. ${p.name}`,h.lvl(p.level??FEATURE_LEVELS.projects),`${art('coins')}${number(p.coins)} + ${items(p.input)}${p.medals?`<small>${p.medals} medal${p.medals===1?'':'s'}</small>`:''}`,wikiTime(p.duration),`${art('diamonds')}${number(CHAPTER_DIAMONDS[i])} · ${number(p.xp)} XP · stall +${art('coins')}${number(CHAPTER_STALL_INCOME[i])} an hour`]));
-  const chapterCards=PROJECTS.map((p,i)=>{const level=p.level??FEATURE_LEVELS.projects;return card({picture:'estate',title:`${i+1}. ${p.name}`,badge:h.lvl(level),locked:h.locked(level),stats:[`${art('coins')}${number(p.coins)}`,...Object.entries(p.input).map(([key,n])=>item(key,n)),`Takes ${wikiTime(p.duration)}`,...(p.medals?[`${p.medals} medal${p.medals===1?'':'s'}`]:[])],note:`Brings ${art('diamonds')}${number(CHAPTER_DIAMONDS[i])}, ${number(p.xp)} XP and ${art('coins')}+${number(CHAPTER_STALL_INCOME[i])} an hour at the stall`});});
+  // What a chapter brings: the diamonds and XP, and on a line of its own the stall's extra coins (7 Oct 2026: "💎35, 1,200 XP" read as
+  // one number, and the stall's coin picture ended a line on its own). In the table each is a .wiki-line (wiki.css).
+  const brings=(p,i)=>`<span class="wiki-line">${art('diamonds')}${number(CHAPTER_DIAMONDS[i])} and ${number(p.xp)} XP</span><br><span class="wiki-line">${art('coins')}+${number(CHAPTER_STALL_INCOME[i])} an hour at the stall</span>`;
+  const chapters=PROJECTS.map((p,i)=>h.row(p.level??FEATURE_LEVELS.projects,[`${i+1}. ${p.name}`,h.lvl(p.level??FEATURE_LEVELS.projects),`${art('coins')}${number(p.coins)} + ${items(p.input)}${p.medals?`<small>${p.medals} medal${p.medals===1?'':'s'}</small>`:''}`,wikiTime(p.duration),brings(p,i)]));
+  const chapterCards=PROJECTS.map((p,i)=>{const level=p.level??FEATURE_LEVELS.projects;return card({picture:'estate',title:`${i+1}. ${p.name}`,badge:h.lvl(level),locked:h.locked(level),stats:[`${art('coins')}${number(p.coins)}`,...Object.entries(p.input).map(([key,n])=>item(key,n)),`Takes ${wikiTime(p.duration)}`,...(p.medals?[`${p.medals} medal${p.medals===1?'':'s'}`]:[])],note:`Brings ${brings(p,i)}`});});
   return section('Something to grow towards',`<ul class="wiki-facts">${later.map(([key,name,picture,text])=>`<li>${art(picture)}<div><strong>${name} ${h.lvl(FEATURE_LEVELS[key])}</strong><p>${text}</p></div></li>`).join('')}</ul>`)
-  +section('Estate chapters',`<p>One chapter at a time, in this order. Pay the coins and goods, and the work takes the time shown. Some chapters also ask for crop medals.</p>`+dual(table(['Chapter','Opens','Costs','Takes','Brings'],chapters),chapterCards))
+  +section('Estate chapters',`<p>One chapter at a time, in this order. Pay the coins and goods, and the work takes the time shown. Some chapters also ask for crop medals.</p>`+dual(table(['Chapter','Opens','Costs','Takes','Brings'],chapters,'wiki-chapters'),chapterCards))
   +section('Estate Workshop improvements',dual(table(['Improvement','What it does','Opens','Costs'],improvements),improvementCards))
   +afterNinety(h);
  },
@@ -359,7 +365,7 @@ const BODIES={
   const farmCards=fromFarm.map(([id,r])=>{const [out,count]=Object.entries(r.output)[0];return card({picture:out,title:`${count>1?`${number(count)} `:''}${itemName(out)}`,badge:h.lvl(recipeLevel(id)),locked:h.locked(recipeLevel(id)),stats:[BUILDINGS[r.building].name,wikiTime(r.duration)],note:`Needs ${items(r.input)}`});});
   // The village's quests (VILLAGE_QUESTS), each with the picture of what it counts.
   const questPicture=q=>{const [,kind,key]=q.stat.match(/^(made|built)_(.+)$/)??[];return kind?key:{village_batches:'mine',village_sold:'villagemarket',village_earned:'coins',beyond_upgrades:'mastertools'}[q.stat]??'quests';};
-  const questReward=q=>`${art('coins')}${number(q.reward)} · ${questXp(q)} XP`;
+  const questReward=q=>`${art('coins')}${number(q.reward)} and ${questXp(q)} XP`;
   const questRows=VILLAGE_QUESTS.map(q=>h.row(q.minLevel,[`${art(questPicture(q))}${q.title}`,q.description,h.lvl(q.minLevel),questReward(q)]));
   const questCards=VILLAGE_QUESTS.map(q=>card({picture:questPicture(q),title:q.title,badge:h.lvl(q.minLevel),locked:h.locked(q.minLevel),stats:[questReward(q)],note:q.description}));
   const steps=MASTER_UPGRADES.map((u,i)=>h.row(u.level,[`${MAX_BUILDING_LEVEL+i} → ${MAX_BUILDING_LEVEL+i+1}`,h.lvl(u.level),`${art('coins')}${number(u.coins)} + ${items(u.materials)}`,`${Math.round((i+1)*DOUBLE_BATCH_PER_LEVEL*100)}%`]));
@@ -377,10 +383,13 @@ const BODIES={
   +section('Village quests',`<p>In Your quests, switch to Village. Each quest opens at its level and pays coins and XP once.</p>`+dual(table(['Quest','Goal','Opens','Reward'],questRows),questCards));
  },
  diamonds(h){
-  const boostPrice=b=>b.prices?Object.entries(b.prices).map(([length,cost])=>`${length.replace('m',' min').replace('h',' hour').replace('d',' day')}: ${number(cost)}`).join(' · '):number(b.cost);
-  const boosts=Object.values(BOOSTS).map(b=>`<tr><td>${art(b.art)}${b.name}</td><td>${b.description}</td><td>${boostPrice(b)}</td></tr>`);
-  const boostCards=Object.values(BOOSTS).map(b=>card({picture:b.art,title:b.name,stats:[`${art('diamonds')}${boostPrice(b)}`],note:b.description}));
-  const vip=Object.values(VIP_PLANS).map(p=>`<tr><td>${p.name}</td><td>${art('diamonds')}${number(p.cost)}</td></tr>`);
+  // Each length with its price, as the diamond shop's length list shows them: "30 min", then the diamond and the price (7 Oct 2026:
+  // they were joined with middle dots). The table lists them in lined-up columns (wiki.css .wiki-prices), a card gives each its own
+  // pill; one price is one pill.
+  const boostPrices=b=>b.prices?Object.entries(b.prices).map(([length,cost])=>`${length.replace('m',' min').replace('h',' hour').replace('d',' day')} ${art('diamonds')}${number(cost)}`):[`${art('diamonds')}${number(b.cost)}`];
+  const boosts=Object.values(BOOSTS).map(b=>`<tr><td>${art(b.art)}${b.name}</td><td>${b.description}</td><td>${b.prices?`<span class="wiki-prices">${boostPrices(b).map(p=>`<span>${p}</span>`).join('')}</span>`:boostPrices(b)[0]}</td></tr>`);
+  const boostCards=Object.values(BOOSTS).map(b=>card({picture:b.art,title:b.name,stats:boostPrices(b),note:b.description}));
+  const vip=Object.values(VIP_PLANS).map(p=>`<tr><td>${Math.round(p.duration/86400000)} days of VIP</td><td>${art('diamonds')}${number(p.cost)}</td></tr>`);
   const packs=DIAMOND_PACKS.map(p=>`<tr><td>${art('diamonds')}${number(p.amount)}</td><td>${p.price}</td></tr>`);
   return section('Earning diamonds',facts([
    ['gift','Every day',`Your daily gift and daily challenges. See ${h.link('daily')}.`],
