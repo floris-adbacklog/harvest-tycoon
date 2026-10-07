@@ -550,6 +550,8 @@ still in the cell's title on hover. Tests: `tests/admin-analytics.test.mjs`.
     `npm run build/dev/start` use it; Vercel only runs build:static. Its packages (next, react, radix-ui, wrangler, ...)
     are still installed on every Vercel build.
   - public/file.svg, globe.svg, window.svg and favicon.svg (template leftovers).
+  - public/assets/farm-welcome.webp and village-welcome.webp (6 Oct 2026): the old key art, replaced everywhere by
+    farm-backdrop(-tall).webp and village-backdrop(-tall).webp. Kept so old links (the partner kit listed them) still work.
   - 9 tracked .DS_Store files. There is no .gitignore.
 - Not done, on purpose: long browser caching for /assets. Pictures have been replaced under the same name before
   (coop.png, family-sharing.png, live-events.png), so a long cache would show old art after a deploy. Safe only if a

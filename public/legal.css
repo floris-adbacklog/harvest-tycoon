@@ -11,7 +11,7 @@ a:hover{color:#3f4c1d}
 a:focus-visible{outline:3px solid #d6ae4b;outline-offset:2px;border-radius:4px}
 
 .legal-hero{position:relative;isolation:isolate;padding:28px 20px 96px;text-align:center;color:#fffdf2;background:#3a361a}
-.legal-hero::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#2c2912cc,#3a361ad9 70%,#3a361a),url('/assets/farm-welcome.webp') center 40%/cover no-repeat}
+.legal-hero::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#2c2912cc,#3a361ad9 70%,#3a361a),url('/assets/farm-backdrop.webp') center 40%/cover no-repeat}
 .legal-logo{display:inline-block}
 .legal-logo img{display:block;width:112px;height:auto}
 .legal-hero .eyebrow{margin:14px 0 4px;font-size:11px;font-weight:700;letter-spacing:.16em;color:#f3d98f}
@@ -70,7 +70,8 @@ code{padding:1px 5px;border-radius:6px;background:#f0ebe3;font-size:.9em}
 
 /* 404: the farm behind one small cream card with the tractor, a big 404 and the way back. */
 body.not-found{min-height:100vh;min-height:100svh;background:#3a361a}
-body.not-found::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,#2c291299,#3a361acc),url('/assets/farm-welcome.webp') center 40%/cover no-repeat}
+body.not-found::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,#2c291299,#3a361acc),url('/assets/farm-backdrop.webp') center 40%/cover no-repeat}
+@media(orientation:portrait){body.not-found::before{background-image:linear-gradient(180deg,#2c291299,#3a361acc),url('/assets/farm-backdrop-tall.webp')}}
 .nf-wrap{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 16px;text-align:center}
 .nf-card{width:min(440px,100%);padding:26px 26px 30px;background:#fffdf6;border:1px solid #fffdf2;border-radius:26px;box-shadow:0 22px 80px #2d2c114d,0 3px 0 #ded1c8}
 .nf-art{display:block;width:132px;height:132px;margin:-6px auto 0;filter:drop-shadow(0 8px 12px #3a361a33)}

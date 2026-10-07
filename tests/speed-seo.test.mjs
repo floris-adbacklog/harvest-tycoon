@@ -133,6 +133,6 @@ test('a phone keeps the pictures, models and sounds for a day; the code is alway
  assert.equal(rule('/assets/fonts/(.*)'),'public, max-age=31536000, immutable');
  assert.equal(rule('/cloud/(.*)'),'no-cache','the game code is never kept stale');
  assert.ok(!headers.some(h=>/\.js|\/\(\.\*\)\.js/.test(h.source)&&/max-age=[1-9]/.test(JSON.stringify(h.headers))),'no long cache for loose scripts');
- for(const [file,max] of [['public/assets/farm-welcome.webp',400000],['public/assets/icons/crops-v2.webp',300000],['public/assets/icons/goods-v2.webp',300000],['public/assets/icons/interface-v2.webp',300000]])
+ for(const [file,max] of [['public/assets/farm-backdrop.webp',400000],['public/assets/farm-backdrop-tall.webp',400000],['public/assets/village-backdrop.webp',400000],['public/assets/village-backdrop-tall.webp',400000],['public/assets/icons/crops-v2.webp',300000],['public/assets/icons/goods-v2.webp',300000],['public/assets/icons/interface-v2.webp',300000]])
   assert.ok(statSync(new URL(`../${file}`,import.meta.url)).size<max,`${file} is light`);
 });

@@ -43,7 +43,8 @@
   <link rel="stylesheet" href="/desktop-hud.css">
   <link rel="stylesheet" href="/mobile-windows.css">
   <link rel="stylesheet" href="/pwa-layout.css">
-  <link rel="preload" as="image" href="/assets/farm-welcome.webp">
+  <!-- The page around the farm opens this frame while it is still hidden (0 by 0, which counts as portrait): min-width keeps the tall picture from coming along on a wide screen. -->
+  <link rel="preload" as="image" href="/assets/farm-backdrop.webp" media="(orientation: landscape)"><link rel="preload" as="image" href="/assets/farm-backdrop-tall.webp" media="(orientation: portrait) and (min-width: 1px)">
   <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
   <!-- The game itself starts downloading with the page, not after the cloud script has started it (the same address as its import in src/game-cloud.js). -->
   <link rel="modulepreload" href="/game.js?v=familyhall-model-2">

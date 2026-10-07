@@ -64,7 +64,7 @@ The Beginner guide has 10 independent steps: harvest, plant wheat, water, sell, 
 
 The guide is available in its desktop card, the mobile step banner, and More. “Show me” opens the appropriate tools or building. “Fields” focuses on crops; “Show the whole farm” opens the overview; My farm restores the centered, medium-zoom view. The camera frames the useful buildings and fields while reserving room for controls. Smaller building footprints, work yards and low props leave clear paths through the same farm.
 
-The signed-out page uses the original logo and `public/assets/farm-welcome.webp`, an original generated farm illustration based on the supplied low-poly farm assets. Art direction: crisp sunny isometric farm with gray farmhouse, red barn, windmill, colorful crop rows, tractor, fences and a quiet meadow behind the account panel; no baked-in text or UI. The source image was converted to WebP for delivery.
+The signed-out page, the loading screens, the legal pages and the partner kit use the original logo and the key art in `public/assets/`: `farm-backdrop.webp` (1672 × 941) with `farm-backdrop-tall.webp` (941 × 1672) for screens taller than wide, and `village-backdrop.webp` with `village-backdrop-tall.webp` for the trip to the village (6 Oct 2026). They are generated illustrations in the style of the game's cover art: warm golden-hour low-poly farm and village, with a calm middle where the logo, the bar and the account panel sit; no baked-in text or UI. The source images were converted to WebP (quality 82) for delivery.
 
 ## Diamond balance
 
