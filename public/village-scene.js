@@ -20,6 +20,12 @@ export const VILLAGE_UTILITIES=Object.freeze({
  villagemarket:{x:38,y:8.4,z:-7.1},
  farmroad:{x:.6,y:6.7,z:-21}
 });
+// How far the camera may look (7 Oct 2026): past the ring of mountains is the empty sky colour (on a phone it showed as a pale strip
+// under the valley). From the game's angle the village fills an oval on the screen round the valley, and the view never leaves this
+// ellipse inside it: x, y its middle, rx, ry its half-width and half-height, in game units on the screen (x across as (x-z)/sqrt(2),
+// y up as (72y-40(x+z))/sqrt(8384), as game.js measures the farm). Measured from a render of the whole village, with a unit and a
+// half to spare all round; a new village.glb means measuring it again.
+export const VILLAGE_VIEW=Object.freeze({x:5,y:8,rx:68,ry:44});
 // The cloud shadows' sheet (farm-atmosphere.js) just above the village's highest ground (hills to 12.7, rocks and trees to 15.7), so
 // the clouds drift over the whole valley; on the farm's height (.28) it lay under the hills. Only the mountain tops rise through it.
 export const VILLAGE_CLOUD_HEIGHT=16;

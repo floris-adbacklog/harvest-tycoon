@@ -13,3 +13,6 @@ html[data-trip="village"] .farm-loading.loading{background-image:url('/assets/vi
 @media(orientation:portrait){html[data-trip="village"] .farm-loading.loading{background-image:url('/assets/village-backdrop-tall.webp')}}
 /* On a phone the farm keeps room at the bottom for its tool dock; the village has none, so its view runs down to the menu bar. */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){html[data-world="village"]{--mobile-bottom:var(--mobile-nav,76px)}}
+/* A phone on its side has its menu bar on the left: the village's view runs down to the bottom edge (7 Oct 2026; it left an empty
+   strip there, where the farm has its tool dock). */
+@media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){html[data-world="village"]{--mobile-bottom:0px}}

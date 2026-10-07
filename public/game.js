@@ -808,15 +808,32 @@ function resize(){
  camera.left=-span*aspect/2-shift;camera.right=span*aspect/2-shift;camera.top=span/2;camera.bottom=-span/2;
  let focus;
  if(villageWorld){
-  // The village: the lake, the houses and the places, from the farm's angle; phones in portrait see less across, so more up and down
-  // (all the places from the Lumber Camp to the Smithy stay in view; a pinch brings a house close).
+  // The village: the lake, the houses and the places, from the farm's angle. A computer sees all the places from the Lumber Camp to
+  // the Smithy. A phone held upright (7 Oct 2026) sees the valley from top to bottom, 28 across as the farm's 32 (at 50 across the
+  // valley was a thin band between grey rock), round the places on the village's side of the lake (villageFrame.phone): the Lumber
+  // Camp across the lake is a swipe away, and a pinch brings a house close.
   // The whole-village view (the scan button) frames all of it, as measured when it loaded (villageFrame). The fog moves out with
   // the view, so zooming out never hides the far side.
-  const whole=viewMode==='overview'&&villageFrame;
-  const across=mobile?50:62*(width>2*hudShift?width/(width-2*hudShift):1);   // the places' width, and on a computer the side tools' share and room for their names
-  const villageSpan=(whole?Math.max(villageFrame.height,villageFrame.width/aspect):Math.max(44,across/aspect))/zoom,villageShift=!mobile?hudShift*villageSpan/height:0;camera.left=-villageSpan*aspect/2-villageShift;camera.right=villageSpan*aspect/2-villageShift;camera.top=villageSpan/2;camera.bottom=-villageSpan/2;
-  // Both views look at the middle of the village's places (the Lumber Camp on the left, the Mine and the Smithy on the right).
-  focus=(villageFrame?villageFrame.focus.clone():new THREE.Vector3(4,0,-9)).add(new THREE.Vector3(pan+panDepth,0,-pan+panDepth));
+  // Never past the mountains (7 Oct 2026): every view stays inside villageFrame.view (VILLAGE_VIEW, an ellipse on the screen), so the
+  // empty sky round the village never shows. room(s) is the tallest view that fits with its middle s (a share of the half-width)
+  // to one side: zooming out stops at room(0), the whole-village view takes all of it (an upright phone as much as fits round the
+  // places' middle), and panning stops at the edge.
+  const whole=viewMode==='overview'&&villageFrame,upright=mobile&&aspect<1,view=villageFrame?.view;
+  const at=villageFrame?(upright&&!whole?villageFrame.phone:villageFrame.focus):new THREE.Vector3(4,0,-9),ax=(at.x-at.z)/Math.SQRT2,ay=-(at.x+at.z)*40/Math.sqrt(8384);   // the middle, and its spot on the screen
+  const across=upright?28:mobile?50:62*(width>2*hudShift?width/(width-2*hudShift):1);   // the places' width, and on a computer the side tools' share and room for their names
+  const u=view?aspect/2/view.rx:0,w=view?.5/view.ry:0,room=s=>(Math.sqrt(u*u+w*w*(1-s*s))-s*u)/(u*u+w*w),fit=view?room(0):Infinity;
+  const base=whole?Math.min(Math.max(villageFrame.height,villageFrame.width/aspect),room(upright?Math.min(1,Math.abs(ax-view.x)/view.rx):0)):Math.min(fit,Math.max(44,across/aspect));
+  villageMinZoom=view?base/fit:.5;zoom=Math.max(zoom,villageMinZoom);
+  const villageSpan=base/zoom,villageShift=!mobile?hudShift*villageSpan/height:0,hw=villageSpan*aspect/2,hh=villageSpan/2;camera.left=-hw-villageShift;camera.right=hw-villageShift;camera.top=hh;camera.bottom=-hh;
+  if(view){
+   // The view's middle from the ellipse's (x, y): to the side first (as far as it goes level with the ellipse's middle, as room
+   // counts), then up and down as far as is left there.
+   const k=80/Math.sqrt(8384),x=ax+pan*Math.SQRT2-villageShift-view.x,y=ay-panDepth*k-view.y;
+   const nx=Math.max(0,view.rx*Math.sqrt(Math.max(0,1-(hh/view.ry)**2))-hw),cx=Math.max(-nx,Math.min(nx,x));
+   const ny=Math.max(0,view.ry*Math.sqrt(Math.max(0,1-((Math.abs(cx)+hw)/view.rx)**2))-hh),cy=Math.max(-ny,Math.min(ny,y));
+   pan+=(cx-x)/Math.SQRT2;panDepth-=(cy-y)/k;
+  }
+  focus=at.clone().add(new THREE.Vector3(pan+panDepth,0,-pan+panDepth));
   if(scene.fog){scene.fog.near=65+villageSpan*.9;scene.fog.far=65+villageSpan*2.6;}
  }else if(viewMode==='fields'){
   const fieldCenter=.25+(Math.ceil(state.plots.length/4)-1)*3.2/2;
@@ -836,9 +853,9 @@ function resize(){
  $('zoom-in').disabled=zoom>=maxZoom();$('zoom-out').disabled=zoom<=minZoom();
  positionLabels();positionBuildingLabels();
 }
-// The village is three times as wide as the farm and its houses are smaller on screen: further out to zoom and to move, and much
-// further in, so a house comes as close as a farm building does.
-const minZoom=()=>villageWorld?.5:.75,maxZoom=()=>villageWorld?6:2.2;
+// The village is three times as wide as the farm and its houses are smaller on screen: further out to zoom and to move (as far as
+// its mountains allow, resize), and much further in, so a house comes as close as a farm building does.
+const minZoom=()=>villageWorld?villageMinZoom:.75,maxZoom=()=>villageWorld?6:2.2;
 function panFarm(delta,depth=0){const limit=villageWorld?60:Math.round(24*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
 function zoomFarm(value){zoom=Math.max(minZoom(),Math.min(maxZoom(),value));resize();}
 function resetView(){viewMode=startView();zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
@@ -922,7 +939,7 @@ function addBuilding(key,x,z,options){
 }
 // World II: how big the village valley looks from the game's angle (its places and a margin around them, so the lake and the houses
 // are in and the ring of mountains is not), and the spot on the ground in its middle, for the whole-village view.
-let villageFrame=null;
+let villageFrame=null,villageMinZoom=.5;
 function measureVillage(spots,margin=26){
  const view=new THREE.OrthographicCamera();view.position.set(36,40,36);view.lookAt(0,0,0);view.updateMatrixWorld();
  let [minX,maxX,minY,maxY]=[Infinity,-Infinity,Infinity,-Infinity];
@@ -1212,10 +1229,15 @@ async function init(){
    // The same shadow map over almost twice the width makes each shadow texel twice as big (0.09 units, 0.19 on phones): the farm's
    // normal bias (.035) left stripes over the rocks, walls and roofs (shadow acne). 1.3 texels of it (Oct 2026): .12, .24 on phones.
    sun.shadow.normalBias=1.3*190/sun.shadow.mapSize.x;
+   // The camera stands 65 units from the spot it looks at, and the mountains at the front of the ring rise past it: it draws from
+   // 200 behind itself (7 Oct 2026), or a view further back cut them open (a hole in the rock at the bottom of a phone's view).
+   camera.near=-200;
    // Only a farmer in the village loads its scene code (and its mesh decoder): the farm never downloads it.
-   const {loadVillage,VILLAGE_PLACES,VILLAGE_UTILITIES,VILLAGE_CLOUD_HEIGHT}=await import('./village-scene.js');
+   const {loadVillage,VILLAGE_PLACES,VILLAGE_UTILITIES,VILLAGE_CLOUD_HEIGHT,VILLAGE_VIEW}=await import('./village-scene.js');
    const [village]=await Promise.all([loadVillage({onProgress:share=>loadingUI.modelsReady(Math.round(share*99))}),client.load().then(()=>loadingUI.accountReady())]);
-   loadingUI.modelsReady(100);scene.add(village);villageFrame=measureVillage([...Object.values(VILLAGE_PLACES),...Object.values(VILLAGE_UTILITIES)]);
+   loadingUI.modelsReady(100);scene.add(village);
+   // The whole village, the middle of the places on its side of the lake (an upright phone's view) and how far the camera may look.
+   const spots={...VILLAGE_PLACES,...VILLAGE_UTILITIES};villageFrame={...measureVillage(Object.values(spots)),phone:measureVillage(Object.entries(spots).filter(([k])=>k!=='lumbercamp').map(([,spot])=>spot),0).focus,view:VILLAGE_VIEW};
    for(const [key,spot] of Object.entries(VILLAGE_PLACES))addVillagePlace(key,spot);
    for(const [key,spot] of Object.entries(VILLAGE_UTILITIES))addVillageUtility(key,spot);
    atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches,cloudHeight:VILLAGE_CLOUD_HEIGHT});measureFarm();resize();icons();
