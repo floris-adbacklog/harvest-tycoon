@@ -14,8 +14,10 @@ import {art,refreshArt} from './visual-icons.js';
 import {farmNow} from './farm-client.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
-// The family emblems' names. 7 Oct 2026: the 33 new ones (farm-state.js).
-const EMBLEM_NAMES={'family-bee':'Honeybee','family-oak':'Oak grove','family-barn':'Sunrise barn','family-fox':'Cosy fox','family-owl':'Wise owl','family-windmill':'Wheat windmill','family-horseshoe':'Lucky horseshoe',
+// The family emblems' names. 7 Oct 2026: the 33 new ones (farm-state.js). A game icon is called after its item; the five that are
+// no item have a name here.
+const EMBLEM_NAMES={tractor:'Tractor',farm:'Farm',silo:'Silo',cart:'Delivery cart',trophy:'Trophy',
+ 'family-bee':'Honeybee','family-oak':'Oak grove','family-barn':'Sunrise barn','family-fox':'Cosy fox','family-owl':'Wise owl','family-windmill':'Wheat windmill','family-horseshoe':'Lucky horseshoe',
  'family-rooster':'Proud rooster','family-sheep':'Fluffy sheep','family-cow':'Happy cow','family-piglet':'Pink piglet','family-bunny':'Carrot bunny','family-hedgehog':'Apple hedgehog','family-duckling':'Little duckling','family-goat':'Cheeky goat','family-horse':'Chestnut horse','family-squirrel':'Busy squirrel','family-robin':'Robin redbreast','family-frog':'Jolly frog','family-turtle':'Steady turtle','family-ladybug':'Spotted ladybird','family-butterfly':'Blue butterfly',
  'family-watering-can':'Blooming watering can','family-lantern':'Glowing lantern','family-key':'Golden key','family-shield-crest':'Harvest shield','family-moon':'Moon and star','family-rainbow':'Rainbow meadow','family-mushroom-cottage':'Mushroom cottage','family-water-well':'Wishing well','family-scarecrow':'Friendly scarecrow',
  'family-ginger-cat':'Ginger cat','family-sheepdog':'Loyal sheepdog','family-snail':'Garden snail','family-dragonfly':'Pond dragonfly','family-swan':'Graceful swan','family-fawn':'Gentle fawn','family-badger':'Brave badger','family-sun':'Smiling sun','family-raincloud':'Spring rain'};
@@ -173,7 +175,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const leave=`<section class="family-leave"><h3>Leave this family</h3><p>${solo?'You are its only member, so you can join another family straight away.':'You can join or start another family straight away.'} Your points this week stay here.${f.leader&&!solo?' The longest-standing member becomes leader.':''}</p>${actionButton('family_leave','Leave family')}</section>`;
   if(!f.manager)return `${header}<p class="family-notice">Your family leader and co-leaders can invite farmers, choose the emblem and rename the family.</p>${leave}`;
   return `${header}
-  <form data-family-look class="family-card family-look"><h3>Look and name</h3>${emblemPickerMarkup({emblems:familyEmblemChoices(f.emblem),checkedId:f.emblem,legend:'Choose an emblem',nameOf:emblemName,tile:emblem,esc})}
+  <form data-family-look class="family-card family-look"><h3>Look and name</h3>${emblemPickerMarkup({emblems:familyEmblemChoices(),checkedId:f.emblem,legend:'Choose an emblem',nameOf:emblemName,tile:emblem,esc})}
   <label for="family-rename">Family name</label><input id="family-rename" name="name" value="${esc(f.name)}" minlength="3" maxlength="20" required ${renameLater?'disabled':''}><small>${renameLater?`You can rename again in ${formatDuration(f.renameAt-farmNow())}.`:'You can rename once every seven days.'}</small>
   <div class="family-look-save" data-look-save hidden><button type="button" class="link-button" data-look-undo>Undo</button><button class="primary-button">Save changes</button></div></form>
   <section class="family-card family-open-row"><div><strong>Who can join</strong><p>${MODE_HELP[f.mode]??MODE_HELP.invite}</p></div><select data-family-mode aria-label="Who can join" ${disabled(false)}>${Object.entries(FAMILY_JOIN_MODES).map(([k,label])=>`<option value="${k}" ${f.mode===k?'selected':''}>${label}</option>`).join('')}</select></section>

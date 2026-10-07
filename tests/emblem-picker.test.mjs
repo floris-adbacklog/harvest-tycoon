@@ -80,8 +80,8 @@ test('the arrows follow the width of the row and stop watching once the dialog r
 
 test('both emblem forms use the picker, and the dialog is not re-rendered under a farmer who is using the arrows',()=>{
  const ui=read('public/family-ui.js');
- assert.match(ui,/emblemPickerMarkup\(\{emblems:familyEmblemChoices\(\),checkedId:FAMILY_EMBLEM_DEFAULT,legend:'Choose your emblem'/,'7 Oct 2026: only the real family emblems');
- assert.match(ui,/emblemPickerMarkup\(\{emblems:familyEmblemChoices\(f\.emblem\),checkedId:f\.emblem,legend:'Choose an emblem'/,'and the family\'s own old one');
+ assert.match(ui,/emblemPickerMarkup\(\{emblems:familyEmblemChoices\(\),checkedId:FAMILY_EMBLEM_DEFAULT,legend:'Choose your emblem'/,'7 Oct 2026: the 40 family emblems, then the 60 game icons');
+ assert.match(ui,/emblemPickerMarkup\(\{emblems:familyEmblemChoices\(\),checkedId:f\.emblem,legend:'Choose an emblem'/,'the same 100 in Family settings: every family can pick any of them again');
  assert(!/<div class="family-emblems">/.test(ui),'no second, hand-written grid');
  assert.match(ui,/inviteSearch\.mount\(content\);bindEmblemPickers\(content\);/);
  assert.match(ui,/closest\('\[data-emblem-picker\]'\)/);
@@ -129,8 +129,8 @@ test('the avatar picker is the same row, with the faces as tiles',()=>{
  assert.match(css,/\.avatar-picker \.avatar-tile\{[^}]*width:62px;height:66px/);assert.match(css,/\.avatar-picker \.family-emblems input:checked\+\.avatar-tile/);
  assert(!/avatar-grid|avatar-choice/.test(css),'the wall of squares is gone');
 });
-test('all 93 family emblems have a picture that ships and a name',async()=>{
- assert.equal(FAMILY_EMBLEMS.length,93);   // 7 Oct 2026: 33 real family emblems (tests/family-emblems.test.mjs)
+test('all 100 family emblems have a picture that ships and a name',async()=>{
+ assert.equal(FAMILY_EMBLEMS.length,100);   // 7 Oct 2026: 33 real family emblems and 7 more game icons (tests/family-emblems.test.mjs)
  const {artSource}=await import('../public/visual-icons.js');for(const e of FAMILY_EMBLEMS)assert.ok(artSource(e.icon),`${e.icon} has a picture`);
  const icons=read('public/visual-icons.js'),ui=read('public/family-ui.js');
  for(const icon of ['family-fox','family-owl','family-windmill','family-horseshoe']){

@@ -2832,24 +2832,36 @@ export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','
  // 27 Sep 2026: 35 more (60 in all), from the crops and goods added since. Always added at the end: an emblem's id is its place in this list.
  'lettuce','barley','cabbage','cauliflower','redcabbage','squash','polebeans','ciderapples','cherries','flour','pie','pickles','oil','stew','applepie','berrytart','orchardjuice','squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','prizeproduce','truffles','vegetables','silo','cart','berrysmoothie',
  // 7 Oct 2026: 33 real family emblems (ids 60-92), painted like the bee and the fox, so the picker offers a round 40.
- 'family-rooster','family-sheep','family-cow','family-piglet','family-bunny','family-hedgehog','family-duckling','family-goat','family-horse','family-squirrel','family-robin','family-frog','family-turtle','family-ladybug','family-butterfly','family-watering-can','family-lantern','family-key','family-shield-crest','family-moon','family-rainbow','family-mushroom-cottage','family-water-well','family-scarecrow','family-ginger-cat','family-sheepdog','family-snail','family-dragonfly','family-swan','family-fawn','family-badger','family-sun','family-raincloud'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
-// The emblem picker (7 Oct 2026) offers only the real family emblems (family-…), animals first, then things. A family whose emblem is
-// one of the old crop or goods pictures keeps it, first in its row, until it picks another; it still shows everywhere. A new family
-// starts with the first one. The server still takes every id in the list (a page that has not reloaded yet offers the old ones).
+ 'family-rooster','family-sheep','family-cow','family-piglet','family-bunny','family-hedgehog','family-duckling','family-goat','family-horse','family-squirrel','family-robin','family-frog','family-turtle','family-ladybug','family-butterfly','family-watering-can','family-lantern','family-key','family-shield-crest','family-moon','family-rainbow','family-mushroom-cottage','family-water-well','family-scarecrow','family-ginger-cat','family-sheepdog','family-snail','family-dragonfly','family-swan','family-fawn','family-badger','family-sun','family-raincloud',
+ // 7 Oct 2026: 7 more game icons (ids 93-99), from the game's own goods that were no emblem yet, so the picker offers 60 game icons
+ // after the 40 family emblems.
+ 'salad','beangratin','applecompote','applevinegar','pickledbeans','truffleomelette','berrycheesecake'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
+// The emblem picker (7 Oct 2026) offers all 100: first the 40 real family emblems (family-…), animals first, then things; then the
+// 60 game icons (the 53 old crop and goods emblems and the 7 new ones), crops first, then goods, then the farm's own things. Every
+// family can pick any of them, also one it had before. A new family starts with the first one.
 export const FAMILY_EMBLEM_ORDER=Object.freeze([
  'family-rooster','family-duckling','family-cow','family-piglet','family-sheep','family-goat','family-horse','family-sheepdog','family-ginger-cat','family-bunny',
  'family-fox','family-owl','family-hedgehog','family-squirrel','family-badger','family-fawn','family-robin','family-swan','family-frog','family-turtle','family-snail',
  'family-bee','family-ladybug','family-butterfly','family-dragonfly',
  'family-barn','family-windmill','family-water-well','family-mushroom-cottage','family-scarecrow','family-watering-can','family-lantern','family-horseshoe','family-key','family-shield-crest',
  'family-oak','family-sun','family-rainbow','family-raincloud','family-moon']);
+export const FAMILY_GAME_EMBLEM_ORDER=Object.freeze([
+ 'wheat','corn','barley','sunflower','lettuce','cabbage','redcabbage','cauliflower','pumpkin','squash','greenbeans','polebeans','apples','ciderapples','cherries','berries','truffles','prizeproduce',
+ 'eggs','milk','cheese','goatmilk','goatcheese','honey',
+ 'flour','bread','pie','applepie','cherrypie','berrytart','berrycheesecake',
+ 'salad','stew','squashsoup','beangratin','truffleomelette',
+ 'berrypreserves','applevinegar','cherryjam','applecompote','pickles','pickledbeans','oil',   // the vinegar apart from the oil: the two bottles look alike
+ 'applejuice','orchardjuice','berrysmoothie','cider',
+ 'beeswax','candles','wool','yarn','cloth','blanket',
+ 'vegetables','harvesthamper',
+ 'farm','tractor','silo','cart','trophy']);
 export const familyEmblemReal=e=>!!e?.icon?.startsWith('family-');
-export function familyEmblemChoices(current=null){
- const place=e=>{const i=FAMILY_EMBLEM_ORDER.indexOf(e.icon);return i<0?FAMILY_EMBLEM_ORDER.length+Number(e.id):i;};   // one missing from the order goes last
- const real=FAMILY_EMBLEMS.filter(familyEmblemReal).sort((a,b)=>place(a)-place(b)),kept=FAMILY_EMBLEMS.find(e=>e.id===current&&!familyEmblemReal(e));
- return kept?[kept,...real]:real;
+export function familyEmblemChoices(){
+ const row=(order,list)=>{const place=e=>{const i=order.indexOf(e.icon);return i<0?order.length+Number(e.id):i;};return list.sort((a,b)=>place(a)-place(b));};   // one missing from its order goes last in its part
+ return [...row(FAMILY_EMBLEM_ORDER,FAMILY_EMBLEMS.filter(familyEmblemReal)),...row(FAMILY_GAME_EMBLEM_ORDER,FAMILY_EMBLEMS.filter(e=>!familyEmblemReal(e)))];
 }
 export const FAMILY_EMBLEM_DEFAULT=familyEmblemChoices()[0].id;
-export const familyEmblemValid=id=>typeof id==='string'&&/^(0|[1-9]\d*)$/.test(id)&&Number(id)<FAMILY_EMBLEMS.length;   // ids 0-92
+export const familyEmblemValid=id=>typeof id==='string'&&/^(0|[1-9]\d*)$/.test(id)&&Number(id)<FAMILY_EMBLEMS.length;   // ids 0-99
 export function familyUnlocked(state,minLevel=FAMILY_MIN_LEVEL){return levelOf(state)>=minLevel;}
 export function familyUnlockHint(minLevel=FAMILY_MIN_LEVEL){return `Reach level ${minLevel} to unlock Farm Family.`;}
 export function familyWeek(now=Date.now()){return Math.floor((now-4*DAY_MS)/(7*DAY_MS));}
