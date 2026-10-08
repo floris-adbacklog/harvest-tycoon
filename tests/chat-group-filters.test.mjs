@@ -2,7 +2,7 @@
 // farmers who match every filter, never to one who switched private messages off, and every copy says who it was sent to.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import {createChatClient,dmChannel} from '../src/chat-client.js';
 import {createChatUI,groupPills,groupLine,messageLayout} from '../src/chat-ui.js';
 import {LANGUAGES} from '../public/languages.js';
@@ -16,7 +16,7 @@ test('the filters: fixed keys only, all together, every value checked; anything 
  assert.match(f,/returns jsonb language plpgsql immutable set search_path to '' as \$f\$/);
  assert.match(f,/if jsonb_typeof\(f\)<>'object' then raise exception 'Choose who gets it\.' using errcode='22023'; end if;/);
  assert.match(f,/if k not in \('minLevel','maxLevel','active','platform','notPlatform','crazygames','language','family'\) then raise exception 'There is no filter called %\.', k using errcode='22023'; end if;/,'an unknown key');
- assert.match(f,/if case when jsonb_typeof\(v\)='number' and s ~ '\^\[0-9\]\{1,3\}\$' then s::integer not between 1 and 200 else true end then raise exception 'Choose a level from 1 to 200\.'/,'a whole level from 1 to 200, never a text read as a number');
+ assert.match(f,/if \(case when jsonb_typeof\(v\)='number' and s ~ '\^\[0-9\]\{1,3\}\$' then s::integer not between 1 and 200 else true end\) then raise exception 'Choose a level from 1 to 200\.'/,'a whole level from 1 to 200, never a text read as a number');
  assert.match(f,/if v is distinct from 'true'::jsonb then raise exception 'The filter % cannot be %\.', k, v using errcode='22023'; end if;/,'CrazyGames is true or left out');
  assert.match(f,/\(k='active' and s in \('online','week','month','all'\)\) or \(k in \('platform','notPlatform'\) and s in \('android','ios','browser'\)\)/);
  assert.match(f,/if out->>'platform'=out->>'notPlatform' then raise exception 'Leave out a different place than the one you chose\.'/,'a place cannot be chosen and left out at once');
@@ -209,4 +209,10 @@ test('the dashboard: the filters next to the audience, the count with them, the 
  assert.match(admin,/import \{translateLink,groupPills\} from '\.\/chat-ui\.js';/);
  // The moderators never see it: the whole card is the admin's (Settings).
  assert.match(admin,/dialog\.querySelector\('\[data-admin-tab="settings"\]'\)\.hidden=role!=='admin';/);
+});
+
+test('no SQL file starts an if with a bare case: PL/pgSQL ends the condition at the case\'s own then (8 Oct 2026, "syntax error at end of input")',()=>{
+ for(const name of readdirSync(new URL('../supabase/',import.meta.url)).filter(n=>n.endsWith('.sql'))){
+  assert.doesNotMatch(read(`supabase/${name}`),/\b(?:if|elsif)\s+(?:not\s+)?case\b/i,name);
+ }
 });

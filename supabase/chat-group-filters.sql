@@ -59,7 +59,8 @@ begin
   if k not in ('minLevel','maxLevel','active','platform','notPlatform','crazygames','language','family') then raise exception 'There is no filter called %.', k using errcode='22023'; end if;
   if k in ('minLevel','maxLevel') then
    -- In a case, so the text is only read as a number once it is one (an or may be worked out in any order).
-   if case when jsonb_typeof(v)='number' and s ~ '^[0-9]{1,3}$' then s::integer not between 1 and 200 else true end then raise exception 'Choose a level from 1 to 200.' using errcode='22023'; end if;
+   -- In brackets: PL/pgSQL ends an if's condition at the first then, also one inside a case.
+   if (case when jsonb_typeof(v)='number' and s ~ '^[0-9]{1,3}$' then s::integer not between 1 and 200 else true end) then raise exception 'Choose a level from 1 to 200.' using errcode='22023'; end if;
    if (k='minLevel' and s::integer>1) or (k='maxLevel' and s::integer<200) then out:=out||jsonb_build_object(k,s::integer); end if;
   elsif k='crazygames' then
    if v is distinct from 'true'::jsonb then raise exception 'The filter % cannot be %.', k, v using errcode='22023'; end if;
