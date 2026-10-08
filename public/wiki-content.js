@@ -2,7 +2,7 @@ import {EVENT_LEAGUES,CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_X
 import {art} from './visual-icons.js';
 import {helpCoins,maxShare,SHARE_LIMIT,REQUEST_DAYS} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
-import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,PODIUM_RULE,EVENT_GOALS} from './live-events-ui.js';
+import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_GOAL_POOLS} from './event-goals.js';
 import {portal as portalAround} from './portal.js';
 import {androidApp,appPushOffered,playBilling,appStoreBilling,webBilling} from './android.js';
@@ -303,12 +303,12 @@ const BODIES={
   +section('Changing family',`<p>Left a family, or did a family remove you? You can join another family straight away. Only the family that removed you stays closed to you for ${Math.round(FAMILY_CONFIG.JOIN_COOLDOWN_MS/3600000)} hours. Delivered to your old family this week? Then you deliver to your new one from Monday.</p>`);
  },
  events(h){
-  // 7 Oct 2026: the podium pays 25, 15 and 10 diamonds, but only in a league with 4 finishers or more (PODIUM_RULE, the same line as
-  // on the event screen); each place has its own number now, because one "50, 30 and 20" kept the English "and" in every language.
+  // 7 Oct 2026: the podium pays 25, 15 and 10 diamonds, each place its own number, because one "50, 30 and 20" kept the English "and"
+  // in every language. Since 8 Oct 2026 in every league however many finished (on 7 Oct only with 4 finishers or more).
   return section('Short shared goals',`<p>${h.lvl(EVENTS_LEVEL)} An event runs for 5 hours, then there is a 1-hour break before the next one. Everyone plays toward the same goals. Events open as soon as you reach level ${EVENTS_LEVEL}.</p>`)
   +section('How it works',facts([
    ['live-events','Goals','Every event has 3 goals from 3 different kinds of play: the fields, crops, buildings, the market or helping out, each in an easy, medium or hard size, and never three hard goals. Each league gets its own goals, made for its levels: the Sprout League grows wheat and collects eggs, higher leagues weave cloth, make goat cheese and fill Valley Market baskets, with bigger numbers. Your progress shows in the event window.'],
-   ['trophy','Rewards',`Complete every goal and you have finished. Everyone who finishes wins coins and diamonds; the sooner you finish, the more. The first three in each league win ${PODIUM_PRIZES[0].diamonds}, ${PODIUM_PRIZES[1].diamonds} and ${PODIUM_PRIZES[2].diamonds} diamonds, every other finisher ${FINISHER_PRIZE.diamonds}. <span>${PODIUM_RULE}</span>`],
+   ['trophy','Rewards',`Complete every goal and you have finished. Everyone who finishes wins coins and diamonds; the sooner you finish, the more. The first three in each league win ${PODIUM_PRIZES[0].diamonds}, ${PODIUM_PRIZES[1].diamonds} and ${PODIUM_PRIZES[2].diamonds} diamonds, every other finisher ${FINISHER_PRIZE.diamonds}.`],
    ['rank-gold','Leagues','You race in your league, against farmers of about your level, with its own top 10 and podium. Your level when the event ends decides your league. Diamonds are the same in every league; higher leagues win more coins.'],
    ['family-members','Family bonus',`When ${FAMILY_EVENT_BONUS.finishers} or more members of one Farm family finish the same event, each of them gets ${number(FAMILY_EVENT_BONUS.coins)} coins and ${FAMILY_EVENT_BONUS.diamonds} diamonds more.`],
    ['gift','Next event','When an event ends, the window shows when the next one starts and what it gives.']
@@ -316,7 +316,7 @@ const BODIES={
   // The six leagues (1 Oct 2026, farm-state.js EVENT_LEAGUES) with what first place wins in coins there, and then each league with
   // the goals its events can draw, per kind of play (public/event-goals.js), so a farmer knows what to get ready for. A higher
   // league keeps every goal of the league below, so it lists only the goals it adds.
-  +section('Leagues',`<p>Your level when an event ends decides your league. Every league has the same diamonds; coins grow with the league. The family bonus counts family members from every league.</p>`+table(['League','Levels','First place'],EVENT_LEAGUES.map(l=>`<tr><td>${l.name}</td><td>${l.to?`${l.from}–${l.to}`:`${l.from}+`}</td><td>${number((200+PODIUM_PRIZES[0].coins)*l.coins)} coins and ${PODIUM_PRIZES[0].diamonds} diamonds</td></tr>`))+`<p>${PODIUM_RULE}</p>`)
+  +section('Leagues',`<p>Your level when an event ends decides your league. Every league has the same diamonds; coins grow with the league. The family bonus counts family members from every league.</p>`+table(['League','Levels','First place'],EVENT_LEAGUES.map(l=>`<tr><td>${l.name}</td><td>${l.to?`${l.from}–${l.to}`:`${l.from}+`}</td><td>${number((200+PODIUM_PRIZES[0].coins)*l.coins)} coins and ${PODIUM_PRIZES[0].diamonds} diamonds</td></tr>`)))
   +EVENT_LEAGUES.map((l,i)=>{
    const below=new Set((EVENT_GOAL_POOLS[i-1]??[]).flat().map(g=>g.stat));
    const added=EVENT_GOAL_POOLS[i].map((group,k)=>[k,group.filter(g=>!below.has(g.stat))]).filter(([,group])=>group.length);

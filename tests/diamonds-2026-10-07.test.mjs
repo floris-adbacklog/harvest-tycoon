@@ -5,10 +5,11 @@ import {createFarm,normalizeFarm,applyFarmAction as act,xpForLevel,buildingEligi
  giantDiamonds,GIANT_KG_PER_DIAMOND,GIANT_MAX_DIAMONDS,familyOrderPay,valleyProjectFinish,VALLEY_PROJECTS,DAILY_DIAMONDS,DAILY_CHALLENGE_DIAMONDS,REPLACE_ORDER_COST,COMMISSION_POOL,ITEMS,FAIR_CLASSES,FAIR_CHAMPION_DIAMONDS,
  VISITOR_DIAMONDS,GIANT_RECORD_DIAMONDS,DEPOT_DIAMONDS,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,VALLEY_PROJECT_DIAMONDS,CHAPTER_DIAMONDS,FAMILY_CHEST_TIERS,
  FAMILY_CONFIG,FAMILY_EVENT_BONUS,BEGINNER_REWARD,EMAIL_BONUS,INVITE_REWARD,VIP_PLANS,BOOSTS,DAY_MS} from '../game/farm-state.js';
-import {eventStandings,PODIUM,FINISHER_PRIZE,PODIUM_MIN_FINISHERS} from '../supabase/functions/farm-api/event-service.js';
+import {eventStandings,PODIUM,FINISHER_PRIZE} from '../supabase/functions/farm-api/event-service.js';
 
 // 7 Oct 2026, the owner's choice ("option B" and "podium only with rivals"): about half the diamonds earned in play at every level and
 // about 60% less in the end game. This file pins the whole table, so a later change to one amount is a choice and not an accident.
+// 8 Oct 2026 ("option 3"): the event podium pays its diamonds however many finished in the league (tests/event-podium-2026-10-08.test.mjs).
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,9,7,12);
 function farmAt(level){const s=createFarm(now);s.xp=xpForLevel(level);s.levelRewards=Array.from({length:level},(_,i)=>i+1);s.coins=5e7;s.rookieUntil=0;
@@ -53,17 +54,17 @@ test('deliveries: quick 1, village 2-3, commission 4 + 1 per 4,000 coins of good
  const top=Math.max(...COMMISSION_POOL.map(t=>Object.entries(t.input).reduce((n,[k,c])=>n+ITEMS[k].sell*c,0)));assert.equal(Math.min(10,4+Math.floor(top/4000)+1),10);
 });
 
-test('farm events: podium 25 / 15 / 10 only with at least 4 finishers in the league, otherwise 3 each; every other finisher 3',()=>{
- assert.deepEqual(PODIUM.map(p=>p.diamonds),[25,15,10]);assert.equal(FINISHER_PRIZE.diamonds,3);assert.equal(PODIUM_MIN_FINISHERS,4);
+test('farm events: podium 25 / 15 / 10, every other finisher 3 (since 8 Oct 2026 however many finished in the league)',()=>{
+ assert.deepEqual(PODIUM.map(p=>p.diamonds),[25,15,10]);assert.equal(FINISHER_PRIZE.diamonds,3);
  assert.deepEqual(PODIUM.map(p=>p.coins),[2000,1000,500],'the podium coins stay');assert.equal(FINISHER_PRIZE.coins,100);
  const H=3600000,iso=t=>new Date(t).toISOString(),e={id:'e',starts_at:iso(now-H),ends_at:iso(now+H),settled_at:null,objectives:[{stat:'harvested',target:10}],rewards:{coins:200}};
  const rows=n=>Array.from({length:n},(_,i)=>({player_id:`p${i}`,progress:{harvested:10},actions:3,joined_at:iso(now-H),last_at:iso(now-H+(10+i)*60000)}));
- assert.deepEqual([1,2,3].map(n=>eventStandings(e,rows(n),now).map(r=>r.diamonds)),[[3],[3,3],[3,3,3]],'no rivals: no podium diamonds');
+ assert.deepEqual([1,2,3].map(n=>eventStandings(e,rows(n),now).map(r=>r.diamonds)),[[25],[25,15],[25,15,10]],'the podium pays with 1 to 3 finishers too (8 Oct 2026)');
  assert.deepEqual(eventStandings(e,rows(4),now).map(r=>r.diamonds),[25,15,10,3]);
  assert.deepEqual(eventStandings(e,rows(6),now).map(r=>r.diamonds),[25,15,10,3,3,3]);
- assert.deepEqual(eventStandings(e,rows(3),now).map(r=>r.coins),[2200,1200,700],'the podium coins come with or without rivals');
- // A farmer still busy does not count as a rival.
- assert.deepEqual(eventStandings(e,[...rows(3),{...rows(1)[0],player_id:'busy',progress:{harvested:9}}],now).map(r=>r.diamonds),[3,3,3,0]);
+ assert.deepEqual(eventStandings(e,rows(3),now).map(r=>r.coins),[2200,1200,700],'the podium coins');
+ // A farmer still busy wins nothing yet.
+ assert.deepEqual(eventStandings(e,[...rows(3),{...rows(1)[0],player_id:'busy',progress:{harvested:9}}],now).map(r=>r.diamonds),[25,15,10,0]);
  assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,coins:200,diamonds:3});
 });
 
@@ -133,19 +134,17 @@ test('unchanged: the beginner guide, the email bonus, invite a friend, VIP and b
  assert.deepEqual(Object.values(BOOSTS).map(b=>b.cost),[50,75,100,150,200,250]);
 });
 
-// What the players read says the same (7 Oct 2026, phase 2): the event screen, the wiki, the estate screens and the tips.
-test('the texts say the new amounts: the event screen and its 4-finisher line, the wiki, the estate screens, the tip and the tournament',async()=>{
+// What the players read says the same (7 Oct 2026, phase 2): the event screen, the wiki, the estate screens and the tips. The event
+// screen's 4-finisher line went again on 8 Oct 2026 (tests/event-podium-2026-10-08.test.mjs).
+test('the texts say the new amounts: the event screen, the wiki, the estate screens, the tip and the tournament',async()=>{
  const screen=await import('../public/live-events-ui.js'),{wikiArticle}=await import('../public/wiki-content.js'),{LOADING_TIPS}=await import('../public/loading-screen.js');
- assert.deepEqual([screen.PODIUM_PRIZES,screen.FINISHER_PRIZE,screen.PODIUM_MIN_FINISHERS],[PODIUM,FINISHER_PRIZE,PODIUM_MIN_FINISHERS],'the screen shows what the server pays');
- assert.equal(screen.PODIUM_RULE,'Podium diamonds need at least 4 finishers in your league. With fewer, every finisher gets 3 diamonds.');
+ assert.deepEqual([screen.PODIUM_PRIZES,screen.FINISHER_PRIZE],[PODIUM,FINISHER_PRIZE],'the screen shows what the server pays');
  const ui=read('public/live-events-ui.js');
- assert.match(ui,/<\/ol><p class="event-podium-note">\$\{PODIUM_RULE\}<\/p>/,'under the list of what each place wins');
- assert.match(ui,/<li>Everyone who finishes wins; the sooner you finish, the more\. The list above shows what each place wins in total\.<\/li><li>\$\{PODIUM_RULE\}<\/li>/,'straight after "the sooner, the more" in How events work');
- assert.match(ui,/The first three to finish in your league win extra coins, and extra diamonds once \$\{PODIUM_MIN_FINISHERS\} or more have finished\./,'the standings caption');
- assert.doesNotMatch(ui,/win a podium prize/);
+ assert.match(ui,/<li>Everyone who finishes wins; the sooner you finish, the more\. The list above shows what each place wins in total\.<\/li><li>You race in your league/,'How events work');
+ assert.match(ui,/'Rewards if the event ended now\. The first three to finish in your league win extra coins and diamonds\.'/,'the standings caption');
  // The wiki: levels, events, visitors and the giant pumpkin.
  assert.match(wikiArticle('quests').html,/1 diamond for every 10 levels \(at least 1\)\./);assert.equal(levelReward(30).diamonds,3);
- const events=wikiArticle('events').html;assert.match(events,/win 25, 15 and 10 diamonds, every other finisher 3\./);assert.equal(events.split(screen.PODIUM_RULE).length,3,'the rule under Rewards and under the league table');
+ const events=wikiArticle('events').html;assert.match(events,/win 25, 15 and 10 diamonds, every other finisher 3\./);
  const estate=wikiArticle('estate').html;
  assert.match(estate,/Deliver it within 12 hours for 1\.8× the goods’ price and 3 diamonds\. Every visitor served in a row makes the next order 10% bigger and better paid in coins/);
  assert.match(estate,/The scale pays 400 coins a kilo and 1 diamond for every 20 kg, up to 20; a new record from 100 kg adds 25 diamonds\./);
@@ -159,5 +158,5 @@ test('the texts say the new amounts: the event screen and its 4-finisher line, t
  const week=familyWeek(now);assert.deepEqual(familyTournament(emptyFamilyContext(),week).pool,50);
  assert.match(read('public/family-tournament.js'),/p=t\.poolSteps\?\?\[50,100,150\];/);
  // No middle dots in any of them (the owner's rule).
- for(const text of [screen.PODIUM_RULE,...LOADING_TIPS.map(([,t])=>t)])assert.doesNotMatch(text,/ · /);
+ for(const text of LOADING_TIPS.map(([,t])=>t))assert.doesNotMatch(text,/ · /);
 });

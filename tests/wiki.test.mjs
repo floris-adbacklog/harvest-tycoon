@@ -105,9 +105,10 @@ test('the wiki matches the rules it explains: family payouts, invites, events an
  assert.doesNotMatch(wikiArticle('quests').html,/Invite a friend/,'inviting is not a level unlock');
  assert.match(wikiArticle('events').html,/Events open as soon as you reach level 15\./);assert.doesNotMatch(wikiArticle('events').html,/email/);
  assert.match(wikiArticle('account').html,/Confirm it once for 10 diamonds/);assert.match(wikiArticle('diamonds').html,/Confirm your email/);assert.doesNotMatch(wikiArticle('events').html,/48 hours/);
- // 7 Oct 2026: 25, 15 and 10 (50, 30 and 20 before), each its own number, and the podium's diamonds only with 4 finishers or more.
- assert.match(wikiArticle('events').html,/The first three in each league win 25, 15 and 10 diamonds, every other finisher 3\. <span>Podium diamonds need at least 4 finishers in your league\. With fewer, every finisher gets 3 diamonds\.<\/span>/);
- assert.match(wikiArticle('events').html,/<td>Valley Legends<\/td><td>90\+<\/td><td>17,600 coins and 25 diamonds<\/td><\/tr><\/tbody><\/table><\/div><p>Podium diamonds need at least 4 finishers in your league\./,'the league table: first place in each league, and the rule under it');
+ // 7 Oct 2026: 25, 15 and 10 (50, 30 and 20 before), each its own number; since 8 Oct 2026 in every league, however many finished.
+ assert.match(wikiArticle('events').html,/The first three in each league win 25, 15 and 10 diamonds, every other finisher 3\.<\/p>/);
+ assert.match(wikiArticle('events').html,/<td>Valley Legends<\/td><td>90\+<\/td><td>17,600 coins and 25 diamonds<\/td><\/tr><\/tbody><\/table><\/div>/,'the league table: first place in each league');
+ assert.doesNotMatch(wikiArticle('events').html,/Podium diamonds need|finishers in your league|With fewer/,'no finisher rule any more (8 Oct 2026)');
  assert.match(wikiArticle('diamonds').html,/at least 1 diamond with every level-up/);
  assert.match(wikiArticle('buildings').html,/Dairy Barn needs the Feed Mill first/);
 });

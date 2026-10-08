@@ -2896,7 +2896,8 @@ export const FAMILY_EVENT_BONUS=Object.freeze({finishers:3,coins:200,diamonds:3}
 // Farm event leagues (1 Oct 2026): every farmer races against farmers of about their level, with a top 10 and a podium of its own
 // per league. Diamonds per place are the same in every league; coins grow with the league: × its number, 1 to 5, and × 8 for the
 // Valley Legends (harvest_event_settle, supabase/live-event-leagues.sql). The level when the event ends decides the league.
-// Since 7 Oct 2026 a league's podium diamonds (25 / 15 / 10) need at least 4 finishers in it (supabase/diamonds-2026-10-07.sql).
+// A league's podium pays 25 / 15 / 10 diamonds however many finished in it (8 Oct 2026, supabase/event-podium-2026-10-08.sql; on
+// 7 Oct only with 4 finishers or more).
 export const EVENT_LEAGUES=Object.freeze([
  {id:'sprout',name:'Sprout League',from:15},{id:'meadow',name:'Meadow League',from:30},{id:'orchard',name:'Orchard League',from:45},
  {id:'harvest',name:'Harvest League',from:60},{id:'estate',name:'Estate League',from:75},{id:'legends',name:'Valley Legends',from:90,coins:8}

@@ -1,8 +1,8 @@
 // Isolated PostgreSQL/WASM integration tests; never connects to Supabase.
 // The event part checks the first event SQL (supabase/live-events.sql, 22 Sep 2026) with that file's own numbers: a shared pool of
-// 1 to 3 diamonds a farmer and a daily claim limit. Later files replaced both; what events pay now (25 / 15 / 10 for the podium with
-// at least 4 finishers in the league, 3 for every other finisher, +3 family bonus: supabase/diamonds-2026-10-07.sql, 7 Oct 2026) is
-// checked in tests/diamonds-2026-10-07.test.mjs and tests/farm-events.test.mjs, not here.
+// 1 to 3 diamonds a farmer and a daily claim limit. Later files replaced both; what events pay now (25 / 15 / 10 for the podium in
+// every league however many finished, 3 for every other finisher, +3 family bonus: supabase/event-podium-2026-10-08.sql, 8 Oct 2026)
+// is checked in tests/event-podium-2026-10-08.test.mjs, tests/diamonds-2026-10-07.test.mjs and tests/farm-events.test.mjs, not here.
 // Install @electric-sql/pglite@0.5.8 in a separate test directory and set HARVEST_PGLITE_MODULE to its dist/index.js.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
