@@ -5,7 +5,7 @@ import {readFileSync,mkdtempSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {LANGUAGES,languagePath,pageLanguage} from '../public/languages.js';
-import {buildLanguagePages,translatePage,READY,OG_LOCALE} from '../scripts/build-languages.mjs';
+import {buildLanguagePages,translatePage,READY,OG_LOCALE,languageLinks} from '../scripts/build-languages.mjs';
 import {buildWiki} from '../scripts/build-wiki.mjs';
 import {chosenLanguage,startTranslation,LANGUAGE_KEY,translateDocument,createTranslator} from '../public/i18n.js';
 import {catalog,translations} from '../scripts/i18n.mjs';
@@ -33,7 +33,11 @@ function build(){
 test('every translated language gets its own page, written in its language with exact translations only',()=>{
  const {html,home,page}=build();
  assert.deepEqual(READY,LANGUAGES.filter(l=>l.ready).map(l=>l.code));
- const english=home.split(TOKENS);
+ // Every language's home page as a real link (8 Oct 2026), inside the language menu's box, hidden until the menu is drawn over them.
+ const SWITCH=`<div id="language-switch" class="language-switch" hidden>${languageLinks()}</div>`,bare=doc=>doc.replace(languageLinks(),'');
+ assert.ok(home.includes(SWITCH));for(const code of others)assert.ok(page(code).includes(SWITCH),code);
+ assert.equal((languageLinks().match(/<a href="\/([a-z]{2}\/)?" hreflang="[a-z]{2}" lang="[a-z]{2}">[^<]+<\/a>/g)??[]).length,READY.length);
+ const english=bare(home).split(TOKENS);
  // The English texts of play.html that a translation changes: none of them may stay on a language page.
  const playKeys=Object.entries(catalog()).filter(([,source])=>source==='public/play.html').map(([key])=>key);
  for(const code of others){
@@ -45,7 +49,7 @@ test('every translated language gets its own page, written in its language with 
   assert.equal(meta(doc,'og:locale'),OG_LOCALE[code]);assert.equal(meta(doc,'og:url'),`${SITE}/${code}/`);
   assert.match(doc,new RegExp(`<link rel="canonical" href="${SITE}/${code}/">`));assert.equal((doc.match(/rel="canonical"/g)??[]).length,1);
   // The same page, tag for tag: every text is the exact translation of the English one, scripts and styles are untouched.
-  const parts=doc.split(TOKENS);assert.equal(parts.length,english.length,`${code}: no tag lost or added`);
+  const parts=bare(doc).split(TOKENS);assert.equal(parts.length,english.length,`${code}: no tag lost or added`);
   for(let i=0;i<parts.length;i+=2)if(/\p{L}/u.test(english[i]))assert.equal(normalize(unescape(parts[i])),normalize(exact(dict,normalize(english[i]))),`${code}: ${english[i].trim()}`);
   for(let i=1;i<parts.length;i+=2)if(/^<(script|style)/i.test(english[i]))assert.equal(parts[i],english[i],`${code}: a script stays as it is`);
   for(const key of playKeys)if(exact(dict,key)!==key&&key.length>3)assert.ok(!doc.includes(`>${key}<`)&&!['title','aria-label','placeholder','alt','content'].some(name=>doc.includes(` ${name}="${key}"`)),`${code}: "${key}" is still English`);
@@ -57,7 +61,7 @@ test('every translated language gets its own page, written in its language with 
  for(const code of others)assert.deepEqual(alternatesOf(page(code)),set,code);
  assert.match(home,new RegExp(`<link rel="canonical" href="${SITE}/">`),'the English home page keeps its own address');
  assert.equal(meta(home,'og:url'),`${SITE}/`);assert.match(home,/^<!doctype html>\n<html lang="en">/);
- assert.equal(home.replace(set.join(''),''),html,'the English page only gains the list of languages');
+ assert.equal(bare(home).replace(set.join(''),''),html,'the English page only gains the list of languages (and their links)');
 });
 
 test('a text without its exact translation stops the build (the game\'s guesses never reach a search engine)',()=>{

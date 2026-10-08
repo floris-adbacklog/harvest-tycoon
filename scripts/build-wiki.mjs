@@ -5,6 +5,12 @@ import {mkdirSync,readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {WIKI_SITE,WIKI_COPY_ICON} from '../public/wiki-link.js';
+import {LANGUAGES} from '../public/languages.js';
+import {APP_STORE_URL} from '../public/game-links.js';
+import {FAMILY_CONFIG,FAMILY_MIN_LEVEL,STARTER_LEVEL} from '../game/farm-state.js';
+import {PAYMENT_PACKS,STARTER_WINDOW,OFFER,PASS,passOnSale} from '../game/payments.js';
+import {ldScript,breadcrumbs,PLAY_URL} from './structured-data.mjs';
+import {appStoreAddress} from './app-store-links.mjs';
 
 const SITE='https://www.harvesttycoon.com';
 const esc=value=>String(value).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
@@ -34,12 +40,12 @@ function byHand(){var f=document.createElement('textarea');f.value=url;f.setAttr
 if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,byHand);else byHand();},true);}
 open();addEventListener('hashchange',open);var bar=document.querySelector('.wiki-jump');if(!bar)return;var wrap=bar.parentElement;function fade(){wrap.classList.toggle('is-scrollable',bar.scrollWidth>bar.clientWidth+2);wrap.classList.toggle('at-end',bar.scrollLeft+bar.clientWidth>=bar.scrollWidth-4);}
 fade();bar.addEventListener('scroll',fade,{passive:true});addEventListener('resize',fade);})();</script>`;
-function page({path,title,heading,description,body}){
+function page({path,title,heading,description,body,data=null}){
  return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#214d36">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">
-<meta property="og:type" content="article"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:image" content="${SITE}/assets/og-image-farm.jpg"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="The Harvest Tycoon logo over the farm at dusk: fields, a red barn, a windmill and a tractor"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(description)}"><meta name="twitter:image" content="${SITE}/assets/og-image-farm.jpg">
-<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48"><link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon-96.png"><link rel="canonical" href="${SITE}${path}"><link rel="manifest" href="/manifest.webmanifest"><script src="/android-app.js"></script><link rel="stylesheet" href="/legal.css"><link rel="stylesheet" href="/wiki.css"></head>
+<meta property="og:type" content="article"><meta property="og:site_name" content="Harvest Tycoon"><meta property="og:url" content="${SITE}${path}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:image" content="${SITE}/assets/og-image-farm.jpg"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="The Harvest Tycoon logo over the farm at dusk: fields, a red barn, a windmill and a tractor"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(description)}"><meta name="twitter:image" content="${SITE}/assets/og-image-farm.jpg">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48"><link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon-96.png"><link rel="canonical" href="${SITE}${path}">${data?ldScript(data):''}<link rel="manifest" href="/manifest.webmanifest"><script src="/android-app.js"></script><link rel="stylesheet" href="/legal.css"><link rel="stylesheet" href="/wiki.css"></head>
 <body class="wiki-page">
 <header class="legal-hero">
  <a class="legal-logo" href="/" aria-label="Harvest Tycoon home"><img src="/assets/harvest-tycoon-logo.webp" alt="Harvest Tycoon" width="1024" height="1024"></a>
@@ -64,6 +70,51 @@ ${body.includes('data-wiki-install')?INSTALL_SCRIPT:''}${body.includes('id="wiki
 `;
 }
 
+// /llms.txt (8 Oct 2026): the plain facts about the game for AI tools, and every page worth reading with one line on what is there.
+// Made on every deploy from the game rules and the wiki topics, so it stays true; the same facts as About the game on /app. What
+// is for sale comes from the shop's own catalogue (game/payments.js): the diamond packs, the Starter Pack, the special offer (from
+// level 14 like the Starter Pack, supabase/special-offer.sql) and the season's pass while it is on sale.
+const euro=cents=>`€${(cents/100).toFixed(2)}`;
+export function priceLine(now=Date.now()){
+ const packs=Object.values(PAYMENT_PACKS).filter(p=>!p.coins).sort((a,b)=>a.cents-b.cents),[low,high]=[packs[0],packs.at(-1)],starter=PAYMENT_PACKS.starter,n=v=>v.toLocaleString('en-GB');
+ const offer=`now and then a special offer from level ${STARTER_LEVEL}, once per farmer (diamonds, coins or VIP worth ${euro(OFFER.valueCents)} for ${euro(OFFER.cents)})`;
+ // The season's pass only while it is on sale (8 Oct 2026), as the wiki drops it once its season is over.
+ const pass=passOnSale(now)?`; and seasonal passes such as the ${PASS.name} (${euro(PASS.cents)} from level ${PASS.level}, with extra rewards to collect in the game)`:'';
+ return `free to play. Optional purchases: diamond packs from ${euro(low.cents)} (${n(low.diamonds)} diamonds) to ${euro(high.cents)} (${n(high.diamonds)} diamonds); a one-time Starter Pack for ${STARTER_WINDOW/864e5} days from level ${STARTER_LEVEL} (${n(starter.diamonds)} diamonds and ${n(starter.coins)} coins for ${euro(starter.cents)}); ${pass?offer:`and ${offer}`}${pass}. Diamonds buy VIP and boosts, and players also earn diamonds by playing.`;
+}
+export function llmsText(topics,{appStoreUrl=APP_STORE_URL}={}){
+ const ios=appStoreUrl==null?null:appStoreAddress(appStoreUrl);
+ const languages=LANGUAGES.filter(l=>l.ready);
+ return `# Harvest Tycoon
+
+> Harvest Tycoon is a free 3D farming game. Play it in your web browser at ${SITE}/ with no download, or with the free Android app on Google Play${ios?` or the free iPhone app on the App Store`:''}. Made by Millstone in the Netherlands.
+
+## Facts
+- What you do: plant and harvest crops, bake and craft goods in your own buildings, sell them at the Market, fill orders, and grow a small farm into a big estate.
+- Platforms: any modern browser on a phone, tablet or computer (no download); Android app on Google Play: ${PLAY_URL}${ios?`; iPhone app on the App Store: ${ios}`:'; an iPhone app is coming soon'}. One account: the same farm on every device.
+- Price: ${priceLine()}
+- Playing together: from level ${FAMILY_MIN_LEVEL}, a Farm Family of up to ${FAMILY_CONFIG.MAX_MEMBERS} farmers, with a Family Chest and a family tournament every week; chat with farmers from all over the world; events every six hours.
+- Languages (${languages.length}): ${languages.map(l=>`${l.name} (${l.code})`).join(', ')}.
+- Age: for players aged 16 and over.
+- Opened: 16 September 2026.
+- Maker: Millstone, the Netherlands. Contact: info@harvesttycoon.com or ${SITE}/support
+
+## Pages
+- [Play Harvest Tycoon](${SITE}/): sign up or sign in and play in the browser
+- [Get the app](${SITE}/app): the Android app, the iPhone, and playing on a computer
+- [Help and support](${SITE}/support): questions and answers, and a form to contact us
+- [Game wiki](${SITE}/wiki): every crop, building and recipe, the Market, families, events and more
+
+## Game wiki
+${topics.map(t=>`- [${t.title}](${SITE}/wiki/${t.id}): ${t.blurb}`).join('\n')}
+
+## Other
+- [Privacy Policy](${SITE}/privacy)
+- [Partner programme](${SITE}/partners)
+- [Harvest Tycoon on Google Play](${PLAY_URL})
+`;
+}
+
 // The search data: [label, topic title, link, picture key, words] per entry (the first of each label in a topic), pictures once.
 export function searchData(index,art){
  const seen=new Set(),arts={},items=[];
@@ -84,8 +135,11 @@ export async function buildWiki(outDir,{contentUrl=new URL('../public/wiki-conte
  ${wikiJump(article)}
  <article class="wiki-article" data-wiki-page="${topic.id}">${article.html}</article>
  <section class="wiki-related"><h3>Read next</h3><div class="wiki-next-list">${article.related.map(t=>wikiNext(t)).join('')}</div></section>`;
-  writeFileSync(join(outDir,'wiki',`${topic.id}.html`),page({path:`/wiki/${topic.id}`,title:`${article.title} — Harvest Tycoon wiki`,heading:article.title,description:article.blurb,body}));
+  // The breadcrumb as search engines read it (8 Oct 2026): the same two steps as the one on the page.
+  const data=[breadcrumbs([['Wiki',`${SITE}/wiki`],[article.title,`${SITE}/wiki/${topic.id}`]])];
+  writeFileSync(join(outDir,'wiki',`${topic.id}.html`),page({path:`/wiki/${topic.id}`,title:`${article.title} — Harvest Tycoon wiki`,heading:article.title,description:article.blurb,body,data}));
  }
+ writeFileSync(join(outDir,'llms.txt'),llmsText(WIKI_TOPICS));
  // The sitemap gets the wiki pages (once, even if the build runs twice).
  const sitemap=join(outDir,'sitemap.xml');
  if(existsSync(sitemap)){

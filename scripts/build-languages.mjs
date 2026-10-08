@@ -22,6 +22,7 @@ const decode=text=>text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,(all,code)=>code
 const normalize=text=>text.replace(/\s+/g,' ').trim();
 const escText=text=>text.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
 const escAttr=text=>text.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const exact=(dict,key)=>{const hit=dict[key],text=hit&&typeof hit==='object'?hit.other:hit;if(typeof text!=='string'||!text.trim())throw new Error(`Language pages: no translation of ${JSON.stringify(key)}`);return text;};
 // Scripts, styles and comments stay as they are; a tag is everything between < and >, the rest is text.
 const TOKENS=/(<script\b[\s\S]*?<\/script>|<style\b[\s\S]*?<\/style>|<!--[\s\S]*?-->|<[^>]+>)/i;
 
@@ -29,6 +30,24 @@ const TOKENS=/(<script\b[\s\S]*?<\/script>|<style\b[\s\S]*?<\/style>|<!--[\s\S]*
 export const alternates=()=>[...READY.map(code=>[code,`${SITE}${languagePath(code)}`]),['x-default',`${SITE}/`]];
 const links=()=>alternates().map(([lang,href])=>`<link rel="alternate" hreflang="${lang}" href="${href}">`).join('');
 const once=(html,from,to,what)=>{if(!html.includes(from))throw new Error(`Language pages: play.html has no ${what}`);return html.replace(from,to);};
+// Links to every language's home page (8 Oct 2026), written into the pages (no script), so a search engine or a reader without
+// JavaScript can follow them from one language to the others: a line in the footer of the app and support pages, and on the home page
+// inside the language menu's box, which stays hidden until src/language-switch.js draws the menu over them (the look is unchanged).
+// Each name in its own language, as in the menu; written after the translation, so they stay as they are.
+export const languageLinks=()=>READY.map(code=>`<a href="${languagePath(code)}" hreflang="${code}" lang="${code}">${escText(LANGUAGES.find(l=>l.code===code).name)}</a>`).join('');
+const SWITCH='<div id="language-switch" class="language-switch" hidden></div>';
+export const withSwitchLinks=html=>once(html,SWITCH,SWITCH.replace('></div>',`>${languageLinks()}</div>`),'language menu');
+export function withLanguageFooter(html,label,what){
+ if(!html.includes('\n</footer>'))throw new Error(`${what} has no footer`);
+ return html.replace('\n</footer>',()=>`\n <nav class="legal-languages" aria-label="${escAttr(label)}">${languageLinks()}</nav>\n</footer>`);
+}
+// The share card's language and address on the support and app pages (8 Oct 2026), as on the home page.
+const shareCard=(html,code,path,what)=>{
+ for(const [from,to] of [['<meta property="og:locale" content="en_GB">',`<meta property="og:locale" content="${OG_LOCALE[code]}">`],[`<meta property="og:url" content="${SITE}${path('en')}">`,`<meta property="og:url" content="${SITE}${path(code)}">`]]){
+  if(!html.includes(from))throw new Error(`${what} has no ${from.match(/og:[a-z]+/)[0]}`);html=html.replace(from,to);
+ }
+ return html;
+};
 
 // The texts of a page in one language, from that language's translations (exact texts only; a missing one stops the build): every
 // text node, the title / aria-label / placeholder / alt attributes and the head's meta tags named in seoMeta. page: the file, for the errors.
@@ -90,17 +109,18 @@ const oncePage=(html,from,to,what)=>{if(!html.includes(from))throw new Error(`Su
 export function translateSupport(html,code,dict){
  html=oncePage(html,'<html lang="en">',htmlTag(code),'<html lang="en">');
  html=oncePage(html,`<link rel="canonical" href="${SITE}/support">`,`<link rel="canonical" href="${SITE}${supportPath(code)}">`,'canonical address');
+ html=shareCard(html,code,supportPath,'Support pages: support.html');
  html=oncePage(html,'<input type="hidden" name="lang" value="en">',`<input type="hidden" name="lang" value="${code}">`,'hidden lang field');
  html=oncePage(html,`src="${playBadge('en')}"`,`src="${playBadge(code)}"`,'Google Play badge');
  html=oncePage(html,`src="${appStoreBadge('en')}"`,`src="${appStoreBadge(code)}"`,'App Store badge');
  // The game's own links in the page's language (the sign-in page per language); the wiki and the legal pages are English only.
  html=html.replace(/href="\/"/g,`href="${languagePath(code)}"`).replaceAll('href="/app"',`href="${appPath(code)}"`);
- return translateTexts(html,code,dict,{label:'Support page',page:'support.html',seoMeta:['description']});
+ return translateTexts(html,code,dict,{label:'Support page',page:'support.html',seoMeta:SEO_META});
 }
 // Writes /<code>/support.html for every translated language and adds the support pages to the sitemap. Returns the English page with
 // the same hreflang set, for /support.
 export function buildSupportPages(outDir,html,{dictionary=readDictionary}={}){
- return buildPerLanguage(outDir,html,{file:'support.html',pathOf:supportPath,translate:translateSupport,dictionary,what:'Support pages: support.html'});
+ return buildPerLanguage(outDir,html,{file:'support.html',pathOf:supportPath,translate:translateSupport,dictionary,what:'Support pages: support.html',footer:true});
 }
 
 // Harvest Tycoon on your phone (4 Oct 2026): /app is public/app.html in English, /es/app, ... the same way (no script; its texts are in
@@ -111,28 +131,33 @@ export function translateAppPage(html,code,dict){
  const once=(from,to,what)=>{if(!html.includes(from))throw new Error(`App pages: app.html has no ${what}`);html=html.replace(from,to);};
  once('<html lang="en">',htmlTag(code),'<html lang="en">');
  once(`<link rel="canonical" href="${SITE}/app">`,`<link rel="canonical" href="${SITE}${appPath(code)}">`,'canonical address');
+ html=shareCard(html,code,appPath,'App pages: app.html');
  if(!html.includes(`src="${playBadge('en')}"`))throw new Error('App pages: app.html has no Google Play badge');
  html=html.replaceAll(`src="${playBadge('en')}"`,`src="${playBadge(code)}"`);
  if(!html.includes(`src="${appStoreBadge('en')}"`))throw new Error('App pages: app.html has no App Store badge');
  html=html.replaceAll(`src="${appStoreBadge('en')}"`,`src="${appStoreBadge(code)}"`);
  html=html.replace(/href="\/"/g,`href="${languagePath(code)}"`).replaceAll('href="/support"',`href="${supportPath(code)}"`);
- return translateTexts(html,code,dict,{label:'App page',page:'app.html',seoMeta:['description']});
+ return translateTexts(html,code,dict,{label:'App page',page:'app.html',seoMeta:SEO_META});
 }
 export function buildAppPages(outDir,html,{dictionary=readDictionary}={}){
- return buildPerLanguage(outDir,html,{file:'app.html',pathOf:appPath,translate:translateAppPage,dictionary,what:'App pages: app.html'});
+ return buildPerLanguage(outDir,html,{file:'app.html',pathOf:appPath,translate:translateAppPage,dictionary,what:'App pages: app.html',footer:true});
 }
 
 // One page in every translated language (/<code>/<file>), each naming all of them (hreflang), and once each in the sitemap (also when
 // the build runs twice). Returns the English page with the same set, for its own address.
 const readDictionary=code=>JSON.parse(readFileSync(new URL(`../public/i18n/${code}.json`,import.meta.url),'utf8'));
-function buildPerLanguage(outDir,html,{file,pathOf,translate,dictionary,what}){
+function buildPerLanguage(outDir,html,{file,pathOf,translate,dictionary,what,footer=false}){
  const set=[...READY.map(code=>[code,`${SITE}${pathOf(code)}`]),['x-default',`${SITE}${pathOf('en')}`]];
  if(!html.includes('<link rel="canonical"'))throw new Error(`${what} has no canonical address`);
- const english=html.replace('<link rel="canonical"',`${set.map(([lang,href])=>`<link rel="alternate" hreflang="${lang}" href="${href}">`).join('')}<link rel="canonical"`);
+ let english=html.replace('<link rel="canonical"',`${set.map(([lang,href])=>`<link rel="alternate" hreflang="${lang}" href="${href}">`).join('')}<link rel="canonical"`);
+ // The footer's line of languages (8 Oct 2026), labelled in the page's language ("Language", as in Settings).
+ const languages=(page,dict)=>footer?withLanguageFooter(page,dict?exact(dict,'Language'):'Language',what):page;
  for(const code of READY.filter(code=>code!=='en')){
   mkdirSync(join(outDir,code),{recursive:true});
-  writeFileSync(join(outDir,code,file),translate(english,code,dictionary(code)));
+  const dict=dictionary(code);
+  writeFileSync(join(outDir,code,file),languages(translate(english,code,dict),dict));
  }
+ english=languages(english,null);
  writeFileSync(join(outDir,file),english);
  const sitemap=join(outDir,'sitemap.xml');
  if(existsSync(sitemap)){
@@ -153,7 +178,7 @@ export function buildLanguagePages(outDir,html,{dictionary=code=>JSON.parse(read
  const english=once(html,'<link rel="canonical"',`${links()}<link rel="canonical"`,'canonical address');
  for(const code of READY.filter(code=>code!=='en')){
   mkdirSync(join(outDir,code),{recursive:true});
-  writeFileSync(join(outDir,code,'index.html'),translatePage(english,code,dictionary(code)));
+  writeFileSync(join(outDir,code,'index.html'),withSwitchLinks(translatePage(english,code,dictionary(code))));
  }
  // The sitemap: the home page once per language, each naming all of them (once, even if the build runs twice).
  const sitemap=join(outDir,'sitemap.xml');
@@ -168,5 +193,5 @@ export function buildLanguagePages(outDir,html,{dictionary=code=>JSON.parse(read
    writeFileSync(sitemap,xml);
   }
  }
- return english;
+ return withSwitchLinks(english);
 }

@@ -248,7 +248,7 @@ const IPHONE_IG='Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWeb
 const page={origin:'https://www.harvesttycoon.com',pathname:'/play.html',search:'?utm_source=facebook',hash:''};
 test('inside Facebook on Android the card offers Chrome, and the first visit hands the page to Chrome by itself, once',async()=>{
  const storage={},f=fixture({ua:ANDROID_FB,storage,location:{...page}});await settle();
- const card=f.nodes.get('.account-card');assert.equal(card.attrs['data-gate'],true);assert.equal(f.nodes.get('gate-open').textContent,'Open in Chrome');
+ const card=f.nodes.get('.account-card');assert.equal(card.attrs['data-gate'],true);assert.equal(f.nodes.get('browser-gate').hidden,false,'the page ships the step hidden; the gate shows it (8 Oct 2026)');assert.equal(f.nodes.get('gate-open').textContent,'Open in Chrome');
  assert.equal(f.context.location.href,'intent://www.harvesttycoon.com/play.html?utm_source=facebook&via=facebook#Intent;scheme=https;package=com.android.chrome;end','the app it came from goes along (src/source-link.js)');
  assert.equal(storage['harvest-tycoon:browser-escape'],'shown');
  const again=fixture({ua:ANDROID_FB,storage,location:{...page}});await settle();
@@ -262,7 +262,8 @@ test('on an iPhone the card tries Safari only on a tap; "Play here instead" is r
  f.nodes.get('gate-open').onclick();assert.equal(f.context.location.href,'x-safari-https://www.harvesttycoon.com/play.html?utm_source=facebook&via=instagram');
  f.nodes.get('gate-stay').onclick();
  assert.equal(storage['harvest-tycoon:browser-escape'],'stay');assert.equal(storage['harvest-tycoon:browser-tip'],'1');assert.equal(f.nodes.get('.account-card').attrs['data-gate'],undefined);
- const later=fixture({ua:IPHONE_IG,storage,location:{...page}});await settle();assert.equal(later.nodes.get('.account-card').attrs?.['data-gate'],false,'the sign-up form straight away');
+ assert.equal(f.nodes.get('browser-gate').hidden,true,'the step is hidden again with its mark (8 Oct 2026)');
+ const later=fixture({ua:IPHONE_IG,storage,location:{...page}});await settle();assert.equal(later.nodes.get('.account-card').attrs?.['data-gate'],false,'the sign-up form straight away');assert.equal(later.nodes.get('browser-gate').hidden,true);
 });
 // 30 Sep 2026: TikTok's app has the step too, but Android never leaves it by itself (not known yet whether TikTok passes intent:// on).
 const ANDROID_TT='Mozilla/5.0 (Linux; Android 14; SM-A546B Build/UP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0 Mobile Safari/537.36 trill_370504 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/trill app_version/37.5.4 ByteLocale/en BytedanceWebview/d8a21c6';
@@ -277,13 +278,17 @@ test('inside TikTok the card offers the phone\'s browser too; Android goes to Ch
 });
 test('a phone browser, and every screen that is not sign-in or sign-up, never shows the browser step',async()=>{
  const chrome=fixture({ua:'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/129.0 Mobile Safari/537.36',storage:{},location:{...page}});await settle();
- assert.equal(chrome.nodes.get('.account-card').attrs?.['data-gate'],false);assert.equal(chrome.context.location.href,undefined);
+ assert.equal(chrome.nodes.get('.account-card').attrs?.['data-gate'],false);assert.equal(chrome.nodes.get('browser-gate').hidden,true);assert.equal(chrome.context.location.href,undefined);
  const reset=fixture({ua:ANDROID_FB,user:{id:'A'},storage:{'harvest-tycoon:browser-escape':'shown'},location:{...page,hash:'#access_token=t&type=recovery'}});await settle();
- assert.notEqual(reset.nodes.get('.account-card').attrs?.['data-gate'],true,'a password reset opened in the app still works');
+ assert.notEqual(reset.nodes.get('.account-card').attrs?.['data-gate'],true,'a password reset opened in the app still works');assert.equal(reset.nodes.get('browser-gate').hidden,true);
 });
 test('the page shows the browser step before the script loads, for the same apps, and keeps a friend\'s invite in the link',async()=>{
  const play=readFileSync(new URL('../public/play.html',import.meta.url),'utf8'),tip=await import('../src/browser-tip.js');
- assert.ok(play.includes(`if(${tip.GATE_APP}.test(navigator.userAgent)&&localStorage.getItem('${tip.ESCAPE_KEY}')!=='stay')document.querySelector('.account-card').setAttribute('data-gate','');`));
+ // 8 Oct 2026: the head decides (data-boot="gate", the loading screen until the end of the page), with the same apps as the script; the
+ // end of the page shows the step. The list of apps is in the page once.
+ assert.ok(play.includes(`try{if(${tip.GATE_APP}.test(navigator.userAgent)&&localStorage.getItem('${tip.ESCAPE_KEY}')!=='stay')h.setAttribute('data-boot','gate');}catch(e){}`));
+ assert.equal(play.split(String(tip.GATE_APP)).length,2,'one list of apps in the page');
+ assert.ok(play.includes(`if(boot==='gate'){document.getElementById('browser-gate').hidden=false;document.querySelector('.account-card').setAttribute('data-gate','');}`));
  for(const ua of [ANDROID_FB,IPHONE_IG,'… [FBAN/FBIOS;FBAV/500.0]','… Barcelona 350.0'])assert.ok(tip.metaApp(ua),ua);
  for(const ua of ['Mozilla/5.0 (iPhone) Version/18.0 Mobile Safari/604.1','Mozilla/5.0 (Linux; Android 14) Chrome/129.0 Mobile Safari/537.36','… musical_ly'])assert.ok(!tip.metaApp(ua),ua);
  for(const ua of [ANDROID_FB,IPHONE_IG,ANDROID_TT,IPHONE_TT])assert.ok(tip.gateApp(ua),ua);

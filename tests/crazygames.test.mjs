@@ -225,7 +225,7 @@ test('crazygames.html: the loading screen and the farm, without tracking, cookie
  assert.match(html,/<script type="module" src="\/cloud\/crazygames\.js"><\/script>/);
  assert.match(html,/<p class="portal-privacy">By playing you agree to our <a href="https:\/\/www\.harvesttycoon\.com\/privacy" target="_blank" rel="noopener">Privacy Policy<\/a>\.<\/p>/,'a notice, never a pop-up');
  for(const id of ['loading-screen','loading-copy','loading-progress','loading-percent','loading-tip-text','loading-tip-icon','farm-host','pause-screen','pause-copy','pause-message','pause-retry'])assert.match(html,new RegExp(`id="${id}"`),id);
- assert.ok(play.includes('<section id="loading-screen" class="loading-screen farm-loading" aria-labelledby="loading-copy">')&&html.includes('<section id="loading-screen" class="loading-screen farm-loading" aria-labelledby="loading-copy">'),'the same loading screen as play.html');
+ assert.ok(play.includes('<section id="loading-screen" class="loading-screen farm-loading" aria-labelledby="loading-copy" hidden>')&&html.includes('<section id="loading-screen" class="loading-screen farm-loading" aria-labelledby="loading-copy">'),'the same loading screen as play.html (hidden there until the page knows the farmer, 8 Oct 2026)');
  assert.match(read('public/crazygames.css'),/user-select:none/);
  assert.doesNotMatch(read('public/sitemap.xml'),/crazygames/);
  const rule=JSON.parse(read('vercel.json')).headers.find(r=>r.source==='/crazygames.html'),get=key=>rule.headers.find(h=>h.key===key)?.value;

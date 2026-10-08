@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#214d36">
 <title>Help and support — Harvest Tycoon</title><meta name="description" content="Help with Harvest Tycoon: how to play, a forgotten password, deleting your account, and a form to send us a message.">
+<!-- The share card (8 Oct 2026), as on the home page; scripts/build-languages.mjs writes it in each language. --><meta property="og:type" content="website"><meta property="og:site_name" content="Harvest Tycoon"><meta property="og:locale" content="en_GB"><meta property="og:url" content="https://www.harvesttycoon.com/support"><meta property="og:title" content="Help and support — Harvest Tycoon"><meta property="og:description" content="Help with Harvest Tycoon: how to play, a forgotten password, deleting your account, and a form to send us a message."><meta property="og:image" content="https://www.harvesttycoon.com/assets/og-image-farm.jpg"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="The Harvest Tycoon logo over the farm at dusk: fields, a red barn, a windmill and a tractor"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Help and support — Harvest Tycoon"><meta name="twitter:description" content="Help with Harvest Tycoon: how to play, a forgotten password, deleting your account, and a form to send us a message."><meta name="twitter:image" content="https://www.harvesttycoon.com/assets/og-image-farm.jpg">
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48"><link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon-96.png"><link rel="canonical" href="https://www.harvesttycoon.com/support"><script src="/android-app.js"></script><link rel="stylesheet" href="/legal.css"><link rel="stylesheet" href="/support.css"></head>
 <body>
 <!-- Help and support (3 Oct 2026, the App Store's support URL): short help, then a form that works without JavaScript, also in our
@@ -21,6 +22,33 @@
   <li class="support-social"><a href="/"><strong>Signed in with Google or Facebook?</strong><span>Use the same button again to sign in. Your farm is linked to that account, so there is no separate password.</span></a></li>
   <li><a href="/delete-account"><strong>Delete account</strong><span>How to delete your account and the data linked to it.</span></a></li>
  </ul>
+
+ <!-- Questions (8 Oct 2026): the answers people look for, true to the game; the deploy turns them into FAQPage data
+      (scripts/structured-data.mjs), word for word as they show here. Nothing about buying here either (the App Store's rule). The two
+      about the stores (class support-stores) step aside inside our apps, like the store badges (support.css); the data keeps them. -->
+ <h2 id="questions">Questions</h2>
+ <div class="support-faq">
+  <h3>Is Harvest Tycoon free?</h3>
+  <p>Yes. Harvest Tycoon is free to play.</p>
+  <h3 class="support-stores">Do I need to download anything?</h3>
+  <p class="support-stores">No. Harvest Tycoon plays right in your browser on a phone, tablet or computer. If you like, you can also get the free app for Android on Google Play.</p>
+  <h3 class="support-stores">Which devices can I play on?</h3>
+  <!--app-store:soon--><p class="support-stores">Any phone, tablet or computer with a modern browser, and Android phones and tablets with our free app from Google Play. An app for iPhone is coming soon.</p><!--/app-store:soon--><!--app-store:live--><p class="support-stores">Any phone, tablet or computer with a modern browser, and with our free apps: for Android on Google Play and for iPhone on the App Store.</p><!--/app-store:live-->
+  <h3>Is my farm saved?</h3>
+  <p>Yes. Your farm is saved to your account, so you can sign in on another device and carry on where you left off.</p>
+  <h3>Can I play with friends?</h3>
+  <p>Yes. From level 10 you can start or join a Farm Family of up to 10 farmers, fill the Family Chest together every week and chat with other farmers.</p>
+  <h3>Which languages can I play in?</h3>
+  <p>Harvest Tycoon is in 16 languages. Choose yours in the game in Settings, under Language, or with the links at the bottom of this page.</p>
+  <h3>How old do I need to be?</h3>
+  <p>Harvest Tycoon is for players aged 16 and over.</p>
+  <h3>Who makes Harvest Tycoon?</h3>
+  <p>Harvest Tycoon is made by Millstone in the Netherlands.</p>
+  <h3>How do I delete my account?</h3>
+  <p>In the game, open Settings, go to Privacy and tap Delete account. Your account and the data linked to it are deleted at once.</p>
+  <h3>How do I contact you?</h3>
+  <p>Send us a message with the form below, or email us at info@harvesttycoon.com. We answer by email, usually within a few days.</p>
+ </div>
 
  <h2 id="contact">Send us a message</h2>
  <p>Something else, or did the help above not solve it? Write to us and we answer by email, usually within a few days.</p>
@@ -43,7 +71,7 @@
 </main>
 <footer class="legal-footer">
  <span class="play-badge"><a class="app-store-badge" href="/app" data-app-store-link><img src="/assets/badges/app-store-en.webp" alt="Download on the App Store" width="120" height="40" loading="lazy" decoding="async"></a><a href="https://play.google.com/store/apps/details?id=com.harvesttycoon.app&amp;referrer=utm_source%3Dwebsite%26utm_medium%3Dfooter" target="_blank" rel="noopener"><img src="/assets/badges/google-play-en.webp" alt="Get it on Google Play" width="135" height="40" loading="lazy" decoding="async"></a></span>
- <span>© 2026 Harvest Tycoon</span>
+ <span>© 2026 Harvest Tycoon by Millstone</span>
  <a href="/">Play Harvest Tycoon</a>
  <a class="footer-app" href="/app">Get the app</a>
  <a href="/wiki">Game wiki</a>

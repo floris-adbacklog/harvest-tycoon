@@ -93,6 +93,7 @@ test('the home page has a search title and description, a canonical address, and
  assert.equal(meta('name','twitter:card'),'summary_large_image');
  assert.deepEqual(size('public/assets/og-image-farm.jpg'),{w:1200,h:630});
  assert.equal(meta('property','og:image:width'),'1200');assert.equal(meta('property','og:image:height'),'630');
+ // The page's own block names the site; the deploy replaces it with the full graph (website, Millstone, the game: tests/seo-geo.test.mjs).
  const data=JSON.parse(html.match(/<script type="application\/ld\+json">(.+?)<\/script>/)[1]);
  assert.deepEqual(data,{'@context':'https://schema.org','@type':'WebSite',name:'Harvest Tycoon',url:`${SITE}/`});
  // The static build serves this same file as / (dist-static/index.html), so the tags reach the home page.

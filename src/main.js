@@ -130,7 +130,7 @@ function lock(busy){$('account-submit').disabled=busy;document.querySelectorAll(
 // Google / Facebook buttons: only on the sign-in and create-account cards, and only for providers that are switched on.
 function showSocial(){$('social-login').hidden=!providers.length||!['signin','register'].includes(mode);}
 function setMode(next,focus=false){
- mode=next;const m=MODES[mode];if(!['signin','register'].includes(mode))document.querySelector('.account-card')?.removeAttribute('data-gate');if(mode!=='register')nameOpen=false;
+ mode=next;const m=MODES[mode];if(!['signin','register'].includes(mode))gateOff();if(mode!=='register')nameOpen=false;
  const shows=field=>m.fields.includes(field)||(field==='name'&&mode==='register'&&nameOpen),visible=['email','password','name'].filter(shows);
  for(const field of ['email','password','name']){$(field+'-row').hidden=!shows(field);$(inputId(field)).required=shows(field)&&(field!=='name'||mode==='name');$(inputId(field)).setAttribute('enterkeyhint',field===visible.at(-1)?'go':'next');}
  clearErrors();setPasswordVisible(false);$('password').autocomplete=mode==='signin'?'current-password':'new-password';
@@ -143,11 +143,13 @@ function setMode(next,focus=false){
  if(focus){document.querySelector('.account-card').scrollIntoView({behavior:'smooth',block:'start'});if(visible.length)focusField(inputId(visible[0]),{preventScroll:true});}
 }
 // Inside the Facebook, Instagram or TikTok app, the sign-up card first offers the phone's own browser (src/browser-tip.js, 28 Sep 2026);
-// never in our own Android app, which is where the farm belongs there.
+// never in our own Android app, which is where the farm belongs there. The page ships that step hidden (8 Oct 2026), so a reader that
+// skips the styles never takes it for the page's own text: on and off, the card's mark and the step's hidden go together.
 let gateTimer=null;
+function gateOff(){document.querySelector('.account-card')?.removeAttribute('data-gate');const step=$('browser-gate');if(step)step.hidden=true;}
 function browserGate(){
  const card=document.querySelector('.account-card'),ua=navigator.userAgent,on=!inApp&&gateApp(ua)&&store.get(ESCAPE_KEY)!=='stay';
- card.toggleAttribute('data-gate',on);if(!on)return;
+ card.toggleAttribute('data-gate',on);$('browser-gate').hidden=!on;if(!on)return;
  const text=gateText(ua),target=escapeTarget(location,pendingInvite(localStore),pendingRef(localStore),{rd:pendingSource?.ref,via:appKey(ua)}),help=$('gate-help');
  document.querySelectorAll('[data-gate-browser]').forEach(el=>el.textContent=text.browser);document.querySelectorAll('[data-gate-app]').forEach(el=>el.textContent=text.app);$('gate-open').textContent=text.action;
  const leave=()=>{location.href=text.android?chromeIntent(target):safariUrl(target);};
@@ -156,7 +158,7 @@ function browserGate(){
   // Still here a moment later: the app kept the page. Show where its own "open in browser" is (and copy the link on an iPhone).
   gateTimer=setTimeout(()=>{if(document.hidden)return;help.textContent=text.help;help.hidden=false;if(!text.android)void navigator.clipboard?.writeText(target).catch(()=>{});},1500);
  };
- $('gate-stay').onclick=()=>{store.set(ESCAPE_KEY,'stay');store.set(BROWSER_TIP_KEY,'1');card.removeAttribute('data-gate');trackAuth('browser_gate',{reason:'stay'});};
+ $('gate-stay').onclick=()=>{store.set(ESCAPE_KEY,'stay');store.set(BROWSER_TIP_KEY,'1');gateOff();trackAuth('browser_gate',{reason:'stay'});};
  if(!store.get(ESCAPE_KEY)){store.set(ESCAPE_KEY,'shown');trackAuth('browser_gate',{reason:'shown'});if(text.android&&metaApp(ua))leave();}
 }
 function landing(message=''){connection.stop();dispose();if(inApp)forgetAppPushLink(window);setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');browserGate();$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}

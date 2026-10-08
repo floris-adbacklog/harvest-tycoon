@@ -6,7 +6,8 @@ import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {LANGUAGES,playBadge} from '../public/languages.js';
-import {buildSupportPages,buildLanguagePages,translateSupport,supportPath,READY} from '../scripts/build-languages.mjs';
+import {buildSupportPages,buildLanguagePages,translateSupport,supportPath,READY,OG_LOCALE,languageLinks} from '../scripts/build-languages.mjs';
+import {FAMILY_CONFIG,FAMILY_MIN_LEVEL} from '../game/farm-state.js';
 import {catalog,translations} from '../scripts/i18n.mjs';
 import * as support from '../supabase/functions/support/support.js';
 const {handleSupport,checkRequest,readForm,readBody,formLang,cleanText,cleanEmail,subjectOf,supportMail,supportUrl,appKind,ipHash,clientIp,SITE,TO,TRAP,MAX_BODY,LIMITS,RESULTS,TOPICS}=support;
@@ -41,6 +42,33 @@ test('the support page: a legal-style page with no script but the app mark and t
  // Nothing about buying: no shop, no prices (the App Store's rule about other ways to pay).
  assert.doesNotMatch(html,/stripe|diamonds|€|\$\d|checkout/i);
  assert.doesNotMatch(html,/floris@|millstone\.nl/i);
+});
+
+// Questions (8 Oct 2026): a Questions heading, one h3 per question with its answer under it, true to the game's rules.
+test('the support page answers the common questions, true to the game, before the form',()=>{
+ const html=read('public/support.html'),faq=html.match(/<div class="support-faq">([\s\S]*?)<\/div>/)[1];
+ assert.ok(html.indexOf('<h2 id="questions">Questions</h2>')<html.indexOf('<div class="support-faq">')&&html.indexOf('<div class="support-faq">')<html.indexOf('<form'));
+ const questions=[...faq.matchAll(/<h3(?: class="support-stores")?>([^<]+)<\/h3>/g)].map(m=>m[1]);
+ for(const q of ['Is Harvest Tycoon free?','Do I need to download anything?','Which devices can I play on?','Can I play with friends?','Which languages can I play in?','How do I delete my account?','How do I contact you?'])assert.ok(questions.includes(q),q);
+ assert.equal((faq.match(/<h3[ >]/g)??[]).length,(faq.match(/<\/h3>\s*(<!--app-store:soon-->)?<p[ >]/g)??[]).length,'an answer under every question');
+ assert.ok(faq.includes(`From level ${FAMILY_MIN_LEVEL} you can start or join a Farm Family of up to ${FAMILY_CONFIG.MAX_MEMBERS} farmers`),'the family rules as the game has them');
+ assert.ok(faq.includes(`Harvest Tycoon is in ${LANGUAGES.filter(l=>l.ready).length} languages.`));
+ assert.ok(faq.includes('open Settings, go to Privacy and tap Delete account'),'the way the game and /delete-account say it');
+ assert.ok(faq.includes('info@harvesttycoon.com'));
+ assert.doesNotMatch(faq,/ · /);
+});
+
+// 8 Oct 2026: inside our apps (html[data-app], the iPhone app also data-app-os=ios) the page says nothing about the stores, as the footer's
+// store badges already step aside there; on the website every question shows, and the FAQPage data keeps them all.
+test('inside our apps the questions about the stores step aside; on the website they show',()=>{
+ const html=read('public/support.html'),faq=html.match(/<div class="support-faq">([\s\S]*?)<\/div>/)[1],css=read('public/support.css');
+ assert.match(css,/\nhtml\[data-app\] \.support-stores\{display:none\}/);assert.doesNotMatch(css,/(^|\n)\.support-stores\{/,'on the website they show');
+ const items=[...faq.replace(/<!--\/?app-store:\w+-->/g,'').matchAll(/<(h3|p)( class="support-stores")?>([^<]+)<\/\1>/g)].map(m=>({tag:m[1],stores:Boolean(m[2]),text:m[3]}));
+ assert.ok(items.length>=14);
+ for(const item of items)if(/Google Play|App Store|iPhone|coming soon|download|devices/i.test(item.text))assert.ok(item.stores,`steps aside in the apps: ${item.text}`);
+ for(const question of ['Do I need to download anything?','Which devices can I play on?'])assert.ok(faq.includes(`<h3 class="support-stores">${question}</h3>`),question);
+ assert.equal(items.filter(i=>i.stores).length,5,'two questions, their answers (the devices answer in both App Store wordings)');
+ assert.ok(items.filter(i=>!i.stores).length>=14,'the rest shows in the apps too');
 });
 
 test('the form: POST, the browser\'s own encoding, the fields the function reads, limits as the function\'s, and a hidden honeypot',()=>{
@@ -116,9 +144,12 @@ test('every translated language gets its support page: exact translations, its o
  try{
   const set=english.match(/<link rel="alternate" hreflang="[^"]+" href="[^"]+">/g);
   assert.deepEqual(set.map(l=>l.match(/hreflang="([^"]+)" href="([^"]+)"/).slice(1)),[...READY.map(code=>[code,`${SITE}${supportPath(code)}`]),['x-default',`${SITE}/support`]]);
-  assert.equal(english.replace(set.join(''),''),html,'the English page only gains the list of languages');
+  // The footer's line of languages (8 Oct 2026): every language's home page, labelled "Language" in the page's language.
+  const NAV=label=>`\n <nav class="legal-languages" aria-label="${label}">${languageLinks()}</nav>\n</footer>`,bare=doc=>doc.replace(/\n <nav class="legal-languages"[^>]*>.*?<\/nav>/,'');
+  assert.ok(english.includes(NAV('Language')));
+  assert.equal(bare(english).replace(set.join(''),''),html,'the English page only gains the list of languages (and their links)');
   assert.equal(readFileSync(join(out,'support.html'),'utf8'),english);
-  const parts=english.split(TOKENS);
+  const parts=bare(english).split(TOKENS);
   const keys=Object.entries(catalog()).filter(([,source])=>source==='public/support.html').map(([key])=>key);
   assert.ok(keys.length>20,'the page\'s texts are in the catalog');
   for(const code of others){
@@ -128,9 +159,12 @@ test('every translated language gets its support page: exact translations, its o
    assert.match(doc,new RegExp(`<input type="hidden" name="lang" value="${code}">`),`${code}: the way back comes to this page`);
    assert.match(doc,new RegExp(`<form class="support-form" method="post" action="${ACTION}"`));
    assert.ok(doc.includes(`src="${playBadge(code)}"`),`${code}: the badge in the page's language`);
-   assert.ok(!/href="\/"/.test(doc)&&doc.includes(`href="/${code}/"`),`${code}: the sign-in page in the same language`);
+   assert.ok(!/href="\/"/.test(bare(doc))&&doc.includes(`href="/${code}/"`),`${code}: the sign-in page in the same language`);
    assert.deepEqual(doc.match(/<link rel="alternate" hreflang="[^"]+" href="[^"]+">/g),set,code);
-   const mine=doc.split(TOKENS);assert.equal(mine.length,parts.length,`${code}: no tag lost or added`);
+   assert.ok(doc.includes(NAV(exact(dict,'Language'))),`${code}: every language in the footer`);
+   assert.ok(doc.includes(`<meta property="og:url" content="${SITE}/${code}/support">`)&&doc.includes(`<meta property="og:locale" content="${OG_LOCALE[code]}">`),`${code}: the share card's own address and language`);
+   assert.ok(doc.includes(`<meta property="og:title" content="${unescape(exact(dict,'Help and support — Harvest Tycoon')).replace(/&/g,'&amp;')}">`),`${code} og:title`);
+   const mine=bare(doc).split(TOKENS);assert.equal(mine.length,parts.length,`${code}: no tag lost or added`);
    for(let i=0;i<mine.length;i+=2)if(/\p{L}/u.test(parts[i]))assert.equal(normalize(unescape(mine[i])),normalize(exact(dict,normalize(unescape(parts[i])))),`${code}: ${parts[i].trim()}`);
    assert.equal(doc.match(/<title>([^<]*)<\/title>/)[1],unescape(exact(dict,'Help and support — Harvest Tycoon')).replace(/&/g,'&amp;'));
    assert.match(doc,new RegExp(`<meta name="description" content="${exact(dict,'Help with Harvest Tycoon: how to play, a forgotten password, deleting your account, and a form to send us a message.').replace(/[.?*+()[\]]/g,'\\$&')}">`),`${code} description`);

@@ -53,6 +53,11 @@ code{padding:1px 5px;border-radius:6px;background:#f0ebe3;font-size:.9em}
 
 .legal-footer{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;width:min(820px,calc(100% - 32px));margin:28px auto 0;padding:0 0 40px;font-size:13px;color:#7d7060}
 .legal-footer a{color:#5d5436}
+/* Every language's home page (8 Oct 2026, scripts/build-languages.mjs), a quiet line of its own under the app and support pages'
+   footer links, each name in its own language. */
+.legal-languages{flex-basis:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;margin-top:8px;padding-top:12px;border-top:1px solid #e3d8c8;font-size:12px}
+.legal-languages a{text-decoration:none}
+.legal-languages a:hover{text-decoration:underline}
 
 @media(max-width:640px){
  body{font-size:15px}

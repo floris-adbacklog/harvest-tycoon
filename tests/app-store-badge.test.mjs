@@ -57,11 +57,26 @@ test('once approved: every badge to the App Store in a new tab, and the app page
  assert.match(app,/<section class="app-option app-ios" id="iphone" aria-labelledby="iphone-title" data-app-store="on">/);
  assert.equal(app.match(new RegExp(`<a class="app-store-badge" href="${live.replaceAll('.','\\.')}" target="_blank" rel="noopener" data-app-store-link>`,'g')).length,2);
  assert.equal(withAppStore(home,url),home,'twice is the same as once');
- assert.equal(withAppStore(read('public/app.html'),null),read('public/app.html'),'null leaves the page as it is');
+ // 8 Oct 2026: once approved, only the App Store's own words are left, and none says "coming soon".
+ for(const page of [app,withAppStore(read('public/support.html'),url)]){
+  assert.doesNotMatch(page,/app-store:|coming soon/,'no wording markers and nothing coming soon');
+ }
+ assert.match(app,/<div class="app-store-block">\n    <p>Get the free app on the App Store\./);assert.match(app,/<li>The free app for iPhone is on the App Store\.<\/li>/);
+ assert.match(withAppStore(read('public/support.html'),url),/for iPhone on the App Store\.<\/p>/);
+ // While Apple reviews it (null): the badges stay as they are, the pages say the iPhone app is coming soon, and no App Store app is
+ // promised anywhere (not even behind CSS); a page without such words stays as it is.
+ assert.equal(withAppStore(read('public/play.html'),null),read('public/play.html'),'null leaves the home page as it is');
+ for(const [name,page] of [['app',withAppStore(read('public/app.html'),null)],['support',withAppStore(read('public/support.html'),null)]]){
+  assert.doesNotMatch(page,/app-store:|on the App Store\.|App Store\. Sign in/,`${name}: no App Store app yet`);
+  assert.match(page,/coming soon/,`${name}: coming soon`);
+ }
+ assert.match(withAppStore(read('public/app.html'),null),/<p class="app-soon">The iPhone app is coming soon\.<\/p>/);
+ assert.equal(withAppStore(read('public/app.html'),null).match(/data-app-store-link/g).length,1,'only the footer badge, to the iPhone part');
  const dir=mkdtempSync(join(tmpdir(),'app-store-'));
  try{
   mkdirSync(join(dir,'es'));writeFileSync(join(dir,'index.html'),read('public/play.html'));writeFileSync(join(dir,'es','app.html'),read('public/app.html'));writeFileSync(join(dir,'other.html'),'<p>no badge</p>');writeFileSync(join(dir,'x.css'),'a{}');
-  assert.equal(applyAppStore(dir,null),0);
+  assert.equal(applyAppStore(dir,null),1,'null: only the app page changes (its wording)');assert.equal(readFileSync(join(dir,'index.html'),'utf8'),read('public/play.html'));
+  writeFileSync(join(dir,'es','app.html'),read('public/app.html'));
   assert.equal(applyAppStore(dir,url),2);
   assert.ok(readFileSync(join(dir,'es','app.html'),'utf8').includes('data-app-store="on"'));
   assert.equal(readFileSync(join(dir,'other.html'),'utf8'),'<p>no badge</p>');

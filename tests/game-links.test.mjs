@@ -8,7 +8,7 @@ import {chatParts,MAX_LINKS} from '../src/chat-rich.js';
 import {openIntent,withoutOpen} from '../public/app-links.js';
 import {wikiArticle} from '../public/wiki-content.js';
 import {LANGUAGES,playBadge} from '../public/languages.js';
-import {buildAppPages,translateAppPage,appPath,READY} from '../scripts/build-languages.mjs';
+import {buildAppPages,translateAppPage,appPath,READY,OG_LOCALE,languageLinks} from '../scripts/build-languages.mjs';
 import {AWAY} from '../public/settings-nav.js';
 import {catalog,translations} from '../scripts/i18n.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -180,8 +180,13 @@ test('the app page in every language: exact translations, its own address, the b
    assert.ok(doc.startsWith(`<!doctype html>\n<html lang="${code}"${code==='ar'?' dir="rtl"':''} data-page-lang="${code}"><head>`),code);
    assert.match(doc,new RegExp(`<link rel="canonical" href="${SITE}/${code}/app">`));
    assert.equal(doc.split(`src="${playBadge(code)}"`).length-1,2,`${code}: both badges in the page's language`);
-   assert.ok(!/href="\/"/.test(doc)&&doc.includes(`href="/${code}/"`)&&doc.includes(`href="/${code}/support"`),`${code}: links in the same language`);
+   // The footer's line of languages (8 Oct 2026) links every language's home page, English ('/') too; the page's own links stay in its language.
+   const own=doc.replace(/<nav class="legal-languages"[^>]*>.*?<\/nav>/,'');
+   assert.ok(!/href="\/"/.test(own)&&own.includes(`href="/${code}/"`)&&own.includes(`href="/${code}/support"`),`${code}: links in the same language`);
    assert.equal(doc.match(/<title>([^<]*)<\/title>/)[1],exact(dict,'Get the app — Harvest Tycoon'));
+   for(const name of ['og:title','twitter:title'])assert.ok(doc.includes(`<meta ${name.startsWith('og')?'property':'name'}="${name}" content="${exact(dict,'Get the app — Harvest Tycoon')}">`),`${code} ${name}`);
+   assert.ok(doc.includes(`<meta property="og:url" content="${SITE}/${code}/app">`)&&doc.includes(`<meta property="og:locale" content="${OG_LOCALE[code]}">`),`${code}: the share card's own address and language`);
+   assert.ok(doc.includes(`<nav class="legal-languages" aria-label="${exact(dict,'Language')}">${languageLinks()}</nav>\n</footer>`),`${code}: every language in the footer`);
    for(const key of keys)if(exact(dict,key)!==key&&key.length>8)assert.ok(!doc.includes(`>${key}<`),`${code}: "${key}" is still English`);
   }
   buildAppPages(out,html);

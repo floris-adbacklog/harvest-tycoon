@@ -8,6 +8,11 @@
 .support-help span{font-size:14px;line-height:1.5;color:#6d6248}
 /* Our apps have no Google or Facebook sign-in (android-app.js marks the page html[data-app]), so that card is not theirs. */
 html[data-app] .support-social{display:none}
+/* Questions (8 Oct 2026): one short answer under each question. Inside our apps the two about the stores (Google Play, the iPhone app)
+   step aside, as the footer's store badges do there (legal.css). */
+.support-faq h3:first-child{margin-top:12px}
+.support-faq p{color:#5a5038}
+html[data-app] .support-stores{display:none}
 .support-mail{font-size:15px}
 .support-mail a{display:inline-block;font-weight:700;overflow-wrap:anywhere}
 
