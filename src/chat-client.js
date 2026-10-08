@@ -43,6 +43,14 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   playerId,
   dmChannel:other=>dmChannel(playerId,other),
   overview:()=>rpc('chat_overview'),
+  // 8 Oct 2026 (supabase/chat-threads-paging.sql): the private chats after the overview's, a page at a time from the cursor the overview
+  // or the page before gave ({at,channel}, passed back as written: a message to many farmers gives their chats one time, and a Date
+  // would cut its microseconds). Before that file is in the database (no such function, PGRST202): null, so no Show more.
+  async threads(cursor,limit=30){
+   check();const {data,error}=await supabase.rpc('chat_threads',{p_before_at:cursor?.at??null,p_before_channel:cursor?.channel??null,p_limit:limit});
+   if(error?.code==='PGRST202')return null;
+   if(error)throw chatError(error);check();return data;
+  },
   myRole:()=>rpc('chat_my_role'),
   // The newest messages of a channel; before (a created_at): the ones just older than that (Load earlier messages, Oct 2026).
   async messages(name,limit=50,before=null){
@@ -132,6 +140,20 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   // The admin's private message to many farmers at once (supabase/chat-broadcast-dm.sql): count first, then send; from a farm
   // level too (supabase/chat-broadcast-level.sql).
   broadcastDm:({body='',audience,send=false,minLevel=1,texts=null})=>rpc('chat_broadcast_dm',{p_body:body,p_audience:audience,p_send:send,p_min_level:minLevel,p_texts:texts}),
+  // 8 Oct 2026 (supabase/chat-group-filters.sql): the same as a group message with filters, all together ({minLevel,maxLevel,active,
+  // platform,crazygames,language,family}); every copy says who it went to. Its own parameter names (p_filters), so the API never mixes
+  // it up with the call above. Before that file is in the database (no such function: PGRST202): null, the dashboard keeps the old choice.
+  async broadcastGroup({body='',filters={},send=false,texts=null}){
+   check();const {data,error}=await supabase.rpc('chat_broadcast_dm',{p_body:body,p_filters:filters,p_send:send,p_texts:texts});
+   if(error?.code==='PGRST202')return null;
+   if(error)throw chatError(error);check();return data;
+  },
+  // The last group messages, with how many farmers replied (the admin only); null before that file.
+  async broadcastLog(limit=10){
+   check();const {data,error}=await supabase.rpc('chat_broadcast_log',{p_limit:limit});
+   if(error?.code==='PGRST202')return null;
+   if(error)throw chatError(error);check();return data;
+  },
   // Pop-ups (supabase/popups.sql): news that also opens once as a pop-up. Posting, the list and stopping are for the admin only.
   postPopup:({title,body,buttonLabel=null,buttonTarget=null,audience='all',minLevel=1,hours=24,news=true,texts=null})=>rpc('popup_post',{p_title:title,p_body:body,p_button_label:buttonLabel,p_button_target:buttonTarget,p_audience:audience,p_min_level:minLevel,p_hours:hours,p_news:news,p_texts:texts}),
   popupList:()=>rpc('popup_list'),

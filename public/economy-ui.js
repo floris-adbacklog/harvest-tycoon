@@ -9,6 +9,11 @@ import {flyHarvest,bump} from './harvest-fly.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const seconds=formatDuration;
+// 8 Oct 2026: a built building in the Buildings list says what it is doing in separate chips under its name, which wrap instead of
+// being cut off with … (French, Russian and Czech on a phone, English on a computer): green "4 ready", amber "1 working", plain
+// "2 free" (slots; always with its number, a bare "free" is translated as "gratis") and, while nothing is ready yet, a quiet
+// "Next in 3m". Only the counts above zero; nothing running is one "Ready to work"; the Farmhouse keeps its fields. s: status().
+export const buildingChips=s=>(s.kind==='farm'?[['farm',s.text]]:s.kind==='idle'?[['idle','Ready to work']]:[['ready',s.ready&&`${s.ready} ready`],['working',s.working&&`${s.working} working`],['free',s.free&&`${s.free} free`],['next',!s.ready&&s.working&&`Next in ${seconds(s.next)}`]]).filter(([,text])=>text).map(([kind,text])=>`<span class="building-status ${kind}">${text}</span>`).join('');
 // village: the game shows World II, the village (public/game.js). Its Buildings list holds only the village's places and its market
 // only buys village goods; on the farm the village's places and goods never show here.
 export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate,onFamily,onPlace,village=false}){
@@ -37,9 +42,12 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(key==='familyhall')return buildingEligible(state,key)?{text:'Your weekly order & family',kind:'family'}:{text:`Locked · ${buildingUnlockHint(state,key)}`,kind:'locked'};
   const jobs=productionJobs(b),slots=productionSlots(b.level,key),ready=jobs.filter(j=>now>=j.readyAt).length;
   if(!buildingUnlocked(state,key))return {text:!buildingEligible(state,key)?`Locked · ${buildingUnlockHint(state,key)}`:`Build for ${number(buildingCost(state,key))} coins`,kind:buildingEligible(state,key)?'available':'locked'};
-  if(!jobs.length)return {text:`Ready to work · 0 / ${slots} slots`,kind:'idle'};
-  if(ready)return {text:`${ready} ready · ${jobs.length} / ${slots} slots`,kind:'ready'};
-  return {text:`${jobs.length} / ${slots} working · ${seconds(Math.min(...jobs.map(j=>j.readyAt))-now)}`,kind:'working'};
+  // 8 Oct 2026: the counts as well, for the chips in the Buildings list (buildingChips); the text stays the line the farm map shows.
+  const counts={ready,working:jobs.length-ready,free:Math.max(0,slots-jobs.length)};
+  if(!jobs.length)return {text:`Ready to work · 0 / ${slots} slots`,kind:'idle',...counts};
+  if(ready)return {text:`${ready} ready · ${jobs.length} / ${slots} slots`,kind:'ready',...counts};
+  const next=Math.min(...jobs.map(j=>j.readyAt))-now;
+  return {text:`${jobs.length} / ${slots} working · ${seconds(next)}`,kind:'working',...counts,next};
  }
  function chooseCrop(key){if(!cropUnlocked(state,key)){notify(cropUnlockHint(state,key));return;}selectedCrop=key;$('selected-crop-art').innerHTML=art(key);$('selected-crop-name').textContent=CROPS[key].name;$('selected-crop-price').textContent=`${seedCost(state,key)} · ${seconds(cropDuration(state,key,false,farmNow()))}`;onCrop(key);}
  function renderSeeds(){
@@ -100,16 +108,17 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   const fair=state.fair??{classes:[],entered:[]},open=fair.classes.filter((c,i)=>!fair.entered.includes(i));
   return open.some(c=>canPay(c.input))?{text:`A ribbon to win · ${fair.entered.length} / ${fair.classes.length} this week`,kind:'ready'}:{text:`${fair.entered.length} / ${fair.classes.length} ribbons this week`,kind:'idle'};
  }
- // The buildings list shows one line under the name (30 Sep 2026): the level and what the building is doing ("Level 3 · 2 ready"),
- // not two lines; the labels on the farm keep the short status.
- const catalogLine=(key,s)=>key!=='familyhall'&&(key==='farmhouse'||buildingUnlocked(state,key))?`Level ${state.buildings[key].level} · ${s.kind==='idle'?'Ready to work':s.text}`:s.text;
+ // The buildings list (8 Oct 2026): a built building has its level as a gold chip beside the name and what it is doing as chips under
+ // it (buildingChips), not one "Level 3 · 2 ready · 4 / 5 slots" line that was cut off; locked, to build and the Family Hall keep their
+ // one line. The labels on the farm keep the short status.
+ const isBuilt=key=>key==='farmhouse'||key!=='familyhall'&&buildingUnlocked(state,key);
+ const catalogStatus=(key,s)=>isBuilt(key)?`<span class="building-chips" data-building-status="${key}">${buildingChips(s)}</span>`:`<span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span>`;
  function renderCatalog(){
   const buildingLevel=key=>guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1;
   // Buildings with finished batches come first, so collecting is one tap away; the rest in the order they unlock.
   const readyFirst=key=>status(key).kind==='ready'?0:1;
   $('building-catalog').innerHTML=Object.entries(BUILDINGS).filter(([key])=>inWorld(key)).sort(([a],[b])=>readyFirst(a)-readyFirst(b)||buildingLevel(a)-buildingLevel(b)).map(([key,b])=>{const s=status(key),picture=key==='familyhall'?'familyhall-model':key;
-   const line=catalogLine(key,s);
-   return `<button class="building-card" data-open-building="${key}"><span class="building-card-art"><img src="${pictureFile(picture)}" alt=""></span><span class="building-card-info"><strong>${b.name}</strong><span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${line}</span></span><i data-lucide="chevron-right"></i></button>`;}).join('');
+   return `<button class="building-card" data-open-building="${key}"><span class="building-card-art"><img src="${pictureFile(picture)}" alt=""></span><span class="building-card-info"><strong>${b.name}${isBuilt(key)?` <span class="building-level-chip">Level ${state.buildings[key].level}</span>`:''}</strong>${catalogStatus(key,s)}</span><i data-lucide="chevron-right"></i></button>`;}).join('');
   foldLocked($('building-catalog'),'[data-open-building]',b=>!buildingEligible(state,b.dataset.openBuilding),village?'Places to unlock':'Buildings to unlock');
   normalizeFarm(state,farmNow());
   const placeFirst=key=>placeStatus(key).kind==='ready'?0:1,places=village?[]:Object.keys(PLACES).filter(k=>!ENDGAME_PLACES.includes(k)||endgameInSight(state)).sort((a,b)=>placeFirst(a)-placeFirst(b)||FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),openPlaces=places.filter(k=>featureUnlocked(state,k));
@@ -346,7 +355,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(day!==lastMarketDay){lastMarketDay=day;if($('market-dialog').open)renderMarket();if($('seed-dialog').open)renderSeeds();if($('building-dialog').open)renderBuilding();}
   if($('market-dialog').open)marketCountdown(now);
   const coinBoost=`${state.boosts.coinsUntil>now}:${vipActive(state,now)}`;if(lastCoinBoost!==coinBoost){lastCoinBoost=coinBoost;if($('market-dialog').open)renderMarket();if($('seed-dialog').open)renderSeeds();if($('building-dialog').open)renderBuilding();}
-  document.querySelectorAll('[data-building-status]').forEach(el=>{const key=el.dataset.buildingStatus,s=status(key,now),text=el.closest('#building-catalog')?catalogLine(key,s):s.text,kind=`building-status ${s.kind}`;if(el.dataset.text!==text&&!el.querySelector('.game-art')){el.dataset.text=text;el.textContent=text;}if(el.className!==kind)el.className=kind;});
+  // The chips in the Buildings list are written again only when what they say changes (a count, the next time), like the places' line.
+  document.querySelectorAll('[data-building-status]').forEach(el=>{const key=el.dataset.buildingStatus,s=status(key,now);if(el.classList.contains('building-chips')){const html=buildingChips(s);if(el.dataset.html!==html){el.dataset.html=html;el.innerHTML=html;}return;}const text=s.text,kind=`building-status ${s.kind}`;if(el.dataset.text!==text&&!el.querySelector('.game-art')){el.dataset.text=text;el.textContent=text;}if(el.className!==kind)el.className=kind;});
   // A building that finishes while the list is open moves to the top; the places keep their line up to date.
   const readyKeys=Object.keys(BUILDINGS).filter(key=>status(key,now).kind==='ready').join();
   if($('buildings-dialog').open&&readyKeys!==lastReadyKeys){const y=$('buildings-dialog').scrollTop;renderCatalog();$('buildings-dialog').scrollTop=y;}

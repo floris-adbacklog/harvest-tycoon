@@ -341,11 +341,16 @@ test('the Crew: one group chat for the admin and the moderators, pinned on top o
  assert.match(sql,/elsif p_channel='crew' then\n  if public\.chat_staff_role\(me\) is null then raise exception 'Choose a chat\.'/,'only the staff write in it');
  assert.match(sql,/if public\.chat_staff_role\(me\) is not null then crew:=jsonb_build_object\('channel','crew',/,'the overview has it for the staff only');
  assert.match(sql,/'dm',coalesce\(\(select sum\(\(x->>'unread'\)::int\) from jsonb_array_elements\(threads\) x\),0\)\+coalesce\(\(crew->>'unread'\)::int,0\)\),/,'its new messages count on Private');
+ // 8 Oct 2026: Private counts every private chat, listed or not (supabase/chat-threads-paging.sql), and the Crew on top as before.
+ assert.match(read('supabase/chat-threads-paging.sql'),/\$new\$'dm',n_dm\+coalesce\(\(crew->>'unread'\)::int,0\)\),\$new\$/);
  assert.match(sql,/body ~\* '\(https\?:\/\/\|www\\\.\|/,'the chat\'s rules hold here too');
  assert.match(ui,/list\.innerHTML=\(overview\?\.crew\?crewRow\(overview\.crew\):''\)\+/,'pinned first');
  assert.match(ui,/blockButton\.hidden=reportButton\.hidden=back\.hidden\|\|Boolean\(thread\?\.crew\);/,'no Block or Report on the Crew');
  assert.match(ui,/if\(threadButton&&threadButton\.dataset\.thread==='crew'\)\{if\(!overview\?\.crew\)return;/);
- assert.match(ui,/overview\.unread\.dm=overview\.threads\.reduce\(\(sum,x\)=>sum\+\(x\.unread\|\|0\),0\)\+\(overview\.crew\?\.unread\|\|0\);/);
+ // A chat read takes its own count off (8 Oct 2026): the server's count covers chats that are not listed, so the list cannot add it up.
+ assert.match(ui,/const t=name==='crew'\?overview\?\.crew:findThread\(name\);if\(!t\)return;/);
+ assert.match(ui,/overview\.unread\.dm=Math\.max\(0,\(overview\.unread\.dm\?\?0\)-\(t\.unread\|\|0\)\);t\.unread=0;/);
+ assert.doesNotMatch(ui,/overview\.threads\.reduce\(/);
 });
 test('a Crew message is a push for the rest of the staff, like a private message, and tapping it opens the Crew (1 Oct 2026)',()=>{
  const sql=read('supabase/chat-crew-push.sql'),crew=read('supabase/chat-crew.sql');

@@ -24,7 +24,8 @@ test('links that open one screen: only known screens, and a chat only by a real 
  const cloud=read('src/game-cloud.js');
  assert.match(cloud,/window\.harvestOpen=intent=>\{/);assert.match(cloud,/const waiting=window\.parent\?\.harvestTakeOpen\?\.\(\);if\(waiting\)window\.harvestOpen\(waiting\);/);
  assert.match(read('public/game.js'),/window\.harvestToday=\(\)=>retention\.openToday\(\);/);
- assert.match(read('src/chat-ui.js'),/if\(channel\?\.startsWith\('dm:'\)\)\{const t=overview\.threads\?\.find\(x=>x\.channel===channel\);/);
+ // 8 Oct 2026: a private chat that is not in the list opens too, from the channel itself (tests/chat-threads-paging.test.mjs).
+ assert.match(read('src/chat-ui.js'),/if\(channel\?\.startsWith\('dm:'\)\)\{const t=findThread\(channel\)\?\?await threadFromCard\(channel\);/);
 });
 test('a private message opens its conversation; a reminder only about the daily gift opens Daily rewards',()=>{
  assert.match(read('supabase/functions/notify-hourly/messages.js'),/url:`\/\?open=chat&channel=\$\{encodeURIComponent\(channel\)\}`/,'the chat push (messages.js since 3 Oct 2026)');

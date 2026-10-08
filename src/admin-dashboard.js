@@ -13,7 +13,7 @@ import {OFFER,offerValueCents,offerProblem,offerFill} from '../game/payments.js'
 import {avatarImage} from '../public/player-avatars.js';
 import {LANGUAGES} from '../public/languages.js';
 import {chosenLanguage} from '../public/i18n.js';
-import {translateLink} from './chat-ui.js';
+import {translateLink,groupPills} from './chat-ui.js';
 import {deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
 import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,RETENTION_PERIODS,SOURCE_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,sourcesHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 
@@ -91,8 +91,19 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<textarea id="admin-news-text" maxlength="400" rows="3" placeholder="A new feature, an event… As a notification everyone sees it under Notifications in the chat."></textarea>'
   // The admin only: the same news also as a pop-up, once per farmer, with an optional button (src/popup-ui.js, supabase/popups.sql).
   +'<label class="admin-news-hours admin-send-as">Send as<select id="admin-send-as"><option value="news">Notification</option><option value="popup">Pop-up</option><option value="both">Notification and pop-up</option><option value="dm">Private message (they can reply)</option></select></label>'
-  // The admin's private message to many farmers: who gets it, and how many that is right now (supabase/chat-broadcast-dm.sql).
-  +'<div class="admin-popup-fields" id="admin-dm-fields" hidden><label>Who gets it<select id="admin-dm-audience"><option value="online">Online now</option><option value="week" selected>Active this week</option><option value="all">Everyone</option></select></label><label>From level<input id="admin-dm-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label><p class="admin-popup-note" id="admin-dm-count">Counting farmers…</p><p class="admin-popup-note">Every farmer gets it as a private message from you and can reply; the replies come in under your private messages. Farmers with notifications on for messages also get a push. Links (https) work.</p></div>'
+  // The admin's private message to many farmers: who gets it, and how many that is right now (supabase/chat-broadcast-dm.sql). A group
+  // message with filters since 8 Oct 2026 (supabase/chat-group-filters.sql), all together; what is marked data-group-filter goes away
+  // while the database does not have them yet. Below it the last ones sent, with how many farmers replied.
+  +'<div class="admin-popup-fields" id="admin-dm-fields" hidden><div class="admin-dm-filters"><label>Who gets it<select id="admin-dm-audience"><option value="online">Online now</option><option value="week" selected>Active this week</option><option value="month" data-group-filter>Active this month</option><option value="all">Everyone</option></select></label><label>From level<input id="admin-dm-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label>'
+  +'<label data-group-filter>Up to level<input id="admin-dm-max-level" type="number" min="1" max="200" step="1" placeholder="Any level" inputmode="numeric"></label>'
+  +'<label data-group-filter>Plays<select id="admin-dm-platform"><option value="">Anywhere</option><option value="android">In the Android app (Google Play)</option><option value="ios">In the iPhone app (App Store)</option><option value="browser">In the browser</option></select></label>'
+  +'<label data-group-filter>Leave out<select id="admin-dm-notPlatform"><option value="">Nobody</option><option value="android">The Android app (Google Play)</option><option value="ios">The iPhone app (App Store)</option><option value="browser">The browser</option></select></label>'
+  +'<label data-group-filter>Game language<select id="admin-dm-language"><option value="">Any language</option>'+LANGUAGES.map(l=>`<option value="${l.code}">${esc(l.name)}</option>`).join('')+'</select></label>'
+  +'<label data-group-filter>Family<select id="admin-dm-family"><option value="">In a family or not</option><option value="in">In a family</option><option value="out">Not in a family</option></select></label>'
+  +'<label class="admin-dm-check" data-group-filter><input type="checkbox" id="admin-dm-crazygames">CrazyGames accounts only</label></div>'
+  +'<p class="admin-popup-note" id="admin-dm-count">Counting farmers…</p><p class="admin-popup-note">Every farmer gets it as a private message from you and can reply; the replies come in under your private messages. Farmers with notifications on for messages also get a push. Links (https) work.</p>'
+  +'<p class="admin-popup-note" data-group-filter>Above it they read “Group message from the team” and who it was sent to, in their own language. Farmers who switched private messages off are left out. Plays and Leave out: where they last opened the game (a farmer with nothing on record is in no place and never left out). Game language: the one they last played in.</p>'
+  +'<h4 class="admin-subhead" id="admin-dm-log-head" hidden>Last group messages</h4><ul class="admin-popup-list" id="admin-dm-log" hidden></ul></div>'
   +'<div class="admin-popup-fields" id="admin-popup-fields" hidden>'
   +'<label>Title<input id="admin-popup-title" maxlength="60" placeholder="Play it as an app"></label>'
   +'<label>Button<input id="admin-popup-label" maxlength="30" placeholder="Show me how (leave empty for no button)"></label>'
@@ -425,19 +436,48 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   }catch(error){room.textContent=why(error);}
  });
  // Pop-ups: the fields open with "Also as a pop-up", the web address with "A web page"; below the form the last ten, with who saw them.
- dialog.querySelector('#admin-send-as').addEventListener('change',event=>{const mode=event.target.value;dialog.querySelector('#admin-popup-fields').hidden=mode==='news'||mode==='dm';dialog.querySelector('#admin-dm-fields').hidden=mode!=='dm';dialog.querySelector('#admin-news-hours-row').hidden=mode==='dm';dialog.querySelector('#admin-news-level-row').hidden=mode!=='news';if(mode==='dm')void countDm();});
+ dialog.querySelector('#admin-send-as').addEventListener('change',event=>{const mode=event.target.value;dialog.querySelector('#admin-popup-fields').hidden=mode==='news'||mode==='dm';dialog.querySelector('#admin-dm-fields').hidden=mode!=='dm';dialog.querySelector('#admin-news-hours-row').hidden=mode==='dm';dialog.querySelector('#admin-news-level-row').hidden=mode!=='news';if(mode==='dm'){void countDm();void showDmLog();}});
  // How many farmers a private message to all would reach right now.
  async function countDm(){
-  const note=dialog.querySelector('#admin-dm-count'),audience=dialog.querySelector('#admin-dm-audience').value,minLevel=dmLevel(),ask=++dmCounting;note.textContent='Counting farmers…';delete note.dataset.count;
+  const note=dialog.querySelector('#admin-dm-count'),minLevel=dmLevel(),ask=++dmCounting;note.textContent='Counting farmers…';delete note.dataset.count;
   // Only the latest count shows (typing a level asks again for every digit).
-  try{const n=await bridge.chat.broadcastDm({audience,minLevel});if(ask!==dmCounting)return;note.textContent=`Goes to ${n.toLocaleString('en-US')} farmer${n===1?'':'s'}.`;note.dataset.count=String(n);}catch(error){if(ask===dmCounting)note.textContent=why(error);}
+  // With the filters while the database has them (8 Oct 2026); without (null), the old choice and the old count.
+  try{
+   let n=groupFilters===false?null:await bridge.chat.broadcastGroup({filters:dmFilters()});if(ask!==dmCounting)return;
+   if(n===null){showGroupFilters(false);n=await bridge.chat.broadcastDm({audience:dialog.querySelector('#admin-dm-audience').value,minLevel});if(ask!==dmCounting)return;}else groupFilters=true;
+   note.textContent=`Goes to ${n.toLocaleString('en-US')} farmer${n===1?'':'s'}.`;note.dataset.count=String(n);
+  }catch(error){if(ask===dmCounting)note.textContent=why(error);}
+ }
+ // A group message's filters (8 Oct 2026, supabase/chat-group-filters.sql), all together: only what narrows it down goes (the database
+ // checks them again), the same filters the farmers' line shows. groupFilters: null until the first count, false without that file.
+ let groupFilters=null;
+ const $dm=id=>dialog.querySelector(`#admin-dm-${id}`);
+ function dmFilters(){
+  const f={},active=$dm('audience').value,minLevel=dmLevel(),max=$dm('max-level').value.trim();
+  if(active!=='all')f.active=active;if(minLevel>1)f.minLevel=minLevel;
+  if(max){const n=Math.min(200,Math.max(1,Math.round(Number(max)||1)));if(n<200)f.maxLevel=n;}
+  for(const key of ['platform','notPlatform','language','family'])if($dm(key).value)f[key]=$dm(key).value;
+  if($dm('crazygames').checked)f.crazygames=true;
+  return f;
+ }
+ // Before that file: no filters but the old choice (a hidden option is still picked in Safari, so it is switched off too).
+ function showGroupFilters(on){
+  groupFilters=on;dialog.querySelectorAll('#admin-dm-fields [data-group-filter]').forEach(el=>{el.hidden=!on;if(el.tagName==='OPTION')el.disabled=!on;});
+  if(!on&&$dm('audience').value==='month')$dm('audience').value='week';
+ }
+ // The last group messages: the text, who they went to (the pills the farmers see, src/chat-ui.js), how many farmers and how many replied.
+ async function showDmLog(){
+  const list=$dm('log'),head=$dm('log-head');let rows=[];
+  try{rows=await bridge.chat.broadcastLog?.()??[];}catch{rows=[];}
+  if(!Array.isArray(rows))rows=[];list.hidden=head.hidden=!rows.length;
+  list.innerHTML=rows.map(b=>`<li><span class="admin-recent-copy"><strong>“${esc(b.body)}”</strong><small>${esc(groupPills(b.filters).join(', '))}</small><small>${number(b.recipients)} farmer${b.recipients===1?'':'s'}, ${number(b.replies)} replied${b.senderName?`, from ${esc(b.senderName)}`:''}, ${esc(fmtDate(b.sentAt))}</small></span></li>`).join('');
  }
  // From a farm level too (supabase/chat-broadcast-level.sql), e.g. level 14 for the farmers who can buy the special offer.
  // News from a level (4 Oct 2026): 1 is everyone.
  const newsLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-news-level').value)||1)));
  let dmCounting=0;const dmLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-dm-level').value)||1)));
- dialog.querySelector('#admin-dm-audience').addEventListener('change',()=>void countDm());
- dialog.querySelector('#admin-dm-level').addEventListener('input',()=>void countDm());
+ for(const id of ['audience','platform','notPlatform','language','family','crazygames'])dialog.querySelector(`#admin-dm-${id}`).addEventListener('change',()=>void countDm());
+ for(const id of ['level','max-level'])dialog.querySelector(`#admin-dm-${id}`).addEventListener('input',()=>void countDm());
  dialog.querySelector('#admin-popup-target').addEventListener('change',event=>{dialog.querySelector('#admin-popup-link-row').hidden=event.target.value!=='link';});
  // News, pop-ups and the private message per language: the text, the title and the button. Each language keeps what was typed for it
  // until the message goes; the English parts show in the empty fields of another language, as what to translate.
@@ -566,9 +606,14 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   try{
    if(mode==='dm'){
     const audience=dialog.querySelector('#admin-dm-audience'),n=Number(dialog.querySelector('#admin-dm-count').dataset.count??0),who=audience.options[audience.selectedIndex].text.toLowerCase(),minLevel=dmLevel();
-    if(!await confirmAction({title:`Send a private message to ${n.toLocaleString('en-US')} farmers?`,description:`Every farmer${audience.value==='all'?'':` ${who}`}${minLevel>1?` from level ${minLevel}`:''} gets “${body}” from you${languages} and can reply.`,confirmLabel:'Send',cancelLabel:'Cancel',picture:'bell'}))return;
-    const reached=await bridge.chat.broadcastDm({body,audience:audience.value,send:true,minLevel,texts});
-    sent();chatStatus.textContent=`Sent to ${reached.toLocaleString('en-US')} farmers${languages}. Their replies come in under your private messages.`;return;
+    // With filters (8 Oct 2026): the question names them as the farmers' line will; without that file in the database, as before.
+    const filters=dmFilters(),group=groupFilters!==false;
+    const description=group?`Sent to: ${groupPills(filters).join(', ')}. They get “${body}” from you${languages} and can reply. Above it they read “Group message from the team” and who it was sent to.`:`Every farmer${audience.value==='all'?'':` ${who}`}${minLevel>1?` from level ${minLevel}`:''} gets “${body}” from you${languages} and can reply.`;
+    if(!await confirmAction({title:`Send a private message to ${n.toLocaleString('en-US')} farmers?`,description,confirmLabel:'Send',cancelLabel:'Cancel',picture:'bell'}))return;
+    const reached=group?await bridge.chat.broadcastGroup({body,filters,send:true,texts}):await bridge.chat.broadcastDm({body,audience:audience.value,send:true,minLevel,texts});
+    // No filters in the database after all (sent before the first count came back): nothing went; the old choice shows, to check.
+    if(reached===null){showGroupFilters(false);void countDm();chatStatus.textContent='Not sent: the database has no group filters yet. Check who gets it and send again.';return;}
+    sent();void showDmLog();chatStatus.textContent=`Sent to ${reached.toLocaleString('en-US')} farmers${languages}. Their replies come in under your private messages.`;return;
    }
    if(popup){
     const label=en.buttonLabel??'',target=$p('target').value==='link'?$p('link').value.trim():$p('target').value;

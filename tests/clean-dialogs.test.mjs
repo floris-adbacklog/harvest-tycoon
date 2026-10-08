@@ -12,11 +12,13 @@ test('one job per window: the market pick lives in the Market only, with tomorro
  assert.match(read('public/wiki-content.js'),/the outlook shows tomorrow’s/,'the wiki says the same');
 });
 
-test('less text per row: a building is one line (level and what it does), a fair price has no label',()=>{
+test('less text per row: a building is its name with a level chip and chips for what it does, a fair price has no label',()=>{
  const market=read('public/economy-ui.js');
- assert.match(market,/const catalogLine=\(key,s\)=>key!=='familyhall'&&\(key==='farmhouse'\|\|buildingUnlocked\(state,key\)\)\?`Level \$\{state\.buildings\[key\]\.level\} · \$\{s\.kind==='idle'\?'Ready to work':s\.text\}`:s\.text;/);
+ // 8 Oct 2026: the one "Level 6 · 4 ready · 4 / 5 slots" line was cut off with … (tests/building-chips.test.mjs has the chips).
+ assert.match(market,/<strong>\$\{b\.name\}\$\{isBuilt\(key\)\?` <span class="building-level-chip">Level \$\{state\.buildings\[key\]\.level\}<\/span>`:''\}<\/strong>\$\{catalogStatus\(key,s\)\}<\/span>/);
  assert.doesNotMatch(market,/<small>Level \$\{state\.buildings\[key\]\.level\}<\/small>/,'no second line');
- assert.match(market,/text=el\.closest\('#building-catalog'\)\?catalogLine\(key,s\):s\.text/,'the live update keeps the one line');
+ assert.doesNotMatch(market,/catalogLine/,'no one line with the level and the status any more');
+ assert.match(market,/if\(el\.classList\.contains\('building-chips'\)\)\{const html=buildingChips\(s\);if\(el\.dataset\.html!==html\)\{el\.dataset\.html=html;el\.innerHTML=html;\}return;\}/,'the live update writes the chips again only when they change');
  assert.match(market,/\$\{q\.demand==='fair'\|\|!q\.demand\|\|q\.label==='Fair price'\?'':`<span class="demand-pill/);
 });
 

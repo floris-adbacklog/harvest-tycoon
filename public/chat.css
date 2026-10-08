@@ -92,6 +92,16 @@ span.chat-avatar{cursor:default}
 @media(pointer:coarse){.chat-translate{display:none}.chat-msg.has-translate .chat-text{padding-inline-end:0}}
 .chat-translate:hover,.chat-translate:focus-visible{color:#5b5336;background:#efe7dc}
 .chat-translate svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* A group message from the admin (8 Oct 2026, src/chat-ui.js groupLine): above its text, who it is from and who it was sent to, one pill
+   per filter in the Family list's chip (family.css .family-mode-chip). The pills wrap on a phone and follow the page's direction. */
+.chat-group{display:grid;gap:5px;margin:4px 0 6px;color:#8a5a14;font:700 12px/1.35 'DM Sans',sans-serif}
+.chat-group-title{display:inline-flex;align-items:center;gap:5px}
+.chat-group-title .game-art{flex:none;width:16px;height:16px}
+.chat-group-to{display:flex;flex-wrap:wrap;align-items:center;gap:4px;color:#6b624c}
+.chat-group-to>span:first-child{margin-inline-end:2px}
+.chat-group-pill{max-width:100%;box-sizing:border-box;padding:2px 9px;border-radius:999px;background:#efe8dc;color:#6b624c;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-msg.has-translate:not(.is-cont) .chat-group{padding-inline-end:24px}
+@media(pointer:coarse){.chat-msg.has-translate:not(.is-cont) .chat-group{padding-inline-end:0}}
 .chat-menu{position:absolute;inset-inline-end:8px;top:36px;z-index:3;display:grid;min-width:176px;padding:5px;border:1px solid #e0d4c6;border-radius:12px;background:#fffdf5;box-shadow:0 10px 30px #3a2f1f26}
 .chat-menu button{padding:9px 12px;border:0;border-radius:8px;background:none;color:#4a4232;font:700 14px 'DM Sans',sans-serif;text-align:start;cursor:pointer}
 .chat-menu button:hover,.chat-menu button:focus-visible{background:#f4ece2}
@@ -271,6 +281,10 @@ span.chat-avatar{cursor:default}
 .admin-popup-fields label{display:grid;gap:4px;color:#5e523a;font:700 13px 'DM Sans',sans-serif}
 .admin-popup-fields input,.admin-popup-fields select{min-height:38px;box-sizing:border-box;padding:0 10px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;color:#3d382a;font:600 14px 'DM Sans',sans-serif}
 .admin-popup-note{margin:0;color:#8a7c6a;font-size:12px;line-height:1.4}
+/* A group message's filters (8 Oct 2026, src/admin-dashboard.js): side by side where they fit, one under the other on a phone. */
+.admin-dm-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.admin-popup-fields label.admin-dm-check:not([hidden]){display:flex;align-items:center;gap:8px;min-height:38px;align-self:end}
+.admin-popup-fields .admin-dm-check input{width:18px;height:18px;min-height:0;margin:0;padding:0;accent-color:#615742}
 .admin-popup-list{display:grid;gap:6px;margin:10px 0 0;padding:0;list-style:none}
 .admin-popup-list[hidden]{display:none}
 .admin-popup-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:10px;background:#f6efe7}

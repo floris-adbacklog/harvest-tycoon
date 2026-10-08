@@ -17,6 +17,7 @@ import {chatParts,mentionsMe,mentionAt,insertMention,appendMention,mentionIds,me
 import {wikiSectionTitle} from '../public/wiki-content.js';
 import {SITE,appPath,settingsPart} from '../public/game-links.js';
 import {androidApp} from '../public/android.js';
+import {LANGUAGES} from '../public/languages.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
@@ -44,8 +45,9 @@ export function dayLabel(iso,now=Date.now()){
 export function messageLayout(shown){
  return shown.map((m,i)=>{
   const newer=shown[i-1],day=!newer||dayKey(newer.created_at)!==dayKey(m.created_at);
-  // A card (a request, a new rank) stands on its own: it never folds into the messages around it.
-  const card=x=>Boolean(x.kind)&&x.kind!=='message';
+  // A card (a request, a new rank) stands on its own: it never folds into the messages around it. So does a group message (8 Oct 2026):
+  // its line says who it is from and who got it.
+  const card=x=>(Boolean(x.kind)&&x.kind!=='message')||Boolean(x.meta?.group);
   const cont=Boolean(newer)&&!day&&!card(newer)&&!card(m)&&newer.sender===m.sender&&Date.parse(newer.created_at)-Date.parse(m.created_at)<=GROUP_GAP;
   return {m,day,cont};
  });
@@ -61,6 +63,32 @@ export function chestCard(m,now=Date.now()){
  return `<li class="chat-request chat-chest" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Family Chest</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at,now)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(tier?`family-chest-${tier.id}`:'family-chest-open')}</span><div><p class="chat-text">${esc(CHEST_OPENED[tier?.id]??m.body)}</p><small class="chat-request-status">${esc(who)}</small></div></div><button type="button" class="small-button chat-chest-open" data-open-family>Open Farm Family</button></li>`;
 }
 export const hiddenAsBlocked=(m,blocked)=>m.kind!=='chest'&&blocked.has(m.sender);
+// A group message from the admin (8 Oct 2026, supabase/chat-group-filters.sql): every copy carries who it was sent to (meta.group.filters,
+// as the database checked them), so the farmer reads an honest line above it: one pill per filter, in the game's own words (translated
+// like the rest), never the admin's text. A language by its own name, as Settings lists it. No filter: "Every farmer". A filter this
+// game does not know yet is left out, and then nothing claims it went to everyone.
+const GROUP_ACTIVE={online:'Online now',week:'Active this week',month:'Active this month'};
+const GROUP_PLATFORM={android:'Plays in the Android app',ios:'Plays in the iPhone app',browser:'Plays in the browser'};
+const GROUP_NOT_PLATFORM={android:'Not in the Android app',ios:'Not in the iPhone app',browser:'Not in the browser'};
+const GROUP_FAMILY={in:'In a family',out:'Not in a family'};
+export function groupPills(filters){
+ const f=filters&&typeof filters==='object'&&!Array.isArray(filters)?filters:{},level=n=>Number.isInteger(n)&&n>=1&&n<=200,language=LANGUAGES.find(l=>l.code===f.language)?.name;
+ const pills=[level(f.minLevel)&&`From level ${f.minLevel}`,level(f.maxLevel)&&`Up to level ${f.maxLevel}`,GROUP_ACTIVE[f.active],GROUP_PLATFORM[f.platform],GROUP_NOT_PLATFORM[f.notPlatform],f.crazygames===true&&'Plays on CrazyGames',language&&`Plays in ${language}`,GROUP_FAMILY[f.family]].filter(text=>typeof text==='string'&&text);
+ return pills.length||Object.keys(f).length?pills:['Every farmer'];
+}
+// Above the message's text: "Group message from the team", then "Sent to:" and the pills, each its own element (no " · ").
+export function groupLine(m){
+ if(!m?.meta?.group)return '';const pills=groupPills(m.meta.group.filters);
+ return `<div class="chat-group"><span class="chat-group-title">${art('chat')}Group message from the team</span>${pills.length?`<span class="chat-group-to"><span>Sent to:</span>${pills.map(text=>`<span class="chat-group-pill">${esc(text)}</span>`).join('')}</span>`:''}</div>`;
+}
+// 8 Oct 2026: the other farmer in a private chat, read from its channel; null when it is not one of mine (a link can name any channel).
+export function dmOther(channel,me){const m=/^dm:([0-9a-f-]{36}):([0-9a-f-]{36})$/.exec(String(channel??''));return !m||!me?null:m[1]===me?m[2]:m[2]===me?m[1]:null;}
+// 8 Oct 2026 (supabase/chat-threads-paging.sql): the Private list is the overview's chats, then the older pages (Show more) that are not
+// among them: each chat once, the first copy wins (the overview's, the newer).
+// Newest first, then the channel in byte order (collate "C"), as chat_threads pages them: the overview's unread older chats and the
+// pages after them interleave by time (8 Oct 2026).
+export const byLast=(a,b)=>(Date.parse(b.lastAt)||0)-(Date.parse(a.lastAt)||0)||(a.channel<b.channel?1:a.channel>b.channel?-1:0);
+export function mergeThreads(first,older){const seen=new Set();return [...(first??[]),...(older??[])].filter(t=>t?.channel&&!seen.has(t.channel)&&seen.add(t.channel));}
 // The header button counts news and notes, your family and your private messages. Global's own messages do not count: with the whole
 // valley talking, a number on the button would never go away. A mention of you there does (3 Oct 2026): it is meant for you.
 export const headerCount=unread=>(unread?.notices??0)+(unread?.family??0)+(unread?.dm??0)+(unread?.mentions??0);
@@ -118,6 +146,10 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // Earlier messages (5 Oct 2026, a farmer's feedback: an old conversation could not be read back): the newest PAGE come first, and a button
  // at the end of the list fetches the PAGE before them, as long as there are more.
  const PAGE=50;let more=false,loadingMore=false;
+ // Older private chats (8 Oct 2026, supabase/chat-threads-paging.sql): the overview has the 30 newest and every unread one, Show more
+ // fetches the next 30 after its cursor. They live here, apart from the overview, which is replaced every 3 minutes and on every private
+ // message. olderMore is null until the first page: then the overview says whether there are more.
+ let olderThreads=[],olderMore=null,olderCursor=null,loadingThreads=false,threadsTicket=0;
  let overviewTimer=null,pollTimer=null;const readTimers=new Map(),statusCache=new Map();
  // A message keeps the avatar its sender had when it was sent (chat_messages.sender_avatar); the chat shows the sender's avatar of now
  // instead: looked up for every farmer on screen when a chat opens (at most once a minute, then only farmers not seen yet), and changed
@@ -153,6 +185,10 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  async function refreshOverview(){
   try{
    const next=await chat.overview();if(disposed)return;
+   // Once older pages are (being) fetched, a chat that drops out of the newest 30 (new chats came in) stays in the list, or it would
+   // fall between the new 30th and the pages already there.
+   // Below 99 rows the overview lists every chat with something unread, so a kept chat it no longer lists has nothing unread.
+   if(olderMore!==null||loadingThreads){const listed=new Set((next?.threads??[]).map(t=>t.channel)),full=(next?.threads?.length??0)>=99;olderThreads=mergeThreads(overview?.threads,olderThreads).map(t=>full||listed.has(t.channel)||!t.unread?t:{...t,unread:0});}
    overview=next;button.hidden=switchedOff;settings();
    // What is on screen right now is read, even if the count raced ahead of it.
    if(dialog.open){const name=channelOf();if(tab==='notices')overview.unread.notices=0;else if(name==='global')overview.unread.global=overview.unread.mentions=0;else if(name&&name===overview.family?.channel)overview.unread.family=0;else if(name)clearThread(name);}
@@ -160,10 +196,12 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   }catch{}
  }
  const scheduleOverview=(wait=1200)=>{clearTimeout(overviewTimer);overviewTimer=setTimeout(refreshOverview,wait);};
+ const findThread=name=>overview?.threads?.find(x=>x.channel===name)??olderThreads.find(x=>x.channel===name);
  function clearThread(name){
-  const t=name==='crew'?overview?.crew:overview?.threads?.find(x=>x.channel===name);if(!t)return;
-  // Private counts the staff's Crew too (supabase/chat-crew.sql).
-  t.unread=0;overview.unread.dm=overview.threads.reduce((sum,x)=>sum+(x.unread||0),0)+(overview.crew?.unread||0);
+  const t=name==='crew'?overview?.crew:findThread(name);if(!t)return;
+  // Private counts the staff's Crew too (supabase/chat-crew.sql). 8 Oct 2026: and every private chat, listed or not
+  // (supabase/chat-threads-paging.sql), so this one's count comes off rather than the listed ones being added up again.
+  overview.unread.dm=Math.max(0,(overview.unread.dm??0)-(t.unread||0));t.unread=0;for(const x of olderThreads)if(x.channel===name)x.unread=0;
  }
  // Marks a chat read on the server, at most once every few seconds per chat, and at once on this screen.
  function markRead(name){
@@ -237,7 +275,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const text=`${bodyHtml(m)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`,tr=`${translate?' has-translate':''}${mentionsMe(m,me)?' is-mention':''}`;
   // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
   if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${esc(m.sender_name)}: </span>${text}</p></div>${more}${translate}</li>`;
-  return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div><p class="chat-text">${text}</p></div>${translate}</li>`;
+  return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div>${groupLine(m)}<p class="chat-text">${text}</p></div>${translate}</li>`;
  }
  function threadRow(t){
   return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${esc(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}<span translate="no">${esc(t.last?.body??'')}</span></small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
@@ -297,6 +335,19 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   catch(error){if(ticket===loading)note(error.message);}
   finally{if(ticket===loading){loadingMore=false;paint();}}
  }
+ // Show more under the private chats (8 Oct 2026), only while the database says there are more: never before
+ // supabase/chat-threads-paging.sql (the overview has no moreThreads then, and a missing chat_threads gives null).
+ const threadsCursor=()=>olderMore===null?(overview?.moreThreads&&overview.threadsCursor)||null:olderMore?olderCursor:null;
+ const moreThreadsButton=()=>threadsCursor()?`<li class="chat-earlier"><button type="button" class="small-button" data-chat-threads${loadingThreads?' disabled':''}>${loadingThreads?'Loading…':'Show more'}</button></li>`:'';
+ async function loadThreads(){
+  const cursor=threadsCursor(),ticket=threadsTicket;if(!cursor||loadingThreads)return;
+  loadingThreads=true;paint();
+  try{const page=await chat.threads(cursor);if(ticket!==threadsTicket||disposed)return;olderThreads=mergeThreads(olderThreads,page?.threads);olderCursor=page?.cursor??null;olderMore=Boolean(page?.more&&olderCursor);}
+  catch(error){if(ticket===threadsTicket)note(error.message);}
+  finally{if(ticket===threadsTicket){loadingThreads=false;if(dialog.open&&!disposed)paint();}}
+ }
+ // A fresh open of the chat starts the list at the newest 30 again.
+ function resetThreads(){threadsTicket++;olderThreads=[];olderMore=null;olderCursor=null;loadingThreads=false;}
  function paint(){
   dialog.querySelectorAll('[data-chat-tab]').forEach(tabButton=>{const on=tabButton.dataset.chatTab===tab;tabButton.classList.toggle('active',on);tabButton.setAttribute('aria-selected',String(on));});
   back.hidden=!(tab==='private'&&thread);blockButton.hidden=reportButton.hidden=back.hidden||Boolean(thread?.crew);
@@ -321,7 +372,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    list.innerHTML=empty(familyButton&&!familyButton.hidden?'Join a family to chat with its farmers.':'Families open at level 10. Then you can chat with yours here.',familyButton&&!familyButton.hidden?'<button type="button" class="small-button" data-open-family>Find a family</button>':'');
   }
   else if(tab==='private'&&!thread&&found&&!find.hidden)list.innerHTML=found.loading?'<li class="chat-empty"><p>Looking around the valley…</p></li>':found.players.length?found.players.map(foundRow).join(''):empty('No farmers found. Try another name.');
-  else if(tab==='private'&&!thread){const threads=(overview?.threads??[]).filter(t=>!blocked().has(t.otherId));list.innerHTML=(overview?.crew?crewRow(overview.crew):'')+(overview?.privateOn===false?'<li class="chat-empty chat-off"><p>Your private messages are off. You can turn them on in Settings, under Chat.</p></li>':'')+(threads.length?threads.map(threadRow).join(''):overview?.privateOn===false?'':empty(EMPTY.private));}
+  else if(tab==='private'&&!thread){const threads=mergeThreads(overview?.threads,olderThreads).filter(t=>!blocked().has(t.otherId)).sort(byLast);list.innerHTML=(overview?.crew?crewRow(overview.crew):'')+(overview?.privateOn===false?'<li class="chat-empty chat-off"><p>Your private messages are off. You can turn them on in Settings, under Chat.</p></li>':'')+(threads.length?threads.map(threadRow).join('')+moreThreadsButton():overview?.privateOn===false?'':empty(EMPTY.private));}
   else{const shown=messages.filter(m=>!hiddenAsBlocked(m,blocked()));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join('')+moreButton():empty(thread?.crew?'Say hello to the crew!':thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
   refreshArt();
  }
@@ -345,14 +396,23 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   tab=next;if(!keepThread)thread=null;messages=[];more=false;found=null;findInput.value='';picked.clear();closePicks();load();
   if(!matchMedia('(pointer:coarse)').matches&&!form.hidden)input.focus({preventScroll:true});
  }
+ // 8 Oct 2026: a push for a private chat that is not in the list (the welcome sender has 1,500+ of them) opens it all the same, as
+ // Send message on a profile does: the other farmer from the channel, their name and picture as they are now (chat.cards, the same
+ // public table as the leaderboard). Only when that fails, the list.
+ async function threadFromCard(channel){
+  const id=dmOther(channel,me);if(!id)return null;
+  const card=(await chat.cards?.([id]).catch(()=>[])??[]).find(c=>c?.playerId===id);
+  return card?{channel,otherId:id,otherName:card.username??'A farmer',otherAvatar:card.avatarId}:null;
+ }
  // A channel comes from a notification or a link (public/app-links.js): a private chat opens that conversation, a family chat the
  // Family tab.
  async function open({tab:wanted,with:other,channel}={}){
   if(switchedOff)return;
   doc.querySelectorAll('dialog[open]').forEach(d=>d.close());
+  resetThreads();
   if(!overview||channel)await refreshOverview();
   if(!overview)return;
-  if(channel?.startsWith('dm:')){const t=overview.threads?.find(x=>x.channel===channel);if(t)other={id:t.otherId,name:t.otherName,avatar:t.otherAvatar};else wanted='private';}
+  if(channel?.startsWith('dm:')){const t=findThread(channel)??await threadFromCard(channel);if(t)other={id:t.otherId,name:t.otherName,avatar:t.otherAvatar};else wanted='private';}
   else if(channel?.startsWith('family:'))wanted='family';
   else if(channel==='notices')wanted='notices';
   // A push from the Crew opens the Crew (a farmer who is no longer staff gets their private chats).
@@ -431,6 +491,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  list.addEventListener('click',event=>{
   if(pressed){pressed=false;return;}   // the tap that ends a long press opened the menu already
   if(event.target.closest('[data-chat-more]')){void loadMore();return;}
+  if(event.target.closest('[data-chat-threads]')){void loadThreads();return;}
   const profile=event.target.closest('[data-profile]'),threadButton=event.target.closest('[data-thread]'),more=event.target.closest('[data-more]');
   if(more){openMenu(more.closest('.chat-msg'));return;}
   const give=event.target.closest('[data-give]');
@@ -445,7 +506,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const start=event.target.closest('[data-start]');
   if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}
   if(threadButton&&threadButton.dataset.thread==='crew'){if(!overview?.crew)return;thread={channel:'crew',crew:true,otherName:'Crew'};show('private',{keepThread:true});return;}
-  if(threadButton){const t=overview?.threads?.find(x=>x.channel===threadButton.dataset.thread);if(!t)return;thread={channel:t.channel,otherId:t.otherId,otherName:t.otherName,otherAvatar:t.otherAvatar};show('private',{keepThread:true});return;}
+  if(threadButton){const t=findThread(threadButton.dataset.thread);if(!t)return;thread={channel:t.channel,otherId:t.otherId,otherName:t.otherName,otherAvatar:t.otherAvatar};show('private',{keepThread:true});return;}
   if(event.target.closest('[data-open-family]')){dialog.close();doc.getElementById('family-button')?.click();}
  });
  findInput.addEventListener('input',()=>{

@@ -44,5 +44,9 @@
  "the feedback link is not counted",
  "two of our links",
  "No count",
- "too late to water"
+ "too late to water",
+ "There is no filter called {0}.",
+ "The filter {0} cannot be {1}.",
+ "Up to level must be at least From level.",
+ "Leave out a different place than the one you chose."
 ]

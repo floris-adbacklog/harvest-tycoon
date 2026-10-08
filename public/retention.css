@@ -852,6 +852,12 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #buildings-dialog .building-status.family{background:#e3e9f5;color:#3d4a86}
 #buildings-dialog .building-status .game-art{width:13px;height:13px}
 #buildings-dialog .building-card:has(.building-status.ready){border-color:#cfe0c3;background:#f3f9ec}
+/* 8 Oct 2026: a built building's level is a gold chip beside its name (like the level in the Family list) and what it is doing are
+   chips under it, which wrap instead of being cut off with …; "Next in 3m" is quiet, without a background. */
+#buildings-dialog .building-level-chip{display:inline-block;margin-inline-start:4px;padding:1px 7px;border-radius:99px;background:#f6ecd0;color:#8a6a22;font:700 12px/1.5 'DM Sans',sans-serif;vertical-align:2px;white-space:nowrap}
+#buildings-dialog .building-chips{display:flex;flex-wrap:wrap;gap:4px;max-width:100%;margin-top:3px}
+#buildings-dialog .building-chips>.building-status{margin:0;white-space:normal;overflow:visible}
+#buildings-dialog .building-status.next{padding-inline:2px;background:none;font-weight:600;color:#8a7c69}
 #buildings-dialog .future-unlocks{margin-top:8px;padding:10px 12px}
 #buildings-dialog .future-unlocks .building-card{grid-column:auto;min-height:0}
 #buildings-dialog .future-unlocks-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-top:10px}

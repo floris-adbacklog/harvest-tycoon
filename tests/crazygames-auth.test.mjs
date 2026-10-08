@@ -368,6 +368,10 @@ test('crazygames.sql: the email bonus for a CrazyGames login and never a guest; 
  assert.equal(provider('crazygames'),'CrazyGames');assert.equal(provider('crazygames_guest'),'CrazyGames guest');assert.equal(provider('email'),'Email');assert.equal(provider('google'),'Google');
  const [welcome]=of('public.welcome_dm_run()');assert.match(welcome.to,/coalesce\(u\.raw_app_meta_data->>'guest',''\)<>'true'/);
  const [broadcast]=of('public.chat_broadcast_targets(uuid,text,integer)');assert.match(broadcast.to,/and not public\.harvest_portal_guest\(ps\.player_id\)$/);
+ // The group message with filters (8 Oct 2026) has a target list of its own: no guest there either, also with the CrazyGames filter.
+ const group=read('supabase/chat-group-filters.sql');
+ assert.match(group,/and not public\.harvest_portal_guest\(ps\.player_id\)\n\$function\$;\nrevoke all on function public\.chat_broadcast_targets\(uuid,jsonb\)/);
+ assert.match(group,/if me is null or coalesce\(\(select auth\.jwt\(\)->>'is_anonymous'\)::boolean,false\) or public\.harvest_portal_guest\(me\) then raise exception 'Sign in to use the chat\.'/,'nor does a guest send one');
 });
 
 // farm-api itself, run as in vip-endpoint.test.mjs: a CrazyGames account is no email sign-up.
