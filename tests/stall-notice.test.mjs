@@ -20,13 +20,13 @@ test('no stall "!" before the stall is unlocked',()=>{
  assert.equal(stallNotice(s,now),false);
 });
 
-test('the "!" sits on the phone menu tile, the More button and the Estate button, not on the map pin, never a "G"',()=>{
+test('the "!" sits on the phone menu tile and the More button, not on the map pin or (since 8 Oct 2026) the Estate button, never a "G"',()=>{
  const growth=read('public/growth-ui.js');
- assert.match(growth,/\$\('estate-dot'\)\.hidden=!projectReady\(\)&&!waiting&&!master&&!medals;/,'a medal to collect lights it too (Oct 2026)');
+ assert.match(growth,/\$\('estate-dot'\)\.hidden=!projectReady\(\)&&!master&&!medals;/,'a medal to collect lights it too (Oct 2026); the stall no more: Estate does not open it');
  assert.match(growth,/\[data-menu-utility="stall"\]'\)\?\.classList\.toggle\('has-dot',waiting\)/);
  assert.doesNotMatch(growth,/utility-label/,'the map pin stays a plain picture');
  assert.doesNotMatch(growth,/'G'/);
- assert.match(growth,/open\(!projectReady\(\)&&stallNotice\(state,farmNow\(\)\)\?'stall':!projectReady\(\)&&featureUnlocked\(state,'mastery'\)&&medalsWaiting\(state\)\.length\?'mastery':\['projects','stall','chores','mastery'\]\.find\(t=>featureUnlocked\(state,t\)\)\?\?'projects'\)/,'the Estate button opens the stall when that is what waits, else a medal to collect, else its first open tab');
+ assert.match(growth,/\$\('estate-button'\)\.onclick=\(\)=>open\(!projectReady\(\)&&featureUnlocked\(state,'mastery'\)&&medalsWaiting\(state\)\.length\?'mastery':\['projects','chores','mastery'\]\.find\(t=>featureUnlocked\(state,t\)\)\?\?'projects'\);/,'the Estate button never opens the stall');
  assert.match(read('public/farm.html'),/<em id="estate-dot" hidden>!<\/em>/);
  assert.match(read('public/mobile-ui.js'),/&&!menu\.querySelector\('\[data-menu-utility="stall"\]'\)\?\.classList\.contains\('has-dot'\)/);
  assert.doesNotMatch(read('public/icons.css'),/\.utility-label\.has-dot/);

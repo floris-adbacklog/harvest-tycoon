@@ -28,7 +28,7 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
   // A crop medal earned and not collected (Oct 2026) lights the "!" until it is collected: on the Medals tab, its tile in More (and so
   // the More button) and the Estate button. Medals already waiting when the game opens light it too, without a toast (medal-notice.js).
   const medals=featureUnlocked(state,'mastery')&&medalsWaiting(state).length>0;
-  $('estate-dot').hidden=!projectReady()&&!waiting&&!master&&!medals;
+  $('estate-dot').hidden=!projectReady()&&!master&&!medals;
   document.querySelector('[data-menu-utility="stall"]')?.classList.toggle('has-dot',waiting);
   document.querySelector('[data-menu-utility="mastery"]')?.classList.toggle('has-dot',medals);
   const tabDot=document.querySelector('[data-estate-tab="mastery"] .estate-tab-dot');if(tabDot)tabDot.hidden=!medals;
@@ -119,9 +119,10 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
   if(tab==='bonuses')renderBonuses();
   if(tab==='projects'&&state.estate.job){const job=state.estate.job;$('project-clock').textContent=farmNow()>=job.readyAt?'Ready to complete':`${formatDuration(job.readyAt-farmNow())} remaining`;$('project-progress').value=Math.min(100,(farmNow()-job.startedAt)/(job.readyAt-job.startedAt)*100);}
  }
- // The Estate button opens what waits: a finished chapter, else a stall worth emptying, else a medal to collect (Oct 2026); otherwise the
- // projects, or before they open at 27 (on a computer the button is there from Medals at level 7) its first open tab.
- $('estate-button').onclick=()=>open(!projectReady()&&stallNotice(state,farmNow())?'stall':!projectReady()&&featureUnlocked(state,'mastery')&&medalsWaiting(state).length?'mastery':['projects','stall','chores','mastery'].find(t=>featureUnlocked(state,t))??'projects');
+ // The Estate button opens what waits: a finished chapter, else a medal to collect (Oct 2026); otherwise the projects, or before they
+ // open at 27 (on a computer the button is there from Medals at level 7) its first open tab. Never the stall (8 Oct 2026): it has its own
+ // icon and tile and opens on its own, so the Estate button showed only the stall whenever coins waited there.
+ $('estate-button').onclick=()=>open(!projectReady()&&featureUnlocked(state,'mastery')&&medalsWaiting(state).length?'mastery':['projects','chores','mastery'].find(t=>featureUnlocked(state,t))??'projects');
  document.querySelectorAll('[data-estate-tab]').forEach(b=>b.onclick=()=>open(b.dataset.estateTab));
  return {open,refresh,tick};
 }
