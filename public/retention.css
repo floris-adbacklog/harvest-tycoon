@@ -759,8 +759,9 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #tasks-dialog #quest-summary strong{font:600 15px 'Outfit',sans-serif;color:#4a4130}
 #tasks-dialog #quest-summary progress{width:100%;height:6px}
 #tasks-dialog .quest-filters button{min-height:40px;padding:6px 4px;font-size:13px;white-space:nowrap}
-/* Completed quests fold away at the end of the one list (public/quests-ui.js). */
-#tasks-dialog .quest-done-toggle{display:block;margin:14px auto 6px;font-size:14px}
+/* Completed quests fold away at the end of the one list (public/quests-ui.js); the toggle is a second button (buttons.css), since
+   8 Oct 2026 (it was a .link-button, which only the welcome page styles, so the game showed the browser's own grey button). */
+#tasks-dialog .quest-done-toggle{display:block;min-height:44px;margin:14px auto 6px;padding:0 18px;font:700 14px 'DM Sans',sans-serif;cursor:pointer}
 #tasks-dialog .quest-filters button[aria-pressed="true"]{color:#3d382a;background:#fffdf7;box-shadow:0 1px 4px #43362218}
 #tasks-dialog .quest-filters span{display:inline-grid;place-items:center;min-width:20px;height:20px;margin:0 0 0 5px;padding:0 5px;border-radius:999px;background:#e6dccd;font-size:12px;font-weight:700;opacity:1}
 #tasks-dialog .quest-filters [data-quest-filter="ready"] span{background:#dcebcf;color:#3f6b2c}

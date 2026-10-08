@@ -56,7 +56,7 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,village=fa
   // One list, no tabs (30 Sep 2026): what you can claim comes first, then what is in progress; completed quests fold away at the
   // end. Every reward is claimed on its own, one tap per quest: that is the satisfying part.
   const open=[...groups.ready.map(entry=>row(entry,'ready')),...groups.active.map(entry=>row(entry,'active'))].join('');
-  const toggle=done?`<button type="button" class="link-button quest-done-toggle" data-quest-done aria-expanded="${showDone}">${showDone?'Hide completed':`Show completed (${done})`}</button>`:'';
+  const toggle=done?`<button type="button" class="secondary-button quest-done-toggle" data-quest-done aria-expanded="${showDone}">${showDone?'Hide completed':`Show completed (${done})`}</button>`:'';
   list.innerHTML=(open||`<div class="quest-empty">${art('trophy')}<h3>All caught up!</h3><p>New quests arrive as your farm grows.</p></div>`)+toggle+(showDone?groups.done.map(entry=>row(entry,'done')).join(''):'');
   icons();
  }

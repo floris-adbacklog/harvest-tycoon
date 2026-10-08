@@ -71,6 +71,8 @@ const CONNECTION_STAGES=new Set(['reconnecting','paused']);
 // A farm that did not open (3 Oct 2026, public/loading-screen.js watchLoading): its code failed to load, or the bar stood still; again =
 // the second time within ten minutes, when it shows Try again instead of opening once more by itself.
 const LOAD_REASONS=new Set(['failed','stalled']);
+// 8 Oct 2026: which step stood still (loading-screen.js loadStep) and how many models had arrived by then.
+const LOAD_STEPS=new Set(['code','models','account','scene']);
 // Invite a friend: the screen opened, the link shared or copied, a sign-up that came with a code. Never a name or code.
 const INVITE_EVENTS=new Set(['invite_open','invite_share','invite_copy','invite_signup']);
 export function trackInvite(event,win=globalThis.window){if(INVITE_EVENTS.has(event))pushEvent(event,{device:deviceType(win)},win);}
@@ -88,7 +90,8 @@ export function trackGame(event,params={},win=globalThis.window){
  const clean={device:deviceType(win)};
  if(Number.isSafeInteger(params.level)&&params.level>=1&&params.level<=500)clean.level=params.level;
  if(Number.isSafeInteger(params.index)&&params.index>=0&&params.index<=9)clean.index=params.index;
- if(GUIDE_STEPS.has(params.step))clean.step=params.step;
+ if(GUIDE_STEPS.has(params.step)||LOAD_STEPS.has(params.step))clean.step=params.step;
+ if(Number.isSafeInteger(params.models)&&params.models>=0&&params.models<=999)clean.models=params.models;
  if(PROMPT_ACTIONS.has(params.action))clean.action=params.action;
  if(PROMPT_CHANNELS.has(params.channel))clean.channel=params.channel;
  if(typeof params.returning==='boolean')clean.returning=params.returning;

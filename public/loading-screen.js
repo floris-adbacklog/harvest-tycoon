@@ -73,9 +73,11 @@ export function startLoadingTips(doc,{tips:all=LOADING_TIPS,text='loading-tip-te
 // Progress reflects completed work: model files, account data and the first frame. On the way to the village (World II) the first
 // step reads 'Travelling to the village'.
 export function createLoadingScreen(doc,modelCount,{loading='Loading your farm'}={}){
- const get=id=>doc.getElementById(id);
+ const get=id=>doc.getElementById(id),view=doc.defaultView;
  let models=0,account=false,finished=false;
  function render(){
+  // Where the load is (8 Oct 2026), for watchLoading below when the bar stands still; none at all means public/game.js never ran.
+  if(view)view.harvestLoading={models,of:modelCount,account,finished};
   const done=(models+Number(account)+Number(finished))/(modelCount+2);
   const percent=finished?100:Math.min(99,FARM_START+Math.floor(done*(100-FARM_START)));
   get('load-progress').value=percent;
@@ -96,26 +98,31 @@ export function createLoadingScreen(doc,modelCount,{loading='Loading your farm'}
 // the farm again); a second time within ten minutes, or without a place to count it, shows "Your farm could not load" with Try again
 // instead of a loop (over the loading screen, in the player's language). Try again reloads the whole page too: this page alone would come back without its farm. Each time is counted
 // (farm_load_retry, with the player's consent like every other measurement), to see how often it happens.
+// 8 Oct 2026: only the seconds in view count, and time out of view no longer starts them again: before, a tab in the background or a
+// window fully covered by another (a Mac then counts the page as out of view) never got to 30 and stayed at 12%. The event also says
+// which step stood still: 'code' (public/game.js never ran), 'models' (with how many had arrived), 'account' or 'scene'.
 export const LOAD_STALL_MS=30000,LOAD_RETRY_KEY='harvest-tycoon:farm-retry',LOAD_RETRY_GAP_MS=600000;
+export const loadStep=at=>!at?'code':at.models<at.of?'models':!at.account?'account':'scene';
 export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=window,storage=(()=>{try{return win.sessionStorage;}catch{return null;}})(),now=()=>Date.now()}={}){
  const reload=()=>{if(portal)portal.reopen();else win.parent.location.reload();};
  const retry=doc.querySelector('#error .primary-button');if(retry)retry.onclick=reload;
- let last=null,still=now(),over=false;
+ let last=null,still=0,over=false;
  const stop=()=>{over=true;win.clearInterval(timer);};
  function recover(reason){
   if(over)return;stop();
   let before=null;try{before=Number(storage.getItem(LOAD_RETRY_KEY))||0;}catch{}
   const again=before===null||now()-before<LOAD_RETRY_GAP_MS;
-  try{bridge.trackGame?.('farm_load_retry',{reason,again});}catch{}
+  const at=win.harvestLoading;try{bridge.trackGame?.('farm_load_retry',{reason,again,step:loadStep(at),models:at?.models??0});}catch{}
   if(!again){try{storage.setItem(LOAD_RETRY_KEY,String(now()));}catch{}win.setTimeout(reload,400);return;}
   // Over the loading screen, without its bar: the page under it only holds placeholders (level 1, 180 coins), not this farm. In the
   // player's language, which otherwise comes with the game's code.
   const bar=doc.querySelector('#loading .farm-loading-progress');if(bar)bar.style.visibility='hidden';
   const card=doc.getElementById('error');card.style.zIndex='101';card.hidden=false;try{translate();}catch{}
  }
+ // Every second in view with the bar where it was counts; a second out of view counts for nothing, and does not start them again.
  const timer=win.setInterval(()=>{
   const value=Number(doc.getElementById('load-progress')?.value??0);
-  if(value!==last||doc.hidden){last=value;still=now();}else if(now()-still>=LOAD_STALL_MS)recover('stalled');
+  if(value!==last){last=value;still=0;}else if(!doc.hidden&&(still+=1000)>=LOAD_STALL_MS)recover('stalled');
  },1000);
  return {failed:()=>recover('failed'),done(ready){if(over)return;stop();if(ready)try{storage.removeItem(LOAD_RETRY_KEY);}catch{}}};
 }

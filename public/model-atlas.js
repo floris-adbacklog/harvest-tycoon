@@ -18,18 +18,40 @@ let base=null,soft=null,villageBase=null;
 // checks that cost seconds on a slow phone connection. GLTFLoader still makes each model's own
 // texture (its sampler, flipY, colour space) exactly as before, so material.map is there for shareAtlas and the farm looks the
 // same. A model is only ready once its palette has arrived, so nothing is ever drawn without it. A palette that does not come is
-// asked for once more past the browser's cache (as fetchModel in game.js does for a model); if it still fails, the model fails to
-// load, and game.js puts its invisible stand-in there instead of an unpainted model.
+// asked for again past the browser's cache (as fetchModel in game.js does for a model; paletteImage below); if it still fails, the
+// model fails to load, and game.js puts its invisible stand-in there instead of an unpainted model.
 const PALETTE=/(^|\/)(village-)?palette\.png$/;
 // The palettes' colours change now and then (6 Oct 2026: deeper greens, like the loading screen's painted valley; 7 Oct: half of
 // that). /assets/ is kept for a day, so the version makes a returning farmer fetch the new palette at once instead of yesterday's.
 export const PALETTE_VERSION='20261007';
+// A palette that does not answer (8 Oct 2026): the bar stood still at 12% until a refresh. All farm models wait for palette.png, and
+// one request that never answered (a stalled transfer, another tab downloading the same address slowly, a decode that never ended)
+// held every one of them, with nothing logged: the second try only came after an error. Now each try has a wait. When the palette is
+// not there by then, a fresh request (an address of its own, so it never waits behind the stuck one in the browser's cache) goes
+// beside it, the first to arrive is used and the rest are stopped. 8, 12 and 16 seconds: the 6.6 KB palette takes 0.02-0.06 s on
+// broadband, 0.6 s on Fast 3G and about 4 s on Slow 3G next to the first eight models (harness, 8 Oct), so a slow line seldom needs
+// a second request, and one costs 6.6 KB. After the third try (36 s) it keeps waiting for those three and never gives up: a palette
+// that is merely slow still paints every model, and a page that stays stuck is opened again by loading-screen.js watchLoading after
+// 30 seconds in view. A refused palette (an error, not silence) is asked for once more at once and then by the next model, as before.
+export const PALETTE_WAITS=Object.freeze([8000,12000,16000]);
 const palettes=new Map();
 function paletteImage(loader,url){
  let image=palettes.get(url);
  if(!image){
   const current=`${url}?v=${PALETTE_VERSION}`;
-  image=loader.loadAsync(current).catch(()=>loader.loadAsync(`${current}&fresh=${Date.now()}`));
+  image=new Promise((resolve,reject)=>{
+   let tries=0,open=0,timer=0,over=false;
+   const end=(settle,value)=>{if(over)return;over=true;clearTimeout(timer);if(open)try{loader.abort?.();}catch{}settle(value);};
+   const ask=()=>{
+    clearTimeout(timer);
+    if(tries===PALETTE_WAITS.length)return;
+    const wait=PALETTE_WAITS[tries];open++;
+    // A late second picture is closed: one decoded palette per page.
+    loader.loadAsync(tries++?`${current}&fresh=${Date.now()}`:current).then(picture=>{open--;if(over)picture?.close?.();else end(resolve,picture);},error=>{open--;if(!over&&!open){if(tries===1)ask();else end(reject,error);}});
+    timer=setTimeout(()=>{console.warn(`The palette ${url} did not arrive within ${wait/1000} s.`);ask();},wait);
+   };
+   ask();
+  });
   palettes.set(url,image);image.catch(()=>palettes.delete(url));
  }
  return image;
@@ -40,7 +62,8 @@ export function sharePalette(gltfLoader){
   if(!PALETTE.test(uri))return null;
   // The loader GLTFLoader chose for this browser (an ImageBitmap where it can, an <img> otherwise), asked once per palette.
   const loader=parser.textureLoader;
-  const once={isImageBitmapLoader:loader.isImageBitmapLoader,load:(url,onLoad,onProgress,onError)=>paletteImage(loader,url).then(image=>onLoad(image.isTexture?image.clone():image),onError)};
+  // An error in onLoad itself reaches onError too (8 Oct 2026); as then()'s second argument it was lost and the model waited forever.
+  const once={isImageBitmapLoader:loader.isImageBitmapLoader,load:(url,onLoad,onProgress,onError)=>paletteImage(loader,url).then(image=>onLoad(image.isTexture?image.clone():image)).catch(onError)};
   return parser.loadTextureImage(index,source,once).then(texture=>{
    if(!texture)throw new Error(`The palette ${uri} could not load.`);
    texture.userData.sharedPalette=true;return texture;
