@@ -1359,8 +1359,11 @@ html[data-portal] .feedback-copy{display:none!important}
 .project-pips i,.master-pips i{display:block;width:10px;height:10px;border-radius:50%;background:#e8dfcd;border:1px solid #d6c9ad}
 .project-pips i.is-on,.master-pips i.is-on{background:#e7b43e;border-color:#b98a22}
 .master-pips{margin:8px 0 2px}
-/* The Estate tabs in one row whatever their number (a fifth, Master, opens at level 91). */
-#estate-dialog .estate-tabs{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+/* The Estate tabs in one row whatever their number (a fifth, Master, opens at level 91), as long as their words fit: since the Bonuses
+   tab (8 Oct 2026, six tabs from level 91) a tab is never narrower than its longest word, so "Hofarbeiten" no longer runs into the next
+   tab on a phone; the tabs share the row evenly and only words that do not fit move the last tabs to a second row. */
+#estate-dialog .estate-tabs{display:flex;flex-wrap:wrap}
+#estate-dialog .estate-tabs button{flex:1 1 0;min-width:min-content}
 /* Master point cards in the Estate screen, laid out like the valley places. */
 #estate-content .master-branch{margin:0;padding:12px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2}
 #estate-content .master-branch.is-ready{border-color:#cfe0c3;background:#f3f9ec}
@@ -1373,6 +1376,25 @@ html[data-portal] .feedback-copy{display:none!important}
 #estate-content .master-branch .valley-line{margin:2px 0 0;font-size:13px;color:#6f6450}
 #estate-content .master-branch .task-bottom{display:flex;justify-content:flex-end;margin-top:8px}
 #estate-content .daily-list{display:grid;gap:8px}
+/* The Bonuses tab (8 Oct 2026, public/bonus-overview.js): a cream card per group, its total in green, a row per bonus with its value in a
+   chip at the end (green when the farm has it, like the Buildings list's chips) and the next bonus of the group dimmed. */
+#estate-dialog .bonus-groups{display:grid;gap:10px}
+#estate-dialog .bonus-group{padding:12px 14px 6px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2}
+#estate-dialog .bonus-group h3{display:flex;align-items:center;gap:8px;margin:0;font:600 17px/1.25 'Outfit',sans-serif;color:#3f3827}
+#estate-dialog .bonus-group h3>.game-art{flex:none;width:28px;height:28px;object-fit:contain}
+#estate-dialog .bonus-total{margin:6px 0 0;font-size:14px;font-weight:700;line-height:1.35;color:#3f6b2c}
+#estate-dialog .bonus-list{margin:4px 0 0;padding:0;list-style:none}
+#estate-dialog .bonus-row{display:flex;align-items:center;gap:10px;padding:9px 0}
+#estate-dialog .bonus-row+.bonus-row{border-top:1px solid #e9e1d4}
+#estate-dialog .bonus-row>div{flex:1;min-width:0}
+#estate-dialog .bonus-row strong{display:block;font-size:14px;line-height:1.3;color:#3f3827;overflow-wrap:anywhere}
+#estate-dialog .bonus-row small{display:block;margin-top:2px;font-size:12px;line-height:1.4;color:#8f816f}
+#estate-dialog .bonus-chip{flex:none;max-width:48%;padding:2px 9px;border-radius:999px;background:#eee6da;color:#766653;font:700 12px/1.5 'DM Sans',sans-serif;text-align:center}
+#estate-dialog .bonus-row.is-active .bonus-chip{background:#dcebcf;color:#3f6b2c}
+#estate-dialog .bonus-row.is-next strong{color:#8a7c69}
+#estate-dialog .bonus-row.is-next small{color:#9a8d7a}
+#estate-dialog .bonus-row.is-next .bonus-chip{background:none;box-shadow:inset 0 0 0 1px #ddd3c4;color:#8a7c69;font-weight:600}
+#estate-dialog .bonus-note{margin:0;padding:8px 0 4px;border-top:1px solid #e9e1d4;font-size:12px;line-height:1.4;color:#8f816f}
 /* Change your email (28 Sep 2026): the new address and the password, then the code sent to the new address. */
 .email-change-form{display:grid;gap:10px;margin:0 0 10px;text-align:start}
 .email-change-form label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:700}

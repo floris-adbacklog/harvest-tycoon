@@ -2,9 +2,18 @@ import {MASTER_BRANCHES,MASTER_FROM,masterPoints,masterFree,masterRank,masterBon
 import {MEDAL_NAMES} from './medal-notice.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt,MEDAL_ART} from './visual-icons.js';
+import {bonusOverview} from './bonus-overview.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 const number=n=>n.toLocaleString('en-US');
+// Each tab opens with one short line next to its icon, not an icon, a big heading and a paragraph.
+const lead=(icon,text)=>`<p class="estate-lead"><span class="estate-icon"><i data-lucide="${icon}"></i></span><span>${text}</span></p>`;
+// The Bonuses tab (8 Oct 2026) opens with the diamond boosts at level 10 (FEATURE_LEVELS.boosts); every other tab is its own feature.
+const gate=tab=>tab==='bonuses'?'boosts':tab;
+// Bonuses: a card per group with its total in green, a row per bonus with its value in a chip at the end, and the next bonus of
+// the group dimmed (public/bonus-overview.js). Separate elements, never a " · " between them.
+const bonusRow=r=>`<li class="bonus-row ${r.active?'is-active':'is-next'}"><div><strong>${r.name}</strong>${r.sub?`<small>${r.sub}</small>`:''}</div><span class="bonus-chip">${r.value}</span></li>`;
+export const bonusesMarkup=({groups})=>`${lead('sparkles','Every bonus your farm has now, and the next one to get.')}<div class="bonus-groups">${groups.map(g=>`<section class="bonus-group"><h3>${art(g.art)}<span>${g.title}</span></h3>${g.totals.map(t=>`<p class="bonus-total">${t.text}</p>`).join('')}<ul class="bonus-list">${g.rows.map(bonusRow).join('')}</ul>${g.note?`<p class="bonus-note">${g.note}</p>`:''}</section>`).join('')}</div>`;
 export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotice}){
  let tab='projects',lastReadiness='',stallWaiting=null,medalWaiting=null;
  const projectReady=()=>Boolean(state.estate.job&&farmNow()>=state.estate.job.readyAt);
@@ -27,15 +36,16 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  }
  async function act(action,message){try{const result=await runAction(action);onChange();render();$('estate-feedback').textContent=typeof message==='function'?message(result):message;notify($('estate-feedback').textContent);}catch(error){$('estate-feedback').textContent=error.message;notify(error.message);}}
  function open(section='projects'){
-  if(!featureUnlocked(state,section)){notify(featureUnlockHint(section));return;}
+  if(!featureUnlocked(state,gate(section))){notify(featureUnlockHint(gate(section)));return;}
   tab=section;document.querySelectorAll('dialog[open]').forEach(d=>d.close());render();$('estate-dialog').showModal();icons();
  }
- // Each tab opens with one short line next to its icon, not an icon, a big heading and a paragraph.
- const lead=(icon,text)=>`<p class="estate-lead"><span class="estate-icon"><i data-lucide="${icon}"></i></span><span>${text}</span></p>`;
  function render(){
-  document.querySelectorAll('[data-estate-tab]').forEach(b=>{b.hidden=!featureUnlocked(state,b.dataset.estateTab);b.classList.toggle('active',b.dataset.estateTab===tab);b.setAttribute('aria-pressed',String(b.dataset.estateTab===tab));});
+  document.querySelectorAll('[data-estate-tab]').forEach(b=>{b.hidden=!featureUnlocked(state,gate(b.dataset.estateTab));b.classList.toggle('active',b.dataset.estateTab===tab);b.setAttribute('aria-pressed',String(b.dataset.estateTab===tab));});
+  // 8 Oct 2026: the Farm stall has its own ways in (its icon on the farm and the Farm stall tile), so it has no tab here. Opened for the
+  // stall, the window is just the stall: no Estate tabs, titled like its tile.
+  const alone=tab==='stall',dlg=$('estate-dialog');for(const el of [dlg.querySelector?.('.estate-tabs'),dlg.querySelector?.('.dialog-heading .eyebrow')])if(el)el.hidden=alone;$('estate-title').textContent=alone?'Farm stall':'Your growing estate';
   $('estate-feedback').textContent='';
-  if(tab==='projects')renderProjects();if(tab==='stall')renderStall();if(tab==='chores')renderChores();if(tab==='mastery')renderMastery();if(tab==='master')renderMaster();
+  if(tab==='projects')renderProjects();if(tab==='stall')renderStall();if(tab==='chores')renderChores();if(tab==='mastery')renderMastery();if(tab==='master')renderMaster();if(tab==='bonuses')renderBonuses(true);
   lastReadiness=readiness();icons();
  }
  function renderProjects(){
@@ -92,6 +102,9 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
   $('estate-content').innerHTML=`${lead('star',`Every level after ${MASTER_FROM} gives a Master point. Spend each one on a bonus that lasts.`)}<div class="mastery-total"><strong>${free} ${free===1?'point':'points'} to spend</strong><span>${total} earned in all · the next one at level ${MASTER_FROM+total+1}</span></div><div class="daily-list">${cards}</div>`;
   document.querySelectorAll('[data-master]').forEach(b=>b.onclick=()=>act({type:'master_spend',branch:b.dataset.master},r=>`${r.name} is now rank ${r.rank}.${r.free?` ${r.free} ${r.free===1?'point':'points'} left.`:''}`));
  }
+ // Written again only when something on it changes: a timer's minute, a boost that starts or ends (tick, every half second).
+ let bonusesShown='';
+ function renderBonuses(always=false){const html=bonusesMarkup(bonusOverview(state,farmNow()));if(!always&&html===bonusesShown)return;bonusesShown=html;$('estate-content').innerHTML=html;icons();}
  function readiness(){return [tab,state.estate.job&&farmNow()>=state.estate.job.readyAt,...Object.keys(CHORES).map(id=>farmNow()>=(state.chores[id]??0))].join('|');}
  function refresh(){
   notices();
@@ -103,6 +116,7 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
   if(lastReadiness!==readiness()){render();return;}
   if(tab==='stall'){$('stall-balance').innerHTML=`${art('coins')}${number(s.available)}`;$('stall-meter').value=s.balance;$('stall-capacity').textContent=stallNote(s);$('stall-collect').disabled=s.available<1;document.querySelector('.stall-hero')?.classList.toggle('is-full',s.balance>=s.capacity);}
   if(tab==='chores')document.querySelectorAll('[data-chore]').forEach(b=>{const s=choreStatus(state,b.dataset.chore,farmNow()),shown=choreButton(s);b.textContent=shown.text;b.classList.toggle('is-waiting',shown.waiting);b.disabled=s.locked||s.remaining>0;});
+  if(tab==='bonuses')renderBonuses();
   if(tab==='projects'&&state.estate.job){const job=state.estate.job;$('project-clock').textContent=farmNow()>=job.readyAt?'Ready to complete':`${formatDuration(job.readyAt-farmNow())} remaining`;$('project-progress').value=Math.min(100,(farmNow()-job.startedAt)/(job.readyAt-job.startedAt)*100);}
  }
  // The Estate button opens what waits: a finished chapter, else a stall worth emptying, else a medal to collect (Oct 2026); otherwise the
