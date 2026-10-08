@@ -26,7 +26,7 @@ test('the "!" sits on the phone menu tile and the More button, not on the map pi
  assert.match(growth,/\[data-menu-utility="stall"\]'\)\?\.classList\.toggle\('has-dot',waiting\)/);
  assert.doesNotMatch(growth,/utility-label/,'the map pin stays a plain picture');
  assert.doesNotMatch(growth,/'G'/);
- assert.match(growth,/\$\('estate-button'\)\.onclick=\(\)=>open\(!projectReady\(\)&&featureUnlocked\(state,'mastery'\)&&medalsWaiting\(state\)\.length\?'mastery':\['projects','chores','mastery'\]\.find\(t=>featureUnlocked\(state,t\)\)\?\?'projects'\);/,'the Estate button never opens the stall');
+ assert.match(growth,/\$\('estate-button'\)\.onclick=\(\)=>open\(!projectReady\(\)&&featureUnlocked\(state,'mastery'\)&&medalsWaiting\(state\)\.length\?'mastery':\['projects','mastery'\]\.find\(t=>featureUnlocked\(state,t\)\)\?\?'projects'\);/,'the Estate button never opens the stall');
  assert.match(read('public/farm.html'),/<em id="estate-dot" hidden>!<\/em>/);
  assert.match(read('public/mobile-ui.js'),/&&!menu\.querySelector\('\[data-menu-utility="stall"\]'\)\?\.classList\.contains\('has-dot'\)/);
  assert.doesNotMatch(read('public/icons.css'),/\.utility-label\.has-dot/);

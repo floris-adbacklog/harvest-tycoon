@@ -149,10 +149,11 @@ test('the Market wagon and the Loading crane count as bonuses, and picking a her
  assert.equal(next.sub,'Batches in one barn take 35% less time.');
 });
 
-test('the Estate window has no Stall tab: the stall opens on its own, from its icon and its tile, titled Farm stall',()=>{
+test('the Estate window has no Stall or Chores tab: each opens on its own, from its icon and its tile, titled like its tile',()=>{
  const html=read('public/farm.html'),ui=read('public/growth-ui.js'),game=read('public/game.js');
- assert.doesNotMatch(html,/data-estate-tab="stall"/);
+ assert.doesNotMatch(html,/data-estate-tab="(stall|chores)"/);
+ assert.match(html,/data-menu-utility="chores"/,'the Farm chores tile stays');
  assert.match(html,/data-menu-utility="stall"/,'the Farm stall tile stays');
  assert.match(game,/key==='stall'\|\|key==='chores'\|\|key==='mastery'\)growth\.open\(key\)/,'its icon and tile still open it');
- assert.match(ui,/const alone=tab==='stall',dlg=\$\('estate-dialog'\);for\(const el of \[dlg\.querySelector\?\.\('\.estate-tabs'\),dlg\.querySelector\?\.\('\.dialog-heading \.eyebrow'\)\]\)if\(el\)el\.hidden=alone;\$\('estate-title'\)\.textContent=alone\?'Farm stall':'Your growing estate';/);
+ assert.match(ui,/const alone=\{stall:'Farm stall',chores:'Farm chores'\}\[tab\],dlg=\$\('estate-dialog'\);for\(const el of \[dlg\.querySelector\?\.\('\.estate-tabs'\),dlg\.querySelector\?\.\('\.dialog-heading \.eyebrow'\)\]\)if\(el\)el\.hidden=!!alone;\$\('estate-title'\)\.textContent=alone\?\?'Your growing estate';/);
 });

@@ -844,7 +844,7 @@
 "Chore":"public/wiki-content.js",
 "Chore champion":"public/farm-state.js",
 "Chore time":"public/farm-state.js",
-"Chores":"public/farm.html",
+"Chores":"src/leaderboard.js",
 "Chores done":"src/profile-stats.js",
 "Chrome":"src/browser-tip.js",
 "Chrome so your farm is easy to find again and you get reminders when your crops are ready":"src/browser-tip.js",

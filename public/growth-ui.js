@@ -41,9 +41,9 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  }
  function render(){
   document.querySelectorAll('[data-estate-tab]').forEach(b=>{b.hidden=!featureUnlocked(state,gate(b.dataset.estateTab));b.classList.toggle('active',b.dataset.estateTab===tab);b.setAttribute('aria-pressed',String(b.dataset.estateTab===tab));});
-  // 8 Oct 2026: the Farm stall has its own ways in (its icon on the farm and the Farm stall tile), so it has no tab here. Opened for the
-  // stall, the window is just the stall: no Estate tabs, titled like its tile.
-  const alone=tab==='stall',dlg=$('estate-dialog');for(const el of [dlg.querySelector?.('.estate-tabs'),dlg.querySelector?.('.dialog-heading .eyebrow')])if(el)el.hidden=alone;$('estate-title').textContent=alone?'Farm stall':'Your growing estate';
+  // 8 Oct 2026: the Farm stall and the Farm chores have their own ways in (their icons on the farm and their tiles), so they have no tab
+  // here. Opened for one of them, the window is just that one: no Estate tabs, titled like its tile.
+  const alone={stall:'Farm stall',chores:'Farm chores'}[tab],dlg=$('estate-dialog');for(const el of [dlg.querySelector?.('.estate-tabs'),dlg.querySelector?.('.dialog-heading .eyebrow')])if(el)el.hidden=!!alone;$('estate-title').textContent=alone??'Your growing estate';
   $('estate-feedback').textContent='';
   if(tab==='projects')renderProjects();if(tab==='stall')renderStall();if(tab==='chores')renderChores();if(tab==='mastery')renderMastery();if(tab==='master')renderMaster();if(tab==='bonuses')renderBonuses(true);
   lastReadiness=readiness();icons();
@@ -121,8 +121,8 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  }
  // The Estate button opens what waits: a finished chapter, else a medal to collect (Oct 2026); otherwise the projects, or before they
  // open at 27 (on a computer the button is there from Medals at level 7) its first open tab. Never the stall (8 Oct 2026): it has its own
- // icon and tile and opens on its own, so the Estate button showed only the stall whenever coins waited there.
- $('estate-button').onclick=()=>open(!projectReady()&&featureUnlocked(state,'mastery')&&medalsWaiting(state).length?'mastery':['projects','chores','mastery'].find(t=>featureUnlocked(state,t))??'projects');
+ // icon and tile and opens on its own, so the Estate button showed only the stall whenever coins waited there. Nor the chores, for the same reason.
+ $('estate-button').onclick=()=>open(!projectReady()&&featureUnlocked(state,'mastery')&&medalsWaiting(state).length?'mastery':['projects','mastery'].find(t=>featureUnlocked(state,t))??'projects');
  document.querySelectorAll('[data-estate-tab]').forEach(b=>b.onclick=()=>open(b.dataset.estateTab));
  return {open,refresh,tick};
 }
