@@ -7,13 +7,28 @@ import {pathToFileURL} from 'node:url';
 import {WIKI_SITE,WIKI_COPY_ICON} from '../public/wiki-link.js';
 import {LANGUAGES} from '../public/languages.js';
 import {APP_STORE_URL} from '../public/game-links.js';
-import {FAMILY_CONFIG,FAMILY_MIN_LEVEL,STARTER_LEVEL} from '../game/farm-state.js';
+import {FAMILY_CONFIG,FAMILY_MIN_LEVEL,STARTER_LEVEL,ITEMS,BUILDINGS,EVENT_LEAGUES} from '../game/farm-state.js';
 import {PAYMENT_PACKS,STARTER_WINDOW,OFFER,PASS,passOnSale} from '../game/payments.js';
 import {ldScript,breadcrumbs,PLAY_URL} from './structured-data.mjs';
 import {appStoreAddress} from './app-store-links.mjs';
 
 const SITE='https://www.harvesttycoon.com';
 const esc=value=>String(value).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+// Every picture on the website wiki says what it shows (9 Oct 2026): Bing's site scan reads alt="" as a missing alt. The name is the
+// game's own name of the crop, good or building, a league's name, else the name written right beside it. Each one is aria-hidden: that
+// name is always written beside it (or the row of small pictures it sits in is hidden from screen readers already), so a screen reader
+// still reads every name once. How to play in the game keeps alt="" (public/visual-icons.js art()).
+const ENTITY={amp:'&',lt:'<',gt:'>',quot:'"',rsquo:'’',nbsp:' '};
+const plainText=html=>html.replace(/&(amp|lt|gt|quot|rsquo|nbsp);/g,(all,name)=>ENTITY[name]).replace(/\s+/g,' ').trim();
+const BESIDE=/^(?:\s*<(?!\/|img\b|input\b|span class="game-art)[a-z][^>]*>)*\s*([^<]*\p{L}[^<]*)/u;
+export function namePictures(html,fallback=''){
+ return html.replace(/<img\b([^>]*?) alt=""([^>]*)>/g,(tag,before,after,at)=>{
+  const attrs=before+after,key=attrs.match(/ data-art="([^"]+)"/)?.[1],league=attrs.match(/\/league-([a-z]+)\.webp"/)?.[1];
+  const beside=html.slice(at+tag.length).match(BESIDE)?.[1],file=attrs.match(/ src="[^"]*\/([^/."]+)\.[a-z]+"/)?.[1]??'';
+  const name=(key&&(ITEMS[key]?.name??BUILDINGS[key]?.name))||(league&&EVENT_LEAGUES.find(l=>l.id===league)?.name)||(beside&&plainText(beside))||fallback||(key??file).replace(/-/g,' ').replace(/^./,c=>c.toUpperCase());
+  return `<img${before} alt="${esc(name)}"${/ aria-hidden=/.test(attrs)?'':' aria-hidden="true"'}${after}>`;
+ });
+}
 
 // Install the app on the website (30 Sep 2026): where the browser offers to install (Android, Chrome and Edge on a computer) the
 // button in Getting started shows and opens that offer; elsewhere it stays hidden and the steps say how. Only on that page.
@@ -41,6 +56,7 @@ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeT
 open();addEventListener('hashchange',open);var bar=document.querySelector('.wiki-jump');if(!bar)return;var wrap=bar.parentElement;function fade(){wrap.classList.toggle('is-scrollable',bar.scrollWidth>bar.clientWidth+2);wrap.classList.toggle('at-end',bar.scrollLeft+bar.clientWidth>=bar.scrollWidth-4);}
 fade();bar.addEventListener('scroll',fade,{passive:true});addEventListener('resize',fade);})();</script>`;
 function page({path,title,heading,description,body,data=null}){
+ body=namePictures(body);
  return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#214d36">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">
@@ -115,10 +131,11 @@ ${topics.map(t=>`- [${t.title}](${SITE}/wiki/${t.id}): ${t.blurb}`).join('\n')}
 `;
 }
 
-// The search data: [label, topic title, link, picture key, words] per entry (the first of each label in a topic), pictures once.
+// The search data: [label, topic title, link, picture key, words] per entry (the first of each label in a topic), pictures once, each
+// named like the pages' pictures (namePictures, 9 Oct 2026).
 export function searchData(index,art){
  const seen=new Set(),arts={},items=[];
- for(const e of index){const key=`${e.topic}:${e.label}`;if(seen.has(key))continue;seen.add(key);arts[e.art]??=art(e.art);items.push([e.label,e.topicTitle,`/wiki/${e.topic}${e.anchor?`#${e.anchor}`:''}`,e.art,e.text]);}
+ for(const e of index){const key=`${e.topic}:${e.label}`;if(seen.has(key))continue;seen.add(key);arts[e.art]??=namePictures(art(e.art),e.label);items.push([e.label,e.topicTitle,`/wiki/${e.topic}${e.anchor?`#${e.anchor}`:''}`,e.art,e.text]);}
  return {arts,items};
 }
 

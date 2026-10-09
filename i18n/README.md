@@ -28,6 +28,9 @@ language, from `public/i18n/<code>.json` (`{"English text": "translation"}`). En
   wiki and the legal pages stay English.
 - The app page (`/app`, 4 Oct 2026) is built the same way from `public/app.html` (`/es/app`, ...): a missing translation
   of an `app.html` text stops the deploy build too.
+- A picture's alt is a text like any other (9 Oct 2026): Bing's site scan reads an empty alt as a missing one, so every picture
+  on the sign-in page has a name, also a small one beside its own text (`aria-hidden="true"`, so a screen reader reads that text
+  once), and each name needs its translations (`tests/image-alt.test.mjs`).
 
 Texts that are cut by markup arrive in pieces (`Beginner guide complete! +` … `XP and {0} diamonds.`): translate each
 piece so the pieces still read as one sentence in their order. In Japanese and Chinese a piece that ends with 。！？： gets no

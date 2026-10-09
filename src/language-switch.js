@@ -4,7 +4,9 @@ import {chosenLanguage,chooseLanguage} from '../public/i18n.js';
 // each with its flag. Picking one saves it on this device (the same choice as Settings > Language) and opens the page
 // again in that language: its own page (/es/, English on '/'; Oct 2026), so a language page never opens itself again.
 // From seven languages on the menu has two columns, so it stays small.
-const flag=code=>`<img src="/assets/icons/flag-${code}.webp" alt="" width="20" height="20">`;
+// A flag carries its language's name (9 Oct 2026: Bing's site scan reads an empty alt as a missing one), hidden from screen readers:
+// the name is written right beside it.
+export const flag=(code,name)=>`<img src="/assets/icons/flag-${code}.webp" alt="${name}" aria-hidden="true" width="20" height="20">`;
 const chevron='<svg class="language-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const check='<svg class="language-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
 
@@ -13,8 +15,8 @@ export function renderLanguageSwitch(host=document.getElementById('language-swit
  const ready=LANGUAGES.filter(l=>l.ready);
  if(ready.length<2){host.hidden=true;return;}
  const current=chosenLanguage(),name=(ready.find(l=>l.code===current)??ready[0]).name;
- host.innerHTML=`<button type="button" class="language-button" aria-haspopup="listbox" aria-expanded="false">${flag(current)}<span lang="${current}">${name}</span>${chevron}</button>`
-  +`<ul class="language-menu${ready.length>6?' is-wide':''}" role="listbox" aria-label="Language" hidden>${ready.map(({code,name})=>`<li role="option" tabindex="-1" data-code="${code}" lang="${code}" aria-selected="${code===current}">${flag(code)}<span>${name}</span>${code===current?check:''}</li>`).join('')}</ul>`;
+ host.innerHTML=`<button type="button" class="language-button" aria-haspopup="listbox" aria-expanded="false">${flag(current,name)}<span lang="${current}">${name}</span>${chevron}</button>`
+  +`<ul class="language-menu${ready.length>6?' is-wide':''}" role="listbox" aria-label="Language" hidden>${ready.map(({code,name})=>`<li role="option" tabindex="-1" data-code="${code}" lang="${code}" aria-selected="${code===current}">${flag(code,name)}<span>${name}</span>${code===current?check:''}</li>`).join('')}</ul>`;
  host.hidden=false;
  const button=host.querySelector('.language-button'),menu=host.querySelector('.language-menu'),options=()=>[...menu.querySelectorAll('[role=option]')];
  const open=()=>{menu.hidden=false;button.setAttribute('aria-expanded','true');(options().find(o=>o.getAttribute('aria-selected')==='true')??options()[0]).focus();};
