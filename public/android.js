@@ -6,6 +6,14 @@ export function androidApp(win=globalThis.window){
  if(marked(win))return true;
  try{return Boolean(win?.parent&&win.parent!==win&&marked(win.parent));}catch{return false;}
 }
+// Our Android app from Google Play (9 Oct 2026, the pop-up group "Android app"): marked data-app="android" without the iPhone app's
+// data-app-os="ios" and without the Galaxy Store app's data-web-billing (the same wrapper, not from Google Play). Never in a browser and
+// never on CrazyGames, Kongregate or itch: nothing marks those (public/android-app.js).
+export function googlePlayApp(win=globalThis.window){
+ const marked=w=>{try{const html=w?.document?.documentElement;return html?.getAttribute?.('data-app')==='android'&&html.getAttribute('data-app-os')!=='ios'&&!html.hasAttribute('data-web-billing');}catch{return false;}};
+ if(marked(win))return true;
+ try{return Boolean(win?.parent&&win.parent!==win&&marked(win.parent));}catch{return false;}
+}
 // The app's own share sheet (agreed with the Android app; the WebView has no navigator.share): the page goes to
 // shareapp://shareapp?<message>&url=<url>, both parts encoded in full, and the app shares "message", a new line and the link. A message
 // that ends with the link already (Share my farm's text) gives it up here, so the link comes once.
