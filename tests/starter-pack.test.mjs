@@ -27,7 +27,7 @@ test('Starter Pack verifies €2.99, 500 diamonds and 10000 coins against exact 
  assert.throws(()=>validatePaidSession(s,p,{...items,data:[{quantity:1,price:{id:PAYMENT_PACKS['1250'].price}}]}));
 });
 test('seed-box sorting starts at 35%, keeps practice and caps at 60% after 7 attempts',()=>{
- const s=createFarm(start);s.chorePractice={weeds:20,troughs:20,sorting:0};const rest=1200000;
+ const s=createFarm(start);s.chorePractice={weeds:20,troughs:20,sorting:0};const rest=3600000;   // an hour since 9 Oct 2026 (20 minutes before)
  assert.equal(choreStatus(s,'sorting',start).chance,35);
  for(let n=0;n<7;n++)applyFarmAction(s,{type:'chore',id:'sorting'},start+n*rest,()=>0);
  assert.equal(choreStatus(s,'sorting',start+7*rest).chance,60);

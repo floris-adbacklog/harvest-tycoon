@@ -7,7 +7,7 @@ import {createToast} from './toast-ui.js';
 // sweep or tractor run, never a window), and the yellow "!" (growth-ui.js) stays on Medals until it is collected. Collecting stays the
 // farmer's own tap.
 export const MEDAL_NAMES=['Bronze medal','Silver medal','Gold medal','Platinum medal'];
-// What an action earned: waiting now and not before it. Nothing while Medals is still closed (below level 7): those wait quietly and
+// What an action earned: waiting now and not before it. Nothing while Medals is still closed (below level 14 since 9 Oct 2026): those wait quietly and
 // only light the "!" once it opens, like the ones a farm already had when the game started (no toast storm at launch).
 export function newMedals(before,state){
  if(!featureUnlocked(state,'mastery'))return [];

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,beginnerProgress,BEGINNER_QUESTS,BEGINNER_STEP_XP,BEGINNER_REWARD,levelOf,levelProgress,xpForLevel,XP_CURVE,convertXpCurve,CROPS,CROP_LEVELS,BUILDING_LEVELS,RECIPE_LEVELS,FEATURE_LEVELS,DELIVERY_LEVELS,FAMILY_MIN_LEVEL} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,applyFarmAction as act,beginnerProgress,BEGINNER_QUESTS,BEGINNER_STEP_XP,BEGINNER_REWARD,levelOf,levelProgress,xpForLevel,XP_CURVE,convertXpCurve,CROPS,CROP_LEVELS,BUILDING_LEVELS,RECIPE_LEVELS,FEATURE_LEVELS,DELIVERY_LEVELS,FAMILY_MIN_LEVEL,cropUnlocked,featureUnlocked,deliveryTierUnlocked,recipeLevel} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,21,12);
 
 test('the guide starts with the money loop: harvest, sell, plant',()=>{
@@ -15,7 +15,7 @@ test('every guide step pays XP, so following the guide takes a new farmer to lev
  act(s,{type:'field',id:6,action:'plant',crop:'wheat'},now);act(s,{type:'field',id:6,action:'water'},now);
  assert(levelOf(s)>=2,'level 2 arrives after about four steps, in the first minutes');
  act(s,{type:'produce',recipe:'eggs'},now);act(s,{type:'checkin'},now);
- act(s,{type:'field',id:6,action:'tend'},now+10000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
+ act(s,{type:'field',id:6,action:'tend'},now+22000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
  assert.equal(s.onboarding.completed,BEGINNER_QUESTS.length-1,'nine steps done without a single claim');
  act(s,{type:'beginner_claim',id:'collect'},now+300000);
@@ -59,21 +59,45 @@ test('slow crops pay more XP so hours of waiting still feel like progress; quick
  for(const key of ['barley','greenbeans','cabbage','cauliflower','pumpkin','redcabbage','sunflower'])assert(perHour(key)>=2.5,`${key} ${perHour(key).toFixed(1)}/h`);
  assert(CROPS.apples.xp>22&&CROPS.berries.xp>18);
 });
-test('hands-on jobs come at level 8, chores wait until level 10, and no level unlocks more than four things',()=>{
- assert.equal(FEATURE_LEVELS.activities,8);assert.equal(FEATURE_LEVELS.chores,10);assert.equal(FEATURE_LEVELS.mastery,7);
- const perLevel={};const add=(level,what)=>{(perLevel[level]??=[]).push(what);};
+// 9 Oct 2026 (the owner's call: new things open gradually, without a flood): the first half hour opened about one new thing a minute.
+// What a level-up card can show, per level: crops, buildings, recipes and features (the order tiers come with Delivery orders).
+const opensAt=()=>{const perLevel={};const add=(level,what)=>{(perLevel[level]??=[]).push(what);};
  for(const [k,l] of Object.entries(CROP_LEVELS))if(l>1)add(l,'crop:'+k);
- for(const [k,l] of Object.entries(BUILDING_LEVELS))if(l>1)add(l,'building:'+k);
+ for(const [k,l] of Object.entries(BUILDING_LEVELS))if(l>1&&k!=='familyhall')add(l,'building:'+k);
  for(const [k,l] of Object.entries(RECIPE_LEVELS))if(l>1)add(l,'recipe:'+k);
- for(const [k,l] of Object.entries(FEATURE_LEVELS))if(k!=='activities'&&k!=='family')add(l,'feature:'+k);
- for(const [k,l] of Object.entries(DELIVERY_LEVELS))add(l,'orders:'+k);
- for(let level=2;level<=12;level++){const things=perLevel[level]??[];assert(things.length>=2,`level ${level} has only ${things.join(', ')||'nothing'}`);assert(things.length<=4,`level ${level}: ${things.join(', ')}`);}
+ for(const [k,l] of Object.entries(FEATURE_LEVELS))add(l,'feature:'+k);
+ return perLevel;};
+test('every level up to 20 opens one to three new things, and levels 2 to 10 twenty in all (26 before 9 Oct 2026)',()=>{
+ assert.equal(FEATURE_LEVELS.activities,8);assert.equal(FEATURE_LEVELS.chores,15);assert.equal(FEATURE_LEVELS.mastery,14);assert.equal(FEATURE_LEVELS.cart,7);
+ const perLevel=opensAt();
+ for(let level=2;level<=20;level++){const things=perLevel[level]??[];assert(things.length>=1,`level ${level} has nothing`);assert(things.length<=3,`level ${level}: ${things.join(', ')}`);}
+ let first=0;for(let level=2;level<=10;level++)first+=(perLevel[level]??[]).length;assert.equal(first,20);
  assert.equal(FAMILY_MIN_LEVEL,10);
+ // Every goal an event can ask for is open when events open (level 15): chores, fertilizer and green beans included.
+ assert(FEATURE_LEVELS.chores<=15&&RECIPE_LEVELS.fertilizer<=15&&CROP_LEVELS.greenbeans<=15);
+ // A crop comes with its first use: green beans with the vegetable stew, and the Packing shed with the fresh salad.
+ assert.equal(CROP_LEVELS.greenbeans,RECIPE_LEVELS.stew);assert.equal(RECIPE_LEVELS.salad,BUILDING_LEVELS.packing);
 });
-// Farm chores (4 -> 10) and A helping hand (6 -> 8) were moved later on purpose; a farm that already had them keeps them (tests/helping-hands.test.mjs).
-test('nothing else unlocks later than before, so every existing player keeps what they already use',()=>{
- const before={mastery:9};
- for(const [key,level] of Object.entries(before))assert(FEATURE_LEVELS[key]<=level,key);
+// Farm chores (4 -> 10 -> 15), A helping hand (6 -> 8) and seven more unlocks (9 Oct 2026) were moved later on purpose; a farm that
+// already had one keeps it (tests/helping-hands.test.mjs and below).
+test('what moved later on 9 Oct 2026 stays open for every farm that was already past its old level, or had used it',()=>{
+ const moved=[['crops','greenbeans',7,12],['features','cart',5,7],['features','mastery',7,14],['features','chores',10,15],['orderTiers','quick',5,7],['recipes','salad',10,11],['recipes','vegetables',11,13],['recipes','fertilizer',9,14],['recipes','windfeed',7,18]];
+ const levels={crops:CROP_LEVELS,features:FEATURE_LEVELS,orderTiers:DELIVERY_LEVELS,recipes:RECIPE_LEVELS};
+ const open=(s,kind,key)=>kind==='crops'?cropUnlocked(s,key):kind==='features'?featureUnlocked(s,key):kind==='orderTiers'?deliveryTierUnlocked(s,key):recipeLevel(s,key)<=levelOf(s);
+ // A farm saved before this change (progression version 5), at a given level, then opened with today's rules.
+ const saved=level=>{const s=createFarm(now);s.progression={mode:'guided',version:5,fields:s.progression.fields};s.xp=xpForLevel(level);s.xpOffset=0;normalizeFarm(s,now);return s;};
+ for(const [kind,key,from,to] of moved){
+  assert.equal(levels[kind][key],to,`${key} opens at ${to}`);
+  const had=saved(from),waiting=saved(from-1);
+  assert.equal(had.progression.version,6);assert.ok(open(had,kind,key),`${key}: a farm at level ${from} keeps it`);
+  assert.ok(!open(waiting,kind,key),`${key}: a farm at level ${from-1} waits for level ${to}`);
+  waiting.xp=xpForLevel(to);assert.ok(open(waiting,kind,key),`${key}: and gets it at ${to}`);
+ }
+ // A farm that already used a feature keeps it at any level; migrating twice changes nothing; a new farm starts at version 6.
+ const used=createFarm(now);used.progression={mode:'guided',version:5,fields:used.progression.fields};used.xp=xpForLevel(4);used.stats.deliveries=1;normalizeFarm(used,now);
+ assert.ok(featureUnlocked(used,'cart')&&deliveryTierUnlocked(used,'quick'));
+ const again=structuredClone(saved(30));const once=structuredClone(again);normalizeFarm(again,now);assert.deepEqual(again,once);
+ assert.equal(createFarm(now).progression.version,6);assert.equal(createFarm(now).progression.kept,undefined);
 });
 
 // 27 Sep 2026 (curve 5): levels 10 to 30 cheaper. 10 -> 20 felt four and a half times as long as 1 -> 10, right as the beginner boost ran out.
@@ -150,4 +174,65 @@ test('curve 6: from level 90 every level asks twice the XP; farms convert both w
  assert.equal(top.xp,531068);assert.equal(levelOf(top),102);assert.equal(levelProgress(top).target,25584);
  // normalizeFarm converts to the curve that is switched on.
  const any={...createFarm(now),xp:392898,xpOffset:0,xpCurve:5};normalizeFarm(any,now);assert.equal(any.xpCurve,XP_CURVE);assert.equal(levelOf(any),102);
+});
+// 9 Oct 2026 (curve 7): the steps from level 5 to 59 dearer, up to 1.3x from level 10 to 50, back to curve 6's own steps at 60. Every
+// copy learns to read it first (XP_CURVE stays 6), then farms switch; a farm keeps its level and its share of the way to the next one.
+const factor7=level=>level<5?1:level<10?1+(level-5)*.06:level<50?1.3:level<60?1.3-(level-50)*.03:1;
+const xp7=(()=>{const totals=[0,0];return level=>{while(totals.length<=level){const from=totals.length-1;totals.push(totals[from]+Math.round((xp6(from+1)-xp6(from))*factor7(from)));}return totals[level];};})();
+test('curve 7: levels 5 to 59 ask more XP, up to 1.3x, with no jump anywhere; every copy reads it; farms convert both ways keeping level and share',()=>{
+ const step6=level=>xp6(level+1)-xp6(level),step7=level=>xp7(level+1)-xp7(level);
+ assert.equal(XP_CURVE,6,'step 1: every copy reads curve 7 before any farm is on it');
+ for(let level=1;level<=6;level++)assert.equal(xp7(level),xp6(level),`reaching level ${level} costs the same`);
+ assert.deepEqual([5,6,9,10,11,20,49,50,51,59,60,89,90].map(step7),[130,180,397,429,462,832,2574,2626,2720,3334,3388,9165,18824]);
+ for(let level=10;level<50;level++)assert.equal(step7(level),Math.round(step6(level)*1.3),`${level} -> ${level+1} is 1.3x`);
+ for(let level=60;level<300;level++)assert.equal(step7(level),step6(level),`${level} -> ${level+1} as on curve 6`);
+ for(let level=1;level<300;level++)assert(step7(level+1)>step7(level),`steps keep growing: ${level}`);
+ for(let level=10;level<300;level++)if(level!==90)assert(step7(level)/step7(level-1)<1.1,`no jump at ${level}`);
+ assert.deepEqual([10,20,30,50,60,90].map(xp7),[1476,7388,19064,60664,90725,272521]);
+ for(let level=2;level<=300;level++){
+  assert.equal(levelOf({xp:xp7(level),xpOffset:0,xpCurve:7}),level,`curve 7 level ${level}`);
+  assert.equal(levelOf({xp:xp7(level)-1,xpOffset:0,xpCurve:7}),level-1,`curve 7 just below ${level}`);
+ }
+ for(const [level,share] of [[1,.5],[5,.9],[6,0],[9,.5],[10,.2],[14,.99],[20,.3],[50,.5],[59,.4],[60,0],[89,.99],[95,.3],[108,.5],[200,.1]]){
+  const xp=Math.round(xp6(level)+share*step6(level)),s={...createFarm(now),xp,xpOffset:0,xpCurve:6},before=levelProgress(s);
+  convertXpCurve(s,7);const after=levelProgress(s),oneXp=1/Math.min(before.target,after.target);
+  assert.equal(s.xpCurve,7);assert.equal(before.level,level);assert.equal(after.level,level,`level ${level} kept`);
+  assert.ok(Math.abs(after.current/after.target-before.current/before.target)<=oneXp,`level ${level}: same share, give or take one XP`);
+  if(level<6)assert.equal(s.xp,xp,`level ${level}: XP untouched`);
+  const again=structuredClone(s);convertXpCurve(again,7);assert.equal(again.xp,s.xp,'converted once');
+  // And back (a farm-api that is one release behind): the same level and share again.
+  convertXpCurve(again,6);assert.equal(levelOf(again),level);assert.ok(Math.abs(levelProgress(again).current/levelProgress(again).target-before.current/before.target)<=2*oneXp);
+ }
+});
+
+// 9 Oct 2026 (found in review): "Good soil, good harvests" counts fertilizer made at the Windmill and showed from level 8 (the paddock's
+// helping hand gives fertilizer), while the recipe opens at 14. A "made" quest or challenge now waits for a recipe that makes the good.
+test('a quest or daily challenge about making a good only shows once a recipe for it is open, at every level',async()=>{
+ const {QUESTS,DAILY_POOLS,RECIPES,availableDaily,recipeUnlocked}=await import('../game/farm-state.js');
+ const goals=[...QUESTS,...DAILY_POOLS.flat()].filter(q=>q.stat?.startsWith('made_'));
+ assert.ok(goals.some(q=>q.title==='Good soil, good harvests'));
+ for(let level=1;level<=60;level++){
+  const s=createFarm(now);s.coins=1e9;s.xp=xpForLevel(level);s.xpOffset=0;normalizeFarm(s,now);
+  for(const key of Object.keys(s.buildings))if(BUILDING_LEVELS[key]<=level)s.buildings[key].built=true;
+  for(const q of goals)if(availableDaily(s,q))assert.ok(Object.entries(RECIPES).some(([id,r])=>r.output[q.stat.slice(5)]&&recipeUnlocked(s,id)),`level ${level}: ${q.title} shows, but nothing makes ${q.stat.slice(5)}`);
+ }
+ const fertilizer=goals.find(q=>q.title==='Good soil, good harvests'),at=level=>{const s=createFarm(now);s.xp=xpForLevel(level);s.xpOffset=0;normalizeFarm(s,now);for(const key of Object.keys(s.buildings))if(BUILDING_LEVELS[key]<=level)s.buildings[key].built=true;return s;};
+ assert.equal(availableDaily(at(13),fertilizer),false);assert.equal(availableDaily(at(14),fertilizer),true);
+});
+
+// 9 Oct 2026 (found in review): a daily challenge drawn before an update keeps up with its definition (target, reward, the text the
+// languages translate), and what a farm has used stays open even if it met the old levels after a rollback.
+test('a stored daily challenge follows its new definition; a used feature stays open on every load, also after a rollback',async()=>{
+ const {DAILY_POOLS}=await import('../game/farm-state.js');
+ const s=createFarm(now);s.xp=xpForLevel(12);s.xpOffset=0;normalizeFarm(s,now);
+ const honey=DAILY_POOLS.flat().find(q=>q.title==='Honey time');
+ s.daily.tasks=[{...honey,target:3,reward:85,description:'Finish 3 Apiary jobs and collect their Honey.'}];
+ normalizeFarm(s,now+60000);
+ assert.deepEqual([s.daily.tasks[0].target,s.daily.tasks[0].reward,s.daily.tasks[0].description],[2,65,'Finish 2 Apiary jobs and collect their Honey.']);
+ // A version-6 farm that used Medals, chores and deliveries below their new levels (the old rules, after a rollback) keeps them.
+ const back=createFarm(now);back.xp=xpForLevel(11);back.xpOffset=0;back.stats.chores=3;back.stats.deliveries=2;back.mastery.claimed=['corn:0'];
+ normalizeFarm(back,now);
+ assert.equal(back.progression.version,6);for(const key of ['chores','mastery','cart'])assert.ok(featureUnlocked(back,key),key);assert.ok(deliveryTierUnlocked(back,'quick'));
+ const fresh=createFarm(now);fresh.xp=xpForLevel(11);fresh.xpOffset=0;normalizeFarm(fresh,now);
+ assert.ok(!featureUnlocked(fresh,'chores')&&!featureUnlocked(fresh,'mastery'),'a farm that never used them waits for their levels');assert.equal(fresh.progression.kept,undefined);
 });

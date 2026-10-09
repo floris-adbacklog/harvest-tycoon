@@ -29,12 +29,12 @@ test('a regular completion earns guaranteed rewards, advances practice, starts c
  assert.equal(r.success,true);assert.equal(r.coins,27);assert.equal(r.xp,90,'45 XP, doubled by the XP boost');
  assert.equal(s.coins,coins+27+levelGain(level,levelOf(s),'coins'));assert.equal(s.xp,xp+90);assert.deepEqual(s.inventory,inventory);
  assert.equal(s.stats.chores,1);assert.ok(s.onboarding.milestones.chore);
- assert.equal(r.nextChance,64);assert.equal(s.chores.weeds,now+300000);
- assert.throws(()=>act(s,{type:'chore',id:'weeds'},now+299999,()=>{throw Error('must not roll');}),/returns in/);
+ assert.equal(r.nextChance,64);assert.equal(s.chores.weeds,now+900000);
+ assert.throws(()=>act(s,{type:'chore',id:'weeds'},now+899999,()=>{throw Error('must not roll');}),/returns in/);
  assert.equal(s.chorePractice.weeds,1);assert.equal(r.bonus,false);
  const restored=normalizeFarm(JSON.parse(JSON.stringify(s)),now);
  assert.equal(restored.chorePractice.weeds,1);
- assert.equal(act(restored,{type:'chore',id:'weeds'},now+300000,()=>0).bonus,true);
+ assert.equal(act(restored,{type:'chore',id:'weeds'},now+900000,()=>0).bonus,true);
 });
 test('success boundary is strict and a mastered first chore always succeeds',()=>{
  assert.equal(act(createFarm(now),{type:'chore',id:'weeds'},now,()=>.6).bonus,false);
@@ -52,9 +52,9 @@ test('each hands-on station awards an item and Honey has dedicated artwork',()=>
  assert.deepEqual(Object.values(ACTIVE_STATIONS).map(s=>s.item),['lettuce','honey','fertilizer','feed']);
  assert.match(art('honey'),/assets\/icons\/honey.webp/);
 });
-test('chores rest 5 minutes to an hour and pay their XP in full; the chores list counts attempts with the same practice step',()=>{
+test('chores rest 15 minutes to three hours (three times as long since 9 Oct 2026) and pay their XP in full; the chores list counts attempts with the same practice step',()=>{
  const rows=Object.values(CHORES).map(c=>[c.cooldown/60000,c.xp]);
- assert.deepEqual(rows,[[5,45],[10,70],[20,110],[30,150],[45,200],[60,260]]);
+ assert.deepEqual(rows,[[15,45],[30,70],[60,110],[90,150],[135,200],[180,260]]);
  assert.equal(CHORE_PRACTICE_STEP,4);
  const ui=readFileSync(new URL('../public/growth-ui.js',import.meta.url),'utf8');
  assert.match(ui,/const mastery=c=>Math\.ceil\(\(c\.maxChance-c\.baseChance\)\/CHORE_PRACTICE_STEP\);/);

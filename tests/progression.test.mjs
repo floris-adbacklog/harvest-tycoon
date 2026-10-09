@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,normalizeFarm,applyFarmAction as act,CROPS,BUILDINGS,RECIPES,CROP_LEVELS,BUILDING_LEVELS,FEATURE_LEVELS,BUILDING_COSTS,RECIPE_LEVELS,FEATURE_NAMES,cropUnlocked,buildingUnlocked,buildingEligible,buildingCost,constructionNeeds,featureUnlocked,recipeUnlocked,itemAvailable,beginnerProgress,xpForLevel,levelOf,dailyTasks,dailyOrders,DAY_MS,productionJobs,availableDaily,familyOrder,marketHighlights,unlockEntries,formatDuration,itemUnlockLevel} from '../game/farm-state.js';
+import {DAILY_POOLS,createFarm,normalizeFarm,applyFarmAction as act,CROPS,BUILDINGS,RECIPES,CROP_LEVELS,BUILDING_LEVELS,FEATURE_LEVELS,BUILDING_COSTS,RECIPE_LEVELS,FEATURE_NAMES,cropUnlocked,buildingUnlocked,buildingEligible,buildingCost,constructionNeeds,featureUnlocked,recipeUnlocked,itemAvailable,beginnerProgress,xpForLevel,levelOf,dailyTasks,dailyOrders,DAY_MS,productionJobs,availableDaily,familyOrder,marketHighlights,unlockEntries,formatDuration,itemUnlockLevel} from '../game/farm-state.js';
 import {progressionSnapshot,progressionChange,roadmapMarkup} from '../public/progression-ui.js';
 import {ART_KEYS} from '../public/visual-icons.js';
 const now=Date.UTC(2026,8,20,12);
@@ -9,7 +9,7 @@ function level(s,n){s.xp=xpForLevel(n);s.xpOffset=0;}
 function produce(s,recipe,t=now){act(s,{type:'produce',recipe},t);const key=RECIPES[recipe].building,job=productionJobs(s.buildings[key]).at(-1);act(s,{type:'collect',building:key,jobId:job.id},job.readyAt);return job.readyAt;}
 function buyAvailable(s,t=now){for(const key of Object.keys(BUILDINGS).sort((a,b)=>BUILDING_LEVELS[a]-BUILDING_LEVELS[b]))if(buildingCost(s,key)&&buildingEligible(s,key)&&!buildingUnlocked(s,key))act(s,{type:'construct',building:key},t);}
 test('new farm starts with two crops, one production building and only a daily gift',()=>{
- const s=createFarm(now);assert.equal(s.progression.version,5);
+ const s=createFarm(now);assert.equal(s.progression.version,6);
  assert.deepEqual(Object.keys(CROPS).filter(k=>cropUnlocked(s,k)),['corn','wheat']);
  assert.deepEqual(Object.keys(BUILDINGS).filter(k=>buildingUnlocked(s,k)),['farmhouse','coop']);
  assert.ok(s.plots.every(p=>!p.crop||['wheat','corn'].includes(p.crop)));
@@ -76,7 +76,8 @@ test('every level has renewable play, every new building has a viable recipe; th
  for(const id of Object.keys(RECIPES))if((RECIPE_LEVELS[id]??0)>=100)assert.ok(!recipeUnlocked(s,id),`${id} waits for World II`);
  assert.ok(['squashsoup','beeswax','wool','yarn','cloth','cider','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','prizeproduce'].every(k=>outputs.has(k)));
  const levels=Object.entries(CROP_LEVELS).filter(([,n])=>n>1).sort((a,b)=>a[1]-b[1]);
- assert.deepEqual(levels.map(([k])=>k),['lettuce','barley','greenbeans','cabbage','cauliflower','pumpkin','redcabbage','sunflower','apples','berries','squash','polebeans','ciderapples','cherries']);
+ // Green beans at 12 since 9 Oct 2026 (with the vegetable stew, their first use; they were 7).
+ assert.deepEqual(levels.map(([k])=>k),['lettuce','barley','cabbage','cauliflower','greenbeans','pumpkin','redcabbage','sunflower','apples','berries','squash','polebeans','ciderapples','cherries']);
  assert.equal(new Set(levels.map(([,n])=>n)).size,14);
 });
 test('levelled inventory from the Starter Pack cannot bypass seeds, recipes or building locks',()=>{
@@ -97,7 +98,8 @@ test('daily boards respect unlocks and owned production at all 25 levels',()=>{
  }
 });
 test('new delivery tiers append without changing paid, replaced or existing orders',()=>{
- const s=createFarm(now);s.coins=100000;level(s,5);buyAvailable(s);delete s.daily;normalizeFarm(s,now);
+ // Delivery orders open at level 7 (9 Oct 2026; they were 5).
+ const s=createFarm(now);s.coins=100000;level(s,7);buyAvailable(s);delete s.daily;normalizeFarm(s,now);
  const first=structuredClone(dailyOrders(s,now)[0]);assert.equal(s.daily.orderBoard.length,1);s.daily.orders=[0];s.daily.orderRevisions[0]=1;
  level(s,8);buyAvailable(s);dailyOrders(s,now);assert.equal(s.daily.orderBoard.length,2);
  assert.deepEqual(s.daily.orderBoard[0].input,first.input);assert.equal(s.daily.orderBoard[0].coins,first.coins);assert.deepEqual(s.daily.orders,[0]);assert.equal(s.daily.orderRevisions[0],1);
@@ -127,7 +129,7 @@ test('all ten beginner steps still finish in the first session and pay once',()=
  const s=createFarm(now);
  act(s,{type:'field',id:0,action:'harvest'},now);act(s,{type:'field',id:6,action:'plant',crop:'wheat'},now);act(s,{type:'field',id:6,action:'water'},now);
  act(s,{type:'sell',item:'corn',quantity:1},now);act(s,{type:'produce',recipe:'eggs'},now);act(s,{type:'checkin'},now);
- act(s,{type:'field',id:6,action:'tend'},now+10000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
+ act(s,{type:'field',id:6,action:'tend'},now+22000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
  // Steps finish themselves as they are done (in any order they happened); only the last one, with the diamonds, is claimed.
  assert.equal(s.onboarding.completed,9);for(const q of beginnerProgress(s))assert.equal(q.ready,true,q.id);
@@ -141,7 +143,10 @@ test('pre-update guided and legacy saves retain every prior unlock, balance, tim
   for(const key of access.buildings)assert.ok(buildingUnlocked(s,key),`${name}: ${key}`);
   for(const key of access.features)assert.ok(featureUnlocked(s,key),`${name}: ${key}`);
   for(const key of access.recipes)assert.ok(recipeUnlocked(s,key),`${name}: ${key}`);
-  for(const key of ['coins','diamonds','claimed','plots','daily','onboarding','levelRewards'])assert.deepEqual(s[key],state[key],`${name}: ${key}`);
+  for(const key of ['coins','diamonds','claimed','plots','onboarding','levelRewards'])assert.deepEqual(s[key],state[key],`${name}: ${key}`);
+  // Today's challenges stay the same ones; each follows its current target, reward and text (9 Oct 2026: two went from 3 jobs to 2).
+  const today=structuredClone(state.daily);for(const q of today?.tasks??[]){const cur=DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
+  assert.deepEqual(s.daily,today,`${name}: daily`);
   // Every item the save had keeps its count; items added to the game since then start at zero.
   for(const [key,n] of Object.entries(state.inventory))assert.equal(s.inventory[key],n,`${name}: inventory ${key}`);
   for(const key of Object.keys(s.inventory))if(!(key in state.inventory))assert.equal(s.inventory[key],0,`${name}: new item ${key}`);

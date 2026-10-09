@@ -104,9 +104,12 @@ test('the tab never shows a " · ": names, lines and chips are separate elements
  assert.deepEqual([...read('public/bonus-overview.js').matchAll(/from '([^']+)'/g)].map(m=>m[1]),['./farm-state.js']);
 });
 
-test('the Bonuses tab is the last Estate tab and opens with the diamond boosts at level 10',()=>{
+// 9 Oct 2026: the Bonuses tab opens with Medals at level 14 (with the diamond boosts at 10 before). The Estate window is reached
+// through Medals (or the projects, from 27), so when Medals moved from 7 to 14 nothing led to the tab from 10 to 13.
+test('the Bonuses tab is the last Estate tab and opens with Medals at level 14, the way into the Estate window; the boosts stay at 10',()=>{
  assert.match(read('public/farm.html'),/<button data-estate-tab="master" aria-pressed="false" hidden>Master<\/button><button data-estate-tab="bonuses" aria-pressed="false" hidden>Bonuses<\/button><\/div>/);
- assert.equal(FEATURE_LEVELS.boosts,10);
+ assert.equal(FEATURE_LEVELS.boosts,10);assert.equal(FEATURE_LEVELS.mastery,14);
+ assert.match(read('public/progression-ui.js'),/const sideTools=\{'#boosts-button':'boosts','#estate-button':'mastery'\};/,'the Boosts button from 10, the Estate button from Medals');
  // Just enough of the page for the Estate window: its tabs, its content and the dialog.
  const page=()=>{
   const els=new Map(),tabs=['projects','stall','chores','mastery','master','bonuses'].map(t=>({dataset:{estateTab:t},hidden:true,classList:{toggle(){}},setAttribute(){},querySelector:()=>null}));
@@ -115,14 +118,16 @@ test('the Bonuses tab is the last Estate tab and opens with the diamond boosts a
   return {el,tab:t=>tabs.find(b=>b.dataset.estateTab===t)};
  };
  try{
-  for(const [level,shown] of [[9,false],[10,true],[40,true]]){
+  for(const [level,shown] of [[10,false],[13,false],[14,true],[40,true]]){
    const s=farm(level,()=>{},now-2*3600000),{el,tab}=page(),told=[];
-   assert.equal(featureUnlocked(s,'boosts'),shown,`level ${level}`);
+   assert.equal(featureUnlocked(s,'boosts'),true,`level ${level}: the boosts are open`);assert.equal(featureUnlocked(s,'mastery'),shown,`level ${level}: Medals`);
    const ui=createGrowthUI({state:s,runAction:async()=>({}),onChange(){},notify:t=>told.push(t),itemList:()=>'',onNotice(){}});
-   ui.open('mastery');assert.equal(tab('bonuses').hidden,!shown,`level ${level}: the tab`);assert.equal(tab('mastery').hidden,false);
+   // In through Medals, as the Estate button and the Medals tile in More do.
+   ui.open('mastery');assert.equal(el('estate-dialog').open,shown,`level ${level}: the window`);
+   if(shown){assert.equal(tab('bonuses').hidden,false,`level ${level}: the tab`);assert.equal(tab('mastery').hidden,false);}
    el('estate-dialog').open=false;ui.open('bonuses');
    assert.equal(el('estate-dialog').open,shown,`level ${level}: opening it`);
-   if(shown)assert.match(el('estate-content').innerHTML,/class="bonus-groups"/);else assert.deepEqual(told,['Reach level 10 to unlock Diamond boosts.']);
+   if(shown)assert.match(el('estate-content').innerHTML,/class="bonus-groups"/);else assert.deepEqual(told,['Reach level 14 to unlock Medals.','Reach level 14 to unlock Medals.']);
   }
  }finally{delete globalThis.document;}
 });

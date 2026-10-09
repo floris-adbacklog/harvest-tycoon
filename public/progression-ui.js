@@ -50,7 +50,7 @@ export function createProgressionUI({state,isReady,share=null,notify=null}){
  }
  function refresh(){
   tellLevel();
-  // The Estate button (computers; phones have it in More) is there from Medals at level 7 (Oct 2026): a computer has no More menu, so
+  // The Estate button (computers; phones have it in More) is there from Medals at level 14 (level 7 until 9 Oct 2026): a computer has no More menu, so
   // before the projects open at 27 it was no way to Medals at all. Its window shows only the tabs that are open.
   const sideTools={'#boosts-button':'boosts','#estate-button':'mastery'};
   for(const [selector,feature]of Object.entries(sideTools))document.querySelectorAll(selector).forEach(el=>el.hidden=!featureUnlocked(state,feature));

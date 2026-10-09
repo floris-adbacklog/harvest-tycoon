@@ -88,7 +88,9 @@ const KINDS=[
  // Buildings
  ['made_eggs',2,0,[24,36,54],1.15],['made_feed',2,0,[20,30,45],1.15],['made_milk',2,0,[12,20,30],1.15],['made_cheese',2,0,[3,5,8],1.15],['made_flour',2,0,[16,32,56],1.15],
  ['produced',2,0,[5,8,12],1.25],['made_grainmeal',2,0,[6,12,18],1.15],['made_bread',2,0,[4,8,12],1.15],['parallel_batches',2,0,[5,10,15],1.15],
- ['made_salad',2,0,[4,8,12],1.15],['made_vegetables',2,0,[2,4,6],1.15],['made_pickles',2,0,[1,2,3],1.15],['made_fertilizer',2,0,[6,9,15],1.15],
+ // Pickles join from the Meadow League (9 Oct 2026, found in review): red cabbage and the pickle recipe both open at level 15, and the
+ // cabbage alone grows 12 hours, so a farmer who has just reached 15 could not make one within the 5 hours of an event.
+ ['made_salad',2,0,[4,8,12],1.15],['made_vegetables',2,0,[2,4,6],1.15],['made_pickles',2,1,[1,2,3],1.15],['made_fertilizer',2,0,[6,9,15],1.15],
  ['made_oil',2,1,[1,2,3],1.15],['made_beangratin',2,1,[1,2,3],1.15],['made_applepie',2,1,[1,2,3],1.15],['made_berrysmoothie',2,1,[2,4,6],1.15],['made_applecompote',2,1,[2,3,5],1.15],
  ['made_pickledbeans',2,1,[1,2,3],1.15],['made_orchardsalad',2,1,[3,6,9],1.15],['made_truffleomelette',2,1,[2,4,6],1.15],
  ['made_berrycheesecake',2,2,[1,2,3],1.15],
@@ -101,7 +103,10 @@ const KINDS=[
  ['sold_eggs',3,0,[20,30,45],1.1],['sold_cheese',3,1,[3,5,8],1.1],
  ['valley_baskets',3,4,[1,2,3],1.3],
  // Helping out
- ['chores',4,0,[2,3,4],1.2],['activities',4,0,[3,5,8],1.15],['upgrades',4,0,[1,2,3],1.1],['activity_rounds',4,0,[1,1,2],1.15],
+ // A helping-hand stop rests an hour since 9 Oct 2026 (15 minutes before), so jobs and rounds are capped by the clock, not by the farm:
+ // every league asks the Sprout League's numbers, at most 8 jobs or 2 rounds, two visits an hour apart (until then up to 16 jobs and 4
+ // rounds higher up, four visits an hour apart). Chores keep growing: a farm high up has every chore open, ten within the hour.
+ ['chores',4,0,[2,3,4],1.2],['activities',4,0,[3,5,8],1],['upgrades',4,0,[1,2,3],1.1],['activity_rounds',4,0,[1,1,2],1],
  ['tractor',4,1,[3,5,8],1.15]
 ];
 // Round numbers in the leagues above a kind's own (whole below 20, then to 5, 10 and 100; never 0, easy ≤ medium ≤ hard).

@@ -9,8 +9,9 @@ const now=Date.UTC(2026,9,3,12);
 function farm(level){const s=createFarm(now);s.xp=xpForLevel(level);s.rookieUntil=0;normalizeFarm(s,now);return s;}
 
 // Oct 2026: a crop medal used to be silent until collected, and farmers on level 7-9 could not open Medals at all.
+// 9 Oct 2026: Medals opens at level 14 (it was 7), so these farms are level 14.
 test('a medal waits from its harvest until it is collected, only for crops the Medals list shows',()=>{
- const s=farm(8);
+ const s=farm(14);
  assert.deepEqual(medalsWaiting(s),[]);
  s.mastery.harvests.wheat=25;assert.deepEqual(medalsWaiting(s),['wheat:0']);
  s.mastery.harvests.wheat=100;assert.deepEqual(medalsWaiting(s),['wheat:0','wheat:1']);
@@ -18,15 +19,15 @@ test('a medal waits from its harvest until it is collected, only for crops the M
  s.mastery.harvests.truffles=1000;assert.ok(!medalsWaiting(s).some(id=>id.startsWith('truffles:')),'a crop that is not open yet never lights the "!"');
 });
 
-test('the harvest that earns a medal names it once; before level 7 a medal waits quietly',()=>{
- const s=farm(8),before=medalsWaiting(s);
+test('the harvest that earns a medal names it once; before level 14 a medal waits quietly',()=>{
+ const s=farm(14),before=medalsWaiting(s);
  s.mastery.harvests.wheat=24;s.plots[0]={...s.plots[0],crop:'wheat',plantedAt:now-3600000,readyAt:now-1,careAt:now-1};
  const was=medalsWaiting(s);applyFarmAction(s,{type:'field',id:0,action:'harvest'},now);
  assert.deepEqual(newMedals(was,s),[{crop:'wheat',tier:0}]);
  assert.deepEqual(newMedals(medalsWaiting(s),s),[],'already known: no second notice');
  assert.deepEqual(before,[]);
- const young=farm(5);young.mastery.harvests.corn=25;assert.deepEqual(newMedals([],young),[],'Medals opens at level 7');
- assert.equal(FEATURE_LEVELS.mastery,7);
+ const young=farm(13);young.mastery.harvests.corn=25;assert.deepEqual(newMedals([],young),[],'Medals opens at level 14');
+ assert.equal(FEATURE_LEVELS.mastery,14);
 });
 
 test('the toast names the crop and the medal, or how many; it is good news with the medal picture',()=>{
@@ -65,7 +66,7 @@ function page(){
 }
 test('one toast for many medals, never under a window, and a medal collected meanwhile is left out',t=>{
  t.mock.timers.enable({apis:['setTimeout']});
- const s=farm(8),p=page(),notice=createMedalNotice(p.el,{state:s,doc:p.doc});
+ const s=farm(14),p=page(),notice=createMedalNotice(p.el,{state:s,doc:p.doc});
  s.mastery.harvests.wheat=25;s.mastery.harvests.corn=25;
  notice.earned([{crop:'wheat',tier:0}]);notice.earned([{crop:'corn',tier:0}]);
  t.mock.timers.tick(800);
@@ -80,7 +81,7 @@ test('one toast for many medals, never under a window, and a medal collected mea
  applyFarmAction(s,{type:'mastery',crop:'lettuce',tier:0},now);p.close();t.mock.timers.tick(500);assert.equal(p.el.innerHTML,'');
 });
 
-test('the game: the chip, the toast at the bottom, the "!" on the way to Medals and a Medals tile in More from level 7',()=>{
+test('the game: the chip, the toast at the bottom, the "!" on the way to Medals and a Medals tile in More from level 14',()=>{
  const game=read('public/game.js'),growth=read('public/growth-ui.js'),html=read('public/farm.html'),mobile=read('public/mobile-ui.js');
  assert.match(game,/const runAction=withActionSounds\(async action=>\{const before=progressionSnapshot\(state\),medalsBefore=medalsWaiting\(state\);[^\n]*medalToast\(newMedals\(medalsBefore,state\)\);return result;\}/,'every action (a tap, the tractor) names a new medal');
  assert.match(game,/floatReward\(id,withMedals\(newMedals\(medalsBefore,state\),/,'the chip over a tap harvest');
@@ -88,7 +89,8 @@ test('the game: the chip, the toast at the bottom, the "!" on the way to Medals 
  assert.match(game,/floatReward\(last,withMedals\(medals,[^\n]*\)\);medalToast\(medals\);\}/,'one toast for the whole sweep');
  assert.match(game,/key==='stall'\|\|key==='chores'\|\|key==='mastery'\)growth\.open\(key\)/);
  assert.match(html,/<section class="bottom-hud" aria-label="Tools and seeds">\n      <div id="medal-toast" class="toast medal-toast" role="status" aria-live="polite"><\/div>/);
- assert.match(html,/<h3 class="menu-section" data-section-heading="farm">On the farm<\/h3>\n    <button data-menu-utility="mastery"><i data-lucide="medal"><\/i><span><strong>Medals<\/strong><small class="menu-hint">Rewards for every crop<\/small><\/span><\/button>/);
+ // Under On the farm, after Boosts (level 10) since Medals moved to level 14: the menu lists what is gated in the order it opens.
+ assert.match(html,/<button data-menu-action="boosts-button">[^\n]*\n    <button data-menu-utility="mastery"><i data-lucide="medal"><\/i><span><strong>Medals<\/strong><small class="menu-hint">Rewards for every crop<\/small><\/span><\/button>/);
  assert.match(html,/<button data-estate-tab="mastery" aria-pressed="false">Medals<b class="estate-tab-dot" hidden>!<\/b><\/button>/);
  assert.match(growth,/const medals=featureUnlocked\(state,'mastery'\)&&medalsWaiting\(state\)\.length>0;/);
  assert.match(growth,/\[data-menu-utility="mastery"\]'\)\?\.classList\.toggle\('has-dot',medals\)/);
@@ -99,7 +101,7 @@ test('the game: the chip, the toast at the bottom, the "!" on the way to Medals 
 
 test('Medals is called Medals everywhere: the level-up card, the menus, the wiki',()=>{
  assert.equal(FEATURE_NAMES.mastery,'Medals');
- assert.equal(unlockEntries(farm(6)).find(e=>e.id==='feature:mastery').name,'Medals','the level-up card at level 7');
+ assert.equal(unlockEntries(farm(13)).find(e=>e.id==='feature:mastery').name,'Medals','the level-up card at level 14');
  for(const file of ['game/farm-state.js','public/growth-ui.js','public/wiki-content.js','public/economy-ui.js','public/farm.html'])assert.doesNotMatch(read(file),/Crop mastery|mastery!|mastery medal|Full mastery|Projects & mastery|passive income and mastery/i,file);
  const wiki=read('public/wiki-content.js');
  assert.match(wiki,/section\('Medals',/);assert.match(wiki,/You collect each medal yourself in Medals \(on a phone: More → Medals; on a computer: Estate → Medals\)\. A yellow ! shows when one is waiting\./);

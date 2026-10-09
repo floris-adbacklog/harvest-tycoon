@@ -715,6 +715,14 @@ export const MAX_PLOTS=40;
 // Two releases, so no copy of this code ever meets a farm on a curve it cannot read (an unknown curve reads as curve 1, so an old
 // browser tab would show every farmer at a wrong level, and an old farm-api would rewrite their XP): first every copy learns to
 // read curve 6 while farms stay on curve 5 (XP_CURVE 5, 4 Oct 2026, 14:00); then XP_CURVE became 6 (4 Oct 2026, 17:15) and farms convert.
+// Curve 7 (9 Oct 2026, the owner's call: "every level goes too fast", and new things should open gradually, without a flood) is curve 6
+// with the steps from level 5 to 59 dearer. From level 5 a step asks 6% more for every level, up to 1.3x at level 10; it stays 1.3x up
+// to level 50 and falls back 3% a level to curve 6's own step at level 60, where unlocks are already far apart (and from 90 every step
+// is doubled). So there is no jump anywhere: 9 -> 10 asks 397 XP (was 320), 10 -> 11 429 (330), 50 -> 51 2,626 (2,020), 59 -> 60 3,334
+// and 60 -> 61 3,388 as before. Reaching level 6 costs the same. In real play (farms since 28 Sep 2026) a player who came back on five
+// days or more was level 12 after the first day, 18 after three and 26 after a week, and the fastest went from 1 to 88 in a week.
+// Nobody goes back: a farm keeps its level and its share of the way to the next one. Released in the same two steps as curve 6: first
+// every copy reads curve 7 while farms stay on curve 6, then XP_CURVE becomes 7 and farms convert.
 export const XP_CURVE=6;
 export const LATE_XP_FROM=50,LATE_XP_STEP=.04,LATER_XP_FROM=100,LATER_XP_STEP=.06,TOP_XP_FROM=90,TOP_XP_FACTOR=2;
 const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
@@ -724,14 +732,24 @@ const EARLY_GAPS=Object.freeze({   // XP from level 1 to 2, 2 to 3 ... 9 to 10 (
  3:Object.freeze([15,40,65,95,130,170,215,265,320]),
  4:Object.freeze([15,40,65,95,130,170,215,265,320]),
  5:CURVE5_GAPS,
- 6:CURVE5_GAPS   // curve 6 differs from 5 only from level 90 (lateStep)
+ 6:CURVE5_GAPS,   // curve 6 differs from 5 only from level 90 (lateStep)
+ 7:CURVE5_GAPS    // listed so a farm on curve 7 is read as one; its totals come from curve7Total
 });
-// level -> level+1, from level 50; on curve 6 twice that from level 90 (exactly twice the rounded step)
+// level -> level+1, from level 50; on curve 6 (and 7) twice that from level 90 (exactly twice the rounded step)
 const lateStep=(level,curve)=>Math.round((40*level+20)*(1+(Math.min(level,LATER_XP_FROM)-LATE_XP_FROM)*LATE_XP_STEP+Math.max(0,level-LATER_XP_FROM)*LATER_XP_STEP))*(curve>=6&&level>=TOP_XP_FROM?TOP_XP_FACTOR:1);
 const curveOf=state=>Object.hasOwn(EARLY_GAPS,state.xpCurve)?Number(state.xpCurve):1;
 const sum=list=>list.reduce((total,n)=>total+n,0);
+// Curve 7: how much dearer than curve 6 the step from a level is, and the total XP to reach each level (filled as far as asked).
+export const CURVE7_FACTOR=level=>level<5?1:level<10?1+(level-5)*.06:level<50?1.3:level<60?1.3-(level-50)*.03:1;
+const curve6Step=level=>level>=LATE_XP_FROM?lateStep(level,6):totalForLevel(level+1,6)-totalForLevel(level,6);
+const CURVE7_TOTALS=[0,0];
+function curve7Total(level){
+ while(CURVE7_TOTALS.length<=level){const from=CURVE7_TOTALS.length-1;CURVE7_TOTALS.push(CURVE7_TOTALS[from]+Math.round(curve6Step(from)*CURVE7_FACTOR(from)));}
+ return CURVE7_TOTALS[level];
+}
 function totalForLevel(level,curve){
  if(level<=1)return 0;
+ if(curve>=7)return curve7Total(level);
  const gaps=EARLY_GAPS[curve];if(!gaps)return oldXpForLevel(level);
  if(level<=gaps.length+1)return sum(gaps.slice(0,level-1));
  if(curve>=4&&level>LATE_XP_FROM){let total=totalForLevel(LATE_XP_FROM,curve);for(let l=LATE_XP_FROM;l<level;l++)total+=lateStep(l,curve);return total;}
@@ -739,6 +757,7 @@ function totalForLevel(level,curve){
 }
 export const xpForLevel=level=>totalForLevel(level,XP_CURVE);
 function levelFromTotal(total,curve){
+ if(curve>=7){let level=1;while(level<10000&&total>=curve7Total(level+1))level++;return level;}
  if(curve>=4&&total>=totalForLevel(LATE_XP_FROM,curve)){let level=LATE_XP_FROM,next=totalForLevel(LATE_XP_FROM,curve)+lateStep(LATE_XP_FROM,curve);while(total>=next&&level<10000){level++;next+=lateStep(level,curve);}return level;}
  const gaps=EARLY_GAPS[curve];
  if(!gaps)return 1+Math.floor((Math.sqrt(1600+80*total)-40)/40);
@@ -802,16 +821,18 @@ export function productionSlots(level,building){const n=Math.max(1,Math.min(MAX_
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
 export function recipeValue(id,now,state){const r=state?recipeFor(state,id):RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input)+(r.coins??0),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level,building){const speed=level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));return building==='factory'?speed/2:speed;}
-// The beginner boost: when a farm is created, new crops and new batches take 80% less time (corn 15 min -> 3 min). It gets smaller
-// evenly, in a straight line, and stops at exactly 0% after the first day (ROOKIE_BOOST_MS): 60% after 6 hours, 40% after 12 and 20%
-// after 18, so the first session feels fast and a return later that day still gets real help. (Until 27 Sep 2026 it followed the
-// square of the time left: its last hours read "0% shorter waiting" while it still ran.)
+// The beginner boost: when a farm is created, new crops and new batches take 40% less time (corn 15 min -> 9 min). It gets smaller
+// evenly, in a straight line, and stops at exactly 0% after the first day (ROOKIE_BOOST_MS): 30% after 6 hours, 20% after 12 and 10%
+// after 18, so the first session feels quick and a return later that day still gets some help. (Until 27 Sep 2026 it followed the
+// square of the time left: its last hours read "0% shorter waiting" while it still ran.) It was 80% until 9 Oct 2026 (the owner's
+// call): everything then grew five times as fast in the first hour, a new farmer reached level 10 in about 33 minutes of play, and the
+// first half hour opened 29 new things, about one a minute.
 // Separately, for the first 30 minutes (ROOKIE_MS, until state.rookieUntil) the starter corn and animal feed stay in the barn so nothing
 // is sold by accident. Both are plain clock time from creation; the boost counts from the same start (rookieUntil - ROOKIE_MS), so
 // farms made before the boost lasted a day get the whole day too. Crops and batches that are already running keep their times.
 // Only farms created in the guided flow have it: farms from before this simply have no rookieUntil.
 export const ROOKIE_MS=30*60000;
-export const ROOKIE_TIMER_BOOST=.8;
+export const ROOKIE_TIMER_BOOST=.4;
 export const ROOKIE_BOOST_MS=24*60*60000;
 export const rookieLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil-now):0;
 export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)&&state.rookieUntil>0?Math.max(0,state.rookieUntil-ROOKIE_MS+ROOKIE_BOOST_MS-now):0;
@@ -820,14 +841,14 @@ export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPE
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
-export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:7,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
+export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:12,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
 export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST,
  // World II (30 Sep 2026): the village's places are built with coins like the farm's, on from the Factory.
  mine:150000,lumbercamp:150000,smithy:200000,villagemill:300000});
-export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:7,bread:8,cheese:9,fertilizer:9,salad:10,vegetables:11,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115});
-export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:5,activities:8,chores:10,mastery:7,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
-export const DELIVERY_LEVELS=Object.freeze({quick:5,village:8,commission:16});
+export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115});
+export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:7,activities:8,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
+export const DELIVERY_LEVELS=Object.freeze({quick:7,village:8,commission:16});
 export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
 const kept=(state,kind,key)=>state.progression?.kept?.[kind]?.includes(key)===true;
@@ -880,6 +901,26 @@ function migrateUnlockSpread(state){
   if(had.length)rights[kind]=[...new Set([...(rights[kind]??[]),...had])];
  }
  state.progression.version=5;
+}
+// Version 6 (9 Oct 2026, the owner's call: new things open gradually, without a flood): the first half hour opened 29 new things, about
+// one a minute, so eight moved later and no level up to 20 opens more than three: Delivery orders 5 -> 7, Green beans 7 -> 12 (with the
+// vegetable stew, their first use; they waited five levels for it), the fresh salad 10 -> 11 (with the Packing shed it is made in), the
+// vegetable box 11 -> 13, Medals 7 -> 14, natural fertilizer 9 -> 14, Farm chores 10 -> 15 and the wind-milled barley feed 7 -> 18.
+// Chores, fertilizer and green beans stay at 15 or below, so every event goal can still be done when events open at level 15. A guided
+// farm that already had one under the old level keeps it, as with version 5, and so does a farm that has already used it.
+const GRADUAL_FROM=Object.freeze({crops:{greenbeans:7},features:{cart:5,mastery:7,chores:10},orderTiers:{quick:5},
+ recipes:{salad:10,vegetables:11,fertilizer:9,windfeed:7}});
+// What a farm has used stays open on every load, not only on the first: a farm that met the old levels after a rollback and used
+// them there keeps them when this comes back (found in review, 9 Oct 2026).
+function migrateGradualUnlocks(state){
+ if(!guidedFarm(state))return;
+ const before=(state.progression.version??0)<6,level=levelOf(state);
+ const used={cart:(state.stats?.deliveries??0)>0,quick:(state.stats?.deliveries??0)>0,mastery:(state.mastery?.claimed?.length??0)>0,chores:(state.stats?.chores??0)>0};
+ for(const [kind,levels] of Object.entries(GRADUAL_FROM)){
+  const had=Object.entries(levels).filter(([key,from])=>(before&&level>=from)||used[key]).map(([key])=>key);
+  if(had.length){const rights=state.progression.kept??={};rights[kind]=[...new Set([...(rights[kind]??[]),...had])];}
+ }
+ state.progression.version=Math.max(state.progression.version??0,6);
 }
 function migrateProgression(state){
  if(!guidedFarm(state)||state.progression.version>=2)return;
@@ -1087,7 +1128,7 @@ function createBaseFarm(now=Date.now()) {
  const plots=Array.from({length:STARTER_FIELDS},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
  for(const id of [0,1,2])plots[id]={id,crop:'corn',plantedAt:now-CROPS.corn.duration*1.1,readyAt:now-1000,watered:false};
  [30000,60000,90000].forEach((left,i)=>{plots[3+i]={id:3+i,crop:'wheat',plantedAt:now+left-CROPS.wheat.duration,readyAt:now+left,watered:false};});
- return {version:14,progression:{mode:'guided',version:5,fields:STARTER_FIELDS},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
+ return {version:14,progression:{mode:'guided',version:6,fields:STARTER_FIELDS},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
 }
 export function progress(plot,now=Date.now()) {
  if(!plot.crop)return 0;
@@ -1512,14 +1553,16 @@ const ESTATE_DAILIES=[
  [{"stat":"made_prizeproduce","target":1,"title":"Show-ready vegetables","description":"Grow 1 prize produce.","reward":650,"minLevel":80,"requiresBuildings":["glasshouse"]}],
  [{"stat":"made_blanket","target":2,"title":"Two warm blankets","description":"Make 2 wool blankets.","reward":700,"minLevel":82,"requiresBuildings":["craftshop"]}]
 ];
-export const DAILY_POOLS=LEGACY_DAILY_POOLS.map((pool,id)=>Object.freeze([...pool,...ORCHARD_DAILIES[id],...PANTRY_DAILIES[id],...MIDGAME_DAILIES[id],...VALLEY_DAILIES[id],...ESTATE_DAILIES[id],...[[{"stat":"activity_greenhouse","target":2,"title":"Seedling care","description":"Finish 2 Greenhouse jobs.","reward":65},{"stat":"activity_paddock","target":2,"title":"Happy herd","description":"Finish 2 Animal paddock jobs.","reward":65},{"stat":"chore_weeds","target":3,"title":"A tidy start","description":"Successfully clear the paths 3 times.","reward":70},{"stat":"tended","target":4,"title":"More than watering","description":"Give 4 growing crops extra care.","reward":65},{"stat":"harvest_lettuce","target":8,"title":"Leafy little harvest","description":"Harvest 8 lettuce.","reward":55},{"stat":"harvest_corn","target":6,"title":"Golden corn","description":"Harvest 6 corn.","reward":65}],[{"stat":"activity_apiary","target":3,"title":"Honey time","description":"Finish 3 Apiary jobs and collect their Honey.","reward":85},{"stat":"activity_workshop","target":3,"title":"Tools of the trade","description":"Finish 3 Tool workshop jobs.","reward":85},{"stat":"made_feed","target":3,"title":"Feed the farm","description":"Collect 3 animal feed from production.","reward":80},{"stat":"parallel_batches","target":2,"title":"Side by side","description":"Start 2 batches while another batch is still running in the same building.","reward":90,"parallel":true},{"stat":"fertilized","target":2,"title":"A soil boost","description":"Use natural fertilizer on 2 growing fields.","reward":80,"minLevel":3},{"stat":"made_flour","target":4,"title":"Flour power","description":"Collect 4 flour from production.","reward":80,"minLevel":3},{"stat":"made_salad","target":1,"title":"Freshly prepared","description":"Collect 1 fresh salad.","reward":90,"minLevel":4}],[{"stat":"activity_rounds","target":1,"title":"Make the rounds","description":"Finish a full farm round by helping at all four stops.","reward":110},{"stat":"activities","target":6,"title":"A hands-on day","description":"Finish 6 hands-on jobs around the farm.","reward":110},{"stat":"chore_troughs","target":2,"title":"Fresh water rounds","description":"Successfully fill the water troughs twice.","reward":110,"chore":"troughs"},{"stat":"chore_sorting","target":1,"title":"Everything sorted","description":"Successfully sort the seed boxes once.","reward":140,"chore":"sorting"},{"stat":"made_bread","target":2,"title":"Warm from the oven","description":"Collect 2 fresh bread.","reward":100,"minLevel":4},{"stat":"passive_earned","target":30,"title":"Roadside trade","description":"Collect 30 coins from the farm stall.","reward":80,"minLevel":3}]][id]]));
+export const DAILY_POOLS=LEGACY_DAILY_POOLS.map((pool,id)=>Object.freeze([...pool,...ORCHARD_DAILIES[id],...PANTRY_DAILIES[id],...MIDGAME_DAILIES[id],...VALLEY_DAILIES[id],...ESTATE_DAILIES[id],...[[{"stat":"activity_greenhouse","target":2,"title":"Seedling care","description":"Finish 2 Greenhouse jobs.","reward":65},{"stat":"activity_paddock","target":2,"title":"Happy herd","description":"Finish 2 Animal paddock jobs.","reward":65},{"stat":"chore_weeds","target":3,"title":"A tidy start","description":"Successfully clear the paths 3 times.","reward":70},{"stat":"tended","target":4,"title":"More than watering","description":"Give 4 growing crops extra care.","reward":65},{"stat":"harvest_lettuce","target":8,"title":"Leafy little harvest","description":"Harvest 8 lettuce.","reward":55},{"stat":"harvest_corn","target":6,"title":"Golden corn","description":"Harvest 6 corn.","reward":65}],[{"stat":"activity_apiary","target":2,"title":"Honey time","description":"Finish 2 Apiary jobs and collect their Honey.","reward":65},{"stat":"activity_workshop","target":2,"title":"Tools of the trade","description":"Finish 2 Tool workshop jobs.","reward":65},{"stat":"made_feed","target":3,"title":"Feed the farm","description":"Collect 3 animal feed from production.","reward":80},{"stat":"parallel_batches","target":2,"title":"Side by side","description":"Start 2 batches while another batch is still running in the same building.","reward":90,"parallel":true},{"stat":"fertilized","target":2,"title":"A soil boost","description":"Use natural fertilizer on 2 growing fields.","reward":80,"minLevel":3},{"stat":"made_flour","target":4,"title":"Flour power","description":"Collect 4 flour from production.","reward":80,"minLevel":3},{"stat":"made_salad","target":1,"title":"Freshly prepared","description":"Collect 1 fresh salad.","reward":90,"minLevel":4}],[{"stat":"activity_rounds","target":1,"title":"Make the rounds","description":"Finish a full farm round by helping at all four stops.","reward":110},{"stat":"activities","target":6,"title":"A hands-on day","description":"Finish 6 hands-on jobs around the farm.","reward":110},{"stat":"chore_troughs","target":2,"title":"Fresh water rounds","description":"Successfully fill the water troughs twice.","reward":110,"chore":"troughs"},{"stat":"chore_sorting","target":1,"title":"Everything sorted","description":"Successfully sort the seed boxes once.","reward":140,"chore":"sorting"},{"stat":"made_bread","target":2,"title":"Warm from the oven","description":"Collect 2 fresh bread.","reward":100,"minLevel":4},{"stat":"passive_earned","target":30,"title":"Roadside trade","description":"Collect 30 coins from the farm stall.","reward":80,"minLevel":3}]][id]]));
 export const ORDER_POOL=Object.freeze([{"title": "The judges’ table", "input": {"prizeproduce": 1, "cherryjam": 1}, "xp": 180, "minLevel": 80}, {"title": "Show day at the inn", "input": {"prizeproduce": 1, "goatcheese": 2}, "xp": 190, "minLevel": 82}, {"title": "Milk for the café", "input": {"goatmilk": 6, "honey": 4}, "xp": 90, "minLevel": 54}, {"title": "The goat farmer’s table", "input": {"goatcheese": 1, "bread": 2}, "xp": 100, "minLevel": 55}, {"title": "Evening candles", "input": {"candles": 2, "beeswax": 3}, "xp": 100, "minLevel": 58}, {"title": "A cosy winter", "input": {"blanket": 1, "candles": 1}, "xp": 160, "minLevel": 60}, {"title": "Cherry season", "input": {"cherryjam": 1, "cherries": 6}, "xp": 110, "minLevel": 67}, {"title": "The pie stand", "input": {"cherrypie": 1, "applepie": 1}, "xp": 120, "minLevel": 68}, {"title": "Soup kitchen", "input": {"squashsoup": 1, "bread": 2}, "xp": 90, "minLevel": 32}, {"title": "The candle maker", "input": {"beeswax": 4, "honey": 4}, "xp": 70, "minLevel": 34}, {"title": "The village knitters", "input": {"wool": 6}, "xp": 70, "minLevel": 37}, {"title": "Glasshouse greens", "input": {"cauliflower": 8, "salad": 2}, "xp": 75, "minLevel": 40}, {"title": "The tailor’s shelves", "input": {"yarn": 4, "wool": 4}, "xp": 95, "minLevel": 43}, {"title": "Fabric for the fair", "input": {"cloth": 1, "yarn": 2}, "xp": 120, "minLevel": 45}, {"title": "Harvest cider", "input": {"cider": 1, "ciderapples": 4}, "xp": 110, "minLevel": 47}, {"title": "The baker next door", "input": {"wheat": 5}, "xp": 15, "minLevel": 1}, {"title": "A leafy lunch", "input": {"lettuce": 4, "corn": 2}, "xp": 20, "minLevel": 1}, {"title": "Sweet little favour", "input": {"honey": 2, "wheat": 4}, "xp": 20, "minLevel": 1}, {"title": "Breakfast at the inn", "input": {"eggs": 3, "milk": 2}, "xp": 25, "minLevel": 1}, {"title": "The paddock pantry", "input": {"feed": 2, "corn": 2}, "xp": 25, "minLevel": 1}, {"title": "Honey on toast", "input": {"honey": 2, "bread": 2}, "xp": 35, "minLevel": 3}, {"title": "A cream tea", "input": {"honey": 3, "milk": 2, "bread": 1}, "xp": 35, "minLevel": 3}, {"title": "The village grocer", "input": {"corn": 3, "lettuce": 2, "cabbage": 1}, "xp": 25, "minLevel": 3}, {"title": "The millers basket", "input": {"grainmeal": 2, "flour": 4}, "xp": 30, "minLevel": 3}, {"title": "For the garden club", "input": {"fertilizer": 2, "lettuce": 4}, "xp": 30, "minLevel": 3}, {"title": "The animal sanctuary", "input": {"feed": 3, "barley": 3}, "xp": 30, "minLevel": 3}, {"title": "A picnic in the park", "input": {"bread": 2, "salad": 1, "honey": 1}, "xp": 40, "minLevel": 4}, {"title": "The cheese board", "input": {"cheese": 2, "bread": 1}, "xp": 35, "minLevel": 4}, {"title": "A farm-fresh lunch", "input": {"salad": 2, "eggs": 3}, "xp": 35, "minLevel": 4}, {"title": "Sunday lunch", "input": {"cabbage": 2, "pumpkin": 2}, "xp": 35, "minLevel": 5}, {"title": "The harvest kitchen", "input": {"vegetables": 1, "flour": 3}, "xp": 45, "minLevel": 5}, {"title": "A golden afternoon", "input": {"pie": 1, "honey": 2, "milk": 2}, "xp": 50, "minLevel": 6}, {"title": "Autumn pantry", "input": {"redcabbage": 2, "cauliflower": 2}, "xp": 40, "minLevel": 6}, {"title": "The village feast", "input": {"bread": 3, "cheese": 2, "vegetables": 1}, "xp": 65, "minLevel": 7}, {"title": "Pantry provisions", "input": {"pickles": 1, "vegetables": 1}, "xp": 55, "minLevel": 7}, {"title": "A chefs finishing touch", "input": {"oil": 1, "salad": 2, "honey": 2}, "xp": 65, "minLevel": 8}, {"title": "Golden harvest hamper", "input": {"sunflower": 2, "oil": 1}, "xp": 60, "minLevel": 8}, {"title": "The autumn festival", "input": {"pie": 2, "pickles": 1, "honey": 3}, "xp": 75, "minLevel": 8}, {"title": "The estate banquet", "input": {"oil": 1, "vegetables": 2, "cheese": 2, "bread": 2}, "xp": 85, "minLevel": 10}, {"title": "The kitchen garden", "input": {"stew": 2, "bread": 2}, "xp": 80, "minLevel": 6, "requiresBuildings": ["kitchen"]}, {"title": "An orchard picnic", "input": {"applejuice": 2, "applepie": 1}, "xp": 110, "minLevel": 8, "requiresBuildings": ["juicepress"]}, {"title": "Breakfast preserves", "input": {"berrypreserves": 2, "bread": 3}, "xp": 120, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The orchard tea room", "input": {"berrytart": 2, "applepie": 2}, "xp": 160, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "A colourful orchard refreshment", "input": {"orchardjuice": 1, "bread": 2}, "xp": 65, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "Smoothies for the village", "input": {"berrysmoothie": 1, "bread": 2}, "xp": 68, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "A honey-sweet breakfast", "input": {"applecompote": 1, "bread": 2}, "xp": 62, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The pickling pantry", "input": {"applevinegar": 1, "bread": 2}, "xp": 80, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "Beans for the village deli", "input": {"pickledbeans": 1, "bread": 2}, "xp": 100, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "A warming farm supper", "input": {"beangratin": 1, "bread": 2}, "xp": 85, "minLevel": 7, "requiresBuildings": ["kitchen"]}, {"title": "Lunch under the apple trees", "input": {"orchardsalad": 1, "bread": 2}, "xp": 58, "minLevel": 8, "requiresBuildings": []}, {"title": "Cheesecake at the tea room", "input": {"berrycheesecake": 1, "honey": 2}, "xp": 105, "minLevel": 11, "requiresBuildings": []}, {"title": "A gift from the valley", "input": {"harvesthamper": 1, "honey": 2}, "xp": 160, "minLevel": 12, "requiresBuildings": ["juicepress", "preserves"]}]);
 export function availableDaily(state,q){
  if(q.input&&!Object.keys(q.input).every(k=>itemAvailable(state,k)))return false;
  if(guidedFarm(state)){
   const stat=q.stat??'';
   if(stat.startsWith('harvest_')&&!cropUnlocked(state,stat.slice(8)))return false;
-  if(stat.startsWith('made_')&&!itemAvailable(state,stat.slice(5)))return false;
+  // A "made" goal counts what is collected from a building's batches, so it waits for a recipe that makes the good, not just a way to get it: the
+  // paddock's helping hand gives fertilizer from level 8, the fertilizer recipe opens at 14 (9 Oct 2026).
+  if(stat.startsWith('made_')&&!Object.entries(RECIPES).some(([id,r])=>r.output[stat.slice(5)]&&recipeUnlocked(state,id)))return false;
   if(stat==='produced'&&!Object.keys(RECIPES).some(id=>recipeUnlocked(state,id)))return false;
   if(stat.startsWith('built_')&&!buildingEligible(state,stat.slice(6)))return false;
   if(stat==='varieties'&&q.target>Object.keys(CROPS).filter(k=>cropUnlocked(state,k)).length)return false;
@@ -2055,7 +2098,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.boosts??={};for(const key of ['xpUntil','harvestUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
  state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
- state.stats??={};migrateProgression(state);migrateFeatureLevels(state);migrateUnlockSpread(state);
+ state.stats??={};migrateProgression(state);migrateFeatureLevels(state);migrateUnlockSpread(state);migrateGradualUnlocks(state);
  for(const key of Object.keys(BUILDINGS))if(buildingCost(state,key))state.buildings[key].built??=false;
  // Keep paid-for legacy flour batches intact when milling moves to the Windmill.
  if(oldVersion<6&&state.buildings.mill.job?.recipe==='flour'){
@@ -2099,6 +2142,9 @@ export function normalizeFarm(state,now=Date.now()){
  const d=dayNumber(now);
  state.daily.replacements??=0;state.daily.orderRevisions??={};
  state.daily.tasks??=oldVersion<10&&existingDay?LEGACY_DAILY_POOLS.map((pool,id)=>({...pool[(d+id)%pool.length]})):featureUnlocked(state,'challenges')?selectDailyTasks(state,d):[];
+ // A challenge drawn today keeps up with its definition (9 Oct 2026: two of them went from 3 jobs to 2): its target, reward and text
+ // come from the pool again, found by its counter and title (a unique pair), so the text is the one the languages translate.
+ for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);
  normalizeShift(state);settleShift(state,now);
@@ -2648,17 +2694,20 @@ function dispatchFarmAction(state,action,now,random){
 // last two. A farm keeps every step it already has.
 export const SILO_COSTS=[2000,4000,8000,15000,65000];
 export const MASTERY_TIERS=[{name:'Bronze',target:25,coins:100,xp:25},{name:'Silver',target:100,coins:350,xp:60},{name:'Gold',target:300,coins:1200,xp:150},{name:'Platinum',target:1000,coins:4000,xp:400}];
-// Chores pay XP straight (a helping-hand job's worth for the quickest, more for the longer ones) and rest 5 minutes to an hour: few,
-// worthwhile clicks instead of one every minute, so an autoclicker gains little. Coins per hour are what they were before the longer
-// rests. Each chore done raises its bonus-find chance by CHORE_PRACTICE_STEP; at the chore's maximum it is mastered and the next unlocks.
+// Chores pay XP straight (a helping-hand job's worth for the quickest, more for the longer ones) and rest 15 minutes to three hours: few,
+// worthwhile clicks instead of one every minute, so an autoclicker gains little. Each chore done raises its bonus-find chance by
+// CHORE_PRACTICE_STEP; at the chore's maximum it is mastered and the next unlocks.
+// The rests are three times what they were until 9 Oct 2026 (5 minutes to an hour; the owner's call, with the helping hand's): chores pay
+// the same XP at level 15 as at level 90, and a farmer who kept the game open could do them all the time, up to about 2,100 XP an hour,
+// several levels an hour early on. A farmer who comes back a few times a day finds every chore ready, as before.
 export const CHORE_PRACTICE_STEP=4;
 export const CHORES=Object.freeze({
- weeds:{name:'Clear the paths',description:'Pull weeds along the farm paths.',icon:'shovel',coins:90,xp:45,cooldown:300000,baseChance:60,maxChance:100,bonus:{item:'wheat',count:2}},
- troughs:{name:'Fill the water troughs',description:'Fresh water for the animals.',icon:'droplets',coins:133,xp:70,cooldown:600000,baseChance:40,maxChance:80,requires:'weeds',bonus:{item:'lettuce',count:2}},
- sorting:{name:'Sort the seed boxes',description:'Get tomorrow’s planting ready.',icon:'package-open',coins:225,xp:110,cooldown:1200000,baseChance:35,maxChance:60,requires:'troughs',bonus:{item:'corn',count:2}},
- fences:{name:'Mend the orchard fence',description:'Repair loose rails and keep the orchard safe.',icon:'fence',coins:360,xp:150,cooldown:1800000,baseChance:30,maxChance:70,requires:'sorting',bonus:{item:'apples',count:1}},
- irrigation:{name:'Restore the irrigation',description:'Clear the channels and bring water to the far fields.',icon:'waves',coins:594,xp:200,cooldown:2700000,baseChance:25,maxChance:65,requires:'fences',bonus:{item:'cauliflower',count:1}},
- harvestfair:{name:'Prepare the harvest fair',description:'Arrange a prize-worthy display of the farm’s best goods.',icon:'party-popper',coins:800,xp:260,cooldown:3600000,baseChance:20,maxChance:60,requires:'irrigation',bonus:{item:'pumpkin',count:1}}
+ weeds:{name:'Clear the paths',description:'Pull weeds along the farm paths.',icon:'shovel',coins:90,xp:45,cooldown:900000,baseChance:60,maxChance:100,bonus:{item:'wheat',count:2}},
+ troughs:{name:'Fill the water troughs',description:'Fresh water for the animals.',icon:'droplets',coins:133,xp:70,cooldown:1800000,baseChance:40,maxChance:80,requires:'weeds',bonus:{item:'lettuce',count:2}},
+ sorting:{name:'Sort the seed boxes',description:'Get tomorrow’s planting ready.',icon:'package-open',coins:225,xp:110,cooldown:3600000,baseChance:35,maxChance:60,requires:'troughs',bonus:{item:'corn',count:2}},
+ fences:{name:'Mend the orchard fence',description:'Repair loose rails and keep the orchard safe.',icon:'fence',coins:360,xp:150,cooldown:5400000,baseChance:30,maxChance:70,requires:'sorting',bonus:{item:'apples',count:1}},
+ irrigation:{name:'Restore the irrigation',description:'Clear the channels and bring water to the far fields.',icon:'waves',coins:594,xp:200,cooldown:8100000,baseChance:25,maxChance:65,requires:'fences',bonus:{item:'cauliflower',count:1}},
+ harvestfair:{name:'Prepare the harvest fair',description:'Arrange a prize-worthy display of the farm’s best goods.',icon:'party-popper',coins:800,xp:260,cooldown:10800000,baseChance:20,maxChance:60,requires:'irrigation',bonus:{item:'pumpkin',count:1}}
 });
 // Guaranteed half of the original starting expected payout; the remaining budget is random.
 // At every practice level expected coins/XP stay at or below the old success-only budget.
@@ -2775,11 +2824,15 @@ export function completeProject(state,now=Date.now()){
 // Small hands-on jobs run alongside crops and production. Only server time and
 // persisted progress determine rewards; the client submits a station and tile.
 // task: what a tile that needs work says to a screen reader ("Water dry seedling"), one text, so it is translated whole (6 Oct 2026).
+// A stop rests an hour after its job (9 Oct 2026, the owner's call; it was 15 minutes; the daily challenges for one stop ask for it twice,
+// so two visits an hour apart, and farm events ask at most two rounds, public/event-goals.js): a round pays 240 XP at every level, so a
+// farmer who kept the game open earned about 960 XP an hour here alone, two or three levels an hour between levels 8 and 15, and a
+// quarter of all XP between levels 5 and 30. A farmer who comes back a few times a day finds all four stops ready, as before.
 export const ACTIVE_STATIONS=Object.freeze({
- greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:0,xp:42,cooldown:900000,item:'lettuce',itemCount:3,instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',task:'Water dry seedling',targetIcon:'droplets',otherIcon:'sprout'},
- apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:0,xp:48,cooldown:900000,item:'honey',itemCount:3,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',task:'Collect capped honey',targetIcon:'hexagon',otherIcon:'flower-2'},
- paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:0,xp:42,cooldown:900000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',task:'Fill empty bowl',targetIcon:'droplet',otherIcon:'waves'},
- workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:0,xp:48,cooldown:900000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',task:'Repair worn tool',targetIcon:'wrench',otherIcon:'check'}
+ greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:0,xp:42,cooldown:3600000,item:'lettuce',itemCount:3,instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',task:'Water dry seedling',targetIcon:'droplets',otherIcon:'sprout'},
+ apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:0,xp:48,cooldown:3600000,item:'honey',itemCount:3,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',task:'Collect capped honey',targetIcon:'hexagon',otherIcon:'flower-2'},
+ paddock:{name:'Animal paddock',icon:'heart',model:'horse_002',coins:0,xp:42,cooldown:3600000,item:'fertilizer',instruction:'Refill the three empty water bowls.',target:'Empty bowl',other:'Full bowl',verb:'Fill',task:'Fill empty bowl',targetIcon:'droplet',otherIcon:'waves'},
+ workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:0,xp:48,cooldown:3600000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',task:'Repair worn tool',targetIcon:'wrench',otherIcon:'check'}
 });
 export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:250,xp:60});
 export function activityTargets(station,cycle){

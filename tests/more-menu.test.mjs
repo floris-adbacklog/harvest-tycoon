@@ -29,7 +29,7 @@ test('"Your farm menu" always lists every feature, gated ones in the order they 
 test('a locked feature stays visible in the menu, greyed and unclickable, with the level it needs; the side-tool bar keeps hiding it',()=>{
  const ui=read('public/progression-ui.js');
  assert.match(ui,/import \{[^}]*FEATURE_LEVELS[^}]*\} from '\.\/farm-state\.js';/);
- assert.match(ui,/const sideTools=\{'#boosts-button':'boosts','#estate-button':'mastery'\};/,'the desktop side-tool bar still hides what is not open (the Estate button from Medals, level 7: a computer has no More menu, Oct 2026)');
+ assert.match(ui,/const sideTools=\{'#boosts-button':'boosts','#estate-button':'mastery'\};/,'the desktop side-tool bar still hides what is not open (the Estate button from Medals, level 14 since 9 Oct 2026, level 7 before: a computer has no More menu, Oct 2026)');
  assert.match(ui,/el\.disabled=!unlocked;el\.classList\.toggle\('locked',!unlocked\);/,'the More-menu card is disabled and greyed, never hidden');
  assert.match(ui,/hint\.textContent=unlocked\?hint\.dataset\.open:`Reach level \$\{FEATURE_LEVELS\[feature\]\}\.`;/);
  assert.doesNotMatch(ui,/data-menu-utility.*\.hidden=!featureUnlocked/s);

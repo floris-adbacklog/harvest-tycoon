@@ -12,14 +12,14 @@ function fresh(level){const s=createFarm(now);s.xp=xpForLevel(level);s.xpOffset=
 test('the unlocks between levels 10 and 38 are spread out: one or more new things on every level from 11 to 48',()=>{
  assert.deepEqual([FEATURE_LEVELS.stall,FEATURE_LEVELS.tractor,FEATURE_LEVELS.silo,FEATURE_LEVELS.projects,DELIVERY_LEVELS.commission,BUILDING_LEVELS.packing],[19,18,26,27,16,11]);
  assert.deepEqual(['windflour','berrycheesecake','harvesthamper','vegetablefeast','berrytart'].map(id=>RECIPE_LEVELS[id]),[14,33,35,36,38]);
- assert.deepEqual([FEATURE_LEVELS.chores,FEATURE_LEVELS.family,FEATURE_LEVELS.boosts],[10,10,10],'chores, Farm Family and (since 5 Oct 2026) diamond boosts at 10; the Starter Pack stays at 14');
+ assert.deepEqual([FEATURE_LEVELS.chores,FEATURE_LEVELS.family,FEATURE_LEVELS.boosts],[15,10,10],'Farm Family and (since 5 Oct 2026) diamond boosts at 10, chores at 15 (since 9 Oct 2026; 10 before); the Starter Pack stays at 14');
  const levels=new Set([...Object.values(CROP_LEVELS),...Object.values(BUILDING_LEVELS),...Object.values(FEATURE_LEVELS),...Object.values(DELIVERY_LEVELS),
   ...Object.entries(RECIPE_LEVELS).filter(([id,l])=>RECIPES[id]&&RECIPES[id].building!=='factory'&&l>(BUILDING_LEVELS[RECIPES[id].building]??1)).map(([,l])=>l)]);
  for(let level=11;level<=48;level++)assert.ok(levels.has(level),`level ${level} brings something new`);
 });
 test('a farm from before the spread keeps everything it already had; what it had not reached yet follows the new levels',()=>{
  const twelve=before(12);
- assert.equal(twelve.progression.version,5);
+ assert.equal(twelve.progression.version,6,'and then version 6 (9 Oct 2026)');
  for(const key of ['stall','tractor'])assert.ok(featureUnlocked(twelve,key),`level 12 keeps ${key}`);
  for(const key of ['silo','projects'])assert.ok(!featureUnlocked(twelve,key),`${key} was not reached yet`);
  assert.ok(deliveryTierUnlocked(twelve,'commission'),'commission orders stay');assert.ok(buildingEligible(twelve,'packing'));
@@ -28,17 +28,19 @@ test('a farm from before the spread keeps everything it already had; what it had
  for(const key of ['stall','tractor','silo','projects'])assert.ok(featureUnlocked(thirty,key),key);
  assert.ok(['windflour','berrycheesecake','harvesthamper','berrytart'].every(id=>thirty.progression.kept.recipes.includes(id)));assert.ok(!thirty.progression.kept.recipes.includes('vegetablefeast'),'the pig feast was level 31');
  const again=structuredClone(thirty);normalizeFarm(again,now);assert.deepEqual(again,thirty,'migrating twice changes nothing');
- const nine=before(9);assert.deepEqual(nine.progression.kept??{},{},'a farm below every old level keeps nothing extra');
+ // Below every level version 5 moved, nothing of version 5 is kept (what version 6 keeps for it: tests/gradual-unlocks.test.mjs).
+ const nine=before(9),kept=nine.progression.kept??{};
+ assert.ok(!['stall','tractor','silo','projects'].some(key=>kept.features?.includes(key))&&!kept.buildings?.includes('packing')&&!kept.orderTiers?.includes('commission')&&!kept.recipes?.some(id=>['windflour','berrycheesecake','harvesthamper','berrytart','vegetablefeast'].includes(id)),'a farm below every old level of version 5 keeps nothing of it');
  const later=before(9);later.xp=xpForLevel(12);normalizeFarm(later,now);assert.ok(!featureUnlocked(later,'tractor'),'and then follows the new levels');
 });
 test('a new farm follows the new levels',()=>{
- const s=fresh(17);assert.equal(s.progression.version,5);assert.equal(levelOf(s),17);
+ const s=fresh(17);assert.equal(s.progression.version,6);assert.equal(levelOf(s),17);
  assert.ok(!featureUnlocked(s,'tractor')&&!featureUnlocked(s,'stall')&&!featureUnlocked(s,'silo'));assert.ok(featureUnlocked(fresh(18),'tractor'));assert.ok(featureUnlocked(fresh(19),'stall'));
  assert.ok(!deliveryTierUnlocked(fresh(15),'commission'));assert.ok(deliveryTierUnlocked(fresh(16),'commission'));
  assert.ok(!buildingEligible(fresh(10),'packing'));assert.ok(buildingEligible(fresh(11),'packing'));
 });
-test('A helping hand rests 15 minutes after each job, and the wiki says so',()=>{
- for(const [key,stop] of Object.entries(ACTIVE_STATIONS))assert.equal(stop.cooldown,15*60000,key);
- assert.match(JSON.stringify(wikiArticle('helpers')),/After its job a stop rests 15 min\./);
+test('A helping hand rests an hour after each job (15 minutes until 9 Oct 2026), and the wiki says so',()=>{
+ for(const [key,stop] of Object.entries(ACTIVE_STATIONS))assert.equal(stop.cooldown,60*60000,key);
+ assert.match(JSON.stringify(wikiArticle('helpers')),/After its job a stop rests 1 h\./);
  assert.match(read('public/wiki-content.js'),/After its job a stop rests \$\{wikiTime\(Math\.min\(\.\.\.Object\.values\(ACTIVE_STATIONS\)\.map\(a=>a\.cooldown\)\)\)\}/);
 });

@@ -12,8 +12,8 @@ const emptyPlot=s=>s.plots.findIndex(p=>!p.crop);
 
 test('a new farm gets a beginner boost for its first day, in plain clock time, and keeps its starter goods for 30 minutes',()=>{
  const s=createFarm(now);
- assert.equal(ROOKIE_MS,30*MIN);assert.equal(ROOKIE_BOOST_MS,24*60*MIN);assert.equal(ROOKIE_TIMER_BOOST,.8);assert.equal(s.rookieUntil,now+ROOKIE_MS);
- assert.equal(rookieBoost(s,now),.8);assert(Math.abs(rookieBoost(s,now+12*60*MIN)-.4)<1e-9,'a straight line to 0% after a day (27 Sep 2026)');assert.equal(rookieBoost(s,now+24*60*MIN),0);
+ assert.equal(ROOKIE_MS,30*MIN);assert.equal(ROOKIE_BOOST_MS,24*60*MIN);assert.equal(ROOKIE_TIMER_BOOST,.4,'40% since 9 Oct 2026 (80% before)');assert.equal(s.rookieUntil,now+ROOKIE_MS);
+ assert.equal(rookieBoost(s,now),.4);assert(Math.abs(rookieBoost(s,now+12*60*MIN)-.2)<1e-9,'a straight line to 0% after a day (27 Sep 2026)');assert.equal(rookieBoost(s,now+24*60*MIN),0);
  assert.equal(rookieLeft(s,now+10*MIN),20*MIN);assert.equal(rookieLeft(s,now+45*MIN),0);
  // Nothing else moves it: not actions, not pauses, not the level.
  act(s,{type:'field',id:0,action:'harvest'},now+MIN);s.xp=1e6;assert.equal(s.rookieUntil,now+ROOKIE_MS);
@@ -24,20 +24,20 @@ test('a new farm gets a beginner boost for its first day, in plain clock time, a
  assert.equal(cropDuration(legacy,'corn',false,now),CROPS.corn.duration);
 });
 
-test('at the start crops, batches and Care take 80% less time; after the first day everything is normal and running things keep their time',()=>{
+test('at the start crops, batches and Care take 40% less time; after the first day everything is normal and running things keep their time',()=>{
  const s=createFarm(now),legacy=createLegacyFarm(now),DAY=24*60*MIN;
- assert.equal(cropDuration(s,'corn',false,now),CROPS.corn.duration*.2);assert.equal(cropDuration(s,'corn',false,now+DAY),CROPS.corn.duration);
- assert(Math.abs(recipeDuration(s,'eggs',now)-recipeDuration(legacy,'eggs',now)*.2)<=1);
+ assert.equal(cropDuration(s,'corn',false,now),CROPS.corn.duration*.6);assert.equal(cropDuration(s,'corn',false,now+DAY),CROPS.corn.duration);
+ assert(Math.abs(recipeDuration(s,'eggs',now)-recipeDuration(legacy,'eggs',now)*.6)<=1);
  assert.equal(recipeDuration(s,'eggs',now+DAY),recipeDuration(legacy,'eggs',now));
  const a=emptyPlot(s),b=a+1;
  act(s,{type:'field',id:a,action:'plant',crop:'corn'},now);act(s,{type:'field',id:b,action:'plant',crop:'wheat'},now);
- assert.equal(s.plots[a].readyAt-now,180000,'corn 15 min -> 3 min');assert.equal(s.plots[a].careAt-now,54000,'Care 270 s -> 54 s');
- assert.equal(s.plots[b].readyAt-now,24000);assert.equal(s.plots[b].careAt-now,7200,'wheat Care comes at 7.2 s, well inside its 24 s');
- act(s,{type:'field',id:b,action:'tend'},now+8000);assert.equal(s.plots[b].tended,true);
- // After the first day: the normal 15 minutes and 270 seconds. The corn planted at the start keeps its 3 minutes.
+ assert.equal(s.plots[a].readyAt-now,540000,'corn 15 min -> 9 min');assert.equal(s.plots[a].careAt-now,162000,'Care 270 s -> 162 s');
+ assert.equal(s.plots[b].readyAt-now,72000);assert.equal(s.plots[b].careAt-now,21600,'wheat Care comes at 21.6 s, well inside its 72 s');
+ act(s,{type:'field',id:b,action:'tend'},now+22000);assert.equal(s.plots[b].tended,true);
+ // After the first day: the normal 15 minutes and 270 seconds. The corn planted at the start keeps its 9 minutes.
  const late=now+DAY+MIN;act(s,{type:'field',id:0,action:'harvest'},late);act(s,{type:'field',id:0,action:'plant',crop:'corn'},late);
  assert.equal(s.plots[0].readyAt-late,900000);assert.equal(s.plots[0].careAt-late,270000);
- assert.equal(s.plots[a].readyAt,now+180000);
+ assert.equal(s.plots[a].readyAt,now+540000);
  // Care never comes after the crop is ready, not even with the boost.
  for(const key of Object.keys(CROPS))assert(cropDuration(s,key,false,now)*.3>=6000&&Math.max(6000,cropDuration(s,key,false,now)*.3)<cropDuration(s,key,false,now),key);
 });
@@ -128,7 +128,7 @@ test('the hourglass sits next to the diamonds like the Family button, opens a sc
 test('the hourglass says how long is left and that it is temporary',()=>{
  assert.equal(rookieBadge(24*MIN-1),'24m');assert.equal(rookieBadge(30*MIN),'30m');assert.equal(rookieBadge(30000),'<1m');
  assert.equal(rookieTimeLeft(45000),'45s');assert.equal(rookieTimeLeft(24*MIN-1),'24 min');
- assert.equal(rookieLabel(24*MIN-1),'80% shorter waiting · 24 min left');
+ assert.equal(rookieLabel(24*MIN-1),'40% shorter waiting · 24 min left');
  assert.equal(rookieBadge(23*60*MIN),'23h');assert.equal(rookieTimeLeft(90*MIN),'1 h 30 min');assert.equal(rookieTimeLeft(24*60*MIN),'24 h');
  assert.match(read('rookie-ui.js'),/ease back to normal over your first/);assert.match(read('rookie-ui.js'),/Beginner boost ended/);
 });
