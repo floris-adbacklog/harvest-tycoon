@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createFarm,normalizeFarm,applyFarmAction as act,beginnerProgress,BEGINNER_QUESTS,BEGINNER_STEP_XP,BEGINNER_REWARD,levelOf,levelProgress,xpForLevel,XP_CURVE,convertXpCurve,CROPS,CROP_LEVELS,BUILDING_LEVELS,RECIPE_LEVELS,FEATURE_LEVELS,DELIVERY_LEVELS,FAMILY_MIN_LEVEL,cropUnlocked,featureUnlocked,deliveryTierUnlocked,recipeLevel} from '../game/farm-state.js';
+// The XP to reach a level on a given curve, through the game's own conversion (a farm at the very start of the level stays there).
+const onCurve=(curve,level)=>{const s={xp:xpForLevel(level),xpOffset:0,xpCurve:XP_CURVE};convertXpCurve(s,curve);return s.xp;};
 const now=Date.UTC(2026,8,21,12);
 
 test('the guide starts with the money loop: harvest, sell, plant',()=>{
@@ -23,9 +25,9 @@ test('every guide step pays XP, so following the guide takes a new farmer to lev
  assert(s.xp>=BEGINNER_STEP_XP*BEGINNER_QUESTS.length);assert(levelOf(s)>=3,`level ${levelOf(s)} after the guide`);
 });
 test('levels 1 to 10 need less XP than the original curve, the first harvest reaches level 2, and levels 30 to 50 keep their old distances',()=>{
- assert.deepEqual([1,2,3,4,5,6,7,8,9,10,11,12,20,30].map(xpForLevel),[0,15,55,120,215,345,515,730,995,1315,1645,2000,5860,14840]);
- assert.equal(XP_CURVE,6,'curve 6 is on: every copy learned to read it first (step 1), then farms switched (step 2)');assert(xpForLevel(10)<xpForLevelOld(10)&&xpForLevel(10)>850,'between the flying curve of a day (850) and the original (1,980)');
- for(let level=30;level<=50;level++)assert.equal(xpForLevel(level+1)-xpForLevel(level),60+40*(level-1),`the step from level ${level} is unchanged`);
+ assert.deepEqual([1,2,3,4,5,6,7,8,9,10,11,12,20,30].map(level=>onCurve(6,level)),[0,15,55,120,215,345,515,730,995,1315,1645,2000,5860,14840],'curve 6 (curve 7 asks more from level 6, below)');
+ assert.equal(XP_CURVE,7,'curve 7 is on (9 Oct 2026): every copy learned to read it first (step 1), then farms switched (step 2)');assert(xpForLevel(10)<xpForLevelOld(10)&&xpForLevel(10)>850,'between the flying curve of a day (850) and the original (1,980)');
+ for(let level=30;level<=50;level++)assert.equal(onCurve(6,level+1)-onCurve(6,level),60+40*(level-1),`the step from level ${level} is unchanged on curve 6`);
  for(let level=1;level<60;level++)assert(xpForLevel(level+1)-xpForLevel(level)<xpForLevel(level+2)-xpForLevel(level+1),`steps grow: ${level}`);
  for(const level of [1,2,5,9,10,12,25]){const s={xp:xpForLevel(level),xpOffset:0,xpCurve:XP_CURVE};assert.equal(levelOf(s),level);assert.equal(levelOf({...s,xp:xpForLevel(level+1)-1}),level);}
  const s=createFarm(now);act(s,{type:'field',id:0,action:'harvest'},now);
@@ -102,26 +104,25 @@ test('what moved later on 9 Oct 2026 stays open for every farm that was already 
 
 // 27 Sep 2026 (curve 5): levels 10 to 30 cheaper. 10 -> 20 felt four and a half times as long as 1 -> 10, right as the beginner boost ran out.
 test('levels 10 to 20 ask a quarter less XP, the steps grow smoothly on from level 9 and back to the old ones by level 30',()=>{
- const step=level=>xpForLevel(level+1)-xpForLevel(level),old=level=>60+40*(level-1);
+ const step=level=>onCurve(5,level+1)-onCurve(5,level),old=level=>60+40*(level-1);
  assert.deepEqual([9,10,11,12,13,14,15,16,17,18,19].map(step),[320,330,355,380,405,435,465,495,525,560,595]);
- assert.equal(xpForLevel(20)-xpForLevel(10),4545,'was 6,000');
- assert.equal(xpForLevel(30)-xpForLevel(20),8980,'was 10,000');
+ assert.equal(onCurve(5,20)-onCurve(5,10),4545,'was 6,000');
+ assert.equal(onCurve(5,30)-onCurve(5,20),8980,'was 10,000');
  for(let level=10;level<30;level++){assert(step(level)<old(level),`level ${level} is cheaper`);assert(step(level)/step(level-1)<1.1,`no jump at ${level}`);}
  assert.equal(step(30),old(30),'from level 30 as before');
- for(const level of [1,9,10])assert.equal(xpForLevel(level),[0,995,1315][[1,9,10].indexOf(level)],'levels 1 to 10 unchanged');
+ for(const level of [1,9,10])assert.equal(onCurve(5,level),[0,995,1315][[1,9,10].indexOf(level)],'levels 1 to 10 unchanged');
  // A curve-4 farm keeps its level and its share of the way to the next one.
  const curve4=level=>{const n=level-1;return 60*n+20*n*(n-1)-665;};
  for(const [level,share] of [[9,.5],[10,0],[10,.5],[14,.2],[16,.4],[19,.99],[20,0],[25,.3],[29,.7],[30,.2],[49,.5]]){
   const xp=Math.round(curve4(level)+share*(curve4(level+1)-curve4(level))),s={...createFarm(now),xp,xpOffset:0,xpCurve:4},before=levelProgress(s);
-  normalizeFarm(s,now);const after=levelProgress(s);
+  convertXpCurve(s,5);const after=levelProgress(s);   // to curve 5, as on 27 Sep (normalizeFarm converts to the curve that is on)
   assert.equal(before.level,level);assert.equal(after.level,level);assert.ok(Math.abs(after.current/after.target-before.current/before.target)<.005,`level ${level}: same share`);
   if(level<10)assert.equal(s.xp,xp,`level ${level}: untouched`);
   if(level>=30)assert.equal(s.xp,xp-2475,`level ${level}: the same XP into the level`);
  }
 });
 // Curve 5's and curve 6's totals, whichever is switched on (curve 6 is curve 5 with every step from level 90 exactly doubled).
-const xp5=level=>XP_CURVE===5||level<=90?xpForLevel(level):xpForLevel(90)+(xpForLevel(level)-xpForLevel(90))/2;
-const xp6=level=>XP_CURVE===6||level<=90?xpForLevel(level):xpForLevel(90)+2*(xpForLevel(level)-xpForLevel(90));
+const xp5=level=>onCurve(5,level),xp6=level=>onCurve(6,level);
 // 26 Sep 2026: from level 50 every step asks 4% more per level above 50, from level 100 6% more per level (curve 4); 4 Oct 2026: twice
 // that from level 90 (curve 6).
 test('from level 50 each level asks 4% more per level above 50, from 100 6% more (curve 5); nobody loses a level or progress',()=>{
@@ -181,7 +182,7 @@ const factor7=level=>level<5?1:level<10?1+(level-5)*.06:level<50?1.3:level<60?1.
 const xp7=(()=>{const totals=[0,0];return level=>{while(totals.length<=level){const from=totals.length-1;totals.push(totals[from]+Math.round((xp6(from+1)-xp6(from))*factor7(from)));}return totals[level];};})();
 test('curve 7: levels 5 to 59 ask more XP, up to 1.3x, with no jump anywhere; every copy reads it; farms convert both ways keeping level and share',()=>{
  const step6=level=>xp6(level+1)-xp6(level),step7=level=>xp7(level+1)-xp7(level);
- assert.equal(XP_CURVE,6,'step 1: every copy reads curve 7 before any farm is on it');
+ assert.equal(XP_CURVE,7,'step 2 (9 Oct 2026): farms are on curve 7; every copy read it first (step 1)');
  for(let level=1;level<=6;level++)assert.equal(xp7(level),xp6(level),`reaching level ${level} costs the same`);
  assert.deepEqual([5,6,9,10,11,20,49,50,51,59,60,89,90].map(step7),[130,180,397,429,462,832,2574,2626,2720,3334,3388,9165,18824]);
  for(let level=10;level<50;level++)assert.equal(step7(level),Math.round(step6(level)*1.3),`${level} -> ${level+1} is 1.3x`);

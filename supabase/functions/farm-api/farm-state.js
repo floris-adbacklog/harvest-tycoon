@@ -722,8 +722,9 @@ export const MAX_PLOTS=40;
 // and 60 -> 61 3,388 as before. Reaching level 6 costs the same. In real play (farms since 28 Sep 2026) a player who came back on five
 // days or more was level 12 after the first day, 18 after three and 26 after a week, and the fastest went from 1 to 88 in a week.
 // Nobody goes back: a farm keeps its level and its share of the way to the next one. Released in the same two steps as curve 6: first
-// every copy reads curve 7 while farms stay on curve 6, then XP_CURVE becomes 7 and farms convert.
-export const XP_CURVE=6;
+// every copy read curve 7 while farms stayed on curve 6 (XP_CURVE 6, 9 Oct 2026, 20:09), then XP_CURVE became 7 (9 Oct 2026, same
+// evening, at the owner's request) and farms convert.
+export const XP_CURVE=7;
 export const LATE_XP_FROM=50,LATE_XP_STEP=.04,LATER_XP_FROM=100,LATER_XP_STEP=.06,TOP_XP_FROM=90,TOP_XP_FACTOR=2;
 const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
 const CURVE5_GAPS=Object.freeze([15,40,65,95,130,170,215,265,320,  330,355,380,405,435,465,495,525,560,595,  640,690,745,800,860,920,985,1050,1115,1175]);   // to level 30
