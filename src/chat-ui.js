@@ -76,9 +76,12 @@ export function groupPills(filters){
  const pills=[level(f.minLevel)&&`From level ${f.minLevel}`,level(f.maxLevel)&&`Up to level ${f.maxLevel}`,GROUP_ACTIVE[f.active],GROUP_PLATFORM[f.platform],GROUP_NOT_PLATFORM[f.notPlatform],f.crazygames===true&&'Plays on CrazyGames',f.kongregate===true&&'Plays on Kongregate',language&&`Plays in ${language}`,GROUP_FAMILY[f.family]].filter(text=>typeof text==='string'&&text);
  return pills.length||Object.keys(f).length?pills:['Every farmer'];
 }
-// Above the message's text: "Group message from the team", then "Sent to:" and the pills, each its own element (no " · ").
+// Above the message's text: "Group message from the team", then "Sent to:" and the pills, each its own element (no " · "). On CrazyGames
+// and Kongregate (Oct 2026) a farmer counts as one in the browser, so a message for the browser, or one that leaves an app out, reaches
+// them too: there the pills that name our Android or iPhone app stay out (no app of ours is mentioned there).
+const APP_PILLS=new Set([GROUP_PLATFORM.android,GROUP_PLATFORM.ios,GROUP_NOT_PLATFORM.android,GROUP_NOT_PLATFORM.ios]);
 export function groupLine(m){
- if(!m?.meta?.group)return '';const pills=groupPills(m.meta.group.filters);
+ if(!m?.meta?.group)return '';const app=portalOff('app'),pills=groupPills(m.meta.group.filters).filter(text=>!(app&&APP_PILLS.has(text)));
  return `<div class="chat-group"><span class="chat-group-title">${art('chat')}Group message from the team</span>${pills.length?`<span class="chat-group-to"><span>Sent to:</span>${pills.map(text=>`<span class="chat-group-pill">${esc(text)}</span>`).join('')}</span>`:''}</div>`;
 }
 // 8 Oct 2026: the other farmer in a private chat, read from its channel; null when it is not one of mine (a link can name any channel).

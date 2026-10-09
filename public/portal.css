@@ -18,6 +18,17 @@ html[data-portal] .reminder-nudge,html[data-portal] #app-settings,html[data-port
 html[data-portal] #logout-player,html[data-portal] #cookie-settings,html[data-portal] #delete-account-row{display:none!important}
 /* The chat's "Translate with Google" (a link out). */
 html[data-portal] .chat-translate{display:none!important}
+/* A portal's frame on a computer can be only 1024 to 1100 px wide (Kongregate: 1024 x 640 to 1100 x 700, Oct 2026). With a long level
+   name and big numbers the buttons on the right ran out of the frame (How to play first, then Feedback and Settings): there the level
+   card gives way instead, its name and XP cut short with "…". Where everything fits, nothing changes. */
+@media(min-width:901px) and (max-width:1150px){
+ html[data-portal] .topbar{gap:10px}
+ html[data-portal] .topbar .level-card{flex:0 1 auto;min-width:0}
+ html[data-portal] .topbar .level-info>div{min-width:0}
+ html[data-portal] .topbar .level-info>div>*{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ html[data-portal] .topbar #xp-text{flex-shrink:100}
+ html[data-portal] .topbar .resources{flex:none}
+}
 /* The guest's "Save your farm: log in with CrazyGames" in Settings, Your account. */
 html[data-portal] #sound-dialog .account-actions{flex-wrap:wrap}
 html[data-portal] #sound-dialog .account-actions .portal-login{flex:1 1 100%;white-space:normal}

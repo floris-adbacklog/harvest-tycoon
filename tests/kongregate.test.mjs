@@ -7,7 +7,7 @@ import {portal as portalAround,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,
 import {wikiArticle,wikiQuick,WIKI_TOPICS} from '../public/wiki-content.js';
 import {createPortalUI} from '../src/portal-ui.js';
 import {linkify} from '../src/popup-ui.js';
-import {groupPills} from '../src/chat-ui.js';
+import {groupPills,groupLine} from '../src/chat-ui.js';
 import {portalTips,LOADING_TIPS,PORTAL_HIDDEN_TIPS} from '../public/loading-screen.js';
 import {farmPrefetch,prefetchLines,PREFETCH_START,PREFETCH_END} from '../scripts/module-preload.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -153,7 +153,7 @@ test('the portal object the page hands the game: every feature off, a signed-in 
 });
 test('the wiki on Kongregate: no buying, inviting, app, email or reminders; its own lines; only the privacy policy as a link out',()=>{
  const ctx={level:120,portal:'kongregate',href:id=>`#wiki-${id}`},html=WIKI_TOPICS.map(t=>wikiArticle(t.id,ctx).html).join('\n');
- for(const gone of [/Buying diamonds/,/Play it as an app/,/Install the app/,/Invite a friend/,/Confirm your email/,/Share my farm/,/delete-account/,/Stripe;/,/Reminders/,/Forgot your password/,/home screen/,/CrazyGames/,/As a guest/])assert.doesNotMatch(html,gone,String(gone));
+ for(const gone of [/Buying diamonds/,/Play it as an app/,/Install the app/,/Invite a friend/,/Confirm your email/,/Share my farm/,/delete-account/,/Stripe;/,/Reminders/,/Forgot your password/,/home screen/,/CrazyGames/,/As a guest/,/Starter Pack/])assert.doesNotMatch(html,gone,String(gone));
  assert.match(html,/Your farm on Kongregate/);assert.match(html,/Your farm is saved on our server with your Kongregate account/);
  assert.match(html,/Questions about your privacy\? Email info@harvesttycoon\.com\./);
  const links=[...html.matchAll(/href="([^"]*)"/g)].map(m=>m[1]);
@@ -162,6 +162,8 @@ test('the wiki on Kongregate: no buying, inviting, app, email or reminders; its 
  assert.doesNotMatch(wikiQuick({portal:'kongregate'}),/>App</);
  // CrazyGames keeps its own lines.
  const cg=WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal:true}).html).join('\n');assert.match(cg,/Your farm on CrazyGames/);assert.doesNotMatch(cg,/Kongregate|Questions about your privacy/);
+ // Nothing is sold on either: What opens when has no Starter Pack there (the website's wiki keeps it).
+ assert.doesNotMatch(cg,/Starter Pack/);assert.match(wikiArticle('quests',{level:120,href:id=>`#wiki-${id}`}).html,/<span>Starter Pack<\/span>/);
  assert.ok(portalTips(LOADING_TIPS,{documentElement:{dataset:{portal:'kongregate'}}}).every(([picture])=>!PORTAL_HIDDEN_TIPS.includes(picture)),'no tips about inviting or the app');
 });
 test('no address out of the game in Kongregate mode: popups and staff messages plain, Settings › Privacy only the policy and the contact',()=>{
@@ -169,6 +171,10 @@ test('no address out of the game in Kongregate mode: popups and staff messages p
  try{
   assert.equal(linkify('See https://www.harvesttycoon.com/partners'),'See https://www.harvesttycoon.com/partners','a web address stays words');
   assert.equal(portalOff('links'),true);assert.equal(portalOff('translate'),true);assert.equal(portalOff('app'),true);assert.equal(portalOff('payments'),true);
+  // A group message for the browser, or one that leaves an app out, reaches Kongregate players too: no pill names our apps there.
+  const sent=groupLine({meta:{group:{filters:{platform:'browser',notPlatform:'android',minLevel:20}}}});
+  assert.doesNotMatch(sent,/Android|iPhone/);assert.match(sent,/Plays in the browser/);assert.match(sent,/From level 20/);
+  assert.doesNotMatch(groupLine({meta:{group:{filters:{notPlatform:'ios'}}}}),/Sent to/,'nothing left to say who it went to');
  }finally{if(saved===undefined)delete globalThis.window;else globalThis.window=saved;}
  // Settings › Privacy: the cookie button, Contact support and Delete account go; the policy (our full address) and who to ask come in.
  const nodes=[],make=tag=>{const n={tag,className:'',textContent:'',innerHTML:'',children:[],append(c){this.children.push(c);},prepend(c){this.children.unshift(c);},remove(){n.removed=true;}};nodes.push(n);return n;};
@@ -197,6 +203,8 @@ test('no address out of the game in Kongregate mode: popups and staff messages p
   const cg={navigator:{setAppBadge:async n=>set.push(n)},caches:null,parent:{harvestBridge:{portal:{name:'crazygames'}}}};await setAppBadge(4,cg);assert.deepEqual(set,[2,4],'CrazyGames\' farm frame keeps its own number, as before Kongregate');
   // The admin's group messages can go to Kongregate players only, and they read it.
   assert.deepEqual(groupPills({kongregate:true}),['Plays on Kongregate']);
+  // On the website every pill stays.
+  assert.match(groupLine({meta:{group:{filters:{notPlatform:'android'}}}}),/Not in the Android app/);
  })();
 });
 
@@ -219,6 +227,9 @@ test('kongregate.html: Kongregate\'s API script once, the loading screen, the Re
  assert.equal(read('public/crazygames.html').match(/<section id="loading-screen"[^]*?<\/section>/)[0],html.match(/<section id="loading-screen"[^]*?<\/section>/)[0],'the same loading screen as on CrazyGames');
  const css=read('public/kongregate.css');assert.match(css,/user-select:none/);assert.match(css,/background:#fbf8f3/);assert.match(css,/background:#3f8a4a/,'the game\'s green main button');
  assert.doesNotMatch(read('public/sitemap.xml'),/kongregate/);
+ // Kongregate's frame is 1024 to 1100 px wide: on a computer that narrow the level card gives way, so How to play never runs out of it.
+ const narrow=read('public/portal.css').match(/@media\(min-width:901px\) and \(max-width:1150px\)\{([^]*?)\n\}/)?.[1]??'';
+ for(const rule of ['html[data-portal] .topbar .level-card{flex:0 1 auto;min-width:0}','html[data-portal] .topbar #xp-text{flex-shrink:100}','html[data-portal] .topbar .resources{flex:none}'])assert.ok(narrow.includes(rule),rule);
  // The farm downloads meanwhile, the same list as on CrazyGames.
  const block=html.slice(html.indexOf(PREFETCH_START)+PREFETCH_START.length,html.indexOf(PREFETCH_END)).trim();
  assert.equal(block,prefetchLines(farmPrefetch(read('public/farm.html'))),'run node scripts/module-preload.mjs');

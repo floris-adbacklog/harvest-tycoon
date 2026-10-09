@@ -243,10 +243,11 @@ const BODIES={
   +section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Your stall earns coins by itself. Collect them from time to time. What it earns per level is in ${h.link('helpers',TOPIC.helpers.title,'sec-farm-stall')}.</p>`);
  },
  quests(h){
-  // Each thing that opens is a chip; one explained elsewhere leads there (Oct 2026). The Starter Pack is bought, so never in our Android app:
-  // How to play there leaves it out, and on the website's wiki data-shop-only lets public/wiki.css hide it in the app.
+  // Each thing that opens is a chip; one explained elsewhere leads there (Oct 2026). The Starter Pack is bought, so never in our Android app
+  // or on CrazyGames and Kongregate (nothing is sold there): How to play there leaves it out, and on the website's wiki data-shop-only lets
+  // public/wiki.css hide it in the app.
   const chip=e=>{const tag=e.to?'a':'span';return `<${tag} class="wiki-open"${e.mark??''}${e.to?` href="${h.to(...e.to)}" data-wiki-topic="${e.to[0]}"${e.to[1]?` data-wiki-anchor="${e.to[1]}"`:''}`:''}>${art(e.picture)||art('gift')}<span>${e.name}</span>${e.kind?`<small>${e.kind}</small>`:''}</${tag}>`;};
-  const opens=opensByLevel(h.app);
+  const opens=opensByLevel(h.app||h.portal);
   return section('Quests',facts([
    ['quests','One little goal at a time',`${number(QUESTS.length)} quests, from your first harvest to the Grand Valley Fair. They ask for things like harvesting 12 wheat. When one is done, claim its coins and XP.${h.level==null||h.level>=WORLD_TWO_TEASER?` <span>From level ${WORLD_TWO_LEVEL}, ${h.link('village',TOPIC.village.title,'sec-village-quests')} has its own quests.</span>`:''}`],
    ['trophy','Bigger quests, more XP',`Quests up to ${number(1000)} coins give ${QUEST_XP} XP. Bigger ones give more, up to 250 XP for the biggest.`],
