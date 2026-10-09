@@ -2,8 +2,8 @@
 // message arrives while the game is closed; the chat sets the real count whenever it knows it. A browser without app badges ignores it.
 import {portal} from './portal.js';
 export async function setAppBadge(count,win=globalThis.window){
- // Not inside a game portal (CrazyGames, Kongregate, Oct 2026): there is no app of ours to put a number on.
- if(portal(win))return;
+ // Not on Kongregate (Oct 2026): there is no app of ours to put a number on. CrazyGames' farm frame keeps its own number as before.
+ if(portal(win)?.name==='kongregate')return;
  // The top window only when it is ours: inside CrazyGames' page (Oct 2026) reading its navigator throws, so this frame's own is used.
  let top=win;try{top=win?.top??win;void top?.navigator;}catch{top=win;}
  const n=Math.max(0,Math.floor(Number(count)||0)),nav=top?.navigator;

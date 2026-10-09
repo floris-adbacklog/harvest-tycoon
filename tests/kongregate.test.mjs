@@ -194,6 +194,7 @@ test('no address out of the game in Kongregate mode: popups and staff messages p
   const set=[],frame={navigator:{setAppBadge:async n=>set.push(n)},caches:null,parent:{harvestBridge:{portal:KONG}}};
   const {setAppBadge}=await import('../public/app-badge.js');await setAppBadge(3,frame);assert.deepEqual(set,[]);
   const site={navigator:{setAppBadge:async n=>set.push(n)},caches:null,parent:{harvestBridge:{}}};await setAppBadge(2,site);assert.deepEqual(set,[2],'the website as before');
+  const cg={navigator:{setAppBadge:async n=>set.push(n)},caches:null,parent:{harvestBridge:{portal:{name:'crazygames'}}}};await setAppBadge(4,cg);assert.deepEqual(set,[2,4],'CrazyGames\' farm frame keeps its own number, as before Kongregate');
   // The admin's group messages can go to Kongregate players only, and they read it.
   assert.deepEqual(groupPills({kongregate:true}),['Plays on Kongregate']);
  })();
@@ -206,7 +207,7 @@ test('kongregate.html: Kongregate\'s API script once, the loading screen, the Re
  assert.match(html,/<html lang="en" data-portal="kongregate" class="i18n-wait">/);assert.match(html,/<meta name="robots" content="noindex, nofollow">/);assert.match(html,/<meta name="harvest-version" content="dev">/);
  assert.match(html,/<meta name="referrer" content="strict-origin">/,'Kongregate may put the sign-in in the address: only our own address goes along');
  assert.equal(API_SCRIPT,'https://cdn1.kongregate.com/javascripts/kongregate_api.js');
- assert.equal(html.split(API_SCRIPT).length-1,1,'loaded once');assert.ok(html.indexOf(`<script src="${API_SCRIPT}"></script>`)<html.indexOf('</head>'),'in the head, as their docs ask');
+ assert.equal(html.split(API_SCRIPT).length-1,1,'loaded once');assert.ok(html.indexOf(`<script>if(window.parent!==window)document.write('<script src="${API_SCRIPT}"><\\/script>');</script>`)>0&&html.indexOf(API_SCRIPT)<html.indexOf('</head>'),'in the head, as their docs ask, and only inside a frame: a direct visit never runs it on our own site');
  assert.ok(html.indexOf(API_SCRIPT)<html.indexOf('<script type="module" src="/cloud/kongregate.js"></script>'));
  const code=html.replace(/<!--[^]*?-->/g,'');
  assert.deepEqual([...new Set([...code.matchAll(/https?:\/\/[^\s'"`)<,]+/g)].map(m=>m[0]))].sort(),[API_SCRIPT,'https://jnmdirvidffzxukbdmij.supabase.co',PRIVACY_URL].sort(),'no address besides Kongregate\'s API, our database and the privacy policy');
