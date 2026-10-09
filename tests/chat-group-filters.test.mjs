@@ -196,9 +196,9 @@ test('in the game: the group message shows the line above its text; an ordinary 
 test('the dashboard: the filters next to the audience, the count with them, the question names them, the last sends listed',()=>{
  const admin=read('src/admin-dashboard.js');
  assert.match(admin,/<option value="online">Online now<\/option><option value="week" selected>Active this week<\/option><option value="month" data-group-filter>Active this month<\/option><option value="all">Everyone<\/option>/);
- for(const id of ['max-level','platform','notPlatform','language','family','crazygames'])assert.match(admin,new RegExp(`id="admin-dm-${id}"`),id);
+ for(const id of ['max-level','platform','notPlatform','language','family','crazygames','kongregate'])assert.match(admin,new RegExp(`id="admin-dm-${id}"`),id);
  assert.match(admin,/<select id="admin-dm-language"><option value="">Any language<\/option>'\+LANGUAGES\.map/);
- assert.match(admin,/for\(const id of \['audience','platform','notPlatform','language','family','crazygames'\]\)dialog\.querySelector\(`#admin-dm-\$\{id\}`\)\.addEventListener\('change',\(\)=>void countDm\(\)\);/,'every filter counts again');
+ assert.match(admin,/for\(const id of \['audience','platform','notPlatform','language','family','crazygames','kongregate'\]\)dialog\.querySelector\(`#admin-dm-\$\{id\}`\)\.addEventListener\('change',\(\)=>void countDm\(\)\);/,'every filter counts again');
  assert.match(admin,/let n=groupFilters===false\?null:await bridge\.chat\.broadcastGroup\(\{filters:dmFilters\(\)\}\);if\(ask!==dmCounting\)return;/,'the count with the filters, only the latest one');
  assert.match(admin,/if\(n===null\)\{showGroupFilters\(false\);n=await bridge\.chat\.broadcastDm\(/,'the old database: the old choice and count');
  assert.match(admin,/if\(active!=='all'\)f\.active=active;if\(minLevel>1\)f\.minLevel=minLevel;/,'only what narrows it down, as the database keeps it');

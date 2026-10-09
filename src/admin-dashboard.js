@@ -100,7 +100,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label data-group-filter>Leave out<select id="admin-dm-notPlatform"><option value="">Nobody</option><option value="android">The Android app (Google Play)</option><option value="ios">The iPhone app (App Store)</option><option value="browser">The browser</option></select></label>'
   +'<label data-group-filter>Game language<select id="admin-dm-language"><option value="">Any language</option>'+LANGUAGES.map(l=>`<option value="${l.code}">${esc(l.name)}</option>`).join('')+'</select></label>'
   +'<label data-group-filter>Family<select id="admin-dm-family"><option value="">In a family or not</option><option value="in">In a family</option><option value="out">Not in a family</option></select></label>'
-  +'<label class="admin-dm-check" data-group-filter><input type="checkbox" id="admin-dm-crazygames">CrazyGames accounts only</label></div>'
+  +'<label class="admin-dm-check" data-group-filter><input type="checkbox" id="admin-dm-crazygames">CrazyGames accounts only</label>'
+  +'<label class="admin-dm-check" data-group-filter><input type="checkbox" id="admin-dm-kongregate">Kongregate accounts only</label></div>'
   +'<p class="admin-popup-note" id="admin-dm-count">Counting farmers…</p><p class="admin-popup-note">Every farmer gets it as a private message from you and can reply; the replies come in under your private messages. Farmers with notifications on for messages also get a push. Links (https) work.</p>'
   +'<p class="admin-popup-note" data-group-filter>Above it they read “Group message from the team” and who it was sent to, in their own language. Farmers who switched private messages off are left out. Plays and Leave out: where they last opened the game (a farmer with nothing on record is in no place and never left out). Game language: the one they last played in.</p>'
   +'<h4 class="admin-subhead" id="admin-dm-log-head" hidden>Last group messages</h4><ul class="admin-popup-list" id="admin-dm-log" hidden></ul></div>'
@@ -458,6 +459,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(max){const n=Math.min(200,Math.max(1,Math.round(Number(max)||1)));if(n<200)f.maxLevel=n;}
   for(const key of ['platform','notPlatform','language','family'])if($dm(key).value)f[key]=$dm(key).value;
   if($dm('crazygames').checked)f.crazygames=true;
+  if($dm('kongregate').checked)f.kongregate=true;
   return f;
  }
  // Before that file: no filters but the old choice (a hidden option is still picked in Safari, so it is switched off too).
@@ -476,7 +478,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  // News from a level (4 Oct 2026): 1 is everyone.
  const newsLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-news-level').value)||1)));
  let dmCounting=0;const dmLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-dm-level').value)||1)));
- for(const id of ['audience','platform','notPlatform','language','family','crazygames'])dialog.querySelector(`#admin-dm-${id}`).addEventListener('change',()=>void countDm());
+ for(const id of ['audience','platform','notPlatform','language','family','crazygames','kongregate'])dialog.querySelector(`#admin-dm-${id}`).addEventListener('change',()=>void countDm());
  for(const id of ['level','max-level'])dialog.querySelector(`#admin-dm-${id}`).addEventListener('input',()=>void countDm());
  dialog.querySelector('#admin-popup-target').addEventListener('change',event=>{dialog.querySelector('#admin-popup-link-row').hidden=event.target.value!=='link';});
  // News, pop-ups and the private message per language: the text, the title and the button. Each language keeps what was typed for it

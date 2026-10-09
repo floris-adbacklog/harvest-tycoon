@@ -14,6 +14,8 @@ copyFileSync(new URL('../src/presence.js',import.meta.url),new URL('../supabase/
 copyFileSync(new URL('../src/account-form.js',import.meta.url),new URL('../supabase/functions/farm-api/account-form.js',import.meta.url));
 // The same name maker and "Name 2" rule for a CrazyGames username (crazygames-auth, Oct 2026).
 copyFileSync(new URL('../src/account-form.js',import.meta.url),new URL('../supabase/functions/crazygames-auth/account-form.js',import.meta.url));
+// And for a Kongregate username (kongregate-auth, Oct 2026).
+copyFileSync(new URL('../src/account-form.js',import.meta.url),new URL('../supabase/functions/kongregate-auth/account-form.js',import.meta.url));
 
 copyFileSync(new URL('../public/player-avatars.js',import.meta.url),new URL('../supabase/functions/farm-api/player-avatars.js',import.meta.url));
 

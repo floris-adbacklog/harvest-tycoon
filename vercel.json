@@ -172,6 +172,23 @@
       ]
     },
     {
+      "source": "/kongregate.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors https://www.kongregate.com https://*.kongregate.com https://*.konggames.com"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
       "source": "/version.json",
       "headers": [
         {

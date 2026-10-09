@@ -7,7 +7,7 @@
  <a class="legal-logo" href="/" aria-label="Harvest Tycoon home"><img src="/assets/harvest-tycoon-logo.webp" alt="Harvest Tycoon" width="1024" height="1024"></a>
  <p class="eyebrow">HARVEST TYCOON</p>
  <h1>Privacy Policy</h1>
- <p class="updated">Last updated: 4 October 2026</p>
+ <p class="updated">Last updated: 9 October 2026</p>
 </header>
 <main class="legal-card">
  <section class="legal-summary" aria-labelledby="summary-title">
@@ -20,6 +20,7 @@
    <li>We send you news and offers by email only if you say yes to that separately. Confirming your email address does not mean yes. You can unsubscribe at any time.</li>
    <li>Our website uses Google Analytics, the Meta Pixel and the TikTok Pixel, and our Android app the Meta SDK, only if you accept cookies. See <a href="#cookies">Cookies and local storage</a>.</li>
    <li>On CrazyGames you play with your CrazyGames account or as a guest, and we load no trackers there. See <a href="#crazygames">Playing on CrazyGames</a>.</li>
+   <li>On Kongregate you play with your Kongregate account, and we load no trackers there. See <a href="#kongregate">Playing on Kongregate</a>.</li>
    <li>In our Android app from Google Play you sign in with your email address, and purchases go through Google Play. Its push notifications go through OneSignal, which receives nothing about your account or your game until you turn them on. See <a href="#android-app">The Android app</a>.</li>
    <li>Our iPhone app from the App Store works the same way, and it has no Tag Manager, no cookies or cookie banner and no ad tracking. See <a href="#iphone-app">The iPhone app</a>.</li>
    <li>We do not sell your personal data.</li>
@@ -99,6 +100,15 @@
   <li>Everything else is as for any farm: your game data (above), that your farm came from CrazyGames (<em>How you found us</em>), and what other players can see (<a href="#other-players">section 5</a>). The chat is only open to players logged in with CrazyGames, and only when CrazyGames allows chat. To limit how many new guest farms one network can start, our server keeps a scrambled form (a keyed hash) of your IP address for at most two hours, never the address itself.</li>
   <li><strong>No trackers from us:</strong> on CrazyGames we load no Google Analytics, Meta Pixel, TikTok Pixel or other trackers, show no ads of our own, set no cookies and send no emails or push notifications. CrazyGames runs its own website and software under its own privacy policy and is responsible for what it collects.</li>
   <li><strong>Deleting your farm:</strong> email <a href="mailto:info@harvesttycoon.com">info@harvesttycoon.com</a> with your farmer name (and your CrazyGames username if you logged in), and we delete your farm and the data linked to it.</li>
+ </ul>
+
+ <h3 id="kongregate">Playing on Kongregate</h3>
+ <p>You can also play Harvest Tycoon on Kongregate (kongregate.com). There you never sign up with us: no email address and no password. Only players signed in to Kongregate get a farm; a guest sees a page that asks to register or sign in with Kongregate.</p>
+ <ul>
+  <li><strong>Signed in with Kongregate:</strong> Kongregate gives the game your <strong>Kongregate user ID</strong>, <strong>username</strong> and a sign-in token for this game. Our server checks the token with Kongregate and keeps the user ID with your farm, so you find the same farm wherever you sign in to Kongregate. So that a new start within the hour needs no new check, it also keeps a scrambled form (a keyed hash) of the token, never the token itself. Your username, made to fit our name rules, becomes your farmer name; you can change it like any farmer name. We do not receive your Kongregate password or email address.</li>
+  <li>Everything else is as for any farm: your game data (above), that your farm came from Kongregate (<em>How you found us</em>), and what other players can see (<a href="#other-players">section 5</a>), the chat included. To limit how often one network can make us check sign-ins with Kongregate, our server keeps a scrambled form (a keyed hash) of your IP address for at most two hours, never the address itself.</li>
+  <li><strong>No trackers from us:</strong> on Kongregate we load no Google Analytics, Meta Pixel, TikTok Pixel or other trackers, show no ads of our own, sell nothing, set no cookies and send no emails or push notifications. Kongregate runs its own website and software, including the ads around the game, under its own privacy policy and is responsible for what it collects.</li>
+  <li><strong>Deleting your farm:</strong> email <a href="mailto:info@harvesttycoon.com">info@harvesttycoon.com</a> with your farmer name and your Kongregate username, and we delete your farm and the data linked to it.</li>
  </ul>
 
  <h3 id="android-app">The Android app</h3>
@@ -205,6 +215,8 @@
    <tr><td data-label="Name"><code>harvest-tycoon:cg-user</code></td><td data-label="What it does">On CrazyGames: keeps you signed in to the farm of your CrazyGames account.</td><td data-label="How long">Renewed each time you play logged in</td></tr>
    <tr><td data-label="Name"><code>harvest-tycoon:cg-guest</code></td><td data-label="What it does">On CrazyGames: the way back to your guest farm in this browser.</td><td data-label="How long">Until you log in with CrazyGames or clear your browser’s storage</td></tr>
    <tr><td data-label="Name"><code>harvest-tycoon:cg-locale</code></td><td data-label="What it does">On CrazyGames: the language CrazyGames asked for last, so a language you pick yourself in Settings stays.</td><td data-label="How long">Until you clear your browser’s storage</td></tr>
+   <tr><td data-label="Name"><code>harvest-tycoon:kg-user</code></td><td data-label="What it does">On Kongregate: keeps you signed in to the farm of your Kongregate account.</td><td data-label="How long">Renewed each time you play signed in</td></tr>
+   <tr><td data-label="Name"><code>harvest-tycoon:kg-locale</code></td><td data-label="What it does">On Kongregate: the language of Kongregate’s site last time, so a language you pick yourself in Settings stays.</td><td data-label="How long">Until you clear your browser’s storage</td></tr>
    <tr><td data-label="Name"><code>harvest-tycoon:cookies</code></td><td data-label="What it does">Remembers whether you accepted or declined cookies for Google Analytics, the Meta Pixel and the TikTok Pixel.</td><td data-label="How long">12 months, then we ask again</td></tr>
    <tr><td data-label="Name"><code>harvest-payment-event:…</code></td><td data-label="What it does">Session storage that stops a purchase from being counted twice.</td><td data-label="How long">Until you close the tab</td></tr>
   </tbody>
@@ -232,6 +244,7 @@
   <li><strong>Emails with us</strong>: for as long as needed to handle your question, and afterwards only if we need them for legal reasons.</li>
   <li><strong>How you found us</strong>: for as long as your account exists.</li>
   <li><strong>Playing on CrazyGames</strong>: the link between your CrazyGames user ID and your farm, for as long as your account exists; the scrambled IP address of a new guest farm, at most two hours.</li>
+  <li><strong>Playing on Kongregate</strong>: the link between your Kongregate user ID and your farm, for as long as your account exists; the scrambled sign-in token, until the next check replaces it; the scrambled IP address of a sign-in check, at most two hours.</li>
   <li><strong>Technical logs</strong>: for a limited period, according to the settings of our hosting and database providers.</li>
   <li><strong>Analytics data</strong>: according to the retention settings of Google Analytics, Meta and TikTok.</li>
   <li><strong>Backups</strong>: deleted data can remain in backups for a limited time until those backups are replaced.</li>

@@ -73,7 +73,7 @@ const GROUP_NOT_PLATFORM={android:'Not in the Android app',ios:'Not in the iPhon
 const GROUP_FAMILY={in:'In a family',out:'Not in a family'};
 export function groupPills(filters){
  const f=filters&&typeof filters==='object'&&!Array.isArray(filters)?filters:{},level=n=>Number.isInteger(n)&&n>=1&&n<=200,language=LANGUAGES.find(l=>l.code===f.language)?.name;
- const pills=[level(f.minLevel)&&`From level ${f.minLevel}`,level(f.maxLevel)&&`Up to level ${f.maxLevel}`,GROUP_ACTIVE[f.active],GROUP_PLATFORM[f.platform],GROUP_NOT_PLATFORM[f.notPlatform],f.crazygames===true&&'Plays on CrazyGames',language&&`Plays in ${language}`,GROUP_FAMILY[f.family]].filter(text=>typeof text==='string'&&text);
+ const pills=[level(f.minLevel)&&`From level ${f.minLevel}`,level(f.maxLevel)&&`Up to level ${f.maxLevel}`,GROUP_ACTIVE[f.active],GROUP_PLATFORM[f.platform],GROUP_NOT_PLATFORM[f.notPlatform],f.crazygames===true&&'Plays on CrazyGames',f.kongregate===true&&'Plays on Kongregate',language&&`Plays in ${language}`,GROUP_FAMILY[f.family]].filter(text=>typeof text==='string'&&text);
  return pills.length||Object.keys(f).length?pills:['Every farmer'];
 }
 // Above the message's text: "Group message from the team", then "Sent to:" and the pills, each its own element (no " · ").
@@ -604,9 +604,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  }
 
  // "Get the app" opens /app in a new tab on the website, in the farmer's language (/es/app, ...). In our Android or iPhone app the farmer has it already (the game's own view
- // never goes away to a store page), and CrazyGames allows no links to an app: a short line says so instead.
+ // never goes away to a store page), and CrazyGames and Kongregate allow no links to an app: a short line says so instead.
  function openApp(){
-  if(portalOff('app')){showCenterNotice(dialog,'The app is not available on CrazyGames.');return;}
+  if(portalOff('app')){showCenterNotice(dialog,bridge.portal?.name==='kongregate'?'The app is not available on Kongregate.':'The app is not available on CrazyGames.');return;}
   if(androidApp(win)){showCenterNotice(dialog,'You already have the app: you are playing in it.');return;}
   win.open(`${SITE}${appPath(chosenLanguage())}`,'_blank','noopener');
  }

@@ -24,8 +24,9 @@ const offset=ms=>{const p=Object.fromEntries(PARTS.formatToParts(ms).map(x=>[x.t
 export const zoneDay=ms=>DAY_KEY.format(ms);
 export const zoneMidnight=ms=>{const start=Date.parse(`${zoneDay(ms)}T00:00:00Z`);return start-offset(start-offset(start));};
 export const ago=(iso,now=Date.now())=>{const t=time(iso);if(t==null)return 'never';const m=Math.floor((now-t)/60000);return m<1?'just now':m<60?`${m}m ago`:m<1440?`${Math.floor(m/60)}h ago`:`${Math.floor(m/1440)}d ago`;};
-// CrazyGames accounts (Oct 2026): admin_player_accounts says crazygames or crazygames_guest (supabase/crazygames.sql).
-const PROVIDERS={email:'Email',google:'Google',facebook:'Facebook',crazygames:'CrazyGames',crazygames_guest:'CrazyGames guest'};
+// CrazyGames accounts (Oct 2026): admin_player_accounts says crazygames or crazygames_guest (supabase/crazygames.sql); Kongregate
+// accounts kongregate (supabase/kongregate.sql).
+const PROVIDERS={email:'Email',google:'Google',facebook:'Facebook',crazygames:'CrazyGames',crazygames_guest:'CrazyGames guest',kongregate:'Kongregate'};
 export const provider=id=>PROVIDERS[id]??String(id??'Email');
 let regions=null;
 try{regions=new Intl.DisplayNames(['en'],{type:'region'});}catch{}

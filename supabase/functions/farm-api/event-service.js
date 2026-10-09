@@ -116,10 +116,11 @@ async function resendMail(to,message){
  const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({from,to:[to],subject:message.subject,html:message.html,text:message.text})});
  if(!response.ok)throw Error('The email could not be sent. Try again in a moment.');
 }
-// A CrazyGames account (Oct 2026, portal.js) has a made-up address: no code is ever sent to it and it is never changed.
-const NO_PORTAL_EMAIL='You play with CrazyGames, so your account has no email address.';
+// A CrazyGames or Kongregate account (Oct 2026, portal.js) has a made-up address: no code is ever sent to it and it is never changed.
+const NO_PORTAL_EMAIL=Object.freeze({crazygames:'You play with CrazyGames, so your account has no email address.',kongregate:'You play with Kongregate, so your account has no email address.'});
+const noPortalEmail=user=>Error(NO_PORTAL_EMAIL[portalOf(user).id]);
 export async function sendEmailCode({admin,user,now=Date.now(),mail=resendMail,random=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
- if(portalOf(user))throw Error(NO_PORTAL_EMAIL);
+ if(portalOf(user))throw noPortalEmail(user);
  if(!user.email)throw Error('Your account has no email address.');
  const checked=await admin.rpc('harvest_email_checked',{p_player:user.id});if(checked.error)throw checked.error;
  if(checked.data===true)return {verified:true};
@@ -157,7 +158,7 @@ export async function confirmEmailCode({admin,user,code,now=Date.now()}){
 // password cannot be guessed here.
 const emailProvider=user=>(user.app_metadata?.provider??'email')==='email';
 export async function sendEmailChange({admin,user,email,password,passwordOk,now=Date.now(),mail=resendMail,random=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
- if(portalOf(user))throw Error(NO_PORTAL_EMAIL);
+ if(portalOf(user))throw noPortalEmail(user);
  if(!emailProvider(user))throw Error('You sign in with Google or Facebook, so your email address comes from there.');
  // The admin's address is what makes it the admin (admin-service.js): moving it here would lock the admin out of the dashboard.
  if(isAdminAccount(user))throw Error('This is the admin account. Change its address in Supabase.');
@@ -179,7 +180,7 @@ export async function sendEmailChange({admin,user,email,password,passwordOk,now=
  return {sent:true,email:next,waitMs:EMAIL_CODE.waitMs};
 }
 export async function confirmEmailChange({admin,user,code,now=Date.now()}){
- if(portalOf(user))throw Error(NO_PORTAL_EMAIL);
+ if(portalOf(user))throw noPortalEmail(user);
  if(!emailProvider(user))throw Error('You sign in with Google or Facebook, so your email address comes from there.');
  if(!/^\d{6}$/.test(String(code??'')))throw Error('Type the 6 digits from the email.');
  const row=await admin.from('email_checks').select('*').eq('player_id',user.id).maybeSingle();if(row.error)throw row.error;

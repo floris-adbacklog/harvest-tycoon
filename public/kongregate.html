@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en" data-portal="kongregate" class="i18n-wait"><head><meta charset="utf-8">
+<!-- Harvest Tycoon on Kongregate (Oct 2026): Kongregate shows this page in a frame on its game page (their "Iframe" game type), with
+     Kongregate's own API script. No sign-in of ours, cookie banner, tracking, purchases, links or app here: src/kongregate.js signs in a
+     player who is signed in to Kongregate and opens the same farm as the website; a guest gets the Register page. Not for search engines
+     (vercel.json says so too). Kongregate may put the player's sign-in in this page's address, so the page sends no more than our own
+     address along to anything it loads (the referrer meta). -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"><meta name="theme-color" content="#214d36"><meta name="robots" content="noindex, nofollow"><meta name="referrer" content="strict-origin"><meta name="harvest-version" content="dev"><title>Harvest Tycoon</title>
+<link rel="preconnect" href="https://jnmdirvidffzxukbdmij.supabase.co" crossorigin><link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48"><link rel="preload" as="image" href="/assets/farm-backdrop.webp" media="(orientation: landscape)"><link rel="preload" as="image" href="/assets/farm-backdrop-tall.webp" media="(orientation: portrait)"><link rel="stylesheet" href="/loading-screen.css"><link rel="stylesheet" href="/kongregate.css">
+<script src="https://cdn1.kongregate.com/javascripts/kongregate_api.js"></script></head>
+<body data-phase="checking">
+<section id="loading-screen" class="loading-screen farm-loading" aria-labelledby="loading-copy"><div class="farm-loading-stage">
+ <img class="farm-loading-logo" src="/assets/harvest-tycoon-logo.webp" alt="Harvest Tycoon" width="1024" height="1024" fetchpriority="high" draggable="false">
+ <div class="farm-loading-progress"><progress max="100" value="4" id="loading-progress" aria-label="Loading progress"></progress><p class="farm-loading-status"><span id="loading-copy" role="status">Checking your account…</span><span id="loading-percent" aria-hidden="true">4%</span></p></div>
+ <p class="farm-loading-tip"><img id="loading-tip-icon" src="/assets/icons/apples.webp" alt="" width="30" height="30"><span id="loading-tip-text">Apple trees and berry bushes grow back after you pick them.</span></p>
+ <p class="portal-privacy">By playing you agree to our <a href="https://www.harvesttycoon.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+ </div></section>
+<section id="guest-screen" class="loading-screen farm-loading kong-guest" aria-labelledby="guest-title" hidden><div class="farm-loading-stage">
+ <img class="farm-loading-logo" src="/assets/harvest-tycoon-logo.webp" alt="Harvest Tycoon" width="1024" height="1024" draggable="false">
+ <div class="kong-guest-card"><h1 id="guest-title">Your farm is waiting</h1><p>Grow crops, build your farm and trade with farmers from all over the world. Register to start: your farm is saved to your Kongregate account.</p><button type="button" id="guest-register" class="kong-register">Register or sign in</button><p id="guest-status" class="kong-guest-status" role="status"></p></div>
+ <p class="portal-privacy">By playing you agree to our <a href="https://www.harvesttycoon.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+ <p id="guest-contact" class="portal-privacy"></p>
+ </div></section>
+<section id="pause-screen" class="portal-pause" role="alert" hidden><div class="portal-pause-card"><img src="/assets/harvest-tycoon-logo.webp" alt="" width="120" height="120" draggable="false"><h2>A little pause.</h2><p id="pause-copy">Your farm is safe. Reconnect to continue.</p><p id="pause-message" class="portal-pause-status"></p><button type="button" id="pause-retry" class="portal-button">Try again</button></div></section>
+<div id="farm-host" hidden></div>
+<noscript><p>Enable JavaScript to play Harvest Tycoon.</p></noscript>
+<script type="module" src="/cloud/kongregate.js"></script>
+<!-- The farm downloads while the account is being checked: farm.html, what it loads and the models, prefetched at the lowest priority
+     after this page's own files (scripts/module-preload.mjs writes the list, the same as on public/crazygames.html). -->
+<!-- farm-prefetch:start -->
+<link rel="prefetch" href="/farm.html">
+<link rel="prefetch" href="/app-mode.js">
+<link rel="prefetch" href="/styles.css">
+<link rel="prefetch" href="/beta.css">
+<link rel="prefetch" href="/mobile.css">
+<link rel="prefetch" href="/icons.css">
+<link rel="prefetch" href="/payments.css">
+<link rel="prefetch" href="/production-controls.css">
+<link rel="prefetch" href="/daily-market.css">
+<link rel="prefetch" href="/beginner.css">
+<link rel="prefetch" href="/farm-life.css">
+<link rel="prefetch" href="/farm-audio.css">
+<link rel="prefetch" href="/settings.css">
+<link rel="prefetch" href="/player-avatars.css">
+<link rel="prefetch" href="/loading-screen.css">
+<link rel="prefetch" href="/progression.css">
+<link rel="prefetch" href="/family.css">
+<link rel="prefetch" href="/pass.css">
+<link rel="prefetch" href="/player-profiles.css">
+<link rel="prefetch" href="/vip.css">
+<link rel="prefetch" href="/shop.css">
+<link rel="prefetch" href="/ui-polish.css">
+<link rel="prefetch" href="/retention.css">
+<link rel="prefetch" href="/pretty-select.css">
+<link rel="prefetch" href="/invite.css">
+<link rel="prefetch" href="/chat.css">
+<link rel="prefetch" href="/wiki.css">
+<link rel="prefetch" href="/buttons.css">
+<link rel="prefetch" href="/world-two.css">
+<link rel="prefetch" href="/portal.css">
+<link rel="prefetch" href="/more-menu.css">
+<link rel="prefetch" href="/desktop-hud.css">
+<link rel="prefetch" href="/mobile-windows.css">
+<link rel="prefetch" href="/pwa-layout.css">
+<link rel="prefetch" href="/game.js?v=familyhall-model-2">
+<link rel="prefetch" href="/activities-ui.js">
+<link rel="prefetch" href="/beginner-ui.js">
+<link rel="prefetch" href="/bonus-overview.js">
+<link rel="prefetch" href="/boosts-ui.js">
+<link rel="prefetch" href="/center-notice.js">
+<link rel="prefetch" href="/coach.js">
+<link rel="prefetch" href="/confirm-dialog.js">
+<link rel="prefetch" href="/crop-growth.js">
+<link rel="prefetch" href="/crop-rows.js">
+<link rel="prefetch" href="/daylight.js">
+<link rel="prefetch" href="/diamond-confirm.js">
+<link rel="prefetch" href="/economy-ui.js?v=familyhall-model-2">
+<link rel="prefetch" href="/email-check-ui.js">
+<link rel="prefetch" href="/emblem-picker.js">
+<link rel="prefetch" href="/estate-ui.js">
+<link rel="prefetch" href="/event-goals.js">
+<link rel="prefetch" href="/family-flag.js">
+<link rel="prefetch" href="/family-invitations-ui.js">
+<link rel="prefetch" href="/family-order-rewards.js">
+<link rel="prefetch" href="/family-profile.js">
+<link rel="prefetch" href="/family-stats.js">
+<link rel="prefetch" href="/family-tournament.js">
+<link rel="prefetch" href="/family-ui.js">
+<link rel="prefetch" href="/farm-atmosphere.js">
+<link rel="prefetch" href="/farm-audio.js">
+<link rel="prefetch" href="/farm-client.js">
+<link rel="prefetch" href="/farm-input.js">
+<link rel="prefetch" href="/farm-layout.js">
+<link rel="prefetch" href="/farm-life.js">
+<link rel="prefetch" href="/farm-props.js">
+<link rel="prefetch" href="/farm-share.js">
+<link rel="prefetch" href="/farm-state.js">
+<link rel="prefetch" href="/feedback-ui.js">
+<link rel="prefetch" href="/field-picker.js">
+<link rel="prefetch" href="/fit-text.js">
+<link rel="prefetch" href="/game-links.js">
+<link rel="prefetch" href="/growth-ui.js">
+<link rel="prefetch" href="/guide-steps.js">
+<link rel="prefetch" href="/haptics.js">
+<link rel="prefetch" href="/harvest-fly.js">
+<link rel="prefetch" href="/i18n.js">
+<link rel="prefetch" href="/install-ui.js">
+<link rel="prefetch" href="/invite-ui.js">
+<link rel="prefetch" href="/language-settings.js">
+<link rel="prefetch" href="/languages.js">
+<link rel="prefetch" href="/live-events-ui.js">
+<link rel="prefetch" href="/loading-screen.js">
+<link rel="prefetch" href="/medal-notice.js">
+<link rel="prefetch" href="/minimap.js">
+<link rel="prefetch" href="/mobile-ui.js">
+<link rel="prefetch" href="/model-atlas.js">
+<link rel="prefetch" href="/notifications-ui.js">
+<link rel="prefetch" href="/pass-ui.js">
+<link rel="prefetch" href="/place-label.js">
+<link rel="prefetch" href="/player-avatars.js">
+<link rel="prefetch" href="/portal.js">
+<link rel="prefetch" href="/pretty-select.js">
+<link rel="prefetch" href="/progression-ui.js">
+<link rel="prefetch" href="/quests-ui.js">
+<link rel="prefetch" href="/rank-art.js">
+<link rel="prefetch" href="/reminder-nudge.js">
+<link rel="prefetch" href="/render-resources.js">
+<link rel="prefetch" href="/retention-ui.js">
+<link rel="prefetch" href="/rookie-ui.js">
+<link rel="prefetch" href="/scene-polish.js">
+<link rel="prefetch" href="/settings-nav.js">
+<link rel="prefetch" href="/skeleton.js">
+<link rel="prefetch" href="/social-ui.js">
+<link rel="prefetch" href="/soft-red.js">
+<link rel="prefetch" href="/sound-kit.js">
+<link rel="prefetch" href="/sound-settings.js">
+<link rel="prefetch" href="/sweep-tools.js">
+<link rel="prefetch" href="/toast-ui.js">
+<link rel="prefetch" href="/valley-ui.js">
+<link rel="prefetch" href="/vendor/addons/loaders/GLTFLoader.js">
+<link rel="prefetch" href="/vendor/addons/utils/BufferGeometryUtils.js">
+<link rel="prefetch" href="/vendor/three.core.js">
+<link rel="prefetch" href="/vendor/three.module.js">
+<link rel="prefetch" href="/vip-ui.js">
+<link rel="prefetch" href="/visual-icons.js">
+<link rel="prefetch" href="/welcome-ui.js">
+<link rel="prefetch" href="/wiki-content.js">
+<link rel="prefetch" href="/wiki-link.js">
+<link rel="prefetch" href="/wiki-ui.js">
+<link rel="prefetch" href="/lucide-icons.js">
+<link rel="prefetch" href="/cloud/game-cloud.js">
+<link rel="prefetch" href="/assets/models/palette.png?v=20261007">
+<link rel="prefetch" href="/assets/models/plant_001.glb">
+<link rel="prefetch" href="/assets/models/plant_002.glb">
+<link rel="prefetch" href="/assets/models/plant_003.glb">
+<link rel="prefetch" href="/assets/models/plant_004.glb">
+<link rel="prefetch" href="/assets/models/plant_005.glb">
+<link rel="prefetch" href="/assets/models/plant_006.glb">
+<link rel="prefetch" href="/assets/models/plant_007.glb">
+<link rel="prefetch" href="/assets/models/plant_010.glb">
+<link rel="prefetch" href="/assets/models/plant_011.glb">
+<link rel="prefetch" href="/assets/models/garden_bed_001.glb">
+<link rel="prefetch" href="/assets/models/bag_001.glb">
+<link rel="prefetch" href="/assets/models/bag_002.glb">
+<link rel="prefetch" href="/assets/models/bag_003.glb">
+<link rel="prefetch" href="/assets/models/bucket_001.glb">
+<link rel="prefetch" href="/assets/models/apiary_001.glb">
+<link rel="prefetch" href="/assets/models/cart_004.glb">
+<link rel="prefetch" href="/assets/models/chair_001.glb">
+<link rel="prefetch" href="/assets/models/firewood_003.glb">
+<link rel="prefetch" href="/assets/models/firewood_008.glb">
+<link rel="prefetch" href="/assets/models/hay_002.glb">
+<link rel="prefetch" href="/assets/models/hay_003.glb">
+<link rel="prefetch" href="/assets/models/table_001.glb">
+<link rel="prefetch" href="/assets/models/grass_004.glb">
+<link rel="prefetch" href="/assets/models/bush_003.glb">
+<link rel="prefetch" href="/assets/models/hangar_003.glb">
+<link rel="prefetch" href="/assets/models/house_027.glb">
+<link rel="prefetch" href="/assets/models/house_030.glb">
+<link rel="prefetch" href="/assets/models/tower_005.glb">
+<link rel="prefetch" href="/assets/models/house_010.glb">
+<link rel="prefetch" href="/assets/models/hangar_004.glb">
+<link rel="prefetch" href="/assets/models/tower_002.glb">
+<link rel="prefetch" href="/assets/models/tractor_001.glb">
+<link rel="prefetch" href="/assets/models/tree_001.glb">
+<link rel="prefetch" href="/assets/models/tree_004.glb">
+<link rel="prefetch" href="/assets/models/tree_006.glb">
+<link rel="prefetch" href="/assets/models/fence_001.glb">
+<link rel="prefetch" href="/assets/models/cow_001.glb">
+<link rel="prefetch" href="/assets/models/chicken_001.glb">
+<link rel="prefetch" href="/assets/models/sheep_001.glb">
+<link rel="prefetch" href="/assets/models/hay_001.glb">
+<link rel="prefetch" href="/assets/models/bush_001.glb">
+<link rel="prefetch" href="/assets/models/grass_001.glb">
+<link rel="prefetch" href="/assets/models/barrel_001.glb">
+<link rel="prefetch" href="/assets/models/barrel_009.glb">
+<link rel="prefetch" href="/assets/models/cart_001.glb">
+<link rel="prefetch" href="/assets/models/case_002.glb">
+<link rel="prefetch" href="/assets/models/case_003.glb">
+<link rel="prefetch" href="/assets/models/coop_001.glb">
+<link rel="prefetch" href="/assets/models/landscape_001.glb">
+<link rel="prefetch" href="/assets/models/ground_004.glb">
+<link rel="prefetch" href="/assets/models/road_001.glb">
+<link rel="prefetch" href="/assets/models/tower_001.glb">
+<link rel="prefetch" href="/assets/models/tower_020.glb">
+<link rel="prefetch" href="/assets/models/village_stall_001.glb">
+<link rel="prefetch" href="/assets/models/greenhouse_003.glb">
+<link rel="prefetch" href="/assets/models/prop_023.glb">
+<link rel="prefetch" href="/assets/models/barrel_002.glb">
+<link rel="prefetch" href="/assets/models/bucket_003.glb">
+<link rel="prefetch" href="/assets/models/goat_001.glb">
+<link rel="prefetch" href="/assets/models/fence_008.glb">
+<link rel="prefetch" href="/assets/models/fence_015.glb">
+<link rel="prefetch" href="/assets/models/ground_002.glb">
+<link rel="prefetch" href="/assets/models/ground_006.glb">
+<link rel="prefetch" href="/assets/models/ground_007.glb">
+<link rel="prefetch" href="/assets/models/stall_001.glb">
+<link rel="prefetch" href="/assets/models/case_001.glb">
+<link rel="prefetch" href="/assets/models/dray_002.glb">
+<link rel="prefetch" href="/assets/models/dray_004.glb">
+<link rel="prefetch" href="/assets/models/prop_029.glb">
+<link rel="prefetch" href="/assets/models/hangar_007.glb">
+<link rel="prefetch" href="/assets/models/hangar_022.glb">
+<link rel="prefetch" href="/assets/models/tower_010.glb">
+<link rel="prefetch" href="/assets/models/tree_009.glb">
+<link rel="prefetch" href="/assets/models/hangar_005.glb">
+<link rel="prefetch" href="/assets/models/hangar_002.glb">
+<link rel="prefetch" href="/assets/models/house_011.glb">
+<link rel="prefetch" href="/assets/models/mountain_008.glb">
+<link rel="prefetch" href="/assets/models/field_004.glb">
+<link rel="prefetch" href="/assets/models/field_005.glb">
+<link rel="prefetch" href="/assets/models/village_pier_001.glb">
+<link rel="prefetch" href="/assets/models/village_boat_001.glb">
+<link rel="prefetch" href="/assets/models/village_rowboat_001.glb">
+<link rel="prefetch" href="/assets/models/village_stones_001.glb">
+<link rel="prefetch" href="/assets/models/horse_002.glb">
+<link rel="prefetch" href="/assets/models/pig_001.glb">
+<link rel="prefetch" href="/assets/models/lawn_mower_001.glb">
+<link rel="prefetch" href="/assets/models/fir_tree_003.glb">
+<link rel="prefetch" href="/assets/models/tree_008.glb">
+<link rel="prefetch" href="/assets/models/stone_fence_001.glb">
+<link rel="prefetch" href="/assets/models/trailer_001.glb">
+<link rel="prefetch" href="/assets/models/tree_002.glb">
+<link rel="prefetch" href="/assets/models/tree_005.glb">
+<link rel="prefetch" href="/assets/models/tree_007.glb">
+<link rel="prefetch" href="/assets/models/fir_tree_001.glb">
+<link rel="prefetch" href="/assets/models/fir_tree_006.glb">
+<link rel="prefetch" href="/assets/models/bush_002.glb">
+<link rel="prefetch" href="/assets/models/bush_004.glb">
+<link rel="prefetch" href="/assets/models/stone_fence_003.glb">
+<link rel="prefetch" href="/assets/models/coop_002.glb">
+<link rel="prefetch" href="/assets/models/mountain_001.glb">
+<link rel="prefetch" href="/assets/models/mountain_007.glb">
+<link rel="prefetch" href="/assets/models/village_stall_002.glb">
+<link rel="prefetch" href="/assets/models/village_stall_003.glb">
+<link rel="prefetch" href="/assets/models/village_stall_004.glb">
+<link rel="prefetch" href="/assets/models/village_melons_001.glb">
+<link rel="prefetch" href="/assets/models/village_barrels_001.glb">
+<link rel="prefetch" href="/assets/models/house_008.glb">
+<link rel="prefetch" href="/assets/models/pointer_002.glb">
+<link rel="prefetch" href="/assets/models/table_002.glb">
+<link rel="prefetch" href="/assets/models/garden_bed_002.glb">
+<link rel="prefetch" href="/assets/models/firewood_001.glb">
+<link rel="prefetch" href="/assets/models/house_019.glb">
+<link rel="prefetch" href="/assets/models/pig_002.glb">
+<link rel="prefetch" href="/assets/models/pig_003.glb">
+<link rel="prefetch" href="/assets/models/pig_005.glb">
+<link rel="prefetch" href="/assets/models/plant_009.glb">
+<link rel="prefetch" href="/assets/models/tree_010.glb">
+<link rel="prefetch" href="/assets/models/apiary_002.glb">
+<link rel="prefetch" href="/assets/models/apiary_003.glb">
+<link rel="prefetch" href="/assets/models/sheep_002.glb">
+<link rel="prefetch" href="/assets/models/sheep_003.glb">
+<link rel="prefetch" href="/assets/models/hangar_006.glb">
+<link rel="prefetch" href="/assets/models/greenhouse_004.glb">
+<link rel="prefetch" href="/assets/models/house_018.glb">
+<link rel="prefetch" href="/assets/models/tree_011.glb">
+<link rel="prefetch" href="/assets/models/hangar_015.glb">
+<link rel="prefetch" href="/assets/models/hangar_019.glb">
+<link rel="prefetch" href="/assets/models/hangar_001.glb">
+<link rel="prefetch" href="/assets/models/hangar_009.glb">
+<link rel="prefetch" href="/assets/models/goat_002.glb">
+<link rel="prefetch" href="/assets/models/horse_003.glb">
+<link rel="prefetch" href="/assets/models/horse_004.glb">
+<link rel="prefetch" href="/assets/models/horse_005.glb">
+<link rel="prefetch" href="/assets/models/house_005.glb">
+<link rel="prefetch" href="/assets/models/hangar_008.glb">
+<link rel="prefetch" href="/assets/models/trailer_003.glb">
+<link rel="prefetch" href="/assets/models/truck_005.glb">
+<link rel="prefetch" href="/assets/models/prop_020.glb">
+<link rel="prefetch" href="/assets/models/prop_021.glb">
+<link rel="prefetch" href="/assets/models/house_023.glb">
+<link rel="prefetch" href="/assets/models/dray_003.glb">
+<!-- farm-prefetch:end -->
+</body></html>

@@ -9,3 +9,5 @@ await build({configFile:false,publicDir:false,define:{'import.meta.env.VITE_SUPA
 // Harvest Tycoon on CrazyGames (Oct 2026, public/crazygames.html): its own build next to the website's, so the website's files are
 // made exactly as before; it shares no file with them.
 await build({configFile:false,publicDir:false,define:{'import.meta.env.VITE_SUPABASE_URL':JSON.stringify(url),'import.meta.env.VITE_SUPABASE_ANON_KEY':JSON.stringify(key)},build:{outDir:'public/cloud',emptyOutDir:false,lib:{entry:{crazygames:'src/crazygames.js'},formats:['es'],fileName:(_format,name)=>name+'.js'},minify:true,sourcemap:false}});
+// Harvest Tycoon on Kongregate (Oct 2026, public/kongregate.html): its own build too, sharing no file with the others.
+await build({configFile:false,publicDir:false,define:{'import.meta.env.VITE_SUPABASE_URL':JSON.stringify(url),'import.meta.env.VITE_SUPABASE_ANON_KEY':JSON.stringify(key)},build:{outDir:'public/cloud',emptyOutDir:false,lib:{entry:{kongregate:'src/kongregate.js'},formats:['es'],fileName:(_format,name)=>name+'.js'},minify:true,sourcemap:false}});

@@ -4,7 +4,7 @@ import {helpCoins,maxShare,SHARE_LIMIT,REQUEST_DAYS} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
 import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_GOAL_POOLS} from './event-goals.js';
-import {portal as portalAround} from './portal.js';
+import {portal as portalAround,privacyContact} from './portal.js';
 import {androidApp,appPushOffered,playBilling,appStoreBilling,webBilling} from './android.js';
 import {wikiLink,parseWikiLink,wikiLinksIn} from './wiki-link.js';
 // A link to one spot of the wiki (Oct 2026): public/wiki-link.js, here too for whoever has the wiki at hand.
@@ -96,7 +96,10 @@ const itemTarget=key=>CROPS[key]?['crops',`crop-${key}`]:HEIRLOOMS[key]?['estate
 // play, appStore: in the app, it sells through Google Play or the App Store (app 1.1, Oct 2026; read from the page when not given); web:
 // the Galaxy Store app, which sells through Stripe like the website (Oct 2026)}.
 function helpers(ctx){
- const level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now(),portal=Boolean(ctx.portal??portalAround()),app=Boolean(ctx.app??androidApp());
+ const around=ctx.portal??portalAround(),level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now(),portal=Boolean(around),app=Boolean(ctx.app??androidApp());
+ // Which portal (Oct 2026): Kongregate has its own lines where CrazyGames' talk about guests and CrazyGames' log-in (its portal, or
+ // portal:'kongregate'; portal:true is CrazyGames, as before).
+ const kongregate=around==='kongregate'||around?.name==='kongregate';
  const appPush=app&&Boolean(ctx.appPush??appPushOffered()),play=app&&Boolean(ctx.play??playBilling()),appStore=app&&Boolean(ctx.appStore??appStoreBilling()),web=app&&Boolean(ctx.web??webBilling());
  // to: a link to a spot (Oct 2026). On the website the address itself (/wiki/crops#crop-wheat); in the game the topic's own href (never
  // our site: CrazyGames allows no links to it), the spot rides along in data-wiki-anchor.
@@ -108,11 +111,15 @@ function helpers(ctx){
  const link=(id,text=TOPIC[id].title,anchor='')=>`<a href="${to(id,anchor)}" data-wiki-topic="${id}"${anchor?` data-wiki-anchor="${anchor}"`:''}>${text}</a>`;
  // shop: our own purchases are there (not on CrazyGames, not in an app that sells nothing; the app 1.1 sells through its store, Oct
  // 2026: Google Play in the Android app, play; the App Store in the iPhone app, appStore); install: installing the web app is.
- return {level,href,to,locked,lvl,row,link,now,portal,app,appPush,play,appStore,web,shop:!portal&&(!app||play||appStore||web),install:!portal&&!app};
+ return {level,href,to,locked,lvl,row,link,now,portal,kongregate,app,appPush,play,appStore,web,shop:!portal&&(!app||play||appStore||web),install:!portal&&!app};
 }
 // On CrazyGames: what is saved where, and the one link allowed (our Privacy Policy, in full).
 const PORTAL_SAVED='<p>Your farm is saved on our server. As a guest it stays with this browser; log in with CrazyGames to keep it safe and play it on any device. You need an internet connection to play.</p>';
 const PORTAL_PRIVACY='<p>Read how we handle your data in our <a href="https://www.harvesttycoon.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>';
+// On Kongregate (Oct 2026): a farm is always that of a player signed in to Kongregate (guests get the Register page, no farm), and
+// Kongregate asks for who to write to about privacy beside the policy.
+const KONGREGATE_SAVED='<p>Your farm is saved on our server with your Kongregate account: sign in to Kongregate on any device to play it. You need an internet connection to play.</p>';
+const kongregatePrivacy=()=>`${PORTAL_PRIVACY}<p>${privacyContact()}</p>`;
 const PORTAL_BLURBS=Object.freeze({account:'Your account, settings and privacy.'});
 // The Halloween Pass (Oct 2026): from its preview until the collecting week ends, every number and date from SEASON_PASS
 // (farm-state.js). Its dates as "23 October" (UTC, as the daily reset).
@@ -191,7 +198,7 @@ const BODIES={
    ['harvest','Swipe across fields',`With a mouse, hold the button on a ripe crop and sweep across your fields: every ripe crop you pass is harvested on the spot, up to ${SWIPE_MAX_FIELDS} in one sweep. From an empty field a sweep plants your seed, and from a growing crop it waters or gives extra care. On a touchscreen, hold a field for a moment until it lights up, then swipe across your fields. A quick swipe moves the farm instead.`],
    ['care','Tools at the bottom','Pick Plant, Water, Care or Harvest at the bottom of the screen, then tap or swipe your fields.']
   ]))
-  +section('Saved for you',h.portal?PORTAL_SAVED:'<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>')
+  +section('Saved for you',h.kongregate?KONGREGATE_SAVED:h.portal?PORTAL_SAVED:'<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>')
   +(!h.install?'':section('Play it as an app',facts([
    ['farm','Why the app','One tap from your home screen, without the browser bar. Reminders when your farm needs you, a number on the icon for new messages, and press and hold the icon for Chat, Daily gift and the leaderboard.']
   ])+'<ul class="wiki-list wiki-app-steps"><li><strong>Android:</strong> in Chrome, tap the menu (⋮) and choose “Install app” or “Add to Home screen”.</li><li><strong>iPhone and iPad:</strong> in Safari, tap Share, then “Add to Home Screen”, then “Add”.</li><li><strong>Computer:</strong> in Chrome or Edge, click the install icon at the right of the address bar.</li></ul>'
@@ -408,7 +415,7 @@ const BODIES={
    :`One-time purchases, added right after payment. ${h.play?'Payments go through Google Play':'Payments go through Stripe'}; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL} there is also a Starter Pack for ${STARTER_DAYS} days.`}${passSale(h.now)?` From level ${SEASON_PASS.level} the ${h.link('daily',SEASON_PASS.name,slug(SEASON_PASS.name))} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}. ${passSale(h.now)}`:''}</p>`+table(['Diamonds','Price'],packs)));
  },
  chat(h){
-  return (h.portal?section('Who can chat','<p>The chat is for farmers who are logged in with CrazyGames, when CrazyGames has the chat switched on. Playing as a guest? Tap the chat button to log in with CrazyGames; your farm comes with you.</p>'):'')
+  return (h.portal&&!h.kongregate?section('Who can chat','<p>The chat is for farmers who are logged in with CrazyGames, when CrazyGames has the chat switched on. Playing as a guest? Tap the chat button to log in with CrazyGames; your farm comes with you.</p>'):'')
   +section('The chat',facts([
    ['bell','Notifications','News from the Harvest Tycoon team, and gifts.'],
    ['chat','Global','Everyone in the valley. Be kind: new farmers read along too.'],
@@ -436,12 +443,13 @@ const BODIES={
  },
  account(h){
   if(h.portal)return section('Your account',facts([
-   ['farm','Your farm on CrazyGames','Logged in with CrazyGames, your farm is yours on any device. As a guest it stays with this browser: tap “Save your farm: log in with CrazyGames” in Settings to keep it. Your farm comes with you when you log in.']
+   h.kongregate?['farm','Your farm on Kongregate','Your farm belongs to your Kongregate account: sign in to Kongregate on any device and it is there.']
+   :['farm','Your farm on CrazyGames','Logged in with CrazyGames, your farm is yours on any device. As a guest it stays with this browser: tap “Save your farm: log in with CrazyGames” in Settings to keep it. Your farm comes with you when you log in.']
   ]))
   +section('Settings','<p>In Settings you change your farmer name and avatar, sound and music, private messages and the language.</p>')
   +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap the mailbox next to How to play (on a phone: More, then Feedback), choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
   +section('Avatars',avatarsBody(true))
-  +section('Privacy',PORTAL_PRIVACY);
+  +section('Privacy',h.kongregate?kongregatePrivacy():PORTAL_PRIVACY);
   // In the Android app (Oct 2026): no home screen or Farm app to point at; what the app says instead is the line Getting started already
   // has (so it is translated already). Push reminders only once the app offers its own notifications (h.appPush, src/app-push.js);
   // until then Settings has no switch for them there, so the line would promise one.

@@ -6,7 +6,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 // about 3 s. With a modulepreload for each in farm.html they all start with the page, side by side, while the farm itself is still
 // loading. This script follows game.js's static imports (the import map's "three" too) and writes the list between the two markers in
 // public/farm.html; tests/module-preload.test.mjs fails when the list is out of date. Run: node scripts/module-preload.mjs
-const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..'),PUBLIC=join(ROOT,'public'),PAGE=join(PUBLIC,'farm.html'),CRAZY=join(PUBLIC,'crazygames.html');
+const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..'),PUBLIC=join(ROOT,'public'),PAGE=join(PUBLIC,'farm.html'),CRAZY=join(PUBLIC,'crazygames.html'),KONG=join(PUBLIC,'kongregate.html');
 export const START='<!-- module-preload:start -->',END='<!-- module-preload:end -->';
 const IMPORTMAP={'three':'/vendor/three.module.js'},PREFIX={'three/addons/':'/vendor/addons/'};
 const readPublic=path=>readFileSync(join(PUBLIC,path.split('?')[0]),'utf8');
@@ -77,10 +77,12 @@ export function farmFiles(html){
 export const KEEP_OFF=/android|i18n-boot/;
 export const farmPrefetch=(farm=readFileSync(PAGE,'utf8'),read=readPublic)=>['/farm.html',...farmFiles(farm).filter(path=>!KEEP_OFF.test(path)),paletteAddress(read),...farmModels(read)];
 export const prefetchLines=list=>list.map(path=>`<link rel="prefetch" href="${path}">`).join('\n');
-export const withPrefetch=(html,list)=>between(html,PREFETCH_START,PREFETCH_END,prefetchLines(list),'public/crazygames.html');
+export const withPrefetch=(html,list,page='public/crazygames.html')=>between(html,PREFETCH_START,PREFETCH_END,prefetchLines(list),page);
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const list=moduleGraph(),farm=withPreloads(readFileSync(PAGE,'utf8'),list);writeFileSync(PAGE,farm);
  const prefetch=farmPrefetch(farm);writeFileSync(CRAZY,withPrefetch(readFileSync(CRAZY,'utf8'),prefetch));
- console.log(`public/farm.html: ${list.length} modules preloaded; public/crazygames.html: ${prefetch.length} files prefetched`);
+ // The Kongregate page (Oct 2026) the same way.
+ writeFileSync(KONG,withPrefetch(readFileSync(KONG,'utf8'),prefetch,'public/kongregate.html'));
+ console.log(`public/farm.html: ${list.length} modules preloaded; public/crazygames.html and public/kongregate.html: ${prefetch.length} files prefetched`);
 }

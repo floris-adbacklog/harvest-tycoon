@@ -23,6 +23,10 @@ buildAppPages('dist-static',readFileSync('public/app.html','utf8'));
 const crazy=readFileSync('public/crazygames.html','utf8').replace('<meta name="harvest-version" content="dev">',`<meta name="harvest-version" content="${version}">`);
 if(!crazy.includes(`content="${version}"`))throw new Error('crazygames.html lost its harvest-version meta tag');
 writeFileSync('dist-static/crazygames.html',crazy);
+// The Kongregate page (Oct 2026) the same way.
+const kong=readFileSync('public/kongregate.html','utf8').replace('<meta name="harvest-version" content="dev">',`<meta name="harvest-version" content="${version}">`);
+if(!kong.includes(`content="${version}"`))throw new Error('kongregate.html lost its harvest-version meta tag');
+writeFileSync('dist-static/kongregate.html',kong);
 // The public farm wiki (/wiki), made from the game rules on every deploy.
 const {buildWiki}=await import('./build-wiki.mjs');await buildWiki('dist-static');
 // The App Store badges on every page (7 Oct 2026): to the iPhone app's App Store page once Apple has approved it (APP_STORE_URL in

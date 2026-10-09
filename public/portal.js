@@ -1,8 +1,9 @@
 // CrazyGames (Oct 2026): the same farm also runs inside CrazyGames. Their page loads ours, public/crazygames.html (src/crazygames.js),
 // which hands the farm a portal on the bridge (bridge.portal; window.harvestPortal before the farm is there). CrazyGames allows no
 // payments of our own, no sign-in of our own, no sign out, no links out to our site or an app, no invites and no full-screen button,
-// so each of those is a feature that is off there; the farm asks here. On harvesttycoon.com there is no portal: everything is on and
-// nothing here changes a thing.
+// so each of those is a feature that is off there; the farm asks here. Kongregate (Oct 2026: public/kongregate.html,
+// src/kongregate.js) is a portal the same way, with the same features off. On harvesttycoon.com there is no portal: everything is on
+// and nothing here changes a thing.
 import {androidApp,appBilling} from './android.js';
 export const PORTAL_FEATURES=Object.freeze(['payments','invite','share','email','reminders','app','signOut','cookies','translate','links']);
 // The portal of the page around this frame, or null (the website, a test, a page on its own).
@@ -35,3 +36,7 @@ export const portalLogIn=(found=portal())=>Boolean(found)&&found.userAvailable!=
 // The privacy line on a portal: CrazyGames allows a link to our Privacy Policy (and only that), so it is the full address.
 export const PRIVACY_URL='https://www.harvesttycoon.com/privacy';
 export const privacyLine=()=>`By playing you agree to our <a href="${PRIVACY_URL}" target="_blank" rel="noopener">Privacy Policy</a>.`;
+// Who to ask about privacy (Kongregate, Oct 2026: their privacy rules ask for a contact beside the policy). An address to write to, not
+// a link: the policy is the only link out there. On CrazyGames the policy itself names it.
+export const PRIVACY_CONTACT='info@harvesttycoon.com';
+export const privacyContact=(address=PRIVACY_CONTACT)=>`Questions about your privacy? Email ${address}.`;
