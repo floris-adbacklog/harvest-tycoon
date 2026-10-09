@@ -1,16 +1,16 @@
 import {refreshArt} from '../public/visual-icons.js';
 import {rookieLeft} from '../public/farm-state.js';
 import {chosenLanguage} from '../public/i18n.js';
-import {portalOff} from '../public/portal.js';
+import {portal,portalOff} from '../public/portal.js';
 import {androidApp,googlePlayApp} from '../public/android.js';
 
 // Pop-ups from the admin (supabase/popups.sql, 26 Sep 2026): news that also opens once as a pop-up, with an optional button to a
 // screen of the game or to a web page (in a new tab); the admin can also send it without the news. Who sees it: everyone, phones in
-// the browser, anyone in the browser, phones or computers, or (9 Oct 2026) our Android app from Google Play (decided here, on the
-// device: nothing records who installed the app), and from a farm level (decided by the server). Never in a farmer's first half hour,
-// and never over another window: it waits until nothing else is open.
+// the browser, anyone in the browser, phones or computers, or (9 Oct 2026) our Android app from Google Play or our website (decided
+// here, on the device: nothing records who installed the app), and from a farm level (decided by the server). Never in a farmer's first
+// half hour, and never over another window: it waits until nothing else is open.
 export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play',feedback:'Feedback'});
-export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)'});
+export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps, CrazyGames or Kongregate)'});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text). On CrazyGames (Oct 2026,
 // public/portal.js) no links out are allowed: the address stays plain text there.
@@ -23,16 +23,19 @@ export function inLanguage(item,code=chosenLanguage()){
 }
 // A group this list does not know is never shown, as in every version since 26 Sep 2026: a game from before the Android app group (9 Oct
 // 2026) skips its pop-ups and leaves them unseen, so the farmer still gets them once the game knows the group. playApp: public/android.js
-// googlePlayApp (only the special offer leaves it out: no offer goes to that group).
-export function fitsDevice(audience,{installed,phone,playApp=false}){
- return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true);
+// googlePlayApp (only the special offer leaves it out: no offer goes to that group). The website group (9 Oct 2026, web): harvesttycoon.com
+// in a browser or on the home screen, itch.io's frame too; never in our apps (Android, iPhone, Galaxy Store) or on CrazyGames or
+// Kongregate (no links out there; 'browser' does include those portals). A game from before it skips it, as above; the offer passes no web.
+export function fitsDevice(audience,{installed,phone,playApp=false,web=false}){
+ return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true);
 }
 
 export function createPopupUI({client,chat,state,doc=document,win=window,now=()=>Date.now()}){
  const dialog=doc.createElement('dialog');dialog.id='popup-dialog';dialog.setAttribute('aria-labelledby','popup-title');doc.body.append(dialog);
  // Our Android app (Oct 2026, public/android.js) counts as installed: a pop-up for players in the browser is not for it.
- // The Android app group (9 Oct 2026): only our Google Play app, never the iPhone app, a browser or a portal.
- const device=()=>({installed:doc.documentElement.dataset.appMode==='standalone'||androidApp(win),phone:Boolean(win.matchMedia?.('(pointer: coarse)').matches),playApp:googlePlayApp(win)});
+ // The Android app group (9 Oct 2026): only our Google Play app, never the iPhone app, a browser or a portal. The website group: no app
+ // marks the page and no portal is around it (public/portal.js).
+ const device=()=>({installed:doc.documentElement.dataset.appMode==='standalone'||androidApp(win),phone:Boolean(win.matchMedia?.('(pointer: coarse)').matches),playApp:googlePlayApp(win),web:!androidApp(win)&&!portal(win)});
  const click=id=>doc.getElementById(id)?.click();
  const screens={install:()=>win.harvestWiki?.('getting-started','sec-play-it-as-an-app'),today:()=>win.harvestToday?.(),events:()=>click('events-button'),
   leaderboard:()=>click('leaderboard-button'),chat:()=>chat?.open(),shop:()=>win.harvestShop?.open(),family:()=>click('family-button'),wiki:()=>click('help-button'),

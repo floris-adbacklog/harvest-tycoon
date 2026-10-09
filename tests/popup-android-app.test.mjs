@@ -123,7 +123,7 @@ test('the database: the group in the table\'s check and in popup_post, changed i
  assert.match(sql,/<>1 then raise exception 'popup_post is not as expected/,'stops when the live text differs');
  assert.doesNotMatch(read('supabase/special-offer.sql'),/android_app/,'no offer for the group');
  const admin=read('src/admin-dashboard.js');
- assert.match(admin,/<select id="admin-offer-audience">'\+Object\.entries\(POPUP_AUDIENCES\)\.filter\(\(\[key\]\)=>key!=='android_app'\)/,'the offer form leaves it out');
+ assert.match(admin,/<select id="admin-offer-audience">'\+Object\.entries\(POPUP_AUDIENCES\)\.filter\(\(\[key\]\)=>key!=='android_app'(&&key!=='web')?\)/,'the offer form leaves it out (9 Oct 2026: the website group too)');
  assert.match(admin,/<select id="admin-popup-audience">'\+Object\.entries\(POPUP_AUDIENCES\)\.map/,'the pop-up form has it');
  for(const text of [sql,read('src/popup-ui.js'),read('public/android.js')])assert.doesNotMatch(text,/ · /,'no middle dots');
 });
