@@ -37,7 +37,7 @@ test('every production recipe has one bulk version: quick goods x20, slow goods 
  assert.deepEqual([RECIPES.mass_eggs.input,RECIPES.mass_eggs.output,RECIPES.mass_eggs.duration],[{feed:20},{eggs:60},600000]);
  assert.deepEqual([RECIPES.mass_bread.input,RECIPES.mass_bread.output],[{flour:80,milk:40},{bread:40}]);
  assert.deepEqual([RECIPES.mass_harvesthamper.input,RECIPES.mass_harvesthamper.output,RECIPES.mass_harvesthamper.duration],[{applejuice:20,berrypreserves:20,bread:20},{harvesthamper:10},57600000]);
- assert.deepEqual(RECIPES.mass_berrypreserves.input,{berries:40,honey:30},'honey recipes are bulk too');
+ assert.deepEqual(RECIPES.mass_berrypreserves.input,{berries:40,honey:20},'honey recipes are bulk too (2 honey a jar since 10 Oct 2026)');
 });
 test('the Factory only makes production goods: no bulk recipe produces a crop, and nothing is planted or grown there',()=>{
  for(const [id,r] of mass)for(const item of Object.keys(r.output)){assert.ok(!CROPS[item],`${id} makes ${item}`);assert.ok(ITEMS[item],item);}

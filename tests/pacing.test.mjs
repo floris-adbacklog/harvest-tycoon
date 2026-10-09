@@ -237,3 +237,31 @@ test('a stored daily challenge follows its new definition; a used feature stays 
  const fresh=createFarm(now);fresh.xp=xpForLevel(11);fresh.xpOffset=0;normalizeFarm(fresh,now);
  assert.ok(!featureUnlocked(fresh,'chores')&&!featureUnlocked(fresh,'mastery'),'a farm that never used them waits for their levels');assert.equal(fresh.progression.kept,undefined);
 });
+
+// 10 Oct 2026 (the owner's picks 3, 5 and 7 from the balance review).
+test('quests for things not open yet stay hidden; the first boost quest asks one boost at level 10',async()=>{
+ const {QUESTS,availableDaily}=await import('../game/farm-state.js');
+ const at=level=>{const s=createFarm(now);s.xp=xpForLevel(level);s.xpOffset=0;normalizeFarm(s,now);for(const key of Object.keys(s.buildings))if(BUILDING_LEVELS[key]<=level)s.buildings[key].built=true;return s;};
+ const shows=(level,stat)=>QUESTS.filter(q=>q.stat===stat).some(q=>availableDaily(at(level),q));
+ for(const [stat,opens] of [['boosts_used',FEATURE_LEVELS.boosts],['windmill_batches',BUILDING_LEVELS.windmill],['crafted_deliveries',FEATURE_LEVELS.cart]]){
+  assert.equal(shows(opens-1,stat),false,`${stat} waits below ${opens}`);assert.equal(shows(Math.max(opens,8),stat),true,`${stat} from ${opens}`);
+ }
+ const power=QUESTS.find(q=>q.title==='A little extra power');
+ assert.deepEqual([power.target,power.reward,power.description],[1,100,'Activate a boost with earned diamonds.']);
+});
+test('the Estate Workshop improvements are in the unlock list at their own levels; fields 29-40 only after the field before',async()=>{
+ const {IMPROVEMENTS,unlockEntries}=await import('../game/farm-state.js');const {ART_KEYS}=await import('../public/visual-icons.js');
+ const s=createFarm(now);s.xp=xpForLevel(80);s.xpOffset=0;normalizeFarm(s,now);
+ const entries=unlockEntries(s).filter(e=>e.id.startsWith('improvement:'));
+ assert.equal(entries.length,Object.keys(IMPROVEMENTS).length);
+ for(const e of entries){const i=IMPROVEMENTS[e.id.slice(12)];assert.equal(e.level,i.level);assert.equal(e.unlocked,i.level<=80,e.id);assert.equal(e.kind,'Improvement');assert.ok(ART_KEYS.includes(e.art),e.art);}
+ assert.ok(!unlockEntries(s).some(e=>e.id==='field:29'),'a farm with 8 fields hears nothing of field 29 yet');
+});
+test('the five recipes that paid less than an earlier one in the same building now add at least 40%, at the market price',async()=>{
+ const {RECIPES,ITEMS}=await import('../game/farm-state.js');
+ const value=o=>Object.entries(o).reduce((sum,[k,n])=>sum+ITEMS[k].sell*.8*n,0),perHour=id=>(value(RECIPES[id].output)-value(RECIPES[id].input))/(RECIPES[id].duration/3600000);
+ for(const [id,hour] of [['berrypreserves',100],['cheese',100],['pickles',160],['applepie',180],['applejuice',130]]){
+  assert.ok(value(RECIPES[id].output)>=1.4*value(RECIPES[id].input),`${id} adds 40%`);assert.ok(perHour(id)>=hour,`${id} ${Math.round(perHour(id))} an hour`);
+ }
+ assert.deepEqual([ITEMS.cheese.sell,ITEMS.pickles.sell,ITEMS.applepie.sell],[230,1100,1200],'their prices stay: they are ingredients and project goods elsewhere');
+});

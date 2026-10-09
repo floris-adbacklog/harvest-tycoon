@@ -26,7 +26,12 @@ test('forty fields: the last twelve are long-term goals that need a level, coins
  for(let i=1;i<12;i++){assert(ENDGAME_FIELDS[i].coins>ENDGAME_FIELDS[i-1].coins);assert(ENDGAME_FIELDS[i].level>ENDGAME_FIELDS[i-1].level);}
  for(const field of ENDGAME_FIELDS)for(const item of Object.keys(field.materials))assert(Object.hasOwn(ITEMS,item),item);
  const early=createFarm(now);assert.equal(expansionLevel(early),1,'the first 28 fields have no level requirement');
- assert.deepEqual(unlockEntries(s).filter(e=>e.id.startsWith('field:')).length,12,'they show up in the unlock list');
+ // 10 Oct 2026: a field from 29 on shows in the unlock list (level-up card, Coming up) once the farm owns the field before it, so
+ // from level 30 the list no longer announces fields nobody can buy yet (fields 13-28 come first).
+ const fields=farm=>unlockEntries(farm).filter(e=>/^field:(29|3\d|40)$/.test(e.id)).map(e=>e.id);
+ assert.deepEqual(fields(s),['field:29','field:30'],'with 29 fields: the one it has and the next');
+ const all=structuredClone(s);all.plots=Array.from({length:39},(_,id)=>({...s.plots[0],id}));assert.equal(fields(all).length,12);
+ const young=structuredClone(s);young.plots=young.plots.slice(0,20);assert.deepEqual(fields(young),[],'with 20 fields: none of them yet');
 });
 test('missing expansion supplies and insufficient tractor fuel leave balances and plots intact',()=>{
  const s=createFarm(now);s.coins=10000;let old=structuredClone(s);

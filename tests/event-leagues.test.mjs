@@ -44,7 +44,11 @@ test('every league draws its own goals, open from its first level, with bigger n
   }
  }
  const old=read('supabase/live-events-mixed.sql')+read('supabase/live-events-sell-wheat.sql'),sprout=EVENT_GOAL_POOLS[0].flat();
- for(const {stat,targets} of sprout.filter(g=>old.includes(`"stat":"${g.stat}"`)&&g.stat!=='boosts_used'))assert.match(old,new RegExp(`"stat":"${stat}","targets":\\[${targets.join(',')}\\]`),`Sprout keeps ${stat} as before`);
+ // 10 Oct 2026: four Sprout goals that almost nobody finished ask less, and vegetable boxes left Sprout (event-goals.js KINDS).
+ const lowered={fertilized:[2,3,5],harvest_cauliflower:[4,6,10],diamonds_spent:[10,10,20],activities:[3,4,8]};
+ for(const [stat,targets] of Object.entries(lowered))assert.deepEqual(sprout.find(g=>g.stat===stat)?.targets,targets,`Sprout ${stat} since 10 Oct`);
+ assert.ok(!sprout.some(g=>g.stat==='made_vegetables'),'vegetable boxes from the Meadow League');
+ for(const {stat,targets} of sprout.filter(g=>old.includes(`"stat":"${g.stat}"`)&&g.stat!=='boosts_used'&&!lowered[g.stat]))assert.match(old,new RegExp(`"stat":"${stat}","targets":\\[${targets.join(',')}\\]`),`Sprout keeps ${stat} as before`);
  // Higher leagues ask more of the goals they share with the league below.
  for(let i=1;i<EVENT_GOAL_POOLS.length;i++){
   const below=new Map(EVENT_GOAL_POOLS[i-1].flat().map(g=>[g.stat,g.targets]));
@@ -94,11 +98,11 @@ test('helping-hand goals fit the hour-long rests: events ask at most 8 jobs or 2
   if(/^activity_(greenhouse|apiary|paddock|workshop)$/.test(q.stat))assert.ok(q.target<=2,`${q.title}: one stop ${q.target} times a day`);
   if(q.stat==='activities')assert.ok(q.target<=2*stops,q.title);if(q.stat==='activity_rounds')assert.ok(q.target<=2,q.title);
  }
- const patch=read('supabase/event-goals-2026-10-09.sql'),goals=read('supabase/live-event-league-goals.sql');
+ const patch=read('supabase/event-goals-2026-10-10.sql'),goals=read('supabase/live-event-league-goals.sql');   // the newest live patch
  const pools=goals.slice(goals.indexOf("pools constant jsonb:='")+23,goals.indexOf("';\n",goals.indexOf("pools constant jsonb:='")));
  const {createHash}=await import('node:crypto'),md5=createHash('md5').update(pools).digest('hex');
  // The live patch edits the live list and only applies it when the result is exactly the goals of live-event-league-goals.sql.
- assert.match(patch,new RegExp(`if md5\\(pools\\)<>'${md5}' then raise exception 'the new goals do not come out`),'the live patch ends on exactly these goals');assert.match(patch,new RegExp(`if md5\\(pools\\)='${md5}' then raise notice`),'a second run does nothing');
+ assert.match(patch,new RegExp(`if md5\\(pools\\)<>'${md5}' then raise exception using message='the new goals do not come out`),'the live patch ends on exactly these goals');assert.match(patch,new RegExp(`if md5\\(pools\\)='${md5}' then raise notice`),'a second run does nothing');
 });
 
 // 9 Oct 2026 (found in review): a goal must be doable by a farmer who has only just reached the league, within the 5 hours of an event.

@@ -40,7 +40,7 @@ export const PRODUCTS = Object.freeze({
  vegetables:{name:'Vegetable box',sell:1700,icon:'salad',color:'green'},
  applejuice:{"name": "Apple juice", "sell": 650, "icon": "package-check", "color": "gold"},
  applepie:{"name": "Apple pie", "sell": 1200, "icon": "package-check", "color": "gold"},
- berrypreserves:{"name": "Berry preserves", "sell": 800, "icon": "package-check", "color": "gold"},
+ berrypreserves:{"name": "Berry preserves", "sell": 850, "icon": "package-check", "color": "gold"},
  berrytart:{"name": "Berry tart", "sell": 3000, "icon": "package-check", "color": "gold"},
  stew:{"name": "Vegetable stew", "sell": 1100, "icon": "package-check", "color": "gold"},
 orchardjuice:{"name": "Apple & Berry Juice", "sell": 780, "icon": "package-check", "color": "gold"},
@@ -190,13 +190,13 @@ const BASE_RECIPES=Object.freeze({
  windfeed:{building:'windmill',name:'Wind-milled barley feed',input:{barley:8},output:{feed:13},duration:1200000,xp:32},
  barleyfeed:{building:'mill',name:'Mix barley feed',input:{barley:2},output:{feed:3},duration:120000,xp:6},
  salad:{building:'packing',name:'Prepare a fresh salad',input:{lettuce:4,cabbage:2},output:{salad:1},duration:900000,xp:14},
- pickles:{building:'packing',name:'Pickle red cabbage',input:{redcabbage:2},output:{pickles:1},duration:10800000,xp:60},
+ pickles:{building:'packing',name:'Pickle red cabbage',input:{redcabbage:2},output:{pickles:1},duration:7200000,xp:60},
  flour:{building:'windmill',name:'Refine grain meal into flour',input:{grainmeal:1},output:{flour:4},duration:240000,xp:8},
  feed:{building:'mill',name:'Mix animal feed',input:{corn:2},output:{feed:2},duration:120000,xp:4},
  wheatfeed:{building:'mill',name:'Mix wheat feed',input:{wheat:5},output:{feed:1},duration:120000,xp:3},
  oil:{building:'mill',name:'Press sunflower oil',input:{sunflower:2},output:{oil:1},duration:14400000,xp:80},
  milk:{building:'dairy',name:'Feed the cows',input:{feed:1},output:{milk:2},duration:600000,xp:10},
- cheese:{building:'dairy',name:'Make farmhouse cheese',input:{milk:2},output:{cheese:1},duration:3600000,xp:24},
+ cheese:{building:'dairy',name:'Make farmhouse cheese',input:{milk:2},output:{cheese:1},duration:1800000,xp:24},
  eggs:{building:'coop',name:'Feed the chickens',input:{feed:1},output:{eggs:3},duration:300000,xp:10},
  bread:{building:'bakery',name:'Bake fresh bread',input:{flour:4,milk:2},output:{bread:2},duration:1200000,xp:16},
  // World II: lunch for the village's miners and woodcutters, and the farm's bakes with heirloom flour from the village.
@@ -206,9 +206,9 @@ const BASE_RECIPES=Object.freeze({
  pie:{building:'bakery',name:'Bake fresh pumpkin pie',input:{flour:2,pumpkin:2,eggs:2},output:{pie:1},duration:7200000,xp:50},
  vegetables:{building:'packing',name:'Pack a vegetable box',input:{cabbage:4,cauliflower:4},output:{vegetables:1},duration:3600000,xp:30},
  stew:{"building": "kitchen", "name": "Simmer vegetable stew", "input": {"greenbeans": 4, "corn": 3, "cabbage": 2}, "output": {"stew": 1}, "duration": 7200000, "xp": 40, "minLevel": 6},
- applejuice:{"building": "juicepress", "name": "Press apple juice", "input": {"apples": 4}, "output": {"applejuice": 1}, "duration": 10800000, "xp": 45, "minLevel": 8},
- applepie:{"building": "bakery", "name": "Bake an apple pie", "input": {"apples": 4, "flour": 4, "eggs": 2}, "output": {"applepie": 1}, "duration": 14400000, "xp": 55, "minLevel": 8},
- berrypreserves:{"building": "preserves", "name": "Cook berry preserves", "input": {"berries": 4, "honey": 3}, "output": {"berrypreserves": 1}, "duration": 10800000, "xp": 50, "minLevel": 10},
+ applejuice:{"building": "juicepress", "name": "Press apple juice", "input": {"apples": 4}, "output": {"applejuice": 1}, "duration": 5400000, "xp": 45, "minLevel": 8},
+ applepie:{"building": "bakery", "name": "Bake an apple pie", "input": {"apples": 4, "flour": 4, "eggs": 2}, "output": {"applepie": 1}, "duration": 7200000, "xp": 55, "minLevel": 8},
+ berrypreserves:{"building": "preserves", "name": "Cook berry preserves", "input": {"berries": 4, "honey": 2}, "output": {"berrypreserves": 1}, "duration": 7200000, "xp": 50, "minLevel": 10},
  berrytart:{"building": "bakery", "name": "Bake a berry tart", "input": {"berrypreserves": 2, "flour": 4, "eggs": 2}, "output": {"berrytart": 1}, "duration": 18000000, "xp": 70, "minLevel": 10, "requiresBuildings": ["preserves"]},
 orchardjuice:{"building": "juicepress", "name": "Press apple and berry juice", "input": {"apples": 2, "berries": 2}, "output": {"orchardjuice": 1}, "duration": 3600000, "xp": 45, "minLevel": 10},
 berrysmoothie:{"building": "juicepress", "name": "Blend a berry smoothie", "input": {"berries": 2, "milk": 2, "honey": 2}, "output": {"berrysmoothie": 1}, "duration": 5400000, "xp": 48, "minLevel": 10},
@@ -411,7 +411,7 @@ export const QUESTS = Object.freeze([
  {title:'Fresh from the mill',description:'Refine grain meal into 12 flour for the Bakery.',stat:'made_flour',target:12,reward:200},
  {title:'A gentler way to grow',description:'Use natural fertilizer on 4 growing fields.',stat:'fertilized',target:4,reward:240},
  {title:'A sparkling streak',description:'Earn 10 diamonds from daily gifts.',stat:'diamonds_earned',target:10,reward:200},
- {title:'A little extra power',description:'Activate 2 boosts with earned diamonds.',stat:'boosts_used',target:2,reward:250},
+ {title:'A little extra power',description:'Activate a boost with earned diamonds.',stat:'boosts_used',target:1,reward:100},
  {title:'A stronger windmill',description:'Upgrade your Windmill to level 2.',stat:'windmill_upgrades',target:1,reward:200},
  {title:'From mill to oven',description:'Collect 12 fresh bread from the Bakery.',stat:'made_bread',target:12,reward:300},
  {title:'Pumpkin perfection',description:'Collect 6 fresh pumpkin pies from the Bakery.',stat:'made_pie',target:6,reward:400},
@@ -877,7 +877,11 @@ export function unlockEntries(state){return [
  ...Object.entries(RECIPES).filter(([key,r])=>r.building!=='factory'&&buildingUnlocked(state,r.building)&&worldTwoEntry(state,recipeLevel(state,key))).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
  // Fields 9-12 only for farms that started with 8 (a farm that has more than 8 but fewer than 12 fields, or 8).
  ...(state.plots.length<12||state.progression?.fields===STARTER_FIELDS?EARLY_FIELDS.map((field,i)=>({id:'field:'+(i+9),name:`Field ${i+9}`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+9,hint:`Level ${field.level} · Expand at the Farmhouse for ${field.coins} coins.`})):[]),
- ...ENDGAME_FIELDS.map((field,i)=>({id:'field:'+(i+29),name:`Field ${i+29} expansion`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+29,hint:`Level ${field.level} · Expand at the Farmhouse with coins and supplies.`}))
+ // Fields 29-40 only once the farm owns the field before (10 Oct 2026): fields 13-28 come first, so from level 30 the level-up card
+ // and Coming up announced fields nobody could buy yet.
+ ...ENDGAME_FIELDS.map((field,i)=>({id:'field:'+(i+29),name:`Field ${i+29} expansion`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+29,hint:`Level ${field.level} · Expand at the Farmhouse with coins and supplies.`})).filter((_,i)=>state.plots.length>=i+28),
+ // The Estate Workshop's improvements, each at its own level (10 Oct 2026: the stretch 75-88 listed none of them).
+ ...Object.entries(IMPROVEMENTS).map(([key,i])=>({id:'improvement:'+key,name:i.name,art:i.art,kind:'Improvement',level:i.level,unlocked:featureUnlocked(state,'estateworkshop')&&levelOf(state)>=i.level,hint:`Reach level ${i.level}.`}))
  ];}
 // Two features were moved later on purpose: A helping hand (level 6 -> 8) and farm chores (level 4 -> 10). Moving a feature later would take it
 // from farms that already have it, so a guided farm from before (progression version below 4) keeps what it had: chores from level 4, hands-on
@@ -1570,6 +1574,12 @@ export function availableDaily(state,q){
   const gate=stat==='mastery_medals'?'mastery':stat==='projects'?'projects':stat==='silo_upgrades'?'silo':stat==='tractor'?'tractor':stat==='dailies'?'challenges':stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':stat.startsWith('valley_')?'valleymarket':stat==='ranch_focus'?'ranch':stat==='improvements'?'estateworkshop':stat.startsWith('depot_')?'tradedepot':stat.startsWith('fair_')?'grandfair':null;
   if(gate&&!featureUnlocked(state,gate))return false;
   if(stat==='fertilized'&&!itemAvailable(state,'fertilizer'))return false;
+  // 10 Oct 2026 (balance review): quests for things that are not open yet waited in the list from level 2: the Windmill's, the
+  // boosts' (level 10) and the delivery orders' (level 7; honey ones also need honey).
+  if(stat.startsWith('windmill_')&&!buildingEligible(state,'windmill'))return false;
+  if(stat==='boosts_used'&&!featureUnlocked(state,'boosts'))return false;
+  if((stat==='crafted_deliveries'||stat==='honey_deliveries')&&!featureUnlocked(state,'cart'))return false;
+  if(stat==='honey_deliveries'&&!itemAvailable(state,'honey'))return false;
  }
  return levelOf(state)>=(q.minLevel??1)&&(q.requiresBuildings??[]).every(key=>buildingUnlocked(state,key))&&(!q.chore||!choreStatus(state,q.chore).locked)&&(!q.parallel||Object.entries(state.buildings).some(([id,b])=>BUILDINGS[id].type==='production'&&b.level>=2));
 }
