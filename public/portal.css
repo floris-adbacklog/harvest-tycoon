@@ -10,6 +10,8 @@ html[data-portal] .pass-heads,html[data-portal] .pass-row{grid-template-columns:
 /* Invite a friend and Share my farm (both links to our website). */
 html[data-portal] #invite-button,html[data-portal] [data-menu-action="invite-button"],html[data-portal] .family-invite-friend,
 html[data-portal] .level-up-share,html[data-portal] .farmer-share{display:none!important}
+/* Settings › Chat: the invite to our Discord server leaves the game, so no portal shows it (10 Oct 2026). */
+html[data-portal] .chat-discord{display:none!important}
 /* Email, reminders, the app and full screen (CrazyGames has its own full-screen button). */
 html[data-portal] #email-button,html[data-portal] #email-menu-entry,html[data-portal] #email-settings,html[data-portal] #notify-settings,
 html[data-portal] .reminder-nudge,html[data-portal] #app-settings,html[data-portal] .wiki-install{display:none!important}

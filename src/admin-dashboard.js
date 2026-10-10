@@ -103,7 +103,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label data-group-filter>Game language<select id="admin-dm-language"><option value="">Any language</option>'+LANGUAGES.map(l=>`<option value="${l.code}">${esc(l.name)}</option>`).join('')+'</select></label>'
   +'<label data-group-filter>Family<select id="admin-dm-family"><option value="">In a family or not</option><option value="in">In a family</option><option value="out">Not in a family</option></select></label>'
   +'<label class="admin-dm-check" data-group-filter><input type="checkbox" id="admin-dm-crazygames">CrazyGames accounts only</label>'
-  +'<label class="admin-dm-check" data-group-filter><input type="checkbox" id="admin-dm-kongregate">Kongregate accounts only</label></div>'
+  +'<label class="admin-dm-check" data-group-filter><input type="checkbox" id="admin-dm-kongregate">Kongregate accounts only</label>'
+  +'<label class="admin-dm-check" data-group-filter><input type="checkbox" id="admin-dm-discord">Discord accounts only</label></div>'
   +'<p class="admin-popup-note" id="admin-dm-count">Counting farmers…</p><p class="admin-popup-note">Every farmer gets it as a private message from you and can reply; the replies come in under your private messages. Farmers with notifications on for messages also get a push. Links (https) work.</p>'
   +'<p class="admin-popup-note" data-group-filter>Above it they read “Group message from the team” and who it was sent to, in their own language. Farmers who switched private messages off are left out. Plays and Leave out: where they last opened the game (a farmer with nothing on record is in no place and never left out). Game language: the one they last played in.</p>'
   +'<h4 class="admin-subhead" id="admin-dm-log-head" hidden>Last group messages</h4><ul class="admin-popup-list" id="admin-dm-log" hidden></ul></div>'
@@ -114,7 +115,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label id="admin-popup-link-row" hidden>Web address<input id="admin-popup-link" type="url" maxlength="300" placeholder="https://"></label>'
   +'<label>Who sees it<select id="admin-popup-audience">'+Object.entries(POPUP_AUDIENCES).map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'
   +'<label>From level<input id="admin-popup-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label>'
-  +'<p class="admin-popup-note">Every farmer sees the pop-up once, when nothing else is open, and never in their first half hour. It ends after the time below, or after 30 days. Who installed the app is only known on the device: phones and browsers are checked when the game opens. Android app (Google Play): only in our app from Google Play, never in the iPhone app, a browser or a game site; send it as a pop-up only (a notification would reach everyone). Website: harvesttycoon.com in a browser or on the home screen (itch.io too), never in our apps, on CrazyGames or on Kongregate; a pop-up only as well.</p></div>'
+  +'<p class="admin-popup-note">Every farmer sees the pop-up once, when nothing else is open, and never in their first half hour. It ends after the time below, or after 30 days. Who installed the app is only known on the device: phones and browsers are checked when the game opens. Android app (Google Play): only in our app from Google Play, never in the iPhone app, a browser or a game site; send it as a pop-up only (a notification would reach everyone). Website: harvesttycoon.com in a browser or on the home screen (itch.io too), never in our apps or on a game portal (CrazyGames, Kongregate, Discord); a pop-up only as well.</p></div>'
   +'<label class="admin-news-hours" id="admin-news-hours-row">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><label class="admin-news-hours" id="admin-news-level-row">From level<input id="admin-news-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label><button type="submit" class="primary-button">Send</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
   // A private message from the admin to every new farmer, a few minutes after they sign up (supabase/welcome-dm.sql), in the
   // language they play in when it has a text of its own, otherwise in English (supabase/welcome-dm-languages.sql).
@@ -462,6 +463,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   for(const key of ['platform','notPlatform','language','family'])if($dm(key).value)f[key]=$dm(key).value;
   if($dm('crazygames').checked)f.crazygames=true;
   if($dm('kongregate').checked)f.kongregate=true;
+  if($dm('discord').checked)f.discord=true;
   return f;
  }
  // Before that file: no filters but the old choice (a hidden option is still picked in Safari, so it is switched off too).
@@ -480,7 +482,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  // News from a level (4 Oct 2026): 1 is everyone.
  const newsLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-news-level').value)||1)));
  let dmCounting=0;const dmLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-dm-level').value)||1)));
- for(const id of ['audience','platform','notPlatform','language','family','crazygames','kongregate'])dialog.querySelector(`#admin-dm-${id}`).addEventListener('change',()=>void countDm());
+ for(const id of ['audience','platform','notPlatform','language','family','crazygames','kongregate','discord'])dialog.querySelector(`#admin-dm-${id}`).addEventListener('change',()=>void countDm());
  for(const id of ['level','max-level'])dialog.querySelector(`#admin-dm-${id}`).addEventListener('input',()=>void countDm());
  dialog.querySelector('#admin-popup-target').addEventListener('change',event=>{dialog.querySelector('#admin-popup-link-row').hidden=event.target.value!=='link';});
  // News, pop-ups and the private message per language: the text, the title and the button. Each language keeps what was typed for it

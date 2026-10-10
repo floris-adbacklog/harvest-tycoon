@@ -2,8 +2,8 @@
 // which hands the farm a portal on the bridge (bridge.portal; window.harvestPortal before the farm is there). CrazyGames allows no
 // payments of our own, no sign-in of our own, no sign out, no links out to our site or an app, no invites and no full-screen button,
 // so each of those is a feature that is off there; the farm asks here. Kongregate (Oct 2026: public/kongregate.html,
-// src/kongregate.js) is a portal the same way, with the same features off. On harvesttycoon.com there is no portal: everything is on
-// and nothing here changes a thing.
+// src/kongregate.js) and Discord (Oct 2026: public/discord.html, src/discord.js) are portals the same way, with the same features off.
+// On harvesttycoon.com there is no portal: everything is on and nothing here changes a thing.
 import {androidApp,appBilling} from './android.js';
 export const PORTAL_FEATURES=Object.freeze(['payments','invite','share','email','reminders','app','signOut','cookies','translate','links']);
 // The portal of the page around this frame, or null (the website, a test, a page on its own).
@@ -40,3 +40,11 @@ export const privacyLine=()=>`By playing you agree to our <a href="${PRIVACY_URL
 // a link: the policy is the only link out there. On CrazyGames the policy itself names it.
 export const PRIVACY_CONTACT='info@harvesttycoon.com';
 export const privacyContact=(address=PRIVACY_CONTACT)=>`Questions about your privacy? Email ${address}.`;
+// Discord (Oct 2026): a link leaves the game only through the page around it (portal.openLink, Discord's own window that asks the
+// player first); a plain link would not open from Discord's frame. A tap on the privacy policy goes there when the portal has one, and
+// the link stays as it is (a new tab) everywhere else. True when it went to the portal.
+export function openOut(event,found=portal()){
+ const link=event?.target?.closest?.(`a[href="${PRIVACY_URL}"]`);
+ if(!link||typeof found?.openLink!=='function')return false;
+ event.preventDefault();void Promise.resolve(found.openLink(PRIVACY_URL)).catch(()=>{});return true;
+}

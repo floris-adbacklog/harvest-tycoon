@@ -1,9 +1,10 @@
 // Accounts made for a game portal (Oct 2026): a CrazyGames player, guest or logged in to CrazyGames, plays on an ordinary account
 // made by the crazygames-auth Edge Function, marked app_metadata.portal='crazygames' (and app_metadata.guest=true for a guest); a
-// player signed in to Kongregate on one made by kongregate-auth, marked app_metadata.portal='kongregate' (no guests there).
+// player signed in to Kongregate on one made by kongregate-auth, marked app_metadata.portal='kongregate' (no guests there), and a
+// player of the Discord Activity on one made by discord-auth, marked app_metadata.portal='discord' (no guests there either).
 // Its address on players.harvesttycoon.com is made up: no mailbox, never mailed, never changed (supabase/crazygames.sql,
-// supabase/kongregate.sql).
-export const PORTALS=Object.freeze({crazygames:'CrazyGames',kongregate:'Kongregate'});
+// supabase/kongregate.sql, supabase/discord.sql).
+export const PORTALS=Object.freeze({crazygames:'CrazyGames',kongregate:'Kongregate',discord:'Discord'});
 export const PORTAL_MAIL=/@players\.harvesttycoon\.com$/i;
 export function portalOf(user){
  const id=user?.app_metadata?.portal;

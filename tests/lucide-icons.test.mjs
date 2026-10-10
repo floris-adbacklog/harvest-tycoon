@@ -6,7 +6,12 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // 25 Sep 2026: the game loads only the line icons it uses (public/lucide-icons.js, ~28 KB), not all of Lucide (400 KB).
 test('the game loads the slim icon file, and every icon name in the code is in it',()=>{
  const farm=read('public/farm.html');
- assert.match(farm,/<script src="\/lucide-icons\.js"><\/script><script>lucide\.createIcons\(\);<\/script>/);
+ assert.match(farm,/<script src="\/lucide-icons\.js"><\/script>\n  <script type="module" src="\/cloud\/game-cloud\.js"><\/script>/);
+ // Oct 2026: the file draws the page's icons itself as it loads, at the same moment the script in farm.html did (Discord runs no script
+ // written in the page), and the deploy makes it again that way.
+ assert.doesNotMatch(farm,/<script>|createIcons/,'no script of its own in farm.html');
+ assert.match(read('public/lucide-icons.js'),/\nwindow\.lucide=\{createIcons,icons\};\ncreateIcons\(\);\n\}\)\(\);\n$/);
+ assert.match(read('scripts/build-lucide-subset.mjs'),/\nwindow\.lucide=\{createIcons,icons\};\ncreateIcons\(\);\n\}\)\(\);\n`;/);
  assert.doesNotMatch(farm,/vendor\/lucide\.min\.js/,'not the whole library');
  const file=read('public/lucide-icons.js'),icons=JSON.parse(file.match(/const icons=(\{.*?\});\n/s)[1]);
  const pascal=n=>n.replace(/^([A-Z])|[\s-_]+(\w)/g,(x,a,b)=>b?b.toUpperCase():a.toLowerCase()).replace(/^./,c=>c.toUpperCase());

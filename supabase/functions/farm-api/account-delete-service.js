@@ -1,8 +1,8 @@
 import {isAdminAccount} from './admin-service.js';
 // Delete account (3 Oct 2026): Settings › Privacy in the game, on the website and in both apps (the App Store asks for it inside the app).
 // Only ever the signed-in farmer (user.id from the verified token, never an id from the request), only with their farmer name typed
-// exactly, never an admin account, never a CrazyGames or Kongregate account (its sign-in would quietly make a new one; neither has the
-// button).
+// exactly, never an admin account, never a CrazyGames, Kongregate or Discord account (its sign-in would quietly make a new one; none has
+// the button).
 // Everything personal and the sign-in account itself go in one database function, one transaction (supabase/delete-account.sql), so
 // a failure leaves the account whole; purchases stay for the bookkeeping, unlinked. At once, no grace period. The database checks the
 // name and the admin again, so a rename or a second tab in between changes nothing.
@@ -12,6 +12,8 @@ export const DELETE_PAYOUT_OPEN='Your partner payout is still open. Please conta
 export const DELETE_PORTAL='Your CrazyGames account cannot be deleted here.';
 // The same for a Kongregate account (Oct 2026): no button there either; Kongregate's players ask through support.
 export const DELETE_KONGREGATE='Your Kongregate account cannot be deleted here.';
+// And for a Discord account (Oct 2026): no button there either; its players ask by email (info@harvesttycoon.com).
+export const DELETE_DISCORD='Your Discord account cannot be deleted here.';
 // The database's own refusals, said to the farmer as they are (the same texts).
 const REFUSALS=[DELETE_ADMIN,DELETE_WRONG_NAME,DELETE_PAYOUT_OPEN];
 // OneSignal (the apps' push notifications) keeps a user under the player id as external_id: removed too, once the account is gone, for a
@@ -28,6 +30,7 @@ export async function handleDeleteAccount({admin,body,user,oneSignalKey='',fetch
  if(isAdminAccount(user))return {status:403,data:{error:DELETE_ADMIN,code:'ACTION_REJECTED'}};
  if(user.app_metadata?.provider==='crazygames')return {status:403,data:{error:DELETE_PORTAL,code:'ACTION_REJECTED'}};
  if(user.app_metadata?.provider==='kongregate')return {status:403,data:{error:DELETE_KONGREGATE,code:'ACTION_REJECTED'}};
+ if(user.app_metadata?.provider==='discord')return {status:403,data:{error:DELETE_DISCORD,code:'ACTION_REJECTED'}};
  const typed=typeof body?.username==='string'?body.username.trim():'';
  if(!typed||typed.length>40)return {status:422,data:{error:DELETE_WRONG_NAME,code:'ACTION_REJECTED'}};
  const found=await admin.from('player_stats').select('username').eq('player_id',user.id).maybeSingle();

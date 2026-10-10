@@ -188,6 +188,8 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   if($('boost-dialog').open&&signature()!==lastStatus)render();
  }
  $('diamond-button').onclick=open;
+ // The pill opens the shop as the diamonds do (its onclick left farm.html in Oct 2026: Discord runs no handler written in the page).
+ $('active-boosts').addEventListener('click',()=>$('diamond-button').click());
  $('boosts-button').onclick=open;
  $('boost-daily').onclick=()=>{$('boost-dialog').close();$('today-button').click();};
  return {open,refresh,tick};

@@ -95,7 +95,9 @@ test('the chips: "Get the app" and "Settings › part" in the game\'s words; the
  const ui=read('src/chat-ui.js');
  assert.match(ui,/data-app-link>\$\{ICON\.phone\}<span>Get the app<\/span><\/button>/);
  assert.match(ui,/data-settings-link="\$\{esc\(link\.slug\)\}">\$\{art\('settings'\)\}<span>Settings<\/span><span class="chat-path-sep" aria-hidden="true">›<\/span><span>\$\{esc\(settingsPart\(link\.slug\)\?\.title\?\?''\)\}<\/span><\/button>/);
- assert.match(ui,/if\(portalOff\('app'\)\)\{showCenterNotice\(dialog,bridge\.portal\?\.name==='kongregate'\?'The app is not available on Kongregate\.':'The app is not available on CrazyGames\.'\);return;\}\n  if\(androidApp\(win\)\)\{showCenterNotice\(dialog,'You already have the app: you are playing in it\.'\);return;\}\n  win\.open\(`\$\{SITE\}\$\{appPath\(chosenLanguage\(\)\)\}`,'_blank','noopener'\);/,'the page in the farmer\'s language');
+ // Each portal by its name (Discord, Oct 2026); CrazyGames for one the list does not know, as before Kongregate and Discord.
+ assert.match(ui,/const NO_APP=\{crazygames:'The app is not available on CrazyGames\.',kongregate:'The app is not available on Kongregate\.',discord:'The app is not available on Discord\.'\};/);
+ assert.match(ui,/if\(portalOff\('app'\)\)\{showCenterNotice\(dialog,NO_APP\[bridge\.portal\?\.name\]\?\?NO_APP\.crazygames\);return;\}\n  if\(androidApp\(win\)\)\{showCenterNotice\(dialog,'You already have the app: you are playing in it\.'\);return;\}\n  win\.open\(`\$\{SITE\}\$\{appPath\(chosenLanguage\(\)\)\}`,'_blank','noopener'\);/,'the page in the farmer\'s language');
  assert.match(ui,/part\.app\?\(portalOff\('app'\)\?`<span translate="no">\$\{esc\(part\.app\.url\)\}<\/span>`:appChip\(\)\):part\.settings\?settingsChip\(part\.settings\)/,'on CrazyGames an app link stays words');
  assert.equal(gameAppPath('en'),'/app');assert.equal(gameAppPath('es'),'/es/app');assert.equal(appPath,gameAppPath,'one copy for the build and the chat');
  assert.match(read('public/chat.css'),/\.chat-text \.chat-settings-link span:first-of-type\{flex:none\}/,'"Settings" itself is never cut off');

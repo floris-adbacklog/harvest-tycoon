@@ -1,9 +1,10 @@
 // A new version of the game. An installed app often stays open for days, so after a deploy it would keep running the old files. When the
 // game comes back on screen after a minute or more away, this checks /version.json (written by scripts/build-static.mjs on every deploy)
 // and reloads when the version differs. It never reloads while someone is playing, only on the way back in; the farm is on the server,
-// so nothing is lost.
+// so nothing is lost. canReload lets a page hold the reload back while a reload would undo what it shows (the Discord page's Authorize
+// card); the new version then waits for the next return.
 export const UPDATE_AFTER_HIDDEN=60*1000,UPDATE_POLL=30*60*1000;
-export function startUpdateCheck({doc=globalThis.document,win=globalThis.window,fetchImpl=globalThis.fetch,now=()=>Date.now()}={}){
+export function startUpdateCheck({doc=globalThis.document,win=globalThis.window,fetchImpl=globalThis.fetch,now=()=>Date.now(),canReload=()=>true}={}){
  const current=doc?.querySelector?.('meta[name="harvest-version"]')?.content;
  if(!current||current==='dev')return null;
  let hiddenAt=0,newer=false;
@@ -18,7 +19,7 @@ export function startUpdateCheck({doc=globalThis.document,win=globalThis.window,
   if(doc.hidden){hiddenAt=now();return;}
   const away=hiddenAt?now()-hiddenAt:0;hiddenAt=0;
   if(away<UPDATE_AFTER_HIDDEN)return;
-  if(newer||await check())win.location.reload();
+  if((newer||await check())&&canReload())win.location.reload();
  });
  return {check,stop:()=>win.clearInterval(timer)};
 }

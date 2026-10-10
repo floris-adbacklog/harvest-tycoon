@@ -73,12 +73,12 @@ const GROUP_NOT_PLATFORM={android:'Not in the Android app',ios:'Not in the iPhon
 const GROUP_FAMILY={in:'In a family',out:'Not in a family'};
 export function groupPills(filters){
  const f=filters&&typeof filters==='object'&&!Array.isArray(filters)?filters:{},level=n=>Number.isInteger(n)&&n>=1&&n<=200,language=LANGUAGES.find(l=>l.code===f.language)?.name;
- const pills=[level(f.minLevel)&&`From level ${f.minLevel}`,level(f.maxLevel)&&`Up to level ${f.maxLevel}`,GROUP_ACTIVE[f.active],GROUP_PLATFORM[f.platform],GROUP_NOT_PLATFORM[f.notPlatform],f.crazygames===true&&'Plays on CrazyGames',f.kongregate===true&&'Plays on Kongregate',language&&`Plays in ${language}`,GROUP_FAMILY[f.family]].filter(text=>typeof text==='string'&&text);
+ const pills=[level(f.minLevel)&&`From level ${f.minLevel}`,level(f.maxLevel)&&`Up to level ${f.maxLevel}`,GROUP_ACTIVE[f.active],GROUP_PLATFORM[f.platform],GROUP_NOT_PLATFORM[f.notPlatform],f.crazygames===true&&'Plays on CrazyGames',f.kongregate===true&&'Plays on Kongregate',f.discord===true&&'Plays on Discord',language&&`Plays in ${language}`,GROUP_FAMILY[f.family]].filter(text=>typeof text==='string'&&text);
  return pills.length||Object.keys(f).length?pills:['Every farmer'];
 }
-// Above the message's text: "Group message from the team", then "Sent to:" and the pills, each its own element (no " · "). On CrazyGames
-// and Kongregate (Oct 2026) a farmer counts as one in the browser, so a message for the browser, or one that leaves an app out, reaches
-// them too: there the pills that name our Android or iPhone app stay out (no app of ours is mentioned there).
+// Above the message's text: "Group message from the team", then "Sent to:" and the pills, each its own element (no " · "). On CrazyGames,
+// Kongregate and Discord (Oct 2026) a farmer counts as one in the browser, so a message for the browser, or one that leaves an app out,
+// reaches them too: there the pills that name our Android or iPhone app stay out (no app of ours is mentioned there).
 const APP_PILLS=new Set([GROUP_PLATFORM.android,GROUP_PLATFORM.ios,GROUP_NOT_PLATFORM.android,GROUP_NOT_PLATFORM.ios]);
 export function groupLine(m){
  if(!m?.meta?.group)return '';const app=portalOff('app'),pills=groupPills(m.meta.group.filters).filter(text=>!(app&&APP_PILLS.has(text)));
@@ -607,9 +607,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  }
 
  // "Get the app" opens /app in a new tab on the website, in the farmer's language (/es/app, ...). In our Android or iPhone app the farmer has it already (the game's own view
- // never goes away to a store page), and CrazyGames and Kongregate allow no links to an app: a short line says so instead.
+ // never goes away to a store page), and CrazyGames, Kongregate and Discord allow no links to an app: a short line says so instead,
+ // naming the portal it is played on (CrazyGames for one this list does not know, as before).
+ const NO_APP={crazygames:'The app is not available on CrazyGames.',kongregate:'The app is not available on Kongregate.',discord:'The app is not available on Discord.'};
  function openApp(){
-  if(portalOff('app')){showCenterNotice(dialog,bridge.portal?.name==='kongregate'?'The app is not available on Kongregate.':'The app is not available on CrazyGames.');return;}
+  if(portalOff('app')){showCenterNotice(dialog,NO_APP[bridge.portal?.name]??NO_APP.crazygames);return;}
   if(androidApp(win)){showCenterNotice(dialog,'You already have the app: you are playing in it.');return;}
   win.open(`${SITE}${appPath(chosenLanguage())}`,'_blank','noopener');
  }

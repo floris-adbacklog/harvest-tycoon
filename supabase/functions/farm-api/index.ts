@@ -57,6 +57,8 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='crazygames')user.app_metadata={...user.app_metadata,provider:'crazygames'};
   // The same for a Kongregate account (Oct 2026, kongregate-auth): signed in through Kongregate, a made-up address, the bonus quietly.
   if(user.app_metadata?.portal==='kongregate')user.app_metadata={...user.app_metadata,provider:'kongregate'};
+  // And for a Discord account (Oct 2026, discord-auth): signed in through Discord, a made-up address, the bonus quietly.
+  if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
   if(!['events','admin_events','social','load','action','rename','avatar','delete_account','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);

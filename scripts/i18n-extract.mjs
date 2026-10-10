@@ -23,8 +23,8 @@ export const SOURCES=[
 // The CrazyGames page (Oct 2026) shows the same loading screen and a pause card of its own. The support page (3 Oct 2026) is written
 // per language at deploy time from these translations (scripts/build-languages.mjs), like the sign-in page.
 // The app page (/app, 4 Oct 2026) too.
-// The Kongregate page (Oct 2026) the same, with the guest's Register page.
-export const PAGES=['public/farm.html','public/play.html','public/crazygames.html','public/kongregate.html','public/support.html','public/app.html'];
+// The Kongregate page (Oct 2026) the same, with the guest's Register page, and the Discord page (Oct 2026) with its Authorize card.
+export const PAGES=['public/farm.html','public/play.html','public/crazygames.html','public/kongregate.html','public/discord.html','public/support.html','public/app.html'];
 const SQL_DIRS=['supabase/','supabase/migrations/'];
 
 // data-note becomes a line of text in a dropdown (pretty-select.js), so it is collected too.

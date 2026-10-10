@@ -65,7 +65,9 @@ test('the game reads the bottom safe area in one place, which the installed app 
  const base=read('public/styles.css');
  assert.match(base,/^:root\{--safe-bottom:env\(safe-area-inset-bottom,0px\)\}/,'the browser keeps the plain safe area');
  assert.match(read('public/pwa-layout.css'),/html\[data-app-mode=standalone\]\{--safe-bottom:max\(0px,calc\(env\(safe-area-inset-bottom,0px\) - var\(--viewport-shortfall,0px\)\)\)\}/);
- const own=new Set(['styles.css','welcome.css','pwa-layout.css','loading-screen.css']);
+ // discord.css: the Discord Activity's outer page (never the game frame or the installed app, no styles.css) takes Discord's own insets,
+ // with the device's as the fallback.
+ const own=new Set(['styles.css','welcome.css','pwa-layout.css','loading-screen.css','discord.css']);
  for(const file of readdirSync(new URL('public/',root)).filter(name=>name.endsWith('.css')&&!own.has(name)))
   assert(!/env\(safe-area-inset-bottom\)/.test(read(`public/${file}`)),`${file} reads the bottom safe area directly`);
  for(const file of ['mobile.css','beginner.css','settings.css','starter-pack.css'])assert.match(read(`public/${file}`),/var\(--safe-bottom\)/,file);

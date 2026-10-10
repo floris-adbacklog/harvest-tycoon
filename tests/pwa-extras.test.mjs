@@ -48,6 +48,10 @@ test('a new version: checked on the way back in after a minute away, never while
  assert.deepEqual(reloads,[],'a short glance away changes nothing');assert.equal(fetches.length,0);
  doc.hidden=true;await listeners.visibilitychange();clock+=UPDATE_AFTER_HIDDEN;doc.hidden=false;await listeners.visibilitychange();
  assert.deepEqual(fetches,[['/version.json','no-store']]);assert.equal(reloads.length,1,'back after a minute with a new version: reload');
+ // A page that holds the reload back (the Discord page's Authorize card): the new version waits for the next return.
+ let allowed=false;reloads.length=0;startUpdateCheck({doc,win,fetchImpl,now:()=>clock,canReload:()=>allowed});
+ doc.hidden=true;await listeners.visibilitychange();clock+=UPDATE_AFTER_HIDDEN;doc.hidden=false;await listeners.visibilitychange();assert.deepEqual(reloads,[]);
+ allowed=true;doc.hidden=true;await listeners.visibilitychange();clock+=UPDATE_AFTER_HIDDEN;doc.hidden=false;await listeners.visibilitychange();assert.equal(reloads.length,1);
  live='v1';reloads.length=0;const same=startUpdateCheck({doc,win,fetchImpl,now:()=>clock});assert.equal(await same.check(),false);
  assert.equal(startUpdateCheck({doc:{querySelector:()=>({content:'dev'})},win,fetchImpl}),null,'a local build never checks');
  const build=read('scripts/build-static.mjs');

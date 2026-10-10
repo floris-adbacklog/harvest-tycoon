@@ -16,6 +16,8 @@ copyFileSync(new URL('../src/account-form.js',import.meta.url),new URL('../supab
 copyFileSync(new URL('../src/account-form.js',import.meta.url),new URL('../supabase/functions/crazygames-auth/account-form.js',import.meta.url));
 // And for a Kongregate username (kongregate-auth, Oct 2026).
 copyFileSync(new URL('../src/account-form.js',import.meta.url),new URL('../supabase/functions/kongregate-auth/account-form.js',import.meta.url));
+// And for a new Discord farm's random name (discord-auth, Oct 2026).
+copyFileSync(new URL('../src/account-form.js',import.meta.url),new URL('../supabase/functions/discord-auth/account-form.js',import.meta.url));
 
 copyFileSync(new URL('../public/player-avatars.js',import.meta.url),new URL('../supabase/functions/farm-api/player-avatars.js',import.meta.url));
 

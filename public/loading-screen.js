@@ -105,6 +105,7 @@ export const LOAD_STALL_MS=30000,LOAD_RETRY_KEY='harvest-tycoon:farm-retry',LOAD
 export const loadStep=at=>!at?'code':at.models<at.of?'models':!at.account?'account':'scene';
 export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=window,storage=(()=>{try{return win.sessionStorage;}catch{return null;}})(),now=()=>Date.now()}={}){
  const reload=()=>{if(portal)portal.reopen();else win.parent.location.reload();};
+ // Try again's only handler: farm.html has no onclick of its own since Oct 2026 (Discord runs no handler written in the page).
  const retry=doc.querySelector('#error .primary-button');if(retry)retry.onclick=reload;
  let last=null,still=0,over=false;
  const stop=()=>{over=true;win.clearInterval(timer);};

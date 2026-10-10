@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createKongregateLink,localStandIn,cleanUser,addressUser,siteLanguage,isGuest,API_SCRIPT,GUEST} from '../src/kongregate-link.js';
 import {runKongregatePage,TEXT,KG_KEY,LOCALE_KEY,SOURCE} from '../src/kongregate-page.js';
-import {portal as portalAround,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,PRIVACY_URL,PRIVACY_CONTACT,privacyContact} from '../public/portal.js';
+import {portal as portalAround,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,PRIVACY_URL,PRIVACY_CONTACT,privacyContact,openOut} from '../public/portal.js';
 import {wikiArticle,wikiQuick,WIKI_TOPICS} from '../public/wiki-content.js';
 import {createPortalUI} from '../src/portal-ui.js';
 import {linkify} from '../src/popup-ui.js';
@@ -162,6 +162,9 @@ test('the wiki on Kongregate: no buying, inviting, app, email or reminders; its 
  assert.doesNotMatch(wikiQuick({portal:'kongregate'}),/>App</);
  // CrazyGames keeps its own lines.
  const cg=WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal:true}).html).join('\n');assert.match(cg,/Your farm on CrazyGames/);assert.doesNotMatch(cg,/Kongregate|Questions about your privacy/);
+ // Kongregate as before Discord (Oct 2026): its own lines, none of Discord's, and the portal object reads the same as its name.
+ assert.doesNotMatch(html,/Discord|Who can chat/);assert.match(html,/sign in to Kongregate on any device and it is there\./);
+ assert.equal(WIKI_TOPICS.map(t=>wikiArticle(t.id,{...ctx,portal:KONG}).html).join('\n'),html);
  // Nothing is sold on either: What opens when has no Starter Pack there (the website's wiki keeps it).
  assert.doesNotMatch(cg,/Starter Pack/);assert.match(wikiArticle('quests',{level:120,href:id=>`#wiki-${id}`}).html,/<span>Starter Pack<\/span>/);
  assert.ok(portalTips(LOADING_TIPS,{documentElement:{dataset:{portal:'kongregate'}}}).every(([picture])=>!PORTAL_HIDDEN_TIPS.includes(picture)),'no tips about inviting or the app');
@@ -191,7 +194,11 @@ test('no address out of the game in Kongregate mode: popups and staff messages p
  assert.match(read('src/popup-ui.js'),/const offered=button&&!\(portalOff\('links'\)&&/);
  assert.match(read('src/chat-ui.js'),/if\(key==='translate'\)\{if\(!portalOff\('translate'\)\)win\.open/);
  assert.match(read('src/chat-ui.js'),/part\.app\?\(portalOff\('app'\)\?`<span translate="no">/);
- assert.match(read('src/chat-ui.js'),/if\(portalOff\('app'\)\)\{showCenterNotice\(dialog,bridge\.portal\?\.name==='kongregate'\?'The app is not available on Kongregate\.'/);
+ assert.match(read('src/chat-ui.js'),/if\(portalOff\('app'\)\)\{showCenterNotice\(dialog,NO_APP\[bridge\.portal\?\.name\]\?\?NO_APP\.crazygames\);return;\}/);
+ assert.match(read('src/chat-ui.js'),/const NO_APP=\{[^}]*kongregate:'The app is not available on Kongregate\.'/,'Kongregate\'s own line, as before Discord');
+ // The privacy link is a plain link to the policy in a new tab, as before Discord (Oct 2026): only a portal with openLink takes it over.
+ let stopped=0;const tap={target:{closest:sel=>sel===`a[href="${PRIVACY_URL}"]`?{}:null},preventDefault:()=>stopped++};
+ assert.equal(openOut(tap,KONG),false);assert.equal(stopped,0);assert.equal(typeof KONG.openLink,'undefined');
  assert.match(read('public/farm-share.js'),/!portalOff\('share'\)/);assert.match(read('src/game-cloud.js'),/if\(!portal\)void loadStaff/,'no Copy link for the staff there');
  assert.match(read('src/game-cloud.js'),/const shop=!portal;/,'no payment return, special offer or Starter Pack');
  assert.match(read('public/wiki-ui.js'),/if\(portal\(\)\)return;/);

@@ -10,7 +10,7 @@ import {androidApp,googlePlayApp} from '../public/android.js';
 // here, on the device: nothing records who installed the app), and from a farm level (decided by the server). Never in a farmer's first
 // half hour, and never over another window: it waits until nothing else is open.
 export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play',feedback:'Feedback'});
-export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps, CrazyGames or Kongregate)'});
+export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps or the game portals)'});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text). On CrazyGames (Oct 2026,
 // public/portal.js) no links out are allowed: the address stays plain text there.
@@ -24,8 +24,9 @@ export function inLanguage(item,code=chosenLanguage()){
 // A group this list does not know is never shown, as in every version since 26 Sep 2026: a game from before the Android app group (9 Oct
 // 2026) skips its pop-ups and leaves them unseen, so the farmer still gets them once the game knows the group. playApp: public/android.js
 // googlePlayApp (only the special offer leaves it out: no offer goes to that group). The website group (9 Oct 2026, web): harvesttycoon.com
-// in a browser or on the home screen, itch.io's frame too; never in our apps (Android, iPhone, Galaxy Store) or on CrazyGames or
-// Kongregate (no links out there; 'browser' does include those portals). A game from before it skips it, as above; the offer passes no web.
+// in a browser or on the home screen, itch.io's frame too; never in our apps (Android, iPhone, Galaxy Store) or on a game portal
+// (CrazyGames, Kongregate, Discord: no links out there; 'browser' does include those portals). A game from before it skips it, as above;
+// the offer passes no web.
 export function fitsDevice(audience,{installed,phone,playApp=false,web=false}){
  return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true);
 }

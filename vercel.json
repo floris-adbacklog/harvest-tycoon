@@ -50,6 +50,17 @@
       "source": "/settings/",
       "destination": "/?open=settings",
       "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "query",
+          "key": "frame_id"
+        }
+      ],
+      "destination": "/discord.html",
+      "permanent": false
     }
   ],
   "rewrites": [
@@ -181,6 +192,19 @@
         {
           "key": "Content-Security-Policy",
           "value": "frame-ancestors https://www.kongregate.com https://*.kongregate.com https://*.konggames.com"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/discord.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
         },
         {
           "key": "X-Robots-Tag",

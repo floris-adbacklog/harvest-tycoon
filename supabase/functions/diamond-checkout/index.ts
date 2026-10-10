@@ -174,6 +174,9 @@ Deno.serve(async req=>{
   if(user.app_metadata?.portal==='crazygames')return reply({error:'Purchases are not available on CrazyGames.'},403);
   // The same for a Kongregate account (Oct 2026, kongregate-auth): Kongregate allows only its own Kreds, which the game does not sell yet.
   if(user.app_metadata?.portal==='kongregate')return reply({error:'Purchases are not available on Kongregate.'},403);
+  // And for a Discord account (Oct 2026, discord-auth): nothing is sold in the Activity (Discord's Developer Policy would ask for its
+  // own purchases at no higher price), and a Discord account cannot buy on the website either.
+  if(user.app_metadata?.portal==='discord')return reply({error:'Purchases are not available on Discord.'},403);
   if(!enabled)return reply({error:play?'Purchases through Google Play are not available yet.':apple?'Purchases through the App Store are not available yet.':'Diamond purchases are not available yet.'},503);
   let pack;
   if(body.pack==='offer'){

@@ -116,8 +116,10 @@ async function resendMail(to,message){
  const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({from,to:[to],subject:message.subject,html:message.html,text:message.text})});
  if(!response.ok)throw Error('The email could not be sent. Try again in a moment.');
 }
-// A CrazyGames or Kongregate account (Oct 2026, portal.js) has a made-up address: no code is ever sent to it and it is never changed.
-const NO_PORTAL_EMAIL=Object.freeze({crazygames:'You play with CrazyGames, so your account has no email address.',kongregate:'You play with Kongregate, so your account has no email address.'});
+// A CrazyGames, Kongregate or Discord account (Oct 2026, portal.js) has a made-up address: no code is ever sent to it and it is never
+// changed.
+const NO_PORTAL_EMAIL=Object.freeze({crazygames:'You play with CrazyGames, so your account has no email address.',kongregate:'You play with Kongregate, so your account has no email address.',
+ discord:'You play with Discord, so your account has no email address.'});
 const noPortalEmail=user=>Error(NO_PORTAL_EMAIL[portalOf(user).id]);
 export async function sendEmailCode({admin,user,now=Date.now(),mail=resendMail,random=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
  if(portalOf(user))throw noPortalEmail(user);

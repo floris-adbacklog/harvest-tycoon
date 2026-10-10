@@ -142,6 +142,9 @@ test('the farmer\'s line: one pill per filter in the game\'s words, the language
  assert.deepEqual(groupPills({notPlatform:'browser'}),['Not in the browser']);assert.deepEqual(groupPills({notPlatform:'windows'}),[]);
  // Only what the database checked: a filter this game does not know is left out, and then nothing says "every farmer".
  assert.deepEqual(groupPills({country:'NL'}),[]);assert.deepEqual(groupPills({active:'constructor',minLevel:'14',crazygames:'yes'}),[]);
+ // Discord accounts (Oct 2026) as Kongregate's: only a real true; CrazyGames and Kongregate as before.
+ assert.deepEqual(groupPills({discord:true,minLevel:20}),['From level 20','Plays on Discord']);assert.deepEqual(groupPills({discord:'yes'}),[]);
+ assert.deepEqual(groupPills({crazygames:true,kongregate:true,discord:true}),['Plays on CrazyGames','Plays on Kongregate','Plays on Discord']);
  const line=groupLine({body:'Hi',meta:{group:{id:'g',filters:{minLevel:14,language:'nl'}}}});
  assert.match(line,/^<div class="chat-group"><span class="chat-group-title">.*Group message from the team<\/span><span class="chat-group-to"><span>Sent to:<\/span><span class="chat-group-pill">From level 14<\/span><span class="chat-group-pill">Plays in Nederlands<\/span><\/span><\/div>$/);
  assert.doesNotMatch(line,/·/,'separate pills, never a middle dot');
@@ -196,9 +199,11 @@ test('in the game: the group message shows the line above its text; an ordinary 
 test('the dashboard: the filters next to the audience, the count with them, the question names them, the last sends listed',()=>{
  const admin=read('src/admin-dashboard.js');
  assert.match(admin,/<option value="online">Online now<\/option><option value="week" selected>Active this week<\/option><option value="month" data-group-filter>Active this month<\/option><option value="all">Everyone<\/option>/);
- for(const id of ['max-level','platform','notPlatform','language','family','crazygames','kongregate'])assert.match(admin,new RegExp(`id="admin-dm-${id}"`),id);
+ for(const id of ['max-level','platform','notPlatform','language','family','crazygames','kongregate','discord'])assert.match(admin,new RegExp(`id="admin-dm-${id}"`),id);
+ assert.match(admin,/<input type="checkbox" id="admin-dm-discord">Discord accounts only<\/label><\/div>'/,'after Kongregate, the last of the filters');
+ assert.match(admin,/if\(\$dm\('crazygames'\)\.checked\)f\.crazygames=true;\n  if\(\$dm\('kongregate'\)\.checked\)f\.kongregate=true;\n  if\(\$dm\('discord'\)\.checked\)f\.discord=true;\n  return f;/);
  assert.match(admin,/<select id="admin-dm-language"><option value="">Any language<\/option>'\+LANGUAGES\.map/);
- assert.match(admin,/for\(const id of \['audience','platform','notPlatform','language','family','crazygames','kongregate'\]\)dialog\.querySelector\(`#admin-dm-\$\{id\}`\)\.addEventListener\('change',\(\)=>void countDm\(\)\);/,'every filter counts again');
+ assert.match(admin,/for\(const id of \['audience','platform','notPlatform','language','family','crazygames','kongregate','discord'\]\)dialog\.querySelector\(`#admin-dm-\$\{id\}`\)\.addEventListener\('change',\(\)=>void countDm\(\)\);/,'every filter counts again');
  assert.match(admin,/let n=groupFilters===false\?null:await bridge\.chat\.broadcastGroup\(\{filters:dmFilters\(\)\}\);if\(ask!==dmCounting\)return;/,'the count with the filters, only the latest one');
  assert.match(admin,/if\(n===null\)\{showGroupFilters\(false\);n=await bridge\.chat\.broadcastDm\(/,'the old database: the old choice and count');
  assert.match(admin,/if\(active!=='all'\)f\.active=active;if\(minLevel>1\)f\.minLevel=minLevel;/,'only what narrows it down, as the database keeps it');

@@ -116,8 +116,8 @@ export async function handleAdminEmail({admin,body,user,now=Date.now()}){
  if(isAdminAddress(next))return respond({error:'This email address cannot be used.'},400);
  const found=await admin.auth.admin.getUserById(playerId);
  const target=found.data?.user;if(found.error||!target)return respond({error:'This farmer could not be found.'},404);
- // A CrazyGames or Kongregate account (Oct 2026) signs in through that site: its address is made up and must stay as it is
- // (crazygames-auth and kongregate-auth sign it in with that address).
+ // A CrazyGames, Kongregate or Discord account (Oct 2026) signs in through that site: its address is made up and must stay as it is
+ // (crazygames-auth, kongregate-auth and discord-auth sign it in with that address).
  const portal=portalOf(target);
  if(portal)return respond({error:`This farmer plays on ${portal.name}, so the account has no real email address to change.`},400);
  if((target.app_metadata?.provider??'email')!=='email')return respond({error:'This farmer signs in with Google or Facebook, so the address comes from there.'},400);

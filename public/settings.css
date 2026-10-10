@@ -55,3 +55,7 @@
 #sound-dialog .avatar-settings-header .settings-copied{font-size:12.5px;color:inherit}
 .settings-copy-field{width:min(100%,340px);margin:0 0 10px;padding:6px 8px;border:1px solid #e3d6c1;border-radius:8px;background:#fffdf5;color:#3d392b;font:400 13px 'DM Sans',sans-serif}
 html[data-portal] .settings-copy{display:none!important}
+/* Settings > Chat: the invite to our Discord server (10 Oct 2026). The logo in Discord's own blurple, as their brand page asks; the
+   row is gone on every portal (public/portal.css), where no link may leave the game. */
+.chat-discord{cursor:default}.chat-discord>.discord-logo{flex:none;width:34px;height:34px;color:#5865f2}
+.chat-discord-join{display:inline-flex;align-items:center;flex:none;min-height:44px;text-decoration:none;color:var(--btn-second-text)}

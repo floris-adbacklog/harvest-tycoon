@@ -7,7 +7,7 @@ import {join} from 'node:path';
 import {createWrapperLink,trustedWrapper,portalLanguage,cleanInit,localStandIn,NS} from '../src/crazygames-link.js';
 import {createWrapper,startWrapper,gameAddress,allowedOrigin,GAME_URL,GAME_ORIGIN,SDK_EVENTS,SHOW_AFTER_HELLO} from '../crazygames/wrapper.js';
 import {createFarmSession} from '../src/farm-session.js';
-import {portal,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,PRIVACY_URL} from '../public/portal.js';
+import {portal,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,PRIVACY_URL,openOut} from '../public/portal.js';
 import {setAppBadge} from '../public/app-badge.js';
 import {portalTips,LOADING_TIPS,PORTAL_HIDDEN_TIPS} from '../public/loading-screen.js';
 import {wikiArticle,wikiQuick,WIKI_TOPICS} from '../public/wiki-content.js';
@@ -344,6 +344,10 @@ test('the farm frame on CrazyGames: SDK events at farm ready, no purchases, the 
  assert.match(cloud,/const shop=!portal;\n   if\(shop\)showPaymentReturn\(bridge\);/);assert.match(cloud,/if\(shop\)\{createOfferUI\(bridge\);\n   await createStarterPackUI\(bridge\);\}/);
  assert.match(ui,/doc\.documentElement\.dataset\.portal=portal\.name;/);assert.match(ui,/button\.textContent='Save your farm: log in with CrazyGames';/);assert.match(ui,/if\(portal\.guest&&portalLogIn\(portal\)\)\{/);
  assert.match(ui,/button\.onclick=async\(\)=>\{button\.disabled=true;try\{await portal\.showAuthPrompt\(\);\}/,'only from a tap');
+ // CrazyGames as before Discord (Oct 2026): its privacy links stay plain links in a new tab; only a portal with openLink takes them over.
+ assert.match(ui,/if\(typeof portal\.openLink==='function'\)doc\.addEventListener\('click',event=>openOut\(event,portal\),true\);/);
+ let stopped=0;const tap={target:{closest:sel=>sel===`a[href="${PRIVACY_URL}"]`?{}:null},preventDefault:()=>stopped++};
+ assert.equal(openOut(tap,CRAZY),false);assert.equal(openOut(tap,null),false,'the website');assert.equal(stopped,0);
  assert.match(read('public/boosts-ui.js'),/track\('diamond_shop_view'\);if\(portalOff\('payments'\)\)return;try\{catalog=await bridge\(\)\.payments/,'the shop never asks for the packs there');
  assert.match(read('public/pass-ui.js'),/if\(catalog\|\|portalOff\('payments'\)\|\|/);assert.match(read('public/pass-ui.js'),/if\(pending\|\|portalOff\('payments'\)\|\|/);
  assert.match(read('public/farm-share.js'),/const available=\(\)=>Boolean\(capture\)&&!portalOff\('share'\)&&Boolean\(canCapture\(\)\);/);
@@ -365,6 +369,9 @@ test('loading tips, the wiki and the chat leave out what is not there on CrazyGa
  for(const gone of [/Buying diamonds/,/Play it as an app/,/Install the app/,/Invite a friend/,/Confirm your email/,/Share my farm/,/delete-account/,/Stripe;/,/Reminders/,/Forgot your password/,/home screen/])
   {assert.doesNotMatch(crazyWiki,gone,String(gone));assert.match(site,gone,`the website keeps ${gone}`);}
  assert.match(crazyWiki,/The chat is for farmers who are logged in with CrazyGames/);assert.match(crazyWiki,/href="https:\/\/www\.harvesttycoon\.com\/privacy"/);
+ // CrazyGames as before Kongregate and Discord (Oct 2026): its own lines, whether the game hands the portal or true, and no one else's.
+ assert.equal(wiki(CRAZY),crazyWiki);assert.match(crazyWiki,/Who can chat/);assert.match(crazyWiki,/Your farm on CrazyGames/);
+ assert.doesNotMatch(crazyWiki,/Kongregate|Discord|Questions about your privacy/);
  assert.doesNotMatch(wikiQuick({portal:true}),/>App</);assert.match(wikiQuick({}),/>App</);
  assert.match(read('src/chat-ui.js'),/if\(portalOff\('translate'\)\)\{const at=items\.findIndex/);assert.match(read('src/popup-ui.js'),/export const linkify=text=>portalOff\('links'\)\?esc\(text\):/);
  assert.match(read('src/popup-ui.js'),/const offered=button&&!\(portalOff\('links'\)&&/);
@@ -406,6 +413,9 @@ test('the app badge never reaches into CrazyGames\' own page',async()=>{
  const set=[];const own={navigator:{setAppBadge:async n=>{set.push(n);}},caches:null};
  own.top={get navigator(){throw new Error('cross-origin');}};
  await setAppBadge(3,own);assert.deepEqual(set,[3]);
+ // CrazyGames' farm frame keeps its own number, as before Kongregate and Discord (Oct 2026), which have none.
+ const cg={navigator:{setAppBadge:async n=>{set.push(`cg ${n}`);}},caches:null,parent:{harvestBridge:{portal:CRAZY}}};cg.top={get navigator(){throw new Error('cross-origin');}};
+ await setAppBadge(5,cg);assert.deepEqual(set,[3,'cg 5']);set.length=1;
  const site={navigator:{setAppBadge:async n=>{set.push(`top ${n}`);}}};const frame={navigator:{setAppBadge:async()=>set.push('frame')},top:site};
  await setAppBadge(2,frame);assert.deepEqual(set,[3,'top 2'],'on the website the installed app\'s own window still gets it');
 });

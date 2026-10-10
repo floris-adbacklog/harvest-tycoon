@@ -6,7 +6,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 // about 3 s. With a modulepreload for each in farm.html they all start with the page, side by side, while the farm itself is still
 // loading. This script follows game.js's static imports (the import map's "three" too) and writes the list between the two markers in
 // public/farm.html; tests/module-preload.test.mjs fails when the list is out of date. Run: node scripts/module-preload.mjs
-const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..'),PUBLIC=join(ROOT,'public'),PAGE=join(PUBLIC,'farm.html'),CRAZY=join(PUBLIC,'crazygames.html'),KONG=join(PUBLIC,'kongregate.html');
+const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..'),PUBLIC=join(ROOT,'public'),PAGE=join(PUBLIC,'farm.html'),CRAZY=join(PUBLIC,'crazygames.html'),KONG=join(PUBLIC,'kongregate.html'),DISCORD=join(PUBLIC,'discord.html');
 export const START='<!-- module-preload:start -->',END='<!-- module-preload:end -->';
 const IMPORTMAP={'three':'/vendor/three.module.js'},PREFIX={'three/addons/':'/vendor/addons/'};
 const readPublic=path=>readFileSync(join(PUBLIC,path.split('?')[0]),'utf8');
@@ -84,5 +84,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const prefetch=farmPrefetch(farm);writeFileSync(CRAZY,withPrefetch(readFileSync(CRAZY,'utf8'),prefetch));
  // The Kongregate page (Oct 2026) the same way.
  writeFileSync(KONG,withPrefetch(readFileSync(KONG,'utf8'),prefetch,'public/kongregate.html'));
- console.log(`public/farm.html: ${list.length} modules preloaded; public/crazygames.html and public/kongregate.html: ${prefetch.length} files prefetched`);
+ // And the Discord page (Oct 2026).
+ writeFileSync(DISCORD,withPrefetch(readFileSync(DISCORD,'utf8'),prefetch,'public/discord.html'));
+ console.log(`public/farm.html: ${list.length} modules preloaded; public/crazygames.html, public/kongregate.html and public/discord.html: ${prefetch.length} files prefetched`);
 }

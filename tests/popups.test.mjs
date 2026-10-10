@@ -14,7 +14,7 @@ test('web addresses in news and pop-ups open in a new tab; only https, and the r
 test('who sees it: everyone, phones in the browser, anyone in the browser, phones or computers',()=>{
  const app={installed:true,phone:true},browserPhone={installed:false,phone:true},computer={installed:false,phone:false};
  assert.deepEqual(['all','phone_browser','browser','phone','desktop'].map(a=>[app,browserPhone,computer].map(d=>fitsDevice(a,d))),[[true,true,true],[false,true,false],[false,true,true],[true,true,false],[false,false,true]]);
- assert.deepEqual(POPUP_AUDIENCES,{all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps, CrazyGames or Kongregate)'},'9 Oct 2026: our Google Play app and our website too (tests/popup-android-app.test.mjs, tests/popup-web.test.mjs)');
+ assert.deepEqual(POPUP_AUDIENCES,{all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps or the game portals)'},'9 Oct 2026: our Google Play app and our website too (tests/popup-android-app.test.mjs, tests/popup-web.test.mjs)');
  assert.deepEqual(Object.keys(POPUP_SCREENS),['install','today','events','leaderboard','chat','shop','family','wiki','feedback']);
  assert.match(readFileSync(new URL('../supabase/popup-feedback-target.sql',import.meta.url),'utf8'),/screen:\(install\|today\|events\|leaderboard\|chat\|shop\|family\|wiki\|feedback\)/,'the database takes it too');
 });

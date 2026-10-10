@@ -1,7 +1,7 @@
-import {privacyLine,privacyContact,PRIVACY_URL,portalLogIn} from '../public/portal.js';
-// The farm on CrazyGames or Kongregate (Oct 2026; src/game-cloud.js calls this only there). The page is marked (html[data-portal], so
-// portal.css hides what the portal does not allow: our purchases, invites, sharing, email, reminders, the app, Sign out and cookies)
-// and gets what the portal asks for instead:
+import {privacyLine,privacyContact,PRIVACY_URL,portalLogIn,openOut} from '../public/portal.js';
+// The farm on CrazyGames, Kongregate or Discord (Oct 2026; src/game-cloud.js calls this only there). The page is marked
+// (html[data-portal], so portal.css hides what the portal does not allow: our purchases, invites, sharing, email, reminders, the app,
+// Sign out and cookies) and gets what the portal asks for instead:
 // - the privacy notice: one line on the loading screen (never a pop-up) and in Settings, Privacy, with the only link allowed;
 // - for a guest, one small button in Settings, Your account: "Save your farm: log in with CrazyGames". It opens CrazyGames' own
 //   log-in window, only when tapped; a guest who logs in keeps this farm (src/crazygames.js).
@@ -13,11 +13,13 @@ export function createPortalUI({portal,doc=globalThis.document}){
  if(privacy){
   for(const old of privacy.querySelectorAll('.install-copy,.notify-device-actions,.privacy-danger'))old.remove();
   const line=doc.createElement('p');line.className='install-copy portal-privacy-settings';line.innerHTML=privacyLine();privacy.append(line);
-  // Kongregate (Oct 2026): who to ask about privacy, beside the policy (an address, not a link).
+  // Kongregate and Discord (Oct 2026): who to ask about privacy, beside the policy (an address, not a link).
   if(portal.privacyContact){const contact=doc.createElement('p');contact.className='install-copy portal-privacy-contact';contact.textContent=privacyContact(portal.privacyContact);privacy.append(contact);}
  }
- // The privacy link in the wiki and elsewhere in the frame: our full address, in a new tab (CrazyGames allows this one link).
+ // The privacy link in the wiki and elsewhere in the frame: our full address, in a new tab (CrazyGames allows this one link). On Discord
+ // (Oct 2026) every one of them, the wiki's too, opens through Discord's own window instead (public/portal.js openOut).
  for(const link of doc.querySelectorAll('a[href="/privacy"]'))link.href=PRIVACY_URL;
+ if(typeof portal.openLink==='function')doc.addEventListener('click',event=>openOut(event,portal),true);
  if(portal.guest&&portalLogIn(portal)){
   const account=doc.querySelector('.settings-account .account-actions');
   if(account&&!doc.getElementById('portal-login')){

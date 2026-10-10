@@ -7,8 +7,8 @@ import {PORTAL_FEATURES} from '../public/portal.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // Pop-ups for our website (9 Oct 2026, supabase/popup-web.sql), first for the Trustpilot review: harvesttycoon.com in a browser or on the
-// home screen, itch.io's frame too; never in our Android, iPhone or Galaxy Store app, never on CrazyGames or Kongregate (no links out
-// there). The user agents the apps send (public/android-app.js).
+// home screen, itch.io's frame too; never in our Android, iPhone or Galaxy Store app, never on a game portal: CrazyGames, Kongregate or
+// Discord (Oct 2026; no links out there). The user agents the apps send (public/android-app.js).
 const WEBVIEW_UA='Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP2A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0.6668.70 Mobile Safari/537.36';
 const PLAY_10=`${WEBVIEW_UA} HarvestTycoonApp/1.0`,PLAY_12=`${WEBVIEW_UA} HarvestTycoonApp/1.2 PlayBilling/1`,GALAXY=`${WEBVIEW_UA} HarvestTycoonApp/1.2 WebBilling/1`;
 const IOS_APP='Mozilla/5.0 (iPhone; CPU iPhone OS 26_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 HarvestTycoonApp/1.0',IOS_APP_11=IOS_APP.replace('HarvestTycoonApp/1.0','HarvestTycoonApp/1.1 AppStoreBilling/1');
@@ -29,7 +29,7 @@ function marked({ua,own={},parent=null}){
  vm.runInNewContext(read('public/android-app.js'),{window,document:{documentElement:html},navigator:{userAgent:ua},location:{search:''},localStorage:{getItem:()=>null,setItem(){},removeItem(){}}});
  return html;
 }
-// A portal as src/crazygames.js and src/kongregate-page.js hand it to the farm (bridge.portal): every feature off.
+// A portal as src/crazygames.js, src/kongregate-page.js and src/discord-page.js hand it to the farm (bridge.portal): every feature off.
 const portalOf=name=>({name,features:Object.freeze(Object.fromEntries(PORTAL_FEATURES.map(feature=>[feature,false]))),guest:false,settings:{},userAvailable:true});
 // The game itself: the farm frame (farm.html, where src/game-cloud.js starts the pop-ups) in the page around it, as on the website
 // (src/main.js), in an app, on a portal (its page marked data-portal, the portal on the bridge) or in itch's frame.
@@ -49,7 +49,8 @@ async function play({ua=CHROME,portal=null,itch=false,standalone=false,coarse=tr
 }
 
 test('the website group: its name, and only a real web flag shows it; the other groups stay as they were',()=>{
- assert.equal(POPUP_AUDIENCES.web,'Website (not the apps, CrazyGames or Kongregate)');
+ // Oct 2026: one name for every game portal, Discord's too (the admin's own screens, in English).
+ assert.equal(POPUP_AUDIENCES.web,'Website (not the apps or the game portals)');
  const web={installed:false,phone:true,web:true},home={installed:true,phone:true,web:true},app={installed:true,phone:true,playApp:true,web:false},portal={installed:false,phone:false,web:false};
  assert.deepEqual([web,home,app,portal].map(d=>fitsDevice('web',d)),[true,true,false,false]);
  assert.equal(fitsDevice('web',{installed:false,phone:false,web:'yes'}),false,'only a real true');
@@ -67,19 +68,19 @@ test('the Trustpilot pop-up opens on the website (a phone, a computer, an iPhone
  }
 });
 
-test('never in our apps (Google Play, iPhone, Galaxy Store) or on CrazyGames or Kongregate: not shown and not marked as seen',async()=>{
+test('never in our apps (Google Play, iPhone, Galaxy Store) or on CrazyGames, Kongregate or Discord: not shown and not marked as seen',async()=>{
  for(const ua of [PLAY_10,PLAY_12,GALAXY,IOS_APP,IOS_APP_11,IPAD_APP]){
   const run=await play({ua});assert.deepEqual([run.shown.length,run.seen],[0,[]],ua);
  }
- for(const portal of ['crazygames','kongregate'])for(const ua of [CHROME,DESKTOP]){
+ for(const portal of ['crazygames','kongregate','discord'])for(const ua of [CHROME,DESKTOP]){
   const run=await play({ua,portal,coarse:ua===CHROME});assert.deepEqual([run.shown.length,run.seen],[0,[]],`${portal} ${ua}`);
  }
  // A portal farmer with the review first in the list still gets the next one that is for them.
- const run=await play({portal:'crazygames',list:[REVIEW,{id:'all',title:'Hi',body:'Hello',audience:'all',texts:{}}]});assert.deepEqual(run.seen,['all']);
+ for(const portal of ['crazygames','discord']){const run=await play({portal,list:[REVIEW,{id:'all',title:'Hi',body:'Hello',audience:'all',texts:{}}]});assert.deepEqual(run.seen,['all'],portal);}
 });
 
 test('why a new group: on a portal "In the browser" shows, without its button (a review ask with no way to it)',async()=>{
- for(const portal of ['crazygames','kongregate']){
+ for(const portal of ['crazygames','kongregate','discord']){
   const run=await play({portal,list:[{...REVIEW,audience:'browser'}]});
   assert.equal(run.shown.length,1,portal);assert.doesNotMatch(run.shown[0],/data-popup-go|trustpilot\.com"/,portal);
   assert.match(run.shown[0],/<button type="button" class="primary-button" data-popup-close>Got it<\/button>$/,portal);
