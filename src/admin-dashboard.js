@@ -231,8 +231,10 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   void showPartners();
  });
  function renderPurchases(data){
-  if(data)purchases=data;if(!purchases)return;const t=purchases.totals,counts=purchaseCounts(purchases.purchases);
-  dialog.querySelector('#admin-purchase-totals').innerHTML=`<span><strong>${number(t.started)}</strong> checkouts</span><span><strong>${number(t.paid)}</strong> paid</span><span><strong>${number(counts.open)}</strong> open</span><span><strong>${number(counts.unpaid)}</strong> not paid</span>${counts.refunded?`<span><strong>${number(counts.refunded)}</strong> refunded</span>`:''}<span><strong>${euro(t.revenueCents)}</strong> earned</span><span><strong>${number(t.players)}</strong> farmers</span>`;
+  // The totals count real farmers' checkouts only: a test one (Stripe's test mode, App Review's sandbox, or the owners' own accounts,
+  // marked by hand on 10 Oct 2026) stays in the list, marked test, but out of every number.
+  if(data)purchases=data;if(!purchases)return;const t=purchases.totals,live=purchases.purchases.filter(p=>p.live),counts=purchaseCounts(live);
+  dialog.querySelector('#admin-purchase-totals').innerHTML=`<span><strong>${number(live.length)}</strong> checkouts</span><span><strong>${number(t.paid)}</strong> paid</span><span><strong>${number(counts.open)}</strong> open</span><span><strong>${number(counts.unpaid)}</strong> not paid</span>${counts.refunded?`<span><strong>${number(counts.refunded)}</strong> refunded</span>`:''}<span><strong>${euro(t.revenueCents)}</strong> earned</span><span><strong>${number(new Set(live.map(p=>p.playerId).filter(Boolean)).size)}</strong> farmers</span>`;
   const shown=purchases.purchases.filter(p=>purchaseFilter==='all'||purchaseState(p)===purchaseFilter);
   // The Halloween Pass (Oct 2026) holds no diamonds of its own: it goes by its name.
   const what=p=>p.pack==='pass'?'Halloween Pass':p.pack==='starter'||p.pack==='offer'?`${p.pack==='offer'?'Special offer':'Starter Pack'} · ${number(p.diamonds)} diamonds${p.coins?` + ${number(p.coins)} coins`:''}`:`${number(p.diamonds)} diamonds`;

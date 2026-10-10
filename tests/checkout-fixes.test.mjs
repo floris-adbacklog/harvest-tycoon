@@ -95,5 +95,9 @@ test('the admin panel says Paid, Open (a page up to 24 hours old) or Not paid',(
  assert.match(dash,/data-purchase-filter="open" aria-pressed="false">Open<\/button><button type="button" class="admin-filter" data-purchase-filter="unpaid" aria-pressed="false">Not paid<\/button>/);
  assert.match(dash,/<strong>\$\{number\(counts\.open\)\}<\/strong> open<\/span><span><strong>\$\{number\(counts\.unpaid\)\}<\/strong> not paid<\/span>/);
  assert.match(dash,/const \[label,cls\]=PURCHASE_LABELS\[purchaseState\(p\)\];/);
+ // the totals are real farmers' only: test checkouts stay in the list but out of every number
+ assert.match(dash,/live=purchases\.purchases\.filter\(p=>p\.live\),counts=purchaseCounts\(live\);/);
+ assert.match(dash,/<strong>\$\{number\(live\.length\)\}<\/strong> checkouts/);
+ assert.match(dash,/<strong>\$\{number\(new Set\(live\.map\(p=>p\.playerId\)\.filter\(Boolean\)\)\.size\)\}<\/strong> farmers/);
  assert.doesNotMatch(dash,/Not finished/);
 });
