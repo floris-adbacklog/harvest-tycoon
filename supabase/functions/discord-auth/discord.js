@@ -166,10 +166,13 @@ export async function verifyDiscord({code,clientId,clientSecret,redirectUri=null
 
 const nameFree=async(admin,name)=>{const {data,error}=await admin.rpc('username_available',{p_name:name});if(error)throw error;return data===true;};
 const accountMetadata=userId=>({portal:PORTAL,guest:false,discord_id:userId});
-// A moderator (staff_roles, supabase/chat.sql): their powers go with every session of the account, so never one made through Discord.
+// A moderator (staff_roles, supabase/chat.sql) or one of the two admins (chat_staff_role names them by their confirmed address,
+// supabase/admins.sql; asked by this service it says 'admin' whatever the session): staff go with every session of the account (the
+// badge, cannot be muted), so never one made through Discord (10 Oct 2026, the owner's question about admin accounts).
 async function staffAccount(admin,playerId){
- const found=await admin.from('staff_roles').select('player_id').eq('player_id',playerId).maybeSingle();
- if(found.error)throw found.error;return Boolean(found.data);
+ const [found,role]=await Promise.all([admin.from('staff_roles').select('player_id').eq('player_id',playerId).maybeSingle(),admin.rpc('chat_staff_role',{p_player:playerId})]);
+ if(found.error)throw found.error;if(role.error)throw role.error;
+ return Boolean(found.data)||role.data==='admin'||role.data==='moderator';
 }
 const isCurrent=(user,userId)=>user?.app_metadata?.portal===PORTAL&&user.app_metadata.guest===false&&user.app_metadata.discord_id===userId;
 const language=value=>typeof value==='string'&&/^[a-z]{2}$/.test(value)?value:null;

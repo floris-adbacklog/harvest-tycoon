@@ -91,10 +91,10 @@ function fakeTables(tables,{unique={},defaults={},onWrite=()=>{}}={}){
 }
 // The database and Auth as Supabase keeps them: deleting an account takes its rows (discord_accounts, player_stats and a ticket's
 // linked_player on delete cascade) and empties a ticket's relink_from (on delete set null), as supabase/discord-link.sql says.
-function fakeSupabase({users=USERS(),accounts=[],tickets=[],checked=[W],staff=[],failDelete=0,failLink=0,failCreate=0}={}){
+function fakeSupabase({users=USERS(),accounts=[],tickets=[],checked=[W],staff=[],admins=[],failDelete=0,failLink=0,failCreate=0}={}){
  const db={users:new Map(users.map(u=>[u.id,structuredClone(u)])),accounts:structuredClone(accounts),tickets:structuredClone(tickets),
   stats:users.filter(u=>u.user_metadata?.username).map(u=>({player_id:u.id,username:u.user_metadata.username})),
-  staff:staff.map(id=>({player_id:id,role:'moderator'}))};
+  staff:staff.map(id=>({player_id:id,role:'moderator'})),admins:[...admins]};
  const log={calls:[],links:[],updated:[],created:[],deletes:[],signOuts:[]};
  let counter=0;
  const removeUser=id=>{
@@ -113,6 +113,7 @@ function fakeSupabase({users=USERS(),accounts=[],tickets=[],checked=[W],staff=[]
    if(name==='username_available')return {data:true,error:null};
    if(name==='harvest_session_active')return {data:db.users.has(args.p_player)&&args.p_session==='s-'+args.p_player,error:null};
    if(name==='harvest_email_checked')return {data:checked.includes(args.p_player),error:null};
+   if(name==='chat_staff_role')return {data:db.admins.includes(args.p_player)?'admin':db.staff.some(r=>r.player_id===args.p_player)?'moderator':null,error:null};
    if(name==='harvest_delete_account'){
     log.deletes.push({...args});
     if(failDelete>0){failDelete--;return {data:null,error:{code:'P0001',message:'Your partner payout is still open. Please contact support before you delete your account.'}};}
@@ -289,6 +290,11 @@ test('the website says no: an old, used or made-up ticket; a portal account; an 
  const staffed=fakeSupabase({staff:[GOOGLE]}),st=await choose(staffed.admin);
  assert.deepEqual(await run(staffed.admin,{op:'confirm',ticket:st},{headers:bearer(GOOGLE)}),{status:403,data:{error:'STAFF_ACCOUNT'}});
  assert.deepEqual(staffed.db.accounts,[]);assert.equal(ticketRow(staffed.db,st).linked_player,null);
+ // One of the two admins (chat_staff_role, by the confirmed address): never through Discord either (10 Oct 2026).
+ const admined=fakeSupabase({admins:[GOOGLE]}),at=await choose(admined.admin);
+ assert.deepEqual(await run(admined.admin,{op:'peek',ticket:at},{headers:bearer(GOOGLE)}),{status:403,data:{error:'STAFF_ACCOUNT'}});
+ assert.deepEqual(await run(admined.admin,{op:'confirm',ticket:at},{headers:bearer(GOOGLE)}),{status:403,data:{error:'STAFF_ACCOUNT'}});
+ assert.deepEqual(admined.db.accounts,[]);assert.equal(ticketRow(admined.db,at).linked_player,null);
  assert.deepEqual(await confirm(UNCONFIRMED),{status:403,data:{error:'EMAIL_UNCONFIRMED'}},'Supabase never confirmed it');
  assert.deepEqual(await confirm(UNCHECKED),{status:403,data:{error:'EMAIL_UNCONFIRMED'}},'not confirmed in Settings, Email address');
  assert.deepEqual(await confirm(W2),{status:409,data:{error:'ALREADY_LINKED'}},'another Discord account plays it already');
