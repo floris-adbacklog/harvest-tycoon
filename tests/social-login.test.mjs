@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const reply=(body,ok=true)=>async()=>({ok,json:async()=>body});
 
 test('only the providers switched on in Supabase get a button; any problem shows none',async()=>{
- assert.deepEqual(Object.keys(SOCIAL_PROVIDERS),['google','facebook','discord']);
+ assert.deepEqual(Object.keys(SOCIAL_PROVIDERS),['google','facebook','apple','discord']);
  assert.deepEqual(await enabledProviders({url:'https://x.supabase.co/',key:'k',fetchImpl:reply({external:{google:true,facebook:false,github:true}})}),['google']);
  assert.deepEqual(await enabledProviders({url:'https://x.supabase.co',key:'k',fetchImpl:reply({external:{google:true,facebook:true}})}),['google','facebook']);
  assert.deepEqual(await enabledProviders({url:'u',key:'k',fetchImpl:reply({},false)}),[]);
@@ -83,4 +83,37 @@ test('Discord sign-in: never in an app\'s own browser, not for a visit from an a
  for(const source of [{fb:true},{tt:true},{g:true},{utm_source:'facebook'},{utm_source:'Instagram'},{utm_source:'tiktok'}])assert.equal(adVisit(source),true,JSON.stringify(source));
  for(const source of [null,{},{src:'itch'},{utm_source:'newsletter'},{ref:'discord.com'}])assert.equal(adVisit(source),false,JSON.stringify(source));
  assert.match(read('src/main.js'),/usableProviders\(list,navigator\.userAgent,undefined,\{fromAd:adVisit\(pendingSource\)\}\)/);
+});
+
+test('Apple sign-in: only on an iPhone, iPad or Mac, never in an app or an app\'s own browser, not for a visit from an ad (10 Oct 2026)',async()=>{
+ const {usableProviders,appleDevice,SOCIAL_PROVIDERS}=await import('../src/social-login.js');
+ const all=['google','facebook','apple','discord'];
+ const ua={
+  safariIphone:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+  chromeIphone:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0.6478.54 Mobile/15E148 Safari/604.1',
+  ipad:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+  chromeMac:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  windows:'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
+  android:'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+  facebookIphone:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0.0.40.97]',
+  instagramIphone:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 337.0.0.0.0 (iPhone15,2; iOS 17_5; nl_NL)'
+ };
+ assert.equal(SOCIAL_PROVIDERS.apple,'Apple');
+ for(const key of ['safariIphone','chromeIphone','ipad','chromeMac']){assert.equal(appleDevice(ua[key]),true,key);assert.deepEqual(usableProviders(all,ua[key],false),all,key);}
+ for(const key of ['windows','android']){assert.equal(appleDevice(ua[key]),false,key);assert.deepEqual(usableProviders(all,ua[key],false),['google','facebook','discord'],key);}
+ for(const key of ['facebookIphone','instagramIphone'])assert.deepEqual(usableProviders(all,ua[key],false),['facebook'],`${key}: only Facebook (and email)`);
+ assert.deepEqual(usableProviders(all,ua.safariIphone,false,{fromAd:true}),['google','facebook'],'from an ad: no Apple, no Discord');
+ assert.deepEqual(usableProviders(all,ua.safariIphone,true),[],'our apps (the iPhone app is marked like the Android app): none');
+ // The button: Apple's logo in black on our white button, between Facebook and Discord; two by two with the others.
+ const html=read('public/play.html');
+ assert.match(html,/<span>Facebook<\/span><\/button><button type="button" class="social-button" data-provider="apple" aria-label="Continue with Apple" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#000" d="M12\.152 6\.896[^"]+"\/><\/svg><span>Apple<\/span><\/button><button type="button" class="social-button" data-provider="discord"/);
+ // The privacy policy names Apple: an address (its own or Hide My Email) and an identifier, no picture; where to take the access back.
+ const privacy=read('public/privacy.html');
+ assert.match(privacy,/<h2 id="social-sign-in">3\. Signing in with Google, Facebook, Apple or Discord<\/h2>/);
+ assert.match(privacy,/If you choose Apple, Apple shares an <strong>email address<\/strong> and a unique identifier for your Apple Account, and no profile picture\./);
+ assert.match(privacy,/Hide My Email/);assert.match(privacy,/We do not receive your Google, Facebook, Apple or Discord password/);
+ assert.match(privacy,/Google, Meta, Apple and Discord process your data under their own privacy policies\..*your Apple Account \(Sign in with Apple\)/);
+ // The admin says "Apple" under "Signs in with"; linking to Discord trusts Apple's address like Google's and Facebook's.
+ assert.match(read('src/admin-players.js'),/discord:'Discord',apple:'Apple'\}/);
+ assert.match(read('supabase/functions/discord-auth/discord.js'),/const OAUTH=\['google','facebook','apple'\];/);
 });

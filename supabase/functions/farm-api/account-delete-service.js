@@ -30,7 +30,9 @@ export async function handleDeleteAccount({admin,body,user,oneSignalKey='',fetch
  if(isAdminAccount(user))return {status:403,data:{error:DELETE_ADMIN,code:'ACTION_REJECTED'}};
  if(user.app_metadata?.provider==='crazygames')return {status:403,data:{error:DELETE_PORTAL,code:'ACTION_REJECTED'}};
  if(user.app_metadata?.provider==='kongregate')return {status:403,data:{error:DELETE_KONGREGATE,code:'ACTION_REJECTED'}};
- if(user.app_metadata?.provider==='discord')return {status:403,data:{error:DELETE_DISCORD,code:'ACTION_REJECTED'}};
+ // Only a farm made in the Discord Activity (portal 'discord'); a sign-in with Discord on the website (10 Oct 2026) is Supabase's own and
+ // says provider 'discord' too, but has a real address and deletes like Google and Facebook.
+ if(user.app_metadata?.portal==='discord')return {status:403,data:{error:DELETE_DISCORD,code:'ACTION_REJECTED'}};
  const typed=typeof body?.username==='string'?body.username.trim():'';
  if(!typed||typed.length>40)return {status:422,data:{error:DELETE_WRONG_NAME,code:'ACTION_REJECTED'}};
  const found=await admin.from('player_stats').select('username').eq('player_id',user.id).maybeSingle();

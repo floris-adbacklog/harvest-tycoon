@@ -186,8 +186,8 @@ const madeFor=(user,userId)=>DISCORD_MAIL.exec(String(user?.email??''))?.[1]===u
 const discordOnly=(user,userId)=>user?.app_metadata?.portal===PORTAL&&madeFor(user,userId);
 // A CrazyGames, Kongregate or Discord account (marked, or with a made-up address): never linked to a Discord user.
 const portalAccount=user=>Boolean(user?.app_metadata?.portal)||/@players\.harvesttycoon\.com$/i.test(String(user?.email??''));
-// Google or Facebook said whose address it is.
-const OAUTH=['google','facebook'];
+// Google, Facebook or Apple said whose address it is (Apple's own or its Hide My Email address, which reaches the farmer).
+const OAUTH=['google','facebook','apple'];
 const hasOAuth=user=>(Array.isArray(user?.identities)?user.identities:[]).some(i=>OAUTH.includes(i?.provider))||
  (Array.isArray(user?.app_metadata?.providers)?user.app_metadata.providers:[]).some(p=>OAUTH.includes(p));
 export function jwtClaims(token){

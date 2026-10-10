@@ -441,6 +441,11 @@ test('farm-api, diamond-checkout and the admin: a Discord account has no email, 
  const refused=await handleDeleteAccount({admin:nothing,body:{username:'Sunny Acres 4821'},user:{...dc,app_metadata:{...dc.app_metadata,provider:'discord'}}});
  assert.deepEqual(refused,{status:403,data:{error:DELETE_DISCORD,code:'ACTION_REJECTED'}});
  assert.equal(DELETE_DISCORD,'Your Discord account cannot be deleted here.');
+ // A sign-in with Discord on the website (10 Oct 2026, Supabase's own: provider 'discord', no portal, a real address) deletes like
+ // Google and Facebook: past the refusal to the farmer-name check.
+ const stats={from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{username:'Real Farm'},error:null})})})}),rpc:async()=>{throw new Error('not this far');}};
+ const website=await handleDeleteAccount({admin:stats,body:{username:'Not My Farm'},user:{id:FARMER,email:'farmer@example.com',app_metadata:{provider:'discord',providers:['discord']}}});
+ assert.equal(website.status,422);assert.notEqual(website.data.error,DELETE_DISCORD);
  assert.deepEqual(await handleDeleteAccount({admin:nothing,body:{username:'x'},user:{...dc,app_metadata:{provider:'kongregate'}}}),{status:403,data:{error:DELETE_KONGREGATE,code:'ACTION_REJECTED'}},'Kongregate as before');
  for(const text of [DELETE_DISCORD,'You play with Discord, so your account has no email address.'])assert.ok(JSON.parse(read('i18n/ignore.json')).includes(text),'never shown in the game (no email or delete there)');
  // "Discord" itself is on the sign-in button since 10 Oct 2026 (public/play.html), so the language pages translate it like Google and Facebook.

@@ -1,7 +1,7 @@
 import {androidApp} from '../public/android.js';
-// Sign in with Google, Facebook or Discord (10 Oct 2026, the owner's choice). The buttons only appear for providers that are switched on in Supabase
-// (Authentication → Providers), so nothing half-working shows up before that is set up.
-export const SOCIAL_PROVIDERS=Object.freeze({google:'Google',facebook:'Facebook',discord:'Discord'});
+// Sign in with Google, Facebook, Apple or Discord (10 Oct 2026, the owner's choice). The buttons only appear for providers that are switched on
+// in Supabase (Authentication → Providers), so nothing half-working shows up before that is set up.
+export const SOCIAL_PROVIDERS=Object.freeze({google:'Google',facebook:'Facebook',apple:'Apple',discord:'Discord'});
 // Remembers, for this tab only, which provider a sign-in was started with, so the page it returns to can explain a
 // cancelled or failed attempt instead of saying that an email link expired.
 export const OAUTH_KEY='harvest-tycoon:oauth';
@@ -27,8 +27,12 @@ export const embeddedBrowser=(userAgent=globalThis.navigator?.userAgent??'')=>EM
 // from a browser built into an app. There only the email address and password are offered.
 // Discord (10 Oct 2026, the owner): never inside an app's own browser, and not for a visit from an ad (Meta, TikTok or Google, the click
 // id or the ad's utm_source, src/source-link.js): those newcomers get Google, Facebook and email, without a button that only distracts.
+// Apple (10 Oct 2026, the owner): only on an iPhone, iPad or Mac, where the Apple Account is already there (an iPad says "Macintosh"),
+// and like Discord never inside an app's own browser and not for a visit from an ad. Never in our apps, the iPhone app included.
 export const adVisit=source=>Boolean(source?.fb||source?.tt||source?.g||/facebook|instagram|meta|tiktok|google/i.test(String(source?.utm_source??'')));
-export const usableProviders=(list,userAgent,app=androidApp(),{fromAd=false}={})=>app?[]:embeddedBrowser(userAgent)?list.filter(provider=>provider!=='google'&&provider!=='discord'):fromAd?list.filter(provider=>provider!=='discord'):list;
+export const appleDevice=(userAgent=globalThis.navigator?.userAgent??'')=>/iPhone|iPad|iPod|Macintosh/i.test(userAgent);
+export const usableProviders=(list,userAgent,app=androidApp(),{fromAd=false}={})=>app?[]:list.filter(provider=>
+ (provider!=='apple'||appleDevice(userAgent))&&(embeddedBrowser(userAgent)?provider==='facebook':!(fromAd&&(provider==='discord'||provider==='apple'))));
 
 export const providerName=provider=>SOCIAL_PROVIDERS[provider]??'that service';
 
