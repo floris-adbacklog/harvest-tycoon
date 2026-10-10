@@ -20,7 +20,7 @@ function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {
 // web: the Galaxy Store app, which sells through Stripe like the website (Oct 2026, public/android.js webBilling).
 function fixture({ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null,apple=false,appStore=null,web=false,win={}}={}){
  const nodes=new Map(),events={},frames=[],calls=[],analytics=[],game=[],timers=[],lookups=[];let authCallback,currentUser=user,clock=1_000_000,nextTimer=1;
- const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},toggleAttribute(name,on){(this.attrs??={})[name]=Boolean(on);},removeAttribute(name){if(this.attrs)delete this.attrs[name];},focus(){},scrollIntoView(){},replaceChildren(...items){for(const old of this.children)if(!items.includes(old))old.removed=true;this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},contentWindow:{}});return nodes.get(id);};
+ const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},toggleAttribute(name,on){(this.attrs??={})[name]=Boolean(on);},removeAttribute(name){if(this.attrs)delete this.attrs[name];},focus(){},scrollIntoView(){},replaceChildren(...items){for(const old of this.children)if(!items.includes(old))old.removed=true;this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},classList:(set=>({add:name=>set.add(name),remove:name=>set.delete(name),contains:name=>set.has(name)}))(new Set()),contentWindow:{}});return nodes.get(id);};
  const providerButtons=buttons?['google','facebook'].map(provider=>Object.assign(element(`provider-${provider}`),{dataset:{provider}})):[];
  const document={body:{dataset:{}},hidden:false,getElementById:element,querySelector:element,querySelectorAll:selector=>selector==='[data-provider]'?providerButtons:[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
  const window={addEventListener(name,fn){events[name]=fn;},...win};
@@ -309,6 +309,7 @@ test('the Android app: only email and password, and a sign-in with Google or Fac
  assert.equal(app.nodes.get('email-row').hidden,false);assert.equal(app.nodes.get('password-row').hidden,false);
  const site=fixture({ua:'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/129.0 Mobile Safari/537.36',storage:{},providers:['google','facebook'],buttons:true,authApi,location:{...page}});await settle();
  assert.equal(site.nodes.get('provider-google').hidden,false);assert.equal(site.nodes.get('provider-facebook').hidden,false);assert.equal(site.nodes.get('social-login').hidden,false);
+ assert.equal(site.nodes.get('provider-facebook').classList.contains('is-wide'),false,'two buttons side by side, none takes the whole row');
  await site.nodes.get('provider-google').onclick();assert.equal(oauth,1,'the website signs in with Google as before');
 });
 test('the Android app never shows the step to open the game in Chrome, not even for a user agent the step knows',async()=>{

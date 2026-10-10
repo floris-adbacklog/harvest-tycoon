@@ -67,6 +67,9 @@ test('inside the Facebook, Instagram or other in-app browsers the Google button 
  for(const key of ['facebookIos','instagramAndroid','androidWebView']){assert.equal(embeddedBrowser(ua[key]),true,key);assert.deepEqual(usableProviders(['google','facebook'],ua[key]),['facebook'],key);}
  for(const key of ['chromeIphone','safariIphone','homeScreenIphone','chromeAndroid','desktop']){assert.equal(embeddedBrowser(ua[key]),false,key);assert.deepEqual(usableProviders(['google','facebook'],ua[key]),['google','facebook'],key);}
  assert.match(read('src/main.js'),/providers=usableProviders\(list,navigator\.userAgent,undefined,\{fromAd:adVisit\(pendingSource\)\}\)/);
+ // Two by two, the last of an odd number across the row (10 Oct 2026).
+ assert.match(read('src/main.js'),/if\(shown\.length%2\)shown\.at\(-1\)\.classList\.add\('is-wide'\);/);
+ assert.match(read('public/welcome.css'),/\.social-buttons\{display:grid;grid-template-columns:1fr 1fr;gap:8px\}\n\.social-button\.is-wide\{grid-column:1\/-1\}/);
 });
 
 test('Discord sign-in: never in an app\'s own browser, not for a visit from an ad; everywhere else beside Google and Facebook (10 Oct 2026)',async()=>{

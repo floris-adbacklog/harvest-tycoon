@@ -381,7 +381,7 @@ async function openFarm(){
 }
 document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{if(submitting)return;const next=button.dataset.mode;if(next!==mode)trackAuth('mode',{mode:next});setMode(next,true);});
 // In the Android app there is nothing to ask: neither provider can sign in there (src/social-login.js).
-(inApp?Promise.resolve([]):socialProviders()).then(list=>{providers=usableProviders(list,navigator.userAgent,undefined,{fromAd:adVisit(pendingSource)});document.querySelectorAll('[data-provider]').forEach(b=>{b.hidden=!providers.includes(b.dataset.provider);});showSocial();});
+(inApp?Promise.resolve([]):socialProviders()).then(list=>{providers=usableProviders(list,navigator.userAgent,undefined,{fromAd:adVisit(pendingSource)});const shown=[...document.querySelectorAll('[data-provider]')].filter(b=>{b.hidden=!providers.includes(b.dataset.provider);b.classList.remove('is-wide');return !b.hidden;});if(shown.length%2)shown.at(-1).classList.add('is-wide');showSocial();});
 // Never in the Android app (Oct 2026): Google and Facebook both refuse a WebView, so there the buttons stay hidden (src/social-login.js)
 // and a sign-in with them cannot even start.
 document.querySelectorAll('[data-provider]').forEach(button=>button.onclick=async()=>{

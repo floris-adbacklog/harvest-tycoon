@@ -115,9 +115,11 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]),html[data-app
 /* Sign in with Google or Facebook: two small buttons side by side (only the providers that are switched on), then a thin
    "or use your email" line. */
 .social-login{margin:0 0 2px}
-/* One button under the other, each the card's full width with its own words (10 Oct 2026, the owner: cleaner than three side by side). */
-.social-buttons{display:flex;flex-direction:column;gap:8px}
-.social-button{flex:none;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 12px;border:1px solid #e2d9cf;border-radius:11px;background:#fff;color:#3d3923;font:700 14px 'DM Sans',system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 0 #e7e0d9}
+/* Two by two (10 Oct 2026, the owner, ready for Apple beside Google, Facebook and Discord): with an odd number shown, the last one
+   takes the whole row (src/main.js marks it), so a single button (inside the Facebook app) is the card's full width. */
+.social-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.social-button.is-wide{grid-column:1/-1}
+.social-button{width:100%;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 12px;border:1px solid #e2d9cf;border-radius:11px;background:#fff;color:#3d3923;font:700 14px 'DM Sans',system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 0 #e7e0d9}
 .social-button[hidden]{display:none}
 .social-button svg{flex:none;width:18px;height:18px}
 .social-button:hover:not(:disabled){background:#faf7f2}
