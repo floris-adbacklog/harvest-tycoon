@@ -198,7 +198,8 @@ test('the game opens the market square from the Village market\'s pin and lights
  assert.match(game,/villagemarket:\{name:'Market square',icon:'store',hint:'Villagers’ requests and golden briefs'\}/);
  assert.match(game,/if\(key==='villagemarket'\)\{villageSquare\?\.open\(\);return;\}/);
  assert.match(game,/\n if\(key==='villagemarket'\)return villageSquareReady\(state\)\?'ready':'';\n return economy\.placeReady\(key\)\?'ready':'';/,'its pin is yellow when there is something to do');
- assert.match(game,/economy\.status\(k\)\.kind==='ready'\)\.length\+\(villageSquareReady\(state\)\?1:0\):0;/,'the Village button\'s count, no pop-up');
+ assert.match(game,/economy\.status\(k\)\.kind==='ready'\)\.length\+\(villageBrief\(state\)\?\.ready\?1:0\):0;/,'the Village button\'s count: ready batches and a brief to build, no pop-up');
+ assert.doesNotMatch(game.match(/villageReady=[^\n]*/)[0],/villageSquareReady/,'a villager you could help never lights the Village button (10 Oct 2026)');
  assert.match(game,/villageSquare=createVillageSquareUI\(\{state,runAction,onChange:updateUI,notify:toast,itemList:economy\.itemList,onShow:showVillagePlace,onSell:\(\)=>economy\.openMarket\('village'\),refresh:\(\)=>client\.refresh\(\)\}\);/,'and a refusal for a villager who moved on loads the farm again');
  assert.match(game,/valley\?\.refresh\(\);villageSquare\?\.refresh\(\);/);
  assert.doesNotMatch(game,/harvestVillageMarket/,'the Market button sells; nothing else opened the sell list from the pin');

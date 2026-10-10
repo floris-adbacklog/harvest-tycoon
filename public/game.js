@@ -766,9 +766,10 @@ function updateUI(){
  hudNumbers();
  const lp=levelProgress(state),lvl=lp.level;
  // World II (30 Sep 2026): the way to the village from level 100, in the side tools and in the More menu. Its count: the places with a
- // batch ready, and the market square when a villager can be helped or the golden brief built (Oct 2026; no pop-up). In the village the
- // Village tool is the one lit and My farm travels back.
- const worldTwo=worldTwoOpen(state),villageReady=worldTwo&&economy?Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].world===2&&economy.status(k).kind==='ready').length+(villageSquareReady(state)?1:0):0;
+ // batch ready, and the market square when the golden brief can be built (Oct 2026; no pop-up). Not a villager you could help (10 Oct
+ // 2026, a player's feedback): who doesn't want to trade saw a number for good and missed a batch that was ready. In the village the
+ // square's own pin still lights for a villager, the Village tool is the one lit and My farm travels back.
+ const worldTwo=worldTwoOpen(state),villageReady=worldTwo&&economy?Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].world===2&&economy.status(k).kind==='ready').length+(villageBrief(state)?.ready?1:0):0;
  $('village-button').hidden=!worldTwo;$('village-button').classList.toggle('active',villageWorld);$('farm-button').classList.toggle('active',!villageWorld);
  $('village-count').hidden=villageWorld||!villageReady;$('village-count').textContent=villageReady;$('village-menu-entry').hidden=villageWorld||!worldTwo;
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
