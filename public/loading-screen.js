@@ -34,6 +34,9 @@ export const PASS_LOADING_TIP=Object.freeze(['giant-small','Halloween Pass from 
 // On the way to the village (World II, 30 Sep 2026) the tips are about the village.
 export const VILLAGE_LOADING_TIPS=Object.freeze([
  ['packedlunch','Every trip into the mine or the forest starts with packed lunches from your farm Kitchen.'],
+ // The market square (Oct 2026).
+ ['villagemarket','Villagers at the market square pay half again what their goods are worth.'],
+ ['village-badge','Each golden brief at the market square builds the next village place.'],
  ['mastertools','Master tools from the Smithy take your farm buildings past level 10.'],
  ['villagemarket','Village goods sell at the Village market, not at the farm Market.'],
  ['farmroad','Your farm keeps growing while you are in the village.']

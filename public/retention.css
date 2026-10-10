@@ -1125,35 +1125,36 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #building-content .build-price{display:flex;align-items:center;justify-content:center;gap:6px;margin:0;padding:10px;border-radius:12px;background:#f1ebe2;font-size:14px;font-weight:700;color:#6f6250}
 #building-content .build-price .game-art{width:20px;height:20px}
 
-/* Valley Market and Ranch (public/valley-ui.js) and the wave-3 places (public/estate-ui.js): the same cards as the delivery orders. */
+/* Valley Market and Ranch (public/valley-ui.js), the wave-3 places (public/estate-ui.js) and the village's market square (Oct 2026,
+   public/village-square-ui.js): the same cards as the delivery orders. */
 #valley-content .valley-lead .estate-icon>.game-art,#estate-place-content .valley-lead .estate-icon>.game-art{width:30px;height:30px;object-fit:contain}
-#valley-content .daily-list,#estate-place-content .daily-list{display:grid;gap:8px}
-#valley-content .order-card,#estate-place-content .order-card{margin:0;padding:12px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2}
-#valley-content .order-card.is-ready,#estate-place-content .order-card.is-ready{border-color:#cfe0c3;background:#f3f9ec}
-#valley-content .order-card.is-waiting,#estate-place-content .order-card.is-waiting{background:#f6f2ec}
-#valley-content .order-head,#estate-place-content .order-head{display:flex;align-items:center;gap:12px;margin:0 0 10px}
-#valley-content .order-head>div,#estate-place-content .order-head>div{flex:1;min-width:0}
-#valley-content .order-head small,#estate-place-content .order-head small{display:block;margin:0 0 1px;font-size:12px;font-weight:600;color:#9a8457;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#valley-content .order-head small b,#estate-place-content .order-head small b{color:#3f6b2c}
-#valley-content .order-head h3,#estate-place-content .order-head h3{margin:0;font:600 17px/1.25 'Outfit',sans-serif;letter-spacing:0;color:#3f3827}
-#valley-content .order-icon,#estate-place-content .order-icon{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:#f1e9dc}
-#valley-content .order-icon>.game-art,#estate-place-content .order-icon>.game-art{width:36px;height:36px;object-fit:contain}
-#valley-content .valley-line,#estate-place-content .valley-line{margin:2px 0 0;font-size:13px;line-height:1.4;color:#817463}
-#valley-content .ingredients,#estate-place-content .ingredients{margin:0}
-#valley-content .task-bottom,#estate-place-content .task-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
-#valley-content .task-bottom .primary-button,#estate-place-content .task-bottom .primary-button{flex:none;min-height:38px;padding:7px 16px}
-#valley-content .task-bottom .primary-button .game-art,#estate-place-content .task-bottom .primary-button .game-art{width:16px;height:16px}
+#valley-content .daily-list,#estate-place-content .daily-list,#village-square-content .daily-list{display:grid;gap:8px}
+#valley-content .order-card,#estate-place-content .order-card,#village-square-content .order-card{margin:0;padding:12px;border:1px solid #e6ddd2;border-radius:16px;background:#fbf8f2}
+#valley-content .order-card.is-ready,#estate-place-content .order-card.is-ready,#village-square-content .order-card.is-ready{border-color:#cfe0c3;background:#f3f9ec}
+#valley-content .order-card.is-waiting,#estate-place-content .order-card.is-waiting,#village-square-content .order-card.is-waiting{background:#f6f2ec}
+#valley-content .order-head,#estate-place-content .order-head,#village-square-content .order-head{display:flex;align-items:center;gap:12px;margin:0 0 10px}
+#valley-content .order-head>div,#estate-place-content .order-head>div,#village-square-content .order-head>div{flex:1;min-width:0}
+#valley-content .order-head small,#estate-place-content .order-head small,#village-square-content .order-head small{display:block;margin:0 0 1px;font-size:12px;font-weight:600;color:#9a8457;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#valley-content .order-head small b,#estate-place-content .order-head small b,#village-square-content .order-head small b{color:#3f6b2c}
+#valley-content .order-head h3,#estate-place-content .order-head h3,#village-square-content .order-head h3{margin:0;font:600 17px/1.25 'Outfit',sans-serif;letter-spacing:0;color:#3f3827}
+#valley-content .order-icon,#estate-place-content .order-icon,#village-square-content .order-icon{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:#f1e9dc}
+#valley-content .order-icon>.game-art,#estate-place-content .order-icon>.game-art,#village-square-content .order-icon>.game-art{width:36px;height:36px;object-fit:contain}
+#valley-content .valley-line,#estate-place-content .valley-line,#village-square-content .valley-line{margin:2px 0 0;font-size:13px;line-height:1.4;color:#817463}
+#valley-content .ingredients,#estate-place-content .ingredients,#village-square-content .ingredients{margin:0}
+#valley-content .task-bottom,#estate-place-content .task-bottom,#village-square-content .task-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+#valley-content .task-bottom .primary-button,#estate-place-content .task-bottom .primary-button,#village-square-content .task-bottom .primary-button{flex:none;min-height:38px;padding:7px 16px}
+#valley-content .task-bottom .primary-button .game-art,#estate-place-content .task-bottom .primary-button .game-art,#village-square-content .task-bottom .primary-button .game-art{width:16px;height:16px}
 #valley-content .quest-state,#estate-place-content .quest-state{font-size:12px;font-weight:600;color:#5d7a4a;white-space:nowrap}
-#valley-content .valley-next,#estate-place-content .valley-next{margin:0;font-size:13px;color:#7a6c58}
-#valley-content .valley-next b,#estate-place-content .valley-next b{color:#453e28}
-#valley-content .valley-skip,#estate-place-content .valley-skip{display:block;margin:6px 0 0;padding:4px 0;border:0;background:none;font-size:12px;font-weight:600;color:#8a7a62;cursor:pointer}
-#valley-content .valley-skip:hover,#estate-place-content .valley-skip:hover{color:#5b5336;text-decoration:underline}
+#valley-content .valley-next,#estate-place-content .valley-next,#village-square-content .valley-next{margin:0;font-size:13px;color:#7a6c58}
+#valley-content .valley-next b,#estate-place-content .valley-next b,#village-square-content .valley-next b{color:#453e28}
+#valley-content .valley-skip,#estate-place-content .valley-skip,#village-square-content .valley-skip{display:block;margin:6px 0 0;padding:4px 0;border:0;background:none;font-size:12px;font-weight:600;color:#8a7a62;cursor:pointer}
+#valley-content .valley-skip:hover,#estate-place-content .valley-skip:hover,#village-square-content .valley-skip:hover{color:#5b5336;text-decoration:underline}
 #valley-content .ranch-closed,#estate-place-content .ranch-closed{font-size:12px;color:#8f7f6f}
 #valley-content .ranch-herd .task-bottom,#estate-place-content .ranch-herd .task-bottom{justify-content:flex-end}
-#valley-content .valley-footer,#estate-place-content .valley-footer{margin:12px 0 0;font-size:12px;line-height:1.5;color:#8a7d6b}
+#valley-content .valley-footer,#estate-place-content .valley-footer,#village-square-content .valley-footer{margin:12px 0 0;font-size:12px;line-height:1.5;color:#8a7d6b}
 @media(max-width:420px){
- #valley-content .order-icon,#estate-place-content .order-icon{width:40px;height:40px}
- #valley-content .order-icon>.game-art,#estate-place-content .order-icon>.game-art{width:31px;height:31px}
+ #valley-content .order-icon,#estate-place-content .order-icon,#village-square-content .order-icon{width:40px;height:40px}
+ #valley-content .order-icon>.game-art,#estate-place-content .order-icon>.game-art,#village-square-content .order-icon>.game-art{width:31px;height:31px}
 }
 /* Estate Workshop, Trade Depot and Grand Valley Fair (public/estate-ui.js). */
 #estate-place-content .order-card.improvement .ingredients{display:flex;flex-wrap:wrap;gap:6px}

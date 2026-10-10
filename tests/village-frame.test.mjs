@@ -74,3 +74,23 @@ test('the camera draws the front of the ring, and a phone on its side has no emp
  assert.match(read('public/world-two.css'),/@media\(max-height:550px\) and \(orientation:landscape\) and \(max-width:900px\),\(max-height:550px\) and \(orientation:landscape\) and \(pointer:coarse\)\{html\[data-world="village"\]\{--mobile-bottom:0px\}\}/);
  assert.match(game,/const minZoom=\(\)=>villageWorld\?villageMinZoom:\.75/,'zooming out stops at the mountains');
 });
+// "Show me" on the golden brief (Oct 2026): game.js's own villagePan moves the village's normal view so a place is in the middle. On
+// every screen each place (and the market) then stands clear of the edges where game.js hides a name (beyond .92 of the half-width,
+// .82 of the half-height), and the view stays inside the mountains: resize's own clamp may stop it short of the middle.
+test('Show me puts every village place in view, on phones and computers',()=>{
+ const villagePan=new Function(`${slice('function villagePan(spot,at){','}\n')}return villagePan;`)();
+ const upright=([w,h,o])=>o.mobile&&w<h;
+ for(const screenSize of SCREENS){
+  const [w,h,options]=screenSize,at=upright(screenSize)?villageFrame.phone:villageFrame.focus;
+  for(const [key,spot] of Object.entries({...VILLAGE_PLACES,villagemarket:VILLAGE_UTILITIES.villagemarket})){
+   const v=view(w,h,{...options,...villagePan(spot,at)}),[x,y]=screen({...spot,y:spot.y+3});
+   const across=Math.abs(x-(v.left+v.right)/2)/(v.across/2),up=Math.abs(y-(v.bottom+v.top)/2)/(v.span/2);
+   assert.ok(across<.92&&up<.82,`${w}x${h} ${key}: ${across.toFixed(2)} across, ${up.toFixed(2)} up`);
+   assert.ok(inside(v),`${w}x${h} ${key} stays inside the mountains`);
+  }
+ }
+ const game=read('public/game.js');
+ assert.match(game,/viewMode=startView\(\);zoom=1;\(\{pan,panDepth\}=villagePan\(v,upright\?villageFrame\.phone:villageFrame\.focus\)\);resize\(\);/,'the normal view, the same middle resize uses');
+ assert.match(game,/v\.label\.classList\.add\('is-pointed'\);setTimeout\(\(\)=>v\.label\.classList\.remove\('is-pointed'\),2400\);/,'its name lights up for a moment');
+ assert.match(read('public/world-two.css'),/@media\(prefers-reduced-motion:reduce\)\{html\[data-world="village"\] :is\(\.building-label,\.utility-label\)\.is-pointed\{animation:none;/);
+});

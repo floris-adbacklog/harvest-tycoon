@@ -102,7 +102,9 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
   // A load that fills the export trailer sends it off (horn); a part load is just crates going on.
  if(action.type==='depot_load')return result.shipped?'depot':'produce';
  return {sell:'sell',produce:'produce',collect:'collect',collect_all:'collect',upgrade:'upgrade',expand:'expand',quest:'quest',mastery:'reward',level_rewards:'reward',delivery:'delivery',tractor:'tractor',chore:'chore',fertilize:'care',stall_collect:'stall',stall_upgrade:'upgrade',project_start:'produce',project_collect:'reward',silo_upgrade:'upgrade',buy_boost:'boost',
-  construct:'construct',finish_crop:'finish',finish_batch:'finish',valley_sell:'valley',fair_enter:'fair',improve:'improve'}[action.type]??null;
+  construct:'construct',finish_crop:'finish',finish_batch:'finish',valley_sell:'valley',fair_enter:'fair',improve:'improve',
+  // The market square (Oct 2026): helping a villager sounds like a sold basket, a golden brief like a new building; "Not now" is quiet.
+  village_deliver:'valley',village_build:'construct'}[action.type]??null;
 }
 // A sweep's snip per field (Oct 2026): step n of the sweep (from 0) is a step higher on a pentatonic scale, up to an octave and then
 // it stays there; every sweep starts low again.

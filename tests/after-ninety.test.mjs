@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createFarm,normalizeFarm,applyFarmAction as act,xpForLevel,levelOf,FEATURE_LEVELS,featureUnlocked,ITEMS,CROPS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_MS,LAB_GROW_MS,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,
  masterPoints,masterFree,masterBonus,cropDuration,recipeDuration,marketSaleValue,VISITOR_STAY,VISITOR_WAIT,VISITOR_DIAMONDS,GIANT_TEND_MS,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,
- VALLEY_PROJECTS,valleyProjectBonus,endgameInSight,itemAvailable,STARTER_PACK_CROPS,familyOrder,labCanCross,RECIPES,RECIPE_LEVELS} from '../game/farm-state.js';
+ VALLEY_PROJECTS,valleyProjectBonus,endgameInSight,itemAvailable,STARTER_PACK_CROPS,familyOrder,labCanCross,RECIPES,RECIPE_LEVELS,marketItems} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // 27 Sep 2026: the Grand Valley Fair (90) is the last building; five things keep a farm going after it, all on its own.
@@ -50,7 +50,11 @@ test('Seed Lab: 20 heirlooms from two crops each; the first cross takes a day an
 test('heirlooms stay out of the family order, family sharing and the goods boards',()=>{
  for(let w=2940;w<2990;w++)for(const k of Object.keys(familyOrder('fam',w,5).lines))assert.ok(!HEIRLOOMS[k],`${w}:${k}`);
  assert.match(read('public/social-ui.js'),/stock\(k\)>0&&!ITEMS\[k\]\.heirloom/);assert.match(read('src/leaderboard.js'),/!CROPS\[key\]&&!ITEMS\[key\]\.heirloom/);
- assert.match(read('public/economy-ui.js'),/HEIRLOOMS\[key\]\?state\.inventory\[key\]>0\|\|itemAvailable\(state,key\)/,'the Market shows an heirloom only once found or in stock');
+ // The Market shows an heirloom only once found or in stock. Since Oct 2026 the Market's list is the rules' marketItems.
+ const m=farm(95),[first,second]=Object.keys(HEIRLOOMS);m.lab.found=[first];m.inventory[second]=0;
+ assert.ok(marketItems(m,'crops').includes(first)&&!marketItems(m,'crops').includes(second));
+ m.inventory[second]=2;assert.ok(marketItems(m,'crops').includes(second));
+ assert.match(read('public/economy-ui.js'),/function marketEntries\(\)\{return marketItems\(state,marketTab\)\.map\(k=>\[k,ITEMS\[k\]\]\);\}/);
 });
 
 test('visitors: a rush order when you are on the farm; a run of served visitors makes the next bigger and better paid',()=>{

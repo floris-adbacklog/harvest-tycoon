@@ -8,7 +8,7 @@ import {createFamilyUI} from './family-ui.js';
 import {createPassUI} from './pass-ui.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
-import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase} from './farm-state.js';
+import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase} from './farm-state.js';
 import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
@@ -23,6 +23,7 @@ import { createFarmClient, farmNow } from './farm-client.js';
 import { createRetentionUI } from './retention-ui.js';
 import { createGrowthUI } from './growth-ui.js';
 import { createValleyUI } from './valley-ui.js';
+import { createVillageSquareUI } from './village-square-ui.js';
 import { createEstateUI } from './estate-ui.js';
 import { createBoostsUI } from './boosts-ui.js';
 import { createRookieUI } from './rookie-ui.js';
@@ -99,10 +100,11 @@ let familyFlag=null;
 const familyDecor=[],factoryDecor=[],yardDecor={pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 // The pointer for Show me (public/coach.js): one at a time, gone after the last tap.
 const coach=createCoach();
-let liveEvents,familyUI,passUI,progression,economy,retention,growth,valley,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
+let liveEvents,familyUI,passUI,progression,economy,retention,growth,valley,villageSquare,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
-Object.assign(utilityInfo,{villagemarket:{name:'Village market',icon:'store',hint:'Sell village goods'},farmroad:{name:'Road to your farm',icon:'house',hint:'Travel back to your farm'}});
+// The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
+Object.assign(utilityInfo,{villagemarket:{name:'Market square',icon:'store',hint:'Villagers’ requests and golden briefs'},farmroad:{name:'Road to your farm',icon:'house',hint:'Travel back to your farm'}});
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onEmailCheck:c=>setEmailCheck(c),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
 const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
 // CrazyGames' sound switch (Oct 2026, public/portal.js): while it is off there, the farm is silent.
@@ -118,7 +120,7 @@ const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,noti
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
-function openUtility(key){if(key==='farmroad'){travel('farm');return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){window.harvestVillageMarket?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
+function openUtility(key){if(key==='farmroad'){travel('farm');return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -763,9 +765,10 @@ function hudNumbers(){
 function updateUI(){
  hudNumbers();
  const lp=levelProgress(state),lvl=lp.level;
- // World II (30 Sep 2026): the way to the village from level 100, in the side tools (with how many of its places have a batch
- // ready) and in the More menu. In the village the Village tool is the one lit and My farm travels back.
- const worldTwo=worldTwoOpen(state),villageReady=worldTwo&&economy?Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].world===2&&economy.status(k).kind==='ready').length:0;
+ // World II (30 Sep 2026): the way to the village from level 100, in the side tools and in the More menu. Its count: the places with a
+ // batch ready, and the market square when a villager can be helped or the golden brief built (Oct 2026; no pop-up). In the village the
+ // Village tool is the one lit and My farm travels back.
+ const worldTwo=worldTwoOpen(state),villageReady=worldTwo&&economy?Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].world===2&&economy.status(k).kind==='ready').length+(villageSquareReady(state)?1:0):0;
  $('village-button').hidden=!worldTwo;$('village-button').classList.toggle('active',villageWorld);$('farm-button').classList.toggle('active',!villageWorld);
  $('village-count').hidden=villageWorld||!villageReady;$('village-count').textContent=villageReady;$('village-menu-entry').hidden=villageWorld||!worldTwo;
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
@@ -775,7 +778,7 @@ function updateUI(){
  // What the next level brings, on the level card (computer screens): there is always something just ahead.
  const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';
  $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target)&&!villageQuestReady(state);
- familyUI?.refresh();passUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
+ familyUI?.refresh();passUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();villageSquare?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
@@ -961,6 +964,19 @@ function measureVillage(spots,margin=26){
  const middle=view.position.clone().add(right.multiplyScalar((minX+maxX)/2)).add(up.multiplyScalar((minY+maxY)/2));
  return {width:maxX-minX,height:maxY-minY,focus:middle.add(dir.multiplyScalar(-middle.y/dir.y))};
 }
+// "Show me" on the golden brief (Oct 2026): the village's normal view, moved so the place is in the middle (as far as the mountains let
+// it: resize keeps every view inside them), and its name lights up for a moment. On an upright phone the Lumber Camp across the lake
+// is a swipe away otherwise. The camera looks at at+(pan+panDepth,0,panDepth-pan) (resize), so a spot is in the middle at this pan.
+function villagePan(spot,at){const dx=spot.x-at.x,dz=spot.z-at.z;return {pan:(dx-dz)/2,panDepth:(dx+dz)/2};}
+function showVillagePlace(key){
+ const v=buildingViews.get(key)??utilityViews.get(key);if(!villageWorld||!v||!villageFrame)return;
+ document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+ const upright=mobileLayout.matches&&world.clientWidth<world.clientHeight;
+ viewMode=startView();zoom=1;({pan,panDepth}=villagePan(v,upright?villageFrame.phone:villageFrame.focus));resize();updateUI();
+ v.label.classList.remove('is-pointed');void v.label.offsetWidth;v.label.classList.add('is-pointed');setTimeout(()=>v.label.classList.remove('is-pointed'),2400);
+}
+// The arrival toast points to the market square while the first two places wait for their brief (the start of the village).
+const briefWaits=()=>{const b=villageBrief(state);return Boolean(b?.open)&&['mine','lumbercamp'].includes(b.place);};
 // World II: a village place has no model of its own (it is part of the village scene), only an invisible block to measure and
 // grey out, with the same label as a farm building (or a place pin for the market and the road back).
 function villageMarker(x,y,z){
@@ -986,6 +1002,8 @@ function addVillageUtility(key,{x,y,z}){
 function pinLight(key){
  if(key==='stall'){const now=farmNow(),s=stallStatus(state,now);return s.balance>=s.capacity?'full':stallNotice(state,now)?'ready':'';}
  if(key==='chores'){const now=farmNow(),open=Object.keys(CHORES).map(id=>choreStatus(state,id,now)).filter(s=>!s.locked);return open.length&&open.every(s=>!s.remaining)?'ready':'';}
+ // The village's market square: a villager you can help or a golden brief you can build.
+ if(key==='villagemarket')return villageSquareReady(state)?'ready':'';
  return economy.placeReady(key)?'ready':'';
 }
 // The live map in the top-left corner on a computer (public/minimap.js): a small render of the farm from high above, with what is
@@ -1094,7 +1112,9 @@ function positionBuildingLabels(){
   if(!locked){const aria=`${status.kind==='ready'?'Collect from':'Open'} ${BUILDINGS[key].name}`;if(v.label.getAttribute('aria-label')!==aria)v.label.setAttribute('aria-label',aria);}
  }
 }
-function expandVisuals(){if(!ready)return;createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
+// After every answer from the server (farm-client.js onChange). The village has no fields and never loads the farm's models: createPlots
+// there threw "Missing model: ground_004", so each reply in the village (a request, a build, a batch) ended in that error.
+function expandVisuals(){if(!ready)return;if(villageWorld){renderer.shadowMap.needsUpdate=true;resize();icons();return;}createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
 function bindUI(){
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
@@ -1139,7 +1159,6 @@ function bindUI(){
  // The family chat's request cards (src/chat-ui.js) show how many of the asked-for good you have.
  window.harvestStock=key=>Number(state.inventory?.[key])||0;
  economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section),village:villageWorld});
- window.harvestVillageMarket={open:()=>economy.openMarket('village')};
  let savedCrop=null;try{savedCrop=localStorage.getItem(CROP_KEY);}catch{}
  if(savedCrop&&CROPS[savedCrop]&&cropUnlocked(state,savedCrop))economy.chooseCrop(savedCrop);
  // Every seventh day of a streak (7, 14 ...) is celebrated with the gift popup, after a level-up if one is showing.
@@ -1147,6 +1166,8 @@ function bindUI(){
  retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList,celebrate:weekCelebration});
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},onNotice:()=>mobileUI?.refresh(),notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  valley=createValleyUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList});
+ // World II's market square (Oct 2026): opened by the Village market's pin; Show me turns the village's camera to a place.
+ villageSquare=createVillageSquareUI({state,runAction,onChange:updateUI,notify:toast,itemList:economy.itemList,onShow:showVillagePlace,onSell:()=>economy.openMarket('village'),refresh:()=>client.refresh()});
  estatePlaces=createEstateUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList});
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  // The purchase pop-up after a cancelled or expired checkout (src/payment-ui.js) offers a way straight back to the shop.
@@ -1298,7 +1319,7 @@ async function init(){
     panFarm(shift.side,shift.depth);
    }
   });
-  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! Your farm keeps growing while you are here.');else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // The loading screen fades into the farm instead of disappearing at once.
   $('loading').classList.add('fade');
   if(!villageWorld&&!adminView&&!(state.stats.harvested>0))noteFirstLook();

@@ -49,7 +49,11 @@ export function createMobileUI({openUtility,resetView}){
   // A waiting event reward, a stall worth emptying (growth-ui.js) or something in the family also lights the More dot, since they
   // live in that menu on phones. A crop medal to collect too (Oct 2026): on a phone its tile in More is the way to Medals.
   const medalWaiting=Boolean(menu.querySelector('[data-menu-utility="mastery"]')?.classList.contains('has-dot'));
-  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!medalWaiting&&!passWaiting&&!familyWaiting&&!chatWaiting&&!emailWaiting;
+  // World II (Oct 2026): phones hide the Village side tool, so its count (a batch ready, a villager to help, a brief to build) lights
+  // The Village's tile and the More dot instead.
+  const villageTile=$('village-menu-entry');villageTile?.classList.toggle('has-dot',Boolean(villageTile&&!villageTile.hidden&&!($('village-count')?.hidden??true)));
+  const villageWaiting=mobileLayout.matches&&Boolean(villageTile?.classList.contains('has-dot'));
+  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!villageWaiting&&!medalWaiting&&!passWaiting&&!familyWaiting&&!chatWaiting&&!emailWaiting;
   $('tasks-button').setAttribute('aria-label',quests.hidden?'Open quests':'Open quests, rewards ready');
   $('buildings-button').setAttribute('aria-label',batches.hidden?'Open buildings':`Open buildings, ${batches.textContent} batches ready`);
  }

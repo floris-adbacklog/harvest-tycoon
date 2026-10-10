@@ -37,8 +37,10 @@ test('one link form: wiki-link.js builds and reads https://www.harvesttycoon.com
 });
 
 test('every link in the wiki lands on a spot its topic has, on the website and in the game at every level',()=>{
- for(const ctx of [{},{level:1,href:id=>`#wiki-${id}`},{level:30,href:id=>`#wiki-${id}`},{level:200,href:id=>`#wiki-${id}`}]){
-  const pages=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,wikiArticle(t.id,ctx).html]));
+ // A topic hidden at that level (The Village below 100) has no page there, so nothing may link to it either.
+ for(const ctx of [{},{level:1,href:id=>`#wiki-${id}`},{level:30,href:id=>`#wiki-${id}`},{level:99,href:id=>`#wiki-${id}`},{level:100,href:id=>`#wiki-${id}`},{level:200,href:id=>`#wiki-${id}`}]){
+  const pages=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,wikiArticle(t.id,ctx)?.html]).filter(([,html])=>html));
+  assert.equal('village' in pages,ctx.level==null||ctx.level>=100,`${ctx.level}`);
   for(const [from,html] of Object.entries(pages))for(const {topic,anchor} of links(html)){
    assert.ok(pages[topic],`${from} → ${topic}`);
    if(anchor)assert.ok(ids(pages[topic]).has(anchor),`${from} → ${topic}#${anchor} (${ctx.level??'website'})`);

@@ -16,3 +16,42 @@ html[data-trip="village"] .farm-loading.loading{background-image:url('/assets/vi
 /* A phone on its side has its menu bar on the left: the village's view runs down to the bottom edge (7 Oct 2026; it left an empty
    strip there, where the farm has its tool dock). */
 @media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){html[data-world="village"]{--mobile-bottom:0px}}
+/* World II's market square (Oct 2026, public/village-square-ui.js): the cards are the Valley Market's (retention.css). Each part has a
+   heading and its rule in one line. The golden brief is cream with the yellow of a ready label round it (#efc750) and the level chip's
+   colours inside: --btn-gold stays for real money. A village place's own window shows the same brief (#building-content). */
+#village-square-content .square-heading{margin:18px 0 2px;font:600 16px/1.3 'Outfit',sans-serif;color:#3f3827}
+#village-square-content .square-heading:first-child{margin-top:0}
+#village-square-content .square-rule{margin:0 0 10px;font-size:13px;line-height:1.45;color:#7a705f}
+#village-square-content .order-card.village-brief,#building-content .order-card.village-brief{background:#fbf8f3;border:2px solid #efc750}
+#village-square-content .order-card.village-brief.is-ready,#building-content .order-card.village-brief.is-ready{background:#fff8e6}
+#village-square-content .order-card.village-brief.is-waiting{border:1px dashed #e0c98a;background:#fbf8f3}
+#building-content .village-brief{margin:12px 0 0;padding:12px;border-radius:16px}
+#building-content .village-brief .order-head{display:flex;align-items:center;gap:12px;margin:0 0 10px}
+#building-content .village-brief .order-head>div{flex:1;min-width:0}
+#building-content .village-brief .order-head h3{margin:0;font:600 17px/1.25 'Outfit',sans-serif;color:#3f3827}
+#building-content .village-brief .order-icon{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:13px}
+#building-content .village-brief .order-icon>.game-art{width:36px;height:36px;object-fit:contain}
+#building-content .village-brief .valley-line{margin:2px 0 0;font-size:13px;line-height:1.4;color:#817463}
+#building-content .village-brief .task-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+:is(#village-square-content,#building-content) .village-brief .order-head small{display:block;margin:0 0 1px;font-size:12px;font-weight:700;letter-spacing:1px;color:#8a6a22}
+:is(#village-square-content,#building-content) .village-brief .order-icon{background:#f6ecd0}
+:is(#village-square-content,#building-content) .village-brief q{font-style:italic}
+:is(#village-square-content,#building-content) .brief-from{display:block;margin-top:2px;font-size:12px;font-style:normal;font-weight:600;color:#9a8457}
+:is(#village-square-content,#building-content) .brief-builds{margin:0 0 8px;font-size:13px;line-height:1.45;color:#7a705f}
+:is(#village-square-content,#building-content) .brief-builds b{color:#453e28}
+:is(#village-square-content,#building-content) .brief-actions{display:flex;flex:none;gap:8px}
+:is(#village-square-content,#building-content) .village-brief .brief-actions button{width:auto;min-height:38px;padding:7px 14px}
+:is(#village-square-content,#building-content) .village-brief .shortfall{margin-top:8px}
+/* A line under a brief or a request: where packed lunches come from, and a request that uses goods the brief needs (in the brief's
+   label brown). */
+:is(#village-square-content,#building-content) .square-note{display:block;margin:6px 0 0;font-size:12px;line-height:1.4;color:#7a6c58}
+:is(#village-square-content,#building-content) .village-brief .square-note{text-align:center}
+#village-square-content .square-note.is-brief{font-weight:600;color:#8a6a22}
+#village-square-content .valley-footer span{display:block}
+#village-square-content .market-board-link{margin-top:14px}
+/* The Village market's sell list holds only the way to the market square (no farm prices of the day). */
+html[data-world="village"] #market-outlook .market-board-link{margin-top:0}
+/* Show me (public/game.js showVillagePlace): the place's name lights up twice in the ready yellow; with less motion, a ring for a while. */
+html[data-world="village"] :is(.building-label,.utility-label).is-pointed{z-index:5;animation:village-point 1.2s ease-out 2}
+@keyframes village-point{0%,40%{box-shadow:0 0 0 4px #efc750}100%{box-shadow:0 0 0 4px #efc75000}}
+@media(prefers-reduced-motion:reduce){html[data-world="village"] :is(.building-label,.utility-label).is-pointed{animation:none;box-shadow:0 0 0 4px #efc750}}

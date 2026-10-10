@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {applyFarmAction,normalizeFarm,xpForLevel,upgradeCost,upgradeRequirements,productionSlots,productionJobs,productionSpeed,recipeDuration,recipeAvailability,startProduction,BASE_BUILDING_LEVEL,MAX_BUILDING_LEVEL,RECIPES,BUILDINGS,BOOSTS} from '../game/farm-state.js';
+import {applyFarmAction,normalizeFarm,xpForLevel,upgradeCost,upgradeRequirements,productionSlots,productionJobs,productionSpeed,recipeDuration,recipeAvailability,startProduction,worldTwoBuilding,BASE_BUILDING_LEVEL,MAX_BUILDING_LEVEL,RECIPES,BUILDINGS,BOOSTS} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,26,12);
 function farm(level=1){const s=createFarm(now);s.xp=xpForLevel(level);s.coins=1e9;s.diamonds=1e6;for(const b of Object.values(s.buildings))b.built=true;return s;}
@@ -76,7 +76,8 @@ test('from the upgrade to level 4 a building also asks for its own goods: 2 × t
  assert.deepEqual(upgradeGoods('kitchen',9),{stew:18});assert.deepEqual(upgradeGoods('glasshouse',3),{cauliflower:48});
  assert.deepEqual(upgradeGoods('factory',9),{flour:144,cheese:36,cloth:18,harvesthamper:9,squashsoup:9,cider:9},'the Factory makes everything, so goods from across the valley');
  assert.deepEqual(upgradeGoods('mill',10),{},'nothing above the top');
- for(const [key,b] of Object.entries(BUILDINGS).filter(([,b])=>b.type==='production'))for(const item of Object.keys(upgradeGoods(key,5)))assert.ok(Object.values(RECIPES).some(r=>r.output[item]&&(r.building===key||key==='factory')),`${key} makes ${item}`);
+ // The village's places upgrade with planks and stone (Oct 2026, tests/world-two.test.mjs), like the Factory not with goods of their own.
+ for(const [key,b] of Object.entries(BUILDINGS).filter(([,b])=>b.type==='production'))for(const item of Object.keys(upgradeGoods(key,5)))assert.ok(Object.values(RECIPES).some(r=>r.output[item]&&(r.building===key||key==='factory'||worldTwoBuilding(key))),`${key} makes ${item}`);
 });
 test('an upgrade takes the coins and the goods; the Buildings discount halves both; level 5-10 cost 1.5× the coins',()=>{
  const s=farm(40);s.buildings.dairy.level=5;s.inventory.milk=0;

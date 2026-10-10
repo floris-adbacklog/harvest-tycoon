@@ -23,6 +23,22 @@ test('a farm action becomes one readable line with what it gave or cost; field t
  assert.ok(farmLog({type:'sell'},before,s,{}).every(r=>LOG_CATEGORIES.includes(r.category)&&r.text.length<=240));
 });
 
+// World II's market square (Oct 2026): helping a villager, "Not now" and a village place built from its golden brief.
+test('the market square\'s actions have their own lines: a villager helped or turned away, a place built from a golden brief',()=>{
+ const s=farm(110);s.coins=1000000;s.inventory.packedlunch=6;s.buildings.mine.built=false;s.buildings.lumbercamp.built=false;
+ for(const k of ['stone','ironore','packedlunch','timber','plank','ironbar','pickaxe','silverore','cheese','goatcheese','wool','cloth','candles','cider'])s.inventory[k]=(s.inventory[k]??0)+500;
+ let before=snapshot(s);applyFarmAction(s,{type:'village_build',place:'mine'},now);
+ const [built]=farmLog({type:'village_build',place:'mine'},before,s,{});
+ assert.equal(built.category,'farm');assert.match(built.text,/^Built the Mine from a golden brief · −75,000 coins · \+250 XP · −6 Packed lunch$/);
+ const r=s.village.boards[0].request;before=snapshot(s);
+ const got=applyFarmAction(s,{type:'village_deliver',board:0,request:r.id,input:r.input},now);
+ const [help]=farmLog({type:'village_deliver',board:0,request:r.id},before,s,got);
+ assert.equal(help.category,'market');assert.match(help.text,new RegExp(`^Helped a villager at the market square · \\+${r.coins.toLocaleString('en-US')} coins · \\+${r.xp} XP · `));
+ const q=s.village.boards[1].request;before=snapshot(s);applyFarmAction(s,{type:'village_skip',board:1,request:q.id},now);
+ assert.deepEqual(farmLog({type:'village_skip',board:1,request:q.id},before,s,{}).map(l=>[l.category,l.text]),[['market','Said “Not now” to a villager']]);
+ assert.equal(farmLog({type:'sell',item:'all',category:'village'},before,s,{})[0].text,'Sold all village goods');
+});
+
 test('the changes line: coins and diamonds both ways, XP gained, the three biggest item changes and how many more',()=>{
  const before={coins:100,diamonds:10,xp:0,inventory:{corn:10,wheat:10,milk:0,eggs:0,feed:5}};
  const after={coins:40,diamonds:12,xp:30,inventory:{corn:0,wheat:4,milk:8,eggs:1,feed:3}};

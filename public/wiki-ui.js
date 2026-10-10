@@ -34,7 +34,8 @@ function home(){
  el.innerHTML=`<div class="wiki" data-wiki-view="home">${wikiSearchBox()}${wikiQuick(ctx())}<div id="wiki-results" class="wiki-results" hidden></div>${wikiGroups(ctx(),{featured:!farm||levelOf(farm)<15})}<p class="wiki-note">Your farm is saved to your account. You need an internet connection to play.</p></div>`;
  const input=el.querySelector('#wiki-search'),results=el.querySelector('#wiki-results');
  input.addEventListener('input',()=>{
-  const q=input.value.trim(),hits=wikiSearch(q);results.hidden=!q;
+  // In the game search finds only what the farmer's level shows (Oct 2026): nothing of the village below level 100.
+  const q=input.value.trim(),hits=wikiSearch(q,{level:ctx().level});results.hidden=!q;
   results.innerHTML=hits.length?`<ul>${hits.map(h=>`<li><a href="#wiki-${h.topic}" data-wiki-topic="${h.topic}"${h.anchor?` data-wiki-anchor="${h.anchor}"`:''}>${art(h.art)}<strong>${esc(h.label)}</strong><span>${esc(h.topicTitle)}</span></a></li>`).join('')}</ul>`:`<p>Nothing found for “${esc(q)}”. Try a crop, a building or a word like “diamonds”.</p>`;
   refreshArt();
  });

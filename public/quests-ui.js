@@ -22,12 +22,14 @@ export function villageQuestGroups(state){
   const value=Math.min(quest.target,Number(state.stats[quest.stat])||0);
   groups[claimed.includes(id)?'done':value>=quest.target?'ready':'active'].push({id,quest,value});
  });
+ // By the level they open (Oct 2026): the market square's quests come last in the list but open at 100, with the first ones.
+ groups.active.sort((a,b)=>a.quest.minLevel-b.quest.minLevel||a.id-b.id);
  return groups;
 }
 export const villageQuestReady=state=>worldTwoOpen(state)&&villageQuestGroups(state).ready.length>0;
 
 // One picture per quest, from what it counts: the crop or good itself, the building, or the farm job.
-const QUEST_ART={village_batches:'mine',village_sold:'villagemarket',village_earned:'coins',beyond_upgrades:'mastertools',coins_spent:'coins',diamonds_spent:'diamonds',harvested:'harvest',planted:'seeds',varieties:'seeds',watered:'water',tended:'care',fertilized:'fertilizer',earned:'coins',passive_earned:'stall',sold:'market',produced:'buildings',parallel_batches:'buildings',bread:'bread',upgrades:'hammer',windmill_upgrades:'windmill',windmill_batches:'windmill',silo_upgrades:'silo',expansions:'estate',projects:'estate',deliveries:'cart',crafted_deliveries:'cart',honey_deliveries:'honey',tractor:'tractor',dailies:'gift',glasshouse_batches:'glasshouse',valley_baskets:'valley-market',ranch_focus:'ranch',improvements:'estate-workshop',depot_shipments:'trade-depot',depot_loaded:'trade-depot',depot_coins:'trade-depot',valley_coins:'valley-market',fair_entries:'grand-fair',fair_stars:'grand-fair',fair_champion:'grand-fair',chores:'chores',mastery_medals:'trophy',diamonds_earned:'diamonds',boosts_used:'boost',activities:'helping-hand',activity_rounds:'helping-hand'};
+const QUEST_ART={village_batches:'mine',village_sold:'villagemarket',village_requests:'villagemarket',village_earned:'coins',beyond_upgrades:'mastertools',coins_spent:'coins',diamonds_spent:'diamonds',harvested:'harvest',planted:'seeds',varieties:'seeds',watered:'water',tended:'care',fertilized:'fertilizer',earned:'coins',passive_earned:'stall',sold:'market',produced:'buildings',parallel_batches:'buildings',bread:'bread',upgrades:'hammer',windmill_upgrades:'windmill',windmill_batches:'windmill',silo_upgrades:'silo',expansions:'estate',projects:'estate',deliveries:'cart',crafted_deliveries:'cart',honey_deliveries:'honey',tractor:'tractor',dailies:'gift',glasshouse_batches:'glasshouse',valley_baskets:'valley-market',ranch_focus:'ranch',improvements:'estate-workshop',depot_shipments:'trade-depot',depot_loaded:'trade-depot',depot_coins:'trade-depot',valley_coins:'valley-market',fair_entries:'grand-fair',fair_stars:'grand-fair',fair_champion:'grand-fair',chores:'chores',mastery_medals:'trophy',diamonds_earned:'diamonds',boosts_used:'boost',activities:'helping-hand',activity_rounds:'helping-hand'};
 export function questArt(stat){
  const [, kind, key]=stat.match(/^(made|harvest|built|activity|chore|sold)_(.+)$/)??[];
  const pick=QUEST_ART[stat]??(kind==='activity'?`activity-${key}`:kind==='chore'?`chore-${key}`:key);

@@ -237,7 +237,8 @@ test('a building that is not built yet shows one status line, what it makes, and
  assert.match(ui,/\$\{key==='farmhouse'\|\|buildingUnlocked\(state,key\)\?`LEVEL \$\{bs\.level\}`:'NOT BUILT YET'\}/,'no "Level 1" for a building that is not there');
  assert.match(ui,/<strong>\$\{level<openLevel\?`Opens at level \$\{openLevel\}`:buildingUnlockHint\(state,key\)\}<\/strong>/);
  assert.match(ui,/<details class="build-recipes"><summary>See/,'the full recipes are folded away');
- assert.match(ui,/\$\{eligible\?`<button type="button" id="construct-building" class="primary-button"/,'no greyed-out button while it is still locked');
+ // A village place has no Build button of its own (Oct 2026): the golden brief builds it, and only the next one shows it.
+ assert.match(ui,/\$\{villagePlace\?\(next&&!after\?briefCard\(state,itemList,\{showMe:false\}\):''\):eligible\?`<button type="button" id="construct-building" class="primary-button"/,'no greyed-out button while it is still locked');
  assert.match(ui,/<p class="build-price">\$\{art\('coins'\)\}<span>\$\{number\(buildCost\)\} coins to build<\/span><\/p>/);
  assert.match(ui,/`Build for \$\{number\(buildingCost\(state,key\)\)\} coins`/);
 });

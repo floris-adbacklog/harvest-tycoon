@@ -181,18 +181,48 @@ test('the wiki shows what the helpers, chapters, market, levels and challenges p
  assert.match(text('quests'),/Level rewards/);assert.match(text('daily'),new RegExp(`bonus of .*${rules.DAILY_BONUS.coins}`));
 });
 
-test('The Village has its own topic: every World II recipe and the steps past level 10, hidden in the game below level 90',async()=>{
+test('The Village has its own topic: every World II recipe and the steps past level 10, hidden in the game below level 100',async()=>{
  const {wikiGroups,wikiArticle:article}=await import('../public/wiki-content.js');
  const {MASTER_UPGRADES}=await import('../public/farm-state.js');
  const village=article('village').html,buildings=article('buildings').html;
  for(const r of Object.values(RECIPES).filter(r=>worldTwo(r)&&r.building!=='factory'))assert.ok(village.includes(r.name)||Object.keys(r.output).every(k=>village.includes(k)),r.name);
  for(const key of Object.keys(BUILDINGS).filter(worldTwoBuilding)){assert.match(village,new RegExp(`id="building-${key}"`));assert.doesNotMatch(buildings,new RegExp(`id="building-${key}"`));}
  for(const u of MASTER_UPGRADES)assert.ok(village.includes(`Level ${u.level}`),u.level);
- assert.doesNotMatch(wikiGroups({level:50,href:id=>`#wiki-${id}`}),/data-wiki-topic="village"/,'a farmer below level 90 never sees it');
- assert.match(wikiGroups({level:90,href:id=>`#wiki-${id}`}),/data-wiki-topic="village"/);
+ // From level 100 since Oct 2026 (the owner's choice; it showed from 90). The signpost and the closed bridge on the farm stay at 90.
+ for(const level of [50,90,99])assert.doesNotMatch(wikiGroups({level,href:id=>`#wiki-${id}`}),/data-wiki-topic="village"/,`a farmer at level ${level} never sees it`);
+ assert.match(wikiGroups({level:100,href:id=>`#wiki-${id}`}),/data-wiki-topic="village"/);
  assert.match(wikiGroups(),/data-wiki-topic="village"/,'the website shows it');
- assert.doesNotMatch(article('buildings',{level:40}).html,/master tools/,'the Buildings topic mentions it only from level 90');
+ assert.equal(article('village',{level:99}),null,'a link to it (from the chat, say) opens the wiki\'s home page instead');
+ for(const [id,re] of [['buildings',/master tools|The Village/],['quests',/The Village/]]){
+  assert.doesNotMatch(article(id,{level:99}).html,re,`${id} mentions it only from level 100`);assert.match(article(id,{level:100}).html,re,id);
+ }
+ assert.doesNotMatch(article('family',{level:99}).html,/village/i,'the tournament goods say "nothing from the village" only from 100');assert.match(article('family',{level:100}).html,/nothing from the village/);
  assert.doesNotMatch(article('quests').html,/Lumber Camp|Packed lunch/,'the level list stays on the farm');
+});
+
+test('the market square in the wiki: the golden briefs and the villagers\' requests, every number from the rules (Oct 2026)',async()=>{
+ const {wikiSectionTitle}=await import('../public/wiki-content.js');
+ const R=await import('../public/farm-state.js');
+ const village=wikiArticle('village').html;
+ for(const id of ['sec-golden-briefs','sec-villagers-requests'])assert.match(village,new RegExp(`id="${id}"`),id);
+ assert.match(village,/75,000/);assert.match(village,new RegExp(`${R.VILLAGE_BUILD_XP} XP`));
+ for(const b of R.VILLAGE_BRIEFS){assert.ok(village.includes(R.BUILDINGS[b.place].name));assert.ok(village.includes(R.BUILDING_COSTS[b.place].toLocaleString('en-US')),b.place);}
+ // The requests table from villageRequestValue: 4,000 at 100, 20,000 from where it stops growing (180), paid half again and a 50th in XP.
+ assert.equal(R.VILLAGE_PREMIUM,1.5,'the texts say "half again"');assert.equal(R.VILLAGE_XP_SHARE,50,'and "a 50th"');
+ for(const level of [100,180]){const v=R.villageRequestValue(level);for(const n of [v,Math.ceil(v*R.VILLAGE_PREMIUM),Math.round(v/R.VILLAGE_XP_SHARE)])assert.ok(village.includes(`${n.toLocaleString('en-US')}`),`${level}: ${n}`);}
+ assert.match(village,/4,000/);assert.match(village,/20,000/);assert.match(village,/<td>180\+<\/td>/);
+ for(const k of R.VILLAGE_NEVER_ASKED)assert.match(village,new RegExp(R.ITEMS[k].name,'i'),`never asked: ${k}`);
+ // Before any place is built every request asks packed lunches (the farm's Kitchen): the text names them, not only the places built.
+ assert.match(village,/They ask for two kinds of goods: packed lunches and village goods from places you have built,/);
+ // Village places upgrade with planks and stone; the example is the rules' own.
+ const example=R.upgradeGoods('mine',6);assert.match(village,new RegExp(`${example.plank} planks and ${example.stone} stone to reach level 7`));
+ // Nothing says the Village market "buys nothing else" any more: villagers at the market square take farm goods too.
+ assert.doesNotMatch(village,/buys nothing else/);assert.match(village,/market square/);
+ assert.match(wikiArticle('village').blurb,/villagers’ requests/);
+ assert.ok(wikiSearch('golden brief').some(h=>h.topic==='village'));assert.deepEqual(wikiSearch('golden brief',{level:99}),[]);
+ // A chat chip's title of a spot on The Village does not break when the topic is hidden at the level asked.
+ assert.equal(wikiSectionTitle('village','sec-golden-briefs',{level:99}),'The Village');
+ assert.equal(wikiSectionTitle('village','sec-golden-briefs'),'Golden briefs');
 });
 
 // 30 Sep 2026: an Install the app button under the steps, only where one tap installs it (in the game and on the website).
