@@ -70,9 +70,10 @@ test('vercel.json: /discord-link and Discord\'s way back go to the game like /fe
  const others=[...vercel.redirects,...vercel.rewrites,...vercel.headers].filter(r=>!sources.includes(r.source));
  assert.doesNotMatch(JSON.stringify(others),/discord-link/);
  assert.deepEqual(vercel.redirects.filter(r=>r.source==='/'),[{source:'/',has:[{type:'query',key:'frame_id'}],destination:'/discord.html',permanent:false}]);
- // The home page itself (/ and /xx/ are written from it) looks and works as before: nothing new after its head.
- const home=read('public/play.html');
- assert.doesNotMatch(home.slice(home.indexOf('</head>')),/discord/i);
+ // The home page itself (/ and /xx/ are written from it) looks and works as before: nothing of the link after its head. The one
+ // Discord thing there is the footer's community icon (10 Oct 2026, the owner's choice), a plain link to our server.
+ const home=read('public/play.html'),body=home.slice(home.indexOf('</head>')).replace(/<a class="footer-social" href="https:\/\/discord\.gg\/CQrc42CMgf"[^]*?<\/a>/,'');
+ assert.doesNotMatch(body,/discord/i);
 });
 
 test('the ticket leaves the address before Google Tag Manager loads, so no page view of the analytics carries it; src/main.js takes it back',()=>{
