@@ -14,6 +14,13 @@ export const clientIdOf=hostname=>CLIENT_HOST.exec(String(hostname??'').toLowerC
 export const inDiscord=({search='',hostname=''}={})=>Boolean(new URLSearchParams(search||'').get('frame_id'))&&Boolean(clientIdOf(hostname));
 // The one thing asked of Discord: who the player is. No guilds, no email, no voice.
 export const SCOPE=Object.freeze(['identify']);
+// A farm the player already has on harvesttycoon.com (Oct 2026): Discord's rules allow no log-in of ours inside the Activity, so the
+// player logs in on the website, on this page (vercel.json sends it on to the game, which asks there "Play this farm on Discord?").
+// The ticket in its address is our server's (discord-auth): 32 random bytes in base64url, good once and for 10 minutes. Anything that
+// is not one never goes into an address.
+export const LINK_PAGE='https://www.harvesttycoon.com/discord-link';
+export const validTicket=value=>typeof value==='string'&&/^[A-Za-z0-9_-]{32,128}$/.test(value)?value:null;
+export const linkPageUrl=ticket=>`${LINK_PAGE}?t=${encodeURIComponent(ticket)}`;
 
 // The link from this page. Nothing is made outside Discord (the SDK needs Discord's frame_id). authorize() answers {code} when the
 // player allowed it, or {code:null, reason}: 'declined' when Discord's window was closed or refused, 'unready' when Discord did not
@@ -50,13 +57,24 @@ export function createDiscordLink({win=globalThis.window,SDK,wait=15000,timers=g
    if(url!==PRIVACY_URL||!sdk)return false;
    void connect().then(on=>on?sdk.commands.openExternalLink({url}):null).catch(()=>{});
    return true;
+  },
+  // The website's link page with this ticket (and nothing else), in Discord's own window. {opened:true} when Discord opened it (an
+  // older Discord says nothing: opened too), {opened:false, reason}: 'declined' when the player said no in Discord's window,
+  // 'unready' when Discord is not there or could not open it.
+  async openLinkPage(ticket){
+   const valid=validTicket(ticket);
+   if(!valid||!await connect())return {opened:false,reason:'unready'};
+   try{const answer=await sdk.commands.openExternalLink({url:linkPageUrl(valid)});return answer?.opened===false?{opened:false,reason:'declined'}:{opened:true};}
+   catch{return {opened:false,reason:'unready'};}
   }
  };
 }
 // A stand-in when this page is opened on a computer of our own (http://localhost:…/discord.html), to look at the page: the Authorize
-// card, or with ?discord_code=… a start with that code (our server refuses a made-up one: the pause card). Links open as links.
-export function localStandIn({search=globalThis.location?.search??''}={}){
+// card, or with ?discord_code=… a start with that code (our server refuses a made-up one: the pause card). Links open as links, the
+// website's link page in a new tab.
+export function localStandIn({search=globalThis.location?.search??'',win=globalThis.window}={}){
  const code=new URLSearchParams(search||'').get('discord_code');
  const answer=async()=>code?{code}:{code:null,reason:'declined'};
- return {hello:answer,authorize:answer,ready:false,openLink:()=>false};
+ return {hello:answer,authorize:answer,ready:false,openLink:()=>false,
+  async openLinkPage(ticket){const valid=validTicket(ticket);if(!valid)return {opened:false,reason:'unready'};win?.open?.(linkPageUrl(valid),'_blank','noopener');return {opened:true};}};
 }

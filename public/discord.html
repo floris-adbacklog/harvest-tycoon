@@ -3,9 +3,11 @@
 <!-- Harvest Tycoon on Discord (Oct 2026): Discord shows this page as an Activity, in a frame on <client id>.discordsays.com, Discord's
      proxy to our website (vercel.json sends a visit to / with Discord's frame_id here). No sign-in of ours, cookie banner, tracking,
      purchases, links or app here: src/discord.js signs in the player Discord says plays, with Discord's SDK from its own bundle, and
-     opens the same farm as the website; a player who says no gets the Authorize card. Discord's frame runs no script written into a
-     page and nothing from another address, so this page has neither. Not for search engines (vercel.json says so too). Discord puts
-     its launch in this page's address, so the page sends no more than our own address along to anything it loads (the referrer meta). -->
+     opens the same farm as the website; a player who says no gets the Authorize card. A Discord player seen for the first time picks a
+     new farm or the one they have on harvesttycoon.com (logged in on the website, in Discord's own window; the waiting card here goes on
+     by itself). Discord's frame runs no script written into a page and nothing from another address, so this page has neither. Not for
+     search engines (vercel.json says so too). Discord puts its launch in this page's address, so the page sends no more than our own
+     address along to anything it loads (the referrer meta). -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"><meta name="theme-color" content="#214d36"><meta name="robots" content="noindex, nofollow"><meta name="referrer" content="strict-origin"><meta name="harvest-version" content="dev"><title>Harvest Tycoon</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48"><link rel="preload" as="image" href="/assets/farm-backdrop.webp" media="(orientation: landscape)"><link rel="preload" as="image" href="/assets/farm-backdrop-tall.webp" media="(orientation: portrait)"><link rel="stylesheet" href="/loading-screen.css"><link rel="stylesheet" href="/discord.css"></head>
 <body data-phase="checking">
@@ -20,6 +22,15 @@
  <div class="dc-authorize-card"><h1 id="authorize-title">Your farm is waiting</h1><p>Grow crops, build your farm and trade with farmers from all over the world. Authorize Harvest Tycoon to start: your farm is saved with your Discord account.</p><button type="button" id="authorize-play" class="dc-authorize-button">Authorize to play</button><p id="authorize-status" class="dc-authorize-status" role="status"></p></div>
  <p class="portal-privacy">By playing you agree to our <a href="https://www.harvesttycoon.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
  <p id="authorize-contact" class="portal-privacy"></p>
+ </div></section>
+<section id="choose-screen" class="loading-screen farm-loading dc-authorize" aria-labelledby="choose-title" hidden><div class="farm-loading-stage">
+ <img class="farm-loading-logo" src="/assets/harvest-tycoon-logo.webp" alt="Harvest Tycoon" width="1024" height="1024" draggable="false">
+ <div class="dc-authorize-card"><h1 id="choose-title">Welcome, farmer!</h1><p>Start a new farm, saved with your Discord account, or play the farm you already have on harvesttycoon.com.</p><div class="dc-choice"><button type="button" id="choose-new" class="dc-authorize-button">New farm</button><button type="button" id="choose-existing" class="dc-second-button">I already have a farm</button></div><p id="choose-status" class="dc-authorize-status" role="status"></p></div>
+ <p class="portal-privacy">By playing you agree to our <a href="https://www.harvesttycoon.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+ </div></section>
+<section id="wait-screen" class="loading-screen farm-loading dc-authorize" aria-labelledby="wait-title" hidden><div class="farm-loading-stage">
+ <img class="farm-loading-logo" src="/assets/harvest-tycoon-logo.webp" alt="Harvest Tycoon" width="1024" height="1024" draggable="false">
+ <div class="dc-authorize-card" aria-busy="true"><h1 id="wait-title">Link your farm</h1><span class="dc-wait-spinner" aria-hidden="true"></span><p>Log in on harvesttycoon.com, tap Link and confirm on Discord. This window continues by itself.</p><div class="dc-wait-actions"><button type="button" id="wait-new" class="dc-second-button">New farm instead</button><button type="button" id="wait-cancel" class="dc-second-button">Cancel</button></div></div>
  </div></section>
 <section id="pause-screen" class="portal-pause" role="alert" hidden><div class="portal-pause-card"><img src="/assets/harvest-tycoon-logo.webp" alt="" width="120" height="120" draggable="false"><h2>A little pause.</h2><p id="pause-copy">Your farm is safe. Reconnect to continue.</p><p id="pause-message" class="portal-pause-status"></p><button type="button" id="pause-retry" class="portal-button">Try again</button></div></section>
 <div id="farm-host" hidden></div>

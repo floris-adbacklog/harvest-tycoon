@@ -6,7 +6,7 @@ import {fetchLeaderboard} from './leaderboard.js';
 import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInvite,trackShare} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
-import {openIntent,withoutOpen} from '../public/app-links.js';
+import {openIntent,openIntentOfUrl,withoutOpen,discordTicket,discordAuthorizeUrl,discordBack} from '../public/app-links.js';
 import {startUpdateCheck} from './app-update.js';
 import {createNotifications} from './notifications.js';
 import {createChatClient} from './chat-client.js';
@@ -15,7 +15,7 @@ import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
 import {takeRefFromUrl,pendingRef,clearRef} from './partner-link.js';
 import {readSource,sourceQuery} from './source-link.js';
-import {createConnection,connectionMessage,reasonOf,refused,WAKE_GRACE} from './connection.js';
+import {createConnection,connectionMessage,describeFailure,reasonOf,refused,WAKE_GRACE} from './connection.js';
 import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
@@ -58,20 +58,29 @@ startPwa();startUpdateCheck();
 // frame takes it when it is ready (harvestTakeOpen); a notification tapped while the game is open arrives from sw.js as a message.
 let pendingOpen=openIntent(location.search);
 if(pendingOpen)history.replaceState(null,'',withoutOpen(location.href));
+// A Discord link's ticket, and Discord's answer after Link on the website (/discord-link/callback, Oct 2026: its code, state or error),
+// left the address before Google Tag Manager could read them (the first script in play.html's head keeps them in
+// window.harvestDiscordLink), so no page view of the analytics carries them; they come back here. With Discord's answer the intent
+// carries no ticket from the address: Discord's code and the state our server gave Link are all the farm needs, in this tab or in the
+// new one Discord's app often opens on a phone (public/discord-link-ui.js).
+const discordParts=window.harvestDiscordLink;delete window.harvestDiscordLink;
+if(pendingOpen?.open==='discord-link'&&discordParts&&typeof discordParts==='object')pendingOpen=openIntent(`?${new URLSearchParams({...discordParts,open:'discord-link'})}`);
 // It also survives a sign-in that leaves this page (Google or Facebook; /settings/<part> signed out, 4 Oct 2026): kept in this tab
-// for 30 minutes, read back through openIntent, gone once the farm takes it.
+// for 30 minutes, read back through openIntent, gone once the farm takes it. A Discord link (Oct 2026, /discord-link) for the 10
+// minutes its ticket is good for.
 const OPEN_KEY='harvest-tycoon:open',keepOpen=intent=>{try{if(intent)sessionStorage.setItem(OPEN_KEY,JSON.stringify({...intent,at:Date.now()}));else sessionStorage.removeItem(OPEN_KEY);}catch{}};
 if(pendingOpen)keepOpen(pendingOpen);
-else try{const kept=JSON.parse(sessionStorage.getItem(OPEN_KEY)??'null');if(kept&&Date.now()-Number(kept.at)<1800000)pendingOpen=openIntent(`?${new URLSearchParams(Object.entries(kept).filter(([key])=>key!=='at').map(([key,value])=>[key,String(value)]))}`);else keepOpen(null);}catch{}
+else try{const kept=JSON.parse(sessionStorage.getItem(OPEN_KEY)??'null');if(kept&&Date.now()-Number(kept.at)<(kept.open==='discord-link'?600000:1800000))pendingOpen=openIntent(`?${new URLSearchParams(Object.entries(kept).filter(([key])=>key!=='at').map(([key,value])=>[key,String(value)]))}`);else keepOpen(null);}catch{}
 window.harvestTakeOpen=()=>{const intent=pendingOpen;pendingOpen=null;keepOpen(null);return intent;};
 function openScreen(intent){
  if(!intent)return;
  try{const open=frame?.contentWindow?.harvestOpen;if(typeof open==='function'){open(intent);return;}}catch{}
  pendingOpen=intent;
 }
-navigator.serviceWorker?.addEventListener?.('message',event=>{if(event.data?.type!=='open')return;try{openScreen(openIntent(new URL(String(event.data.url),location.origin).search));}catch{}});
-// A shortcut on the app icon while the app is already open comes to this window (manifest launch_handler: focus-existing).
-window.launchQueue?.setConsumer?.(params=>{try{openScreen(openIntent(new URL(params.targetURL).search));}catch{}});
+navigator.serviceWorker?.addEventListener?.('message',event=>{if(event.data?.type!=='open')return;try{openScreen(openIntentOfUrl(String(event.data.url),location.origin));}catch{}});
+// A shortcut on the app icon, or a link the app catches (/feedback, /settings/<part>, /discord-link?t=…), while the app is already
+// open comes to this window (manifest launch_handler: focus-existing).
+window.launchQueue?.setConsumer?.(params=>{try{openScreen(openIntentOfUrl(params.targetURL));}catch{}});
 startPlayerCounts({functionsUrl});
 let presence=null,notifications=null,chat=null;
 let mode='register',generation=0,playerId=null,frame=null,submitting=false,checking=false,reopen=false;
@@ -109,6 +118,9 @@ const linkError=()=>/error_code=|error=access_denied/.test(linkText());
 // address (redirectUrl(true)); the password reset does not need it.
 let pendingSource=readSource({href:location.href,pathname:location.pathname,referrer:document.referrer,authReturn:Boolean(tabStore.get(OAUTH_KEY)||linkKind()||/access_token=/.test(location.hash??''))});
 const redirectUrl=(carry=false)=>{const url=new URL('/play.html',location.origin);if(carry)for(const [key,value] of sourceQuery(location.href,pendingSource))url.searchParams.set(key,value);return url.href;};
+// The Discord Activity's sign-in (supabase/functions/discord-auth): the website only asks it about a Discord link. In Frankfurt, next
+// to the database, as farm-api (src/supabase.js FARM_API).
+const DISCORD_AUTH='discord-auth?forceFunctionRegion=eu-central-1';
 const inputId=field=>field==='name'?'player-name':field;
 const MESSAGES={register:'Creating your account…',signin:'Opening your farm…',name:'Opening your farm…',forgot:'Sending your link…',recovery:'Saving your password…'};
 // The loading screen before the farm: the same layout as the farm's own, and its bar covers the first few percent (the farm goes on
@@ -161,7 +173,10 @@ function browserGate(){
  $('gate-stay').onclick=()=>{store.set(ESCAPE_KEY,'stay');store.set(BROWSER_TIP_KEY,'1');gateOff();trackAuth('browser_gate',{reason:'stay'});};
  if(!store.get(ESCAPE_KEY)){store.set(ESCAPE_KEY,'shown');trackAuth('browser_gate',{reason:'shown'});if(text.android&&metaApp(ua))leave();}
 }
-function landing(message=''){connection.stop();dispose();if(inApp)forgetAppPushLink(window);setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');browserGate();$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
+// A Discord player who asked to play their farm from here in the Discord Activity (/discord-link, public/discord-link-ui.js) and is
+// not signed in on this browser: the sign-in card, with what it is for (they have a farm already).
+const DISCORD_SIGN_IN='Sign in to play your farm on Discord.';
+function landing(message=''){connection.stop();dispose();if(inApp)forgetAppPushLink(window);if(!message&&pendingOpen?.open==='discord-link')message=DISCORD_SIGN_IN;setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');browserGate();$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
 function unavailable(message='Your farm is safe. Reconnect to continue.',{retrying=false}={}){dispose();phase('error');$('account-title').textContent='A little pause.';$('account-copy').hidden=false;$('account-copy').textContent=message;$('account-message').textContent=retrying?'We are trying again automatically.':'';$('account-form').hidden=true;$('confirm-panel').hidden=true;$('mode-switch-row').hidden=true;document.querySelector('.account-tabs').hidden=true;$('connection-actions').hidden=false;}
 async function signOut(){if(!supabase){landing();return;}connection.stop();try{await notifications?.push?.detach();}catch{}notifications?.dispose?.();notifications=null;dispose();phase('checking','Signing you out…');try{const result=await supabase.auth.signOut();if(result.error)throw result.error;}catch{await supabase.auth.signOut({scope:'local'});}finally{landing();$('password').value='';}}
 // "Check your inbox": shown after registering, after asking for a reset link, and when an unconfirmed player tries to sign in.
@@ -319,6 +334,40 @@ async function openFarm(){
    connection.stop();try{await notifications?.push?.detach();}catch{}notifications?.dispose?.();notifications=null;dispose();
    try{await supabase.auth.signOut({scope:'local'});}catch{}
    store.remove(RETURNING_KEY);landing();setMode('register');$('account-message').textContent='Your account has been deleted.';
+  };
+  // Play this farm on Discord? (Oct 2026, public/discord-link-ui.js): who asks ({op:'peek'}), Link's state for the trip to Discord
+  // ({op:'begin'}) and the farmer's yes ({op:'confirm'}, with that state and the code Discord gave after Link), to discord-auth with
+  // this farmer's own session (supabase-js sends it, with the project's key). The link is named by its ticket (Discord's link) or by
+  // its state (back from Discord). Never repeated by itself: a link, a state and a code are good once. A refusal keeps the server's
+  // status and its code (discord-auth LINK_ERRORS, as {error:'TICKET_GONE'}), which the dialog turns into the farmer's words; the
+  // server's own texts are English only and never shown.
+  bridge.discordLink=async(op,{ticket:linkTicket,state,code:discordCode}={})=>{
+   if(ticket!==generation||!navigator.onLine)throw new Error('Your session is paused. Reconnect to continue.');
+   const {data,error}=await supabase.functions.invoke(DISCORD_AUTH,{body:{op,ticket:linkTicket,state,code:discordCode},timeout:20000});
+   if(error){let detail;try{detail=await error.context?.json();}catch{}const {transient,status}=describeFailure(error,detail),code=[detail?.code,detail?.error].find(value=>typeof value==='string'&&/^[A-Z][A-Z_]{2,39}$/.test(value));throw Object.assign(new Error('We could not connect. Please try again.'),{status,code,transient});}
+   if(ticket!==generation)throw new Error('Your session has ended.');
+   return data;
+  };
+  // Link (Oct 2026): first Discord says who taps it, so a ticket's link sent to someone else links nothing (discord-auth confirm only
+  // links with a code of the ticket's own Discord account). The dialog asked our server for this Link's state ({op:'begin'}), which
+  // our server keeps with this farmer's account; this page goes to Discord's own page with it (never the farm's frame: as with a
+  // Google sign-in), which comes back to /discord-link/callback with a one-time code and that state. On a phone Discord's app often
+  // opens that in a new tab or another browser: code and state are all the farm needs there, so nothing is kept in this tab.
+  // again: Discord answered for another account last time, so its page now shows which one and lets the player switch.
+  bridge.discordVerify=async(state,{again=false}={})=>{
+   if(ticket!==generation||!navigator.onLine)throw new Error('Your session is paused. Reconnect to continue.');
+   const valid=discordTicket(state);
+   if(!valid)throw new Error('We could not connect. Please try again.');
+   location.assign(discordAuthorizeUrl(valid,again===true));
+  };
+  // Back from Discord while another account is signed in here than the one that tapped Link (discord-auth LINK_OTHER_ACCOUNT): the
+  // dialog's Sign out keeps Discord's answer in this tab as a link through a sign-in (OPEN_KEY, 10 minutes), so the sign-in card says
+  // what it is for and the account that tapped Link gets the same question back, where Discord's code links.
+  bridge.discordSignOut=answer=>{
+   if(ticket!==generation)return;
+   const back=discordBack(new Map(Object.entries(Object(answer))));
+   if(!back.state)return;
+   pendingOpen={open:'discord-link',...back};keepOpen(pendingOpen);void signOut();
   };
   window.harvestBridge=bridge;frame=page;release(bridge);phase('authenticated');store.set(RETURNING_KEY,'1');
   scheduleBrowserTip({embedded:embeddedBrowser(navigator.userAgent),doc:document,win:window,storage:store});

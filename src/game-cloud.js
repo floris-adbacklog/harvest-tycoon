@@ -18,6 +18,7 @@ import {createOfferUI} from './offer-ui.js';
 import {createPortalUI} from './portal-ui.js';
 import {markAdminView,startAdminView} from './admin-view.js';
 import {createAccountDelete} from './account-delete.js';
+import {createDiscordLinkDialog,createDiscordSwitch,createDiscordUnlink} from '../public/discord-link-ui.js';
 // The game frame never zooms as a page: only the 3D field does (src/page-zoom.js).
 stopPageZoom(document);
 let bridge;
@@ -62,8 +63,15 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   if(adminView)startAdminView({bridge});
   // On CrazyGames the purchases, links and account buttons step aside (portal.css) and the page's own lines come in (src/portal-ui.js).
   if(portal)createPortalUI({portal});
+  // Discord (Oct 2026, public/discord-link-ui.js): in the Activity, a farm made on Discord only can make way for the farmer's
+  // harvesttycoon.com farm (Settings, Your account). Nowhere else: the portal says whether this is one (discordOnly).
+  const farmerName=()=>document.getElementById('player-name')?.dataset.username??'',firstLevel=window.harvestInitialFarm.profile?.level;
+  if(portal)createDiscordSwitch({portal,farmer:farmerName,level:()=>firstLevel});
   // Settings › Privacy › Delete account (3 Oct 2026, src/account-delete.js): on the website and in both apps, never on CrazyGames.
   if(!portal)createAccountDelete({bridge,name:()=>document.getElementById('player-name')?.dataset.username??''});
+  // Settings › Privacy › Played on Discord (Oct 2026, public/discord-link-ui.js): a farm a Discord account plays, and Unlink Discord.
+  // On the website and in both apps (src/main.js bridge.discordLink), never on a portal.
+  const discordUnlink=!portal&&typeof bridge.discordLink==='function'?createDiscordUnlink({request:bridge.discordLink}):null;
   // The Family Members list opens a farmer's profile too (public/family-ui.js).
   window.harvestProfiles=profiles;
   ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');
@@ -104,6 +112,7 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
    await createStarterPackUI(bridge);}
    // One screen from a notification, a shortcut on the app icon or a link (public/app-links.js). src/main.js keeps it until the farm is
    // ready, and hands over what arrives later.
+   let discordLink=null;
    window.harvestOpen=intent=>{
     if(intent?.open==='chat')void chat.open(intent.channel?{channel:intent.channel}:{});
     else if(intent?.open==='today')window.harvestToday?.();
@@ -112,6 +121,12 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
     else if(intent?.open==='settings')window.harvestSettings?.(intent.part);
     // The Feedback window (6 Oct 2026, /feedback): the button that opens it, as a pop-up's or a chat chip does.
     else if(intent?.open==='feedback')document.getElementById('feedback-button')?.click();
+    // Play this farm on Discord? (Oct 2026, /discord-link?t=…, public/discord-link-ui.js): on the website and in our apps only, whose
+    // page around the game asks our server with this farmer's session (src/main.js bridge.discordLink). Never on a portal. Link goes to
+    // Discord first (bridge.discordVerify) and comes back here, in this tab or another, with Discord's answer (/discord-link/callback:
+    // the intent's code, state or error), which is all the question needs. Signed in with another account than the one that tapped
+    // Link: Sign out there keeps that answer for the next sign-in (bridge.discordSignOut).
+    else if(intent?.open==='discord-link'&&!portal&&typeof bridge.discordLink==='function')void (discordLink??=createDiscordLinkDialog({request:bridge.discordLink,verify:bridge.discordVerify,signOut:bridge.discordSignOut,farmer:farmerName})).open(intent.t,intent).then(result=>{if(result?.linked)discordUnlink?.show();});
    };
    const waiting=window.parent?.harvestTakeOpen?.();if(waiting)window.harvestOpen(waiting);
   }

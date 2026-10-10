@@ -59,3 +59,19 @@ html[data-portal] .settings-copy{display:none!important}
    row is gone on every portal (public/portal.css), where no link may leave the game. */
 .chat-discord{cursor:default}.chat-discord>.discord-logo{flex:none;width:34px;height:34px;color:#5865f2}
 .chat-discord-join{display:inline-flex;align-items:center;flex:none;min-height:44px;text-decoration:none;color:var(--btn-second-text)}
+/* Discord (Oct 2026, public/discord-link-ui.js). In the Activity, for a farm made on Discord only: "Play your harvesttycoon.com farm
+   here" under Your account, in the look of the Settings rows. On the website: "Play this farm on Discord?", the confirmation dialog
+   with a line for its answer (green when linked, red when refused). */
+#sound-dialog .discord-switch{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 14px;margin-top:12px;padding:12px 14px;border:1px solid #e2d7cb;border-radius:14px;background:#f3ede7}
+#sound-dialog .discord-switch>span{display:grid;gap:3px;min-width:0}
+#sound-dialog .discord-switch strong{font-size:14px;line-height:1.3;color:#3d392b}
+#sound-dialog .discord-switch small{font-size:12px;line-height:1.45;color:#827a6f}
+#sound-dialog .discord-switch .small-button{min-height:44px;padding:8px 14px;white-space:nowrap}
+#sound-dialog .discord-switch .cloud-form-error{grid-column:1/-1;margin:0}
+#sound-dialog .discord-switch .cloud-form-error:empty{display:none}
+@media(max-width:420px){#sound-dialog .discord-switch{grid-template-columns:minmax(0,1fr)}#sound-dialog .discord-switch .small-button{width:100%}}
+.discord-link-dialog [hidden]{display:none!important}
+.discord-link-dialog .discord-link-status{margin-top:12px;font-size:14px;font-weight:700}
+.discord-link-dialog .discord-link-status:empty{display:none}
+.discord-link-dialog .discord-link-status.is-done{color:#3f6b4a}
+.discord-link-dialog .discord-link-status.is-error{color:#b4513f}

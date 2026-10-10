@@ -11,7 +11,7 @@ const exists=path=>existsSync(new URL(`../${path}`,import.meta.url));
 const D='11111111-1111-4111-8111-111111111111',E='22222222-2222-4222-8222-222222222222';
 
 test('links that open one screen: only known screens, and a chat only by a real channel',()=>{
- assert.deepEqual(OPEN_SCREENS,['chat','today','leaderboard','farm','settings','feedback']);
+ assert.deepEqual(OPEN_SCREENS,['chat','today','leaderboard','farm','settings','feedback','discord-link']);
  assert.deepEqual(openIntent('?open=today'),{open:'today'});assert.deepEqual(openIntent('?source=pwa&open=leaderboard'),{open:'leaderboard'});
  assert.deepEqual(openIntent(`?open=chat&channel=${encodeURIComponent(`dm:${D}:${E}`)}`),{open:'chat',channel:`dm:${D}:${E}`});
  assert.deepEqual(openIntent('?open=chat&channel=global'),{open:'chat',channel:'global'});

@@ -264,9 +264,10 @@ test('src/crazygames.js: its own sign-ins, the token on every start, a guest oth
 test('the farm session builds the same bridge as the website\'s (src/main.js), so a change to one shows up in the other',()=>{
  const main=read('src/main.js'),session=read('src/farm-session.js');
  const assigned=src=>[...new Set([...src.matchAll(/\bbridge\.(\w+)=/g)].map(m=>m[1]))].sort();
- // Only the website's: Delete account (3 Oct 2026), which CrazyGames never offers and farm-api refuses for its accounts, and Google
- // Play's purchases (Oct 2026), only in our Android app.
- assert.deepEqual(assigned(session),assigned(main).filter(name=>!['deleteAccount','playSettle','playRecover'].includes(name)));
+ // Only the website's: Delete account (3 Oct 2026), which CrazyGames never offers and farm-api refuses for its accounts, Google
+ // Play's purchases (Oct 2026), only in our Android app, and Play this farm on Discord? (Oct 2026, with Link's trip to Discord and
+ // Sign out for another account than the one that tapped Link), never on a portal.
+ assert.deepEqual(assigned(session),assigned(main).filter(name=>!['deleteAccount','playSettle','playRecover','discordLink','discordVerify','discordSignOut'].includes(name)));
  for(const line of ["const bridge={playerId,presence,serverNow:initial.serverNow,takeInitial(){const data=initial;initial=null;return data;},","async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');","watchConnection(watch){watchers.add(watch);return()=>watchers.delete(watch);}}",
   "if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}","data.profile?.player_id!==user.id)throw new Error('Your session has ended.');connection.ok();return data;}","else if(error.status===409)unavailable(error.message);",
   "else if(!refused(error.status)&&!['player_search','player_profile','avatar'].includes(body.operation))connection.problem(reasonOf(error,","presence.setClock?.(initial.serverNow);",

@@ -13,6 +13,7 @@ import {setAppBadge} from '../public/app-badge.js';
 import {portalTips,LOADING_TIPS,PORTAL_HIDDEN_TIPS,watchLoading} from '../public/loading-screen.js';
 import {renderLanguageSettings} from '../public/language-settings.js';
 import {provider} from '../src/admin-players.js';
+import {createDiscordSwitch,switchWarning,SWITCH_TEXT} from '../public/discord-link-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const settle=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
 
@@ -133,3 +134,59 @@ test('the farm page follows Discord\'s rules: no handler or script written in th
  // The portal code never reaches into Discord's own window.
  for(const path of ['public/portal.js','src/portal-ui.js','public/app-badge.js'])assert.doesNotMatch(read(path).replace(/\/\/[^\n]*/g,''),/window\.top|top\.location/,path);
 });
+
+// Settings › Your account, in the Activity, for a farm made on Discord only (Oct 2026, public/discord-link-ui.js): "Play your
+// harvesttycoon.com farm here". A clear warning first; then the page around the game (src/discord-page.js linkExisting) opens the
+// website in Discord's window and waits. This farm is deleted by our server only once the farmer taps Link on the website.
+function settingsPage({level='12'}={}){
+ const made=[],account={children:[],append(child){this.children.push(child);}},sound={closed:0,close(){this.closed++;}};
+ const part=()=>({textContent:'',disabled:false,listeners:{},addEventListener(name,fn){(this.listeners[name]??=[]).push(fn);},click(){for(const fn of this.listeners.click??[])fn();}});
+ const doc={
+  querySelector:sel=>sel==='.settings-account'?account:null,
+  getElementById:id=>id==='discord-switch'?made.find(row=>account.children.includes(row))??null:id==='level'?{textContent:level}:id==='sound-dialog'?sound:null,
+  createElement(tag){const row={tag,id:'',className:'',parts:{'[data-switch-title]':part(),'[data-switch-copy]':part(),'[data-switch]':part(),'[data-switch-message]':part()},set innerHTML(v){this.html=v;},querySelector(sel){return this.parts[sel];}};made.push(row);return row;}
+ };
+ return {doc,account,sound,made};
+}
+test('Settings in the Activity: a Discord farm can make way for the farmer\'s harvesttycoon.com farm, after a clear warning',async()=>{
+ let linked=0,answer={opened:true};const asked=[];let yes=true;
+ const portal={...discordPortal(),discordOnly:true,get linkExisting(){return this.discordOnly?async()=>{linked++;if(answer instanceof Error)throw answer;return answer;}:undefined;}};
+ const page=settingsPage(),ui=createDiscordSwitch({portal,farmer:()=>'Sunny Acres ',level:()=>3,doc:page.doc,ask:async o=>{asked.push(o);return yes;}});
+ const row=page.account.children[0];
+ assert.equal(row,ui.row);assert.equal(row.id,'discord-switch');assert.equal(row.className,'discord-switch');
+ assert.equal(row.parts['[data-switch-title]'].textContent,'Play your harvesttycoon.com farm here');assert.equal(row.parts['[data-switch]'].textContent,'Link my farm');
+ assert.equal(row.parts['[data-switch-copy]'].textContent,SWITCH_TEXT.copy);assert.doesNotMatch(row.html,/\son[a-z]+=/,'no handler in the markup (Discord runs none)');
+ assert.equal(createDiscordSwitch({portal,doc:page.doc,ask:async()=>true}),null,'once');
+ // The warning: this farm by name and level (the top bar's), deleted for good; red, and Keep this farm is the way out.
+ row.parts['[data-switch]'].click();await settle();
+ assert.equal(asked.length,1);assert.equal(asked[0].title,'Play your harvesttycoon.com farm here?');assert.equal(asked[0].tone,'danger');
+ assert.equal(asked[0].description,'Your Discord farm Sunny Acres (level 12) will be deleted and Discord opens your harvesttycoon.com farm instead. This cannot be undone.');
+ assert.equal(asked[0].confirmLabel,'Continue');assert.equal(asked[0].cancelLabel,'Keep this farm');
+ assert.equal(linked,1);assert.equal(page.sound.closed,1,'Settings closes: the page around the game shows its waiting card');
+ // Keep this farm: nothing happens.
+ yes=false;assert.equal(await ui.start(),false);assert.equal(linked,1);yes=true;
+ // No in Discord's own window: the farm stays as it is, Settings too, no message.
+ answer={opened:false};assert.equal(await ui.start(),false);assert.equal(linked,2);assert.equal(page.sound.closed,1);assert.equal(row.parts['[data-switch-message]'].textContent,'');
+ // It could not start (our server, Discord): the page's own words under the button, which works again.
+ answer=new Error('We could not open harvesttycoon.com. Please try again.');assert.equal(await ui.start(),false);
+ assert.equal(row.parts['[data-switch-message]'].textContent,'We could not open harvesttycoon.com. Please try again.');assert.equal(row.parts['[data-switch]'].disabled,false);
+ // The farm open is no longer a Discord one by the time of the tap: nothing is asked of the page.
+ portal.discordOnly=false;assert.equal(await ui.start(),false);assert.equal(linked,3);assert.equal(row.parts['[data-switch-message]'].textContent,SWITCH_TEXT.failed);
+ // The level from the farm's start when the top bar has none yet.
+ const early=settingsPage({level:''}),seen=[];createDiscordSwitch({portal:{...discordPortal(),discordOnly:true,linkExisting:async()=>({opened:false})},farmer:()=>'Sunny Acres',level:()=>7,doc:early.doc,ask:async o=>{seen.push(o);return false;}}).start();
+ await settle();assert.equal(seen[0].description,switchWarning('Sunny Acres',7));
+ assert.doesNotMatch(switchWarning('{0}','{1}'),/·/);
+});
+test('the row is nowhere else: the website, the other portals, a harvesttycoon.com farm played in Discord',()=>{
+ const link=async()=>({opened:true});
+ for(const [why,portal] of [['the website',null],['CrazyGames',{...CRAZY,discordOnly:true,linkExisting:link}],['Kongregate',{...KONG,discordOnly:true,linkExisting:link}],
+  ['a website farm in Discord',{...discordPortal(),discordOnly:false,linkExisting:link}],['no way to link',{...discordPortal(),discordOnly:true}],['not said',{...discordPortal(),linkExisting:link}]]){
+  const page=settingsPage();assert.equal(createDiscordSwitch({portal,doc:page.doc,ask:async()=>{throw new Error('never asked');}}),null,why);assert.equal(page.account.children.length,0,why);
+ }
+ // The frame asks for it on every portal and lets the portal decide; the website never asks.
+ const cloud=read('src/game-cloud.js');
+ assert.match(cloud,/if\(portal\)createDiscordSwitch\(\{portal,farmer:farmerName,level:\(\)=>firstLevel\}\);/);
+ const css=read('public/settings.css');
+ assert.match(css,/#sound-dialog \.discord-switch\{display:grid;grid-template-columns:minmax\(0,1fr\) auto;[^}]*border:1px solid #e2d7cb;border-radius:14px;background:#f3ede7\}/,'the cream of the Settings rows');
+});
+

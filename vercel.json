@@ -47,6 +47,21 @@
       "permanent": false
     },
     {
+      "source": "/discord-link",
+      "destination": "/?open=discord-link",
+      "permanent": false
+    },
+    {
+      "source": "/discord-link/",
+      "destination": "/?open=discord-link",
+      "permanent": false
+    },
+    {
+      "source": "/discord-link/callback",
+      "destination": "/?open=discord-link",
+      "permanent": false
+    },
+    {
       "source": "/settings/",
       "destination": "/?open=settings",
       "permanent": false

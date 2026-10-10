@@ -17,8 +17,10 @@ import {provider} from '../src/admin-players.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // Discord (10 Oct 2026, the owner: the simplest version, as Kongregate): the Activity's Discord log-in only (OAuth scope identify),
-// swapped on our server; no guests, no purchases, no linking, never Discord's name or avatar. The server half: discord-auth,
-// supabase/discord.sql and the guards in farm-api and diamond-checkout (notify-hourly and auth-email skip the address by its domain).
+// swapped on our server; no guests, no purchases, never Discord's avatar, its name only on the player's own link ticket. The server
+// half: discord-auth, supabase/discord.sql and the guards in farm-api and diamond-checkout (notify-hourly and auth-email skip the
+// address by its domain). The same day, the owner's "doe 2": a new Discord player chooses a new farm or their harvesttycoon.com farm
+// (the link ops: tests/discord-link-server.test.mjs).
 const CLIENT_ID='1290000000000000001',SECRET='dc-client-secret-123',DISCORD_ID='81384788765712384';
 const NELLY={id:DISCORD_ID,username:'nelly',global_name:'Nelly',avatar:'8342729096ea3675442027381ff50dfe',locale:'en-US'};
 const part=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -54,7 +56,8 @@ function fakeDiscord({codes={'code-1':NELLY,'code-2':NELLY,'code-3':NELLY},limit
 
 test('Discord is asked from the server only: the code swapped with our secret, form-encoded, then users/@me with that token',async()=>{
  const d=fakeDiscord();
- assert.deepEqual(await verifyDiscord({code:'code-1',clientId:CLIENT_ID,clientSecret:SECRET,fetchImpl:d.fetchImpl}),{userId:DISCORD_ID,locale:'en-US'},'only the id and the locale, never the name or avatar');
+ // The id and the locale; the username only for a link ticket (discord-link-server.test.mjs), never the display name or the avatar.
+ assert.deepEqual(await verifyDiscord({code:'code-1',clientId:CLIENT_ID,clientSecret:SECRET,fetchImpl:d.fetchImpl}),{userId:DISCORD_ID,locale:'en-US',displayName:'nelly'});
  const [swap,who]=d.calls;
  // The versioned API: unversioned is v6, where retry_after counts milliseconds and a short wait would lock everyone out for an hour.
  assert.equal(TOKEN_URL,'https://discord.com/api/v10/oauth2/token');assert.equal(ME_URL,'https://discord.com/api/v10/users/@me');
@@ -108,23 +111,59 @@ test('only a real code is taken; a Discord id is 17 to 20 digits as text; the lo
 // A database and Auth that keep what they are told, like Supabase's.
 const FARMER='00000000-0000-4000-8000-0000000000d1',WEBSITE='00000000-0000-4000-8000-0000000000c1',CG='00000000-0000-4000-8000-0000000000c2',KG='00000000-0000-4000-8000-0000000000c3';
 const session=(id,{role='authenticated',session_id='s-'+id}={})=>`${part({alg:'HS256'})}.${part({sub:id,role,session_id})}.sig`;
+// Tables that keep what they are told, as PostgREST does: eq, is, gt and lt filters, maybeSingle, a head count, insert with the
+// table's unique columns (23505), update and delete that give back the rows they changed with .select().
+function fakeTables(tables,{unique={},defaults={},onInsert=()=>{}}={}){
+ const test=(row,[op,key,value])=>op==='gt'?row[key]!=null&&row[key]>value:op==='lt'?row[key]!=null&&row[key]<value:row[key]===value;
+ return name=>{
+  const rows=tables[name];assert.ok(rows,`unexpected table ${name}`);
+  const filters=[];let action='select',values=null,head=false,returning=false;
+  const clash=(row,self)=>(unique[name]??[]).some(key=>rows.some(other=>other!==self&&other[key]===row[key]));
+  const duplicate={code:'23505',message:'duplicate key value violates unique constraint'};
+  function run(){
+   if(action==='insert'){
+    onInsert(name,values);const row={...(defaults[name]?.()??{}),...values};
+    if(clash(row))return {data:null,error:duplicate};
+    rows.push(structuredClone(row));return {data:null,error:null};
+   }
+   const found=rows.filter(row=>filters.every(f=>test(row,f)));
+   if(action==='update'){
+    if(found.some(row=>clash({...row,...values},row)))return {data:null,error:duplicate};
+    for(const row of found)Object.assign(row,structuredClone(values));
+    return {data:returning?structuredClone(found):null,error:null};
+   }
+   if(action==='delete'){for(const row of found)rows.splice(rows.indexOf(row),1);return {data:returning?structuredClone(found):null,error:null};}
+   return head?{data:null,count:found.length,error:null}:{data:structuredClone(found),error:null};
+  }
+  const api={
+   select(columns,options={}){if(action==='select')head=options.head===true;else returning=true;return api;},
+   insert(row){action='insert';values={...row};return api;},
+   update(changes){action='update';values={...changes};return api;},
+   delete(){action='delete';return api;},
+   eq(key,value){filters.push(['eq',key,value]);return api;},
+   is(key,value){filters.push(['is',key,value]);return api;},
+   gt(key,value){filters.push(['gt',key,value]);return api;},
+   lt(key,value){filters.push(['lt',key,value]);return api;},
+   async maybeSingle(){const r=run();return {data:r.data?.[0]??null,error:r.error};},
+   then(resolve,reject){try{resolve(run());}catch(error){reject(error);}}
+  };
+  return api;
+ };
+}
 function fakeSupabase({users=[],accounts=[],sessions=[],taken=[],takenOnce=false,lostRace=false}={}){
- const db={users:new Map(users.map(u=>[u.id,structuredClone(u)])),accounts:structuredClone(accounts)};
+ const db={users:new Map(users.map(u=>[u.id,structuredClone(u)])),accounts:structuredClone(accounts),tickets:[]};
  const log={created:[],updated:[],deleted:[],links:[],inserted:[],names:[],getUser:0};
  let counter=0;
+ const from=fakeTables({discord_accounts:db.accounts,discord_link_tickets:db.tickets},{
+  unique:{discord_accounts:['discord_user_id','player_id'],discord_link_tickets:['ticket_hash']},
+  defaults:{discord_link_tickets:()=>({display_name:null,relink_from:null,linked_player:null,used_at:null,created_at:new Date().toISOString()})},
+  onInsert(table,row){
+   if(table!=='discord_accounts')return;
+   if(lostRace&&!db.accounts.length)db.accounts.push({discord_user_id:row.discord_user_id,player_id:FARMER});
+   if(!db.accounts.some(a=>a.discord_user_id===row.discord_user_id||a.player_id===row.player_id))log.inserted.push({...row});
+  }});
  const admin={
-  from(table){
-   assert.equal(table,'discord_accounts');
-   const filters=[];
-   const api={select(){return api;},eq(key,value){filters.push([key,value]);return api;},
-    async maybeSingle(){const found=db.accounts.filter(r=>filters.every(([k,v])=>r[k]===v));return {data:found[0]?structuredClone(found[0]):null,error:null};},
-    async insert(row){
-     if(lostRace&&!db.accounts.length)db.accounts.push({discord_user_id:row.discord_user_id,player_id:FARMER});
-     if(db.accounts.some(a=>a.discord_user_id===row.discord_user_id||a.player_id===row.player_id))return {error:{code:'23505',message:'duplicate key'}};
-     db.accounts.push({...row});log.inserted.push({...row});return {error:null};
-    }};
-   return api;
-  },
+  from,
   async rpc(name,args){
    if(name==='username_available'){log.names.push(args.p_name);return {data:!(takenOnce&&log.names.length===1)&&!taken.includes(args.p_name.toLowerCase()),error:null};}
    if(name==='harvest_session_active')return {data:sessions.includes(args.p_session),error:null};
@@ -153,12 +192,17 @@ const run=(admin,body,{headers={},env=ENV,d=fakeDiscord(),pause={until:0},now=Da
 const START={op:'discord',code:'code-1'};
 const farmer=()=>({id:FARMER,email:`dc-${DISCORD_ID}@players.harvesttycoon.com`,app_metadata:{provider:'email',portal:'discord',guest:false,discord_id:DISCORD_ID},user_metadata:{username:'Sunny Acres 4821'}});
 
-test('the first start: Discord asked once for each step, a new account keyed on the Discord id, a random farmer name, a way in',async()=>{
+test('the first start: Discord asked once for each step, a choice; "New farm": an account keyed on the Discord id, a random farmer name, a way in',async()=>{
  const {admin,db,log}=fakeSupabase(),d=fakeDiscord();
- const r=await run(admin,{...START,language:'nl',username:'Admin'},{d});
- assert.equal(r.status,200);assert.deepEqual(Object.keys(r.data).sort(),['locale','player_id','token_hash'],'the contract: {token_hash, player_id, locale}');
- assert.equal(r.data.locale,'en-US','Discord\'s locale, for the game\'s language');
+ const start=await run(admin,{...START,language:'nl',username:'Admin'},{d});
+ assert.equal(start.status,200);assert.deepEqual(Object.keys(start.data).sort(),['choose','expires_in','key','locale','ticket'],'the contract: {choose:true, ticket, key, expires_in, locale}');
+ assert.equal(start.data.choose,true);assert.equal(start.data.expires_in,600);
+ assert.equal(start.data.locale,'en-US','Discord\'s locale, for the game\'s language');
  assert.deepEqual(d.calls.map(c=>c.step),['token','me']);
+ assert.equal(log.created.length+log.links.length+db.accounts.length,0,'nothing made before the player chooses');
+ const r=await run(admin,{op:'create',ticket:start.data.ticket,key:start.data.key,language:'nl',username:'Admin'},{d});
+ assert.equal(r.status,200);assert.deepEqual(Object.keys(r.data).sort(),['player_id','token_hash'],'the contract: {token_hash, player_id}');
+ assert.equal(d.calls.length,2,'"New farm" does not ask Discord again');
  const [made]=log.created;
  assert.equal(made.email,`dc-${DISCORD_ID}@players.harvesttycoon.com`);assert.equal(made.email_confirm,true);assert.ok(made.password.length>=40,'a long random password, never stored or shown');
  assert.deepEqual(made.app_metadata,{portal:'discord',guest:false,discord_id:DISCORD_ID});
@@ -172,11 +216,13 @@ test('the first start: Discord asked once for each step, a new account keyed on 
  // The access token and the code are used once and dropped: not kept, not sent back.
  assert.doesNotMatch(JSON.stringify({db:[...db.users.values(),db.accounts],r}),/access-|refresh-|code-1/);
  // Taken: the first free one ("… 2").
- const busyName=fakeSupabase({takenOnce:true});await run(busyName.admin,START);
+ const newFarm=async(admin,body={},d=fakeDiscord())=>{const s=await run(admin,START,{d});return run(admin,{op:'create',ticket:s.data.ticket,key:s.data.key,...body},{d});};
+ const busyName=fakeSupabase({takenOnce:true});await newFarm(busyName.admin);
  assert.match(busyName.log.names[1],/ 2$/);assert.equal(busyName.log.created[0].user_metadata.username,busyName.log.names[1]);
  // A language that is not one is left out; the locale Discord does not give is null.
- const quiet=fakeSupabase();const q=await run(quiet.admin,{...START,language:'Dutch'},{d:fakeDiscord({codes:{'code-1':{...NELLY,locale:undefined}}})});
- assert.equal(q.data.locale,null);assert.deepEqual(Object.keys(quiet.log.created[0].user_metadata),['username','source']);
+ const quiet=fakeSupabase(),qd=fakeDiscord({codes:{'code-1':{...NELLY,locale:undefined}}});
+ assert.equal((await run(quiet.admin,START,{d:qd})).data.locale,null);
+ await newFarm(quiet.admin,{language:'Dutch'});assert.deepEqual(Object.keys(quiet.log.created[0].user_metadata),['username','source']);
 });
 
 test('the next start: the same farm; this session already, no new sign-in; a new code each time',async()=>{
@@ -232,22 +278,26 @@ test('Discord asks us to wait: 429 with retry_after, and nobody\'s code goes to 
  const d=fakeDiscord();
  assert.deepEqual(await run(admin,START,{d,pause,now:NOW+5000}),{status:429,data:{error:MESSAGES.busy,retry_after:8}},'the rest of the wait');
  assert.equal(d.calls.length,0,'Discord is not asked while it said wait');
- assert.equal((await run(admin,START,{d,pause,now:NOW+13000})).status,200,'after the wait: asked again');
- assert.equal(log.created.length,1);
+ const after=await run(admin,START,{d,pause,now:NOW+13000});
+ assert.equal(after.status,200,'after the wait: asked again');assert.equal(after.data.choose,true);
+ assert.equal(log.created.length,0);
  // The same when users/@me says it.
  const late={until:0},again=fakeSupabase();
  assert.deepEqual(await run(again.admin,START,{d:fakeDiscord({limit:{at:'me',retry_after:1}}),pause:late,now:NOW}),{status:429,data:{error:MESSAGES.busy,retry_after:1}});
  assert.equal(again.log.created.length,0);assert.equal(late.until,NOW+1000);
 });
 
-test('never linked: a website, CrazyGames or Kongregate session is left alone and the Discord player gets a farm of their own',async()=>{
- const website={id:WEBSITE,email:'farmer@example.com',app_metadata:{provider:'email'},user_metadata:{}};
+test('a session sent along never links: a website, CrazyGames or Kongregate session is left alone and the Discord player chooses',async()=>{
+ const website={id:WEBSITE,email:'farmer@example.com',email_confirmed_at:'2026-09-01T00:00:00Z',app_metadata:{provider:'email'},user_metadata:{}};
  const cg={id:CG,email:'cg-x@players.harvesttycoon.com',app_metadata:{provider:'email',portal:'crazygames',guest:true},user_metadata:{}};
  const kg={id:KG,email:'kg-1480702@players.harvesttycoon.com',app_metadata:{provider:'email',portal:'kongregate',guest:false,kongregate_id:'1480702'},user_metadata:{}};
  for(const [label,user] of [['a website account',website],['a CrazyGames guest',cg],['a Kongregate account',kg]]){
-  const {admin,log,db}=fakeSupabase({users:[user],sessions:['s-'+user.id]});
-  const r=await run(admin,START,{headers:{Authorization:`Bearer ${session(user.id)}`}});
-  assert.equal(r.status,200,label);assert.notEqual(r.data.player_id,user.id,label);assert.equal(log.created.length,1,label);assert.ok(r.data.token_hash,label);
+  const {admin,log,db}=fakeSupabase({users:[user],sessions:['s-'+user.id]}),headers={Authorization:`Bearer ${session(user.id)}`};
+  const r=await run(admin,START,{headers});
+  assert.equal(r.status,200,label);assert.equal(r.data.choose,true,label);assert.equal(r.data.player_id,undefined,label);
+  // "New farm" with that session still there: a farm of the Discord player's own.
+  const made=await run(admin,{op:'create',ticket:r.data.ticket,key:r.data.key},{headers});
+  assert.notEqual(made.data.player_id,user.id,label);assert.equal(log.created.length,1,label);assert.ok(made.data.token_hash,label);
   assert.deepEqual(db.users.get(user.id).app_metadata,user.app_metadata,`${label}: left as it was`);
  }
  const anon=fakeSupabase({users:[farmer()],accounts:[{discord_user_id:DISCORD_ID,player_id:FARMER}]});
@@ -259,13 +309,15 @@ test('never linked: a website, CrazyGames or Kongregate session is left alone an
  assert.equal(unmarked.db.users.get(FARMER).app_metadata.discord_id,DISCORD_ID);assert.equal(fixed.data.token_hash,`hash:${farmer().email}`);
 });
 
-test('two first starts at the same moment and a taken address end on one farm',async()=>{
+test('two "New farm"s at the same moment and a taken address end on one farm',async()=>{
+ const newFarm=async admin=>{const s=await run(admin,START);return run(admin,{op:'create',ticket:s.data.ticket,key:s.data.key});};
  const race=fakeSupabase({users:[farmer()],lostRace:true});
- const r=await run(race.admin,START);
+ const r=await newFarm(race.admin);
  assert.equal(r.data.player_id,FARMER,'the other start made the farm: that one opens');assert.equal(race.log.deleted.length,1,'the extra account is removed again');
  assert.match(race.log.created[0].email,new RegExp(`^dc-${DISCORD_ID}-[0-9a-f]{6}@players\\.harvesttycoon\\.com$`),'the first address was taken');
  const squatted=fakeSupabase({users:[{id:WEBSITE,email:`dc-${DISCORD_ID}@players.harvesttycoon.com`,app_metadata:{provider:'email'},user_metadata:{}}]});
- const own=await run(squatted.admin,START);assert.notEqual(own.data.player_id,WEBSITE,'an account someone else made with that address is never used');
+ const own=await newFarm(squatted.admin);assert.notEqual(own.data.player_id,WEBSITE,'an account someone else made with that address is never used');
+ assert.deepEqual(squatted.db.users.get(WEBSITE).app_metadata,{provider:'email'},'nor marked');
 });
 
 test('the Edge Function itself: OPTIONS, POST JSON up to 4 KB, the settings from the environment, a 503 that names nothing',async()=>{
@@ -282,7 +334,10 @@ test('the Edge Function itself: OPTIONS, POST JSON up to 4 KB, the settings from
  assert.deepEqual(await (await call('POST','not json')).json(),{error:MESSAGES.request});
  const ok=await call('POST',JSON.stringify(START));
  assert.equal(ok.status,200);assert.equal(ok.headers.get('content-type'),'application/json');assert.equal(ok.headers.get('cache-control'),'no-store');
- assert.deepEqual(Object.keys(await ok.json()).sort(),['locale','player_id','token_hash'],'the id and secret are used trimmed');
+ const chosen=await ok.json();
+ assert.deepEqual(Object.keys(chosen).sort(),['choose','expires_in','key','locale','ticket'],'the id and secret are used trimmed');
+ const made=await call('POST',JSON.stringify({op:'create',ticket:chosen.ticket,key:chosen.key}));assert.equal(made.status,200);const {token_hash}=await made.json();
+ assert.equal((await call('POST',JSON.stringify({op:'create',ticket:chosen.ticket,key:chosen.key}))).status,410,'a ticket works once');
  const refused=await call('POST',JSON.stringify({...START,code:'nope'}));assert.equal(refused.status,401);assert.deepEqual(Object.keys(await refused.json()),['error'],'why stays in the log');
  const missing=start(fakeSupabase().admin,fakeDiscord(),{...settings,DISCORD_CLIENT_SECRET:''});
  assert.equal((await missing('POST',JSON.stringify(START))).status,503);
@@ -290,11 +345,12 @@ test('the Edge Function itself: OPTIONS, POST JSON up to 4 KB, the settings from
  assert.deepEqual(await (await wrong('POST',JSON.stringify(START))).json(),{error:MESSAGES.setup,code:'NOT_CONFIGURED'});
  const waiting=start(fakeSupabase().admin,fakeDiscord({limit:{at:'token',retry_after:4}}));
  const wait=await waiting('POST',JSON.stringify(START));assert.equal(wait.status,429);assert.deepEqual(await wait.json(),{error:MESSAGES.busy,retry_after:4});
- const broken=start({...fakeSupabase().admin,rpc:async()=>({error:{code:'XX000',message:'database down'}})});
+ const down=()=>{const q={select:()=>q,eq:()=>q,maybeSingle:async()=>({data:null,error:{code:'XX000',message:'database down'}})};return q;};
+ const broken=start({...fakeSupabase().admin,from:down,rpc:async()=>({error:{code:'XX000',message:'database down'}})});
  assert.deepEqual(await (await broken('POST',JSON.stringify(START))).json(),{error:'Your farm could not be reached. Please try again.',code:'SERVER_UNAVAILABLE'});
  assert.ok(logs.some(line=>/Discord refused a sign-in: invalid_grant/.test(line)));assert.ok(logs.some(line=>/Discord refused a sign-in: invalid_client/.test(line)));
  assert.ok(logs.some(line=>/DISCORD_CLIENT_ID or DISCORD_CLIENT_SECRET is not set/.test(line)));assert.ok(logs.some(line=>/Discord asks to wait 4 s/.test(line)));
- assert.ok(!logs.some(line=>line.includes(SECRET)||line.includes('code-1')||line.includes('nope')||line.includes('access-')),'never the secret, a code or a token in the log');
+ assert.ok(!logs.some(line=>line.includes(SECRET)||line.includes('code-1')||line.includes('nope')||line.includes('access-')||line.includes(chosen.ticket)||line.includes(chosen.key)||line.includes(token_hash)),'never the secret, a code, a ticket, its key or a token in the log');
  const index=read('supabase/functions/discord-auth/index.ts');
  assert.match(index,/Deploy with --no-verify-jwt/);assert.match(index,/clientId:env\('DISCORD_CLIENT_ID'\)\.trim\(\),clientSecret:env\('DISCORD_CLIENT_SECRET'\)\.trim\(\)/);
  assert.equal(read('supabase/functions/discord-auth/deno.json'),read('supabase/functions/farm-api/deno.json'));
