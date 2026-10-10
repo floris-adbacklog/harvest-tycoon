@@ -40,4 +40,10 @@ const appStorePages=applyAppStore('dist-static',APP_STORE_URL);if(APP_STORE_URL)
 // Structured data (8 Oct 2026): the website, Millstone and the game on the home and app pages, the Questions on the support page, from
 // the pages as they are now (scripts/structured-data.mjs).
 const {applyStructuredData}=await import('./structured-data.mjs');applyStructuredData('dist-static',{appStoreUrl:APP_STORE_URL});
+// The game's pages name every script and stylesheet with its content's version, and their import maps every module's (10 Oct 2026,
+// scripts/cache-bust.mjs): Discord's proxy keeps those files 4 hours, so an Activity ran the old game after a deploy. Last, once
+// every file is as it will be served. The portal pages prefetch the farm's files, so they need the same addresses. Not the home page
+// (/, /xx/): it stays as it is, and the website sends its files with no-cache.
+const {cacheBust}=await import('./cache-bust.mjs');
+for(const {page,versioned,mapped} of cacheBust('dist-static',['farm.html','discord.html','crazygames.html','kongregate.html']))console.log(`${page}: ${versioned} addresses versioned, ${mapped} in its import map.`);
 console.log('Standalone static game ready in dist-static/. No application server is required.');

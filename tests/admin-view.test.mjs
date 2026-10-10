@@ -71,7 +71,7 @@ test('the page is marked before it shows, from the load\'s adminView, never on C
  assert.ok(cloud.indexOf('if(adminView)startAdminView({bridge});')>cloud.indexOf('createAdminDashboard(bridge,{chat});'),'after the dashboard, whose buttons it presses');
  assert.doesNotMatch(farm,/admin-view|data-admin-view|data-admin-tool/);
  const doc={documentElement:{dataset:{}},head:{children:[],append(el){this.children.push(el);}},createElement:()=>({})};
- markAdminView(doc);assert.equal(doc.documentElement.dataset.adminView,'');assert.equal(doc.head.children[0].href,'/admin-view.css');
+ markAdminView(doc);assert.equal(doc.documentElement.dataset.adminView,'');assert.match(doc.head.children[0].href,/^(?:file:\/\/)?\/admin-view\.css$/,'its own address (through the import map in a browser: scripts/cache-bust.mjs)');
 });
 
 test('admin-view.css only acts in the admin view and hides the play-only parts, never the bottom HUD (the medal toast lives there)',()=>{

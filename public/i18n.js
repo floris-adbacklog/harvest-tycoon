@@ -237,7 +237,9 @@ export async function startTranslation(doc=globalThis.document){
  // English: no translation file, but the page is still kept free of middle dots (undot).
  if(code==='en'){show();try{if(typeof MutationObserver==='function'&&doc.createTreeWalker)translateDocument(doc,{code:'en',translate:()=>null});}catch{}return null;}
  try{
-  const dict=await(globalThis.harvestI18n?.code===code?globalThis.harvestI18n.load:fetch(`/i18n/${code}.json`).then(response=>{if(!response.ok)throw new Error(String(response.status));return response.json();}));
+  // Checked with the server on every load (a short "not changed" when it is the same), whatever a proxy in between says about the
+  // file: Discord's keeps scripts and stylesheets 4 hours (scripts/cache-bust.mjs), JSON not yet. public/i18n-boot.js asks the same way.
+  const dict=await(globalThis.harvestI18n?.code===code?globalThis.harvestI18n.load:fetch(`/i18n/${code}.json`,{cache:'no-cache'}).then(response=>{if(!response.ok)throw new Error(String(response.status));return response.json();}));
   const translator=createTranslator(dict,code);codeText=codeTranslator(dict,code);
   const numbers=localNumbers(code),rtl=RTL_LANGUAGES.includes(code);
   pageText=text=>{const key=normalize(text);let out=key?translator.translate(key):null;if(out==null)return null;if(numbers&&/\d/.test(out))out=numbers(out);return rtl&&/\d/.test(out)?isolateNumbers(out):out;};

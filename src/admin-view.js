@@ -16,7 +16,8 @@ export const ONLINE_MINUTES=30;
 export const ADMIN_WAIT_MS=15000,SHOWCASE_RELOAD_MS=3600000;
 export function markAdminView(doc=document){
  doc.documentElement.dataset.adminView='';
- const style=doc.createElement('link');style.rel='stylesheet';style.href='/admin-view.css';doc.head.append(style);
+ // Its versioned address, from the farm page's import map (scripts/cache-bust.mjs: Discord keeps a stylesheet 4 hours).
+ const style=doc.createElement('link');style.rel='stylesheet';style.href=import.meta.resolve?.('/admin-view.css')??'/admin-view.css';doc.head.append(style);
 }
 // "37", or "–" while unknown or when it could not be read (a password session has no admin powers: the reports answer "Not authorized").
 export const statText=n=>Number.isFinite(n)?n.toLocaleString('en-US'):'–';

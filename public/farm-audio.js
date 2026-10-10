@@ -117,6 +117,9 @@ export function createProductionCueTracker(buildings,now){
  return {reset,check(current,time){let fresh=false;for(const [id,b] of Object.entries(current))for(const job of productionJobs(b)){if(previous.get(key(id,job))===false&&job.readyAt<=time)fresh=true;}reset(current,time);return fresh;}};
 }
 // The effects are rendered in a worker (sound-worker.js), away from the game; without workers, one cue per idle moment instead.
+// The worker and the sound kit come at the addresses the page's import map gives them, with this deploy's version (scripts/cache-bust.mjs:
+// Discord's proxy keeps a script 4 hours). A worker has no import map of its own, so it is told where the kit is (a browser without
+// import.meta.resolve: the plain addresses, the worker's own ./sound-kit.js).
 function renderInBackground(windowRef,accept){
  const jobs=CUE_ORDER.flatMap(kind=>Array.from({length:CUE_VARIANTS[kind]??1},(_,variant)=>[kind,variant])),done=new Set();let stopped=false,worker=null;
  // Without a worker (or if it fails to start, as in an older browser): one cue per idle moment, only the ones still missing.
@@ -127,9 +130,9 @@ function renderInBackground(windowRef,accept){
   later(next);
  };
  try{
-  worker=new windowRef.Worker(new URL('./sound-worker.js',import.meta.url),{type:'module'});
+  worker=new windowRef.Worker(import.meta.resolve?.('./sound-worker.js')??new URL('./sound-worker.js',import.meta.url),{type:'module'});
   worker.onmessage=({data})=>{done.add(`${data.kind}:${data.variant}`);accept(data.kind,data.variant,data.data,data.rate);};worker.onerror=idle;
-  worker.postMessage({rate:SFX_RATE});
+  worker.postMessage({rate:SFX_RATE,kit:import.meta.resolve?.('./sound-kit.js')});
  }catch{idle();}
  return ()=>{stopped=true;worker?.terminate();};
 }

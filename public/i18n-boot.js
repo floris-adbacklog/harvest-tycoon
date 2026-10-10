@@ -24,7 +24,7 @@
   var wait=page?'.i18n-wait .account-card,.i18n-wait .cookie-banner,.i18n-wait .farm-loading-status,.i18n-wait .farm-loading-tip,.i18n-wait .player-counts{visibility:hidden}':'.i18n-wait body{visibility:hidden}';
   var style=document.createElement('style');style.textContent=wait+'body{-webkit-hyphens:auto;hyphens:auto}';document.head.appendChild(style);
   root.classList.add('i18n-wait');
-  window.harvestI18n={code:code,load:fetch('/i18n/'+code+'.json').then(function(r){if(!r.ok)throw new Error(String(r.status));return r.json();})};
+  window.harvestI18n={code:code,load:fetch('/i18n/'+code+'.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(String(r.status));return r.json();})};
   // Never keep the page hidden for long, also when something goes wrong.
   setTimeout(function(){root.classList.remove('i18n-wait');},3000);
  }catch(error){}

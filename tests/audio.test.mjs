@@ -203,12 +203,32 @@ test('the effects are made in the background (a worker), never while the farm is
  await s.audio.unlock();assert.equal(s.renderedFor(),1);s.audio.dispose();
  const audio=read('public/farm-audio.js'),worker=read('public/sound-worker.js');
  assert.doesNotMatch(audio,/renderCue\(kind,ctx\.sampleRate/,'no sound is computed on the spot any more');
- assert.match(audio,/new windowRef\.Worker\(new URL\('\.\/sound-worker\.js',import\.meta\.url\),\{type:'module'\}\)/);
+ assert.match(audio,/new windowRef\.Worker\(import\.meta\.resolve\?\.\('\.\/sound-worker\.js'\)\?\?new URL\('\.\/sound-worker\.js',import\.meta\.url\),\{type:'module'\}\)/);
  assert.match(worker,/self\.postMessage\(\{kind,variant,rate,data\},\[data\.buffer\]\)/,'handed over without copying');
+ // Both at the import map's versioned address (scripts/cache-bust.mjs): the worker has no import map, so it is told where the kit is.
+ assert.match(audio,/worker\.postMessage\(\{rate:SFX_RATE,kit:import\.meta\.resolve\?\.\('\.\/sound-kit\.js'\)\}\)/);
+ assert.match(worker,/self\.onmessage=\(\{data:\{rate,kit='\.\/sound-kit\.js'\}\}\)=>import\(kit\)\.then\(/);
+ assert.doesNotMatch(worker,/^import /m,'no import of its own: that would be the kit at its plain address');
  const {CUE_ORDER:order,CUE_LENGTH,SFX_RATE}=await import('../public/sound-kit.js');
  assert.deepEqual([...order].sort(),Object.keys(CUE_LENGTH).sort(),'every cue is made');assert.equal(SFX_RATE,24000);
  const quiet=setup(),notes=quiet.ctx.oscillators;
  quiet.audio.dispose();assert.equal(notes.length,0);
+});
+// 10 Oct 2026: the worker loads the kit from the address the page sends (its import map's, versioned), and still makes every cue.
+test('the worker makes every cue with the kit the page points it to; a kit that cannot load becomes the worker\'s error',async()=>{
+ const savedSelf=globalThis.self,savedTimeout=globalThis.setTimeout,posts=[],later=[];
+ globalThis.self={postMessage:(message,transfer)=>posts.push({message,transfer})};
+ try{
+  await import('../public/sound-worker.js');
+  await self.onmessage({data:{rate:24000,kit:new URL('../public/sound-kit.js',import.meta.url).href}});
+  const all=CUE_ORDER.reduce((sum,kind)=>sum+(CUE_VARIANTS[kind]??1),0);
+  assert.equal(posts.length,all,'every cue and variant');
+  assert.ok(posts.every(({message,transfer})=>message.rate===24000&&transfer[0]===message.data.buffer));
+  // Thrown outside the promise, so it reaches the page as the worker's error event (farm-audio.js then makes the cues itself).
+  globalThis.setTimeout=fn=>later.push(fn);
+  await self.onmessage({data:{rate:24000,kit:new URL('../public/no-such-kit.js',import.meta.url).href}});
+  assert.equal(later.length,1);assert.throws(later[0]);
+ }finally{globalThis.setTimeout=savedTimeout;if(savedSelf)globalThis.self=savedSelf;else delete globalThis.self;}
 });
 test('a chore sounds happier when it also found an extra resource',()=>{
  assert.equal(soundForAction({type:'chore',id:'weeds'},{success:true,bonus:true,coins:5},1,1),'chorebonus');

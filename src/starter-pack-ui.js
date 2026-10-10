@@ -2,7 +2,8 @@ import {shopPrice} from '../public/android.js';
 export async function createStarterPackUI(bridge){
  const {CROPS,STARTER_PACK_CROPS,STARTER_LEVEL,formatDuration}=await import(/* @vite-ignore */ '/farm-state.js');
  const {art,refreshArt}=await import(/* @vite-ignore */ '/visual-icons.js');
- const style=document.createElement('link');style.rel='stylesheet';style.href='/starter-pack.css';document.head.append(style);
+ // Its versioned address, from the farm page's import map (scripts/cache-bust.mjs: Discord keeps a stylesheet 4 hours).
+ const style=document.createElement('link');style.rel='stylesheet';style.href=import.meta.resolve?.('/starter-pack.css')??'/starter-pack.css';document.head.append(style);
  const button=document.createElement('button');button.id='starter-pack-button';button.hidden=true;button.type='button';button.setAttribute('aria-label','Starter Pack, €2.99');button.innerHTML='<img src="/assets/icons/starter-pack.webp" alt=""><span>Starter Pack</span><small>€2.99</small>';
  // On a computer the offer is a small button next to the diamonds; phones keep the tile above the bottom bar
  // (starter-pack.css shows one of the two).

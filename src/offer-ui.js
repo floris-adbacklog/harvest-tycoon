@@ -27,7 +27,8 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  let offer=null,mode='live',enabled=true,offset=0,pending=false,requestId='',waiting=0,disposed=false,live=null,prices=null;
  // In the Android app (Oct 2026) the price is Google Play's and the worth is in the same currency (public/android.js shopPrice).
  const price=()=>shopPrice({prices},'offer',offer.cents),worth=()=>shopWorth({prices},'offer',offer.cents,offer.valueCents);
- const style=doc.createElement('link');style.rel='stylesheet';style.href='/offer.css';doc.head.append(style);
+ // Its versioned address, from the farm page's import map (scripts/cache-bust.mjs: Discord keeps a stylesheet 4 hours).
+ const style=doc.createElement('link');style.rel='stylesheet';style.href=import.meta.resolve?.('/offer.css')??'/offer.css';doc.head.append(style);
  const tile=doc.createElement('button');tile.id='offer-button';tile.type='button';tile.hidden=true;
  const chip=doc.createElement('button');chip.id='offer-chip';chip.className='icon-button';chip.type='button';chip.hidden=true;chip.title='Special offer';
  const dialog=doc.createElement('dialog');dialog.id='offer-dialog';dialog.className='game-dialog';dialog.setAttribute('aria-labelledby','offer-title');dialog.tabIndex=-1;
