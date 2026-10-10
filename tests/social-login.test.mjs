@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const reply=(body,ok=true)=>async()=>({ok,json:async()=>body});
 
 test('only the providers switched on in Supabase get a button; any problem shows none',async()=>{
- assert.deepEqual(Object.keys(SOCIAL_PROVIDERS),['google','facebook']);
+ assert.deepEqual(Object.keys(SOCIAL_PROVIDERS),['google','facebook','discord']);
  assert.deepEqual(await enabledProviders({url:'https://x.supabase.co/',key:'k',fetchImpl:reply({external:{google:true,facebook:false,github:true}})}),['google']);
  assert.deepEqual(await enabledProviders({url:'https://x.supabase.co',key:'k',fetchImpl:reply({external:{google:true,facebook:true}})}),['google','facebook']);
  assert.deepEqual(await enabledProviders({url:'u',key:'k',fetchImpl:reply({},false)}),[]);
@@ -26,7 +26,7 @@ test('sign-in problems with Google or Facebook are explained in plain English',(
 test('the buttons are compact, English, hidden until a provider is on, and only on the sign-in and sign-up cards',()=>{
  const html=read('public/play.html'),main=read('src/main.js');
  assert.match(html,/<div id="social-login" class="social-login" hidden>/);
- assert.match(html,/data-provider="google" aria-label="Continue with Google" hidden>/);assert.match(html,/data-provider="facebook" aria-label="Continue with Facebook" hidden>/);
+ assert.match(html,/data-provider="google" aria-label="Continue with Google" hidden>/);assert.match(html,/data-provider="facebook" aria-label="Continue with Facebook" hidden>/);assert.match(html,/data-provider="discord" aria-label="Continue with Discord" hidden>/,'Discord after Facebook (10 Oct 2026)');
  assert.match(html,/<span>or use your email<\/span>/);
  assert.match(main,/\$\('social-login'\)\.hidden=!providers\.length\|\|!\['signin','register'\]\.includes\(mode\)/);
  assert.match(main,/signInWithOAuth\(\{provider,options:\{redirectTo:redirectUrl\(true\)\}\}\)/);
@@ -66,5 +66,18 @@ test('inside the Facebook, Instagram or other in-app browsers the Google button 
  };
  for(const key of ['facebookIos','instagramAndroid','androidWebView']){assert.equal(embeddedBrowser(ua[key]),true,key);assert.deepEqual(usableProviders(['google','facebook'],ua[key]),['facebook'],key);}
  for(const key of ['chromeIphone','safariIphone','homeScreenIphone','chromeAndroid','desktop']){assert.equal(embeddedBrowser(ua[key]),false,key);assert.deepEqual(usableProviders(['google','facebook'],ua[key]),['google','facebook'],key);}
- assert.match(read('src/main.js'),/providers=usableProviders\(list,navigator\.userAgent\)/);
+ assert.match(read('src/main.js'),/providers=usableProviders\(list,navigator\.userAgent,undefined,\{fromAd:adVisit\(pendingSource\)\}\)/);
+});
+
+test('Discord sign-in: never in an app\'s own browser, not for a visit from an ad; everywhere else beside Google and Facebook (10 Oct 2026)',async()=>{
+ const {usableProviders,adVisit}=await import('../src/social-login.js');
+ const all=['google','facebook','discord'],chrome='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36';
+ const facebookApp='Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0.0.40.97]';
+ assert.deepEqual(usableProviders(all,chrome,false),all);
+ assert.deepEqual(usableProviders(all,facebookApp,false),['facebook'],'in the Facebook app: only Facebook (and email)');
+ assert.deepEqual(usableProviders(all,chrome,false,{fromAd:true}),['google','facebook'],'from an ad in a normal browser: no Discord');
+ assert.deepEqual(usableProviders(all,chrome,true),[],'our Android app: none');
+ for(const source of [{fb:true},{tt:true},{g:true},{utm_source:'facebook'},{utm_source:'Instagram'},{utm_source:'tiktok'}])assert.equal(adVisit(source),true,JSON.stringify(source));
+ for(const source of [null,{},{src:'itch'},{utm_source:'newsletter'},{ref:'discord.com'}])assert.equal(adVisit(source),false,JSON.stringify(source));
+ assert.match(read('src/main.js'),/usableProviders\(list,navigator\.userAgent,undefined,\{fromAd:adVisit\(pendingSource\)\}\)/);
 });

@@ -1,7 +1,7 @@
 import {androidApp} from '../public/android.js';
-// Sign in with Google or Facebook. The buttons only appear for providers that are switched on in Supabase
+// Sign in with Google, Facebook or Discord (10 Oct 2026, the owner's choice). The buttons only appear for providers that are switched on in Supabase
 // (Authentication → Providers), so nothing half-working shows up before that is set up.
-export const SOCIAL_PROVIDERS=Object.freeze({google:'Google',facebook:'Facebook'});
+export const SOCIAL_PROVIDERS=Object.freeze({google:'Google',facebook:'Facebook',discord:'Discord'});
 // Remembers, for this tab only, which provider a sign-in was started with, so the page it returns to can explain a
 // cancelled or failed attempt instead of saying that an email link expired.
 export const OAUTH_KEY='harvest-tycoon:oauth';
@@ -25,7 +25,10 @@ const EMBEDDED=/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona|musical_ly|BytedanceW
 export const embeddedBrowser=(userAgent=globalThis.navigator?.userAgent??'')=>EMBEDDED.test(userAgent);
 // In our own Android app (Oct 2026, public/android.js) neither works: Google refuses every WebView and Facebook no longer signs anyone in
 // from a browser built into an app. There only the email address and password are offered.
-export const usableProviders=(list,userAgent,app=androidApp())=>app?[]:embeddedBrowser(userAgent)?list.filter(provider=>provider!=='google'):list;
+// Discord (10 Oct 2026, the owner): never inside an app's own browser, and not for a visit from an ad (Meta, TikTok or Google, the click
+// id or the ad's utm_source, src/source-link.js): those newcomers get Google, Facebook and email, without a button that only distracts.
+export const adVisit=source=>Boolean(source?.fb||source?.tt||source?.g||/facebook|instagram|meta|tiktok|google/i.test(String(source?.utm_source??'')));
+export const usableProviders=(list,userAgent,app=androidApp(),{fromAd=false}={})=>app?[]:embeddedBrowser(userAgent)?list.filter(provider=>provider!=='google'&&provider!=='discord'):fromAd?list.filter(provider=>provider!=='discord'):list;
 
 export const providerName=provider=>SOCIAL_PROVIDERS[provider]??'that service';
 

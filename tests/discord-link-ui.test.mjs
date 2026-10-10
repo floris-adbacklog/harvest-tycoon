@@ -70,9 +70,10 @@ test('vercel.json: /discord-link and Discord\'s way back go to the game like /fe
  const others=[...vercel.redirects,...vercel.rewrites,...vercel.headers].filter(r=>!sources.includes(r.source));
  assert.doesNotMatch(JSON.stringify(others),/discord-link/);
  assert.deepEqual(vercel.redirects.filter(r=>r.source==='/'),[{source:'/',has:[{type:'query',key:'frame_id'}],destination:'/discord.html',permanent:false}]);
- // The home page itself (/ and /xx/ are written from it) looks and works as before: nothing of the link after its head. The one
- // Discord thing there is the footer's community icon (10 Oct 2026, the owner's choice), a plain link to our server.
- const home=read('public/play.html'),body=home.slice(home.indexOf('</head>')).replace(/<a class="footer-social" href="https:\/\/discord\.gg\/CQrc42CMgf"[^]*?<\/a>/,'');
+ // The home page itself (/ and /xx/ are written from it) looks and works as before: nothing of the link after its head. The Discord
+ // things there are the owner's own choices of 10 Oct 2026: the footer's community icon (a plain link to our server) and the sign-in
+ // button "Continue with Discord" (Supabase's own Discord sign-in, src/social-login.js), neither part of the Activity's link.
+ const home=read('public/play.html'),body=home.slice(home.indexOf('</head>')).replace(/<a class="footer-social" href="https:\/\/discord\.gg\/CQrc42CMgf"[^]*?<\/a>/,'').replace(/<button type="button" class="social-button" data-provider="discord"[^]*?<\/button>/,'');
  assert.doesNotMatch(body,/discord/i);
 });
 
