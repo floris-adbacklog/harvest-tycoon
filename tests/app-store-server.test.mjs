@@ -10,6 +10,7 @@ import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
 import * as payments from '../game/payments.js';
 import * as appStore from '../game/app-store.js';
+import * as checkoutSession from '../supabase/functions/diamond-checkout/checkout-session.js';
 import {handleAdminPurchases} from '../supabase/functions/farm-api/admin-analytics-service.js';
 
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -141,7 +142,7 @@ function fakeDb(tables,{fail}={}){
   const q={filters:[],op:'select'};
   const run=()=>{
    const list=tables[table]??=[];
-   if(q.op==='insert'){calls.push([table,'insert',q.value]);if(unique(list,q.value))return {error:{code:'23505'}};list.push({status:'pending',created_at:new Date().toISOString(),stripe_session_id:null,apple_transaction_id:null,...q.value});return {error:null};}
+   if(q.op==='insert'){calls.push([table,'insert',q.value]);if(unique(list,q.value))return {error:{code:'23505'}};const added={status:'pending',store:'stripe',created_at:new Date().toISOString(),stripe_session_id:null,apple_transaction_id:null,...q.value};list.push(added);return {data:[{...added}],error:null};}
    const hit=list.filter(r=>q.filters.every(f=>f(r)));
    if(q.op==='update'){calls.push([table,'update',q.value]);for(const r of hit)Object.assign(r,q.value);}
    return {data:hit.map(r=>({...r})),error:null};
@@ -170,10 +171,10 @@ function fakeDb(tables,{fail}={}){
  }
  return {calls,from,rpc,credits:()=>calls.filter(c=>c[0]==='harvest_credit_apple_purchase').map(c=>c[1]),revokes:()=>calls.filter(c=>c[0]==='harvest_revoke_apple_purchases').map(c=>c[1])};
 }
-function fakeStripe(log,{session='open'}={}){
+function fakeStripe(log,{session='open',made=[]}={}){
  const Stripe=class{constructor(){log.push('made');
   this.checkout={sessions:{retrieve:async id=>{log.push(['retrieve',id]);return {id,status:session,url:'https://checkout.stripe.com/c/old'};},expire:async id=>{log.push(['expire',id]);},
-   create:async params=>{log.push(['create',params.line_items[0].price]);return {id:'cs_new',url:'https://checkout.stripe.com/c/new',status:'open'};}}};
+   create:async params=>{log.push(['create',params.line_items[0].price]);made.push(params);return {id:'cs_new',url:'https://checkout.stripe.com/c/new',status:'open'};}}};
   this.prices={retrieve:async id=>{const pack=Object.values(payments.PAYMENT_PACKS).find(p=>p.price===id);return {id,active:true,livemode:true,currency:'eur',unit_amount:pack.cents,type:'one_time',product:pack.product??'prod_x'};}};}};
  Stripe.createFetchHttpClient=()=>null;
  return Stripe;
@@ -181,15 +182,15 @@ function fakeStripe(log,{session='open'}={}){
 const quiet={error(){},log(){}};
 const sessionToken=`x.${Buffer.from(JSON.stringify({session_id:'s'})).toString('base64url')}.y`;
 // diamond-checkout, run with the stand-ins and the real App Store check against the test CA.
-async function checkout(body,{tables={harvest_purchases:[row()]},user={id:FARMER,app_metadata:{provider:'email'}},env={},fail,session}={}){
+async function checkout(body,{tables={harvest_purchases:[row()]},user={id:FARMER,app_metadata:{provider:'email'}},env={},fail,session,made=[]}={}){
  let handler;const db=fakeDb(tables,{fail}),stripe=[];
  const admin={auth:{async getUser(){return {data:{user},error:null};}},from:db.from,rpc:db.rpc};
  const source=stripTypeScriptTypes(read('supabase/functions/diamond-checkout/index.ts').replace(/^import .*;\n/gm,''));
- vm.runInNewContext(source,{...payments,serviceAccount:raw=>raw?{client_email:'x'}:null,getPurchase:async()=>{throw new Error('no Google here');},consumePurchase:async()=>{throw new Error('no Google here');},
-  verifyAppleJws:(token,options={})=>appStore.verifyAppleJws(token,{...TEST,...options}),Stripe:fakeStripe(stripe,{session}),createClient:()=>admin,
+ vm.runInNewContext(source,{...payments,...checkoutSession,crypto:globalThis.crypto,serviceAccount:raw=>raw?{client_email:'x'}:null,getPurchase:async()=>{throw new Error('no Google here');},consumePurchase:async()=>{throw new Error('no Google here');},
+  verifyAppleJws:(token,options={})=>appStore.verifyAppleJws(token,{...TEST,...options}),Stripe:fakeStripe(stripe,{session,made}),createClient:()=>admin,
   Deno:{env:{get:name=>env[name]??''},serve:fn=>handler=fn},Response,JSON,Date,Object,Promise,Error,Boolean,String,atob,console:quiet});
  const r=await handler(new Request('https://test.invalid/diamond-checkout',{method:'POST',headers:{Authorization:`Bearer ${sessionToken}`},body:typeof body==='string'?body:JSON.stringify(body)}));
- return {status:r.status,data:await r.json(),db,stripe,rows:tables.harvest_purchases};
+ return {status:r.status,data:await r.json(),db,stripe,made,rows:tables.harvest_purchases};
 }
 const confirmBody=(token,over={})=>({operation:'apple_confirm',store:'app_store',product:'diamonds_500',transaction:token,...over});
 
@@ -369,4 +370,40 @@ test('the admin panel says App Store for an App Store purchase; a sandbox one is
  assert.deepEqual(data.purchases.map(p=>p.store),['app_store','app_store','google_play','stripe']);
  assert.equal(data.totals.revenueCents,499+199,'the sandbox purchase is no revenue');
  assert.match(read('src/admin-dashboard.js'),/\$\{p\.store==='google_play'\?' · Google Play':p\.store==='app_store'\?' · App Store':''\}/);
+});
+
+// 10 Oct 2026 (tests/checkout-fixes.test.mjs has the rest): the website's checkout, run for real with the stand-ins.
+test('the website: an expired Stripe page gives a new row and page at once (not for a row back from an app), and Stripe gets the address and language',async()=>{
+ const farms=()=>[{player_id:FARMER,offer:{unlockedAt:Date.now()-3600000}}];
+ const env={STRIPE_SECRET_KEY:'sk_live_x',STRIPE_WEBHOOK_SECRET:'whsec_x'},price=payments.PAYMENT_PACKS.starter.price;
+ const starter=over=>row({id:ROW,pack:'starter',diamonds:500,coins:10000,amount_cents:299,price_id:price,store:'stripe',starter_expires_at:new Date(Date.now()+86400000).toISOString(),...over});
+ const farmer={id:FARMER,app_metadata:{provider:'google'},email:'farmer@example.com',email_confirmed_at:'2026-10-01T00:00:00Z'};
+ const expired=await checkout({operation:'create',pack:'starter',requestId:REQ,language:'pt'},{tables:{harvest_purchases:[starter({stripe_session_id:'cs_old'})],player_farms:farms()},env,session:'expired',user:farmer});
+ assert.equal(expired.status,200,JSON.stringify(expired.data));
+ assert.equal(expired.data.url,'https://checkout.stripe.com/c/new');
+ assert.match(expired.data.purchaseId,payments.UUID);assert.notEqual(expired.data.purchaseId,ROW,'a new row');
+ const [old,fresh]=expired.rows;
+ assert.equal(old.status,'expired','the old row ends');
+ assert.deepEqual([fresh.id,fresh.status,fresh.pack,fresh.store,fresh.stripe_session_id,fresh.price_id],[expired.data.purchaseId,'pending','starter','stripe','cs_new',price]);
+ assert.deepEqual(expired.stripe,['made',['retrieve','cs_old'],['create',price]]);
+ const [params]=expired.made;
+ assert.equal(params.customer_email,'farmer@example.com');assert.equal(params.locale,'pt-BR');
+ assert.deepEqual({...params.metadata},{app:'harvest-tycoon',purchase_id:fresh.id,player_id:FARMER});
+ assert.deepEqual({...params.payment_intent_data.metadata},{app:'harvest-tycoon',purchase_id:fresh.id,player_id:FARMER});
+ assert.equal(params.success_url,`https://www.harvesttycoon.com/play.html?purchase=${fresh.id}`);
+ // an email sign-up's address is not filled in (it may be a typo), and Stripe has no Ukrainian page
+ const own=await checkout({operation:'create',pack:'starter',requestId:REQ,language:'uk'},{tables:{harvest_purchases:[],player_farms:farms()},env,user:{id:FARMER,app_metadata:{provider:'email'},email:'farmer@gmail.con',email_confirmed_at:'2026-10-01T00:00:00Z'}});
+ assert.equal(own.status,200,JSON.stringify(own.data));assert.equal(own.made[0].customer_email,undefined);assert.equal(own.made[0].locale,'auto');
+ // a Starter Pack started in the app two days ago, never paid there: still refused after 23 hours (its app sheet may still be paying)
+ const twoDays=new Date(Date.now()-2*86400000).toISOString();
+ const back=await checkout({operation:'create',pack:'starter',requestId:REQ},{tables:{harvest_purchases:[starter({store:'app_store',price_id:'starter_pack',created_at:twoDays})],player_farms:farms()},env});
+ assert.deepEqual([back.status,back.data],[409,{error:'This checkout request needs review. Please contact support before retrying.'}]);
+ // one back from an app with a Stripe page that expired meanwhile: no fresh row in that tap, as before
+ const moved=await checkout({operation:'create',pack:'starter',requestId:REQ},{tables:{harvest_purchases:[starter({store:'app_store',price_id:'starter_pack',stripe_session_id:'cs_old'})],player_farms:farms()},env,session:'expired'});
+ assert.deepEqual([moved.status,moved.data],[409,{error:'This checkout expired. Close the shop and try again.'}]);
+ assert.equal(moved.rows.length,1,'no fresh row');assert.equal(moved.rows[0].status,'expired');
+ // a Stripe row that old without a page (never from an app) is still refused, as before
+ const stuck=await checkout({operation:'create',pack:'starter',requestId:REQ},{tables:{harvest_purchases:[starter({created_at:twoDays})],player_farms:farms()},env});
+ assert.deepEqual([stuck.status,stuck.data],[409,{error:'This checkout request needs review. Please contact support before retrying.'}]);
+ assert.deepEqual(stuck.stripe,['made']);
 });

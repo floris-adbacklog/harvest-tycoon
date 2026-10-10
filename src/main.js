@@ -313,7 +313,7 @@ async function openFarm(){
   // Galaxy Store app (webPay) the app opens Stripe's page in the phone's browser, and the farm waits the same way.
   bridge.checkout=async(pack,requestId,offerId)=>{if(inApp&&!inAppStore&&!webPay)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId);
    const tab=framed?window.open('','_blank'):null;if(framed&&!tab)throw new Error('Allow pop-ups for this page to pay in a new tab.');
-   try{const data=await bridge.payments({operation:'create',pack,requestId,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');
+   try{const data=await bridge.payments({operation:'create',pack,requestId,language:document.documentElement?.lang,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');
     if(webPay){bridge.purchaseDone?.(data.purchaseId,{tab:true,app:true});location.assign(url.href);return {store:'browser'};}
     if(!tab){location.assign(url.href);return;}
     tab.opener=null;tab.location.href=url.href;bridge.purchaseDone?.(data.purchaseId,{tab:true});return {store:'tab'};}

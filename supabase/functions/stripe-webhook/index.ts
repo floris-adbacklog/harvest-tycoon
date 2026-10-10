@@ -11,6 +11,19 @@ Deno.serve(async req=>{
  const stripe=new Stripe(key,{apiVersion:'2026-07-29.dahlia',httpClient:Stripe.createFetchHttpClient(),maxNetworkRetries:2});
  const raw=await req.text();if(raw.length>1048576)return reply({error:'Payload too large.'},413);
  let event;try{event=await stripe.webhooks.constructEventAsync(raw,signature,secret,300,Stripe.createSubtleCryptoProvider());}catch{return reply({error:'Invalid signature.'},400);}
+ // A Stripe page that ended unpaid (10 Oct 2026): expired after its 24 hours, or a bank payment that failed afterwards. Its purchase becomes
+ // 'expired', so the admin panel tells it from a page still open, and a Starter Pack, offer or pass can be started again. Only the pending
+ // Stripe row this page belongs to: never a paid row, and never one that moved to Google Play or the App Store (whose sheet may be paying).
+ if(event.type==='checkout.session.expired'||event.type==='checkout.session.async_payment_failed'){
+  const ended=event.data.object;
+  if(ended.metadata?.app!=='harvest-tycoon'||!UUID.test(ended.metadata?.purchase_id??''))return reply({received:true,ignored:true});
+  // A page ended before its time was ended by diamond-checkout itself, when the farmer moved the purchase to an app store: that move
+  // looks after the row, which may still be on its way there.
+  if(event.type==='checkout.session.expired'&&Number(ended.expires_at)*1000>Date.now()+60000)return reply({received:true,ignored:true});
+  const done=await admin.from('harvest_purchases').update({status:'expired'}).eq('id',ended.metadata.purchase_id).eq('stripe_session_id',ended.id).eq('store','stripe').eq('status','pending');
+  if(done.error){console.error('Ending a checkout failed',event.id,done.error.code);return reply({error:'Checkout could not be ended yet. Retry this event.'},500);}
+  return reply({received:true,ended:true});
+ }
  if(!['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(event.type))return reply({received:true});
  const session=event.data.object;
  if(session.metadata?.app!=='harvest-tycoon')return reply({received:true,ignored:true});

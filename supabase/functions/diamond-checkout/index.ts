@@ -3,6 +3,7 @@ import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase} from './payments.js';
 import {serviceAccount,getPurchase,consumePurchase} from './google-play.js';
 import {verifyAppleJws} from './app-store.js';
+import {checkoutEmail,checkoutLocale} from './checkout-session.js';
 const origin='https://www.harvesttycoon.com';
 const cors={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -204,7 +205,8 @@ Deno.serve(async req=>{
   if(!priceId)return reply({error:'This pack has not been configured.'},503);
   const price=await stripe.prices.retrieve(priceId);
   if(!price.active||price.livemode!==live||price.currency!=='eur'||price.unit_amount!==pack.cents||price.type!=='one_time'||(live&&pack.product&&price.product!==pack.product))return reply({error:'This pack needs a pricing configuration update.'},503);
-  const insert=await admin.from('harvest_purchases').insert({id:body.requestId,player_id:user.id,pack:packId,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:priceId,livemode:live,starter_expires_at:packId==='starter'?new Date(starter.expiresAt).toISOString():null,...(packId==='offer'?{offer_id:pack.offerId,vip_days:pack.vipDays}:{}),...(packId==='pass'?{pass_id:pack.passId}:{})});
+  const newRow=(id:string)=>({id,player_id:user.id,pack:packId,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:priceId,livemode:live,starter_expires_at:packId==='starter'?new Date(starter.expiresAt).toISOString():null,...(packId==='offer'?{offer_id:pack.offerId,vip_days:pack.vipDays}:{}),...(packId==='pass'?{pass_id:pack.passId}:{})});
+  const insert=await admin.from('harvest_purchases').insert(newRow(body.requestId));
   if(insert.error&&insert.error.code!=='23505')throw insert.error;
   let query=admin.from('harvest_purchases').select('*').eq('player_id',user.id);
   // The Starter Pack, a special offer and a pass: one checkout per farmer (a unique index each), so a second tab or tap reuses it.
@@ -212,29 +214,40 @@ Deno.serve(async req=>{
   const found=await query.single();if(found.error)throw found.error;
   let p=found.data;
   // The same Starter Pack, offer or pass started in the Android or iPhone app and never paid there: the website takes the row back for Stripe.
+  // movedBack: its app store's sheet may still be paying for this row (a cash payment, or the app closed before it confirmed), so it never
+  // gets a fresh row in the same tap below, and after 23 hours it is still refused (10 Oct 2026 review: else it could be paid twice).
+  let movedBack=false;
   if((p.store==='google_play'||p.store==='app_store')&&p.status==='pending'&&p.pack===packId){
    const back=await admin.from('harvest_purchases').update({store:'stripe',price_id:priceId}).eq('id',p.id).eq('status','pending').select('*').single();if(back.error)throw back.error;p=back.data;
+   movedBack=true;
   }
   if(p.pack!==packId||p.price_id!==priceId||p.livemode!==live||packId==='offer'&&p.offer_id!==pack.offerId||packId==='pass'&&p.pass_id!==pack.passId)return reply({error:'Start a new purchase request.'},409);
   if(p.pack==='starter'&&Date.parse(p.created_at)>=starter.expiresAt)return reply({error:'The Starter Pack offer has ended.'},409);
   if(p.status!=='pending')return reply({error:'This purchase has already been processed.'},409);
   if(Date.now()-Date.parse(p.created_at)>23*3600000&&!p.stripe_session_id)return reply({error:'This checkout request needs review. Please contact support before retrying.'},409);
-  const metadata={app:'harvest-tycoon',purchase_id:p.id,player_id:user.id};
-  const session=p.stripe_session_id?await stripe.checkout.sessions.retrieve(p.stripe_session_id):await stripe.checkout.sessions.create({
-   mode:'payment',line_items:[{price:priceId,quantity:1}],client_reference_id:user.id,metadata,
+  const openPage=(row:any)=>stripe.checkout.sessions.create({
+   mode:'payment',line_items:[{price:priceId,quantity:1}],client_reference_id:user.id,metadata:{app:'harvest-tycoon',purchase_id:row.id,player_id:user.id},
+   // 10 Oct 2026: the account's confirmed address is filled in, and the page speaks the game's language (checkout-session.js).
+   customer_email:checkoutEmail(user),locale:checkoutLocale(body.language),
    // Adaptive Pricing (27 Sep 2026): a farmer abroad sees and pays the euro price in their own currency (₹, $, zł …), converted by
    // Stripe, which also opens local methods such as UPI and BLIK. The session and the payment still show euros (the local amount is
    // in presentment_details), so the webhook's check on the exact euro amount stays as it is.
-   payment_intent_data:{metadata},adaptive_pricing:{enabled:true},
+   payment_intent_data:{metadata:{app:'harvest-tycoon',purchase_id:row.id,player_id:user.id}},adaptive_pricing:{enabled:true},
    integration_identifier:'harvest_tycoon_xqbnrjka',
    // The payment page looks like the game (27 Sep 2026), for this session only: the Stripe account (Millstone) also sells other
    // things, so its own name and branding stay as they are everywhere else. The name only changes the top of the page.
    branding_settings:{display_name:'Harvest Tycoon',icon:{type:'url',url:`${origin}/assets/pwa/icon-512.png`},button_color:'#2f5d3a',border_style:'rounded'},
-   success_url:`${origin}/play.html?purchase=${p.id}`,cancel_url:`${origin}/play.html?purchase=${p.id}&checkout=cancelled`
-  },{idempotencyKey:`harvest-${live?'live':'test'}-${p.id}`});
+   success_url:`${origin}/play.html?purchase=${row.id}`,cancel_url:`${origin}/play.html?purchase=${row.id}&checkout=cancelled`
+  },{idempotencyKey:`harvest-${live?'live':'test'}-${row.id}`});
+  let session=p.stripe_session_id?await stripe.checkout.sessions.retrieve(p.stripe_session_id):await openPage(p);
+  // A Stripe page lasts 24 hours. A farmer who comes back later (a Starter Pack, offer or pass reuses its row) gets a new row and a new
+  // page at once (10 Oct 2026); before, the first tap only said 'This checkout expired' and the second tap worked. A row just taken back from
+  // an app store keeps the old answer (movedBack above).
   if(session.status==='expired'){
    const expired=await admin.from('harvest_purchases').update({status:'expired'}).eq('id',p.id).eq('status','pending');if(expired.error)throw expired.error;
-   return reply({error:'This checkout expired. Close the shop and try again.'},409);
+   if(movedBack)return reply({error:'This checkout expired. Close the shop and try again.'},409);
+   const fresh=await admin.from('harvest_purchases').insert(newRow(crypto.randomUUID())).select('*').single();if(fresh.error)throw fresh.error;
+   p=fresh.data;session=await openPage(p);
   }
   if(!session.url||session.status!=='open')return reply({error:'This checkout has ended. If you paid, your rewards will arrive after confirmation.'},409);
   const saved=await admin.from('harvest_purchases').update({stripe_session_id:session.id}).eq('id',p.id).eq('player_id',user.id);if(saved.error)throw saved.error;

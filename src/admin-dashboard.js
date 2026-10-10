@@ -16,6 +16,7 @@ import {chosenLanguage} from '../public/i18n.js';
 import {translateLink,groupPills} from './chat-ui.js';
 import {deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
 import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,RETENTION_PERIODS,SOURCE_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,sourcesHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
+import {purchaseState,purchaseCounts,PURCHASE_LABELS} from './admin-purchases.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
@@ -83,7 +84,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<p class="admin-popup-note">Always €4.99 for what costs €49.99 in the shop (a diamond as in the 500 pack, 200 coins a diamond (1,000 coins = 5 diamonds), VIP at its diamond price). Every farmer from the level above can buy it once. It opens by itself once per device, when nothing else is open, and then waits next to the diamonds until it ends.</p>'
   +'<div class="admin-offer-actions"><button type="button" class="secondary-button" id="admin-offer-preview">Preview</button><button type="submit" class="primary-button">Start offer</button></div>'
   +'<p class="admin-hint" id="admin-offer-status" role="status"></p></form><ul id="admin-offer-list" class="admin-recent-list" hidden></ul></section>'
-  +'<section class="admin-card"><h3>'+art('diamonds')+'Purchases</h3><div id="admin-purchase-totals" class="admin-invite-totals"></div><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-purchase-filter="all" aria-pressed="true">All</button><button type="button" class="admin-filter" data-purchase-filter="paid" aria-pressed="false">Paid</button><button type="button" class="admin-filter" data-purchase-filter="open" aria-pressed="false">Not finished</button></div><ul id="admin-purchase-list" class="admin-recent-list admin-purchase-list"></ul><p class="admin-hint">Every checkout, newest first (Amsterdam time). “Not finished”: the farmer opened the payment page but did not pay, or the page is still open. Test payments are marked.</p></section>'
+  +'<section class="admin-card"><h3>'+art('diamonds')+'Purchases</h3><div id="admin-purchase-totals" class="admin-invite-totals"></div><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-purchase-filter="all" aria-pressed="true">All</button><button type="button" class="admin-filter" data-purchase-filter="paid" aria-pressed="false">Paid</button><button type="button" class="admin-filter" data-purchase-filter="open" aria-pressed="false">Open</button><button type="button" class="admin-filter" data-purchase-filter="unpaid" aria-pressed="false">Not paid</button></div><ul id="admin-purchase-list" class="admin-recent-list admin-purchase-list"></ul><p class="admin-hint">Every checkout, newest first (Amsterdam time). “Open”: the payment page may still be open, for up to 24 hours. “Not paid”: no payment within 24 hours. Test payments are marked.</p></section>'
   // The partner programme (supabase/partners.sql, /partners): partners, what they brought in, and payout requests to pay by hand.
   +'<section class="admin-card" id="admin-partners"><h3>'+art('invite-friends')+'Partners <span id="admin-partner-count">0</span></h3><div id="admin-partner-totals" class="admin-invite-totals"></div><h4 class="admin-subhead">Payout requests</h4><ul id="admin-payout-list" class="admin-recent-list"></ul><h4 class="admin-subhead">Partners</h4><ul id="admin-partner-list" class="admin-recent-list"></ul><p class="admin-hint">Partners sign up on harvesttycoon.com/partners and earn 25% of what their players spend, without 21% VAT. A payout request comes by email to info@harvesttycoon.com with where to pay: pay it by hand, then mark it paid here. Rejected goes back to what they can ask for.</p></section>'
   +'</div><div data-admin-panel="settings" hidden>'
@@ -208,7 +209,6 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  }
  // Purchases: the totals, then one row per checkout with who, what, the price and whether it was paid.
  let purchases=null,purchaseFilter='all';
- const PURCHASE_STATUS={credited:['Paid','is-paid'],pending:['Not finished','is-open'],expired:['Expired','is-expired'],refunded:['Refunded','is-expired']};
  const euro=cents=>`€${(cents/100).toFixed(2)}`;
  // Partners: the totals, the payout requests (open ones first, with Paid and Reject) and every partner with their numbers.
  const PAYOUT_STATUS={requested:['Asked for','is-open'],paid:['Paid','is-paid'],rejected:['Rejected','is-expired']};
@@ -231,12 +231,12 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   void showPartners();
  });
  function renderPurchases(data){
-  if(data)purchases=data;if(!purchases)return;const t=purchases.totals;
-  dialog.querySelector('#admin-purchase-totals').innerHTML=`<span><strong>${number(t.started)}</strong> checkouts</span><span><strong>${number(t.paid)}</strong> paid</span><span><strong>${number(t.notFinished)}</strong> not finished</span><span><strong>${euro(t.revenueCents)}</strong> earned</span><span><strong>${number(t.players)}</strong> farmers</span>`;
-  const shown=purchases.purchases.filter(p=>purchaseFilter==='all'||(purchaseFilter==='paid'?p.status==='credited':p.status!=='credited'));
+  if(data)purchases=data;if(!purchases)return;const t=purchases.totals,counts=purchaseCounts(purchases.purchases);
+  dialog.querySelector('#admin-purchase-totals').innerHTML=`<span><strong>${number(t.started)}</strong> checkouts</span><span><strong>${number(t.paid)}</strong> paid</span><span><strong>${number(counts.open)}</strong> open</span><span><strong>${number(counts.unpaid)}</strong> not paid</span>${counts.refunded?`<span><strong>${number(counts.refunded)}</strong> refunded</span>`:''}<span><strong>${euro(t.revenueCents)}</strong> earned</span><span><strong>${number(t.players)}</strong> farmers</span>`;
+  const shown=purchases.purchases.filter(p=>purchaseFilter==='all'||purchaseState(p)===purchaseFilter);
   // The Halloween Pass (Oct 2026) holds no diamonds of its own: it goes by its name.
   const what=p=>p.pack==='pass'?'Halloween Pass':p.pack==='starter'||p.pack==='offer'?`${p.pack==='offer'?'Special offer':'Starter Pack'} · ${number(p.diamonds)} diamonds${p.coins?` + ${number(p.coins)} coins`:''}`:`${number(p.diamonds)} diamonds`;
-  dialog.querySelector('#admin-purchase-list').innerHTML=shown.length?shown.map(p=>{const [label,cls]=PURCHASE_STATUS[p.status]??[p.status,'is-open'];
+  dialog.querySelector('#admin-purchase-list').innerHTML=shown.length?shown.map(p=>{const [label,cls]=PURCHASE_LABELS[purchaseState(p)];
    return `<li>${avatar(p.username,false,p.playerId)}<span class="admin-recent-copy"><strong>${p.playerId?`<button type="button" class="admin-log-name" data-profile="${esc(p.playerId)}">${esc(p.username)}</button>`:esc(p.username)} <small>${p.level?`Level ${p.level}`:''}</small></strong><small>${what(p)} · ${euro(p.amountCents)}${p.store==='google_play'?' · Google Play':p.store==='app_store'?' · App Store':''}${p.live?'':' · test'}</small></span><span class="admin-purchase-status ${cls}">${label}</span><small class="admin-when" title="${esc(fmtDate(p.createdAt))}">${ago(p.createdAt)}</small></li>`;}).join(''):'<li class="admin-empty">No checkouts here yet.</li>';
  }
  dialog.querySelectorAll('[data-purchase-filter]').forEach(b=>b.onclick=()=>{purchaseFilter=b.dataset.purchaseFilter;dialog.querySelectorAll('[data-purchase-filter]').forEach(x=>{const on=x===b;x.classList.toggle('active',on);x.setAttribute('aria-pressed',String(on));});renderPurchases();});
