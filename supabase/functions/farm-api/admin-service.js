@@ -16,7 +16,12 @@ export const isAdminAccount=user=>isAdminAddress(user?.email)&&Boolean(user?.ema
 // (millstone.nl is Google Workspace). A password session of the same account is an ordinary farmer's. index.ts copies the
 // session's sign-in methods (the verified JWT's amr) onto the user as signInMethods; supabase/admin-google-only.sql does the same
 // for the chat's staff powers.
-export const isSuperadmin=user=>isAdminAccount(user)&&Array.isArray(user?.signInMethods)&&user.signInMethods.includes('oauth');
+// The session only says "oauth", never which service (10 Oct 2026, Discord and Apple sign-in on the website): Supabase links a sign-in with
+// the same verified address to the account, so an admin account that has any sign-in besides Google and its email (getUser's identities
+// and app_metadata.providers) has no powers until that one is removed. supabase/admin-google-identity.sql does the same for the chat.
+const otherSignIn=user=>[...(Array.isArray(user?.identities)?user.identities.map(i=>i?.provider):[]),...(Array.isArray(user?.app_metadata?.providers)?user.app_metadata.providers:[])]
+ .some(provider=>provider!=='google'&&provider!=='email');
+export const isSuperadmin=user=>isAdminAccount(user)&&Array.isArray(user?.signInMethods)&&user.signInMethods.includes('oauth')&&!otherSignIn(user);
 // The admin or a moderator (staff_roles, supabase/chat.sql): may read the Admin dashboard. Giving anything stays isSuperadmin only.
 export async function isStaff(admin,user){
  if(isSuperadmin(user))return true;

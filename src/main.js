@@ -112,7 +112,9 @@ async function showInviter(){
 void showInviter();
 const linkText=()=>`${globalThis.location?.hash??''}&${globalThis.location?.search??''}`;
 const linkKind=()=>/type=(recovery|signup|magiclink|invite|email_change)/.exec(linkText())?.[1]??'';
-const linkError=()=>/error_code=|error=access_denied/.test(linkText());
+// A sign-in that came back with an error: Google, Facebook and Discord say error=access_denied (with error_code), a cancel on Apple's
+// page error=user_cancelled_authorize alone (10 Oct 2026), so any error parameter counts.
+const linkError=()=>/error_code=|(?:^|[?#&])error=/.test(linkText());
 // Where a new farmer came from (src/source-link.js, 2 Oct 2026): read once from this address, in memory only (nothing on the device),
 // and sent with the sign-up and the first farm load. Google, Facebook and the email links come back to /play.html with it in their
 // address (redirectUrl(true)); the password reset does not need it.

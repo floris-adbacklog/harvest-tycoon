@@ -82,6 +82,9 @@ test('Discord sign-in: never in an app\'s own browser, not for a visit from an a
  assert.deepEqual(usableProviders(all,chrome,true),[],'our Android app: none');
  for(const source of [{fb:true},{tt:true},{g:true},{utm_source:'facebook'},{utm_source:'Instagram'},{utm_source:'tiktok'}])assert.equal(adVisit(source),true,JSON.stringify(source));
  for(const source of [null,{},{src:'itch'},{utm_source:'newsletter'},{ref:'discord.com'}])assert.equal(adVisit(source),false,JSON.stringify(source));
+ // Meta's own links say fb, ig or an; ChatGPT's ads chatgpt; any paid utm_medium is an ad too (10 Oct 2026).
+ for(const source of [{utm_source:'fb'},{utm_source:'IG'},{utm_source:'an'},{utm_source:'chatgpt',utm_medium:'paid'},{utm_source:'x',utm_medium:'cpc'},{utm_medium:'paid_social'}])assert.equal(adVisit(source),true,JSON.stringify(source));
+ for(const source of [{utm_source:'fbgroup'},{utm_source:'android'},{utm_medium:'social'},{utm_medium:'email'}])assert.equal(adVisit(source),false,JSON.stringify(source));
  assert.match(read('src/main.js'),/usableProviders\(list,navigator\.userAgent,undefined,\{fromAd:adVisit\(pendingSource\)\}\)/);
 });
 
@@ -110,10 +113,28 @@ test('Apple sign-in: only on an iPhone, iPad or Mac, never in an app or an app\'
  // The privacy policy names Apple: an address (its own or Hide My Email) and an identifier, no picture; where to take the access back.
  const privacy=read('public/privacy.html');
  assert.match(privacy,/<h2 id="social-sign-in">3\. Signing in with Google, Facebook, Apple or Discord<\/h2>/);
- assert.match(privacy,/If you choose Apple, Apple shares an <strong>email address<\/strong> and a unique identifier for your Apple Account, and no profile picture\./);
+ assert.match(privacy,/If you choose Apple, Apple asks you to agree to share your <strong>name<\/strong> \(only the first time, and you can change it on Apple’s screen\) and an <strong>email address<\/strong> with Harvest Tycoon, together with a unique identifier for your Apple Account\. Apple shares no profile picture\./);
+ assert.match(privacy,/if you sign in with Google, Facebook, Apple or Discord or confirm your email/);assert.match(privacy,/push notifications, and, if you use it, Sign in with Apple\.<\/li>/);
  assert.match(privacy,/Hide My Email/);assert.match(privacy,/We do not receive your Google, Facebook, Apple or Discord password/);
  assert.match(privacy,/Google, Meta, Apple and Discord process your data under their own privacy policies\..*your Apple Account \(Sign in with Apple\)/);
  // The admin says "Apple" under "Signs in with"; linking to Discord trusts Apple's address like Google's and Facebook's.
  assert.match(read('src/admin-players.js'),/discord:'Discord',apple:'Apple'\}/);
  assert.match(read('supabase/functions/discord-auth/discord.js'),/const OAUTH=\['google','facebook','apple'\];/);
+});
+
+test('a sign-in that comes back with any error says so: a cancel on Apple\'s page has no error_code (10 Oct 2026)',async()=>{
+ const main=read('src/main.js');
+ assert.match(main,/const linkError=\(\)=>\/error_code=\|\(\?:\^\|\[\?#&\]\)error=\/\.test\(linkText\(\)\);/);
+ const linkError=text=>/error_code=|(?:^|[?#&])error=/.test(text);
+ assert.equal(linkError('#error=user_cancelled_authorize&sb=&?error=user_cancelled_authorize&error_description='),true,'Apple cancel');
+ assert.equal(linkError('#error=access_denied&error_code=400&error_description=x&'),true,'Google, Facebook or Discord cancel');
+ assert.equal(linkError('#access_token=x&type=signup&?src=itch&error_description_x=1'),false,'a good return');
+ // TikTok's Asian app (trill_) is an app's own browser, as browser-tip.js already counts it.
+ const {embeddedBrowser}=await import('../src/social-login.js');
+ assert.equal(embeddedBrowser('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 trill_35.0.0 JsSdk/2.0'),true);
+ // Translations that work for every provider's name (no article before it).
+ const fr=JSON.parse(read('public/i18n/fr.json')),hu=JSON.parse(read('public/i18n/hu.json')),pt=JSON.parse(read('public/i18n/pt.json'));
+ assert.equal(fr['Opening {0}…'],"{0} s'ouvre…");
+ assert.equal(hu['Sign in with {0} in the new tab.'],'Jelentkezz be az új lapon ezzel: {0}.');
+ assert.equal(pt['To sign in with {0}, open www.harvesttycoon.com.'],'Para entrar com {0}, abra www.harvesttycoon.com.');
 });

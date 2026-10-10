@@ -21,15 +21,19 @@ export async function enabledProviders({url,key,fetchImpl=globalThis.fetch}){
 // Instagram, Messenger, Threads, TikTok, Snapchat and LinkedIn apps, and Android web views in general. Visitors from
 // Meta ads arrive in exactly those browsers, so there the Google button is left out; Facebook and email still work.
 // Only named app markers are used: an iPhone home-screen app also lacks the "Safari" word but can use Google fine.
-const EMBEDDED=/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|; wv\)/i;
+const EMBEDDED=/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona|musical_ly|trill_|BytedanceWebview|Snapchat|LinkedInApp|; wv\)/i;
 export const embeddedBrowser=(userAgent=globalThis.navigator?.userAgent??'')=>EMBEDDED.test(userAgent);
 // In our own Android app (Oct 2026, public/android.js) neither works: Google refuses every WebView and Facebook no longer signs anyone in
 // from a browser built into an app. There only the email address and password are offered.
-// Discord (10 Oct 2026, the owner): never inside an app's own browser, and not for a visit from an ad (Meta, TikTok or Google, the click
-// id or the ad's utm_source, src/source-link.js): those newcomers get Google, Facebook and email, without a button that only distracts.
+// Discord (10 Oct 2026, the owner): never inside an app's own browser, and not for a visit from an ad (Meta, TikTok or Google's click id,
+// or the ad's utm_source or a paid utm_medium, src/source-link.js; Meta's own links say fb, ig or an, ChatGPT's chatgpt): those newcomers
+// get Google, Facebook and email, without a button that only distracts.
 // Apple (10 Oct 2026, the owner): only on an iPhone, iPad or Mac, where the Apple Account is already there (an iPad says "Macintosh"),
 // and like Discord never inside an app's own browser and not for a visit from an ad. Never in our apps, the iPhone app included.
-export const adVisit=source=>Boolean(source?.fb||source?.tt||source?.g||/facebook|instagram|meta|tiktok|google/i.test(String(source?.utm_source??'')));
+// Apple's secret in Supabase (Authentication, Providers, Apple) is valid for 6 months: made 10 Oct 2026, so make a new one before 10 Apr 2027
+// (~/Harvest Tycoon/discord/inloggen-apple-stappen.md), or every Apple sign-in fails.
+export const adVisit=source=>Boolean(source?.fb||source?.tt||source?.g||/facebook|instagram|meta|tiktok|google|chatgpt|openai|^(fb|ig|an)$/i.test(String(source?.utm_source??''))||
+ /^(paid|cpc|ppc|paid_?social|paidsocial)$/i.test(String(source?.utm_medium??'')));
 export const appleDevice=(userAgent=globalThis.navigator?.userAgent??'')=>/iPhone|iPad|iPod|Macintosh/i.test(userAgent);
 export const usableProviders=(list,userAgent,app=androidApp(),{fromAd=false}={})=>app?[]:list.filter(provider=>
  (provider!=='apple'||appleDevice(userAgent))&&(embeddedBrowser(userAgent)?provider==='facebook':!(fromAd&&(provider==='discord'||provider==='apple'))));

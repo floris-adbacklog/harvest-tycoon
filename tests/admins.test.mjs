@@ -17,6 +17,23 @@ test('both admin addresses have the same powers, only with Google',()=>{
  }
  assert.ok(!isAdminAddress('someone@gmail.com'));
 });
+test('the admin powers need Google itself: an admin account that also signs in with Discord or Apple has none (10 Oct 2026)',()=>{
+ // The session says only "oauth"; Supabase links a Discord or Apple sign-in with the same verified address to the account.
+ for(const email of ADMINS){
+  const user={email,email_confirmed_at:'2026-10-03T00:00:00Z',signInMethods:['oauth']};
+  assert.ok(isSuperadmin({...user,identities:[{provider:'google'},{provider:'email'}],app_metadata:{provider:'email',providers:['email','google']}}),`${email}: Google and email, as both are on 10 Oct`);
+  for(const other of ['discord','apple','facebook']){
+   assert.ok(!isSuperadmin({...user,identities:[{provider:'google'},{provider:other}]}),`${email} with ${other} linked`);
+   assert.ok(!isSuperadmin({...user,app_metadata:{providers:['google',other]}}),`${email} with ${other} in providers`);
+  }
+ }
+ // The chat's staff powers: the same rule in the database, patched from the live definition, and only the admin's own session.
+ const sql=read('supabase/admin-google-identity.sql');
+ assert.match(sql,/681aff59b24e63e597d7390b4693f0bd/);
+ assert.match(sql,/and not exists\(select 1 from auth\.identities i where i\.user_id=p_player and i\.provider not in \('google','email'\)\)/);
+ assert.match(sql,/if position\('auth\.identities' in def\)>0 then return; end if;/);
+ assert.match(sql,/revoke execute on function public\.chat_staff_role\(uuid\) from public, anon, authenticated;/);
+});
 test('the game and the database list the same admin addresses',()=>{
  assert.match(read('src/player-profiles.js'),/ADMIN_EMAILS=Object\.freeze\(\['floris@millstone\.nl','harvesttycoon@gmail\.com'\]\)/);
  assert.match(read('supabase/admins.sql'),/lower\(u\.email\) in \('floris@millstone\.nl','harvesttycoon@gmail\.com'\)/);
