@@ -1,5 +1,5 @@
 import {foldLocked} from './progression-ui.js';
-import {labCanCross,doubleBatchChance,worldTwoBuilding,builderCrates,BUILDER_CRATE_COINS,VILLAGE_TILES_FROM,VILLAGE_PREMIUM,VILLAGE_HALL_PREMIUM,villagePremium,buildingRecipes,marketItems,villageBrief,villagePlaceBefore,VALLEY_PROJECTS,valleyProjectLevel,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
+import {labCanCross,doubleBatchChance,worldTwoBuilding,builderCrates,BUILDER_CRATE_COINS,VILLAGE_TILES_FROM,VILLAGE_PREMIUM,VILLAGE_HALL_PREMIUM,villagePremium,buildingRecipes,marketItems,villageBrief,villagePlaceBefore,VALLEY_PROJECTS,valleyProjectLevel,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,batchDuration,quickFirstBatch,FIRST_BATCH_MS,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt,pictureFile} from './visual-icons.js';
@@ -10,6 +10,9 @@ import {confirmAction} from './confirm-dialog.js';
 import {flyHarvest,bump} from './harvest-fly.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
+// What one market tab's stock is worth at today's prices, as Sell all would pay (11 Oct 2026, Part A A11: the Market button's badge from
+// the first harvest to the first sale says the same number as the Crops tab's "This basket is worth").
+export function marketWorth(state,tab,now=Date.now()){return marketSaleValue(state,marketItems(state,tab).reduce((v,k)=>v+sellableStock(state,k,now)*marketQuote(k,now).price,0),now);}
 const seconds=formatDuration;
 // 8 Oct 2026: a built building in the Buildings list says what it is doing in separate chips under its name, which wrap instead of
 // being cut off with … (French, Russian and Czech on a phone, English on a computer): green "4 ready", amber "1 working", plain
@@ -144,7 +147,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  }
  function openBuildings(){renderCatalog();show('buildings-dialog');}
  // The built Pier opens the town boat (Oct 2026); while it is not built its window shows its golden brief like any village place.
- function openBuilding(key){if(!Object.hasOwn(BUILDINGS,key))return;if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHint(state,key));return;}onFamily();return;}if(BUILDINGS[key].type==='pier'&&buildingUnlocked(state,key)){onBoat?.();return;}currentBuilding=key;renderBuilding();show('building-dialog');}
+ function openBuilding(key){if(!Object.hasOwn(BUILDINGS,key))return;if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHint(state,key));return;}onFamily();return;}if(BUILDINGS[key].type==='pier'&&buildingUnlocked(state,key)){onBoat?.();return;}currentBuilding=key;$('building-dialog').dataset.building=key;renderBuilding();show('building-dialog');}
  function renderBuilding(){
   if(!currentBuilding)return;
   // A Pier built from its own window (its brief) opens the town boat instead; mutate's toast still shows.
@@ -220,8 +223,11 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    }
    content+='</div>';
    content+=`<div class="recipe-section-heading"><h3>What shall we make?</h3><span>Ingredients are used when you start.</span></div>`;
+   // A guided farm's first batch in a building is ready in 30 seconds (11 Oct 2026, farm-state.js batchDuration): said once above the
+   // recipes while the building has never made one, and every card's clock shows the quick time.
+   if(quickFirstBatch(state,key))content+=`<p class="milling-note first-batch-note">Your first batch here is ready in ${FIRST_BATCH_MS/1000} seconds.</p>`;
    const recipeCard=(rid,r)=>{
-    const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid,farmNow()),value=recipeValue(rid,farmNow(),state),count=Math.max(1,Math.min(batchCounts[rid]??1,a.maxCount||1));batchCounts[rid]=count;
+    const a=recipeAvailability(state,rid),duration=batchDuration(state,rid,farmNow()),value=recipeValue(rid,farmNow(),state),count=Math.max(1,Math.min(batchCounts[rid]??1,a.maxCount||1));batchCounts[rid]=count;
     return `<article class="recipe-card ${a.canStart?'is-ready':''}" data-recipe-card="${rid}"><div class="recipe-head"><span class="recipe-art">${art(Object.keys(r.output)[0])}</span><div class="recipe-title"><h4>${r.name}</h4><div class="recipe-meta"><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span><p class="recipe-value">${art('coins')}<strong>${signed(value.added)}</strong> profit</p><span class="recipe-xp">${art('xp')}+${r.xp} XP</span></div></div></div><div class="recipe-flow-wrap"><div class="recipe-flow"><div class="ingredients">${costList(rid)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div></div><div class="recipe-footer"><span>${a.locked?`${art('lock','unlock-lock')} Locked · ${recipeUnlockHint(state,rid)}`:a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':a.poor?`You need ${number(a.price)} coins for a batch.`:`+${r.xp} XP`}</span>${a.slots>1?`<div class="batch-picker"><span id="batch-label-${rid}">Batches</span><div class="batch-stepper" role="group" aria-labelledby="batch-label-${rid}"><button type="button" data-batch-step="-1" data-for-recipe="${rid}" aria-label="Fewer batches of ${r.name}" ${count<=1||!a.maxCount?'disabled':''}>−</button><output data-batch-count="${rid}" data-max="${a.maxCount}" aria-live="polite" aria-label="Number of batches for ${r.name}">${count}</output><button type="button" data-batch-step="1" data-for-recipe="${rid}" aria-label="More batches of ${r.name}" ${count>=a.maxCount?'disabled':''}>+</button></div><small>${a.maxCount} available${a.maxCount>2?` · <button type="button" class="batch-max" data-batch-step="max" data-for-recipe="${rid}" aria-label="Start the most batches of ${r.name}">Max</button>`:''}</small></div>`:''}<button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
    };
    const recipeEntries=buildingRecipes(state,key).map(id=>[id,recipeFor(state,id)]);
@@ -358,7 +364,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  // What "Sell all" would bring in right now for the tab that is open.
  // Heirlooms from the Seed Lab sell with the crops, once found or in stock (27 Sep 2026).
  function marketEntries(){return marketItems(state,marketTab).map(k=>[k,ITEMS[k]]);}
- function categoryTotal(now=farmNow()){return marketSaleValue(state,marketEntries().reduce((v,[k])=>v+sellableStock(state,k,now)*marketQuote(k,now).price,0),now);}
+ function categoryTotal(now=farmNow()){return marketWorth(state,marketTab,now);}
  let confirmingSale=false;
  async function sell(key='category',quantity){
   if(marketSelling||confirmingSale)return;

@@ -19,8 +19,12 @@ test('every guide step pays XP, so following the guide takes a new farmer to lev
  act(s,{type:'produce',recipe:'eggs'},now);act(s,{type:'checkin'},now);
  act(s,{type:'field',id:6,action:'tend'},now+22000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
+ // Step 9 is A helping hand (11 Oct 2026): one job at any stop.
+ assert.equal(s.onboarding.completed,8,'step 9 waits for a helping-hand job');assert(levelOf(s)>=3,'and the hand is open by then');
+ const {startedAt}=act(s,{type:'activity_start',station:'greenhouse'},now+301000);
+ s.activities.jobs.greenhouse.targets.forEach((target,i)=>act(s,{type:'activity_work',station:'greenhouse',startedAt,target},now+301000+(i+1)*700));
  assert.equal(s.onboarding.completed,BEGINNER_QUESTS.length-1,'nine steps done without a single claim');
- act(s,{type:'beginner_claim',id:'collect'},now+300000);
+ act(s,{type:'beginner_claim',id:'collect'},now+305000);
  assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds>=BEGINNER_REWARD,true);
  assert(s.xp>=BEGINNER_STEP_XP*BEGINNER_QUESTS.length);assert(levelOf(s)>=3,`level ${levelOf(s)} after the guide`);
 });
@@ -70,11 +74,13 @@ const opensAt=()=>{const perLevel={};const add=(level,what)=>{(perLevel[level]??
  for(const [k,l] of Object.entries(FEATURE_LEVELS))add(l,'feature:'+k);
  return perLevel;};
 test('every level up to 20 opens one to three new things, and levels 2 to 10 twenty in all (26 before 9 Oct 2026)',()=>{
- assert.equal(FEATURE_LEVELS.activities,8);assert.equal(FEATURE_LEVELS.chores,15);assert.equal(FEATURE_LEVELS.mastery,14);assert.equal(FEATURE_LEVELS.cart,7);
+ // A helping hand opens at level 3 (11 Oct 2026; 8 before): with lettuce and Daily challenges, three things there, and level 8 two.
+ assert.equal(FEATURE_LEVELS.activities,3);assert.equal(FEATURE_LEVELS.chores,15);assert.equal(FEATURE_LEVELS.mastery,14);assert.equal(FEATURE_LEVELS.cart,7);
  const perLevel=opensAt();
  for(let level=2;level<=20;level++){const things=perLevel[level]??[];assert(things.length>=1,`level ${level} has nothing`);assert(things.length<=3,`level ${level}: ${things.join(', ')}`);}
  // The Fishing pond (11 Oct 2026, the owner's call) is the 21st, at level 4, once it is open (POND_OPEN); level 4 then opens three things.
  let first=0;for(let level=2;level<=10;level++)first+=(perLevel[level]??[]).length;assert.equal(first,POND_OPEN?21:20);
+ assert.deepEqual([perLevel[3].length,perLevel[8].length],[3,2]);assert.ok(perLevel[3].includes('feature:activities'));
  if(POND_OPEN)assert.deepEqual(perLevel[4].filter(x=>x.startsWith('feature:')),['feature:fishing']);
  assert.equal(FAMILY_MIN_LEVEL,10);
  // Every goal an event can ask for is open when events open (level 15): chores, fertilizer and green beans included.

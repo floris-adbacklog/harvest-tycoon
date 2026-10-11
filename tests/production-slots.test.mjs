@@ -71,7 +71,7 @@ test('a second batch becoming ready triggers one cue even with a long-running fi
 });
 test('completed beginner guide disappears from desktop, mobile and menu, including after reload',async()=>{
  const previous=globalThis.document;const elements=new Map();
- class Element {hidden=false;open=false;classList={toggle(){}};listeners={};addEventListener(type,fn){this.listeners[type]=fn;}close(){this.open=false;}showModal(){this.open=true;}focus(){}querySelector(){return new Element();}}
+ class Element {hidden=false;open=false;classList={toggle(){}};listeners={};addEventListener(type,fn){this.listeners[type]=fn;}setAttribute(){}close(){this.open=false;}showModal(){this.open=true;}focus(){}querySelector(){return new Element();}}
  const get=id=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
  globalThis.document={getElementById:get,querySelector:get,querySelectorAll:selector=>selector==='[data-menu-action="all-quests-mobile"]'?[get('menu')]:[]};
  try{
@@ -81,5 +81,7 @@ test('completed beginner guide disappears from desktop, mobile and menu, includi
   await get('claim-reward').listeners.click();assert.equal(s.diamonds,originalDiamonds+50);
   for(const el of ['.beginner-card','beginner-mobile','menu'])assert.equal(get(el).hidden,true,el);assert.equal(get('beginner-dialog').open,false);
   ui.open();assert.equal(get('beginner-dialog').open,false);ui.refresh();assert.equal(get('.beginner-card').hidden,true);assert.equal(s.diamonds,originalDiamonds+50);
+  // Its place goes to the next goal (11 Oct 2026, Part A A13): a card of its own, the guide's card stays away.
+  assert.equal(get('next-goal-card').hidden,false,'the next-goal card in the guide\'s place');
  }finally{globalThis.document=previous;}
 });

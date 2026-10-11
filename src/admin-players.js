@@ -119,7 +119,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
 
 // Where new players stop: of everyone who made an account in the period, how many got how far. The guide steps follow
 // BEGINNER_QUESTS (game/farm-state.js); a guided farm sells an egg at step 7 where an older farm does a chore.
-export const GUIDE_STEPS=Object.freeze(['First harvest','First sale','Plant wheat','Water a crop','Start production','Daily gift','A chore or an egg sale','Care for a crop','Harvest wheat','Collect goods and the guide reward']);
+export const GUIDE_STEPS=Object.freeze(['First harvest','First sale','Plant wheat','Water a crop','Start production','Daily gift','A chore or an egg sale','Care for a crop','A helping hand (before 11 Oct: harvest wheat)','Collect goods and the guide reward']);
 export const FUNNEL_PERIODS=Object.freeze([['7','Last 7 days'],['30','Last 30 days'],['all','Everyone']]);
 // Retention over 7, 30 or 90 days (1 Oct 2026, supabase/functions/farm-api/admin-analytics-service.js RETENTION_PERIODS).
 export const RETENTION_PERIODS=Object.freeze([['7','7d'],['30','30d'],['90','90d']]);

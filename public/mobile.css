@@ -92,7 +92,9 @@
  .building-label .building-pin{display:grid;place-items:center;width:32px;height:32px;background:none}
  .building-pin>.game-art{width:34px;height:34px}.building-label>span:nth-child(2){display:none}
  .utility-label>.game-art{width:33px;height:33px}.building-label.ready{box-shadow:0 0 0 3px #efc75080}
- .floating-reward{font-size:17px;max-width:230px;text-align:center}.plot-tooltip{display:none}
+ .floating-reward{font-size:17px;max-width:230px;text-align:center;flex-wrap:wrap;justify-content:center;row-gap:4px}.plot-tooltip{display:none}
+ /* 11 Oct 2026 (Part A A11): the chips of a harvest wrap inside the float's 230 px (with what the harvest is worth they ran off a phone's
+    edge, the float's box being narrower than its row of chips); public/game.js floatClear keeps that box on the screen. */
  .toast{top:calc(var(--mobile-top) + 39px);font-size:14px;line-height:1.4;padding:10px 14px;max-width:calc(100% - 24px)}
  .game-dialog,.wide-dialog{position:fixed;inset:auto 0 0;margin:auto 0 0;width:100%;max-width:none;max-height:calc(100dvh - env(safe-area-inset-top) - 8px);padding:16px 16px calc(22px + var(--safe-bottom));border:1px solid #d6cbbe;border-bottom:0;border-radius:23px 23px 0 0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:auto;scroll-padding-top:102px;-webkit-overflow-scrolling:touch}
  .game-dialog::backdrop{background:#37332160;backdrop-filter:blur(3px)}

@@ -23,6 +23,9 @@ import {createDiscordLinkDialog,createDiscordSwitch,createDiscordUnlink} from '.
 stopPageZoom(document);
 let bridge;
 try{bridge=window.parent!==window?window.parent.harvestBridge:null;}catch{}
+// The load chain (11 Oct 2026, Part A A1; public/farm-state.js FIRST_LOOK_CHAIN): the farm page started, on the clock of the page around
+// it (where src/crazygames.js keeps its own steps; on the website the chain starts here). public/game.js adds models and render.
+try{const chain=window.parent.harvestChain??={};chain.frame??=Math.round(window.parent.performance.now());}catch{}
 // src/main.js starts this page while the farm is still on its way from the server (1 Oct 2026): wait for it here. When it does not
 // come (a new name is needed, the session ended), the parent takes this page away; nothing more happens here.
 let waited=false;

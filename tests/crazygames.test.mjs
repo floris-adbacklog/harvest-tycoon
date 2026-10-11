@@ -249,7 +249,7 @@ test('src/crazygames.js: its own sign-ins, the token on every start, a guest oth
  // asked again later each time; a trip to the village that does not start gives CrazyGames its gameplay back; the same player told
  // twice does not reload the farm.
  assert.match(js,/async function account\(\)\{\n  if\(info\.userAvailable\)\{\n   const token=await link\.token\(\);/);
- assert.match(js,/retryTimer=setTimeout\(\(\)=>void start\(\),Math\.min\(60000,8000\*2\*\*retries\+\+\)\);/);assert.match(js,/await account\(\);await session\.open\(\);retries=0;/);
+ assert.match(js,/retryTimer=setTimeout\(\(\)=>void start\(\),Math\.min\(60000,8000\*2\*\*retries\+\+\)\);/);assert.match(js,/await account\(\);mark\('account'\);await session\.open\(\);retries=0;/);
  assert.match(js,/try\{await travel\(to\);\}catch\(error\)\{sdk\('loadingStop'\);ready=true;sdk\('gameplayStart'\);throw error;\}/);
  assert.match(js,/link\.onAuth\(user=>\{if\(\(user\?\.username\?\?null\)===\(info\.user\?\.username\?\?null\)\)return;/);
  assert.match(js,/get userAvailable\(\)\{return info\.userAvailable;\}/);
@@ -425,4 +425,20 @@ test('a tab switch sends CrazyGames nothing, and a farm ready behind another tab
  const js=readFileSync(new URL('../src/crazygames.js',import.meta.url),'utf8');
  assert.doesNotMatch(js,/addEventListener\('visibilitychange',\(\)=>\{if\(document\.hidden\)sdk\('gameplayStop'\)/,'CrazyGames pauses its own count while the game is hidden');
  assert.match(js,/if\(name==='gameplayStart'\)\{if\(playing\|\|!ready\|\|document\.body\.dataset\.phase!=='authenticated'\)return;playing=true;\}/,'no document.hidden: a start is never dropped');
+});
+
+// 11 Oct 2026 (Part A, A3): CrazyGames asks for happytime "sparingly". Only the guide complete and every fifth level are one now;
+// the two-minute limit stays, and every level-up still goes to our own analytics on the website.
+test('happytime only at a milestone: the guide complete and every fifth level, at most once in two minutes',async()=>{
+ const {happyMoment}=await import('../src/crazygames-link.js');
+ assert.equal(happyMoment('guide_complete'),true);
+ for(const level of [5,10,15,50,100])assert.equal(happyMoment('level_up',{level}),true,`level ${level}`);
+ for(const level of [2,3,4,6,9,11,99])assert.equal(happyMoment('level_up',{level}),false,`level ${level}`);
+ for(const [event,params] of [['level_up',{}],['level_up',{level:'5'}],['level_up',{level:0}],['guide_step',{index:9}],['game_session',{level:5}]])assert.equal(happyMoment(event,params),false,`${event} ${JSON.stringify(params)}`);
+ const page=read('src/crazygames.js');
+ assert.match(page,/track:\{game:\(event,params\)=>\{if\(happyMoment\(event,params\)&&Date\.now\(\)-happyAt>120000\)\{happyAt=Date\.now\(\);sdk\('happytime'\);\}\}\}/);
+ // The guide's end reaches the page as guide_complete (with its diamonds), and a level-up carries its level.
+ assert.match(read('public/farm-client.js'),/if\(result\.diamonds\)bridge\.trackGame\?\.\('guide_complete'\);/);
+ assert.match(read('public/game.js'),/if\(change\.leveled\)track\('level_up',\{level:change\.level\}\);/);
+ assert.ok(read('src/analytics.js').includes("'guide_complete'"),'the website keeps guide_complete as a game event of its own');
 });

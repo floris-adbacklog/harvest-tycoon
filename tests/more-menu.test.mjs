@@ -19,7 +19,13 @@ test('"Your farm menu" always lists every feature, gated ones in the order they 
  assert.match(html,/<button data-menu-utility="villageroad" id="village-menu-entry" hidden>/,'The Village is hidden until level 100, so a beginner never sees it');
  assert(order.includes('activities'),'A helping hand has its own entry, it was missing entirely before');
  const gated=order.filter(Boolean);
- assert.deepEqual(gated,[...gated].sort((a,b)=>FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),'gated entries are already in ascending unlock-level order in the markup');
+ // In each group (11 Oct 2026: A helping hand opens at level 3, under On the farm, after Deliveries at 7 under Every day). On screen
+ // the locked tiles still read in unlock order: progression-ui.js gives each one the CSS order 100 + its level, below Coming later (99).
+ assert.match(read('public/progression-ui.js'),/el\.style\.order=unlocked\?'':String\(100\+FEATURE_LEVELS\[feature\]\);/);
+ assert.match(read('public/more-menu.css'),/#more-dialog \.menu-later\{grid-column:1\/-1;order:99;/);
+ const grid=html.slice(html.indexOf('id="more-dialog"'),html.indexOf('</dialog>',html.indexOf('id="more-dialog"')));
+ for(const group of grid.split('data-section-heading=').slice(1)){const keys=menuOrder(`id="more-dialog"${group}</dialog>`).filter(Boolean);
+  assert.deepEqual(keys,[...keys].sort((a,b)=>FEATURE_LEVELS[a]-FEATURE_LEVELS[b]),'gated entries are in ascending unlock-level order within their group');}
  const grid2=html.slice(html.indexOf('id="more-dialog"'),html.indexOf('</dialog>',html.indexOf('id="more-dialog"')));
  for(const key of gated){
   const attr=key==='boosts'?'data-menu-action="boosts-button"':key==='projects'?'data-menu-action="estate-button"':`data-menu-utility="${key}"`;

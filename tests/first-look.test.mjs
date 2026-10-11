@@ -73,7 +73,7 @@ test('the game notes the first look and sends it at once; the first touch goes w
  assert.match(cloud,/started=window\.parent\.performance\.timeOrigin\|\|started/,'from the start of the page around the farm');
  assert.match(game,/if\(!villageWorld&&!adminView&&!\(state\.stats\.harvested>0\)\)noteFirstLook\(\);/,'only for a farm that has not harvested yet');
  assert.match(game,/let started=look\.started;if\(!started\)try\{started=window\.parent\.performance\.timeOrigin;\}catch\{started=performance\.timeOrigin;\}/);
- assert.match(game,/readyAt:at,\.\.\.\(started\?\{readyMs:Math\.round\(at-started\)\}:\{\}\),frame:look\.frame\?\?`\$\{step\(innerWidth\)\}x\$\{step\(innerHeight\)\}`\}\);client\.sendLook\(\);\}/);
+ assert.match(game,/readyAt:at,\.\.\.\(started\?\{readyMs:Math\.round\(at-started\)\}:\{\}\),frame:look\.frame\?\?`\$\{step\(innerWidth\)\}x\$\{step\(innerHeight\)\}`,\.\.\.\(chain\?\{chain\}:\{\}\)\}\);client\.sendLook\(\);\}/);
  assert.match(game,/const t=Date\.now\(\);client\.look\(\{firstInputAt:t,\.\.\.\(fresh\?\{firstInputMs:t-at\}:\{\}\)\}\);/,'the device\'s clock: the server moves it by sentAt');
  assert.match(game,/fresh=!state\.onboarding\?\.firstLook;/,'firstInputMs only after a readyAt from this same visit');assert.doesNotMatch(game,/firstInputAt:server\(/);
  assert.match(game,/game\.addEventListener\('pointerdown',touched,true\);/);
@@ -86,6 +86,9 @@ test('the game notes the first look and sends it at once; the first touch goes w
 test('timers under 2 minutes keep their seconds, and step 10 says how long the eggs take now',()=>{
  assert.deepEqual([59,60,61,90,119,120,121].map(s=>formatDuration(s*1000)),['59s','1m','1m 1s','1m 30s','1m 59s','2m','3m']);
  const s=createFarm(now),eggs=at=>beginnerProgress(s,at).find(q=>q.id==='collect').description;
+ // The Coop's very first batch is ready in 30 seconds (11 Oct 2026); after it the beginner boost's time (40% since 9 Oct 2026).
+ assert.equal(eggs(now),'Collect a finished batch from a building. Chicken feed becomes eggs in 30s.','the quick first batch');
+ s.buildings.coop.batchSequence=1;
  assert.equal(eggs(now),'Collect a finished batch from a building. Chicken feed becomes eggs in 3m.','the beginner boost (40% since 9 Oct 2026)');
  assert.equal(eggs(now+3*DAY_MS),'Collect a finished batch from a building. Chicken feed becomes eggs in 5m.');
  assert.equal(beginnerProgress(s,now).find(q=>q.id==='water').description,'Plant wheat and water it within a minute. It grows faster and gives an extra crop.');
@@ -105,8 +108,50 @@ test('the phone banner says when the eggs are ready, and what to do at step 7, i
 test('day 1 of the gift, level 2 and the end of the guide say what comes next',()=>{
  assert.match(read('public/retention-ui.js'),/r\.streak===1\?`Day 1 gift! \+\$\{r\.diamonds\} diamonds and \+\$\{r\.coins\.toLocaleString\('en-US'\)\} coins\.\$\{r\.returnBoost\?` Plus \$\{r\.returnBoost\} minutes of double harvest!`:''\} Come back tomorrow for day 2\.`:`Welcome back!/);
  const game=read('public/game.js');
- assert.match(game,/const goal=\['mill','dairy'\]\.find\(key=>!state\.buildings\[key\]\?\.built&&buildingEligible\(state,key\)&&buildingCost\(state,key\)>0\);/);
+ assert.match(game,/const goal=lead&&\['mill','dairy'\]\.find\(key=>!state\.buildings\[key\]\?\.built&&buildingEligible\(state,key\)&&buildingCost\(state,key\)>0\);/);
  assert.match(game,/if\(goal\)return back\?`Next goal: build the \$\{name\} for \$\{cost\} coins in Buildings\. \$\{when\} Come back tomorrow for your next daily gift and 30 minutes of double harvest\.`/);
  // No middle dot in the new texts (the page swaps them out, but they are written without).
  for(const text of ['Day 1 gift!','Next goal: build the','Eggs in {0}, then sell one','Batch ready in {0}',"Water works in a crop's first minute"])assert.ok(read('i18n/catalog.json').includes(text),text);
+});
+
+// 11 Oct 2026 (Part A, A1): the load chain, to tell which step of a new farm's wait is slow (CrazyGames: 9.8 s to playable on a computer).
+test('the load chain is kept once: the 8 known steps, whole ms up to 10 minutes, lost only as 1, and old parts stay',async()=>{
+ const {FIRST_LOOK_CHAIN}=await import('../game/farm-state.js');
+ assert.deepEqual([...FIRST_LOOK_CHAIN],['hello','token','account','farm','frame','models','render','lost']);
+ const s=createFarm(now);
+ recordFirstLook(s,{readyAt:now-1000,chain:{hello:812.6,token:1500,account:2400,farm:3900,frame:4100,models:7600,render:7700,boot:5,extra:9,lost:2}},now);
+ assert.deepEqual(s.onboarding.firstLook.chain,{hello:813,token:1500,account:2400,farm:3900,frame:4100,models:7600,render:7700},'unknown steps and a lost that is not 1 are left out');
+ assert.equal(s.onboarding.firstLook.readyAt,now-1000);
+ // A second note keeps every step it had and adds only what is new (a lost 3D view later in the first visit).
+ recordFirstLook(s,{chain:{hello:1,render:2,lost:1}},now+5000);
+ assert.equal(s.onboarding.firstLook.chain.hello,813);assert.equal(s.onboarding.firstLook.chain.render,7700);assert.equal(s.onboarding.firstLook.chain.lost,1);
+ assert.equal(Object.keys(s.onboarding.firstLook.chain).length,8,'never more than 8');
+ const t=createFarm(now);recordFirstLook(t,{chain:{hello:-5,token:'7',account:FIRST_LOOK_MAX_MS*2,farm:Infinity,models:NaN}},now);
+ assert.deepEqual(t.onboarding.firstLook,{chain:{account:FIRST_LOOK_MAX_MS}},'negative, text and endless times left out; a long one clamped to 10 minutes');
+ for(const chain of [[1,2,3],'x',null,7]){const u=createFarm(now);recordFirstLook(u,{chain},now);assert.equal(u.onboarding.firstLook,undefined,JSON.stringify(chain));}
+ // Through the action as farm-api runs it, with the rest of the first look.
+ const v=createFarm(now);act(v,{type:'first_look',look:{readyAt:now-500,frame:'840x430',chain:{frame:300,models:2100,render:2300}}},now);
+ assert.deepEqual(v.onboarding.firstLook,{readyAt:now-500,frame:'840x430',chain:{frame:300,models:2100,render:2300}});
+});
+
+// Release order (new key onboarding.firstLook.chain): site first, farm-api later. A save with a chain must load and play in today's rules.
+test('a farm with a load chain loads and plays on: normalize, an action and the next first look',async()=>{
+ const {normalizeFarm}=await import('../game/farm-state.js');
+ const s=createFarm(now);s.onboarding.firstLook={readyAt:now,chain:{hello:800,lost:1}};
+ const copy=structuredClone(s);normalizeFarm(copy,now+1000);assert.deepEqual(copy.onboarding.firstLook.chain,{hello:800,lost:1});
+ act(copy,{type:'field',id:0,action:'harvest',look:{firstInputAt:now+900}},now+1000);assert.equal(copy.onboarding.firstLook.firstInputAt,now+900);
+ assert.deepEqual(copy.onboarding.firstLook.chain,{hello:800,lost:1});
+});
+
+test('the pages note the load chain on one clock, and the game sends it with the first look',()=>{
+ const page=read('src/crazygames.js'),cloud=read('src/game-cloud.js'),game=read('public/game.js'),client=read('public/farm-client.js');
+ assert.match(page,/const chain=window\.harvestChain\?\?=\{\},mark=key=>\{chain\[key\]\?\?=Math\.round\(performance\.now\(\)\);\};/);
+ for(const step of ['hello','token','account'])assert.ok(page.includes(`mark('${step}')`),step);
+ assert.match(page,/farmRequest:\(body,options\)=>farmRequest\(body,options\)\.then\(data=>\{if\(body\?\.operation==='load'\)mark\('farm'\);return data;\}\)/);
+ assert.match(cloud,/chain\.frame\?\?=Math\.round\(window\.parent\.performance\.now\(\)\);/,'on the clock of the page around the farm');
+ assert.match(game,/const markChain=key=>\{try\{const chain=window\.parent\.harvestChain\?\?=\{\};chain\[key\]\?\?=Math\.round\(window\.parent\.performance\.now\(\)\);\}catch\{\}\};/);
+ assert.match(game,/\.then\(\(\)=>markChain\('models'\)\)/);assert.match(game,/renderer\.render\(scene,camera\);markChain\('render'\);/);
+ assert.match(game,/frame:look\.frame\?\?`\$\{step\(innerWidth\)\}x\$\{step\(innerHeight\)\}`,\.\.\.\(chain\?\{chain\}:\{\}\)\}\);client\.sendLook\(\);\}/);
+ // A lost view later in that visit adds to the chain waiting to be sent instead of replacing it.
+ assert.match(client,/noted=\{\.\.\.noted,\.\.\.parts,\.\.\.\(noted\?\.chain&&parts\?\.chain\?\{chain:\{\.\.\.noted\.chain,\.\.\.parts\.chain\}\}:\{\}\)\}/);
 });

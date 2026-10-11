@@ -353,7 +353,9 @@ export const BEGINNER_STEP_XP=15;
 export const BEGINNER_QUESTS=Object.freeze([
  // Step 1 says the sweep first (Oct 2026): sweeping over the ripe corn harvests every field it passes; a tap still harvests one.
  {id:'harvest',title:'Your first basket',description:'Sweep across your ripe corn to harvest it, or tap one.',guide:'harvest',icon:'shopping-basket'},
- {id:'sell',title:'Your first market sale',description:'Open Market and sell some corn. Save your animal feed for the chickens.',guide:'market',icon:'store'},
+ // 11 Oct 2026 (Part A A11): one thing to do. The feed sentence went: starter feed and corn cannot be sold in the first 30 minutes anyway
+ // (STARTER_KEEP).
+ {id:'sell',title:'Your first market sale',description:'Open Market and sell your corn.',guide:'market',icon:'store'},
  {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
  // 7 Oct 2026: water works only in a crop's first minute, and the starter wheat is past it (9 of 38 new farmers who planted never watered).
  {id:'water',title:'A little water goes a long way',description:'Plant wheat and water it within a minute. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
@@ -364,11 +366,18 @@ export const BEGINNER_QUESTS=Object.freeze([
  {id:'wheat',title:'Bring in the wheat',description:'Harvest one wheat field when it is ready. Water and care make your harvest bigger.',guide:'harvest',icon:'wheat'},
  {id:'collect',title:'Made on your farm',description:'Collect a finished batch from a building. Chicken feed becomes eggs in 5 minutes.',guide:'collect',icon:'package-check'}
 ]);
-function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>q.id==='chore'?{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. Save the coins for your next building. Hands-on jobs open at level 8.',guide:'eggs',icon:'egg'}:q):BEGINNER_QUESTS;}
+// A guided farm's step 9 is A helping hand (11 Oct 2026, the owner's call; it was "Bring in the wheat", whose wheat was always ripe by
+// then): the hand opens at level 3, and every farmer is at least level 4 there (eight steps of 15 XP). The step numbers stay the same,
+// so a farm in the middle of the guide keeps its place. Older (legacy) farms keep their chore and wheat steps.
+const GUIDED_STEPS=Object.freeze({
+ chore:{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. Save the coins for your next building.',guide:'eggs',icon:'egg'},
+ wheat:{id:'hand',title:'A helping hand',description:'Help at the Greenhouse: water the three dry seedlings. Every stop on the farm has a small job like this.',guide:'hand',icon:'sprout'}
+});
+function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>GUIDED_STEPS[q.id]??q):BEGINNER_QUESTS;}
 // Step 10 says how long the eggs take on this farm now (7 Oct 2026: it said 5 minutes, where the beginner boost makes it about 1),
-// to the nearest 5 seconds.
+// to the nearest 5 seconds (the quick first batch too, 11 Oct 2026).
 export function beginnerProgress(state,now=Date.now()){
- const guide=state.onboarding??{completed:0,milestones:{}},eggs=state.buildings?.coop?formatDuration(Math.round(recipeDuration(state,'eggs',now)/5000)*5000):'5m';
+ const guide=state.onboarding??{completed:0,milestones:{}},eggs=state.buildings?.coop?formatDuration(Math.round(batchDuration(state,'eggs',now)/5000)*5000):'5m';
  return beginnerQuests(state).map((quest,index)=>({...quest,...(quest.id==='collect'?{description:`Collect a finished batch from a building. Chicken feed becomes eggs in ${eggs}.`}:{}),index,done:index<guide.completed,current:index===guide.completed,ready:!!guide.milestones[quest.id]}));
 }
 // Guide steps finish themselves as soon as the farmer has done them (many never found the "Complete step" button and
@@ -400,6 +409,13 @@ export function claimBeginnerQuest(state,id,now=Date.now()){
 // which is why the time to the first touch is a duration of its own. Without sentAt they count as the server's. Each part is kept once:
 // a time only within the last day and never ahead of the server, a duration up to 10 minutes; anything else is left out.
 export const FIRST_LOOK_MAX_MS=600000;
+// 11 Oct 2026 (Part A, A1): the load chain (look.chain), to see which step of the wait is slow: how long after the start of the page around
+// the farm (its own clock, performance.now()) CrazyGames' SDK answered (hello), its token came (token), the account was there (account:
+// a guest made or a sign-in found), our server sent the farm (farm), the farm page started (frame), the 3D models were in (models) and the
+// first picture was drawn (render); lost is 1 when the 3D view was lost during that first visit (public/game.js). At most these 8, each a
+// whole number of ms up to 10 minutes and kept once, like the other parts; anything else is left out. A step a page does not have (the
+// website has no hello or token) is simply not there.
+export const FIRST_LOOK_CHAIN=Object.freeze(['hello','token','account','farm','frame','models','render','lost']);
 export function recordFirstLook(state,look,now=Date.now()){
  if(!look||typeof look!=='object'||!state.onboarding)return;
  const shift=Number.isFinite(look.sentAt)?now-look.sentAt:0;
@@ -407,6 +423,9 @@ export function recordFirstLook(state,look,now=Date.now()){
  const span=v=>Number.isFinite(v)&&v>=0?Math.min(Math.round(v),FIRST_LOOK_MAX_MS):undefined;
  const parts={shownAt:time(look.shownAt),loadMs:span(look.loadMs),readyAt:time(look.readyAt),readyMs:span(look.readyMs),frame:typeof look.frame==='string'&&/^\d{2,5}x\d{2,5}$/.test(look.frame)?look.frame:undefined,firstInputAt:time(look.firstInputAt),firstInputMs:span(look.firstInputMs)};
  const seen={...state.onboarding.firstLook};for(const [key,value] of Object.entries(parts))if(value!==undefined&&seen[key]===undefined)seen[key]=value;
+ const chain=look.chain&&typeof look.chain==='object'&&!Array.isArray(look.chain)?look.chain:{},links={...seen.chain};
+ for(const key of FIRST_LOOK_CHAIN){const value=key==='lost'?(chain.lost===1?1:undefined):span(chain[key]);if(value!==undefined&&links[key]===undefined)links[key]=value;}
+ if(Object.keys(links).length)seen.chain=links;
  if(Object.keys(seen).length)state.onboarding.firstLook=seen;
 }
 function recordBeginnerAction(state,action,result,before){
@@ -422,6 +441,8 @@ function recordBeginnerAction(state,action,result,before){
  if(action.type==='collect'||action.type==='collect_all')m.collect=true;
  if(action.type==='checkin')m.gift=true;
  if(action.type==='chore'&&result.success)m.chore=true;
+ // Step 9 of a guided farm: any finished helping-hand job, also one done before the step came (11 Oct 2026).
+ if(guidedFarm(state)&&!state.onboarding.rewardClaimed&&(state.stats.activities??0)>0)m.hand=true;
 }
 
 export const QUESTS = Object.freeze([
@@ -892,6 +913,12 @@ export const rookieBoost=(state,now=Date.now())=>ROOKIE_TIMER_BOOST*Math.min(1,r
 // The village's Wind pump and Longhouse (landmarks, Oct 2026) take 25% off the Village Fields' batches and 10% off every village place's;
 // on the Fields both count (x0.675). A batch already running keeps the time it started with.
 export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-ranchSpeedup(state):1)*(RECIPES[id].building==='glasshouse'&&hasImprovement(state,'heating')?.75:1)*(1-masterBonus(state,'production'))*(['windmill','mill'].includes(RECIPES[id].building)?1-valleyProjectBonus(state,'watermill'):1)*(RECIPES[id].building==='villagefields'?1-landmarkBonus(state,'windpump'):1)*(worldTwoBuilding(RECIPES[id].building)?1-landmarkBonus(state,'longhouse'):1));}
+// The first batch in a new building is ready in 30 seconds (11 Oct 2026, the owner's call): the guide's eggs come at once instead of
+// after three minutes, and the first milk, grain meal and bread pay off right away. Guided farms only, once per building: its very first
+// batch (batchSequence counts every batch started there; of several started at once only the first is quick). Time only, never more goods.
+export const FIRST_BATCH_MS=30000;
+export function quickFirstBatch(state,building){return guidedFarm(state)&&!(state.buildings?.[building]?.batchSequence>0);}
+export function batchDuration(state,id,now=Date.now()){const full=recipeDuration(state,id,now);return quickFirstBatch(state,RECIPES[id].building)?Math.min(FIRST_BATCH_MS,full):full;}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
@@ -909,7 +936,9 @@ export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vege
 // refuses every 'fish', so no save gets a pond. Release: closed first (site, about 40 minutes, then farm-api), then POND_OPEN true with
 // farm-api first and the site after it. Once ponds exist farm-api never goes back before the closed release.
 export const POND_OPEN=false,POND_LEVEL=4;
-export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),challenges:3,cart:7,activities:8,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
+// A helping hand opens at level 3 (11 Oct 2026, the owner's call; it was 8): its stops grow with the farm until level 10 (activityStatus),
+// so it pays no more an hour than from level 8 before. Level 3 then opens lettuce, Daily challenges and the hand: three things.
+export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:7,village:8,commission:16});
 export const FEATURE_NAMES={...(POND_OPEN?{fishing:'Fishing pond'}:{}),challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
@@ -1345,7 +1374,7 @@ function startSingleProduction(state,id,now=Date.now(),random=secureChoreRandom)
  if(a.busy)throw new Error('All production slots are occupied. Collect a finished batch first.');
  if(a.missing.length)throw new Error('Missing ingredients: '+a.missing.map(m=>`${m.name} (${m.have}/${m.need})`).join(', ')+'.');
  if(a.poor)throw new Error(`You need ${r.coins} coins for this batch.`);
- const duration=recipeDuration(state,id,now);
+ const duration=batchDuration(state,id,now);
  state.coins-=a.price;
  for(const [k,n]of Object.entries(r.input))state.inventory[k]-=n;
  b.batchSequence=(b.batchSequence??0)+1;
@@ -1705,14 +1734,16 @@ export function availableDaily(state,q){
   const stat=q.stat??'';
   if(stat.startsWith('harvest_')&&!cropUnlocked(state,stat.slice(8)))return false;
   // A "made" goal counts what is collected from a building's batches, so it waits for a recipe that makes the good, not just a way to get it: the
-  // paddock's helping hand gives fertilizer from level 8, the fertilizer recipe opens at 14 (9 Oct 2026).
+  // paddock's helping hand gives fertilizer from level 3 (8 before 11 Oct 2026), the fertilizer recipe opens at 14 (9 Oct 2026).
   if(stat.startsWith('made_')&&!Object.entries(RECIPES).some(([id,r])=>r.output[stat.slice(5)]&&recipeUnlocked(state,id)))return false;
   if(stat==='produced'&&!Object.keys(RECIPES).some(id=>recipeUnlocked(state,id)))return false;
   if(stat.startsWith('built_')&&!buildingEligible(state,stat.slice(6)))return false;
   if(stat==='varieties'&&q.target>Object.keys(CROPS).filter(k=>cropUnlocked(state,k)).length)return false;
   const gate=stat==='mastery_medals'?'mastery':stat==='projects'?'projects':stat==='silo_upgrades'?'silo':stat==='tractor'?'tractor':stat==='dailies'?'challenges':stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':stat.startsWith('valley_')?'valleymarket':stat==='ranch_focus'?'ranch':stat==='improvements'?'estateworkshop':stat.startsWith('depot_')?'tradedepot':stat.startsWith('fair_')?'grandfair':null;
   if(gate&&!featureUnlocked(state,gate))return false;
-  if(stat==='fertilized'&&!itemAvailable(state,'fertilizer'))return false;
+  // Fertilizer is used from the Windmill's window only: from level 3 the paddock's helping hand gives some (11 Oct 2026), and "use
+  // fertilizer" quests and challenges wait for the Windmill (level 6), as they did when the hand opened at 8.
+  if(stat==='fertilized'&&(!itemAvailable(state,'fertilizer')||!buildingEligible(state,'windmill')))return false;
   // 10 Oct 2026 (balance review): quests for things that are not open yet waited in the list from level 2: the Windmill's, the
   // boosts' (level 10) and the delivery orders' (level 7; honey ones also need honey).
   if(stat.startsWith('windmill_')&&!buildingEligible(state,'windmill'))return false;
@@ -3435,6 +3466,7 @@ export function completeProject(state,now=Date.now()){
 // so two visits an hour apart, and farm events ask at most two rounds, public/event-goals.js): a round pays 240 XP at every level, so a
 // farmer who kept the game open earned about 960 XP an hour here alone, two or three levels an hour between levels 8 and 15, and a
 // quarter of all XP between levels 5 and 30. A farmer who comes back a few times a day finds all four stops ready, as before.
+// These are the full amounts, from level 10; below it a stop rests less and pays less in step (11 Oct 2026, handShare below).
 export const ACTIVE_STATIONS=Object.freeze({
  greenhouse:{name:'Greenhouse',icon:'sprout',model:'greenhouse_003',coins:0,xp:42,cooldown:3600000,item:'lettuce',itemCount:3,instruction:'Water the three dry seedlings.',target:'Dry seedling',other:'Healthy seedling',verb:'Water',task:'Water dry seedling',targetIcon:'droplets',otherIcon:'sprout'},
  apiary:{name:'Apiary',icon:'flower-2',model:'apiary_001',coins:0,xp:48,cooldown:3600000,item:'honey',itemCount:3,instruction:'Collect the three capped honey frames. Leave the bees at work.',target:'Capped honey',other:'Bees at work',verb:'Collect',task:'Collect capped honey',targetIcon:'hexagon',otherIcon:'flower-2'},
@@ -3442,14 +3474,23 @@ export const ACTIVE_STATIONS=Object.freeze({
  workshop:{name:'Tool workshop',icon:'wrench',model:'lawn_mower_001',coins:0,xp:48,cooldown:3600000,item:'feed',instruction:'Repair the three worn tools. The others are ready to use.',target:'Worn tool',other:'Ready tool',verb:'Repair',task:'Repair worn tool',targetIcon:'wrench',otherIcon:'check'}
 });
 export const ACTIVITY_ROUND_REWARD=Object.freeze({coins:250,xp:60});
+// The hand grows with the farm (11 Oct 2026, the owner's call): it opens at level 3, and until level 10 a stop rests 6 minutes for every
+// farm level (18 minutes at level 3, 54 at level 9) and its XP and the round bonus are a tenth of the full amount for every level (30% at
+// level 3). So it pays at most 240 XP and 250 coins an hour at every level, as from level 8 before, and a new farmer finds the stops ready
+// again within half an hour. The goods stay the same. From level 10 everything is as before; older (legacy) farms keep the full amounts.
+// The level is the one the farm has when the job finishes, before its XP; a stop that is already resting keeps its time.
+export const HAND_FULL_LEVEL=10,HAND_REST_PER_LEVEL=360000;
+export function handShare(state){return guidedFarm(state)?Math.min(1,Math.max(1,levelOf(state))/HAND_FULL_LEVEL):1;}
+export function activityRoundReward(state){const share=handShare(state);return {coins:Math.round(ACTIVITY_ROUND_REWARD.coins*share),xp:Math.round(ACTIVITY_ROUND_REWARD.xp*share)};}
 export function activityTargets(station,cycle){
  const offset=(Object.keys(ACTIVE_STATIONS).indexOf(station)+cycle)%6;
  return [0,2,3].map(i=>(i+offset)%6);
 }
 export function activityStatus(state,station,now=Date.now()){
  if(!Object.hasOwn(ACTIVE_STATIONS,station))throw new Error('Choose a farm activity.');
- const a=state.activities??{jobs:{},cooldowns:{},completed:{},round:[],rounds:0};
- return {...ACTIVE_STATIONS[station],station,job:a.jobs[station]??null,remaining:Math.max(0,(a.cooldowns[station]??0)-now),completed:a.completed[station]??0,inRound:a.round.includes(station)};
+ const a=state.activities??{jobs:{},cooldowns:{},completed:{},round:[],rounds:0},stop=ACTIVE_STATIONS[station],share=handShare(state);
+ const grown=share<1?{xp:Math.round(stop.xp*share),cooldown:Math.min(stop.cooldown,HAND_REST_PER_LEVEL*Math.max(1,levelOf(state)))}:{};
+ return {...stop,...grown,share,station,job:a.jobs[station]??null,remaining:Math.max(0,(a.cooldowns[station]??0)-now),completed:a.completed[station]??0,inRound:a.round.includes(station)};
 }
 function startActivity(state,station,now){
  const s=activityStatus(state,station,now);
@@ -3459,7 +3500,7 @@ function startActivity(state,station,now){
  state.activities.jobs[station]=job;return {station,startedAt:now};
 }
 function workActivity(state,action,now){
- const s=activityStatus(state,action.station,now),job=s.job;
+ const s=activityStatus(state,action.station,now),job=s.job,bonus=activityRoundReward(state);
  if(!job||action.startedAt!==job.startedAt)throw new Error('Open the current job and try again.');
  if(!Number.isInteger(action.target)||!job.targets.includes(action.target))throw new Error(s.instruction);
  if(job.done.includes(action.target))throw new Error('That part of the job is already done.');
@@ -3470,7 +3511,7 @@ function workActivity(state,action,now){
  a.completed[action.station]=(a.completed[action.station]??0)+1;
  if(!a.round.includes(action.station))a.round.push(action.station);
  const roundComplete=Object.keys(ACTIVE_STATIONS).every(key=>a.round.includes(key));
- const coins=s.coins+(roundComplete?ACTIVITY_ROUND_REWARD.coins:0),xp=s.xp+(roundComplete?ACTIVITY_ROUND_REWARD.xp:0);
+ const coins=s.coins+(roundComplete?bonus.coins:0),xp=s.xp+(roundComplete?bonus.xp:0);
  if(roundComplete){a.round=[];a.rounds++;}
  state.coins+=coins;state.xp+=xp;
  const itemCount=s.item?(s.itemCount??1):0;

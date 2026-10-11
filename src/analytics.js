@@ -61,7 +61,8 @@ export function trackCommerce(event,params={},win=globalThis.window){
 // Pacing events from inside the game (how far new farmers get, and where they stop). Only numbers and a few fixed
 // words are accepted, so nothing personal can be sent along.
 const GAME_EVENTS=new Set(['game_session','level_up','guide_step','guide_complete','reminder_prompt','connection_problem','connection_recovered','farm_load_retry']);
-const GUIDE_STEPS=new Set(['harvest','sell','plant','water','produce','gift','chore','sell_egg','tend','wheat','collect']);
+// 'hand': a guided farm's step 9 since 11 Oct 2026 (it was 'wheat').
+const GUIDE_STEPS=new Set(['harvest','sell','plant','water','produce','gift','chore','sell_egg','tend','wheat','hand','collect']);
 const PROMPT_ACTIONS=new Set(['shown','accepted','dismissed','failed']);
 // Which reminder the question offered (28 Sep 2026): push on the device, or the daily email where push cannot work.
 const PROMPT_CHANNELS=new Set(['push','email']);

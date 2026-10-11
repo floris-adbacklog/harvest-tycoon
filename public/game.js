@@ -8,17 +8,17 @@ import {createFamilyUI} from './family-ui.js';
 import {createPassUI} from './pass-ui.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
-import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase} from './farm-state.js';
+import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketSaleValue} from './farm-state.js';
 import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { CROPS, ITEMS, BUILDINGS, RECIPES, QUESTS, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, productionJobs, unlockEntries, fieldTapAction, canWater, waterUntil, normalizeFarm } from './farm-state.js';
+import { CROPS, ITEMS, BUILDINGS, RECIPES, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, productionJobs, unlockEntries, fieldTapAction, canWater, waterUntil, normalizeFarm } from './farm-state.js';
 import { createReminderNudge,harvestAction } from './reminder-nudge.js';
 import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments, pondBounds } from './farm-layout.js';
 import { createMinimap } from './minimap.js';
 import { scatterProps, seeded } from './farm-props.js';
-import { createEconomyUI } from './economy-ui.js?v=familyhall-model-2';
+import { createEconomyUI,marketWorth } from './economy-ui.js?v=familyhall-model-2';
 import { createFarmClient, farmNow } from './farm-client.js';
 import { createRetentionUI } from './retention-ui.js';
 import { createGrowthUI } from './growth-ui.js';
@@ -31,7 +31,7 @@ import { createRookieUI } from './rookie-ui.js';
 import { art,refreshArt } from './visual-icons.js';
 import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
-import { createQuestsUI,villageQuestReady } from './quests-ui.js';
+import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups } from './quests-ui.js';
 import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
@@ -54,6 +54,8 @@ import { createFarmShare,photoFrame } from './farm-share.js';
 import { fitText } from './fit-text.js';
 import { createCoach } from './coach.js';
 import { guideSteps } from './guide-steps.js';
+import { guardWheel } from './wheel-guard.js';
+import { nextGoal } from './next-goal.js';
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
@@ -104,6 +106,8 @@ let familyFlag=null;
 const familyDecor=[],factoryDecor=[],yardDecor={pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 // The pointer for Show me (public/coach.js): one at a time, gone after the last tap.
 const coach=createCoach();
+// The wheel never scrolls the page around the game (11 Oct 2026, Part A A7, wheel-guard.js).
+guardWheel();
 let liveEvents,familyUI,passUI,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN
@@ -119,6 +123,9 @@ window.harvestSound=kind=>farmAudio.play(kind);
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 // Pacing measurements go to the page around the game (see src/analytics.js); they carry numbers only.
 const track=(event,params={})=>{if(adminView)return;try{window.parent.harvestBridge?.trackGame?.(event,params);}catch{}};
+// A step of a new farm's load chain (11 Oct 2026, Part A A1; farm-state.js FIRST_LOOK_CHAIN), on the clock of the page around the farm,
+// where src/crazygames.js and src/game-cloud.js keep theirs: the 3D models in (models) and the first picture (render). Sent with the first look.
+const markChain=key=>{try{const chain=window.parent.harvestChain??={};chain[key]??=Math.round(window.parent.performance.now());}catch{}};
 let sessionTracked=false;
 const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
 // A crop medal the action earned (a tap harvest, the tractor) gets its toast at the bottom (medal-notice.js, Oct 2026).
@@ -153,7 +160,14 @@ function toast(message){showToast??=createToast($('toast'));showToast(message);}
 const WATER_FIRST_MINUTE="Water works in a crop's first minute: plant wheat, then water it.";
 // The one short toast at the bottom for new crop medals (farm.html #medal-toast): the toast at the top stays free for the action's own.
 let medalNotice;
-function medalToast(medals){if(!medals.length||!$('medal-toast'))return;medalNotice??=createMedalNotice($('medal-toast'),{state});medalNotice.earned(medals);}
+// The guide's step now (11 Oct 2026, Part A A11): from the first harvest to the first sale only one line speaks, so a medal earned while
+// step 2 waits (the first basket's, or one for the rest of the corn) is held until a moment after the sale (heldMedals; updateUI lets it
+// go), and at most 20 seconds for a farmer who does not sell yet.
+const guideAt=id=>!villageWorld&&beginnerProgress(state).find(q=>q.current)?.id===id;
+const MEDAL_HOLD_MS=20000;
+let heldMedals=[],heldTimer=0;
+function showMedals(medals){medalNotice??=createMedalNotice($('medal-toast'),{state});medalNotice.earned(medals);}
+function medalToast(medals){if(!medals.length||!$('medal-toast'))return;if(guideAt('sell')){heldMedals.push(...medals);heldTimer||=setTimeout(()=>{heldTimer=0;const held=heldMedals;heldMedals=[];if(held.length)showMedals(held);},MEDAL_HOLD_MS);return;}showMedals(medals);}
 // A gift from the admin (public/player-profiles.js, floris@millstone.nl only) picked up on this farm's next
 // load and cleared server-side (farm-api index.ts). The message, if any, is set with textContent — never HTML —
 // so there is nothing here that needs escaping.
@@ -161,8 +175,9 @@ function medalToast(medals){if(!medals.length||!$('medal-toast'))return;medalNot
 // the second day's gift is collected) the double harvest that comes with tomorrow's gift (farm-state.js checkIn).
 // 7 Oct 2026: it leads with the next goal, a building to build (the Feed Mill, then the Dairy Barn), so a farmer who finishes the guide
 // in a few minutes has something to do now instead of only a reason to leave. One sentence each way, so it is translated whole.
-function comeBackNote(now=farmNow()){
- const goal=['mill','dairy'].find(key=>!state.buildings[key]?.built&&buildingEligible(state,key)&&buildingCost(state,key)>0);
+// lead: false (11 Oct 2026, Part A A8) when the card's green button already leads to another goal (the quests that wait): one goal at a time.
+function comeBackNote(now=farmNow(),{lead=true}={}){
+ const goal=lead&&['mill','dairy'].find(key=>!state.buildings[key]?.built&&buildingEligible(state,key)&&buildingCost(state,key)>0);
  const name=goal?BUILDINGS[goal].name:'',cost=goal?buildingCost(state,goal).toLocaleString('en-US'):'',back=(state.login?.visits??0)<2;
  const times=[...state.plots.filter(p=>p.crop&&p.readyAt>now).map(p=>p.readyAt),...Object.values(state.buildings).flatMap(productionJobs).filter(j=>j.readyAt>now).map(j=>j.readyAt)];
  const last=times.length?Math.max(...times):0,clock=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
@@ -170,10 +185,14 @@ function comeBackNote(now=farmNow()){
  if(goal)return back?`Next goal: build the ${name} for ${cost} coins in Buildings. ${when} Come back tomorrow for your next daily gift and 30 minutes of double harvest.`:`Next goal: build the ${name} for ${cost} coins in Buildings. ${when}`;
  return back?`${when} Come back tomorrow for your next daily gift and 30 minutes of double harvest.`:when;
 }
-function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',text=''}={}){
+// action {label,run} (11 Oct 2026, Part A A8): the card leads somewhere, the guide's end to the next goal. Its green button does that and
+// Thank you stands beside it as the quiet choice; still one green button.
+function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',text='',action=null}={}){
  if(!gift)return;
  // While fishing the gift waits until the farmer is back on the farm (pond-ui.js).
- if(pond?.hold(()=>giftPopup(gift,{eyebrow,title,icon,text})))return;
+ if(pond?.hold(()=>giftPopup(gift,{eyebrow,title,icon,text,action})))return;
+ const actions=document.querySelector('#gift-dialog .gift-actions'),go=document.querySelector('#gift-dialog .gift-action');
+ if(actions&&go){actions.hidden=!action;document.querySelector('#gift-dialog .gift-done').hidden=Boolean(action);go.textContent=action?.label??'';go.onclick=action?()=>{$('gift-dialog').close();action.run();}:null;}
  $('gift-icon').innerHTML=art(icon);document.querySelector('#gift-dialog .eyebrow').textContent=eyebrow;$('gift-title').textContent=title;
  const rewards=[];
  if(gift.coins)rewards.push(`<strong class="reward-coins">${art('coins')}+${gift.coins.toLocaleString('en-US')} coins</strong>`);
@@ -641,7 +660,8 @@ function flyToMarket(x,y,z,html,count,delay=0){
  if(reducedMotion)return;
  const market=[...document.querySelectorAll('#market-button')].find(b=>b.offsetParent);if(!market)return;
  const m=market.getBoundingClientRect(),from=toScreen(x,y,z),to={x:m.left+m.width/2,y:m.top+m.height/2};
- setTimeout(()=>flyHarvest({from,to,html,count,onArrive:()=>bump(market)}),delay);
+ // The harvest landing at the Market is when step 2's pointer comes (11 Oct 2026, Part A A11, beginner-ui.js landed).
+ setTimeout(()=>flyHarvest({from,to,html,count,onArrive:()=>{bump(market);beginner?.landed?.();}}),delay);
 }
 // Tapping a building's name while batches are ready collects them all right on the farm (as Collect all in its window does), and
 // the goods fly to the Market button. With nothing ready, or a tap on the building itself, its window opens.
@@ -661,8 +681,33 @@ async function tapBuilding(key){
 }
 // What an action gave, floating up from the field as small chips with their own picture (markup built here, never from input).
 const floatChip=(key,text,cls='')=>`<span class="float-chip ${cls}">${art(key)}${text}</span>`;
+// What a harvest is worth at today's prices (11 Oct 2026, Part A A11, a player's idea on Reddit): one coin chip beside what it brought in,
+// on the field itself, never a pop-up; the coins come when it is sold. Not in the village, whose crops sell at its own market.
+function worthChip(crops){
+ if(villageWorld)return '';const now=farmNow();
+ const base=Object.entries(crops).reduce((sum,[item,n])=>sum+(Object.hasOwn(ITEMS,item)?n*marketQuote(item,now).price:0),0),worth=base>0?marketSaleValue(state,base,now):0;
+ return worth>0?floatChip('coins',`worth ${worth.toLocaleString('en-US')}`,'is-worth'):'';
+}
 function floatReward(id,html){const v=plots[id];floatAt(v.x,2.4,v.z,html);}
-function floatAt(x,y,z,html){const p=new THREE.Vector3(x,y,z).project(camera),e=document.createElement('div');e.className='floating-reward';e.innerHTML=html;e.style.left=`${world.offsetLeft+(p.x*.5+.5)*world.clientWidth}px`;e.style.top=`${world.offsetTop+(-p.y*.5+.5)*world.clientHeight}px`;$('game').append(e);setTimeout(()=>e.remove(),1400);}
+function floatAt(x,y,z,html){const p=new THREE.Vector3(x,y,z).project(camera),e=document.createElement('div');e.className='floating-reward';e.innerHTML=html;e.style.left=`${world.offsetLeft+(p.x*.5+.5)*world.clientWidth}px`;e.style.top=`${world.offsetTop+(-p.y*.5+.5)*world.clientHeight}px`;$('game').append(e);floatClear(e);setTimeout(()=>e.remove(),1400);}
+// A float stays in sight (11 Oct 2026, Part A A11: at 918x516 the first basket's float, with what it is worth, rose from the top row of
+// fields under the level card and the level-2 line, and its start lay under the side tools). It starts low enough to stay below the bars
+// at the top and the toast's place all the way up (the float rises 75 px, styles.css @keyframes reward); the toast's place counts also
+// while it is empty, as a level-up's line follows the harvest a moment later (progression-ui.js). Sideways it moves into the free part
+// between the side tools and the guide card (or the next-goal card), or is centred there when it is a little wider.
+const FLOAT_RISE=75,FLOAT_OVER=['#journal-button','.resources','#beginner-mobile','#next-goal-mobile'];
+function floatClear(e){
+ const f=e.getBoundingClientRect();if(!f.width)return;
+ const box=sel=>{const el=document.querySelector(sel);return el&&!el.hidden&&el.getClientRects().length?el.getBoundingClientRect():null;};
+ const over=FLOAT_OVER.map(box),t=$('toast'),g=$('game').getBoundingClientRect();
+ if(t){const w=Math.max(t.offsetWidth,360),c=g.left+g.width/2,top=g.top+t.offsetTop;over.push({left:c-w/2,right:c+w/2,top,bottom:top+Math.max(t.offsetHeight,46),width:w});}
+ const tools=box('.side-tools'),side=tools&&tools.top<innerHeight*.6&&tools.left<innerWidth*.3?tools.right:g.left;
+ const card=[box('.beginner-card'),box('#next-goal-card')].find(Boolean),end=card&&card.left>innerWidth*.6?card.left:g.right;
+ let shift=0;if(end-side>200)shift=f.width<=end-side-12?(f.left<side+6?side+6-f.left:f.right>end-6?end-6-f.right:0):(side+end)/2-(f.left+f.right)/2;
+ const need=Math.max(0,...over.filter(r=>r?.width&&r.right>f.left+shift&&r.left<f.right+shift&&r.top<f.bottom).map(r=>r.bottom))+FLOAT_RISE+6;
+ if(shift)e.style.left=`${parseFloat(e.style.left)+shift}px`;
+ if(f.top<need)e.style.top=`${parseFloat(e.style.top)+need-f.top}px`;
+}
 async function interact(id,forcedAction){
  if(!ready)return;
  const plot=state.plots[id];
@@ -682,7 +727,7 @@ async function interact(id,forcedAction){
   const result=await runAction({type:'field',id,action,crop:selectedCrop});
   // The golden first harvest shows on the field itself, so the toast stays free for the guide step it completes. A medal it earned
   // gets a chip of its own above it (Oct 2026).
-  if(action==='harvest'){harvestFlight(id,result.crop,flightCount);if(result.firstHarvest)particleBurst(id,true);floatReward(id,withMedals(newMedals(medalsBefore,state),(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+floatChip('xp',`+${result.xp} XP`,'is-xp')));}
+  if(action==='harvest'){harvestFlight(id,result.crop,flightCount);if(result.firstHarvest)particleBurst(id,true);floatReward(id,withMedals(newMedals(medalsBefore,state),(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+worthChip({[result.crop]:result.quantity})+floatChip('xp',`+${result.xp} XP`,'is-xp')));}
   if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
   if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
   if(action==='plant')floatReward(id,floatChip(state.plots[id].crop??selectedCrop,'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));
@@ -742,11 +787,24 @@ function endSweep(){
  if(action==='harvest')for(const f of result.fields){crops[f.crop]=(crops[f.crop]??0)+f.quantity;xp+=f.xp;if(f.firstHarvest)golden=f.firstHarvest;}
  // The medals a sweep earned: their chips over its sum and ONE toast for all of them (Oct 2026).
  const medals=action==='harvest'?newMedals(run.medals,state):[];
- if(action==='harvest'){floatReward(last,withMedals(medals,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+floatChip('xp',`+${xp} XP`,'is-xp')));medalToast(medals);}
+ if(action==='harvest'){floatReward(last,withMedals(medals,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+worthChip(crops)+floatChip('xp',`+${xp} XP`,'is-xp')));medalToast(medals);}
  if(action==='water')floatReward(last,floatChip('water',result.count>1?`${result.count} fields · faster`:'+1 crop · faster'));
  if(action==='tend')floatReward(last,floatChip('care',`+${result.count} crop${result.count>1?'s':''}`));
  if(action==='plant'){floatReward(last,floatChip(result.crop,result.count>1?`${result.count} planted`:'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));if(result.short)toast('Out of coins for more seeds. Sell some produce at the market.');}
  renderer.shadowMap.needsUpdate=true;icons();
+}
+// Before a new farm's first harvest (11 Oct 2026, Part A A15) a harvest sweep may start anywhere, and the fields never stay out of sight:
+// after a release that left most of them off the screen, the view eases back to them. Only while a ripe crop waits for it (the starter corn),
+// so the rule and the line at the bottom always go together.
+const firstBasketWaits=()=>!adminView&&!villageWorld&&!(state.stats.harvested>0)&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt);
+let easing=0;
+function easeToFields(){
+ if(!plots.length||!camera)return;const r=world.getBoundingClientRect();
+ const seen=plots.filter(v=>{const p=toScreen(v.x,.5,v.z);return p.x>r.left&&p.x<r.right&&p.y>r.top&&p.y<r.bottom;}).length;
+ if(seen*2>=plots.length)return;
+ cancelAnimationFrame(easing);const from={pan,panDepth,zoom},start=performance.now();
+ const step=now=>{const t=Math.min(1,(now-start)/450),k=1-(1-t)**3;pan=from.pan*(1-k);panDepth=from.panDepth*(1-k);zoom=from.zoom+(1-from.zoom)*k;resize();if(t<1)easing=requestAnimationFrame(step);};
+ easing=requestAnimationFrame(step);
 }
 function showTool(tool){if(tool!==selectedTool)setTool(tool,false);const button=document.querySelector(`[data-tool="${tool}"]`);if(!button)return;button.classList.remove('just-used');void button.offsetWidth;button.classList.add('just-used');}
 function setTool(tool,picked=true){selectedTool=tool;toolPicked=picked;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
@@ -756,10 +814,14 @@ function setCrop(crop){selectedCrop=crop;try{localStorage.setItem(CROP_KEY,crop)
 function updateHint(){
  // A drag from a ripe crop or an empty field sweeps (Oct 2026): the computer hints say so, and that the grass moves the view.
  let text=selectedTool==='tend'?'Give growing crops extra care when the green marker appears. Earn +1 crop.':selectedTool==='water'?'Water a crop soon after planting for +1 crop and 20% less waiting.':selectedTool==='harvest'?'Click a ripe crop, or hold the mouse button and sweep over your crops to harvest them all. Drag the grass to move the view.':`Click an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water it and give extra care when it is ready. Hold the mouse button and sweep over empty fields to plant them all. Drag the grass to move the view.`;
- if(!state.stats.harvested&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt))text='Your first crops are ready. Click one, or hold the mouse button and sweep across them to harvest them all!';
+ if(!state.stats.harvested&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt))text='Your first crops are ready. Click one, or hold the mouse button anywhere and sweep across them to harvest them all!';
  if(selectedTool==='plant'&&state.stats.harvested>=3&&state.stats.produced===0)text='Your farm can do more. Click a building to start producing!';
  if(mobileLayout.matches)text=selectedTool==='plant'?`Tap an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water and care for it. Drag to move the view.`:`Tap a field to ${selectedTool==='tend'?'give extra care':selectedTool}. Drag to move the view.`;
  $('hint-text').textContent=text;
+ // The line at the bottom says the same rule (11 Oct 2026, Part A A15): before the first harvest a sweep starts anywhere, and the grass does
+ // not move the farm yet. Only when the English line changes (the page translates it in place).
+ const note=$('bottom-note-copy'),line=firstBasketWaits()?'Sweep across your ripe crops from anywhere. Drag with the right mouse button to explore.':'Click to work · Sweep across crops · Drag the grass to explore';
+ if(note&&note.dataset.line!==line){note.dataset.line=line;note.textContent=line;}
 }
 // The numbers in the header that a sweep moves field by field (Oct 2026): coins, level and XP, and what the Market button counts.
 // updateUI shows them too, with everything else.
@@ -768,7 +830,14 @@ function hudNumbers(){
  const lp=levelProgress(state),lvl=lp.level;
  $('level').textContent=lvl;$('xp-text').textContent=`${lp.current} / ${lp.target} XP`;$('xp-bar').max=lp.target;$('xp-bar').value=lp.current;$('journal-button').style.setProperty('--xp',String(Math.min(100,Math.round(lp.current/Math.max(1,lp.target)*100))));
  // What the Market button counts: the goods its market buys (village goods in the village, the rest on the farm).
- const count=Object.entries(state.inventory).reduce((a,[k,n])=>a+(villageGood(k)===villageWorld?n:0),0);$('stock-count').hidden=count===0;$('stock-count').textContent=count;
+ const count=Object.entries(state.inventory).reduce((a,[k,n])=>a+(villageGood(k)===villageWorld?n:0),0);
+ // From the first harvest to the first sale it shows what the basket is worth today instead (11 Oct 2026, Part A A11: the count was about
+ // 37, mostly starter stock that cannot be sold yet): the same number as "This basket is worth" on the Crops tab that Market then opens on
+ // (the corn and the starter wheat). Its name says it too.
+ const worth=guideAt('sell')?marketWorth(state,'crops',farmNow()):0,badge=$('stock-count'),market=$('market-button');
+ badge.hidden=!worth&&count===0;badge.classList.toggle('is-worth',worth>0);
+ if(worth){const text=worth.toLocaleString('en-US');if(badge.dataset.worth!==text){badge.dataset.worth=text;badge.innerHTML=`${art('coins')}${text}`;}market.setAttribute('aria-label',`Market: your basket is worth ${text} coins`);}
+ else{if(badge.dataset.worth){delete badge.dataset.worth;}badge.textContent=count;market.removeAttribute('aria-label');}
 }
 function updateUI(){
  hudNumbers();
@@ -786,7 +855,10 @@ function updateUI(){
  $('level-name').textContent=levelTitle(lvl);
  // What the next level brings, on the level card (computer screens): there is always something just ahead.
  const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';
- $('task-dot').hidden=!QUESTS.some((q,i)=>!state.claimed.includes(i)&&state.stats[q.stat]>=q.target)&&!villageQuestReady(state);
+ // How many quests wait to be claimed, one tap each in Quests (11 Oct 2026, Part A A13; it was "!").
+ {const waiting=questGroups(state).ready.length+(villageQuestReady(state)?villageQuestGroups(state).ready.length:0);$('task-dot').hidden=!waiting;$('task-dot').textContent=waiting>99?'99+':String(waiting);}
+ // The medals of the first basket, a moment after the first sale (A11).
+ if(heldMedals.length&&!guideAt('sell')){const medals=heldMedals;heldMedals=[];clearTimeout(heldTimer);heldTimer=0;setTimeout(()=>medalToast(medals),2600);}
  familyUI?.refresh();passUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();villageSquare?.refresh();boat?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
@@ -794,17 +866,38 @@ function sell(item='category'){return economy.sell(item);}
 // World II's own quests (public/quests-ui.js, from level 100).
 async function claimVillage(id){try{const r=await runAction({type:'village_quest',id});updateUI();toast(`Village quest complete! +${r.coins.toLocaleString('en-US')} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 async function claim(id,{quiet=false}={}){try{const r=await runAction({type:'quest',id});updateUI();if(!quiet)toast(`Quest complete! +${r.coins} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
-function openDialog(id){if(id==='tasks-dialog'){quests.open();return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;}
+// While step 2 waits, Market opens on Crops with Sell all corn in view: two taps instead of three (11 Oct 2026, Part A A11). Every time, the
+// pointer shows Sell all corn there and brings it into view (a short frame has it below the fold), also when the pointer to Market went
+// with an earlier tap (a farmer who taps the corn one by one). Step 7 the same once its eggs are in: Farm goods and Sell all eggs.
+function guidedMarket(){return guideAt('sell')?'market':guideAt('sell_egg')&&(state.inventory.eggs??0)>0?'eggs':null;}
+function openDialog(id){
+ if(id==='tasks-dialog'){quests.open();return;}
+ const way=id==='market-dialog'?guidedMarket():null;
+ if(way){economy.openMarket(way==='market'?'crops':'goods');$(id).scrollTop=0;const steps=coach.active?null:guideSteps(way,{state,now:farmNow()});if(steps)coach.start(steps.slice(1),{auto:true});return;}
+ document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;
+}
 // On a computer the side tools float over the map: a building name that would sit behind them is hidden until the map
 // moves (desktop-hud.css keeps the tools see-through). Measured when the window or the tools change, not every frame.
 // The home and fields views centre the farm between the side tools and, while it is open, the Beginner guide on the right
 // (hudShift, in pixels).
-let toolsBox=null,hudShift=0;
+let toolsBox=null,hudShift=0,fieldRoom=null;
+// The free height for the fields (11 Oct 2026, Part A A14): between the bars at the top (the level card and coins, the guide's one-line
+// banner) and the tool dock, in the farm view's own pixels. A short frame fits the fields into it (resize).
+function measureFieldRoom(){
+ const w=world.getBoundingClientRect();if(!w.height){fieldRoom=null;return;}
+ const box=sel=>{const el=document.querySelector(sel);if(!el||el.hidden||!el.getClientRects().length)return null;return el.getBoundingClientRect();};
+ const tops=['#journal-button','.resources','#beginner-mobile','#next-goal-mobile'].map(box).filter(r=>r&&r.width&&r.bottom>w.top&&r.top<w.top+w.height/2);
+ const dock=box('.bottom-hud .tool-dock')??box('.bottom-hud');
+ const top=Math.max(0,...tops.map(r=>r.bottom-w.top)),bottom=Math.min(w.height,dock&&dock.top>w.top+w.height/2?dock.top-w.top:w.height);
+ fieldRoom=bottom-top>w.height*.35?{top,bottom}:null;
+}
 function measureTools(){
+ measureFieldRoom();
  const tools=document.querySelector('.side-tools');if(!tools||mobileLayout.matches){toolsBox=null;hudShift=0;return;}
  const t=tools.getBoundingClientRect(),w=world.getBoundingClientRect();if(!t.width){toolsBox=null;hudShift=0;return;}   // not on screen
  toolsBox={left:t.left-w.left,right:t.right-w.left,top:t.top-w.top,bottom:t.bottom-w.top};
- const guide=document.querySelector('.beginner-card'),g=guide&&!guide.hidden&&$('quest-collapse')?.getAttribute('aria-expanded')!=='false'?guide.getBoundingClientRect():null;
+ // The next-goal card in the guide's place after it (11 Oct 2026, Part A A13) counts the same way.
+ const guide=document.querySelector('.beginner-card'),goal=$('next-goal-card'),g=guide&&!guide.hidden&&$('quest-collapse')?.getAttribute('aria-expanded')!=='false'?guide.getBoundingClientRect():goal&&!goal.hidden&&!$('next-goal-body')?.hidden?goal.getBoundingClientRect():null;
  hudShift=(toolsBox.right-(g?.width?w.right-g.left:0))/2;
 }
 const behindTools=(x,y,half)=>Boolean(toolsBox)&&x+half>toolsBox.left&&x-half<toolsBox.right&&y>toolsBox.top&&y-50<toolsBox.bottom;
@@ -834,13 +927,22 @@ function resize(){
  const overviewSpan=Math.max((bounds.maxY-bounds.minY+3)*height/usableHeight,(bounds.maxX-bounds.minX+3)*height/usableWidth);
  // The fields view shows every row: the block is 12 wide and 3.2 per row deep, seen diagonally (about .44 of its width plus depth
  // up and down, 1.4 across), with room for the buttons above and below it.
- const rows=Math.ceil(state.plots.length/4),fieldSpan=Math.max(21,24/aspect,(10+2.26*rows)/aspect,10.6+rows*2.06);
+ const rows=Math.ceil(state.plots.length/4);
+ // A frame under 650 px tall (11 Oct 2026, Part A A14: on CrazyGames 29% of the computers show the game under 450 px, and only 58% of those
+ // farmers harvested): the fields fill the free height between the top bars and the dock (measureFieldRoom), about 4 units of field and
+ // its crops a row with a little room around, instead of the fixed 21 units; at 840x430 the corn is about one and a half times as big.
+ // Taller frames keep the view they had. The block is centred with the ready and timer markers over its back row (lift below): at 1000x450
+ // the top corn's marker lay under the guide's one-line banner.
+ const fitRoom=height<650&&fieldRoom&&!villageWorld?fieldRoom:null,fieldFit=fitRoom?(6.1+rows*2.06)*height/(fitRoom.bottom-fitRoom.top):0;
+ const fieldSpan=fitRoom?Math.max(24/aspect,(10+2.26*rows)/aspect,fieldFit):Math.max(21,24/aspect,(10+2.26*rows)/aspect,10.6+rows*2.06);
  const homeSpan=Math.min(overviewSpan,Math.max(fieldSpan,mobile?32/aspect:38));
  const span=(viewMode==='fields'?fieldSpan:viewMode==='home'?homeSpan:overviewSpan)/zoom;
  // On a computer the side tools (and an open Beginner guide) cover the edges of the map: the home and fields views centre
  // the farm in the free part between them (the overview already keeps its own margins).
  const shift=!mobile&&viewMode!=='overview'?hudShift*span/height:0;
- camera.left=-span*aspect/2-shift;camera.right=span*aspect/2-shift;camera.top=span/2;camera.bottom=-span/2;
+ // The fitted fields sit in the middle of that free height with their markers, which stand 2.5 units over the back row (+1.25: 1000x450).
+ const lift=viewMode==='fields'&&fitRoom?((fitRoom.top+fitRoom.bottom)/2-height/2)*span/height+1.25:0;
+ camera.left=-span*aspect/2-shift;camera.right=span*aspect/2-shift;camera.top=span/2+lift;camera.bottom=-span/2+lift;
  let focus;
  if(villageWorld){
   // The village: the lake, the houses and the places, from the farm's angle. A computer sees all the places from the Lumber Camp to
@@ -1271,23 +1373,9 @@ function bindUI(){
  rookie=createRookieUI({state});
  quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,village:villageWorld});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
- beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote()}),guide:target=>{
-  coach.stop();sweepGhost.stop();
-  // Harvest (Oct 2026): sweeping is said first. A finger holds a field a moment before it sweeps (a quick swipe moves the farm).
-  // Step 1's Show me also draws a see-through sickle sweeping over the ripe starter corn, again and again until the first harvest, on
-  // the farm itself (no window, no bubble; every tap goes through).
-  const touch=mobileLayout.matches||matchMedia('(pointer: coarse)').matches,firstBasket=target==='harvest'&&beginnerProgress(state).find(q=>q.current)?.id==='harvest';
-  if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?(state.plots.some(p=>canWater(p,farmNow()))?'Tap a growing crop to water it.':WATER_FIRST_MINUTE):firstBasket?(touch?'Hold one ripe corn for a moment, then sweep across the others to harvest them, or tap one.':'Sweep across your ripe corn to harvest it, or tap one.'):touch?'Tap a ready crop, or hold one for a moment and sweep across the others.':'Click a ready crop, or sweep across your ready crops to harvest them all.');if(firstBasket&&!villageWorld)firstBasketGhost();}
-  // Show me points at the way in and lets the farmer tap it (1 Oct 2026: it used to open the window for them, so they never
-  // learnt where Market was). Only where nothing can be pointed at does it still open the window itself.
-  else if(guideSteps(target,{state,now:farmNow()}))coach.start(guideSteps(target,{state,now:farmNow()}));
-  else if(target==='eggs')economy.openMarket('goods');
-  else if(target==='market')openDialog('market-dialog');
-  else if(target==='produce')economy.openBuilding('coop');
-  else if(target==='collect'){const key=Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??Object.keys(state.buildings).find(k=>state.buildings[k].job)??'coop';economy.openBuilding(key);}
-  else if(target==='today')retention.openToday();
-  else if(target==='chores')growth.open('chores');
- }});
+ // The guide (Part A, 11 Oct 2026): showWay shows the way to a step (Show me, and by itself once after each step: auto); the coach must be
+ // free for that (idle). At the end the card leads to the next goal (A8, next-goal.js): one green button for it, Thank you beside it.
+ beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>{const goal=nextGoal(state);giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote(farmNow(),{lead:goal.kind!=='quest'}),action:goalAction(goal)});},guide:showWay,idle:()=>!coach.active,claimQuest:claim,openQuest:id=>quests.openAt(id),village:villageWorld});
  const inviteUI=createInviteUI({notify:toast});
  // Share my farm (Oct 2026): on the level-up card and on your own profile (src/player-profiles.js, through window.harvestShareFarm).
  // The village is another scene, so not there. It takes the invite link Invite a friend already asked for (one ask per visit).
@@ -1299,7 +1387,7 @@ function bindUI(){
  if(initialInvite)inviteLoadPopup(initialInvite);
  mobileUI=createMobileUI({openUtility,resetView});
  $('save-status').onclick=()=>client.retry();
- new ResizeObserver(resize).observe(world);const sideTools=document.querySelector('.side-tools');if(sideTools)new ResizeObserver(resize).observe(sideTools);const guideCard=document.querySelector('.beginner-card');if(guideCard)new ResizeObserver(resize).observe(guideCard);icons();
+ new ResizeObserver(resize).observe(world);const sideTools=document.querySelector('.side-tools');if(sideTools)new ResizeObserver(resize).observe(sideTools);const guideCard=document.querySelector('.beginner-card');if(guideCard)new ResizeObserver(resize).observe(guideCard);const goalCard=$('next-goal-card');if(goalCard)new ResizeObserver(resize).observe(goalCard);icons();
 }
 function frame(now){
  requestAnimationFrame(frame);if(!ready||document.hidden)return;
@@ -1333,6 +1421,65 @@ function registerAgentTools(){
  for(const tool of specs){try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}}
  window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
 }
+// Show me: the way to a step of the guide (and to a goal of the next-goal card). auto (11 Oct 2026, Part A A12): the guide shows it by itself
+// once after each finished step; the pointer then ends on any tap that is not on it (coach.js). Right after planting, the Water tool lights
+// and one line says when (A12, step 4); the camera stays where the farmer is planting.
+function showWay(target,{auto=false}={}){
+ if(auto&&target==='water'&&state.plots.some(p=>canWater(p,farmNow()))){coach.stop();showTool('water');toast('Water it within a minute.');return;}
+ // A building to build (A8, A13): through Buildings (or its name on the map) to its Build button.
+ if(typeof target==='string'&&target.startsWith('build:')){const steps=guideSteps(target,{state,now:farmNow()});if(steps){coach.stop();coach.start(steps,{auto});}else economy.openBuilding(target.slice(6));return;}
+ coach.stop();sweepGhost.stop();
+ // Harvest (Oct 2026): sweeping is said first. A finger holds a field a moment before it sweeps (a quick swipe moves the farm).
+ // Step 1's Show me also draws a see-through sickle sweeping over the ripe starter corn, again and again until the first harvest, on
+ // the farm itself (no window, no bubble; every tap goes through).
+ const touch=mobileLayout.matches||matchMedia('(pointer: coarse)').matches,firstBasket=target==='harvest'&&beginnerProgress(state).find(q=>q.current)?.id==='harvest';
+ if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?(state.plots.some(p=>canWater(p,farmNow()))?'Tap a growing crop to water it.':WATER_FIRST_MINUTE):firstBasket?(touch?'Hold one ripe corn for a moment, then sweep across the others to harvest them, or tap one.':'Sweep across your ripe corn to harvest it, or tap one.'):touch?'Tap a ready crop, or hold one for a moment and sweep across the others.':'Click a ready crop, or sweep across your ready crops to harvest them all.');if(firstBasket&&!villageWorld)firstBasketGhost();}
+ // Step 9, A helping hand (11 Oct 2026): the view moves to the Greenhouse first, so Show me points at its pin in the open farm (at
+ // 918x516 it stood under the top bar, beside the guide card), on a phone too; the stops' window only when there is no farm to show,
+ // and never by itself (auto).
+ else if(target==='hand'){const v=farmLife?.views.get('greenhouse');if(v&&!villageWorld){lookAt(v.x,v.z);positionBuildingLabels();}const steps=guideSteps('hand',{state,now:farmNow()});if(steps)coach.start(steps,{auto});else if(!auto)activities.openHub();}
+ // Show me points at the way in and lets the farmer tap it (1 Oct 2026: it used to open the window for them, so they never
+ // learnt where Market was). Only where nothing can be pointed at does it still open the window itself.
+ else if(guideSteps(target,{state,now:farmNow()}))coach.start(guideSteps(target,{state,now:farmNow()}),{auto});
+ // By itself the guide only points; it never opens a window (no extra pop-ups).
+ else if(auto)return;
+ else if(target==='eggs')economy.openMarket('goods');
+ else if(target==='market')openDialog('market-dialog');
+ else if(target==='produce')economy.openBuilding('coop');
+ else if(target==='collect'){const key=Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??Object.keys(state.buildings).find(k=>state.buildings[k].job)??'coop';economy.openBuilding(key);}
+ else if(target==='today')retention.openToday();
+ else if(target==='chores')growth.open('chores');
+}
+// The guide-complete card's green button (A8): the quest that waits (Quests at that quest, claimed there one by one: one quest, so the
+// label never reads like a Claim all), build what opened, or plant.
+function goalAction(goal){
+ if(goal.kind==='quest')return {label:'Claim your next quest',run:()=>quests.openAt(goal.id)};
+ if(goal.kind==='build')return {label:`Build the ${goal.name}`,run:()=>showWay(`build:${goal.key}`)};
+ return {label:'Plant your fields',run:()=>{setCrop('wheat');focusFields();}};
+}
+// A lost 3D view comes back by itself (11 Oct 2026, Part A A4; before, "The 3D view was interrupted. Reload..." was a dead end): a phone
+// that switched apps or a graphics reset takes the view away. The farm pauses under a small cream card, "Getting your farm back…", and the
+// bars stay. When the browser gives the view back (webglcontextrestored), three.js builds its own state again, the pictures drawn on a
+// canvas (the family flag, the field rows) are sent again with the shadows, the farm is drawn and goes on, and the map is shot again.
+// Only when nothing comes back within 5 seconds: the card with Try again, as before (it reloads the farm, or on a portal asks its page for
+// it: public/loading-screen.js). A loss during a new farm's first visit counts in its load chain (A1, chain.lost).
+const CONTEXT_RESTORE_MS=5000;
+let restoreTimer=0;
+function bindContextRestore(canvas){
+ let wasReady=false;
+ canvas.addEventListener('webglcontextlost',event=>{
+  event.preventDefault();clearTimeout(restoreTimer);if(ready)wasReady=true;ready=false;$('restoring').hidden=false;
+  if(firstVisit){client.look({chain:{lost:1}});client.sendLook();}
+  restoreTimer=setTimeout(()=>{$('restoring').hidden=true;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;},CONTEXT_RESTORE_MS);
+ });
+ canvas.addEventListener('webglcontextrestored',()=>{
+  clearTimeout(restoreTimer);$('restoring').hidden=true;$('error').hidden=true;
+  scene?.traverse(o=>{for(const m of [o.material].flat())if(m)for(const v of Object.values(m))if(v?.isCanvasTexture)v.needsUpdate=true;});
+  // Lost while the farm was still loading: init goes on and starts the farm itself.
+  if(!wasReady)return;
+  wasReady=false;ready=true;resize();renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);if(!villageWorld)shootMinimap();
+ });
+}
 async function init(){
  const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,villageWorld?{loading:'Travelling to the village'}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?VILLAGE_LOADING_TIPS:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)]});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open
  try{
@@ -1341,7 +1488,7 @@ async function init(){
   renderer.setClearColor(0xdeede6);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.32;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
-  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;});
+  bindContextRestore(renderer.domElement);
   scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,300);   // far enough for the mountains at the edge when zoomed out
   // Sunny, cheerful daylight (7 Oct 2026: the farm should look fun and cheerful; halfway between the fresh light of before and the
   // painted valley of the loading screen): a bright sky, a slightly warmer sun a little lower than before for longer, soft shadows
@@ -1373,7 +1520,7 @@ async function init(){
    for(const [key,spot] of Object.entries(VILLAGE_LANDMARK_SPOTS))addVillageLandmark(key,spot);
    atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches,cloudHeight:VILLAGE_CLOUD_HEIGHT});measureFarm();resize();icons();
   }else{
-  await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);},8)]);
+  await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);},8).then(()=>markChain('models'))]);
   decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
   }
   // Every press starts its own way (Oct 2026): a finger that holds a field after the mouse was used gets no sickle at the old mouse
@@ -1407,7 +1554,9 @@ async function init(){
    },
    // A swipe from a field with work to do (plant, water, care, harvest): each field is worked the moment it is passed, and all of
    // them are saved in one request on release (sweepField, endSweep).
-   sweep:{action:sweepAction,add:(target,action)=>sweepField(target.id,action??sweepAction(target)),end:()=>endSweep()},
+   // early (11 Oct 2026, Part A A15): before the first harvest a mouse drag from the grass sweeps too; settle brings the fields back.
+   sweep:{action:sweepAction,add:(target,action)=>sweepField(target.id,action??sweepAction(target)),end:()=>endSweep(),early:firstBasketWaits},
+   settle:()=>{if(firstBasketWaits()&&viewMode==='fields')easeToFields();},
    zoom:(ratio,x,y)=>{
     const before=zoom;zoomFarm(zoom*ratio);
     // Scrolling zooms towards the pointer: the spot under the mouse stays under the mouse.
@@ -1417,7 +1566,7 @@ async function init(){
     panFarm(shift.side,shift.depth);
    }
   });
-  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();if(villageWorld)void addVillageExtras();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();if(villageWorld)void addVillageExtras();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // The Fishing pond (11 Oct 2026): farm only (never in the village), never on the admin's showcase farm.
   if(POND_OPEN&&!villageWorld&&!adminView)void import('./pond-ui.js').then(({createPond})=>{pond=createPond({state,scene,game:$('game'),labels:$('building-labels'),runAction,now:farmNow,play:kind=>farmAudio.play(kind),haptic,toast,resize,reducedMotion,focusFarm:focusFields});positionBuildingLabels();}).catch(error=>console.error('Fishing pond failed',error?.message));
   // The loading screen fades into the farm instead of disappearing at once.
@@ -1439,10 +1588,14 @@ async function init(){
 // farmer who leaves without a tap still counts as one who saw the farm. The first touch on the farm or its buttons goes along with the
 // next request, or by itself 15 seconds later, with how long after readyAt it came when this visit sent readyAt. Times are this device's
 // clock: farm-client.js stamps when the request leaves and the server moves them onto its own clock.
+// 11 Oct 2026 (Part A, A1): with the load chain (chain), the steps the pages noted on the way (markChain); firstVisit tells the lost 3D
+// view (A4) to count itself too.
+let firstVisit=false;
 function noteFirstLook(){
  const look=window.harvestFirstLook??{},at=Date.now(),step=n=>Math.round((n||0)/10)*10,fresh=!state.onboarding?.firstLook;
  let started=look.started;if(!started)try{started=window.parent.performance.timeOrigin;}catch{started=performance.timeOrigin;}
- if(fresh){client.look({...(look.shownAt?{shownAt:look.shownAt,loadMs:look.loadMs}:{}),readyAt:at,...(started?{readyMs:Math.round(at-started)}:{}),frame:look.frame??`${step(innerWidth)}x${step(innerHeight)}`});client.sendLook();}
+ let chain=null;try{chain=window.parent.harvestChain?{...window.parent.harvestChain}:null;}catch{}
+ if(fresh){firstVisit=true;client.look({...(look.shownAt?{shownAt:look.shownAt,loadMs:look.loadMs}:{}),readyAt:at,...(started?{readyMs:Math.round(at-started)}:{}),frame:look.frame??`${step(innerWidth)}x${step(innerHeight)}`,...(chain?{chain}:{})});client.sendLook();}
  if(state.onboarding?.firstLook?.firstInputAt)return;
  const game=$('game'),touched=()=>{game.removeEventListener('pointerdown',touched,true);const t=Date.now();client.look({firstInputAt:t,...(fresh?{firstInputMs:t-at}:{})});setTimeout(()=>client.sendLook(),15000);};
  game.addEventListener('pointerdown',touched,true);

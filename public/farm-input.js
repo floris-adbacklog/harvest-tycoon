@@ -12,8 +12,15 @@ export function cameraDragDelta(dx,dy,spanX,spanY,width,height){
 // On a touchscreen the swipe waits for a short hold on that first field (26 Sep 2026): the field lights up and the swipe is on. A quick
 // drag always moves the farm, so scrolling past ripe or empty fields no longer harvests or plants them by accident. A mouse or a pen
 // swipes straight away, as before. `later`/`cancelLater` are the timer functions (replaced in the tests).
+// Before a new farm's first harvest (11 Oct 2026, Part A A15: on CrazyGames 12% of the farmers who touched the farm never harvested, and a
+// sweep that began on the grass moved the farm away from the corn): a left-mouse drag from anywhere is a harvest sweep from the first ripe
+// crop it crosses, and the farm stays put under it (sweep.early()). Only a ripe crop starts it: on a new farm the growing starter wheat and
+// the empty fields lie in front of the corn, and a drag from the grass below gave them extra care or planted them (coins spent) while the
+// corn stayed; a drag that starts on such a field looks for the corn too (a click there still works that field). After the first harvest
+// the grass moves the farm again. A right- or middle-button drag still moves it, and a finger keeps its short hold. settle() runs after
+// every release (game.js brings the fields back into view when they left it, before the first harvest).
 export const SWIPE_HOLD_MS=350;
-export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,holdMs=SWIPE_HOLD_MS,later=setTimeout,cancelLater=clearTimeout}){
+export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,settle=()=>{},holdMs=SWIPE_HOLD_MS,later=setTimeout,cancelLater=clearTimeout}){
  const pointers=new Map();
  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
  const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
@@ -29,6 +36,7 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,hold
   }
   if(cancelled)for(const other of pointers.values())other.multi=true;
   if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+  if(!pointers.size)settle();
  }
  canvas.addEventListener('pointerdown',event=>{
   const panOnly=event.pointerType==='mouse'&&(event.button===1||event.button===2);
@@ -36,7 +44,8 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,hold
   event.preventDefault();canvas.setPointerCapture(event.pointerId);
   const target=panOnly?null:pick(event);
   const action=target?.type==='plot'&&sweep?sweep.action(target):null;
-  const point={x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,target,panOnly,moved:false,multi:false,threshold:event.pointerType==='touch'?12:8,sweep:action?{action,ids:[],started:false,armed:event.pointerType!=='touch'}:null};
+  const early=action!=='harvest'&&!panOnly&&event.pointerType==='mouse'&&Boolean(sweep?.early?.());
+  const point={x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,target,panOnly,early,moved:false,multi:false,threshold:event.pointerType==='touch'?12:8,sweep:action&&!early?{action,ids:[],started:false,armed:event.pointerType!=='touch'}:null};
   pointers.set(event.pointerId,point);
   if(pointers.size>1){for(const item of pointers.values()){item.multi=true;if(item.sweep&&!item.sweep.started){cancelLater(item.hold);item.sweep=null;}}return;}
   // A finger that stays on the field arms the swipe: that field lights up (and the phone ticks, where it can).
@@ -56,6 +65,17 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,hold
   // A swipe: every field under the finger since the last move (checked every few pixels, so a quick swipe misses none).
   // A finger that moves before the hold: not a swipe, the farm moves.
   if(point.sweep&&!point.sweep.armed&&!point.multi){if(!point.moved)return;cancelLater(point.hold);point.sweep=null;}
+  // Before the first harvest a mouse drag from anywhere looks for the first ripe crop on its way; that crop starts a harvest sweep (fields
+  // with other work on the way are passed by).
+  if(point.early&&!point.sweep&&!point.multi){
+   if(!point.moved)return;
+   const steps=Math.max(1,Math.ceil(Math.hypot(point.x-previous.x,point.y-previous.y)/10));
+   for(let i=1;i<=steps&&!point.sweep;i++){
+    const at={clientX:previous.x+(point.x-previous.x)*i/steps,clientY:previous.y+(point.y-previous.y)*i/steps},over=pick(at);
+    if(over?.type==='plot'&&sweep.action(over)==='harvest'){point.sweep={action:'harvest',ids:[],started:false,armed:true};point.target=over;previous.x=at.clientX;previous.y=at.clientY;}
+   }
+   if(!point.sweep)return;
+  }
   if(point.sweep&&!point.multi){
    if(!point.moved)return;
    const s=point.sweep;
