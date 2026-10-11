@@ -80,6 +80,8 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
 .pond-book-head h3{margin:0;font:700 22px 'Outfit','DM Sans',sans-serif;color:#453e28}
 .pond-book-head p{margin:2px 0 0;font-weight:700;color:var(--muted)}
 .pond-book-head .icon-button{width:40px;height:40px;font-size:22px;line-height:1}
+/* Page 1 and Page 2 (from level 20): the game's own tabs (buttons.css .market-tabs). */
+.pond-book-pages{margin:10px 0 0}
 .pond-book-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0;padding:0;list-style:none}
 .pond-book-list li{display:flex;align-items:center;gap:8px;min-width:0;padding:6px 8px;background:#f7f0e3;border-radius:14px}
 .pond-book-list strong{display:block;font-size:14px;color:#453e28}

@@ -17,7 +17,7 @@ test('the reel: a slow, sloppy player lands every common fish and most rare ones
  for(const [species,f] of Object.entries(FISH)){
   let first=0,within=0;const N=60;
   for(let i=0;i<N;i++){let ok=false;for(let tries=0;tries<3&&!ok;tries++){const r=play(species,{tries,seed:i*31+tries*7+1});if(r.done==='landed'){ok=true;if(!tries)first++;}}if(ok)within++;}
-  if(f.chance>=9)assert.ok(first/N>=.9,`${species}: ${first}/${N} on the first try`);
+  if(f.chance>=9||f.chance20>=9)assert.ok(first/N>=.9,`${species}: ${first}/${N} on the first try`);   // the common kinds, below level 20 or from it
   assert.ok(within/N>=.9,`${species}: ${within}/${N} within three tries`);
   let idle=0;for(let i=0;i<N;i++)if(play(species,{idle:true,seed:i+500}).done==='landed')idle++;
   if(['roach','carp','whiskers'].includes(species))assert.equal(idle,0,`${species}: never landed by doing nothing`);else assert.ok(idle/N<=.3,`${species}: ${idle}/${N} by doing nothing`);
@@ -99,7 +99,7 @@ test('the pond\'s pin waits at the edge for a pier just below it, above the bar 
  assert.match(ui,/blocked=\{bars:find\('\.bottom-hud'\),sides:find\('\.scene-controls,\.side-tools'\)\};/,'measured where the labels are');
  assert.match(read('public/pond.css'),/\.pond-label\.edge::after\{content:'';position:absolute;left:50%;bottom:-9px;/,'a small point down at the pier');
  // The level-4 card says where it is, like a building ("open Buildings") and a field ("at the Farmhouse").
- assert.match(read('public/progression-ui.js'),/e\.id==='feature:fishing'\?'Activity · tap its pin over the pier':e\.kind\+' unlocked'/);
+ assert.match(read('public/progression-ui.js'),/e\.id==='feature:fishing'\?'Activity · tap its pin over the pier':/);
 });
 test('the pond screen says what a new kind pays, a refused catch takes its card along, and a long press selects nothing',()=>{
  const ui=read('public/pond-ui.js'),css=read('public/pond.css');

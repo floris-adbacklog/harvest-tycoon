@@ -6,7 +6,9 @@ import {POND,placeIn} from './farm-layout.js';
 // its rest from level 4, so the pier says what it is for; a small fish jumps now and then while casts are waiting (cue()). pond-ui.js
 // drives the rest. Where things stand comes from the pier as it was placed (farm-life.js), so a moved pier takes the spot along.
 const WATER_Y=.034,UP=new THREE.Vector3(0,1,0);
-export const FISH_LOOK=Object.freeze({minnow:[0xc9cfbf,.5],perch:[0x9aa547,.7],roach:[0xc5ccd3,.75],carp:[0xc08a3e,1.1],tench:[0x7b8a35,1],pike:[0x7d9440,1.3],goldencarp:[0xf2b33a,1],whiskers:[0x8a7a55,1.6]});
+// Colour, size and (page two's eel and sturgeon) how long and slim the body is, from the owner's pictures.
+export const FISH_LOOK=Object.freeze({minnow:[0xc9cfbf,.5],perch:[0x9aa547,.7],roach:[0xc5ccd3,.75],carp:[0xc08a3e,1.1],tench:[0x7b8a35,1],pike:[0x7d9440,1.3],goldencarp:[0xf2b33a,1],whiskers:[0x8a7a55,1.6],
+ rudd:[0xb9a23e,.65],bream:[0xa49a7e,.95],eel:[0x6f5f2a,1,2],trout:[0xc7b3ae,.9],barbel:[0xa77c4a,1.05],zander:[0x97a08a,1.15],koi:[0xee7a3a,1],sturgeon:[0x7f8a92,1.6,1.5]});
 const ease=k=>k<.5?2*k*k:1-(-2*k+2)**2/2;
 export function createPondScene({scene,reducedMotion=false,cue=()=>false}){
  const [cx,cz]=placeIn('pond',POND.x,POND.z),centre=new THREE.Vector3(cx,WATER_Y,cz);
@@ -54,11 +56,11 @@ export function createPondScene({scene,reducedMotion=false,cue=()=>false}){
    const a=i/count*Math.PI*2;effects.push({obj:m,life:.7,age:0,kind:'drop',v:new THREE.Vector3(Math.cos(a)*.9*power,(1.6+Math.random())*power,Math.sin(a)*.9*power)});}
  }
  function fishMesh(species){
-  const [color,size]=FISH_LOOK[species]??FISH_LOOK.minnow,g=new THREE.Group(),m=mat(color,{roughness:.5,metalness:.15});
-  const body=new THREE.Mesh(new THREE.SphereGeometry(1,10,8),m);body.scale.set(.34,.14,.09);g.add(body);
-  const tail=new THREE.Mesh(new THREE.ConeGeometry(.13,.22,4),m);tail.rotation.z=Math.PI/2;tail.position.x=-.4;tail.scale.set(1,1,.35);g.add(tail);
+  const [color,size,long=1]=FISH_LOOK[species]??FISH_LOOK.minnow,g=new THREE.Group(),m=mat(color,{roughness:.5,metalness:.15});
+  const body=new THREE.Mesh(new THREE.SphereGeometry(1,10,8),m);body.scale.set(.34*long,.14/Math.sqrt(long),.09);g.add(body);
+  const tail=new THREE.Mesh(new THREE.ConeGeometry(.13,.22,4),m);tail.rotation.z=Math.PI/2;tail.position.x=-.06-.34*long;tail.scale.set(1,1,.35);g.add(tail);
   const fin=new THREE.Mesh(new THREE.ConeGeometry(.06,.14,3),m);fin.position.set(.02,.15,0);fin.scale.set(1,1,.3);g.add(fin);
-  if(species==='whiskers')for(const s of [-1,1]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.3,3),m);w.position.set(.36,-.04,s*.05);w.rotation.z=1.1;g.add(w);}
+  if(species==='whiskers'||species==='barbel'||species==='sturgeon')for(const s of [-1,1]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.3,3),m);w.position.set(.02+.34*long,-.04,s*.05);w.rotation.z=1.1;g.add(w);}
   g.scale.setScalar(size);return g;
  }
  // A fish that leaps out of the water at `from` and dives back further on (landed: towards the pier, where it is caught).

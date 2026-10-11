@@ -1,5 +1,5 @@
 import {art,refreshArt} from './visual-icons.js';
-import {FISH,POND_MAX_CASTS,POND_REFILL_MS,POND_BOOK_DIAMONDS,POND_PERFECT,POND_NEW_FISH_COINS,POND_NEW_FISH_XP,pondCasts,pondFish,pondBookDone,todaysFish,featureUnlocked,featureUnlockHint,formatDuration} from './farm-state.js';
+import {FISH,FISH_PAGES,POND_MAX_CASTS,POND_REFILL_MS,POND_BOOK_DIAMONDS,POND_BOOK2_DIAMONDS,POND_PERFECT,POND_NEW_FISH_COINS,POND_NEW_FISH_XP,pondCasts,pondFish,pondBookDone,pondBook2Done,pondPageTwoOpen,todaysFish,featureUnlocked,featureUnlockHint,formatDuration} from './farm-state.js';
 import {createReel} from './pond-reel.js';
 import {createPondScene} from './pond-scene.js';
 import {fitText} from './fit-text.js';
@@ -13,6 +13,7 @@ const say={cast:'Tap to cast.',wait:'Wait for the float to dip…',soon:'Too soo
  missed:'Missed it. The fish is still there: cast again.',slipped:'The fish slipped off. It’s still in the pond: cast again.',tired:'It’s getting tired.',paused:'Paused. Tap to go on.',
  letGo:'You let the fish go.',empty:'No casts left. A new cast comes every 20 minutes.'};
 const NAME='Fishing pond';
+const pageDone=page=>`Page ${page} complete!`;
 const kg=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const number=n=>n.toLocaleString('en-US');
 // Where the pond's pin goes (11 Oct 2026, the review). x, y: the pier's spot on the screen; px, py: the same from -1 to 1 (py -1 is the
@@ -56,7 +57,7 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
  tile.onclick=()=>{document.getElementById('more-dialog')?.close();open();};if(farmHeading)farmHeading.after(tile);
  const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='pond-shortcut';shortcut.innerHTML=`${art('fishingpond')}<span>Fishing pond</span>`;shortcut.hidden=true;
  shortcut.onclick=()=>{document.getElementById('buildings-dialog')?.close();open();};document.querySelector('#buildings-dialog .utility-shortcuts')?.prepend(shortcut);   // first: it opens at level 4, long before the others
- let isOpen=false,phase='idle',clock=0,phaseAt=0,reel=null,holding=false,fishN=-1,tries=0,escapes=0,waitEnd=0,nibbles=[],paused=false,sending=false,loop=0,last=0,held=[],shown=-1,paid=0;
+ let bookPage=-1,isOpen=false,phase='idle',clock=0,phaseAt=0,reel=null,holding=false,fishN=-1,tries=0,escapes=0,waitEnd=0,nibbles=[],paused=false,sending=false,loop=0,last=0,held=[],shown=-1,paid=0;
  let glide={from:0,to:0,at:0,ms:600};
  const mix=()=>{const k=glide.ms>0?Math.min(1,(performance.now()-glide.at)/glide.ms):1,e=k<.5?2*k*k:1-(-2*k+2)**2/2;return glide.from+(glide.to-glide.from)*e;};
  const gliding=()=>performance.now()-glide.at<glide.ms;
@@ -112,7 +113,9 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
   if(r.first)tags.push(['is-new',`New fish for your book: ${POND_NEW_FISH_COINS+1}× coins, +${POND_NEW_FISH_XP} XP`]);else if(r.record)tags.push(['is-record','New record!']);
   if(r.perfect)tags.push(['',`Perfect catch! +${Math.round(POND_PERFECT*100)}% coins`]);
   if(r.today)tags.push(['','Today’s fish: double coins']);
-  if(r.diamonds)tags.push(['is-book','Fish book complete!']);
+  // The book's diamonds (11 Oct 2026, page two): below level 20 the book is one page, as before; from 20 page one's 25 say which page,
+  // and the 50 for all 16 kinds (book2, both pages) say the whole book.
+  if(r.diamonds)tags.push(['is-book',r.book2||!pondPageTwoOpen(state)?'Fish book complete!':pageDone(1)]);
   card.innerHTML=`<div class="pond-card-fish">${art(`fish-${r.species}`,'pond-card-art')}<div><span class="eyebrow">YOU CAUGHT</span><h3>${f.name}</h3><p class="pond-kg">${kg(r.kg)} kg</p></div></div>
    ${tags.length?`<div class="pond-tags">${tags.map(([cls,text])=>`<b class="pond-tag ${cls}">${text}</b>`).join('')}</div>`:''}
    <div class="pond-rewards"><strong class="reward-coins">${art('coins')}+${number(r.coins)} coins</strong><strong class="reward-xp">${art('xp')}+${number(r.xp)} XP</strong>${r.diamonds?`<strong class="reward-diamonds">${art('diamonds')}+${r.diamonds} diamonds</strong>`:''}</div>
@@ -124,19 +127,31 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
   (card.querySelector('[data-card-again]')??card.querySelector('[data-card-farm]')).focus({preventScroll:true});
  }
  // The Fish book: the eight kinds with their best weight (a shadow until caught), the reward for all eight and how fishing works.
- function openBook(){
-  const best=state.pond?.best??{},caught=Object.keys(FISH).filter(k=>best[k]>0).length,done=pondBookDone(state);
-  book.innerHTML=`<div class="pond-book-head"><div><h3 id="pond-book-title">Fish book</h3><p>${caught} of ${Object.keys(FISH).length} caught</p></div><button type="button" class="icon-button" data-book-close aria-label="Close">×</button></div>
-   <ul class="pond-book-list">${Object.entries(FISH).map(([key,f])=>{const have=best[key]>0,secret=key==='whiskers'&&!have;
-    return `<li class="${have?'is-caught':'is-missing'}">${art(`fish-${key}`,'pond-book-art')}<div><strong>${secret?'?':f.name}</strong><small>${have?`Best: ${kg(best[key])} kg`:secret?'Something big lives in this pond.':'Not caught yet'}</small></div></li>`;}).join('')}</ul>
-   <p class="pond-book-reward">${art('diamonds')}<span>${done?`Book complete: ${POND_BOOK_DIAMONDS} diamonds earned.`:`Catch all ${Object.keys(FISH).length} kinds: ${POND_BOOK_DIAMONDS} diamonds, once.`}</span></p>
+ // From level 20 (11 Oct 2026, the owner's call) it has two pages, as tabs: page 2 holds the 8 kinds that swim in the pond from then,
+ // and its reward is for all 16 kinds, both pages. Below level 20 there are no tabs and nothing of page 2: the book is as it was.
+ // It opens on the page looked at last; the first time on page 2 once page 1 is full.
+ const secrets={whiskers:'Something big lives in this pond.',sturgeon:'Something even bigger swims at the bottom.'};
+ function openBook(page){
+  const best=state.pond?.best??{},two=pondPageTwoOpen(state),turned=page!==undefined;
+  if(!turned)page=bookPage>=0?bookPage:pondBookDone(state)?1:0;
+  page=two?Math.min(1,Math.max(0,page)):0;if(two)bookPage=page;
+  const kinds=FISH_PAGES[page],caught=kinds.filter(k=>best[k]>0).length;
+  const reward=page===1?(pondBook2Done(state)?`Book complete: ${POND_BOOK2_DIAMONDS} diamonds earned.`:`Catch all ${Object.keys(FISH).length} kinds on both pages: ${POND_BOOK2_DIAMONDS} diamonds, once.`)
+   :pondBookDone(state)?(two?`Page ${page+1} complete: ${POND_BOOK_DIAMONDS} diamonds earned.`:`Book complete: ${POND_BOOK_DIAMONDS} diamonds earned.`):`Catch all ${kinds.length} kinds: ${POND_BOOK_DIAMONDS} diamonds, once.`;
+  book.innerHTML=`<div class="pond-book-head"><div><h3 id="pond-book-title">Fish book</h3><p>${caught} of ${kinds.length} caught</p></div><button type="button" class="icon-button" data-book-close aria-label="Close">×</button></div>
+   ${two?`<div class="market-tabs pond-book-pages" role="tablist" aria-label="Fish book">${[0,1].map(i=>`<button type="button" role="tab" aria-selected="${i===page}" data-book-page="${i}">Page ${i+1}</button>`).join('')}</div>`:''}
+   <ul class="pond-book-list">${kinds.map(key=>{const f=FISH[key],have=best[key]>0,secret=!have&&secrets[key];
+    return `<li class="${have?'is-caught':'is-missing'}">${art(`fish-${key}`,'pond-book-art')}<div><strong>${secret?'?':f.name}</strong><small>${have?`Best: ${kg(best[key])} kg`:secret||'Not caught yet'}</small></div></li>`;}).join('')}</ul>
+   <p class="pond-book-reward">${art('diamonds')}<span>${reward}</span></p>
    <h4>How fishing works</h4><ul class="pond-rules"><li>Tap or press Space to cast. When the float dips, tap again. Hold to reel and keep the fish in the green.</li><li>A fish that gets away stays in the pond: a cast is only used when you land a fish or let it go.</li><li>Every fish pays coins (more for a heavier fish and at a higher level) and XP. The first of each kind pays ${POND_NEW_FISH_COINS+1} times its coins and ${POND_NEW_FISH_XP} XP more.</li><li>A new cast every ${POND_REFILL_MS/60000} minutes, up to ${POND_MAX_CASTS}. Today’s fish pays double coins.</li></ul>`;
-  book.querySelector('[data-book-close]').onclick=closeBook;book.hidden=false;refreshArt();book.querySelector('[data-book-close]').focus({preventScroll:true});
+  book.querySelector('[data-book-close]').onclick=closeBook;
+  for(const tab of book.querySelectorAll('[data-book-page]'))tab.onclick=()=>openBook(Number(tab.dataset.bookPage));
+  book.hidden=false;refreshArt();(turned&&book.querySelector(`[data-book-page="${page}"]`)||book.querySelector('[data-book-close]')).focus({preventScroll:true});
  }
  function closeBook(){book.hidden=true;act.focus({preventScroll:true});}
  // The top of the screen: casts waiting (and when the next comes), today's fish, and a way back when crops are ripe meanwhile.
  function top(){
-  const c=casts(),t=todaysFish(now()),pill=$('casts');
+  const c=casts(),t=todaysFish(now(),state),pill=$('casts');
   pill.querySelector('b').textContent=`${c.casts} / ${POND_MAX_CASTS}`;pill.setAttribute('aria-label',`Casts waiting: ${c.casts}`);pill.title=`Casts waiting: ${c.casts}`;
   pill.querySelector('small').textContent=c.nextAt?`Next cast in ${formatDuration(c.nextAt-now())}`:'Casts';
   const today=$('today');if(today.dataset.fish!==t){today.dataset.fish=t;today.innerHTML=`${art(`fish-${t}`)}<span>Today’s fish: ${FISH[t].name}. Pays double.</span>`;refreshArt();}

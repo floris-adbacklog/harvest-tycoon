@@ -60,7 +60,9 @@ const TOOL_PICTURES=['tool-sickle','tool-can','tool-seeds','tool-gloves'];
 for(const key of TOOL_PICTURES)pictures[key]=key;
 // The Fishing pond (11 Oct 2026, painted by the owner, WebP, 256 px on a clear ground): the eight fish of the fish book (fish-minnow …
 // fish-whiskers; a fish not caught yet is its own shadow, by CSS) and the rod on its basket for the pond's pin, menus and level card.
-export const FISH_PICTURES=Object.freeze(['fish-minnow','fish-perch','fish-roach','fish-carp','fish-tench','fish-pike','fish-goldencarp','fish-whiskers','fishingpond']);
+// Page two's eight (11 Oct 2026, painted by the owner the same way): the fish that swim in the pond from level 20.
+export const FISH_PICTURES=Object.freeze(['fish-minnow','fish-perch','fish-roach','fish-carp','fish-tench','fish-pike','fish-goldencarp','fish-whiskers','fishingpond',
+ 'fish-rudd','fish-bream','fish-eel','fish-trout','fish-barbel','fish-zander','fish-koi','fish-sturgeon']);
 for(const key of FISH_PICTURES)pictures[key]=key;
 // Feedback & bugs (30 Sep 2026, painted by the user, WebP): the mailbox on its button and in the More menu.
 pictures.feedback='feedback';
