@@ -8,10 +8,11 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const art=key=>`<i data-art="${key}"></i>`;
 
 test('every board has a chip: fifteen main boards, "By crop" and "By good" chips and one chip per crop and per good',()=>{
- const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art),goods=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom).length;
+ // Goods with a board (World II's later goods have none, Oct 2026); Villagers helped is a small chip in the Village row.
+ const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art),goods=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&!ITEMS[k].noBoard).length;
  const keys=[...html.matchAll(/data-rank="([a-z_]+)"/g)].map(m=>m[1]);
  assert.deepEqual(keys.sort(),Object.keys(LEADERBOARD_CATEGORIES).sort(),'nothing lost from the old dropdown');
- assert.equal(keys.length,15+Object.keys(CROPS).length+goods);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length+goods);
+ assert.equal(keys.length,16+Object.keys(CROPS).length+goods);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length+goods+1);
  assert.match(html,/data-rank-goods aria-pressed="false" aria-expanded="false" aria-controls="rank-goods"/);assert.match(html,/id="rank-goods"[^>]*aria-label="Choose a good" hidden/);assert.match(html,/data-art="bread"/);
  assert.match(html,/id="rank-crops"[^>]*hidden/,'the crop row starts closed');assert.match(html,/data-rank-crops aria-pressed="false" aria-expanded="false" aria-controls="rank-crops"/);
  for(const key of ['level','currency','harvested_crops','goods_produced','items_sold','badges','deliveries','events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades','quests_done'])assert(RANK_ART[key],`${key} has a picture`);
@@ -74,4 +75,15 @@ test('Rank by is one line with the current board; the chips fold open and close 
  assert.match(ui,/<details class="rank-drawer" id="rank-drawer"><summary><span class="rank-label" id="rank-label">Rank by<\/span><span class="rank-current" id="rank-current">/);
  assert.match(ui,/\$\('rank-current'\)\.innerHTML=`\$\{art\(rankArtKey\(key\)\)\}<b>\$\{LEADERBOARD_CATEGORIES\[key\]\.heading\}<\/b>`;\$\('rank-drawer'\)\.open=false;/);
  assert.equal(rankArtKey('harvested_pumpkin'),'pumpkin');assert.equal(rankArtKey('events_finished'),'live-events');
+});
+
+// World II's market square (Oct 2026): Villagers helped is the Village row's first board, with the market's picture; the row's label says
+// boards, not goods, and the chip stays hidden below level 100 (showVillage).
+test('Villagers helped is the first Village board, with the market\'s picture',()=>{
+ assert.equal(LEADERBOARD_CATEGORIES.villagers_helped.group,'village');assert.equal(RANK_ART.villagers_helped,'villagemarket');assert.equal(rankArtKey('villagers_helped'),'villagemarket');
+ assert.equal(Object.keys(LEADERBOARD_CATEGORIES).find(k=>LEADERBOARD_CATEGORIES[k].group==='village'),'villagers_helped');
+ assert.equal(nextRank(LEADERBOARD_CATEGORIES,{category:'level'},{group:'village'}).category,'villagers_helped');
+ const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art);
+ assert.match(html,/data-rank-village aria-pressed="false" aria-expanded="false" aria-controls="rank-village" hidden>/);
+ assert.match(html,/id="rank-village" role="group" aria-label="Choose a village board" hidden><button type="button" class="rank-chip rank-chip-small" data-rank="villagers_helped"/);
 });

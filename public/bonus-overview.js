@@ -4,8 +4,8 @@
 // so no number here can drift from the game. Three are written out because farm-state.js keeps them inside an action, and its own
 // texts state them: the Water tower's 30% (actOnPlot; its own share is 1 − 0.7/0.8 of what is left), the Buildings discount's 50%
 // (upgradeCost) and the boosts' ×2.
-import {CROPS,RECIPES,BUILDINGS,BOOSTS,IMPROVEMENTS,MASTER_BRANCHES,VALLEY_PROJECTS,EVENT_LEAGUES,FEATURE_LEVELS,SILO_COSTS,FAMILY_LEVEL_BONUS,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,DAY_MS,
- levelOf,featureUnlocked,cropDuration,recipeDuration,marketSaleValue,siloBonus,vipActive,dailyRewardMultiplier,rookieBoost,rookieBoostLeft,masterRank,masterBonus,valleyProjectLevel,valleyProjectBonus,
+import {CROPS,RECIPES,BUILDINGS,BOOSTS,IMPROVEMENTS,MASTER_BRANCHES,VALLEY_PROJECTS,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_BONUS,EVENT_LEAGUES,FEATURE_LEVELS,SILO_COSTS,FAMILY_LEVEL_BONUS,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,DAY_MS,
+ levelOf,landmarkDone,featureUnlocked,cropDuration,recipeDuration,marketSaleValue,siloBonus,vipActive,dailyRewardMultiplier,rookieBoost,rookieBoostLeft,masterRank,masterBonus,valleyProjectLevel,valleyProjectBonus,
  hasImprovement,ranchFocus,ranchSpeedup,visitorPay,eventLeague,boostStatus,formatDuration} from './farm-state.js';
 
 const pct=n=>Math.round(n*100);
@@ -58,7 +58,10 @@ export function bonusOverview(state,now=Date.now()){
   ranks('production')&&row('production',MASTER_BRANCHES.production.name,'Master points',less(masterBonus(state,'production'))),
   herd&&row('ranch','The Ranch',BUILDINGS[herd].name,less(ranchSpeedup(state))),
   hasImprovement(state,'heating')&&row('heating',IMPROVEMENTS.heating.name,BUILDINGS.glasshouse.name,less(1-recipeDuration(state,GLASS,now)/recipeDuration(noImprovement('heating'),GLASS,now))),
-  projectDone('watermill')&&row('watermill',VALLEY_PROJECTS.watermill.name,'Windmill and Feed Mill',less(valleyProjectBonus(state,'watermill')))
+  projectDone('watermill')&&row('watermill',VALLEY_PROJECTS.watermill.name,'Windmill and Feed Mill',less(valleyProjectBonus(state,'watermill'))),
+  // The village's landmarks (Oct 2026), once finished: nothing of them shows before (no "next" row), so nothing below level 100.
+  landmarkDone(state,'windpump')&&row('windpump',VILLAGE_LANDMARKS.windpump.name,BUILDINGS.villagefields.name,less(VILLAGE_LANDMARK_BONUS.windpump)),
+  landmarkDone(state,'longhouse')&&row('longhouse',VILLAGE_LANDMARKS.longhouse.name,'Every village place',less(VILLAGE_LANDMARK_BONUS.longhouse))
  ],[{id:'ranch',level:FEATURE_LEVELS.ranch,had:!!herd,open:featureUnlocked(state,'ranch'),where:'Pick a herd',name:'The Ranch',sub:`Batches in one barn take ${pct(ranchSpeedup(state))}% less time.`},vipNext('10% faster production'),improvement('heating'),improvement('hayloft'),branch('production'),project('watermill')],
   [{value:shared,text:`Batches take ${pct(shared)}% less time`}],'Every building also gets faster with its own level.');
  // The Market: everything but the Double earnings boost, which runs out (it is under Running now).

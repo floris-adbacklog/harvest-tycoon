@@ -1,9 +1,10 @@
 import {foldLocked} from './progression-ui.js';
-import {labCanCross,doubleBatchChance,worldTwoBuilding,buildingRecipes,marketItems,villageBrief,villagePlaceBefore,VALLEY_PROJECTS,valleyProjectLevel,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
+import {labCanCross,doubleBatchChance,worldTwoBuilding,builderCrates,BUILDER_CRATE_COINS,VILLAGE_TILES_FROM,VILLAGE_PREMIUM,VILLAGE_HALL_PREMIUM,villagePremium,buildingRecipes,marketItems,villageBrief,villagePlaceBefore,VALLEY_PROJECTS,valleyProjectLevel,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketSaleValue,vipActive,buildingCost,constructionNeeds,recipeUnlocked,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,recipeDuration,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt,pictureFile} from './visual-icons.js';
 import {briefCard,squareStatus} from './village-square-ui.js';
+import {boatStatus} from './boat-ui.js';
 import {fieldPicker,bindFieldPicker} from './field-picker.js';
 import {confirmAction} from './confirm-dialog.js';
 import {flyHarvest,bump} from './harvest-fly.js';
@@ -17,13 +18,16 @@ const seconds=formatDuration;
 export const buildingChips=s=>(s.kind==='farm'?[['farm',s.text]]:s.kind==='idle'?[['idle','Ready to work']]:[['ready',s.ready&&`${s.ready} ready`],['working',s.working&&`${s.working} working`],['free',s.free&&`${s.free} free`],['next',!s.ready&&s.working&&`Next in ${seconds(s.next)}`]]).filter(([,text])=>text).map(([kind,text])=>`<span class="building-status ${kind}">${text}</span>`).join('');
 // village: the game shows World II, the village (public/game.js). Its Buildings list holds only the village's places and its market
 // only buys village goods; on the farm the village's places and goods never show here.
-export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate,onFamily,onPlace,village=false}){
+// onBoat (Oct 2026): opens the town boat at the Pier (public/boat-ui.js), which has no batches of its own.
+export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction,onEstate,onFamily,onPlace,onBoat,village=false}){
  const openFactoryGroups=new Set();let factoryFilter='all';
  let currentBuilding=null,marketTab=village?'village':'crops',selectedCrop='wheat',seedFilter='all',lastJobReady='',lastCoinBoost=false,mutating=false,lastReadyKeys='';
  let marketSelling=false,renderedMarketDay='',lastMarketDay=utcDay(farmNow());
  const number=n=>n.toLocaleString('en-US');
  const inWorld=key=>worldTwoBuilding(key)===village;
  const signed=n=>`${n>=0?'+':''}${number(n)}`;
+ // The builder's crate's rule (Oct 2026), said where crates are packed (the Lumber Camp) and where they are used (a farm building's upgrade).
+ const CRATE_RULE=`Each builder’s crate takes ${number(BUILDER_CRATE_COINS)} coins off a farm building upgrade, up to half the price.`;
  const sellQuantities={};
  // Market rows whose amount slider is open on a phone (mobile-windows.css); a computer always shows it.
  const openSaleRows=new Set();
@@ -46,6 +50,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   // the place right before them (villagePlaceBefore). Below their level they stay locked as before.
   if(!buildingUnlocked(state,key)&&worldTwoBuilding(key)&&buildingEligible(state,key)){const before=villagePlaceBefore(state,key);return before?{text:`After the ${BUILDINGS[before].name}`,kind:'locked'}:{text:'Build from the golden brief',kind:'available'};}
   if(!buildingUnlocked(state,key))return {text:!buildingEligible(state,key)?`Locked · ${buildingUnlockHint(state,key)}`:`Build for ${number(buildingCost(state,key))} coins`,kind:buildingEligible(state,key)?'available':'locked'};
+  // The Pier (Oct 2026) has no batches: its line is the town boat's.
+  if(BUILDINGS[key].type==='pier')return boatStatus(state,now);
   // 8 Oct 2026: the counts as well, for the chips in the Buildings list (buildingChips); the text stays the line the farm map shows.
   const counts={ready,working:jobs.length-ready,free:Math.max(0,slots-jobs.length)};
   if(!jobs.length)return {text:`Ready to work · 0 / ${slots} slots`,kind:'idle',...counts};
@@ -116,13 +122,15 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  // it (buildingChips), not one "Level 3 · 2 ready · 4 / 5 slots" line that was cut off; locked, to build and the Family Hall keep their
  // one line. The labels on the farm keep the short status.
  const isBuilt=key=>key==='farmhouse'||key!=='familyhall'&&buildingUnlocked(state,key);
- const catalogStatus=(key,s)=>isBuilt(key)?`<span class="building-chips" data-building-status="${key}">${buildingChips(s)}</span>`:`<span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span>`;
+ // The built Pier (Oct 2026) has no levels: one line (the town boat's), no level chip.
+ const leveled=key=>isBuilt(key)&&BUILDINGS[key].type!=='pier';
+ const catalogStatus=(key,s)=>leveled(key)?`<span class="building-chips" data-building-status="${key}">${buildingChips(s)}</span>`:`<span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span>`;
  function renderCatalog(){
   const buildingLevel=key=>guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1;
   // Buildings with finished batches come first, so collecting is one tap away; the rest in the order they unlock.
   const readyFirst=key=>status(key).kind==='ready'?0:1;
   $('building-catalog').innerHTML=Object.entries(BUILDINGS).filter(([key])=>inWorld(key)).sort(([a],[b])=>readyFirst(a)-readyFirst(b)||buildingLevel(a)-buildingLevel(b)).map(([key,b])=>{const s=status(key),picture=key==='familyhall'?'familyhall-model':key;
-   return `<button class="building-card" data-open-building="${key}"><span class="building-card-art"><img src="${pictureFile(picture)}" alt=""></span><span class="building-card-info"><strong>${b.name}${isBuilt(key)?` <span class="building-level-chip">Level ${state.buildings[key].level}</span>`:''}</strong>${catalogStatus(key,s)}</span><i data-lucide="chevron-right"></i></button>`;}).join('');
+   return `<button class="building-card" data-open-building="${key}"><span class="building-card-art"><img src="${pictureFile(picture)}" alt=""></span><span class="building-card-info"><strong>${b.name}${leveled(key)?` <span class="building-level-chip">Level ${state.buildings[key].level}</span>`:''}</strong>${catalogStatus(key,s)}</span><i data-lucide="chevron-right"></i></button>`;}).join('');
   foldLocked($('building-catalog'),'[data-open-building]',b=>!buildingEligible(state,b.dataset.openBuilding),village?'Places to unlock':'Buildings to unlock');
   normalizeFarm(state,farmNow());
   // In the village the market square comes first (Oct 2026): its golden brief builds the places listed under it.
@@ -135,12 +143,16 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   $('building-catalog').querySelector('[data-open-square]')?.addEventListener('click',()=>{$('buildings-dialog').close();onPlace?.('villagemarket');});icons();
  }
  function openBuildings(){renderCatalog();show('buildings-dialog');}
- function openBuilding(key){if(!Object.hasOwn(BUILDINGS,key))return;if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHint(state,key));return;}onFamily();return;}currentBuilding=key;renderBuilding();show('building-dialog');}
+ // The built Pier opens the town boat (Oct 2026); while it is not built its window shows its golden brief like any village place.
+ function openBuilding(key){if(!Object.hasOwn(BUILDINGS,key))return;if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHint(state,key));return;}onFamily();return;}if(BUILDINGS[key].type==='pier'&&buildingUnlocked(state,key)){onBoat?.();return;}currentBuilding=key;renderBuilding();show('building-dialog');}
  function renderBuilding(){
   if(!currentBuilding)return;
+  // A Pier built from its own window (its brief) opens the town boat instead; mutate's toast still shows.
+  if(BUILDINGS[currentBuilding].type==='pier'&&buildingUnlocked(state,currentBuilding)){currentBuilding=null;$('building-dialog').close();onBoat?.();return;}
   const picker=$('fertilizer-field-picker'),pickerOpen=picker?.open,pickerScroll=picker?.querySelector('.field-picker-options')?.scrollTop??0;
   const key=currentBuilding,b=BUILDINGS[key],bs=state.buildings[key],buildCost=buildingCost(state,key);
-  let content=`<div class="building-hero"><div class="building-image"><img src="${pictureFile(key)}" alt=""></div><div><span class="eyebrow">${worldTwoBuilding(key)?(buildingUnlocked(state,key)?`LEVEL ${bs.level} · VILLAGE PRODUCTION`:'NOT BUILT YET · VILLAGE PRODUCTION'):`${key==='farmhouse'||buildingUnlocked(state,key)?`LEVEL ${bs.level}`:'NOT BUILT YET'}${key==='farmhouse'?' · YOUR HOMESTEAD':' · FARM PRODUCTION'}`}</span><h2 id="building-title">${b.name}</h2><p>${b.tagline}</p></div></div>`;
+  let crateOffer=0;   // the builder's crates the upgrade card shows, sent with Use crates
+  let content=`<div class="building-hero"><div class="building-image"><img src="${pictureFile(key)}" alt=""></div><div><span class="eyebrow">${worldTwoBuilding(key)?(b.type==='pier'?'NOT BUILT YET · FOR THE TOWN BOAT':buildingUnlocked(state,key)?`LEVEL ${bs.level} · VILLAGE PRODUCTION`:'NOT BUILT YET · VILLAGE PRODUCTION'):`${key==='farmhouse'||buildingUnlocked(state,key)?`LEVEL ${bs.level}`:'NOT BUILT YET'}${key==='farmhouse'?' · YOUR HOMESTEAD':' · FARM PRODUCTION'}`}</span><h2 id="building-title">${b.name}</h2><p>${b.tagline}</p></div></div>`;
   // Shared by both the pre-purchase preview and the working recipe list below: the Factory repeats every other
   // building's whole catalogue, so both of its recipe lists get grouped and collapsed by source; every other
   // building's own, much shorter list stays exactly the flat list it always was.
@@ -185,11 +197,15 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    const made=[...new Set(buildingRecipes(state,key).flatMap(id=>Object.keys(RECIPES[id].output)))],shown=made.slice(0,6);
    // A village place (Oct 2026): built from the golden brief, the next one in its order only; the others name the place right before them.
    const villagePlace=worldTwoBuilding(key),next=villagePlace&&eligible?villageBrief(state):null,before=next&&next.place!==key?villagePlaceBefore(state,key):null,after=before?BUILDINGS[before].name:'';
-   const status=after?`<span class="build-status-art is-locked">${art('lock','unlock-lock')}</span><div><strong>After the ${after}</strong><small>Village places are built with coins and village goods, one at a time.</small></div>`:eligible?`<span class="build-status-art">${art('hammer')}</span><div><strong>Ready to build</strong><small>Starts with one batch slot. Every upgrade adds one.</small></div>`
+   const status=after?`<span class="build-status-art is-locked">${art('lock','unlock-lock')}</span><div><strong>After the ${after}</strong><small>Village places are built with coins and village goods, one at a time.</small></div>`:eligible?`<span class="build-status-art">${art('hammer')}</span><div><strong>Ready to build</strong><small>${b.type==='pier'?'The town boat calls here once the pier is mended.':'Starts with one batch slot. Every upgrade adds one.'}</small></div>`
     :`<span class="build-status-art is-locked">${art('lock','unlock-lock')}</span><div><strong>${level<openLevel?`Opens at level ${openLevel}`:buildingUnlockHint(state,key)}</strong><small>${level<openLevel?`You are level ${level}${openLevel-level>1?` · ${openLevel-level} levels to go`:' · almost there'}`:'Not open yet'}</small></div>`;
    content+=`<section class="construction-panel ${eligible&&!after?'is-ready':'is-locked'}"><div class="build-status">${status}</div>${made.length?`<div class="build-makes"><span>Makes</span><div>${shown.map(k=>`<b title="${ITEMS[k].name}">${art(k)}${ITEMS[k].name}</b>`).join('')}${made.length>shown.length?`<b class="build-more">+${made.length-shown.length} more</b>`:''}</div></div>`:''}${previewEntries.length?`<details class="build-recipes"><summary>See ${previewEntries.length===1?'the recipe':`all ${previewEntries.length} recipes`}</summary><div class="construction-recipes${key==='factory'?' factory-recipe-list':''}">${previewRecipes}</div></details>`:''}${needs.length?`<p class="build-needs">First open ${needs.map(k=>BUILDINGS[k].name).join(' and ')} to supply this building.</p>`:''}${villagePlace?(next&&!after?briefCard(state,itemList,{showMe:false}):''):eligible?`<button type="button" id="construct-building" class="primary-button" ${state.coins>=buildCost&&!needs.length?'':'disabled'}><span>Build</span><span class="button-price">${art('coins')}${number(buildCost)} coins</span></button>${short>0?`<p class="build-short">You need ${number(short)} more coins.</p>`:''}`:`<p class="build-price">${art('coins')}<span>${number(buildCost)} coins to build</span></p>`}</section>`;
   }else{
    if(key==='windmill' ||key==='bakery')content+=`<div class="milling-chain"><span>${art('wheat')} Grain</span><b>→</b><span>${art('grainmeal')} Grain meal</span><b>→</b><span>${art('flour')} Flour</span><b>→</b><span>${art('bread')} Fresh baking</span></div><p class="milling-note">${key==='windmill'?'Grain becomes meal, then flour for the Bakery.':'Flour comes from the Windmill.'}</p>`;
+   // World II (Oct 2026): a village place's own rule in one sentence. The Village Fields sow with the farm's natural fertilizer: what is in
+   // storage, and a button that opens the farm's Windmill window right here (its batches start from the village as well).
+   if(key==='villagefields')content+=`<p class="milling-note">Sow with natural fertilizer and coins, harvest when ripe. Village crops sell only at the Village market.</p><div class="market-board-link village-fertilizer"><span>${art('fertilizer')}${number(state.inventory.fertilizer)} natural fertilizer in storage. Make more at the farm’s Windmill.</span><button type="button" id="open-windmill">Farm Windmill →</button></div>`;
+   else if(key==='canteen')content+='<p class="milling-note">Pasty lunches are packed lunches baked without apples.</p>';
    const jobs=productionJobs(bs),slots=productionSlots(bs.level,key),ready=jobs.filter(j=>j.readyAt<=farmNow());
    // What Collect all brings in, e.g. "6 Eggs · 2 Milk".
    const readyGoods=list=>Object.entries(list.reduce((sum,j)=>{for(const [k,n] of Object.entries(j.output??RECIPES[j.recipe].output))sum[k]=(sum[k]??0)+n;return sum;},{})).map(([k,n])=>`${number(n)} ${ITEMS[k]?.name??k}`).join(' · ');
@@ -206,7 +222,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    content+=`<div class="recipe-section-heading"><h3>What shall we make?</h3><span>Ingredients are used when you start.</span></div>`;
    const recipeCard=(rid,r)=>{
     const a=recipeAvailability(state,rid),duration=recipeDuration(state,rid,farmNow()),value=recipeValue(rid,farmNow(),state),count=Math.max(1,Math.min(batchCounts[rid]??1,a.maxCount||1));batchCounts[rid]=count;
-    return `<article class="recipe-card ${a.canStart?'is-ready':''}" data-recipe-card="${rid}"><div class="recipe-head"><span class="recipe-art">${art(Object.keys(r.output)[0])}</span><div class="recipe-title"><h4>${r.name}</h4><div class="recipe-meta"><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span><p class="recipe-value">${r.coins?`Costs ${number(r.coins)} coins`:`${art('coins')}<strong>${signed(value.added)}</strong> profit`}</p><span class="recipe-xp">${art('xp')}+${r.xp} XP</span></div></div></div><div class="recipe-flow-wrap"><div class="recipe-flow"><div class="ingredients">${costList(rid)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div></div><div class="recipe-footer"><span>${a.locked?`${art('lock','unlock-lock')} Locked · ${recipeUnlockHint(state,rid)}`:a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':a.poor?`You need ${number(a.price)} coins for a batch.`:`+${r.xp} XP`}</span>${a.slots>1?`<div class="batch-picker"><span id="batch-label-${rid}">Batches</span><div class="batch-stepper" role="group" aria-labelledby="batch-label-${rid}"><button type="button" data-batch-step="-1" data-for-recipe="${rid}" aria-label="Fewer batches of ${r.name}" ${count<=1||!a.maxCount?'disabled':''}>−</button><output data-batch-count="${rid}" data-max="${a.maxCount}" aria-live="polite" aria-label="Number of batches for ${r.name}">${count}</output><button type="button" data-batch-step="1" data-for-recipe="${rid}" aria-label="More batches of ${r.name}" ${count>=a.maxCount?'disabled':''}>+</button></div><small>${a.maxCount} available${a.maxCount>2?` · <button type="button" class="batch-max" data-batch-step="max" data-for-recipe="${rid}" aria-label="Start the most batches of ${r.name}">Max</button>`:''}</small></div>`:''}<button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
+    return `<article class="recipe-card ${a.canStart?'is-ready':''}" data-recipe-card="${rid}"><div class="recipe-head"><span class="recipe-art">${art(Object.keys(r.output)[0])}</span><div class="recipe-title"><h4>${r.name}</h4><div class="recipe-meta"><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span><p class="recipe-value">${art('coins')}<strong>${signed(value.added)}</strong> profit</p><span class="recipe-xp">${art('xp')}+${r.xp} XP</span></div></div></div><div class="recipe-flow-wrap"><div class="recipe-flow"><div class="ingredients">${costList(rid)}</div><i class="recipe-arrow" data-lucide="arrow-right"></i><div class="recipe-output">${itemList(r.output)}</div></div></div><div class="recipe-footer"><span>${a.locked?`${art('lock','unlock-lock')} Locked · ${recipeUnlockHint(state,rid)}`:a.busy?'All slots are occupied. Collect a finished batch first.':a.missing.length?'Gather the missing ingredients.':a.poor?`You need ${number(a.price)} coins for a batch.`:`+${r.xp} XP`}</span>${a.slots>1?`<div class="batch-picker"><span id="batch-label-${rid}">Batches</span><div class="batch-stepper" role="group" aria-labelledby="batch-label-${rid}"><button type="button" data-batch-step="-1" data-for-recipe="${rid}" aria-label="Fewer batches of ${r.name}" ${count<=1||!a.maxCount?'disabled':''}>−</button><output data-batch-count="${rid}" data-max="${a.maxCount}" aria-live="polite" aria-label="Number of batches for ${r.name}">${count}</output><button type="button" data-batch-step="1" data-for-recipe="${rid}" aria-label="More batches of ${r.name}" ${count>=a.maxCount?'disabled':''}>+</button></div><small>${a.maxCount} available${a.maxCount>2?` · <button type="button" class="batch-max" data-batch-step="max" data-for-recipe="${rid}" aria-label="Start the most batches of ${r.name}">Max</button>`:''}</small></div>`:''}<button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button></div></article>`;
    };
    const recipeEntries=buildingRecipes(state,key).map(id=>[id,recipeFor(state,id)]);
    // Every good any other building makes, in one huge batch — that is the Factory's whole point, but it also
@@ -220,6 +236,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
     content+=`<div class="market-tabs factory-filter" role="group" aria-label="Show recipes"><button type="button" data-factory-filter="all" aria-pressed="${factoryFilter==='all'}" class="${factoryFilter==='all'?'active':''}">All sources</button><button type="button" data-factory-filter="ready" aria-pressed="${factoryFilter==='ready'}" class="${factoryFilter==='ready'?'active':''}" ${readyEntries.length?'':'disabled'}>Ready now <span>${readyEntries.length}</span></button></div>`;
     content+=factoryFilter==='ready'?`<div class="recipe-list factory-ready-list">${readyEntries.map(([rid,r])=>recipeCard(rid,r)).join('')}</div>`:`<div class="recipe-list factory-recipe-list">${foldFactoryGroups(recipeEntries,recipeCard,{ready:canStart})}</div>`;
    }else content+=`<div class="recipe-list">${recipeEntries.map(([rid,r])=>recipeCard(rid,r)).join('')}</div>`;
+   // From level 128 the Lumber Camp packs builder's crates (Oct 2026): its window says what they are for.
+   if(key==='lumbercamp'&&recipeUnlocked(state,'builderscrate'))content+=`<p class="milling-note crate-note">${CRATE_RULE}</p>`;
    if(key==='windmill'){
     const eligible=state.plots.filter(p=>p.crop&&p.readyAt>farmNow()&&!p.fertilized);
     content+=`<section class="fertilizer-panel"><div>${art('fertilizer')}<h3>Give a field a head start</h3></div><p>Use 1 natural fertilizer to remove 35% of a crop’s remaining growing time. Once per growing cycle; watering and extra care still work.</p>${fieldPicker({id:'fertilizer-field-picker',plots:eligible,selected:[...fertilizerFields].filter(id=>eligible.some(p=>p.id===id)),multiple:true,now:farmNow(),available:state.inventory.fertilizer})}<div class="fertilizer-action"><span id="fertilizer-cost">${state.inventory.fertilizer} fertilizer in storage · 0 required</span><button id="fertilize-field" class="small-button" disabled>Fertilize selected fields</button></div></section>`;
@@ -233,14 +251,22 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    const missingGoods=estate?Object.entries(estate.materials).filter(([item,n])=>(state.inventory[item]??0)<n).map(([item,n])=>`${number(n-(state.inventory[item]??0))} ${ITEMS[item].name}`):[];
    const coinsShort=cost!==null&&state.coins<cost?[`${number(cost-state.coins)} coins`]:[],stillNeeded=[...missingGoods,...coinsShort];
    const coinRow=cost===null?'':`<div class="upgrade-option"><div class="upgrade-cost"><span class="upgrade-price">${art('coins')}<b>${number(cost)}</b></span>${estate?`<span class="upgrade-plus">+</span><div class="ingredients expansion-materials">${itemList(estate.materials,true)}</div>`:''}</div><button id="upgrade-building" class="small-button" ${mutating||stillNeeded.length||!estateLevelOk?'disabled':''} aria-label="Upgrade with coins${estate?' and goods':''}">Upgrade</button>${estate&&!estateLevelOk?`<small class="shortfall">Level ${next} unlocks at farm level ${estate.level}. You are level ${levelOf(state)}.</small>`:stillNeeded.length?`<small class="shortfall">Still needed: ${stillNeeded.join(' and ')}.</small>`:''}</div>`;
-   content+=`<div class="upgrade-panel"><span class="upgrade-icon"><i data-lucide="circle-fading-arrow-up"></i></span><div><strong>${cost?`Upgrade to level ${next}`:'Fully upgraded'}</strong><p>${upgradeNote}${doubleNote?` <span class="upgrade-double">${doubleNote}</span>`:''}</p></div>${cost===null?'':`<div class="upgrade-payments">${coinRow}</div>`}</div>`;
+   // Builder's crates (Oct 2026, from the village's Lumber Camp): a second row only when this upgrade can take one (builderCrates: from level
+   // 100, crates in stock, a farm production building below level 10, not the Factory), using as many as it may. The coins row stays.
+   const crates=builderCrates(state,key),cratePrice=cost===null?0:cost-crates*BUILDER_CRATE_COINS;crateOffer=crates;
+   const crateNeeded=[...missingGoods,...(crates&&state.coins<cratePrice?[`${number(cratePrice-state.coins)} coins`]:[])];
+   const crateRow=crates?`<div class="upgrade-option is-crates"><div class="upgrade-cost"><span class="upgrade-price">${art('coins')}<b>${number(cratePrice)}</b></span><span class="upgrade-plus">+</span><div class="ingredients expansion-materials">${itemList({...(estate?.materials??{}),builderscrate:crates},true)}</div></div><button id="upgrade-building-crates" class="small-button" ${mutating||crateNeeded.length||!estateLevelOk?'disabled':''} aria-label="Upgrade with ${number(crates)} builder’s ${crates===1?'crate':'crates'}">Use crates</button>${crateNeeded.length?`<small class="shortfall">Still needed: ${crateNeeded.join(' and ')}.</small>`:''}</div><small class="upgrade-rule">${CRATE_RULE}</small>`:'';
+   // A village place's card says what its upgrades take (the owner's choice 8a: roof tiles for the places from level 125).
+   const placeRule=cost!==null&&worldTwoBuilding(key)?`<small class="upgrade-rule">Village places upgrade with planks and stone; the places from level ${VILLAGE_TILES_FROM} on take roof tiles too.</small>`:'';
+   content+=`<div class="upgrade-panel"><span class="upgrade-icon"><i data-lucide="circle-fading-arrow-up"></i></span><div><strong>${cost?`Upgrade to level ${next}`:'Fully upgraded'}</strong><p>${upgradeNote}${doubleNote?` <span class="upgrade-double">${doubleNote}</span>`:''}</p></div>${cost===null?'':`<div class="upgrade-payments">${coinRow}${crateRow}${placeRule}</div>`}</div>`;
   }
   $('building-content').innerHTML=content;$('building-feedback').textContent='';
   const recipeList=$('building-content').querySelector('.recipe-list');if(recipeList)foldLocked(recipeList,'[data-recipe-card]',card=>recipeAvailability(state,card.dataset.recipeCard).locked,'Coming later');
   $('building-content').querySelectorAll('[data-factory-filter]').forEach(b=>b.addEventListener('click',()=>{factoryFilter=b.dataset.factoryFilter;renderBuilding();}));
   $('building-content').querySelectorAll('[data-factory-group]').forEach(g=>g.addEventListener('toggle',()=>{if(g.open)openFactoryGroups.add(g.dataset.factoryGroup);else openFactoryGroups.delete(g.dataset.factoryGroup);}));
   $('construct-building')?.addEventListener('click',()=>mutate(async()=>{await runAction({type:'construct',building:key});return `${b.name} is open. Start your first batch!`;}));
-  $('building-content').querySelector('[data-village-build]')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'village_build',place:key});return `The ${r.name} is built! +${number(r.xp)} XP.`;}));
+  $('building-content').querySelector('[data-village-build]')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'village_build',place:key});return r.place==='villagefields'?`The ${r.name} are built! +${number(r.xp)} XP.`:`The ${r.name} is built! +${number(r.xp)} XP.${r.place==='pier'?' The town boat waits at the pier.':''}`;}));
+  $('open-windmill')?.addEventListener('click',()=>openBuilding('windmill'));
   // "Remove all" and "Remove all but regrowing": one save for every field, after typing ALL. The fields go as they were shown; if one
   // changed in the meantime, nothing is removed.
   $('building-content').querySelectorAll('[data-clear-all]').forEach(btn=>btn.addEventListener('click',async()=>{
@@ -263,6 +289,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   $('building-content').querySelectorAll('[data-collect-job]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'collect',building:key,jobId:btn.dataset.collectJob});return `Collected ${Object.entries(r.items).map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ')} · +${r.xp} XP.`;})));
   $('collect-all-batches')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'collect_all',building:key});return `Collected ${r.count} batches: ${Object.entries(r.items).map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ')} · +${r.xp} XP.`;}));
   $('upgrade-building')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'upgrade',building:key});return `${b.name} upgraded to level ${r.level}.`;}));
+  // Use crates sends as many crates as the card showed; the rules refuse a count that is no longer right.
+  $('upgrade-building-crates')?.addEventListener('click',()=>{const crates=crateOffer;mutate(async()=>{const r=await runAction({type:'upgrade',building:key,crates});return `${b.name} upgraded to level ${r.level} with ${number(r.crates)} builder’s ${r.crates===1?'crate':'crates'}.`;});});
   const updateFertilizer=ids=>{
    fertilizerFields.clear();ids.forEach(id=>fertilizerFields.add(id));
    const count=ids.length,missing=Math.max(0,count-state.inventory.fertilizer);
@@ -286,7 +314,9 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    card.querySelector('.recipe-output').innerHTML=itemList(multiply(r.output));
    if(max)card.querySelector('.recipe-footer>span').textContent=`+${r.xp*count} XP`;
    const value=recipeValue(id,farmNow(),state);
-   card.querySelector('.recipe-value').innerHTML=RECIPES[id].coins?`Costs ${number(RECIPES[id].coins*count)} coins`:`${art('coins')}<strong>${signed(value.added*count)}</strong> profit`;
+   // A recipe that costs coins (the Village Fields' sowing) shows its profit too: recipeValue counts the coins in, and the coins are one
+   // of the ingredients below, so a "Costs N coins" line here said the same thing twice (10 Oct 2026).
+   card.querySelector('.recipe-value').innerHTML=`${art('coins')}<strong>${signed(value.added*count)}</strong> profit`;
    card.querySelector('[data-recipe]').textContent=`Start ${count} ${count===1?'batch':'batches'}`;
   }
   $('building-content').querySelectorAll('[data-batch-step]').forEach(button=>button.addEventListener('click',()=>{
@@ -303,7 +333,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   // Tomorrow's outlook (back on 1 Oct 2026, the player missed it): the item whose price rises most tomorrow, to plant or make for.
   $('market-outlook').hidden=false;
   // The Village market's sell list leads to the market square, where villagers pay more (Oct 2026); it has no farm prices of the day.
-  if(village){$('market-outlook').innerHTML='<div class="market-board-link"><span>Villagers pay half again at the market square.</span><button type="button" id="market-square">Market square →</button></div>';$('market-square').onclick=()=>{$('market-dialog').close();onPlace?.('villagemarket');};}
+  if(village){$('market-outlook').innerHTML=`<div class="market-board-link"><span>${villagePremium(state)===VILLAGE_PREMIUM?'Villagers pay half again at the market square.':`Villagers pay ${VILLAGE_HALL_PREMIUM} times at the market square.`}</span><button type="button" id="market-square">Market square →</button></div>`;$('market-square').onclick=()=>{$('market-dialog').close();onPlace?.('villagemarket');};}
   else{
   const {today,tomorrow}=marketHighlights(now,state),tomorrowChange=`${signed(tomorrow.change)}%`;
   $('market-outlook').innerHTML=`<div class="market-outlook-heading"><span class="eyebrow">TODAY’S MARKET</span><span id="market-countdown"></span></div><div class="market-highlight">${art(today.item)}<div><strong>${ITEMS[today.item].name}</strong><span>${number(today.price)} coins each · ${today.label}</span></div><b class="demand-pill ${today.demand}">${signed(today.change)}%</b></div><p class="market-forecast">Tomorrow’s outlook: <strong>${ITEMS[tomorrow.item].name}</strong> · ${tomorrowChange} expected.</p><div class="market-board-link"><span>The Valley Market pays 1.5× for a full basket.</span><button type="button" id="market-valley">Valley Market →</button></div>`;

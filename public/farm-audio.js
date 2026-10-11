@@ -88,6 +88,7 @@ export const SOUND_CUES=Object.freeze({
  improve:{notes:[392,523.25,698.46],step:.13,duration:.4,volume:.09},
  tractor:{notes:[98,123.47,146.83],step:.085,duration:.16,volume:.06,type:'triangle'},
  levelup:{notes:[523.25,659.25,783.99,1046.5,1318.51,1046.5],step:.14,duration:.52,volume:.12},
+ bell:{notes:[392,329.63,261.63],step:.3,duration:.6,volume:.07},
 });
 export function soundForAction(action,result,beforeLevel,afterLevel){
  if(action.type==='chore'&&result.success===false)return null;
@@ -101,10 +102,17 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
  if(['daily','beginner_claim'].includes(action.type))return result.diamonds>0?'diamond':'reward';
   // A load that fills the export trailer sends it off (horn); a part load is just crates going on.
  if(action.type==='depot_load')return result.shipped?'depot':'produce';
+ // The village (Oct 2026): the Help that opens the market crate sounds like diamonds, sowing in the Village Fields like planting; a full
+ // town boat sails off with the depot's horn and a part load is crates going on, like the trailer.
+ if(action.type==='village_deliver'&&result.crate>0)return 'diamond';
+ if(action.type==='produce'&&result.building==='villagefields')return 'plant';
+ if(action.type==='boat_load')return result.sailed?'depot':'produce';
  return {sell:'sell',produce:'produce',collect:'collect',collect_all:'collect',upgrade:'upgrade',expand:'expand',quest:'quest',mastery:'reward',level_rewards:'reward',delivery:'delivery',tractor:'tractor',chore:'chore',fertilize:'care',stall_collect:'stall',stall_upgrade:'upgrade',project_start:'produce',project_collect:'reward',silo_upgrade:'upgrade',buy_boost:'boost',
   construct:'construct',finish_crop:'finish',finish_batch:'finish',valley_sell:'valley',fair_enter:'fair',improve:'improve',
   // The market square (Oct 2026): helping a villager sounds like a sold basket, a golden brief like a new building; "Not now" is quiet.
-  village_deliver:'valley',village_build:'construct'}[action.type]??null;
+  village_deliver:'valley',village_build:'construct',
+  // A landmark (Oct 2026): goods handed in are crates going on, finishing it is a lasting improvement; turning a boat cargo down is quiet.
+  landmark_give:'produce',landmark_finish:'improve'}[action.type]??null;
 }
 // A sweep's snip per field (Oct 2026): step n of the sweep (from 0) is a step higher on a pentatonic scale, up to an octave and then
 // it stays there; every sweep starts low again.

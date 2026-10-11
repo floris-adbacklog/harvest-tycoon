@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm} from './legacy-farm.mjs';
-import {applyFarmAction,xpForLevel} from '../game/farm-state.js';
+import {applyFarmAction,xpForLevel,ITEMS} from '../game/farm-state.js';
 import {LOG_CATEGORIES,LOG_PAGE,snapshot,changes,farmLog,familyLog,loadLog,accountLog,adminGrantLog,writeLog,handlePlayerLog} from '../supabase/functions/farm-api/player-log.js';
 import {renderLogEntries,LOG_LABELS} from '../src/player-profiles.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -145,4 +145,60 @@ test('a collected farm event reward is in the log with the event\'s name, one co
  assert.equal(eventRewardLog(null,{coins:1,diamonds:0})[0].text,'Collected the reward of the event · +1 coin');
  const events=read('supabase/functions/farm-api/event-service.js');
  assert.match(events,/if\(r\.data\?\.coins\|\|r\.data\?\.diamonds\)globalThis\.EdgeRuntime\?\.waitUntil\?\.\(logEventReward\(admin,user\.id,body\.eventId,r\.data\)\);\n   return respond\(\{reward:r\.data\}\);/,'only a reward that paid, after the reply');
+});
+
+// World II, levels 110-200 (Oct 2026): the market crate, builder's crates, the town boat and the landmarks.
+test('the market crate, builder’s crates, the town boat and the landmarks have their own lines',()=>{
+ // The 15th villager of the week (from level 116) opens the market crate in the same Help.
+ const s=farm(116);for(const k of Object.keys(s.inventory))s.inventory[k]=100000;
+ let t=now,crate=null;
+ for(let i=0;i<10&&!crate;i++){
+  applyFarmAction(s,{type:'first_look'},t);
+  for(const [board,b] of s.village.boards.entries()){
+   if(!b.request||crate)continue;const before=snapshot(s),got=applyFarmAction(s,{type:'village_deliver',board,request:b.request.id,input:b.request.input},t);
+   const [line]=farmLog({type:'village_deliver',board,request:b.request.id},before,s,got);
+   if(got.crate){crate=line;break;}
+   assert.match(line.text,/^Helped a villager at the market square · /);
+  }
+  t+=3*3600000;
+ }
+ assert.equal(crate.category,'market');assert.match(crate.text,/^Helped a villager at the market square and opened the market crate · \+[\d,]+ coins · \+10 diamonds · \+[\d,]+ XP · /);
+ // An upgrade with builder's crates names them; the coins line is the coins paid.
+ const u=farm(128);u.buildings.dairy.level=6;Object.assign(u.inventory,{milk:24,builderscrate:30});u.boosts.upgradeCredits=0;u.coins=10000000;
+ let before=snapshot(u),got=applyFarmAction(u,{type:'upgrade',building:'dairy',crates:2},now);
+ assert.equal(farmLog({type:'upgrade',building:'dairy',crates:2},before,u,got)[0].text,'Upgraded the Dairy Barn to level 7 with 2 builder’s crates · −22,973 coins · +15 XP · −24 Milk · −2 Builder’s crate');
+ u.inventory.milk=60;u.boosts.upgradeCredits=1;before=snapshot(u);got=applyFarmAction(u,{type:'upgrade',building:'dairy',crates:1},now);
+ assert.match(farmLog({type:'upgrade',building:'dairy',crates:1},before,u,got)[0].text,/^Upgraded the Dairy Barn to level 8 with 1 builder’s crate · −[\d,]+ coins · \+15 XP · /);
+ before=snapshot(u);got=applyFarmAction(u,{type:'upgrade',building:'dairy'},now);
+ assert.match(farmLog({type:'upgrade',building:'dairy'},before,u,got)[0].text,/^Upgraded the Dairy Barn to level 9 · −[\d,]+ coins · \+15 XP/,'without crates the live line');
+ // The town boat and the landmarks (their rules come with the boat and the landmarks): the lines read the action and its result.
+ const b=farm(150),after=structuredClone(b);after.inventory.linen-=10;
+ assert.deepEqual(farmLog({type:'boat_load',cargo:1,item:'linen'},snapshot(b),after,{loaded:{linen:10},units:10,sailed:false}).map(l=>[l.category,l.text]),[['market','Loaded the town boat · −10 Linen']]);
+ const sailed=structuredClone(b);sailed.coins+=87700;sailed.diamonds+=3;
+ assert.equal(farmLog({type:'boat_load',cargo:1},snapshot(b),sailed,{sailed:true})[0].text,'Sent the town boat off · +87,700 coins · +3 diamonds');
+ assert.equal(farmLog({type:'boat_skip',cargo:1},snapshot(b),b,{readyAt:now})[0].text,'Turned down a town boat cargo');
+ const gave=structuredClone(b);gave.inventory.rooftile-=250;
+ assert.deepEqual(farmLog({type:'landmark_give',landmark:'windpump',item:'rooftile'},snapshot(b),gave,{}).map(l=>[l.category,l.action,l.text]),[['farm','landmark_give','Handed in goods for the Wind pump · −250 Roof tile']]);
+ assert.equal(farmLog({type:'landmark_finish',landmark:'greathall'},snapshot(b),b,{})[0].text,'Finished the Great Hall in the village');
+ assert.equal(farmLog({type:'landmark_give',landmark:'__proto__'},snapshot(b),b,{})[0].text,'Handed in goods for the landmark');
+});
+
+// The same lines from real actions (Oct 2026): a part load, the boat sailing with what it paid, a cargo turned down, goods handed in to a
+// landmark and the Great Hall finished with its diamonds.
+test('the town boat and the landmarks log what the actions really gave or took',()=>{
+ const s=farm(200);s.coins=50000000;for(const k of Object.keys(s.inventory))s.inventory[k]=0;applyFarmAction(s,{type:'first_look'},now);
+ const c=s.village.boat.cargo,[first]=Object.keys(c.input),input=c.input;s.inventory[first]=1;
+ let before=snapshot(s),got=applyFarmAction(s,{type:'boat_load',cargo:c.id,input,item:first},now);
+ assert.deepEqual(farmLog({type:'boat_load',cargo:c.id,item:first},before,s,got).map(l=>[l.category,l.text]),[['market',`Loaded the town boat · −1 ${ITEMS[first].name}`]]);
+ Object.assign(s.inventory,input);before=snapshot(s);got=applyFarmAction(s,{type:'boat_load',cargo:c.id,input},now);
+ assert.ok(got.sailed);
+ assert.match(farmLog({type:'boat_load',cargo:c.id},before,s,got)[0].text,new RegExp(`^Sent the town boat off · \\+${c.coins.toLocaleString('en-US')} coins · \\+3 diamonds · \\+${c.xp.toLocaleString('en-US')} XP · `));
+ const t=now+12*3600000;applyFarmAction(s,{type:'first_look'},t);const next=s.village.boat.cargo;before=snapshot(s);got=applyFarmAction(s,{type:'boat_skip',cargo:next.id,input:next.input},t);
+ assert.deepEqual(farmLog({type:'boat_skip',cargo:next.id},before,s,got).map(l=>[l.category,l.text]),[['market','Turned down a town boat cargo']]);
+ // The landmarks: the first four finished in the save, the Great Hall's goods handed in, then finished.
+ s.village.landmarks={done:['windpump','longhouse','stonequay','lookout'],given:{}};Object.assign(s.inventory,{rooftile:100,linen:100,lavendersoap:100,scentedsachet:100,saffronbun:100});
+ applyFarmAction(s,{type:'first_look'},t);before=snapshot(s);got=applyFarmAction(s,{type:'landmark_give',landmark:'greathall',item:'rooftile'},t);
+ assert.deepEqual(farmLog({type:'landmark_give',landmark:'greathall',item:'rooftile'},before,s,got).map(l=>[l.category,l.text]),[['farm','Handed in goods for the Great Hall · −100 Roof tile']]);
+ applyFarmAction(s,{type:'landmark_give',landmark:'greathall'},t);before=snapshot(s);got=applyFarmAction(s,{type:'landmark_finish',landmark:'greathall'},t);
+ assert.match(farmLog({type:'landmark_finish',landmark:'greathall'},before,s,got)[0].text,/^Finished the Great Hall in the village · −3,000,000 coins · \+200 diamonds · \+5,000 XP/);
 });

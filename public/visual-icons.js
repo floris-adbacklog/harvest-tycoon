@@ -48,8 +48,11 @@ for(const key of ENDGAME_PICTURES)pictures[key]=key;
 Object.assign(pictures,{master:'endgame-master-star',seedlab:'endgame-seed-lab',visitors:'endgame-visitors',giantpumpkin:'giant-prize',valleyprojects:'project-watermill'});
 // World II, The Village (30 Sep 2026): renders of its places, built from the Village pack's own models like the farm's buildings, and
 // its goods painted by the user (all WebP), the badge on the travel button and the closed bridge that shows at level 90 to 99.
+// The levels 100-200 of Oct 2026 add the 13 later goods (painted, 256 px) and renders of the seven later places and the five landmarks
+// (512 px, scripts/render-village-pictures.py), all WebP.
 const VILLAGE_ART=['mine','lumbercamp','smithy','villagemill','villagemarket','farmroad','packedlunch','stone','ironore','timber','plank','ironbar','pickaxe',
- 'silverore','silverbar','mastertools','heirloomflour','gemstone','goldenloaf','heirloompie','village-badge','village-bridge'];
+ 'silverore','silverbar','mastertools','heirloomflour','gemstone','goldenloaf','heirloompie','village-badge','village-bridge',
+ 'potatoes','clay','rooftile','flax','linen','builderscrate','lavender','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffron','saffronbun','villagefields','canteen','kiln','linenloft','soapmaker','pier','jeweller','landmark-windpump','landmark-longhouse','landmark-stonequay','landmark-lookout','landmark-greathall'];
 for(const key of VILLAGE_ART)pictures[key]=key;
 // The hand tools of a sweep (Oct 2026, painted by the owner, WebP): the sickle, the watering can, the seed bag and the gardening gloves
 // for care, as the cursor over a field and in the hand during a sweep (public/sweep-tools.js).

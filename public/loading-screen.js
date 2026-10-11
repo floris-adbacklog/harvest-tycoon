@@ -34,9 +34,19 @@ export const PASS_LOADING_TIP=Object.freeze(['giant-small','Halloween Pass from 
 // On the way to the village (World II, 30 Sep 2026) the tips are about the village.
 export const VILLAGE_LOADING_TIPS=Object.freeze([
  ['packedlunch','Every trip into the mine or the forest starts with packed lunches from your farm Kitchen.'],
- // The market square (Oct 2026).
- ['villagemarket','Villagers at the market square pay half again what their goods are worth.'],
- ['village-badge','Each golden brief at the market square builds the next village place.'],
+ // The market square (Oct 2026). "At least half again": 1.6 times once the Great Hall stands.
+ ['villagemarket','Villagers at the market square pay at least half again what their goods are worth.'],
+ ['village-badge','Each golden brief at the market square builds the next village place or landmark.'],
+ // The village's later levels (Oct 2026), each with the level it opens at (this screen reads none of the game's rules:
+ // tests/village-square.test.mjs keeps the numbers equal to farm-state.js).
+ ['potatoes','From level 110, the Village Fields grow potatoes from natural fertilizer and coins, with no field on the farm.'],
+ ['canteen','From level 113, the Miners’ Canteen bakes packed lunches without apples.'],
+ // The screen loads /assets/icons/<picture>.webp itself, so a tip's picture is a file there, never a sprite like 'diamonds' (10 Oct 2026,
+ // review fix: a broken picture). The crate of diamonds is the market crate.
+ ['offer-diamonds','From level 116, help 15 villagers in a week and the market crate gives you 10 diamonds.'],
+ ['builderscrate','From level 128, builder’s crates from the Lumber Camp take coins off your farm building upgrades.'],
+ ['pier','From level 144, mend the old pier and the town boat buys your finest village goods.'],
+ ['landmark-greathall','From level 165, the golden brief builds landmarks, and each one’s bonus lasts for good.'],
  ['mastertools','Master tools from the Smithy take your farm buildings past level 10.'],
  ['villagemarket','Village goods sell at the Village market, not at the farm Market.'],
  ['farmroad','Your farm keeps growing while you are in the village.']

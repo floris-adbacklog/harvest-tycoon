@@ -11,9 +11,10 @@ const CROP_BOARDS=Object.keys(CROPS).sort((a,b)=>(CROP_LEVELS[a]??1)-(CROP_LEVEL
 // The level at which a good can first be made: its earliest recipe outside the Factory (the building's level or the recipe's own).
 const goodLevel=key=>Math.min(...Object.values(RECIPES).filter(r=>r.building!=='factory'&&r.output[key]).map(r=>Math.max(BUILDING_LEVELS[r.building]??1,r.minLevel??1)),Infinity);
 const byLevel=(a,b)=>goodLevel(a)-goodLevel(b)||ITEMS[a].name.localeCompare(ITEMS[b].name);
-// World II's goods (30 Sep 2026) are boards of their own, under Village, which only a farmer from level 100 sees (src/ui.js).
+// World II's goods (30 Sep 2026) are boards of their own, under Village, which only a farmer from level 100 sees (src/ui.js). The 13 goods
+// of its later places (Oct 2026, noBoard) have none: the Village row holds the first fourteen and Villagers helped.
 const GOOD_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&!ITEMS[key].heirloom&&!worldTwoItem(key)).sort(byLevel);
-const VILLAGE_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&worldTwoItem(key)).sort(byLevel);
+const VILLAGE_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&worldTwoItem(key)&&!ITEMS[key].noBoard).sort(byLevel);
 export const LEADERBOARD_CATEGORIES=Object.freeze({
  level:{label:'Highest level',heading:'Level',unit:'level',description:'Your farmer level, earned through farming experience.'},
  currency:{label:'Most coins',heading:'Coins',unit:'coins',description:'Current coin balance. Spending coins can change your position.'},
@@ -38,6 +39,9 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  // One board per good, in the order the goods unlock. Each reads the good's count in player_stats.goods_made (the farm journal's
  // numbers, kept up to date on every save: supabase/leaderboard-goods.sql).
  ...Object.fromEntries(GOOD_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'goods',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} collected from your buildings.`}])),
+ // The market square's own board (Oct 2026), first in the Village row: villagers helped, from stats.village_requests (its own column,
+ // player_stats.villagers_helped: supabase/world-two-phase-2-5.sql).
+ villagers_helped:{label:'Most villagers helped',heading:'Villagers helped',unit:'villagers helped',group:'village',description:'Villagers helped at the market square in the village.'},
  ...Object.fromEntries(VILLAGE_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'village',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} made for and in the village.`}]))
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}

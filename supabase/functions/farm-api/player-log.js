@@ -1,4 +1,4 @@
-import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,levelOf,recipeFor} from './farm-state.js';
+import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,levelOf,recipeFor} from './farm-state.js';
 import {isStaff,isSuperadmin} from './admin-service.js';
 
 // A log per farmer (26 Sep 2026): what they did and what it gave or cost, with the time, in categories. The farmer reads their own
@@ -11,6 +11,7 @@ export const LOG_PAGE=50;
 const number=value=>Number(value).toLocaleString('en-US');
 const itemName=key=>ITEMS[key]?.name??key;
 const building=key=>BUILDINGS[key]?.name??'building';
+const landmark=key=>VILLAGE_LANDMARKS[key]?.name??'landmark';
 const batches=count=>`${number(count)} ${count===1?'batch':'batches'}`;
 
 // What a farm has before and after an action; the difference is what the log line says it gave or cost.
@@ -28,7 +29,8 @@ export function changes(before,after){
 // Each logged action: its category and what happened, in the farmer's words. Actions not in here are not logged.
 const FARM_ACTIONS={
  construct:['farm',(a)=>`Built the ${building(a.building)}`],
- upgrade:['farm',(a,s)=>`Upgraded the ${building(a.building)} to level ${s.buildings[a.building]?.level??''}${a.currency==='diamonds'?' with diamonds':''}`],
+ // With builder's crates from the village (Oct 2026) the line names them; the changes after it show the coins paid and the crates used.
+ upgrade:['farm',(a,s,r)=>r?.crates?`Upgraded the ${building(a.building)} to level ${s.buildings[a.building]?.level??''} with ${number(r.crates)} builder’s ${r.crates===1?'crate':'crates'}`:`Upgraded the ${building(a.building)} to level ${s.buildings[a.building]?.level??''}${a.currency==='diamonds'?' with diamonds':''}`],
  expand:['farm',(a,s)=>`Unlocked field ${s.plots.length}`],
  silo_upgrade:['farm',(a,s)=>`Silo research step ${s.siloLevel}`],
  improve:['farm',(a)=>`Built ${IMPROVEMENTS[a.id]?.name??'an estate improvement'}`],
@@ -46,9 +48,16 @@ const FARM_ACTIONS={
  valley_sell:['market',()=>'Sold a basket at the Valley Market'],
  valley_skip:['market',()=>'Sent a Valley Market customer away'],
  // World II's market square (Oct 2026): a villager helped or turned away, and a village place built from its golden brief.
- village_deliver:['market',()=>'Helped a villager at the market square'],
+ // The Help that opens the market crate (from level 116) says so; the changes show its diamonds.
+ village_deliver:['market',(a,s,r)=>r?.crate?'Helped a villager at the market square and opened the market crate':'Helped a villager at the market square'],
  village_skip:['market',()=>'Said “Not now” to a villager'],
  village_build:['farm',a=>`Built the ${building(a.place)} from a golden brief`],
+ // The town boat at the Pier (Oct 2026): a part load, a full boat sailing off, a cargo turned down.
+ boat_load:['market',(a,s,r)=>r?.sailed?'Sent the town boat off':'Loaded the town boat'],
+ boat_skip:['market',()=>'Turned down a town boat cargo'],
+ // The village's landmarks (Oct 2026): goods handed in bit by bit, and the landmark finished.
+ landmark_give:['farm',a=>`Handed in goods for the ${landmark(a.landmark)}`],
+ landmark_finish:['farm',a=>`Finished the ${landmark(a.landmark)} in the village`],
  depot_load:['market',()=>'Loaded an export trailer'],
  depot_skip:['market',()=>'Skipped an export order'],
  fair_enter:['market',()=>'Entered the Grand Valley Fair'],

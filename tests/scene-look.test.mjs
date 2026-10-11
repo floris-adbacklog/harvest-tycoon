@@ -67,7 +67,7 @@ test('the harvest: a ripe field\'s plants are picked and the harvest flies to th
 });
 test('goods: a tap on a building\'s yellow name collects everything ready on the farm and the goods fly to the Market button',()=>{
  const game=read('public/game.js');
- assert.match(game,/if\(economy\.status\(key\)\.kind!=='ready'\)\{economy\.openBuilding\(key\);return;\}/,'nothing ready: the window opens');
+ assert.match(game,/if\(BUILDINGS\[key\]\.type==='pier'\|\|economy\.status\(key\)\.kind!=='ready'\)\{economy\.openBuilding\(key\);return;\}/,'nothing ready: the window opens (the village\'s Pier, Oct 2026, has nothing to collect: its name opens the town boat)');
  assert.match(game,/const result=await runAction\(\{type:'collect_all',building:key\}\)/,'the same as Collect all in the window');
  assert.match(game,/else if\(target\.type==='building'\)\{if\(target\.label\)tapBuilding\(target\.id\);else economy\.openBuilding\(target\.id\);\}/,'a tap on the building itself opens its window');
  assert.match(read('public/wiki-content.js'),/tap the name to collect everything that is ready\. Or open the building and use Collect all\./);

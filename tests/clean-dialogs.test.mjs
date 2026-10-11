@@ -15,7 +15,7 @@ test('one job per window: the market pick lives in the Market only, with tomorro
 test('less text per row: a building is its name with a level chip and chips for what it does, a fair price has no label',()=>{
  const market=read('public/economy-ui.js');
  // 8 Oct 2026: the one "Level 6 · 4 ready · 4 / 5 slots" line was cut off with … (tests/building-chips.test.mjs has the chips).
- assert.match(market,/<strong>\$\{b\.name\}\$\{isBuilt\(key\)\?` <span class="building-level-chip">Level \$\{state\.buildings\[key\]\.level\}<\/span>`:''\}<\/strong>\$\{catalogStatus\(key,s\)\}<\/span>/);
+ assert.match(market,/<strong>\$\{b\.name\}\$\{leveled\(key\)\?` <span class="building-level-chip">Level \$\{state\.buildings\[key\]\.level\}<\/span>`:''\}<\/strong>\$\{catalogStatus\(key,s\)\}<\/span>/);
  assert.doesNotMatch(market,/<small>Level \$\{state\.buildings\[key\]\.level\}<\/small>/,'no second line');
  assert.doesNotMatch(market,/catalogLine/,'no one line with the level and the status any more');
  assert.match(market,/if\(el\.classList\.contains\('building-chips'\)\)\{const html=buildingChips\(s\);if\(el\.dataset\.html!==html\)\{el\.dataset\.html=html;el\.innerHTML=html;\}return;\}/,'the live update writes the chips again only when they change');

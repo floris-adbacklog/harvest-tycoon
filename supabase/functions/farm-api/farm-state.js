@@ -96,6 +96,9 @@ export const HEIRLOOMS=Object.freeze(Object.fromEntries(HEIRLOOM_LIST.map(([key,
 // woodcutters and the village sends back what lets the farm grow past its top (see WORLD_TWO_LEVEL below). Village goods share the
 // storage but have their own tab and their own market: they never show in the farm's Market, Family Orders, family sharing, the
 // Starter Pack or the World I leaderboards (villageGood). Each sells for about 1.4 times what goes into it, like the farm's goods.
+// The village's crops (crop:true, Oct 2026) grow in the Village Fields, never on a farm field: they are not CROPS (no seeds, no mastery,
+// not in the Starter Pack) and sell at the Village market only. The goods of levels 110-200 (noBoard:true) have no leaderboard of their
+// own; "Villagers helped" is the village's board for them. Always added at the end, in this order: requests and cargos follow it.
 export const VILLAGE_GOODS=Object.freeze({
  packedlunch:{name:'Packed lunch',sell:370,village:true,world:2},
  stone:{name:'Stone',sell:45,village:true,world:2},
@@ -108,7 +111,22 @@ export const VILLAGE_GOODS=Object.freeze({
  silverbar:{name:'Silver bar',sell:2500,village:true,world:2},
  mastertools:{name:'Master tools',sell:9400,village:true,world:2},
  heirloomflour:{name:'Heirloom flour',sell:1200,village:true,world:2},
- gemstone:{name:'Ruby',sell:2400,village:true,world:2}
+ gemstone:{name:'Ruby',sell:2400,village:true,world:2},
+ // World II, levels 110-200 (Oct 2026): the Village Fields' four crops, the Potter's Kiln's clay and roof tiles, linen, the builder's
+ // crate for the farm's upgrades, the Soap Maker's two goods, the Jeweller's candlestick and ring, and the canteen's saffron buns.
+ potatoes:{name:'Potatoes',sell:75,village:true,world:2,crop:true,noBoard:true},
+ flax:{name:'Flax',sell:110,village:true,world:2,crop:true,noBoard:true},
+ lavender:{name:'Lavender',sell:170,village:true,world:2,crop:true,noBoard:true},
+ saffron:{name:'Saffron',sell:650,village:true,world:2,crop:true,noBoard:true},
+ clay:{name:'Clay',sell:70,village:true,world:2,noBoard:true},
+ rooftile:{name:'Roof tile',sell:220,village:true,world:2,noBoard:true},
+ linen:{name:'Linen',sell:480,village:true,world:2,noBoard:true},
+ builderscrate:{name:'Builder’s crate',sell:6500,village:true,world:2,noBoard:true},
+ lavendersoap:{name:'Lavender soap',sell:560,village:true,world:2,noBoard:true},
+ scentedsachet:{name:'Scented sachet',sell:580,village:true,world:2,noBoard:true},
+ silvercandlestick:{name:'Silver candlestick',sell:10500,village:true,world:2,noBoard:true},
+ rubyring:{name:'Ruby ring',sell:14000,village:true,world:2,noBoard:true},
+ saffronbun:{name:'Saffron bun',sell:2100,village:true,world:2,noBoard:true}
 });
 export const villageGood=key=>ITEMS[key]?.village===true;
 // Everything of World II (the village goods, and the farm's bakes with heirloom flour): never shared with a family, never in a
@@ -130,7 +148,7 @@ function calendarHash(text){let h=2166136261;for(let i=0;i<text.length;i++)h=Mat
 export const MARKET_RANGES=Object.freeze({crops:Object.freeze([.85,1.15]),goods:Object.freeze([.7,1.6])});
 export function marketQuote(item,now=Date.now()){
  if(!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid market item.');
- const base=ITEMS[item].sell,range=Object.hasOwn(CROPS,item)||Object.hasOwn(HEIRLOOMS,item)?MARKET_RANGES.crops:MARKET_RANGES.goods;
+ const base=ITEMS[item].sell,range=Object.hasOwn(CROPS,item)||Object.hasOwn(HEIRLOOMS,item)||ITEMS[item].crop===true?MARKET_RANGES.crops:MARKET_RANGES.goods;   // the village's crops move like the farm's (Oct 2026)
  const baseMin=Math.max(1,Math.round(base*range[0])),baseMax=Math.round(base*range[1]);
  const position=MARKET_CURVE[calendarHash(`market-v1:${utcDay(now)}:${item}`)%MARKET_CURVE.length];
  const originalPrice=Math.round(position<=.5?baseMin+(base-baseMin)*position*2:base+(baseMax-base)*(position-.5)*2);
@@ -182,7 +200,16 @@ export const BUILDINGS = Object.freeze({
  mine:{name:'Mine',tagline:'Stone and iron from the mountain, silver and rubies deeper down.',icon:'pickaxe',model:null,type:'production',upgradeCost:1600,minLevel:100,buildCost:75000,world:2},
  lumbercamp:{name:'Lumber Camp',tagline:'Logs from the forest, sawn into planks.',icon:'axe',model:null,type:'production',upgradeCost:1600,minLevel:100,buildCost:75000,world:2},
  smithy:{name:'Smithy',tagline:'Iron and silver bars, pickaxes and master tools for the farm.',icon:'hammer',model:null,type:'production',upgradeCost:1800,minLevel:102,buildCost:150000,world:2},
- villagemill:{name:'Village Windmill',tagline:'Grind golden wheat into heirloom flour.',icon:'wind',model:null,type:'production',upgradeCost:2000,minLevel:112,buildCost:250000,world:2}
+ villagemill:{name:'Village Windmill',tagline:'Grind golden wheat into heirloom flour.',icon:'wind',model:null,type:'production',upgradeCost:2000,minLevel:112,buildCost:250000,world:2},
+ // Levels 110-150 (Oct 2026, the owner's plan): six more places like the Mine (upgradeCost has no effect: the brief price and the ladder
+ // decide every step) and the Pier, which makes nothing (type 'pier': no slots, no upgrades) and only carries the town boat.
+ villagefields:{name:'Village Fields',tagline:'Potatoes, flax, lavender and saffron, sown with fertilizer and coins.',icon:'sprout',model:null,type:'production',upgradeCost:2000,minLevel:110,buildCost:150000,world:2},
+ canteen:{name:'Miners’ Canteen',tagline:'Pasty lunches without apples, and saffron buns.',icon:'utensils',model:null,type:'production',upgradeCost:2000,minLevel:113,buildCost:200000,world:2},
+ kiln:{name:'Potter’s Kiln',tagline:'Clay from the pit, fired into roof tiles.',icon:'flame',model:null,type:'production',upgradeCost:2000,minLevel:118,buildCost:250000,world:2},
+ linenloft:{name:'Linen Loft',tagline:'Flax woven into fine linen.',icon:'scroll',model:null,type:'production',upgradeCost:2000,minLevel:125,buildCost:300000,world:2},
+ soapmaker:{name:'Soap Maker',tagline:'Lavender soap and scented sachets.',icon:'droplets',model:null,type:'production',upgradeCost:2000,minLevel:135,buildCost:350000,world:2},
+ pier:{name:'Pier',tagline:'The old pier, mended: the town boat calls for your finest goods.',icon:'anchor',model:null,type:'pier',minLevel:144,buildCost:400000,world:2},
+ jeweller:{name:'Jeweller',tagline:'Silver candlesticks and ruby rings.',icon:'gem',model:null,type:'production',upgradeCost:2000,minLevel:150,buildCost:450000,world:2}
 });
 export const worldTwoBuilding=key=>BUILDINGS[key]?.world===2;
 const BASE_RECIPES=Object.freeze({
@@ -273,7 +300,27 @@ const VILLAGE_RECIPES=Object.freeze({
  smeltsilver:{building:'smithy',name:'Smelt a silver bar',input:{silverore:4,timber:2},output:{silverbar:1},duration:5400000,xp:45,minLevel:105},
  mastertools:{building:'smithy',name:'Forge master tools',input:{ironbar:2,silverbar:2,plank:2},output:{mastertools:1},duration:14400000,xp:120,minLevel:108},
  heirloomflour:{building:'villagemill',name:'Grind heirloom flour',input:{goldenwheat:2},output:{heirloomflour:3},duration:3600000,xp:30,minLevel:112},
- digdeep:{building:'mine',name:'Dig deep for rubies',input:{pickaxe:2,packedlunch:2},output:{gemstone:1,stone:8},duration:7200000,xp:60,minLevel:115}
+ digdeep:{building:'mine',name:'Dig deep for rubies',input:{pickaxe:2,packedlunch:2},output:{gemstone:1,stone:8},duration:7200000,xp:60,minLevel:115},
+ // The Village Fields (Oct 2026) grow the village's crops as the Glasshouse grows the farm's: natural fertilizer and coins a batch, no
+ // field, 20 XP a slot-hour. The Miners' Canteen bakes packed lunches from potatoes and flour: the first lunch without apples.
+ sowpotatoes:{building:'villagefields',name:'Sow potatoes',input:{fertilizer:1},coins:120,output:{potatoes:10},duration:2700000,xp:15,minLevel:110},
+ pastylunch:{building:'canteen',name:'Bake pasty lunches',input:{potatoes:10,flour:4},output:{packedlunch:4},duration:1800000,xp:15,minLevel:113},
+ // Levels 118-128: clay dug with a packed lunch and fired into roof tiles, flax woven into linen, and builder's crates for the farm.
+ digclay:{building:'kiln',name:'Dig clay',input:{packedlunch:1},output:{clay:8},duration:1500000,xp:12,minLevel:118},
+ rooftile:{building:'kiln',name:'Fire roof tiles',input:{clay:6,timber:2},output:{rooftile:4},duration:1800000,xp:15,minLevel:118},
+ sowflax:{building:'villagefields',name:'Sow flax',input:{fertilizer:1},coins:200,output:{flax:10},duration:4500000,xp:25,minLevel:123},
+ linen:{building:'linenloft',name:'Weave linen',input:{flax:6},output:{linen:2},duration:1800000,xp:15,minLevel:125},
+ builderscrate:{building:'lumbercamp',name:'Pack a builder’s crate',input:{plank:10,rooftile:6,ironbar:2},output:{builderscrate:1},duration:7200000,xp:60,minLevel:128},
+ // Levels 132-150: lavender, its soap and sachets (goat milk and beeswax from the farm), and silver candlesticks from the farm's candles.
+ sowlavender:{building:'villagefields',name:'Sow lavender',input:{fertilizer:2},coins:400,output:{lavender:15},duration:10800000,xp:60,minLevel:132},
+ lavendersoap:{building:'soapmaker',name:'Make lavender soap',input:{lavender:4,goatmilk:2,beeswax:2},output:{lavendersoap:4},duration:3600000,xp:30,minLevel:135},
+ scentedsachet:{building:'soapmaker',name:'Sew scented sachets',input:{lavender:4,linen:2},output:{scentedsachet:4},duration:3600000,xp:30,minLevel:138},
+ silvercandlestick:{building:'jeweller',name:'Make a silver candlestick',input:{silverbar:2,candles:2},output:{silvercandlestick:1},duration:10800000,xp:90,minLevel:150},
+ // Levels 154-158: rubies from digging deep are set in rings at the Jeweller, and saffron, the village's slowest crop (6 hours), goes
+ // into the canteen's saffron buns. Rings and buns are what the town boat and the last landmarks ask for.
+ rubyring:{building:'jeweller',name:'Set a ruby ring',input:{silverbar:2,gemstone:2},output:{rubyring:1},duration:12600000,xp:105,minLevel:154},
+ sowsaffron:{building:'villagefields',name:'Sow saffron',input:{fertilizer:2},coins:1100,output:{saffron:8},duration:21600000,xp:120,minLevel:158},
+ saffronbun:{building:'canteen',name:'Bake saffron buns',input:{saffron:4,flour:4,eggs:2},output:{saffronbun:2},duration:3600000,xp:30,minLevel:158}
 });
 export const RECIPES=Object.freeze({...BASE_RECIPES,...MASS_RECIPES,...VILLAGE_RECIPES});
 // How big a Factory batch is on this farm (26 Sep 2026): twice the level of the building that normally makes the good, up to ×20;
@@ -842,17 +889,21 @@ export const ROOKIE_BOOST_MS=24*60*60000;
 export const rookieLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil-now):0;
 export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)&&state.rookieUntil>0?Math.max(0,state.rookieUntil-ROOKIE_MS+ROOKIE_BOOST_MS-now):0;
 export const rookieBoost=(state,now=Date.now())=>ROOKIE_TIMER_BOOST*Math.min(1,rookieBoostLeft(state,now)/ROOKIE_BOOST_MS);
-export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-ranchSpeedup(state):1)*(RECIPES[id].building==='glasshouse'&&hasImprovement(state,'heating')?.75:1)*(1-masterBonus(state,'production'))*(['windmill','mill'].includes(RECIPES[id].building)?1-valleyProjectBonus(state,'watermill'):1));}
+// The village's Wind pump and Longhouse (landmarks, Oct 2026) take 25% off the Village Fields' batches and 10% off every village place's;
+// on the Fields both count (x0.675). A batch already running keeps the time it started with.
+export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-ranchSpeedup(state):1)*(RECIPES[id].building==='glasshouse'&&hasImprovement(state,'heating')?.75:1)*(1-masterBonus(state,'production'))*(['windmill','mill'].includes(RECIPES[id].building)?1-valleyProjectBonus(state,'watermill'):1)*(RECIPES[id].building==='villagefields'?1-landmarkBonus(state,'windpump'):1)*(worldTwoBuilding(RECIPES[id].building)?1-landmarkBonus(state,'longhouse'):1));}
 export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,level-3)*.05,growth:Math.min(level,3)*.1+Math.max(0,level-3)*.05};}
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:12,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
-export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112});
+export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112,
+ villagefields:110,canteen:113,kiln:118,linenloft:125,soapmaker:135,pier:144,jeweller:150});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST,
  // World II (Oct 2026): built from the golden brief at the market square (VILLAGE_BRIEFS), with these coins and the brief's goods. One
  // number for the brief, the wiki and the upgrade ladder's floor (150k / 150k / 200k / 300k from 30 Sep 2026, when they were built here).
- mine:75000,lumbercamp:75000,smithy:150000,villagemill:250000});
-export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115});
+ mine:75000,lumbercamp:75000,smithy:150000,villagemill:250000,villagefields:150000,canteen:200000,kiln:250000,linenloft:300000,soapmaker:350000,pier:400000,jeweller:450000});
+export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
+ sowpotatoes:110,pastylunch:113,digclay:118,rooftile:118,sowflax:123,linen:125,builderscrate:128,sowlavender:132,lavendersoap:135,scentedsachet:138,silvercandlestick:150,rubyring:154,sowsaffron:158,saffronbun:158});
 export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:7,activities:8,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:7,village:8,commission:16});
 export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
@@ -879,6 +930,10 @@ const worldTwoEntry=(state,level)=>level<WORLD_TWO_LEVEL||worldTwoOpen(state);
 export function unlockEntries(state){return [
  ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,art:key,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
  ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall'&&worldTwoEntry(state,guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1)).map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:worldTwoBuilding(key)?'Village place':buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
+ // The market week (Oct 2026): an activity of the village's market square, so only from level 100, like every World II entry.
+ ...(worldTwoOpen(state)?[{id:'village:week',name:'Market week',art:'villagemarket',kind:'Activity',level:VILLAGE_WEEK_LEVEL,unlocked:levelOf(state)>=VILLAGE_WEEK_LEVEL,hint:`Reach level ${VILLAGE_WEEK_LEVEL}.`}]:[]),
+ // The village's landmarks (Oct 2026), from level 100 like every World II unlock: built from the golden brief after the last place.
+ ...Object.entries(VILLAGE_LANDMARKS).filter(([,l])=>worldTwoEntry(state,l.level)).map(([key,l])=>({id:'landmark:'+key,name:l.name,art:l.art,kind:'Landmark',level:l.level,unlocked:levelOf(state)>=l.level,hint:`Reach level ${l.level}.`})),
  ...Object.entries(FEATURE_NAMES).map(([key,name])=>({id:'feature:'+key,name,art:FEATURE_ART[key]??key,kind:'Activity',level:FEATURE_LEVELS[key],unlocked:featureUnlocked(state,key),hint:featureUnlockHint(key)})),
  ...Object.entries(RECIPES).filter(([key,r])=>r.building!=='factory'&&buildingUnlocked(state,r.building)&&worldTwoEntry(state,recipeLevel(state,key))).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
  // Fields 9-12 only for farms that started with 8 (a farm that has more than 8 but fewer than 12 fields, or 8).
@@ -1094,12 +1149,15 @@ export const UPGRADE_GOODS_FROM=3;
 // Village places upgrade with planks and stone (Oct 2026, the owner's choice), 4 and 6 for every level they have, the same for all of
 // them: their own first goods asked up to 252 heirloom flour of the Village Windmill (42 Seed Lab crosses, 210 sunflowers).
 export const VILLAGE_UPGRADE_GOODS=Object.freeze({plank:4,stone:6});
+// From level 125 the village's new places ask roof tiles too (Oct 2026, the owner's choice 8a): 2 for every level, from the upgrade to
+// level 4, for the places that open at level 125 or later. The older places keep planks and stone, so a farm without a Kiln can upgrade them.
+export const VILLAGE_TILES_FROM=125,VILLAGE_UPGRADE_TILES=2;
 let firstProducts=null;
 export function upgradeGoods(building,level){
  if(!BUILDINGS[building]||BUILDINGS[building].type!=='production'||level<1||level>=MAX_BUILDING_LEVEL)return {};
  if(building==='factory')return {flour:16*level,cheese:4*level,cloth:2*level,...(level>=4?{harvesthamper:level}:{}),...(level>=6?{squashsoup:level}:{}),...(level>=8?{cider:level}:{})};
  if(level<UPGRADE_GOODS_FROM)return {};
- if(worldTwoBuilding(building))return Object.fromEntries(Object.entries(VILLAGE_UPGRADE_GOODS).map(([k,n])=>[k,n*level]));
+ if(worldTwoBuilding(building))return Object.fromEntries(Object.entries({...VILLAGE_UPGRADE_GOODS,...(BUILDING_LEVELS[building]>=VILLAGE_TILES_FROM?{rooftile:VILLAGE_UPGRADE_TILES}:{})}).map(([k,n])=>[k,n*level]));
  firstProducts??=Object.fromEntries(Object.keys(BUILDINGS).map(key=>[key,Object.entries(RECIPES).filter(([,r])=>r.building===key).sort(([a],[b])=>(RECIPE_LEVELS[a]??0)-(RECIPE_LEVELS[b]??0))[0]?.[1]]).filter(([,r])=>r).map(([key,r])=>[key,Object.entries(r.output)[0]]));
  const product=firstProducts[building];return product?{[product[0]]:2*level*product[1]}:{};
 }
@@ -1320,7 +1378,17 @@ export function collectAllProduction(state,building,now=Date.now()){
  }
  return result;
 }
-export function upgradeBuilding(state,building,currency='coins',expectedCost,expectedLevel){
+// Builder's crates (Oct 2026, the owner's choice 4a): packed at the village's Lumber Camp from level 128, each takes BUILDER_CRATE_COINS off
+// a farm building's upgrade (to level 2-10), after the Buildings discount and never more than half of what is left, so an upgrade always
+// costs coins. Not the Factory, the steps past level 10 (master tools) or the village's own places. 8,000 coins for a crate the Village
+// market buys for 5,200: 1.54 times, about the villagers' premium (convenience, not a leap).
+export const BUILDER_CRATE_COINS=8000;
+// How many crates this upgrade may take now: 0 below level 100 and wherever crates do not count, so the card shows no crate option.
+export function builderCrates(state,building){
+ if(!worldTwoOpen(state)||!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production'||building==='factory'||worldTwoBuilding(building)||(state.buildings[building]?.level??1)>=MAX_BUILDING_LEVEL)return 0;
+ const cost=upgradeCost(state,building);return cost?Math.min(state.inventory.builderscrate??0,Math.floor(cost/2/BUILDER_CRATE_COINS)):0;
+}
+export function upgradeBuilding(state,building,currency='coins',expectedCost,expectedLevel,crates){
  if(!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production')throw new Error('Choose a production building.');
  if(!buildingUnlocked(state,building))throw new Error('Open this building before upgrading it.');
  if(currency!=='coins')throw new Error('Upgrades are paid with coins and goods.');   // since 26 Sep 2026, not with diamonds
@@ -1330,17 +1398,21 @@ export function upgradeBuilding(state,building,currency='coins',expectedCost,exp
  // A running batch is unaffected either way: its speed and output were fixed when it started, not read live off b.level. Upgrading only
  // changes what a NEW batch gets, so there is nothing to protect by making a farmer wait for every slot to empty first.
  if(estate&&levelOf(state)<estate.level)throw new Error(`Reach level ${estate.level} to upgrade this building to level ${b.level+1}.`);
- if(state[currency]<cost)throw new Error(`You need ${cost} ${currency} for this upgrade.`);
+ // With builder's crates (from the card's second row): as many as the screen showed, which must still be what may be used now.
+ if(crates!==undefined&&!(Number.isInteger(crates)&&crates>=1&&crates<=builderCrates(state,building)))throw new Error('Your builder’s crates have changed. Look at the upgrade again.');
+ const used=crates??0,pay=cost-used*BUILDER_CRATE_COINS;
+ if(state[currency]<pay)throw new Error(`You need ${pay} ${currency} for this upgrade.`);
  const missing=estate?Object.entries(estate.materials).filter(([key,n])=>(state.inventory[key]??0)<n):[];
  if(missing.length)throw new Error(`Make the goods first: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
- state[currency]-=cost;if(estate)for(const [key,n] of Object.entries(estate.materials))state.inventory[key]-=n;
+ state[currency]-=pay;if(estate)for(const [key,n] of Object.entries(estate.materials))state.inventory[key]-=n;
+ if(used){state.inventory.builderscrate-=used;state.stats.builder_crates_used=(state.stats.builder_crates_used??0)+used;}
  b.level++;state.stats.upgrades++;state.xp+=15;
  // Past level 10 (World II): counted per building, so a level can never come back from an old save (normalizeFarm), and for the
  // World II leaderboard.
  if(b.level>MAX_BUILDING_LEVEL){b.beyond=b.level-MAX_BUILDING_LEVEL;state.stats.beyond_upgrades=(state.stats.beyond_upgrades??0)+1;}
  if(state.boosts?.upgradeCredits>0)state.boosts.upgradeCredits--;
  if(building==='windmill')state.stats.windmill_upgrades=(state.stats.windmill_upgrades??0)+1;
- return {building,level:b.level,cost,currency,materials:estate?{...estate.materials}:{}};
+ return {building,level:b.level,cost:pay,currency,materials:estate?{...estate.materials}:{},crates:used};
 }
 export function expandFarm(state){
  const cost=expansionCost(state),materials=expansionMaterials(state),early=Boolean(earlyField(state));
@@ -1406,7 +1478,39 @@ export const VILLAGE_QUESTS=Object.freeze([
  {title:'A friendly face',description:'Help a villager at the market square.',stat:'village_requests',target:1,reward:10000,minLevel:100},
  {title:'Good neighbours',description:'Help 10 villagers at the market square.',stat:'village_requests',target:10,reward:30000,minLevel:100},
  {title:'Known in the village',description:'Help 50 villagers at the market square.',stat:'village_requests',target:50,reward:100000,minLevel:104},
- {title:'Pillar of the village',description:'Help 200 villagers at the market square.',stat:'village_requests',target:200,reward:250000,minLevel:120}
+ {title:'Pillar of the village',description:'Help 200 villagers at the market square.',stat:'village_requests',target:200,reward:250000,minLevel:120},
+ // World II, levels 110-116 (Oct 2026): the Village Fields, the Miners’ Canteen and the market week.
+ {title:'Fields of our own',description:'Build the Village Fields.',stat:'built_villagefields',target:1,reward:60000,minLevel:110},
+ {title:'A sack of potatoes',description:'Grow 200 potatoes.',stat:'made_potatoes',target:200,reward:40000,minLevel:110},
+ {title:'The miners’ canteen',description:'Build the Miners’ Canteen.',stat:'built_canteen',target:1,reward:80000,minLevel:113},
+ {title:'A good week at the market',description:'Open the market crate.',stat:'market_crates',target:1,reward:50000,minLevel:116},
+ // Levels 118-128: the Potter’s Kiln, flax, the Linen Loft and builder’s crates.
+ {title:'The potter’s kiln',description:'Build the Potter’s Kiln.',stat:'built_kiln',target:1,reward:100000,minLevel:118},
+ {title:'Roofs for the village',description:'Fire 300 roof tiles.',stat:'made_rooftile',target:300,reward:80000,minLevel:118},
+ {title:'Blue flowers, fine thread',description:'Grow 200 flax.',stat:'made_flax',target:200,reward:60000,minLevel:123},
+ {title:'The linen loft',description:'Build the Linen Loft.',stat:'built_linenloft',target:1,reward:120000,minLevel:125},
+ {title:'Fine linen',description:'Weave 100 linen.',stat:'made_linen',target:100,reward:100000,minLevel:125},
+ {title:'Packed for the farm',description:'Pack 10 builder’s crates.',stat:'made_builderscrate',target:10,reward:120000,minLevel:128},
+ {title:'A cheaper upgrade',description:'Use 25 builder’s crates on farm upgrades.',stat:'builder_crates_used',target:25,reward:150000,minLevel:128},
+ // Levels 132-150: lavender, the Soap Maker, the Pier with the town boat, and the Jeweller.
+ {title:'Purple rows',description:'Grow 300 lavender.',stat:'made_lavender',target:300,reward:80000,minLevel:132},
+ {title:'The soap maker’s workshop',description:'Build the Soap Maker.',stat:'built_soapmaker',target:1,reward:150000,minLevel:135},
+ {title:'Clean and fragrant',description:'Make 100 lavender soap.',stat:'made_lavendersoap',target:100,reward:120000,minLevel:135},
+ {title:'A sachet for every drawer',description:'Sew 100 scented sachets.',stat:'made_scentedsachet',target:100,reward:120000,minLevel:138},
+ {title:'The old pier',description:'Mend the old pier.',stat:'built_pier',target:1,reward:150000,minLevel:144},
+ {title:'Bound for town',description:'Send the town boat off 10 times.',stat:'boat_trips',target:10,reward:200000,minLevel:144},
+ {title:'The jeweller’s shop',description:'Build the Jeweller.',stat:'built_jeweller',target:1,reward:200000,minLevel:150},
+ {title:'Silver on the table',description:'Make 20 silver candlesticks.',stat:'made_silvercandlestick',target:20,reward:200000,minLevel:150},
+ // Levels 154-160: ruby rings, saffron and saffron buns, and the market square's long run.
+ {title:'A ring of rubies',description:'Set 10 ruby rings.',stat:'made_rubyring',target:10,reward:250000,minLevel:154},
+ {title:'Golden threads',description:'Grow 200 saffron.',stat:'made_saffron',target:200,reward:200000,minLevel:158},
+ {title:'Saffron buns',description:'Bake 50 saffron buns.',stat:'made_saffronbun',target:50,reward:250000,minLevel:158},
+ {title:'Friend of the village',description:'Help 500 villagers at the market square.',stat:'village_requests',target:500,reward:300000,minLevel:160},
+ {title:'Weeks at the market',description:'Open the market crate 20 times.',stat:'market_crates',target:20,reward:250000,minLevel:160},
+ // Levels 165-200: the village's landmarks, counted (they are finished in their order, so 5 is the Great Hall).
+ {title:'A landmark for the village',description:'Finish a landmark in the village.',stat:'village_landmarks',target:1,reward:300000,minLevel:165},
+ {title:'Three landmarks',description:'Finish 3 landmarks in the village.',stat:'village_landmarks',target:3,reward:400000,minLevel:185},
+ {title:'The Great Hall',description:'Finish the Great Hall.',stat:'village_landmarks',target:5,reward:500000,minLevel:200}
 ].map(q=>Object.freeze(q)));
 export function claimVillageQuest(state,id){
  if(!Number.isInteger(id)||!VILLAGE_QUESTS[id])throw new Error('Choose a valid quest.');
@@ -1583,7 +1687,12 @@ const ESTATE_DAILIES=[
  [{"stat":"made_prizeproduce","target":1,"title":"Show-ready vegetables","description":"Grow 1 prize produce.","reward":650,"minLevel":80,"requiresBuildings":["glasshouse"]}],
  [{"stat":"made_blanket","target":2,"title":"Two warm blankets","description":"Make 2 wool blankets.","reward":700,"minLevel":82,"requiresBuildings":["craftshop"]}]
 ];
-export const DAILY_POOLS=LEGACY_DAILY_POOLS.map((pool,id)=>Object.freeze([...pool,...ORCHARD_DAILIES[id],...PANTRY_DAILIES[id],...MIDGAME_DAILIES[id],...VALLEY_DAILIES[id],...ESTATE_DAILIES[id],...[[{"stat":"activity_greenhouse","target":2,"title":"Seedling care","description":"Finish 2 Greenhouse jobs.","reward":65},{"stat":"activity_paddock","target":2,"title":"Happy herd","description":"Finish 2 Animal paddock jobs.","reward":65},{"stat":"chore_weeds","target":3,"title":"A tidy start","description":"Successfully clear the paths 3 times.","reward":70},{"stat":"tended","target":4,"title":"More than watering","description":"Give 4 growing crops extra care.","reward":65},{"stat":"harvest_lettuce","target":8,"title":"Leafy little harvest","description":"Harvest 8 lettuce.","reward":55},{"stat":"harvest_corn","target":6,"title":"Golden corn","description":"Harvest 6 corn.","reward":65}],[{"stat":"activity_apiary","target":2,"title":"Honey time","description":"Finish 2 Apiary jobs and collect their Honey.","reward":65},{"stat":"activity_workshop","target":2,"title":"Tools of the trade","description":"Finish 2 Tool workshop jobs.","reward":65},{"stat":"made_feed","target":3,"title":"Feed the farm","description":"Collect 3 animal feed from production.","reward":80},{"stat":"parallel_batches","target":2,"title":"Side by side","description":"Start 2 batches while another batch is still running in the same building.","reward":90,"parallel":true},{"stat":"fertilized","target":2,"title":"A soil boost","description":"Use natural fertilizer on 2 growing fields.","reward":80,"minLevel":3},{"stat":"made_flour","target":4,"title":"Flour power","description":"Collect 4 flour from production.","reward":80,"minLevel":3},{"stat":"made_salad","target":1,"title":"Freshly prepared","description":"Collect 1 fresh salad.","reward":90,"minLevel":4}],[{"stat":"activity_rounds","target":1,"title":"Make the rounds","description":"Finish a full farm round by helping at all four stops.","reward":110},{"stat":"activities","target":6,"title":"A hands-on day","description":"Finish 6 hands-on jobs around the farm.","reward":110},{"stat":"chore_troughs","target":2,"title":"Fresh water rounds","description":"Successfully fill the water troughs twice.","reward":110,"chore":"troughs"},{"stat":"chore_sorting","target":1,"title":"Everything sorted","description":"Successfully sort the seed boxes once.","reward":140,"chore":"sorting"},{"stat":"made_bread","target":2,"title":"Warm from the oven","description":"Collect 2 fresh bread.","reward":100,"minLevel":4},{"stat":"passive_earned","target":30,"title":"Roadside trade","description":"Collect 30 coins from the farm stall.","reward":80,"minLevel":3}]][id]]));
+// World II's daily (Oct 2026, the owner's extra): help two villagers, only from level 100. Added last to each pool, so every pool below level
+// 100 keeps exactly its entries and order (the day picks eligible[(day+id)%length]). A copy with its own title in the other two pools
+// (10 Oct 2026, the main session's choice) makes it come about one day in 7 instead of one in 26.
+const VILLAGE_ERRANDS={stat:'village_requests',target:2,description:'Help 2 villagers at the market square.',reward:800,minLevel:100};
+const VILLAGE_DAILIES=[[{...VILLAGE_ERRANDS,title:'Market square errands'}],[{...VILLAGE_ERRANDS,title:'Village errands'}],[{...VILLAGE_ERRANDS,title:'Errands for the villagers'}]];
+export const DAILY_POOLS=LEGACY_DAILY_POOLS.map((pool,id)=>Object.freeze([...pool,...ORCHARD_DAILIES[id],...PANTRY_DAILIES[id],...MIDGAME_DAILIES[id],...VALLEY_DAILIES[id],...ESTATE_DAILIES[id],...[[{"stat":"activity_greenhouse","target":2,"title":"Seedling care","description":"Finish 2 Greenhouse jobs.","reward":65},{"stat":"activity_paddock","target":2,"title":"Happy herd","description":"Finish 2 Animal paddock jobs.","reward":65},{"stat":"chore_weeds","target":3,"title":"A tidy start","description":"Successfully clear the paths 3 times.","reward":70},{"stat":"tended","target":4,"title":"More than watering","description":"Give 4 growing crops extra care.","reward":65},{"stat":"harvest_lettuce","target":8,"title":"Leafy little harvest","description":"Harvest 8 lettuce.","reward":55},{"stat":"harvest_corn","target":6,"title":"Golden corn","description":"Harvest 6 corn.","reward":65}],[{"stat":"activity_apiary","target":2,"title":"Honey time","description":"Finish 2 Apiary jobs and collect their Honey.","reward":65},{"stat":"activity_workshop","target":2,"title":"Tools of the trade","description":"Finish 2 Tool workshop jobs.","reward":65},{"stat":"made_feed","target":3,"title":"Feed the farm","description":"Collect 3 animal feed from production.","reward":80},{"stat":"parallel_batches","target":2,"title":"Side by side","description":"Start 2 batches while another batch is still running in the same building.","reward":90,"parallel":true},{"stat":"fertilized","target":2,"title":"A soil boost","description":"Use natural fertilizer on 2 growing fields.","reward":80,"minLevel":3},{"stat":"made_flour","target":4,"title":"Flour power","description":"Collect 4 flour from production.","reward":80,"minLevel":3},{"stat":"made_salad","target":1,"title":"Freshly prepared","description":"Collect 1 fresh salad.","reward":90,"minLevel":4}],[{"stat":"activity_rounds","target":1,"title":"Make the rounds","description":"Finish a full farm round by helping at all four stops.","reward":110},{"stat":"activities","target":6,"title":"A hands-on day","description":"Finish 6 hands-on jobs around the farm.","reward":110},{"stat":"chore_troughs","target":2,"title":"Fresh water rounds","description":"Successfully fill the water troughs twice.","reward":110,"chore":"troughs"},{"stat":"chore_sorting","target":1,"title":"Everything sorted","description":"Successfully sort the seed boxes once.","reward":140,"chore":"sorting"},{"stat":"made_bread","target":2,"title":"Warm from the oven","description":"Collect 2 fresh bread.","reward":100,"minLevel":4},{"stat":"passive_earned","target":30,"title":"Roadside trade","description":"Collect 30 coins from the farm stall.","reward":80,"minLevel":3}]][id],...VILLAGE_DAILIES[id]]));
 export const ORDER_POOL=Object.freeze([{"title": "The judges’ table", "input": {"prizeproduce": 1, "cherryjam": 1}, "xp": 180, "minLevel": 80}, {"title": "Show day at the inn", "input": {"prizeproduce": 1, "goatcheese": 2}, "xp": 190, "minLevel": 82}, {"title": "Milk for the café", "input": {"goatmilk": 6, "honey": 4}, "xp": 90, "minLevel": 54}, {"title": "The goat farmer’s table", "input": {"goatcheese": 1, "bread": 2}, "xp": 100, "minLevel": 55}, {"title": "Evening candles", "input": {"candles": 2, "beeswax": 3}, "xp": 100, "minLevel": 58}, {"title": "A cosy winter", "input": {"blanket": 1, "candles": 1}, "xp": 160, "minLevel": 60}, {"title": "Cherry season", "input": {"cherryjam": 1, "cherries": 6}, "xp": 110, "minLevel": 67}, {"title": "The pie stand", "input": {"cherrypie": 1, "applepie": 1}, "xp": 120, "minLevel": 68}, {"title": "Soup kitchen", "input": {"squashsoup": 1, "bread": 2}, "xp": 90, "minLevel": 32}, {"title": "The candle maker", "input": {"beeswax": 4, "honey": 4}, "xp": 70, "minLevel": 34}, {"title": "The village knitters", "input": {"wool": 6}, "xp": 70, "minLevel": 37}, {"title": "Glasshouse greens", "input": {"cauliflower": 8, "salad": 2}, "xp": 75, "minLevel": 40}, {"title": "The tailor’s shelves", "input": {"yarn": 4, "wool": 4}, "xp": 95, "minLevel": 43}, {"title": "Fabric for the fair", "input": {"cloth": 1, "yarn": 2}, "xp": 120, "minLevel": 45}, {"title": "Harvest cider", "input": {"cider": 1, "ciderapples": 4}, "xp": 110, "minLevel": 47}, {"title": "The baker next door", "input": {"wheat": 5}, "xp": 15, "minLevel": 1}, {"title": "A leafy lunch", "input": {"lettuce": 4, "corn": 2}, "xp": 20, "minLevel": 1}, {"title": "Sweet little favour", "input": {"honey": 2, "wheat": 4}, "xp": 20, "minLevel": 1}, {"title": "Breakfast at the inn", "input": {"eggs": 3, "milk": 2}, "xp": 25, "minLevel": 1}, {"title": "The paddock pantry", "input": {"feed": 2, "corn": 2}, "xp": 25, "minLevel": 1}, {"title": "Honey on toast", "input": {"honey": 2, "bread": 2}, "xp": 35, "minLevel": 3}, {"title": "A cream tea", "input": {"honey": 3, "milk": 2, "bread": 1}, "xp": 35, "minLevel": 3}, {"title": "The village grocer", "input": {"corn": 3, "lettuce": 2, "cabbage": 1}, "xp": 25, "minLevel": 3}, {"title": "The millers basket", "input": {"grainmeal": 2, "flour": 4}, "xp": 30, "minLevel": 3}, {"title": "For the garden club", "input": {"fertilizer": 2, "lettuce": 4}, "xp": 30, "minLevel": 3}, {"title": "The animal sanctuary", "input": {"feed": 3, "barley": 3}, "xp": 30, "minLevel": 3}, {"title": "A picnic in the park", "input": {"bread": 2, "salad": 1, "honey": 1}, "xp": 40, "minLevel": 4}, {"title": "The cheese board", "input": {"cheese": 2, "bread": 1}, "xp": 35, "minLevel": 4}, {"title": "A farm-fresh lunch", "input": {"salad": 2, "eggs": 3}, "xp": 35, "minLevel": 4}, {"title": "Sunday lunch", "input": {"cabbage": 2, "pumpkin": 2}, "xp": 35, "minLevel": 5}, {"title": "The harvest kitchen", "input": {"vegetables": 1, "flour": 3}, "xp": 45, "minLevel": 5}, {"title": "A golden afternoon", "input": {"pie": 1, "honey": 2, "milk": 2}, "xp": 50, "minLevel": 6}, {"title": "Autumn pantry", "input": {"redcabbage": 2, "cauliflower": 2}, "xp": 40, "minLevel": 6}, {"title": "The village feast", "input": {"bread": 3, "cheese": 2, "vegetables": 1}, "xp": 65, "minLevel": 7}, {"title": "Pantry provisions", "input": {"pickles": 1, "vegetables": 1}, "xp": 55, "minLevel": 7}, {"title": "A chefs finishing touch", "input": {"oil": 1, "salad": 2, "honey": 2}, "xp": 65, "minLevel": 8}, {"title": "Golden harvest hamper", "input": {"sunflower": 2, "oil": 1}, "xp": 60, "minLevel": 8}, {"title": "The autumn festival", "input": {"pie": 2, "pickles": 1, "honey": 3}, "xp": 75, "minLevel": 8}, {"title": "The estate banquet", "input": {"oil": 1, "vegetables": 2, "cheese": 2, "bread": 2}, "xp": 85, "minLevel": 10}, {"title": "The kitchen garden", "input": {"stew": 2, "bread": 2}, "xp": 80, "minLevel": 6, "requiresBuildings": ["kitchen"]}, {"title": "An orchard picnic", "input": {"applejuice": 2, "applepie": 1}, "xp": 110, "minLevel": 8, "requiresBuildings": ["juicepress"]}, {"title": "Breakfast preserves", "input": {"berrypreserves": 2, "bread": 3}, "xp": 120, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The orchard tea room", "input": {"berrytart": 2, "applepie": 2}, "xp": 160, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "A colourful orchard refreshment", "input": {"orchardjuice": 1, "bread": 2}, "xp": 65, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "Smoothies for the village", "input": {"berrysmoothie": 1, "bread": 2}, "xp": 68, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "A honey-sweet breakfast", "input": {"applecompote": 1, "bread": 2}, "xp": 62, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The pickling pantry", "input": {"applevinegar": 1, "bread": 2}, "xp": 80, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "Beans for the village deli", "input": {"pickledbeans": 1, "bread": 2}, "xp": 100, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "A warming farm supper", "input": {"beangratin": 1, "bread": 2}, "xp": 85, "minLevel": 7, "requiresBuildings": ["kitchen"]}, {"title": "Lunch under the apple trees", "input": {"orchardsalad": 1, "bread": 2}, "xp": 58, "minLevel": 8, "requiresBuildings": []}, {"title": "Cheesecake at the tea room", "input": {"berrycheesecake": 1, "honey": 2}, "xp": 105, "minLevel": 11, "requiresBuildings": []}, {"title": "A gift from the valley", "input": {"harvesthamper": 1, "honey": 2}, "xp": 160, "minLevel": 12, "requiresBuildings": ["juicepress", "preserves"]}]);
 export function availableDaily(state,q){
  if(q.input&&!Object.keys(q.input).every(k=>itemAvailable(state,k)))return false;
@@ -1606,10 +1715,15 @@ export function availableDaily(state,q){
   if((stat==='crafted_deliveries'||stat==='honey_deliveries')&&!featureUnlocked(state,'cart'))return false;
   if(stat==='honey_deliveries'&&!itemAvailable(state,'honey'))return false;
  }
+ if(q.stat==='village_requests'&&!itemAvailable(state,'packedlunch'))return false;   // no packed lunches (Kitchen or Canteen), no villager comes (Oct 2026)
  return levelOf(state)>=(q.minLevel??1)&&(q.requiresBuildings??[]).every(key=>buildingUnlocked(state,key))&&(!q.chore||!choreStatus(state,q.chore).locked)&&(!q.parallel||Object.entries(state.buildings).some(([id,b])=>BUILDINGS[id].type==='production'&&b.level>=2));
 }
+// The three dailies never count the same thing (10 Oct 2026, review fix): the Village errands sit in all three pools from level 100, so when a
+// pool draws a goal an earlier pool already drew today, it draws again by the same rule from its goals that count something else. Below level
+// 100 no goal is in two pools, so those draws are exactly as before.
 function selectDailyTasks(state,day){
- return DAILY_POOLS.map((pool,id)=>{const eligible=pool.filter(q=>availableDaily(state,q));if(!eligible.length)eligible.push(LEGACY_DAILY_POOLS[0][id]);return {...eligible[(day+id)%eligible.length]};});
+ const picked=new Set();
+ return DAILY_POOLS.map((pool,id)=>{const eligible=pool.filter(q=>availableDaily(state,q));if(!eligible.length)eligible.push(LEGACY_DAILY_POOLS[0][id]);let task=eligible[(day+id)%eligible.length];if(picked.has(task.stat)){const other=eligible.filter(q=>!picked.has(q.stat));if(other.length)task=other[(day+id)%other.length];}picked.add(task.stat);return {...task};});
 }
 export function deliveryDiamonds(order){
  if(order.tier&&Number.isInteger(order.diamonds))return order.diamonds;
@@ -2112,56 +2226,96 @@ export function valleyProjectFinish(state,id){
 // their normal price, like the Valley Market's baskets. A board gets its next villager 3 hours after you help or say "Not now".
 // Requests follow from the board and a running number (and the farm as it is then), so the game and the server agree on them.
 // Requests pay exactly what they show: no VIP, Double earnings or other coin bonus (only the XP boost, like every action).
-export const VILLAGE_REQUEST_BOARDS=2,VILLAGE_REQUEST_BOARDS_MAX=3,VILLAGE_THIRD_BOARD=104,VILLAGE_REQUEST_WAIT=3*3600000,VILLAGE_PREMIUM=1.5,VILLAGE_XP_SHARE=50,VILLAGE_LINE_MAX=200,VILLAGE_BUILD_XP=250;
+export const VILLAGE_REQUEST_BOARDS=2,VILLAGE_REQUEST_BOARDS_MAX=4,VILLAGE_THIRD_BOARD=104,VILLAGE_REQUEST_WAIT=3*3600000,VILLAGE_PREMIUM=1.5,VILLAGE_XP_SHARE=50,VILLAGE_LINE_MAX=200,VILLAGE_BUILD_XP=250;
+// The market week (Oct 2026, from level 116): the villagers helped between Monday 00:00 and Sunday 24:00 UTC (familyWeek, as the family
+// tournament and the fair) count, and the 15th opens the market crate at once: 10 diamonds, once a week. No pop-up, nothing to claim,
+// nothing lost when a week falls short. Helps below level 116 do not count.
+export const VILLAGE_WEEK_LEVEL=116,VILLAGE_WEEK_TARGET=15,VILLAGE_CRATE_DIAMONDS=10;
+// From level 120 a villager asks three kinds of goods (Oct 2026), worth the same in all.
+export const VILLAGE_THREE_KINDS=120;
 export const villageRequestValue=level=>Math.min(20000,4000+200*Math.max(0,level-WORLD_TWO_LEVEL));
-export const villageBoards=state=>levelOf(state)>=VILLAGE_THIRD_BOARD?VILLAGE_REQUEST_BOARDS_MAX:VILLAGE_REQUEST_BOARDS;
-// The farm's late goods a villager may ask for, never more than one in a request. Never asked: master tools (for the farm's master steps)
-// and heirloom flour (golden wheat from the Seed Lab: a slow crop the village's requests should not lean on).
+// Two villagers, a third from level 104 and a fourth with the Lookout tower (a landmark, Oct 2026). Not "MAX" for the third: MAX is the
+// tower's 4.
+export const villageBoards=state=>(levelOf(state)>=VILLAGE_THIRD_BOARD?VILLAGE_REQUEST_BOARDS+1:VILLAGE_REQUEST_BOARDS)+(landmarkDone(state,'lookout')?1:0);
+// This week's count, for the market square's bar: a saved count of an older week reads as none yet.
+export function villageWeek(state,now=Date.now()){const w=state.village?.week,current=w?.week===familyWeek(now);return {helped:current?w.helped:0,paid:current&&w.paid===true};}
+// The farm's late goods a villager may ask for, never more than one in a request. Never asked: master tools (for the farm's master steps),
+// heirloom flour (golden wheat from the Seed Lab: a slow crop the village's requests should not lean on) and builder's crates (they are
+// for the farm's upgrades; from level 180 a request's share would be worth more than one).
 export const VILLAGE_FARM_GOODS=Object.freeze(['cheese','goatcheese','wool','cloth','candles','blanket','cherryjam','cider']);
-export const VILLAGE_NEVER_ASKED=Object.freeze(['mastertools','heirloomflour']);
-// Who asks at the market square (villagerFor), each with three lines: as many as there are boards, so two cards never read the same
-// (villagerLine). The miller only speaks on his golden brief: his windmill grinds heirloom flour, which villagers never ask for. Always
-// added at the end: a request keeps its villager by its place in this list.
+export const VILLAGE_NEVER_ASKED=Object.freeze(['mastertools','heirloomflour','builderscrate']);
+// Who asks at the market square (villagerFor), each with four lines: as many as there can be boards (VILLAGE_REQUEST_BOARDS_MAX, the fourth
+// with the Lookout tower), so two cards never read the same (villagerLine). The miller, the skipper, the jeweller and the village elder
+// only speak on their golden briefs, the town boat and the landmarks. Always added at the end: a request keeps its villager by its place
+// in this list.
 export const VILLAGERS=Object.freeze([
- Object.freeze({id:'foreman',name:'The mine foreman',place:'mine',lines:Object.freeze(['My crew has a long shift ahead.','The new tunnel needs supplies.','We dig a little deeper every week.'])}),
- Object.freeze({id:'woodcutter',name:'The head woodcutter',place:'lumbercamp',lines:Object.freeze(['The forest crew is hungry and busy.','We are building a new shed by the lake.','The saws have been running since dawn.'])}),
- Object.freeze({id:'smith',name:'The village smith',place:'smithy',lines:Object.freeze(['The forge is hot and my shelves are empty.','A big order came in from the valley.','Every miner wants a new pickaxe.'])}),
+ Object.freeze({id:'foreman',name:'The mine foreman',place:'mine',lines:Object.freeze(['My crew has a long shift ahead.','The new tunnel needs supplies.','We dig a little deeper every week.','Night shift starts soon, and we are short.'])}),
+ Object.freeze({id:'woodcutter',name:'The head woodcutter',place:'lumbercamp',lines:Object.freeze(['The forest crew is hungry and busy.','We are building a new shed by the lake.','The saws have been running since dawn.','A storm brought half the forest down.'])}),
+ Object.freeze({id:'smith',name:'The village smith',place:'smithy',lines:Object.freeze(['The forge is hot and my shelves are empty.','A big order came in from the valley.','Every miner wants a new pickaxe.','The bellows have not rested all day.'])}),
  Object.freeze({id:'miller',name:'The miller',place:'villagemill',lines:Object.freeze([])}),
- Object.freeze({id:'keeper',name:'The market keeper',place:'villagemarket',lines:Object.freeze(['The stalls want something special today.','Travellers keep asking for your goods.','It is market day, and the square is full.'])})
+ Object.freeze({id:'keeper',name:'The market keeper',place:'villagemarket',lines:Object.freeze(['The stalls want something special today.','Travellers keep asking for your goods.','It is market day, and the square is full.','A coach full of travellers just stopped here.'])}),
+ // The places of levels 110-150 (Oct 2026). The jeweller's goods never fit a request (they go to the town boat and the landmarks).
+ Object.freeze({id:'fieldhand',name:'The field hand',place:'villagefields',lines:Object.freeze(['The rows need tending before the rain.','We are ploughing a new strip by the barns.','The harvest cart is empty again.','Every hand in the fields is hungry.'])}),
+ Object.freeze({id:'canteencook',name:'The canteen cook',place:'canteen',lines:Object.freeze(['The miners come in hungry at noon.','My ovens are warm and my shelves are bare.','A long shift needs a good lunch.','The whole crew wants seconds today.'])}),
+ Object.freeze({id:'potter',name:'The potter',place:'kiln',lines:Object.freeze(['The kiln is hot, but my yard is empty.','Half the village wants new roofs.','A cart of pots goes to the valley tomorrow.','The clay pit is flooded again.'])}),
+ Object.freeze({id:'weaver',name:'The weaver',place:'linenloft',lines:Object.freeze(['My looms are waiting for work.','A bride wants linen for her new home.','The loft is quiet without thread.','The tailor came by with a big order.'])}),
+ Object.freeze({id:'soapmaker',name:'The soap maker',place:'soapmaker',lines:Object.freeze(['The whole square smells of lavender.','Wash day is coming for the village.','Visitors keep asking for my soap.','My moulds are empty and my kettle is hot.'])}),
+ Object.freeze({id:'skipper',name:'The skipper',place:'pier',lines:Object.freeze([])}),
+ Object.freeze({id:'jeweller',name:'The jeweller',place:'jeweller',lines:Object.freeze([])}),
+ Object.freeze({id:'elder',name:'The village elder',place:null,lines:Object.freeze([])})
 ]);
 // The golden briefs, in their order (prices: BUILDING_COSTS / buildCost above). A place opens at its own level and after the one before.
+// In the order the places open (Oct 2026): the Village Fields (110) come before the Village Windmill (112), the rest after it. There is
+// no brief state, so the order moves nobody (no farm had built a place then); each brief's goods come from places before it.
 export const VILLAGE_BRIEFS=Object.freeze([
  {place:'mine',goods:{packedlunch:6},title:'The miners’ lunch',villager:0,line:'Feed my miners and we will open the old mine for you.'},
  {place:'lumbercamp',goods:{packedlunch:6},title:'A camp in the forest',villager:1,line:'Pack us lunch for the forest and we will build a camp by the lake.'},
  {place:'smithy',goods:{ironore:20,timber:20},title:'A fire for the forge',villager:2,line:'Bring me ore and logs, and the forge will burn again.'},
- {place:'villagemill',goods:{plank:30,stone:40},title:'Sails on the hill',villager:3,line:'Planks for the sails and stone for the base, and the windmill will turn.'}
+ {place:'villagefields',goods:{plank:20,stone:30},title:'Rows by the hay barns',villager:5,line:'Planks for the fences and stone for the paths, and we will plough the old fields.'},
+ {place:'villagemill',goods:{plank:30,stone:40},title:'Sails on the hill',villager:3,line:'Planks for the sails and stone for the base, and the windmill will turn.'},
+ {place:'canteen',goods:{plank:30,ironbar:10},title:'A canteen for the miners',villager:6,line:'Planks for the tables and iron for the stove, and the miners get pasties, no apples needed.'},
+ {place:'kiln',goods:{stone:60,ironbar:20},title:'Fire in the kiln',villager:7,line:'Stone for the kiln and iron for its doors, and I will fire roof tiles for the whole village.'},
+ {place:'linenloft',goods:{rooftile:40,plank:40},title:'A loft for the looms',villager:8,line:'Roof tiles to keep it dry and planks for the looms, and I will weave your flax.'},
+ {place:'soapmaker',goods:{rooftile:60,linen:20},title:'A sweet-smelling workshop',villager:9,line:'A good roof and some linen, and the village will smell of lavender.'},
+ {place:'pier',goods:{plank:120,rooftile:60,ironbar:20},title:'Mend the old pier',villager:10,line:'Planks, tiles and iron for the old pier, and my boat will call at the village again.'},
+ {place:'jeweller',goods:{rooftile:80,silverbar:10},title:'A shop on the square',villager:11,line:'Tiles for the roof and silver for my bench, and your rubies will finally shine.'}
 ].map(b=>Object.freeze({...b,goods:Object.freeze(b.goods)})));
 // A villager's request: two kinds of goods worth villageRequestValue(level) at their normal price, paid half again in coins and a 50th of
 // it in XP. Only goods the farm can make now: village goods from places it has built (and the Kitchen's packed lunches), and at most one
 // of the farm's late goods. One line is something the farm has at least half of in stock, when it has any (players turned away 27 of 30
 // visitors who asked for what they did not have). No line is worth more than its share, so the size stays honest.
 const villageAsks=state=>Object.keys(VILLAGE_GOODS).filter(k=>!VILLAGE_NEVER_ASKED.includes(k)&&itemAvailable(state,k));
-// Who asks: the villager whose place makes a good in the request, found in the village goods' own order (not the order of the keys,
-// which a save changes), so the same goods always bring the same villager; packed lunches (the farm's Kitchen) alone bring the market keeper.
-const villagerFor=input=>{const place=Object.keys(VILLAGE_GOODS).filter(k=>input[k]).map(k=>Object.values(VILLAGE_RECIPES).find(r=>r.output[k])?.building).find(Boolean);return VILLAGERS.findIndex(v=>v.place===(place??'villagemarket'));};
+// Who asks: the villager of the newest village place among the request's goods (Oct 2026; ties in the village goods' own order, never the
+// order of the keys, which a save changes). Goods the farm's own buildings make too (packed lunches, in the Kitchen) have no place, so
+// lunches with a farm good bring the market keeper. At level 130 the goods' order gave the potter 26 of 900 requests; now 229.
+const villagePlaceOf=k=>Object.values(BASE_RECIPES).some(r=>r.output[k])?undefined:Object.values(VILLAGE_RECIPES).find(r=>r.output[k])?.building;
+const villagerFor=input=>{const place=Object.keys(VILLAGE_GOODS).filter(k=>input[k]).map(villagePlaceOf).filter(Boolean).sort((a,b)=>BUILDING_LEVELS[b]-BUILDING_LEVELS[a])[0];return VILLAGERS.findIndex(v=>v.place===(place??'villagemarket'));};
+// From level 120 a villager asks three kinds of goods (Oct 2026): each line is worth what is left divided over the lines still to come.
+// With two kinds this is the request of Phase 1, line for line. The pay is half again (1.6 times once the Great Hall stands: villagePremium).
 function villageRequest(state,board,serial,taken){
- const roll=n=>mixBits(calendarHash(`village-v1:${board}:${serial}:${n}`)),target=villageRequestValue(levelOf(state)),share=target/2;
+ const roll=n=>mixBits(calendarHash(`village-v1:${board}:${serial}:${n}`)),target=villageRequestValue(levelOf(state)),kinds=levelOf(state)>=VILLAGE_THREE_KINDS?3:2,share=target/kinds;
  const fits=k=>ITEMS[k].sell<=share,village=villageAsks(state).filter(fits),farm=VILLAGE_FARM_GOODS.filter(k=>fits(k)&&itemAvailable(state,k));
  if(!village.length)return null;   // nothing the farm can make for the village yet: the board waits
  const amount=(k,worth)=>Math.max(1,Math.min(VILLAGE_LINE_MAX,Math.round(worth/ITEMS[k].sell)));
  const fresh=list=>{const left=list.filter(k=>!taken.has(k));return left.length?left:list;};   // another board's goods only when nothing else is left
  const stocked=fresh([...village,...farm].filter(k=>(state.inventory[k]??0)>=Math.ceil(amount(k,share)/2)));
  const firstPool=stocked.length?stocked:fresh(village),first=firstPool[roll(0)%firstPool.length],input={[first]:amount(first,share)};
- const rest=target-ITEMS[first].sell*input[first],secondPool=fresh((farm.includes(first)?village:[...village,...farm]).filter(k=>k!==first&&ITEMS[k].sell<=rest));
- if(secondPool.length){const second=secondPool[roll(1)%secondPool.length];input[second]=amount(second,rest);}else input[first]=amount(first,target);
+ let rest=target-ITEMS[first].sell*input[first];
+ for(let i=1;i<kinds;i++){
+  const worth=rest/(kinds-i),hasFarm=Object.keys(input).some(k=>farm.includes(k));
+  const pool=fresh((hasFarm?village:[...village,...farm]).filter(k=>!input[k]&&ITEMS[k].sell<=worth));
+  if(!pool.length)continue;
+  const k=pool[roll(i)%pool.length];input[k]=amount(k,worth);rest-=ITEMS[k].sell*input[k];
+ }
+ if(Object.keys(input).length===1)input[first]=amount(first,target);
  const value=Object.entries(input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
- return {id:serial,villager:villagerFor(input),input,value,coins:Math.ceil(value*VILLAGE_PREMIUM),xp:Math.round(value/VILLAGE_XP_SHARE)};
+ return {id:serial,villager:villagerFor(input),input,value,coins:Math.ceil(value*villagePremium(state)),xp:Math.round(value/VILLAGE_XP_SHARE)};
 }
 // Gives every board whose waiting time is over its next villager, the one that has waited longest first (then board order): each sees the
 // goods the other boards already ask for. In that order one pass after two boards fell due fills them as two passes did, one as each fell
 // due: a load that is not saved fills a board on the screen, and the server later fills both at once from the saved farm. In board order
 // the second board got the first number there, and the villager on the screen swapped. Only the boards the level has (villageBoards); the
-// third comes at 104.
+// third comes at 104, a fourth with the Lookout tower.
 function refreshVillage(state,now){
  if(!worldTwoOpen(state))return;
  const v=state.village;while(v.boards.length<villageBoards(state))v.boards.push({request:null,readyAt:0});
@@ -2170,14 +2324,23 @@ function refreshVillage(state,now){
   const taken=new Set(v.boards.flatMap(b=>b.request?Object.keys(b.request.input):[]));
   const request=villageRequest(state,i,v.serial+1,taken);if(request){v.serial++;board.request=request;}
  }
+ refreshBoat(state,now);
 }
-// World II's market square: farms from before start with no boards; anything else in it is cleaned up. Only the boards the farm's level
-// has are kept, so a third villager never waits below level 104.
+// World II's market square: farms from before start with no boards, an empty market week, no boat and no landmark; anything else in it is
+// cleaned up. Only the boards the farm's level has are kept (villageBoards: a third from 104, a fourth with the Lookout tower), so the
+// landmarks are read before the boards.
 function normalizeVillage(state){
- const v=state.village&&typeof state.village==='object'&&!Array.isArray(state.village)?state.village:{},count=n=>Number.isSafeInteger(n)&&n>0?n:0;
+ const obj=x=>x&&typeof x==='object'&&!Array.isArray(x)?x:{},v=obj(state.village),count=n=>Number.isSafeInteger(n)&&n>0?n:0;
  const request=r=>r&&typeof r==='object'&&count(r.id)&&Number.isInteger(r.villager)&&VILLAGERS[r.villager]?.lines.length&&r.input&&typeof r.input==='object'&&!Array.isArray(r.input)&&Object.keys(r.input).length>=1&&Object.keys(r.input).length<=3&&Object.entries(r.input).every(([k,n])=>Object.hasOwn(ITEMS,k)&&count(n))&&[r.value,r.coins,r.xp].every(n=>Number.isSafeInteger(n)&&n>=0)?{id:r.id,villager:r.villager,input:{...r.input},value:r.value,coins:r.coins,xp:r.xp}:null;
  const boards=(Array.isArray(v.boards)?v.boards:[]).slice(0,VILLAGE_REQUEST_BOARDS_MAX).map(b=>({request:request(b?.request),readyAt:count(b?.readyAt)}));
- state.village={serial:Math.max(count(v.serial),...boards.map(b=>b.request?.id??0)),boards:boards.slice(0,villageBoards(state))};   // a new request never repeats an id
+ // The market week: a crate counts as opened only with the villagers it needs.
+ const w=obj(v.week),week={week:Number.isSafeInteger(w.week)?w.week:null,helped:count(w.helped),paid:w.paid===true&&count(w.helped)>=VILLAGE_WEEK_TARGET};
+ // The landmarks: the longest run of VILLAGE_LANDMARKS' order in the save (they are finished in that order), and the next one's goods,
+ // never more than it asks.
+ const lm=obj(v.landmarks),saved=Array.isArray(lm.done)?lm.done:[],ids=Object.keys(VILLAGE_LANDMARKS);let n=0;while(n<ids.length&&saved.includes(ids[n]))n++;
+ const next=ids[n],g=obj(lm.given),given=next?Object.fromEntries(Object.entries(VILLAGE_LANDMARKS[next].materials).map(([k,need])=>[k,Math.min(need,count(g[k]))]).filter(([,x])=>x>0)):{};
+ state.village={serial:Math.max(count(v.serial),...boards.map(b=>b.request?.id??0)),boards:[],week,boat:normalizeBoat(v.boat),landmarks:{done:ids.slice(0,n),given}};   // a new request never repeats an id
+ state.village.boards=boards.slice(0,villageBoards(state));
 }
 // A request's goods in a fixed order (village goods first, then the farm's), whatever order a save keeps the keys in, so the market
 // square shows the lines the same way every time.
@@ -2210,7 +2373,11 @@ export function villageDeliver(state,board,request,input,now=Date.now()){
  state.coins+=r.coins;state.xp+=r.xp;state.stats.earned+=r.coins;
  state.stats.village_requests=(state.stats.village_requests??0)+1;state.stats.village_sold=(state.stats.village_sold??0)+units;state.stats.village_earned=(state.stats.village_earned??0)+r.coins;
  b.request=null;b.readyAt=now+VILLAGE_REQUEST_WAIT;
- return {coins:r.coins,xp:r.xp,villager:VILLAGERS[r.villager].name,readyAt:b.readyAt};
+ // The market week (from level 116): the 15th villager of the week opens the crate in this same Help.
+ let crate=0;
+ if(levelOf(state)>=VILLAGE_WEEK_LEVEL){const wk=familyWeek(now),w=state.village.week;if(w.week!==wk)Object.assign(w,{week:wk,helped:0,paid:false});w.helped++;
+  if(!w.paid&&w.helped>=VILLAGE_WEEK_TARGET){w.paid=true;crate=VILLAGE_CRATE_DIAMONDS;state.diamonds+=crate;state.stats.market_crates=(state.stats.market_crates??0)+1;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+crate;}}
+ return {coins:r.coins,xp:r.xp,villager:VILLAGERS[r.villager].name,readyAt:b.readyAt,crate};
 }
 // "Not now": the goods the farmer was shown are checked too when the game sends them.
 export function villageSkip(state,board,request,input,now=Date.now()){
@@ -2235,7 +2402,8 @@ export function villagePlaceBefore(state,place){
 export function villageBuild(state,place){
  villageOpen(state);
  const brief=typeof place==='string'?VILLAGE_BRIEFS.find(b=>b.place===place):null;if(!brief)throw new Error('Choose a village place.');
- const name=BUILDINGS[place].name;if(state.buildings[place].built)throw new Error(`The ${name} is already built.`);
+ // The Village Fields are one name in the plural (Oct 2026).
+ const name=BUILDINGS[place].name;if(state.buildings[place].built)throw new Error(place==='villagefields'?`The ${name} are already built.`:`The ${name} is already built.`);
  const next=villageBrief(state);if(next.place!==place)throw new Error(`Build the ${BUILDINGS[next.place].name} first: one golden brief at a time.`);
  if(!next.open)throw new Error(buildingUnlockHint(state,place));
  if(state.coins<next.coins)throw new Error(`You need ${next.coins.toLocaleString('en-US')} coins to build the ${name}.`);
@@ -2245,10 +2413,157 @@ export function villageBuild(state,place){
  state.buildings[place].built=true;state.stats['built_'+place]=1;state.xp+=VILLAGE_BUILD_XP;
  return {place,name,coins:next.coins,goods:{...brief.goods},xp:VILLAGE_BUILD_XP};
 }
-// Whether the market square has something to do now: a brief ready to build or a villager you can help (its pin and the Village button).
+// Whether the market square has something to do now: a brief or a landmark ready to build (everything handed in and the coins there) or
+// a villager you can help (its pin in the village; the Village button leaves villagers out, game.js).
 export function villageSquareReady(state){
  if(!worldTwoOpen(state))return false;
- return Boolean(villageBrief(state)?.ready)||(state.village?.boards??[]).some(b=>b.request&&Object.entries(b.request.input).every(([k,n])=>(state.inventory[k]??0)>=n));
+ return Boolean(villageBrief(state)?.ready)||Boolean(villageLandmark(state)?.ready)||(state.village?.boards??[]).some(b=>b.request&&Object.entries(b.request.input).every(([k,n])=>(state.inventory[k]??0)>=n));
+}
+// The town boat (Oct 2026, the owner's choice 9b): once the Pier is mended (level 144) the boat calls for one cargo at a time, three or
+// four of the village's dearer goods, loaded bit by bit like the Trade Depot's trailer (what is loaded stays loaded). A full boat sails at
+// once and pays 1.6 times the goods' normal price and a 40th in XP, exactly as shown (no coin boost or VIP, like the villagers' requests),
+// and 3 diamonds on the first 14 boats of a week (Monday to Sunday UTC, the market week's week: at most 52 diamonds a week with the crate,
+// also with the Stone quay). It is back 12 hours later (6 with the Stone quay), also after a cargo with nothing loaded is turned down. A
+// cargo is worth 50,000 at level 144 and 1,000 more a level, up to 106,000 at 200: never more than the Trade Depot's trailer (120,000).
+export const BOAT_PREMIUM=1.6,BOAT_DIAMONDS=3,BOAT_DIAMOND_TRIPS=14,BOAT_XP_SHARE=40,BOAT_RETURN=12*3600000,BOAT_QUAY_RETURN=6*3600000;
+export const BOAT_VALUE_BASE=50000,BOAT_VALUE_STEP=1000,BOAT_VALUE_MAX=106000;
+export const BOAT_GOODS=Object.freeze(['rooftile','linen','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffronbun','silverbar']);
+// The refusal when the server's cargo is not the one on the screen: the boat's window loads the farm again when it hears it.
+export const BOAT_GONE='The boat’s cargo has changed. Look at the boat again.';
+// A village landmark is finished (VILLAGE_LANDMARKS below): the Stone quay brings the boat back sooner. Defined once, here.
+export const landmarkDone=(state,id)=>state.village?.landmarks?.done?.includes(id)===true;
+export const boatValue=level=>Math.min(BOAT_VALUE_MAX,BOAT_VALUE_BASE+BOAT_VALUE_STEP*Math.max(0,level-BUILDING_LEVELS.pier));
+export const boatReturn=state=>landmarkDone(state,'stonequay')?BOAT_QUAY_RETURN:BOAT_RETURN;
+// A cargo: three or four (about half each) of BOAT_GOODS the farm can make now, each line an equal share of boatValue at its normal price
+// (1 to 200 of a good). It follows from the boat's running number and the farm as it is then, like the depot's contracts.
+function boatCargo(state,serial){
+ const roll=n=>mixBits(calendarHash(`boat-v1:${serial}:${n}`)),target=boatValue(levelOf(state));
+ const goods=BOAT_GOODS.filter(k=>itemAvailable(state,k)),kinds=Math.min(goods.length,3+roll(8)%2),input={};
+ if(!kinds)return null;   // nothing the boat takes yet: it waits until the village makes something
+ for(let i=0;i<kinds;i++){const key=goods.splice(roll(i)%goods.length,1)[0];input[key]=Math.max(1,Math.min(VILLAGE_LINE_MAX,Math.round(target/kinds/ITEMS[key].sell)));}
+ const value=Object.entries(input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
+ return {id:serial,input,loaded:Object.fromEntries(Object.keys(input).map(k=>[k,0])),value,coins:Math.ceil(value*BOAT_PREMIUM/100)*100,xp:Math.round(value/BOAT_XP_SHARE),diamonds:BOAT_DIAMONDS};
+}
+// The next cargo, once the Pier is mended (buildingUnlocked: built and its level reached) and the boat is back; the first one as soon as the
+// Pier stands (its brief was the wait).
+function refreshBoat(state,now){
+ const boat=state.village.boat;
+ if(!worldTwoOpen(state)||!buildingUnlocked(state,'pier')||boat.cargo||now<boat.readyAt)return;
+ const cargo=boatCargo(state,boat.serial+1);if(cargo){boat.serial++;boat.cargo=cargo;}
+}
+// The diamonds the next full boat brings: BOAT_DIAMONDS on the first BOAT_DIAMOND_TRIPS boats of this week, none after them until Monday
+// (only the Stone quay's 6 hours can send more than 14 a week). For the boat's card; a saved older week counts as none sent yet.
+export function boatDiamonds(state,now=Date.now()){const b=state.village?.boat;return b?.week===familyWeek(now)&&b.paid>=BOAT_DIAMOND_TRIPS?0:BOAT_DIAMONDS;}
+// One Load all would sail it: what is not loaded yet is all in stock (the Pier's yellow label and the Village button's count).
+export function boatReady(state){const c=state.village?.boat?.cargo;return Boolean(c)&&Object.entries(c.input).every(([k,n])=>c.loaded[k]+(state.inventory[k]??0)>=n);}
+// The cargo the screen showed, by its number and its goods (10 Oct 2026, as Help at the market square): the game and the server each make
+// a cargo from the farm of that moment, so one number can ask other amounts on each side (a level-up in between). Keys in any order.
+function boatOf(state,cargo,input,shown=true){
+ villageOpen(state);
+ if(!buildingUnlocked(state,'pier'))throw new Error('Build the Pier first.');
+ const c=state.village.boat.cargo;if(!c||c.id!==cargo||shown&&!sameGoods(input,c.input))throw new Error(BOAT_GONE);
+ return c;
+}
+// Loads one kind of goods (item) or everything the cargo still needs (no item), as far as the barn has it; a full boat sails at once.
+export function boatLoad(state,cargo,input,item,now=Date.now()){
+ const c=boatOf(state,cargo,input);
+ if(item!==undefined&&(typeof item!=='string'||!Object.hasOwn(c.input,item)))throw new Error('The boat does not take that.');
+ const loaded={};
+ for(const key of item===undefined?Object.keys(c.input):[item]){const n=Math.min(state.inventory[key]??0,c.input[key]-c.loaded[key]);if(n>0){state.inventory[key]-=n;c.loaded[key]+=n;loaded[key]=n;}}
+ const units=Object.values(loaded).reduce((sum,n)=>sum+n,0);
+ if(!units)throw new Error(item===undefined?'You have none of the goods the boat still needs.':`You have no ${ITEMS[item].name.toLowerCase()} to load.`);
+ state.stats.boat_loaded=(state.stats.boat_loaded??0)+units;
+ if(Object.keys(c.input).some(k=>c.loaded[k]<c.input[k]))return {loaded,units,sailed:false};
+ // At the village's own pier: earned (like the depot), never the farm Market's sold, sold_* or deliveries. The diamonds only on the week's
+ // first BOAT_DIAMOND_TRIPS boats (10 Oct 2026, the main session's choice F2): the coins and XP on every one.
+ const boat=state.village.boat,week=familyWeek(now);if(boat.week!==week)Object.assign(boat,{week,paid:0});
+ const diamonds=boat.paid<BOAT_DIAMOND_TRIPS?c.diamonds:0;if(diamonds)boat.paid++;
+ state.coins+=c.coins;state.xp+=c.xp;state.diamonds+=diamonds;state.stats.earned+=c.coins;
+ state.stats.boat_trips=(state.stats.boat_trips??0)+1;state.stats.boat_coins=(state.stats.boat_coins??0)+c.coins;
+ if(diamonds)state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
+ boat.trips++;boat.cargo=null;boat.readyAt=now+boatReturn(state);
+ return {loaded,units,sailed:true,coins:c.coins,xp:c.xp,diamonds,readyAt:boat.readyAt};
+}
+// "Turn this cargo down": only while nothing is loaded; the boat is back after the same wait. The goods the screen showed are checked
+// too when the game sends them, as for "Not now".
+export function boatSkip(state,cargo,input,now=Date.now()){
+ const c=boatOf(state,cargo,input,input!==undefined);
+ if(Object.values(c.loaded).some(n=>n>0))throw new Error('Goods are already on the boat. Finish loading it.');
+ const boat=state.village.boat;boat.cargo=null;boat.readyAt=now+boatReturn(state);
+ return {readyAt:boat.readyAt};
+}
+// The boat's saved state, cleaned: a cargo is kept only as the rules make one (its goods from BOAT_GOODS, one to four kinds, never more
+// loaded than asked) and always holds today's diamonds; anything else is no cargo. week and paid: the diamond boats sent in that familyWeek
+// (at most BOAT_DIAMOND_TRIPS). normalizeVillage calls it.
+function normalizeBoat(b){
+ const plain=x=>Boolean(x)&&typeof x==='object'&&!Array.isArray(x),count=n=>Number.isSafeInteger(n)&&n>0?n:0;b=plain(b)?b:{};
+ const c=b.cargo,keys=plain(c)&&plain(c.input)?Object.keys(c.input):[];
+ const ok=count(c?.id)&&keys.length>=1&&keys.length<=4&&keys.every(k=>BOAT_GOODS.includes(k)&&count(c.input[k]))&&plain(c.loaded)&&Object.keys(c.loaded).length===keys.length&&keys.every(k=>Number.isSafeInteger(c.loaded[k])&&c.loaded[k]>=0&&c.loaded[k]<=c.input[k])&&[c.value,c.coins,c.xp].every(n=>Number.isSafeInteger(n)&&n>=0);
+ const cargo=ok?{id:c.id,input:Object.fromEntries(keys.map(k=>[k,c.input[k]])),loaded:Object.fromEntries(keys.map(k=>[k,c.loaded[k]])),value:c.value,coins:c.coins,xp:c.xp,diamonds:BOAT_DIAMONDS}:null;
+ const week=Number.isSafeInteger(b.week)?b.week:null;
+ return {serial:Math.max(count(b.serial),cargo?.id??0),cargo,readyAt:count(b.readyAt),trips:count(b.trips),week,paid:week===null?0:Math.min(BOAT_DIAMOND_TRIPS,count(b.paid))};
+}
+// The village's landmarks (Oct 2026, the owner's plan for levels 165-200): after the last village place the golden brief builds five
+// landmarks, one at a time, in this order. Like a valley project: hand in the goods bit by bit (what you give stays given), then pay the
+// coins to finish; each gives 5,000 XP and a bonus that lasts for good. The Great Hall at WORLD_TWO_TOP is the last thing World II opens.
+// The Longhouse takes scented sachets, not lavender soap (10 Oct 2026): about 57 sunflowers' worth of beeswax and candles for all five.
+export const VILLAGE_LANDMARKS=Object.freeze(Object.fromEntries(Object.entries({
+ windpump:{name:'Wind pump',level:165,coins:1500000,materials:{rooftile:600,plank:300,ironbar:60},effect:'Village Fields batches take 25% less time.',villager:5,title:'Water for the fields',line:'A wind pump by the fields, and every row grows faster.',art:'landmark-windpump'},
+ longhouse:{name:'Longhouse',level:172,coins:2000000,materials:{linen:300,scentedsachet:200,rooftile:400},effect:'Batches in every village place take 10% less time.',villager:12,title:'A hall for the workers',line:'A longhouse where the workers rest, and every workshop goes faster.',art:'landmark-longhouse'},
+ stonequay:{name:'Stone quay',level:185,coins:2500000,materials:{stone:2000,plank:400,scentedsachet:200},effect:'The town boat comes back after 6 hours instead of 12.',villager:10,title:'A quay of stone',line:'A stone quay, and my boat is loaded and back in half the time.',art:'landmark-stonequay'},
+ lookout:{name:'Lookout tower',level:192,coins:3000000,materials:{silvercandlestick:20,rubyring:20,saffronbun:150},effect:'A fourth villager comes to the market square.',villager:4,title:'A tower above the square',line:'A lookout tower, and travellers will see the market from afar.',art:'landmark-lookout'},
+ greathall:{name:'Great Hall',level:WORLD_TWO_TOP,coins:3000000,materials:{rooftile:100,linen:100,lavendersoap:100,scentedsachet:100,saffronbun:100},effect:'Villagers pay 1.6 times what their goods are worth. The Hall gives 200 diamonds once.',villager:12,title:'The heart of the village',line:'One last hall for the whole village, with a bell for every villager who comes.',art:'landmark-greathall'}
+}).map(([k,l])=>[k,Object.freeze({...l,materials:Object.freeze(l.materials)})])));
+export const VILLAGE_LANDMARK_XP=5000,VILLAGE_HALL_PREMIUM=1.6,GREAT_HALL_DIAMONDS=200;
+export const VILLAGE_LANDMARK_BONUS=Object.freeze({windpump:.25,longhouse:.1});   // less batch time: the Village Fields', every village place's
+export const landmarkBonus=(state,id)=>landmarkDone(state,id)?VILLAGE_LANDMARK_BONUS[id]??0:0;
+// What a villager pays for a request made now: half again, 1.6 times with the Great Hall. A request already waiting keeps its coins.
+export const villagePremium=state=>landmarkDone(state,'greathall')?VILLAGE_HALL_PREMIUM:VILLAGE_PREMIUM;
+// What the golden brief's card says once every place and landmark is built: after the Great Hall nothing more opens (the builders'
+// "next plans" are retired, Oct 2026).
+export const VILLAGE_ALL_BUILT='Every place and landmark in the village is built.';
+// The landmark the golden brief builds now: none below level 100, while a village place's brief is open or once all five are finished.
+// missing: the goods still to hand in; ready: its level reached, everything handed in and the coins there (the market square's pin lights).
+export function villageLandmark(state){
+ if(!worldTwoOpen(state)||villageBrief(state))return null;
+ const id=Object.keys(VILLAGE_LANDMARKS).find(k=>!landmarkDone(state,k));if(!id)return null;
+ const l=VILLAGE_LANDMARKS[id],given=state.village?.landmarks?.given??{},open=levelOf(state)>=l.level;
+ const missing=Object.fromEntries(Object.entries(l.materials).filter(([k,n])=>(given[k]??0)<n).map(([k,n])=>[k,n-(given[k]??0)]));
+ return {id,...l,given:{...given},open,missing,short:Math.max(0,l.coins-state.coins),ready:open&&!Object.keys(missing).length&&state.coins>=l.coins};
+}
+// The checks both landmark actions share, in this order: one golden brief at a time, so a landmark waits for the last place and the one
+// before it, and its goods are taken only from its level (nothing to hand in early).
+function landmarkStep(state,id){
+ villageOpen(state);
+ if(typeof id!=='string'||!Object.hasOwn(VILLAGE_LANDMARKS,id))throw new Error('Choose a landmark.');
+ const l=VILLAGE_LANDMARKS[id];if(landmarkDone(state,id))throw new Error(`The ${l.name} is already finished.`);
+ const brief=villageBrief(state);if(brief)throw new Error(`Build the ${BUILDINGS[brief.place].name} first: one golden brief at a time.`);
+ const next=villageLandmark(state);if(next.id!==id)throw new Error(`Finish the ${next.name} first: one golden brief at a time.`);
+ if(!next.open)throw new Error(`Reach level ${l.level} to build the ${l.name}.`);
+ return {l,given:state.village.landmarks.given};
+}
+// Hands in one kind of goods (item) or everything the landmark still needs (no item), as far as the barn has it; what is given stays given.
+export function landmarkGive(state,id,item){
+ const {l,given}=landmarkStep(state,id);
+ if(item!==undefined&&(typeof item!=='string'||!Object.hasOwn(l.materials,item)))throw new Error(`The ${l.name} does not need that.`);
+ const handed={};
+ for(const key of item===undefined?Object.keys(l.materials):[item]){const n=Math.min(state.inventory[key]??0,l.materials[key]-(given[key]??0));if(n>0){state.inventory[key]-=n;given[key]=(given[key]??0)+n;handed[key]=n;}}
+ const units=Object.values(handed).reduce((sum,n)=>sum+n,0);
+ if(!units)throw new Error(item===undefined?'You have none of the goods this landmark still needs.':`You have no ${ITEMS[item].name.toLowerCase()} to give.`);
+ return {handed,units,ready:Object.entries(l.materials).every(([k,n])=>(given[k]??0)>=n)};
+}
+// Pays the coins and finishes it: 5,000 XP, its bonus for good, and the Great Hall's 200 diamonds, which can come only once (done never
+// loses an id and a finished landmark is refused). Spent coins count for the events through applyFarmAction, as for the briefs; never
+// sold, earned or produced.
+export function landmarkFinish(state,id){
+ const {l,given}=landmarkStep(state,id);
+ if(Object.entries(l.materials).some(([k,n])=>(given[k]??0)<n))throw new Error('Hand in all the goods first.');
+ if(state.coins<l.coins)throw new Error(`You need ${l.coins.toLocaleString('en-US')} coins to finish it.`);
+ const diamonds=id==='greathall'?GREAT_HALL_DIAMONDS:0;
+ state.coins-=l.coins;state.village.landmarks.done.push(id);state.village.landmarks.given={};
+ state.xp+=VILLAGE_LANDMARK_XP;state.diamonds+=diamonds;
+ state.stats.village_landmarks=(state.stats.village_landmarks??0)+1;if(diamonds)state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
+ return {landmark:id,name:l.name,coins:l.coins,xp:VILLAGE_LANDMARK_XP,diamonds};
 }
 function normalizeEndgame(state){
  const master=state.master&&typeof state.master==='object'?state.master:{};state.master={};
@@ -2338,6 +2653,7 @@ function currentEndgameDiamonds(state){
  if(Array.isArray(state.fair.classes))for(const c of state.fair.classes){const now=FAIR_CLASSES.find(x=>x.name===c?.name);if(now)c.diamonds=now.diamonds;}
  if(state.depot.contract)state.depot.contract.diamonds=DEPOT_DIAMONDS;
  if(state.visitors.current)state.visitors.current.diamonds=VISITOR_DIAMONDS;
+ if(state.village.boat.cargo)state.village.boat.cargo.diamonds=BOAT_DIAMONDS;   // the town boat's, too (Oct 2026)
 }
 // An order on today's board that the farm cannot make (picked before a rule changed, or a building it has not built) is swapped,
 // while undelivered, for one of the same kind it can make; its revision moves on, so an open screen asks to look again.
@@ -2832,7 +3148,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'produce':return startProduction(state,action.recipe,now,action.count,random);
   case 'collect':return collectProduction(state,action.building,now,action.jobId);
   case 'collect_all':return collectAllProduction(state,action.building,now);
-  case 'upgrade':return upgradeBuilding(state,action.building,action.currency,action.expectedCost,action.expectedLevel);
+  case 'upgrade':return upgradeBuilding(state,action.building,action.currency,action.expectedCost,action.expectedLevel,action.crates);
   case 'expand':return expandFarm(state);
   case 'quest':return claimQuest(state,action.id);
   case 'village_quest':return claimVillageQuest(state,action.id);
@@ -2855,6 +3171,11 @@ function dispatchFarmAction(state,action,now,random){
   case 'village_deliver':return villageDeliver(state,action.board,action.request,action.input,now);
   case 'village_skip':return villageSkip(state,action.board,action.request,action.input,now);
   case 'village_build':return villageBuild(state,action.place);
+  // The town boat at the Pier (from level 144) carries the cargo the screen showed; the landmarks (165-200) come from the golden brief.
+  case 'boat_load':return boatLoad(state,action.cargo,action.input,action.item,now);
+  case 'boat_skip':return boatSkip(state,action.cargo,action.input,now);
+  case 'landmark_give':return landmarkGive(state,action.landmark,action.item);
+  case 'landmark_finish':return landmarkFinish(state,action.landmark);
   case 'ranch_focus':return setRanchFocus(state,action.focus,action.expectedCost);
   case 'improve':return buildImprovement(state,action.improvement);
   case 'depot_load':return depotLoad(state,action.contract,action.item,now);
@@ -3638,6 +3959,9 @@ export function createShowcaseFarm(now=Date.now(),{family=null}={}){
  for(const k of Object.keys(ITEMS))s.stats[(CROPS[k]?'harvest_':'made_')+k]=1000;
  Object.assign(s.stats,{harvested:25000,planted:25000,watered:20000,tended:15000,produced:12000,earned:50000000,expansions:MAX_PLOTS-12,upgrades:300,deliveries:2000,sold:40000,dailies:600,chores:900,mastery_medals:Object.keys(CROPS).length*MASTERY_TIERS.length,projects:PROJECTS.length});
  s.login={lastDay:utcDay(now),streak:30,best:60,visits:200};s.comeback={lastAt:now,collected:0,pending:null};
+ // World II (Oct 2026): every landmark finished and the town boat away for a month. Set before the farm is normalized, so the Lookout
+ // tower's fourth villager is there when every board is emptied below.
+ s.village={serial:0,boards:[],landmarks:{done:Object.keys(VILLAGE_LANDMARKS),given:{}},boat:{serial:0,cargo:null,readyAt:now+30*DAY_MS,trips:0}};s.stats.village_landmarks=Object.keys(VILLAGE_LANDMARKS).length;
  delete s.daily;normalizeFarm(s,now);refreshProgressionDaily(s,now);
  // Today's tasks and orders done, the helping hands resting: no "!" anywhere.
  s.daily.claimed=s.daily.tasks.map((_,i)=>i);s.daily.orders=s.daily.orderBoard.map((_,i)=>i);s.daily.bonusClaimed=true;

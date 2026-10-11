@@ -41,7 +41,9 @@ test('status() keeps its text for the farm map and the tooltip and only adds the
 test('the list: the level chip only on built buildings, locked, to build and the Family Hall keep their one line, no middle dots',()=>{
  const ui=read('public/economy-ui.js');
  assert.match(ui,/const isBuilt=key=>key==='farmhouse'\|\|key!=='familyhall'&&buildingUnlocked\(state,key\);/);
- assert.match(ui,/const catalogStatus=\(key,s\)=>isBuilt\(key\)\?`<span class="building-chips" data-building-status="\$\{key\}">\$\{buildingChips\(s\)\}<\/span>`:`<span class="building-status \$\{s\.kind\}" data-building-status="\$\{key\}">\$\{s\.kind==='locked'\?art\('lock','unlock-lock'\):''\}\$\{s\.text\}<\/span>`;/);
+ // The built Pier (Oct 2026) has no levels: one line (the town boat's), like a place to build.
+ assert.match(ui,/const leveled=key=>isBuilt\(key\)&&BUILDINGS\[key\]\.type!=='pier';/);
+ assert.match(ui,/const catalogStatus=\(key,s\)=>leveled\(key\)\?`<span class="building-chips" data-building-status="\$\{key\}">\$\{buildingChips\(s\)\}<\/span>`:`<span class="building-status \$\{s\.kind\}" data-building-status="\$\{key\}">\$\{s\.kind==='locked'\?art\('lock','unlock-lock'\):''\}\$\{s\.text\}<\/span>`;/);
  const list=ui.slice(ui.indexOf('const isBuilt='),ui.indexOf("foldLocked($('building-catalog'),'[data-open-building]'"));
  assert.doesNotMatch(list,/·/,'the list joins nothing with " · " (the locked line keeps its own "Locked · Reach level N.")');
  assert.doesNotMatch(buildingChips({kind:'ready',ready:2,working:1,free:1})+buildingChips({kind:'working',ready:0,working:2,free:1,next:90000}),/·/);

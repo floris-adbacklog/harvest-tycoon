@@ -34,7 +34,7 @@ test('old daily progress and order identities survive the migration until midnig
  const snapshot=JSON.stringify(s.daily);normalizeFarm(s,now);assert.equal(JSON.stringify(s.daily),snapshot);
 });
 test('daily rotation covers accessible orders without locked chores or parallel goals for starters',()=>{
- assert.equal(DAILY_POOLS.flat().length,66);assert.equal(ORDER_POOL.length,52);
+ assert.equal(DAILY_POOLS.flat().length,69,'66, and World II\'s Village errands in each pool from level 100 (Oct 2026)');assert.equal(ORDER_POOL.length,52);
  const tasksSeen=new Set(),ordersSeen=new Set();
  for(let day=0;day<180;day++){
   const t=now+day*DAY_MS,s=createFarm(t);

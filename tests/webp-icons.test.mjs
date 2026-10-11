@@ -62,3 +62,15 @@ test('every hardcoded icon path outside visual-icons.js was updated to match: th
 test('ART_KEYS still lists every converted key — nothing lost its entry when its extension changed',()=>{
  for(const key of WEBP_PICTURES)assert(ART_KEYS.includes(key),key);
 });
+// World II's levels 100-200 (Oct 2026): the 13 later goods (painted by the owner, 256 px) and the pictures of the seven later places and
+// the five landmarks (renders of the Village pack, 512 px, scripts/render-village-pictures.py) are WebP from the start, never PNG.
+const VILLAGE_GOODS_ART=['potatoes','clay','rooftile','flax','linen','builderscrate','lavender','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffron','saffronbun'];
+const VILLAGE_PICTURES=['villagefields','canteen','kiln','linenloft','soapmaker','pier','jeweller','landmark-windpump','landmark-longhouse','landmark-stonequay','landmark-lookout','landmark-greathall'];
+test('World II\'s later goods, places and landmarks are WebP, never PNG',()=>{
+ for(const [keys,side,most] of [[VILLAGE_GOODS_ART,256,30000],[VILLAGE_PICTURES,512,40000]])for(const key of keys){
+  const file=icon(`${key}.webp`);assert(existsSync(file),`${key}.webp is missing`);assert(!existsSync(icon(`${key}.png`)),`${key}.png: new pictures are WebP only`);
+  const b=readFileSync(file);assert.equal(b.toString('ascii',0,4)+b.toString('ascii',8,16),'RIFFWEBPVP8X','an extended WebP, with transparency');
+  assert.deepEqual([1+b.readUIntLE(24,3),1+b.readUIntLE(27,3)],[side,side],`${key}: ${side} px`);assert.ok(statSync(file).size<=most,`${key}.webp is ${statSync(file).size} bytes`);
+  assert.match(art(key),new RegExp(`src="/assets/icons/${key}\\.webp"`),`art('${key}') asks for the .webp file`);assert.ok(ART_KEYS.includes(key),key);
+ }
+});

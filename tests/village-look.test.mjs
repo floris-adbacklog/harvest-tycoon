@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,statSync} from 'node:fs';
+import {readFileSync,statSync,readdirSync,existsSync} from 'node:fs';
 import {inflateSync} from 'node:zlib';
+import {RECIPES} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const file=new URL('../public/assets/village/village.glb',import.meta.url);
 
 // Oct 2026: World II's village is finished like the farm: the farm's baked shade, matte materials, no shadow stripes, hazy mountains
 // and cloud shadows above its hills (ASSET-USAGE.md, Village shade). World I must stay exactly as it was.
-async function village(){
- const b=readFileSync(file),jl=b.readUInt32LE(12),json=JSON.parse(b.subarray(20,20+jl).toString('utf8')),bin=b.subarray(20+jl+8);
+async function village(at=file){
+ const b=readFileSync(at),jl=b.readUInt32LE(12),json=JSON.parse(b.subarray(20,20+jl).toString('utf8')),bin=b.subarray(20+jl+8);
  const {MeshoptDecoder}=await import('../public/vendor/addons/libs/meshopt_decoder.module.js');await MeshoptDecoder.ready;
  // One byte of shade a vertex, from the meshopt-compressed buffer view as the game's loader reads it.
  const shade=accessor=>{const a=json.accessors[accessor],bv=json.bufferViews[a.bufferView],m=bv.extensions?.EXT_meshopt_compression;
@@ -134,4 +135,71 @@ test('the meadows are the farm\'s green, the lake blue like the farm\'s pond, th
  const seam=[...onSeam].sort();assert.ok(seam.every(n=>/^(hill|Road)_/.test(n)),`only hills and paths: ${seam.filter(n=>!/^(hill|Road)_/.test(n))}`);
  assert.equal(seam.filter(n=>/^hill_/.test(n)).length,json.nodes.filter(n=>n.mesh!=null&&/^hill_/.test(n.name)).length,'every hill');
  assert.equal(seam.filter(n=>/^Road_/.test(n)).length,5,'the five paths');
+});
+
+// Oct 2026, the owner's plan for levels 100-200: the later places are names on houses already in village.glb, and their props and the
+// five landmarks come in one small file of their own (village-extras.glb), shaded like the rest and loaded only in the village.
+const extras=new URL('../public/assets/village/village-extras.glb',import.meta.url);
+const sceneFile=()=>read('public/village-scene.js');
+const extrasTable=()=>new Function(`return ${/export const VILLAGE_EXTRAS=Object\.freeze\((\{[\s\S]*?\})\);/.exec(sceneFile())[1]}`)();
+test('village.glb stays as it is: the later places are names on its houses',()=>{
+ assert.equal(statSync(file).size,5269692,'village.glb');
+ assert.equal(statSync(new URL('../public/assets/village/village-layout.json',import.meta.url)).size,105028,'village-layout.json');
+});
+test('the village\'s extras: the pack\'s props and the five landmarks, shaded like the village, under 500 KB',async()=>{
+ const size=statSync(extras).size;assert.ok(size>250000&&size<500000,`village-extras.glb is ${size} bytes`);
+ const {json,shade}=await village(extras),all=[];
+ assert.equal(json.asset.extras?.bakedShade,true,'marked like the farm\'s models');
+ assert.ok(json.extensionsRequired.includes('EXT_meshopt_compression')&&json.extensionsRequired.includes('KHR_mesh_quantization'),'meshopt-compressed and quantized');
+ assert.equal(json.images,undefined,'no picture: the village paints it with its own palette');assert.equal(json.textures,undefined);
+ for(const mesh of json.meshes)for(const p of mesh.primitives){
+  const a=json.accessors[p.attributes._SHADE];assert.ok(a,`${mesh.name} has no baked shade`);
+  assert.deepEqual([a.type,a.componentType,a.normalized],['SCALAR',5121,true],'one normalized byte a vertex');
+  assert.ok(p.attributes.TEXCOORD_0!=null&&p.attributes.NORMAL!=null,'the palette\'s coordinates and the normals');
+  assert.equal(p.attributes.COLOR_0,undefined,'the shade replaces the pack\'s plain white colours');
+  const values=shade(p.attributes._SHADE);assert.equal(values.length,json.accessors[p.attributes.POSITION].count);all.push(...values);
+ }
+ all.sort((x,y)=>x-y);assert.ok(all[0]>=140&&all.at(-1)===255,`shade ${all[0]}..${all.at(-1)}`);
+ const roots=json.scenes[json.scene??0].nodes.map(i=>json.nodes[i].name);
+ assert.deepEqual(roots,json.asset.extras.models,'one node a model, named after it');
+ assert.deepEqual([...roots].sort(),[...new Set(Object.values(extrasTable()).flat().map(([model])=>model))].sort(),'exactly the models village-scene.js places');
+});
+test('the extras build: the farm\'s strength and floor, a shade that must fit, one way to make the file',()=>{
+ const build=read('scripts/build-village-extras.mjs');
+ assert.match(build,/shade=v=>Math\.max\(\.55,1-\.45\*\(1-v\)\)/);
+ assert.match(build,/throw new Error\(`\$\{name\}: the shade does not fit part /,'a bake of another build never slips in');
+ assert.match(build,/prune\(\{keepAttributes:true\}\)/,'without a texture prune would drop the palette coordinates');
+ assert.match(build,/meshopt\(\{encoder:MeshoptEncoder,level:'high'\}\)/);
+ assert.deepEqual(JSON.parse(/const MODELS=(\[[^\]]+\]);/.exec(build)[1].replace(/'/g,'"')).sort(),[...new Set(Object.values(extrasTable()).flat().map(([model])=>model))].sort(),'the build makes the models the scene places');
+ assert.match(read('ASSET-USAGE.md'),/SRC=<out>\/models OUT=<out>\/ao blender -b --factory-startup --python scripts\/model-shade\/bake-ao\.py/);
+});
+test('the extras are painted with the village\'s palette and loaded only there, after it shows',()=>{
+ const scene=sceneFile(),game=read('public/game.js');
+ assert.match(scene,/world\.userData=\{scale:s,palette:paletteMap\};/);
+ assert.match(scene,/paletteMap\?\?=o\.material\.name!=='Transparent'\?o\.material\.map:null;/,'the houses\' palette, never the lake\'s plain blue');
+ assert.match(scene,/new THREE\.MeshStandardMaterial\(\{map:palette,vertexColors:true,roughness:1,metalness:0,side:THREE\.DoubleSide\}\)/);
+ assert.match(scene,/mesh\.name=`\$\{landmark\?'landmark':'extras'\}-\$\{key\}`;mesh\.visible=false;/,'all hidden until game.js shows them');
+ assert.match(scene,/loader\.loadAsync\(EXTRAS_URL\)\.catch\(\(\)=>loader\.loadAsync\(`\$\{EXTRAS_URL\}\?fresh=\$\{Date\.now\(\)\}`\)\)/,'asked for once more past the cache');
+ assert.match(scene,/import \{mergeGeometries\} from 'three\/addons\/utils\/BufferGeometryUtils\.js';/);
+ for(const name of readdirSync(new URL('../public/',import.meta.url),{recursive:true}).filter(n=>/\.(m?js|html|css|json)$/.test(n)&&!n.startsWith('vendor')&&n!=='village-scene.js'))
+  assert.doesNotMatch(read(`public/${name}`),/village-extras\.glb/,`only the village scene loads the extras (${name})`);
+ assert.match(game,/if\(!villageWorld\)void addScenery\(\);if\(villageWorld\)void addVillageExtras\(\);/,'after the village is on screen, never on the farm');
+ assert.match(game,/console\.warn\('The village extras were skipped\.',error\);/,'a file that does not come leaves the village as it is');
+ const tick=/if\(now-lastTick>500\)\{[^\n]*\}/.exec(game)?.[0]??'';assert.match(tick,/atmosphere\?\.tick\(\);syncVillageExtras\(\);/,'a build shows within half a second');
+ assert.doesNotMatch(/function expandVisuals\(\)\{[^\n]*\}/.exec(game)[0],/syncVillageExtras/,'not in expandVisuals (tests/village-square.test.mjs runs it alone)');
+});
+// The Village Fields' rows (Oct 2026): the farm's own crop models, one strip for each crop the Fields sow, and for flax, lavender and
+// saffron one colour of the pack's palette (a tint multiplied over green leaves turned them grey-green; checked in a render).
+test('the Fields\' rows: one strip per village crop, the farm\'s models, the pack\'s colours',()=>{
+ const scene=sceneFile(),object=name=>new Function('Object',`return ${new RegExp(`export const ${name}=Object\\.freeze\\((\\{[\\s\\S]*?\\})\\);\\n`).exec(scene)[1]}`)({freeze:o=>o});
+ const crops=object('VILLAGE_FIELD_CROPS'),plot=object('VILLAGE_FIELD_PLOT');
+ assert.deepEqual(Object.keys(crops).sort(),Object.values(RECIPES).filter(r=>r.building==='villagefields').map(r=>Object.keys(r.output)[0]).sort(),'a strip for every crop the Fields sow');
+ assert.deepEqual(Object.values(crops).map(c=>c.strip).sort(),[0,1,2,3]);
+ for(const c of Object.values(crops))assert.ok(existsSync(new URL(`../public/assets/models/${c.model}.glb`,import.meta.url)),`${c.model}: a farm model, nothing new to download`);
+ const at=png('public/assets/models/village-palette.png'),hex=([r,g,b])=>r<<16|g<<8|b;
+ assert.deepEqual([crops.flax.color,crops.lavender.color,crops.saffron.color,crops.potatoes.color],[hex(at(326,698)),hex(at(233,698)),hex(at(233,791)),null],'blue flax, purple lavender, lilac saffron; potatoes in the farm\'s own greens');
+ const from=scene.indexOf('export function villageFieldSpots(strip){'),spots=new Function('VILLAGE_FIELD_PLOT',`${scene.slice(from+7,scene.indexOf('\n}\n',from)+2)}return villageFieldSpots;`)(plot);
+ for(let strip=0;strip<4;strip++){const list=spots(strip);assert.equal(list.length,45);
+  for(const {x,z} of list){const a=(x-plot.x)*plot.ax+(z-plot.z)*plot.az,b=-(x-plot.x)*plot.az+(z-plot.z)*plot.ax;assert.ok(a>0&&a<9.41&&b>0&&b<7.07,`strip ${strip}: ${a.toFixed(2)}, ${b.toFixed(2)} on the plot`);}}
+ assert.match(scene,/if\(hit\?\.object\.name==='landscape_004'\)/,'a plant only where the plot\'s soil is on top');
 });

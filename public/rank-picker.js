@@ -1,14 +1,14 @@
 // The leaderboard's "Rank by" choice: the main boards as chips, and a "By crop" and a "By good" chip that each open a row of boards.
 // It replaces a 19-item native dropdown. The chosen board is still kept in a hidden field, so the rest of the leaderboard code is unchanged.
-export const RANK_ART=Object.freeze({level:'xp',currency:'coins',harvested_crops:'harvest',goods_produced:'bread',items_sold:'market',badges:'medal-gold',deliveries:'cart',events_finished:'live-events',best_streak:'streak',farm_fields:'estate',chores_done:'chores',helping_rounds:'helping-hand',estate_projects:'farmhouse',building_upgrades:'hammer',quests_done:'quests'});
+export const RANK_ART=Object.freeze({level:'xp',currency:'coins',harvested_crops:'harvest',goods_produced:'bread',items_sold:'market',badges:'medal-gold',deliveries:'cart',events_finished:'live-events',best_streak:'streak',farm_fields:'estate',chores_done:'chores',helping_rounds:'helping-hand',estate_projects:'farmhouse',building_upgrades:'hammer',quests_done:'quests',villagers_helped:'villagemarket'});
 // A crop board shows the crop, a good's board the good.
 export const rankArtKey=key=>RANK_ART[key]??(key.startsWith('harvested_')?key.slice(10):key.startsWith('made_')?key.slice(5):'trophy');
 // "By crop" and "By good": each chip opens its own row of boards and remembers the last one you looked at there.
 const GROUPS=Object.freeze({
  crops:{toggle:'data-rank-crops',row:'rank-crops',label:'By crop',art:'wheat',label2:'Choose a crop',first:'harvested_wheat'},
  goods:{toggle:'data-rank-goods',row:'rank-goods',label:'By good',art:'bread',label2:'Choose a good',first:'made_bread'},
- // World II: the village's goods, a chip that is hidden until the farmer reaches level 100 (src/ui.js).
- village:{toggle:'data-rank-village',row:'rank-village',label:'Village',art:'village-badge',label2:'Choose a village good',first:'made_packedlunch',hidden:true}
+ // World II: the village's boards, a chip that is hidden until the farmer reaches level 100 (src/ui.js). Villagers helped first (Oct 2026).
+ village:{toggle:'data-rank-village',row:'rank-village',label:'Village',art:'village-badge',label2:'Choose a village board',first:'villagers_helped',hidden:true}
 });
 const groupOf=(categories,key)=>categories[key]?.group??null;
 const chip=(art,key,label,extra='')=>`<button type="button" class="rank-chip ${extra}" data-rank="${key}" aria-pressed="false">${art}<span>${label}</span></button>`;

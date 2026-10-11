@@ -100,7 +100,10 @@ test('the upgrade panel: one row with the coins and the goods, the Upgrade butto
  assert.match(ui,/<div class="upgrade-option"><div class="upgrade-cost"><span class="upgrade-price">\$\{art\('coins'\)\}<b>\$\{number\(cost\)\}<\/b><\/span>\$\{estate\?`<span class="upgrade-plus">\+<\/span><div class="ingredients expansion-materials">\$\{itemList\(estate\.materials,true\)\}<\/div>`:''\}<\/div>/,'coins plus the goods, with what you have');
  assert.match(ui,/<small class="shortfall">Still needed: \$\{stillNeeded\.join\(' and '\)\}\.<\/small>/,'exactly what is missing');
  assert.doesNotMatch(ui,/upgrade-building-diamonds|diamondUpgradeCost|Upgrade now · /);
- assert.match(ui,/\$\{cost===null\?'':`<div class="upgrade-payments">\$\{coinRow\}<\/div>`\}/);
+ // Builder's crates (Oct 2026): a second row and its rule only when the upgrade can take crates; a village place's rule under its row.
+ assert.match(ui,/\$\{cost===null\?'':`<div class="upgrade-payments">\$\{coinRow\}\$\{crateRow\}\$\{placeRule\}<\/div>`\}/);
+ assert.match(ui,/const crates=builderCrates\(state,key\),cratePrice=cost===null\?0:cost-crates\*BUILDER_CRATE_COINS;crateOffer=crates;/);
+ assert.match(ui,/const crateRow=crates\?`<div class="upgrade-option is-crates">/);assert.doesNotMatch(ui.match(/const crateRow=[^\n]+/)[0],/jobs\.length/);
  assert.match(read('public/production-controls.css'),/\.upgrade-option\{display:grid;grid-template-columns:minmax\(0,1fr\) auto;/);
  assert.match(read('public/wiki-content.js'),/From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn\. The Factory asks for goods from across the valley from its first upgrade\. The Buildings discount boost halves the coins and goods of your next upgrade\./);
 });

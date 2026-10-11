@@ -87,3 +87,38 @@ The shade travels as one byte per vertex (`_SHADE`) and public/village-scene.js 
 models carry: as COLOR_0 (three bytes) the meshopt file would grow to 6.4 MB, now 4.5 → 5.3 MB. The file is marked
 (asset.extras.bakedShade). The buckets of the two wells and one market prop had no material in the pack (drawn almost black);
 the build gives them the palette. tests/village-look.test.mjs checks the shade, the size and the village's light settings.
+
+## Village extras (Oct 2026)
+
+World II's props at its places and its five landmarks (`public/assets/village/village-extras.glb`, about 410 KB) are 35 more models
+of the same Village pack, each once, shaded like the farm's props: baked per model on a ground plane with the strength (.45) and
+floor (.55) of the rest. They carry no palette; the village paints them with its own. scripts/build-village-extras.mjs is the one way
+to make the file, with <tools> a folder holding a copy of it and @gltf-transform/core, extensions, functions and meshoptimizer
+installed:
+
+    node <tools>/build-village-extras.mjs assets-source/village <out>
+    SRC=<out>/models OUT=<out>/ao blender -b --factory-startup --python scripts/model-shade/bake-ao.py
+    node <tools>/build-village-extras.mjs assets-source/village <out> <out>/ao
+    cp <out>/village-extras.glb public/assets/village/
+
+public/village-scene.js says where each model stands (VILLAGE_EXTRAS); tests/village-look.test.mjs checks the shade, the size and
+that every model it places is in the file. Like the village, a second bake is not byte for byte the same; the tests check ranges.
+
+Two landmarks are built of the pack's parts (10 Oct 2026, after the owner's review: the Great Hall was one more house of the square,
+the Stone quay a wooden pier on posts). The Great Hall is the house parts the village's own houses are made of (Building_Angle_002,
+Angle_Roof_002, Window_002, Door_002, Roof_002, Small_Window_002, Canopy_002, all in the light wood with red roofs): two wings and a
+bell tower of three storeys under a cross roof, on the village's stone footings (foundation_002) with stone steps (foundation_010).
+The Stone quay is six of those stone steps as slabs on the water, faced and backed with dry-stone walls (stones_015), with barrels,
+crates, a sack and a boat (props_055, 018, 022, 044, 023). A part that stands several times is in the file once. foundation_010 is
+written at a tenth of the pack's size, the size the village draws it at (village-layout.json), so 1 in VILLAGE_EXTRAS is the
+village's own size for every model. Each part is baked on its own, so the storeys of the tower and the roofs carry the shade of a
+part on the ground, not of the whole Hall; from the game's distance that reads as the joints between them. The file went from
+381,800 to 408,956 bytes.
+
+The pictures of the later places and the landmarks (`public/assets/icons/<key>.webp`, 512 px) are drawn from the same models by
+scripts/render-village-pictures.py (numpy and Pillow, no Blender), after the first step above has written <out>/models:
+
+    python3 scripts/render-village-pictures.py assets-source/village/Village_Summer_glb/Separate_assets_glb <out>/models <pictures>
+    for f in <pictures>/*.png; do cwebp -q 82 -alpha_q 100 -m 6 "$f" -o public/assets/icons/$(basename "${f%.png}").webp; done
+
+The 13 later goods (potatoes … saffron buns) are painted by the owner, 256 px WebP, copied as they are.

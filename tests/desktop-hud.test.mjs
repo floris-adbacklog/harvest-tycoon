@@ -9,6 +9,12 @@ test('on a computer the side tools stay see-through and the camera buttons are o
  assert.doesNotMatch(css,/\.side-tools\{[^}]*background/,'no panel behind the side tools');
  const game=read('public/game.js');
  assert.match(game,/behindTools\(x,y,80\)/,'a building name behind the side tools is hidden');
+ // In the village (11 Oct 2026) a name that guess puts behind the tools is measured and slides clear of them, its point on its place;
+ // only one whose point is at the tools hides (the Linen Loft's was hidden in the whole-village view, clear of the tools).
+ assert.match(game,/function nameBehindTools\(v,x,y\)\{\n v\.label\.hidden=false;const half=v\.label\.offsetWidth\/2,/);
+ assert.match(game,/v\.slid=true;v\.label\.style\.left=`\$\{x\+slide\}px`;v\.label\.style\.setProperty\('--tail',`\$\{-slide\}px`\);return false;/);
+ assert.match(game,/if\(v\.slid\)\{v\.slid=false;v\.label\.style\.removeProperty\('--tail'\);\}/,'and back over its place once the view moves');
+ assert.match(read('public/world-two.css'),/html\[data-world="village"\] \.building-label:after\{left:calc\(50% \+ var\(--tail,0px\)\)\}/);
  assert.match(game,/behindTools\(x,y,22\)/,'and so is a small place marker');
  assert.match(game,/if\(!tools\|\|mobileLayout\.matches\)\{toolsBox=null;hudShift=0;return;\}/,'only on a computer');
  assert.match(game,/hudShift=\(toolsBox\.right-\(g\?\.width\?w\.right-g\.left:0\)\)\/2;/,'the farm sits between the side tools and an open Beginner guide');

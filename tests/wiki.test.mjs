@@ -225,6 +225,67 @@ test('the market square in the wiki: the golden briefs and the villagers\' reque
  assert.equal(wikiSectionTitle('village','sec-golden-briefs'),'Golden briefs');
 });
 
+// World II's later levels (Oct 2026, Phases 2a to 5): the Village topic says every new rule with the rules' own numbers, from level 100 only;
+// nothing a farm below level 100 can see changes (the Glasshouse's rows in Buildings and goods keep their Needs as they were).
+test('the Village topic from level 100: crops, the market week, builder\'s crates, the town boat and the landmarks, every number from the rules',async()=>{
+ const R=await import('../public/farm-state.js');
+ const village=wikiArticle('village').html,text=village.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
+ for(const id of ['sec-market-week','sec-builder-s-crates','sec-landmarks','building-villagefields','building-canteen','building-kiln','building-linenloft','building-soapmaker','building-pier','building-jeweller'])assert.match(village,new RegExp(`id="${id}"`),id);
+ // Phase 2a: the Fields sow with coins (its Needs say them), the pasty lunch, the market week.
+ assert.match(text,/From level 110 the Village Fields grow these crops from natural fertilizer and coins, with no field on the farm: Potatoes Flax Lavender Saffron Make the fertilizer/);
+ assert.match(village,/120 coins<\/span>/);assert.match(text,/The Farm Kitchen packs 6 at a time from: [^]*? From level 113 the Miners’ Canteen bakes 4 at a time without apples, from: 10 Potatoes 4 Flour /);
+ assert.match(text,/Level 116 Help 15 villagers between Monday and Sunday and the market crate gives you 10 diamonds\. It opens by itself, once a week\. A week starts on Monday at 00:00 UTC, and a week that falls short costs nothing\./);
+ // Phase 2b: roof tiles from 125, three kinds as "often" (the 10 Oct decision: not a promise), builder's crates.
+ assert.match(text,/Village places upgrade with planks and stone; the places from level 125 on take roof tiles too\./);assert.match(text,/12 at level 6/);
+ assert.match(text,/From level 120 they often ask for three kinds of goods\./);assert.doesNotMatch(text,/from level 120 three/i);
+ assert.match(village,/<th scope="col">Kinds of goods<\/th>/);assert.match(text,/They never ask for master tools, heirloom flour or builder’s crates\./);
+ assert.match(text,/Each builder’s crate takes 8,000 coins off a farm building upgrade, up to half the price\./);assert.match(text,/An upgrade to level 10 costs 461,538 coins: 28 crates take 224,000 off it\./);
+ // Phase 3: the Pier's row, its boat and its table (boatValue).
+ assert.match(text,/Diamonds come with the first 14 trips each week: 3 a boat\. It is back 12 hours later \(6 with the Stone quay\)\./);
+ for(const n of ['50,000','106,000','169,600'])assert.ok(village.includes(n),n);assert.match(village,/A cargo is worth about/);
+ // Phase 5: the landmarks, the Hall's 1.6 times and the Lookout tower's fourth villager; the requests table never says 4.
+ for(const l of Object.values(R.VILLAGE_LANDMARKS)){assert.ok(text.includes(l.name)&&text.includes(l.effect),l.name);assert.ok(village.includes(l.coins.toLocaleString('en-US')),l.name);}
+ assert.match(text,/Each landmark gives 5,000 XP; the Great Hall also gives 200 diamonds once/);assert.match(text,/\(1\.6 times once the Great Hall is built\)/);assert.match(text,/three villagers at a time, and a fourth with the Lookout tower\./);
+ assert.match(text,/After the last place, the golden brief builds the landmarks\./);assert.doesNotMatch(text,/builders draw/);
+ const cells=[...village.matchAll(/<tr[^>]*><td>(\d+\+?)<\/td><td>(\d)<\/td><td>([^<]+)<\/td>/g)].map(m=>[m[1],m[2],m[3]]);
+ assert.deepEqual(cells.slice(0,4),[['100','2','2'],['104','3','2'],['110','3','2'],['120','3','2 or 3']]);assert.ok(cells.every(c=>c[1]!=='4'));
+ // FIX 8: the facts that became untrue.
+ assert.match(text,/the farm's quests and leaderboards stay the farm's\. From level 100 one daily challenge asks you to help villagers at the market square\./);
+ assert.match(text,/On top, a golden brief builds the next village place, and after the last place a landmark;/);
+ for(const q of R.VILLAGE_QUESTS)assert.ok(text.includes(q.title),q.title);
+ // Search: from 100 only.
+ for(const name of ['Pier','town boat','Wind pump','Great Hall','Market week','Potatoes','Builder’s crate']){assert.deepEqual(wikiSearch(name,{level:99}),[],name);assert.ok(wikiSearch(name,{level:100}).length>0,name);}
+ assert.ok(wikiSearch('town boat',{level:150}).some(hit=>hit.anchor==='building-pier'));
+});
+
+// Review fix (10 Oct 2026): the page translates the text between two pictures on its own, so a sentence cut by goods' pictures stayed
+// English ("make 4.", ". A fourth villager comes to the market square."). Every such text of the Village topic is a whole translation.
+test('every text of the Village topic, between the goods\' pictures too, has its translation in every language',async()=>{
+ const {LANGUAGES}=await import('../public/languages.js'),{createTranslator,normalize}=await import('../public/i18n.js');
+ const decode=t=>t.replace(/&(amp|lt|gt|quot|nbsp|rsquo);/g,(all,e)=>({amp:'&',lt:'<',gt:'>',quot:'"',nbsp:' ',rsquo:'’'})[e]);
+ // The text nodes the page shows, without players' own words (translate="no"); a time in hours ("2 h") is the same in every language.
+ const nodes=html=>{const out=[],kept=[];for(const part of html.split(/(<[^>]+>)/)){if(!part)continue;
+  if(part[0]==='<'){if(part[1]==='/')kept.pop();else if(!/^<(img|br|wbr|input)\b|\/>$/.test(part))kept.push(/translate="no"/.test(part));continue;}
+  const key=normalize(decode(part));if(key&&/\p{L}/u.test(key)&&!kept.includes(true)&&!/^\d+ h( \d+ min)?$/.test(key))out.push(key);}return out;};
+ const texts=[...new Set([100,165,200].flatMap(level=>nodes(wikiArticle('village',{level}).html)))];
+ for(const want of ['Village Fields batches take 25% less time.','Make the fertilizer at the farm’s Windmill. Village crops sell only at the Village market, and like the farm’s crops their price changes only a little from day to day.'])assert.ok(texts.includes(want),want);
+ assert.ok(!texts.some(t=>/^[.,]/.test(t)),'no text starts with the end of a sentence');
+ for(const {code} of LANGUAGES.filter(l=>l.code!=='en')){
+  const t=createTranslator(JSON.parse(read(`public/i18n/${code}.json`)),code);
+  assert.deepEqual(texts.filter(key=>t.translate(key)==null),[],code);
+ }
+});
+
+test('below level 100 the wiki is as it was: the Glasshouse keeps its rows, and the crates only show from level 100',async()=>{
+ const {RECIPES:recipes}=await import('../public/farm-state.js');
+ for(const level of [99,null]){
+  const glass=wikiArticle('buildings',{level,href:id=>`#${id}`}).html.match(/<details class="wiki-section wiki-building" id="building-glasshouse">[^]*?<\/details>/)[0];
+  for(const r of Object.values(recipes).filter(r=>r.building==='glasshouse'&&r.coins))assert.ok(!glass.includes(`${r.coins.toLocaleString('en-US')} coins</span>`),`${level}: ${r.name}`);
+ }
+ assert.doesNotMatch(wikiArticle('buildings',{level:99,href:id=>`#${id}`}).html,/builder’s crate/i);assert.match(wikiArticle('buildings',{level:100,href:id=>`#${id}`}).html,/From level 128, builder’s crates from/);
+ assert.equal(wikiArticle('village',{level:99}),null);
+});
+
 // 30 Sep 2026: an Install the app button under the steps, only where one tap installs it (in the game and on the website).
 test('Play it as an app has an install button that shows only where the browser can install in one tap',async()=>{
  const content=read('public/wiki-content.js'),ui=read('public/wiki-ui.js'),build=read('scripts/build-wiki.mjs');

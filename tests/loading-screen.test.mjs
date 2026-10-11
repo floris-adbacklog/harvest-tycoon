@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createLoadingScreen,startLoadingTips,LOADING_TIPS,FARM_START,ACCOUNT_STEPS,farmHandOver} from '../public/loading-screen.js';
+import {createLoadingScreen,startLoadingTips,LOADING_TIPS,VILLAGE_LOADING_TIPS,PASS_LOADING_TIP,FARM_START,ACCOUNT_STEPS,farmHandOver} from '../public/loading-screen.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 function fixture(){const nodes=new Map();const doc={getElementById(id){if(!nodes.has(id))nodes.set(id,{value:0,textContent:'',src:'',parentElement:{classList:{add(){},remove(){}}}});return nodes.get(id);}};return{doc,nodes};}
 
@@ -30,6 +30,8 @@ test('a tip with a painted picture changes every few seconds and stops when aske
  timers.intervals[0]();assert.equal(nodes.get('loading-tip-text').textContent,LOADING_TIPS[1][1]);
  stop();assert.equal(timers.stopped,true);
  for(const [picture] of LOADING_TIPS)assert.ok(readFileSync(new URL(`../public/assets/icons/${picture}.webp`,import.meta.url)).length>1000,picture);
+ // The village's and the Pass's tips too (10 Oct 2026: the market crate's tip asked for a diamonds.webp that is only a sprite).
+ for(const [picture] of [...VILLAGE_LOADING_TIPS,PASS_LOADING_TIP])assert.ok(readFileSync(new URL(`../public/assets/icons/${picture}.webp`,import.meta.url)).length>1000,picture);
 });
 
 test('the sign-in check and the farm show the same calm screen, and it fades into the farm',()=>{

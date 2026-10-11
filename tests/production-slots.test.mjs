@@ -5,7 +5,7 @@ import {xpForLevel,normalizeFarm,applyFarmAction,productionSlots,productionJobs,
 import {createProductionCueTracker} from '../public/farm-audio.js';
 import {createBeginnerUI} from '../public/beginner-ui.js';
 const now=1789690000000;
-function farm(){const s=createFarm(now);s.xp=xpForLevel(115);   // World II's places open at 100-112
+function farm(){const s=createFarm(now);s.xp=xpForLevel(150);   // World II's places open at 100-150, each with its first recipe (Oct 2026)
  for(const b of Object.values(s.buildings))b.built=true;s.coins=1000000;s.diamonds=500;for(const k of Object.keys(s.inventory))s.inventory[k]=1000;return s;}
 const act=(s,a,t=now)=>applyFarmAction(s,a,t);
 test('every production building permits exactly one simultaneous batch per level',()=>{
