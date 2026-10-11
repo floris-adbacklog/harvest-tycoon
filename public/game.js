@@ -36,7 +36,7 @@ import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
 import { createScenePolish } from './scene-polish.js';
-import { shareAtlas,sharePalette } from './model-atlas.js';
+import { shareAtlas,sharePalette,download } from './model-atlas.js';
 import { createAtmosphere } from './farm-atmosphere.js';
 import { buildRows, createCropMotion, isRowCrop } from './crop-rows.js';
 import { flyHarvest, bump } from './harvest-fly.js';
@@ -223,10 +223,14 @@ let gltfLoader=null;
 // A model that cannot be fetched (a deploy still going live, or a "not found" the browser remembers: vercel.json caches /assets/ for
 // a day, 404s included) is asked for once more past that cache. If it still fails, an invisible stand-in of 1x1x1 takes its place,
 // so the farm opens without that one model instead of not at all (27 Sep 2026).
+// 11 Oct 2026: the file comes through model-atlas.js download, which asks again beside a request that sends nothing (it used to hold the
+// bar for good), and is then read as GLTFLoader.loadAsync read it. missingModels counts the stand-ins for init below.
+let missingModels=0;
+const openModel=url=>download(url).then(data=>gltfLoader.parseAsync(data,'/assets/models/'));
 async function fetchModel(name){
- try{return await gltfLoader.loadAsync(`/assets/models/${name}.glb`);}
+ try{return await openModel(`/assets/models/${name}.glb`);}
  catch{
-  try{return await gltfLoader.loadAsync(`/assets/models/${name}.glb?fresh=${Date.now()}`);}
+  try{return await openModel(`/assets/models/${name}.glb?fresh=${Date.now()}`);}
   catch(error){console.warn(`The model ${name} could not load; the farm opens without it.`,error);return null;}
  }
 }
@@ -234,7 +238,7 @@ async function loadModel(name){
  // Every model's palette comes from one palette.png, fetched once for all of them (model-atlas.js sharePalette, 6 Oct 2026).
  gltfLoader??=sharePalette(new GLTFLoader());
  const gltf=await fetchModel(name);
- if(!gltf){const group=new THREE.Group(),stand=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({visible:false}));stand.position.y=.5;group.add(stand);models.set(name,{object:group,size:new THREE.Vector3(1,1,1)});return;}
+ if(!gltf){missingModels++;const group=new THREE.Group(),stand=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({visible:false}));stand.position.y=.5;group.add(stand);models.set(name,{object:group,size:new THREE.Vector3(1,1,1)});return;}
  const object=gltf.scene;
  const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
  object.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));const group=new THREE.Group();group.add(object);
@@ -1481,7 +1485,7 @@ function bindContextRestore(canvas){
  });
 }
 async function init(){
- const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,villageWorld?{loading:'Travelling to the village'}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?VILLAGE_LOADING_TIPS:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)]});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open
+ const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,villageWorld?{loading:'Travelling to the village',village:true}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?VILLAGE_LOADING_TIPS:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)]});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open
  try{
   bindUI();updateUI();
   renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
@@ -1521,6 +1525,10 @@ async function init(){
    atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches,cloudHeight:VILLAGE_CLOUD_HEIGHT});measureFarm();resize();icons();
   }else{
   await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);},8).then(()=>markChain('models'))]);
+  // A farm without its models (11 Oct 2026): a palette that was refused, or a moment offline just as they started, made every model an
+  // invisible stand-in and the farm opened as an empty valley that nothing opened again (harness, 11 Oct). More than half of them missing
+  // now fails the start (src/game-cloud.js): the page opens once more by itself, a second time it shows Try again.
+  if(missingModels*2>modelNames.length)throw Object.assign(new Error('missing-models'),{reopen:true});
   decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
   }
   // Every press starts its own way (Oct 2026): a finger that holds a field after the mouse was used gets no sickle at the old mouse
@@ -1572,7 +1580,9 @@ async function init(){
   // The loading screen fades into the farm instead of disappearing at once.
   $('loading').classList.add('fade');
   if(!villageWorld&&!adminView&&!(state.stats.harvested>0))noteFirstLook();
-  await new Promise(resolve=>setTimeout(()=>{$('loading').hidden=true;stopTips();progression.refresh();resolve();},450));
+  // The farm is on screen whatever the refresh does (11 Oct 2026): one that threw left farmReady waiting for good, and the page was opened
+  // again 30 seconds later over a farm that could be played.
+  await new Promise(resolve=>setTimeout(()=>{try{$('loading').hidden=true;stopTips();progression.refresh();}finally{resolve();}},450));
   // A brand-new farm (6 Oct 2026): the sickle shows by itself where to sweep, as Show me does, until the first harvest. 11% of new farmers
   // tapped growing wheat or an empty field instead, got no harvest and left.
   if(!villageWorld&&!adminView&&!(state.stats.harvested>0)&&beginnerProgress(state).find(q=>q.current)?.id==='harvest')firstBasketGhost();
@@ -1580,7 +1590,7 @@ async function init(){
  // for other dialogs), so one collected in Today meanwhile is not offered twice.
  if(!villageWorld)showWelcomeBack(initialWelcome,{gift:{offer:retention.giftOffer(),chips:retention.giftChips,collect:retention.collectGift},chest:{offer:retention.chestOffer(),chips:retention.chestChips,collect:retention.collectChest},current:()=>({gift:retention.giftOffer(),chest:retention.chestOffer()}),fields:focusFields,production:()=>economy.openBuilding(Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??'coop'),stall:()=>growth.open('stall'),today:()=>retention.openToday()});
   return ready;
- }catch(error){console.error('Farm initialization failed',error);if(renderer)$('error-message').textContent=error.message||'Your saved farm could not load. Please try again.';$('loading').hidden=true;$('error').hidden=false;if(!renderer)$('error-message').textContent='This game needs WebGL 2. Try a current browser with hardware acceleration enabled.';return false;}
+ }catch(error){if(error?.reopen)throw error;console.error('Farm initialization failed',error);if(renderer)$('error-message').textContent=error.message||'Your saved farm could not load. Please try again.';$('loading').hidden=true;$('error').hidden=false;if(!renderer)$('error-message').textContent='This game needs WebGL 2. Try a current browser with hardware acceleration enabled.';return false;}
 }
 // A new farm's first look (7 Oct 2026, farm-state.js recordFirstLook): when it could be played and how long that took from the start of
 // the page around it, with what src/game-cloud.js noted: that start, the frame's size and, once the page was drawn, shownAt and loadMs

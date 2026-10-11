@@ -80,7 +80,7 @@ let farms=0;
 async function loadFarm(rule){
  const THREE=await import('three'),{GLTFLoader}=await import('three/addons/loaders/GLTFLoader.js'),{loadInBatches}=await import('../public/render-resources.js');
  // A fresh model-atlas.js each time: one page, with its own palettes.
- const {sharePalette,shareAtlas}=await import(`../public/model-atlas.js?farm=${++farms}`);
+ const {sharePalette,shareAtlas,download}=await import(`../public/model-atlas.js?farm=${++farms}`);
  const net={asked:[],aborted:[],decodes:0,closed:0,warned:[]};
  globalThis.self??=globalThis;   // GLTFLoader reads self.URL, as in a browser
  globalThis.Request=class{constructor(url,init={}){this.url=url;this.signal=init.signal;}};
@@ -92,6 +92,9 @@ async function loadFarm(rule){
   // A number: the answer comes after that many milliseconds (a palette that is only slow).
   if(typeof how==='number')return new Promise((resolve,reject)=>{let came=false;const timer=setTimeout(()=>{came=true;resolve(new Response(readFileSync(new URL(file,dir))));},how);signal?.addEventListener('abort',()=>{if(came)return;clearTimeout(timer);net.aborted.push(url);reject(new DOMException('The operation was aborted.','AbortError'));});});
   if(how==='404')return new Response('Not found',{status:404});
+  // {trickle:ms} (11 Oct 2026): a file that is only slow, in eight pieces, one every ms, with no length (as the site sends it packed).
+  if(how?.trickle){const bytes=readFileSync(new URL(file,dir)),size=Math.ceil(bytes.length/8);let at=0;
+   return new Response(new ReadableStream({pull:controller=>new Promise(resolve=>setTimeout(()=>{if(at>=bytes.length)controller.close();else{controller.enqueue(new Uint8Array(bytes.subarray(at,at+size)));at+=size;}resolve();},how.trickle))}));}
   return new Response(readFileSync(new URL(file,dir)));
  };
  globalThis.createImageBitmap=async blob=>{
@@ -102,11 +105,11 @@ async function loadFarm(rule){
  const models=new Map(),game=read('public/game.js'),from=game.indexOf('let gltfLoader=null;'),to=game.indexOf(' models.set(name,{object:group,size});\n}',from);
  const quiet={warn:(...a)=>net.warned.push(a.map(String).join(' ')),error:(...a)=>net.warned.push(a.map(String).join(' '))},{warn,error}=console;
  Object.assign(console,quiet);
- const {loadModel}=new Function('THREE','GLTFLoader','sharePalette','shareAtlas','models','console',`${game.slice(from,to)} models.set(name,{object:group,size});\n}\nreturn {loadModel};`)(THREE,GLTFLoader,sharePalette,shareAtlas,models,quiet);
- const farm={net,models,loaded:0,done:false,restore:()=>Object.assign(console,{warn,error}),
+ const {loadModel,missing}=new Function('THREE','GLTFLoader','sharePalette','shareAtlas','download','models','console',`${game.slice(from,to)} models.set(name,{object:group,size});\n}\nreturn {loadModel,missing:()=>missingModels};`)(THREE,GLTFLoader,sharePalette,shareAtlas,download,models,quiet);
+ const farm={net,models,missing,loaded:0,done:false,restore:()=>Object.assign(console,{warn,error}),
   standIns:()=>[...models.values()].filter(m=>m.object.children[0]?.material?.visible===false).length,
   painted:()=>[...models.values()].filter(m=>{let map=null;m.object.traverse(n=>{if(n.isMesh)map??=n.material.map;});return map?.image?.width===1024;}).length,
-  palette:()=>net.asked.filter(u=>/\/palette\.png/.test(u))};
+  palette:()=>net.asked.filter(u=>/\/palette\.png/.test(u)),file:name=>net.asked.filter(u=>u.split('?')[0].endsWith(`/${name}.glb`))};
  loadInBatches([...FARM,...VILLAGE],async name=>{await loadModel(name);farm.loaded++;},8).then(()=>{farm.done=true;});
  return farm;
 }
@@ -158,4 +161,46 @@ test('an error inside onLoad reaches onError: the model fails (and gets its stan
  let plugin=null;sharePalette({register:make=>{plugin=make(parser);}});
  const result=await Promise.race([plugin.loadTexture(0).then(()=>'loaded',error=>error.message),flush().then(()=>'still waiting')]);
  assert.equal(result,'onLoad broke');
+});
+
+// 11 Oct 2026, the 12% report again: a model file that sent nothing held its place among the eight for good (fetchModel only asked
+// again after an error) and the bar stood still until watchLoading opened the page again. Now a file that sends nothing for 8 seconds
+// gets a fresh request beside it (model-atlas.js download); one that is only slow is never asked for twice.
+test('a model request that never answers: after 8 seconds a fresh one beside it, the stuck one is stopped, and the farm loads',{skip},async t=>{
+ mock.timers.enable({apis:['setTimeout']});t.after(()=>mock.timers.reset());
+ const farm=await loadFarm((url,nth)=>/\/house_005\.glb/.test(url)&&nth===1?'hang':'ok');t.after(farm.restore);
+ await later(7900);
+ assert.equal(farm.done,false);assert.equal(farm.loaded,FARM.length+VILLAGE.length-1,'only that one waits');assert.equal(farm.file('house_005').length,1,'no second request before 8 seconds');
+ await later(400);
+ assert.equal(farm.done,true,'loaded without a refresh');assert.equal(farm.standIns(),0);assert.equal(farm.painted(),FARM.length+VILLAGE.length);
+ assert.match(farm.file('house_005')[1],/house_005\.glb\?fresh=\d+$/,'an address of its own, past the stuck one');
+ assert.deepEqual(farm.net.aborted,[farm.file('house_005')[0]],'the stuck request is stopped');
+ assert.ok(farm.net.warned.some(line=>/house_005\.glb sent nothing for 8 s/.test(line)),'and it says so in the console');
+});
+test('a model that is only slow (a piece every 3 seconds, 24 seconds in all, no length) is never asked for twice',{skip},async t=>{
+ mock.timers.enable({apis:['setTimeout']});t.after(()=>mock.timers.reset());
+ const farm=await loadFarm(url=>/\/house_005\.glb/.test(url)?{trickle:3000}:'ok');t.after(farm.restore);
+ await later(20000);assert.equal(farm.done,false,'still coming in');
+ await later(8000);
+ assert.equal(farm.done,true);assert.equal(farm.standIns(),0);assert.equal(farm.file('house_005').length,1,'every piece starts the wait again');
+ assert.deepEqual(farm.net.aborted,[]);assert.deepEqual(farm.net.warned,[]);
+});
+test('a model that never answers at all: three requests (at 0, 8 and 20 seconds), then it keeps waiting, the rest of the farm loaded',{skip},async t=>{
+ mock.timers.enable({apis:['setTimeout']});t.after(()=>mock.timers.reset());
+ const farm=await loadFarm(url=>/\/house_005\.glb/.test(url)?'hang':'ok');t.after(farm.restore);
+ await later(19900);assert.equal(farm.file('house_005').length,2);
+ await later(100000);
+ assert.equal(farm.done,false);assert.equal(farm.file('house_005').length,3,'none after the third: a page that stays stuck is opened again by watchLoading');
+ assert.equal(farm.loaded,FARM.length+VILLAGE.length-1);assert.equal(farm.standIns(),0,'no stand-in for a file that may still come');assert.deepEqual(farm.net.aborted,[]);
+});
+// A palette that is refused every time made every model a stand-in, and the farm opened as an empty valley (harness, 11 Oct). game.js
+// counts them: more than half missing fails the start (src/game-cloud.js opens the page again, then Try again).
+test('every model a stand-in (the palette refused) is counted, and more than half of them missing fails the farm\'s start',{skip},async t=>{
+ mock.timers.enable({apis:['setTimeout']});t.after(()=>mock.timers.reset());
+ const farm=await loadFarm(url=>/\/palette\.png/.test(url)?'404':'ok');t.after(farm.restore);
+ for(let i=0;i<80&&!farm.done;i++)await later(250);   // four palette requests a model: many more steps than one
+ assert.equal(farm.done,true);assert.equal(farm.standIns(),FARM.length);assert.equal(farm.missing(),FARM.length,'each farm model that fell back to its stand-in');
+ const game=read('public/game.js');
+ assert.match(game,/loadInBatches\(modelNames,[^\n]*\n(?:  \/\/[^\n]*\n)+  if\(missingModels\*2>modelNames\.length\)throw Object\.assign\(new Error\('missing-models'\),\{reopen:true\}\);/,'right after the farm\'s models');
+ assert.match(game,/\}catch\(error\)\{if\(error\?\.reopen\)throw error;console\.error\('Farm initialization failed',error\);/,'not the game\'s own error card: farmReady fails, and the load is opened again');
 });

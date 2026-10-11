@@ -61,11 +61,42 @@ export const ACCOUNT_STEPS=Object.freeze({'Checking your account…':4,'Signing 
 // farm frame until the farm page shows its own (src/game-cloud.js calls harvestFarmShown once it has drawn it). Before, the frame showed
 // empty while the farm page's script was still on its way, and the farm's screen then came as a second one; on CrazyGames two thirds
 // of the farmers who opened the game never started playing. If the farm page never says so, the frame shows after `wait` anyway.
-export function farmHandOver(win,screen,{wait=20000}={}){
- let timer=0;const shown=()=>{clearTimeout(timer);timer=0;screen.hidden=true;};
+// 11 Oct 2026 (the 12% report again): this page now watches the farm page until it shows itself. watchLoading below only starts once the
+// farm page's own code runs (src/game-cloud.js), and before that nothing watched: a farm page whose files did not come (a stylesheet or a
+// script caught in a stalled transfer, or right after a deploy a part of src/game-cloud.js under its old name, gone from the site) stayed
+// hidden, this screen went after 20 seconds and left an empty frame for good; after a trip to the village (no screen here then) at once.
+// Now this screen stays until the farm page shows (its word, or its page seen shown), and one that does not get there is opened again by
+// watchLoading's own rule and count: 30 seconds in view without a file of it arriving (a slow line keeps them coming, so it is never
+// taken for stuck), or 3 seconds once all its files are there and it still has not shown (its code did not run); once, then a second time
+// within ten minutes the page's own pause card with Try again (fail). A trip's new farm page is watched the same way, without this
+// screen over it. Where no farm frame can be seen, the screen goes after `wait`, as before.
+export const FRAME_FAILED_MS=3000;
+export const LOAD_FAILED_TEXT='Check your connection and try again.';
+export function farmHandOver(win,screen,{wait=20000,frame=()=>win.document?.querySelector?.('#farm-host iframe'),reload=()=>win.location?.reload(),fail=()=>{screen.hidden=true;},track=()=>{},storage=pageStorage(win),now=()=>Date.now(),hidden=()=>Boolean(win.document?.hidden),timers=globalThis}={}){
+ let timer=0,tick=0,shownDoc=null,seen=null,files=-1,still=0;
+ const view=()=>{try{const el=frame(),doc=el?.contentDocument;return doc?{doc,win:el.contentWindow}:null;}catch{return null;}};
+ const shown=()=>{timers.clearTimeout(timer);timer=0;screen.hidden=true;shownDoc=view()?.doc??shownDoc;};
  win.harvestFarmShown=shown;
- return {wait(){clearTimeout(timer);screen.hidden=false;timer=setTimeout(shown,wait);},stop(){clearTimeout(timer);timer=0;}};
+ const stop=()=>{timers.clearTimeout(timer);timers.clearInterval(tick);timer=tick=0;};
+ function check(){
+  const at=view();if(!at||at.doc===shownDoc)return;
+  // The farm page (its bar is there: not the frame's first empty page) shows itself in src/game-cloud.js, also when its word never came.
+  const {doc}=at,farm=Boolean(doc.getElementById?.('load-progress'));
+  if(farm&&doc.body&&!doc.body.hidden){shown();return;}
+  const count=filesIn(at.win);
+  if(doc!==seen||count!==files){seen=doc;files=count;still=0;return;}
+  if(hidden())return;
+  const failed=farm&&doc.readyState==='complete';
+  if((still+=1000)<(failed?FRAME_FAILED_MS:LOAD_STALL_MS))return;
+  stop();const again=retriedLately(storage,now);
+  try{track('farm_load_retry',{reason:failed?'failed':'stalled',again,step:'frame',models:0});}catch{}
+  if(again)fail();else timers.setTimeout(reload,400);
+ }
+ return {wait(){stop();screen.hidden=false;shownDoc=seen=null;files=-1;still=0;if(view())tick=timers.setInterval(check,1000);else timer=timers.setTimeout(shown,wait);},stop};
 }
+const pageStorage=win=>{try{return win.sessionStorage;}catch{return null;}};
+// How many files a page has had so far (its resource timing): a load that is slow, not stuck, keeps adding to it.
+const filesIn=win=>{try{return win.performance.getEntriesByType('resource').length;}catch{return 0;}};
 
 // On CrazyGames (Oct 2026: the page is marked html[data-portal], public/portal.js) the tips about inviting, sharing and the app are
 // left out: none of those are there.
@@ -88,12 +119,13 @@ export function startLoadingTips(doc,{tips:all=LOADING_TIPS,text='loading-tip-te
 
 // Progress reflects completed work: model files, account data and the first frame. On the way to the village (World II) the first
 // step reads 'Travelling to the village'.
-export function createLoadingScreen(doc,modelCount,{loading='Loading your farm'}={}){
+export function createLoadingScreen(doc,modelCount,{loading='Loading your farm',village=false}={}){
  const get=id=>doc.getElementById(id),view=doc.defaultView;
  let models=0,account=false,finished=false;
  function render(){
   // Where the load is (8 Oct 2026), for watchLoading below when the bar stands still; none at all means public/game.js never ran.
-  if(view)view.harvestLoading={models,of:modelCount,account,finished};
+  // 11 Oct 2026: and whether it is the village (its own step in farm_load_retry).
+  if(view)view.harvestLoading={models,of:modelCount,account,finished,...(village?{village}:{})};
   const done=(models+Number(account)+Number(finished))/(modelCount+2);
   const percent=finished?100:Math.min(99,FARM_START+Math.floor(done*(100-FARM_START)));
   get('load-progress').value=percent;
@@ -118,8 +150,17 @@ export function createLoadingScreen(doc,modelCount,{loading='Loading your farm'}
 // window fully covered by another (a Mac then counts the page as out of view) never got to 30 and stayed at 12%. The event also says
 // which step stood still: 'code' (public/game.js never ran), 'models' (with how many had arrived), 'account' or 'scene'.
 export const LOAD_STALL_MS=30000,LOAD_RETRY_KEY='harvest-tycoon:farm-retry',LOAD_RETRY_GAP_MS=600000;
-export const loadStep=at=>!at?'code':at.models<at.of?'models':!at.account?'account':'scene';
-export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=window,storage=(()=>{try{return win.sessionStorage;}catch{return null;}})(),now=()=>Date.now()}={}){
+// 11 Oct 2026: 'village' is the village's own models step, 'frame' a farm page that never showed (farmHandOver above).
+export const loadStep=at=>!at?'code':at.models<at.of?(at.village?'village':'models'):!at.account?'account':'scene';
+// The one count of a farm opened again by itself, for this page and the page around it (11 Oct 2026): true when it already was within
+// ten minutes, or there is no place to count it (then Try again, never a loop); otherwise the reload about to come is counted.
+function retriedLately(storage,now){
+ let before=null;try{before=Number(storage.getItem(LOAD_RETRY_KEY))||0;}catch{}
+ const again=before===null||now()-before<LOAD_RETRY_GAP_MS;
+ if(!again)try{storage.setItem(LOAD_RETRY_KEY,String(now()));}catch{}
+ return again;
+}
+export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=window,storage=pageStorage(win),now=()=>Date.now()}={}){
  const reload=()=>{if(portal)portal.reopen();else win.parent.location.reload();};
  // Try again's only handler: farm.html has no onclick of its own since Oct 2026 (Discord runs no handler written in the page).
  const retry=doc.querySelector('#error .primary-button');if(retry)retry.onclick=reload;
@@ -127,19 +168,21 @@ export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=wi
  const stop=()=>{over=true;win.clearInterval(timer);};
  function recover(reason){
   if(over)return;stop();
-  let before=null;try{before=Number(storage.getItem(LOAD_RETRY_KEY))||0;}catch{}
-  const again=before===null||now()-before<LOAD_RETRY_GAP_MS;
+  const again=retriedLately(storage,now);
   const at=win.harvestLoading;try{bridge.trackGame?.('farm_load_retry',{reason,again,step:loadStep(at),models:at?.models??0});}catch{}
-  if(!again){try{storage.setItem(LOAD_RETRY_KEY,String(now()));}catch{}win.setTimeout(reload,400);return;}
+  if(!again){win.setTimeout(reload,400);return;}
   // Over the loading screen, without its bar: the page under it only holds placeholders (level 1, 180 coins), not this farm. In the
   // player's language, which otherwise comes with the game's code.
   const bar=doc.querySelector('#loading .farm-loading-progress');if(bar)bar.style.visibility='hidden';
   const card=doc.getElementById('error');card.style.zIndex='101';card.hidden=false;try{translate();}catch{}
  }
  // Every second in view with the bar where it was counts; a second out of view counts for nothing, and does not start them again.
+ // 11 Oct 2026: until public/game.js runs, each file of its code that arrives counts as moving too (about 1 MB packed: on a slow line
+ // longer than 30 seconds at 12%, which was taken for a stuck page and opened again halfway), and a finished bar is never stuck (the
+ // farm is on screen: opening it again would only lose it).
  const timer=win.setInterval(()=>{
-  const value=Number(doc.getElementById('load-progress')?.value??0);
-  if(value!==last){last=value;still=0;}else if(!doc.hidden&&(still+=1000)>=LOAD_STALL_MS)recover('stalled');
+  const at=win.harvestLoading,value=`${Number(doc.getElementById('load-progress')?.value??0)} ${at?'':filesIn(win)}`;
+  if(value!==last){last=value;still=0;}else if(!doc.hidden&&!at?.finished&&(still+=1000)>=LOAD_STALL_MS)recover('stalled');
  },1000);
  return {failed:()=>recover('failed'),done(ready){if(over)return;stop();if(ready)try{storage.removeItem(LOAD_RETRY_KEY);}catch{}}};
 }

@@ -21,7 +21,21 @@ export function cloudError(error){
  if(error?.code==='email_not_confirmed')return 'Please confirm your email address using the link in your inbox.';
  return error?.message||'We could not connect. Please try again.';
 }
-export async function verifiedUser(){
+// A check that never ends (11 Oct 2026, the 12% report again): getSession may first renew the sign-in over the network and getUser asks
+// the server, both without a time limit of their own, and a farm request waits for that session before it goes out, a wait invoke's
+// 20-second limit cannot end. On a connection that stalls, the loading screen stood at 4% ("Checking your account…") or 10% ("Opening
+// your farm…") for good, and the pause screen's checks waited behind it. Each now ends after ACCOUNT_WAIT as a slow connection
+// (transient): the pause screen, which keeps trying by itself (src/connection.js). A farm request that is late changes nothing: invoke's
+// own limit has stopped it by then, so it never goes out after all.
+export const ACCOUNT_WAIT=20000;
+function inTime(work,ms){
+ return new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>reject(Object.assign(new Error(connectionMessage('timeout',globalThis.navigator?.onLine)),{kind:'timeout',transient:true})),ms);
+  work.then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});
+ });
+}
+export function verifiedUser(){return inTime(checkUser(),ACCOUNT_WAIT);}
+async function checkUser(){
  const {data:{session},error}=await supabase.auth.getSession();if(error)throw error;
  if(!session||session.user.is_anonymous)return null;
  const checked=await supabase.auth.getUser();
@@ -34,7 +48,7 @@ export async function verifiedUser(){
 // one per step. The query parameter (not the x-region header) keeps the request free of a CORS preflight change.
 export const FARM_API='farm-api?forceFunctionRegion=eu-central-1';
 async function farmRequestOnce(body){
- const {data,error}=await supabase.functions.invoke(FARM_API,{body,timeout:20000});
+ const {data,error}=await inTime(supabase.functions.invoke(FARM_API,{body,timeout:20000}),ACCOUNT_WAIT+1000);
  if(error){let detail;try{detail=await error.context?.json();}catch{}
   const {kind,transient,status,code}=describeFailure(error,detail);
   const failure=new Error(detail?.error||connectionMessage(kind,globalThis.navigator?.onLine));

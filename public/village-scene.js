@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {PALETTE_VERSION} from './model-atlas.js';
-import {sharePalette} from './model-atlas.js';
+import {sharePalette,paletteImage,download} from './model-atlas.js';
 import {wildflowerGeometry,wildflowerMaterial} from './scene-polish.js';
 
 // World II, The Village (30 Sep 2026): the village of the ITHappy Studios Village pack, as its own scene. One GLB holds every model
@@ -122,16 +121,33 @@ function freshGrass(g){
   uv.setXY(i,WHITE[0],WHITE[1]);colour.setXYZ(i,colour.getX(i)*tint.r,colour.getY(i)*tint.g,colour.getZ(i)*tint.b);
  }
 }
+// The trip to the village (11 Oct 2026, the 12% report again). The site sends village.glb packed (brotli) without its length, so three.js
+// could not say how far along it was: the bar stood at 12% "Travelling to the village" until all of it had come, on a slow line longer
+// than the 30 seconds after which watchLoading takes a page for stuck and opens it again (on the farm). The bar now follows the bytes
+// that arrived against the file's own size (VILLAGE_BYTES, unpacked as they arrive; tests/village-look.test.mjs keeps it the file's),
+// also where a length is sent: that is the packed size, and the bar would stand at its end for the rest of the download.
+// The village and its layout come through model-atlas.js download (a request that sends nothing gets a fresh one beside it) and are
+// asked once more past the browser's cache after an error, as the models are; the layout used to wait for good. The palette waits
+// as the farm's does, but at most VILLAGE_PALETTE_WAIT: the village then keeps its own copy, as it did when the palette failed.
+export const VILLAGE_BYTES=5269692,VILLAGE_PALETTE_WAIT=20000;
+const VILLAGE_FILE='/assets/village/village.glb',LAYOUT_FILE='/assets/village/village-layout.json';
+function twice(url,options){
+ return download(url,options).catch(()=>download(`${url}?fresh=${Date.now()}`,options)).catch(()=>{throw new Error('The village could not load.');});
+}
+function atMost(work,ms){
+ return new Promise(resolve=>{const timer=setTimeout(resolve,ms,null);work.then(value=>{clearTimeout(timer);resolve(value);},()=>{clearTimeout(timer);resolve(null);});});
+}
 export async function loadVillage({onProgress}={}){
  const loader=new GLTFLoader();loader.setMeshoptDecoder(MeshoptDecoder);
- const [gltf,layout,palette]=await Promise.all([
-  loader.loadAsync('/assets/village/village.glb',event=>{if(event.total)onProgress?.(event.loaded/event.total);}),
-  fetch('/assets/village/village-layout.json').then(r=>{if(!r.ok)throw new Error('The village could not load.');return r.json();}),
+ const [data,layout,palette]=await Promise.all([
+  twice(VILLAGE_FILE,{onProgress:event=>onProgress?.(Math.min(1,event.loaded/Math.max(event.total||0,VILLAGE_BYTES)))}),
+  twice(LAYOUT_FILE,{type:'json'}),
   // village.glb carries its own copy of the pack's palette; the village paints from village-palette.png instead (6 Oct 2026),
   // the one its props on the farm use, graded like the farm's palette (7 Oct 2026: livelier greens, a touch fuller colours) and
-  // versioned past a day-old cache. Without it the village keeps its own copy.
-  new THREE.ImageLoader().loadAsync(`/assets/models/village-palette.png?v=${PALETTE_VERSION}`).catch(()=>null)
+  // versioned past a day-old cache (paletteImage). Without it the village keeps its own copy.
+  atMost(paletteImage(new THREE.ImageLoader(),'/assets/models/village-palette.png'),VILLAGE_PALETTE_WAIT)
  ]);
+ const gltf=await loader.parseAsync(data,'/assets/village/');
  if(palette){const maps=new Set();gltf.scene.traverse(o=>{if(o.isMesh&&o.material.map)maps.add(o.material.map);});for(const map of maps){map.image?.close?.();map.image=palette;map.needsUpdate=true;}}
  const world=new THREE.Group();gltf.scene.updateMatrixWorld(true);
  // Finished like the farm's models (Oct 2026; game.js loadModel, scene-polish.js mountainRing): the baked shade (_SHADE, one byte a

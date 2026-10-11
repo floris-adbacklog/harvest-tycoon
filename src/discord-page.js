@@ -1,6 +1,6 @@
 import {portalLanguage} from './crazygames-link.js';
 import {validTicket} from './discord-link.js';
-import {ACCOUNT_STEPS} from '../public/loading-screen.js';
+import {ACCOUNT_STEPS,LOAD_FAILED_TEXT} from '../public/loading-screen.js';
 import {PORTAL_FEATURES,PRIVACY_CONTACT,privacyContact} from '../public/portal.js';
 // Harvest Tycoon on Discord (Oct 2026): what public/discord.html does, from the moment Discord's SDK is there (src/discord.js hands it
 // everything it talks to, so tests run all of it). As on Kongregate there is only the portal's own log-in: no sign-in card of ours, no
@@ -85,7 +85,8 @@ export async function runDiscordPage({
  win.harvestPortal=portal;
 
  // ---- The screens of this page: loading, the Authorize card, the choice of a farm and its waiting card, the farm, a pause ----
- let stopTips=null;const handOver=farmHandOver(win,$('loading-screen'));
+ // A farm page that never shows (11 Oct 2026, public/loading-screen.js farmHandOver): the farm again, a second time the pause card.
+ let stopTips=null;const handOver=farmHandOver(win,$('loading-screen'),{frame:()=>$('farm-host')?.querySelector?.('iframe'),reload:()=>portal.reopen(),fail:()=>pause(LOAD_FAILED_TEXT)});
  function phase(value,message){
   doc.body.dataset.phase=value;
   // The loading screen stays over the farm until the farm page shows its own (public/loading-screen.js farmHandOver).
@@ -116,7 +117,8 @@ export async function runDiscordPage({
  async function askServer(body,bearer){
   let response;
   // In Frankfurt next to the database, as farm-api (src/supabase.js FARM_API): one long hop instead of one per database step.
-  try{response=await fetchImpl(`${functionsUrl}/discord-auth?forceFunctionRegion=eu-central-1`,{method:'POST',headers:{'content-type':'application/json',apikey:supabaseKey,...(bearer?{authorization:`Bearer ${bearer}`}:{})},body:JSON.stringify(body)});}
+  // At most 20 seconds (11 Oct 2026, as src/supabase.js ACCOUNT_WAIT): one that never answered held this page at 4% for good.
+  try{response=await fetchImpl(`${functionsUrl}/discord-auth?forceFunctionRegion=eu-central-1`,{method:'POST',headers:{'content-type':'application/json',apikey:supabaseKey,...(bearer?{authorization:`Bearer ${bearer}`}:{})},body:JSON.stringify(body),signal:globalThis.AbortSignal?.timeout?.(20000)});}
   catch{throw Object.assign(new Error(TEXT.away),{transient:true});}
   let data=null;try{data=await response.json();}catch{}
   if(!response.ok){

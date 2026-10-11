@@ -65,9 +65,11 @@ test('Village stalls at the Farm stall, the Valley Market and in front of the Gr
 // and if it still fails the farm opens without it.
 test('one model that will not load never keeps the farm shut',()=>{
  const game=read('public/game.js');
- assert.match(game,/try\{return await gltfLoader\.loadAsync\(`\/assets\/models\/\$\{name\}\.glb`\);\}/);
- assert.match(game,/try\{return await gltfLoader\.loadAsync\(`\/assets\/models\/\$\{name\}\.glb\?fresh=\$\{Date\.now\(\)\}`\);\}/,'the second try goes past the browser cache');
- assert.match(game,/if\(!gltf\)\{const group=new THREE\.Group\(\),stand=new THREE\.Mesh\(new THREE\.BoxGeometry\(1,1,1\),new THREE\.MeshBasicMaterial\(\{visible:false\}\)\);/,'an invisible stand-in keeps every size and tap area working');
+ // 11 Oct 2026: each try through model-atlas.js download (a request that sends nothing gets a fresh one beside it), read by GLTFLoader.
+ assert.match(game,/const openModel=url=>download\(url\)\.then\(data=>gltfLoader\.parseAsync\(data,'\/assets\/models\/'\)\);/);
+ assert.match(game,/try\{return await openModel\(`\/assets\/models\/\$\{name\}\.glb`\);\}/);
+ assert.match(game,/try\{return await openModel\(`\/assets\/models\/\$\{name\}\.glb\?fresh=\$\{Date\.now\(\)\}`\);\}/,'the second try goes past the browser cache');
+ assert.match(game,/if\(!gltf\)\{missingModels\+\+;const group=new THREE\.Group\(\),stand=new THREE\.Mesh\(new THREE\.BoxGeometry\(1,1,1\),new THREE\.MeshBasicMaterial\(\{visible:false\}\)\);/,'an invisible stand-in keeps every size and tap area working');
  assert.match(read('vercel.json'),/"source": "\/assets\/\(\.\*\)"/,'this is why: /assets/ is cached for a day');
 });
 

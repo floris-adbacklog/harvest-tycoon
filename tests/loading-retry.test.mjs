@@ -74,7 +74,7 @@ test('the measurement: one fixed event with a fixed reason, after consent like e
  assert.equal(events.length,2);assert.equal(events[0].reason,'stalled');assert.equal(events[0].again,true);assert.equal(events[0].extra,undefined);assert.equal(events[1].reason,undefined,'never an error text');
  assert.equal(events[0].step,'models');assert.equal(events[0].models,0);assert.equal(events[1].step,undefined,'only the fixed step words');assert.equal(events[1].models,undefined);
  const analytics=readFileSync(new URL('../src/analytics.js',import.meta.url),'utf8');
- assert.match(analytics,/'connection_recovered','farm_load_retry'\]\);/);assert.match(analytics,/const LOAD_REASONS=new Set\(\['failed','stalled'\]\);/);assert.match(analytics,/const LOAD_STEPS=new Set\(\['code','models','account','scene'\]\);/);
+ assert.match(analytics,/'connection_recovered','farm_load_retry'\]\);/);assert.match(analytics,/const LOAD_REASONS=new Set\(\['failed','stalled'\]\);/);assert.match(analytics,/const LOAD_STEPS=new Set\(\['code','models','account','scene','village','frame'\]\);/);
  const cloud=readFileSync(new URL('../src/game-cloud.js',import.meta.url),'utf8');
  assert.ok(cloud.indexOf('document.body.hidden=false;\n  const watch=watchLoading(bridge,portal,')>0,'watched from the moment the page shows');
  assert.match(cloud,/const watch=watchLoading\(bridge,portal,\{translate:\(\)=>void startTranslation\(document\)\}\);/);

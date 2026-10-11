@@ -113,8 +113,11 @@ test('the meadows are the farm\'s green, the lake blue like the farm\'s pond, th
  assert.ok(near(hex('VILLAGE_LAKE'),half(0x80deea,0x2898f2)),'the lake halfway');assert.ok(near(0x4eb1d2,half(0x62bfc0,0x3aa3e3)),'the pond halfway');
  assert.match(read('public/farm-life.js'),/color:0x4eb1d2,roughness:\.35/,'the farm\'s pond');
  assert.equal(hex('VILLAGE_HAZE'),Number(/n\.material\.emissive=new THREE\.Color\((0x[0-9a-f]{6})\);n\.material\.emissiveIntensity=\.24;/.exec(read('public/scene-polish.js'))?.[1]),'the farm\'s mountain haze: one valley');
- assert.match(scene,/import \{PALETTE_VERSION\} from '\.\/model-atlas\.js';/);
- assert.match(scene,/new THREE\.ImageLoader\(\)\.loadAsync\(`\/assets\/models\/village-palette\.png\?v=\$\{PALETTE_VERSION\}`\)\.catch\(\(\)=>null\)/,'versioned past a day-old cache; without it the village keeps its own copy');
+ // 11 Oct 2026: through model-atlas.js paletteImage (its version past a day-old cache, a fresh request beside one that does not answer),
+ // and at most VILLAGE_PALETTE_WAIT: without it the village keeps its own copy.
+ assert.match(scene,/import \{sharePalette,paletteImage,download\} from '\.\/model-atlas\.js';/);
+ assert.match(scene,/atMost\(paletteImage\(new THREE\.ImageLoader\(\),'\/assets\/models\/village-palette\.png'\),VILLAGE_PALETTE_WAIT\)/,'versioned past a day-old cache; without it the village keeps its own copy');
+ assert.match(read('public/model-atlas.js'),/const current=`\$\{url\}\?v=\$\{PALETTE_VERSION\}`;/);
  assert.match(scene,/for\(const map of maps\)\{map\.image\?\.close\?\.\(\);map\.image=palette;map\.needsUpdate=true;\}/,'the copy inside village.glb is freed');
  assert.match(scene,/g\.setAttribute\('color',new THREE\.BufferAttribute\(c,4,true\)\);g\.deleteAttribute\('_shade'\);freshGrass\(g\);\}/,'once a part, right after its shade');
  assert.match(scene,/if\(!own\)\{uv=uv\.clone\(\);own=true;g\.setAttribute\('uv',uv\);\}/,'parts sharing texture coordinates each get their own copy, or the next one stays white');
@@ -144,6 +147,8 @@ const sceneFile=()=>read('public/village-scene.js');
 const extrasTable=()=>new Function(`return ${/export const VILLAGE_EXTRAS=Object\.freeze\((\{[\s\S]*?\})\);/.exec(sceneFile())[1]}`)();
 test('village.glb stays as it is: the later places are names on its houses',()=>{
  assert.equal(statSync(file).size,5269692,'village.glb');
+ // The trip's bar measures the village against its size (11 Oct 2026, public/village-scene.js VILLAGE_BYTES): a new village.glb, a new size.
+ assert.match(sceneFile(),/export const VILLAGE_BYTES=5269692,/);
  assert.equal(statSync(new URL('../public/assets/village/village-layout.json',import.meta.url)).size,105028,'village-layout.json');
 });
 test('the village\'s extras: the pack\'s props and the five landmarks, shaded like the village, under 500 KB',async()=>{

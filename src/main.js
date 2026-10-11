@@ -10,7 +10,7 @@ import {openIntent,openIntentOfUrl,withoutOpen,discordTicket,discordAuthorizeUrl
 import {startUpdateCheck} from './app-update.js';
 import {createNotifications} from './notifications.js';
 import {createChatClient} from './chat-client.js';
-import {startLoadingTips,ACCOUNT_STEPS,farmHandOver} from '../public/loading-screen.js';
+import {startLoadingTips,ACCOUNT_STEPS,farmHandOver,LOAD_FAILED_TEXT} from '../public/loading-screen.js';
 import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
 import {takeRefFromUrl,pendingRef,clearRef} from './partner-link.js';
@@ -130,7 +130,9 @@ const MESSAGES={register:'Creating your account…',signin:'Opening your farm…
 let stopTips=null;
 stopPageZoom(document,()=>document.body.dataset.phase==='authenticated');
 // The loading screen stays over the farm until the farm page shows its own (public/loading-screen.js farmHandOver, 6 Oct 2026).
-const handOver=farmHandOver(window,$('loading-screen'));
+// 11 Oct 2026: a farm page that never gets there opens the whole page again, as the farm page's own watch does; a second time within ten
+// minutes the pause card, whose Try again opens the farm.
+const handOver=farmHandOver(window,$('loading-screen'),{reload:()=>location.reload(),fail:()=>unavailable(LOAD_FAILED_TEXT),track:(event,params)=>trackGame(event,params)});
 function phase(value,message){document.body.dataset.phase=value;gameViewport(value==='authenticated');if(value==='authenticated')handOver.wait();else{handOver.stop();$('loading-screen').hidden=value!=='checking';}$('welcome').hidden=value==='checking'||value==='authenticated';$('farm-host').hidden=value!=='authenticated';if(message){$('loading-copy').textContent=message;const step=ACCOUNT_STEPS[message]??6;$('loading-progress').value=step;$('loading-percent').textContent=`${step}%`;}
  if(value==='checking')stopTips??=startLoadingTips(document);else{stopTips?.();stopTips=null;}}
 function dispose(){presence?.dispose();presence=null;chat?.dispose();chat=null;watchers.clear();generation++;frame?.remove();frame=null;playerId=null;delete window.harvestBridge;$('farm-host').replaceChildren();}

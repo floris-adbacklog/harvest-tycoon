@@ -8,7 +8,7 @@ import {stopPageZoom} from './page-zoom.js';
 import {startUpdateCheck} from './app-update.js';
 import {WAKE_GRACE} from './connection.js';
 import {startTranslation,chooseLanguage,chosenLanguage} from '../public/i18n.js';
-import {startLoadingTips,ACCOUNT_STEPS,farmHandOver} from '../public/loading-screen.js';
+import {startLoadingTips,ACCOUNT_STEPS,farmHandOver,LOAD_FAILED_TEXT} from '../public/loading-screen.js';
 import {PORTAL_FEATURES} from '../public/portal.js';
 import {guardWheel} from '../public/wheel-guard.js';
 // Harvest Tycoon on CrazyGames (Oct 2026): public/crazygames.html, shown in a frame by our small page on CrazyGames (crazygames/).
@@ -80,7 +80,9 @@ async function boot(){
  link.onSettings(next=>{Object.assign(settings,next);for(const fn of [...listeners])try{fn({...settings});}catch{listeners.delete(fn);}});
 
  // ---- The screens of this page: loading, the farm, a pause ----
- let stopTips=null;const handOver=farmHandOver(window,$('loading-screen'));
+ // A farm page that never shows (11 Oct 2026): this page asks for the farm again, as the farm page's own watch does; a second time
+ // within ten minutes the pause card.
+ let stopTips=null;const handOver=farmHandOver(window,$('loading-screen'),{reload:()=>portal.reopen(),fail:()=>pause(LOAD_FAILED_TEXT)});
  function phase(value,message){
   document.body.dataset.phase=value;
   // The loading screen stays over the farm until the farm page shows its own (public/loading-screen.js farmHandOver, 6 Oct 2026).
@@ -109,7 +111,8 @@ async function boot(){
  async function askServer(body,bearer){
   let response;
   // In Frankfurt next to the database, as farm-api (src/supabase.js FARM_API): one long hop instead of one per database step.
-  try{response=await fetch(`${functionsUrl}/crazygames-auth?forceFunctionRegion=eu-central-1`,{method:'POST',headers:{'content-type':'application/json',apikey:supabaseKey,...(bearer?{authorization:`Bearer ${bearer}`}:{})},body:JSON.stringify(body)});}
+  // At most 20 seconds (11 Oct 2026, as src/supabase.js ACCOUNT_WAIT): one that never answered held this page at 4% for good.
+  try{response=await fetch(`${functionsUrl}/crazygames-auth?forceFunctionRegion=eu-central-1`,{method:'POST',headers:{'content-type':'application/json',apikey:supabaseKey,...(bearer?{authorization:`Bearer ${bearer}`}:{})},body:JSON.stringify(body),signal:globalThis.AbortSignal?.timeout?.(20000)});}
   catch{throw Object.assign(new Error('We could not reach your farm. Your farm is safe; we keep trying.'),{transient:true});}
   let data=null;try{data=await response.json();}catch{}
   if(!response.ok)throw Object.assign(new Error(data?.error||'We could not connect. Please try again.'),{status:response.status,transient:response.status>=500});

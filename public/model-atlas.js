@@ -35,7 +35,8 @@ export const PALETTE_VERSION='20261007';
 // 30 seconds in view. A refused palette (an error, not silence) is asked for once more at once and then by the next model, as before.
 export const PALETTE_WAITS=Object.freeze([8000,12000,16000]);
 const palettes=new Map();
-function paletteImage(loader,url){
+// 11 Oct 2026: the village's palette (village-scene.js) comes through here too, with its own <img> loader.
+export function paletteImage(loader,url){
  let image=palettes.get(url);
  if(!image){
   const current=`${url}?v=${PALETTE_VERSION}`;
@@ -55,6 +56,31 @@ function paletteImage(loader,url){
   palettes.set(url,image);image.catch(()=>palettes.delete(url));
  }
  return image;
+}
+// A model file that sends nothing (11 Oct 2026, the 12% report again): fetchModel in game.js only asked again after an error, so a .glb
+// caught in a stalled transfer (a laptop waking up, a phone between networks, a page that went to the background while loading) kept
+// its place among the eight for good, and the bar stood still until watchLoading opened the page again 30 seconds later (harness, 11 Oct:
+// after 15 seconds of no network the models caught in it never came, the farm stood at 95% and was opened again at 52 seconds; now it
+// is ready at 23). Now a file that sends nothing for FILE_WAITS (nothing at all: every piece that arrives starts the wait again, so a
+// file that is only slow is never asked for twice, and a model that waits for its palette has all its bytes already) gets a fresh
+// request beside it, an address of its own as the palette's, the first to arrive is used and the rest are stopped. After the last wait
+// it keeps waiting (watchLoading is there for a page that stays stuck). An error is not silence: when no request is left the file fails
+// at once and its caller asks once more past the browser's cache, as before. The village and its layout (village-scene.js) come the
+// same way; onProgress hears every piece.
+export const FILE_WAITS=Object.freeze([8000,12000]);
+export function download(url,{type='arraybuffer',waits=FILE_WAITS,onProgress}={}){
+ return new Promise((resolve,reject)=>{
+  const files=new THREE.FileLoader().setResponseType(type);
+  let tries=0,open=0,timer=0,over=false;
+  const end=(settle,value)=>{if(over)return;over=true;clearTimeout(timer);if(open)files.abort();settle(value);};
+  const quiet=()=>{clearTimeout(timer);const wait=waits[tries-1];if(!over&&wait)timer=setTimeout(()=>{console.warn(`${url} sent nothing for ${wait/1000} s.`);ask();},wait);};
+  const ask=()=>{
+   open++;
+   files.load(tries++?`${url}${url.includes('?')?'&':'?'}fresh=${Date.now()}`:url,data=>{open--;end(resolve,data);},event=>{if(over)return;quiet();onProgress?.(event);},error=>{open--;if(!over&&!open)end(reject,error);});
+   quiet();
+  };
+  ask();
+ });
 }
 export function sharePalette(gltfLoader){
  return gltfLoader.register(parser=>({name:'harvest_shared_palette',loadTexture(index){

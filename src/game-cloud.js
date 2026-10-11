@@ -93,7 +93,10 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   const boardCache=new Map();
   async function openBoard(quiet=false){const request=++boardRequest,category=ui.category,cached=!quiet&&boardCache.get(category);if(cached){board=cached;boardPage=0;drawBoard();}else if(!quiet)ui.results.innerHTML=skeleton('Gathering the latest scores…',{rows:6});ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own)ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);if(!quiet&&!cached||board?.category!==result.category)boardPage=0;board=result;boardCache.set(result.category,result);drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
   let game=null;try{game=await import(/* @vite-ignore */ '/game.js?v=familyhall-model-2');}catch(error){console.error('The game could not load',error);}
-  const ready=game?await game.farmReady:false;
+  // A farm start that broke before the game's own error card (11 Oct 2026: its loading screen, or a farm whose models nearly all failed,
+  // public/game.js init) fails like the code that did not come: opened once more by itself, then Try again. Before, neither was said and
+  // the bar stood still until the 30 seconds were up.
+  const ready=game?await game.farmReady.catch(error=>{console.error('The game could not load',error);game=null;return false;}):false;
   if(!game)watch.failed();else watch.done(ready);
   if(ready){
    // CrazyGames' SDK (src/crazygames.js): the farm is loaded and can be played.

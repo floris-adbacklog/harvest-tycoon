@@ -46,6 +46,8 @@ test('the sign-in check and the farm show the same calm screen, and it fades int
 });
 
 // One screen from start to farm (6 Oct 2026): the page around keeps its loading screen until the farm page has drawn its own.
+// 11 Oct 2026: with a farm frame to look into, the screen stays until the farm page shows and a stuck one is opened again
+// (tests/loading-never-stuck.test.mjs); the wait below is for a page where no frame can be seen.
 test('the loading screen stays over the farm frame until the farm page shows its own, or until the wait is over',async()=>{
  const win={},screen={hidden:true},hand=farmHandOver(win,screen,{wait:40});
  hand.wait();assert.equal(screen.hidden,false,'still there while the farm page loads');

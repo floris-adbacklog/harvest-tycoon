@@ -72,8 +72,9 @@ const CONNECTION_STAGES=new Set(['reconnecting','paused']);
 // A farm that did not open (3 Oct 2026, public/loading-screen.js watchLoading): its code failed to load, or the bar stood still; again =
 // the second time within ten minutes, when it shows Try again instead of opening once more by itself.
 const LOAD_REASONS=new Set(['failed','stalled']);
-// 8 Oct 2026: which step stood still (loading-screen.js loadStep) and how many models had arrived by then.
-const LOAD_STEPS=new Set(['code','models','account','scene']);
+// 8 Oct 2026: which step stood still (loading-screen.js loadStep) and how many models had arrived by then. 11 Oct 2026: 'village', the
+// village's own download, and 'frame', a farm page that never showed itself (the page around it noticed: loading-screen.js farmHandOver).
+const LOAD_STEPS=new Set(['code','models','account','scene','village','frame']);
 // Invite a friend: the screen opened, the link shared or copied, a sign-up that came with a code. Never a name or code.
 const INVITE_EVENTS=new Set(['invite_open','invite_share','invite_copy','invite_signup']);
 export function trackInvite(event,win=globalThis.window){if(INVITE_EVENTS.has(event))pushEvent(event,{device:deviceType(win)},win);}
