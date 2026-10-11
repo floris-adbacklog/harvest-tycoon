@@ -545,7 +545,8 @@ test('the Village Fields sow with natural fertilizer and coins, like the Glassho
   const s=mode==='guided'?farm(110):legacyFarm(110);s.rookieUntil=0;for(const k of Object.keys(s.inventory))s.inventory[k]=0;s.inventory.fertilizer=1;s.coins=1000;
   const produced=s.stats.produced??0,batches=s.stats.village_batches??0;
   const r=act(s,{type:'produce',recipe:'sowpotatoes'});
-  assert.deepEqual([s.coins,s.inventory.fertilizer,r.readyAt-now],[880,0,2700000],mode);
+  // A guided farm's first batch in a new place is ready in 30 seconds (11 Oct 2026, tests/first-batch.test.mjs).
+  assert.deepEqual([s.coins,s.inventory.fertilizer,r.readyAt-now],[880,0,mode==='guided'?30000:2700000],mode);
   assert.deepEqual(act(s,{type:'collect',building:'villagefields'},r.readyAt).items,{potatoes:10});
   assert.deepEqual([s.inventory.potatoes,s.stats.made_potatoes,s.stats.village_batches-batches,s.stats.produced??0],[10,10,1,produced],'a village batch, not the farm\'s');
   assert.throws(()=>act(s,{type:'produce',recipe:'sowpotatoes'},r.readyAt),{message:'Missing ingredients for this many batches.'});
@@ -558,6 +559,7 @@ test('the Village Fields sow with natural fertilizer and coins, like the Glassho
 test('pasty lunches are packed lunches without apples, from the Miners’ Canteen',()=>{
  for(const mode of ['guided','legacy']){
   const s=mode==='guided'?farm(113):legacyFarm(113);s.rookieUntil=0;for(const k of Object.keys(s.inventory))s.inventory[k]=0;Object.assign(s.inventory,{potatoes:10,flour:4});
+  s.buildings.canteen.batchSequence=1;   // not its first batch (that one is quick on a guided farm, tests/first-batch.test.mjs)
   const made=s.stats.made_packedlunch??0,r=act(s,{type:'produce',recipe:'pastylunch'});
   assert.equal(r.readyAt-now,1800000);assert.deepEqual(act(s,{type:'collect',building:'canteen'},r.readyAt).items,{packedlunch:4});
   assert.deepEqual([s.inventory.packedlunch,s.inventory.potatoes,s.inventory.flour,s.inventory.apples,s.stats.made_packedlunch-made],[4,0,0,0,4],mode);
@@ -893,7 +895,7 @@ test('rubies finally have a use: two rubies and two silver bars make a ruby ring
   assert.ok(buildingRecipes(early,'jeweller').includes('rubyring'),'listed under Coming later');
   const s=mode==='guided'?farm(154):legacyFarm(154);for(const k of Object.keys(s.inventory))s.inventory[k]=0;Object.assign(s.inventory,{silverbar:2,gemstone:2});
   const produced=s.stats.produced??0,batches=s.stats.village_batches??0,r=act(s,{type:'produce',recipe:'rubyring'});
-  assert.equal(r.readyAt-now,recipeDuration(s,'rubyring',now));
+  assert.equal(r.readyAt-now,mode==='guided'?30000:recipeDuration(s,'rubyring',now),'the first ring of a guided farm is quick (tests/first-batch.test.mjs)');
   assert.deepEqual(act(s,{type:'collect',building:'jeweller'},r.readyAt),{building:'jeweller',items:{rubyring:1},xp:105});
   assert.deepEqual([s.inventory.rubyring,s.inventory.silverbar,s.inventory.gemstone,s.stats.made_rubyring,s.stats.village_batches-batches,s.stats.produced??0],[1,0,0,1,1,produced],mode);
   const none=mode==='guided'?farm(160):legacyFarm(160);none.buildings.jeweller.built=false;Object.assign(none.inventory,{silverbar:2,gemstone:2});

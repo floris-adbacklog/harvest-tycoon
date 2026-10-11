@@ -6,7 +6,9 @@ import {art} from './visual-icons.js';
 // of 16 farmers on a phone made the first market sale).
 const DO_NOW={harvest:'Harvest the ripe corn',sell:'Sell corn in Market',plant:'Plant wheat in an empty field',water:'Plant wheat, then water it',produce:'Start a batch in the Chicken Coop',gift:'Collect your gift in Today',chore:'Do a farm chore',tend:'Give care to a growing crop',wheat:'Harvest a ripe wheat field',collect:'Collect a finished batch',
  // A guided farm sells an egg at step 7 instead of a chore (7 Oct 2026: its banner said only "An egg opens new doors").
- sell_egg:'Collect eggs at the Coop, then sell one in Market'};
+ sell_egg:'Collect eggs at the Coop, then sell one in Market',
+ // And step 9 is A helping hand (11 Oct 2026).
+ hand:'Help at the Greenhouse'};
 // What to do now when it depends on the farm (7 Oct 2026: step 7 waited about a minute for eggs and nothing said how long). Step 7: the
 // eggs on their way (and how long), waiting at the Coop, or ready to sell; step 10: how long the batch still takes. Short, so the
 // phone's one-line banner shows it whole. null: the step's own line (DO_NOW).

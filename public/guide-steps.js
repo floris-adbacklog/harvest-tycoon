@@ -27,6 +27,16 @@ export function guideSteps(target,{state,now,doc=globalThis.document,win=globalT
  }
  if(target==='produce'||target==='eggs')return [...building('coop','Tap the Chicken Coop.','Open the Chicken Coop.'),{find:()=>doc.querySelector('dialog[open] .start-recipe[data-recipe="eggs"]'),text:'Start a batch here.'}];
  if(target==='today')return [...via('today-button','Tap Today for your daily gift.','[data-menu-action="today-button"]','Tap Daily rewards.'),{find:()=>doc.querySelector('dialog[open] #checkin-gift'),text:'Collect your gift here.'}];
+ // Step 9, A helping hand (11 Oct 2026): the Greenhouse's pin on the map, or on a phone More, A helping hand and the Greenhouse's card;
+ // then a tile that needs work. (Nothing has rested yet at this step: a finished job finishes the step.) game.js moves the view to the
+ // Greenhouse first; without a pin in view or a More button there is no way in to point at, and game.js opens the stops' window.
+ if(target==='hand'){
+  const pin='.activity-label[data-activity="greenhouse"]',work={find:()=>doc.querySelector('#activities-dialog[open] .activity-tile.needs-care'),text:'Tap each one that needs help.'};
+  if(shown(pin))return [{find:()=>shown(pin),text:'Tap the Greenhouse.'},work];
+  if(shown('#more-button'))return [{find:()=>shown('#more-button'),text:'Tap More.'},{find:()=>inDialog('more-dialog','[data-menu-utility="activities"]'),text:'Tap A helping hand.'},
+   {find:()=>doc.querySelector('#activities-hub-dialog[open] [data-open-station="greenhouse"]'),text:'Open the Greenhouse.'},work];
+  return null;
+ }
  if(target==='chores'){
   const label='.utility-label[data-utility="chores"]:not(.locked)',tile='[data-menu-utility="chores"]:not(.locked):not(:disabled)';
   const spot=shown(label)?[{find:()=>shown(label),text:'Tap the shovel for Farm chores.'}]

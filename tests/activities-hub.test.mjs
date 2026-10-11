@@ -35,7 +35,8 @@ test('the round strip (in the hub and in a station\'s own dialog) is clickable: 
  assert.match(ui,/function roundStrip\(all,round\)\{/,'one shared template for both places it appears');
  assert.match(ui,/<button type="button" class="round-stop \$\{stop\.inRound\?'complete':''\}" data-round-station="\$\{stop\.station\}" \$\{stop\.station===selected\?'disabled':''\}/,'a real button per stop, disabled only for the one already open');
  assert.match(ui,/function bindRoundStrip\(root\)\{root\.querySelectorAll\('\[data-round-station\]'\)\.forEach\(b=>b\.onclick=\(\)=>open\(b\.dataset\.roundStation\)\);\}/);
- assert.match(ui,/\$\('activities-hub-round'\)\.innerHTML=roundStrip\(all,round\);bindRoundStrip\(\$\('activities-hub-round'\)\);/);
+ // The hub adds the rule line below level 10 under its strip (11 Oct 2026, tests/hand-grows.test.mjs).
+ assert.match(ui,/\$\('activities-hub-round'\)\.innerHTML=roundStrip\(all,round\)\+growRule\(\);bindRoundStrip\(\$\('activities-hub-round'\)\);/);
  assert.match(ui,/\$\('activity-round'\)\.innerHTML=roundStrip\(all,round\);bindRoundStrip\(\$\('activity-round'\)\);/,'the station dialog\'s own strip is wired the same way');
  // The round stops used to be non-interactive <span role="img">; the CSS was updated for a real button (padding, disabled, hover).
  const css=read('public/farm-life.css');

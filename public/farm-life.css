@@ -58,3 +58,9 @@
 @media(prefers-reduced-motion:reduce){.activity-tile.needs-care{animation:none}}
 .activity-stop-art>.game-art{display:block;width:72px;height:72px;object-fit:contain}
 @media(max-width:600px){.activity-stop-art>.game-art{width:54px;height:54px}}
+/* A helping-hand stop that is ready again hops twice (11 Oct 2026): a cue on the farm, no popup. farm-life.js adds the class once. */
+.activity-label.just-ready{animation:activity-ready-hop .9s ease-in-out 2}
+@keyframes activity-ready-hop{0%,60%,100%{transform:translate(-50%,-110%)}25%{transform:translate(-50%,-150%)}45%{transform:translate(-50%,-122%)}}
+@media (prefers-reduced-motion:reduce){.activity-label.just-ready{animation:none}}
+/* Below level 10 the hub says how the stops grow with the farm (11 Oct 2026). */
+.activity-grow-rule{margin:10px 0 0;font-size:12px;line-height:1.5;color:#756b5d}

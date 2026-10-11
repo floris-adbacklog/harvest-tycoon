@@ -86,6 +86,9 @@ test('the game notes the first look and sends it at once; the first touch goes w
 test('timers under 2 minutes keep their seconds, and step 10 says how long the eggs take now',()=>{
  assert.deepEqual([59,60,61,90,119,120,121].map(s=>formatDuration(s*1000)),['59s','1m','1m 1s','1m 30s','1m 59s','2m','3m']);
  const s=createFarm(now),eggs=at=>beginnerProgress(s,at).find(q=>q.id==='collect').description;
+ // The Coop's very first batch is ready in 30 seconds (11 Oct 2026); after it the beginner boost's time (40% since 9 Oct 2026).
+ assert.equal(eggs(now),'Collect a finished batch from a building. Chicken feed becomes eggs in 30s.','the quick first batch');
+ s.buildings.coop.batchSequence=1;
  assert.equal(eggs(now),'Collect a finished batch from a building. Chicken feed becomes eggs in 3m.','the beginner boost (40% since 9 Oct 2026)');
  assert.equal(eggs(now+3*DAY_MS),'Collect a finished batch from a building. Chicken feed becomes eggs in 5m.');
  assert.equal(beginnerProgress(s,now).find(q=>q.id==='water').description,'Plant wheat and water it within a minute. It grows faster and gives an extra crop.');

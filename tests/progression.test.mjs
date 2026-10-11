@@ -23,10 +23,11 @@ test('locked actions and premature construction cannot spend balances or goods',
   const s=createFarm(now),before=structuredClone(s);assert.throws(()=>act(s,action,now));assert.deepEqual(s,before,JSON.stringify(action));
  }
 });
-test('selling the first egg remains an achievable beginner step; jobs arrive at level 8',()=>{
+// 11 Oct 2026: the helping hand opens at level 3 (it was 8).
+test('selling the first egg remains an achievable beginner step; jobs arrive at level 3',()=>{
  const s=createFarm(now),t=produce(s,'eggs');act(s,{type:'sell',item:'eggs',quantity:1},t);
  assert.equal(s.inventory.eggs,2);assert.equal(beginnerProgress(s).find(q=>q.id==='sell_egg').ready,true);
- assert.equal(featureUnlocked(s,'activities'),false);level(s,7);assert.equal(featureUnlocked(s,'activities'),false);level(s,8);assert.ok(featureUnlocked(s,'activities'));
+ assert.equal(featureUnlocked(s,'activities'),false);level(s,2);assert.equal(featureUnlocked(s,'activities'),false);level(s,3);assert.ok(featureUnlocked(s,'activities'));
  act(s,{type:'activity_start',station:'greenhouse'},t);assert.ok(s.activities.jobs.greenhouse);
 });
 test('buying through the feed, milk, grain and bread chain uses only earlier ingredients',()=>{
@@ -131,10 +132,13 @@ test('all ten beginner steps still finish in the first session and pay once',()=
  act(s,{type:'sell',item:'corn',quantity:1},now);act(s,{type:'produce',recipe:'eggs'},now);act(s,{type:'checkin'},now);
  act(s,{type:'field',id:6,action:'tend'},now+22000);act(s,{type:'field',id:6,action:'harvest'},now+120000);
  act(s,{type:'collect',building:'coop'},now+300000);act(s,{type:'sell',item:'eggs',quantity:1},now+300000);
+ // Step 9 is a helping-hand job (11 Oct 2026, it was the wheat harvest): one at the Apiary here, any stop counts.
+ const {startedAt}=act(s,{type:'activity_start',station:'apiary'},now+300000);
+ s.activities.jobs.apiary.targets.forEach((target,i)=>act(s,{type:'activity_work',station:'apiary',startedAt,target},now+300000+(i+1)*700));
  // Steps finish themselves as they are done (in any order they happened); only the last one, with the diamonds, is claimed.
  assert.equal(s.onboarding.completed,9);for(const q of beginnerProgress(s))assert.equal(q.ready,true,q.id);
- const diamonds=s.diamonds;const levelDiamonds=act(s,{type:'beginner_claim',id:'collect'},now+300000).levelReward?.diamonds??0;
- assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+50+levelDiamonds);assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+300000));
+ const diamonds=s.diamonds;const levelDiamonds=act(s,{type:'beginner_claim',id:'collect'},now+303000).levelReward?.diamonds??0;
+ assert.equal(s.onboarding.rewardClaimed,true);assert.equal(s.diamonds,diamonds+50+levelDiamonds);assert.throws(()=>act(s,{type:'beginner_claim',id:'collect'},now+303000));
 });
 test('pre-update guided and legacy saves retain every prior unlock, balance, timer and paid reward',()=>{
  const fixtures=JSON.parse(readFileSync(new URL('./fixtures/progression-v1.json',import.meta.url),'utf8'));

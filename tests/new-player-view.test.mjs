@@ -23,4 +23,5 @@ test('the first minute: fields up close on every screen, the sickle shows itself
  assert.deepEqual(ids,['harvest','sell','plant','water','produce','gift','chore','tend','wheat','collect'],'a short what-to-do for every guide step, in order');
  assert.match(beginner,/liveStep\(state,current\?\.id,farmNow\(\)\)\?\?DO_NOW\[current\?\.id\]\?\?current\?\.title/);
  assert.match(beginner,/sell_egg:'Collect eggs at the Coop, then sell one in Market'/,'a guided farm\'s step 7 too');
+ assert.match(beginner,/hand:'Help at the Greenhouse'/,'and its step 9, A helping hand (11 Oct 2026)');
 });

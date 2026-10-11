@@ -1270,6 +1270,9 @@ function bindUI(){
   // the farm itself (no window, no bubble; every tap goes through).
   const touch=mobileLayout.matches||matchMedia('(pointer: coarse)').matches,firstBasket=target==='harvest'&&beginnerProgress(state).find(q=>q.current)?.id==='harvest';
   if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?(state.plots.some(p=>canWater(p,farmNow()))?'Tap a growing crop to water it.':WATER_FIRST_MINUTE):firstBasket?(touch?'Hold one ripe corn for a moment, then sweep across the others to harvest them, or tap one.':'Sweep across your ripe corn to harvest it, or tap one.'):touch?'Tap a ready crop, or hold one for a moment and sweep across the others.':'Click a ready crop, or sweep across your ready crops to harvest them all.');if(firstBasket&&!villageWorld)firstBasketGhost();}
+  // Step 9, A helping hand (11 Oct 2026): the view moves to the Greenhouse first, so Show me points at its pin in the open farm (at
+  // 918x516 it stood under the top bar, beside the guide card), on a phone too; the stops' window only when there is no farm to show.
+  else if(target==='hand'){const v=farmLife?.views.get('greenhouse');if(v&&!villageWorld){lookAt(v.x,v.z);positionBuildingLabels();}const steps=guideSteps('hand',{state,now:farmNow()});if(steps)coach.start(steps);else activities.openHub();}
   // Show me points at the way in and lets the farmer tap it (1 Oct 2026: it used to open the window for them, so they never
   // learnt where Market was). Only where nothing can be pointed at does it still open the window itself.
   else if(guideSteps(target,{state,now:farmNow()}))coach.start(guideSteps(target,{state,now:farmNow()}));

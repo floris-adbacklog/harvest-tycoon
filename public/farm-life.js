@@ -17,7 +17,8 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   const hit=new THREE.Mesh(new THREE.BoxGeometry(Math.max(size.x+.6,2.8),Math.max(size.y+.4,1.8),Math.max(size.z+.6,2.8)),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
   hit.position.copy(center);hit.userData.activity=id;scene.add(hit);hit.updateMatrixWorld(true);hitAreas.push(hit);
   const height=new THREE.Box3().setFromObject(object).max.y;
-  const label=document.createElement('button');label.className='activity-label';label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=art(`activity-${id}`);label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
+  const label=document.createElement('button');label.className='activity-label';label.dataset.activity=id;label.setAttribute('aria-label',`Help at the ${ACTIVE_STATIONS[id].name}`);label.title=ACTIVE_STATIONS[id].name;label.innerHTML=art(`activity-${id}`);label.onclick=()=>onOpen(id);document.getElementById('building-labels').append(label);
+  label.addEventListener('animationend',()=>label.classList.remove('just-ready'));
   views.set(id,{object,x:object.position.x,z:object.position.z,height,label});return object;
  }
   // Higher mountains stay behind the farm; the edges around it are open meadow with pines and strips of field. (Broad smooth green
@@ -112,6 +113,11 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
    const p=new THREE.Vector3(v.object.position.x,v.height+.4,v.object.position.z).project(camera),s=activityStatus(state,id,now);
    v.label.style.left=`${(p.x*.5+.5)*width}px`;v.label.style.top=`${(-p.y*.5+.5)*height}px`;
    v.label.hidden=!featureUnlocked(state,'activities')||Math.abs(p.x)>.94||Math.abs(p.y)>.86;v.label.classList.toggle('available',!s.remaining);v.label.classList.toggle('working',!!s.job);
+   // A stop that is ready again hops twice on the map (11 Oct 2026, the owner's call: a cue on the farm itself, no popup): when its rest
+   // ends, and when its pin first shows ready (the farm opens, or the hand opens at level 3). Then it stands still until its next rest ends.
+   const ready=featureUnlocked(state,'activities')&&!s.remaining&&!s.job;
+   if(ready&&!v.ready&&!reducedMotion){v.label.classList.remove('just-ready');void v.label.offsetWidth;v.label.classList.add('just-ready');}
+   v.ready=ready;
   }
  }
  function watchProduction(buildings){
