@@ -58,6 +58,10 @@ for(const key of VILLAGE_ART)pictures[key]=key;
 // for care, as the cursor over a field and in the hand during a sweep (public/sweep-tools.js).
 const TOOL_PICTURES=['tool-sickle','tool-can','tool-seeds','tool-gloves'];
 for(const key of TOOL_PICTURES)pictures[key]=key;
+// The Fishing pond (11 Oct 2026, painted by the owner, WebP, 256 px on a clear ground): the eight fish of the fish book (fish-minnow …
+// fish-whiskers; a fish not caught yet is its own shadow, by CSS) and the rod on its basket for the pond's pin, menus and level card.
+export const FISH_PICTURES=Object.freeze(['fish-minnow','fish-perch','fish-roach','fish-carp','fish-tench','fish-pike','fish-goldencarp','fish-whiskers','fishingpond']);
+for(const key of FISH_PICTURES)pictures[key]=key;
 // Feedback & bugs (30 Sep 2026, painted by the user, WebP): the mailbox on its button and in the More menu.
 pictures.feedback='feedback';
 export const ART_KEYS=Object.freeze([...Object.keys(spriteEntries),...Object.keys(pictures)]);
@@ -82,6 +86,8 @@ export const MEDAL_ART=Object.freeze(['medal-bronze','medal-silver','medal-gold'
 for(const key of MEDAL_ART){pictures[key]=key;webpPictures.add(key);}
 // The tractor's diamond work (4 Oct 2026, painted by the user, WebP): Full care and the night shift, on the tractor card and in the wiki.
 for(const key of ['tractor-full-care','tractor-night-shift']){pictures[key]=key;webpPictures.add(key);}
+// The Fishing pond's pictures are WebP (FISH_PICTURES, above).
+for(const key of FISH_PICTURES)webpPictures.add(key);
 // Family rank badges (27 Sep 2026), painted by the user; public/family-profile.js shows each one that is here beside the rank's name.
 for(const key of ['family-rank-leader','family-rank-coleader','family-rank-honorary','family-rank-member','family-rank-top']){pictures[key]=key;webpPictures.add(key);}
 // The real family emblems (7 Oct 2026: 33 more, painted in the family style): every family-… emblem in the list, as WebP. A picture

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction as act,beginnerProgress,BEGINNER_QUESTS,BEGINNER_STEP_XP,BEGINNER_REWARD,levelOf,levelProgress,xpForLevel,XP_CURVE,convertXpCurve,CROPS,CROP_LEVELS,BUILDING_LEVELS,RECIPE_LEVELS,FEATURE_LEVELS,DELIVERY_LEVELS,FAMILY_MIN_LEVEL,cropUnlocked,featureUnlocked,deliveryTierUnlocked,recipeLevel} from '../game/farm-state.js';
+import {POND_OPEN,createFarm,normalizeFarm,applyFarmAction as act,beginnerProgress,BEGINNER_QUESTS,BEGINNER_STEP_XP,BEGINNER_REWARD,levelOf,levelProgress,xpForLevel,XP_CURVE,convertXpCurve,CROPS,CROP_LEVELS,BUILDING_LEVELS,RECIPE_LEVELS,FEATURE_LEVELS,DELIVERY_LEVELS,FAMILY_MIN_LEVEL,cropUnlocked,featureUnlocked,deliveryTierUnlocked,recipeLevel} from '../game/farm-state.js';
 // The XP to reach a level on a given curve, through the game's own conversion (a farm at the very start of the level stays there).
 const onCurve=(curve,level)=>{const s={xp:xpForLevel(level),xpOffset:0,xpCurve:XP_CURVE};convertXpCurve(s,curve);return s.xp;};
 const now=Date.UTC(2026,8,21,12);
@@ -73,7 +73,9 @@ test('every level up to 20 opens one to three new things, and levels 2 to 10 twe
  assert.equal(FEATURE_LEVELS.activities,8);assert.equal(FEATURE_LEVELS.chores,15);assert.equal(FEATURE_LEVELS.mastery,14);assert.equal(FEATURE_LEVELS.cart,7);
  const perLevel=opensAt();
  for(let level=2;level<=20;level++){const things=perLevel[level]??[];assert(things.length>=1,`level ${level} has nothing`);assert(things.length<=3,`level ${level}: ${things.join(', ')}`);}
- let first=0;for(let level=2;level<=10;level++)first+=(perLevel[level]??[]).length;assert.equal(first,20);
+ // The Fishing pond (11 Oct 2026, the owner's call) is the 21st, at level 4, once it is open (POND_OPEN); level 4 then opens three things.
+ let first=0;for(let level=2;level<=10;level++)first+=(perLevel[level]??[]).length;assert.equal(first,POND_OPEN?21:20);
+ if(POND_OPEN)assert.deepEqual(perLevel[4].filter(x=>x.startsWith('feature:')),['feature:fishing']);
  assert.equal(FAMILY_MIN_LEVEL,10);
  // Every goal an event can ask for is open when events open (level 15): chores, fertilizer and green beans included.
  assert(FEATURE_LEVELS.chores<=15&&RECIPE_LEVELS.fertilizer<=15&&CROP_LEVELS.greenbeans<=15);

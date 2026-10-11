@@ -31,6 +31,9 @@ export const LOADING_TIPS=Object.freeze([
 // The Halloween Pass (Oct 2026): a tip of its own among the others, only while lanterns count (public/game.js checks the season, so this
 // screen needs none of the game's rules).
 export const PASS_LOADING_TIP=Object.freeze(['giant-small','Halloween Pass from level 10: every daily gift, daily challenge and delivery brings lanterns for its rewards.']);
+// The Fishing pond (11 Oct 2026): its tip only once the pond is open (game.js adds it when farm-state.js POND_OPEN is on). The numbers
+// are the rules' (POND_LEVEL, POND_START_CASTS, POND_REFILL_MS; tests/fishing.test.mjs keeps them equal).
+export const POND_LOADING_TIP=Object.freeze(['fishingpond','Waiting for your crops? From level 4 the fishing pond has 5 casts for you, and a new one every 20 minutes.']);
 // On the way to the village (World II, 30 Sep 2026) the tips are about the village.
 export const VILLAGE_LOADING_TIPS=Object.freeze([
  ['packedlunch','Every trip into the mine or the forest starts with packed lunches from your farm Kitchen.'],

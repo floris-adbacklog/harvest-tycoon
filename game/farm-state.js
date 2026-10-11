@@ -904,9 +904,14 @@ export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,baker
  mine:75000,lumbercamp:75000,smithy:150000,villagemill:250000,villagefields:150000,canteen:200000,kiln:250000,linenloft:300000,soapmaker:350000,pier:400000,jeweller:450000});
 export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
  sowpotatoes:110,pastylunch:113,digclay:118,rooftile:118,sowflax:123,linen:125,builderscrate:128,sowlavender:132,lavendersoap:135,scentedsachet:138,silvercandlestick:150,rubyring:154,sowsaffron:158,saffronbun:158});
-export const FEATURE_LEVELS=Object.freeze({challenges:3,cart:7,activities:8,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
+// The Fishing pond (11 Oct 2026, part C): POND_OPEN is its one switch. While it is false the pond is built but hidden: it is in no list
+// (not in FEATURE_LEVELS or FEATURE_NAMES, so no level card, Coming up, wiki or menu names it), the game loads none of it and farm-api
+// refuses every 'fish', so no save gets a pond. Release: closed first (site, about 40 minutes, then farm-api), then POND_OPEN true with
+// farm-api first and the site after it. Once ponds exist farm-api never goes back before the closed release.
+export const POND_OPEN=false,POND_LEVEL=4;
+export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),challenges:3,cart:7,activities:8,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:7,village:8,commission:16});
-export const FEATURE_NAMES={challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
+export const FEATURE_NAMES={...(POND_OPEN?{fishing:'Fishing pond'}:{}),challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
 const kept=(state,kind,key)=>state.progression?.kept?.[kind]?.includes(key)===true;
 export function buildingCost(state,key){return guidedFarm(state)?BUILDING_COSTS[key]??0:BUILDINGS[key]?.buildCost??0;}
@@ -917,13 +922,13 @@ export function cropUnlocked(state,crop){return Object.hasOwn(CROPS,crop)&&(kept
 export function buildingEligible(state,key){return Object.hasOwn(BUILDINGS,key)&&(kept(state,'buildings',key)||levelOf(state)>=(guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1));}
 export function buildingUnlocked(state,key){return buildingEligible(state,key)&&(!buildingCost(state,key)||state.buildings[key]?.built===true);}
 // The Valley Market, the Ranch and the wave-3 places (Estate Workshop, Trade Depot, Grand Valley Fair) are new for every farm,
-// old or new: they open at their level, never earlier.
-const LATE_FEATURES=Object.freeze(['valleymarket','ranch','estateworkshop','tradedepot','grandfair','master','seedlab','visitors','giantpumpkin','valleyprojects']);
+// old or new: they open at their level, never earlier. The Fishing pond too (11 Oct 2026): an old farm waits for level 4 like a new one.
+const LATE_FEATURES=Object.freeze(['fishing','valleymarket','ranch','estateworkshop','tradedepot','grandfair','master','seedlab','visitors','giantpumpkin','valleyprojects']);
 export function featureUnlocked(state,key){if(key==='family')return familyUnlocked(state);if(LATE_FEATURES.includes(key))return levelOf(state)>=FEATURE_LEVELS[key];return !guidedFarm(state)||kept(state,'features',key)||levelOf(state)>=(FEATURE_LEVELS[key]??1);}
 export function featureUnlockHint(key){return `Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
 export function recipeLevel(state,id){const factory=RECIPES[id]?.building==='factory';if(factory)return Math.max(FACTORY_LEVEL,RECIPES[id].base?recipeLevel(state,RECIPES[id].base):1);return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
 export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
-const FEATURE_ART={challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',master:'master',seedlab:'seedlab',visitors:'visitors',giantpumpkin:'giantpumpkin',valleyprojects:'valleyprojects'};
+const FEATURE_ART={fishing:'fishingpond',challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',master:'master',seedlab:'seedlab',visitors:'visitors',giantpumpkin:'giantpumpkin',valleyprojects:'valleyprojects'};
 // World II's unlocks (its places, and the farm's recipes for it) only show from level 100: below it nothing of the village does. Its places
 // are their own kind (Oct 2026): built from a golden brief at the market square, one at a time, never from Buildings.
 const worldTwoEntry=(state,level)=>level<WORLD_TWO_LEVEL||worldTwoOpen(state);
@@ -2642,7 +2647,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);
- normalizeShift(state);settleShift(state,now);
+ normalizeShift(state);settleShift(state,now);normalizePond(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);
  currentEndgameDiamonds(state);
  return state;
@@ -2962,7 +2967,8 @@ export function useTractor(state,mode,crop='corn',now=Date.now()){
 // The tractor's diamond work (4 Oct 2026). It counts for no challenges, events or leaderboards: it never raises the harvest, water,
 // care or plant counters (only its own), gives no XP, and farm-api saves it as no event action (NO_EVENT_ACTIONS), so not even
 // the diamonds it costs move an event's "Spend diamonds" goal. Quests that count diamonds spent do count them, as every spend.
-export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift']));
+// A fish (11 Oct 2026) counts for nothing else either: no event, no Family Chest, no challenge (its coins are not stats.earned).
+export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish']));
 // Full care: water and extra care for every growing crop at once, also outside their moments (water is meant for the start, care
 // opens at 30% of the growing time), so each gives 3 times the crop and double XP at harvest. Per growing crop that still misses
 // either: FULL_CARE_COST diamonds.
@@ -3083,6 +3089,99 @@ export function upgradeSilo(state){
  if(state.siloLevel>=5)throw new Error('Your silo research is complete.');const cost=SILO_COSTS[state.siloLevel];if(state.coins<cost)throw new Error(`You need ${cost} coins for this research.`);
  state.coins-=cost;state.siloLevel++;state.stats.silo_upgrades=(state.stats.silo_upgrades??0)+1;state.xp+=20;return {level:state.siloLevel,cost};
 }
+// The Fishing pond (11 Oct 2026, part C, with the owner's answers): a game for the waits, at the farm's own pond from level 4.
+// - Casts: 5 at the start, then a new one every 20 minutes, up to 5 waiting (77 a day at most, so no other cap). A cast is used only when
+//   a fish is landed or let go: one that slips off or is missed stays in the pond for the next try, so it costs time, never a cast.
+// - Every fish, its kind and its weight, is fixed in advance: the first three always (a Minnow, a Perch, a Carp), then from the farm's
+//   own seed (rookieUntil, written once by the server when the farm was made) and the fish's number. So the screen shows the fish the
+//   server pays, the server only checks the casts, the number and the pace, and the most a cheat can get is what a good farmer gets: a
+//   perfect catch (the fish never left the green) adds a fifth to the coins, and that is the only thing the server takes on trust.
+// - Pay: coins by kind, weight and level, and 2 to 20 XP; the first of each kind pays three times its coins and 10 XP more. "Today's
+//   fish", one of the five common kinds (by the UTC day, with the daily tasks), pays double. Old Whiskers, the pond's legend, is rare,
+//   but fish 120 is him for a farm that never landed him (and 240, and so on, should he be let go).
+// - The fish book keeps the heaviest of each kind; all 8 pay 5 diamonds, once. No items and no diamonds per fish; nothing reaches the
+//   Market, orders or offers. Every catch is a line in the farm's log (player-log.js).
+export const POND_START_CASTS=5,POND_MAX_CASTS=5,POND_REFILL_MS=20*60000,POND_MIN_GAP_MS=3500,POND_PERFECT=.2,POND_DAY_FACTOR=2,POND_NEW_FISH_COINS=2,POND_NEW_FISH_XP=10,POND_LEGEND_BY=120,POND_BOOK_DIAMONDS=5;
+// chance (%), weight (kg, from-to), coins and XP, and the reel (pond-reel.js): the strike window (s), the green zone (% of the bar), how
+// fast the fish moves (bar/s), how fast the catch fills in the green and drains outside it (%/s), and how it fights. The reel's values
+// were tuned on 11 Oct 2026 with simulated players (a quick one, a casual one, a slow one and one who never presses): the plan's first
+// values let every player land the three small kinds and almost nobody a Golden carp or Old Whiskers. Now a slow player lands nearly every
+// common fish and most rare ones within three tries, and doing nothing lands no big fish. To be tuned further with the owner.
+export const FISH=Object.freeze(Object.fromEntries(Object.entries({
+ minnow:{name:'Minnow',chance:30,kg:[.05,.2],coins:4,xp:2,strike:1.2,zone:36,speed:20,fill:28,drain:12,fight:'drift'},
+ perch:{name:'Perch',chance:22,kg:[.2,.9],coins:6,xp:3,strike:1,zone:32,speed:30,fill:22,drain:12,fight:'hops'},
+ roach:{name:'Roach',chance:18,kg:[.3,1.2],coins:7,xp:3,strike:1,zone:32,speed:30,fill:22,drain:12,fight:'steady'},
+ carp:{name:'Carp',chance:14,kg:[1.5,6],coins:12,xp:5,strike:.9,zone:28,speed:32,fill:17,drain:13,fight:'pulls'},
+ tench:{name:'Tench',chance:9,kg:[1,3.5],coins:12,xp:5,strike:.9,zone:28,speed:30,fill:17,drain:13,fight:'stopgo'},
+ pike:{name:'Pike',chance:5,kg:[2,8],coins:20,xp:8,strike:.7,zone:24,speed:45,fill:15,drain:13,fight:'darts'},
+ goldencarp:{name:'Golden carp',chance:1.8,kg:[1,4],coins:40,xp:12,strike:.65,zone:24,speed:42,fill:14,drain:13,fight:'erratic'},
+ whiskers:{name:'Old Whiskers',chance:.2,kg:[9,15],coins:120,xp:20,strike:.6,zone:22,speed:36,fill:11,drain:11,fight:'phases'}
+}).map(([key,f])=>[key,Object.freeze({...f,kg:Object.freeze(f.kg)})])));
+export const POND_FIRST_FISH=Object.freeze([['minnow',.11],['perch',.42],['carp',2.35]]);
+const POND_COMMON=Object.freeze(['minnow','perch','roach','carp','tench']);
+export const todaysFish=(now=Date.now())=>POND_COMMON[dayNumber(now)%POND_COMMON.length];
+// The farm's own fish sequence (mulberry32 over the farm's seed and the fish's number): the same in the browser and in farm-api.
+function pondRandom(state,n){
+ let a=(calendarHash(`pond:${Number.isSafeInteger(state.rookieUntil)?state.rookieUntil:0}`)^Math.imul(n+1,0x9E3779B1))>>>0;
+ return ()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};
+}
+// Fish number n (from 0): its kind, its weight and where that weight sits between the kind's lightest and heaviest (0 to 1). Weights
+// lean light (u^1.6), so a new record stays possible for a long time.
+export function pondFish(state,n){
+ const fish=(species,kg)=>{const [lo,hi]=FISH[species].kg;return {species,kg,share:Math.min(1,Math.max(0,(kg-lo)/(hi-lo)))};};
+ if(n<POND_FIRST_FISH.length)return fish(...POND_FIRST_FISH[n]);
+ const random=pondRandom(state,n),roll=random()*100,u=random();
+ let species='whiskers';
+ if(!(state.pond?.best?.whiskers>0)&&(n+1)%POND_LEGEND_BY===0)species='whiskers';
+ else{let sum=0;for(const [key,f] of Object.entries(FISH)){sum+=f.chance;if(roll<sum){species=key;break;}}}
+ const [lo,hi]=FISH[species].kg;return fish(species,Math.round((lo+(hi-lo)*u**1.6)*100)/100);
+}
+// How many casts wait, and when the next one comes (0 when the pond is full). A farm that never fished has a full pond.
+export function pondCasts(state,now=Date.now()){
+ const p=state.pond;if(!p)return {casts:POND_START_CASTS,nextAt:0};
+ const gained=Math.max(0,Math.floor((now-p.castsAt)/POND_REFILL_MS)),casts=Math.min(POND_MAX_CASTS,p.casts+gained);
+ return {casts,nextAt:casts>=POND_MAX_CASTS?0:p.castsAt+(gained+1)*POND_REFILL_MS};
+}
+// Spending from a full pond starts the 20 minutes from now; otherwise the time already counted towards the next cast is kept.
+function spendCast(p,now){
+ const gained=Math.max(0,Math.floor((now-p.castsAt)/POND_REFILL_MS)),had=Math.min(POND_MAX_CASTS,p.casts+gained);
+ p.castsAt=had>=POND_MAX_CASTS?now:p.castsAt+gained*POND_REFILL_MS;p.casts=had-1;
+}
+export function fishCoins(state,fish,perfect,now=Date.now()){
+ const f=FISH[fish.species];
+ return Math.round(f.coins*(.8+.4*fish.share)*(1+levelOf(state)/8)*(todaysFish(now)===fish.species?POND_DAY_FACTOR:1)*(perfect?1+POND_PERFECT:1));
+}
+export const pondBookDone=state=>Object.keys(FISH).every(key=>state.pond?.best?.[key]>0);
+// One fish: n is the number the screen fished (the pond's own count: another tab may have fished meanwhile), landed whether it came
+// in or was let go, perfect whether it stayed in the green all the way. The client sends no amount: everything paid comes from here.
+export function landFish(state,n,landed,perfect,now=Date.now()){
+ if(!featureUnlocked(state,'fishing'))throw new Error(POND_OPEN?featureUnlockHint('fishing'):'The fishing pond is not open yet.');
+ if(typeof landed!=='boolean'||typeof perfect!=='boolean')throw new Error('Choose whether you landed the fish.');
+ if(pondCasts(state,now).casts<1)throw new Error('No casts left. A new cast comes every 20 minutes.');
+ if(!Number.isInteger(n)||n!==(state.pond?.n??0))throw new Error('Your pond changed in another tab.');
+ // Two fish may come close together (a slow connection can deliver them so); a third within POND_MIN_GAP_MS of the first cannot.
+ if(state.pond&&now-state.pond.prevAt<POND_MIN_GAP_MS)throw new Error('Give the line a moment.');
+ const fish=pondFish(state,n),p=state.pond??={firstAt:now,n:0,casts:POND_START_CASTS,castsAt:now,lastAt:0,prevAt:0,best:{}};
+ spendCast(p,now);p.n=n+1;p.prevAt=p.lastAt;p.lastAt=now;
+ if(!landed){state.stats.fish_released=(state.stats.fish_released??0)+1;return {released:true,n,casts:pondCasts(state,now)};}
+ const first=!(p.best[fish.species]>0),record=!first&&fish.kg>p.best[fish.species],today=todaysFish(now)===fish.species;
+ const base=fishCoins(state,fish,perfect,now),coins=base+(first?POND_NEW_FISH_COINS*base:0),xp=FISH[fish.species].xp+(first?POND_NEW_FISH_XP:0);
+ if(first||record)p.best[fish.species]=fish.kg;
+ state.coins+=coins;state.xp+=xp;
+ state.stats.fish=(state.stats.fish??0)+1;state.stats.fish_coins=(state.stats.fish_coins??0)+coins;if(perfect)state.stats.fish_perfect=(state.stats.fish_perfect??0)+1;
+ let diamonds=0;if(!p.bookPaid&&pondBookDone(state)){p.bookPaid=true;diamonds=POND_BOOK_DIAMONDS;state.diamonds+=diamonds;}
+ return {n,species:fish.species,kg:fish.kg,coins,xp,first,record,perfect,today,diamonds,casts:pondCasts(state,now)};
+}
+// A saved pond as the rules expect it (never made here: a farm that never fished keeps its shape). Numbers are whole and in range, the
+// book holds only the 8 kinds with a real weight; the count and the book survive anything else being wrong.
+function normalizePond(state){
+ const p=state.pond;if(p===undefined)return;
+ if(!p||typeof p!=='object'||Array.isArray(p)){delete state.pond;return;}
+ const count=(v,max=Number.MAX_SAFE_INTEGER)=>Number.isSafeInteger(v)?Math.min(max,Math.max(0,v)):0;
+ for(const key of ['n','castsAt','firstAt','lastAt','prevAt'])p[key]=count(p[key]);p.casts=count(p.casts,POND_MAX_CASTS);
+ p.best=Object.fromEntries(Object.entries(p.best&&typeof p.best==='object'&&!Array.isArray(p.best)?p.best:{}).filter(([key,kg])=>Object.hasOwn(FISH,key)&&Number.isFinite(kg)&&kg>0).map(([key,kg])=>[key,Math.round(kg*100)/100]));
+ if(p.bookPaid!==undefined&&p.bookPaid!==true)delete p.bookPaid;
+}
 // The Starter Pack (a welcome offer, see game/payments.js) opens at level 14 (until 5 Oct 2026 also where diamond boosts unlocked): a pack of diamonds is only a shop in the
 // way until there is something to spend them on. Then it is there for 7 days. Only the server writes the moment. A farm that is already past
 // that level when this is first seen had its moment long ago (unlockedAt 0: never offered again); a farm below it gets its moment on the way up.
@@ -3190,6 +3289,8 @@ function dispatchFarmAction(state,action,now,random){
   case 'giant_weigh':return giantWeigh(state);
   case 'vproject_give':return valleyProjectGive(state,action.project,action.item);
   case 'vproject_finish':return valleyProjectFinish(state,action.project);
+  // The Fishing pond (11 Oct 2026): its own gate (closed until POND_OPEN, then level 4).
+  case 'fish':return landFish(state,action.n,action.landed,action.perfect,now);
   default:throw new Error('Unknown farm action.');
  }
 }

@@ -95,7 +95,8 @@ test('the shift stops planting when the coins run out, keeps harvesting, and reg
 });
 
 test('diamond work is no event action, and its seeds are no "Spend coins" for challenges or events',()=>{
- assert.deepEqual([...NO_EVENT_ACTIONS].sort(),['tractor_care','tractor_shift']);
+ // The Fishing pond's fish (11 Oct 2026, the owner's answer: fishing counts for no event or Family Chest) is the third.
+ assert.deepEqual([...NO_EVENT_ACTIONS].sort(),['fish','tractor_care','tractor_shift']);
  assert.match(read('supabase/functions/farm-api/index.ts'),/eventAction:NO_EVENT_ACTIONS\.has\(body\.action\.type\)\?null:body\.action\.type/);
  const s=farm(),spent=s.stats.coins_spent??0;shift(s);
  assert.equal(s.stats.coins_spent??0,spent);

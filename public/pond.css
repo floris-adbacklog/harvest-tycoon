@@ -1,0 +1,123 @@
+/* The Fishing pond (11 Oct 2026, part C, pond-ui.js): a mode of the farm screen. The farm's buttons fold away and the farm fills the screen;
+   the pond's own pieces are cream cards and the game's buttons (buttons.css), one round main button at the bottom with the reel bar
+   beside it. Laid out for an upright phone, a short laptop frame (840 x 430, 918 x 516) and a big screen alike. */
+body.fishing :is(.topbar,.side-tools,.bottom-hud,.scene-controls,.quest-card,.beginner-mobile,.touch-instructions,#plot-labels,#building-labels,.active-boosts,#tooltip,.coach-bubble,.reminder-nudge,.sweep-tool,.vignette,.toast.medal-toast){opacity:0;visibility:hidden;pointer-events:none}
+body.fishing #world{inset:0;border-radius:0}
+body.fishing #game::after{display:none}   /* the cream panel behind a phone's tools (beginner.css) */
+.pond-view{position:absolute;inset:0;width:auto;height:auto;max-width:none;max-height:none;margin:0;padding:0;border:0;background:transparent;color:var(--ink);overflow:hidden;z-index:40;font-family:'DM Sans',sans-serif}
+.pond-view[open]{display:block}
+/* Gliding back to the farm: the pond's pieces are gone at once (the screen itself stays open until the farm is back, so the cards that
+   waited come after it). */
+.pond-view.is-closing{pointer-events:none}.pond-view.is-closing>*{display:none}
+.pond-water{position:absolute;inset:0;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pond-view button{font-family:inherit}
+.pond-top{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));inset-inline:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
+.pond-top>*{pointer-events:auto}
+.pond-back,.pond-book-open{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:6px 14px;background:var(--btn-second);border:1px solid var(--btn-second-line);border-radius:var(--btn-radius);box-shadow:0 3px 0 var(--btn-second-edge);color:var(--btn-second-text);font-weight:700;font-size:15px;cursor:pointer}
+.pond-back>span:first-child{font-size:22px;line-height:1;margin-top:-2px}
+.pond-back:hover,.pond-book-open:hover{background:var(--btn-second-hover)}
+.pond-book-open .game-art{width:28px;height:28px;object-fit:contain;margin:-4px 0}
+.pond-title{display:flex;align-items:center;gap:8px;margin:0;padding:6px 14px 6px 8px;background:var(--cream);border:1px solid #e3d8c6;border-radius:999px;box-shadow:var(--shadow);font:700 17px 'Outfit','DM Sans',sans-serif;color:#453e28;pointer-events:none}
+.pond-title .game-art{width:30px;height:30px;object-fit:contain}
+.pond-top-right{display:flex;align-items:flex-start;gap:8px}
+.pond-casts{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42px;min-width:62px;padding:3px 10px;background:var(--cream);border:1px solid #e3d8c6;border-radius:var(--btn-radius);box-shadow:var(--shadow);text-align:center}
+.pond-casts b{font-size:17px;color:#453e28}
+.pond-casts small{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.pond-casts small:empty{display:none}
+.pond-today{position:absolute;top:calc(62px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;margin:0;padding:4px 12px 4px 6px;max-width:calc(100% - 24px);background:#fffdf5e6;border:1px solid #e3d8c6;border-radius:999px;box-shadow:var(--shadow);font-size:13px;font-weight:700;color:#5b4520;white-space:nowrap;pointer-events:none}
+.pond-today .game-art{width:30px;height:30px;object-fit:contain;flex-shrink:0}
+.pond-today span{overflow:hidden;text-overflow:ellipsis}
+.pond-chip{position:absolute;top:calc(104px + env(safe-area-inset-top,0px));inset-inline-start:12px;display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:4px 12px 4px 6px;background:#fff0b2;border:2px solid #e3b447;border-radius:999px;box-shadow:var(--shadow);color:#5b4520;font-weight:700;font-size:13px;cursor:pointer}
+.pond-chip .game-art{width:26px;height:26px;object-fit:contain}
+.pond-play{position:absolute;inset-inline:0;bottom:calc(16px + var(--safe-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.pond-play>*{pointer-events:auto}
+.pond-say{margin:0;max-width:min(520px,calc(100% - 24px));padding:8px 16px;background:#fffdf5ee;border:1px solid #e3d8c6;border-radius:16px;box-shadow:var(--shadow);font-weight:700;font-size:15px;line-height:1.35;color:#453e28;text-align:center}
+.pond-say:empty{display:none}
+.pond-say-more{margin:-4px 0 0;padding:3px 12px;background:#fff0b2;border-radius:999px;font-size:13px;font-weight:700;color:#5b4520}
+.pond-controls{position:relative;display:flex;align-items:flex-end;justify-content:center;width:100%;height:96px;pointer-events:none}
+/* While reeling the bar stands beside the button: the line of text moves up above it. */
+.pond-view[data-phase="reel"] .pond-controls{height:calc(min(158px,32vh) + 6px)}
+.pond-controls>*{pointer-events:auto}
+.pond-act{position:relative;width:88px;height:88px;margin-bottom:6px;border-radius:50%;background:var(--btn-main);border:1px solid var(--btn-main-line);box-shadow:0 4px 0 var(--btn-main-edge);color:var(--btn-main-text);font-weight:700;font-size:16px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;transition:transform .08s,box-shadow .08s,background .12s}
+.pond-act:active{transform:translateY(2px);box-shadow:0 2px 0 var(--btn-main-edge)}
+.pond-act:hover:not(:disabled){background:var(--btn-main-hover)}
+.pond-act:disabled{background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;cursor:default}
+.pond-act{padding:0}
+.pond-act>span{position:relative;z-index:1;display:block;width:calc(100% - 10px);margin:0 auto;overflow:hidden;white-space:nowrap;-webkit-hyphens:manual;hyphens:manual;text-align:center}
+.pond-ring{position:absolute;inset:-9px;width:calc(100% + 18px);height:calc(100% + 18px);transform:rotate(-90deg);pointer-events:none}
+.pond-ring circle{fill:none;stroke:#fffdf5;stroke-width:6;opacity:.85}
+.pond-ring .pond-ring-fill{stroke:var(--yellow);opacity:1;stroke-dasharray:100;stroke-dashoffset:100;stroke-linecap:round}
+.pond-view[data-phase="bite"] .pond-act{animation:pond-strike .32s ease-in-out infinite alternate;box-shadow:0 4px 0 var(--btn-main-edge),0 0 0 8px #f3c35399}
+@keyframes pond-strike{to{transform:scale(1.08)}}
+.pond-view[data-phase="cast"] .pond-act,.pond-view[data-phase="wait"] .pond-act{background:var(--btn-second);border-color:var(--btn-second-line);box-shadow:0 4px 0 var(--btn-second-edge);color:var(--btn-second-text)}
+.pond-bar{position:absolute;bottom:0;left:calc(50% + 66px);width:34px;height:min(158px,32vh);min-height:104px;border-radius:17px;background:linear-gradient(#cfe9ef,#9fcfdb);border:3px solid var(--cream);box-shadow:var(--shadow);overflow:hidden}
+.pond-zone{position:absolute;left:0;right:0;background:#3f8a4a8c;border-block:2px solid var(--btn-main);border-radius:6px}
+.pond-zone.is-out{background:#b4513f59;border-color:var(--btn-red)}
+.pond-mark{position:absolute;left:50%;width:30px;height:30px;transform:translate(-50%,50%);pointer-events:none}
+.pond-mark-art{display:block;width:100%;height:100%;object-fit:contain;filter:brightness(0) opacity(.72)}
+.pond-letgo{min-height:36px;padding:4px 14px;background:#fffdf5d9;border:1px solid #e3d8c6;border-radius:999px;color:var(--btn-red);font-weight:700;font-size:13px;text-decoration:underline;cursor:pointer}
+.pond-view:is([data-phase="result"],[data-phase="landing"]) .pond-play{visibility:hidden}
+.pond-card{z-index:2;position:absolute;left:50%;bottom:calc(14px + var(--safe-bottom,0px));transform:translateX(-50%);box-sizing:border-box;width:min(400px,calc(100% - 24px));max-height:min(300px,calc(100% - 118px));overflow:auto;padding:14px 16px;background:var(--cream);border:1px solid #e3d8c6;border-radius:20px;box-shadow:var(--shadow)}
+.pond-card-fish{display:flex;align-items:center;gap:12px}
+.pond-card-art{width:84px;height:84px;object-fit:contain;flex-shrink:0;animation:pond-catch .45s cubic-bezier(.2,1.5,.4,1)}
+@keyframes pond-catch{from{transform:scale(.4) rotate(-12deg)}}
+.pond-card h3{margin:0;font:700 22px 'Outfit','DM Sans',sans-serif;color:#453e28}
+.pond-card .eyebrow{display:block;font-size:11px;letter-spacing:.08em;font-weight:700;color:var(--muted)}
+.pond-kg{margin:0;font-weight:700;color:#5b4520}
+.pond-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+.pond-tag{padding:3px 9px;border-radius:999px;background:#f3ead6;color:#5b4520;font-size:12px}
+.pond-tag.is-new{background:#e3f0d6;color:#2f5f33}.pond-tag.is-record{background:#fff0b2}.pond-tag.is-book{background:var(--btn-diamond);color:var(--btn-diamond-text)}
+.pond-rewards{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 10px}
+.pond-rewards strong{display:inline-flex;align-items:center;gap:4px;font-size:16px;color:#453e28}
+.pond-rewards .game-art{width:22px;height:22px;object-fit:contain}
+.pond-card-note{margin:0 0 10px;font-size:13px;line-height:1.35;color:var(--muted)}
+.pond-card-actions{display:flex;gap:8px}
+.pond-card-actions button{flex:1 1 0;min-height:44px;padding:8px 10px;font-size:15px;cursor:pointer}
+.pond-book{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:14px 16px 16px;background:var(--cream);border:1px solid #e3d8c6;border-radius:20px;box-shadow:0 18px 50px #2f281a40;z-index:2}
+.pond-book-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.pond-book-head h3{margin:0;font:700 22px 'Outfit','DM Sans',sans-serif;color:#453e28}
+.pond-book-head p{margin:2px 0 0;font-weight:700;color:var(--muted)}
+.pond-book-head .icon-button{width:40px;height:40px;font-size:22px;line-height:1}
+.pond-book-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0;padding:0;list-style:none}
+.pond-book-list li{display:flex;align-items:center;gap:8px;min-width:0;padding:6px 8px;background:#f7f0e3;border-radius:14px}
+.pond-book-list strong{display:block;font-size:14px;color:#453e28}
+.pond-book-list small{display:block;font-size:12px;line-height:1.25;color:var(--muted)}
+.pond-book-art{width:52px;height:52px;object-fit:contain;flex-shrink:0}
+.pond-book-list .is-missing .pond-book-art{filter:brightness(0) opacity(.25)}
+.pond-book-reward{display:flex;align-items:center;gap:8px;margin:6px 0 4px;padding:8px 10px;background:var(--btn-diamond);border-radius:12px;color:var(--btn-diamond-text);font-weight:700;font-size:14px}
+.pond-book-reward .game-art{width:24px;height:24px}
+.pond-book h4{margin:12px 0 4px;font-size:15px;color:#453e28}
+.pond-rules{margin:0;padding-inline-start:18px;font-size:14px;line-height:1.4;color:#5b4520}
+.pond-rules li+li{margin-top:4px}
+/* The pond's pin over the pier: the rod on its basket, with the casts waiting (gold when the pond is full, greyed at none). */
+.pond-label{position:absolute;transform:translate(-50%,-110%);display:grid;place-items:center;width:46px;height:46px;padding:0;line-height:0;border:2px solid #d3c2af;border-radius:50%;background:#fffdf5;pointer-events:auto;touch-action:manipulation;z-index:3;box-shadow:0 3px 7px #423c2924;cursor:pointer}
+.pond-label>.game-art{width:36px;height:36px;object-fit:contain}
+.pond-badge{position:absolute;top:-5px;inset-inline-end:-7px;display:grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--btn-main);color:var(--btn-main-text);font:700 12px/1 'DM Sans',sans-serif;font-style:normal}
+.pond-label.ready{border-color:#e3b447;background:#fff0b2}
+.pond-label.empty .pond-badge{background:var(--btn-off);color:var(--btn-off-text)}
+.pond-shortcut .game-art{width:32px;height:32px;object-fit:contain}
+/* An upright phone: no title (the pin and the button say what this is), a slightly smaller button. */
+@media (max-width:600px){
+ .pond-title{display:none}
+ .pond-back,.pond-book-open{padding:6px 11px;font-size:14px}
+ .pond-today{top:calc(60px + env(safe-area-inset-top,0px))}
+}
+/* A short frame (a laptop's game page, a phone on its side): everything closer together, the catch card's main button in view. */
+@media (max-height:540px){
+ .pond-top{top:8px}.pond-back,.pond-book-open,.pond-casts{min-height:36px}.pond-casts b{font-size:15px}
+ .pond-today{top:52px;font-size:12px}.pond-today .game-art{width:24px;height:24px}
+ .pond-chip{top:88px}
+ .pond-play{bottom:10px;gap:5px}.pond-say{padding:5px 12px;font-size:14px}
+ .pond-controls{height:80px}.pond-act{width:72px;height:72px;font-size:15px}
+ .pond-view[data-phase="reel"] .pond-controls{height:calc(min(130px,42vh) + 6px)}
+ .pond-bar{left:calc(50% + 56px);height:min(130px,42vh);min-height:90px}
+ .pond-card{bottom:8px;max-height:calc(100% - 92px);padding:10px 14px}.pond-card-art{width:60px;height:60px}.pond-card h3{font-size:19px}
+ .pond-tags{margin-top:4px}.pond-rewards{margin:4px 0 8px}
+}
+@media (max-height:540px) and (min-width:620px){
+ .pond-book{width:min(720px,calc(100% - 24px))}.pond-book-list{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){
+ .pond-view[data-phase="bite"] .pond-act{animation:none;transform:none}
+ .pond-card-art{animation:none}
+}

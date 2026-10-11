@@ -89,6 +89,12 @@ export const SOUND_CUES=Object.freeze({
  tractor:{notes:[98,123.47,146.83],step:.085,duration:.16,volume:.06,type:'triangle'},
  levelup:{notes:[523.25,659.25,783.99,1046.5,1318.51,1046.5],step:.14,duration:.52,volume:.12},
  bell:{notes:[392,329.63,261.63],step:.3,duration:.6,volume:.07},
+ // The Fishing pond (11 Oct 2026, pond-ui.js plays them itself): the cast, a nibble, the bite, a fish landed and one that slipped off.
+ cast:{notes:[520,330],step:.06,duration:.18,volume:.05,type:'triangle',glide:.7},
+ nibble:{notes:[1174.66],step:.05,duration:.06,volume:.035,type:'triangle'},
+ bite:{notes:[330,220],step:.05,duration:.18,volume:.08,glide:.6},
+ catch:{notes:[523.25,659.25,783.99,1046.5],step:.08,duration:.3,volume:.1},
+ escape:{notes:[392,293.66,220],step:.08,duration:.2,volume:.06,type:'triangle'},
 });
 export function soundForAction(action,result,beforeLevel,afterLevel){
  if(action.type==='chore'&&result.success===false)return null;
