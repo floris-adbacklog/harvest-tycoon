@@ -6,10 +6,12 @@ body.fishing #world{inset:0;border-radius:0}
 body.fishing #game::after{display:none}   /* the cream panel behind a phone's tools (beginner.css) */
 .pond-view{position:absolute;inset:0;width:auto;height:auto;max-width:none;max-height:none;margin:0;padding:0;border:0;background:transparent;color:var(--ink);overflow:hidden;z-index:40;font-family:'DM Sans',sans-serif}
 .pond-view[open]{display:block}
+/* A long press on the water or the button (holding to reel) must not select text or open the iPhone's callout (11 Oct 2026, the review). */
+.pond-view{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 /* Gliding back to the farm: the pond's pieces are gone at once (the screen itself stays open until the farm is back, so the cards that
    waited come after it). */
 .pond-view.is-closing{pointer-events:none}.pond-view.is-closing>*{display:none}
-.pond-water{position:absolute;inset:0;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pond-water{position:absolute;inset:0;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 .pond-view button{font-family:inherit}
 .pond-top{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));inset-inline:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
 .pond-top>*{pointer-events:auto}
@@ -50,7 +52,7 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
 .pond-view[data-phase="bite"] .pond-act{animation:pond-strike .32s ease-in-out infinite alternate;box-shadow:0 4px 0 var(--btn-main-edge),0 0 0 8px #f3c35399}
 @keyframes pond-strike{to{transform:scale(1.08)}}
 .pond-view[data-phase="cast"] .pond-act,.pond-view[data-phase="wait"] .pond-act{background:var(--btn-second);border-color:var(--btn-second-line);box-shadow:0 4px 0 var(--btn-second-edge);color:var(--btn-second-text)}
-.pond-bar{position:absolute;bottom:0;left:calc(50% + 66px);width:34px;height:min(158px,32vh);min-height:104px;border-radius:17px;background:linear-gradient(#cfe9ef,#9fcfdb);border:3px solid var(--cream);box-shadow:var(--shadow);overflow:hidden}
+.pond-bar{position:absolute;bottom:0;left:calc(50% + 66px);width:34px;height:min(158px,32vh);min-height:104px;border-radius:17px;background:linear-gradient(var(--btn-diamond),var(--btn-diamond-hover));border:3px solid var(--cream);box-shadow:var(--shadow);overflow:hidden}
 .pond-zone{position:absolute;left:0;right:0;background:#3f8a4a8c;border-block:2px solid var(--btn-main);border-radius:6px}
 .pond-zone.is-out{background:#b4513f59;border-color:var(--btn-red)}
 .pond-mark{position:absolute;left:50%;width:30px;height:30px;transform:translate(-50%,50%);pointer-events:none}
@@ -65,15 +67,15 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
 .pond-card .eyebrow{display:block;font-size:11px;letter-spacing:.08em;font-weight:700;color:var(--muted)}
 .pond-kg{margin:0;font-weight:700;color:#5b4520}
 .pond-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
-.pond-tag{padding:3px 9px;border-radius:999px;background:#f3ead6;color:#5b4520;font-size:12px}
-.pond-tag.is-new{background:#e3f0d6;color:#2f5f33}.pond-tag.is-record{background:#fff0b2}.pond-tag.is-book{background:var(--btn-diamond);color:var(--btn-diamond-text)}
+.pond-tag{padding:3px 9px;border-radius:999px;background:var(--btn-second);color:var(--btn-second-text);font-size:12px}
+.pond-tag.is-new{background:#dcebcf;color:#3f6b2c}.pond-tag.is-record{background:#fff0b2}.pond-tag.is-book{background:var(--btn-diamond);color:var(--btn-diamond-text)}
 .pond-rewards{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 10px}
 .pond-rewards strong{display:inline-flex;align-items:center;gap:4px;font-size:16px;color:#453e28}
 .pond-rewards .game-art{width:22px;height:22px;object-fit:contain}
 .pond-card-note{margin:0 0 10px;font-size:13px;line-height:1.35;color:var(--muted)}
 .pond-card-actions{display:flex;gap:8px}
 .pond-card-actions button{flex:1 1 0;min-height:44px;padding:8px 10px;font-size:15px;cursor:pointer}
-.pond-book{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:14px 16px 16px;background:var(--cream);border:1px solid #e3d8c6;border-radius:20px;box-shadow:0 18px 50px #2f281a40;z-index:2}
+.pond-book{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:14px 16px 16px;background:var(--cream);border:1px solid #e3d8c6;border-radius:20px;box-shadow:0 18px 48px #3a301c40;z-index:2}
 .pond-book-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .pond-book-head h3{margin:0;font:700 22px 'Outfit','DM Sans',sans-serif;color:#453e28}
 .pond-book-head p{margin:2px 0 0;font-weight:700;color:var(--muted)}
@@ -95,6 +97,9 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
 .pond-badge{position:absolute;top:-5px;inset-inline-end:-7px;display:grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--btn-main);color:var(--btn-main-text);font:700 12px/1 'DM Sans',sans-serif;font-style:normal}
 .pond-label.ready{border-color:#e3b447;background:#fff0b2}
 .pond-label.empty .pond-badge{background:var(--btn-off);color:var(--btn-off-text)}
+/* A pier just below the edge (or under the tools): the pin waits at the edge and points down at it (pond-ui.js pinSpot). */
+.pond-label.edge::after{content:'';position:absolute;left:50%;bottom:-9px;margin-left:-7px;border-inline:7px solid transparent;border-top:8px solid #d3c2af}
+.pond-label.edge.ready::after{border-top-color:#e3b447}
 .pond-shortcut .game-art{width:32px;height:32px;object-fit:contain}
 /* An upright phone: no title (the pin and the button say what this is), a slightly smaller button. */
 @media (max-width:600px){

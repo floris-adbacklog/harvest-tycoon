@@ -110,6 +110,7 @@ test('the fish book: a record only when heavier, and all eight kinds pay 5 diamo
   assert.equal(r.record,had>0&&next.kg>had,`${next.species} ${next.kg} after ${had}`);assert.equal(s.pond.best[next.species],Math.max(had,next.kg));assert.equal(r.first,!(had>0));
  }
  assert.ok(s.pond.best.whiskers>=9,'Old Whiskers came');assert.equal(paid,5);assert.equal(s.diamonds,diamonds+5);assert.equal(s.pond.bookPaid,true);assert.ok(G.pondBookDone(s));
+ assert.equal(s.stats.diamonds_earned,5,'counted as diamonds earned, like every diamond from play (the quest "A sparkling streak")');
  for(let k=0;k<30;k++){t+=LATER;assert.equal(fish(s,t).diamonds,0,'never again');}
 });
 
@@ -174,6 +175,26 @@ test('balance: about 3.6 XP a cast (77 casts at most a day, under 300 XP), coins
  // The first session at level 4: five casts, all of them first catches, stay below the Dairy Barn's price and a level's XP.
  const s=at(4);let coins=0,xp=0;for(let k=0;k<5;k++){const r=fish(s,now+k*GAP);coins+=r.coins;xp+=r.xp;}
  assert.ok(coins<G.BUILDING_COSTS.dairy,`first session ${coins} coins`);assert.ok(xp<G.xpForLevel(5)-G.xpForLevel(4),`and ${xp} XP, less than a level`);
+});
+
+// The review (11 Oct 2026): the first session over many farms, not one. Fish 1 to 3 are fixed; fish 4 and 5 come from the farm's seed and
+// every new kind pays 3 times, so a Pike, a Golden carp or (0.4% of farms) Old Whiskers among them makes it a big first day. Measured on
+// 20,000 seeds x 5 days: without a perfect catch median 152, 95% under 250, 2.3% at 300 or more, at most 834; every catch perfect: median
+// 182, 4.9% at 300 or more, at most 1,002. XP: 44 to 92, always under the 95 of level 4. Whether to cap this is the owner's call.
+test('balance: the first five fish at level 4 over 4,000 farms and 5 days (the real range, not one farm)',()=>{
+ const level4=at(4),gap=G.xpForLevel(5)-G.xpForLevel(4);
+ const session=(seed,day,perfect)=>{const s={...level4,rookieUntil:seed*7919+13,pond:undefined},seen=new Set(),t=now+day*G.DAY_MS;let coins=0,xp=0;
+  for(let n=0;n<5;n++){const f=G.pondFish(s,n),first=!seen.has(f.species),base=G.fishCoins(s,f,perfect,t);seen.add(f.species);coins+=base*(first?1+G.POND_NEW_FISH_COINS:1);xp+=G.FISH[f.species].xp+(first?G.POND_NEW_FISH_XP:0);}
+  return {coins,xp};};
+ // The quick sum is the rules' own: the same as five real fish through applyFarmAction.
+ for(let seed=1;seed<=40;seed++){const s=at(4);s.rookieUntil=seed*7919+13;let coins=0;for(let k=0;k<5;k++)coins+=fish(s,now+(seed%5)*G.DAY_MS+k*GAP,true,seed%2===0).coins;assert.equal(coins,session(seed,seed%5,seed%2===0).coins,`seed ${seed}`);}
+ for(const perfect of [false,true]){
+  const all=[];for(let seed=1;seed<=4000;seed++)for(let day=0;day<5;day++)all.push(session(seed,day,perfect));
+  const coins=all.map(r=>r.coins).sort((a,b)=>a-b),median=coins[coins.length>>1],over=coins.filter(c=>c>=G.BUILDING_COSTS.dairy).length/coins.length;
+  assert.ok(median>=130&&median<=200,`median ${median} coins (perfect ${perfect})`);
+  assert.ok(over<(perfect?.07:.04),`${(over*100).toFixed(1)}% of first sessions reach the Dairy Barn's ${G.BUILDING_COSTS.dairy} coins`);
+  assert.ok(coins.at(-1)<=1100,`at most ${coins.at(-1)} coins`);assert.ok(all.every(r=>r.xp<gap),'never a whole level of XP');
+ }
 });
 
 test('every catch is a line in the farm\'s log; the loading tip says the rules\' numbers',()=>{

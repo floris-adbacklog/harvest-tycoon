@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,existsSync,statSync} from 'node:fs';
+import {readFileSync,existsSync,statSync,readdirSync} from 'node:fs';
 import {createReel,REEL,FIGHTS} from '../public/pond-reel.js';
 import {FISH,POND_FIRST_FISH} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -74,6 +74,47 @@ test('the fish pictures are the owner\'s WebP, registered like the others, in th
  for(const key of Object.keys(FISH))assert.ok(read('public/pond-ui.js').includes('art(`fish-${')&&key,'every fish has its picture');
  const ui=read('public/pond-ui.js');
  assert.match(ui,/tile\.dataset\.menuUtility='fishing'/,'a More tile, greyed and "Reach level 4." until then like the other features (progression-ui.js)');
- assert.match(ui,/document\.querySelector\('#buildings-dialog \.utility-shortcuts'\)\?\.append\(shortcut\)/,'and in Buildings › Around the farm (computers have no More menu)');
+ assert.match(ui,/document\.querySelector\('#buildings-dialog \.utility-shortcuts'\)\?\.prepend\(shortcut\);/,'and first in Buildings › Around the farm (computers have no More menu; the others open from level 7)');
  assert.match(read('public/pond.css'),/\.pond-book-list \.is-missing \.pond-book-art\{filter:brightness\(0\) opacity\(\.25\)\}/,'a fish not caught yet is its own shadow');
+});
+// The review of part C (11 Oct 2026). The pin over the pier: on the home view of a phone and of a computer the pier is at or just past
+// the bottom edge (on a computer under the bar of tools), so it was hidden at level 4. These are the spots measured on the stage.
+test('the pond\'s pin waits at the edge for a pier just below it, above the bar of tools and beside the camera buttons',()=>{
+ const ui=read('public/pond-ui.js'),code=ui.match(/\nconst overlaps=[^\n]*\nexport const pinSpot=[\s\S]*?\n\};\n/)[0].replace('export const','const');
+ const pinSpot=new Function(`${code}return pinSpot;`)(),ndc=(y,h)=>1-2*y/h;
+ // A phone (390 x 844, the farm 588 high): the pier at 583 is in view, the pin stays on it (it was hidden below 92% of the height).
+ assert.deepEqual(pinSpot(328,583,.68,ndc(583,588),588,[{left:8,right:382,top:588,bottom:701}],[{left:0,right:390,top:708,bottom:772}]),{x:328,y:582,edge:false});
+ // A computer, 1280 x 800: the pier at 788 is under the bar of tools (688 to 780), so the pin waits just above the bar, pointing down.
+ const bar1280={left:379,right:901,top:688,bottom:780},cam1280={left:1036,right:1260,top:728,bottom:780};
+ assert.deepEqual(pinSpot(770,788,.2,ndc(788,800),800,[bar1280],[cam1280]),{x:770,y:682,edge:true});
+ // 918 x 516: above the bar, and to the side of the camera buttons that stand above its right end.
+ const spot=pinSpot(668,509,.46,ndc(509,516),516,[{left:189,right:729,top:415,bottom:507}],[{left:674,right:898,top:340,bottom:392}]);
+ assert.deepEqual(spot,{x:644,y:409,edge:true});
+ // A phone on its side (844 x 390, the farm 248 high, the tools below it): the pier 94 px past the edge, the pin at the edge.
+ assert.deepEqual(pinSpot(486,342,.272,-1.757,248),{x:486,y:242,edge:true});
+ // In view and clear of everything: right on the pier. Far below (more than half the height), above the top or off a side: hidden.
+ assert.deepEqual(pinSpot(500,300,0,0,600),{x:500,y:300,edge:false});
+ assert.equal(pinSpot(500,760,0,ndc(760,500),500),null);assert.equal(pinSpot(500,20,0,ndc(20,600),600),null);assert.equal(pinSpot(990,300,.95,0,600),null);
+ assert.match(ui,/pin\.hidden=!spot;if\(!spot\)return;pin\.style\.left=`\$\{spot\.x\}px`;pin\.style\.top=`\$\{spot\.y\}px`;pin\.classList\.toggle\('edge',spot\.edge\);/);
+ assert.match(ui,/blocked=\{bars:find\('\.bottom-hud'\),sides:find\('\.scene-controls,\.side-tools'\)\};/,'measured where the labels are');
+ assert.match(read('public/pond.css'),/\.pond-label\.edge::after\{content:'';position:absolute;left:50%;bottom:-9px;/,'a small point down at the pier');
+ // The level-4 card says where it is, like a building ("open Buildings") and a field ("at the Farmhouse").
+ assert.match(read('public/progression-ui.js'),/e\.id==='feature:fishing'\?'Activity · tap its pin over the pier':e\.kind\+' unlocked'/);
+});
+test('the pond screen says what a new kind pays, a refused catch takes its card along, and a long press selects nothing',()=>{
+ const ui=read('public/pond-ui.js'),css=read('public/pond.css');
+ // The first of each kind pays 3 times its coins and 10 XP more (farm-state.js landFish): the catch card and the Fish book say so.
+ assert.match(ui,/if\(r\.first\)tags\.push\(\['is-new',`New fish for your book: \$\{POND_NEW_FISH_COINS\+1\}× coins, \+\$\{POND_NEW_FISH_XP\} XP`\]\);/);
+ assert.ok(ui.includes('<li>Every fish pays coins (more for a heavier fish and at a higher level) and XP. The first of each kind pays ${POND_NEW_FISH_COINS+1} times its coins and ${POND_NEW_FISH_XP} XP more.</li>'),'in How fishing works, the wiki\'s own words');
+ assert.ok(read('public/wiki-content.js').includes('The first of each kind pays ${POND_NEW_FISH_COINS+1} times its coins and ${POND_NEW_FISH_XP} XP more.'));
+ // While a catch card is up the pond's count is the fish after it; when the farm takes the catch back (farm-client.js rolls it back
+ // with its coins) the card goes, and the next cast fishes the same fish again.
+ assert.match(ui,/shown=r\.n;paid=state\.stats\.fish_coins\?\?0;setPhase\('result'\)/);
+ assert.match(ui,/if\(isOpen&&phase==='result'&&\(current\(\)!==shown\+1\|\|\(state\.stats\.fish_coins\?\?0\)!==paid\)\)\{card\.hidden=true;idle\(\);\}/);
+ assert.match(ui,/function cast\(\)\{\n  if\(casts\(\)\.casts<1\|\|sending\)\{idle\(\);return;\}\n  if\(fishN!==current\(\)\)\{fishN=current\(\);tries=0;escapes=0;\}/);
+ // Holding on the water or the button (to reel) selects no text and opens no callout on an iPhone.
+ assert.match(css,/\.pond-view\{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none\}/);
+ // The game's palette only: every colour in pond.css is one the game already uses (or a buttons.css token).
+ const others=readdirSync(new URL('../public/',import.meta.url)).filter(f=>f.endsWith('.css')&&f!=='pond.css').map(f=>read(`public/${f}`)).join('\n').toLowerCase();
+ for(const hex of new Set(css.toLowerCase().match(/#[0-9a-f]{6}(?=[0-9a-f]{2}\b|\b)/g)))assert.ok(others.includes(hex),`${hex} is not a colour of the game`);
 });

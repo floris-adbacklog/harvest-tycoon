@@ -3169,7 +3169,8 @@ export function landFish(state,n,landed,perfect,now=Date.now()){
  if(first||record)p.best[fish.species]=fish.kg;
  state.coins+=coins;state.xp+=xp;
  state.stats.fish=(state.stats.fish??0)+1;state.stats.fish_coins=(state.stats.fish_coins??0)+coins;if(perfect)state.stats.fish_perfect=(state.stats.fish_perfect??0)+1;
- let diamonds=0;if(!p.bookPaid&&pondBookDone(state)){p.bookPaid=true;diamonds=POND_BOOK_DIAMONDS;state.diamonds+=diamonds;}
+ // The book's diamonds count as diamonds earned, like every other diamond from play (11 Oct 2026, the review).
+ let diamonds=0;if(!p.bookPaid&&pondBookDone(state)){p.bookPaid=true;diamonds=POND_BOOK_DIAMONDS;state.diamonds+=diamonds;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;}
  return {n,species:fish.species,kg:fish.kg,coins,xp,first,record,perfect,today,diamonds,casts:pondCasts(state,now)};
 }
 // A saved pond as the rules expect it (never made here: a farm that never fished keeps its shape). Numbers are whole and in range, the

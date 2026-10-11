@@ -1,5 +1,5 @@
 import {art,refreshArt} from './visual-icons.js';
-import {FISH,POND_MAX_CASTS,POND_REFILL_MS,POND_BOOK_DIAMONDS,POND_PERFECT,pondCasts,pondFish,pondBookDone,todaysFish,featureUnlocked,featureUnlockHint,formatDuration} from './farm-state.js';
+import {FISH,POND_MAX_CASTS,POND_REFILL_MS,POND_BOOK_DIAMONDS,POND_PERFECT,POND_NEW_FISH_COINS,POND_NEW_FISH_XP,pondCasts,pondFish,pondBookDone,todaysFish,featureUnlocked,featureUnlockHint,formatDuration} from './farm-state.js';
 import {createReel} from './pond-reel.js';
 import {createPondScene} from './pond-scene.js';
 import {fitText} from './fit-text.js';
@@ -15,6 +15,19 @@ const say={cast:'Tap to cast.',wait:'Wait for the float to dip…',soon:'Too soo
 const NAME='Fishing pond';
 const kg=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const number=n=>n.toLocaleString('en-US');
+// Where the pond's pin goes (11 Oct 2026, the review). x, y: the pier's spot on the screen; px, py: the same from -1 to 1 (py -1 is the
+// bottom edge). On the home view of a phone and of a computer the pier sits at or just past the bottom edge (on a computer behind the
+// bar of tools; a phone on its side does not show the pond at all), so the pin was hidden just as level 4 opened the pond. A pier up to
+// half the screen below the edge now has its pin waiting at the edge, pointing down at it (edge); it goes above a bar it would sit under
+// (bars: the bar of tools) and beside a button group (sides: the camera buttons, a computer's side tools). A pier further away, or off
+// to a side, hides it as before (null).
+const overlaps=(x,top,b)=>x+26>b.left&&x-26<b.right&&top>b.top-4&&top-52<b.bottom;
+export const pinSpot=(x,y,px,py,height,bars=[],sides=[])=>{
+ if(Math.abs(px)>.94||py>.84||py<-2)return null;
+ let top=Math.min(y,height-6),left=x;for(const b of bars)if(overlaps(left,top,b))top=b.top-6;
+ for(const b of sides)if(overlaps(left,top,b))left=left<(b.left+b.right)/2?b.left-30:b.right+30;
+ return {x:left,y:top,edge:top<y-1};
+};
 export function createPond({state,scene,game,labels,runAction,now,play=()=>{},haptic=()=>{},toast=()=>{},resize=()=>{},reducedMotion=false,focusFarm=()=>{}}){
  // The pond's own cue: now and then a fish jumps while casts are waiting and nothing on the farm is ripe (a ripe crop comes first).
  const pond3d=createPondScene({scene,reducedMotion,cue:()=>!isOpen&&featureUnlocked(state,'fishing')&&pondCasts(state,now()).casts>0&&!state.plots.some(p=>p.crop&&p.readyAt<=now())});
@@ -42,8 +55,8 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
  const tile=document.createElement('button');tile.dataset.menuUtility='fishing';tile.innerHTML=`${art('fishingpond')}<span><strong>Fishing pond</strong><small class="menu-hint">Fish while your crops grow</small></span>`;
  tile.onclick=()=>{document.getElementById('more-dialog')?.close();open();};if(farmHeading)farmHeading.after(tile);
  const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='pond-shortcut';shortcut.innerHTML=`${art('fishingpond')}<span>Fishing pond</span>`;shortcut.hidden=true;
- shortcut.onclick=()=>{document.getElementById('buildings-dialog')?.close();open();};document.querySelector('#buildings-dialog .utility-shortcuts')?.append(shortcut);
- let isOpen=false,phase='idle',clock=0,phaseAt=0,reel=null,holding=false,fishN=-1,tries=0,escapes=0,waitEnd=0,nibbles=[],paused=false,sending=false,loop=0,last=0,held=[];
+ shortcut.onclick=()=>{document.getElementById('buildings-dialog')?.close();open();};document.querySelector('#buildings-dialog .utility-shortcuts')?.prepend(shortcut);   // first: it opens at level 4, long before the others
+ let isOpen=false,phase='idle',clock=0,phaseAt=0,reel=null,holding=false,fishN=-1,tries=0,escapes=0,waitEnd=0,nibbles=[],paused=false,sending=false,loop=0,last=0,held=[],shown=-1,paid=0;
  let glide={from:0,to:0,at:0,ms:600};
  const mix=()=>{const k=glide.ms>0?Math.min(1,(performance.now()-glide.at)/glide.ms):1,e=k<.5?2*k*k:1-(-2*k+2)**2/2;return glide.from+(glide.to-glide.from)*e;};
  const gliding=()=>performance.now()-glide.at<glide.ms;
@@ -68,6 +81,7 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
  }
  function cast(){
   if(casts().casts<1||sending){idle();return;}
+  if(fishN!==current()){fishN=current();tries=0;escapes=0;}   // the farm refused a fish or a let-go after all: that fish is still there
   card.hidden=true;letGo.hidden=true;setPhase('cast');pond3d.cast();play('cast');word('Wait');tell(say.wait);planWait();waitEnd+=.7;nibbles=nibbles.map(t=>t+.7);
  }
  function bite(){setPhase('bite');pond3d.bite();play('bite');haptic('bite');word('Strike!');tell(say.now);}
@@ -94,7 +108,8 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
  function showCard(r){
   const f=FISH[r.species],left=r.casts.casts,tags=[];
   // Each tag a text of its own (plain strings, so the languages find them).
-  if(r.first)tags.push(['is-new','New fish for your book!']);else if(r.record)tags.push(['is-record','New record!']);
+  // A new kind says what it paid extra (11 Oct 2026, the review: the next of the same kind paid a third and nothing said why).
+  if(r.first)tags.push(['is-new',`New fish for your book: ${POND_NEW_FISH_COINS+1}× coins, +${POND_NEW_FISH_XP} XP`]);else if(r.record)tags.push(['is-record','New record!']);
   if(r.perfect)tags.push(['',`Perfect catch! +${Math.round(POND_PERFECT*100)}% coins`]);
   if(r.today)tags.push(['','Today’s fish: double coins']);
   if(r.diamonds)tags.push(['is-book','Fish book complete!']);
@@ -105,7 +120,7 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
    <div class="pond-card-actions">${left>0?`<button type="button" class="primary-button" data-card-again>Cast again (${left} left)</button><button type="button" class="secondary-button" data-card-farm>Back to my farm</button>`:'<button type="button" class="primary-button" data-card-farm>Back to my farm</button>'}</div>`;
   card.querySelector('[data-card-again]')?.addEventListener('click',()=>{card.hidden=true;fishN=current();tries=0;escapes=0;cast();});
   card.querySelector('[data-card-farm]').addEventListener('click',()=>close());
-  setPhase('result');card.hidden=false;tell('');refreshArt();top();
+  shown=r.n;paid=state.stats.fish_coins??0;setPhase('result');card.hidden=false;tell('');refreshArt();top();
   (card.querySelector('[data-card-again]')??card.querySelector('[data-card-farm]')).focus({preventScroll:true});
  }
  // The Fish book: the eight kinds with their best weight (a shadow until caught), the reward for all eight and how fishing works.
@@ -115,7 +130,7 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
    <ul class="pond-book-list">${Object.entries(FISH).map(([key,f])=>{const have=best[key]>0,secret=key==='whiskers'&&!have;
     return `<li class="${have?'is-caught':'is-missing'}">${art(`fish-${key}`,'pond-book-art')}<div><strong>${secret?'?':f.name}</strong><small>${have?`Best: ${kg(best[key])} kg`:secret?'Something big lives in this pond.':'Not caught yet'}</small></div></li>`;}).join('')}</ul>
    <p class="pond-book-reward">${art('diamonds')}<span>${done?`Book complete: ${POND_BOOK_DIAMONDS} diamonds earned.`:`Catch all ${Object.keys(FISH).length} kinds: ${POND_BOOK_DIAMONDS} diamonds, once.`}</span></p>
-   <h4>How fishing works</h4><ul class="pond-rules"><li>Tap or press Space to cast. When the float dips, tap again. Hold to reel and keep the fish in the green.</li><li>A fish that gets away stays in the pond: a cast is only used when you land a fish or let it go.</li><li>A new cast every ${POND_REFILL_MS/60000} minutes, up to ${POND_MAX_CASTS}. Today’s fish pays double coins.</li></ul>`;
+   <h4>How fishing works</h4><ul class="pond-rules"><li>Tap or press Space to cast. When the float dips, tap again. Hold to reel and keep the fish in the green.</li><li>A fish that gets away stays in the pond: a cast is only used when you land a fish or let it go.</li><li>Every fish pays coins (more for a heavier fish and at a higher level) and XP. The first of each kind pays ${POND_NEW_FISH_COINS+1} times its coins and ${POND_NEW_FISH_XP} XP more.</li><li>A new cast every ${POND_REFILL_MS/60000} minutes, up to ${POND_MAX_CASTS}. Today’s fish pays double coins.</li></ul>`;
   book.querySelector('[data-book-close]').onclick=closeBook;book.hidden=false;refreshArt();book.querySelector('[data-book-close]').focus({preventScroll:true});
  }
  function closeBook(){book.hidden=true;act.focus({preventScroll:true});}
@@ -210,16 +225,25 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
  function position(camera,width,height){
   const open=unlocked(),c=open?casts().casts:0;pond3d.show(open);shortcut.hidden=!open;
   if(!open||isOpen){pin.hidden=true;return;}
-  const p=pond3d.labelAt().project(camera),x=(p.x*.5+.5)*width,y=(-p.y*.5+.5)*height;
-  pin.style.left=`${x}px`;pin.style.top=`${y}px`;pin.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.84;
+  const p=pond3d.labelAt().project(camera),{bars,sides}=blocks(),spot=pinSpot((p.x*.5+.5)*width,(-p.y*.5+.5)*height,p.x,p.y,height,bars,sides);
+  pin.hidden=!spot;if(!spot)return;pin.style.left=`${spot.x}px`;pin.style.top=`${spot.y}px`;pin.classList.toggle('edge',spot.edge);
   const badge=pin.querySelector('.pond-badge'),text=String(c);if(badge.textContent!==text)badge.textContent=text;
   pin.classList.toggle('ready',c>=POND_MAX_CASTS);pin.classList.toggle('empty',c<1);pin.title=`Casts waiting: ${c}`;
+ }
+ // The tools over the farm, where the labels are (measured at most once a second: the labels move far more often).
+ let blocked={bars:[],sides:[]},measured=-Infinity;
+ function blocks(){
+  const t=performance.now();if(t-measured<1000)return blocked;measured=t;const box=labels.getBoundingClientRect();
+  const find=selector=>[...document.querySelectorAll(selector)].map(el=>el.getBoundingClientRect()).filter(r=>r.width&&r.height).map(r=>({left:r.left-box.left,right:r.right-box.left,top:r.top-box.top,bottom:r.bottom-box.top}));
+  blocked={bars:find('.bottom-hud'),sides:find('.scene-controls,.side-tools')};return blocked;
  }
  let lastTop=0;
  return {
   open,close,viewing:()=>isOpen||mix()>0,frame:frame3d,position,
   // Called by the game's frame: the pond's 3D life, and the top line of the open screen once a second.
-  tick(t,dt){pond3d.tick(t,dt);if(isOpen&&t-lastTop>1000){lastTop=t;top();}},
+  // A catch the farm refused after all (another tab, a fish too soon after two others) is taken back with its coins, so its card goes too:
+  // while a card is up the pond's count is the fish after it and the fish coins are what they were with it, unless the farm went back.
+  tick(t,dt){pond3d.tick(t,dt);if(isOpen&&phase==='result'&&(current()!==shown+1||(state.stats.fish_coins??0)!==paid)){card.hidden=true;idle();}if(isOpen&&t-lastTop>1000){lastTop=t;top();}},
   // A card that would cover the pond waits until the farmer is back on the farm.
   hold(show){if(!isOpen)return false;held.push(show);return true;}
  };
