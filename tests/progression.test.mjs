@@ -165,3 +165,35 @@ test('grandfathered construction keeps the first recipe when a previously availa
  s.progression.kept.recipes=[];assert.ok(recipeUnlocked(s,'applejuice'),'partial older migration still keeps buildable recipe access');
  s.inventory.apples=4;produce(s,'applejuice');assert.equal(s.inventory.applejuice,1);
 });
+
+// 11 Oct 2026 (Part A, A6): about 8 interruptions in a new farmer's first 8 minutes, some an "Unlocked!" card for a building just built
+// (its recipes). A new level keeps its card; what opens without one is a single line at the top; an avatar earned keeps its card.
+test('what opens without a new level is one line at the top; a level, catch-up rewards or an avatar keep the card',async()=>{
+ const {createProgressionUI,newLine,progressionChange,progressionSnapshot}=await import('../public/progression-ui.js');
+ assert.equal(newLine(['Animal feed']),'New: Animal feed.');
+ assert.equal(newLine(['Cheese','Butter']),'New: Cheese and Butter.');
+ assert.equal(newLine(['Cheese','Butter','Cream']),'New: Cheese, Butter and Cream.');
+ assert.equal(newLine(['A','B','C','D','E']),'New: A, B, C and more.','at most three names');
+ const cards=[],lines=[],timers=[];
+ const dialog={setAttribute(){},addEventListener(){},querySelector:()=>({}),showModal(){cards.push(this.innerHTML);}};
+ const saved={document:globalThis.document,window:globalThis.window,setTimeout:globalThis.setTimeout};
+ globalThis.document={createElement:()=>dialog,body:{append(){}},querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},removeEventListener(){}};
+ globalThis.window={addEventListener(){},dispatchEvent(){}};
+ try{
+  const s=createFarm(now);level(s,4);s.coins=1e6;
+  const ui=createProgressionUI({state:s,isReady:()=>true,notify:text=>lines.push(text)});
+  const flush=()=>new Promise(r=>saved.setTimeout(r,140));
+  // Building the Feed Mill opens its recipes: one line, no card.
+  const before=progressionSnapshot(s);act(s,{type:'construct',building:'mill'},now);const built=progressionChange(before,s,null);
+  assert.equal(built.leveled,false);assert.ok(built.entries.length>0,'the mill opens something');
+  ui.announce(built);await flush();
+  assert.equal(cards.length,0,'no Unlocked! card');assert.equal(lines.length,1);assert.match(lines[0],/^New: /);
+  // A new level: its card, as always.
+  const b2=progressionSnapshot(s);level(s,6);ui.announce(progressionChange(b2,s,null));await flush();
+  assert.equal(cards.length,1);assert.match(cards[0],/Level 6!/);
+  // Catch-up rewards keep their card too.
+  ui.announce({...progressionChange(progressionSnapshot(s),s,{levels:[6],coins:60,diamonds:1}),catchUp:true});await flush();
+  assert.equal(cards.length,2);
+ }finally{Object.assign(globalThis,saved);}
+ assert.match(readFileSync(new URL('../public/progression-ui.js',import.meta.url),'utf8'),/if\(notify&&!p\.leveled&&!p\.catchUp&&!faces\.length&&p\.entries\.length\)\{notify\(newLine\(p\.entries\.map\(e=>e\.name\)\)\);return;\}/);
+});

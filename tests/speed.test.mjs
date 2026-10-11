@@ -21,10 +21,20 @@ test('Show me points the way: the bubble sits above the button when there is roo
  const top=bubblePlace({left:300,top:10,width:76,height:40,bottom:50},{width:240,height:40},view);
  assert.equal(top.above,false,'below a button at the very top');assert.equal(top.left,390-12-240,'kept 12 px from the edge');
  assert(top.arrow>16&&top.arrow<=240-16,'the arrow still points at the button');
+ // 11 Oct 2026: a side tool on a computer (840x430): beside the whole column, level with the button, so no other side button is covered.
+ const tools={left:16,top:150,width:186,height:200,right:202,bottom:350},market={left:20,top:216,width:60,height:60,right:80,bottom:276};
+ const side=bubblePlace(market,{width:170,height:40},{width:840,height:430},tools);
+ assert.equal(side.side,'right');assert.equal(side.left,202+12,'right of the column');assert.equal(side.top,246-20,'level with the button');assert.equal(side.arrowY,20);
+ const rtl=bubblePlace({...market,left:760,right:820},{width:170,height:40},{width:840,height:430},{...tools,left:638,right:824});
+ assert.equal(rtl.side,'left');assert.equal(rtl.left,638-12-170,'left of a column on the right (Arabic)');
+ const tight=bubblePlace(market,{width:170,height:40},{width:300,height:430},{...tools,right:200});
+ assert.equal(tight.side,undefined,'no room beside it: above or below as before');
+ const coach=read('public/coach.js');
+ assert.match(coach,/const beside=tools&&tools\.width&&tools\.top<win\.innerHeight\*\.6&&\(tools\.left<win\.innerWidth\*\.3\|\|tools\.right>win\.innerWidth\*\.7\)\?tools:null;/,'never the phone\'s bottom bar');
 });
 test('every Show me goal uses the buttons a farmer uses: the bottom bar and More on a phone, the side buttons and the map on a computer',()=>{
  const steps=read('public/guide-steps.js'),game=read('public/game.js'),coach=read('public/coach.js');
- assert.match(game,/else if\(guideSteps\(target,\{state,now:farmNow\(\)\}\)\)coach\.start\(guideSteps\(target,\{state,now:farmNow\(\)\}\)\);/);
+ assert.match(game,/else if\(guideSteps\(target,\{state,now:farmNow\(\)\}\)\)coach\.start\(guideSteps\(target,\{state,now:farmNow\(\)\}\),\{auto\}\);/);
  assert.doesNotMatch(game,/else if\(target==='market'\)openDialog\('market-dialog'\);\n  else if\(guideSteps/,'pointing comes first');
  for(const sel of ["shown('#market-button')","shown('#buildings-button')","shown('#more-button')",'[data-menu-action="today-button"]','.utility-label[data-utility="chores"]:not(.locked)','.start-recipe[data-recipe="eggs"]','#checkin-gift','[data-collect-job]'])assert.ok(steps.includes(sel),sel);
  assert.match(coach,/pointer-events|r\.index===at/);assert.match(read('public/beginner.css'),/\.coach-bubble\{position:fixed;[^}]*pointer-events:none/,'taps go through the bubble');

@@ -140,7 +140,8 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
  window.harvestRefresh=refresh;
  // The parent reports a connection that is being restored ("Reconnecting…") and tells when it is back.
  bridge.watchConnection?.(status=>{if(status==='reconnecting')onStatus('reconnecting');else if(status==='ok')onStatus('saved');});
- const look=parts=>{if(!adminView())noted={...noted,...parts};};
+ // The load chain (11 Oct 2026) adds to what waits to be sent: a lost 3D view (chain.lost) does not drop the steps before it.
+ const look=parts=>{if(!adminView())noted={...noted,...parts,...(noted?.chain&&parts?.chain?{chain:{...noted.chain,...parts.chain}}:{})};};
  // Quietly: no saving status, no locked farm, no error shown (an older farm-api refuses it); its answer still takes over the farm.
  const sendLook=()=>{if(noted&&!adminView())void send({type:'first_look'},true).then(replace,()=>{});};
  return {load,runAction,sweep,retry:refresh,flush:async()=>{},refresh,look,sendLook};

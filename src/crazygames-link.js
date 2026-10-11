@@ -12,6 +12,10 @@ export const NS='harvest-cg';
 export const WRAPPER_ORIGIN=/^https:\/\/([a-z0-9-]+\.)*crazygames\.com$/;
 export const LOCAL_ORIGIN=/^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/;
 export const SDK_EVENTS=Object.freeze(['loadingStart','loadingStop','gameplayStart','gameplayStop','happytime']);
+// When the game tells CrazyGames it is a happy moment (their happytime, 11 Oct 2026, Part A A3): only at a milestone, as CrazyGames asks for it
+// "sparingly": the guide complete (farm-client.js sends guide_complete with its 50 diamonds) and every fifth level (5, 10, 15 ...). Until
+// then every level-up was one, at most once in two minutes; that limit stays (src/crazygames.js).
+export const happyMoment=(event,params)=>event==='guide_complete'||event==='level_up'&&Number.isInteger(params?.level)&&params.level>0&&params.level%5===0;
 export const isLocalHost=hostname=>hostname==='localhost'||hostname==='127.0.0.1';
 export function trustedWrapper(origin,{local=false}={}){return typeof origin==='string'&&(WRAPPER_ORIGIN.test(origin)||(local&&LOCAL_ORIGIN.test(origin)));}
 // What init may carry, and nothing else.

@@ -17,8 +17,11 @@ test('the first minute: fields up close on every screen, the sickle shows itself
  assert.match(game,/\|\|!\(state\.stats\.harvested>0\)\?'fields':'home'/,'a computer starts on the fields until the first harvest');
  assert.match(game,/if\(!villageWorld&&!adminView&&!\(state\.stats\.harvested>0\)&&beginnerProgress\(state\)\.find\(q=>q\.current\)\?\.id==='harvest'\)firstBasketGhost\(\);/,'the sickle shows by itself on a new farm');
  assert.match(game,/if\(firstBasket&&!villageWorld\)firstBasketGhost\(\);/,'and still from Show me');
- assert.match(progression,/if\(notify&&p\.leveled&&!p\.catchUp&&p\.level===2&&!p\.avatars\?\.length\)\{notify\(p\.entries\.some\(e=>e\.id==='building:mill'\)\?'Level 2! You can now build the Feed Mill and buy a new field\.':`Level \$\{p\.level\}! One harvest at a time, your farm is growing\.`\);return;\}/,'level 2 names the Feed Mill and the new field (7 Oct 2026)');
- assert.match(beginner,/if\(lastStep==='harvest'&&current\?\.id==='sell'\)\{clearTimeout\(marketTimer\);marketTimer=setTimeout\(\(\)=>\{if\(!document\.querySelector\('dialog\[open\]'\)&&beginnerProgress\(state\)\.find\(q=>q\.current\)\?\.id==='sell'\)guide\('market'\);\},1800\);\}/);
+ // 11 Oct 2026 (Part A A11): with the first basket the level-2 line says the next step; otherwise it names the Feed Mill (7 Oct 2026).
+ assert.match(progression,/if\(notify&&p\.leveled&&!p\.catchUp&&p\.level===2&&!p\.avatars\?\.length\)\{notify\(beginnerProgress\(state\)\.find\(q=>q\.current\)\?\.id==='sell'\?'Level 2! Next: sell your corn in Market\.':p\.entries\.some\(e=>e\.id==='building:mill'\)\?'Level 2! You can now build the Feed Mill and buy a new field\.':`Level \$\{p\.level\}! One harvest at a time, your farm is growing\.`\);return;\}/,'level 2 says the next step, or names the Feed Mill and the new field');
+ // The way to the Market by itself (since 6 Oct 2026), now for every step (A12): pending after a step, the moment the harvest lands for step 2.
+ assert.match(beginner,/if\(lastStep&&phase&&phase!==lastStep\)\{pending=\{id:current\.id,phase,guide:current\.guide,wait:AUTO_WAIT_MS,quietAt:quiet\(\)\?Date\.now\(\):0\};\}/);
+ assert.match(beginner,/function landed\(\)\{if\(pending\?\.id!=='sell'&&pending\?\.phase!=='sell_egg:sell'\)return;pending\.wait=0;autoCheck\(\);\}/);
  const ids=[...beginner.matchAll(/(\w+):'[^']+'/g)].map(m=>m[1]).slice(0,10);
  assert.deepEqual(ids,['harvest','sell','plant','water','produce','gift','chore','tend','wheat','collect'],'a short what-to-do for every guide step, in order');
  assert.match(beginner,/liveStep\(state,current\?\.id,farmNow\(\)\)\?\?DO_NOW\[current\?\.id\]\?\?current\?\.title/);

@@ -248,7 +248,7 @@ test('the texts say how: computer hints and step 1 sweep first, the wiki mouse f
  assert.ok(game.includes("'Sweep across your ripe corn to harvest it, or tap one.'"),'Show me says it too');
  const section=wiki.match(/\['harvest','Swipe across fields',`([^`]*)`\]/)[1];
  assert.ok(section.indexOf('With a mouse')===0&&section.indexOf('With a mouse')<section.indexOf('On a touchscreen'),'mouse first, then touch');
- assert.match(wiki,/With a mouse, a drag with the right button moves it from anywhere\./);
+ assert.match(wiki,/With a mouse, a drag with the right button moves it from anywhere; before your first harvest only that one does\./);
  assert.match(tips,/\['instant-harvest','Hold the mouse button on a ripe crop and sweep across your fields to harvest them all\. On a phone, hold a field for a moment first\.'\]/);
  assert.match(read('public/farm.html'),/Click to work · Sweep across crops · Drag the grass to explore/);
 });

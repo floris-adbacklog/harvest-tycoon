@@ -113,3 +113,12 @@ html,body{touch-action:pan-x pan-y}
 /* Right to left (Arabic, 1 Oct 2026): arrows point the way the page reads, and Arabic letters are never spaced apart (they join). */
 [dir=rtl] :is(.lucide-chevron-right,.lucide-chevron-left,.lucide-arrow-right,.lucide-arrow-left,.lucide-chevrons-right,.lucide-chevrons-left,.lucide-move-right,.lucide-move-left,[data-lucide="chevron-right"],[data-lucide="chevron-left"],[data-lucide="arrow-right"],[data-lucide="arrow-left"]){transform:scaleX(-1)}
 :lang(ar) *{letter-spacing:0!important}
+/* A lost 3D view on its way back (11 Oct 2026, Part A A4; public/game.js bindContextRestore): a small cream card over the paused farm, the
+   bars stay usable around it; only after 5 seconds without the view the card with Try again (#error) takes its place. */
+.restoring-card{display:flex;align-items:center;gap:14px;width:auto;max-width:90%;padding:18px 24px;pointer-events:none}.restoring-card[hidden]{display:none}
+.restoring-card h2{font-size:20px;margin:0}
+.restoring-dot{width:18px;height:18px;flex:none;border-radius:50%;border:3px solid var(--btn-second-line);border-top-color:var(--btn-main);animation:restoring-turn 1s linear infinite}
+@keyframes restoring-turn{to{transform:rotate(360deg)}}
+/* A swipe or wheel past the end of the farm page or one of its windows stays here (11 Oct 2026, Part A A7, with public/wheel-guard.js):
+   on CrazyGames it slid their page, and the game with it, out of view. */
+html,body{overscroll-behavior:none}dialog{overscroll-behavior:contain}

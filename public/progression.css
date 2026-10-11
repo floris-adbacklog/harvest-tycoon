@@ -94,3 +94,14 @@
 .farm-share-copy-field{position:fixed;inset-inline-start:-9999px;top:0;opacity:0}
 @media(max-width:360px){#level-up-dialog .level-up-actions{flex-direction:column}.farm-share-actions{flex-direction:column}}
 @media(prefers-reduced-motion:reduce){.farm-share-spinner{animation:none}}
+/* The guide-complete card's way on (11 Oct 2026, Part A A8): Thank you (cream) beside the green button that leads to the next goal. */
+#gift-dialog .gift-actions{display:flex;gap:10px;margin-top:24px}#gift-dialog .gift-actions[hidden]{display:none}
+#gift-dialog .gift-actions>button{flex:1 1 0;min-width:0;min-height:48px;justify-content:center}
+#gift-dialog .gift-actions>.gift-action{flex-grow:1.6}
+@media(max-width:360px){#gift-dialog .gift-actions{flex-direction:column-reverse}}
+/* Short frames (11 Oct 2026, Part A A14: 918x516 and 840x430 on CrazyGames cut Keep growing off below the card): the card's main button, or
+   its row of buttons, stays in sight at the bottom of the card while the rest scrolls under it, on a cream edge of its own. */
+@media(max-height:599px){
+ #level-up-dialog>.level-up-done,#gift-dialog>.gift-done{position:sticky;bottom:-12px;z-index:2;box-shadow:0 3px 0 var(--btn-main-edge),0 0 0 12px #fffdf4}
+ #level-up-dialog>.level-up-actions,#gift-dialog>.gift-actions{position:sticky;bottom:-24px;z-index:2;margin-bottom:-24px;padding:12px 0 24px;background:#fffdf4}
+}

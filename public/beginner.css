@@ -122,7 +122,43 @@
 .coach-bubble{position:fixed;left:0;top:0;z-index:2147483000;box-sizing:border-box;max-width:min(270px,calc(100vw - 24px));padding:10px 14px;border-radius:14px;background:#33452a;color:#fffbea;font:700 15px/1.35 'DM Sans',system-ui,sans-serif;text-align:center;box-shadow:0 10px 26px rgba(30,40,20,.35);pointer-events:none;animation:coach-bob 1.3s ease-in-out infinite}
 .coach-bubble::after{content:'';position:absolute;left:var(--coach-arrow,50%);top:100%;width:0;height:0;margin-inline-start:-9px;border:9px solid transparent;border-top-color:#33452a}
 .coach-bubble.is-below::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:#33452a}
+/* Beside the side tools (11 Oct 2026, coach.js bubblePlace): the arrow points sideways at the button. */
+.coach-bubble.is-side-right::after,.coach-bubble.is-side-left::after{top:var(--coach-arrow-y,50%);bottom:auto;margin:-9px 0 0;border-top-color:transparent}
+.coach-bubble.is-side-right::after{left:auto;right:100%;border-right-color:#33452a}
+.coach-bubble.is-side-left::after{left:100%;right:auto;border-left-color:#33452a}
 @keyframes coach-bob{0%,100%{translate:0 0}50%{translate:0 -4px}}
 .coach-bubble.is-below{animation-name:coach-bob-down}
 @keyframes coach-bob-down{0%,100%{translate:0 0}50%{translate:0 4px}}
 @media(prefers-reduced-motion:reduce){.coach-target,.coach-bubble{animation:none}}
+
+/* ---- Part A, the first ten minutes (11 Oct 2026) ---- */
+/* A11: from the first harvest to the first sale the Market stays lit (beginner-ui.js guide-next), and its badge says what the basket is
+   worth today (game.js hudNumbers), a coin and the amount instead of the count. */
+.side-tool.guide-next>span{box-shadow:0 0 0 3px #f2c14e,0 0 14px 3px #f2c14e8c;animation:guide-next-glow 1.6s ease-in-out infinite}
+@keyframes guide-next-glow{50%{box-shadow:0 0 0 3px #f2c14e,0 0 22px 7px #f2c14ec2}}
+#stock-count.is-worth{display:flex;align-items:center;gap:2px;width:auto;min-width:0;padding:0 6px 0 2px;border-radius:999px;white-space:nowrap;background:#fff1c4;color:#6b4712}
+#stock-count.is-worth .game-art{width:14px;height:14px;flex:none}
+@media(prefers-reduced-motion:reduce){.side-tool.guide-next>span{animation:none}}
+/* A13: the next goal in the guide's place once it is done: a small cream card on a computer, the guide's one-line banner on a phone (only
+   while there is a quest to claim or a building to build). */
+.next-goal-card{box-sizing:border-box;overflow:hidden}
+@media(min-width:901px){.next-goal-card{width:270px;inset-inline-end:20px}}
+.next-goal-card .quest-heading{display:grid;grid-template-columns:30px minmax(0,1fr) 28px;gap:10px;align-items:center;padding:10px 14px}
+.next-goal-card .quest-heading>span:nth-child(2){min-width:0;font-size:14px;line-height:1.3}
+.next-goal-card .quest-heading small{display:block;font-size:10px;letter-spacing:.1em;margin-top:3px}
+.next-goal-card .quest-icon{width:30px;height:30px}
+.next-goal-card .quest-heading .bare-button{width:28px;height:28px;min-width:0;margin:0;padding:4px;display:grid;place-items:center}
+#next-goal-body{padding:2px 14px 14px}
+.next-goal-main{display:flex;align-items:center;gap:10px;min-width:0}
+.next-goal-art{flex:none;width:40px;height:40px;display:grid;place-items:center}.next-goal-art>.game-art{width:40px;height:40px}
+.next-goal-card #next-goal-title{margin:0;font-size:17px;line-height:1.25;overflow-wrap:break-word;min-width:0}
+.next-goal-card .next-goal-note{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0}
+.next-goal-note b{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 4px;border-radius:999px;background:#f6efdc;color:#6b4712;font-size:12px}
+.next-goal-note .game-art{width:18px;height:18px}
+.next-goal-note .reward-xp{background:#eef2fc;color:#39518f}
+.next-goal-card #next-goal-meter{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:0}
+.next-goal-card #next-goal-meter progress{flex:1 1 0;width:0;min-width:0;height:7px}
+.next-goal-card #next-goal-meter b{flex:none;font-size:11px;font-variant-numeric:tabular-nums}
+.next-goal-card #next-goal-button{display:flex;width:100%;min-height:40px;margin:12px 0 0;justify-content:center;font-size:13px}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){#next-goal-mobile-copy{font-size:12px;line-height:1.4;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:start}}
+.goal-line .touch-instructions{display:none}
