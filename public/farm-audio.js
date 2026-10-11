@@ -152,9 +152,22 @@ function renderInBackground(windowRef,accept){
  }catch{idle();}
  return ()=>{stopped=true;worker?.terminate();};
 }
-export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic,loadPreview=loadMusicPreview,renderSounds=renderInBackground}={}){
+// 11 Oct 2026 (a player's iPhone app stayed silent after a trip to the village and back): on iOS a resume() can wait for good (WebKit
+// parks it while it may not start: a tap it did not count, an interruption that never ends) and a context can say 'running' while its
+// clock stands still. So every tap asks again; a context a tap could not start within RESUME_WAIT, or whose clock stood still for
+// STILL_WAIT, is closed and a fresh one made in that tap (each wait twice as long after every replacement, up to 32 times, until a tap
+// hears the clock move again); a context the browser would not make is tried again on a tap RESUME_WAIT later, MAKE_TRIES in a row
+// at most.
+export const RESUME_WAIT=1000,STILL_WAIT=2000,MAKE_TRIES=3;
+// touchend and click too (11 Oct 2026): older iOS did not count a pointerup as a tap that may start sound, and VoiceOver only clicks.
+const GESTURES=['pointerup','pointerdown','touchend','click','keydown'];
+export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic,loadPreview=loadMusicPreview,renderSounds=renderInBackground,clock=()=>globalThis.performance?.now?.()??Date.now()}={}){
  let settings={...AUDIO_DEFAULTS},ctx,master,compressor,ambientBus,effectBus,music=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;
  let nextEffectAt=0,priorityUntil=0,resuming=null,lastSnip=-Infinity;
+ // tried: when a tap first asked this context to start since it last ran; gaveUp: such a start ended without it running; renewals:
+ // contexts replaced since a tap last heard the clock move; heard: the clock at a tap, to see it moves; makeFails, failedAt: makes
+ // failed in a row, and when the last one did.
+ let tried=null,gaveUp=false,renewals=0,heard=null,makeFails=0,failedAt=0;
  // CrazyGames' own sound switch (Oct 2026, settings.muteAudio through public/portal.js): while it is off the game is silent, whatever
  // Settings say, and the sound comes back as Settings have it once CrazyGames turns it on again.
  let outsideMute=false;
@@ -187,17 +200,43 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   if(!ctx)return;master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(0,ctx.currentTime);stopBed();for(const v of [...voices])stopVoice(v);
   if(preview){if(preview.source){try{preview.source.stop();preview.source.disconnect();preview.gain.disconnect();}catch{}}preview=null;previewTurn++;if(!disposed)onChange(read());}
   nextEffectAt=0;priorityUntil=0;lastSnip=-Infinity;lastPlayed.clear();
+  // A resume still waiting does not hold back the next one (11 Oct 2026); a suspended clock stands still on purpose.
+  resuming=null;heard=null;
   if(ctx.state!=='closed')Promise.resolve(ctx.suspend()).catch(()=>{});
  }
  function makeContext(){
   const AudioContext=windowRef?.AudioContext??windowRef?.webkitAudioContext;
-  ctx=contextFactory?contextFactory():new AudioContext();
+  const c=ctx=contextFactory?contextFactory():new AudioContext();
   master=ctx.createGain();master.gain.value=0;
   compressor=ctx.createDynamicsCompressor();compressor.threshold.value=-16;compressor.knee.value=12;compressor.ratio.value=8;compressor.attack.value=.006;compressor.release.value=.18;
   ambientBus=ctx.createGain();ambientBus.gain.value=0;effectBus=ctx.createGain();effectBus.gain.value=settings.effects/100;
   ambientBus.connect(compressor);effectBus.connect(compressor);compressor.connect(master);master.connect(ctx.destination);
+  // An interruption that ends (a call, Siri, an alarm) brings the mix back, or keeps it silent while the game may not sound; one that
+  // does not end is the next tap's to heal.
+  c.onstatechange=()=>{if(c!==ctx||disposed)return;heard=null;if(c.state!=='running')return;ran();if(active())applyMix(true);else silence();};
   prepareSounds();
  }
+ // A context the browser would not make (11 Oct 2026): sound is 'not available' until a later tap makes one (not the same tap's
+ // touchend or click), MAKE_TRIES in a row at most; a browser without Web Audio is not asked again.
+ function make(){
+  if(makeFails&&clock()-failedAt<RESUME_WAIT)return false;
+  try{makeContext();makeFails=0;if(unavailable){unavailable=false;onChange(read());}return true;}
+  catch{shut(ctx);ctx=null;makeFails=contextFactory||windowRef?.AudioContext||windowRef?.webkitAudioContext?makeFails+1:MAKE_TRIES;failedAt=clock();unavailable=true;onChange(read());return false;}
+ }
+ function shut(c){if(!c)return;c.onstatechange=null;try{if(c.state!=='closed')Promise.resolve(c.close()).catch(()=>{});}catch{}}
+ function ran(){tried=null;gaveUp=false;}
+ // On a tap: a context closed behind the game, one a tap could not start in time (at once if its start already gave up), or one that
+ // says 'running' while its clock stood still since an earlier tap (WebKit bugs 263627, 276687).
+ function stuck(){
+  const now=clock(),later=2**Math.min(renewals,5);
+  if(ctx.state==='closed')return true;
+  if(ctx.state!=='running'){heard=null;return tried!==null&&now-tried>=(gaveUp&&!renewals?0:RESUME_WAIT*later);}
+  if(heard&&now-heard.at>=STILL_WAIT*later){if(ctx.currentTime<=heard.time)return true;heard=null;renewals=0;}
+  heard??={time:ctx.currentTime,at:now};return false;
+ }
+ // The old context is closed before the new one is made: one live context per page. The rendered effects and the music are plain
+ // AudioBuffers, not tied to a context, so they are kept, and the music goes on where it was.
+ function renew(){silence();shut(ctx);ctx=null;tried=null;gaveUp=false;renewals++;}
  // The effects themselves (sound-kit.js: soil, water, leaves, coins, wood, bells), rendered in the background once the sound is on.
  // Until a cue is ready (a second or two), or if it cannot be made, it plays its plain notes (SOUND_CUES).
  // A cue with several versions (the tractor) plays them in turn.
@@ -278,15 +317,22 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   ramp(effectBus.gain,settings.effects/100);ramp(ambientBus.gain,settings.ambience/100,fadeIn?.75:.15);ramp(master.gain,.55,fadeIn?.3:.05);
   if(settings.ambience)startBed();else stopBed();
  }
- function unlock(){
-  if(disposed||!settings.enabled||outsideMute||documentRef?.hidden||unavailable)return Promise.resolve(false);
+ // byGesture: a tap, a click, a key or one of Settings' buttons. Without one (the page back in view, a slider, CrazyGames' switch) the
+ // context is asked to start once at a time, and a context is only made or replaced on a tap.
+ function unlock(byGesture=true){
+  if(disposed||!settings.enabled||outsideMute||documentRef?.hidden||makeFails>=MAKE_TRIES)return Promise.resolve(false);
   unlocked=true;
   try{
-   const first=!ctx;if(!ctx)makeContext();
-   if(ctx.state==='running'){applyMix(first);return Promise.resolve(true);}
-   if(resuming)return resuming;
-   resuming=Promise.resolve(ctx.resume()).then(()=>{if(!active()){silence();return false;}applyMix(true);return ctx.state==='running';}).catch(()=>false).finally(()=>{resuming=null;});return resuming;
-  }catch{unavailable=true;onChange(read());return Promise.resolve(false);}
+   if(ctx&&byGesture&&stuck())renew();
+   const first=!ctx;if(!ctx&&!(byGesture&&make()))return Promise.resolve(false);
+   if(ctx.state==='running'){ran();applyMix(first);return Promise.resolve(true);}
+   // Every tap asks again (11 Oct 2026): WebKit may never settle a resume() it could not start, and only a new tap lets it start.
+   if(resuming&&!byGesture)return resuming;
+   const c=ctx;if(byGesture)tried??=clock();
+   const asked=resuming=new Promise(resolve=>resolve(c.resume())).then(()=>{if(c!==ctx)return false;if(!active()){silence();return false;}applyMix(true);if(c.state!=='running'){if(byGesture)gaveUp=true;return false;}ran();return true;})
+    .catch(()=>{if(c===ctx&&byGesture)gaveUp=true;return false;}).finally(()=>{if(resuming===asked)resuming=null;});
+   return asked;
+  }catch{return Promise.resolve(false);}
  }
  function play(kind){
   const cue=SOUND_CUES[kind];if(!cue||!active()||!settings.effects||ctx?.state!=='running')return false;
@@ -312,16 +358,16 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   if(settings.music!==before){musicOffset=0;musicRetryAt=0;previewFailed=null;endPreview();if(ctx)fadeOutBed();}
   onChange(read());
   if(!settings.enabled){silence();return;}
-  if(unlocked)void unlock();
+  if(unlocked)void unlock(false);
  }
- function muteFromOutside(on){if(outsideMute===Boolean(on))return;outsideMute=Boolean(on);onChange(read());if(outsideMute)silence();else if(unlocked)void unlock();}
+ function muteFromOutside(on){if(outsideMute===Boolean(on))return;outsideMute=Boolean(on);onChange(read());if(outsideMute)silence();else if(unlocked)void unlock(false);}
  // A mouse button going down counts too (Oct 2026), so a first sweep with the mouse already has its snips.
  function gesture(event){if(event.isTrusted&&(event.type!=='keydown'||['Enter',' ','1','2','3','4'].includes(event.key))&&(event.type!=='pointerdown'||event.pointerType==='mouse'))void unlock();}
- function visibility(){if(documentRef.hidden)silence();else if(unlocked)void unlock();}
+ function visibility(){if(documentRef.hidden)silence();else if(unlocked)void unlock(false);}
  function pagehide(event){if(event.persisted)silence();else dispose();}
- function pageshow(event){if(event.persisted&&unlocked)void unlock();}
- function dispose(){if(disposed)return;disposed=true;stopRendering?.();silence();documentRef?.removeEventListener('pointerup',gesture,true);documentRef?.removeEventListener('pointerdown',gesture,true);documentRef?.removeEventListener('keydown',gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);music=null;previewBuffer=null;if(ctx&&ctx.state!=='closed')Promise.resolve(ctx.close()).catch(()=>{});}
- documentRef?.addEventListener('pointerup',gesture,true);documentRef?.addEventListener('pointerdown',gesture,true);documentRef?.addEventListener('keydown',gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
+ function pageshow(event){if(event.persisted&&unlocked)void unlock(false);}
+ function dispose(){if(disposed)return;disposed=true;stopRendering?.();silence();for(const type of GESTURES)documentRef?.removeEventListener(type,gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);music=null;previewBuffer=null;shut(ctx);}
+ for(const type of GESTURES)documentRef?.addEventListener(type,gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
  return {settings:read,setSettings,unlock,play,snip,dispose,muteFromOutside,preview:playPreview,stopPreview};
 }
 
