@@ -3131,12 +3131,14 @@ export function upgradeSilo(state){
 //   server pays, the server only checks the casts, the number and the pace, and the most a cheat can get is what a good farmer gets: a
 //   perfect catch (the fish never left the green) adds a fifth to the coins, and that is the only thing the server takes on trust.
 // - Pay: coins by kind, weight and level, and 2 to 20 XP; the first of each kind pays three times its coins and 10 XP more. "Today's
-//   fish", one of the common kinds (by the UTC day, with the daily tasks), pays double. Old Whiskers, the pond's legend, is rare,
+//   fish", one of the five common kinds (by the UTC day, with the daily tasks), pays double. Old Whiskers, the pond's legend, is rare,
 //   but fish 120 is him for a farm that never landed him (and 240, and so on, should he be let go).
 // - The fish book keeps the heaviest of each kind; all 8 pay 25 diamonds, once. No items and no diamonds per fish; nothing reaches the
 //   Market, orders or offers. Every catch is a line in the farm's log (player-log.js).
 // - Page two (11 Oct 2026, the owner's call): from level 20, 8 more kinds swim in the same pond and fill a second page of the book;
-//   all 16 kinds pay 50 diamonds more, once (75 in all). Below level 20 nothing changes: the same 8 kinds, as often as before.
+//   all 16 kinds pay 50 diamonds more, once (75 in all). Below level 20 nothing changes: the same 8 kinds, as often as before. Today's
+//   fish stays one of page one's five common kinds at every level (the review: a day's fish that changed at the farm's first fish at level
+//   20 could not be understood, and a rare kind never pays double).
 export const POND_START_CASTS=5,POND_MAX_CASTS=5,POND_REFILL_MS=20*60000,POND_MIN_GAP_MS=3500,POND_PERFECT=.2,POND_DAY_FACTOR=2,POND_NEW_FISH_COINS=2,POND_NEW_FISH_XP=10,POND_LEGEND_BY=120,POND_BOOK_DIAMONDS=25;
 export const POND_PAGE_TWO_LEVEL=20,POND_BOOK2_DIAMONDS=50,POND_STURGEON_BY=60;
 // chance (%) below level 20, chance20 (%) from level 20, weight (kg, from-to), coins and XP, and the reel (pond-reel.js): the strike
@@ -3168,15 +3170,12 @@ export const FISH=Object.freeze(Object.fromEntries(Object.entries({
 // The fish book's two pages, in the book's order (the commonest first).
 export const FISH_PAGES=Object.freeze([1,2].map(page=>Object.freeze(Object.keys(FISH).filter(key=>FISH[key].page===page))));
 export const POND_FIRST_FISH=Object.freeze([['minnow',.11],['perch',.42],['carp',2.35]]);
-// Today's fish: one of the five common kinds; from level 20 one of ten, page two's five common kinds after them, so on every other day
-// a farm of 20 and up has the same one as a farm below 20 (the ten repeat the five on the days the five come round).
-const POND_COMMON=Object.freeze(['minnow','perch','roach','carp','tench']),POND_COMMON20=Object.freeze([...POND_COMMON,'rudd','bream','eel','trout','barbel']);
+const POND_COMMON=Object.freeze(['minnow','perch','roach','carp','tench']);
+export const todaysFish=(now=Date.now())=>POND_COMMON[dayNumber(now)%POND_COMMON.length];
 // Fish number n swims in the pond of 16 kinds: the farm's first fish at level 20 or later marks the spot (pond.page2At, its number; it
 // is still one of the 8 itself), every fish after it may be any of the 16. So the pond turns over only once the farm itself has said so:
 // a site that knows page two and a farm-api that does not yet (or the other way round) never disagree about a fish.
 export const pondPageTwo=(state,n=state?.pond?.n??0)=>Number.isSafeInteger(state?.pond?.page2At)&&n>state.pond.page2At;
-// The day's fish for the farm's next fish (n, the pond's count), or for fish n.
-export const todaysFish=(now=Date.now(),state=null,n=state?.pond?.n??0)=>{const list=pondPageTwo(state,n)?POND_COMMON20:POND_COMMON;return list[dayNumber(now)%list.length];};
 // The farm's own fish sequence (mulberry32 over the farm's seed and the fish's number): the same in the browser and in farm-api.
 function pondRandom(state,n){
  let a=(calendarHash(`pond:${Number.isSafeInteger(state.rookieUntil)?state.rookieUntil:0}`)^Math.imul(n+1,0x9E3779B1))>>>0;
@@ -3194,7 +3193,7 @@ function sturgeonDue(state,n){
 // lean light (u^1.6), so a new record stays possible for a long time. Below level 20 the 8 kinds of page one by `chance`, exactly as
 // before page two; from level 20 the 16 by `chance20` (the same random numbers, another table).
 export function pondFish(state,n){
- const fish=(species,kg)=>{const [lo,hi]=FISH[species].kg;return {species,kg,share:Math.min(1,Math.max(0,(kg-lo)/(hi-lo))),n};};
+ const fish=(species,kg)=>{const [lo,hi]=FISH[species].kg;return {species,kg,share:Math.min(1,Math.max(0,(kg-lo)/(hi-lo)))};};
  if(n<POND_FIRST_FISH.length)return fish(...POND_FIRST_FISH[n]);
  const random=pondRandom(state,n),roll=random()*100,u=random(),two=pondPageTwo(state,n);
  let species='whiskers';
@@ -3216,7 +3215,7 @@ function spendCast(p,now){
 }
 export function fishCoins(state,fish,perfect,now=Date.now()){
  const f=FISH[fish.species];
- return Math.round(f.coins*(.8+.4*fish.share)*(1+levelOf(state)/8)*(todaysFish(now,state,fish.n)===fish.species?POND_DAY_FACTOR:1)*(perfect?1+POND_PERFECT:1));
+ return Math.round(f.coins*(.8+.4*fish.share)*(1+levelOf(state)/8)*(todaysFish(now)===fish.species?POND_DAY_FACTOR:1)*(perfect?1+POND_PERFECT:1));
 }
 // Page one (the 8 kinds, 25 diamonds) and the whole book (all 16 kinds, 50 diamonds more).
 export const pondBookDone=state=>FISH_PAGES[0].every(key=>state.pond?.best?.[key]>0);
@@ -3237,7 +3236,7 @@ export function landFish(state,n,landed,perfect,now=Date.now()){
  if(p.page2At===undefined&&levelOf(state)>=POND_PAGE_TWO_LEVEL)p.page2At=n;
  spendCast(p,now);p.n=n+1;p.prevAt=p.lastAt;p.lastAt=now;
  if(!landed){state.stats.fish_released=(state.stats.fish_released??0)+1;return {released:true,n,casts:pondCasts(state,now)};}
- const first=!(p.best[fish.species]>0),record=!first&&fish.kg>p.best[fish.species],today=todaysFish(now,state,n)===fish.species;
+ const first=!(p.best[fish.species]>0),record=!first&&fish.kg>p.best[fish.species],today=todaysFish(now)===fish.species;
  const base=fishCoins(state,fish,perfect,now),coins=base+(first?POND_NEW_FISH_COINS*base:0),xp=FISH[fish.species].xp+(first?POND_NEW_FISH_XP:0);
  if(first||record)p.best[fish.species]=fish.kg;
  state.coins+=coins;state.xp+=xp;

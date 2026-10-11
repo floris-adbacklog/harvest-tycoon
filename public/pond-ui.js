@@ -151,7 +151,7 @@ export function createPond({state,scene,game,labels,runAction,now,play=()=>{},ha
  function closeBook(){book.hidden=true;act.focus({preventScroll:true});}
  // The top of the screen: casts waiting (and when the next comes), today's fish, and a way back when crops are ripe meanwhile.
  function top(){
-  const c=casts(),t=todaysFish(now(),state),pill=$('casts');
+  const c=casts(),t=todaysFish(now()),pill=$('casts');
   pill.querySelector('b').textContent=`${c.casts} / ${POND_MAX_CASTS}`;pill.setAttribute('aria-label',`Casts waiting: ${c.casts}`);pill.title=`Casts waiting: ${c.casts}`;
   pill.querySelector('small').textContent=c.nextAt?`Next cast in ${formatDuration(c.nextAt-now())}`:'Casts';
   const today=$('today');if(today.dataset.fish!==t){today.dataset.fish=t;today.innerHTML=`${art(`fish-${t}`)}<span>Today’s fish: ${FISH[t].name}. Pays double.</span>`;refreshArt();}

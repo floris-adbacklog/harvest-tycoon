@@ -549,14 +549,15 @@ function afterNinety(h){
 // The Fishing pond (11 Oct 2026, part C): the rule as the pond's own screen says it, and every fish from the rules (FISH). Coins depend on
 // the level, so the table shows them at the farmer's level (in the game) or at the pond's own level (on the website). Page two (from
 // level 20, a section of its own, its coins at level 20 or the farmer's): the first 8 kinds' chance below level 20 and from it (the 16
-// share the pond then); in the game a farmer of 20 and up sees only the chance that is theirs.
+// share the pond then); in the game a farmer of 20 and up sees only the chance that is theirs. A farmer below 20 (the review, 11 Oct 2026)
+// sees nothing of page two: the section reads as it did before page two came.
 function pondSection(h){
- const at=h.level??POND_LEVEL,from=POND_PAGE_TWO_LEVEL,now20=h.level!=null&&h.level>=from,kg=v=>v.toLocaleString('en-US',{maximumFractionDigits:2});
+ const at=h.level??POND_LEVEL,from=POND_PAGE_TWO_LEVEL,now20=h.level!=null&&h.level>=from,before20=h.level!=null&&h.level<from,kg=v=>v.toLocaleString('en-US',{maximumFractionDigits:2});
  const coins=(f,level)=>{const factor=1+level/8;return `${number(Math.round(f.coins*.8*factor))}–${number(Math.round(f.coins*1.2*factor))}`;};
  const weight=f=>`${kg(f.kg[0])}–${kg(f.kg[1])} kg`,[one,two]=FISH_PAGES;
- const chances=f=>now20?[`${f.chance20}%`]:[`${f.chance}%`,`${f.chance20}%`];
+ const chances=f=>now20?[`${f.chance20}%`]:before20?[`${f.chance}%`]:[`${f.chance}%`,`${f.chance20}%`];
  const rows=one.map(key=>{const f=FISH[key];return `<tr>${[`${art(`fish-${key}`)}${f.name}`,...chances(f),weight(f),`${art('coins')}${coins(f,at)}`,`${f.xp} XP`].map(c=>`<td>${c}</td>`).join('')}</tr>`;});
- const cards=one.map(key=>{const f=FISH[key];return card({picture:`fish-${key}`,title:f.name,stats:[`${now20?f.chance20:f.chance}%`,weight(f),`${art('coins')}${coins(f,at)}`,`${f.xp} XP`],note:now20?'':`From level ${from}: ${f.chance20}%`});});
+ const cards=one.map(key=>{const f=FISH[key];return card({picture:`fish-${key}`,title:f.name,stats:[`${now20?f.chance20:f.chance}%`,weight(f),`${art('coins')}${coins(f,at)}`,`${f.xp} XP`],note:now20||before20?'':`From level ${from}: ${f.chance20}%`});});
  const twoAt=Math.max(at,from);
  const rows2=two.map(key=>{const f=FISH[key];return h.row(from,[`${art(`fish-${key}`)}${f.name}`,`${f.chance20}%`,weight(f),`${art('coins')}${coins(f,twoAt)}`,`${f.xp} XP`]);});
  const cards2=two.map(key=>{const f=FISH[key];return card({picture:`fish-${key}`,title:f.name,badge:h.lvl(from),locked:h.locked(from),stats:[`${f.chance20}%`,weight(f),`${art('coins')}${coins(f,twoAt)}`,`${f.xp} XP`]});});
@@ -564,10 +565,10 @@ function pondSection(h){
   +`<ul class="wiki-list"><li>${POND_START_CASTS} casts to start, then a new one every ${POND_REFILL_MS/60000} minutes, up to ${POND_MAX_CASTS} waiting.</li><li>A cast is only used when you land a fish or let it go. A fish that gets away stays in the pond, a little more tired each time.</li>`
   +`<li>Every fish pays coins (more for a heavier fish and at a higher level) and XP. The first of each kind pays ${POND_NEW_FISH_COINS+1} times its coins and ${POND_NEW_FISH_XP} XP more.</li><li>Today’s fish pays double coins. A perfect catch, where the fish never left the green, pays ${Math.round(POND_PERFECT*100)}% more.</li>`
   +`<li>The fish book keeps your heaviest of each kind. Catch all ${one.length} kinds for ${POND_BOOK_DIAMONDS} diamonds, once.</li><li>Old Whiskers, the pond’s legend, is very rare, but your fish number ${POND_LEGEND_BY} is him if you have not landed him yet.</li><li>Fishing counts for no events, challenges or Family Chest.</li></ul>`
-  +dual(table(['Fish',...(now20?['Chance']:['Chance',`From level ${from}`]),'Weight',`Coins at level ${at}`,'XP'],rows),cards))
- +section('Fish book page 2',`<p>${h.lvl(from)} ${two.length} more kinds swim in the pond, on page 2 of the fish book. From then on the ${one.length+two.length} kinds share the pond, so each of the first ${one.length} comes less often, and a cast pays about what it did before.</p>`
-  +`<ul class="wiki-list"><li>Catch all ${one.length+two.length} kinds, on both pages, for ${POND_BOOK2_DIAMONDS} diamonds more, once: ${POND_BOOK_DIAMONDS+POND_BOOK2_DIAMONDS} diamonds in all.</li><li>The sturgeon, the pond’s giant, is very rare too, but one of your first ${POND_STURGEON_BY} fish from level ${from} is always a sturgeon.</li><li>Today’s fish can be one of page 2’s common kinds too.</li></ul>`
-  +dual(table(['Fish','Chance','Weight',`Coins at level ${twoAt}`,'XP'],rows2),cards2));
+  +dual(table(['Fish',...(now20||before20?['Chance']:['Chance',`From level ${from}`]),'Weight',`Coins at level ${at}`,'XP'],rows),cards))
+ +(before20?'':section('Fish book page 2',`<p>${h.lvl(from)} ${two.length} more kinds swim in the pond, on page 2 of the fish book. From then on the ${one.length+two.length} kinds share the pond, so each of the first ${one.length} comes less often, and a cast pays about what it did before.</p>`
+  +`<ul class="wiki-list"><li>Catch all ${one.length+two.length} kinds, on both pages, for ${POND_BOOK2_DIAMONDS} diamonds more, once: ${POND_BOOK_DIAMONDS+POND_BOOK2_DIAMONDS} diamonds in all.</li><li>The sturgeon, the pond’s giant, is very rare too, but one of your first ${POND_STURGEON_BY} fish from level ${from} is always a sturgeon.</li></ul>`
+  +dual(table(['Fish','Chance','Weight',`Coins at level ${twoAt}`,'XP'],rows2),cards2)));
 }
 // Everything a level opens, not only the features: buildings, crops and the recipes that come later than their building (26 Sep 2026;
 // between level 27 and 62 only buildings, crops and recipes open, and a features-only list looked empty there). to (Oct 2026): the

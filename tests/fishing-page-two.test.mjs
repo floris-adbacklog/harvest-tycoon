@@ -22,8 +22,9 @@ const pond=(n,best={},extra={})=>({firstAt:now-86400000,n,casts:5,castsAt:0,last
 const fish=(s,t,landed=true,perfect=false)=>G.applyFarmAction(s,{type:'fish',n:s.pond?.n??0,landed,perfect},t);
 const allOne=()=>Object.fromEntries(ONE_KINDS.map(k=>[k,G.FISH[k].kg[0]]));
 // The game before page two (this branch's base 01ff2cd and the closed pond fd1cf29), for the differential tests; null without git.
-const before=sha=>{try{return execFileSync('git',['show',`${sha}:game/farm-state.js`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<24,stdio:['ignore','pipe','ignore']});}catch{return null;}};
-const OLD_SOURCE=before('01ff2cd'),OLD=OLD_SOURCE&&await import(asModule(OLD_SOURCE.replace(/export const POND_OPEN=(true|false),/,'export const POND_OPEN=true,')));
+const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<24,stdio:['ignore','pipe','ignore']});}catch{return null;}};
+const before=sha=>show(sha,'game/farm-state.js');
+const OLD_SOURCE=before('01ff2cd'),OLD_URL=OLD_SOURCE&&asModule(OLD_SOURCE.replace(/export const POND_OPEN=(true|false),/,'export const POND_OPEN=true,')),OLD=OLD_URL&&await import(OLD_URL);
 
 test('16 kinds on two pages: the first 8 as before, page two\'s 8 only from level 20, each table adding up to 100%',()=>{
  assert.deepEqual(ONE_KINDS,['minnow','perch','roach','carp','tench','pike','goldencarp','whiskers']);
@@ -49,7 +50,7 @@ test('below level 20 every fish, its coins and today\'s fish are exactly as befo
    assert.deepEqual([a.species,a.kg,a.share],[b.species,b.kg,b.share],`seed ${seed}, fish ${n}`);
    if(n%37===0)for(const perfect of [false,true])assert.equal(G.fishCoins(s,a,perfect,now+(n%10)*DAY),OLD.fishCoins(o,b,perfect,now+(n%10)*DAY));}
  }
- for(let d=0;d<30;d++)assert.equal(G.todaysFish(now+d*DAY,at(19)),OLD.todaysFish(now+d*DAY),`day ${d}`);
+ for(let d=0;d<30;d++)assert.equal(G.todaysFish(now+d*DAY),OLD.todaysFish(now+d*DAY),`day ${d}`);
  // A whole first day at level 19 pays the same coins and XP, fish by fish, as the game before.
  const s=at(19),o=structuredClone(s);
  for(let k=0;k<77;k++){const tt=now+k*LATER,a=fish(s,tt,k%7!==3,k%3===0),b=OLD.applyFarmAction(o,{type:'fish',n:k,landed:k%7!==3,perfect:k%3===0},tt);
@@ -128,10 +129,12 @@ test('page two\'s book: all 16 kinds pay 50 diamonds exactly once, both pages at
 });
 
 test('balance: from level 20 a cast pays on average what it paid before (coins within 1.5%, XP not more); still 77 casts a day',t=>{
- // Exactly, from the tables: a kind's coins times its chance, and today's fish doubling its kind on one day in 5 (below 20) or in 10.
+ // Exactly, from the tables: a kind's coins times its chance, and today's fish doubling its kind on one day in 5, at every level (the
+ // same 5 kinds: 9.808 coins a cast below 20, 9.860 from 20, +0.5%; with 10 kinds from 20 it was 9.737, -0.7%).
  const table=(key,today)=>Object.entries(G.FISH).reduce((sum,[k,f])=>sum+f[key]/100*f.coins*(1+(today.includes(k)?1/today.length:0)),0);
- const five=['minnow','perch','roach','carp','tench'],ten=[...five,'rudd','bream','eel','trout','barbel'];
- const coinsWas=table('chance',five),coinsIs=table('chance20',ten),xp=key=>Object.values(G.FISH).reduce((sum,f)=>sum+f[key]/100*f.xp,0);
+ const five=['minnow','perch','roach','carp','tench'];
+ const coinsWas=table('chance',five),coinsIs=table('chance20',five),xp=key=>Object.values(G.FISH).reduce((sum,f)=>sum+f[key]/100*f.xp,0);
+ assert.equal(coinsWas.toFixed(3),'9.808');assert.equal(coinsIs.toFixed(3),'9.860');
  assert.ok(Math.abs(coinsIs/coinsWas-1)<=.015,`coin base a cast ${coinsWas.toFixed(3)} -> ${coinsIs.toFixed(3)}`);assert.ok(xp('chance20')<=xp('chance'),`${xp('chance')} -> ${xp('chance20')} XP a cast`);
  if(!OLD){t.skip('no git history here');return;}
  // Expected coins and XP a cast for a farm whose legends are landed (no first catches): perfect 3 in 10, ten days of today's fish.
@@ -151,21 +154,35 @@ test('balance: from level 20 a cast pays on average what it paid before (coins w
  assert.ok(bonus<2500,`${bonus} coins once`);
 });
 
-test('today\'s fish: one of the 5 common kinds, from the farm\'s first fish at level 20 one of 10 (the 5, then page two\'s 5 common kinds)',()=>{
- const low=at(19),high=at(25);high.pond=pond(30,{},{page2At:10});G.normalizeFarm(high,now);
- const unmarked=at(25);unmarked.pond=pond(30,{});G.normalizeFarm(unmarked,now);
- const days=Array.from({length:20},(_,d)=>now+d*G.DAY_MS);
- const five=new Set(days.map(t=>G.todaysFish(t,low))),ten=new Set(days.map(t=>G.todaysFish(t,high)));
- assert.deepEqual([...five].sort(),['carp','minnow','perch','roach','tench']);
- assert.deepEqual([...ten].sort(),['barbel','bream','carp','eel','minnow','perch','roach','rudd','tench','trout']);
- for(const t of days){
-  assert.equal(G.todaysFish(t,unmarked),G.todaysFish(t),'before its first fish at level 20 a farm has the 5');
-  const d=G.dayNumber(t);if(d%10<5)assert.equal(G.todaysFish(t,high),G.todaysFish(t,low),'every other five days the same as below 20');
-  assert.ok(G.FISH[G.todaysFish(t,high)].chance20>=4,'a common kind of the farm\'s own pond');
+test('today\'s fish: one of page one\'s 5 common kinds at every level, exactly as at 01ff2cd, page two or not (the review)',t=>{
+ // The review (11 Oct 2026): a day's fish that changed at the farm's first fish at level 20 could not be understood, and a rare kind
+ // never pays double. So it is the game's one fish of the day, the same for every farm, by the UTC day only.
+ const five=['minnow','perch','roach','carp','tench'];
+ assert.doesNotMatch(SOURCE,/POND_COMMON20/);assert.match(SOURCE,/export const todaysFish=\(now=Date\.now\(\)\)=>POND_COMMON\[dayNumber\(now\)%POND_COMMON\.length\];/);
+ const days=Array.from({length:400},(_,d)=>now+d*G.DAY_MS+(d%24)*3600000);
+ assert.deepEqual([...new Set(days.map(tt=>G.todaysFish(tt)))].sort(),[...five].sort());
+ if(OLD)for(const tt of days)assert.equal(G.todaysFish(tt),OLD.todaysFish(tt));
+ // Farms below 20, at 20 before and after their first fish there (pond.page2At), and far past it: the day's fish doubles the same kind
+ // for all of them (as at 01ff2cd for page one's kinds), and never one of page two's.
+ const farms=[at(10),at(19),at(TWO),at(TWO),at(40),at(80)];
+ farms[2].pond=pond(30,{});farms[3].pond=pond(30,{},{page2At:10});farms[4].pond=pond(300,{},{page2At:0});farms[5].pond=pond(9000,{whiskers:9,sturgeon:12},{page2At:400});
+ for(const s of farms){G.normalizeFarm(s,now);const o=structuredClone(s);
+  for(const tt of days.slice(0,12)){
+   const today=G.todaysFish(tt),factor=1+G.levelOf(s)/8;
+   for(const [kind,f] of Object.entries(G.FISH))for(const perfect of [false,true]){
+    const caught={species:kind,kg:f.kg[1],share:1},paid=G.fishCoins(s,caught,perfect,tt);
+    assert.equal(paid,Math.round(f.coins*1.2*factor*(kind===today?2:1)*(perfect?1.2:1)),`level ${G.levelOf(s)}, ${kind}`);
+    if(f.page===2)assert.notEqual(kind,today);else if(OLD)assert.equal(paid,OLD.fishCoins(o,caught,perfect,tt),`level ${G.levelOf(s)}, ${kind}: as at 01ff2cd`);
+   }
+  }
  }
- // It pays double for the fish it names: a page-two farm on a page-two day.
- const day=days.find(t=>G.FISH[G.todaysFish(t,high)].page===2),kind=G.todaysFish(day,high),f={species:kind,kg:G.FISH[kind].kg[0],share:0,n:31};
- assert.equal(G.fishCoins(high,f,false,day),Math.round(G.FISH[kind].coins*.8*(1+25/8)*2));
+ // Fish after fish across ten days at level 30 with page two: the catch card's tag says the day's own fish, a page-two kind never.
+ const s=at(30);s.rookieUntil=31;s.pond=pond(50,allOne(),{bookPaid:true,page2At:40});G.normalizeFarm(s,now);let tt=now,two=0;
+ for(let k=0;k<300;k++){tt+=k%30===29?G.DAY_MS:GAP+1;if(G.pondCasts(s,tt).casts<1)tt+=LATER;const r=fish(s,tt);
+  assert.equal(r.today,r.species===G.todaysFish(tt));if(G.FISH[r.species].page===2){two++;assert.equal(r.today,false);}
+  if(OLD)assert.equal(G.todaysFish(tt),OLD.todaysFish(tt));}
+ assert.ok(two>50,`${two} fish of page two`);
+ if(!OLD)t.diagnostic('no git history here: 01ff2cd not compared');
 });
 
 test('the save: page two adds kinds to pond.best, pond.book2Paid and pond.page2At; garbled ones are cleaned, a good pond is left as it is',()=>{
@@ -210,7 +227,8 @@ test('level 20\'s card names it; below 20 nothing of page two is listed, a farm 
  const change=progressionChange(snap,s,null),entry=change.entries.find(e=>e.id==='pond:page2');
  assert.ok(change.leveled&&entry,'on the level-up card');assert.deepEqual([entry.name,entry.art,entry.kind,entry.level,entry.unlocked],['8 new fish in the Fishing pond','fish-koi','Activity',TWO,true]);
  const later=at(35);assert.ok(G.unlockEntries(later).find(e=>e.id==='pond:page2').unlocked);
- assert.match(read('public/progression-ui.js'),/e\.id==='pond:page2'\?`Page 2 of the fish book: all \$\{Object\.keys\(FISH\)\.length\} kinds pay \$\{POND_BOOK2_DIAMONDS\} diamonds`/);
+ // The same words as the book (the review: "all 16 kinds pay 50 diamonds" read as 50 for each kind).
+ assert.match(read('public/progression-ui.js'),/e\.id==='pond:page2'\?`Catch all \$\{Object\.keys\(FISH\)\.length\} kinds: \$\{POND_BOOK2_DIAMONDS\} diamonds, once\.`/);
  // Closed (POND_OPEN false): nothing of it.
  const C=await import(asModule(SOURCE.replace(/export const POND_OPEN=(true|false),/,'export const POND_OPEN=false,')));
  const c=C.createFarm(now);c.xp=C.xpForLevel(40);C.normalizeFarm(c,now);assert.ok(!C.unlockEntries(c).some(e=>e.id==='pond:page2'));assert.equal(C.pondPageTwoOpen(c),false);
@@ -226,7 +244,7 @@ test('the pond screen: page 2 is a tab of the book from level 20 only, its rewar
  assert.match(ui,/`Catch all \$\{kinds\.length\} kinds: \$\{POND_BOOK_DIAMONDS\} diamonds, once\.`/,'page one says 8, as before');
  assert.match(ui,/const secrets=\{whiskers:'Something big lives in this pond\.',sturgeon:'Something even bigger swims at the bottom\.'\};/);
  assert.match(ui,/if\(r\.diamonds\)tags\.push\(\['is-book',r\.book2\|\|!pondPageTwoOpen\(state\)\?'Fish book complete!':pageDone\(1\)\]\);/);
- assert.match(ui,/const c=casts\(\),t=todaysFish\(now\(\),state\),pill=\$\('casts'\);/,'today\'s fish of the farm\'s own pond');
+ assert.match(ui,/const c=casts\(\),t=todaysFish\(now\(\)\),pill=\$\('casts'\);/,'the day\'s one fish, as at 01ff2cd');
  for(const text of ui.match(/'[^'\n]*'|`[^`]*`/g))assert.doesNotMatch(text,/ · /);
  assert.match(read('public/pond.css'),/\.pond-book-pages\{margin:10px 0 0\}/);
 });
@@ -245,18 +263,37 @@ test('page two\'s pictures: the owner\'s 256 px WebP on a clear ground, register
 
 test('the wiki explains page two from the rules: from level 20, 50 diamonds for all 16 (75 in all), the sturgeon within 60 fish',()=>{
  const pondPart=html=>html.slice(html.indexOf('id="sec-fishing-pond"'),html.indexOf('</section>',html.indexOf('id="sec-fish-book-page-2"')));
- const site=pondPart(wikiArticle('helpers',{}).html),low=pondPart(wikiArticle('helpers',{level:10}).html),high=pondPart(wikiArticle('helpers',{level:30}).html);
- for(const html of [site,low,high]){
+ const site=pondPart(wikiArticle('helpers',{}).html),high=pondPart(wikiArticle('helpers',{level:30}).html),at20=pondPart(wikiArticle('helpers',{level:TWO}).html);
+ for(const html of [site,high,at20]){
   assert.match(html,/<h3>Fish book page 2<\/h3>/);
   assert.ok(html.includes('Catch all 16 kinds, on both pages, for 50 diamonds more, once: 75 diamonds in all.'));
   assert.ok(html.includes('one of your first 60 fish from level 20 is always a sturgeon.'));
   assert.ok(html.includes('Catch all 8 kinds for 25 diamonds, once.'));
+  assert.ok(!/Today’s fish can|page 2’s common/.test(html),'today\'s fish is page one\'s, so the wiki says nothing more of it');
   for(const key of TWO_KINDS)assert.ok(html.includes(G.FISH[key].name),key);
  }
- assert.ok(low.includes('is-locked'),'locked for a farmer below 20, like every later level');
  assert.ok(site.includes('From level 20')&&site.includes(`${G.FISH.minnow.chance}%`)&&site.includes(`${G.FISH.minnow.chance20}%`),'both chances on the website');
  assert.ok(!high.includes(`<td>${G.FISH.minnow.chance}%</td>`),'a farmer of 20 and up sees the chance that is theirs');
  assert.doesNotMatch(site,/ · /);
+});
+
+// The review (11 Oct 2026): a farmer below level 20 reads the pond's section exactly as at 01ff2cd, with nothing of page two (no section,
+// no "From level 20" column or notes). The wiki of 01ff2cd is that version's wiki-content.js on its own farm-state.js.
+test('the wiki below level 20 is the pond section of 01ff2cd, word for word; page two only on the website and from level 20',async t=>{
+ const pond=html=>{const from=html.lastIndexOf('<section',html.indexOf('id="sec-fishing-pond"'));return html.slice(from,html.indexOf('</section>',from)+'</section>'.length);};
+ for(const level of [1,10,19]){
+  const html=wikiArticle('helpers',{level}).html;
+  assert.ok(html.includes('id="sec-fishing-pond"'),`level ${level}`);
+  assert.ok(!html.includes('sec-fish-book-page-2')&&!html.includes('Fish book page 2'),`level ${level}: no page two`);
+  assert.ok(!pond(html).includes(`From level ${TWO}`),`level ${level}: no "From level 20"`);
+  for(const key of TWO_KINDS)assert.ok(!html.includes(`fish-${key}`),`level ${level}: no ${key}`);
+ }
+ for(const html of [wikiArticle('helpers',{}).html,wikiArticle('helpers',{level:30}).html])assert.ok(html.includes('id="sec-fish-book-page-2"'));
+ const old=show('01ff2cd','public/wiki-content.js');if(!old||!OLD_URL){t.skip('no git history here');return;}
+ const here=file=>new URL(`../public/${file}`,import.meta.url).href;
+ const O=await import(asModule(old.replace(/from '\.\/([\w-]+\.js)';/g,(all,file)=>`from '${file==='farm-state.js'?OLD_URL:here(file)}';`)));
+ for(const level of [1,4,10,19])assert.equal(pond(wikiArticle('helpers',{level}).html),pond(O.wikiArticle('helpers',{level}).html),`level ${level}`);
+ assert.notEqual(pond(wikiArticle('helpers',{level:30}).html),pond(O.wikiArticle('helpers',{level:30}).html),'from 20 the section is page two\'s');
 });
 
 test('texts: every language has page two (fish names in the glossary, number forms for Russian and Ukrainian)',()=>{
@@ -264,8 +301,22 @@ test('texts: every language has page two (fish names in the glossary, number for
  for(const name of TWO_KINDS.map(k=>G.FISH[k].name))assert.equal((readme.match(new RegExp(` · ${name} `,'g'))??[]).length,15,`${name} in all 15 glossary lines`);
  for(const code of ['ru','uk']){
   const dict=JSON.parse(read(`public/i18n/${code}.json`));
-  for(const key of ['{0} new fish in the Fishing pond','Catch all {0} kinds on both pages: {1} diamonds, once.','Page 2 of the fish book: all {0} kinds pay {1} diamonds'])
+  for(const key of ['{0} new fish in the Fishing pond','Catch all {0} kinds on both pages: {1} diamonds, once.','Catch all {0} kinds: {1} diamonds, once.'])
    assert.deepEqual(Object.keys(dict[key]).sort(),['few','many','one','other'],`${code}: ${key}`);
  }
  assert.equal(JSON.parse(read('public/i18n/ru.json'))['Barbel'],'Марена','not Усач: that is Old Whiskers');
+});
+
+test('level 20\'s card line is the book\'s own text in every language (16 kinds, 50 diamonds), the old line gone from the catalogs',async()=>{
+ const {createTranslator}=await import('../public/i18n.js');
+ const old='Page 2 of the fish book: all {0} kinds pay {1} diamonds',card='Catch all 16 kinds: 50 diamonds, once.';
+ assert.equal(old in JSON.parse(read('i18n/catalog.json')),false);assert.ok('Catch all {0} kinds: {1} diamonds, once.' in JSON.parse(read('i18n/catalog.json')));
+ const want={nl:'Vang alle 16 soorten: 50 diamanten, eenmalig.',ru:'Поймай все 16 видов: 50 алмазов, один раз.',uk:'Злови всі 16 видів: 50 діамантів, один раз.'};
+ for(const code of ['ar','cs','de','es','fr','hi','hu','id','ja','nl','pt','ru','tr','uk','zh']){
+  const dict=JSON.parse(read(`public/i18n/${code}.json`)),text=createTranslator(dict,code).translate(card);
+  assert.equal(old in dict,false,code);assert.ok(text&&text!==card&&text.includes('16')&&text.includes('50'),`${code}: ${text}`);
+  if(want[code])assert.equal(text,want[code]);
+  // Page one's book (8 kinds, 25 diamonds) reads as before.
+  if(code==='ru')assert.equal(createTranslator(dict,code).translate('Catch all 8 kinds: 25 diamonds, once.'),'Поймай все 8 видов: 25 алмазов, один раз.');
+ }
 });
