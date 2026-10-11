@@ -935,7 +935,7 @@ export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vege
 // (not in FEATURE_LEVELS or FEATURE_NAMES, so no level card, Coming up, wiki or menu names it), the game loads none of it and farm-api
 // refuses every 'fish', so no save gets a pond. Release: closed first (site, about 40 minutes, then farm-api), then POND_OPEN true with
 // farm-api first and the site after it. Once ponds exist farm-api never goes back before the closed release.
-export const POND_OPEN=false,POND_LEVEL=4;
+export const POND_OPEN=true,POND_LEVEL=4;
 // A helping hand opens at level 3 (11 Oct 2026, the owner's call; it was 8): its stops grow with the farm until level 10 (activityStatus),
 // so it pays no more an hour than from level 8 before. Level 3 then opens lettuce, Daily challenges and the hand: three things.
 export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
