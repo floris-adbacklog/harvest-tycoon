@@ -4,6 +4,7 @@ import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {PALETTE_VERSION} from './model-atlas.js';
 import {sharePalette} from './model-atlas.js';
+import {wildflowerGeometry,wildflowerMaterial} from './scene-polish.js';
 
 // World II, The Village (30 Sep 2026): the village of the ITHappy Studios Village pack, as its own scene. One GLB holds every model
 // once (meshopt-compressed, one shared palette texture) and a layout says where each stands (scripts/build-village.mjs); each model
@@ -230,41 +231,140 @@ export async function loadVillageExtras(village){
  };
  return {group,places,landmarks,showLandmark};
 }
-// The Village Fields' rows (Oct 2026): the farm's own crop models at a third of their size, in four strips on the bare plot by the hay
-// barns, each from the moment the Fields can sow it. Flax, lavender and saffron wear one colour of the pack's palette: a tint multiplied
-// over the green leaves turned them grey-green. The plot: its corner (x, z) and its long side's direction; 9.41 by 7.07.
-export const VILLAGE_FIELD_PLOT=Object.freeze({x:10.29,z:-21.24,ax:.996,az:.088});
+// The Village Fields (11 Oct 2026, the owner's review: the pack's bumpy brown hill piece with crops in diagonal bands, neon flax and
+// mixed sizes was ugly), built like the farm's own fields: four strips of the farm's ploughed field (field_004 in the brown of
+// farm-life.js's ploughed neighbours) side by side in a low cream fence (the farm's crop-field fence, fence_008, in its tint), with a
+// gate in the south side towards the path, and each strip one crop in straight rows from the moment the Fields can sow it. The soil and
+// the fence stand from the start, as the bare plot did. The plot is clear of the trees round it, the hay barn at its south-east corner
+// and the Wind pump behind it; the pack's bare plot (landscape_004) goes, and the soil lies on the smooth hill under it instead.
+// The plot: its north-west corner (x, z), its length along x and its depth along z, and the gate (from, to along the south side, from
+// the west corner), in game units.
+export const VILLAGE_FIELD_PLOT=Object.freeze({x:10.4,z:-19.8,width:7.5,depth:5.6,gate:[1.4,2.4]});
+// The crops, from the back strip (north, 0) to the front, tall to low: `rows` rows along the strip, a plant every `step`. Each part is
+// one of the farm's plant models (`height` tall, about a third of its size on the farm, as the village's houses are; `bush` tufts in a
+// clump) or the farm's wildflower (scene-polish.js, `size` times its own) over the plants and between them (`alone`: only over every
+// other plant, `lift` higher). A colour is one of the game's: the models' palette (lavender, soft blue, leaf green) or the wildflowers'
+// white; a model without one keeps the farm's own greens. Lavender: green clumps with purple spikes; flax: green stalks under soft blue
+// flowers; potatoes: leafy plants with a few white flowers; saffron: low lilac flowers on short leaves.
 export const VILLAGE_FIELD_CROPS=Object.freeze({
- lavender:Object.freeze({strip:0,model:'plant_004',height:.21,color:0x9470d2}),
- potatoes:Object.freeze({strip:1,model:'plant_005',height:.165,color:null}),
- flax:Object.freeze({strip:2,model:'plant_004',height:.21,color:0x5cb6fe}),
- saffron:Object.freeze({strip:3,model:'plant_005',height:.165,color:0xb299df})
+ lavender:Object.freeze({strip:0,rows:3,step:.18,parts:Object.freeze([Object.freeze({model:'plant_010',height:.17,color:null,bush:3}),Object.freeze({model:'plant_010',height:.3,color:0x9470d2,bush:4})])}),
+ flax:Object.freeze({strip:1,rows:5,step:.16,parts:Object.freeze([Object.freeze({model:'plant_010',height:.26,color:null}),Object.freeze({bloom:0x8acaff,size:.95})])}),
+ potatoes:Object.freeze({strip:2,rows:3,step:.25,parts:Object.freeze([Object.freeze({model:'plant_005',height:.17,color:0x49be4c}),Object.freeze({bloom:0xfffdf4,size:.5,lift:.1,alone:true})])}),
+ saffron:Object.freeze({strip:3,rows:4,step:.2,parts:Object.freeze([Object.freeze({model:'plant_010',height:.13,color:null}),Object.freeze({bloom:0x9470d2,size:.75})])})
 });
-// A strip's 45 places: 3 rows of 15 along the plot, a little out of line so they look sown by hand.
-export function villageFieldSpots(strip){
- const p=VILLAGE_FIELD_PLOT,out=[];
- for(let r=0;r<3;r++)for(let i=0;i<15;i++){
-  const n=strip*45+r*15+i,a=.7+i*8.01/14+((n*37)%11/10-.5)*.12,b=.9+strip*1.4675+r*.435+((n*53)%7/6-.5)*.1;
-  out.push({x:p.x+p.ax*a-p.az*b,z:p.z+p.az*a+p.ax*b,yaw:(n*2.4)%(2*Math.PI)});
+// The soil's edge (fence to field) and the grass between two strips, so a strip is (5.6 - 2 x .3 - 3 x .2) / 4 = 1.1 deep; the
+// ploughed field's height from its rim to its highest furrow (on the farm .45 over a field ten times as deep: flat, not a bump); and
+// a piece of fence, post to post.
+const FIELD_EDGE=.3,FIELD_GAP=.2,FIELD_SOIL=.16,FIELD_FENCE=.7;
+export function villageFieldStrip(strip){
+ const p=VILLAGE_FIELD_PLOT,depth=(p.depth-2*FIELD_EDGE-3*FIELD_GAP)/4;
+ return {x:p.x+FIELD_EDGE,z:p.z+FIELD_EDGE+strip*(depth+FIELD_GAP),width:p.width-2*FIELD_EDGE,depth};
+}
+// A strip's plants: straight rows along it, a little in from its rounded edge, each turned its own way and a touch bigger or smaller.
+export function villageFieldSpots(crop){
+ const c=VILLAGE_FIELD_CROPS[crop],s=villageFieldStrip(c.strip),n=Math.floor((s.width-.3)/c.step)+1,x0=s.x+(s.width-(n-1)*c.step)/2,out=[];
+ for(let r=0;r<c.rows;r++)for(let i=0;i<n;i++){
+  const k=c.strip*997+r*131+i,wobble=((k*37)%11/10-.5)*.03;
+  out.push({x:x0+i*c.step+wobble,z:s.z+.14+(s.depth-.28)*(r+.5)/c.rows+((k*53)%7/6-.5)*.03,yaw:(k*2.4)%(2*Math.PI),size:.92+((k*29)%9)/8*.16});
  }
  return out;
 }
-// A plant stands only where the plot's soil is on top: where the two hills rise over its edge there is none.
+// The ground under the plot, every quarter unit, so the soil, the fence and the plants follow it: nothing floats and nothing sinks into
+// the grass. Read straight off the village's hills (their triangles drawn into a height grid, the highest one on top), not with rays:
+// 340 rays onto the hills took half a second (headless Chrome on a computer, 11 Oct 2026), the grid a few milliseconds.
+const GROUND_STEP=.25;
+function groundUnder(village,p){
+ const x0=p.x-1,z0=p.z-1,cols=Math.ceil((p.width+2)/GROUND_STEP)+1,rows=Math.ceil((p.depth+2)/GROUND_STEP)+1,h=new Float32Array(cols*rows).fill(-Infinity);
+ const area=new THREE.Box3(new THREE.Vector3(x0,-1e3,z0),new THREE.Vector3(x0+(cols-1)*GROUND_STEP,1e3,z0+(rows-1)*GROUND_STEP)),box=new THREE.Box3(),a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+ village.updateMatrixWorld(true);
+ village.traverse(o=>{
+  if(!o.isMesh||o.isInstancedMesh||!/^hill_/.test(o.name)||!box.setFromObject(o).intersectsBox(area))return;
+  const pos=o.geometry.getAttribute('position'),index=o.geometry.index,n=index?index.count:pos.count,at=k=>index?index.getX(k):k;
+  for(let t=0;t+2<n;t+=3){
+   a.fromBufferAttribute(pos,at(t)).applyMatrix4(o.matrixWorld);b.fromBufferAttribute(pos,at(t+1)).applyMatrix4(o.matrixWorld);c.fromBufferAttribute(pos,at(t+2)).applyMatrix4(o.matrixWorld);
+   const i0=Math.max(0,Math.ceil((Math.min(a.x,b.x,c.x)-x0)/GROUND_STEP)),i1=Math.min(cols-1,Math.floor((Math.max(a.x,b.x,c.x)-x0)/GROUND_STEP));
+   const j0=Math.max(0,Math.ceil((Math.min(a.z,b.z,c.z)-z0)/GROUND_STEP)),j1=Math.min(rows-1,Math.floor((Math.max(a.z,b.z,c.z)-z0)/GROUND_STEP));
+   const d=(b.z-c.z)*(a.x-c.x)+(c.x-b.x)*(a.z-c.z);if(i0>i1||j0>j1||Math.abs(d)<1e-9)continue;
+   for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){
+    const x=x0+i*GROUND_STEP-c.x,z=z0+j*GROUND_STEP-c.z,u=((b.z-c.z)*x+(c.x-b.x)*z)/d,v=((c.z-a.z)*x+(a.x-c.x)*z)/d;
+    if(u<-1e-6||v<-1e-6||u+v>1+1e-6)continue;
+    const y=u*a.y+v*b.y+(1-u-v)*c.y;if(y>h[j*cols+i])h[j*cols+i]=y;
+   }
+  }
+ });
+ // A point with no hill over it (none under the plot today) takes the plot's middle height.
+ const known=h.filter(Number.isFinite),middle=known.length?known.reduce((s,y)=>s+y,0)/known.length:0;for(let k=0;k<h.length;k++)if(!Number.isFinite(h[k]))h[k]=middle;
+ return (x,z)=>{
+  const fx=Math.min(cols-1.001,Math.max(0,(x-x0)/GROUND_STEP)),fz=Math.min(rows-1.001,Math.max(0,(z-z0)/GROUND_STEP)),i=Math.floor(fx),j=Math.floor(fz),u=fx-i,v=fz-j,y=(a,b)=>h[b*cols+a];
+  return (y(i,j)*(1-u)+y(i+1,j)*u)*(1-v)+(y(i,j+1)*(1-u)+y(i+1,j+1)*u)*v;
+ };
+}
+const firstMesh=gltf=>{let mesh=null;gltf.scene.traverse(o=>{if(!mesh&&o.isMesh)mesh=o;});return mesh;};
+// A model's geometry stood on its base, centred, 1 unit tall, with its own material made matte.
+function unitModel(gltf){
+ const mesh=firstMesh(gltf),g=mesh.geometry.clone();g.computeBoundingBox();const b=g.boundingBox;
+ g.translate(-(b.min.x+b.max.x)/2,-b.min.y,-(b.min.z+b.max.z)/2);g.scale(1/(b.max.y-b.min.y),1/(b.max.y-b.min.y),1/(b.max.y-b.min.y));
+ const material=mesh.material.clone();material.roughness=1;material.metalness=0;material.vertexColors=Boolean(g.getAttribute('color'));
+ return {geometry:g,material};
+}
 export async function createVillageFields(village){
- const loader=sharePalette(new GLTFLoader()),names=[...new Set(Object.values(VILLAGE_FIELD_CROPS).map(c=>c.model))];
- const models=new Map(await Promise.all(names.map(async name=>[name,await loader.loadAsync(`/assets/models/${name}.glb`)])));
- const soil=['landscape_004','hill_008001','hill_009001'].map(name=>village.getObjectByName(name)).filter(Boolean);
- const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0),m=new THREE.Matrix4(),q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),group=new THREE.Group(),strips=new Map();
- for(const [crop,c] of Object.entries(VILLAGE_FIELD_CROPS)){
-  let mesh=null;models.get(c.model).scene.traverse(o=>{if(!mesh&&o.isMesh)mesh=o;});
-  const g=mesh.geometry.clone();g.computeBoundingBox();const b=g.boundingBox,k=c.height/(b.max.y-b.min.y);g.translate(-(b.min.x+b.max.x)/2,-b.min.y,-(b.min.z+b.max.z)/2);
-  const material=mesh.material.clone();material.roughness=1;material.metalness=0;material.vertexColors=Boolean(g.getAttribute('color'));
-  if(c.color!=null){material.map=null;material.color.setHex(c.color);}
-  const spots=[];
-  for(const s of villageFieldSpots(c.strip)){ray.set(new THREE.Vector3(s.x,40,s.z),down);const hit=ray.intersectObjects(soil,true)[0];if(hit?.object.name==='landscape_004')spots.push([s,hit.point.y+.01]);}
-  const rows=new THREE.InstancedMesh(g,material,spots.length);rows.name=`fields-${crop}`;rows.visible=false;rows.receiveShadow=true;
-  spots.forEach(([s,y],i)=>rows.setMatrixAt(i,m.compose(new THREE.Vector3(s.x,y,s.z),q.setFromAxisAngle(up,s.yaw),new THREE.Vector3(k,k,k))));
-  rows.computeBoundingSphere();group.add(rows);strips.set(crop,rows);
+ const p=VILLAGE_FIELD_PLOT,names=['field_004','fence_008',...new Set(Object.values(VILLAGE_FIELD_CROPS).flatMap(c=>c.parts.map(part=>part.model).filter(Boolean)))];
+ const loader=sharePalette(new GLTFLoader()),models=new Map(await Promise.all(names.map(async name=>[name,await loader.loadAsync(`/assets/models/${name}.glb`)])));
+ const ground=groundUnder(village,p),group=new THREE.Group(),strips=new Map(),m=new THREE.Matrix4(),q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),at=new THREE.Vector3(),size=new THREE.Vector3();
+ // The soil: the farm's ploughed field, stretched over each strip and laid on the ground point by point. Its rounded rim goes into the
+ // grass, the lowest point of its middle stands just over it.
+ {
+  const tile=firstMesh(models.get('field_004')),t=tile.geometry;t.computeBoundingBox();const b=t.boundingBox,pos=t.getAttribute('position'),sx=b.max.x-b.min.x,sy=b.max.y-b.min.y,sz=b.max.z-b.min.z;
+  let low=Infinity;for(let i=0;i<pos.count;i++){const u=(pos.getX(i)-b.min.x)/sx,w=(pos.getZ(i)-b.min.z)/sz;if(u>.08&&u<.92&&w>.12&&w<.88)low=Math.min(low,pos.getY(i));}
+  const parts=[];
+  for(let strip=0;strip<4;strip++){
+   const s=villageFieldStrip(strip),g=t.clone(),out=g.getAttribute('position');
+   for(let i=0;i<out.count;i++){const x=s.x+(pos.getX(i)-b.min.x)/sx*s.width,z=s.z+(pos.getZ(i)-b.min.z)/sz*s.depth;out.setXYZ(i,x,ground(x,z)+(pos.getY(i)-low)/sy*FIELD_SOIL+.015,z);}
+   g.computeVertexNormals();parts.push(g);
+  }
+  const material=tile.material.clone();material.map=null;material.color.setHex(0x9c7a52);material.roughness=1;material.metalness=0;material.vertexColors=Boolean(t.getAttribute('color'));
+  const soil=new THREE.Mesh(mergeGeometries(parts),material);soil.name='fields-soil';soil.receiveShadow=true;group.add(soil);
  }
+ // The fence: the farm's cream fence (the tint of the farm's crop-field fence) round the plot, knee-high to the village's houses, with the
+ // gate left open on the side of the path. Each piece runs from post to post on the ground: its rails follow the slope, its posts stay upright.
+ {
+  const {geometry,material}=unitModel(models.get('fence_008'));material.color.setHex(0xf2e2bd);
+  geometry.computeBoundingBox();const long=geometry.boundingBox.max.x-geometry.boundingBox.min.x,tall=FIELD_FENCE*.47,pieces=[];
+  for(const [x0,z0,dx,dz,length,gate] of [[p.x,p.z,1,0,p.width,null],[p.x+p.width,p.z,0,1,p.depth,null],[p.x,p.z+p.depth,1,0,p.width,p.gate],[p.x,p.z,0,1,p.depth,null]]){
+   const n=Math.round(length/FIELD_FENCE),l=length/n;
+   for(let i=0;i<n;i++){
+    if(gate&&(i+1)*l>gate[0]+.01&&i*l<gate[1]-.01)continue;
+    const from=ground(x0+dx*i*l,z0+dz*i*l),to=ground(x0+dx*(i+1)*l,z0+dz*(i+1)*l);
+    pieces.push(new THREE.Matrix4().makeBasis(new THREE.Vector3(dx*l/long,(to-from)/long,dz*l/long),new THREE.Vector3(0,tall,0),new THREE.Vector3(-dz*tall,0,dx*tall)).setPosition(x0+dx*(i+.5)*l,(from+to)/2-.02,z0+dz*(i+.5)*l));
+   }
+  }
+  const fence=new THREE.InstancedMesh(geometry,material,pieces.length);fence.name='fields-fence';fence.receiveShadow=true;
+  pieces.forEach((piece,i)=>fence.setMatrixAt(i,piece));fence.computeBoundingSphere();group.add(fence);
+ }
+ // The crops: one instanced mesh a part, each strip hidden until game.js shows it. A plant's foot stands at the lowest of the soil (its
+ // furrows), so none floats over a furrow.
+ const root=(x,z)=>ground(x,z)+FIELD_SOIL*.2;
+ for(const [crop,c] of Object.entries(VILLAGE_FIELD_CROPS)){
+  const spots=villageFieldSpots(crop),rows=new THREE.Group();rows.name=`fields-${crop}`;rows.visible=false;
+  for(const [n,part] of c.parts.entries()){
+   let mesh;
+   if(part.bloom!=null){
+    // Flowers over the leaves: one a plant, and (but for the potatoes' few white ones) as many again between them, inside the rows' ends.
+    const end=Math.max(...spots.map(s=>s.x)),list=part.alone?spots.filter((s,i)=>i%2===0):[...spots,...spots.map((s,i)=>({x:s.x+c.step/2,z:s.z+((i*7)%5/4-.5)*.12,yaw:s.yaw+1.3,size:s.size*.9})).filter(s=>s.x<end)];
+    mesh=new THREE.InstancedMesh(wildflowerGeometry(),wildflowerMaterial(),list.length);const colour=new THREE.Color(part.bloom);
+    list.forEach((s,i)=>{const k=part.size*s.size;mesh.setMatrixAt(i,m.compose(at.set(s.x,root(s.x,s.z)+(part.lift??0),s.z),q.setFromAxisAngle(up,s.yaw),size.set(k,k,k)));mesh.setColorAt(i,colour);});
+   }else{
+    const {geometry,material}=unitModel(models.get(part.model)),bush=part.bush??1,list=[];
+    if(part.color!=null){material.map=null;material.color.setHex(part.color);}
+    for(const s of spots)for(let t=0;t<bush;t++){const a=s.yaw+t*2.4,d=bush>1?.035:0;list.push([s.x+Math.cos(a)*d,s.z+Math.sin(a)*d,s.yaw+t*1.7,s.size*(bush>1?.85+.15*(t%2):1)]);}
+    mesh=new THREE.InstancedMesh(geometry,material,list.length);
+    list.forEach(([x,z,yaw,k],i)=>{const h=part.height*k;mesh.setMatrixAt(i,m.compose(at.set(x,root(x,z),z),q.setFromAxisAngle(up,yaw),size.set(h,h,h)));});
+   }
+   mesh.name=`fields-${crop}-${n}`;mesh.receiveShadow=true;mesh.computeBoundingSphere();rows.add(mesh);
+  }
+  group.add(rows);strips.set(crop,rows);
+ }
+ // The pack's bare plot goes once the new one stands (if any of the above failed, it stays as it was).
+ const bare=village.getObjectByName('landscape_004');if(bare)bare.visible=false;
  return {group,show:open=>{for(const [crop,rows] of strips)rows.visible=open(crop);}};
 }

@@ -977,14 +977,14 @@ function measureVillage(spots,margin=26){
  const middle=view.position.clone().add(right.multiplyScalar((minX+maxX)/2)).add(up.multiplyScalar((minY+maxY)/2));
  return {width:maxX-minX,height:maxY-minY,focus:middle.add(dir.multiplyScalar(-middle.y/dir.y))};
 }
-// World II's props, landmarks and the Fields' rows (Oct 2026, village-scene.js) arrive after the village is on screen, like the farm's
+// World II's props, landmarks and the Village Fields (Oct 2026, village-scene.js) arrive after the village is on screen, like the farm's
 // extra scenery: the trip is not slower, and if any of it fails the village simply shows without it.
 let villageGroup=null,villageExtras=null;
 async function addVillageExtras(){
  try{
   const {loadVillageExtras,createVillageFields}=await import('./village-scene.js');
   villageExtras=await loadVillageExtras(villageGroup);scene.add(villageExtras.group);
-  try{villageExtras.fields=await createVillageFields(villageGroup);scene.add(villageExtras.fields.group);}catch(error){console.warn('The Village Fields\' rows were skipped.',error);}
+  try{villageExtras.fields=await createVillageFields(villageGroup);scene.add(villageExtras.fields.group);}catch(error){console.warn('The Village Fields were skipped.',error);}
   syncVillageExtras();renderer.shadowMap.needsUpdate=true;
  }catch(error){console.warn('The village extras were skipped.',error);}
 }

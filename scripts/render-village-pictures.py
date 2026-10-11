@@ -10,7 +10,40 @@ from PIL import Image
 pack,extras,out=sys.argv[1:4];root=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','public','assets','models')
 PAL=np.array(Image.open(os.path.join(root,'village-palette.png')).convert('RGB'))/255
 P=lambda n:os.path.join(pack,n+'.glb');E=lambda n:os.path.join(extras,n+'.glb');F=lambda n:os.path.join(root,n+'.glb')
-ROWS=[(F('plant_005'),3.5,2.8,None),(F('plant_004'),0.9,3,'9470d2'),(F('plant_004'),-1.7,3,'5cb6fe'),(F('plant_005'),-4.3,2.8,'b299df')]
+# The Village Fields (11 Oct 2026), as the village draws them (public/village-scene.js createVillageFields): four strips of the farm's
+# ploughed field (field_004 in its ploughed brown) in the farm's cream fence (fence_008) with a gate at the front, and from the back
+# lavender (green clumps with purple spikes), flax (green stalks under soft blue flowers), potatoes (green plants, a few white flowers) and
+# saffron (low lilac flowers), each the farm's own plants and wildflowers in straight rows, in the same colours. In game units, on a
+# shorter plot with fewer plants 1.6 times as big, so the four crops still read at pin size. The old picture's hay barn is left out: the
+# plot is the place now, and beside a barn it shrank to half the pin. ('bloom', colour) is the farm's wildflower (scene-polish.js
+# wildflowerGeometry), drawn below.
+def fields(big=1.6):
+    W,D,edge,gap,rows=5.2,3.9,.22,.16,3;depth=(D-2*edge-3*gap)/4;L=W-2*edge
+    fence=lambda x,z,turn,l:(F('fence_008'),x,0,z,turn,(l/2.35,.3,.3),'f2e2bd')
+    items=[fence(-W/2+(i+.5)*W/7,D/2,0,W/7) for i in range(7) if i!=1]+[fence(-W/2+(i+.5)*W/7,-D/2,0,W/7) for i in range(7)]
+    items+=[fence(x,-D/2+(i+.5)*D/6,-math.pi/2,D/6) for i in range(6) for x in (-W/2,W/2)]
+    # (step, [(model or 'bloom', height or size, colour, tufts a clump)]) from the back strip to the front
+    crops=[(.3,[('plant_010',.2,None,3),('plant_010',.34,'9470d2',4)]),(.28,[('plant_010',.28,None,1),('bloom',1.15,'8acaff',1)]),
+           (.38,[('plant_005',.22,'49be4c',1),('bloom',.65,'fffdf4',1)]),(.3,[('plant_010',.14,None,1),('bloom',.95,'9470d2',1)])]
+    for strip,(step,parts) in enumerate(crops):
+        z0=-D/2+edge+strip*(depth+gap);n=int((L-.3)/step)+1;x0=-L/2+(L-(n-1)*step)/2
+        items.append((F('field_004'),0,-.035,z0+depth/2,0,(L/490.7,.12/27.3,depth/268.5),'9c7a52'))
+        for r in range(rows):
+            for i in range(n):
+                j=strip*997+r*131+i;x=x0+i*step;z=z0+.1+(depth-.2)*(r+.5)/rows;yaw=(j*2.4)%(2*math.pi)
+                for model,h,colour,bush in parts:
+                    if model=='bloom':
+                        # The potatoes' few white flowers stand over their leaves; flax and saffron have as many again between the plants.
+                        if colour=='fffdf4':
+                            if i%2==0:items.append((('bloom',colour),x,.1*big,z,yaw,h*big,None))
+                            continue
+                        items.append((('bloom',colour),x,0,z,yaw,h*big,None))
+                        if i<n-1:items.append((('bloom',colour),x+step/2,0,z+((j*7)%5/4-.5)*.08,yaw+1.3,h*big*.9,None))
+                        continue
+                    for t in range(bush):
+                        a=yaw+t*2.4;d=.04 if bush>1 else 0
+                        items.append((F(model),x+math.cos(a)*d,0,z+math.sin(a)*d,yaw+t*1.7,big*h/(1.0996 if model=='plant_010' else .4258)*(.85+.15*(t%2) if bush>1 else 1),colour))
+    return items
 # The Great Hall and the Stone quay (10 Oct 2026) are built of the pack's parts as VILLAGE_EXTRAS places them, (model, x, y, z, turn) in
 # metres of the pack: the Hall's two wings and its bell tower of three storeys under a cross roof, with a porch, stone steps and the
 # village's stone footings; the quay's stone slabs (the village's steps, foundation_010) with dry-stone walls, goods and a boat.
@@ -23,7 +56,7 @@ QUAY=([('foundation_010',-4.7*i,0,s*1.55,0 if s>0 else T) for i in range(3) for 
  +[('stones_015',-4.7,.6,-2.6,0),('stones_015',-2.65,-.34,3.45,0),('stones_015',-6.75,-.36,3.6,T)]
  +[('props_055',-.6,1.45,-.9,0),('props_018',1.3,1.45,-.5,.3),('props_018',1.4,2.45,-.4,.6),('props_044',1.6,1.45,.8,0),('props_022',-4,1.45,-.6,.2),('props_023',-5.7,.25,5.6,T/2)])
 PICTURES={   # name: [(file, x, y, z, turn, size, colour or None)], metres of the pack
- 'villagefields':[(P('landscape_004'),3.98,0,-3.7,0,.28,None),(P('Building_018'),-10,0,-9,0,1,None)]+[(f,i*2.6-6.5,1.45,z,i*.9,s,c) for f,z,s,c in ROWS for i in range(6)],
+ 'villagefields':fields(),
  'canteen':[(P('Building_029'),0,0,0,0,1,None),(E('props_054'),-6,0,4,0,1,None),(E('props_044'),-7.2,0,2.6,0,1,None),(E('props_044'),-5.6,0,5.6,.8,1,None)],
  'kiln':[(P('Building_010'),0,0,0,0,1,None),(E('props_063'),5,0,3,0,1,None),(E('props_073'),-1,0,6.5,0,1,None),(E('props_056'),3,0,5.5,0,1,None),(E('props_059'),4.2,0,6,1,1,None),(E('props_061'),6.5,0,6,0,1,None)],
  'linenloft':[(P('Building_014'),0,0,0,0,1,None),(E('props_034'),-9,0,7,0,1,None),(E('props_034'),-3,0,9,0,1,None)],
@@ -60,11 +93,23 @@ def read(path):
             idx=acc(p['indices']).astype(int).reshape(-1,3) if 'indices' in p else np.arange(len(pos)).reshape(-1,3)
             T.append(pos[idx]);U.append(acc(p['attributes']['TEXCOORD_0'])[idx].mean(1))
     return np.concatenate(T),np.concatenate(U)
+# The farm's wildflower (scene-polish.js wildflowerGeometry): a stem with two leaves, five petals in the flower's colour round a golden heart,
+# 0.26 tall; the stem's and the heart's vertex colours (linear in the game) as they show on screen.
+def bloom(colour):
+    top,T,C=.24,[],[];stem,heart,petal=(.68,.81,.55),(1,.88,.48),tuple(int(colour[i:i+2],16)/255 for i in (0,2,4))
+    ring=lambda n,i,r,y:(math.cos(i/n*2*math.pi)*r,y,math.sin(i/n*2*math.pi)*r)
+    for t in ([(-.012,0,0),(.012,0,0),(0,top,0)],[(0,.02,0),(.075,.09,.02),(.03,.06,-.015)],[(0,.03,0),(-.07,.1,-.02),(-.025,.07,.02)]):T.append(t);C.append(stem)
+    for k in range(10):T.append([(0,top+.004,0),ring(10,k+1,.09 if k%2 else .042,top+(.014 if k%2 else 0)),ring(10,k,.042 if k%2 else .09,top+(0 if k%2 else .014))]);C.append(petal)
+    for k in range(5):T.append([(0,top+.032,0),ring(5,k+1,.034,top+.01),ring(5,k,.034,top+.01)]);C.append(heart)
+    return np.array(T,dtype=np.float64),np.array(C)
+READ={}
 def render(items,path,N=1024):
     V=[];C=[]
     for f,x,y,z,r,s,tint in items:
-        v,uv=read(f);c,sn=math.cos(r),math.sin(r);R=np.array([[c,0,sn],[0,1,0],[-sn,0,c]])
-        V.append(np.einsum('ij,ntj->nti',R,v)*s+np.array([x,y,z]))
+        if f not in READ:READ[f]=bloom(f[1]) if isinstance(f,tuple) else read(f)
+        v,uv=READ[f];c,sn=math.cos(r),math.sin(r);R=np.array([[c,0,sn],[0,1,0],[-sn,0,c]])
+        V.append(np.einsum('ij,ntj->nti',R,v*np.array(s if isinstance(s,tuple) else (s,s,s)))+np.array([x,y,z]))
+        if isinstance(f,tuple):C.append(uv);continue
         xy=np.clip(((uv%1)*1023).round().astype(int),0,1023)
         C.append(np.tile([int(tint[i:i+2],16)/255 for i in (0,2,4)],(len(v),1)) if tint else PAL[xy[:,1],xy[:,0]])
     V=np.concatenate(V);C=np.concatenate(C)

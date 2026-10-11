@@ -126,10 +126,11 @@ test('a place\'s props show once it is built; the Fields show what they can sow;
  assert.match(game,/for\(const \[key,mesh\] of villageExtras\.places\)mesh\.visible=state\.buildings\[key\]\?\.built===true;/,'the landmarks are never a place\'s props');
 });
 // The real village-scene.js and the real files, in node: the extras on the village's scale and palette, every mesh hidden until game.js
-// shows it, and the Fields' rows only where the plot's soil is on top.
+// shows it, and the Village Fields (11 Oct 2026) on the hill under the pack's old plot: soil, fence and plants on the ground, clear of the
+// trees and the hay barns, the old plot hidden.
 const {registerHooks}=nodeModule,vendor=new URL('../public/vendor/',import.meta.url).href;
 registerHooks?.({resolve:(specifier,context,next)=>next(specifier==='three'?`${vendor}three.module.js`:specifier.startsWith('three/addons/')?vendor+specifier.slice(6):specifier,context)});
-test('the extras and the Fields\' rows build from the real files, hidden until the game shows them',{skip:!registerHooks&&'needs module.registerHooks (Node 22.15 or newer)'},async()=>{
+test('the extras and the Village Fields build from the real files, hidden until the game shows them',{skip:!registerHooks&&'needs module.registerHooks (Node 22.15 or newer)'},async()=>{
  const asked=[],R=globalThis.Request;
  globalThis.self??=globalThis;globalThis.ProgressEvent??=class extends Event{constructor(type,init){super(type);Object.assign(this,init);}};
  globalThis.Request=class{constructor(url,init={}){this.url=url;this.signal=init.signal;}};
@@ -152,10 +153,33 @@ test('the extras and the Fields\' rows build from the real files, hidden until t
    // point (game.js: the spot's y + 3.3) half a unit over the model's top, the Lookout's a unit (lower, a phone on its side lost it).
    if(LANDMARKS.includes(key)){const over=spot.y+3.3-box.max.y;assert.ok(over>.45&&over<(key==='lookout'?1.15:.55),`${key}: its pin ${over.toFixed(2)} over its top`);}
   }
-  const fields=await V.createVillageFields(village);
-  assert.deepEqual(fields.group.children.map(r=>[r.name,r.count]),[['fields-lavender',28],['fields-potatoes',45],['fields-flax',45],['fields-saffron',26]],'only on the plot\'s soil');
-  assert.ok(fields.group.children.every(r=>!r.visible));fields.show(crop=>crop==='potatoes');assert.deepEqual(fields.group.children.map(r=>r.visible),[false,true,false,false]);
-  assert.deepEqual(asked.filter(u=>!u.startsWith('blob:')).map(u=>u.split('?')[0]),['/assets/village/village.glb','/assets/village/village-layout.json','/assets/village/village-extras.glb','/assets/models/plant_004.glb','/assets/models/plant_005.glb','/assets/models/palette.png'],'the farm\'s own crop models, no new file');
+  const THREE=await import('three'),started=performance.now(),fields=await V.createVillageFields(village),took=performance.now()-started;
+  assert.deepEqual(fields.group.children.map(o=>o.name),['fields-soil','fields-fence','fields-lavender','fields-flax','fields-potatoes','fields-saffron']);
+  const count=name=>fields.group.getObjectByName(`fields-${name}`).children.map(m=>m.count);
+  assert.deepEqual([count('lavender'),count('flax'),count('potatoes'),count('saffron')],[[333,444],[210,415],[81,41],[136,268]],'clumps of lavender, flax and saffron under flowers, potatoes with a few');
+  assert.equal(fields.group.getObjectByName('fields-fence').count,36,'36 pieces of fence, the gate open');
+  assert.ok(fields.group.children.slice(2).every(r=>!r.visible)&&fields.group.children.slice(0,2).every(o=>o.visible),'the soil and the fence always, the crops once they are sown');
+  fields.show(crop=>crop==='potatoes');assert.deepEqual(fields.group.children.slice(2).map(r=>r.visible),[false,false,true,false]);
+  assert.equal(village.getObjectByName('landscape_004').visible,false,'the pack\'s bumpy plot is gone');
+  assert.ok(took<3000,`built in ${Math.round(took)} ms (rays onto the hills took seconds)`);
+  // On the hill: the soil's middle just over the grass, the fence's feet in it, every plant's foot in the soil.
+  const hills=[],ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0),m=new THREE.Matrix4(),at=new THREE.Vector3(),box=new THREE.Box3();village.updateMatrixWorld(true);
+  village.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh&&/^hill_/.test(o.name))hills.push(o);});
+  const from=new THREE.Vector3(),hill=(x,z)=>{ray.set(from.set(x,40,z),down);return ray.intersectObjects(hills,false)[0].point.y;},soil=fields.group.getObjectByName('fields-soil');
+  for(let k=0;k<24;k++){const s=V.villageFieldStrip(k%4),x=s.x+s.width*(.1+.8*((k*7)%6)/5),z=s.z+s.depth*(.3+.4*(k%3)/2);ray.set(from.set(x,40,z),down);
+   const over=ray.intersectObject(soil,false)[0].point.y-hill(x,z);assert.ok(over>.01&&over<.12,`the soil ${over.toFixed(3)} over the grass at ${x.toFixed(1)}, ${z.toFixed(1)}`);}
+  const fence=fields.group.getObjectByName('fields-fence');
+  for(let i=0;i<fence.count;i++){fence.getMatrixAt(i,m);at.setFromMatrixPosition(m);const sunk=hill(at.x,at.z)-at.y;assert.ok(sunk>-.005&&sunk<.1,`fence piece ${i} ${sunk.toFixed(3)} in the ground`);}
+  for(const rows of fields.group.children.slice(2))for(const mesh of rows.children)for(let i=0;i<mesh.count;i+=7){mesh.getMatrixAt(i,m);at.setFromMatrixPosition(m);const foot=at.y-hill(at.x,at.z);assert.ok(foot>0&&foot<.15,`${mesh.name} ${i}: its foot ${foot.toFixed(3)} over the grass`);}
+  // Clear of the village: no tree stands in the fence, no hay barn and no landmark reaches into it.
+  const P=V.VILLAGE_FIELD_PLOT,plot=new THREE.Box3(new THREE.Vector3(P.x,-1e3,P.z),new THREE.Vector3(P.x+P.width,1e3,P.z+P.depth)),middle=new THREE.Vector3();
+  village.traverse(o=>{
+   if(!o.isInstancedMesh||!/^(Tree_|Building_)/.test(o.name))return;if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+   for(let i=0;i<o.count;i++){o.getMatrixAt(i,m);box.copy(o.geometry.boundingBox).applyMatrix4(m).applyMatrix4(o.matrixWorld);
+    if(/^Tree_/.test(o.name))assert.ok(!plot.containsPoint(box.getCenter(middle)),`${o.name} ${i} grows in the Fields`);else assert.ok(!box.intersectsBox(plot),`${o.name} ${i} stands in the Fields`);}
+  });
+  for(const mesh of extras.landmarks.values()){mesh.geometry.computeBoundingBox();assert.ok(!mesh.geometry.boundingBox.intersectsBox(plot),`${mesh.name} stands in the Fields`);}
+  assert.deepEqual(asked.filter(u=>!u.startsWith('blob:')).map(u=>u.split('?')[0]),['/assets/village/village.glb','/assets/village/village-layout.json','/assets/village/village-extras.glb','/assets/models/field_004.glb','/assets/models/fence_008.glb','/assets/models/plant_010.glb','/assets/models/plant_005.glb','/assets/models/palette.png'],'the farm\'s own field, fence and plants, no new file');
  }finally{console.error=error;console.warn=warn;globalThis.Request=R;}
 });
 // 10 Oct 2026 (review fixes): the game's camera looks one way on every screen (from 36, 40, 36 towards the middle), so a landmark behind

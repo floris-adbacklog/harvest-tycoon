@@ -7,7 +7,7 @@ The game now loads **75 distinct model files**, up from 55. Loading every variat
 | Additional models | Purpose |
 | --- | --- |
 | mountain_008 | The distant valley ridge |
-| field_004, field_005 | Green and golden neighbouring fields; scenery, with no misleading crop timers |
+| field_004, field_005 | Green and golden neighbouring fields; scenery, with no misleading crop timers. field_004 in its ploughed brown is also the soil of World II's Village Fields |
 | horse_002, pig_001 | Animal paddock; tap for animal-care activities |
 | lawn_mower_001 | Workshop and its hands-on repair activity |
 | trailer_001 | Parked equipment beside the workshop |
@@ -120,5 +120,10 @@ scripts/render-village-pictures.py (numpy and Pillow, no Blender), after the fir
 
     python3 scripts/render-village-pictures.py assets-source/village/Village_Summer_glb/Separate_assets_glb <out>/models <pictures>
     for f in <pictures>/*.png; do cwebp -q 82 -alpha_q 100 -m 6 "$f" -o public/assets/icons/$(basename "${f%.png}").webp; done
+
+The Village Fields (11 Oct 2026) have no model of their own: public/village-scene.js lays four strips of the farm's field_004 (in
+the brown of the farm's ploughed fields) on the hill where the pack's bare plot (landscape_004, now hidden) lay, puts the farm's
+cream fence_008 round them and grows the farm's plant_010 and plant_005 and the farm's wildflower (scene-polish.js) on them, all
+from public/assets/models. Their picture is drawn from the same farm models (`fields()` in the script above).
 
 The 13 later goods (potatoes … saffron buns) are painted by the owner, 256 px WebP, copied as they are.

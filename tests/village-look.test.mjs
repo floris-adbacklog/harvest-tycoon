@@ -188,18 +188,49 @@ test('the extras are painted with the village\'s palette and loaded only there, 
  const tick=/if\(now-lastTick>500\)\{[^\n]*\}/.exec(game)?.[0]??'';assert.match(tick,/atmosphere\?\.tick\(\);syncVillageExtras\(\);/,'a build shows within half a second');
  assert.doesNotMatch(/function expandVisuals\(\)\{[^\n]*\}/.exec(game)[0],/syncVillageExtras/,'not in expandVisuals (tests/village-square.test.mjs runs it alone)');
 });
-// The Village Fields' rows (Oct 2026): the farm's own crop models, one strip for each crop the Fields sow, and for flax, lavender and
-// saffron one colour of the pack's palette (a tint multiplied over green leaves turned them grey-green; checked in a render).
-test('the Fields\' rows: one strip per village crop, the farm\'s models, the pack\'s colours',()=>{
- const scene=sceneFile(),object=name=>new Function('Object',`return ${new RegExp(`export const ${name}=Object\\.freeze\\((\\{[\\s\\S]*?\\})\\);\\n`).exec(scene)[1]}`)({freeze:o=>o});
- const crops=object('VILLAGE_FIELD_CROPS'),plot=object('VILLAGE_FIELD_PLOT');
+// The Village Fields (11 Oct 2026, the owner's review: the pack's bumpy brown plot with crops in diagonal bands and neon flax was ugly),
+// built like the farm's own fields: four strips of the farm's ploughed field side by side in the farm's cream fence, with a gate, one crop
+// a strip in straight rows, the farm's own plant models and wildflowers in colours of the game's palette (checked in renders).
+const fieldCode=()=>{const scene=sceneFile(),from=scene.indexOf('export const VILLAGE_FIELD_PLOT='),to=scene.indexOf('// The ground under the plot');assert.ok(from>0&&to>from);
+ return new Function(`${scene.slice(from,to).replaceAll('export ','')}return {plot:VILLAGE_FIELD_PLOT,crops:VILLAGE_FIELD_CROPS,strip:villageFieldStrip,spots:villageFieldSpots};`)();};
+test('the Village Fields: the farm\'s ploughed strips in its cream fence, one crop a strip in straight rows, the palette\'s colours',()=>{
+ const scene=sceneFile(),{plot,crops,strip,spots}=fieldCode();
  assert.deepEqual(Object.keys(crops).sort(),Object.values(RECIPES).filter(r=>r.building==='villagefields').map(r=>Object.keys(r.output)[0]).sort(),'a strip for every crop the Fields sow');
- assert.deepEqual(Object.values(crops).map(c=>c.strip).sort(),[0,1,2,3]);
- for(const c of Object.values(crops))assert.ok(existsSync(new URL(`../public/assets/models/${c.model}.glb`,import.meta.url)),`${c.model}: a farm model, nothing new to download`);
- const at=png('public/assets/models/village-palette.png'),hex=([r,g,b])=>r<<16|g<<8|b;
- assert.deepEqual([crops.flax.color,crops.lavender.color,crops.saffron.color,crops.potatoes.color],[hex(at(326,698)),hex(at(233,698)),hex(at(233,791)),null],'blue flax, purple lavender, lilac saffron; potatoes in the farm\'s own greens');
- const from=scene.indexOf('export function villageFieldSpots(strip){'),spots=new Function('VILLAGE_FIELD_PLOT',`${scene.slice(from+7,scene.indexOf('\n}\n',from)+2)}return villageFieldSpots;`)(plot);
- for(let strip=0;strip<4;strip++){const list=spots(strip);assert.equal(list.length,45);
-  for(const {x,z} of list){const a=(x-plot.x)*plot.ax+(z-plot.z)*plot.az,b=-(x-plot.x)*plot.az+(z-plot.z)*plot.ax;assert.ok(a>0&&a<9.41&&b>0&&b<7.07,`strip ${strip}: ${a.toFixed(2)}, ${b.toFixed(2)} on the plot`);}}
- assert.match(scene,/if\(hit\?\.object\.name==='landscape_004'\)/,'a plant only where the plot\'s soil is on top');
+ assert.deepEqual(Object.values(crops).map(c=>c.strip),[0,1,2,3],'from the back: lavender, flax, potatoes, saffron');
+ // The farm's own fields: its ploughed field in farm-life.js's brown, its crop fields' fence in game.js's cream.
+ assert.match(read('public/farm-life.js'),/ploughed:\['field_004',0x9c7a52,false\]/);assert.match(scene,/material=tile\.material\.clone\(\);material\.map=null;material\.color\.setHex\(0x9c7a52\);/);
+ assert.match(read('public/game.js'),/fenceLine\(-4\.4,-\.3,15,'z',2\.2,'fence_008',0xf2e2bd\)/);assert.match(scene,/unitModel\(models\.get\('fence_008'\)\);material\.color\.setHex\(0xf2e2bd\);/);
+ assert.match(scene,/names=\['field_004','fence_008',/);
+ for(const c of Object.values(crops))for(const part of c.parts)if(part.model)assert.ok(/^plant_0\d\d$/.test(part.model)&&existsSync(new URL(`../public/assets/models/${part.model}.glb`,import.meta.url)),`${part.model}: a farm plant, nothing new to download`);
+ // Every colour is the game's: a cell of the models' palette, or one of the farm's wildflower colours (scene-polish.js BLOOM).
+ const at=png('public/assets/models/palette.png'),hex=([r,g,b])=>r<<16|g<<8|b,palette=new Set();for(let y=0;y<1024;y+=4)for(let x=0;x<1024;x+=4)palette.add(hex(at(x,y)));
+ const bloom=new Function(`return ${/export const BLOOM=Object\.freeze\((\[[^\]]*\])\);/.exec(read('public/scene-polish.js'))[1]}`)();
+ for(const [crop,c] of Object.entries(crops))for(const part of c.parts)for(const colour of [part.color,part.bloom].filter(v=>v!=null))assert.ok(palette.has(colour)||bloom.includes(colour),`${crop}: ${colour.toString(16)} is not a colour of the game`);
+ const flower=crop=>crops[crop].parts.find(p=>p.bloom!=null)?.bloom,light=n=>(Math.max(n>>16,n>>8&255,n&255)+Math.min(n>>16,n>>8&255,n&255))/510;
+ assert.ok(flower('flax')!==0x5cb6fe&&light(flower('flax'))>.7&&(flower('flax')&255)>(flower('flax')>>16),'soft light blue flax, not the neon of before');
+ assert.ok(crops.lavender.parts.some(p=>p.color===0x9470d2&&p.bush>1),'lavender in round clumps of the palette\'s lavender');
+ assert.ok(bloom.includes(flower('potatoes'))&&light(flower('potatoes'))>.95,'white potato flowers');
+ assert.ok(Math.max(...crops.saffron.parts.map(p=>p.height??0))<Math.min(...crops.lavender.parts.map(p=>p.height)),'saffron grows low');
+ // Four strips side by side with grass between, inside the fence, and each crop in straight rows on its own strip.
+ const strips=[0,1,2,3].map(strip);
+ for(const [i,s] of strips.entries()){
+  assert.ok(s.x>=plot.x+.2&&s.x+s.width<=plot.x+plot.width-.2&&s.z>=plot.z+.2&&s.z+s.depth<=plot.z+plot.depth-.2,`strip ${i} inside the fence`);
+  if(i)assert.ok(s.z-(strips[i-1].z+strips[i-1].depth)>=.15,`grass between strips ${i-1} and ${i}`);
+  assert.ok(s.width>5*s.depth,'long strips');
+ }
+ for(const [crop,c] of Object.entries(crops)){
+  const list=spots(crop),s=strips[c.strip],n=list.length/c.rows;assert.ok(Number.isInteger(n)&&n>=20,`${crop}: ${list.length} plants in ${c.rows} rows`);
+  for(let r=0;r<c.rows;r++){
+   const row=list.slice(r*n,(r+1)*n),z=row.reduce((t,p)=>t+p.z,0)/n;
+   for(const [i,p] of row.entries()){
+    assert.ok(Math.abs(p.z-z)<.03,`${crop} row ${r}: a straight row`);if(i)assert.ok(Math.abs(p.x-row[i-1].x-c.step)<.04,`${crop} row ${r}: evenly spaced`);
+    assert.ok(p.x>s.x+.1&&p.x<s.x+s.width-.1&&p.z>s.z+.1&&p.z<s.z+s.depth-.1,`${crop}: ${p.x.toFixed(2)}, ${p.z.toFixed(2)} on its strip`);
+   }
+  }
+ }
+ // The gate in the south side, on the side of the path; the plot clear of the Wind pump behind it (Building_022, 1.6 wide).
+ assert.ok(plot.gate[0]>.6&&plot.gate[1]-plot.gate[0]>=.8&&plot.gate[1]<plot.width-.6,'a gate in the south side');assert.match(scene,/\[p\.x,p\.z\+p\.depth,1,0,p\.width,p\.gate\]/);
+ const pump=extrasTable().windpump[0];assert.equal(pump[0],'Building_022');assert.ok(plot.z>pump[3]+.8&&pump[1]>plot.x&&pump[1]<plot.x+plot.width,'the Wind pump stands behind the plot\'s north side');
+ // The pack's bare plot goes once the new one stands; the soil, the fence and the plants follow the hill under it (village-props.test.mjs).
+ assert.match(scene,/const bare=village\.getObjectByName\('landscape_004'\);if\(bare\)bare\.visible=false;\n return \{group,show:/);
 });
