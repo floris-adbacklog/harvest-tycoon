@@ -133,8 +133,62 @@ test('the hub shows this farm\'s own amounts and the rule in one line below leve
  assert.match(ui,/const paid=action\.type==='activity_work'\?\{xp:activityStatus\(state,action\.station,farmNow\(\)\)\.xp,bonus:activityRoundReward\(state\)\}:null;/,'what a job paid, at the level before its XP');
  assert.doesNotMatch(ui,/ACTIVITY_ROUND_REWARD/,'no fixed round bonus on screen');
  const life=read('public/farm-life.js'),css=read('public/farm-life.css');
- assert.match(life,/if\(ready&&!v\.ready&&!reducedMotion\)\{v\.label\.classList\.remove\('just-ready'\);void v\.label\.offsetWidth;v\.label\.classList\.add\('just-ready'\);\}/);
+ assert.match(life,/else if\(!v\.hopped&&!covered&&seen\(v\.label\)\)\{v\.hopped=true;if\(!reducedMotion\)\{v\.label\.classList\.remove\('just-ready'\);void v\.label\.offsetWidth;v\.label\.classList\.add\('just-ready'\);\}\}/);
  assert.match(css,/\.activity-label\.just-ready\{animation:activity-ready-hop \.9s ease-in-out 2\}/);assert.match(css,/@media \(prefers-reduced-motion:reduce\)\{\.activity-label\.just-ready\{animation:none\}\}/);
  const wiki=read('public/wiki-content.js');
  assert.match(wiki,/Until level \$\{HAND_FULL_LEVEL\} the stops grow with your farm: a stop rests \$\{HAND_REST_PER_LEVEL\/60000\} minutes for every level of your farm/);
+});
+
+// 11 Oct 2026 review of part B. A job that levels the farm up (at levels 3 to 6 a round is about one level) showed three sets of
+// numbers: the stop's reward line already at the next level, the result with what was paid, and the round strip with the next round's
+// bonus. The result is now the only one: the reward line goes while it shows, and so does the strip's bonus after a round.
+function fakeDom(){
+ const els=new Map(),el=id=>({id,innerHTML:'',textContent:'',open:false,targets:[],showModal(){this.open=true;},close(){this.open=false;},addEventListener(){},querySelector:()=>null,
+  querySelectorAll(sel){return sel!=='[data-activity-target]'?[]:this.targets=[...this.innerHTML.matchAll(/data-activity-target="(\d+)"/g)].map(m=>({dataset:{activityTarget:m[1]}}));}});
+ globalThis.document={getElementById:id=>els.get(id)??els.set(id,el(id)).get(id),querySelector:()=>null,querySelectorAll:sel=>sel==='dialog[open]'?[...els.values()].filter(e=>e.open):[]};
+ return els;
+}
+test('a job that levels the farm up shows what it paid, once: no reward line beside the result, no next round\'s bonus after a round',async()=>{
+ const t=Date.now()-120000,s=createFarm(t);s.xp=xpForLevel(3);s.xpOffset=0;normalizeFarm(s,t);
+ job(s,'greenhouse',t);job(s,'apiary',t+5000);job(s,'paddock',t+10000);
+ const {startedAt}=act(s,{type:'activity_start',station:'workshop'},t+15000),targets=s.activities.jobs.workshop.targets;
+ targets.slice(0,2).forEach((target,i)=>act(s,{type:'activity_work',station:'workshop',startedAt,target},t+16000+i*1000));
+ s.xp=xpForLevel(4)-5;assert.equal(levelOf(s),3);
+ const paid=activityStatus(s,'workshop',Date.now()).xp,bonus=activityRoundReward(s);
+ const els=fakeDom();
+ try{
+  const {createActivitiesUI}=await import('../public/activities-ui.js');
+  const ui=createActivitiesUI({state:s,runAction:async a=>act(s,a,Date.now()),notify:()=>{}}),panel=els.get('activity-work')??document.getElementById('activity-work');
+  ui.open('workshop');
+  assert.match(panel.innerHTML,new RegExp(`class="activity-reward">.*<b>\\+${paid} XP</b>`),'while working, the line says what the job pays');
+  assert.match(els.get('activity-round').innerHTML,new RegExp(`All four stops: \\+${bonus.coins} coins`));
+  await panel.targets.find(b=>Number(b.dataset.activityTarget)===targets[2]).onclick();
+  const next=activityStatus(s,'workshop',Date.now()).xp,nextBonus=activityRoundReward(s);
+  assert.equal(levelOf(s),4);assert.notEqual(next,paid);assert.notEqual(nextBonus.coins,bonus.coins);
+  assert.match(panel.innerHTML,/Round complete!/);
+  assert.doesNotMatch(panel.innerHTML,/class="activity-reward"/,'no reward line beside the result');
+  assert.match(panel.innerHTML,new RegExp(`\\+${paid} XP</span>`),'the job\'s chip says what it paid');assert.doesNotMatch(panel.innerHTML,new RegExp(`\\+${next} XP`));
+  assert.match(panel.innerHTML,new RegExp(`Round bonus: \\+${bonus.coins} coins · \\+${bonus.xp} XP`),'the bonus that was paid');
+  assert.doesNotMatch(els.get('activity-round').innerHTML,/All four stops/,'the strip leaves out the next round\'s bonus while the result shows');
+  // The next stop: the reward line and the strip's bonus are back, at the new level.
+  ui.open('greenhouse');
+  assert.match(panel.innerHTML,/class="activity-reward"/);assert.match(els.get('activity-round').innerHTML,new RegExp(`All four stops: \\+${nextBonus.coins} coins · \\+${nextBonus.xp} XP`));
+ }finally{delete globalThis.document;}
+});
+
+// The pin's hop waits until the pin can be seen: on screen, no window open, nothing on top of it (at level 3 it hopped under the level-up
+// card; on a computer the one pin on screen sat under the diamonds).
+test('a ready pin hops once it can be seen, once per ready time',()=>{
+ const life=read('public/farm-life.js'),src=life.slice(life.indexOf(' // A pin is seen when'),life.indexOf(' function watchProduction('));
+ const label={style:{},hidden:false,adds:0,offsetWidth:40,contains:el=>el===label,getBoundingClientRect:()=>({left:100,top:100,width:44,height:44}),classList:{set:new Set(),toggle(c,on){on?this.set.add(c):this.set.delete(c);},remove(c){this.set.delete(c);},add(c){this.set.add(c);if(c==='just-ready')label.adds++;}}};
+ let screenX=0,dialogOpen=true,onTop=label,status={remaining:0,job:null};
+ const THREE={Vector3:class{project(){return {x:screenX,y:0};}}},views=new Map([['greenhouse',{object:{position:{x:0,z:0}},height:1,label}]]);
+ const position=new Function('THREE','views','activityStatus','featureUnlocked','state','reducedMotion','document',`${src}\nreturn position;`)(THREE,views,()=>status,()=>true,{},false,{querySelector:()=>dialogOpen?{}:null,elementFromPoint:(x,y)=>x===122&&y===122?onTop:null});
+ const frame=()=>position({},1280,800,0);
+ frame();assert.equal(label.adds,0,'not under the level-up card');
+ dialogOpen=false;onTop={};frame();assert.equal(label.adds,0,'not under the top bar');
+ onTop=label;frame();assert.equal(label.adds,1,'in sight: it hops');frame();frame();assert.equal(label.adds,1,'then it stands still');
+ status={remaining:60000,job:null};frame();screenX=2;status={remaining:0,job:null};frame();assert.equal(label.hidden,true);assert.equal(label.adds,1,'ready again, but off screen');
+ screenX=.5;frame();assert.equal(label.adds,2,'panned into view: it hops');
+ status={remaining:0,job:{}};frame();status={remaining:0,job:null};dialogOpen=true;frame();assert.equal(label.adds,2);dialogOpen=false;frame();assert.equal(label.adds,3,'after a job and its rest');
 });

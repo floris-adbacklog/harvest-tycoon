@@ -108,16 +108,21 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  const beeHome=placeIn('apiary',10.4,13.7);
  for(let i=0;i<5;i++){const bee=new THREE.Mesh(new THREE.SphereGeometry(.06,4,3),new THREE.MeshBasicMaterial({color:0xf5c64c}));scene.add(bee);moving.push({obj:bee,kind:'bee',phase:i*1.8});}
  function attach(id,obj){return station(id,obj,obj.position.x,obj.position.z);}
+ // A pin is seen when nothing covers the farm and it is the topmost thing at its own middle (not under the top bar or a card).
+ const seen=label=>{if(label.hidden)return false;const r=label.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return Boolean(hit&&label.contains(hit));};
  function position(camera,width,height,now){
+  const covered=Boolean(document.querySelector('dialog[open]'));
   for(const [id,v] of views){
    const p=new THREE.Vector3(v.object.position.x,v.height+.4,v.object.position.z).project(camera),s=activityStatus(state,id,now);
    v.label.style.left=`${(p.x*.5+.5)*width}px`;v.label.style.top=`${(-p.y*.5+.5)*height}px`;
    v.label.hidden=!featureUnlocked(state,'activities')||Math.abs(p.x)>.94||Math.abs(p.y)>.86;v.label.classList.toggle('available',!s.remaining);v.label.classList.toggle('working',!!s.job);
    // A stop that is ready again hops twice on the map (11 Oct 2026, the owner's call: a cue on the farm itself, no popup): when its rest
    // ends, and when its pin first shows ready (the farm opens, or the hand opens at level 3). Then it stands still until its next rest ends.
+   // The hop waits until the pin can be seen (11 Oct 2026 review: at level 3 it hopped under the level-up card, and on a computer three
+   // of the four pins were off screen and the fourth under the diamonds), so a pin panned into view later still hops once.
    const ready=featureUnlocked(state,'activities')&&!s.remaining&&!s.job;
-   if(ready&&!v.ready&&!reducedMotion){v.label.classList.remove('just-ready');void v.label.offsetWidth;v.label.classList.add('just-ready');}
-   v.ready=ready;
+   if(!ready)v.hopped=false;
+   else if(!v.hopped&&!covered&&seen(v.label)){v.hopped=true;if(!reducedMotion){v.label.classList.remove('just-ready');void v.label.offsetWidth;v.label.classList.add('just-ready');}}
   }
  }
  function watchProduction(buildings){

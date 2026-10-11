@@ -13,9 +13,11 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
  function statuses(){return order.map(id=>activityStatus(state,id,farmNow()));}
  function signature(){return statuses().map(s=>`${s.station}:${!!s.job}:${s.job?.done.length}:${s.remaining>0}:${s.inRound}`).join('|');}
  // Shared by the hub grid and the station dialog: every stop, clickable to jump straight there (except the one already open).
- function roundStrip(all,round){
+ // paidBonus: the round was just completed, and the result below says what its bonus paid (11 Oct 2026 review: the strip left out the
+ // next round's bonus then, it is more after a level-up and read as a second, different amount).
+ function roundStrip(all,round,paidBonus=false){
   const bonus=activityRoundReward(state);
-  return `<div class="activity-round-heading"><strong>Your farm round</strong><b>${round.length} / 4</b></div><div class="activity-round-stops" aria-label="Stops completed">${all.map(stop=>`<button type="button" class="round-stop ${stop.inRound?'complete':''}" data-round-station="${stop.station}" ${stop.station===selected?'disabled':''} aria-label="${stop.name}: ${stop.inRound?'complete':'not completed'}" title="${stop.name} · ${stop.inRound?'Complete':'Not completed'}">${art(`activity-${stop.station}`)}${stop.inRound?'<i data-lucide="check" class="round-tick" data-line-icon aria-hidden="true"></i>':''}</button>`).join('')}<span class="round-bonus">All four stops: +${bonus.coins} coins · +${bonus.xp} XP</span></div>`;
+  return `<div class="activity-round-heading"><strong>Your farm round</strong><b>${round.length} / 4</b></div><div class="activity-round-stops" aria-label="Stops completed">${all.map(stop=>`<button type="button" class="round-stop ${stop.inRound?'complete':''}" data-round-station="${stop.station}" ${stop.station===selected?'disabled':''} aria-label="${stop.name}: ${stop.inRound?'complete':'not completed'}" title="${stop.name} · ${stop.inRound?'Complete':'Not completed'}">${art(`activity-${stop.station}`)}${stop.inRound?'<i data-lucide="check" class="round-tick" data-line-icon aria-hidden="true"></i>':''}</button>`).join('')}${paidBonus?'':`<span class="round-bonus">All four stops: +${bonus.coins} coins · +${bonus.xp} XP</span>`}</div>`;
  }
  // The rule, only while it applies (a guided farm below level 10).
  function growRule(){
@@ -61,7 +63,7 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
   const all=statuses(),round=state.activities?.round??[],s=all.find(s=>s.station===selected),panel=$('activity-work');
   $('activities-title').textContent=s.name;
   $('activity-icon').innerHTML=art(`activity-${s.station}`);
-  $('activity-round').innerHTML=roundStrip(all,round);bindRoundStrip($('activity-round'));
+  $('activity-round').innerHTML=roundStrip(all,round,!!result?.roundComplete);bindRoundStrip($('activity-round'));
   const next=nextStop(s.station);
   const nav=`<div class="activity-nav"><button type="button" class="small-button" data-activity-hub>‹ All stops</button>${next?`<button type="button" class="primary-button" data-activity-next="${next.station}">Next stop: ${next.name} ›</button>`:''}</div>`;
   let body;
@@ -77,7 +79,9 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
   }else{
    body=busy?'<p class="activity-wait">Getting the job ready…</p>':`<button id="activity-start" class="primary-button">Start this job<i data-lucide="arrow-right"></i></button>`;
   }
-  panel.innerHTML=`<p class="activity-instruction">${s.instruction}</p><div class="activity-reward">${art('xp')}<b>+${s.xp} XP</b>${s.item?`<span>· ${art(s.item)} +${s.itemCount??1} ${ITEMS[s.item].name}</span>`:''}</div>${body}`;
+  // The stop's reward line goes while a result shows (11 Oct 2026 review): the result says what the job paid, and after a level-up the
+  // line would already show the next level's XP next to it (at levels 3 to 6 a round is about one level, so on most rounds).
+  panel.innerHTML=`<p class="activity-instruction">${s.instruction}</p>${result?'':`<div class="activity-reward">${art('xp')}<b>+${s.xp} XP</b>${s.item?`<span>· ${art(s.item)} +${s.itemCount??1} ${ITEMS[s.item].name}</span>`:''}</div>`}${body}`;
   $('activity-start')?.addEventListener('click',()=>act({type:'activity_start',station:s.station}));
   panel.querySelectorAll('[data-activity-target]').forEach(b=>b.onclick=()=>act({type:'activity_work',station:s.station,startedAt:s.job.startedAt,target:Number(b.dataset.activityTarget)}));
   panel.querySelector('[data-activity-next]')?.addEventListener('click',e=>open(e.currentTarget.dataset.activityNext));

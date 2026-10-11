@@ -1717,7 +1717,7 @@ export function availableDaily(state,q){
   const stat=q.stat??'';
   if(stat.startsWith('harvest_')&&!cropUnlocked(state,stat.slice(8)))return false;
   // A "made" goal counts what is collected from a building's batches, so it waits for a recipe that makes the good, not just a way to get it: the
-  // paddock's helping hand gives fertilizer from level 8, the fertilizer recipe opens at 14 (9 Oct 2026).
+  // paddock's helping hand gives fertilizer from level 3 (8 before 11 Oct 2026), the fertilizer recipe opens at 14 (9 Oct 2026).
   if(stat.startsWith('made_')&&!Object.entries(RECIPES).some(([id,r])=>r.output[stat.slice(5)]&&recipeUnlocked(state,id)))return false;
   if(stat==='produced'&&!Object.keys(RECIPES).some(id=>recipeUnlocked(state,id)))return false;
   if(stat.startsWith('built_')&&!buildingEligible(state,stat.slice(6)))return false;
