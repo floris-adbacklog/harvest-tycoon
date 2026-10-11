@@ -353,7 +353,9 @@ export const BEGINNER_STEP_XP=15;
 export const BEGINNER_QUESTS=Object.freeze([
  // Step 1 says the sweep first (Oct 2026): sweeping over the ripe corn harvests every field it passes; a tap still harvests one.
  {id:'harvest',title:'Your first basket',description:'Sweep across your ripe corn to harvest it, or tap one.',guide:'harvest',icon:'shopping-basket'},
- {id:'sell',title:'Your first market sale',description:'Open Market and sell some corn. Save your animal feed for the chickens.',guide:'market',icon:'store'},
+ // 11 Oct 2026 (Part A A11): one thing to do. The feed sentence went: starter feed and corn cannot be sold in the first 30 minutes anyway
+ // (STARTER_KEEP).
+ {id:'sell',title:'Your first market sale',description:'Open Market and sell your corn.',guide:'market',icon:'store'},
  {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
  // 7 Oct 2026: water works only in a crop's first minute, and the starter wheat is past it (9 of 38 new farmers who planted never watered).
  {id:'water',title:'A little water goes a long way',description:'Plant wheat and water it within a minute. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
@@ -407,6 +409,13 @@ export function claimBeginnerQuest(state,id,now=Date.now()){
 // which is why the time to the first touch is a duration of its own. Without sentAt they count as the server's. Each part is kept once:
 // a time only within the last day and never ahead of the server, a duration up to 10 minutes; anything else is left out.
 export const FIRST_LOOK_MAX_MS=600000;
+// 11 Oct 2026 (Part A, A1): the load chain (look.chain), to see which step of the wait is slow: how long after the start of the page around
+// the farm (its own clock, performance.now()) CrazyGames' SDK answered (hello), its token came (token), the account was there (account:
+// a guest made or a sign-in found), our server sent the farm (farm), the farm page started (frame), the 3D models were in (models) and the
+// first picture was drawn (render); lost is 1 when the 3D view was lost during that first visit (public/game.js). At most these 8, each a
+// whole number of ms up to 10 minutes and kept once, like the other parts; anything else is left out. A step a page does not have (the
+// website has no hello or token) is simply not there.
+export const FIRST_LOOK_CHAIN=Object.freeze(['hello','token','account','farm','frame','models','render','lost']);
 export function recordFirstLook(state,look,now=Date.now()){
  if(!look||typeof look!=='object'||!state.onboarding)return;
  const shift=Number.isFinite(look.sentAt)?now-look.sentAt:0;
@@ -414,6 +423,9 @@ export function recordFirstLook(state,look,now=Date.now()){
  const span=v=>Number.isFinite(v)&&v>=0?Math.min(Math.round(v),FIRST_LOOK_MAX_MS):undefined;
  const parts={shownAt:time(look.shownAt),loadMs:span(look.loadMs),readyAt:time(look.readyAt),readyMs:span(look.readyMs),frame:typeof look.frame==='string'&&/^\d{2,5}x\d{2,5}$/.test(look.frame)?look.frame:undefined,firstInputAt:time(look.firstInputAt),firstInputMs:span(look.firstInputMs)};
  const seen={...state.onboarding.firstLook};for(const [key,value] of Object.entries(parts))if(value!==undefined&&seen[key]===undefined)seen[key]=value;
+ const chain=look.chain&&typeof look.chain==='object'&&!Array.isArray(look.chain)?look.chain:{},links={...seen.chain};
+ for(const key of FIRST_LOOK_CHAIN){const value=key==='lost'?(chain.lost===1?1:undefined):span(chain[key]);if(value!==undefined&&links[key]===undefined)links[key]=value;}
+ if(Object.keys(links).length)seen.chain=links;
  if(Object.keys(seen).length)state.onboarding.firstLook=seen;
 }
 function recordBeginnerAction(state,action,result,before){

@@ -82,5 +82,7 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,village=fa
  });
  // One direct path for desktop and mobile; there is no nested quest popover on phones.
  doc.getElementById('tasks-button').addEventListener('click',open);
- return {open,refresh(){if(dialog.open)render();}};
+ // Quests straight at one quest (11 Oct 2026, Part A A13: the next-goal banner on a phone): that quest in the middle, its Claim in reach.
+ function openAt(id){open();const button=list.querySelector(`[data-claim="${Number(id)}"]`);button?.closest('.task-row')?.scrollIntoView?.({block:'center'});button?.focus({preventScroll:true});}
+ return {open,openAt,refresh(){if(dialog.open)render();}};
 }

@@ -20,7 +20,7 @@ test('giftPopup fills in only the amounts (and item, if any) that were actually 
  const js=read('public/game.js');
  // The same popup also carries Invite a friend rewards and the end of the Beginner guide, with its own heading, picture and
  // a plain line of text (defaults: a gift, no text).
- assert.match(js,/function giftPopup\(gift,\{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',text=''\}=\{\}\)\{/);
+ assert.match(js,/function giftPopup\(gift,\{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',text='',action=null\}=\{\}\)\{/);
  assert.match(js,/else\{note\.textContent=text;note\.hidden=!text;\}/,'that text is set as text too');
  assert.match(js,/if\(gift\.coins\)rewards\.push\(`<strong class="reward-coins">\$\{art\('coins'\)\}\+\$\{gift\.coins\.toLocaleString\('en-US'\)\} coins<\/strong>`\);/);
  assert.match(js,/if\(gift\.xp\)rewards\.push\(`<strong class="reward-xp">\$\{art\('xp'\)\}\+\$\{gift\.xp\.toLocaleString\('en-US'\)\} XP<\/strong>`\);/);

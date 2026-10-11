@@ -10,6 +10,9 @@ import {confirmAction} from './confirm-dialog.js';
 import {flyHarvest,bump} from './harvest-fly.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
+// What one market tab's stock is worth at today's prices, as Sell all would pay (11 Oct 2026, Part A A11: the Market button's badge from
+// the first harvest to the first sale says the same number as the Crops tab's "This basket is worth").
+export function marketWorth(state,tab,now=Date.now()){return marketSaleValue(state,marketItems(state,tab).reduce((v,k)=>v+sellableStock(state,k,now)*marketQuote(k,now).price,0),now);}
 const seconds=formatDuration;
 // 8 Oct 2026: a built building in the Buildings list says what it is doing in separate chips under its name, which wrap instead of
 // being cut off with … (French, Russian and Czech on a phone, English on a computer): green "4 ready", amber "1 working", plain
@@ -144,7 +147,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  }
  function openBuildings(){renderCatalog();show('buildings-dialog');}
  // The built Pier opens the town boat (Oct 2026); while it is not built its window shows its golden brief like any village place.
- function openBuilding(key){if(!Object.hasOwn(BUILDINGS,key))return;if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHint(state,key));return;}onFamily();return;}if(BUILDINGS[key].type==='pier'&&buildingUnlocked(state,key)){onBoat?.();return;}currentBuilding=key;renderBuilding();show('building-dialog');}
+ function openBuilding(key){if(!Object.hasOwn(BUILDINGS,key))return;if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHint(state,key));return;}onFamily();return;}if(BUILDINGS[key].type==='pier'&&buildingUnlocked(state,key)){onBoat?.();return;}currentBuilding=key;$('building-dialog').dataset.building=key;renderBuilding();show('building-dialog');}
  function renderBuilding(){
   if(!currentBuilding)return;
   // A Pier built from its own window (its brief) opens the town boat instead; mutate's toast still shows.
@@ -361,7 +364,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  // What "Sell all" would bring in right now for the tab that is open.
  // Heirlooms from the Seed Lab sell with the crops, once found or in stock (27 Sep 2026).
  function marketEntries(){return marketItems(state,marketTab).map(k=>[k,ITEMS[k]]);}
- function categoryTotal(now=farmNow()){return marketSaleValue(state,marketEntries().reduce((v,[k])=>v+sellableStock(state,k,now)*marketQuote(k,now).price,0),now);}
+ function categoryTotal(now=farmNow()){return marketWorth(state,marketTab,now);}
  let confirmingSale=false;
  async function sell(key='category',quantity){
   if(marketSelling||confirmingSale)return;

@@ -91,7 +91,7 @@ test('the game wires the swipe to one save and lights the swiped fields; labels 
  const game=read('public/game.js');
   assert.match(game,/return a==='plant'\|\|a==='harvest'\|\|a==='water'\|\|a==='tend'\?a:null;/,'plant, harvest, water and care');
  assert.match(game,/handle:client\.sweep\(action,selectedCrop\)/,'one sweep handle per sweep; planting uses the chosen seed');
- assert.match(game,/sweep:\{action:sweepAction,add:\(target,action\)=>sweepField\(target\.id,action\?\?sweepAction\(target\)\),end:\(\)=>endSweep\(\)\}/);
+ assert.match(game,/sweep:\{action:sweepAction,add:\(target,action\)=>sweepField\(target\.id,action\?\?sweepAction\(target\)\),end:\(\)=>endSweep\(\),early:firstBasketWaits\}/);
  assert.doesNotMatch(game,/still saving|workSwept/,'the dead "still saving" retry is gone: the farm client queues every request');
  assert.match(read('public/farm-audio.js'),/if\(action\.type==='fields'\)return/);
 });

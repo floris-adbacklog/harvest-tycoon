@@ -118,7 +118,7 @@ test('Show me for step 9 moves the view to the Greenhouse and points at its pin,
  assert.equal(phone[0].find(),more);assert.equal(phone[1].find(),entry);assert.equal(phone[2].find(),card);
  assert.equal(guideSteps('hand',{state,now,doc:doc({}),win}),null);
  const game=read('public/game.js');
- assert.match(game,/else if\(target==='hand'\)\{const v=farmLife\?\.views\.get\('greenhouse'\);if\(v&&!villageWorld\)\{lookAt\(v\.x,v\.z\);positionBuildingLabels\(\);\}const steps=guideSteps\('hand',\{state,now:farmNow\(\)\}\);if\(steps\)coach\.start\(steps\);else activities\.openHub\(\);\}\n[^\n]*\n[^\n]*\n  else if\(guideSteps\(target/,'the view moves to the Greenhouse first, then Show me points');
+ assert.match(game,/else if\(target==='hand'\)\{const v=farmLife\?\.views\.get\('greenhouse'\);if\(v&&!villageWorld\)\{lookAt\(v\.x,v\.z\);positionBuildingLabels\(\);\}const steps=guideSteps\('hand',\{state,now:farmNow\(\)\}\);if\(steps\)coach\.start\(steps,\{auto\}\);else if\(!auto\)activities\.openHub\(\);\}\n[^\n]*\n[^\n]*\n else if\(guideSteps\(target/,'the view moves to the Greenhouse first, then Show me points (in showWay since Part A; never a window by itself)');
  assert.match(read('public/farm-life.js'),/label\.className='activity-label';label\.dataset\.activity=id;/);
  assert.match(read('public/beginner-ui.js'),/hand:'Help at the Greenhouse'/);
  assert.match(read('src/analytics.js'),/'tend','wheat','hand','collect'\]/);

@@ -3,13 +3,14 @@ import {createFarmSession} from './farm-session.js';
 import {createFarmPresence} from './presence.js';
 import {fetchLeaderboard} from './leaderboard.js';
 import {createChatClient} from './chat-client.js';
-import {createWrapperLink,localStandIn,isLocalHost,portalLanguage} from './crazygames-link.js';
+import {createWrapperLink,localStandIn,isLocalHost,portalLanguage,happyMoment} from './crazygames-link.js';
 import {stopPageZoom} from './page-zoom.js';
 import {startUpdateCheck} from './app-update.js';
 import {WAKE_GRACE} from './connection.js';
 import {startTranslation,chooseLanguage,chosenLanguage} from '../public/i18n.js';
 import {startLoadingTips,ACCOUNT_STEPS,farmHandOver} from '../public/loading-screen.js';
 import {PORTAL_FEATURES} from '../public/portal.js';
+import {guardWheel} from '../public/wheel-guard.js';
 // Harvest Tycoon on CrazyGames (Oct 2026): public/crazygames.html, shown in a frame by our small page on CrazyGames (crazygames/).
 // No sign-in card: a player who is logged in on CrazyGames gets their own farm (their token is checked by our server, the Edge
 // Function crazygames-auth, on every start), anyone else plays as a guest of this browser. The farm itself opens exactly as on the
@@ -27,12 +28,18 @@ const framed=window.parent!==window,local=isLocalHost(location.hostname);
 if(!framed&&!local)location.replace('/');
 else void boot();
 
+// The load chain of a new farm (11 Oct 2026, Part A A1; public/farm-state.js FIRST_LOOK_CHAIN): when each step was done, in ms on this
+// page's own clock. The farm page adds its own steps to the same object (src/game-cloud.js, public/game.js) and sends them with its
+// first look. Each step keeps its first time: a second start (a log-in during play) does not move it.
+const chain=window.harvestChain??={},mark=key=>{chain[key]??=Math.round(performance.now());};
 async function boot(){
  const link=framed?createWrapperLink({win:window,parent:window.parent,local}):localStandIn();
  stopPageZoom(document);
+ // Nor does the wheel scroll CrazyGames' page from ours (11 Oct 2026, Part A A7): over the loading screen, the pause, the edges.
+ guardWheel(document);
  // The page shows its texts once it knows the language (crazygames.css hides them until then; never longer than 3 seconds).
  setTimeout(()=>document.documentElement.classList.remove('i18n-wait'),3000);
- const info=await link.hello();
+ const info=await link.hello();mark('hello');
  const language=portalLanguage(info.locale);
  if(info.locale&&store.get(LOCALE_KEY)!==language){chooseLanguage(language);store.set(LOCALE_KEY,language);}
  void startTranslation();
@@ -118,7 +125,7 @@ async function boot(){
  // logged-in player to a guest farm); a guest simply gets no token.
  async function account(){
   if(info.userAvailable){
-   const token=await link.token();
+   const token=await link.token();mark('token');
    if(token){
     try{
      const own=await sessionOf('user'),current=active==='guest'?await sessionOf('guest'):null,stored=own||current?null:await sessionOf('guest');
@@ -140,12 +147,14 @@ async function boot(){
  }
 
  const session=createFarmSession({
-  supabase:()=>supabase,verifiedUser,farmRequest,fetchLeaderboard,createFarmPresence,createChatClient,cloudError,
+  // The farm's first answer from our server is a step of the load chain (farm).
+  supabase:()=>supabase,verifiedUser,farmRequest:(body,options)=>farmRequest(body,options).then(data=>{if(body?.operation==='load')mark('farm');return data;}),fetchLeaderboard,createFarmPresence,createChatClient,cloudError,
   host:()=>$('farm-host'),phase,unavailable:pause,signedOut,
   // Where these farmers come from (supabase/player-attribution.sql): the server keeps it for a brand-new farm only.
   firstLoad:()=>({source:{src:'crazygames',ref:'crazygames.com'}}),
-  // No trackers here: only a level-up becomes CrazyGames' happytime, at most once in two minutes.
-  track:{game:event=>{if(event==='level_up'&&Date.now()-happyAt>120000){happyAt=Date.now();sdk('happytime');}}},
+  // No trackers here: only a milestone becomes CrazyGames' happytime (the guide complete, every fifth level; src/crazygames-link.js
+  // happyMoment, 11 Oct 2026), at most once in two minutes.
+  track:{game:(event,params)=>{if(happyMoment(event,params)&&Date.now()-happyAt>120000){happyAt=Date.now();sdk('happytime');}}},
   extend(bridge){
    // No Sign out on CrazyGames (their rule; portal.css hides the button): a guest's farm is never let go by a tap.
    bridge.portal=portal;bridge.signOut=()=>{};
@@ -160,7 +169,7 @@ async function boot(){
   try{
    session.dispose();phase('checking','Checking your account…');
    if(!isConfigured)throw new Error('Account access is temporarily unavailable. Please try again later.');
-   await account();await session.open();retries=0;
+   await account();mark('account');await session.open();retries=0;
   }catch(error){
    // 429: our guest limit or Supabase's own sign-in limit, both per network (a school class behind one address).
    if(error?.status===429)pause('Many players on this network are starting at once. Please try again in a little while.');

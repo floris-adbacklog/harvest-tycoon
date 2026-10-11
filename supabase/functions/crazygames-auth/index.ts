@@ -8,7 +8,11 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {handleCrazyGamesAuth,createKeyStore,PUBLIC_KEY_URL,MAX_BODY,MESSAGES} from './crazygames.js';
 
-const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
+// 11 Oct 2026: a browser keeps the answer to its preflight (OPTIONS) for up to 2 hours (Max-Age; Chrome's own cap, Safari keeps it
+// shorter), instead of Chrome's 5 seconds: about 50,800 OPTIONS calls a day were over a third of all the calls, and every tap after a pause paid
+// two round trips. Allow-Headers must name every header the browser sends (supabase-js: authorization, apikey, content-type,
+// x-client-info), or a kept preflight fails for those 2 hours; tests/cors-max-age.test.mjs checks it against the installed supabase-js.
+const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Max-Age':'7200','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const env=(key:string)=>Deno.env.get(key)??'';
 const admin=createClient(env('SUPABASE_URL'),env('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false,autoRefreshToken:false}});
