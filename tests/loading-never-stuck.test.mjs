@@ -16,7 +16,7 @@ function frameFixture({stored,storage=true,started='blank'}={}){
  // The frame's first empty page (about:blank: shown, no bar) and the farm page (farm.html: its bar, hidden until its code runs).
  const blank={getElementById:()=>null,body:{hidden:false},readyState:'complete'};
  const page=()=>({getElementById:id=>id==='load-progress'?{value:12}:null,body:{hidden:true},readyState:'interactive'});
- const frame={files:0,contentDocument:started==='blank'?blank:page()};
+ const frame={files:0,src:'https://www.harvesttycoon.com/farm.html',contentDocument:started==='blank'?blank:started==='error'?null:page()};
  frame.contentWindow={performance:{getEntriesByType:type=>type==='resource'?{length:frame.files}:[]}};
  const timers={setInterval:fn=>{tick=fn;return 1;},clearInterval:()=>{tick=null;},setTimeout:fn=>{later.push(fn);return 2;},clearTimeout(){}};
  const screen={hidden:true},win={},view={hidden:false};
@@ -71,6 +71,33 @@ test('a trip\'s new farm page (World II) is watched as well, without the loading
  f.frame.contentDocument=f.page();f.frame.files=0;f.pass(LOAD_STALL_MS);f.flush();assert.deepEqual(f.reloads,[]);assert.equal(f.screen.hidden,true,'no screen of this page over a trip');
  f.pass(1000);f.flush();assert.deepEqual(f.reloads,['page']);
  const fine=frameFixture({started:'page'});fine.hand.wait();fine.win.harvestFarmShown();fine.frame.contentDocument=fine.page();fine.pass(5000);fine.frame.contentDocument.body.hidden=false;fine.pass(LOAD_STALL_MS*3);fine.flush();assert.deepEqual(fine.reloads,[]);
+});
+// Review fix (11 Oct 2026): farm.html's own request that fails (a network switch, a reset connection) leaves the browser's error page
+// in the frame, a page this page cannot read (contentDocument null). That read as no frame at all, and the screen stayed at 10% for good.
+test('farm.html that fails to load (the browser\'s error page, unreadable): opened again after 3 seconds, a second time the pause card',()=>{
+ // The frame's first empty page is there when the farm opens, the error page comes after (a portal: the frame is added at 10%).
+ const f=frameFixture();f.hand.wait();assert.equal(f.running(),true);f.pass(2000);
+ f.frame.contentDocument=null;f.pass(1000);f.pass(FRAME_FAILED_MS-1000);f.flush();assert.deepEqual(f.reloads,[],'not before 3 seconds');assert.equal(f.screen.hidden,false,'the screen stays over it');
+ f.pass(1000);f.flush();assert.deepEqual(f.reloads,['page']);assert.deepEqual(f.tracked,[['farm_load_retry',{reason:'failed',again:false,step:'frame',models:0}]]);
+ assert.equal(f.running(),false);f.pass(LOAD_STALL_MS*3);f.flush();assert.deepEqual(f.reloads,['page'],'once');
+ // The error page already there when the farm opens: watched too, never the old reveal after 20 seconds.
+ const first=frameFixture({started:'error'});first.hand.wait();assert.equal(first.running(),true);assert.deepEqual(first.later,[],'no 20-second reveal');
+ first.pass(FRAME_FAILED_MS+1000);first.flush();assert.deepEqual(first.reloads,['page']);assert.equal(first.screen.hidden,false);
+ const again=frameFixture({stored:1_000_000-60000,started:'error'});again.hand.wait();again.pass(FRAME_FAILED_MS+1000);again.flush();
+ assert.deepEqual(again.reloads,[]);assert.deepEqual(again.fails,['card'],'within ten minutes: the pause card with Try again');
+ const away=frameFixture({started:'error'});away.hand.wait();away.view.hidden=true;away.pass(LOAD_STALL_MS*3);away.flush();assert.deepEqual(away.reloads,[],'only seconds in view');
+ away.view.hidden=false;away.pass(FRAME_FAILED_MS+1000);away.flush();assert.deepEqual(away.reloads,['page']);
+});
+test('a trip whose farm.html fails is opened again; a shown farm page that went to another site itself is left alone',()=>{
+ const trip=frameFixture({started:'page'});trip.hand.wait();trip.win.harvestFarmShown();assert.equal(trip.screen.hidden,true);
+ // src/main.js bridge.travel sends the frame to a new address, and that load fails.
+ trip.frame.src='https://www.harvesttycoon.com/farm.html?world=village';trip.frame.contentDocument=null;
+ trip.pass(FRAME_FAILED_MS+1000);trip.flush();assert.deepEqual(trip.reloads,['page']);assert.equal(trip.screen.hidden,true,'no screen of this page over a trip');
+ const away=frameFixture({started:'page'});away.hand.wait();away.frame.contentDocument.body.hidden=false;away.pass(1000);assert.equal(away.screen.hidden,true);
+ away.frame.contentDocument=null;away.pass(LOAD_STALL_MS*4);away.flush();assert.deepEqual([...away.reloads,...away.fails],[],'the frame was not sent anywhere: not ours to reload');
+ // No farm frame at all (a page without one): the screen still goes after `wait`, as before.
+ const screen={hidden:true},later=[],none=farmHandOver({},screen,{frame:()=>null,timers:{setTimeout:fn=>{later.push(fn);return 1;},clearTimeout(){},setInterval:()=>{throw new Error('no watch without a frame');},clearInterval(){}}});
+ none.wait();assert.equal(screen.hidden,false);later.splice(0).forEach(fn=>fn());assert.equal(screen.hidden,true);
 });
 // The farm page's own watch and this one share one count: whichever opens the farm again first, the next stuck load within ten
 // minutes shows Try again (the farm page's card or this page's pause card), and a farm that opened forgets it.

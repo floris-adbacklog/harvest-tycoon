@@ -73,27 +73,35 @@ export const ACCOUNT_STEPS=Object.freeze({'Checking your account…':4,'Signing 
 export const FRAME_FAILED_MS=3000;
 export const LOAD_FAILED_TEXT='Check your connection and try again.';
 export function farmHandOver(win,screen,{wait=20000,frame=()=>win.document?.querySelector?.('#farm-host iframe'),reload=()=>win.location?.reload(),fail=()=>{screen.hidden=true;},track=()=>{},storage=pageStorage(win),now=()=>Date.now(),hidden=()=>Boolean(win.document?.hidden),timers=globalThis}={}){
- let timer=0,tick=0,shownDoc=null,seen=null,files=-1,still=0;
- const view=()=>{try{const el=frame(),doc=el?.contentDocument;return doc?{doc,win:el.contentWindow}:null;}catch{return null;}};
- const shown=()=>{timers.clearTimeout(timer);timer=0;screen.hidden=true;shownDoc=view()?.doc??shownDoc;};
+ let timer=0,tick=0,shownDoc=null,shownSrc=null,seen=null,files=-1,still=0;
+ // 11 Oct 2026, review fix: a frame whose page cannot be read (doc null) is the browser's own error page, as when farm.html's own
+ // request fails (a network switch, a reset connection): before, that read as no frame at all, and this screen stayed at 10% for good.
+ const frameEl=()=>{try{return frame()??null;}catch{return null;}};
+ const view=()=>{const el=frameEl();if(!el)return null;try{const doc=el.contentDocument??null;return {el,doc,win:doc?el.contentWindow:null};}catch{return {el,doc:null,win:null};}};
+ const shown=()=>{timers.clearTimeout(timer);timer=0;screen.hidden=true;const at=view();if(at?.doc){shownDoc=at.doc;shownSrc=at.el.src;}};
  win.harvestFarmShown=shown;
  const stop=()=>{timers.clearTimeout(timer);timers.clearInterval(tick);timer=tick=0;};
  function check(){
-  const at=view();if(!at||at.doc===shownDoc)return;
+  const at=view();if(!at||at.doc&&at.doc===shownDoc)return;
+  // An unreadable page counts as a failed load while the farm page is awaited: before it has shown, or after the frame was sent to a
+  // new address (a trip). The farm page that has shown and then went to another site itself (never ours: its links open a new tab)
+  // is left alone.
+  if(!at.doc&&shownDoc&&at.el.src===shownSrc)return;
   // The farm page (its bar is there: not the frame's first empty page) shows itself in src/game-cloud.js, also when its word never came.
-  const {doc}=at,farm=Boolean(doc.getElementById?.('load-progress'));
+  const {doc}=at,farm=Boolean(doc?.getElementById?.('load-progress'));
   if(farm&&doc.body&&!doc.body.hidden){shown();return;}
-  const count=filesIn(at.win);
-  if(doc!==seen||count!==files){seen=doc;files=count;still=0;return;}
+  const page=doc??UNREADABLE,count=doc?filesIn(at.win):-1;
+  if(page!==seen||count!==files){seen=page;files=count;still=0;return;}
   if(hidden())return;
-  const failed=farm&&doc.readyState==='complete';
+  const failed=!doc||farm&&doc.readyState==='complete';
   if((still+=1000)<(failed?FRAME_FAILED_MS:LOAD_STALL_MS))return;
   stop();const again=retriedLately(storage,now);
   try{track('farm_load_retry',{reason:failed?'failed':'stalled',again,step:'frame',models:0});}catch{}
   if(again)fail();else timers.setTimeout(reload,400);
  }
- return {wait(){stop();screen.hidden=false;shownDoc=seen=null;files=-1;still=0;if(view())tick=timers.setInterval(check,1000);else timer=timers.setTimeout(shown,wait);},stop};
+ return {wait(){stop();screen.hidden=false;shownDoc=shownSrc=seen=null;files=-1;still=0;if(frameEl())tick=timers.setInterval(check,1000);else timer=timers.setTimeout(shown,wait);},stop};
 }
+const UNREADABLE={};
 const pageStorage=win=>{try{return win.sessionStorage;}catch{return null;}};
 // How many files a page has had so far (its resource timing): a load that is slow, not stuck, keeps adding to it.
 const filesIn=win=>{try{return win.performance.getEntriesByType('resource').length;}catch{return 0;}};
