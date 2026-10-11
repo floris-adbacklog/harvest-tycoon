@@ -192,7 +192,7 @@ test('the extras are painted with the village\'s palette and loaded only there, 
 // built like the farm's own fields: four strips of the farm's ploughed field side by side in the farm's cream fence, with a gate, one crop
 // a strip in straight rows, the farm's own plant models and wildflowers in colours of the game's palette (checked in renders).
 const fieldCode=()=>{const scene=sceneFile(),from=scene.indexOf('export const VILLAGE_FIELD_PLOT='),to=scene.indexOf('// The ground under the plot');assert.ok(from>0&&to>from);
- return new Function(`${scene.slice(from,to).replaceAll('export ','')}return {plot:VILLAGE_FIELD_PLOT,crops:VILLAGE_FIELD_CROPS,strip:villageFieldStrip,spots:villageFieldSpots};`)();};
+ return new Function(`${scene.slice(from,to).replaceAll('export ','')}return {plot:VILLAGE_FIELD_PLOT,crops:VILLAGE_FIELD_CROPS,strip:villageFieldStrip,spots:villageFieldSpots,soil:villageFieldSoil,plants:villageFieldPlants,flat:FIELD_FLAT,reach:FIELD_REACH};`)();};
 test('the Village Fields: the farm\'s ploughed strips in its cream fence, one crop a strip in straight rows, the palette\'s colours',()=>{
  const scene=sceneFile(),{plot,crops,strip,spots}=fieldCode();
  assert.deepEqual(Object.keys(crops).sort(),Object.values(RECIPES).filter(r=>r.building==='villagefields').map(r=>Object.keys(r.output)[0]).sort(),'a strip for every crop the Fields sow');
@@ -208,7 +208,21 @@ test('the Village Fields: the farm\'s ploughed strips in its cream fence, one cr
  for(const [crop,c] of Object.entries(crops))for(const part of c.parts)for(const colour of [part.color,part.bloom].filter(v=>v!=null))assert.ok(palette.has(colour)||bloom.includes(colour),`${crop}: ${colour.toString(16)} is not a colour of the game`);
  const flower=crop=>crops[crop].parts.find(p=>p.bloom!=null)?.bloom,light=n=>(Math.max(n>>16,n>>8&255,n&255)+Math.min(n>>16,n>>8&255,n&255))/510;
  assert.ok(flower('flax')!==0x5cb6fe&&light(flower('flax'))>.7&&(flower('flax')&255)>(flower('flax')>>16),'soft light blue flax, not the neon of before');
- assert.ok(crops.lavender.parts.some(p=>p.color===0x9470d2&&p.bush>1),'lavender in round clumps of the palette\'s lavender');
+ // 11 Oct 2026, the owner's review: the lavender rendered dark indigo. Its spikes are thin upright blades whose sides the camera sees in
+ // the shade, under the olive ground light: they now take the light as the ground does (normals up, as the wildflowers), in the palette's
+ // lighter lavender. The saffron's crocuses keep a colour of their own, a deeper violet, so the two strips never look alike.
+ const spikes=crops.lavender.parts.find(p=>p.color!=null);
+ assert.ok(spikes.color===0xb299df&&spikes.bush>1&&spikes.sky===true,'lavender: clumps of light lilac spikes, lit from above');
+ assert.match(scene,/if\(part\.sky\)\{const normal=geometry\.getAttribute\('normal'\);for\(let i=0;i<normal\.count;i\+\+\)normal\.setXYZ\(i,0,1,0\);\}/,'the spikes\' normals point up');
+ assert.match(read('public/scene-polish.js'),/g\.setAttribute\('normal',new THREE\.Float32BufferAttribute\(pos\.map\(\(_,i\)=>i%3===1\?1:0\),3\)\);/,'as the wildflowers\' do');
+ assert.ok(light(spikes.color)>.7,'a light lilac, not the dark lavender of before');
+ assert.ok(flower('saffron')!==spikes.color&&light(spikes.color)-light(flower('saffron'))>.1&&(flower('saffron')&255)>(flower('saffron')>>16),'saffron: violet crocuses, clearly darker than the lavender');
+ // The potatoes are no longer the farm's lettuce (plant_005, also its cauliflower): the farm's bean plant without its pole, low and wide in
+ // leafy clumps on hilled rows, with a few white flowers; the farm's green beans grow on that model tall, upright, on a pole, with pods.
+ const farmCrops=read('game/farm-state.js'),potato=crops.potatoes.parts.find(p=>p.model);
+ assert.ok(!/model:'plant_005'/.test(JSON.stringify(crops.potatoes))&&potato.model!=='plant_005','no longer the lettuce');
+ assert.match(farmCrops,new RegExp(`greenbeans:.*"model": "${potato.model}"`),'the bean plant');assert.ok(potato.bare&&potato.wide>1&&potato.bush>1&&crops.potatoes.ridge>0,'without its pole, low and wide, in clumps on ridges');
+ assert.match(scene,/if\(bare\)\{\n[^\n]*\n[^\n]*Math\.floor\(uv\.getX\(i\)\*1024\/94\)===5/,'only the leaves of the palette\'s greens stay');
  assert.ok(bloom.includes(flower('potatoes'))&&light(flower('potatoes'))>.95,'white potato flowers');
  assert.ok(Math.max(...crops.saffron.parts.map(p=>p.height??0))<Math.min(...crops.lavender.parts.map(p=>p.height)),'saffron grows low');
  // Four strips side by side with grass between, inside the fence, and each crop in straight rows on its own strip.
@@ -228,6 +242,28 @@ test('the Village Fields: the farm\'s ploughed strips in its cream fence, one cr
    }
   }
  }
+ // 11 Oct 2026, the owner's review: plants stood past the strips' rounded ends on the grass. The ploughed field's flat middle is u .08 to
+ // .92 along it and w .12 to .88 across (createVillageFields reads its soil's lowest furrow there), and every plant, tuft and flower stands
+ // on it with room for its own reach round its foot.
+ assert.deepEqual(fieldCode().flat,{u:[.08,.92],w:[.12,.88]});assert.match(scene,/if\(u>\.08&&u<\.92&&w>\.12&&w<\.88\)low=/,'the flat middle the soil is laid by');
+ for(const [crop,c] of Object.entries(crops)){
+  const soil=fieldCode().soil(c.strip),s=strips[c.strip];assert.ok(soil.x0>s.x+.5&&soil.x1<s.x+s.width-.5&&soil.z0>s.z+.1&&soil.z1<s.z+s.depth-.1,`${crop}: the flat soil is inside the strip's rim`);
+  const parts=fieldCode().plants(crop);assert.equal(parts.length,c.parts.length);
+  for(const [n,list] of parts.entries())for(const [i,p] of list.entries()){
+   assert.ok(p.reach>0&&p.x-p.reach>=soil.x0&&p.x+p.reach<=soil.x1&&p.z-p.reach>=soil.z0&&p.z+p.reach<=soil.z1,`${crop} part ${n} #${i} at ${p.x.toFixed(3)}, ${p.z.toFixed(3)} (reach ${p.reach.toFixed(3)}) leaves the flat soil`);
+  }
+  assert.ok(parts[0].length>=60,`${crop}: rows that still fill the strip`);
+ }
+ // How far each model reaches round its foot (in its own height, stood on its foot and centred on its box as unitModel does), measured
+ // off the .glb files, and the wildflower's petals (.09 at size 1): the reach above may only be a little more, never less.
+ const reachOf=name=>{const b=readFileSync(new URL(`../public/assets/models/${name}.glb`,import.meta.url)),jl=b.readUInt32LE(12),json=JSON.parse(b.subarray(20,20+jl).toString('utf8')),bin=b.subarray(28+jl);
+  const a=json.accessors[json.meshes[0].primitives[0].attributes.POSITION],bv=json.bufferViews[a.bufferView],stride=bv.byteStride??12,pos=[];assert.equal(a.componentType,5126);
+  for(let i=0;i<a.count;i++){const o=(bv.byteOffset??0)+(a.byteOffset??0)+i*stride;pos.push([bin.readFloatLE(o),bin.readFloatLE(o+4),bin.readFloatLE(o+8)]);}
+  const c=k=>(Math.min(...pos.map(p=>p[k]))+Math.max(...pos.map(p=>p[k])))/2,tall=Math.max(...pos.map(p=>p[1]))-Math.min(...pos.map(p=>p[1]));
+  return Math.max(...pos.map(p=>Math.hypot(p[0]-c(0),p[2]-c(2))))/tall;};
+ const {reach}=fieldCode();
+ for(const model of new Set(Object.values(crops).flatMap(c=>c.parts.map(p=>p.model).filter(Boolean)))){const r=reachOf(model);assert.ok(reach[model]>=r&&reach[model]<r+.02,`${model}: reach ${reach[model]} for ${r.toFixed(3)}`);}
+ assert.equal(reach.bloom,.09);assert.match(read('public/scene-polish.js'),/ring\(10,k\+1,k%2\?\.09:\.042,/);
  // The gate in the south side, on the side of the path; the plot clear of the Wind pump behind it (Building_022, 1.6 wide).
  assert.ok(plot.gate[0]>.6&&plot.gate[1]-plot.gate[0]>=.8&&plot.gate[1]<plot.width-.6,'a gate in the south side');assert.match(scene,/\[p\.x,p\.z\+p\.depth,1,0,p\.width,p\.gate\]/);
  const pump=extrasTable().windpump[0];assert.equal(pump[0],'Building_022');assert.ok(plot.z>pump[3]+.8&&pump[1]>plot.x&&pump[1]<plot.x+plot.width,'the Wind pump stands behind the plot\'s north side');

@@ -12,37 +12,41 @@ PAL=np.array(Image.open(os.path.join(root,'village-palette.png')).convert('RGB')
 P=lambda n:os.path.join(pack,n+'.glb');E=lambda n:os.path.join(extras,n+'.glb');F=lambda n:os.path.join(root,n+'.glb')
 # The Village Fields (11 Oct 2026), as the village draws them (public/village-scene.js createVillageFields): four strips of the farm's
 # ploughed field (field_004 in its ploughed brown) in the farm's cream fence (fence_008) with a gate at the front, and from the back
-# lavender (green clumps with purple spikes), flax (green stalks under soft blue flowers), potatoes (green plants, a few white flowers) and
-# saffron (low lilac flowers), each the farm's own plants and wildflowers in straight rows, in the same colours. In game units, on a
-# shorter plot with fewer plants 1.6 times as big, so the four crops still read at pin size. The old picture's hay barn is left out: the
-# plot is the place now, and beside a barn it shrank to half the pin. ('bloom', colour) is the farm's wildflower (scene-polish.js
-# wildflowerGeometry), drawn below.
+# lavender (green clumps with lilac spikes), flax (green stalks under soft blue flowers), potatoes (the bean plant without its pole, low and
+# wide in leafy clumps on hilled rows, a few white flowers) and saffron (low violet flowers), each the farm's own plants and wildflowers in
+# straight rows on the flat middle of their strip, in the same colours (the owner's review of 11 Oct 2026). In game units, on a shorter
+# plot with fewer plants 1.6 times as big, so the four crops still read at pin size. The old picture's hay barn is left out: the plot is
+# the place now, and beside a barn it shrank to half the pin. ('bloom', colour) is the farm's wildflower (scene-polish.js
+# wildflowerGeometry), ('bare', file) a model without its pole and ('ridge', (from, to, z, width, height)) a hilled row, all drawn below.
 def fields(big=1.6):
     W,D,edge,gap,rows=5.2,3.9,.22,.16,3;depth=(D-2*edge-3*gap)/4;L=W-2*edge
     fence=lambda x,z,turn,l:(F('fence_008'),x,0,z,turn,(l/2.35,.3,.3),'f2e2bd')
     items=[fence(-W/2+(i+.5)*W/7,D/2,0,W/7) for i in range(7) if i!=1]+[fence(-W/2+(i+.5)*W/7,-D/2,0,W/7) for i in range(7)]
     items+=[fence(x,-D/2+(i+.5)*D/6,-math.pi/2,D/6) for i in range(6) for x in (-W/2,W/2)]
-    # (step, [(model or 'bloom', height or size, colour, tufts a clump)]) from the back strip to the front
-    crops=[(.3,[('plant_010',.2,None,3),('plant_010',.34,'9470d2',4)]),(.28,[('plant_010',.28,None,1),('bloom',1.15,'8acaff',1)]),
-           (.38,[('plant_005',.22,'49be4c',1),('bloom',.65,'fffdf4',1)]),(.3,[('plant_010',.14,None,1),('bloom',.95,'9470d2',1)])]
-    for strip,(step,parts) in enumerate(crops):
-        z0=-D/2+edge+strip*(depth+gap);n=int((L-.3)/step)+1;x0=-L/2+(L-(n-1)*step)/2
+    # (step, ridge, [(model or 'bloom' or 'bare', height or size, colour, tufts a clump, wide)]) from the back strip to the front
+    crops=[(.3,0,[('plant_010',.2,None,3,1),('plant_010',.34,'b299df',4,1)]),(.28,0,[('plant_010',.28,None,1,1),('bloom',1.15,'8acaff',1,1)]),
+           (.28,.04,[('bare',.2,None,3,1.1),('bloom',.6,'fffdf4',1,1)]),(.3,0,[('plant_010',.14,None,1,1),('bloom',.95,'7d51c8',1,1)])]
+    for strip,(step,ridge,parts) in enumerate(crops):
+        # The rows on the strip's flat middle (field_004's .08 to .92 along it), clear of its rounded ends.
+        z0=-D/2+edge+strip*(depth+gap);n=int((.84*L-.4)/step)+1;x0=-L/2+(L-(n-1)*step)/2
         items.append((F('field_004'),0,-.035,z0+depth/2,0,(L/490.7,.12/27.3,depth/268.5),'9c7a52'))
         for r in range(rows):
+            z=z0+.1+(depth-.2)*(r+.5)/rows
+            if ridge:items.append((('ridge',(x0-.12,x0+(n-1)*step+.12,z,.15,ridge)),0,0,0,0,1,None))
             for i in range(n):
-                j=strip*997+r*131+i;x=x0+i*step;z=z0+.1+(depth-.2)*(r+.5)/rows;yaw=(j*2.4)%(2*math.pi)
-                for model,h,colour,bush in parts:
+                j=strip*997+r*131+i;x=x0+i*step;yaw=(j*2.4)%(2*math.pi)
+                for model,h,colour,bush,w in parts:
                     if model=='bloom':
                         # The potatoes' few white flowers stand over their leaves; flax and saffron have as many again between the plants.
                         if colour=='fffdf4':
-                            if i%2==0:items.append((('bloom',colour),x,.1*big,z,yaw,h*big,None))
+                            if i%2==0:items.append((('bloom',colour),x,ridge+.13*big,z,yaw,h*big,None))
                             continue
                         items.append((('bloom',colour),x,0,z,yaw,h*big,None))
                         if i<n-1:items.append((('bloom',colour),x+step/2,0,z+((j*7)%5/4-.5)*.08,yaw+1.3,h*big*.9,None))
                         continue
                     for t in range(bush):
-                        a=yaw+t*2.4;d=.04 if bush>1 else 0
-                        items.append((F(model),x+math.cos(a)*d,0,z+math.sin(a)*d,yaw+t*1.7,big*h/(1.0996 if model=='plant_010' else .4258)*(.85+.15*(t%2) if bush>1 else 1),colour))
+                        a=yaw+t*2.4;d=.04*w if bush>1 else 0;k=big*h/(1.0996 if model=='plant_010' else 1.998)*(.85+.15*(t%2) if bush>1 else 1)
+                        items.append((('bare',F('plant_006')) if model=='bare' else F(model),x+math.cos(a)*d,ridge,z+math.sin(a)*d,yaw+t*1.7,(k*w,k,k*w),colour))
     return items
 # The Great Hall and the Stone quay (10 Oct 2026) are built of the pack's parts as VILLAGE_EXTRAS places them, (model, x, y, z, turn) in
 # metres of the pack: the Hall's two wings and its bell tower of three storeys under a cross roof, with a porch, stone steps and the
@@ -102,14 +106,24 @@ def bloom(colour):
     for k in range(10):T.append([(0,top+.004,0),ring(10,k+1,.09 if k%2 else .042,top+(.014 if k%2 else 0)),ring(10,k,.042 if k%2 else .09,top+(0 if k%2 else .014))]);C.append(petal)
     for k in range(5):T.append([(0,top+.032,0),ring(5,k+1,.034,top+.01),ring(5,k,.034,top+.01)]);C.append(heart)
     return np.array(T,dtype=np.float64),np.array(C)
+# A model without its pole (the bean plant): the triangles painted from the palette's greens (its sixth column of cells, 94 px each).
+def bare(path):
+    T,U=read(path);keep=np.floor(U[:,0]*1024/94)==5;return T[keep],U[keep]
+# A hilled row along x from x0 to x1 at z: a low ridge of the soil (its brown, a little darker) w wide and h high, its ends sloping down.
+def ridge(x0,x1,z,w,h):
+    xs=[x0,x0+.12]+[x0+.12+(x1-x0-.24)*k/8 for k in range(1,8)]+[x1-.12,x1];prof=[(-w/2,0),(-w/5,1),(w/5,1),(w/2,0)];T=[]
+    P=lambda i,j:(xs[i],h*prof[j][1]*(0 if i in (0,len(xs)-1) else 1),z+prof[j][0])
+    for i in range(len(xs)-1):
+        for j in range(3):T+=[[P(i,j),P(i,j+1),P(i+1,j)],[P(i+1,j),P(i,j+1),P(i+1,j+1)]]
+    return np.array(T,dtype=np.float64),np.tile([.61*.8,.48*.8,.32*.8],(len(T),1))
 READ={}
 def render(items,path,N=1024):
     V=[];C=[]
     for f,x,y,z,r,s,tint in items:
-        if f not in READ:READ[f]=bloom(f[1]) if isinstance(f,tuple) else read(f)
+        if f not in READ:READ[f]=bloom(f[1]) if isinstance(f,tuple) and f[0]=='bloom' else bare(f[1]) if isinstance(f,tuple) and f[0]=='bare' else ridge(*f[1]) if isinstance(f,tuple) else read(f)
         v,uv=READ[f];c,sn=math.cos(r),math.sin(r);R=np.array([[c,0,sn],[0,1,0],[-sn,0,c]])
         V.append(np.einsum('ij,ntj->nti',R,v*np.array(s if isinstance(s,tuple) else (s,s,s)))+np.array([x,y,z]))
-        if isinstance(f,tuple):C.append(uv);continue
+        if isinstance(f,tuple) and f[0]!='bare':C.append(uv);continue
         xy=np.clip(((uv%1)*1023).round().astype(int),0,1023)
         C.append(np.tile([int(tint[i:i+2],16)/255 for i in (0,2,4)],(len(v),1)) if tint else PAL[xy[:,1],xy[:,0]])
     V=np.concatenate(V);C=np.concatenate(C)

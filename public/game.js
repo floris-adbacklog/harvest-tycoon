@@ -984,7 +984,13 @@ async function addVillageExtras(){
  try{
   const {loadVillageExtras,createVillageFields}=await import('./village-scene.js');
   villageExtras=await loadVillageExtras(villageGroup);scene.add(villageExtras.group);
-  try{villageExtras.fields=await createVillageFields(villageGroup);scene.add(villageExtras.fields.group);}catch(error){console.warn('The Village Fields were skipped.',error);}
+  // The Fields' lid (11 Oct 2026, the owner's review: only a tap by their name, at the plot's south-west corner, opened them) takes the
+  // place of their block on their place: a tap anywhere on the plot finds the place as a tap on the block did, and it shows, greys and
+  // hides with it. The block (4 x 3 x 4 round the name's foot) also caught taps on the tree and the grass outside that corner.
+  try{
+   villageExtras.fields=await createVillageFields(villageGroup);scene.add(villageExtras.fields.group);
+   const v=buildingViews.get('villagefields');if(v){v.object.remove(v.hit);v.object.attach(villageExtras.fields.tap);v.hit=villageExtras.fields.tap;}
+  }catch(error){console.warn('The Village Fields were skipped.',error);}
   syncVillageExtras();renderer.shadowMap.needsUpdate=true;
  }catch(error){console.warn('The village extras were skipped.',error);}
 }

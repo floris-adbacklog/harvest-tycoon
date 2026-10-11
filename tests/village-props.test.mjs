@@ -155,8 +155,11 @@ test('the extras and the Village Fields build from the real files, hidden until 
   }
   const THREE=await import('three'),started=performance.now(),fields=await V.createVillageFields(village),took=performance.now()-started;
   assert.deepEqual(fields.group.children.map(o=>o.name),['fields-soil','fields-fence','fields-lavender','fields-flax','fields-potatoes','fields-saffron']);
-  const count=name=>fields.group.getObjectByName(`fields-${name}`).children.map(m=>m.count);
-  assert.deepEqual([count('lavender'),count('flax'),count('potatoes'),count('saffron')],[[333,444],[210,415],[81,41],[136,268]],'clumps of lavender, flax and saffron under flowers, potatoes with a few');
+  const count=name=>fields.group.getObjectByName(`fields-${name}`).children.filter(m=>m.isInstancedMesh).map(m=>m.count);
+  // 11 Oct 2026, the owner's review: the rows keep to the strips' flat soil (a little shorter), the potatoes are leafy clumps of three.
+  assert.deepEqual([count('lavender'),count('flax'),count('potatoes'),count('saffron')],[[279,372],[175,345],[261,44],[112,220]],'clumps of lavender, flax and saffron under flowers, potatoes with a few');
+  assert.deepEqual(fields.group.getObjectByName('fields-potatoes').children.map(m=>m.name),['fields-potatoes-0','fields-potatoes-1','fields-potatoes-ridges'],'the potatoes on hilled rows');
+  assert.equal(fields.group.getObjectByName('fields-potatoes-ridges').material,fields.group.getObjectByName('fields-soil').material,'ridges of the same soil');
   assert.equal(fields.group.getObjectByName('fields-fence').count,36,'36 pieces of fence, the gate open');
   assert.ok(fields.group.children.slice(2).every(r=>!r.visible)&&fields.group.children.slice(0,2).every(o=>o.visible),'the soil and the fence always, the crops once they are sown');
   fields.show(crop=>crop==='potatoes');assert.deepEqual(fields.group.children.slice(2).map(r=>r.visible),[false,false,true,false]);
@@ -170,7 +173,14 @@ test('the extras and the Village Fields build from the real files, hidden until 
    const over=ray.intersectObject(soil,false)[0].point.y-hill(x,z);assert.ok(over>.01&&over<.12,`the soil ${over.toFixed(3)} over the grass at ${x.toFixed(1)}, ${z.toFixed(1)}`);}
   const fence=fields.group.getObjectByName('fields-fence');
   for(let i=0;i<fence.count;i++){fence.getMatrixAt(i,m);at.setFromMatrixPosition(m);const sunk=hill(at.x,at.z)-at.y;assert.ok(sunk>-.005&&sunk<.1,`fence piece ${i} ${sunk.toFixed(3)} in the ground`);}
-  for(const rows of fields.group.children.slice(2))for(const mesh of rows.children)for(let i=0;i<mesh.count;i+=7){mesh.getMatrixAt(i,m);at.setFromMatrixPosition(m);const foot=at.y-hill(at.x,at.z);assert.ok(foot>0&&foot<.15,`${mesh.name} ${i}: its foot ${foot.toFixed(3)} over the grass`);}
+  // A plant's foot in the soil; on the potatoes' ridges that much higher, their flowers higher again over the leaves.
+  for(const rows of fields.group.children.slice(2))for(const mesh of rows.children.filter(o=>o.isInstancedMesh)){
+   const [,crop,n]=mesh.name.split('-'),c=V.VILLAGE_FIELD_CROPS[crop],lift=(c.ridge??0)+(c.parts[n].lift??0);
+   for(let i=0;i<mesh.count;i+=7){mesh.getMatrixAt(i,m);at.setFromMatrixPosition(m);const foot=at.y-lift-hill(at.x,at.z);assert.ok(foot>0&&foot<.15,`${mesh.name} ${i}: its foot ${foot.toFixed(3)} over the grass`);}
+  }
+  // The ridges lie on the strip's flat soil, their tops where the plants stand.
+  {const ridges=fields.group.getObjectByName('fields-potatoes-ridges'),pos=ridges.geometry.getAttribute('position'),soilOf=V.villageFieldSoil(V.VILLAGE_FIELD_CROPS.potatoes.strip);
+   for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i),over=pos.getY(i)-hill(x,z);assert.ok(x>=soilOf.x0&&x<=soilOf.x1&&z>=soilOf.z0&&z<=soilOf.z1&&over>0&&over<.15,`ridge corner ${i} at ${x.toFixed(2)}, ${z.toFixed(2)}, ${over.toFixed(3)} over the grass`);}}
   // Clear of the village: no tree stands in the fence, no hay barn and no landmark reaches into it.
   const P=V.VILLAGE_FIELD_PLOT,plot=new THREE.Box3(new THREE.Vector3(P.x,-1e3,P.z),new THREE.Vector3(P.x+P.width,1e3,P.z+P.depth)),middle=new THREE.Vector3();
   village.traverse(o=>{
@@ -179,8 +189,53 @@ test('the extras and the Village Fields build from the real files, hidden until 
     if(/^Tree_/.test(o.name))assert.ok(!plot.containsPoint(box.getCenter(middle)),`${o.name} ${i} grows in the Fields`);else assert.ok(!box.intersectsBox(plot),`${o.name} ${i} stands in the Fields`);}
   });
   for(const mesh of extras.landmarks.values()){mesh.geometry.computeBoundingBox();assert.ok(!mesh.geometry.boundingBox.intersectsBox(plot),`${mesh.name} stands in the Fields`);}
-  assert.deepEqual(asked.filter(u=>!u.startsWith('blob:')).map(u=>u.split('?')[0]),['/assets/village/village.glb','/assets/village/village-layout.json','/assets/village/village-extras.glb','/assets/models/field_004.glb','/assets/models/fence_008.glb','/assets/models/plant_010.glb','/assets/models/plant_005.glb','/assets/models/palette.png'],'the farm\'s own field, fence and plants, no new file');
+  assert.deepEqual(asked.filter(u=>!u.startsWith('blob:')).map(u=>u.split('?')[0]),['/assets/village/village.glb','/assets/village/village-layout.json','/assets/village/village-extras.glb','/assets/models/field_004.glb','/assets/models/fence_008.glb','/assets/models/plant_010.glb','/assets/models/plant_006.glb','/assets/models/palette.png'],'the farm\'s own field, fence and plants, no new file');
+  // The tap target (11 Oct 2026, the owner's review: only a tap by the name, at the plot's south-west corner, opened the Fields): an
+  // invisible lid over the whole fenced plot. Rays as the game's camera casts them (it looks one way, from 36, 40, 36, orthographic):
+  // through the soil, the crops, the fence and every corner of the plot they find it; through the hay barn, a tree in front of the plot,
+  // the Wind pump behind it, or the grass just outside the fence they do not (on the far sides, west and north, from half a unit out:
+  // nearer, the fence's top rail, a third of a unit tall, stands in front of that grass).
+  const tap=fields.tap,dir=new THREE.Vector3(36,40,36).normalize(),caster=new THREE.Raycaster();
+  assert.ok(tap.isMesh&&tap.material.visible===false&&tap.name==='fields-tap'&&!fields.group.getObjectById(tap.id),'never drawn, and not part of the Fields\' group');
+  tap.updateMatrixWorld(true);
+  const through=(x,y,z)=>{caster.set(new THREE.Vector3(x,y,z).addScaledVector(dir,80),dir.clone().negate());return caster;};
+  const hits=(x,y,z)=>{through(x,y,z);return caster.intersectObject(tap,false).length>0;},behind=(x,y,z)=>{through(x,y,z);const raw=[];THREE.Mesh.prototype.raycast.call(tap,caster,raw);return raw.length>0;};
+  const G=(x,z)=>[x,hill(x,z),z];
+  for(const [what,point] of [['the middle',G(P.x+P.width/2,P.z+P.depth/2)],['the north-east corner',G(P.x+P.width-.1,P.z+.1)],['the north-west corner',G(P.x+.1,P.z+.1)],['the south-west corner',G(P.x+.1,P.z+P.depth-.1)],['the south-east corner',G(P.x+P.width-.1,P.z+P.depth-.1)],['the gate',G(P.x+1.9,P.z+P.depth-.05)]])assert.ok(hits(...point),`a tap on ${what} of the plot`);
+  for(const name of ['fields-lavender-1','fields-flax-1','fields-potatoes-0','fields-saffron-1']){const mesh=fields.group.getObjectByName(name);for(const i of [0,Math.floor(mesh.count/2),mesh.count-1]){mesh.getMatrixAt(i,m);at.setFromMatrixPosition(m);assert.ok(hits(at.x,at.y+.12,at.z),`a tap on ${name} ${i}`);}}
+  // The fence: both ends and the middle of each side (north 0-10, east 11-18, south 19-27 without the gate, west 28-35), but for the
+  // pieces the hay barn hides from the camera at the south-east corner (17, 18, 27).
+  {const fence=fields.group.getObjectByName('fields-fence');for(const i of [0,5,10,11,14,19,23,26,28,31,35]){fence.getMatrixAt(i,m);at.setFromMatrixPosition(m);assert.ok(hits(at.x,at.y+.15,at.z),`a tap on fence piece ${i}`);}}
+  for(const [what,[x,z]] of [['south',[P.x+P.width/2,P.z+P.depth+.2]],['east',[P.x+P.width+.2,P.z+P.depth/2]],['south-east',[P.x+P.width+.2,P.z+P.depth+.2]],['west',[P.x-.5,P.z+P.depth/2]],['north',[P.x+P.width/2,P.z-.5]]])assert.ok(!hits(...G(x,z)),`the grass just ${what} of the fence is not the Fields`);
+  // In front of the plot, from the camera's side: what a ray meets first is what was tapped, even where the lid lies behind it.
+  let blocked=0;const by={};
+  village.traverse(o=>{
+   if(!o.isInstancedMesh||!/^(Tree_|Building_018)/.test(o.name))return;
+   for(let i=0;i<o.count;i++){o.getMatrixAt(i,m);box.copy(o.geometry.boundingBox).applyMatrix4(m).applyMatrix4(o.matrixWorld);if(box.min.x>P.x+P.width+3||box.max.x<P.x-1||box.min.z>P.z+P.depth+3||box.max.z<P.z-1)continue;
+    const probe=new THREE.Mesh(o.geometry,new THREE.MeshBasicMaterial({side:THREE.DoubleSide}));probe.matrixWorld.multiplyMatrices(o.matrixWorld,m);
+    for(let k=0;k<35;k++){const p=new THREE.Vector3(box.min.x+(box.max.x-box.min.x)*(k%7+.5)/7,box.min.y+(box.max.y-box.min.y)*(.3+.6*((k*3)%5)/4),box.min.z+(box.max.z-box.min.z)*((k*3)%7+.5)/7);
+     through(p.x,p.y,p.z);const own=[];probe.raycast(caster,own);if(!own.length||!behind(p.x,p.y,p.z))continue;
+     blocked++;by[o.name]=(by[o.name]??0)+1;assert.ok(!hits(p.x,p.y,p.z),`a tap on ${o.name} ${i} at ${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)} opened the Fields behind it`);}
+   }
+  });
+  assert.ok(blocked>=10,`taps on the hay barn and the trees in front of the plot checked (${blocked})`);
+  const barn=[];village.traverse(o=>{if(o.isInstancedMesh&&o.name==='Building_018'){o.getMatrixAt(0,m);barn.push(box.copy(o.geometry.boundingBox).applyMatrix4(m).applyMatrix4(o.matrixWorld).clone());}});
+  assert.ok(barn[0].min.x>P.x+P.width&&barn[0].min.z<P.z+P.depth&&barn[0].max.z>P.z+P.depth,'the hay barn at the plot\'s south-east corner');
+  assert.ok(by.Building_018>0,'its roof hides a corner of the plot, and a tap on it is not the Fields');
+  const pump=extras.landmarks.get('windpump');pump.geometry.computeBoundingBox();const pb=pump.geometry.boundingBox;
+  for(let k=0;k<20;k++){const x=pb.min.x+(pb.max.x-pb.min.x)*(k%5+.5)/5,y=pb.min.y+(pb.max.y-pb.min.y)*Math.floor(k/5)/4+.05,z=pb.max.z;assert.ok(!hits(x,y,z),`a tap on the Wind pump at ${x.toFixed(1)}, ${y.toFixed(1)} is not the Fields`);}
  }finally{console.error=error;console.warn=warn;globalThis.Request=R;}
+});
+// 11 Oct 2026, the owner's review: only a tap by the Fields' name, at the plot's south-west corner, opened them. Their lid (above) takes
+// the place of the place's block, so a tap anywhere on the plot walks up to the place as a tap on the block did: the same window as
+// the name opens, greyed and hidden with the place (a place still waiting for its golden brief shows nothing and takes no tap).
+test('a tap anywhere on the Village Fields opens them, as a tap on their place did',()=>{
+ const add=/async function addVillageExtras\(\)\{[\s\S]*?\n\}/.exec(game)[0];
+ assert.match(add,/const v=buildingViews\.get\('villagefields'\);if\(v\)\{v\.object\.remove\(v\.hit\);v\.object\.attach\(villageExtras\.fields\.tap\);v\.hit=villageExtras\.fields\.tap;\}/,'the lid hangs on the Fields\' place instead of its block');
+ assert.match(game,/function addVillagePlace\(key,\{x,y,z\}\)\{\n const object=villageMarker\(x,y,z\);object\.userData\.building=key;/,'the place carries its key');
+ assert.match(game,/\.\.\.Array\.from\(buildingViews\.values\(\)\)\.filter\(v=>v\.object\.visible\)\.flatMap\(v=>\[v\.object,v\.hit\]\)/,'a shown place and what hangs on it are tap targets');
+ assert.match(game,/if\(obj\.userData\.building\)return \{type:'building',id:obj\.userData\.building\};/,'found by walking up to the place');
+ assert.match(game,/v\.object\.visible=!waiting;if\(waiting\)\{v\.label\.hidden=true;continue;\}/,'hidden with its name while it waits');
 });
 // 10 Oct 2026 (review fixes): the game's camera looks one way on every screen (from 36, 40, 36 towards the middle), so a landmark behind
 // the near mountains is never seen, whatever the pan or zoom: the Great Hall stood there, hidden whole behind mountains_003. From points

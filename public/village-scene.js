@@ -240,34 +240,73 @@ export async function loadVillageExtras(village){
 // The plot: its north-west corner (x, z), its length along x and its depth along z, and the gate (from, to along the south side, from
 // the west corner), in game units.
 export const VILLAGE_FIELD_PLOT=Object.freeze({x:10.4,z:-19.8,width:7.5,depth:5.6,gate:[1.4,2.4]});
-// The crops, from the back strip (north, 0) to the front, tall to low: `rows` rows along the strip, a plant every `step`. Each part is
-// one of the farm's plant models (`height` tall, about a third of its size on the farm, as the village's houses are; `bush` tufts in a
-// clump) or the farm's wildflower (scene-polish.js, `size` times its own) over the plants and between them (`alone`: only over every
-// other plant, `lift` higher). A colour is one of the game's: the models' palette (lavender, soft blue, leaf green) or the wildflowers'
-// white; a model without one keeps the farm's own greens. Lavender: green clumps with purple spikes; flax: green stalks under soft blue
-// flowers; potatoes: leafy plants with a few white flowers; saffron: low lilac flowers on short leaves.
+// The crops, from the back strip (north, 0) to the front, tall to low: `rows` rows along the strip, a plant every `step`, on soil
+// ridges `ridge` high (hilled rows). Each part is one of the farm's plant models (`height` tall, about a third of its size on the farm, as
+// the village's houses are; `wide` times as wide; `bush` tufts in a clump; `bare`: without its pole; `sky`: lit as the ground is) or the
+// farm's wildflower (scene-polish.js, `size` times its own) over the plants and between them (`alone`: only over every other plant,
+// `lift` higher). A colour is one of the game's: the models' palette (lavender, soft blue, violet) or the wildflowers' white; a model
+// without one keeps the farm's own greens. Lavender: green clumps with lilac spikes; flax: green stalks under soft blue flowers;
+// potatoes: low, wide, leafy plants on hilled rows with a few small white flowers; saffron: low violet crocuses on short leaves.
+// 11 Oct 2026, the owner's review: the lavender was dark indigo, not lilac. Its spikes are the farm's thin upright blades: from the
+// game's side the camera sees their shaded sides (the sun shines from the west, the camera looks from the south-east), lit only by the
+// sky light, half of which is the olive bounce off the ground (game.js's hemisphere light, 0x778b40, almost no blue in it), times the
+// blades' darker feet (vertex colours .55 to .8). The palette's 9470d2 came out about #56446c on screen; the saffron's flowers of the
+// same colour did not (#a77dad), as the wildflower's normals point straight up. The spikes now take the light as the wildflowers and
+// the ground do (`sky`), in the palette's lighter lavender (b299df): soft lilac in the sun, about #b99ade. The saffron's crocuses went a deeper violet (7d51c8), so
+// the two purple strips stay apart. The potatoes were the farm's lettuce (plant_005): now the farm's bean plant without its pole
+// (plant_006, which the farm's green beans grow on a pole, tall and with pods) low and wide in leafy clumps, on hilled rows.
 export const VILLAGE_FIELD_CROPS=Object.freeze({
- lavender:Object.freeze({strip:0,rows:3,step:.18,parts:Object.freeze([Object.freeze({model:'plant_010',height:.17,color:null,bush:3}),Object.freeze({model:'plant_010',height:.3,color:0x9470d2,bush:4})])}),
+ lavender:Object.freeze({strip:0,rows:3,step:.18,parts:Object.freeze([Object.freeze({model:'plant_010',height:.17,color:null,bush:3}),Object.freeze({model:'plant_010',height:.3,color:0xb299df,bush:4,sky:true})])}),
  flax:Object.freeze({strip:1,rows:5,step:.16,parts:Object.freeze([Object.freeze({model:'plant_010',height:.26,color:null}),Object.freeze({bloom:0x8acaff,size:.95})])}),
- potatoes:Object.freeze({strip:2,rows:3,step:.25,parts:Object.freeze([Object.freeze({model:'plant_005',height:.17,color:0x49be4c}),Object.freeze({bloom:0xfffdf4,size:.5,lift:.1,alone:true})])}),
- saffron:Object.freeze({strip:3,rows:4,step:.2,parts:Object.freeze([Object.freeze({model:'plant_010',height:.13,color:null}),Object.freeze({bloom:0x9470d2,size:.75})])})
+ potatoes:Object.freeze({strip:2,rows:3,step:.19,ridge:.06,parts:Object.freeze([Object.freeze({model:'plant_006',height:.2,color:null,bush:3,wide:1.25,bare:true}),Object.freeze({bloom:0xfffdf4,size:.45,lift:.15,alone:true})])}),
+ saffron:Object.freeze({strip:3,rows:4,step:.2,parts:Object.freeze([Object.freeze({model:'plant_010',height:.13,color:null}),Object.freeze({bloom:0x7d51c8,size:.75})])})
 });
 // The soil's edge (fence to field) and the grass between two strips, so a strip is (5.6 - 2 x .3 - 3 x .2) / 4 = 1.1 deep; the
 // ploughed field's height from its rim to its highest furrow (on the farm .45 over a field ten times as deep: flat, not a bump); and
 // a piece of fence, post to post.
 const FIELD_EDGE=.3,FIELD_GAP=.2,FIELD_SOIL=.16,FIELD_FENCE=.7;
+// The flat middle of the ploughed field (field_004 in its own size, 0 to 1 along and across: its rim rounds down into the grass), how
+// far each model reaches round its foot in its own height (stood on its foot and centred, as unitModel does; measured off the .glb
+// files) and the wildflower at size 1, and how far a clump's tufts stand from its middle (times the plant's `wide`).
+const FIELD_FLAT=Object.freeze({u:[.08,.92],w:[.12,.88]}),FIELD_REACH=Object.freeze({plant_006:.37,plant_010:.23,bloom:.09}),FIELD_TUFT=.035;
 export function villageFieldStrip(strip){
  const p=VILLAGE_FIELD_PLOT,depth=(p.depth-2*FIELD_EDGE-3*FIELD_GAP)/4;
  return {x:p.x+FIELD_EDGE,z:p.z+FIELD_EDGE+strip*(depth+FIELD_GAP),width:p.width-2*FIELD_EDGE,depth};
 }
-// A strip's plants: straight rows along it, a little in from its rounded edge, each turned its own way and a touch bigger or smaller.
+// A strip's flat soil (11 Oct 2026, the owner's review: plants stood past the strips' rounded ends on the grass): x0 to x1 along it,
+// z0 to z1 across it. Every plant, tuft and flower stands inside it with room for its own reach.
+export function villageFieldSoil(strip){
+ const s=villageFieldStrip(strip);
+ return {x0:s.x+FIELD_FLAT.u[0]*s.width,x1:s.x+FIELD_FLAT.u[1]*s.width,z0:s.z+FIELD_FLAT.w[0]*s.depth,z1:s.z+FIELD_FLAT.w[1]*s.depth};
+}
+// How far past its plant's spot a crop's furthest part reaches: a spot moves .015 at most, a plant is up to 1.08 times its size, a tuft
+// stands off the clump's middle, and a flower between two plants up to .06 across the row.
+const fieldReach=c=>.015+Math.max(...c.parts.map(part=>part.bloom!=null?FIELD_REACH.bloom*part.size*1.08+(part.alone?0:.06):(FIELD_REACH[part.model]*part.height*1.08+((part.bush??1)>1?FIELD_TUFT:0))*(part.wide??1)));
+// A strip's plants: straight rows along its flat soil, the outer ones as far out as their reach lets them, each plant turned its own way
+// and a touch bigger or smaller.
 export function villageFieldSpots(crop){
- const c=VILLAGE_FIELD_CROPS[crop],s=villageFieldStrip(c.strip),n=Math.floor((s.width-.3)/c.step)+1,x0=s.x+(s.width-(n-1)*c.step)/2,out=[];
+ const c=VILLAGE_FIELD_CROPS[crop],soil=villageFieldSoil(c.strip),reach=fieldReach(c),length=soil.x1-soil.x0-2*reach,depth=soil.z1-soil.z0-2*reach;
+ const n=Math.floor(length/c.step)+1,x0=soil.x0+reach+(length-(n-1)*c.step)/2,out=[];
  for(let r=0;r<c.rows;r++)for(let i=0;i<n;i++){
   const k=c.strip*997+r*131+i,wobble=((k*37)%11/10-.5)*.03;
-  out.push({x:x0+i*c.step+wobble,z:s.z+.14+(s.depth-.28)*(r+.5)/c.rows+((k*53)%7/6-.5)*.03,yaw:(k*2.4)%(2*Math.PI),size:.92+((k*29)%9)/8*.16});
+  out.push({x:x0+i*c.step+wobble,z:soil.z0+reach+depth*(c.rows>1?r/(c.rows-1):.5)+((k*53)%7/6-.5)*.03,yaw:(k*2.4)%(2*Math.PI),size:.92+((k*29)%9)/8*.16});
  }
  return out;
+}
+// Every plant, tuft and flower of a crop, part by part: where it stands, its turn, its size (a model's height, a flower's scale) and how
+// far it reaches round its foot. Flowers stand one over each plant and (unless `alone`: over every other plant) as many again between
+// them, inside the rows' ends; a clump's tufts stand round its middle.
+export function villageFieldPlants(crop){
+ const c=VILLAGE_FIELD_CROPS[crop],spots=villageFieldSpots(crop),end=Math.max(...spots.map(s=>s.x));
+ return c.parts.map(part=>{
+  if(part.bloom!=null){
+   const list=part.alone?spots.filter((s,i)=>i%2===0):[...spots,...spots.map((s,i)=>({x:s.x+c.step/2,z:s.z+((i*7)%5/4-.5)*.12,yaw:s.yaw+1.3,size:s.size*.9})).filter(s=>s.x<end)];
+   return list.map(s=>({x:s.x,z:s.z,yaw:s.yaw,size:part.size*s.size,reach:FIELD_REACH.bloom*part.size*s.size}));
+  }
+  const bush=part.bush??1,wide=part.wide??1,d=bush>1?FIELD_TUFT*wide:0,out=[];
+  for(const s of spots)for(let t=0;t<bush;t++){const a=s.yaw+t*2.4,size=part.height*s.size*(bush>1?.85+.15*(t%2):1);out.push({x:s.x+Math.cos(a)*d,z:s.z+Math.sin(a)*d,yaw:s.yaw+t*1.7,size,reach:FIELD_REACH[part.model]*size*wide});}
+  return out;
+ });
 }
 // The ground under the plot, every quarter unit, so the soil, the fence and the plants follow it: nothing floats and nothing sinks into
 // the grass. Read straight off the village's hills (their triangles drawn into a height grid, the highest one on top), not with rays:
@@ -300,17 +339,59 @@ function groundUnder(village,p){
  };
 }
 const firstMesh=gltf=>{let mesh=null;gltf.scene.traverse(o=>{if(!mesh&&o.isMesh)mesh=o;});return mesh;};
-// A model's geometry stood on its base, centred, 1 unit tall, with its own material made matte.
-function unitModel(gltf){
- const mesh=firstMesh(gltf),g=mesh.geometry.clone();g.computeBoundingBox();const b=g.boundingBox;
+// A model's geometry stood on its base, centred, 1 unit tall, with its own material made matte. Bare (11 Oct 2026): only the triangles
+// painted from the palette's greens (its sixth column of cells, 94 px each), so the bean plant leaves its brown pole behind.
+function unitModel(gltf,bare=false){
+ const mesh=firstMesh(gltf);let g=mesh.geometry.clone();
+ if(bare){
+  const all=g.index?g.toNonIndexed():g,uv=all.getAttribute('uv'),keep=[];
+  for(let t=0;t+2<uv.count;t+=3)if([t,t+1,t+2].every(i=>Math.floor(uv.getX(i)*1024/94)===5))keep.push(t,t+1,t+2);
+  g=new THREE.BufferGeometry();for(const [name,a] of Object.entries(all.attributes)){const n=a.itemSize,out=new a.array.constructor(keep.length*n);keep.forEach((i,k)=>{for(let c=0;c<n;c++)out[k*n+c]=a.array[i*n+c];});g.setAttribute(name,new THREE.BufferAttribute(out,n,a.normalized));}
+ }
+ g.computeBoundingBox();const b=g.boundingBox;
  g.translate(-(b.min.x+b.max.x)/2,-b.min.y,-(b.min.z+b.max.z)/2);g.scale(1/(b.max.y-b.min.y),1/(b.max.y-b.min.y),1/(b.max.y-b.min.y));
  const material=mesh.material.clone();material.roughness=1;material.metalness=0;material.vertexColors=Boolean(g.getAttribute('color'));
  return {geometry:g,material};
 }
+// The Fields' tap target (createVillageFields below): the lid's height over the ground, and how far round the plot something standing in
+// front of it can hide part of it from the camera (a tree two and a half units tall hides the ground three units behind it).
+const FIELD_LID=.4,FIELD_COVER=5;
+function fieldTap(village,p,ground){
+ const pos=[],x0=p.x-.04,z0=p.z-.04,width=p.width+.08,depth=p.depth+.08,cols=Math.ceil(width/.5),rows=Math.ceil(depth/.5),a=new THREE.Vector3(),b=new THREE.Vector3(),n=new THREE.Vector3();
+ const point=(i,j,y)=>{const x=x0+width*i/cols,z=z0+depth*j/rows;return [x,ground(x,z)+y,z];};
+ // Each triangle faces out of the lid (rays only meet its outside): up on top, away from the plot on the sides.
+ const face=(u,v,w,out)=>{n.crossVectors(a.fromArray(v).sub(b.fromArray(u)),new THREE.Vector3().fromArray(w).sub(b));pos.push(...u,...(n.dot(out)<0?[...w,...v]:[...v,...w]));};
+ for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const top=new THREE.Vector3(0,1,0);face(point(i,j,FIELD_LID),point(i,j+1,FIELD_LID),point(i+1,j,FIELD_LID),top);face(point(i+1,j,FIELD_LID),point(i,j+1,FIELD_LID),point(i+1,j+1,FIELD_LID),top);}
+ for(const [steps,at,out] of [[cols,k=>[k,0],new THREE.Vector3(0,0,-1)],[cols,k=>[k,rows],new THREE.Vector3(0,0,1)],[rows,k=>[0,k],new THREE.Vector3(-1,0,0)],[rows,k=>[cols,k],new THREE.Vector3(1,0,0)]])
+  for(let k=0;k<steps;k++){const [i0,j0]=at(k),[i1,j1]=at(k+1);face(point(i0,j0,.03),point(i1,j1,.03),point(i0,j0,FIELD_LID),out);face(point(i1,j1,.03),point(i1,j1,FIELD_LID),point(i0,j0,FIELD_LID),out);}
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geometry.computeBoundingSphere();
+ const lid=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({visible:false}));lid.name='fields-tap';
+ // What stands round the plot (all but the hills, the mountains and the water): each tree, house, barn or rock of the village within
+ // FIELD_COVER of the fence, read where it stands at the moment of the tap (a landmark's ground clears its trees, game.js may hide some).
+ const area=new THREE.Box3(new THREE.Vector3(p.x-FIELD_COVER,-1e3,p.z-FIELD_COVER),new THREE.Vector3(p.x+p.width+FIELD_COVER,1e3,p.z+p.depth+FIELD_COVER)),box=new THREE.Box3(),m=new THREE.Matrix4(),near=[];
+ village.updateMatrixWorld(true);
+ village.traverse(o=>{
+  if(!o.isMesh||/^(hill_|landscape_|mountains_|water_)/.test(o.name))return;if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+  if(!o.isInstancedMesh){if(box.setFromObject(o).intersectsBox(area))near.push([o,-1]);return;}
+  for(let i=0;i<o.count;i++){o.getMatrixAt(i,m);if(box.copy(o.geometry.boundingBox).applyMatrix4(m).applyMatrix4(o.matrixWorld).intersectsBox(area))near.push([o,i]);}
+ });
+ const probe=new THREE.Mesh(undefined,new THREE.MeshBasicMaterial({side:THREE.DoubleSide})),hits=[];
+ lid.raycast=function(raycaster,intersects){
+  const found=[];THREE.Mesh.prototype.raycast.call(this,raycaster,found);if(!found.length)return;
+  const first=found.reduce((x,y)=>x.distance<y.distance?x:y);
+  for(const [o,i] of near){
+   if(i<0&&!o.visible)continue;
+   probe.geometry=o.geometry;if(i<0)probe.matrixWorld.copy(o.matrixWorld);else{o.getMatrixAt(i,m);probe.matrixWorld.multiplyMatrices(o.matrixWorld,m);}
+   hits.length=0;probe.raycast(raycaster,hits);if(hits.some(h=>h.distance<first.distance))return;
+  }
+  intersects.push(first);
+ };
+ return lid;
+}
 export async function createVillageFields(village){
  const p=VILLAGE_FIELD_PLOT,names=['field_004','fence_008',...new Set(Object.values(VILLAGE_FIELD_CROPS).flatMap(c=>c.parts.map(part=>part.model).filter(Boolean)))];
  const loader=sharePalette(new GLTFLoader()),models=new Map(await Promise.all(names.map(async name=>[name,await loader.loadAsync(`/assets/models/${name}.glb`)])));
- const ground=groundUnder(village,p),group=new THREE.Group(),strips=new Map(),m=new THREE.Matrix4(),q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),at=new THREE.Vector3(),size=new THREE.Vector3();
+ let soilMaterial=null;const ground=groundUnder(village,p),group=new THREE.Group(),strips=new Map(),m=new THREE.Matrix4(),q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),at=new THREE.Vector3(),size=new THREE.Vector3();
  // The soil: the farm's ploughed field, stretched over each strip and laid on the ground point by point. Its rounded rim goes into the
  // grass, the lowest point of its middle stands just over it.
  {
@@ -323,7 +404,7 @@ export async function createVillageFields(village){
    g.computeVertexNormals();parts.push(g);
   }
   const material=tile.material.clone();material.map=null;material.color.setHex(0x9c7a52);material.roughness=1;material.metalness=0;material.vertexColors=Boolean(t.getAttribute('color'));
-  const soil=new THREE.Mesh(mergeGeometries(parts),material);soil.name='fields-soil';soil.receiveShadow=true;group.add(soil);
+  const soil=new THREE.Mesh(mergeGeometries(parts),material);soil.name='fields-soil';soil.receiveShadow=true;group.add(soil);soilMaterial=material;
  }
  // The fence: the farm's cream fence (the tint of the farm's crop-field fence) round the plot, knee-high to the village's houses, with the
  // gate left open on the side of the path. Each piece runs from post to post on the ground: its rails follow the slope, its posts stay upright.
@@ -342,29 +423,48 @@ export async function createVillageFields(village){
   pieces.forEach((piece,i)=>fence.setMatrixAt(i,piece));fence.computeBoundingSphere();group.add(fence);
  }
  // The crops: one instanced mesh a part, each strip hidden until game.js shows it. A plant's foot stands at the lowest of the soil (its
- // furrows), so none floats over a furrow.
+ // furrows), so none floats over a furrow; on a hilled strip it stands on its ridge.
  const root=(x,z)=>ground(x,z)+FIELD_SOIL*.2;
  for(const [crop,c] of Object.entries(VILLAGE_FIELD_CROPS)){
-  const spots=villageFieldSpots(crop),rows=new THREE.Group();rows.name=`fields-${crop}`;rows.visible=false;
-  for(const [n,part] of c.parts.entries()){
-   let mesh;
+  const rows=new THREE.Group(),lift=c.ridge??0;rows.name=`fields-${crop}`;rows.visible=false;
+  for(const [n,list] of villageFieldPlants(crop).entries()){
+   const part=c.parts[n];let mesh;
    if(part.bloom!=null){
-    // Flowers over the leaves: one a plant, and (but for the potatoes' few white ones) as many again between them, inside the rows' ends.
-    const end=Math.max(...spots.map(s=>s.x)),list=part.alone?spots.filter((s,i)=>i%2===0):[...spots,...spots.map((s,i)=>({x:s.x+c.step/2,z:s.z+((i*7)%5/4-.5)*.12,yaw:s.yaw+1.3,size:s.size*.9})).filter(s=>s.x<end)];
     mesh=new THREE.InstancedMesh(wildflowerGeometry(),wildflowerMaterial(),list.length);const colour=new THREE.Color(part.bloom);
-    list.forEach((s,i)=>{const k=part.size*s.size;mesh.setMatrixAt(i,m.compose(at.set(s.x,root(s.x,s.z)+(part.lift??0),s.z),q.setFromAxisAngle(up,s.yaw),size.set(k,k,k)));mesh.setColorAt(i,colour);});
+    list.forEach((s,i)=>{mesh.setMatrixAt(i,m.compose(at.set(s.x,root(s.x,s.z)+lift+(part.lift??0),s.z),q.setFromAxisAngle(up,s.yaw),size.set(s.size,s.size,s.size)));mesh.setColorAt(i,colour);});
    }else{
-    const {geometry,material}=unitModel(models.get(part.model)),bush=part.bush??1,list=[];
+    const {geometry,material}=unitModel(models.get(part.model),part.bare),wide=part.wide??1;
     if(part.color!=null){material.map=null;material.color.setHex(part.color);}
-    for(const s of spots)for(let t=0;t<bush;t++){const a=s.yaw+t*2.4,d=bush>1?.035:0;list.push([s.x+Math.cos(a)*d,s.z+Math.sin(a)*d,s.yaw+t*1.7,s.size*(bush>1?.85+.15*(t%2):1)]);}
+    // Lit as the ground is (as the wildflowers are): every normal straight up, so the sun and the sky fall on all sides of a thin blade.
+    if(part.sky){const normal=geometry.getAttribute('normal');for(let i=0;i<normal.count;i++)normal.setXYZ(i,0,1,0);}
     mesh=new THREE.InstancedMesh(geometry,material,list.length);
-    list.forEach(([x,z,yaw,k],i)=>{const h=part.height*k;mesh.setMatrixAt(i,m.compose(at.set(x,root(x,z),z),q.setFromAxisAngle(up,yaw),size.set(h,h,h)));});
+    list.forEach((s,i)=>mesh.setMatrixAt(i,m.compose(at.set(s.x,root(s.x,s.z)+lift,s.z),q.setFromAxisAngle(up,s.yaw),size.set(s.size*wide,s.size,s.size*wide))));
    }
    mesh.name=`fields-${crop}-${n}`;mesh.receiveShadow=true;mesh.computeBoundingSphere();rows.add(mesh);
   }
+  // Hilled rows (the potatoes): a low ridge of the soil under each row, from just before its first plant to just past its last, its ends
+  // sloping into the furrow, inside the strip's flat soil. One mesh for the strip, shown with its crop.
+  if(c.ridge){
+   const soil=villageFieldSoil(c.strip),spots=villageFieldSpots(crop),per=spots.length/c.rows,pos=[],profile=[[-.12,0],[-.05,1],[.05,1],[.12,0]];
+   for(let r=0;r<c.rows;r++){
+    const row=spots.slice(r*per,(r+1)*per),z=row.reduce((t,s)=>t+s.z,0)/per,x0=Math.max(soil.x0+.02,row[0].x-.12),x1=Math.min(soil.x1-.02,row[per-1].x+.12),cuts=Math.ceil((x1-x0)/.3);
+    const point=(k,j)=>{const x=x0+(x1-x0)*k/cuts,zz=z+profile[j][0],high=k===0||k===cuts?0:profile[j][1];return [x,ground(x,zz)+.02+high*(c.ridge+FIELD_SOIL*.2-.02),zz];};
+    for(let k=0;k<cuts;k++)for(let j=0;j<3;j++){const a=point(k,j),b=point(k+1,j),e=point(k,j+1),f=point(k+1,j+1);pos.push(...a,...e,...b,...b,...e,...f);}
+   }
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(pos.map(()=>.75),3));g.computeVertexNormals();
+   const ridges=new THREE.Mesh(g,soilMaterial);ridges.name=`fields-${crop}-ridges`;ridges.receiveShadow=true;rows.add(ridges);
+  }
   group.add(rows);strips.set(crop,rows);
  }
+ // The tap target (11 Oct 2026, the owner's review: only a tap by the name, at the plot's south-west corner, opened the Fields): an
+ // invisible lid FIELD_LID over the ground across the whole fenced plot, over the fence and the tallest crop, with sides down to the
+ // ground. game.js hangs it on the Fields' place, so a tap anywhere on the soil, the crops or the fence opens their window, as a tap on a
+ // farm building does (their name, like a building's, collects what is ready). On the south and east sides, which face the camera, a ray
+ // that meets the grass outside the fence passes under the lid's sides; behind the north and west fences the lid's top also covers a
+ // strip of grass about 0.4 deep, a few pixels just over the fence's top rail. A ray that first meets something standing in front of the
+ // plot (the hay barn at its south-east corner, a tree) is that thing's: the lid does not count it. Never drawn.
+ const tap=fieldTap(village,p,ground);
  // The pack's bare plot goes once the new one stands (if any of the above failed, it stays as it was).
  const bare=village.getObjectByName('landscape_004');if(bare)bare.visible=false;
- return {group,show:open=>{for(const [crop,rows] of strips)rows.visible=open(crop);}};
+ return {group,show:open=>{for(const [crop,rows] of strips)rows.visible=open(crop);},tap};
 }
