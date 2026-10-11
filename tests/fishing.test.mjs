@@ -102,15 +102,15 @@ test('pay: coins by kind, weight and level, double for today\'s fish, a fifth mo
  assert.equal(second.coins,G.fishCoins(t,G.pondFish({...t,pond:{best:{}}},second.n),false,now+300*LATER));
 });
 
-test('the fish book: a record only when heavier, and all eight kinds pay 5 diamonds exactly once',()=>{
+test('the fish book: a record only when heavier, and all eight kinds pay 25 diamonds exactly once',()=>{
  const s=at(30);s.pond={firstAt:now,n:3,casts:5,castsAt:now,lastAt:0,prevAt:0,best:{minnow:.15,perch:.5,roach:.6,carp:3,tench:2,pike:4,goldencarp:2}};G.normalizeFarm(s,now);
  const diamonds=s.diamonds;let t=now,paid=0;
  for(let k=0;k<400&&!(s.pond.best.whiskers>0);k++){
   t+=LATER;const next=G.pondFish(s,s.pond.n),had=s.pond.best[next.species]??0,r=fish(s,t);paid+=r.diamonds;
   assert.equal(r.record,had>0&&next.kg>had,`${next.species} ${next.kg} after ${had}`);assert.equal(s.pond.best[next.species],Math.max(had,next.kg));assert.equal(r.first,!(had>0));
  }
- assert.ok(s.pond.best.whiskers>=9,'Old Whiskers came');assert.equal(paid,5);assert.equal(s.diamonds,diamonds+5);assert.equal(s.pond.bookPaid,true);assert.ok(G.pondBookDone(s));
- assert.equal(s.stats.diamonds_earned,5,'counted as diamonds earned, like every diamond from play (the quest "A sparkling streak")');
+ assert.ok(s.pond.best.whiskers>=9,'Old Whiskers came');assert.equal(paid,25);assert.equal(s.diamonds,diamonds+25);assert.equal(s.pond.bookPaid,true);assert.ok(G.pondBookDone(s));
+ assert.equal(s.stats.diamonds_earned,25,'counted as diamonds earned, like every diamond from play (the quest "A sparkling streak")');
  for(let k=0;k<30;k++){t+=LATER;assert.equal(fish(s,t).diamonds,0,'never again');}
 });
 
@@ -130,7 +130,7 @@ test('letting a fish go pays nothing, uses the cast and is counted; nothing is p
  assert.equal(s.stats.fish_released,1);assert.equal(s.pond.n,1);assert.deepEqual(s.pond.best,{});
  const t=at(40),inv={...t.inventory},d=t.diamonds,earned=t.stats.earned;
  for(let k=0;k<200;k++)fish(t,now+k*LATER,true,k%3===0);
- assert.deepEqual(t.inventory,inv,'no items, no Market goods');assert.ok(t.diamonds-d<=5,'diamonds only for the full book');
+ assert.deepEqual(t.inventory,inv,'no items, no Market goods');assert.ok(t.diamonds-d<=G.POND_BOOK_DIAMONDS,'diamonds only for the full book');
  assert.equal(t.stats.fish,200);assert.equal(t.stats.fish_perfect,67);assert.ok(t.stats.fish_coins>0);
  assert.equal(t.stats.earned,earned,'fish coins are not market earnings (no "Earn coins" goal moves)');
  assert.ok(G.NO_EVENT_ACTIONS.has('fish'),'and no event or Family Chest counts a fish (farm-api saves it as no event action)');

@@ -3132,7 +3132,7 @@ export function upgradeSilo(state){
 //   but fish 120 is him for a farm that never landed him (and 240, and so on, should he be let go).
 // - The fish book keeps the heaviest of each kind; all 8 pay 5 diamonds, once. No items and no diamonds per fish; nothing reaches the
 //   Market, orders or offers. Every catch is a line in the farm's log (player-log.js).
-export const POND_START_CASTS=5,POND_MAX_CASTS=5,POND_REFILL_MS=20*60000,POND_MIN_GAP_MS=3500,POND_PERFECT=.2,POND_DAY_FACTOR=2,POND_NEW_FISH_COINS=2,POND_NEW_FISH_XP=10,POND_LEGEND_BY=120,POND_BOOK_DIAMONDS=5;
+export const POND_START_CASTS=5,POND_MAX_CASTS=5,POND_REFILL_MS=20*60000,POND_MIN_GAP_MS=3500,POND_PERFECT=.2,POND_DAY_FACTOR=2,POND_NEW_FISH_COINS=2,POND_NEW_FISH_XP=10,POND_LEGEND_BY=120,POND_BOOK_DIAMONDS=25;
 // chance (%), weight (kg, from-to), coins and XP, and the reel (pond-reel.js): the strike window (s), the green zone (% of the bar), how
 // fast the fish moves (bar/s), how fast the catch fills in the green and drains outside it (%/s), and how it fights. The reel's values
 // were tuned on 11 Oct 2026 with simulated players (a quick one, a casual one, a slow one and one who never presses): the plan's first
