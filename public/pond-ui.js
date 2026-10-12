@@ -31,6 +31,8 @@ export const pinSpot=(x,y,px,py,height,bars=[],sides=[])=>{
  for(const b of sides)if(overlaps(left,top,b))left=left<(b.left+b.right)/2?b.left-30:b.right+30;
  return {x:left,y:top,edge:top<y-1};
 };
+// How much more of the world the lake's fishing view shows than the pond's (frame3d).
+export const LAKE_VIEW=2.2;
 export function createPond({water:which='pond',place=null,state,scene,game,labels,runAction,now,play=()=>{},haptic=()=>{},toast=()=>{},resize=()=>{},reducedMotion=false,focusFarm=()=>{}}){
  const W=WATERS[which],lake=which==='lake',FISH=W.fish,NAME=lake?'Village lake':'Fishing pond',ART=lake?'villagelake':'fishingpond';
  const slipText=lake?'The fish slipped off. It’s still in the lake: cast again.':say.slipped;
@@ -251,7 +253,9 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
  function frame3d(camera,focus,aspect){
   const k=mix();if(k<=0)return focus;
   // About 7.6 across the height on a wide screen; on an upright phone about 7 across its width (the pier and the float stack up).
-  const span=(aspect<1?7/aspect:7.6)*Math.sqrt(Math.max(1,520/Math.max(300,game.clientHeight)));   // a short frame sees a little more
+  // The lake (12 Oct 2026, the owner's look): the village is built larger and the boat sits mid-lake, so the pond's span showed only
+  // water; LAKE_VIEW widens it so the shore, the pier and the houses frame the boat as the pier and the fields frame the pond.
+  const span=(aspect<1?7/aspect:7.6)*(lake?LAKE_VIEW:1)*Math.sqrt(Math.max(1,520/Math.max(300,game.clientHeight)));   // a short frame sees a little more
   // The line sits a little above the middle on a wide screen (clear of the button), a little below it on an upright phone (clear of the top).
   const target=pond3d.focus(),up=span*(aspect<1?-.035:.06)/.874;target.x+=up;target.z+=up;
   const half=span/2,box={left:-half*aspect,right:half*aspect,top:half,bottom:-half};
