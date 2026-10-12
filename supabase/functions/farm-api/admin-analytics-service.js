@@ -160,13 +160,15 @@ export async function allRows(query,page=1000){
 // Every farmer in one list, for the Players tab and the new-player funnel (src/admin-dashboard.js): when they joined and how they
 // sign in, when they were last active, their level, days played, beginner guide step, VIP, family and the language they play in. The
 // country, IP address and device are for the admin only, never for the moderators.
+// The farm's values come from its small summary column (supabase/farm-summary.sql), never from the whole saved state: reading six
+// values out of every farm's state took 6.7 s a page on 12 Oct 2026 (5,801 farms), every minute while the dashboard was open.
 export async function handleAdminPlayers({admin,user,now=Date.now(),page=1000}){
  if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  const owner=isSuperadmin(user);
  const [accounts,stats,farms,families]=await Promise.all([
   allRows(()=>admin.rpc('admin_player_accounts',{}),page),
   allRows(()=>admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id').order('player_id'),page),
-  allRows(()=>admin.from('player_farms').select('player_id,diamonds:state->diamonds,visits:state->login->visits,streak:state->login->streak,guide:state->onboarding->completed,guideDone:state->onboarding->rewardClaimed,family:state->family->familyId').order('player_id'),page),
+  allRows(()=>admin.from('player_farms').select('player_id,diamonds:summary->diamonds,visits:summary->visits,streak:summary->streak,guide:summary->guide,guideDone:summary->guideDone,family:summary->family').order('player_id'),page),
   allRows(()=>admin.from('families').select('id,name').order('id'),page)
  ]);
  const stat=new Map(stats.map(s=>[s.player_id,s])),farm=new Map(farms.map(f=>[f.player_id,f])),family=new Map(families.map(f=>[f.id,f.name]));

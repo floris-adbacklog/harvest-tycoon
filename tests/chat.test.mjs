@@ -266,6 +266,23 @@ test('the admin shows as Admin (not Moderator) in the chat, on profiles and on t
  const sql=readFileSync(new URL('../supabase/chat-staff-list.sql',import.meta.url),'utf8');
  assert.match(sql,/''role'',public\.chat_staff_role\(p_player\)/);assert.doesNotMatch(sql,/@/,'no e-mail address in the list');
 });
+test('the staff list asks chat_staff_role only about the admins and staff_roles, never about every farmer (12 Oct 2026: 245 ms, now 8 ms)',()=>{
+ const sql=readFileSync(new URL('../supabase/chat-staff-list-fast.sql',import.meta.url),'utf8');
+ const list=sql.slice(sql.indexOf('create or replace function public.chat_staff_list()'));
+ assert.doesNotMatch(list,/@/,'no e-mail address in the list itself');
+ assert.match(list,/\(select c\.player_id,public\.chat_staff_role\(c\.player_id\) as role from \(/,'chat_staff_role still decides who is who');
+ assert.match(list,/select u\.id as player_id from auth\.users u where lower\(u\.email\)=any\(public\.harvest_admin_emails\(\)\)\n   union select r\.player_id from public\.staff_roles r/);
+ assert.match(list,/\) c where exists\(select 1 from public\.player_stats ps where ps\.player_id=c\.player_id\)\) s where s\.role is not null/,'still only farmers who have a farm');
+ assert.doesNotMatch(list,/from public\.player_stats ps\) s/,'not one chat_staff_role call per farmer');
+ assert.match(list,/returns jsonb language sql stable security definer set search_path to ''/);
+ assert.match(sql,/revoke all on function public\.chat_staff_list\(\) from public, anon;\ngrant execute on function public\.chat_staff_list\(\) to authenticated;/);
+ // chat_staff_role keeps its whole rule; only its address line reads the one list, patched from the live definition, re-runnable.
+ assert.match(sql,/old text:=\$a\$lower\(u\.email\) in \('floris@millstone\.nl','harvesttycoon@gmail\.com'\)\$a\$;/);
+ assert.match(sql,/if position\('public\.harvest_admin_emails\(\)' in def\)>0 then return; end if;\n if position\(old in def\)=0 then raise exception/);
+ assert.match(sql,/execute replace\(def,old,\$b\$lower\(u\.email\)=any\(public\.harvest_admin_emails\(\)\)\$b\$\);/);
+ assert.match(sql,/revoke all on function public\.harvest_admin_emails\(\) from public, anon, authenticated;/,'players cannot ask for the addresses');
+ assert.match(sql,/revoke execute on function public\.chat_staff_role\(uuid\) from public, anon, authenticated;/);
+});
 test('the chat client has no method twice: a second staffList once emptied the Admin dashboard\'s moderator list',()=>{
  const src=readFileSync(new URL('../src/chat-client.js',import.meta.url),'utf8');
  const names=[...src.matchAll(/^\s{2}([A-Za-z]+):/gm)].map(m=>m[1]),twice=names.filter((n,i)=>names.indexOf(n)!==i);

@@ -84,6 +84,23 @@ test('admin_players: every page is read, however many farmers there are (PostgRE
  assert.doesNotMatch(code.slice(code.indexOf('export async function handleAdminPlayers'),code.indexOf('export async function handleAdminPlayer(')),/\.limit\(/,'no cap on the list');
  assert.doesNotMatch(read('supabase/admin-player-accounts-paging.sql'),/limit 5000/);
 });
+test('admin_players reads each farm\'s small summary column, never the whole saved state (12 Oct 2026: 6.7 s a page for 5,801 farms)',async()=>{
+ const db=database(tables);await handleAdminPlayers({admin:db,user:owner,now});
+ const farms=db.calls.find(c=>c.table==='player_farms').select;
+ assert.doesNotMatch(farms,/state/,'the whole state is never unpacked for the list');
+ const read6=[...farms.matchAll(/(\w+):summary->(\w+)/g)].map(([,alias,key])=>[alias,key]);
+ assert.deepEqual(read6.map(([alias])=>alias),['diamonds','visits','streak','guide','guideDone','family'],'the same six values as before');
+ assert.ok(read6.every(([alias,key])=>alias===key));
+ // The database keeps exactly those six, from the same places in the state the list read before.
+ const sql=read('supabase/farm-summary.sql');
+ const kept=Object.fromEntries([...sql.matchAll(/'(\w+)',p_state(?:->'(\w+)'|#>'\{([\w,]+)\}')/g)].map(([,key,top,path])=>[key,top??path]));
+ assert.deepEqual(kept,{diamonds:'diamonds',visits:'login,visits',streak:'login,streak',guide:'onboarding,completed',guideDone:'onboarding,rewardClaimed',family:'family,familyId'});
+ assert.match(sql,/alter table public\.player_farms add column if not exists summary jsonb;/);
+ assert.match(sql,/create trigger harvest_farm_summary before insert or update of state on public\.player_farms\n for each row execute function public\.harvest_stamp_farm_summary\(\);/,'every write of a state, also a gift or a purchase');
+ assert.match(sql,/new\.summary:=public\.harvest_farm_summary\(new\.state\);/);
+ assert.match(sql,/update public\.player_farms f set summary=public\.harvest_farm_summary\(f\.state\)\n where f\.player_id in \(select p\.player_id from public\.player_farms p where p\.summary is null limit 1000\);/,'the farms from before: only the new column, in batches');
+ for(const fn of ['harvest_farm_summary(jsonb)','harvest_stamp_farm_summary()'])assert.ok(sql.includes(`revoke all on function public.${fn} from public, anon, authenticated;`),fn);
+});
 test('admin_players and admin_player: the IP address, country and device are for the admin only, never for a moderator',async()=>{
  const list=await handleAdminPlayers({admin:database(tables),user:moderator,now});
  assert.equal(list.status,200);assert.equal(list.data.owner,false);

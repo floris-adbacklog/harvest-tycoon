@@ -37,6 +37,8 @@ test('the admin powers need Google itself: an admin account that also signs in w
 test('the game and the database list the same admin addresses',()=>{
  assert.match(read('src/player-profiles.js'),/ADMIN_EMAILS=Object\.freeze\(\['floris@millstone\.nl','harvesttycoon@gmail\.com'\]\)/);
  assert.match(read('supabase/admins.sql'),/lower\(u\.email\) in \('floris@millstone\.nl','harvesttycoon@gmail\.com'\)/);
+ // Since 12 Oct 2026 the database keeps them in harvest_admin_emails, which chat_staff_role and the staff list both read.
+ assert.match(read('supabase/chat-staff-list-fast.sql'),/returns text\[\] language sql immutable set search_path to '' as \$function\$\n select array\['floris@millstone\.nl','harvesttycoon@gmail\.com'\]\n/);
 });
 test('the welcome message can come from either admin; for now from Gerard, whose texts say "I\'m Gerard"',()=>{
  const client=read('src/chat-client.js'),dash=read('src/admin-dashboard.js'),sql=read('supabase/gerard.sql');
