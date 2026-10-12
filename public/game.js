@@ -850,9 +850,10 @@ function updateUI(){
  // batch ready, and the market square when the golden brief or a landmark can be built (Oct 2026; no pop-up). Not a villager you could
  // help (10 Oct 2026, a player's feedback): who doesn't want to trade saw a number for good and missed a batch that was ready. In the
  // village the square's own pin still lights for a villager, the Village tool is the one lit and My farm travels back.
+ // 12 Oct 2026 (a player's feedback): the More menu offers the other world in both, The Village on the farm and My farm in the village.
  const worldTwo=worldTwoOpen(state),villageReady=worldTwo&&economy?Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].world===2&&economy.status(k).kind==='ready').length+(villageBrief(state)?.ready||villageLandmark(state)?.ready?1:0):0;
  $('village-button').hidden=!worldTwo;$('village-button').classList.toggle('active',villageWorld);$('farm-button').classList.toggle('active',!villageWorld);
- $('village-count').hidden=villageWorld||!villageReady;$('village-count').textContent=villageReady;$('village-menu-entry').hidden=villageWorld||!worldTwo;
+ $('village-count').hidden=villageWorld||!villageReady;$('village-count').textContent=villageReady;$('village-menu-entry').hidden=villageWorld||!worldTwo;$('farm-menu-entry').hidden=!villageWorld;
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
  {const next=unlockEntries(state).filter(e=>!e.unlocked&&e.level===lvl+1).map(e=>e.name);$('journal-button').title=next.length?`Level ${lvl+1} unlocks: ${next.slice(0,3).join(', ')}${next.length>3?'…':''}`:'Farm journal & level rewards';}
  nudge?.check();
