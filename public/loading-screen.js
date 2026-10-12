@@ -34,6 +34,9 @@ export const PASS_LOADING_TIP=Object.freeze(['giant-small','Halloween Pass from 
 // The Fishing pond (11 Oct 2026): its tip only once the pond is open (game.js adds it when farm-state.js POND_OPEN is on). The numbers
 // are the rules' (POND_LEVEL, POND_START_CASTS, POND_REFILL_MS; tests/fishing.test.mjs keeps them equal).
 export const POND_LOADING_TIP=Object.freeze(['fishingpond','Waiting for your crops? From level 4 the fishing pond has 5 casts for you, and a new one every 20 minutes.']);
+// The village lake (12 Oct 2026, plan D): a village tip of its own, only once the lake is open (game.js adds it first on the way to the
+// village when farm-state.js LAKE_OPEN is on). Its 5 is the rules' POND_START_CASTS (tests/lake-screen.test.mjs keeps them equal).
+export const LAKE_LOADING_TIP=Object.freeze(['villagelake','The village lake has its own 5 casts, apart from your farm pond, and its fish pay much more.']);
 // On the way to the village (World II, 30 Sep 2026) the tips are about the village.
 export const VILLAGE_LOADING_TIPS=Object.freeze([
  ['packedlunch','Every trip into the mine or the forest starts with packed lunches from your farm Kitchen.'],

@@ -392,3 +392,23 @@ own, as Old Whiskers has. The lake's name is never the pond's: in Hungarian, whe
 - **العربية** (ar): Village lake بحيرة القرية · Bleak سمك البليك · Chub سمك الشوب · Whitefish السمك الأبيض · Nase سمك الناز · Grayling سمك الغرايلنغ · Brown trout التراوت البني · Arctic char سمك الشار القطبي · Burbot سمك البربوط · Huchen سلمون الدانوب · Old Granite أبو صخر العجوز · Bullhead سمك أبو رأس · Vendace سمك الفنداس · Ide سمك الآيد · Golden orfe الآيد الذهبي · Brook trout تراوت الجداول · Lake trout تراوت البحيرة · Salmon السلمون · Golden trout التراوت الذهبي · Marble trout التراوت الرخامي · Glacier Ghost شبح الجليد.
 - **简体中文** (zh): Village lake 村庄湖泊 · Bleak 欧白鱼 · Chub 雅罗鱼 · Whitefish 白鲑 · Nase 软口鱼 · Grayling 茴鱼 · Brown trout 褐鳟 · Arctic char 北极红点鲑 · Burbot 江鳕 · Huchen 多瑙哲罗鲑 · Old Granite 老花岗 · Bullhead 杜父鱼 · Vendace 小白鲑 · Ide 高体雅罗鱼 · Golden orfe 金雅罗鱼 · Brook trout 溪红点鲑 · Lake trout 湖红点鲑 · Salmon 鲑鱼 · Golden trout 金鳟 · Marble trout 大理石鳟 · Glacier Ghost 冰川幽灵.
 - **हिन्दी** (hi): Village lake गाँव की झील · Bleak ब्लीक · Chub चब · Whitefish व्हाइटफ़िश · Nase नाज़े · Grayling ग्रेलिंग · Brown trout ब्राउन ट्राउट · Arctic char आर्कटिक चार · Burbot बरबट · Huchen हुचेन · Old Granite बूढ़ा पत्थरू · Bullhead बुलहेड · Vendace वेंडेस · Ide आइड · Golden orfe सुनहरी ऑर्फ़ · Brook trout ब्रुक ट्राउट · Lake trout लेक ट्राउट · Salmon सैल्मन · Golden trout सुनहरी ट्राउट · Marble trout मार्बल ट्राउट · Glacier Ghost हिमनद भूत.
+
+The lake's screens (12 Oct 2026, plan D) speak of the lake where the pond's say pond ("stays in the lake", "the lake's casts are its
+own"), call the way back the village's ("Back to the village", the button ‹ Village), and add the rowboat it is fished from and its
+More tile's mountain lake. A ready village batch on the way back is "Ready to collect!" (a crop on the farm is "Ready to harvest!").
+
+- **Español** (es): rowboat barca de remos · mountain lake lago de montaña · Back to the village Volver a la aldea
+- **Deutsch** (de): rowboat Ruderboot · mountain lake Bergsee · Back to the village Zurück ins Dorf
+- **Français** (fr): rowboat barque · mountain lake lac de montagne · Back to the village Retour au village
+- **Português** (pt): rowboat barco a remo · mountain lake lago da montanha · Back to the village Voltar para a vila (the pond is lago too: the lake is always lago da vila)
+- **Nederlands** (nl): rowboat roeiboot · mountain lake bergmeer · Back to the village Terug naar het dorp
+- **Bahasa Indonesia** (id): rowboat perahu dayung · mountain lake danau gunung · Back to the village Kembali ke desa
+- **日本語** (ja): rowboat 手こぎボート · mountain lake 山の湖 · Back to the village 村に戻る
+- **Türkçe** (tr): rowboat kayık · mountain lake dağ gölü · Back to the village Köye dön
+- **Čeština** (cs): rowboat loďka · mountain lake horské jezero · Back to the village Zpět do vesnice
+- **Українська** (uk): rowboat човен · mountain lake гірське озеро · Back to the village Назад до села
+- **Magyar** (hu): rowboat csónak · mountain lake hegyi tó · Back to the village Vissza a faluba (the lake is always falusi tó)
+- **Русский** (ru): rowboat лодка · mountain lake горное озеро · Back to the village Назад в деревню
+- **العربية** (ar): rowboat قارب التجديف · mountain lake بحيرة الجبل · Back to the village العودة إلى القرية
+- **简体中文** (zh): rowboat 小划艇 · mountain lake 山间湖泊 · Back to the village 回到村庄
+- **हिन्दी** (hi): rowboat चप्पू वाली नाव · mountain lake पहाड़ी झील · Back to the village गाँव में वापस

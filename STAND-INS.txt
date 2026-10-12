@@ -1,0 +1,30 @@
+STAND-IN PICTURES: THE VILLAGE LAKE (12 Oct 2026, plan D)
+
+These 21 pictures are copies of the farm pond's own pictures, only so the village lake can be built and tried in the harness before
+the owner's real pictures come (prompts: ~/Harvest Tycoon/plan-wachten/vissen-dorp-prompts.md). They must never ship.
+
+When the real pictures arrive: turn each into a 256 px WebP with transparency (like the pond's fish), put it over its stand-in in
+public/assets/icons/, then delete this file. Not even the closed first step (LAKE_OPEN false) ships with them. Once LAKE_OPEN is
+true, tests/lake-screen.test.mjs fails while this file exists or while any lake picture is still byte for byte a pond picture.
+
+public/assets/icons/fish-bleak.webp          copy of fish-minnow.webp
+public/assets/icons/fish-chub.webp           copy of fish-roach.webp
+public/assets/icons/fish-whitefish.webp      copy of fish-bream.webp
+public/assets/icons/fish-nase.webp           copy of fish-rudd.webp
+public/assets/icons/fish-grayling.webp       copy of fish-perch.webp
+public/assets/icons/fish-browntrout.webp     copy of fish-trout.webp
+public/assets/icons/fish-char.webp           copy of fish-zander.webp
+public/assets/icons/fish-burbot.webp         copy of fish-eel.webp
+public/assets/icons/fish-huchen.webp         copy of fish-pike.webp
+public/assets/icons/fish-oldgranite.webp     copy of fish-whiskers.webp
+public/assets/icons/fish-bullhead.webp       copy of fish-tench.webp
+public/assets/icons/fish-vendace.webp        copy of fish-minnow.webp
+public/assets/icons/fish-ide.webp            copy of fish-roach.webp
+public/assets/icons/fish-goldenorfe.webp     copy of fish-goldencarp.webp
+public/assets/icons/fish-brooktrout.webp     copy of fish-trout.webp
+public/assets/icons/fish-laketrout.webp      copy of fish-barbel.webp
+public/assets/icons/fish-salmon.webp         copy of fish-pike.webp
+public/assets/icons/fish-goldentrout.webp    copy of fish-goldencarp.webp
+public/assets/icons/fish-marbletrout.webp    copy of fish-koi.webp
+public/assets/icons/fish-glacierghost.webp   copy of fish-sturgeon.webp
+public/assets/icons/villagelake.webp         copy of fishingpond.webp

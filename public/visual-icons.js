@@ -64,6 +64,11 @@ for(const key of TOOL_PICTURES)pictures[key]=key;
 export const FISH_PICTURES=Object.freeze(['fish-minnow','fish-perch','fish-roach','fish-carp','fish-tench','fish-pike','fish-goldencarp','fish-whiskers','fishingpond',
  'fish-rudd','fish-bream','fish-eel','fish-trout','fish-barbel','fish-zander','fish-koi','fish-sturgeon']);
 for(const key of FISH_PICTURES)pictures[key]=key;
+// The village lake (12 Oct 2026, plan D, WebP, 256 px on a clear ground like the pond's): its 20 fish, page one then page two, and the
+// rowboat on the lake for its pin, the More tile, the Buildings card and the level card. Stand-ins until the owner's own come (STAND-INS.txt).
+export const LAKE_PICTURES=Object.freeze(['fish-bleak','fish-chub','fish-whitefish','fish-nase','fish-grayling','fish-browntrout','fish-char','fish-burbot','fish-huchen','fish-oldgranite',
+ 'fish-bullhead','fish-vendace','fish-ide','fish-goldenorfe','fish-brooktrout','fish-laketrout','fish-salmon','fish-goldentrout','fish-marbletrout','fish-glacierghost','villagelake']);
+for(const key of LAKE_PICTURES)pictures[key]=key;
 // Feedback & bugs (30 Sep 2026, painted by the user, WebP): the mailbox on its button and in the More menu.
 pictures.feedback='feedback';
 export const ART_KEYS=Object.freeze([...Object.keys(spriteEntries),...Object.keys(pictures)]);
@@ -90,6 +95,7 @@ for(const key of MEDAL_ART){pictures[key]=key;webpPictures.add(key);}
 for(const key of ['tractor-full-care','tractor-night-shift']){pictures[key]=key;webpPictures.add(key);}
 // The Fishing pond's pictures are WebP (FISH_PICTURES, above).
 for(const key of FISH_PICTURES)webpPictures.add(key);
+for(const key of LAKE_PICTURES)webpPictures.add(key);
 // Family rank badges (27 Sep 2026), painted by the user; public/family-profile.js shows each one that is here beside the rank's name.
 for(const key of ['family-rank-leader','family-rank-coleader','family-rank-honorary','family-rank-member','family-rank-top']){pictures[key]=key;webpPictures.add(key);}
 // The real family emblems (7 Oct 2026: 33 more, painted in the family style): every family-… emblem in the list, as WebP. A picture

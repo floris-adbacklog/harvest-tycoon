@@ -5,13 +5,20 @@ import {POND,placeIn} from './farm-layout.js';
 // rod or float in the model packs), in the colours of the owner's fish pictures; the float is the game's red and cream. The rod lies in
 // its rest from level 4, so the pier says what it is for; a small fish jumps now and then while casts are waiting (cue()). pond-ui.js
 // drives the rest. Where things stand comes from the pier as it was placed (farm-life.js), so a moved pier takes the spot along.
-const WATER_Y=.034,UP=new THREE.Vector3(0,1,0);
+// The village lake (12 Oct 2026, plan D) is fished from the rowboat in its middle: the same pieces at the spot village-scene.js gives
+// (VILLAGE_FISHING_SPOT), on the lake's surface (6.67 high, the pond's .034).
+const POND_WATER_Y=.034,UP=new THREE.Vector3(0,1,0);
 // Colour, size and (page two's eel and sturgeon) how long and slim the body is, from the owner's pictures.
 export const FISH_LOOK=Object.freeze({minnow:[0xc9cfbf,.5],perch:[0x9aa547,.7],roach:[0xc5ccd3,.75],carp:[0xc08a3e,1.1],tench:[0x7b8a35,1],pike:[0x7d9440,1.3],goldencarp:[0xf2b33a,1],whiskers:[0x8a7a55,1.6],
- rudd:[0xb9a23e,.65],bream:[0xa49a7e,.95],eel:[0x6f5f2a,1,2],trout:[0xc7b3ae,.9],barbel:[0xa77c4a,1.05],zander:[0x97a08a,1.15],koi:[0xee7a3a,1],sturgeon:[0x7f8a92,1.6,1.5]});
+ rudd:[0xb9a23e,.65],bream:[0xa49a7e,.95],eel:[0x6f5f2a,1,2],trout:[0xc7b3ae,.9],barbel:[0xa77c4a,1.05],zander:[0x97a08a,1.15],koi:[0xee7a3a,1],sturgeon:[0x7f8a92,1.6,1.5],
+ // The village lake's 20 (12 Oct 2026), from the owner's prompts (vissen-dorp-prompts.md): the burbot long like an eel, the big trout,
+ // the salmon and both legends large; Old Granite granite grey-green, the Glacier Ghost silvery white.
+ bleak:[0xc9d4c8,.45],chub:[0xb59a6a,.85],whitefish:[0xc3ccd6,.8],nase:[0xbfc3c0,.75],grayling:[0x9c98a8,.8],browntrout:[0xb08a4a,.95],char:[0xb0703e,.9],burbot:[0x8a7a3e,1.05,1.8],huchen:[0xc0785e,1.3,1.3],oldgranite:[0x7f8a7a,1.7],
+ bullhead:[0x9a8058,.5],vendace:[0xbcc6d0,.55],ide:[0xb8bcbc,.85],goldenorfe:[0xf0a040,.85],brooktrout:[0x8f7a40,.85],laketrout:[0x8a958a,1.25,1.2],salmon:[0xc8ccd0,1.3,1.2],goldentrout:[0xf2c040,.8],marbletrout:[0xa49a6a,1.2,1.1],glacierghost:[0xdfeaf0,1.7,1.3]});
 const ease=k=>k<.5?2*k*k:1-(-2*k+2)**2/2;
-export function createPondScene({scene,reducedMotion=false,cue=()=>false}){
- const [cx,cz]=placeIn('pond',POND.x,POND.z),centre=new THREE.Vector3(cx,WATER_Y,cz);
+// The farm pond's spot (11 Oct 2026): where the farmer stands, where the float rests, the pin over the pier, and where a fish may jump.
+function pierSpot(scene,WATER_Y){
+ const [cx,cz]=placeIn('pond',POND.x,POND.z);
  const pier=scene.children.find(o=>o.userData.model==='village_pier_001');
  const pierBox=pier?new THREE.Box3().setFromObject(pier):null,pierMid=pierBox?pierBox.getCenter(new THREE.Vector3()):new THREE.Vector3(cx+4.8,0,cz+3);
  // The farmer stands at the pier's right-hand corner as the camera sees it (screen right is +x -z), so the rod reaches up and over the
@@ -23,7 +30,20 @@ export function createPondScene({scene,reducedMotion=false,cue=()=>false}){
  const stand=pierMid.clone().addScaledVector(right,.75).addScaledVector(toCentre,.55);stand.y=deckAt(stand.x,stand.z);
  const dir=new THREE.Vector3(cx-stand.x,0,cz-stand.z).normalize(),side=new THREE.Vector3(-dir.z,0,dir.x);
  const rest=stand.clone().addScaledVector(dir,3.3);rest.y=WATER_Y;
- const group=new THREE.Group();group.name='Fishing pond';scene.add(group);
+ return {stand,rest,dir,side,label:pierMid.clone().setY((pierBox?.max.y??1)+.9),pool:{x:cx,z:cz,rx:POND.rx*.55,rz:POND.rz*.55},jumper:'minnow',high:false,post:.95};
+}
+// The village lake's spot (12 Oct 2026, plan D): the rod's butt in the rowboat, a little back from the float, which lands about 3 units
+// out; its rest (post) close to the butt, so it stands in the narrow boat and not in the water. high: the camera's spot is moved down
+// to the ground along the camera's line (game.js frames the village at ground height).
+function boatSpot(p){
+ const boat=new THREE.Vector3(p.x,p.seat,p.z),rest=new THREE.Vector3(p.float.x,p.water,p.float.z);
+ const dir=new THREE.Vector3(rest.x-boat.x,0,rest.z-boat.z).normalize(),side=new THREE.Vector3(-dir.z,0,dir.x);
+ return {stand:boat.addScaledVector(dir,-.15),rest,dir,side,label:new THREE.Vector3(p.pin.x,p.pin.y,p.pin.z),pool:{x:p.float.x,z:p.float.z,rx:p.jump,rz:p.jump},jumper:'bleak',high:true,post:.3};
+}
+// place: the village lake's spot (VILLAGE_FISHING_SPOT), or none for the farm pond.
+export function createPondScene({scene,reducedMotion=false,cue=()=>false,place=null}){
+ const WATER_Y=place?place.water:POND_WATER_Y,{stand,rest,dir,side,label,pool,jumper,high,post}=place?boatSpot(place):pierSpot(scene,WATER_Y);
+ const group=new THREE.Group();group.name=place?'Village lake':'Fishing pond';scene.add(group);
  const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.7,...extra});
  // The rod in its rest: a pivot at the butt, turned to the water, lifted by `pitch`.
  const rod=new THREE.Group();rod.position.copy(stand);rod.rotation.y=Math.atan2(-dir.z,dir.x);group.add(rod);
@@ -32,7 +52,7 @@ export function createPondScene({scene,reducedMotion=false,cue=()=>false}){
  const grip=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.42,8),mat(0x5e3a1c));grip.rotation.z=-Math.PI/2;grip.position.x=.24;pivot.add(grip);
  const reelWheel=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.05,10),mat(0xb9b2a0,{metalness:.4,roughness:.4}));reelWheel.rotation.x=Math.PI/2;reelWheel.position.set(.5,-.08,0);pivot.add(reelWheel);
  const tip=new THREE.Object3D();tip.position.x=ROD;pivot.add(tip);
- const stick=new THREE.Mesh(new THREE.BoxGeometry(.07,.42,.07),mat(0x6b4a2b));stick.position.set(.95,.17,0);rod.add(stick);
+ const stick=new THREE.Mesh(new THREE.BoxGeometry(.07,.42,.07),mat(0x6b4a2b));stick.position.set(post,.17,0);rod.add(stick);
  let pitch=.5,pitchTo=.5;pivot.rotation.z=pitch;
  // The float: red over cream, with a little stick on top.
  const float=new THREE.Group(),R=.16;
@@ -109,7 +129,7 @@ export function createPondScene({scene,reducedMotion=false,cue=()=>false}){
   {const waiting=mode==='float'||mode==='nibble'||mode==='bite',goal=waiting?(mode==='bite'?.9:.45+(reducedMotion?0:Math.sin(clock*3)*.12)):0;marker.material.opacity+=(goal-marker.material.opacity)*Math.min(1,dt*6);marker.scale.setScalar(mode==='bite'?1.25:1);}
   if(mode!=='fight'&&shadow.material.opacity>0)shadow.material.opacity=Math.max(0,shadow.material.opacity-dt*1.2);
   // The pond's own life: now and then a small fish jumps while casts are waiting (never while fishing, never with reduced motion).
-  if(!reducedMotion&&mode==='off'&&(nextCue-=dt)<=0){nextCue=18+Math.random()*10;if(cue()){const a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random())*.55,p=new THREE.Vector3(cx+Math.cos(a)*r*POND.rx,WATER_Y,cz+Math.sin(a)*r*POND.rz);leap('minnow',p,p.clone().addScaledVector(dir,-.7).addScaledVector(side,.3),.55,.5);}}
+  if(!reducedMotion&&mode==='off'&&(nextCue-=dt)<=0){nextCue=18+Math.random()*10;if(cue()){const a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random()),p=new THREE.Vector3(pool.x+Math.cos(a)*r*pool.rx,WATER_Y,pool.z+Math.sin(a)*r*pool.rz);leap(jumper,p,p.clone().addScaledVector(dir,-.7).addScaledVector(side,.3),.55,.5);}}
   for(let i=effects.length-1;i>=0;i--){
    const e=effects[i];e.age+=dt;const k=Math.min(1,e.age/e.life);
    if(e.kind==='ring'){e.obj.scale.setScalar((.25+k*1.4)*e.size);e.obj.material.opacity=(1-k)*.8;}
@@ -121,9 +141,10 @@ export function createPondScene({scene,reducedMotion=false,cue=()=>false}){
  }
  return {
   stand,rest,dir,
-  // The spot between the farmer and the float: what the fishing view frames.
-  focus:()=>stand.clone().lerp(rest,.55).setY(0),
-  labelAt:()=>pierMid.clone().setY((pierBox?.max.y??1)+.9),
+  // The spot between the farmer and the float: what the fishing view frames. At the lake that spot is 6.7 high, moved down along the
+  // camera's line (36, 40, 36) to the ground, where the village's camera looks (the same spot on the screen).
+  focus:()=>{const f=stand.clone().lerp(rest,.55);return high?f.set(f.x-.9*f.y,0,f.z-.9*f.y):f.setY(0);},
+  labelAt:()=>label.clone(),
   show(on){rod.visible=on;},
   ready(){set('ready');},
   off(){set('off');},

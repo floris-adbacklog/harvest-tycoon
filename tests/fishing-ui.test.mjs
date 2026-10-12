@@ -109,8 +109,8 @@ test('the pond screen says what a new kind pays, a refused catch takes its card 
  assert.ok(read('public/wiki-content.js').includes('The first of each kind pays ${POND_NEW_FISH_COINS+1} times its coins and ${POND_NEW_FISH_XP} XP more.'));
  // While a catch card is up the pond's count is the fish after it; when the farm takes the catch back (farm-client.js rolls it back
  // with its coins) the card goes, and the next cast fishes the same fish again.
- assert.match(ui,/shown=r\.n;paid=state\.stats\.fish_coins\?\?0;setPhase\('result'\)/);
- assert.match(ui,/if\(isOpen&&phase==='result'&&\(current\(\)!==shown\+1\|\|\(state\.stats\.fish_coins\?\?0\)!==paid\)\)\{card\.hidden=true;idle\(\);\}/);
+ assert.match(ui,/shown=r\.n;paid=state\.stats\[W\.stats\.coins\]\?\?0;setPhase\('result'\)/);
+ assert.match(ui,/if\(isOpen&&phase==='result'&&\(current\(\)!==shown\+1\|\|\(state\.stats\[W\.stats\.coins\]\?\?0\)!==paid\)\)\{card\.hidden=true;idle\(\);\}/);
  assert.match(ui,/function cast\(\)\{\n  if\(casts\(\)\.casts<1\|\|sending\)\{idle\(\);return;\}\n  if\(fishN!==current\(\)\)\{fishN=current\(\);tries=0;escapes=0;\}/);
  // Holding on the water or the button (to reel) selects no text and opens no callout on an iPhone.
  assert.match(css,/\.pond-view\{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none\}/);

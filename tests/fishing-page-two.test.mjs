@@ -237,14 +237,14 @@ test('level 20\'s card names it; below 20 nothing of page two is listed, a farm 
 test('the pond screen: page 2 is a tab of the book from level 20 only, its reward and secret on it, the right tag on the catch card',()=>{
  assert.equal(G.pondPageTwoOpen(at(19)),false);assert.equal(G.pondPageTwoOpen(at(TWO)),true);
  const ui=read('public/pond-ui.js');
- assert.match(ui,/const best=state\.pond\?\.best\?\?\{\},two=pondPageTwoOpen\(state\),turned=page!==undefined;/);
+ assert.match(ui,/const best=state\[W\.key\]\?\.best\?\?\{\},two=pageTwo\(\),turned=page!==undefined;/);
  assert.match(ui,/\$\{two\?`<div class="market-tabs pond-book-pages" role="tablist" aria-label="Fish book">\$\{\[0,1\]\.map\(i=>`<button type="button" role="tab" aria-selected="\$\{i===page\}" data-book-page="\$\{i\}">Page \$\{i\+1\}<\/button>`\)\.join\(''\)\}<\/div>`:''\}/,'no tabs below level 20');
  assert.match(ui,/page=two\?Math\.min\(1,Math\.max\(0,page\)\):0;/,'and page 1 only');
- assert.match(ui,/`Catch all \$\{Object\.keys\(FISH\)\.length\} kinds on both pages: \$\{POND_BOOK2_DIAMONDS\} diamonds, once\.`/);
- assert.match(ui,/`Catch all \$\{kinds\.length\} kinds: \$\{POND_BOOK_DIAMONDS\} diamonds, once\.`/,'page one says 8, as before');
+ assert.match(ui,/`Catch all \$\{Object\.keys\(FISH\)\.length\} kinds on both pages: \$\{W\.book2\} diamonds, once\.`/);
+ assert.match(ui,/`Catch all \$\{kinds\.length\} kinds: \$\{W\.book\} diamonds, once\.`/,'page one says 8, as before');
  assert.match(ui,/const secrets=\{whiskers:'Something big lives in this pond\.',sturgeon:'Something even bigger swims at the bottom\.'\};/);
- assert.match(ui,/if\(r\.diamonds\)tags\.push\(\['is-book',r\.book2\|\|!pondPageTwoOpen\(state\)\?'Fish book complete!':pageDone\(1\)\]\);/);
- assert.match(ui,/const c=casts\(\),t=todaysFish\(now\(\)\),pill=\$\('casts'\);/,'the day\'s one fish, as at 01ff2cd');
+ assert.match(ui,/if\(r\.diamonds\)tags\.push\(\['is-book',r\.book2\|\|!pageTwo\(\)\?'Fish book complete!':pageDone\(1\)\]\);/);
+ assert.match(ui,/const c=casts\(\),t=W\.today\(now\(\)\),pill=\$\('casts'\);/,'the day\'s one fish, as at 01ff2cd');
  for(const text of ui.match(/'[^'\n]*'|`[^`]*`/g))assert.doesNotMatch(text,/ · /);
  assert.match(read('public/pond.css'),/\.pond-book-pages\{margin:10px 0 0\}/);
 });

@@ -34,6 +34,13 @@ export const VILLAGE_UTILITIES=Object.freeze({
  villagemarket:{x:37.1,y:8.4,z:-6.2},
  farmroad:{x:.6,y:6.7,z:-21}
 });
+// The village lake's fishing spot (12 Oct 2026, plan D; VILLAGE_LAKE is the water's colour): the rowboat that already floats in the
+// middle of the lake, between the market square and the Pier (the pack's props_016; tests/lake-screen.test.mjs checks it is still there,
+// so a new village layout cannot move it away silently). x, z the boat's middle; seat the rod's height in it; float where the line lands,
+// about 3 units out (left of the boat on the screen); water the lake's surface there (the farm pond's is .034); pin the fishing pin's
+// spot over the boat; jump how far from the float a fish may leap. Not a VILLAGE_UTILITIES place: that list would give it a second pin
+// and move the village's approved first views (VILLAGE_FRAME, villageFrame.phone). pond-scene.js makes the rest from it.
+export const VILLAGE_FISHING_SPOT=Object.freeze({x:-1.6,z:-.7,seat:6.95,float:Object.freeze({x:-3.7,z:1.4}),water:6.67,pin:Object.freeze({x:-1.6,y:8,z:-.7}),jump:2});
 // The places across the lake or past the west shore (Oct 2026): an upright phone's first view is the village's own side; these are a swipe away.
 export const VILLAGE_FAR_SIDE=Object.freeze(['lumbercamp','kiln','linenloft','soapmaker','pier']);
 // The computer's first view and the whole-village view are measured round the places of 30 Sep 2026, as the owner approved them: the
