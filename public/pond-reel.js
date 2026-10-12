@@ -4,7 +4,8 @@
 // 100 high) and seconds, never pixels or frames, so a small phone and a big screen play the same fish the same way.
 // A fish that slipped off is still in the pond: each new try on it gives a little more green and a quicker fill (it is getting tired),
 // up to four tries' worth. The very first fish of a farm (n 0) hardly moves and drains slowly, so a new farmer lands it.
-import {FISH} from './farm-state.js';
+// The village lake's kinds too (12 Oct 2026): ALL_FISH is the pond's 16 and the lake's 20 in one list, no name shared.
+import {ALL_FISH as FISH} from './farm-state.js';
 export const REEL=Object.freeze({start:30,lift:260,fall:220,top:120,bounce:.3,tireZone:2,tireFill:2,tireMax:4,firstDrain:5,firstSpeed:.6,edge:4});
 // How each kind fights: how often it picks a new spot (seconds), how far it goes (bar units) and how much quicker it moves meanwhile.
 // steady swims up and down evenly; stopgo rests between its moves; Old Whiskers fights in three phases as the catch fills.

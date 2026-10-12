@@ -936,6 +936,9 @@ export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vege
 // refuses every 'fish', so no save gets a pond. Release: closed first (site, about 40 minutes, then farm-api), then POND_OPEN true with
 // farm-api first and the site after it. Once ponds exist farm-api never goes back before the closed release.
 export const POND_OPEN=true,POND_LEVEL=4;
+// The village lake (12 Oct 2026, part D): LAKE_OPEN is its one switch, the pond's release order again. While it is false nothing of the
+// lake is listed and every 'lake_fish' is refused, so no save gets a lake. It opens at level 100, with World II.
+export const LAKE_OPEN=false,LAKE_LEVEL=WORLD_TWO_LEVEL;
 // A helping hand opens at level 3 (11 Oct 2026, the owner's call; it was 8): its stops grow with the farm until level 10 (activityStatus),
 // so it pays no more an hour than from level 8 before. Level 3 then opens lettuce, Daily challenges and the hand: three things.
 export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
@@ -972,6 +975,10 @@ export function unlockEntries(state){return [
  // The Fishing pond's second page (11 Oct 2026): 8 more fish from level 20. Listed only from that level (nothing of page two shows below it),
  // so it is on level 20's card and never in Coming up; a farm already past 20 when it came has it without a card.
  ...(POND_OPEN&&levelOf(state)>=POND_PAGE_TWO_LEVEL?[{id:'pond:page2',name:`${FISH_PAGES[1].length} new fish in the Fishing pond`,art:'fish-koi',kind:'Activity',level:POND_PAGE_TWO_LEVEL,unlocked:featureUnlocked(state,'fishing'),hint:`Reach level ${POND_PAGE_TWO_LEVEL}.`}]:[]),
+ // The village lake (12 Oct 2026, part D): listed only from level 100 like every World II entry, its page two only from 120 like the
+ // pond's, so each is on its level's card and never in Coming up; a farm already past them when the lake opens has them without a card.
+ ...(lakeOpen(state)?[{id:'lake:open',name:'Village lake',art:'villagelake',kind:'Activity',level:LAKE_LEVEL,unlocked:true,hint:`Reach level ${LAKE_LEVEL}.`}]:[]),
+ ...(lakePageTwoOpen(state)?[{id:'lake:page2',name:`${LAKE_FISH_PAGES[1].length} new fish in the Village lake`,art:'fish-goldentrout',kind:'Activity',level:LAKE_PAGE_TWO_LEVEL,unlocked:true,hint:`Reach level ${LAKE_PAGE_TWO_LEVEL}.`}]:[]),
  ...Object.entries(RECIPES).filter(([key,r])=>r.building!=='factory'&&buildingUnlocked(state,r.building)&&worldTwoEntry(state,recipeLevel(state,key))).map(([key,r])=>({id:'recipe:'+key,name:r.name,art:Object.keys(r.output)[0],kind:'Recipe',level:recipeLevel(state,key),unlocked:recipeUnlocked(state,key),hint:recipeUnlockHint(state,key)})),
  // Fields 9-12 only for farms that started with 8 (a farm that has more than 8 but fewer than 12 fields, or 8).
  ...(state.plots.length<12||state.progression?.fields===STARTER_FIELDS?EARLY_FIELDS.map((field,i)=>({id:'field:'+(i+9),name:`Field ${i+9}`,art:'estate',kind:'Ready to expand',level:field.level,unlocked:levelOf(state)>=field.level||state.plots.length>=i+9,hint:`Level ${field.level} · Expand at the Farmhouse for ${field.coins} coins.`})):[]),
@@ -2681,7 +2688,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);
- normalizeShift(state);settleShift(state,now);normalizePond(state);
+ normalizeShift(state);settleShift(state,now);normalizePond(state);normalizeLake(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);
  currentEndgameDiamonds(state);
  return state;
@@ -3001,8 +3008,9 @@ export function useTractor(state,mode,crop='corn',now=Date.now()){
 // The tractor's diamond work (4 Oct 2026). It counts for no challenges, events or leaderboards: it never raises the harvest, water,
 // care or plant counters (only its own), gives no XP, and farm-api saves it as no event action (NO_EVENT_ACTIONS), so not even
 // the diamonds it costs move an event's "Spend diamonds" goal. Quests that count diamonds spent do count them, as every spend.
-// A fish (11 Oct 2026) counts for nothing else either: no event, no Family Chest, no challenge (its coins are not stats.earned).
-export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish']));
+// A fish (11 Oct 2026) counts for nothing else either: no event, no Family Chest, no challenge (its coins are not stats.earned). Nor
+// does a fish at the village lake (12 Oct 2026).
+export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish','lake_fish']));
 // Full care: water and extra care for every growing crop at once, also outside their moments (water is meant for the start, care
 // opens at 30% of the growing time), so each gives 3 times the crop and double XP at harvest. Per growing crop that still misses
 // either: FULL_CARE_COST diamonds.
@@ -3172,94 +3180,180 @@ export const FISH_PAGES=Object.freeze([1,2].map(page=>Object.freeze(Object.keys(
 export const POND_FIRST_FISH=Object.freeze([['minnow',.11],['perch',.42],['carp',2.35]]);
 const POND_COMMON=Object.freeze(['minnow','perch','roach','carp','tench']);
 export const todaysFish=(now=Date.now())=>POND_COMMON[dayNumber(now)%POND_COMMON.length];
-// Fish number n swims in the pond of 16 kinds: the farm's first fish at level 20 or later marks the spot (pond.page2At, its number; it
-// is still one of the 8 itself), every fish after it may be any of the 16. So the pond turns over only once the farm itself has said so:
-// a site that knows page two and a farm-api that does not yet (or the other way round) never disagree about a fish.
-export const pondPageTwo=(state,n=state?.pond?.n??0)=>Number.isSafeInteger(state?.pond?.page2At)&&n>state.pond.page2At;
-// The farm's own fish sequence (mulberry32 over the farm's seed and the fish's number): the same in the browser and in farm-api.
-function pondRandom(state,n){
- let a=(calendarHash(`pond:${Number.isSafeInteger(state.rookieUntil)?state.rookieUntil:0}`)^Math.imul(n+1,0x9E3779B1))>>>0;
+// The village lake (12 Oct 2026, part D, with the owner's answers): World II's fishing, from the rowboat in the middle of the village
+// lake, from level 100. The pond's game and rules with the lake's own casts (5, then one every 20 minutes, up to 5: 77 a day on top of the
+// pond's 77), its own 20 kinds on two pages, its own book (35 diamonds for page one, 65 more for all 20) and much higher coins: the same
+// coin rule on bases about 7.6 times the pond's, so a cast is about 4 minutes of a steady farmer's income at every level (about 1,019
+// coins at level 100, the pond 134). XP is small and flat (about 6 to 7 a cast): it must not grow with the level, or World II's pace
+// moves. Page two (from level 120) moves a cast's average base by +1.4%: something to collect, not a raise. Old Granite, page one's
+// legend, is certain by lake fish 120 (Old Whiskers' rule); the Glacier Ghost, page two's, within the first 60 lake fish from level 120
+// (the sturgeon's rule, with its tie rule). Kept apart from FISH on purpose: six places count that table, and the pond's whole book
+// would ask for 36 kinds. No lake quests or leaderboard yet (after a week of data), but the lake counts on its own from day one
+// (stats.lake_fish, lake_fish_coins, lake_fish_perfect, lake_fish_released), so they can come without touching saves.
+// The reel's values start from the pond fish of the same rarity and were tuned on 12 Oct 2026 with the pond's simulated players
+// (tests/lake-balance.test.mjs): a slow player lands nearly every common and most rare lake fish within three tries, doing nothing lands
+// no big one, and the big ones (Huchen, Lake trout, Salmon, Marble trout and both legends) pull a little longer.
+export const LAKE_PAGE_TWO_LEVEL=120,LAKE_BOOK_DIAMONDS=35,LAKE_BOOK2_DIAMONDS=65,LAKE_LEGEND_BY=120,LAKE_GHOST_BY=60;
+// chance (%) at levels 100 to 119, chance120 (%) from level 120; the rest as in FISH.
+export const LAKE_FISH=Object.freeze(Object.fromEntries(Object.entries({
+ bleak:{name:'Bleak',page:1,chance:24,chance120:12,kg:[.03,.12],coins:30,xp:4,strike:1.2,zone:36,speed:22,fill:28,drain:12,fight:'drift'},
+ chub:{name:'Chub',page:1,chance:18,chance120:9.5,kg:[.5,4],coins:45,xp:5,strike:1,zone:32,speed:30,fill:22,drain:12,fight:'steady'},
+ whitefish:{name:'Whitefish',page:1,chance:15,chance120:8,kg:[.5,4],coins:50,xp:5,strike:1,zone:32,speed:30,fill:22,drain:12,fight:'hops'},
+ nase:{name:'Nase',page:1,chance:13,chance120:7,kg:[.4,2.5],coins:60,xp:6,strike:.95,zone:30,speed:30,fill:20,drain:12,fight:'steady'},
+ grayling:{name:'Grayling',page:1,chance:11,chance120:6,kg:[.3,2.5],coins:65,xp:6,strike:.95,zone:30,speed:32,fill:20,drain:12,fight:'hops'},
+ browntrout:{name:'Brown trout',page:1,chance:9,chance120:5,kg:[.5,8],coins:90,xp:8,strike:.9,zone:28,speed:32,fill:17,drain:13,fight:'pulls'},
+ char:{name:'Arctic char',page:1,chance:5.3,chance120:3.3,kg:[.5,6],coins:120,xp:10,strike:.75,zone:26,speed:40,fill:15,drain:13,fight:'darts'},
+ burbot:{name:'Burbot',page:1,chance:2.5,chance120:1.6,kg:[1,12],coins:220,xp:15,strike:.7,zone:26,speed:34,fill:15,drain:13,fight:'stopgo'},
+ huchen:{name:'Huchen',page:1,chance:2,chance120:1.3,kg:[5,35],coins:360,xp:20,strike:.65,zone:24,speed:40,fill:11,drain:12,fight:'pulls'},
+ oldgranite:{name:'Old Granite',page:1,chance:.2,chance120:.2,kg:[25,45],coins:1100,xp:40,strike:.6,zone:22,speed:36,fill:10,drain:10,fight:'phases'},
+ bullhead:{name:'Bullhead',page:2,chance:0,chance120:10,kg:[.02,.15],coins:25,xp:4,strike:1.1,zone:34,speed:22,fill:26,drain:12,fight:'drift'},
+ vendace:{name:'Vendace',page:2,chance:0,chance120:9,kg:[.05,.4],coins:35,xp:5,strike:1.05,zone:32,speed:28,fill:24,drain:12,fight:'hops'},
+ ide:{name:'Ide',page:2,chance:0,chance120:8,kg:[.5,3.5],coins:45,xp:6,strike:1,zone:30,speed:28,fill:20,drain:12,fight:'steady'},
+ goldenorfe:{name:'Golden orfe',page:2,chance:0,chance120:5,kg:[.4,3],coins:60,xp:8,strike:.9,zone:28,speed:32,fill:18,drain:13,fight:'stopgo'},
+ brooktrout:{name:'Brook trout',page:2,chance:0,chance120:5,kg:[.3,3],coins:65,xp:8,strike:.85,zone:28,speed:36,fill:17,drain:13,fight:'darts'},
+ laketrout:{name:'Lake trout',page:2,chance:0,chance120:3.2,kg:[2,20],coins:100,xp:12,strike:.8,zone:28,speed:32,fill:15,drain:12,fight:'pulls'},
+ salmon:{name:'Salmon',page:2,chance:0,chance120:2.4,kg:[3,25],coins:130,xp:14,strike:.75,zone:26,speed:40,fill:13,drain:12,fight:'pulls'},
+ goldentrout:{name:'Golden trout',page:2,chance:0,chance120:1.8,kg:[.3,2.5],coins:200,xp:18,strike:.65,zone:24,speed:40,fill:14,drain:13,fight:'erratic'},
+ marbletrout:{name:'Marble trout',page:2,chance:0,chance120:1.5,kg:[3,22],coins:350,xp:25,strike:.62,zone:24,speed:36,fill:12,drain:12,fight:'pulls'},
+ glacierghost:{name:'Glacier Ghost',page:2,chance:0,chance120:.2,kg:[30,60],coins:1100,xp:40,strike:.6,zone:22,speed:34,fill:10,drain:10,fight:'phases'}
+}).map(([key,f])=>[key,Object.freeze({...f,kg:Object.freeze(f.kg)})])));
+export const LAKE_FISH_PAGES=Object.freeze([1,2].map(page=>Object.freeze(Object.keys(LAKE_FISH).filter(key=>LAKE_FISH[key].page===page))));
+// The first three lake fish: a Bleak, a Chub and a Brown trout (the first real fight). Today's fish is one of page one's five common
+// kinds at every level, by the UTC day like the pond's.
+export const LAKE_FIRST_FISH=Object.freeze([['bleak',.07],['chub',1.35],['browntrout',2.1]]);
+const LAKE_COMMON=Object.freeze(['bleak','chub','whitefish','nase','grayling']);
+export const lakeTodaysFish=(now=Date.now())=>LAKE_COMMON[dayNumber(now)%LAKE_COMMON.length];
+export const lakeOpen=state=>LAKE_OPEN&&levelOf(state)>=LAKE_LEVEL;
+// All 36 kinds in one list, for what shows any fish (the pictures, the reel, the 3D fish, the log). No lake kind has a farm kind's name.
+export const ALL_FISH=Object.freeze({...FISH,...LAKE_FISH});
+// The two waters (12 Oct 2026): what the steps below need to know of one. key: its save key (state.pond, state.lake, both top level);
+// action: its farm action; fish, pages, first, common, today: its kinds, the book's pages, the first three fish, Today's five and
+// Today's fish; salt: its seed's salt (so lake fish 7 is not pond fish 7; the same farm seed); late: the chance from page two on;
+// legend, legendBy, giant, giantBy: the legends' rules; page2Level, book, book2: page two and the book's diamonds; open, closed: its gate
+// and the refusal; changed: another tab's refusal; stats: its counters. The pond's names (pondFish, landFish, ...) stay as wrappers with
+// exactly the results they had (tests/lake.test.mjs compares every pond fish with fe636fc).
+export const POND_WATER=Object.freeze({key:'pond',action:'fish',fish:FISH,pages:FISH_PAGES,first:POND_FIRST_FISH,common:POND_COMMON,today:todaysFish,salt:'pond',late:'chance20',
+ legend:'whiskers',legendBy:POND_LEGEND_BY,giant:'sturgeon',giantBy:POND_STURGEON_BY,page2Level:POND_PAGE_TWO_LEVEL,book:POND_BOOK_DIAMONDS,book2:POND_BOOK2_DIAMONDS,
+ open:state=>featureUnlocked(state,'fishing'),closed:()=>POND_OPEN?featureUnlockHint('fishing'):'The fishing pond is not open yet.',changed:'Your pond changed in another tab.',
+ stats:Object.freeze({fish:'fish',coins:'fish_coins',perfect:'fish_perfect',released:'fish_released'})});
+export const LAKE_WATER=Object.freeze({key:'lake',action:'lake_fish',fish:LAKE_FISH,pages:LAKE_FISH_PAGES,first:LAKE_FIRST_FISH,common:LAKE_COMMON,today:lakeTodaysFish,salt:'lake',late:'chance120',
+ legend:'oldgranite',legendBy:LAKE_LEGEND_BY,giant:'glacierghost',giantBy:LAKE_GHOST_BY,page2Level:LAKE_PAGE_TWO_LEVEL,book:LAKE_BOOK_DIAMONDS,book2:LAKE_BOOK2_DIAMONDS,
+ open:lakeOpen,closed:()=>LAKE_OPEN?`Reach level ${LAKE_LEVEL} to fish at the village lake.`:'The village lake is not open yet.',changed:'Your lake changed in another tab.',
+ stats:Object.freeze({fish:'lake_fish',coins:'lake_fish_coins',perfect:'lake_fish_perfect',released:'lake_fish_released'})});
+export const WATERS=Object.freeze({pond:POND_WATER,lake:LAKE_WATER});
+// Fish number n swims in the water of all its kinds once the farm has said so: the farm's first fish there at the water's page-two level
+// or later marks the spot (page2At, its number; it is still one of page one itself), every fish after it may be any kind. So a site that
+// knows page two and a farm-api that does not yet (or the other way round) never disagree about a fish.
+export const waterPageTwo=(water,state,n=state?.[water.key]?.n??0)=>Number.isSafeInteger(state?.[water.key]?.page2At)&&n>state[water.key].page2At;
+// The farm's own fish sequence per water (mulberry32 over the farm's seed, the water's salt and the fish's number): the same in the
+// browser and in farm-api. Old farms without a seed share one sequence per water, as they did on the pond (harmless).
+function waterRandom(water,state,n){
+ let a=(calendarHash(`${water.salt}:${Number.isSafeInteger(state.rookieUntil)?state.rookieUntil:0}`)^Math.imul(n+1,0x9E3779B1))>>>0;
  return ()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};
 }
-// The sturgeon, page two's giant, is very rare, but a farm's 60th fish from level 20 is the sturgeon if it never landed one (and the
-// 120th, and so on, should it be let go): one of the first 60 fish from level 20 is always a sturgeon. Fish 120, 240, ... are Old
-// Whiskers' own: when the 60th falls on one of them, the 59th is the sturgeon instead.
-function sturgeonDue(state,n){
- if(!pondPageTwo(state,n)||state.pond?.best?.sturgeon>0)return false;
- const k=n-state.pond.page2At+1;   // the fish's count from level 20: the first fish at level 20 or later is 1
- return k%POND_STURGEON_BY===0&&(n+1)%POND_LEGEND_BY!==0||k%POND_STURGEON_BY===POND_STURGEON_BY-1&&(n+2)%POND_LEGEND_BY===0;
+// Page two's giant (the sturgeon, the Glacier Ghost) is very rare, but a farm's 60th fish there from page two's level is the giant if it
+// never landed one (and the 120th, and so on, should it be let go). Fish 120, 240, ... are page one's legend's own (Old Whiskers, Old
+// Granite): when the 60th falls on one of them, the 59th is the giant instead.
+function giantDue(water,state,n){
+ const w=state[water.key];
+ if(!waterPageTwo(water,state,n)||w?.best?.[water.giant]>0)return false;
+ const k=n-w.page2At+1;   // the fish's count from page two's level: the first fish there is 1
+ return k%water.giantBy===0&&(n+1)%water.legendBy!==0||k%water.giantBy===water.giantBy-1&&(n+2)%water.legendBy===0;
 }
-// Fish number n (from 0): its kind, its weight and where that weight sits between the kind's lightest and heaviest (0 to 1). Weights
-// lean light (u^1.6), so a new record stays possible for a long time. Below level 20 the 8 kinds of page one by `chance`, exactly as
-// before page two; from level 20 the 16 by `chance20` (the same random numbers, another table).
-export function pondFish(state,n){
- const fish=(species,kg)=>{const [lo,hi]=FISH[species].kg;return {species,kg,share:Math.min(1,Math.max(0,(kg-lo)/(hi-lo)))};};
- if(n<POND_FIRST_FISH.length)return fish(...POND_FIRST_FISH[n]);
- const random=pondRandom(state,n),roll=random()*100,u=random(),two=pondPageTwo(state,n);
- let species='whiskers';
- if(!(state.pond?.best?.whiskers>0)&&(n+1)%POND_LEGEND_BY===0)species='whiskers';
- else if(sturgeonDue(state,n))species='sturgeon';
- else{let sum=0;for(const [key,f] of Object.entries(FISH)){sum+=two?f.chance20:f.chance;if(roll<sum){species=key;break;}}}
- const [lo,hi]=FISH[species].kg;return fish(species,Math.round((lo+(hi-lo)*u**1.6)*100)/100);
+// Fish number n (from 0) of a water: its kind, its weight and where that weight sits between the kind's lightest and heaviest (0 to 1).
+// Weights lean light (u^1.6), so a new record stays possible for a long time. Before page two the kinds by `chance`, from it by the
+// water's late chance (the same random numbers, another column).
+export function waterFish(water,state,n){
+ const table=water.fish,fish=(species,kg)=>{const [lo,hi]=table[species].kg;return {species,kg,share:Math.min(1,Math.max(0,(kg-lo)/(hi-lo)))};};
+ if(n<water.first.length)return fish(...water.first[n]);
+ const random=waterRandom(water,state,n),roll=random()*100,u=random(),two=waterPageTwo(water,state,n);
+ let species=water.legend;
+ if(!(state[water.key]?.best?.[water.legend]>0)&&(n+1)%water.legendBy===0)species=water.legend;
+ else if(giantDue(water,state,n))species=water.giant;
+ else{let sum=0;for(const [key,f] of Object.entries(table)){sum+=two?f[water.late]:f.chance;if(roll<sum){species=key;break;}}}
+ const [lo,hi]=table[species].kg;return fish(species,Math.round((lo+(hi-lo)*u**1.6)*100)/100);
 }
-// How many casts wait, and when the next one comes (0 when the pond is full). A farm that never fished has a full pond.
-export function pondCasts(state,now=Date.now()){
- const p=state.pond;if(!p)return {casts:POND_START_CASTS,nextAt:0};
+// How many casts wait at a water, and when the next one comes (0 when it is full). A farm that never fished there has it full.
+export function waterCasts(water,state,now=Date.now()){
+ const p=state[water.key];if(!p)return {casts:POND_START_CASTS,nextAt:0};
  const gained=Math.max(0,Math.floor((now-p.castsAt)/POND_REFILL_MS)),casts=Math.min(POND_MAX_CASTS,p.casts+gained);
  return {casts,nextAt:casts>=POND_MAX_CASTS?0:p.castsAt+(gained+1)*POND_REFILL_MS};
 }
-// Spending from a full pond starts the 20 minutes from now; otherwise the time already counted towards the next cast is kept.
+// Spending from a full water starts the 20 minutes from now; otherwise the time already counted towards the next cast is kept.
 function spendCast(p,now){
  const gained=Math.max(0,Math.floor((now-p.castsAt)/POND_REFILL_MS)),had=Math.min(POND_MAX_CASTS,p.casts+gained);
  p.castsAt=had>=POND_MAX_CASTS?now:p.castsAt+gained*POND_REFILL_MS;p.casts=had-1;
 }
-export function fishCoins(state,fish,perfect,now=Date.now()){
- const f=FISH[fish.species];
- return Math.round(f.coins*(.8+.4*fish.share)*(1+levelOf(state)/8)*(todaysFish(now)===fish.species?POND_DAY_FACTOR:1)*(perfect?1+POND_PERFECT:1));
+export function waterCoins(water,state,fish,perfect,now=Date.now()){
+ const f=water.fish[fish.species];
+ return Math.round(f.coins*(.8+.4*fish.share)*(1+levelOf(state)/8)*(water.today(now)===fish.species?POND_DAY_FACTOR:1)*(perfect?1+POND_PERFECT:1));
 }
-// Page one (the 8 kinds, 25 diamonds) and the whole book (all 16 kinds, 50 diamonds more).
-export const pondBookDone=state=>FISH_PAGES[0].every(key=>state.pond?.best?.[key]>0);
-export const pondBook2Done=state=>Object.keys(FISH).every(key=>state.pond?.best?.[key]>0);
-// The book's second page shows from level 20 (pond-ui.js); below it nothing of page two is seen.
-export const pondPageTwoOpen=state=>featureUnlocked(state,'fishing')&&levelOf(state)>=POND_PAGE_TWO_LEVEL;
-// One fish: n is the number the screen fished (the pond's own count: another tab may have fished meanwhile), landed whether it came
-// in or was let go, perfect whether it stayed in the green all the way. The client sends no amount: everything paid comes from here.
-export function landFish(state,n,landed,perfect,now=Date.now()){
- if(!featureUnlocked(state,'fishing'))throw new Error(POND_OPEN?featureUnlockHint('fishing'):'The fishing pond is not open yet.');
+// Page one and the whole book of a water.
+export const waterBookDone=(water,state)=>water.pages[0].every(key=>state[water.key]?.best?.[key]>0);
+export const waterBook2Done=(water,state)=>Object.keys(water.fish).every(key=>state[water.key]?.best?.[key]>0);
+// The book's second page shows from page two's level; below it nothing of page two is seen.
+export const waterPageTwoOpen=(water,state)=>water.open(state)&&levelOf(state)>=water.page2Level;
+// One fish at a water: n is the number the screen fished (the water's own count: another tab may have fished meanwhile), landed whether
+// it came in or was let go, perfect whether it stayed in the green all the way. The client sends no amount: everything paid comes from
+// here, and the kind and weight from the farm's seed and the number.
+export function castWater(water,state,n,landed,perfect,now=Date.now()){
+ if(!water.open(state))throw new Error(water.closed());
  if(typeof landed!=='boolean'||typeof perfect!=='boolean')throw new Error('Choose whether you landed the fish.');
- if(pondCasts(state,now).casts<1)throw new Error('No casts left. A new cast comes every 20 minutes.');
- if(!Number.isInteger(n)||n!==(state.pond?.n??0))throw new Error('Your pond changed in another tab.');
+ if(waterCasts(water,state,now).casts<1)throw new Error('No casts left. A new cast comes every 20 minutes.');
+ if(!Number.isInteger(n)||n!==(state[water.key]?.n??0))throw new Error(water.changed);
  // Two fish may come close together (a slow connection can deliver them so); a third within POND_MIN_GAP_MS of the first cannot.
- if(state.pond&&now-state.pond.prevAt<POND_MIN_GAP_MS)throw new Error('Give the line a moment.');
- const fish=pondFish(state,n),p=state.pond??={firstAt:now,n:0,casts:POND_START_CASTS,castsAt:now,lastAt:0,prevAt:0,best:{}};
- // The farm's first fish at level 20 or later (this one, still of page one) marks where page two starts (pondPageTwo).
- if(p.page2At===undefined&&levelOf(state)>=POND_PAGE_TWO_LEVEL)p.page2At=n;
+ if(state[water.key]&&now-state[water.key].prevAt<POND_MIN_GAP_MS)throw new Error('Give the line a moment.');
+ const fish=waterFish(water,state,n),p=state[water.key]??={firstAt:now,n:0,casts:POND_START_CASTS,castsAt:now,lastAt:0,prevAt:0,best:{}},stat=water.stats;
+ // The farm's first fish there at page two's level or later (this one, still of page one) marks where page two starts (waterPageTwo).
+ if(p.page2At===undefined&&levelOf(state)>=water.page2Level)p.page2At=n;
  spendCast(p,now);p.n=n+1;p.prevAt=p.lastAt;p.lastAt=now;
- if(!landed){state.stats.fish_released=(state.stats.fish_released??0)+1;return {released:true,n,casts:pondCasts(state,now)};}
- const first=!(p.best[fish.species]>0),record=!first&&fish.kg>p.best[fish.species],today=todaysFish(now)===fish.species;
- const base=fishCoins(state,fish,perfect,now),coins=base+(first?POND_NEW_FISH_COINS*base:0),xp=FISH[fish.species].xp+(first?POND_NEW_FISH_XP:0);
+ if(!landed){state.stats[stat.released]=(state.stats[stat.released]??0)+1;return {released:true,n,casts:waterCasts(water,state,now)};}
+ const first=!(p.best[fish.species]>0),record=!first&&fish.kg>p.best[fish.species],today=water.today(now)===fish.species;
+ const base=waterCoins(water,state,fish,perfect,now),coins=base+(first?POND_NEW_FISH_COINS*base:0),xp=water.fish[fish.species].xp+(first?POND_NEW_FISH_XP:0);
  if(first||record)p.best[fish.species]=fish.kg;
  state.coins+=coins;state.xp+=xp;
- state.stats.fish=(state.stats.fish??0)+1;state.stats.fish_coins=(state.stats.fish_coins??0)+coins;if(perfect)state.stats.fish_perfect=(state.stats.fish_perfect??0)+1;
- // The book's diamonds count as diamonds earned, like every other diamond from play (11 Oct 2026, the review). Page one's 25 for its 8
- // kinds, then 50 for all 16 (book2: this fish completed the whole book; both at once when its last kind was page one's).
+ state.stats[stat.fish]=(state.stats[stat.fish]??0)+1;state.stats[stat.coins]=(state.stats[stat.coins]??0)+coins;if(perfect)state.stats[stat.perfect]=(state.stats[stat.perfect]??0)+1;
+ // The book's diamonds count as diamonds earned, like every other diamond from play (11 Oct 2026, the review). Page one's for its kinds,
+ // then the whole book's (book2: this fish completed the whole book; both at once when its last kind was page one's).
  let diamonds=0;const pay=amount=>{diamonds+=amount;state.diamonds+=amount;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+amount;};
- if(!p.bookPaid&&pondBookDone(state)){p.bookPaid=true;pay(POND_BOOK_DIAMONDS);}
- let book2=false;if(!p.book2Paid&&pondBook2Done(state)){p.book2Paid=book2=true;pay(POND_BOOK2_DIAMONDS);}
- return {n,species:fish.species,kg:fish.kg,coins,xp,first,record,perfect,today,diamonds,...(book2?{book2}:{}),casts:pondCasts(state,now)};
+ if(!p.bookPaid&&waterBookDone(water,state)){p.bookPaid=true;pay(water.book);}
+ let book2=false;if(!p.book2Paid&&waterBook2Done(water,state)){p.book2Paid=book2=true;pay(water.book2);}
+ return {n,species:fish.species,kg:fish.kg,coins,xp,first,record,perfect,today,diamonds,...(book2?{book2}:{}),casts:waterCasts(water,state,now)};
 }
-// A saved pond as the rules expect it (never made here: a farm that never fished keeps its shape). Numbers are whole and in range, the
-// book holds only the 16 kinds with a real weight; the count and the book survive anything else being wrong. page2At, where page two
-// starts, is the number of a fish already cast, or it goes (the next fish at level 20 writes it again).
-function normalizePond(state){
- const p=state.pond;if(p===undefined)return;
- if(!p||typeof p!=='object'||Array.isArray(p)){delete state.pond;return;}
+// A saved water as the rules expect it (never made here: a farm that never fished there keeps its shape). Numbers are whole and in range,
+// the book holds only the water's own kinds with a real weight; the count and the book survive anything else being wrong. page2At, where
+// page two starts, is the number of a fish already cast, or it goes (the next fish at page two's level writes it again).
+function normalizeWater(water,state){
+ const p=state[water.key];if(p===undefined)return;
+ if(!p||typeof p!=='object'||Array.isArray(p)){delete state[water.key];return;}
  const count=(v,max=Number.MAX_SAFE_INTEGER)=>Number.isSafeInteger(v)?Math.min(max,Math.max(0,v)):0;
  for(const key of ['n','castsAt','firstAt','lastAt','prevAt'])p[key]=count(p[key]);p.casts=count(p.casts,POND_MAX_CASTS);
- p.best=Object.fromEntries(Object.entries(p.best&&typeof p.best==='object'&&!Array.isArray(p.best)?p.best:{}).filter(([key,kg])=>Object.hasOwn(FISH,key)&&Number.isFinite(kg)&&kg>0).map(([key,kg])=>[key,Math.round(kg*100)/100]));
+ p.best=Object.fromEntries(Object.entries(p.best&&typeof p.best==='object'&&!Array.isArray(p.best)?p.best:{}).filter(([key,kg])=>Object.hasOwn(water.fish,key)&&Number.isFinite(kg)&&kg>0).map(([key,kg])=>[key,Math.round(kg*100)/100]));
  for(const key of ['bookPaid','book2Paid'])if(p[key]!==undefined&&p[key]!==true)delete p[key];
  if(p.page2At!==undefined&&!(Number.isSafeInteger(p.page2At)&&p.page2At>=0&&p.page2At<p.n))delete p.page2At;
 }
+// The Fishing pond's own names, as they were (11 Oct 2026): one line each over the shared steps, with exactly the same results.
+export const pondPageTwo=(state,n=state?.pond?.n??0)=>waterPageTwo(POND_WATER,state,n);
+export const pondFish=(state,n)=>waterFish(POND_WATER,state,n);
+export const pondCasts=(state,now=Date.now())=>waterCasts(POND_WATER,state,now);
+export const fishCoins=(state,fish,perfect,now=Date.now())=>waterCoins(POND_WATER,state,fish,perfect,now);
+// Page one (the 8 kinds, 25 diamonds) and the whole book (all 16 kinds, 50 diamonds more).
+export const pondBookDone=state=>waterBookDone(POND_WATER,state);
+export const pondBook2Done=state=>waterBook2Done(POND_WATER,state);
+// The book's second page shows from level 20 (pond-ui.js); below it nothing of page two is seen.
+export const pondPageTwoOpen=state=>waterPageTwoOpen(POND_WATER,state);
+export const landFish=(state,n,landed,perfect,now=Date.now())=>castWater(POND_WATER,state,n,landed,perfect,now);
+const normalizePond=state=>normalizeWater(POND_WATER,state);
+// The village lake's (12 Oct 2026), the same way.
+export const lakePageTwo=(state,n=state?.lake?.n??0)=>waterPageTwo(LAKE_WATER,state,n);
+export const lakeFish=(state,n)=>waterFish(LAKE_WATER,state,n);
+export const lakeCasts=(state,now=Date.now())=>waterCasts(LAKE_WATER,state,now);
+export const lakeFishCoins=(state,fish,perfect,now=Date.now())=>waterCoins(LAKE_WATER,state,fish,perfect,now);
+export const lakeBookDone=state=>waterBookDone(LAKE_WATER,state);
+export const lakeBook2Done=state=>waterBook2Done(LAKE_WATER,state);
+export const lakePageTwoOpen=state=>waterPageTwoOpen(LAKE_WATER,state);
+export const landLakeFish=(state,n,landed,perfect,now=Date.now())=>castWater(LAKE_WATER,state,n,landed,perfect,now);
+const normalizeLake=state=>normalizeWater(LAKE_WATER,state);
 // The Starter Pack (a welcome offer, see game/payments.js) opens at level 14 (until 5 Oct 2026 also where diamond boosts unlocked): a pack of diamonds is only a shop in the
 // way until there is something to spend them on. Then it is there for 7 days. Only the server writes the moment. A farm that is already past
 // that level when this is first seen had its moment long ago (unlockedAt 0: never offered again); a farm below it gets its moment on the way up.
@@ -3369,6 +3463,9 @@ function dispatchFarmAction(state,action,now,random){
   case 'vproject_finish':return valleyProjectFinish(state,action.project);
   // The Fishing pond (11 Oct 2026): its own gate (closed until POND_OPEN, then level 4).
   case 'fish':return landFish(state,action.n,action.landed,action.perfect,now);
+  // The village lake (12 Oct 2026): its own action, never 'fish' with a field more (an older farm-api would ignore the field and pay a pond
+  // fish), its own gate (closed until LAKE_OPEN, then level 100).
+  case 'lake_fish':return landLakeFish(state,action.n,action.landed,action.perfect,now);
   default:throw new Error('Unknown farm action.');
  }
 }

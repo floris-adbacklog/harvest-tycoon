@@ -1,4 +1,4 @@
-import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,FISH,levelOf,recipeFor} from './farm-state.js';
+import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,FISH,LAKE_FISH,levelOf,recipeFor} from './farm-state.js';
 import {isStaff,isSuperadmin} from './admin-service.js';
 
 // A log per farmer (26 Sep 2026): what they did and what it gave or cost, with the time, in categories. The farmer reads their own
@@ -72,6 +72,8 @@ const FARM_ACTIONS={
  vproject_finish:['farm',a=>`Finished a level of the ${a.project} project`],
  // The Fishing pond (11 Oct 2026): every fish, landed or let go, is a line (up to 77 a day), with its time: what the pond is measured by.
  fish:['rewards',(a,s,r)=>r?.released?'Let a fish go':`Caught a fish: ${FISH[r?.species]?.name??'fish'}, ${Number(r?.kg??0).toFixed(2)} kg`],
+ // The village lake (12 Oct 2026): every lake fish too, with the lake named, so the two waters read apart in the log.
+ lake_fish:['rewards',(a,s,r)=>r?.released?'Let a fish go at the village lake':`Caught a fish at the village lake: ${LAKE_FISH[r?.species]?.name??'fish'}, ${Number(r?.kg??0).toFixed(2)} kg`],
  quest:['rewards',()=>'Claimed a quest'],
  beginner_claim:['rewards',()=>'Claimed a beginner guide step'],
  daily:['rewards',()=>'Claimed a daily challenge'],
