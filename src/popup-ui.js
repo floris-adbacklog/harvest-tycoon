@@ -10,7 +10,7 @@ import {androidApp,googlePlayApp} from '../public/android.js';
 // here, on the device: nothing records who installed the app), and from a farm level (decided by the server). Never in a farmer's first
 // half hour, and never over another window: it waits until nothing else is open.
 export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play',feedback:'Feedback'});
-export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps or the game portals)'});
+export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps or the game portals)',crazygames:'CrazyGames players'});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text). On CrazyGames (Oct 2026,
 // public/portal.js) no links out are allowed: the address stays plain text there.
@@ -26,9 +26,10 @@ export function inLanguage(item,code=chosenLanguage()){
 // googlePlayApp (only the special offer leaves it out: no offer goes to that group). The website group (9 Oct 2026, web): harvesttycoon.com
 // in a browser or on the home screen, itch.io's frame too; never in our apps (Android, iPhone, Galaxy Store) or on a game portal
 // (CrazyGames, Kongregate, Discord: no links out there; 'browser' does include those portals). A game from before it skips it, as above;
-// the offer passes no web.
-export function fitsDevice(audience,{installed,phone,playApp=false,web=false}){
- return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true);
+// the offer passes no web. CrazyGames players (12 Oct 2026, crazygames): only the game inside CrazyGames (the portal named crazygames),
+// for the notice that the game leaves CrazyGames; guests there have no chat, so News would not reach them. Never Kongregate or Discord.
+export function fitsDevice(audience,{installed,phone,playApp=false,web=false,crazygames=false}){
+ return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true)||(audience==='crazygames'&&crazygames===true);
 }
 
 export function createPopupUI({client,chat,state,doc=document,win=window,now=()=>Date.now()}){
@@ -36,7 +37,7 @@ export function createPopupUI({client,chat,state,doc=document,win=window,now=()=
  // Our Android app (Oct 2026, public/android.js) counts as installed: a pop-up for players in the browser is not for it.
  // The Android app group (9 Oct 2026): only our Google Play app, never the iPhone app, a browser or a portal. The website group: no app
  // marks the page and no portal is around it (public/portal.js).
- const device=()=>({installed:doc.documentElement.dataset.appMode==='standalone'||androidApp(win),phone:Boolean(win.matchMedia?.('(pointer: coarse)').matches),playApp:googlePlayApp(win),web:!androidApp(win)&&!portal(win)});
+ const device=()=>({installed:doc.documentElement.dataset.appMode==='standalone'||androidApp(win),phone:Boolean(win.matchMedia?.('(pointer: coarse)').matches),playApp:googlePlayApp(win),web:!androidApp(win)&&!portal(win),crazygames:portal(win)?.name==='crazygames'});
  const click=id=>doc.getElementById(id)?.click();
  const screens={install:()=>win.harvestWiki?.('getting-started','sec-play-it-as-an-app'),today:()=>win.harvestToday?.(),events:()=>click('events-button'),
   leaderboard:()=>click('leaderboard-button'),chat:()=>chat?.open(),shop:()=>win.harvestShop?.open(),family:()=>click('family-button'),wiki:()=>click('help-button'),

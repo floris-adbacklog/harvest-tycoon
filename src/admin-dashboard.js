@@ -77,7 +77,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label>Coins<input id="admin-offer-coins" type="number" min="0" max="'+OFFER.maxCoins+'" step="1000" inputmode="numeric"></label>'
   // The pop-ups' groups but the Android app and the website (9 Oct 2026): the database takes no offer for those
   // (supabase/popup-android-app.sql, supabase/popup-web.sql).
-  +'<label>Who sees it<select id="admin-offer-audience">'+Object.entries(POPUP_AUDIENCES).filter(([key])=>key!=='android_app'&&key!=='web').map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'
+  +'<label>Who sees it<select id="admin-offer-audience">'+Object.entries(POPUP_AUDIENCES).filter(([key])=>key!=='android_app'&&key!=='web'&&key!=='crazygames').map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'
   +'<label>From level<input id="admin-offer-level" type="number" min="14" max="200" step="1" value="14" inputmode="numeric"></label>'
   +'<label>Runs for<select id="admin-offer-hours"><option value="24">24 hours</option><option value="48" selected>48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="336">14 days</option></select></label></div>'
   +'<p class="admin-offer-worth" id="admin-offer-worth"></p>'
