@@ -149,7 +149,8 @@ test('the Buildings card: in the village right after the Market square once the 
   const s=at(120);assert.match(catalog(open,s,true),/^<button class="building-card is-place" data-open-square>[^]*?<\/button><button class="building-card is-place" data-open-lake><span class="building-card-art"><img src="\/assets\/icons\/villagelake\.webp" alt=""><\/span><span class="building-card-info"><strong>Village lake<\/strong><span class="building-status ready" data-lake-status>Casts waiting: 5<\/span>/);
   s.lake={firstAt:now,n:3,casts:2,castsAt:Date.now(),lastAt:0,prevAt:0,best:{}};assert.match(catalog(open,s,true),/<span class="building-status idle" data-lake-status>Casts waiting: 2<\/span>/,'gold only when all 5 wait');
   assert.doesNotMatch(catalog(open,at(120),false),/data-open-lake/,'not in the farm\'s list');
-  assert.doesNotMatch(catalog(shipped,at(120,C),true),/data-open-lake/,'closed as it ships');
+  // Step 2 of the release (12 Oct 2026) opens the lake: the list as it ships follows the switch.
+  if(C.LAKE_OPEN)assert.match(catalog(shipped,at(120,C),true),/data-open-lake/,'open as it ships');else assert.doesNotMatch(catalog(shipped,at(120,C),true),/data-open-lake/,'closed as it ships');
  }finally{globalThis.document=saved;if(saved===undefined)delete globalThis.document;}
  const ui=read('public/economy-ui.js');
  assert.match(ui,/\$\('building-catalog'\)\.querySelector\('\[data-open-lake\]'\)\?\.addEventListener\('click',\(\)=>\{\$\('buildings-dialog'\)\.close\(\);onPlace\?\.\('villagelake'\);\}\);/);
@@ -170,7 +171,8 @@ test('the level cards: level 100\'s line says where the lake is, level 120\'s wh
 test('the wiki: a Village lake section in The Village only, from the rules; page two from level 120; nothing while closed',async()=>{
  const O=await import(opened('wiki-content.js')),{wikiArticle}=await import('../public/wiki-content.js');
  const lake=html=>{const from=html.lastIndexOf('<section',html.indexOf('id="sec-village-lake"'));return from<0?'':html.slice(from,html.indexOf('</section>',html.lastIndexOf('id="sec-village-lake')+1)+10);};
- for(const ctx of [{},{level:120},{level:150}])assert.ok(!wikiArticle('village',ctx).html.includes('sec-village-lake'),`closed: ${JSON.stringify(ctx)}`);
+ if(C.LAKE_OPEN)assert.ok(wikiArticle('village',{level:120}).html.includes('sec-village-lake'),'open as it ships (step 2, 12 Oct 2026)');
+ else for(const ctx of [{},{level:120},{level:150}])assert.ok(!wikiArticle('village',ctx).html.includes('sec-village-lake'),`closed: ${JSON.stringify(ctx)}`);
  assert.equal(O.wikiArticle('village',{level:99}),null,'below 100 there is no village topic at all');
  for(const id of ['helpers','getting-started'])assert.equal(O.wikiArticle(id,{level:150}).html,wikiArticle(id,{level:150}).html,`${id}: the farm's topics as they were (the pond's section too)`);
  for(const level of [100,119]){

@@ -27,7 +27,7 @@ const LAKE_STATS=['lake_fish','lake_fish_coins','lake_fish_perfect','lake_fish_r
 test('one switch, closed in this build: nothing of the lake is listed, every lake fish is refused, no save gets a lake; one file in three places',()=>{
  assert.equal((SOURCE.match(/export const LAKE_OPEN=(true|false),/g)??[]).length,1,'one switch, in game/farm-state.js');
  // Step 1 of the release (plan D, section 4) ships the lake closed; step 2 turns only this switch (and this line) to true.
- assert.match(SOURCE,/export const LAKE_OPEN=false,LAKE_LEVEL=WORLD_TWO_LEVEL;/);
+ assert.match(SOURCE,/export const LAKE_OPEN=true,LAKE_LEVEL=WORLD_TWO_LEVEL;/);   // step 2 (12 Oct 2026): the lake is open
  assert.equal(read('public/farm-state.js'),SOURCE,'scripts/sync-game.mjs copies the rules to the browser');
  assert.equal(read('supabase/functions/farm-api/farm-state.js'),SOURCE,'and to farm-api');
  for(const level of [100,120,180]){

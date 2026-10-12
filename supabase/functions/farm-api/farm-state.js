@@ -938,7 +938,7 @@ export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vege
 export const POND_OPEN=true,POND_LEVEL=4;
 // The village lake (12 Oct 2026, part D): LAKE_OPEN is its one switch, the pond's release order again. While it is false nothing of the
 // lake is listed and every 'lake_fish' is refused, so no save gets a lake. It opens at level 100, with World II.
-export const LAKE_OPEN=false,LAKE_LEVEL=WORLD_TWO_LEVEL;
+export const LAKE_OPEN=true,LAKE_LEVEL=WORLD_TWO_LEVEL;
 // A helping hand opens at level 3 (11 Oct 2026, the owner's call; it was 8): its stops grow with the farm until level 10 (activityStatus),
 // so it pays no more an hour than from level 8 before. Level 3 then opens lettuce, Daily challenges and the hand: three things.
 export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
