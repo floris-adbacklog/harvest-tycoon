@@ -20,11 +20,12 @@ export function watchWindows(doc=globalThis.document,Observer=globalThis.Mutatio
 // Escape does on a computer, to the top-most window only: first that window's own Escape (the fish book before the pond, a menu inside
 // a window), then, as the browser does with Escape, its cancel (a window that waits for the server says no there) and close. Right
 // away, without waiting for a window's closing glide. true: a window was open (closed now, or it chose to stay open); false: none was,
-// and the app does what Back did before (back a page, or leave the game).
+// and the app does what Back did before (back a page, or leave the game). A window still gliding shut (the pond, the lake: 0.6 s) also
+// says true and does nothing more (13 Oct 2026, review): a second Back during its glide left the game.
 export function createBack({doc=globalThis.document,win=globalThis.window,windows=watchWindows(doc,win?.MutationObserver)}={}){
  return function back(){
   try{
-   const top=windows.top();if(!top)return false;
+   const top=windows.top();if(!top)return [...doc.querySelectorAll('dialog[open]')].some(d=>d.classList?.contains('is-closing'));
    const focus=doc.activeElement,at=focus&&top.contains?.(focus)?focus:top;
    if(!at.dispatchEvent(new win.KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true,cancelable:true})))return true;
    if(top.open&&!top.classList?.contains('is-closing')&&top.dispatchEvent(new win.Event('cancel',{cancelable:true})))top.close();

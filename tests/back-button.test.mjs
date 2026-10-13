@@ -66,17 +66,21 @@ test('the window opened last is on top, wherever it sits in the page; one alread
 });
 // The pond and the lake (public/pond-ui.js) open with show, under any window opened with showModal; their own Escape closes the fish
 // book first, then the pond (gliding shut: .is-closing, no longer open). A window over the pond (a level-up after a catch) goes first.
+// Review (13 Oct 2026): a Back during the pond's glide says true and does nothing, so a quick second Back does not leave the game; and
+// the pond acts on Escape's keydown only (its keyup closed the pond too: one Escape shut the book and the pond, or a window and the pond).
 test('the pond and its fish book close by their own Escape, after a window over them; a pond gliding shut is no longer open',()=>{
  const p=farm(),pond=p.dialog('pond-view'),book={hidden:true};let isOpen=false;
  const open=()=>{isOpen=true;pond.classList.delete('is-closing');pond.show();},close=()=>{isOpen=false;pond.classList.add('is-closing');};
- p.win.addEventListener('keydown',event=>{if(!isOpen)return;if(event.key==='Escape'){if(modalOpen(p.doc))return;event.preventDefault();if(!book.hidden)book.hidden=true;else close();}},true);
+ const key=event=>{if(!isOpen)return;if(event.key==='Escape'){if(event.type!=='keydown'||modalOpen(p.doc))return;event.preventDefault();if(!book.hidden)book.hidden=true;else close();}};p.win.addEventListener('keydown',key,true);p.win.addEventListener('keyup',key,true);
  open();book.hidden=false;const levelUp=p.dialog('level-up-dialog');levelUp.showModal();
  assert.equal(p.back(),true);assert.equal(levelUp.open,false,'the level-up first');assert.equal(book.hidden,false);assert.equal(isOpen,true);
  assert.equal(p.back(),true);assert.equal(book.hidden,true,'then the fish book');assert.equal(isOpen,true);assert.equal(pond.closes,0);
  assert.equal(p.back(),true);assert.equal(isOpen,false,'then the pond, by its own close (its glide)');assert.equal(pond.closes,0);
- assert.equal(p.back(),false,'gliding shut: nothing open any more');
+ assert.equal(p.back(),true,'gliding shut: a second Back is taken, so the app does not leave the game');assert.equal(pond.closes,0,'and nothing more is done');
+ pond.close();assert.equal(p.back(),false,'the glide over: nothing open any more');
+ open();book.hidden=false;p.body.dispatchEvent(new FakeKeyboardEvent('keyup',{key:'Escape',bubbles:true,cancelable:true}));assert.equal(book.hidden,false,'a keyup does nothing');assert.equal(isOpen,true);
  // The pond's own rule: a window over it closes first, also with Escape on a computer.
- assert.match(read('public/pond-ui.js'),/if\(event\.key==='Escape'\)\{if\(modalOpen\(document\)\)return;event\.preventDefault\(\);if\(!book\.hidden\)closeBook\(\);else close\(\);return;\}/);
+ assert.match(read('public/pond-ui.js'),/if\(event\.key==='Escape'\)\{if\(event\.type!=='keydown'\|\|modalOpen\(document\)\)return;event\.preventDefault\(\);if\(!book\.hidden\)closeBook\(\);else close\(\);return;\}/);
  assert.match(read('public/pond-ui.js'),/import \{modalOpen\} from '\.\/windows\.js';/);
 });
 test('a menu inside a window closes before the window; a window that waits for the server stays open, and Back still says true',()=>{

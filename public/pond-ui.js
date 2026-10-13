@@ -225,7 +225,9 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
  function key(event){
   if(!isOpen||event.ctrlKey||event.metaKey||event.altKey)return;
   // A window over the pond (a level-up, a confirmation) is closed first, by the browser or by Back (13 Oct 2026, public/windows.js).
-  if(event.key==='Escape'){if(modalOpen(document))return;event.preventDefault();if(!book.hidden)closeBook();else close();return;}
+  // Escape acts on its keydown only (13 Oct 2026, review): its keyup then closed the pond as well, so one Escape on a computer shut the
+  // fish book and the pond, or the window over the pond and the pond.
+  if(event.key==='Escape'){if(event.type!=='keydown'||modalOpen(document))return;event.preventDefault();if(!book.hidden)closeBook();else close();return;}
   if(event.key!==' '&&event.key!=='Enter')return;
   const focus=document.activeElement;if(focus&&focus!==act&&focus!==dialog&&focus!==document.body&&focus.closest?.('button,a,input,select,textarea'))return;   // another button: the browser presses it
   event.preventDefault();if(event.type==='keydown'){if(!event.repeat)press();}else lift();
