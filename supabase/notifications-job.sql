@@ -1,7 +1,7 @@
 -- Support for the hourly reminder job (Edge Function notify-hourly). Everything here is for the service role only.
 --
 -- notification_job is a single row that makes sure the job runs at most once per clock hour, however often it is
--- called, and counts the emails sent today so the free Resend allowance is never exceeded.
+-- called, and counts the emails sent today for the job's daily cap (EMAIL_DAILY_CAP in functions/notify-hourly/job.js).
 create table if not exists public.notification_job (
  id smallint primary key default 1 check (id = 1),
  last_run_at timestamptz,

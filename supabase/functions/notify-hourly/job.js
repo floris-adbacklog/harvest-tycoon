@@ -8,7 +8,10 @@
 // whether the app is still on it, so leaving the browser's copy out could leave the phone silent. In Chrome, Settings' "Turn off in
 // this browser or app" stops the browser's copy (NOTIFICATIONS-SETUP.md).
 import {planPlayer} from './rules.js';
-export const EMAIL_DAILY_CAP=60;   // keeps the free Resend allowance (100 a day) free for sign-up and password mails
+// The daily email's cap (13 Oct 2026): 1,000 a day, a safety net against a runaway run, no longer a budget. Resend is paid since
+// 29 Sep 2026 (50,000 a month, no daily limit); the 60 kept for its free plan's 100 a day ran out at 12:05 UTC with about 75 farmers
+// asking, so the Americas got their morning mail after midnight UTC. 30,000 a month at most still leaves Resend room for the sign-up mails.
+export const EMAIL_DAILY_CAP=1000;
 export const MAX_FAILURES=5;       // a device that keeps failing is forgotten
 // A CrazyGames account (Oct 2026) has a made-up address on players.harvesttycoon.com: it gets no reminder at all, push or email.
 // notification_candidates already leaves these out (supabase/crazygames.sql); this holds even before that is run.
