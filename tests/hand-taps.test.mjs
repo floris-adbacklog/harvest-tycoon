@@ -59,3 +59,25 @@ test('the tiles no longer wait on nextAt, and its refusal text is gone from the 
  for(const f of ['game/farm-state.js','public/farm-state.js','supabase/functions/farm-api/farm-state.js']){const src=read(f);assert.doesNotMatch(src,/moment to finish|nextAt:now\+600|job\.nextAt/,f);}
  assert(!('Give your last action a moment to finish.' in JSON.parse(read('i18n/catalog.json'))));
 });
+// The server's answers now come in while the next tile is pressed. A tile drawn anew under a held mouse button loses its click (checked in
+// Chrome on the stage), so an answer that only confirms what the stop shows leaves the tiles as they are; a tap reads the job's start then.
+test('an answer that changes nothing on the stop leaves its tiles in place, and a tap carries the start the farm has at that moment',async()=>{
+ const s=at(12,createFarm,Date.now()),els=new Map(),sent=[];let writes=0;
+ const el=id=>{let html='';const e={id,textContent:'',open:false,targets:[],showModal(){this.open=true;},close(){this.open=false;},addEventListener(){},querySelector:()=>null,
+  querySelectorAll(sel){return sel!=='[data-activity-target]'?[]:this.targets=[...html.matchAll(/data-activity-target="(\d+)"/g)].map(m=>({dataset:{activityTarget:m[1]}}));}};
+  Object.defineProperty(e,'innerHTML',{get:()=>html,set(v){html=v;if(id==='activity-work')writes++;}});return e;};
+ globalThis.document={getElementById:id=>els.get(id)??els.set(id,el(id)).get(id),querySelector:()=>null,querySelectorAll:sel=>sel==='dialog[open]'?[...els.values()].filter(e=>e.open):[]};
+ try{
+  const {createActivitiesUI}=await import('../public/activities-ui.js');
+  const ui=createActivitiesUI({state:s,runAction:async a=>{sent.push(a);return act(s,a,Date.now());},notify(){}}),panel=document.getElementById('activity-work');
+  ui.open('apiary');await new Promise(r=>setTimeout(r,0));
+  const job=s.activities.jobs.apiary,tiles=panel.targets,drawn=writes;assert(job&&tiles.length===6);
+  // The server's answer to the start: its own clock, a moment after this device's.
+  job.startedAt+=400;ui.refresh();ui.tick();
+  assert.equal(writes,drawn,'nothing on the stop changed: the tiles stay');assert.equal(panel.targets,tiles);
+  await tiles.find(b=>Number(b.dataset.activityTarget)===job.targets[0]).onclick();
+  assert.equal(sent.at(-1).startedAt,job.startedAt,'the tap carries the start the farm has now');assert.deepEqual(s.activities.jobs.apiary.done,[job.targets[0]]);
+  assert.equal(writes,drawn+1,'the tap itself shows: the stop is drawn anew once');
+  ui.refresh();assert.equal(writes,drawn+1,'and its answer leaves it as it is');
+ }finally{delete globalThis.document;}
+});

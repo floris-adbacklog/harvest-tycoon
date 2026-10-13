@@ -7,7 +7,7 @@ const $=id=>document.getElementById(id);
 // Below level 10 the stops grow with the farm (11 Oct 2026, farm-state.js handShare): the rewards shown are this farm's own, the round
 // bonus too, and the hub says the rule in one line under the round, on the screen that shows it.
 export function createActivitiesUI({state,runAction,notify,onResult}){
- let selected=null,busy=false,lastSignature='',feedback='',result=null;
+ let selected=null,busy=false,lastSignature='',feedback='',result=null,shownPanel='';
  const dialog=$('activities-dialog'),hubDialog=$('activities-hub-dialog');
  const order=Object.keys(ACTIVE_STATIONS);
  function statuses(){return order.map(id=>activityStatus(state,id,farmNow()));}
@@ -81,11 +81,17 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
   }
   // The stop's reward line goes while a result shows (11 Oct 2026 review): the result says what the job paid, and after a level-up the
   // line would already show the next level's XP next to it (at levels 3 to 6 a round is about one level, so on most rounds).
-  panel.innerHTML=`<p class="activity-instruction">${s.instruction}</p>${result?'':`<div class="activity-reward">${art('xp')}<b>+${s.xp} XP</b>${s.item?`<span>· ${art(s.item)} +${s.itemCount??1} ${ITEMS[s.item].name}</span>`:''}</div>`}${body}`;
-  $('activity-start')?.addEventListener('click',()=>act({type:'activity_start',station:s.station}));
-  panel.querySelectorAll('[data-activity-target]').forEach(b=>b.onclick=()=>act({type:'activity_work',station:s.station,startedAt:s.job.startedAt,target:Number(b.dataset.activityTarget)}));
-  panel.querySelector('[data-activity-next]')?.addEventListener('click',e=>open(e.currentTarget.dataset.activityNext));
-  panel.querySelector('[data-activity-hub]')?.addEventListener('click',openHub);
+  const html=`<p class="activity-instruction">${s.instruction}</p>${result?'':`<div class="activity-reward">${art('xp')}<b>+${s.xp} XP</b>${s.item?`<span>· ${art(s.item)} +${s.itemCount??1} ${ITEMS[s.item].name}</span>`:''}</div>`}${body}`;
+  // Drawn anew only when it changes (13 Oct 2026): the server's answer to a tap that is already shown leaves the tiles where they are.
+  // A tile drawn anew while the mouse holds it down loses its click, and now that the three taps follow each other at once the answers
+  // come in while the next tile is pressed. The job's start is read at the tap: the server's answer to the start may have changed it.
+  if(html!==shownPanel){
+   panel.innerHTML=shownPanel=html;
+   $('activity-start')?.addEventListener('click',()=>act({type:'activity_start',station:s.station}));
+   panel.querySelectorAll('[data-activity-target]').forEach(b=>b.onclick=()=>act({type:'activity_work',station:s.station,startedAt:activityStatus(state,s.station,farmNow()).job?.startedAt,target:Number(b.dataset.activityTarget)}));
+   panel.querySelector('[data-activity-next]')?.addEventListener('click',e=>open(e.currentTarget.dataset.activityNext));
+   panel.querySelector('[data-activity-hub]')?.addEventListener('click',openHub);
+  }
   $('activity-feedback').textContent=feedback;lastSignature=signature();refreshArt();tickButtons();
  }
  async function act(action){
