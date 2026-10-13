@@ -73,12 +73,12 @@ function page(){
 }
 test('Quests: one line at the top says how many daily challenges are ready and opens Today; it claims nothing',()=>{
  const s=farmer(),tasks=dailyTasks(s,now),{dialog,toolbar,line,button,doc}=page(),opened=[],claims=[];
- const ui=createQuestsUI({state:s,claim:id=>claims.push(id),claimVillage(){},icons(){},notify(){},openToday:()=>opened.push('today'),document:doc});
+ const ui=createQuestsUI({state:s,claim:id=>claims.push(id),claimVillage(){},icons(){},notify(){},openToday:id=>opened.push(id),document:doc});
  button.listeners.click[0]();assert.equal(dialog.open,true);assert.equal(line.hidden,true,'nothing ready: no line');
  finish(s,tasks[0]);ui.refresh();assert.equal(line.hidden,false);assert.match(line.innerHTML,/<strong>1 daily challenge ready<\/strong><span>Today<\/span>/);
  finish(s,tasks[1]);ui.refresh();assert.match(line.innerHTML,/<strong>2 daily challenges ready<\/strong>/);
  toolbar.listeners.click[0]({target:{closest:sel=>sel==='[data-quest-today]'?line:null}});
- assert.deepEqual(opened,['today'],'a tap opens Today');assert.equal(dialog.open,false,'and closes Quests');assert.deepEqual(claims,[],'it claims nothing');
+ assert.deepEqual(opened,[tasks[0].id],'a tap opens Today at the first challenge that is ready (its Claim in view)');assert.equal(dialog.open,false,'and closes Quests');assert.deepEqual(claims,[],'it claims nothing');
  // Without a way to Today (a page that gives none) the line stays away.
  const other=page(),plain=createQuestsUI({state:s,claim(){},claimVillage(){},icons(){},notify(){},document:other.doc});
  other.button.listeners.click[0]();assert.equal(other.line.hidden,true);plain.refresh();
@@ -108,8 +108,8 @@ test('the next-goal card and the phone line open Today at a ready challenge; it 
 test('the wiring: Quests counts the ready challenges, Today is called Today in More, Today says when a stop is ready, the texts match',()=>{
  const game=read('public/game.js'),html=read('public/farm.html'),retention=read('public/retention-ui.js'),wiki=read('public/wiki-content.js');
  assert.match(game,/const waiting=questGroups\(state\)\.ready\.length\+\(villageQuestReady\(state\)\?villageQuestGroups\(state\)\.ready\.length:0\)\+readyDailies\(state,farmNow\(\)\)\.length;/);
- assert.match(game,/openToday:\(\)=>retention\.openToday\('challenges'\)/,'the line in Quests opens Today on its challenges');
- assert.match(game,/openToday:id=>retention\.openToday\('challenges',\{at:id\}\)/,'the card and the phone line open Today at the challenge');
+ assert.match(game,/quests=createQuestsUI\(\{[^\n]*openToday:id=>retention\.openToday\('challenges',\{at:id\}\)/,'the line in Quests opens Today at the first ready challenge');
+ assert.match(game,/beginner=createBeginnerUI\(\{[^\n]*openToday:id=>retention\.openToday\('challenges',\{at:id\}\)/,'the card and the phone line open Today at the challenge');
  assert.match(game,/if\(goal\.kind==='daily'\)return \{label:'Open Today',run:\(\)=>retention\.openToday\('challenges',\{at:goal\.id\}\)\};/,'the guide-complete card too');
  // Plan E (13 Oct 2026) stays: until the first sale Quests shows no number, Today and More no "!".
  assert.match(read('public/beginner.css'),/#game\.first-sale-waits :is\(#task-dot,#today-dot,#more-dot\)/);

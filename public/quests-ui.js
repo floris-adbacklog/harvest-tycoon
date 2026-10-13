@@ -55,7 +55,8 @@ const number=n=>Number(n).toLocaleString('en-US');
 
 // village: the game shows the village (World II), where Your quests opens on the village's quests. From level 100 a Farm / Village
 // switch shows either list; below it there is only the farm's.
-// openToday (Plan F, 13 Oct 2026): the line at the top for the daily challenges that are ready opens Today, where they are claimed.
+// openToday(id) (Plan F, 13 Oct 2026): the line at the top for the daily challenges that are ready opens Today at the first of them, where
+// they are claimed (review fix: at the top of Today a phone of 360x640 showed the gift and no Claim).
 export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=null,village=false,document:doc=globalThis.document}){
  const dialog=doc.getElementById('tasks-dialog'),list=doc.getElementById('task-list');
  let showDone=false,world=village?'village':'farm';
@@ -92,7 +93,7 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=
  toolbar.addEventListener('click',event=>{
   const switcher=event.target.closest('[data-quest-world]');
   if(switcher){world=switcher.dataset.questWorld;showDone=false;render();}
-  if(event.target.closest('[data-quest-today]')){dialog.close();openToday?.();}
+  if(event.target.closest('[data-quest-today]')){dialog.close();openToday?.(readyDailies(state)[0]?.id??null);}
  });
  list.addEventListener('click',async event=>{
   if(event.target.closest('[data-quest-done]')){showDone=!showDone;render();return;}

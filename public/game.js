@@ -1383,7 +1383,7 @@ function bindUI(){
  // A notification or a shortcut on the app icon can open Today (src/game-cloud.js harvestOpen).
  window.harvestToday=()=>retention.openToday();
  rookie=createRookieUI({state});
- quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,openToday:()=>retention.openToday('challenges'),village:villageWorld});
+ quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  // The guide (Part A, 11 Oct 2026): showWay shows the way to a step (Show me, and by itself once after each step: auto); the coach must be
  // free for that (idle). At the end the card leads to the next goal (A8, next-goal.js): one green button for it, Thank you beside it.
