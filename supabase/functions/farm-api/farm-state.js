@@ -896,18 +896,18 @@ export function productionSlots(level,building){const n=Math.max(1,Math.min(MAX_
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
 export function recipeValue(id,now,state){const r=state?recipeFor(state,id):RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input)+(r.coins??0),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level,building){const speed=level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));return building==='factory'?speed/2:speed;}
-// The beginner boost: when a farm is created, new crops and new batches take 40% less time (corn 15 min -> 9 min). It gets smaller
-// evenly, in a straight line, and stops at exactly 0% after the first day (ROOKIE_BOOST_MS): 30% after 6 hours, 20% after 12 and 10%
-// after 18, so the first session feels quick and a return later that day still gets some help. (Until 27 Sep 2026 it followed the
+// The beginner boost: when a farm is created, new crops and new batches take 50% less time (corn 15 min -> 7.5 min). It gets smaller
+// evenly, in a straight line, and stops at exactly 0% after the first day (ROOKIE_BOOST_MS): 37.5% after 6 hours, 25% after 12 and
+// 12.5% after 18, so the first session feels quick and a return later that day still gets some help. (Until 27 Sep 2026 it followed the
 // square of the time left: its last hours read "0% shorter waiting" while it still ran.) It was 80% until 9 Oct 2026 (the owner's
 // call): everything then grew five times as fast in the first hour, a new farmer reached level 10 in about 33 minutes of play, and the
-// first half hour opened 29 new things, about one a minute.
+// first half hour opened 29 new things, about one a minute. 40% from 9 Oct, 50% from 13 Oct 2026 (the owner's call).
 // Separately, for the first 30 minutes (ROOKIE_MS, until state.rookieUntil) the starter corn and animal feed stay in the barn so nothing
 // is sold by accident. Both are plain clock time from creation; the boost counts from the same start (rookieUntil - ROOKIE_MS), so
 // farms made before the boost lasted a day get the whole day too. Crops and batches that are already running keep their times.
 // Only farms created in the guided flow have it: farms from before this simply have no rookieUntil.
 export const ROOKIE_MS=30*60000;
-export const ROOKIE_TIMER_BOOST=.4;
+export const ROOKIE_TIMER_BOOST=.5;
 export const ROOKIE_BOOST_MS=24*60*60000;
 export const rookieLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil-now):0;
 export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)&&state.rookieUntil>0?Math.max(0,state.rookieUntil-ROOKIE_MS+ROOKIE_BOOST_MS-now):0;
