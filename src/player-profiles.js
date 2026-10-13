@@ -159,7 +159,7 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
  let chatExtras=null;
  // The last answer for each farmer opened in this visit, shown at once when they are opened again.
  const profileCache=new Map();
- let searchSequence=0,profileSequence=0,timer,selected=null,statPage=0,returnFocus,disposed=false,profileUsername=null,clockOffset=Number.isFinite(bridge.serverNow)?bridge.serverNow-Date.now():0;
+ let searchSequence=0,profileSequence=0,timer,selected=null,statPage=0,returnFocus,disposed=false,profileUsername=null,clockOffset=Number.isFinite(bridge.serverNow)?bridge.serverNow-(Number.isFinite(bridge.serverAt)?bridge.serverAt:Date.now()):0;
  function close(){dialog.close();}
  dialog.querySelector('.farmer-profile-close').onclick=close;dialog.querySelector('.farmer-profile-back').onclick=close;
  dialog.addEventListener('close',()=>{++profileSequence;selected=null;if(shareSlot)window.harvestShareFarm?.reset(shareSlot.querySelector('.farm-share-box'));if(!disposed)(returnFocus?.isConnected?returnFocus:input).focus();});

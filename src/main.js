@@ -213,7 +213,7 @@ async function openFarm(){
   if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}
   presence=createFarmPresence(supabase,user.id);
   presence.setClock?.(initial.serverNow);const clock=Number.isFinite(initial.serverNow)?initial.serverNow-Date.now():0;   // the server's clock, for the board's online count
-  const bridge={playerId,presence,serverNow:initial.serverNow,takeInitial(){const data=initial;initial=null;return data;},signOut,async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');const result=await fetchLeaderboard(supabase,user.id,category,{counts:true,now:Date.now()+clock});if(ticket!==generation)throw new Error('Your session has ended.');presence?.setRows?.(result.rows);return {...result,...presence?.snapshot()};},async request(body){
+  const bridge={playerId,presence,serverNow:initial.serverNow,serverAt:Date.now(),takeInitial(){const data=initial;initial=null;return data;},signOut,async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');const result=await fetchLeaderboard(supabase,user.id,category,{counts:true,now:Date.now()+clock});if(ticket!==generation)throw new Error('Your session has ended.');presence?.setRows?.(result.rows);return {...result,...presence?.snapshot()};},async request(body){
    if(ticket!==generation||!navigator.onLine)throw new Error('Your session is paused. Reconnect to continue.');
    try{const data=await farmRequest(body);if(ticket!==generation||data.profile?.player_id!==user.id)throw new Error('Your session has ended.');connection.ok();return data;}
    catch(error){
@@ -326,7 +326,7 @@ async function openFarm(){
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,
   // with the farm as it is now (public/game.js reads ?world=village).
-  bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;frame.src=to==='village'?'/farm.html?world=village':'/farm.html';};
+  bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();frame.src=to==='village'?'/farm.html?world=village':'/farm.html';};
   // Delete account (3 Oct 2026, Settings › Privacy, src/account-delete.js): farm-api deletes the farm, everything personal and the account
   // itself, for this signed-in farmer only and only with their farmer name typed exactly (account-delete-service.js). Never repeated by
   // itself. Then this device lets go (the app's notifications, the session, which the server no longer knows) and the home page says so;

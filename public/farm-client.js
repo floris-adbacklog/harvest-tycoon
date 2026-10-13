@@ -3,6 +3,11 @@ import {BUILDINGS,applyFarmAction,inviteeReward,seedCost} from './farm-state.js'
 // the most recently committed server state; it never persists game data.
 let clockOffset=0;
 export const farmNow=()=>Date.now()+clockOffset;
+// The server's clock for a farm page that starts (13 Oct 2026, "after a trip to the village the crops show no time for half a minute"):
+// the page around keeps the farm's last load (bridge.serverNow) and when it came (bridge.serverAt, src/main.js). A trip's new page counted
+// from the first load and so ran behind by the whole visit, until the next answer (the 60-second check). A page around without serverAt
+// (one from before) counts as before; no serverNow at all, this device's clock.
+export const bridgeClock=bridge=>Number.isFinite(bridge?.serverNow)?bridge.serverNow-(Number.isFinite(bridge.serverAt)?bridge.serverAt:Date.now()):0;
 // Taps that show at once (1 Oct 2026, "a harvest took over five seconds"): the frame works the action out with the same rules as
 // the server (farm-state.js), shows it straight away and sends it; the server's answer then takes over. The everyday taps (fields,
 // selling, batches), and since the same day the claims, building, helping hands and the daily gift (and the comeback chest, Oct 2026:
@@ -136,7 +141,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
    }};
   return handle;
  }
- async function load(){clockOffset=bridge.serverNow-Date.now();base=structuredClone(state);onChange();onStatus('saved');return {state};}
+ async function load(){clockOffset=bridgeClock(bridge);base=structuredClone(state);onChange();onStatus('saved');return {state};}
  // Not while taps (or the first look) are on their way: their answers bring the newest farm anyway.
  async function refresh(){if(waiting||quiet||pending.length)return;replace(await bridge.request({operation:'load'}));}
  window.harvestRefresh=refresh;

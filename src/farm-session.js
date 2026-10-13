@@ -39,7 +39,7 @@ export function createFarmSession({
    if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}
    presence=createFarmPresence(client(),user.id);
    presence.setClock?.(initial.serverNow);const clock=Number.isFinite(initial.serverNow)?initial.serverNow-Date.now():0;   // the server's clock, for the board's online count
-   const bridge={playerId,presence,serverNow:initial.serverNow,takeInitial(){const data=initial;initial=null;return data;},signOut:()=>signedOut(),async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');const result=await fetchLeaderboard(client(),user.id,category,{counts:true,now:Date.now()+clock});if(ticket!==generation)throw new Error('Your session has ended.');presence?.setRows?.(result.rows);return {...result,...presence?.snapshot()};},async request(body){
+   const bridge={playerId,presence,serverNow:initial.serverNow,serverAt:Date.now(),takeInitial(){const data=initial;initial=null;return data;},signOut:()=>signedOut(),async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');const result=await fetchLeaderboard(client(),user.id,category,{counts:true,now:Date.now()+clock});if(ticket!==generation)throw new Error('Your session has ended.');presence?.setRows?.(result.rows);return {...result,...presence?.snapshot()};},async request(body){
     if(ticket!==generation||!nav.onLine)throw new Error('Your session is paused. Reconnect to continue.');
     try{const data=await farmRequest(body);if(ticket!==generation||data.profile?.player_id!==user.id)throw new Error('Your session has ended.');connection.ok();return data;}
     catch(error){
@@ -73,7 +73,7 @@ export function createFarmSession({
    bridge.paymentReturn=()=>{const params=new URLSearchParams(win.location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
    bridge.clearPaymentReturn=()=>{const url=new URL(win.location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');win.history.replaceState(null,'',url.pathname+url.search+url.hash);};
    // World II: travelling between the farm and the village loads the game frame again, through its loading screen, with the farm as it is now.
-   bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;frame.src=to==='village'?`${farmUrl}?world=village`:farmUrl;};
+   bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();frame.src=to==='village'?`${farmUrl}?world=village`:farmUrl;};
    extend(bridge,{alive:()=>ticket===generation,user});
    win.harvestBridge=bridge;frame=page;release(bridge);phase('authenticated');
    opened(bridge,user);

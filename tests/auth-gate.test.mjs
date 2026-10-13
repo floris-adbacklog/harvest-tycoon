@@ -54,6 +54,16 @@ test('late farm response after logout cannot reopen private gameplay',async()=>{
 test('cross-tab account switch discards A before B and never mounts a stale response',async()=>{
  const pending=deferred();let count=0;const f=fixture({user:{id:'A'},load:()=>++count===1?pending.promise:Promise.resolve({profile:{player_id:'B'},state:{coins:180},serverNow:Date.now()})});await settle();await f.auth('SIGNED_IN',{id:'B'});pending.resolve({profile:{player_id:'A'},state:{coins:999},serverNow:Date.now()});await settle();assert.equal(shown(f).length,1);assert.equal(f.window.harvestBridge.playerId,'B');assert.equal(f.window.harvestBridge.takeInitial().state.coins,180);
 });
+// 13 Oct 2026 ("after a trip to the village the crops show no time for half a minute"): a trip's load is the farm page's clock too. The
+// bridge kept the first load's serverNow for good, so a trip's new page ran behind by the whole visit until the 60-second check.
+test('a trip carries its own server time and when it came: the next farm page is never behind by the time since the first load',async()=>{
+ const f=fixture({user:{id:'A'},load:()=>({profile:{player_id:'A'},state:{coins:1},serverNow:f.context.Date.now()+4000})});await settle();const bridge=f.window.harvestBridge,opened=bridge.serverAt;
+ assert.equal(bridge.serverNow-bridge.serverAt,4000,'the first load: the server\'s clock against this device\'s, when it came');
+ await f.advance(10*60000);await bridge.travel('village');
+ assert.equal(f.frames[0].src,'/farm.html?world=village');assert.equal(bridge.serverAt,opened+10*60000,'stamped when the trip\'s farm came');
+ assert.equal(bridge.serverNow-bridge.serverAt,4000,'the same clock, not ten minutes behind');
+ await f.advance(5*60000);await bridge.travel('farm');assert.equal(f.frames[0].src,'/farm.html');assert.equal(bridge.serverAt,opened+15*60000);
+});
 test('offline and server failures fail closed without creating fallback farms',async()=>{
  const f=fixture({user:{id:'A'},online:false});await settle();assert.equal(f.calls.length,0);assert.equal(f.frames.length,0);assert.equal(f.document.body.dataset.phase,'error');
  const g=fixture({user:{id:'A'},load:async()=>{throw new Error('Unavailable');}});await settle();assert.equal(shown(g).length,0);assert.equal(g.window.harvestBridge,undefined);assert.equal(g.document.body.dataset.phase,'error');
