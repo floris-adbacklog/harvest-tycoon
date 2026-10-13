@@ -2002,7 +2002,6 @@
 "Give some coins or diamonds.":"supabase/chat.sql",
 "Give the line a moment.":"public/farm-state.js",
 "Give your fields some extra love with water.":"public/event-goals.js",
-"Give your last action a moment to finish.":"public/farm-state.js",
 "Give {0}":"public/estate-ui.js",
 "Give {0} {1}":"src/chat-ui.js",
 "Give {0}?":"src/player-profiles.js",

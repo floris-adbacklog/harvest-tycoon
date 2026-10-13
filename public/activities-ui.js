@@ -98,9 +98,10 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
   }catch(e){feedback=e.message;}
   finally{busy=false;render();refresh();}
  }
+ // A tile is open again the moment its tap is shown (13 Oct 2026): no wait on the job's old nextAt, so the three taps follow each other at once.
  function tickButtons(){
   if(!selected)return;const s=activityStatus(state,selected,farmNow());
-  document.querySelectorAll('[data-activity-target]').forEach(b=>b.disabled=busy||!s.job||s.job.done.includes(Number(b.dataset.activityTarget))||farmNow()<s.job.nextAt);
+  document.querySelectorAll('[data-activity-target]').forEach(b=>b.disabled=busy||!s.job||s.job.done.includes(Number(b.dataset.activityTarget)));
   const wait=dialog.querySelector('[data-activity-wait]');if(wait&&s.remaining)wait.textContent=formatDuration(s.remaining);
  }
  function refresh(){if(dialog.open&&!busy)render();else if(hubDialog.open)renderHub();}

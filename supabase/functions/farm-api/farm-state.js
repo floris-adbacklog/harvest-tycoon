@@ -3637,20 +3637,25 @@ export function activityStatus(state,station,now=Date.now()){
  const grown=share<1?{xp:Math.round(stop.xp*share),cooldown:Math.min(stop.cooldown,HAND_REST_PER_LEVEL*Math.max(1,levelOf(state)))}:{};
  return {...stop,...grown,share,station,job:a.jobs[station]??null,remaining:Math.max(0,(a.cooldowns[station]??0)-now),completed:a.completed[station]??0,inRound:a.round.includes(station)};
 }
+// The three taps of a job follow each other at once (13 Oct 2026, the owner's call): no 0.6-second wait between them any more (the job's
+// nextAt; it paced nothing, a job pays once and the stop's rest is the pace, and it kept the tiles grey about a second after every tap).
+// The first tap can now come before the server's answer to the start, with the start time this device showed (its clock, a moment off):
+// a tap is for the job that started within HAND_TAP_SLACK of it. A stop rests at least 18 minutes after a job (level 3), so a tap from
+// an earlier job is still refused. An older job in a save may still carry nextAt; nothing reads it.
+export const HAND_TAP_SLACK=300000;
 function startActivity(state,station,now){
  const s=activityStatus(state,station,now);
  if(s.job)throw new Error('This job is already in progress.');
  if(s.remaining)throw new Error(`This job returns in ${formatDuration(s.remaining)}.`);
- const job={startedAt:now,nextAt:now+600,targets:activityTargets(station,s.completed),done:[]};
+ const job={startedAt:now,targets:activityTargets(station,s.completed),done:[]};
  state.activities.jobs[station]=job;return {station,startedAt:now};
 }
 function workActivity(state,action,now){
  const s=activityStatus(state,action.station,now),job=s.job,bonus=activityRoundReward(state);
- if(!job||action.startedAt!==job.startedAt)throw new Error('Open the current job and try again.');
+ if(!job||!Number.isFinite(action.startedAt)||Math.abs(action.startedAt-job.startedAt)>HAND_TAP_SLACK)throw new Error('Open the current job and try again.');
  if(!Number.isInteger(action.target)||!job.targets.includes(action.target))throw new Error(s.instruction);
  if(job.done.includes(action.target))throw new Error('That part of the job is already done.');
- if(now<job.nextAt)throw new Error('Give your last action a moment to finish.');
- job.done.push(action.target);job.nextAt=now+600;
+ job.done.push(action.target);
  if(job.done.length<3)return {station:action.station,finished:false,progress:job.done.length};
  const a=state.activities;delete a.jobs[action.station];a.cooldowns[action.station]=now+s.cooldown;
  a.completed[action.station]=(a.completed[action.station]??0)+1;

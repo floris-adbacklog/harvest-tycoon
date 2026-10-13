@@ -23,13 +23,12 @@ test('all four hands-on jobs reward once, give useful goods and complete one rou
  assert.equal(s.stats.activity_rounds,1);
  assert(result.roundComplete);assert.equal(s.activities.rounds,1);assert.deepEqual(s.activities.round,[]);assert.equal(s.stats.activities,4);
 });
-test('invalid, premature, wrong and repeated tile requests never award or advance',()=>{
+test('invalid, wrong and repeated tile requests never award or advance',()=>{
  const s=createFarm(now);assert.throws(()=>act(s,{type:'activity_start',station:'constructor'},now),/Choose/);
  act(s,{type:'activity_start',station:'apiary'},now);const j=s.activities.jobs.apiary,valid=j.targets[0],wrong=Array.from({length:6},(_,i)=>i).find(i=>!j.targets.includes(i));
- for(const action of [{target:valid,startedAt:now+1},{target:wrong,startedAt:now},{target:String(valid),startedAt:now},{target:6,startedAt:now}]){
+ for(const action of [{target:valid,startedAt:now-3600000},{target:wrong,startedAt:now},{target:String(valid),startedAt:now},{target:6,startedAt:now}]){
   const before=structuredClone(s);assert.throws(()=>act(s,{type:'activity_work',station:'apiary',...action},now+700));assert.deepEqual(s,before);
  }
- assert.throws(()=>act(s,{type:'activity_work',station:'apiary',startedAt:now,target:valid},now+100),/moment/);
  act(s,{type:'activity_work',station:'apiary',startedAt:now,target:valid},now+700);
  const after=structuredClone(s);assert.throws(()=>act(s,{type:'activity_work',station:'apiary',startedAt:now,target:valid},now+1500),/already/);assert.deepEqual(s,after);
  assert.throws(()=>act(s,{type:'activity_start',station:'apiary'},now+3000),/already/);
