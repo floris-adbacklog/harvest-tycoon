@@ -63,11 +63,18 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   // the farmers who harvested never made the first sale): see autoCheck. Step 7 asks two things, collect the eggs and sell one: once the
   // eggs are in, the way to Market is shown by itself too (its first pointer went to the Coop).
   const phase=current?current.guide==='eggs'&&(state.inventory?.eggs??0)>0?`${current.id}:sell`:current.id:null;
-  if(lastStep&&phase&&phase!==lastStep){pending={id:current.id,phase,guide:current.guide,wait:AUTO_WAIT_MS,quietAt:quiet()?Date.now():0};}
+  // Step 2 also when the farm opens on it (13 Oct 2026: a farmer who left before the first sale), from 1.8 s after the farm is on screen:
+  // its pointer comes back (repeat, autoCheck).
+  if(phase&&phase!==lastStep&&(lastStep||phase==='sell')){pending={id:current.id,phase,guide:current.guide,wait:AUTO_WAIT_MS,quietAt:lastStep&&quiet()?Date.now():0,repeat:phase==='sell'};}
   lastStep=phase;
   // From the first harvest to the first sale the Market stays lit (11 Oct 2026, Part A A11): a steady glow, also after the pointer went.
   // The same while step 7's eggs wait to be sold.
   $('market-button')?.classList.toggle('guide-next',current?.id==='sell'||phase==='sell_egg:sell');
+  // Quiet until the first sale (13 Oct 2026): from the start to the first sale only the Market carries a mark. Quests' number and the "!"
+  // on Today (on a phone More) wait until then (4 of 12 slow sellers on a phone claimed quests first), and before the first harvest the
+  // Market shows no number either (its 32 was starter stock that cannot be sold yet, and read like 32 messages). beginner.css hides them.
+  const firstSale=!village&&(current?.id==='harvest'||current?.id==='sell')&&!state.onboarding?.milestones?.sell&&!(state.stats?.sold>0);
+  $('game')?.classList.toggle('first-sale-waits',firstSale);$('game')?.classList.toggle('first-harvest-waits',firstSale&&current.id==='harvest');
   goalCard(finished);
   $('quest-number').textContent=Math.min(done+1,steps.length);$('quest-total').textContent=steps.length;
   $('quest-title').textContent=current?.title??'Ready to grow your own way';
@@ -117,17 +124,26 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
  }
  // ---- The pointer by itself (A12) ----
  function quiet(){return !document.querySelector('dialog[open]')&&idle();}
+ // Step 2's pointer comes back (13 Oct 2026, the 11 Oct regression: it showed once and the next tap on a corn ended it; before, it came
+ // 1.8 s after the harvest and stood up to 25 s). While step 2 waits it shows again each time nothing has been touched for 1.8 s (no
+ // window open, the pointer free), until Market has been opened; inside Market it points at Sell all itself (game.js openDialog). Taps
+ // on the farm leave it standing (stay, coach.js).
+ let touchedAt=0;for(const type of ['pointerdown','keydown','wheel'])document.addEventListener?.(type,()=>{touchedAt=Date.now();},{capture:true,passive:true});
  function autoCheck(now=Date.now()){
   if(!pending)return;
   const current=beginnerProgress(state).find(q=>q.current);
   if(current?.id!==pending.id){pending=null;return;}
+  if(pending.repeat&&$('market-dialog')?.open){pending=null;return;}
   if(!quiet()){pending.quietAt=0;return;}
   pending.quietAt||=now;
-  if(now-pending.quietAt<pending.wait||!canPointNow(state,pending.guide,farmNow()))return;
-  const target=pending.guide;pending=null;guide(target,{auto:true});
+  if(now-Math.max(pending.quietAt,pending.repeat?touchedAt:0)<pending.wait||!canPointNow(state,pending.guide,farmNow()))return;
+  const {guide:target,repeat}=pending;
+  if(repeat)Object.assign(pending,{shown:true,wait:AUTO_WAIT_MS,quietAt:0});else pending=null;
+  guide(target,repeat?{auto:true,stay:true}:{auto:true});
  }
- // The harvest landed at the Market (game.js flyToMarket): step 2 points at once, not 1.8 s later (A11); so do step 7's eggs.
- function landed(){if(pending?.id!=='sell'&&pending?.phase!=='sell_egg:sell')return;pending.wait=0;autoCheck();}
+ // The harvest landed at the Market (game.js flyToMarket): step 2 points at once, not 1.8 s later (A11); so do step 7's eggs. Only the
+ // first time: after that step 2's pointer waits for 1.8 s without a touch.
+ function landed(){if(pending?.id!=='sell'&&pending?.phase!=='sell_egg:sell'||pending.shown)return;pending.wait=0;autoCheck();}
  // ---- The next goal, in the guide's place once it is done (11 Oct 2026, Part A A13; public/next-goal.js) ----
  // On a computer a small card where the guide was; on a phone the guide's one-line banner, only while there is something to claim or
  // build (otherwise the view stays free). A quest is claimed on its own with one tap, as in Quests; then the card shows the next goal.

@@ -25,7 +25,8 @@ test('fast account response and out-of-order asset callbacks never regress progr
 
 test('a tip with a painted picture changes every few seconds and stops when asked',()=>{
  const {doc,nodes}=fixture(),timers={intervals:[],setInterval(fn){this.intervals.push(fn);return 1;},setTimeout(fn){fn();return 2;},clearInterval(){this.stopped=true;},clearTimeout(){}};
- const stop=startLoadingTips(doc,{timers,now:0});
+ // A farmer from level 10 sees every tip in turn (13 Oct 2026: below it the later ones are passed over, tests/first-sale-quiet.test.mjs).
+ const stop=startLoadingTips(doc,{timers,now:0,level:()=>10});
  assert.equal(nodes.get('loading-tip-text').textContent,LOADING_TIPS[0][1]);assert.equal(nodes.get('loading-tip-icon').src,`/assets/icons/${LOADING_TIPS[0][0]}.webp`);
  timers.intervals[0]();assert.equal(nodes.get('loading-tip-text').textContent,LOADING_TIPS[1][1]);
  stop();assert.equal(timers.stopped,true);

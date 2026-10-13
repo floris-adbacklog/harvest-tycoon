@@ -139,6 +139,9 @@
 #stock-count.is-worth{display:flex;align-items:center;gap:2px;width:auto;min-width:0;padding:0 6px 0 2px;border-radius:999px;white-space:nowrap;background:#fff1c4;color:#6b4712}
 #stock-count.is-worth .game-art{width:14px;height:14px;flex:none}
 @media(prefers-reduced-motion:reduce){.side-tool.guide-next>span{animation:none}}
+/* Quiet until the first sale (13 Oct 2026, beginner-ui.js): only the Market carries a mark. Quests' number and the "!" on Today and More
+   wait for the first sale, and before the first harvest the Market shows no stock number (starter stock that cannot be sold yet). */
+#game.first-sale-waits :is(#task-dot,#today-dot,#more-dot),#game.first-harvest-waits #stock-count{display:none}
 /* A13: the next goal in the guide's place once it is done: a small cream card on a computer, the guide's one-line banner on a phone (only
    while there is a quest to claim or a building to build). */
 .next-goal-card{box-sizing:border-box;overflow:hidden}

@@ -1431,8 +1431,9 @@ function registerAgentTools(){
 }
 // Show me: the way to a step of the guide (and to a goal of the next-goal card). auto (11 Oct 2026, Part A A12): the guide shows it by itself
 // once after each finished step; the pointer then ends on any tap that is not on it (coach.js). Right after planting, the Water tool lights
-// and one line says when (A12, step 4); the camera stays where the farmer is planting.
-function showWay(target,{auto=false}={}){
+// and one line says when (A12, step 4); the camera stays where the farmer is planting. stay (13 Oct 2026): step 2's pointer to Market
+// is not ended by taps on the farm (beginner-ui.js, coach.js).
+function showWay(target,{auto=false,stay=false}={}){
  if(auto&&target==='water'&&state.plots.some(p=>canWater(p,farmNow()))){coach.stop();showTool('water');toast('Water it within a minute.');return;}
  // A building to build (A8, A13): through Buildings (or its name on the map) to its Build button.
  if(typeof target==='string'&&target.startsWith('build:')){const steps=guideSteps(target,{state,now:farmNow()});if(steps){coach.stop();coach.start(steps,{auto});}else economy.openBuilding(target.slice(6));return;}
@@ -1448,7 +1449,7 @@ function showWay(target,{auto=false}={}){
  else if(target==='hand'){const v=farmLife?.views.get('greenhouse');if(v&&!villageWorld){lookAt(v.x,v.z);positionBuildingLabels();}const steps=guideSteps('hand',{state,now:farmNow()});if(steps)coach.start(steps,{auto});else if(!auto)activities.openHub();}
  // Show me points at the way in and lets the farmer tap it (1 Oct 2026: it used to open the window for them, so they never
  // learnt where Market was). Only where nothing can be pointed at does it still open the window itself.
- else if(guideSteps(target,{state,now:farmNow()}))coach.start(guideSteps(target,{state,now:farmNow()}),{auto});
+ else if(guideSteps(target,{state,now:farmNow()}))coach.start(guideSteps(target,{state,now:farmNow()}),{auto,stay});
  // By itself the guide only points; it never opens a window (no extra pop-ups).
  else if(auto)return;
  else if(target==='eggs')economy.openMarket('goods');
@@ -1489,7 +1490,7 @@ function bindContextRestore(canvas){
  });
 }
 async function init(){
- const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,villageWorld?{loading:'Travelling to the village',village:true}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?[...(LAKE_OPEN?[LAKE_LOADING_TIP]:[]),...VILLAGE_LOADING_TIPS]:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)]});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open
+ const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,villageWorld?{loading:'Travelling to the village',village:true}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?[...(LAKE_OPEN?[LAKE_LOADING_TIP]:[]),...VILLAGE_LOADING_TIPS]:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)],level:()=>levelProgress(state).level});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open   // the tips about later features from level 10 (13 Oct 2026)
  try{
   bindUI();updateUI();
   renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});

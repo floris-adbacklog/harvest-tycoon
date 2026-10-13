@@ -79,7 +79,8 @@ test('the pointer by itself ends on any tap that is not on it, and never opens a
   coach.stop();coach.start([{find:()=>null,text:'x'}]);assert.equal(coach.auto,false,'Show me as before');coach.stop();
  }finally{globalThis.requestAnimationFrame=saved.raf;globalThis.cancelAnimationFrame=saved.caf;}
  const src=read('public/coach.js');
- assert.match(src,/r\.onDown=event=>\{if\(run!==r\|\|!r\.auto\|\|!r\.target\)return;if\(!\(event\.target\?\.nodeType===1&&r\.target\.contains\(event\.target\)\)&&!onSpot\(r\.target,event\)\)stop\(\);\};/);
+ // 13 Oct 2026: except a tap on the farm while step 2's pointer to Market stays (stay; tests/first-sale-quiet.test.mjs).
+ assert.match(src,/r\.onDown=event=>\{if\(run!==r\|\|!r\.auto\|\|!r\.target\)return;if\(!\(event\.target\?\.nodeType===1&&r\.target\.contains\(event\.target\)\)&&!onSpot\(r\.target,event\)&&!\(r\.stay&&event\.target\?\.closest\?\.\(FARM_VIEW\)\)\)stop\(\);\};/);
  assert.match(src,/doc\.addEventListener\('pointerdown',r\.onDown,true\);/);
  const game=read('public/game.js');
  assert.match(game,/\n \/\/ By itself the guide only points; it never opens a window \(no extra pop-ups\)\.\n else if\(auto\)return;/);

@@ -115,14 +115,23 @@ export const PORTAL_HIDDEN_TIPS=Object.freeze(['invite-friends','farmapp']);
 // In our Android app (Oct 2026: html[data-app=android], public/android.js) only the tip about adding the game to the home screen goes:
 // the app is on the phone already.
 export const APP_HIDDEN_TIPS=Object.freeze(['farmapp']);
+// Beginners see only the tips about the basics (13 Oct 2026: a level-1 farmer could read about the Family Order while the farm loaded).
+// The tips about features that open at level 10 or later (events, Farm chores, Farm families, the Halloween Pass, the Valley Market, the
+// Trade Depot) wait until level 10, when Farm families open (farm-state.js FAMILY_MIN_LEVEL; tests/first-sale-quiet.test.mjs keeps them
+// equal and checks each level). Crops are no feature: every level opens new ones (the apple tip is also each page's first, in its HTML).
+// The farm page knows the farmer's level (game.js level); the page around it (play.html, the portals) does not: there only the basics.
+export const BEGINNER_TIP_LEVEL=10;
+export const LATER_TIPS=Object.freeze(['live-events','chore-weeds','family-chest-gold','family-sharing','family-tournament','family-weekly-order','family-members','valley-market','trade-depot','giant-small']);
 export const portalTips=(tips,doc)=>{
  const data=doc?.documentElement?.dataset,hidden=data?.portal?PORTAL_HIDDEN_TIPS:data?.app==='android'?APP_HIDDEN_TIPS:null;
  return hidden?tips.filter(([picture])=>!hidden.includes(picture)):tips;
 };
-// Shows a tip and changes it every few seconds with a short fade. Returns a function that stops it.
-export function startLoadingTips(doc,{tips:all=LOADING_TIPS,text='loading-tip-text',icon='loading-tip-icon',interval=4500,timers=globalThis,now=Date.now()}={}){
+// Shows a tip and changes it every few seconds with a short fade. Returns a function that stops it. level(): the farmer's level, 0 when
+// not known (a later tip is passed over below BEGINNER_TIP_LEVEL).
+export function startLoadingTips(doc,{tips:all=LOADING_TIPS,level=()=>0,text='loading-tip-text',icon='loading-tip-icon',interval=4500,timers=globalThis,now=Date.now()}={}){
  const tips=portalTips(all,doc),box=doc.getElementById(text)?.parentElement;let index=Math.floor(now/interval)%tips.length,swap=0;
- const show=()=>{const [picture,tip]=tips[index];const t=doc.getElementById(text),i=doc.getElementById(icon);if(t)t.textContent=tip;if(i)i.src=`/assets/icons/${picture}.webp`;};
+ const fits=([picture])=>{if(!LATER_TIPS.includes(picture))return true;try{return Number(level())>=BEGINNER_TIP_LEVEL;}catch{return false;}};
+ const show=()=>{for(let n=0;n<tips.length&&!fits(tips[index]);n++)index=(index+1)%tips.length;const [picture,tip]=tips[index];const t=doc.getElementById(text),i=doc.getElementById(icon);if(t)t.textContent=tip;if(i)i.src=`/assets/icons/${picture}.webp`;};
  show();
  const timer=timers.setInterval(()=>{box?.classList?.add('is-changing');swap=timers.setTimeout(()=>{index=(index+1)%tips.length;show();box?.classList?.remove('is-changing');},350);},interval);
  return ()=>{timers.clearInterval(timer);timers.clearTimeout(swap);};

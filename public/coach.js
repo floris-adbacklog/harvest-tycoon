@@ -52,15 +52,18 @@ export function createCoach({doc=globalThis.document,win=globalThis,timeout=2500
  }
  // auto (11 Oct 2026, Part A A12): the guide shows the way by itself after a step; then any tap that is not on the pointed button ends
  // it at once, as Escape does, so it never stands in the way of what the farmer does instead.
- function start(steps,{auto=false}={}){
+ // stay (13 Oct 2026): step 2's pointer to Market (beginner-ui.js) stays while the farmer works the farm: a tap on the farm (a field, the
+ // corn, the grass) leaves it standing; a tap on another button, or a window that opens over it, still ends it. Before, the second corn
+ // ended it, and on a phone the sales within 30 s of the first harvest fell from 60% to 20%.
+ function start(steps,{auto=false,stay=false}={}){
   stop();if(!steps?.length)return;
-  const r=run={steps,auto,index:-1,target:null,bubble:null,host:null,frame:0,timer:0,waitUntil:0};
+  const r=run={steps,auto,stay,tapped:false,index:-1,target:null,bubble:null,host:null,frame:0,timer:0,waitUntil:0};
   r.onKey=event=>{if(event.key==='Escape')stop();};
   // On it: inside the button, or on its spot (a map label lets the tap through to the farm below it, which opens the building).
-  r.onDown=event=>{if(run!==r||!r.auto||!r.target)return;if(!(event.target?.nodeType===1&&r.target.contains(event.target))&&!onSpot(r.target,event))stop();};
+  r.onDown=event=>{if(run!==r||!r.auto||!r.target)return;if(!(event.target?.nodeType===1&&r.target.contains(event.target))&&!onSpot(r.target,event)&&!(r.stay&&event.target?.closest?.(FARM_VIEW)))stop();};
   // The farmer tapped the button: on to the next step once the window it opens is there.
   // Only from the step that was tapped: a tab that already passed itself on must not move the coach on twice.
-  r.onClick=event=>{if(run!==r||!r.target||!event.target.closest)return;const at=r.index;if(r.target.contains(event.target))setTimeout(()=>{if(run===r&&r.index===at)advance();},60);};
+  r.onClick=event=>{if(run!==r||!r.target||!event.target.closest)return;const at=r.index;if(r.target.contains(event.target)){r.tapped=true;setTimeout(()=>{if(run===r&&r.index===at)advance();},60);}};
   doc.addEventListener('click',r.onClick,true);doc.addEventListener('keydown',r.onKey,true);doc.addEventListener('pointerdown',r.onDown,true);
   advance();
  }
@@ -74,6 +77,8 @@ export function createCoach({doc=globalThis.document,win=globalThis,timeout=2500
  // Every frame: find the step's button (a window may still be opening, or may draw its list again), then keep the bubble beside it.
  function tick(){
   const r=run;if(!r)return;
+  // A pointer that stays: a window that opens over it, and not from a tap on it (a building's window from a tap on the farm), ends it.
+  if(r.stay&&!r.tapped&&doc.querySelector?.('dialog[open]')){stop();return;}
   const step=r.steps[r.index],found=step.find();
   // A step that is already done (the right tab is open) passes straight on.
   if(found?.skip){advance();return;}

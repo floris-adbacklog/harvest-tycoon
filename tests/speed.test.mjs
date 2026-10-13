@@ -34,7 +34,7 @@ test('Show me points the way: the bubble sits above the button when there is roo
 });
 test('every Show me goal uses the buttons a farmer uses: the bottom bar and More on a phone, the side buttons and the map on a computer',()=>{
  const steps=read('public/guide-steps.js'),game=read('public/game.js'),coach=read('public/coach.js');
- assert.match(game,/else if\(guideSteps\(target,\{state,now:farmNow\(\)\}\)\)coach\.start\(guideSteps\(target,\{state,now:farmNow\(\)\}\),\{auto\}\);/);
+ assert.match(game,/else if\(guideSteps\(target,\{state,now:farmNow\(\)\}\)\)coach\.start\(guideSteps\(target,\{state,now:farmNow\(\)\}\),\{auto,stay\}\);/);
  assert.doesNotMatch(game,/else if\(target==='market'\)openDialog\('market-dialog'\);\n  else if\(guideSteps/,'pointing comes first');
  for(const sel of ["shown('#market-button')","shown('#buildings-button')","shown('#more-button')",'[data-menu-action="today-button"]','.utility-label[data-utility="chores"]:not(.locked)','.start-recipe[data-recipe="eggs"]','#checkin-gift','[data-collect-job]'])assert.ok(steps.includes(sel),sel);
  assert.match(coach,/pointer-events|r\.index===at/);assert.match(read('public/beginner.css'),/\.coach-bubble\{position:fixed;[^}]*pointer-events:none/,'taps go through the bubble');
