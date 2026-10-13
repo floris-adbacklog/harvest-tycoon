@@ -31,9 +31,10 @@ export async function isStaff(admin,user){
 }
 
 // Generous enough for a real reward, small enough that an extra typed zero cannot hand out a fortune by accident.
-// Diamonds are capped tighter: they are the currency the diamond-checkout Stripe packs sell, topping out at 3500.
+// Diamonds are capped tighter: they are the currency the diamond-checkout Stripe packs sell, topping out at 3500. 20,000 since 13 Oct
+// 2026 (the owner's call; it was 5,000), the same as a special offer's most (game/payments.js OFFER.maxDiamonds).
 // A single item is capped tighter still — these stack in an inventory slot, not a wallet.
-const MAX_GRANT=1000000,MAX_DIAMONDS=5000,MAX_ITEM=10000,MAX_MESSAGE=200;
+const MAX_GRANT=1000000,MAX_DIAMONDS=20000,MAX_ITEM=10000,MAX_MESSAGE=200;
 export const validGrantAmount=(value,max)=>Number.isInteger(value)&&value>=0&&value<=max;
 export const validItem=(item,itemCount)=>item==null?!itemCount:Object.hasOwn(ITEMS,item)&&validGrantAmount(itemCount,MAX_ITEM)&&itemCount>0;
 export function validGrant({coins,xp,diamonds,item,itemCount}){
@@ -62,7 +63,7 @@ export async function handleAdminGrant({admin,body,user}){
  if(typeof playerId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(playerId))return respond({error:'Choose a valid farmer.'},400);
  const coins=Number(body.coins)||0,xp=Number(body.xp)||0,diamonds=Number(body.diamonds)||0;
  const item=typeof body.item==='string'&&body.item?body.item:null,itemCount=item?Math.max(0,Math.floor(Number(body.itemCount)||0)):0;
- if(!validGrant({coins,xp,diamonds,item,itemCount}))return respond({error:'Enter whole, non-negative amounts (at least one), within the per-gift limit.'},400);
+ if(!validGrant({coins,xp,diamonds,item,itemCount}))return respond({error:`Enter whole, non-negative amounts (at least one): per gift at most ${amount(MAX_DIAMONDS)} diamonds, ${amount(MAX_GRANT)} coins or XP and ${amount(MAX_ITEM)} of a crop or good.`},400);
  const notify=body.notify===true,message=notify?sanitizeGiftMessage(body.message):null;
  // Never to an admin account (3 Oct 2026): it plays nothing and opens a showcase farm, so a gift would never be seen, and saving its real
  // farm would set its level 999 back (supabase/admin-level.sql). A lookup that fails does not stop a gift to a farmer.

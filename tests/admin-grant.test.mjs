@@ -18,8 +18,8 @@ test('grant amounts must be whole, non-negative, within limits, and at least one
  for(const bad of [-1,1000001,1.5,NaN,Infinity,'5'])assert.equal(validGrantAmount(bad,1000000),false);
  assert.equal(validGrant({coins:0,xp:0,diamonds:0}),false,'nothing to give');
  assert.equal(validGrant({coins:1,xp:0,diamonds:0}),true);
- assert.equal(validGrant({coins:0,xp:0,diamonds:5000}),true,'diamonds allowed up to their own, tighter cap');
- assert.equal(validGrant({coins:0,xp:0,diamonds:5001}),false,'diamonds capped well below the coins/xp limit');
+ assert.equal(validGrant({coins:0,xp:0,diamonds:20000}),true,'diamonds allowed up to their own, tighter cap (20,000 since 13 Oct 2026)');
+ assert.equal(validGrant({coins:0,xp:0,diamonds:20001}),false,'diamonds capped well below the coins/xp limit');
  assert.equal(validGrant({coins:1000001,xp:0,diamonds:0}),false);
 });
 test('an item grant needs a real item key, a positive whole count within its own cap, or no item at all',()=>{
@@ -142,7 +142,7 @@ test('anyone but the one admin account is rejected before touching the database 
  }
 });
 test('a malformed player id or an empty/out-of-range gift is rejected before touching the database',async()=>{
- for(const body of [{playerId:'not-a-uuid',coins:1},{playerId:id,coins:0,xp:0,diamonds:0},{playerId:id,coins:-1},{playerId:id,coins:1000001},{playerId:id,diamonds:5001}]){
+ for(const body of [{playerId:'not-a-uuid',coins:1},{playerId:id,coins:0,xp:0,diamonds:0},{playerId:id,coins:-1},{playerId:id,coins:1000001},{playerId:id,diamonds:20001}]){
   const db=database();
   const result=await handleAdminGrant({admin:db,body,user:admin});
   assert.equal(result.status,400);assert.equal(db.calls.length,0);
