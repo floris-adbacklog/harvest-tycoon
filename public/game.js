@@ -31,7 +31,7 @@ import { createRookieUI } from './rookie-ui.js';
 import { art,refreshArt } from './visual-icons.js';
 import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
-import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups } from './quests-ui.js';
+import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDailies } from './quests-ui.js';
 import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
@@ -866,8 +866,9 @@ function updateUI(){
  $('level-name').textContent=levelTitle(lvl);
  // What the next level brings, on the level card (computer screens): there is always something just ahead.
  const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';
- // How many quests wait to be claimed, one tap each in Quests (11 Oct 2026, Part A A13; it was "!").
- {const waiting=questGroups(state).ready.length+(villageQuestReady(state)?villageQuestGroups(state).ready.length:0);$('task-dot').hidden=!waiting;$('task-dot').textContent=waiting>99?'99+':String(waiting);}
+ // How many quests wait to be claimed, one tap each in Quests (11 Oct 2026, Part A A13; it was "!"), and the daily challenges that are
+ // ready in Today (Plan F, 13 Oct 2026; the line at the top of Quests opens Today).
+ {const waiting=questGroups(state).ready.length+(villageQuestReady(state)?villageQuestGroups(state).ready.length:0)+readyDailies(state,farmNow()).length;$('task-dot').hidden=!waiting;$('task-dot').textContent=waiting>99?'99+':String(waiting);}
  // The medals of the first basket, a moment after the first sale (A11).
  if(heldMedals.length&&!guideAt('sell')){const medals=heldMedals;heldMedals=[];clearTimeout(heldTimer);heldTimer=0;setTimeout(()=>medalToast(medals),2600);}
  familyUI?.refresh();passUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();villageSquare?.refresh();boat?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
@@ -1379,14 +1380,14 @@ function bindUI(){
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  // The purchase pop-up after a cancelled or expired checkout (src/payment-ui.js) offers a way straight back to the shop.
  window.harvestShop={open:()=>boosts.open()};
- // A notification or a shortcut on the app icon can open Daily rewards (src/game-cloud.js harvestOpen).
+ // A notification or a shortcut on the app icon can open Today (src/game-cloud.js harvestOpen).
  window.harvestToday=()=>retention.openToday();
  rookie=createRookieUI({state});
- quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,village:villageWorld});
+ quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,openToday:()=>retention.openToday('challenges'),village:villageWorld});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  // The guide (Part A, 11 Oct 2026): showWay shows the way to a step (Show me, and by itself once after each step: auto); the coach must be
  // free for that (idle). At the end the card leads to the next goal (A8, next-goal.js): one green button for it, Thank you beside it.
- beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>{const goal=nextGoal(state);giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote(farmNow(),{lead:goal.kind!=='quest'}),action:goalAction(goal)});},guide:showWay,idle:()=>!coach.active,claimQuest:claim,openQuest:id=>quests.openAt(id),village:villageWorld});
+ beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>{const goal=nextGoal(state);giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote(farmNow(),{lead:goal.kind!=='quest'&&goal.kind!=='daily'}),action:goalAction(goal)});},guide:showWay,idle:()=>!coach.active,claimQuest:claim,openQuest:id=>quests.openAt(id),openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
  const inviteUI=createInviteUI({notify:toast});
  // Share my farm (Oct 2026): on the level-up card and on your own profile (src/player-profiles.js, through window.harvestShareFarm).
  // The village is another scene, so not there. It takes the invite link Invite a friend already asked for (one ask per visit).
@@ -1466,6 +1467,7 @@ function showWay(target,{auto=false,stay=false}={}){
 // label never reads like a Claim all), build what opened, or plant.
 function goalAction(goal){
  if(goal.kind==='quest')return {label:'Claim your next quest',run:()=>quests.openAt(goal.id)};
+ if(goal.kind==='daily')return {label:'Open Today',run:()=>retention.openToday('challenges',{at:goal.id})};   // Plan F (13 Oct 2026)
  if(goal.kind==='build')return {label:`Build the ${goal.name}`,run:()=>showWay(`build:${goal.key}`)};
  return {label:'Plant your fields',run:()=>{setCrop('wheat');focusFields();}};
 }

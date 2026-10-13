@@ -39,9 +39,9 @@ export function canPointNow(state,guideTarget,now){
 // shows it open.
 const GOAL_FOLDED_KEY='harvest-tycoon:next-goal';
 // guide(target,{auto}): Show me (public/game.js showWay); idle(): the pointer is free; claimQuest(id): one quest, as in Quests; openQuest(id):
-// Quests at that quest.
+// Quests at that quest; openToday(id): Today at that daily challenge (Plan F, 13 Oct 2026), where it is claimed.
 // village: the game shows the village (World II), which has its own quests: no farm goal there.
-export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,idle=()=>true,claimQuest=null,openQuest=null,village=false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
+export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
  const $=id=>document.getElementById(id),dialog=$('beginner-dialog');
  let busy=false,lastMarkup='',finaleShown=false,lastStep=null,lastBanner='',pending=null,goalKey='',goalBusy=false;
  function banner(steps,current,done){
@@ -162,19 +162,21 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   $('next-goal-body').hidden=folded;const fold=$('next-goal-collapse');fold.setAttribute('aria-expanded',String(!folded));fold.setAttribute('aria-label',folded?'Expand next goal':'Collapse next goal');
   if(!goal){goalKey='';return;}
   const key=JSON.stringify(goal)+goalBusy;if(key===goalKey)return;goalKey=key;
-  const kind={quest:'QUEST READY',build:'READY TO BUILD',progress:'QUEST IN PROGRESS',level:'NEXT LEVEL'}[goal.kind];
+  const kind={quest:'QUEST READY',daily:'DAILY CHALLENGE READY',build:'READY TO BUILD',progress:'QUEST IN PROGRESS',level:'NEXT LEVEL'}[goal.kind];
   const title=goal.kind==='build'?`Build the ${goal.name}`:goal.kind==='level'?(goal.name?`Level ${goal.level}: ${goal.name}`:`Level ${goal.level}`):goal.title;
   $('next-goal-kind').textContent=kind;$('next-goal-title').textContent=title;
-  $('next-goal-art').innerHTML=goal.kind==='quest'||goal.kind==='progress'?questArt(goal.stat):art(goal.kind==='build'?goal.key:goal.art)||art('quests');
-  $('next-goal-note').innerHTML=goal.kind==='quest'?`<b class="reward-coins">${art('coins')}+${number(goal.coins)} coins</b>${goal.xp?`<b class="reward-xp">${art('xp')}+${number(goal.xp)} XP</b>`:''}`:goal.kind==='build'?`<b class="reward-coins">${art('coins')}${number(goal.cost)} coins</b>`:'';
+  $('next-goal-art').innerHTML=goal.kind==='quest'||goal.kind==='daily'||goal.kind==='progress'?questArt(goal.stat):art(goal.kind==='build'?goal.key:goal.art)||art('quests');
+  // A daily challenge (Plan F, 13 Oct 2026): its coins, diamonds and XP, as in Today.
+  $('next-goal-note').innerHTML=goal.kind==='quest'||goal.kind==='daily'?`<b class="reward-coins">${art('coins')}+${number(goal.coins)} coins</b>${goal.diamonds?`<b class="reward-diamonds">${art('diamonds')}+${number(goal.diamonds)} ${goal.diamonds===1?'diamond':'diamonds'}</b>`:''}${goal.xp?`<b class="reward-xp">${art('xp')}+${number(goal.xp)} XP</b>`:''}`:goal.kind==='build'?`<b class="reward-coins">${art('coins')}${number(goal.cost)} coins</b>`:'';
   $('next-goal-note').hidden=goal.kind==='progress'||goal.kind==='level';
   const meter=goal.kind==='progress'||goal.kind==='level';$('next-goal-meter').hidden=!meter;
   if(meter){const [value,max]=goal.kind==='progress'?[goal.value,goal.target]:[goal.current,goal.target];$('next-goal-progress').max=max;$('next-goal-progress').value=value;$('next-goal-count').textContent=goal.kind==='level'?`${number(value)} / ${number(max)} XP`:`${number(value)} / ${number(max)}`;}
+  // A daily challenge is claimed in Today, one at a time: its button opens Today at it.
   const button=$('next-goal-button'),showMe=goal.kind==='build'||goal.kind==='progress'&&goal.guide;
-  button.hidden=!(goal.kind==='quest'||showMe);button.disabled=goalBusy;
-  button.className=goal.kind==='quest'?'primary-button':'small-button';button.textContent=goal.kind==='quest'?'Claim':'Show me';
+  button.hidden=!(goal.kind==='quest'||goal.kind==='daily'&&openToday||showMe);button.disabled=goalBusy;
+  button.className=goal.kind==='quest'||goal.kind==='daily'?'primary-button':'small-button';button.textContent=goal.kind==='quest'?'Claim':goal.kind==='daily'?'Open Today':'Show me';
   // "Quest ready:" before the quest's own title (11 Oct 2026: "Next: Claim Your first harvest" glued the title into a sentence, capital kept).
-  $('next-goal-mobile-copy').textContent=goal.kind==='quest'?`Quest ready: ${goal.title}`:goal.kind==='build'?`Next: Build the ${goal.name}`:'';
+  $('next-goal-mobile-copy').textContent=goal.kind==='quest'?`Quest ready: ${goal.title}`:goal.kind==='daily'?`Daily challenge ready: ${goal.title}`:goal.kind==='build'?`Next: Build the ${goal.name}`:'';
   icons();
  }
  async function goalTap(fromLine=false){
@@ -185,6 +187,8 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
    if(!claimQuest)return;goalBusy=true;goalCard(true);try{await claimQuest(goal.id);}finally{goalBusy=false;goalKey='';refresh();}
    return;
   }
+  // The card and the phone's line both open Today at the challenge; it is claimed there, one at a time.
+  if(goal.kind==='daily'){openToday?.(goal.id);return;}
   if(goal.kind==='build')guide(`build:${goal.key}`);
   else if(goal.kind==='progress'&&goal.guide)guide(goal.guide);
  }

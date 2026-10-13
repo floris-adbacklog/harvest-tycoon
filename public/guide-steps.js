@@ -33,7 +33,8 @@ export function guideSteps(target,{state,now,doc=globalThis.document,win=globalT
   return [...building(key,'Tap this building.','Open this building.'),{find:()=>doc.querySelector('dialog[open] [data-collect-job]')??doc.querySelector('dialog[open] #collect-all-batches'),text:'Collect your batch here.'}];
  }
  if(target==='produce'||target==='eggs')return [...building('coop','Tap the Chicken Coop.','Open the Chicken Coop.'),{find:()=>doc.querySelector('dialog[open] .start-recipe[data-recipe="eggs"]'),text:'Start a batch here.'}];
- if(target==='today')return [...via('today-button','Tap Today for your daily gift.','[data-menu-action="today-button"]','Tap Daily rewards.'),{find:()=>doc.querySelector('dialog[open] #checkin-gift'),text:'Collect your gift here.'}];
+ // Its tile in More is called Today too, like the button on a computer (Plan F, 13 Oct 2026; it was "Daily rewards").
+ if(target==='today')return [...via('today-button','Tap Today for your daily gift.','[data-menu-action="today-button"]','Tap Today.'),{find:()=>doc.querySelector('dialog[open] #checkin-gift'),text:'Collect your gift here.'}];
  // Step 9, A helping hand (11 Oct 2026): the Greenhouse's pin on the map, or on a phone More, A helping hand and the Greenhouse's card;
  // then a tile that needs work. (Nothing has rested yet at this step: a finished job finishes the step.) game.js moves the view to the
  // Greenhouse first; without a pin in view or a More button there is no way in to point at, and game.js opens the stops' window.

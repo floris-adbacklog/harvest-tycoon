@@ -1,4 +1,5 @@
-import {QUESTS,VILLAGE_QUESTS,questXp,levelOf,guidedFarm,availableDaily,worldTwoOpen} from './farm-state.js';
+import {QUESTS,VILLAGE_QUESTS,questXp,levelOf,guidedFarm,availableDaily,worldTwoOpen,featureUnlocked,dailyTasks,ACTIVE_STATIONS} from './farm-state.js';
+import {farmNow} from './farm-client.js';
 import {art} from './visual-icons.js';
 
 export function questGroups(state){
@@ -27,6 +28,20 @@ export function villageQuestGroups(state){
  return groups;
 }
 export const villageQuestReady=state=>worldTwoOpen(state)&&villageQuestGroups(state).ready.length>0;
+// Plan F (13 Oct 2026): the daily challenges that are done and wait in Today, one Claim each. On a phone Today sits in More, and 48% of
+// the farmers who stopped at level 5 or 6 left one there: the Quests button counts them too (game.js), and its window has one line at the
+// top that opens Today. They are still claimed in Today, one at a time.
+export function readyDailies(state,now=farmNow()){return featureUnlocked(state,'challenges')?dailyTasks(state,now).filter(q=>!q.claimed&&q.progress>=q.target):[];}
+// Plan F (13 Oct 2026): when a daily challenge waits for a helping hand stop that is resting, Today says when that stop is ready again
+// ("Greenhouse ready at 14:35"): the stop it asks for, or for a round or for any jobs the first of the stops it still needs, and only when
+// none of them can be done now. null when nothing waits.
+export function dailyWait(state,task,now=farmNow()){
+ if(task.claimed||task.progress>=task.target)return null;
+ const a=state.activities??{},keys=Object.keys(ACTIVE_STATIONS),one=task.stat?.match(/^activity_(.+)$/)?.[1];
+ const stops=task.stat==='activities'?keys:task.stat==='activity_rounds'?keys.filter(k=>!(a.round??[]).includes(k)):keys.includes(one)?[one]:[];
+ const rest=stops.map(k=>({station:k,name:ACTIVE_STATIONS[k].name,at:a.jobs?.[k]?0:Number(a.cooldowns?.[k])||0}));
+ return !rest.length||rest.some(s=>s.at<=now)?null:rest.sort((x,y)=>x.at-y.at)[0];
+}
 
 // One picture per quest, from what it counts: the crop or good itself, the building, or the farm job. The village's later quests (Oct 2026):
 // the market crate, builder's crates, the town boat and the landmarks.
@@ -40,11 +55,12 @@ const number=n=>Number(n).toLocaleString('en-US');
 
 // village: the game shows the village (World II), where Your quests opens on the village's quests. From level 100 a Farm / Village
 // switch shows either list; below it there is only the farm's.
-export function createQuestsUI({state,claim,claimVillage,icons,notify,village=false,document:doc=globalThis.document}){
+// openToday (Plan F, 13 Oct 2026): the line at the top for the daily challenges that are ready opens Today, where they are claimed.
+export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=null,village=false,document:doc=globalThis.document}){
  const dialog=doc.getElementById('tasks-dialog'),list=doc.getElementById('task-list');
  let showDone=false,world=village?'village':'farm';
  const toolbar=doc.createElement('div');toolbar.className='quest-toolbar';
- toolbar.innerHTML='<div class="market-tabs quest-worlds" role="group" aria-label="Quests for" hidden><button data-quest-world="farm" aria-pressed="true">Farm</button><button data-quest-world="village" aria-pressed="false">Village</button></div><div id="quest-summary" role="status"></div>';
+ toolbar.innerHTML='<button type="button" class="quest-today-line" data-quest-today hidden></button><div class="market-tabs quest-worlds" role="group" aria-label="Quests for" hidden><button data-quest-world="farm" aria-pressed="true">Farm</button><button data-quest-world="village" aria-pressed="false">Village</button></div><div id="quest-summary" role="status"></div>';
  list.before(toolbar);
  function row({id,quest:q,value},group){
   const xp=questXp(q),rewards=`<span class="quest-rewards"><b>${art('coins')}${number(q.reward)}</b>${xp?`<b class="is-xp">${art('xp')}${xp} XP</b>`:''}</span>`;
@@ -54,6 +70,9 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,village=fa
  function render(){
   const both=worldTwoOpen(state);if(!both)world='farm';
   const villageList=world==='village',groups=villageList?villageQuestGroups(state):questGroups(state),done=groups.done.length,all=villageList?VILLAGE_QUESTS.length:QUESTS.length;
+  // Plan F (13 Oct 2026): the daily challenges the Quests button also counts, in one line that opens Today.
+  const daily=readyDailies(state).length,line=toolbar.querySelector('[data-quest-today]');if(line)line.hidden=!daily||!openToday;
+  if(line&&!line.hidden)line.innerHTML=`${art('gift')}<strong>${daily} daily challenge${daily===1?'':'s'} ready</strong><span>Today</span><i data-lucide="chevron-right"></i>`;
   const worlds=toolbar.querySelector('.quest-worlds');if(worlds){worlds.hidden=!both;worlds.querySelectorAll('[data-quest-world]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.questWorld===world)));}
   toolbar.querySelector('#quest-summary').innerHTML=`${art(villageList?'village-badge':'quests')}<span><strong>${villageList?`${done} of ${all} village quests done`:`${done} of ${all} quests done`}</strong><progress max="${all}" value="${done}" aria-label="Quests completed"></progress></span>`;
   // One list, no tabs (30 Sep 2026): what you can claim comes first, then what is in progress; completed quests fold away at the
@@ -73,6 +92,7 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,village=fa
  toolbar.addEventListener('click',event=>{
   const switcher=event.target.closest('[data-quest-world]');
   if(switcher){world=switcher.dataset.questWorld;showDone=false;render();}
+  if(event.target.closest('[data-quest-today]')){dialog.close();openToday?.();}
  });
  list.addEventListener('click',async event=>{
   if(event.target.closest('[data-quest-done]')){showDone=!showDone;render();return;}

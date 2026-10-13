@@ -1,9 +1,11 @@
 import {BUILDINGS,questXp,buildingEligible,buildingUnlocked,buildingCost,constructionNeeds,worldTwoBuilding,levelProgress} from './farm-state.js';
-import {questGroups} from './quests-ui.js';
+import {questGroups,readyDailies} from './quests-ui.js';
+import {farmNow} from './farm-client.js';
 import {nextUnlock} from './progression-ui.js';
 // The next goal after the Beginner guide (11 Oct 2026, Part A A8 and A13): after step 10 there was no goal on screen, 9 or more finished
 // quests waited unclaimed and wheat paid 2 XP a minute against 130 XP for level 6. One goal at a time, the first of:
 // 1. a quest ready to claim (the first in Quests' own order),
+// 1b. a daily challenge ready to claim in Today (Plan F, 13 Oct 2026: on a phone Today sits in More, and many left one there),
 // 2. a building that opened and can be paid for now (the cheapest first; never a place of the village, which is built from a golden brief),
 // 3. the open quest closest to done,
 // 4. what the next level opens, with the XP bar.
@@ -12,9 +14,12 @@ import {nextUnlock} from './progression-ui.js';
 // What a quest counts → where Show me points (public/guide-steps.js and the guide's own targets in game.js).
 const QUEST_GUIDE={harvested:'harvest',planted:'plant',watered:'water',tended:'tend',earned:'market',sold:'market',produced:'produce',made_eggs:'produce',collected:'collect'};
 export const questGuide=stat=>QUEST_GUIDE[stat]??(/^harvest_/.test(stat??'')?'harvest':null);
-export function nextGoal(state){
+export function nextGoal(state,now=farmNow()){
  const groups=questGroups(state),ready=groups.ready[0];
  if(ready)return {kind:'quest',id:ready.id,title:ready.quest.title,stat:ready.quest.stat,coins:ready.quest.reward,xp:questXp(ready.quest),ready:groups.ready.length};
+ // Its rewards as Today shows them (XP doubled while an XP boost runs); the card opens Today, where it is claimed.
+ const dailies=readyDailies(state,now),daily=dailies[0];
+ if(daily)return {kind:'daily',id:daily.id,title:daily.title,stat:daily.stat,coins:daily.reward,diamonds:daily.diamonds,xp:daily.xp*(state.boosts?.xpUntil>now?2:1),ready:dailies.length};
  const build=Object.keys(BUILDINGS).filter(key=>!worldTwoBuilding(key)&&buildingEligible(state,key)&&!buildingUnlocked(state,key)&&buildingCost(state,key)>0&&buildingCost(state,key)<=state.coins&&!constructionNeeds(state,key).length)
   .sort((a,b)=>buildingCost(state,a)-buildingCost(state,b)||a.localeCompare(b))[0];
  if(build)return {kind:'build',key:build,name:BUILDINGS[build].name,cost:buildingCost(state,build)};
@@ -23,5 +28,5 @@ export function nextGoal(state){
  const next=nextUnlock(state),lp=levelProgress(state);
  return {kind:'level',level:next?.level??lp.level+1,name:next?.name??'',art:next?.art??'xp',current:Math.max(0,lp.current),target:lp.target};
 }
-// A goal the farmer can act on right now (a quest to claim, a building to build): the phone's banner shows only these.
-export const actNow=goal=>goal?.kind==='quest'||goal?.kind==='build';
+// A goal the farmer can act on right now (a quest or a daily challenge to claim, a building to build): the phone's banner shows only these.
+export const actNow=goal=>goal?.kind==='quest'||goal?.kind==='daily'||goal?.kind==='build';

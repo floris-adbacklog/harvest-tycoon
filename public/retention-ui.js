@@ -1,5 +1,5 @@
 import {roadmapMarkup} from './progression-ui.js';
-import {questArt} from './quests-ui.js';
+import {questArt,dailyWait} from './quests-ui.js';
 import {streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
@@ -9,7 +9,7 @@ import {APP_PUSH_BLOCKED} from './android.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList,celebrate=()=>{}}){
- let tab='challenges',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
+ let tab='challenges',lastWaits='',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
  const open=id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();};
  // Rewards as the same little chips everywhere: coins, diamonds, XP.
  // In the order given, so a screen can lead with what matters most there (the streak leads with diamonds).
@@ -80,9 +80,10 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   if(tab==='challenges'&&!challengesOpen){
    $('today-content').innerHTML=`<p class="section-copy">Your daily gift is ready from the start. ${featureUnlockHint('challenges')}</p>`;
   }else if(tab==='challenges'){
-   const tasks=dailyTasks(state,farmNow()),xpBoost=state.boosts.xpUntil>farmNow()?2:1,multiplier=dailyRewardMultiplier(state,farmNow()),done=tasks.filter(q=>q.claimed).length;
+   // Plan F (13 Oct 2026): a challenge that waits for a helping hand stop that is resting says when that stop is ready again.
+   const tasks=dailyTasks(state,farmNow()),xpBoost=state.boosts.xpUntil>farmNow()?2:1;lastWaits=waitKey(tasks);const wait=q=>{const w=dailyWait(state,q,farmNow());return w?`<small class="daily-wait">${art('hourglass')}<span>${w.name} ready at ${clock(w.at)}</span></small>`:'';},multiplier=dailyRewardMultiplier(state,farmNow()),done=tasks.filter(q=>q.claimed).length;
    // Same cards as the quest list: picture, goal, a bar with the count and the reward as chips; Claim only when done.
-   $('today-content').innerHTML=`<div class="daily-bonus-card ${done===3?'is-done':''}"><span class="daily-bonus-art">${art('gift')}</span><span><strong>${done===3?'Daily bonus collected':'Finish all three for a bonus'}</strong>${rewardChips({coins:DAILY_BONUS.coins*multiplier,xp:DAILY_BONUS.xp*multiplier*xpBoost})}</span><b>${done}/3</b></div><div class="daily-list">`+tasks.map(q=>{const ready=!q.claimed&&q.progress>=q.target;return `<article class="daily-task daily-card ${q.claimed?'completed':ready?'is-ready':''}"><span class="quest-art">${questArt(q.stat)}</span><div class="quest-body"><h3>${q.title}</h3><p>${q.description}</p>${q.claimed?'':`<div class="quest-meter"><progress max="${q.target}" value="${q.progress}" aria-label="${q.title} progress"></progress><span>${q.progress} / ${q.target}</span></div>`}<div class="task-bottom">${rewardChips({coins:q.reward,diamonds:q.diamonds,xp:q.xp*xpBoost},lanternChip(state,'daily',farmNow()))}${q.claimed?'<span class="quest-state">Collected ✓</span>':ready?`<button class="primary-button" data-daily="${q.id}">Claim</button>`:''}</div></div></article>`;}).join('')+'</div>';
+   $('today-content').innerHTML=`<div class="daily-bonus-card ${done===3?'is-done':''}"><span class="daily-bonus-art">${art('gift')}</span><span><strong>${done===3?'Daily bonus collected':'Finish all three for a bonus'}</strong>${rewardChips({coins:DAILY_BONUS.coins*multiplier,xp:DAILY_BONUS.xp*multiplier*xpBoost})}</span><b>${done}/3</b></div><div class="daily-list">`+tasks.map(q=>{const ready=!q.claimed&&q.progress>=q.target;return `<article class="daily-task daily-card ${q.claimed?'completed':ready?'is-ready':''}"><span class="quest-art">${questArt(q.stat)}</span><div class="quest-body"><h3>${q.title}</h3><p>${q.description}</p>${q.claimed?'':`<div class="quest-meter"><progress max="${q.target}" value="${q.progress}" aria-label="${q.title} progress"></progress><span>${q.progress} / ${q.target}</span></div>${wait(q)}`}<div class="task-bottom">${rewardChips({coins:q.reward,diamonds:q.diamonds,xp:q.xp*xpBoost},lanternChip(state,'daily',farmNow()))}${q.claimed?'<span class="quest-state">Collected ✓</span>':ready?`<button class="primary-button" data-daily="${q.id}">Claim</button>`:''}</div></div></article>`;}).join('')+'</div>';
    document.querySelectorAll('[data-daily]').forEach(b=>b.onclick=()=>act({type:'daily',id:Number(b.dataset.daily),day},r=>`Challenge complete! +${r.coins} coins and +${r.diamonds} diamond${r.diamonds===1?'':'s'}${r.bonus?' including your daily bonus!':'.'}`));
   }else{
    const now=farmNow(),orders=dailyOrders(state,now),coinBoost=state.boosts.coinsUntil>now?2:1,xpBoost=state.boosts.xpUntil>now?2:1;
@@ -98,7 +99,9 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   }
   countdown();icons();
  }
- function openToday(selected='challenges'){tab=selected==='orders'&&!featureUnlocked(state,'cart')?'challenges':selected;renderToday();open('today-dialog');}
+ // at (Plan F, 13 Oct 2026): a daily challenge from the next-goal card or the phone's goal line, in view with its Claim ready.
+ function openToday(selected='challenges',{at=null}={}){tab=selected==='orders'&&!featureUnlocked(state,'cart')?'challenges':selected;renderToday();open('today-dialog');
+  const claim=at==null?null:document.querySelector(`#today-content [data-daily="${Number(at)}"]`);if(claim){claim.closest('.daily-card')?.scrollIntoView?.({block:'center'});claim.focus({preventScroll:true});}}
  function renderUtility(){
   if(utility==='tractor'){
    $('utility-title').textContent='Your trusty tractor';
@@ -178,6 +181,8 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   $('journal-button').classList.remove('has-reward');
   if($('today-dialog').open)renderToday();if($('utility-dialog').open)renderUtility();if($('journal-dialog').open)renderJournal();
  }
+ // What the challenges wait for (Plan F): Today is drawn anew only when that changes, so a Claim in view keeps its focus.
+ const waitKey=tasks=>tasks.map(q=>dailyWait(state,q,farmNow())?.at??0).join();
  function countdown(){const ms=DAY_MS-farmNow()%DAY_MS,h=Math.floor(ms/3600000),m=Math.floor(ms/60000)%60;$('daily-countdown').textContent=`Resets in ${h}h ${m}m`;}
  // Water only fits early in a crop's growth, so the tractor's water job says how long is left (the field that closes first).
  const clock=at=>new Date(at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
@@ -221,6 +226,8 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const coinBoost=`${state.boosts.coinsUntil>farmNow()}:${vipActive(state,farmNow())}`;if(lastCoinBoost!==coinBoost){lastCoinBoost=coinBoost;if($('today-dialog').open)renderToday();}
   const xpBoost=state.boosts.xpUntil>farmNow();if(lastXPBoost!==xpBoost){lastXPBoost=xpBoost;if($('today-dialog').open)renderToday();}
   const day=utcDay(farmNow());if(day!==lastDay){lastDay=day;refresh();}countdown();streakDanger();
+  // A helping hand stop a challenge waits for is ready again: its time goes (Plan F, 13 Oct 2026).
+  if($('today-dialog').open&&tab==='challenges'&&featureUnlocked(state,'challenges')&&waitKey(dailyTasks(state,farmNow()))!==lastWaits)renderToday();
   if($('utility-dialog').open&&utility==='tractor'&&lastFieldStatus!==fieldStatus())renderUtility();
  }
  $('today-button').onclick=()=>openToday();$('journal-button').onclick=()=>{renderJournal();open('journal-dialog');};
