@@ -181,7 +181,8 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  let outsideMute=false;
  // The page around the farm, when there is one we may use (not farm.html on its own, nor a page of another site); trip: this page is
  // about to make way for the farm's other world (travel()), so its context stays running there for the next page.
- let homeRef=null,trip=false;try{if(home&&home!==windowRef){void home[HOME_CONTEXT];homeRef=home;}}catch{}
+ // onState: this page's statechange handler, so a page that goes knows whether a later page already took the context over.
+ let homeRef=null,trip=false,onState=null;try{if(home&&home!==windowRef){void home[HOME_CONTEXT];homeRef=home;}}catch{}
  const voices=new Set(),lastPlayed=new Map();
  // A track's preview in Settings: {id,status:'loading'|'playing',source,gain}; the farm's music is turned down while it plays.
  let preview=null,previewTurn=0,previewFailed=null,previewBuffer=null;
@@ -227,7 +228,7 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   ambientBus.connect(compressor);effectBus.connect(compressor);compressor.connect(master);master.connect(ctx.destination);
   // An interruption that ends (a call, Siri, an alarm) brings the mix back, or keeps it silent while the game may not sound; one that
   // does not end is the next tap's to heal.
-  c.onstatechange=()=>{if(c!==ctx||disposed)return;heard=null;if(c.state!=='running')return;ran();if(active())applyMix(true);else silence();};
+  c.onstatechange=onState=()=>{if(c!==ctx||disposed)return;heard=null;if(c.state!=='running')return;ran();if(active())applyMix(true);else silence();};
   prepareSounds();
   if(homeRef&&!kept)try{homeRef[HOME_CONTEXT]=c;}catch{}
  }
@@ -382,18 +383,20 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  function pagehide(event){if(event.persisted)silence();else dispose();}
  function pageshow(event){if(event.persisted&&unlocked)void unlock(false);}
  // A context the page around the farm holds is never closed here (13 Oct 2026): this page's sounds stop and its mix comes off it, and
- // it stays running on a trip, for the next page, or is suspended when the farm closes otherwise (signed out, paused).
+ // it stays running on a trip, for the next page, or is suspended when the farm closes otherwise (signed out, paused). One a later page
+ // already took over (its handler is on it, review 13 Oct 2026) is that page's: this page only takes its own sounds off.
  function dispose(){
-  if(disposed)return;disposed=true;stopRendering?.();const kept=Boolean(ctx)&&parked()===ctx;silence(kept&&trip);
+  if(disposed)return;disposed=true;stopRendering?.();const kept=Boolean(ctx)&&parked()===ctx,taken=kept&&ctx.onstatechange!==onState;silence(kept&&(trip||taken));
   for(const type of GESTURES)documentRef?.removeEventListener(type,gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);music=null;previewBuffer=null;
-  if(kept){ctx.onstatechange=null;try{master.disconnect();}catch{}ctx=null;}else shut(ctx);
+  if(kept){if(!taken)ctx.onstatechange=null;for(const node of [effectBus,ambientBus,compressor,master])try{node.disconnect();}catch{}ctx=null;}else shut(ctx);
  }
  for(const type of GESTURES)documentRef?.addEventListener(type,gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
  // After a trip (13 Oct 2026): the context the page before left is taken over at once, before any tap here (the farmer tapped for it
  // there). Running, the sound goes on; suspended or interrupted, it is asked to start, and every tap here asks again, with no wait
  // carried over; where the game may not sound (hidden, sound off in Settings, muted from outside) it is suspended.
  if(parked()&&make()){unlocked=true;if(active())void unlock(false);else silence();}
- return {settings:read,setSettings,unlock,play,snip,dispose,muteFromOutside,preview:playPreview,stopPreview,travel(){trip=true;}};
+ // travel(false): the trip did not happen (its load failed), so a farm closed later is not taken for one.
+ return {settings:read,setSettings,unlock,play,snip,dispose,muteFromOutside,preview:playPreview,stopPreview,travel(on=true){trip=Boolean(on);}};
 }
 
 export function withActionSounds(runAction,getLevel,play){

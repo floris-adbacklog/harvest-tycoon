@@ -245,8 +245,24 @@ test('without a page around it we may use (farm.html on its own, another site\'s
  const foreign=new Proxy({},{get(){throw Error('SecurityError');},set(){throw Error('SecurityError');}});
  const made=[],p=farm([],{home:foreign,made});await p.tap();assert.ok(p.heard());away(p);assert.equal(made[0].state,'closed');
 });
-test('the game hands the page around the farm to its sound and marks a trip before the frame travels',()=>{
+test('the game hands the page around the farm to its sound, marks a trip before the frame travels and takes the mark back when the trip\'s load fails',()=>{
  const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
  assert.match(game,/const farmAudio=createFarmAudio\(\{home:window\.parent,/);
- assert.match(game,/if\(window\.parent\?\.harvestBridge\?\.travel\)\{farmAudio\.travel\(\);void window\.parent\.harvestBridge\.travel\(to\);\}/);
+ assert.match(game,/if\(window\.parent\?\.harvestBridge\?\.travel\)\{farmAudio\.travel\(\);void Promise\.resolve\(window\.parent\.harvestBridge\.travel\(to\)\)\.catch\(error=>\{farmAudio\.travel\(false\);throw error;\}\);\}/);
+});
+// Review 13 Oct 2026.
+test('a trip whose load failed is no trip: the farm closed afterwards (signed out) suspends the context and nothing of it stays connected',async()=>{
+ const home={},made=[];const p=farm([],{home,made});await p.tap();const c=p.ctx();assert.ok(p.heard());
+ p.audio.travel();p.audio.travel(false);p.win.fire('pagehide',{persisted:false});
+ assert.equal(c.state,'suspended');assert.equal(c.closes,0);assert.equal(home.harvestAudioContext,c);assert.equal(c.onstatechange,null);
+ assert.ok(c.gains.slice(0,3).every(n=>n.disconnected),'the page\'s own mix is off the context');
+});
+test('a page that goes after the next page already took the context over leaves it to that page: running, its handler on it, and a call that ends brings the next page\'s sound back',async()=>{
+ for(const trip of [true,false]){
+  const home={},made=[];const p=farm([],{home,made});await p.tap();const c=p.ctx();
+  const q=farm([],{home,made});await settle();await settle();assert.equal(made.length,1);const handler=c.onstatechange;assert.ok(handler);
+  if(trip)p.audio.travel();p.win.fire('pagehide',{persisted:false});await settle();
+  assert.equal(c.state,'running',`trip ${trip}: not suspended by the page that went`);assert.equal(c.onstatechange,handler,'the next page keeps its handler');
+  assert.ok(q.heard());c.go('interrupted');await settle();assert.equal(q.audio.play('harvest'),false,'quiet during the call');c.go('running');await settle();await settle();q.wait(500);assert.ok(q.heard(),'back after the call');q.audio.dispose();
+ }
 });

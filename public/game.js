@@ -77,8 +77,9 @@ const villageWorld=new URLSearchParams(location.search).get('world')==='village'
 if(villageWorld)document.documentElement.dataset.world='village';else document.documentElement.removeAttribute('data-trip');   // app-mode.js marks the trip
 // In the village the camera buttons speak of the village: centre it, or show all of it.
 if(villageWorld)for(const [id,label] of [['zoom-reset','Center the village'],['zoom-fit','Show the whole village']]){$(id).setAttribute('aria-label',label);$(id).title=label;}
-// The sound goes along (13 Oct 2026, farm-audio.js travel): the next page takes over this page's running context.
-const travel=to=>{if(window.parent?.harvestBridge?.travel){farmAudio.travel();void window.parent.harvestBridge.travel(to);}else location.search=to==='village'?'?world=village':'';};
+// The sound goes along (13 Oct 2026, farm-audio.js travel): the next page takes over this page's running context. A trip whose load
+// fails stays here, and is no trip for the sound either.
+const travel=to=>{if(window.parent?.harvestBridge?.travel){farmAudio.travel();void Promise.resolve(window.parent.harvestBridge.travel(to)).catch(error=>{farmAudio.travel(false);throw error;});}else location.search=to==='village'?'?world=village':'';};
 window.harvestTravel=travel;
 const initialChapterReward=window.harvestInitialFarm.chapterReward;
 const initialLevelReward=window.harvestInitialFarm.levelReward;
