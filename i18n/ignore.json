@@ -75,8 +75,8 @@
  "Keep every subject to 100 characters.",
  "Add the web address the button opens.",
  "The button can only open a page on harvesttycoon.com.",
- "You sent this email a moment ago.",
+ "An email with this subject went out in the last 24 hours. Use Continue under Last emails, or change the subject.",
  "No farmer matches: nobody gets this email.",
  "More than 5,000 farmers match. Choose a higher level or fewer days.",
- "The email could not be sent right now. Please try again."
+ "The server did not answer. Look under Last emails before you send again: Continue goes on where it stopped."
 ]

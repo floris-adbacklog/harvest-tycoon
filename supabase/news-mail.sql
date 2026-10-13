@@ -152,7 +152,8 @@ revoke all on function public.news_mail_me() from public, anon;
 grant execute on function public.news_mail_me() to authenticated;
 
 -- Records an email and its farmers, in batches of 50 (by farmer id, so a batch is the same farmers every time it goes). The button only
--- with its English text, and only to a page of harvesttycoon.com. The same subject twice within 10 minutes is a double click.
+-- with its English text, and only to a page of harvesttycoon.com. The same English subject again within 24 hours is refused: a double
+-- click, or Send again after a call that got no answer (the email is going already: Continue under Last emails goes on with it).
 create or replace function public.news_mail_start(p_texts jsonb, p_button_url text, p_filters jsonb)
  returns jsonb language plpgsql security definer set search_path to '' as $function$
 declare me uuid:=(select auth.uid()); v_texts jsonb; v_filters jsonb; v_url text:=nullif(btrim(coalesce(p_button_url,'')),''); v_id uuid:=gen_random_uuid(); v_n integer;
@@ -164,8 +165,8 @@ begin
  elsif v_url !~ '^https://(www\.)?harvesttycoon\.com(/[A-Za-z0-9._~:/?#@!$&()*+,;=%-]*)?$' then raise exception 'The button can only open a page on harvesttycoon.com.' using errcode='22023';
  end if;
  perform pg_advisory_xact_lock(hashtextextended('news-mail',0));
- if exists(select 1 from public.news_mailings m where m.texts->'en'->>'subject'=v_texts->'en'->>'subject' and m.created_at>now()-interval '10 minutes') then
-  raise exception 'You sent this email a moment ago.' using errcode='54000';
+ if exists(select 1 from public.news_mailings m where m.texts->'en'->>'subject'=v_texts->'en'->>'subject' and m.created_at>now()-interval '24 hours') then
+  raise exception 'An email with this subject went out in the last 24 hours. Use Continue under Last emails, or change the subject.' using errcode='54000';
  end if;
  select count(*) into v_n from public.news_mail_targets(v_filters);
  if v_n=0 then raise exception 'No farmer matches: nobody gets this email.' using errcode='22023'; end if;

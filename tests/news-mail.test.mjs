@@ -138,7 +138,7 @@ function world({players=120,admin=true,start=Date.UTC(2026,9,13,9)}={}){
   if(!admin)return {data:null,error:{code:'42501',message:'Not authorized.'}};
   if(name==='news_mail_me')return {data:{email:ADMIN_EMAIL,token:TOKEN,language:'nl'},error:null};
   if(name==='news_mail_start'){
-   if([...mailings.values()].some(m=>m.texts.en.subject===a.p_texts.en.subject&&t-m.at<600000))return {data:null,error:{code:'54000',message:'You sent this email a moment ago.'}};
+   if([...mailings.values()].some(m=>m.texts.en.subject===a.p_texts.en.subject&&t-m.at<86400000))return {data:null,error:{code:'54000',message:'An email with this subject went out in the last 24 hours. Use Continue under Last emails, or change the subject.'}};
    const who=[...farmers].filter(([,f])=>f.ok&&f.level>=(a.p_filters.minLevel??1)).map(([pid])=>pid).sort();
    const m={id:id(5000+ ++seq),texts:a.p_texts,buttonUrl:a.p_button_url,recipients:who.length,at:t};mailings.set(m.id,m);
    who.forEach((pid,i)=>rows.push({mailing:m.id,player:pid,language:farmers.get(pid).language,batch:Math.floor(i/50),status:'pending'}));
@@ -240,7 +240,7 @@ test('Send: batches of 50 through Resend\'s batch call, one key per batch, paced
  assert.ok(w.rows.every(row=>row.status==='sent'&&/^re_/.test(row.id)));
  assert.equal(w.mailings.get(mailing).run,null,'the run lets go');
  // The same subject again at once: a double click, refused by the database.
- assert.deepEqual((await run(w,fake,{operation:'start',...MAIL})).data,{error:'You sent this email a moment ago.'});
+ assert.deepEqual((await run(w,fake,{operation:'start',...MAIL})).data,{error:'An email with this subject went out in the last 24 hours. Use Continue under Last emails, or change the subject.'});
 });
 
 test('a call ends at its time limit; Continue goes on where it stopped and nobody gets it twice',async()=>{
@@ -375,7 +375,7 @@ test('news-mail.sql: the same limits and own-page rule as the dashboard, batches
  assert.ok(start.includes(`elsif v_url is null then raise exception '${MESSAGES.noLink}'`));
  assert.match(start,/if v_texts->'en'->>'buttonLabel' is null then v_url:=null;/,'no English button text: no button');
  assert.match(start,/if v_n>5000 then raise exception 'More than 5,000 farmers match\. Choose a higher level or fewer days\.'/);
- assert.match(start,/m\.texts->'en'->>'subject'=v_texts->'en'->>'subject' and m\.created_at>now\(\)-interval '10 minutes'\) then\n  raise exception 'You sent this email a moment ago\.' using errcode='54000';/);
+ assert.match(start,/m\.texts->'en'->>'subject'=v_texts->'en'->>'subject' and m\.created_at>now\(\)-interval '24 hours'\) then\n  raise exception 'An email with this subject went out in the last 24 hours\. Use Continue under Last emails, or change the subject\.' using errcode='54000';/);
  assert.match(start,/\(\(row_number\(\) over \(order by t\.player_id\)\)-1\)\/50 from public\.news_mail_targets\(v_filters\) t;/,'a batch is the same farmers every time');
  const claim=fn('news_mail_claim');
  assert.match(claim,/run_until=now\(\)\+interval '2 minutes' where id=p_mailing and \(run_id is null or run_id=p_run or run_until<now\(\)\);/,'one run at a time');
@@ -468,13 +468,16 @@ test('the news-mail function: a signed-in session only, every check with that se
 // ---- The Admin dashboard ----
 test('the client: the count and the list from the database, the rest through the function, in Frankfurt',async()=>{
  const calls=[],invoked=[];
- const supabase={rpc:async(name,args)=>{calls.push([name,args]);return {data:{total:3},error:null};},functions:{invoke:async(name,options)=>{invoked.push([name,options]);return name.includes('news-mail')&&options.body.operation==='bad'?{data:null,error:{message:'Edge Function returned a non-2xx status code',context:{json:async()=>({error:'Not authorized.'})}}}:{data:{ok:true},error:null};}}};
+ const supabase={rpc:async(name,args)=>{calls.push([name,args]);return {data:{total:3},error:null};},functions:{invoke:async(name,options)=>{invoked.push([name,options]);return name.includes('news-mail')&&options.body.operation==='bad'?{data:null,error:{message:'Edge Function returned a non-2xx status code',context:{json:async()=>({error:'Not authorized.'})}}}
+  :options.body.operation==='lost'?{data:null,error:{message:'Failed to send a request to the Edge Function'}}:{data:{ok:true},error:null};}}};
  const client=createChatClient(supabase,{playerId:'admin'});
  assert.deepEqual(await client.newsMailCount({minLevel:14}),{total:3});await client.newsMailList();
  assert.deepEqual(calls,[['news_mail_count',{p_filters:{minLevel:14}}],['news_mail_list',{p_limit:10}]]);
  assert.deepEqual(await client.newsMail({operation:'send',mailing:'m'}),{ok:true});
  assert.equal(invoked[0][0],'news-mail?forceFunctionRegion=eu-central-1');assert.deepEqual(invoked[0][1].body,{operation:'send',mailing:'m'});assert.ok(invoked[0][1].timeout>=TIME_BUDGET+30000);
  await assert.rejects(client.newsMail({operation:'bad'}),{message:'Not authorized.'});
+ // No answer (a timeout, the network): the email may be going already, so not "try again" but where to look first (13 Oct 2026).
+ await assert.rejects(client.newsMail({operation:'lost'}),{message:'The server did not answer. Look under Last emails before you send again: Continue goes on where it stopped.'});
 });
 
 test('the dashboard: its own card in Settings for the admin only, the staff screens\' rules',()=>{

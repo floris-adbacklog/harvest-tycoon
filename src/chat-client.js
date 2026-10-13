@@ -172,7 +172,7 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   newsMailList:(limit=10)=>rpc('news_mail_list',{p_limit:limit}),
   async newsMail(body){
    check();const {data,error}=await supabase.functions.invoke('news-mail?forceFunctionRegion=eu-central-1',{body,timeout:90000});
-   if(error){let detail;try{detail=await error.context?.json();}catch{}throw Object.assign(new Error(detail?.error||'The email could not be sent right now. Please try again.'),{raw:detail?.error??error.message});}
+   if(error){let detail;try{detail=await error.context?.json();}catch{}throw Object.assign(new Error(detail?.error||'The server did not answer. Look under Last emails before you send again: Continue goes on where it stopped.'),{raw:detail?.error??error.message});}
    check();return data;
   },
   subscribe(listener){listeners.add(listener);connect();return()=>listeners.delete(listener);},
