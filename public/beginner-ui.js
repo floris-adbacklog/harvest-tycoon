@@ -1,7 +1,7 @@
 import {BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,beginnerProgress,productionJobs,formatDuration,levelOf} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art} from './visual-icons.js';
-import {nextGoal,actNow} from './next-goal.js';
+import {nextGoal,actNow,readyAllAt} from './next-goal.js';
 import {questArt} from './quests-ui.js';
 
 // What to do now, in the phone's one-line banner (6 Oct 2026: it said only the step's title, and the instruction was a tap away; only 7
@@ -40,17 +40,19 @@ export function canPointNow(state,guideTarget,now){
 const GOAL_FOLDED_KEY='harvest-tycoon:next-goal';
 // guide(target,{auto}): Show me (public/game.js showWay); idle(): the pointer is free; claimQuest(id): one quest, as in Quests; openQuest(id):
 // Quests at that quest; openToday(id): Today at that daily challenge (Plan F, 13 Oct 2026), where it is claimed.
-// village: the game shows the village (World II), which has its own quests: no farm goal there.
-export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
+// village: the game shows the village (World II), which has its own quests: no farm goal there. phone(): the phone layout (the same query as
+// mobile-ui.js mobileLayout, which this file cannot import: it asks the browser as it loads).
+export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,phone=()=>globalThis.matchMedia?.('(max-width: 900px), (max-height: 550px) and (pointer: coarse)')?.matches??false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
  const $=id=>document.getElementById(id),dialog=$('beginner-dialog');
- let busy=false,lastMarkup='',finaleShown=false,lastStep=null,lastBanner='',pending=null,goalKey='',goalBusy=false;
+ let busy=false,lastMarkup='',finaleShown=false,lastStep=null,lastBanner='',pending=null,goalKey='',goalBusy=false,goalWait=0;
  function banner(steps,current,done){
   const text=`Step ${Math.min(done+1,steps.length)} of 10 · ${current?.ready?'Ready to complete':liveStep(state,current?.id,farmNow())??DO_NOW[current?.id]??current?.title??'Guide complete'}`;
   // Only when the English line changed: the page translates it in place, so its text is not compared.
   if(text!==lastBanner){lastBanner=text;$('beginner-mobile-copy').textContent=text;}
  }
- // Twice a second (public/game.js): only the banner, for its batch time, and only while it is on screen (phones).
- function tick(){autoCheck();if($('beginner-mobile').hidden||!$('beginner-mobile').getClientRects().length)return;const steps=beginnerProgress(state);banner(steps,steps.find(q=>q.current),steps.filter(q=>q.done).length);}
+ // Twice a second (public/game.js): only the banner, for its batch time, and only while it is on screen (phones). The phone's goal line once the
+ // moment it names has come (Plan F, proposal 2): then it shows what is next.
+ function tick(){autoCheck();if(goalWait&&goalWait<=farmNow()){goalKey='';goalCard(true);}if($('beginner-mobile').hidden||!$('beginner-mobile').getClientRects().length)return;const steps=beginnerProgress(state);banner(steps,steps.find(q=>q.current),steps.filter(q=>q.done).length);}
  function refresh(){
   const steps=beginnerProgress(state),current=steps.find(q=>q.current),done=steps.filter(q=>q.done).length,complete=done===steps.length;
   const finished=complete&&state.onboarding?.rewardClaimed===true;
@@ -149,34 +151,45 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
  // first time: after that step 2's pointer waits for 1.8 s without a touch.
  function landed(){if(pending?.id!=='sell'&&pending?.phase!=='sell_egg:sell'||pending.shown)return;pending.wait=0;autoCheck();}
  // ---- The next goal, in the guide's place once it is done (11 Oct 2026, Part A A13; public/next-goal.js) ----
- // On a computer a small card where the guide was; on a phone the guide's one-line banner, only while there is something to claim or
- // build (otherwise the view stays free). A quest is claimed on its own with one tap, as in Quests; then the card shows the next goal.
+ // On a computer a small card where the guide was; on a phone the guide's one-line banner. A quest is claimed on its own with one tap, as in
+ // Quests; then the card shows the next goal.
+ // Plan F, proposal 2 (13 Oct 2026; the owner's yes, partly undoing 11 Oct, when the line showed only something to claim or build): after
+ // the guide a phone always shows one line. What the farmer can do now first (a quest or a daily challenge to claim, a building to build, a
+ // field to buy); otherwise, while crops or batches grow, when everything is ready ("Everything is ready at 14:35", in the device's own
+ // clock); and when nothing grows the card's own goal, the quest closest to done, as on a computer. The tap hints under the bar make way for
+ // it. A computer keeps its card as it was, and a short computer window (desktop-hud.css, the line instead of the card) only the goals to act on.
  let folded=false;try{folded=storage?.getItem(GOAL_FOLDED_KEY)==='folded';}catch{}
  const number=n=>Number(n).toLocaleString('en-US');
  function goalCard(finished){
   const card=$('next-goal-card'),line=$('next-goal-mobile');if(!card||!line)return;
-  const goal=finished&&!village?nextGoal(state):null;
-  card.hidden=!goal;line.hidden=!goal||!actNow(goal);
+  const now=farmNow(),goal=finished&&!village?nextGoal(state,now):null,onPhone=phone();
+  const wait=goal&&!actNow(goal)&&onPhone?readyAllAt(state,now):0;goalWait=wait;
+  card.hidden=!goal;line.hidden=!goal||!actNow(goal)&&!onPhone;
   // The phone's line takes the place of the tap hints under the bar while it shows.
   $('game')?.classList.toggle('goal-line',!line.hidden);
   $('next-goal-body').hidden=folded;const fold=$('next-goal-collapse');fold.setAttribute('aria-expanded',String(!folded));fold.setAttribute('aria-label',folded?'Expand next goal':'Collapse next goal');
   if(!goal){goalKey='';return;}
-  const key=JSON.stringify(goal)+goalBusy;if(key===goalKey)return;goalKey=key;
-  const kind={quest:'QUEST READY',daily:'DAILY CHALLENGE READY',build:'READY TO BUILD',progress:'QUEST IN PROGRESS',level:'NEXT LEVEL'}[goal.kind];
-  const title=goal.kind==='build'?`Build the ${goal.name}`:goal.kind==='level'?(goal.name?`Level ${goal.level}: ${goal.name}`:`Level ${goal.level}`):goal.title;
+  // The day too: a time after midnight reads "tomorrow" until the day turns.
+  const today=new Date(now).toDateString(),key=JSON.stringify(goal)+goalBusy+wait+today;if(key===goalKey)return;goalKey=key;
+  const kind={quest:'QUEST READY',daily:'DAILY CHALLENGE READY',build:'READY TO BUILD',field:'NEW FIELD',progress:'QUEST IN PROGRESS',level:'NEXT LEVEL'}[goal.kind];
+  const title=goal.kind==='build'?`Build the ${goal.name}`:goal.kind==='field'?`Buy field ${goal.field}`:goal.kind==='level'?(goal.name?`Level ${goal.level}: ${goal.name}`:`Level ${goal.level}`):goal.title;
   $('next-goal-kind').textContent=kind;$('next-goal-title').textContent=title;
-  $('next-goal-art').innerHTML=goal.kind==='quest'||goal.kind==='daily'||goal.kind==='progress'?questArt(goal.stat):art(goal.kind==='build'?goal.key:goal.art)||art('quests');
+  $('next-goal-art').innerHTML=goal.kind==='quest'||goal.kind==='daily'||goal.kind==='progress'?questArt(goal.stat):art(goal.kind==='build'?goal.key:goal.kind==='field'?'estate':goal.art)||art('quests');
   // A daily challenge (Plan F, 13 Oct 2026): its coins, diamonds and XP, as in Today.
-  $('next-goal-note').innerHTML=goal.kind==='quest'||goal.kind==='daily'?`<b class="reward-coins">${art('coins')}+${number(goal.coins)} coins</b>${goal.diamonds?`<b class="reward-diamonds">${art('diamonds')}+${number(goal.diamonds)} ${goal.diamonds===1?'diamond':'diamonds'}</b>`:''}${goal.xp?`<b class="reward-xp">${art('xp')}+${number(goal.xp)} XP</b>`:''}`:goal.kind==='build'?`<b class="reward-coins">${art('coins')}${number(goal.cost)} coins</b>`:'';
+  $('next-goal-note').innerHTML=goal.kind==='quest'||goal.kind==='daily'?`<b class="reward-coins">${art('coins')}+${number(goal.coins)} coins</b>${goal.diamonds?`<b class="reward-diamonds">${art('diamonds')}+${number(goal.diamonds)} ${goal.diamonds===1?'diamond':'diamonds'}</b>`:''}${goal.xp?`<b class="reward-xp">${art('xp')}+${number(goal.xp)} XP</b>`:''}`:goal.kind==='build'||goal.kind==='field'?`<b class="reward-coins">${art('coins')}${number(goal.cost)} coins</b>`:'';
   $('next-goal-note').hidden=goal.kind==='progress'||goal.kind==='level';
   const meter=goal.kind==='progress'||goal.kind==='level';$('next-goal-meter').hidden=!meter;
   if(meter){const [value,max]=goal.kind==='progress'?[goal.value,goal.target]:[goal.current,goal.target];$('next-goal-progress').max=max;$('next-goal-progress').value=value;$('next-goal-count').textContent=goal.kind==='level'?`${number(value)} / ${number(max)} XP`:`${number(value)} / ${number(max)}`;}
   // A daily challenge is claimed in Today, one at a time: its button opens Today at it.
-  const button=$('next-goal-button'),showMe=goal.kind==='build'||goal.kind==='progress'&&goal.guide;
+  const button=$('next-goal-button'),showMe=goal.kind==='build'||goal.kind==='field'||goal.kind==='progress'&&goal.guide;
   button.hidden=!(goal.kind==='quest'||goal.kind==='daily'&&openToday||showMe);button.disabled=goalBusy;
   button.className=goal.kind==='quest'||goal.kind==='daily'?'primary-button':'small-button';button.textContent=goal.kind==='quest'?'Claim':goal.kind==='daily'?'Open Today':'Show me';
   // "Quest ready:" before the quest's own title (11 Oct 2026: "Next: Claim Your first harvest" glued the title into a sentence, capital kept).
-  $('next-goal-mobile-copy').textContent=goal.kind==='quest'?`Quest ready: ${goal.title}`:goal.kind==='daily'?`Daily challenge ready: ${goal.title}`:goal.kind==='build'?`Next: Build the ${goal.name}`:'';
+  // A field (Plan F, proposal 3) with its coins; the time everything is ready (proposal 2), today or tomorrow (nothing grows longer than a
+  // day); and when nothing grows the quest closest to done with its count, or the next level, as the card says them.
+  const clock=new Date(wait).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  $('next-goal-mobile-copy').textContent=goal.kind==='quest'?`Quest ready: ${goal.title}`:goal.kind==='daily'?`Daily challenge ready: ${goal.title}`:goal.kind==='build'?`Next: Build the ${goal.name}`:goal.kind==='field'?`Next: Buy field ${goal.field} for ${number(goal.cost)} coins`
+   :wait?(new Date(wait).toDateString()===today?`Everything is ready at ${clock}`:`Everything is ready tomorrow at ${clock}`):goal.kind==='progress'?`Quest: ${goal.title} (${number(goal.value)} / ${number(goal.target)})`:title;
   icons();
  }
  async function goalTap(fromLine=false){
@@ -189,7 +202,10 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   }
   // The card and the phone's line both open Today at the challenge; it is claimed there, one at a time.
   if(goal.kind==='daily'){openToday?.(goal.id);return;}
+  // The phone's line while the farm grows, or for a goal without a Show me (the next level): Quests, with the quests in progress.
+  if(fromLine&&!actNow(goal)&&(goalWait>farmNow()||!(goal.kind==='progress'&&goal.guide))){openQuest?.(goal.kind==='progress'?goal.id:null);return;}
   if(goal.kind==='build')guide(`build:${goal.key}`);
+  else if(goal.kind==='field')guide('field');
   else if(goal.kind==='progress'&&goal.guide)guide(goal.guide);
  }
  $('next-goal-button')?.addEventListener('click',()=>void goalTap());

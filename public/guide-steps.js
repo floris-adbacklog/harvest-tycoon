@@ -25,6 +25,8 @@ export function guideSteps(target,{state,now,doc=globalThis.document,win=globalT
  // A building to build (11 Oct 2026, Part A A8/A13: the guide-complete card and the next-goal card): its name on the map, or Buildings and
  // its card, then its Build button.
  if(typeof target==='string'&&target.startsWith('build:')){const key=target.slice(6);return [...building(key,'Tap this building.','Open this building.'),{find:()=>doc.querySelector('dialog[open] #construct-building'),text:'Build it here.'}];}
+ // A field to buy (Plan F, proposal 3, 13 Oct 2026: the next-goal card and the phone's line): the Farmhouse, then its button for one more field.
+ if(target==='field')return [...building('farmhouse','Tap this building.','Open this building.'),{find:()=>doc.querySelector('dialog[open] #expand-fields'),text:'Buy your new field here.'}];
  if(target==='market')return sell('crops','corn','Sell your corn here.','Open Crops.');
  if(target==='eggs'&&(state.inventory.eggs??0)>0)return sell('goods','eggs','Sell your eggs here.','Open Farm goods.');
  const ready=Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=now));

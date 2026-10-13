@@ -75,7 +75,8 @@ test('the next-goal card claims one quest per tap and the phone line opens Quest
   get('next-goal-mobile').click();assert.deepEqual(opened,[nextGoal(s).id],'the phone line opens Quests at the quest');assert.equal(claims.length,1,'and claims nothing itself');
   // Folded on this device, kept for next time.
   get('next-goal-collapse').click();assert.equal(get('next-goal-body').hidden,true);assert.equal(store.get('harvest-tycoon:next-goal'),'folded');
-  // Nothing to claim or build: the phone line steps aside, the card stays on a computer.
+  // Nothing to claim or build: outside the phone layout the line steps aside and the card stays (a phone keeps one line since Plan F,
+  // 13 Oct 2026: tests/goal-line-wait.test.mjs).
   s.claimed=QUESTS.map((_,i)=>i);s.coins=0;ui.refresh();assert.equal(get('next-goal-mobile').hidden,true);assert.equal(get('next-goal-card').hidden,false);
  }finally{globalThis.document=previous;}
  // Never a Claim all: the card and the line only ever claim one quest.

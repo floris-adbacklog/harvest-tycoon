@@ -55,7 +55,7 @@ import { fitText } from './fit-text.js';
 import { createCoach } from './coach.js';
 import { guideSteps } from './guide-steps.js';
 import { guardWheel } from './wheel-guard.js';
-import { nextGoal } from './next-goal.js';
+import { nextGoal, readyAllAt } from './next-goal.js';
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
@@ -182,11 +182,11 @@ function medalToast(medals){if(!medals.length||!$('medal-toast'))return;if(guide
 // 7 Oct 2026: it leads with the next goal, a building to build (the Feed Mill, then the Dairy Barn), so a farmer who finishes the guide
 // in a few minutes has something to do now instead of only a reason to leave. One sentence each way, so it is translated whole.
 // lead: false (11 Oct 2026, Part A A8) when the card's green button already leads to another goal (the quests that wait): one goal at a time.
+// The time is next-goal.js readyAllAt, the same moment the phone's goal line says while the farm grows (Plan F, 13 Oct 2026).
 function comeBackNote(now=farmNow(),{lead=true}={}){
  const goal=lead&&['mill','dairy'].find(key=>!state.buildings[key]?.built&&buildingEligible(state,key)&&buildingCost(state,key)>0);
  const name=goal?BUILDINGS[goal].name:'',cost=goal?buildingCost(state,goal).toLocaleString('en-US'):'',back=(state.login?.visits??0)<2;
- const times=[...state.plots.filter(p=>p.crop&&p.readyAt>now).map(p=>p.readyAt),...Object.values(state.buildings).flatMap(productionJobs).filter(j=>j.readyAt>now).map(j=>j.readyAt)];
- const last=times.length?Math.max(...times):0,clock=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+ const last=readyAllAt(state,now),clock=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
  const when=last?`Your farm keeps growing while you are away: everything is ready ${new Date(last).toDateString()===new Date(now).toDateString()?'at':'tomorrow at'} ${clock(last)}.`:'Plant something before you go: your farm keeps growing while you are away.';
  if(goal)return back?`Next goal: build the ${name} for ${cost} coins in Buildings. ${when} Come back tomorrow for your next daily gift and 30 minutes of double harvest.`:`Next goal: build the ${name} for ${cost} coins in Buildings. ${when}`;
  return back?`${when} Come back tomorrow for your next daily gift and 30 minutes of double harvest.`:when;
@@ -1469,6 +1469,7 @@ function goalAction(goal){
  if(goal.kind==='quest')return {label:'Claim your next quest',run:()=>quests.openAt(goal.id)};
  if(goal.kind==='daily')return {label:'Open Today',run:()=>retention.openToday('challenges',{at:goal.id})};   // Plan F (13 Oct 2026)
  if(goal.kind==='build')return {label:`Build the ${goal.name}`,run:()=>showWay(`build:${goal.key}`)};
+ if(goal.kind==='field')return {label:`Buy field ${goal.field}`,run:()=>showWay('field')};   // Plan F, proposal 3 (13 Oct 2026)
  return {label:'Plant your fields',run:()=>{setCrop('wheat');focusFields();}};
 }
 // A lost 3D view comes back by itself (11 Oct 2026, Part A A4; before, "The 3D view was interrupted. Reload..." was a dead end): a phone
