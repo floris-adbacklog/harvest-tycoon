@@ -31,9 +31,17 @@ const db={
  async beginRun(){const {data,error}=await admin.rpc('notification_begin_run');if(error)throw error;return data;},
  // Each farmer's game language (player_seen.language, saved by farm-api when the game loads), so the reminder is written in it.
  // Read in chunks; if that fails the reminders still go out, in English.
+ // Every farmer, however many (13 Oct 2026): PostgREST answers at most 1,000 rows a request, and with 721 farmers on 13 Oct and up to
+ // 400 more a week the ones past 1,000 would have had no reminder at all, push or email. Pages follow the last player_id, so a farmer
+ // who turns reminders on meanwhile is never read twice (twice would mean two mails) and makes nobody else drop out.
  async candidates(){
-  const {data,error}=await admin.rpc('notification_candidates');if(error)throw error;
-  const rows=data??[],languages=new Map();
+  const rows:Record<string,any>[]=[];
+  for(;;){
+   const call=admin.rpc('notification_candidates'),last=rows[rows.length-1]?.player_id;
+   const {data,error}=await (last?call.gt('player_id',last):call).order('player_id').limit(1000);if(error)throw error;
+   rows.push(...(data??[]));if((data??[]).length<1000)break;
+  }
+  const languages=new Map();
   for(let i=0;i<rows.length;i+=150){
    const ids=rows.slice(i,i+150).map((r:Record<string,any>)=>r.player_id);
    const seen=await admin.from('player_seen').select('player_id,language').in('player_id',ids);

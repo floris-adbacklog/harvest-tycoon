@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {stripTypeScriptTypes} from 'node:module';
+import vm from 'node:vm';
 import {runJob,EMAIL_DAILY_CAP} from '../supabase/functions/notify-hourly/job.js';
 import {CROP_NAMES,BUILDING_NAMES} from '../supabase/functions/notify-hourly/names.js';
 
@@ -31,4 +33,30 @@ test('at the cap no more mail goes out that day, and nobody is marked as mailed'
  assert.equal(stats.emails,0);assert.deepEqual(full.log.mails,[]);assert.deepEqual(full.log.digestOn,[]);assert.equal(full.log.added,0);
  // One left: the most recently active farmer gets it.
  const last=jobDeps(rows,EMAIL_DAILY_CAP-1);await runJob(last.deps,MORNING);assert.deepEqual(last.log.mails,['p0']);
+});
+// Every farmer is read, however many (13 Oct 2026): PostgREST answers at most 1,000 rows a request (721 farmers on 13 Oct), so
+// db.candidates in index.ts reads page after page after the last player_id. Its db object runs here with a fake PostgREST.
+function candidatesDb(table){
+ const calls=[],index=stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/notify-hourly/index.ts',import.meta.url),'utf8'));
+ const start=index.indexOf('const db={'),end=index.indexOf('\n};\n',start)+3;
+ const admin={rpc(name){const call={name};calls.push(call);const query={gt(column,value){call.after=[column,value];return query;},order(column){call.order=column;return query;},limit(count){call.limit=count;return query;},
+  then(ok,fail){const rows=table(calls.length).filter(r=>!call.after||r.player_id>call.after[1]).sort((a,b)=>a.player_id<b.player_id?-1:1).slice(0,Math.min(call.limit??1000,1000));return Promise.resolve({data:rows,error:null}).then(ok,fail);}};return query;},
+  from(){return {select(){return {in:async(column,ids)=>({data:ids.filter(id=>id.endsWith('7')).map(id=>({player_id:id,language:'nl'})),error:null})};}};}};
+ return {calls,db:vm.runInNewContext(`${index.slice(start,end)}\ndb;`,{admin,console:{error(){}},Map,Set,Promise,Date})};
+}
+const id=i=>`00000000-0000-4000-8000-${String(i).padStart(12,'0')}`;
+test('every farmer gets the job, also past 1,000: candidates are read a page at a time after the last player_id',async()=>{
+ const farmers=Array.from({length:2005},(_,i)=>({player_id:id(i)})),{calls,db}=candidatesDb(()=>farmers);
+ const rows=await db.candidates();
+ assert.equal(rows.length,2005);assert.equal(new Set(rows.map(r=>r.player_id)).size,2005);
+ assert.deepEqual(calls.map(c=>[c.name,c.order,c.limit,c.after?.[1]??null]),[['notification_candidates','player_id',1000,null],['notification_candidates','player_id',1000,id(999)],['notification_candidates','player_id',1000,id(1999)]]);
+ assert.equal(rows.find(r=>r.player_id===id(7)).language,'nl');assert.equal(rows.find(r=>r.player_id===id(8)).language,null);
+ // 721 like on 13 Oct: one request, as before.
+ const today=candidatesDb(()=>farmers.slice(0,721));assert.equal((await today.db.candidates()).length,721);assert.equal(today.calls.length,1);
+});
+test('a farmer who turns reminders on or off between two pages is never read twice and makes nobody else drop out',async()=>{
+ const farmers=Array.from({length:1500},(_,i)=>({player_id:id(i*2)})),later=[{player_id:id(1)},...farmers.filter(f=>f.player_id!==id(2400))];
+ const {db}=candidatesDb(page=>page===1?farmers:later),rows=await db.candidates(),ids=rows.map(r=>r.player_id);
+ assert.equal(new Set(ids).size,ids.length,'nobody twice, so nobody gets two mails');
+ for(const f of farmers)if(f.player_id!==id(2400))assert.ok(ids.includes(f.player_id),f.player_id);
 });
