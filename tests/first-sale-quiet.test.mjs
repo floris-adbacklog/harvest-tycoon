@@ -115,6 +115,10 @@ test('until the first sale only the Market carries a mark; before the first harv
  // A farm that sold before (starter wheat before its first harvest, 42 farms on 13 Oct), past the guide, or the village, is never quiet.
  const early=page();globalThis.document=early.document;const before=createFarm(now);before.stats.sold=8;
  createBeginnerUI({state:before,runAction:async()=>({}),icons(){},notify(){},onChange(){},guide(){}});assert.equal(early.get('game').classList.contains('first-sale-waits'),false);
+ // Review fix: coins from an order count as the first sale too (14 farms on step 2 delivered orders but never sold at Market).
+ const order=page();globalThis.document=order.document;const delivered=createFarm(now);act(delivered,{type:'field',id:0,action:'harvest'},now);delivered.stats.deliveries=1;delivered.stats.earned=41;
+ assert.equal(beginnerProgress(delivered).find(q=>q.current).id,'sell');
+ createBeginnerUI({state:delivered,runAction:async()=>({}),icons(){},notify(){},onChange(){},guide(){}});assert.equal(order.get('game').classList.contains('first-sale-waits'),false,'earned from an order');
  const done=createFarm(now);done.onboarding={...done.onboarding,completed:10,rewardClaimed:true};const q=page();globalThis.document=q.document;
  createBeginnerUI({state:done,runAction:async()=>({}),icons(){},notify(){},onChange(){},guide(){}});assert.equal(q.get('game').classList.contains('first-sale-waits'),false);
  const v=page();globalThis.document=v.document;createBeginnerUI({state:createFarm(now),runAction:async()=>({}),icons(){},notify(){},onChange(){},guide(){},village:true});

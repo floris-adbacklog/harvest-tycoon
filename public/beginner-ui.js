@@ -73,7 +73,9 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   // Quiet until the first sale (13 Oct 2026): from the start to the first sale only the Market carries a mark. Quests' number and the "!"
   // on Today (on a phone More) wait until then (4 of 12 slow sellers on a phone claimed quests first), and before the first harvest the
   // Market shows no number either (its 32 was starter stock that cannot be sold yet, and read like 32 messages). beginner.css hides them.
-  const firstSale=!village&&(current?.id==='harvest'||current?.id==='sell')&&!state.onboarding?.milestones?.sell&&!(state.stats?.sold>0);
+  // Coins earned another way count as the first sale too (review fix: 14 farms on step 2 that never sold at Market but delivered orders,
+  // up to level 11, would have lost their quest number and daily gift mark for good).
+  const firstSale=!village&&(current?.id==='harvest'||current?.id==='sell')&&!state.onboarding?.milestones?.sell&&!(state.stats?.sold>0)&&!(state.stats?.earned>0);
   $('game')?.classList.toggle('first-sale-waits',firstSale);$('game')?.classList.toggle('first-harvest-waits',firstSale&&current.id==='harvest');
   goalCard(finished);
   $('quest-number').textContent=Math.min(done+1,steps.length);$('quest-total').textContent=steps.length;
