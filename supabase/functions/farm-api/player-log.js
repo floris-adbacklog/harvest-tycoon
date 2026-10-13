@@ -135,6 +135,7 @@ export const accountLog=(action,text)=>[line('account',action,text)];
 // did with it, in this log too (Tag Manager only has it with the farmer's consent). The game keeps them (public/farm-client.js note) and
 // sends them along with its next request to farm-api, an action or a refresh (body.notes): no request of their own. Never trusted: at
 // most NOTE_MAX a request, known steps and channels only, a whole level; anything else is left out.
+// The question right after the farm's first daily gift (13 Oct 2026, item 4) says so when it is shown (at: 'gift'); its answer reads the same.
 export const NOTE_MAX=5;
 const REMINDER_NOTES={
  shown:{push:l=>`Was asked to turn on push reminders at level ${l}`,email:l=>`Was asked to turn on the daily email at level ${l}`},
@@ -143,10 +144,12 @@ const REMINDER_NOTES={
  blocked:{push:()=>'Push reminders could not be turned on: notifications are blocked on this device'},
  failed:{push:()=>'Push reminders could not be turned on',email:()=>'The daily email could not be turned on'}
 };
+const GIFT_SHOWN={push:l=>`Was asked to turn on push reminders after the first daily gift, at level ${l}`,email:l=>`Was asked to turn on the daily email after the first daily gift, at level ${l}`};
 export function noteLog(notes){
  if(!Array.isArray(notes))return [];
  return notes.slice(0,NOTE_MAX).flatMap(n=>{
-  const text=n&&typeof n==='object'&&n.kind==='reminder'&&Object.hasOwn(REMINDER_NOTES,n.step)&&Object.hasOwn(REMINDER_NOTES[n.step],n.channel)?REMINDER_NOTES[n.step][n.channel]:null;
+  const texts=n&&typeof n==='object'&&n.kind==='reminder'&&Object.hasOwn(REMINDER_NOTES,n.step)?(n.step==='shown'&&n.at==='gift'?GIFT_SHOWN:REMINDER_NOTES[n.step]):null;
+  const text=texts&&Object.hasOwn(texts,n.channel)?texts[n.channel]:null;
   const level=n?.level;if(!text||!Number.isSafeInteger(level)||level<1||level>9999)return [];
   return [line('account',`reminder_${n.step}`,text(level))];
  });
