@@ -82,8 +82,9 @@ test('Turn on asks the app only on the farmer\'s tap; the answer is saved for th
  assert.deepEqual(await push.status(),{kind:'off'});assert.deepEqual(await push.status(),{kind:'off'});
  assert.ok(!visits.includes(APP_PUSH.register),'reading the state never asks Android\'s question');
  assert.ok(!db.calls.some(([name])=>name==='app_push_save'),'nothing is saved without a tap');
- assert.deepEqual(await push.enable(),{kind:'on'});
- assert.deepEqual(visits,['onesignallogin://login?id=p1',APP_PUSH.register]);
+ assert.deepEqual(await push.enable(),{kind:'on'});await settle();
+ // Saved: the link goes once more (13 Oct 2026), now that the app has OneSignal's consent and the phone's yes.
+ assert.deepEqual(visits,['onesignallogin://login?id=p1',APP_PUSH.register,'onesignallogin://login?id=p1']);
  // On for the farmer, with this phone's time zone for reminder settings made now (quiet hours, 09:00 and 19:00); no push id is kept.
  assert.deepEqual(db.calls.filter(([name])=>name==='app_push_save'),[['app_push_save',{p_enabled:true,p_timezone:ZONE}]]);
  assert.deepEqual(await push.status(),{kind:'on'});assert.ok(db.calls.some(([name,table])=>name==='from'&&table==='app_push_players'));
@@ -159,7 +160,7 @@ test('Android 8-12: allowed from the install but not opted in reads as off (Turn
  }finally{delete globalThis.document;delete globalThis.window;}
  // The tap: an answer that is allowed and opted in but has no subscription yet is not the end (and not a no); the subscription is.
  db.on=false;
- assert.deepEqual(await push.enable(),{kind:'on'});assert.equal(visits.at(-1),APP_PUSH.register);
+ assert.deepEqual(await push.enable(),{kind:'on'});await settle();assert.deepEqual(visits.slice(-2),[APP_PUSH.register,'onesignallogin://login?id=p1'],'the question, then the link again once saved');
  assert.deepEqual(db.calls.filter(([name])=>name==='app_push_save'),[['app_push_save',{p_enabled:true,p_timezone:ZONE}]]);
  push.dispose();
  // An app that stays not opted in after the tap: off after the wait, not blocked (the phone allows them), nothing saved.

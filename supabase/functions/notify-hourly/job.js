@@ -31,7 +31,7 @@ async function deliver(deps,player,push){
 export async function runJob(deps,now=Date.now()){
  const run=await deps.db.beginRun();
  if(!run?.run)return {ran:false};
- const stats={ran:true,players:0,pushes:0,appPushes:0,emails:0,errors:0};
+ const stats={ran:true,players:0,pushes:0,appPushes:0,appPushUnreachable:0,emails:0,errors:0};
  let emailBudget=Math.max(0,(deps.emailCap??EMAIL_DAILY_CAP)-(run.emails_sent??0));
  // The farmers with the app's notifications on; when that cannot be read, the reminders still go to their browsers.
  let appPlayers=new Set();
@@ -61,9 +61,14 @@ export async function runJob(deps,now=Date.now()){
   }catch(error){stats.errors++;deps.log?.(`player ${row.player_id}: ${error?.message??error}`);}
  }
  if(toApp.length){
-  let reached=new Set();
-  try{reached=new Set(await deps.sendAppPush(toApp.map(({row,plan})=>({player:row.player_id,push:plan.push})),now));}
+  let reached=new Set();const unreachable=new Set();
+  try{reached=new Set(await deps.sendAppPush(toApp.map(({row,plan})=>({player:row.player_id,push:plan.push})),now,unreachable));}
   catch(error){deps.log?.(`app push: ${error?.message??error}`);}
+  // Reachable or not (13 Oct 2026): one line per run, and the farmers OneSignal named as not reachable are marked (db.markAppPushReach,
+  // supabase/app-push-reach.sql), the ones it took unmarked; the game then asks the app to link a marked farmer's phone afresh.
+  stats.appPushUnreachable=unreachable.size;
+  deps.log?.(`app push this hour: ${toApp.length} farmers, ${toApp.filter(({row})=>reached.has(row.player_id)).length} reached, ${unreachable.size} not reachable`);
+  if(deps.db.markAppPushReach){try{await deps.db.markAppPushReach({reached:toApp.map(({row})=>row.player_id).filter(id=>reached.has(id)),unreachable:[...unreachable]});}catch(error){deps.log?.(`app push reach: ${error?.message??error}`);}}
   for(const {row,plan,patch,browser} of toApp){
    try{
     const app=reached.has(row.player_id);if(app)stats.appPushes++;

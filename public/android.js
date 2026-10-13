@@ -32,13 +32,15 @@ export function shareInApp({text,url},host=globalThis.window){
 // going to one of these addresses, as Share does (the app only sees the main frame), and the app answers on that page by calling
 // window.harvestAppPush({permission:'granted'|'denied'|'default',optedIn,subscriptionId,externalId,version}): after login,
 // registerpush and pushstatus, and whenever the phone's permission or the subscription changes.
-// - login: links this phone to the farmer (OneSignal's external_id = the player id); once per page load, and again after a sign-in.
+// - login: links this phone to the farmer (OneSignal's external_id = the player id); once per page load, again after a sign-in, and
+//   again after a Turn on that saved (13 Oct 2026). &fresh=1 (the app 1.3 and later; older apps read only the id): OneSignal could not
+//   reach the farmer at the last reminder (app_push_players.unreachable_at), so the app sends the link to OneSignal afresh.
 // - logout: Sign out; this phone stops getting that farmer's notifications.
 // - register: asks Android's permission (the Android 13+ question) and opts the phone in. Only ever from the farmer's own tap. While
 //   Android's question is open the app reports nothing (AppPush.holdingState), so the next report is the farmer's answer.
 // - status: the app answers with the state as it is, asking nothing.
 export const APP_PUSH=Object.freeze({login:'onesignallogin://login',logout:'onesignallogout://logout',register:'registerpush://',status:'pushstatus://status'});
-export const appPushLoginLink=id=>`${APP_PUSH.login}?id=${encodeURIComponent(String(id??''))}`;
+export const appPushLoginLink=(id,{fresh=false}={})=>`${APP_PUSH.login}?id=${encodeURIComponent(String(id??''))}${fresh?'&fresh=1':''}`;
 // The phone said no to notifications for the app (a question Android asks once or twice): Settings, the reminder question and the
 // daily gift's "Remind me" say where to allow them again, instead of the browser's own words.
 export const APP_PUSH_BLOCKED='Notifications are off for Harvest Tycoon on this phone. You can allow them in your phone settings.';

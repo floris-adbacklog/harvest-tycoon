@@ -64,6 +64,14 @@ const db={
   }
   return ids;
  },
+ // Reachable or not (13 Oct 2026, supabase/app-push-reach.sql): the farmers OneSignal named as not reachable at this hour's reminders get
+ // unreachable_at (when it first said so, kept until it takes them again), the ones it took lose it. The game reads its own mark and asks
+ // the app to send the phone's link afresh. Before that file is run (no column) or on an error: logged, and the reminders are not affected.
+ async markAppPushReach({reached,unreachable}:{reached:string[];unreachable:string[]}){
+  const at=new Date().toISOString();
+  for(let i=0;i<unreachable.length;i+=150){const {error}=await admin.from('app_push_players').update({unreachable_at:at}).in('player_id',unreachable.slice(i,i+150)).is('unreachable_at',null);if(error){console.error(`app push reach: ${error.message}`);return;}}
+  for(let i=0;i<reached.length;i+=150){const {error}=await admin.from('app_push_players').update({unreachable_at:null}).in('player_id',reached.slice(i,i+150)).not('unreachable_at','is',null);if(error){console.error(`app push reach: ${error.message}`);return;}}
+ },
  // Of these farmers, the ones with the app's notifications on.
  async appPushOf(players:string[]){
   if(!players.length)return [];
@@ -180,7 +188,7 @@ Deno.serve(async(req)=>{
  if(!pushOn&&!emailOn&&!appPushOn)return json({ran:false,reason:'not configured'},503);
  try{
   const stats=await runJob({db,sendPush:pushOn?sendPush:null,sendEmail:emailOn?sendEmail:null,emailConfirmed,names:{crops:CROP_NAMES,buildings:BUILDING_NAMES},log:(m:string)=>console.error(m),
-   sendAppPush:appPushOn?(items:{player:string;push:Record<string,string>}[],now:number)=>sendReminders(appPush,items,now):null});
+   sendAppPush:appPushOn?(items:{player:string;push:Record<string,string>}[],now:number,unreachable:Set<string>)=>sendReminders(appPush,items,now,unreachable):null});
   return json(stats);
  }catch(error){console.error(error);return json({error:'The reminder job failed.'},500);}
 });

@@ -53,15 +53,18 @@ export function notificationRequest({ids,title,body,url,tag,key,channel},base=SI
 export function createOneSignal({apiKey='',fetchImpl=globalThis.fetch,base=SITE,log=()=>{}}={}){
  const enabled=Boolean(apiKey)&&typeof fetchImpl==='function';
  // The farmers OneSignal took. A refusal, an error or "not subscribed" for all of them: none. Farmers it names as not reachable
- // (errors.invalid_aliases: signed out, or the app is gone): not them. The key itself is never logged.
- async function call(request){
+ // (errors.invalid_aliases: no phone of theirs is subscribed at OneSignal: signed out, the app is gone, or the phone's link or
+ // subscription never reached OneSignal): not them, and they go into `unreachable` when given (13 Oct 2026, also when it names every
+ // farmer of the call and so sends nothing). The key itself is never logged.
+ async function call(request,unreachable){
   const ids=request.include_aliases.external_id;
   try{
    const response=await fetchImpl(ONESIGNAL_URL,{method:'POST',headers:{Authorization:`Key ${apiKey}`,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(request)});
    const data=await response.json().catch(()=>null);
    if(!response.ok){log(`app push refused: ${response.status} ${JSON.stringify(data?.errors??'').slice(0,200)}`);return [];}
+   const asked=new Set(ids),missed=new Set((Array.isArray(data?.errors?.invalid_aliases?.external_id)?data.errors.invalid_aliases.external_id:[]).map(String).filter(id=>asked.has(id)));
+   for(const id of missed)unreachable?.add(id);
    if(!data?.id){log(`app push reached nobody of ${ids.length}: ${JSON.stringify(data?.errors??'').slice(0,200)}`);return [];}
-   const missed=new Set((Array.isArray(data.errors?.invalid_aliases?.external_id)?data.errors.invalid_aliases.external_id:[]).map(String));
    if(missed.size)log(`app push: ${missed.size} of ${ids.length} not reachable`);
    return ids.filter(id=>!missed.has(id));
   }catch(error){log(`app push failed: ${error?.message??error}`);return [];}
@@ -70,14 +73,14 @@ export function createOneSignal({apiKey='',fetchImpl=globalThis.fetch,base=SITE,
   enabled,
   // One notification for many farmers, in calls of at most ONESIGNAL_BATCH. key: what makes it this notification (the reminder and
   // its hour, a message's id); each call's idempotency key adds its farmers. channel: the app's category (APP_PUSH_CHANNELS).
-  // Returns the set of player ids OneSignal took.
-  async send({ids,title,body,url,tag,key,channel}){
+  // unreachable: a Set that gets the farmers OneSignal named as not reachable. Returns the set of player ids OneSignal took.
+  async send({ids,title,body,url,tag,key,channel,unreachable=null}){
    const reached=new Set();if(!enabled)return reached;
    const unique=[...new Set((ids??[]).filter(id=>id!=null&&id!=='').map(String))].sort();
    for(let i=0;i<unique.length;i+=ONESIGNAL_BATCH){
     const part=unique.slice(i,i+ONESIGNAL_BATCH);
     const request=notificationRequest({ids:part,title,body,url,tag,channel,key:await idempotencyKey(`${key}|${part.join(',')}`)},base);
-    for(const id of await call(request))reached.add(id);
+    for(const id of await call(request,unreachable))reached.add(id);
    }
    return reached;
   }
@@ -85,8 +88,9 @@ export function createOneSignal({apiKey='',fetchImpl=globalThis.fetch,base=SITE,
 }
 
 // The hourly reminders (job.js): farmers with the same words, link and category share calls. items: [{player, push}] with push as
-// planPlayer made it ({title, body, tag, url, channel}: 'daily' or 'ready'). Returns the set of player ids OneSignal took.
-export async function sendReminders(client,items,now=Date.now()){
+// planPlayer made it ({title, body, tag, url, channel}: 'daily' or 'ready'). Returns the set of player ids OneSignal took; unreachable
+// (a Set, 13 Oct 2026) gets the ones it named as not reachable.
+export async function sendReminders(client,items,now=Date.now(),unreachable=null){
  const reached=new Set();if(!client?.enabled)return reached;
  const groups=new Map(),hour=new Date(now).toISOString().slice(0,13);
  for(const {player,push} of items??[]){
@@ -94,7 +98,7 @@ export async function sendReminders(client,items,now=Date.now()){
   if(!groups.has(group))groups.set(group,{push,ids:[]});groups.get(group).ids.push(player);
  }
  for(const {push,ids} of groups.values()){
-  const sent=await client.send({ids,title:push.title,body:push.body,url:push.url,tag:push.tag,channel:push.channel,key:`reminder|${hour}|${push.title}|${push.body}|${push.url}|${push.channel??''}`});
+  const sent=await client.send({ids,title:push.title,body:push.body,url:push.url,tag:push.tag,channel:push.channel,unreachable,key:`reminder|${hour}|${push.title}|${push.body}|${push.url}|${push.channel??''}`});
   for(const id of sent)reached.add(id);
  }
  return reached;

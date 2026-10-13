@@ -44,10 +44,13 @@ export function createAppPush({supabase,playerId=null,win=globalThis.window,time
   let zone='UTC';try{zone=String(timezone()||'UTC');}catch{}
   const {error}=await supabase.rpc('app_push_save',{p_enabled:true,p_timezone:zone});if(error)throw new Error(FAILED);
  }
+ // After a Turn on that saved (13 Oct 2026): the link once more, now that the app has OneSignal's consent and the phone's yes. The app
+ // (1.3 and later) then sends the link and the phone's subscription to OneSignal again; an older app does nothing with a known id.
+ const relink=()=>{if(playerId)void open(appPushLoginLink(playerId));};
  // Every answer repaints Settings. A "Turn on" that is still wanted (the phone's subscription came after the wait, the farmer said no
  // and then allowed them in the phone's settings) is saved the moment the phone allows it.
  const unlisten=hub?.onChange(state=>{
-  if(wanted&&!asking&&ready(state)){wanted=false;void save().catch(()=>{wanted=true;}).finally(tell);return;}
+  if(wanted&&!asking&&ready(state)){wanted=false;void save().then(relink,()=>{wanted=true;}).finally(tell);return;}
   tell();
  });
  // On for the farmer (the farmer's own row; row-level security shows no one else's).
@@ -78,7 +81,7 @@ export function createAppPush({supabase,playerId=null,win=globalThis.window,time
     void open(APP_PUSH.register,()=>{sent=true;});
     // Already allowed: the app's answer only confirms it. Otherwise only an answer that came after the question went out.
     const state=ready(now)?now:await answer(s=>(answered=sent&&(ready(s)||s.permission!=='granted')),waitMs,{fresh:true});
-    if(ready(state)){await save();wanted=false;}
+    if(ready(state)){await save();wanted=false;relink();}
     else refused=answered&&state?.permission!=='granted';
    }finally{asking=false;tell();}
    return refused?{kind:'blocked'}:status();
@@ -90,10 +93,18 @@ export function createAppPush({supabase,playerId=null,win=globalThis.window,time
    tell();return status();
   },
   // Links this phone to the farmer (OneSignal's external_id), once per page load and again after a sign-in; the app answers with the state.
+  // The phone's push repaired (13 Oct 2026): when this phone allows them and OneSignal could not reach the farmer at the last reminder
+  // (notify-hourly marks app_push_players.unreachable_at, supabase/app-push-reach.sql), the link goes once more with fresh=1 and the app
+  // sends it to OneSignal afresh. Read with * so a database without that column yet reads no mark.
   async sync(){
    if(!playerId)return;
    try{if(win.harvestAppPushLinked===playerId)return;win.harvestAppPushLinked=playerId;}catch{return;}
    await open(appPushLoginLink(playerId));
+   if(!ready(await answer(Boolean,statusWaitMs)))return;
+   try{
+    const {data,error}=await supabase.from('app_push_players').select('*').limit(1);
+    if(!error&&data?.[0]?.enabled===true&&data[0].unreachable_at)await open(appPushLoginLink(playerId,{fresh:true}));
+   }catch{}
   },
   // Sign out: this phone stops getting the farmer's notifications (the app unlinks it); on or off stays the farmer's, for their other phones.
   async detach(){

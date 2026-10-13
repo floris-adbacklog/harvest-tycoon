@@ -87,6 +87,22 @@ Elke melding valt in een categorie van de app (Android-instellingen, `existing_a
 vermeldingen (sinds 3 okt 2026), de Crew en aankoopmeldingen; `daily` voor een uurlijkse herinnering waarvan elke regel over het dagcadeau, de reeks of de terugkomkist
 gaat; anders `ready`.
 
+### Bereikbaar of niet (13 okt 2026)
+
+Op 13 oktober kende OneSignal 96 van de 180 spelers met app-push niet als bereikbaar (`invalid_aliases`), vooral op Android 13 en
+nieuwer. De reparatie zit vooral in de app (Android 1.3, `android-app/README.md`); de server en de site helpen zo:
+
+- **notify-hourly** schrijft per uur één regel in de log: `app push this hour: N farmers, X reached, Y not reachable`. Dat getal Y
+  moet na de nieuwe app-versie naar bijna 0.
+- Met `supabase/app-push-reach.sql` (kolom `unreachable_at` op `app_push_players`) onthoudt notify-hourly ook per speler sinds
+  wanneer OneSignal hem niet bereikt, en wist dat weer zodra OneSignal hem wel neemt. Tellen:
+  `select count(*) filter (where unreachable_at is null) as bereikbaar, count(*) from public.app_push_players where enabled;`
+- **De site**: na een geslaagde "Turn on" stuurt de pagina de koppeling (`onesignallogin://`) nog één keer. Opent een speler met zo'n
+  markering de game op een telefoon die meldingen toestaat, dan stuurt de pagina `onesignallogin://login?id=…&fresh=1`: de app 1.3
+  koppelt de telefoon dan opnieuw bij OneSignal (hooguit eens per 6 uur). Oudere apps lezen alleen de id en doen niets nieuws.
+- Volgorde: de SQL, notify-hourly en de site mogen in elke volgorde; zonder de SQL logt notify-hourly dat hij niet kan markeren en
+  leest de site geen markering. Daarna de nieuwe app-versie.
+
 Bekend en zo gelaten: wie op dezelfde telefoon eerder pushmeldingen in Chrome aanzette en daarna in de app, krijgt elke melding daar
 twee keer. De server kan niet zien dat Chrome op dezelfde telefoon zit, en ook niet of de app er nog op staat; de Chrome-kopie
 weglaten kan de telefoon dus helemaal stil maken. De speler zet de Chrome-kopie uit in Chrome: Settings, Reminders, "Turn off in this browser or app".
