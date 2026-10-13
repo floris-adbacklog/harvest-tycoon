@@ -79,8 +79,10 @@ const villageWorld=new URLSearchParams(location.search).get('world')==='village'
 if(villageWorld)document.documentElement.dataset.world='village';else document.documentElement.removeAttribute('data-trip');   // app-mode.js marks the trip
 // In the village the camera buttons speak of the village: centre it, or show all of it.
 if(villageWorld)for(const [id,label] of [['zoom-reset','Center the village'],['zoom-fit','Show the whole village']]){$(id).setAttribute('aria-label',label);$(id).title=label;}
-// 13 Oct 2026 (Android app 1.3): without a page around it the trip takes this page's place in the history too (src/main.js travel).
-const travel=to=>{if(window.parent?.harvestBridge?.travel)void window.parent.harvestBridge.travel(to);else location.replace(location.pathname+(to==='village'?'?world=village':''));};
+// The sound goes along (13 Oct 2026, farm-audio.js travel): the next page takes over this page's running context. A trip whose load
+// fails stays here, and is no trip for the sound either. Without a page around it the trip takes this page's place in the history
+// too (13 Oct 2026, Android app 1.3, src/main.js travel).
+const travel=to=>{if(window.parent?.harvestBridge?.travel){farmAudio.travel();void Promise.resolve(window.parent.harvestBridge.travel(to)).catch(error=>{farmAudio.travel(false);throw error;});}else location.replace(location.pathname+(to==='village'?'?world=village':''));};
 window.harvestTravel=travel;
 // The apps' Back button (13 Oct 2026, Android app 1.3): closes the top-most window as Escape does, true when one was open (public/windows.js).
 window.harvestBack=createBack();
@@ -124,7 +126,8 @@ const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel 
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
 Object.assign(utilityInfo,{villagemarket:{name:'Market square',icon:'store',hint:'Villagers’ requests and golden briefs'},farmroad:{name:'Road to your farm',icon:'house',hint:'Travel back to your farm'}});
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onEmailCheck:c=>setEmailCheck(c),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
-const farmAudio=createFarmAudio({onChange:()=>soundUI?.refresh()});
+// home (13 Oct 2026): the page around the farm keeps the sound's context, so a trip to the village and back keeps the sound going.
+const farmAudio=createFarmAudio({home:window.parent,onChange:()=>soundUI?.refresh()});
 // CrazyGames' sound switch (Oct 2026, public/portal.js): while it is off there, the farm is silent.
 const soundPortal=portal();if(soundPortal){farmAudio.muteFromOutside(soundPortal.settings?.muteAudio);const stop=soundPortal.onSettings?.(next=>farmAudio.muteFromOutside(next?.muteAudio));window.addEventListener('pagehide',()=>stop?.(),{once:true});}
 // For the parts of the game outside the farm's own actions (src/chat-ui.js: a private message; src/payment-ui.js: diamonds bought).

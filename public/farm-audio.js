@@ -161,7 +161,22 @@ function renderInBackground(windowRef,accept){
 export const RESUME_WAIT=1000,STILL_WAIT=2000,MAKE_TRIES=3;
 // touchend and click too (11 Oct 2026): older iOS did not count a pointerup as a tap that may start sound, and VoiceOver only clicks.
 const GESTURES=['pointerup','pointerdown','touchend','click','keydown'];
-export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,onChange=()=>{},loadMusic=loadFarmMusic,loadPreview=loadMusicPreview,renderSounds=renderInBackground,clock=()=>globalThis.performance?.now?.()??Date.now()}={}){
+// 13 Oct 2026 (an iPhone player, after the 12 Oct fix: no tune and no sound for 30-60 s after every trip between the farm and the
+// village): a trip loads the farm's page again in its frame and a context belongs to the page that made it, so every trip closed a
+// running context (iOS then turns the phone's sound session off) and the new page had to make and start one of its own, which iOS only
+// allows inside a tap on that new page and can refuse for a while, each replacement waiting twice as long. Now the context belongs to the
+// page around the farm (home: the website's own page or a portal's, same origin) and stays there through a trip, running: the new page
+// takes it over as it is and the sound goes on at once, no tap needed. Only the context is kept there (made with that page's own
+// AudioContext), never one of this page's objects, so nothing of a page that went stays in memory.
+const HOME_CONTEXT='harvestAudioContext';
+// 13 Oct 2026 (review, not yet seen on an iPhone): iOS may not let a tap in the farm's frame start a context of the page around it, and
+// then the game would have no sound at all. So until a context there has run (HOME_SHARED true on that page), a tap that asks it to
+// start and does not see it run within SHARED_WAIT (at once when its start fails) goes back to the 12 Oct way: that context is closed
+// and this page makes its own, still inside that tap where it can (WebKit carries a tap into a timer under a second; if not, the next
+// tap starts it), and HOME_SHARED false tells every later page of the session to make its own at once, without waiting again.
+export const SHARED_WAIT=500;
+const HOME_SHARED='harvestAudioShared';
+export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,home=null,onChange=()=>{},loadMusic=loadFarmMusic,loadPreview=loadMusicPreview,renderSounds=renderInBackground,clock=()=>globalThis.performance?.now?.()??Date.now(),later=(fn,ms)=>globalThis.setTimeout(fn,ms)}={}){
  let settings={...AUDIO_DEFAULTS},ctx,master,compressor,ambientBus,effectBus,music=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;
  let nextEffectAt=0,priorityUntil=0,resuming=null,lastSnip=-Infinity;
  // tried: when a tap first asked this context to start since it last ran; gaveUp: such a start ended without it running; renewals:
@@ -171,6 +186,12 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  // CrazyGames' own sound switch (Oct 2026, settings.muteAudio through public/portal.js): while it is off the game is silent, whatever
  // Settings say, and the sound comes back as Settings have it once CrazyGames turns it on again.
  let outsideMute=false;
+ // The page around the farm, when there is one we may use (not farm.html on its own, nor a page of another site); trip: this page is
+ // about to make way for the farm's other world (travel()), so its context stays running there for the next page.
+ // onState: this page's statechange handler, so a page that goes knows whether a later page already took the context over.
+ // A page around the farm whose context would not start from a tap here (HOME_SHARED false) is not used: this page keeps its own.
+ // waiting: the SHARED_WAIT check a tap set off, until it is done.
+ let homeRef=null,trip=false,onState=null,waiting=null;try{if(home&&home!==windowRef&&home[HOME_SHARED]!==false){void home[HOME_CONTEXT];homeRef=home;}}catch{}
  const voices=new Set(),lastPlayed=new Map();
  // A track's preview in Settings: {id,status:'loading'|'playing',source,gain}; the farm's music is turned down while it plays.
  let preview=null,previewTurn=0,previewFailed=null,previewBuffer=null;
@@ -196,25 +217,29 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   if(bed)ramp(bed[1].gain,1,.4);
   return true;
  }
- function silence(){
+ // running: the sounds stop but the context keeps running (a trip, 13 Oct 2026).
+ function silence(running=false){
   if(!ctx)return;master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(0,ctx.currentTime);stopBed();for(const v of [...voices])stopVoice(v);
   if(preview){if(preview.source){try{preview.source.stop();preview.source.disconnect();preview.gain.disconnect();}catch{}}preview=null;previewTurn++;if(!disposed)onChange(read());}
   nextEffectAt=0;priorityUntil=0;lastSnip=-Infinity;lastPlayed.clear();
   // A resume still waiting does not hold back the next one (11 Oct 2026); a suspended clock stands still on purpose.
   resuming=null;heard=null;
-  if(ctx.state!=='closed')Promise.resolve(ctx.suspend()).catch(()=>{});
+  if(!running&&ctx.state!=='closed')Promise.resolve(ctx.suspend()).catch(()=>{});
  }
+ // The context the page around the farm holds (13 Oct 2026), while it is open: a context is made only when there is none.
+ function parked(){try{const c=homeRef?.[HOME_CONTEXT];return c&&c.state!=='closed'?c:null;}catch{return null;}}
  function makeContext(){
-  const AudioContext=windowRef?.AudioContext??windowRef?.webkitAudioContext;
-  const c=ctx=contextFactory?contextFactory():new AudioContext();
+  const AudioContext=homeRef?.AudioContext??homeRef?.webkitAudioContext??windowRef?.AudioContext??windowRef?.webkitAudioContext;
+  const kept=parked(),c=ctx=kept??(contextFactory?contextFactory():new AudioContext());
   master=ctx.createGain();master.gain.value=0;
   compressor=ctx.createDynamicsCompressor();compressor.threshold.value=-16;compressor.knee.value=12;compressor.ratio.value=8;compressor.attack.value=.006;compressor.release.value=.18;
   ambientBus=ctx.createGain();ambientBus.gain.value=0;effectBus=ctx.createGain();effectBus.gain.value=settings.effects/100;
   ambientBus.connect(compressor);effectBus.connect(compressor);compressor.connect(master);master.connect(ctx.destination);
   // An interruption that ends (a call, Siri, an alarm) brings the mix back, or keeps it silent while the game may not sound; one that
   // does not end is the next tap's to heal.
-  c.onstatechange=()=>{if(c!==ctx||disposed)return;heard=null;if(c.state!=='running')return;ran();if(active())applyMix(true);else silence();};
+  c.onstatechange=onState=()=>{if(c!==ctx||disposed)return;heard=null;if(c.state!=='running')return;ran();if(active())applyMix(true);else silence();};
   prepareSounds();
+  if(homeRef&&!kept)try{homeRef[HOME_CONTEXT]=c;}catch{}
  }
  // A context the browser would not make (11 Oct 2026): sound is 'not available' until a later tap makes one (not the same tap's
  // touchend or click), MAKE_TRIES in a row at most; a browser without Web Audio is not asked again.
@@ -223,8 +248,13 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   try{makeContext();makeFails=0;if(unavailable){unavailable=false;onChange(read());}return true;}
   catch{shut(ctx);ctx=null;makeFails=contextFactory||windowRef?.AudioContext||windowRef?.webkitAudioContext?makeFails+1:MAKE_TRIES;failedAt=clock();unavailable=true;onChange(read());return false;}
  }
- function shut(c){if(!c)return;c.onstatechange=null;try{if(c.state!=='closed')Promise.resolve(c.close()).catch(()=>{});}catch{}}
- function ran(){tried=null;gaveUp=false;}
+ function shut(c){if(!c)return;c.onstatechange=null;try{if(homeRef?.[HOME_CONTEXT]===c)homeRef[HOME_CONTEXT]=null;}catch{}try{if(c.state!=='closed')Promise.resolve(c.close()).catch(()=>{});}catch{}}
+ // A context of the page around the farm that runs shows it works here (13 Oct 2026 review): it is never given up for one of our own.
+ function ran(){tried=null;gaveUp=false;if(homeRef)try{homeRef[HOME_SHARED]=true;}catch{}}
+ const untried=()=>{try{return Boolean(homeRef)&&homeRef[HOME_SHARED]!==true;}catch{return false;}};
+ // The page around the farm's context would not start from a tap here: it is closed (one live context), the page around remembers it
+ // for the session, and this page makes its own and asks it to start at once (in the tap still, where the browser carries it over).
+ function goLocal(){try{homeRef[HOME_SHARED]=false;}catch{}silence();shut(ctx);ctx=null;homeRef=null;tried=null;gaveUp=false;if(make())void unlock(false);}
  // On a tap: a context closed behind the game, one a tap could not start in time (at once if its start already gave up), or one that
  // says 'running' while its clock stood still since an earlier tap (WebKit bugs 263627, 276687).
  function stuck(){
@@ -329,8 +359,11 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
    // Every tap asks again (11 Oct 2026): WebKit may never settle a resume() it could not start, and only a new tap lets it start.
    if(resuming&&!byGesture)return resuming;
    const c=ctx;if(byGesture)tried??=clock();
+   // A tap asks the page around the farm's context, which never ran here (13 Oct 2026 review): not running SHARED_WAIT later, or its
+   // start failed, this page goes its own way.
+   if(byGesture&&!waiting&&untried()){const turn=waiting={};later(()=>{if(waiting!==turn)return;waiting=null;if(ctx&&ctx.state!=='running'&&untried()&&active())goLocal();},SHARED_WAIT);}
    const asked=resuming=new Promise(resolve=>resolve(c.resume())).then(()=>{if(c!==ctx)return false;if(!active()){silence();return false;}applyMix(true);if(c.state!=='running'){if(byGesture)gaveUp=true;return false;}ran();return true;})
-    .catch(()=>{if(c===ctx&&byGesture)gaveUp=true;return false;}).finally(()=>{if(resuming===asked)resuming=null;});
+    .catch(()=>{if(c===ctx&&byGesture){gaveUp=true;if(untried()&&active())goLocal();}return false;}).finally(()=>{if(resuming===asked)resuming=null;});
    return asked;
   }catch{return Promise.resolve(false);}
  }
@@ -366,9 +399,21 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  function visibility(){if(documentRef.hidden)silence();else if(unlocked)void unlock(false);}
  function pagehide(event){if(event.persisted)silence();else dispose();}
  function pageshow(event){if(event.persisted&&unlocked)void unlock(false);}
- function dispose(){if(disposed)return;disposed=true;stopRendering?.();silence();for(const type of GESTURES)documentRef?.removeEventListener(type,gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);music=null;previewBuffer=null;shut(ctx);}
+ // A context the page around the farm holds is never closed here (13 Oct 2026): this page's sounds stop and its mix comes off it, and
+ // it stays running on a trip, for the next page, or is suspended when the farm closes otherwise (signed out, paused). One a later page
+ // already took over (its handler is on it, review 13 Oct 2026) is that page's: this page only takes its own sounds off.
+ function dispose(){
+  if(disposed)return;disposed=true;stopRendering?.();const kept=Boolean(ctx)&&parked()===ctx,taken=kept&&ctx.onstatechange!==onState;silence(kept&&(trip||taken));
+  for(const type of GESTURES)documentRef?.removeEventListener(type,gesture,true);documentRef?.removeEventListener('visibilitychange',visibility);windowRef?.removeEventListener('pagehide',pagehide);windowRef?.removeEventListener('pageshow',pageshow);music=null;previewBuffer=null;
+  if(kept){if(!taken)ctx.onstatechange=null;for(const node of [effectBus,ambientBus,compressor,master])try{node.disconnect();}catch{}ctx=null;}else shut(ctx);
+ }
  for(const type of GESTURES)documentRef?.addEventListener(type,gesture,true);documentRef?.addEventListener('visibilitychange',visibility);windowRef?.addEventListener('pagehide',pagehide);windowRef?.addEventListener('pageshow',pageshow);
- return {settings:read,setSettings,unlock,play,snip,dispose,muteFromOutside,preview:playPreview,stopPreview};
+ // After a trip (13 Oct 2026): the context the page before left is taken over at once, before any tap here (the farmer tapped for it
+ // there). Running, the sound goes on; suspended or interrupted, it is asked to start, and every tap here asks again, with no wait
+ // carried over; where the game may not sound (hidden, sound off in Settings, muted from outside) it is suspended.
+ if(parked()&&make()){unlocked=true;if(active())void unlock(false);else silence();}
+ // travel(false): the trip did not happen (its load failed), so a farm closed later is not taken for one.
+ return {settings:read,setSettings,unlock,play,snip,dispose,muteFromOutside,preview:playPreview,stopPreview,travel(on=true){trip=Boolean(on);}};
 }
 
 export function withActionSounds(runAction,getLevel,play){
