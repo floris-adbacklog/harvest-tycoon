@@ -25,23 +25,36 @@ async function requestNotice(admin,action,result,context,player,username,now){
  to=to.filter(id=>id&&id!==player);if(!to.length)return;
  try{await admin.from('player_notices').insert(to.map(id=>({player_id:id,kind:'family',body:body.slice(0,400),expires_at:new Date(now+7*86400000).toISOString()})));}catch{}
 }
+// Reads (the Family window's 30-second refresh, chat's @mention list) and the family profile ask for only the rows the rules use for
+// this farmer (13 Oct 2026, supabase/family-read.sql): every family's whole history was 504 KB and 82 ms a read, 97% of all family
+// calls. The rules and every answer are the same (tests/family-read.test.mjs). Actions still read everything: harvest_family_context.
+// Until family-read.sql has run (no such function yet), a read takes the whole context as before.
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+async function readContext(admin,player,family=null){
+ let fetched=await admin.rpc('harvest_family_read',{p_player:player,p_family:family});
+ if(fetched.error?.code==='PGRST202')fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:null});
+ if(fetched.error)throw fetched.error;
+ return fetched.data;
+}
 // A family's profile (familyProfile, farm-state.js): read only, so it never settles a week or writes anything.
 export async function handleFamilyProfile({admin,body,state,player}){
  if(typeof body.familyId!=='string'||!body.familyId||body.familyId.length>64)return {status:422,data:{error:'Choose a family.',code:'ACTION_REJECTED'}};
- const fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:null});
- if(fetched.error)throw fetched.error;
- const context=fetched.data,now=context.now;
+ // Every family id is a UUID: anything else is no family, as before, without asking the database (which would refuse it).
+ const gone={status:422,data:{error:'This family is no longer around.',code:'ACTION_REJECTED'}};
+ if(!UUID.test(body.familyId))return gone;
+ const context=await readContext(admin,player,body.familyId),now=context.now;
  context.players=context.players.map(p=>({...p,online:isRecentlyActive(p.last_active_at,now)}));
  const profile=familyProfile(context,body.familyId,player,state,now);
- return profile?{status:200,data:{familyProfile:profile,profile:{player_id:player},serverNow:now}}:{status:422,data:{error:'This family is no longer around.',code:'ACTION_REJECTED'}};
+ return profile?{status:200,data:{familyProfile:profile,profile:{player_id:player},serverNow:now}}:gone;
 }
 // null tells the existing farm-api revision loop to reload and retry.
 export async function handleFamily({admin,body,row,state,player,username}){
  const reading=body.operation==='family';
  if(!reading&&body.action.type==='family_read')return {status:422,data:{error:'Use the Family view to refresh.',code:'ACTION_REJECTED'}};
- const fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:reading?null:body.requestId});
- if(fetched.error)throw fetched.error;
- const before=fetched.data,now=before.now;
+ let before;
+ if(reading)before=await readContext(admin,player);
+ else{const fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:body.requestId});if(fetched.error)throw fetched.error;before=fetched.data;}
+ const now=before.now;
  const response=(context,result,failed,written=false)=>({status:failed?422:200,data:failed?{error:result.error,code:'ACTION_REJECTED'}:reading?{profile:{player_id:player},family:publicView(context,player,state,now),serverNow:now}:{state,profile:{player_id:player,username,currency:state.coins,level:levelOf(state)},result:{...result,family:publicView(context,player,state,now)},revision:row.revision+(written?1:0),serverNow:now}});
  if(before.receipt)return response(before,before.receipt.result,before.receipt.failed);
  if(!reading&&body.action.type==='family_invite'){

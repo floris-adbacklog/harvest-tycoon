@@ -206,7 +206,8 @@ test('Migration is additive, RLS/service-only, atomic, replay safe and locks set
  for(const table of ['families','family_members','family_orders','family_contributions','family_week_results','family_rewards','family_claims']){assert.ok(sql.includes(`create table if not exists public.${table}`));assert.ok(sql.includes(`alter table public.${table} enable row level security`));assert.ok(sql.includes(`revoke all on public.${table} from public, anon, authenticated`));}
 });
 test('Family read includes the authenticated player identity required by the existing bridge',async()=>{
- const c=create();c.now=now;const admin={rpc:async name=>{assert.equal(name,'harvest_family_context');return {data:c};}};
+ // A read asks harvest_family_read (13 Oct 2026, supabase/family-read.sql; tests/family-read.test.mjs).
+ const c=create();c.now=now;const admin={rpc:async name=>{assert.equal(name,'harvest_family_read');return {data:c};}};
  const response=await handleFamily({admin,body:{operation:'family'},row:{revision:1,receipts:[]},state:farm(),player:'alice',username:'Alice'});
  assert.equal(response.data.profile.player_id,'alice');assert.ok(response.data.family);assert.equal(response.data.state,undefined);
 });
