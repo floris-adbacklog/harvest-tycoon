@@ -79,9 +79,10 @@ function openScreen(intent){
 }
 // A reminder that opened the game (13 Oct 2026, the measurement package): notify-hourly's push (?source=push, in a browser and in both
 // apps, which open the push's address) or the daily email (?source=email). Said once, with the next farm load, so farm-api's "Opened the
-// game" line in the farmer's log says so (src/supabase.js openedBy); a reload or Back to this page is no new open. The address keeps it
+// game" line in the farmer's log says so (src/supabase.js openedBy); a reload or Back to this page is no new open, nor a tab the phone
+// put to sleep and loads again later (document.wasDiscarded), still on the push's address. The address keeps it
 // (Tag Manager reads it). A push tapped while the game is open (sw.js) counts for the load that follows, when the tab comes back into view.
-openedBy((()=>{try{const entry=performance.getEntriesByType?.('navigation')?.[0];if(entry&&entry.type!=='navigate')return null;}catch{}return reminderSource(location.href,location.origin);})());
+openedBy((()=>{try{if(document.wasDiscarded)return null;const entry=performance.getEntriesByType?.('navigation')?.[0];if(entry&&entry.type!=='navigate')return null;}catch{}return reminderSource(location.href,location.origin);})());
 navigator.serviceWorker?.addEventListener?.('message',event=>{if(event.data?.type!=='open')return;openedBy(reminderSource(String(event.data.url),location.origin));try{openScreen(openIntentOfUrl(String(event.data.url),location.origin));}catch{}});
 // A shortcut on the app icon, or a link the app catches (/feedback, /settings/<part>, /discord-link?t=…), while the app is already
 // open comes to this window (manifest launch_handler: focus-existing).

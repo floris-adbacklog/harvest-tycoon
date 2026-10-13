@@ -21,6 +21,9 @@ test('opened from a reminder: the open line says which, also after less than 30 
  assert.deepEqual(text(loadLog({away:2*86400000,from:'email'})),[['account','open','Opened the game from the daily email after 2 days']]);
  assert.deepEqual(text(loadLog({away:12*60000,from:'push'})),[['account','open','Opened the game from a push reminder after 12 minutes']],'a tap within 30 minutes still counts');
  assert.deepEqual(text(loadLog({away:20000,from:'email'})),[['account','open','Opened the game from the daily email']],'no "after 0 minutes"');
+ assert.equal(loadLog({away:89000,from:'push'})[0].text,'Opened the game from a push reminder after 1 minute','one minute, not "1 minutes"');
+ assert.equal(loadLog({away:3599000,from:'email'})[0].text,'Opened the game from the daily email after 59 minutes','whole minutes, never "60 minutes"');
+ assert.equal(loadLog({away:45.8*60000})[0].text,'Opened the game after 45 minutes');
  assert.deepEqual(text(loadLog({away:5*3600000+60000,from:'pwa'})),[['account','open','Opened the game after 5 hours']],'anything else is an ordinary open');
  assert.deepEqual(loadLog({away:10*60000,from:'chat'}),[],'and under 30 minutes no line, as before');
  for(const rows of [loadLog({away:1,from:'push'}),loadLog({away:1e9,from:'email'})])assert.ok(rows.every(r=>!r.text.includes(' · ')&&r.text.length<=240));
@@ -34,7 +37,7 @@ test('reminderSource: only push and email, from any address the game opens on',(
 });
 test('the site says it once, with the next farm load; a reload or Back is no new open; farm-api passes it to the log',()=>{
  const main=read('src/main.js'),supabase=read('src/supabase.js'),api=read('supabase/functions/farm-api/index.ts');
- assert.match(main,/openedBy\(\(\(\)=>\{try\{const entry=performance\.getEntriesByType\?\.\('navigation'\)\?\.\[0\];if\(entry&&entry\.type!=='navigate'\)return null;\}catch\{\}return reminderSource\(location\.href,location\.origin\);\}\)\(\)\);/);
+ assert.match(main,/openedBy\(\(\(\)=>\{try\{if\(document\.wasDiscarded\)return null;const entry=performance\.getEntriesByType\?\.\('navigation'\)\?\.\[0\];if\(entry&&entry\.type!=='navigate'\)return null;\}catch\{\}return reminderSource\(location\.href,location\.origin\);\}\)\(\)\);/,'nor a tab the phone put to sleep and loads again');
  assert.match(main,/addEventListener\?\.\('message',event=>\{if\(event\.data\?\.type!=='open'\)return;openedBy\(reminderSource\(String\(event\.data\.url\),location\.origin\)\);/,'a push tapped while the game is open counts for the next load');
  assert.match(supabase,/export function openedBy\(source\)\{if\(source==='push'\|\|source==='email'\)openedFrom=source;\}/);
  assert.match(supabase,/const takeOpened=\(\)=>\{const source=openedFrom;openedFrom=null;return source\?\{opened:source\}:\{\};\};/,'taken once');
@@ -157,6 +160,14 @@ test('recordSeen keeps the platform with the rest of the visit; a page that cann
  assert.equal((await seen({'user-agent':ANDROID_APP},{})).platform,'android_app','an app is known even from an old page');
  assert.equal((await seen({'user-agent':PHONE},{portal:'crazygames'})).platform,'crazygames');
  assert.equal((await seen({'user-agent':PHONE},{platform:'nonsense'})).platform,undefined);
+ // A farm-api out before supabase/player-platform.sql: the column is not there yet, and the rest of the visit is still saved.
+ for(const code of ['PGRST204','42703']){
+  const rows=[],db={from(){return {upsert(row){rows.push(row);return Promise.resolve({error:'platform' in row?{code}:null});}};}};
+  await recordSeen({admin:db,player:P1,headers:new Headers({'user-agent':PHONE}),timeZone:'Europe/Amsterdam',language:'nl',platform:'pwa',now});
+  assert.deepEqual(rows.map(r=>r.platform),['pwa',undefined],code);assert.deepEqual(rows[1],{player_id:P1,country:'NL',device:PHONE,language:'nl',seen_at:new Date(now).toISOString()});
+ }
+ let tries=0;const other={from(){return {upsert:()=>{tries++;return Promise.resolve({error:{code:'23514'}});}};}};
+ await assert.rejects(()=>recordSeen({admin:other,player:P1,headers:new Headers({'user-agent':PHONE}),platform:'pwa',now}));assert.equal(tries,1,'any other failure still fails, at once');
  const api=read('supabase/functions/farm-api/index.ts');
  assert.match(api,/recordSeen\(\{admin,player:user\.id,headers:req\.headers,timeZone:body\.timeZone,language:body\.language,platform:body\.platform,portal:user\.app_metadata\?\.portal\}\)/);
 });

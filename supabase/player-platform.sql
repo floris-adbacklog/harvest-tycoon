@@ -9,7 +9,7 @@
 -- tell (a game tab from before this) keeps what was saved. Like the rest of the row, only the latest visit is kept.
 -- On player_seen, one row per farmer, so no new table: harvest_delete_account (delete-account.sql) already removes the row, and nothing
 -- goes into the farm's saved state. Only farm-api (the service role) reads or writes the table, as before.
--- Release: run this first, then farm-api (it writes the column: without it the whole row of that load is not saved), then the site.
+-- Release: run this first, then farm-api (it writes the column; one out before this saves the rest of the visit without it), then the site.
 -- Safe to run again.
 alter table public.player_seen add column if not exists platform text;
 do $do$

@@ -147,7 +147,10 @@ export function platformOf({hint,agent,portal}={}){
 // 13 Oct 2026: the platform too.
 export async function recordSeen({admin,player,headers,timeZone,language,platform:hint,portal,now=Date.now()}){
  const seen=Object.fromEntries(Object.entries({...seenFrom(headers,timeZone,language),platform:platformOf({hint,agent:headers?.get?.('user-agent'),portal})}).filter(([,value])=>value!=null));
- const saved=await admin.from('player_seen').upsert({player_id:player,...seen,seen_at:new Date(now).toISOString()});
+ let saved=await admin.from('player_seen').upsert({player_id:player,...seen,seen_at:new Date(now).toISOString()});
+ // A farm-api out before supabase/player-platform.sql (the column not there yet: PGRST204, 42703) still saves the rest of the visit: the
+ // country, device and language the welcome message and group messages read. Only then a second write.
+ if(saved.error&&'platform' in seen&&['PGRST204','42703'].includes(saved.error.code)){const rest={...seen};delete rest.platform;saved=await admin.from('player_seen').upsert({player_id:player,...rest,seen_at:new Date(now).toISOString()});}
  if(saved.error)throw saved.error;
 }
 // "iPhone · Safari", "Windows · Chrome", "Android phone · Facebook app": enough to tell devices apart, from the user agent.

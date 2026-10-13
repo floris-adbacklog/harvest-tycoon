@@ -128,7 +128,8 @@ export function loadLog({away,gift,inviteReward,emailBonus,comeback,from}){
  if(comeback)rows.push(line('rewards','comeback',`A comeback chest was waiting after ${comeback.days} days away`));
  return rows;
 }
-function awayText(ms){const h=Math.floor(ms/3600000),d=Math.floor(h/24);return d?`${d} ${d===1?'day':'days'}`:h?`${h} ${h===1?'hour':'hours'}`:`${Math.round(ms/60000)} minutes`;}
+// Whole minutes, like the hours and days (13 Oct 2026: a reminder's open from 1 minute away said "1 minutes", and 59.5 "60 minutes").
+function awayText(ms){const m=Math.floor(ms/60000),h=Math.floor(ms/3600000),d=Math.floor(h/24);return d?`${d} ${d===1?'day':'days'}`:h?`${h} ${h===1?'hour':'hours'}`:`${m} ${m===1?'minute':'minutes'}`;}
 export const accountLog=(action,text)=>[line('account',action,text)];
 // The reminder question after a harvest (13 Oct 2026, the measurement package; public/reminder-nudge.js): shown, and what the farmer
 // did with it, in this log too (Tag Manager only has it with the farmer's consent). The game keeps them (public/farm-client.js note) and

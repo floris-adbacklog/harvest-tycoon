@@ -19,12 +19,12 @@ function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {
 // play: the app sells through Google Play (app 1.1, public/android.js playBilling); playStore: the fake app it talks to (src/play-store.js).
 // apple, appStore: the same for the iPhone app 1.1 and the App Store (Oct 2026, public/android.js appStoreBilling, src/app-store.js).
 // web: the Galaxy Store app, which sells through Stripe like the website (Oct 2026, public/android.js webBilling).
-function fixture({navigation=null,ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null,apple=false,appStore=null,web=false,win={},
+function fixture({navigation=null,discarded=false,ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null,apple=false,appStore=null,web=false,win={},
  playProducts={'150':'diamonds_150','500':'diamonds_500',starter:'starter_pack'},appleProducts={'150':'diamonds_150','500':'diamonds_500',starter:'starter_pack'},appleSellsOffer=false}={}){
  const nodes=new Map(),events={},frames=[],calls=[],analytics=[],game=[],timers=[],lookups=[],opened=[];let authCallback,currentUser=user,clock=1_000_000,nextTimer=1;
  const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},toggleAttribute(name,on){(this.attrs??={})[name]=Boolean(on);},removeAttribute(name){if(this.attrs)delete this.attrs[name];},focus(){},scrollIntoView(){},replaceChildren(...items){for(const old of this.children)if(!items.includes(old))old.removed=true;this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},classList:(set=>({add:name=>set.add(name),remove:name=>set.delete(name),contains:name=>set.has(name)}))(new Set()),contentWindow:{}});return nodes.get(id);};
  const providerButtons=buttons?['google','facebook'].map(provider=>Object.assign(element(`provider-${provider}`),{dataset:{provider}})):[];
- const document={body:{dataset:{}},hidden:false,getElementById:element,querySelector:element,querySelectorAll:selector=>selector==='[data-provider]'?providerButtons:[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
+ const document={body:{dataset:{}},hidden:false,wasDiscarded:discarded,getElementById:element,querySelector:element,querySelectorAll:selector=>selector==='[data-provider]'?providerButtons:[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
  const window={addEventListener(name,fn){events[name]=fn;},...win};
  const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};},...authApi},...(rpc?{rpc}:{})};
  const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online,userAgent:ua},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,URLSearchParams,queueMicrotask,
@@ -537,4 +537,6 @@ test('a push reminder or the daily email that opened the page is noted for the f
   const f=fixture({user:{id:'A'},location:at(search),navigation});await settle();
   assert.deepEqual(f.opened,expected,`${search} ${navigation}`);
  }
+ const woken=fixture({user:{id:'A'},location:at('?source=push'),navigation:'navigate',discarded:true});await settle();
+ assert.deepEqual(woken.opened,[],'a tab the phone put to sleep, loaded again on the push\'s address');
 });
