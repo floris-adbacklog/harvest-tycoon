@@ -109,3 +109,17 @@ test('the farmer\'s log says when the question came after the first gift; its an
 test('the privacy policy says when the question comes',()=>{
  assert.match(read('public/privacy.html'),/we ask after your first daily gift or at level 5, whichever comes first, and again at level 10 and 20 while they are off/);
 });
+// Review fixes (13 Oct 2026): on a phone the card covers the bottom bar, and right after the first gift step 7's pointer ("Tap Buildings.")
+// came 0.3 s after it, pointing under the card, and Not now ended that pointer. One at a time now, whichever came first.
+test('the card and the guide\'s pointer never stand together: the card waits for the pointer, the guide\'s own pointer waits for the card',async()=>{
+ let pointer=true;const h=harness({canShow:()=>!pointer});h.nudge.gifted();await h.look();h.later(20000);await h.look();assert.equal(h.shown(),false,'not while the pointer stands');
+ pointer=false;h.later(500);await h.look();h.later(1600);await h.look();assert.equal(h.shown(),true,'1.5 s after the pointer is gone');h.cleanup();
+ assert.match(read('public/game.js'),/canShow:\(\)=>ready&&\$\('loading'\)\.hidden&&!document\.querySelector\('dialog\[open\]'\)&&!coach\.active\}\);/);
+ assert.match(read('public/beginner-ui.js'),/function quiet\(\)\{return !document\.querySelector\('dialog\[open\]'\)&&!document\.querySelector\('\.reminder-nudge'\)&&idle\(\);\}/);
+ assert.match(read('public/reminder-nudge.js'),/card\.className='reminder-nudge'/,'the class the guide looks for');
+});
+test('the look after the first gift ends with its 5 minutes, also while the device never answers the push check',async()=>{
+ const h=harness();globalThis.window.parent.harvestBridge.notifications.push.status=()=>new Promise(()=>{});
+ h.nudge.gifted();await h.look();h.later(2000);await h.look();assert.equal(h.shown(),false);assert.equal(h.looks.length,1,'still looking');
+ h.later(5*60000);await h.look();await h.look();assert.equal(h.looks.length,0,'it stops');assert.equal(h.shown(),false);h.cleanup();
+});

@@ -9,7 +9,8 @@ const now=Date.UTC(2026,9,13,12);
 // Item 1 of the 13 Oct 2026 proposal (plan-wachten/E-verbeteringen.md): since 11 Oct the pointer "Tap Market to open it." showed once, the
 // next tap on a corn ended it, and on a phone the sales within 30 s of the first harvest fell from 60% to 20%.
 
-// A small page for the guide (beginner-ui.js): elements by id, an open window or not, taps on the page, and a clock the test moves.
+// A small page for the guide (beginner-ui.js): elements by id, an open window or not, taps on the page, and a clock the test moves (no
+// reminder card: beginner-ui.js quiet looks for it since 13 Oct 2026).
 function page(){
  const els=new Map(),listeners={};let dialogOpen=false;
  class El{hidden=false;open=false;disabled=false;className='';textContent='';innerHTML='';attrs={};listeners={};classes=new Set();
@@ -17,7 +18,7 @@ function page(){
   addEventListener(type,fn){(this.listeners[type]??=[]).push(fn);}setAttribute(k,v){this.attrs[k]=v;}getAttribute(k){return this.attrs[k]??null;}close(){this.open=false;}showModal(){this.open=true;}focus(){}querySelector(){return new El();}getClientRects(){return [];}}
  const get=id=>{if(!els.has(id))els.set(id,new El());return els.get(id);};
  const touch=type=>(listeners[type]??[]).forEach(fn=>fn({type}));
- return {get,touch,setDialog:v=>{dialogOpen=v;},document:{getElementById:get,querySelector:sel=>sel==='dialog[open]'?(dialogOpen||get('market-dialog').open?{}:null):get(sel),querySelectorAll:()=>[],addEventListener:(type,fn)=>{(listeners[type]??=[]).push(fn);}}};
+ return {get,touch,setDialog:v=>{dialogOpen=v;},document:{getElementById:get,querySelector:sel=>sel==='dialog[open]'?(dialogOpen||get('market-dialog').open?{}:null):sel==='.reminder-nudge'?null:get(sel),querySelectorAll:()=>[],addEventListener:(type,fn)=>{(listeners[type]??=[]).push(fn);}}};
 }
 async function guide(setup=s=>s){
  const {createBeginnerUI,AUTO_WAIT_MS}=await import('../public/beginner-ui.js');

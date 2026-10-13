@@ -131,8 +131,9 @@ const track=(event,params={})=>{if(adminView)return;try{window.parent.harvestBri
 const markChain=key=>{try{const chain=window.parent.harvestChain??={};chain[key]??=Math.round(window.parent.performance.now());}catch{}};
 let sessionTracked=false;
 // The reminder question's steps go to the farmer's log too (13 Oct 2026, farm-client.js note). It comes after a harvest, or right after
-// the farm's first daily gift (13 Oct 2026, item 4; runAction's checkin, from Today or Welcome back).
-const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,log:client.note,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
+// the farm's first daily gift (13 Oct 2026, item 4; runAction's checkin, from Today or Welcome back). Never while the guide's pointer
+// stands (review fix: step 7's "Tap Buildings." came with it, under the card), and the guide's own pointer waits for the card (beginner-ui.js quiet).
+const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,log:client.note,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')&&!coach.active});
 // A crop medal the action earned (a tap harvest, the tractor) gets its toast at the bottom (medal-notice.js, Oct 2026).
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens

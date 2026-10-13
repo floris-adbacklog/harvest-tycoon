@@ -125,7 +125,9 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   if(current?.index===BEGINNER_QUESTS.length-1&&current.ready&&!finaleShown){finaleShown=true;open();}
  }
  // ---- The pointer by itself (A12) ----
- function quiet(){return !document.querySelector('dialog[open]')&&idle();}
+ // Nor while the reminder question's card stands (13 Oct 2026, item 4 review: right after the first gift it came with step 7's pointer to
+ // Buildings, which it covers on a phone, and its Not now ended that pointer); the pointer comes 1.8 s after it is answered.
+ function quiet(){return !document.querySelector('dialog[open]')&&!document.querySelector('.reminder-nudge')&&idle();}
  // Step 2's pointer comes back (13 Oct 2026, the 11 Oct regression: it showed once and the next tap on a corn ended it; before, it came
  // 1.8 s after the harvest and stood up to 25 s). While step 2 waits it shows again each time nothing has been touched for 1.8 s (no
  // window open, the pointer free), until Market has been opened; inside Market it points at Sell all itself (game.js openDialog). Taps

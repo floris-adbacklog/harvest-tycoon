@@ -6,14 +6,15 @@ import {bindFarmInput,SWIPE_HOLD_MS} from '../public/farm-input.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,9,11,12);
 
-// A small page for the guide (beginner-ui.js): elements by id, an open window or not, and a clock the test moves.
+// A small page for the guide (beginner-ui.js): elements by id, an open window or not, the reminder question's card or not (13 Oct 2026),
+// and a clock the test moves.
 function page(){
- const els=new Map();let dialogOpen=false;
+ const els=new Map();let dialogOpen=false,card=false;
  class El{hidden=false;open=false;disabled=false;className='';textContent='';innerHTML='';attrs={};listeners={};classes=new Set();
   classList={toggle:(c,on)=>{if(on??!this.classes.has(c))this.classes.add(c);else this.classes.delete(c);},add:c=>this.classes.add(c),remove:c=>this.classes.delete(c),contains:c=>this.classes.has(c)};
   addEventListener(type,fn){(this.listeners[type]??=[]).push(fn);}setAttribute(k,v){this.attrs[k]=v;}getAttribute(k){return this.attrs[k]??null;}close(){this.open=false;}showModal(){this.open=true;}focus(){}querySelector(){return new El();}getClientRects(){return [];}}
  const get=id=>{if(!els.has(id))els.set(id,new El());return els.get(id);};
- return {get,setDialog:v=>{dialogOpen=v;},document:{getElementById:get,querySelector:sel=>sel==='dialog[open]'?(dialogOpen?{}:null):get(sel),querySelectorAll:()=>[]}};
+ return {get,setDialog:v=>{dialogOpen=v;},setCard:v=>{card=v;},document:{getElementById:get,querySelector:sel=>sel==='dialog[open]'?(dialogOpen?{}:null):sel==='.reminder-nudge'?(card?{}:null):get(sel),querySelectorAll:()=>[]}};
 }
 
 // 11 Oct 2026 (Part A, A11 and A12): only step 2 showed the way by itself; every other step needed Show me, which short frames hid.
@@ -39,7 +40,10 @@ test('every finished step shows the way to the next one by itself, once: 1.8 s l
   p.setDialog(true);clock+=5000;ui.tick();assert.equal(pointed.length,1,'a window is open');
   p.setDialog(false);ui.tick();clock+=1000;ui.tick();assert.equal(pointed.length,1,'not yet: 1.8 s with no window');
   coachBusy=true;clock+=1000;ui.tick();assert.equal(pointed.length,1,'the pointer is busy');
-  coachBusy=false;ui.tick();clock+=1900;ui.tick();assert.deepEqual(pointed.at(-1),['plant',true]);
+  // Nor while the reminder question's card stands (13 Oct 2026, item 4 review): the pointer comes 1.8 s after it is answered.
+  coachBusy=false;p.setCard(true);ui.tick();clock+=1900;ui.tick();assert.equal(pointed.length,1,'the reminder card stands');
+  p.setCard(false);ui.tick();clock+=1000;ui.tick();assert.equal(pointed.length,1,'not yet: 1.8 s after the card');
+  clock+=900;ui.tick();assert.deepEqual(pointed.at(-1),['plant',true]);
   // A step that cannot be done yet waits for its moment: the wheat step points once a crop is ripe.
   assert.equal(canPointNow({plots:[{crop:'wheat',readyAt:now+60000}],buildings:{}},'harvest',now),false);
   assert.equal(canPointNow({plots:[{crop:'wheat',readyAt:now-1}],buildings:{}},'harvest',now),true);

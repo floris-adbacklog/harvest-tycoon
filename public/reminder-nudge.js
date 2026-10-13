@@ -76,11 +76,12 @@ export function createReminderNudge({state,level,notify,track=()=>{},log=()=>{},
  // After a harvest the question may come within two minutes (a level-up window after the harvest is closed first, then a quiet moment).
  function harvested(){harvestedAt=clock();lastCheck=0;}
  // After a daily gift (game.js runAction, a checkin): only the farm's first (login.visits, kept by the farm), and only while this device
- // has not asked this farm anything yet. Looked at every half second until it is asked or its 5 minutes are over.
+ // has not asked this farm anything yet. Looked at every half second until it is asked or its 5 minutes are over (also while a look
+ // still waits for the browser, review fix: a push check that never answers kept it looking for good).
  function gifted(){
   if(state.login?.visits!==1||askedAt()!==0)return;
   giftAt=clock();lastCheck=0;visibleSince=0;
-  const look=()=>{if(!giftAt||open)return;void check();schedule(look,500);};look();
+  const look=()=>{if(!giftAt||open)return;if(clock()-giftAt>GIFT_WINDOW_MS){giftAt=0;return;}void check();schedule(look,500);};look();
  }
  // Cheap enough to call after every screen update: only after a harvest or the first gift, at most every 30 seconds, and only at a
  // level it has not asked at (after the first gift: when it has asked nothing yet).
