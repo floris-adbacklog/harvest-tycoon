@@ -113,3 +113,19 @@ test('computer: the card as it was, and a short computer window (the line instea
  // The wiki says it.
  assert.match(read('public/wiki-content.js'),/a new field to buy \(fields 9 to 12, once no building waits to be built\), the quest closest to done or your next level\. On a phone it is one line at the top; while your crops or batches grow and nothing else waits, it says when everything is ready\./);
 });
+
+// Review (13 Oct 2026): at midnight "tomorrow at 07:05" becomes "at 07:05" by itself, as the twice-a-second tick already moves the line
+// on when the moment comes (before, it waited for the next farm action).
+test('phone: at midnight the line\'s "tomorrow at" becomes "at" without a farm action',async t=>{
+ const evening=new Date();evening.setHours(23,59,58,0);const morning=new Date(evening);morning.setHours(24+7,5,0,0);
+ t.mock.timers.enable({apis:['Date'],now:evening.getTime()});
+ const s=farmer();s.plots[0]={...s.plots[0],crop:'wheat',readyAt:morning.getTime()};
+ const {get,ui:beginner}=await ui(s,{phone:true});
+ const prev=globalThis.document;globalThis.document={getElementById:get,querySelector:get,querySelectorAll:()=>[]};
+ try{
+  assert.equal(get('next-goal-mobile-copy').textContent,`Everything is ready tomorrow at ${clock(morning)}`);
+  beginner.tick();assert.equal(get('next-goal-mobile-copy').textContent,`Everything is ready tomorrow at ${clock(morning)}`,'still the same day');
+  t.mock.timers.tick(5000);beginner.tick();
+  assert.equal(get('next-goal-mobile-copy').textContent,`Everything is ready at ${clock(morning)}`);
+ }finally{globalThis.document=prev;}
+});

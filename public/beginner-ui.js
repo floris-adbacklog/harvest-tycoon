@@ -44,15 +44,16 @@ const GOAL_FOLDED_KEY='harvest-tycoon:next-goal';
 // mobile-ui.js mobileLayout, which this file cannot import: it asks the browser as it loads).
 export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,phone=()=>globalThis.matchMedia?.('(max-width: 900px), (max-height: 550px) and (pointer: coarse)')?.matches??false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
  const $=id=>document.getElementById(id),dialog=$('beginner-dialog');
- let busy=false,lastMarkup='',finaleShown=false,lastStep=null,lastBanner='',pending=null,goalKey='',goalBusy=false,goalWait=0;
+ let busy=false,lastMarkup='',finaleShown=false,lastStep=null,lastBanner='',pending=null,goalKey='',goalBusy=false,goalWait=0,goalDay='';
  function banner(steps,current,done){
   const text=`Step ${Math.min(done+1,steps.length)} of 10 · ${current?.ready?'Ready to complete':liveStep(state,current?.id,farmNow())??DO_NOW[current?.id]??current?.title??'Guide complete'}`;
   // Only when the English line changed: the page translates it in place, so its text is not compared.
   if(text!==lastBanner){lastBanner=text;$('beginner-mobile-copy').textContent=text;}
  }
  // Twice a second (public/game.js): only the banner, for its batch time, and only while it is on screen (phones). The phone's goal line once the
- // moment it names has come (Plan F, proposal 2): then it shows what is next.
- function tick(){autoCheck();if(goalWait&&goalWait<=farmNow()){goalKey='';goalCard(true);}if($('beginner-mobile').hidden||!$('beginner-mobile').getClientRects().length)return;const steps=beginnerProgress(state);banner(steps,steps.find(q=>q.current),steps.filter(q=>q.done).length);}
+ // moment it names has come (Plan F, proposal 2): then it shows what is next; and at midnight, when "tomorrow at 07:05" becomes "at 07:05"
+ // (review, 13 Oct 2026: it waited for the next farm action).
+ function tick(){autoCheck();if(goalWait&&(goalWait<=farmNow()||new Date(farmNow()).toDateString()!==goalDay)){goalKey='';goalCard(true);}if($('beginner-mobile').hidden||!$('beginner-mobile').getClientRects().length)return;const steps=beginnerProgress(state);banner(steps,steps.find(q=>q.current),steps.filter(q=>q.done).length);}
  function refresh(){
   const steps=beginnerProgress(state),current=steps.find(q=>q.current),done=steps.filter(q=>q.done).length,complete=done===steps.length;
   const finished=complete&&state.onboarding?.rewardClaimed===true;
@@ -163,7 +164,7 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
  function goalCard(finished){
   const card=$('next-goal-card'),line=$('next-goal-mobile');if(!card||!line)return;
   const now=farmNow(),goal=finished&&!village?nextGoal(state,now):null,onPhone=phone();
-  const wait=goal&&!actNow(goal)&&onPhone?readyAllAt(state,now):0;goalWait=wait;
+  const wait=goal&&!actNow(goal)&&onPhone?readyAllAt(state,now):0;goalWait=wait;goalDay=new Date(now).toDateString();
   card.hidden=!goal;line.hidden=!goal||!actNow(goal)&&!onPhone;
   // The phone's line takes the place of the tap hints under the bar while it shows.
   $('game')?.classList.toggle('goal-line',!line.hidden);
