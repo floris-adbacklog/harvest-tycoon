@@ -447,13 +447,15 @@ function recordBeginnerAction(state,action,result,before){
  if(guidedFarm(state)&&!state.onboarding.rewardClaimed&&(state.stats.activities??0)>0)m.hand=true;
 }
 
+// Plan F (13 Oct 2026, proposal 5): "Room for more" names field 13 (fields 9-12 are no expansion, so it stayed 0 / 1 after them), the
+// tractor's quest is no second "A helping hand", and the Feed Mill and the Dairy Barn have their whole names.
 export const QUESTS = Object.freeze([
  {title:'Your first harvest',description:'Harvest 3 crops from your fields.',stat:'harvested',target:3,reward:40},
  {title:'A little green thumb',description:'Plant 6 crops and let them grow.',stat:'planted',target:6,reward:65},
  {title:'Open for business',description:'Earn 120 coins at the market.',stat:'earned',target:120,reward:100},
  {title:'Made on the farm',description:'Collect 3 finished production batches.',stat:'produced',target:3,reward:100},
  {title:'A growing operation',description:'Upgrade a production building.',stat:'upgrades',target:1,reward:80},
- {title:'Room for more',description:'Expand your fields at the Farmhouse.',stat:'expansions',target:1,reward:100},
+ {title:'Room for more',description:'Unlock field 13 at the Farmhouse.',stat:'expansions',target:1,reward:100},
  {title:'From field to oven',description:'Collect 2 loaves of fresh bread.',stat:'bread',target:2,reward:120},
  {title:'Harvest tycoon',description:'Earn 1,000 coins at the market.',stat:'earned',target:1000,reward:200},
  {title:'Wheat beginnings',description:'Harvest 12 wheat.',stat:'harvest_wheat',target:12,reward:65},
@@ -466,8 +468,8 @@ export const QUESTS = Object.freeze([
  {title:'The greener side',description:'Harvest 10 lettuce.',stat:'harvest_lettuce',target:10,reward:80},
  {title:'A colourful harvest',description:'Harvest 8 red cabbage.',stat:'harvest_redcabbage',target:8,reward:140},
  {title:'Freshly packed',description:'Collect 5 vegetable boxes.',stat:'made_vegetables',target:5,reward:160},
- {title:'Delivery day',description:'Complete 3 orders from the farm cart.',stat:'deliveries',target:3,reward:120},
- {title:'A helping hand',description:'Use the tractor 5 times.',stat:'tractor',target:5,reward:100},
+ {title:'Delivery day',description:'Complete 3 delivery orders.',stat:'deliveries',target:3,reward:120},
+ {title:'Tractor time',description:'Use the tractor 5 times.',stat:'tractor',target:5,reward:100},
  {title:'Built to last',description:'Upgrade production buildings 5 times.',stat:'upgrades',target:5,reward:180},
  {title:'A full field',description:'Harvest 100 crops.',stat:'harvested',target:100,reward:250},
  {title:'A farm favourite',description:'Collect 30 production batches.',stat:'produced',target:30,reward:200},
@@ -599,9 +601,9 @@ export const QUESTS = Object.freeze([
  {title:'First challenge',description:'Complete 1 daily challenge.',stat:'dailies',target:1,reward:40,xp:0},
  {title:'Busy market day',description:'Sell 20 items at the market.',stat:'sold',target:20,reward:40,xp:0},
  {title:'First order',description:'Complete 1 delivery order.',stat:'deliveries',target:1,reward:45,xp:0},
- {title:'Feed the flock',description:'Make 6 animal feed at the Mill.',stat:'made_feed',target:6,reward:35,xp:0},
+ {title:'Feed the flock',description:'Make 6 animal feed at the Feed Mill.',stat:'made_feed',target:6,reward:35,xp:0},
  {title:'Corn crib',description:'Harvest 12 corn.',stat:'harvest_corn',target:12,reward:40,xp:0},
- {title:'Say cheese',description:'Collect 2 cheese from the Dairy.',stat:'made_cheese',target:2,reward:45,xp:0},
+ {title:'Say cheese',description:'Collect 2 cheese from the Dairy Barn.',stat:'made_cheese',target:2,reward:45,xp:0},
  {title:'A small fortune',description:'Earn 300 coins at the market.',stat:'earned',target:300,reward:60,xp:0},
  // The midgame expansion (levels 28-46): open each new building, grow each new crop and make each new good. Appended, so every
  // earlier quest keeps its ID. A quest shows up once what it asks for is open (see availableDaily).
@@ -756,7 +758,7 @@ export const QUESTS = Object.freeze([
  {title:'Full research',description:'Finish all five silo research steps.',stat:'silo_upgrades',target:5,reward:15000,minLevel:26},
  {title:'Twenty-five chores',description:'Finish 25 farm chores.',stat:'chores',target:25,reward:200,minLevel:10},
  {title:'Always helping',description:'Lend a helping hand 50 times.',stat:'activities',target:50,reward:1200,minLevel:8},
- {title:'On the road',description:'Deliver 25 orders.',stat:'deliveries',target:25,reward:1300,minLevel:5},
+ {title:'On the road',description:'Complete 25 delivery orders.',stat:'deliveries',target:25,reward:1300,minLevel:5},
  {title:'Medal collector',description:'Earn 18 crop medals.',stat:'mastery_medals',target:18,reward:5500,minLevel:7},
  {title:'Decorated farmer',description:'Earn 27 crop medals.',stat:'mastery_medals',target:27,reward:12000,minLevel:7},
  {title:'Every seed in the shop',description:'Harvest every one of the 16 crops at least once.',stat:'varieties',target:16,reward:40000,minLevel:66},
@@ -974,6 +976,9 @@ export function unlockEntries(state){return [
  // The village's landmarks (Oct 2026), from level 100 like every World II unlock: built from the golden brief after the last place.
  ...Object.entries(VILLAGE_LANDMARKS).filter(([,l])=>worldTwoEntry(state,l.level)).map(([key,l])=>({id:'landmark:'+key,name:l.name,art:l.art,kind:'Landmark',level:l.level,unlocked:levelOf(state)>=l.level,hint:`Reach level ${l.level}.`})),
  ...Object.entries(FEATURE_NAMES).map(([key,name])=>({id:'feature:'+key,name,art:FEATURE_ART[key]??key,kind:'Activity',level:FEATURE_LEVELS[key],unlocked:featureUnlocked(state,key),hint:featureUnlockHint(key)})),
+ // Plan F (13 Oct 2026): village orders (level 8) and special commissions (16) come to the delivery orders on their level, and its card
+ // says so (level 8 named only the Bakery). Their art is the order card's own (cart, trophy).
+ ...Object.entries(DELIVERY_LEVELS).filter(([tier])=>tier!=='quick').map(([tier,level])=>({id:'orders:'+tier,name:tier==='village'?'Village orders':'Special commissions',art:tier==='village'?'cart':'trophy',kind:'Activity',level,unlocked:deliveryTierUnlocked(state,tier),hint:`Reach level ${level}.`})),
  // The Fishing pond's second page (11 Oct 2026): 8 more fish from level 20. Listed only from that level (nothing of page two shows below it),
  // so it is on level 20's card and never in Coming up; a farm already past 20 when it came has it without a card.
  ...(POND_OPEN&&levelOf(state)>=POND_PAGE_TWO_LEVEL?[{id:'pond:page2',name:`${FISH_PAGES[1].length} new fish in the Fishing pond`,art:'fish-koi',kind:'Activity',level:POND_PAGE_TWO_LEVEL,unlocked:featureUnlocked(state,'fishing'),hint:`Reach level ${POND_PAGE_TWO_LEVEL}.`}]:[]),
@@ -1703,7 +1708,7 @@ export function fertilizeField(state,id,now=Date.now()){
 const LEGACY_DAILY_POOLS=[
  [{stat:'harvested',target:8,title:'Bring in the harvest',description:'Harvest 8 crops.',reward:45},{stat:'watered',target:8,title:'A little extra care',description:'Water 8 growing crops.',reward:40},{stat:'planted',target:10,title:'A fresh start',description:'Plant 10 crops.',reward:45}],
  [{stat:'produced',target:2,title:'Busy little buildings',description:'Collect 2 production batches.',reward:55},{stat:'made_milk',target:4,title:'Fresh from the barn',description:'Collect 4 milk.',reward:60},{stat:'made_eggs',target:6,title:'The morning basket',description:'Collect 6 eggs.',reward:55}],
- [{stat:'earned',target:120,title:'Market day',description:'Earn 120 coins from sales or deliveries.',reward:55},{stat:'deliveries',target:1,title:'Special delivery',description:'Complete an order at the farm cart.',reward:60},{stat:'harvest_wheat',target:6,title:'Golden fields',description:'Harvest 6 wheat.',reward:45}]
+ [{stat:'earned',target:120,title:'Market day',description:'Earn 120 coins from sales or deliveries.',reward:55},{stat:'deliveries',target:1,title:'Special delivery',description:'Complete 1 delivery order.',reward:60},{stat:'harvest_wheat',target:6,title:'Golden fields',description:'Harvest 6 wheat.',reward:45}]
 ];
 const LEGACY_ORDER_POOL=[
  {title:'The village grocer',input:{corn:3,lettuce:2},coins:112,xp:18},

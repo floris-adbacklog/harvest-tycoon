@@ -48,7 +48,7 @@ test('the screens: steps announce themselves, the finale opens once, a promise a
  assert.match(guide,/if\(current\?\.index===BEGINNER_QUESTS\.length-1&&current\.ready&&!finaleShown\)\{finaleShown=true;open\(\);\}/);
  assert.match(game,/beginner\?\.afterAction\(result\);/);
  // 11 Oct 2026 (Part A A8): the card leads to the next goal (next-goal.js); its text leaves the building out when the quests come first.
- assert.match(game,/onFinished:result=>\{const goal=nextGoal\(state\);giftPopup\(\{xp:result\.xp,diamonds:result\.diamonds\},\{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote\(farmNow\(\),\{lead:goal\.kind!=='quest'\}\),action:goalAction\(goal\)\}\);\}/);
+ assert.match(game,/onFinished:result=>\{const goal=nextGoal\(state\);giftPopup\(\{xp:result\.xp,diamonds:result\.diamonds\},\{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote\(farmNow\(\),\{lead:goal\.kind!=='quest'&&goal\.kind!=='daily'\}\),action:goalAction\(goal\)\}\);\}/);
  assert.match(game,/Come back tomorrow for your next daily gift and 30 minutes of double harvest\./);
  assert.match(game,/result\.firstHarvest\?floatChip\('harvest',`Golden first harvest ×\$\{result\.firstHarvest\}`,'is-golden'\)/,'on the field, so the toast is free for the guide');
  assert.match(progression,/export const nextUnlock=state=>upcoming\(state\)\[0\]\?\?null;/);

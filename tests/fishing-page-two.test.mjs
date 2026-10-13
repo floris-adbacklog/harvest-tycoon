@@ -228,7 +228,7 @@ test('level 20\'s card names it; below 20 nothing of page two is listed, a farm 
  assert.ok(change.leveled&&entry,'on the level-up card');assert.deepEqual([entry.name,entry.art,entry.kind,entry.level,entry.unlocked],['8 new fish in the Fishing pond','fish-koi','Activity',TWO,true]);
  const later=at(35);assert.ok(G.unlockEntries(later).find(e=>e.id==='pond:page2').unlocked);
  // The same words as the book (the review: "all 16 kinds pay 50 diamonds" read as 50 for each kind).
- assert.match(read('public/progression-ui.js'),/e\.id==='pond:page2'\?`Catch all \$\{Object\.keys\(FISH\)\.length\} kinds: \$\{POND_BOOK2_DIAMONDS\} diamonds, once\.`/);
+ assert.match(read('public/progression-ui.js'),/if\(e\.id==='pond:page2'\)return `Catch all \$\{Object\.keys\(FISH\)\.length\} kinds: \$\{POND_BOOK2_DIAMONDS\} diamonds, once\.`;/);
  // Closed (POND_OPEN false): nothing of it.
  const C=await import(asModule(SOURCE.replace(/export const POND_OPEN=(true|false),/,'export const POND_OPEN=false,')));
  const c=C.createFarm(now);c.xp=C.xpForLevel(40);C.normalizeFarm(c,now);assert.ok(!C.unlockEntries(c).some(e=>e.id==='pond:page2'));assert.equal(C.pondPageTwoOpen(c),false);

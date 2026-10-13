@@ -31,7 +31,7 @@ import { createRookieUI } from './rookie-ui.js';
 import { art,refreshArt } from './visual-icons.js';
 import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
-import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups } from './quests-ui.js';
+import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDailies } from './quests-ui.js';
 import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
@@ -55,7 +55,7 @@ import { fitText } from './fit-text.js';
 import { createCoach } from './coach.js';
 import { guideSteps } from './guide-steps.js';
 import { guardWheel } from './wheel-guard.js';
-import { nextGoal } from './next-goal.js';
+import { nextGoal, readyAllAt } from './next-goal.js';
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
@@ -122,7 +122,7 @@ guardWheel();
 let liveEvents,familyUI,passUI,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN; in the village its village lake, from LAKE_OPEN
-const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery cart',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
+const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
 Object.assign(utilityInfo,{villagemarket:{name:'Market square',icon:'store',hint:'Villagers’ requests and golden briefs'},farmroad:{name:'Road to your farm',icon:'house',hint:'Travel back to your farm'}});
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onEmailCheck:c=>setEmailCheck(c),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
@@ -191,11 +191,11 @@ function medalToast(medals){if(!medals.length||!$('medal-toast'))return;if(guide
 // 7 Oct 2026: it leads with the next goal, a building to build (the Feed Mill, then the Dairy Barn), so a farmer who finishes the guide
 // in a few minutes has something to do now instead of only a reason to leave. One sentence each way, so it is translated whole.
 // lead: false (11 Oct 2026, Part A A8) when the card's green button already leads to another goal (the quests that wait): one goal at a time.
+// The time is next-goal.js readyAllAt, the same moment the phone's goal line says while the farm grows (Plan F, 13 Oct 2026).
 function comeBackNote(now=farmNow(),{lead=true}={}){
  const goal=lead&&['mill','dairy'].find(key=>!state.buildings[key]?.built&&buildingEligible(state,key)&&buildingCost(state,key)>0);
  const name=goal?BUILDINGS[goal].name:'',cost=goal?buildingCost(state,goal).toLocaleString('en-US'):'',back=(state.login?.visits??0)<2;
- const times=[...state.plots.filter(p=>p.crop&&p.readyAt>now).map(p=>p.readyAt),...Object.values(state.buildings).flatMap(productionJobs).filter(j=>j.readyAt>now).map(j=>j.readyAt)];
- const last=times.length?Math.max(...times):0,clock=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+ const last=readyAllAt(state,now),clock=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
  const when=last?`Your farm keeps growing while you are away: everything is ready ${new Date(last).toDateString()===new Date(now).toDateString()?'at':'tomorrow at'} ${clock(last)}.`:'Plant something before you go: your farm keeps growing while you are away.';
  if(goal)return back?`Next goal: build the ${name} for ${cost} coins in Buildings. ${when} Come back tomorrow for your next daily gift and 30 minutes of double harvest.`:`Next goal: build the ${name} for ${cost} coins in Buildings. ${when}`;
  return back?`${when} Come back tomorrow for your next daily gift and 30 minutes of double harvest.`:when;
@@ -875,8 +875,9 @@ function updateUI(){
  $('level-name').textContent=levelTitle(lvl);
  // What the next level brings, on the level card (computer screens): there is always something just ahead.
  const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';
- // How many quests wait to be claimed, one tap each in Quests (11 Oct 2026, Part A A13; it was "!").
- {const waiting=questGroups(state).ready.length+(villageQuestReady(state)?villageQuestGroups(state).ready.length:0);$('task-dot').hidden=!waiting;$('task-dot').textContent=waiting>99?'99+':String(waiting);}
+ // How many quests wait to be claimed, one tap each in Quests (11 Oct 2026, Part A A13; it was "!"), and the daily challenges that are
+ // ready in Today (Plan F, 13 Oct 2026; the line at the top of Quests opens Today).
+ {const waiting=questGroups(state).ready.length+(villageQuestReady(state)?villageQuestGroups(state).ready.length:0)+readyDailies(state,farmNow()).length;$('task-dot').hidden=!waiting;$('task-dot').textContent=waiting>99?'99+':String(waiting);}
  // The medals of the first basket, a moment after the first sale (A11).
  if(heldMedals.length&&!guideAt('sell')){const medals=heldMedals;heldMedals=[];clearTimeout(heldTimer);heldTimer=0;setTimeout(()=>medalToast(medals),2600);}
  familyUI?.refresh();passUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();villageSquare?.refresh();boat?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
@@ -894,7 +895,7 @@ function openDialog(id){
  if(id==='tasks-dialog'){quests.open();return;}
  const way=id==='market-dialog'?guidedMarket():null;
  if(way){economy.openMarket(way==='market'?'crops':'goods');$(id).scrollTop=0;const steps=coach.active?null:guideSteps(way,{state,now:farmNow()});if(steps)coach.start(steps.slice(1),{auto:true});return;}
- document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;
+ document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')economy.renderMarket({opening:true});$(id).showModal();$(id).scrollTop=0;
 }
 // On a computer the side tools float over the map: a building name that would sit behind them is hidden until the map
 // moves (desktop-hud.css keeps the tools see-through). Measured when the window or the tools change, not every frame.
@@ -1388,14 +1389,14 @@ function bindUI(){
  boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
  // The purchase pop-up after a cancelled or expired checkout (src/payment-ui.js) offers a way straight back to the shop.
  window.harvestShop={open:()=>boosts.open()};
- // A notification or a shortcut on the app icon can open Daily rewards (src/game-cloud.js harvestOpen).
+ // A notification or a shortcut on the app icon can open Today (src/game-cloud.js harvestOpen).
  window.harvestToday=()=>retention.openToday();
  rookie=createRookieUI({state});
- quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,village:villageWorld});
+ quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  // The guide (Part A, 11 Oct 2026): showWay shows the way to a step (Show me, and by itself once after each step: auto); the coach must be
  // free for that (idle). At the end the card leads to the next goal (A8, next-goal.js): one green button for it, Thank you beside it.
- beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>{const goal=nextGoal(state);giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote(farmNow(),{lead:goal.kind!=='quest'}),action:goalAction(goal)});},guide:showWay,idle:()=>!coach.active,claimQuest:claim,openQuest:id=>quests.openAt(id),village:villageWorld});
+ beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>{const goal=nextGoal(state);giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote(farmNow(),{lead:goal.kind!=='quest'&&goal.kind!=='daily'}),action:goalAction(goal)});},guide:showWay,idle:()=>!coach.active,claimQuest:claim,openQuest:id=>quests.openAt(id),openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
  const inviteUI=createInviteUI({notify:toast});
  // Share my farm (Oct 2026): on the level-up card and on your own profile (src/player-profiles.js, through window.harvestShareFarm).
  // The village is another scene, so not there. It takes the invite link Invite a friend already asked for (one ask per visit).
@@ -1457,6 +1458,9 @@ function showWay(target,{auto=false,stay=false}={}){
  // Step 1's Show me also draws a see-through sickle sweeping over the ripe starter corn, again and again until the first harvest, on
  // the farm itself (no window, no bubble; every tap goes through).
  const touch=mobileLayout.matches||matchMedia('(pointer: coarse)').matches,firstBasket=target==='harvest'&&beginnerProgress(state).find(q=>q.current)?.id==='harvest';
+ // Plan F (13 Oct 2026, proposal 5): the care step's Show me with nothing growing points to planting (or to harvesting when no field is
+ // empty); it asked for a care marker that could not come.
+ if(target==='tend'&&!state.plots.some(p=>p.crop&&p.readyAt>farmNow())){const empty=state.plots.some(p=>!p.crop);if(empty)setCrop('wheat');else setTool('harvest');focusFields();toast(empty?'Plant wheat first: its care marker comes while it grows.':'Harvest a ripe crop first, then plant one: care is for a crop that grows.');return;}
  if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?(state.plots.some(p=>canWater(p,farmNow()))?'Tap a growing crop to water it.':WATER_FIRST_MINUTE):firstBasket?(touch?'Hold one ripe corn for a moment, then sweep across the others to harvest them, or tap one.':'Sweep across your ripe corn to harvest it, or tap one.'):touch?'Tap a ready crop, or hold one for a moment and sweep across the others.':'Click a ready crop, or sweep across your ready crops to harvest them all.');if(firstBasket&&!villageWorld)firstBasketGhost();}
  // Step 9, A helping hand (11 Oct 2026): the view moves to the Greenhouse first, so Show me points at its pin in the open farm (at
  // 918x516 it stood under the top bar, beside the guide card), on a phone too; the stops' window only when there is no farm to show,
@@ -1478,7 +1482,9 @@ function showWay(target,{auto=false,stay=false}={}){
 // label never reads like a Claim all), build what opened, or plant.
 function goalAction(goal){
  if(goal.kind==='quest')return {label:'Claim your next quest',run:()=>quests.openAt(goal.id)};
+ if(goal.kind==='daily')return {label:'Open Today',run:()=>retention.openToday('challenges',{at:goal.id})};   // Plan F (13 Oct 2026)
  if(goal.kind==='build')return {label:`Build the ${goal.name}`,run:()=>showWay(`build:${goal.key}`)};
+ if(goal.kind==='field')return {label:`Buy field ${goal.field}`,run:()=>showWay('field')};   // Plan F, proposal 3 (13 Oct 2026)
  return {label:'Plant your fields',run:()=>{setCrop('wheat');focusFields();}};
 }
 // A lost 3D view comes back by itself (11 Oct 2026, Part A A4; before, "The 3D view was interrupted. Reload..." was a dead end): a phone

@@ -248,7 +248,7 @@ test('level 99 sees nothing new in How to play or on the screens: no search hit,
  // The building windows and the Market list what buildingRecipes and marketItems list; the wiki's search gets the farmer's level.
  const ui=read('public/economy-ui.js');
  assert.match(ui,/const previewEntries=buildingRecipes\(state,key\)\.filter\(id=>recipeUnlocked\(preview,id\)\)/,'the build panel\'s recipes');
- assert.match(ui,/const made=\[\.\.\.new Set\(buildingRecipes\(state,key\)\.flatMap/,'its Makes pictures');
+ assert.match(ui,/const all=buildingRecipes\(state,key\),outputs=ids=>/,'its Makes and Coming later pictures');
  assert.match(ui,/const recipeEntries=buildingRecipes\(state,key\)\.map/,'a built building\'s list and its Coming later');
  assert.match(ui,/function marketEntries\(\)\{return marketItems\(state,marketTab\)\.map\(k=>\[k,ITEMS\[k\]\]\);\}/,'the Market tabs');
  assert.doesNotMatch(ui,/Object\.(entries|values)\(RECIPES\)\.filter/,'no screen lists a building\'s recipes on its own');
@@ -528,7 +528,7 @@ test('the level-up card and Coming up call a village place a village place, buil
   assert.ok(entries.filter(e=>e.id.startsWith('building:')&&!worldTwoBuilding(e.id.slice(9))).every(e=>e.kind!=='Village place'),mode);
  }
  const ui=readFileSync(new URL('../public/progression-ui.js',import.meta.url),'utf8');
- assert.match(ui,/e\.kind==='Village place'\?'Village place · built from a golden brief at the market square':/);
+ assert.match(ui,/if\(e\.kind==='Village place'\)return 'Village place · built from a golden brief at the market square';/);
 });
 
 test('a village place that waits names the place right before it, not the open brief',()=>{

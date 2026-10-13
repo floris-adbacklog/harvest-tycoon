@@ -159,6 +159,7 @@
 .next-goal-note b{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 4px;border-radius:999px;background:#f6efdc;color:#6b4712;font-size:12px}
 .next-goal-note .game-art{width:18px;height:18px}
 .next-goal-note .reward-xp{background:#eef2fc;color:#39518f}
+.next-goal-note .reward-diamonds{background:#eef7fb;color:#2f6a80}
 .next-goal-card #next-goal-meter{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:0}
 .next-goal-card #next-goal-meter progress{flex:1 1 0;width:0;min-width:0;height:7px}
 .next-goal-card #next-goal-meter b{flex:none;font-size:11px;font-variant-numeric:tabular-nums}
