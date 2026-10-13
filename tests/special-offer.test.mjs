@@ -129,6 +129,11 @@ test('an offer can open at level 10 at the earliest, 14 unless the admin picks a
  const guard=patch.match(/if md5\(pg_get_functiondef\('public\.(.+?)'::regprocedure\)\)\n  not in \('([0-9a-f]{32})','([0-9a-f]{32})'\) then\n  raise exception/);
  assert.ok(guard);assert.equal(guard[1],OFFER_POST);assert.deepEqual([guard[2],guard[3]],[md5(live),md5(patched)],'the live one, or this file already run');
  assert.ok(patch.indexOf('$guard$')<patch.indexOf('alter table'),'the guard first');
+ // And a check at the end: offer_post exactly as written (a € mangled by a clipboard that was not UTF-8 gives another md5) and the
+ // table's check as Postgres prints between 10 and 200; otherwise the file stops (one transaction in the SQL editor).
+ const after=patch.match(/do \$after\$\nbegin\n if md5\(pg_get_functiondef\('public\.(.+?)'::regprocedure\)\)<>'([0-9a-f]{32})'\n  or \(select pg_get_constraintdef\(c\.oid\) from pg_constraint c where c\.conrelid='public\.harvest_offers'::regclass and c\.conname='harvest_offers_min_level_check'\)\n   is distinct from 'CHECK \(\(\(min_level >= 10\) AND \(min_level <= 200\)\)\)' then\n  raise exception /);
+ assert.ok(after,'the check at the end');assert.equal(after[1],OFFER_POST);assert.equal(after[2],md5(patched));
+ assert.ok(patch.lastIndexOf('$after$')>patch.indexOf('end $f$;'),'after offer_post is replaced');assert.match(patched,/€49\.99/,'the € it guards');
  assert.equal(patched,offerPostDef(base),'supabase/special-offer.sql gives the same function');
  // Only the level line differs from the live function.
  const diff=(a,b)=>a.split('\n').filter((line,i)=>line!==b.split('\n')[i]);

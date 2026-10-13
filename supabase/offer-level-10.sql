@@ -9,6 +9,9 @@
 -- special-offer-vip-60-90.sql), with only the level check changed (md5 6e7d4f9a43cde06be7806c57fdb311e2 after this file, which
 -- supabase/special-offer.sql now gives too); a different live definition stops the file. Re-runnable.
 -- Run before the site (src/admin-dashboard.js lets the admin choose 10 only then; the panel from before refuses a level below 14).
+-- offer_post holds a € (its worth message): copy this file as UTF-8 (LC_ALL=en_US.UTF-8 pbcopy). The check at the end stops the file
+-- when offer_post or the table's check did not come out exactly as written, so a mangled € never stays (the SQL editor runs the file as
+-- one transaction).
 
 do $guard$
 begin
@@ -41,3 +44,13 @@ begin
   values(d,c,v,who,lvl,now()+make_interval(hours=>hours),me) returning id into offer;
  return offer;
 end $f$;
+
+-- After: offer_post is exactly the function above (md5 6e7d4f9a…, as supabase/special-offer.sql) and the table takes 10 to 200.
+do $after$
+begin
+ if md5(pg_get_functiondef('public.offer_post(integer,integer,integer,text,integer,integer)'::regprocedure))<>'6e7d4f9a43cde06be7806c57fdb311e2'
+  or (select pg_get_constraintdef(c.oid) from pg_constraint c where c.conrelid='public.harvest_offers'::regclass and c.conname='harvest_offers_min_level_check')
+   is distinct from 'CHECK (((min_level >= 10) AND (min_level <= 200)))' then
+  raise exception 'offer_post or the level check did not come out as written (copied as UTF-8?): nothing of this file is kept';
+ end if;
+end $after$;

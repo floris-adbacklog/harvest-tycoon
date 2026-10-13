@@ -2,7 +2,8 @@ import {fitsDevice} from './popup-ui.js';
 import {shopPrice,shopWorth} from '../public/android.js';
 
 // The special offer (29 Sep 2026, supabase/special-offer.sql): diamonds, coins and/or VIP time worth €49.99 at the shop's own
-// prices, for €4.99, once per farmer, from level 14. The admin puts one together in the Admin panel; the server's catalogue says
+// prices, for €4.99, once per farmer, from the level the admin picks (14 unless changed, 10 at the earliest since 13 Oct 2026,
+// supabase/offer-level-10.sql; never in the iPhone app until Apple sells it, game/payments.js APPLE_SELLS_OFFER). The admin puts one together in the Admin panel; the server's catalogue says
 // which offer runs for this farm (diamond-checkout), so this screen needs no request of its own at the start: it reads the
 // catalogue the Starter Pack already asks for (starter-pack-ui.js, the harvest-catalog event). A big window on a computer or
 // tablet, a compact one on a phone, with a sound of its own; it opens by itself once per offer on this device, when nothing else
