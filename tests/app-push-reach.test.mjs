@@ -143,3 +143,24 @@ test('the game: a Turn on that saved sends the link once more, also when the pho
  const anon=appTop(phone()),anonPush=createAppPush({supabase:database(null),win:anon.win,waitMs:200,statusWaitMs:20,gapMs:0});
  anon.win.harvestAppPush({permission:'granted',optedIn:true,subscriptionId:SUB});await anonPush.enable();await settle();assert.deepEqual(anon.visits,[APP_PUSH.register]);anonPush.dispose();
 });
+test('the game: a link to the farmer still on its way is dropped after Sign out or when the next farmer plays, never sent after the logout',async()=>{
+ // A Turn on whose save comes back after Sign out: the logout stays the last word.
+ let finish;const slow={from(){const q={select:()=>q,eq:()=>q,limit:async()=>({data:[],error:null})};return q;},rpc:()=>new Promise(resolve=>{finish=()=>resolve({error:null});})};
+ const top=appTop(),push=createAppPush({supabase:slow,playerId:'p1',win:top.win,waitMs:50,statusWaitMs:20,gapMs:0,timezone:()=>'UTC'});
+ top.win.harvestAppPush({permission:'granted',optedIn:true,subscriptionId:SUB,externalId:'p1',version:'1.3.0'});
+ const turnOn=push.enable();await settle();assert.ok(finish,'saving');
+ await push.detach();push.dispose();finish();await turnOn;await settle();await pause(5);
+ assert.deepEqual(top.visits,[APP_PUSH.register,APP_PUSH.logout]);
+ // fresh=1 for a marked farmer whose row comes back once the next farmer signed in (the page links p2 now): not sent.
+ let rows;const marked={player_id:'p1',enabled:true,unreachable_at:'2026-10-13T16:05:52Z'};
+ const db={from(){const q={select:()=>q,eq:()=>q,limit:()=>new Promise(resolve=>{rows=()=>resolve({data:[marked],error:null});})};return q;}};
+ const next=appTop(phone()),old=createAppPush({supabase:db,playerId:'p1',win:next.win,statusWaitMs:20,gapMs:0});
+ const syncing=old.sync();for(let i=0;i<50&&!rows;i++)await pause(1);assert.ok(rows,'reading the mark');
+ old.dispose();next.win.harvestAppPushLinked='p2';rows();await syncing;await settle();
+ assert.deepEqual(next.visits,['onesignallogin://login?id=p1']);
+ // The same farmer's farm opened again (the page still links p1): what was on its way still goes.
+ let again;const same=appTop(phone()),db2={from(){const q={select:()=>q,eq:()=>q,limit:()=>new Promise(resolve=>{again=()=>resolve({data:[marked],error:null});})};return q;}};
+ const first=createAppPush({supabase:db2,playerId:'p1',win:same.win,statusWaitMs:20,gapMs:0});
+ const s2=first.sync();for(let i=0;i<50&&!again;i++)await pause(1);first.dispose();again();await s2;await settle();
+ assert.deepEqual(same.visits,['onesignallogin://login?id=p1','onesignallogin://login?id=p1&fresh=1']);
+});

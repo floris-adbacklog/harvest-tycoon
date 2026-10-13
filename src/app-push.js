@@ -20,12 +20,16 @@ export function forgetAppPushLink(win=globalThis.window){try{if(win)win.harvestA
 export function createAppPush({supabase,playerId=null,win=globalThis.window,timers=globalThis,clock=()=>Date.now(),timezone=deviceTimezone,
  waitMs=APP_PUSH_WAIT_MS,statusWaitMs=APP_STATUS_WAIT_MS,gapMs=APP_LINK_GAP_MS}){
  const hub=listenAppPush(win),watchers=new Set();
- let chain=Promise.resolve(),last=-Infinity,wanted=false,asking=false;
+ let chain=Promise.resolve(),last=-Infinity,wanted=false,asking=false,gone=false;
  const sleep=ms=>new Promise(resolve=>timers.setTimeout(resolve,ms));
+ // gone (13 Oct 2026): signed out or closed (detach, dispose). A link to this farmer still waiting its turn is dropped once the page no
+ // longer links this farmer, so a late one (after a Turn on, or fresh=1) never links the phone again after Sign out, or to this farmer
+ // while the next one plays.
+ const stale=link=>{if(!gone||!link.startsWith(APP_PUSH.login))return false;try{return win.harvestAppPushLinked!==playerId;}catch{return true;}};
  // One address at a time, a moment apart: a second address straight after the first would cancel it before the app sees it.
  // sent: told the moment the page goes to the address.
  function open(link,sent=()=>{}){
-  chain=chain.then(async()=>{const wait=last+gapMs-clock();if(wait>0)await sleep(wait);sent();try{win.location.href=link;}catch{}last=clock();});
+  chain=chain.then(async()=>{const wait=last+gapMs-clock();if(wait>0)await sleep(wait);if(stale(link))return;sent();try{win.location.href=link;}catch{}last=clock();});
   return chain;
  }
  const tell=()=>{for(const watch of [...watchers]){try{watch();}catch{}}};
@@ -100,7 +104,7 @@ export function createAppPush({supabase,playerId=null,win=globalThis.window,time
    if(!playerId)return;
    try{if(win.harvestAppPushLinked===playerId)return;win.harvestAppPushLinked=playerId;}catch{return;}
    await open(appPushLoginLink(playerId));
-   if(!ready(await answer(Boolean,statusWaitMs)))return;
+   if(!ready(await answer(Boolean,statusWaitMs))||gone)return;
    try{
     const {data,error}=await supabase.from('app_push_players').select('*').limit(1);
     if(!error&&data?.[0]?.enabled===true&&data[0].unreachable_at)await open(appPushLoginLink(playerId,{fresh:true}));
@@ -108,12 +112,12 @@ export function createAppPush({supabase,playerId=null,win=globalThis.window,time
   },
   // Sign out: this phone stops getting the farmer's notifications (the app unlinks it); on or off stays the farmer's, for their other phones.
   async detach(){
-   wanted=false;
+   wanted=false;gone=true;
    forgetAppPushLink(win);
    await open(APP_PUSH.logout);
   },
   onChange(watch){watchers.add(watch);return()=>watchers.delete(watch);},
   // The farm closed (signed out, or opened again): this one stops listening, so an old "Turn on" never saves for the next farmer.
-  dispose(){wanted=false;unlisten?.();watchers.clear();}
+  dispose(){wanted=false;gone=true;unlisten?.();watchers.clear();}
  };
 }
