@@ -63,6 +63,8 @@ import { POND_LOADING_TIP } from './loading-screen.js';
 // The village lake (12 Oct 2026, plan D): the same screen at the rowboat in the village, once its own switch is on.
 import { LAKE_OPEN } from './farm-state.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
+// The apps' Back button and the farm's rest under a window on phones, tablets and the apps (13 Oct 2026, public/windows.js).
+import { createBack,modalOpen,handheldDevice,farmRests } from './windows.js';
 
 // Another language than English: translate the farm's texts as they appear (public/i18n.js).
 startTranslation();
@@ -77,8 +79,11 @@ const villageWorld=new URLSearchParams(location.search).get('world')==='village'
 if(villageWorld)document.documentElement.dataset.world='village';else document.documentElement.removeAttribute('data-trip');   // app-mode.js marks the trip
 // In the village the camera buttons speak of the village: centre it, or show all of it.
 if(villageWorld)for(const [id,label] of [['zoom-reset','Center the village'],['zoom-fit','Show the whole village']]){$(id).setAttribute('aria-label',label);$(id).title=label;}
-const travel=to=>{if(window.parent?.harvestBridge?.travel)void window.parent.harvestBridge.travel(to);else location.search=to==='village'?'?world=village':'';};
+// 13 Oct 2026 (Android app 1.3): without a page around it the trip takes this page's place in the history too (src/main.js travel).
+const travel=to=>{if(window.parent?.harvestBridge?.travel)void window.parent.harvestBridge.travel(to);else location.replace(location.pathname+(to==='village'?'?world=village':''));};
 window.harvestTravel=travel;
+// The apps' Back button (13 Oct 2026, Android app 1.3): closes the top-most window as Escape does, true when one was open (public/windows.js).
+window.harvestBack=createBack();
 const initialChapterReward=window.harvestInitialFarm.chapterReward;
 const initialLevelReward=window.harvestInitialFarm.levelReward;
 const initialGift=window.harvestInitialFarm.gift;
@@ -97,7 +102,8 @@ let emailAccount={needed:false,email:''},emailCheckUI=null;
 function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check,needed:false,canChange:false}:check;const hide=!emailAccount.needed;$('email-button').hidden=hide;$('email-menu-entry').hidden=hide;
  // Settings, Email address (28 Sep 2026): email sign-ups see their address, can change it, and are reminded to confirm it.
  $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
-let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0;
+let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0,lastDraw=0;
+const handheld=handheldDevice();   // phones, tablets and the apps: the farm rests under a window (frame, public/windows.js)
 const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
 // On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide. On a
 // computer too until the first harvest (6 Oct 2026: from the whole valley the ripe corn was some 25 px, and 37% of new farmers on a
@@ -928,7 +934,7 @@ function resize(){
  const width=world.clientWidth,height=world.clientHeight;if(width<=0||height<=0)return;const aspect=width/height;
  const ratio=Math.min(devicePixelRatio,mobileLayout.matches?1.5:1.75);
  if(ratio!==viewportRatio){renderer.setPixelRatio(ratio);viewportRatio=ratio;}
- if(width!==viewportWidth||height!==viewportHeight){renderer.setSize(width,height);viewportWidth=width;viewportHeight=height;}
+ if(width!==viewportWidth||height!==viewportHeight){renderer.setSize(width,height);viewportWidth=width;viewportHeight=height;lastDraw=0;}   // a new size clears the picture: drawn again at once, under a window too
  const mobile=mobileLayout.matches;
  // Fit the actual useful farm, not its decorative trees. Desktop HUD areas are
  // reserved so the main buildings are not hidden behind the guide or tool dock.
@@ -1405,6 +1411,9 @@ function frame(now){
  if(now-lastFrame<32)return;const dt=Math.min((now-lastFrame)/1000,.1);lastFrame=now;
  pond?.tick(now,dt);
  if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();beginner?.tick();atmosphere?.tick();syncVillageExtras();villageArrivals(now);icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
+ // Phones, tablets and the apps (13 Oct 2026, Android vitals): under a window opened with showModal the farm is drawn once a second,
+ // not 30 times (public/windows.js farmRests); the 500 ms tick above still runs, so the windows' own timers keep going.
+ if(farmRests(handheld||mobileLayout.matches,now-lastDraw,modalOpen))return;lastDraw=now;
  if(!reducedMotion){familyFlag?.tick(now/1000);
   // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
   if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}

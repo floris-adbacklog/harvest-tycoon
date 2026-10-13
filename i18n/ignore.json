@@ -78,5 +78,6 @@
  "An email with this subject went out in the last 24 hours. Use Continue under Last emails, or change the subject.",
  "No farmer matches: nobody gets this email.",
  "More than 5,000 farmers match. Choose a higher level or fewer days.",
- "The server did not answer. Look under Last emails before you send again: Continue goes on where it stopped."
+ "The server did not answer. Look under Last emails before you send again: Continue goes on where it stopped.",
+ "Escape"
 ]

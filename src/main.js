@@ -72,6 +72,10 @@ const OPEN_KEY='harvest-tycoon:open',keepOpen=intent=>{try{if(intent)sessionStor
 if(pendingOpen)keepOpen(pendingOpen);
 else try{const kept=JSON.parse(sessionStorage.getItem(OPEN_KEY)??'null');if(kept&&Date.now()-Number(kept.at)<(kept.open==='discord-link'?600000:1800000))pendingOpen=openIntent(`?${new URLSearchParams(Object.entries(kept).filter(([key])=>key!=='at').map(([key,value])=>[key,String(value)]))}`);else keepOpen(null);}catch{}
 window.harvestTakeOpen=()=>{const intent=pendingOpen;pendingOpen=null;keepOpen(null);return intent;};
+// The apps' Back button (13 Oct 2026, Android app 1.3): the app asks this page (window.harvestBack), and this page asks the farm, which
+// closes its top-most window (public/windows.js). true: a window was open; false: no farm or nothing open, and the app does what Back
+// did before (back a page, or leave the game).
+window.harvestBack=()=>{try{return frame?.contentWindow?.harvestBack?.()===true;}catch{return false;}};
 function openScreen(intent){
  if(!intent)return;
  try{const open=frame?.contentWindow?.harvestOpen;if(typeof open==='function'){open(intent);return;}}catch{}
@@ -332,7 +336,10 @@ async function openFarm(){
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,
   // with the farm as it is now (public/game.js reads ?world=village).
-  bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();frame.src=to==='village'?'/farm.html?world=village':'/farm.html';};
+  // 13 Oct 2026 (Android app 1.3, the Back button): the trip takes the frame's own place in the history (location.replace), so Back
+  // after trips does what it did before them; frame.src added a step for each trip, and Back then loaded the whole game again.
+  // dataset.address says where the frame was sent (public/loading-screen.js farmHandOver watches a trip's page by it).
+  bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();const address=to==='village'?'/farm.html?world=village':'/farm.html';try{frame.dataset.address=address;frame.contentWindow.location.replace(address);}catch{frame.src=address;}};
   // Delete account (3 Oct 2026, Settings › Privacy, src/account-delete.js): farm-api deletes the farm, everything personal and the account
   // itself, for this signed-in farmer only and only with their farmer name typed exactly (account-delete-service.js). Never repeated by
   // itself. Then this device lets go (the app's notifications, the session, which the server no longer knows) and the home page says so;

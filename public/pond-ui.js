@@ -3,6 +3,7 @@ import {WATERS,POND_MAX_CASTS,POND_REFILL_MS,POND_PERFECT,POND_NEW_FISH_COINS,PO
 import {createReel} from './pond-reel.js';
 import {createPondScene} from './pond-scene.js';
 import {fitText} from './fit-text.js';
+import {modalOpen} from './windows.js';
 // The Fishing pond (11 Oct 2026, part C): a mode of the farm screen, not a window. The camera glides to the pier, the farm's buttons
 // fold away and one button does everything: tap to cast, tap again when the float dips, hold to reel (also a tap or a hold anywhere on
 // the water, Space or Enter). The rule is on this screen: in the Fish book's "How fishing works" and in the line above the button.
@@ -223,7 +224,8 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
  $('back').onclick=()=>close();$('book').onclick=()=>openBook();letGo.onclick=()=>void release();chip.onclick=()=>{close();focusFarm(chip.dataset.place||undefined);};
  function key(event){
   if(!isOpen||event.ctrlKey||event.metaKey||event.altKey)return;
-  if(event.key==='Escape'){event.preventDefault();if(!book.hidden)closeBook();else close();return;}
+  // A window over the pond (a level-up, a confirmation) is closed first, by the browser or by Back (13 Oct 2026, public/windows.js).
+  if(event.key==='Escape'){if(modalOpen(document))return;event.preventDefault();if(!book.hidden)closeBook();else close();return;}
   if(event.key!==' '&&event.key!=='Enter')return;
   const focus=document.activeElement;if(focus&&focus!==act&&focus!==dialog&&focus!==document.body&&focus.closest?.('button,a,input,select,textarea'))return;   // another button: the browser presses it
   event.preventDefault();if(event.type==='keydown'){if(!event.repeat)press();}else lift();

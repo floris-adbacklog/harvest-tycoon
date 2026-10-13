@@ -81,7 +81,9 @@ export function farmHandOver(win,screen,{wait=20000,frame=()=>win.document?.quer
  // request fails (a network switch, a reset connection): before, that read as no frame at all, and this screen stayed at 10% for good.
  const frameEl=()=>{try{return frame()??null;}catch{return null;}};
  const view=()=>{const el=frameEl();if(!el)return null;try{const doc=el.contentDocument??null;return {el,doc,win:doc?el.contentWindow:null};}catch{return {el,doc:null,win:null};}};
- const shown=()=>{timers.clearTimeout(timer);timer=0;screen.hidden=true;const at=view();if(at?.doc){shownDoc=at.doc;shownSrc=at.el.src;}};
+ // Where the frame was sent: a trip sends it with location.replace and says so in dataset.address (13 Oct 2026, src/main.js travel).
+ const address=el=>el.dataset?.address||el.src;
+ const shown=()=>{timers.clearTimeout(timer);timer=0;screen.hidden=true;const at=view();if(at?.doc){shownDoc=at.doc;shownSrc=address(at.el);}};
  win.harvestFarmShown=shown;
  const stop=()=>{timers.clearTimeout(timer);timers.clearInterval(tick);timer=tick=0;};
  function check(){
@@ -89,7 +91,7 @@ export function farmHandOver(win,screen,{wait=20000,frame=()=>win.document?.quer
   // An unreadable page counts as a failed load while the farm page is awaited: before it has shown, or after the frame was sent to a
   // new address (a trip). The farm page that has shown and then went to another site itself (never ours: its links open a new tab)
   // is left alone.
-  if(!at.doc&&shownDoc&&at.el.src===shownSrc)return;
+  if(!at.doc&&shownDoc&&address(at.el)===shownSrc)return;
   // The farm page (its bar is there: not the frame's first empty page) shows itself in src/game-cloud.js, also when its word never came.
   const {doc}=at,farm=Boolean(doc?.getElementById?.('load-progress'));
   if(farm&&doc.body&&!doc.body.hidden){shown();return;}

@@ -99,6 +99,17 @@ test('a trip whose farm.html fails is opened again; a shown farm page that went 
  const screen={hidden:true},later=[],none=farmHandOver({},screen,{frame:()=>null,timers:{setTimeout:fn=>{later.push(fn);return 1;},clearTimeout(){},setInterval:()=>{throw new Error('no watch without a frame');},clearInterval(){}}});
  none.wait();assert.equal(screen.hidden,false);later.splice(0).forEach(fn=>fn());assert.equal(screen.hidden,true);
 });
+// 13 Oct 2026 (Android app 1.3, the Back button): a trip now sends the frame with location.replace (no new step in the history), so its
+// src stays; src/main.js says where it went in dataset.address, and a trip whose farm.html fails is still opened again.
+test('a trip sent with location.replace (its src unchanged) whose farm.html fails is opened again; a frame sent nowhere is left alone',()=>{
+ const trip=frameFixture({started:'page'});trip.hand.wait();trip.win.harvestFarmShown();
+ trip.frame.dataset={address:'/farm.html?world=village'};trip.frame.contentDocument=null;
+ trip.pass(FRAME_FAILED_MS+1000);trip.flush();assert.deepEqual(trip.reloads,['page']);assert.equal(trip.screen.hidden,true,'no screen of this page over a trip');
+ const home=frameFixture({started:'page'});home.frame.dataset={address:'/farm.html?world=village'};home.hand.wait();home.win.harvestFarmShown();
+ home.frame.dataset.address='/farm.html';home.frame.contentDocument=null;home.pass(FRAME_FAILED_MS+1000);home.flush();assert.deepEqual(home.reloads,['page'],'and the trip home');
+ const stay=frameFixture({started:'page'});stay.frame.dataset={address:'/farm.html?world=village'};stay.hand.wait();stay.win.harvestFarmShown();
+ stay.frame.contentDocument=null;stay.pass(LOAD_STALL_MS*4);stay.flush();assert.deepEqual([...stay.reloads,...stay.fails],[],'not sent anywhere: not ours to reload');
+});
 // The farm page's own watch and this one share one count: whichever opens the farm again first, the next stuck load within ten
 // minutes shows Try again (the farm page's card or this page's pause card), and a farm that opened forgets it.
 test('never a loop: the page around the farm and the farm page share one count of opening it again',()=>{

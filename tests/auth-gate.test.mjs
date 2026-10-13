@@ -65,6 +65,23 @@ test('a trip carries its own server time and when it came: the next farm page is
  assert.equal(bridge.serverNow-bridge.serverAt,4000,'the same clock, not ten minutes behind');
  await f.advance(5*60000);await bridge.travel('farm');assert.equal(f.frames[0].src,'/farm.html');assert.equal(bridge.serverAt,opened+15*60000);
 });
+// 13 Oct 2026 (Android app 1.3, the Back button): the app asks this page (window.harvestBack), this page asks the farm (public/windows.js);
+// a trip to the village and back takes the frame's own place in the history, so Back after trips does what it did before them.
+test('Back: the page around the farm asks the farm, true only when it closed a window; a trip adds no step to the history',async()=>{
+ const f=fixture({user:{id:'A'},load:()=>({profile:{player_id:'A'},state:{coins:1},serverNow:f.context.Date.now()})});
+ assert.equal(f.window.harvestBack(),false,'no farm yet');await settle();
+ const frame=f.frames[0],replaced=[];assert.equal(frame.src,'/farm.html');
+ frame.contentWindow={harvestBack:()=>true,location:{replace:address=>replaced.push(address)}};
+ assert.equal(f.window.harvestBack(),true);
+ for(const answer of [()=>false,()=>1,()=>{throw new Error('no');}])assert.equal((frame.contentWindow.harvestBack=answer,f.window.harvestBack()),false);
+ delete frame.contentWindow.harvestBack;assert.equal(f.window.harvestBack(),false,'a farm page still loading');
+ const bridge=f.window.harvestBridge;
+ await bridge.travel('village');assert.deepEqual(replaced,['/farm.html?world=village']);assert.equal(frame.src,'/farm.html','not through its src: that added a step');
+ assert.equal(frame.dataset.address,'/farm.html?world=village');
+ await bridge.travel('farm');assert.deepEqual(replaced,['/farm.html?world=village','/farm.html']);assert.equal(frame.dataset.address,'/farm.html');
+ frame.contentWindow=null;await bridge.travel('village');assert.equal(frame.src,'/farm.html?world=village','no window to send: its src, as before');
+ await f.auth('SIGNED_OUT',null);assert.equal(f.window.harvestBack(),false,'signed out: no farm');
+});
 test('offline and server failures fail closed without creating fallback farms',async()=>{
  const f=fixture({user:{id:'A'},online:false});await settle();assert.equal(f.calls.length,0);assert.equal(f.frames.length,0);assert.equal(f.document.body.dataset.phase,'error');
  const g=fixture({user:{id:'A'},load:async()=>{throw new Error('Unavailable');}});await settle();assert.equal(shown(g).length,0);assert.equal(g.window.harvestBridge,undefined);assert.equal(g.document.body.dataset.phase,'error');

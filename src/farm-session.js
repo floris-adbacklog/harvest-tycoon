@@ -22,6 +22,8 @@ export function createFarmSession({
   onStatus:(next,{reason})=>{for(const watch of watchers)watch(next);if(next==='paused')unavailable(connectionMessage(reason,nav.onLine),{retrying:true});},
   onRecovered:from=>{if(from==='paused')openFarm();else void frame?.contentWindow?.harvestRefresh?.();}
  });
+ // The apps' Back button, as on the website (13 Oct 2026, src/main.js harvestBack): the farm closes its top-most window (public/windows.js).
+ win.harvestBack=()=>{try{return frame?.contentWindow?.harvestBack?.()===true;}catch{return false;}};
  function dispose(){presence?.dispose();presence=null;chat?.dispose();chat=null;watchers.clear();generation++;frame?.remove();frame=null;playerId=null;delete win.harvestBridge;host().replaceChildren();}
  function unavailable(message='Your farm is safe. Reconnect to continue.',{retrying=false}={}){dispose();showPause(message,{retrying});}
  async function openFarm(){
@@ -73,7 +75,8 @@ export function createFarmSession({
    bridge.paymentReturn=()=>{const params=new URLSearchParams(win.location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
    bridge.clearPaymentReturn=()=>{const url=new URL(win.location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');win.history.replaceState(null,'',url.pathname+url.search+url.hash);};
    // World II: travelling between the farm and the village loads the game frame again, through its loading screen, with the farm as it is now.
-   bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();frame.src=to==='village'?`${farmUrl}?world=village`:farmUrl;};
+   // A trip takes the frame's own place in the history, as on the website (13 Oct 2026, src/main.js travel).
+   bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();const address=to==='village'?`${farmUrl}?world=village`:farmUrl;try{frame.dataset.address=address;frame.contentWindow.location.replace(address);}catch{frame.src=address;}};
    extend(bridge,{alive:()=>ticket===generation,user});
    win.harvestBridge=bridge;frame=page;release(bridge);phase('authenticated');
    opened(bridge,user);

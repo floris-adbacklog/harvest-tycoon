@@ -55,7 +55,7 @@ test('the website and the portals travel the same way: the trip\'s load sets the
  const trip=src=>src.match(/bridge\.travel=async to=>\{[^\n]*\};/)?.[0];
  for(const file of ['src/main.js','src/farm-session.js']){
   const line=trip(read(file));assert.ok(line,file);
-  assert.match(line,/const data=await farmRequest\(\{operation:'load'\}\);if\(ticket!==generation\)return;initial=data;bridge\.serverNow=data\.serverNow;bridge\.serverAt=Date\.now\(\);frame\.src=/,file);
+  assert.match(line,/const data=await farmRequest\(\{operation:'load'\}\);if\(ticket!==generation\)return;initial=data;bridge\.serverNow=data\.serverNow;bridge\.serverAt=Date\.now\(\);const address=[^;]+;try\{frame\.dataset\.address=address;frame\.contentWindow\.location\.replace\(address\);\}catch\{frame\.src=address;\}\};$/,file);   // 13 Oct 2026: the new page takes the old one's place in the history (tests/back-button.test.mjs)
   assert.ok(read(file).includes('serverNow:initial.serverNow,serverAt:Date.now(),takeInitial(){'),file);
  }
  assert.match(read('public/farm-client.js'),/async function load\(\)\{clockOffset=bridgeClock\(bridge\);/);
