@@ -528,7 +528,7 @@ test('the level-up card and Coming up call a village place a village place, buil
   assert.ok(entries.filter(e=>e.id.startsWith('building:')&&!worldTwoBuilding(e.id.slice(9))).every(e=>e.kind!=='Village place'),mode);
  }
  const ui=readFileSync(new URL('../public/progression-ui.js',import.meta.url),'utf8');
- assert.match(ui,/e\.kind==='Village place'\?'Village place · built from a golden brief at the market square':/);
+ assert.match(ui,/if\(e\.kind==='Village place'\)return 'Village place · built from a golden brief at the market square';/);
 });
 
 test('a village place that waits names the place right before it, not the open brief',()=>{

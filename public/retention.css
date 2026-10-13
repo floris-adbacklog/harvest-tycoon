@@ -917,6 +917,8 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #today-content .task-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
 #today-content .task-bottom .primary-button{flex:none;min-height:38px;padding:7px 16px}
 #today-content .quest-state{font-size:12px;font-weight:600;color:#5d7a4a;white-space:nowrap}
+/* Plan F (13 Oct 2026): what delivery orders are, in one line above them. */
+#today-content .orders-lead{margin:0 0 6px;font-size:14px;line-height:1.45;color:#5c4f3c}
 #today-content .delivery-summary{margin:0 0 10px;font-size:13px;color:#7a6c58}
 #today-content .delivery-summary b{color:#453e28}
 #today-content .delivery-summary span{font-weight:700;color:#3f6b2c}

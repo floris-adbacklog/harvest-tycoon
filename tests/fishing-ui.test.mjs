@@ -99,7 +99,7 @@ test('the pond\'s pin waits at the edge for a pier just below it, above the bar 
  assert.match(ui,/blocked=\{bars:find\('\.bottom-hud'\),sides:find\('\.scene-controls,\.side-tools'\)\};/,'measured where the labels are');
  assert.match(read('public/pond.css'),/\.pond-label\.edge::after\{content:'';position:absolute;left:50%;bottom:-9px;/,'a small point down at the pier');
  // The level-4 card says where it is, like a building ("open Buildings") and a field ("at the Farmhouse").
- assert.match(read('public/progression-ui.js'),/e\.id==='feature:fishing'\?'Activity · tap its pin over the pier':/);
+ assert.match(read('public/progression-ui.js'),/if\(e\.id==='feature:fishing'\)return 'Activity · tap its pin over the pier';/);
 });
 test('the pond screen says what a new kind pays, a refused catch takes its card along, and a long press selects nothing',()=>{
  const ui=read('public/pond-ui.js'),css=read('public/pond.css');

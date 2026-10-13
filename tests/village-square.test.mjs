@@ -544,7 +544,7 @@ test('Give, Give all you can and Finish send what the screen shows; Show me find
 
 test('Coming up and the level-up card call a landmark a landmark; the Bonuses tab shows the two speed landmarks once finished',async()=>{
  const progression=read('public/progression-ui.js');
- assert.match(progression,/e\.kind==='Landmark'\?'Landmark · built from a golden brief at the market square':/);assert.match(progression,/Landmark:'Village landmark'/);
+ assert.match(progression,/if\(e\.kind==='Landmark'\)return 'Landmark · built from a golden brief at the market square';/);assert.match(progression,/Landmark:'Village landmark'/);
  const {unlockEntries}=await import('../public/farm-state.js');
  assert.deepEqual(unlockEntries(farm(164,{built:ALL})).filter(e=>e.kind==='Landmark'&&!e.unlocked).map(e=>e.id),Object.keys(VILLAGE_LANDMARKS).map(k=>`landmark:${k}`));
  const {bonusOverview}=await import('../public/bonus-overview.js');

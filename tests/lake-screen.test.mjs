@@ -158,7 +158,7 @@ test('the Buildings card: in the village right after the Market square once the 
 });
 
 test('the level cards: level 100\'s line says where the lake is, level 120\'s what the whole book pays; every picture is a game picture',async()=>{
- assert.match(read('public/progression-ui.js'),/e\.id==='lake:open'\?'Fish from the rowboat in the village: its own casts and fish\.':e\.id==='lake:page2'\?`Catch all \$\{Object\.keys\(LAKE_FISH\)\.length\} kinds: \$\{LAKE_BOOK2_DIAMONDS\} diamonds, once\.`/);
+ assert.match(read('public/progression-ui.js'),/if\(e\.id==='lake:open'\)return 'Fish from the rowboat in the village: its own casts and fish\.';\n if\(e\.id==='lake:page2'\)return `Catch all \$\{Object\.keys\(LAKE_FISH\)\.length\} kinds: \$\{LAKE_BOOK2_DIAMONDS\} diamonds, once\.`;/);
  for(let level=98;level<=122;level++)for(const e of G.unlockEntries(at(level)))assert.ok(ART_KEYS.includes(e.art),`level ${level}: ${e.id} (${e.art})`);
  assert.deepEqual(G.unlockEntries(at(120)).filter(e=>e.id.startsWith('lake:')).map(e=>e.art),['villagelake','fish-goldentrout']);
  const {createTranslator}=await import('../public/i18n.js');
