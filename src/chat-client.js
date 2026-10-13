@@ -165,6 +165,16 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   offerList:()=>rpc('offer_list'),
   stopOffer:id=>rpc('offer_stop',{p_id:id}),
   setLevels:(global,dm)=>rpc('chat_set_levels',{p_global:global,p_dm:dm}),
+  // News and offers by email (13 Oct 2026, supabase/news-mail.sql), the admin only: how many it reaches and the last ones, straight from
+  // the database; a test, the send and going on with one through the news-mail function (supabase/functions/news-mail), in Frankfurt
+  // next to the database like farm-api. A call sends for up to 45 seconds.
+  newsMailCount:filters=>rpc('news_mail_count',{p_filters:filters}),
+  newsMailList:(limit=10)=>rpc('news_mail_list',{p_limit:limit}),
+  async newsMail(body){
+   check();const {data,error}=await supabase.functions.invoke('news-mail?forceFunctionRegion=eu-central-1',{body,timeout:90000});
+   if(error){let detail;try{detail=await error.context?.json();}catch{}throw Object.assign(new Error(detail?.error||'The email could not be sent right now. Please try again.'),{raw:detail?.error??error.message});}
+   check();return data;
+  },
   subscribe(listener){listeners.add(listener);connect();return()=>listeners.delete(listener);},
   dispose(){listeners.clear();if(channel){void supabase.removeChannel(channel);channel=null;}}
  };

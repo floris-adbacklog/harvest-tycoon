@@ -86,3 +86,17 @@ Zo krijgt elke speler de mail met een onderwerp in zijn eigen taal (een template
   bevestigt farm-api zelf met een code.
 - In Resend heeft elke mail de labels `kind` (`auth_signup` / `auth_recovery`) en `language`.
 - Gaat er iets mis? Zet de hook uit in Authentication → Hooks; Supabase stuurt dan meteen weer via SMTP.
+
+## Stap 8. Nieuws en aanbiedingen per e-mail (13 okt 2026)
+Een eigen mail van de admin vanuit het Admin dashboard (Settings, **News and offers by email**), opnieuw te gebruiken voor elke actie.
+- Gaat alleen naar spelers met **News & offers by email** aan en een bevestigd adres (dezelfde regel als de dagelijkse samenvatting:
+  Google, Facebook of Apple, of de 6-cijferige code), nooit naar CrazyGames-, Kongregate- of Discord-accounts. Filters: vanaf level
+  en eventueel "gespeeld in de laatste N dagen". Elke speler krijgt de tekst van zijn speltaal, anders de Engelse.
+- Elke mail heeft een eigen afmeldlink (alleen nieuws en aanbiedingen; de dagelijkse samenvatting blijft) plus de one-click-headers
+  (`List-Unsubscribe`, `List-Unsubscribe-Post`) die Gmail en Yahoo vragen.
+- Volgorde: eerst `supabase/news-mail.sql` in de SQL-editor, dan
+  `npx supabase functions deploy notify-hourly --project-ref jnmdirvidffzxukbdmij --use-api --no-verify-jwt` (de afmeldpagina),
+  dan `npx supabase functions deploy news-mail --project-ref jnmdirvidffzxukbdmij --use-api` (zonder `--no-verify-jwt`), dan de site.
+- De functie gebruikt `RESEND_API_KEY` en `MAIL_FROM`, dezelfde als hierboven. In Resend heeft elke mail de labels `kind` (`news`,
+  of `news_test` voor een test) en `mailing`.
+- Altijd eerst **Send a test to me**: die gaat alleen naar je eigen adres, in de gekozen taal.

@@ -17,6 +17,7 @@ import {translateLink,groupPills} from './chat-ui.js';
 import {deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
 import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,RETENTION_PERIODS,SOURCE_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,sourcesHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 import {purchaseState,purchaseCounts,PURCHASE_LABELS} from './admin-purchases.js';
+import {createNewsMail} from './admin-news-mail.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
@@ -135,6 +136,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<h3>'+art('chat')+'Who may chat</h3><form id="admin-levels-form" class="admin-levels"><label>Global chat from level<input type="number" id="admin-level-global" min="1" max="200" step="1" inputmode="numeric"></label><label>Private messages from level<input type="number" id="admin-level-dm" min="1" max="200" step="1" inputmode="numeric"></label><button type="submit" class="small-button">Save</button></form><p id="admin-chat-status" class="admin-hint" role="status"></p><p id="admin-device" class="admin-hint admin-device"></p></section></div>'
   +'<p id="admin-dashboard-status" class="admin-hint admin-status" role="status"></p>';
  document.body.append(dialog);
+ // News and offers by email (13 Oct 2026): its own card at the end of Settings, shown for the admin only (src/admin-news-mail.js).
+ const newsMail=createNewsMail({dialog,bridge});
  dialog.querySelector('.admin-dashboard-close').onclick=()=>dialog.close();
  // Four tabs: the chat first (what a moderator comes for), then players, growth and, for the admin, the chat settings.
  function showTab(name){
@@ -255,6 +258,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(role==='admin')void showOffers();
   if(role==='admin')void showPartners();
   if(role==='admin')void loadSources();
+  if(role==='admin')newsMail.show();
   if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(renderPurchases).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
   if(players)showPlayers(players);
   if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}

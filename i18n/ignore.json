@@ -69,5 +69,14 @@
  "edit 12: its text is not in the live list once",
  "edit 13: its text is not in the live list once",
  "A farm or profile is missing.",
- "The two accounts are not the ones expected."
+ "The two accounts are not the ones expected.",
+ "Choose from 1 to 365 days.",
+ "Write a subject and a text in English first.",
+ "Keep every subject to 100 characters.",
+ "Add the web address the button opens.",
+ "The button can only open a page on harvesttycoon.com.",
+ "You sent this email a moment ago.",
+ "No farmer matches: nobody gets this email.",
+ "More than 5,000 farmers match. Choose a higher level or fewer days.",
+ "The email could not be sent right now. Please try again."
 ]
