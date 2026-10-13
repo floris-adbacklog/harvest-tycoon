@@ -122,7 +122,7 @@ test('the hourglass sits next to the diamonds like the Family button, opens a sc
  const ui=read('rookie-ui.js');assert.match(ui,/showModal/);assert.match(ui,/data-rookie-close/);assert.match(ui,/aria-labelledby/);assert.match(ui,/\[data-rookie-open\]/);
  assert.match(read('game.js'),/createRookieUI\(\{state\}\)/);assert.match(read('game.js'),/rookie\.tick\(\)/);assert.match(read('game.js'),/rookie\?\.refresh\(\)/);
  const css=read('ui-polish.css');assert.match(css,/#rookie-button/);assert.match(css,/\.topbar \.resources:has\(#rookie-button:not\(\[hidden\]\)\)\{grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\) 44px;gap:6px\}/,'room for the boost on a phone');assert.doesNotMatch(css,/:has\(#family-button:not\(\[hidden\]\)\)/,'Farm Family is no longer in a phone header');
- assert.match(read('economy-ui.js'),/sellableStock\(state,key,now\)/);assert.match(read('economy-ui.js'),/kept, free in/);
+ assert.match(read('economy-ui.js'),/sellableStock\(state,key,now\)/);assert.match(read('economy-ui.js'),/kept for your first buildings, free in/);
 });
 
 test('the hourglass says how long is left and that it is temporary',()=>{

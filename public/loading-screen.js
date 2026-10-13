@@ -1,12 +1,14 @@
 // One loading screen for the sign-in check (play.html) and the farm (farm.html): the same layout on both pages, so it reads as
 // one screen. One bar runs on from the account check (the first few percent) to 100%, the line under it says the real step,
 // and a tip with a small painted picture changes every few seconds. "Ready!" only ever shows at 100%.
+// Plan F (13 Oct 2026, proposal 5): a tip about something that opens later says its level, as the Valley Market's does (events and farm
+// chores at 15, apple trees at 20 and berry bushes at 23; tests/text-round.test.mjs keeps them equal to the rules).
 export const LOADING_TIPS=Object.freeze([
  ['double-harvest','Water and care for a field: up to three crops from one harvest.'],
- ['apples','Apple trees and berry bushes grow back after you pick them.'],
+ ['apples','From level 20 apple trees grow back after you pick them, and from level 23 berry bushes too.'],
  ['collect-all','Turn crops into goods in your buildings: they sell for more.'],
  ['instant-harvest','Hold the mouse button on a ripe crop and sweep across your fields to harvest them all. On a phone, hold a field for a moment first.'],
- ['live-events','A new event starts every six hours: finish its goals for coins and diamonds.'],
+ ['live-events','From level 15 a new event starts every six hours: finish its goals for coins and diamonds.'],
  ['guide','How to play has a wiki with every crop and recipe.'],
  // More tips (1 Oct 2026); the old Farm family tip (weekly orders) gave way to the Family Chest and the top ten.
  ['double-coins','The Market shows tomorrow’s best price: make it today, sell it tomorrow.'],
@@ -14,7 +16,7 @@ export const LOADING_TIPS=Object.freeze([
  ['level-up','Every new level brings coins and diamonds, and opens new crops and buildings.'],
  ['invite-friends','Share my farm: send a picture of your farm with your invite link when you level up.'],
  ['squash','Plant a long crop before you go: your farm keeps growing while you are away.'],
- ['chore-weeds','Farm chores pay coins and XP, and sometimes find extra crops.'],
+ ['chore-weeds','From level 15 farm chores pay coins and XP, and sometimes find extra crops.'],
  ['helping-hand','Lend a helping hand at four stops on the farm for coins, goods and XP.'],
  ['family-chest-gold','Fill a Family Chest with your Farm family every week: everything you do on your farm counts.'],
  ['family-sharing','In a Farm family you help each other every day with coins, crops and goods.'],

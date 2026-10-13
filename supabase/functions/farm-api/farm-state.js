@@ -447,13 +447,15 @@ function recordBeginnerAction(state,action,result,before){
  if(guidedFarm(state)&&!state.onboarding.rewardClaimed&&(state.stats.activities??0)>0)m.hand=true;
 }
 
+// Plan F (13 Oct 2026, proposal 5): "Room for more" names field 13 (fields 9-12 are no expansion, so it stayed 0 / 1 after them), the
+// tractor's quest is no second "A helping hand", and the Feed Mill and the Dairy Barn have their whole names.
 export const QUESTS = Object.freeze([
  {title:'Your first harvest',description:'Harvest 3 crops from your fields.',stat:'harvested',target:3,reward:40},
  {title:'A little green thumb',description:'Plant 6 crops and let them grow.',stat:'planted',target:6,reward:65},
  {title:'Open for business',description:'Earn 120 coins at the market.',stat:'earned',target:120,reward:100},
  {title:'Made on the farm',description:'Collect 3 finished production batches.',stat:'produced',target:3,reward:100},
  {title:'A growing operation',description:'Upgrade a production building.',stat:'upgrades',target:1,reward:80},
- {title:'Room for more',description:'Expand your fields at the Farmhouse.',stat:'expansions',target:1,reward:100},
+ {title:'Room for more',description:'Unlock field 13 at the Farmhouse.',stat:'expansions',target:1,reward:100},
  {title:'From field to oven',description:'Collect 2 loaves of fresh bread.',stat:'bread',target:2,reward:120},
  {title:'Harvest tycoon',description:'Earn 1,000 coins at the market.',stat:'earned',target:1000,reward:200},
  {title:'Wheat beginnings',description:'Harvest 12 wheat.',stat:'harvest_wheat',target:12,reward:65},
@@ -467,7 +469,7 @@ export const QUESTS = Object.freeze([
  {title:'A colourful harvest',description:'Harvest 8 red cabbage.',stat:'harvest_redcabbage',target:8,reward:140},
  {title:'Freshly packed',description:'Collect 5 vegetable boxes.',stat:'made_vegetables',target:5,reward:160},
  {title:'Delivery day',description:'Complete 3 delivery orders.',stat:'deliveries',target:3,reward:120},
- {title:'A helping hand',description:'Use the tractor 5 times.',stat:'tractor',target:5,reward:100},
+ {title:'Tractor time',description:'Use the tractor 5 times.',stat:'tractor',target:5,reward:100},
  {title:'Built to last',description:'Upgrade production buildings 5 times.',stat:'upgrades',target:5,reward:180},
  {title:'A full field',description:'Harvest 100 crops.',stat:'harvested',target:100,reward:250},
  {title:'A farm favourite',description:'Collect 30 production batches.',stat:'produced',target:30,reward:200},
@@ -599,9 +601,9 @@ export const QUESTS = Object.freeze([
  {title:'First challenge',description:'Complete 1 daily challenge.',stat:'dailies',target:1,reward:40,xp:0},
  {title:'Busy market day',description:'Sell 20 items at the market.',stat:'sold',target:20,reward:40,xp:0},
  {title:'First order',description:'Complete 1 delivery order.',stat:'deliveries',target:1,reward:45,xp:0},
- {title:'Feed the flock',description:'Make 6 animal feed at the Mill.',stat:'made_feed',target:6,reward:35,xp:0},
+ {title:'Feed the flock',description:'Make 6 animal feed at the Feed Mill.',stat:'made_feed',target:6,reward:35,xp:0},
  {title:'Corn crib',description:'Harvest 12 corn.',stat:'harvest_corn',target:12,reward:40,xp:0},
- {title:'Say cheese',description:'Collect 2 cheese from the Dairy.',stat:'made_cheese',target:2,reward:45,xp:0},
+ {title:'Say cheese',description:'Collect 2 cheese from the Dairy Barn.',stat:'made_cheese',target:2,reward:45,xp:0},
  {title:'A small fortune',description:'Earn 300 coins at the market.',stat:'earned',target:300,reward:60,xp:0},
  // The midgame expansion (levels 28-46): open each new building, grow each new crop and make each new good. Appended, so every
  // earlier quest keeps its ID. A quest shows up once what it asks for is open (see availableDaily).

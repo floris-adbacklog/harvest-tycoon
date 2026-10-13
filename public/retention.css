@@ -961,6 +961,9 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #daily-gift .streak-day{position:relative}
 #daily-gift .streak-boost{position:absolute;top:-7px;inset-inline-end:-5px;display:grid;place-items:center;width:24px;height:24px;border:1px solid #cfe0c0;border-radius:50%;background:#f3f8ec;box-shadow:0 1px 3px #3c2f1426}
 #daily-gift .streak-boost .game-art{width:17px;height:17px}
+/* Plan F (13 Oct 2026, proposal 5): on a phone a day is about 43 px wide and the corner badge covered the 3, 5 and 7 of "Day 3": there it
+   sits on the top edge, in the middle, above the day's name. */
+@media(max-width:560px){#daily-gift .streak-day{padding-top:12px}#daily-gift .streak-boost{top:-10px;inset-inline-end:auto;left:50%;width:20px;height:20px;transform:translateX(-50%)}#daily-gift .streak-boost .game-art{width:14px;height:14px}}
 #daily-gift .streak-claim{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:#fffaf0}
 #daily-gift .streak-claim>span:not(.streak-done){flex:1;min-width:0;display:grid;gap:5px}
 #daily-gift .streak-claim strong{font:600 15px 'Outfit',sans-serif;color:#4a3c1c}
@@ -1130,6 +1133,9 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #building-content .build-makes b{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 5px;border:1px solid #e6dccd;border-radius:999px;background:#fff;font-size:13px;color:#4f4331}
 #building-content .build-makes b .game-art{width:22px;height:22px}
 #building-content .build-makes b.build-more{padding-inline-start:10px;color:#8a7c69}
+/* Plan F (13 Oct 2026): what the building makes later, with the level it opens at. */
+#building-content .build-later b{border-style:dashed;background:#fbf7ee;color:#7d6f5a}
+#building-content .build-later b small{margin-inline-start:2px;font-size:12px;font-weight:700;color:#a08a5c}
 #building-content .build-recipes{margin:0 0 12px}
 #building-content .build-recipes>summary{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#6d5a2f;cursor:pointer}
 #building-content .build-recipes .construction-recipes{margin-top:10px}

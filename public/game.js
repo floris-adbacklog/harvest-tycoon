@@ -886,7 +886,7 @@ function openDialog(id){
  if(id==='tasks-dialog'){quests.open();return;}
  const way=id==='market-dialog'?guidedMarket():null;
  if(way){economy.openMarket(way==='market'?'crops':'goods');$(id).scrollTop=0;const steps=coach.active?null:guideSteps(way,{state,now:farmNow()});if(steps)coach.start(steps.slice(1),{auto:true});return;}
- document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')renderMarket();$(id).showModal();$(id).scrollTop=0;
+ document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(id==='market-dialog')economy.renderMarket({opening:true});$(id).showModal();$(id).scrollTop=0;
 }
 // On a computer the side tools float over the map: a building name that would sit behind them is hidden until the map
 // moves (desktop-hud.css keeps the tools see-through). Measured when the window or the tools change, not every frame.
@@ -1446,6 +1446,9 @@ function showWay(target,{auto=false,stay=false}={}){
  // Step 1's Show me also draws a see-through sickle sweeping over the ripe starter corn, again and again until the first harvest, on
  // the farm itself (no window, no bubble; every tap goes through).
  const touch=mobileLayout.matches||matchMedia('(pointer: coarse)').matches,firstBasket=target==='harvest'&&beginnerProgress(state).find(q=>q.current)?.id==='harvest';
+ // Plan F (13 Oct 2026, proposal 5): the care step's Show me with nothing growing points to planting (or to harvesting when no field is
+ // empty); it asked for a care marker that could not come.
+ if(target==='tend'&&!state.plots.some(p=>p.crop&&p.readyAt>farmNow())){const empty=state.plots.some(p=>!p.crop);if(empty)setCrop('wheat');else setTool('harvest');focusFields();toast(empty?'Plant wheat first: its care marker comes while it grows.':'Harvest a ripe crop first, then plant one: care is for a crop that grows.');return;}
  if(['plant','water','harvest','tend'].includes(target)){if(target==='plant')setCrop('wheat');else setTool(target);focusFields();toast(target==='plant'?'Tap an empty field to plant wheat.':target==='tend'?'Tap a growing crop with a care marker.':target==='water'?(state.plots.some(p=>canWater(p,farmNow()))?'Tap a growing crop to water it.':WATER_FIRST_MINUTE):firstBasket?(touch?'Hold one ripe corn for a moment, then sweep across the others to harvest them, or tap one.':'Sweep across your ripe corn to harvest it, or tap one.'):touch?'Tap a ready crop, or hold one for a moment and sweep across the others.':'Click a ready crop, or sweep across your ready crops to harvest them all.');if(firstBasket&&!villageWorld)firstBasketGhost();}
  // Step 9, A helping hand (11 Oct 2026): the view moves to the Greenhouse first, so Show me points at its pin in the open farm (at
  // 918x516 it stood under the top bar, beside the guide card), on a phone too; the stops' window only when there is no farm to show,
