@@ -9,8 +9,9 @@ const esc=text=>String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;',
 const dirOf=language=>RTL_MAIL.includes(language)?'rtl':'ltr';
 const FONT="'DM Sans',Helvetica,Arial,sans-serif";
 
-// notify-hourly's unsubscribe page (only=news, 13 Oct 2026): opening it changes nothing, its button or a mail app's one-click request
-// turns news and offers off and leaves the daily summary on; the page is in the farmer's language.
+// notify-hourly's unsubscribe link (only=news, 13 Oct 2026), in the email and in its List-Unsubscribe header: opening it changes nothing
+// (it goes on to our page, public/unsubscribe.html, in the farmer's language); that page's button or a mail app's one-click request
+// turns news and offers off and leaves the daily summary on.
 export const unsubscribeLink=(functionsUrl,token,language)=>`${functionsUrl}/notify-hourly?unsubscribe=${encodeURIComponent(String(token??''))}&only=news&lang=${MAIL_LANGUAGES.includes(language)?language:'en'}`;
 
 // The admin's text for one game language: that language's own parts, English for a part left empty (as News and pop-ups do).

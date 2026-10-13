@@ -1,6 +1,10 @@
-// The unsubscribe page of a news and offers email (13 Oct 2026, supabase/functions/news-mail): its link ends with only=news and the
-// farmer's game language (lang). It turns news and offers off and leaves the daily summary as it is, so the page says so, in that
-// language; unknown or missing means English. Plain text only (no markup): index.ts puts it in the page as it is.
+// The unsubscribe page of a news and offers email (13 Oct 2026, public/unsubscribe.html; the email: supabase/functions/news-mail). On our
+// own website, as Supabase serves an Edge Function's HTML as plain text (the page showed its markup): the email's link goes to
+// notify-hourly (?unsubscribe=<token>&only=news&lang=<code>), which sends the browser here with the token after the # (never sent to
+// a server, gone from the address bar once read). Opening it changes nothing; its button posts to notify-hourly, which turns news and
+// offers off, leaves the daily summary as it is and sends the browser back here (#done or #error). The page is in the farmer's game
+// language (lang), unknown or missing means English. Written in every language here (like farm-api/mail-text.js), not through the
+// catalog: in a folder of its own, which scripts/i18n-extract.mjs does not read. Shown as text only (textContent), never as markup.
 const NB=' ';
 const TEXTS={
  en:{askTitle:'Unsubscribe from news and offers?',askBody:'You will not get news and offers by email any more. The daily summary of your farm, if you switched it on, and emails about your account still arrive.',button:'Unsubscribe',
@@ -73,3 +77,27 @@ export function newsUnsubscribeTexts(language){
  const code=TEXTS[language]?language:'en';
  return {...TEXTS[code],language:code,dir:code==='ar'?'rtl':'ltr'};
 }
+
+// notify-hourly, where the button posts (back: it answers with the way back here, not a page of its own).
+export const NOTIFY_URL='https://jnmdirvidffzxukbdmij.supabase.co/functions/v1/notify-hourly';
+const TOKEN=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// What the page shows for its address: ask (a token: the button), done, error or invalid (no token, or not one of ours).
+export function unsubscribeView(search,hash){
+ const t=newsUnsubscribeTexts(new URLSearchParams(String(search??'')).get('lang')),h=String(hash??'').replace(/^#/,'');
+ const view=(state,title,body,action=null)=>({state,title,body,action,button:t.button,language:t.language,dir:t.dir});
+ if(h==='done')return view('done',t.doneTitle,t.doneBody);
+ if(h==='error')return view('error',t.errorTitle,t.errorBody);
+ const token=new URLSearchParams(h).get('t');
+ if(!TOKEN.test(token??''))return view('invalid',t.invalidTitle,t.invalidBody);
+ return view('ask',t.askTitle,t.askBody,`${NOTIFY_URL}?unsubscribe=${token.toLowerCase()}&only=news&lang=${t.language}&back=1`);
+}
+export function showUnsubscribe(doc,loc,hist){
+ const v=unsubscribeView(loc.search,loc.hash),root=doc.documentElement,$=name=>doc.querySelector(`[data-unsubscribe-${name}]`);
+ root.lang=v.language;root.dir=v.dir;doc.title=`${v.title} — Harvest Tycoon`;
+ $('title').textContent=v.title;$('body').textContent=v.body;$('button').textContent=v.button;
+ const form=$('form');form.hidden=!v.action;if(v.action)form.action=v.action;else form.removeAttribute('action');
+ // The token stays in the form only, not in the address bar (a screenshot, a shared link, the history).
+ if(v.action)try{hist.replaceState(null,'',`${loc.pathname}${loc.search}`);}catch{}
+ return v;
+}
+if(typeof document!=='undefined'&&document.querySelector('[data-unsubscribe-form]'))showUnsubscribe(document,location,history);

@@ -1,6 +1,6 @@
 // News and offers by email (13 Oct 2026): the admin's email from the Admin dashboard to the farmers who said yes to it, each in their
 // own language with an unsubscribe link of their own; supabase/news-mail.sql, supabase/functions/news-mail, src/admin-news-mail.js and
-// the news-only unsubscribe page in notify-hourly.
+// the news-only unsubscribe (notify-hourly, with its page on our website: public/unsubscribe.html).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -9,7 +9,7 @@ import {MAIL_LANGUAGES,MAIL_LIMITS,MAIL_CAP,OWN_PAGE,GAME_URL,MESSAGES,cleanText
 import {newsTexts,NEWS_LANGUAGES,RTL_MAIL} from '../supabase/functions/news-mail/texts.js';
 import {newsEmail,unsubscribeLink,textFor,paragraphs} from '../supabase/functions/news-mail/mail.js';
 import {handleNewsMail,createResend,batchResults,refusal,TIME_BUDGET,PACE} from '../supabase/functions/news-mail/send.js';
-import {newsUnsubscribeTexts,NEWS_UNSUBSCRIBE_LANGUAGES} from '../supabase/functions/notify-hourly/news-unsubscribe.js';
+import {newsUnsubscribeTexts,NEWS_UNSUBSCRIBE_LANGUAGES,unsubscribeView,showUnsubscribe,NOTIFY_URL} from '../public/mail/news-unsubscribe.js';
 import {createChatClient} from '../src/chat-client.js';
 import {createNewsMail,countLine,sendLine,filtersText,logRow} from '../src/admin-news-mail.js';
 
@@ -404,17 +404,48 @@ test('delete account: the farmer\'s rows go with the account, patched into the l
 });
 
 // ---- notify-hourly: the news-only unsubscribe ----
-test('notify-hourly: the news-only link turns off news and offers only, only on a POST, and answers in the farmer\'s language',()=>{
+test('notify-hourly: the news-only link turns off news and offers only, only on a POST; a browser goes to our page in the farmer\'s language',()=>{
  const index=read('supabase/functions/notify-hourly/index.ts');
- assert.match(index,/import \{newsUnsubscribeTexts\} from '\.\/news-unsubscribe\.js';/);
  const at=index.indexOf("if(query.get('only')==='news'){"),old=index.indexOf("if(!tokenOk(token))return page('This link is not valid'");
  assert.ok(at>0&&at<old,'before the full unsubscribe');const news=index.slice(at,old);
- assert.match(news,/const t=newsUnsubscribeTexts\(query\.get\('lang'\)\);\n\s+if\(!tokenOk\(token\)\)return page\(t\.invalidTitle,/);
- assert.match(news,/if\(req\.method==='POST'\)\{\n\s+const at=new Date\(\)\.toISOString\(\);\n\s+const \{error\}=await admin\.from\('notification_settings'\)\.update\(\{email_marketing:false,marketing_changed_at:at,updated_at:at\}\)\.eq\('unsubscribe_token',token\)\.eq\('email_marketing',true\);/);
- assert.doesNotMatch(news,/email_digest/,'the daily summary stays as it is');
- assert.match(news,/<form method="post" action="\?unsubscribe=\$\{token\}&amp;only=news&amp;lang=\$\{t\.language\}">/,'its button posts the same link');
- assert.match(index,/const page=\(title:string,body:string,lang='en',dir='ltr'\)=>new Response\(`<!doctype html><html lang="\$\{lang\}" dir="\$\{dir\}">/);
+ // Supabase serves a function's HTML as plain text (its markup showed): the browser goes to public/unsubscribe.html, the token after the
+ // #, and only from our own address and a two-letter language (never from the request: no open redirect).
+ assert.match(news,/const lang=\/\^\[a-z\]\{2\}\$\/\.test\(query\.get\('lang'\)\?\?''\)\?query\.get\('lang'\):'en';/);
+ assert.match(news,/Location:`\$\{APP_URL\}\/unsubscribe\.html\?lang=\$\{lang\}#\$\{hash\}`/);
+ assert.match(news,/if\(req\.method!=='POST'\)return back\(`t=\$\{token!\.toLowerCase\(\)\}`\);/,'opening it changes nothing');
+ assert.ok(news.indexOf("if(!tokenOk(token))")<news.indexOf("if(req.method!=='POST')"),'a token that is not one is never passed on');
+ assert.match(news,/const \{error\}=await admin\.from\('notification_settings'\)\.update\(\{email_marketing:false,marketing_changed_at:at,updated_at:at\}\)\.eq\('unsubscribe_token',token\)\.eq\('email_marketing',true\);/);
+ assert.match(news,/if\(query\.has\('back'\)\)return back\(error\?'error':'done'\);\n\s+return json\(\{ok:!error\},error\?500:200\);/,'the page goes back to the page; a mail app\'s one-click gets a plain answer');
+ assert.doesNotMatch(news,/email_digest|page\(/,'the daily summary stays as it is');
+ assert.doesNotMatch(index,/news-unsubscribe/,'the texts live with the page');
  assert.match(index,/\.update\(\{email_digest:false,email_marketing:false,marketing_changed_at:at,updated_at:at\}\)\.eq\('unsubscribe_token',token\)/,'the daily summary\'s link stops both, as before');
+ assert.equal(read('vercel.json').includes('unsubscribe'),false,'a plain file of the site, no route of its own');
+});
+
+test('the unsubscribe page: asks first, posts to notify-hourly, says done or why not, in the farmer\'s language, as text only',()=>{
+ assert.equal(NOTIFY_URL,`${FUNCTIONS}/notify-hourly`);
+ const ask=unsubscribeView('?lang=nl',`#t=${TOKEN.toUpperCase()}`);
+ assert.deepEqual(ask,{state:'ask',title:newsUnsubscribeTexts('nl').askTitle,body:newsUnsubscribeTexts('nl').askBody,button:'Afmelden',language:'nl',dir:'ltr',
+  action:`${FUNCTIONS}/notify-hourly?unsubscribe=${TOKEN}&only=news&lang=nl&back=1`});
+ assert.equal(unsubscribeView('?lang=nl','#done').title,'Je bent afgemeld');assert.equal(unsubscribeView('?lang=ar','#error').dir,'rtl');
+ for(const hash of ['','#','#invalid','#t=','#t=nope','#t=<script>',`#t=${TOKEN}x`,`#done&t=${TOKEN}x`])assert.equal(unsubscribeView('?lang=de',hash).state,'invalid',hash);
+ assert.equal(unsubscribeView('?lang=<b>',`#t=${TOKEN}`).language,'en');assert.match(unsubscribeView(null,`#t=${TOKEN}`).action,/&lang=en&back=1$/);
+ // In a page: the texts as text, the form only with a token, and the token gone from the address bar.
+ const el=()=>({textContent:'',hidden:true,action:'',removeAttribute(name){if(name==='action')this.action='';}});
+ const parts={title:el(),body:el(),button:el(),form:el()},doc={documentElement:{},title:'',querySelector:q=>parts[/data-unsubscribe-(\w+)/.exec(q)[1]]};
+ const replaced=[],hist={replaceState:(...a)=>replaced.push(a)};
+ showUnsubscribe(doc,{search:'?lang=fr',hash:`#t=${TOKEN}`,pathname:'/unsubscribe.html'},hist);
+ assert.equal(doc.documentElement.lang,'fr');assert.equal(parts.title.textContent,newsUnsubscribeTexts('fr').askTitle);assert.equal(parts.form.hidden,false);
+ assert.equal(parts.form.action,`${FUNCTIONS}/notify-hourly?unsubscribe=${TOKEN}&only=news&lang=fr&back=1`);assert.deepEqual(replaced,[[null,'','/unsubscribe.html?lang=fr']]);
+ showUnsubscribe(doc,{search:'?lang=fr',hash:'#done',pathname:'/unsubscribe.html'},hist);
+ assert.equal(parts.form.hidden,true);assert.equal(parts.form.action,'');assert.equal(parts.body.textContent,newsUnsubscribeTexts('fr').doneBody);assert.equal(replaced.length,1);
+ // The page: no other script (the token goes nowhere else), not indexed, no referrer, the game's look.
+ const page=read('public/unsubscribe.html');
+ assert.deepEqual([...page.matchAll(/<script[^>]*>/g)].map(m=>m[0]),['<script type="module" src="/mail/news-unsubscribe.js">']);
+ assert.match(page,/<meta name="robots" content="noindex">/);assert.match(page,/<meta name="referrer" content="no-referrer">/);assert.match(page,/href="\/legal\.css"/);
+ assert.match(page,/<form method="post" data-unsubscribe-form hidden>/);assert.doesNotMatch(page,/ · /);
+ // Not through the catalog: the extractor reads public/*.js only, not this folder.
+ assert.match(read('scripts/i18n-extract.mjs'),/list\('public\/',f=>f\.endsWith\('\.js'\)\)/);
 });
 
 // ---- The function's wiring ----

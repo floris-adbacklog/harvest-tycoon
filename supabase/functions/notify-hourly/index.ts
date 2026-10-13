@@ -5,7 +5,6 @@ import {digestEmail} from './mail.js';
 import {CROP_NAMES,BUILDING_NAMES} from './names.js';
 import {createOneSignal,sendReminders} from './onesignal.js';
 import {messagePushes} from './messages.js';
-import {newsUnsubscribeTexts} from './news-unsubscribe.js';
 
 // verify_jwt is off for this function: the hourly cron call carries no user, and the unsubscribe link is opened from an email.
 // Nothing here trusts the caller. The job runs at most once per clock hour (notification_begin_run), so calling it more
@@ -25,7 +24,7 @@ const appPushOn=appPush.enabled;
 const functionUrl=`${url}/functions/v1/notify-hourly`;
 const cors={'Access-Control-Allow-Origin':'*','Cache-Control':'no-store'};
 const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
-const page=(title:string,body:string,lang='en',dir='ltr')=>new Response(`<!doctype html><html lang="${lang}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body style="margin:0;background:#f3e8e0;font-family:Helvetica,Arial,sans-serif;color:#3d3923;"><main style="max-width:420px;margin:12vh auto;padding:28px;background:#fffdf6;border-radius:20px;border:1px solid #eadfd4;"><h1 style="font-size:22px;margin:0 0 12px;">${title}</h1>${body}</main></body></html>`,{status:200,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
+const page=(title:string,body:string)=>new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body style="margin:0;background:#f3e8e0;font-family:Helvetica,Arial,sans-serif;color:#3d3923;"><main style="max-width:420px;margin:12vh auto;padding:28px;background:#fffdf6;border-radius:20px;border:1px solid #eadfd4;"><h1 style="font-size:22px;margin:0 0 12px;">${title}</h1>${body}</main></body></html>`,{status:200,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
 const tokenOk=(value:string|null)=>Boolean(value&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value));
 
 const db={
@@ -135,17 +134,18 @@ Deno.serve(async(req)=>{
  if(query.has('unsubscribe')){
   const token=query.get('unsubscribe');
   // News and offers only (13 Oct 2026): the link in those emails (supabase/functions/news-mail) ends with only=news and the farmer's
-  // language. It turns news and offers off and leaves the daily summary as it is; its page is in that language (news-unsubscribe.js).
+  // language. Supabase serves this function's HTML as plain text, so its page is on our website (public/unsubscribe.html): opening the
+  // link goes there with the token after the # and changes nothing. A POST (the page's button, or a mail app's one-click request)
+  // turns news and offers off and leaves the daily summary as it is; the page's button (back) is sent back to the page.
   if(query.get('only')==='news'){
-   const t=newsUnsubscribeTexts(query.get('lang'));
-   if(!tokenOk(token))return page(t.invalidTitle,`<p>${t.invalidBody}</p>`,t.language,t.dir);
-   if(req.method==='POST'){
-    const at=new Date().toISOString();
-    const {error}=await admin.from('notification_settings').update({email_marketing:false,marketing_changed_at:at,updated_at:at}).eq('unsubscribe_token',token).eq('email_marketing',true);
-    if(error)return page(t.errorTitle,`<p>${t.errorBody}</p>`,t.language,t.dir);
-    return page(t.doneTitle,`<p>${t.doneBody}</p>`,t.language,t.dir);
-   }
-   return page(t.askTitle,`<p>${t.askBody}</p><form method="post" action="?unsubscribe=${token}&amp;only=news&amp;lang=${t.language}"><button type="submit" style="background:#685e3f;color:#fffdf0;border:0;border-radius:12px;padding:14px 22px;font-size:16px;font-weight:700;cursor:pointer;">${t.button}</button></form>`,t.language,t.dir);
+   const lang=/^[a-z]{2}$/.test(query.get('lang')??'')?query.get('lang'):'en';
+   const back=(hash:string)=>new Response(null,{status:303,headers:{Location:`${APP_URL}/unsubscribe.html?lang=${lang}#${hash}`,'Cache-Control':'no-store'}});
+   if(!tokenOk(token))return req.method==='POST'&&!query.has('back')?json({ok:false},400):back('invalid');
+   if(req.method!=='POST')return back(`t=${token!.toLowerCase()}`);
+   const at=new Date().toISOString();
+   const {error}=await admin.from('notification_settings').update({email_marketing:false,marketing_changed_at:at,updated_at:at}).eq('unsubscribe_token',token).eq('email_marketing',true);
+   if(query.has('back'))return back(error?'error':'done');
+   return json({ok:!error},error?500:200);
   }
   if(!tokenOk(token))return page('This link is not valid','<p>Open Settings in the game to change your reminders.</p>');
   // Opening the link (mail scanners do that) changes nothing; the button, or a mail app\'s one-click request, does.

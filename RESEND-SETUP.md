@@ -93,7 +93,9 @@ Een eigen mail van de admin vanuit het Admin dashboard (Settings, **News and off
   Google, Facebook of Apple, of de 6-cijferige code), nooit naar CrazyGames-, Kongregate- of Discord-accounts. Filters: vanaf level
   en eventueel "gespeeld in de laatste N dagen". Elke speler krijgt de tekst van zijn speltaal, anders de Engelse.
 - Elke mail heeft een eigen afmeldlink (alleen nieuws en aanbiedingen; de dagelijkse samenvatting blijft) plus de one-click-headers
-  (`List-Unsubscribe`, `List-Unsubscribe-Post`) die Gmail en Yahoo vragen.
+  (`List-Unsubscribe`, `List-Unsubscribe-Post`) die Gmail en Yahoo vragen. Wie de link opent, komt via notify-hourly op onze eigen
+  pagina `harvesttycoon.com/unsubscribe.html` in zijn taal (Supabase toont HTML van een Edge Function als platte tekst); de knop
+  daar zet nieuws en aanbiedingen uit.
 - Volgorde: eerst `supabase/news-mail.sql` in de SQL-editor, dan
   `npx supabase functions deploy notify-hourly --project-ref jnmdirvidffzxukbdmij --use-api --no-verify-jwt` (de afmeldpagina),
   dan `npx supabase functions deploy news-mail --project-ref jnmdirvidffzxukbdmij --use-api` (zonder `--no-verify-jwt`), dan de site.
