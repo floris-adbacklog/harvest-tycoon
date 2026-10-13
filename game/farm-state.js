@@ -408,6 +408,8 @@ export function claimBeginnerQuest(state,id,now=Date.now()){
 // sentAt (the game's own idea of server time ran behind by the farm page's start-up), so each is late by its request's trip to the server,
 // which is why the time to the first touch is a duration of its own. Without sentAt they count as the server's. Each part is kept once:
 // a time only within the last day and never ahead of the server, a duration up to 10 minutes; anything else is left out.
+// 13 Oct 2026 (the measurement package): when the farm was first in view, touched or not (viewAt: the loading screen gone and the page
+// in view; a tab in the background reaches readyAt unseen), and how long after readyAt (viewMs, the device's own clock).
 export const FIRST_LOOK_MAX_MS=600000;
 // 11 Oct 2026 (Part A, A1): the load chain (look.chain), to see which step of the wait is slow: how long after the start of the page around
 // the farm (its own clock, performance.now()) CrazyGames' SDK answered (hello), its token came (token), the account was there (account:
@@ -421,7 +423,7 @@ export function recordFirstLook(state,look,now=Date.now()){
  const shift=Number.isFinite(look.sentAt)?now-look.sentAt:0;
  const time=v=>Number.isFinite(v)&&v+shift>now-DAY_MS&&v+shift<now+60000?Math.min(Math.round(v+shift),now):undefined;
  const span=v=>Number.isFinite(v)&&v>=0?Math.min(Math.round(v),FIRST_LOOK_MAX_MS):undefined;
- const parts={shownAt:time(look.shownAt),loadMs:span(look.loadMs),readyAt:time(look.readyAt),readyMs:span(look.readyMs),frame:typeof look.frame==='string'&&/^\d{2,5}x\d{2,5}$/.test(look.frame)?look.frame:undefined,firstInputAt:time(look.firstInputAt),firstInputMs:span(look.firstInputMs)};
+ const parts={shownAt:time(look.shownAt),loadMs:span(look.loadMs),readyAt:time(look.readyAt),readyMs:span(look.readyMs),frame:typeof look.frame==='string'&&/^\d{2,5}x\d{2,5}$/.test(look.frame)?look.frame:undefined,firstInputAt:time(look.firstInputAt),firstInputMs:span(look.firstInputMs),viewAt:time(look.viewAt),viewMs:span(look.viewMs)};
  const seen={...state.onboarding.firstLook};for(const [key,value] of Object.entries(parts))if(value!==undefined&&seen[key]===undefined)seen[key]=value;
  const chain=look.chain&&typeof look.chain==='object'&&!Array.isArray(look.chain)?look.chain:{},links={...seen.chain};
  for(const key of FIRST_LOOK_CHAIN){const value=key==='lost'?(chain.lost===1?1:undefined):span(chain[key]);if(value!==undefined&&links[key]===undefined)links[key]=value;}

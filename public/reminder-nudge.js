@@ -18,7 +18,9 @@ const SETTLE_MS=15000;
 // `settleMs` gives the farm a moment of quiet after that, so the question never lands on top of the welcome-back message.
 // An email sign-up's address is not checked at sign-up (fewer steps to an account), so it can hold a typo or someone else's address.
 // There "Email me" opens the 6-digit code check (email-check-ui.js, with its diamonds) and notify-hourly mails only a confirmed address.
-export function createReminderNudge({state,level,notify,track=()=>{},canShow=()=>true,settleMs=SETTLE_MS,clock=()=>Date.now(),emailUnconfirmed=()=>false,confirmEmail=()=>{}}){
+// `log` (13 Oct 2026, the measurement package): each step also goes to the farmer's log (farm-api player-log.js noteLog), whatever the
+// cookie choice: {step: shown, on, later, blocked or failed, channel: push or email, level}. blocked: the browser or the phone said no.
+export function createReminderNudge({state,level,notify,track=()=>{},log=()=>{},canShow=()=>true,settleMs=SETTLE_MS,clock=()=>Date.now(),emailUnconfirmed=()=>false,confirmEmail=()=>{}}){
  let open=false,checking=false,lastCheck=0,visibleSince=0,harvestedAt=0;
  const storage={get(){try{return localStorage.getItem(KEY);}catch{return 'unavailable';}},set(value){try{localStorage.setItem(KEY,value);}catch{}}};
  // The device remembers the farm it last asked and that farm's level then ("farm:level"; a new farm on the same device starts
@@ -32,26 +34,27 @@ export function createReminderNudge({state,level,notify,track=()=>{},canShow=()=
  const bridge=()=>{try{return window.parent?.harvestBridge?.notifications??null;}catch{return null;}};
  function close(){open=false;document.querySelector('.reminder-nudge')?.remove();}
  function show(channel,lvl){
-  open=true;storage.set(`${farmKey()}:${lvl}`);track('reminder_prompt',{action:'shown',channel});
+  const step=name=>{try{log({kind:'reminder',step:name,channel,level:lvl});}catch{}};
+  open=true;storage.set(`${farmKey()}:${lvl}`);track('reminder_prompt',{action:'shown',channel});step('shown');
   const card=document.createElement('aside');card.className='reminder-nudge';card.setAttribute('role','region');card.setAttribute('aria-label','Reminders');
   card.innerHTML=channel==='email'
    ?'<span class="reminder-nudge-icon" aria-hidden="true">'+art('letter')+'</span><div class="reminder-nudge-copy"><strong>Want a reminder by email?</strong><span>At most one a day, only when crops or your daily gift are waiting. Unsubscribe in one tap.</span></div><div class="reminder-nudge-actions"><button type="button" class="small-button" data-nudge-later>Not now</button><button type="button" class="primary-button" data-nudge-on>Email me</button></div>'
    :'<span class="reminder-nudge-icon" aria-hidden="true"><i data-lucide="bell"></i></span><div class="reminder-nudge-copy"><strong>Want a nudge when your crops are ready?</strong><span>We only send a reminder when something is waiting.</span></div><div class="reminder-nudge-actions"><button type="button" class="small-button" data-nudge-later>Not now</button><button type="button" class="primary-button" data-nudge-on>Turn on</button></div>';
-  card.querySelector('[data-nudge-later]').onclick=()=>{track('reminder_prompt',{action:'dismissed',channel});close();};
+  card.querySelector('[data-nudge-later]').onclick=()=>{track('reminder_prompt',{action:'dismissed',channel});step('later');close();};
   card.querySelector('[data-nudge-on]').onclick=async()=>{
    const button=card.querySelector('[data-nudge-on]');button.disabled=true;
    if(channel==='email'){
-    try{const api=bridge(),current=await api.get();await api.save({...current,emailDigest:true});track('reminder_prompt',{action:'accepted',channel});if(emailUnconfirmed()){notify('Confirm your email address and the reminders start.');confirmEmail();}else notify('Email reminders are on. You can change the time in Settings.');}
-    catch{notify('Email reminders could not be turned on. You can try again in Settings.');track('reminder_prompt',{action:'failed',channel});}
+    try{const api=bridge(),current=await api.get();await api.save({...current,emailDigest:true});track('reminder_prompt',{action:'accepted',channel});step('on');if(emailUnconfirmed()){notify('Confirm your email address and the reminders start.');confirmEmail();}else notify('Email reminders are on. You can change the time in Settings.');}
+    catch{notify('Email reminders could not be turned on. You can try again in Settings.');track('reminder_prompt',{action:'failed',channel});step('failed');}
     finally{close();}
     return;
    }
    try{
     const api=bridge(),result=await api.push.enable();
-    if(result?.kind!=='on'){notify(result?.kind==='blocked'?(api.push.app?APP_PUSH_BLOCKED:'Notifications are blocked for this site. You can allow them in your browser settings.'):'Reminders could not be turned on here.');track('reminder_prompt',{action:'failed',channel});close();return;}
+    if(result?.kind!=='on'){notify(result?.kind==='blocked'?(api.push.app?APP_PUSH_BLOCKED:'Notifications are blocked for this site. You can allow them in your browser settings.'):'Reminders could not be turned on here.');track('reminder_prompt',{action:'failed',channel});step(result?.kind==='blocked'?'blocked':'failed');close();return;}
     const current=await api.get();await api.save({...current,pushCrops:true,pushProduction:true});
-    track('reminder_prompt',{action:'accepted',channel});notify('Reminders are on. We will nudge you when crops or batches are ready.');
-   }catch{notify('Reminders could not be turned on. You can try again in Settings.');track('reminder_prompt',{action:'failed',channel});}
+    track('reminder_prompt',{action:'accepted',channel});step('on');notify('Reminders are on. We will nudge you when crops or batches are ready.');
+   }catch{notify('Reminders could not be turned on. You can try again in Settings.');track('reminder_prompt',{action:'failed',channel});step('failed');}
    finally{close();}
   };
   document.body.append(card);

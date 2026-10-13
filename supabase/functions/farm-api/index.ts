@@ -10,7 +10,7 @@ import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-s
 import {linkPartner} from './partner-service.js';
 import {handleDeleteAccount} from './account-delete-service.js';
 import {recordSource} from './source-service.js';
-import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog} from './player-log.js';
+import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,noteLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
 import {NO_EVENT_ACTIONS,grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
@@ -113,6 +113,9 @@ Deno.serve(async(req)=>{
    if(saved.status===200)later(writeLog(admin,user.id,accountLog('avatar','Picked a new face')));
    return reply(saved.data,saved.status);
   }
+  // The reminder question's steps (13 Oct 2026, player-log.js noteLog) ride along with the game's next action or refresh: logged beside it,
+  // whatever the request itself does. Never for an admin account (its farm is the showcase).
+  if((body.operation==='load'||body.operation==='action')&&Array.isArray(body.notes)&&!isAdminAccount(user)){const noted=noteLog(body.notes);if(noted.length)later(writeLog(admin,user.id,noted));}
   // Delete account (3 Oct 2026, account-delete-service.js): the signed-in farmer's own account, with their farmer name typed exactly; never
   // an admin account. Before the farm is read, so nothing here can make a farm or a name again.
   if(body.operation==='delete_account'){
@@ -126,7 +129,8 @@ Deno.serve(async(req)=>{
   const chosen=profile?.username??(nameValid(user.user_metadata?.username)?user.user_metadata.username.trim():randomPlayerName());
   const username=profile?.username??await freeName(admin,chosen);
   // Where and on what the farm was opened, for the admin dashboard (admin-analytics-service.js): runs beside the load, never holds it up.
-  if(body.operation==='load'){const seen=Promise.resolve().then(()=>recordSeen({admin,player:user.id,headers:req.headers,timeZone:body.timeZone,language:body.language})).catch(()=>{});(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(seen);}
+  // 13 Oct 2026: and on what (platform: the page's own word, checked against the user agent and the account's portal, admin-analytics-service.js platformOf).
+  if(body.operation==='load'){const seen=Promise.resolve().then(()=>recordSeen({admin,player:user.id,headers:req.headers,timeZone:body.timeZone,language:body.language,platform:body.platform,portal:user.app_metadata?.portal})).catch(()=>{});(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(seen);}
   // The game language also goes on the account (user_metadata.language), where the Supabase Auth emails read it: the password reset
   // and the sign-up confirmation (supabase/email-templates) are written in it. Only when it changed, beside the load.
   if(body.operation==='load'&&typeof body.language==='string'&&/^[a-z]{2}$/.test(body.language)&&user.user_metadata?.language!==body.language){
@@ -240,7 +244,7 @@ Deno.serve(async(req)=>{
       if((user.app_metadata?.provider??'email')==='email'){const message='Thanks for confirming your email!';gift=gift?{...gift,diamonds:(gift.diamonds??0)+EMAIL_BONUS,message:gift.message??message}:{coins:0,xp:0,diamonds:EMAIL_BONUS,item:null,itemCount:0,message,at:now};}
      }
     }
-    const logged=loadLog({away:now-(Date.parse(row.updated_at)||now),gift:donations.length?fromStaff:null,inviteReward,emailBonus:emailBonusPaid,comeback});
+    const logged=loadLog({away:now-(Date.parse(row.updated_at)||now),gift:donations.length?fromStaff:null,inviteReward,emailBonus:emailBonusPaid,comeback,from:body.opened});
     if(welcome||levelReward.levels.length||chapterReward.chapters.length||gift||inviteReward||friends.length||emailBonusPaid){
      const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
      if(saved.error)throw saved.error;if(!saved.data)continue;

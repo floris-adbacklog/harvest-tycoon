@@ -61,7 +61,19 @@ async function farmRequestOnce(body){
 // Every farm load says which time zone the device is in and which language the game is in: the admin dashboard shows the country
 // the time zone belongs to (farm-api, time-zones.js) and the language.
 const deviceTimeZone=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||null;}catch{return null;}};
-export function farmRequest(body,{retry=true}={}){const sent=body?.operation==='load'?{...body,timeZone:deviceTimeZone(),language:chosenLanguage()}:body;return withRetry(()=>farmRequestOnce(sent),{repeatable:retry&&safeToRepeat(sent)});}
+// And on what (13 Oct 2026, the measurement package; farm-api admin-analytics-service.js platformOf): a portal's own page (data-portal),
+// our app (data-app, public/android-app.js), the web app opened from the home screen (pwa: as it opened, since full screen changes the
+// display mode later, src/pwa.js), the website inside another site (frame) or a browser tab.
+const openedStandalone=(()=>{try{return Boolean(globalThis.matchMedia?.('(display-mode: standalone)')?.matches||globalThis.navigator?.standalone===true);}catch{return false;}})();
+export function pagePlatform(win=globalThis.window,standalone=openedStandalone){
+ try{const html=win.document.documentElement,portal=html.getAttribute('data-portal');if(portal)return portal;if(html.getAttribute('data-app')==='android')return 'app';if(standalone)return 'pwa';return win.top!==win?'frame':'browser';}catch{return null;}
+}
+// A reminder that opened the game (13 Oct 2026, src/main.js: 'push' or 'email'): the next farm load takes it along, once (opened), for the
+// "Opened the game" line in the farmer's log (farm-api player-log.js loadLog).
+let openedFrom=null;
+export function openedBy(source){if(source==='push'||source==='email')openedFrom=source;}
+const takeOpened=()=>{const source=openedFrom;openedFrom=null;return source?{opened:source}:{};};
+export function farmRequest(body,{retry=true}={}){const sent=body?.operation==='load'?{...body,timeZone:deviceTimeZone(),language:chosenLanguage(),platform:pagePlatform(),...takeOpened()}:body;return withRetry(()=>farmRequestOnce(sent),{repeatable:retry&&safeToRepeat(sent)});}
 export async function paymentRequest(body){
  const {data,error}=await supabase.functions.invoke('diamond-checkout',{body,timeout:20000});
  if(error){let detail;try{detail=await error.context?.json();}catch{}throw new Error(detail?.error||'Could not connect to checkout. Please try again.');}

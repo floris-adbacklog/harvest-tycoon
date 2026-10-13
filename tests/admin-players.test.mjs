@@ -154,10 +154,10 @@ test('recordSeen keeps one row per farmer (an upsert) with only what the visit k
  assert.ok(!('country' in older.calls[0].upsert),'a load without a time zone keeps the country saved before');
  assert.ok(!('language' in older.calls[0].upsert),'and one without a language keeps the language');
  const api=read('supabase/functions/farm-api/index.ts');
- assert.match(api,/if\(body\.operation==='load'\)\{const seen=Promise\.resolve\(\)\.then\(\(\)=>recordSeen\(\{admin,player:user\.id,headers:req\.headers,timeZone:body\.timeZone,language:body\.language\}\)\)\.catch\(\(\)=>\{\}\);/,'even a synchronous failure never stops the load');
+ assert.match(api,/if\(body\.operation==='load'\)\{const seen=Promise\.resolve\(\)\.then\(\(\)=>recordSeen\(\{admin,player:user\.id,headers:req\.headers,timeZone:body\.timeZone,language:body\.language,platform:body\.platform,portal:user\.app_metadata\?\.portal\}\)\)\.catch\(\(\)=>\{\}\);/,'even a synchronous failure never stops the load');
  assert.match(api,/EdgeRuntime\?\.waitUntil\?\.\(seen\)/);
  assert.match(api,/'admin_players','admin_player'/);assert.match(read('src/connection.js'),/'admin_invites','admin_players','admin_player','admin_purchases'\]/,'read-only, so safe to retry');
- assert.match(read('src/supabase.js'),/const sent=body\?\.operation==='load'\?\{\.\.\.body,timeZone:deviceTimeZone\(\),language:chosenLanguage\(\)\}:body;/,'every farm load sends the device time zone and the game language');
+ assert.match(read('src/supabase.js'),/const sent=body\?\.operation==='load'\?\{\.\.\.body,timeZone:deviceTimeZone\(\),language:chosenLanguage\(\),platform:pagePlatform\(\),/,'every farm load sends the device time zone, the game language and (13 Oct 2026) the platform');
  const languageSql=read('supabase/admin-player-language.sql');
  assert.match(languageSql,/alter table public\.player_seen add column if not exists language text check \(language ~ '\^\[a-z\]\{2\}\$'\);/);
  assert.match(languageSql,/seen_at timestamptz, language text\)/);assert.match(languageSql,/grant execute on function public\.admin_player_accounts\(uuid, text\) to service_role;/);

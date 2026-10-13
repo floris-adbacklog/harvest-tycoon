@@ -1,12 +1,12 @@
 import {createFarmPresence} from './presence.js';
-import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError,socialProviders} from './supabase.js';
+import {supabase,isConfigured,functionsUrl,verifiedUser,validUsername,farmRequest,paymentRequest,cloudError,socialProviders,openedBy} from './supabase.js';
 import {OAUTH_KEY,providerName,oauthStartError,oauthReturnMessage,usableProviders,embeddedBrowser,adVisit} from './social-login.js';
 import {scheduleBrowserTip,metaApp,gateApp,gateText,escapeTarget,chromeIntent,safariUrl,appKey,ESCAPE_KEY,BROWSER_TIP_KEY} from './browser-tip.js';
 import {fetchLeaderboard} from './leaderboard.js';
 import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInvite,trackShare} from './analytics.js';
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
-import {openIntent,openIntentOfUrl,withoutOpen,discordTicket,discordAuthorizeUrl,discordBack} from '../public/app-links.js';
+import {openIntent,openIntentOfUrl,withoutOpen,discordTicket,discordAuthorizeUrl,discordBack,reminderSource} from '../public/app-links.js';
 import {startUpdateCheck} from './app-update.js';
 import {createNotifications} from './notifications.js';
 import {createChatClient} from './chat-client.js';
@@ -77,7 +77,12 @@ function openScreen(intent){
  try{const open=frame?.contentWindow?.harvestOpen;if(typeof open==='function'){open(intent);return;}}catch{}
  pendingOpen=intent;
 }
-navigator.serviceWorker?.addEventListener?.('message',event=>{if(event.data?.type!=='open')return;try{openScreen(openIntentOfUrl(String(event.data.url),location.origin));}catch{}});
+// A reminder that opened the game (13 Oct 2026, the measurement package): notify-hourly's push (?source=push, in a browser and in both
+// apps, which open the push's address) or the daily email (?source=email). Said once, with the next farm load, so farm-api's "Opened the
+// game" line in the farmer's log says so (src/supabase.js openedBy); a reload or Back to this page is no new open. The address keeps it
+// (Tag Manager reads it). A push tapped while the game is open (sw.js) counts for the load that follows, when the tab comes back into view.
+openedBy((()=>{try{const entry=performance.getEntriesByType?.('navigation')?.[0];if(entry&&entry.type!=='navigate')return null;}catch{}return reminderSource(location.href,location.origin);})());
+navigator.serviceWorker?.addEventListener?.('message',event=>{if(event.data?.type!=='open')return;openedBy(reminderSource(String(event.data.url),location.origin));try{openScreen(openIntentOfUrl(String(event.data.url),location.origin));}catch{}});
 // A shortcut on the app icon, or a link the app catches (/feedback, /settings/<part>, /discord-link?t=…), while the app is already
 // open comes to this window (manifest launch_handler: focus-existing).
 window.launchQueue?.setConsumer?.(params=>{try{openScreen(openIntentOfUrl(params.targetURL));}catch{}});

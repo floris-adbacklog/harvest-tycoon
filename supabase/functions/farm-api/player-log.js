@@ -114,9 +114,14 @@ export function familyLog(action,before,state){
 }
 // On opening the game: back after a while, and what was waiting (a gift from the staff, the invite reward, the email bonus, and since
 // Oct 2026 a comeback chest after 3 days or more away).
-export function loadLog({away,gift,inviteReward,emailBonus,comeback}){
+// 13 Oct 2026 (the measurement package): opened from a reminder (from: 'push', notify-hourly's ?source=push in a browser or either app,
+// or 'email', the daily email's ?source=email; src/main.js sends it once, with the first load after the tap) says so, also after less
+// than 30 minutes away. Still the action 'open', so every count of opens stays the same.
+export function loadLog({away,gift,inviteReward,emailBonus,comeback,from}){
  const rows=[];
- if(away>=30*60000)rows.push(line('account','open',`Opened the game after ${awayText(away)}`));
+ if(from==='push')rows.push(line('account','open',away>=60000?`Opened the game from a push reminder after ${awayText(away)}`:'Opened the game from a push reminder'));
+ else if(from==='email')rows.push(line('account','open',away>=60000?`Opened the game from the daily email after ${awayText(away)}`:'Opened the game from the daily email'));
+ else if(away>=30*60000)rows.push(line('account','open',`Opened the game after ${awayText(away)}`));
  if(gift&&(gift.coins||gift.diamonds||gift.xp||gift.itemCount))rows.push(line('staff','gift','Received a gift from the staff',changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:gift.coins??0,diamonds:gift.diamonds??0,xp:gift.xp??0,inventory:gift.item?{[gift.item]:gift.itemCount}:{}})));
  if(inviteReward)rows.push(line('social','invite','Got the reward for joining through an invite'));
  if(emailBonus)rows.push(line('rewards','email','Got the bonus for confirming the email address'));
@@ -125,6 +130,26 @@ export function loadLog({away,gift,inviteReward,emailBonus,comeback}){
 }
 function awayText(ms){const h=Math.floor(ms/3600000),d=Math.floor(h/24);return d?`${d} ${d===1?'day':'days'}`:h?`${h} ${h===1?'hour':'hours'}`:`${Math.round(ms/60000)} minutes`;}
 export const accountLog=(action,text)=>[line('account',action,text)];
+// The reminder question after a harvest (13 Oct 2026, the measurement package; public/reminder-nudge.js): shown, and what the farmer
+// did with it, in this log too (Tag Manager only has it with the farmer's consent). The game keeps them (public/farm-client.js note) and
+// sends them along with its next request to farm-api, an action or a refresh (body.notes): no request of their own. Never trusted: at
+// most NOTE_MAX a request, known steps and channels only, a whole level; anything else is left out.
+export const NOTE_MAX=5;
+const REMINDER_NOTES={
+ shown:{push:l=>`Was asked to turn on push reminders at level ${l}`,email:l=>`Was asked to turn on the daily email at level ${l}`},
+ on:{push:()=>'Turned on push reminders from the question',email:()=>'Turned on the daily email from the question'},
+ later:{push:()=>'Said “Not now” to push reminders',email:()=>'Said “Not now” to the daily email'},
+ blocked:{push:()=>'Push reminders could not be turned on: notifications are blocked on this device'},
+ failed:{push:()=>'Push reminders could not be turned on',email:()=>'The daily email could not be turned on'}
+};
+export function noteLog(notes){
+ if(!Array.isArray(notes))return [];
+ return notes.slice(0,NOTE_MAX).flatMap(n=>{
+  const text=n&&typeof n==='object'&&n.kind==='reminder'&&Object.hasOwn(REMINDER_NOTES,n.step)&&Object.hasOwn(REMINDER_NOTES[n.step],n.channel)?REMINDER_NOTES[n.step][n.channel]:null;
+  const level=n?.level;if(!text||!Number.isSafeInteger(level)||level<1||level>9999)return [];
+  return [line('account',`reminder_${n.step}`,text(level))];
+ });
+}
 // A farm event's reward, when the farmer collects it (event-service.js): the event's name and what it paid.
 export function eventRewardLog(title,reward){
  return [line('rewards','event_reward',`Collected the reward of the event ${title?`“${title}”`:''}`.trim(),changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:reward?.coins??0,diamonds:reward?.diamonds??0,xp:0,inventory:{}}))];

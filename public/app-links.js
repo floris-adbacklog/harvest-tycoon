@@ -57,6 +57,12 @@ export function openIntentOfUrl(href,base){
  if(settings)return settings[1]===undefined?{open:'settings'}:settingsPart(settings[1])?{open:'settings',part:settings[1]}:null;
  return openIntent(url.search);
 }
+// The reminder an address comes from (13 Oct 2026, the measurement package): 'push' (notify-hourly's push reminders, rules.js) or
+// 'email' (its daily email, mail.js); null for anything else (?source=pwa is the web app's own start).
+export function reminderSource(href,base){
+ let url;try{url=new URL(href,base);}catch{return null;}
+ const source=url.searchParams.get('source');return source==='push'||source==='email'?source:null;
+}
 // The address without the link's own part, so a reload does not open the screen again. The Discord link's ticket and Discord's
 // answer go too, so they are never shared along with the address by accident.
 const DISCORD_PARTS=['t','code','state','error','error_description'];

@@ -48,6 +48,7 @@ export function sweepTotal(action,results,short=false){
 // nothing is tried here at all: no farm change shown first, no sound, no request. The same words as farm-api's refusal.
 export const ADMIN_LOCKED='This is your admin account, so playing is locked here. Play on your own farmer account.';
 export const adminView=()=>Boolean(globalThis.document?.documentElement?.hasAttribute?.('data-admin-view'));
+export const NOTE_WAIT_MS=15000;
 const adminLocked=()=>Object.assign(new Error(ADMIN_LOCKED),{code:'ACTION_REJECTED'});
 export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapterReward,onGift,onEmailCheck,onError}){
  const bridge=window.parent.harvestBridge;
@@ -77,13 +78,19 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
  // its action; sendLook sends it by itself when nothing else took it. Not with a family action (farm-api hands those to another service).
  // Its times are this device's clock: sentAt, stamped as the request leaves, lets the server move them onto its own.
  let noted=null,quiet=0;
+ // The reminder question's steps (13 Oct 2026, the measurement package; public/reminder-nudge.js, farm-api player-log.js noteLog): kept
+ // here and taken by the next request to farm-api as it leaves, an action or a refresh, so they cost no request of their own. When none
+ // leaves within NOTE_WAIT_MS a refresh takes them (the farm's own every-minute check, brought forward). At most 5 wait.
+ let notes=[],noteTimer=0;
+ const withNotes=body=>{if(!notes.length)return body;const carried={...body,notes};notes=[];clearTimeout(noteTimer);noteTimer=0;return carried;};
+ const note=entry=>{if(adminView()||!entry||typeof entry!=='object')return;notes=[...notes,entry].slice(-5);if(!noteTimer)noteTimer=setTimeout(()=>{noteTimer=0;if(notes.length)void refresh().catch(()=>{});},NOTE_WAIT_MS);};
  const withLook=action=>{if(!noted||String(action?.type).startsWith('family_'))return action;const carried={...action,look:noted};noted=null;return carried;};
  const stamped=action=>action.look?{...action,look:{...action.look,sentAt:Date.now()}}:action;
  // One request in the line; the saving status stays on until the line is empty. A quiet one (the first look, 7 Oct 2026) keeps its
  // place in the line but shows no saving and never locks the farm: it goes out just as a new farmer can first tap.
  function send(action,hushed=false){
   if(hushed)quiet++;else{waiting++;onStatus('saving');document.body.classList.add('farm-saving');}
-  const sent=withLook(action),run=line.then(()=>bridge.request({operation:'action',action:stamped(sent),requestId:crypto.randomUUID()}));
+  const sent=withLook(action),run=line.then(()=>bridge.request(withNotes({operation:'action',action:stamped(sent),requestId:crypto.randomUUID()})));
   line=run.catch(()=>{});
   const done=hushed?()=>{quiet--;}:()=>{waiting--;if(!waiting)document.body.classList.remove('farm-saving');};
   run.then(done,done);
@@ -143,7 +150,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
  }
  async function load(){clockOffset=bridgeClock(bridge);base=structuredClone(state);onChange();onStatus('saved');return {state};}
  // Not while taps (or the first look) are on their way: their answers bring the newest farm anyway.
- async function refresh(){if(waiting||quiet||pending.length)return;replace(await bridge.request({operation:'load'}));}
+ async function refresh(){if(waiting||quiet||pending.length)return;replace(await bridge.request(withNotes({operation:'load'})));}
  window.harvestRefresh=refresh;
  // The parent reports a connection that is being restored ("Reconnecting…") and tells when it is back.
  bridge.watchConnection?.(status=>{if(status==='reconnecting')onStatus('reconnecting');else if(status==='ok')onStatus('saved');});
@@ -151,5 +158,5 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
  const look=parts=>{if(!adminView())noted={...noted,...parts,...(noted?.chain&&parts?.chain?{chain:{...noted.chain,...parts.chain}}:{})};};
  // Quietly: no saving status, no locked farm, no error shown (an older farm-api refuses it); its answer still takes over the farm.
  const sendLook=()=>{if(noted&&!adminView())void send({type:'first_look'},true).then(replace,()=>{});};
- return {load,runAction,sweep,retry:refresh,flush:async()=>{},refresh,look,sendLook};
+ return {load,runAction,sweep,retry:refresh,flush:async()=>{},refresh,look,sendLook,note};
 }

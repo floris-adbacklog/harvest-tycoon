@@ -130,9 +130,23 @@ export function seenFrom(headers,timeZone,language){
  return {country:zoneCountry(timeZone),ip:IPV4.test(ip)||IPV6.test(ip)&&ip.includes(':')?ip:null,device:get('user-agent').slice(0,300)||null,
   language:/^[a-z]{2}$/.test(language??'')?language:null};
 }
+// On what the farm was opened (13 Oct 2026, the measurement package; supabase/player-platform.sql): our app by its user agent's own
+// token (" HarvestTycoonApp/", public/android-app.js: the iPhone app, the Galaxy Store app with " WebBilling/", else Google Play's), a
+// portal's own page or account, else what the page says of itself (hint, src/supabase.js pagePlatform): the web app opened from the
+// home screen (pwa), the website inside another site (frame) or a browser tab (web). null when nothing tells (a page from before this).
+export const PLATFORMS=Object.freeze(['web','pwa','frame','android_app','galaxy_app','ios_app','crazygames','kongregate','discord']);
+const PORTAL_PLATFORMS=['crazygames','kongregate','discord'],HINT_PLATFORMS=Object.freeze({app:'android_app',pwa:'pwa',frame:'frame',browser:'web'});
+export function platformOf({hint,agent,portal}={}){
+ const ua=String(agent??'');
+ if(/HarvestTycoonApp\//.test(ua))return /iPhone|iPad|iPod|Macintosh/.test(ua)?'ios_app':/ WebBilling\/\d/.test(ua)?'galaxy_app':'android_app';
+ if(PORTAL_PLATFORMS.includes(hint))return hint;
+ if(PORTAL_PLATFORMS.includes(portal))return portal;
+ return typeof hint==='string'&&Object.hasOwn(HINT_PLATFORMS,hint)?HINT_PLATFORMS[hint]:null;
+}
 // Only what this visit knows is written: a load without a time zone or language (a game tab from before this) keeps what was saved.
-export async function recordSeen({admin,player,headers,timeZone,language,now=Date.now()}){
- const seen=Object.fromEntries(Object.entries(seenFrom(headers,timeZone,language)).filter(([,value])=>value!=null));
+// 13 Oct 2026: the platform too.
+export async function recordSeen({admin,player,headers,timeZone,language,platform:hint,portal,now=Date.now()}){
+ const seen=Object.fromEntries(Object.entries({...seenFrom(headers,timeZone,language),platform:platformOf({hint,agent:headers?.get?.('user-agent'),portal})}).filter(([,value])=>value!=null));
  const saved=await admin.from('player_seen').upsert({player_id:player,...seen,seen_at:new Date(now).toISOString()});
  if(saved.error)throw saved.error;
 }

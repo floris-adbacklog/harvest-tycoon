@@ -130,7 +130,8 @@ const track=(event,params={})=>{if(adminView)return;try{window.parent.harvestBri
 // where src/crazygames.js and src/game-cloud.js keep theirs: the 3D models in (models) and the first picture (render). Sent with the first look.
 const markChain=key=>{try{const chain=window.parent.harvestChain??={};chain[key]??=Math.round(window.parent.performance.now());}catch{}};
 let sessionTracked=false;
-const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
+// The reminder question's steps go to the farmer's log too (13 Oct 2026, farm-client.js note).
+const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,log:client.note,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')});
 // A crop medal the action earned (a tap harvest, the tractor) gets its toast at the bottom (medal-notice.js, Oct 2026).
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
@@ -1591,6 +1592,7 @@ async function init(){
   // The farm is on screen whatever the refresh does (11 Oct 2026): one that threw left farmReady waiting for good, and the page was opened
   // again 30 seconds later over a farm that could be played.
   await new Promise(resolve=>setTimeout(()=>{try{$('loading').hidden=true;stopTips();progression.refresh();}finally{resolve();}},450));
+  farmInView?.();
   // A brand-new farm (6 Oct 2026): the sickle shows by itself where to sweep, as Show me does, until the first harvest. 11% of new farmers
   // tapped growing wheat or an empty field instead, got no harvest and left.
   if(!villageWorld&&!adminView&&!(state.stats.harvested>0)&&beginnerProgress(state).find(q=>q.current)?.id==='harvest')firstBasketGhost();
@@ -1608,12 +1610,18 @@ async function init(){
 // clock: farm-client.js stamps when the request leaves and the server moves them onto its own clock.
 // 11 Oct 2026 (Part A, A1): with the load chain (chain), the steps the pages noted on the way (markChain); firstVisit tells the lost 3D
 // view (A4) to count itself too.
-let firstVisit=false;
+// 13 Oct 2026 (the measurement package): and when the farm was first in view, touched or not (farmInView, viewAt and viewMs): the loading
+// screen gone (450 ms after readyAt) and the page in view. A page in view at readyAt holds readyAt back for those 450 ms and sends both
+// in one request; a tab in the background sends readyAt at once, as before, and viewAt by itself when it comes into view.
+let firstVisit=false,farmInView=null;
+const pageInView=()=>document.visibilityState==='visible';
 function noteFirstLook(){
  const look=window.harvestFirstLook??{},at=Date.now(),step=n=>Math.round((n||0)/10)*10,fresh=!state.onboarding?.firstLook;
  let started=look.started;if(!started)try{started=window.parent.performance.timeOrigin;}catch{started=performance.timeOrigin;}
  let chain=null;try{chain=window.parent.harvestChain?{...window.parent.harvestChain}:null;}catch{}
- if(fresh){firstVisit=true;client.look({...(look.shownAt?{shownAt:look.shownAt,loadMs:look.loadMs}:{}),readyAt:at,...(started?{readyMs:Math.round(at-started)}:{}),frame:look.frame??`${step(innerWidth)}x${step(innerHeight)}`,...(chain?{chain}:{})});client.sendLook();}
+ if(fresh){firstVisit=true;client.look({...(look.shownAt?{shownAt:look.shownAt,loadMs:look.loadMs}:{}),readyAt:at,...(started?{readyMs:Math.round(at-started)}:{}),frame:look.frame??`${step(innerWidth)}x${step(innerHeight)}`,...(chain?{chain}:{})});if(!pageInView())client.sendLook();
+  farmInView=()=>{farmInView=null;const seen=()=>{if(!pageInView())return false;const t=Date.now();client.look({viewAt:t,viewMs:t-at});client.sendLook();return true;};
+   if(!seen()){client.sendLook();const later=()=>{if(seen())document.removeEventListener('visibilitychange',later);};document.addEventListener('visibilitychange',later);}};}
  if(state.onboarding?.firstLook?.firstInputAt)return;
  const game=$('game'),touched=()=>{game.removeEventListener('pointerdown',touched,true);const t=Date.now();client.look({firstInputAt:t,...(fresh?{firstInputMs:t-at}:{})});setTimeout(()=>client.sendLook(),15000);};
  game.addEventListener('pointerdown',touched,true);

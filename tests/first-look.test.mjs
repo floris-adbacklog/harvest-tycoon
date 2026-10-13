@@ -73,11 +73,11 @@ test('the game notes the first look and sends it at once; the first touch goes w
  assert.match(cloud,/started=window\.parent\.performance\.timeOrigin\|\|started/,'from the start of the page around the farm');
  assert.match(game,/if\(!villageWorld&&!adminView&&!\(state\.stats\.harvested>0\)\)noteFirstLook\(\);/,'only for a farm that has not harvested yet');
  assert.match(game,/let started=look\.started;if\(!started\)try\{started=window\.parent\.performance\.timeOrigin;\}catch\{started=performance\.timeOrigin;\}/);
- assert.match(game,/readyAt:at,\.\.\.\(started\?\{readyMs:Math\.round\(at-started\)\}:\{\}\),frame:look\.frame\?\?`\$\{step\(innerWidth\)\}x\$\{step\(innerHeight\)\}`,\.\.\.\(chain\?\{chain\}:\{\}\)\}\);client\.sendLook\(\);\}/);
+ assert.match(game,/readyAt:at,\.\.\.\(started\?\{readyMs:Math\.round\(at-started\)\}:\{\}\),frame:look\.frame\?\?`\$\{step\(innerWidth\)\}x\$\{step\(innerHeight\)\}`,\.\.\.\(chain\?\{chain\}:\{\}\)\}\);if\(!pageInView\(\)\)client\.sendLook\(\);/,'a tab in the background at once; one in view with viewAt (13 Oct 2026)');
  assert.match(game,/const t=Date\.now\(\);client\.look\(\{firstInputAt:t,\.\.\.\(fresh\?\{firstInputMs:t-at\}:\{\}\)\}\);/,'the device\'s clock: the server moves it by sentAt');
  assert.match(game,/fresh=!state\.onboarding\?\.firstLook;/,'firstInputMs only after a readyAt from this same visit');assert.doesNotMatch(game,/firstInputAt:server\(/);
  assert.match(game,/game\.addEventListener\('pointerdown',touched,true\);/);
- assert.match(client,/const sent=withLook\(action\),run=line\.then\(\(\)=>bridge\.request\(\{operation:'action',action:stamped\(sent\),requestId:crypto\.randomUUID\(\)\}\)\);/);
+ assert.match(client,/const sent=withLook\(action\),run=line\.then\(\(\)=>bridge\.request\(withNotes\(\{operation:'action',action:stamped\(sent\),requestId:crypto\.randomUUID\(\)\}\)\)\);/,'with the reminder question\'s steps that wait (13 Oct 2026)');
  assert.match(client,/const sendLook=\(\)=>\{if\(noted&&!adminView\(\)\)void send\(\{type:'first_look'\},true\)\.then\(replace,\(\)=>\{\}\);\};/);
  // The farm's models load 8 at a time (7 Oct 2026; 4 before).
  assert.match(game,/loadInBatches\(modelNames,async name=>\{await loadModel\(name\);loaded\+\+;loadingUI\.modelsReady\(loaded\);\},8\)/);
@@ -151,7 +151,7 @@ test('the pages note the load chain on one clock, and the game sends it with the
  assert.match(cloud,/chain\.frame\?\?=Math\.round\(window\.parent\.performance\.now\(\)\);/,'on the clock of the page around the farm');
  assert.match(game,/const markChain=key=>\{try\{const chain=window\.parent\.harvestChain\?\?=\{\};chain\[key\]\?\?=Math\.round\(window\.parent\.performance\.now\(\)\);\}catch\{\}\};/);
  assert.match(game,/\.then\(\(\)=>markChain\('models'\)\)/);assert.match(game,/renderer\.render\(scene,camera\);markChain\('render'\);/);
- assert.match(game,/frame:look\.frame\?\?`\$\{step\(innerWidth\)\}x\$\{step\(innerHeight\)\}`,\.\.\.\(chain\?\{chain\}:\{\}\)\}\);client\.sendLook\(\);\}/);
+ assert.match(game,/frame:look\.frame\?\?`\$\{step\(innerWidth\)\}x\$\{step\(innerHeight\)\}`,\.\.\.\(chain\?\{chain\}:\{\}\)\}\);if\(!pageInView\(\)\)client\.sendLook\(\);/);
  // A lost view later in that visit adds to the chain waiting to be sent instead of replacing it.
  assert.match(client,/noted=\{\.\.\.noted,\.\.\.parts,\.\.\.\(noted\?\.chain&&parts\?\.chain\?\{chain:\{\.\.\.noted\.chain,\.\.\.parts\.chain\}\}:\{\}\)\}/);
 });
