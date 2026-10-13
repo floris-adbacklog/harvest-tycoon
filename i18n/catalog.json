@@ -1365,7 +1365,7 @@
 "Delivered ✓":"public/retention-ui.js",
 "Deliveries":"src/leaderboard.js",
 "Deliveries count for the tournament too and cannot be taken back.":"public/family-ui.js",
-"Delivery cart":"public/farm.html",
+"Delivery cart":"public/family-ui.js",
 "Delivery complete! +{0} coins, +{1} XP and +{2} diamond.":"public/retention-ui.js",
 "Delivery complete! +{0} coins, +{1} XP and +{2} diamonds.":"public/retention-ui.js",
 "Delivery day":"public/farm-state.js",

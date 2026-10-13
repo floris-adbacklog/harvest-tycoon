@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,normalizeFarm,applyFarmAction as act,xpForLevel,unlockEntries,QUESTS,DAILY_POOLS,FEATURE_NAMES,DELIVERY_LEVELS,BUILDINGS,buildingCost,buildingEligible,buildingUnlocked,BUILDING_LEVELS,worldTwoBuilding} from '../public/farm-state.js';
+import {dailyTasks,createFarm,normalizeFarm,applyFarmAction as act,xpForLevel,unlockEntries,QUESTS,DAILY_POOLS,FEATURE_NAMES,DELIVERY_LEVELS,BUILDINGS,buildingCost,buildingEligible,buildingUnlocked,BUILDING_LEVELS,worldTwoBuilding} from '../public/farm-state.js';
 import {entryLine,nextUnlock,progressionSnapshot,progressionChange,createProgressionUI} from '../public/progression-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,9,13,12);
@@ -43,7 +43,7 @@ test('the first ten levels: daily challenges, the helping hand, delivery orders,
  assert.match(farm,/id="diamond-button"/);assert.match(read('public/boosts-ui.js'),/\$\('diamond-button'\)\.onclick=open;/);
  // The card draws these lines (the old chain of kinds is gone).
  // A short phone (360x640) keeps the card without scrolling (measured on the stage, Russian level 3: 601 of 606 px).
- assert.match(read('public/progression.css'),/@media\(max-height:700px\)\{#level-up-dialog\{padding-top:14px\}#level-up-dialog \.level-up-art\{width:52px;height:52px;margin-bottom:2px\}/);
+ assert.match(read('public/progression.css'),/@media\(max-width:900px\) and \(max-height:700px\),\(max-height:550px\) and \(pointer:coarse\)\{#level-up-dialog\{padding-top:14px\}#level-up-dialog \.level-up-art\{width:52px;height:52px;margin-bottom:2px\}/);
  const ui=read('public/progression-ui.js');assert.match(ui,/<span>\$\{entryLine\(e,\{phone:phone\(\)\}\)\}<\/span>/);assert.doesNotMatch(ui,/e\.kind\+' unlocked'\}<\/span>/);
 });
 
@@ -98,4 +98,16 @@ test('delivery orders have one name everywhere, and their tab says what they are
  assert.match(read('public/wiki-content.js'),/Tap the cart on your farm, or open Delivery orders in Today\./);
  // farm-state.js is the same in all three places.
  const one=read('public/farm-state.js');assert.equal(read('game/farm-state.js'),one);assert.equal(read('supabase/functions/farm-api/farm-state.js'),one);
+});
+
+// Review of fc18e9b (14 Oct 2026): the Buildings window's shortcut still said "Delivery cart". And a challenge saved before the release
+// with "Complete an order at the farm cart." (no translation has it any more) shows the pool's words now: normalizeFarm takes them from the
+// pool by counter and title (9 Oct 2026), so the site and farm-api can go in either order.
+test('the review: the Buildings window says Delivery orders, and a challenge saved with the old words shows the new ones',()=>{
+ const farm=read('public/farm.html');
+ assert.match(farm,/<button data-utility="cart"><i data-lucide="truck"><\/i><span>Delivery orders<\/span><\/button>/);
+ assert.doesNotMatch(farm,/Delivery cart/);
+ const s=createFarm(now);level(s,7);normalizeFarm(s,now);
+ s.daily.tasks[2]={stat:'deliveries',target:1,title:'Special delivery',description:'Complete an order at the farm cart.',reward:60};
+ assert.equal(dailyTasks(s,now)[2].description,'Complete 1 delivery order.');
 });
