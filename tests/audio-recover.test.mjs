@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarmAudio,RESUME_WAIT,STILL_WAIT,MAKE_TRIES} from '../public/farm-audio.js';
+import {createFarmAudio,RESUME_WAIT,STILL_WAIT,MAKE_TRIES,SHARED_WAIT} from '../public/farm-audio.js';
 import {CUE_ORDER,CUE_VARIANTS} from '../public/sound-kit.js';
 // 11 Oct 2026: a player's iPhone app (home screen) went silent after a trip to the village and back, until the app was restarted.
 // On iOS a resume() can wait for good, a context can stay 'interrupted' or 'suspended', can say 'running' with its clock standing still,
@@ -46,18 +46,21 @@ function page(){
 }
 // One farm.html document. plans: how each context it makes behaves, in turn ('throw': the browser will not make one). home: the page
 // around the farm (13 Oct 2026), shared by the pages of a trip, with made, the contexts made so far; saved: the Settings on this device.
-function farm(plans=[],{home=null,made=[],saved=null,hidden=false}={}){
- const doc=page(),win=page(),loads=[];let now=0,asked=0,rendered=0,changes=0;doc.hidden=hidden;
- const audio=createFarmAudio({clock:()=>now,documentRef:doc,windowRef:win,home,storage:{getItem:()=>saved,setItem(){}},onChange:()=>changes++,
-  contextFactory:()=>{asked++;const plan=plans.length?plans.shift():'ok';if(plan==='throw')throw Error('busy');const c=new Context(...[plan].flat());made.push(c);return c;},
+// native: no factory, the page's own window.AudioContext makes them (and the page around the farm's own, home.AudioContext, its).
+function farm(plans=[],{home=null,made=[],saved=null,hidden=false,native=false}={}){
+ const doc=page(),win=page(),loads=[],timers=[];let now=0,asked=0,rendered=0,changes=0;doc.hidden=hidden;
+ const next=()=>{asked++;const plan=plans.length?plans.shift():'ok';if(plan==='throw')throw Error('busy');const c=new Context(...[plan].flat());made.push(c);return c;};
+ if(native)win.AudioContext=function(){return next();};
+ const audio=createFarmAudio({clock:()=>now,later:(fn,ms)=>timers.push({at:now+ms,fn}),documentRef:doc,windowRef:win,home,storage:{getItem:()=>saved,setItem(){}},onChange:()=>changes++,
+  contextFactory:native?undefined:next,
   renderSounds:(w,accept)=>{rendered++;for(const k of CUE_ORDER)for(let v=0;v<(CUE_VARIANTS[k]??1);v++)accept(k,v,new Float32Array(64),8000);},
   loadMusic:(context,track)=>{loads.push(track.id);return Promise.resolve({duration:144});}});
  const ctx=()=>made.at(-1);
  return {audio,doc,win,made,loads,ctx,asked:()=>asked,rendered:()=>rendered,changes:()=>changes,
   // A finger on the screen: pointerdown (not a gesture for touch), pointerup, touchend and click.
   async tap(){tapping=true;try{for(const type of ['pointerdown','pointerup'])doc.fire(type,{pointerType:'touch'});doc.fire('touchend');doc.fire('click');}finally{tapping=false;}await settle();await settle();},
-  // Time goes by; a context that runs moves its clock (one that is 'still' does not).
-  wait(ms){now+=ms;for(const c of made)if(c.state==='running'&&c.mode!=='still')c.currentTime+=ms/1000;},
+  // Time goes by; a context that runs moves its clock (one that is 'still' does not), and the page's timers that are due fire.
+  wait(ms){now+=ms;for(const c of made)if(c.state==='running'&&c.mode!=='still')c.currentTime+=ms/1000;for(const t of timers.filter(t=>t.at<=now)){timers.splice(timers.indexOf(t),1);t.fn();}},
   async hide(){doc.hidden=true;doc.fire('visibilitychange');await settle();},
   async show(){doc.hidden=false;doc.fire('visibilitychange');await settle();await settle();},
   live:()=>made.filter(c=>c.state!=='closed'),
@@ -204,7 +207,8 @@ test('after a trip, a context the iPhone holds back starts on the very first tap
  assert.notEqual(c.state,'running');assert.equal(p.audio.play('harvest'),false,'held back until a tap');
  await p.tap();assert.equal(made.length,1,'the same context');assert.ok(p.heard(),'back on the very first tap');p.audio.dispose();
  // The page before had replaced three contexts that never started (1, 2 and 4 s; its next wait would be 8 s): the new page waits 1 s.
- const h={},m=[];let q=farm(['never','never','never','never'],{home:h,made:m});await q.tap();
+ // A context there ran earlier in the session (so it works from a tap here and is never given up for one of the frame's own).
+ const h={harvestAudioShared:true},m=[];let q=farm(['never','never','never','never'],{home:h,made:m});await q.tap();
  for(const wait of [1,2,4]){q.wait(wait*RESUME_WAIT);await q.tap();}assert.equal(m.length,4);
  away(q);q=farm([],{home:h,made:m});await settle();
  await q.tap();assert.equal(m.length,4,'the first tap asks the context the page before left');
@@ -264,5 +268,56 @@ test('a page that goes after the next page already took the context over leaves 
   if(trip)p.audio.travel();p.win.fire('pagehide',{persisted:false});await settle();
   assert.equal(c.state,'running',`trip ${trip}: not suspended by the page that went`);assert.equal(c.onstatechange,handler,'the next page keeps its handler');
   assert.ok(q.heard());c.go('interrupted');await settle();assert.equal(q.audio.play('harvest'),false,'quiet during the call');c.go('running');await settle();await settle();q.wait(500);assert.ok(q.heard(),'back after the call');q.audio.dispose();
+ }
+});
+// Review 13 Oct 2026, not yet seen on an iPhone: iOS may not let a tap in the farm's frame start a context of the page around the farm.
+// around: that page with its own AudioContext; plan, how its contexts answer ('never': iOS does not count the frame's tap for them).
+function around(plan='ok'){const made=[];return {made,AudioContext:function(){const c=new Context(...[plan].flat());made.push(c);return c;}};}
+const settled=async(n=4)=>{for(let i=0;i<n;i++)await settle();};
+test('a tap that cannot start the page around the farm\'s context: SHARED_WAIT later the page makes its own and plays, the page around remembers it, and the next page makes its own on its first tap, without waiting again',async()=>{
+ assert.equal(SHARED_WAIT,500);
+ const home=around('never'),made=[];let p=farm([],{home,made,native:true});await p.tap();
+ const shared=home.made[0];assert.equal(home.made.length,1);assert.equal(home.harvestAudioContext,shared,'first the page around the farm\'s');assert.equal(made.length,0);
+ assert.equal(shared.state,'suspended');assert.equal(p.audio.play('harvest'),false);
+ p.wait(SHARED_WAIT-100);await settled();assert.equal(made.length,0,'not given up yet');
+ p.wait(100);await settled();
+ assert.equal(shared.state,'closed');assert.equal(shared.onstatechange,null);assert.equal(home.harvestAudioContext,null);
+ assert.equal(home.harvestAudioShared,false,'the page around the farm remembers it');
+ assert.equal(made.length,1,'the page made its own');assert.ok(p.heard(),'music and game sounds, without another tap');
+ for(let i=0;i<5;i++){p.wait(1500);await p.tap();}
+ assert.equal(made.length,1,'it stays');assert.equal(home.made.length,1,'the page around is not asked again');assert.deepEqual(p.live(),[p.ctx()]);assert.equal(p.music().length,1,'one music loop');
+ // A trip: the page that goes closes its own; the next makes its own on its first tap (the 12 Oct way), at once, nothing of the page around's.
+ away(p);assert.equal(made[0].state,'closed');assert.ok(GESTURE_TYPES.every(type=>!p.doc.on.get(type)?.length));
+ p=farm([],{home,made,native:true});await settled();assert.equal(made.length,1,'nothing made before a tap');
+ await p.tap();await settled();assert.equal(home.made.length,1);assert.equal(made.length,2);assert.ok(p.heard(),'sound on that first tap, no wait');
+ p.wait(SHARED_WAIT);await settled();assert.equal(made.length,2);assert.equal(home.harvestAudioContext,null);
+ p.win.fire('pagehide',{persisted:false});assert.equal(made[1].state,'closed','farm closed (signed out): its own is closed');
+});
+test('a start of the page around the farm\'s context that fails gives up at once, in that tap, and one of the page\'s own that only starts in a tap starts on the next',async()=>{
+ const home=around('reject'),made=[];const p=farm([],{home,made,native:true});await p.tap();await settled();
+ assert.equal(home.made[0].state,'closed');assert.equal(home.harvestAudioShared,false);assert.equal(made.length,1);assert.ok(p.heard(),'no wait');p.audio.dispose();
+ // WebKit did not carry the tap into the check: the page's own waits for the next tap, which starts that same one.
+ const h=around('never'),m=[];const q=farm(['tap'],{home:h,made:m,native:true});await q.tap();q.wait(SHARED_WAIT);await settled();
+ assert.equal(m.length,1);assert.notEqual(m[0].state,'running');assert.equal(q.audio.play('harvest'),false);assert.equal(h.made[0].state,'closed');
+ await q.tap();await settled();assert.equal(m.length,1,'the same one');assert.ok(q.heard(),'the next tap starts it');assert.deepEqual(q.live(),[m[0]]);q.audio.dispose();
+});
+test('a context of the page around the farm that ran is never given up for the page\'s own: one that stops later is replaced by another of the page around\'s (12 Oct)',async()=>{
+ const home=around('ok'),made=[];const p=farm([],{home,made,native:true});await p.tap();const c=home.made[0];
+ assert.ok(p.heard(c));assert.equal(home.harvestAudioShared,true,'it works here');
+ c.mode='never';c.go('interrupted');await settle();await p.tap();p.wait(SHARED_WAIT);await settled();
+ assert.equal(made.length,0,'no context of its own');assert.equal(home.made.length,1);
+ p.wait(RESUME_WAIT);await p.tap();await settled();assert.equal(home.made.length,2,'replaced by the page around\'s');assert.equal(c.state,'closed');
+ assert.equal(home.harvestAudioContext,home.made[1]);assert.ok(p.heard(home.made[1]));assert.equal(made.length,0);p.audio.dispose();
+});
+test('while the game may not sound (hidden, sound off, CrazyGames\' switch) a tap\'s check gives nothing up and nothing plays; a tap once it may sound does',async()=>{
+ for(const quiet of ['hidden','off','outside']){
+  const home=around('never'),made=[];const p=farm([],{home,made,native:true});await p.tap();
+  if(quiet==='hidden')await p.hide();else if(quiet==='off')p.audio.setSettings({enabled:false});else p.audio.muteFromOutside(true);
+  p.wait(SHARED_WAIT);await settled();await p.tap();p.wait(SHARED_WAIT);await settled();
+  assert.equal(made.length,0,`${quiet}: nothing of its own`);assert.equal(home.harvestAudioShared,undefined,quiet);assert.equal(p.audio.play('harvest'),false,quiet);
+  if(quiet==='hidden')await p.show();else if(quiet==='off')p.audio.setSettings({enabled:true});else p.audio.muteFromOutside(false);
+  await settled();await p.tap();p.wait(SHARED_WAIT);await settled();
+  assert.equal(made.length,1,quiet);assert.equal(home.harvestAudioShared,false);assert.ok(p.heard(),`${quiet}: then the page's own plays`);
+  assert.equal(home.made.filter(c=>c.state!=='closed').length,0,`${quiet}: nothing of the page around left open`);p.audio.dispose();
  }
 });

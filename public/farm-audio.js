@@ -169,7 +169,14 @@ const GESTURES=['pointerup','pointerdown','touchend','click','keydown'];
 // takes it over as it is and the sound goes on at once, no tap needed. Only the context is kept there (made with that page's own
 // AudioContext), never one of this page's objects, so nothing of a page that went stays in memory.
 const HOME_CONTEXT='harvestAudioContext';
-export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,home=null,onChange=()=>{},loadMusic=loadFarmMusic,loadPreview=loadMusicPreview,renderSounds=renderInBackground,clock=()=>globalThis.performance?.now?.()??Date.now()}={}){
+// 13 Oct 2026 (review, not yet seen on an iPhone): iOS may not let a tap in the farm's frame start a context of the page around it, and
+// then the game would have no sound at all. So until a context there has run (HOME_SHARED true on that page), a tap that asks it to
+// start and does not see it run within SHARED_WAIT (at once when its start fails) goes back to the 12 Oct way: that context is closed
+// and this page makes its own, still inside that tap where it can (WebKit carries a tap into a timer under a second; if not, the next
+// tap starts it), and HOME_SHARED false tells every later page of the session to make its own at once, without waiting again.
+export const SHARED_WAIT=500;
+const HOME_SHARED='harvestAudioShared';
+export function createFarmAudio({contextFactory,storage,documentRef=globalThis.document,windowRef=globalThis.window,home=null,onChange=()=>{},loadMusic=loadFarmMusic,loadPreview=loadMusicPreview,renderSounds=renderInBackground,clock=()=>globalThis.performance?.now?.()??Date.now(),later=(fn,ms)=>globalThis.setTimeout(fn,ms)}={}){
  let settings={...AUDIO_DEFAULTS},ctx,master,compressor,ambientBus,effectBus,music=null,musicLoading=null,bed=null,musicOffset=0,musicStartedAt=0,musicRetryAt=0,musicStatus='idle',unlocked=false,disposed=false,unavailable=false;
  let nextEffectAt=0,priorityUntil=0,resuming=null,lastSnip=-Infinity;
  // tried: when a tap first asked this context to start since it last ran; gaveUp: such a start ended without it running; renewals:
@@ -182,7 +189,9 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
  // The page around the farm, when there is one we may use (not farm.html on its own, nor a page of another site); trip: this page is
  // about to make way for the farm's other world (travel()), so its context stays running there for the next page.
  // onState: this page's statechange handler, so a page that goes knows whether a later page already took the context over.
- let homeRef=null,trip=false,onState=null;try{if(home&&home!==windowRef){void home[HOME_CONTEXT];homeRef=home;}}catch{}
+ // A page around the farm whose context would not start from a tap here (HOME_SHARED false) is not used: this page keeps its own.
+ // waiting: the SHARED_WAIT check a tap set off, until it is done.
+ let homeRef=null,trip=false,onState=null,waiting=null;try{if(home&&home!==windowRef&&home[HOME_SHARED]!==false){void home[HOME_CONTEXT];homeRef=home;}}catch{}
  const voices=new Set(),lastPlayed=new Map();
  // A track's preview in Settings: {id,status:'loading'|'playing',source,gain}; the farm's music is turned down while it plays.
  let preview=null,previewTurn=0,previewFailed=null,previewBuffer=null;
@@ -240,7 +249,12 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
   catch{shut(ctx);ctx=null;makeFails=contextFactory||windowRef?.AudioContext||windowRef?.webkitAudioContext?makeFails+1:MAKE_TRIES;failedAt=clock();unavailable=true;onChange(read());return false;}
  }
  function shut(c){if(!c)return;c.onstatechange=null;try{if(homeRef?.[HOME_CONTEXT]===c)homeRef[HOME_CONTEXT]=null;}catch{}try{if(c.state!=='closed')Promise.resolve(c.close()).catch(()=>{});}catch{}}
- function ran(){tried=null;gaveUp=false;}
+ // A context of the page around the farm that runs shows it works here (13 Oct 2026 review): it is never given up for one of our own.
+ function ran(){tried=null;gaveUp=false;if(homeRef)try{homeRef[HOME_SHARED]=true;}catch{}}
+ const untried=()=>{try{return Boolean(homeRef)&&homeRef[HOME_SHARED]!==true;}catch{return false;}};
+ // The page around the farm's context would not start from a tap here: it is closed (one live context), the page around remembers it
+ // for the session, and this page makes its own and asks it to start at once (in the tap still, where the browser carries it over).
+ function goLocal(){try{homeRef[HOME_SHARED]=false;}catch{}silence();shut(ctx);ctx=null;homeRef=null;tried=null;gaveUp=false;if(make())void unlock(false);}
  // On a tap: a context closed behind the game, one a tap could not start in time (at once if its start already gave up), or one that
  // says 'running' while its clock stood still since an earlier tap (WebKit bugs 263627, 276687).
  function stuck(){
@@ -345,8 +359,11 @@ export function createFarmAudio({contextFactory,storage,documentRef=globalThis.d
    // Every tap asks again (11 Oct 2026): WebKit may never settle a resume() it could not start, and only a new tap lets it start.
    if(resuming&&!byGesture)return resuming;
    const c=ctx;if(byGesture)tried??=clock();
+   // A tap asks the page around the farm's context, which never ran here (13 Oct 2026 review): not running SHARED_WAIT later, or its
+   // start failed, this page goes its own way.
+   if(byGesture&&!waiting&&untried()){const turn=waiting={};later(()=>{if(waiting!==turn)return;waiting=null;if(ctx&&ctx.state!=='running'&&untried()&&active())goLocal();},SHARED_WAIT);}
    const asked=resuming=new Promise(resolve=>resolve(c.resume())).then(()=>{if(c!==ctx)return false;if(!active()){silence();return false;}applyMix(true);if(c.state!=='running'){if(byGesture)gaveUp=true;return false;}ran();return true;})
-    .catch(()=>{if(c===ctx&&byGesture)gaveUp=true;return false;}).finally(()=>{if(resuming===asked)resuming=null;});
+    .catch(()=>{if(c===ctx&&byGesture){gaveUp=true;if(untried()&&active())goLocal();}return false;}).finally(()=>{if(resuming===asked)resuming=null;});
    return asked;
   }catch{return Promise.resolve(false);}
  }
