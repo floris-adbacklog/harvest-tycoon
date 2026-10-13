@@ -89,11 +89,11 @@ ${body.includes('data-wiki-install')?INSTALL_SCRIPT:''}${body.includes('id="wiki
 // /llms.txt (8 Oct 2026): the plain facts about the game for AI tools, and every page worth reading with one line on what is there.
 // Made on every deploy from the game rules and the wiki topics, so it stays true; the same facts as About the game on /app. What
 // is for sale comes from the shop's own catalogue (game/payments.js): the diamond packs, the Starter Pack, the special offer (from
-// level 14 like the Starter Pack, supabase/special-offer.sql) and the season's pass while it is on sale.
+// level 10 at the earliest since 13 Oct 2026, OFFER.minLevel, supabase/offer-level-10.sql) and the season's pass while it is on sale.
 const euro=cents=>`€${(cents/100).toFixed(2)}`;
 export function priceLine(now=Date.now()){
  const packs=Object.values(PAYMENT_PACKS).filter(p=>!p.coins).sort((a,b)=>a.cents-b.cents),[low,high]=[packs[0],packs.at(-1)],starter=PAYMENT_PACKS.starter,n=v=>v.toLocaleString('en-GB');
- const offer=`now and then a special offer from level ${STARTER_LEVEL}, once per farmer (diamonds, coins or VIP worth ${euro(OFFER.valueCents)} for ${euro(OFFER.cents)})`;
+ const offer=`now and then a special offer from level ${OFFER.minLevel}, once per farmer (diamonds, coins or VIP worth ${euro(OFFER.valueCents)} for ${euro(OFFER.cents)})`;
  // The season's pass only while it is on sale (8 Oct 2026), as the wiki drops it once its season is over.
  const pass=passOnSale(now)?`; and seasonal passes such as the ${PASS.name} (${euro(PASS.cents)} from level ${PASS.level}, with extra rewards to collect in the game)`:'';
  return `free to play. Optional purchases: diamond packs from ${euro(low.cents)} (${n(low.diamonds)} diamonds) to ${euro(high.cents)} (${n(high.diamonds)} diamonds); a one-time Starter Pack for ${STARTER_WINDOW/864e5} days from level ${STARTER_LEVEL} (${n(starter.diamonds)} diamonds and ${n(starter.coins)} coins for ${euro(starter.cents)}); ${pass?offer:`and ${offer}`}${pass}. Diamonds buy VIP and boosts, and players also earn diamonds by playing.`;

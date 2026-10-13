@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {OFFER,offerValueCents,offerProblem,offerFill,validatePaidSession} from '../game/payments.js';
+import {createHash} from 'node:crypto';
+import {OFFER,offerValueCents,offerProblem,offerFill,validatePaidSession,APPLE_SELLS_OFFER,APPLE_PRODUCTS,PLAY_PRODUCTS} from '../game/payments.js';
+import {STARTER_LEVEL} from '../game/farm-state.js';
 import {offerParts,offerDiscount} from '../src/offer-ui.js';
 
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -50,9 +52,11 @@ test('a paid offer is credited only with contents that still make a valid offer'
  const cheap=fixture();cheap.session.amount_total=cheap.session.amount_subtotal=199;assert.throws(()=>validatePaidSession(cheap.session,cheap.purchase,cheap.items));
 });
 
-test('the database checks the same rules: admin in a Google session, from level 14, one offer at a time, once per farmer',()=>{
+test('the database checks the same rules: admin in a Google session, from level 10 (14 unless the admin picks another), one offer at a time, once per farmer',()=>{
  const sql=read('supabase/special-offer.sql');
- assert.match(sql,/min_level integer not null default 14 check \(min_level between 14 and 200\)/);
+ assert.match(sql,/min_level integer not null default 14 check \(min_level between 10 and 200\)/);
+ assert.match(sql,/lvl integer:=coalesce\(p_min_level,14\);/,'a call without a level is 14');
+ assert.match(sql,/ if lvl not between 10 and 200 then raise exception 'Choose a level from 10 to 200\.' using errcode='22023'; end if;/);
  assert.match(sql,/worth:=round\(\(d\+c\/200\.0\+case v when 7 then 500 when 30 then 1500 when 60 then 3000 when 90 then 4500 else 0 end\)\*499\/500\.0\);/,'the same sum as offerValueCents');
  assert.match(sql,/if abs\(worth-4999\)>4999\*0\.02 then raise exception/);
  assert.equal((sql.match(/chat_staff_role\((?:me|\(select auth\.uid\(\)\))\) is distinct from 'admin'/g)??[]).length,3,'posting, listing and stopping');
@@ -92,4 +96,69 @@ test('a paid offer reaches Tag Manager with its price in euro cents (the ChatGPT
  assert.deepEqual(win.dataLayer[0],{event:'diamond_pack_completed',device:'mobile',pack:'offer',diamonds:3000,amount_cents:499,currency:'EUR'});
  assert.equal(win.dataLayer.at(-1).event,'purchase','and the standard purchase for other ad pixels (tests/ad-events.test.mjs)');
  assert.match(read('src/payment-ui.js'),/amount=paymentPack\(result\.pack\)\.cents;/);
+});
+
+// 13 Oct 2026: the admin may let an offer open at level 10 (the shop and boosts open at 10 since 5 Oct); 14 stays the default, and
+// the Starter Pack keeps its own level 14.
+const OFFER_POST='offer_post(integer,integer,integer,text,integer,integer)';
+// What pg_get_functiondef gives for offer_post written as in these files (its header as Postgres prints it, then the body as written).
+function offerPostDef(sql){
+ const start=sql.indexOf('create or replace function public.offer_post(');assert.ok(start>=0);
+ const body=sql.slice(sql.indexOf('as $f$',start)+'as $f$'.length,sql.indexOf('end $f$;',start)+'end '.length);
+ return `CREATE OR REPLACE FUNCTION public.offer_post(p_diamonds integer, p_coins integer, p_vip_days integer, p_audience text, p_min_level integer, p_hours integer)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$${body}$function$\n`;
+}
+const md5=text=>createHash('md5').update(text,'utf8').digest('hex');
+// The levels a file lets an offer open at: both the table's check and offer_post's must take it.
+function levelTaken(sql,level){
+ const table=/check \(min_level between (\d+) and (\d+)\)/.exec(sql),post=/ if lvl not between (\d+) and (\d+) then raise exception 'Choose a level from (\d+) to (\d+)\.'/.exec(sql);
+ assert.ok(table&&post);assert.equal(post[1],post[3]);assert.equal(post[2],post[4],'the message names the same levels');
+ return level>=Number(table[1])&&level<=Number(table[2])&&level>=Number(post[1])&&level<=Number(post[2]);
+}
+test('an offer can open at level 10 at the earliest, 14 unless the admin picks another: level 9 is refused (supabase/offer-level-10.sql)',()=>{
+ assert.equal(OFFER.minLevel,10);assert.equal(OFFER.defaultLevel,14);assert.equal(OFFER.maxLevel,200);
+ const patch=read('supabase/offer-level-10.sql'),base=read('supabase/special-offer.sql');
+ for(const sql of [patch,base]){
+  for(const level of [10,11,14,25,200])assert.equal(levelTaken(sql,level),true,String(level));
+  for(const level of [9,1,0,201])assert.equal(levelTaken(sql,level),false,String(level));
+ }
+ // The live database: the table's own check and offer_post, built from the live definition with an md5 guard, re-runnable.
+ assert.match(patch,/alter table public\.harvest_offers drop constraint if exists harvest_offers_min_level_check;\nalter table public\.harvest_offers add constraint harvest_offers_min_level_check check \(min_level between 10 and 200\);/);
+ assert.doesNotMatch(patch,/alter column min_level|set default/,'the default stays 14');
+ const live=offerPostDef(read('supabase/special-offer-vip-60-90.sql')),patched=offerPostDef(patch);
+ assert.equal(md5(live),'248e13ffd02423154bad639989a4ef6b','the definition live on 13 Oct 2026');
+ const guard=patch.match(/if md5\(pg_get_functiondef\('public\.(.+?)'::regprocedure\)\)\n  not in \('([0-9a-f]{32})','([0-9a-f]{32})'\) then\n  raise exception/);
+ assert.ok(guard);assert.equal(guard[1],OFFER_POST);assert.deepEqual([guard[2],guard[3]],[md5(live),md5(patched)],'the live one, or this file already run');
+ assert.ok(patch.indexOf('$guard$')<patch.indexOf('alter table'),'the guard first');
+ assert.equal(patched,offerPostDef(base),'supabase/special-offer.sql gives the same function');
+ // Only the level line differs from the live function.
+ const diff=(a,b)=>a.split('\n').filter((line,i)=>line!==b.split('\n')[i]);
+ assert.equal(live.split('\n').length,patched.split('\n').length);
+ assert.deepEqual(diff(patched,live),[" if lvl not between 10 and 200 then raise exception 'Choose a level from 10 to 200.' using errcode='22023'; end if;"]);
+ // The Admin panel: from 10, 14 filled in, and 14 when the field is empty.
+ const admin=read('src/admin-dashboard.js');
+ assert.match(admin,/<input id="admin-offer-level" type="number" min="'\+OFFER\.minLevel\+'" max="'\+OFFER\.maxLevel\+'" step="1" value="'\+OFFER\.defaultLevel\+'" inputmode="numeric">/);
+ assert.match(admin,/minLevel:Number\(\$o\('level'\)\.value\)\|\|OFFER\.defaultLevel,hours\}\)/);
+ assert.match(read('src/chat-client.js'),/postOffer:\(\{diamonds=0,coins=0,vipDays=0,audience='all',minLevel=14,hours=48\}\)=>rpc\('offer_post'/);
+ // diamond-checkout shows an offer from its own level, whatever it is.
+ assert.match(read('supabase/functions/diamond-checkout/index.ts'),/if\(\(stats\.data\?\.level\?\?1\)<o\.min_level\)return null;/);
+});
+test('the Starter Pack keeps its own level 14',()=>{
+ assert.equal(STARTER_LEVEL,14);assert.notEqual(OFFER.minLevel,STARTER_LEVEL);
+ const fn=read('supabase/functions/diamond-checkout/index.ts');
+ assert.match(fn,/'The Starter Pack opens when you reach level 14 and is then available for 7 days\.'/);
+ assert.match(fn,/if\(packId==='starter'&&!starter\.eligible\)return reply/);
+ assert.doesNotMatch(read('supabase/offer-level-10.sql').replace(/^--.*$/gm,''),/starter/i,'the patch touches nothing of it');
+});
+test('the iPhone app never shows or sells a special offer until Apple sells special_offer, also an offer from level 10',()=>{
+ assert.equal(APPLE_SELLS_OFFER,false,'special_offer is not in App Review with the app 1.1');
+ assert.equal(APPLE_PRODUCTS.offer,'special_offer');assert.equal(PLAY_PRODUCTS.offer,'special_offer','Google Play sells it as before');
+ // The server: no offer in the iPhone app's catalogue, and its offer checkout finds none ('This offer has ended.').
+ const fn=read('supabase/functions/diamond-checkout/index.ts');
+ assert.match(fn,/\(body\.operation==='catalog'\|\|body\.pack==='offer'\)&&\(!apple\|\|APPLE_SELLS_OFFER\)\?currentOffer\(user\.id\):null\]\);/);
+ assert.match(fn,/const play=body\.store==='google_play',apple=body\.store==='app_store',/);
+ assert.match(fn,/if\(!special\|\|special\.id!==body\.offerId\)return reply\(\{error:'This offer has ended\.'\},409\);/);
+ for(const name of ['diamond-checkout','stripe-webhook','play-voided','app-store-notify'])assert.equal(read(`supabase/functions/${name}/payments.js`),read('game/payments.js'),name);
+ // The page: none in the App Store's catalogue, whatever Apple prices (tests/auth-gate.test.mjs plays it).
+ assert.match(read('src/main.js'),/offer:prices\.offer&&\(!appStore\|\|APPLE_SELLS_OFFER\)\?data\?\.offer\?\?null:null,/);
+ assert.match(read('src/admin-dashboard.js'),/\(APPLE_SELLS_OFFER\?'':' The iPhone app does not show it until Apple has approved it as an in-app purchase\.'\)/,'the admin is told');
 });

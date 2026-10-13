@@ -1,6 +1,6 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase} from './payments.js';
+import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase,APPLE_SELLS_OFFER} from './payments.js';
 import {serviceAccount,getPurchase,consumePurchase} from './google-play.js';
 import {verifyAppleJws} from './app-store.js';
 import {checkoutEmail,checkoutLocale} from './checkout-session.js';
@@ -17,8 +17,8 @@ const playEnabled=Boolean(playAccount)&&String(Deno.env.get('PLAY_PAYMENTS_ENABL
 // purchases (catalog and create); apple_confirm still credits what a farmer has paid already.
 const appleEnabled=String(Deno.env.get('APPLE_PAYMENTS_ENABLED')??'').trim().toLowerCase()!=='false';
 const purchaseReply=(p:any)=>({id:p.id,pack:p.pack,coins:p.coins,diamonds:p.diamonds,status:p.status,livemode:p.livemode,vipDays:p.vip_days??0,serverNow:Date.now()});
-// The special offer running now for this farmer (supabase/special-offer.sql): one at a time, from its level (14 or higher). A
-// problem reading it only hides the offer, so the Starter Pack and the diamond packs keep working.
+// The special offer running now for this farmer (supabase/special-offer.sql): one at a time, from its level (10 or higher since 13 Oct
+// 2026, supabase/offer-level-10.sql). A problem reading it only hides the offer, so the Starter Pack and the diamond packs keep working.
 async function currentOffer(player:string){
  const now=new Date().toISOString();
  // The three look-ups at once (30 Sep 2026: one after the other they made the catalogue ~150 ms slower).
@@ -117,11 +117,13 @@ Deno.serve(async req=>{
   // The offer opens when the farm reaches level 14 (STARTER_LEVEL): the server wrote that moment into the farm (farm-state.js stampStarterOffer).
   // The special offer running now (game/payments.js OFFER), for a farm at its level: what is in it, until when, and whether this
   // farmer already bought it. Only in the catalogue and for an offer checkout, so other requests make no extra queries.
+  // Never in the iPhone app while Apple does not sell special_offer (APPLE_SELLS_OFFER, 13 Oct 2026): its catalogue has no offer and
+  // its offer checkout is refused ('This offer has ended.'), whatever level the offer opens at.
   // The Starter Pack's and the special offer's look-ups run at the same time.
   const [existingStarter,offerRow,special]=await Promise.all([
    body.operation==='catalog'||body.pack==='starter'?admin.from('harvest_purchases').select('*').eq('player_id',user.id).eq('pack','starter').eq('livemode',live).neq('status','expired').maybeSingle():null,
    body.operation==='catalog'||body.pack==='starter'?admin.from('player_farms').select('offer:state->starterOffer').eq('player_id',user.id).maybeSingle():null,
-   body.operation==='catalog'||body.pack==='offer'?currentOffer(user.id):null]);
+   (body.operation==='catalog'||body.pack==='offer')&&(!apple||APPLE_SELLS_OFFER)?currentOffer(user.id):null]);
   if(existingStarter?.error)throw existingStarter.error;
   if(offerRow?.error)throw offerRow.error;
   const starter=starterEligibility(offerRow?.data?.offer?.unlockedAt,['credited','test_paid'].includes(existingStarter?.data?.status));

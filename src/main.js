@@ -24,7 +24,7 @@ import {androidApp,listenAppPush,playBilling,appStoreBilling,webBilling} from '.
 import {forgetAppPushLink} from './app-push.js';
 import {createPlayStore,PLAY_ERRORS} from './play-store.js';
 import {createAppStore,APP_STORE_ERRORS} from './app-store.js';
-import {PLAY_PRODUCTS,APPLE_PRODUCTS} from '../game/payments.js';
+import {PLAY_PRODUCTS,APPLE_PRODUCTS,APPLE_SELLS_OFFER} from '../game/payments.js';
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
 const inApp=androidApp();
@@ -263,8 +263,10 @@ async function openFarm(){
    const prices=Object.fromEntries(Object.entries(storeProducts).filter(([,id])=>found[id]).map(([pack,id])=>[pack,found[id]]));
    // A pack the store gives no price for is not for sale in the app (Oct 2026: the App Store only sells what Apple approved, and the
    // Starter Pack and the special offer go to Apple's review later): that Starter Pack and offer do not show and the pass cannot be bought.
+   // The iPhone app shows no special offer at all until Apple sells special_offer (game/payments.js APPLE_SELLS_OFFER, 13 Oct 2026): Apple's
+   // sandbox, where App Review buys, also prices one that is only Ready to Submit, and an offer may now open at level 10.
    return {...data,enabled:Boolean(data?.enabled)&&Object.keys(prices).length>0,prices,
-    starter:prices.starter||!data?.starter?data?.starter:{...data.starter,eligible:false},offer:prices.offer?data?.offer??null:null,
+    starter:prices.starter||!data?.starter?data?.starter:{...data.starter,eligible:false},offer:prices.offer&&(!appStore||APPLE_SELLS_OFFER)?data?.offer??null:null,
     pass:data?.pass&&!prices.pass?{...data.pass,ready:false}:data?.pass};
   };
   // The App Store's purchase goes as Apple's signed transaction (up to 16 KB); a refusal (not Apple's, another farmer's: a 403) is not

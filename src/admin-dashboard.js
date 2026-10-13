@@ -9,7 +9,7 @@ import {refreshArt} from '../public/visual-icons.js';
 import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {POPUP_SCREENS,POPUP_AUDIENCES} from './popup-ui.js';
-import {OFFER,offerValueCents,offerProblem,offerFill} from '../game/payments.js';
+import {OFFER,offerValueCents,offerProblem,offerFill,APPLE_SELLS_OFFER} from '../game/payments.js';
 import {avatarImage} from '../public/player-avatars.js';
 import {LANGUAGES} from '../public/languages.js';
 import {chosenLanguage} from '../public/i18n.js';
@@ -68,7 +68,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   // Purchases (27 Sep 2026, the admin only): every checkout, paid or not, newest first.
   +'</div><div data-admin-panel="purchases" hidden>'
   // Special offers (29 Sep 2026, supabase/special-offer.sql): diamonds, coins and/or VIP worth €49.99 at shop prices, for €4.99,
-  // once per farmer, from level 14. Ticking a kind fills in amounts worth €49.99; they can be changed while the worth stays
+  // once per farmer, from the level the admin picks: 14 unless changed, 10 at the earliest (13 Oct 2026, OFFER.minLevel,
+  // supabase/offer-level-10.sql). Ticking a kind fills in amounts worth €49.99; they can be changed while the worth stays
   // within 2%. One offer at a time: a new one ends the one running now.
   +'<section class="admin-card" id="admin-offers"><h3>'+art('diamonds')+'Special offer</h3><form id="admin-offer-form" class="admin-news admin-offer">'
   +'<div class="admin-offer-kinds"><label><input type="checkbox" id="admin-offer-has-diamonds" checked> Diamonds</label><label><input type="checkbox" id="admin-offer-has-coins"> Coins</label>'
@@ -78,10 +79,12 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   // The pop-ups' groups but the Android app and the website (9 Oct 2026): the database takes no offer for those
   // (supabase/popup-android-app.sql, supabase/popup-web.sql).
   +'<label>Who sees it<select id="admin-offer-audience">'+Object.entries(POPUP_AUDIENCES).filter(([key])=>key!=='android_app'&&key!=='web'&&key!=='crazygames').map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'
-  +'<label>From level<input id="admin-offer-level" type="number" min="14" max="200" step="1" value="14" inputmode="numeric"></label>'
+  +'<label>From level<input id="admin-offer-level" type="number" min="'+OFFER.minLevel+'" max="'+OFFER.maxLevel+'" step="1" value="'+OFFER.defaultLevel+'" inputmode="numeric"></label>'
   +'<label>Runs for<select id="admin-offer-hours"><option value="24">24 hours</option><option value="48" selected>48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="336">14 days</option></select></label></div>'
   +'<p class="admin-offer-worth" id="admin-offer-worth"></p>'
-  +'<p class="admin-popup-note">Always €4.99 for what costs €49.99 in the shop (a diamond as in the 500 pack, 200 coins a diamond (1,000 coins = 5 diamonds), VIP at its diamond price). Every farmer from the level above can buy it once. It opens by itself once per device, when nothing else is open, and then waits next to the diamonds until it ends.</p>'
+  +'<p class="admin-popup-note">Always €4.99 for what costs €49.99 in the shop (a diamond as in the 500 pack, 200 coins a diamond (1,000 coins = 5 diamonds), VIP at its diamond price). Every farmer from the level above can buy it once. It opens by itself once per device, when nothing else is open, and then waits next to the diamonds until it ends.'
+  // The iPhone app shows no offer until Apple sells special_offer (game/payments.js APPLE_SELLS_OFFER, 13 Oct 2026).
+  +(APPLE_SELLS_OFFER?'':' The iPhone app does not show it until Apple has approved it as an in-app purchase.')+'</p>'
   +'<div class="admin-offer-actions"><button type="button" class="secondary-button" id="admin-offer-preview">Preview</button><button type="submit" class="primary-button">Start offer</button></div>'
   +'<p class="admin-hint" id="admin-offer-status" role="status"></p></form><ul id="admin-offer-list" class="admin-recent-list" hidden></ul></section>'
   +'<section class="admin-card"><h3>'+art('diamonds')+'Purchases</h3><div id="admin-purchase-totals" class="admin-invite-totals"></div><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-purchase-filter="all" aria-pressed="true">All</button><button type="button" class="admin-filter" data-purchase-filter="paid" aria-pressed="false">Paid</button><button type="button" class="admin-filter" data-purchase-filter="open" aria-pressed="false">Open</button><button type="button" class="admin-filter" data-purchase-filter="unpaid" aria-pressed="false">Not paid</button></div><ul id="admin-purchase-list" class="admin-recent-list admin-purchase-list"></ul><p class="admin-hint">Every checkout, newest first (Amsterdam time). “Open”: the payment page may still be open, for up to 24 hours. “Not paid”: no payment within 24 hours. Test payments are marked.</p></section>'
@@ -480,7 +483,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(!Array.isArray(rows))rows=[];list.hidden=head.hidden=!rows.length;
   list.innerHTML=rows.map(b=>`<li><span class="admin-recent-copy"><strong>“${esc(b.body)}”</strong><small>${esc(groupPills(b.filters).join(', '))}</small><small>${number(b.recipients)} farmer${b.recipients===1?'':'s'}, ${number(b.replies)} replied${b.senderName?`, from ${esc(b.senderName)}`:''}, ${esc(fmtDate(b.sentAt))}</small></span></li>`).join('');
  }
- // From a farm level too (supabase/chat-broadcast-level.sql), e.g. level 14 for the farmers who can buy the special offer.
+ // From a farm level too (supabase/chat-broadcast-level.sql), e.g. the special offer's level for the farmers who can buy it.
  // News from a level (4 Oct 2026): 1 is everyone.
  const newsLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-news-level').value)||1)));
  let dmCounting=0;const dmLevel=()=>Math.min(200,Math.max(1,Math.round(Number(dialog.querySelector('#admin-dm-level').value)||1)));
@@ -587,7 +590,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   event.preventDefault();const o=offerDraft();if(offerProblem(o))return;
   const hours=Number($o('hours').value),time=$o('hours').options[$o('hours').selectedIndex].text;
   if(!await confirmAction({title:'Start this offer?',description:`${offerText(o)} for ${euro(OFFER.cents)}, for ${time}, from level ${$o('level').value}. It replaces the offer running now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'diamonds'}))return;
-  try{await bridge.chat.postOffer({...o,audience:$o('audience').value,minLevel:Number($o('level').value)||14,hours});$o('status').textContent='The offer is running. Farmers see it the next time they open the game.';}
+  try{await bridge.chat.postOffer({...o,audience:$o('audience').value,minLevel:Number($o('level').value)||OFFER.defaultLevel,hours});$o('status').textContent='The offer is running. Farmers see it the next time they open the game.';}
   catch(error){$o('status').textContent=why(error);}
   void showOffers();
  });

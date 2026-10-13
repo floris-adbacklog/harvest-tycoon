@@ -1,5 +1,6 @@
 -- The special offer (29 Sep 2026): the admin puts together diamonds, coins and/or VIP time worth €49.99 at shop prices, sold once
--- per farmer for €4.99, one offer at a time, from level 14 like the Starter Pack (game/payments.js OFFER). Only the admin writes
+-- per farmer for €4.99, one offer at a time, from the level the admin picks: 14 unless changed, 10 at the earliest since 13 Oct 2026
+-- (supabase/offer-level-10.sql; level 14 before, like the Starter Pack; game/payments.js OFFER). Only the admin writes
 -- offers (the admin panel, a Google admin session, like the pop-ups); only diamond-checkout creates an offer purchase, with the
 -- contents taken from the offer; harvest_credit_purchase adds them to the farm once Stripe confirms the payment.
 create table if not exists public.harvest_offers(
@@ -8,7 +9,7 @@ create table if not exists public.harvest_offers(
  coins integer not null default 0 check (coins between 0 and 10000000),
  vip_days integer not null default 0 check (vip_days in (0,7,30,60,90)),
  audience text not null default 'all' check (audience in ('all','browser','phone_browser','phone','desktop')),
- min_level integer not null default 14 check (min_level between 14 and 200),
+ min_level integer not null default 14 check (min_level between 10 and 200),
  starts_at timestamptz not null default now(),
  ends_at timestamptz not null,
  stopped_at timestamptz,
@@ -139,7 +140,7 @@ begin
  worth:=round((d+c/200.0+case v when 7 then 500 when 30 then 1500 when 60 then 3000 when 90 then 4500 else 0 end)*499/500.0);
  if abs(worth-4999)>4999*0.02 then raise exception 'The offer must be worth €49.99; it is worth €%.', to_char(worth/100.0,'FM990.00') using errcode='22023'; end if;
  if who not in ('all','browser','phone_browser','phone','desktop') then raise exception 'Choose who sees it.' using errcode='22023'; end if;
- if lvl not between 14 and 200 then raise exception 'Choose a level from 14 to 200.' using errcode='22023'; end if;
+ if lvl not between 10 and 200 then raise exception 'Choose a level from 10 to 200.' using errcode='22023'; end if;
  if hours not between 1 and 336 then raise exception 'Choose up to 336 hours (14 days).' using errcode='22023'; end if;
  update public.harvest_offers set stopped_at=now() where stopped_at is null and ends_at>now();
  insert into public.harvest_offers(diamonds,coins,vip_days,audience,min_level,ends_at,created_by)

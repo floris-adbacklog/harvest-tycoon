@@ -21,8 +21,12 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
 // sold once per farmer for €4.99 (90% off), one offer at a time. Worth: a diamond as in the €4.99 pack (500 for €4.99), coins at 200
 // for a diamond (the admin's rate; coins are never sold), VIP at its price in diamonds (VIP_PLANS in farm-state.js). The server
 // takes the contents from the offer itself, never from the browser, and the "worth" line is always this sum.
+// The admin picks the level it opens at per offer: level 10 at the earliest (minLevel, 13 Oct 2026; level 14 before, as the shop and
+// boosts open at 10 since 5 Oct), 14 unless the admin picks another (defaultLevel), up to 200 (supabase/offer-level-10.sql). The
+// Starter Pack keeps its own level 14 (STARTER_LEVEL).
 export const OFFER=Object.freeze({cents:499,valueCents:4999,price:'price_1UL3qr04FdNTUSp41m7H0DCp',coinsPerDiamond:200,
- diamondCents:499/500,vipDiamonds:Object.freeze({7:500,30:1500,60:3000,90:4500}),target:5000,maxDiamonds:20000,maxCoins:10000000});
+ diamondCents:499/500,vipDiamonds:Object.freeze({7:500,30:1500,60:3000,90:4500}),target:5000,maxDiamonds:20000,maxCoins:10000000,
+ minLevel:10,defaultLevel:14,maxLevel:200});
 // What an offer is worth, in euro cents at the shop's prices.
 export function offerValueCents({diamonds=0,coins=0,vipDays=0}={}){
  return Math.round((Number(diamonds)+Number(coins)/OFFER.coinsPerDiamond+(OFFER.vipDiamonds[vipDays]??0))*OFFER.diamondCents);
@@ -120,6 +124,13 @@ export const playProduct=pack=>typeof pack==='string'&&Object.hasOwn(PLAY_PRODUC
 // signed transaction (game/app-store.js, no key needed) before crediting it, and only then does the app finish it.
 export const APPLE_BUNDLE='com.harvesttycoon.app';
 export const APPLE_PRODUCTS=PLAY_PRODUCTS;
+// The special offer in the iPhone app (13 Oct 2026): not yet. The app 1.1 went to App Review with the diamond packs and the Halloween
+// Pass; starter_pack and special_offer follow as in-app purchases once it is approved. App Review buys in Apple's sandbox, which also
+// prices an in-app purchase that is only Ready to Submit, so the App Store's price is no proof that Apple sells it. While this is false
+// the iPhone app is never shown a special offer (diamond-checkout gives it none and refuses its checkout; src/main.js shows none), also
+// an offer from level 10, the level of App Review's demo account. Set it to true (site and diamond-checkout) when special_offer goes to
+// Apple's review as an in-app purchase. The Starter Pack (level 14) is not affected.
+export const APPLE_SELLS_OFFER=false;
 export const APPLE_TRANSACTION=/^[0-9]{1,20}$/;
 export const APPLE_JWS=/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 export const APPLE_JWS_MAX=16000;

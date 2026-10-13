@@ -69,7 +69,7 @@ test('the admin can send one private message to many farmers: online now, active
  assert.match(read('src/chat-ui.js'),/m\.sender_staff\?linkify\(part\.text\):esc\(part\.text\)/,'a link in the admin\'s message works (its words between wiki chips, 3 Oct 2026)');
  assert.match(sql,/add constraint chat_messages_body_check check \(char_length\(body\) between 1 and 500\);/,'the table takes the admin\'s 500 characters (it allowed 200)');
 });
-test('the admin\'s private message can go to farmers from a level, e.g. 14 for the special offer',()=>{
+test('the admin\'s private message can go to farmers from a level, e.g. the special offer\'s level',()=>{
  const sql=read('supabase/chat-broadcast-level.sql'),admin=read('src/admin-dashboard.js');
  assert.match(sql,/drop function if exists public\.chat_broadcast_dm\(text,text,boolean\);/,'one function for the game to call');
  assert.match(sql,/ps\.level>=greatest\(\(select c\.dm_level from public\.chat_config c\),coalesce\(p_min_level,1\)\)/,'the private-message level still applies');
