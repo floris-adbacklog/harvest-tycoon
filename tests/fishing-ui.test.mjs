@@ -118,3 +118,23 @@ test('the pond screen says what a new kind pays, a refused catch takes its card 
  const others=readdirSync(new URL('../public/',import.meta.url)).filter(f=>f.endsWith('.css')&&f!=='pond.css').map(f=>read(`public/${f}`)).join('\n').toLowerCase();
  for(const hex of new Set(css.toLowerCase().match(/#[0-9a-f]{6}(?=[0-9a-f]{2}\b|\b)/g)))assert.ok(others.includes(hex),`${hex} is not a colour of the game`);
 });
+test('the phone\'s offer tiles fold away while fishing and lift no picture on a long press (14 Oct 2026, the owner on an iPhone)',()=>{
+ const pond=read('public/pond.css'),offer=read('public/offer.css'),starter=read('public/starter-pack.css');
+ // The tiles hang on the body (src/offer-ui.js, src/starter-pack-ui.js), outside #game, which isolates the pond screen on a phone:
+ // they must be in the list of what folds away, or they sit on the water mid-screen and take its taps and holds (pond and lake alike).
+ const fold=pond.match(/body\.fishing :is\(([^)]*)\)\{opacity:0;visibility:hidden;pointer-events:none\}/)?.[1].split(',')??[];
+ for(const tile of ['#offer-button','#starter-pack-button'])assert.ok(fold.includes(tile),`${tile} folds away while fishing`);
+ assert.match(read('src/offer-ui.js'),/doc\.body\.append\(tile,dialog\)/);assert.match(read('src/starter-pack-ui.js'),/document\.body\.append\(button,dialog\)/);
+ assert.match(read('public/mobile.css'),/#game\{height:100dvh;min-height:0;isolation:isolate\}/);
+ // Holding a tile on the farm opens no iPhone callout, which lifted the chest or the crate to the top of the screen.
+ assert.match(offer,/#offer-button\{position:fixed;[^}]*;-webkit-touch-callout:none\}/);
+ assert.match(starter,/#starter-pack-button\{position:fixed;[^}]*;-webkit-touch-callout:none\}/);
+});
+test('the offer does not open by itself on the water or in the seconds after it (14 Oct 2026, the owner on an iPhone)',async()=>{
+ const {AFTER_FISHING}=await import('../src/offer-ui.js');
+ assert.ok(AFTER_FISHING>=5000&&AFTER_FISHING<=15000,'a few seconds, not minutes');
+ const src=read('src/offer-ui.js');
+ // The 2-second check counts the fishing screen (the pond and the lake set body.fishing) as busy, and waits AFTER_FISHING after it.
+ assert.match(src,/let fished=0;const quiet=\(\)=>\{if\(doc\.body\?\.classList\?\.contains\?\.\('fishing'\)\)fished=Date\.now\(\);return !doc\.querySelector\('dialog\[open\]'\)&&Date\.now\(\)-fished>=AFTER_FISHING;\};/);
+ assert.match(read('public/pond-ui.js'),/document\.body\.classList\.add\('fishing'\)/);
+});

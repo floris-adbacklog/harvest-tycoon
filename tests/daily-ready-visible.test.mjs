@@ -72,6 +72,8 @@ function page(){
  return {dialog,toolbar,line,button,doc:{getElementById:id=>els[id],createElement:()=>toolbar,querySelectorAll:()=>[]}};
 }
 test('Quests: one line at the top says how many daily challenges are ready and opens Today; it claims nothing',()=>{
+ // The window counts at the farm's clock (farmNow, Date.now): held at this test's day (14 Oct 2026: from that day it counted another day's challenges).
+ const realNow=Date.now;Date.now=()=>now;try{
  const s=farmer(),tasks=dailyTasks(s,now),{dialog,toolbar,line,button,doc}=page(),opened=[],claims=[];
  const ui=createQuestsUI({state:s,claim:id=>claims.push(id),claimVillage(){},icons(){},notify(){},openToday:id=>opened.push(id),document:doc});
  button.listeners.click[0]();assert.equal(dialog.open,true);assert.equal(line.hidden,true,'nothing ready: no line');
@@ -82,6 +84,7 @@ test('Quests: one line at the top says how many daily challenges are ready and o
  // Without a way to Today (a page that gives none) the line stays away.
  const other=page(),plain=createQuestsUI({state:s,claim(){},claimVillage(){},icons(){},notify(){},document:other.doc});
  other.button.listeners.click[0]();assert.equal(other.line.hidden,true);plain.refresh();
+ }finally{Date.now=realNow;}
 });
 
 test('the next-goal card and the phone line open Today at a ready challenge; it is claimed there, one at a time',async()=>{

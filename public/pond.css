@@ -1,7 +1,9 @@
 /* The Fishing pond (11 Oct 2026, part C, pond-ui.js): a mode of the farm screen. The farm's buttons fold away and the farm fills the screen;
    the pond's own pieces are cream cards and the game's buttons (buttons.css), one round main button at the bottom with the reel bar
    beside it. Laid out for an upright phone, a short laptop frame (840 x 430, 918 x 516) and a big screen alike. */
-body.fishing :is(.topbar,.side-tools,.bottom-hud,.scene-controls,.quest-card,.beginner-mobile,.touch-instructions,#plot-labels,#building-labels,.active-boosts,#tooltip,.coach-bubble,.reminder-nudge,.sweep-tool,.vignette,.toast.medal-toast){opacity:0;visibility:hidden;pointer-events:none}
+body.fishing :is(.topbar,.side-tools,.bottom-hud,.scene-controls,.quest-card,.beginner-mobile,.touch-instructions,#plot-labels,#building-labels,.active-boosts,#tooltip,.coach-bubble,.reminder-nudge,.sweep-tool,.vignette,.toast.medal-toast,#offer-button,#starter-pack-button){opacity:0;visibility:hidden;pointer-events:none}
+/* The phone's offer tiles (14 Oct 2026, the owner on an iPhone): they hang on the body, above #game (isolation:isolate, mobile.css), so
+   they stayed over the water mid-screen; a tap there closed the pond and opened the offer, a hold to reel lifted their picture. */
 body.fishing #world{inset:0;border-radius:0}
 body.fishing #game::after{display:none}   /* the cream panel behind a phone's tools (beginner.css) */
 .pond-view{position:absolute;inset:0;width:auto;height:auto;max-width:none;max-height:none;margin:0;padding:0;border:0;background:transparent;color:var(--ink);overflow:hidden;z-index:40;font-family:'DM Sans',sans-serif}

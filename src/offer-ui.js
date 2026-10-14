@@ -23,6 +23,9 @@ export function offerParts(offer){
 }
 // "Worth" is always the shop price of what is in it (game/payments.js OFFER.valueCents); the discount follows from it.
 export const offerDiscount=offer=>Math.round((1-offer.cents/offer.valueCents)*100);
+// Not on the water or straight after it (14 Oct 2026, the owner on an iPhone): the offer opened by itself 0-2 s after the pond or the
+// lake closed, over the farm the player had just come back to; it now waits this long after the fishing screen was last seen.
+export const AFTER_FISHING=8000;
 
 export function createOfferUI(bridge,{doc=document,win=window,storage=win.localStorage}={}){
  let offer=null,mode='live',enabled=true,offset=0,pending=false,requestId='',waiting=0,disposed=false,live=null,prices=null;
@@ -100,7 +103,7 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  // Never by itself in the admin view (3 Oct 2026, src/admin-view.js): nothing is bought there; the dashboard's Preview still opens it.
  function autoOpen(){
   if(!running()||seen()||waiting||doc.documentElement?.hasAttribute?.('data-admin-view'))return;
-  const quiet=()=>!doc.querySelector('dialog[open]');
+  let fished=0;const quiet=()=>{if(doc.body?.classList?.contains?.('fishing'))fished=Date.now();return !doc.querySelector('dialog[open]')&&Date.now()-fished>=AFTER_FISHING;};
   if(quiet()){open();return;}
   waiting=win.setInterval(()=>{if(disposed||!running()){win.clearInterval(waiting);waiting=0;return;}if(quiet()){win.clearInterval(waiting);waiting=0;open();}},2000);
  }
