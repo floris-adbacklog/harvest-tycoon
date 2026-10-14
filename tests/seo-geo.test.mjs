@@ -5,7 +5,7 @@ import {readFileSync,mkdtempSync,writeFileSync,rmSync,existsSync} from 'node:fs'
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {LANGUAGES,languagePath} from '../public/languages.js';
-import {appPath} from '../public/game-links.js';
+import {appPath,APP_STORE_URL} from '../public/game-links.js';
 import {buildLanguagePages,buildSupportPages,buildAppPages,supportPath,READY} from '../scripts/build-languages.mjs';
 import {applyAppStore} from '../scripts/app-store-links.mjs';
 import {applyStructuredData,withGraph,ldScript,pageQuestions,PLAY_URL,ORG_ID,GAME_ID} from '../scripts/structured-data.mjs';
@@ -240,7 +240,9 @@ test('the wiki: a breadcrumb for search engines on every topic page, og:url and 
   assert.ok(priceLine(PASS.endsAt).includes('; and now and then a special offer from level 10'));
   assert.ok(price.startsWith('free to play.')&&price.endsWith('Diamonds buy VIP and boosts, and players also earn diamonds by playing.'));
   assert.equal(price,priceLine());assert.ok(llms.includes(`Languages (${READY.length})`));
-  assert.match(llms,/an iPhone app is coming soon/);assert.doesNotMatch(llms,/ · |apps\.apple\.com/);
+  const soon=llmsText(WIKI_TOPICS,{appStoreUrl:null});assert.match(soon,/an iPhone app is coming soon/);assert.doesNotMatch(soon,/ · |apps\.apple\.com/);
+  // The real one follows APP_STORE_URL: the iPhone app is in the App Store since 14 Oct 2026.
+  assert.doesNotMatch(llms,/ · /);assert.equal(/coming soon/.test(llms),APP_STORE_URL===null);assert.equal(llms.includes('apps.apple.com'),APP_STORE_URL!==null);
   const live=llmsText(WIKI_TOPICS,{appStoreUrl:APP});assert.ok(live.includes(`iPhone app on the App Store: ${APP_LIVE}`));assert.doesNotMatch(live,/coming soon/);
  }finally{rmSync(out,{recursive:true,force:true});}
 });
