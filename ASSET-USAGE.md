@@ -8,7 +8,7 @@ The game now loads **75 distinct model files**, up from 55. Loading every variat
 | --- | --- |
 | mountain_008 | The distant valley ridge |
 | field_004, field_005 | Green and golden neighbouring fields; scenery, with no misleading crop timers. field_004 in its ploughed brown is also the soil of World II's Village Fields |
-| horse_002, pig_001 | Animal paddock; tap for animal-care activities |
+| horse_002 | Animal paddock (the horse alone since 15 Oct 2026); tap for animal-care activities |
 | lawn_mower_001 | Workshop and its hands-on repair activity |
 | trailer_001 | Parked equipment beside the workshop |
 | fir_tree_003, tree_008, stone_fence_001 | Forest edges and low boundary walls |

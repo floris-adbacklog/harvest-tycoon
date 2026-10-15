@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {featureUnlocked,ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 import {art} from './visual-icons.js';
 import {SPREAD,zone,place,placeIn,wide,ROADS,roadSize,onRoad,roadRects,POND} from './farm-layout.js';
-export const LIFE_MODELS=['mountain_008','field_004','field_005','village_pier_001','village_boat_001','village_rowboat_001','village_stones_001','horse_002','pig_001','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
+export const LIFE_MODELS=['mountain_008','field_004','field_005','village_pier_001','village_boat_001','village_rowboat_001','village_stones_001','horse_002','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
 
 export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
  const views=new Map(),hitAreas=[],moving=[],effects=[],water=[],smoke=[];
@@ -99,11 +99,13 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  station('workshop',cloneModel('lawn_mower_001',-9.1,-14.7,{width:1.25,rotation:.5}),-9.1,-14.7);
  zone(null);scenery('trailer_001',-19,-20,{width:2.2,rotation:.25});zone('paddock');
  // The existing glasshouse and hives receive real activities through attach().
- const horse=station('paddock',cloneModel('horse_002',17.9,-8.5,{width:2.2,rotation:-.7}),17.9,-8.5);
- const pig=cloneModel('pig_001',17.9,-5.6,{width:1.3,rotation:2.4});pig.userData.activity='paddock';
- {const [hx,hz]=place(17.9,-8.5),[gx,gz]=place(17.9,-5.6);moving.push({obj:horse,x:hx,z:hz,kind:'animal',phase:0},{obj:pig,x:gx,z:gz,kind:'animal',phase:3});}
- // Three standard 2.2-unit segments, like every other fence on the farm (one 5.8-wide piece made the posts oversized).
- for(const z of [-9.2,-7,-4.8])scenery('fence_001',19.5,z,{width:2.2,rotation:Math.PI/2});scenery('hay_002',17.7,-3.2,{width:1.8});zone(null);
+ // The horse has the open grass in front of the silo to itself (15 Oct 2026, the owner: no pig, more room): the dairy cows' pasture
+ // fence on one side, the chickens' pen on the other, the silo just behind it and the silo's hay stack in front by the road. It stands
+ // back and to the right, so on a phone at zoom 1 its pin floats over the silo's foot, not over the cows, and the Windmill's pin
+ // stays off it.
+ const horse=station('paddock',cloneModel('horse_002',18.62,-9.92,{width:2.2,rotation:-.7}),18.62,-9.92);
+ {const [hx,hz]=place(18.62,-9.92);moving.push({obj:horse,x:hx,z:hz,kind:'animal',phase:0});}
+ zone(null);
  // A few bees, kept away from the crop labels.
  const beeHome=placeIn('apiary',10.4,13.7);
  for(let i=0;i<5;i++){const bee=new THREE.Mesh(new THREE.SphereGeometry(.06,4,3),new THREE.MeshBasicMaterial({color:0xf5c64c}));scene.add(bee);moving.push({obj:bee,kind:'bee',phase:i*1.8});}

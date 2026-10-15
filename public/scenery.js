@@ -1,6 +1,6 @@
 // Scenery that makes the valley feel lived in. It is added after the farm is on screen (game.js addScenery), so the first
 // load is not slower, and everything in it stands still. Around the valley: a belt of firs with soft green hills behind, between the farm's trees and the mountains. Beside the roads: strips of sunflowers. On the farm:
-// chicks and a rooster at the coop, a spotted cow, and the odd tool around the farmhouse and the fields. Grass tufts
+// chicks and a rooster at the coop and the odd tool around the farmhouse and the fields. Grass tufts
 // across the outer meadows, which were bare ground, and at the front (towards the camera) only low things: bushes, young
 // trees and clumps of sunflowers. Round bushes, wildflowers and sunflowers along the crops' fences, the roads and the yards and on
 // the pond's bank, mostly in the home view, and a few round bales by the farmyards (6 Oct 2026), for the abundance of the loading
@@ -13,7 +13,7 @@ import {SPREAD,ANCHORS,POND,YARD_EXTENT,FIELD_BLOCK,roadRects,onRoad,anchorAt,pl
 import {wildflowers} from './scene-polish.js';
 
 const FIRS=['fir_tree_001','fir_tree_003','fir_tree_004','fir_tree_006','fir_tree_007','fir_tree_010'];
-const FARM_PIECES=['chicken_002','chicken_003','cow_003','toilet_001','firewood_005','cart_003','cart_006','lawn_mower_001','car_005','dray_001'];
+const FARM_PIECES=['chicken_002','chicken_003','toilet_001','firewood_005','cart_003','cart_006','lawn_mower_001','car_005','dray_001'];
 const FRONT=['bush_001','bush_002','bush_003','bush_004','tree_002','tree_005','tree_007','tree_008'];
 export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','mountain_007','mountain_008','plant_008','grass_001','grass_004','hay_001',...FARM_PIECES]);
 
@@ -157,8 +157,9 @@ export function buildScenery({scene,models,mobile=false}){
   for(let i=0,n=mobile?1:2+Math.floor(rand()*2);i<n;i++)fir(front.x+(rand()-.5)*5,front.z+(rand()-.5)*5,.8,2.4+rand()*1.6);
  }
  for(const [name,list] of Object.entries(firs))instanced(name,list);
- // 4. Sunflower strips beside the roads: a row every so often, on the side where there is room.
- const flowers=[];
+ // 4. Sunflower strips beside the roads: a row every so often, on the side where there is room. None in the chickens' pen (its front
+ // along the trunk road has no fence, 15 Oct 2026, the owner); its spot is still claimed and its draws made, so nothing else moves.
+ const flowers=[],[penX,penZ]=anchorAt('coop'),pen=YARD_EXTENT.coop,inPen=(x,z)=>x>penX+pen[0]&&x<penX+pen[1]&&z>penZ+pen[2]&&z<penZ+pen[3];
  for(const r of roadRects()){
   const length=r.horizontal?r.maxX-r.minX:r.maxZ-r.minZ;
   for(let d=6;d<length-6;d+=mobile?22:13){
@@ -166,7 +167,7 @@ export function buildScenery({scene,models,mobile=false}){
    const side=rand()<.5?-1:1,row=5+Math.floor(rand()*4),offset=(r.horizontal?(r.maxZ-r.minZ):(r.maxX-r.minX))/2+1.3;
    for(let k=0;k<row;k++){
     const along=d+k*.75,x=r.horizontal?r.minX+along:(r.minX+r.maxX)/2+side*offset,z=r.horizontal?(r.minZ+r.maxZ)/2+side*offset:r.minZ+along;
-    if(!free(x,z,.35))continue;claim(x,z,.35);flowers.push([x,z,1.05+rand()*.4,rand()*Math.PI*2]);
+    if(!free(x,z,.35))continue;claim(x,z,.35);const size=1.05+rand()*.4,turn=rand()*Math.PI*2;if(!inPen(x,z))flowers.push([x,z,size,turn]);
    }
   }
  }
@@ -209,7 +210,6 @@ export function buildScenery({scene,models,mobile=false}){
   ['chicken_002',near('coop',-2,-2.4),5,.5,{height:.42,rotation:.6}],
   ['chicken_002',near('coop',-1,-3.4),5,.5,{height:.38,rotation:2.2}],
   ['chicken_003',near('coop',3,-1.6),5,.6,{height:.85,rotation:-.9}],
-  ['cow_003',near('paddock',0,2),6,1,{height:1.25,rotation:2.4}],
   ['toilet_001',near('farmhouse',-6,-4),7,.9,{height:2.1,rotation:.4}],
   ['firewood_005',near('farmhouse',-4,-5.5),7,.8,{width:1.5,rotation:1.1}],
   ['cart_003',near('farmhouse',4,4),7,.8,{width:1.3,rotation:2.3}],

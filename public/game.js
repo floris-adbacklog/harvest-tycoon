@@ -114,7 +114,7 @@ const startView=()=>villageWorld?'home':mobileLayout.matches&&!beginnerProgress(
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
 let overviewBounds=null;
 let familyFlag=null;
-const familyDecor=[],factoryDecor=[],yardDecor={pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 // The pointer for Show me (public/coach.js): one at a time, gone after the last tap.
 const coach=createCoach();
 // The wheel never scrolls the page around the game (11 Oct 2026, Part A A7, wheel-guard.js).
@@ -161,6 +161,8 @@ modelNames.push('village_stall_002','village_stall_003','village_stall_004','vil
 modelNames.push('house_008','pointer_002','table_002','garden_bed_002','firewood_001');
 // The Pig Farm: its barn and three pigs.
 modelNames.push('house_019','pig_002','pig_003','pig_005');
+// The Dairy Barn's grazing brown and white cow, in its pasture (15 Oct 2026; before, scenery.js loaded it later for the paddock).
+modelNames.push('cow_003');
 // The midgame expansion: two crops and the four new yards.
 modelNames.push('plant_009','tree_010','apiary_002','apiary_003','sheep_002','sheep_003','hangar_006','greenhouse_004','house_018');
 // Wave 2: the cherry tree, the Goat Shed, the Craft Workshop, the Ranch with its horses and the Valley Market's canopy.
@@ -339,7 +341,9 @@ function decorate(){
  zone('coop');patch(13,-9.5,15.8,11.6,0xa4b472,.007);
  zone('mill');patch(-12.5,5.3,8.7,13,0xa8b676,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
- zone('dairy');addBuilding('dairy',-1,-13.2,{width:6.8,rotation:Math.PI/2});
+ // The Dairy Barn faces its cows' pasture, its doors opening into it like the Goat Shed's (15 Oct 2026, the owner); the pasture is
+ // further down in this file, after the chickens (animalAt).
+ zone('dairy');addBuilding('dairy',-.3,-13.9,{width:6.8});
  zone('silo');addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
  zone('farmhouse');addBuilding('farmhouse',-13.8,-10.2,{width:6.5,rotation:Math.PI/2});
  zone('mill');addBuilding('mill',-12.5,4,{width:6.2,rotation:Math.PI/2});
@@ -397,12 +401,13 @@ function decorate(){
  cloneModel('apiary_001',11.4,14.2,{height:1.25,rotation:-.2});
  zone('farmhouse');
  zone('silo');
- cloneModel('hay_001',4.6,-7.8,{width:1.9});
- cloneModel('hay_001',6.2,-8.1,{width:1.7,rotation:.4});
- cloneModel('hay_001',5.35,-7.9,{width:1.5,y:1.2});
- cloneModel('hay_002',3.7,-8.4,{width:1.45,rotation:.2});
+ // The hay stack stands in front of the silo by the road, with the horse of the Animal paddock behind it (15 Oct 2026).
+ cloneModel('hay_001',3.32,-4.86,{width:1.9});
+ cloneModel('hay_001',4.92,-5.16,{width:1.7,rotation:.4});
+ cloneModel('hay_001',4.12,-4.96,{width:1.5,y:1.2});
+ cloneModel('hay_002',6.12,-4.46,{width:1.45,rotation:.2});
  zone('chores');
- // Just beside the road that runs past (x -9.3 to -6.4), not on it.
+ // By the farmhouse, in front on its east side by the crossroads, where they are seen at once (farm-layout.js HOMES, 15 Oct 2026).
  addUtility('chores','barrel_001',-3.4,-10.7,{height:1.1});
  cloneModel('barrel_001',-2.6,-10.2,{height:1.05});
  zone('stall');
@@ -424,12 +429,19 @@ function decorate(){
  // The animals stand sideways to the camera (which looks from +x,+z): at about -0.8 they face left, at 2.4 right. Seen head-on or
  // from behind, a low-poly animal looks twisted from up here. The cow only faces right: its head is turned a little, and seen from
  // its left side it seems to stare at the sky.
- animalAt('cow_001',8.6,-6.6,{width:2.4,rotation:2.1},'dairy',.5);
- animalAt('cow_001',17.6,-6.2,{width:1.85,rotation:2.4},'dairy',3);
- animalAt('sheep_001',8.2,-12.2,{width:1.6,rotation:2.3},'dairy',1.5);
- animalAt('goat_001',17.8,-12,{width:1.5,rotation:-1.1},'dairy',4.2);
- // The chickens live at their coop, in the pen with the other animals.
- for(const [x,z,r] of [[10.6,-11.6,.2],[9.9,-8.6,2.1]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
+ // Every animal stands by the building a tap on it opens (15 Oct 2026: two cows, a sheep and a goat stood in the chickens' pen and a
+ // tap on one opened the Dairy Barn, which a player found confusing). The pen round the coop is the chickens' own.
+ // None at the pen's front left, under the Windmill's tall tap box or its pin, none under the coop's own pin (where a tap collects)
+ // and none at the back right behind the trees (checked by tapping on a phone and a computer at zoom 1).
+ for(const [x,z,r] of [[11.9,-5.75,.2],[15.9,-8.15,2.1],[14.6,-6.4,-.7],[17.2,-6.4,2.3],[6.7,-14.05,2.4],[17.4,-11.8,-.9]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
+ // The Dairy Barn's three cows (two black and white, one brown and white, grazing) graze in their own pasture in front of its doors, as big as the Goat Shed's: four rail segments wide
+ // and three deep, the barn's front between the two short pieces at the back. To make room the chores barrels moved to the farmhouse
+ // and the Animal paddock east of it, in front of the silo (farm-layout.js HOMES, farm-life.js).
+ zone('dairy');
+ // Like the Goat Shed's flock, the cows and the fence are greyed with the barn until it opens (yardDecor).
+ yardDecor.dairy.push(animalAt('cow_001',-2.6,-8.2,{width:2.4,rotation:2.1},'dairy',.5),animalAt('cow_001',2.2,-8,{width:1.85,rotation:2.4},'dairy',3),
+  animalAt('cow_003',-.3,-5.4,{height:1.25,rotation:2.4},'dairy',1.7));
+ yardDecor.dairy.push(...fenceLine(-3.6,-3.9,4),...fenceLine(-4.7,-9.4,3,'z'),...fenceLine(4.1,-9.4,3,'z'),...fenceLine(-3.6,-10.5,1),...fenceLine(3,-10.5,1));
  // The midgame yards, on the new ground east of the coop and the Family Hall. Like every building that is still to come they
  // stand there from the start, greyed out, with everything that belongs to them (yardDecor).
  // The Bee Yard: a cluster of hives among sunflowers, tapped and greyed as one piece.
@@ -521,7 +533,7 @@ function decorate(){
   dairy:[['bucket_003',-1.8,-9.1,{height:.65}]],
   apiary:[['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}]],
   factory:[['case_002',12.6,24.9,{width:1.1,rotation:.15}],['bag_003',13.8,25.1,{height:.82,rotation:-.3}],['cart_004',20.4,25,{width:1.7,rotation:Math.PI/2}],['prop_029',18.6,25.2,{width:.55,rotation:.5}]]
-})){zone(yard);for(const [name,x,z,options] of list){const piece=cloneModel(name,x,z,options);if(yard==='factory')factoryDecor.push(piece);}}
+})){zone(yard);for(const [name,x,z,options] of list){const piece=cloneModel(name,x,z,options);if(yard==='factory')factoryDecor.push(piece);else if(yard==='dairy')yardDecor.dairy.push(piece);}}
  // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
  // glow since a plain color tint can only darken a texture, never lighten it.
  zone('packing');lighten(cloneModel('case_001',9.9,-15.1,{width:.95,rotation:-.4}),0x3a2a16,.28);
@@ -563,7 +575,8 @@ function addExtraProps(){
  for(const object of scene.children){
   if(object.isLight||object.isCamera||object===scene.getObjectByName('Farm ground'))continue;
   const box=new THREE.Box3().setFromObject(object),model=object.userData.model??'';if(box.isEmpty()||box.getSize(new THREE.Vector3()).y<.03&&!FLAT_BLOCKS.test(model))continue;
-  blocked.push(ANIMAL.test(model)?box.expandByScalar(1.2):box);
+  // A helper or station (the delivery cart, the chores barrels) keeps 1.6 clear round it, so no bale hides it (15 Oct 2026).
+  blocked.push(ANIMAL.test(model)?box.expandByScalar(1.2):object.userData.utility||object.userData.activity?box.expandByScalar(1.6):box);
  }
  const pond=pondBounds(),fields=[-5.6,-3,10.4,33.6];
  const free=(x,z,r)=>!blocked.some(b=>x>b.min.x-r&&x<b.max.x+r&&z>b.min.z-r&&z<b.max.z+r)

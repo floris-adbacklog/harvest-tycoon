@@ -69,7 +69,7 @@ test('the farm is tidier: fewer props, kept off roads and fields and clear of th
  assert.deepEqual([PROPS_PER_YARD,ROAD_STEP,MEADOW_CLUMPS],[2,14,18]);
  const game=read('public/game.js');
  assert.match(game,/const ANIMAL=\/\^\(cow\|horse\|pig\|sheep\|goat\|chicken\)_\/,FLAT_BLOCKS=\/\^\(road\|field\)_\/;/);
- assert.match(game,/blocked\.push\(ANIMAL\.test\(model\)\?box\.expandByScalar\(1\.2\):box\);/);
+ assert.match(game,/blocked\.push\(ANIMAL\.test\(model\)\?box\.expandByScalar\(1\.2\):object\.userData\.utility\|\|object\.userData\.activity\?box\.expandByScalar\(1\.6\):box\);/);
  // every animal faces left (about -0.8) or right (about 2.4) with a small margin, never head-on or from behind (0.8, -2.4)
  const turns=[...game.matchAll(/animalAt\('(?:cow|sheep|goat)_00\d',[-\d.]+,[-\d.]+,\{[^}]*rotation:([-\d.]+)\}/g)].map(m=>Number(m[1]))
   .concat([...game.matchAll(/\['(?:sheep|goat|horse)_00\d',[-\d.]+,[-\d.]+,([-\d.]+)\]/g)].map(m=>Number(m[1])),[...game.matchAll(/\['pig_00\d',[-\d.]+,[-\d.]+,[\d.]+,([-\d.]+)\]/g)].map(m=>Number(m[1])));
@@ -99,4 +99,19 @@ test('the smaller buildings are in scale with the rest, and trees stand where th
   assert.match(game,new RegExp(`addBuilding\\('${id}',[-\\d.]+,[-\\d.]+,\\{${size.replace(/\./g,'\\.')}`),id);
  assert.doesNotMatch(life,/\['field_005',15,29,25,11,0\]/,'no wheat field in front of the Factory');
  assert.match(life,/A grove where the big wheat field in front of the Factory was/);
+});
+// 15 Oct 2026 (a player): cows, a sheep and a goat stood in the chickens' pen and a tap on one opened the Dairy Barn. Every animal
+// now stands in the yard (zone) of the building a tap on it opens: only chickens at the coop, the cows in the Dairy Barn's pasture,
+// greyed with the barn until it opens; the Animal paddock is the horse alone, the chores barrels stand by the farmhouse.
+test('every farm animal stands in the yard of the building a tap on it opens, and the coop pen is the chickens\' own',()=>{
+ const game=read('public/game.js'),life=read('public/farm-life.js');
+ const zoneAt=i=>[...game.slice(0,i).matchAll(/zone\('([a-z]+)'\)/g)].pop()?.[1];
+ const calls=[...game.matchAll(/animalAt\((?:'([a-z]+)_\d{3}'|model),[^;]*?\},'([a-z]+)'/g)];
+ assert.ok(calls.length>=7,`found ${calls.length} animalAt calls`);
+ for(const m of calls){assert.equal(zoneAt(m.index),m[2],`${m[1]??'a flock'} tagged ${m[2]} stands in zone ${zoneAt(m.index)}`);if(m[2]==='coop')assert.equal(m[1],'chicken');}
+ assert.equal(calls.filter(m=>m[2]==='dairy').length,3,'three cows at the Dairy Barn');
+ assert.match(game,/yardDecor=\{dairy:\[\],/);assert.match(game,/yardDecor\.dairy\.push\(animalAt\('cow_001'/);
+ assert.match(game,/modelNames\.push\('cow_003'\);/,'the brown cow is loaded with the farm, not later with the scenery');
+ assert.doesNotMatch(life,/pig_001/,'no pig at the Animal paddock');assert.match(life,/station\('paddock',cloneModel\('horse_002'/);
+ assert.match(read('public/scenery.js'),/if\(!inPen\(x,z\)\)flowers\.push\(\[x,z,size,turn\]\);/,'no road sunflowers in the chickens\' open-fronted pen');
 });
