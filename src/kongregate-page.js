@@ -21,7 +21,11 @@ export const SOURCE=Object.freeze({src:'kongregate',ref:'kongregate.com'});
 // up as a Max statistic shown as the high score; "initialized" stays, hidden from the high scores. A name Kongregate does not know yet
 // is simply ignored by its API.
 export const LEVEL_STAT='Level';
-export const levelFor=(event,params)=>(event==='game_session'||event==='level_up')&&Number.isSafeInteger(params?.level)&&params.level>=1&&params.level<=500?params.level:null;
+export const levelFor=(event,params)=>(event==='game_session'||event==='level_up'||event==='farm_totals')&&Number.isSafeInteger(params?.level)&&params.level>=1&&params.level<=500?params.level:null;
+// Two more high scores (15 Oct 2026, the owner): the crops a farmer has harvested and the goods made in the farm's buildings, from the
+// game's farm_totals (public/game.js trackTotals). Both are Max statistics on Kongregate, so a total sent again changes nothing.
+export const TOTAL_STATS=Object.freeze({harvested:'Crops harvested',made:'Goods made'});
+export const totalsFor=(event,params)=>event!=='farm_totals'?[]:Object.entries(TOTAL_STATS).filter(([key])=>Number.isSafeInteger(params?.[key])&&params[key]>0).map(([key,name])=>[name,params[key]]);
 // What the page says when a start goes wrong (the server's own texts are English only; these are translated with the game).
 export const TEXT=Object.freeze({
  refused:'Your Kongregate sign-in could not be checked. Please reload the game.',
@@ -123,7 +127,7 @@ export async function runKongregatePage({
   ...sessionDeps,cloudError,
   host:()=>$('farm-host'),phase,unavailable:pause,signedOut,
   firstLoad:()=>({source:{...SOURCE}}),
-  track:{game:(event,params)=>{const level=levelFor(event,params);if(level)link.submit(LEVEL_STAT,level);}},
+  track:{game:(event,params)=>{const level=levelFor(event,params);if(level)link.submit(LEVEL_STAT,level);for(const [name,value] of totalsFor(event,params))link.submit(name,value);}},
   extend(bridge){
    // No Sign out on Kongregate (portal.css hides the button): Kongregate's own log-in is the only one.
    bridge.portal=portal;bridge.signOut=()=>{};

@@ -135,6 +135,15 @@ window.harvestSound=kind=>farmAudio.play(kind);
 const productionSounds=createProductionCueTracker(state.buildings,Date.now());
 // Pacing measurements go to the page around the game (see src/analytics.js); they carry numbers only.
 const track=(event,params={})=>{if(adminView)return;try{window.parent.harvestBridge?.trackGame?.(event,params);}catch{}};
+// The farm's running totals for a game portal's high scores (Kongregate, 15 Oct 2026, src/kongregate-page.js): the level, the crops
+// harvested and the goods made, when they change, at most once in 20 seconds (the last change still goes, after the wait). The
+// website's analytics and CrazyGames ignore the event.
+let totalsSent='',totalsAt=0,totalsTimer=0;
+function trackTotals(level){
+ const wait=totalsAt+20000-Date.now();if(wait>0){if(!totalsTimer)totalsTimer=setTimeout(()=>{totalsTimer=0;trackTotals(levelProgress(state).level);},wait);return;}
+ const totals={level,harvested:state.stats?.harvested??0,made:state.stats?.produced??0},key=JSON.stringify(totals);
+ if(key===totalsSent)return;totalsSent=key;totalsAt=Date.now();track('farm_totals',totals);
+}
 // A step of a new farm's load chain (11 Oct 2026, Part A A1; farm-state.js FIRST_LOOK_CHAIN), on the clock of the page around the farm,
 // where src/crazygames.js and src/game-cloud.js keep theirs: the 3D models in (models) and the first picture (render). Sent with the first look.
 const markChain=key=>{try{const chain=window.parent.harvestChain??={};chain[key]??=Math.round(window.parent.performance.now());}catch{}};
@@ -885,6 +894,7 @@ function updateUI(){
  $('village-button').hidden=!worldTwo;$('village-button').classList.toggle('active',villageWorld);$('farm-button').classList.toggle('active',!villageWorld);
  $('village-count').hidden=villageWorld||!villageReady;$('village-count').textContent=villageReady;$('village-menu-entry').hidden=villageWorld||!worldTwo;$('farm-menu-entry').hidden=!villageWorld;
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
+ trackTotals(lvl);
  {const next=unlockEntries(state).filter(e=>!e.unlocked&&e.level===lvl+1).map(e=>e.name);$('journal-button').title=next.length?`Level ${lvl+1} unlocks: ${next.slice(0,3).join(', ')}${next.length>3?'…':''}`:'Farm journal & level rewards';}
  nudge?.check();
  $('level-name').textContent=levelTitle(lvl);

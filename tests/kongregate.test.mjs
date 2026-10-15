@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createKongregateLink,localStandIn,cleanUser,addressUser,siteLanguage,isGuest,API_SCRIPT,GUEST} from '../src/kongregate-link.js';
-import {runKongregatePage,TEXT,KG_KEY,LOCALE_KEY,SOURCE,LEVEL_STAT} from '../src/kongregate-page.js';
+import {runKongregatePage,TEXT,KG_KEY,LOCALE_KEY,SOURCE,LEVEL_STAT,TOTAL_STATS} from '../src/kongregate-page.js';
 import {portal as portalAround,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,PRIVACY_URL,PRIVACY_CONTACT,privacyContact,openOut} from '../public/portal.js';
 import {wikiArticle,wikiQuick,WIKI_TOPICS} from '../public/wiki-content.js';
 import {createPortalUI} from '../src/portal-ui.js';
@@ -273,4 +273,15 @@ test('the farmer\'s level goes to Kongregate as the statistic "Level": when the 
  game('game_session',{level:12,returning:true});game('level_up',{level:13});
  game('guide_step',{step:'market'});game('level_up',{level:0});game('level_up',{level:'14'});game('level_up',{level:501});game('level_up',{});
  assert.deepEqual(p.link.stats,[['initialized',1],['Level',12],['Level',13]]);
+});
+test('the farm\'s totals go to Kongregate too: "Crops harvested" and "Goods made", from the game\'s farm_totals, at most once in 20 seconds',async()=>{
+ const p=fakePage();await p.run();
+ assert.deepEqual(TOTAL_STATS,{harvested:'Crops harvested',made:'Goods made'});
+ const game=p.config.track.game;
+ game('farm_totals',{level:14,harvested:820,made:95});game('farm_totals',{level:14,harvested:0,made:-1});game('farm_totals',{level:14,harvested:'9',made:1.5});
+ assert.deepEqual(p.link.stats,[['initialized',1],['Level',14],['Crops harvested',820],['Goods made',95],['Level',14],['Level',14]]);
+ const game_js=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
+ assert.match(game_js,/function trackTotals\(level\)\{\n const wait=totalsAt\+20000-Date\.now\(\);/);
+ assert.match(game_js,/const totals=\{level,harvested:state\.stats\?\.harvested\?\?0,made:state\.stats\?\.produced\?\?0\}/);
+ assert.match(game_js,/track\('game_session',\{level:lvl,returning:\(state\.stats\?\.harvested\?\?0\)>=5\}\);\}\n trackTotals\(lvl\);/);
 });
