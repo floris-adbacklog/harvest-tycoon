@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createKongregateLink,localStandIn,cleanUser,addressUser,siteLanguage,isGuest,API_SCRIPT,GUEST} from '../src/kongregate-link.js';
-import {runKongregatePage,TEXT,KG_KEY,LOCALE_KEY,SOURCE} from '../src/kongregate-page.js';
+import {runKongregatePage,TEXT,KG_KEY,LOCALE_KEY,SOURCE,LEVEL_STAT} from '../src/kongregate-page.js';
 import {portal as portalAround,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,PRIVACY_URL,PRIVACY_CONTACT,privacyContact,openOut} from '../public/portal.js';
 import {wikiArticle,wikiQuick,WIKI_TOPICS} from '../public/wiki-content.js';
 import {createPortalUI} from '../src/portal-ui.js';
@@ -264,4 +264,13 @@ test('the headers: only Kongregate may frame the page, no search engine, revalid
  assert.match(read('scripts/i18n-extract.mjs'),/'public\/kongregate\.html'/,'its words are translated with the game');
  assert.match(read('scripts/module-preload.mjs'),/writeFileSync\(KONG,withPrefetch\(readFileSync\(KONG,'utf8'\),prefetch,'public\/kongregate\.html'\)\);/);
  assert.doesNotMatch(read('package.json').match(/"build:static": "[^"]*"/)[0],/kongregate/,'nothing to upload: Kongregate frames the live page');
+});
+// 15 Oct 2026 (the owner): Kongregate's high scores showed only "initialized", 1 for every player.
+test('the farmer\'s level goes to Kongregate as the statistic "Level": when the farm opens and at every level-up, nothing else',async()=>{
+ const p=fakePage();await p.run();
+ assert.equal(LEVEL_STAT,'Level');
+ const game=p.config.track.game;
+ game('game_session',{level:12,returning:true});game('level_up',{level:13});
+ game('guide_step',{step:'market'});game('level_up',{level:0});game('level_up',{level:'14'});game('level_up',{level:501});game('level_up',{});
+ assert.deepEqual(p.link.stats,[['initialized',1],['Level',12],['Level',13]]);
 });

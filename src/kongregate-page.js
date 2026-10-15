@@ -16,6 +16,12 @@ export const KG_KEY='harvest-tycoon:kg-user';
 export const LOCALE_KEY='harvest-tycoon:kg-locale';
 // Where these farmers come from (supabase/player-attribution.sql): the server keeps it for a brand-new farm only.
 export const SOURCE=Object.freeze({src:'kongregate',ref:'kongregate.com'});
+// The farmer's level as Kongregate's statistic "Level" (15 Oct 2026, the owner: its high scores showed only "initialized", 1 for every
+// player): when the farm opens and at every level-up, from the game's own events (no trackers on Kongregate). On Kongregate it is set
+// up as a Max statistic shown as the high score; "initialized" stays, hidden from the high scores. A name Kongregate does not know yet
+// is simply ignored by its API.
+export const LEVEL_STAT='Level';
+export const levelFor=(event,params)=>(event==='game_session'||event==='level_up')&&Number.isSafeInteger(params?.level)&&params.level>=1&&params.level<=500?params.level:null;
 // What the page says when a start goes wrong (the server's own texts are English only; these are translated with the game).
 export const TEXT=Object.freeze({
  refused:'Your Kongregate sign-in could not be checked. Please reload the game.',
@@ -117,6 +123,7 @@ export async function runKongregatePage({
   ...sessionDeps,cloudError,
   host:()=>$('farm-host'),phase,unavailable:pause,signedOut,
   firstLoad:()=>({source:{...SOURCE}}),
+  track:{game:(event,params)=>{const level=levelFor(event,params);if(level)link.submit(LEVEL_STAT,level);}},
   extend(bridge){
    // No Sign out on Kongregate (portal.css hides the button): Kongregate's own log-in is the only one.
    bridge.portal=portal;bridge.signOut=()=>{};
