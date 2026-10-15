@@ -228,6 +228,17 @@ select pg_temp.kreds_patch('public.harvest_delete_account(uuid,text)',$m$account
 revoke all on function public.harvest_delete_account(uuid,text) from public, anon, authenticated;
 grant execute on function public.harvest_delete_account(uuid,text) to service_role;
 
+-- 7. The price in Kreds (the owner, 15 Oct 2026): the purchase notice to the admins (harvest_purchase_alert) and the farmer's own log
+-- (harvest_purchase_log) said "for €4.99" for a Kongregate purchase too; they now name its Kreds ("for 50 Kreds"), as Kongregate charged
+-- them (kreds is set before the row is credited, section 2). Every other store keeps its euro price; Admin › Purchases keeps counting the
+-- euro list price (the owner's call). Patched from the LIVE definitions the same way: once each, or the whole file stops.
+select pg_temp.kreds_patch('public.harvest_purchase_alert()',$m$' Kreds'$m$,
+ $a$price:='€'||to_char(new.amount_cents/100.0,'FM999990.00');$a$,
+ $b$price:=case when new.store='kongregate' then coalesce(new.kreds::text||' Kreds','Kreds') else '€'||to_char(new.amount_cents/100.0,'FM999990.00') end;$b$);
+select pg_temp.kreds_patch('public.harvest_purchase_log()',$m$' Kreds'$m$,
+ $a$||' for €'||to_char(new.amount_cents/100.0,'FM999990.00'));$a$,
+ $b$||' for '||case when new.store='kongregate' then coalesce(new.kreds::text||' Kreds','Kreds') else '€'||to_char(new.amount_cents/100.0,'FM999990.00') end);$b$);
+
 -- Dry run first, if you like: in the SQL editor put "begin;" above this file and these lines plus "rollback;" below it, so nothing stays.
 -- select pg_get_constraintdef(oid) from pg_constraint where conname='harvest_purchases_store_check'; -- ... 'kongregate' ...
 -- select public.harvest_revoke_kong_purchases('[{"item":"1"},{"item":"x"},5]'::jsonb); -- {"revoked": 0}

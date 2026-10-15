@@ -452,6 +452,15 @@ test('kongregate-kreds.sql: guarded like app-store.sql, the store and columns ad
   assert.ok(sql.includes(`select pg_temp.kreds_patch('public.harvest_delete_account(uuid,text)',$m$${marker}$m$,\n $a$${from}$a$,\n $b$${to}$b$);`),marker);
   assert.equal(del.split(from).length-1,1,`delete-account.sql has it once: ${from}`);assert.ok(to.includes(marker)&&!from.includes(marker));
  }
+ // The price in Kreds (the owner, 15 Oct 2026): the admins' purchase notice and the farmer's log name a Kongregate purchase's Kreds, every
+ // other store its euro price as before; each line patched from the live definition once (the lines are season-pass.sql's own).
+ const pass=read('supabase/season-pass.sql'),kreds="case when new.store='kongregate' then coalesce(new.kreds::text||' Kreds','Kreds') else '€'||to_char(new.amount_cents/100.0,'FM999990.00') end";
+ for(const [fn,from,to] of [['harvest_purchase_alert()',"price:='€'||to_char(new.amount_cents/100.0,'FM999990.00');",`price:=${kreds};`],
+  ['harvest_purchase_log()',"||' for €'||to_char(new.amount_cents/100.0,'FM999990.00'));",`||' for '||${kreds});`]]){
+  assert.ok(sql.includes(`select pg_temp.kreds_patch('public.${fn}',$m$' Kreds'$m$,\n $a$${from}$a$,\n $b$${to}$b$);`),fn);
+  assert.equal(pass.split(from).length-1,1,`season-pass.sql has it once: ${from}`);assert.ok(to.includes("' Kreds'")&&!from.includes("' Kreds'"),'patched once, then left alone');
+ }
+ assert.ok(sql.indexOf("kreds=p_kreds,livemode=not p_test where id=p_purchase")<sql.indexOf("set status='credited',credited_at=now() where id=p_purchase"),'kreds is on the row before the status triggers run');
  assert.match(sql,/if position\(p_from in def\)=0 or \(length\(def\)-length\(replace\(def,p_from,''\)\)\)\/length\(p_from\)<>1 then\n  raise exception/);
  assert.match(sql,/revoke all on function public\.harvest_delete_account\(uuid,text\) from public, anon, authenticated;\ngrant execute on function public\.harvest_delete_account\(uuid,text\) to service_role;/);
  // It removes nothing, replaces no existing function (the delete function only gets its two lines), and ends with a commented dry run.
