@@ -10,7 +10,7 @@ export const ANCHORS=Object.freeze({
  // The midgame yards stand on new ground east of the coop and the Family Hall, where the trunk road now runs on to.
  beeyard:[22.7,1.9],sheepbarn:[23.8,-15.4],glasshouse:[28.8,1.2],weaving:[26.2,8.5],
  // Wave 2: the goats beside the sheep, the Craft Workshop beside the Weaving Shed, the Ranch and its paddock by the pond, and the
- // Valley Market behind the Juice Press, on the top road out of the valley.
+ // Valley Market behind the Dairy Barn, where the Juice Press stood until 15 Oct 2026, on the top road out of the valley.
  goatshed:[31.9,-14.6],craftshop:[33.1,9.6],ranch:[31.5,16.2],valleymarket:[0,-29.2],
  // Wave 3: a new column at the east end of the trunk road: the Trade Depot where the road ends, the Estate Workshop's manor across
  // the road, and the Grand Valley Fair's hall and fairground south of it.
@@ -23,14 +23,15 @@ export const ANCHORS=Object.freeze({
 // The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), the
 // market waits by the road out at the front, the delivery cart stands at the open end of the farmhouse fence where it can be seen,
 // the animal paddock has the open grass beside the trunk road in front of the silo, next to the dairy cows' pasture, and the chores barrels
-// stand by the farmhouse at the crossroads (15 Oct 2026).
+// stand by the farmhouse at the crossroads (15 Oct 2026). The Juice Press (8) stands beside the Family Hall, west of it along the trunk
+// road (the owner, 15 Oct 2026), where the level rule below would put a later yard.
 // The valley is sorted by level (25 Sep 2026): what opens up to level 25 in the middle, levels 25-50 on the west side (the left of
 // the screen) and 50+ in the east (the right). West, beyond the Family Hall (10) and the west road: the Pig Farm (29) by the trunk
 // road, then the Bee Yard (34) and the Sheep Barn (37) with its pasture, and the Weaving Shed (43) at the foot of the mountains.
 // East, along the trunk road: the Glasshouse (40, which has more room there), the Goat Shed (54) and the Trade Depot (85) across
 // the road, the Craft Workshop (58) first along the road, the Ranch (70) and the Estate Workshop (75) behind, the Grand Valley Fair (90) furthest out.
 // The Factory (50) and the Valley Market (62) stay in the middle, at the front and on the road out at the back.
-export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[-25.77,-6.92],stall:[-10.4,24],cart:[-9.7,-10.45],paddock:[4.6,-7.6],chores:[-12.62,-6.31],
+export const HOMES=Object.freeze({apiary:ANCHORS.familyhall,familyhall:[-25.77,-6.92],stall:[-10.4,24],cart:[-9.7,-10.45],paddock:[4.6,-7.6],chores:[-12.62,-6.31],juicepress:[-32.8,-7.39],
  pigfarm:[-26.15,0.77],beeyard:[-33.85,14.62],sheepbarn:[-26.15,16.15],glasshouse:[37.62,1.23],weaving:[-33.46,22.69],
  craftshop:[23.46,1.69],ranch:[33.85,13.46],estateworkshop:[46.92,11.15],grandfair:[40,28.1]});
 // Trees, bushes and other loose pieces keep this far from the middle of a yard.

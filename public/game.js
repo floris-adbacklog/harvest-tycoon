@@ -353,8 +353,10 @@ function decorate(){
  zone('windmill');
  const windmillPosition={x:12.8,z:-1.5};
  addBuilding('windmill',windmillPosition.x,windmillPosition.z,{height:6.6});
- zone('juicepress');addBuilding('juicepress',-1,-20.1,{width:5.5,height:3.7,depth:4.8,rotation:Math.PI/2});
- zone('preserves');addBuilding('preserves',-15.2,-18.6,{width:5.7,height:3.9,depth:5,rotation:Math.PI/2});
+ // The Juice Press and the Preserves Workshop keep their models' own shape, as on their pictures (15 Oct 2026: a separate width,
+ // height and depth had made them 1.75 times as wide as high and long, squashed); the Juice Press stands beside the Family Hall.
+ zone('juicepress');addBuilding('juicepress',-1,-20.1,{width:6.2,rotation:Math.PI/2});
+ zone('preserves');addBuilding('preserves',-15.2,-18.6,{width:6.4,rotation:Math.PI/2});
  zone('kitchen');addBuilding('kitchen',-12.4,18.2,{width:5.5,height:3.9,depth:4.8,rotation:Math.PI/2});
  // The Factory: a long white production hall with a chimney unit at one end and a hopper at the other, south of the pond.
  zone('factory');addBuilding('factory',16.2,21.9,{width:6.4,height:3.6,depth:13,rotation:Math.PI/2});
@@ -547,7 +549,7 @@ function decorate(){
  const trees=[[-19,-16,4],[-20,-10,5],[-19,1,4.5],[-18.8,6,4.7],[-17.4,8.5,4],[-18,12,6.2],[-18,18,4],[-5,19,5.8],[26,12,5.2],[14,15,5.4],[21,1,5.7],[22.5,-10,6],[19,-19,6.1],[4,-21,5.4],[-21,-16,4.8],[1,-24.5,4],[-23,7,6.5],[-25,-1,6.4],[25,-17,7]];
  trees.forEach(([x,z,height],i)=>cloneModel(['tree_001','tree_004','tree_006'][i%3],x,z,{height,rotation:i*1.8}));
  // More trees between the far ones fill the wider ring the spread-out farm needs.
- [[-27,-24,4.4],[-28,-4,5],[-27,17,5.4],[-9,27,5],[9,29,5.8],[27,3,5.6],[27,-12,5.8],[24,-25,6],[12,-31,5.2],[-6,-33,4.6],[-24,-32,5.2],[-10,-30,4.8]].forEach(([x,z,height],i)=>cloneModel(['tree_004','tree_006','tree_001'][i%3],x,z,{height,rotation:i*2.3+.7}));
+ [[-27,-24,4.4],[-31,-12,5],[-27,17,5.4],[-9,27,5],[9,29,5.8],[27,3,5.6],[27,-12,5.8],[24,-25,6],[12,-31,5.2],[-6,-33,4.6],[-24,-32,5.2],[-10,-30,4.8]].forEach(([x,z,height],i)=>cloneModel(['tree_004','tree_006','tree_001'][i%3],x,z,{height,rotation:i*2.3+.7}));
  // The east end, around the wave-3 column and along the road out of the valley: big trees in loose groups, young ones between them
  // and pines towards the mountain, none of them the same size.
  [[51.5,-11.5,6.2],[60,-12.3,5],[56.5,-14.8,4.2],[50.8,1.5,5.6],[59.2,.8,6.8],[63.8,3.8,4.6],[53,11.5,5.2],[57,15.4,6.4],[50.8,22.3,4.8],[61.5,10,5.8]].forEach(([x,z,height],i)=>cloneModel(['tree_006','tree_001','tree_004'][i%3],x,z,{height,rotation:i*1.7+.4}));
