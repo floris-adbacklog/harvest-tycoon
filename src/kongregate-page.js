@@ -15,7 +15,8 @@ import {createKredsShop} from './kongregate-kreds.js';
 // ~/Harvest Tycoon/kongregate/kreds-uitrollen.md). While SELLS_KREDS is false nothing about the shop is on Kongregate, exactly as before:
 // the portal keeps payments off (the game shows no shop, price or Starter Pack) and the farm session has no way to buy. With it true
 // the shop sells for Kreds (src/kongregate-kreds.js). diamond-checkout has its own switch (KONG_PAYMENTS_ENABLED), so both must be on.
-export const SELLS_KREDS=false;
+// On since 15 Oct 2026: Kongregate gave Harvest Tycoon the Virtual Goods API that day, and the owner chose no testers-only phase.
+export const SELLS_KREDS=true;
 // The sign-in of this page, in its own place on the device, apart from the website's and CrazyGames'.
 export const KG_KEY='harvest-tycoon:kg-user';
 // The language Kongregate's site was in last time: it is only applied again when that language changes, so a language picked in

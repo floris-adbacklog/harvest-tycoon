@@ -596,16 +596,18 @@ function page({sellsKreds,paymentRequest}={}){
   ...(sellsKreds===undefined?{}:{sellsKreds}),...(paymentRequest?{paymentRequest}:{})});
  return {run,get config(){return config;}};
 }
-test('SELLS_KREDS: off today, so Kongregate is exactly as before; on, the portal sells and the farm\'s bridge buys with Kreds',async()=>{
- assert.equal(SELLS_KREDS,false,'off until Kongregate allows the Virtual Goods API');
+test('SELLS_KREDS: on since 15 Oct 2026, the portal sells and the farm\'s bridge buys with Kreds; off, or without diamond-checkout, as before',async()=>{
+ assert.equal(SELLS_KREDS,true,'on since Kongregate allowed the Virtual Goods API (15 Oct 2026)');
  const asked=[];const pay=async body=>{asked.push(body);return {enabled:true,store:'kongregate'};};
- for(const options of [{},{paymentRequest:pay},{sellsKreds:true},{sellsKreds:false,paymentRequest:pay}]){
+ for(const options of [{},{sellsKreds:false},{sellsKreds:true},{sellsKreds:false,paymentRequest:pay}]){
   const p=page(options);const {portal}=await p.run();
   assert.ok(Object.values(portal.features).every(on=>on===false),JSON.stringify(Object.keys(options)));assert.equal(portalSells(portal),false);assert.equal(portalOff('payments',portal),true);
   const bridge={payments:'the farm session\'s',checkout:'the farm session\'s'};p.config.extend(bridge,{alive:()=>true,user:{id:FARMER}});
   assert.deepEqual([bridge.payments,bridge.checkout,bridge.kreds,bridge.playRecover],['the farm session\'s','the farm session\'s',undefined,undefined],'no way to buy: the session\'s own refusal');
  }
  assert.deepEqual(asked,[]);
+ {const {portal}=await page({paymentRequest:pay}).run();assert.equal(portalSells(portal),true,'the page as it ships: on');}
+ asked.length=0;
  const on=page({sellsKreds:true,paymentRequest:pay});const {portal}=await on.run();
  assert.deepEqual(Object.entries(portal.features).filter(([,v])=>v).map(([k])=>k),['payments'],'only payments: no invites, links, email, app or Sign out');
  assert.deepEqual(Object.keys(portal.features),PORTAL_FEATURES);assert.equal(portalSells(portal),true);assert.equal(portalOff('payments',portal),false);

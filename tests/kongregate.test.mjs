@@ -250,10 +250,10 @@ test('src/kongregate.js: only on Kongregate (on its own our address sends the vi
   assert.doesNotMatch(source,/trackCommerce|trackInvite|pushEvent|dataLayer|gtag|fbq|ttq/,'no trackers');
  }
  // No purchases or reminders in the farm session: Kreds (15 Oct 2026) go through the page's own shop (src/kongregate-kreds.js), only
- // with SELLS_KREDS on, which it is not until Kongregate says yes.
+ // with SELLS_KREDS on (since Kongregate said yes, 15 Oct 2026).
  assert.doesNotMatch(js.match(/sessionDeps:\{[^}]*\}/)[0],/paymentRequest|createNotifications/);
  assert.doesNotMatch(page.match(/session=createFarmSession\(\{[^]*?\n \}\);/)[0],/paymentRequest|createNotifications/);
- assert.doesNotMatch(page,/createNotifications/);assert.match(page,/\nexport const SELLS_KREDS=false;\n/,'off until Kongregate allows the Virtual Goods API');
+ assert.doesNotMatch(page,/createNotifications/);assert.match(page,/\nexport const SELLS_KREDS=true;\n/,'on since Kongregate allowed the Virtual Goods API (15 Oct 2026)');
  assert.match(page,/await askServer\(\{op:'kongregate',user_id:user\.id,game_auth_token:user\.token,language:chosenLanguage\(\)\},now\?\.access_token\)/);
  assert.match(page,/verifyOtp\(\{token_hash:reply\.token_hash,type:'magiclink'\}\)/);
  assert.equal((page.match(/link\.register\(\)/g)??[]).length,2,'only from a tap: the Register button, and the portal\'s log-in (never asked for: no guests in the farm)');
