@@ -74,8 +74,11 @@ test('a refusal in either style the docs show is a no; a server problem or no an
  for(const status of [500,502,503,429,408])assert.equal(await reason({status}),'transient',String(status));
  assert.equal(await reason({down:true}),'transient','Kongregate unreachable');
  assert.equal(await reason({status:404}),'status 404');
- assert.match(read('supabase/functions/kongregate-auth/kongregate.js'),/signal:AbortSignal\.timeout\(timeoutMs\)/);
- assert.match(read('supabase/functions/kongregate-auth/kongregate.js'),/fetchImpl=globalThis\.fetch,timeoutMs=5000/);
+ // The calls themselves are in game/kongregate-api.js since 15 Oct 2026 (shared with diamond-checkout's Kreds), synced in byte for byte.
+ assert.match(read('game/kongregate-api.js'),/signal:AbortSignal\.timeout\(timeoutMs\)/);
+ assert.match(read('game/kongregate-api.js'),/export async function verifyKongregate\(\{userId,token,apiKey,fetchImpl=globalThis\.fetch,timeoutMs=5000\}\)/);
+ assert.equal(read('supabase/functions/kongregate-auth/kongregate-api.js'),read('game/kongregate-api.js'),'scripts/sync-game.mjs');
+ assert.match(read('supabase/functions/kongregate-auth/kongregate.js'),/import \{AUTH_URL,REFUSED_TEXT,kongId,kongToken,KongregateRefused,verifyKongregate\} from '\.\/kongregate-api\.js';/);
 });
 
 test('only a real Kongregate user id and token are taken; a guest (0) or anything else is no request',()=>{

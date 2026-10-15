@@ -16,6 +16,7 @@ import {startTranslation} from '../public/i18n.js';
 import {createPopupUI} from './popup-ui.js';
 import {createOfferUI} from './offer-ui.js';
 import {createPortalUI} from './portal-ui.js';
+import {portalSells} from '../public/portal.js';
 import {markAdminView,startAdminView} from './admin-view.js';
 import {createAccountDelete} from './account-delete.js';
 import {createDiscordLinkDialog,createDiscordSwitch,createDiscordUnlink} from '../public/discord-link-ui.js';
@@ -36,8 +37,9 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
  // that opens again by itself (its Try again) asks that page for the farm; the website's sign-in page never opens inside CrazyGames.
  const portal=bridge.portal??null;
  if(!window.harvestInitialFarm){if(portal)portal.reopen();else window.parent.location.reload();}else{
-  // Marked before anything shows or loads: portal.css and the farm's loading tips (public/loading-screen.js) read it.
-  if(portal)document.documentElement.dataset.portal=portal.name;
+  // Marked before anything shows or loads: portal.css and the farm's loading tips (public/loading-screen.js) read it. A portal that sells
+  // with its own currency (Kongregate's Kreds, 15 Oct 2026; off until Kongregate says yes) keeps the shop (html[data-portal-shop]).
+  if(portal){document.documentElement.dataset.portal=portal.name;if(portalSells(portal))document.documentElement.dataset.portalShop='';}
   // The admin view (3 Oct 2026, src/admin-view.js): farm-api answers an admin account with its showcase farm and adminView; the page is
   // marked (and its stylesheet asked for) before it shows, so coins, diamonds and the tools never flash. Never on CrazyGames.
   const adminView=!portal&&window.harvestInitialFarm.adminView===true;
@@ -103,14 +105,16 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
    if(portal){portal.event('loadingStop');portal.event('gameplayStart');}
    // The board the leaderboard opens on, read once in the background, so the first look needs no wait.
    setTimeout(()=>{const category=ui.category;if(!boardCache.has(category))bridge.leaderboard(category).then(result=>{if(!boardCache.has(result.category))boardCache.set(result.category,result);}).catch(()=>{});},8000);
-   // No purchases on CrazyGames (their rule): no payment return, special offer or Starter Pack there.
-   const shop=!portal;
+   // No purchases on CrazyGames (their rule): no payment return, special offer or Starter Pack there. On Kongregate only once it sells
+   // Kreds (public/portal.js portalSells, 15 Oct 2026).
+   const shop=!portal||portalSells(portal);
    if(shop)showPaymentReturn(bridge);
    // The app's store (Oct 2026, src/main.js: Google Play in the Android app, the App Store in the iPhone app): a purchase confirmed in the
    // app shows in the same window, and one paid while the game was closed (never confirmed) is confirmed now. A Stripe payment in a new
-   // tab (the game in a frame on another site) shows there too, waiting for it ({tab:true}).
+   // tab (the game in a frame on another site) shows there too, waiting for it ({tab:true}). Kreds on Kongregate the same way (15 Oct
+   // 2026, src/kongregate-kreds.js): what was bought at Kongregate and never credited (the page closed during the purchase window) now.
    if(shop)bridge.purchaseDone=(id,more)=>showPaymentReturn(bridge,{id,cancelled:false,...more});
-   if(shop&&bridge.playSettle)void bridge.playRecover?.().catch(()=>{});
+   if(shop&&(bridge.playSettle||bridge.kreds))void bridge.playRecover?.().catch(()=>{});
    // A pop-up from the admin (news with a button), once, when nothing else is open. It does not wait for the Starter Pack's catalog.
    void createPopupUI({client:bridge.chat,chat,state:firstState}).start();
    // The special offer listens for the Starter Pack's catalogue, so it starts first.

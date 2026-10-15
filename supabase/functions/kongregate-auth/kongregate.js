@@ -10,11 +10,13 @@
 //   {ok:true, player_id}; or a session for the farm of this Kongregate user, made the first time: {token_hash, player_id}.
 //   A bad token or a user id that is not the token's: 401. Kongregate unreachable: 503 (the game tries again by itself).
 import {randomPlayerName,firstFreeName} from './account-form.js';
+// Kongregate's server API itself (authenticate.json), shared with diamond-checkout's Kreds (15 Oct 2026): game/kongregate-api.js, copied here
+// by scripts/sync-game.mjs.
+import {AUTH_URL,REFUSED_TEXT,kongId,kongToken,KongregateRefused,verifyKongregate} from './kongregate-api.js';
+export {AUTH_URL,kongId,kongToken,KongregateRefused,verifyKongregate};
 
 export const PORTAL='kongregate';
 export const MAIL_DOMAIN='players.harvesttycoon.com';
-// Kongregate's server API (docs.kongregate.com/reference/server-api-authenticate): only ever called from here, never from the game.
-export const AUTH_URL='https://api.kongregate.com/api/authenticate.json';
 export const MAX_BODY=4096;
 // Checks with Kongregate an hour: from one network (a keyed hash of the IP address; a school class behind one address still gets
 // in) and from all networks together, so nobody can make us call Kongregate over and over with made-up tokens.
@@ -30,7 +32,7 @@ export const SOURCE=Object.freeze({src:'kongregate',ref:'kongregate.com'});
 // The farmer-name rule (farm-api nameValid).
 export const NAME_RULE=/^[A-Za-z0-9][A-Za-z0-9 _-]{2,19}$/;
 export const MESSAGES=Object.freeze({
- token:'Your Kongregate sign-in could not be checked. Please reload the game.',
+ token:REFUSED_TEXT,
  busy:'Too many sign-ins from this network right now. Please try again later.',
  setup:'Signing in with Kongregate is not available yet. Please try again later.',
  unavailable:'Kongregate could not be reached. Please try again.',
@@ -45,45 +47,6 @@ const decode=text=>{const s=String(text).replace(/-/g,'+').replace(/_/g,'/');ret
 async function keyed(secret,text){
  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(String(secret||'kongregate')),{name:'HMAC',hash:'SHA-256'},false,['sign']);
  return hex(new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(text))));
-}
-
-// Kongregate's user id: a whole number above 0, as their API gives it (int32), sent as a number or as digits. 0 is a guest, who gets
-// no account (the game shows a guest the Register page and never asks).
-export function kongId(value){
- const text=typeof value==='number'&&Number.isSafeInteger(value)?String(value):typeof value==='string'?value.trim():'';
- return /^[1-9]\d{0,9}$/.test(text)&&Number(text)<=2147483647?text:null;
-}
-// The game auth token as Kongregate hands it to the game: visible characters, no spaces. Never stored or logged.
-export const kongToken=value=>typeof value==='string'&&/^[\x21-\x7e]{1,256}$/.test(value)?value:null;
-
-// Kongregate said no: a wrong or old token, or a user id that is not the token's own (someone changed the id in the address).
-export class KongregateRefused extends Error{constructor(reason){super(MESSAGES.token);this.reason=reason;}}
-// Asks Kongregate whose token this is. The docs disagree in two places, so both ways are understood:
-// - the request: the reference defines user_id, game_auth_token and api_key as query parameters (asked that way); its examples send
-//   them as a JSON body instead, so an answer that says they are missing ("required parameters") is asked once more with a body;
-// - the answer: a refusal comes as {success:false, error:403} with status 200, or as the status itself (403, 401, 400).
-// Gives {userId, username} (Kongregate's, never the game's), throws KongregateRefused for a no and an error with transient=true when
-// Kongregate cannot be reached or answers with something else (a server error, too many requests). At most 5 seconds a call.
-export async function verifyKongregate({userId,token,apiKey,fetchImpl=globalThis.fetch,timeoutMs=5000}){
- const call=async(url,init)=>{
-  let response;
-  try{response=await fetchImpl(url,{...init,headers:{Accept:'application/json',...init.headers},signal:AbortSignal.timeout(timeoutMs)});}
-  catch{throw Object.assign(new Error('Kongregate could not be reached.'),{transient:true});}
-  let data=null;try{data=await response.json();}catch{}
-  return {status:response.status,data:data&&typeof data==='object'&&!Array.isArray(data)?data:null};
- };
- const missing=answer=>answer.data?.success===false&&(Number(answer.data.error)||answer.status)===400&&/required/i.test(String(answer.data.error_description??''));
- let answer=await call(`${AUTH_URL}?${new URLSearchParams({user_id:userId,game_auth_token:token,api_key:apiKey})}`,{method:'GET'});
- if(missing(answer))answer=await call(AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:Number(userId),game_auth_token:token,api_key:apiKey})});
- const {status,data}=answer;
- if(status>=200&&status<300&&data?.success===true){
-  if(String(data.user_id??'')!==userId)throw new KongregateRefused('user');
-  return {userId,username:typeof data.username==='string'?data.username:''};
- }
- const code=data?.success===false?Number(data.error)||status:status;
- const refused=code>=400&&code<500&&code!==408&&code!==429;
- if(refused||(data?.success===false&&!(code>=500)))throw new KongregateRefused(missing(answer)?'request':code===403||code===401?'credentials':`status ${code}`);
- throw Object.assign(new Error(`Kongregate answered ${status}`),{transient:true});
 }
 
 // A Kongregate username (letters, numbers and "_", up to 16 characters) as a farmer name: anything outside the name rule is left out

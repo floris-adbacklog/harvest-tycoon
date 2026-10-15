@@ -104,6 +104,8 @@ function helpers(ctx){
  // Which portal (Oct 2026): Kongregate and Discord have their own lines where CrazyGames' talk about guests and CrazyGames' log-in
  // (the portal, or its name such as portal:'kongregate'; portal:true is CrazyGames, as before). signedIn: those lines, else null.
  const name=typeof around==='string'?around:around?.name,signedIn=Object.hasOwn(SIGNED_IN,name??'')?SIGNED_IN[name]:null;
+ // kreds: Kongregate once it sells with Kreds (15 Oct 2026, its portal's payments on; off until Kongregate says yes): its own shop lines.
+ const kreds=name==='kongregate'&&around?.features?.payments===true;
  const appPush=app&&Boolean(ctx.appPush??appPushOffered()),play=app&&Boolean(ctx.play??playBilling()),appStore=app&&Boolean(ctx.appStore??appStoreBilling()),web=app&&Boolean(ctx.web??webBilling());
  // to: a link to a spot (Oct 2026). On the website the address itself (/wiki/crops#crop-wheat); in the game the topic's own href (never
  // our site: CrazyGames allows no links to it), the spot rides along in data-wiki-anchor.
@@ -114,8 +116,9 @@ function helpers(ctx){
  // anchor: the spot on that topic (Oct 2026), so a link lands on the paragraph it means rather than the top.
  const link=(id,text=TOPIC[id].title,anchor='')=>`<a href="${to(id,anchor)}" data-wiki-topic="${id}"${anchor?` data-wiki-anchor="${anchor}"`:''}>${text}</a>`;
  // shop: our own purchases are there (not on CrazyGames, not in an app that sells nothing; the app 1.1 sells through its store, Oct
- // 2026: Google Play in the Android app, play; the App Store in the iPhone app, appStore); install: installing the web app is.
- return {level,href,to,locked,lvl,row,link,now,portal,signedIn,crazygames:portal&&!signedIn,app,appPush,play,appStore,web,shop:!portal&&(!app||play||appStore||web),install:!portal&&!app};
+ // 2026: Google Play in the Android app, play; the App Store in the iPhone app, appStore; Kongregate with Kreds, kreds); install:
+ // installing the web app is.
+ return {level,href,to,locked,lvl,row,link,now,portal,signedIn,crazygames:portal&&!signedIn,app,appPush,play,appStore,web,kreds,shop:(!portal||kreds)&&(!app||play||appStore||web),install:!portal&&!app};
 }
 // On CrazyGames: what is saved where, and the one link allowed (our Privacy Policy, in full).
 const PORTAL_SAVED='<p>Your farm is saved on our server. As a guest it stays with this browser; log in with CrazyGames to keep it safe and play it on any device. You need an internet connection to play.</p>';
@@ -148,7 +151,9 @@ function passSection(h){
  const rows=P.tiers.map((t,i)=>`<tr><td>${i+1}</td><td>${reward(t.free)}</td><td>${reward(t.paid)}</td></tr>`);
  return section(P.name,`<p>${h.lvl(P.level)} From ${passDay(P.startsAt)} to ${passDay(P.endsAt-DAY)}. Every daily gift gives ${p.gift} lanterns, every daily challenge and every delivery ${p.daily}. Every ${P.perTier} lanterns open the next of ${P.tiers.length} tiers. Collect each reward with its own button, until ${passDay(P.claimUntil-DAY)}.</p>`
   +(!h.shop?`<p>Rewards: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts.</p>`+table(['Tier','Reward'],P.tiers.map((t,i)=>`<tr><td>${i+1}</td><td>${reward(t.free)}</td></tr>`))
-  :`<p>Free: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts. For ${price} the paid rewards open too: ${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts, pies and more coins. Tiers you already reached open at once.</p>`+(passSale(h.now)?`<p>${passSale(h.now)}</p>`:'')
+  // On Kongregate (Kreds, 15 Oct 2026) a sentence of its own: the price is Kongregate's, in Kreds, and the shop shows it.
+  :`<p>${h.kreds?`Free: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts. With Kreds the paid rewards open too: ${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts, pies and more coins. Tiers you already reached open at once.`
+   :`Free: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts. For ${price} the paid rewards open too: ${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts, pies and more coins. Tiers you already reached open at once.`}</p>`+(passSale(h.now)?`<p>${passSale(h.now)}</p>`:'')
   +table(['Tier','Free','Paid'],rows)));
 }
 
@@ -268,10 +273,10 @@ const BODIES={
  },
  quests(h){
   // Each thing that opens is a chip; one explained elsewhere leads there (Oct 2026). The Starter Pack is bought, so never in our Android app
-  // or on CrazyGames and Kongregate (nothing is sold there): How to play there leaves it out, and on the website's wiki data-shop-only lets
-  // public/wiki.css hide it in the app.
+  // or on CrazyGames and Kongregate (nothing is sold there, except Kreds on Kongregate once switched on, 15 Oct 2026): How to play there
+  // leaves it out, and on the website's wiki data-shop-only lets public/wiki.css hide it in the app.
   const chip=e=>{const tag=e.to?'a':'span';return `<${tag} class="wiki-open"${e.mark??''}${e.to?` href="${h.to(...e.to)}" data-wiki-topic="${e.to[0]}"${e.to[1]?` data-wiki-anchor="${e.to[1]}"`:''}`:''}>${art(e.picture)||art('gift')}<span>${e.name}</span>${e.kind?`<small>${e.kind}</small>`:''}</${tag}>`;};
-  const opens=opensByLevel(h.app||h.portal);
+  const opens=opensByLevel(h.app||h.portal&&!h.kreds);
   return section('Quests',facts([
    // Plan F (13 Oct 2026): a field to buy on the Next goal card (proposal 3), and the phone's line that says when everything is ready (2).
    ['quests','One little goal at a time',`${number(QUESTS.length)} quests, from your first harvest to the Grand Valley Fair. They ask for things like harvesting 12 wheat. When one is done, claim its coins and XP, one quest at a time. The number on Quests also counts the daily challenges that are ready; claim those in Today. After the Beginner guide the Next goal card shows one goal: a quest to claim, a daily challenge to claim, a building to build, a new field to buy (fields 9 to 12, once no building waits to be built), the quest closest to done or your next level. On a phone it is one line at the top; while your crops or batches grow and nothing else waits, it says when everything is ready.${h.level==null||h.level>=WORLD_TWO_LEVEL?` <span>From level ${WORLD_TWO_LEVEL}, ${h.link('village',TOPIC.village.title,'sec-village-quests')} has its own quests.</span>`:''}`],
@@ -475,8 +480,10 @@ const BODIES={
   +section('Finish now',`<p>Finish a growing field for ${SINGLE_CROP_COST} diamonds, or a running batch for ${SINGLE_BATCH_COST} (not in the Factory).</p>`)
   +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+dual(table(['Boost','What it does','Diamonds'],boosts),boostCards))
   +section('VIP',`<p>VIP gives 10% faster crops, 10% faster production, 5% more coins at the market and double daily rewards. Buying again adds time; it never gets stronger.</p>`+table(['Plan','Diamonds'],vip))
-  // The App Store's sentence is a text of its own (Oct 2026), so the website's and Google Play's keep their translations.
-  +(!h.shop?'':section('Buying diamonds',`<p>${h.appStore?`One-time purchases, added right after payment. Payments go through the App Store; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL} there is also a Starter Pack for ${STARTER_DAYS} days.`
+  // The App Store's sentence is a text of its own (Oct 2026), so the website's and Google Play's keep their translations. On Kongregate
+  // (Kreds, 15 Oct 2026) the prices are Kongregate's own, in Kreds: no euro table, and the pass is in its own section.
+  +(!h.shop?'':h.kreds?section('Buying diamonds',`<p>One-time purchases with Kreds, Kongregate’s own currency, added to your farm right after payment. The diamond shop shows each price in Kreds. From level ${STARTER_LEVEL} there is also a Starter Pack for ${STARTER_DAYS} days.</p>`)
+  :section('Buying diamonds',`<p>${h.appStore?`One-time purchases, added right after payment. Payments go through the App Store; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL} there is also a Starter Pack for ${STARTER_DAYS} days.`
    :`One-time purchases, added right after payment. ${h.play?'Payments go through Google Play':'Payments go through Stripe'}; we never see your card. The bigger the pack, the more diamonds per euro. From level ${STARTER_LEVEL} there is also a Starter Pack for ${STARTER_DAYS} days.`}${passSale(h.now)?` From level ${SEASON_PASS.level} the ${h.link('daily',SEASON_PASS.name,slug(SEASON_PASS.name))} opens its paid rewards for €${(SEASON_PASS.cents/100).toFixed(2)}. ${passSale(h.now)}`:''}</p>`+table(['Diamonds','Price'],packs)));
  },
  chat(h){

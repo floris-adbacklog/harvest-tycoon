@@ -328,8 +328,11 @@ test('every control CrazyGames does not allow is hidden by the portal flag, and 
   '#email-button','#email-menu-entry','#email-settings','#notify-settings','.reminder-nudge','#app-settings','.wiki-install','#logout-player','#cookie-settings','.chat-translate'];
  const rules=css.replace(/\/\*[^]*?\*\//g,'').replace(/@media[^{]*\{([^{}]*\{[^}]*\})*\s*\}/g,'');
  const none=[...rules.matchAll(/([^{}]+)\{([^}]*)\}/g)].filter(([,,body])=>/display:none!important/.test(body)).flatMap(([,selectors])=>selectors.split(',').map(s=>s.trim()));
+ // Our purchases only where the portal does not sell with its own currency (Kongregate's Kreds, 15 Oct 2026: html[data-portal-shop]).
+ const purchases=['#diamond-store','[data-shop-jump="diamond-store"]','.get-diamonds','#shop-pass','.pass-paid-box','.pass-cell.is-paid'];
  for(const selector of hidden){
-  assert.ok(none.includes(`html[data-portal] ${selector}`),`hidden: ${selector}`);
+  assert.ok(none.includes(purchases.includes(selector)?`html[data-portal]:not([data-portal-shop]) ${selector}`:`html[data-portal] ${selector}`),`hidden: ${selector}`);
+  if(purchases.includes(selector))assert.ok(!none.includes(`html[data-portal] ${selector}`),`a selling portal keeps it: ${selector}`);
   const name=selector.match(/[#.]([\w-]+)|"([\w-]+)"/).slice(1).find(Boolean);assert.ok(sources.includes(name),`still in the game: ${name}`);
  }
  for(const [,selectors] of css.replace(/\/\*[^]*?\*\//g,'').replace(/@media[^{]*\{/g,'').matchAll(/([^{}]+)\{[^}]*\}/g))for(const selector of selectors.split(',').map(s=>s.trim()).filter(Boolean))
@@ -342,7 +345,7 @@ test('the farm frame on CrazyGames: SDK events at farm ready, no purchases, the 
  assert.match(cloud,/const portal=bridge\.portal\?\?null;\n if\(!window\.harvestInitialFarm\)\{if\(portal\)portal\.reopen\(\);else window\.parent\.location\.reload\(\);\}else\{/,'the website\'s sign-in page never opens inside CrazyGames (nor inside the website\'s own frame: the whole page opens again, 3 Oct 2026)');
  assert.match(cloud,/if\(portal\)createPortalUI\(\{portal\}\);/);
  assert.match(cloud,/if\(ready\)\{\n   \/\/[^\n]*\n   if\(portal\)\{portal\.event\('loadingStop'\);portal\.event\('gameplayStart'\);\}/);
- assert.match(cloud,/const shop=!portal;\n   if\(shop\)showPaymentReturn\(bridge\);/);assert.match(cloud,/if\(shop\)\{createOfferUI\(bridge\);\n   await createStarterPackUI\(bridge\);\}/);
+ assert.match(cloud,/const shop=!portal\|\|portalSells\(portal\);\n   if\(shop\)showPaymentReturn\(bridge\);/,'a portal sells only with its own currency (Kongregate\'s Kreds, 15 Oct 2026); CrazyGames never');assert.match(cloud,/if\(shop\)\{createOfferUI\(bridge\);\n   await createStarterPackUI\(bridge\);\}/);
  assert.match(ui,/doc\.documentElement\.dataset\.portal=portal\.name;/);assert.match(ui,/button\.textContent='Save your farm: log in with CrazyGames';/);assert.match(ui,/if\(portal\.guest&&portalLogIn\(portal\)\)\{/);
  assert.match(ui,/button\.onclick=async\(\)=>\{button\.disabled=true;try\{await portal\.showAuthPrompt\(\);\}/,'only from a tap');
  // CrazyGames as before Discord (Oct 2026): its privacy links stay plain links in a new tab; only a portal with openLink takes them over.

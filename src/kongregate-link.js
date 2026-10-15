@@ -67,6 +67,28 @@ export function createKongregateLink({win=globalThis.window,wait=15000,poll=2000
   register(){try{if(typeof api?.services?.showRegistrationBox==='function'){api.services.showRegistrationBox();return true;}}catch{}return false;},
   // A statistic (kongregate.stats.submit); nothing happens when Kongregate does not know it yet. true when it was handed over.
   submit(name,value){try{if(typeof api?.stats?.submit==='function'){api.stats.submit(name,value);return true;}}catch{}return false;},
+  // Kreds (15 Oct 2026): the prices the owner set for our items in Kongregate's Manage Items (kongregate.mtx.requestItemList, all items),
+  // as {identifier: Kreds}; {} without the API, or when Kongregate does not answer in `wait` ms.
+  items(){
+   return new Promise(resolve=>{
+    const mtx=api?.mtx;if(typeof mtx?.requestItemList!=='function'){resolve({});return;}
+    let done=false;const finish=found=>{if(done)return;done=true;timers.clearTimeout(timer);resolve(found);};
+    const timer=timers.setTimeout(()=>finish({}),wait);
+    try{mtx.requestItemList([],result=>finish(result?.success===true&&Array.isArray(result.data)?Object.fromEntries(result.data.filter(item=>typeof item?.identifier==='string'&&Number.isSafeInteger(item.price)).map(item=>[item.identifier,item.price])):{}));}
+    catch{finish({});}
+   });
+  },
+  // Kongregate's own purchase window for one item (kongregate.mtx.purchaseItems), with our purchase row's id as the item's data: answers
+  // {success} when the window closes. Only one window at a time (Kongregate keeps one answer), so the page never asks twice at once.
+  purchase(identifier,data){
+   return new Promise(resolve=>{
+    const mtx=api?.mtx;if(typeof mtx?.purchaseItems!=='function'){resolve({success:false});return;}
+    let done=false;const finish=success=>{if(done)return;done=true;timers.clearTimeout(timer);resolve({success});};
+    const timer=timers.setTimeout(()=>finish(false),PURCHASE_WAIT);
+    try{mtx.purchaseItems([{identifier,data}],result=>finish(result?.success===true));}
+    catch{finish(false);}
+   });
+  },
   onChange(fn){
    listeners.add(fn);
    pollTimer||=timers.setInterval(()=>{if(key(user())!==last)tell();},poll);
@@ -75,6 +97,10 @@ export function createKongregateLink({win=globalThis.window,wait=15000,poll=2000
   dispose(){listeners.clear();timers.clearInterval(pollTimer);pollTimer=0;}
  };
 }
+// Kreds (15 Oct 2026, src/kongregate-kreds.js): the longest Kongregate's purchase window is waited for (a player may first buy Kreds in
+// it). After that the page asks our server anyway, so a purchase that finishes later is still credited at the next claim.
+export const PURCHASE_WAIT=20*60000;
+
 // A stand-in when this page is opened on its own on a computer of our own (http://localhost:…/kongregate.html), to look at the page:
 // the user and the language from the address (?kongregate_user_id=…&kongregate_game_auth_token=…&kongregate_language=…), a guest
 // without them. Kongregate's own window does not exist here. Only for trying the page out; on our real address the page sends a
@@ -82,5 +108,5 @@ export function createKongregateLink({win=globalThis.window,wait=15000,poll=2000
 export function localStandIn({search=globalThis.location?.search??''}={}){
  const values=Object.fromEntries(new URLSearchParams(search||''));
  return {hello:async()=>({api:false,language:siteLanguage(values),user:addressUser(search)}),user:()=>addressUser(search),ready:false,
-  register:()=>false,submit:()=>false,onChange:()=>()=>{},dispose(){}};
+  register:()=>false,submit:()=>false,items:async()=>({}),purchase:async()=>({success:false}),onChange:()=>()=>{},dispose(){}};
 }

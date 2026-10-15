@@ -4,6 +4,8 @@ for(const name of ['diamond-checkout','stripe-webhook','play-voided','app-store-
 for(const name of ['diamond-checkout','play-voided'])copyFileSync(new URL('../game/google-play.js',import.meta.url),new URL(`../supabase/functions/${name}/google-play.js`,import.meta.url));
 // The App Store (Oct 2026): Apple's signed purchases, checked without a key, for the iPhone app's purchases and Apple's notifications.
 for(const name of ['diamond-checkout','app-store-notify'])copyFileSync(new URL('../game/app-store.js',import.meta.url),new URL(`../supabase/functions/${name}/app-store.js`,import.meta.url));
+// Kongregate's server API (15 Oct 2026): the sign-in check for kongregate-auth, and the Kreds inventory, use and prices for diamond-checkout.
+for(const name of ['kongregate-auth','diamond-checkout'])copyFileSync(new URL('../game/kongregate-api.js',import.meta.url),new URL(`../supabase/functions/${name}/kongregate-api.js`,import.meta.url));
 copyFileSync(new URL('../game/farm-state.js',import.meta.url),new URL('../public/farm-state.js',import.meta.url));
 
 copyFileSync(new URL('../game/farm-state.js',import.meta.url),new URL('../supabase/functions/farm-api/farm-state.js',import.meta.url));

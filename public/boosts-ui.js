@@ -12,6 +12,26 @@ const LENGTH_LABELS={'30m':'30 min','1h':'1 hour','1d':'1 day'};
 // The picture of each diamond pack, from a handful to a big chest (painted; plain diamonds until those arrive).
 const PACK_ART=['pack-nest','pack-sack','pack-chest','pack-gold'];
 
+// The diamond packs as tappable cards (the shop's render below; 15 Oct 2026: on its own, so the tests run it): purchasing, the pack
+// being opened; suggestion, the pack that covers what the farmer is short of.
+export function diamondPackCards({catalog=null,purchasing='',suggestion=0}={}){
+ // Kreds on Kongregate (15 Oct 2026, off until Kongregate says yes): a pack Kongregate gives no price is not for sale there (Unavailable),
+ // and with a price for every pack the extra is worked out from Kongregate's own prices, so the tabs stay true whatever the owner sets.
+ const kreds=catalog?.store==='kongregate',kredsAll=kreds&&DIAMOND_PACKS.every(p=>catalog.prices?.[p.amount]?.kreds>0);
+ const perEuro=pack=>pack.amount/(kredsAll?catalog.prices[pack.amount].kreds:Number(pack.price.replace(/[^0-9.]/g,''))),base=perEuro(DIAMOND_PACKS[0]);
+ // In the Android app (Oct 2026) the price is Google Play's, in the farmer's currency (catalog.prices, src/play-store.js); the extra per
+ // euro stays the shop's own.
+ const packPrice=pack=>catalog?.prices?.[pack.amount]?.price??pack.price,forSale=pack=>Boolean(catalog?.enabled)&&!(kreds&&!catalog.prices?.[pack.amount]);
+ const last=DIAMOND_PACKS.length-1,open=Boolean(catalog?.enabled)&&!purchasing;
+ return DIAMOND_PACKS.map((pack,i)=>{
+  const best=i===last,suggested=suggestion===pack.amount,opening=purchasing===String(pack.amount),sale=forSale(pack);
+  const extra=Math.round((perEuro(pack)/base-1)*100);
+  const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':best?`<span class="pack-ribbon">+${extra}% extra</span>`:extra>0?`<span class="pack-ribbon is-extra">+${extra}% extra</span>`:'';
+  const foot=opening?'Opening…':sale?packPrice(pack):catalog?'Unavailable':packPrice(pack);
+  const label=kreds&&!sale?`${number(pack.amount)} diamonds`:`Buy ${number(pack.amount)} diamonds for ${packPrice(pack)}`;
+  return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':sale?'available':'unavailable'}" aria-label="${label}" ${open&&sale?'':'disabled'}>${tag}<span class="pack-amount"><b>${number(pack.amount)}</b><small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}${best?'<span class="pack-best">Best value</span>':''}<span class="pack-price">${foot}</span></button>`;}).join('');
+}
+
 export function createBoostsUI({state,runAction,onChange,notify}){
  let lastStatus='',catalog=null,purchasing='',requests={},selectedFields=[],selectedBatches=[],finishing=false;
  // The length picked on each timed boost: 30 minutes every time the shop opens and after each purchase.
@@ -95,17 +115,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   // Short of diamonds for something here: the smallest pack that covers it gets a green tab.
   // Each bigger pack's tab says how many more diamonds per euro it gives than the smallest pack, rounded. The biggest has a gold tab
   // and "Best value" above its price (1 Oct 2026: "Best value · +86%" did not fit on one tab and was cut off).
-  const perEuro=pack=>pack.amount/Number(pack.price.replace(/[^0-9.]/g,'')),base=perEuro(DIAMOND_PACKS[0]);
-  // In the Android app (Oct 2026) the price is Google Play's, in the farmer's currency (catalog.prices, src/play-store.js); the extra per
-  // euro stays the shop's own.
-  const packPrice=pack=>catalog?.prices?.[pack.amount]?.price??pack.price;
-  const last=DIAMOND_PACKS.length-1,open=Boolean(catalog?.enabled)&&!purchasing;
-  $('diamond-packs').innerHTML=DIAMOND_PACKS.map((pack,i)=>{
-   const best=i===last,suggested=suggestion===pack.amount,opening=purchasing===String(pack.amount);
-   const extra=Math.round((perEuro(pack)/base-1)*100);
-   const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':best?`<span class="pack-ribbon">+${extra}% extra</span>`:extra>0?`<span class="pack-ribbon is-extra">+${extra}% extra</span>`:'';
-   const foot=opening?'Opening…':catalog?.enabled?packPrice(pack):catalog?'Unavailable':packPrice(pack);
-   return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':catalog?.enabled?'available':'unavailable'}" aria-label="Buy ${number(pack.amount)} diamonds for ${packPrice(pack)}" ${open?'':'disabled'}>${tag}<span class="pack-amount"><b>${number(pack.amount)}</b><small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}${best?'<span class="pack-best">Best value</span>':''}<span class="pack-price">${foot}</span></button>`;}).join('')
+  $('diamond-packs').innerHTML=diamondPackCards({catalog,purchasing,suggestion})
    +(catalog?.mode==='test'?'<p class="pack-note">Test checkout: no real payment.</p>':'')
    +(packError?`<p class="pack-error" role="alert">${packError.message}</p>`:'');
   $('diamond-packs').querySelectorAll('[data-diamond-pack]').forEach(button=>button.onclick=async()=>{

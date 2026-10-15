@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createKongregateLink,localStandIn,cleanUser,addressUser,siteLanguage,isGuest,API_SCRIPT,GUEST} from '../src/kongregate-link.js';
 import {runKongregatePage,TEXT,KG_KEY,LOCALE_KEY,SOURCE,LEVEL_STAT,TOTAL_STATS} from '../src/kongregate-page.js';
-import {portal as portalAround,portalOff,portalChat,portalLogIn,PORTAL_FEATURES,PRIVACY_URL,PRIVACY_CONTACT,privacyContact,openOut} from '../public/portal.js';
+import {portal as portalAround,portalOff,portalChat,portalLogIn,portalSells,PORTAL_FEATURES,PRIVACY_URL,PRIVACY_CONTACT,privacyContact,openOut} from '../public/portal.js';
 import {wikiArticle,wikiQuick,WIKI_TOPICS} from '../public/wiki-content.js';
 import {createPortalUI} from '../src/portal-ui.js';
 import {linkify} from '../src/popup-ui.js';
@@ -200,7 +200,7 @@ test('no address out of the game in Kongregate mode: popups and staff messages p
  let stopped=0;const tap={target:{closest:sel=>sel===`a[href="${PRIVACY_URL}"]`?{}:null},preventDefault:()=>stopped++};
  assert.equal(openOut(tap,KONG),false);assert.equal(stopped,0);assert.equal(typeof KONG.openLink,'undefined');
  assert.match(read('public/farm-share.js'),/!portalOff\('share'\)/);assert.match(read('src/game-cloud.js'),/if\(!portal\)void loadStaff/,'no Copy link for the staff there');
- assert.match(read('src/game-cloud.js'),/const shop=!portal;/,'no payment return, special offer or Starter Pack');
+ assert.match(read('src/game-cloud.js'),/const shop=!portal\|\|portalSells\(portal\);/,'no payment return, special offer or Starter Pack while it sells no Kreds');assert.equal(portalSells(KONG),false);
  assert.match(read('public/wiki-ui.js'),/if\(portal\(\)\)return;/);
  // No number on an app icon there: there is no app of ours (public/app-badge.js).
  return (async()=>{
@@ -245,11 +245,15 @@ test('src/kongregate.js: only on Kongregate (on its own our address sends the vi
  const js=read('src/kongregate.js'),page=read('src/kongregate-page.js');
  assert.match(js,/if\(!framed&&!local\)location\.replace\('\/'\);/);
  assert.match(js,/link:framed\?createKongregateLink\(\{win:window\}\):localStandIn\(\{search:location\.search\}\)/);
- for(const source of [js,page,read('src/kongregate-link.js')]){
+ for(const source of [js,page,read('src/kongregate-link.js'),read('src/kongregate-kreds.js')]){
   assert.doesNotMatch(source,/window\.top|top\.location/,'never Kongregate\'s own page');
   assert.doesNotMatch(source,/trackCommerce|trackInvite|pushEvent|dataLayer|gtag|fbq|ttq/,'no trackers');
  }
- assert.doesNotMatch(page,/paymentRequest|createNotifications/,'no purchases or reminders in this session');
+ // No purchases or reminders in the farm session: Kreds (15 Oct 2026) go through the page's own shop (src/kongregate-kreds.js), only
+ // with SELLS_KREDS on, which it is not until Kongregate says yes.
+ assert.doesNotMatch(js.match(/sessionDeps:\{[^}]*\}/)[0],/paymentRequest|createNotifications/);
+ assert.doesNotMatch(page.match(/session=createFarmSession\(\{[^]*?\n \}\);/)[0],/paymentRequest|createNotifications/);
+ assert.doesNotMatch(page,/createNotifications/);assert.match(page,/\nexport const SELLS_KREDS=false;\n/,'off until Kongregate allows the Virtual Goods API');
  assert.match(page,/await askServer\(\{op:'kongregate',user_id:user\.id,game_auth_token:user\.token,language:chosenLanguage\(\)\},now\?\.access_token\)/);
  assert.match(page,/verifyOtp\(\{token_hash:reply\.token_hash,type:'magiclink'\}\)/);
  assert.equal((page.match(/link\.register\(\)/g)??[]).length,2,'only from a tap: the Register button, and the portal\'s log-in (never asked for: no guests in the farm)');

@@ -2,6 +2,7 @@ import {isGuest,GUEST} from './kongregate-link.js';
 import {portalLanguage} from './crazygames-link.js';
 import {ACCOUNT_STEPS,LOAD_FAILED_TEXT} from '../public/loading-screen.js';
 import {PORTAL_FEATURES,PRIVACY_CONTACT,privacyContact} from '../public/portal.js';
+import {createKredsShop} from './kongregate-kreds.js';
 // Harvest Tycoon on Kongregate (Oct 2026): what public/kongregate.html does, from the moment Kongregate's API says who plays
 // (src/kongregate.js hands it everything it talks to, so tests run all of it). Kongregate allows only its own log-in, so there is no
 // sign-in card and no guest farm: a player signed in to Kongregate gets their own farm (their user id and game auth token are checked
@@ -9,6 +10,12 @@ import {PORTAL_FEATURES,PRIVACY_CONTACT,privacyContact} from '../public/portal.j
 // Kongregate's own sign-in window. A guest who signs in, or another Kongregate user, gets the farm of whoever plays now. The farm itself
 // opens exactly as on the website (src/farm-session.js), with a portal on the bridge that tells the game what Kongregate does not allow
 // (public/portal.js): every purchase, sign-up, email, reminder, app, invite and link out.
+// Kreds (15 Oct 2026, the owner): Kongregate's own currency, built and switched off until Kongregate allows the game its Virtual Goods
+// API (an email to developers@kongregate.com, the box "I would like to access Kongregate's Virtual Goods API" and a new review;
+// ~/Harvest Tycoon/kongregate/kreds-uitrollen.md). While SELLS_KREDS is false nothing about the shop is on Kongregate, exactly as before:
+// the portal keeps payments off (the game shows no shop, price or Starter Pack) and the farm session has no way to buy. With it true
+// the shop sells for Kreds (src/kongregate-kreds.js). diamond-checkout has its own switch (KONG_PAYMENTS_ENABLED), so both must be on.
+export const SELLS_KREDS=false;
 // The sign-in of this page, in its own place on the device, apart from the website's and CrazyGames'.
 export const KG_KEY='harvest-tycoon:kg-user';
 // The language Kongregate's site was in last time: it is only applied again when that language changes, so a language picked in
@@ -42,7 +49,8 @@ export async function runKongregatePage({
  portalClient,setClient,functionsUrl,supabaseKey,isConfigured,fetchImpl=(...args)=>globalThis.fetch(...args),
  createFarmSession,sessionDeps={},cloudError=error=>error?.message||'We could not connect. Please try again.',
  startTranslation=()=>{},chooseLanguage=()=>{},chosenLanguage=()=>'en',startUpdateCheck=()=>{},
- startLoadingTips=()=>()=>{},farmHandOver=()=>({wait(){},stop(){}}),stopPageZoom=()=>{}
+ startLoadingTips=()=>()=>{},farmHandOver=()=>({wait(){},stop(){}}),stopPageZoom=()=>{},
+ sellsKreds=SELLS_KREDS,paymentRequest=null
 }){
  const $=id=>doc.getElementById(id);
  stopPageZoom(doc);
@@ -56,10 +64,12 @@ export async function runKongregatePage({
  void startTranslation();
  startUpdateCheck();
 
- // ---- The portal the game reads (public/portal.js): everything off, a player always signed in, the privacy contact ----
+ // ---- The portal the game reads (public/portal.js): everything off (payments on only with Kreds), a player always signed in, the
+ // privacy contact ----
  let session=null;
+ const kreds=sellsKreds&&typeof paymentRequest==='function';
  const portal={
-  name:'kongregate',features:Object.freeze(Object.fromEntries(PORTAL_FEATURES.map(feature=>[feature,false]))),
+  name:'kongregate',features:Object.freeze(Object.fromEntries(PORTAL_FEATURES.map(feature=>[feature,feature==='payments'&&kreds]))),
   // The farm only ever opens for a player signed in to Kongregate: never a guest, no settings of Kongregate's own.
   guest:false,settings:Object.freeze({muteAudio:false,disableChat:false}),userAvailable:true,privacyContact:PRIVACY_CONTACT,
   event(){},
@@ -94,6 +104,8 @@ export async function runKongregatePage({
 
  // ---- Who plays ----
  let client=null,active=null;
+ // Kreds (off while SELLS_KREDS is false): the shop of the farm whose Kongregate user plays now.
+ const shop=kreds?createKredsShop({link,pay:paymentRequest,current:()=>active}):null;
  const own=()=>client??=portalClient(KG_KEY);
  async function sessionNow(){try{const {data}=await own().auth.getSession();return data?.session??null;}catch{return null;}}
  // The sign-in ends on this device only (a guest now, or a new start after a session that ended).
@@ -128,9 +140,10 @@ export async function runKongregatePage({
   host:()=>$('farm-host'),phase,unavailable:pause,signedOut,
   firstLoad:()=>({source:{...SOURCE}}),
   track:{game:(event,params)=>{const level=levelFor(event,params);if(level)link.submit(LEVEL_STAT,level);for(const [name,value] of totalsFor(event,params))link.submit(name,value);}},
-  extend(bridge){
+  extend(bridge,{alive,user}={}){
    // No Sign out on Kongregate (portal.css hides the button): Kongregate's own log-in is the only one.
    bridge.portal=portal;bridge.signOut=()=>{};
+   shop?.attach(bridge,{alive,user});
   }
  });
  let running=false,again=false,endedAt=0,retries=0;

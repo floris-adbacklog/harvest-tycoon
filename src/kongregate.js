@@ -1,4 +1,4 @@
-import {supabase,portalClient,useClient,supabaseKey,functionsUrl,isConfigured,verifiedUser,farmRequest,cloudError} from './supabase.js';
+import {supabase,portalClient,useClient,supabaseKey,functionsUrl,isConfigured,verifiedUser,farmRequest,paymentRequest,cloudError} from './supabase.js';
 import {createFarmSession} from './farm-session.js';
 import {createFarmPresence} from './presence.js';
 import {fetchLeaderboard} from './leaderboard.js';
@@ -20,5 +20,7 @@ else void runKongregatePage({
  link:framed?createKongregateLink({win:window}):localStandIn({search:location.search}),
  portalClient,setClient:useClient,functionsUrl,supabaseKey,isConfigured,createFarmSession,cloudError,
  sessionDeps:{supabase:()=>supabase,verifiedUser,farmRequest,fetchLeaderboard,createFarmPresence,createChatClient},
- startTranslation,chooseLanguage,chosenLanguage,startUpdateCheck,startLoadingTips,farmHandOver,stopPageZoom
+ startTranslation,chooseLanguage,chosenLanguage,startUpdateCheck,startLoadingTips,farmHandOver,stopPageZoom,
+ // Kreds (15 Oct 2026): diamond-checkout, used only once the page sells them (src/kongregate-page.js SELLS_KREDS); never the farm session's.
+ paymentRequest
 });

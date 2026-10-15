@@ -1,4 +1,4 @@
-import {privacyLine,privacyContact,PRIVACY_URL,portalLogIn,openOut} from '../public/portal.js';
+import {privacyLine,privacyContact,PRIVACY_URL,portalLogIn,openOut,portalSells} from '../public/portal.js';
 // The farm on CrazyGames, Kongregate or Discord (Oct 2026; src/game-cloud.js calls this only there). The page is marked
 // (html[data-portal], so portal.css hides what the portal does not allow: our purchases, invites, sharing, email, reminders, the app,
 // Sign out and cookies) and gets what the portal asks for instead:
@@ -7,6 +7,8 @@ import {privacyLine,privacyContact,PRIVACY_URL,portalLogIn,openOut} from '../pub
 //   log-in window, only when tapped; a guest who logs in keeps this farm (src/crazygames.js).
 export function createPortalUI({portal,doc=globalThis.document}){
  doc.documentElement.dataset.portal=portal.name;
+ // Kongregate with Kreds (15 Oct 2026): its shop stays (portal.css hides our purchases only without html[data-portal-shop]).
+ if(portalSells(portal))doc.documentElement.dataset.portalShop='';
  const stage=doc.querySelector('#loading .farm-loading-stage');
  if(stage&&!stage.querySelector('.portal-privacy')){const line=doc.createElement('p');line.className='portal-privacy';line.innerHTML=privacyLine();stage.append(line);}
  const privacy=doc.getElementById('privacy-settings');

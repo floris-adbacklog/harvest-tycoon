@@ -131,6 +131,63 @@ export const APPLE_PRODUCTS=PLAY_PRODUCTS;
 // an offer from level 10, the level of App Review's demo account. Set it to true (site and diamond-checkout) when special_offer goes to
 // Apple's review as an in-app purchase. The Starter Pack (level 14) is not affected.
 export const APPLE_SELLS_OFFER=false;
+// Kreds on Kongregate (15 Oct 2026, the owner: built now, switched on once Kongregate allows the game its Virtual Goods API). The same
+// packs as Kongregate's own items (its developer portal, Manage Items: consumables of 1 use) with the Google Play product ids as their
+// identifiers, at prices in Kreds the owner sets there; the game shows only Kongregate's own prices (src/kongregate-kreds.js). A purchase
+// is the same row again (store 'kongregate', price_id = the identifier, amount_cents the euro list price so every check and the admin's
+// list stay as they are; kong_item_id = Kongregate's item instance, kreds = its price; supabase/kongregate-kreds.sql). diamond-checkout
+// kong_claim credits what the player owns at Kongregate (user_items.json), each instance once, and then uses it up there (use_item.json).
+export const KONG_PRODUCTS=PLAY_PRODUCTS;
+export const kongProduct=pack=>playProduct(pack);
+// The pack an identifier sells, or null.
+export const kongPack=identifier=>typeof identifier==='string'?Object.keys(KONG_PRODUCTS).find(pack=>KONG_PRODUCTS[pack]===identifier)??null:null;
+// Off until Kongregate says yes: diamond-checkout sells Kreds only when KONG_PAYMENTS_ENABLED is exactly 'true'.
+export const kongPaymentsEnabled=flag=>String(flag??'').trim()==='true';
+// Kongregate's test accounts (KONGREGATE_TEST_USERS, user ids with commas between): the developer account buys for 0 Kreds, so its
+// purchases are credited as livemode false (no revenue, no partner share), as Apple's sandbox.
+export const kongTestUsers=text=>new Set(String(text??'').split(',').map(id=>id.trim()).filter(id=>/^[1-9]\d{0,9}$/.test(id)));
+// How often a farmer's page may make diamond-checkout ask Kongregate for its purchases (kong_claim, 15 Oct 2026 review): once in 5
+// seconds and 120 times an hour per Kongregate account, checked with the account's own row before Kongregate is asked
+// (supabase/kongregate-kreds.sql harvest_kong_claim_slot), as kongregate-auth limits its sign-in checks. The page asks at most every
+// 10 seconds by itself (src/kongregate-kreds.js CLAIM_GAP); a purchase window open a minute asks about 6 times.
+export const KONG_CLAIM_LIMIT=Object.freeze({gapMs:5000,perHour:120});
+// A price in Kreds worth keeping beside a purchase (supabase/kongregate-kreds.sql: 1 to 100,000), else null.
+export const kongKreds=value=>Number.isSafeInteger(value)&&value>=1&&value<=100000?value:null;
+// What to do with each item a Kongregate player owns (diamond-checkout kong_claim), lowest instance first:
+// - 'use': credited before (a row has this instance): only used up at Kongregate again, never credited twice;
+// - 'credit': this farmer's own pending Kongregate row for the same product: the one named in the instance's data (the row id the page
+//   gave Kongregate's purchase window), else the oldest one (a special offer or pass: the newest);
+// - 'new': no row left for a diamond pack (bought outside our window, or the data changed by a browser plugin): a new row for it;
+// - 'leave': no row left for a Starter Pack, special offer or pass (its contents come from its row): not credited, not used up, logged.
+// instances: Kongregate's (game/kongregate-api.js kongUserItems); claimed: rows that hold one of these instances; rows: this farmer's
+// pending Kongregate rows without one, oldest first. Another farmer's row, or a row of another product, is never taken.
+export function kongPlan(instances,{player,claimed=[],rows=[]}){
+ const taken=new Set(),plan=[],seen=new Map();
+ for(const i of instances??[])if(kongPack(i?.identifier)&&Number.isSafeInteger(i.id)&&i.id>0&&!seen.has(i.id))seen.set(i.id,i);
+ for(const instance of [...seen.values()].sort((a,b)=>a.id-b.id)){
+  const pack=kongPack(instance.identifier),done=claimed.find(r=>Number(r?.kong_item_id)===instance.id);
+  if(done){plan.push({kind:'use',instance,pack,row:done});continue;}
+  const fits=r=>Boolean(r)&&r.player_id===player&&r.store==='kongregate'&&r.status==='pending'&&r.kong_item_id==null&&r.pack===pack&&r.price_id===instance.identifier&&!taken.has(r.id);
+  const data=typeof instance.data==='string'?instance.data.trim().toLowerCase():'';
+  // No row named: a diamond pack's oldest; a special offer's or pass's newest (15 Oct 2026 review: an older one may be an offer that has
+  // ended, the newest is the one most likely on sale now), so paid Kreds always find a row of theirs.
+  const row=(UUID.test(data)?rows.find(r=>r?.id===data&&fits(r)):null)??(pack==='offer'||pack==='pass'?rows.findLast(fits):rows.find(fits));
+  if(row){taken.add(row.id);plan.push({kind:'credit',instance,pack,row});}
+  else plan.push({kind:/^\d+$/.test(pack)?'new':'leave',instance,pack});
+ }
+ return plan;
+}
+// A row about to be credited for a Kongregate item: this farmer's Kongregate row for that product, with the contents and amounts of
+// its pack (the same checks as Google Play's and Apple's). Anything else throws.
+export function checkKongPurchase(purchase,{product,player}){
+ if(!purchase||typeof product!=='string'||kongProduct(purchase.pack)!==product||purchase.price_id!==product)throw new Error('Product mismatch.');
+ if(typeof player!=='string'||purchase.player_id!==player||purchase.store!=='kongregate')throw new Error('Purchase ownership mismatch.');
+ const pack=paymentPack(purchase.pack);
+ if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||offerProblem({diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0})))throw new Error('Offer mismatch.');
+ if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
+ if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
+ return {product};
+}
 export const APPLE_TRANSACTION=/^[0-9]{1,20}$/;
 export const APPLE_JWS=/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 export const APPLE_JWS_MAX=16000;

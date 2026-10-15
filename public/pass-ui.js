@@ -19,9 +19,12 @@ export function passRule(){const p=SEASON_PASS.points;return `Every daily gift g
 // What the paid row holds in all, from the tiers (farm-state.js): its diamonds, VIP and boosts.
 export const passPaidTotals=passTotals;
 // A true comparison only: the shop's own price for as many diamonds as the paid row holds (as the Starter Pack does), never a "was" price.
-export function passValueLine(){
+// On Kongregate Kongregate's own price for that pack, in Kreds (15 Oct 2026; no line while Kongregate gives it none); everywhere else
+// the euro price as before.
+export function passValueLine(catalog=null){
  const {diamonds}=passPaidTotals(),pack=DIAMOND_PACKS.find(p=>p.amount===diamonds);
- return pack?`The ${number(diamonds)} diamonds alone cost ${pack.price} in the shop.`:'';
+ const price=catalog?.store==='kongregate'?catalog.prices?.[diamonds]?.price:pack?.price;
+ return pack&&price?`The ${number(diamonds)} diamonds alone cost ${price} in the shop.`:'';
 }
 // One reward as a picture, an amount and what it is: rewardParts for one worked out already (a claim's result), passRewardParts for a
 // tier's reward at this farm's level (its coins grow with the level).
@@ -62,7 +65,7 @@ export function passPaidBox(state,{phase,now,catalog=null,pending=false,feedback
  // No tiers are reached before the season, so that part waits for it.
  const holds=soon?`${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts and more.`
   :`${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts and more. Tiers you already reached open at once.`;
- return `<section class="pass-paid-box"><div class="pass-paid-copy"><strong>Unlock the paid rewards</strong><small>${holds}</small><small class="pass-value">${passValueLine()}</small><small class="pass-avatar-line"><img src="/assets/avatars/lantern-keeper.webp" alt="" width="40" height="40" loading="lazy" decoding="async" draggable="false">With the Lantern keeper avatar, yours at once.</small>${soon?`<small class="pass-starts" data-pass-starts>${passStartsLine(state,now)}</small>`:''}</div>`
+ return `<section class="pass-paid-box"><div class="pass-paid-copy"><strong>Unlock the paid rewards</strong><small>${holds}</small><small class="pass-value">${passValueLine(catalog)}</small><small class="pass-avatar-line"><img src="/assets/avatars/lantern-keeper.webp" alt="" width="40" height="40" loading="lazy" decoding="async" draggable="false">With the Lantern keeper avatar, yours at once.</small>${soon?`<small class="pass-starts" data-pass-starts>${passStartsLine(state,now)}</small>`:''}</div>`
   +`<button type="button" class="primary-button pass-buy" ${ready&&!pending?'':'disabled'}>${label}</button><p class="pass-feedback" role="status" aria-live="polite">${note}</p></section>`;
 }
 // The small line under the tile in the More menu.

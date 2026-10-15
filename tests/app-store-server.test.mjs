@@ -369,7 +369,8 @@ test('the admin panel says App Store for an App Store purchase; a sandbox one is
  const {data}=await handleAdminPurchases({admin:db,user:owner});
  assert.deepEqual(data.purchases.map(p=>p.store),['app_store','app_store','google_play','stripe']);
  assert.equal(data.totals.revenueCents,499+199,'the sandbox purchase is no revenue');
- assert.match(read('src/admin-dashboard.js'),/\$\{p\.store==='google_play'\?' · Google Play':p\.store==='app_store'\?' · App Store':''\}/);
+ // Kongregate's Kreds (15 Oct 2026) after them, its own word (tests/kongregate-kreds.test.mjs).
+ assert.match(read('src/admin-dashboard.js'),/\$\{p\.store==='google_play'\?' · Google Play':p\.store==='app_store'\?' · App Store':p\.store==='kongregate'\?' · Kongregate':''\}/);
 });
 
 // 10 Oct 2026 (tests/checkout-fixes.test.mjs has the rest): the website's checkout, run for real with the stand-ins.

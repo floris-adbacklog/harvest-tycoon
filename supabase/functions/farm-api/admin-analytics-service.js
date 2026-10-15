@@ -261,8 +261,9 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
 // Every checkout (27 Sep 2026), paid or not, newest first, with the farmer who started it: for the admin only, not the moderators
 // (money). A checkout stays 'pending' until Stripe confirms the payment; a farmer who closes the payment page leaves it there.
 // A farmer who deleted their account (3 Oct 2026, supabase/delete-account.sql) leaves the purchase without a player: "Deleted account".
-// store: 'stripe' (the website), 'google_play' (the Android app, Oct 2026) or 'app_store' (the iPhone app, Oct 2026); 'refunded': Google
-// or Apple refunded it (play-voided, app-store-notify). A sandbox App Store purchase is credited but not live, so it is no revenue.
+// store: 'stripe' (the website), 'google_play' (the Android app, Oct 2026), 'app_store' (the iPhone app, Oct 2026) or 'kongregate' (Kreds,
+// 15 Oct 2026; its amount the euro list price); 'refunded': Google or Apple refunded it (play-voided, app-store-notify), or the owner took
+// back what Kongregate refunded. A sandbox App Store purchase or a Kongregate test account's is credited but not live, so it is no revenue.
 export async function handleAdminPurchases({admin,user,limit=500}){
  if(!isSuperadmin(user))return respond(user,{error:'Not authorized.'},403);
  const found=await admin.from('harvest_purchases').select('id,player_id,pack,diamonds,coins,amount_cents,livemode,status,store,created_at,credited_at').order('created_at',{ascending:false}).limit(limit);
@@ -270,7 +271,7 @@ export async function handleAdminPurchases({admin,user,limit=500}){
  const rows=found.data??[],ids=[...new Set(rows.map(r=>r.player_id).filter(Boolean))];
  const stats=await rowsFor(()=>admin.from('player_stats').select('player_id,username,level'),ids);
  const who=new Map(stats.map(s=>[s.player_id,s]));
- const purchases=rows.map(r=>({id:r.id,playerId:r.player_id,username:r.player_id?who.get(r.player_id)?.username??'Farmer':'Deleted account',level:who.get(r.player_id)?.level??null,pack:r.pack,diamonds:r.diamonds??0,coins:r.coins??0,amountCents:r.amount_cents??0,live:r.livemode!==false,status:r.status,store:['google_play','app_store'].includes(r.store)?r.store:'stripe',createdAt:r.created_at,creditedAt:r.credited_at}));
+ const purchases=rows.map(r=>({id:r.id,playerId:r.player_id,username:r.player_id?who.get(r.player_id)?.username??'Farmer':'Deleted account',level:who.get(r.player_id)?.level??null,pack:r.pack,diamonds:r.diamonds??0,coins:r.coins??0,amountCents:r.amount_cents??0,live:r.livemode!==false,status:r.status,store:['google_play','app_store','kongregate'].includes(r.store)?r.store:'stripe',createdAt:r.created_at,creditedAt:r.credited_at}));
  const paid=purchases.filter(p=>p.status==='credited'&&p.live);
  return respond(user,{purchases,totals:{started:purchases.length,paid:paid.length,notFinished:purchases.filter(p=>p.status!=='credited').length,revenueCents:paid.reduce((n,p)=>n+p.amountCents,0),players:new Set(purchases.map(p=>p.playerId).filter(Boolean)).size}});
 }

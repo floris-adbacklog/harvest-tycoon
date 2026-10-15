@@ -21,6 +21,10 @@ export function portal(win=globalThis.window){
 export const APP_OFF=Object.freeze(['payments']);
 // True only where a portal switched this feature off, or the app does.
 export function portalOff(feature,found=portal(),app=androidApp(),billing=appBilling()){return (Boolean(found)&&found.features?.[feature]===false)||(app&&APP_OFF.includes(feature)&&!(feature==='payments'&&billing));}
+// A portal that sells with its own currency (Kongregate's Kreds, 15 Oct 2026: src/kongregate-page.js SELLS_KREDS, off until Kongregate
+// says yes): payments on there, so the shop, its prices and the Starter Pack are back (src/game-cloud.js, html[data-portal-shop] in
+// portal.css). On harvesttycoon.com there is no portal, and every other portal sells nothing.
+export const portalSells=(found=portal())=>Boolean(found)&&found.features?.payments===true;
 // The chat on a portal (one rule each): 'off' when CrazyGames switches chat off (its disableChat setting), 'guest' for a guest (the
 // chat is for players logged in with CrazyGames; they see a way to log in instead), else 'on'. Always 'on' on the website. A guest
 // where CrazyGames has no accounts (portalLogIn false) cannot log in, so there the chat is simply not there (Oct 2026 review).

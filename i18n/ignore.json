@@ -79,5 +79,9 @@
  "No farmer matches: nobody gets this email.",
  "More than 5,000 farmers match. Choose a higher level or fewer days.",
  "The server did not answer. Look under Last emails before you send again: Continue goes on where it stopped.",
- "Escape"
+ "Escape",
+ "Kreds",
+ "{0} Kreds",
+ "Only a diamond pack",
+ "Purchase without a farmer"
 ]

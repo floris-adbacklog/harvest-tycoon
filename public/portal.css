@@ -2,11 +2,12 @@
    applies. CrazyGames allows no purchases of our own, no invites or sharing links, no email, reminders or app, no Sign out and no
    cookie banner: those step aside here (the JS that would use them checks public/portal.js too). */
 /* Purchases: the diamond packs and every "Get diamonds" (boosts and VIP with earned diamonds stay), the Halloween Pass's paid row,
-   its buy box and its banner in the shop (the free row stays). */
-html[data-portal] #diamond-store,html[data-portal] [data-shop-jump="diamond-store"],html[data-portal] .get-diamonds,
-html[data-portal] #shop-pass,html[data-portal] .pass-paid-box,html[data-portal] .pass-cell.is-paid,html[data-portal] .pass-heads b:last-child{display:none!important}
-html[data-portal] .pass-heads,html[data-portal] .pass-row{grid-template-columns:34px minmax(0,1fr)}
-@media(max-width:600px){html[data-portal] .pass-heads,html[data-portal] .pass-row{grid-template-columns:26px minmax(0,1fr)}}
+   its buy box and its banner in the shop (the free row stays). Not on a portal that sells with its own currency: Kongregate with Kreds
+   (15 Oct 2026, off until Kongregate says yes) marks html[data-portal-shop] (src/game-cloud.js) and keeps the shop. */
+html[data-portal]:not([data-portal-shop]) #diamond-store,html[data-portal]:not([data-portal-shop]) [data-shop-jump="diamond-store"],html[data-portal]:not([data-portal-shop]) .get-diamonds,
+html[data-portal]:not([data-portal-shop]) #shop-pass,html[data-portal]:not([data-portal-shop]) .pass-paid-box,html[data-portal]:not([data-portal-shop]) .pass-cell.is-paid,html[data-portal]:not([data-portal-shop]) .pass-heads b:last-child{display:none!important}
+html[data-portal]:not([data-portal-shop]) .pass-heads,html[data-portal]:not([data-portal-shop]) .pass-row{grid-template-columns:34px minmax(0,1fr)}
+@media(max-width:600px){html[data-portal]:not([data-portal-shop]) .pass-heads,html[data-portal]:not([data-portal-shop]) .pass-row{grid-template-columns:26px minmax(0,1fr)}}
 /* Invite a friend and Share my farm (both links to our website). */
 html[data-portal] #invite-button,html[data-portal] [data-menu-action="invite-button"],html[data-portal] .family-invite-friend,
 html[data-portal] .level-up-share,html[data-portal] .farmer-share{display:none!important}

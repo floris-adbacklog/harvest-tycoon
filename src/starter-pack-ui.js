@@ -16,10 +16,15 @@ export async function createStarterPackUI(bridge){
  const buy=dialog.querySelector('.starter-buy'),feedback=dialog.querySelector('.starter-feedback'),time=dialog.querySelector('.starter-time'),value=dialog.querySelector('.starter-value');
  // What the pack is worth, from the shop's own prices (the server catalogue): the pack of as many diamonds as the Starter Pack (27 Sep
  // 2026). A plain comparison, never a made-up "was" price; in the Android app at Google Play's price (public/android.js shopPrice).
- let catalog=null,offset=0,pending=false,disposed=false,requestId='',refreshing=false,checkedAt=0;
+ let catalog=null,offset=0,pending=false,disposed=false,requestId='',refreshing=false,checkedAt=0,hudPrice='€2.99';
  function render(){
   const offer=catalog?.starter,remaining=(offer?.expiresAt??0)-(Date.now()+offset),eligible=offer?.eligible&&remaining>0;
   button.hidden=chip.hidden=!eligible;buy.disabled=pending||!eligible||!catalog?.enabled;
+  // The tile and the chip show Kongregate's price in Kreds there (15 Oct 2026, off until Kongregate says yes), everywhere else the euro
+  // price as before (the apps' prices only in the window: one such as 'Rp 49.000' does not fit the phone's 62-pixel tile). Only touched
+  // when it changes (the translation reads them again each time); a long one sits a little closer together (is-long, starter-pack.css).
+  const price=catalog?.store==='kongregate'?shopPrice(catalog,'starter',299):'€2.99';
+  if(price!==hudPrice){hudPrice=price;for(const hud of [button,chip]){const small=hud.querySelector('small');small.textContent=price;small.classList.toggle('is-long',price.length>6);hud.setAttribute('aria-label',`Starter Pack, ${price}`);}}
   // In the Android app (Oct 2026) Google Play's prices, in the farmer's currency (public/android.js shopPrice).
   buy.textContent=pending?'Opening secure checkout…':catalog?.mode==='test'?'Test purchase · €2.99':catalog?.prices?.starter?`Buy for ${shopPrice(catalog,'starter',299)}`:'Buy for €2.99';
   time.textContent=offer?.claimed?'Already received':eligible?`Only in your first week at level ${STARTER_LEVEL} · ${formatDuration(remaining)} left`:'This offer has ended';
