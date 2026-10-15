@@ -104,8 +104,13 @@ export function farmHandOver(win,screen,{wait=20000,frame=()=>win.document?.quer
   if((still+=1000)<(failed?FRAME_FAILED_MS:LOAD_STALL_MS))return;
   stop();const again=retriedLately(storage,now);
   try{track('farm_load_retry',{reason:failed?'failed':'stalled',again,step:'frame',models:0});}catch{}
-  if(again)fail();else timers.setTimeout(reload,400);
+  if(again)fail();else timers.setTimeout(reopen,400);
  }
+ // The reload is watched too (15 Oct 2026, RELOAD_HUNG_MS below): this page stays until the new one arrives, and still here after 15
+ // seconds it shows the pause card with Try again. A portal opens the farm again inside this page and stops this watch at once (its
+ // phase 'checking'), and a farm page that shows itself meanwhile clears it too.
+ function reopen(){timer=timers.setTimeout(hung,RELOAD_HUNG_MS);reload();}
+ function hung(){timer=0;try{track('farm_load_retry',{reason:'reload_hung',again:true,step:'frame',models:0});}catch{}fail();}
  return {wait(){stop();screen.hidden=false;shownDoc=shownSrc=seen=null;files=-1;still=0;if(frameEl())tick=timers.setInterval(check,1000);else timer=timers.setTimeout(shown,wait);},stop};
 }
 const UNREADABLE={};
@@ -174,6 +179,11 @@ export function createLoadingScreen(doc,modelCount,{loading='Loading your farm',
 // window fully covered by another (a Mac then counts the page as out of view) never got to 30 and stayed at 12%. The event also says
 // which step stood still: 'code' (public/game.js never ran), 'models' (with how many had arrived), 'account' or 'scene'.
 export const LOAD_STALL_MS=30000,LOAD_RETRY_KEY='harvest-tycoon:farm-retry',LOAD_RETRY_GAP_MS=600000;
+// 15 Oct 2026 (the 12% report, a fourth time): the page opened again by itself was not watched. A reload keeps the old page on screen
+// until the new one arrives, and a reload that got no answer either (the same weak line, a laptop just awake) left it at 12% until the
+// player refreshed. Still here 15 seconds after the reload: "Your farm could not load" with Try again (farmHandOver: the page's own
+// pause card), counted as reason 'reload_hung'. Never a second reload by itself: that would only start the waiting one over.
+export const RELOAD_HUNG_MS=15000;
 // 11 Oct 2026: 'village' is the village's own models step, 'frame' a farm page that never showed (farmHandOver above).
 export const loadStep=at=>!at?'code':at.models<at.of?(at.village?'village':'models'):!at.account?'account':'scene';
 // The one count of a farm opened again by itself, for this page and the page around it (11 Oct 2026): true when it already was within
@@ -194,11 +204,21 @@ export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=wi
   if(over)return;stop();
   const again=retriedLately(storage,now);
   const at=win.harvestLoading;try{bridge.trackGame?.('farm_load_retry',{reason,again,step:loadStep(at),models:at?.models??0});}catch{}
-  if(!again){win.setTimeout(reload,400);return;}
-  // Over the loading screen, without its bar: the page under it only holds placeholders (level 1, 180 coins), not this farm. In the
-  // player's language, which otherwise comes with the game's code.
+  if(again)showCard();else win.setTimeout(reopen,400);
+ }
+ // Over the loading screen, without its bar: the page under it only holds placeholders (level 1, 180 coins), not this farm. In the
+ // player's language, which otherwise comes with the game's code.
+ function showCard(){
   const bar=doc.querySelector('#loading .farm-loading-progress');if(bar)bar.style.visibility='hidden';
   const card=doc.getElementById('error');card.style.zIndex='101';card.hidden=false;try{translate();}catch{}
+ }
+ // The reload is watched too (RELOAD_HUNG_MS): this page still here 15 seconds after it, and its farm not on screen, shows the card. A
+ // portal's reopen removes this page's frame at once, and its timers with it.
+ function reopen(){win.setTimeout(hung,RELOAD_HUNG_MS);reload();}
+ function hung(){
+  const at=win.harvestLoading;if(at?.finished)return;
+  try{bridge.trackGame?.('farm_load_retry',{reason:'reload_hung',again:true,step:loadStep(at),models:at?.models??0});}catch{}
+  showCard();
  }
  // Every second in view with the bar where it was counts; a second out of view counts for nothing, and does not start them again.
  // 11 Oct 2026: until public/game.js runs, each file of its code that arrives counts as moving too (about 1 MB packed: on a slow line

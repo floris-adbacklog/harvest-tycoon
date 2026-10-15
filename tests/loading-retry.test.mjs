@@ -1,20 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {watchLoading,createLoadingScreen,loadStep,LOAD_STALL_MS,LOAD_RETRY_KEY,LOAD_RETRY_GAP_MS} from '../public/loading-screen.js';
+import {watchLoading,createLoadingScreen,loadStep,LOAD_STALL_MS,LOAD_RETRY_KEY,LOAD_RETRY_GAP_MS,RELOAD_HUNG_MS} from '../public/loading-screen.js';
 import {trackGame} from '../src/analytics.js';
 
 // 3 Oct 2026: the bar sometimes stood still at 12% until a refresh: the game's code had not arrived. Now the page opens once more by
 // itself, and a second time shows Try again.
 function setup({stored,storage=true,portal=null}={}){
- let clock=1_000_000,tick=null;const timeouts=[],tracked=[],reloads=[],store=new Map(stored==null?[]:[[LOAD_RETRY_KEY,String(stored)]]);
+ let clock=1_000_000,tick=null;const timeouts=[],delays=[],tracked=[],reloads=[],store=new Map(stored==null?[]:[[LOAD_RETRY_KEY,String(stored)]]);
  const el={progress:{value:12},loading:{hidden:false},error:{hidden:true,style:{}}},retry={onclick:null},bar={style:{}};let translated=0;
  const doc={hidden:false,getElementById:id=>el[{'load-progress':'progress',loading:'loading',error:'error'}[id]],querySelector:sel=>sel==='#error .primary-button'?retry:sel==='#loading .farm-loading-progress'?bar:null};
- const win={setInterval:fn=>{tick=fn;return 7;},clearInterval:id=>{if(id===7)tick=null;},setTimeout:fn=>timeouts.push(fn),parent:{location:{reload:()=>reloads.push('page')}}};
+ const win={setInterval:fn=>{tick=fn;return 7;},clearInterval:id=>{if(id===7)tick=null;},setTimeout:(fn,ms)=>{delays.push(ms);return timeouts.push(fn);},parent:{location:{reload:()=>reloads.push('page')}}};
  const storageApi=storage?{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)}:null;
  const watch=watchLoading({trackGame:(e,p)=>tracked.push([e,p])},portal,{translate:()=>translated++,doc,win,storage:storageApi,now:()=>clock});
  const pass=ms=>{for(let t=0;t<ms;t+=1000){clock+=1000;tick?.();}};
- return {watch,el,doc,win,retry,bar,translated:()=>translated,store,tracked,reloads,timeouts,pass,running:()=>Boolean(tick),flush:()=>timeouts.splice(0).forEach(fn=>fn())};
+ return {watch,el,doc,win,retry,bar,translated:()=>translated,store,tracked,reloads,timeouts,delays,pass,running:()=>Boolean(tick),flush:()=>timeouts.splice(0).forEach(fn=>fn())};
 }
 test('a bar that stands still for 30 seconds opens the whole page again, once',()=>{
  const t=setup();t.pass(LOAD_STALL_MS-1000);assert.equal(t.reloads.length,0,'not before 30 seconds');
@@ -59,6 +59,22 @@ test('the game code failing to load opens the page again at once; a second time 
  const later=setup({stored:1_000_000-LOAD_RETRY_GAP_MS-1});later.watch.failed();later.flush();assert.deepEqual(later.reloads,['page'],'long after, it may try once more');
  const nowhere=setup({storage:false});nowhere.watch.failed();nowhere.flush();assert.deepEqual(nowhere.reloads,[],'without a place to count it never reloads by itself');assert.equal(nowhere.el.error.hidden,false);
 });
+// 15 Oct 2026 (the 12% report, a fourth time): the reload is watched too. This page stays on screen until the new one arrives, and a
+// reload that got no answer left it at 12% until the player refreshed.
+test('a reload that gets no answer shows Try again 15 seconds later, never a second reload; a farm on screen by then is left alone',()=>{
+ const t=setup();t.pass(LOAD_STALL_MS+1000);t.flush();assert.deepEqual(t.reloads,['page']);assert.equal(t.el.error.hidden,true);
+ assert.deepEqual(t.delays,[400,RELOAD_HUNG_MS],'watched from the moment it starts');
+ t.flush();assert.deepEqual(t.reloads,['page'],'no second reload: it would only start the waiting one over');
+ assert.equal(t.el.error.hidden,false);assert.equal(t.bar.style.visibility,'hidden');assert.equal(t.el.error.style.zIndex,'101');assert.equal(t.translated(),1);
+ assert.deepEqual(t.tracked.at(-1),['farm_load_retry',{reason:'reload_hung',again:true,step:'code',models:0}]);
+ t.retry.onclick();assert.deepEqual(t.reloads,['page','page'],'Try again is the player\'s own');
+ const failed=setup();failed.win.harvestLoading={models:30,of:141,account:true,finished:false};failed.watch.failed();failed.flush();failed.flush();
+ assert.equal(failed.el.error.hidden,false);assert.deepEqual(failed.tracked.at(-1)[1],{reason:'reload_hung',again:true,step:'models',models:30});
+ const shown=setup();shown.watch.failed();shown.flush();shown.win.harvestLoading={models:141,of:141,account:true,finished:true};shown.flush();
+ assert.equal(shown.el.error.hidden,true,'the farm came after all: no card over it');assert.equal(shown.tracked.length,1);
+ const pushed=[],win={dataLayer:{push:e=>pushed.push(e)},innerWidth:390,matchMedia:()=>({matches:true})};
+ trackGame('farm_load_retry',{reason:'reload_hung',again:true,step:'frame',models:0},win);assert.equal(pushed.find(e=>e?.event==='farm_load_retry').reason,'reload_hung');
+});
 test('a farm that opened stops the watch and forgets the try; the game\'s own error stays as it is',()=>{
  const ok=setup({stored:1_000_000-1000});ok.watch.done(true);assert.equal(ok.running(),false);assert.equal(ok.store.has(LOAD_RETRY_KEY),false);ok.pass(60000);assert.equal(ok.reloads.length,0);
  const webgl=setup({stored:5});webgl.watch.done(false);assert.equal(webgl.store.has(LOAD_RETRY_KEY),true);webgl.watch.failed();webgl.flush();assert.equal(webgl.reloads.length,0,'after done nothing more happens');
@@ -74,7 +90,7 @@ test('the measurement: one fixed event with a fixed reason, after consent like e
  assert.equal(events.length,2);assert.equal(events[0].reason,'stalled');assert.equal(events[0].again,true);assert.equal(events[0].extra,undefined);assert.equal(events[1].reason,undefined,'never an error text');
  assert.equal(events[0].step,'models');assert.equal(events[0].models,0);assert.equal(events[1].step,undefined,'only the fixed step words');assert.equal(events[1].models,undefined);
  const analytics=readFileSync(new URL('../src/analytics.js',import.meta.url),'utf8');
- assert.match(analytics,/'connection_recovered','farm_load_retry'\]\);/);assert.match(analytics,/const LOAD_REASONS=new Set\(\['failed','stalled'\]\);/);assert.match(analytics,/const LOAD_STEPS=new Set\(\['code','models','account','scene','village','frame'\]\);/);
+ assert.match(analytics,/'connection_recovered','farm_load_retry'\]\);/);assert.match(analytics,/const LOAD_REASONS=new Set\(\['failed','stalled','reload_hung'\]\);/);assert.match(analytics,/const LOAD_STEPS=new Set\(\['code','models','account','scene','village','frame'\]\);/);
  const cloud=readFileSync(new URL('../src/game-cloud.js',import.meta.url),'utf8');
  assert.ok(cloud.indexOf('document.body.hidden=false;\n  const watch=watchLoading(bridge,portal,')>0,'watched from the moment the page shows');
  assert.match(cloud,/const watch=watchLoading\(bridge,portal,\{translate:\(\)=>void startTranslation\(document\)\}\);/);

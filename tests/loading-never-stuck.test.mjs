@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,statSync} from 'node:fs';
 import vm from 'node:vm';
 import * as nodeModule from 'node:module';
-import {farmHandOver,watchLoading,loadStep,LOAD_STALL_MS,LOAD_RETRY_KEY,LOAD_RETRY_GAP_MS,FRAME_FAILED_MS,LOAD_FAILED_TEXT} from '../public/loading-screen.js';
+import {farmHandOver,watchLoading,loadStep,LOAD_STALL_MS,LOAD_RETRY_KEY,LOAD_RETRY_GAP_MS,FRAME_FAILED_MS,LOAD_FAILED_TEXT,RELOAD_HUNG_MS} from '../public/loading-screen.js';
 import {trackGame} from '../src/analytics.js';
 import {describeFailure,connectionMessage,safeToRepeat,withRetry} from '../src/connection.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -12,18 +12,19 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // page until its own code ran (src/game-cloud.js), so a page whose files did not come stayed hidden for good behind an empty frame. The
 // page around it (play.html, crazygames.html, discord.html, kongregate.html) now watches the frame (public/loading-screen.js farmHandOver).
 function frameFixture({stored,storage=true,started='blank'}={}){
- let tick=null,clock=1_000_000;const later=[],reloads=[],fails=[],tracked=[],store=new Map(stored==null?[]:[[LOAD_RETRY_KEY,String(stored)]]);
+ let tick=null,clock=1_000_000,ids=0,onReload=null;const later=[],live=new Map(),reloads=[],fails=[],tracked=[],store=new Map(stored==null?[]:[[LOAD_RETRY_KEY,String(stored)]]);
  // The frame's first empty page (about:blank: shown, no bar) and the farm page (farm.html: its bar, hidden until its code runs).
  const blank={getElementById:()=>null,body:{hidden:false},readyState:'complete'};
  const page=()=>({getElementById:id=>id==='load-progress'?{value:12}:null,body:{hidden:true},readyState:'interactive'});
  const frame={files:0,src:'https://www.harvesttycoon.com/farm.html',contentDocument:started==='blank'?blank:started==='error'?null:page()};
  frame.contentWindow={performance:{getEntriesByType:type=>type==='resource'?{length:frame.files}:[]}};
- const timers={setInterval:fn=>{tick=fn;return 1;},clearInterval:()=>{tick=null;},setTimeout:fn=>{later.push(fn);return 2;},clearTimeout(){}};
+ // Timeouts keep their delay (live: the ones not run or cleared yet) and run on flush, one round at a time.
+ const timers={setInterval:fn=>{tick=fn;return 1;},clearInterval:()=>{tick=null;},setTimeout:(fn,ms)=>{const id=++ids;live.set(id,ms);later.push(()=>{if(live.delete(id))fn();});return id;},clearTimeout:id=>{live.delete(id);}};
  const screen={hidden:true},win={},view={hidden:false};
  const storageApi=storage?{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)}:null;
- const hand=farmHandOver(win,screen,{frame:()=>frame,reload:()=>reloads.push('page'),fail:()=>fails.push('card'),track:(e,p)=>tracked.push([e,p]),storage:storageApi,now:()=>clock,hidden:()=>view.hidden,timers});
+ const hand=farmHandOver(win,screen,{frame:()=>frame,reload:()=>{reloads.push('page');onReload?.();},fail:()=>fails.push('card'),track:(e,p)=>tracked.push([e,p]),storage:storageApi,now:()=>clock,hidden:()=>view.hidden,timers});
  const pass=ms=>{for(let t=0;t<ms;t+=1000){clock+=1000;tick?.();}};
- return {hand,frame,page,blank,screen,win,view,store,storageApi,reloads,fails,tracked,pass,later,running:()=>Boolean(tick),flush:()=>later.splice(0).forEach(fn=>fn()),get clock(){return clock;},set clock(v){clock=v;}};
+ return {hand,frame,page,blank,screen,win,view,store,storageApi,reloads,fails,tracked,pass,later,running:()=>Boolean(tick),flush:()=>later.splice(0).forEach(fn=>fn()),delays:()=>[...live.values()],set onReload(fn){onReload=fn;},get clock(){return clock;},set clock(v){clock=v;}};
 }
 test('a farm page whose files stop coming: the loading screen stays over it, and after 30 seconds in view it is opened again, once',()=>{
  const f=frameFixture();f.hand.wait();assert.equal(f.screen.hidden,false);
@@ -109,6 +110,28 @@ test('a trip sent with location.replace (its src unchanged) whose farm.html fail
  home.frame.dataset.address='/farm.html';home.frame.contentDocument=null;home.pass(FRAME_FAILED_MS+1000);home.flush();assert.deepEqual(home.reloads,['page'],'and the trip home');
  const stay=frameFixture({started:'page'});stay.frame.dataset={address:'/farm.html?world=village'};stay.hand.wait();stay.win.harvestFarmShown();
  stay.frame.contentDocument=null;stay.pass(LOAD_STALL_MS*4);stay.flush();assert.deepEqual([...stay.reloads,...stay.fails],[],'not sent anywhere: not ours to reload');
+});
+// 15 Oct 2026 (the 12% report, a fourth time): the reload this page starts is watched too. A reload that gets no answer keeps the old
+// page on screen, and nothing watched it then: 12% until the player refreshed.
+test('a reload that gets no answer: the pause card with Try again 15 seconds later, never a second reload by itself',()=>{
+ const f=frameFixture({started:'page'});f.hand.wait();f.pass(LOAD_STALL_MS+1000);f.flush();
+ assert.deepEqual(f.reloads,['page']);assert.deepEqual(f.delays(),[RELOAD_HUNG_MS],'watched from the moment it starts');assert.deepEqual(f.fails,[]);
+ f.flush();assert.deepEqual(f.reloads,['page'],'no second reload: it would only start the waiting one over');assert.deepEqual(f.fails,['card']);
+ assert.deepEqual(f.tracked.at(-1),['farm_load_retry',{reason:'reload_hung',again:true,step:'frame',models:0}]);assert.equal(RELOAD_HUNG_MS,15000);
+ // farm.html that failed (the browser's error page) is opened again the same way, and watched the same way.
+ const error=frameFixture({started:'error'});error.hand.wait();error.pass(FRAME_FAILED_MS+1000);error.flush();error.flush();assert.deepEqual(error.reloads,['page']);assert.deepEqual(error.fails,['card']);
+});
+test('the watch on a reload ends when a portal opens the farm again inside its page, or the farm page shows itself after all',()=>{
+ // CrazyGames, Discord, Kongregate: portal.reopen opens the farm in this page, whose phase 'checking' stops this watch at once.
+ const portal=frameFixture({started:'page'});portal.onReload=()=>portal.hand.stop();portal.hand.wait();portal.pass(LOAD_STALL_MS+1000);portal.flush();
+ assert.deepEqual(portal.reloads,['page']);assert.deepEqual(portal.delays(),[]);portal.flush();assert.deepEqual(portal.fails,[]);
+ assert.equal(read('src/farm-session.js').includes("connection.stop();dispose();const ticket=generation;phase('checking','Checking your account…');"),true,'reopen reaches phase checking before anything waits');
+ for(const file of ['src/crazygames.js','src/discord-page.js','src/kongregate-page.js'])assert.match(read(file),/if\(value==='authenticated'\)handOver\.wait\(\);else\{handOver\.stop\(\);/,file);
+ // The page that took long was not gone: it shows itself before the reload lands, and no card comes over the farm.
+ const late=frameFixture({started:'page'});late.hand.wait();late.pass(LOAD_STALL_MS+1000);late.flush();late.win.harvestFarmShown();
+ assert.deepEqual(late.delays(),[]);late.flush();assert.deepEqual(late.fails,[]);assert.equal(late.screen.hidden,true);
+ // The page signed out or paused meanwhile (stop), or waits for a new farm (wait): its own screen, no card of this watch.
+ const stopped=frameFixture({started:'page'});stopped.hand.wait();stopped.pass(LOAD_STALL_MS+1000);stopped.flush();stopped.hand.stop();stopped.flush();assert.deepEqual(stopped.fails,[]);
 });
 // The farm page's own watch and this one share one count: whichever opens the farm again first, the next stuck load within ten
 // minutes shows Try again (the farm page's card or this page's pause card), and a farm that opened forgets it.
